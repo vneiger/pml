@@ -1,0 +1,11 @@
+
+DIRS = sage_output magma_output lzz_p_extra vec_lzz_p_extra lzz_pX_extra lzz_pX_middle_product lzz_pX_CRT mat_lzz_pX_extra # cauchy_like_geometric_special mosaic_hankel
+
+all:	clean
+	$(foreach dir, $(DIRS), if [ -d $(dir) ]; then cd $(dir)/src ; make ; cd ../.. ; fi ;)
+
+clean:
+	rm -f lib/*
+	rm -f include/*
+	$(foreach dir, $(DIRS), if [ -d $(dir) ]; then cd $(dir)/src ; make clean ; cd ../.. ; fi ;)
+	$(foreach dir, $(DIRS), if [ -d $(dir) ]; then cd $(dir)/test ; make clean ; cd ../.. ; fi ;)
