@@ -181,6 +181,115 @@ zz_pX_Multipoint_FFT get_FFT_points(long n);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/* basic transforms over zz_p (naive, Karatsuba, Montgomery)  */
+/* abstract class                                             */
+/* usually not symmetric, so we have left / right transforms  */
+/* work modulo any p                                          */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class zz_pX_Transform
+{
+public:
+    
+    /*------------------------------------------------------------*/
+    /* basic operations                                           */
+    /*------------------------------------------------------------*/
+    virtual void forward_left(Vec<zz_p>& val, const zz_pX& P) const = 0;
+    virtual void forward_right(Vec<zz_p>& val, const zz_pX& P) const = 0;
+    virtual void backward(zz_pX& P, const Vec<zz_p>& val) const = 0;  
+
+    /*------------------------------------------------------------*/
+    /* action on vectors and matrices                             */
+    /*------------------------------------------------------------*/
+    void forward_left_vector(Vec<Vec<zz_p>>& val, const Vec<zz_pX>& P) const;
+    void forward_right_vector(Vec<Vec<zz_p>>& val, const Vec<zz_pX>& P) const;
+    void backward_vector(Vec<zz_pX>& f, const Vec<Vec<zz_p>>& val) const;
+    void forward_left_matrix(Vec<Mat<zz_p>>& val, const Mat<zz_pX>& f) const;
+    void forward_right_matrix(Vec<Mat<zz_p>>& val, const Mat<zz_pX>& f) const;
+    void backward_matrix(Mat<zz_pX>& f, const Vec<Mat<zz_p>>& val) const;
+
+    /*------------------------------------------------------------*/
+    /* size of the input                                          */
+    /*------------------------------------------------------------*/
+    long input_length() const;
+
+    /*------------------------------------------------------------*/
+    /* size of the transform                                      */
+    /*------------------------------------------------------------*/
+    long transform_length() const;
+ 
+protected:
+    long m, n; // m = input size, n = transform size
+};
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* quadratic transform                                        */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class zz_pX_Transform_naive : public zz_pX_Transform
+{
+public:
+    /*------------------------------------------------------------*/
+    /* boilerplate                                                */
+    /*------------------------------------------------------------*/
+    zz_pX_Transform_naive(){}
+    ~zz_pX_Transform_naive(){};
+
+    /*------------------------------------------------------------*/
+    /* constructor                                                */
+    /* sets m and n                                               */
+    /*------------------------------------------------------------*/
+    zz_pX_Transform_naive(long d);
+
+    /*------------------------------------------------------------*/
+    /* basic operations                                           */
+    /*------------------------------------------------------------*/
+    void forward_left(Vec<zz_p>& val, const zz_pX& P) const;
+    void forward_right(Vec<zz_p>& val, const zz_pX& P) const;
+    void backward(zz_pX& P, const Vec<zz_p>& val) const;  
+};
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* quadratic transform                                        */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class zz_pX_Transform_karatsuba : public zz_pX_Transform
+{
+public:
+    /*------------------------------------------------------------*/
+    /* boilerplate                                                */
+    /*------------------------------------------------------------*/
+    ~zz_pX_Transform_karatsuba(){};
+
+    /*------------------------------------------------------------*/
+    /* constructor                                                */
+    /* sets m and n                                               */
+    /*------------------------------------------------------------*/
+    zz_pX_Transform_karatsuba();
+
+    /*------------------------------------------------------------*/
+    /* basic operations                                           */
+    /*------------------------------------------------------------*/
+    void forward_left(Vec<zz_p>& val, const zz_pX& P) const;
+    void forward_right(Vec<zz_p>& val, const zz_pX& P) const;
+    void backward(zz_pX& P, const Vec<zz_p>& val) const;  
+};
+
+
+
+
+
+
+
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 /* Chinese Remaindering over zz_p                             */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

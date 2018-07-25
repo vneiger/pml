@@ -8,51 +8,100 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* initializes a zz_pX_Multipoint                             */
+/* checks some products                                       */
 /*------------------------------------------------------------*/
-void check(){
+void one_check(long sz, long deg, long p)
+{
+    Mat<zz_pX> a, b, c1;
+    double t;
 
-  long i = 1000;
-  long j = 2;
-  Mat<zz_pX> a, b, c1, c2;
+    if (p == 0) // init zz_p with FFTInit()
+    {
+	zz_p::FFTInit(0);
+    }
+    else
+    {
+	zz_p::init(p);
+    }
 
-  cout << i << " " << j << " ";
+    random_mat_zz_pX(a, sz, sz, deg);
+    random_mat_zz_pX(b, sz, sz, deg);
+    cout << sz << " " << deg << " ";
 
-  double t;
-  zz_p::init(1125899906842679);
-  zz_p::init(23068673);
-  zz_p::UserFFTInit(23068673); // TODO: detect this
+    // naive algorithm, if the size is reasonable
+    long do_naive = (sz <= 400)  && (deg <= 40);
+    if (do_naive)
+    {
+	t = GetTime();
+	multiply_naive(c1, a, b);
+	cout << GetTime()-t << " ";
+    }
+    else 
+    { 
+	cout << "------ ";
+    }
 
-  random_mat_zz_pX(a, i, i, j);
-  random_mat_zz_pX(b, i, i, j);
+    // geometric evaluation
+    t = GetTime();
+    Mat<zz_pX> c2;
+    multiply_evaluate_geometric(c2, a, b);
+    cout << GetTime()-t << " ";
 
-  t = GetTime();
-  multiply_naive(c1, a, b);
-  cout << GetTime()-t << endl;
+    if (do_naive)
+    {
+	if (c1 != c2)
+	{
+	    cout << "evaluate mismatch with p=" << p << ", sz=" << sz << ", deg=" << deg << endl;
+	}
+    }
 
-  t = GetTime();
-  multiply_evaluate_geometric(c2, a, b);
-  cout << GetTime()-t << endl;
+    // naive transform
+    t = GetTime();
+    Mat<zz_pX> c3;
+    multiply_transform_naive(c3, a, b);
+    cout << GetTime()-t << " ";
 
-  if (c1 != c2)
-    cout << "mismatch 1\n";
+    if (c3 != c2)
+    {
+	cout << "transform naive mismatch with p=" << p << ", sz=" << sz << ", deg=" << deg << endl;
+    }
 
-  zz_p::FFTInit(1);
+    if (deg == 2) // TODO: write is_karatsuba..
+    {
+	t = GetTime();
+	Mat<zz_pX> c4;
+	multiply_transform_karatsuba(c4, a, b);
+	cout << GetTime()-t << " ";
+	
+	if (c4 != c2)
+	{
+	    cout << "transform karatsuba mismatch with p=" << p << ", sz=" << sz << ", deg=" << deg << endl;
+	}
+    }
+    
 
-  random_mat_zz_pX(a, i, i, j);
-  random_mat_zz_pX(b, i, i, j);
 
-  multiply_naive(c1, a, b);
+    cout << endl;
+}
 
-  t = GetTime();
-  multiply_evaluate_FFT(c2, a, b);
-  cout << GetTime()-t << endl;
+/*------------------------------------------------------------*/
+/* checks some products                                       */
+/*------------------------------------------------------------*/
+void check()
+{
+    
+// TODO: detect small Fourier primes
+    one_check(1000, 2, 1125899906842679);
+    one_check(1000, 2, 23068673);
+    one_check(1000, 2, 0);
 
-  if (c1 != c2)
-    cout << "mismatch 2\n";
 }  
 
-int main(int argc, char ** argv){
-  check();
-  return 0;
+/*------------------------------------------------------------*/
+/* main calls check                                           */
+/*------------------------------------------------------------*/
+int main(int argc, char ** argv)
+{
+    check();
+    return 0;
 }
