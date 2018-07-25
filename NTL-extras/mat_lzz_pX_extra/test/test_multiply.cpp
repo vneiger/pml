@@ -8,51 +8,70 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* initializes a zz_pX_Multipoint                             */
+/* checks some products                                       */
 /*------------------------------------------------------------*/
-void check(){
+void one_check(long sz, long deg, long p)
+{
+    Mat<zz_pX> a, b, c1, c2;
+    double t;
 
-  long i = 1000;
-  long j = 2;
-  Mat<zz_pX> a, b, c1, c2;
+    if (p == 0) // init zz_p with FFTInit()
+    {
+	zz_p::FFTInit(0);
+    }
+    else
+    {
+	zz_p::init(p);
+    }
 
-  cout << i << " " << j << " ";
+    random_mat_zz_pX(a, sz, sz, deg);
+    random_mat_zz_pX(b, sz, sz, deg);
+    cout << sz << " " << deg << " ";
 
-  double t;
-  zz_p::init(1125899906842679);
-  zz_p::init(23068673);
-  zz_p::UserFFTInit(23068673); // TODO: detect this
+    long do_naive = (sz <= 400)  && (deg <= 40);
 
-  random_mat_zz_pX(a, i, i, j);
-  random_mat_zz_pX(b, i, i, j);
+    if (do_naive)
+    {
+	t = GetTime();
+	multiply_naive(c1, a, b);
+	cout << GetTime()-t << " ";
+    }
+    else 
+    { 
+	cout << "------ ";
+    }
 
-  t = GetTime();
-  multiply_naive(c1, a, b);
-  cout << GetTime()-t << endl;
+    t = GetTime();
+    multiply_evaluate_geometric(c2, a, b);
+    cout << GetTime()-t << endl;
 
-  t = GetTime();
-  multiply_evaluate_geometric(c2, a, b);
-  cout << GetTime()-t << endl;
+    if (do_naive)
+    {
+	if (c1 != c2)
+	{
+	    cout << "mismatch with p=" << p << ", sz=" << sz << ", deg=" << deg << endl;
+	}
+    }
+}
 
-  if (c1 != c2)
-    cout << "mismatch 1\n";
+/*------------------------------------------------------------*/
+/* checks some products                                       */
+/*------------------------------------------------------------*/
+void check()
+{
+    
+// TODO: detect small Fourier primes
+    one_check(1000, 2, 1125899906842679);
+    one_check(1000, 2, 23068673);
+    one_check(1000, 2, 0);
 
-  zz_p::FFTInit(1);
-
-  random_mat_zz_pX(a, i, i, j);
-  random_mat_zz_pX(b, i, i, j);
-
-  multiply_naive(c1, a, b);
-
-  t = GetTime();
-  multiply_evaluate_FFT(c2, a, b);
-  cout << GetTime()-t << endl;
-
-  if (c1 != c2)
-    cout << "mismatch 2\n";
 }  
 
-int main(int argc, char ** argv){
-  check();
-  return 0;
+/*------------------------------------------------------------*/
+/* main calls check                                           */
+/*------------------------------------------------------------*/
+int main(int argc, char ** argv)
+{
+    check();
+    return 0;
 }
