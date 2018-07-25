@@ -12,7 +12,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void one_check(long sz, long deg, long p)
 {
-    Mat<zz_pX> a, b, c1, c2, c3;
+    Mat<zz_pX> a, b, c1;
     double t;
 
     if (p == 0) // init zz_p with FFTInit()
@@ -28,8 +28,8 @@ void one_check(long sz, long deg, long p)
     random_mat_zz_pX(b, sz, sz, deg);
     cout << sz << " " << deg << " ";
 
+    // naive algorithm, if the size is reasonable
     long do_naive = (sz <= 400)  && (deg <= 40);
-
     if (do_naive)
     {
 	t = GetTime();
@@ -41,7 +41,9 @@ void one_check(long sz, long deg, long p)
 	cout << "------ ";
     }
 
+    // geometric evaluation
     t = GetTime();
+    Mat<zz_pX> c2;
     multiply_evaluate_geometric(c2, a, b);
     cout << GetTime()-t << " ";
 
@@ -53,7 +55,9 @@ void one_check(long sz, long deg, long p)
 	}
     }
 
+    // naive transform
     t = GetTime();
+    Mat<zz_pX> c3;
     multiply_transform_naive(c3, a, b);
     cout << GetTime()-t << " ";
 
@@ -61,6 +65,21 @@ void one_check(long sz, long deg, long p)
     {
 	cout << "transform naive mismatch with p=" << p << ", sz=" << sz << ", deg=" << deg << endl;
     }
+
+    if (deg == 2) // TODO: write is_karatsuba..
+    {
+	t = GetTime();
+	Mat<zz_pX> c4;
+	multiply_transform_karatsuba(c4, a, b);
+	cout << GetTime()-t << " ";
+	
+	if (c4 != c2)
+	{
+	    cout << "transform karatsuba mismatch with p=" << p << ", sz=" << sz << ", deg=" << deg << endl;
+	}
+    }
+    
+
 
     cout << endl;
 }
