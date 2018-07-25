@@ -224,7 +224,6 @@ void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
     }
 }
 
-<<<<<<< HEAD
 long min (const Vec<long> &v){
 	if (v.length() == 0) return 0;
 	long m = v[0];
