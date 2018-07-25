@@ -231,3 +231,35 @@ void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
 	multiply_evaluate_geometric(c, a, b);
     }
 }
+
+/*------------------------------------------------------------*/
+/* c = a*b                                                    */
+/*------------------------------------------------------------*/
+void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{
+    long dA = deg(a);
+    long dB = deg(b);
+
+    // double t;
+
+    zz_pX_Transform_naive trs_naive(max(dA, dB) + 1);
+
+    // t = GetTime();
+    Vec<Mat<zz_p>> valA, valB, valC;
+    trs_naive.forward_left_matrix(valA, a);
+    trs_naive.forward_right_matrix(valB, b);
+    // cout << "forward: " << GetTime()-t << endl;
+
+    // t = GetTime();
+    long len = trs_naive.transform_length();
+    valC.SetLength(len);
+    for (long i = 0; i < len; i++)
+    {
+    	mul(valC[i], valA[i], valB[i]);
+    }
+    // cout << "muls eval: " << GetTime()-t << endl;
+
+    // t = GetTime();
+    trs_naive.backward_matrix(c, valC);
+}
+

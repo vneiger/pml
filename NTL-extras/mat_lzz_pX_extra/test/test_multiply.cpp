@@ -12,7 +12,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void one_check(long sz, long deg, long p)
 {
-    Mat<zz_pX> a, b, c1, c2;
+    Mat<zz_pX> a, b, c1, c2, c3;
     double t;
 
     if (p == 0) // init zz_p with FFTInit()
@@ -43,15 +43,26 @@ void one_check(long sz, long deg, long p)
 
     t = GetTime();
     multiply_evaluate_geometric(c2, a, b);
-    cout << GetTime()-t << endl;
+    cout << GetTime()-t << " ";
 
     if (do_naive)
     {
 	if (c1 != c2)
 	{
-	    cout << "mismatch with p=" << p << ", sz=" << sz << ", deg=" << deg << endl;
+	    cout << "evaluate mismatch with p=" << p << ", sz=" << sz << ", deg=" << deg << endl;
 	}
     }
+
+    t = GetTime();
+    multiply_transform_naive(c3, a, b);
+    cout << GetTime()-t << " ";
+
+    if (c3 != c2)
+    {
+	cout << "transform naive mismatch with p=" << p << ", sz=" << sz << ", deg=" << deg << endl;
+    }
+
+    cout << endl;
 }
 
 /*------------------------------------------------------------*/
