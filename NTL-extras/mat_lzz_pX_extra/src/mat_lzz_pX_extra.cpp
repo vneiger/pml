@@ -8,8 +8,85 @@
 NTL_CLIENT
 
 
+
 /*------------------------------------------------------------*/
-/* random matrix of a given degree                            */
+/*------------------------------------------------------------*/
+/* addition / subtraction                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* addition                                                   */
+/*------------------------------------------------------------*/
+void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    if (m != b.NumRows() || n != b.NumCols())
+    {
+	LogicError("dimension mismatch in matrix addition");
+    }
+
+    c.SetDims(m, n);
+    for (long i = 0; i < m; i++)
+    {
+	for (long j = 0; j < n; j++)
+	{
+	    c[i][j] = a[i][j] + b[i][j];
+	}
+    }
+}
+
+/*------------------------------------------------------------*/
+/* addition, rhs is constant                                  */
+/*------------------------------------------------------------*/
+void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    if (m != b.NumRows() || n != b.NumCols())
+    {
+	LogicError("dimension mismatch in matrix addition");
+    }
+
+    c.SetDims(m, n);
+    for (long i = 0; i < m; i++)
+    {
+	for (long j = 0; j < n; j++)
+	{
+	    c[i][j] = a[i][j] + b[i][j];
+	}
+    }
+}
+
+/*------------------------------------------------------------*/
+/* subtraction                                                */
+/*------------------------------------------------------------*/
+void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    if (m != b.NumRows() || n != b.NumCols())
+    {
+	LogicError("dimension mismatch in matrix addition");
+    }
+
+    c.SetDims(m, n);
+    for (long i = 0; i < m; i++)
+    {
+	for (long j = 0; j < n; j++)
+	{
+	    c[i][j] = a[i][j] - b[i][j];
+	}
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/* random (n, m) matrix of degree < d                         */
 /*------------------------------------------------------------*/
 void random_mat_zz_pX(Mat<zz_pX>& a, long n, long m, long d)
 {
