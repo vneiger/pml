@@ -903,8 +903,8 @@ bool is_weak_popov (const Mat<zz_pX> &b, const std::vector<long> &shift, const b
 		if (pivots[0] == -1)
 			return false;
 	}
-	std::sort(pivots.begin(), pivots.end());
 	if (!ordered){ // only check for pair-wise distinct
+		std::sort(pivots.begin(), pivots.end());
 		for (unsigned long i = 1; i < pivots.size(); i++)
 			if(pivots[i] == pivots[i-1]){
 				return false;
