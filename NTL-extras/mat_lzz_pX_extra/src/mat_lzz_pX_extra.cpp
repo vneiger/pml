@@ -916,6 +916,13 @@ bool is_weak_popov (
 	return true;
 }
 
+std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
+	out << "[ ";
+	for (auto &i: s)
+		out << i << " ";
+	return out << "]";
+}
+
 /*
 bool is_popov (const Mat<zz_pX> &m, const Vec<long> &shift = Vec<long>(), const bool row_wise = true){
 	Vec<long> pivots;

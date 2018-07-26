@@ -2,6 +2,7 @@
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
 #include <iomanip>
+#include <vector>
 
 #include "mat_lzz_pX_extra.h"
 
@@ -22,7 +23,7 @@ void printVec(std::vector<T> const &input)
 /******************************************************/
 
 
-
+using namespace std;
 int main(){
 	zz_p::init(13);
 
