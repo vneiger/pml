@@ -636,58 +636,58 @@ long max(const Vec<long> &v)
 /*------------------------------------------------------------*/
 /* some comment                                               */
 /*------------------------------------------------------------*/
-void check_shift(bool &shifted, const Vec<long> &shift, const Mat<zz_pX> &b, const bool row_wise = true)
+void check_shift(bool &shifted, const std::vector<long> &shift, const Mat<zz_pX> &b, const bool row_wise = true)
 {
-    shifted = false;
-    if (shift.length() != 0) 
-    {
-	shifted = true;
-	if (row_wise && shift.length() != b.NumCols())
+	shifted = false;
+	if (not shift.empty()) 
 	{
-	    throw "bad row shift dimensions";
+		shifted = true;
+		if (row_wise && (long)shift.size() != b.NumCols())
+		{
+			throw "bad row shift dimensions";
+		}
+		if (!row_wise && (long)shift.size() != b.NumRows())
+		{
+			throw "bad col shift dimensions";
+		}
 	}
-	if (!row_wise && shift.length() != b.NumRows())
-	{
-	    throw "bad col shift  dimensions";
-	}
-    }
 }
 
 /*------------------------------------------------------------*/
 /* some comment                                               */
 /*------------------------------------------------------------*/
 void degree_matrix(Mat<long> &a, const Mat<zz_pX> &b, 
-                   const Vec<long> & shift,
+                   const std::vector<long> & shift,
                    const bool row_wise)
 {
-    // check for shifts
-    bool shifted;
-    check_shift(shifted, shift, b, row_wise);
-    long min_shift = min(shift);
-	
-    a.SetDims(b.NumRows(), b.NumCols());
-    for (long i = 0; i < b.NumRows(); i++)
-    {
-	for (long j = 0; j < b.NumCols(); j++)
+	// check for shifts
+	bool shifted;
+	check_shift(shifted, shift, b, row_wise);
+	long min_shift = min(shift);
+
+	a.SetDims(b.NumRows(), b.NumCols());
+	for (long i = 0; i < b.NumRows(); i++)
 	{
-	    a[i][j] = deg(b[i][j]);
-	    if (shifted)
-	    {
-		if (a[i][j] == -1)
+		for (long j = 0; j < b.NumCols(); j++)
 		{
-		    a[i][j] += min_shift;
+			a[i][j] = deg(b[i][j]);
+			if (shifted)
+			{
+				if (a[i][j] == -1)
+				{
+					a[i][j] += min_shift;
+				}
+				else if (row_wise)
+				{
+					a[i][j] += shift[j];
+				}
+				else
+				{
+					a[i][j] += shift[i];
+				}
+			}
 		}
-		else if (row_wise)
-		{
-		    a[i][j] += shift[j];
-		}
-		else
-		{
-		    a[i][j] += shift[i];
-		}
-	    }
 	}
-    }
 }
 
 /*------------------------------------------------------------*/

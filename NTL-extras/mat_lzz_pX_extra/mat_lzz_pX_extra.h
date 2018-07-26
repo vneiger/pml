@@ -3,6 +3,7 @@
 
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
+#include <vector> // std vector, for shifts, degrees, pivot indices
 
 NTL_CLIENT
 
@@ -250,27 +251,27 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 /*------------------------------------------------------------*/
 /* matrix of integers; deg(0) = -1                            */
 /*------------------------------------------------------------*/
-void degree_matrix(Mat<long> &a, const Mat<zz_pX> &b, const Vec<long>& shift=Vec<long>(), const bool row_wise=true);
+void degree_matrix(Mat<long> &a, const Mat<zz_pX> &b, const std::vector<long>& shift=std::vector<long>(), const bool row_wise=true);
 
 /*------------------------------------------------------------*/
 /* max degree of row entries                                  */
 /*------------------------------------------------------------*/
-void row_degree(Vec<long> &a, const Mat<zz_pX> &b, const Vec<long>& shift=Vec<long>()); 
+void row_degree(std::vector<long> &a, const Mat<zz_pX> &b, const std::vector<long>& shift=std::vector<long>()); 
 
 /*------------------------------------------------------------*/
 /* max degree of col entries                                  */
 /*------------------------------------------------------------*/
-void col_degree(Vec<long> &a, const Mat<zz_pX> &b,const Vec<long>& shift=Vec<long>()); 
+void col_degree(std::vector<long> &a, const Mat<zz_pX> &b,const std::vector<long>& shift=std::vector<long>()); 
 
 /*------------------------------------------------------------*/
 /* finds the pivot indices; returns the row/col degs          */
 /*------------------------------------------------------------*/
-Vec<long> pivot_index (Vec<long> &index, const Mat<zz_pX> &b,const Vec<long> & shift = Vec<long>(), const bool row_wise = true);
+std::vector<long> pivot_index (std::vector<long> &index, const Mat<zz_pX> &b,const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
 
 /*------------------------------------------------------------*/
 /* leading matrix of b                                        */
 /*------------------------------------------------------------*/
-void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, const Vec<long> & shift = Vec<long>(), const bool row_wise = true);
+void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
 
 
 /*------------------------------------------------------------*/
@@ -282,7 +283,7 @@ void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, const Vec<long> & shift =
 /*------------------------------------------------------------*/
 /* returns true if b is reduced                               */
 /*------------------------------------------------------------*/
-bool is_reduced (const Mat<zz_pX> &b,const Vec<long> & shift = Vec<long>(), const bool row_wise = true);
+bool is_reduced (const Mat<zz_pX> &b,const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
 
 
 /*------------------------------------------------------------*/
@@ -300,28 +301,28 @@ bool is_reduced (const Mat<zz_pX> &b,const Vec<long> & shift = Vec<long>(), cons
 /* general user-friendly interface                            */
 /*------------------------------------------------------------*/
 // TODO: choice: output s-pivot degree or s-row degree ????
-Vec<long> approximant_basis(
+std::vector<long> approximant_basis(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & mat,
-		const Vec<unsigned long> & order,
-		const Vec<long> & shift = Vec<long>(),
+		const std::vector<unsigned long> & order,
+		const std::vector<long> & shift = std::vector<long>(),
 		const bool canonical = true,
 		const bool row_wise = true,
 		const bool generic = false
 		);
 
-Vec<long> approximant_basis(
+std::vector<long> approximant_basis(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & mat,
 		const unsigned long order,
-		const Vec<long> & shift = Vec<long>(),
+		const std::vector<long> & shift = std::vector<long>(),
 		const bool canonical = true,
 		const bool row_wise = true,
 		const bool generic = false
 		)
 {
-	//Vec<unsigned long> orders(mat.NumRows(),order);
-	//approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
+	std::vector<unsigned long> orders(mat.NumRows(),order);
+	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
 }
 
 /*------------------------------------------------------------*/
@@ -332,7 +333,8 @@ Vec<long> approximant_basis(
 /*   - Jeannerod-Neiger-Villard 2018                          */
 /*          (ensuring s-ordered weak Popov)                   */
 /*------------------------------------------------------------*/
-Vec<long> mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long ord, const Vec<long> & shift);
+std::vector<long> appbas_iterative(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long ord, const std::vector<long> & shift);
+std::vector<long> popov_iter_appbas(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long ord, const std::vector<long> & shift);
 
 /*------------------------------------------------------------*/
 /* M-Basis algorithm for approximant order = 1                */
@@ -341,7 +343,7 @@ Vec<long> mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long ord, const
 /*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
 /*   - Jeannerod-Neiger-Villard 2018 (ensuring s-Popov)       */
 /*------------------------------------------------------------*/
-Vec<long> mbasis1(Mat<zz_pX> &appbas, const Mat<zz_p> mat, const Vec<long> & shift);
+std::vector<long> mbasis1(Mat<zz_pX> &appbas, const Mat<zz_p> mat, const std::vector<long> & shift);
 
 /*------------------------------------------------------------*/
 /* M-Basis algorithm for uniform approximant order            */
@@ -351,7 +353,8 @@ Vec<long> mbasis1(Mat<zz_pX> &appbas, const Mat<zz_p> mat, const Vec<long> & shi
 /*   - Jeannerod-Neiger-Villard 2018                          */
 /*          (ensuring s-ordered weak Popov)                   */
 /*------------------------------------------------------------*/
-Vec<long> mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long ord, const Vec<long> & shift);
+std::vector<long> mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long order, const std::vector<long> & shift);
+std::vector<long> popov_mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long order, const std::vector<long> & shift);
 
 
 
