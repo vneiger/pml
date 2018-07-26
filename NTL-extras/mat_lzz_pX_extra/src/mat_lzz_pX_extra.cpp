@@ -1,6 +1,7 @@
 #include <NTL/matrix.h>
 #include <NTL/mat_lzz_p.h>
 #include <NTL/lzz_pX.h>
+#include <algorithm> // for manipulating std::vector (min, max, ..)
 
 #include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
@@ -426,289 +427,271 @@ void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
 /*------------------------------------------------------------*/
 /* some comment                                               */
 /*------------------------------------------------------------*/
-long min (const Vec<long> &v)
+void check_shift(bool &shifted, const std::vector<long> &shift, const Mat<zz_pX> &pmat, const bool row_wise = true)
 {
-    if (v.length() == 0) 
-    {
-	return 0;
-    }
-    long m = v[0];
-    for (long i = 1; i < v.length(); i++)
-    {
-	if (v[i] < m) m = v[i];
-    }
-    return m;
-}
-
-/*------------------------------------------------------------*/
-/* some comment                                               */
-/*------------------------------------------------------------*/
-long max(const Vec<long> &v)
-{
-    if (v.length() == 0) 
-    { 
-	return 0;
-    }
-    long m = v[0];
-    for (long i = 1; i < v.length(); i++)
-    {
-	if (v[i] > m) m = v[i];
-    }
-    return m;
-}
-
-/*------------------------------------------------------------*/
-/* some comment                                               */
-/*------------------------------------------------------------*/
-void check_shift(bool &shifted, const Vec<long> &shift, const Mat<zz_pX> &b, const bool row_wise = true)
-{
-    shifted = false;
-    if (shift.length() != 0) 
-    {
-	shifted = true;
-	if (row_wise && shift.length() != b.NumCols())
+	shifted = false;
+	if (!shift.empty()) 
 	{
-	    throw "bad row shift dimensions";
+		shifted = true;
+		if (row_wise && (long)shift.size() != pmat.NumCols())
+		{
+			throw "==check_shift== Provided shift does not have the right dimension (working row-wise)";
+		}
+		if (!row_wise && (long)shift.size() != pmat.NumRows())
+		{
+			throw "==check_shift== Provided shift does not have the right dimension (working column-wise)";
+		}
 	}
-	if (!row_wise && shift.length() != b.NumRows())
-	{
-	    throw "bad col shift  dimensions";
-	}
-    }
 }
 
 /*------------------------------------------------------------*/
 /* some comment                                               */
+/* a supposed to be empty, just initialized */
 /*------------------------------------------------------------*/
-void degree_matrix(Mat<long> &a, const Mat<zz_pX> &b, 
-                   const Vec<long> & shift,
+void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat, 
+                   const std::vector<long> & shift,
                    const bool row_wise)
 {
-    // check for shifts
-    bool shifted;
-    check_shift(shifted, shift, b, row_wise);
-    long min_shift = min(shift);
-	
-    a.SetDims(b.NumRows(), b.NumCols());
-    for (long i = 0; i < b.NumRows(); i++)
-    {
-	for (long j = 0; j < b.NumCols(); j++)
+	// check if shifted + shift dimension
+	bool shifted;
+	check_shift(shifted, shift, pmat, row_wise);
+
+	// compute minimum shift entry (will be used for degree of zero entries of b)
+	long min_shift = *std::min_element(shift.begin(),shift.end());
+
+	// set the dimensions of degmat and populate it with degrees
+	degmat.SetDims(pmat.NumRows(), pmat.NumCols());
+	for (long i = 0; i < pmat.NumRows(); i++)
 	{
-	    a[i][j] = deg(b[i][j]);
-	    if (shifted)
-	    {
-		if (a[i][j] == -1)
+		for (long j = 0; j < pmat.NumCols(); j++)
 		{
-		    a[i][j] += min_shift;
+			degmat[i][j] = deg(pmat[i][j]);
+			if (shifted)
+			{
+				if (pmat[i][j] == -1)
+				{
+					degmat[i][j] += min_shift;
+				}
+				else if (row_wise)
+				{
+					degmat[i][j] += shift[j];
+				}
+				else
+				{
+					degmat[i][j] += shift[i];
+				}
+			}
 		}
-		else if (row_wise)
-		{
-		    a[i][j] += shift[j];
-		}
-		else
-		{
-		    a[i][j] += shift[i];
-		}
-	    }
 	}
-    }
 }
 
 /*------------------------------------------------------------*/
 /* some comment                                               */
+/* requirement: length of rdeg is correct */
 /*------------------------------------------------------------*/
-void row_degree(Vec<long> &a, const Mat<zz_pX> &b,
-                const Vec<long> &shift)
+void row_degree(std::vector<long> &rdeg, const Mat<zz_pX> &pmat,
+                const std::vector<long> &shift)
 { 
-    bool shifted;
-    check_shift(shifted,shift,b);
-  
-    a.SetLength(b.NumRows());
-    Mat<long> deg_mat;
-    degree_matrix(deg_mat,b,shift,true);
-	
-    for (long r = 0; r < b.NumRows(); r++)
-    {
-	auto max_deg = deg_mat[r][0];
-	for (long c = 1; c < b.NumCols(); c++)
-	{
-	    if (max_deg < deg_mat[r][c]) 
-	    {
-		max_deg = deg_mat[r][c];
-	    }
+	// check if shifted + shift dimension
+	bool shifted;
+	check_shift(shifted,shift,pmat);
+
+	// check rdeg has the right length
+	if ((long)rdeg.size() != pmat.NumRows()) {
+		throw "==row_degree== Provided vector does not have size = NumRows";
 	}
-	a[r] = max_deg;
-    }
+
+	// retrieve the shifted degree matrix
+	Mat<long> degmat;
+	degree_matrix(degmat,pmat,shift,true);
+
+	// take the max of each row of degmat
+	for (long r = 0; r < pmat.NumRows(); r++)
+	{
+		auto max_deg = degmat[r][0];
+		for (long c = 1; c < pmat.NumCols(); c++)
+		{
+			if (max_deg < degmat[r][c]) 
+			{
+				max_deg = degmat[r][c];
+			}
+		}
+		rdeg[r] = max_deg;
+	}
 }
 
 /*------------------------------------------------------------*/
 /* some comment                                               */
+/* requirement: length of cdeg is correct */
 /*------------------------------------------------------------*/
-void col_degree(Vec<long> &a, const Mat<zz_pX> &b,
-                const Vec<long> &shift)
+void col_degree(std::vector<long> &cdeg, const Mat<zz_pX> &pmat,
+                const std::vector<long> &shift)
 {
-    bool shifted;
-    check_shift(shifted,shift,b,false);
-	
-    a.SetLength(b.NumCols());
-    Mat<long> deg_mat;
-    degree_matrix(deg_mat,b,shift,false);
-	
-    a.SetLength(b.NumCols());
-    for (long c = 0; c < b.NumCols(); c++)
-    {
-	auto max_deg = deg_mat[0][c];
-	for (long r = 1; r < b.NumRows(); r++)
-	{
-	    if (max_deg < deg_mat[r][c]) 
-	    {
-		max_deg = deg_mat[r][c];
-	    }
+	// check if shifted + shift dimension
+	bool shifted;
+	check_shift(shifted,shift,pmat,false);
+
+	// check cdeg has the right length
+	if ((long)cdeg.size() != pmat.NumCols()) {
+		throw "==col_degree== Provided vector does not have size = NumCols";
 	}
-	a[c] = max_deg;
-    }
+
+	// retrieve the shifted degree matrix
+	Mat<long> degmat;
+	degree_matrix(degmat,pmat,shift,false);
+
+	// take the max of each column of degmat
+	for (long c = 0; c < pmat.NumCols(); c++)
+	{
+		auto max_deg = degmat[0][c];
+		for (long r = 1; r < pmat.NumRows(); r++)
+		{
+			if (max_deg < degmat[r][c]) 
+			{
+				max_deg = degmat[r][c];
+			}
+		}
+		cdeg[c] = max_deg;
+	}
 } 
 
 /*------------------------------------------------------------*/
 /* some comment                                               */
 /*------------------------------------------------------------*/
-void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, 
-		    const Vec<long> & shift,
-		    const bool row_wise)
+void leading_matrix(Mat<zz_p> &lmat,
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> & shift,
+		const bool row_wise)
 {
-    // check for shifts
-    bool shifted;
-    check_shift(shifted, shift, b, row_wise);
-	
-    Vec<long> degree;
-    if (row_wise)
-    {
-	row_degree(degree,b,shift);
-    }
-    else
-    {
-	col_degree(degree,b,shift);
-    }
-	
-    a.SetDims(b.NumRows(), b.NumCols());
-    for (long r = 0; r < b.NumRows(); r++)
-    {
-	for (long c = 0; c < b.NumCols(); c++)
+	// check if shifted + shift dimension
+	bool shifted;
+	check_shift(shifted, shift, pmat, row_wise);
+
+	// retrieve the row degree (or column degree)
+	std::vector<long> degree;
+	if (row_wise)
 	{
-	    long d,d2;
-	    if (row_wise) 
-	    {
-		d = degree[r];
-	    }
-	    else
-	    {
-		d = degree[c];
-	    }
-	    d2 = deg(b[r][c]);
-	    if (shifted)
-	    {
-		if (row_wise) 
-		{
-		    d2 += shift[c];
-		}
-		else
-		{
-		    d2 += shift[r];
-		}
-	    }
-	    if (d2 >= d)
-	    {
-		a[r][c] = LeadCoeff(b[r][c]);
-	    }
+		degree.resize(pmat.NumRows());
+		row_degree(degree,pmat,shift);
 	}
-    }
+	else
+	{
+		degree.resize(pmat.NumCols());
+		col_degree(degree,pmat,shift);
+	}
+
+	// initialize space for lmat
+	lmat.SetDims(pmat.NumRows(), pmat.NumCols());
+	// retrieve the leading coefficients
+	for (long r = 0; r < pmat.NumRows(); r++)
+	{
+		for (long c = 0; c < pmat.NumCols(); c++)
+		{
+			long d; // actual shifted degree of the r,c entry
+			// FIXME issue with zero entries? why not using degree matrix?
+			d = deg(pmat[r][c]);
+			if (shifted)
+			{
+				d += (row_wise ? shift[c] : shift[r]);
+			}
+			if (d == (row_wise ? degree[r] : degree[c]))
+			{
+				lmat[r][c] = LeadCoeff(pmat[r][c]);
+			}
+		}
+	}
 }
 
 /*------------------------------------------------------------*/
 /* some comment                                               */
 /*------------------------------------------------------------*/
-bool is_reduced (const Mat<zz_pX> &b,const Vec<long> & shift, const bool row_wise)
+bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const bool row_wise)
 {
-    Mat<zz_p> lead_mat;
-    leading_matrix(lead_mat,b,shift,row_wise);
-    auto rank = gauss(lead_mat);
-    if (row_wise)
-    {
-	return b.NumRows() == rank;
-    }
-    return b.NumCols() == rank;
+	Mat<zz_p> lead_mat;
+	leading_matrix(lead_mat,pmat,shift,row_wise);
+	auto rank = gauss(lead_mat);
+	return rank == (row_wise ? pmat.NumRows() : pmat.NumCols());
 }
 
 /*------------------------------------------------------------*/
 /* some comment                                               */
 /*------------------------------------------------------------*/
-Vec<long> pivot_index (Vec<long> &index, const Mat<zz_pX> &b,const Vec<long> & shift, const bool row_wise)
+// FIXME return vector?
+std::vector<long> pivot_index (
+		std::vector<long> & index,
+		const Mat<zz_pX> & b,
+		const std::vector<long> & shift,
+		const bool row_wise)
 {
-    bool shifted;
-    check_shift(shifted, shift, b, row_wise);
+	bool shifted;
+	check_shift(shifted, shift, b, row_wise);
 
-    Mat<long> deg_mat;
-    degree_matrix(deg_mat,b,shift,row_wise);
-	
-    Vec<long> degree;
-    if (row_wise)
-    {
-	row_degree(degree,b,shift);
-    }
-    else
-    {
-	col_degree(degree,b,shift);
-    }
+	Mat<long> deg_mat;
+	degree_matrix(deg_mat,b,shift,row_wise);
 
-    long zero_degree = -1;
-    if (shifted)
-    {
-	zero_degree = min(shift) -1;
-    }
-	
-    if (row_wise)
-    {
-	index.SetLength(b.NumRows());
-	for (long r = 0; r < b.NumRows(); r++)
+	std::vector<long> degree;
+	if (row_wise)
 	{
-	    if (degree[r] == zero_degree) 
-	    {
-		index[r] = -1;
-	    }
-	    else
-	    {
-		for (long c = 0; c <b.NumCols(); c++)
-		{
-		    if (deg_mat[r][c] == degree[r]) 
-		    {
-			index[r] = c;
-		    }
-		}
-	    }
+		row_degree(degree,b,shift);
 	}
-    }
-    else
-    {
-	index.SetLength(b.NumCols());
-	for(long c = 0; c < b.NumCols(); c++)
+	else
 	{
-	    if (degree[c] == zero_degree) 
-	    {
-		index[c] = -1;
-	    }
-	    else
-	    {
+		col_degree(degree,b,shift);
+	}
+
+	long zero_degree = -1;
+	if (shifted)
+	{
+		zero_degree = *std::min_element(shift.begin(),shift.end()) -1;
+	}
+
+	if (row_wise)
+	{
+		if ((long)index.size() != b.NumRows()) {
+			throw "==pivot_index== Provided vector does not have size = NumRows";
+		}
 		for (long r = 0; r < b.NumRows(); r++)
 		{
-		    if (deg_mat[r][c] == degree[c]) 
-		    {
-			index[c] = r;
-		    }
+			if (degree[r] == zero_degree) 
+			{
+				index[r] = -1;
+			}
+			else
+			{
+				for (long c = 0; c <b.NumCols(); c++)
+				{
+					if (deg_mat[r][c] == degree[r]) 
+					{
+						index[r] = c;
+					}
+				}
+			}
 		}
-	    }
 	}
-    }
-    return degree;
+	else
+	{
+		if ((long)index.size() != b.NumCols()) {
+			throw "==pivot_index== Provided vector does not have size = NumCols";
+		}
+		for(long c = 0; c < b.NumCols(); c++)
+		{
+			if (degree[c] == zero_degree) 
+			{
+				index[c] = -1;
+			}
+			else
+			{
+				for (long r = 0; r < b.NumRows(); r++)
+				{
+					if (deg_mat[r][c] == degree[c]) 
+					{
+						index[c] = r;
+					}
+				}
+			}
+		}
+	}
+	return degree;
 }
 
 /*

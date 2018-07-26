@@ -67,14 +67,3 @@ int main(){
 	pivot_index(pivot, m, cs, false);
 	cout << "col pivot: " << pivot << endl;
 }
-
-
-
-
-
-
-
-
-
-
-

@@ -3,6 +3,7 @@
 
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
+#include <vector> // std vector, for shifts, degrees, pivot indices
 
 NTL_CLIENT
 
@@ -18,7 +19,7 @@ long deg(const Mat<zz_pX> & a);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* basic arithmetic                                           */
+/* BASIC ARITHMETIC                                           */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
@@ -170,7 +171,7 @@ inline Mat<zz_pX> operator-(const Mat<zz_pX> & a)
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* setting and getting coefficients                           */
+/* SETTING AND GETTING COEFFICIENTS                           */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
@@ -212,46 +213,11 @@ void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a);
 /* convert from Mat<zz_p>                                     */
 /*------------------------------------------------------------*/
 
+
 /*------------------------------------------------------------*/
 /* convert to / from Vec<Mat<zz_p>>                           */
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* left and right shifts                                     */
-/*------------------------------------------------------------*/
-
-
-
-
-/*------------------------------------------------------------*/
-/* matrix of integers; deg(0) = -1                            */
-/*------------------------------------------------------------*/
-void degree_matrix(Mat<long> &a, const Mat<zz_pX> &b, const Vec<long>& shift=Vec<long>(), const bool row_wise=true);
-
-/*------------------------------------------------------------*/
-/* max degree of row entries                                  */
-/*------------------------------------------------------------*/
-void row_degree(Vec<long> &a, const Mat<zz_pX> &b, const Vec<long>& shift=Vec<long>()); 
-
-/*------------------------------------------------------------*/
-/* max degree of col entries                                  */
-/*------------------------------------------------------------*/
-void col_degree(Vec<long> &a, const Mat<zz_pX> &b,const Vec<long>& shift=Vec<long>()); 
-
-/*------------------------------------------------------------*/
-/* leading matrix of b                                        */
-/*------------------------------------------------------------*/
-void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, const Vec<long> & shift = Vec<long>(), const bool row_wise = true);
-
-/*------------------------------------------------------------*/
-/* returns true if b is reduced                               */
-/*------------------------------------------------------------*/
-bool is_reduced (const Mat<zz_pX> &b,const Vec<long> & shift = Vec<long>(), const bool row_wise = true);
-
-/*------------------------------------------------------------*/
-/* finds the pivot indices; returns the row/col degs          */
-/*------------------------------------------------------------*/
-Vec<long> pivot_index (Vec<long> &index, const Mat<zz_pX> &b,const Vec<long> & shift = Vec<long>(), const bool row_wise = true);
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
@@ -276,43 +242,120 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 /* } */
 
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* DEGREES, PIVOTS, LEADING MATRIX                            */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
-#endif
+/*------------------------------------------------------------*/
+/* matrix of integers; deg(0) = -1                            */
+/*------------------------------------------------------------*/
+void degree_matrix(Mat<long> &a, const Mat<zz_pX> &b, const std::vector<long>& shift=std::vector<long>(), const bool row_wise=true);
 
+/*------------------------------------------------------------*/
+/* max degree of row entries                                  */
+/*------------------------------------------------------------*/
+void row_degree(std::vector<long> &a, const Mat<zz_pX> &b, const std::vector<long>& shift=std::vector<long>()); 
 
+/*------------------------------------------------------------*/
+/* max degree of col entries                                  */
+/*------------------------------------------------------------*/
+void col_degree(std::vector<long> &a, const Mat<zz_pX> &b,const std::vector<long>& shift=std::vector<long>()); 
 
+/*------------------------------------------------------------*/
+/* finds the pivot indices; returns the row/col degs          */
+/*------------------------------------------------------------*/
+std::vector<long> pivot_index (std::vector<long> &index, const Mat<zz_pX> &b,const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/*------------------------------------------------------------*/
+/* leading matrix of b                                        */
+/*------------------------------------------------------------*/
+void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
 
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING REDUCED/NORMAL FORMS                               */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* returns true if b is reduced                               */
+/*------------------------------------------------------------*/
+bool is_reduced (const Mat<zz_pX> &b,const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* MINIMAL APPROXIMANT BASES                                  */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* TODO: documentation to explain what this computes and what */
+/* are the options                                            */
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* general user-friendly interface                            */
+/*------------------------------------------------------------*/
+// TODO: choice: output s-pivot degree or s-row degree ????
+std::vector<long> approximant_basis(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & mat,
+		const std::vector<unsigned long> & order,
+		const std::vector<long> & shift = std::vector<long>(),
+		const bool canonical = true,
+		const bool row_wise = true,
+		const bool generic = false
+		);
+
+std::vector<long> approximant_basis(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & mat,
+		const unsigned long order,
+		const std::vector<long> & shift = std::vector<long>(),
+		const bool canonical = true,
+		const bool row_wise = true,
+		const bool generic = false
+		)
+{
+	std::vector<unsigned long> orders(mat.NumRows(),order);
+	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
+}
+
+/*------------------------------------------------------------*/
+/* Iterative algorithm for general order and shift            */
+/* References:                                                */
+/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
+/*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
+/*   - Jeannerod-Neiger-Villard 2018                          */
+/*          (ensuring s-ordered weak Popov)                   */
+/*------------------------------------------------------------*/
+std::vector<long> appbas_iterative(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long ord, const std::vector<long> & shift);
+std::vector<long> popov_iter_appbas(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long ord, const std::vector<long> & shift);
+
+/*------------------------------------------------------------*/
+/* M-Basis algorithm for approximant order = 1                */
+/* References:                                                */
+/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
+/*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
+/*   - Jeannerod-Neiger-Villard 2018 (ensuring s-Popov)       */
+/*------------------------------------------------------------*/
+std::vector<long> mbasis1(Mat<zz_pX> &appbas, const Mat<zz_p> mat, const std::vector<long> & shift);
+
+/*------------------------------------------------------------*/
+/* M-Basis algorithm for uniform approximant order            */
+/* References:                                                */
+/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
+/*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
+/*   - Jeannerod-Neiger-Villard 2018                          */
+/*          (ensuring s-ordered weak Popov)                   */
+/*------------------------------------------------------------*/
+std::vector<long> mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long order, const std::vector<long> & shift);
+std::vector<long> popov_mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long order, const std::vector<long> & shift);
 
 
 
-
-
-
+#endif // MAT_LZZ_PX_EXTRA__H
