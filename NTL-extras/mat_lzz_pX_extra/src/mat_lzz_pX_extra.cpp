@@ -3,6 +3,7 @@
 #include <NTL/lzz_pX.h>
 
 #include "lzz_p_extra.h"
+#include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
 
 NTL_CLIENT
@@ -11,12 +12,12 @@ NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* addition / subtraction                                     */
+/* addition                                                   */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* addition                                                   */
+/* zz_pX addition                                             */
 /*------------------------------------------------------------*/
 void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
@@ -61,8 +62,15 @@ void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
     }
 }
 
+
+/*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* subtraction                                                */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* zz_pX subtraction                                          */
 /*------------------------------------------------------------*/
 void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
@@ -71,7 +79,7 @@ void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 
     if (m != b.NumRows() || n != b.NumCols())
     {
-	LogicError("dimension mismatch in matrix addition");
+	LogicError("dimension mismatch in matrix subtraction");
     }
 
     c.SetDims(m, n);
@@ -83,6 +91,163 @@ void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 	}
     }
 }
+
+/*------------------------------------------------------------*/
+/* subtraction, rhs is constant                               */
+/*------------------------------------------------------------*/
+void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    if (m != b.NumRows() || n != b.NumCols())
+    {
+	LogicError("dimension mismatch in matrix subtraction");
+    }
+
+    c.SetDims(m, n);
+    for (long i = 0; i < m; i++)
+    {
+	for (long j = 0; j < n; j++)
+	{
+	    c[i][j] = a[i][j] - b[i][j];
+	}
+    }
+}
+
+/*------------------------------------------------------------*/
+/* subtraction, lhs is constant                               */
+/*------------------------------------------------------------*/
+void sub(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    if (m != b.NumRows() || n != b.NumCols())
+    {
+	LogicError("dimension mismatch in matrix subtraction");
+    }
+
+    c.SetDims(m, n);
+    for (long i = 0; i < m; i++)
+    {
+	for (long j = 0; j < n; j++)
+	{
+	    c[i][j] = a[i][j] - b[i][j];
+	}
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* constant matrix multiplication                             */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* multiplication, rhs is a constant matrix                   */
+/*------------------------------------------------------------*/
+void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
+{
+    long d = deg(a);
+
+    long m = a.NumRows();
+    long n = a.NumCols();
+    long p = b.NumCols();
+
+    if (n != b.NumRows())
+    {
+	LogicError("dimension mismatch in constant matrix multplication");
+    }
+
+    c.SetDims(m, p);
+    Mat<zz_p> tmp, res;
+    tmp.SetDims(m, p);
+    for (long i = 0; i <= d; i++)
+    {
+	for (long u = 0; u < m; u++)
+	{
+	    for (long v = 0; v < n; v++)
+	    {
+		tmp[u][v] = coeff(a[u][v], i);
+	    }
+	}
+	res = tmp * b;
+	for (long u = 0; u < m; u++)
+	{
+	    for (long v = 0; v < p; v++)
+	    {
+		SetCoeff(c[u][v], i, res[u][v]);
+	    }
+	}
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/* multiplication, lhs is a constant matrix                   */
+/*------------------------------------------------------------*/
+void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
+{
+    long d = deg(b);
+
+    long m = a.NumRows();
+    long n = a.NumCols();
+    long p = b.NumCols();
+
+    if (n != b.NumRows())
+    {
+	LogicError("dimension mismatch in constant matrix multplication");
+    }
+
+    c.SetDims(m, p);
+    Mat<zz_p> tmp, res;
+    tmp.SetDims(m, p);
+    for (long i = 0; i <= d; i++)
+    {
+	for (long u = 0; u < n; u++)
+	{
+	    for (long v = 0; v < p; v++)
+	    {
+		tmp[u][v] = coeff(b[u][v], i);
+	    }
+	}
+	res = a * tmp;
+	for (long u = 0; u < m; u++)
+	{
+	    for (long v = 0; v < p; v++)
+	    {
+		SetCoeff(c[u][v], i, res[u][v]);
+	    }
+	}
+    }
+}
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* scalar multiplication                                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_p & b){
+
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    c.SetDims(m, n);
+
+    for (long u = 0; u < m; u++)
+    {
+	for (long v = 0; v < n; v++)
+	{
+	    c[u][v] = b * a[u][v];
+	}
+    }
+}
+
 
 
 /*------------------------------------------------------------*/
@@ -233,27 +398,20 @@ void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat
     long dC = dA+dB;
     long sz = dC+1;
 
-    // double t;
     zz_pX_Multipoint_Geometric ev_geom = get_geometric_points(sz);
 
-    // t = GetTime();
     Vec<Mat<zz_p>> valA, valB, valC;
     ev_geom.evaluate_matrix(valA, a);
     ev_geom.evaluate_matrix(valB, b);
-    // cout << "geom eval: " << GetTime()-t << endl;
 
-    // t = GetTime();
     long len = ev_geom.length();
     valC.SetLength(len);
     for (long i = 0; i < len; i++)
     {
     	mul(valC[i], valA[i], valB[i]);
     }
-    // cout << "muls eval: " << GetTime()-t << endl;
 
-    // t = GetTime();
     ev_geom.interpolate_matrix(c, valC);
-    // cout << "geom interp: " << GetTime()-t << endl;
 }
 
 /*------------------------------------------------------------*/

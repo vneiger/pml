@@ -17,6 +17,12 @@ void random_mat_zz_pX(Mat<zz_pX>& a, long n, long m, long d);
 long deg(const Mat<zz_pX> & a);
 
 /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* basic arithmetic                                           */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
 /* addition                                                   */
 /*------------------------------------------------------------*/
 void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
@@ -26,21 +32,21 @@ inline void add(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
     add(c, b, a);
 }
 
-inline Mat<zz_pX> operator+(const Max<zz_pX<& a, const Mat<zz_pX>& b)
+inline Mat<zz_pX> operator+(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
 { 
     Mat<zz_pX> x; 
     add(x, a, b); 
     return x; 
 }
 
-inline Mat<zz_pX> operator+(const Max<zz_pX<& a, const Mat<zz_p>& b)
+inline Mat<zz_pX> operator+(const Mat<zz_pX>& a, const Mat<zz_p>& b)
 { 
     Mat<zz_pX> x; 
     add(x, a, b); 
     return x; 
 }
 
-inline Mat<zz_pX> operator+(const Max<zz_p<& a, const Mat<zz_pX>& b)
+inline Mat<zz_pX> operator+(const Mat<zz_p>& a, const Mat<zz_pX>& b)
 { 
     Mat<zz_pX> x; 
     add(x, a, b); 
@@ -54,7 +60,21 @@ void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b);
 void sub(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b);
 
-inline Mat<zz_pX> operator+(const Max<zz_pX<& a, const Mat<zz_pX>& b)
+inline Mat<zz_pX> operator-(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
+{ 
+    Mat<zz_pX> x; 
+    sub(x, a, b); 
+    return x; 
+}
+
+inline Mat<zz_pX> operator-(const Mat<zz_pX>& a, const Mat<zz_p>& b)
+{ 
+    Mat<zz_pX> x; 
+    sub(x, a, b); 
+    return x; 
+}
+
+inline Mat<zz_pX> operator-(const Mat<zz_p>& a, const Mat<zz_pX>& b)
 { 
     Mat<zz_pX> x; 
     sub(x, a, b); 
@@ -62,7 +82,64 @@ inline Mat<zz_pX> operator+(const Max<zz_pX<& a, const Mat<zz_pX>& b)
 }
 
 /*------------------------------------------------------------*/
+/* constant matrix multiplication                             */
+/*------------------------------------------------------------*/
+void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b);
+void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b);
+
+inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const Mat<zz_p>& b)
+{ 
+    Mat<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+inline Mat<zz_pX> operator*(const Mat<zz_p>& a, const Mat<zz_pX>& b)
+{ 
+    Mat<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+/*------------------------------------------------------------*/
+/* scalar multiplication                                      */
+/*------------------------------------------------------------*/
+void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_p & b);
+
+inline void mul(Mat<zz_pX> & c, const zz_p & a, const Mat<zz_pX> & b)
+{
+    mul(c, b, a);
+}
+
+inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const zz_p& b)
+{ 
+    Mat<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+inline Mat<zz_pX> operator*(const zz_p& a, const Mat<zz_pX>& b)
+{ 
+    Mat<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+
+/*------------------------------------------------------------*/
 /* negate                                                     */
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* get / set coefficients                                     */
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* convert from Mat<zz_p>                                     */
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* convert to / from Vec<Mat<zz_p>>                           */
 /*------------------------------------------------------------*/
 
 
@@ -73,7 +150,9 @@ inline Mat<zz_pX> operator+(const Max<zz_pX<& a, const Mat<zz_pX>& b)
 
 
 /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 /* c = a*b                                                    */
+/*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 void multiply_waksman(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
