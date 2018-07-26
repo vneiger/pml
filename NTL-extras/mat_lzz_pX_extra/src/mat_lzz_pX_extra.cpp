@@ -657,8 +657,8 @@ void check_shift(bool &shifted, const Vec<long> &shift, const Mat<zz_pX> &b, con
 /* some comment                                               */
 /*------------------------------------------------------------*/
 void degree_matrix(Mat<long> &a, const Mat<zz_pX> &b, 
-                   const Vec<long> & shift = Vec<long>(),
-                   const bool row_wise = true)
+                   const Vec<long> & shift,
+                   const bool row_wise)
 {
     // check for shifts
     bool shifted;
@@ -694,7 +694,7 @@ void degree_matrix(Mat<long> &a, const Mat<zz_pX> &b,
 /* some comment                                               */
 /*------------------------------------------------------------*/
 void row_degree(Vec<long> &a, const Mat<zz_pX> &b,
-                const Vec<long> &shift = Vec<long>())
+                const Vec<long> &shift)
 { 
     bool shifted;
     check_shift(shifted,shift,b);
@@ -721,7 +721,7 @@ void row_degree(Vec<long> &a, const Mat<zz_pX> &b,
 /* some comment                                               */
 /*------------------------------------------------------------*/
 void col_degree(Vec<long> &a, const Mat<zz_pX> &b,
-                const Vec<long> &shift = Vec<long>())
+                const Vec<long> &shift)
 {
     bool shifted;
     check_shift(shifted,shift,b,false);
@@ -749,8 +749,8 @@ void col_degree(Vec<long> &a, const Mat<zz_pX> &b,
 /* some comment                                               */
 /*------------------------------------------------------------*/
 void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, 
-		    const Vec<long> & shift = Vec<long>(),
-		    const bool row_wise = true)
+		    const Vec<long> & shift,
+		    const bool row_wise)
 {
     // check for shifts
     bool shifted;
@@ -803,7 +803,7 @@ void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b,
 /*------------------------------------------------------------*/
 /* some comment                                               */
 /*------------------------------------------------------------*/
-bool is_reduced (const Mat<zz_pX> &b,const Vec<long> & shift = Vec<long>(), const bool row_wise = true)
+bool is_reduced (const Mat<zz_pX> &b,const Vec<long> & shift, const bool row_wise)
 {
     Mat<zz_p> lead_mat;
     leading_matrix(lead_mat,b,shift,row_wise);
@@ -818,7 +818,7 @@ bool is_reduced (const Mat<zz_pX> &b,const Vec<long> & shift = Vec<long>(), cons
 /*------------------------------------------------------------*/
 /* some comment                                               */
 /*------------------------------------------------------------*/
-Vec<long> pivot_index (Vec<long> &index, const Mat<zz_pX> &b,const Vec<long> & shift = Vec<long>(), const bool row_wise = true)
+Vec<long> pivot_index (Vec<long> &index, const Mat<zz_pX> &b,const Vec<long> & shift, const bool row_wise)
 {
     bool shifted;
     check_shift(shifted, shift, b, row_wise);
