@@ -810,8 +810,9 @@ bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const 
 /* some comment                                               */
 /*------------------------------------------------------------*/
 // TODO return pivot degree rather than row degree
-std::vector<long> pivot_index (
+void pivot_index (
 		std::vector<long> & index,
+		std::vector<long> & pivdeg,
 		const Mat<zz_pX> & pmat,
 		const std::vector<long> & shift,
 		const bool row_wise)
@@ -838,19 +839,18 @@ std::vector<long> pivot_index (
 
 	long zero_degree = -1;
 	if (shifted)
-	{
 		zero_degree = *std::min_element(shift.begin(),shift.end()) -1;
-	}
 
 	if (row_wise)
 	{
-		if ((long)index.size() != pmat.NumRows()) {
+		if ((long)index.size() != pmat.NumRows())
 			throw "==pivot_index== Provided vector does not have size = NumRows";
-		}
+
 		for (long r = 0; r < pmat.NumRows(); r++)
 		{
 			if (degree[r] == zero_degree) 
 			{
+				pivdeg[r] = -1;
 				index[r] = -1;
 			}
 			else
@@ -859,6 +859,7 @@ std::vector<long> pivot_index (
 				{
 					if (deg_mat[r][c] == degree[r]) 
 					{
+						pivdeg[r] = deg(pmat[r][c]);
 						index[r] = c;
 					}
 				}
@@ -867,13 +868,14 @@ std::vector<long> pivot_index (
 	}
 	else
 	{
-		if ((long)index.size() != pmat.NumCols()) {
+		if ((long)index.size() != pmat.NumCols())
 			throw "==pivot_index== Provided vector does not have size = NumCols";
-		}
+
 		for(long c = 0; c < pmat.NumCols(); c++)
 		{
 			if (degree[c] == zero_degree) 
 			{
+				pivdeg[c] = -1;
 				index[c] = -1;
 			}
 			else
@@ -882,13 +884,13 @@ std::vector<long> pivot_index (
 				{
 					if (deg_mat[r][c] == degree[c]) 
 					{
+						pivdeg[c] = deg(pmat[r][c]);
 						index[c] = r;
 					}
 				}
 			}
 		}
 	}
-	return degree;
 }
 
 bool is_weak_popov (
