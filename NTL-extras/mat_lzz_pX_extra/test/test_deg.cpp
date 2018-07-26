@@ -29,6 +29,7 @@ int main(){
 
 	Mat<zz_pX> pmat;
 	pmat.SetDims(3,4);
+	// TODO there is a random function for matrices :-)
 	pmat[0][0] = random_zz_pX(4);
 	pmat[0][1] = random_zz_pX(1);
 	pmat[0][2] = random_zz_pX(2);

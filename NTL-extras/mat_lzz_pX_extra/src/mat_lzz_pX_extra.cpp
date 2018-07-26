@@ -997,7 +997,7 @@ std::vector<long> appbas_iterative(
 
 	// indices of columns/orders that remain to be dealt with
 	std::vector<long> rem_index( cdim );
-	std::iota(rem_index.begin(), rem_index.end());
+	std::iota(rem_index.begin(), rem_index.end(), 0);
 
 	// shifted row degrees of approximant basis
 	// (initially, of the identity matrix, i.e. rdeg == shift)
@@ -1089,4 +1089,6 @@ std::vector<long> appbas_iterative(
 			}
 		}
 	}
+	// TODO return rdeg or pivdeg????
+	return rdeg;
 }
