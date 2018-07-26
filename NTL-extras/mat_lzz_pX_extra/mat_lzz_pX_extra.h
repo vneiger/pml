@@ -158,10 +158,6 @@ inline Mat<zz_pX> operator*(const zz_p& a, const Mat<zz_pX>& b)
     return x; 
 }
 
-/*------------------------------------------------------------*/
-/* returns true if b is in weak popov form (forbide 0-row/col */
-/*------------------------------------------------------------*/
-bool is_weak_popov (const Mat<zz_pX> &b, const std::vector<long> &shift = std::vector<long>(), const bool row_wise = true, const bool ordered= false);
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
@@ -292,6 +288,15 @@ void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, const std::vector<long> &
 /*------------------------------------------------------------*/
 bool is_reduced (const Mat<zz_pX> &b,const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
 
+/*------------------------------------------------------------*/
+/* returns true if b is in weak popov form (forbide 0-row/col */
+/*------------------------------------------------------------*/
+bool is_weak_popov(
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> &shift = std::vector<long>(),
+		const bool row_wise = true,
+		const bool ordered= false);
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -326,11 +331,11 @@ std::vector<long> approximant_basis(
 		const bool canonical = true,
 		const bool row_wise = true,
 		const bool generic = false
-		)
-{
-	std::vector<unsigned long> orders(mat.NumRows(),order);
-	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
-}
+		);
+//{
+//	std::vector<unsigned long> orders(mat.NumRows(),order);
+//	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
+//}
 
 /*------------------------------------------------------------*/
 /* Iterative algorithm for general order and shift            */

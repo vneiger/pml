@@ -623,7 +623,7 @@ void check_shift(bool &shifted, const std::vector<long> &shift, const Mat<zz_pX>
 
 /*------------------------------------------------------------*/
 /* some comment                                               */
-/* a supposed to be empty, just initialized */
+/* degmat supposed to be empty, just initialized */
 /*------------------------------------------------------------*/
 void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat, 
                    const std::vector<long> & shift,
@@ -634,7 +634,7 @@ void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat,
 	check_shift(shifted, shift, pmat, row_wise);
 
 	// compute minimum shift entry (will be used for degree of zero entries of b)
-	long min_shift = *std::min_element(shift.begin(),shift.end());
+	long min_shift = (shifted ? *std::min_element(shift.begin(),shift.end()) : 0);
 
 	// set the dimensions of degmat and populate it with degrees
 	degmat.SetDims(pmat.NumRows(), pmat.NumCols());
@@ -794,26 +794,32 @@ bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const 
 /* some comment                                               */
 /*------------------------------------------------------------*/
 // FIXME return vector?
+// FIXME pivot degree?
+// FIXME row degree?
 std::vector<long> pivot_index (
 		std::vector<long> & index,
-		const Mat<zz_pX> & b,
+		const Mat<zz_pX> & pmat,
 		const std::vector<long> & shift,
 		const bool row_wise)
 {
+	// check if shifted + shift dimension
 	bool shifted;
-	check_shift(shifted, shift, b, row_wise);
+	check_shift(shifted, shift, pmat, row_wise);
 
+	// retrieve (shifted) degree matrix
 	Mat<long> deg_mat;
-	degree_matrix(deg_mat,b,shift,row_wise);
+	degree_matrix(deg_mat,pmat,shift,row_wise);
 
 	std::vector<long> degree;
 	if (row_wise)
 	{
-		row_degree(degree,b,shift);
+		degree.resize(pmat.NumRows());
+		row_degree(degree,pmat,shift);
 	}
 	else
 	{
-		col_degree(degree,b,shift);
+		degree.resize(pmat.NumCols());
+		col_degree(degree,pmat,shift);
 	}
 
 	long zero_degree = -1;
@@ -824,10 +830,10 @@ std::vector<long> pivot_index (
 
 	if (row_wise)
 	{
-		if ((long)index.size() != b.NumRows()) {
+		if ((long)index.size() != pmat.NumRows()) {
 			throw "==pivot_index== Provided vector does not have size = NumRows";
 		}
-		for (long r = 0; r < b.NumRows(); r++)
+		for (long r = 0; r < pmat.NumRows(); r++)
 		{
 			if (degree[r] == zero_degree) 
 			{
@@ -835,7 +841,7 @@ std::vector<long> pivot_index (
 			}
 			else
 			{
-				for (long c = 0; c <b.NumCols(); c++)
+				for (long c = 0; c <pmat.NumCols(); c++)
 				{
 					if (deg_mat[r][c] == degree[r]) 
 					{
@@ -847,10 +853,10 @@ std::vector<long> pivot_index (
 	}
 	else
 	{
-		if ((long)index.size() != b.NumCols()) {
+		if ((long)index.size() != pmat.NumCols()) {
 			throw "==pivot_index== Provided vector does not have size = NumCols";
 		}
-		for(long c = 0; c < b.NumCols(); c++)
+		for(long c = 0; c < pmat.NumCols(); c++)
 		{
 			if (degree[c] == zero_degree) 
 			{
@@ -858,7 +864,7 @@ std::vector<long> pivot_index (
 			}
 			else
 			{
-				for (long r = 0; r < b.NumRows(); r++)
+				for (long r = 0; r < pmat.NumRows(); r++)
 				{
 					if (deg_mat[r][c] == degree[c]) 
 					{
@@ -871,49 +877,39 @@ std::vector<long> pivot_index (
 	return degree;
 }
 
-// uses merge sort
-Vec<long> sort (const Vec<long> &l){
-	if (l.length() <= 1) return l;
-	long m = l.length()/2;
-	Vec<long> lh,rh;
-	for (long i = 0; i < m; i++)
-		lh.append(l[i]);
-	for (long i = m; i < l.length(); i++)
-		rh.append(l[i]);
-	lh = sort(lh);
-	rh = sort(rh);
-	Vec<long> result;
-	result.SetLength(l.length());
-	long ilh = 0;
-	long irh = 0;
-	for (long i = 0; i < l.length(); i++){
-		if (lh.length() == ilh) result[i] = rh[irh++];
-		else if (rh.length() == irh) result[i] = lh[ilh++];
-		else if (lh[ilh] < rh[irh]) result[i] = lh[ilh++];
-		else result[i] = rh[irh++];
-	}
-	return result;
-}
-
-bool is_weak_popov (const Mat<zz_pX> &b, const std::vector<long> &shift, const bool row_wise, const bool ordered){
+bool is_weak_popov (
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> &shift,
+		const bool row_wise,
+		const bool ordered)
+{
+	//retrieve pivot index
 	std::vector<long> pivots;
-	pivot_index(pivots, b, shift, row_wise);
+	pivots.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
+	pivot_index(pivots, pmat, shift, row_wise);
+
 	// forbide zero vectors
-	for (unsigned long i = 0; i < pivots.size(); i++){
-		if (pivots[0] == -1)
-			return false;
+	if( std::find(pivots.begin(),pivots.end(),-1) != pivots.end() )
+	{
+		return false;
 	}
-	if (!ordered){ // only check for pair-wise distinct
-		std::sort(pivots.begin(), pivots.end());
-		for (unsigned long i = 1; i < pivots.size(); i++)
-			if(pivots[i] == pivots[i-1]){
+	if (!ordered)
+	{ // only check for pair-wise distinct
+		std::sort(pivots.begin(),pivots.end());
+		for (size_t i = 1; i < pivots.size(); i++)
+			if(pivots[i] == pivots[i-1])
+			{
 				return false;
 			}
-	}else{
-		for (unsigned long i = 1; i < pivots.size(); i++)
+	}
+	else
+	{
+		for (size_t i = 1; i < pivots.size(); i++)
+		{
 			if (pivots[i] <= pivots[i-1]){ // means not strict increasing
 				return false;
 			}
+		}
 	}
 	return true;
 }
@@ -951,20 +947,3 @@ weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &m, Vec<long> shift=Vec<long>(
 	
 }
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
