@@ -21,19 +21,28 @@ void printVec(std::vector<T> const &input)
 /* Tests the degree functions for polynomial matrices */
 /******************************************************/
 
+
+
 int main(){
 	zz_p::init(13);
+
 	Mat<zz_pX> pmat;
-	pmat.SetDims(2,3);
-	pmat[0][0] = random_zz_pX(3);
-	pmat[0][1] = random_zz_pX(2);
-	pmat[0][2] = random_zz_pX(0);
-	pmat[1][0] = random_zz_pX(0);
-	pmat[1][1] = random_zz_pX(0);
-	pmat[1][2] = random_zz_pX(0);
+	pmat.SetDims(3,4);
+	pmat[0][0] = random_zz_pX(4);
+	pmat[0][1] = random_zz_pX(1);
+	pmat[0][2] = random_zz_pX(2);
+	pmat[0][3] = random_zz_pX(0);
+	pmat[1][0] = random_zz_pX(3);
+	pmat[1][1] = random_zz_pX(1);
+	pmat[1][2] = random_zz_pX(1);
+	pmat[1][3] = random_zz_pX(0);
+	pmat[2][0] = random_zz_pX(4);
+	pmat[2][1] = random_zz_pX(2);
+	pmat[2][2] = random_zz_pX(3);
+	pmat[2][3] = random_zz_pX(3);
 
 	cout << pmat << endl;
-
+	
 	cout << "Starting tests:" << endl;
 
 	std::vector<long> degs(pmat.NumRows());
@@ -68,10 +77,10 @@ int main(){
 
 	cout << endl << "Tests for shifts: " << endl;
 
-	std::vector<long> rs {1,2,3};
+	std::vector<long> rs {0,2,1,3};
 	cout << "row shift: ";
 	printVec(rs);
-	std::vector<long> cs {4,2};
+	std::vector<long> cs {4,2,0};
 	cout << "col shift: ";
 	printVec(cs);
 
@@ -105,4 +114,7 @@ int main(){
 	pivot_index(pivot, pmat, cs, false);
 	cout << "col pivot: ";
 	printVec(pivot);
+
+	cout << "popov? " << is_weak_popov(pmat,rs) << endl;
+	cout << "ordered popov? " << is_weak_popov(pmat,rs,true,true) << endl;
 }

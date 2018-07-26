@@ -158,6 +158,7 @@ inline Mat<zz_pX> operator*(const zz_p& a, const Mat<zz_pX>& b)
 }
 
 /*------------------------------------------------------------*/
+/* c = a*b                                                    */
 /* negate                                                     */
 /*------------------------------------------------------------*/
 void neg(Mat<zz_pX> & x, const Mat<zz_pX> & a);
@@ -284,6 +285,15 @@ void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, const std::vector<long> &
 /* returns true if b is reduced                               */
 /*------------------------------------------------------------*/
 bool is_reduced (const Mat<zz_pX> &b,const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
+
+/*------------------------------------------------------------*/
+/* returns true if b is in weak popov form (forbide 0-row/col */
+/*------------------------------------------------------------*/
+bool is_weak_popov(
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> &shift = std::vector<long>(),
+		const bool row_wise = true,
+		const bool ordered= false);
 
 
 /*------------------------------------------------------------*/

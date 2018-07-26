@@ -1,6 +1,7 @@
 #include <NTL/matrix.h>
 #include <NTL/mat_lzz_p.h>
 #include <NTL/lzz_pX.h>
+#include <cmath>
 #include <algorithm> // for manipulating std::vector (min, max, ..)
 
 #include "lzz_p_extra.h"
@@ -681,7 +682,6 @@ void row_degree(std::vector<long> &rdeg, const Mat<zz_pX> &pmat,
 	Mat<long> degmat;
 	degree_matrix(degmat,pmat,shift,true);
 
-	std::cout << "here" << std::endl;
 	// take the max of each row of degmat
 	for (long r = 0; r < pmat.NumRows(); r++)
 	{
@@ -695,7 +695,6 @@ void row_degree(std::vector<long> &rdeg, const Mat<zz_pX> &pmat,
 		}
 		rdeg[r] = max_deg;
 	}
-	std::cout << "here" << std::endl;
 }
 
 /*------------------------------------------------------------*/
@@ -795,6 +794,8 @@ bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const 
 /* some comment                                               */
 /*------------------------------------------------------------*/
 // FIXME return vector?
+// FIXME pivot degree?
+// FIXME row degree?
 std::vector<long> pivot_index (
 		std::vector<long> & index,
 		const Mat<zz_pX> & pmat,
@@ -876,15 +877,68 @@ std::vector<long> pivot_index (
 	return degree;
 }
 
-/*
-  bool is_weak_popov (const Mat<zz_pX> &m, const Vec<long> &shift = Vec<long>(), const bool row_wise = true){
-  Vec<long> pivots;
-  pivot_index(pivots, b, shift, row_wise);
-	
-  }
+bool is_weak_popov (
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> &shift,
+		const bool row_wise,
+		const bool ordered)
+{
+	//retrieve pivot index
+	std::vector<long> pivots;
+	pivots.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
+	pivot_index(pivots, pmat, shift, row_wise);
 
-  bool is_popov (const Mat<zz_pX> &m, const Vec<long> &shift = Vec<long>(), const bool row_wise = true){
-  Vec<long> pivots;
-  Vec<long degree = pivot_index(pivots, b, shift, row_wise);
-  }
+	// forbide zero vectors
+	if( std::find(pivots.begin(),pivots.end(),-1) != pivots.end() )
+	{
+		return false;
+	}
+
+	std::sort(pivots.begin(),pivots.end()); // TODO: should probably not be done if ordered case??
+
+	if (!ordered)
+	{ // only check for pair-wise distinct
+		for (size_t i = 1; i < pivots.size(); i++)
+			if(pivots[i] == pivots[i-1])
+			{
+				return false;
+			}
+	}
+	else
+	{
+		for (size_t i = 1; i < pivots.size(); i++)
+		{
+			if (pivots[i] <= pivots[i-1]){ // means not strict increasing
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+/*
+bool is_popov (const Mat<zz_pX> &m, const Vec<long> &shift = Vec<long>(), const bool row_wise = true){
+	Vec<long> pivots;
+	Vec<long degree = pivot_index(pivots, b, shift, row_wise);
+}
+
+Mat<zz_pX> identity_matrix(const long n){
+	Mat<zz_pX> res;
+	res.SetDims(n,n);
+	for (long i = 0; i < n; i++)
+		res[i][i] = zz_pX(1);
+	return res;
+}
+
+weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &m, Vec<long> shift=Vec<long>()){
+	wpf = m;
+	m = wpf.NumRows();
+	n = wpf.NumCols();
+	trans = identity_matrix(m);
+	if (shift.length() == 0){ 
+		shift = Vec<long>();
+		shift.SetLength(n);
+	}
+	
+}
 */
