@@ -8,15 +8,29 @@
 
 NTL_CLIENT
 
-/*------------------------------------------------------------*/
-/* random (n, m) matrix of degree < d                         */
-/*------------------------------------------------------------*/
-void random_mat_zz_pX(Mat<zz_pX>& a, long n, long m, long d);
 
 /*------------------------------------------------------------*/
-/* maximum degree of the entries of a                         */
 /*------------------------------------------------------------*/
-long deg(const Mat<zz_pX> & a);
+/* UTILS                                                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* print vector                                               */
+/*------------------------------------------------------------*/
+std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* CREATE RANDOM MATRICES                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* random (m, n) matrix of degree < d                         */
+/*------------------------------------------------------------*/
+void random_mat_zz_pX(Mat<zz_pX>& a, long m, long n, long d);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -252,30 +266,57 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
+/* maximum degree of the entries of pmat                      */
+/*------------------------------------------------------------*/
+long deg(const Mat<zz_pX> & pmat);
+
+/*------------------------------------------------------------*/
 /* matrix of integers; deg(0) = -1                            */
 /*------------------------------------------------------------*/
-void degree_matrix(Mat<long> &a, const Mat<zz_pX> &b, const std::vector<long>& shift=std::vector<long>(), const bool row_wise=true);
+void degree_matrix(
+		Mat<long> &degmat,
+		const Mat<zz_pX> &pmat,
+		const std::vector<long>& shift=std::vector<long>(),
+		const bool row_wise=true
+		);
 
 /*------------------------------------------------------------*/
 /* max degree of row entries                                  */
 /*------------------------------------------------------------*/
-void row_degree(std::vector<long> &a, const Mat<zz_pX> &b, const std::vector<long>& shift=std::vector<long>()); 
+void row_degree(
+		std::vector<long> &rdeg,
+		const Mat<zz_pX> &pmat,
+		const std::vector<long>& shift=std::vector<long>()
+		); 
 
 /*------------------------------------------------------------*/
 /* max degree of col entries                                  */
 /*------------------------------------------------------------*/
-void col_degree(std::vector<long> &a, const Mat<zz_pX> &b,const std::vector<long>& shift=std::vector<long>()); 
+void col_degree(
+		std::vector<long> &cdeg,
+		const Mat<zz_pX> &pmat,
+		const std::vector<long>& shift=std::vector<long>()
+		); 
 
 /*------------------------------------------------------------*/
 /* finds the pivot indices; returns the row/col degs          */
 /*------------------------------------------------------------*/
-std::vector<long> pivot_index (std::vector<long> &index, const Mat<zz_pX> &b,const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
+std::vector<long> pivot_index(
+		std::vector<long> &index,
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> & shift = std::vector<long>(),
+		const bool row_wise = true
+		);
 
 /*------------------------------------------------------------*/
 /* leading matrix of b                                        */
 /*------------------------------------------------------------*/
-void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
-
+void leading_matrix(
+		Mat<zz_p> &lmat,
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> & shift = std::vector<long>(),
+		const bool row_wise = true
+		);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -286,7 +327,11 @@ void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, const std::vector<long> &
 /*------------------------------------------------------------*/
 /* returns true if b is reduced                               */
 /*------------------------------------------------------------*/
-bool is_reduced (const Mat<zz_pX> &b,const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
+bool is_reduced(
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> & shift = std::vector<long>(),
+		const bool row_wise = true
+		);
 
 /*------------------------------------------------------------*/
 /* returns true if b is in weak popov form (forbide 0-row/col */
@@ -295,7 +340,8 @@ bool is_weak_popov(
 		const Mat<zz_pX> &pmat,
 		const std::vector<long> &shift = std::vector<long>(),
 		const bool row_wise = true,
-		const bool ordered= false);
+		const bool ordered= false
+		);
 
 
 /*------------------------------------------------------------*/
@@ -367,9 +413,6 @@ std::vector<long> mbasis1(Mat<zz_pX> &appbas, const Mat<zz_p> mat, const std::ve
 /*------------------------------------------------------------*/
 std::vector<long> mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long order, const std::vector<long> & shift);
 std::vector<long> popov_mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long order, const std::vector<long> & shift);
-
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
-
 
 
 #endif // MAT_LZZ_PX_EXTRA__H
