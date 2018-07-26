@@ -11,16 +11,25 @@ NTL_CLIENT
 /* Tests the degree functions for polynomial matrices */
 /******************************************************/
 
+
+
 int main(){
 	zz_p::init(13);
 	Mat<zz_pX> m;
-	m.SetDims(2,3);
-	m[0][0] = random_zz_pX(3);
-	m[0][1] = random_zz_pX(2);
-	m[0][2] = random_zz_pX(0);
-	m[1][0] = random_zz_pX(0);
-	m[1][1] = random_zz_pX(0);
-	m[1][2] = random_zz_pX(0);
+	m.SetDims(3,4);
+	m[0][0] = random_zz_pX(4);
+	m[0][1] = random_zz_pX(1);
+	m[0][2] = random_zz_pX(2);
+	m[0][3] = random_zz_pX(0);
+	m[1][0] = random_zz_pX(3);
+	m[1][1] = random_zz_pX(1);
+	m[1][2] = random_zz_pX(1);
+	m[1][3] = random_zz_pX(0);
+	m[2][0] = random_zz_pX(4);
+	m[2][1] = random_zz_pX(2);
+	m[2][2] = random_zz_pX(3);
+	m[2][3] = random_zz_pX(3);
+
 
 	cout << m << endl;
 	
@@ -42,13 +51,14 @@ int main(){
 	cout << "row pivot: " << pivot << endl;
 	pivot_index(pivot, m, Vec<long>(), false);
 	cout << "col pivot: " << pivot << endl;
+
 	
 	cout << endl << "Tests for shifts: " << endl;
 	Vec<long> rs;
-	rs.append(1); rs.append(2); rs.append(3);
+	rs.append(0); rs.append(2); rs.append(1); rs.append(3);
 	cout << "row shift: " << rs << endl;
 	Vec<long> cs;
-	cs.append(4); cs.append(2);
+	cs.append(4); cs.append(2); cs.append(0);
 	cout << "col shift: " << cs << endl;
 	degree_matrix(deg_mat,m,rs,true);
 	cout << "row wise degree after shift: " << endl << deg_mat<<endl;
@@ -66,6 +76,8 @@ int main(){
 	cout << "row pivot: " << pivot << endl;
 	pivot_index(pivot, m, cs, false);
 	cout << "col pivot: " << pivot << endl;
+	cout << "popov? " << boolalpha << is_weak_popov(m,rs) << endl;
+	cout << "ordered popov? " << boolalpha << is_weak_popov(m,rs,true,true) << endl;
 }
 
 

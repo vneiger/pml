@@ -2,15 +2,352 @@
 #include <NTL/mat_lzz_p.h>
 #include <NTL/lzz_pX.h>
 #include <cmath>
+#include <algorithm> // for manipulating std::vector (min, max, ..)
 
 #include "lzz_p_extra.h"
+#include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
 
 NTL_CLIENT
 
 
+
 /*------------------------------------------------------------*/
-/* random matrix of a given degree                            */
+/*------------------------------------------------------------*/
+/* addition                                                   */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* zz_pX addition                                             */
+/*------------------------------------------------------------*/
+void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    if (m != b.NumRows() || n != b.NumCols())
+    {
+	LogicError("dimension mismatch in matrix addition");
+    }
+
+    c.SetDims(m, n);
+    for (long i = 0; i < m; i++)
+    {
+	for (long j = 0; j < n; j++)
+	{
+	    c[i][j] = a[i][j] + b[i][j];
+	}
+    }
+}
+
+/*------------------------------------------------------------*/
+/* addition, rhs is constant                                  */
+/*------------------------------------------------------------*/
+void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    if (m != b.NumRows() || n != b.NumCols())
+    {
+	LogicError("dimension mismatch in matrix addition");
+    }
+
+    c.SetDims(m, n);
+    for (long i = 0; i < m; i++)
+    {
+	for (long j = 0; j < n; j++)
+	{
+	    c[i][j] = a[i][j] + b[i][j];
+	}
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* subtraction                                                */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* zz_pX subtraction                                          */
+/*------------------------------------------------------------*/
+void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    if (m != b.NumRows() || n != b.NumCols())
+    {
+	LogicError("dimension mismatch in matrix subtraction");
+    }
+
+    c.SetDims(m, n);
+    for (long i = 0; i < m; i++)
+    {
+	for (long j = 0; j < n; j++)
+	{
+	    c[i][j] = a[i][j] - b[i][j];
+	}
+    }
+}
+
+/*------------------------------------------------------------*/
+/* subtraction, rhs is constant                               */
+/*------------------------------------------------------------*/
+void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    if (m != b.NumRows() || n != b.NumCols())
+    {
+	LogicError("dimension mismatch in matrix subtraction");
+    }
+
+    c.SetDims(m, n);
+    for (long i = 0; i < m; i++)
+    {
+	for (long j = 0; j < n; j++)
+	{
+	    c[i][j] = a[i][j] - b[i][j];
+	}
+    }
+}
+
+/*------------------------------------------------------------*/
+/* subtraction, lhs is constant                               */
+/*------------------------------------------------------------*/
+void sub(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    if (m != b.NumRows() || n != b.NumCols())
+    {
+	LogicError("dimension mismatch in matrix subtraction");
+    }
+
+    c.SetDims(m, n);
+    for (long i = 0; i < m; i++)
+    {
+	for (long j = 0; j < n; j++)
+	{
+	    c[i][j] = a[i][j] - b[i][j];
+	}
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* constant matrix multiplication                             */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* multiplication, rhs is a constant matrix                   */
+/*------------------------------------------------------------*/
+void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
+{
+    long d = deg(a);
+
+    long m = a.NumRows();
+    long n = a.NumCols();
+    long p = b.NumCols();
+
+    if (n != b.NumRows())
+    {
+	LogicError("dimension mismatch in constant matrix multplication");
+    }
+
+    c.SetDims(m, p);
+    Mat<zz_p> tmp, res;
+    tmp.SetDims(m, p);
+    for (long i = 0; i <= d; i++)
+    {
+	for (long u = 0; u < m; u++)
+	{
+	    for (long v = 0; v < n; v++)
+	    {
+		tmp[u][v] = coeff(a[u][v], i);
+	    }
+	}
+	res = tmp * b;
+	for (long u = 0; u < m; u++)
+	{
+	    for (long v = 0; v < p; v++)
+	    {
+		SetCoeff(c[u][v], i, res[u][v]);
+	    }
+	}
+    }
+}
+
+/*------------------------------------------------------------*/
+/* multiplication, lhs is a constant matrix                   */
+/*------------------------------------------------------------*/
+void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
+{
+    long d = deg(b);
+
+    long m = a.NumRows();
+    long n = a.NumCols();
+    long p = b.NumCols();
+
+    if (n != b.NumRows())
+    {
+	LogicError("dimension mismatch in constant matrix multplication");
+    }
+
+    c.SetDims(m, p);
+    Mat<zz_p> tmp, res;
+    tmp.SetDims(m, p);
+    for (long i = 0; i <= d; i++)
+    {
+	for (long u = 0; u < n; u++)
+	{
+	    for (long v = 0; v < p; v++)
+	    {
+		tmp[u][v] = coeff(b[u][v], i);
+	    }
+	}
+	res = a * tmp;
+	for (long u = 0; u < m; u++)
+	{
+	    for (long v = 0; v < p; v++)
+	    {
+		SetCoeff(c[u][v], i, res[u][v]);
+	    }
+	}
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* scalar multiplication                                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_p & b){
+
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    c.SetDims(m, n);
+
+    for (long u = 0; u < m; u++)
+    {
+	for (long v = 0; v < n; v++)
+	{
+	    c[u][v] = b * a[u][v];
+	}
+    }
+}
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* negate                                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+void neg(Mat<zz_pX> & x, const Mat<zz_pX> & a)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+   
+    x.SetDims(m, n);
+   
+    for (long u = 0; u < m; u++)
+    {
+	for (long v = 0; v < n; v++)
+	{
+	    NTL::negate(x[u][v], a[u][v]);
+	}
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* get / set coefficients                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* sets x = ith coefficient of a                              */
+/*------------------------------------------------------------*/
+void GetCoeff(Mat<zz_p>& x, const Mat<zz_pX>& a, long i)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+   
+    x.SetDims(m, n);
+    
+    for (long u = 0; u < m; u++)
+    {
+	for (long v = 0; v < n; v++)
+	{
+	    x[u][v] = coeff(a[u][v], i);
+	}
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/* returns the matrix of leading coefficients                 */
+/*------------------------------------------------------------*/
+Mat<zz_p> matrix_of_leading_coefficients(const Mat<zz_pX>& a)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+    
+    Mat<zz_p> x;
+    x.SetDims(m, n);
+    
+    for (long u = 0; u < m; u++)
+    {
+	for (long v = 0; v < n; v++)
+	{
+	    x[u][v] = LeadCoeff(a[u][v]);
+	}
+    }
+
+    return x;
+}
+
+
+/*------------------------------------------------------------*/
+/* sets ith coefficient of x to a                             */
+/*------------------------------------------------------------*/
+void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a)
+{
+    long m = x.NumRows();
+    long n = x.NumCols();
+    
+    if (m != a.NumRows() || n != a.NumCols())
+    {
+	LogicError("dimension mismatch in matrix SetCoeff");
+    }
+
+    if (i < 0)
+    {
+	LogicError("negative index in matrix SetCoeff");
+    }
+
+    for (long u = 0; u < m; u++)
+    {
+	for (long v = 0; v < n; v++)
+	{
+	    SetCoeff(x[u][v], i, a[u][v]);
+	}
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/* random (n, m) matrix of degree < d                         */
 /*------------------------------------------------------------*/
 void random_mat_zz_pX(Mat<zz_pX>& a, long n, long m, long d)
 {
@@ -157,27 +494,20 @@ void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat
     long dC = dA+dB;
     long sz = dC+1;
 
-    // double t;
     zz_pX_Multipoint_Geometric ev_geom = get_geometric_points(sz);
 
-    // t = GetTime();
     Vec<Mat<zz_p>> valA, valB, valC;
     ev_geom.evaluate_matrix(valA, a);
     ev_geom.evaluate_matrix(valB, b);
-    // cout << "geom eval: " << GetTime()-t << endl;
 
-    // t = GetTime();
     long len = ev_geom.length();
     valC.SetLength(len);
     for (long i = 0; i < len; i++)
     {
     	mul(valC[i], valA[i], valB[i]);
     }
-    // cout << "muls eval: " << GetTime()-t << endl;
 
-    // t = GetTime();
     ev_geom.interpolate_matrix(c, valC);
-    // cout << "geom interp: " << GetTime()-t << endl;
 }
 
 /*------------------------------------------------------------*/
@@ -270,156 +600,272 @@ void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
     trs_karatsuba.backward_matrix(c, valC);
 }
 
-long min (const Vec<long> &v){
-	if (v.length() == 0) return 0;
-	long m = v[0];
-	for (long i = 1; i < v.length(); i++)
-		if (v[i] < m) m = v[i];
-	return m;
-}
 
-long max(const Vec<long> &v){
-	if (v.length() == 0) return 0;
-	long m = v[0];
-	for (long i = 1; i < v.length(); i++)
-		if (v[i] > m) m = v[i];
-	return m;
-}
-
-void check_shift(bool &shifted, const Vec<long> &shift, const Mat<zz_pX> &b, const bool row_wise = true){
+/*------------------------------------------------------------*/
+/* some comment                                               */
+/*------------------------------------------------------------*/
+void check_shift(bool &shifted, const std::vector<long> &shift, const Mat<zz_pX> &pmat, const bool row_wise = true)
+{
 	shifted = false;
-	if (shift.length() != 0) {
+	if (!shift.empty()) 
+	{
 		shifted = true;
-		if (row_wise && shift.length() != b.NumCols())
-			throw "bad row shift dimensions";
-		if (!row_wise && shift.length() != b.NumRows())
-			throw "bad col shift  dimensions";
+		if (row_wise && (long)shift.size() != pmat.NumCols())
+		{
+			throw "==check_shift== Provided shift does not have the right dimension (working row-wise)";
+		}
+		if (!row_wise && (long)shift.size() != pmat.NumRows())
+		{
+			throw "==check_shift== Provided shift does not have the right dimension (working column-wise)";
+		}
 	}
 }
 
-void degree_matrix(Mat<long> &a, const Mat<zz_pX> &b, 
-                   const Vec<long> & shift = Vec<long>(),
-                   const bool row_wise = true){
-	// check for shifts
+/*------------------------------------------------------------*/
+/* some comment                                               */
+/* a supposed to be empty, just initialized */
+/*------------------------------------------------------------*/
+void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat, 
+                   const std::vector<long> & shift,
+                   const bool row_wise)
+{
+	// check if shifted + shift dimension
 	bool shifted;
-	check_shift(shifted, shift, b, row_wise);
-	long min_shift = min(shift);
-	
-	a.SetDims(b.NumRows(), b.NumCols());
-	for (long i = 0; i < b.NumRows(); i++){
-		for (long j = 0; j < b.NumCols(); j++){
-			a[i][j] = deg(b[i][j]);
-			if (shifted){
-				if (a[i][j] == -1) a[i][j] += min_shift;
-				else if (row_wise) a[i][j] += shift[j];
-				else a[i][j] += shift[i];
+	check_shift(shifted, shift, pmat, row_wise);
+
+	// compute minimum shift entry (will be used for degree of zero entries of b)
+	long min_shift = *std::min_element(shift.begin(),shift.end());
+
+	// set the dimensions of degmat and populate it with degrees
+	degmat.SetDims(pmat.NumRows(), pmat.NumCols());
+	for (long i = 0; i < pmat.NumRows(); i++)
+	{
+		for (long j = 0; j < pmat.NumCols(); j++)
+		{
+			degmat[i][j] = deg(pmat[i][j]);
+			if (shifted)
+			{
+				if (pmat[i][j] == -1)
+				{
+					degmat[i][j] += min_shift;
+				}
+				else if (row_wise)
+				{
+					degmat[i][j] += shift[j];
+				}
+				else
+				{
+					degmat[i][j] += shift[i];
+				}
 			}
 		}
 	}
 }
 
-void row_degree(Vec<long> &a, const Mat<zz_pX> &b,
-                const Vec<long> &shift = Vec<long>()){ 
-  bool shifted;
-  check_shift(shifted,shift,b);
-  
-	a.SetLength(b.NumRows());
-	Mat<long> deg_mat;
-	degree_matrix(deg_mat,b,shift,true);
-	
-	for (long r = 0; r < b.NumRows(); r++){
-		auto max_deg = deg_mat[r][0];
-		for (long c = 1; c < b.NumCols(); c++){
-			if (max_deg < deg_mat[r][c]) max_deg = deg_mat[r][c];
+/*------------------------------------------------------------*/
+/* some comment                                               */
+/* requirement: length of rdeg is correct */
+/*------------------------------------------------------------*/
+void row_degree(std::vector<long> &rdeg, const Mat<zz_pX> &pmat,
+                const std::vector<long> &shift)
+{ 
+	// check if shifted + shift dimension
+	bool shifted;
+	check_shift(shifted,shift,pmat);
+
+	// check rdeg has the right length
+	if ((long)rdeg.size() != pmat.NumRows()) {
+		throw "==row_degree== Provided vector does not have size = NumRows";
+	}
+
+	// retrieve the shifted degree matrix
+	Mat<long> degmat;
+	degree_matrix(degmat,pmat,shift,true);
+
+	// take the max of each row of degmat
+	for (long r = 0; r < pmat.NumRows(); r++)
+	{
+		auto max_deg = degmat[r][0];
+		for (long c = 1; c < pmat.NumCols(); c++)
+		{
+			if (max_deg < degmat[r][c]) 
+			{
+				max_deg = degmat[r][c];
+			}
 		}
-		a[r] = max_deg;
+		rdeg[r] = max_deg;
 	}
 }
 
-void col_degree(Vec<long> &a, const Mat<zz_pX> &b,
-                const Vec<long> &shift = Vec<long>()){
+/*------------------------------------------------------------*/
+/* some comment                                               */
+/* requirement: length of cdeg is correct */
+/*------------------------------------------------------------*/
+void col_degree(std::vector<long> &cdeg, const Mat<zz_pX> &pmat,
+                const std::vector<long> &shift)
+{
+	// check if shifted + shift dimension
 	bool shifted;
-	check_shift(shifted,shift,b,false);
-	
-	a.SetLength(b.NumCols());
-	Mat<long> deg_mat;
-	degree_matrix(deg_mat,b,shift,false);
-	
-	a.SetLength(b.NumCols());
-	for (long c = 0; c < b.NumCols(); c++){
-		auto max_deg = deg_mat[0][c];
-		for (long r = 1; r < b.NumRows(); r++){
-			if (max_deg < deg_mat[r][c]) max_deg = deg_mat[r][c];
+	check_shift(shifted,shift,pmat,false);
+
+	// check cdeg has the right length
+	if ((long)cdeg.size() != pmat.NumCols()) {
+		throw "==col_degree== Provided vector does not have size = NumCols";
+	}
+
+	// retrieve the shifted degree matrix
+	Mat<long> degmat;
+	degree_matrix(degmat,pmat,shift,false);
+
+	// take the max of each column of degmat
+	for (long c = 0; c < pmat.NumCols(); c++)
+	{
+		auto max_deg = degmat[0][c];
+		for (long r = 1; r < pmat.NumRows(); r++)
+		{
+			if (max_deg < degmat[r][c]) 
+			{
+				max_deg = degmat[r][c];
+			}
 		}
-		a[c] = max_deg;
+		cdeg[c] = max_deg;
 	}
 } 
 
-void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, 
-                   const Vec<long> & shift = Vec<long>(),
-                   const bool row_wise = true){
-	// check for shifts
+/*------------------------------------------------------------*/
+/* some comment                                               */
+/*------------------------------------------------------------*/
+void leading_matrix(Mat<zz_p> &lmat,
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> & shift,
+		const bool row_wise)
+{
+	// check if shifted + shift dimension
 	bool shifted;
-	check_shift(shifted, shift, b, row_wise);
-	
-	Vec<long> degree;
+	check_shift(shifted, shift, pmat, row_wise);
+
+	// retrieve the row degree (or column degree)
+	std::vector<long> degree;
 	if (row_wise)
-		row_degree(degree,b,shift);
+	{
+		degree.resize(pmat.NumRows());
+		row_degree(degree,pmat,shift);
+	}
 	else
-		col_degree(degree,b,shift);
-	
-	a.SetDims(b.NumRows(), b.NumCols());
-	for (long r = 0; r < b.NumRows(); r++)
-		for (long c = 0; c < b.NumCols(); c++){
-			long d,d2;
-			if (row_wise) d = degree[r];
-			else d = degree[c];
-			d2 = deg(b[r][c]);
-			if (shifted){
-				if (row_wise) d2 += shift[c];
-				else d2 += shift[r];
+	{
+		degree.resize(pmat.NumCols());
+		col_degree(degree,pmat,shift);
+	}
+
+	// initialize space for lmat
+	lmat.SetDims(pmat.NumRows(), pmat.NumCols());
+	// retrieve the leading coefficients
+	for (long r = 0; r < pmat.NumRows(); r++)
+	{
+		for (long c = 0; c < pmat.NumCols(); c++)
+		{
+			long d; // actual shifted degree of the r,c entry
+			// FIXME issue with zero entries? why not using degree matrix?
+			d = deg(pmat[r][c]);
+			if (shifted)
+			{
+				d += (row_wise ? shift[c] : shift[r]);
 			}
-			if (d2 >= d)
-				a[r][c] = LeadCoeff(b[r][c]);
+			if (d == (row_wise ? degree[r] : degree[c]))
+			{
+				lmat[r][c] = LeadCoeff(pmat[r][c]);
+			}
 		}
+	}
 }
 
-bool is_reduced (const Mat<zz_pX> &b,const Vec<long> & shift = Vec<long>(), const bool row_wise = true){
+/*------------------------------------------------------------*/
+/* some comment                                               */
+/*------------------------------------------------------------*/
+bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const bool row_wise)
+{
 	Mat<zz_p> lead_mat;
-	leading_matrix(lead_mat,b,shift,row_wise);
+	leading_matrix(lead_mat,pmat,shift,row_wise);
 	auto rank = gauss(lead_mat);
-	if (row_wise)
-		return b.NumRows() == rank;
-	return b.NumCols() == rank;
+	return rank == (row_wise ? pmat.NumRows() : pmat.NumCols());
 }
 
-Vec<long> pivot_index (Vec<long> &index, const Mat<zz_pX> &b,const Vec<long> & shift = Vec<long>(), const bool row_wise = true){
+/*------------------------------------------------------------*/
+/* some comment                                               */
+/*------------------------------------------------------------*/
+// FIXME return vector?
+std::vector<long> pivot_index (
+		std::vector<long> & index,
+		const Mat<zz_pX> & b,
+		const std::vector<long> & shift,
+		const bool row_wise)
+{
 	bool shifted;
 	check_shift(shifted, shift, b, row_wise);
 
 	Mat<long> deg_mat;
 	degree_matrix(deg_mat,b,shift,row_wise);
-	
-	Vec<long> degree;
-	if (row_wise) row_degree(degree,b,shift);
-	else col_degree(degree,b,shift);
-	long zero_degree = min(shift) -1;
-	
-	if (row_wise){
-		index.SetLength(b.NumRows());
-		for (long r = 0; r < b.NumRows(); r++){
-			if (degree[r] == zero_degree) index[r] = -1;
-			else
-				for (long c = 0; c <b.NumCols(); c++)
-					if (deg_mat[r][c] == degree[r]) index[r] = c;
+
+	std::vector<long> degree;
+	if (row_wise)
+	{
+		row_degree(degree,b,shift);
+	}
+	else
+	{
+		col_degree(degree,b,shift);
+	}
+
+	long zero_degree = -1;
+	if (shifted)
+	{
+		zero_degree = *std::min_element(shift.begin(),shift.end()) -1;
+	}
+
+	if (row_wise)
+	{
+		if ((long)index.size() != b.NumRows()) {
+			throw "==pivot_index== Provided vector does not have size = NumRows";
 		}
-	}else{
-		index.SetLength(b.NumCols());
-		for(long c = 0; c < b.NumCols(); c++){
-			if (degree[c] == zero_degree) index[c] = -1;
+		for (long r = 0; r < b.NumRows(); r++)
+		{
+			if (degree[r] == zero_degree) 
+			{
+				index[r] = -1;
+			}
 			else
+			{
+				for (long c = 0; c <b.NumCols(); c++)
+				{
+					if (deg_mat[r][c] == degree[r]) 
+					{
+						index[r] = c;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		if ((long)index.size() != b.NumCols()) {
+			throw "==pivot_index== Provided vector does not have size = NumCols";
+		}
+		for(long c = 0; c < b.NumCols(); c++)
+		{
+			if (degree[c] == zero_degree) 
+			{
+				index[c] = -1;
+			}
+			else
+			{
 				for (long r = 0; r < b.NumRows(); r++)
-					if (deg_mat[r][c] == degree[c]) index[c] = r;
+				{
+					if (deg_mat[r][c] == degree[c]) 
+					{
+						index[c] = r;
+					}
+				}
+			}
 		}
 	}
 	return degree;
@@ -497,7 +943,7 @@ weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &m, Vec<long> shift=Vec<long>(
 	}
 	
 }
-*/
+
 
 
 

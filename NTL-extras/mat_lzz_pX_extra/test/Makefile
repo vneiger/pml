@@ -13,10 +13,10 @@ CXXFLAGS = -Wall -std=c++11 -O3 -march=native -I$(INC_DIR)
 LIBS = -lntl -lpthread -lgmp -lm
 .PHONY: clean
 
+all:	$(TESTS)
+
 clean:
 	rm -f $(EXEC)
-
-all:	$(TESTS)
 
 utest_%:	$(OBJS)
 	if test -e test_$*.cpp; then $(CXX) -o test_$* test_$*.cpp $(OBJS) $(CXXFLAGS) $(LIBS); fi
