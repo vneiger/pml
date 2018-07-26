@@ -3,6 +3,7 @@
 
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
+#include <iostream>
 #include <vector> // std vector, for shifts, degrees, pivot indices
 
 NTL_CLIENT
@@ -160,7 +161,7 @@ inline Mat<zz_pX> operator*(const zz_p& a, const Mat<zz_pX>& b)
 /*------------------------------------------------------------*/
 /* returns true if b is in weak popov form (forbide 0-row/col */
 /*------------------------------------------------------------*/
-bool is_weak_popov (const Mat<zz_pX> &b, const Vec<long> &shift = Vec<long>(), const bool row_wise = true, const bool ordered= false);
+bool is_weak_popov (const Mat<zz_pX> &b, const std::vector<long> &shift = std::vector<long>(), const bool row_wise = true, const bool ordered= false);
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
@@ -361,6 +362,8 @@ std::vector<long> mbasis1(Mat<zz_pX> &appbas, const Mat<zz_p> mat, const std::ve
 /*------------------------------------------------------------*/
 std::vector<long> mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long order, const std::vector<long> & shift);
 std::vector<long> popov_mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long order, const std::vector<long> & shift);
+
+std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
 
 
 

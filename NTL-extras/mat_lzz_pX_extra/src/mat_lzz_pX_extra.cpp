@@ -895,27 +895,34 @@ Vec<long> sort (const Vec<long> &l){
 	return result;
 }
 
-bool is_weak_popov (const Mat<zz_pX> &b, const Vec<long> &shift = Vec<long>(), const bool row_wise = true, const bool ordered= false){
-	Vec<long> pivots;
+bool is_weak_popov (const Mat<zz_pX> &b, const std::vector<long> &shift, const bool row_wise, const bool ordered){
+	std::vector<long> pivots;
 	pivot_index(pivots, b, shift, row_wise);
 	// forbide zero vectors
-	for (long i = 0; i < pivots.length(); i++){
+	for (unsigned long i = 0; i < pivots.size(); i++){
 		if (pivots[0] == -1)
 			return false;
 	}
-	pivots = sort(pivots);
+	std::sort(pivots.begin(), pivots.end());
 	if (!ordered){ // only check for pair-wise distinct
-		for (long i = 1; i < pivots.length(); i++)
+		for (unsigned long i = 1; i < pivots.size(); i++)
 			if(pivots[i] == pivots[i-1]){
 				return false;
 			}
 	}else{
-		for (long i = 1; i < pivots.length(); i++)
+		for (unsigned long i = 1; i < pivots.size(); i++)
 			if (pivots[i] <= pivots[i-1]){ // means not strict increasing
 				return false;
 			}
 	}
 	return true;
+}
+
+std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
+	out << "[ ";
+	for (auto &i: s)
+		out << i << " ";
+	return out << "]";
 }
 
 /*
@@ -943,7 +950,7 @@ weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &m, Vec<long> shift=Vec<long>(
 	}
 	
 }
-
+*/
 
 
 

@@ -2,6 +2,7 @@
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
 #include <iomanip>
+#include <vector>
 
 #include "mat_lzz_pX_extra.h"
 
@@ -12,7 +13,7 @@ NTL_CLIENT
 /******************************************************/
 
 
-
+using namespace std;
 int main(){
 	zz_p::init(13);
 	Mat<zz_pX> m;
@@ -34,7 +35,7 @@ int main(){
 	cout << m << endl;
 	
 	cout << "Starting tests:" << endl;
-	Vec<long> degs;
+	vector<long> degs;
 	row_degree(degs,m);
 	cout << "row degs: " << degs << endl;
 	col_degree(degs,m);
@@ -46,19 +47,20 @@ int main(){
 	leading_matrix(lead_mat, m);
 	cout << "leading mat: " << endl << lead_mat << endl;
 	cout << "is reduced: " << boolalpha << is_reduced(m) << endl;
-	Vec<long> pivot;
-	pivot_index(pivot, m, Vec<long>(), true);
+	vector<long> pivot;
+	pivot_index(pivot, m, vector<long>(), true);
 	cout << "row pivot: " << pivot << endl;
-	pivot_index(pivot, m, Vec<long>(), false);
+	pivot_index(pivot, m, vector<long>(), false);
 	cout << "col pivot: " << pivot << endl;
 
 	
 	cout << endl << "Tests for shifts: " << endl;
-	Vec<long> rs;
-	rs.append(0); rs.append(2); rs.append(1); rs.append(3);
+	vector<long> rs;
+	rs.emplace_back(0); rs.emplace_back(2); 
+	rs.emplace_back(1); rs.emplace_back(3);
 	cout << "row shift: " << rs << endl;
-	Vec<long> cs;
-	cs.append(4); cs.append(2); cs.append(0);
+	vector<long> cs;
+	cs.emplace_back(4); cs.emplace_back(2); cs.emplace_back(0);
 	cout << "col shift: " << cs << endl;
 	degree_matrix(deg_mat,m,rs,true);
 	cout << "row wise degree after shift: " << endl << deg_mat<<endl;
