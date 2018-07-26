@@ -910,26 +910,18 @@ bool is_weak_popov (
 
 	// forbide zero vectors
 	if( std::find(pivots.begin(),pivots.end(),-1) != pivots.end() )
-	{
 		return false;
-	}
+
 	if (!ordered)
-	{ // only check for pair-wise distinct
+	{ // check for pairwise distinct: sort and check no adjacent equal elements
 		std::sort(pivots.begin(),pivots.end());
-		for (size_t i = 1; i < pivots.size(); i++)
-			if(pivots[i] == pivots[i-1])
-			{
-				return false;
-			}
+		if (std::adjacent_find(pivots.begin(),pivots.end()) != pivots.end())
+			return false;
 	}
 	else
-	{
-		for (size_t i = 1; i < pivots.size(); i++)
-		{
-			if (pivots[i] <= pivots[i-1]){ // means not strict increasing
-				return false;
-			}
-		}
+	{ // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+		if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+			return false;
 	}
 	return true;
 }
