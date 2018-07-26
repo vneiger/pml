@@ -20,6 +20,13 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
 
+//TODO : left and right shifts (multiplication/division by powers of X),
+//for all the matrix or some columns/rows of it
+//
+//TODO : truncate mod X^... , for all the matrix or some columns/rows of it
+
+//TODO: multiply row or column of matrix by constant
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -351,10 +358,30 @@ bool is_weak_popov(
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+////Definition (approximant basis)
+// Given:
+//   * m x n matrix of univariate polynomials 'pmat',
+//   * approximation order 'order' (list of n positive integers),
+// An approximant basis for (pmat,order) is a matrix over K[X]
+// whose rows form a basis for the K[X]-module
+// { 'app' in K[X]^{1 x m}  |  the column j of 'app' 'pmat' is 0 modulo X^{order[j]} }
+
+//// Minimal and Popov approximant bases
+// Given in addition:
+//   * a degree shift 'shifts' (list of m integers)
+// then an approximant basis for (pmat,order) is said to be
+// "a shift-minimal" (resp. "the shift-Popov") approximant basis
+// if it shift-reduced (resp. in shift-Popov form)
+// Idem for shift-ordered weak Popov
+// Cf. literature for definitions
+
 /*------------------------------------------------------------*/
 /* TODO: documentation to explain what this computes and what */
 /* are the options                                            */
 /*------------------------------------------------------------*/
+
+// Guarantee: output is at least ordered weak Popov
+// return value is pivot degree
 
 /*------------------------------------------------------------*/
 /* general user-friendly interface                            */
@@ -362,8 +389,8 @@ bool is_weak_popov(
 // choice: output s-pivot degree
 std::vector<long> approximant_basis(
 		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & mat,
-		const std::vector<unsigned long> & order,
+		const Mat<zz_pX> & pmat,
+		const std::vector<long> & order,
 		const std::vector<long> & shift = std::vector<long>(),
 		const bool canonical = true,
 		const bool row_wise = true,
@@ -372,50 +399,53 @@ std::vector<long> approximant_basis(
 
 std::vector<long> approximant_basis(
 		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & mat,
-		const unsigned long order,
+		const Mat<zz_pX> & pmat,
+		const long order,
 		const std::vector<long> & shift = std::vector<long>(),
 		const bool canonical = true,
 		const bool row_wise = true,
 		const bool generic = false
 		);
 //{
-//	std::vector<unsigned long> orders(mat.NumRows(),order);
+//	std::vector<long> orders(mat.NumRows(),order);
 //	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
 //}
 
 /*------------------------------------------------------------*/
 /* Iterative algorithm for general order and shift            */
 /* References:                                                */
-/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
-/*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
-/*   - Jeannerod-Neiger-Villard 2018                          */
-/*          (ensuring s-ordered weak Popov)                   */
+/*   - Beckermann 1992                                        */
+/*   - Van Barel-Bultheel 1991+1992                           */
+/*   - Beckermann-Labahn 2000 (ensuring s-Popov)              */
 /*------------------------------------------------------------*/
 std::vector<long> appbas_iterative(
 		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & mat,
-		const long ord,
-		const std::vector<long> & shift
+		const Mat<zz_pX> & pmat,
+		const std::vector<long> order,
+		const std::vector<long> & shift,
+		bool order_wise=true
+		
 		);
 
-std::vector<long> popov_iter_appbas(
+std::vector<long> popov_appbas_iterative(
 		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & mat,
-		const long ord,
-		const std::vector<long> & shift
+		const Mat<zz_pX> & pmat,
+		const std::vector<long> order,
+		const std::vector<long> & shift,
+		bool order_wise=true
+		
 		);
 
 /*------------------------------------------------------------*/
 /* M-Basis algorithm for approximant order = 1                */
 /* References:                                                */
 /*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
-/*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
+/*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shift)  */
 /*   - Jeannerod-Neiger-Villard 2018 (ensuring s-Popov)       */
 /*------------------------------------------------------------*/
-std::vector<long> mbasis1(
+std::vector<long> popov_mbasis1(
 		Mat<zz_pX> & appbas,
-		const Mat<zz_p> & mat,
+		const Mat<zz_p> & pmat,
 		const std::vector<long> & shift
 		);
 
@@ -423,20 +453,42 @@ std::vector<long> mbasis1(
 /* M-Basis algorithm for uniform approximant order            */
 /* References:                                                */
 /*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
-/*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
+/*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shift)  */
 /*   - Jeannerod-Neiger-Villard 2018                          */
-/*          (ensuring s-ordered weak Popov)                   */
+/*          (ensuring s-ordered weak Popov or s-Popov)        */
 /*------------------------------------------------------------*/
 std::vector<long> mbasis(
 		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & mat,
+		const Mat<zz_pX> & pmat,
 		const long order,
 		const std::vector<long> & shift
 		);
 
 std::vector<long> popov_mbasis(
 		Mat<zz_pX> &appbas,
-		const Mat<zz_pX> & mat,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
+		);
+
+/*------------------------------------------------------------*/
+/* PM-Basis algorithm for uniform approximant order           */
+/* References:                                                */
+/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
+/*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shifts) */
+/*   - Jeannerod-Neiger-Villard 2018                          */
+/*          (ensuring s-ordered weak Popov or s-Popov)        */
+/*------------------------------------------------------------*/
+std::vector<long> pmbasis(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
+		);
+
+std::vector<long> popov_pmbasis(
+		Mat<zz_pX> &appbas,
+		const Mat<zz_pX> & pmat,
 		const long order,
 		const std::vector<long> & shift
 		);

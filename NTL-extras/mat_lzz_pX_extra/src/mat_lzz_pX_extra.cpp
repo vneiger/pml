@@ -3,6 +3,7 @@
 #include <NTL/lzz_pX.h>
 #include <cmath>
 #include <algorithm> // for manipulating std::vector (min, max, ..)
+#include <numeric> // for std::iota
 
 #include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
@@ -949,3 +950,116 @@ weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &m, Vec<long> shift=Vec<long>(
 	
 }
 */
+
+
+
+
+
+
+
+
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* MINIMAL APPROXIMANT BASES                                  */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+std::vector<long> appbas_iterative(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const std::vector<long> order,
+		const std::vector<long> & shift,
+		bool order_wise
+		)
+{
+	/** Three possibilities (among others) for next coefficient to deal with:
+	 *   - process 'pmat' order-wise (choose column with largest order)
+	 *   - process 'pmat' column-wise (choose leftmost column not yet completed)
+	 **/
+
+	long rdim = pmat.NumRows();
+	long cdim = pmat.NumCols();
+
+	// initial approximant basis: identity of dimensions 'rdim x rdim'
+	appbas.SetDims(rdim,rdim);
+	for (long i = 0; i < rdim; ++i)
+		appbas[i][i] = 1;
+
+	// initial residual: the whole input matrix
+	Mat<zz_pX> residual( pmat );
+
+	// order that remains to be dealt with
+	std::vector<long> rem_order( order );
+
+	// indices of columns/orders that remain to be dealt with
+	std::vector<long> rem_index( cdim );
+	std::iota(rem_index.begin(), rem_index.end());
+
+	// shifted row degrees of approximant basis
+	// (initially, of the identity matrix, i.e. rdeg == shift)
+	std::vector<long> rdeg( shift );
+
+	while (not rem_order.empty())
+	{
+		/** Invariant:
+		 *  - appbas is a shift-ordered weak Popov approximant basis for
+		 *  (pmat,doneorder) where doneorder is the tuple such that
+		 *  doneorer + rem_order == order (componentwise sum)
+		 *  - rdeg == the shift-row degree of appbas
+		 *  - residual == submatrix of columns (appbas * pmat)[:,j] for all j such that rem_order[j] > 0
+		 **/
+
+		long j=0; // value if columnwise (order_wise==False)
+		if (order_wise)
+		{
+			// FIXME could be valuable to simply initially permute the columns of pmat and order... then 'j' is obvious
+			j = std::distance(rem_order.begin(), std::max_element(rem_order.begin(), rem_order.end()));
+		}
+
+		long deg = order[rem_index[j]] - rem_order[j];
+
+		// record the coefficients of degree deg of the column j of residual
+		// also keep track of which of these are nonzero,
+		// and among the nonzero ones, which is the first with smallest shift
+		Vec<zz_p> const_residual;
+		const_residual.SetLength(rdim);
+		std::vector<long> indices_nonzero;
+		long piv = -1;
+		for (long i = 0; i < rdim; ++i)
+		{
+			const_residual[i] = residual[i][j][deg];
+			if (const_residual[i] != 0)
+			{
+				indices_nonzero.push_back(i);
+				if (piv<0 || rdeg[i] < rdeg[piv])
+					piv = i;
+			}
+		}
+
+		if (not indices_nonzero.empty()) { // otherwise, const_residual already zero, there is nothing to do
+			// update all rows of appbas and residual in indices_nonzero except row piv
+			for (long row : indices_nonzero) {
+				if (row!=piv) {
+					zz_p coeff = - const_residual[row] / const_residual[piv];
+					for (long k=0; k<rdim; ++k)
+						appbas[row][k] += coeff * appbas[piv][k];
+					for (long k=0; k<residual.NumCols(); ++k)
+						residual[row][k] += coeff * residual[piv][k];
+				}
+			}
+
+			// update row piv
+			++rdeg[piv]; // shifted row degree of row piv increases
+			for (long k=0; k<rdim; ++k)
+				appbas[piv][k] <<= 1; // row piv multiplied by X
+			for (long k=0; k<residual.NumCols(); ++k)
+				residual[piv][k] <<= 1; // row piv multiplied by X
+		}
+		
+
+	}
+}
