@@ -47,6 +47,11 @@ bool is_reduced (const Mat<zz_pX> &b,const Vec<long> & shift = Vec<long>(), cons
 Vec<long> pivot_index (Vec<long> &index, const Mat<zz_pX> &b,const Vec<long> & shift = Vec<long>(), const bool row_wise = true);
 
 /*------------------------------------------------------------*/
+/* returns true if b is in weak popov form (forbide 0-row/col */
+/*------------------------------------------------------------*/
+bool is_weak_popov (const Mat<zz_pX> &b, const Vec<long> &shift = Vec<long>(), const bool row_wise = true, const bool ordered= false);
+
+/*------------------------------------------------------------*/
 /* c = a*b                                                    */
 /*------------------------------------------------------------*/
 void multiply_waksman(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);

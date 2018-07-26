@@ -1,6 +1,7 @@
 #include <NTL/matrix.h>
 #include <NTL/mat_lzz_p.h>
 #include <NTL/lzz_pX.h>
+#include <cmath>
 
 #include "lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
@@ -402,9 +403,7 @@ Vec<long> pivot_index (Vec<long> &index, const Mat<zz_pX> &b,const Vec<long> & s
 	Vec<long> degree;
 	if (row_wise) row_degree(degree,b,shift);
 	else col_degree(degree,b,shift);
-	long zero_degree = -1;
-	if (shifted)
-		zero_degree = min(shift) -1;
+	long zero_degree = min(shift) -1;
 	
 	if (row_wise){
 		index.SetLength(b.NumRows());
@@ -426,15 +425,93 @@ Vec<long> pivot_index (Vec<long> &index, const Mat<zz_pX> &b,const Vec<long> & s
 	return degree;
 }
 
-/*
-bool is_weak_popov (const Mat<zz_pX> &m, const Vec<long> &shift = Vec<long>(), const bool row_wise = true){
-	Vec<long> pivots;
-	pivot_index(pivots, b, shift, row_wise);
-	
+// uses merge sort
+Vec<long> sort (const Vec<long> &l){
+	if (l.length() <= 1) return l;
+	long m = l.length()/2;
+	Vec<long> lh,rh;
+	for (long i = 0; i < m; i++)
+		lh.append(l[i]);
+	for (long i = m; i < l.length(); i++)
+		rh.append(l[i]);
+	lh = sort(lh);
+	rh = sort(rh);
+	Vec<long> result;
+	result.SetLength(l.length());
+	long ilh = 0;
+	long irh = 0;
+	for (long i = 0; i < l.length(); i++){
+		if (lh.length() == ilh) result[i] = rh[irh++];
+		else if (rh.length() == irh) result[i] = lh[ilh++];
+		else if (lh[ilh] < rh[irh]) result[i] = lh[ilh++];
+		else result[i] = rh[irh++];
+	}
+	return result;
 }
 
+bool is_weak_popov (const Mat<zz_pX> &b, const Vec<long> &shift = Vec<long>(), const bool row_wise = true, const bool ordered= false){
+	Vec<long> pivots;
+	pivot_index(pivots, b, shift, row_wise);
+	// forbide zero vectors
+	for (long i = 0; i < pivots.length(); i++){
+		if (pivots[0] == -1)
+			return false;
+	}
+	pivots = sort(pivots);
+	if (!ordered){ // only check for pair-wise distinct
+		for (long i = 1; i < pivots.length(); i++)
+			if(pivots[i] == pivots[i-1]){
+				return false;
+			}
+	}else{
+		for (long i = 1; i < pivots.length(); i++)
+			if (pivots[i] <= pivots[i-1]){ // means not strict increasing
+				return false;
+			}
+	}
+	return true;
+}
+
+/*
 bool is_popov (const Mat<zz_pX> &m, const Vec<long> &shift = Vec<long>(), const bool row_wise = true){
 	Vec<long> pivots;
 	Vec<long degree = pivot_index(pivots, b, shift, row_wise);
 }
+
+Mat<zz_pX> identity_matrix(const long n){
+	Mat<zz_pX> res;
+	res.SetDims(n,n);
+	for (long i = 0; i < n; i++)
+		res[i][i] = zz_pX(1);
+	return res;
+}
+
+weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &m, Vec<long> shift=Vec<long>()){
+	wpf = m;
+	m = wpf.NumRows();
+	n = wpf.NumCols();
+	trans = identity_matrix(m);
+	if (shift.length() == 0){ 
+		shift = Vec<long>();
+		shift.SetLength(n);
+	}
+	
+}
 */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
