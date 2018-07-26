@@ -37,14 +37,14 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
 /*------------------------------------------------------------*/
 void random_mat_zz_pX(Mat<zz_pX>& a, long n, long m, long d)
 {
-    a.SetDims(n, m);
-    for (long i = 0; i < n; i++)
-    {
-	for (long j = 0; j < m; j++)
+	a.SetDims(n, m);
+	for (long i = 0; i < n; i++)
 	{
-	    a[i][j] = random_zz_pX(d);
+		for (long j = 0; j < m; j++)
+		{
+			a[i][j] = random_zz_pX(d);
+		}
 	}
-    }
 }
 
 
