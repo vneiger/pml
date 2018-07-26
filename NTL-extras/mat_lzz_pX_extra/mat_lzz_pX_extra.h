@@ -18,7 +18,7 @@ long deg(const Mat<zz_pX> & a);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* basic arithmetic                                           */
+/* BASIC ARITHMETIC                                           */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
@@ -170,7 +170,7 @@ inline Mat<zz_pX> operator-(const Mat<zz_pX> & a)
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* setting and getting coefficients                           */
+/* SETTING AND GETTING COEFFICIENTS                           */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
@@ -241,9 +241,11 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 /* } */
 
 
-/*************************************
-*  DEGREES, PIVOTS, LEADING MATRIX  *
-*************************************/
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* DEGREES, PIVOTS, LEADING MATRIX                            */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
 /* matrix of integers; deg(0) = -1                            */
@@ -270,9 +272,12 @@ Vec<long> pivot_index (Vec<long> &index, const Mat<zz_pX> &b,const Vec<long> & s
 /*------------------------------------------------------------*/
 void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, const Vec<long> & shift = Vec<long>(), const bool row_wise = true);
 
-/**********************************
-*  TESTING REDUCED/NORMAL FORMS  *
-**********************************/
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING REDUCED/NORMAL FORMS                               */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
 /* returns true if b is reduced                               */
@@ -280,4 +285,74 @@ void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, const Vec<long> & shift =
 bool is_reduced (const Mat<zz_pX> &b,const Vec<long> & shift = Vec<long>(), const bool row_wise = true);
 
 
-#endif
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* MINIMAL APPROXIMANT BASES                                  */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* TODO: documentation to explain what this computes and what */
+/* are the options                                            */
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* general user-friendly interface                            */
+/*------------------------------------------------------------*/
+// TODO: choice: output s-pivot degree or s-row degree ????
+Vec<long> approximant_basis(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & mat,
+		const Vec<unsigned long> & order,
+		const Vec<long> & shift = Vec<long>(),
+		const bool canonical = true,
+		const bool row_wise = true,
+		const bool generic = false
+		);
+
+Vec<long> approximant_basis(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & mat,
+		const unsigned long order,
+		const Vec<long> & shift = Vec<long>(),
+		const bool canonical = true,
+		const bool row_wise = true,
+		const bool generic = false
+		)
+{
+	//Vec<unsigned long> orders(mat.NumRows(),order);
+	//approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
+}
+
+/*------------------------------------------------------------*/
+/* Iterative algorithm for general order and shift            */
+/* References:                                                */
+/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
+/*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
+/*   - Jeannerod-Neiger-Villard 2018                          */
+/*          (ensuring s-ordered weak Popov)                   */
+/*------------------------------------------------------------*/
+Vec<long> mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long ord, const Vec<long> & shift);
+
+/*------------------------------------------------------------*/
+/* M-Basis algorithm for approximant order = 1                */
+/* References:                                                */
+/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
+/*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
+/*   - Jeannerod-Neiger-Villard 2018 (ensuring s-Popov)       */
+/*------------------------------------------------------------*/
+Vec<long> mbasis1(Mat<zz_pX> &appbas, const Mat<zz_p> mat, const Vec<long> & shift);
+
+/*------------------------------------------------------------*/
+/* M-Basis algorithm for uniform approximant order            */
+/* References:                                                */
+/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
+/*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
+/*   - Jeannerod-Neiger-Villard 2018                          */
+/*          (ensuring s-ordered weak Popov)                   */
+/*------------------------------------------------------------*/
+Vec<long> mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long ord, const Vec<long> & shift);
+
+
+
+#endif // MAT_LZZ_PX_EXTRA__H
