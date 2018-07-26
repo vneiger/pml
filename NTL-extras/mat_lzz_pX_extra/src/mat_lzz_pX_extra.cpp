@@ -795,24 +795,28 @@ bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const 
 // FIXME return vector?
 std::vector<long> pivot_index (
 		std::vector<long> & index,
-		const Mat<zz_pX> & b,
+		const Mat<zz_pX> & pmat,
 		const std::vector<long> & shift,
 		const bool row_wise)
 {
+	// check if shifted + shift dimension
 	bool shifted;
-	check_shift(shifted, shift, b, row_wise);
+	check_shift(shifted, shift, pmat, row_wise);
 
+	// retrieve (shifted) degree matrix
 	Mat<long> deg_mat;
-	degree_matrix(deg_mat,b,shift,row_wise);
+	degree_matrix(deg_mat,pmat,shift,row_wise);
 
 	std::vector<long> degree;
 	if (row_wise)
 	{
-		row_degree(degree,b,shift);
+		degree.resize(pmat.NumRows());
+		row_degree(degree,pmat,shift);
 	}
 	else
 	{
-		col_degree(degree,b,shift);
+		degree.resize(pmat.NumCols());
+		col_degree(degree,pmat,shift);
 	}
 
 	long zero_degree = -1;
@@ -823,10 +827,10 @@ std::vector<long> pivot_index (
 
 	if (row_wise)
 	{
-		if ((long)index.size() != b.NumRows()) {
+		if ((long)index.size() != pmat.NumRows()) {
 			throw "==pivot_index== Provided vector does not have size = NumRows";
 		}
-		for (long r = 0; r < b.NumRows(); r++)
+		for (long r = 0; r < pmat.NumRows(); r++)
 		{
 			if (degree[r] == zero_degree) 
 			{
@@ -834,7 +838,7 @@ std::vector<long> pivot_index (
 			}
 			else
 			{
-				for (long c = 0; c <b.NumCols(); c++)
+				for (long c = 0; c <pmat.NumCols(); c++)
 				{
 					if (deg_mat[r][c] == degree[r]) 
 					{
@@ -846,10 +850,10 @@ std::vector<long> pivot_index (
 	}
 	else
 	{
-		if ((long)index.size() != b.NumCols()) {
+		if ((long)index.size() != pmat.NumCols()) {
 			throw "==pivot_index== Provided vector does not have size = NumCols";
 		}
-		for(long c = 0; c < b.NumCols(); c++)
+		for(long c = 0; c < pmat.NumCols(); c++)
 		{
 			if (degree[c] == zero_degree) 
 			{
@@ -857,7 +861,7 @@ std::vector<long> pivot_index (
 			}
 			else
 			{
-				for (long r = 0; r < b.NumRows(); r++)
+				for (long r = 0; r < pmat.NumRows(); r++)
 				{
 					if (deg_mat[r][c] == degree[c]) 
 					{
