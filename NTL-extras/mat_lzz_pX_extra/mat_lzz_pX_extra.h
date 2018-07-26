@@ -25,7 +25,7 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
 //
 //TODO : truncate mod X^... , for all the matrix or some columns/rows of it
 
-//TODO: multiply row or column of matrix by constant
+//TODO: multiply row or column of matrix (vec_lzz_pX) by constant
 
 
 /*------------------------------------------------------------*/
@@ -424,7 +424,6 @@ std::vector<long> appbas_iterative(
 		const std::vector<long> order,
 		const std::vector<long> & shift,
 		bool order_wise=true
-		
 		);
 
 std::vector<long> popov_appbas_iterative(
@@ -433,7 +432,6 @@ std::vector<long> popov_appbas_iterative(
 		const std::vector<long> order,
 		const std::vector<long> & shift,
 		bool order_wise=true
-		
 		);
 
 /*------------------------------------------------------------*/

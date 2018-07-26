@@ -1040,10 +1040,14 @@ std::vector<long> appbas_iterative(
 			}
 		}
 
-		if (not indices_nonzero.empty()) { // otherwise, const_residual already zero, there is nothing to do
+		// if indices_nonzero is empty, const_residual is already zero, there is nothing to do
+		if (not indices_nonzero.empty())
+		{
 			// update all rows of appbas and residual in indices_nonzero except row piv
-			for (long row : indices_nonzero) {
-				if (row!=piv) {
+			for (long row : indices_nonzero)
+			{
+				if (row!=piv)
+				{
 					zz_p coeff = - const_residual[row] / const_residual[piv];
 					for (long k=0; k<rdim; ++k)
 						appbas[row][k] += coeff * appbas[piv][k];
@@ -1057,9 +1061,32 @@ std::vector<long> appbas_iterative(
 			for (long k=0; k<rdim; ++k)
 				appbas[piv][k] <<= 1; // row piv multiplied by X
 			for (long k=0; k<residual.NumCols(); ++k)
+			{
 				residual[piv][k] <<= 1; // row piv multiplied by X
+				residual[piv][k][order[rem_index[k]]] = 0; // truncate
+			}
 		}
-		
 
+		// now column j (or rather rem_index[j] in original 'pmat') is zero mod X^(deg+1)
+		if (rem_order[j] > 1) // one less step towards order[j]
+			--rem_order[j];
+		else // rem_order[j] == 1: work completed for column j
+		{
+			rem_order.erase(rem_order.begin() + j);
+			rem_index.erase(rem_index.begin() + j);
+			if (!rem_order.empty())
+			{
+				Mat<zz_pX> buffer( residual );
+				residual.kill();
+				residual.SetDims(rdim,rem_order.size());
+				for (long i=0; i<rdim; ++i)
+				{
+					for (long k=0; k<j; ++k)
+							residual[i][k] = buffer[i][k];
+					for (long k=j+1; k<buffer.NumCols(); ++k)
+						residual[i][k] = buffer[i][k+1];
+				}
+			}
+		}
 	}
 }
