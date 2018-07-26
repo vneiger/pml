@@ -436,7 +436,7 @@ std::vector<long> mbasis(
 
 std::vector<long> popov_mbasis(
 		Mat<zz_pX> &appbas,
-		const Mat<zz_pX> mat,
+		const Mat<zz_pX> & mat,
 		const long order,
 		const std::vector<long> & shift
 		);
