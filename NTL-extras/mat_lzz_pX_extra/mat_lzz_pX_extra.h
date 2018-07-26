@@ -392,8 +392,19 @@ std::vector<long> approximant_basis(
 /*   - Jeannerod-Neiger-Villard 2018                          */
 /*          (ensuring s-ordered weak Popov)                   */
 /*------------------------------------------------------------*/
-std::vector<long> appbas_iterative(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long ord, const std::vector<long> & shift);
-std::vector<long> popov_iter_appbas(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long ord, const std::vector<long> & shift);
+std::vector<long> appbas_iterative(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & mat,
+		const long ord,
+		const std::vector<long> & shift
+		);
+
+std::vector<long> popov_iter_appbas(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & mat,
+		const long ord,
+		const std::vector<long> & shift
+		);
 
 /*------------------------------------------------------------*/
 /* M-Basis algorithm for approximant order = 1                */
@@ -402,7 +413,11 @@ std::vector<long> popov_iter_appbas(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, co
 /*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
 /*   - Jeannerod-Neiger-Villard 2018 (ensuring s-Popov)       */
 /*------------------------------------------------------------*/
-std::vector<long> mbasis1(Mat<zz_pX> &appbas, const Mat<zz_p> mat, const std::vector<long> & shift);
+std::vector<long> mbasis1(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_p> & mat,
+		const std::vector<long> & shift
+		);
 
 /*------------------------------------------------------------*/
 /* M-Basis algorithm for uniform approximant order            */
@@ -412,8 +427,19 @@ std::vector<long> mbasis1(Mat<zz_pX> &appbas, const Mat<zz_p> mat, const std::ve
 /*   - Jeannerod-Neiger-Villard 2018                          */
 /*          (ensuring s-ordered weak Popov)                   */
 /*------------------------------------------------------------*/
-std::vector<long> mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long order, const std::vector<long> & shift);
-std::vector<long> popov_mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long order, const std::vector<long> & shift);
+std::vector<long> mbasis(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & mat,
+		const long order,
+		const std::vector<long> & shift
+		);
+
+std::vector<long> popov_mbasis(
+		Mat<zz_pX> &appbas,
+		const Mat<zz_pX> mat,
+		const long order,
+		const std::vector<long> & shift
+		);
 
 
 #endif // MAT_LZZ_PX_EXTRA__H
