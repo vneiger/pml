@@ -622,7 +622,7 @@ void check_shift(bool &shifted, const std::vector<long> &shift, const Mat<zz_pX>
 
 /*------------------------------------------------------------*/
 /* some comment                                               */
-/* a supposed to be empty, just initialized */
+/* degmat supposed to be empty, just initialized */
 /*------------------------------------------------------------*/
 void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat, 
                    const std::vector<long> & shift,
@@ -633,7 +633,7 @@ void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat,
 	check_shift(shifted, shift, pmat, row_wise);
 
 	// compute minimum shift entry (will be used for degree of zero entries of b)
-	long min_shift = *std::min_element(shift.begin(),shift.end());
+	long min_shift = (shifted ? *std::min_element(shift.begin(),shift.end()) : 0);
 
 	// set the dimensions of degmat and populate it with degrees
 	degmat.SetDims(pmat.NumRows(), pmat.NumCols());
@@ -681,6 +681,7 @@ void row_degree(std::vector<long> &rdeg, const Mat<zz_pX> &pmat,
 	Mat<long> degmat;
 	degree_matrix(degmat,pmat,shift,true);
 
+	std::cout << "here" << std::endl;
 	// take the max of each row of degmat
 	for (long r = 0; r < pmat.NumRows(); r++)
 	{
@@ -694,6 +695,7 @@ void row_degree(std::vector<long> &rdeg, const Mat<zz_pX> &pmat,
 		}
 		rdeg[r] = max_deg;
 	}
+	std::cout << "here" << std::endl;
 }
 
 /*------------------------------------------------------------*/

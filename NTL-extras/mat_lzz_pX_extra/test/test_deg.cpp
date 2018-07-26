@@ -8,7 +8,7 @@
 NTL_CLIENT
 
 template<typename T>
-void printvec(std::vector<T> const &input)
+void printVec(std::vector<T> const &input)
 {
 	std::cout << '[';
 	for (auto elt : input) {
@@ -35,55 +35,74 @@ int main(){
 	cout << pmat << endl;
 
 	cout << "Starting tests:" << endl;
-	std::vector<long> degs;
+
+	std::vector<long> degs(pmat.NumRows());
 	row_degree(degs,pmat);
 	cout << "row degs: ";
-	printvec(degs);
+	printVec(degs);
+
+	degs.resize(pmat.NumCols());
 	col_degree(degs,pmat);
 	cout << "col degs: ";
-	printvec(degs);
+	printVec(degs);
+
 	Mat<long> deg_mat;
 	degree_matrix(deg_mat, pmat);
 	cout << "deg mat: " << endl << deg_mat << endl;
+
 	Mat<zz_p> lead_mat;
 	leading_matrix(lead_mat, pmat);
 	cout << "leading mat: " << endl << lead_mat << endl;
+
 	cout << "is reduced: " << boolalpha << is_reduced(pmat) << endl;
-	std::vector<long> pivot;
+
+	std::vector<long> pivot(pmat.NumRows());
 	pivot_index(pivot, pmat, std::vector<long>(), true);
 	cout << "row pivot: ";
-	printvec(pivot);
+	printVec(pivot);
+
+	pivot.resize(pmat.NumCols());
 	pivot_index(pivot, pmat, std::vector<long>(), false);
 	cout << "col pivot: ";
-	printvec(pivot);
+	printVec(pivot);
 
 	cout << endl << "Tests for shifts: " << endl;
-	std::vector<long> rs;
-	rs.push_back(1); rs.push_back(2); rs.push_back(3);
+
+	std::vector<long> rs {1,2,3};
 	cout << "row shift: ";
-	printvec(rs);
-	std::vector<long> cs;
-	cs.push_back(4); cs.push_back(2);
+	printVec(rs);
+	std::vector<long> cs {4,2};
 	cout << "col shift: ";
-	printvec(cs);
+	printVec(cs);
+
 	degree_matrix(deg_mat,pmat,rs,true);
-	cout << "row wise degree after shift: " << endl << deg_mat<<endl;
+	cout << "degree matrix with row wise shift: " << endl << deg_mat<<endl;
 	degree_matrix(deg_mat,pmat,cs,false);
-	cout << "col wise degree after shift: " << endl << deg_mat<<endl;
+	cout << "degree matrix with col wise shift: " << endl << deg_mat<<endl;
+
+	degs.resize(pmat.NumRows());
 	row_degree(degs,pmat,rs);
 	cout << "shifted row degree: ";
-	printvec(degs);
+	printVec(degs);
+
+	degs.resize(pmat.NumCols());
 	col_degree(degs,pmat,cs);
 	cout << "shifted col degree: ";
-	printvec(degs);
+	printVec(degs);
+
 	leading_matrix(lead_mat,pmat,rs,true);
 	cout << "row shifted leading mat: " << endl << lead_mat << endl;
+
 	leading_matrix(lead_mat,pmat,cs,false);
 	cout << "col shifted leading mat: " << endl << lead_mat << endl;
+
+	pivot.resize(pmat.NumRows());
 	pivot_index(pivot, pmat, rs, true);
 	cout << "row pivot: ";
-	printvec(pivot);
+	printVec(pivot);
+
+	pivot.resize(pmat.NumCols());
 	pivot_index(pivot, pmat, cs, false);
 	cout << "col pivot: ";
-	printvec(pivot);
+	printVec(pivot);
 }

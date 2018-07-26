@@ -319,11 +319,11 @@ std::vector<long> approximant_basis(
 		const bool canonical = true,
 		const bool row_wise = true,
 		const bool generic = false
-		)
-{
-	std::vector<unsigned long> orders(mat.NumRows(),order);
-	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
-}
+		);
+//{
+//	std::vector<unsigned long> orders(mat.NumRows(),order);
+//	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
+//}
 
 /*------------------------------------------------------------*/
 /* Iterative algorithm for general order and shift            */
