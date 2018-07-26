@@ -358,7 +358,7 @@ bool is_weak_popov(
 /*------------------------------------------------------------*/
 /* general user-friendly interface                            */
 /*------------------------------------------------------------*/
-// TODO: choice: output s-pivot degree or s-row degree ????
+// choice: output s-pivot degree
 std::vector<long> approximant_basis(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & mat,

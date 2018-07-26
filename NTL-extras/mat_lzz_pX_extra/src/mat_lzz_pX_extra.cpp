@@ -809,9 +809,7 @@ bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const 
 /*------------------------------------------------------------*/
 /* some comment                                               */
 /*------------------------------------------------------------*/
-// FIXME return vector?
-// FIXME pivot degree?
-// FIXME row degree?
+// TODO return pivot degree rather than row degree
 std::vector<long> pivot_index (
 		std::vector<long> & index,
 		const Mat<zz_pX> & pmat,
