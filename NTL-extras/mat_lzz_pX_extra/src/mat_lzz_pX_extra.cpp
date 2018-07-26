@@ -784,17 +784,13 @@ void leading_matrix(Mat<zz_p> &lmat,
 	{
 		for (long c = 0; c < pmat.NumCols(); c++)
 		{
-			long d; // actual shifted degree of the r,c entry
-			// FIXME issue with zero entries? why not using degree matrix?
-			d = deg(pmat[r][c]);
+			long d = deg(pmat[r][c]); // actual shifted degree of the r,c entry
+
 			if (shifted)
-			{
 				d += (row_wise ? shift[c] : shift[r]);
-			}
+
 			if (d == (row_wise ? degree[r] : degree[c]))
-			{
 				lmat[r][c] = LeadCoeff(pmat[r][c]);
-			}
 		}
 	}
 }
