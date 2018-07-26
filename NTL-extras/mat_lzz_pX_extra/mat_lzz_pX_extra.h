@@ -53,6 +53,19 @@ inline Mat<zz_pX> operator+(const Mat<zz_p>& a, const Mat<zz_pX>& b)
     return x; 
 }
 
+inline Mat<zz_pX> & operator+=(Mat<zz_pX> & x, const Mat<zz_pX>& b)
+{
+    add(x, x, b); 
+    return x; 
+}
+
+inline Mat<zz_pX> & operator+=(Mat<zz_pX> & x, const Mat<zz_p>& b)
+{
+    add(x, x, b); 
+    return x; 
+}
+
+
 /*------------------------------------------------------------*/
 /* subtraction                                                */
 /*------------------------------------------------------------*/
@@ -81,6 +94,18 @@ inline Mat<zz_pX> operator-(const Mat<zz_p>& a, const Mat<zz_pX>& b)
     return x; 
 }
 
+inline Mat<zz_pX> & operator-=(Mat<zz_pX> & x, const Mat<zz_pX>& b)
+{
+    sub(x, x, b); 
+    return x; 
+}
+
+inline Mat<zz_pX> & operator-=(Mat<zz_pX> & x, const Mat<zz_p>& b)
+{
+    sub(x, x, b); 
+    return x; 
+}
+
 /*------------------------------------------------------------*/
 /* constant matrix multiplication                             */
 /*------------------------------------------------------------*/
@@ -98,6 +123,12 @@ inline Mat<zz_pX> operator*(const Mat<zz_p>& a, const Mat<zz_pX>& b)
 { 
     Mat<zz_pX> x; 
     mul(x, a, b); 
+    return x; 
+}
+
+inline Mat<zz_pX> & operator*=(Mat<zz_pX> & x, const Mat<zz_p>& b)
+{
+    mul(x, x, b); 
     return x; 
 }
 
@@ -125,14 +156,57 @@ inline Mat<zz_pX> operator*(const zz_p& a, const Mat<zz_pX>& b)
     return x; 
 }
 
-
 /*------------------------------------------------------------*/
 /* negate                                                     */
 /*------------------------------------------------------------*/
+void neg(Mat<zz_pX> & x, const Mat<zz_pX> & a);
+
+inline Mat<zz_pX> operator-(const Mat<zz_pX> & a)
+{
+    Mat<zz_pX> x; 
+    neg(x, a); 
+    return x;
+}
 
 /*------------------------------------------------------------*/
-/* get / set coefficients                                     */
 /*------------------------------------------------------------*/
+/* setting and getting coefficients                           */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* sets x = ith coefficient of a                              */
+/*------------------------------------------------------------*/
+void GetCoeff(Mat<zz_p>& x, const Mat<zz_pX>& a, long i);
+
+/*------------------------------------------------------------*/
+/* returns ith coefficient matrix of a                        */
+/*------------------------------------------------------------*/
+inline Mat<zz_p> coeff(const Mat<zz_pX>& a, long i)
+{
+    Mat<zz_p> x;
+    GetCoeff(x, a, i);
+    return x;
+}
+
+/*------------------------------------------------------------*/
+/* returns the matrix of leading coefficients                 */
+/*------------------------------------------------------------*/
+Mat<zz_p> matrix_of_leading_coefficients(const Mat<zz_pX>& a);
+
+/*------------------------------------------------------------*/
+/* returns constant coefficient matrix of a                   */
+/*------------------------------------------------------------*/
+inline Mat<zz_p> constant_coefficient(const Mat<zz_pX>& a)
+{
+    return coeff(a, 0);
+}
+
+/*------------------------------------------------------------*/
+/* sets ith coefficient of x to a                             */
+/*------------------------------------------------------------*/
+void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a);
+
 
 /*------------------------------------------------------------*/
 /* convert from Mat<zz_p>                                     */
@@ -142,11 +216,11 @@ inline Mat<zz_pX> operator*(const zz_p& a, const Mat<zz_pX>& b)
 /* convert to / from Vec<Mat<zz_p>>                           */
 /*------------------------------------------------------------*/
 
+/*------------------------------------------------------------*/
+/* left and right shifts                                     */
+/*------------------------------------------------------------*/
 
 
-/*------------------------------------------------------------*/
-/* leading and trailing coefficient matrices                  */
-/*------------------------------------------------------------*/
 
 
 /*------------------------------------------------------------*/
@@ -165,5 +239,14 @@ void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
 void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 // TODO: multiply given upper degree bound --> use transforms
+
+
+/* inline Mat<zz_pX> & operator*=(Mat<zz_pX> & x, const Mat<zz_pX>& b) */
+/* { */
+/*     mul(x, x, b);  */
+/*     return x;  */
+/* } */
+
+
 
 #endif

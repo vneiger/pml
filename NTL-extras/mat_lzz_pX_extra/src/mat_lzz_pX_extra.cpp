@@ -184,7 +184,6 @@ void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
     }
 }
 
-
 /*------------------------------------------------------------*/
 /* multiplication, lhs is a constant matrix                   */
 /*------------------------------------------------------------*/
@@ -225,8 +224,6 @@ void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
 }
 
 
-
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* scalar multiplication                                      */
@@ -248,6 +245,103 @@ void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_p & b){
     }
 }
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* negate                                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+void neg(Mat<zz_pX> & x, const Mat<zz_pX> & a)
+{
+   long m = a.NumRows();
+   long n = a.NumCols();
+   
+   x.SetDims(m, n);
+   
+    for (long u = 0; u < m; u++)
+    {
+	for (long v = 0; v < n; v++)
+	{
+	    NTL::negate(x[u][v], a[u][v]);
+	}
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* get / set coefficients                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* sets x = ith coefficient of a                              */
+/*------------------------------------------------------------*/
+void GetCoeff(Mat<zz_p>& x, const Mat<zz_pX>& a, long i)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+   
+    x.SetDims(m, n);
+    
+    for (long u = 0; u < m; u++)
+    {
+	for (long v = 0; v < n; v++)
+	{
+	    x[u][v] = coeff(a[u][v], i);
+	}
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/* returns the matrix of leading coefficients                 */
+/*------------------------------------------------------------*/
+Mat<zz_p> matrix_of_leading_coefficients(const Mat<zz_pX>& a)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+    
+    Mat<zz_p> x;
+    x.SetDims(m, n);
+    
+    for (long u = 0; u < m; u++)
+    {
+	for (long v = 0; v < n; v++)
+	{
+	    x[u][v] = LeadCoeff(a[u][v]);
+	}
+    }
+
+    return x;
+}
+
+
+/*------------------------------------------------------------*/
+/* sets ith coefficient of x to a                             */
+/*------------------------------------------------------------*/
+void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a)
+{
+    long m = x.NumRows();
+    long n = x.NumCols();
+    
+    if (m != a.NumRows() || n != a.NumCols())
+    {
+	LogicError("dimension mismatch in matrix SetCoeff");
+    }
+
+    if (i < 0)
+    {
+	LogicError("negative index in matrix SetCoeff");
+    }
+
+    for (long u = 0; u < m; u++)
+    {
+	for (long v = 0; v < n; v++)
+	{
+	    SetCoeff(x[u][v], i, a[u][v]);
+	}
+    }
+}
 
 
 /*------------------------------------------------------------*/
