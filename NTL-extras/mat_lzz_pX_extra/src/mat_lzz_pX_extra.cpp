@@ -1084,7 +1084,7 @@ std::vector<long> appbas_iterative(
 					for (long k=0; k<j; ++k)
 							residual[i][k] = buffer[i][k];
 					for (long k=j+1; k<buffer.NumCols(); ++k)
-						residual[i][k] = buffer[i][k+1];
+						residual[i][k-1] = buffer[i][k];
 				}
 			}
 		}
