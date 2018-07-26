@@ -11,6 +11,41 @@
 NTL_CLIENT
 
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* UTILS                                                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
+	out << "[ ";
+	for (auto &i: s)
+		out << i << " ";
+	return out << "]";
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* CREATE RANDOM MATRICES                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* random (n, m) matrix of degree < d                         */
+/*------------------------------------------------------------*/
+void random_mat_zz_pX(Mat<zz_pX>& a, long n, long m, long d)
+{
+    a.SetDims(n, m);
+    for (long i = 0; i < n; i++)
+    {
+	for (long j = 0; j < m; j++)
+	{
+	    a[i][j] = random_zz_pX(d);
+	}
+    }
+}
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -300,21 +335,21 @@ void GetCoeff(Mat<zz_p>& x, const Mat<zz_pX>& a, long i)
 /*------------------------------------------------------------*/
 Mat<zz_p> matrix_of_leading_coefficients(const Mat<zz_pX>& a)
 {
-    long m = a.NumRows();
-    long n = a.NumCols();
-    
-    Mat<zz_p> x;
-    x.SetDims(m, n);
-    
-    for (long u = 0; u < m; u++)
-    {
-	for (long v = 0; v < n; v++)
-	{
-	    x[u][v] = LeadCoeff(a[u][v]);
-	}
-    }
+	long m = a.NumRows();
+	long n = a.NumCols();
 
-    return x;
+	Mat<zz_p> x;
+	x.SetDims(m, n);
+
+	for (long u = 0; u < m; u++)
+	{
+		for (long v = 0; v < n; v++)
+		{
+			x[u][v] = LeadCoeff(a[u][v]);
+		}
+	}
+
+	return x;
 }
 
 
@@ -345,21 +380,6 @@ void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a)
     }
 }
 
-
-/*------------------------------------------------------------*/
-/* random (n, m) matrix of degree < d                         */
-/*------------------------------------------------------------*/
-void random_mat_zz_pX(Mat<zz_pX>& a, long n, long m, long d)
-{
-    a.SetDims(n, m);
-    for (long i = 0; i < n; i++)
-    {
-	for (long j = 0; j < m; j++)
-	{
-	    a[i][j] = random_zz_pX(d);
-	}
-    }
-}
 
 /*------------------------------------------------------------*/
 /* maximum degree of the entries of a                         */
@@ -912,13 +932,6 @@ bool is_weak_popov (
 		}
 	}
 	return true;
-}
-
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
-	out << "[ ";
-	for (auto &i: s)
-		out << i << " ";
-	return out << "]";
 }
 
 /*
