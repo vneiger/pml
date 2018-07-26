@@ -893,11 +893,9 @@ bool is_weak_popov (
 	{
 		return false;
 	}
-
-	std::sort(pivots.begin(),pivots.end()); // TODO: should probably not be done if ordered case??
-
 	if (!ordered)
 	{ // only check for pair-wise distinct
+		std::sort(pivots.begin(),pivots.end());
 		for (size_t i = 1; i < pivots.size(); i++)
 			if(pivots[i] == pivots[i-1])
 			{
