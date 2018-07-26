@@ -66,15 +66,19 @@ int main(){
 
 	cout << "is reduced: " << boolalpha << is_reduced(pmat) << endl;
 
-	std::vector<long> pivot(pmat.NumRows());
-	pivot_index(pivot, pmat, std::vector<long>(), true);
+	std::vector<long> pivind(pmat.NumRows());
+	std::vector<long> pivdeg(pmat.NumRows());
+	pivot_index(pivind, pivdeg, pmat, std::vector<long>(), true);
 	cout << "row pivot: ";
-	printVec(pivot);
+	printVec(pivind);
+	printVec(pivdeg);
 
-	pivot.resize(pmat.NumCols());
-	pivot_index(pivot, pmat, std::vector<long>(), false);
+	pivind.resize(pmat.NumCols());
+	pivdeg.resize(pmat.NumCols());
+	pivot_index(pivind, pivdeg, pmat, std::vector<long>(), false);
 	cout << "col pivot: ";
-	printVec(pivot);
+	printVec(pivind);
+	printVec(pivdeg);
 
 	cout << endl << "Tests for shifts: " << endl;
 
@@ -106,15 +110,19 @@ int main(){
 	leading_matrix(lead_mat,pmat,cs,false);
 	cout << "col shifted leading mat: " << endl << lead_mat << endl;
 
-	pivot.resize(pmat.NumRows());
-	pivot_index(pivot, pmat, rs, true);
+	pivind.resize(pmat.NumRows());
+	pivdeg.resize(pmat.NumRows());
+	pivot_index(pivind, pivdeg, pmat, rs, true);
 	cout << "row pivot: ";
-	printVec(pivot);
+	printVec(pivind);
+	printVec(pivdeg);
 
-	pivot.resize(pmat.NumCols());
-	pivot_index(pivot, pmat, cs, false);
+	pivind.resize(pmat.NumCols());
+	pivdeg.resize(pmat.NumCols());
+	pivot_index(pivind, pivdeg, pmat, cs, false);
 	cout << "col pivot: ";
-	printVec(pivot);
+	printVec(pivind);
+	printVec(pivdeg);
 
 	cout << "popov? " << is_weak_popov(pmat,rs) << endl;
 	cout << "ordered popov? " << is_weak_popov(pmat,rs,true,true) << endl;

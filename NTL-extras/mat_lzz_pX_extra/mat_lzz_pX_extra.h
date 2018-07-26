@@ -302,7 +302,8 @@ void col_degree(
 /* finds the pivot indices; returns the row/col degs          */
 /*------------------------------------------------------------*/
 void pivot_index(
-		std::vector<long> &index,
+		std::vector<long> &pivind,
+		std::vector<long> &pivdeg,
 		const Mat<zz_pX> &pmat,
 		const std::vector<long> & shift = std::vector<long>(),
 		const bool row_wise = true

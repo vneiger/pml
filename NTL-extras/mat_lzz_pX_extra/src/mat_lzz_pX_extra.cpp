@@ -809,9 +809,8 @@ bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const 
 /*------------------------------------------------------------*/
 /* some comment                                               */
 /*------------------------------------------------------------*/
-// TODO return pivot degree rather than row degree
 void pivot_index (
-		std::vector<long> & index,
+		std::vector<long> & pivind,
 		std::vector<long> & pivdeg,
 		const Mat<zz_pX> & pmat,
 		const std::vector<long> & shift,
@@ -843,7 +842,7 @@ void pivot_index (
 
 	if (row_wise)
 	{
-		if ((long)index.size() != pmat.NumRows())
+		if ((long)pivind.size() != pmat.NumRows())
 			throw "==pivot_index== Provided vector does not have size = NumRows";
 
 		for (long r = 0; r < pmat.NumRows(); r++)
@@ -851,7 +850,7 @@ void pivot_index (
 			if (degree[r] == zero_degree) 
 			{
 				pivdeg[r] = -1;
-				index[r] = -1;
+				pivind[r] = -1;
 			}
 			else
 			{
@@ -860,7 +859,7 @@ void pivot_index (
 					if (deg_mat[r][c] == degree[r]) 
 					{
 						pivdeg[r] = deg(pmat[r][c]);
-						index[r] = c;
+						pivind[r] = c;
 					}
 				}
 			}
@@ -868,7 +867,7 @@ void pivot_index (
 	}
 	else
 	{
-		if ((long)index.size() != pmat.NumCols())
+		if ((long)pivind.size() != pmat.NumCols())
 			throw "==pivot_index== Provided vector does not have size = NumCols";
 
 		for(long c = 0; c < pmat.NumCols(); c++)
@@ -876,7 +875,7 @@ void pivot_index (
 			if (degree[c] == zero_degree) 
 			{
 				pivdeg[c] = -1;
-				index[c] = -1;
+				pivind[c] = -1;
 			}
 			else
 			{
@@ -885,7 +884,7 @@ void pivot_index (
 					if (deg_mat[r][c] == degree[c]) 
 					{
 						pivdeg[c] = deg(pmat[r][c]);
-						index[c] = r;
+						pivind[c] = r;
 					}
 				}
 			}
@@ -901,8 +900,10 @@ bool is_weak_popov (
 {
 	//retrieve pivot index
 	std::vector<long> pivots;
+	std::vector<long> pivdeg;
 	pivots.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
-	pivot_index(pivots, pmat, shift, row_wise);
+	pivdeg.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
+	pivot_index(pivots, pivdeg, pmat, shift, row_wise);
 
 	// forbide zero vectors
 	if( std::find(pivots.begin(),pivots.end(),-1) != pivots.end() )
