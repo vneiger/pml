@@ -330,38 +330,38 @@ void sub(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
 /*------------------------------------------------------------*/
 void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
 {
-    long d = deg(a);
+	long d = deg(a);
 
-    long m = a.NumRows();
-    long n = a.NumCols();
-    long p = b.NumCols();
+	long m = a.NumRows();
+	long n = a.NumCols();
+	long p = b.NumCols();
 
-    if (n != b.NumRows())
-    {
-	LogicError("dimension mismatch in constant matrix multplication");
-    }
-
-    c.SetDims(m, p);
-    Mat<zz_p> tmp, res;
-    tmp.SetDims(m, p);
-    for (long i = 0; i <= d; i++)
-    {
-	for (long u = 0; u < m; u++)
+	if (n != b.NumRows())
 	{
-	    for (long v = 0; v < n; v++)
-	    {
-		tmp[u][v] = coeff(a[u][v], i);
-	    }
+		LogicError("dimension mismatch in constant matrix multplication");
 	}
-	res = tmp * b;
-	for (long u = 0; u < m; u++)
+
+	c.SetDims(m, p);
+	Mat<zz_p> tmp, res;
+	tmp.SetDims(m, n);
+	for (long i = 0; i <= d; i++)
 	{
-	    for (long v = 0; v < p; v++)
-	    {
-		SetCoeff(c[u][v], i, res[u][v]);
-	    }
+		for (long u = 0; u < m; u++)
+		{
+			for (long v = 0; v < n; v++)
+			{
+				tmp[u][v] = coeff(a[u][v], i);
+			}
+		}
+		res = tmp * b;
+		for (long u = 0; u < m; u++)
+		{
+			for (long v = 0; v < p; v++)
+			{
+				SetCoeff(c[u][v], i, res[u][v]);
+			}
+		}
 	}
-    }
 }
 
 /*------------------------------------------------------------*/
@@ -369,38 +369,38 @@ void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
 /*------------------------------------------------------------*/
 void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
 {
-    long d = deg(b);
+	long d = deg(b);
 
-    long m = a.NumRows();
-    long n = a.NumCols();
-    long p = b.NumCols();
+	long m = a.NumRows();
+	long n = a.NumCols();
+	long p = b.NumCols();
 
-    if (n != b.NumRows())
-    {
-	LogicError("dimension mismatch in constant matrix multplication");
-    }
-
-    c.SetDims(m, p);
-    Mat<zz_p> tmp, res;
-    tmp.SetDims(m, p);
-    for (long i = 0; i <= d; i++)
-    {
-	for (long u = 0; u < n; u++)
+	if (n != b.NumRows())
 	{
-	    for (long v = 0; v < p; v++)
-	    {
-		tmp[u][v] = coeff(b[u][v], i);
-	    }
+		LogicError("dimension mismatch in constant matrix multplication");
 	}
-	res = a * tmp;
-	for (long u = 0; u < m; u++)
+
+	c.SetDims(m, p);
+	Mat<zz_p> tmp, res;
+	tmp.SetDims(n, p);
+	for (long i = 0; i <= d; i++)
 	{
-	    for (long v = 0; v < p; v++)
-	    {
-		SetCoeff(c[u][v], i, res[u][v]);
-	    }
+		for (long u = 0; u < n; u++)
+		{
+			for (long v = 0; v < p; v++)
+			{
+				tmp[u][v] = coeff(b[u][v], i);
+			}
+		}
+		res = a * tmp;
+		for (long u = 0; u < m; u++)
+		{
+			for (long v = 0; v < p; v++)
+			{
+				SetCoeff(c[u][v], i, res[u][v]);
+			}
+		}
 	}
-    }
 }
 
 
