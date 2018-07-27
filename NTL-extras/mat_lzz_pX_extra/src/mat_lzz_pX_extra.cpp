@@ -411,11 +411,11 @@ void check_shift(bool &shifted, const std::vector<long> &shift, const Mat<zz_pX>
 		shifted = true;
 		if (row_wise && (long)shift.size() != pmat.NumCols())
 		{
-			throw "==check_shift== Provided shift does not have the right dimension (working row-wise)";
+			throw std::invalid_argument("==check_shift== Provided shift does not have the right dimension (working row-wise)");
 		}
 		if (!row_wise && (long)shift.size() != pmat.NumRows())
 		{
-			throw "==check_shift== Provided shift does not have the right dimension (working column-wise)";
+			throw std::invalid_argument("==check_shift== Provided shift does not have the right dimension (working column-wise)");
 		}
 	}
 }
@@ -434,7 +434,6 @@ void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat,
 
 	// compute minimum shift entry (will be used for degree of zero entries of b)
 	long min_shift = (shifted ? *std::min_element(shift.begin(),shift.end()) : 0);
-
 	// set the dimensions of degmat and populate it with degrees
 	degmat.SetDims(pmat.NumRows(), pmat.NumCols());
 	for (long i = 0; i < pmat.NumRows(); i++)
@@ -474,7 +473,7 @@ void row_degree(std::vector<long> &rdeg, const Mat<zz_pX> &pmat,
 
 	// check rdeg has the right length
 	if ((long)rdeg.size() != pmat.NumRows()) {
-		throw "==row_degree== Provided vector does not have size = NumRows";
+		throw std::invalid_argument("==row_degree== Provided vector does not have size = NumRows");
 	}
 
 	// retrieve the shifted degree matrix
@@ -509,7 +508,7 @@ void col_degree(std::vector<long> &cdeg, const Mat<zz_pX> &pmat,
 
 	// check cdeg has the right length
 	if ((long)cdeg.size() != pmat.NumCols()) {
-		throw "==col_degree== Provided vector does not have size = NumCols";
+		throw std::invalid_argument("==col_degree== Provided vector does not have size = NumCols");
 	}
 
 	// retrieve the shifted degree matrix
@@ -622,7 +621,7 @@ void pivot_index (
 	if (row_wise)
 	{
 		if ((long)pivind.size() != pmat.NumRows())
-			throw "==pivot_index== Provided vector does not have size = NumRows";
+			throw std::invalid_argument("==pivot_index== Provided vector does not have size = NumRows");
 
 		for (long r = 0; r < pmat.NumRows(); ++r)
 		{
@@ -647,7 +646,7 @@ void pivot_index (
 	else
 	{
 		if ((long)pivind.size() != pmat.NumCols())
-			throw "==pivot_index== Provided vector does not have size = NumCols";
+			throw std::invalid_argument("==pivot_index== Provided vector does not have size = NumCols");
 
 		for(long c = 0; c < pmat.NumCols(); c++)
 		{
@@ -707,6 +706,7 @@ bool is_popov (const Mat<zz_pX> &m, const Vec<long> &shift = Vec<long>(), const 
 	Vec<long> pivots;
 	Vec<long degree = pivot_index(pivots, b, shift, row_wise);
 }
+*/
 
 Mat<zz_pX> identity_matrix(const long n){
 	Mat<zz_pX> res;
@@ -715,8 +715,8 @@ Mat<zz_pX> identity_matrix(const long n){
 		res[i][i] = zz_pX(1);
 	return res;
 }
-
-weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &m, Vec<long> shift=Vec<long>()){
+/*
+void weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &m, Vec<long> shift=Vec<long>()){
 	wpf = m;
 	m = wpf.NumRows();
 	n = wpf.NumCols();
@@ -770,11 +770,5 @@ bool is_polmatform(
 		default: throw std::invalid_argument("==is_polmatform== Unknown required polynomial matrix form.");
 	}
 }
-
-
-
-
-
-
 
 
