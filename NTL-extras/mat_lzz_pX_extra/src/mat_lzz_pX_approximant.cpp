@@ -233,10 +233,11 @@ std::vector<long> popov_appbas_iterative(
 /*------------------------------------------------------------*/
 /* ALGORITHMS FOR UNIFORM ORDER                               */
 /*------------------------------------------------------------*/
+// defined for arbitrary shifts, but
 // works best for shifts close to uniform
 
 std::vector<long> popov_mbasis1(
-		Mat<zz_pX> & appbas,
+		Mat<zz_p> & kerbas,
 		const Mat<zz_p> & pmat,
 		const std::vector<long> & shift
 		)
@@ -258,15 +259,33 @@ std::vector<long> popov_mbasis1(
 	//for (long j = 0; j < mat.NumRows(); ++j)
 		mat[i] = pmat[perm_shift[i]];
 
-	//// FIXME remove this debug
-	//std::cout << "shift\n" << perm_shift << std::endl;
-	//std::cout << "input\n" << pmat << std::endl;
-	//std::cout << "permuted\n" << mat << std::endl;
-
 	// find the kernel basis in row echelon form
 	Mat<zz_p> ker;
 	kernel(ker,mat);
+
+	// compute the pivot indices, and use this info to compute the output pivot degree
+	// FIXME unfortunately NTL doesn't return the pivot indices in Gaussian
+	// elimination... see if retrieving them actually takes time
+	std::vector<long> pivdeg(pmat.NumRows());
+	for (long i = 0; i < pmat.NumRows(); ++i)
+	{
+		long piv=ker.NumCols();
+		while (piv>=0 && ker[i][piv]==0)
+			--piv;
+		pivdeg[piv] = 1;
+	}
+
+	// permute everything back to original order
 	
-	return shift;
+	
+
+	//	// FIXME remove this debug
+	//	std::cout << "shift\n" << perm_shift << std::endl;
+	//	std::cout << "input\n" << pmat << std::endl;
+	//	std::cout << "permuted\n" << mat << std::endl;
+	//	std::cout << "kernel\n" << ker << std::endl;
+	//	std::cout << "pivdegs\n" << pivdeg << std::endl;
+
+	return pivdeg;
 }
 

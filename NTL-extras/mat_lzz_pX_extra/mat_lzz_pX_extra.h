@@ -562,8 +562,11 @@ std::vector<long> popov_appbas_iterative(
 /*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shift)  */
 /*   - Jeannerod-Neiger-Villard 2018 (ensuring s-Popov)       */
 /*------------------------------------------------------------*/
+// input: kerbas is constant, will contain the left kernel of pmat in reduced REF
+// output: pivot degrees of the approx basis (also indicates where the rows of
+// kernel should appear in approx basis)
 std::vector<long> popov_mbasis1(
-		Mat<zz_pX> & appbas,
+		Mat<zz_p> & kerbas,
 		const Mat<zz_p> & pmat,
 		const std::vector<long> & shift
 		);
