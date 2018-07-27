@@ -38,6 +38,8 @@ flags = [
 '-Wall',
 '-Wextra',
 '-Werror',
+#'-Wno-unused-value',
+#'-Wno-unused-parameter',
 #'-Wc++98-compat', I REMOVED THIS
 '-fexceptions',
 '-DNDEBUG',
