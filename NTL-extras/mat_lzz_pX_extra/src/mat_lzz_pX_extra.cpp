@@ -1184,6 +1184,26 @@ std::vector<long> appbas_iterative(
 			}
 		}
 	}
-	// TODO return rdeg or pivdeg????
+
+	// make rdeg contain the pivot degree rather than shifted row degree, i.e.:
+	// rdeg = rdeg-shift   , done entry-wise
+	std::transform(rdeg.begin(),rdeg.end(),shift.begin(),rdeg.begin(),std::minus<long>());
 	return rdeg;
+}
+
+std::vector<long> popov_appbas_iterative(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const std::vector<long> order,
+		const std::vector<long> & shift,
+		bool order_wise
+		)
+{
+	// TODO: first call can be very slow if strange degrees --> rather implement
+	// BecLab00's "continuous" normalization
+	std::vector<long> pivdeg = appbas_iterative(appbas,pmat,order,shift,order_wise);
+	std::transform(pivdeg.begin(), pivdeg.end(), pivdeg.begin(), std::negate<long>());
+	pivdeg = appbas_iterative(appbas,pmat,order,pivdeg,order_wise);
+	// TODO multiply appbas by inverse of leading matrix
+	return pivdeg;
 }
