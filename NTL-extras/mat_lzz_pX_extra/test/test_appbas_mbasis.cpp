@@ -107,33 +107,40 @@ int main(int argc, char *argv[])
 		std::cout << degmat << std::endl;
 	}
 
+	std::cout << "~~~Testing mbasis_resupdate~~~" << std::endl;
+	start = std::chrono::system_clock::now();
+	Mat<zz_pX> appbas;
+	pivdeg = mbasis_resupdate(appbas,pmat,order,shift);
+	end = std::chrono::system_clock::now();
 
+	std::cout << "Time(mbasis_resupdate computation): " <<
+		(std::chrono::duration<double> (end-start)).count() << "s\n";
 
-//	std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
-//	start = std::chrono::system_clock::now();
-//	bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
-//	end = std::chrono::system_clock::now();
-//	std::cout << (verif?"correct":"wrong") << std::endl;
-//	std::cout << "Time(verification): " <<
-//		(std::chrono::duration<double> (end-start)).count() << "s\n";
-//
-//	Mat<zz_pX> residual;
-//	multiply_naive(residual,appbas,pmat);
-//
-//	if (rdim*cdim*order < 100)
-//	{
-//		std::cout << "Print output approx basis..." << std::endl;
-//		std::cout << appbas << std::endl;
-//		std::cout << "Print final residual..." << std::endl;
-//		std::cout << residual << std::endl;
-//	}
-//
-//	if (std::max(rdim,cdim)<33) {
-//		Mat<long> degmat;
-//		degree_matrix(degmat,appbas,shift,true);
-//		std::cout << "Print degree matrix of approx basis..." << std::endl;
-//		std::cout << degmat << std::endl;
-//	}
+	std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
+	start = std::chrono::system_clock::now();
+	bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
+	end = std::chrono::system_clock::now();
+	std::cout << (verif?"correct":"wrong") << std::endl;
+	std::cout << "Time(verification): " <<
+		(std::chrono::duration<double> (end-start)).count() << "s\n";
+
+	Mat<zz_pX> residual;
+	multiply_naive(residual,appbas,pmat);
+
+	if (rdim*cdim*order < 100)
+	{
+		std::cout << "Print output approx basis..." << std::endl;
+		std::cout << appbas << std::endl;
+		std::cout << "Print final residual..." << std::endl;
+		std::cout << residual << std::endl;
+	}
+
+	if (std::max(rdim,cdim)<33) {
+		Mat<long> degmat;
+		degree_matrix(degmat,appbas,shift,true);
+		std::cout << "Print degree matrix of approx basis..." << std::endl;
+		std::cout << degmat << std::endl;
+	}
 
 	return 0;
 }

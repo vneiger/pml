@@ -623,6 +623,13 @@ std::vector<long> mbasis(
 		const std::vector<long> & shift
 		);
 
+std::vector<long> mbasis_resupdate(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
+		);
+
 std::vector<long> popov_mbasis(
 		Mat<zz_pX> &appbas,
 		const Mat<zz_pX> & pmat,

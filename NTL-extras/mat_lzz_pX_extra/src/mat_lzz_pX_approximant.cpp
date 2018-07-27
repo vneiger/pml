@@ -386,7 +386,19 @@ std::vector<long> mbasis_resupdate(
 		for (long i = 0; i < appbas.NumRows(); ++i)
 			if (pivdeg[i]==1)
 				LeftShiftRow(appbas,appbas,i,1);
-		// submatrix of rows with pivdeg=0 is left-multiplied by kerbas
+		// submatrix of rows with pivdeg=0 is replaced by kerbas*appbas
+		Mat<zz_pX> kerapp;
+		mul(kerapp,kerbas,appbas);
+		long row=0;
+		// TODO have function to copy into submatrix??
+		for (long i = 0; i < appbas.NumRows(); ++i)
+		{
+			if (pivdeg[i]==0)
+			{
+				appbas[i] = kerapp[row];
+				++row;
+			}
+		}
 
 		// update residual so that it remains equal to X^(-ord) appbas*pmat mod X^(order-ord)
 		if (false)
@@ -398,9 +410,22 @@ std::vector<long> mbasis_resupdate(
 				{
 					RightShiftRow(residual,residual,i,1);
 				}
-				//truncate all rows to ord-1
+				//truncate all rows mod X^(order-ord)
+				trunc(residual,residual,order-ord);
 			}
-			// submatrix of rows with pivdeg=0 is left-multiplied by kerbas
+			// submatrix of rows with pivdeg=0 is replaced by kerbas*residual
+			Mat<zz_pX> kerres;
+			mul(kerres,kerbas,residual);
+			row=0;
+			// TODO have function to copy into submatrix??
+			for (long i = 0; i < residual.NumRows(); ++i)
+			{
+				if (pivdeg[i]==0)
+				{
+					residual[i] = kerres[row];
+					++row;
+				}
+			}
 		}
 
 		// new shifted row degree = old rdeg + pivdeg  (entrywise)
