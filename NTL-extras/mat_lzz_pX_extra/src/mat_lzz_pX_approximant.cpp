@@ -305,3 +305,52 @@ std::vector<long> popov_mbasis1(
 	return pivdeg;
 }
 
+std::vector<long> mbasis(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
+		)
+{
+	// initially, appbas is the identity matrix
+	appbas.SetDims(pmat.NumRows(),pmat.NumRows());
+	for (long i = 0; i < appbas.NumRows(); ++i)
+		SetCoeff(appbas[i][i],0);
+
+	// holds the current shifted row degree of appbas
+	// initially, this is exactly shift
+	std::vector<long> rdeg( shift );
+
+	// temporary buffer for local pivdegs at each mbasis1 call
+	std::vector<long> pivdeg(pmat.NumRows());
+
+	// matrix to store the kernels in mbasis1 calls
+	Mat<zz_p> kerbas;
+	// matrix to store residuals, initially constant coeff of pmat
+	Mat<zz_p> residual( coeff(pmat,0) );
+
+	for (long ord = 0; ord < order; ++ord)
+	{
+		// call MBasis1 to retrieve kernel and pivdeg
+		pivdeg = popov_mbasis1(kerbas,residual,rdeg);
+
+		// update approximant basis
+		for (long i = 0; i < appbas.NumRows(); ++i) {
+			if (pivdeg[i]==1) {
+				LeftShiftRow(appbas,appbas,i,1);
+			} else {
+				
+			}
+		}
+
+		// find new residual
+		
+		// TODO: other option with continuous full update of pmat
+
+		// new shifted row degree = old rdeg + pivdeg  (entrywise)
+		std::transform(rdeg.begin(), rdeg.end(), pivdeg.begin(), rdeg.begin(), std::plus<long>());
+	}
+
+	std::transform(rdeg.begin(),rdeg.end(),shift.begin(),rdeg.begin(),std::minus<long>());
+	return rdeg;
+}
