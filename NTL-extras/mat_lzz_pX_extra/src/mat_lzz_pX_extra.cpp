@@ -955,6 +955,45 @@ weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &m, Vec<long> shift=Vec<long>(
 
 
 
+PolMatForm get_polmatform(
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> &shift,
+		const bool row_wise
+		)
+{
+	//if (is_popov()) {   // TODO waiting for is_popov
+	//	return POPOV;
+	//}
+	//else // same as below
+	if (is_weak_popov(pmat,shift,row_wise,true))
+		return ORD_WEAK_POPOV;
+	else if (is_weak_popov(pmat,shift,row_wise))
+		return WEAK_POPOV;
+	else if (is_reduced(pmat,shift,row_wise))
+		return REDUCED;
+	else
+		return NONE;
+}
+
+bool is_polmatform(
+		const Mat<zz_pX> &pmat,
+		const PolMatForm form,
+		const std::vector<long> &shift,
+		const bool row_wise
+		)
+{
+	switch (form)
+	{
+		case NONE: return true;
+		case REDUCED: return is_reduced(pmat,shift,row_wise);
+		case WEAK_POPOV: return is_weak_popov(pmat,shift,row_wise,false);
+		case ORD_WEAK_POPOV: return is_weak_popov(pmat,shift,row_wise,true);
+		//case POPOV: return is_popov(pmat,shift,row_wise); // TODO
+		default: throw std::invalid_argument("==is_polmatform== Unknown required polynomial matrix form.");
+	}
+}
+
+
 
 
 
@@ -967,6 +1006,59 @@ weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &m, Vec<long> shift=Vec<long>(
 /* MINIMAL APPROXIMANT BASES                                  */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+
+bool is_approximant_basis(
+		const Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const std::vector<long> & order,
+		const std::vector<long> & shift,
+		const PolMatForm & form,
+		const bool row_wise,
+		const bool randomized
+		)
+{
+	if (randomized)
+		throw std::logic_error("==is_approximant_basis== Fast randomized approximant basis not implemented yet");
+
+	std::cout << "==is_approximant_basis== WARNING: not fully implemented: not checking generation" << std::endl;
+
+	// test that appbas is shift-reduced with form at least 'form'
+	if (not is_polmatform(appbas,form,shift,row_wise))
+		return false;
+
+	// test that the matrix consists of approximants
+	Mat<zz_pX> residual;
+	if (row_wise)
+		multiply_naive(residual,appbas,pmat); // TODO this mul should be (truncated and) non-naive
+	else
+		multiply_naive(residual,pmat,appbas); // TODO this mul should be (truncated and) non-naive
+	for (long i = 0; i < residual.NumRows(); ++i)
+	{
+		for (long j = 0; j < residual.NumCols(); ++j)
+		{
+			long ord = row_wise ? order[j] : order[i];
+			trunc(residual[i][j],residual[i][j],ord);
+			if (residual[i][j] != 0)
+				return false;
+		}
+	}
+
+	return true;
+}
+
+bool is_approximant_basis(
+		const Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift,
+		const PolMatForm & form,
+		const bool row_wise,
+		const bool randomized
+		)
+{
+	std::vector<long> orders(pmat.NumRows(),order);
+	return is_approximant_basis(appbas,pmat,orders,shift,form,row_wise,randomized);
+}
 
 std::vector<long> appbas_iterative(
 		Mat<zz_pX> & appbas,

@@ -333,6 +333,19 @@ void leading_matrix(
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
+/* Shifted reduced forms of polynomials matrices. Recall that */
+/* Popov => ordered weak Popov => weak Popov => Reduced       */
+/*------------------------------------------------------------*/
+
+enum PolMatForm {
+	NONE = 0,
+	REDUCED = 1, 
+	WEAK_POPOV = 2,
+	ORD_WEAK_POPOV = 3,
+	POPOV = 4,
+};
+
+/*------------------------------------------------------------*/
 /* returns true if b is reduced                               */
 /*------------------------------------------------------------*/
 bool is_reduced(
@@ -351,6 +364,27 @@ bool is_weak_popov(
 		const bool ordered= false
 		);
 
+/*------------------------------------------------------------*/
+/* if b is in some shifted reduced form,                      */
+/* return the strongest detected form                         */
+/* otherwise return NONE (= 0)                                */
+/*------------------------------------------------------------*/
+PolMatForm get_polmatform(
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> &shift = std::vector<long>(),
+		const bool row_wise = true
+		);
+
+/*------------------------------------------------------------*/
+/* check that pmat is in the shifted reduced form             */
+/* indicated by argument 'form'                               */
+/*------------------------------------------------------------*/
+bool is_polmatform(
+		const Mat<zz_pX> &pmat,
+		const PolMatForm form,
+		const std::vector<long> &shift = std::vector<long>(),
+		const bool row_wise = true
+		);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -386,13 +420,13 @@ bool is_weak_popov(
 /*------------------------------------------------------------*/
 /* general user-friendly interface                            */
 /*------------------------------------------------------------*/
-// choice: output s-pivot degree
+
 std::vector<long> approximant_basis(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
 		const std::vector<long> & order,
 		const std::vector<long> & shift = std::vector<long>(),
-		const bool canonical = true,
+		const PolMatForm form = ORD_WEAK_POPOV,
 		const bool row_wise = true,
 		const bool generic = false
 		);
@@ -402,7 +436,7 @@ std::vector<long> approximant_basis(
 		const Mat<zz_pX> & pmat,
 		const long order,
 		const std::vector<long> & shift = std::vector<long>(),
-		const bool canonical = true,
+		const PolMatForm form = ORD_WEAK_POPOV,
 		const bool row_wise = true,
 		const bool generic = false
 		);
@@ -410,6 +444,38 @@ std::vector<long> approximant_basis(
 //	std::vector<long> orders(mat.NumRows(),order);
 //	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
 //}
+
+
+/*------------------------------------------------------------*/
+/* Verifying that appbas is a shift-minimal approximant       */
+/* basis for input matrix 'pmat' and order 'order'            */
+/* 'form' gives the minimal requirement to check (matrix must */
+/* be at least in the form 'form')                            */
+/* 'randomized' says whether using a Monte Carlo or Las Vegas */
+/* verification algorithm is acceptable                       */
+/* Note: currently, deterministic verification is, for most   */
+/* instances, as long as re-computing the basis               */
+/*------------------------------------------------------------*/
+
+bool is_approximant_basis(
+		const Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const std::vector<long> & order,
+		const std::vector<long> & shift = std::vector<long>(),
+		const PolMatForm & form = ORD_WEAK_POPOV,
+		const bool row_wise = true,
+		const bool randomized = false
+		);
+
+bool is_approximant_basis(
+		const Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift = std::vector<long>(),
+		const PolMatForm & form = ORD_WEAK_POPOV,
+		const bool row_wise = true,
+		const bool randomized = false
+		);
 
 /*------------------------------------------------------------*/
 /* Iterative algorithm for general order and shift            */

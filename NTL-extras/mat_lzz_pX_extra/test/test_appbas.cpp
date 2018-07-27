@@ -3,6 +3,7 @@
 #include <NTL/vector.h>
 #include <iomanip>
 #include <vector>
+#include <numeric>
 #include <chrono>
 
 #include "mat_lzz_pX_extra.h"
@@ -27,6 +28,8 @@ int main(int argc, char *argv[])
 	long cdim   = atoi(argv[2]);
 	long degree = atoi(argv[3]);
 	long nbits = atoi(argv[4]);
+	std::vector<long> shift(rdim,0);
+	std::iota(shift.begin(), shift.end(),0);
 
 	long prime = NTL::GenPrime_long(nbits);
   zz_p::init(prime);
@@ -36,7 +39,7 @@ int main(int argc, char *argv[])
 	std::cout << "--rdim =\t" << rdim << std::endl;
 	std::cout << "--cdim =\t" << cdim << std::endl;
 	std::cout << "--degree <\t" << degree << std::endl;
-	std::cout << "--shift : uniform" << std::endl;
+	std::cout << "--shift =\t" << shift << std::endl;
 
 	// build random matrix
   Mat<zz_pX> pmat;
@@ -50,25 +53,30 @@ int main(int argc, char *argv[])
 	start = std::chrono::system_clock::now();
 	Mat<zz_pX> appbas;
 	std::vector<long> order(cdim,degree);
-	std::vector<long> shift(rdim,0);
 	std::vector<long> rdeg = appbas_iterative(appbas,pmat,order,shift,order_wise);
 	end = std::chrono::system_clock::now();
 
 	std::cout << "Time(appbas computation): " <<
 		(std::chrono::duration<double> (end-start)).count() << "s\n";
 
-	Mat<zz_pX> prod;
-	multiply_naive(prod,appbas,pmat);
+	std::cout << "Is ordered weak Popov approximant basis? --> " << std::endl;
+	std::cout << is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false) << std::endl;
+
+	Mat<zz_pX> residual;
+	multiply_naive(residual,appbas,pmat);
 
 	if (rdim*cdim*degree < 100)
 	{
+		std::cout << "Print output approx basis..." << std::endl;
 		std::cout << appbas << std::endl;
-		std::cout << prod << std::endl;
+		std::cout << "Print final residual..." << std::endl;
+		std::cout << residual << std::endl;
 	}
 
 	if (std::max(rdim,cdim)<33) {
 		Mat<long> degmat;
 		degree_matrix(degmat,appbas);
+		std::cout << "Print degree matrix of approx basis..." << std::endl;
 		std::cout << degmat << std::endl;
 	}
 
