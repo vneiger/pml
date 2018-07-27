@@ -329,7 +329,7 @@ std::vector<long> mbasis(
 	// matrix to store residuals, initially constant coeff of pmat
 	Mat<zz_p> residual( coeff(pmat,0) );
 
-	for (long ord = 0; ord < order; ++ord)
+	for (long ord = 1; ord <= order; ++ord)
 	{
 		// call MBasis1 to retrieve kernel and pivdeg
 		pivdeg = popov_mbasis1(kerbas,residual,rdeg);
@@ -354,6 +354,9 @@ std::vector<long> mbasis(
 				LeftShiftRow(appbas,appbas,i,1);
 
 		// find new residual
+		residual = coeff(appbas,0) * coeff(pmat,ord);
+		for (long d = 1; d <= ord; ++d)
+			residual += coeff(appbas,d) * coeff(pmat,ord-d);
 
 		// new shifted row degree = old rdeg + pivdeg  (entrywise)
 		std::transform(rdeg.begin(), rdeg.end(), pivdeg.begin(), rdeg.begin(), std::plus<long>());
