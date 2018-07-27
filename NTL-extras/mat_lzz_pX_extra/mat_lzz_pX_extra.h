@@ -8,15 +8,82 @@
 
 NTL_CLIENT
 
-/*------------------------------------------------------------*/
-/* random (n, m) matrix of degree < d                         */
-/*------------------------------------------------------------*/
-void random_mat_zz_pX(Mat<zz_pX>& a, long n, long m, long d);
 
 /*------------------------------------------------------------*/
-/* maximum degree of the entries of a                         */
 /*------------------------------------------------------------*/
-long deg(const Mat<zz_pX> & a);
+/* UTILS                                                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* print vector -- move elsewhere ???                         */
+/*------------------------------------------------------------*/
+std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
+
+//TODO equivalents of those:
+//const zz_p coeff(const zz_pX& a, long i);
+// returns the coefficient of X^i, or zero if i not in range
+//void SetCoeff(zz_pX& x, long i, zz_p a);
+//void SetCoeff(zz_pX& x, long i, long a);
+// makes coefficient of X^i equal to a; error is raised if i < 0
+//void SetCoeff(zz_pX& x, long i);
+// makes coefficient of X^i equal to 1;  error is raised if i < 0
+
+//TODO : left and right shifts (multiplication/division by powers of X),
+//for all the matrix or some columns/rows of it
+
+//TODO : truncate mod X^... , for all the matrix or some columns/rows of it
+//void trunc(zz_pX& x, const zz_pX& a, long n); // x = a % X^n
+//zz_pX trunc(const zz_pX& a, long n);
+
+//TODO: multiply row or column of matrix (vec_lzz_pX) by constant
+
+/**************************************************************************\
+
+                               Shift Operations
+
+LeftShift by n means multiplication by X^n
+RightShift by n means division by X^n
+
+A negative shift amount reverses the direction of the shift.
+
+\**************************************************************************/
+
+// operator notation:
+
+//zz_pX operator<<(const zz_pX& a, long n);
+//zz_pX operator>>(const zz_pX& a, long n);
+//
+//zz_pX& operator<<=(zz_pX& x, long n);
+//zz_pX& operator>>=(zz_pX& x, long n);
+//
+//// procedural versions:
+//
+//void LeftShift(zz_pX& x, const zz_pX& a, long n);
+//zz_pX LeftShift(const zz_pX& a, long n);
+//
+//void RightShift(zz_pX& x, const zz_pX& a, long n);
+//zz_pX RightShift(const zz_pX& a, long n);
+
+//void reverse(zz_pX& x, const zz_pX& a, long hi);
+//zz_pX reverse(const zz_pX& a, long hi);
+//
+//void reverse(zz_pX& x, const zz_pX& a);
+//zz_pX reverse(const zz_pX& a);
+// x = reverse of a[0]..a[hi] (hi >= -1);
+// hi defaults to deg(a) in second version
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* CREATE RANDOM MATRICES                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* random (m, n) matrix of degree < d                         */
+/*------------------------------------------------------------*/
+void random_mat_zz_pX(Mat<zz_pX>& a, long m, long n, long d);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -232,6 +299,8 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
 void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_transform_montgomery3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_transform_karatsuba4(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
@@ -252,30 +321,58 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
+/* maximum degree of the entries of pmat                      */
+/*------------------------------------------------------------*/
+long deg(const Mat<zz_pX> & pmat);
+
+/*------------------------------------------------------------*/
 /* matrix of integers; deg(0) = -1                            */
 /*------------------------------------------------------------*/
-void degree_matrix(Mat<long> &a, const Mat<zz_pX> &b, const std::vector<long>& shift=std::vector<long>(), const bool row_wise=true);
+void degree_matrix(
+		Mat<long> &degmat,
+		const Mat<zz_pX> &pmat,
+		const std::vector<long>& shift=std::vector<long>(),
+		const bool row_wise=true
+		);
 
 /*------------------------------------------------------------*/
 /* max degree of row entries                                  */
 /*------------------------------------------------------------*/
-void row_degree(std::vector<long> &a, const Mat<zz_pX> &b, const std::vector<long>& shift=std::vector<long>()); 
+void row_degree(
+		std::vector<long> &rdeg,
+		const Mat<zz_pX> &pmat,
+		const std::vector<long>& shift=std::vector<long>()
+		); 
 
 /*------------------------------------------------------------*/
 /* max degree of col entries                                  */
 /*------------------------------------------------------------*/
-void col_degree(std::vector<long> &a, const Mat<zz_pX> &b,const std::vector<long>& shift=std::vector<long>()); 
+void col_degree(
+		std::vector<long> &cdeg,
+		const Mat<zz_pX> &pmat,
+		const std::vector<long>& shift=std::vector<long>()
+		); 
 
 /*------------------------------------------------------------*/
 /* finds the pivot indices; returns the row/col degs          */
 /*------------------------------------------------------------*/
-std::vector<long> pivot_index (std::vector<long> &index, const Mat<zz_pX> &b,const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
+void pivot_index(
+		std::vector<long> &pivind,
+		std::vector<long> &pivdeg,
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> & shift = std::vector<long>(),
+		const bool row_wise = true
+		);
 
 /*------------------------------------------------------------*/
 /* leading matrix of b                                        */
 /*------------------------------------------------------------*/
-void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
-
+void leading_matrix(
+		Mat<zz_p> &lmat,
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> & shift = std::vector<long>(),
+		const bool row_wise = true
+		);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -284,9 +381,26 @@ void leading_matrix(Mat<zz_p> &a, const Mat<zz_pX> &b, const std::vector<long> &
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
+/* Shifted reduced forms of polynomials matrices. Recall that */
+/* Popov => ordered weak Popov => weak Popov => Reduced       */
+/*------------------------------------------------------------*/
+
+enum PolMatForm {
+	NONE = 0,
+	REDUCED = 1, 
+	WEAK_POPOV = 2,
+	ORD_WEAK_POPOV = 3,
+	POPOV = 4,
+};
+
+/*------------------------------------------------------------*/
 /* returns true if b is reduced                               */
 /*------------------------------------------------------------*/
-bool is_reduced (const Mat<zz_pX> &b,const std::vector<long> & shift = std::vector<long>(), const bool row_wise = true);
+bool is_reduced(
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> & shift = std::vector<long>(),
+		const bool row_wise = true
+		);
 
 /*------------------------------------------------------------*/
 /* returns true if b is in weak popov form (forbide 0-row/col */
@@ -295,8 +409,30 @@ bool is_weak_popov(
 		const Mat<zz_pX> &pmat,
 		const std::vector<long> &shift = std::vector<long>(),
 		const bool row_wise = true,
-		const bool ordered= false);
+		const bool ordered= false
+		);
 
+/*------------------------------------------------------------*/
+/* if b is in some shifted reduced form,                      */
+/* return the strongest detected form                         */
+/* otherwise return NONE (= 0)                                */
+/*------------------------------------------------------------*/
+PolMatForm get_polmatform(
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> &shift = std::vector<long>(),
+		const bool row_wise = true
+		);
+
+/*------------------------------------------------------------*/
+/* check that pmat is in the shifted reduced form             */
+/* indicated by argument 'form'                               */
+/*------------------------------------------------------------*/
+bool is_polmatform(
+		const Mat<zz_pX> &pmat,
+		const PolMatForm form,
+		const std::vector<long> &shift = std::vector<long>(),
+		const bool row_wise = true
+		);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -304,72 +440,170 @@ bool is_weak_popov(
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+////Definition (approximant basis)
+// Given:
+//   * m x n matrix of univariate polynomials 'pmat',
+//   * approximation order 'order' (list of n positive integers),
+// An approximant basis for (pmat,order) is a matrix over K[X]
+// whose rows form a basis for the K[X]-module
+// { 'app' in K[X]^{1 x m}  |  the column j of 'app' 'pmat' is 0 modulo X^{order[j]} }
+
+//// Minimal and Popov approximant bases
+// Given in addition:
+//   * a degree shift 'shifts' (list of m integers)
+// then an approximant basis for (pmat,order) is said to be
+// "a shift-minimal" (resp. "the shift-Popov") approximant basis
+// if it shift-reduced (resp. in shift-Popov form)
+// Idem for shift-ordered weak Popov
+// Cf. literature for definitions
+
 /*------------------------------------------------------------*/
 /* TODO: documentation to explain what this computes and what */
 /* are the options                                            */
 /*------------------------------------------------------------*/
 
+// Guarantee: output is at least ordered weak Popov
+// return value is pivot degree
+
 /*------------------------------------------------------------*/
 /* general user-friendly interface                            */
 /*------------------------------------------------------------*/
-// TODO: choice: output s-pivot degree or s-row degree ????
+
 std::vector<long> approximant_basis(
 		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & mat,
-		const std::vector<unsigned long> & order,
+		const Mat<zz_pX> & pmat,
+		const std::vector<long> & order,
 		const std::vector<long> & shift = std::vector<long>(),
-		const bool canonical = true,
+		const PolMatForm form = ORD_WEAK_POPOV,
 		const bool row_wise = true,
 		const bool generic = false
 		);
 
 std::vector<long> approximant_basis(
 		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & mat,
-		const unsigned long order,
+		const Mat<zz_pX> & pmat,
+		const long order,
 		const std::vector<long> & shift = std::vector<long>(),
-		const bool canonical = true,
+		const PolMatForm form = ORD_WEAK_POPOV,
 		const bool row_wise = true,
 		const bool generic = false
 		);
 //{
-//	std::vector<unsigned long> orders(mat.NumRows(),order);
+//	std::vector<long> orders(mat.NumRows(),order);
 //	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
 //}
+
+
+/*------------------------------------------------------------*/
+/* Verifying that appbas is a shift-minimal approximant       */
+/* basis for input matrix 'pmat' and order 'order'            */
+/* 'form' gives the minimal requirement to check (matrix must */
+/* be at least in the form 'form')                            */
+/* 'randomized' says whether using a Monte Carlo or Las Vegas */
+/* verification algorithm is acceptable                       */
+/* Note: currently, deterministic verification is, for most   */
+/* instances, as long as re-computing the basis               */
+/*------------------------------------------------------------*/
+
+bool is_approximant_basis(
+		const Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const std::vector<long> & order,
+		const std::vector<long> & shift = std::vector<long>(),
+		const PolMatForm & form = ORD_WEAK_POPOV,
+		const bool row_wise = true,
+		const bool randomized = false
+		);
+
+bool is_approximant_basis(
+		const Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift = std::vector<long>(),
+		const PolMatForm & form = ORD_WEAK_POPOV,
+		const bool row_wise = true,
+		const bool randomized = false
+		);
 
 /*------------------------------------------------------------*/
 /* Iterative algorithm for general order and shift            */
 /* References:                                                */
-/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
-/*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
-/*   - Jeannerod-Neiger-Villard 2018                          */
-/*          (ensuring s-ordered weak Popov)                   */
+/*   - Beckermann 1992                                        */
+/*   - Van Barel-Bultheel 1991+1992                           */
+/*   - Beckermann-Labahn 2000 (ensuring s-Popov)              */
 /*------------------------------------------------------------*/
-std::vector<long> appbas_iterative(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long ord, const std::vector<long> & shift);
-std::vector<long> popov_iter_appbas(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long ord, const std::vector<long> & shift);
+std::vector<long> appbas_iterative(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const std::vector<long> order,
+		const std::vector<long> & shift,
+		bool order_wise=true
+		);
+
+std::vector<long> popov_appbas_iterative(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const std::vector<long> order,
+		const std::vector<long> & shift,
+		bool order_wise=true
+		);
 
 /*------------------------------------------------------------*/
 /* M-Basis algorithm for approximant order = 1                */
 /* References:                                                */
 /*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
-/*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
+/*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shift)  */
 /*   - Jeannerod-Neiger-Villard 2018 (ensuring s-Popov)       */
 /*------------------------------------------------------------*/
-std::vector<long> mbasis1(Mat<zz_pX> &appbas, const Mat<zz_p> mat, const std::vector<long> & shift);
+std::vector<long> popov_mbasis1(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_p> & pmat,
+		const std::vector<long> & shift
+		);
 
 /*------------------------------------------------------------*/
 /* M-Basis algorithm for uniform approximant order            */
 /* References:                                                */
 /*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
-/*   - Giorgi-Lebreton ISSAC 2014 (algo for any shift)        */
+/*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shift)  */
 /*   - Jeannerod-Neiger-Villard 2018                          */
-/*          (ensuring s-ordered weak Popov)                   */
+/*          (ensuring s-ordered weak Popov or s-Popov)        */
 /*------------------------------------------------------------*/
-std::vector<long> mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long order, const std::vector<long> & shift);
-std::vector<long> popov_mbasis(Mat<zz_pX> &appbas, const Mat<zz_pX> mat, const long order, const std::vector<long> & shift);
+std::vector<long> mbasis(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
+		);
 
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
+std::vector<long> popov_mbasis(
+		Mat<zz_pX> &appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
+		);
 
+/*------------------------------------------------------------*/
+/* PM-Basis algorithm for uniform approximant order           */
+/* References:                                                */
+/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
+/*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shifts) */
+/*   - Jeannerod-Neiger-Villard 2018                          */
+/*          (ensuring s-ordered weak Popov or s-Popov)        */
+/*------------------------------------------------------------*/
+std::vector<long> pmbasis(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
+		);
+
+std::vector<long> popov_pmbasis(
+		Mat<zz_pX> &appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
+		);
 
 
 #endif // MAT_LZZ_PX_EXTRA__H

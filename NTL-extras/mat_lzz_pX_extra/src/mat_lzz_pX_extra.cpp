@@ -3,6 +3,7 @@
 #include <NTL/lzz_pX.h>
 #include <cmath>
 #include <algorithm> // for manipulating std::vector (min, max, ..)
+#include <numeric> // for std::iota
 
 #include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
@@ -10,6 +11,41 @@
 
 NTL_CLIENT
 
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* UTILS                                                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
+	out << "[ ";
+	for (auto &i: s)
+		out << i << " ";
+	return out << "]";
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* CREATE RANDOM MATRICES                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* random (n, m) matrix of degree < d                         */
+/*------------------------------------------------------------*/
+void random_mat_zz_pX(Mat<zz_pX>& a, long n, long m, long d)
+{
+	a.SetDims(n, m);
+	for (long i = 0; i < n; i++)
+	{
+		for (long j = 0; j < m; j++)
+		{
+			a[i][j] = random_zz_pX(d);
+		}
+	}
+}
 
 
 /*------------------------------------------------------------*/
@@ -300,21 +336,21 @@ void GetCoeff(Mat<zz_p>& x, const Mat<zz_pX>& a, long i)
 /*------------------------------------------------------------*/
 Mat<zz_p> matrix_of_leading_coefficients(const Mat<zz_pX>& a)
 {
-    long m = a.NumRows();
-    long n = a.NumCols();
-    
-    Mat<zz_p> x;
-    x.SetDims(m, n);
-    
-    for (long u = 0; u < m; u++)
-    {
-	for (long v = 0; v < n; v++)
-	{
-	    x[u][v] = LeadCoeff(a[u][v]);
-	}
-    }
+	long m = a.NumRows();
+	long n = a.NumCols();
 
-    return x;
+	Mat<zz_p> x;
+	x.SetDims(m, n);
+
+	for (long u = 0; u < m; u++)
+	{
+		for (long v = 0; v < n; v++)
+		{
+			x[u][v] = LeadCoeff(a[u][v]);
+		}
+	}
+
+	return x;
 }
 
 
@@ -347,21 +383,6 @@ void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a)
 
 
 /*------------------------------------------------------------*/
-/* random (n, m) matrix of degree < d                         */
-/*------------------------------------------------------------*/
-void random_mat_zz_pX(Mat<zz_pX>& a, long n, long m, long d)
-{
-    a.SetDims(n, m);
-    for (long i = 0; i < n; i++)
-    {
-	for (long j = 0; j < m; j++)
-	{
-	    a[i][j] = random_zz_pX(d);
-	}
-    }
-}
-
-/*------------------------------------------------------------*/
 /* maximum degree of the entries of a                         */
 /*------------------------------------------------------------*/
 long deg(const Mat<zz_pX> & a)
@@ -377,228 +398,6 @@ long deg(const Mat<zz_pX> & a)
     return d;
 }
 
-
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/* Waksman's algorithm                                        */
-/*------------------------------------------------------------*/
-void multiply_waksman(Mat<zz_pX> &C, const Mat<zz_pX> &A, const Mat<zz_pX> &B)
-{
-    Vec<zz_pX> Arow, Acol, D, E;
-    zz_pX val0, val1, val2, crow;
-
-    long m = A.NumRows();
-    long n = A.NumCols();
-    long p = B.NumCols();
-
-    C.SetDims(m, p);
-  
-    D.SetLength(p);
-    E.SetLength(m);
-
-    long np = n>>1;
-
-    for (long j=1; j<=np; j++)
-    {
-	const long j2=(j<<1)-1;
-    
-	for (long k=0; k<p; k++)
-	{
-	    C[0][k] += (A[0][j2-1]+B[j2][k]) * (A[0][j2]+B[j2-1][k]);
-	    D[k] += (A[0][j2-1]-B[j2][k]) * (A[0][j2]-B[j2-1][k]);
-	}
-
-	for (long l=1; l<m; l++)
-	{
-	    C[l][0] += (A[l][j2-1]+B[j2][0]) * (A[l][j2]+B[j2-1][0]);
-	    E[l] += (A[l][j2-1]-B[j2][0]) * (A[l][j2]-B[j2-1][0]);
-	}
-
-	for (long k=1; k<p; k++)
-	{
-	    for (long l=1; l<m; l++)
-	    {
-		C[l][k] += (A[l][j2-1]+B[j2][k]) * (A[l][j2]+B[j2-1][k]);
-	    }
-	}
-    }
-
-    for (long l=1; l<m; l++)
-    {
-	E[l] = (E[l]+C[l][0])/2;
-	C[l][0] -= E[l];
-    }
-
-    val0 = (D[0]+C[0][0])/2;
-    C[0][0] -= val0;
-    for (long k=1; k<p; k++)
-    {
-	val1 = (D[k]+C[0][k])/2;
-	C[0][k] -= val1;
-	val1 -= val0;
-	for (long l=1; l<m; l++)
-	{
-	    C[l][k] -= val1 + E[l];
-	}
-    }
-
-    if ( (n&1) == 1)
-    {
-	for (long l=0; l<m; l++)
-	{
-	    for (long k=0; k<p; k++)
-	    {
-		C[l][k] += A[l][n-1]*B[n-1][k];
-	    }
-	}
-    }
-}
-
-
-
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/* naive algorithm                                            */
-/*------------------------------------------------------------*/
-void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-
-    long u = a.NumRows();
-    long v = a.NumCols();
-    long w = b.NumCols();
-
-    c.SetDims(u, w);
-
-    for (long i = 0; i < u; i++)
-    {
-	for (long j = 0; j < w; j++)
-	{
-	    c[i][j] = 0;
-	    for (long k = 0; k < v; k++)
-	    {
-		c[i][j] += a[i][k]*b[k][j];
-	    }
-	}
-    }
-}
-
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/* geometric points                                           */
-/*------------------------------------------------------------*/
-void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-  
-    long dA = deg(a);
-    long dB = deg(b);
-    long dC = dA+dB;
-    long sz = dC+1;
-
-    zz_pX_Multipoint_Geometric ev_geom = get_geometric_points(sz);
-
-    Vec<Mat<zz_p>> valA, valB, valC;
-    ev_geom.evaluate_matrix(valA, a);
-    ev_geom.evaluate_matrix(valB, b);
-
-    long len = ev_geom.length();
-    valC.SetLength(len);
-    for (long i = 0; i < len; i++)
-    {
-    	mul(valC[i], valA[i], valB[i]);
-    }
-
-    ev_geom.interpolate_matrix(c, valC);
-}
-
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/* FFT points                                                 */
-/*------------------------------------------------------------*/
-void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-  
-    long dA = deg(a);
-    long dB = deg(b);
-    long dC = dA+dB;
-    long sz = dC+1;
-
-    zz_pX_Multipoint_FFT ev_FFT = get_FFT_points(sz);
-
-    Vec<Mat<zz_p>> valA, valB, valC;
-    ev_FFT.evaluate_matrix(valA, a);
-    ev_FFT.evaluate_matrix(valB, b);
-
-    long len = ev_FFT.length();
-    valC.SetLength(len);
-    for (long i = 0; i < len; i++)
-    {
-    	mul(valC[i], valA[i], valB[i]);
-    }
-
-    ev_FFT.interpolate_matrix(c, valC);
-}
-
-
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/* chooses the kind of points                                 */
-/*------------------------------------------------------------*/
-void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-    if (is_FFT_ready())
-    {
-	multiply_evaluate_FFT(c, a, b);
-    }
-    else
-    {
-	multiply_evaluate_geometric(c, a, b);
-    }
-}
-
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/*------------------------------------------------------------*/
-void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-    long dA = deg(a);
-    long dB = deg(b);
-
-    zz_pX_Transform_naive trs_naive(max(dA, dB) + 1);
-
-    Vec<Mat<zz_p>> valA, valB, valC;
-    trs_naive.forward_left_matrix(valA, a);
-    trs_naive.forward_right_matrix(valB, b);
-
-    long len = trs_naive.transform_length();
-    valC.SetLength(len);
-    for (long i = 0; i < len; i++)
-    {
-    	mul(valC[i], valA[i], valB[i]);
-    }
-
-    trs_naive.backward_matrix(c, valC);
-}
-
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/*------------------------------------------------------------*/
-void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-    zz_pX_Transform_karatsuba trs_karatsuba = zz_pX_Transform_karatsuba();
-
-    Vec<Mat<zz_p>> valA, valB, valC;
-    trs_karatsuba.forward_left_matrix(valA, a);
-    trs_karatsuba.forward_right_matrix(valB, b);
-
-    long len = trs_karatsuba.transform_length();
-    valC.SetLength(len);
-    for (long i = 0; i < len; i++)
-    {
-    	mul(valC[i], valA[i], valB[i]);
-    }
-
-    trs_karatsuba.backward_matrix(c, valC);
-}
 
 
 /*------------------------------------------------------------*/
@@ -763,17 +562,13 @@ void leading_matrix(Mat<zz_p> &lmat,
 	{
 		for (long c = 0; c < pmat.NumCols(); c++)
 		{
-			long d; // actual shifted degree of the r,c entry
-			// FIXME issue with zero entries? why not using degree matrix?
-			d = deg(pmat[r][c]);
+			long d = deg(pmat[r][c]); // actual shifted degree of the r,c entry
+
 			if (shifted)
-			{
 				d += (row_wise ? shift[c] : shift[r]);
-			}
+
 			if (d == (row_wise ? degree[r] : degree[c]))
-			{
 				lmat[r][c] = LeadCoeff(pmat[r][c]);
-			}
 		}
 	}
 }
@@ -792,11 +587,9 @@ bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const 
 /*------------------------------------------------------------*/
 /* some comment                                               */
 /*------------------------------------------------------------*/
-// FIXME return vector?
-// FIXME pivot degree?
-// FIXME row degree?
-std::vector<long> pivot_index (
-		std::vector<long> & index,
+void pivot_index (
+		std::vector<long> & pivind,
+		std::vector<long> & pivdeg,
 		const Mat<zz_pX> & pmat,
 		const std::vector<long> & shift,
 		const bool row_wise)
@@ -823,28 +616,28 @@ std::vector<long> pivot_index (
 
 	long zero_degree = -1;
 	if (shifted)
-	{
 		zero_degree = *std::min_element(shift.begin(),shift.end()) -1;
-	}
 
 	if (row_wise)
 	{
-		if ((long)index.size() != pmat.NumRows()) {
+		if ((long)pivind.size() != pmat.NumRows())
 			throw "==pivot_index== Provided vector does not have size = NumRows";
-		}
-		for (long r = 0; r < pmat.NumRows(); r++)
+
+		for (long r = 0; r < pmat.NumRows(); ++r)
 		{
 			if (degree[r] == zero_degree) 
 			{
-				index[r] = -1;
+				pivdeg[r] = -1;
+				pivind[r] = -1;
 			}
 			else
 			{
-				for (long c = 0; c <pmat.NumCols(); c++)
+				for (long c = 0; c <pmat.NumCols(); ++c)
 				{
 					if (deg_mat[r][c] == degree[r]) 
 					{
-						index[r] = c;
+						pivdeg[r] = deg(pmat[r][c]);
+						pivind[r] = c;
 					}
 				}
 			}
@@ -852,14 +645,15 @@ std::vector<long> pivot_index (
 	}
 	else
 	{
-		if ((long)index.size() != pmat.NumCols()) {
+		if ((long)pivind.size() != pmat.NumCols())
 			throw "==pivot_index== Provided vector does not have size = NumCols";
-		}
+
 		for(long c = 0; c < pmat.NumCols(); c++)
 		{
 			if (degree[c] == zero_degree) 
 			{
-				index[c] = -1;
+				pivdeg[c] = -1;
+				pivind[c] = -1;
 			}
 			else
 			{
@@ -867,13 +661,13 @@ std::vector<long> pivot_index (
 				{
 					if (deg_mat[r][c] == degree[c]) 
 					{
-						index[c] = r;
+						pivdeg[c] = deg(pmat[r][c]);
+						pivind[c] = r;
 					}
 				}
 			}
 		}
 	}
-	return degree;
 }
 
 bool is_weak_popov (
@@ -884,40 +678,27 @@ bool is_weak_popov (
 {
 	//retrieve pivot index
 	std::vector<long> pivots;
+	std::vector<long> pivdeg;
 	pivots.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
-	pivot_index(pivots, pmat, shift, row_wise);
+	pivdeg.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
+	pivot_index(pivots, pivdeg, pmat, shift, row_wise);
 
 	// forbide zero vectors
 	if( std::find(pivots.begin(),pivots.end(),-1) != pivots.end() )
-	{
 		return false;
-	}
+
 	if (!ordered)
-	{ // only check for pair-wise distinct
+	{ // check for pairwise distinct: sort and check no adjacent equal elements
 		std::sort(pivots.begin(),pivots.end());
-		for (size_t i = 1; i < pivots.size(); i++)
-			if(pivots[i] == pivots[i-1])
-			{
-				return false;
-			}
+		if (std::adjacent_find(pivots.begin(),pivots.end()) != pivots.end())
+			return false;
 	}
 	else
-	{
-		for (size_t i = 1; i < pivots.size(); i++)
-		{
-			if (pivots[i] <= pivots[i-1]){ // means not strict increasing
-				return false;
-			}
-		}
+	{ // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+		if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+			return false;
 	}
 	return true;
-}
-
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
-	out << "[ ";
-	for (auto &i: s)
-		out << i << " ";
-	return out << "]";
 }
 
 /*
@@ -946,4 +727,48 @@ weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &m, Vec<long> shift=Vec<long>(
 	}
 	
 }
+*/
+
+
+
+
+
+PolMatForm get_polmatform(
+		const Mat<zz_pX> &pmat,
+		const std::vector<long> &shift,
+		const bool row_wise
+		)
+{
+	//if (is_popov()) {   // TODO waiting for is_popov
+	//	return POPOV;
+	//}
+	//else // same as below
+	if (is_weak_popov(pmat,shift,row_wise,true))
+		return ORD_WEAK_POPOV;
+	else if (is_weak_popov(pmat,shift,row_wise))
+		return WEAK_POPOV;
+	else if (is_reduced(pmat,shift,row_wise))
+		return REDUCED;
+	else
+		return NONE;
+}
+
+bool is_polmatform(
+		const Mat<zz_pX> &pmat,
+		const PolMatForm form,
+		const std::vector<long> &shift,
+		const bool row_wise
+		)
+{
+	switch (form)
+	{
+		case NONE: return true;
+		case REDUCED: return is_reduced(pmat,shift,row_wise);
+		case WEAK_POPOV: return is_weak_popov(pmat,shift,row_wise,false);
+		case ORD_WEAK_POPOV: return is_weak_popov(pmat,shift,row_wise,true);
+		//case POPOV: return is_popov(pmat,shift,row_wise); // TODO
+		default: throw std::invalid_argument("==is_polmatform== Unknown required polynomial matrix form.");
+	}
+}
+
 

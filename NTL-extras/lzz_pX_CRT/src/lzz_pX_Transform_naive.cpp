@@ -16,18 +16,26 @@ zz_pX_Transform_naive::zz_pX_Transform_naive(long d)
 }
 
 /*------------------------------------------------------------*/
-/* (a0,a1,a2) -> (a0, a0, a0, a1, a1, a1, a2, a2, a2)         */
+/* (a0,a1,a2) -> (a0, a0, a1, a0, a1, a2, a1, a2, a2)         */
 /*------------------------------------------------------------*/
 void zz_pX_Transform_naive::forward_left(Vec<zz_p>& val, const zz_pX& P) const
 {
     long idx = 0;
     val.SetLength(n);
+
     for (long i = 0; i < m; i++)
     {
-	zz_p a = coeff(P, i);
-	for (long j = 0; j < m; j++)
+	for (long j = i; j >= 0; j--)
 	{
-	    val[idx++] = a;
+	    val[idx++] = coeff(P, j);
+	}
+    }
+
+    for (long i = 1; i < m; i++)
+    {
+	for (long j = m-1; j >= i; j--)
+	{
+	    val[idx++] = coeff(P, j);
 	}
     }
 }
@@ -40,20 +48,21 @@ void zz_pX_Transform_naive::forward_right(Vec<zz_p>& val, const zz_pX& P) const
     long idx = 0;
     val.SetLength(n);
 
-    const zz_p * coeffs = P.rep.elts();
-
     for (long i = 0; i < m; i++)
     {
-	for (long j = 0; j <= deg(P); j++)
+	for (long j = 0; j <= i; j++)
 	{
-	    val[idx++] = coeffs[j];
-	}
-	for (long j = deg(P)+1; j < m; j++)
-	{
-	    val[idx++] = 0;
+	    val[idx++] = coeff(P, j);
 	}
     }
 
+    for (long i = 1; i < m; i++)
+    {
+	for (long j = i; j <= m-1; j++)
+	{
+	    val[idx++] = coeff(P, j);
+	}
+    }
 }
 
 /*------------------------------------------------------------*/
