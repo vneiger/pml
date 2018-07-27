@@ -810,7 +810,7 @@ bool is_polmatform(
 		case REDUCED: return is_reduced(pmat,shift,row_wise);
 		case WEAK_POPOV: return is_weak_popov(pmat,shift,row_wise,false);
 		case ORD_WEAK_POPOV: return is_weak_popov(pmat,shift,row_wise,true);
-		//case POPOV: return is_popov(pmat,shift,row_wise); // TODO
+		case POPOV: return is_popov(pmat,shift,row_wise,false);
 		default: throw std::invalid_argument("==is_polmatform== Unknown required polynomial matrix form.");
 	}
 }

@@ -416,7 +416,7 @@ bool is_popov(
 		const Mat<zz_pX> &pmat,
 		const std::vector<long> &shift = std::vector<long>(),
 		const bool row_wise = true,
-		const bool up_to_permutation= false
+		const bool up_to_permutation = false
 		);
 
 /*------------------------------------------------------------*/
