@@ -63,6 +63,14 @@ Mat<zz_pX> LeftShift(const Mat<zz_pX>& a, long n){
 	return a << n;
 }
 
+void RightShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n){
+	x = a >> n;
+}
+
+Mat<zz_pX> RightShift(const Mat<zz_pX>& a, long n){
+	return a >> n;
+}
+
 void LeftShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n){
 	x = a;
 	for (long c = 0; c < x.NumCols(); c++)
@@ -76,16 +84,42 @@ Mat<zz_pX> LeftShiftRow(const Mat<zz_pX>& a, const long r, long n){
 	return x;
 }
 
+void RightShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n){
+	x = a;
+	for (long c = 0; c < x.NumCols(); c++)
+		x[r][c] >>= n;
+}
+
+Mat<zz_pX> RightShiftRow(const Mat<zz_pX>& a, const long r, long n){
+	auto x = a;
+	for (long c = 0; c < x.NumCols(); c++)
+		x[r][c] >>= n;
+	return x;
+}
+
 void LeftShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n){
 	x = a;
 	for (long r = 0; r < x.NumRows(); r++)
 		x[r][c] <<= n;
 }
 
-Mat<zz_pX> LeftShiftCow(const Mat<zz_pX>& a, const long c, long n){
+Mat<zz_pX> LeftShiftCol(const Mat<zz_pX>& a, const long c, long n){
 	auto x = a;
 	for (long r = 0; r < x.NumCols(); r++)
 		x[r][c] <<= n;
+	return x;
+}
+
+void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n){
+	x = a;
+	for (long r = 0; r < x.NumRows(); r++)
+		x[r][c] >>= n;
+}
+
+Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n){
+	auto x = a;
+	for (long r = 0; r < x.NumCols(); r++)
+		x[r][c] >>= n;
 	return x;
 }
 

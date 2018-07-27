@@ -84,6 +84,17 @@ Mat<zz_pX> LeftShiftCol(const Mat<zz_pX>& a, const long c, long n);
 //
 //void RightShift(zz_pX& x, const zz_pX& a, long n);
 //zz_pX RightShift(const zz_pX& a, long n);
+// full matrix left shifts
+void RightShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
+Mat<zz_pX> RightShift(const Mat<zz_pX>& a, long n);
+
+// single row shifts
+void RightShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n);
+Mat<zz_pX> RightShiftRow(const Mat<zz_pX>& a, const long r, long n);
+
+// single col shifts
+void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
+Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n);
 
 //void reverse(zz_pX& x, const zz_pX& a, long hi);
 //zz_pX reverse(const zz_pX& a, long hi);
