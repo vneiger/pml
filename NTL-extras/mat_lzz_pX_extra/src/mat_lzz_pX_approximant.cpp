@@ -79,6 +79,7 @@ bool is_approximant_basis(
 /*------------------------------------------------------------*/
 /* ITERATIVE ALGORITHMS                                       */
 /*------------------------------------------------------------*/
+// for the general case
 
 
 std::vector<long> appbas_iterative(
@@ -228,3 +229,44 @@ std::vector<long> popov_appbas_iterative(
 	// TODO multiply appbas by inverse of leading matrix
 	return pivdeg;
 }
+
+/*------------------------------------------------------------*/
+/* ALGORITHMS FOR UNIFORM ORDER                               */
+/*------------------------------------------------------------*/
+// works best for shifts close to uniform
+
+std::vector<long> popov_mbasis1(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_p> & pmat,
+		const std::vector<long> & shift
+		)
+{
+	// compute permutation which realizes stable sort of the shift
+	// (i.e. sorts (shift[0],0)....(shift[len],len) lexicographically increasingly)
+	std::vector<long> perm_shift(pmat.NumRows());
+	std::iota(perm_shift.begin(), perm_shift.end(), 0);
+	stable_sort(perm_shift.begin(), perm_shift.end(),
+					[&](const size_t& a, const size_t& b)->bool
+					{
+							return (shift[a] < shift[b]);
+					} );
+
+	// permute rows of pmat accordingly
+	Mat<zz_p> mat;
+	mat.SetDims(pmat.NumRows(),pmat.NumCols());
+	for (long i = 0; i < mat.NumRows(); ++i)
+	//for (long j = 0; j < mat.NumRows(); ++j)
+		mat[i] = pmat[perm_shift[i]];
+
+	//// FIXME remove this debug
+	//std::cout << "shift\n" << perm_shift << std::endl;
+	//std::cout << "input\n" << pmat << std::endl;
+	//std::cout << "permuted\n" << mat << std::endl;
+
+	// find the kernel basis in row echelon form
+	Mat<zz_p> ker;
+	kernel(ker,mat);
+	
+	return shift;
+}
+
