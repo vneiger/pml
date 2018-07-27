@@ -701,12 +701,44 @@ bool is_weak_popov (
 	return true;
 }
 
-/*
-bool is_popov (const Mat<zz_pX> &m, const Vec<long> &shift = Vec<long>(), const bool row_wise = true){
-	Vec<long> pivots;
-	Vec<long degree = pivot_index(pivots, b, shift, row_wise);
+bool is_monic(const zz_pX &p){
+	return IsOne(LeadCoeff(p));
 }
-*/
+
+bool is_popov (const Mat<zz_pX> &pmat,
+		const std::vector<long> &shift,
+		const bool row_wise,
+		const bool up_to_permutation){
+	if (!is_weak_popov(pmat,shift,row_wise,!up_to_permutation))
+		return false;
+	
+	
+	std::vector<long> pivots;
+	std::vector<long> degrees;
+	pivots.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
+	degrees.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
+	pivot_index(pivots,degrees,pmat,shift,row_wise);
+	for (unsigned long i = 0; i < pivots.size(); i++){
+		auto index = pivots[i];
+		if (index >= 0){
+			if(row_wise){
+				if (!is_monic(pmat[i][index]))
+					return false;
+				for (long k=0; k < pmat.NumRows(); k++){
+					if (deg(pmat[k][index]) >= degrees[i] && ((unsigned long)k != i))
+						return false;
+				}
+			}else{ // col-wise
+				if (!is_monic(pmat[index][i]))
+					return false;
+				for (long k = 0; k < pmat.NumCols(); k++)
+					if (deg(pmat[index][k]) >= degrees[i] && ((unsigned long)k != i))
+						return false;
+			}
+		}
+	}
+	return true;
+}
 
 Mat<zz_pX> identity_matrix(const long n){
 	Mat<zz_pX> res;
@@ -715,20 +747,32 @@ Mat<zz_pX> identity_matrix(const long n){
 		res[i][i] = zz_pX(1);
 	return res;
 }
+
 /*
-void weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &m, Vec<long> shift=Vec<long>()){
-	wpf = m;
+void weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &pmat, const std::vector<long> &shift){
+	wpf = pmat;
 	m = wpf.NumRows();
 	n = wpf.NumCols();
 	trans = identity_matrix(m);
+	
+	// populate shift with zeros if empty
 	if (shift.length() == 0){ 
-		shift = Vec<long>();
-		shift.SetLength(n);
+		for (long i = 0; i < n; i++)
+			shift.emplace_back(0);
 	}
 	
+	// pivots[i] = shift-pivot index of the row i of wpf
+	// degrees = shift-row degree of wpf
+	std::vector<long> pivots;
+	std::vector<long> degrees;
+	pivot_index(pivots,degress,wpf,shift,true);
+	
+	// rows_with_pivot[p] = indices of the rows that have pivot index p
+	std::vector<std::vector<long>> rows_with_pivot(n, std::vector<long>());
+	for (long i = 0; i < n; i++)
+		rows_with_pivot[pivots[i]].emplace_back(i);
 }
 */
-
 
 
 
