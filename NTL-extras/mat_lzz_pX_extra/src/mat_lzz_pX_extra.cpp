@@ -26,6 +26,7 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
 }
 
 /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 /* operators                                                  */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -123,6 +124,48 @@ Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n){
 	return x;
 }
 
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* trunc                                                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n){
+	x = a;
+	for (long r = 0; r < x.NumRows(); r++)
+		for (long c = 0; c < x.NumCols(); c++)
+			trunc(x[r][c],x[r][c],n);
+}
+
+Mat<zz_pX> trunc(const Mat<zz_pX>& a, long n){
+	auto x = a;
+	trunc(x,x,n);
+	return x;
+}
+
+void truncRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, long r,long n){
+	x = a;
+	for (long c = 0; c < x.NumCols(); c++)
+		trunc(x[r][c],x[r][c],n);
+}
+
+Mat<zz_pX> truncRow(const Mat<zz_pX>& a, long r, long n){
+	auto x = a;
+	truncRow(x,x,r,n);
+	return x;
+}
+
+void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c,long n){
+	x = a;
+	for (long r = 0; r < x.NumRows(); r++)
+		trunc(x[r][c],x[r][c],n);
+}
+
+Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n){
+	auto x = a;
+	truncRow(x,x,c,n);
+	return x;
+}
 
 
 /*------------------------------------------------------------*/
