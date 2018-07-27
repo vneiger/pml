@@ -666,7 +666,7 @@ void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat,
 			degmat[i][j] = deg(pmat[i][j]);
 			if (shifted)
 			{
-				if (pmat[i][j] == -1)
+				if (degmat[i][j] == -1)
 				{
 					degmat[i][j] += min_shift;
 				}
@@ -846,7 +846,7 @@ void pivot_index (
 		if ((long)pivind.size() != pmat.NumRows())
 			throw "==pivot_index== Provided vector does not have size = NumRows";
 
-		for (long r = 0; r < pmat.NumRows(); r++)
+		for (long r = 0; r < pmat.NumRows(); ++r)
 		{
 			if (degree[r] == zero_degree) 
 			{
@@ -855,7 +855,7 @@ void pivot_index (
 			}
 			else
 			{
-				for (long c = 0; c <pmat.NumCols(); c++)
+				for (long c = 0; c <pmat.NumCols(); ++c)
 				{
 					if (deg_mat[r][c] == degree[r]) 
 					{

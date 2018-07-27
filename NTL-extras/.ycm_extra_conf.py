@@ -45,7 +45,6 @@ flags = [
 '-DNDEBUG',
 #WHAT I ADDED FOR NTL-EXTRAS
 '-I./include',
-'-L./lib',
 #'-I./lzz_p_extra',
 #'-I./lzz_pX_extra',
 #'-I./lzz_pX_middle_product',
