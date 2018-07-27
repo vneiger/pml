@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <vector>
 #include <numeric>
+#include <algorithm>
+#include <random>
 #include <chrono>
 
 #include "mat_lzz_pX_extra.h"
@@ -28,6 +30,7 @@ int main(int argc, char *argv[])
 	//std::vector<long> shift {0,1,0,1};
 	//std::vector<long> shift {4,1,0,1};
 	//std::iota(shift.begin(), shift.end(),0);
+	std::shuffle(shift.begin(), shift.end(), std::mt19937{std::random_device{}()});
 
 	long prime = NTL::GenPrime_long(nbits);
   zz_p::init(prime);
@@ -37,7 +40,11 @@ int main(int argc, char *argv[])
 	std::cout << "--rdim =\t" << rdim << std::endl;
 	std::cout << "--cdim =\t" << cdim << std::endl;
 	std::cout << "--degree <\t" << order << std::endl;
-	std::cout << "--shift =\t" << shift << std::endl;
+	std::cout << "--shift =\t";
+	if (shift.size()<50)
+		std::cout << shift << std::endl; 
+	else
+		std::cout << "length " << shift.size() << std::endl;
 
 	// build random matrix
   Mat<zz_pX> pmat,pmat2;

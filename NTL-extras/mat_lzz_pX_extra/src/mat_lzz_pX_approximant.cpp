@@ -301,17 +301,6 @@ std::vector<long> popov_mbasis1(
 	for (long i = 0; i < kerbas.NumRows(); ++i)
 		for (long j = 0; j < kerbas.NumCols(); ++j)
 			kerbas[i][perm_shift[j]] = p_kerbas[perm_rows_ker[i]][j];
-	std::cout << "ok3" << std::endl;
-
-	// FIXME remove this debug
-	std::cout << "permutation for shift\n" << perm_shift << std::endl;
-	std::cout << "input\n" << pmat << std::endl;
-	std::cout << "permuted\n" << mat << std::endl;
-	std::cout << "permuted kernel\n" << p_kerbas << std::endl;
-	std::cout << "permuted pivots\n" << p_pivind << std::endl;
-	std::cout << "kernel\n" << kerbas << std::endl;
-	std::cout << "pivot\n" << pivind << std::endl;
-	std::cout << "pivdegs\n" << pivdeg << std::endl;
 
 	return pivdeg;
 }
