@@ -26,7 +26,7 @@ void one_check(long sz, long deg, long p)
 
     random_mat_zz_pX(a, sz, sz, deg);
     random_mat_zz_pX(b, sz, sz, deg);
-    cout << sz << " " << deg << " ";
+    cout << "size=" << sz << ", length=" << deg << " ";
 
     // naive algorithm, if the size is reasonable
     long do_naive = (sz <= 400)  && (deg <= 40);
@@ -51,7 +51,7 @@ void one_check(long sz, long deg, long p)
     {
 	if (c1 != c2)
 	{
-	    cout << "evaluate mismatch with p=" << p << ", sz=" << sz << ", deg=" << deg << endl;
+	    cout << "(evaluate mismatch) ";
 	}
     }
 
@@ -63,10 +63,10 @@ void one_check(long sz, long deg, long p)
 
     if (c3 != c2)
     {
-	cout << "transform naive mismatch with p=" << p << ", sz=" << sz << ", deg=" << deg << endl;
+	cout << "(transform naive mismatch) ";
     }
 
-    if (deg == 2) // TODO: write is_karatsuba..
+    if (deg == 2) // TODO: write is_karatsuba.
     {
 	t = GetTime();
 	Mat<zz_pX> c4;
@@ -75,11 +75,35 @@ void one_check(long sz, long deg, long p)
 	
 	if (c4 != c2)
 	{
-	    cout << "transform karatsuba mismatch with p=" << p << ", sz=" << sz << ", deg=" << deg << endl;
+	    cout << "(transform karatsuba mismatch) ";
 	}
     }
-    
 
+    if (deg == 3) // TODO: write is_montgomery
+    {
+	t = GetTime();
+	Mat<zz_pX> c4;
+	multiply_transform_montgomery3(c4, a, b);
+	cout << GetTime()-t << " ";
+	
+	if (c4 != c2)
+	{
+	    cout << "(transform montgomery mismatch) ";
+	}
+    }
+
+    if (deg == 4) // TODO: write is_karatsuba4
+    {
+	t = GetTime();
+	Mat<zz_pX> c4;
+	multiply_transform_karatsuba4(c4, a, b);
+	cout << GetTime()-t << " ";
+	
+	if (c4 != c2)
+	{
+	    cout << "(transform karatsuba4 mismatch) ";
+	}
+    }
 
     cout << endl;
 }
@@ -94,7 +118,12 @@ void check()
     one_check(1000, 2, 1125899906842679);
     one_check(1000, 2, 23068673);
     one_check(1000, 2, 0);
-
+    one_check(1000, 3, 1125899906842679);
+    one_check(1000, 3, 23068673);
+    one_check(1000, 3, 0);
+    one_check(1000, 4, 1125899906842679);
+    one_check(1000, 4, 23068673);
+    one_check(1000, 4, 0);
 }  
 
 /*------------------------------------------------------------*/

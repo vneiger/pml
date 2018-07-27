@@ -229,6 +229,8 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
 void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_transform_montgomery3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_transform_karatsuba4(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
@@ -301,29 +303,29 @@ bool is_reduced (const Mat<zz_pX> &b,const std::vector<long> & shift = std::vect
 /* general user-friendly interface                            */
 /*------------------------------------------------------------*/
 // TODO: choice: output s-pivot degree or s-row degree ????
-std::vector<long> approximant_basis(
-		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & mat,
-		const std::vector<unsigned long> & order,
-		const std::vector<long> & shift = std::vector<long>(),
-		const bool canonical = true,
-		const bool row_wise = true,
-		const bool generic = false
-		);
+/* std::vector<long> approximant_basis( */
+/* 		Mat<zz_pX> & appbas, */
+/* 		const Mat<zz_pX> & mat, */
+/* 		const std::vector<unsigned long> & order, */
+/* 		const std::vector<long> & shift = std::vector<long>(), */
+/* 		const bool canonical = true, */
+/* 		const bool row_wise = true, */
+/* 		const bool generic = false */
+/* 		); */
 
-std::vector<long> approximant_basis(
-		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & mat,
-		const unsigned long order,
-		const std::vector<long> & shift = std::vector<long>(),
-		const bool canonical = true,
-		const bool row_wise = true,
-		const bool generic = false
-		)
-{
-	std::vector<unsigned long> orders(mat.NumRows(),order);
-	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
-}
+/* std::vector<long> approximant_basis( */
+/* 		Mat<zz_pX> & appbas, */
+/* 		const Mat<zz_pX> & mat, */
+/* 		const unsigned long order, */
+/* 		const std::vector<long> & shift = std::vector<long>(), */
+/* 		const bool canonical = true, */
+/* 		const bool row_wise = true, */
+/* 		const bool generic = false */
+/* 		) */
+/* { */
+/* 	std::vector<unsigned long> orders(mat.NumRows(),order); */
+/* 	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic); */
+/* } */
 
 /*------------------------------------------------------------*/
 /* Iterative algorithm for general order and shift            */

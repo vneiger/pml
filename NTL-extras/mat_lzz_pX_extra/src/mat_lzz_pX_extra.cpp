@@ -379,52 +379,6 @@ long deg(const Mat<zz_pX> & a)
 
 
 /*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/*------------------------------------------------------------*/
-void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-    long dA = deg(a);
-    long dB = deg(b);
-
-    zz_pX_Transform_naive trs_naive(max(dA, dB) + 1);
-
-    Vec<Mat<zz_p>> valA, valB, valC;
-    trs_naive.forward_left_matrix(valA, a);
-    trs_naive.forward_right_matrix(valB, b);
-
-    long len = trs_naive.transform_length();
-    valC.SetLength(len);
-    for (long i = 0; i < len; i++)
-    {
-    	mul(valC[i], valA[i], valB[i]);
-    }
-
-    trs_naive.backward_matrix(c, valC);
-}
-
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/*------------------------------------------------------------*/
-void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-    zz_pX_Transform_karatsuba trs_karatsuba = zz_pX_Transform_karatsuba();
-
-    Vec<Mat<zz_p>> valA, valB, valC;
-    trs_karatsuba.forward_left_matrix(valA, a);
-    trs_karatsuba.forward_right_matrix(valB, b);
-
-    long len = trs_karatsuba.transform_length();
-    valC.SetLength(len);
-    for (long i = 0; i < len; i++)
-    {
-    	mul(valC[i], valA[i], valB[i]);
-    }
-
-    trs_karatsuba.backward_matrix(c, valC);
-}
-
-
-/*------------------------------------------------------------*/
 /* some comment                                               */
 /*------------------------------------------------------------*/
 void check_shift(bool &shifted, const std::vector<long> &shift, const Mat<zz_pX> &pmat, const bool row_wise = true)
