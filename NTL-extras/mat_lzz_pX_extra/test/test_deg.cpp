@@ -148,9 +148,35 @@ int main(){
 	cout << "deg mat: " << endl << deg_mat << endl;
 	cout << "is_popov: " << boolalpha << is_popov(pmat) << endl;
 	
-	cout << endl << "Test shifts" << endl;
-	cout << "left shift operator: " << (pmat << 4) << endl;
-	cout << "left shift mutator: " << (pmat <<= 4) << endl;
+	cout << endl << "Test Left shifts" << endl;
+	cout << "left shift operator: " << (pmat << 2) << endl;
+	cout << "left shift mutator: " << (pmat <<= 2) << endl;
+	cout << "test procedure: " << LeftShift(pmat,2) << endl;
+	LeftShift(pmat,pmat,2);
+	cout << "test mutator: " << pmat << endl;
+	//row
+	cout << "row test procedure: " << LeftShiftRow(pmat,0,1) << endl;
+	LeftShiftRow(pmat,pmat,0,1);
+	cout << "row test mutator: " << pmat << endl;
+	//col
+	cout << "col test procedure: " << LeftShiftCol(pmat,1,2) << endl;
+	LeftShiftCol(pmat,pmat,1,2);
+	cout << "col test mutator: " << pmat << endl;
+	
+	cout << endl << "Test Right shifts" << endl;
+	cout << "left shift operator: " << (pmat >> 2) << endl;
+	cout << "left shift mutator: " << (pmat >>= 2) << endl;
+	cout << "test procedure: " << RightShift(pmat,2) << endl;
+	RightShift(pmat,pmat,2);
+	cout << "test mutator: " << pmat << endl;
+	//row
+	cout << "row test procedure: " << RightShiftRow(pmat,0,1) << endl;
+	RightShiftRow(pmat,pmat,0,1);
+	cout << "row test mutator: " << pmat << endl;
+	//col
+	cout << "col test procedure: " << RightShiftCol(pmat,1,2) << endl;
+	RightShiftCol(pmat,pmat,1,2);
+	cout << "col test mutator: " << pmat << endl;
 }
 
 
