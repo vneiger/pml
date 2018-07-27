@@ -1007,16 +1007,19 @@ std::vector<long> appbas_iterative(
 	{
 		/** Invariant:
 		 *  - appbas is a shift-ordered weak Popov approximant basis for
-		 *  (pmat,doneorder) where doneorder is the tuple such that
-		 *  doneorer + rem_order == order (componentwise sum)
+		 *  (pmat,reached_order) where doneorder is the tuple such that
+		 *  -->reached_order[j] + rem_order[j] == order[j] for j appearing in rem_index
+		 *  -->reached_order[j] == order[j] for j not appearing in rem_index
 		 *  - rdeg == the shift-row degree of appbas
-		 *  - residual == submatrix of columns (appbas * pmat)[:,j] for all j such that rem_order[j] > 0
+		 *  - residual == submatrix of columns (appbas * pmat)[:,j] for all j such that reached_order[j] < order[j]
 		 **/
 
 		long j=0; // value if columnwise (order_wise==False)
 		if (order_wise)
 		{
-			// FIXME could be valuable to simply initially permute the columns of pmat and order... then 'j' is obvious
+			// FIXME if seems to slow (e.g. compared to non-order-wise), could be
+			// valuable to simply initially permute the columns of pmat and order:
+			// then 'j' is obvious
 			j = std::distance(rem_order.begin(), std::max_element(rem_order.begin(), rem_order.end()));
 		}
 
@@ -1031,7 +1034,7 @@ std::vector<long> appbas_iterative(
 		long piv = -1;
 		for (long i = 0; i < rdim; ++i)
 		{
-			const_residual[i] = residual[i][j][deg];
+			const_residual[i] = coeff(residual[i][j],deg);
 			if (const_residual[i] != 0)
 			{
 				indices_nonzero.push_back(i);
@@ -1048,11 +1051,11 @@ std::vector<long> appbas_iterative(
 			{
 				if (row!=piv)
 				{
-					zz_p coeff = - const_residual[row] / const_residual[piv];
+					zz_p c = - const_residual[row] / const_residual[piv];
 					for (long k=0; k<rdim; ++k)
-						appbas[row][k] += coeff * appbas[piv][k];
+						appbas[row][k] += c * appbas[piv][k];
 					for (long k=0; k<residual.NumCols(); ++k)
-						residual[row][k] += coeff * residual[piv][k];
+						residual[row][k] += c * residual[piv][k];
 				}
 			}
 
@@ -1063,12 +1066,12 @@ std::vector<long> appbas_iterative(
 			for (long k=0; k<residual.NumCols(); ++k)
 			{
 				residual[piv][k] <<= 1; // row piv multiplied by X
-				residual[piv][k][order[rem_index[k]]] = 0; // truncate
+				trunc(residual[piv][k],residual[piv][k],order[rem_index[k]]); // truncate
 			}
 		}
 
 		// now column j (or rather rem_index[j] in original 'pmat') is zero mod X^(deg+1)
-		if (rem_order[j] > 1) // one less step towards order[j]
+		if (rem_order[j] > 1) // one step of progress towards order[j]
 			--rem_order[j];
 		else // rem_order[j] == 1: work completed for column j
 		{

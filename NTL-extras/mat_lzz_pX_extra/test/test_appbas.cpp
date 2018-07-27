@@ -15,20 +15,21 @@ NTL_CLIENT
 
 int main(int argc, char *argv[])
 {
-	long prime;
-	long nbits = 50;
 
-	if (argc!=4 and argc!=5)
-		throw std::invalid_argument("Usage: ./test_appbas rdim cdim deg (nbits)");
-	if (argc == 5)
-		nbits = atoi(argv[4]);
+	bool order_wise=true;
 
-	prime = NTL::GenPrime_long(nbits);
-  zz_p::init(prime);
+	if (argc!=5 && argc!=6)
+		throw std::invalid_argument("Usage: ./test_appbas rdim cdim deg nbits (order_wise)");
+	if (argc == 6)
+		order_wise = atoi(argv[5]) ? true : false;
 
 	long rdim   = atoi(argv[1]);
 	long cdim   = atoi(argv[2]);
 	long degree = atoi(argv[3]);
+	long nbits = atoi(argv[4]);
+
+	long prime = NTL::GenPrime_long(nbits);
+  zz_p::init(prime);
 
 	std::cout << "Testing approximant basis computation with random input matrix" << std::endl;
 	std::cout << "--prime =\t" << prime << std::endl;
@@ -46,12 +47,11 @@ int main(int argc, char *argv[])
 	std::cout << "Time(random mat creation): " <<
 		(std::chrono::duration<double> (end-start)).count() << "s\n";
 
-
 	start = std::chrono::system_clock::now();
 	Mat<zz_pX> appbas;
 	std::vector<long> order(cdim,degree);
 	std::vector<long> shift(rdim,0);
-	std::vector<long> rdeg = appbas_iterative(appbas,pmat,order,shift,true);
+	std::vector<long> rdeg = appbas_iterative(appbas,pmat,order,shift,order_wise);
 	end = std::chrono::system_clock::now();
 
 	std::cout << "Time(appbas computation): " <<
