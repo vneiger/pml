@@ -247,7 +247,7 @@ std::vector<long> popov_mbasis1(
 	std::vector<long> perm_shift(pmat.NumRows());
 	std::iota(perm_shift.begin(), perm_shift.end(), 0);
 	stable_sort(perm_shift.begin(), perm_shift.end(),
-					[&](const size_t& a, const size_t& b)->bool
+					[&](const long& a, const long& b)->bool
 					{
 							return (shift[a] < shift[b]);
 					} );
@@ -255,36 +255,52 @@ std::vector<long> popov_mbasis1(
 	// permute rows of pmat accordingly
 	Mat<zz_p> mat;
 	mat.SetDims(pmat.NumRows(),pmat.NumCols());
-	for (long i = 0; i < mat.NumRows(); ++i)
+	for (long i = 0; i < pmat.NumRows(); ++i)
 	//for (long j = 0; j < mat.NumRows(); ++j)
 		mat[i] = pmat[perm_shift[i]];
 
-	// find the kernel basis in row echelon form
-	Mat<zz_p> ker;
-	kernel(ker,mat);
+	// find the permuted kernel basis in row echelon form
+	Mat<zz_p> p_kerbas;
+	kernel(p_kerbas,mat);
 
-	// compute the pivot indices, and use this info to compute the output pivot degree
-	// FIXME unfortunately NTL doesn't return the pivot indices in Gaussian
-	// elimination... see if retrieving them actually takes time
-	std::vector<long> pivdeg(pmat.NumRows());
-	for (long i = 0; i < pmat.NumRows(); ++i)
+	// compute the (permuted) pivot indices
+	// FIXME unfortunately NTL doesn't return the pivot indices in Gaussian elimination
+	// elimination... investigate if retrieving them as below actually takes time
+	std::vector<long> p_pivind(p_kerbas.NumRows()); // pivot indices in permuted kernel basis
+	p_pivind.back() = p_kerbas.NumCols()-1;
+	for (long i = p_kerbas.NumRows()-1; i>=0; --i)
 	{
-		long piv=ker.NumCols();
-		while (piv>=0 && ker[i][piv]==0)
-			--piv;
-		pivdeg[piv] = 1;
+		while (p_pivind[i]>=0 && p_kerbas[i][p_pivind[i]]==0)
+			--p_pivind[i];
+		// pivot of row i-1 is always less than pivot of row i
+		if (i>0)
+			p_pivind[i-1] = p_pivind[i]-1;
+	}
+	// note: "generically", the while loop will not perform any iteration
+
+	// permute everything back to original order:
+	// prepare kernel permutation by permuting kernel pivot indices
+	// pivot degrees corresponding to kernel pivot indices are 0, others are 1
+	std::vector<long> pivdeg(pmat.NumRows(),1);
+	std::vector<long> pivind(p_kerbas.NumRows());
+	for (long i = 0; i < p_kerbas.NumRows(); ++i)
+	{
+		pivind[i] = perm_shift[p_pivind[i]];
+		pivdeg[pivind[i]] = 0;
 	}
 
-	// permute everything back to original order
-	
-	
+	std::vector<long> perm_rows_ker(p_kerbas.NumRows());
+	std::iota(perm_rows_ker.begin(), perm_rows_ker.end(), 0);
+	sort(perm_rows_ker.begin(), perm_rows_ker.end(),
+					[&](const long& a, const long& b)->bool
+					{
+							return (pivind[a] < pivind[b]);
+					} );
 
-	//	// FIXME remove this debug
-	//	std::cout << "shift\n" << perm_shift << std::endl;
-	//	std::cout << "input\n" << pmat << std::endl;
-	//	std::cout << "permuted\n" << mat << std::endl;
-	//	std::cout << "kernel\n" << ker << std::endl;
-	//	std::cout << "pivdegs\n" << pivdeg << std::endl;
+	kerbas.SetDims(p_kerbas.NumRows(),p_kerbas.NumCols());
+	for (long i = 0; i < kerbas.NumRows(); ++i)
+		for (long j = 0; j < kerbas.NumCols(); ++j)
+			kerbas[i][perm_shift[j]] = p_kerbas[perm_rows_ker[i]][j];
 
 	return pivdeg;
 }
