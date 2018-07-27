@@ -54,3 +54,115 @@ void zz_pX_Transform_karatsuba::backward(zz_pX& P, const Vec<zz_p>& val) const
 }
 
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* Montgomery for 3 input terms                               */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* constructor                                                */
+/*------------------------------------------------------------*/
+zz_pX_Transform_montgomery3::zz_pX_Transform_montgomery3()
+{
+    m = 3;
+    n = 6;
+}
+
+/*------------------------------------------------------------*/
+/* cf. Montgomery Section 2, C=X                              */
+/*------------------------------------------------------------*/
+void zz_pX_Transform_montgomery3::forward_left(Vec<zz_p>& val, const zz_pX& P) const
+{
+    val.SetLength(6);
+    const zz_p a0 = coeff(P, 0);    
+    const zz_p a1 = coeff(P, 1);
+    const zz_p a2 = coeff(P, 2);
+    val[0] = a0;
+    val[1] = a1;
+    val[2] = a2;
+    val[3] = a0+a2;
+    zz_p s = a1+a2;
+    val[4] = s;
+    val[5] = a0+s;
+}
+
+/*------------------------------------------------------------*/
+/* cf. Montgomery Section 2, C=X                              */
+/*------------------------------------------------------------*/
+void zz_pX_Transform_montgomery3::backward(zz_pX& P, const Vec<zz_p>& val) const
+{
+    const zz_p s = val[2]-val[3];
+    SetCoeff(P, 0, val[0]);
+    SetCoeff(P, 1, s-val[4]+val[5]);
+    SetCoeff(P, 2, val[1]-val[0]-s);
+    SetCoeff(P, 3, val[4]-val[1]-val[2]);
+    SetCoeff(P, 4, val[2]);
+}
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* Karatsuba for 4 input terms                                */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* constructor                                                */
+/*------------------------------------------------------------*/
+zz_pX_Transform_karatsuba4::zz_pX_Transform_karatsuba4()
+{
+    m = 4;
+    n = 9;
+}
+
+/*------------------------------------------------------------*/
+/* 2 rounds of karatsuba                                      */
+/*------------------------------------------------------------*/
+void zz_pX_Transform_karatsuba4::forward_left(Vec<zz_p>& val, const zz_pX& P) const
+{
+    val.SetLength(9);
+    const zz_p a0 = coeff(P, 0);    
+    const zz_p a1 = coeff(P, 1);
+    const zz_p a2 = coeff(P, 2);
+    const zz_p a3 = coeff(P, 3);
+
+    val[0] = a0;
+    val[1] = a1;
+    val[2] = a0 + a1;
+    val[3] = a2;
+    val[4] = a3;
+    val[5] = a2 + a3;
+    const zz_p s1 = a0 + a2;
+    const zz_p s2 = a1 + a3;
+    val[6] = s1;
+    val[7] = s2;
+    val[8] = s1 + s2;
+}
+
+/*------------------------------------------------------------*/
+/* 2 rounds of karatsuba                                      */
+/*------------------------------------------------------------*/
+void zz_pX_Transform_karatsuba4::backward(zz_pX& P, const Vec<zz_p>& val) const
+{
+    P.rep.SetLength(7);
+    zz_p * coeffs = P.rep.elts();
+    coeffs[0] = val[0];
+    coeffs[1] = val[2] - val[0] - val[1];
+    const zz_p s = val[1] - val[3];
+    coeffs[2] = s + val[6] - val[0];
+    coeffs[4] = val[7] - val[4] - s;
+    coeffs[5] = val[5] - val[3] - val[4];
+    coeffs[6] = val[4];
+    coeffs[3] = val[8] - (coeffs[1] + coeffs[5] + val[6] + val[7]);
+    P.normalize();
+// d0:=v0;
+// d1:=v2-v0-v1;
+// s:=v1-v3;
+// d2:=s+v6-v0;
+// d4:=v7-v4-s;
+// d5:=v5-v3-v4;
+// d6:=v4;
+// d3:=v8-(d1+d5+v6+v7);
+
+}
+
