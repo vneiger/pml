@@ -335,17 +335,73 @@ std::vector<long> mbasis(
 		pivdeg = popov_mbasis1(kerbas,residual,rdeg);
 
 		// update approximant basis
-		for (long i = 0; i < appbas.NumRows(); ++i) {
-			if (pivdeg[i]==1) {
+		// rows with pivdeg=1 are simply multiplied by X
+		for (long i = 0; i < appbas.NumRows(); ++i)
+			if (pivdeg[i]==1)
 				LeftShiftRow(appbas,appbas,i,1);
-			} else {
-				
-			}
-		}
+		// submatrix of rows with pivdeg=0 is left-multiplied by kerbas
 
 		// find new residual
-		
-		// TODO: other option with continuous full update of pmat
+
+		// new shifted row degree = old rdeg + pivdeg  (entrywise)
+		std::transform(rdeg.begin(), rdeg.end(), pivdeg.begin(), rdeg.begin(), std::plus<long>());
+	}
+
+	std::transform(rdeg.begin(),rdeg.end(),shift.begin(),rdeg.begin(),std::minus<long>());
+	return rdeg;
+}
+
+// variant with continuous update of the residual
+std::vector<long> mbasis_resupdate(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
+		)
+{
+	// initially, appbas is the identity matrix
+	appbas.SetDims(pmat.NumRows(),pmat.NumRows());
+	for (long i = 0; i < appbas.NumRows(); ++i)
+		SetCoeff(appbas[i][i],0);
+
+	// holds the current shifted row degree of appbas
+	// initially, this is exactly shift
+	std::vector<long> rdeg( shift );
+
+	// temporary buffer for local pivdegs at each mbasis1 call
+	std::vector<long> pivdeg(pmat.NumRows());
+
+	// matrix to store the kernels in mbasis1 calls
+	Mat<zz_p> kerbas;
+	// matrix to store the residual, initially equal to pmat
+	Mat<zz_pX> residual( pmat );
+
+	for (long ord = 1; ord <= order; ++ord)
+	{
+		// call MBasis1 to retrieve kernel and pivdeg
+		pivdeg = popov_mbasis1(kerbas,coeff(residual,0),rdeg);
+
+		// update approximant basis
+		// rows with pivdeg=1 are simply multiplied by X
+		for (long i = 0; i < appbas.NumRows(); ++i)
+			if (pivdeg[i]==1)
+				LeftShiftRow(appbas,appbas,i,1);
+		// submatrix of rows with pivdeg=0 is left-multiplied by kerbas
+
+		// update residual so that it remains equal to X^(-ord) appbas*pmat mod X^(order-ord)
+		if (false)
+		{
+			// rows with pivdeg=1 are simply multiplied by X
+			for (long i = 0; i < pmat.NumRows(); ++i)
+			{
+				if (pivdeg[i]==0)
+				{
+					RightShiftRow(residual,residual,i,1);
+				}
+				//truncate all rows to ord-1
+			}
+			// submatrix of rows with pivdeg=0 is left-multiplied by kerbas
+		}
 
 		// new shifted row degree = old rdeg + pivdeg  (entrywise)
 		std::transform(rdeg.begin(), rdeg.end(), pivdeg.begin(), rdeg.begin(), std::plus<long>());
