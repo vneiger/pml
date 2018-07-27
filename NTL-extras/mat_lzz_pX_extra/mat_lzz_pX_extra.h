@@ -29,12 +29,21 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
 //void SetCoeff(zz_pX& x, long i);
 // makes coefficient of X^i equal to 1;  error is raised if i < 0
 
-//TODO : left and right shifts (multiplication/division by powers of X),
-//for all the matrix or some columns/rows of it
-
 //TODO : truncate mod X^... , for all the matrix or some columns/rows of it
 //void trunc(zz_pX& x, const zz_pX& a, long n); // x = a % X^n
 //zz_pX trunc(const zz_pX& a, long n);
+// full matrix versions
+void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
+Mat<zz_pX> trunc(const Mat<zz_pX>& a, long n);
+
+// row versions
+void truncRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, long r, long n);
+Mat<zz_pX> truncRow(const Mat<zz_pX>& a, long r, long n);
+
+// col versions
+void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c, long n);
+Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n);
+
 
 //TODO: multiply row or column of matrix (vec_lzz_pX) by constant
 
@@ -81,10 +90,7 @@ void LeftShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
 Mat<zz_pX> LeftShiftCol(const Mat<zz_pX>& a, const long c, long n);
 
 
-//
-//void RightShift(zz_pX& x, const zz_pX& a, long n);
-//zz_pX RightShift(const zz_pX& a, long n);
-// full matrix left shifts
+// full matrix right shifts
 void RightShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
 Mat<zz_pX> RightShift(const Mat<zz_pX>& a, long n);
 

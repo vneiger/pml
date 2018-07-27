@@ -177,6 +177,21 @@ int main(){
 	cout << "col test procedure: " << RightShiftCol(pmat,1,2) << endl;
 	RightShiftCol(pmat,pmat,1,2);
 	cout << "col test mutator: " << pmat << endl;
+	
+	cout << endl << "Test trunc" << endl;
+	cout << "trunc: " << trunc(pmat,4) << endl;
+	trunc(pmat,pmat,4);
+	cout << "mutator trunc: " << pmat << endl;
+	
+	cout << endl << "Test trunc row" << endl;
+	cout << "trunc: " << truncRow(pmat,0,2) << endl;
+	truncRow(pmat,pmat,0,2);
+	cout << "mutator trunc: " << pmat << endl;
+	
+	cout << endl << "Test trunc col" << endl;
+	cout << "trunc: " << truncCol(pmat,1,1) << endl;
+	truncCol(pmat,pmat,1,1);
+	cout << "mutator trunc: " << pmat << endl;
 }
 
 
