@@ -635,7 +635,6 @@ void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat,
 
 	// compute minimum shift entry (will be used for degree of zero entries of b)
 	long min_shift = (shifted ? *std::min_element(shift.begin(),shift.end()) : 0);
-
 	// set the dimensions of degmat and populate it with degrees
 	degmat.SetDims(pmat.NumRows(), pmat.NumCols());
 	for (long i = 0; i < pmat.NumRows(); i++)
@@ -645,7 +644,7 @@ void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat,
 			degmat[i][j] = deg(pmat[i][j]);
 			if (shifted)
 			{
-				if (pmat[i][j] == -1)
+				if (degmat[i][j] == -1)
 				{
 					degmat[i][j] += min_shift;
 				}
@@ -926,6 +925,7 @@ bool is_popov (const Mat<zz_pX> &m, const Vec<long> &shift = Vec<long>(), const 
 	Vec<long> pivots;
 	Vec<long degree = pivot_index(pivots, b, shift, row_wise);
 }
+*/
 
 Mat<zz_pX> identity_matrix(const long n){
 	Mat<zz_pX> res;
@@ -946,4 +946,4 @@ weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &m, Vec<long> shift=Vec<long>(
 	}
 	
 }
-*/
+

@@ -12,8 +12,8 @@ template<typename T>
 void printVec(std::vector<T> const &input)
 {
 	std::cout << '[';
-	for (auto elt : input) {
-		std::cout << elt << ", ";
+	for (auto &elt : input) {
+		std::cout << elt << " ";
 	}
 	std::cout << ']' << std::endl;
 }
