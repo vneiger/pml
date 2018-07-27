@@ -16,16 +16,62 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* print vector                                               */
+/* print vector -- move elsewhere ???                         */
 /*------------------------------------------------------------*/
 std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
 
+//TODO equivalents of those:
+//const zz_p coeff(const zz_pX& a, long i);
+// returns the coefficient of X^i, or zero if i not in range
+//void SetCoeff(zz_pX& x, long i, zz_p a);
+//void SetCoeff(zz_pX& x, long i, long a);
+// makes coefficient of X^i equal to a; error is raised if i < 0
+//void SetCoeff(zz_pX& x, long i);
+// makes coefficient of X^i equal to 1;  error is raised if i < 0
+
 //TODO : left and right shifts (multiplication/division by powers of X),
 //for all the matrix or some columns/rows of it
-//
+
 //TODO : truncate mod X^... , for all the matrix or some columns/rows of it
+//void trunc(zz_pX& x, const zz_pX& a, long n); // x = a % X^n
+//zz_pX trunc(const zz_pX& a, long n);
 
 //TODO: multiply row or column of matrix (vec_lzz_pX) by constant
+
+/**************************************************************************\
+
+                               Shift Operations
+
+LeftShift by n means multiplication by X^n
+RightShift by n means division by X^n
+
+A negative shift amount reverses the direction of the shift.
+
+\**************************************************************************/
+
+// operator notation:
+
+//zz_pX operator<<(const zz_pX& a, long n);
+//zz_pX operator>>(const zz_pX& a, long n);
+//
+//zz_pX& operator<<=(zz_pX& x, long n);
+//zz_pX& operator>>=(zz_pX& x, long n);
+//
+//// procedural versions:
+//
+//void LeftShift(zz_pX& x, const zz_pX& a, long n);
+//zz_pX LeftShift(const zz_pX& a, long n);
+//
+//void RightShift(zz_pX& x, const zz_pX& a, long n);
+//zz_pX RightShift(const zz_pX& a, long n);
+
+//void reverse(zz_pX& x, const zz_pX& a, long hi);
+//zz_pX reverse(const zz_pX& a, long hi);
+//
+//void reverse(zz_pX& x, const zz_pX& a);
+//zz_pX reverse(const zz_pX& a);
+// x = reverse of a[0]..a[hi] (hi >= -1);
+// hi defaults to deg(a) in second version
 
 
 /*------------------------------------------------------------*/
