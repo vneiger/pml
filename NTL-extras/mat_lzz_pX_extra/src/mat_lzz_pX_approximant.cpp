@@ -364,6 +364,8 @@ std::vector<long> mbasis_resupdate(
 	for (long i = 0; i < appbas.NumRows(); ++i)
 		SetCoeff(appbas[i][i],0);
 
+	std::cout << "ok1" << std::endl;
+
 	// holds the current shifted row degree of appbas
 	// initially, this is exactly shift
 	std::vector<long> rdeg( shift );
@@ -380,6 +382,7 @@ std::vector<long> mbasis_resupdate(
 	{
 		// call MBasis1 to retrieve kernel and pivdeg
 		pivdeg = popov_mbasis1(kerbas,coeff(residual,0),rdeg);
+		std::cout << "ok2" << std::endl;
 
 		// update approximant basis
 		// rows with pivdeg=1 are simply multiplied by X
@@ -389,6 +392,7 @@ std::vector<long> mbasis_resupdate(
 		// submatrix of rows with pivdeg=0 is replaced by kerbas*appbas
 		Mat<zz_pX> kerapp;
 		mul(kerapp,kerbas,appbas);
+		std::cout << "okmul" << std::endl;
 		long row=0;
 		// TODO have function to copy into submatrix??
 		for (long i = 0; i < appbas.NumRows(); ++i)
@@ -399,35 +403,34 @@ std::vector<long> mbasis_resupdate(
 				++row;
 			}
 		}
+		std::cout << "ok3" << std::endl;
 
 		// update residual so that it remains equal to X^(-ord) appbas*pmat mod X^(order-ord)
-		if (false)
+		// rows with pivdeg=1 are simply multiplied by X
+		for (long i = 0; i < pmat.NumRows(); ++i)
 		{
-			// rows with pivdeg=1 are simply multiplied by X
-			for (long i = 0; i < pmat.NumRows(); ++i)
+			if (pivdeg[i]==0)
 			{
-				if (pivdeg[i]==0)
-				{
-					RightShiftRow(residual,residual,i,1);
-				}
-				//truncate all rows mod X^(order-ord)
-				trunc(residual,residual,order-ord);
+				RightShiftRow(residual,residual,i,1);
 			}
-			// submatrix of rows with pivdeg=0 is replaced by kerbas*residual
-			Mat<zz_pX> kerres;
-			mul(kerres,kerbas,residual);
-			row=0;
-			// TODO have function to copy into submatrix??
-			for (long i = 0; i < residual.NumRows(); ++i)
+			//truncate all rows mod X^(order-ord)
+			trunc(residual,residual,order-ord);
+		}
+		// submatrix of rows with pivdeg=0 is replaced by kerbas*residual
+		Mat<zz_pX> kerres;
+		mul(kerres,kerbas,residual);
+		row=0;
+		// TODO have function to copy into submatrix??
+		for (long i = 0; i < residual.NumRows(); ++i)
+		{
+			if (pivdeg[i]==0)
 			{
-				if (pivdeg[i]==0)
-				{
-					residual[i] = kerres[row];
-					++row;
-				}
+				residual[i] = kerres[row];
+				++row;
 			}
 		}
 
+		std::cout << "ok4" << std::endl;
 		// new shifted row degree = old rdeg + pivdeg  (entrywise)
 		std::transform(rdeg.begin(), rdeg.end(), pivdeg.begin(), rdeg.begin(), std::plus<long>());
 	}
