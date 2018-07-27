@@ -59,8 +59,13 @@ int main(int argc, char *argv[])
 	std::cout << "Time(appbas computation): " <<
 		(std::chrono::duration<double> (end-start)).count() << "s\n";
 
-	std::cout << "Is ordered weak Popov approximant basis? --> " << std::endl;
-	std::cout << is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false) << std::endl;
+	std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
+	start = std::chrono::system_clock::now();
+	bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
+	end = std::chrono::system_clock::now();
+	std::cout << (verif?"correct":"wrong") << std::endl;
+	std::cout << "Time(verification): " <<
+		(std::chrono::duration<double> (end-start)).count() << "s\n";
 
 	Mat<zz_pX> residual;
 	multiply_naive(residual,appbas,pmat);
