@@ -51,16 +51,36 @@ A negative shift amount reverses the direction of the shift.
 
 // operator notation:
 
+// full matrix, 1 row, 1 col
+
 //zz_pX operator<<(const zz_pX& a, long n);
+// full matrix shift
+Mat<zz_pX> operator<< (const Mat<zz_pX> &a, long n);
+
 //zz_pX operator>>(const zz_pX& a, long n);
+Mat<zz_pX> operator>> (const Mat<zz_pX> &a, long n);
+
 //
 //zz_pX& operator<<=(zz_pX& x, long n);
+Mat<zz_pX>& operator<<=(Mat<zz_pX>& x, long n);
 //zz_pX& operator>>=(zz_pX& x, long n);
-//
+Mat<zz_pX>& operator>>=(Mat<zz_pX>& x, long n);
+
 //// procedural versions:
-//
-//void LeftShift(zz_pX& x, const zz_pX& a, long n);
-//zz_pX LeftShift(const zz_pX& a, long n);
+
+// full matrix left shifts
+void LeftShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
+Mat<zz_pX> LeftShift(const Mat<zz_pX>& a, long n);
+
+// single row shifts
+void LeftShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n);
+Mat<zz_pX> LeftShiftRow(const Mat<zz_pX>& a, const long r, long n);
+
+// single col shifts
+void LeftShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
+Mat<zz_pX> LeftShiftCol(const Mat<zz_pX>& a, const long c, long n);
+
+
 //
 //void RightShift(zz_pX& x, const zz_pX& a, long n);
 //zz_pX RightShift(const zz_pX& a, long n);

@@ -25,6 +25,71 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
 	return out << "]";
 }
 
+/*------------------------------------------------------------*/
+/* operators                                                  */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+Mat<zz_pX>& operator<<=(Mat<zz_pX>& x, long n){
+	for (long r = 0; r < x.NumRows(); r++)
+		for (long c = 0; c < x.NumCols(); c++)
+			x[r][c] <<= n;
+	return x;
+}
+
+Mat<zz_pX>& operator>>=(Mat<zz_pX>& x, long n){
+	for (long r = 0; r < x.NumRows(); r++)
+		for (long c = 0; c < x.NumCols(); c++)
+			x[r][c] >>= n;
+	return x;
+}
+
+Mat<zz_pX> operator<< (const Mat<zz_pX> &a, long n){
+	Mat<zz_pX> res{a};
+	res <<= n;
+	return res;
+}
+
+Mat<zz_pX> operator>> (const Mat<zz_pX> &a, long n){
+	Mat<zz_pX> res{a};
+	res >>= n;
+	return res;
+}
+
+void LeftShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n){
+	x = a << n;
+}
+
+Mat<zz_pX> LeftShift(const Mat<zz_pX>& a, long n){
+	return a << n;
+}
+
+void LeftShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n){
+	x = a;
+	for (long c = 0; c < x.NumCols(); c++)
+		x[r][c] <<= n;
+}
+
+Mat<zz_pX> LeftShiftRow(const Mat<zz_pX>& a, const long r, long n){
+	auto x = a;
+	for (long c = 0; c < x.NumCols(); c++)
+		x[r][c] <<= n;
+	return x;
+}
+
+void LeftShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n){
+	x = a;
+	for (long r = 0; r < x.NumRows(); r++)
+		x[r][c] <<= n;
+}
+
+Mat<zz_pX> LeftShiftCow(const Mat<zz_pX>& a, const long c, long n){
+	auto x = a;
+	for (long r = 0; r < x.NumCols(); r++)
+		x[r][c] <<= n;
+	return x;
+}
+
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -783,10 +848,9 @@ PolMatForm get_polmatform(
 		const bool row_wise
 		)
 {
-	//if (is_popov()) {   // TODO waiting for is_popov
-	//	return POPOV;
-	//}
-	//else // same as below
+	if (is_popov(pmat,shift,row_wise)) {   // TODO waiting for is_popov
+		return POPOV;
+	}
 	if (is_weak_popov(pmat,shift,row_wise,true))
 		return ORD_WEAK_POPOV;
 	else if (is_weak_popov(pmat,shift,row_wise))
@@ -810,7 +874,7 @@ bool is_polmatform(
 		case REDUCED: return is_reduced(pmat,shift,row_wise);
 		case WEAK_POPOV: return is_weak_popov(pmat,shift,row_wise,false);
 		case ORD_WEAK_POPOV: return is_weak_popov(pmat,shift,row_wise,true);
-		//case POPOV: return is_popov(pmat,shift,row_wise); // TODO
+		case POPOV: return is_popov(pmat,shift,row_wise);
 		default: throw std::invalid_argument("==is_polmatform== Unknown required polynomial matrix form.");
 	}
 }

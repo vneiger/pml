@@ -125,6 +125,48 @@ int main(){
 	printVec(pivind);
 	printVec(pivdeg);
 
-	cout << "popov? " << is_weak_popov(pmat,rs) << endl;
-	cout << "ordered popov? " << is_weak_popov(pmat,rs,true,true) << endl;
+	cout << "weak popov? " << is_weak_popov(pmat,rs) << endl;
+	cout << "weak ordered popov? " << is_weak_popov(pmat,rs,true,true) << endl;
+	
+	cout << endl << "testing is_popov" << endl;
+	pmat.SetDims(3,3);
+	pmat[0][0] = random_zz_pX(5);
+	pmat[0][1] = random_zz_pX(2);
+	pmat[0][2] = random_zz_pX(1);
+	pmat[1][0] = random_zz_pX(3);
+	pmat[1][1] = random_zz_pX(3);
+	pmat[1][2] = random_zz_pX(1);
+	pmat[2][0] = random_zz_pX(2);
+	pmat[2][1] = random_zz_pX(2);
+	pmat[2][2] = random_zz_pX(0);
+	MakeMonic(pmat[0][0]);
+	MakeMonic(pmat[1][0]);
+	MakeMonic(pmat[1][1]);
+	MakeMonic(pmat[2][2]);
+	cout << "pmat: " << endl << pmat << endl;
+	degree_matrix(deg_mat, pmat);
+	cout << "deg mat: " << endl << deg_mat << endl;
+	cout << "is_popov: " << boolalpha << is_popov(pmat) << endl;
+	
+	cout << endl << "Test shifts" << endl;
+	cout << "left shift operator: " << (pmat << 4) << endl;
+	cout << "left shift mutator: " << (pmat <<= 4) << endl;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
