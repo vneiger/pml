@@ -54,31 +54,36 @@ int main(int argc, char *argv[])
 	else
 		std::cout << "length " << shift.size() << std::endl;
 
+	double t1,t2;
+
 	// build random matrix
   Mat<zz_pX> pmat;
-	auto start = std::chrono::system_clock::now();
+	t1 = GetWallTime();
   random_mat_zz_pX(pmat, rdim, cdim, order);
-	auto end = std::chrono::system_clock::now();
+	t2 = GetWallTime();
 
-	std::cout << "Time(random mat creation): " <<
-		(std::chrono::duration<double> (end-start)).count() << "s\n";
+	std::cout << "Time(random mat creation): " << (t2-t1) << "s\n";
+
+	// to warm up
+	Mat<zz_p> kerbas;
+	std::vector<long> pivdeg;
+	for (long i = 0; i < 5; ++i) {
+		pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
+	}
 
 	std::cout << "~~~Testing popov_mbasis1 on constant matrix~~~" << std::endl;
-	start = std::chrono::system_clock::now();
-	Mat<zz_p> kerbas;
-	std::vector<long> pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
-	end = std::chrono::system_clock::now();
-	std::cout << "Time(popov_mbasis1 computation): " <<
-		(std::chrono::duration<double> (end-start)).count() << "s\n";
+	t1 = GetWallTime();
+	pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
+	t2 = GetWallTime();
+	std::cout << "Time(popov_mbasis1 computation): " << (t2-t1) << "s\n";
 
 	Mat<zz_p> mat;
   mat = random_mat_zz_p(rdim, cdim);
-	start = std::chrono::system_clock::now();
+	t1 = GetWallTime();
 	Mat<zz_p> kerbas2;
 	kernel(kerbas2,mat);
-	end = std::chrono::system_clock::now();
-	std::cout << "Time(kernel same size): " <<
-		(std::chrono::duration<double> (end-start)).count() << "s\n";
+	t2 = GetWallTime();
+	std::cout << "Time(kernel same size): " << (t2-t1) << "s\n";
 
 	if (verify)
 	{
@@ -97,7 +102,6 @@ int main(int argc, char *argv[])
 
 		std::cout << "Verifying Popov approximant basis..." << std::endl;
 		bool verif1 = is_approximant_basis(appbas1,pmat,1,shift,POPOV,true,false);
-		end = std::chrono::system_clock::now();
 		std::cout << (verif1?"correct":"wrong") << std::endl;
 
 		if (std::max(rdim,cdim)<33) {
@@ -111,23 +115,20 @@ int main(int argc, char *argv[])
   // mbasis_resupdate
 	{
 		std::cout << "~~~Testing mbasis_resupdate~~~" << std::endl;
-		start = std::chrono::system_clock::now();
+		t1 = GetWallTime();
 		Mat<zz_pX> appbas;
 		pivdeg = mbasis_resupdate(appbas,pmat,order,shift);
-		end = std::chrono::system_clock::now();
+		t2 = GetWallTime();
 
 		std::cout << "Time(mbasis_resupdate computation): " <<
-			(std::chrono::duration<double> (end-start)).count() << "s\n";
+			(t2-t1) << "s\n";
 
 		if (verify)
 		{
 			std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
-			start = std::chrono::system_clock::now();
 			bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
-			end = std::chrono::system_clock::now();
 			std::cout << (verif?"correct":"wrong") << std::endl;
-			std::cout << "Time(verification): " <<
-				(std::chrono::duration<double> (end-start)).count() << "s\n";
+			std::cout << "Time(verification): " << (t2-t1) << "s\n";
 		}
 
 		if (rdim*cdim*order < 100)
@@ -151,23 +152,21 @@ int main(int argc, char *argv[])
 	// mbasis "normal" update
 	{
 		std::cout << "~~~Testing mbasis~~~" << std::endl;
-		start = std::chrono::system_clock::now();
+		t1 = GetWallTime();
 		Mat<zz_pX> appbas;
 		pivdeg = mbasis(appbas,pmat,order,shift);
-		end = std::chrono::system_clock::now();
+		t2 = GetWallTime();
 
-		std::cout << "Time(mbasis computation): " <<
-			(std::chrono::duration<double> (end-start)).count() << "s\n";
+		std::cout << "Time(mbasis computation): " << (t2-t1) << "s\n";
 
 		if (verify)
 		{
 			std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
-			start = std::chrono::system_clock::now();
+			t1 = GetWallTime();
 			bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
-			end = std::chrono::system_clock::now();
+			t2 = GetWallTime();
 			std::cout << (verif?"correct":"wrong") << std::endl;
-			std::cout << "Time(verification): " <<
-				(std::chrono::duration<double> (end-start)).count() << "s\n";
+			std::cout << "Time(verification): " << (t2-t1) << "s\n";
 		}
 
 		if (rdim*cdim*order < 100)
