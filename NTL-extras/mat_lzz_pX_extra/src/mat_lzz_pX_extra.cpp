@@ -409,8 +409,8 @@ void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
 /* scalar multiplication                                      */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_p & b){
-
+void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_p & b)
+{
     long m = a.NumRows();
     long n = a.NumCols();
 

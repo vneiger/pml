@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 		std::cout << "length " << shift.size() << std::endl;
 
 	// build random matrix
-  Mat<zz_pX> pmat,pmat2;
+  Mat<zz_pX> pmat;
 	auto start = std::chrono::system_clock::now();
   random_mat_zz_pX(pmat, rdim, cdim, order);
 	auto end = std::chrono::system_clock::now();
@@ -71,50 +71,41 @@ int main(int argc, char *argv[])
 	std::cout << "Time(popov_mbasis1 computation): " <<
 		(std::chrono::duration<double> (end-start)).count() << "s\n";
 
-  random_mat_zz_pX(pmat2, rdim, cdim, order);
+	Mat<zz_p> mat;
+  mat = random_mat_zz_p(rdim, cdim);
 	start = std::chrono::system_clock::now();
 	Mat<zz_p> kerbas2;
-	kernel(kerbas2,coeff(pmat2,0));
+	kernel(kerbas2,mat);
 	end = std::chrono::system_clock::now();
 	std::cout << "Time(kernel same size): " <<
 		(std::chrono::duration<double> (end-start)).count() << "s\n";
 
-	Mat<zz_pX> appbas1;
-	appbas1.SetDims(rdim,rdim);
-	long row=0;
-	for (long i = 0; i < rdim; ++i) {
-		if (pivdeg[i]==0) {
-			for (long j = 0; j < rdim; ++j)
-				appbas1[i][j] = kerbas[row][j];
-			++row;
-		} else {
-			SetX(appbas1[i][i]);
-		}
-	}
-
 	if (verify)
 	{
+		Mat<zz_pX> appbas1;
+		appbas1.SetDims(rdim,rdim);
+		long row=0;
+		for (long i = 0; i < rdim; ++i) {
+			if (pivdeg[i]==0) {
+				for (long j = 0; j < rdim; ++j)
+					appbas1[i][j] = kerbas[row][j];
+				++row;
+			} else {
+				SetX(appbas1[i][i]);
+			}
+		}
+
 		std::cout << "Verifying Popov approximant basis..." << std::endl;
 		bool verif1 = is_approximant_basis(appbas1,pmat,1,shift,POPOV,true,false);
 		end = std::chrono::system_clock::now();
 		std::cout << (verif1?"correct":"wrong") << std::endl;
-	}
 
-	if (rdim*cdim*order < 100)
-	{
-		std::cout << "Print output approx basis..." << std::endl;
-		std::cout << appbas1 << std::endl;
-		std::cout << "Print final residual..." << std::endl;
-		Mat<zz_pX> residual1;
-		multiply_naive(residual1,appbas1,pmat);
-		std::cout << residual1 << std::endl;
-	}
-
-	if (std::max(rdim,cdim)<33) {
-		Mat<long> degmat;
-		degree_matrix(degmat,appbas1,shift,true);
-		std::cout << "Print degree matrix of approx basis..." << std::endl;
-		std::cout << degmat << std::endl;
+		if (std::max(rdim,cdim)<33) {
+			Mat<long> degmat;
+			degree_matrix(degmat,appbas1,shift,true);
+			std::cout << "Print degree matrix of approx basis..." << std::endl;
+			std::cout << degmat << std::endl;
+		}
 	}
 
   // mbasis_resupdate

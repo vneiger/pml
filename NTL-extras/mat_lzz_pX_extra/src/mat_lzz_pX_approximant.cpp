@@ -264,6 +264,8 @@ std::vector<long> popov_mbasis1(
 	kernel(p_kerbas,mat);
 	if (p_kerbas.NumRows()==0)
 		return std::vector<long>(pmat.NumRows(),1);
+	if (p_kerbas.NumRows()==pmat.NumRows())
+		return std::vector<long>(pmat.NumRows(),0);
 
 	// compute the (permuted) pivot indices
 	// FIXME unfortunately NTL doesn't return the pivot indices in Gaussian elimination
@@ -328,15 +330,22 @@ std::vector<long> mbasis(
 	// (note that at all times pivdeg+shift = rdeg entrywise)
 	std::vector<long> pivdeg(pmat.NumRows());
 
+	// will store the pivot degree at each call of mbasis1
+	std::vector<long> diff_pivdeg;
+
 	// matrix to store the kernels in mbasis1 calls
 	Mat<zz_p> kerbas;
 	// matrix to store residuals, initially constant coeff of pmat
 	Mat<zz_p> residual( coeff(pmat,0) );
 
+	// declare matrices
+	Mat<zz_p> res_coeff,res_coeff1,res_coeff2; // will store coefficient matrices used to compute the residual
+	Mat<zz_pX> kerapp; // will store constant-kernel * appbas
+
 	for (long ord = 1; ord <= order; ++ord)
 	{
 		// call MBasis1 to retrieve kernel and pivdeg
-		std::vector<long> diff_pivdeg = popov_mbasis1(kerbas,residual,rdeg);
+		diff_pivdeg = popov_mbasis1(kerbas,residual,rdeg);
 
 		if (kerbas.NumRows()==0)
 		{
@@ -365,7 +374,6 @@ std::vector<long> mbasis(
 			// II/ update approximant basis
 
 			// submatrix of rows with diff_pivdeg==0 is replaced by kerbas*appbas
-			Mat<zz_pX> kerapp;
 			mul(kerapp,kerbas,appbas);
 			long row=0;
 			// TODO have function to copy into submatrix??
@@ -386,7 +394,10 @@ std::vector<long> mbasis(
 			residual = coeff(appbas,0) * coeff(pmat,ord);
 			for (long d = 1; d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
 			{
-				residual += coeff(appbas,d) * coeff(pmat,ord-d);
+				res_coeff1 = coeff(appbas,d);
+				res_coeff2 = coeff(pmat,ord-d);
+				mul(res_coeff, res_coeff1, res_coeff2);
+				add(residual, residual, res_coeff);
 			}
 		}
 	}
@@ -419,8 +430,16 @@ std::vector<long> mbasis_resupdate(
 
 	// matrix to store the kernels in mbasis1 calls
 	Mat<zz_p> kerbas;
+
+	// matrix to temporarily store constant coeff of residual
+	Mat<zz_p> res_const;
+
+	// matrices which will be constant-kernel*appbas and constant-kernel*residual
+	Mat<zz_pX> kerapp,kerres;
+
 	// matrix to store the residual, initially equal to pmat
 	Mat<zz_pX> residual( pmat );
+
 
 	for (long ord = 1; ord <= order; ++ord)
 	{
@@ -446,7 +465,6 @@ std::vector<long> mbasis_resupdate(
 		{
 			// update approximant basis
 			// submatrix of rows with pivdeg=0 is replaced by kerbas*appbas
-			Mat<zz_pX> kerapp;
 			mul(kerapp,kerbas,appbas);
 			long row=0;
 			// TODO have function to copy into submatrix??
@@ -465,10 +483,9 @@ std::vector<long> mbasis_resupdate(
 
 			// update residual so that it remains equal to X^(-ord) appbas*pmat mod X^(order-ord)
 			// keep the constant matrix as a temp, and shift residual = X^(-1) residual
-			Mat<zz_p> res_const( coeff(residual,0) );
+			GetCoeff(res_const, residual, 0);
 			residual >>= 1;
 			// submatrix of rows with pivdeg=0 is replaced by kerbas*residual
-			Mat<zz_pX> kerres;
 			mul(kerres,kerbas,residual);
 			row=0;
 			// TODO have function to copy into submatrix??
