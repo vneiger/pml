@@ -445,9 +445,9 @@ std::vector<long> mbasis_resupdate(
 	// matrices which will be constant-kernel*appbas and constant-kernel*residual
 	Mat<zz_pX> kerapp,kerres;
 
-	// matrix to store the residual, initially equal to pmat
-	Mat<zz_pX> residual( pmat );
-
+	// matrix to store the residual, initially equal to pmat mod X^order
+	Mat<zz_pX> residual;
+	trunc(residual,pmat,order);
 
 	for (long ord = 1; ord <= order; ++ord)
 	{
@@ -556,23 +556,39 @@ std::vector<long> pmbasis(
 		const std::vector<long> & shift
 		)
 {
-	if (order <= PMBASIS_THRESHOLD)
+	// TODO thresholds to be determined:
+	//  --> from mbasis (only linalg) to pmbasis with low-degree polmatmul (Karatsuba...)
+	//  --> from this pmbasis to pmbasis with eval-based polmatmul (FFT, geometric..)
+	if (order <= 16)
 		return mbasis(appbas,pmat,order,shift);
 
-	std::vector<long> pivdeg; // pivot degree
+	std::vector<long> pivdeg; // pivot degree, first call
+	std::vector<long> pivdeg2; // pivot degree, second call
+	std::vector<long> rdeg(pmat.NumRows()); // shifted row degree
 	long order1 = order>>1; // order of first call
 	long order2 = order-order1; // order of second call
 	Mat<zz_pX> appbas2; // basis for second call
+	Mat<zz_pX> residual; // for the residual
 
+	// first recursive call, with 'pmat' and 'shift'
 	pivdeg = pmbasis(appbas,pmat,order1,shift);
 
 	// shifted row degree = shift for second call = pivdeg+shift
-	std::vector<long> rdeg(appbas.NumRows());
 	std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
 
-	pivdeg = pmbasis(appbas2,pmat,order2,rdeg);
+	// residual = (appbas * pmat * X^-order1) mod X^order2
+	multiply_evaluate(residual,appbas,pmat);
+	residual >> order1;
+	trunc(residual,residual,order2);
 
+	// second recursive call, with 'residual' and 'rdeg'
+	pivdeg2 = pmbasis(appbas2,residual,order2,rdeg);
+
+	// final basis = appbas2 * appbas
 	multiply_evaluate(appbas,appbas2,appbas);
+
+	// final pivot degree = pivdeg1+pivdeg2
+	std::transform(pivdeg.begin(), pivdeg.end(), pivdeg2.begin(), pivdeg.begin(), std::plus<long>());
 
 	return pivdeg;
 }
@@ -588,8 +604,8 @@ std::vector<long> popov_pmbasis(
 	std::vector<long> new_shift( pivdeg );
 	std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
 	// TODO write zero method for polmats
-	for (long i = 0; i < appbas.NumCols(); ++i)
-		for (long j = 0; j < appbas.NumRows(); ++j)
+	for (long i = 0; i < appbas.NumRows(); ++i)
+		for (long j = 0; j < appbas.NumCols(); ++j)
 			appbas[i][j] = 0;
 	pmbasis(appbas,pmat,order,new_shift);
 	Mat<zz_p> lmat;
@@ -598,4 +614,3 @@ std::vector<long> popov_pmbasis(
 	mul(appbas,lmat,appbas);
 	return pivdeg;
 }
-

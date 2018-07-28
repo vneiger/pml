@@ -6,8 +6,6 @@
 #include <iostream>
 #include <vector> // std vector, for shifts, degrees, pivot indices
 
-#define PMBASIS_THRESHOLD 32 // TODO optimize
-
 NTL_CLIENT
 
 
