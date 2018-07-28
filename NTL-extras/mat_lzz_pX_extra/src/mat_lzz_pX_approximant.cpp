@@ -227,8 +227,8 @@ std::vector<long> popov_appbas_iterative(
 	std::vector<long> new_shift( pivdeg );
 	std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
 	// TODO write zero method for polmats
-	for (long j = 0; j < appbas.NumCols(); ++j)
-		for (long i = 0; i < appbas.NumRows(); ++i)
+	for (long i = 0; i < appbas.NumCols(); ++i)
+		for (long j = 0; j < appbas.NumRows(); ++j)
 			appbas[i][j] = 0;
 	appbas_iterative(appbas,pmat,order,new_shift,order_wise);
 	Mat<zz_p> lmat;
@@ -525,4 +525,26 @@ std::vector<long> mbasis_resupdate(
 
 	std::transform(rdeg.begin(),rdeg.end(),shift.begin(),rdeg.begin(),std::minus<long>());
 	return rdeg;
+}
+
+std::vector<long> popov_mbasis(
+		Mat<zz_pX> &appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
+		)
+{
+	std::vector<long> pivdeg = mbasis(appbas,pmat,order,shift);
+	std::vector<long> new_shift( pivdeg );
+	std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
+	// TODO write zero method for polmats
+	for (long i = 0; i < appbas.NumCols(); ++i)
+		for (long j = 0; j < appbas.NumRows(); ++j)
+			appbas[i][j] = 0;
+	mbasis(appbas,pmat,order,new_shift);
+	Mat<zz_p> lmat;
+	leading_matrix(lmat, appbas, new_shift, true);
+	inv(lmat, lmat);
+	mul(appbas,lmat,appbas);
+	return pivdeg;
 }

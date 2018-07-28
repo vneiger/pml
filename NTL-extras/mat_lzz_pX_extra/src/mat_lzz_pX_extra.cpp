@@ -364,6 +364,18 @@ void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
 	}
 }
 
+// TODO: for mul with rhs constant
+// -- it seems more efficient to rather expand 'a' as single big constant
+// matrix 'cmat', and compute b*cmat, and retrieve back the entries in 'c'
+// -- this would require first computing cdeg(a); it may be given by the user
+// as an optional parameter since it is sometimes known from pivdeg and such
+
+// TODO: for mul with lhs constant
+// -- it seems more efficient to rather expand 'a' as single big constant
+// matrix 'cmat', and compute b*cmat, and retrieve back the entries in 'c'
+// -- this would require first computing cdeg(a); it may be given by the user
+// as an optional parameter since it is sometimes known from pivdeg and such
+
 /*------------------------------------------------------------*/
 /* multiplication, lhs is a constant matrix                   */
 /*------------------------------------------------------------*/
@@ -402,7 +414,6 @@ void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
 		}
 	}
 }
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

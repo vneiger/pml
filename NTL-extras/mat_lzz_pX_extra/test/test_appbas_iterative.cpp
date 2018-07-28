@@ -32,8 +32,8 @@ int main(int argc, char *argv[])
 	long degree = atoi(argv[3]);
 	long nbits = atoi(argv[4]);
 	std::vector<long> shift(rdim,0);
-	std::iota(shift.begin(), shift.end(),0);
-	std::shuffle(shift.begin(), shift.end(), std::mt19937{std::random_device{}()});
+	//std::iota(shift.begin(), shift.end(),0);
+	//std::shuffle(shift.begin(), shift.end(), std::mt19937{std::random_device{}()});
 
 	long prime = NTL::GenPrime_long(nbits);
   zz_p::init(prime);
@@ -46,7 +46,10 @@ int main(int argc, char *argv[])
 	if (rdim<40)
 		std::cout << "--shift =\t" << shift << std::endl;
 	else
-		std::cout << "--shift: shuffled iota" << std::endl;
+	{
+		//std::cout << "--shift: shuffled iota" << std::endl;
+		std::cout << "--shift: uniform" << std::endl;
+	}
 
 	double t1,t2,t1w,t2w;
 
