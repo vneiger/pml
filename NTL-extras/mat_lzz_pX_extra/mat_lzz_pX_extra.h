@@ -6,6 +6,8 @@
 #include <iostream>
 #include <vector> // std vector, for shifts, degrees, pivot indices
 
+#define PMBASIS_THRESHOLD 32 // TODO optimize
+
 NTL_CLIENT
 
 
@@ -620,6 +622,9 @@ std::vector<long> mbasis(
 		const std::vector<long> & shift
 		);
 
+// TODO some thresholding to be done, so that mbasis does the
+// resupdate strategy when it is faster
+// --> organize code so that mbasis is always ~the fastest
 std::vector<long> mbasis_resupdate(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,

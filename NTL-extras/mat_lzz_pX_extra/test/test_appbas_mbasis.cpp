@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 	std::vector<long> shift(rdim,0);
 	//std::vector<long> shift {0,1,0,1};
 	//std::vector<long> shift {4,1,0,1};
-	//std::iota(shift.begin(), shift.end(),0);
+	std::iota(shift.begin(), shift.end(),0);
 	std::shuffle(shift.begin(), shift.end(), std::mt19937{std::random_device{}()});
 
 	long prime = NTL::GenPrime_long(nbits);

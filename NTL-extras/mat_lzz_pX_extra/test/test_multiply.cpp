@@ -111,19 +111,22 @@ void one_check(long sz, long deg, long p)
 /*------------------------------------------------------------*/
 /* checks some products                                       */
 /*------------------------------------------------------------*/
-void check()
+void check(long sz=200, long deg=4)
 {
     
 // TODO: detect small Fourier primes
-    one_check(1000, 2, 1125899906842679);
-    one_check(1000, 2, 23068673);
-    one_check(1000, 2, 0);
-    one_check(1000, 3, 1125899906842679);
-    one_check(1000, 3, 23068673);
-    one_check(1000, 3, 0);
-    one_check(1000, 4, 1125899906842679);
-    one_check(1000, 4, 23068673);
-    one_check(1000, 4, 0);
+    one_check(sz, 2, 1125899906842679);
+    one_check(sz, 2, 23068673);
+    one_check(sz, 2, 0);
+    one_check(sz, 3, 1125899906842679);
+    one_check(sz, 3, 23068673);
+    one_check(sz, 3, 0);
+    one_check(sz, 4, 1125899906842679);
+    one_check(sz, 4, 23068673);
+    one_check(sz, 4, 0);
+    one_check(sz, deg, 1125899906842679);
+    one_check(sz, deg, 23068673);
+    one_check(sz, deg, 0);
 }  
 
 /*------------------------------------------------------------*/
@@ -131,6 +134,12 @@ void check()
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    check();
-    return 0;
+	if (argc==1)
+		check();
+	else if (argc==3)
+		check(atoi(argv[1]),atoi(argv[2]));
+	else
+		throw std::invalid_argument("Usage: ./test_multiply OR ./test_multiply size degree");
+
+	return 0;
 }

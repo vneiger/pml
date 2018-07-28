@@ -548,3 +548,54 @@ std::vector<long> popov_mbasis(
 	mul(appbas,lmat,appbas);
 	return pivdeg;
 }
+
+std::vector<long> pmbasis(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
+		)
+{
+	if (order <= PMBASIS_THRESHOLD)
+		return mbasis(appbas,pmat,order,shift);
+
+	std::vector<long> pivdeg; // pivot degree
+	long order1 = order>>1; // order of first call
+	long order2 = order-order1; // order of second call
+	Mat<zz_pX> appbas2; // basis for second call
+
+	pivdeg = pmbasis(appbas,pmat,order1,shift);
+
+	// shifted row degree = shift for second call = pivdeg+shift
+	std::vector<long> rdeg(appbas.NumRows());
+	std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
+
+	pivdeg = pmbasis(appbas2,pmat,order2,rdeg);
+
+	multiply_evaluate(appbas,appbas2,appbas);
+
+	return pivdeg;
+}
+
+std::vector<long> popov_pmbasis(
+		Mat<zz_pX> &appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
+		)
+{
+	std::vector<long> pivdeg = pmbasis(appbas,pmat,order,shift);
+	std::vector<long> new_shift( pivdeg );
+	std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
+	// TODO write zero method for polmats
+	for (long i = 0; i < appbas.NumCols(); ++i)
+		for (long j = 0; j < appbas.NumRows(); ++j)
+			appbas[i][j] = 0;
+	pmbasis(appbas,pmat,order,new_shift);
+	Mat<zz_p> lmat;
+	leading_matrix(lmat, appbas, new_shift, true);
+	inv(lmat, lmat);
+	mul(appbas,lmat,appbas);
+	return pivdeg;
+}
+
