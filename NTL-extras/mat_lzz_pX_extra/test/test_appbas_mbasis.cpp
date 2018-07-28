@@ -6,7 +6,6 @@
 #include <numeric>
 #include <algorithm>
 #include <random>
-#include <chrono>
 #include <NTL/BasicThreadPool.h>
 
 #include "mat_lzz_pX_extra.h"
@@ -64,11 +63,15 @@ int main(int argc, char *argv[])
 
 	std::cout << "Time(random mat creation): " << (t2-t1) << "s\n";
 
-	// to warm up
 	Mat<zz_p> kerbas;
 	std::vector<long> pivdeg;
-	for (long i = 0; i < 5; ++i) {
-		pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
+	// to warm up
+	if (rdim*cdim < 1000000000)
+	{
+		std::cout << "warming up..." << std::endl;
+		for (long i = 0; i < 5; ++i) {
+			pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
+		}
 	}
 
 	std::cout << "~~~Testing popov_mbasis1 on constant matrix~~~" << std::endl;

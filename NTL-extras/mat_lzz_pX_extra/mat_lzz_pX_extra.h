@@ -15,12 +15,14 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+// TODO Identity matrix, zero matrix
+
 /*------------------------------------------------------------*/
 /* print vector -- move elsewhere ???                         */
 /*------------------------------------------------------------*/
 std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
 
-//TODO equivalents of those:
+//TODO need equivalents of those to make storage transparent???
 //const zz_p coeff(const zz_pX& a, long i);
 // returns the coefficient of X^i, or zero if i not in range
 //void SetCoeff(zz_pX& x, long i, zz_p a);
@@ -29,9 +31,8 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
 //void SetCoeff(zz_pX& x, long i);
 // makes coefficient of X^i equal to 1;  error is raised if i < 0
 
-//TODO : truncate mod X^... , for all the matrix or some columns/rows of it
-//void trunc(zz_pX& x, const zz_pX& a, long n); // x = a % X^n
-//zz_pX trunc(const zz_pX& a, long n);
+//truncate mod X^... , for all the matrix or some columns/rows of it
+//TODO different truncation orders on the different columns/rows
 // full matrix versions
 void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
 Mat<zz_pX> trunc(const Mat<zz_pX>& a, long n);
@@ -43,7 +44,6 @@ Mat<zz_pX> truncRow(const Mat<zz_pX>& a, long r, long n);
 // col versions
 void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c, long n);
 Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n);
-
 
 //TODO: multiply row or column of matrix (vec_lzz_pX) by constant
 
@@ -59,20 +59,15 @@ A negative shift amount reverses the direction of the shift.
 \**************************************************************************/
 
 // operator notation:
+// TODO versions with different shifting orders on different rows/columns
 
 // full matrix, 1 row, 1 col
 
-//zz_pX operator<<(const zz_pX& a, long n);
 // full matrix shift
 Mat<zz_pX> operator<< (const Mat<zz_pX> &a, long n);
-
-//zz_pX operator>>(const zz_pX& a, long n);
 Mat<zz_pX> operator>> (const Mat<zz_pX> &a, long n);
 
-//
-//zz_pX& operator<<=(zz_pX& x, long n);
 Mat<zz_pX>& operator<<=(Mat<zz_pX>& x, long n);
-//zz_pX& operator>>=(zz_pX& x, long n);
 Mat<zz_pX>& operator>>=(Mat<zz_pX>& x, long n);
 
 //// procedural versions:
@@ -89,7 +84,6 @@ Mat<zz_pX> LeftShiftRow(const Mat<zz_pX>& a, const long r, long n);
 void LeftShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
 Mat<zz_pX> LeftShiftCol(const Mat<zz_pX>& a, const long c, long n);
 
-
 // full matrix right shifts
 void RightShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
 Mat<zz_pX> RightShift(const Mat<zz_pX>& a, long n);
@@ -102,6 +96,7 @@ Mat<zz_pX> RightShiftRow(const Mat<zz_pX>& a, const long r, long n);
 void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
 Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n);
 
+// TODO reverse operations
 //void reverse(zz_pX& x, const zz_pX& a, long hi);
 //zz_pX reverse(const zz_pX& a, long hi);
 //
@@ -109,6 +104,8 @@ Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n);
 //zz_pX reverse(const zz_pX& a);
 // x = reverse of a[0]..a[hi] (hi >= -1);
 // hi defaults to deg(a) in second version
+
+
 
 
 /*------------------------------------------------------------*/

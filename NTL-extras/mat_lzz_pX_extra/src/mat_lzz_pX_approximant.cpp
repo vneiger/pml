@@ -90,7 +90,7 @@ std::vector<long> appbas_iterative(
 		bool order_wise
 		)
 {
-	/** Three possibilities (among others) for next coefficient to deal with:
+	/** Two possibilities (among others) for next coefficient to deal with:
 	 *   - process 'pmat' order-wise (choose column with largest order)
 	 *   - process 'pmat' column-wise (choose leftmost column not yet completed)
 	 **/
@@ -101,7 +101,7 @@ std::vector<long> appbas_iterative(
 	// initial approximant basis: identity of dimensions 'rdim x rdim'
 	appbas.SetDims(rdim,rdim);
 	for (long i = 0; i < rdim; ++i)
-		appbas[i][i] = 1;
+		SetCoeff(appbas[i][i],0);
 
 	// initial residual: the whole input matrix
 	Mat<zz_pX> residual( pmat );
@@ -222,11 +222,19 @@ std::vector<long> popov_appbas_iterative(
 		)
 {
 	// TODO: first call can be very slow if strange degrees --> rather implement
-	// BecLab00's "continuous" normalization
+	// BecLab00's "continuous" normalization?
 	std::vector<long> pivdeg = appbas_iterative(appbas,pmat,order,shift,order_wise);
-	std::transform(pivdeg.begin(), pivdeg.end(), pivdeg.begin(), std::negate<long>());
-	pivdeg = appbas_iterative(appbas,pmat,order,pivdeg,order_wise);
-	// TODO multiply appbas by inverse of leading matrix
+	std::vector<long> new_shift( pivdeg );
+	std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
+	// TODO write zero method for polmats
+	for (long j = 0; j < appbas.NumCols(); ++j)
+		for (long i = 0; i < appbas.NumRows(); ++i)
+			appbas[i][j] = 0;
+	appbas_iterative(appbas,pmat,order,new_shift,order_wise);
+	Mat<zz_p> lmat;
+	leading_matrix(lmat, appbas, new_shift, true);
+	inv(lmat, lmat);
+	mul(appbas,lmat,appbas);
 	return pivdeg;
 }
 
