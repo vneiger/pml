@@ -321,7 +321,9 @@ std::vector<long> mbasis(
 	// initially, this is exactly shift
 	std::vector<long> rdeg( shift );
 
-	// temporary buffer for local pivdegs at each mbasis1 call
+	// holds the current pivot degree of appbas
+	// initially tuple of zeroes
+	// (note that at all times pivdeg+shift = rdeg entrywise)
 	std::vector<long> pivdeg(pmat.NumRows());
 
 	// matrix to store the kernels in mbasis1 calls
@@ -332,38 +334,47 @@ std::vector<long> mbasis(
 	for (long ord = 1; ord <= order; ++ord)
 	{
 		// call MBasis1 to retrieve kernel and pivdeg
-		pivdeg = popov_mbasis1(kerbas,residual,rdeg);
+		std::vector<long> diff_pivdeg = popov_mbasis1(kerbas,residual,rdeg);
 
-		// update approximant basis
-		// submatrix of rows with pivdeg=0 is replaced by kerbas*appbas
+		// I/ Update degrees:
+		// new shifted row degree = old rdeg + diff_pivdeg
+		std::transform(rdeg.begin(), rdeg.end(), diff_pivdeg.begin(), rdeg.begin(), std::plus<long>());
+		// new pivot degree = old pivot_degree + diff_pivdeg
+		std::transform(pivdeg.begin(), pivdeg.end(), diff_pivdeg.begin(), pivdeg.begin(), std::plus<long>());
+		// deduce degree of appbas; note that it is a property of this algorithm
+		// that deg(appbas) = max(pivot degree) (i.e. max(degree of diagonal
+		// entries); this does not hold in general for ordered weak Popov forms
+		long deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
+
+		// II/ update approximant basis
+
+		// submatrix of rows with diffpivdeg=0 is replaced by kerbas*appbas
 		Mat<zz_pX> kerapp;
 		mul(kerapp,kerbas,appbas);
 		long row=0;
 		// TODO have function to copy into submatrix??
 		for (long i = 0; i < appbas.NumRows(); ++i)
 		{
-			if (pivdeg[i]==0)
+			if (diff_pivdeg[i]==0)
 			{
 				appbas[i] = kerapp[row];
 				++row;
 			}
 		}
-		// rows with pivdeg=1 are simply multiplied by X
+		// rows with diff_pivdeg=1 are simply multiplied by X
 		for (long i = 0; i < appbas.NumRows(); ++i)
-			if (pivdeg[i]==1)
+			if (diff_pivdeg[i]==1)
 				LeftShiftRow(appbas,appbas,i,1);
 
-		// find new residual
+		// III/ compute new residual
 		residual = coeff(appbas,0) * coeff(pmat,ord);
-		for (long d = 1; d <= ord; ++d)
+		for (long d = 1; d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
+		{
 			residual += coeff(appbas,d) * coeff(pmat,ord-d);
-
-		// new shifted row degree = old rdeg + pivdeg  (entrywise)
-		std::transform(rdeg.begin(), rdeg.end(), pivdeg.begin(), rdeg.begin(), std::plus<long>());
+		}
 	}
 
-	std::transform(rdeg.begin(),rdeg.end(),shift.begin(),rdeg.begin(),std::minus<long>());
-	return rdeg;
+	return pivdeg;
 }
 
 // variant with continuous update of the residual
