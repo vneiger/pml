@@ -68,7 +68,6 @@ int main(int argc, char *argv[])
 	Mat<zz_p> kerbas;
 	std::vector<long> pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
 	end = std::chrono::system_clock::now();
-
 	std::cout << "Time(popov_mbasis1 computation): " <<
 		(std::chrono::duration<double> (end-start)).count() << "s\n";
 

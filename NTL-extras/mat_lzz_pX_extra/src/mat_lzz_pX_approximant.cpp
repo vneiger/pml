@@ -175,7 +175,7 @@ std::vector<long> appbas_iterative(
 
 			// update row piv
 			++rdeg[piv]; // shifted row degree of row piv increases
-			for (long k=0; k<rdim; ++k)
+			for (long k=0; k<rdim; ++k) // TODO use shiftRow
 				appbas[piv][k] <<= 1; // row piv multiplied by X
 			for (long k=0; k<residual.NumCols(); ++k)
 			{
@@ -262,6 +262,8 @@ std::vector<long> popov_mbasis1(
 	// find the permuted kernel basis in row echelon form
 	Mat<zz_p> p_kerbas;
 	kernel(p_kerbas,mat);
+	if (p_kerbas.NumRows()==0)
+		return std::vector<long>(pmat.NumRows(),1);
 
 	// compute the (permuted) pivot indices
 	// FIXME unfortunately NTL doesn't return the pivot indices in Gaussian elimination
@@ -336,41 +338,56 @@ std::vector<long> mbasis(
 		// call MBasis1 to retrieve kernel and pivdeg
 		std::vector<long> diff_pivdeg = popov_mbasis1(kerbas,residual,rdeg);
 
-		// I/ Update degrees:
-		// new shifted row degree = old rdeg + diff_pivdeg
-		std::transform(rdeg.begin(), rdeg.end(), diff_pivdeg.begin(), rdeg.begin(), std::plus<long>());
-		// new pivot degree = old pivot_degree + diff_pivdeg
-		std::transform(pivdeg.begin(), pivdeg.end(), diff_pivdeg.begin(), pivdeg.begin(), std::plus<long>());
-		// deduce degree of appbas; note that it is a property of this algorithm
-		// that deg(appbas) = max(pivot degree) (i.e. max(degree of diagonal
-		// entries); this does not hold in general for ordered weak Popov forms
-		long deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
-
-		// II/ update approximant basis
-
-		// submatrix of rows with diffpivdeg=0 is replaced by kerbas*appbas
-		Mat<zz_pX> kerapp;
-		mul(kerapp,kerbas,appbas);
-		long row=0;
-		// TODO have function to copy into submatrix??
-		for (long i = 0; i < appbas.NumRows(); ++i)
+		if (kerbas.NumRows()==0)
 		{
-			if (diff_pivdeg[i]==0)
-			{
-				appbas[i] = kerapp[row];
-				++row;
-			}
+			// computation is already finished: the final basis is X^(order-ord+1)*appbas
+			appbas <<= (order-ord+1);
+			// update pivdeg accordingly, and return
+			std::for_each(pivdeg.begin(), pivdeg.end(), [&order,&ord](long& a) { a+=order-ord+1; });
+			return pivdeg;
 		}
-		// rows with diff_pivdeg=1 are simply multiplied by X
-		for (long i = 0; i < appbas.NumRows(); ++i)
-			if (diff_pivdeg[i]==1)
-				LeftShiftRow(appbas,appbas,i,1);
 
-		// III/ compute new residual
-		residual = coeff(appbas,0) * coeff(pmat,ord);
-		for (long d = 1; d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
+		// kerbas.NumRows()==residual.NumRows() --> approximant basis is already
+		// correct for this order, just go to the next
+
+		if (kerbas.NumRows()<residual.NumRows())
 		{
-			residual += coeff(appbas,d) * coeff(pmat,ord-d);
+			// I/ Update degrees:
+			// new shifted row degree = old rdeg + diff_pivdeg
+			std::transform(rdeg.begin(), rdeg.end(), diff_pivdeg.begin(), rdeg.begin(), std::plus<long>());
+			// new pivot degree = old pivot_degree + diff_pivdeg
+			std::transform(pivdeg.begin(), pivdeg.end(), diff_pivdeg.begin(), pivdeg.begin(), std::plus<long>());
+			// deduce degree of appbas; note that it is a property of this algorithm
+			// that deg(appbas) = max(pivot degree) (i.e. max(degree of diagonal
+			// entries); this does not hold in general for ordered weak Popov forms
+			long deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
+
+			// II/ update approximant basis
+
+			// submatrix of rows with diff_pivdeg==0 is replaced by kerbas*appbas
+			Mat<zz_pX> kerapp;
+			mul(kerapp,kerbas,appbas);
+			long row=0;
+			// TODO have function to copy into submatrix??
+			for (long i = 0; i < appbas.NumRows(); ++i)
+			{
+				if (diff_pivdeg[i]==0)
+				{
+					appbas[i] = kerapp[row];
+					++row;
+				}
+			}
+			// rows with diff_pivdeg=1 are simply multiplied by X
+			for (long i = 0; i < appbas.NumRows(); ++i)
+				if (diff_pivdeg[i]==1)
+					LeftShiftRow(appbas,appbas,i,1);
+
+			// III/ compute new residual
+			residual = coeff(appbas,0) * coeff(pmat,ord);
+			for (long d = 1; d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
+			{
+				residual += coeff(appbas,d) * coeff(pmat,ord-d);
+			}
 		}
 	}
 
@@ -390,13 +407,15 @@ std::vector<long> mbasis_resupdate(
 	for (long i = 0; i < appbas.NumRows(); ++i)
 		SetCoeff(appbas[i][i],0);
 
-
 	// holds the current shifted row degree of appbas
 	// initially, this is exactly shift
 	std::vector<long> rdeg( shift );
 
-	// temporary buffer for local pivdegs at each mbasis1 call
+	// buffer for temporary pivdegs at each mbasis1 call
 	std::vector<long> pivdeg(pmat.NumRows());
+	// here, unlike in mbasis(), we do not hold the current pivot degree of
+	// appbas (there the main motivation for having it was that we needed
+	// to maintain the actual degree of the basis)
 
 	// matrix to store the kernels in mbasis1 calls
 	Mat<zz_p> kerbas;
@@ -408,57 +427,75 @@ std::vector<long> mbasis_resupdate(
 		// call MBasis1 to retrieve kernel and pivdeg
 		pivdeg = popov_mbasis1(kerbas,coeff(residual,0),rdeg);
 
-		// update approximant basis
-		// submatrix of rows with pivdeg=0 is replaced by kerbas*appbas
-		Mat<zz_pX> kerapp;
-		mul(kerapp,kerbas,appbas);
-		long row=0;
-		// TODO have function to copy into submatrix??
-		for (long i = 0; i < appbas.NumRows(); ++i)
+		if (kerbas.NumRows()==0)
 		{
-			if (pivdeg[i]==0)
-			{
-				appbas[i] = kerapp[row];
-				++row;
-			}
+			// computation is already finished: the final basis is X^(order-ord+1)*appbas
+			appbas <<= (order-ord+1);
+			// update rdeg accordingly, then transform it to pivdeg, and return
+			std::for_each(rdeg.begin(), rdeg.end(), [&order,&ord](long& a) { a+=order-ord+1; });
+			std::transform(rdeg.begin(),rdeg.end(),shift.begin(),rdeg.begin(),std::minus<long>());
+			return rdeg;
 		}
-		// rows with pivdeg=1 are simply multiplied by X
-		for (long i = 0; i < appbas.NumRows(); ++i)
-			if (pivdeg[i]==1)
-				LeftShiftRow(appbas,appbas,i,1);
+		else if (kerbas.NumRows()==residual.NumRows())
+		{
+			// approximant basis is already correct for this order
+			// just update the residual (discard zero constant coefficient)
+			residual >>= 1;
+		}
+		else
+		{
+			// update approximant basis
+			// submatrix of rows with pivdeg=0 is replaced by kerbas*appbas
+			Mat<zz_pX> kerapp;
+			mul(kerapp,kerbas,appbas);
+			long row=0;
+			// TODO have function to copy into submatrix??
+			for (long i = 0; i < appbas.NumRows(); ++i)
+			{
+				if (pivdeg[i]==0)
+				{
+					appbas[i] = kerapp[row];
+					++row;
+				}
+			}
+			// rows with pivdeg=1 are simply multiplied by X
+			for (long i = 0; i < appbas.NumRows(); ++i)
+				if (pivdeg[i]==1)
+					LeftShiftRow(appbas,appbas,i,1);
 
-		// update residual so that it remains equal to X^(-ord) appbas*pmat mod X^(order-ord)
-		// keep the constant matrix as a temp, and shift residual = X^(-1) residual
-		Mat<zz_p> res_const( coeff(residual,0) );
-		residual >>= 1;
-		// submatrix of rows with pivdeg=0 is replaced by kerbas*residual
-		Mat<zz_pX> kerres;
-		mul(kerres,kerbas,residual);
-		row=0;
-		// TODO have function to copy into submatrix??
-		for (long i = 0; i < residual.NumRows(); ++i)
-		{
-			if (pivdeg[i]==0)
+			// update residual so that it remains equal to X^(-ord) appbas*pmat mod X^(order-ord)
+			// keep the constant matrix as a temp, and shift residual = X^(-1) residual
+			Mat<zz_p> res_const( coeff(residual,0) );
+			residual >>= 1;
+			// submatrix of rows with pivdeg=0 is replaced by kerbas*residual
+			Mat<zz_pX> kerres;
+			mul(kerres,kerbas,residual);
+			row=0;
+			// TODO have function to copy into submatrix??
+			for (long i = 0; i < residual.NumRows(); ++i)
 			{
-				residual[i] = kerres[row];
-				++row;
+				if (pivdeg[i]==0)
+				{
+					residual[i] = kerres[row];
+					++row;
+				}
 			}
-		}
-		// rows with pivdeg=1 are multiplied by X
-		for (long i = 0; i < residual.NumRows(); ++i)
-		{
-			if (pivdeg[i]==1)
+			// rows with pivdeg=1 are multiplied by X
+			for (long i = 0; i < residual.NumRows(); ++i)
 			{
-				// multiply by X and truncate mod X^(order-ord)
-				LeftShiftRow(residual,residual,i,1);
-				truncRow(residual,residual,i,order-ord);
-				for (long j = 0; j < residual.NumCols(); ++j)
-					SetCoeff(residual[i][j],0,res_const[i][j]); 
+				if (pivdeg[i]==1)
+				{
+					// multiply by X and truncate mod X^(order-ord)
+					LeftShiftRow(residual,residual,i,1);
+					truncRow(residual,residual,i,order-ord);
+					for (long j = 0; j < residual.NumCols(); ++j)
+						SetCoeff(residual[i][j],0,res_const[i][j]); 
+				}
 			}
-		}
 
-		// new shifted row degree = old rdeg + pivdeg  (entrywise)
-		std::transform(rdeg.begin(), rdeg.end(), pivdeg.begin(), rdeg.begin(), std::plus<long>());
+			// new shifted row degree = old rdeg + pivdeg  (entrywise)
+			std::transform(rdeg.begin(), rdeg.end(), pivdeg.begin(), rdeg.begin(), std::plus<long>());
+		}
 	}
 
 	std::transform(rdeg.begin(),rdeg.end(),shift.begin(),rdeg.begin(),std::minus<long>());
