@@ -503,6 +503,26 @@ bool is_polmatform(
 /* are the options                                            */
 /*------------------------------------------------------------*/
 
+// TODO generic: from shift, deduce the pivot degree expected generically and
+// use this as a shift instead of 'shift', then obtain directly Popov approx
+// basis; skipping the first call to find the pivot degree (in addition, will
+// this be more efficient because shift is nicer?)
+
+// TODO generic: try base case at nd = m instead of d = 1 (linearization
+// approach), see what improvement this brings (will improve, but for what kind
+// of n?)
+
+// TODO mbasis: threshold res_update
+// TODO pmbasis: threshold mbasis
+
+// TODO mbasis (non-res-update): at the beginning, in a single round, gather
+// matrix coefficients a[i], i<order, such that pmat = sum_i a[i] X^i,
+// and work with them
+
+// TODO mbasis parallelize computation of residual (for big matrices)
+
+// TODO mbasis-resupdate: what representation of pmat to use?
+
 // Guarantee: output is at least ordered weak Popov
 // return value is pivot degree
 
@@ -658,6 +678,131 @@ std::vector<long> popov_pmbasis(
 		const long order,
 		const std::vector<long> & shift
 		);
+
+/**********************************************************************
+*                            KERNEL BASIS                            *
+**********************************************************************/
+
+/****************************
+*  Kernel via approximant  *
+****************************/
+
+// TODO generic case
+
+// TODO general case via fast s-Popov appbas (fastest known approach for bad shifts)
+
+/*************************************************
+*  Zhou-Labahn-Storjohann minimal kernel basis  *
+*************************************************/
+
+// TODO
+
+/******************************************
+*  Application to linear system solving  *
+******************************************/
+
+// TODO
+
+/*************************************************
+*  Fast left kernel for small column dimension  *
+*************************************************/
+
+// TODO-long shot via relation basis (itself todo), cf work with Xuan
+
+/**********************************************************************
+*                             ROW BASIS                              *
+**********************************************************************/
+
+/*************************************
+*  Li and Storjohann's compression  *
+*************************************/
+
+// TODO, cf Chao Li's 2007 Master's thesis
+// does not really give a row basis, but allows to reduce to almost
+// square case by an efficient Las Vegas algorithm
+
+/***************************
+*  Zhou-Labahn algorithm  *
+***************************/
+
+// TODO
+
+/**********************************************************************
+*                         INVERSE EXPANSION                          *
+**********************************************************************/
+
+// TODO Newton iteration
+// --> polynomial matrix division with remainder (cf. e.g. Neiger-Vu 2017)
+
+// TODO see Storjohann 2003 for high-order lifting
+// TODO application to linear system solving
+// --> see which other consequences of high-order lifting may be worth implementing
+
+
+/**********************************************************************
+*                             INVERSION                              *
+**********************************************************************/
+
+// TODO evaluation-interpolation approach
+
+// TODO Jeannerod-Villard: worth implementing?
+
+// TODO Storjohann 2015 fast Las Vegas
+
+// TODO Zhou-Labahn-Storjohann 2014 fast deterministic
+
+/**********************************************************************
+*                          BASIS REDUCTION                           *
+*            (shifted reduced form and shifted normal forms)         *
+**********************************************************************/
+
+// TODO general reduction to uniform shift via pre-multiplication
+// worthwile at least when shift close to uniform
+
+// TODO naive algorithms (see Mulders-Storjohann for good reference)
+
+// TODO general shifted Popov form via kernel (itself via approximant basis)
+
+// TODO understand if there is any chance Alekhnovich improves over the
+// kernel approach
+
+// TODO nonsingular: Giorgi-Jeannerod-Villard's Las Vegas reduction
+// (worth implementing for shifts other than uniform?)
+
+
+/**********************************************************************
+*                    TRIANGULARIZATION ALGORITHMS                    *
+**********************************************************************/
+
+/**************************************************
+*  Labahn-Neiger-Zhou partial triangularization  *
+**************************************************/
+
+// TODO one step (uses kernel + row basis)
+// TODO diagonal entries of Hermite form
+
+/***********************************************
+*  Labahn-Neiger-Zhou Hermite form algorithm  *
+***********************************************/
+
+// TODO (requires partial linearization + basis reduction)
+
+
+/**********************************************************************
+*                       DETERMINANT ALGORITHMS                       *
+**********************************************************************/
+
+/*******************************************************************
+*  Labahn-Neiger-Zhou: via diagonal entries of triangularization  *
+*******************************************************************/
+
+// TODO general version
+// TODO generic version: much simpler (only requires generic kernel + products)
+
+// TODO other determinant algorithms??
+// --> could rely on x-Smith decomposition of Gupta et al (worth
+// implementing??), cf Appendix of LaNeZh17 
+// --> no randomized faster approach?
 
 
 #endif // MAT_LZZ_PX_EXTRA__H
