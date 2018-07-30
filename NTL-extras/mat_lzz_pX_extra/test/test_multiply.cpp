@@ -25,7 +25,7 @@ void one_check(long sz, long deg, long p)
 	zz_p::init(p);
     }
 
-    cout << "size=" << sz << ", length=" << deg << " ";
+    cout << p<< "," << sz << "," << deg << ",";
 
     random_mat_zz_pX(a, sz, sz, deg);
     random_mat_zz_pX(b, sz, sz, deg);
@@ -39,17 +39,17 @@ void one_check(long sz, long deg, long p)
     {
 	t = GetTime();
 	multiply_waksman(c1, a, b);
-	cout << GetTime()-t << " ";
+	cout << GetTime()-t << ",";
     }
     else 
     { 
-	cout << "------ ";
+	cout << "-1,";
     }
 
     // evaluation -- should be done only if feasible
     t = GetTime();
     multiply_evaluate(c2, a, b);
-    cout << GetTime()-t << " ";
+    cout << GetTime()-t << ",";
     
     if (do_naive && (c1 != c2))
     {
@@ -59,14 +59,14 @@ void one_check(long sz, long deg, long p)
     // 3 primes FFT
     t = GetTime();
     multiply_3_primes(c4, a, b);
-    cout << GetTime()-t << " ";
+    cout << GetTime()-t << ",";
     if (c4 != c2)
     {
 	cout << "(3 primes mismatch) ";
     }
 
     // transform, if the size is reasonable
-    long do_transform = (deg <= 5) || ((sz <= 400) && (deg <= 10)) || ((sz <= 50) && (deg <= 20));
+    long do_transform = (deg <= 10) || ((sz <= 400) && (deg <= 10)) || ((sz <= 50) && (deg <= 20));
     if (do_transform)
     {
 	t = GetTime();
@@ -76,7 +76,7 @@ void one_check(long sz, long deg, long p)
 	{
 	    cout << "(transform mismatch) ";
 	}
-    }
+    }else cout << "-1";
 
     cout << endl;
 }
