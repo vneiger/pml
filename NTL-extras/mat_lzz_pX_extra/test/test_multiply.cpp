@@ -13,7 +13,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void one_check(long sz, long deg, long p)
 {
-    Mat<zz_pX> a, b, c0, c1, c2, c3, c4;
+    Mat<zz_pX> a, b, c0, c1, c2, c4, c5;
     double t;
 
     if (p == 0) // init zz_p with FFTInit()
@@ -35,47 +35,22 @@ void one_check(long sz, long deg, long p)
     if (do_naive)
     {
 	t = GetTime();
-	multiply_naive(c0, a, b);
-	cout << GetTime()-t << " ";
-
-	t = GetTime();
 	multiply_waksman(c1, a, b);
 	cout << GetTime()-t << " ";
-
-	if (c1 != c0)
-	{
-	    cout << "(waksman mismatch) ";
-	}
     }
     else 
     { 
-	cout << "------ ------ ";
+	cout << "------ ";
     }
 
-    // geometric evaluation -- should be done only if feasible
+    // evaluation -- should be done only if feasible
     t = GetTime();
-    multiply_evaluate_geometric(c2, a, b);
+    multiply_evaluate(c2, a, b);
     cout << GetTime()-t << " ";
     
     if (do_naive && (c1 != c2))
     {
 	cout << "(geometric mismatch) ";
-    }
-
-    // FFT, if possible
-    if ( p==0 )
-    {
-	t = GetTime();
-	multiply_evaluate_FFT(c3, a, b);
-	cout << GetTime()-t << " ";
-	if (c3 != c2)
-	{
-	    cout << "(evaluate FFT mismatch) ";
-	}
-    }
-    else 
-    { 
-	cout << "------ ";
     }
 
     // 3 primes FFT
@@ -86,8 +61,26 @@ void one_check(long sz, long deg, long p)
     {
 	cout << "(3 primes mismatch) ";
     }
+
+    // transform, if the size is reasonable
+    long do_transform = (deg <= 5) || ((sz <= 400) && (deg <= 10)) || ((sz <= 50) && (deg <= 20));
+    if (do_transform)
+    {
+	t = GetTime();
+	multiply_transform(c5, a, b);
+	cout << GetTime()-t << " ";
+	if (c5 != c2)
+	{
+	    cout << "(transform mismatch) ";
+	}
+    }
+
+    cout << endl;
 }
 
+/*------------------------------------------------------------*/
+/* checks some products in small degree                       */
+/*------------------------------------------------------------*/
 void one_check_smalldeg(long sz, long deg, long p)
 {
     Mat<zz_pX> a, b, c1;
@@ -153,24 +146,21 @@ void one_check_smalldeg(long sz, long deg, long p)
 /*------------------------------------------------------------*/
 void check(long sz=200, long deg=4)
 {
+    long p0 = 0;
+    long p1 = 288230376151711813;
+    long p2 = 23068673;
 
-    // small degree checks
-    one_check_smalldeg(sz, 2, 1125899906842679);
-    one_check_smalldeg(sz, 2, 23068673);
-    one_check_smalldeg(sz, 2, 0);
-    one_check_smalldeg(sz, 3, 1125899906842679);
-    one_check_smalldeg(sz, 3, 23068673);
-    one_check_smalldeg(sz, 3, 0);
-    one_check_smalldeg(sz, 4, 1125899906842679);
-    one_check_smalldeg(sz, 4, 23068673);
-    one_check_smalldeg(sz, 4, 0);
+    // // small degree checks
+    // one_check_smalldeg(sz, 2, p0);
+    // one_check_smalldeg(sz, 2, p1);
+    // one_check_smalldeg(sz, 2, p2);
 
-    // big degrees checks
-    cout << "size=" << sz << ", length=" << deg << " " << endl;
-    cout << "naive\t\t" << "eval geom\t" << "naive trans\t" << "eval FFT" << endl;
-    one_check(sz, deg, 1125899906842679);
-    one_check(sz, deg, 23068673);
-    one_check(sz, deg, 0);
+    // // big degrees checks
+    // cout << "size=" << sz << ", length=" << deg << " " << endl;
+    // cout << "naive\t\t" << "eval geom\t" << "naive trans\t" << "eval FFT" << endl;
+    one_check(sz, deg, p0);
+    one_check(sz, deg, p1);
+    one_check(sz, deg, p2);
 }  
 
 /*------------------------------------------------------------*/
@@ -183,11 +173,17 @@ int main(int argc, char ** argv)
     std::cout << std::setprecision(8);
 
     if (argc==1)
+    {
 	check();
+    }
     else if (argc==3)
-	check(atoi(argv[1]),atoi(argv[2]));
+    {
+	check(atoi(argv[1]), atoi(argv[2]));
+    }
     else
+    {
 	throw std::invalid_argument("Usage: ./test_multiply OR ./test_multiply size degree");
+    }
 
     return 0;
 }

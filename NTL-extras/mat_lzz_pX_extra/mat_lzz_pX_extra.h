@@ -17,6 +17,12 @@ NTL_CLIENT
 
 // TODO Identity matrix, zero matrix
 
+
+/*------------------------------------------------------------*/
+/* maximum degree of the entries of pmat                      */
+/*------------------------------------------------------------*/
+long deg(const Mat<zz_pX> & pmat);
+
 /*------------------------------------------------------------*/
 /* print vector -- move elsewhere ???                         */
 /*------------------------------------------------------------*/
@@ -329,14 +335,23 @@ void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a);
 /*------------------------------------------------------------*/
 void multiply_waksman(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
 void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
 void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform_montgomery3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform_karatsuba4(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long len);
+
+inline void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b){
+    multiply_transform(c, a, b, max(deg(a), deg(b)) + 1);
+}
+
 void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
 
 void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
@@ -355,11 +370,6 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 /* DEGREES, PIVOTS, LEADING MATRIX                            */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* maximum degree of the entries of pmat                      */
-/*------------------------------------------------------------*/
-long deg(const Mat<zz_pX> & pmat);
 
 /*------------------------------------------------------------*/
 /* matrix of integers; deg(0) = -1                            */

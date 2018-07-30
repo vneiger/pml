@@ -96,3 +96,21 @@ void multiply_transform_karatsuba4(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
     trs_karatsuba4.backward_matrix(c, valC);
 }
 
+
+void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long len)
+{
+    switch (len) 
+    {
+    case 2:
+	multiply_transform_karatsuba(c, a, b);
+	break;
+    case 3:
+	multiply_transform_montgomery3(c, a, b);
+	break;
+    case 4:
+	multiply_transform_karatsuba4(c, a, b);
+	break;
+    default:
+	multiply_transform_naive(c, a, b);
+    }
+}
