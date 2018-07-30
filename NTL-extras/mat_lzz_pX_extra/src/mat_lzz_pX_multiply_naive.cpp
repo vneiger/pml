@@ -12,8 +12,9 @@ NTL_CLIENT
 /* c = a*b                                                    */
 /* Waksman's algorithm                                        */
 /*------------------------------------------------------------*/
-void multiply_waksman(Mat<zz_pX> &C, const Mat<zz_pX> &A, const Mat<zz_pX> &B)
+void multiply_waksman(Mat<zz_pX> &Cout, const Mat<zz_pX> &A, const Mat<zz_pX> &B)
 {
+    Mat<zz_pX> C;
     Vec<zz_pX> Arow, Acol, D, E;
     zz_pX val0, val1, val2, crow;
 
@@ -82,6 +83,7 @@ void multiply_waksman(Mat<zz_pX> &C, const Mat<zz_pX> &A, const Mat<zz_pX> &B)
 	    }
 	}
     }
+    Cout = C;
 }
 
 
@@ -90,9 +92,10 @@ void multiply_waksman(Mat<zz_pX> &C, const Mat<zz_pX> &A, const Mat<zz_pX> &B)
 /* c = a*b                                                    */
 /* naive algorithm                                            */
 /*------------------------------------------------------------*/
-void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+void multiply_naive(Mat<zz_pX> & c_out, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
 
+    Mat<zz_pX> c;
     long u = a.NumRows();
     long v = a.NumCols();
     long w = b.NumCols();
@@ -110,5 +113,6 @@ void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 	    }
 	}
     }
+    c_out = c;
 }
 

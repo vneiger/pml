@@ -24,24 +24,34 @@ void one_check(long sz, long deg, long p)
 	zz_p::init(p);
     }
 
-    random_mat_zz_pX(a, sz, sz, deg);
-    random_mat_zz_pX(b, sz, sz, deg);
     cout << "size=" << sz << ", length=" << deg << " ";
 
+    random_mat_zz_pX(a, sz, sz, deg);
+    random_mat_zz_pX(b, sz, sz, deg);
+
     // naive algorithm, if the size is reasonable
-    long do_naive = (sz <= 400)  && (deg <= 40);
+    long do_naive = ((sz <= 400)  && (deg <= 40)) || ((sz <= 50) && (deg <= 200)) ||  ((sz <= 10) && (deg <= 500));
     if (do_naive)
     {
 	t = GetTime();
 	multiply_naive(c1, a, b);
 	cout << GetTime()-t << " ";
+
+	Mat<zz_pX> c0;
+	t = GetTime();
+	multiply_waksman(c0, a, b);
+	if (c1 != c0)
+	{
+	    cout << "(waksman mismatch) ";
+	}
+	cout << GetTime()-t << " ";
     }
     else 
     { 
-	cout << "------ ";
+	cout << "------ ------ ";
     }
 
-    // geometric evaluation
+    // geometric evaluation -- should be done only if feasible
     t = GetTime();
     Mat<zz_pX> c2;
     multiply_evaluate_geometric(c2, a, b);
@@ -55,12 +65,11 @@ void one_check(long sz, long deg, long p)
 	}
     }
 
-    // naive transform
+    // naive transform -- always works
     t = GetTime();
     Mat<zz_pX> c3;
     multiply_transform_naive(c3, a, b);
     cout << GetTime()-t << " ";
-
     if (c3 != c2)
     {
 	cout << "(transform naive mismatch) ";
@@ -72,12 +81,16 @@ void one_check(long sz, long deg, long p)
 	Mat<zz_pX> c4;
 	multiply_transform_karatsuba(c4, a, b);
 	cout << GetTime()-t << " ";
-	
 	if (c4 != c2)
 	{
 	    cout << "(transform karatsuba mismatch) ";
 	}
     }
+    else 
+    { 
+	cout << "------ ";
+    }
+
 
     if (deg == 3) // TODO: write is_montgomery
     {
@@ -90,6 +103,10 @@ void one_check(long sz, long deg, long p)
 	{
 	    cout << "(transform montgomery mismatch) ";
 	}
+    }
+    else 
+    { 
+	cout << "------ ";
     }
 
     if (deg == 4) // TODO: write is_karatsuba4
@@ -104,6 +121,22 @@ void one_check(long sz, long deg, long p)
 	    cout << "(transform karatsuba4 mismatch) ";
 	}
     }
+    else 
+    { 
+	cout << "------ ";
+    }
+
+
+    {
+	t = GetTime();
+	Mat<zz_pX> c4;
+	multiply_3_primes(c4, a, b);
+	cout << GetTime()-t << " ";
+	if (c4 != c2)
+	{
+	    cout << "(transform 3 primes mismatch) ";
+	}
+    }
 
     cout << endl;
 }
@@ -115,15 +148,31 @@ void check()
 {
     
 // TODO: detect small Fourier primes
-    one_check(1000, 2, 1125899906842679);
-    one_check(1000, 2, 23068673);
-    one_check(1000, 2, 0);
-    one_check(1000, 3, 1125899906842679);
-    one_check(1000, 3, 23068673);
-    one_check(1000, 3, 0);
-    one_check(1000, 4, 1125899906842679);
-    one_check(1000, 4, 23068673);
-    one_check(1000, 4, 0);
+
+
+    one_check(2, 500, 288230376151711813);
+    one_check(2, 500, 23068673);
+    one_check(2, 500, 0);
+
+    one_check(10, 200, 288230376151711813);
+    one_check(10, 200, 23068673);
+    one_check(10, 200, 0);
+
+    // one_check(100, 100, 288230376151711813);
+    // one_check(100, 100, 23068673);
+    // one_check(100, 100, 0);
+
+    // one_check(1000, 2, 288230376151711813);
+    // one_check(1000, 2, 23068673);
+    // one_check(1000, 2, 0);
+
+    // one_check(1000, 3, 288230376151711813);
+    // one_check(1000, 3, 23068673);
+    // one_check(1000, 3, 0);
+
+    // one_check(1000, 4, 288230376151711813);
+    // one_check(1000, 4, 23068673);
+    // one_check(1000, 4, 0);
 }  
 
 /*------------------------------------------------------------*/
