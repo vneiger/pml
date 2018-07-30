@@ -74,6 +74,10 @@ void one_check(long sz, long deg, long p)
 	    cout << "(transform mismatch) ";
 	}
     }
+    else 
+    { 
+	cout << "--------- ";
+    }
 
     cout << endl;
 }
@@ -146,21 +150,16 @@ void one_check_smalldeg(long sz, long deg, long p)
 /*------------------------------------------------------------*/
 void check(long sz=200, long deg=4)
 {
-    long p0 = 0;
     long p1 = 288230376151711813;
-    long p2 = 23068673;
+    // long p0 = 0;
+    // long p2 = 23068673;
 
-    // // small degree checks
-    // one_check_smalldeg(sz, 2, p0);
-    // one_check_smalldeg(sz, 2, p1);
-    // one_check_smalldeg(sz, 2, p2);
-
-    // // big degrees checks
-    // cout << "size=" << sz << ", length=" << deg << " " << endl;
-    // cout << "naive\t\t" << "eval geom\t" << "naive trans\t" << "eval FFT" << endl;
-    one_check(sz, deg, p0);
-    one_check(sz, deg, p1);
-    one_check(sz, deg, p2);
+    cout << "                   waksman    eval       3primes    transf\n";
+    
+    for (long i = 1; i < deg; i++)
+    {
+	one_check(sz, i, p1);
+    }
 }  
 
 /*------------------------------------------------------------*/
@@ -168,7 +167,6 @@ void check(long sz=200, long deg=4)
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
