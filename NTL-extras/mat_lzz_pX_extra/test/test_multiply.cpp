@@ -18,7 +18,7 @@ void one_check(long sz, long deg, long p)
 
     if (p == 0) // init zz_p with FFTInit()
     {
-	zz_p::FFTInit(0);
+	zz_p::FFTInit(100);
     }
     else
     {
@@ -31,7 +31,10 @@ void one_check(long sz, long deg, long p)
     random_mat_zz_pX(b, sz, sz, deg);
 
     // naive algorithm, if the size is reasonable
-    long do_naive = ((sz <= 400)  && (deg <= 40)) || ((sz <= 50) && (deg <= 200)) ||  ((sz <= 10) && (deg <= 500));
+    long do_naive = ((sz <= 400)  && (deg <= 40))
+			|| ((sz <= 50) && (deg <= 200))
+			||  ((sz <= 10) && (deg <= 2000))
+			|| (sz==2);
     if (do_naive)
     {
 	t = GetTime();
