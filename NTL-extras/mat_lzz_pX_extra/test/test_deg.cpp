@@ -12,8 +12,8 @@ template<typename T>
 void printVec(std::vector<T> const &input)
 {
 	std::cout << '[';
-	for (auto elt : input) {
-		std::cout << elt << ", ";
+	for (auto &elt : input) {
+		std::cout << elt << " ";
 	}
 	std::cout << ']' << std::endl;
 }
@@ -125,6 +125,89 @@ int main(){
 	printVec(pivind);
 	printVec(pivdeg);
 
-	cout << "popov? " << is_weak_popov(pmat,rs) << endl;
-	cout << "ordered popov? " << is_weak_popov(pmat,rs,true,true) << endl;
+	cout << "weak popov? " << is_weak_popov(pmat,rs) << endl;
+	cout << "weak ordered popov? " << is_weak_popov(pmat,rs,true,true) << endl;
+	
+	cout << endl << "testing is_popov" << endl;
+	pmat.SetDims(3,3);
+	pmat[0][0] = random_zz_pX(5);
+	pmat[0][1] = random_zz_pX(2);
+	pmat[0][2] = random_zz_pX(1);
+	pmat[1][0] = random_zz_pX(3);
+	pmat[1][1] = random_zz_pX(3);
+	pmat[1][2] = random_zz_pX(1);
+	pmat[2][0] = random_zz_pX(2);
+	pmat[2][1] = random_zz_pX(2);
+	pmat[2][2] = random_zz_pX(0);
+	MakeMonic(pmat[0][0]);
+	MakeMonic(pmat[1][0]);
+	MakeMonic(pmat[1][1]);
+	MakeMonic(pmat[2][2]);
+	cout << "pmat: " << endl << pmat << endl;
+	degree_matrix(deg_mat, pmat);
+	cout << "deg mat: " << endl << deg_mat << endl;
+	cout << "is_popov: " << boolalpha << is_popov(pmat) << endl;
+	
+	cout << endl << "Test Left shifts" << endl;
+	cout << "left shift operator: " << (pmat << 2) << endl;
+	cout << "left shift mutator: " << (pmat <<= 2) << endl;
+	cout << "test procedure: " << LeftShift(pmat,2) << endl;
+	LeftShift(pmat,pmat,2);
+	cout << "test mutator: " << pmat << endl;
+	//row
+	cout << "row test procedure: " << LeftShiftRow(pmat,0,1) << endl;
+	LeftShiftRow(pmat,pmat,0,1);
+	cout << "row test mutator: " << pmat << endl;
+	//col
+	cout << "col test procedure: " << LeftShiftCol(pmat,1,2) << endl;
+	LeftShiftCol(pmat,pmat,1,2);
+	cout << "col test mutator: " << pmat << endl;
+	
+	cout << endl << "Test Right shifts" << endl;
+	cout << "left shift operator: " << (pmat >> 2) << endl;
+	cout << "left shift mutator: " << (pmat >>= 2) << endl;
+	cout << "test procedure: " << RightShift(pmat,2) << endl;
+	RightShift(pmat,pmat,2);
+	cout << "test mutator: " << pmat << endl;
+	//row
+	cout << "row test procedure: " << RightShiftRow(pmat,0,1) << endl;
+	RightShiftRow(pmat,pmat,0,1);
+	cout << "row test mutator: " << pmat << endl;
+	//col
+	cout << "col test procedure: " << RightShiftCol(pmat,1,2) << endl;
+	RightShiftCol(pmat,pmat,1,2);
+	cout << "col test mutator: " << pmat << endl;
+	
+	cout << endl << "Test trunc" << endl;
+	cout << "trunc: " << trunc(pmat,4) << endl;
+	trunc(pmat,pmat,4);
+	cout << "mutator trunc: " << pmat << endl;
+	
+	cout << endl << "Test trunc row" << endl;
+	cout << "trunc: " << truncRow(pmat,0,2) << endl;
+	truncRow(pmat,pmat,0,2);
+	cout << "mutator trunc: " << pmat << endl;
+	
+	cout << endl << "Test trunc col" << endl;
+	cout << "trunc: " << truncCol(pmat,1,1) << endl;
+	truncCol(pmat,pmat,1,1);
+	cout << "mutator trunc: " << pmat << endl;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
