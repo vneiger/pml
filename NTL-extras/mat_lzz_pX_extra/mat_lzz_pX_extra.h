@@ -821,6 +821,8 @@ DegVec popov_intbas_iterative(
 // --> popov_mbasis1 can be called as such (with, as input, pmat evaluated at a
 // point)
 
+// TODO input pmat should be... (list of evaluations?)
+
 DegVec mbasis(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
@@ -848,6 +850,11 @@ DegVec popov_mbasis(
 /*------------------------------------------------------------*/
 /* PM-Basis algorithm for uniform interpolation points        */
 /*------------------------------------------------------------*/
+
+// TODO there are two variants, test them to be sure if they are similar / which is faster
+//   either compute more in the evaluated world and interpolate appbas at the end,
+//   or compute in the polynomial world and evaluate to obtain the residuals
+// (in any case, there will still be interpolation/evaluation in the middle)
 DegVec pmbasis(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
