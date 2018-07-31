@@ -372,61 +372,6 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* matrix of integers; deg(0) = -1                            */
-/*------------------------------------------------------------*/
-void degree_matrix(
-		Mat<long> &degmat,
-		const Mat<zz_pX> &pmat,
-		const std::vector<long>& shift=std::vector<long>(),
-		const bool row_wise=true
-		);
-
-/*------------------------------------------------------------*/
-/* max degree of row entries                                  */
-/*------------------------------------------------------------*/
-void row_degree(
-		std::vector<long> &rdeg,
-		const Mat<zz_pX> &pmat,
-		const std::vector<long>& shift=std::vector<long>()
-		); 
-
-/*------------------------------------------------------------*/
-/* max degree of col entries                                  */
-/*------------------------------------------------------------*/
-void col_degree(
-		std::vector<long> &cdeg,
-		const Mat<zz_pX> &pmat,
-		const std::vector<long>& shift=std::vector<long>()
-		); 
-
-/*------------------------------------------------------------*/
-/* finds the pivot indices; returns the row/col degs          */
-/*------------------------------------------------------------*/
-void pivot_index(
-		std::vector<long> &pivind,
-		std::vector<long> &pivdeg,
-		const Mat<zz_pX> &pmat,
-		const std::vector<long> & shift = std::vector<long>(),
-		const bool row_wise = true
-		);
-
-/*------------------------------------------------------------*/
-/* leading matrix of b                                        */
-/*------------------------------------------------------------*/
-void leading_matrix(
-		Mat<zz_p> &lmat,
-		const Mat<zz_pX> &pmat,
-		const std::vector<long> & shift = std::vector<long>(),
-		const bool row_wise = true
-		);
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* TESTING REDUCED/NORMAL FORMS                               */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
 /* Shifted reduced forms of polynomials matrices. Recall that */
 /* Popov => ordered weak Popov => weak Popov => Reduced       */
 /*------------------------------------------------------------*/
@@ -439,12 +384,70 @@ enum PolMatForm {
 	POPOV = 4,
 };
 
+typedef std::vector<long> Shift;
+typedef std::vector<long> DegVec;
+
+/*------------------------------------------------------------*/
+/* matrix of integers; deg(0) = -1                            */
+/*------------------------------------------------------------*/
+void degree_matrix(
+		Mat<long> &degmat,
+		const Mat<zz_pX> &pmat,
+		const Shift & shift = Shift(),
+		const bool row_wise=true
+		);
+
+/*------------------------------------------------------------*/
+/* max degree of row entries                                  */
+/*------------------------------------------------------------*/
+void row_degree(
+		DegVec & rdeg,
+		const Mat<zz_pX> &pmat,
+		const Shift & shift = Shift()
+		); 
+
+/*------------------------------------------------------------*/
+/* max degree of col entries                                  */
+/*------------------------------------------------------------*/
+void col_degree(
+		DegVec & cdeg,
+		const Mat<zz_pX> &pmat,
+		const Shift & shift = Shift()
+		); 
+
+/*------------------------------------------------------------*/
+/* finds the pivot indices; returns the row/col degs          */
+/*------------------------------------------------------------*/
+void pivot_index(
+		std::vector<long> & pivind,
+		DegVec & pivdeg,
+		const Mat<zz_pX> & pmat,
+		const Shift & shift = Shift(),
+		const bool row_wise = true
+		);
+
+/*------------------------------------------------------------*/
+/* leading matrix of b                                        */
+/*------------------------------------------------------------*/
+void leading_matrix(
+		Mat<zz_p> &lmat,
+		const Mat<zz_pX> &pmat,
+		const Shift & shift = Shift(),
+		const bool row_wise = true
+		);
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING REDUCED/NORMAL FORMS                               */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
 /*------------------------------------------------------------*/
 /* returns true if b is reduced                               */
 /*------------------------------------------------------------*/
 bool is_reduced(
 		const Mat<zz_pX> &pmat,
-		const std::vector<long> & shift = std::vector<long>(),
+		const Shift & shift = Shift(),
 		const bool row_wise = true
 		);
 
@@ -453,14 +456,14 @@ bool is_reduced(
 /*------------------------------------------------------------*/
 bool is_weak_popov(
 		const Mat<zz_pX> &pmat,
-		const std::vector<long> &shift = std::vector<long>(),
+		const Shift & shift = Shift(),
 		const bool row_wise = true,
 		const bool ordered= false
 		);
 
 bool is_popov(
 		const Mat<zz_pX> &pmat,
-		const std::vector<long> &shift = std::vector<long>(),
+		const Shift & shift = Shift(),
 		const bool row_wise = true,
 		const bool up_to_permutation = false
 		);
@@ -471,8 +474,8 @@ bool is_popov(
 /* otherwise return NONE (= 0)                                */
 /*------------------------------------------------------------*/
 PolMatForm get_polmatform(
-		const Mat<zz_pX> &pmat,
-		const std::vector<long> &shift = std::vector<long>(),
+		const Mat<zz_pX> & pmat,
+		const Shift & shift = Shift(),
 		const bool row_wise = true
 		);
 
@@ -481,9 +484,9 @@ PolMatForm get_polmatform(
 /* indicated by argument 'form'                               */
 /*------------------------------------------------------------*/
 bool is_polmatform(
-		const Mat<zz_pX> &pmat,
+		const Mat<zz_pX> & pmat,
 		const PolMatForm form,
-		const std::vector<long> &shift = std::vector<long>(),
+		const Shift & shift = Shift(),
 		const bool row_wise = true
 		);
 
@@ -492,6 +495,10 @@ bool is_polmatform(
 /* MINIMAL APPROXIMANT BASES                                  */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+
+typedef std::vector<long> Order;
+
+// TODO write proper docstrings
 
 ////Definition (approximant basis)
 // Given:
@@ -542,27 +549,29 @@ bool is_polmatform(
 /* general user-friendly interface                            */
 /*------------------------------------------------------------*/
 
-std::vector<long> approximant_basis(
+// TODO: when algorithms are ready, find threshold and write the definition
+DegVec approximant_basis(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
-		const std::vector<long> & order,
-		const std::vector<long> & shift = std::vector<long>(),
+		const Order & order,
+		const Shift & shift = Shift(),
 		const PolMatForm form = ORD_WEAK_POPOV,
 		const bool row_wise = true,
 		const bool generic = false
 		);
 
-std::vector<long> approximant_basis(
+// TODO: when the above function is ready, uncomment the definition below
+DegVec approximant_basis(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift = std::vector<long>(),
+		const Shift & shift = Shift(),
 		const PolMatForm form = ORD_WEAK_POPOV,
 		const bool row_wise = true,
 		const bool generic = false
 		);
 //{
-//	std::vector<long> orders(mat.NumRows(),order);
+//	Order orders(mat.NumRows(),order);
 //	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
 //}
 
@@ -581,8 +590,8 @@ std::vector<long> approximant_basis(
 bool is_approximant_basis(
 		const Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
-		const std::vector<long> & order,
-		const std::vector<long> & shift = std::vector<long>(),
+		const Order & order,
+		const Shift & shift = Shift(),
 		const PolMatForm & form = ORD_WEAK_POPOV,
 		const bool row_wise = true,
 		const bool randomized = false
@@ -592,7 +601,7 @@ bool is_approximant_basis(
 		const Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift = std::vector<long>(),
+		const Shift & shift = Shift(),
 		const PolMatForm & form = ORD_WEAK_POPOV,
 		const bool row_wise = true,
 		const bool randomized = false
@@ -605,19 +614,19 @@ bool is_approximant_basis(
 /*   - Van Barel-Bultheel 1991+1992                           */
 /*   - Beckermann-Labahn 2000 (ensuring s-Popov)              */
 /*------------------------------------------------------------*/
-std::vector<long> appbas_iterative(
+DegVec appbas_iterative(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
-		const std::vector<long> order,
-		const std::vector<long> & shift,
+		const Order & order,
+		const Shift & shift,
 		bool order_wise=true
 		);
 
-std::vector<long> popov_appbas_iterative(
+DegVec popov_appbas_iterative(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
-		const std::vector<long> order,
-		const std::vector<long> & shift,
+		const Order & order,
+		const Shift & shift,
 		bool order_wise=true
 		);
 
@@ -631,10 +640,10 @@ std::vector<long> popov_appbas_iterative(
 // input: kerbas is constant, will contain the left kernel of pmat in reduced REF
 // output: pivot degrees of the approx basis (also indicates where the rows of
 // kernel should appear in approx basis)
-std::vector<long> popov_mbasis1(
+DegVec popov_mbasis1(
 		Mat<zz_p> & kerbas,
 		const Mat<zz_p> & pmat,
-		const std::vector<long> & shift
+		const Shift & shift
 		);
 
 /*------------------------------------------------------------*/
@@ -645,28 +654,28 @@ std::vector<long> popov_mbasis1(
 /*   - Jeannerod-Neiger-Villard 2018                          */
 /*          (ensuring s-ordered weak Popov or s-Popov)        */
 /*------------------------------------------------------------*/
-std::vector<long> mbasis(
+DegVec mbasis(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift
+		const Shift & shift
 		);
 
 // TODO some thresholding to be done, so that mbasis does the
 // resupdate strategy when it is faster
 // --> organize code so that mbasis is always ~the fastest
-std::vector<long> mbasis_resupdate(
+DegVec mbasis_resupdate(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift
+		const Shift & shift
 		);
 
-std::vector<long> popov_mbasis(
+DegVec popov_mbasis(
 		Mat<zz_pX> &appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift
+		const Shift & shift
 		);
 
 /*------------------------------------------------------------*/
@@ -677,19 +686,118 @@ std::vector<long> popov_mbasis(
 /*   - Jeannerod-Neiger-Villard 2018                          */
 /*          (ensuring s-ordered weak Popov or s-Popov)        */
 /*------------------------------------------------------------*/
-std::vector<long> pmbasis(
+DegVec pmbasis(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift
+		const Shift & shift
 		);
 
-std::vector<long> popov_pmbasis(
+DegVec popov_pmbasis(
 		Mat<zz_pX> &appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift
+		const Shift & shift
 		);
+
+
+/**********************************************************************
+*                     MINIMAL INTERPOLANT BASES                      *
+**********************************************************************/
+
+////Definition (interpolant basis)
+// Given:
+//   * m x n matrix of univariate polynomials 'pmat',
+//   * list 'points' of n pairs [root,multiplicity], which define n products of linear factors M_0,...,M_{n-1},
+// An interpolant basis for (pmat,points) is a matrix over K[X]
+// whose rows form a basis for the K[X]-module
+// { 'int' in K[X]^{1 x m}  |  the column j of 'app' 'pmat' is 0 modulo M_j }
+
+/*------------------------------------------------------------*/
+/* general user-friendly interface                            */
+/*------------------------------------------------------------*/
+
+// TODO
+DegVec interpolant_basis(
+		Mat<zz_pX> & intbas,
+		const Mat<zz_pX> & pmat,
+		// TODO const std::vector<long> & order,
+		const Shift & shift = Shift(),
+		const PolMatForm form = ORD_WEAK_POPOV,
+		const bool row_wise = true,
+		const bool generic = false
+		);
+
+//std::vector<long> interpolant_basis(
+//		Mat<zz_pX> & intbas,
+//		const Mat<zz_pX> & pmat,
+//		// TODO const long order,
+//		const std::vector<long> & shift = std::vector<long>(),
+//		const PolMatForm form = ORD_WEAK_POPOV,
+//		const bool row_wise = true,
+//		const bool generic = false
+//		);
+//{
+//	std::vector<long> orders(mat.NumRows(),order);
+//	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
+//}
+
+
+/*------------------------------------------------------------*/
+/* Verifying that intbas is a shift-minimal interpolant       */
+/* basis for input matrix 'pmat' and points 'points'          */
+/* 'form' gives the minimal requirement to check (matrix must */
+/* be at least in the form 'form')                            */
+/* 'randomized' says whether using a Monte Carlo or Las Vegas */
+/* verification algorithm is acceptable                       */
+/* Note: currently, deterministic verification is, for most   */
+/* instances, as long as re-computing the basis               */
+/*------------------------------------------------------------*/
+
+bool is_interpolant_basis(
+		const Mat<zz_pX> & intbas,
+		const Mat<zz_pX> & pmat,
+		// TODO const std::vector<long> & order,
+		const Shift & shift = Shift(),
+		const PolMatForm & form = ORD_WEAK_POPOV,
+		const bool row_wise = true,
+		const bool randomized = false
+		);
+
+//bool is_interpolant_basis(
+//		const Mat<zz_pX> & intbas,
+//		const Mat<zz_pX> & pmat,
+//		// TODO const long order,
+//		const std::vector<long> & shift = std::vector<long>(),
+//		const PolMatForm & form = ORD_WEAK_POPOV,
+//		const bool row_wise = true,
+//		const bool randomized = false
+//		);
+
+/*------------------------------------------------------------*/
+/* Iterative algorithm for general order and shift            */
+/* References:                                                */
+/*   - Beckermann 1992                                        */
+/*   - Van Barel-Bultheel 1991+1992                           */
+/*   - Beckermann-Labahn 2000 (ensuring s-Popov)              */
+/*------------------------------------------------------------*/
+DegVec intbas_iterative(
+		Mat<zz_pX> & intbas,
+		const Mat<zz_pX> & pmat,
+		// TODO const std::vector<long> order,
+		const Shift & shift,
+		bool order_wise=true
+		);
+
+DegVec popov_intbas_iterative(
+		Mat<zz_pX> & intbas,
+		const Mat<zz_pX> & pmat,
+		// TODO const std::vector<long> order,
+		const Shift & shift,
+		bool order_wise=true
+		);
+
+
 
 /**********************************************************************
 *                            KERNEL BASIS                            *

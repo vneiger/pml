@@ -26,8 +26,8 @@ NTL_CLIENT
 bool is_approximant_basis(
 		const Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
-		const std::vector<long> & order,
-		const std::vector<long> & shift,
+		const Order & order,
+		const Shift & shift,
 		const PolMatForm & form,
 		const bool row_wise,
 		const bool randomized
@@ -66,13 +66,13 @@ bool is_approximant_basis(
 		const Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift,
+		const Shift & shift,
 		const PolMatForm & form,
 		const bool row_wise,
 		const bool randomized
 		)
 {
-	std::vector<long> orders(pmat.NumRows(),order);
+	Order orders(pmat.NumRows(),order);
 	return is_approximant_basis(appbas,pmat,orders,shift,form,row_wise,randomized);
 }
 
@@ -82,11 +82,11 @@ bool is_approximant_basis(
 // for the general case
 
 
-std::vector<long> appbas_iterative(
+DegVec appbas_iterative(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
-		const std::vector<long> order,
-		const std::vector<long> & shift,
+		const Order & order,
+		const Shift & shift,
 		bool order_wise
 		)
 {
@@ -107,7 +107,7 @@ std::vector<long> appbas_iterative(
 	Mat<zz_pX> residual( pmat );
 
 	// order that remains to be dealt with
-	std::vector<long> rem_order( order );
+	Order rem_order( order );
 
 	// indices of columns/orders that remain to be dealt with
 	std::vector<long> rem_index( cdim );
@@ -115,7 +115,7 @@ std::vector<long> appbas_iterative(
 
 	// shifted row degrees of approximant basis
 	// (initially, of the identity matrix, i.e. rdeg == shift)
-	std::vector<long> rdeg( shift );
+	DegVec rdeg( shift );
 
 	while (not rem_order.empty())
 	{
@@ -213,18 +213,18 @@ std::vector<long> appbas_iterative(
 	return rdeg;
 }
 
-std::vector<long> popov_appbas_iterative(
+DegVec popov_appbas_iterative(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
-		const std::vector<long> order,
-		const std::vector<long> & shift,
+		const Order & order,
+		const Shift & shift,
 		bool order_wise
 		)
 {
 	// TODO: first call can be very slow if strange degrees --> rather implement
 	// BecLab00's "continuous" normalization?
-	std::vector<long> pivdeg = appbas_iterative(appbas,pmat,order,shift,order_wise);
-	std::vector<long> new_shift( pivdeg );
+	DegVec pivdeg = appbas_iterative(appbas,pmat,order,shift,order_wise);
+	DegVec new_shift( pivdeg );
 	std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
 	// TODO write zero method for polmats
 	for (long i = 0; i < appbas.NumCols(); ++i)
@@ -244,10 +244,10 @@ std::vector<long> popov_appbas_iterative(
 // defined for arbitrary shifts, but
 // works best for shifts close to uniform
 
-std::vector<long> popov_mbasis1(
+DegVec popov_mbasis1(
 		Mat<zz_p> & kerbas,
 		const Mat<zz_p> & pmat,
-		const std::vector<long> & shift
+		const Shift & shift
 		)
 {
 	// compute permutation which realizes stable sort of the shift
@@ -271,9 +271,9 @@ std::vector<long> popov_mbasis1(
 	Mat<zz_p> p_kerbas;
 	kernel(p_kerbas,mat);
 	if (p_kerbas.NumRows()==0)
-		return std::vector<long>(pmat.NumRows(),1);
+		return DegVec(pmat.NumRows(),1);
 	if (p_kerbas.NumRows()==pmat.NumRows())
-		return std::vector<long>(pmat.NumRows(),0);
+		return DegVec(pmat.NumRows(),0);
 
 	// compute the (permuted) pivot indices
 	// FIXME unfortunately NTL doesn't return the pivot indices in Gaussian elimination
@@ -293,7 +293,7 @@ std::vector<long> popov_mbasis1(
 	// permute everything back to original order:
 	// prepare kernel permutation by permuting kernel pivot indices
 	// pivot degrees corresponding to kernel pivot indices are 0, others are 1
-	std::vector<long> pivdeg(pmat.NumRows(),1);
+	DegVec pivdeg(pmat.NumRows(),1);
 	std::vector<long> pivind(p_kerbas.NumRows());
 	for (long i = 0; i < p_kerbas.NumRows(); ++i)
 	{
@@ -317,11 +317,11 @@ std::vector<long> popov_mbasis1(
 	return pivdeg;
 }
 
-std::vector<long> mbasis(
+DegVec mbasis(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift
+		const Shift & shift
 		)
 {
 	// initially, appbas is the identity matrix
@@ -331,15 +331,15 @@ std::vector<long> mbasis(
 
 	// holds the current shifted row degree of appbas
 	// initially, this is exactly shift
-	std::vector<long> rdeg( shift );
+	DegVec rdeg( shift );
 
 	// holds the current pivot degree of appbas
 	// initially tuple of zeroes
 	// (note that at all times pivdeg+shift = rdeg entrywise)
-	std::vector<long> pivdeg(pmat.NumRows());
+	DegVec pivdeg(pmat.NumRows());
 
 	// will store the pivot degree at each call of mbasis1
-	std::vector<long> diff_pivdeg;
+	DegVec diff_pivdeg;
 
 	// matrix to store the kernels in mbasis1 calls
 	Mat<zz_p> kerbas;
@@ -414,11 +414,11 @@ std::vector<long> mbasis(
 }
 
 // variant with continuous update of the residual
-std::vector<long> mbasis_resupdate(
+DegVec mbasis_resupdate(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift
+		const Shift & shift
 		)
 {
 	// initially, appbas is the identity matrix
@@ -428,10 +428,10 @@ std::vector<long> mbasis_resupdate(
 
 	// holds the current shifted row degree of appbas
 	// initially, this is exactly shift
-	std::vector<long> rdeg( shift );
+	DegVec rdeg( shift );
 
 	// buffer for temporary pivdegs at each mbasis1 call
-	std::vector<long> pivdeg(pmat.NumRows());
+	DegVec pivdeg(pmat.NumRows());
 	// here, unlike in mbasis(), we do not hold the current pivot degree of
 	// appbas (there the main motivation for having it was that we needed
 	// to maintain the actual degree of the basis)
@@ -527,15 +527,15 @@ std::vector<long> mbasis_resupdate(
 	return rdeg;
 }
 
-std::vector<long> popov_mbasis(
+DegVec popov_mbasis(
 		Mat<zz_pX> &appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift
+		const Shift & shift
 		)
 {
-	std::vector<long> pivdeg = mbasis(appbas,pmat,order,shift);
-	std::vector<long> new_shift( pivdeg );
+	DegVec pivdeg = mbasis(appbas,pmat,order,shift);
+	Shift new_shift( pivdeg );
 	std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
 	// TODO write zero method for polmats
 	for (long i = 0; i < appbas.NumCols(); ++i)
@@ -549,11 +549,11 @@ std::vector<long> popov_mbasis(
 	return pivdeg;
 }
 
-std::vector<long> pmbasis(
+DegVec pmbasis(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift
+		const Shift & shift
 		)
 {
 	// TODO thresholds to be determined:
@@ -562,9 +562,9 @@ std::vector<long> pmbasis(
 	if (order <= 16)
 		return mbasis(appbas,pmat,order,shift);
 
-	std::vector<long> pivdeg; // pivot degree, first call
-	std::vector<long> pivdeg2; // pivot degree, second call
-	std::vector<long> rdeg(pmat.NumRows()); // shifted row degree
+	DegVec pivdeg; // pivot degree, first call
+	DegVec pivdeg2; // pivot degree, second call
+	DegVec rdeg(pmat.NumRows()); // shifted row degree
 	long order1 = order>>1; // order of first call
 	long order2 = order-order1; // order of second call
 	Mat<zz_pX> appbas2; // basis for second call
@@ -593,15 +593,15 @@ std::vector<long> pmbasis(
 	return pivdeg;
 }
 
-std::vector<long> popov_pmbasis(
+DegVec popov_pmbasis(
 		Mat<zz_pX> &appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift
+		const Shift & shift
 		)
 {
-	std::vector<long> pivdeg = pmbasis(appbas,pmat,order,shift);
-	std::vector<long> new_shift( pivdeg );
+	DegVec pivdeg = pmbasis(appbas,pmat,order,shift);
+	Shift new_shift( pivdeg );
 	std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
 	// TODO write zero method for polmats
 	for (long i = 0; i < appbas.NumRows(); ++i)
