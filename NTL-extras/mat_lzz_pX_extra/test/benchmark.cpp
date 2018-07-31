@@ -70,15 +70,11 @@ struct tree{
   int find_best(long size, long deg){
     auto *stp = find_closest(true,size,this);
     auto *dtp = find_closest(false,deg,stp->subtree);
-    cout << "size: " << dtp->d.size << 
-    " deg: " << dtp->d.deg << endl;
     
     const auto &timings = dtp->d.timings;
     long ind = 0;
     double min_time = timings[0];
     for (long i = 1; i < timings.size(); i++){
-      cout << "mintime: " << min_time << endl;
-      cout << "time: " << timings[i] << endl;
       if (min_time == -1){
         ind = i;
         min_time = timings[i];
@@ -88,6 +84,8 @@ struct tree{
         min_time = timings[i];
       }
     }
+    cout << "size: " << size << ", deg: " << deg <<
+    ", min_time: " << min_time << endl;
     return ind;
   }
   
@@ -96,7 +94,6 @@ struct tree{
     long min = numeric_limits<long>::max();
     data::return_size = size;
     find_closest(start,at,min,n);
-    cout << "returned: " << at->d.val() << endl;
     return at;
   }
   
@@ -107,9 +104,7 @@ struct tree{
   
   void find_closest(tree* tp, tree* &at, long &min, const long val){
     if (tp == nullptr) return;
-    cout << "val: " << val << ", current: " << tp->d.size << " " << tp->d.deg << endl;
     if (abs(tp->d.val() - val) < min){
-      cout << "assigned: " << tp->d.val() << endl;
       at = tp;
       min = abs(tp->d.val() - val);
     }
@@ -198,10 +193,25 @@ int main(){
     else large_prime.emplace_back(i);
   }       
   
-  auto *tp = create_tree_size(small_prime);
-  auto l = tp->find_best(16,91);
-  cout << "index: " << l << endl;
-  delete tp;
+  auto *tp0 = create_tree_size(fft_prime);
+  auto *tp1 = create_tree_size(small_prime);
+  auto *tp2 = create_tree_size(large_prime);
+  long p,size,deg;
+  cout << "ENTER p(0,1,2), size, deg" << endl;
+  while (cin >> p >> size >> deg){
+    auto l = 0; 
+    if (p == 0)
+      l = tp0->find_best(size,deg);
+    else if (p == 1)
+      l = tp1->find_best(size,deg);
+    else
+      l = tp1->find_best(size,deg);
+    cout << "index: " << l << endl << endl;
+    cout << "ENTER p(0,1,2), size, deg" << endl;
+  }
+  delete tp0;
+  delete tp1;
+  delete tp2;
 }
 
 
