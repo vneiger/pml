@@ -224,7 +224,7 @@ DegVec popov_appbas_iterative(
 	// TODO: first call can be very slow if strange degrees --> rather implement
 	// BecLab00's "continuous" normalization?
 	DegVec pivdeg = appbas_iterative(appbas,pmat,order,shift,order_wise);
-	DegVec new_shift( pivdeg );
+	Shift new_shift( pivdeg );
 	std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
 	// TODO write zero method for polmats
 	for (long i = 0; i < appbas.NumCols(); ++i)

@@ -705,6 +705,11 @@ DegVec popov_pmbasis(
 *                     MINIMAL INTERPOLANT BASES                      *
 **********************************************************************/
 
+// list of points: for each column, we have a list of points (elt from zz_p and
+// multiplicity)
+// FIXME not thought thorougly yet, subject to change
+typedef std::vector<std::vector<std::pair<zz_p,long>>> Points;
+
 ////Definition (interpolant basis)
 // Given:
 //   * m x n matrix of univariate polynomials 'pmat',
@@ -721,25 +726,34 @@ DegVec popov_pmbasis(
 DegVec interpolant_basis(
 		Mat<zz_pX> & intbas,
 		const Mat<zz_pX> & pmat,
-		// TODO const std::vector<long> & order,
+		const Points & pts,
 		const Shift & shift = Shift(),
 		const PolMatForm form = ORD_WEAK_POPOV,
 		const bool row_wise = true,
 		const bool generic = false
 		);
 
-//std::vector<long> interpolant_basis(
-//		Mat<zz_pX> & intbas,
-//		const Mat<zz_pX> & pmat,
-//		// TODO const long order,
-//		const std::vector<long> & shift = std::vector<long>(),
-//		const PolMatForm form = ORD_WEAK_POPOV,
-//		const bool row_wise = true,
-//		const bool generic = false
-//		);
+// TODO uncomment below when above is ready
+// below, the following is called "uniform interpolation case" (or case with uniform points)
+// this means that we have the same points on all columns, all with multiplicity one)
+// (FIXME could be easily generalized to any constant multiplicity for all...?)
+DegVec interpolant_basis(
+		Mat<zz_pX> & intbas,
+		const Mat<zz_pX> & pmat,
+		const Vec<zz_p> & pts,
+		const Shift & shift = Shift(),
+		const PolMatForm form = ORD_WEAK_POPOV,
+		const bool row_wise = true,
+		const bool generic = false
+		);
 //{
-//	std::vector<long> orders(mat.NumRows(),order);
-//	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
+//	std::vector<std::pair<zz_p,long>> list_pts(pts.size());
+//	for ( long i=0; i<list_pts.size(); ++i )
+//	{
+//		list_pts[i] = std::pair<zz_p,long>(pts[i],1);
+//	}
+//	Points points(mat.NumCols(),list_pts);
+//	return interpolant_basis(appbas,mat,points,shift,canonical,row_wise,generic);
 //}
 
 
@@ -754,28 +768,30 @@ DegVec interpolant_basis(
 /* instances, as long as re-computing the basis               */
 /*------------------------------------------------------------*/
 
+// TODO not implemented yet
 bool is_interpolant_basis(
 		const Mat<zz_pX> & intbas,
 		const Mat<zz_pX> & pmat,
-		// TODO const std::vector<long> & order,
+		const Points & pts,
 		const Shift & shift = Shift(),
 		const PolMatForm & form = ORD_WEAK_POPOV,
 		const bool row_wise = true,
 		const bool randomized = false
 		);
 
-//bool is_interpolant_basis(
-//		const Mat<zz_pX> & intbas,
-//		const Mat<zz_pX> & pmat,
-//		// TODO const long order,
-//		const std::vector<long> & shift = std::vector<long>(),
-//		const PolMatForm & form = ORD_WEAK_POPOV,
-//		const bool row_wise = true,
-//		const bool randomized = false
-//		);
+// TODO (uniform interpolation variant)
+bool is_interpolant_basis(
+		const Mat<zz_pX> & intbas,
+		const Mat<zz_pX> & pmat,
+		const Vec<zz_p> & pts,
+		const Shift & shift = Shift(),
+		const PolMatForm & form = ORD_WEAK_POPOV,
+		const bool row_wise = true,
+		const bool randomized = false
+		);
 
 /*------------------------------------------------------------*/
-/* Iterative algorithm for general order and shift            */
+/* Iterative algorithm for arbitrary points and shift         */
 /* References:                                                */
 /*   - Beckermann 1992                                        */
 /*   - Van Barel-Bultheel 1991+1992                           */
@@ -784,7 +800,7 @@ bool is_interpolant_basis(
 DegVec intbas_iterative(
 		Mat<zz_pX> & intbas,
 		const Mat<zz_pX> & pmat,
-		// TODO const std::vector<long> order,
+		const Points & pts,
 		const Shift & shift,
 		bool order_wise=true
 		);
@@ -792,12 +808,59 @@ DegVec intbas_iterative(
 DegVec popov_intbas_iterative(
 		Mat<zz_pX> & intbas,
 		const Mat<zz_pX> & pmat,
-		// TODO const std::vector<long> order,
+		const Points & pts,
 		const Shift & shift,
 		bool order_wise=true
 		);
 
 
+/*------------------------------------------------------------*/
+/* Adaptation of M-Basis for uniform interpolation points     */
+/*------------------------------------------------------------*/
+
+// --> popov_mbasis1 can be called as such (with, as input, pmat evaluated at a
+// point)
+
+DegVec mbasis(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const Vec<zz_p> & pts,
+		const Shift & shift
+		);
+
+// TODO some thresholding to be done, so that mbasis does the
+// resupdate strategy when it is faster
+// --> organize code so that mbasis is always ~the fastest
+DegVec mbasis_resupdate(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const Vec<zz_p> & pts,
+		const Shift & shift
+		);
+
+DegVec popov_mbasis(
+		Mat<zz_pX> &appbas,
+		const Mat<zz_pX> & pmat,
+		const Vec<zz_p> & pts,
+		const Shift & shift
+		);
+
+/*------------------------------------------------------------*/
+/* PM-Basis algorithm for uniform interpolation points        */
+/*------------------------------------------------------------*/
+DegVec pmbasis(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const Vec<zz_p> & pts,
+		const Shift & shift
+		);
+
+DegVec popov_pmbasis(
+		Mat<zz_pX> &appbas,
+		const Mat<zz_pX> & pmat,
+		const Vec<zz_p> & pts,
+		const Shift & shift
+		);
 
 /**********************************************************************
 *                            KERNEL BASIS                            *
