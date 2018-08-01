@@ -417,8 +417,8 @@ DegVec mbasis(
 }
 
 // TODO FIXME below is an attempt at a "vector of matrices" approach for
-// mbasis. If it has some interest, we may want to have more broadly
-// functionalities for these
+// mbasis. Input only. If it has some interest, we may want to have more
+// broadly functionalities for this representation of polynomial matrices
 DegVec mbasis(
 		Mat<zz_pX> & appbas,
 		const Vec<Mat<zz_p>> & pmat,
@@ -512,6 +512,134 @@ DegVec mbasis(
 					add(residual, residual, res_coeff);
 				}
 			}
+		}
+	}
+
+	return pivdeg;
+}
+
+// TODO FIXME below is an attempt at a "vector of matrices" approach for
+// mbasis. Input+Output. If it has some interest, we may want to have more
+// broadly functionalities for this representation of polynomial matrices
+DegVec mbasis(
+		Vec<Mat<zz_p>> & appbas,
+		const Vec<Mat<zz_p>> & pmat,
+		const long order,
+		const Shift & shift
+		)
+{
+	long nrows = pmat[0].NumRows();
+	// TODO FIXME expected degree in non-shifted case --> assuming generic and shift==0
+	long expected_degree = ceil(pmat[0].NumCols()*order/nrows);
+	appbas.SetLength(expected_degree+1);
+	for (long d = 0; d < expected_degree+1; ++d)
+		appbas[d].SetDims(nrows,nrows);
+	// initially, appbas is the identity matrix
+	long current_degree = 0;
+	for (long i = 0; i < nrows; ++i)
+		appbas[0].put(i,i,zz_p(1));
+
+	// holds the current shifted row degree of appbas
+	// initially, this is exactly shift
+	DegVec rdeg( shift );
+
+	// holds the current pivot degree of appbas
+	// initially tuple of zeroes
+	// (note that at all times pivdeg+shift = rdeg entrywise)
+	DegVec pivdeg(nrows);
+
+	// will store the pivot degree at each call of mbasis1
+	DegVec diff_pivdeg;
+
+	// matrix to store the kernels in mbasis1 calls
+	Mat<zz_p> kerbas;
+	// matrix to store residuals, initially constant coeff of pmat
+	Mat<zz_p> residual( pmat[0] );
+
+	// declare matrices
+	Mat<zz_p> res_coeff,res_coeff1,res_coeff2; // will store coefficient matrices used to compute the residual
+	Mat<zz_p> kerapp; // will store constant-kernel * appbas[d]
+
+	for (long ord = 1; ord <= order; ++ord)
+	{
+		// call MBasis1 to retrieve kernel and pivdeg
+		diff_pivdeg = popov_mbasis1(kerbas,residual,rdeg);
+
+		if (kerbas.NumRows()==0)
+		{
+			// computation is already finished: the final basis is X^(order-ord+1)*appbas
+			//appbas <<= (order-ord+1);  // TODO !!! (for now assuming this doesn't happen)
+			// update pivdeg accordingly, and return
+			std::for_each(pivdeg.begin(), pivdeg.end(), [&order,&ord](long& a) { a+=order-ord+1; });
+			return pivdeg;
+		}
+
+		// kerbas.NumRows()==residual.NumRows() --> approximant basis is already
+		// correct for this order, just go to the next
+
+		if (kerbas.NumRows()<residual.NumRows())
+		{
+			// I/ Update degrees:
+			// new shifted row degree = old rdeg + diff_pivdeg
+			std::transform(rdeg.begin(), rdeg.end(), diff_pivdeg.begin(), rdeg.begin(), std::plus<long>());
+			// new pivot degree = old pivot_degree + diff_pivdeg
+			std::transform(pivdeg.begin(), pivdeg.end(), diff_pivdeg.begin(), pivdeg.begin(), std::plus<long>());
+			// deduce degree of appbas; note that it is a property of this algorithm
+			// that deg(appbas) = max(pivot degree) (i.e. max(degree of diagonal
+			// entries); this does not hold in general for ordered weak Popov forms
+			long deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
+
+			if (deg_appbas > expected_degree) {
+				std::cout << "~~mbasis-variant not implemented yet, currently assuming generic pmat and uniform shift" << std::endl;
+				throw;
+			}
+
+			// II/ update approximant basis
+
+			// submatrix of rows with diff_pivdeg==0 is replaced by kerbas*appbas
+			// while rows with diff_pivdeg=1 are simply multiplied by X
+			// --> the loop goes downwards, so that we can do both in the same iteration
+			long row;
+			// separate treatment of highest degree terms, if degree has increased
+			if (deg_appbas>current_degree)
+				for (long i = 0; i < nrows; ++i)
+					if (diff_pivdeg[i]==1)
+						appbas[deg_appbas][i] = appbas[deg_appbas-1][i];
+			// normal treatment of other terms
+			for (long d = current_degree; d >= 0; --d)
+			{
+				mul(kerapp,kerbas,appbas[d]);
+				row=0;
+				for (long i = 0; i < nrows; ++i)
+				{
+					if (diff_pivdeg[i]==0)
+					{
+						appbas[d][i] = kerapp[row];
+						++row;
+					}
+					else  // diff_pivdeg[i]==1 --> multiply by X
+					{
+						if (d>0)
+							appbas[d][i] = appbas[d-1][i];
+						else // d==0 : put zero row
+							clear(appbas[0][i]);
+					}
+				}
+			}
+
+			// III/ compute next residual, if needed
+			if (ord<order)
+			{
+				residual = appbas[0] * pmat[ord];
+				for (long d = 1; d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
+				{
+					res_coeff1 = appbas[d];
+					res_coeff2 = pmat[ord-d];
+					mul(res_coeff, res_coeff1, res_coeff2);
+					add(residual, residual, res_coeff);
+				}
+			}
+			current_degree = deg_appbas;
 		}
 	}
 

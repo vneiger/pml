@@ -665,9 +665,17 @@ DegVec mbasis(
 		const Shift & shift
 		);
 
-// variant with input given by matrix coefficients
+// TODO work in progress, variant with input given by matrix coefficients
 DegVec mbasis(
 		Mat<zz_pX> & appbas,
+		const Vec<Mat<zz_p>> & pmat,
+		const long order,
+		const Shift & shift
+		);
+
+// TODO work in progress, variant with input and output given by matrix coefficients
+DegVec mbasis(
+		Vec<Mat<zz_p>> & appbas,
 		const Vec<Mat<zz_p>> & pmat,
 		const long order,
 		const Shift & shift
