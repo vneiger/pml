@@ -846,7 +846,7 @@ DegVec intbas_iterative(
 		const Mat<zz_pX> & pmat,
 		const Points & pts,
 		const Shift & shift,
-		bool order_wise=true
+		bool point_wise=true // TODO to be thought about
 		);
 
 DegVec popov_intbas_iterative(
@@ -854,7 +854,7 @@ DegVec popov_intbas_iterative(
 		const Mat<zz_pX> & pmat,
 		const Points & pts,
 		const Shift & shift,
-		bool order_wise=true
+		bool point_wise=true // TODO to be thought about
 		);
 
 
@@ -865,27 +865,24 @@ DegVec popov_intbas_iterative(
 // --> popov_mbasis1 can be called as such (with, as input, pmat evaluated at a
 // point)
 
-// TODO input pmat should be... (list of evaluations?)
-
+// TODO input pmat = polynomial matrix, not implemented yet
 DegVec mbasis(
-		Mat<zz_pX> & appbas,
+		Mat<zz_pX> & intbas,
 		const Mat<zz_pX> & pmat,
 		const Vec<zz_p> & pts,
 		const Shift & shift
 		);
 
-// TODO some thresholding to be done, so that mbasis does the
-// resupdate strategy when it is faster
-// --> organize code so that mbasis is always ~the fastest
-DegVec mbasis_resupdate(
-		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & pmat,
+// input pmat = list of evaluations, implemented
+DegVec mbasis(
+		Mat<zz_pX> & intbas,
+		const Vec<Mat<zz_p>> & evals,
 		const Vec<zz_p> & pts,
 		const Shift & shift
 		);
 
 DegVec popov_mbasis(
-		Mat<zz_pX> &appbas,
+		Mat<zz_pX> &intbas,
 		const Mat<zz_pX> & pmat,
 		const Vec<zz_p> & pts,
 		const Shift & shift
@@ -896,18 +893,18 @@ DegVec popov_mbasis(
 /*------------------------------------------------------------*/
 
 // TODO there are two variants, test them to be sure if they are similar / which is faster
-//   either compute more in the evaluated world and interpolate appbas at the end,
+//   either compute more in the evaluated world and interpolate intbas at the end,
 //   or compute in the polynomial world and evaluate to obtain the residuals
 // (in any case, there will still be interpolation/evaluation in the middle)
 DegVec pmbasis(
-		Mat<zz_pX> & appbas,
+		Mat<zz_pX> & intbas,
 		const Mat<zz_pX> & pmat,
 		const Vec<zz_p> & pts,
 		const Shift & shift
 		);
 
 DegVec popov_pmbasis(
-		Mat<zz_pX> &appbas,
+		Mat<zz_pX> &intbas,
 		const Mat<zz_pX> & pmat,
 		const Vec<zz_p> & pts,
 		const Shift & shift
