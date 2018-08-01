@@ -748,7 +748,7 @@ std::vector<long> mbasis_vector(
 
             long old_deg = coeffs_appbas.length();
             coeffs_appbas.SetLength(deg_appbas + 1);
-            for (long s = old_deg; s <= deg_appbas; s++)
+            for (long s = old_deg; s <= deg_appbas; s++) // FIXME at most one such s --> using "if" is more clear
                 coeffs_appbas[s].SetDims(nrows, nrows);
 
             for (long s = deg_appbas-1; s >= 0; s--) 
@@ -760,6 +760,9 @@ std::vector<long> mbasis_vector(
                     zz_p * s_row = coeffs_appbas[s][i].elts();
                     zz_p * spp_row = coeffs_appbas[s+1][i].elts();
                     zz_p * prow = prod[row].elts();
+										// TODO (Vincent, for understanding: manipulating the
+										// pointers like here is more efficient, rather than doing
+										// just coeffs_appbas[s][i] = prod[row] ??
 
                     if (diff_pivdeg[i] == 0)
                     {
