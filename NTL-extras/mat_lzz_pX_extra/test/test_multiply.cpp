@@ -18,11 +18,11 @@ void one_check(long sz, long deg, long p)
 
     if (p == 0) // init zz_p with FFTInit()
     {
-	zz_p::FFTInit(100);
+        zz_p::FFTInit(100);
     }
     else
     {
-	zz_p::init(p);
+        zz_p::init(p);
     }
 
     cout << p<< "," << sz << "," << deg << ",";
@@ -32,18 +32,18 @@ void one_check(long sz, long deg, long p)
 
     // naive algorithm, if the size is reasonable
     long do_naive = ((sz <= 400)  && (deg <= 40))
-			|| ((sz <= 50) && (deg <= 200))
-			||  ((sz <= 10) && (deg <= 2000))
-			|| (sz==2);
+                        || ((sz <= 50) && (deg <= 200))
+                        ||  ((sz <= 10) && (deg <= 2000))
+                        || (sz==2);
     if (do_naive)
     {
-	t = GetTime();
-	multiply_waksman(c1, a, b);
-	cout << GetTime()-t << ",";
+        t = GetTime();
+        multiply_waksman(c1, a, b);
+        cout << GetTime()-t << ",";
     }
     else 
     { 
-	cout << "-1,";
+        cout << "-1,";
     }
 
     // evaluation -- should be done only if feasible
@@ -53,7 +53,7 @@ void one_check(long sz, long deg, long p)
     
     if (do_naive && (c1 != c2))
     {
-	cout << "(geometric mismatch) ";
+        cout << "(geometric mismatch) ";
     }
 
     // 3 primes FFT
@@ -62,20 +62,20 @@ void one_check(long sz, long deg, long p)
     cout << GetTime()-t << ",";
     if (c4 != c2)
     {
-	cout << "(3 primes mismatch) ";
+        cout << "(3 primes mismatch) ";
     }
 
     // transform, if the size is reasonable
     long do_transform = (deg <= 10) || ((sz <= 400) && (deg <= 10)) || ((sz <= 50) && (deg <= 20));
     if (do_transform)
     {
-	t = GetTime();
-	multiply_transform(c5, a, b);
-	cout << GetTime()-t << " ";
-	if (c5 != c2)
-	{
-	    cout << "(transform mismatch) ";
-	}
+        t = GetTime();
+        multiply_transform(c5, a, b);
+        cout << GetTime()-t << " ";
+        if (c5 != c2)
+        {
+            cout << "(transform mismatch) ";
+        }
     }
     else
     {
@@ -95,11 +95,11 @@ void one_check_smalldeg(long sz, long deg, long p)
     
     if (p == 0) // init zz_p with FFTInit()
     {
-	zz_p::FFTInit(0);
+        zz_p::FFTInit(0);
     }
     else
     {
-	zz_p::init(p);
+        zz_p::init(p);
     }
 
     random_mat_zz_pX(a, sz, sz, deg);
@@ -108,41 +108,41 @@ void one_check_smalldeg(long sz, long deg, long p)
     
     if (sz*sz*deg > 10000000000)
     {
-	throw std::invalid_argument("Calling one_check_smalldeg with large size and/or degree");
+        throw std::invalid_argument("Calling one_check_smalldeg with large size and/or degree");
     }
     
     // naive algorithms: if the size is reasonable
     bool do_naive = (sz*sz*sz*deg*deg <= 1000000000);
     if (do_naive)
     {
-	t = GetTime();
-	multiply_transform_naive(c1, a, b);
-	cout << GetTime()-t << " ";
+        t = GetTime();
+        multiply_transform_naive(c1, a, b);
+        cout << GetTime()-t << " ";
     }
     
     Mat<zz_pX> c2;
     switch (deg) 
     {
     case 2: // TODO: write is_karatsuba.
-	t = GetTime();
-	multiply_transform_karatsuba(c2, a, b);
-	cout << GetTime()-t << " ";
-	break;
+        t = GetTime();
+        multiply_transform_karatsuba(c2, a, b);
+        cout << GetTime()-t << " ";
+        break;
     case 3: // TODO: write is_montgomery
-	t = GetTime();
-	multiply_transform_montgomery3(c2, a, b);
-	cout << GetTime()-t << " ";
-	break;
+        t = GetTime();
+        multiply_transform_montgomery3(c2, a, b);
+        cout << GetTime()-t << " ";
+        break;
     case 4: // TODO: write is_karatsuba4
-	t = GetTime();
-	multiply_transform_karatsuba4(c2, a, b);
-	cout << GetTime()-t << " ";
-	break;
+        t = GetTime();
+        multiply_transform_karatsuba4(c2, a, b);
+        cout << GetTime()-t << " ";
+        break;
     }
     
     if (do_naive && c2 != c1)
     {
-	cout << "(transform mismatch) ";
+        cout << "(transform mismatch) ";
     }
 
     cout << endl;
@@ -161,7 +161,7 @@ void check(long sz=200, long deg=4)
     
     for (long i = 1; i < deg; i++)
     {
-	one_check(sz, i, p1);
+        one_check(sz, i, p1);
     }
 }  
 
@@ -175,15 +175,15 @@ int main(int argc, char ** argv)
 
     if (argc==1)
     {
-	check();
+        check();
     }
     else if (argc==3)
     {
-	check(atoi(argv[1]), atoi(argv[2]));
+        check(atoi(argv[1]), atoi(argv[2]));
     }
     else
     {
-	throw std::invalid_argument("Usage: ./test_multiply OR ./test_multiply size degree");
+        throw std::invalid_argument("Usage: ./test_multiply OR ./test_multiply size degree");
     }
 
     return 0;

@@ -323,10 +323,27 @@ void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a);
 /* convert from Mat<zz_p>                                     */
 /*------------------------------------------------------------*/
 
-
 /*------------------------------------------------------------*/
 /* convert to / from Vec<Mat<zz_p>>                           */
 /*------------------------------------------------------------*/
+void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat);
+
+inline Vec<Mat<zz_p>> conv(const Mat<zz_pX>& mat)
+{
+    Vec<Mat<zz_p>> coeffs;
+    conv(coeffs, mat);
+    return coeffs;
+}
+
+void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs);
+
+inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs)
+{
+    Mat<zz_pX> mat;
+    conv(mat, coeffs);
+    return mat;
+}
+
 
 
 /*------------------------------------------------------------*/
@@ -679,6 +696,13 @@ DegVec mbasis(
 		const Vec<Mat<zz_p>> & pmat,
 		const long order,
 		const Shift & shift
+		);
+
+std::vector<long> mbasis_vector(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
 		);
 
 // TODO some thresholding to be done, so that mbasis does the

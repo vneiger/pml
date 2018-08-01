@@ -1,0 +1,3 @@
+* agree on indent (4 spaces?) and find a way to make this go smoothly with our editors (modelines? Luca's trick?)
+
+* write actual docstrings that can be extracted into an html doc?
