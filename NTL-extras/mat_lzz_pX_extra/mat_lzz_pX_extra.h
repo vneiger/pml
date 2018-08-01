@@ -323,10 +323,27 @@ void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a);
 /* convert from Mat<zz_p>                                     */
 /*------------------------------------------------------------*/
 
-
 /*------------------------------------------------------------*/
 /* convert to / from Vec<Mat<zz_p>>                           */
 /*------------------------------------------------------------*/
+void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat);
+
+inline Vec<Mat<zz_p>> conv(const Mat<zz_pX>& mat)
+{
+    Vec<Mat<zz_p>> coeffs;
+    conv(coeffs, mat);
+    return coeffs;
+}
+
+void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs);
+
+inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs)
+{
+    Mat<zz_pX> mat;
+    conv(mat, coeffs);
+    return mat;
+}
+
 
 
 /*------------------------------------------------------------*/
@@ -646,6 +663,13 @@ std::vector<long> popov_mbasis1(
 /*          (ensuring s-ordered weak Popov or s-Popov)        */
 /*------------------------------------------------------------*/
 std::vector<long> mbasis(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
+		const long order,
+		const std::vector<long> & shift
+		);
+
+std::vector<long> mbasis_vector(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
