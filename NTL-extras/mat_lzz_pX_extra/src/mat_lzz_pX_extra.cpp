@@ -606,7 +606,7 @@ void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs)
 
 
 /*------------------------------------------------------------*/
-/* some comment                                               */
+/* TODO comment                                               */
 /*------------------------------------------------------------*/
 void check_shift(bool &shifted, const std::vector<long> &shift, const Mat<zz_pX> &pmat, const bool row_wise = true)
 {
@@ -626,7 +626,7 @@ void check_shift(bool &shifted, const std::vector<long> &shift, const Mat<zz_pX>
 }
 
 /*------------------------------------------------------------*/
-/* some comment                                               */
+/* TODO comment                                               */
 /* degmat supposed to be empty, just initialized */
 /*------------------------------------------------------------*/
 void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat, 
@@ -666,7 +666,7 @@ void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat,
 }
 
 /*------------------------------------------------------------*/
-/* some comment                                               */
+/* TODO comment                                               */
 /* requirement: length of rdeg is correct */
 /*------------------------------------------------------------*/
 void row_degree(std::vector<long> &rdeg, const Mat<zz_pX> &pmat,
@@ -701,7 +701,7 @@ void row_degree(std::vector<long> &rdeg, const Mat<zz_pX> &pmat,
 }
 
 /*------------------------------------------------------------*/
-/* some comment                                               */
+/* TODO comment                                               */
 /* requirement: length of cdeg is correct */
 /*------------------------------------------------------------*/
 void col_degree(std::vector<long> &cdeg, const Mat<zz_pX> &pmat,
@@ -736,7 +736,7 @@ void col_degree(std::vector<long> &cdeg, const Mat<zz_pX> &pmat,
 } 
 
 /*------------------------------------------------------------*/
-/* some comment                                               */
+/* TODO comment                                               */
 /*------------------------------------------------------------*/
 void leading_matrix(Mat<zz_p> &lmat,
                     const Mat<zz_pX> &pmat,
@@ -779,7 +779,7 @@ void leading_matrix(Mat<zz_p> &lmat,
 }
 
 /*------------------------------------------------------------*/
-/* some comment                                               */
+/* TODO comment                                               */
 /*------------------------------------------------------------*/
 bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const bool row_wise)
 {
@@ -790,7 +790,7 @@ bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const 
 }
 
 /*------------------------------------------------------------*/
-/* some comment                                               */
+/* TODO comment                                               */
 /*------------------------------------------------------------*/
 void pivot_index (
     std::vector<long> & pivind,
@@ -875,6 +875,9 @@ void pivot_index (
     }
 }
 
+/*------------------------------------------------------------*/
+/* TODO comment                                               */
+/*------------------------------------------------------------*/
 bool is_weak_popov (
     const Mat<zz_pX> &pmat,
     const std::vector<long> &shift,
@@ -910,6 +913,9 @@ bool is_monic(const zz_pX &p){
     return IsOne(LeadCoeff(p));
 }
 
+/*------------------------------------------------------------*/
+/* TODO comment                                               */
+/*------------------------------------------------------------*/
 bool is_popov (const Mat<zz_pX> &pmat,
                const std::vector<long> &shift,
                const bool row_wise,

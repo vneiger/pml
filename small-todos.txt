@@ -1,5 +1,16 @@
 * agree on indent (4 spaces?) and find a way to make this go smoothly with our editors (modelines? Luca's trick?)
 
+* when we are writing code and notice that there is a todo (functionality, doc,
+  comment to write...): let's write "todo" in a comment right away, before it
+  is forgotten and becomes difficult to find
+
+* delimiters {..} :
+  -- always put them even for "one-line" if/for/...  ?
+  -- or allow ourselves shorter code such as
+  for(blabla)
+    if(bli)
+      one instruction;
+
 * please avoid spaces/tabs at end of line
 
 * write actual docstrings?
