@@ -1,3 +1,9 @@
 * agree on indent (4 spaces?) and find a way to make this go smoothly with our editors (modelines? Luca's trick?)
 
-* write actual docstrings that can be extracted into an html doc?
+* please avoid spaces/tabs at end of line
+
+* write actual docstrings?
+  -- possibly for extracting into an html doc, but
+  -- mostly for forcing us to document everything in a way that is more
+  informative than the big header lines of /*-----*/ before every function (and
+  which will be easier to work with since editors are used to these docstrings)

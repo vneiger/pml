@@ -158,21 +158,11 @@ int main(int argc, char *argv[])
 
     // mbasis "normal" update
     {
-        std::cout << "~~~Testing mbasis~~~" << std::endl;
-        t1w = GetWallTime(); t1 = GetTime();
-        Mat<zz_pX> appbas_vector;
-        pivdeg = mbasis_vector(appbas_vector,pmat,order,shift);
-        t2w = GetWallTime(); t2 = GetTime();
-
-        std::cout << "Time(mbasisvector computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-
         t1w = GetWallTime(); t1 = GetTime();
         Mat<zz_pX> appbas;
         pivdeg = mbasis(appbas,pmat,order,shift);
         t2w = GetWallTime(); t2 = GetTime();
         std::cout << "Time(mbasis computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-
-        cout << "check: " << (appbas == appbas_vector) << endl;
 
         if (verify)
         {

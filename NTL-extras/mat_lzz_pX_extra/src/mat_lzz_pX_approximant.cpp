@@ -674,7 +674,7 @@ std::vector<long> mbasis_vector(
     Mat<zz_pX> & appbas,
     const Mat<zz_pX> & pmat,
     const long order,
-    const std::vector<long> & shift
+    const Shift & shift
     )
 {
     long nrows = pmat.NumRows();
@@ -682,28 +682,33 @@ std::vector<long> mbasis_vector(
     Mat<zz_p> zero; // TODO: a zeromatrix function
     zero.SetDims(nrows, ncols);
 
+		// TODO either next should only take first 'order' coeffs,
+		// or we should assume pmat has degree < order
+		// --> currently, first recursive call of pmbasis might lead to calling
+		// mbasis with degree >= order (and not clear that it is a good idea to
+		// require deg(pmat)<order)
     Vec<Mat<zz_p>> coeffs = conv(pmat);
     Vec<Mat<zz_p>> coeffs_appbas;
     coeffs_appbas.SetLength(1);
     coeffs_appbas[0] = ident_mat_zz_p(nrows);
-    
+
     // holds the current shifted row degree of appbas
     // initially, this is exactly shift
-    std::vector<long> rdeg( shift );
-    
+    DegVec rdeg( shift );
+
     // holds the current pivot degree of appbas
     // initially tuple of zeroes
     // (note that at all times pivdeg+shift = rdeg entrywise)
-    std::vector<long> pivdeg(nrows);
-    
+    DegVec pivdeg(nrows);
+
     // will store the pivot degree at each call of mbasis1
-    std::vector<long> diff_pivdeg;
-    
+    DegVec diff_pivdeg;
+
     // matrix to store the kernels in mbasis1 calls
     Mat<zz_p> kerbas;
     // matrix to store residuals, initially constant coeff of pmat
     Mat<zz_p> residual( coeffs[0] );
-    
+
     // declare matrices
     Mat<zz_p> res_coeff, res_coeff1, res_coeff2; // will store coefficient matrices used to compute the residual
 
@@ -711,7 +716,7 @@ std::vector<long> mbasis_vector(
     {
         // call MBasis1 to retrieve kernel and pivdeg
         diff_pivdeg = popov_mbasis1(kerbas, residual, rdeg);
-        
+
         if (kerbas.NumRows() == 0)
         {
             // computation is already finished: the final basis is X^(order-ord+1)*appbas
@@ -721,10 +726,10 @@ std::vector<long> mbasis_vector(
             std::for_each(pivdeg.begin(), pivdeg.end(), [&order,&ord](long& a) { a+=order-ord+1; });
             return pivdeg;
         }
-        
+
         // kerbas.NumRows()==residual.NumRows() --> approximant basis is already
         // correct for this order, just go to the next
-        
+
         if (kerbas.NumRows() < residual.NumRows())
         {
             // I/ Update degrees:
@@ -772,20 +777,23 @@ std::vector<long> mbasis_vector(
                 }
             }
             
-            // III/ compute new residual
-            if (ord < coeffs.length())
-                residual = coeffs_appbas[0] * coeffs[ord];
-            else
-                residual = coeffs_appbas[0] * zero;
-            
-            for (long d = 1; d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
-            {
-                if (ord-d < coeffs.length())
-                {
-                    mul(res_coeff, coeffs_appbas[d], coeffs[ord-d]);
-                    add(residual, residual, res_coeff);
-                }
-            }
+            // III/ compute new residual, if needed (not needed for ord==order)
+						if (ord<order)
+						{
+								if (ord < coeffs.length()) // TODO see about this when choice about deg(pmat) / coeffs.length has been made
+									residual = coeffs_appbas[0] * coeffs[ord];
+								else
+									residual = coeffs_appbas[0] * zero;
+
+								for (long d = 1; d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
+								{
+									if (ord-d < coeffs.length())
+									{
+										mul(res_coeff, coeffs_appbas[d], coeffs[ord-d]);
+										add(residual, residual, res_coeff);
+									}
+								}
+						}
         }
     }
 
