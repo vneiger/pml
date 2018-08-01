@@ -84,7 +84,7 @@ struct tree{
         min_time = timings[i];
       }
     }
-    cout << "size: " << size << ", deg: " << deg <<
+    cout << "size: " << stp->d.size << ", deg: " << dtp->d.deg <<
     ", min_time: " << min_time << endl;
     return ind;
   }
@@ -205,7 +205,7 @@ int main(){
     else if (p == 1)
       l = tp1->find_best(size,deg);
     else
-      l = tp1->find_best(size,deg);
+      l = tp2->find_best(size,deg);
     cout << "index: " << l << endl << endl;
     cout << "ENTER p(0,1,2), size, deg" << endl;
   }
