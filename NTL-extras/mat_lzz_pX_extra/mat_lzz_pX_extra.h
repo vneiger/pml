@@ -646,6 +646,10 @@ DegVec popov_mbasis1(
 		const Shift & shift
 		);
 
+// TODO check if serious difference of time if not returning Popov but just
+// minimal, like done in GJV03 and GL14 (implies slightly less permutation
+// work: the final permutation of the rows is not necessary)
+
 /*------------------------------------------------------------*/
 /* M-Basis algorithm for uniform approximant order            */
 /* References:                                                */
@@ -657,6 +661,14 @@ DegVec popov_mbasis1(
 DegVec mbasis(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
+		const long order,
+		const Shift & shift
+		);
+
+// variant with input given by matrix coefficients
+DegVec mbasis(
+		Mat<zz_pX> & appbas,
+		const Vec<Mat<zz_p>> & pmat,
 		const long order,
 		const Shift & shift
 		);
