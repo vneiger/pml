@@ -39,7 +39,7 @@ bool is_approximant_basis(
 		)
 {
     if (randomized)
-        throw std::logic_error("==is_approximant_basis== Fast randomized approximant basis not implemented yet");
+        throw std::logic_error("==is_approximant_basis== Fast randomized approximant basis verification not implemented yet");
 
     std::cout << "==is_approximant_basis== WARNING: not fully implemented: not checking generation" << std::endl;
 
@@ -542,6 +542,10 @@ DegVec mbasis(
 // TODO FIXME below is an attempt at a "vector of matrices" approach for
 // mbasis. Input+Output. If it has some interest, we may want to have more
 // broadly functionalities for this representation of polynomial matrices
+// TODO currently only works for generic case, with nice degree balancing
+// --> could simply add degree conditions so that it reserves more memory for
+// intbas_vec in case degree is more than expected (probably what was done
+// in the next mbasis below?)
 DegVec mbasis(
 		Vec<Mat<zz_p>> & appbas,
 		const Vec<Mat<zz_p>> & pmat,
@@ -551,7 +555,8 @@ DegVec mbasis(
 {
 	long nrows = pmat[0].NumRows();
 	// TODO FIXME expected degree in non-shifted case --> assuming generic and shift==0
-	long expected_degree = ceil(pmat[0].NumCols()*order/nrows);
+	// ceiling of nbcols * nbpoints / nbrows
+	long expected_degree = 1 + (pmat[0].NumCols()*order - 1)/nrows;
 	appbas.SetLength(expected_degree+1);
 	for (long d = 0; d < expected_degree+1; ++d)
 		appbas[d].SetDims(nrows,nrows);

@@ -823,11 +823,11 @@ bool is_interpolant_basis(
 		const bool randomized = false
 		);
 
-// TODO (uniform interpolation variant)
+// TODO (naive version written)
 bool is_interpolant_basis(
 		const Mat<zz_pX> & intbas,
-		const Mat<zz_pX> & pmat,
-		const Vec<zz_p> & pts,
+		const Vec<Mat<zz_p>> & pmat, // vector of evaluations
+		const Vec<zz_p> & pts, // "uniform" case
 		const Shift & shift = Shift(),
 		const PolMatForm & form = ORD_WEAK_POPOV,
 		const bool row_wise = true,

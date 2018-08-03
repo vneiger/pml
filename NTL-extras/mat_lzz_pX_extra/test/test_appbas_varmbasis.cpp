@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 {
 	SetNumThreads(4);
 
-	bool verify=false;
+	bool verify=true;
 
 	if (argc!=5 && argc!=6)
 		throw std::invalid_argument("Usage: ./test_appbas_varmbasis rdim cdim order nbits (verify)");
@@ -74,7 +74,8 @@ int main(int argc, char *argv[])
 	Mat<zz_p> kerbas;
 	std::vector<long> pivdeg;
 	// to warm up
-	long warm_time = ceil(500000000/(rdim*cdim*cdim));
+	size_t maxdim = std::max(rdim,cdim);
+	long warm_time = ceil(100000000/(maxdim*maxdim*maxdim));
 	std::cout << "warming up..." << std::endl;
 	for (long i = 0; i < warm_time; ++i)
 		pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
