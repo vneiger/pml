@@ -9,11 +9,13 @@ NTL_CLIENT
 /* a class that does Taylor shift                             */
 /*------------------------------------------------------------*/
 
-class zz_pX_shift {
+class zz_pX_shift 
+{
  private:
   Vec<zz_p> fact, ifact;
   zz_pX v;
   long d;
+
  public:  
   /*------------------------------------------------------------*/
   /* constructor inits a few arrays                             */
@@ -32,5 +34,10 @@ class zz_pX_shift {
 /* g = f(x+c)                                                 */
 /*------------------------------------------------------------*/
 void shift(zz_pX& g, const zz_pX& f, const zz_p& c);
+
+/*------------------------------------------------------------*/
+/* reverse in degree < d                                      */
+/*------------------------------------------------------------*/
+zz_pX rev(const zz_pX& a, long d);
 
 #endif
