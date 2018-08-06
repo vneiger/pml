@@ -14,6 +14,7 @@ NTL_CLIENT
 void one_check(long sz, long deg, long p)
 {
     Mat<zz_pX> a, b, c0, c1, c2, c4, c5;
+    long nb;
     double t;
 
     if (p == 0) // init zz_p with FFTInit()
@@ -31,25 +32,41 @@ void one_check(long sz, long deg, long p)
     random_mat_zz_pX(b, sz, sz, deg);
 
     // naive algorithm, if the size is reasonable
-    long do_naive = ((sz <= 400)  && (deg <= 40))
+    long do_naive = ((sz <= 200)  && (deg <= 40))
                         || ((sz <= 50) && (deg <= 200))
                         ||  ((sz <= 10) && (deg <= 2000))
                         || (sz==2);
     if (do_naive)
     {
-        t = GetTime();
-        multiply_waksman(c1, a, b);
-        cout << GetTime()-t << ",";
+        t = GetWallTime();
+        nb = 0;
+        do
+        {
+            multiply_waksman(c1, a, b);
+            nb++;
+        }
+        while ((GetWallTime()-t) <= 0.001);
+        
+        t = (GetWallTime()-t) / nb;
+        cout << t << ",";
     }
     else 
     { 
-        cout << "-1,";
+        cout << "999999,";
     }
 
     // evaluation -- should be done only if feasible
-    t = GetTime();
-    multiply_evaluate(c2, a, b);
-    cout << GetTime()-t << ",";
+    t = GetWallTime();
+    nb = 0;
+    do
+    {
+        multiply_evaluate(c2, a, b);
+        nb++;
+    }
+    while ((GetWallTime()-t) <= 0.001);
+    
+    t = (GetWallTime()-t) / nb;
+    cout << t << ",";
     
     if (do_naive && (c1 != c2))
     {
@@ -57,9 +74,18 @@ void one_check(long sz, long deg, long p)
     }
 
     // 3 primes FFT
-    t = GetTime();
-    multiply_3_primes(c4, a, b);
-    cout << GetTime()-t << ",";
+    t = GetWallTime();
+    nb = 0;
+    do
+    {
+        multiply_3_primes(c4, a, b);
+        nb++;
+    }
+    while ((GetWallTime()-t) <= 0.001);
+
+    t = (GetWallTime()-t) / nb;
+    cout << t << ",";
+
     if (c4 != c2)
     {
         cout << "(3 primes mismatch) ";
@@ -69,9 +95,18 @@ void one_check(long sz, long deg, long p)
     long do_transform = (deg <= 10) || ((sz <= 400) && (deg <= 10)) || ((sz <= 50) && (deg <= 20));
     if (do_transform)
     {
-        t = GetTime();
-        multiply_transform(c5, a, b);
-        cout << GetTime()-t << " ";
+        t = GetWallTime();
+        nb = 0;
+        do
+        {
+            multiply_transform(c5, a, b);
+            nb++;
+        }
+        while ((GetWallTime()-t) <= 0.001);
+        
+        t = (GetWallTime()-t) / nb;
+        cout << t << ",";
+
         if (c5 != c2)
         {
             cout << "(transform mismatch) ";
@@ -79,70 +114,7 @@ void one_check(long sz, long deg, long p)
     }
     else
     {
-        cout << "-1";
-    }
-
-    cout << endl;
-}
-
-/*------------------------------------------------------------*/
-/* checks some products in small degree                       */
-/*------------------------------------------------------------*/
-void one_check_smalldeg(long sz, long deg, long p)
-{
-    Mat<zz_pX> a, b, c1;
-    double t;
-    
-    if (p == 0) // init zz_p with FFTInit()
-    {
-        zz_p::FFTInit(0);
-    }
-    else
-    {
-        zz_p::init(p);
-    }
-
-    random_mat_zz_pX(a, sz, sz, deg);
-    random_mat_zz_pX(b, sz, sz, deg);
-    cout << "size=" << sz << ", length=" << deg << " ";
-    
-    if (sz*sz*deg > 10000000000)
-    {
-        throw std::invalid_argument("Calling one_check_smalldeg with large size and/or degree");
-    }
-    
-    // naive algorithms: if the size is reasonable
-    bool do_naive = (sz*sz*sz*deg*deg <= 1000000000);
-    if (do_naive)
-    {
-        t = GetTime();
-        multiply_transform_naive(c1, a, b);
-        cout << GetTime()-t << " ";
-    }
-    
-    Mat<zz_pX> c2;
-    switch (deg) 
-    {
-    case 2: // TODO: write is_karatsuba.
-        t = GetTime();
-        multiply_transform_karatsuba(c2, a, b);
-        cout << GetTime()-t << " ";
-        break;
-    case 3: // TODO: write is_montgomery
-        t = GetTime();
-        multiply_transform_montgomery3(c2, a, b);
-        cout << GetTime()-t << " ";
-        break;
-    case 4: // TODO: write is_karatsuba4
-        t = GetTime();
-        multiply_transform_karatsuba4(c2, a, b);
-        cout << GetTime()-t << " ";
-        break;
-    }
-    
-    if (do_naive && c2 != c1)
-    {
-        cout << "(transform mismatch) ";
+        cout << "999999";
     }
 
     cout << endl;
@@ -153,16 +125,13 @@ void one_check_smalldeg(long sz, long deg, long p)
 /*------------------------------------------------------------*/
 void check(long sz=200, long deg=4)
 {
-    long p1 = 288230376151711813;
-    // long p0 = 0;
-    // long p2 = 23068673;
+    long p0 = 0;
+    long p1 = 23068673;
+    long p2 = 288230376151711813;
 
-    cout << "                   waksman    eval       3primes    transf\n";
-    
-    for (long i = 1; i < deg; i++)
-    {
-        one_check(sz, i, p1);
-    }
+    one_check(sz, deg, p0);
+    one_check(sz, deg, p1);
+    one_check(sz, deg, p2);
 }  
 
 /*------------------------------------------------------------*/
