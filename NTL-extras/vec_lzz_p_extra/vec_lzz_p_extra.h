@@ -9,27 +9,27 @@ NTL_CLIENT
 /*---------------------------------------------*/
 /* random vector of length d                   */
 /*---------------------------------------------*/
-void random(vec_zz_p& A, long d);
+void random_vec_zz_p(Vec<zz_p>& A, long d);
 
 /*---------------------------------------------*/
 /* random matrix of size (d,e)                 */
 /*---------------------------------------------*/
-void random(mat_zz_p& A, long d, long e);
+void random_mat_zz_p(mat_zz_p& A, long d, long e);
 
 /*---------------------------------------------*/
 /* inverts every entry in A -- TODO: CHECK 0   */
 /*---------------------------------------------*/
-void inv_naive(vec_zz_p& invA, const vec_zz_p& A);
+void inv_naive(Vec<zz_p>& invA, const Vec<zz_p>& A);
 
 /*---------------------------------------------*/
 /* inverts every entry in A -- TODO: CHECK 0   */
 /*---------------------------------------------*/
-void inv(vec_zz_p& invA, const vec_zz_p& A);
+void inv(Vec<zz_p>& invA, const Vec<zz_p>& A);
 
 /*---------------------------------------------*/
 /* inverts every entry in A -- TODO: CHECK 0   */
 /*---------------------------------------------*/
-void inv(vec_zz_p& A);
+void inv(Vec<zz_p>& A);
 
 #ifdef NTL_HAVE_LL_TYPE
 /*---------------------------------------------*/

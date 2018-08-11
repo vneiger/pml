@@ -43,6 +43,11 @@ public:
     void evaluate_matrix(Vec<Mat<zz_p>>& val, const Mat<zz_pX>& f) const;
     void interpolate_matrix(Mat<zz_pX>& f, const Vec<Mat<zz_p>>& val);
 
+    /* void t_evaluate_vector(Vec<Vec<zz_p>>& val, const Vec<zz_pX>& P) const; */
+    /* void t_interpolate_vector(Vec<zz_pX>& f, const Vec<Vec<zz_p>>& val); */
+    /* void t_evaluate_matrix(Vec<Mat<zz_p>>& val, const Mat<zz_pX>& f) const; */
+    /* void t_interpolate_matrix(Mat<zz_pX>& f, const Vec<Mat<zz_p>>& val); */
+
     /*------------------------------------------------------------*/
     /* number of points                                           */
     /*------------------------------------------------------------*/
@@ -88,10 +93,14 @@ public:
     /*------------------------------------------------------------*/
     void evaluate(Vec<zz_p>& val, const zz_pX& f) const;
     void interpolate(zz_pX& f, const Vec<zz_p>& val);
+
+    void t_evaluate(zz_pX& f, const Vec<zz_p>& val) const;
+    void t_interpolate(Vec<zz_p>& val, const zz_pX& f);
   
 private:
     Vec<zz_p> cofactors;
     Vec<Vec<zz_pX> > tree;
+    zz_pX reverse_root, inverse_root;
 };
 
 /*------------------------------------------------------------*/
@@ -126,6 +135,16 @@ public:
     /*------------------------------------------------------------*/
     void evaluate(Vec<zz_p>& val, const zz_pX& f) const;
     void interpolate(zz_pX& f, const Vec<zz_p>& val);
+
+    void t_evaluate(zz_pX& f, const Vec<zz_p>& val) const;
+    void t_interpolate(Vec<zz_p>& val, const zz_pX& f);
+
+    /*------------------------------------------------------------*/
+    /* getters                                                    */
+    /*------------------------------------------------------------*/
+    long FFT_evaluate() const;
+    long FFT_interpolate() const;
+
 
 private:  
     long idx_k, do_FFT_evaluate, do_FFT_interpolate;
@@ -167,9 +186,13 @@ public:
     void evaluate(Vec<zz_p>& val, const zz_pX& f) const;
     void interpolate(zz_pX& f, const Vec<zz_p>& val);
 
+    void t_evaluate(zz_pX& f, const Vec<zz_p>& val) const;
+    void t_interpolate(Vec<zz_p>& val, const zz_pX& f);
+
 private:
-    long k;
+    long k, do_bit_reverse;
     fftRep wk; // used to store values for inverse FFT
+    Vec<long> indices; // for bit-reversal, if needed
 };
 
 /*------------------------------------------------------------*/
@@ -303,7 +326,7 @@ public:
     void forward_left(Vec<zz_p>& val, const zz_pX& P) const;
     inline void forward_right(Vec<zz_p>& val, const zz_pX& P) const
     {
-	forward_left(val, P);
+        forward_left(val, P);
     }
     void backward(zz_pX& P, const Vec<zz_p>& val) const;  
 };
@@ -334,7 +357,7 @@ public:
     void forward_left(Vec<zz_p>& val, const zz_pX& P) const;
     inline void forward_right(Vec<zz_p>& val, const zz_pX& P) const
     {
-	forward_left(val, P);
+        forward_left(val, P);
     }
     void backward(zz_pX& P, const Vec<zz_p>& val) const;  
 };
@@ -365,7 +388,7 @@ public:
     /* constructor from moduli                                    */
     /*------------------------------------------------------------*/
     zz_pX_CRT(const Vec<zz_pX>& q);
-	
+        
     /*------------------------------------------------------------*/
     /* basic operations                                           */
     /*------------------------------------------------------------*/

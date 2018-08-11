@@ -69,7 +69,7 @@ zz_pX rev(const zz_pX& a, long d)
         LogicError("degree too large to reverse");
     rA.rep.SetLength(d);
     for (long i = 0; i < d; i++)
-        rA.rep[i] = coeff(a, d-1-i);
+        rA.rep[i] = coeff(a, d - 1 - i);
     rA.normalize();
     return rA;
 }

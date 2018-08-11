@@ -11,22 +11,22 @@ NTL_CLIENT
 
 class zz_pX_shift 
 {
- private:
-  Vec<zz_p> fact, ifact;
-  zz_pX v;
-  long d;
+private:
+    Vec<zz_p> fact, ifact;
+    zz_pX v;
+    long d;
 
- public:  
-  /*------------------------------------------------------------*/
-  /* constructor inits a few arrays                             */
-  /* d is an upper bound on the degrees of the inputs           */
-  /*------------------------------------------------------------*/
-  zz_pX_shift(const zz_p& c, long d);
+public:  
+    /*------------------------------------------------------------*/
+    /* constructor inits a few arrays                             */
+    /* d is an upper bound on the degrees of the inputs           */
+    /*------------------------------------------------------------*/
+    zz_pX_shift(const zz_p& c, long d);
 
-  /*------------------------------------------------------------*/
-  /* g = f(x+c)                                                 */
-  /*------------------------------------------------------------*/
-  void shift(zz_pX& g, const zz_pX& f);
+    /*------------------------------------------------------------*/
+    /* g = f(x+c)                                                 */
+    /*------------------------------------------------------------*/
+    void shift(zz_pX& g, const zz_pX& f);
 
 };
 

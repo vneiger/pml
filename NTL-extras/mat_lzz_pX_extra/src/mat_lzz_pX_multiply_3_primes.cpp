@@ -17,7 +17,8 @@ static void reduce_mod_p(Mat<zz_pX> & a)
     long r = a.NumRows();
     long s = a.NumCols();
     long p = zz_p::modulus();
-    sp_reduce_struct red_struct = zz_p::red_struct();
+    sp_reduce_struct red_struct = zz_pInfo->red_struct;
+    // sp_reduce_struct red_struct = zz_p::red_struct();
 
     for (long i = 0; i < r; i++) 
     {
@@ -78,7 +79,8 @@ static void reconstruct_2CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, con
     mulmod_precon_t p0_inv_prec = PrepMulModPrecon(p0_inv, p1, PrepMulMod(p1)); 
 
     long p = zz_p::modulus();
-    sp_reduce_struct red_struct = zz_p::red_struct();
+    sp_reduce_struct red_struct = zz_pInfo->red_struct;
+    // sp_reduce_struct red_struct = zz_p::red_struct();
     long p0_red = rem(p0, p, red_struct);
     mulmod_precon_t p0_prec = PrepMulModPrecon(p0_red, p, PrepMulMod(p)); 
 
@@ -125,7 +127,8 @@ static void reconstruct_3CRT(Mat<zz_pX> & c, Mat<zz_pX> & c0, long p0, Mat<zz_pX
     c.SetDims(r, s);
 
     long p = zz_p::modulus();
-    sp_reduce_struct red_struct = zz_p::red_struct();
+    sp_reduce_struct red_struct = zz_pInfo->red_struct;
+    // sp_reduce_struct red_struct = zz_p::red_struct();
 
     // p0 mod p
     long p0_p = rem(p0, p, red_struct);
