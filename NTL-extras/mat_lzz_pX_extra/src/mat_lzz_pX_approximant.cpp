@@ -11,10 +11,9 @@
 
 NTL_CLIENT
 
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* MINIMAL APPROXIMANT BASES ALGORITHMS                       */
+/* ALGORITHMS FOR APPROXIMANT BASES                           */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
@@ -26,7 +25,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* TODO doc                                                   */
+/* TODO doc currently in .h --> should be moved here??        */
 /*------------------------------------------------------------*/
 bool is_approximant_basis(
 		const Mat<zz_pX> & appbas,
@@ -67,9 +66,6 @@ bool is_approximant_basis(
     return true;
 }
 
-/*------------------------------------------------------------*/
-/* TODO doc                                                   */
-/*------------------------------------------------------------*/
 bool is_approximant_basis(
 		const Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
@@ -225,7 +221,7 @@ DegVec appbas_iterative(
 }
 
 /*------------------------------------------------------------*/
-/* TODO doc                                                   */
+/* general case, output in Popov form                         */
 /*------------------------------------------------------------*/
 DegVec popov_appbas_iterative(
 		Mat<zz_pX> & appbas,
@@ -258,9 +254,11 @@ DegVec popov_appbas_iterative(
 /* ALGORITHMS FOR UNIFORM ORDER                               */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-// defined for arbitrary shifts, but
-// works best for shifts close to uniform
-// (except the next one, where the shift has roughly no influence)
+
+// These algorithms are defined for arbitrary shifts, but
+// work best for shifts close to uniform
+// (except the next one, popov_mbasis1, where the shift has roughly no
+// influence)
 
 DegVec popov_mbasis1(
 		Mat<zz_p> & kerbas,
@@ -546,6 +544,8 @@ DegVec mbasis(
 // --> could simply add degree conditions so that it reserves more memory for
 // intbas_vec in case degree is more than expected (probably what was done
 // in the next mbasis below?)
+// Note: thresholding will have to take shift into account (representing
+// output as vector of matrices is very bad if max degree is large)
 DegVec mbasis(
 		Vec<Mat<zz_p>> & appbas,
 		const Vec<Mat<zz_p>> & pmat,
@@ -593,6 +593,7 @@ DegVec mbasis(
 
 		if (kerbas.NumRows()==0)
 		{
+			std::cout << "==mbasis==(version vec input+output) empty kerbas currently not dealt with" << std::endl;
 			// computation is already finished: the final basis is X^(order-ord+1)*appbas
 			//appbas <<= (order-ord+1);  // TODO !!! (for now assuming this doesn't happen)
 			// update pivdeg accordingly, and return
