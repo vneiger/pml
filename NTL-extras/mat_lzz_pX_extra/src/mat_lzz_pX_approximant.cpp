@@ -458,17 +458,12 @@ DegVec mbasis_vector1(
 	// mbasis with degree >= order (and not clear that it is a good idea to
 	// require deg(pmat)<order)
 	Vec<Mat<zz_p>> coeffs_pmat = conv(pmat);
+	long nrows = coeffs_pmat[0].NumRows();
 	Vec<Mat<zz_p>> coeffs_appbas;
 
-	long nrows = coeffs_pmat[0].NumRows();
-	// TODO FIXME expected degree in non-shifted case --> assuming generic and shift==0
-	// ceiling of nbcols * nbpoints / nbrows
-	long expected_degree = 1 + (coeffs_pmat[0].NumCols()*order - 1)/nrows;
-	coeffs_appbas.SetLength(expected_degree+1);
 	// initially, coeffs_appbas is the identity matrix
+	coeffs_appbas.SetLength(1);
 	coeffs_appbas[0] = ident_mat_zz_p(nrows);
-	for (long d = 1; d < expected_degree+1; ++d)
-		coeffs_appbas[d].SetDims(nrows,nrows);
 	long current_degree = 0;
 
 	// holds the current shifted row degree of coeffs_appbas
@@ -521,11 +516,8 @@ DegVec mbasis_vector1(
 			// that deg(coeffs_appbas) = max(pivot degree) (i.e. max(degree of diagonal
 			// entries); this does not hold in general for ordered weak Popov forms
 			long deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
-
-			if (deg_appbas > expected_degree) {
-				std::cout << "~~mbasis-variant not implemented yet, currently assuming generic coeffs_pmat and uniform shift" << std::endl;
-				throw;
-			}
+			coeffs_appbas.SetLength(deg_appbas+1);
+			coeffs_appbas[deg_appbas].SetDims(nrows, nrows);
 
 			// II/ update approximant basis
 
@@ -663,10 +655,8 @@ DegVec mbasis_vector(
             // submatrix of rows with diff_pivdeg==0 is replaced by kerbas*appbas
             // rows with diff_pivdeg=1 are simply multiplied by X
 
-            long old_length = coeffs_appbas.length();
             coeffs_appbas.SetLength(deg_appbas + 1);
-            if ( old_length == deg_appbas )
-                coeffs_appbas[deg_appbas].SetDims(nrows, nrows);
+						coeffs_appbas[deg_appbas].SetDims(nrows, nrows);
 
             for (long s = deg_appbas-1; s >= 0; s--) 
             {
