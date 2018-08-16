@@ -4,19 +4,27 @@ LIB_DIR = ../../lib
 
 OBJS = $(wildcard $(LIB_DIR)/*)
 
-SRC = $(wildcard test*cpp)
-TESTS = $(patsubst %.cpp, u%, $(SRC))
+SRC = $(wildcard time*cpp)
 EXEC = $(patsubst %.cpp, %, $(SRC))
+DATA = $(patsubst %.cpp, %.dat, $(SRC))
+COMPILE = $(patsubst %.cpp, %.exe, $(patsubst time_%, %, $(SRC)))
+RUN = $(patsubst %.cpp, %.dat, $(patsubst time_%, %, $(SRC)))
 
 CXX = g++
 CXXFLAGS = -Wall -std=c++11 -O3 -march=native -I$(INC_DIR)
 LIBS = -lntl -lpthread -lgmp -lm
+
 .PHONY: clean
 
 clean:
-	rm -f $(EXEC)
+	rm -f $(EXEC) $(DATA)
 
-all:	$(TESTS)
+all:	$(COMPILE)
 
-utest_%:	$(OBJS)
-	if test -e test_$*.cpp; then $(CXX) -o test_$* test_$*.cpp $(OBJS) $(CXXFLAGS) $(LIBS); fi
+run:	$(RUN)
+
+%.exe:
+	if test -e time_$*.cpp; then $(CXX) -o time_$* time_$*.cpp $(OBJS) $(CXXFLAGS) $(LIBS); fi
+
+%.dat: 
+	if test -e time_$*; then ./time_$* > time_$*.dat; fi

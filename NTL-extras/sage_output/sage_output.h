@@ -65,7 +65,7 @@ void sage_assign(const Mat<zz_p> & v, const string & name);
 void sage_output(const ZZX & v, const string & var);
 void sage_output(const zz_pX & v, const string & var);
 void sage_output(const Vec<zz_pX> & v, const string & var);
-void magma_output(const Mat<zz_pX>& a, const string & var);
+void sage_output(const Mat<zz_pX>& a, const string & var);
 
 /*------------------------------------------------------------*/
 /* prints a poly (or vector) with indeterminate x             */
@@ -73,7 +73,7 @@ void magma_output(const Mat<zz_pX>& a, const string & var);
 void sage_output(const ZZX & v);
 void sage_output(const zz_pX & v);
 void sage_output(const Vec<zz_pX> & v);
-void magma_output(const Mat<zz_pX>& a);
+void sage_output(const Mat<zz_pX>& a);
 
 /*------------------------------------------------------------*/
 /* assign a poly with indeterminate var to variable "name"    */
@@ -81,7 +81,7 @@ void magma_output(const Mat<zz_pX>& a);
 void sage_assign(const ZZX & v, const string & var, const string & name);
 void sage_assign(const zz_pX & v, const string & var, const string & name);
 void sage_assign(const Vec<zz_pX> & v, const string & var, const string & name);
-void magma_assign(const Mat<zz_pX>& a, const string & var, const string & name);
+void sage_assign(const Mat<zz_pX>& a, const string & var, const string & name);
 
 /*------------------------------------------------------------*/
 /* assign a poly with indeterminate x to variable "name"      */
@@ -89,6 +89,6 @@ void magma_assign(const Mat<zz_pX>& a, const string & var, const string & name);
 void sage_assign(const ZZX & v, const string & name);
 void sage_assign(const zz_pX & v, const string & name);
 void sage_assign(const Vec<zz_pX> & v, const string & name);
-void magma_assign(const Mat<zz_pX>& a, const string & var);
+void sage_assign(const Mat<zz_pX>& a, const string & var);
 
 #endif
