@@ -437,14 +437,8 @@ DegVec mbasis(
 }
 
 // TODO FIXME below is an attempt at a "vector of matrices" approach for
-// mbasis. Input+Output. If it has some interest, we may want to have more
-// broadly functionalities for this representation of polynomial matrices
-// TODO currently only works for generic case, with nice degree balancing
-// --> could simply add degree conditions so that it reserves more memory for
-// intbas_vec in case degree is more than expected (probably what was done
-// in the next mbasis below?)
-// Note: thresholding will have to take shift into account (representing
-// output as vector of matrices is very bad if max degree is large)
+// mbasis. Input+Output.
+// FIXME representing output as vector of matrices seems wrong if max degree is large (Hermite-Pade with unbalanced degrees) --> should be avoided in this case???)
 DegVec mbasis_vector1(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
@@ -464,7 +458,6 @@ DegVec mbasis_vector1(
 	// initially, coeffs_appbas is the identity matrix
 	coeffs_appbas.SetLength(1);
 	coeffs_appbas[0] = ident_mat_zz_p(nrows);
-	long current_degree = 0;
 
 	// holds the current shifted row degree of coeffs_appbas
 	// initially, this is exactly shift
@@ -524,13 +517,7 @@ DegVec mbasis_vector1(
 			// submatrix of rows with diff_pivdeg==0 is replaced by kerbas*coeffs_appbas
 			// while rows with diff_pivdeg=1 are simply multiplied by X
 			// --> the loop goes downwards, so that we can do both in the same iteration
-			// separate treatment of highest degree terms, if degree has increased
-			if (deg_appbas>current_degree)
-				for (long i = 0; i < nrows; ++i)
-					if (diff_pivdeg[i]==1)
-						coeffs_appbas[deg_appbas][i] = coeffs_appbas[deg_appbas-1][i];
-			// normal treatment of other terms
-			for (long d = current_degree; d >= 0; --d)
+			for (long d = deg_appbas-1; d >= 0; --d)
 			{
 				kerapp = kerbas * coeffs_appbas[d];
 				long row=0;
@@ -543,9 +530,8 @@ DegVec mbasis_vector1(
 					}
 					else  // diff_pivdeg[i]==1 --> multiply by X
 					{
-						if (d>0)
-							coeffs_appbas[d][i] = coeffs_appbas[d-1][i];
-						else // d==0 : put zero row
+						coeffs_appbas[d+1][i] = coeffs_appbas[d][i];
+						if (d==0) // put zero row
 							clear(coeffs_appbas[0][i]);
 					}
 				}
@@ -568,7 +554,6 @@ DegVec mbasis_vector1(
 					}
 				}
 			}
-			current_degree = deg_appbas;
 		}
 	}
 
@@ -677,7 +662,8 @@ DegVec mbasis_vector(
                             s_row[nb] = prow[nb];
                         ++row;
                     }
-                    else {
+                    else
+										{
                         for (long nb = 0; nb < nrows; nb++)
                             spp_row[nb] = s_row[nb];
                         if (s == 0)
