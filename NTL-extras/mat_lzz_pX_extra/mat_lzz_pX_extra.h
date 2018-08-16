@@ -724,14 +724,14 @@ DegVec mbasis(
 		);
 
 // TODO work in progress, variant with input and output given by matrix coefficients
-DegVec mbasis(
-		Vec<Mat<zz_p>> & appbas,
-		const Vec<Mat<zz_p>> & pmat,
+DegVec mbasis_vector1(
+		Mat<zz_pX> & appbas,
+		const Mat<zz_pX> & pmat,
 		const long order,
 		const Shift & shift
 		);
 
-std::vector<long> mbasis_vector(
+DegVec mbasis_vector(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,

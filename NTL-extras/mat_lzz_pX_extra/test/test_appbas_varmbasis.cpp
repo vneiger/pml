@@ -62,15 +62,11 @@ int main(int argc, char *argv[])
 
 	// build random matrix
   Mat<zz_pX> pmat;
-	Vec<Mat<zz_p>> matp;
-	matp.SetLength(order);
 	t1w = GetWallTime(); t1 = GetTime();
   random_mat_zz_pX(pmat, rdim, cdim, order);
-	for (long d = 0; d < order; ++d)
-		matp[d] = coeff(pmat,d);
 	t2w = GetWallTime(); t2 = GetTime();
 
-	std::cout << "Time(random mat creation; transfer): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+	std::cout << "Time(random mat creation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 
 	Mat<zz_p> kerbas;
 	std::vector<long> pivdeg;
@@ -119,31 +115,21 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	// mbasis Vec<Mat<zz_p>> version input&output
+	// mbasis Vec<Mat<zz_p>> version 1
 	{
 		std::cout << "~~~Testing mbasis - Vec<Mat<zz_p>> version 1 ~~~" << std::endl;
 		t1w = GetWallTime(); t1 = GetTime();
-		Vec<Mat<zz_p>> appbas;
-		pivdeg = mbasis(appbas,matp,order,shift);
+		Mat<zz_pX> appbas;
+		pivdeg = mbasis_vector1(appbas,pmat,order,shift);
 		t2w = GetWallTime(); t2 = GetTime();
 
 		std::cout << "Time(mbasis computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 
 		if (verify)
 		{
-			std::cout << "Converting basis to polmat format..." << std::endl;
-			Mat<zz_pX> appbas2;
-			appbas2.SetDims(appbas[0].NumRows(),appbas[0].NumCols());
-			for (long d = 0; d < appbas.length(); ++d) {
-				for (long i = 0; i < appbas[0].NumRows(); ++i) {
-					for (long j = 0; j < appbas[0].NumCols(); ++j) {
-						SetCoeff(appbas2[i][j],d,appbas[d][i][j]);
-					}
-				}
-			}
 			std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
 			t1w = GetWallTime(); t1 = GetTime();
-			bool verif = is_approximant_basis(appbas2,pmat,order,shift,ORD_WEAK_POPOV,true,false);
+			bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
 			t2w = GetWallTime(); t2 = GetTime();
 			std::cout << (verif?"correct":"wrong") << std::endl;
 			std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
@@ -151,24 +137,23 @@ int main(int argc, char *argv[])
 			if (rdim*cdim*order < 100)
 			{
 				std::cout << "Print output approx basis..." << std::endl;
-				std::cout << appbas2 << std::endl;
+				std::cout << appbas << std::endl;
 				std::cout << "Print final residual..." << std::endl;
 				Mat<zz_pX> residual;
-				multiply_naive(residual,appbas2,pmat);
+				multiply_naive(residual,appbas,pmat);
 				std::cout << residual << std::endl;
 			}
 
 			if (std::max(rdim,cdim)<33) {
 				Mat<long> degmat;
-				degree_matrix(degmat,appbas2,shift,true);
+				degree_matrix(degmat,appbas,shift,true);
 				std::cout << "Print degree matrix of approx basis..." << std::endl;
 				std::cout << degmat << std::endl;
 			}
 		}
 	}
 
-
-	// mbasis_vector Eric's version
+	// mbasis Vec<Mat<zz_p>> version 2
 	{
 		std::cout << "~~~Testing mbasis_vector version 2 ~~~" << std::endl;
 		t1w = GetWallTime(); t1 = GetTime();
@@ -180,7 +165,6 @@ int main(int argc, char *argv[])
 
 		if (verify)
 		{
-			std::cout << "Converting basis to polmat format..." << std::endl;
 			std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
 			t1w = GetWallTime(); t1 = GetTime();
 			bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
