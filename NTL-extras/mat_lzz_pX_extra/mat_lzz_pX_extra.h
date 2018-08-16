@@ -723,19 +723,13 @@ DegVec mbasis(
 		const Shift & shift
 		);
 
-// TODO work in progress, variant with input and output given by matrix coefficients
-DegVec mbasis_vector1(
-		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & pmat,
-		const long order,
-		const Shift & shift
-		);
-
+// variant which first converts to vector of constant matrices
+// TODO see if this is ever slower than the above
 DegVec mbasis_vector(
 		Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
 		const long order,
-		const std::vector<long> & shift
+		const Shift & shift
 		);
 
 // TODO some thresholding to be done, so that mbasis does the
