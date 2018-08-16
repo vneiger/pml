@@ -8,8 +8,7 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* compares geometric evaluation to subproduct tree one       */
-/* prints timings and aborts if results differ                */
+/* computes rnd . eval(f) using direct / tranposed geom. eval */
 /*------------------------------------------------------------*/
 void check()
 {
@@ -23,16 +22,12 @@ void check()
 	zz_pX_Multipoint_Geometric ev;
         Vec<zz_p> valF, rnd;
 
-        cout << j << " ";
-        cout << "(" << ev.FFT_evaluate() << ") ";
-        
         a = random_zz_p();
         ev = zz_pX_Multipoint_Geometric(a, j);
         f = random_zz_pX(j);
         random_vec_zz_p(rnd, j);
 
         ev.evaluate(valF, f);
-
         ev.t_evaluate(g, rnd);
 
         res1 = 0;
@@ -48,8 +43,6 @@ void check()
 	    cerr << "error for j=" << j << endl;
 	    exit (-1);
 	}
-
-        cout << endl;
     }
 }  
 

@@ -7,41 +7,26 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* compares geometric evaluation to subproduct tree one       */
-/* prints timings and aborts if results differ                */
+/* computes rnd . eval(f) using direct / tranposed eval       */
 /*------------------------------------------------------------*/
 void check()
 {
     long p = 1125899906842679;
     zz_p::init(p);
 
-    for (long j = 1; j < 1100; j++)
+    for (long j = 1; j < 500; j++)
     {
-	double t;
-	zz_p a, res1, res2;
+        zz_p res1, res2;
         zz_pX f, g;
-	zz_pX_Multipoint_General ev;
+        zz_pX_Multipoint_General ev;
         Vec<zz_p> valF, rnd;
 
         ev = get_general_points(j);
         f = random_zz_pX(j);
         random(rnd, j);
 
-        cout << j << " ";
-        
-	t = GetWallTime();
-	for (long i = 0; i < 1000; i++)
-	{
-	    ev.evaluate(valF, f);
-	}
-	cout << GetWallTime()-t << " ";
-
-	t = GetWallTime();
-	for (long i = 0; i < 1000; i++)
-	{
-	    ev.t_evaluate(g, rnd);
-	}
-	cout << GetWallTime()-t << " ";
+        ev.evaluate(valF, f);
+        ev.t_evaluate(g, rnd);
 
         res1 = 0;
         for (long i = 0; i < j; i++)
@@ -51,13 +36,11 @@ void check()
         for (long i = 0; i < j; i++)
             res2 += coeff(f, i) * coeff(g, i);
 
-	if (res1 != res2) 
-	{
-	    cerr << "error for j=" << j << endl;
-	    exit (-1);
-	}
-
-        cout << endl;
+        if (res1 != res2) 
+        {
+            cerr << "error for j=" << j << endl;
+            exit (-1);
+        }
     }
 }  
 

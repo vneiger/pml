@@ -24,18 +24,42 @@ void tKarMul_aux(zz_p *b, const long sb, const zz_p *a, const long sa, const zz_
 
 /*------------------------------------------------------------*/
 /* middle product via FFT                                     */
-/* returns x=(a*b div x^(N-1)) mod x^N                        */
+/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
 /*------------------------------------------------------------*/
-void middle_FFT(zz_pX& x, const zz_pX& a, const zz_pX& b, long N);
+void middle_FFT(zz_pX& x, const zz_pX& a, const zz_pX& c, long dA, long dB);
 
 /*------------------------------------------------------------*/
-/* middle product of (a,b)                                    */
-/*   c has length <= 2*N-1                                    */
+/* returns x=(a*b div x^(N-1)) mod x^N                        */
+/*------------------------------------------------------------*/
+inline void middle_FFT(zz_pX& x, const zz_pX& a, const zz_pX& b, long N)
+{
+    middle_FFT(x, a, b, N-1, N-1);
+}
+
+/*------------------------------------------------------------*/
+/* middle product of (a,c)                                    */
+/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
+/*------------------------------------------------------------*/
+void middle_product(zz_pX& b, const zz_pX& a, const zz_pX& c, long dA, long dB);
+
+inline zz_pX middle_product(const zz_pX& a, const zz_pX& c, long dA, long dB)
+{
+    zz_pX b;
+    middle_product(b, a, c, dA, dB);
+    return b;
+}
+
+/*------------------------------------------------------------*/
+/* middle product of (a,c)                                    */
 /*   a has length <= N                                        */
-/*   x has length <= N                                        */
-/* returns x=(a*b div x^(N-1)) mod x^N                        */
+/*   c has length <= 2*N-1                                    */
+/* returns b=(a*c div x^(N-1)) mod x^N                        */
 /*------------------------------------------------------------*/
-zz_pX middle_product(const zz_pX& c, const zz_pX& a, long N);
-
+inline zz_pX middle_product(const zz_pX& a, const zz_pX& c, long N)
+{
+    zz_pX b;
+    middle_product(b, a, c, N-1, N-1);
+    return b;
+}
 
 #endif

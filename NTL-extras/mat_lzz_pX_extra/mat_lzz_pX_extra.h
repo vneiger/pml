@@ -8,7 +8,6 @@
 
 NTL_CLIENT
 
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* UTILS                                                      */
@@ -28,17 +27,24 @@ long deg(const Mat<zz_pX> & pmat);
 /*------------------------------------------------------------*/
 std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
 
-//TODO need equivalents of those to make storage transparent???
-//const zz_p coeff(const zz_pX& a, long i);
-// returns the coefficient of X^i, or zero if i not in range
-//void SetCoeff(zz_pX& x, long i, zz_p a);
-//void SetCoeff(zz_pX& x, long i, long a);
-// makes coefficient of X^i equal to a; error is raised if i < 0
-//void SetCoeff(zz_pX& x, long i);
-// makes coefficient of X^i equal to 1;  error is raised if i < 0
+/*------------------------------------------------------------*/
+/* transpose                                                  */
+/*------------------------------------------------------------*/
+void transpose(Mat<zz_pX>& x, const Mat<zz_pX>& a);
 
-//truncate mod X^... , for all the matrix or some columns/rows of it
-//TODO different truncation orders on the different columns/rows
+inline Mat<zz_pX> transpose(const Mat<zz_pX> & a)
+{ 
+    Mat<zz_pX> x; 
+    transpose(x, a); 
+    return x; 
+}
+
+
+
+/*------------------------------------------------------------*/
+/* truncate mod X^..., for all the matrix / some columns/rows */
+/* TODO: different truncation orders on columns/rows          */
+/*------------------------------------------------------------*/
 // full matrix versions
 void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
 Mat<zz_pX> trunc(const Mat<zz_pX>& a, long n);
@@ -51,24 +57,16 @@ Mat<zz_pX> truncRow(const Mat<zz_pX>& a, long r, long n);
 void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c, long n);
 Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n);
 
-//TODO: multiply row or column of matrix (vec_lzz_pX) by constant
 
-/**************************************************************************\
-
-                               Shift Operations
-
-LeftShift by n means multiplication by X^n
-RightShift by n means division by X^n
-
-A negative shift amount reverses the direction of the shift.
-
-\**************************************************************************/
-
-// operator notation:
-// TODO versions with different shifting orders on different rows/columns
-
+/*------------------------------------------------------------*/
+/*                        Shift Operations                    */
+/* LeftShift by n means multiplication by X^n                 */
+/* RightShift by n means division by X^n                      */
+/* A negative shift reverses the direction of the shift.      */
+/* TODO                                                       */
+/* versions with different shifting orders on rows/columns    */
+/*------------------------------------------------------------*/
 // full matrix, 1 row, 1 col
-
 // full matrix shift
 Mat<zz_pX> operator<< (const Mat<zz_pX> &a, long n);
 Mat<zz_pX> operator>> (const Mat<zz_pX> &a, long n);
@@ -77,7 +75,6 @@ Mat<zz_pX>& operator<<=(Mat<zz_pX>& x, long n);
 Mat<zz_pX>& operator>>=(Mat<zz_pX>& x, long n);
 
 //// procedural versions:
-
 // full matrix left shifts
 void LeftShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
 Mat<zz_pX> LeftShift(const Mat<zz_pX>& a, long n);
@@ -102,17 +99,32 @@ Mat<zz_pX> RightShiftRow(const Mat<zz_pX>& a, const long r, long n);
 void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
 Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n);
 
-// TODO reverse operations
-//void reverse(zz_pX& x, const zz_pX& a, long hi);
-//zz_pX reverse(const zz_pX& a, long hi);
-//
-//void reverse(zz_pX& x, const zz_pX& a);
-//zz_pX reverse(const zz_pX& a);
-// x = reverse of a[0]..a[hi] (hi >= -1);
-// hi defaults to deg(a) in second version
 
+/*------------------------------------------------------------*/
+/* reverse operations                                         */
+/* x = reverse of a[0]..a[hi] (hi >= -1);                     */
+/* hi defaults to deg(a) in second version                    */
+/*------------------------------------------------------------*/
+void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a, long hi);
 
+static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a, long hi)
+{
+    Mat<zz_pX> x;
+    reverse(x, a, hi);
+    return x;
+}
 
+static inline void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a)
+{
+    reverse(x, a, deg(a));
+}
+
+static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
+{
+    Mat<zz_pX> x;
+    reverse(x, a);
+    return x;
+}
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -265,9 +277,12 @@ inline Mat<zz_pX> operator*(const zz_p& a, const Mat<zz_pX>& b)
     return x; 
 }
 
+/*------------------------------------------------------------*/
+/* TODO                                                       */
+/* multiply row or column of matrix (vec_lzz_pX) by constant  */
+/*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* c = a*b                                                    */
 /* negate                                                     */
 /*------------------------------------------------------------*/
 void neg(Mat<zz_pX> & x, const Mat<zz_pX> & a);
@@ -363,7 +378,8 @@ void multiply_transform_montgomery3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const 
 void multiply_transform_karatsuba4(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long len);
 
-inline void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b){
+inline void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{
     multiply_transform(c, a, b, max(deg(a), deg(b)) + 1);
 }
 
@@ -372,7 +388,23 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
 
 void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
-// TODO: multiply given upper degree bound --> use transforms
+
+/*------------------------------------------------------------*/
+/* transpose of b mapsto c = a*b. output is                   */
+/*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
+/* a must have degree at most dA                              */
+/* c must have degree at most dA + dB                         */
+/*------------------------------------------------------------*/
+void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+
+/*------------------------------------------------------------*/
+/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
+/*------------------------------------------------------------*/
+inline void middle_product_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+{
+    t_multiply_evaluate_geometric(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
+}
+
 
 
 /* inline Mat<zz_pX> & operator*=(Mat<zz_pX> & x, const Mat<zz_pX>& b) */

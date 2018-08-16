@@ -8,7 +8,7 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* initializes a zz_pX_Multipoint                             */
+/* computes rnd . FFT(f) using direct and tranposed FFT       */
 /*------------------------------------------------------------*/
 void check(){
 
@@ -16,9 +16,9 @@ void check(){
 
     for (long j = 1; j < 200; j+=1)
     {
-	zz_p res1, res2;
+        zz_p res1, res2;
         zz_pX f, g;
-	zz_pX_Multipoint_FFT ev;
+        zz_pX_Multipoint_FFT ev;
         Vec<zz_p> valF, rnd;
 
         ev = get_FFT_points(j);
@@ -26,7 +26,6 @@ void check(){
         random_vec_zz_p(rnd, ev.length());
 
         ev.evaluate(valF, f);
-
         ev.t_evaluate(g, rnd);
 
         res1 = 0;
@@ -37,11 +36,11 @@ void check(){
         for (long i = 0; i < ev.length(); i++)
             res2 += coeff(f, i) * coeff(g, i);
 
-	if (res1 != res2) 
-	{
-	    cerr << "error for j=" << j << endl;
-	    exit (-1);
-	}
+        if (res1 != res2) 
+        {
+            cerr << "error for j=" << j << endl;
+            exit (-1);
+        }
     }
 }
 

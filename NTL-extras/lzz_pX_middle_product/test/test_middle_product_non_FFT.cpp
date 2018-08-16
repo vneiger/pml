@@ -6,54 +6,45 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* if opt = 1, runs a check                                   */
-/* else, runs timings                                         */
+/* checks middle products                                     */
 /*------------------------------------------------------------*/
-void check(int opt){
-  zz_p::init(1125899906842624);
+void check()
+{
+    zz_p::init(1125899906842624);
   
-  for (long i = 1; i < 10000; i += 1){
-
-    zz_pX a, b, c;
-    a = random_zz_pX(2*i-1);
-    b = random_zz_pX(i);
-
-    if (opt == 1){
-      c = middle_product(a, b, i);
-      assert (c == trunc(RightShift(a*b, i-1), i));
+    for (long dA = 0; dA < 300; dA++)
+    {
+        for (long dB = 0; dB < 300; dB++)
+        {
+            zz_pX a, b, c;
+            a = random_zz_pX(dA + 1);
+            c = random_zz_pX(dA + dB + 1);
+            
+            b = middle_product(a, c, dA, dB);
+            if (b != trunc(RightShift(a*c, dA), dB + 1))
+            {
+                LogicError("Error in middle product.");
+            }
+        }
+        {
+            zz_pX a, b, c;
+            a = random_zz_pX(dA + 1);
+            c = random_zz_pX(2*dA + 1);
+            b = middle_product(a, c, dA + 1);
+            if (b != trunc(RightShift(a*c, dA), dA + 1))
+            {
+                LogicError("Error in middle product.");
+            }
+        }
     }
-    else{
-      cout << i << " ";
-      
-      double t;
-      
-      t = GetTime();
-      for (long j = 0; j < 100000; j++)
-	c = middle_product(a, b, i);
-      t = GetTime() - t;
-      cout << t << " ";
-
-      t = GetTime();
-      for (long j = 0; j < 100000; j++)
-	a = b*c;
-      t = GetTime() - t;
-      cout << t << " ";
-      
-      cout << endl;
-    }
-  }
 }
+
 
 /*------------------------------------------------------------*/
 /* main just calls check()                                    */
-/* if not argument is given, runs timings                     */
-/* if the argument 1 is given, runs check                     */
 /*------------------------------------------------------------*/
-int main(int argc, char** argv){
-  int opt = 0;
-  if (argc > 1)
-    opt = atoi(argv[1]);
-  check(opt);
-
-  return 0;
+int main(int argc, char** argv)
+{
+    check();
+    return 0;
 }

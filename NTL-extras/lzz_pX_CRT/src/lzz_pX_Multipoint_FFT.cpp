@@ -115,6 +115,11 @@ void zz_pX_Multipoint_FFT::interpolate(zz_pX& f, const Vec<zz_p>& val) {
     }
 
     FromfftRep(f, wk, 0, n-1);
+
+    if (n == 2) // weird: seems that for n=2, the normalization is different.
+    {
+        f = (1 / to_zz_p(2)) * f;
+    }
 }
 
 /*------------------------------------------------------------*/

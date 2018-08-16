@@ -17,13 +17,68 @@ NTL_CLIENT
 /* UTILS                                                      */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-
 std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
     out << "[ ";
     for (auto &i: s)
         out << i << " ";
     return out << "]";
 }
+
+
+/*------------------------------------------------------------*/
+/* transpose                                                  */
+/*------------------------------------------------------------*/
+void transpose(Mat<zz_pX>& X, const Mat<zz_pX>& A)
+{
+    long n = A.NumRows();
+    long m = A.NumCols();
+
+    long i, j;
+
+    if (&X == & A) 
+    {
+        if (n == m)
+            for (i = 1; i <= n; i++)
+                for (j = i+1; j <= n; j++)
+                    swap(X(i, j), X(j, i));
+        else 
+        {
+            Mat<zz_pX> tmp;
+            tmp.SetDims(m, n);
+            for (i = 1; i <= n; i++)
+                for (j = 1; j <= m; j++)
+                    tmp(j, i) = A(i, j);
+            X.kill();
+            X = tmp;
+        }
+    }
+    else 
+    {
+        X.SetDims(m, n);
+        for (i = 1; i <= n; i++)
+            for (j = 1; j <= m; j++)
+                X(j, i) = A(i, j);
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/* reverse operations                                         */
+/* x = reverse of a[0]..a[hi] (hi >= -1);                     */
+/*------------------------------------------------------------*/
+void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a, long hi)
+{
+    long rdim, cdim;
+    rdim = a.NumRows();
+    cdim = a.NumCols();
+    x.SetDims(rdim, cdim);
+
+    for (long r = 0; r < rdim; r++)
+        for (long s = 0; s< cdim; s++)
+            reverse(x[r][s], a[r][s], hi);
+}
+    
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -134,36 +189,36 @@ void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n){
     x = a;
     for (long r = 0; r < x.NumRows(); r++)
         for (long c = 0; c < x.NumCols(); c++)
-            trunc(x[r][c],x[r][c],n);
+            trunc(x[r][c], x[r][c], n);
 }
 
 Mat<zz_pX> trunc(const Mat<zz_pX>& a, long n){
     auto x = a;
-    trunc(x,x,n);
+    trunc(x, x, n);
     return x;
 }
 
 void truncRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, long r,long n){
     x = a;
     for (long c = 0; c < x.NumCols(); c++)
-        trunc(x[r][c],x[r][c],n);
+        trunc(x[r][c], x[r][c], n);
 }
 
 Mat<zz_pX> truncRow(const Mat<zz_pX>& a, long r, long n){
     auto x = a;
-    truncRow(x,x,r,n);
+    truncRow(x, x, r, n);
     return x;
 }
 
 void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c,long n){
     x = a;
     for (long r = 0; r < x.NumRows(); r++)
-        trunc(x[r][c],x[r][c],n);
+        trunc(x[r][c], x[r][c], n);
 }
 
 Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n){
     auto x = a;
-    truncRow(x,x,c,n);
+    truncRow(x, x, c, n);
     return x;
 }
 

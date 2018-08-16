@@ -17,6 +17,7 @@ clean:
 	rm -f $(EXEC)
 
 all:	$(TESTS)
+	$(foreach tst, $(EXEC), ./$(tst) ;)
 
 utest_%:	$(OBJS)
 	if test -e test_$*.cpp; then $(CXX) -o test_$* test_$*.cpp $(OBJS) $(CXXFLAGS) $(LIBS); fi

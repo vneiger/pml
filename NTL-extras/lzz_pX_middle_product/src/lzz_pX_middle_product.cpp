@@ -22,7 +22,8 @@ void tPlainMul2(zz_p *b, long sb, const zz_p *a, long sa, const zz_p *c, long sc
     for (long i = 0; i < sb; i++)
         b[i].LoopHole() = 0;
 
-    for (long i = 0; i < sa; i++) {
+    for (long i = 0; i < sa; i++) 
+    {
         long ai = rep(a[i]);
         mulmod_precon_t apinv = PrepMulModPrecon(ai, p, pinv); 
         for (long j = 0; j < sb; j++) 
@@ -108,7 +109,8 @@ void tKarMul_aux(zz_p *b, const long sb, const zz_p *a, const long sa, const zz_
     long hsb = (sb + 1) >> 1;
 
     // Degenerate case I
-    if (sa >= sb && sb <= hsa) {
+    if (sa >= sb && sb <= hsa) 
+    {
         zz_p *T = stk; 
         stk += sb;
         tKarMul_aux(b, sb, a+hsa, sa-hsa, c+hsa, sc-hsa, stk);
@@ -118,7 +120,8 @@ void tKarMul_aux(zz_p *b, const long sb, const zz_p *a, const long sa, const zz_
     }
 
     // Degenerate case II
-    if (sa < sb && sa <= hsb) {
+    if (sa < sb && sa <= hsb) 
+    {
         tKarMul_aux(b, hsb, a, sa, c, min(sa+hsb-1,sc), stk);
         tKarMul_aux(b+hsb, sb - hsb, a, sa, c+hsb, sc-hsb, stk);
         return;
@@ -153,91 +156,79 @@ void tKarMul_aux(zz_p *b, const long sb, const zz_p *a, const long sa, const zz_
     KarAdd(b, T2, hs);
 }
 
-
-
 /*------------------------------------------------------------*/
 /* middle product via FFT                                     */
-/* returns x=(a*b div x^(N-1)) mod x^N                        */
+/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
 /*------------------------------------------------------------*/
-void middle_FFT(zz_pX& x, const zz_pX& a, const zz_pX& b, long N)
+void middle_FFT(zz_pX& x, const zz_pX& a, const zz_pX& c, long dA, long dB)
 {
-    long k = NextPowerOfTwo(2*N-1);
+    long k = NextPowerOfTwo(dA + dB + 1);
     fftRep R1(INIT_SIZE, k), R2(INIT_SIZE, k);
-    TofftRep(R1, a, k);
-    TofftRep(R2, b, k);
+    TofftRep(R1, a, k, 0, dA);
+    TofftRep(R2, c, k, 0, dA + dB);
     mul(R1, R1, R2);
-    FromfftRep(x, R1, N-1, 2*N-2);
+    FromfftRep(x, R1, dA, dA + dB);
 }
 
-
-
 /*------------------------------------------------------------*/
-/* middle product of (a,b)                                    */
-/*   c has length <= 2*N-1                                    */
-/*   a has length <= N                                        */
-/*   x has length <= N                                        */
-/* returns x=(a*c div x^(N-1)) mod x^N                        */
+/* middle product of (a,c)                                    */
+/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
 /*------------------------------------------------------------*/
-zz_pX middle_product(const zz_pX& c, const zz_pX& a, long N)
+void middle_product(zz_pX& b, const zz_pX& a, const zz_pX& c, long dA, long dB)
 {
-  
-    zz_pX b;
 
     if (c == 0 || a == 0)
     {
         clear(b);
-        return b;
+        return;
     }
 
-    if (deg(c) >= 2*N-1 || deg(a) >= N)
-        LogicError("degree mismatch for middle product");
-
-    if (N > NTL_zz_pX_MUL_CROSSOVER)
+    // not sure what's best here
+    if (max(dA, dB) > NTL_zz_pX_MUL_CROSSOVER)
     {
-        middle_FFT(b, a, c, N);
-        return b;
+        middle_FFT(b, a, c, dA, dB);
+        return;
     }
 
-    zz_p *ap = new zz_p[N];
-    const long ind_a = N-(deg(a)+1);
+    Vec<zz_p> ap;
+    ap.SetLength(dA + 1);
+    const long ind_a = dA - deg(a);
     const zz_p *cf_a = a.rep.elts();
     for (long i = 0; i < ind_a; i++)
         ap[i] = 0;
-    for (long i = ind_a; i < N; i++)
-        ap[i] = cf_a[N-1-i];
+    for (long i = max(0, ind_a); i <= dA; i++)
+        ap[i] = cf_a[dA - i];
 
-    zz_p *bp = new zz_p[N];
+    
+    Vec<zz_p> bp;
+    bp.SetLength(dB + 1);
 
-    zz_p *cp = new zz_p[2*N-1];
+    Vec<zz_p> cp;
+    cp.SetLength(dA + dB + 1);
     const long ind_c = deg(c)+1;
     const zz_p *cf_c = c.rep.elts();
-    for (long i = 0; i < ind_c; i++)
+    for (long i = 0; i < min(ind_c, dA + dB + 1); i++)
         cp[i] = cf_c[i];
-    for (long i = ind_c; i < 2*N-1; i++)
+    for (long i = ind_c; i <= dA + dB; i++)
         cp[i] = 0;
-
-    if (N < KARX)
+   
+    if (min(dA, dB) < KARX)
     {
-        tPlainMul2(bp, N, ap, N, cp, 2*N-1);
+        tPlainMul2(bp.elts(), dB + 1, ap.elts(), dA + 1, cp.elts(), dA + dB + 1);
     }
-    else {
-        long sp = Kar_stk_size(N);
-        zz_p *stk = new zz_p[sp];
-        tKarMul_aux(bp, N, ap, N, cp, 2*N-1, stk);
-        delete[] stk;
+    else 
+    {
+        long sp = Kar_stk_size(1 + max(dA, dB));
+        Vec<zz_p> stk;
+        stk.SetLength(sp);
+        tKarMul_aux(bp.elts(), dB + 1, ap.elts(), dA + 1, cp.elts(), dA + dB + 1, stk.elts());
     }
 
-    b.rep.SetLength(N);
+    b.rep.SetLength(dB + 1);
     zz_p *cf_b = b.rep.elts();
-    for (long i = 0; i < N; i++)
+    for (long i = 0; i <= dB; i++)
         cf_b[i] = bp[i];
-  
+
     b.normalize();
-
-    delete[] ap;
-    delete[] bp;
-    delete[] cp;
-
-    return b;
 }
 

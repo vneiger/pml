@@ -14,33 +14,33 @@ void check()
     long p = 1125899906842679;
     zz_p::init(p);
     
-    for (long j = 1; j < 20; j++)
+    for (long j = 1; j < 50; j++)
     {
-	Vec<zz_pX> val, q, mmod;
-	q.SetLength(j);
-	val.SetLength(j);
-	for (long i = 0; i < j; i++)
-	{
-	    q[i] = random_zz_pX(i*3+5);
-	    val[i] = random_zz_pX(i*3+5) % q[i];
-	}
-	zz_pX_CRT crt = zz_pX_CRT(q);
-	zz_pX f;
-	crt.combine(f, val);
-	crt.multimod(mmod, f);
-	for (long i = 0; i < j; i++)
-	{
-	    if (val[i] != (f % q[i]))
-	    {
-		cerr << "error for CRT combine with j=" << j << endl;
-		exit(-1);
-	    }
-	    if (val[i] != mmod[i])
-	    {
-		cerr << "error for CRT multimod with j=" << j << endl;
-		exit(-1);
-	    }
-	}
+        Vec<zz_pX> val, q, mmod;
+        q.SetLength(j);
+        val.SetLength(j);
+        for (long i = 0; i < j; i++)
+        {
+            q[i] = random_zz_pX(i*3+5);
+            val[i] = random_zz_pX(i*3+5) % q[i];
+        }
+        zz_pX_CRT crt = zz_pX_CRT(q);
+        zz_pX f;
+        crt.combine(f, val);
+        crt.multimod(mmod, f);
+        for (long i = 0; i < j; i++)
+        {
+            if (val[i] != (f % q[i]))
+            {
+                cerr << "error for CRT combine with j=" << j << endl;
+                exit(-1);
+            }
+            if (val[i] != mmod[i])
+            {
+                cerr << "error for CRT multimod with j=" << j << endl;
+                exit(-1);
+            }
+        }
     }
 }  
 

@@ -1,6 +1,7 @@
 #ifndef LZZ_PX_CRT__H
 #define LZZ_PX_CRT__H
 
+#include <map>
 #include <NTL/lzz_pX.h>
 #include <NTL/vector.h>
 #include <NTL/matrix.h>
@@ -35,6 +36,9 @@ public:
     virtual void evaluate(Vec<zz_p>& val, const zz_pX& P) const = 0;
     virtual void interpolate(zz_pX& P, const Vec<zz_p>& val) = 0;     // dirty hack: interpolate uses an instance fftRep as workspace
 
+    virtual void t_evaluate(zz_pX& P, const Vec<zz_p>& val) const = 0;
+    virtual void t_interpolate(Vec<zz_p>& val, const zz_pX& P) = 0;     // dirty hack: t_interpolate uses an instance fftRep as workspace
+
     /*------------------------------------------------------------*/
     /* action on vectors and matrices                             */
     /*------------------------------------------------------------*/
@@ -43,10 +47,10 @@ public:
     void evaluate_matrix(Vec<Mat<zz_p>>& val, const Mat<zz_pX>& f) const;
     void interpolate_matrix(Mat<zz_pX>& f, const Vec<Mat<zz_p>>& val);
 
-    /* void t_evaluate_vector(Vec<Vec<zz_p>>& val, const Vec<zz_pX>& P) const; */
-    /* void t_interpolate_vector(Vec<zz_pX>& f, const Vec<Vec<zz_p>>& val); */
-    /* void t_evaluate_matrix(Vec<Mat<zz_p>>& val, const Mat<zz_pX>& f) const; */
-    /* void t_interpolate_matrix(Mat<zz_pX>& f, const Vec<Mat<zz_p>>& val); */
+    void t_evaluate_vector(Vec<zz_pX>& f, const Vec<Vec<zz_p>>& val) const;
+    void t_interpolate_vector(Vec<Vec<zz_p>>& val, const Vec<zz_pX>& P);
+    void t_evaluate_matrix(Mat<zz_pX>& f, const Vec<Mat<zz_p>>& val) const;
+    void t_interpolate_matrix(Vec<Mat<zz_p>>& val, const Mat<zz_pX>& f);
 
     /*------------------------------------------------------------*/
     /* number of points                                           */
@@ -140,17 +144,28 @@ public:
     void t_interpolate(Vec<zz_p>& val, const zz_pX& f);
 
     /*------------------------------------------------------------*/
-    /* getters                                                    */
+    /* getters / setters                                          */
     /*------------------------------------------------------------*/
     long FFT_evaluate() const;
     long FFT_interpolate() const;
 
+    void set_FFT_evaluate();
+    void unset_FFT_evaluate();
+    void set_FFT_interpolate();
+    void unset_FFT_interpolate();
+
+    /*------------------------------------------------------------*/
+    /* adds a new FFT for repeated evaluations in degree d < n    */
+    /*------------------------------------------------------------*/
+    void prepare_degree(long d);
 
 private:  
+    
     long idx_k, do_FFT_evaluate, do_FFT_interpolate;
     Vec<zz_p> x, t, w, y, z;
     zz_pX f, g1, g2;
-    fftRep f_fft, g1_fft, g2_fft;
+    fftRep /* f_fft,  */g1_fft, g2_fft;  
+    map<int, fftRep> known_degrees;
 };
 
 /*------------------------------------------------------------*/
