@@ -104,6 +104,7 @@ Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n);
 /* reverse operations                                         */
 /* x = reverse of a[0]..a[hi] (hi >= -1);                     */
 /* hi defaults to deg(a) in second version                    */
+/* TODO versions with different shifts on different cols/rows */
 /*------------------------------------------------------------*/
 void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a, long hi);
 
@@ -433,11 +434,17 @@ enum PolMatForm {
 	POPOV = 4,
 };
 
+/*------------------------------------------------------------*/
+/* Types for integer tuples: degrees and shifts               */
+/*------------------------------------------------------------*/
+
 typedef std::vector<long> Shift;
 typedef std::vector<long> DegVec;
 
 /*------------------------------------------------------------*/
-/* matrix of integers; deg(0) = -1                            */
+/* Degree matrix: matrix of the degree of each entry          */
+/* Convention: deg(0) = -1, more generally the shifted degree */
+/* of a zero entry is min(shift)-1                            */
 /*------------------------------------------------------------*/
 void degree_matrix(
 		Mat<long> &degmat,
@@ -447,7 +454,9 @@ void degree_matrix(
 		);
 
 /*------------------------------------------------------------*/
-/* max degree of row entries                                  */
+/* tuple (shifted deg row 1, shifted deg row 2, ...)          */
+/* where shifted deg row k is the maximum of the shifted      */
+/* degrees of the entries of row k                            */
 /*------------------------------------------------------------*/
 void row_degree(
 		DegVec & rdeg,
@@ -456,7 +465,7 @@ void row_degree(
 		); 
 
 /*------------------------------------------------------------*/
-/* max degree of col entries                                  */
+/* similar function for column degrees (see row_degree)       */
 /*------------------------------------------------------------*/
 void col_degree(
 		DegVec & cdeg,
@@ -476,7 +485,7 @@ void pivot_index(
 		);
 
 /*------------------------------------------------------------*/
-/* leading matrix of b                                        */
+/* leading matrix of pmat                                     */
 /*------------------------------------------------------------*/
 void leading_matrix(
 		Mat<zz_p> &lmat,
