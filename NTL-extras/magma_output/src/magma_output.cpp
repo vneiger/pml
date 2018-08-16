@@ -40,13 +40,13 @@ void magma_output(const Vec<ZZ> & v)
 {
     if (v.length() == 0)
     {
-	cout << "[]";
-	return;
+        cout << "[]";
+        return;
     }
     cout << "[";
     for (long i = 0; i < v.length()-1; i++)
     {
-	cout << v[i] << ", ";
+        cout << v[i] << ", ";
     }
     cout << v[v.length()-1] << "]";
 }
@@ -55,13 +55,13 @@ void magma_output(const Vec<long> & v)
 {
     if (v.length() == 0)
     {
-	cout << "[]";
-	return;
+        cout << "[]";
+        return;
     }
     cout << "[";
     for (long i = 0; i < v.length()-1; i++)
     {
-	cout << v[i] << ", ";
+        cout << v[i] << ", ";
     }
     cout << v[v.length()-1] << "]";
 }
@@ -70,13 +70,13 @@ void magma_output(const Vec<zz_p> & v)
 {
     if (v.length() == 0)
     {
-	cout << "[]";
-	return;
+        cout << "[]";
+        return;
     }
     cout << "[";
     for (long i = 0; i < v.length()-1; i++)
     {
-	cout << v[i] << ", ";
+        cout << v[i] << ", ";
     }
     cout << v[v.length()-1] << "]";
 }
@@ -85,13 +85,13 @@ void magma_output(const Vec<unsigned long> & v)
 {
     if (v.length() == 0)
     {
-	cout << "[]";
-	return;
+        cout << "[]";
+        return;
     }
     cout << "[";
     for (long i = 0; i < v.length()-1; i++)
     {
-	cout << v[i] << ", ";
+        cout << v[i] << ", ";
     }
     cout << v[v.length()-1] << "]";
 }
@@ -135,14 +135,14 @@ void magma_output(const Mat<zz_p> & v)
 {
     if (v.NumRows() == 0)
     {
-	cout << "Matrix(GF(" << zz_p::modulus() << "), [[]])";
-	return;
+        cout << "Matrix(GF(" << zz_p::modulus() << "), [[]])";
+        return;
     }
     cout << "Matrix(GF(" << zz_p::modulus() << "), [";
     for (long i = 0; i < v.NumRows()-1; i++)
     {
-	magma_output(v[i]);
-	cout << ", ";
+        magma_output(v[i]);
+        cout << ", ";
     }
     magma_output(v[v.NumRows()-1]);
     cout << "])";
@@ -167,7 +167,7 @@ void magma_output(const ZZX & v, const string & var)
     cout << "(Parent(" << var << ")!(0)";
     for (long i = 0; i <= deg(v); i++)
     {
-	cout << "+(" << coeff(v, i) << ")*" << var << "^" << i;
+        cout << "+(" << coeff(v, i) << ")*" << var << "^" << i;
     }
     cout << ")";
 }
@@ -177,7 +177,7 @@ void magma_output(const zz_pX & v, const string & var)
     cout << "(Parent(" << var << ")!(0)";
     for (long i = 0; i <= deg(v); i++)
     {
-	cout << "+(" << coeff(v, i) << ")*" << var << "^" << i;
+        cout << "+(" << coeff(v, i) << ")*" << var << "^" << i;
     }
     cout << ")";
 }
@@ -187,9 +187,9 @@ void magma_output(const Vec<zz_pX> & v, const string & var)
     cout << "[";
     for (long i = 0; i < v.length(); i++)
     {
-	magma_output(v[i]);
-	if (i < v.length()-1)
-	    cout << ", ";
+        magma_output(v[i]);
+        if (i < v.length()-1)
+            cout << ", ";
     }
     cout << "]";
 }
@@ -199,20 +199,20 @@ void magma_output(const Mat<zz_pX>& a, const string & var)
     cout << "Matrix([";
     for (long i = 0; i < a.NumRows(); i++)
     {
-	cout << "[";
-	for (long j = 0; j < a.NumCols(); j++)
-	{
-	    magma_output(a[i][j], var);
-	    if (j < a.NumCols()-1)
-	    {
-		cout << ", ";
-	    }
-	}
-	cout << "]";
-	if (i < a.NumRows()-1)
-	{
-	    cout << ", ";
-	}
+        cout << "[";
+        for (long j = 0; j < a.NumCols(); j++)
+        {
+            magma_output(a[i][j], var);
+            if (j < a.NumCols()-1)
+            {
+                cout << ", ";
+            }
+        }
+        cout << "]";
+        if (i < a.NumRows()-1)
+        {
+            cout << ", ";
+        }
     }
     cout << "])";
 }
