@@ -418,6 +418,7 @@ DegVec mbasis(
 					LeftShiftRow(appbas,appbas,i,1);
 
 			// III/ compute next residual, if needed
+			// TODO improve when deg(pmat)<order, see mbasis_vector
 			if (ord<order)
 			{
 				residual = coeff(appbas,0) * coeff(pmat,ord);
@@ -519,9 +520,9 @@ DegVec mbasis_vector1(
 			// deduce degree of coeffs_appbas; note that it is a property of this algorithm
 			// that deg(coeffs_appbas) = max(pivot degree) (i.e. max(degree of diagonal
 			// entries); this does not hold in general for ordered weak Popov forms
-			long deg_coeffs_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
+			long deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
 
-			if (deg_coeffs_appbas > expected_degree) {
+			if (deg_appbas > expected_degree) {
 				std::cout << "~~mbasis-variant not implemented yet, currently assuming generic coeffs_pmat and uniform shift" << std::endl;
 				throw;
 			}
@@ -531,17 +532,16 @@ DegVec mbasis_vector1(
 			// submatrix of rows with diff_pivdeg==0 is replaced by kerbas*coeffs_appbas
 			// while rows with diff_pivdeg=1 are simply multiplied by X
 			// --> the loop goes downwards, so that we can do both in the same iteration
-			long row;
 			// separate treatment of highest degree terms, if degree has increased
-			if (deg_coeffs_appbas>current_degree)
+			if (deg_appbas>current_degree)
 				for (long i = 0; i < nrows; ++i)
 					if (diff_pivdeg[i]==1)
-						coeffs_appbas[deg_coeffs_appbas][i] = coeffs_appbas[deg_coeffs_appbas-1][i];
+						coeffs_appbas[deg_appbas][i] = coeffs_appbas[deg_appbas-1][i];
 			// normal treatment of other terms
 			for (long d = current_degree; d >= 0; --d)
 			{
-				mul(kerapp,kerbas,coeffs_appbas[d]);
-				row=0;
+				kerapp = kerbas * coeffs_appbas[d];
+				long row=0;
 				for (long i = 0; i < nrows; ++i)
 				{
 					if (diff_pivdeg[i]==0)
@@ -562,16 +562,21 @@ DegVec mbasis_vector1(
 			// III/ compute next residual, if needed
 			if (ord<order)
 			{
-				residual = coeffs_appbas[0] * coeffs_pmat[ord];
-				for (long d = 1; d <= deg_coeffs_appbas; ++d) // note that deg_coeffs_appbas <= ord holds
+				if (ord < coeffs_pmat.length()) // TODO see about this when choice about deg(pmat) / coeffs.length has been made
+					residual = coeffs_appbas[0] * coeffs_pmat[ord];
+				else
+					clear(residual);
+
+				for (long d = 1; d <= deg_appbas; ++d) // we have deg_appbas <= ord
 				{
-					res_coeff1 = coeffs_appbas[d];
-					res_coeff2 = coeffs_pmat[ord-d];
-					mul(res_coeff, res_coeff1, res_coeff2);
-					add(residual, residual, res_coeff);
+					if (ord-d < coeffs_pmat.length())
+					{
+						mul(res_coeff, coeffs_appbas[d], coeffs_pmat[ord-d]);
+						add(residual, residual, res_coeff);
+					}
 				}
 			}
-			current_degree = deg_coeffs_appbas;
+			current_degree = deg_appbas;
 		}
 	}
 
@@ -653,15 +658,15 @@ DegVec mbasis_vector(
             // that deg(appbas) = max(pivot degree) (i.e. max(degree of diagonal
             // entries); this does not hold in general for ordered weak Popov forms
             long deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
-            
+
             // II/ update approximant basis
             // submatrix of rows with diff_pivdeg==0 is replaced by kerbas*appbas
             // rows with diff_pivdeg=1 are simply multiplied by X
 
-            long old_deg = coeffs_appbas.length();
+            long old_length = coeffs_appbas.length();
             coeffs_appbas.SetLength(deg_appbas + 1);
-            for (long s = old_deg; s <= deg_appbas; s++) // FIXME at most one such s --> using "if" is more clear
-                coeffs_appbas[s].SetDims(nrows, nrows);
+            if ( old_length == deg_appbas )
+                coeffs_appbas[deg_appbas].SetDims(nrows, nrows);
 
             for (long s = deg_appbas-1; s >= 0; s--) 
             {
@@ -698,9 +703,9 @@ DegVec mbasis_vector(
 								if (ord < coeffs.length()) // TODO see about this when choice about deg(pmat) / coeffs.length has been made
 									residual = coeffs_appbas[0] * coeffs[ord];
 								else
-									residual = coeffs_appbas[0] * zero;
+									residual = zero;
 
-								for (long d = 1; d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
+								for (long d = 1; d <= deg_appbas; ++d) // we have deg_appbas <= ord
 								{
 									if (ord-d < coeffs.length())
 									{
