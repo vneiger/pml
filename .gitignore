@@ -1,9 +1,0 @@
-*.dat
-*.chk
-*.o
-
-## ignore all test_* and time_* that are neither directories or cpp files
-test_*
-time_*
-!*/
-!*cpp
