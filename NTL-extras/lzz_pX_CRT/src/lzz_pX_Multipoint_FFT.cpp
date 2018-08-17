@@ -1,6 +1,7 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/vector.h>
 
+#include "util.h"
 #include "lzz_pX_CRT.h"
 
 NTL_CLIENT
@@ -116,10 +117,12 @@ void zz_pX_Multipoint_FFT::interpolate(zz_pX& f, const Vec<zz_p>& val) {
 
     FromfftRep(f, wk, 0, n-1);
 
-    if (n == 2) // weird: seems that for n=2, the normalization is different.
+#ifdef __NTL_FIX_SIZE_2_FFT
+    if (n == 2) // for n=2, the normalization is different in version 11.1.0
     {
         f = (1 / to_zz_p(2)) * f;
     }
+#endif
 }
 
 /*------------------------------------------------------------*/
@@ -183,11 +186,17 @@ void zz_pX_Multipoint_FFT::t_interpolate(Vec<zz_p>& val, const zz_pX& f) {
         return;
     }
 
-    if (n == 2) // weird: old NTL FFT misses the factor 1/2 for n=2 ?
+    if (n == 2) 
     {
+// for n=2, the normalization is different in version 11.1.0
+#ifdef __NTL_FIX_SIZE_2_FFT  
         zz_p half = 1/to_zz_p(2);
         val[0] = (coeff(f,0) + coeff(f,1)) * half;
         val[1] = (coeff(f,0) - coeff(f,1)) * half;
+#else
+        val[0] = (coeff(f,0) + coeff(f,1));
+        val[1] = (coeff(f,0) - coeff(f,1));
+#endif
         return;
     }
 

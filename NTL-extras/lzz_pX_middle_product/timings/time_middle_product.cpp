@@ -20,7 +20,7 @@ void check(long p)
     {
         for (long dB = 0; dB < 300; dB += 5)
         {
-            zz_pX a, b, c;
+            zz_pX a, b, c, d;
             
             cout << p << " ";
             cout << dA << " " << dB << " ";
@@ -42,6 +42,19 @@ void check(long p)
             while ( (get_time() - t) < thresh);
             t = (get_time() - t) / nb;
             cout << t << " ";
+
+
+            nb = 0;
+            t = get_time();
+            do
+            {
+		d = a * c;
+                nb++;
+            }
+            while ( (get_time() - t) < thresh);
+            t = (get_time() - t) / nb;
+            cout << t << " ";
+
             
             nb = 0;
             t = get_time();

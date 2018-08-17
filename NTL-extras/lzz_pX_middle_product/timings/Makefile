@@ -7,6 +7,7 @@ OBJS = $(wildcard $(LIB_DIR)/*)
 SRC = $(wildcard time*cpp)
 EXEC = $(patsubst %.cpp, %, $(SRC))
 DATA = $(patsubst %.cpp, %.dat, $(SRC))
+RESULTS = $(patsubst %.cpp, %.res, $(SRC))
 COMPILE = $(patsubst %.cpp, %.exe, $(patsubst time_%, %, $(SRC)))
 RUN = $(patsubst %.cpp, %.dat, $(patsubst time_%, %, $(SRC)))
 
@@ -17,7 +18,7 @@ LIBS = -lntl -lpthread -lgmp -lm
 .PHONY: clean
 
 clean:
-	rm -f $(EXEC) $(DATA)
+	rm -f $(EXEC) $(DATA) $(RESULTS)
 
 all:	$(COMPILE)
 
@@ -28,3 +29,4 @@ run:	$(RUN)
 
 %.dat: 
 	if test -e time_$*; then ./time_$* > time_$*.dat; fi
+	if test -e time_$*.awk; then awk -f time_$*.awk time_$*.dat > time_$*.res; fi
