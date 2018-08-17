@@ -2,6 +2,7 @@
 #include <NTL/vector.h>
 #include <iomanip>
 
+#include "vec_lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
 
 NTL_CLIENT
@@ -23,7 +24,7 @@ void check()
 
         ev = get_general_points(j);
         f = random_zz_pX(j);
-        random(rnd, j);
+        random_vec_zz_p(rnd, j);
 
         ev.evaluate(valF, f);
         ev.t_evaluate(g, rnd);

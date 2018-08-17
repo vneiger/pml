@@ -188,15 +188,16 @@ void zz_pX_Multipoint_FFT::t_interpolate(Vec<zz_p>& val, const zz_pX& f) {
 
     if (n == 2) 
     {
-// for n=2, the normalization is different in version 11.1.0
-#ifdef __NTL_FIX_SIZE_2_FFT  
+// // for n=2, the normalization is different in version 11.1.0
+// #ifdef __NTL_FIX_SIZE_2_FFT  
+//         zz_p half = 1/to_zz_p(2);
+//         val[0] = (coeff(f,0) + coeff(f,1)) * half;
+//         val[1] = (coeff(f,0) - coeff(f,1)) * half;
+// #else
         zz_p half = 1/to_zz_p(2);
         val[0] = (coeff(f,0) + coeff(f,1)) * half;
         val[1] = (coeff(f,0) - coeff(f,1)) * half;
-#else
-        val[0] = (coeff(f,0) + coeff(f,1));
-        val[1] = (coeff(f,0) - coeff(f,1));
-#endif
+// #endif
         return;
     }
 
