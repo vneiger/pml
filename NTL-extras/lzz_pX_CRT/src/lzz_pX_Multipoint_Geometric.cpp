@@ -1,6 +1,7 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/vector.h>
 
+#include "util.h"
 #include "lzz_p_extra.h"
 #include "lzz_pX_middle_product.h"
 #include "lzz_pX_CRT.h"
@@ -241,17 +242,16 @@ void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const{
         TofftRep(a_fft, a, k, 0, dp);
         mul(b_fft, a_fft, f_fft);
         FromfftRep(b, b_fft, dp, dp + n - 1);  
-        if (k == 1) // ?????????
+// for k = 1, the normalization is different in version 11.1.0
+#ifdef __NTL_FIX_SIZE_2_FFT
+        if (k == 1)
         {
             b /= 2;
         }
-        // FromfftRep(b, b_fft, n-1, 2*n-2);  
+#endif
     }
     else
     {
-        // if deg(P) = d <= n-1, we can divide a by x^(n-1-d)
-        // do middle_product(a, f, d, n-1)
-         //        b = middle_product(a, f, n-1); //???
         b = middle_product(a, f, dp, n - 1);
     }
 
