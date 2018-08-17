@@ -11,9 +11,9 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------*/
-/* naive transposed product of (a,c)        */
-/*------------------------------------------*/
+/*------------------------------------------------------------*/
+/* naive transposed product of (a,c)                          */
+/*------------------------------------------------------------*/
 void tPlainMul2(zz_p *b, long sb, const zz_p *a, long sa, const zz_p *c, long sc)
 {
     long p = zz_p::modulus();
@@ -184,7 +184,7 @@ void middle_product(zz_pX& b, const zz_pX& a, const zz_pX& c, long dA, long dB)
     }
 
     // not sure what's best here
-    if (max(dA, dB) > NTL_zz_pX_MUL_CROSSOVER)
+    if (dA > NTL_zz_pX_MUL_CROSSOVER && dB > NTL_zz_pX_MUL_CROSSOVER)
     {
         middle_FFT(b, a, c, dA, dB);
         return;

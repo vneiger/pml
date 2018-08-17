@@ -11,9 +11,11 @@ long order(const zz_p& a);
 
 /*------------------------------------------------------------*/
 /* finds an element of order at least ord                     */
-/* assumes it exists, does not verify                         */
+/* a = 0 if no element was found                              */
+/* does (by default) 100 trials                               */
+/* by default, asks that all (a^i-1) are units, i=1..ord-1    */
 /*------------------------------------------------------------*/
-void element_of_order(zz_p& a, long ord);
+void element_of_order(zz_p& a, long ord, long nb_trials = 100, long strong = 1);
 
 /*------------------------------------------------------------*/
 /* 1 if the current prime can be used as an FFT prime         */

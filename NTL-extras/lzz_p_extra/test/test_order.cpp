@@ -6,25 +6,26 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* does a multipoint evaluation                               */
+/* computes a few orders                                      */
 /*------------------------------------------------------------*/
-void check(int opt){
+void check()
+{
+    long p = 65537;
+    zz_p::init(p);
+    zz_p a;
 
-  long p = 1125899906842679;
-  zz_p::init(p);
-  zz_p a;
+    a = to_zz_p(-1);
+    order(a);
 
-  a = to_zz_p(-1);
-  cout << order(a) << endl;
-
-  a = random_zz_p();
-  cout << order(a) << endl;
+    a = random_zz_p();
+    order(a);
 }  
 
-int main(int argc, char ** argv){
-  int opt = 0;
-  if (argc > 1)
-    opt = atoi(argv[1]);
-  check(opt);
-  return 0;
+/*------------------------------------------------------------*/
+/* main just calls check()                                    */
+/*------------------------------------------------------------*/
+int main(int argc, char** argv)
+{
+    check();
+    return 0;
 }

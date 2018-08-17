@@ -25,7 +25,6 @@ void check()
     zz_pX f = random_zz_pX(10);
     sage_assign(f, "f");
     sage_output(f, "x");
-
 }  
 
 /*------------------------------------------------------------*/

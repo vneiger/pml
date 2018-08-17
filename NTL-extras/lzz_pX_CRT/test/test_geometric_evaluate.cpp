@@ -81,6 +81,7 @@ void check(long p)
 int main(int argc, char ** argv)
 {
     check(0);
-    check(1125899906842679);
+    check(23068673);
+    check(288230376151711813);
     return 0;
 }

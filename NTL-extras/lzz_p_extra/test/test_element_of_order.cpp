@@ -6,28 +6,27 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* does a multipoint evaluation                               */
+/* tries to find an element of order p-1                      */
 /*------------------------------------------------------------*/
-void check(int opt){
+void check(long p)
+{
+    long ord;
+    zz_p a;
+    zz_p::init(p);
 
-  long p = 101;
-  zz_p::init(p);
-  zz_p a;
-
-  long ord = 100;
-  element_of_order(a, ord);
-
-  for (long i = 1; i <= ord; i++)
-    cout << (power(a, i) == 1) << " ";
-
-  cout << endl;
-
+    ord = p - 1;
+    element_of_order(a, ord);
+    if (a != 0)
+        for (long i = 1; i < ord; i++)
+            1/(power(a, i)-1);
 }  
 
-int main(int argc, char ** argv){
-  int opt = 0;
-  if (argc > 1)
-    opt = atoi(argv[1]);
-  check(opt);
-  return 0;
+/*------------------------------------------------------------*/
+/* main just calls check()                                    */
+/*------------------------------------------------------------*/
+int main(int argc, char ** argv)
+{
+    check(1024);
+    check(9001);
+    return 0;
 }
