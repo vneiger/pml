@@ -17,20 +17,14 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long j = 10; j < 300; j++)
+    for (long j = 1; j < 300; j++)
     {
         zz_pX f;
         zz_pX_Multipoint_Geometric ev;
-        Vec<zz_p> q, val1, val2, valG;
+        Vec<zz_p> val1, val2;
         zz_p a;
 
         a = random_zz_p();
-        q.SetLength(j);
-        for (long i = 0; i < j; i++)
-        {
-            q[i] = power(a, 2*i);
-        }
-        
         ev = zz_pX_Multipoint_Geometric(a, j);
 
         f = random_zz_pX(j);
@@ -39,34 +33,8 @@ void check(long p)
         cout << j << " ";
         double t;
         long nb;
-        const double thresh = 0.05;
+        const double thresh = 0.02;
         
-        ev.set_FFT_evaluate();
-        nb = 0;
-        t = get_time();
-        do
-        {
-            ev.evaluate(val1, f);
-            nb++;
-        }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
-        cout << t << " ";
-
-        ev.unset_FFT_evaluate();
-        nb = 0;
-        t = get_time();
-        do
-        {
-            ev.evaluate(val2, f);
-            nb++;
-        }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
-        cout << t << " ";
-
-        f = random_zz_pX(j / 2);
-
         ev.set_FFT_evaluate();
         nb = 0;
         t = get_time();
