@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
 
 	if (nbits==0)
 		zz_p::FFTInit(0);
+		//zz_p::UserFFTInit(1769473); // --> small FFT prime like in LinBox
 	else
 		zz_p::init(NTL::GenPrime_long(nbits));
 

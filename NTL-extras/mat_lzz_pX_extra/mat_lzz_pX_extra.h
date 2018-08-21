@@ -341,6 +341,7 @@ void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a);
 
 /*------------------------------------------------------------*/
 /* convert to / from Vec<Mat<zz_p>>                           */
+/* (degree deduced from input)                                */
 /*------------------------------------------------------------*/
 void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat);
 
@@ -360,6 +361,27 @@ inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs)
     return mat;
 }
 
+/*------------------------------------------------------------*/
+/* convert to / from Vec<Mat<zz_p>>                           */
+/* (user provided truncation order)                           */
+/*------------------------------------------------------------*/
+void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat, const long order);
+
+inline Vec<Mat<zz_p>> conv(const Mat<zz_pX>& mat, const long order)
+{
+    Vec<Mat<zz_p>> coeffs;
+    conv(coeffs, mat, order);
+    return coeffs;
+}
+
+void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs, const long order);
+
+inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs, const long order)
+{
+    Mat<zz_pX> mat;
+    conv(mat, coeffs, order);
+    return mat;
+}
 
 
 /*------------------------------------------------------------*/

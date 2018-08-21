@@ -447,12 +447,7 @@ DegVec mbasis_vector(
 		const Shift & shift
 		)
 {
-	// TODO either next should only take first 'order' coeffs,
-	// or we should assume pmat has degree < order
-	// --> currently, first recursive call of pmbasis might lead to calling
-	// mbasis with degree >= order (and not clear that it is a good idea to
-	// require deg(pmat)<order)
-	Vec<Mat<zz_p>> coeffs_pmat = conv(pmat);
+	Vec<Mat<zz_p>> coeffs_pmat = conv(pmat,order);
 	long nrows = coeffs_pmat[0].NumRows();
 	Vec<Mat<zz_p>> coeffs_appbas;
 
@@ -721,8 +716,10 @@ DegVec pmbasis(
     // TODO thresholds to be determined:
     //  --> from mbasis (only linalg) to pmbasis with low-degree polmatmul (Karatsuba...)
     //  --> from this pmbasis to pmbasis with eval-based polmatmul (FFT, geometric..)
-    if (order <= 16)
-        return mbasis(appbas,pmat,order,shift);
+    if (order <= 32)
+		{
+        return mbasis_vector(appbas,pmat,order,shift);
+		}
 
 		DegVec pivdeg; // pivot degree, first call
 		DegVec pivdeg2; // pivot degree, second call
@@ -733,21 +730,34 @@ DegVec pmbasis(
 		Mat<zz_pX> residual; // for the residual
 
     // first recursive call, with 'pmat' and 'shift'
+		std::cout << "degree pmat before  -->  " << deg(pmat) << std::endl;
     pivdeg = pmbasis(appbas,pmat,order1,shift);
+		std::cout << "degree pmat after  -->  " << deg(pmat) << std::endl;
+		std::cout << "call1 ok" << std::endl;
 
     // shifted row degree = shift for second call = pivdeg+shift
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
 
     // residual = (appbas * pmat * X^-order1) mod X^order2
     multiply_evaluate(residual,appbas,pmat);
+		std::cout << "prod residual ok" << std::endl;
+		std::cout << "degree res  -->  " << deg(residual) << std::endl;
     residual >> order1;
+		std::cout << "shift residual ok" << std::endl;
+		std::cout << "degree res  -->  " << deg(residual) << std::endl;
     trunc(residual,residual,order2);
+		std::cout << "trunc residual ok" << std::endl;
+		std::cout << "degree res  -->  " << deg(residual) << std::endl;
+		std::cout << "order1  -->  " << order1 << std::endl;
+		std::cout << "order2  -->  " << order2 << std::endl;
 
     // second recursive call, with 'residual' and 'rdeg'
     pivdeg2 = pmbasis(appbas2,residual,order2,rdeg);
+		std::cout << "call2 ok" << std::endl;
 
     // final basis = appbas2 * appbas
-    multiply_evaluate(appbas,appbas2,appbas);
+    multiply_evaluate(appbas,appbas2,appbas); // TODO use general multiplication
+		std::cout << "prod ok" << std::endl;
 
     // final pivot degree = pivdeg1+pivdeg2
     std::transform(pivdeg.begin(), pivdeg.end(), pivdeg2.begin(), pivdeg.begin(), std::plus<long>());

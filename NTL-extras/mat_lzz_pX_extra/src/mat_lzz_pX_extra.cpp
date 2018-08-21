@@ -611,6 +611,7 @@ long deg(const Mat<zz_pX> & a)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* convert to / from Vec<Mat<zz_p>>                           */
+/* (degree deduced from input)                                */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat)
@@ -637,6 +638,58 @@ void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat)
 void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs)
 {
     long len = coeffs.length();
+    if (len == 0)
+    {
+        mat.SetDims(0, 0);
+        return;
+    }
+    long r = coeffs[0].NumRows();
+    long s = coeffs[0].NumCols();
+    mat.SetDims(r, s);
+
+    for (long a = 0; a < r; a++)
+    {
+        for (long b = 0; b < s; b++)
+        {
+            zz_pX & entry = mat[a][b];
+            for (long i = 0; i < len; i++)
+            {
+                SetCoeff(entry, i, coeffs[i][a][b]);
+            }
+        }
+    }
+}
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* convert to / from Vec<Mat<zz_p>>                           */
+/* (user provided truncation order)                           */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat, const long order)
+{
+    long d = std::min(order,deg(mat)+1);
+    coeffs.SetLength(d);
+    long r = mat.NumRows();
+    long s = mat.NumCols();
+    for (long i = 0; i < d; i++)
+    {
+        coeffs[i].SetDims(r, s);
+        for (long a = 0; a < r; a++)
+        {
+            zz_p * entries = coeffs[i][a].elts();
+            const zz_pX * entries_mat = mat[a].elts();
+            for (long b = 0; b < s; b++)
+            {
+                entries[b] = coeff(entries_mat[b], i);
+            }
+        }
+    }
+}
+
+void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs, const long order)
+{
+    long len = std::min(order,coeffs.length());
     if (len == 0)
     {
         mat.SetDims(0, 0);
