@@ -40,8 +40,8 @@ int main(int argc, char *argv[])
 	//std::shuffle(shift.begin(), shift.end(), std::mt19937{std::random_device{}()});
 
 	if (nbits==0)
-		zz_p::FFTInit(0);
-		//zz_p::UserFFTInit(1769473); // --> small FFT prime like in LinBox
+		//zz_p::FFTInit(0);
+		zz_p::UserFFTInit(1769473); // --> small FFT prime like in LinBox
 	else
 		zz_p::init(NTL::GenPrime_long(nbits));
 
