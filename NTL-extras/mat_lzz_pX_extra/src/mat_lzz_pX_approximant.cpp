@@ -43,6 +43,8 @@ bool is_approximant_basis(
 	// or when appbas has strange column degrees or strange row degrees)
 	if (randomized)
 		throw std::logic_error("==is_approximant_basis== Fast randomized approximant basis verification not implemented yet");
+	else
+		std::cout << "==is_approximant_basis== Using *randomized* algorithm for testing generation, in the verification that det(appbas) = c X^d" << std::endl;
 
 	// test whether appbas is shift-reduced with form at least 'form'
 	if (not is_polmatform(appbas,form,shift,row_wise))
@@ -72,6 +74,8 @@ bool is_approximant_basis(
 				return false;
 		}
 	}
+
+	
 
 	return true;
 }

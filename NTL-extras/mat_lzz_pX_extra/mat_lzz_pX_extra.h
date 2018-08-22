@@ -32,6 +32,20 @@ long deg(const Mat<zz_pX> & pmat);
 std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
 
 /*------------------------------------------------------------*/
+/* evaluate at a given point                                  */
+/*------------------------------------------------------------*/
+
+void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt);
+
+inline Mat<zz_p> eval(const Mat<zz_pX> & pmat, zz_p pt)
+{
+	Mat<zz_p> evmat;
+	eval(evmat, pmat, pt);
+	return evmat;
+}
+
+
+/*------------------------------------------------------------*/
 /* transpose                                                  */
 /*------------------------------------------------------------*/
 void transpose(Mat<zz_pX>& x, const Mat<zz_pX>& a);
@@ -338,9 +352,9 @@ inline Mat<zz_p> constant_coefficient(const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a);
 
-
 /*------------------------------------------------------------*/
 /* convert from Mat<zz_p>                                     */
+/* TODO ??                                                    */
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
