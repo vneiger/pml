@@ -447,12 +447,7 @@ DegVec mbasis_vector(
 		const Shift & shift
 		)
 {
-	// TODO either next should only take first 'order' coeffs,
-	// or we should assume pmat has degree < order
-	// --> currently, first recursive call of pmbasis might lead to calling
-	// mbasis with degree >= order (and not clear that it is a good idea to
-	// require deg(pmat)<order)
-	Vec<Mat<zz_p>> coeffs_pmat = conv(pmat);
+	Vec<Mat<zz_p>> coeffs_pmat = conv(pmat,order);
 	long nrows = coeffs_pmat[0].NumRows();
 	Vec<Mat<zz_p>> coeffs_appbas;
 
@@ -721,8 +716,8 @@ DegVec pmbasis(
     // TODO thresholds to be determined:
     //  --> from mbasis (only linalg) to pmbasis with low-degree polmatmul (Karatsuba...)
     //  --> from this pmbasis to pmbasis with eval-based polmatmul (FFT, geometric..)
-    if (order <= 16)
-        return mbasis(appbas,pmat,order,shift);
+    if (order <= 32)
+        return mbasis_vector(appbas,pmat,order,shift);
 
 		DegVec pivdeg; // pivot degree, first call
 		DegVec pivdeg2; // pivot degree, second call
@@ -740,14 +735,14 @@ DegVec pmbasis(
 
     // residual = (appbas * pmat * X^-order1) mod X^order2
     multiply_evaluate(residual,appbas,pmat);
-    residual >> order1;
+    residual >>= order1;
     trunc(residual,residual,order2);
 
     // second recursive call, with 'residual' and 'rdeg'
     pivdeg2 = pmbasis(appbas2,residual,order2,rdeg);
 
     // final basis = appbas2 * appbas
-    multiply_evaluate(appbas,appbas2,appbas);
+    multiply_evaluate(appbas,appbas2,appbas); // TODO use general multiplication when it is ready
 
     // final pivot degree = pivdeg1+pivdeg2
     std::transform(pivdeg.begin(), pivdeg.end(), pivdeg2.begin(), pivdeg.begin(), std::plus<long>());
