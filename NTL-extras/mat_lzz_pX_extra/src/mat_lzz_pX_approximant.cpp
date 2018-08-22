@@ -27,6 +27,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* TODO doc currently in .h --> should be moved here??        */
 /*------------------------------------------------------------*/
+// follows ideas from Algorithm 1 in Giorgi-Neiger, ISSAC 2018
 bool is_approximant_basis(
 		const Mat<zz_pX> & appbas,
 		const Mat<zz_pX> & pmat,
@@ -37,33 +38,42 @@ bool is_approximant_basis(
 		const bool randomized
 		)
 {
-    if (randomized)
-        throw std::logic_error("==is_approximant_basis== Fast randomized approximant basis verification not implemented yet");
+	// TODO far from optimal except in the balanced case
+	// (e.g. could be improved when deg(appbas)<<deg(pmat) like in Hermite-Pade,
+	// or when appbas has strange column degrees or strange row degrees)
+	if (randomized)
+		throw std::logic_error("==is_approximant_basis== Fast randomized approximant basis verification not implemented yet");
 
-    std::cout << "==is_approximant_basis== WARNING: not fully implemented: not checking generation" << std::endl;
+	// test whether appbas is shift-reduced with form at least 'form'
+	if (not is_polmatform(appbas,form,shift,row_wise))
+		return false;
 
-    // test that appbas is shift-reduced with form at least 'form'
-    if (not is_polmatform(appbas,form,shift,row_wise))
-        return false;
+	// test whether appbas consists of approximants (if row-wise: appbas * pmat = 0 mod X^order)
+	// and retrieve the constant coefficient "cmat" of degree order (if row-wise: cmat = (appbas * pmat * X^{-order})  mod X)
+	Mat<zz_pX> residual;
+	if (row_wise)
+		multiply_evaluate(residual,appbas,pmat);
+	else
+		multiply_evaluate(residual,pmat,appbas);
+	// TODO this multiplication could be:
+	//   - truncated mod X^{order+1}
+	//   - improved by taking degree profile into account
 
-    // test that the matrix consists of approximants
-    Mat<zz_pX> residual;
-    if (row_wise)
-        multiply_naive(residual,appbas,pmat); // TODO this mul should be (truncated and) non-naive
-    else
-        multiply_naive(residual,pmat,appbas); // TODO this mul should be (truncated and) non-naive
-    for (long i = 0; i < residual.NumRows(); ++i)
-    {
-        for (long j = 0; j < residual.NumCols(); ++j)
-        {
-            long ord = row_wise ? order[j] : order[i];
-            trunc(residual[i][j],residual[i][j],ord);
-            if (residual[i][j] != 0)
-                return false;
-        }
-    }
+	Mat<zz_p> cmat;
+	cmat.SetDims(residual.NumRows(),residual.NumCols());
+	for (long i = 0; i < residual.NumRows(); ++i)
+	{
+		for (long j = 0; j < residual.NumCols(); ++j)
+		{
+			long ord = row_wise ? order[j] : order[i];
+			GetCoeff(cmat[i][j],residual[i][j],ord);
+			trunc(residual[i][j],residual[i][j],ord);
+			if (residual[i][j] != 0)
+				return false;
+		}
+	}
 
-    return true;
+	return true;
 }
 
 bool is_approximant_basis(
