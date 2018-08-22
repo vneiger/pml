@@ -17,11 +17,23 @@ NTL_CLIENT
 /* UTILS                                                      */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+
+// TODO should be moved, only used in examples/tests
 std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
     out << "[ ";
     for (auto &i: s)
         out << i << " ";
     return out << "]";
+}
+
+/*------------------------------------------------------------*/
+/* clears the matrix  (pmat = 0 with same dimensions)         */
+/*------------------------------------------------------------*/
+void clear(Mat<zz_pX> & pmat)
+{
+	for (long i=0; i<pmat.NumRows(); ++i)
+		for (long j=0; j<pmat.NumCols(); ++j)
+			clear(pmat[i][j]);
 }
 
 

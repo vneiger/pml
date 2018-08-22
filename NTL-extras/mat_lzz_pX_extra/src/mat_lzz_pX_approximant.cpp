@@ -236,10 +236,7 @@ DegVec popov_appbas_iterative(
 	DegVec pivdeg = appbas_iterative(appbas,pmat,order,shift,order_wise);
 	Shift new_shift( pivdeg );
 	std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
-	// TODO write zero method for polmats
-	for (long i = 0; i < appbas.NumCols(); ++i)
-		for (long j = 0; j < appbas.NumRows(); ++j)
-			appbas[i][j] = 0;
+	clear(appbas);
 	appbas_iterative(appbas,pmat,order,new_shift,order_wise);
 	Mat<zz_p> lmat;
 	leading_matrix(lmat, appbas, new_shift, true);
@@ -247,7 +244,6 @@ DegVec popov_appbas_iterative(
 	mul(appbas,lmat,appbas);
 	return pivdeg;
 }
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -691,10 +687,7 @@ DegVec popov_mbasis(
 	DegVec pivdeg = mbasis(appbas,pmat,order,shift);
 	Shift new_shift( pivdeg );
 	std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
-	// TODO write zero method for polmats
-	for (long i = 0; i < appbas.NumCols(); ++i)
-		for (long j = 0; j < appbas.NumRows(); ++j)
-			appbas[i][j] = 0;
+	clear(appbas);
 	mbasis(appbas,pmat,order,new_shift);
 	Mat<zz_p> lmat;
 	leading_matrix(lmat, appbas, new_shift, true);
@@ -763,10 +756,7 @@ DegVec popov_pmbasis(
 	DegVec pivdeg = pmbasis(appbas,pmat,order,shift);
 	Shift new_shift( pivdeg );
 	std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
-	// TODO write zero method for polmats
-	for (long i = 0; i < appbas.NumRows(); ++i)
-		for (long j = 0; j < appbas.NumCols(); ++j)
-			appbas[i][j] = 0;
+	clear(appbas);
 	pmbasis(appbas,pmat,order,new_shift);
 	Mat<zz_p> lmat;
 	leading_matrix(lmat, appbas, new_shift, true);
