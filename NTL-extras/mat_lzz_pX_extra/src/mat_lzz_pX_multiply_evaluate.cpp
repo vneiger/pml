@@ -14,13 +14,15 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
-  
     long dA = deg(a);
     long dB = deg(b);
     long dC = dA+dB;
     long sz = dC+1;
 
     zz_pX_Multipoint_Geometric ev_geom = get_geometric_points(sz);
+
+    ev_geom.prepare_degree(dA);
+    ev_geom.prepare_degree(dB);
 
     Vec<Mat<zz_p>> valA, valB, valC;
     ev_geom.evaluate_matrix(valA, a);
@@ -95,6 +97,9 @@ void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const M
     long sz = dC + 1;
 
     zz_pX_Multipoint_Geometric ev_geom = get_geometric_points(sz);
+
+    ev_geom.prepare_degree(dA);
+    ev_geom.prepare_degree(dB);
 
     Vec<Mat<zz_p>> valA, valB, valC;
     ev_geom.evaluate_matrix(valA, a);

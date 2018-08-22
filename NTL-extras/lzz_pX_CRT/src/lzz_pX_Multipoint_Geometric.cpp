@@ -220,15 +220,19 @@ void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const{
         return;
     }
 
-    if ( known_degrees.find(dp) == known_degrees.end() )
+    // finds the smallest among all known degrees >= dp
+    long dp_found = n - 1;
+    for (map<int, fftRep>::const_iterator it = known_degrees.cbegin(); it != known_degrees.cend(); it++)
     {
-        dp = n - 1;
+        if (it->first >= dp && it->first < dp_found)
+            dp_found = it->first;
     }
+    dp = dp_found; 
 
     zz_pX a;
-    for (long i = 0; i <= dp; i++)   // was n-1
+    for (long i = 0; i <= dp; i++)  
     {
-        SetCoeff(a, dp - i, x[i] * coeff(P, i));  //was: n-1-i
+        SetCoeff(a, dp - i, x[i] * coeff(P, i));  
     }
    
     zz_pX b;
@@ -237,6 +241,15 @@ void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const{
         const fftRep& f_fft = known_degrees.find(dp)->second;
         fftRep a_fft, b_fft;
         long k = f_fft.k;
+
+
+        // cout << "here\n";
+        // cout << "dp = " << dp << endl;
+        // cout << "k=" << k << endl;
+        // exit(-1);
+
+
+
         a_fft = fftRep(INIT_SIZE, k);
         b_fft = fftRep(INIT_SIZE, k);
         TofftRep(a_fft, a, k, 0, dp);
@@ -334,16 +347,67 @@ void zz_pX_Multipoint_Geometric::interpolate(zz_pX& f, const Vec<zz_p>& val) {
 /* val[i] = P(r^(2*i)), i = 0..n-1                           */
 /* val must have length n                                    */
 /*-----------------------------------------------------------*/
-void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val) const{
+void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long output_size) const{
+    P = 0;
+
+    if (output_size == -1)
+        output_size = n;
+
+    if (output_size == 0)
+        return;
+
+    if (n == 0)
+        return;
+
+    if (n == 1)
+    {
+        SetCoeff(P, 0, val[0]);
+        return;
+    }
+
     zz_pX Q;
     for (long i = 0; i < n; i++)
         SetCoeff(Q, i, val[i]);
 
-    Vec<zz_p> res;
-    evaluate(res, Q);
+    zz_pX a;
+    for (long i = 0; i < n; i++)  
+        SetCoeff(a, n - 1 - i, x[i] * coeff(Q, i));  
+   
+    zz_pX b;
+    if (do_FFT_evaluate)
+    {
+        // finds the smallest among all known sizes >= output_size
+        long do_output_size = n;
+        for (map<int, fftRep>::const_iterator it = known_degrees.cbegin(); it != known_degrees.cend(); it++)
+        {
+            if ((it->first + 1) >= output_size && (it->first + 1) < do_output_size)
+                do_output_size = it->first + 1;
+        }
+        // cout << output_size << " " << do_output_size << " " << n << " " << (known_degrees.find(do_output_size - 1)->first) << endl;
+        const fftRep& f_fft = known_degrees.find(do_output_size - 1)->second;
+        fftRep a_fft, b_fft;
+        long k = f_fft.k;
+        a_fft = fftRep(INIT_SIZE, k);
+        b_fft = fftRep(INIT_SIZE, k);
+        TofftRep(a_fft, a, k, 0, n - 1);
+        mul(b_fft, a_fft, f_fft);
+        FromfftRep(b, b_fft, n - 1, n - 1 + do_output_size - 1);  
+// for k = 1, the normalization is different in version 11.1.0
+#ifdef __NTL_FIX_SIZE_2_FFT
+        if (k == 1)
+        {
+            b /= 2;
+        }
+#endif
+    }
+    else
+    {
+        b = middle_product(a, f, n - 1, output_size - 1);
+    }
 
-    for (long i = 0; i < n; i++)
-        SetCoeff(P, i, res[i]);
+    for (long i = 0; i < output_size; i++)
+        SetCoeff(P, i, x[i] * coeff(b, i));
+
 }
 
 /*------------------------------------------------------------*/

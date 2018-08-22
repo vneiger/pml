@@ -140,7 +140,11 @@ public:
     void evaluate(Vec<zz_p>& val, const zz_pX& f) const;
     void interpolate(zz_pX& f, const Vec<zz_p>& val);
 
-    void t_evaluate(zz_pX& f, const Vec<zz_p>& val) const;
+    void t_evaluate(zz_pX& f, const Vec<zz_p>& val, long output_size) const;
+    inline void t_evaluate(zz_pX& f, const Vec<zz_p>& val) const
+    {
+        t_evaluate(f, val, -1);
+    }
     void t_interpolate(Vec<zz_p>& val, const zz_pX& f);
 
     /*------------------------------------------------------------*/
@@ -204,6 +208,7 @@ public:
     void t_evaluate(zz_pX& f, const Vec<zz_p>& val) const;
     void t_interpolate(Vec<zz_p>& val, const zz_pX& f);
 
+  
 private:
     long k, do_bit_reverse;
     fftRep wk; // used to store values for inverse FFT

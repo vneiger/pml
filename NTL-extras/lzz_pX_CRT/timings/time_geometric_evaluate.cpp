@@ -8,7 +8,7 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* compares geometric evaluation to subproduct tree one       */
+/* compares FFT / non-FFT and full / half degree              */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -21,7 +21,7 @@ void check(long p)
     {
         zz_pX f;
         zz_pX_Multipoint_Geometric ev;
-        Vec<zz_p> val1, val2;
+        Vec<zz_p> val;
         zz_p a;
 
         a = random_zz_p();
@@ -35,24 +35,26 @@ void check(long p)
         long nb;
         const double thresh = 0.02;
         
+        // FFT evaluate
         ev.set_FFT_evaluate();
         nb = 0;
         t = get_time();
         do
         {
-            ev.evaluate(val1, f);
+            ev.evaluate(val, f);
             nb++;
         }
         while ( (get_time() - t) < thresh);
         t = (get_time() - t) / nb;
         cout << t << " ";
 
+        // non-FFT evaluate
         ev.unset_FFT_evaluate();
         nb = 0;
         t = get_time();
         do
         {
-            ev.evaluate(val2, f);
+            ev.evaluate(val, f);
             nb++;
         }
         while ( (get_time() - t) < thresh);
@@ -61,24 +63,26 @@ void check(long p)
 
         ev.prepare_degree((j / 2) - 1);
        
+        // FFT half-degree evaluate
         ev.set_FFT_evaluate();
         nb = 0;
         t = get_time();
         do
         {
-            ev.evaluate(val1, f);
+            ev.evaluate(val, f);
             nb++;
         }
         while ( (get_time() - t) < thresh);
         t = (get_time() - t) / nb;
         cout << t << " ";
 
+        // non-FFT half-degree evaluate
         ev.unset_FFT_evaluate();
         nb = 0;
         t = get_time();
         do
         {
-            ev.evaluate(val2, f);
+            ev.evaluate(val, f);
             nb++;
         }
         while ( (get_time() - t) < thresh);
