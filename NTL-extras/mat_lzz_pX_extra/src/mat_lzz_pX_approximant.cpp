@@ -44,7 +44,7 @@ bool is_approximant_basis(
 	if (randomized)
 		throw std::logic_error("==is_approximant_basis== Fast randomized approximant basis verification not implemented yet");
 	else
-		std::cout << "==is_approximant_basis== Using *randomized* algorithm for testing generation, in the verification that det(appbas) = c X^d" << std::endl;
+		std::cout << "==is_approximant_basis== Warning: using *randomized* algorithm for testing generation, in the verification that det(appbas) = c X^d" << std::endl;
 
 	// test whether appbas has the right dimensions
 	if (appbas.NumRows() != appbas.NumCols()
