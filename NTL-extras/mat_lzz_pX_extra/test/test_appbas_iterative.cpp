@@ -8,6 +8,7 @@
 #include <random>
 #include <NTL/BasicThreadPool.h>
 
+#include "util.h"
 #include "mat_lzz_pX_extra.h"
 
 NTL_CLIENT
@@ -61,17 +62,8 @@ int main(int argc, char *argv[])
 
 	std::cout << "Time(random mat creation): " << (t2w-t1w) <<  "s,  " << (t2-t1) << "s\n";
 
-	// to warm up, have more accurate timings for small instances
-	if (rdim*cdim*cdim*degree*degree < 10000000)
-	{
-		std::cout << "warming up..." << std::endl;
-		for (long i=0; i<4; ++i)
-		{
-			Mat<zz_pX> appbas;
-			std::vector<long> order(cdim,degree);
-			std::vector<long> pivdeg = appbas_iterative(appbas,pmat,order,shift,order_wise);
-		}
-	}
+	std::cout << "warming up..." << std::endl;
+	warmup();
 
 	{
 		std::cout << "~~~Iterative approximant basis~~~" << std::endl;

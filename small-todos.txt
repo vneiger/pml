@@ -1,4 +1,5 @@
 * agree on indent (4 spaces?) and find a way to make this go smoothly with our editors (modelines? Luca's trick?)
+  --> Vincent: still have to work with 4 spaces choice, will then update my files
 
 * when we are writing code and notice that there is a todo (functionality, doc,
   comment to write...): let's write "todo" in a comment right away, before it

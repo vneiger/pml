@@ -8,6 +8,7 @@
 #include <random>
 #include <NTL/BasicThreadPool.h>
 
+#include "util.h"
 #include "mat_lzz_pX_extra.h"
 
 NTL_CLIENT
@@ -69,14 +70,9 @@ int main(int argc, char *argv[])
 
     Mat<zz_p> kerbas;
     std::vector<long> pivdeg;
-    // to warm up
-    if (rdim*cdim < 1000000000)
-    {
-        std::cout << "warming up..." << std::endl;
-        for (long i = 0; i < 5; ++i) {
-            pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
-        }
-    }
+
+		std::cout << "warming up..." << std::endl;
+		warmup();
 
     std::cout << "~~~Testing popov_mbasis1 on constant matrix~~~" << std::endl;
     t1w = GetWallTime(); t1 = GetTime();
