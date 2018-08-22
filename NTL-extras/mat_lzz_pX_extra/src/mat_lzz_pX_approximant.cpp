@@ -46,12 +46,19 @@ bool is_approximant_basis(
 	else
 		std::cout << "==is_approximant_basis== Using *randomized* algorithm for testing generation, in the verification that det(appbas) = c X^d" << std::endl;
 
+	// test whether appbas has the right dimensions
+	if (appbas.NumRows() != appbas.NumCols()
+			|| (row_wise && appbas.NumCols() != pmat.NumRows())
+			|| ((not row_wise) && appbas.NumRows() != pmat.NumCols()))
+		return false;
+
 	// test whether appbas is shift-reduced with form at least 'form'
 	if (not is_polmatform(appbas,form,shift,row_wise))
 		return false;
 
 	// test whether appbas consists of approximants (if row-wise: appbas * pmat = 0 mod X^order)
 	// and retrieve the constant coefficient "cmat" of degree order (if row-wise: cmat = (appbas * pmat * X^{-order})  mod X)
+	// (we reserve some additional space in cmat because later it will store the constant coefficient of appbas)
 	Mat<zz_pX> residual;
 	if (row_wise)
 		multiply_evaluate(residual,appbas,pmat);
@@ -62,7 +69,11 @@ bool is_approximant_basis(
 	//   - improved by taking degree profile into account
 
 	Mat<zz_p> cmat;
-	cmat.SetDims(residual.NumRows(),residual.NumCols());
+	if (row_wise)
+		cmat.SetDims(residual.NumRows(),residual.NumCols()+appbas.NumRows());
+	else
+		cmat.SetDims(residual.NumRows()+appbas.NumRows(),residual.NumCols());
+		
 	for (long i = 0; i < residual.NumRows(); ++i)
 	{
 		for (long j = 0; j < residual.NumCols(); ++j)
@@ -75,7 +86,32 @@ bool is_approximant_basis(
 		}
 	}
 
-	
+	// test whether det(appbas) is a monomial (power of x):
+	// det(appbas) = det(appbas(1)) * X^(deg(det(appbas)))
+	// the degree of det(appbas) is known since appbas is reduced:
+	DegVec degs = vector_degree(appbas,shift,row_wise);
+	long sum_degs = std::accumulate(degs.begin(), degs.end(), (long)0);
+	long sum_shift = std::accumulate(shift.begin(), shift.end(), (long)0);
+	long degdet = sum_degs - sum_shift;
+	// for a random point pt, verify that det(appbas(pt)) = det(appbas(1)) * pt^degdet
+	zz_p pt = random_zz_p();
+	zz_p det_pt = determinant(eval(appbas, pt));
+	zz_p det_one = determinant(eval(appbas, zz_p(1)));
+	if (det_pt != det_one * power(pt,degdet))
+		return false;
+
+	// generation test: verify that [ cmat  P(0) ] has full rank (see Giorgi-Neiger ISSAC 2018)
+	if (row_wise)
+		for (long i = 0; i < appbas.NumRows(); ++i)
+			for (long j = 0; j < appbas.NumCols(); ++j)
+				cmat[i][j+residual.NumCols()] = coeff(appbas[i][j],0);
+	else
+		for (long i = 0; i < appbas.NumRows(); ++i)
+			for (long j = 0; j < appbas.NumCols(); ++j)
+				cmat[i+residual.NumRows()][j] = coeff(appbas[i][j],0);
+	long rank = gauss(cmat);
+	if (rank != std::min(cmat.NumRows(),cmat.NumCols()))
+		return false;
 
 	return true;
 }

@@ -89,26 +89,14 @@ flags = [
 '-x',
 'c++',
 '-isystem',
-'../BoostParts',
-'-isystem',
-# This path will only work on OS X, but extra paths that don't exist are not
-# harmful ----> anyway then I remove it
-#'/System/Library/Frameworks/Python.framework/Headers',
-'-isystem',
 '../llvm/include',
-'-isystem',
 '../llvm/tools/clang/include',
-'-I',
 '.',
 '-I',
 './ClangCompleter',
-'-isystem',
 './tests/gmock/gtest',
-'-isystem',
 './tests/gmock/gtest/include',
-'-isystem',
 './tests/gmock',
-'-isystem',
 './tests/gmock/include',
 ]
 

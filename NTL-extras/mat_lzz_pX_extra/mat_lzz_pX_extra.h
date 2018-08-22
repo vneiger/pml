@@ -514,6 +514,30 @@ void col_degree(
 		); 
 
 /*------------------------------------------------------------*/
+/* similar function with row-wise option and returning degree */
+/*------------------------------------------------------------*/
+inline DegVec vector_degree(
+		const Mat<zz_pX> &pmat,
+		const Shift & shift = Shift(),
+		const bool row_wise = true
+		)
+{
+	DegVec degs;
+	if (row_wise)
+	{
+		degs.resize(pmat.NumRows());
+		row_degree(degs,pmat,shift);
+	}
+	else
+	{
+		degs.resize(pmat.NumCols());
+		col_degree(degs,pmat,shift);
+	}
+	return degs;
+}
+
+
+/*------------------------------------------------------------*/
 /* finds the pivot indices; returns the row/col degs          */
 /*------------------------------------------------------------*/
 void pivot_index(

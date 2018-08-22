@@ -38,6 +38,7 @@ void clear(Mat<zz_pX> & pmat)
 
 void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt)
 {
+	evmat.SetDims(pmat.NumRows(),pmat.NumCols());
 	for (long i = 0; i < pmat.NumRows(); ++i)
 		for (long j = 0; j < pmat.NumCols(); ++j)
 			eval(evmat[i][j], pmat[i][j], pt);
