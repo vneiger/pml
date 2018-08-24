@@ -66,6 +66,95 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
     ev_FFT.interpolate_matrix(c, valC);
 }
 
+/*------------------------------------------------------------*/
+/* c = a*b                                                    */
+/* FFT points                                                 */
+/*------------------------------------------------------------*/
+void multiply_evaluate_FFT2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{
+  
+    long dA = deg(a);
+    long dB = deg(b);
+    long dC = dA+dB;
+    long sz = dC+1;
+
+    zz_pX_Multipoint_FFT ev_FFT = get_FFT_points(sz);
+
+    long s = a.NumRows();
+    long t = a.NumCols();
+    long u = b.NumCols();
+    c.SetDims(s, u);
+    
+    long n = ev_FFT.length();
+
+    Mat<Vec<zz_p>> mat_valA, mat_valB, mat_valC;
+    mat_valA.SetDims(s, t);
+    mat_valB.SetDims(t, u);
+    mat_valC.SetDims(s, u);
+
+    for (long i = 0; i < s; i++)
+    {
+        for (long k = 0; k < t; k++)
+        {
+            ev_FFT.evaluate(mat_valA[i][k], a[i][k]);
+        }
+    }
+
+    for (long i = 0; i < t; i++)
+    {
+        for (long k = 0; k < u; k++)
+        {
+            ev_FFT.evaluate(mat_valB[i][k], b[i][k]);
+        }
+    }
+
+    Mat<zz_p> va, vb, vc;
+    va.SetDims(s, t);
+    vb.SetDims(t, u);
+
+    for (long i = 0; i < s; i++)
+    {
+        for (long k = 0; k < u; k++)
+        {
+            mat_valC[i][k].SetLength(n);
+        }
+    }
+    
+    for (long j = 0; j < n; j++)
+    {
+        for (long i = 0; i < s; i++)
+        {
+            for (long k = 0; k < t; k++)
+            {
+                va[i][k] = mat_valA[i][k][j];
+            }
+        }
+        for (long i = 0; i < t; i++)
+        {
+            for (long k = 0; k < u; k++)
+            {
+                vb[i][k] = mat_valB[i][k][j];
+            }
+        }
+        vc = va * vb;
+        for (long i = 0; i < s; i++)
+        {
+            for (long k = 0; k < u; k++)
+            {
+                mat_valC[i][k][j] = vc[i][k];
+            }
+        }
+    }
+
+    for (long i = 0; i < s; i++)
+    {
+        for (long k = 0; k < u; k++)
+        {
+            ev_FFT.interpolate(c[i][k], mat_valC[i][k]);
+        }
+    }
+}
+
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
