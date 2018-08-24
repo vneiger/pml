@@ -72,11 +72,10 @@ void check(long p)
     }
 }
 
-
 /*------------------------------------------------------------*/
-/* main just calls check()                                    */
+/* main calls check                                           */
 /*------------------------------------------------------------*/
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
     std::cout << std::fixed;
     std::cout << std::setprecision(8);

@@ -67,18 +67,45 @@ void zz_pX_Multipoint::evaluate_matrix(Vec<Mat<zz_p>>& val, const Mat<zz_pX>& f)
         val[i].SetDims(s, t);
     }
 
-    Vec<zz_p> tmp;
+// new stuff here
+    Mat<Vec<zz_p>> mat_val;
+    mat_val.SetDims(s, t);
+
     for (long i = 0; i < s; i++)
     {
         for (long k = 0; k < t; k++)
         {
-            evaluate(tmp, f[i][k]);
-            for (long j = 0; j < n; j++)
+            evaluate(mat_val[i][k], f[i][k]);
+        }
+    }
+    
+    for (long j = 0; j < n; j++)
+    {
+        for (long i = 0; i < s; i++)
+        {
+            for (long k = 0; k < t; k++)
             {
-                val[j][i][k] = tmp[j];
+                val[j][i][k] = mat_val[i][k][j];
             }
         }
     }
+
+
+
+    // Vec<zz_p> tmp;
+    // for (long i = 0; i < s; i++)
+    // {
+    //     for (long k = 0; k < t; k++)
+    //     {
+    //         evaluate(tmp, f[i][k]);
+    //         for (long j = 0; j < n; j++)
+    //         {
+    //             val[j][i][k] = tmp[j];
+    //         }
+    //     }
+    // }
+
+
 }
 
 /*------------------------------------------------------------*/
