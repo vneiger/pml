@@ -49,6 +49,22 @@ void zz_pX_Multipoint_Geometric::unset_FFT_interpolate()
     do_FFT_interpolate = 0;
 }
 
+/*------------------------------------------------------------*/
+/* decides whether to use FFT or not                          */
+/*------------------------------------------------------------*/
+void zz_pX_Multipoint_Geometric::decide_FFT()
+{
+    if (min_geometric_FFT() <= n &&  n < max_geometric_FFT())
+    {
+        unset_FFT_evaluate();
+        unset_FFT_interpolate();
+    }
+    else
+    {
+        set_FFT_evaluate();
+        set_FFT_interpolate();
+    }
+}
 
 /*------------------------------------------------------------*/
 /* adds a new FFT for repeated evaluations in degree d        */
@@ -60,11 +76,13 @@ void zz_pX_Multipoint_Geometric::prepare_degree(long d)
         LogicError("Degree too large for evaluation.");
     }
 
-    long k = NextPowerOfTwo(d + n);
-    fftRep d_fft = fftRep(INIT_SIZE, k);
-    TofftRep(d_fft, f, k, 0, d + n - 1);
-
-    known_degrees.insert( pair<long, fftRep>(d, d_fft) );
+    if (FFT_feasible)
+    {
+        long k = NextPowerOfTwo(d + n);
+        fftRep d_fft = fftRep(INIT_SIZE, k);
+        TofftRep(d_fft, f, k, 0, d + n - 1);
+        known_degrees.insert( pair<long, fftRep>(d, d_fft) );
+    }
 }
 
 /*------------------------------------------------------------*/
@@ -76,18 +94,13 @@ zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, long d){
     n = d;
     idx_k = NextPowerOfTwo(2*d - 1);
 
-    long cross = zz_pX_mul_crossover[zz_pInfo->PrimeCnt];
-    do_FFT_evaluate = (d > 100);
-    if (cross <= 500)
-        do_FFT_evaluate = (d >= 75);
-    if (cross <= 150)
-        do_FFT_evaluate = 1;
+    // bad case: we have an FFT prime of low order
+    if (is_FFT_prime() && idx_k > zz_pInfo->MaxRoot)
+        FFT_feasible = 0;
+    else
+        FFT_feasible = 1;
 
-    do_FFT_interpolate = (d > 300);
-    if (cross <= 500)
-        do_FFT_interpolate = (d >= 200);
-    if (cross <= 150)
-        do_FFT_interpolate = 1;
+    decide_FFT();
 
     zz_p q = r*r;
     zz_p inv_r = 1/r;
@@ -182,22 +195,25 @@ zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, long d){
         inv_qk *= inv_q;
     }
 
-    prepare_degree(n - 1);
-    // f_fft = fftRep(INIT_SIZE, idx_k);
-    // TofftRep(f_fft, f, idx_k);
-
-    g1_fft = fftRep(INIT_SIZE, idx_k);
-    g2_fft = fftRep(INIT_SIZE, idx_k);
-    TofftRep(g1_fft, g1, idx_k);
-    TofftRep(g2_fft, g2, idx_k);
+    // do it as soon as feasible, whether do_FFT_xxx is set or not
+    if (FFT_feasible) 
+    {
+        prepare_degree(n - 1);
+        g1_fft = fftRep(INIT_SIZE, idx_k);
+        g2_fft = fftRep(INIT_SIZE, idx_k);
+        TofftRep(g1_fft, g1, idx_k);
+        TofftRep(g2_fft, g2, idx_k);
+    }
 }
 
 /*-----------------------------------------------------------*/
 /* val[i] = P(r^(2*i)), i = 0..n-1                           */
 /*-----------------------------------------------------------*/
 void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const{
+
     val.SetLength(n);
 
+    zz_pX a, b;
     long dp = deg(P);
 
     if (n == 0)
@@ -220,35 +236,28 @@ void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const{
         return;
     }
 
-    // finds the smallest among all known degrees >= dp
-    long dp_found = n - 1;
-    for (map<int, fftRep>::const_iterator it = known_degrees.cbegin(); it != known_degrees.cend(); it++)
+    if (FFT_feasible && do_FFT_evaluate)
     {
-        if (it->first >= dp && it->first < dp_found)
-            dp_found = it->first;
+    // finds the smallest among all known degrees >= dp
+        long dp_found = n - 1;
+        for (map<int, fftRep>::const_iterator it = known_degrees.cbegin(); it != known_degrees.cend(); it++)
+        {
+            if (it->first >= dp && it->first < dp_found)
+                dp_found = it->first;
+        }
+        dp = dp_found; 
     }
-    dp = dp_found; 
 
-    zz_pX a;
     for (long i = 0; i <= dp; i++)  
     {
         SetCoeff(a, dp - i, x[i] * coeff(P, i));  
     }
-   
-    zz_pX b;
-    if (do_FFT_evaluate)
+
+    if (FFT_feasible && do_FFT_evaluate)
     {
         const fftRep& f_fft = known_degrees.find(dp)->second;
         fftRep a_fft, b_fft;
         long k = f_fft.k;
-
-
-        // cout << "here\n";
-        // cout << "dp = " << dp << endl;
-        // cout << "k=" << k << endl;
-        // exit(-1);
-
-
 
         a_fft = fftRep(INIT_SIZE, k);
         b_fft = fftRep(INIT_SIZE, k);
@@ -272,6 +281,7 @@ void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const{
     {
         val[i] = x[i] * coeff(b, i);
     }
+
 }
 
 /*------------------------------------------------------------*/
@@ -301,7 +311,7 @@ void zz_pX_Multipoint_Geometric::interpolate(zz_pX& f, const Vec<zz_p>& val) {
         SetCoeff(k, i, val[i] * w[i]);
     }
 
-    if (do_FFT_interpolate)
+    if (FFT_feasible && do_FFT_interpolate)
     {
         fftRep k_fft, h_fft;
         k_fft = fftRep(INIT_SIZE, idx_k);
@@ -320,7 +330,7 @@ void zz_pX_Multipoint_Geometric::interpolate(zz_pX& f, const Vec<zz_p>& val) {
         SetCoeff(k, n - 1 - i, coeff(h, i) * y[i]);
     }
 
-    if (do_FFT_interpolate)
+    if (FFT_feasible && do_FFT_interpolate)
     {
         fftRep k_fft, h_fft;
         k_fft = fftRep(INIT_SIZE, idx_k);
@@ -374,7 +384,7 @@ void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long
         SetCoeff(a, n - 1 - i, x[i] * coeff(Q, i));  
    
     zz_pX b;
-    if (do_FFT_evaluate)
+    if (FFT_feasible && do_FFT_evaluate)
     {
         // finds the smallest among all known sizes >= output_size
         long do_output_size = n;
@@ -383,7 +393,7 @@ void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long
             if ((it->first + 1) >= output_size && (it->first + 1) < do_output_size)
                 do_output_size = it->first + 1;
         }
-        // cout << output_size << " " << do_output_size << " " << n << " " << (known_degrees.find(do_output_size - 1)->first) << endl;
+
         const fftRep& f_fft = known_degrees.find(do_output_size - 1)->second;
         fftRep a_fft, b_fft;
         long k = f_fft.k;

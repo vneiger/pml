@@ -9,7 +9,8 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* compares geometric evaluation to subproduct tree one       */
+/* compares FFT / non-FFT                                     */
+/* FFT non-FFT thresholded                                    */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -35,7 +36,8 @@ void check(long p)
         const double thresh = 0.02;
 
         random_vec_zz_p(val, j);
-        
+
+        // FFT        
         ev.set_FFT_interpolate();
         nb = 0;
         t = get_time();
@@ -48,7 +50,21 @@ void check(long p)
         t = (get_time() - t) / nb;
         cout << t << " ";
 
+        // non-FFT
         ev.unset_FFT_interpolate();
+        nb = 0;
+        t = get_time();
+        do
+        {
+            ev.interpolate(f, val);
+            nb++;
+        }
+        while ( (get_time() - t) < thresh);
+        t = (get_time() - t) / nb;
+        cout << t << " ";
+
+        // re-builds ev, using built-in thresholds
+        ev = zz_pX_Multipoint_Geometric(a, j);
         nb = 0;
         t = get_time();
         do

@@ -7,6 +7,8 @@
 #include <NTL/matrix.h>
 #include <NTL/mat_lzz_p.h>
 
+#include "thresholds_geometric.h"
+
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
@@ -159,13 +161,18 @@ public:
     void unset_FFT_interpolate();
 
     /*------------------------------------------------------------*/
+    /* decides whether to use FFT or not                          */
+    /*------------------------------------------------------------*/
+    void decide_FFT();
+
+    /*------------------------------------------------------------*/
     /* adds a new FFT for repeated evaluations in degree d < n    */
     /*------------------------------------------------------------*/
     void prepare_degree(long d);
 
 private:  
     
-    long idx_k, do_FFT_evaluate, do_FFT_interpolate;
+    long idx_k, FFT_feasible, do_FFT_evaluate, do_FFT_interpolate;
     Vec<zz_p> x, t, w, y, z;
     zz_pX f, g1, g2;
     fftRep /* f_fft,  */g1_fft, g2_fft;  

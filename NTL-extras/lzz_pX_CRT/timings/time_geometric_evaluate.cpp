@@ -9,6 +9,7 @@ NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /* compares FFT / non-FFT and full / half degree              */
+/* FFT_ev non-FFT_ev FFT_h_ev non-FFT_h_ev thresholded        */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -34,7 +35,7 @@ void check(long p)
         double t;
         long nb;
         const double thresh = 0.02;
-        
+
         // FFT evaluate
         ev.set_FFT_evaluate();
         nb = 0;
@@ -61,8 +62,9 @@ void check(long p)
         t = (get_time() - t) / nb;
         cout << t << " ";
 
+        f = random_zz_pX(j / 2);
         ev.prepare_degree((j / 2) - 1);
-       
+
         // FFT half-degree evaluate
         ev.set_FFT_evaluate();
         nb = 0;
@@ -78,6 +80,20 @@ void check(long p)
 
         // non-FFT half-degree evaluate
         ev.unset_FFT_evaluate();
+        nb = 0;
+        t = get_time();
+        do
+        {
+            ev.evaluate(val, f);
+            nb++;
+        }
+        while ( (get_time() - t) < thresh);
+        t = (get_time() - t) / nb;
+        cout << t << " ";
+
+        // re-builds ev, using built-in thresholds
+        f = random_zz_pX(j);
+        ev = zz_pX_Multipoint_Geometric(a, j);
         nb = 0;
         t = get_time();
         do

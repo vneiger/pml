@@ -30,3 +30,4 @@ run:	$(RUN)
 %.dat: 
 	if test -e time_$*; then ./time_$* > time_$*.dat; fi
 	if test -e time_$*.awk; then awk -f time_$*.awk time_$*.dat > time_$*.res; fi
+	if test -e time_$*.sh; then ./time_$*.sh; fi

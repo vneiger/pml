@@ -12,8 +12,15 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* checks some products                                       */
 /*------------------------------------------------------------*/
-void one_check(long sz, long deg, long p)
+void check(long sz, long deg, long p)
 {
+    
+    long sizes[] = {1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,150,200,300,400};
+    long ls = sizeof(sizes)/sizeof(long);
+    long degrees[] = {1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,200,300,400,500};
+    long ld = sizeof(degrees)/sizeof(long);
+  
+
     Mat<zz_pX> a, b, c0, c1, c2, c4, c5;
     long nb;
     double t;
@@ -122,40 +129,15 @@ void one_check(long sz, long deg, long p)
 }
 
 /*------------------------------------------------------------*/
-/* checks some products                                       */
-/*------------------------------------------------------------*/
-void check(long sz=200, long deg=4)
-{
-    long p0 = 0;
-    long p1 = 23068673;
-    long p2 = 288230376151711813;
-
-    one_check(sz, deg, p0);
-    one_check(sz, deg, p1);
-    one_check(sz, deg, p2);
-}  
-
-/*------------------------------------------------------------*/
 /* main calls check                                           */
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
-
     warmup();
-    if (argc==1)
-    {
-        check();
-    }
-    else if (argc==3)
-    {
-        check(atoi(argv[1]), atoi(argv[2]));
-    }
-    else
-    {
-        throw std::invalid_argument("Usage: ./test_multiply OR ./test_multiply size degree");
-    }
-
+    check(0);
+    check(23068673);
+    check(288230376151711813);
     return 0;
 }

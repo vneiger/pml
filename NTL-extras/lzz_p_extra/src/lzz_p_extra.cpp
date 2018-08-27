@@ -75,8 +75,17 @@ void element_of_order(zz_p& a, long ord, long nb_trials, long strong)
 /*------------------------------------------------------------*/
 /* 1 if the current prime can be used as an FFT prime         */
 /*------------------------------------------------------------*/
-long is_FFT_ready()
+long is_FFT_prime()
 {
     return (zz_pInfo->p_info != NULL);
+}
+
+/*------------------------------------------------------------*/
+/* 1 if the current prime can be used as an FFT prime         */
+/* with transforms of size up to 2^k                          */
+/*------------------------------------------------------------*/
+long is_FFT_ready(long k)
+{
+    return (is_FFT_prime() && k <= zz_pInfo->MaxRoot);
 }
     

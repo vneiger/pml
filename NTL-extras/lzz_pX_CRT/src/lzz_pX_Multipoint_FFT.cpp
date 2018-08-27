@@ -61,6 +61,9 @@ zz_pX_Multipoint_FFT::zz_pX_Multipoint_FFT(long n)
         LogicError("Attempt to init a zz_pX_Multipoint_FFT without zz_p::FFTInit");
     }
     
+    if (k > zz_pInfo->MaxRoot) 
+        ResourceError("Too many points for FFT");
+
     BitReverse_init(indices, k);
 
     zz_pX X;
@@ -75,7 +78,6 @@ zz_pX_Multipoint_FFT::zz_pX_Multipoint_FFT(long n)
     zz_p z1 = to_zz_p(wk.tbl[0][1]);
     zz_p z2 = to_zz_p(wk.tbl[0][n >> 1]);
     do_bit_reverse = 1;
-        
 
     for (long i = 0; i < n; i++)
     {

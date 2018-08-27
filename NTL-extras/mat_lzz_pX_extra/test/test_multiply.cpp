@@ -3,135 +3,116 @@
 #include <NTL/vector.h>
 #include <iomanip>
 
-#include "magma_output.h"
+#include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
 
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* checks some products                                       */
+/* checks a product (s,s+1) x (s+1,s+2) in degree < deg       */
 /*------------------------------------------------------------*/
-void one_check(long sz, long deg, long p)
+void one_check(long sz, long deg)
 {
-    Mat<zz_pX> a, b, c0, c1, c2, c4, c5;
-    long nb;
-    double t;
+    Mat<zz_pX> a, b, c1, c2;
 
-    if (p == 0) // init zz_p with FFTInit()
+    random_mat_zz_pX(a, sz, sz+1, deg);
+    random_mat_zz_pX(b, sz+1, sz+2, deg);
+
+    multiply_waksman(c1, a, b);
+
+    // trying all possible call sequences
+    // todo: do it only if basefield supports it
+    multiply_evaluate(c2, a, b);
+    if (c1 != c2)
     {
-        zz_p::FFTInit(100);
+        LogicError("geometric mismatch");
     }
-    else
+
+    // todo: do it only if basefield supports it
+    multiply_evaluate_geometric(c2, a, b);
+    if (c1 != c2)
     {
-        zz_p::init(p);
+        LogicError("geometric mismatch");
     }
 
-    cout << p<< "," << sz << "," << deg << ",";
-
-    random_mat_zz_pX(a, sz, sz, deg);
-    random_mat_zz_pX(b, sz, sz, deg);
-
-    // naive algorithm, if the size is reasonable
-    long do_naive = ((sz <= 200)  && (deg <= 40))
-                        || ((sz <= 50) && (deg <= 200))
-                        ||  ((sz <= 10) && (deg <= 2000))
-                        || (sz==2);
-    if (do_naive)
+    // todo: do it only if basefield supports it
+    multiply_evaluate_geometric_using_FFT(c2, a, b);
+    if (c1 != c2)
     {
-        t = GetWallTime();
-        nb = 0;
-        do
+        LogicError("geometric mismatch");
+    }
+
+    // todo: do it only if basefield supports it
+    multiply_evaluate_geometric_no_FFT(c2, a, b);
+    if (c1 != c2)
+    {
+        LogicError("geometric mismatch");
+    }
+
+    if (is_FFT_ready(2*deg - 1))
+    {
+        multiply_evaluate_FFT(c2, a, b);
+        if (c1 != c2)
         {
-            multiply_waksman(c1, a, b);
-            nb++;
+            LogicError("FFT mismatch");
         }
-        while ((GetWallTime()-t) <= 0.001);
-        
-        t = (GetWallTime()-t) / nb;
-        cout << t << ",";
-    }
-    else 
-    { 
-        cout << "999999,";
     }
 
-    // evaluation -- should be done only if feasible
-    t = GetWallTime();
-    nb = 0;
-    do
+    multiply_3_primes(c2, a, b);
+    if (c1 != c2)
     {
-        multiply_evaluate(c2, a, b);
-        nb++;
-    }
-    while ((GetWallTime()-t) <= 0.001);
-    
-    t = (GetWallTime()-t) / nb;
-    cout << t << ",";
-    
-    if (do_naive && (c1 != c2))
-    {
-        cout << "(geometric mismatch) ";
-    }
-
-    // 3 primes FFT
-    t = GetWallTime();
-    nb = 0;
-    do
-    {
-        multiply_3_primes(c4, a, b);
-        nb++;
-    }
-    while ((GetWallTime()-t) <= 0.001);
-
-    t = (GetWallTime()-t) / nb;
-    cout << t << ",";
-
-    if (c4 != c2)
-    {
-        cout << "(3 primes mismatch) ";
+        LogicError("3 primes mismatch");
     }
 
     // transform, if the size is reasonable
     long do_transform = (deg <= 10) || ((sz <= 400) && (deg <= 10)) || ((sz <= 50) && (deg <= 20));
     if (do_transform)
     {
-        t = GetWallTime();
-        nb = 0;
-        do
+        multiply_transform(c2, a, b);
+        if (c1 != c2)
         {
-            multiply_transform(c5, a, b);
-            nb++;
-        }
-        while ((GetWallTime()-t) <= 0.001);
-        
-        t = (GetWallTime()-t) / nb;
-        cout << t << ",";
-
-        if (c5 != c2)
-        {
-            cout << "(transform mismatch) ";
+            LogicError("transform mismatch");
         }
     }
-    else
-    {
-        cout << "999999";
-    }
-
-    cout << endl;
 }
 
-/*------------------------------------------------------------*/
-/* checks some products                                       */
-/*------------------------------------------------------------*/
-void check(long sz=200, long deg=4)
-{
-    long p0 = 0;
-    long p1 = 23068673;
-    long p2 = 288230376151711813;
 
-    one_check(sz, deg, p0);
-    one_check(sz, deg, p1);
-    one_check(sz, deg, p2);
+/*------------------------------------------------------------*/
+/* for a give prime, checks some (size, degree)               */
+/*------------------------------------------------------------*/
+void all_checks()
+{
+    std::vector<long> szs =
+        {
+            1, 2, 3, 5, 10, 20, 30
+        };
+
+    std::vector<long> degs =
+        {
+            1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 250, 300, 400
+        };
+
+    for (size_t si = 0; si < szs.size(); si++)
+        for (size_t di = 0; di < degs.size(); di++)
+            one_check(szs[si], degs[di]);
+
+}
+
+
+
+/*------------------------------------------------------------*/
+/* checks some primes                                         */
+/*------------------------------------------------------------*/
+void check()
+{
+    zz_p::FFTInit(0);
+    all_checks();
+    zz_p::UserFFTInit(786433);
+    all_checks();
+    zz_p::init(288230376151711813);
+    all_checks();
+    zz_p::init(786433);
+    all_checks();
 }  
 
 /*------------------------------------------------------------*/
@@ -139,21 +120,6 @@ void check(long sz=200, long deg=4)
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    std::cout << std::fixed;
-    std::cout << std::setprecision(8);
-
-    if (argc==1)
-    {
-        check();
-    }
-    else if (argc==3)
-    {
-        check(atoi(argv[1]), atoi(argv[2]));
-    }
-    else
-    {
-        throw std::invalid_argument("Usage: ./test_multiply OR ./test_multiply size degree");
-    }
-
+    check();
     return 0;
 }
