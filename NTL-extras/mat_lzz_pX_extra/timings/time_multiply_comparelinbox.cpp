@@ -16,7 +16,7 @@ void one_bench_fft(long sz, long deg)
 {
     Mat<zz_pX> a, b, c1, c2;
     double t;
-		
+
     random_mat_zz_pX(a, sz, sz, deg);
     random_mat_zz_pX(b, sz, sz, deg);
 
@@ -29,18 +29,30 @@ void one_bench_fft(long sz, long deg)
         cout << sz << "," << deg << "," << t << "  (naive)" << endl;
 
 				// evaluation -- should be done only if feasible
+
+				//t = GetWallTime();
+				//multiply_evaluate_FFT(c2, a, b);
+				//t = GetWallTime()-t;
+				//cout << sz << "," << deg << "," << t << "  (evaluate)" << endl;
+
 				t = GetWallTime();
-				multiply_evaluate_FFT(c2, a, b);
+				multiply_evaluate_FFT2(c2, a, b);
 				t = GetWallTime()-t;
-				cout << sz << "," << deg << "," << t << "  (evaluate)" << endl;
+				cout << sz << "," << deg << "," << t << "  (evaluate2)" << endl;
     }
 		else
 		{
 				// evaluation -- should be done only if feasible
+
+				//t = GetWallTime();
+				//multiply_evaluate_FFT(c2, a, b);
+				//t = GetWallTime()-t;
+				//cout << sz << "," << deg << "," << t << endl;
+
 				t = GetWallTime();
-				multiply_evaluate_FFT(c2, a, b);
+				multiply_evaluate_FFT2(c2, a, b);
 				t = GetWallTime()-t;
-				cout << sz << "," << deg << "," << t << endl;
+				cout << sz << "," << deg << "," << t << "  (evaluate2)" << endl;
 		}
 }
 
@@ -149,24 +161,27 @@ void run_bench(long test)
 			cout << "p = " << zz_p::modulus() << "  (FFT prime)" << endl;
 			for (size_t i=0;i<szs.size();i++)
 				one_bench_fft(szs[i],degs[i]);
+			cout << endl;
 		}
 
 		if (test==0 || test==2)
 		{
-			zz_p::UserFFTInit(744833);
+			zz_p::init(744833);
 			std::cout << "Bench polynomial matrix multiplication (3 primes)" << std::endl;
 			cout << "p = " << zz_p::modulus() << "  (normal prime)" << endl;
 			for (size_t i=0;i<szs.size();i++)
 				one_bench_3primes(szs[i],degs[i]);
+			cout << endl;
 		}
 		
 		if (test==0 || test==3)
 		{
-			zz_p::UserFFTInit(744833);
+			zz_p::init(744833);
 			std::cout << "Bench polynomial matrix multiplication (geometric)" << std::endl;
 			cout << "p = " << zz_p::modulus() << "  (normal prime)" << endl;
 			for (size_t i=0;i<szs.size();i++)
 				one_bench_geometric(szs[i],degs[i]);
+			cout << endl;
 		}
 
 }  
