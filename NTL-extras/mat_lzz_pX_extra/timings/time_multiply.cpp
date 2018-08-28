@@ -14,12 +14,12 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void check(long sz, long deg, long p)
 {
-    
+
     long sizes[] = {1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,150,200,300,400};
     long ls = sizeof(sizes)/sizeof(long);
     long degrees[] = {1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,200,300,400,500};
     long ld = sizeof(degrees)/sizeof(long);
-  
+
 
     Mat<zz_pX> a, b, c0, c1, c2, c4, c5;
     long nb;
@@ -41,9 +41,9 @@ void check(long sz, long deg, long p)
 
     // naive algorithm, if the size is reasonable
     long do_naive = ((sz <= 200)  && (deg <= 40))
-                        || ((sz <= 50) && (deg <= 200))
-                        ||  ((sz <= 10) && (deg <= 2000))
-                        || (sz==2);
+    || ((sz <= 50) && (deg <= 200))
+    ||  ((sz <= 10) && (deg <= 2000))
+    || (sz==2);
     if (do_naive)
     {
         t = GetWallTime();
@@ -54,7 +54,7 @@ void check(long sz, long deg, long p)
             nb++;
         }
         while ((GetWallTime()-t) <= 0.001);
-        
+
         t = (GetWallTime()-t) / nb;
         cout << t << ",";
     }
@@ -72,10 +72,10 @@ void check(long sz, long deg, long p)
         nb++;
     }
     while ((GetWallTime()-t) <= 0.001);
-    
+
     t = (GetWallTime()-t) / nb;
     cout << t << ",";
-    
+
     if (do_naive && (c1 != c2))
     {
         cout << "(geometric mismatch) ";
@@ -111,7 +111,7 @@ void check(long sz, long deg, long p)
             nb++;
         }
         while ((GetWallTime()-t) <= 0.001);
-        
+
         t = (GetWallTime()-t) / nb;
         cout << t << ",";
 
@@ -141,3 +141,11 @@ int main(int argc, char ** argv)
     check(288230376151711813);
     return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
