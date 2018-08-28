@@ -23,7 +23,7 @@ void multiply_waksman(Mat<zz_pX> &Cout, const Mat<zz_pX> &A, const Mat<zz_pX> &B
     long p = B.NumCols();
 
     C.SetDims(m, p);
-  
+
     D.SetLength(p);
     E.SetLength(m);
 
@@ -31,57 +31,57 @@ void multiply_waksman(Mat<zz_pX> &Cout, const Mat<zz_pX> &A, const Mat<zz_pX> &B
 
     for (long j=1; j<=np; j++)
     {
-	const long j2=(j<<1)-1;
-    
-	for (long k=0; k<p; k++)
-	{
-	    C[0][k] += (A[0][j2-1]+B[j2][k]) * (A[0][j2]+B[j2-1][k]);
-	    D[k] += (A[0][j2-1]-B[j2][k]) * (A[0][j2]-B[j2-1][k]);
-	}
+        const long j2=(j<<1)-1;
 
-	for (long l=1; l<m; l++)
-	{
-	    C[l][0] += (A[l][j2-1]+B[j2][0]) * (A[l][j2]+B[j2-1][0]);
-	    E[l] += (A[l][j2-1]-B[j2][0]) * (A[l][j2]-B[j2-1][0]);
-	}
+        for (long k=0; k<p; k++)
+        {
+            C[0][k] += (A[0][j2-1]+B[j2][k]) * (A[0][j2]+B[j2-1][k]);
+            D[k] += (A[0][j2-1]-B[j2][k]) * (A[0][j2]-B[j2-1][k]);
+        }
 
-	for (long k=1; k<p; k++)
-	{
-	    for (long l=1; l<m; l++)
-	    {
-		C[l][k] += (A[l][j2-1]+B[j2][k]) * (A[l][j2]+B[j2-1][k]);
-	    }
-	}
+        for (long l=1; l<m; l++)
+        {
+            C[l][0] += (A[l][j2-1]+B[j2][0]) * (A[l][j2]+B[j2-1][0]);
+            E[l] += (A[l][j2-1]-B[j2][0]) * (A[l][j2]-B[j2-1][0]);
+        }
+
+        for (long k=1; k<p; k++)
+        {
+            for (long l=1; l<m; l++)
+            {
+                C[l][k] += (A[l][j2-1]+B[j2][k]) * (A[l][j2]+B[j2-1][k]);
+            }
+        }
     }
 
     for (long l=1; l<m; l++)
     {
-	E[l] = (E[l]+C[l][0])/2;
-	C[l][0] -= E[l];
+        E[l] = (E[l]+C[l][0])/2;
+        C[l][0] -= E[l];
     }
 
     val0 = (D[0]+C[0][0])/2;
     C[0][0] -= val0;
     for (long k=1; k<p; k++)
     {
-	val1 = (D[k]+C[0][k])/2;
-	C[0][k] -= val1;
-	val1 -= val0;
-	for (long l=1; l<m; l++)
-	{
-	    C[l][k] -= val1 + E[l];
-	}
+        val1 = (D[k]+C[0][k])/2;
+        C[0][k] -= val1;
+        val1 -= val0;
+        for (long l=1; l<m; l++)
+        {
+            C[l][k] -= val1 + E[l];
+        }
     }
 
     if ( (n&1) == 1)
     {
-	for (long l=0; l<m; l++)
-	{
-	    for (long k=0; k<p; k++)
-	    {
-		C[l][k] += A[l][n-1]*B[n-1][k];
-	    }
-	}
+        for (long l=0; l<m; l++)
+        {
+            for (long k=0; k<p; k++)
+            {
+                C[l][k] += A[l][n-1]*B[n-1][k];
+            }
+        }
     }
     Cout = C;
 }
@@ -104,15 +104,22 @@ void multiply_naive(Mat<zz_pX> & c_out, const Mat<zz_pX> & a, const Mat<zz_pX> &
 
     for (long i = 0; i < u; i++)
     {
-	for (long j = 0; j < w; j++)
-	{
-	    c[i][j] = 0;
-	    for (long k = 0; k < v; k++)
-	    {
-		c[i][j] += a[i][k]*b[k][j];
-	    }
-	}
+        for (long j = 0; j < w; j++)
+        {
+            c[i][j] = 0;
+            for (long k = 0; k < v; k++)
+            {
+                c[i][j] += a[i][k]*b[k][j];
+            }
+        }
     }
     c_out = c;
 }
 
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

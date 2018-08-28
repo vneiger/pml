@@ -18,7 +18,7 @@ void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
     long t = a.NumCols();
     long u = b.NumCols();
     c.SetDims(s, u);
-    
+
     long n = ev.length();
 
     Vec<zz_p> mat_valA, mat_valB;
@@ -57,7 +57,7 @@ void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
     mat_valC.SetLength(s * u);
     for (long i = 0; i < s * u; i++)
         mat_valC[i].SetLength(n);
-    
+
     for (long j = 0, jst = 0, jtu = 0; j < n; j++, jst += st, jtu += tu)
     {
         for (long i = 0; i < s; i++)
@@ -231,3 +231,11 @@ void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const M
     ev_geom.t_evaluate_matrix(b, valB);
     trunc(b, b, dB + 1);
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -31,17 +31,17 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
 /*------------------------------------------------------------*/
 void clear(Mat<zz_pX> & pmat)
 {
-	for (long i=0; i<pmat.NumRows(); ++i)
-		for (long j=0; j<pmat.NumCols(); ++j)
-			clear(pmat[i][j]);
+    for (long i=0; i<pmat.NumRows(); ++i)
+        for (long j=0; j<pmat.NumCols(); ++j)
+            clear(pmat[i][j]);
 }
 
 void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt)
 {
-	evmat.SetDims(pmat.NumRows(),pmat.NumCols());
-	for (long i = 0; i < pmat.NumRows(); ++i)
-		for (long j = 0; j < pmat.NumCols(); ++j)
-			eval(evmat[i][j], pmat[i][j], pt);
+    evmat.SetDims(pmat.NumRows(),pmat.NumCols());
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        for (long j = 0; j < pmat.NumCols(); ++j)
+            eval(evmat[i][j], pmat[i][j], pt);
 }
 
 /*------------------------------------------------------------*/
@@ -96,7 +96,7 @@ void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a, long hi)
         for (long s = 0; s< cdim; s++)
             reverse(x[r][s], a[r][s], hi);
 }
-    
+
 
 
 /*------------------------------------------------------------*/
@@ -519,9 +519,9 @@ void neg(Mat<zz_pX> & x, const Mat<zz_pX> & a)
 {
     long m = a.NumRows();
     long n = a.NumCols();
-   
+
     x.SetDims(m, n);
-   
+
     for (long u = 0; u < m; u++)
     {
         for (long v = 0; v < n; v++)
@@ -545,9 +545,9 @@ void GetCoeff(Mat<zz_p>& x, const Mat<zz_pX>& a, long i)
 {
     long m = a.NumRows();
     long n = a.NumCols();
-   
+
     x.SetDims(m, n);
-    
+
     for (long u = 0; u < m; u++)
     {
         for (long v = 0; v < n; v++)
@@ -588,7 +588,7 @@ void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a)
 {
     long m = x.NumRows();
     long n = x.NumCols();
-    
+
     if (m != a.NumRows() || n != a.NumCols())
     {
         LogicError("dimension mismatch in matrix SetCoeff");
@@ -920,11 +920,11 @@ bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const 
 /* TODO comment                                               */
 /*------------------------------------------------------------*/
 void pivot_index (
-    std::vector<long> & pivind,
-    std::vector<long> & pivdeg,
-    const Mat<zz_pX> & pmat,
-    const std::vector<long> & shift,
-    const bool row_wise)
+                  std::vector<long> & pivind,
+                  std::vector<long> & pivdeg,
+                  const Mat<zz_pX> & pmat,
+                  const std::vector<long> & shift,
+                  const bool row_wise)
 {
     // check if shifted + shift dimension
     bool shifted;
@@ -1006,10 +1006,10 @@ void pivot_index (
 /* TODO comment                                               */
 /*------------------------------------------------------------*/
 bool is_weak_popov (
-    const Mat<zz_pX> &pmat,
-    const std::vector<long> &shift,
-    const bool row_wise,
-    const bool ordered)
+                    const Mat<zz_pX> &pmat,
+                    const std::vector<long> &shift,
+                    const bool row_wise,
+                    const bool ordered)
 {
     //retrieve pivot index
     std::vector<long> pivots;
@@ -1049,8 +1049,8 @@ bool is_popov (const Mat<zz_pX> &pmat,
                const bool up_to_permutation){
     if (!is_weak_popov(pmat,shift,row_wise,!up_to_permutation))
         return false;
-        
-        
+
+
     std::vector<long> pivots;
     std::vector<long> degrees;
     pivots.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
@@ -1087,39 +1087,39 @@ Mat<zz_pX> identity_matrix(const long n){
 }
 
 /*
-  void weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &pmat, const std::vector<long> &shift){
-  wpf = pmat;
-  m = wpf.NumRows();
-  n = wpf.NumCols();
-  trans = identity_matrix(m);
-        
-  // populate shift with zeros if empty
-  if (shift.length() == 0){ 
-  for (long i = 0; i < n; i++)
-  shift.emplace_back(0);
-  }
-        
-  // pivots[i] = shift-pivot index of the row i of wpf
-  // degrees = shift-row degree of wpf
-  std::vector<long> pivots;
-  std::vector<long> degrees;
-  pivot_index(pivots,degress,wpf,shift,true);
-        
-  // rows_with_pivot[p] = indices of the rows that have pivot index p
-  std::vector<std::vector<long>> rows_with_pivot(n, std::vector<long>());
-  for (long i = 0; i < n; i++)
-  rows_with_pivot[pivots[i]].emplace_back(i);
-  }
+   void weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &pmat, const std::vector<long> &shift){
+   wpf = pmat;
+   m = wpf.NumRows();
+   n = wpf.NumCols();
+   trans = identity_matrix(m);
+
+// populate shift with zeros if empty
+if (shift.length() == 0){ 
+for (long i = 0; i < n; i++)
+shift.emplace_back(0);
+}
+
+// pivots[i] = shift-pivot index of the row i of wpf
+// degrees = shift-row degree of wpf
+std::vector<long> pivots;
+std::vector<long> degrees;
+pivot_index(pivots,degress,wpf,shift,true);
+
+// rows_with_pivot[p] = indices of the rows that have pivot index p
+std::vector<std::vector<long>> rows_with_pivot(n, std::vector<long>());
+for (long i = 0; i < n; i++)
+rows_with_pivot[pivots[i]].emplace_back(i);
+}
 */
 
 
 
 
 PolMatForm get_polmatform(
-    const Mat<zz_pX> &pmat,
-    const std::vector<long> &shift,
-    const bool row_wise
-    )
+                          const Mat<zz_pX> &pmat,
+                          const std::vector<long> &shift,
+                          const bool row_wise
+                         )
 {
     if (is_popov(pmat,shift,row_wise)) {   // TODO waiting for is_popov
         return POPOV;
@@ -1135,11 +1135,11 @@ PolMatForm get_polmatform(
 }
 
 bool is_polmatform(
-    const Mat<zz_pX> &pmat,
-    const PolMatForm form,
-    const std::vector<long> &shift,
-    const bool row_wise
-    )
+                   const Mat<zz_pX> &pmat,
+                   const PolMatForm form,
+                   const std::vector<long> &shift,
+                   const bool row_wise
+                  )
 {
     switch (form)
     {
@@ -1153,3 +1153,10 @@ bool is_polmatform(
 }
 
 
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
