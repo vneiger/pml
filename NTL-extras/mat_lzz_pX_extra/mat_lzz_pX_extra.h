@@ -39,9 +39,9 @@ void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt);
 
 inline Mat<zz_p> eval(const Mat<zz_pX> & pmat, zz_p pt)
 {
-	Mat<zz_p> evmat;
-	eval(evmat, pmat, pt);
-	return evmat;
+    Mat<zz_p> evmat;
+    eval(evmat, pmat, pt);
+    return evmat;
 }
 
 
@@ -469,11 +469,11 @@ inline void middle_product_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> &
 /*------------------------------------------------------------*/
 
 enum PolMatForm {
-	NONE = 0,
-	REDUCED = 1, 
-	WEAK_POPOV = 2,
-	ORD_WEAK_POPOV = 3,
-	POPOV = 4,
+    NONE = 0,
+    REDUCED = 1, 
+    WEAK_POPOV = 2,
+    ORD_WEAK_POPOV = 3,
+    POPOV = 4,
 };
 
 /*------------------------------------------------------------*/
@@ -489,11 +489,11 @@ typedef std::vector<long> DegVec;
 /* of a zero entry is min(shift)-1                            */
 /*------------------------------------------------------------*/
 void degree_matrix(
-		Mat<long> &degmat,
-		const Mat<zz_pX> &pmat,
-		const Shift & shift = Shift(),
-		const bool row_wise=true
-		);
+                   Mat<long> &degmat,
+                   const Mat<zz_pX> &pmat,
+                   const Shift & shift = Shift(),
+                   const bool row_wise=true
+                  );
 
 /*------------------------------------------------------------*/
 /* tuple (shifted deg row 1, shifted deg row 2, ...)          */
@@ -501,41 +501,41 @@ void degree_matrix(
 /* degrees of the entries of row k                            */
 /*------------------------------------------------------------*/
 void row_degree(
-		DegVec & rdeg,
-		const Mat<zz_pX> &pmat,
-		const Shift & shift = Shift()
-		); 
+                DegVec & rdeg,
+                const Mat<zz_pX> &pmat,
+                const Shift & shift = Shift()
+               ); 
 
-/*------------------------------------------------------------*/
-/* similar function for column degrees (see row_degree)       */
-/*------------------------------------------------------------*/
+    /*------------------------------------------------------------*/
+    /* similar function for column degrees (see row_degree)       */
+    /*------------------------------------------------------------*/
 void col_degree(
-		DegVec & cdeg,
-		const Mat<zz_pX> &pmat,
-		const Shift & shift = Shift()
-		); 
+                DegVec & cdeg,
+                const Mat<zz_pX> &pmat,
+                const Shift & shift = Shift()
+               ); 
 
-/*------------------------------------------------------------*/
-/* similar function with row-wise option and returning degree */
-/*------------------------------------------------------------*/
+    /*------------------------------------------------------------*/
+    /* similar function with row-wise option and returning degree */
+    /*------------------------------------------------------------*/
 inline DegVec vector_degree(
-		const Mat<zz_pX> &pmat,
-		const Shift & shift = Shift(),
-		const bool row_wise = true
-		)
+                            const Mat<zz_pX> &pmat,
+                            const Shift & shift = Shift(),
+                            const bool row_wise = true
+                           )
 {
-	DegVec degs;
-	if (row_wise)
-	{
-		degs.resize(pmat.NumRows());
-		row_degree(degs,pmat,shift);
-	}
-	else
-	{
-		degs.resize(pmat.NumCols());
-		col_degree(degs,pmat,shift);
-	}
-	return degs;
+    DegVec degs;
+    if (row_wise)
+    {
+        degs.resize(pmat.NumRows());
+        row_degree(degs,pmat,shift);
+    }
+    else
+    {
+        degs.resize(pmat.NumCols());
+        col_degree(degs,pmat,shift);
+    }
+    return degs;
 }
 
 
@@ -543,22 +543,22 @@ inline DegVec vector_degree(
 /* finds the pivot indices; returns the row/col degs          */
 /*------------------------------------------------------------*/
 void pivot_index(
-		std::vector<long> & pivind,
-		DegVec & pivdeg,
-		const Mat<zz_pX> & pmat,
-		const Shift & shift = Shift(),
-		const bool row_wise = true
-		);
+                 std::vector<long> & pivind,
+                 DegVec & pivdeg,
+                 const Mat<zz_pX> & pmat,
+                 const Shift & shift = Shift(),
+                 const bool row_wise = true
+                );
 
 /*------------------------------------------------------------*/
 /* leading matrix of pmat                                     */
 /*------------------------------------------------------------*/
 void leading_matrix(
-		Mat<zz_p> &lmat,
-		const Mat<zz_pX> &pmat,
-		const Shift & shift = Shift(),
-		const bool row_wise = true
-		);
+                    Mat<zz_p> &lmat,
+                    const Mat<zz_pX> &pmat,
+                    const Shift & shift = Shift(),
+                    const bool row_wise = true
+                   );
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -570,27 +570,27 @@ void leading_matrix(
 /* returns true if b is reduced                               */
 /*------------------------------------------------------------*/
 bool is_reduced(
-		const Mat<zz_pX> &pmat,
-		const Shift & shift = Shift(),
-		const bool row_wise = true
-		);
+                const Mat<zz_pX> &pmat,
+                const Shift & shift = Shift(),
+                const bool row_wise = true
+               );
 
 /*------------------------------------------------------------*/
 /* returns true if b is in weak popov form (forbide 0-row/col */
 /*------------------------------------------------------------*/
 bool is_weak_popov(
-		const Mat<zz_pX> &pmat,
-		const Shift & shift = Shift(),
-		const bool row_wise = true,
-		const bool ordered= false
-		);
+                   const Mat<zz_pX> &pmat,
+                   const Shift & shift = Shift(),
+                   const bool row_wise = true,
+                   const bool ordered= false
+                  );
 
 bool is_popov(
-		const Mat<zz_pX> &pmat,
-		const Shift & shift = Shift(),
-		const bool row_wise = true,
-		const bool up_to_permutation = false
-		);
+              const Mat<zz_pX> &pmat,
+              const Shift & shift = Shift(),
+              const bool row_wise = true,
+              const bool up_to_permutation = false
+             );
 
 /*------------------------------------------------------------*/
 /* if b is in some shifted reduced form,                      */
@@ -598,21 +598,21 @@ bool is_popov(
 /* otherwise return NONE (= 0)                                */
 /*------------------------------------------------------------*/
 PolMatForm get_polmatform(
-		const Mat<zz_pX> & pmat,
-		const Shift & shift = Shift(),
-		const bool row_wise = true
-		);
+                          const Mat<zz_pX> & pmat,
+                          const Shift & shift = Shift(),
+                          const bool row_wise = true
+                         );
 
 /*------------------------------------------------------------*/
 /* check that pmat is in the shifted reduced form             */
 /* indicated by argument 'form'                               */
 /*------------------------------------------------------------*/
 bool is_polmatform(
-		const Mat<zz_pX> & pmat,
-		const PolMatForm form,
-		const Shift & shift = Shift(),
-		const bool row_wise = true
-		);
+                   const Mat<zz_pX> & pmat,
+                   const PolMatForm form,
+                   const Shift & shift = Shift(),
+                   const bool row_wise = true
+                  );
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -675,28 +675,28 @@ typedef std::vector<long> Order;
 
 // TODO: when algorithms are ready, find threshold and write the definition
 DegVec approximant_basis(
-		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & pmat,
-		const Order & order,
-		const Shift & shift = Shift(),
-		const PolMatForm form = ORD_WEAK_POPOV,
-		const bool row_wise = true,
-		const bool generic = false
-		);
+                         Mat<zz_pX> & appbas,
+                         const Mat<zz_pX> & pmat,
+                         const Order & order,
+                         const Shift & shift = Shift(),
+                         const PolMatForm form = ORD_WEAK_POPOV,
+                         const bool row_wise = true,
+                         const bool generic = false
+                        );
 
 // TODO: when the above function is ready, uncomment the definition below
 DegVec approximant_basis(
-		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & pmat,
-		const long order,
-		const Shift & shift = Shift(),
-		const PolMatForm form = ORD_WEAK_POPOV,
-		const bool row_wise = true,
-		const bool generic = false
-		);
+                         Mat<zz_pX> & appbas,
+                         const Mat<zz_pX> & pmat,
+                         const long order,
+                         const Shift & shift = Shift(),
+                         const PolMatForm form = ORD_WEAK_POPOV,
+                         const bool row_wise = true,
+                         const bool generic = false
+                        );
 //{
-//	Order orders(mat.NumRows(),order);
-//	return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
+//  Order orders(mat.NumRows(),order);
+//  return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
 //}
 
 
@@ -712,24 +712,24 @@ DegVec approximant_basis(
 /*------------------------------------------------------------*/
 
 bool is_approximant_basis(
-		const Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & pmat,
-		const Order & order,
-		const Shift & shift = Shift(),
-		const PolMatForm & form = ORD_WEAK_POPOV,
-		const bool row_wise = true,
-		const bool randomized = false
-		);
+                          const Mat<zz_pX> & appbas,
+                          const Mat<zz_pX> & pmat,
+                          const Order & order,
+                          const Shift & shift = Shift(),
+                          const PolMatForm & form = ORD_WEAK_POPOV,
+                          const bool row_wise = true,
+                          const bool randomized = false
+                         );
 
 bool is_approximant_basis(
-		const Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & pmat,
-		const long order,
-		const Shift & shift = Shift(),
-		const PolMatForm & form = ORD_WEAK_POPOV,
-		const bool row_wise = true,
-		const bool randomized = false
-		);
+                          const Mat<zz_pX> & appbas,
+                          const Mat<zz_pX> & pmat,
+                          const long order,
+                          const Shift & shift = Shift(),
+                          const PolMatForm & form = ORD_WEAK_POPOV,
+                          const bool row_wise = true,
+                          const bool randomized = false
+                         );
 
 /*------------------------------------------------------------*/
 /* Iterative algorithm for general order and shift            */
@@ -739,20 +739,20 @@ bool is_approximant_basis(
 /*   - Beckermann-Labahn 2000 (ensuring s-Popov)              */
 /*------------------------------------------------------------*/
 DegVec appbas_iterative(
-		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & pmat,
-		const Order & order,
-		const Shift & shift,
-		bool order_wise=true
-		);
+                        Mat<zz_pX> & appbas,
+                        const Mat<zz_pX> & pmat,
+                        const Order & order,
+                        const Shift & shift,
+                        bool order_wise=true
+                       );
 
 DegVec popov_appbas_iterative(
-		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & pmat,
-		const Order & order,
-		const Shift & shift,
-		bool order_wise=true
-		);
+                              Mat<zz_pX> & appbas,
+                              const Mat<zz_pX> & pmat,
+                              const Order & order,
+                              const Shift & shift,
+                              bool order_wise=true
+                             );
 
 /*------------------------------------------------------------*/
 /* M-Basis algorithm for approximant order = 1                */
@@ -765,10 +765,10 @@ DegVec popov_appbas_iterative(
 // output: pivot degrees of the approx basis (also indicates where the rows of
 // kernel should appear in approx basis)
 DegVec popov_mbasis1(
-		Mat<zz_p> & kerbas,
-		const Mat<zz_p> & pmat,
-		const Shift & shift
-		);
+                     Mat<zz_p> & kerbas,
+                     const Mat<zz_p> & pmat,
+                     const Shift & shift
+                    );
 
 // TODO check if serious difference of time if not returning Popov but just
 // minimal, like done in GJV03 and GL14 (implies slightly less permutation
@@ -783,37 +783,37 @@ DegVec popov_mbasis1(
 /*          (ensuring s-ordered weak Popov or s-Popov)        */
 /*------------------------------------------------------------*/
 DegVec mbasis(
-		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & pmat,
-		const long order,
-		const Shift & shift
-		);
+              Mat<zz_pX> & appbas,
+              const Mat<zz_pX> & pmat,
+              const long order,
+              const Shift & shift
+             );
 
 // variant which first converts to vector of constant matrices
 // TODO see if this is ever slower than the above
 DegVec mbasis_vector(
-		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & pmat,
-		const long order,
-		const Shift & shift
-		);
+                     Mat<zz_pX> & appbas,
+                     const Mat<zz_pX> & pmat,
+                     const long order,
+                     const Shift & shift
+                    );
 
 // TODO some thresholding to be done, so that mbasis does the
 // resupdate strategy when it is faster
 // --> organize code so that mbasis is always ~the fastest
 DegVec mbasis_resupdate(
-		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & pmat,
-		const long order,
-		const Shift & shift
-		);
+                        Mat<zz_pX> & appbas,
+                        const Mat<zz_pX> & pmat,
+                        const long order,
+                        const Shift & shift
+                       );
 
 DegVec popov_mbasis(
-		Mat<zz_pX> &appbas,
-		const Mat<zz_pX> & pmat,
-		const long order,
-		const Shift & shift
-		);
+                    Mat<zz_pX> &appbas,
+                    const Mat<zz_pX> & pmat,
+                    const long order,
+                    const Shift & shift
+                   );
 
 /*------------------------------------------------------------*/
 /* PM-Basis algorithm for uniform approximant order           */
@@ -824,23 +824,23 @@ DegVec popov_mbasis(
 /*          (ensuring s-ordered weak Popov or s-Popov)        */
 /*------------------------------------------------------------*/
 DegVec pmbasis(
-		Mat<zz_pX> & appbas,
-		const Mat<zz_pX> & pmat,
-		const long order,
-		const Shift & shift
-		);
+               Mat<zz_pX> & appbas,
+               const Mat<zz_pX> & pmat,
+               const long order,
+               const Shift & shift
+              );
 
 DegVec popov_pmbasis(
-		Mat<zz_pX> &appbas,
-		const Mat<zz_pX> & pmat,
-		const long order,
-		const Shift & shift
-		);
+                     Mat<zz_pX> &appbas,
+                     const Mat<zz_pX> & pmat,
+                     const long order,
+                     const Shift & shift
+                    );
 
 
 /**********************************************************************
-*                     MINIMAL INTERPOLANT BASES                      *
-**********************************************************************/
+ *                     MINIMAL INTERPOLANT BASES                      *
+ **********************************************************************/
 
 // list of points: for each column, we have a list of points (elt from zz_p and
 // multiplicity)
@@ -861,36 +861,36 @@ typedef std::vector<std::vector<std::pair<zz_p,long>>> Points;
 
 // TODO
 DegVec interpolant_basis(
-		Mat<zz_pX> & intbas,
-		const Mat<zz_pX> & pmat,
-		const Points & pts,
-		const Shift & shift = Shift(),
-		const PolMatForm form = ORD_WEAK_POPOV,
-		const bool row_wise = true,
-		const bool generic = false
-		);
+                         Mat<zz_pX> & intbas,
+                         const Mat<zz_pX> & pmat,
+                         const Points & pts,
+                         const Shift & shift = Shift(),
+                         const PolMatForm form = ORD_WEAK_POPOV,
+                         const bool row_wise = true,
+                         const bool generic = false
+                        );
 
 // TODO uncomment below when above is ready
 // below, the following is called "uniform interpolation case" (or case with uniform points)
 // this means that we have the same points on all columns, all with multiplicity one)
 // (FIXME could be easily generalized to any constant multiplicity for all...?)
 DegVec interpolant_basis(
-		Mat<zz_pX> & intbas,
-		const Mat<zz_pX> & pmat,
-		const Vec<zz_p> & pts,
-		const Shift & shift = Shift(),
-		const PolMatForm form = ORD_WEAK_POPOV,
-		const bool row_wise = true,
-		const bool generic = false
-		);
+                         Mat<zz_pX> & intbas,
+                         const Mat<zz_pX> & pmat,
+                         const Vec<zz_p> & pts,
+                         const Shift & shift = Shift(),
+                         const PolMatForm form = ORD_WEAK_POPOV,
+                         const bool row_wise = true,
+                         const bool generic = false
+                        );
 //{
-//	std::vector<std::pair<zz_p,long>> list_pts(pts.size());
-//	for ( long i=0; i<list_pts.size(); ++i )
-//	{
-//		list_pts[i] = std::pair<zz_p,long>(pts[i],1);
-//	}
-//	Points points(mat.NumCols(),list_pts);
-//	return interpolant_basis(appbas,mat,points,shift,canonical,row_wise,generic);
+//  std::vector<std::pair<zz_p,long>> list_pts(pts.size());
+//  for ( long i=0; i<list_pts.size(); ++i )
+//  {
+//    list_pts[i] = std::pair<zz_p,long>(pts[i],1);
+//  }
+//  Points points(mat.NumCols(),list_pts);
+//  return interpolant_basis(appbas,mat,points,shift,canonical,row_wise,generic);
 //}
 
 
@@ -907,25 +907,25 @@ DegVec interpolant_basis(
 
 // TODO not implemented yet
 bool is_interpolant_basis(
-		const Mat<zz_pX> & intbas,
-		const Mat<zz_pX> & pmat,
-		const Points & pts,
-		const Shift & shift = Shift(),
-		const PolMatForm & form = ORD_WEAK_POPOV,
-		const bool row_wise = true,
-		const bool randomized = false
-		);
+                          const Mat<zz_pX> & intbas,
+                          const Mat<zz_pX> & pmat,
+                          const Points & pts,
+                          const Shift & shift = Shift(),
+                          const PolMatForm & form = ORD_WEAK_POPOV,
+                          const bool row_wise = true,
+                          const bool randomized = false
+                         );
 
 // TODO (naive version written)
 bool is_interpolant_basis(
-		const Mat<zz_pX> & intbas,
-		const Vec<Mat<zz_p>> & pmat, // vector of evaluations
-		const Vec<zz_p> & pts, // "uniform" case
-		const Shift & shift = Shift(),
-		const PolMatForm & form = ORD_WEAK_POPOV,
-		const bool row_wise = true,
-		const bool randomized = false
-		);
+                          const Mat<zz_pX> & intbas,
+                          const Vec<Mat<zz_p>> & pmat, // vector of evaluations
+                          const Vec<zz_p> & pts, // "uniform" case
+                          const Shift & shift = Shift(),
+                          const PolMatForm & form = ORD_WEAK_POPOV,
+                          const bool row_wise = true,
+                          const bool randomized = false
+                         );
 
 /*------------------------------------------------------------*/
 /* Iterative algorithm for arbitrary points and shift         */
@@ -935,20 +935,20 @@ bool is_interpolant_basis(
 /*   - Beckermann-Labahn 2000 (ensuring s-Popov)              */
 /*------------------------------------------------------------*/
 DegVec intbas_iterative(
-		Mat<zz_pX> & intbas,
-		const Mat<zz_pX> & pmat,
-		const Points & pts,
-		const Shift & shift,
-		bool point_wise=true // TODO to be thought about
-		);
+                        Mat<zz_pX> & intbas,
+                        const Mat<zz_pX> & pmat,
+                        const Points & pts,
+                        const Shift & shift,
+                        bool point_wise=true // TODO to be thought about
+                       );
 
 DegVec popov_intbas_iterative(
-		Mat<zz_pX> & intbas,
-		const Mat<zz_pX> & pmat,
-		const Points & pts,
-		const Shift & shift,
-		bool point_wise=true // TODO to be thought about
-		);
+                              Mat<zz_pX> & intbas,
+                              const Mat<zz_pX> & pmat,
+                              const Points & pts,
+                              const Shift & shift,
+                              bool point_wise=true // TODO to be thought about
+                             );
 
 
 /*------------------------------------------------------------*/
@@ -960,26 +960,26 @@ DegVec popov_intbas_iterative(
 
 // TODO input pmat = polynomial matrix, not implemented yet
 DegVec mbasis(
-		Mat<zz_pX> & intbas,
-		const Mat<zz_pX> & pmat,
-		const Vec<zz_p> & pts,
-		const Shift & shift
-		);
+              Mat<zz_pX> & intbas,
+              const Mat<zz_pX> & pmat,
+              const Vec<zz_p> & pts,
+              const Shift & shift
+             );
 
 // input pmat = list of evaluations, implemented
 DegVec mbasis(
-		Mat<zz_pX> & intbas,
-		const Vec<Mat<zz_p>> & evals,
-		const Vec<zz_p> & pts,
-		const Shift & shift
-		);
+              Mat<zz_pX> & intbas,
+              const Vec<Mat<zz_p>> & evals,
+              const Vec<zz_p> & pts,
+              const Shift & shift
+             );
 
 DegVec popov_mbasis(
-		Mat<zz_pX> &intbas,
-		const Mat<zz_pX> & pmat,
-		const Vec<zz_p> & pts,
-		const Shift & shift
-		);
+                    Mat<zz_pX> &intbas,
+                    const Mat<zz_pX> & pmat,
+                    const Vec<zz_p> & pts,
+                    const Shift & shift
+                   );
 
 /*------------------------------------------------------------*/
 /* PM-Basis algorithm for uniform interpolation points        */
@@ -990,70 +990,70 @@ DegVec popov_mbasis(
 //   or compute in the polynomial world and evaluate to obtain the residuals
 // (in any case, there will still be interpolation/evaluation in the middle)
 DegVec pmbasis(
-		Mat<zz_pX> & intbas,
-		const Mat<zz_pX> & pmat,
-		const Vec<zz_p> & pts,
-		const Shift & shift
-		);
+               Mat<zz_pX> & intbas,
+               const Mat<zz_pX> & pmat,
+               const Vec<zz_p> & pts,
+               const Shift & shift
+              );
 
 DegVec popov_pmbasis(
-		Mat<zz_pX> &intbas,
-		const Mat<zz_pX> & pmat,
-		const Vec<zz_p> & pts,
-		const Shift & shift
-		);
+                     Mat<zz_pX> &intbas,
+                     const Mat<zz_pX> & pmat,
+                     const Vec<zz_p> & pts,
+                     const Shift & shift
+                    );
 
 /**********************************************************************
-*                            KERNEL BASIS                            *
-**********************************************************************/
+ *                            KERNEL BASIS                            *
+ **********************************************************************/
 
 /****************************
-*  Kernel via approximant  *
-****************************/
+ *  Kernel via approximant  *
+ ****************************/
 
 // TODO generic case
 
 // TODO general case via fast s-Popov appbas (fastest known approach for bad shifts)
 
 /*************************************************
-*  Zhou-Labahn-Storjohann minimal kernel basis  *
-*************************************************/
+ *  Zhou-Labahn-Storjohann minimal kernel basis  *
+ *************************************************/
 
 // TODO
 
 /******************************************
-*  Application to linear system solving  *
-******************************************/
+ *  Application to linear system solving  *
+ ******************************************/
 
 // TODO
 
 /*************************************************
-*  Fast left kernel for small column dimension  *
-*************************************************/
+ *  Fast left kernel for small column dimension  *
+ *************************************************/
 
 // TODO-long shot via relation basis (itself todo), cf work with Xuan
 
 /**********************************************************************
-*                             ROW BASIS                              *
-**********************************************************************/
+ *                             ROW BASIS                              *
+ **********************************************************************/
 
 /*************************************
-*  Li and Storjohann's compression  *
-*************************************/
+ *  Li and Storjohann's compression  *
+ *************************************/
 
 // TODO, cf Chao Li's 2007 Master's thesis
 // does not really give a row basis, but allows to reduce to almost
 // square case by an efficient Las Vegas algorithm
 
 /***************************
-*  Zhou-Labahn algorithm  *
-***************************/
+ *  Zhou-Labahn algorithm  *
+ ***************************/
 
 // TODO
 
 /**********************************************************************
-*                         INVERSE EXPANSION                          *
-**********************************************************************/
+ *                         INVERSE EXPANSION                          *
+ **********************************************************************/
 
 // TODO Newton iteration
 // --> polynomial matrix division with remainder (cf. e.g. Neiger-Vu 2017)
@@ -1064,8 +1064,8 @@ DegVec popov_pmbasis(
 
 
 /**********************************************************************
-*                             INVERSION                              *
-**********************************************************************/
+ *                             INVERSION                              *
+ **********************************************************************/
 
 // TODO evaluation-interpolation approach
 
@@ -1076,9 +1076,9 @@ DegVec popov_pmbasis(
 // TODO Zhou-Labahn-Storjohann 2014 fast deterministic
 
 /**********************************************************************
-*                          BASIS REDUCTION                           *
-*            (shifted reduced form and shifted normal forms)         *
-**********************************************************************/
+ *                          BASIS REDUCTION                           *
+ *            (shifted reduced form and shifted normal forms)         *
+ **********************************************************************/
 
 // TODO general reduction to uniform shift via pre-multiplication
 // worthwile at least when shift close to uniform
@@ -1095,30 +1095,30 @@ DegVec popov_pmbasis(
 
 
 /**********************************************************************
-*                    TRIANGULARIZATION ALGORITHMS                    *
-**********************************************************************/
+ *                    TRIANGULARIZATION ALGORITHMS                    *
+ **********************************************************************/
 
 /**************************************************
-*  Labahn-Neiger-Zhou partial triangularization  *
-**************************************************/
+ *  Labahn-Neiger-Zhou partial triangularization  *
+ **************************************************/
 
 // TODO one step (uses kernel + row basis)
 // TODO diagonal entries of Hermite form
 
 /***********************************************
-*  Labahn-Neiger-Zhou Hermite form algorithm  *
-***********************************************/
+ *  Labahn-Neiger-Zhou Hermite form algorithm  *
+ ***********************************************/
 
 // TODO (requires partial linearization + basis reduction)
 
 
 /**********************************************************************
-*                       DETERMINANT ALGORITHMS                       *
-**********************************************************************/
+ *                       DETERMINANT ALGORITHMS                       *
+ **********************************************************************/
 
 /*******************************************************************
-*  Labahn-Neiger-Zhou: via diagonal entries of triangularization  *
-*******************************************************************/
+ *  Labahn-Neiger-Zhou: via diagonal entries of triangularization  *
+ *******************************************************************/
 
 // TODO general version
 // TODO generic version: much simpler (only requires generic kernel + products)
@@ -1130,3 +1130,11 @@ DegVec popov_pmbasis(
 
 
 #endif // MAT_LZZ_PX_EXTRA__H
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
