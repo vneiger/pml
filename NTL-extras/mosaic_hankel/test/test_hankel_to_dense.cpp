@@ -10,39 +10,39 @@ NTL_CLIENT
 /* else, runs timings                                         */
 /*------------------------------------------------------------*/
 void check(int opt){
-   zz_p::FFTInit(0);
+    zz_p::FFTInit(0);
 
-   for (long i = 2; i < 10; i += 1){
+    for (long i = 2; i < 10; i += 1){
 
 
-     if (opt == 1){
-       Vec<zz_p> dat;
-       dat.SetLength(2*i-1);
-       for (long j = 0; j < 2*i-1; j++)
-	 dat[j] = j;
-       
-       hankel h(dat, i, i);
-       Mat<zz_p> M;
+        if (opt == 1){
+            Vec<zz_p> dat;
+            dat.SetLength(2*i-1);
+            for (long j = 0; j < 2*i-1; j++)
+                dat[j] = j;
 
-       to_dense(M, h);
+            hankel h(dat, i, i);
+            Mat<zz_p> M;
 
-       cout << M << endl;
-       cout << endl;
-     }
-     else{
-       cout << i << " ";
+            to_dense(M, h);
 
-       double t;
+            cout << M << endl;
+            cout << endl;
+        }
+        else{
+            cout << i << " ";
 
-       t = GetTime();
-       for (long j = 0; j < 10000; j++)
-	 ;
-       t = GetTime() - t;
-       cout << t << " ";
+            double t;
 
-       cout << endl;
-     }
-   }
+            t = GetTime();
+            for (long j = 0; j < 10000; j++)
+                ;
+            t = GetTime() - t;
+            cout << t << " ";
+
+            cout << endl;
+        }
+    }
 }
 
 /*------------------------------------------------------------*/
@@ -51,10 +51,18 @@ void check(int opt){
 /* if the argument 1 is given, runs check                     */
 /*------------------------------------------------------------*/
 int main(int argc, char** argv){
-  int opt = 0;
-  if (argc > 1)
-    opt = atoi(argv[1]);
-  check(opt);
+    int opt = 0;
+    if (argc > 1)
+        opt = atoi(argv[1]);
+    check(opt);
 
-  return 0;
+    return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

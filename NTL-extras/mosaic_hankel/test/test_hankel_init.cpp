@@ -10,37 +10,37 @@ NTL_CLIENT
 /* else, runs timings                                         */
 /*------------------------------------------------------------*/
 void check(int opt){
-   zz_p::FFTInit(0);
+    zz_p::FFTInit(0);
 
-   for (long i = 2; i < 10; i += 1){
+    for (long i = 2; i < 10; i += 1){
 
-     zz_p a = random_zz_p();
+        zz_p a = random_zz_p();
 
-     if (opt == 1){
-       Vec<zz_p> dat;
-       dat.SetLength(2*i-1);
-       for (long j = 0; j < 2*i-1; j++)
-	 dat[j] = j;
-       
-       hankel h(dat, i, i);
-       
-       cout << h(0,0) << " " << h(0,1) << endl << h(1,0) << " " << h(1,1) << endl;
-       cout << endl;
-     }
-     else{
-       cout << i << " ";
+        if (opt == 1){
+            Vec<zz_p> dat;
+            dat.SetLength(2*i-1);
+            for (long j = 0; j < 2*i-1; j++)
+                dat[j] = j;
 
-       double t;
+            hankel h(dat, i, i);
 
-       t = GetTime();
-       for (long j = 0; j < 10000; j++)
-	 ;
-       t = GetTime() - t;
-       cout << t << " ";
+            cout << h(0,0) << " " << h(0,1) << endl << h(1,0) << " " << h(1,1) << endl;
+            cout << endl;
+        }
+        else{
+            cout << i << " ";
 
-       cout << endl;
-     }
-   }
+            double t;
+
+            t = GetTime();
+            for (long j = 0; j < 10000; j++)
+                ;
+            t = GetTime() - t;
+            cout << t << " ";
+
+            cout << endl;
+        }
+    }
 }
 
 /*------------------------------------------------------------*/
@@ -49,10 +49,18 @@ void check(int opt){
 /* if the argument 1 is given, runs check                     */
 /*------------------------------------------------------------*/
 int main(int argc, char** argv){
-  int opt = 0;
-  if (argc > 1)
-    opt = atoi(argv[1]);
-  check(opt);
+    int opt = 0;
+    if (argc > 1)
+        opt = atoi(argv[1]);
+    check(opt);
 
-  return 0;
+    return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
