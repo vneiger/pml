@@ -22,7 +22,7 @@ void check(long p)
             zz_pX a, b, c;
             a = random_zz_pX(dA + 1);
             c = random_zz_pX(dA + dB + 1);
-            
+
             b = middle_product(a, c, dA, dB);
             if (b != trunc(RightShift(a*c, dA), dB + 1))
             {
@@ -53,3 +53,11 @@ int main(int argc, char** argv)
     check(288230376151711813);
     return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

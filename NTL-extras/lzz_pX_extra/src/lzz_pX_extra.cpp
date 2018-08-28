@@ -17,7 +17,7 @@ zz_pX_shift::zz_pX_shift(const zz_p& c, long d)
     for (long i = 1; i <= d; i++)
         fact[i] = i * fact[i-1];
     inv(ifact, fact);
-  
+
     v.rep.SetLength(d+1);  
     v.rep[0] = to_zz_p(1);
     for (long i = 1; i <= d; i++)
@@ -37,11 +37,11 @@ void zz_pX_shift::shift(zz_pX& g, const zz_pX& f)
     for (long i = 0; i < f.rep.length(); i++)
         u.rep[d-i] = f.rep[i] * fact[i];
     u.normalize();
-  
+
     w = trunc(u * v, d + 1);
 
     g.rep.SetLength(d+1);
-  
+
     for (long i = 0; i < w.rep.length(); i++)
         g.rep[d-i] = w.rep[i] * ifact[d-i];
     for (long i = w.rep.length(); i <= d; i++)
@@ -73,3 +73,11 @@ zz_pX rev(const zz_pX& a, long d)
     rA.normalize();
     return rA;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
