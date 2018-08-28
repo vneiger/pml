@@ -18,10 +18,10 @@ NTL_CLIENT
 static long RevInc(long a, long k)
 {
     long j, m;
-    
+
     j = k; 
     m = 1L << (k-1);
-    
+
     while (j && (m & a)) {
         a ^= m;
         m >>= 1;
@@ -54,13 +54,13 @@ zz_pX_Multipoint_FFT::zz_pX_Multipoint_FFT(long n)
     {
         LogicError("Wrong length for zz_pX_Multipoint_FFT");
     }
-    
+
     this->n = n;
     if (zz_pInfo->p_info == NULL)
     {
         LogicError("Attempt to init a zz_pX_Multipoint_FFT without zz_p::FFTInit");
     }
-    
+
     if (k > zz_pInfo->MaxRoot) 
         ResourceError("Too many points for FFT");
 
@@ -135,7 +135,7 @@ void zz_pX_Multipoint_FFT::t_evaluate(zz_pX& f, const Vec<zz_p>& val) const
     zz_pX tmp;
     tmp.rep.SetLength(n);
     zz_p * coeffs_tmp = tmp.rep.elts();
-    
+
     if (! do_bit_reverse)
     {
         for (long i = 0; i < n; i++)
@@ -181,7 +181,7 @@ void zz_pX_Multipoint_FFT::t_evaluate(zz_pX& f, const Vec<zz_p>& val) const
 /*------------------------------------------------------------*/
 void zz_pX_Multipoint_FFT::t_interpolate(Vec<zz_p>& val, const zz_pX& f) {
     val.SetLength(n);
-    
+
     if (n == 1)
     {
         val[0] = coeff(f, 0);
@@ -190,16 +190,16 @@ void zz_pX_Multipoint_FFT::t_interpolate(Vec<zz_p>& val, const zz_pX& f) {
 
     if (n == 2) 
     {
-// // for n=2, the normalization is different in version 11.1.0
-// #ifdef __NTL_FIX_SIZE_2_FFT  
-//         zz_p half = 1/to_zz_p(2);
-//         val[0] = (coeff(f,0) + coeff(f,1)) * half;
-//         val[1] = (coeff(f,0) - coeff(f,1)) * half;
-// #else
+        // // for n=2, the normalization is different in version 11.1.0
+        // #ifdef __NTL_FIX_SIZE_2_FFT  
+        //         zz_p half = 1/to_zz_p(2);
+        //         val[0] = (coeff(f,0) + coeff(f,1)) * half;
+        //         val[1] = (coeff(f,0) - coeff(f,1)) * half;
+        // #else
         zz_p half = 1/to_zz_p(2);
         val[0] = (coeff(f,0) + coeff(f,1)) * half;
         val[1] = (coeff(f,0) - coeff(f,1)) * half;
-// #endif
+        // #endif
         return;
     }
 
@@ -240,3 +240,11 @@ zz_pX_Multipoint_FFT get_FFT_points(long n)
     long k = NextPowerOfTwo(n);
     return zz_pX_Multipoint_FFT(1L << k);
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

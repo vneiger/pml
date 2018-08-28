@@ -90,7 +90,7 @@ void zz_pX_Multipoint_Geometric::prepare_degree(long d)
 /* we interpolate at r^(2*i), i=0..d-1                        */
 /*------------------------------------------------------------*/
 zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, long d){
-    
+
     n = d;
     idx_k = NextPowerOfTwo(2*d - 1);
 
@@ -134,7 +134,7 @@ zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, long d){
     y[0] = 1;
     w[0] = 1;
     z[0] = 1;
-    
+
     inv_q = 1/q;
 
     Vec<zz_p> inv_diff, diff, prod_diff;
@@ -154,7 +154,7 @@ zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, long d){
         qk *= q;
         prod_diff[i] = diff[i] * prod_diff[i-1];
     }
-    
+
     tmp = 1 / prod_diff[d-1];
     for (long i = d-1; i > 0; i--)
     {
@@ -238,7 +238,7 @@ void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const{
 
     if (FFT_feasible && do_FFT_evaluate)
     {
-    // finds the smallest among all known degrees >= dp
+        // finds the smallest among all known degrees >= dp
         long dp_found = n - 1;
         for (map<int, fftRep>::const_iterator it = known_degrees.cbegin(); it != known_degrees.cend(); it++)
         {
@@ -264,7 +264,7 @@ void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const{
         TofftRep(a_fft, a, k, 0, dp);
         mul(b_fft, a_fft, f_fft);
         FromfftRep(b, b_fft, dp, dp + n - 1);  
-// for k = 1, the normalization is different in version 11.1.0
+        // for k = 1, the normalization is different in version 11.1.0
 #ifdef __NTL_FIX_SIZE_2_FFT
         if (k == 1)
         {
@@ -305,7 +305,7 @@ void zz_pX_Multipoint_Geometric::interpolate(zz_pX& f, const Vec<zz_p>& val) {
     }
 
     zz_pX k, h;
-    
+
     for (long i = 0; i < n; i++)
     {
         SetCoeff(k, i, val[i] * w[i]);
@@ -382,7 +382,7 @@ void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long
     zz_pX a;
     for (long i = 0; i < n; i++)  
         SetCoeff(a, n - 1 - i, x[i] * coeff(Q, i));  
-   
+
     zz_pX b;
     if (FFT_feasible && do_FFT_evaluate)
     {
@@ -402,7 +402,7 @@ void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long
         TofftRep(a_fft, a, k, 0, n - 1);
         mul(b_fft, a_fft, f_fft);
         FromfftRep(b, b_fft, n - 1, n - 1 + do_output_size - 1);  
-// for k = 1, the normalization is different in version 11.1.0
+        // for k = 1, the normalization is different in version 11.1.0
 #ifdef __NTL_FIX_SIZE_2_FFT
         if (k == 1)
         {
@@ -462,3 +462,11 @@ zz_pX_Multipoint_Geometric get_geometric_points(long n)
     element_of_order(r, 2*n);
     return zz_pX_Multipoint_Geometric(r, n);
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -17,9 +17,9 @@ void check()
 
     for (long j = 1; j < 500; j++)
     {
-	zz_p a;
+        zz_p a;
         zz_pX g;
-	zz_pX_Multipoint_Geometric ev;
+        zz_pX_Multipoint_Geometric ev;
         Vec<zz_p> rnd1, rnd2;
 
         a = random_zz_p();
@@ -29,11 +29,11 @@ void check()
         ev.t_evaluate(g, rnd1);
         ev.t_interpolate(rnd2, g);
 
-	if (rnd1 != rnd2) 
-	{
-	    cerr << "error for j=" << j << endl;
-	    exit (-1);
-	}
+        if (rnd1 != rnd2) 
+        {
+            cerr << "error for j=" << j << endl;
+            exit (-1);
+        }
     }
 }  
 
@@ -45,3 +45,11 @@ int main(int argc, char ** argv)
     check();
     return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

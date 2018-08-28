@@ -10,10 +10,10 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void check()
 {
-    
+
     long p = 1125899906842679;
     zz_p::init(p);
-    
+
     for (long j = 1; j < 50; j++)
     {
         Vec<zz_pX> val, q, mmod;
@@ -49,6 +49,14 @@ void check()
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-  check();
-  return 0;
+    check();
+    return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -31,7 +31,7 @@ void build_subproduct_tree(Vec<Vec<zz_pX>> & tree, const Vec<zz_pX> & q);
 class zz_pX_Multipoint
 {
 public:
-    
+
     /*------------------------------------------------------------*/
     /* basic operations                                           */
     /*------------------------------------------------------------*/
@@ -58,7 +58,7 @@ public:
     /* number of points                                           */
     /*------------------------------------------------------------*/
     long length() const;
- 
+
     /*------------------------------------------------------------*/
     /* get the i-th point                                         */
     /*------------------------------------------------------------*/
@@ -102,7 +102,7 @@ public:
 
     void t_evaluate(zz_pX& f, const Vec<zz_p>& val) const;
     void t_interpolate(Vec<zz_p>& val, const zz_pX& f);
-  
+
 private:
     Vec<zz_p> cofactors;
     Vec<Vec<zz_pX> > tree;
@@ -171,7 +171,7 @@ public:
     void prepare_degree(long d);
 
 private:  
-    
+
     long idx_k, FFT_feasible, do_FFT_evaluate, do_FFT_interpolate;
     Vec<zz_p> x, t, w, y, z;
     zz_pX f, g1, g2;
@@ -215,7 +215,7 @@ public:
     void t_evaluate(zz_pX& f, const Vec<zz_p>& val) const;
     void t_interpolate(Vec<zz_p>& val, const zz_pX& f);
 
-  
+
 private:
     long k, do_bit_reverse;
     fftRep wk; // used to store values for inverse FFT
@@ -240,7 +240,7 @@ zz_pX_Multipoint_FFT get_FFT_points(long n);
 class zz_pX_Transform
 {
 public:
-    
+
     /*------------------------------------------------------------*/
     /* basic operations                                           */
     /*------------------------------------------------------------*/
@@ -267,7 +267,7 @@ public:
     /* size of the transform                                      */
     /*------------------------------------------------------------*/
     long transform_length() const;
- 
+
 protected:
     long m, n; // m = input size, n = transform size
 };
@@ -415,13 +415,13 @@ public:
     /* constructor from moduli                                    */
     /*------------------------------------------------------------*/
     zz_pX_CRT(const Vec<zz_pX>& q);
-        
+
     /*------------------------------------------------------------*/
     /* basic operations                                           */
     /*------------------------------------------------------------*/
     void multimod(Vec<zz_pX>& val, const zz_pX& f) const;
     void combine(zz_pX& f, const Vec<zz_pX>& val) const;
- 
+
     /*------------------------------------------------------------*/
     /* master polynomial                                          */
     /*------------------------------------------------------------*/
@@ -444,3 +444,11 @@ private:
 };
 
 #endif
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
