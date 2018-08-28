@@ -9,6 +9,8 @@
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
 
+//#define PMBASIS_PROFILE // FIXME
+
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
@@ -759,7 +761,7 @@ DegVec pmbasis(
     // TODO thresholds to be determined:
     //  --> from mbasis (only linalg) to pmbasis with low-degree polmatmul (Karatsuba...)
     //  --> from this pmbasis to pmbasis with eval-based polmatmul (FFT, geometric..)
-    if (order <= 32)
+    if (order <= 64)
         return mbasis_vector(appbas,pmat,order,shift);
 
     DegVec pivdeg; // pivot degree, first call
@@ -767,25 +769,48 @@ DegVec pmbasis(
     DegVec rdeg(pmat.NumRows()); // shifted row degree
     long order1 = order>>1; // order of first call
     long order2 = order-order1; // order of second call
+    Mat<zz_pX> trunc_pmat; // truncated pmat for first call
     Mat<zz_pX> appbas2; // basis for second call
     Mat<zz_pX> residual; // for the residual
 
     // first recursive call, with 'pmat' and 'shift'
-    pivdeg = pmbasis(appbas,pmat,order1,shift);
+    trunc(trunc_pmat,pmat,order1);
+    pivdeg = pmbasis(appbas,trunc_pmat,order1,shift);
 
     // shifted row degree = shift for second call = pivdeg+shift
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
 
     // residual = (appbas * pmat * X^-order1) mod X^order2
+#ifdef PMBASIS_PROFILE
+    std::cout << "Order: " << order << std::endl;
+    double t1,t2;
+    t1 = GetWallTime();
+#endif
     multiply_evaluate(residual,appbas,pmat);
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(res): " << (t2-t1) << "s" << std::endl;
+    t1 = GetWallTime();
+#endif
     residual >>= order1;
     trunc(residual,residual,order2);
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(shift/trunc): " << (t2-t1) << "s" << std::endl;
+#endif
 
     // second recursive call, with 'residual' and 'rdeg'
     pivdeg2 = pmbasis(appbas2,residual,order2,rdeg);
 
     // final basis = appbas2 * appbas
+#ifdef PMBASIS_PROFILE
+    t1 = GetWallTime();
+#endif
     multiply_evaluate(appbas,appbas2,appbas); // TODO use general multiplication when it is ready
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(basis mul): " << (t2-t1) << "s" << std::endl;
+#endif
 
     // final pivot degree = pivdeg1+pivdeg2
     std::transform(pivdeg.begin(), pivdeg.end(), pivdeg2.begin(), pivdeg.begin(), std::plus<long>());

@@ -41,8 +41,9 @@ int main(int argc, char *argv[])
     //std::shuffle(shift.begin(), shift.end(), std::mt19937{std::random_device{}()});
 
     if (nbits==0)
-        //zz_p::FFTInit(0);
-        zz_p::UserFFTInit(1769473); // --> small FFT prime like in LinBox
+        zz_p::FFTInit(0);
+        //zz_p::UserFFTInit(65537); // --> small FFT prime like in LinBox
+        //zz_p::UserFFTInit(1769473); // --> small FFT prime like in LinBox
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
@@ -74,6 +75,31 @@ int main(int argc, char *argv[])
 
     std::cout << "warming up..." << std::endl;
     warmup();
+
+    // GCD computation, for reference
+    if (rdim==2 && cdim==1)
+    {
+        long deg_gcd = (order>>1);
+        std::cout << "For reference, timings for GCD computation (degree " << deg_gcd << "):" << std::endl;
+        {
+            zz_pX a,b,g;
+            random(a, deg_gcd);
+            random(b, deg_gcd);
+            t1w = GetWallTime();
+            NTL::GCD(g, a, b);
+            t2w = GetWallTime();
+            std::cout << "\t GCD --> " << (t2-t1) << std::endl;
+        }
+        {
+            zz_pX a,b,g,u,v; 
+            random(a, deg_gcd);
+            random(b, deg_gcd);
+            t1w = GetWallTime();
+            NTL::XGCD(g, u, v, a, b);
+            t2w = GetWallTime();
+            std::cout << "\tXGCD --> " << (t2-t1) << std::endl;
+        }
+    }
 
     // pmbasis
     {
