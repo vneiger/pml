@@ -16,7 +16,7 @@ void check()
     {
         Vec<zz_p> A, invA1, invA2;
         random_vec_zz_p(A, i);
-     
+
         inv(invA1, A);
         inv_naive(invA2, A);
         for (long j = 0; j < i; j++)
@@ -35,3 +35,11 @@ int main(int argc, char** argv)
     check();
     return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
