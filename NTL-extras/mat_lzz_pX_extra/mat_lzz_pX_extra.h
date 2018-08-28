@@ -6,6 +6,8 @@
 #include <iostream>
 #include <vector> // std vector, for shifts, degrees, pivot indices
 
+#include "thresholds_matrix_multiply.h"
+
 NTL_CLIENT
 
 /*------------------------------------------------------------*/

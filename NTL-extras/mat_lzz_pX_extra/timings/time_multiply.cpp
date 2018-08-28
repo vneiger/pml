@@ -2,131 +2,183 @@
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
 #include <iomanip>
+#include <limits.h>
 
 #include "util.h"
-#include "magma_output.h"
+#include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
+
+vector<long> sizes = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
 
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /* checks some products                                       */
 /*------------------------------------------------------------*/
-void check(long sz, long deg, long p)
+void check(long p)
 {
-    
-    long sizes[] = {1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,150,200,300,400};
-    long ls = sizeof(sizes)/sizeof(long);
-    long degrees[] = {1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,200,300,400,500};
-    long ld = sizeof(degrees)/sizeof(long);
-  
-
-    Mat<zz_pX> a, b, c0, c1, c2, c4, c5;
-    long nb;
-    double t;
-
-    if (p == 0) // init zz_p with FFTInit()
-    {
-        zz_p::FFTInit(100);
-    }
+    if (p == 0)
+        zz_p::FFTInit(0);
     else
-    {
         zz_p::init(p);
-    }
 
-    cout << p<< "," << sz << "," << deg << ",";
-
-    random_mat_zz_pX(a, sz, sz, deg);
-    random_mat_zz_pX(b, sz, sz, deg);
-
-    // naive algorithm, if the size is reasonable
-    long do_naive = ((sz <= 200)  && (deg <= 40))
-                        || ((sz <= 50) && (deg <= 200))
-                        ||  ((sz <= 10) && (deg <= 2000))
-                        || (sz==2);
-    if (do_naive)
-    {
-        t = GetWallTime();
-        nb = 0;
-        do
-        {
-            multiply_waksman(c1, a, b);
-            nb++;
-        }
-        while ((GetWallTime()-t) <= 0.001);
-        
-        t = (GetWallTime()-t) / nb;
-        cout << t << ",";
-    }
-    else 
-    { 
-        cout << "999999,";
-    }
-
-    // evaluation -- should be done only if feasible
-    t = GetWallTime();
-    nb = 0;
-    do
-    {
-        multiply_evaluate(c2, a, b);
-        nb++;
-    }
-    while ((GetWallTime()-t) <= 0.001);
+    const double thres = 0.001;
     
-    t = (GetWallTime()-t) / nb;
-    cout << t << ",";
-    
-    if (do_naive && (c1 != c2))
-    {
-        cout << "(geometric mismatch) ";
-    }
+    // first, find the crossover between evaluate and 3 primes 
+    // need it only for non-FFT primes
+    vector<long> degrees = {1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
+    vector<long> thresholds;
 
-    // 3 primes FFT
-    t = GetWallTime();
-    nb = 0;
-    do
+    if (p != 0)
     {
-        multiply_3_primes(c4, a, b);
-        nb++;
-    }
-    while ((GetWallTime()-t) <= 0.001);
-
-    t = (GetWallTime()-t) / nb;
-    cout << t << ",";
-
-    if (c4 != c2)
-    {
-        cout << "(3 primes mismatch) ";
-    }
-
-    // transform, if the size is reasonable
-    long do_transform = (deg <= 10) || ((sz <= 400) && (deg <= 10)) || ((sz <= 50) && (deg <= 20));
-    if (do_transform)
-    {
-        t = GetWallTime();
-        nb = 0;
-        do
-        {
-            multiply_transform(c5, a, b);
-            nb++;
-        }
-        while ((GetWallTime()-t) <= 0.001);
+        if (NumBits(p) <= SMALL_PRIME_SIZE)
+            cout << "long MATRIX_DEGREE_THRESHOLDS_SMALL[" << sizes.size() << "] = {";
+        else
+            cout << "long MATRIX_DEGREE_THRESHOLDS_LARGE[" << sizes.size() << "] = {";
         
-        t = (GetWallTime()-t) / nb;
-        cout << t << ",";
-
-        if (c5 != c2)
+        for (unsigned long i = 0; i < sizes.size(); i++)
         {
-            cout << "(transform mismatch) ";
+            long done = 0;
+            long nb_in_a_row = 0;
+            long sz = sizes[i];
+            unsigned long j;
+
+            for (j = 0; done == 0 && j < degrees.size(); j++)
+            {
+                long deg, nb;
+                Mat<zz_pX> a, b, c;
+                double t_eval, t_3primes;
+                deg = degrees[j];
+                random_mat_zz_pX(a, sz, sz, deg);
+                random_mat_zz_pX(b, sz, sz, deg);
+             
+                t_eval = get_time();
+                nb = 0;
+                do
+                {
+                    multiply_evaluate(c, a, b);
+                    nb++;
+                }
+                while ((get_time()-t_eval) <= thres);
+                t_eval = (get_time()-t_eval) / nb;
+
+                t_3primes = get_time();
+                nb = 0;
+                do
+                {
+                    multiply_3_primes(c, a, b);
+                    nb++;
+                }
+                while ((get_time()-t_3primes) <= thres);
+                t_3primes = (get_time()-t_3primes) / nb;
+                
+                if (t_3primes < t_eval)
+                    nb_in_a_row++;
+                else 
+                    nb_in_a_row = 0;
+
+                if (nb_in_a_row == 3)
+                    done = 1;
+            }
+
+            if (nb_in_a_row == 0)
+                cout << LONG_MAX;
+            else
+                cout << degrees[j - nb_in_a_row];
+
+            if (i < sizes.size() - 1)
+                cout << ", ";
+            thresholds.push_back(degrees[j]);
         }
+        cout << "};\n";
     }
     else
     {
-        cout << "999999";
+        for (unsigned long i = 0; i < sizes.size(); i++)
+            thresholds.push_back(9999999);
     }
 
-    cout << endl;
+    if (p == 0)
+        cout << "long MATRIX_WAKSMAN_THRESHOLDS_FFT[" << sizes.size() << "] = {";
+    else 
+        if (NumBits(p) <= SMALL_PRIME_SIZE)
+            cout << "long MATRIX_WAKSMAN_THRESHOLDS_SMALL[" << sizes.size() << "] = {";
+        else
+            cout << "long MATRIX_WAKSMAN_THRESHOLDS_LARGE[" << sizes.size() << "] = {";
+    
+    
+    // find degree threshold for waksman 
+    for (unsigned long i = 0; i < sizes.size(); i++)
+    {
+        double t_old, t_waksman;
+        unsigned long j;
+        long done = 0;
+        long nb_in_a_row = 0;
+        long sz = sizes[i];
+        for (j = 0; done == 0 && j < degrees.size(); j++)
+        {
+            Mat<zz_pX> a, b, c;
+            long deg, nb;
+            
+            deg = degrees[j];
+            random_mat_zz_pX(a, sz, sz, deg);
+            random_mat_zz_pX(b, sz, sz, deg);
+
+            if (deg <= thresholds[i])
+            {
+                t_old = get_time();
+                nb = 0;
+                do
+                {
+                    multiply_evaluate(c, a, b);
+                    nb++;
+                }
+                while ((get_time()-t_old) <= thres);
+                t_old = (get_time()-t_old) / nb;
+            }
+            else
+            {
+                t_old = get_time();
+                nb = 0;
+                do
+                {
+                    multiply_3_primes(c, a, b);
+                    nb++;
+                }
+                while ((get_time()-t_old) <= thres);
+                t_old = (get_time()-t_old) / nb;
+            }
+
+            t_waksman = get_time();
+            nb = 0;
+            do
+            {
+                multiply_waksman(c, a, b);
+                nb++;
+            }
+            while ((get_time()-t_waksman) <= thres);
+            t_waksman = (get_time()-t_waksman) / nb;
+
+            if (t_waksman > t_old)
+                nb_in_a_row++;
+            else 
+                nb_in_a_row = 0;
+            if (nb_in_a_row == 3)
+                done = 1;
+        }             
+        if (nb_in_a_row == 0)
+            cout << LONG_MAX;
+        else
+            cout << degrees[j - nb_in_a_row];
+
+        if (i < sizes.size() - 1)
+            cout << ", ";
+    }
+    cout << "};\n";
 }
+
+
+
 
 /*------------------------------------------------------------*/
 /* main calls check                                           */
@@ -135,6 +187,17 @@ int main(int argc, char ** argv)
 {
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
+
+    cout << "#define MATRIX_THRESHOLDS_LEN " << sizes.size() << endl;
+    cout << "long MATRIX_THRESHOLDS_SIZES[" << sizes.size() << "] = {";
+    for (unsigned long i = 0; i < sizes.size(); i++)
+    {
+        cout << sizes[i];
+        if (i < sizes.size() - 1)
+            cout << ", ";
+    }
+    cout << "};\n";
+
     warmup();
     check(0);
     check(23068673);
