@@ -32,9 +32,9 @@ void check(long p)
     if (p != 0)
     {
         if (NumBits(p) <= SMALL_PRIME_SIZE)
-            cout << "long MATRIX_DEGREE_THRESHOLDS_SMALL[" << sizes.size() << "] = {";
+            cout << "static long MATRIX_DEGREE_THRESHOLDS_SMALL[" << sizes.size() << "] = {";
         else
-            cout << "long MATRIX_DEGREE_THRESHOLDS_LARGE[" << sizes.size() << "] = {";
+            cout << "static long MATRIX_DEGREE_THRESHOLDS_LARGE[" << sizes.size() << "] = {";
         
         for (unsigned long i = 0; i < sizes.size(); i++)
         {
@@ -99,12 +99,12 @@ void check(long p)
     }
 
     if (p == 0)
-        cout << "long MATRIX_WAKSMAN_THRESHOLDS_FFT[" << sizes.size() << "] = {";
+        cout << "static long MATRIX_WAKSMAN_THRESHOLDS_FFT[" << sizes.size() << "] = {";
     else 
         if (NumBits(p) <= SMALL_PRIME_SIZE)
-            cout << "long MATRIX_WAKSMAN_THRESHOLDS_SMALL[" << sizes.size() << "] = {";
+            cout << "static long MATRIX_WAKSMAN_THRESHOLDS_SMALL[" << sizes.size() << "] = {";
         else
-            cout << "long MATRIX_WAKSMAN_THRESHOLDS_LARGE[" << sizes.size() << "] = {";
+            cout << "static long MATRIX_WAKSMAN_THRESHOLDS_LARGE[" << sizes.size() << "] = {";
     
     
     // find degree threshold for waksman 
@@ -189,7 +189,7 @@ int main(int argc, char ** argv)
     std::cout << std::setprecision(8);
 
     cout << "#define MATRIX_THRESHOLDS_LEN " << sizes.size() << endl;
-    cout << "long MATRIX_THRESHOLDS_SIZES[" << sizes.size() << "] = {";
+    cout << "static long MATRIX_THRESHOLDS_SIZES[" << sizes.size() << "] = {";
     for (unsigned long i = 0; i < sizes.size(); i++)
     {
         cout << sizes[i];

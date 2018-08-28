@@ -15,15 +15,36 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long i
 {
     long dA = deg(a);
     long dB = deg(b);
-    
-    long p = zz_p::modulus();
-    
-    if (is_prime && p > 2 * (dA+dB+1))
-    {
+    long dmax = max(dA, dB);
 
+    long deg_trs = max_degree_transform();
+
+    if (dmax <= deg_trs)
+    {
+	multiply_transform(c, a, b, dmax + 1);
+	return;
+    }
+
+    // only calibrated for square matrices; here's a hack
+    long sz = (a.NumRows() + a.NumCols() + b.NumCols()) / 3;
+    long deg_wak = max_degree_waksman(sz);
+
+    if (dmax <= deg_wak)
+    {
+	multiply_waksman(c, a, b);
+	return;
+    }
+	
+    long p = zz_p::modulus();
+    long deg_ev = max_degree_evaluate(sz);
+    if (is_prime && p > 2 * (dA + dB + 1) && dmax <= deg_ev)
+    {
+	multiply_evaluate(c, a, b);
+	return;
     }
     else
     {
-
+	multiply_3_primes(c, a, b);
+	return;
     }
 }

@@ -18,9 +18,10 @@ void one_check(long sz, long deg)
     random_mat_zz_pX(a, sz, sz+1, deg);
     random_mat_zz_pX(b, sz+1, sz+2, deg);
 
+    // trying all possible call sequences
+    // c1 = reference
     multiply_waksman(c1, a, b);
 
-    // trying all possible call sequences
     // todo: do it only if basefield supports it
     multiply_evaluate(c2, a, b);
     if (c1 != c2)
@@ -74,6 +75,12 @@ void one_check(long sz, long deg)
             LogicError("transform mismatch");
         }
     }
+
+    multiply(c2, a, b);
+    if (c1 != c2)
+    {
+        LogicError("multiply mismatch");
+    }    
 }
 
 

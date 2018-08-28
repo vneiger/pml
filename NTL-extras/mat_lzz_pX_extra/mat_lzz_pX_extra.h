@@ -430,8 +430,8 @@ inline void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<z
 
 void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
+void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long is_prime = 1);
 
-void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 
 /*------------------------------------------------------------*/

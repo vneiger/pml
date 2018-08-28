@@ -37,6 +37,8 @@ inline long max_degree_evaluate(long sz)
     for (i = 0; i < MATRIX_THRESHOLDS_LEN - 1; )
         if (sz > MATRIX_THRESHOLDS_SIZES[i])
             i++;
+	else 
+	    break;
 
     if (t == TYPE_SMALL_PRIME)
         return MATRIX_DEGREE_THRESHOLDS_SMALL[i];
@@ -54,6 +56,8 @@ inline long max_degree_waksman(long sz)
     for (i = 0; i < MATRIX_THRESHOLDS_LEN - 1; )
         if (sz > MATRIX_THRESHOLDS_SIZES[i])
             i++;
+	else 
+	    break;
 
     if (t == TYPE_FFT_PRIME)
         return MATRIX_WAKSMAN_THRESHOLDS_FFT[i];
