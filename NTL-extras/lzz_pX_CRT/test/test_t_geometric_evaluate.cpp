@@ -17,9 +17,9 @@ void check()
 
     for (long j = 1; j < 500; j++)
     {
-	zz_p a, res1, res2;
+        zz_p a, res1, res2;
         zz_pX f, g, h, g2, h2;
-	zz_pX_Multipoint_Geometric ev;
+        zz_pX_Multipoint_Geometric ev;
         Vec<zz_p> valF, rnd;
 
         a = random_zz_p();  // yuk --- TODO: fix!!!
@@ -43,27 +43,27 @@ void check()
         res2 = 0;
         for (long i = 0; i < j; i++)
             res2 += coeff(f, i) * coeff(g, i);
-	if (res1 != res2) 
-	{
-	    cerr << "error for j=" << j << endl;
-	    exit (-1);
-	}
+        if (res1 != res2) 
+        {
+            cerr << "error for j=" << j << endl;
+            exit (-1);
+        }
 
         if (trunc(g, degH) != h)
-	{
-	    cerr << "short t_evaluate error for j=" << j << endl;
-	    exit (-1);
-	}
+        {
+            cerr << "short t_evaluate error for j=" << j << endl;
+            exit (-1);
+        }
 
         // not FFT
         ev.unset_FFT_evaluate();
         ev.t_evaluate(g2, rnd);
         ev.t_evaluate(h2, rnd, degH);
         if (g != g2 || h != h2)
-	{
-	    cerr << "error for j=" << j << endl;
-	    exit (-1);
-	}
+        {
+            cerr << "error for j=" << j << endl;
+            exit (-1);
+        }
 
         // with prepared degree
         // need: degH - 1 <= degPrep
@@ -72,10 +72,10 @@ void check()
         ev.t_evaluate(g2, rnd);
         ev.t_evaluate(h2, rnd, degH);
         if (g != g2 || h != h2)
-	{
-	    cerr << "error for j=" << j << endl;
-	    exit (-1);
-	}
+        {
+            cerr << "error for j=" << j << endl;
+            exit (-1);
+        }
     }
 }  
 
@@ -87,3 +87,11 @@ int main(int argc, char ** argv)
     check();
     return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

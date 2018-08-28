@@ -155,14 +155,22 @@ void zz_pX_Transform_karatsuba4::backward(zz_pX& P, const Vec<zz_p>& val) const
     coeffs[6] = val[4];
     coeffs[3] = val[8] - (coeffs[1] + coeffs[5] + val[6] + val[7]);
     P.normalize();
-// d0:=v0;
-// d1:=v2-v0-v1;
-// s:=v1-v3;
-// d2:=s+v6-v0;
-// d4:=v7-v4-s;
-// d5:=v5-v3-v4;
-// d6:=v4;
-// d3:=v8-(d1+d5+v6+v7);
+    // d0:=v0;
+    // d1:=v2-v0-v1;
+    // s:=v1-v3;
+    // d2:=s+v6-v0;
+    // d4:=v7-v4-s;
+    // d5:=v5-v3-v4;
+    // d6:=v4;
+    // d3:=v8-(d1+d5+v6+v7);
 
 }
 
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -10,54 +10,54 @@ NTL_CLIENT
 /* else, runs timings                                         */
 /*------------------------------------------------------------*/
 void check(int opt){
-   zz_p::FFTInit(0);
+    zz_p::FFTInit(0);
 
-   for (long i1 = 1; i1 < 50; i1 += 1)
-     for (long i2 = 1; i2 < 50; i2 += 1){
+    for (long i1 = 1; i1 < 50; i1 += 1)
+        for (long i2 = 1; i2 < 50; i2 += 1){
 
-     if (opt == 1){
-       Vec<zz_p> dat;
-       dat.SetLength(i1+i2-1);
-       for (long j = 0; j < i1+i2-1; j++)
-	 dat[j] = j;
-       
-       hankel h(dat, i1, i2);
+            if (opt == 1){
+                Vec<zz_p> dat;
+                dat.SetLength(i1+i2-1);
+                for (long j = 0; j < i1+i2-1; j++)
+                    dat[j] = j;
 
-       Vec<zz_p> input, output;
-       input.SetLength(i2);
-       for (long j = 0; j < i2; j++)
-	 input[j] = random_zz_p();
-       output.SetLength(i1);
+                hankel h(dat, i1, i2);
 
-       Vec<long> input_long, output_long;
-       conv(input_long, input);
-       output_long.SetLength(i1);
+                Vec<zz_p> input, output;
+                input.SetLength(i2);
+                for (long j = 0; j < i2; j++)
+                    input[j] = random_zz_p();
+                output.SetLength(i1);
 
-       mul_right(output_long._vec__rep.rep, h, input_long._vec__rep.rep);
+                Vec<long> input_long, output_long;
+                conv(input_long, input);
+                output_long.SetLength(i1);
 
-       conv(output, output_long);
+                mul_right(output_long._vec__rep.rep, h, input_long._vec__rep.rep);
 
-       Mat<zz_p> M;
-       to_dense(M, h);
-       Vec<zz_p> output2 = M*input;
+                conv(output, output_long);
 
-       assert (output == output2);
-       cout << i1 << " " << i2 << endl;
-     }
-     else{
-       cout << i1 << " ";
+                Mat<zz_p> M;
+                to_dense(M, h);
+                Vec<zz_p> output2 = M*input;
 
-       double t;
+                assert (output == output2);
+                cout << i1 << " " << i2 << endl;
+            }
+            else{
+                cout << i1 << " ";
 
-       t = GetTime();
-       for (long j = 0; j < 10000; j++)
-	 ;
-       t = GetTime() - t;
-       cout << t << " ";
+                double t;
 
-       cout << endl;
-     }
-   }
+                t = GetTime();
+                for (long j = 0; j < 10000; j++)
+                    ;
+                t = GetTime() - t;
+                cout << t << " ";
+
+                cout << endl;
+            }
+        }
 }
 
 /*------------------------------------------------------------*/
@@ -66,10 +66,18 @@ void check(int opt){
 /* if the argument 1 is given, runs check                     */
 /*------------------------------------------------------------*/
 int main(int argc, char** argv){
-  int opt = 0;
-  if (argc > 1)
-    opt = atoi(argv[1]);
-  check(opt);
+    int opt = 0;
+    if (argc > 1)
+        opt = atoi(argv[1]);
+    check(opt);
 
-  return 0;
+    return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

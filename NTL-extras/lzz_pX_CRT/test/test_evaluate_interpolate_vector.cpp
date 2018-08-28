@@ -25,10 +25,10 @@ void check(){
         }
 
         Vec<Vec<zz_p>> valU;
-        
+
         zz_pX_Multipoint_Geometric points = get_geometric_points(j);
         points.evaluate_vector(valU, u);
-        
+
         for (long r = 0; r < len; r++)
         {
             zz_p pt;
@@ -42,7 +42,7 @@ void check(){
                 }
             }
         }
-        
+
         Vec<zz_pX> v;
         points.interpolate_vector(v, valU);
 
@@ -50,7 +50,7 @@ void check(){
         {
             cerr << "error with vector interpolate at j=" << j << endl;
         }
-        
+
     }
 }
 
@@ -62,3 +62,11 @@ int main(int argc, char ** argv){
     check();
     return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

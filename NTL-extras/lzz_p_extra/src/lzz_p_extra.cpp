@@ -39,7 +39,7 @@ void element_of_order(zz_p& a, long ord, long nb_trials, long strong)
     {
         LogicError("order too large with respect to p");
     }
-    
+
     long nb = 0;
     while (nb < nb_trials)
     {
@@ -88,4 +88,12 @@ long is_FFT_ready(long k)
 {
     return (is_FFT_prime() && k <= zz_pInfo->MaxRoot);
 }
-    
+
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

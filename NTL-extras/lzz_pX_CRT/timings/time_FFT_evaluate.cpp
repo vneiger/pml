@@ -8,18 +8,17 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* compares FFT / non-FFT and full / half degree              */
+/* FFT evaluation and interpolation                           */
 /*------------------------------------------------------------*/
 void check()
 {
     zz_p::FFTInit(0);
 
-    for (long j = 1; j < 20000; j*=2)
+    for (long j = 1; j < 300; j++)
     {
         zz_pX f;
         zz_pX_Multipoint_FFT ev;
         Vec<zz_p> val;
-        zz_p a;
 
         ev = get_FFT_points(j);
 
@@ -29,7 +28,7 @@ void check()
         double t;
         long nb;
         const double thresh = 0.02;
-        
+
         // FFT evaluate
         nb = 0;
         t = get_time();

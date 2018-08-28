@@ -18,3 +18,10 @@ In timings/, timing files should be called time-something.cpp
           "make run" -> runs all executables, outputs results to something.dat
           "make something.exe" -> compiles only time-something.cpp
           "make something.chk" -> runs only time-something
+
+Code style:
+  - with vim and emacs, simply respect the modelines
+  - no hard tabulation
+  - soft tabulations = 4 spaces
+  - scope delimiter { } on their own line
+  - may not insert scope delimiters when not necessary (e.g. for one-line if/for)

@@ -2,7 +2,7 @@
 #define __UTIL_H
 
 #include <NTL/version.h>
-                                               
+
 /*------------------------------------------------------------*/
 /* bug in size-2 lzz_pX FFT in version 11.1.0                 */
 /*------------------------------------------------------------*/
@@ -25,3 +25,11 @@
 void warmup();
 
 #endif
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

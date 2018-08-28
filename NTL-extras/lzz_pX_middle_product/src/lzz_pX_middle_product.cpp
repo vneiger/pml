@@ -199,7 +199,7 @@ void middle_product(zz_pX& b, const zz_pX& a, const zz_pX& c, long dA, long dB)
     for (long i = max(0, ind_a); i <= dA; i++)
         ap[i] = cf_a[dA - i];
 
-    
+
     Vec<zz_p> bp;
     bp.SetLength(dB + 1);
 
@@ -211,7 +211,7 @@ void middle_product(zz_pX& b, const zz_pX& a, const zz_pX& c, long dA, long dB)
         cp[i] = cf_c[i];
     for (long i = ind_c; i <= dA + dB; i++)
         cp[i] = 0;
-   
+
     if (min(dA, dB) < KARX)
     {
         tPlainMul2(bp.elts(), dB + 1, ap.elts(), dA + 1, cp.elts(), dA + dB + 1);
@@ -232,3 +232,11 @@ void middle_product(zz_pX& b, const zz_pX& a, const zz_pX& c, long dA, long dB)
     b.normalize();
 }
 
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -61,7 +61,7 @@ zz_pX_Multipoint_General::zz_pX_Multipoint_General(const Vec<zz_p>& q)
         SetCoeff(qpol[i], 1, 1);
     }
     build_subproduct_tree(tree, qpol);
-    
+
     evaluate(cofactors, diff(tree[tree.length()-1][0]));
     for (long i = 0; i < n; i++)
     {
@@ -150,7 +150,7 @@ void zz_pX_Multipoint_General::t_interpolate(Vec<zz_p>& val, const zz_pX& f)
 /*------------------------------------------------------------*/
 /* returns a zz_pX_Multipoint_General with n points           */
 /*------------------------------------------------------------*/
-    zz_pX_Multipoint_General get_general_points(long n)
+zz_pX_Multipoint_General get_general_points(long n)
 {
     Vec<zz_p> tmp;
     tmp.SetLength(n);
@@ -160,3 +160,11 @@ void zz_pX_Multipoint_General::t_interpolate(Vec<zz_p>& val, const zz_pX& f)
     }
     return zz_pX_Multipoint_General(tmp);
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

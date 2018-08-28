@@ -10,10 +10,10 @@ NTL_CLIENT
 /* creates, t-evaluates, t-interpolates a matrix of polys.    */
 /*------------------------------------------------------------*/
 void check(){
-    
+
     long p = 1125899906842679;
     zz_p::init(p);
-    
+
     for (long j = 1; j < 500; j+=1)
     {
         Vec<Mat<zz_p>> u, valF, v;
@@ -44,7 +44,7 @@ void check(){
 
         points.t_evaluate_matrix(tvalU, u);
         points.evaluate_matrix(valF, f);
-                
+
         for (long r = 0; r < rdim; r++)
         {
             for (long s = 0; s < cdim; s++)
@@ -53,11 +53,11 @@ void check(){
                 res1 = 0;
                 for (long i = 0; i < j; i++)
                     res1 += u[i][r][s] * valF[i][r][s];
-                
+
                 res2 = 0;
                 for (long i = 0; i < j; i++)
                     res2 += coeff(f[r][s], i) * coeff(tvalU[r][s], i);
-                
+
                 if (res1 != res2) 
                 {
                     cerr << "error matrix t_evaluate for j=" << j << endl;
@@ -82,3 +82,11 @@ int main(int argc, char ** argv){
     check();
     return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

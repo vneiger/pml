@@ -234,7 +234,7 @@ void sage_output(const zz_pX & v)
     sage_output(v.rep);
     cout << ")";
 }
-  
+
 void sage_output(const Vec<zz_pX> & v)
 {
     sage_output(v, "x");
@@ -298,3 +298,11 @@ void sage_assign(const Mat<zz_pX>& v, const string & name)
 {
     sage_assign(v, "x", name);
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

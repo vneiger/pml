@@ -61,27 +61,27 @@ int main(int argc, char *argv[])
 
     // build random matrix
     Vec<Mat<zz_p>> evals;
-		Vec<zz_p> pts;
+    Vec<zz_p> pts;
     t1w = GetWallTime(); t1 = GetTime();
-		evals.SetLength(npoints);
-		for (long pt = 0; pt < npoints; ++pt)
-			random(evals[pt], rdim, cdim);
+    evals.SetLength(npoints);
+    for (long pt = 0; pt < npoints; ++pt)
+        random(evals[pt], rdim, cdim);
     random(pts, npoints);
     t2w = GetWallTime(); t2 = GetTime();
 
     std::cout << "Time(random matrix/points): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 
-		if (pts.length()<50 && zz_p::modulus() < 100)
-			std::cout << "Points: " << pts << std::endl;
+    if (pts.length()<50 && zz_p::modulus() < 100)
+        std::cout << "Points: " << pts << std::endl;
 
-		Mat<zz_p> kerbas;
-		std::vector<long> pivdeg;
-		// to warm up
-		size_t maxdim = std::max(rdim,cdim);
-		long warm_time = ceil(100000000/(maxdim*maxdim*maxdim));
-		std::cout << "warming up..." << std::endl;
-		for (long i = 0; i < warm_time; ++i)
-		pivdeg = popov_mbasis1(kerbas,evals[0],shift);
+    Mat<zz_p> kerbas;
+    std::vector<long> pivdeg;
+    // to warm up
+    size_t maxdim = std::max(rdim,cdim);
+    long warm_time = ceil(100000000/(maxdim*maxdim*maxdim));
+    std::cout << "warming up..." << std::endl;
+    for (long i = 0; i < warm_time; ++i)
+        pivdeg = popov_mbasis1(kerbas,evals[0],shift);
 
     // generic uniform shift mbasis for interpolants
     {
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
         t2w = GetWallTime(); t2 = GetTime();
 
         std::cout << "Time(mbasis interpolation computation): " <<
-            (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+        (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 
         if (verify)
         {
@@ -118,3 +118,11 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -10,10 +10,10 @@ NTL_CLIENT
 /* creates, t-evaluates, t-interpolates a vector of polys.    */
 /*------------------------------------------------------------*/
 void check(){
-    
+
     long p = 1125899906842679;
     zz_p::init(p);
-    
+
     for (long j = 1; j < 500; j+=1)
     {
         Vec<Vec<zz_p>> u, valF, v;
@@ -39,8 +39,8 @@ void check(){
 
         points.t_evaluate_vector(tvalU, u);
         points.evaluate_vector(valF, f);
-        
-        
+
+
         for (long r = 0; r < len; r++)
         {
             zz_p res1, res2;
@@ -58,7 +58,7 @@ void check(){
                 exit (-1);
             }
         }
-        
+
         points.t_interpolate_vector(v, tvalU);
 
         if (u != v)
@@ -75,3 +75,11 @@ int main(int argc, char ** argv){
     check();
     return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

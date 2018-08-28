@@ -27,7 +27,7 @@ void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
     valC.SetLength(len);
     for (long i = 0; i < len; i++)
     {
-    	mul(valC[i], valA[i], valB[i]);
+        mul(valC[i], valA[i], valB[i]);
     }
 
     trs_naive.backward_matrix(c, valC);
@@ -48,7 +48,7 @@ void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
     valC.SetLength(len);
     for (long i = 0; i < len; i++)
     {
-    	mul(valC[i], valA[i], valB[i]);
+        mul(valC[i], valA[i], valB[i]);
     }
 
     trs_karatsuba.backward_matrix(c, valC);
@@ -69,7 +69,7 @@ void multiply_transform_montgomery3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const 
     valC.SetLength(len);
     for (long i = 0; i < len; i++)
     {
-    	mul(valC[i], valA[i], valB[i]);
+        mul(valC[i], valA[i], valB[i]);
     }
 
     trs_montgomery3.backward_matrix(c, valC);
@@ -90,7 +90,7 @@ void multiply_transform_karatsuba4(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
     valC.SetLength(len);
     for (long i = 0; i < len; i++)
     {
-    	mul(valC[i], valA[i], valB[i]);
+        mul(valC[i], valA[i], valB[i]);
     }
 
     trs_karatsuba4.backward_matrix(c, valC);
@@ -102,15 +102,23 @@ void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> &
     switch (len) 
     {
     case 2:
-	multiply_transform_karatsuba(c, a, b);
-	break;
+        multiply_transform_karatsuba(c, a, b);
+        break;
     case 3:
-	multiply_transform_montgomery3(c, a, b);
-	break;
+        multiply_transform_montgomery3(c, a, b);
+        break;
     case 4:
-	multiply_transform_karatsuba4(c, a, b);
-	break;
+        multiply_transform_karatsuba4(c, a, b);
+        break;
     default:
-	multiply_transform_naive(c, a, b);
+        multiply_transform_naive(c, a, b);
     }
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
