@@ -123,8 +123,9 @@ void zz_pX_Multipoint_General::interpolate(zz_pX& f, const Vec<zz_p>& val)
 
 /*------------------------------------------------------------*/
 /* transposed multipoint evaluation                           */
+/* parameter output_size not used for the moment              */
 /*------------------------------------------------------------*/
-void zz_pX_Multipoint_General::t_evaluate(zz_pX& f, const Vec<zz_p>& val) const 
+void zz_pX_Multipoint_General::t_evaluate(zz_pX& f, const Vec<zz_p>& val, long output_size) const 
 {
     zz_pX rev_num, num;
     up_tree(rev_num, tree, val);

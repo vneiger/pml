@@ -36,12 +36,12 @@ void check(long p)
         else
             cout << "static long MATRIX_DEGREE_THRESHOLDS_LARGE[" << sizes.size() << "] = {";
         
-        for (unsigned long i = 0; i < sizes.size(); i++)
+        for (size_t i = 0; i < sizes.size(); i++)
         {
             long done = 0;
             long nb_in_a_row = 0;
             long sz = sizes[i];
-            unsigned long j;
+            size_t j;
 
             for (j = 0; done == 0 && j < degrees.size(); j++)
             {
@@ -94,7 +94,7 @@ void check(long p)
     }
     else
     {
-        for (unsigned long i = 0; i < sizes.size(); i++)
+        for (size_t i = 0; i < sizes.size(); i++)
             thresholds.push_back(9999999);
     }
 
@@ -108,10 +108,10 @@ void check(long p)
     
     
     // find degree threshold for waksman 
-    for (unsigned long i = 0; i < sizes.size(); i++)
+    for (size_t i = 0; i < sizes.size(); i++)
     {
         double t_old, t_waksman;
-        unsigned long j;
+        size_t j;
         long done = 0;
         long nb_in_a_row = 0;
         long sz = sizes[i];
@@ -190,7 +190,7 @@ int main(int argc, char ** argv)
 
     cout << "#define MATRIX_THRESHOLDS_LEN " << sizes.size() << endl;
     cout << "static long MATRIX_THRESHOLDS_SIZES[" << sizes.size() << "] = {";
-    for (unsigned long i = 0; i < sizes.size(); i++)
+    for (size_t i = 0; i < sizes.size(); i++)
     {
         cout << sizes[i];
         if (i < sizes.size() - 1)

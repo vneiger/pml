@@ -4,77 +4,87 @@
 #include <iomanip>
 
 #include "util.h"
-#include "magma_output.h"
 #include "mat_lzz_pX_extra.h"
 
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* checks some products                                       */
+/* checks one product / middle product                        */
 /*------------------------------------------------------------*/
-void one_check(long sz, long deg, long p)
+void one_check(long sz, long deg)
 {
     Mat<zz_pX> a, b1, b2, c;
 
-    if (p == 0) // init zz_p with FFTInit()
-    {
-        zz_p::FFTInit(0);
-    }
-    else
-    {
-        zz_p::init(p);
-    }
+    for (long dA = deg - 1; dA < deg + 2; dA++)
+        for (long dB = deg - 1; dB < deg + 2; dB++)
+        {
+            random_mat_zz_pX(a, sz, sz+1, dA + 1);
+            random_mat_zz_pX(c, sz+1, sz+2, dA + dB + 1);
+            
+            middle_product_evaluate_geometric(b1, a, c, dA, dB);
 
-    cout << p<< ", " << sz << "," << deg << ", ";
+            multiply(b2, a, c);
+            b2 >>= dA;
+            trunc(b2, b2, dB + 1);
+            
+            if (b1 != b2){
+                cout << sz << " " << dA << " " << dB << endl;
+                cout << a << endl;
+                cout << c << endl;
+                cout << b1 << endl;
+                cout << b2 << endl;
+                LogicError("Error in geometric middle product");
+            }
 
-    random_mat_zz_pX(a, sz, sz+1, deg);
-    random_mat_zz_pX(c, sz+1, sz+2, 2*deg - 1);
-
-    middle_product_evaluate_geometric(b1, a, c, deg-1, deg-1);
-    multiply_evaluate_geometric(b2, a, c);
-    b2 >>= (deg-1);
-    trunc(b2, b2, deg);
-    cout << (b1 == b2) << " ";
-
-    double t;
-    long nb;
-
-    t = get_time();
-    nb = 0;
-    do
-    {
-        middle_product_evaluate_geometric(b1, a, c, deg-1, deg-1);
-        nb++;
-    }
-    while ((get_time()-t) <= 0.001);
-    t = (get_time()-t) / nb;
-    cout << t << " ";
-
-    t = get_time();
-    nb = 0;
-    do
-    {
-        multiply_evaluate_geometric(b2, a, c);
-        nb++;
-    }
-    while ((get_time()-t) <= 0.001);
-    t = (get_time()-t) / nb;
-    cout << t << " ";
-    cout << endl;
+            if (is_FFT_prime())
+            {
+                middle_product_evaluate_FFT(b2, a, c, dA, dB);
+                if (b1 != b2){
+                    cout << sz << " " << dA << " " << dB << endl;
+                    cout << a << endl;
+                    cout << c << endl;
+                    cout << b1 << endl;
+                    cout << b2 << endl;
+                    LogicError("Error in FFT middle product");
+                }
+            }
+        }
 }
 
 /*------------------------------------------------------------*/
-/* checks some products                                       */
+/* for a give prime, checks some (size, degree)               */
 /*------------------------------------------------------------*/
-void check(long sz=200, long deg=4)
+void all_checks()
 {
-    long p0 = 0;
-    long p1 = 23068673;
-    long p2 = 288230376151711813;
+    std::vector<long> szs =
+    {
+        1, 2, 3, 5, 10, 20, 30
+    };
 
-    one_check(sz, deg, p0);
-    one_check(sz, deg, p1);
-    one_check(sz, deg, p2);
+    std::vector<long> degs =
+    {
+        1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 250, 300, 400
+    };
+
+    for (size_t si = 0; si < szs.size(); si++)
+        for (size_t di = 0; di < degs.size(); di++)
+            one_check(szs[si], degs[di]);
+
+}
+
+/*------------------------------------------------------------*/
+/* checks some primes                                         */
+/*------------------------------------------------------------*/
+void check()
+{
+    zz_p::FFTInit(0);
+    all_checks();
+    zz_p::UserFFTInit(786433);
+    all_checks();
+    zz_p::init(288230376151711813);
+    all_checks();
+    zz_p::init(786433);
+    all_checks();
 }  
 
 /*------------------------------------------------------------*/
@@ -82,23 +92,7 @@ void check(long sz=200, long deg=4)
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    one_check(50, 100, 288230376151711813);
-    std::cout << std::fixed;
-    std::cout << std::setprecision(8);
-
-    // if (argc==1)
-    // {
-    //     check();
-    // }
-    // else if (argc==3)
-    // {
-    //     check(atoi(argv[1]), atoi(argv[2]));
-    // }
-    // else
-    // {
-    //     throw std::invalid_argument("Usage: ./test_multiply OR ./test_multiply size degree");
-    // }
-
+    check();
     return 0;
 }
 

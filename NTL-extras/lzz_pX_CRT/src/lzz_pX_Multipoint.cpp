@@ -190,7 +190,7 @@ void zz_pX_Multipoint::to_dense(Mat<zz_p>& M)
 /*------------------------------------------------------------*/
 /* transpose-evaluates all entries of a vector                */
 /*------------------------------------------------------------*/
-void zz_pX_Multipoint::t_evaluate_vector(Vec<zz_pX>& f, const Vec<Vec<zz_p>>& val) const
+void zz_pX_Multipoint::t_evaluate_vector(Vec<zz_pX>& f, const Vec<Vec<zz_p>>& val, long output_size) const
 {
     if (val.length() == 0)
     {
@@ -209,14 +209,14 @@ void zz_pX_Multipoint::t_evaluate_vector(Vec<zz_pX>& f, const Vec<Vec<zz_p>>& va
         {
             tmp[j] = val[j][i];
         }
-        t_evaluate(f[i], tmp);
+        t_evaluate(f[i], tmp, output_size);
     }
 }
 
 /*------------------------------------------------------------*/
 /* transpose-evaluates all entries of a matrix                */
 /*------------------------------------------------------------*/
-void zz_pX_Multipoint::t_evaluate_matrix(Mat<zz_pX>& f, const Vec<Mat<zz_p>>& val) const
+void zz_pX_Multipoint::t_evaluate_matrix(Mat<zz_pX>& f, const Vec<Mat<zz_p>>& val, long output_size) const
 {
     if (val.length() == 0)
     {
@@ -238,7 +238,7 @@ void zz_pX_Multipoint::t_evaluate_matrix(Mat<zz_pX>& f, const Vec<Mat<zz_p>>& va
             {
                 tmp[j] = val[j][i][k];
             }
-            t_evaluate(f[i][k], tmp);
+            t_evaluate(f[i][k], tmp, output_size);
         }
     }
 }

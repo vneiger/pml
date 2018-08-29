@@ -393,7 +393,6 @@ void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long
             if ((it->first + 1) >= output_size && (it->first + 1) < do_output_size)
                 do_output_size = it->first + 1;
         }
-
         const fftRep& f_fft = known_degrees.find(do_output_size - 1)->second;
         fftRep a_fft, b_fft;
         long k = f_fft.k;

@@ -10,95 +10,89 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* checks some products                                       */
+/* checks one product / middle product                        */
 /*------------------------------------------------------------*/
-void one_check(long sz, long deg, long p)
+void one_check(long sz, long deg)
 {
-    Mat<zz_pX> a, b1, b2, c;
+    Mat<zz_pX> a, b, bb, c;
+    const double thres = 0.01;
 
-    if (p == 0) // init zz_p with FFTInit()
-    {
-        zz_p::FFTInit(0);
-    }
-    else
-    {
-        zz_p::init(p);
-    }
+    for (long dA = deg - 1; dA < deg + 2; dA++)
+        for (long dB = deg - 1; dB < deg + 2; dB++)
+        {
+            double t_mid, t_direct, t_naive;
+            long nb;
 
-    cout << p<< ", " << sz << "," << deg << ", ";
+            random_mat_zz_pX(a, sz, sz, dA + 1);
+            random_mat_zz_pX(c, sz, sz, dA + dB + 1);
+            
+            cout << dA << " " << dB << " ";
 
-    random_mat_zz_pX(a, sz, sz+1, deg);
-    random_mat_zz_pX(c, sz+1, sz+2, 2*deg - 1);
+            t_mid = get_time();
+            nb = 0;
+            do
+            {
+                middle_product_evaluate_geometric(b, a, c, dA, dB);
+                nb++;
+            }
+            while ((get_time()-t_mid) <= thres);
+            t_mid = (get_time()-t_mid) / nb;
 
-    middle_product_evaluate_geometric(b1, a, c, deg-1, deg-1);
-    multiply_evaluate_geometric(b2, a, c);
-    b2 >>= (deg-1);
-    trunc(b2, b2, deg);
-    cout << "OK::" << (b1 == b2) << " ";
 
-    double t;
-    long nb;
+            t_naive = get_time();
+            nb = 0;
+            do
+            {
+                multiply_evaluate_geometric(bb, a, c);
+                nb++;
+            }
+            while ((get_time()-t_naive) <= thres);
+            t_naive = (get_time()-t_naive) / nb;
+            
+            
+            t_direct = get_time();
+            nb = 0;
+            do
+            {
+                multiply_evaluate_geometric(c, a, b);
+                nb++;
+            }
+            while ((get_time()-t_direct) <= thres);
+            t_direct = (get_time()-t_direct) / nb;
 
-    t = get_time();
-    nb = 0;
-    do
-    {
-        middle_product_evaluate_geometric(b1, a, c, deg-1, deg-1);
-        nb++;
-    }
-    while ((get_time()-t) <= 0.001);
-    t = (get_time()-t) / nb;
-    cout << t << " ";
-
-    t = get_time();
-    nb = 0;
-    do
-    {
-        multiply_evaluate_geometric(b2, a, c);
-        nb++;
-    }
-    while ((get_time()-t) <= 0.001);
-    t = (get_time()-t) / nb;
-    cout << t << " ";
-    cout << endl;
+            cout << (t_mid / t_naive) << " " << (t_mid / t_direct) << " ";
+            cout << endl;
+        }
 }
 
 /*------------------------------------------------------------*/
 /* checks some products                                       */
 /*------------------------------------------------------------*/
-void check(long sz=200, long deg=4)
+void check(long p)
 {
-    long p0 = 0;
-    long p1 = 23068673;
-    long p2 = 288230376151711813;
+    vector<long> sizes = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
+    vector<long> degrees = {1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
 
-    one_check(sz, deg, p0);
-    one_check(sz, deg, p1);
-    one_check(sz, deg, p2);
-}  
+    if (p == 0)
+        zz_p::FFTInit(0);
+    else
+        zz_p::init(p);
+
+    for (size_t i = 0; i < sizes.size(); i++)
+        for (size_t j = 0; j < degrees.size(); j++)
+            one_check(sizes[i], degrees[j]);
+}
 
 /*------------------------------------------------------------*/
 /* main calls check                                           */
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    one_check(50, 100, 288230376151711813);
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
-
-    // if (argc==1)
-    // {
-    //     check();
-    // }
-    // else if (argc==3)
-    // {
-    //     check(atoi(argv[1]), atoi(argv[2]));
-    // }
-    // else
-    // {
-    //     throw std::invalid_argument("Usage: ./test_multiply OR ./test_multiply size degree");
-    // }
-
+    check(0);
+    check(23068673);
+    check(288230376151711813);
     return 0;
 }
 

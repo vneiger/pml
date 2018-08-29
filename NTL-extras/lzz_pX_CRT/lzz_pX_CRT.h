@@ -38,7 +38,7 @@ public:
     virtual void evaluate(Vec<zz_p>& val, const zz_pX& P) const = 0;
     virtual void interpolate(zz_pX& P, const Vec<zz_p>& val) = 0;     // dirty hack: interpolate uses an instance fftRep as workspace
 
-    virtual void t_evaluate(zz_pX& P, const Vec<zz_p>& val) const = 0;
+    virtual void t_evaluate(zz_pX& P, const Vec<zz_p>& val, long output_size = -1) const = 0;
     virtual void t_interpolate(Vec<zz_p>& val, const zz_pX& P) = 0;     // dirty hack: t_interpolate uses an instance fftRep as workspace
 
     /*------------------------------------------------------------*/
@@ -49,9 +49,9 @@ public:
     void evaluate_matrix(Vec<Mat<zz_p>>& val, const Mat<zz_pX>& f) const;
     void interpolate_matrix(Mat<zz_pX>& f, const Vec<Mat<zz_p>>& val);
 
-    void t_evaluate_vector(Vec<zz_pX>& f, const Vec<Vec<zz_p>>& val) const;
+    void t_evaluate_vector(Vec<zz_pX>& f, const Vec<Vec<zz_p>>& val, long output_size = -1) const;
     void t_interpolate_vector(Vec<Vec<zz_p>>& val, const Vec<zz_pX>& P);
-    void t_evaluate_matrix(Mat<zz_pX>& f, const Vec<Mat<zz_p>>& val) const;
+    void t_evaluate_matrix(Mat<zz_pX>& f, const Vec<Mat<zz_p>>& val, long output_size = -1) const;
     void t_interpolate_matrix(Vec<Mat<zz_p>>& val, const Mat<zz_pX>& f);
 
     /*------------------------------------------------------------*/
@@ -100,7 +100,7 @@ public:
     void evaluate(Vec<zz_p>& val, const zz_pX& f) const;
     void interpolate(zz_pX& f, const Vec<zz_p>& val);
 
-    void t_evaluate(zz_pX& f, const Vec<zz_p>& val) const;
+    void t_evaluate(zz_pX& f, const Vec<zz_p>& val, long output_size = -1) const;
     void t_interpolate(Vec<zz_p>& val, const zz_pX& f);
 
 private:
@@ -142,11 +142,11 @@ public:
     void evaluate(Vec<zz_p>& val, const zz_pX& f) const;
     void interpolate(zz_pX& f, const Vec<zz_p>& val);
 
-    void t_evaluate(zz_pX& f, const Vec<zz_p>& val, long output_size) const;
-    inline void t_evaluate(zz_pX& f, const Vec<zz_p>& val) const
-    {
-        t_evaluate(f, val, -1);
-    }
+    void t_evaluate(zz_pX& f, const Vec<zz_p>& val, long output_size = -1) const;
+    // inline void t_evaluate(zz_pX& f, const Vec<zz_p>& val) const
+    // {
+    //     t_evaluate(f, val, -1);
+    // }
     void t_interpolate(Vec<zz_p>& val, const zz_pX& f);
 
     /*------------------------------------------------------------*/
@@ -212,7 +212,7 @@ public:
     void evaluate(Vec<zz_p>& val, const zz_pX& f) const;
     void interpolate(zz_pX& f, const Vec<zz_p>& val);
 
-    void t_evaluate(zz_pX& f, const Vec<zz_p>& val) const;
+    void t_evaluate(zz_pX& f, const Vec<zz_p>& val, long output_size = -1) const;
     void t_interpolate(Vec<zz_p>& val, const zz_pX& f);
 
 

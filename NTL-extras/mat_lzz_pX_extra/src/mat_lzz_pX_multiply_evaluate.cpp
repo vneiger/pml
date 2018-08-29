@@ -200,38 +200,6 @@ void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
 }
 
 
-/*------------------------------------------------------------*/
-/* transpose of b mapsto c = a*b. output is                   */
-/*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
-/* geometric points                                           */
-/*------------------------------------------------------------*/
-void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
-{
-    long dC = dA + dB;
-    if (deg(a) > dA || deg(c) > dC)
-        LogicError("bad degree for t_multiply");
-    long sz = dC + 1;
-
-    zz_pX_Multipoint_Geometric ev_geom = get_geometric_points(sz);
-
-    ev_geom.prepare_degree(dA);
-    ev_geom.prepare_degree(dB);
-
-    Vec<Mat<zz_p>> valA, valB, valC;
-    ev_geom.evaluate_matrix(valA, a);
-    ev_geom.t_interpolate_matrix(valC, c);
-
-    long len = ev_geom.length();
-    valB.SetLength(len);
-    for (long i = 0; i < len; i++)
-    {
-        mul(valB[i], valA[i], valC[i]);
-    }
-
-    ev_geom.t_evaluate_matrix(b, valB);
-    trunc(b, b, dB + 1);
-}
-
 // Local Variables:
 // mode: C++
 // tab-width: 4

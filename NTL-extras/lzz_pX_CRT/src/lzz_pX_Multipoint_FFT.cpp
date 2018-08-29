@@ -130,11 +130,15 @@ void zz_pX_Multipoint_FFT::interpolate(zz_pX& f, const Vec<zz_p>& val) {
 /*------------------------------------------------------------*/
 /* transpose forward FFT                                      */
 /*------------------------------------------------------------*/
-void zz_pX_Multipoint_FFT::t_evaluate(zz_pX& f, const Vec<zz_p>& val) const 
+void zz_pX_Multipoint_FFT::t_evaluate(zz_pX& f, const Vec<zz_p>& val, long output_size) const 
 {
+    f = 0;
     zz_pX tmp;
     tmp.rep.SetLength(n);
     zz_p * coeffs_tmp = tmp.rep.elts();
+
+    if (output_size == -1)
+        output_size = n;
 
     if (! do_bit_reverse)
     {
@@ -156,19 +160,19 @@ void zz_pX_Multipoint_FFT::t_evaluate(zz_pX& f, const Vec<zz_p>& val) const
     TofftRep(frep, tmp, k);
     long *frept = &frep.tbl[0][0];
 
-    f.rep.SetLength(n);
+    f.rep.SetLength(output_size);
     zz_p * coeffs_f = f.rep.elts();
 
     if (! do_bit_reverse)
     {
-        for (long i = 0; i < n; i++)
+        for (long i = 0; i < output_size; i++)
         {
             coeffs_f[i] = frept[i];
         }
     }
     else 
     {
-        for (long i = 0; i < n; i++)
+        for (long i = 0; i < output_size; i++)
         {
             coeffs_f[i] = frept[indices[i]];
         }
@@ -190,16 +194,9 @@ void zz_pX_Multipoint_FFT::t_interpolate(Vec<zz_p>& val, const zz_pX& f) {
 
     if (n == 2) 
     {
-        // // for n=2, the normalization is different in version 11.1.0
-        // #ifdef __NTL_FIX_SIZE_2_FFT  
-        //         zz_p half = 1/to_zz_p(2);
-        //         val[0] = (coeff(f,0) + coeff(f,1)) * half;
-        //         val[1] = (coeff(f,0) - coeff(f,1)) * half;
-        // #else
         zz_p half = 1/to_zz_p(2);
         val[0] = (coeff(f,0) + coeff(f,1)) * half;
         val[1] = (coeff(f,0) - coeff(f,1)) * half;
-        // #endif
         return;
     }
 

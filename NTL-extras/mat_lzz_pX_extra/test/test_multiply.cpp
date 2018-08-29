@@ -3,7 +3,7 @@
 #include <NTL/vector.h>
 #include <iomanip>
 
-#include "lzz_p_extra.h"
+#include "util.h"
 #include "mat_lzz_pX_extra.h"
 
 NTL_CLIENT

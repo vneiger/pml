@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector> // std vector, for shifts, degrees, pivot indices
 
+#include "lzz_p_extra.h"
 #include "thresholds_matrix_multiply.h"
 
 NTL_CLIENT
@@ -448,6 +449,23 @@ void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const M
 inline void middle_product_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {
     t_multiply_evaluate_geometric(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
+}
+
+
+/*------------------------------------------------------------*/
+/* transpose of b mapsto c = a*b. output is                   */
+/*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
+/* a must have degree at most dA                              */
+/* c must have degree at most dA + dB                         */
+/*------------------------------------------------------------*/
+void t_multiply_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+
+/*------------------------------------------------------------*/
+/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
+/*------------------------------------------------------------*/
+inline void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+{
+    t_multiply_evaluate_FFT(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
 }
 
 
