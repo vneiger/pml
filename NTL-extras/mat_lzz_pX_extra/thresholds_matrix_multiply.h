@@ -37,8 +37,8 @@ inline long max_degree_evaluate(long sz)
     for (i = 0; i < MATRIX_THRESHOLDS_LEN - 1; )
         if (sz > MATRIX_THRESHOLDS_SIZES[i])
             i++;
-	else 
-	    break;
+        else 
+            break;
 
     if (t == TYPE_SMALL_PRIME)
         return MATRIX_DEGREE_THRESHOLDS_SMALL[i];
@@ -56,8 +56,8 @@ inline long max_degree_waksman(long sz)
     for (i = 0; i < MATRIX_THRESHOLDS_LEN - 1; )
         if (sz > MATRIX_THRESHOLDS_SIZES[i])
             i++;
-	else 
-	    break;
+        else 
+            break;
 
     if (t == TYPE_FFT_PRIME)
         return MATRIX_WAKSMAN_THRESHOLDS_FFT[i];
@@ -69,3 +69,11 @@ inline long max_degree_waksman(long sz)
 }
 
 #endif
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

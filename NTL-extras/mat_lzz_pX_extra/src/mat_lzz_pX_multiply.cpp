@@ -21,8 +21,8 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long i
 
     if (dmax <= deg_trs)
     {
-	multiply_transform(c, a, b, dmax + 1);
-	return;
+        multiply_transform(c, a, b, dmax + 1);
+        return;
     }
 
     // only calibrated for square matrices; here's a hack
@@ -31,20 +31,28 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long i
 
     if (dmax <= deg_wak)
     {
-	multiply_waksman(c, a, b);
-	return;
+        multiply_waksman(c, a, b);
+        return;
     }
-	
+
     long p = zz_p::modulus();
     long deg_ev = max_degree_evaluate(sz);
     if (is_prime && p > 2 * (dA + dB + 1) && dmax <= deg_ev)
     {
-	multiply_evaluate(c, a, b);
-	return;
+        multiply_evaluate(c, a, b);
+        return;
     }
     else
     {
-	multiply_3_primes(c, a, b);
-	return;
+        multiply_3_primes(c, a, b);
+        return;
     }
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

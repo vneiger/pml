@@ -10,3 +10,11 @@ static long MATRIX_DEGREE_THRESHOLDS_LARGE[22] = {1, 25, 25, 25, 15, 25, 15, 50,
 static long MATRIX_WAKSMAN_THRESHOLDS_LARGE[22] = {9223372036854775807, 9223372036854775807, 9223372036854775807, 250, 200, 200, 200, 200, 90, 90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
 #endif
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
