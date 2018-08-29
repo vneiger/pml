@@ -442,6 +442,8 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long i
 /* c must have degree at most dA + dB                         */
 /*------------------------------------------------------------*/
 void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+void t_multiply_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+void t_multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long dA, long dB);
 
 /*------------------------------------------------------------*/
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
@@ -451,18 +453,11 @@ inline void middle_product_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> &
     t_multiply_evaluate_geometric(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
 }
 
+inline void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+{
+    t_multiply_3_primes(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
+}
 
-/*------------------------------------------------------------*/
-/* transpose of b mapsto c = a*b. output is                   */
-/*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
-/* a must have degree at most dA                              */
-/* c must have degree at most dA + dB                         */
-/*------------------------------------------------------------*/
-void t_multiply_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
-
-/*------------------------------------------------------------*/
-/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
-/*------------------------------------------------------------*/
 inline void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {
     t_multiply_evaluate_FFT(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
