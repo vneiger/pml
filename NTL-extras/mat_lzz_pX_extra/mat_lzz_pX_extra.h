@@ -464,7 +464,6 @@ inline void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, co
 }
 
 
-
 /* inline Mat<zz_pX> & operator*=(Mat<zz_pX> & x, const Mat<zz_pX>& b) */
 /* { */
 /*     mul(x, x, b);  */
@@ -1118,7 +1117,9 @@ DegVec popov_pmbasis(
  **************************************************/
 
 // TODO one step (uses kernel + row basis)
-// TODO diagonal entries of Hermite form
+
+// TODO diagonal entries of Hermite form, not implemented yet
+void diagonal_of_hermite(Vec<zz_pX> & diag, const Mat<zz_pX> & pmat);
 
 /***********************************************
  *  Labahn-Neiger-Zhou Hermite form algorithm  *
@@ -1131,12 +1132,41 @@ DegVec popov_pmbasis(
  *                       DETERMINANT ALGORITHMS                       *
  **********************************************************************/
 
+// general user interface
+// TODO (not implemented yet)
+void determinant(zz_pX & det, const Mat<zz_pX> & pmat);
+
+inline zz_pX determinant(const Mat<zz_pX> & pmat)
+{
+    zz_pX det;
+    determinant(det, pmat);
+    return det;
+}
+
+
 /*******************************************************************
  *  Labahn-Neiger-Zhou: via diagonal entries of triangularization  *
  *******************************************************************/
 
-// TODO general version
-// TODO generic version: much simpler (only requires generic kernel + products)
+void determinant_via_diagonal_of_hermite(zz_pX & det, const Mat<zz_pX> & pmat);
+
+// TODO version assuming diagonal of (lower triangular) Hermite form is
+// [det 1 .. 1] and that we have generic degree profiles in the partial
+// triangularization of Labahn-Neiger-Zhou
+
+// Version 1 (deterministic algorithm): degree of determinant is known (e.g. if
+// matrix is reduced or if the determinant corresponds to some invariant of an
+// object with known degree). Runs the partial triangularization and returns
+// false if the computed diagonal entry of Hermite form does not have the right
+// degree. True is returned iff determinant is correct. 
+bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, long degree);
+
+// Version 2 (Las Vegas randomized algorithm): runs the partial
+// triangularization and checks determinant by Zippel-Schwartz; returns false
+// if determinant is wrong or if field size is too small for allowing the
+// Zippel-Schwartz check. If true is returned, then determinant is correct.
+// TODO: not implemented yet
+bool determinant_generic_las_vegas(zz_pX & det, const Mat<zz_pX> & pmat);
 
 // TODO other determinant algorithms??
 // --> could rely on x-Smith decomposition of Gupta et al (worth
