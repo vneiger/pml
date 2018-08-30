@@ -20,7 +20,8 @@ void one_check(long sz, long deg)
         {
             random_mat_zz_pX(a, sz, sz+1, dA + 1);
             random_mat_zz_pX(c, sz+1, sz+2, dA + dB + 1);
-            
+
+            // testing all possible call sequences            
             middle_product_evaluate_geometric(b1, a, c, dA, dB);
 
             multiply(b2, a, c);
@@ -37,6 +38,12 @@ void one_check(long sz, long deg)
                 LogicError("Error in 3 primes middle product");
             }
 
+            middle_product_evaluate(b2, a, c, dA, dB);
+            if (b1 != b2)
+            {
+                LogicError("Error in evaluate middle product");
+            }
+
             if (is_FFT_prime())
             {
                 middle_product_evaluate_FFT(b2, a, c, dA, dB);
@@ -44,6 +51,12 @@ void one_check(long sz, long deg)
                 {
                     LogicError("Error in FFT middle product");
                 }
+            }
+
+            middle_product(b2, a, c, dA, dB);
+            if (b1 != b2)
+            {
+                LogicError("Error in middle product");
             }
         }
 }
@@ -55,14 +68,12 @@ void all_checks()
 {
     std::vector<long> szs =
     {
-        3, 5, 10, 20, 30
-        // 1, 2, 3, 5, 10, 20, 30
+        1, 2, 3, 5, 10, 20, 30
     };
 
     std::vector<long> degs =
     {
-        // 1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 250, 300, 400
-        150, 200, 250, 300, 400
+        1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 250, 300, 400
     };
 
     for (size_t si = 0; si < szs.size(); si++)

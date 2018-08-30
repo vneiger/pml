@@ -26,8 +26,9 @@ void one_check(long sz, long deg)
             random_mat_zz_pX(a, sz, sz, dA + 1);
             random_mat_zz_pX(c, sz, sz, dA + dB + 1);
             
-            cout << dA << " " << dB << " ";
+            cout << sz << " " << dA << " " << dB << " ";
 
+            //-------------- geometric
             t_mid = get_time();
             nb = 0;
             do
@@ -61,6 +62,42 @@ void one_check(long sz, long deg)
             t_direct = (get_time()-t_direct) / nb;
 
             cout << (t_mid / t_naive) << " " << (t_mid / t_direct) << " ";
+
+            //-------------- 3 primes 
+            t_mid = get_time();
+            nb = 0;
+            do
+            {
+                middle_product_3_primes(b, a, c, dA, dB);
+                nb++;
+            }
+            while ((get_time()-t_mid) <= thres);
+            t_mid = (get_time()-t_mid) / nb;
+
+
+            t_naive = get_time();
+            nb = 0;
+            do
+            {
+                multiply_3_primes(bb, a, c);
+                nb++;
+            }
+            while ((get_time()-t_naive) <= thres);
+            t_naive = (get_time()-t_naive) / nb;
+            
+            
+            t_direct = get_time();
+            nb = 0;
+            do
+            {
+                multiply_3_primes(c, a, b);
+                nb++;
+            }
+            while ((get_time()-t_direct) <= thres);
+            t_direct = (get_time()-t_direct) / nb;
+
+            cout << (t_mid / t_naive) << " " << (t_mid / t_direct) << " ";
+
             cout << endl;
         }
 }
@@ -70,8 +107,10 @@ void one_check(long sz, long deg)
 /*------------------------------------------------------------*/
 void check(long p)
 {
-    vector<long> sizes = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
-    vector<long> degrees = {1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
+    vector<long> sizes = {1};
+    vector<long> degrees = {150};
+    // vector<long> sizes = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
+    // vector<long> degrees = {1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
 
     if (p == 0)
         zz_p::FFTInit(0);
@@ -90,6 +129,7 @@ int main(int argc, char ** argv)
 {
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
+    warmup();
     check(0);
     check(23068673);
     check(288230376151711813);

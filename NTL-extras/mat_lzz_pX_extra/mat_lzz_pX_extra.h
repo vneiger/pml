@@ -443,7 +443,9 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long i
 /*------------------------------------------------------------*/
 void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void t_multiply_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+void t_multiply_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void t_multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long dA, long dB);
+void t_multiply(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime = 1);
 
 /*------------------------------------------------------------*/
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
@@ -453,16 +455,25 @@ inline void middle_product_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> &
     t_multiply_evaluate_geometric(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
 }
 
-inline void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
-{
-    t_multiply_3_primes(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
-}
-
 inline void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {
     t_multiply_evaluate_FFT(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
 }
 
+inline void middle_product_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+{
+    t_multiply_evaluate(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
+}
+
+inline void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+{
+    t_multiply_3_primes(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
+}
+
+inline void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime = 1)
+{
+    t_multiply(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB, is_prime);
+}
 
 
 /* inline Mat<zz_pX> & operator*=(Mat<zz_pX> & x, const Mat<zz_pX>& b) */

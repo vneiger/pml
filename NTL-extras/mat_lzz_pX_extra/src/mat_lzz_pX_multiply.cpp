@@ -49,6 +49,26 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long i
     }
 }
 
+/*------------------------------------------------------------*/
+/* transpose of b mapsto c = a*b. output is                   */
+/*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
+/* a must have degree at most dA                              */
+/* c must have degree at most dA + dB                         */
+/*------------------------------------------------------------*/
+void t_multiply(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime)
+{
+    long p = zz_p::modulus();
+
+    if (is_prime == 0 || p < 2 * (dA + dB + 1) || (NextPowerOfTwo(2*dA + dB + 1) == NextPowerOfTwo(dA + dB + 1)))
+    {	    
+        t_multiply_3_primes(b, a, c, dA, dB);
+    }
+    else
+    {
+        t_multiply_evaluate(b, a, c, dA, dB);
+    }
+}
+
 // Local Variables:
 // mode: C++
 // tab-width: 4

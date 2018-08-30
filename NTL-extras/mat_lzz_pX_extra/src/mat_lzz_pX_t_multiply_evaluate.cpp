@@ -138,7 +138,23 @@ void t_multiply_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_
     t_multiply_evaluate_do_it(b, a, c, dA, dB, *ev);
 }
 
-
+/*------------------------------------------------------------*/
+/* transpose of b mapsto c = a*b. output is                   */
+/*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
+/* chooses the kind of points                                 */
+/* assumes that the field is large enough                     */
+/*------------------------------------------------------------*/
+void t_multiply_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+{
+    if (is_FFT_ready(NextPowerOfTwo(dA + dB + 1)))
+    {
+        t_multiply_evaluate_FFT(b, a, c, dA, dB);
+    }
+    else
+    {
+        t_multiply_evaluate_geometric(b, a, c, dA, dB);
+    }
+}
 
 
 // Local Variables:
