@@ -26,25 +26,22 @@ void one_check(long sz, long deg)
             multiply(b2, a, c);
             b2 >>= dA;
             trunc(b2, b2, dB + 1);
-            
-            if (b1 != b2){
-                cout << sz << " " << dA << " " << dB << endl;
-                cout << a << endl;
-                cout << c << endl;
-                cout << b1 << endl;
-                cout << b2 << endl;
+            if (b1 != b2)
+            {
                 LogicError("Error in geometric middle product");
+            }
+
+            middle_product_3_primes(b2, a, c, dA, dB);
+            if (b1 != b2)
+            {
+                LogicError("Error in 3 primes middle product");
             }
 
             if (is_FFT_prime())
             {
                 middle_product_evaluate_FFT(b2, a, c, dA, dB);
-                if (b1 != b2){
-                    cout << sz << " " << dA << " " << dB << endl;
-                    cout << a << endl;
-                    cout << c << endl;
-                    cout << b1 << endl;
-                    cout << b2 << endl;
+                if (b1 != b2)
+                {
                     LogicError("Error in FFT middle product");
                 }
             }
@@ -58,18 +55,19 @@ void all_checks()
 {
     std::vector<long> szs =
     {
-        1, 2, 3, 5, 10, 20, 30
+        3, 5, 10, 20, 30
+        // 1, 2, 3, 5, 10, 20, 30
     };
 
     std::vector<long> degs =
     {
-        1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 250, 300, 400
+        // 1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 250, 300, 400
+        150, 200, 250, 300, 400
     };
 
     for (size_t si = 0; si < szs.size(); si++)
         for (size_t di = 0; di < degs.size(); di++)
             one_check(szs[si], degs[di]);
-
 }
 
 /*------------------------------------------------------------*/

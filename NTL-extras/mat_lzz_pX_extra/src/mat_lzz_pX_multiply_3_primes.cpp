@@ -174,15 +174,17 @@ static void multiply_modulo_FFT_prime(Mat<zz_pX> & c, const Mat<zz_pX> & a, cons
     zz_pPush push;
     zz_p::FFTInit(idx);
     long fft_p = zz_p::modulus();
-    Mat<zz_pX> ap = a;
-    Mat<zz_pX> bp = a;
 
     if (fft_p < p) // entries may not be reduced mod fft_p
     {
+        Mat<zz_pX> ap = a;
+        Mat<zz_pX> bp = b;
         reduce_mod_p(ap);
         reduce_mod_p(bp);
+        multiply_evaluate_FFT(c, ap, bp);
     }
-    multiply_evaluate_FFT(c, ap, bp);
+    else
+        multiply_evaluate_FFT(c, a, b);
 }
 
 /*------------------------------------------------------------*/
@@ -195,15 +197,17 @@ static void t_multiply_modulo_FFT_prime(Mat<zz_pX> & b, const Mat<zz_pX> & a, co
     zz_pPush push;
     zz_p::FFTInit(idx);
     long fft_p = zz_p::modulus();
-    Mat<zz_pX> ap = a;
-    Mat<zz_pX> cp = c;
 
     if (fft_p < p) // entries may not be reduced mod fft_p
     {
+        Mat<zz_pX> ap = a;
+        Mat<zz_pX> cp = c;
         reduce_mod_p(ap);
         reduce_mod_p(cp);
+        t_multiply_evaluate_FFT(b, ap, cp, dA, dB);
     }
-    t_multiply_evaluate_FFT(b, ap, cp, dA, dB);
+    else
+        t_multiply_evaluate_FFT(b, a, c, dA, dB);
 }
 
  
@@ -214,7 +218,6 @@ static void t_multiply_modulo_FFT_prime(Mat<zz_pX> & b, const Mat<zz_pX> & a, co
 /*------------------------------------------------------------*/
 void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
-
     // TODO: check that degrees are not too large?
     long p = zz_p::modulus();
     long s = a.NumCols();
@@ -273,6 +276,9 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
     default:
         LogicError("impossible branch for 3 primes FFT");
     }
+
+
+
 }
 
 /*------------------------------------------------------------*/
@@ -280,7 +286,7 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
 /* c = a*b                                                    */
 /* chooses either 1, 2 or 3 FFT primes                        */
 /*------------------------------------------------------------*/
-void multiply_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+void t_multiply_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {
     // TODO: check that degrees are not too large?
     long p = zz_p::modulus();
