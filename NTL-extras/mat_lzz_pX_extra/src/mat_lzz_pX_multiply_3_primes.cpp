@@ -18,8 +18,7 @@ static void reduce_mod_p(Mat<zz_pX> & a)
     long s = a.NumCols();
     long p = zz_p::modulus();
     sp_reduce_struct red_struct = zz_pInfo->red_struct;
-    // sp_reduce_struct red_struct = zz_p::red_struct();
-
+ 
     for (long i = 0; i < r; i++) 
     {
         for (long j = 0; j < s; j++)
