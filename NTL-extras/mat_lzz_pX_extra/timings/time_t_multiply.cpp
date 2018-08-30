@@ -28,12 +28,11 @@ void one_check(long sz, long deg)
             
             cout << sz << " " << dA << " " << dB << " ";
 
-            //-------------- geometric
             t_mid = get_time();
             nb = 0;
             do
             {
-                middle_product_evaluate_geometric(b, a, c, dA, dB);
+                middle_product(b, a, c, dA, dB);
                 nb++;
             }
             while ((get_time()-t_mid) <= thres);
@@ -44,7 +43,7 @@ void one_check(long sz, long deg)
             nb = 0;
             do
             {
-                multiply_evaluate_geometric(bb, a, c);
+                multiply(bb, a, c);
                 nb++;
             }
             while ((get_time()-t_naive) <= thres);
@@ -55,7 +54,7 @@ void one_check(long sz, long deg)
             nb = 0;
             do
             {
-                multiply_evaluate_geometric(c, a, b);
+                multiply(c, a, b);
                 nb++;
             }
             while ((get_time()-t_direct) <= thres);
@@ -63,40 +62,6 @@ void one_check(long sz, long deg)
 
             cout << (t_mid / t_naive) << " " << (t_mid / t_direct) << " ";
 
-            //-------------- 3 primes 
-            t_mid = get_time();
-            nb = 0;
-            do
-            {
-                middle_product_3_primes(b, a, c, dA, dB);
-                nb++;
-            }
-            while ((get_time()-t_mid) <= thres);
-            t_mid = (get_time()-t_mid) / nb;
-
-
-            t_naive = get_time();
-            nb = 0;
-            do
-            {
-                multiply_3_primes(bb, a, c);
-                nb++;
-            }
-            while ((get_time()-t_naive) <= thres);
-            t_naive = (get_time()-t_naive) / nb;
-            
-            
-            t_direct = get_time();
-            nb = 0;
-            do
-            {
-                multiply_3_primes(c, a, b);
-                nb++;
-            }
-            while ((get_time()-t_direct) <= thres);
-            t_direct = (get_time()-t_direct) / nb;
-
-            cout << (t_mid / t_naive) << " " << (t_mid / t_direct) << " ";
 
             cout << endl;
         }
@@ -107,10 +72,10 @@ void one_check(long sz, long deg)
 /*------------------------------------------------------------*/
 void check(long p)
 {
-    vector<long> sizes = {1};
-    vector<long> degrees = {150};
-    // vector<long> sizes = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
-    // vector<long> degrees = {1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
+    vector<long> sizes = {10};
+    vector<long> degrees = {20};
+    // vector<long> sizes = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
+    // vector<long> degrees = {15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
 
     if (p == 0)
         zz_p::FFTInit(0);
