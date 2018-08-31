@@ -19,3 +19,18 @@
   -- mostly for forcing us to document everything in a way that is more
   informative than the big header lines of /*-----*/ before every function (and
   which will be easier to work with since editors are used to these docstrings)
+
+
+TODO Vincent
+   - function set(.) for polmats. Test of all such small functions (maybe
+     gathered in a single file)
+   - Finishing PM-Basis (incorporate middle product, some profiling to
+avoid stupid mistakes) and comparing it with LinBox's one and with the
+GCD in the small dimension case.
+   - some first attempts show that our PM-Basis is noticeably slower
+than NTL's GCD for similar problem dimensions. I hope to understand this
+(NTL's gcd seems quite readable) and maybe improve PM-Basis with some
+ideas from NTL.
+   - The "point-wise PM-Basis". I am thinking of a general version
+assuming anything on the points, and also specialized versions working
+with FFT points or with geometric points; does that sound good?

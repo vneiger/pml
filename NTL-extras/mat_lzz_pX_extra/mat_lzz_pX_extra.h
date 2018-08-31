@@ -17,12 +17,17 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-// TODO identity matrix?
-
 /*------------------------------------------------------------*/
 /* clears the matrix  (pmat = 0 with same dimensions)         */
 /*------------------------------------------------------------*/
 void clear(Mat<zz_pX> & pmat);
+
+// TODO function "set" for identity matrix?
+
+/*------------------------------------------------------------*/
+/* tests whether pmat is the zero matrix (whatever its dims)  */
+/*------------------------------------------------------------*/
+long IsZero(const Mat<zz_pX> & pmat);
 
 /*------------------------------------------------------------*/
 /* maximum degree of the entries of pmat                      */
@@ -1160,6 +1165,12 @@ inline zz_pX determinant(const Mat<zz_pX> & pmat)
     determinant(det, pmat);
     return det;
 }
+
+// verifies that det = c det(pmat),
+// for some c a nonzero field element if up_to_constant==false; and c=1 otherwise
+// if randomized==true, it is allowed to use a Monte Carlo randomized approach
+// TODO: only randomized implemented for now
+bool verify_determinant(const zz_pX & det, const Mat<zz_pX> & pmat, bool up_to_constant, bool randomized);
 
 
 /*******************************************************************

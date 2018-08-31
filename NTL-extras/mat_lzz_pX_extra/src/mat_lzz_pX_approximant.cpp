@@ -400,6 +400,13 @@ DegVec mbasis(
     // initially, this is exactly shift
     DegVec rdeg( shift );
 
+    // TODO should we keep this?
+    // (is the code below really doing something if zero matrix?)
+    if ( IsZero(pmat) )
+        return rdeg;
+
+    long deg_pmat = deg(pmat);
+
     // holds the current pivot degree of appbas
     // initially tuple of zeroes
     // (note that at all times pivdeg+shift = rdeg entrywise)
@@ -466,11 +473,11 @@ DegVec mbasis(
                     LeftShiftRow(appbas,appbas,i,1);
 
             // III/ compute next residual, if needed
-            // TODO improve when deg(pmat)<order, see mbasis_vector
+            // this is coefficient of degree ord in appbas * pmat
             if (ord<order)
             {
-                residual = coeff(appbas,0) * coeff(pmat,ord);
-                for (long d = 1; d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
+                clear(residual);
+                for (long d = std::max<long>(0,ord-deg_pmat); d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
                 {
                     res_coeff1 = coeff(appbas,d);
                     res_coeff2 = coeff(pmat,ord-d);
@@ -582,20 +589,14 @@ DegVec mbasis_vector(
             }
 
             // III/ compute next residual, if needed
+            // this is coefficient of degree ord in appbas * pmat
             if (ord<order)
             {
-                if (ord < coeffs_pmat.length()) // TODO see about this when choice about deg(pmat) / coeffs.length has been made
-                    residual = coeffs_appbas[0] * coeffs_pmat[ord];
-                else
-                    clear(residual);
-
-                for (long d = 1; d <= deg_appbas; ++d) // we have deg_appbas <= ord
+                clear(residual);
+                for (long d = std::max<long>(0,ord-coeffs_pmat.length()+1); d <= deg_appbas; ++d) // we have deg_appbas <= ord
                 {
-                    if (ord-d < coeffs_pmat.length())
-                    {
-                        mul(res_coeff, coeffs_appbas[d], coeffs_pmat[ord-d]);
-                        add(residual, residual, res_coeff);
-                    }
+                    mul(res_coeff, coeffs_appbas[d], coeffs_pmat[ord-d]);
+                    add(residual, residual, res_coeff);
                 }
             }
         }

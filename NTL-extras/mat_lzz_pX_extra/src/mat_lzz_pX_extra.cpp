@@ -36,6 +36,16 @@ void clear(Mat<zz_pX> & pmat)
             clear(pmat[i][j]);
 }
 
+long IsZero(const Mat<zz_pX> & pmat)
+{
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        for (long j = 0; j < pmat.NumCols(); ++j)
+            if (!IsZero(pmat[i][j]))
+                return 0;
+
+    return 1;
+}
+
 void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt)
 {
     evmat.SetDims(pmat.NumRows(),pmat.NumCols());
