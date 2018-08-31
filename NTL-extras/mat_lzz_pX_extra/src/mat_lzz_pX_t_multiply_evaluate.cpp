@@ -9,7 +9,6 @@
 
 NTL_CLIENT
 
-
 /*------------------------------------------------------------*/
 /* transpose of b mapsto c = a*b. output is                   */
 /*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */

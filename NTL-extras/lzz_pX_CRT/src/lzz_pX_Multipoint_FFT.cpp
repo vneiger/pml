@@ -200,22 +200,32 @@ void zz_pX_Multipoint_FFT::t_interpolate(Vec<zz_p>& val, const zz_pX& f) {
         return;
     }
 
-    Vec<zz_p> coeffs;
-    coeffs.SetLength(n);
+    zz_pX tmp;
+    long *frept = &wk.tbl[0][0];
 
     if (! do_bit_reverse)
     {
         for (long i = 0; i < n; i++)
-            coeffs[i] = coeff(f, i);
+        {
+            frept[i] = rep(coeff(f, i));
+        }
     }
     else
     {
         for (long i = 0; i < n; i++)
-            coeffs[indices[i]] = coeff(f, i);
+        {
+            frept[i] = rep(coeff(f, indices[i]));
+        }
     }
 
-    zz_pX tmp;
-    interpolate(tmp, coeffs);
+    FromfftRep(tmp, wk, 0, n-1);
+
+#ifdef __NTL_FIX_SIZE_2_FFT
+    if (n == 2) // for n=2, the normalization is different in version 11.1.0
+    {
+        tmp = (1 / to_zz_p(2)) * tmp;
+    }
+#endif
 
     if (! do_bit_reverse)
     {

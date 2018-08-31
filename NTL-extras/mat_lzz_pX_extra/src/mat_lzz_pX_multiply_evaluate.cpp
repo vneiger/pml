@@ -9,6 +9,7 @@
 
 NTL_CLIENT
 
+
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
 /*------------------------------------------------------------*/
@@ -97,24 +98,6 @@ void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
-/* FFT points                                                 */
-/*------------------------------------------------------------*/
-void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-    long dA = deg(a);
-    long dB = deg(b);
-    long dC = dA+dB;
-    long sz = dC+1;
-
-    zz_pX_Multipoint *ev;
-    zz_pX_Multipoint_FFT ev_FFT = get_FFT_points(sz);
-
-    ev = &ev_FFT;
-    multiply_evaluate_do_it(c, a, b, *ev);
-}
-
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
 /* geometric points, uses FFTs directly                       */
 /*------------------------------------------------------------*/
 void multiply_evaluate_geometric_using_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
@@ -179,6 +162,24 @@ void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat
     ev_geometric.prepare_degree(dB);
 
     ev = &ev_geometric;
+    multiply_evaluate_do_it(c, a, b, *ev);
+}
+
+/*------------------------------------------------------------*/
+/* c = a*b                                                    */
+/* FFT points                                                 */
+/*------------------------------------------------------------*/
+void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{
+    long dA = deg(a);
+    long dB = deg(b);
+    long dC = dA+dB;
+    long sz = dC+1;
+
+    zz_pX_Multipoint *ev;
+    zz_pX_Multipoint_FFT ev_FFT = get_FFT_points(sz);
+
+    ev = &ev_FFT;
     multiply_evaluate_do_it(c, a, b, *ev);
 }
 
