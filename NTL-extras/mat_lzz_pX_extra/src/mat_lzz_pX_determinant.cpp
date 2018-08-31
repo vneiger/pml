@@ -73,17 +73,24 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
         // (goes over the whole matrix each time... info could be transmitted
         // through the successive calls)
         Mat<zz_pX> appbas;
-        // TODO better order in the odd dimension case? like commented just below?
-        //long order = (dim%2==0) ? (2*deg(pmat_r)+1) : (2*deg(pmat_r)+2);
-        long order = 2*deg(pmat_l)+1;
-        mbasis_vector(appbas, pmat_l, order, Shift(dim,0));
+        // degree of kernel basis will be (generically)  D = dim * deg(pmat_l) / (dim - cdim1)
+        // --> compute approximants at order deg(pmat_l) + D + 1
+        // (cf for example Neiger-Rosenkilde-Solomatov, Lemma 4.3) <-- find better reference
+        long deg_pmat_l = deg(pmat_l);
+        long deg_ker = ceil( cdim1 * deg(pmat_l) / (double)(dim-cdim1) );
+        long order = deg_pmat_l + deg_ker + 1;
+        //long order = 2*deg(pmat_l)+1;
+        Shift shift(dim,0);
+        mbasis(appbas, pmat_l, order, shift);
 
         // FIXME debug
-        //Mat<zz_pX> prod;
-        //Mat<long> degmat;
-        //multiply(prod,appbas,pmat);
-        //degree_matrix(degmat,prod);
-        //std::cout << degmat << std::endl;
+        Mat<long> degmat,degmat2;
+        Mat<zz_pX> prod;
+        degree_matrix(degmat2,appbas);
+        std::cout << "appbas" << std::endl << degmat2 << std::endl;
+        multiply(prod,appbas,pmat);
+        degree_matrix(degmat,prod);
+        std::cout << "prod" << std::endl << degmat << std::endl;
 
         // minimal left kernel basis of pmat_r : last rows of app
         Mat<zz_pX> kerbas;
