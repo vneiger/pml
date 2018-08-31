@@ -186,6 +186,29 @@ static void multiply_modulo_FFT_prime(Mat<zz_pX> & c, const Mat<zz_pX> & a, cons
         multiply_evaluate_FFT(c, a, b);
 }
 
+
+/*------------------------------------------------------------*/
+/* FFT multiplication done modulo FFTprime[idx]               */
+/*------------------------------------------------------------*/
+static void middle_product_modulo_FFT_prime(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long dA, long dB, long idx)
+{
+    long p = zz_p::modulus();
+    zz_pPush push;
+    zz_p::FFTInit(idx);
+    long fft_p = zz_p::modulus();
+
+    if (fft_p < p) // entries may not be reduced mod fft_p
+    {
+        Mat<zz_pX> ap = a;
+        Mat<zz_pX> bp = b;
+        reduce_mod_p(ap);
+        reduce_mod_p(bp);
+        middle_product_FFT(c, ap, bp, dA, dB);
+    }
+    else
+        middle_product_FFT(c, a, b, dA, dB);
+}
+
 /*------------------------------------------------------------*/
 /* transpose of                                               */
 /* FFT multiplication done modulo FFTprime[idx]               */
@@ -208,8 +231,6 @@ static void t_multiply_modulo_FFT_prime(Mat<zz_pX> & b, const Mat<zz_pX> & a, co
     else
         t_multiply_evaluate_FFT(b, a, c, dA, dB);
 }
-
- 
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
@@ -275,9 +296,69 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
     default:
         LogicError("impossible branch for 3 primes FFT");
     }
+}
 
+/*------------------------------------------------------------*/
+/* chooses either 1, 2 or 3 FFT primes                        */
+/*------------------------------------------------------------*/
+void middle_product_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long dA, long dB)
+{
+    // TODO: check that degrees are not too large?
+    long p = zz_p::modulus();
+    long s = a.NumCols();
 
+    ZZ max_coeff = ZZ(s) * ZZ(min(dA + 1, dB + 1)) * ZZ(p - 1) * ZZ(p - 1);
 
+    long fft_p0, fft_p1, fft_p2;
+    {
+        zz_pPush push;
+        zz_p::FFTInit(0);
+        fft_p0 = zz_p::modulus();
+        zz_p::FFTInit(1);
+        fft_p1 = zz_p::modulus();
+        zz_p::FFTInit(2);
+        fft_p2 = zz_p::modulus();
+    }
+
+    long nb_primes = 0;
+    if (ZZ(fft_p0) > max_coeff)
+    {
+        nb_primes = 1;
+    }
+    else if (ZZ(fft_p0)*ZZ(fft_p1) > 2*max_coeff)
+    {
+        nb_primes = 2;
+    }
+    else if (ZZ(fft_p0)*ZZ(fft_p1)*ZZ(fft_p2) > 2*max_coeff)   // x2 so that normalized remainders are in [0..p0p1p2/2]
+    {
+        nb_primes = 3;
+    }
+    else
+    {
+        LogicError("size too large for 3 primes FFT");
+    }
+
+    Mat<zz_pX> c0, c1, c2;
+    switch(nb_primes)
+    {
+    case 1:
+        middle_product_modulo_FFT_prime(c, a, b, dA, dB, 0);
+        reduce_mod_p(c);
+        break;
+    case 2:
+        middle_product_modulo_FFT_prime(c0, a, b, dA, dB, 0);
+        middle_product_modulo_FFT_prime(c1, a, b, dA, dB, 1);
+        reconstruct_2CRT(c, c0, fft_p0, c1, fft_p1);
+        break;
+    case 3:
+        middle_product_modulo_FFT_prime(c0, a, b, dA, dB, 0);
+        middle_product_modulo_FFT_prime(c1, a, b, dA, dB, 1);
+        middle_product_modulo_FFT_prime(c2, a, b, dA, dB, 2);
+        reconstruct_3CRT(c, c0, fft_p0, c1, fft_p1, c2, fft_p2);
+        break;
+    default:
+        LogicError("impossible branch for 3 primes middle product FFT");
+    }
 }
 
 /*------------------------------------------------------------*/

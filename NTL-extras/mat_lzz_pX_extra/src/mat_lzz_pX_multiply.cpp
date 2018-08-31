@@ -29,6 +29,7 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long i
     long sz = (a.NumRows() + a.NumCols() + b.NumCols()) / 3;
     long deg_wak = max_degree_waksman(sz);
 
+
     if (dmax <= deg_wak)
     {
         multiply_waksman(c, a, b);

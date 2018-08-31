@@ -51,6 +51,12 @@ void one_check(long sz, long deg)
                 {
                     LogicError("Error in FFT middle product");
                 }
+
+                middle_product_FFT(b2, a, c, dA, dB);
+                if (b1 != b2)
+                {
+                    LogicError("Error in FFT middle product");
+                }
             }
 
             middle_product(b2, a, c, dA, dB);

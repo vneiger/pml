@@ -460,21 +460,27 @@ inline void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, co
     t_multiply_evaluate_FFT(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
 }
 
-inline void middle_product_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
-{
-    t_multiply_evaluate(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
-}
+// inline void middle_product_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+// {
+//     t_multiply_evaluate(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
+// }
 
-inline void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
-{
-    t_multiply_3_primes(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
-}
+// inline void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+// {
+//     t_multiply_3_primes(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB);
+// }
 
-inline void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime = 1)
-{
-    t_multiply(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB, is_prime);
-}
+void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
+void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime = 1);
+
+// inline void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime = 1)
+// {
+//     t_multiply(b, reverse(a, dA), trunc(c, dA+dB+1), dA, dB, is_prime);
+// }
+
+
+void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
 /* inline Mat<zz_pX> & operator*=(Mat<zz_pX> & x, const Mat<zz_pX>& b) */
 /* { */

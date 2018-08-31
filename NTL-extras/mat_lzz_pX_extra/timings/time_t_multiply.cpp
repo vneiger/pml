@@ -38,34 +38,31 @@ void one_check(long sz, long deg)
             while ((get_time()-t_mid) <= thres);
             t_mid = (get_time()-t_mid) / nb;
 
-            t_naive = get_time();
-            nb = 0;
-            do
-            {
-                multiply(bb, a, c);
-                nb++;
-            }
-            while ((get_time()-t_naive) <= thres);
-            t_naive = (get_time()-t_naive) / nb;
-
-            cout << (t_mid / t_naive) << " ";
-
-            // random_mat_zz_pX(b, sz, sz, dB + 1);
-            // t_direct = get_time();
+            // t_naive = get_time();
             // nb = 0;
             // do
             // {
-            //     multiply(c, a, b);
+            //     multiply(bb, a, c);
             //     nb++;
             // }
-            // while ((get_time()-t_direct) <= thres);
-            // t_direct = (get_time()-t_direct) / nb;
+            // while ((get_time()-t_naive) <= thres);
+            // t_naive = (get_time()-t_naive) / nb;
+            // cout << (t_mid / t_naive) << " ";
 
-            // cout << (t_mid / t_direct) << " ";
+            random_mat_zz_pX(b, sz, sz, dB + 1);
+            t_direct = get_time();
+            nb = 0;
+            do
+            {
+                multiply(c, a, b);
+                nb++;
+            }
+            while ((get_time()-t_direct) <= thres);
+            t_direct = (get_time()-t_direct) / nb;
+
+            cout << (t_mid / t_direct) << " ";
 
             cout << endl;
-
-            exit(0);
         }
 }
 
@@ -99,9 +96,9 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
     warmup();
-    check(0);
+    // check(0);
     // check(23068673);
-    // check(288230376151711813);
+    check(288230376151711813);
     return 0;
 }
 
