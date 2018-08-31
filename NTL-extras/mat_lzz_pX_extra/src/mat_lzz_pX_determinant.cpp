@@ -52,45 +52,93 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
     }
     else
     {
-        long dimm = (dim>>1);
+        long cdim1 = (dim>>1);  // cdim1 ~ dim/2
+        long cdim2 = dim-cdim1;  // cdim2 ~ dim/2, cdim1+cdim2 = dim
         // TODO write and use "generic" kernel
-        Mat<zz_pX> ker;
         Mat<zz_pX> pmat_l;
         Mat<zz_pX> pmat_r;
-        ker.SetDims(dim,dim);
-        pmat_l.SetDims(dim,dimm);
-        pmat_r.SetDims(dim,dim-dimm);
+        pmat_l.SetDims(dim,cdim1);
+        pmat_r.SetDims(dim,cdim2);
 
         for (long i = 0; i < dim; ++i)
         {
-            for (long j = 0; j < dimm; ++j)
+            for (long j = 0; j < cdim1; ++j)
                 pmat_l[i][j] = pmat[i][j];
-            for (long j = dimm; j < dim; ++j)
-                pmat_r[i][j-dimm] = pmat[i][j];
+            for (long j = 0; j < cdim2; ++j)
+                pmat_r[i][j] = pmat[i][j+cdim1];
         }
 
         // compute the kernel via approximant basis at high order
         // TODO is computing the degree at each recursion level necessary?
         // (goes over the whole matrix each time... info could be transmitted
         // through the successive calls)
+        Mat<zz_pX> appbas;
         //long order = (dim%2==0) ? (2*deg(pmat_r)+1) : (2*deg(pmat_r)+2);
-        pmbasis(ker, pmat_r, 2*deg(pmat_r), Shift(dim,0));
+        long order = 2*deg(pmat_l)+1;
+        mbasis(appbas, pmat_l, order, Shift(dim,0));
 
         // FIXME debug
         Mat<zz_pX> prod;
         Mat<long> degmat;
-        multiply(prod,ker,pmat);
+        multiply(prod,appbas,pmat);
         degree_matrix(degmat,prod);
         std::cout << degmat << std::endl;
 
-        // only keep the first rows (minimal left kernel basis of pmat_r),
-        // and compute the product
-        ker.SetDims(dimm,dim);
+        // minimal left kernel basis of pmat_r : last rows of app
+        Mat<zz_pX> kerbas;
+        kerbas.SetDims(cdim2,dim);
+        for (long i = 0; i < cdim2; ++i)
+            for (long j = 0; j < dim; ++j)
+                kerbas[i][j] = appbas[i+cdim1][j];
+
+        // then compute the product
         Mat<zz_pX> pmatt;
-        multiply(pmatt, ker, pmat_l);
+        multiply(pmatt, kerbas, pmat_r);
 
         return determinant_generic_knowing_degree(det,pmatt,degree);
     }
+
+//	// recursion
+//	size_t m1 = m>>1; // m1 ~ m/2
+//	size_t m2 = m - m1; // m2 ~ m/2, m1 + m2 = m
+//	vector<int> shift( m, 0 );
+//	const size_t order = 2*sz-1;
+//
+//	// left columns of the matrix
+//	PolMatDom::PMatrix series( this->field(), m, m1, order );
+//	for ( size_t k=0; k<sz; ++k )
+//	for ( size_t i=0; i<m; ++i )
+//	for ( size_t j=0; j<m1; ++j )
+//		series.ref(i,j,k) = pmat.get(i,j,k);
+//
+//	PolMatDom::PMatrix appbas( this->field(), m, m, 0 );
+//	vector<int> rdeg = this->pmbasis( appbas, series, order, shift );
+//
+//	vector<int>::iterator it = rdeg.begin();
+//	advance(it,m1);
+//	size_t sz2 = *max_element(it,rdeg.end())+1;
+//
+//	// product
+//	PolMatDom::PMatrix newpmat( this->field(), m2, m2, sz2+sz-1 );
+//	// right half columns of pmat_sub
+//	PolMatDom::PMatrix pmat_sub( this->field(), m, m2, sz );
+//	for ( size_t k=0; k<sz; ++k )
+//	for ( size_t i=0; i<m; ++i )
+//	for ( size_t j=0; j<m2; ++j )
+//		pmat_sub.ref(i,j,k) = pmat.get(i,j+m1,k);
+//	// bottom half columns of appbas
+//	PolMatDom::PMatrix appbas_sub( this->field(), m2, m, sz2 );
+//	for ( size_t k=0; k<sz2; ++k )
+//	for ( size_t i=0; i<m2; ++i )
+//	for ( size_t j=0; j<m; ++j )
+//		appbas_sub.ref(i,j,k) = appbas.get(i+m1,j,k);
+//	// compute product
+//
+//	this->_PMMD.mul( newpmat, appbas_sub, pmat_sub );
+//
+//	return this->last_diagonal_entry( newpmat );
+//
+    
 }
 
 // Local Variables:
