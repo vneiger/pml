@@ -1155,6 +1155,12 @@ inline zz_pX determinant(const Mat<zz_pX> & pmat)
     return det;
 }
 
+// verifies that det = c det(pmat),
+// for some c a nonzero field element if up_to_constant==false; and c=1 otherwise
+// if randomized==true, it is allowed to use a Monte Carlo randomized approach
+// TODO: only randomized implemented for now
+bool verify_determinant(const zz_pX & det, const Mat<zz_pX> & pmat, bool up_to_constant, bool randomized);
+
 
 /*******************************************************************
  *  Labahn-Neiger-Zhou: via diagonal entries of triangularization  *

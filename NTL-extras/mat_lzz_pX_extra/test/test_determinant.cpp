@@ -27,12 +27,14 @@ int main(int argc, char *argv[])
 
     bool verify=false;
 
-    if (argc!=4)
-        throw std::invalid_argument("Usage: ./test_determinant rdim degree nbits");
+    if (argc!=4 && argc!=5)
+        throw std::invalid_argument("Usage: ./test_determinant rdim degree nbits (verify)");
 
     long rdim = atoi(argv[1]);
     long degree = atoi(argv[2]);
     long nbits = atoi(argv[3]);
+    if (argc==5)
+        verify = (atoi(argv[4])==1);
 
     if (nbits==0)
         zz_p::FFTInit(0);
@@ -57,22 +59,35 @@ int main(int argc, char *argv[])
     std::cout << "Time(random mat creation): " << (t2-t1) << "\n";
 
     std::cout << "warming up..." << std::endl;
-    warmup();
+    //warmup();
 
     // generic case
     {
-        std::cout << "~~~Testing generic determinant~~~" << std::endl;
+        std::cout << "~~~computing determinant, algorithm for generic case with known degree~~~" << std::endl;
         t1 = GetTime();
         zz_pX det;
-        determinant_generic_knowing_degree(det, pmat, rdim*degree);
+        bool b = determinant_generic_knowing_degree(det, pmat, rdim*degree);
         t2 = GetTime();
 
         std::cout << "Time(determinant computation): " << (t2-t1) << "s\n";
+        std::cout << "Issue detected during computation? " << (b?"yes":"no") << std::endl;
 
-        if (rdim<5 && degree<100)
+        if (verify)
         {
-            std::cout << pmat << std::endl;
-            std::cout << det << std::endl;
+            std::cout << "Verifying computed determinant:" << std::endl;
+            t1 = GetTime();
+            bool correct = verify_determinant(det, pmat, true, true);
+            t2 = GetTime();
+            std::cout << "Time(verification): " << (t2-t1) << "\n";
+            std::cout << "Correctness: " << (correct?"correct":"wrong") << std::endl;
+
+            if (rdim*rdim*degree<200)
+            {
+                std::cout << "Input matrix:" << std::endl;
+                std::cout << pmat << std::endl;
+                std::cout << "Output determinant:" << std::endl;
+                std::cout << det << std::endl;
+            }
         }
     }
 
