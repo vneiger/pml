@@ -474,11 +474,10 @@ DegVec mbasis(
 
             // III/ compute next residual, if needed
             // this is coefficient of degree ord in appbas * pmat
-            // TODO improve when deg(pmat)<order, see mbasis_vector
             if (ord<order)
             {
                 clear(residual);
-                for (long d = ord-deg_pmat; d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
+                for (long d = std::max<long>(0,ord-deg_pmat); d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
                 {
                     res_coeff1 = coeff(appbas,d);
                     res_coeff2 = coeff(pmat,ord-d);
@@ -590,20 +589,14 @@ DegVec mbasis_vector(
             }
 
             // III/ compute next residual, if needed
+            // this is coefficient of degree ord in appbas * pmat
             if (ord<order)
             {
-                if (ord < coeffs_pmat.length()) // TODO see about this when choice about deg(pmat) / coeffs.length has been made
-                    residual = coeffs_appbas[0] * coeffs_pmat[ord];
-                else
-                    clear(residual);
-
-                for (long d = 1; d <= deg_appbas; ++d) // we have deg_appbas <= ord
+                clear(residual);
+                for (long d = std::max<long>(0,ord-coeffs_pmat.length()+1); d <= deg_appbas; ++d) // we have deg_appbas <= ord
                 {
-                    if (ord-d < coeffs_pmat.length())
-                    {
-                        mul(res_coeff, coeffs_appbas[d], coeffs_pmat[ord-d]);
-                        add(residual, residual, res_coeff);
-                    }
+                    mul(res_coeff, coeffs_appbas[d], coeffs_pmat[ord-d]);
+                    add(residual, residual, res_coeff);
                 }
             }
         }
