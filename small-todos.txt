@@ -22,8 +22,8 @@
 
 
 TODO Vincent
-   - Generic determinant. This should be very easy via PM-Basis and
-multiplication.
+   - function set(.) for polmats. Test of all such small functions (maybe
+     gathered in a single file)
    - Finishing PM-Basis (incorporate middle product, some profiling to
 avoid stupid mistakes) and comparing it with LinBox's one and with the
 GCD in the small dimension case.

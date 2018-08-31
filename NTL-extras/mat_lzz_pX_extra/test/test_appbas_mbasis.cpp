@@ -154,6 +154,7 @@ int main(int argc, char *argv[])
 
     // mbasis "normal" update
     {
+        std::cout << "~~~Testing mbasis~~~" << std::endl;
         t1w = GetWallTime(); t1 = GetTime();
         Mat<zz_pX> appbas;
         pivdeg = mbasis(appbas,pmat,order,shift);

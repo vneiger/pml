@@ -400,6 +400,13 @@ DegVec mbasis(
     // initially, this is exactly shift
     DegVec rdeg( shift );
 
+    // TODO should we keep this?
+    // (is the code below really doing something if zero matrix?)
+    if ( IsZero(pmat) )
+        return rdeg;
+
+    long deg_pmat = deg(pmat);
+
     // holds the current pivot degree of appbas
     // initially tuple of zeroes
     // (note that at all times pivdeg+shift = rdeg entrywise)
@@ -466,11 +473,12 @@ DegVec mbasis(
                     LeftShiftRow(appbas,appbas,i,1);
 
             // III/ compute next residual, if needed
+            // this is coefficient of degree ord in appbas * pmat
             // TODO improve when deg(pmat)<order, see mbasis_vector
             if (ord<order)
             {
-                residual = coeff(appbas,0) * coeff(pmat,ord);
-                for (long d = 1; d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
+                clear(residual);
+                for (long d = ord-deg_pmat; d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
                 {
                     res_coeff1 = coeff(appbas,d);
                     res_coeff2 = coeff(pmat,ord-d);
