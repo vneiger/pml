@@ -13,7 +13,7 @@ NTL_CLIENT
 /* transpose of b mapsto c = a*b. output is                   */
 /*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
 /*------------------------------------------------------------*/
-void t_multiply_evaluate_do_it(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, zz_pX_Multipoint& ev)
+static void t_multiply_evaluate_do_it(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, zz_pX_Multipoint& ev)
 {
     long s = a.NumRows();
     long t = a.NumCols();
@@ -116,43 +116,6 @@ void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const M
 
     ev = &ev_geometric;
     t_multiply_evaluate_do_it(b, a, c, dA, dB, *ev);
-}
-
-/*------------------------------------------------------------*/
-/* transpose of b mapsto c = a*b. output is                   */
-/*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
-/* FFT points                                                 */
-/*------------------------------------------------------------*/
-void t_multiply_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
-{
-    long dC = dA + dB;
-    if (deg(a) > dA || deg(c) > dC)
-        LogicError("bad degree for t_multiply");
-    long sz = dC + 1;
-
-    zz_pX_Multipoint *ev;
-    zz_pX_Multipoint_FFT ev_FFT = get_FFT_points(sz);
-
-    ev = &ev_FFT;
-    t_multiply_evaluate_do_it(b, a, c, dA, dB, *ev);
-}
-
-/*------------------------------------------------------------*/
-/* transpose of b mapsto c = a*b. output is                   */
-/*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
-/* chooses the kind of points                                 */
-/* assumes that the field is large enough                     */
-/*------------------------------------------------------------*/
-void t_multiply_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
-{
-    if (is_FFT_ready(NextPowerOfTwo(dA + dB + 1)))
-    {
-        t_multiply_evaluate_FFT(b, a, c, dA, dB);
-    }
-    else
-    {
-        t_multiply_evaluate_geometric(b, a, c, dA, dB);
-    }
 }
 
 

@@ -11,25 +11,25 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* checks one product / middle product                        */
 /*------------------------------------------------------------*/
-void one_check(long sz, long deg)
+void one_check(long sz, long dg)
 {
     Mat<zz_pX> a, b1, b2, c;
 
-    for (long dA = deg - 1; dA < deg + 2; dA++)
-        for (long dB = deg - 1; dB < deg + 2; dB++)
+    for (long dA = dg - 1; dA < dg + 2; dA++)
+        for (long dB = dg - 1; dB < dg + 2; dB++)
         {
             random_mat_zz_pX(a, sz, sz+1, dA + 1);
             random_mat_zz_pX(c, sz+1, sz+2, dA + dB + 1);
 
             // testing all possible call sequences            
-            middle_product_evaluate_geometric(b1, a, c, dA, dB);
+            middle_product(b1, a, c, dA, dB);
 
             multiply(b2, a, c);
             b2 >>= dA;
             trunc(b2, b2, dB + 1);
             if (b1 != b2)
             {
-                LogicError("Error in geometric middle product");
+                LogicError("Error in middle product");
             }
 
             middle_product_3_primes(b2, a, c, dA, dB);
@@ -38,37 +38,19 @@ void one_check(long sz, long deg)
                 LogicError("Error in 3 primes middle product");
             }
 
-            middle_product_evaluate(b2, a, c, dA, dB);
-            if (b1 != b2)
-            {
-                LogicError("Error in evaluate middle product");
-            }
-
             if (is_FFT_prime())
             {
-                middle_product_evaluate_FFT(b2, a, c, dA, dB);
-                if (b1 != b2)
-                {
-                    LogicError("Error in FFT middle product");
-                }
-
                 middle_product_FFT(b2, a, c, dA, dB);
                 if (b1 != b2)
                 {
                     LogicError("Error in FFT middle product");
                 }
             }
-
-            middle_product(b2, a, c, dA, dB);
-            if (b1 != b2)
-            {
-                LogicError("Error in middle product");
-            }
         }
 }
 
 /*------------------------------------------------------------*/
-/* for a give prime, checks some (size, degree)               */
+/* for a give prime, checks some (size, dgree)               */
 /*------------------------------------------------------------*/
 void all_checks()
 {
@@ -77,14 +59,14 @@ void all_checks()
         1, 2, 3, 5, 10, 20, 30
     };
 
-    std::vector<long> degs =
+    std::vector<long> dgs =
     {
         1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 250, 300, 400
     };
 
     for (size_t si = 0; si < szs.size(); si++)
-        for (size_t di = 0; di < degs.size(); di++)
-            one_check(szs[si], degs[di]);
+        for (size_t di = 0; di < dgs.size(); di++)
+            one_check(szs[si], dgs[di]);
 }
 
 /*------------------------------------------------------------*/
