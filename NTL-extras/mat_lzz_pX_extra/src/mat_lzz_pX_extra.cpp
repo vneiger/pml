@@ -259,19 +259,38 @@ Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n){
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* random (n, m) matrix of degree < d                         */
+/* random (m, n) matrix of degree < d                         */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX(Mat<zz_pX>& a, long n, long m, long d)
+void random_mat_zz_pX(Mat<zz_pX>& pmat, long m, long n, long d)
 {
-    a.SetDims(n, m);
-    for (long i = 0; i < n; i++)
-    {
-        for (long j = 0; j < m; j++)
-        {
-            a[i][j] = random_zz_pX(d);
-        }
-    }
+    pmat.SetDims(m, n);
+    for (long i = 0; i < m; i++)
+        for (long j = 0; j < n; j++)
+            pmat[i][j] = random_zz_pX(d);
 }
+
+/*------------------------------------------------------------*/
+/* random (m, n) matrix of row degree < rdeg                  */
+/*------------------------------------------------------------*/
+void random_mat_zz_pX_rdeg(Mat<zz_pX>& pmat, long m, long n, DegVec rdeg)
+{
+    pmat.SetDims(m, n);
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < n; ++j)
+            pmat[i][j] = random_zz_pX(rdeg[i]);
+}
+
+/*------------------------------------------------------------*/
+/* random (m, n) matrix of column degree < cdeg               */
+/*------------------------------------------------------------*/
+void random_mat_zz_pX_cdeg(Mat<zz_pX>& pmat, long m, long n, DegVec cdeg)
+{
+    pmat.SetDims(m, n);
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < n; ++j)
+            pmat[i][j] = random_zz_pX(cdeg[j]);
+}
+
 
 
 /*------------------------------------------------------------*/
