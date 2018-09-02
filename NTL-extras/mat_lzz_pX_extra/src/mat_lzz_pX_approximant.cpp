@@ -9,6 +9,7 @@
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
 
+//#define MBASIS1_PROFILE // FIXME
 //#define PMBASIS_PROFILE // FIXME
 
 NTL_CLIENT
@@ -316,6 +317,10 @@ DegVec popov_mbasis1(
 {
     // compute permutation which realizes stable sort of the shift
     // (i.e. sorts (shift[0],0)....(shift[len],len) lexicographically increasingly)
+#ifdef MBASIS1_PROFILE
+    double t_perm1,t_perm2,t_pivind,t_ker,t_now;
+    t_now = GetWallTime();
+#endif
     std::vector<long> perm_shift(pmat.NumRows());
     std::iota(perm_shift.begin(), perm_shift.end(), 0);
     stable_sort(perm_shift.begin(), perm_shift.end(),
@@ -330,33 +335,48 @@ DegVec popov_mbasis1(
     for (long i = 0; i < pmat.NumRows(); ++i)
         //for (long j = 0; j < mat.NumRows(); ++j)
         mat[i] = pmat[perm_shift[i]];
+#ifdef MBASIS1_PROFILE
+    t_perm1 = GetWallTime() - t_now;
+#endif
 
     // find the permuted kernel basis in row echelon form
+#ifdef MBASIS1_PROFILE
+    t_now = GetWallTime();
+#endif
     Mat<zz_p> p_kerbas;
     kernel(p_kerbas,mat);
+#ifdef MBASIS1_PROFILE
+    t_ker = GetWallTime() - t_now;
+#endif
     if (p_kerbas.NumRows()==0)
         return DegVec(pmat.NumRows(),1);
     if (p_kerbas.NumRows()==pmat.NumRows())
         return DegVec(pmat.NumRows(),0);
 
     // compute the (permuted) pivot indices
-    // FIXME unfortunately NTL doesn't return the pivot indices in Gaussian elimination
-    // elimination... investigate if retrieving them as below actually takes time
-    std::vector<long> p_pivind(p_kerbas.NumRows()); // pivot indices in permuted kernel basis
-    p_pivind.back() = p_kerbas.NumCols()-1;
-    for (long i = p_kerbas.NumRows()-1; i>=0; --i)
+    // (NTL doesn't return the pivot indices in Gaussian elimination, we might
+    // hack the NTL code to retrieve them directly but it seems that the next
+    // lines have negligible time compared to the kernel computation)
+#ifdef MBASIS1_PROFILE
+    t_now = GetWallTime();
+#endif
+    std::vector<long> p_pivind(p_kerbas.NumRows(),p_kerbas.NumCols()-1); // pivot indices in permuted kernel basis
+    //p_pivind.back() = p_kerbas.NumCols()-1;
+    for (long i = 0; i<p_kerbas.NumRows(); ++i)
     {
         while (p_pivind[i]>=0 && p_kerbas[i][p_pivind[i]]==0)
             --p_pivind[i];
-        // pivot of row i-1 is always less than pivot of row i
-        if (i>0)
-            p_pivind[i-1] = p_pivind[i]-1;
     }
-    // note: "generically", the while loop will not perform any iteration
+#ifdef MBASIS1_PROFILE
+    t_pivind = GetWallTime() - t_now;
+#endif
 
     // permute everything back to original order:
     // prepare kernel permutation by permuting kernel pivot indices
     // pivot degrees corresponding to kernel pivot indices are 0, others are 1
+#ifdef MBASIS1_PROFILE
+    t_now = GetWallTime();
+#endif
     DegVec pivdeg(pmat.NumRows(),1);
     std::vector<long> pivind(p_kerbas.NumRows());
     for (long i = 0; i < p_kerbas.NumRows(); ++i)
@@ -373,10 +393,22 @@ DegVec popov_mbasis1(
          return (pivind[a] < pivind[b]);
          } );
 
+
     kerbas.SetDims(p_kerbas.NumRows(),p_kerbas.NumCols());
     for (long i = 0; i < kerbas.NumRows(); ++i)
         for (long j = 0; j < kerbas.NumCols(); ++j)
             kerbas[i][perm_shift[j]] = p_kerbas[perm_rows_ker[i]][j];
+#ifdef MBASIS1_PROFILE
+    t_perm2 = GetWallTime() - t_now;
+#endif
+
+#ifdef MBASIS1_PROFILE
+    std::cout << "~~popov_mbasis1~~ input dimensions " << pmat.NumRows() << " x " << pmat.NumCols() << std::endl;
+    std::cout << "  Initial permutations: " << t_perm1 << std::endl;
+    std::cout << "  Computing kernel: " << t_ker << std::endl;
+    std::cout << "  Computing pivot indices: " << t_pivind << std::endl;
+    std::cout << "  Final permutations: " << t_perm2 << std::endl;
+#endif
 
     return pivdeg;
 }
@@ -426,7 +458,6 @@ DegVec mbasis(
 
     for (long ord = 1; ord <= order; ++ord)
     {
-        // call MBasis1 to retrieve kernel and pivdeg
         diff_pivdeg = popov_mbasis1(kerbas,residual,rdeg);
 
         if (kerbas.NumRows()==0)
@@ -787,7 +818,7 @@ DegVec pmbasis(
     double t1,t2;
     t1 = GetWallTime();
 #endif
-    multiply_evaluate(residual,appbas,pmat);
+    multiply(residual,appbas,pmat);
 #ifdef PMBASIS_PROFILE
     t2 = GetWallTime();
     std::cout << "\tTime(res): " << (t2-t1) << "s" << std::endl;
@@ -807,7 +838,7 @@ DegVec pmbasis(
 #ifdef PMBASIS_PROFILE
     t1 = GetWallTime();
 #endif
-    multiply_evaluate(appbas,appbas2,appbas); // TODO use general multiplication when it is ready
+    multiply(appbas,appbas2,appbas);
 #ifdef PMBASIS_PROFILE
     t2 = GetWallTime();
     std::cout << "\tTime(basis mul): " << (t2-t1) << "s" << std::endl;

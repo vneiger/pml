@@ -194,6 +194,8 @@ void random_mat_zz_pX_rdeg(Mat<zz_pX>& pmat, long m, long n, DegVec rdeg);
 /*------------------------------------------------------------*/
 void random_mat_zz_pX_cdeg(Mat<zz_pX>& pmat, long m, long n, DegVec cdeg);
 
+// TODO random matrix with given PolMatForm
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* BASIC ARITHMETIC                                           */
@@ -511,6 +513,17 @@ void degree_matrix(
                    const bool row_wise=true
                   );
 
+inline Mat<long> degree_matrix(
+                               const Mat<zz_pX> &pmat,
+                               const Shift & shift = Shift(),
+                               const bool row_wise=true
+                              )
+{
+    Mat<long> degmat;
+    degree_matrix(degmat,pmat,shift,row_wise);
+    return degmat;
+}
+
 /*------------------------------------------------------------*/
 /* tuple (shifted deg row 1, shifted deg row 2, ...)          */
 /* where shifted deg row k is the maximum of the shifted      */
@@ -522,18 +535,18 @@ void row_degree(
                 const Shift & shift = Shift()
                ); 
 
-    /*------------------------------------------------------------*/
-    /* similar function for column degrees (see row_degree)       */
-    /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* similar function for column degrees (see row_degree)       */
+/*------------------------------------------------------------*/
 void col_degree(
                 DegVec & cdeg,
                 const Mat<zz_pX> &pmat,
                 const Shift & shift = Shift()
                ); 
 
-    /*------------------------------------------------------------*/
-    /* similar function with row-wise option and returning degree */
-    /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* similar function with row-wise option and returning degree */
+/*------------------------------------------------------------*/
 inline DegVec vector_degree(
                             const Mat<zz_pX> &pmat,
                             const Shift & shift = Shift(),

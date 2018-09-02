@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
 
     if (nbits==0)
         zz_p::FFTInit(0);
+        //zz_p::UserFFTInit(23068673);
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
@@ -53,7 +54,7 @@ int main(int argc, char *argv[])
     // build random matrix
     Mat<zz_pX> pmat;
     t1 = GetTime();
-    random_mat_zz_pX(pmat, rdim, rdim, degree);
+    random_mat_zz_pX(pmat, rdim, rdim, degree+1);
     t2 = GetTime();
 
     std::cout << "Time(random mat creation): " << (t2-t1) << "\n";

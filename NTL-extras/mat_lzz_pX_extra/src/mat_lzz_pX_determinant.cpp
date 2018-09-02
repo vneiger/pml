@@ -79,18 +79,18 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
         long deg_pmat_l = deg(pmat_l);
         long deg_ker = ceil( cdim1 * deg(pmat_l) / (double)(dim-cdim1) );
         long order = deg_pmat_l + deg_ker + 1;
-        //long order = 2*deg(pmat_l)+1;
+
+        //std::cout << "computing approx basis of matrix with degrees:" << std::endl;
+        //std::cout << degree_matrix(pmat_l) << std::endl;
+        //std::cout << "and at order " << order << std::endl;
         Shift shift(dim,0);
-        mbasis(appbas, pmat_l, order, shift);
+        pmbasis(appbas, pmat_l, order, shift);
 
         // FIXME debug
-        Mat<long> degmat,degmat2;
+        //std::cout << "appbas" << std::endl << degree_matrix(appbas) << std::endl;
         Mat<zz_pX> prod;
-        degree_matrix(degmat2,appbas);
-        std::cout << "appbas" << std::endl << degmat2 << std::endl;
         multiply(prod,appbas,pmat);
-        degree_matrix(degmat,prod);
-        std::cout << "prod" << std::endl << degmat << std::endl;
+        //std::cout << "prod" << std::endl << degree_matrix(prod) << std::endl;
 
         // minimal left kernel basis of pmat_r : last rows of app
         Mat<zz_pX> kerbas;
@@ -103,9 +103,7 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
         Mat<zz_pX> pmatt;
         multiply_naive(pmatt, kerbas, pmat_r);
 
-        Mat<long> degmat3;
-        degree_matrix(degmat3,pmatt);
-        std::cout << "pmatt" << std::endl << degmat3 << std::endl;
+        //std::cout << "pmatt" << std::endl << degree_matrix(pmatt) << std::endl;
 
         return determinant_generic_knowing_degree(det,pmatt,degree);
     }
