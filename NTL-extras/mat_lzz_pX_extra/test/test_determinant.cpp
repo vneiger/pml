@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
         t2 = GetTime();
 
         std::cout << "Time(determinant computation): " << (t2-t1) << "s\n";
-        std::cout << "Issue detected during computation? " << (b?"yes":"no") << std::endl;
+        std::cout << "Issue detected during computation? " << (b?"no":"yes") << std::endl;
 
         if (verify)
         {

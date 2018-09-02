@@ -1180,6 +1180,7 @@ void determinant_via_diagonal_of_hermite(zz_pX & det, const Mat<zz_pX> & pmat);
 // object with known degree). Runs the partial triangularization and returns
 // false if the computed diagonal entry of Hermite form does not have the right
 // degree. True is returned iff determinant is correct. 
+// TODO currently returns determinant up to constant factor!!
 bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, long degree);
 
 // Version 2 (Las Vegas randomized algorithm): runs the partial
