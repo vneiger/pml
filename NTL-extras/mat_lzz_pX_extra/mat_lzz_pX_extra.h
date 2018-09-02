@@ -18,6 +18,26 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
+/* Shifted reduced forms of polynomials matrices. Recall that */
+/* Popov => ordered weak Popov => weak Popov => Reduced       */
+/*------------------------------------------------------------*/
+
+enum PolMatForm {
+    NONE = 0,
+    REDUCED = 1, 
+    WEAK_POPOV = 2,
+    ORD_WEAK_POPOV = 3,
+    POPOV = 4,
+};
+
+/*------------------------------------------------------------*/
+/* Types for integer tuples: degrees and shifts               */
+/*------------------------------------------------------------*/
+
+typedef std::vector<long> Shift;
+typedef std::vector<long> DegVec;
+
+/*------------------------------------------------------------*/
 /* clears the matrix  (pmat = 0 with same dimensions)         */
 /*------------------------------------------------------------*/
 void clear(Mat<zz_pX> & pmat);
@@ -162,7 +182,7 @@ static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of degree < d                         */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX(Mat<zz_pX>& a, long m, long n, long d);
+void random_mat_zz_pX(Mat<zz_pX>& pmat, long m, long n, long d);
 
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of row degree < rdeg                  */
@@ -478,26 +498,6 @@ void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, 
 /* DEGREES, PIVOTS, LEADING MATRIX                            */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* Shifted reduced forms of polynomials matrices. Recall that */
-/* Popov => ordered weak Popov => weak Popov => Reduced       */
-/*------------------------------------------------------------*/
-
-enum PolMatForm {
-    NONE = 0,
-    REDUCED = 1, 
-    WEAK_POPOV = 2,
-    ORD_WEAK_POPOV = 3,
-    POPOV = 4,
-};
-
-/*------------------------------------------------------------*/
-/* Types for integer tuples: degrees and shifts               */
-/*------------------------------------------------------------*/
-
-typedef std::vector<long> Shift;
-typedef std::vector<long> DegVec;
 
 /*------------------------------------------------------------*/
 /* Degree matrix: matrix of the degree of each entry          */
