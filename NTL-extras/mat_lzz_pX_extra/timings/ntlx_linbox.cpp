@@ -3,6 +3,7 @@
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
 #include <iomanip>
+//#include <NTL/BasicThreadPool.h>
 
 #include "util.h"
 #include "magma_output.h"
@@ -350,6 +351,8 @@ void run_bench()
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
+    //SetNumThreads(4);
+
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
