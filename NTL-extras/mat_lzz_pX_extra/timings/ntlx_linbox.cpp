@@ -152,18 +152,18 @@ void one_bench_multiply(long sz, long deg, Field field)
     }
 
     {
-        LinBox::PolynomialMatrix<LinBox::PMType::polfirst,LinBox::PMStorage::plain,Field> A(field,sz,sz,deg),B(field,sz,sz,deg),C(field,sz,sz,deg+deg-1);
+        LinBox::PolynomialMatrix<LinBox::PMType::polfirst,LinBox::PMStorage::plain,Field> a(field,sz,sz,deg),b(field,sz,sz,deg),c(field,sz,sz,deg+deg-1);
         typename Field::RandIter Gen(field,time(NULL));
         LinBox::PolynomialMatrixDomain<Field> PMD(field);
 
         // Generate random matrix of polynomials
         for (long i=0;i<sz*sz;++i)
-            randomVect(Gen,A(i));
+            randomVect(Gen,a(i));
         for (long i=0;i<sz*sz;++i)
-            randomVect(Gen,B(i));
+            randomVect(Gen,b(i));
 
         t_linbox = GetWallTime();
-        PMD.mul(C,A,B);
+        PMD.mul(c,a,b);
         t_linbox = GetWallTime()-t_linbox;
     }
 
@@ -268,20 +268,20 @@ void run_bench()
         128,128,128,128,128,128,128,
         256,256,256,256,256,
         512,512,512,
-        1024,1024,
+        1024,
     };
     std::vector<long> degs =
     {
-        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
-        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
-        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
-        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
-        32,64,128,256,512,1024,2048,4096,8192,16384,32768,
-        32,64,128,256,512,1024,2048,4096,8192,
-        32,64,128,256,512,1024,2048,
-        32,64,128,256,512,
-        32,64,128,
-        32,64,
+        30,60,120,250,510,1020,2040,4090,8190,16380,32760,131070,
+        30,60,120,250,510,1020,2040,4090,8190,16380,32760,131070,
+        30,60,120,250,510,1020,2040,4090,8190,16380,32760,131070,
+        30,60,120,250,510,1020,2040,4090,8190,16380,32760,131070,
+        30,60,120,250,510,1020,2040,4090,8190,16380,32760,
+        30,60,120,250,510,1020,2040,4090,8190,
+        30,60,120,250,510,1020,2040,
+        30,60,120,250,510,
+        30,60,120,
+        30,
     };
     std::vector<long> primes =
     {
