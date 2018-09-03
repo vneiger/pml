@@ -1,3 +1,4 @@
+// NTLX
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
@@ -6,6 +7,39 @@
 #include "util.h"
 #include "magma_output.h"
 #include "mat_lzz_pX_extra.h"
+
+// LinBox
+#include <linbox/linbox-config.h>
+//#ifdef HAVE_OPENMP
+//#include <omp.h>
+//#define GIVARO_USES_OMP
+//#include <givaro/givtimer.h>
+//#define gettime realtime
+//typedef Givaro::OMPTimer myTimer;
+//#else
+//#include <givaro/givtimer.h>
+//#define gettime usertime
+//typedef Givaro::Timer myTimer;
+//#endif
+
+#include <linbox/ring/modular.h>
+#include <givaro/zring.h>
+#include <recint/rint.h>
+#include <linbox/util/timer.h>
+#include <linbox/matrix/matrix-domain.h>
+#include <linbox/matrix/polynomial-matrix.h>
+#include <linbox/algorithms/polynomial-matrix/polynomial-matrix-domain.h>
+
+// for LinBox, create random vector (used below to create random polynomial matrices)
+template <typename Rand, typename Vect>
+void randomVect (Rand& r, Vect& v)
+{
+    size_t s = v.size();				   
+    for (size_t i = 0; i < s; ++i)
+        r.random(v[i]); 
+}
+
+
 
 NTL_CLIENT
 
@@ -111,6 +145,43 @@ void one_bench_geometric(long sz, long deg)
 }
 
 /*------------------------------------------------------------*/
+template <typename Field>
+void one_bench_multiply(long sz, long deg, Field field)
+{
+    double t_ntlx,t_linbox;
+
+    {
+        Mat<zz_pX> a, b, c;
+
+        random_mat_zz_pX(a, sz, sz, deg);
+        random_mat_zz_pX(b, sz, sz, deg);
+
+        t_ntlx = GetWallTime();
+        multiply(c, a, b);
+        t_ntlx = GetWallTime()-t_ntlx;
+    }
+
+    {
+        LinBox::PolynomialMatrix<LinBox::PMType::polfirst,LinBox::PMStorage::plain,Field> A(field,sz,sz,deg),B(field,sz,sz,deg),C(field,sz,sz,deg+deg-1);
+        typename Field::RandIter Gen(field,time(NULL));
+        LinBox::PolynomialMatrixDomain<Field> PMD(field);
+
+        // Generate random matrix of polynomials
+        for (long i=0;i<sz*sz;++i)
+            randomVect(Gen,A(i));
+        for (long i=0;i<sz*sz;++i)
+            randomVect(Gen,B(i));
+
+        t_linbox = GetWallTime();
+        PMD.mul(C,A,B);
+        t_linbox = GetWallTime()-t_linbox;
+    }
+
+
+    cout << sz << "," << deg << "," << t_ntlx << "," << t_linbox << "," << t_ntlx/t_linbox << endl;
+}
+
+/*------------------------------------------------------------*/
 /* checks some products                                       */
 /*------------------------------------------------------------*/
 void run_bench(long test, long nbits)
@@ -192,6 +263,94 @@ void run_bench(long test, long nbits)
         cout << endl;
     }
 
+}
+
+void run_bench()
+{
+    std::vector<long> szs =
+    {
+        2,2,2,2,2,2,2,2,2,2,2,2,
+        4,4,4,4,4,4,4,4,4,4,4,4,
+        8,8,8,8,8,8,8,8,8,8,8,8,
+        16,16,16,16,16,16,16,16,16,16,16,16,
+        32,32,32,32,32,32,32,32,32,32,32,
+        64,64,64,64,64,64,64,64,64,
+        128,128,128,128,128,128,128,
+        256,256,256,256,256,
+        512,512,512,
+        1024,1024,
+    };
+    std::vector<long> degs =
+    {
+        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
+        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
+        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
+        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
+        32,64,128,256,512,1024,2048,4096,8192,16384,32768,
+        32,64,128,256,512,1024,2048,4096,8192,
+        32,64,128,256,512,1024,2048,
+        32,64,128,256,512,
+        32,64,128,
+        32,64,
+    };
+    std::vector<long> primes =
+    {
+        786433,2013265921,2748779069441,1139410705724735489,   // FFT primes with 20,31,42,60 bits
+        20,30,40,50,60 // normal primes with 20, 30, 40, 50, 60 bits
+    };
+
+    std::cout << "Bench polynomial matrix multiplication (FFT prime)" << std::endl;
+    for (long p = 0; p < 4; ++p)
+    {
+        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = ";
+        switch (p)
+        {
+            case 0: cout << 20 << ")" << endl; break;
+            case 1: cout << 31 << ")" << endl; break;
+            case 2: cout << 42 << ")" << endl; break;
+            case 3: cout << 60 << ")" << endl; break;
+        }
+
+        // NTLx initialize field
+        zz_p::UserFFTInit(primes[p]);
+        if (p==0) // FFT prime with 20 bits
+        {
+            Givaro::Modular<double> field((int32_t)primes[p]);
+            for (size_t i=0; i<szs.size(); ++i)
+                one_bench_multiply(szs[i],degs[i],field);
+        }
+        else // FFT prime with > 28 bits
+        {
+            Givaro::Modular<RecInt::ruint128,RecInt::ruint256> field(primes[p]);
+            for (size_t i=0; i<szs.size(); ++i)
+                one_bench_multiply(szs[i],degs[i],field);
+        }
+        cout << endl << endl;
+    }
+
+    for (size_t p = 4; p < primes.size(); ++p)
+    {
+        long prime = NTL::GenPrime_long(primes[p]);
+        std::cout << "Bench polynomial matrix multiplication (normal prime)" << std::endl;
+        cout << "p = " << prime << "  (normal prime, bit length = " << primes[p] << ")" << endl;
+        // NTLx initialize field
+        zz_p::init(prime);
+        if (p==0) // normal prime with <29 bits
+        {
+            // LinBox initialize field
+            Givaro::Modular<double> field((int32_t)prime);
+            for (size_t i=0;i<szs.size();i++)
+                one_bench_multiply(szs[i],degs[i],field);
+        }
+        else // FFT prime with >= 29 bits
+        {
+            // LinBox initialize field
+            Givaro::Modular<RecInt::ruint128,RecInt::ruint256> field(prime);
+            for (size_t i=0;i<szs.size();i++)
+                one_bench_multiply(szs[i],degs[i],field);
+        }
+        cout << endl << endl;
+    }
 }
 
 /*------------------------------------------------------------*/
