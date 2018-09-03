@@ -27,7 +27,7 @@ all:	$(COMPILE)
 
 run:	$(RUN)
 
-ntlx_linbox:
+ntlx_linbox: ntlx_linbox.cpp
 	$(CXX) -o ntlx_linbox ntlx_linbox.cpp $(OBJS) $(CXXFLAGS) $(LBCXXFLAGS) $(LIBS) $(LBLIBS)
 
 

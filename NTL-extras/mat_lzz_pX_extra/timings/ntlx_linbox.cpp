@@ -10,17 +10,9 @@
 
 // LinBox
 #include <linbox/linbox-config.h>
-//#ifdef HAVE_OPENMP
-//#include <omp.h>
-//#define GIVARO_USES_OMP
-//#include <givaro/givtimer.h>
-//#define gettime realtime
-//typedef Givaro::OMPTimer myTimer;
-//#else
-//#include <givaro/givtimer.h>
-//#define gettime usertime
-//typedef Givaro::Timer myTimer;
-//#endif
+#ifdef HAVE_OPENMP
+#include <omp.h>
+#endif
 
 #include <linbox/ring/modular.h>
 #include <givaro/zring.h>
@@ -38,8 +30,6 @@ void randomVect (Rand& r, Vect& v)
     for (size_t i = 0; i < s; ++i)
         r.random(v[i]); 
 }
-
-
 
 NTL_CLIENT
 
@@ -302,7 +292,7 @@ void run_bench()
     std::cout << "Bench polynomial matrix multiplication (FFT prime)" << std::endl;
     for (long p = 0; p < 4; ++p)
     {
-        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = ";
+        cout << "p = " << primes[p] << "  (FFT prime, bit length = ";
         switch (p)
         {
             case 0: cout << 20 << ")" << endl; break;
@@ -310,6 +300,7 @@ void run_bench()
             case 2: cout << 42 << ")" << endl; break;
             case 3: cout << 60 << ")" << endl; break;
         }
+        std::cout << "size,degree,ntlx,linbox,ratio(ntlx/linbox)" << std::endl;
 
         // NTLx initialize field
         zz_p::UserFFTInit(primes[p]);
@@ -333,6 +324,7 @@ void run_bench()
         long prime = NTL::GenPrime_long(primes[p]);
         std::cout << "Bench polynomial matrix multiplication (normal prime)" << std::endl;
         cout << "p = " << prime << "  (normal prime, bit length = " << primes[p] << ")" << endl;
+        std::cout << "size,degree,ntlx,linbox,ratio(ntlx/linbox)" << std::endl;
         // NTLx initialize field
         zz_p::init(prime);
         if (p==0) // normal prime with <29 bits
@@ -361,18 +353,22 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    long test = 0; // default: run all benchs
-    long nbits = 60;
-
-    if (argc>=2)
-        nbits = atoi(argv[1]);
-    if (argc==3)
-        test = atoi(argv[2]);
+    if (argc==1)
+    {
+        warmup();
+        run_bench();
+    }
+    if (argc==2 || argc==3)
+    {
+        long test = 0; // default: run all benchs
+        if (argc==3)
+            test = atoi(argv[2]);
+        long nbits = atoi(argv[1]);
+        warmup();
+        run_bench(test,nbits);
+    }
     if (argc>3)
         throw std::invalid_argument("Usage: ./time_multiply_comparelinbox OR ./time_multiply_comparelinbox nbits OR ./time_multiply_comparelinbox nbits test");
-
-    warmup();
-    run_bench(test,nbits);
 
     return 0;
 }
