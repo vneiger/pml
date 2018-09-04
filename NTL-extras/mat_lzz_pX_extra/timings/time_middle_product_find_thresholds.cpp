@@ -23,7 +23,7 @@ void check(long p)
         zz_p::init(p);
 
     const double thres = 0.001;
-    
+
     // first, find the crossover between evaluate and 3 primes 
     // need it only for non-FFT primes
     vector<long> degrees = {1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
@@ -35,7 +35,7 @@ void check(long p)
             cout << "static long MATRIX_MP_DEGREE_THRESHOLDS_SMALL[" << sizes.size() << "] = {";
         else
             cout << "static long MATRIX_MP_DEGREE_THRESHOLDS_LARGE[" << sizes.size() << "] = {";
-        
+
         for (size_t i = 0; i < sizes.size(); i++)
         {
             long done = 0;
@@ -52,7 +52,7 @@ void check(long p)
                 dB = degrees[j];
                 random_mat_zz_pX(a, sz, sz, dA + 1);
                 random_mat_zz_pX(c, sz, sz, dA + dB + 1);
-             
+
                 t_eval = get_time();
                 nb = 0;
                 do
@@ -72,7 +72,7 @@ void check(long p)
                 }
                 while ((get_time()-t_3primes) <= thres);
                 t_3primes = (get_time()-t_3primes) / nb;
-                
+
                 if (t_3primes < t_eval)
                     nb_in_a_row++;
                 else 
@@ -106,8 +106,8 @@ void check(long p)
             cout << "static long MATRIX_MP_NAIVE_THRESHOLDS_SMALL[" << sizes.size() << "] = {";
         else
             cout << "static long MATRIX_MP_NAIVE_THRESHOLDS_LARGE[" << sizes.size() << "] = {";
-    
-    
+
+
     // find degree threshold for naive 
     for (size_t i = 0; i < sizes.size(); i++)
     {
@@ -120,7 +120,7 @@ void check(long p)
         {
             Mat<zz_pX> a, b, c;
             long dA, dB, nb;
-            
+
             dA = degrees[j];
             dB = degrees[j];
             random_mat_zz_pX(a, sz, sz, dA + 1);
@@ -206,3 +206,11 @@ int main(int argc, char ** argv)
     check(288230376151711813);
     return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
