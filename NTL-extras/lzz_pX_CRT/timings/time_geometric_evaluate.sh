@@ -1,6 +1,6 @@
 #!/bin/sh
 
-filename=thresholds_geometric_evaluate_FFT.h
+filename=../thresholds_geometric_evaluate_FFT.h
 rm -f $filename
 echo "#ifndef __THRESHOLDS_GEOMETRIC_EVALUATE_FFT_H" >> $filename
 echo "#define __THRESHOLDS_GEOMETRIC_EVALUATE_FFT_H" >> $filename
