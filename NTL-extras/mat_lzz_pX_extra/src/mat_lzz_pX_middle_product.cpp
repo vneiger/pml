@@ -15,6 +15,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {
+
     long s = a.NumRows();
     long t = a.NumCols();
     long u = c.NumCols();
@@ -114,14 +115,14 @@ void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> &
 /*------------------------------------------------------------*/
 void middle_product_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {
-    if (is_FFT_ready(NextPowerOfTwo(dA + dB + 1)))
-    {
-        middle_product_FFT(b, a, c, dA, dB);
-    }
-    else
-    {
-        t_multiply_evaluate_geometric(b, reverse(a, dA), c, dA, dB);
-    }
+	if (is_FFT_ready(NextPowerOfTwo(dA + dB + 1)))
+	{
+		middle_product_FFT(b, a, c, dA, dB);
+	}
+	else
+	{
+		t_multiply_evaluate_geometric(b, reverse(a, dA), c, dA, dB);
+	}
 }
 
 
@@ -158,3 +159,11 @@ void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, 
     }
 
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

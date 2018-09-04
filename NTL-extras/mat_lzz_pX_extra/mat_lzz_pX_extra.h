@@ -19,6 +19,26 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
+/* Shifted reduced forms of polynomials matrices. Recall that */
+/* Popov => ordered weak Popov => weak Popov => Reduced       */
+/*------------------------------------------------------------*/
+
+enum PolMatForm {
+    NONE = 0,
+    REDUCED = 1, 
+    WEAK_POPOV = 2,
+    ORD_WEAK_POPOV = 3,
+    POPOV = 4,
+};
+
+/*------------------------------------------------------------*/
+/* Types for integer tuples: degrees and shifts               */
+/*------------------------------------------------------------*/
+
+typedef std::vector<long> Shift;
+typedef std::vector<long> DegVec;
+
+/*------------------------------------------------------------*/
 /* clears the matrix  (pmat = 0 with same dimensions)         */
 /*------------------------------------------------------------*/
 void clear(Mat<zz_pX> & pmat);
@@ -163,7 +183,19 @@ static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of degree < d                         */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX(Mat<zz_pX>& a, long m, long n, long d);
+void random_mat_zz_pX(Mat<zz_pX>& pmat, long m, long n, long d);
+
+/*------------------------------------------------------------*/
+/* random (m, n) matrix of row degree < rdeg                  */
+/*------------------------------------------------------------*/
+void random_mat_zz_pX_rdeg(Mat<zz_pX>& pmat, long m, long n, DegVec rdeg);
+
+/*------------------------------------------------------------*/
+/* random (m, n) matrix of column degree < cdeg               */
+/*------------------------------------------------------------*/
+void random_mat_zz_pX_cdeg(Mat<zz_pX>& pmat, long m, long n, DegVec cdeg);
+
+// TODO random matrix with given PolMatForm
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -473,26 +505,6 @@ void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, 
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* Shifted reduced forms of polynomials matrices. Recall that */
-/* Popov => ordered weak Popov => weak Popov => Reduced       */
-/*------------------------------------------------------------*/
-
-enum PolMatForm {
-    NONE = 0,
-    REDUCED = 1, 
-    WEAK_POPOV = 2,
-    ORD_WEAK_POPOV = 3,
-    POPOV = 4,
-};
-
-/*------------------------------------------------------------*/
-/* Types for integer tuples: degrees and shifts               */
-/*------------------------------------------------------------*/
-
-typedef std::vector<long> Shift;
-typedef std::vector<long> DegVec;
-
-/*------------------------------------------------------------*/
 /* Degree matrix: matrix of the degree of each entry          */
 /* Convention: deg(0) = -1, more generally the shifted degree */
 /* of a zero entry is min(shift)-1                            */
@@ -503,6 +515,17 @@ void degree_matrix(
                    const Shift & shift = Shift(),
                    const bool row_wise=true
                   );
+
+inline Mat<long> degree_matrix(
+                               const Mat<zz_pX> &pmat,
+                               const Shift & shift = Shift(),
+                               const bool row_wise=true
+                              )
+{
+    Mat<long> degmat;
+    degree_matrix(degmat,pmat,shift,row_wise);
+    return degmat;
+}
 
 /*------------------------------------------------------------*/
 /* tuple (shifted deg row 1, shifted deg row 2, ...)          */
@@ -515,18 +538,18 @@ void row_degree(
                 const Shift & shift = Shift()
                ); 
 
-    /*------------------------------------------------------------*/
-    /* similar function for column degrees (see row_degree)       */
-    /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* similar function for column degrees (see row_degree)       */
+/*------------------------------------------------------------*/
 void col_degree(
                 DegVec & cdeg,
                 const Mat<zz_pX> &pmat,
                 const Shift & shift = Shift()
                ); 
 
-    /*------------------------------------------------------------*/
-    /* similar function with row-wise option and returning degree */
-    /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* similar function with row-wise option and returning degree */
+/*------------------------------------------------------------*/
 inline DegVec vector_degree(
                             const Mat<zz_pX> &pmat,
                             const Shift & shift = Shift(),
@@ -1160,6 +1183,7 @@ void determinant_via_diagonal_of_hermite(zz_pX & det, const Mat<zz_pX> & pmat);
 // object with known degree). Runs the partial triangularization and returns
 // false if the computed diagonal entry of Hermite form does not have the right
 // degree. True is returned iff determinant is correct. 
+// TODO currently returns determinant up to constant factor!!
 bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, long degree);
 
 // Version 2 (Las Vegas randomized algorithm): runs the partial
