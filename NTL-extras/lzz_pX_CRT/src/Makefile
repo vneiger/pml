@@ -13,6 +13,8 @@ LIBS = -lntl -lgmp -lm
 all:	cp $(OBJS)
 
 cp:
+	if [ ! -f ../thresholds_geometric_evaluate_FFT.h ]; then cp -f ../thresholds_geometric_evaluate_FFT.orig $(INC_DIR)/thresholds_geometric_evaluate_FFT.h ; fi
+	if [ ! -f ../thresholds_geometric_interpolate_FFT.h ]; then cp -f ../thresholds_geometric_interpolate_FFT.orig $(INC_DIR)/thresholds_geometric_interpolate_FFT.h ; fi
 	cp -f ../*.h $(INC_DIR)
 
 clean:
