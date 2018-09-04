@@ -46,6 +46,15 @@ void one_check(long sz, long dg)
                     LogicError("Error in FFT middle product");
                 }
             }
+
+            if (sz <= 10 || max(dA, dB) <= 8)
+            {
+                middle_product_naive(b2, a, c, dA, dB);
+                if (b1 != b2)
+                {
+                    LogicError("Error in FFT middle product");
+                }
+            }
         }
 }
 

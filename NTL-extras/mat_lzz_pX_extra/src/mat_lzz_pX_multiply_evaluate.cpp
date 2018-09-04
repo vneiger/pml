@@ -165,40 +165,6 @@ void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat
     multiply_evaluate_do_it(c, a, b, *ev);
 }
 
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/* FFT points                                                 */
-/*------------------------------------------------------------*/
-void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-    long dA = deg(a);
-    long dB = deg(b);
-    long dC = dA+dB;
-    long sz = dC+1;
-
-    zz_pX_Multipoint *ev;
-    zz_pX_Multipoint_FFT ev_FFT = get_FFT_points(sz);
-
-    ev = &ev_FFT;
-    multiply_evaluate_do_it(c, a, b, *ev);
-}
-
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/* chooses the kind of points                                 */
-/* assumes that the field is large enough                     */
-/*------------------------------------------------------------*/
-void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-    if (is_FFT_ready(NextPowerOfTwo(deg(a) + deg(b) + 1)))
-    {
-        multiply_evaluate_FFT(c, a, b);
-    }
-    else
-    {
-        multiply_evaluate_geometric(c, a, b);
-    }
-}
 
 
 // Local Variables:

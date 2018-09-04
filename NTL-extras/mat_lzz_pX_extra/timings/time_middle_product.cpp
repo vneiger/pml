@@ -38,16 +38,16 @@ void one_check(long sz, long deg)
             while ((get_time()-t_mid) <= thres);
             t_mid = (get_time()-t_mid) / nb;
 
-            // t_naive = get_time();
-            // nb = 0;
-            // do
-            // {
-            //     multiply(bb, a, c);
-            //     nb++;
-            // }
-            // while ((get_time()-t_naive) <= thres);
-            // t_naive = (get_time()-t_naive) / nb;
-            // cout << (t_mid / t_naive) << " ";
+            t_naive = get_time();
+            nb = 0;
+            do
+            {
+                multiply(bb, a, c);
+                nb++;
+            }
+            while ((get_time()-t_naive) <= thres);
+            t_naive = (get_time()-t_naive) / nb;
+            cout << (t_mid / t_naive) << " ";
 
             random_mat_zz_pX(b, sz, sz, dB + 1);
             t_direct = get_time();
@@ -71,10 +71,8 @@ void one_check(long sz, long deg)
 /*------------------------------------------------------------*/
 void check(long p)
 {
-    vector<long> sizes = {10};
-    vector<long> degrees = {20};
-    // vector<long> sizes = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
-    // vector<long> degrees = {15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
+    vector<long> sizes = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
+    vector<long> degrees = {15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
 
     if (p == 0)
         zz_p::FFTInit(0);
@@ -96,8 +94,8 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
     warmup();
-    // check(0);
-    // check(23068673);
+    check(0);
+    check(23068673);
     check(288230376151711813);
     return 0;
 }

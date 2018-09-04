@@ -3,6 +3,7 @@
 #include <NTL/lzz_pX.h>
 
 #include "lzz_p_extra.h"
+#include "lzz_pX_middle_product.h"
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
 
@@ -115,6 +116,37 @@ void multiply_naive(Mat<zz_pX> & c_out, const Mat<zz_pX> & a, const Mat<zz_pX> &
     }
     c_out = c;
 }
+
+
+/*------------------------------------------------------------*/
+/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
+/* naive algorithm                                            */
+/*------------------------------------------------------------*/
+void middle_product_naive(Mat<zz_pX> & b_out, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+{
+    Mat<zz_pX> b;
+    long u = a.NumRows();
+    long v = a.NumCols();
+    long w = c.NumCols();
+
+    b.SetDims(u, w);
+
+    for (long i = 0; i < u; i++)
+    {
+        for (long j = 0; j < w; j++)
+        {
+            b[i][j] = 0;
+            for (long k = 0; k < v; k++)
+            {
+                zz_pX tmp;
+                middle_product(tmp, a[i][k], c[k][j], dA, dB);
+                b[i][j] += tmp;
+            }
+        }
+    }
+    b_out = b;
+}
+
 
 // Local Variables:
 // mode: C++

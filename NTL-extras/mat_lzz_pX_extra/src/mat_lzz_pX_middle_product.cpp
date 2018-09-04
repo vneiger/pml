@@ -37,8 +37,8 @@ void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> &
     {
         for (long k = 0; k < t; k++)
         {
-	    TofftRep(R1, a[i][k], idxk);
-	    long *frept = & R1.tbl[0][0];
+            TofftRep(R1, a[i][k], idxk);
+            long *frept = & R1.tbl[0][0];
             for (long r = 0, rst = 0; r < n; r++, rst += st)
                 mat_valA[rst + i*t + k] = frept[r];
         }
@@ -49,8 +49,8 @@ void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> &
     {
         for (long k = 0; k < u; k++)
         {
-	    TofftRep(R1, c[i][k], idxk);
-	    long *frept = & R1.tbl[0][0];
+            TofftRep(R1, c[i][k], idxk);
+            long *frept = & R1.tbl[0][0];
             for (long r = 0, rtu = 0; r < n; r++, rtu += tu)
                 mat_valC[rtu + i*u + k] = frept[r];
         }
@@ -96,9 +96,11 @@ void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> &
     {
         for (long k = 0; k < u; k++)
         {
-	    long *frept = & R1.tbl[0][0];
-	    for (long r = 0; r < n; r++)
-	     	frept[r] = rep(mat_valB[i*u + k][r]);
+            long *frept = & R1.tbl[0][0];
+            for (long r = 0; r < n; r++)
+            {
+                frept[r] = rep(mat_valB[i*u + k][r]);
+            }
             FromfftRep(b[i][k], R1, dA, dA + dB);
         }
     }
@@ -131,8 +133,18 @@ void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, 
 {
     long dmax = max(dA, dB);
     long p = zz_p::modulus();
+
     long sz = (a.NumRows() + a.NumCols() + c.NumCols()) / 3;
-    long deg_ev = max_degree_evaluate(sz);
+    long deg_naive = max_degree_mp_naive(sz);
+
+    if (dmax <= deg_naive)
+    {
+        middle_product_naive(b, a, c, dA, dB);
+        return;
+    }
+
+
+    long deg_ev = max_degree_mp_evaluate(sz);
 
     if (is_prime && p > 2 * (dA + dB + 1) && dmax <= deg_ev)
     {

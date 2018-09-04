@@ -8,6 +8,7 @@
 
 #include "lzz_p_extra.h"
 #include "thresholds_matrix_multiply.h"
+#include "thresholds_matrix_middle_product.h"
 
 NTL_CLIENT
 
@@ -449,8 +450,10 @@ void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const M
 /*------------------------------------------------------------*/
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
 /*------------------------------------------------------------*/
+void middle_product_naive(Mat<zz_pX> & b_out, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+void middle_product_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime = 1);
 
 
