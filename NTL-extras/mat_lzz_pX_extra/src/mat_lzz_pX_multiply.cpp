@@ -9,15 +9,15 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
+/* c = a*b                                                    */
 /* assumes FFT prime and p large enough                       */
+/* output may alias input; c does not have to be zero matrix  */
 /*------------------------------------------------------------*/
 void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
     long s = a.NumRows();
     long t = a.NumCols();
     long u = b.NumCols();
-    c.SetDims(s, u);
 
     long dA = deg(a);
     long dB = deg(b);
@@ -94,6 +94,7 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
         }
     }
 
+    c.SetDims(s, u);
     for (long i = 0; i < s; i++)
     {
         for (long k = 0; k < u; k++)
@@ -113,6 +114,7 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
 /* c = a*b                                                    */
 /* chooses the kind of points                                 */
 /* assumes that the field is large enough                     */
+/* output may alias input; c does not have to be zero matrix  */
 /*------------------------------------------------------------*/
 void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {

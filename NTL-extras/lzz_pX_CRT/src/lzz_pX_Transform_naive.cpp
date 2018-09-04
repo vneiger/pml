@@ -70,6 +70,7 @@ void zz_pX_Transform_naive::forward_right(Vec<zz_p>& val, const zz_pX& P) const
 /*------------------------------------------------------------*/
 void zz_pX_Transform_naive::backward(zz_pX& P, const Vec<zz_p>& val) const
 {
+    P = 0;
     long idx = 0;
     for (long i = 0; i < m; i++)
     {

@@ -24,6 +24,7 @@ long zz_pX_Transform::transform_length() const
 
 /*------------------------------------------------------------*/
 /* evaluates all entries of a vector                          */
+/* aliases are not permitted between val[i] and f[j].rep      */
 /*------------------------------------------------------------*/
 void zz_pX_Transform::forward_left_vector(Vec<Vec<zz_p>>& val, const Vec<zz_pX>& f) const
 {
@@ -48,6 +49,7 @@ void zz_pX_Transform::forward_left_vector(Vec<Vec<zz_p>>& val, const Vec<zz_pX>&
 
 /*------------------------------------------------------------*/
 /* evaluates all entries of a vector                          */
+/* aliases are not permitted between val[i] and f[j].rep      */
 /*------------------------------------------------------------*/
 void zz_pX_Transform::forward_right_vector(Vec<Vec<zz_p>>& val, const Vec<zz_pX>& f) const
 {
@@ -125,6 +127,7 @@ void zz_pX_Transform::forward_right_matrix(Vec<Mat<zz_p>>& val, const Mat<zz_pX>
 
 /*------------------------------------------------------------*/
 /* interpolates all entries of a vector                       */
+/* aliases are not permitted between val[i] and f[j].rep      */
 /*------------------------------------------------------------*/
 void zz_pX_Transform::backward_vector(Vec<zz_pX>& f, const Vec<Vec<zz_p>>& val) const
 {

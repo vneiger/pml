@@ -12,14 +12,13 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
 /* assumes FFT prime and p large enough                       */
+/* output may alias input; b does not have to be zero matrix  */
 /*------------------------------------------------------------*/
 void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {
-
     long s = a.NumRows();
     long t = a.NumCols();
     long u = c.NumCols();
-    b.SetDims(s, u);
 
     long idxk = NextPowerOfTwo(dA + dB + 1);
     fftRep R1(INIT_SIZE, idxk);
@@ -93,6 +92,7 @@ void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> &
         }
     }
 
+    b.SetDims(s, u);
     for (long i = 0; i < s; i++)
     {
         for (long k = 0; k < u; k++)
@@ -112,6 +112,7 @@ void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> &
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
 /* chooses the kind of points                                 */
 /* assumes that the field is large enough                     */
+/* output may alias input; b does not have to be zero matrix  */
 /*------------------------------------------------------------*/
 void middle_product_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {
@@ -129,6 +130,7 @@ void middle_product_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_
 /*------------------------------------------------------------*/
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
 /* assumes FFT prime and p large enough                       */
+/* output may alias input; b does not have to be zero matrix  */
 /*------------------------------------------------------------*/
 void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime)
 {

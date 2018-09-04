@@ -98,7 +98,7 @@ int main(int argc, char ** argv)
 
     warmup();
     check(0, sz, deg);
-    check(23068673, sz, deg);
-    check(288230376151711813, sz, deg);
+    // check(23068673, sz, deg);
+    // check(288230376151711813, sz, deg);
     return 0;
 }

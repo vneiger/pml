@@ -208,13 +208,12 @@ zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, long d){
 
 /*-----------------------------------------------------------*/
 /* val[i] = P(r^(2*i)), i = 0..n-1                           */
+/* val may alias P.rep                                       */
 /*-----------------------------------------------------------*/
 void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const{
-
-    val.SetLength(n);
-
     zz_pX a, b;
     long dp = deg(P);
+    val.SetLength(n);
 
     if (n == 0)
     {
@@ -287,6 +286,7 @@ void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const{
 /*------------------------------------------------------------*/
 /* finds f of degree < d such that                            */
 /* val[i] = f(r^(2*i)), i = 0..n-1                            */
+/* val may alias f.rep                                        */
 /*------------------------------------------------------------*/
 void zz_pX_Multipoint_Geometric::interpolate(zz_pX& f, const Vec<zz_p>& val) {
     f = 0;
@@ -356,6 +356,7 @@ void zz_pX_Multipoint_Geometric::interpolate(zz_pX& f, const Vec<zz_p>& val) {
 /* transpose of                                              */
 /* val[i] = P(r^(2*i)), i = 0..n-1                           */
 /* val must have length n                                    */
+/* val may alias P.rep                                       */
 /*-----------------------------------------------------------*/
 void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long output_size) const{
     P = 0;
@@ -423,6 +424,7 @@ void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long
 /* transpose of                                               */
 /* finds P of degree < d such that                            */
 /* val[i] = P(r^(2*i)), i = 0..n-1                            */
+/* val may alias P.rep                                        */
 /*------------------------------------------------------------*/
 void zz_pX_Multipoint_Geometric::t_interpolate(Vec<zz_p>& val, const zz_pX& P) {
     val.SetLength(n);

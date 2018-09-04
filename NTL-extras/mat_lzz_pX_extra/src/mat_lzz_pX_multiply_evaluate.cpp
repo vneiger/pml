@@ -12,13 +12,13 @@ NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
+/* output may alias input; c does not have to be zero matrix  */
 /*------------------------------------------------------------*/
 void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, zz_pX_Multipoint& ev)
 {
     long s = a.NumRows();
     long t = a.NumCols();
     long u = b.NumCols();
-    c.SetDims(s, u);
 
     long n = ev.length();
 
@@ -87,6 +87,7 @@ void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
         }
     }
 
+    c.SetDims(s, u);
     for (long i = 0; i < s; i++)
     {
         for (long k = 0; k < u; k++)
@@ -99,6 +100,8 @@ void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
 /* geometric points, uses FFTs directly                       */
+/* output may alias input; c does not have to be zero matrix  */
+/* (exists mostly for testing purposes)                       */
 /*------------------------------------------------------------*/
 void multiply_evaluate_geometric_using_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
@@ -123,6 +126,8 @@ void multiply_evaluate_geometric_using_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a,
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
 /* geometric points, uses middle product                      */
+/* output may alias input; c does not have to be zero matrix  */
+/* (exists mostly for testing purposes)                       */
 /*------------------------------------------------------------*/
 void multiply_evaluate_geometric_no_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
@@ -147,6 +152,7 @@ void multiply_evaluate_geometric_no_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, co
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
 /* geometric points, thresholded                              */
+/* output may alias input; c does not have to be zero matrix  */
 /*------------------------------------------------------------*/
 void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {

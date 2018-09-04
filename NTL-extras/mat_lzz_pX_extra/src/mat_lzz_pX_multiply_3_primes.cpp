@@ -39,6 +39,7 @@ static void reduce_mod_p(Mat<zz_pX> & a)
 
 /*------------------------------------------------------------*/
 /* matrix CRT modulo 2 primes, result reduced modulo p        */
+/* c cannot alias c0 or c1; c does not have to be zero        */
 /*------------------------------------------------------------*/
 static void reconstruct_2CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, const Mat<zz_pX> & c1, long p1)
 {
@@ -57,7 +58,6 @@ static void reconstruct_2CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, con
 
     long p = zz_p::modulus();
     sp_reduce_struct red_struct = zz_pInfo->red_struct;
-    // sp_reduce_struct red_struct = zz_p::red_struct();
     long p0_red = rem(p0, p, red_struct);
     mulmod_precon_t p0_prec = PrepMulModPrecon(p0_red, p, PrepMulMod(p)); 
 
@@ -65,6 +65,7 @@ static void reconstruct_2CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, con
     {
         for (long j = 0; j < s; j++)
         {
+            c[i][j] = 0;
             long d = max(deg(c0[i][j]), deg(c1[i][j]));
             for (long k = 0; k <= d; k++)
             {
@@ -83,6 +84,7 @@ static void reconstruct_2CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, con
 
 /*------------------------------------------------------------*/
 /* matrix CRT modulo 3 primes, result reduced modulo p        */
+/* c cannot alias c0, c1 or c2; c does not have to be zero    */
 /*------------------------------------------------------------*/
 static void reconstruct_3CRT(Mat<zz_pX> & c, Mat<zz_pX> & c0, long p0, Mat<zz_pX> & c1, long p1, Mat<zz_pX> & c2, long p2)
 {
@@ -167,6 +169,7 @@ static void reconstruct_3CRT(Mat<zz_pX> & c, Mat<zz_pX> & c0, long p0, Mat<zz_pX
 
 /*------------------------------------------------------------*/
 /* FFT multiplication done modulo FFTprime[idx]               */
+/* c can alias a or b; c does not have to be zero             */
 /*------------------------------------------------------------*/
 static void multiply_modulo_FFT_prime(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long idx)
 {
@@ -189,9 +192,10 @@ static void multiply_modulo_FFT_prime(Mat<zz_pX> & c, const Mat<zz_pX> & a, cons
 
 
 /*------------------------------------------------------------*/
-/* FFT multiplication done modulo FFTprime[idx]               */
+/* middle product done modulo FFTprime[idx]                   */
+/* b can alias a or c; b does not have to be zero             */
 /*------------------------------------------------------------*/
-static void middle_product_modulo_FFT_prime(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long dA, long dB, long idx)
+static void middle_product_modulo_FFT_prime(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long idx)
 {
     long p = zz_p::modulus();
     zz_pPush push;
@@ -201,14 +205,14 @@ static void middle_product_modulo_FFT_prime(Mat<zz_pX> & c, const Mat<zz_pX> & a
     if (fft_p < p) // entries may not be reduced mod fft_p
     {
         Mat<zz_pX> ap = a;
-        Mat<zz_pX> bp = b;
+        Mat<zz_pX> cp = c;
         reduce_mod_p(ap);
-        reduce_mod_p(bp);
-        middle_product_FFT(c, ap, bp, dA, dB);
+        reduce_mod_p(cp);
+        middle_product_FFT(b, ap, cp, dA, dB);
     }
     else
     {
-        middle_product_FFT(c, a, b, dA, dB);
+        middle_product_FFT(b, a, c, dA, dB);
     }
 }
 
@@ -216,10 +220,10 @@ static void middle_product_modulo_FFT_prime(Mat<zz_pX> & c, const Mat<zz_pX> & a
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
 /* chooses either 1, 2 or 3 FFT primes                        */
+/* c can alias a or b; c does not have to be zero             */
 /*------------------------------------------------------------*/
 void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
-    // TODO: check that degrees are not too large?
     long p = zz_p::modulus();
     long s = a.NumCols();
     long dA = deg(a);
@@ -279,10 +283,13 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
     }
 }
 
+
 /*------------------------------------------------------------*/
+/* middle product                                             */
 /* chooses either 1, 2 or 3 FFT primes                        */
+/* b can alias a or c; b does not have to be zero             */
 /*------------------------------------------------------------*/
-void middle_product_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long dA, long dB)
+void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {
     // TODO: check that degrees are not too large?
     long p = zz_p::modulus();
@@ -319,23 +326,23 @@ void middle_product_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
         LogicError("size too large for 3 primes FFT");
     }
 
-    Mat<zz_pX> c0, c1, c2;
+    Mat<zz_pX> b0, b1, b2;
     switch(nb_primes)
     {
     case 1:
-        middle_product_modulo_FFT_prime(c, a, b, dA, dB, 0);
-        reduce_mod_p(c);
+        middle_product_modulo_FFT_prime(b, a, c, dA, dB, 0);
+        reduce_mod_p(b);
         break;
     case 2:
-        middle_product_modulo_FFT_prime(c0, a, b, dA, dB, 0);
-        middle_product_modulo_FFT_prime(c1, a, b, dA, dB, 1);
-        reconstruct_2CRT(c, c0, fft_p0, c1, fft_p1);
+        middle_product_modulo_FFT_prime(b0, a, c, dA, dB, 0);
+        middle_product_modulo_FFT_prime(b1, a, c, dA, dB, 1);
+        reconstruct_2CRT(b, b0, fft_p0, b1, fft_p1);
         break;
     case 3:
-        middle_product_modulo_FFT_prime(c0, a, b, dA, dB, 0);
-        middle_product_modulo_FFT_prime(c1, a, b, dA, dB, 1);
-        middle_product_modulo_FFT_prime(c2, a, b, dA, dB, 2);
-        reconstruct_3CRT(c, c0, fft_p0, c1, fft_p1, c2, fft_p2);
+        middle_product_modulo_FFT_prime(b0, a, c, dA, dB, 0);
+        middle_product_modulo_FFT_prime(b1, a, c, dA, dB, 1);
+        middle_product_modulo_FFT_prime(b2, a, c, dA, dB, 2);
+        reconstruct_3CRT(b, b0, fft_p0, b1, fft_p1, b2, fft_p2);
         break;
     default:
         LogicError("impossible branch for 3 primes middle product FFT");

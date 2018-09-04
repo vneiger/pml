@@ -12,13 +12,13 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* transpose of b mapsto c = a*b. output is                   */
 /*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
+/* output may alias input; b does not have to be zero matrix  */
 /*------------------------------------------------------------*/
 static void t_multiply_evaluate_do_it(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, zz_pX_Multipoint& ev)
 {
     long s = a.NumRows();
     long t = a.NumCols();
     long u = c.NumCols();
-    b.SetDims(s, u);
 
     long n = ev.length();
 
@@ -87,6 +87,7 @@ static void t_multiply_evaluate_do_it(Mat<zz_pX> & b, const Mat<zz_pX> & a, cons
         }
     }
 
+    b.SetDims(s, u);
     for (long i = 0; i < s; i++)
     {
         for (long k = 0; k < u; k++)
@@ -100,6 +101,7 @@ static void t_multiply_evaluate_do_it(Mat<zz_pX> & b, const Mat<zz_pX> & a, cons
 /* transpose of b mapsto c = a*b. output is                   */
 /*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
 /* geometric points                                           */
+/* output may alias input; b does not have to be zero matrix  */
 /*------------------------------------------------------------*/
 void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {

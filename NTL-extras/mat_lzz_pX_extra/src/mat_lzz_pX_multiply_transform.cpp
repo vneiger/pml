@@ -11,6 +11,7 @@ NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
+/* c can alias a or b; c does not have to be zero             */
 /*------------------------------------------------------------*/
 void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
@@ -35,6 +36,7 @@ void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
+/* c can alias a or b; c does not have to be zero             */
 /*------------------------------------------------------------*/
 void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
@@ -56,6 +58,7 @@ void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
+/* c can alias a or b; c does not have to be zero             */
 /*------------------------------------------------------------*/
 void multiply_transform_montgomery3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
@@ -77,6 +80,7 @@ void multiply_transform_montgomery3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const 
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
+/* c can alias a or b; c does not have to be zero             */
 /*------------------------------------------------------------*/
 void multiply_transform_karatsuba4(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
@@ -96,7 +100,10 @@ void multiply_transform_karatsuba4(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
     trs_karatsuba4.backward_matrix(c, valC);
 }
 
-
+/*------------------------------------------------------------*/
+/* c = a*b                                                    */
+/* c can alias a or b; c does not have to be zero             */
+/*------------------------------------------------------------*/
 void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long len)
 {
     switch (len) 

@@ -12,6 +12,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
 /* Waksman's algorithm                                        */
+/* output may alias input; c does not have to be zero matrix  */
 /*------------------------------------------------------------*/
 void multiply_waksman(Mat<zz_pX> &Cout, const Mat<zz_pX> &A, const Mat<zz_pX> &B)
 {
@@ -92,6 +93,7 @@ void multiply_waksman(Mat<zz_pX> &Cout, const Mat<zz_pX> &A, const Mat<zz_pX> &B
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
 /* naive algorithm                                            */
+/* output may alias input; c does not have to be zero matrix  */
 /*------------------------------------------------------------*/
 void multiply_naive(Mat<zz_pX> & c_out, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
@@ -121,6 +123,7 @@ void multiply_naive(Mat<zz_pX> & c_out, const Mat<zz_pX> & a, const Mat<zz_pX> &
 /*------------------------------------------------------------*/
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
 /* naive algorithm                                            */
+/* output may alias input; b does not have to be zero matrix  */
 /*------------------------------------------------------------*/
 void middle_product_naive(Mat<zz_pX> & b_out, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {
