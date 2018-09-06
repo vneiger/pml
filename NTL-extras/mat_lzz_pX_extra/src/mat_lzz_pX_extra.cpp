@@ -18,13 +18,13 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-// TODO should be moved, only used in examples/tests
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
-    out << "[ ";
-    for (auto &i: s)
-        out << i << " ";
-    return out << "]";
-}
+// // // TODO should be moved, only used in examples/tests
+// std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
+//     out << "[ ";
+//     for (auto &i: s)
+//         out << i << " ";
+//     return out << "]";
+// }
 
 /*------------------------------------------------------------*/
 /* clears the matrix  (pmat = 0 with same dimensions)         */
@@ -36,6 +36,23 @@ void clear(Mat<zz_pX> & pmat)
             clear(pmat[i][j]);
 }
 
+/*------------------------------------------------------------*/
+/* set pmat to be the identity of size n                      */
+/*------------------------------------------------------------*/
+void identity(Mat<zz_pX> & pmat, long n)
+{
+    pmat.SetDims(n, n);
+    for (long i = 0; i < n; i++)
+    {
+        for (long j = 0; j < n; j++)
+            pmat[i][j] = 0;
+        pmat[i][i] = 1;
+    }
+}
+
+/*------------------------------------------------------------*/
+/* tests whether pmat is the zero matrix (whatever its dims)  */
+/*------------------------------------------------------------*/
 long IsZero(const Mat<zz_pX> & pmat)
 {
     for (long i = 0; i < pmat.NumRows(); ++i)
@@ -46,6 +63,28 @@ long IsZero(const Mat<zz_pX> & pmat)
     return 1;
 }
 
+/*------------------------------------------------------------*/
+/* tests whether pmat is the identity matrix                  */
+/*------------------------------------------------------------*/
+long IsIdent(const Mat<zz_pX> & pmat)
+{
+    if (pmat.NumRows() != pmat.NumCols())
+        return 0;
+
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        for (long j = 0; j < pmat.NumCols(); ++j)
+        {
+            if (i == j && ! IsOne(pmat[i][j]))
+                return 0;
+            if (i != j && ! IsZero(pmat[i][j]))
+                return 0;
+        }
+    return 1;
+}
+
+/*------------------------------------------------------------*/
+/* evaluate at a given point                                  */
+/*------------------------------------------------------------*/
 void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt)
 {
     evmat.SetDims(pmat.NumRows(),pmat.NumCols());
@@ -301,6 +340,7 @@ void random_mat_zz_pX_cdeg(Mat<zz_pX>& pmat, long m, long n, DegVec cdeg)
 
 /*------------------------------------------------------------*/
 /* zz_pX addition                                             */
+/* c can alias a or b, does not have to be zero               */
 /*------------------------------------------------------------*/
 void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
@@ -613,7 +653,7 @@ Mat<zz_p> matrix_of_leading_coefficients(const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 /* sets ith coefficient of x to a                             */
 /*------------------------------------------------------------*/
-void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a)
+void SetCoeff(Mat<zz_pX>& x, long i, const Mat<zz_p> &a)
 {
     long m = x.NumRows();
     long n = x.NumCols();
@@ -637,6 +677,15 @@ void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a)
     }
 }
 
+
+/*------------------------------------------------------------*/
+/* convert from Mat<zz_p>                                     */
+/*------------------------------------------------------------*/
+void conv(Mat<zz_pX>& mat, const Mat<zz_p>& coeff)
+{
+    clear(mat);
+    SetCoeff(mat, 0, coeff);
+}
 
 /*------------------------------------------------------------*/
 /* maximum degree of the entries of a                         */
@@ -949,11 +998,11 @@ bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const 
 /* TODO comment                                               */
 /*------------------------------------------------------------*/
 void pivot_index (
-                  std::vector<long> & pivind,
-                  std::vector<long> & pivdeg,
-                  const Mat<zz_pX> & pmat,
-                  const std::vector<long> & shift,
-                  const bool row_wise)
+    std::vector<long> & pivind,
+    std::vector<long> & pivdeg,
+    const Mat<zz_pX> & pmat,
+    const std::vector<long> & shift,
+    const bool row_wise)
 {
     // check if shifted + shift dimension
     bool shifted;
@@ -1035,10 +1084,10 @@ void pivot_index (
 /* TODO comment                                               */
 /*------------------------------------------------------------*/
 bool is_weak_popov (
-                    const Mat<zz_pX> &pmat,
-                    const std::vector<long> &shift,
-                    const bool row_wise,
-                    const bool ordered)
+    const Mat<zz_pX> &pmat,
+    const std::vector<long> &shift,
+    const bool row_wise,
+    const bool ordered)
 {
     //retrieve pivot index
     std::vector<long> pivots;
@@ -1116,11 +1165,11 @@ Mat<zz_pX> identity_matrix(const long n){
 }
 
 /*
-   void weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &pmat, const std::vector<long> &shift){
-   wpf = pmat;
-   m = wpf.NumRows();
-   n = wpf.NumCols();
-   trans = identity_matrix(m);
+  void weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &pmat, const std::vector<long> &shift){
+  wpf = pmat;
+  m = wpf.NumRows();
+  n = wpf.NumCols();
+  trans = identity_matrix(m);
 
 // populate shift with zeros if empty
 if (shift.length() == 0){ 
@@ -1145,10 +1194,10 @@ rows_with_pivot[pivots[i]].emplace_back(i);
 
 
 PolMatForm get_polmatform(
-                          const Mat<zz_pX> &pmat,
-                          const std::vector<long> &shift,
-                          const bool row_wise
-                         )
+    const Mat<zz_pX> &pmat,
+    const std::vector<long> &shift,
+    const bool row_wise
+    )
 {
     if (is_popov(pmat,shift,row_wise)) {   // TODO waiting for is_popov
         return POPOV;
@@ -1164,11 +1213,11 @@ PolMatForm get_polmatform(
 }
 
 bool is_polmatform(
-                   const Mat<zz_pX> &pmat,
-                   const PolMatForm form,
-                   const std::vector<long> &shift,
-                   const bool row_wise
-                  )
+    const Mat<zz_pX> &pmat,
+    const PolMatForm form,
+    const std::vector<long> &shift,
+    const bool row_wise
+    )
 {
     switch (form)
     {

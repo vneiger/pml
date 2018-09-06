@@ -43,7 +43,10 @@ typedef std::vector<long> DegVec;
 /*------------------------------------------------------------*/
 void clear(Mat<zz_pX> & pmat);
 
-// TODO function "set" for identity matrix?
+/*------------------------------------------------------------*/
+/* set pmat to be the identity of size n                      */
+/*------------------------------------------------------------*/
+void identity(Mat<zz_pX> & pmat, long n);
 
 /*------------------------------------------------------------*/
 /* tests whether pmat is the zero matrix (whatever its dims)  */
@@ -51,19 +54,23 @@ void clear(Mat<zz_pX> & pmat);
 long IsZero(const Mat<zz_pX> & pmat);
 
 /*------------------------------------------------------------*/
+/* tests whether pmat is the identity matrix                  */
+/*------------------------------------------------------------*/
+long IsIdent(const Mat<zz_pX> & pmat);
+
+/*------------------------------------------------------------*/
 /* maximum degree of the entries of pmat                      */
 /*------------------------------------------------------------*/
 long deg(const Mat<zz_pX> & pmat);
 
-/*------------------------------------------------------------*/
-/* print vector -- move elsewhere ???                         */
-/*------------------------------------------------------------*/
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
+// /*------------------------------------------------------------*/
+// /* print vector -- move elsewhere ???                         */
+// /*------------------------------------------------------------*/
+// std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
 
 /*------------------------------------------------------------*/
 /* evaluate at a given point                                  */
 /*------------------------------------------------------------*/
-
 void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt);
 
 inline Mat<zz_p> eval(const Mat<zz_pX> & pmat, zz_p pt)
@@ -391,12 +398,19 @@ inline Mat<zz_p> constant_coefficient(const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 /* sets ith coefficient of x to a                             */
 /*------------------------------------------------------------*/
-void SetCoeff(Mat<zz_pX>& x, long i, Mat<zz_p> &a);
+void SetCoeff(Mat<zz_pX>& x, long i, const Mat<zz_p> &a);
 
 /*------------------------------------------------------------*/
 /* convert from Mat<zz_p>                                     */
-/* TODO ??                                                    */
 /*------------------------------------------------------------*/
+void conv(Mat<zz_pX>& mat, const Mat<zz_p>& coeff);
+
+inline Mat<zz_pX> conv(const Mat<zz_p>& coeff)
+{
+    Mat<zz_pX> mat;
+    conv(mat, coeff);
+    return mat;
+}
 
 /*------------------------------------------------------------*/
 /* convert to / from Vec<Mat<zz_p>>                           */
@@ -471,6 +485,18 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
 
 void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long is_prime = 1);
 
+inline void mul_trunc(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long n, long is_prime = 1)
+{
+    multiply(c, a, b, is_prime);
+    trunc(c, c, n);
+}
+
+// inline Mat<zz_pX> & operator*=(Mat<zz_pX> & x, const Mat<zz_pX>& b)
+// {
+//     mul(x, x, b);
+//     return x;
+// }
+
 /*------------------------------------------------------------*/
 /* transpose of b mapsto c = a*b. output is                   */
 /*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
@@ -487,15 +513,6 @@ void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> &
 void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime = 1);
-
-
-
-
-/* inline Mat<zz_pX> & operator*=(Mat<zz_pX> & x, const Mat<zz_pX>& b) */
-/* { */
-/*     mul(x, x, b);  */
-/*     return x;  */
-/* } */
 
 
 /*------------------------------------------------------------*/
@@ -1086,6 +1103,8 @@ DegVec popov_pmbasis(
 /**********************************************************************
  *                         INVERSE EXPANSION                          *
  **********************************************************************/
+
+void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
 
 // TODO Newton iteration
 // --> polynomial matrix division with remainder (cf. e.g. Neiger-Vu 2017)
