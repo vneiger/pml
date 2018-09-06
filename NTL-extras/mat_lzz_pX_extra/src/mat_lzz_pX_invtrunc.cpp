@@ -22,7 +22,7 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 
     long n, u;
     Mat<zz_p> cst_mat, inv0, v, xi, ai, t;
-    
+
     u = a.NumRows();
     if (u != a.NumCols())
     {
@@ -38,11 +38,11 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
         conv(x, inv0);
         return;
     }
-    
+
     // ap = a.rep.elts();
     // x.rep.SetLength(m);
     // xp = x.rep.elts();
-  
+
     x.SetDims(u, u);
     for (long r = 0; r < u; r++)
         for (long s = 0; s < u; s++)
@@ -69,7 +69,7 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
             for (long s = 0; s < u; s++)
                 x[r][s].rep[k] = -v[r][s];
     }
-    
+
     for (long r = 0; r < u; r++)
         for (long s = 0; s < u; s++)
         {
@@ -77,3 +77,10 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
         }
 }
 
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
