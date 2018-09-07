@@ -73,7 +73,7 @@ bool is_interpolant_basis(
 //	long cdim = pmat.NumCols();
 //
 //	// initial approximant basis: identity of dimensions 'rdim x rdim'
-//	intbas = identity(rdim);
+//	set(intbas,rdim);
 //
 //	// initial residual: the whole input matrix
 //	Mat<zz_pX> residual( pmat );
@@ -87,7 +87,7 @@ bool is_interpolant_basis(
 //
 //	// shifted row degrees of approximant basis
 //	// (initially, of the identity matrix, i.e. rdeg == shift)
-//	DegVec rdeg( shift );
+//	DegVec rdeg(shift);
 //
 //	while (not rem_pts.empty())
 //	{
