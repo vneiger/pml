@@ -37,20 +37,6 @@ void clear(Mat<zz_pX> & pmat)
 }
 
 /*------------------------------------------------------------*/
-/* set pmat to be the identity of size n                      */
-/*------------------------------------------------------------*/
-void identity(Mat<zz_pX> & pmat, long n)
-{
-    pmat.SetDims(n, n);
-    for (long i = 0; i < n; i++)
-    {
-        for (long j = 0; j < n; j++)
-            pmat[i][j] = 0;
-        pmat[i][i] = 1;
-    }
-}
-
-/*------------------------------------------------------------*/
 /* tests whether pmat is the zero matrix (whatever its dims)  */
 /*------------------------------------------------------------*/
 long IsZero(const Mat<zz_pX> & pmat)
@@ -64,9 +50,47 @@ long IsZero(const Mat<zz_pX> & pmat)
 }
 
 /*------------------------------------------------------------*/
+/* set pmat to be the identity                                */
+/* keeping same dimensions as pmat (assumes pmat is square)   */
+/*------------------------------------------------------------*/
+void set(Mat<zz_pX> & pmat)
+{
+    long dim = pmat.NumRows();
+    for (long i = 0; i < dim; ++i)
+    {
+        for (long j = 0; j < i; ++j)
+            clear(pmat[i][j]);
+        set(pmat[i][i]);
+        for (long j = i+1; j < dim; ++j)
+            clear(pmat[i][j]);
+    }
+}
+
+/*------------------------------------------------------------*/
+/* set pmat to be the identity of size dim                    */
+/*------------------------------------------------------------*/
+void set(Mat<zz_pX> & pmat, long dim)
+{
+    pmat.SetDims(dim, dim);
+    set(pmat);
+}
+
+/*------------------------------------------------------------*/
+/* return identity matrix of size dim                         */
+/*------------------------------------------------------------*/
+Mat<zz_pX> identity(long dim)
+{
+    Mat<zz_pX> pmat;
+    pmat.SetDims(dim,dim);
+    for (long i = 0; i < dim; ++i)
+        set(pmat[i][i]);
+    return pmat;
+}
+
+/*------------------------------------------------------------*/
 /* tests whether pmat is the identity matrix                  */
 /*------------------------------------------------------------*/
-long IsIdent(const Mat<zz_pX> & pmat)
+long IsIdentity(const Mat<zz_pX> & pmat)
 {
     if (pmat.NumRows() != pmat.NumCols())
         return 0;
@@ -1156,20 +1180,12 @@ bool is_popov (const Mat<zz_pX> &pmat,
     return true;
 }
 
-Mat<zz_pX> identity_matrix(const long n){
-    Mat<zz_pX> res;
-    res.SetDims(n,n);
-    for (long i = 0; i < n; i++)
-        res[i][i] = zz_pX(1);
-    return res;
-}
-
 /*
   void weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &pmat, const std::vector<long> &shift){
   wpf = pmat;
   m = wpf.NumRows();
   n = wpf.NumCols();
-  trans = identity_matrix(m);
+  trans = identity(m);
 
 // populate shift with zeros if empty
 if (shift.length() == 0){ 

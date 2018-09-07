@@ -159,9 +159,7 @@ DegVec appbas_iterative(
     long cdim = pmat.NumCols();
 
     // initial approximant basis: identity of dimensions 'rdim x rdim'
-    appbas.SetDims(rdim,rdim);
-    for (long i = 0; i < rdim; ++i)
-        SetCoeff(appbas[i][i],0);
+    set(appbas,rdim);
 
     // initial residual: the whole input matrix
     Mat<zz_pX> residual( pmat );
@@ -175,7 +173,7 @@ DegVec appbas_iterative(
 
     // shifted row degrees of approximant basis
     // (initially, of the identity matrix, i.e. rdeg == shift)
-    DegVec rdeg( shift );
+    DegVec rdeg(shift);
 
     while (not rem_order.empty())
     {
@@ -424,13 +422,11 @@ DegVec mbasis(
              )
 {
     // initially, appbas is the identity matrix
-    appbas.SetDims(pmat.NumRows(),pmat.NumRows());
-    for (long i = 0; i < appbas.NumRows(); ++i)
-        SetCoeff(appbas[i][i],0);
+    set(appbas,pmat.NumRows());
 
     // holds the current shifted row degree of appbas
     // initially, this is exactly shift
-    DegVec rdeg( shift );
+    DegVec rdeg(shift);
 
     // TODO should we keep this?
     // (is the code below really doing something if zero matrix?)
@@ -648,9 +644,7 @@ DegVec mbasis_resupdate(
                        )
 {
     // initially, appbas is the identity matrix
-    appbas.SetDims(pmat.NumRows(),pmat.NumRows());
-    for (long i = 0; i < appbas.NumRows(); ++i)
-        SetCoeff(appbas[i][i],0);
+    set(appbas,pmat.NumRows());
 
     // holds the current shifted row degree of appbas
     // initially, this is exactly shift
