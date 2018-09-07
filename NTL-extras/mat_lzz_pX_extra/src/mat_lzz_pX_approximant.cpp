@@ -806,24 +806,28 @@ DegVec pmbasis(
     // shifted row degree = shift for second call = pivdeg+shift
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
 
-    // residual = (appbas * pmat * X^-order1) mod X^order2
 #ifdef PMBASIS_PROFILE
     std::cout << "Order: " << order << std::endl;
     double t1,t2;
     t1 = GetWallTime();
 #endif
-    multiply(residual,appbas,pmat);
-#ifdef PMBASIS_PROFILE
-    t2 = GetWallTime();
-    std::cout << "\tTime(res): " << (t2-t1) << "s" << std::endl;
-    t1 = GetWallTime();
-#endif
-    residual >>= order1;
-    trunc(residual,residual,order2);
-#ifdef PMBASIS_PROFILE
-    t2 = GetWallTime();
-    std::cout << "\tTime(shift/trunc): " << (t2-t1) << "s" << std::endl;
-#endif
+    // residual = (appbas * pmat * X^-order1) mod X^order2
+//// middle product version
+    //trunc( trunc(appbas, dA+1)*pmat div x^dA, dB+1) 
+    middle_product(residual, appbas, pmat, order1, order2-1);
+////    before middle product was available
+//    multiply(residual,appbas,pmat);
+//#ifdef PMBASIS_PROFILE
+//    t2 = GetWallTime();
+//    std::cout << "\tTime(res): " << (t2-t1) << "s" << std::endl;
+//  t1 = GetWallTime();
+//#endif
+//    residual >>= order1;
+//    trunc(residual,residual,order2);
+//#ifdef PMBASIS_PROFILE
+//    t2 = GetWallTime();
+//    std::cout << "\tTime(shift/trunc): " << (t2-t1) << "s" << std::endl;
+//#endif
 
     // second recursive call, with 'residual' and 'rdeg'
     pivdeg2 = pmbasis(appbas2,residual,order2,rdeg);

@@ -13,10 +13,17 @@
 
 NTL_CLIENT
 
-
 /********************************************
  *  tests the approximant basis algorithms  *
  ********************************************/
+
+std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
+{
+    out << "[ ";
+    for (auto &i: s)
+        out << i << " ";
+    return out << "]";
+}
 
 int main(int argc, char *argv[])
 {
