@@ -1104,6 +1104,10 @@ DegVec popov_pmbasis(
  *                         INVERSE EXPANSION                          *
  **********************************************************************/
 
+/**********************************************************************
+ * plain truncated inverse                                            *
+ * Requires: a(0) is invertible                                       *
+ **********************************************************************/
 void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
 void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
 
