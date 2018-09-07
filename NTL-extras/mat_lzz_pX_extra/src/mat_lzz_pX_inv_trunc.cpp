@@ -221,6 +221,41 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
     trunc(x, x, m);
 }
 
+/*------------------------------------------------------------*/
+/* returns x = 1/a mod z^m, Newton iteration                  */
+/* throws an error if a(0) not invertible                     */
+/* x can alias a                                              */
+/*------------------------------------------------------------*/
+void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
+{
+    if (x == a)
+    {
+        Mat<zz_pX> y;
+        newton_inv_trunc_middle_product(y, a, m);
+        x = y;
+        return;
+    }
+
+    const long thresh = 10;
+    long k;
+
+    k = 1L << ( NextPowerOfTwo(thresh)-1 );
+    plain_inv_trunc(x, a, k);    
+
+    while (k < m) 
+    {
+        Mat<zz_pX> y;
+        middle_product(y, x, trunc(a, 2*k), k, k-1);
+        mul_trunc(y, y, x, k);
+        y <<= k;
+        x = x - y;
+        k = 2*k;
+    }
+
+    trunc(x, x, m);
+}
+
+
 // Local Variables:
 // mode: C++
 // tab-width: 4
