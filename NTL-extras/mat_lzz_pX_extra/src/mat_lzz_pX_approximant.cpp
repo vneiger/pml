@@ -10,7 +10,7 @@
 #include "lzz_pX_CRT.h"
 
 //#define MBASIS1_PROFILE // FIXME
-#define PMBASIS_PROFILE // FIXME
+//#define PMBASIS_PROFILE // FIXME
 
 NTL_CLIENT
 

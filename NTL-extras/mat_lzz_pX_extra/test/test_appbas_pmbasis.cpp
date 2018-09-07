@@ -28,7 +28,8 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
 
 int main(int argc, char *argv[])
 {
-    SetNumThreads(4);
+    // --> use several threads if big matrix dimensions
+    //SetNumThreads(4);
 
     bool verify=false;
 
