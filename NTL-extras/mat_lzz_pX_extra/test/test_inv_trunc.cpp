@@ -23,6 +23,10 @@ void one_check(long sz, long deg)
     while (determinant(a0) == 0);
     plain_inv_trunc(x, a, 2*deg);
     mul_trunc(residue, x, a, 2*deg);
+    cout << sz << " " << deg << " " << "plain " << IsIdent(residue) << endl;
+    newton_inv_trunc_FFT(x, a, 2*deg);
+    mul_trunc(residue, x, a, 2*deg);
+    cout << sz << " " << deg << " " << "newton " << IsIdent(residue) << endl;
 }
 
 /*------------------------------------------------------------*/
@@ -30,6 +34,7 @@ void one_check(long sz, long deg)
 /*------------------------------------------------------------*/
 void all_checks()
 {
+
     std::vector<long> szs =
     {
         1, 2, 3, 5, 10, 20, 30
@@ -37,7 +42,7 @@ void all_checks()
 
     std::vector<long> degs =
     {
-        20, 500
+        20, 50, 75, 99, 150, 200
     };
 
     for (size_t si = 0; si < szs.size(); si++)
@@ -55,12 +60,12 @@ void check()
 {
     zz_p::FFTInit(0);
     all_checks();
-    zz_p::UserFFTInit(786433);
-    all_checks();
-    zz_p::init(288230376151711813);
-    all_checks();
-    zz_p::init(786433);
-    all_checks();
+    // zz_p::UserFFTInit(786433);
+    // all_checks();
+    // zz_p::init(288230376151711813);
+    // all_checks();
+    // zz_p::init(786433);
+    // all_checks();
 }  
 
 /*------------------------------------------------------------*/

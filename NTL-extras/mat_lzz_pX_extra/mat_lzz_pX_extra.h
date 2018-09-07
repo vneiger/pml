@@ -1105,6 +1105,7 @@ DegVec popov_pmbasis(
  **********************************************************************/
 
 void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
+void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
 
 // TODO Newton iteration
 // --> polynomial matrix division with remainder (cf. e.g. Neiger-Vu 2017)
