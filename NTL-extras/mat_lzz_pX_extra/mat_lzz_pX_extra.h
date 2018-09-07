@@ -63,7 +63,7 @@ Mat<zz_pX> identity(long dim);
 /*------------------------------------------------------------*/
 /* tests whether pmat is the identity matrix                  */
 /*------------------------------------------------------------*/
-long IsIdent(const Mat<zz_pX> & pmat);
+long IsIdentity(const Mat<zz_pX> & pmat);
 
 /*------------------------------------------------------------*/
 /* maximum degree of the entries of pmat                      */

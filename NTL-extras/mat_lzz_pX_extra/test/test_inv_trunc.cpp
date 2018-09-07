@@ -23,10 +23,10 @@ void one_check(long sz, long deg)
     while (determinant(a0) == 0);
     plain_inv_trunc(x, a, 2*deg);
     mul_trunc(residue, x, a, 2*deg);
-    cout << sz << " " << deg << " " << "plain " << IsIdent(residue) << endl;
+    cout << sz << " " << deg << " " << "plain " << IsIdentity(residue) << endl;
     newton_inv_trunc_FFT(x, a, 2*deg);
     mul_trunc(residue, x, a, 2*deg);
-    cout << sz << " " << deg << " " << "newton " << IsIdent(residue) << endl;
+    cout << sz << " " << deg << " " << "newton " << IsIdentity(residue) << endl;
 }
 
 /*------------------------------------------------------------*/
