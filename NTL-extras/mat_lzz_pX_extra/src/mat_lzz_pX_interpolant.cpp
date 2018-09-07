@@ -73,9 +73,7 @@ bool is_interpolant_basis(
 //	long cdim = pmat.NumCols();
 //
 //	// initial approximant basis: identity of dimensions 'rdim x rdim'
-//	intbas.SetDims(rdim,rdim);
-//	for (long i = 0; i < rdim; ++i)
-//		SetCoeff(intbas[i][i],0);
+//	intbas = identity(rdim);
 //
 //	// initial residual: the whole input matrix
 //	Mat<zz_pX> residual( pmat );

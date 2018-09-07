@@ -44,14 +44,21 @@ typedef std::vector<long> DegVec;
 void clear(Mat<zz_pX> & pmat);
 
 /*------------------------------------------------------------*/
-/* set pmat to be the identity of size n                      */
-/*------------------------------------------------------------*/
-void identity(Mat<zz_pX> & pmat, long n);
-
-/*------------------------------------------------------------*/
 /* tests whether pmat is the zero matrix (whatever its dims)  */
 /*------------------------------------------------------------*/
 long IsZero(const Mat<zz_pX> & pmat);
+
+/*------------------------------------------------------------*/
+/* set pmat to be the identity                                */
+/* (same size, assuming square / size dim)                    */
+/*------------------------------------------------------------*/
+void set(Mat<zz_pX> & pmat);
+void set(Mat<zz_pX> & pmat, long dim);
+
+/*------------------------------------------------------------*/
+/* return the identity matrix of size dim                     */
+/*------------------------------------------------------------*/
+Mat<zz_pX> identity(long dim);
 
 /*------------------------------------------------------------*/
 /* tests whether pmat is the identity matrix                  */
