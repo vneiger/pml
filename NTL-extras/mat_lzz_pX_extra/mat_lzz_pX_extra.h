@@ -1113,9 +1113,14 @@ DegVec popov_pmbasis(
  * Requires: a(0) is invertible                                       *
  **********************************************************************/
 void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
-void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
-void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
-void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
+void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thresh = -1);
+void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thresh = -1);
+void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thresh = -1);
+
+// void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
+// void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
+// void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
+
 
 // TODO Newton iteration
 // --> polynomial matrix division with remainder (cf. e.g. Neiger-Vu 2017)

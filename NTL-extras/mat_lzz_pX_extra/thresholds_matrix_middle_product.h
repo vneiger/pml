@@ -4,22 +4,6 @@
 #include <limits.h>
 #include "thresholds_mp_naive_evaluate.h"
 
-/* /\*------------------------------------------------------------*\/ */
-/* /\* max degree for using transforms                            *\/ */
-/* /\*------------------------------------------------------------*\/ */
-/* inline long max_degree_transform() */
-/* { */
-/*     long t = type_of_prime(); */
-
-/*     if (t == TYPE_FFT_PRIME) */
-/*         return MAX_DEGREE_TRANSFORM_FFT; */
-/*     else  */
-/*         if (t == TYPE_SMALL_PRIME) */
-/*             return MAX_DEGREE_TRANSFORM_SMALL; */
-/*         else */
-/*             return MAX_DEGREE_TRANSFORM_LARGE; */
-/* } */
-
 /*------------------------------------------------------------*/
 /* max degree for evaluate                                    */
 /*------------------------------------------------------------*/

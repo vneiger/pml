@@ -8,7 +8,10 @@
 
 NTL_CLIENT
 
-
+/*------------------------------------------------------------*/
+/* finds a sequence of degrees n0, n1, .. nk                  */
+/* n0 <= thresh, ni = {2*n{i-1}, 2*{n-1}-2}, nk >= n          */
+/*------------------------------------------------------------*/
 static vector<long> degrees(long n, long thresh)
 {
     vector<long> all_deg;
@@ -97,18 +100,21 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 /* returns x = 1/a mod z^m, Newton iteration                  */
 /* throws an error if a(0) not invertible                     */
 /* x can alias a                                              */
+/* naive algorithm up to degree 2^thresh                      */
+/* thresh=-1 is the default value, uses lookup table          */
 /*------------------------------------------------------------*/
-void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
+void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thresh)
 {
     if (x == a)
     {
         Mat<zz_pX> y;
-        newton_inv_trunc_FFT(y, a, m);
+        newton_inv_trunc_FFT(y, a, m, thresh);
         x = y;
         return;
     }
 
-    const long thresh = 10;
+    if (thresh == -1)
+        thresh = MATRIX_INV_TRUNC_PLAIN_THRESHOLD_FFT;
     
     long n, k, s, ss, t;
     Mat<zz_pX> P1;
@@ -118,7 +124,7 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 
     fftRep R1(INIT_SIZE, NextPowerOfTwo(2*m-1));
 
-    k = 1L << ( NextPowerOfTwo(thresh)-1 );
+    k = 1L << thresh;
     plain_inv_trunc(x, a, k);    
     s = a.NumRows();
     ss = s * s;
@@ -243,8 +249,10 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 /* returns x = 1/a mod z^m, Newton iteration                  */
 /* throws an error if a(0) not invertible                     */
 /* x can alias a                                              */
+/* naive algorithm up to degree 2^thresh                      */
+/* thresh=-1 is the default value, uses lookup table          */
 /*------------------------------------------------------------*/
-void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
+void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thresh)
 {
     if (x == a)
     {
@@ -254,11 +262,16 @@ void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
         return;
     }
 
-    const long thresh = 10;
-    long k;
+    // should use lookup instead
+    if (thresh == -1)
+        thresh = 5;
 
-    k = 1L << ( NextPowerOfTwo(thresh)-1 );
-    plain_inv_trunc(x, a, k);    
+    long idx, k;
+    k = 1L << thresh;
+    vector<long> all_deg=degrees(m, k);
+    k = all_deg[0];
+    idx = 1;
+    plain_inv_trunc(x, a, k);
 
     while (k < m) 
     {
@@ -267,7 +280,14 @@ void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
         mul_trunc(y, y, x, k);
         y <<= k;
         x = x - y;
-        k = 2*k;
+        k = 2 * k;
+        if (k != all_deg[idx])
+        {
+            k = all_deg[idx];
+            trunc(x, x, k);
+        }            
+        idx++;
+
     }
 
     trunc(x, x, m);
@@ -277,8 +297,10 @@ void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 /* returns x = 1/a mod z^m, Newton iteration                  */
 /* throws an error if a(0) not invertible                     */
 /* x can alias a                                              */
+/* naive algorithm up to degree 2^thresh                      */
+/* thresh=-1 is the default value, uses lookup table          */
 /*------------------------------------------------------------*/
-void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
+void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thresh)
 {
     if (x == a)
     {
@@ -293,9 +315,11 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
     Vec<zz_p> mat_val1, mat_val2;
     Vec<Vec<zz_p>> mat_val3;
 
-    const long thresh = 10;
+    // should use lookup instead
+    if (thresh == -1)
+        thresh = 5;
 
-    k = 1L << ( NextPowerOfTwo(thresh)-1 );
+    k = 1L << thresh;
     vector<long> all_deg=degrees(m, k);
     k = all_deg[0];
     idx = 1;
@@ -314,7 +338,8 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
         zz_pX_Multipoint_Geometric ev = get_geometric_points(n);
 
         ev.prepare_degree(k - 1);
-        ev.prepare_degree(2*k - 1);
+        if (k != 1)
+            ev.prepare_degree(2*k - 1);
 
         mat_val1.SetLength(n * ss);
         mat_val2.SetLength(n * ss);
@@ -339,6 +364,7 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
                 for (long r = 0, rss = 0; r < n; r++, rss += ss)
                     mat_val1[rss + i*s + j] = tmp[r];
             }
+
 
         for (long i = 0; i < s; i++)
             for (long j = 0; j < s; j++)
