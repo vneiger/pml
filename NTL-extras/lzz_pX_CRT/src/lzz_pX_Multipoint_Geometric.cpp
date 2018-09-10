@@ -206,6 +206,20 @@ zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, long d){
     }
 }
 
+/*------------------------------------------------------------*/
+/* return the ratio q = r^2                                   */
+/*------------------------------------------------------------*/
+zz_p zz_pX_Multipoint_Geometric::get_q()
+{
+    zz_p q;
+    if (n == 1)
+        q = to_zz_p(1);
+    else
+        q = 1/(x[1] * x[1]);
+    return q;
+}
+
+
 /*-----------------------------------------------------------*/
 /* val[i] = P(r^(2*i)), i = 0..n-1                           */
 /* val may alias P.rep                                       */

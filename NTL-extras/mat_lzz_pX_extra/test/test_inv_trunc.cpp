@@ -25,19 +25,27 @@ void one_check(long sz, long deg)
     plain_inv_trunc(x, a, 2*deg);
     mul_trunc(residue, x, a, 2*deg);
 
-    cout << sz << " " << deg << " " << "plain " << IsIdentity(residue) << endl;
+    if (! IsIdentity(residue))
+        LogicError("Error with plain inverse.");
 
     if (is_FFT_prime())
     {
         newton_inv_trunc_FFT(x, a, 2*deg);
         mul_trunc(residue, x, a, 2*deg);
-        cout << sz << " " << deg << " " << "newton " << IsIdentity(residue) << endl;
+        if (! IsIdentity(residue))
+            LogicError("Error with FFT newton inverse.");
+
     }
 
     newton_inv_trunc_middle_product(x, a, 2*deg);
     mul_trunc(residue, x, a, 2*deg);
-    cout << sz << " " << deg << " " << "middle " << IsIdentity(residue) << endl;
+    if (! IsIdentity(residue))
+        LogicError("Error with middle product newton inverse.");
 
+    newton_inv_trunc_geometric(x, a, 2*deg);
+    mul_trunc(residue, x, a, 2*deg);
+    if (! IsIdentity(residue))
+        LogicError("Error with geometric newton inverse.");
 
 }
 
@@ -47,6 +55,15 @@ void one_check(long sz, long deg)
 void all_checks()
 {
 
+    // std::vector<long> szs =
+    // {
+    //     1
+    // };
+
+    // std::vector<long> degs =
+    // {
+    //     20
+    // };
     std::vector<long> szs =
     {
         1, 2, 3, 5, 10, 20, 30

@@ -8,6 +8,23 @@
 
 NTL_CLIENT
 
+
+static vector<long> degrees(long n, long thresh)
+{
+    vector<long> all_deg;
+    
+
+    while(n > thresh)
+    {
+        if (n & 1)
+            n++;
+        all_deg.insert(all_deg.begin(), n);
+        n >>= 1;
+    }
+    all_deg.insert(all_deg.begin(), n);
+    return all_deg;
+}
+
 /*------------------------------------------------------------*/
 /* returns x = 1/a mod z^m, naive algorithm                   */
 /* throws an error if a(0) not invertible                     */
@@ -164,6 +181,7 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
         }
 
 
+
         // mat_val2 = values of delta
         for (long i = 0; i < s; i++)
             for (long ell = 0; ell < s; ell++)
@@ -252,6 +270,139 @@ void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
         k = 2*k;
     }
 
+    trunc(x, x, m);
+}
+
+/*------------------------------------------------------------*/
+/* returns x = 1/a mod z^m, Newton iteration                  */
+/* throws an error if a(0) not invertible                     */
+/* x can alias a                                              */
+/*------------------------------------------------------------*/
+void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
+{
+    if (x == a)
+    {
+        Mat<zz_pX> y;
+        newton_inv_trunc_geometric(y, a, m);
+        x = y;
+        return;
+    }
+
+    long k, idx, s, ss;
+    Mat<zz_p> v1, v2, v3;
+    Vec<zz_p> mat_val1, mat_val2;
+    Vec<Vec<zz_p>> mat_val3;
+
+    const long thresh = 10;
+
+    k = 1L << ( NextPowerOfTwo(thresh)-1 );
+    vector<long> all_deg=degrees(m, k);
+    k = all_deg[0];
+    idx = 1;
+    plain_inv_trunc(x, a, k);
+
+    s = a.NumRows();
+    ss = s * s;
+
+    v1.SetDims(s, s);
+    v2.SetDims(s, s);
+    v3.SetDims(s, s);
+
+    while (k < m) 
+    {
+        long n = 3*k - 2;
+        zz_pX_Multipoint_Geometric ev = get_geometric_points(n);
+
+        ev.prepare_degree(k - 1);
+        ev.prepare_degree(2*k - 1);
+
+        mat_val1.SetLength(n * ss);
+        mat_val2.SetLength(n * ss);
+        mat_val3.SetLength(ss);
+        for (long i = 0; i < ss; i++)
+            mat_val3[i].SetLength(n);
+
+        Vec<zz_p> power_x;
+        power_x.SetLength(n);
+        zz_p q = ev.get_q();
+        zz_p inv_q = 1/q;
+        
+        power_x[0] = to_zz_p(1);
+        for (long i = 1; i < n; i++)
+            power_x[i] = power_x[i-1] * inv_q;
+
+        Vec<zz_p> tmp;
+        for (long i = 0; i < s; i++)
+            for (long j = 0; j < s; j++)
+            {
+                ev.evaluate(tmp, x[i][j]); // degree = k - 1
+                for (long r = 0, rss = 0; r < n; r++, rss += ss)
+                    mat_val1[rss + i*s + j] = tmp[r];
+            }
+
+        for (long i = 0; i < s; i++)
+            for (long j = 0; j < s; j++)
+            {
+                ev.evaluate(tmp, trunc(a[i][j], 2*k)); // degree = 2k - 1
+                for (long r = 0, rss = 0; r < n; r++, rss += ss)
+                {
+                    mat_val2[rss + i*s + j] = tmp[r];
+                }
+            }
+
+        // let y = x (a mod t^(2k)
+        // then deg(y) = 3k - 2, and y = I + t^k delta
+        // deg(delta) = 2k - 2
+        // deg(delta x) = 3k - 3
+        for (long j = 0, jss = 0; j < n; j++, jss += ss)
+        {
+            zz_p coeff = power(power_x[j], k);
+
+            for (long i = 0; i < s; i++)
+                for (long ell = 0; ell < s; ell++)
+                    v1[i][ell] = mat_val1[jss + i*s + ell];
+            for (long i = 0; i < s; i++)
+                for (long ell = 0; ell < s; ell++)
+                    v2[i][ell] = mat_val2[jss + i*s + ell];
+            v3 = v1 * v2;
+            for (long i = 0; i < s; i++)
+                for (long ell = 0; ell < s; ell++)
+                    if (i == ell)
+                        v3[i][ell] = (v3[i][ell] - 1) * coeff;
+                    else
+                        v3[i][ell] = v3[i][ell] * coeff;
+            v3 = v3 * v1; 
+            for (long i = 0; i < s; i++)
+                for (long ell = 0; ell < s; ell++)
+                    mat_val3[i*s + ell][j] = v3[i][ell];
+        }
+
+
+        for (long i = 0; i < s; i++)
+            for (long ell = 0; ell < s; ell++)
+            {
+                zz_pX P;
+                ev.interpolate(P, mat_val3[i*s + ell]);
+                x[i][ell].rep.SetLength(2*k);
+                long y_len = P.rep.length();
+                for (long ii = k; ii < 2*k; ii++) 
+                {
+                    if (ii-k >= y_len)
+                        clear(x[i][ell].rep[ii]);
+                    else
+                        x[i][ell].rep[ii] = -P.rep[ii - k];
+                }
+                x[i][ell].normalize();
+            }
+        k = 2 * k;
+        if (k != all_deg[idx])
+        {
+            k = all_deg[idx];
+            trunc(x, x, k);
+        }            
+        idx++;
+
+    }
     trunc(x, x, m);
 }
 

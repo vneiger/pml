@@ -143,10 +143,6 @@ public:
     void interpolate(zz_pX& f, const Vec<zz_p>& val);
 
     void t_evaluate(zz_pX& f, const Vec<zz_p>& val, long output_size = -1) const;
-    // inline void t_evaluate(zz_pX& f, const Vec<zz_p>& val) const
-    // {
-    //     t_evaluate(f, val, -1);
-    // }
     void t_interpolate(Vec<zz_p>& val, const zz_pX& f);
 
     /*------------------------------------------------------------*/
@@ -170,12 +166,18 @@ public:
     /*------------------------------------------------------------*/
     void prepare_degree(long d);
 
+    /*------------------------------------------------------------*/
+    /* return the ratio q = r^2                                   */
+    /*------------------------------------------------------------*/
+    zz_p get_q();
+
+
 private:  
 
     long idx_k, FFT_feasible, do_FFT_evaluate, do_FFT_interpolate;
     Vec<zz_p> x, t, w, y, z;
     zz_pX f, g1, g2;
-    fftRep /* f_fft,  */g1_fft, g2_fft;  
+    fftRep g1_fft, g2_fft;  
     map<int, fftRep> known_degrees;
 };
 
