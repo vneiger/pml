@@ -18,14 +18,6 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-// // // TODO should be moved, only used in examples/tests
-// std::ostream &operator<<(std::ostream &out, const std::vector<long> &s){
-//     out << "[ ";
-//     for (auto &i: s)
-//         out << i << " ";
-//     return out << "]";
-// }
-
 /*------------------------------------------------------------*/
 /* clears the matrix  (pmat = 0 with same dimensions)         */
 /*------------------------------------------------------------*/

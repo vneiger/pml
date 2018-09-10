@@ -1,24 +1,28 @@
-* agree on indent (4 spaces?) and find a way to make this go smoothly with our editors (modelines? Luca's trick?)
-  --> Vincent: still have to work with 4 spaces choice, will then update my files
-
-* when we are writing code and notice that there is a todo (functionality, doc,
-  comment to write...): let's write "todo" in a comment right away, before it
-  is forgotten and becomes difficult to find
-
-* delimiters {..} :
-  -- always put them even for "one-line" if/for/...  ?
-  -- or allow ourselves shorter code such as
-  for(blabla)
-    if(bli)
-      one instruction;
-
+* indent = soft tab, 4 spaces
 * please avoid spaces/tabs at end of line
 
-* write actual docstrings?
-  -- possibly for extracting into an html doc, but
-  -- mostly for forcing us to document everything in a way that is more
-  informative than the big header lines of /*-----*/ before every function (and
-  which will be easier to work with since editors are used to these docstrings)
+* please insert emacs+vim modelines at the end of new files, as follows:
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
+
+* when there is a todo (functionality, doc, comment to write...): write "todo"
+  in a comment
+
+* delimiters {..} :
+  -- not required for "one-line" if/for/... , for example
+		  for(blabla)
+		    if(bli)
+		      one instruction;
+  -- at beginning of line:
+       for (blabla)
+       {
+           blibli
+       }
 
 
 TODO Vincent

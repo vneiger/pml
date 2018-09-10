@@ -38,6 +38,8 @@ enum PolMatForm {
 typedef std::vector<long> Shift;
 typedef std::vector<long> DegVec;
 
+// TODO : kill? swap? vec_lzz_pX ?
+
 /*------------------------------------------------------------*/
 /* clears the matrix  (pmat = 0 with same dimensions)         */
 /*------------------------------------------------------------*/
@@ -69,11 +71,6 @@ long IsIdentity(const Mat<zz_pX> & pmat);
 /* maximum degree of the entries of pmat                      */
 /*------------------------------------------------------------*/
 long deg(const Mat<zz_pX> & pmat);
-
-// /*------------------------------------------------------------*/
-// /* print vector -- move elsewhere ???                         */
-// /*------------------------------------------------------------*/
-// std::ostream &operator<<(std::ostream &out, const std::vector<long> &s);
 
 /*------------------------------------------------------------*/
 /* evaluate at a given point                                  */
@@ -515,7 +512,7 @@ void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const M
 /*------------------------------------------------------------*/
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
 /*------------------------------------------------------------*/
-void middle_product_naive(Mat<zz_pX> & b_out, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+void middle_product_naive(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);

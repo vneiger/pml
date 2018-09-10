@@ -18,9 +18,18 @@ NTL_CLIENT
  *  tests the approximant basis algorithms  *
  ********************************************/
 
+std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
+{
+    out << "[ ";
+    for (auto &i: s)
+        out << i << " ";
+    return out << "]";
+}
+
 int main(int argc, char *argv[])
 {
-    SetNumThreads(4);
+    // --> use several threads if big matrix dimensions
+    //SetNumThreads(4);
 
     bool verify=false;
 

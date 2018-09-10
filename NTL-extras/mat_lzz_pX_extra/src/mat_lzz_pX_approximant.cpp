@@ -784,11 +784,26 @@ DegVec pmbasis(
                const Shift & shift
               )
 {
+#ifdef PMBASIS_PROFILE
+    std::cout << "Order: " << order << std::endl;
+    double t1,t2;
+#endif
     // TODO thresholds to be determined:
     //  --> from mbasis (only linalg) to pmbasis with low-degree polmatmul (Karatsuba...)
     //  --> from this pmbasis to pmbasis with eval-based polmatmul (FFT, geometric..)
-    if (order <= 64)
+#ifdef PMBASIS_PROFILE
+    if (order <= 32)
+    {
+        t1 = GetWallTime();
+        DegVec rdeg = mbasis_vector(appbas,pmat,order,shift);
+        t2 = GetWallTime();
+        std::cout << "\tTime(base-case): " << (t2-t1) << "s" << std::endl;
+        return rdeg;
+    }
+#else
+    if (order <= 32)
         return mbasis_vector(appbas,pmat,order,shift);
+#endif
 
     DegVec pivdeg; // pivot degree, first call
     DegVec pivdeg2; // pivot degree, second call
@@ -800,29 +815,26 @@ DegVec pmbasis(
     Mat<zz_pX> residual; // for the residual
 
     // first recursive call, with 'pmat' and 'shift'
+#ifdef PMBASIS_PROFILE
+    t1 = GetWallTime();
+#endif
     trunc(trunc_pmat,pmat,order1);
     pivdeg = pmbasis(appbas,trunc_pmat,order1,shift);
 
     // shifted row degree = shift for second call = pivdeg+shift
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
 
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(first-call): " << (t2-t1) << "s" << std::endl;
+    t1 = GetWallTime();
+#endif
     // residual = (appbas * pmat * X^-order1) mod X^order2
-#ifdef PMBASIS_PROFILE
-    std::cout << "Order: " << order << std::endl;
-    double t1,t2;
-    t1 = GetWallTime();
-#endif
-    multiply(residual,appbas,pmat);
+    middle_product(residual, appbas, pmat, order1, order2-1);
 #ifdef PMBASIS_PROFILE
     t2 = GetWallTime();
-    std::cout << "\tTime(res): " << (t2-t1) << "s" << std::endl;
+    std::cout << "\tTime(middle-prod): " << (t2-t1) << "s" << std::endl;
     t1 = GetWallTime();
-#endif
-    residual >>= order1;
-    trunc(residual,residual,order2);
-#ifdef PMBASIS_PROFILE
-    t2 = GetWallTime();
-    std::cout << "\tTime(shift/trunc): " << (t2-t1) << "s" << std::endl;
 #endif
 
     // second recursive call, with 'residual' and 'rdeg'
@@ -830,12 +842,14 @@ DegVec pmbasis(
 
     // final basis = appbas2 * appbas
 #ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(second-call): " << (t2-t1) << "s" << std::endl;
     t1 = GetWallTime();
 #endif
     multiply(appbas,appbas2,appbas);
 #ifdef PMBASIS_PROFILE
     t2 = GetWallTime();
-    std::cout << "\tTime(basis mul): " << (t2-t1) << "s" << std::endl;
+    std::cout << "\tTime(basis-mul): " << (t2-t1) << "s" << std::endl;
 #endif
 
     // final pivot degree = pivdeg1+pivdeg2
