@@ -5,6 +5,8 @@ LIB_DIR = ../../lib
 SOURCES = $(wildcard *.cpp)
 OBJS = $(patsubst %.cpp, $(LIB_DIR)/%.o, $(SOURCES))
 
+THRESHOLDS_HEADERS = thresholds_waksman_evaluate thresholds_mp_naive_evaluate thresholds_plain_newton_geometric_mp_inv_trunc
+
 CXX = g++
 CXXFLAGS = -Wall -std=c++11 -O3 -march=native -I$(INC_DIR)
 LIBS = -lntl -lgmp -lm
@@ -13,9 +15,9 @@ LIBS = -lntl -lgmp -lm
 all:	cp $(OBJS)
 
 cp:
-	if [ ! -f ../thresholds_waksman_evaluate.h ]; then cp -f ../thresholds_waksman_evaluate.orig $(INC_DIR)/thresholds_waksman_evaluate.h ; fi
-	if [ ! -f ../thresholds_mp_naive_evaluate.h ]; then cp -f ../thresholds_mp_naive_evaluate.orig $(INC_DIR)/thresholds_mp_naive_evaluate.h ; fi
-
+	for file in $(THRESHOLDS_HEADERS) ; do \
+		if [ ! -f ../$$file.h ]; then cp -f ../$$file.orig $(INC_DIR)/$$file.h ; fi ; \
+	done
 	cp -f ../*.h $(INC_DIR)
 
 clean:

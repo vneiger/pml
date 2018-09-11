@@ -4,6 +4,11 @@
 #include <limits.h>
 #include "thresholds_plain_newton_geometric_mp_inv_trunc.h"
 
+inline long max_degree_middle_product_inv_trunc()
+{
+    return 5;
+}
+
 #endif
 
 // Local Variables:

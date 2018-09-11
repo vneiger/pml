@@ -262,9 +262,18 @@ void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m,
         return;
     }
 
-    // should use lookup instead
     if (thresh == -1)
-        thresh = 5;
+    {
+        long t = type_of_prime();
+        if (t == TYPE_SMALL_PRIME)
+        {
+            thresh = MATRIX_INV_TRUNC_PLAIN_THRESHOLD_MIDDLE_SMALL;
+        }
+        else
+        {
+            thresh = MATRIX_INV_TRUNC_PLAIN_THRESHOLD_MIDDLE_LARGE;
+        }
+    }
 
     long idx, k;
     k = 1L << thresh;
@@ -315,9 +324,18 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
     Vec<zz_p> mat_val1, mat_val2;
     Vec<Vec<zz_p>> mat_val3;
 
-    // should use lookup instead
     if (thresh == -1)
-        thresh = 5;
+    {
+        long t = type_of_prime();
+        if (t == TYPE_SMALL_PRIME)
+        {
+            thresh = MATRIX_INV_TRUNC_PLAIN_THRESHOLD_GEOMETRIC_SMALL;
+        }
+        else
+        {
+            thresh = MATRIX_INV_TRUNC_PLAIN_THRESHOLD_GEOMETRIC_LARGE;
+        }
+    }
 
     k = 1L << thresh;
     vector<long> all_deg=degrees(m, k);
@@ -430,6 +448,35 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
 
     }
     trunc(x, x, m);
+}
+
+
+/*------------------------------------------------------------*/
+/* returns x = 1/a mod z^m                                    */
+/* throws an error if a(0) not invertible                     */
+/* x can alias a                                              */
+/*------------------------------------------------------------*/
+void inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
+{
+    if (is_FFT_ready(NextPowerOfTwo(m+2)))
+    {
+        newton_inv_trunc_FFT(x, a, m);
+        return;
+    }
+    else
+    {
+        long m_middle = max_degree_middle_product_inv_trunc();
+        if (m <= m_middle)
+        {
+            newton_inv_trunc_middle_product(x, a, m);
+            return;
+        }
+        else
+        {
+            newton_inv_trunc_geometric(x, a, m);
+            return;
+        }
+    }
 }
 
 

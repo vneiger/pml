@@ -9,6 +9,7 @@
 #include "lzz_p_extra.h"
 #include "thresholds_matrix_multiply.h"
 #include "thresholds_matrix_middle_product.h"
+#include "thresholds_newton_inv_trunc.h"
 
 NTL_CLIENT
 
@@ -1104,27 +1105,46 @@ DegVec popov_pmbasis(
 
 // TODO
 
-/**********************************************************************
- *                         INVERSE EXPANSION                          *
- **********************************************************************/
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*                      INVERSE EXPANSION                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
-/**********************************************************************
- * plain truncated inverse                                            *
- * Requires: a(0) is invertible                                       *
- **********************************************************************/
+/*------------------------------------------------------------*/
+/* returns x = 1/a mod z^m, quadratic algorithm               */
+/* throws an error if a(0) not invertible                     */
+/* x can alias a                                              */
+/*------------------------------------------------------------*/
 void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
+
+/*------------------------------------------------------------*/
+/* returns x = 1/a mod z^m, Newton iteration                  */
+/* throws an error if a(0) not invertible                     */
+/* x can alias a                                              */
+/* crossover point with naive algo is m = 2^thresh            */
+/* thresh = -1 means we use predetermined values              */
+/*------------------------------------------------------------*/
 void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thresh = -1);
 void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thresh = -1);
 void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thresh = -1);
 
-// void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
-// void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
-// void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
+/*------------------------------------------------------------*/
+/* returns x = 1/a mod z^m                                    */
+/* throws an error if a(0) not invertible                     */
+/* x can alias a                                              */
+/*------------------------------------------------------------*/
+void inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
+
+inline Mat<zz_pX> inv_trunc(const Mat<zz_pX>& a, long m)
+{
+    Mat<zz_pX> y;
+    inv_trunc(y, a, m);
+    return y;
+}
 
 
-// TODO Newton iteration
-// --> polynomial matrix division with remainder (cf. e.g. Neiger-Vu 2017)
-
+// TODO: polynomial matrix division with remainder (cf. e.g. Neiger-Vu 2017)
 // TODO see Storjohann 2003 for high-order lifting
 // TODO application to linear system solving
 // --> see which other consequences of high-order lifting may be worth implementing
