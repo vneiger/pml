@@ -461,6 +461,11 @@ inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs, const long order)
     return mat;
 }
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*             MULTIPLICATION / MIDDLE PRODUCT                */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
@@ -518,6 +523,84 @@ void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> &
 void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime = 1);
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* classes for multiplication with a given l.h.s.             */
+/* constructors take an argument dB st r.h.s has degree <= dB */  
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class mat_lzz_pX_lmultiplier
+{
+public:
+    /*------------------------------------------------------------*/
+    /* c = M * b                                                  */
+    /*------------------------------------------------------------*/
+    virtual void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b) const = 0;
+    
+    long NumRows() const;
+    long NumCols() const;
+    long degA() const;
+    long degB() const;
+
+protected:
+    long __s, __t; // dimensions
+    long __dA; // degree of current matrix
+    long __dB; // max degree of rhs
+};
+
+
+/*------------------------------------------------------------*/
+/* for use with FFT primes                                    */
+/*------------------------------------------------------------*/
+class mat_lzz_pX_lmultiplier_FFT : public mat_lzz_pX_lmultiplier
+{
+public:
+    /*------------------------------------------------------------*/
+    /* c = M * b                                                  */
+    /*------------------------------------------------------------*/
+    void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b) const;
+
+    mat_lzz_pX_lmultiplier_FFT(){}
+    mat_lzz_pX_lmultiplier_FFT(const Mat<zz_pX> & a, long dB);
+
+private:
+    Vec<Mat<zz_p>> va; // FFT of current matrix
+    long idxk; // log-size of FFT
+};
+
+/*------------------------------------------------------------*/
+/* geometric points                                           */
+/*------------------------------------------------------------*/
+class mat_lzz_pX_lmultiplier_geometric : public mat_lzz_pX_lmultiplier
+{
+public:
+    /*------------------------------------------------------------*/
+    /* c = M * b                                                  */
+    /*------------------------------------------------------------*/
+    void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b) const;
+
+    mat_lzz_pX_lmultiplier_geometric(const Mat<zz_pX> & a, long dB);
+private:
+};
+
+/*------------------------------------------------------------*/
+/* 3 primes                                                   */
+/*------------------------------------------------------------*/
+class mat_lzz_pX_lmultiplier_3_primes : public mat_lzz_pX_lmultiplier
+{
+public:
+    /*------------------------------------------------------------*/
+    /* c = M * b                                                  */
+    /*------------------------------------------------------------*/
+    void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b) const;
+
+    mat_lzz_pX_lmultiplier_3_primes(const Mat<zz_pX> & a, long dB);
+private:
+};
+
+
 
 
 /*------------------------------------------------------------*/

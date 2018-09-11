@@ -4,11 +4,12 @@ LIB_DIR = ../../lib
 
 OBJS = $(wildcard $(LIB_DIR)/*)
 
-SRC = $(wildcard time*cpp)
+SRC = $(wildcard tune*cpp)
 EXEC = $(patsubst %.cpp, %, $(SRC))
 DATA = $(patsubst %.cpp, %.dat, $(SRC))
-COMPILE = $(patsubst %.cpp, %.exe, $(patsubst time_%, %, $(SRC)))
-RUN = $(patsubst %.cpp, %.dat, $(patsubst time_%, %, $(SRC)))
+RESULTS = $(patsubst %.cpp, %.res, $(SRC))
+COMPILE = $(patsubst %.cpp, %.exe, $(patsubst tune_%, %, $(SRC)))
+RUN = $(patsubst %.cpp, %.dat, $(patsubst tune_%, %, $(SRC)))
 
 CXX = g++
 CXXFLAGS = -Wall -std=c++11 -O3 -march=native -I$(INC_DIR)
@@ -20,17 +21,20 @@ LBLIBS = -lntl -lmpfr -L/usr/local/lib -fopenmp -lopenblas -lpthread -lgfortran 
 .PHONY: clean
 
 clean:
-	rm -f $(EXEC) $(DATA)
+	rm -f $(EXEC) $(DATA) $(RESULTS)
 
 all:	$(COMPILE)
 
 run:	$(RUN)
 
-ntlx_linbox: ntlx_linbox.cpp
-	$(CXX) -o ntlx_linbox ntlx_linbox.cpp $(OBJS) $(CXXFLAGS) $(LBCXXFLAGS) $(LIBS) $(LBLIBS)
-
 %.exe:
-	if test -e time_$*.cpp; then $(CXX) -o time_$* time_$*.cpp $(OBJS) $(CXXFLAGS) $(LIBS); fi
+	if test -e tune_$*.cpp; then $(CXX) -o tune_$* tune_$*.cpp $(OBJS) $(CXXFLAGS) $(LIBS); fi
 
 %.dat: 
-	if test -e time_$*; then ./time_$* > time_$*.dat; fi
+	if test -e tune_$*; then ./tune_$* > tune_$*.dat; fi
+	if test -e tune_$*.awk; then \
+		if test -e tune_$*.dat; then \
+			awk -f tune_$*.awk tune_$*.dat > tune_$*.res;\
+		fi; \
+	fi
+	if test -e tune_$*.sh; then ./tune_$*.sh; fi

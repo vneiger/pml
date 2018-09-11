@@ -8,9 +8,6 @@
 
 NTL_CLIENT
 
-vector<long> sizes = {5, 10, 50, 100};
-vector<long> degrees = {50, 150};
-
 /*------------------------------------------------------------*/
 /* index of the smallest element in v                         */
 /*------------------------------------------------------------*/
@@ -26,9 +23,8 @@ long index_min(const vector<double>& v)
 }
             
 
-
-
 /*------------------------------------------------------------*/
+/* finds threshold plain / Newton for p                       */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -37,13 +33,18 @@ void check(long p)
     else
         zz_p::init(p);
 
-    // cout << "p=" << p << endl;
     const double thres = 0.01;
+
+    long middle = 5;
+    long geometric = 5;
 
     long middle = 0;
     long geometric = 0;
     long FFT = 0;
     long num_runs = 0;
+
+    vector<long> sizes = {5, 10, 50, 100};
+    vector<long> degrees = {50, 150};
 
     for (size_t i = 0; i < sizes.size(); i++)
     {
@@ -62,8 +63,7 @@ void check(long p)
                 GetCoeff(a0, a, 0);
             }
             while (determinant(a0) == 0);
-        
-            // cout << "size = " << sz << " deg = " << deg << endl;
+
             if (p != 0)
             {
                 vector<double> vec_middle;
@@ -99,9 +99,6 @@ void check(long p)
                 }
                 long min_geometric = 1 + index_min(vec_geometric);
                 geometric += min_geometric;
-                // cout << min_middle << " ";
-                // cout << min_geometric << " ";
-                // cout << endl;
             }
             else
             {
@@ -121,8 +118,7 @@ void check(long p)
                 }
                 long min_FFT = 1 + index_min(vec_FFT);
                 FFT += min_FFT;
-                // cout << min_FFT << " ";
-                // cout << endl;
+
             }
         }
     }
@@ -145,6 +141,50 @@ void check(long p)
             cout << "#define MATRIX_INV_TRUNC_PLAIN_THRESHOLD_GEOMETRIC_LARGE " << (long) (geometric/num_runs) << endl;
         }
     }
+
+    // The behavior middle product vs geometric is too irregular.
+    // The geometric option is disabled for the moment.
+    // if (p != 0)
+    //     for (long sz = 2; sz < 256; sz = (long) (sz * 1.5))
+    //     {
+    //         long done = 0;
+    //         cout << endl;
+    //         for (long deg = 100; !done && deg < 512; deg = (long) (deg * 1.5))
+    //         {
+    //             long nb;
+    //             Mat<zz_pX> a, x;
+    //             Mat<zz_p> a0;
+    //             do
+    //             {
+    //                 random_mat_zz_pX(a, sz, sz, deg);
+    //                 GetCoeff(a0, a, 0);
+    //             }
+    //             while (determinant(a0) == 0);
+                
+    //             cout << sz << " " << deg << " ";
+    //             double t_middle = get_time();
+    //             nb = 0;
+    //             do
+    //             {
+    //                 newton_inv_trunc_middle_product(x, a, deg, middle);
+    //                 nb++;
+    //             }
+    //             while ((get_time()-t_middle) <= thres);
+    //             t_middle = (get_time()-t_middle) / nb;
+
+    //             double t_geometric = get_time();
+    //             nb = 0;
+    //             do
+    //             {
+    //                 newton_inv_trunc_geometric(x, a, deg, geometric);
+    //                 nb++;
+    //             }
+    //             while ((get_time()-t_geometric) <= thres);
+    //             t_geometric = (get_time()-t_geometric) / nb;
+    //         }
+    //     }
+    
+    
 }
 
 
@@ -156,7 +196,7 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
     warmup();
-    check(0);
+    // check(0);
     check(23068673);
     check(288230376151711813);
     return 0;

@@ -4,9 +4,11 @@
 #include <limits.h>
 #include "thresholds_plain_newton_geometric_mp_inv_trunc.h"
 
+// The behavior middle product vs geometric is too irregular.
+// The geometric option is disabled for the moment.
 inline long max_degree_middle_product_inv_trunc()
 {
-    return 5;
+    return LONG_MAX;
 }
 
 #endif
