@@ -474,6 +474,11 @@ void multiply_evaluate_geometric_no_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, co
 void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
+void multiply_evaluate_geometric_using_FFT_parallel(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_evaluate_geometric_no_FFT_parallel(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_evaluate_geometric_parallel(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_evaluate_parallel(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
 void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform_montgomery3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
