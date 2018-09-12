@@ -118,6 +118,7 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
 /*------------------------------------------------------------*/
 void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
+/*
     if (is_FFT_ready(NextPowerOfTwo(deg(a) + deg(b) + 1)))
     {
         multiply_evaluate_FFT(c, a, b);
@@ -126,6 +127,13 @@ void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
     {
         multiply_evaluate_geometric(c, a, b);
     }
+*/
+    multiply_evaluate_geometric(c, a, b);
+}
+
+void multiply_evaluate_parallel(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{
+    multiply_evaluate_geometric_parallel(c, a, b);
 }
 
 
