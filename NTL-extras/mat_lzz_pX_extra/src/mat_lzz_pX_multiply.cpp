@@ -1,6 +1,7 @@
 #include <NTL/matrix.h>
 #include <NTL/mat_lzz_p.h>
 #include <NTL/lzz_pX.h>
+#include <NTL/BasicThreadPool.h>
 
 #include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
@@ -109,6 +110,151 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
     }
 }
 
+void multiply_evaluate_FFT_parallel(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{
+    zz_pContext context;
+    long s = a.NumRows();
+    long t = a.NumCols();
+    long u = b.NumCols();
+
+    long dA = deg(a);
+    long dB = deg(b);
+
+    long idxk = NextPowerOfTwo(dA + dB + 1);
+    fftRep R1(INIT_SIZE, idxk);
+    long n = 1 << idxk;
+    
+
+    Vec<zz_p> mat_valA, mat_valB;
+    Vec<Vec<zz_p>> mat_valC;
+
+    mat_valA.SetLength(n * s * t);
+    mat_valB.SetLength(n * t * u);
+
+    long st = s*t;
+    
+/*** START PARALLEL ********************************************/ 
+    context.save();  
+
+NTL_EXEC_RANGE(s,first,last)
+    
+    context.restore();
+    
+    fftRep R(INIT_SIZE, idxk);
+    for (long i = first; i < last; i++)
+    {
+        for (long k = 0; k < t; k++)
+        {
+            TofftRep(R, a[i][k], idxk);
+            long *frept = & R.tbl[0][0];
+            for (long r = 0, rst = 0; r < n; r++, rst += st)
+                mat_valA[rst + i*t + k] = frept[r];
+        }
+    }
+
+NTL_EXEC_RANGE_END
+/*** END PARALLEL **********************************************/    
+
+long tu = t*u;
+
+/*** START PARALLEL ********************************************/ 
+    context.save();  
+
+NTL_EXEC_RANGE(t,first,last)
+    
+    context.restore();
+    fftRep R(INIT_SIZE, idxk);
+    for (long i = first; i < last; i++)
+    {
+        for (long k = 0; k < u; k++)
+        {
+            TofftRep(R, b[i][k], idxk);
+            long *frept = & R.tbl[0][0];
+            for (long r = 0, rtu = 0; r < n; r++, rtu += tu)
+                mat_valB[rtu + i*u + k] = frept[r];
+        }
+    }
+    
+    R1 = R;
+    
+NTL_EXEC_RANGE_END
+/*** END PARALLEL **********************************************/
+
+    mat_valC.SetLength(s * u);
+    for (long i = 0; i < s * u; i++)
+        mat_valC[i].SetLength(n);
+
+/*** START PARALLEL ********************************************/ 
+    context.save();  
+
+NTL_EXEC_RANGE(n,first,last)
+
+    context.restore();
+    
+    Mat<zz_p> va, vb, vc; 
+    va.SetDims(s, t);
+    vb.SetDims(t, u);
+
+    for (long j = first, jst = st*first, jtu = tu*first; j < last; j++, jst += st, jtu += tu)
+    {
+        for (long i = 0; i < s; i++)
+        {
+            for (long k = 0; k < t; k++)
+            {
+                va[i][k] = mat_valA[jst + i*t + k];
+            }
+        }
+        for (long i = 0; i < t; i++)
+        {
+            for (long k = 0; k < u; k++)
+            {
+                vb[i][k] = mat_valB[jtu + i*u + k];
+            }
+        }
+
+        vc = va * vb;
+
+        for (long i = 0; i < s; i++)
+        {
+            for (long k = 0; k < u; k++)
+            {
+                mat_valC[i*u + k][j] = vc[i][k];
+            }
+        }
+    }
+    
+NTL_EXEC_RANGE_END
+/*** END PARALLEL **********************************************/
+
+/*** START PARALLEL ********************************************/ 
+    context.save();  
+
+NTL_EXEC_RANGE(s,first,last)
+
+    context.restore();
+    
+    Mat<zz_p> vc; 
+    c.SetDims(s, u);
+    
+    fftRep R = R1;
+    
+    for (long i = first; i < last; i++)
+    {
+        for (long k = 0; k < u; k++)
+        {
+            long *frept = & R.tbl[0][0];
+            for (long r = 0; r < n; r++)
+            {
+                frept[r] = rep(mat_valC[i*u + k][r]);
+            }
+            FromfftRep(c[i][k], R, 0, n - 1);
+        }
+    }
+
+NTL_EXEC_RANGE_END
+/*** END PARALLEL **********************************************/
+}
+
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
@@ -118,7 +264,6 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
 /*------------------------------------------------------------*/
 void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
-/*
     if (is_FFT_ready(NextPowerOfTwo(deg(a) + deg(b) + 1)))
     {
         multiply_evaluate_FFT(c, a, b);
@@ -127,13 +272,21 @@ void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
     {
         multiply_evaluate_geometric(c, a, b);
     }
-*/
-    multiply_evaluate_geometric(c, a, b);
+
+    //multiply_evaluate_geometric(c, a, b);
 }
 
 void multiply_evaluate_parallel(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
-    multiply_evaluate_geometric_parallel(c, a, b);
+    if (is_FFT_ready(NextPowerOfTwo(deg(a) + deg(b) + 1)))
+    {
+        multiply_evaluate_FFT_parallel(c, a, b);
+    }
+    else
+    {
+        multiply_evaluate_geometric_parallel(c, a, b);
+    }
+    //multiply_evaluate_geometric_parallel(c, a, b);
 }
 
 
