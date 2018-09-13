@@ -24,14 +24,14 @@ void check(long p, long sz, long deg)
         zz_p::init(p);
 
     const double thres = 0.001;
-    
+
     long nb;
     Mat<zz_pX> a, b, c;
     double t_eval,t_eval_p, t_3primes, t_waksman, t_check;
 
     random_mat_zz_pX(a, sz, sz, deg);
     random_mat_zz_pX(b, sz, sz, deg);
-    
+
     t_eval = get_time();
     nb = 0;
     do
@@ -41,7 +41,7 @@ void check(long p, long sz, long deg)
     }
     while ((get_time()-t_eval) <= thres);
     t_eval = (get_time()-t_eval) / nb;
-    
+
     auto temp_c = c;
     t_eval_p = get_time();
     nb = 0;
@@ -55,37 +55,37 @@ void check(long p, long sz, long deg)
 
     if (temp_c != c) cout << "BAD!!!!!!!" << endl;
     /*
-    t_3primes = get_time();
-    nb = 0;
-    do
-    {
-        multiply_3_primes(c, a, b);
-        nb++;
-    }
-    while ((get_time()-t_3primes) <= thres);
-    t_3primes = (get_time()-t_3primes) / nb;
-                
-    t_waksman = get_time();
-    nb = 0;
-    do
-    {
-        multiply_waksman(c, a, b);
-        nb++;
-    }
-            while ((get_time()-t_waksman) <= thres);
-    t_waksman = (get_time()-t_waksman) / nb;
-    
+       t_3primes = get_time();
+       nb = 0;
+       do
+       {
+       multiply_3_primes(c, a, b);
+       nb++;
+       }
+       while ((get_time()-t_3primes) <= thres);
+       t_3primes = (get_time()-t_3primes) / nb;
 
-    t_check = get_time();
-    nb = 0;
-    do
-    {
-        multiply(c, a, b);
-        nb++;
-    }
-    while ((get_time()-t_check) <= thres);
-    t_check = (get_time()-t_check) / nb;
-    */
+       t_waksman = get_time();
+       nb = 0;
+       do
+       {
+       multiply_waksman(c, a, b);
+       nb++;
+       }
+       while ((get_time()-t_waksman) <= thres);
+       t_waksman = (get_time()-t_waksman) / nb;
+
+
+       t_check = get_time();
+       nb = 0;
+       do
+       {
+       multiply(c, a, b);
+       nb++;
+       }
+       while ((get_time()-t_check) <= thres);
+       t_check = (get_time()-t_check) / nb;
+       */
     cout << p << " " << sz << " " << deg << endl;
     cout << t_eval << " " << t_eval_p << endl;
     //cout << t_eval << " " << t_eval_p << " " << t_3primes << " " << t_waksman << " " << t_check << endl;
@@ -110,7 +110,7 @@ int main(int argc, char ** argv)
         sz = atoi(argv[1]);
         deg = atoi(argv[2]);
     }
-    
+
     SetNumThreads(4);
 
     warmup();
@@ -119,3 +119,10 @@ int main(int argc, char ** argv)
     // check(288230376151711813, sz, deg);
     return 0;
 }
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
