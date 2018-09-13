@@ -102,7 +102,7 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    long sz = 1000;
+    long sz = 4;
     long deg = 30;
 
     if (argc > 1)
@@ -114,8 +114,8 @@ int main(int argc, char ** argv)
     SetNumThreads(4);
 
     warmup();
+    check(0, sz, deg);
     check(23068673, sz, deg);
-    // check(23068673, sz, deg);
     // check(288230376151711813, sz, deg);
     return 0;
 }
