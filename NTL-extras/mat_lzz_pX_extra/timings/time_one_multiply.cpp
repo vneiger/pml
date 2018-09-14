@@ -44,7 +44,7 @@ void check(long p, long sz, long deg)
     t_eval = (get_time()-t_eval) / nb;
     
     cout << p << " " << sz << " " << deg << endl;
-    cout << t_eval << << endl;
+    cout << t_eval << endl;
 }
 
 
