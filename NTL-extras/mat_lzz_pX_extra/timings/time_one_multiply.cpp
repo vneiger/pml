@@ -3,9 +3,6 @@
 #include <NTL/vector.h>
 #include <iomanip>
 #include <limits.h>
-#include <vector>
-
-#include <NTL/BasicThreadPool.h>
 
 #include "util.h"
 #include "lzz_p_extra.h"
@@ -25,14 +22,14 @@ void check(long p, long sz, long deg)
         zz_p::init(p);
 
     const double thres = 0.001;
-
+    
     long nb;
     Mat<zz_pX> a, b, c;
-    double t_eval,t_eval_p, t_3primes, t_waksman, t_check;
+    double t_eval, t_3primes, t_waksman, t_check;
 
     random_mat_zz_pX(a, sz, sz, deg);
     random_mat_zz_pX(b, sz, sz, deg);
-
+    
     t_eval = get_time();
     nb = 0;
     do
@@ -43,8 +40,40 @@ void check(long p, long sz, long deg)
     while ((get_time()-t_eval) <= thres);
     t_eval = (get_time()-t_eval) / nb;
     
+
+    t_3primes = get_time();
+    nb = 0;
+    do
+    {
+        multiply_3_primes(c, a, b);
+        nb++;
+    }
+    while ((get_time()-t_3primes) <= thres);
+    t_3primes = (get_time()-t_3primes) / nb;
+                
+    t_waksman = get_time();
+    nb = 0;
+    do
+    {
+        multiply_waksman(c, a, b);
+        nb++;
+    }
+            while ((get_time()-t_waksman) <= thres);
+    t_waksman = (get_time()-t_waksman) / nb;
+    
+
+    t_check = get_time();
+    nb = 0;
+    do
+    {
+        multiply(c, a, b);
+        nb++;
+    }
+    while ((get_time()-t_check) <= thres);
+    t_check = (get_time()-t_check) / nb;
+
     cout << p << " " << sz << " " << deg << endl;
-    cout << t_eval << endl;
+    cout << t_eval << " " << t_3primes << " " << t_waksman << " " << t_check << endl;
 }
 
 
@@ -58,35 +87,18 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    long s[] = {4, 16, 32};
-    long d[] = {2000,10000,20000};
-    
-    std::vector<long> sz(s,s+sizeof(s)/sizeof(long));
-    std::vector<long> deg(d, d+sizeof(d)/sizeof(long));
+    long sz = 10;
+    long deg = 10;
+
+    if (argc > 1)
+    {
+        sz = atoi(argv[1]);
+        deg = atoi(argv[2]);
+    }
 
     warmup();
-    for (long t = 1; t <= 4; t *= 2)
-    {
-        SetNumThreads(t);
-        std::cout << "-----------------------------\n";
-        std::cout << "NUM THREADS: " << t << "\n";
-        for (auto i = sz.begin(); i < sz.end(); i++)
-        {
-            for (auto j = deg.begin(); j < deg.end(); j++)
-            {
-                check(0, *i, *j);
-                cout << "\n";
-                check(23068673, *i, *j);
-            }
-        }
-        std::cout << "\n";
-    }
+    check(0, sz, deg);
+    // check(23068673, sz, deg);
+    // check(288230376151711813, sz, deg);
     return 0;
 }
-// Local Variables:
-// mode: C++
-// tab-width: 4
-// indent-tabs-mode: nil
-// c-basic-offset: 4
-// End:
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
