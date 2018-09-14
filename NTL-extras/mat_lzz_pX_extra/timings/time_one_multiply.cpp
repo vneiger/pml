@@ -3,6 +3,7 @@
 #include <NTL/vector.h>
 #include <iomanip>
 #include <limits.h>
+#include <vector>
 
 #include <NTL/BasicThreadPool.h>
 
@@ -102,21 +103,29 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    long sz = 4;
-    long deg = 30;
-
-    if (argc > 1)
-    {
-        sz = atoi(argv[1]);
-        deg = atoi(argv[2]);
-    }
-
-    SetNumThreads(4);
+    long s[] = {4, 16, 32};
+    long d[] = {2000,10000,20000};
+    
+    std::vector<long> sz(s,s+sizeof(s)/sizeof(long));
+    std::vector<long> deg(d, d+sizeof(d)/sizeof(long));
 
     warmup();
-    check(0, sz, deg);
-    check(23068673, sz, deg);
-    // check(288230376151711813, sz, deg);
+    for (long t = 1; t <= 4; t *= 2)
+    {
+        SetNumThreads(t);
+        std::cout << "-----------------------------\n";
+        std::cout << "NUM THREADS: " << t << "\n";
+        for (auto i = sz.begin(); i < sz.end(); i++)
+        {
+            for (auto j = deg.begin(); j < deg.end(); j++)
+            {
+                check(0, *i, *j);
+                cout << "\n";
+                check(23068673, *i, *j);
+            }
+        }
+        std::cout << "\n";
+    }
     return 0;
 }
 // Local Variables:
