@@ -37,12 +37,10 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
 
     long st = s*t;
     
-/*** START PARALLEL ********************************************/ 
-    context.save();  
+    context.save(); // to give the zz_p context to each thread
 
 NTL_EXEC_RANGE(s,first,last)
-    
-    context.restore();
+    context.restore(); // now all threads have the right zz_p context
     
     fftRep R(INIT_SIZE, idxk);
     for (long i = first; i < last; i++)
@@ -55,18 +53,13 @@ NTL_EXEC_RANGE(s,first,last)
                 mat_valA[rst + i*t + k] = frept[r];
         }
     }
-
 NTL_EXEC_RANGE_END
-/*** END PARALLEL **********************************************/    
 
 long tu = t*u;
 
-/*** START PARALLEL ********************************************/ 
-    context.save();  
-
 NTL_EXEC_RANGE(t,first,last)
-    
     context.restore();
+
     fftRep R(INIT_SIZE, idxk);
     for (long i = first; i < last; i++)
     {
@@ -80,19 +73,13 @@ NTL_EXEC_RANGE(t,first,last)
     }
     
     R1 = R;
-    
 NTL_EXEC_RANGE_END
-/*** END PARALLEL **********************************************/
 
     mat_valC.SetLength(s * u);
     for (long i = 0; i < s * u; i++)
         mat_valC[i].SetLength(n);
 
-/*** START PARALLEL ********************************************/ 
-    context.save();  
-
 NTL_EXEC_RANGE(n,first,last)
-
     context.restore();
     
     Mat<zz_p> va, vb, vc; 
@@ -126,21 +113,14 @@ NTL_EXEC_RANGE(n,first,last)
             }
         }
     }
-    
 NTL_EXEC_RANGE_END
-/*** END PARALLEL **********************************************/
 
     c.SetDims(s, u);
 
-/*** START PARALLEL ********************************************/ 
-    context.save();  
-
 NTL_EXEC_RANGE(s,first,last)
-
     context.restore();
     
     Mat<zz_p> vc; 
-    
     
     fftRep R = R1;
     
@@ -156,9 +136,7 @@ NTL_EXEC_RANGE(s,first,last)
             FromfftRep(c[i][k], R, 0, n - 1);
         }
     }
-
 NTL_EXEC_RANGE_END
-/*** END PARALLEL **********************************************/
 }
 
 

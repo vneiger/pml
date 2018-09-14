@@ -1,3 +1,4 @@
+#include <NTL/BasicThreadPool.h>
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
@@ -102,7 +103,6 @@ void all_checks()
     for (size_t si = 0; si < szs.size(); si++)
         for (size_t di = 0; di < degs.size(); di++)
             one_check(szs[si], degs[di]);
-
 }
 
 
@@ -127,7 +127,16 @@ void check()
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    check();
+    SetNumThreads(4);
+
+    if (argc==3)
+    {
+        zz_p::FFTInit(0);
+        one_check(atoi(argv[1]),atoi(argv[2]));
+    }
+    else
+        check();
+
     return 0;
 }
 
