@@ -15,26 +15,62 @@ NTL_CLIENT
 void one_check(long sz, long deg)
 {
     Mat<zz_pX> a, b, c1, c2;
-    mat_lzz_pX_lmultiplier_FFT mula;
-
     random_mat_zz_pX(a, sz, sz, deg);
 
-    mula = mat_lzz_pX_lmultiplier_FFT(a, deg-1);
+    mat_lzz_pX_lmultiplier_geometric mula;
+    mula = mat_lzz_pX_lmultiplier_geometric(a, deg-1);
 
+    mat_lzz_pX_lmultiplier_3_primes mul3;
+    mul3 = mat_lzz_pX_lmultiplier_3_primes(a, deg-1);
+
+    std::unique_ptr<mat_lzz_pX_lmultiplier> mul = get_lmultiplier(a, deg-1);
+    
     random_mat_zz_pX(b, sz, 1, deg);
     multiply(c1, a, b);
+
     mula.multiply(c2, b);
     if (c1 != c2)
+        LogicError("Error in geometric lmultiplier");
+
+    mul3.multiply(c2, b);
+    if (c1 != c2)
+        LogicError("Error in 3 primes lmultiplier");
+
+    mul->multiply(c2, b);
+    if (c1 != c2)
+        LogicError("Error in get_lmultiplier");
+
+    if (is_FFT_prime())
     {
-        LogicError("Error in lmultiplier");
+        mat_lzz_pX_lmultiplier_FFT mulF;
+        mulF = mat_lzz_pX_lmultiplier_FFT(a, deg-1);
+        mulF.multiply(c2, b);
+        if (c1 != c2)
+            LogicError("Error in FFT lmultiplier");
     }
 
     random_mat_zz_pX(b, sz, sz, deg);
     multiply(c1, a, b);
+
     mula.multiply(c2, b);
     if (c1 != c2)
+        LogicError("Error in geometric lmultiplier");
+
+    mul3.multiply(c2, b);
+    if (c1 != c2)
+        LogicError("Error in 3 primes lmultiplier");
+
+    mul->multiply(c2, b);
+    if (c1 != c2)
+        LogicError("Error in get_lmultiplier");
+
+    if (is_FFT_prime())
     {
-        LogicError("Error in lmultiplier");
+        mat_lzz_pX_lmultiplier_FFT mulF;
+        mulF = mat_lzz_pX_lmultiplier_FFT(a, deg-1);
+        mulF.multiply(c2, b);
+        if (c1 != c2)
+            LogicError("Error in FFT lmultiplier");
     }
 }
 
@@ -68,10 +104,10 @@ void check()
     all_checks();
     zz_p::UserFFTInit(786433);
     all_checks();
-    // zz_p::init(288230376151711813);
-    // all_checks();
-    // zz_p::init(786433);
-    // all_checks();
+    zz_p::init(288230376151711813);
+    all_checks();
+    zz_p::init(786433);
+    all_checks();
 }  
 
 /*------------------------------------------------------------*/
@@ -79,7 +115,8 @@ void check()
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    check();
+    while(1)
+        check();
     return 0;
 }
 

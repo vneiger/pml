@@ -9,24 +9,26 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* checks a product (s,s) x (s,1) in degree < deg             */
-/* checks a product (s,s) x (s,s) in degree < deg             */
+/* times a product (s,s) x (s,1) in degree < deg              */
 /*------------------------------------------------------------*/
 void one_check(long sz, long deg)
 {
     Mat<zz_pX> a, b, c1, c2;
-    mat_lzz_pX_lmultiplier_FFT mula;
-    double t_plain, t_lmul;
+    double t_plain, t_g, t_3;
     long nb;
     const double thres = 0.01;
 
     cout << sz << " " << deg << " ";
 
     random_mat_zz_pX(a, sz, sz, deg);
-    mula = mat_lzz_pX_lmultiplier_FFT(a, deg-1);
+    
+    mat_lzz_pX_lmultiplier_geometric mulg;
+    mulg = mat_lzz_pX_lmultiplier_geometric(a, deg-1);
+
+    mat_lzz_pX_lmultiplier_3_primes mul3;
+    mul3 = mat_lzz_pX_lmultiplier_3_primes(a, deg-1);
 
     random_mat_zz_pX(b, sz, 1, deg);
-    
     t_plain = get_time();
     nb = 0;
     do
@@ -36,44 +38,47 @@ void one_check(long sz, long deg)
     }
     while ((get_time()-t_plain) <= thres);
     t_plain = (get_time()-t_plain) / nb;
+    cout << t_plain << " ";
 
-    t_lmul = get_time();
+    t_3 = get_time();
     nb = 0;
     do
     {
-        mula.multiply(c2, b);
+        mul3.multiply(c2, b);
         nb++;
     }
-    while ((get_time()-t_lmul) <= thres);
-    t_lmul = (get_time()-t_lmul) / nb;
+    while ((get_time()-t_3) <= thres);
+    t_3 = (get_time()-t_3) / nb;
+    cout << t_3 << " ";
 
-    cout << t_plain << " " << t_lmul << " ";
-
-
-    random_mat_zz_pX(b, sz, sz, deg);
-    
-    t_plain = get_time();
+    t_g = get_time();
     nb = 0;
     do
     {
-        multiply(c1, a, b);
+        mulg.multiply(c2, b);
         nb++;
     }
-    while ((get_time()-t_plain) <= thres);
-    t_plain = (get_time()-t_plain) / nb;
+    while ((get_time()-t_g) <= thres);
+    t_g = (get_time()-t_g) / nb;
+    cout << t_g << " ";
 
-    t_lmul = get_time();
-    nb = 0;
-    do
+    if (is_FFT_prime())
     {
-        mula.multiply(c2, b);
-        nb++;
+        double t_F;
+        mat_lzz_pX_lmultiplier_FFT mulF;
+        mulF = mat_lzz_pX_lmultiplier_FFT(a, deg-1);
+
+        t_F = get_time();
+        nb = 0;
+        do
+        {
+            mulF.multiply(c2, b);
+            nb++;
+        }
+        while ((get_time()-t_F) <= thres);
+        t_F = (get_time()-t_F) / nb;
+        cout << t_F << " ";
     }
-    while ((get_time()-t_lmul) <= thres);
-    t_lmul = (get_time()-t_lmul) / nb;
-
-    cout << t_plain << " " << t_lmul << " ";
-
     cout << endl;
 }
 
@@ -82,6 +87,7 @@ void one_check(long sz, long deg)
 /*------------------------------------------------------------*/
 void all_checks()
 {
+
     std::vector<long> szs =
     {
         1, 2, 3, 5, 10, 20, 30, 50, 100, 150, 200
@@ -108,10 +114,10 @@ void check()
     all_checks();
     zz_p::UserFFTInit(786433);
     all_checks();
-    // zz_p::init(288230376151711813);
-    // all_checks();
-    // zz_p::init(786433);
-    // all_checks();
+    zz_p::init(288230376151711813);
+    all_checks();
+    zz_p::init(786433);
+    all_checks();
 }  
 
 /*------------------------------------------------------------*/

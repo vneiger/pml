@@ -9,10 +9,11 @@
 NTL_CLIENT
 
 
+
 /*------------------------------------------------------------*/
 /* in-place reduction modulo the current prime                */
 /*------------------------------------------------------------*/
-static void reduce_mod_p(Mat<zz_pX> & a)
+void reduce_mod_p(Mat<zz_pX> & a)
 {
     long r = a.NumRows();
     long s = a.NumCols();
@@ -86,7 +87,7 @@ static void reconstruct_2CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, con
 /* matrix CRT modulo 3 primes, result reduced modulo p        */
 /* c cannot alias c0, c1 or c2; c does not have to be zero    */
 /*------------------------------------------------------------*/
-static void reconstruct_3CRT(Mat<zz_pX> & c, Mat<zz_pX> & c0, long p0, Mat<zz_pX> & c1, long p1, Mat<zz_pX> & c2, long p2)
+static void reconstruct_3CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, const Mat<zz_pX> & c1, long p1, const Mat<zz_pX> & c2, long p2)
 {
 
     if (p0 > p1) // ensures that p0 < p1
@@ -166,7 +167,6 @@ static void reconstruct_3CRT(Mat<zz_pX> & c, Mat<zz_pX> & c0, long p0, Mat<zz_pX
     }
 }
 
-
 /*------------------------------------------------------------*/
 /* FFT multiplication done modulo FFTprime[idx]               */
 /* c can alias a or b; c does not have to be zero             */
@@ -216,22 +216,13 @@ static void middle_product_modulo_FFT_prime(Mat<zz_pX> & b, const Mat<zz_pX> & a
     }
 }
 
-
 /*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/* chooses either 1, 2 or 3 FFT primes                        */
-/* c can alias a or b; c does not have to be zero             */
+/* constructor of lzz_p_3_primes                              */
 /*------------------------------------------------------------*/
-void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+lzz_pX_3_primes::lzz_pX_3_primes(long ncols, long dA, long dB)
 {
     long p = zz_p::modulus();
-    long s = a.NumCols();
-    long dA = deg(a);
-    long dB = deg(b);
-
-    ZZ max_coeff = ZZ(s) * ZZ(min(dA + 1, dB + 1)) * ZZ(p - 1) * ZZ(p - 1);
-
-    long fft_p0, fft_p1, fft_p2;
+    ZZ max_coeff = ZZ(ncols) * ZZ(min(dA + 1, dB + 1)) * ZZ(p - 1) * ZZ(p - 1);
     {
         zz_pPush push;
         zz_p::FFTInit(0);
@@ -242,7 +233,7 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
         fft_p2 = zz_p::modulus();
     }
 
-    long nb_primes = 0;
+    nb_primes = 0;
     if (ZZ(fft_p0) > max_coeff)
     {
         nb_primes = 1;
@@ -259,27 +250,70 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
     {
         LogicError("size too large for 3 primes FFT");
     }
+}
 
-    Mat<zz_pX> c0, c1, c2;
+/*------------------------------------------------------------*/
+/* returns the number of primes                               */
+/*------------------------------------------------------------*/
+long lzz_pX_3_primes::nb() const
+{
+    return nb_primes;
+}
+
+
+/*------------------------------------------------------------*/
+/* reconstructs c from its images                             */
+/*------------------------------------------------------------*/
+void lzz_pX_3_primes::reconstruct(Mat<zz_pX>& c, const Vec<Mat<zz_pX>>& cs)
+{
     switch(nb_primes)
     {
     case 1:
-        multiply_modulo_FFT_prime(c, a, b, 0);
+        c = cs[0];
         reduce_mod_p(c);
         break;
     case 2:
-        multiply_modulo_FFT_prime(c0, a, b, 0);
-        multiply_modulo_FFT_prime(c1, a, b, 1);
-        reconstruct_2CRT(c, c0, fft_p0, c1, fft_p1);
+        reconstruct_2CRT(c, cs[0], fft_p0, cs[1], fft_p1);
         break;
     case 3:
-        multiply_modulo_FFT_prime(c0, a, b, 0);
-        multiply_modulo_FFT_prime(c1, a, b, 1);
-        multiply_modulo_FFT_prime(c2, a, b, 2);
-        reconstruct_3CRT(c, c0, fft_p0, c1, fft_p1, c2, fft_p2);
+        reconstruct_3CRT(c, cs[0], fft_p0, cs[1], fft_p1, cs[2], fft_p2);
         break;
     default:
-        LogicError("impossible branch for 3 primes FFT");
+        LogicError("impossible branch for 3 primes");
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/* c = a*b                                                    */
+/* chooses either 1, 2 or 3 FFT primes                        */
+/* c can alias a or b; c does not have to be zero             */
+/*------------------------------------------------------------*/
+void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{
+    long s = a.NumCols();
+    long dA = deg(a);
+    long dB = deg(b);
+    lzz_pX_3_primes primes(s, dA, dB);
+    long nb = primes.nb();
+    
+    if (nb == 1)
+    {
+        multiply_modulo_FFT_prime(c, a, b, 0); // no need to copy stuff around
+        reduce_mod_p(c);
+        return;
+    }
+    else
+    {
+        Vec<Mat<zz_pX>> cs;
+        cs.SetLength(nb);
+        for (long i = 0; i < nb; i++)
+        {
+            Mat<zz_pX> ci;
+            multiply_modulo_FFT_prime(ci, a, b, i);
+            cs[i] = ci;
+        }
+        primes.reconstruct(c, cs);
     }
 }
 
@@ -291,63 +325,32 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
 /*------------------------------------------------------------*/
 void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {
-    // TODO: check that degrees are not too large?
-    long p = zz_p::modulus();
     long s = a.NumCols();
+    lzz_pX_3_primes primes(s, dA, dB);
+    long nb = primes.nb();
 
-    ZZ max_coeff = ZZ(s) * ZZ(min(dA + 1, dB + 1)) * ZZ(p - 1) * ZZ(p - 1);
-
-    long fft_p0, fft_p1, fft_p2;
+    if (nb == 1)
     {
-        zz_pPush push;
-        zz_p::FFTInit(0);
-        fft_p0 = zz_p::modulus();
-        zz_p::FFTInit(1);
-        fft_p1 = zz_p::modulus();
-        zz_p::FFTInit(2);
-        fft_p2 = zz_p::modulus();
-    }
-
-    long nb_primes = 0;
-    if (ZZ(fft_p0) > max_coeff)
-    {
-        nb_primes = 1;
-    }
-    else if (ZZ(fft_p0)*ZZ(fft_p1) > 2*max_coeff)
-    {
-        nb_primes = 2;
-    }
-    else if (ZZ(fft_p0)*ZZ(fft_p1)*ZZ(fft_p2) > 2*max_coeff)   // x2 so that normalized remainders are in [0..p0p1p2/2]
-    {
-        nb_primes = 3;
+        middle_product_modulo_FFT_prime(b, a, c, dA, dB, 0);
+        reduce_mod_p(b);
+        return;
     }
     else
     {
-        LogicError("size too large for 3 primes FFT");
-    }
-
-    Mat<zz_pX> b0, b1, b2;
-    switch(nb_primes)
-    {
-    case 1:
-        middle_product_modulo_FFT_prime(b, a, c, dA, dB, 0);
-        reduce_mod_p(b);
-        break;
-    case 2:
-        middle_product_modulo_FFT_prime(b0, a, c, dA, dB, 0);
-        middle_product_modulo_FFT_prime(b1, a, c, dA, dB, 1);
-        reconstruct_2CRT(b, b0, fft_p0, b1, fft_p1);
-        break;
-    case 3:
-        middle_product_modulo_FFT_prime(b0, a, c, dA, dB, 0);
-        middle_product_modulo_FFT_prime(b1, a, c, dA, dB, 1);
-        middle_product_modulo_FFT_prime(b2, a, c, dA, dB, 2);
-        reconstruct_3CRT(b, b0, fft_p0, b1, fft_p1, b2, fft_p2);
-        break;
-    default:
-        LogicError("impossible branch for 3 primes middle product FFT");
+        Vec<Mat<zz_pX>> bs;
+        bs.SetLength(nb);
+        for (long i = 0; i < nb; i++)
+        {
+            Mat<zz_pX> bi;
+            middle_product_modulo_FFT_prime(bi, a, c, dA, dB, i);
+            bs[i] = bi;
+        }
+        primes.reconstruct(b, bs);
     }
 }
+
+
+
 
 
 // Local Variables:
