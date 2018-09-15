@@ -1,6 +1,7 @@
 #include <NTL/matrix.h>
 #include <NTL/mat_lzz_p.h>
 #include <NTL/lzz_pX.h>
+#include <NTL/BasicThreadPool.h>
 
 #include "util.h"
 #include "lzz_p_extra.h"
@@ -14,8 +15,9 @@ NTL_CLIENT
 /* c = a*b                                                    */
 /* output may alias input; c does not have to be zero matrix  */
 /*------------------------------------------------------------*/
-void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, zz_pX_Multipoint& ev)
+static void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, zz_pX_Multipoint& ev)
 {
+    zz_pContext context;
     long s = a.NumRows();
     long t = a.NumCols();
     long u = b.NumCols();
@@ -27,11 +29,18 @@ void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
 
     mat_valA.SetLength(n * s * t);
     mat_valB.SetLength(n * t * u);
-
-    Vec<zz_p> tmp;
     long st = s*t;
-    for (long i = 0; i < s; i++)
+
+    
+/*** START PARALLEL ********************************************/ 
+    context.save();  
+
+NTL_EXEC_RANGE(s,first,last)
+    
+    context.restore();
+    for (long i = first; i < last; i++)
     {
+        Vec<zz_p> tmp;
         for (long k = 0; k < t; k++)
         {
             ev.evaluate(tmp, a[i][k]);
@@ -40,27 +49,50 @@ void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
         }
     }
 
+NTL_EXEC_RANGE_END
+/*** END PARALLEL **********************************************/
+    
     long tu = t*u;
-    for (long i = 0; i < t; i++)
+    
+/*** START PARALLEL ********************************************/
+    context.save();
+    
+NTL_EXEC_RANGE(t,first,last)
+    
+    context.restore();    
+    for (long i = first; i < last; i++)
     {
+        Vec<zz_p> tmp;
         for (long k = 0; k < u; k++)
         {
             ev.evaluate(tmp, b[i][k]);
             for (long r = 0, rtu = 0; r < n; r++, rtu += tu)
+            {
                 mat_valB[rtu + i*u + k] = tmp[r];
+            }
         }
+        
     }
-
-    Mat<zz_p> va, vb, vc;
-    va.SetDims(s, t);
-    vb.SetDims(t, u);
-
+    
+NTL_EXEC_RANGE_END
+/*** END PARALLEL **********************************************/
+    
     mat_valC.SetLength(s * u);
     for (long i = 0; i < s * u; i++)
         mat_valC[i].SetLength(n);
+    
+/*** START PARALLEL ********************************************/   
+//    context.save();
 
+//NTL_EXEC_RANGE(n,first,last)    
+
+//    context.restore();
     for (long j = 0, jst = 0, jtu = 0; j < n; j++, jst += st, jtu += tu)
     {
+        Mat<zz_p> va, vb, vc;
+        va.SetDims(s, t);
+        vb.SetDims(t, u);
+        
         for (long i = 0; i < s; i++)
         {
             for (long k = 0; k < t; k++)
@@ -75,7 +107,7 @@ void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
                 vb[i][k] = mat_valB[jtu + i*u + k];
             }
         }
-
+        
         vc = va * vb;
 
         for (long i = 0; i < s; i++)
@@ -86,17 +118,30 @@ void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
             }
         }
     }
+    
+//NTL_EXEC_RANGE_END
+/*** END PARALLEL **********************************************/
 
     c.SetDims(s, u);
-    for (long i = 0; i < s; i++)
+
+/*** START PARALLEL ********************************************/   
+    context.save();
+
+NTL_EXEC_RANGE(s,first,last)   
+    
+    context.restore();
+    
+    for (long i = first; i < last; i++)
     {
         for (long k = 0; k < u; k++)
         {
             ev.interpolate(c[i][k], mat_valC[i*u + k]);
         }
     }
-}
 
+NTL_EXEC_RANGE_END
+/*** END PARALLEL **********************************************/
+}
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
 /* geometric points, uses FFTs directly                       */
