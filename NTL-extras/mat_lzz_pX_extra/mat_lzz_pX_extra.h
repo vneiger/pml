@@ -4,7 +4,7 @@
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
 #include <iostream>
-#include <vector> // std vector, for shifts, degrees, pivot indices
+#include <vector> std vector, for shifts, degrees, pivot indices
 #include <memory>
 
 #include "lzz_p_extra.h"
@@ -655,7 +655,7 @@ private:
 
 
 /*------------------------------------------------------------*/
-/*                                                            */
+/* returns a multiplier of the right type                     */
 /*------------------------------------------------------------*/
 std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, long dB);
 
