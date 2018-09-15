@@ -4,7 +4,7 @@
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
 #include <iostream>
-#include <vector> std vector, for shifts, degrees, pivot indices
+#include <vector> // std vector, for shifts, degrees, pivot indices
 #include <memory>
 
 #include "lzz_p_extra.h"

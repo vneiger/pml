@@ -3,6 +3,7 @@
 #include <NTL/vector.h>
 #include <iomanip>
 #include <limits.h>
+#include <NTL/BasicThreadPool.h>
 
 #include "util.h"
 #include "lzz_p_extra.h"
@@ -84,6 +85,8 @@ void check(long p, long sz, long deg)
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
+    SetNumThreads(1);
+
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
@@ -97,8 +100,16 @@ int main(int argc, char ** argv)
     }
 
     warmup();
-    // check(0, sz, deg);
+    check(0, sz, deg);
     // check(23068673, sz, deg);
-    check(288230376151711813, sz, deg);
+    // check(288230376151711813, sz, deg);
     return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
