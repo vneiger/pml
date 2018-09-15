@@ -1,5 +1,6 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/vector.h>
+#include <memory>
 
 #include "vec_lzz_p_extra.h"
 #include "lzz_pX_CRT.h"

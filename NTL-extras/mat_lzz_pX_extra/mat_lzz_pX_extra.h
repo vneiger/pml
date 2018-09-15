@@ -5,8 +5,10 @@
 #include <NTL/lzz_pX.h>
 #include <iostream>
 #include <vector> // std vector, for shifts, degrees, pivot indices
+#include <memory>
 
 #include "lzz_p_extra.h"
+#include "lzz_pX_CRT.h"
 #include "thresholds_matrix_multiply.h"
 #include "thresholds_matrix_middle_product.h"
 #include "thresholds_newton_inv_trunc.h"
@@ -74,6 +76,11 @@ long IsIdentity(const Mat<zz_pX> & pmat);
 long deg(const Mat<zz_pX> & pmat);
 
 /*------------------------------------------------------------*/
+/* in-place reduction modulo the current prime                */
+/*------------------------------------------------------------*/
+void reduce_mod_p(Mat<zz_pX> & a);
+
+/*------------------------------------------------------------*/
 /* evaluate at a given point                                  */
 /*------------------------------------------------------------*/
 void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt);
@@ -118,12 +125,14 @@ Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n);
 
 
 /*------------------------------------------------------------*/
-/*                        Shift Operations                    */
+/*------------------------------------------------------------*/
+/*                        SHIFT OPERATIONS                    */
 /* LeftShift by n means multiplication by X^n                 */
 /* RightShift by n means division by X^n                      */
 /* A negative shift reverses the direction of the shift.      */
 /* TODO                                                       */
 /* versions with different shifting orders on rows/columns    */
+/*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 // full matrix, 1 row, 1 col
 // full matrix shift
@@ -461,6 +470,37 @@ inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs, const long order)
     return mat;
 }
 
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*               A CLASS FOR 3 PRIMES FFTS                    */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class lzz_pX_3_primes
+{
+public:
+    /*------------------------------------------------------------*/
+    /* constructor of lzz_p_3_primes                              */
+    /*------------------------------------------------------------*/
+    lzz_pX_3_primes(long ncols, long dA, long dB);
+    lzz_pX_3_primes(){};
+
+    /*------------------------------------------------------------*/
+    /* returns the number of primes                               */
+    /*------------------------------------------------------------*/
+    long nb() const;
+
+    /*------------------------------------------------------------*/
+    /* reconstructs c from its images                             */
+    /*------------------------------------------------------------*/
+    void reconstruct(Mat<zz_pX>& c, const Vec<Mat<zz_pX>>& cs);
+
+private:
+    long nb_primes;
+    long fft_p0, fft_p1, fft_p2;
+};
+
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*             MULTIPLICATION / MIDDLE PRODUCT                */
@@ -485,7 +525,6 @@ void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
 void multiply_transform_montgomery3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform_karatsuba4(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long len);
-
 inline void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
     multiply_transform(c, a, b, max(deg(a), deg(b)) + 1);
@@ -527,7 +566,7 @@ void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, 
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* classes for multiplication with a given l.h.s.             */
+/* CLASSES FOR MULTIPLICATION WITH A GIVEN L.H.S.             */
 /* constructors take an argument dB st r.h.s has degree <= dB */  
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -537,7 +576,8 @@ public:
     /*------------------------------------------------------------*/
     /* c = M * b                                                  */
     /*------------------------------------------------------------*/
-    virtual void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b) const = 0;
+    virtual void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b) = 0;
+    virtual ~mat_lzz_pX_lmultiplier(){}
     
     long NumRows() const;
     long NumCols() const;
@@ -560,7 +600,7 @@ public:
     /*------------------------------------------------------------*/
     /* c = M * b                                                  */
     /*------------------------------------------------------------*/
-    void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b) const;
+    void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b);
 
     mat_lzz_pX_lmultiplier_FFT(){}
     mat_lzz_pX_lmultiplier_FFT(const Mat<zz_pX> & a, long dB);
@@ -579,10 +619,14 @@ public:
     /*------------------------------------------------------------*/
     /* c = M * b                                                  */
     /*------------------------------------------------------------*/
-    void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b) const;
+    void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b);
 
+    mat_lzz_pX_lmultiplier_geometric(){}
     mat_lzz_pX_lmultiplier_geometric(const Mat<zz_pX> & a, long dB);
+
 private:
+    Vec<Mat<zz_p>> va; // FFT of current matrix
+    zz_pX_Multipoint_Geometric ev;
 };
 
 /*------------------------------------------------------------*/
@@ -594,14 +638,21 @@ public:
     /*------------------------------------------------------------*/
     /* c = M * b                                                  */
     /*------------------------------------------------------------*/
-    void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b) const;
+    void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b);
 
+    mat_lzz_pX_lmultiplier_3_primes(){}
     mat_lzz_pX_lmultiplier_3_primes(const Mat<zz_pX> & a, long dB);
+
 private:
+    lzz_pX_3_primes primes;
+    Vec<mat_lzz_pX_lmultiplier_FFT> FFT_muls;
 };
 
 
-
+/*------------------------------------------------------------*/
+/*                                                            */
+/*------------------------------------------------------------*/
+std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, long dB);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

@@ -31,6 +31,7 @@ void build_subproduct_tree(Vec<Vec<zz_pX>> & tree, const Vec<zz_pX> & q);
 class zz_pX_Multipoint
 {
 public:
+    virtual ~zz_pX_Multipoint(){}
 
     /*------------------------------------------------------------*/
     /* basic operations                                           */
@@ -87,7 +88,6 @@ public:
     /* boilerplate                                                */
     /*------------------------------------------------------------*/
     zz_pX_Multipoint_General(){}
-    ~zz_pX_Multipoint_General(){};
 
     /*------------------------------------------------------------*/
     /* constructor from points                                    */
@@ -128,7 +128,6 @@ public:
     /* boilerplate                                                */
     /*------------------------------------------------------------*/
     zz_pX_Multipoint_Geometric(){}
-    ~zz_pX_Multipoint_Geometric(){}
 
     /*------------------------------------------------------------*/
     /* constructor for geometric progressions                     */
@@ -200,7 +199,6 @@ public:
     /* boilerplate                                                */
     /*------------------------------------------------------------*/
     zz_pX_Multipoint_FFT(){}
-    ~zz_pX_Multipoint_FFT(){};
 
     /*------------------------------------------------------------*/
     /* constructor for geometric progressions                     */
