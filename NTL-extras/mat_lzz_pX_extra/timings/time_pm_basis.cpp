@@ -62,7 +62,7 @@ void one_bench_pm_basis(long sz, long deg, long nbits)
             t1w = GetWallTime();
             NTL::GCD(g, a, b);
             t2w = GetWallTime();
-            cout << sz << "," << deg << "," << (t2-t1) << " (GCD)" << endl;
+            cout << rdim << cdim << "," << order << "," << (t2-t1) << " (GCD)" << endl;
             //std::cout << "\t GCD --> " << (t2-t1) << std::endl;
         }
         {
@@ -71,7 +71,8 @@ void one_bench_pm_basis(long sz, long deg, long nbits)
             random(b, deg_gcd);
             t1w = GetWallTime();
             NTL::XGCD(g, u, v, a, b);
-            t2w = GetWallTime();cout << sz << "," << deg << "," << (t2-t1) << " (XGCD)" << endl;
+            t2w = GetWallTime();
+            cout << rdim << cdim << "," << order << "," << (t2-t1) << " (XGCD)" << endl;
             //std::cout << "\tXGCD --> " << (t2-t1) << std::endl;
         }
     }
@@ -84,7 +85,7 @@ void one_bench_pm_basis(long sz, long deg, long nbits)
         pivdeg = pmbasis(appbas,pmat,order,shift);
         t2w = GetWallTime(); t2 = GetTime();
 
-        cout << sz << "," << deg << "," << (t2w-t1w) << " (pm_basis)" << endl;
+        cout << rdim << cdim << "," << order << "," << (t2w-t1w) << " (pm_basis)" << endl;
     }
     // popov_pmbasis
     {
@@ -94,7 +95,7 @@ void one_bench_pm_basis(long sz, long deg, long nbits)
         pivdeg = popov_pmbasis(appbas,pmat,order,shift);
         t2w = GetWallTime(); t2 = GetTime();
 
-        cout << sz << "," << deg << "," << (t2w-t1w) << "(povov_pm_basis)" << endl;   
+        cout << rdim << cdim << "," << order << "," << (t2w-t1w) << "(povov_pm_basis)" << endl;   
     }
 
 }
@@ -172,6 +173,8 @@ int main(int argc, char ** argv)
 
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
+    
+    cout << "rdim, cdim, order, time" << endl;
 
     if (argc==1)
     {
