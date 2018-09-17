@@ -88,7 +88,7 @@ void one_bench_pm_basis(long sz, long deg, long nbits)
     }
     // popov_pmbasis
     {
-        std::cout << "~~~Testing popov_pmbasis~~~" << std::endl;
+        //std::cout << "~~~Testing popov_pmbasis~~~" << std::endl;
         t1w = GetWallTime(); t1 = GetTime();
         Mat<zz_pX> appbas;
         pivdeg = popov_pmbasis(appbas,pmat,order,shift);
