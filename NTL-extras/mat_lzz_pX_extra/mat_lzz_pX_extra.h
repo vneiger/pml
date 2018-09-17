@@ -4,7 +4,7 @@
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
 #include <iostream>
-#include <vector> std vector, for shifts, degrees, pivot indices
+#include <vector> // std vector, for shifts, degrees, pivot indices
 #include <memory>
 
 #include "lzz_p_extra.h"
@@ -537,19 +537,30 @@ inline void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<z
 
 void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
+/*------------------------------------------------------------*/
+/* main function for c = a*b                                  */
+/* output can alias input                                     */
+/* is_prime = 1 assumes that p is known to be prime           */
+/*------------------------------------------------------------*/
 void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long is_prime = 1);
+
+inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
+{ 
+    Mat<zz_pX> x; 
+    multiply(x, a, b); 
+    return x; 
+}
+
+
+/*------------------------------------------------------------*/
+/* c = a*b mod x^n                                            */
+/*------------------------------------------------------------*/
 
 inline void mul_trunc(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long n, long is_prime = 1)
 {
     multiply(c, a, b, is_prime);
     trunc(c, c, n);
 }
-
-// inline Mat<zz_pX> & operator*=(Mat<zz_pX> & x, const Mat<zz_pX>& b)
-// {
-//     mul(x, x, b);
-//     return x;
-// }
 
 /*------------------------------------------------------------*/
 /* transpose of b mapsto c = a*b. output is                   */
@@ -658,6 +669,30 @@ private:
 /* returns a multiplier of the right type                     */
 /*------------------------------------------------------------*/
 std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, long dB);
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* x-adic algorithms for solving systems                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* solve A u = b mod x^prec                                   */
+/* A square, A(0) invertible, deg(A), deg(b) < prec           */
+/* use when deg(A) close to prec                              */
+/*------------------------------------------------------------*/
+void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec);
+
+/*------------------------------------------------------------*/
+/* solve A u = b mod x^prec                                   */
+/* A square, A(0) invertible, deg(A), deg(b) < prec           */
+/* use when deg(A) << prec                                    */
+/*------------------------------------------------------------*/
+void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec);
+
+
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
