@@ -27,7 +27,7 @@ void one_bench_pm_basis(long sz, long deg, long nbits)
     // --> use several threads if big matrix dimensions
     //SetNumThreads(4);
 
-    bool verify=false;
+    //bool verify=false;
 
     long rdim = sz*2;
     long cdim = sz;
