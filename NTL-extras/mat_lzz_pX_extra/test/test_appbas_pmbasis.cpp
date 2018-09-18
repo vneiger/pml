@@ -28,7 +28,7 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
 
 int main(int argc, char *argv[])
 {
-    SetNumThreads(1);
+    SetNumThreads(4);
 
     bool verify=false;
 

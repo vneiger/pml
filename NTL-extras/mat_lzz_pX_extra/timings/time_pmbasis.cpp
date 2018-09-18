@@ -35,13 +35,13 @@ void one_bench_pm_basis(long sz, long deg, long nbits)
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
-    double t1,t2,t1w,t2w;
+    double t1w,t2w;
 
     // build random matrix
     Mat<zz_pX> pmat;
-    t1w = GetWallTime(); t1 = GetTime();
+    t1w = GetWallTime();
     random_mat_zz_pX(pmat, rdim, cdim, order);
-    t2w = GetWallTime(); t2 = GetTime();
+    t2w = GetWallTime();
 
     Mat<zz_p> kerbas;
     std::vector<long> pivdeg;
@@ -50,58 +50,46 @@ void one_bench_pm_basis(long sz, long deg, long nbits)
     if (rdim==2 && cdim==1)
     {
         long deg_gcd = (order>>1);
-        {
-            zz_pX a,b,g;
-            random(a, deg_gcd);
-            random(b, deg_gcd);
-            t1w = GetWallTime();
-            NTL::GCD(g, a, b);
-            t2w = GetWallTime();
-            cout << rdim << cdim << "," << order << "," << (t2-t1) << " (GCD)" << endl;
-            //std::cout << "\t GCD --> " << (t2-t1) << std::endl;
-        }
-        {
-            zz_pX a,b,g,u,v; 
-            random(a, deg_gcd);
-            random(b, deg_gcd);
-            t1w = GetWallTime();
-            NTL::XGCD(g, u, v, a, b);
-            t2w = GetWallTime();
-            cout << rdim << cdim << "," << order << "," << (t2-t1) << " (XGCD)" << endl;
-            //std::cout << "\tXGCD --> " << (t2-t1) << std::endl;
-        }
+        zz_pX a,b,g,u,v; 
+        random(a, deg_gcd);
+        random(b, deg_gcd);
+        t1w = GetWallTime();
+        NTL::XGCD(g, u, v, a, b);
+        t2w = GetWallTime();
+        cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << " (ntl xgcd)" << endl;
     }
 
     // pmbasis
     {
         //std::cout << "~~~Testing pmbasis~~~" << std::endl;
-        t1w = GetWallTime(); t1 = GetTime();
+        t1w = GetWallTime();
         Mat<zz_pX> appbas;
         pivdeg = pmbasis(appbas,pmat,order,shift);
-        t2w = GetWallTime(); t2 = GetTime();
+        t2w = GetWallTime();
 
-        cout << rdim << cdim << "," << order << "," << (t2w-t1w) << " (pm_basis)" << endl;
+        cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << endl;
+        //cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << " (pm_basis)" << endl;
     }
     // popov_pmbasis
-    {
-        //std::cout << "~~~Testing popov_pmbasis~~~" << std::endl;
-        t1w = GetWallTime(); t1 = GetTime();
-        Mat<zz_pX> appbas;
-        pivdeg = popov_pmbasis(appbas,pmat,order,shift);
-        t2w = GetWallTime(); t2 = GetTime();
+    //{
+    //    //std::cout << "~~~Testing popov_pmbasis~~~" << std::endl;
+    //    t1w = GetWallTime(); t1 = GetTime();
+    //    Mat<zz_pX> appbas;
+    //    pivdeg = popov_pmbasis(appbas,pmat,order,shift);
+    //    t2w = GetWallTime(); t2 = GetTime();
 
-        cout << rdim << cdim << "," << order << "," << (t2w-t1w) << "(povov_pm_basis)" << endl;   
-    }
-
+    //    cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << "(povov_pm_basis)" << endl;   
+    //}
 }
 
 /*------------------------------------------------------------*/
 /* checks some products                                       */
 /*------------------------------------------------------------*/
-void run_bench(long test, long nbits)
+void run_bench(long nbits)
 {
     std::vector<long> szs =
     {
+        1,1,1,1,1,1,1,1,1,1,1,1,
         2,2,2,2,2,2,2,2,2,2,2,2,
         4,4,4,4,4,4,4,4,4,4,4,4,
         8,8,8,8,8,8,8,8,8,8,8,8,
@@ -119,6 +107,7 @@ void run_bench(long test, long nbits)
         32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
         32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
         32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
+        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
         32,64,128,256,512,1024,2048,4096,8192,16384,32768,
         32,64,128,256,512,1024,2048,4096,8192,
         32,64,128,256,512,1024,2048,
@@ -127,35 +116,30 @@ void run_bench(long test, long nbits)
         32,64,
     };
 
-    if (test==0 || test==1)
+    std::cout << "Bench pm-basis (FFT prime)" << std::endl;
+    if (nbits < 25)
     {
-        std::cout << "Bench pm-basis (FFT prime)" << std::endl;
-        if (nbits < 25)
-        {
-            zz_p::UserFFTInit(786433); // 20 bits
-            cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 20 << ")" << endl;
-        }
-        else if (nbits < 35)
-        {
-            zz_p::UserFFTInit(2013265921); // 31 bits
-            cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 31 << ")" << endl;
-        }
-        else if (nbits < 45)
-        {
-            zz_p::UserFFTInit(2748779069441); // 42 bits
-            cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 42 << ")" << endl;
-        }
-        else if (nbits < 65)
-        {
-            zz_p::UserFFTInit(1139410705724735489); // 60 bits
-            cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
-        }
-        for (size_t i=0;i<szs.size();i++)
-            one_bench_pm_basis(szs[i],degs[i],nbits);
-        cout << endl;
+        zz_p::UserFFTInit(786433); // 20 bits
+        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 20 << ")" << endl;
     }
-
-
+    else if (nbits < 35)
+    {
+        zz_p::UserFFTInit(2013265921); // 31 bits
+        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 31 << ")" << endl;
+    }
+    else if (nbits < 45)
+    {
+        zz_p::UserFFTInit(2748779069441); // 42 bits
+        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 42 << ")" << endl;
+    }
+    else if (nbits < 65)
+    {
+        zz_p::UserFFTInit(1139410705724735489); // 60 bits
+        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
+    }
+    for (size_t i=0;i<szs.size();i++)
+        one_bench_pm_basis(szs[i],degs[i],nbits);
+    cout << endl;
 }
 
 /*------------------------------------------------------------*/
@@ -163,30 +147,26 @@ void run_bench(long test, long nbits)
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    SetNumThreads(4);
+    SetNumThreads(1);
 
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
     
-    cout << "rdim, cdim, order, time" << endl;
+    cout << "rdim,cdim,order,time" << endl;
 
     if (argc==1)
     {
         warmup();
-        
-        run_bench(0,0);
+        run_bench(0);
     }
-    if (argc==2 || argc==3)
+    if (argc==2)
     {
-        long test = 0; // default: run all benchs
-        if (argc==3)
-            test = atoi(argv[2]);
         long nbits = atoi(argv[1]);
         warmup();
-        run_bench(test,nbits);
+        run_bench(nbits);
     }
     if (argc>3)
-        throw std::invalid_argument("Usage: ./time_multiply_comparelinbox OR ./time_multiply_comparelinbox nbits OR ./time_multiply_comparelinbox nbits test");
+        throw std::invalid_argument("Usage: ./time_pmbasis OR ./time_pmbasis nbits");
 
     return 0;
 }
