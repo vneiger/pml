@@ -12,6 +12,7 @@
 #include "thresholds_matrix_multiply.h"
 #include "thresholds_matrix_middle_product.h"
 #include "thresholds_newton_inv_trunc.h"
+#include "thresholds_solve_lift.h"
 
 NTL_CLIENT
 
@@ -679,10 +680,10 @@ std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, lo
 
 /*------------------------------------------------------------*/
 /* solve A u = b mod x^prec                                   */
-/* A square, A(0) invertible, deg(A), deg(b) < prec           */
+/* A square, A(0) invertible                                  */
 /* use when deg(A) close to prec                              */
 /*------------------------------------------------------------*/
-void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec);
+void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec, long thresh = -1);
 
 /*------------------------------------------------------------*/
 /* solve A u = b mod x^prec                                   */

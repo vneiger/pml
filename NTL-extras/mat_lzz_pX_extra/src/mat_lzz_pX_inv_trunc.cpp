@@ -124,7 +124,7 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
 
     fftRep R1(INIT_SIZE, NextPowerOfTwo(2*m-1));
 
-    k = 1L << thresh;
+    k = thresh;
     plain_inv_trunc(x, a, k);    
     s = a.NumRows();
     ss = s * s;
@@ -276,7 +276,7 @@ void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m,
     }
 
     long idx, k;
-    k = 1L << thresh;
+    k = thresh;
     vector<long> all_deg=degrees(m, k);
     k = all_deg[0];
     idx = 1;
@@ -337,7 +337,7 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
         }
     }
 
-    k = 1L << thresh;
+    k = thresh;
     vector<long> all_deg=degrees(m, k);
     k = all_deg[0];
     idx = 1;

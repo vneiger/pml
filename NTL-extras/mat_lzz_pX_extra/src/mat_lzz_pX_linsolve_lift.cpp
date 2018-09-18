@@ -37,15 +37,37 @@ static void solve_DAC(Mat<zz_pX>& sol, const Mat<zz_pX>& A, const Mat<zz_pX>& b,
 
 /*------------------------------------------------------------*/
 /* solve A u = b mod x^prec                                   */
-/* A square, A(0) invertible, deg(A), deg(b) < prec           */
+/* A square, A(0) invertible                                  */
 /* use when deg(A) close to prec                              */
+/* Computes inverse mod 2^thresh                              */
+/* thresh=-1 is the default value, uses lookup table          */
 /*------------------------------------------------------------*/
-void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
+void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec, long thresh)
 {
     if (deg(A) >= prec || deg(b) >= prec)
-        LogicError("A and b must be reduced in solve_series");
+    {
+        solve_series_low_precision(u, trunc(A, prec), trunc(b, prec), prec, thresh);
+        return;
+    }
 
-    long thresh = 8;
+    if (thresh == -1)
+    {
+        long t = type_of_prime();
+        switch(t)
+        {
+        case TYPE_FFT_PRIME:
+            thresh = THRESHOLDS_SOLVE_LOW_PRECISION_FFT;
+            break;
+        case TYPE_SMALL_PRIME:
+            thresh = THRESHOLDS_SOLVE_LOW_PRECISION_SMALL;
+            break;
+        case TYPE_LARGE_PRIME:
+            thresh = THRESHOLDS_SOLVE_LOW_PRECISION_LARGE;
+            break;
+        default:
+            LogicError("Unknown prime type in linear solving.");
+        }
+    }
     Mat<zz_pX> invA = inv_trunc(A, thresh);
     std::unique_ptr<mat_lzz_pX_lmultiplier> mult = get_lmultiplier(invA, thresh);
     solve_DAC(u, A, b, prec, mult, thresh);
@@ -60,7 +82,10 @@ void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz
 void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
 {
     if (deg(A) >= prec || deg(b) >= prec)
-        LogicError("A and b must be reduced in solve_series");
+    {
+        solve_series_high_precision(u, trunc(A, prec), trunc(b, prec), prec);
+        return;
+    }
     
     long dA = deg(A);
     long lenA = dA + 1;
