@@ -26,13 +26,16 @@
 
 
 TODO Vincent
-   - Finishing PM-Basis (incorporate middle product, some profiling to
-avoid stupid mistakes) and comparing it with LinBox's one and with the
-GCD in the small dimension case.
-   - some first attempts show that our PM-Basis is noticeably slower
-than NTL's GCD for similar problem dimensions. I hope to understand this
-(NTL's gcd seems quite readable) and maybe improve PM-Basis with some
-ideas from NTL.
-   - The "point-wise PM-Basis". I am thinking of a general version
-assuming anything on the points, and also specialized versions working
-with FFT points or with geometric points; does that sound good?
+   - Finishing PM-Basis (power series version):
+      * some profiling to avoid stupid mistakes
+      * finalize mbasis by merging the existing ones
+      * compare with LinBox's pmbasis
+      * compare with NTL's GCD when dimension is 2x1
+   - Matrix multiplication:
+      * FFT: decide on which algo (more thresholds?)
+      * do similar improvement for geometric and others
+      * test on a machine with more cores
+   - Uniform interpolants:
+      * improve mbasis so that it always works (see mbasis-approx)
+      * pmbasis
+      * interpolant basis verification: generation
