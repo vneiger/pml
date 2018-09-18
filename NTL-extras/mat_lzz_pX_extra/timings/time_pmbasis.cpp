@@ -157,7 +157,7 @@ int main(int argc, char ** argv)
     if (argc==1)
     {
         warmup();
-        run_bench(0);
+        run_bench(60);
     }
     if (argc==2)
     {
