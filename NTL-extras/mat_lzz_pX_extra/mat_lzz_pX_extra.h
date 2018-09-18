@@ -1182,12 +1182,21 @@ DegVec popov_mbasis(
 //   either compute more in the evaluated world and interpolate intbas at the end,
 //   or compute in the polynomial world and evaluate to obtain the residuals
 // (in any case, there will still be interpolation/evaluation in the middle)
+// TODO input pmat = polynomial matrix, not implemented yet
 DegVec pmbasis(
                Mat<zz_pX> & intbas,
                const Mat<zz_pX> & pmat,
                const Vec<zz_p> & pts,
                const Shift & shift
               );
+
+// input pmat = list of evaluations, implemented
+DegVec pmbasis(
+              Mat<zz_pX> & intbas,
+              const Vec<Mat<zz_p>> & evals,
+              const Vec<zz_p> & pts,
+              const Shift & shift
+             );
 
 DegVec popov_pmbasis(
                      Mat<zz_pX> &intbas,

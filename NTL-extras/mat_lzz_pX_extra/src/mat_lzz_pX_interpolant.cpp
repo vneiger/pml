@@ -356,15 +356,14 @@ DegVec pmbasis(
               Mat<zz_pX> & intbas,
               const Vec<Mat<zz_p>> & evals,
               const Vec<zz_p> & pts,
-              const long order,
               const Shift & shift
              )
 {
-    if (order == 1)
-    {
+
+    const long order = pts.length();
+    if (order <= 32)
         return mbasis(intbas, evals, pts, shift);
-    }
-    
+
     DegVec pivdeg; // pivot degree, first call
     DegVec pivdeg2; // pivot degree, second call
     DegVec rdeg(evals[0].NumRows()); // shifted row degree
@@ -373,17 +372,17 @@ DegVec pmbasis(
     Mat<zz_pX> trunc_pmat; // truncated pmat for first call
     Mat<zz_pX> intbas2; // basis for second call
     Mat<zz_pX> residual; // for the residual
-    
+
     // first recursive call
     Vec<zz_p>  pts1;
     pts1.SetLength(order1);
     for (long i = 0; i < order1; i++)
         pts1[i] = pts[i];
-    pivdeg = pmbasis(intbas, evals, pts, order1, shift);
-    
+    pivdeg = pmbasis(intbas, evals, pts1, shift);
+
     // shifted row degree = shift for second call = pivdeg+shift
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
-    
+
     // get the product of evaluations intbas(x_i) * pmat(x_i)
     // for the second half of the points
     Vec<Mat<zz_p>> evals2;
@@ -411,7 +410,7 @@ DegVec pmbasis(
     }
     
     // second recursive call
-    pivdeg2 = pmbasis(intbas2, evals2, pts2, order2,rdeg);
+    pivdeg2 = pmbasis(intbas2, evals2, pts2, rdeg);
     
     multiply(intbas,intbas2,intbas);
     
@@ -420,30 +419,6 @@ DegVec pmbasis(
 
     return pivdeg;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // Local Variables:
 // mode: C++
