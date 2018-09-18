@@ -413,6 +413,8 @@ DegVec pmbasis(
     // second recursive call
     pivdeg2 = pmbasis(intbas2, evals2, pts2, order2,rdeg);
     
+    multiply(intbas,intbas2,intbas);
+    
     // final pivot degree = pivdeg1+pivdeg2
     std::transform(pivdeg.begin(), pivdeg.end(), pivdeg2.begin(), pivdeg.begin(), std::plus<long>());
 
