@@ -28,8 +28,7 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
 
 int main(int argc, char *argv[])
 {
-    // --> use several threads if big matrix dimensions
-    //SetNumThreads(4);
+    SetNumThreads(1);
 
     bool verify=false;
 
@@ -97,7 +96,7 @@ int main(int argc, char *argv[])
             t1w = GetWallTime();
             NTL::GCD(g, a, b);
             t2w = GetWallTime();
-            std::cout << "\t GCD --> " << (t2-t1) << std::endl;
+            std::cout << "\t GCD --> " << (t2w-t1w) << std::endl;
         }
         {
             zz_pX a,b,g,u,v; 
@@ -106,7 +105,7 @@ int main(int argc, char *argv[])
             t1w = GetWallTime();
             NTL::XGCD(g, u, v, a, b);
             t2w = GetWallTime();
-            std::cout << "\tXGCD --> " << (t2-t1) << std::endl;
+            std::cout << "\tXGCD --> " << (t2w-t1w) << std::endl;
         }
     }
 

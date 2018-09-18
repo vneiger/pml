@@ -24,11 +24,6 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void one_bench_pm_basis(long sz, long deg, long nbits)
 {
-    // --> use several threads if big matrix dimensions
-    //SetNumThreads(4);
-
-    //bool verify=false;
-
     long rdim = sz*2;
     long cdim = sz;
     long order = 2*deg;
@@ -169,7 +164,6 @@ void run_bench(long test, long nbits)
 int main(int argc, char ** argv)
 {
     SetNumThreads(4);
-    //SetNumThreads(4);
 
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
