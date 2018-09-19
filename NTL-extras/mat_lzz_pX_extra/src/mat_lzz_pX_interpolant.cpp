@@ -372,9 +372,7 @@ DegVec pmbasis(
     DegVec rdeg(evals[0].NumRows()); // shifted row degree
     long order1 = order>>1; // order of first call
     long order2 = order-order1; // order of second call
-    Mat<zz_pX> trunc_pmat; // truncated pmat for first call
     Mat<zz_pX> intbas2; // basis for second call
-    Mat<zz_pX> residual; // for the residual
 
     // first recursive call
     Vec<zz_p>  pts1;
