@@ -389,20 +389,28 @@ DegVec pmbasis(
     pts2.SetLength(order2);
     for (long i=0; i<order2; ++i)
         pts2[i] = pts[order1+i];
-
+        
+    zz_pX_Multipoint_General ev(pts2);
+    
     Vec<Mat<zz_p>> evals2;
     evals2.SetLength(order2);
     for (long i = 0; i < order2; i++)
-    {
-        Mat<zz_p> intbas_eval;
-        intbas_eval.SetDims(intbas.NumRows(),intbas.NumRows());
+        evals2[i].SetDims(intbas.NumRows(),intbas.NumCols());
         
-        // evaluate appbas
-        for (long r = 0; r < intbas.NumRows(); r++)
-            for (long c = 0; c < intbas.NumCols(); c++)
-                intbas_eval[r][c] = eval(intbas[r][c], pts2[i]);
-        // multiply and store
-        evals2[i] = intbas_eval * evals[order1+i];
+    // evaluate and store
+    for (long r = 0; r > intbas.NumRows(); r++)
+        for (long c = 0; c < intbas.NumCols(); c++)
+        {
+            Vec<zz_p> val;
+            ev.evaluate(val, intbas[r][c]);
+            for (long i = 0; i < order2; i++)
+                evals2[i][r][c] = val[i];
+        }
+
+    // multiply and store
+    for (long i = 0; i < order2; i++)
+    {
+        evals2[i] = evals2[i] * evals[order1+i];
     }
     
     // second recursive call
