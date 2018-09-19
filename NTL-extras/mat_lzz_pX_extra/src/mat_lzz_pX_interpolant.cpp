@@ -4,6 +4,7 @@
 #include <cmath>
 #include <algorithm> // for manipulating std::vector (min, max, ..)
 #include <numeric> // for std::iota
+#include <NTL/BasicThreadPool.h>
 
 #include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
@@ -361,6 +362,8 @@ DegVec pmbasis(
 {
 
     const long order = pts.length();
+    zz_pContext context;
+    
     if (order <= 32)
         return mbasis(intbas, evals, pts, shift);
 
@@ -397,8 +400,13 @@ DegVec pmbasis(
     for (long i = 0; i < order2; i++)
         evals2[i].SetDims(intbas.NumRows(),intbas.NumCols());
     
+    context.save();  
+
     // evaluate and store
-    for (long r = 0; r < intbas.NumRows(); r++)
+NTL_EXEC_RANGE(intbas.NumRows(),first,last)
+    
+    context.restore();    
+    for (long r = first; r < last; r++)
         for (long c = 0; c < intbas.NumCols(); c++)
         {
             Vec<zz_p> val;
@@ -407,14 +415,19 @@ DegVec pmbasis(
                 evals2[i][r][c] = val[i];
             
         }
+NTL_EXEC_RANGE_END
 
-    // multiply and store
-    for (long i = 0; i < order2; i++)
+    context.save();  
+
+    // multiply and store    
+NTL_EXEC_RANGE(order2,first,last)
+    context.restore();    
+    
+    for (long i = first; i < last; i++)
     {
-        auto temp = evals2[i] * evals[order1+i];
-        evals2[i] = temp;
-        //evals2[i] = evals2[i] * evals[order1+i];
+        evals2[i] = evals2[i] * evals[order1+i];
     }
+NTL_EXEC_RANGE_END
     
     // second recursive call
     pivdeg2 = pmbasis(intbas2, evals2, pts2, rdeg);
