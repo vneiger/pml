@@ -774,6 +774,135 @@ DegVec popov_mbasis(
     return pivdeg;
 }
 
+void split (Mat<zz_pX> &res, 
+            const Mat<zz_pX> &F, 
+            const long deg,
+            const long deg_sp)
+{
+    long m = F.NumRows();
+    long n = F.NumCols();
+    
+    // compute the number of columns required for the split
+    long cols_sp = ceil((deg+1.0) / (deg_sp+1));
+    
+    // split requires m rows and cols_sp * n columns
+    Mat<zz_pX> F_sp;
+    F_sp.SetDims(m, cols_sp*n);
+    
+    // copy
+    for (long i = 0; i < n; i++)
+    {
+        for (long r = 0; r < m; r++)
+        {
+            long deg_at = 0;
+            for (long c = 0; c < cols_sp; c++)
+            {
+                long col_at = i*cols_sp + c;
+                zz_pX tmp;
+                for (long t = 0; t <= deg_sp; t++)
+                {
+                    SetCoeff(tmp, t, coeff(F[r][i], deg_at++));
+                }
+                F_sp[r][col_at] = tmp;
+            }
+        }
+    }
+    
+    res = F_sp;
+}
+
+// splits F such that each entry has at most deg_sp
+void split_and_multiply (Mat<zz_pX> &res, 
+                         const Mat<zz_pX> &P, 
+                         const Mat<zz_pX> &F,
+                         const long deg,
+                         const long deg_sp)
+{
+    long m = F.NumRows();
+    long n = F.NumCols();
+    
+    Mat<zz_pX> F_sp;
+    split(F_sp,F,deg,deg_sp);
+    
+    res.SetDims(F_sp.NumRows(), F_sp.NumCols());
+    
+    // compute the number of columns required for the split
+    long cols_sp = ceil((deg+1.0) / (deg_sp+1));
+    
+    Mat<zz_pX> res_sp;
+    
+    multiply(res_sp, P, F_sp);
+    
+    // collect
+    for (long i = 0; i < n; i++)
+    {
+        for (long r = 0; r < m; r++)
+        {
+            zz_pX tmp;
+            long deg_at = 0;
+            for (long c = 0; c < cols_sp; c++)
+            {
+                long col_at = i*cols_sp + c;
+                tmp += LeftShift(res_sp[r][col_at], deg_at);
+                deg_at += deg_sp+1;
+            }
+            res[r][i] = tmp;
+        }
+    }
+}
+
+void mbasis_generic(
+                     Mat<zz_pX> & appbas,
+                     const Mat<zz_pX> & pmat,
+                     const long order,
+                     const Shift & shift
+                    )
+{
+    cout << "here" << endl;
+    Mat<zz_pX> L;
+    split (L, pmat, order-1, 0);
+    
+    cout << "L: " << L << endl;
+    
+    long m = L.NumRows();
+    long n = L.NumCols();
+    
+    // copy the constant coeffs
+    Mat<zz_p> L_cp;
+    L_cp.SetDims(m,n);
+    for (long r = 0; r < m; r++)
+        for (long c = 0; c < n; c++)
+            L_cp[r][c] = ConstTerm(L[r][c]);
+    
+    
+    Mat<zz_p> inv_L;
+    inv(inv_L, L_cp);
+    
+    Mat<zz_p> Ls;
+    Ls.SetDims(L.NumRows(), L.NumCols());
+    for (long c = 1; c < L.NumCols(); c++)
+        for (long r = 0; r < L.NumRows(); r++)
+            Ls[r][c] = L_cp[r][c-1];
+    
+    L_cp = Ls*inv_L;
+    zz_pX x;
+    SetCoeff(x,1,1);
+    
+    appbas.SetDims(L.NumRows(), L.NumCols());
+    for (long r = 0; r < L.NumRows(); r++)
+    {
+        for (long c = 0; c < L.NumCols(); c++)
+        {
+            zz_pX tmp;
+            SetCoeff(tmp, 0, -L_cp[r][c]);
+            if (r == c) tmp += x;
+            appbas[r][c] = tmp;
+        }
+    }
+    
+}
+                         
+
 /*------------------------------------------------------------*/
 /* Divide and Conquer: PMBasis                                */
 /*------------------------------------------------------------*/
@@ -839,6 +968,103 @@ DegVec pmbasis(
 
     // second recursive call, with 'residual' and 'rdeg'
     pivdeg2 = pmbasis(appbas2,residual,order2,rdeg);
+
+    // final basis = appbas2 * appbas
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(second-call): " << (t2-t1) << "s" << std::endl;
+    t1 = GetWallTime();
+#endif
+    multiply(appbas,appbas2,appbas);
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(basis-mul): " << (t2-t1) << "s" << std::endl;
+#endif
+
+    // final pivot degree = pivdeg1+pivdeg2
+    std::transform(pivdeg.begin(), pivdeg.end(), pivdeg2.begin(), pivdeg.begin(), std::plus<long>());
+
+    return pivdeg;
+}
+
+/*------------------------------------------------------------*/
+/* Divide and Conquer: PMBasis                                */
+/*------------------------------------------------------------*/
+DegVec pmbasis_generic(
+               Mat<zz_pX> & appbas,
+               const Mat<zz_pX> & pmat,
+               const long order,
+               const Shift & shift
+              )
+{
+#ifdef PMBASIS_PROFILE
+    std::cout << "Order: " << order << std::endl;
+    double t1,t2;
+#endif
+    // TODO thresholds to be determined:
+    //  --> from mbasis (only linalg) to pmbasis with low-degree polmatmul (Karatsuba...)
+    //  --> from this pmbasis to pmbasis with eval-based polmatmul (FFT, geometric..)
+#ifdef PMBASIS_PROFILE
+    if (order <= 32)
+    {
+        t1 = GetWallTime();
+        DegVec rdeg = mbasis_vector(appbas,pmat,order,shift);
+        t2 = GetWallTime();
+        std::cout << "\tTime(base-case): " << (t2-t1) << "s" << std::endl;
+        return rdeg;
+    }
+#else
+    if (order == pmat.NumRows()){
+        //cout << "blah blah" << endl;
+        mbasis_generic(appbas,pmat,order,shift);
+        cout << "appbas1: " << appbas << endl;
+        auto t = mbasis_vector(appbas,pmat,order,shift);
+        cout << "appbas2: " << appbas << endl;
+        return t;
+    }
+#endif
+
+    //cout << "blah" << endl;
+    
+    DegVec pivdeg; // pivot degree, first call
+    DegVec pivdeg2; // pivot degree, second call
+    DegVec rdeg(pmat.NumRows()); // shifted row degree
+    long order1 = order>>1; // order of first call
+    long order2 = order-order1; // order of second call
+    Mat<zz_pX> trunc_pmat; // truncated pmat for first call
+    Mat<zz_pX> appbas2; // basis for second call
+    Mat<zz_pX> residual; // for the residual
+
+    // first recursive call, with 'pmat' and 'shift'
+#ifdef PMBASIS_PROFILE
+    t1 = GetWallTime();
+#endif
+    trunc(trunc_pmat,pmat,order1);
+    pivdeg = pmbasis_generic(appbas,trunc_pmat,order1,shift);
+
+    // shifted row degree = shift for second call = pivdeg+shift
+    std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
+
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(first-call): " << (t2-t1) << "s" << std::endl;
+    t1 = GetWallTime();
+#endif
+    // residual = (appbas * pmat * X^-order1) mod X^order2
+    long deg_sp = (pmat.NumCols() * (order-1))/ (2*pmat.NumRows());
+    split_and_multiply(residual, appbas, pmat, order -1, deg_sp);
+    for (long r = 0; r < residual.NumRows(); r++)
+        for (long c = 0; c < residual.NumCols(); c++)
+            RightShift(residual[r][c], residual[r][c], order1);    
+    
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(middle-prod): " << (t2-t1) << "s" << std::endl;
+    t1 = GetWallTime();
+#endif
+
+    // second recursive call, with 'residual' and 'rdeg'
+    pivdeg2 = pmbasis_generic(appbas2,residual,order2,rdeg);
 
     // final basis = appbas2 * appbas
 #ifdef PMBASIS_PROFILE
