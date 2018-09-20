@@ -824,7 +824,7 @@ void split_and_multiply (Mat<zz_pX> &res,
     Mat<zz_pX> F_sp;
     split(F_sp,F,deg,deg_sp);
     
-    res.SetDims(F_sp.NumRows(), F_sp.NumCols());
+    res.SetDims(F_sp.NumRows(), n);
     
     // compute the number of columns required for the split
     long cols_sp = ceil((deg+1.0) / (deg_sp+1));
@@ -851,18 +851,15 @@ void split_and_multiply (Mat<zz_pX> &res,
     }
 }
 
-void mbasis_generic(
+DegVec mbasis_generic(
                      Mat<zz_pX> & appbas,
                      const Mat<zz_pX> & pmat,
                      const long order,
                      const Shift & shift
                     )
 {
-    cout << "here" << endl;
     Mat<zz_pX> L;
     split (L, pmat, order-1, 0);
-    
-    cout << "L: " << L << endl;
     
     long m = L.NumRows();
     long n = L.NumCols();
@@ -899,7 +896,10 @@ void mbasis_generic(
             appbas[r][c] = tmp;
         }
     }
-    
+    DegVec dv (L.NumRows());
+    for (long i = 0; i < L.NumRows(); i++)
+        dv[i] = 1;
+    return dv;
 }
                          
 
@@ -933,7 +933,6 @@ DegVec pmbasis(
     if (order <= 32)
         return mbasis_vector(appbas,pmat,order,shift);
 #endif
-
     DegVec pivdeg; // pivot degree, first call
     DegVec pivdeg2; // pivot degree, second call
     DegVec rdeg(pmat.NumRows()); // shifted row degree
@@ -1015,12 +1014,13 @@ DegVec pmbasis_generic(
     }
 #else
     if (order == pmat.NumRows()){
+        //cout << "pmat: " << pmat << endl;
         //cout << "blah blah" << endl;
-        mbasis_generic(appbas,pmat,order,shift);
-        cout << "appbas1: " << appbas << endl;
-        auto t = mbasis_vector(appbas,pmat,order,shift);
-        cout << "appbas2: " << appbas << endl;
-        return t;
+        return mbasis_generic(appbas,pmat,order,shift);
+        //cout << "appbas1: " << appbas << endl;
+        //auto t = mbasis_vector(appbas,pmat,order,shift);
+        //cout << "appbas2: " << appbas << endl;
+        //return t;
     }
 #endif
 
@@ -1055,7 +1055,7 @@ DegVec pmbasis_generic(
     split_and_multiply(residual, appbas, pmat, order -1, deg_sp);
     for (long r = 0; r < residual.NumRows(); r++)
         for (long c = 0; c < residual.NumCols(); c++)
-            RightShift(residual[r][c], residual[r][c], order1);    
+            RightShift(residual[r][c], residual[r][c], order1); 
     
 #ifdef PMBASIS_PROFILE
     t2 = GetWallTime();
