@@ -1022,6 +1022,13 @@ DegVec pmbasis(
                const long order,
                const Shift & shift
               );
+              
+DegVec pmbasis_generic(
+               Mat<zz_pX> & appbas,
+               const Mat<zz_pX> & pmat,
+               const long order,
+               const Shift & shift
+              );
 
 DegVec popov_pmbasis(
                      Mat<zz_pX> &appbas,
