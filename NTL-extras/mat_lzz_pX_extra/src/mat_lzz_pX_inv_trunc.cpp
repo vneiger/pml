@@ -479,6 +479,29 @@ void inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
     }
 }
 
+/*------------------------------------------------------------*/
+/* for i >= 0, define Si = coefficients of A^{-1} of degrees  */
+/*             i-(2d-1) .. i-1, with d=deg(A)                 */
+/* given src = Si, this computes S_{2i-d}                     */
+/* invA = A^{-1} mod x^d                                      */
+/* note: deg(Si) < 2d-1                                       */
+/*------------------------------------------------------------*/
+void high_order_lift_inverse_odd(Mat<zz_pX> & next, const Mat<zz_pX>& src, 
+                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & A, 
+                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & invA, long d)
+{
+    Mat<zz_pX> b = A->multiply(trunc(src, d)); // deg-argument < d
+    trunc(b, b, d); // deg(b) < d
+    next = transpose(middle_product(transpose(b), transpose(src), d-1, d-1)); // deg(next) < d
+    Mat<zz_pX> m = A->multiply(next); // deg(m) < 2d
+    m >>= d;   // deg(m) < d
+    trunc(m, m, d-1); // deg(m) < d-1
+    Mat<zz_pX> tmp = invA->multiply(m); // deg(tmp) < 2d-2
+    trunc(tmp, tmp, d-1);  // deg(tmp) < d-1
+    tmp <<= d;  // deg(tmp) < 2d-1
+    next = next - tmp; // deg(next) < 2d-1
+}
+
 
 // Local Variables:
 // mode: C++

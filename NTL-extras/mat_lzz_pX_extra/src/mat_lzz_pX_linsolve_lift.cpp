@@ -132,7 +132,42 @@ void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<z
                     SetCoeff(u[a][c], k + shift, coeff(sol[a][c], k));
         shift += lenA;
     }
+    trunc(u, u, prec);
+}
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
+{
+
+    Mat<zz_pX> slice, sol;
+    std::unique_ptr<mat_lzz_pX_lmultiplier> ma, minvA;
+    long d = deg(A);
+    long ncols = prec / d;
+    if (prec > ncols*d)
+        ncols++;
+    long bcols = b.NumCols();
+
+    if (deg(b) >= deg(A))
+        LogicError("not implemented yet");
+
+    ma = get_lmultiplier(A, d-1);
+    minvA = get_lmultiplier(inv_trunc(A, d), d-1);
+
+    slice = inv_trunc(A, 2*d) >> 1;
+    sol = b;
+    
+   
+    while( sol.NumCols() < ncols*bcols )
+    {
+        Mat<zz_pX> next = transpose(middle_product(transpose(sol), transpose(slice), d-1, d-1)); // deg(next) < d
+        sol = horizontal_join(sol, trunc(ma->multiply(next), d)); // deg(sol) < d
+        if (sol.NumCols() < ncols*bcols)
+            high_order_lift_inverse_odd(slice, slice, ma, minvA, d);
+    }
+    sol = trunc(minvA->multiply(sol), d);
+    u = collapse_nonconsecutive_columns(sol, d, bcols);
+    trunc(u, u, prec);
 }
 
 

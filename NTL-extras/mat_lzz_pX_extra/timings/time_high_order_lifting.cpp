@@ -9,46 +9,53 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* builds truncated inverse in size sz and degree deg         */ 
 /*------------------------------------------------------------*/
-void one_check(long sz, long deg)
+void check_solution(long sz, long deg)
 {
-    Mat<zz_pX> a, x, residue;
+    double t;
+    long nb;
+    const double thresh = 0.01;
+    Mat<zz_pX> a, b, sol;
     Mat<zz_p> a0;
 
     do
     {
-        random_mat_zz_pX(a, sz, sz, deg);
+        random_mat_zz_pX(a, sz, sz, deg+1);
         GetCoeff(a0, a, 0);
     }
     while (determinant(a0) == 0);
 
-    plain_inv_trunc(x, a, 2*deg);
-    mul_trunc(residue, x, a, 2*deg);
+    cout << sz << " " << deg << " ";
 
-    if (! IsIdentity(residue))
-        LogicError("Error with plain inverse.");
+    random_mat_zz_pX(b, sz, 1, deg);
 
-    if (is_FFT_prime())
+    t = get_time();
+    nb = 0;
+    do
     {
-        newton_inv_trunc_FFT(x, a, 2*deg);
-        mul_trunc(residue, x, a, 2*deg);
-        if (! IsIdentity(residue))
-            LogicError("Error with FFT newton inverse.");
-
+        solve_series_high_order_lifting(sol, a, b, sz*deg);
+        nb++;
     }
+    while ((get_time()-t) <= thresh);
+    t = (get_time()-t) / nb;
+    cout << t << " ";
 
-    newton_inv_trunc_middle_product(x, a, 2*deg);
-    mul_trunc(residue, x, a, 2*deg);
-    if (! IsIdentity(residue))
-        LogicError("Error with middle product newton inverse.");
+    Mat<zz_pX> check;
 
-    newton_inv_trunc_geometric(x, a, 2*deg);
-    mul_trunc(residue, x, a, 2*deg);
-    if (! IsIdentity(residue))
-        LogicError("Error with geometric newton inverse.");
+    t = get_time();
+    nb = 0;
+    do
+    {
+        check = solve_series_high_precision(a, b, sz*deg);
+        nb++;
+    }
+    while ((get_time()-t) <= thresh);
+    t = (get_time()-t) / nb;
+    cout << t << " ";
 
+    cout << endl;
 }
+
 
 /*------------------------------------------------------------*/
 /* for a give prime, checks some (size, degree)               */
@@ -58,17 +65,26 @@ void all_checks()
 
     std::vector<long> szs =
     {
-        1, 2, 3, 5, 10, 20, 30
+        30
     };
 
     std::vector<long> degs =
     {
-        20, 50, 75, 99, 150, 200
+        1000
     };
+    // std::vector<long> szs =
+    // {
+    //     1, 2, 3, 5, 10, 20, 30, 50, 100
+    // };
+
+    // std::vector<long> degs =
+    // {
+    //     20, 50, 75, 100, 150, 250, 350
+    // };
 
     for (size_t si = 0; si < szs.size(); si++)
         for (size_t di = 0; di < degs.size(); di++)
-            one_check(szs[si], degs[di]);
+            check_solution(szs[si], degs[di]);
 
 }
 
@@ -81,12 +97,12 @@ void check()
 {
     zz_p::FFTInit(0);
     all_checks();
-    zz_p::UserFFTInit(786433);
-    all_checks();
-    zz_p::init(288230376151711813);
-    all_checks();
-    zz_p::init(786433);
-    all_checks();
+    // zz_p::UserFFTInit(786433);
+    // all_checks();
+    // zz_p::init(288230376151711813);
+    // all_checks();
+    // zz_p::init(786433);
+    // all_checks();
 }  
 
 /*------------------------------------------------------------*/
@@ -94,6 +110,7 @@ void check()
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
+    warmup();
     check();
     return 0;
 }

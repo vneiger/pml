@@ -93,7 +93,6 @@ inline Mat<zz_p> eval(const Mat<zz_pX> & pmat, zz_p pt)
     return evmat;
 }
 
-
 /*------------------------------------------------------------*/
 /* transpose                                                  */
 /*------------------------------------------------------------*/
@@ -106,7 +105,48 @@ inline Mat<zz_pX> transpose(const Mat<zz_pX> & a)
     return x; 
 }
 
+/*------------------------------------------------------------*/
+/* horizontal join                                            */
+/* requires a.NumRows() == b.NumRows()                        */
+/*------------------------------------------------------------*/
+void horizontal_join(Mat<zz_pX>& c, const Mat<zz_pX>& a, const Mat<zz_pX>& b);
 
+inline Mat<zz_pX> horizontal_join(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
+{
+    Mat<zz_pX> c;
+    horizontal_join(c, a, b);
+    return c;
+}
+
+/*------------------------------------------------------------*/
+/* collapses s consecutive columns of a into one column of c  */
+/* let t=a.NumCols(). For i=0..t/s-1, the i-th column of c is */
+/* a[i*s] + x^d a[i*s+1] + ... + x^{(s-1)*d} a[i*s+s-1)]      */
+/* requires that s divides t exactly                          */
+/*------------------------------------------------------------*/
+void collapse_consecutive_columns(Mat<zz_pX>& c, const Mat<zz_pX>& a, long d, long s);
+
+inline Mat<zz_pX> collapse_consecutive_columns(const Mat<zz_pX>& a, long d, long s)
+{
+    Mat<zz_pX> c;
+    collapse_consecutive_columns(c, a, d, s);
+    return c;
+}
+
+/*------------------------------------------------------------*/
+/* collapses columns with stepsize s of a into a column of c  */
+/* let t=a.NumCols(). For i=0..s-1, the i-th column of c is   */
+/* a[i] + x^d a[i+s] + ... + x^{(t/s-1)*d} a[i+(t/s-1)*s)]    */
+/* requires that s divides t exactly                          */
+/*------------------------------------------------------------*/
+void collapse_nonconsecutive_columns(Mat<zz_pX>& c, const Mat<zz_pX>& a, long d, long s);
+
+inline Mat<zz_pX> collapse_nonconsecutive_columns(const Mat<zz_pX>& a, long d, long s)
+{
+    Mat<zz_pX> c;
+    collapse_nonconsecutive_columns(c, a, d, s);
+    return c;
+}
 
 /*------------------------------------------------------------*/
 /* truncate mod X^..., for all the matrix / some columns/rows */
@@ -556,11 +596,17 @@ inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
 /*------------------------------------------------------------*/
 /* c = a*b mod x^n                                            */
 /*------------------------------------------------------------*/
-
 inline void mul_trunc(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long n, long is_prime = 1)
 {
     multiply(c, a, b, is_prime);
     trunc(c, c, n);
+}
+
+inline Mat<zz_pX> mul_trunc(const Mat<zz_pX> & a, const Mat<zz_pX> & b, long n, long is_prime = 1)
+{
+    Mat<zz_pX> c;
+    mul_trunc(c, a, b, n, is_prime);
+    return c;
 }
 
 /*------------------------------------------------------------*/
@@ -573,12 +619,20 @@ void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const M
 
 /*------------------------------------------------------------*/
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
+/* todo: ensure degree bounds on a, c                         */
 /*------------------------------------------------------------*/
 void middle_product_naive(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime = 1);
+
+inline Mat<zz_pX> middle_product(const Mat<zz_pX>& a, const Mat<zz_pX>& c, long dA, long dB, long is_prime = 1)
+{ 
+    Mat<zz_pX> b; 
+    middle_product(b, a, c, dA, dB, is_prime); 
+    return b; 
+}
 
 
 /*------------------------------------------------------------*/
@@ -595,6 +649,14 @@ public:
     /*------------------------------------------------------------*/
     virtual void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b) = 0;
     virtual ~mat_lzz_pX_lmultiplier(){}
+
+    inline Mat<zz_pX> multiply(const Mat<zz_pX>& b)
+        {
+            Mat<zz_pX> c;
+            multiply(c, b);
+            return c;
+        }
+
     
     long NumRows() const;
     long NumCols() const;
@@ -685,6 +747,13 @@ std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, lo
 /*------------------------------------------------------------*/
 void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec, long thresh = -1);
 
+inline Mat<zz_pX> solve_series_low_precision(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
+{
+    Mat<zz_pX> u;
+    solve_series_low_precision(u, A, b, prec);
+    return u;
+}
+
 /*------------------------------------------------------------*/
 /* solve A u = b mod x^prec                                   */
 /* A square, A(0) invertible, deg(A), deg(b) < prec           */
@@ -692,6 +761,17 @@ void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz
 /*------------------------------------------------------------*/
 void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec);
 
+inline Mat<zz_pX> solve_series_high_precision(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
+{
+    Mat<zz_pX> u;
+    solve_series_high_precision(u, A, b, prec);
+    return u;
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec);
 
 
 
@@ -1317,6 +1397,18 @@ inline Mat<zz_pX> inv_trunc(const Mat<zz_pX>& a, long m)
     inv_trunc(y, a, m);
     return y;
 }
+
+
+/*------------------------------------------------------------*/
+/* for i >= 0, define Si = coefficients of A^{-1} of degrees  */
+/*             i-(2d-1) .. i-1, with d=deg(A)                 */
+/* given src = Si, this computes S_{2i-d}                     */
+/* invA = A^{-1} mod x^d                                      */
+/* note: deg(Si) < 2d-1                                       */
+/*------------------------------------------------------------*/
+void high_order_lift_inverse_odd(Mat<zz_pX> & next, const Mat<zz_pX>& src, 
+                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & A, 
+                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & invA, long d);
 
 
 // TODO: polynomial matrix division with remainder (cf. e.g. Neiger-Vu 2017)
