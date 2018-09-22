@@ -39,11 +39,18 @@ static void solve_DAC(Mat<zz_pX>& sol, const Mat<zz_pX>& A, const Mat<zz_pX>& b,
 /* solve A u = b mod x^prec                                   */
 /* A square, A(0) invertible                                  */
 /* use when deg(A) close to prec                              */
-/* Computes inverse mod 2^thresh                              */
+/* computes A^-1 mod x^{2^thresh}                             */
 /* thresh=-1 is the default value, uses lookup table          */
+/* output can alias input                                     */
 /*------------------------------------------------------------*/
 void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec, long thresh)
 {
+    if (&u == &A || &u == &b)
+    {
+        u = solve_series_low_precision(A, b, prec, thresh);
+        return;
+    }
+
     if (deg(A) >= prec || deg(b) >= prec)
     {
         solve_series_low_precision(u, trunc(A, prec), trunc(b, prec), prec, thresh);
@@ -78,9 +85,15 @@ void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz
 /* solve A u = b mod x^prec                                   */
 /* A square, A(0) invertible, deg(A), deg(b) < prec           */
 /* use when deg(A) << prec                                    */
+/* output can alias input                                     */
 /*------------------------------------------------------------*/
 void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
 {
+    if (&u == &A || &u == &b)
+    {
+        u = solve_series_high_precision(A, b, prec);
+        return;
+    }
     if (deg(A) >= prec || deg(b) >= prec)
     {
         solve_series_high_precision(u, trunc(A, prec), trunc(b, prec), prec);
@@ -104,7 +117,10 @@ void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<z
 
     for (long a = 0; a < r; a++)
         for (long c = 0; c < s; c++)
+        {
+            u[a][c] = 0;
             u[a][c].SetMaxLength(prec);
+        }
 
     Mat<zz_pX> sol;
     multI->multiply(sol, trunc(b, lenA));
@@ -136,10 +152,27 @@ void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<z
 }
 
 /*------------------------------------------------------------*/
+/* solve A u = b mod x^prec                                   */
+/* A must be square, A(0) invertible                          */
+/* output can alias input                                     */
+/*------------------------------------------------------------*/
+void solve_series(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
+{
+    long dA = deg(A);
+    if (prec <= 4 * dA)  // seems reasonable
+        solve_series_low_precision(u, A, b, prec);
+    else
+        solve_series_high_precision(u, A, b, prec);
+}
+
+
+/*------------------------------------------------------------*/
+/* Implements a minor variation of Storjohann's algorithm     */
+/* A must be square, A(0) invertible, deg(b) < deg(A)         */
+/* output can alias input                                     */
 /*------------------------------------------------------------*/
 void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
 {
-
     Mat<zz_pX> slice, sol;
     std::unique_ptr<mat_lzz_pX_lmultiplier> ma, minvA;
     long d = deg(A);
@@ -149,14 +182,13 @@ void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const M
     long bcols = b.NumCols();
 
     if (deg(b) >= deg(A))
-        LogicError("not implemented yet");
+        LogicError("Bad degrees for high order lifting");
 
     ma = get_lmultiplier(A, d-1);
     minvA = get_lmultiplier(inv_trunc(A, d), d-1);
 
     slice = inv_trunc(A, 2*d) >> 1;
     sol = b;
-    
    
     while( sol.NumCols() < ncols*bcols )
     {
@@ -169,44 +201,6 @@ void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const M
     u = collapse_nonconsecutive_columns(sol, d, bcols);
     trunc(u, u, prec);
 }
-
-
-// /*------------------------------------------------------------*/
-// /* solve A u = b mod x^prec                                   */
-// /* A must be square, A(0) invertible                          */
-// /*------------------------------------------------------------*/
-// void solve_series_regular(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
-// {
-//     long dA = deg(A);
-//     if (prec <= dA)
-//         linsolve_series_low_precision(u, trunc(A, prec), b, prec);
-//     else
-//         linsolve_series_high_precision(u, A, b, prec);
-// }
-
-// /*------------------------------------------------------------*/
-// /* solve A u/den = b                                          */
-// /* A must be square                                           */
-// /*------------------------------------------------------------*/
-// void solve(Mat<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const Mat<zz_pX>& b)
-// {
-//     long dA = deg(A);
-//     long dB = deg(b);
-//     long s = A.NumRows();
-//     if (s != A.NumCols())
-//         LogicError("A should be square in linsolve_rational_square");
-//     if (s != B.NumRows())
-//         LogicError("Dimension mismatch in linsolve_rational_square");
-
-//     long deg_u = (s-1)*dA + dB;
-//     long deg_den = s*dA;
-
-//     // TODO: choose the initial point at random 
-    
-
-    
-// }
-
 
 
 // Local Variables:

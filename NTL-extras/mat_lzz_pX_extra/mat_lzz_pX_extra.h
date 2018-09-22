@@ -736,47 +736,6 @@ std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, lo
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* x-adic algorithms for solving systems                      */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* solve A u = b mod x^prec                                   */
-/* A square, A(0) invertible                                  */
-/* use when deg(A) close to prec                              */
-/*------------------------------------------------------------*/
-void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec, long thresh = -1);
-
-inline Mat<zz_pX> solve_series_low_precision(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
-{
-    Mat<zz_pX> u;
-    solve_series_low_precision(u, A, b, prec);
-    return u;
-}
-
-/*------------------------------------------------------------*/
-/* solve A u = b mod x^prec                                   */
-/* A square, A(0) invertible, deg(A), deg(b) < prec           */
-/* use when deg(A) << prec                                    */
-/*------------------------------------------------------------*/
-void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec);
-
-inline Mat<zz_pX> solve_series_high_precision(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
-{
-    Mat<zz_pX> u;
-    solve_series_high_precision(u, A, b, prec);
-    return u;
-}
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec);
-
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
 /* DEGREES, PIVOTS, LEADING MATRIX                            */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -1398,17 +1357,82 @@ inline Mat<zz_pX> inv_trunc(const Mat<zz_pX>& a, long m)
     return y;
 }
 
-
 /*------------------------------------------------------------*/
 /* for i >= 0, define Si = coefficients of A^{-1} of degrees  */
 /*             i-(2d-1) .. i-1, with d=deg(A)                 */
 /* given src = Si, this computes S_{2i-d}                     */
 /* invA = A^{-1} mod x^d                                      */
 /* note: deg(Si) < 2d-1                                       */
+/* output can alias input                                     */
 /*------------------------------------------------------------*/
 void high_order_lift_inverse_odd(Mat<zz_pX> & next, const Mat<zz_pX>& src, 
                                  std::unique_ptr<mat_lzz_pX_lmultiplier> & A, 
                                  std::unique_ptr<mat_lzz_pX_lmultiplier> & invA, long d);
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* x-adic algorithms for solving systems                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* solve A u = b mod x^prec                                   */
+/* A square, A(0) invertible                                  */
+/* use when deg(A) close to prec                              */
+/* computes A^-1 mod x^{2^thresh}                             */
+/* thresh=-1 is the default value, uses lookup table          */
+/* output can alias input                                     */
+/*------------------------------------------------------------*/
+void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec, long thresh = -1);
+
+inline Mat<zz_pX> solve_series_low_precision(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec, long thresh = -1)
+{
+    Mat<zz_pX> u;
+    solve_series_low_precision(u, A, b, prec, thresh);
+    return u;
+}
+
+/*------------------------------------------------------------*/
+/* solve A u = b mod x^prec                                   */
+/* A square, A(0) invertible, deg(A), deg(b) < prec           */
+/* use when deg(A) << prec                                    */
+/*------------------------------------------------------------*/
+void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec);
+
+inline Mat<zz_pX> solve_series_high_precision(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
+{
+    Mat<zz_pX> u;
+    solve_series_high_precision(u, A, b, prec);
+    return u;
+}
+
+/*------------------------------------------------------------*/
+/* solve A u = b mod x^prec                                   */
+/* A must be square, A(0) invertible                          */
+/* output can alias input                                     */
+/*------------------------------------------------------------*/
+void solve_series(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec);
+
+inline Mat<zz_pX> solve_series(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
+{
+    Mat<zz_pX> u;
+    solve_series(u, A, b, prec);
+    return u;
+}
+
+/*------------------------------------------------------------*/
+/* Implements a minor variation of Storjohann's algorithm     */
+/* A must be square, A(0) invertible, deg(b) < deg(A)         */
+/* output can alias input                                     */
+/*------------------------------------------------------------*/
+void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec);
+
+inline Mat<zz_pX> solve_series_high_order_lifting(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
+{
+    Mat<zz_pX> u;
+    solve_series_high_order_lifting(u, A, b, prec);
+    return u;
+}
 
 
 // TODO: polynomial matrix division with remainder (cf. e.g. Neiger-Vu 2017)

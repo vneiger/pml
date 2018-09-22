@@ -1,6 +1,8 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
+#include <NTL/BasicThreadPool.h>
+
 #include <iomanip>
 
 #include "util.h"
@@ -8,92 +10,71 @@
 
 NTL_CLIENT
 
-
-/*------------------------------------------------------------*/
-/* checks an (sz,sz) matrix in degree < deg                   */
-/*------------------------------------------------------------*/
-void one_check(long sz, long deg)
-{
-    Mat<zz_pX> A, b, u, res;
-    const double thresh = 0.01;
-    random_mat_zz_pX(A, sz, sz, deg);
-    random_mat_zz_pX(b, sz, 1, deg);
-
-    double t;
-    long nb;
-    
-    cout << sz << " " << deg << " ";
-
-    t = get_time();
-    nb = 0;
-    do
-    {
-        solve_series_low_precision(u, A, b, deg);
-        nb++;
-    }
-    while ((get_time()-t) <= thresh);
-    t = (get_time()-t) / nb;
-    cout << t << " ";
-
-    t = get_time();
-    nb = 0;
-    do
-    {
-        solve_series_low_precision2(u, A, b, deg);
-        nb++;
-    }
-    while ((get_time()-t) <= thresh);
-    t = (get_time()-t) / nb;
-    cout << t << " ";
-
-    t = get_time();
-    nb = 0;
-    do
-    {
-        solve_series_low_precision3(u, A, b, deg);
-        nb++;
-    }
-    while ((get_time()-t) <= thresh);
-    t = (get_time()-t) / nb;
-    cout << t << " ";
-
-    cout << endl;
-}
-
 /*------------------------------------------------------------*/
 /* for a give prime, checks some (size, degree)               */
 /*------------------------------------------------------------*/
-void all_checks()
-{
-    std::vector<long> szs =
-    {
-        30
-        // 1, 2, 3, 5, 10, 20, 30
-    };
-
-    std::vector<long> degs =
-    {
-        200
-        // 1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 250, 300, 400
-    };
-
-    for (size_t si = 0; si < szs.size(); si++)
-        for (size_t di = 0; di < degs.size(); di++)
-            one_check(szs[si], degs[di]);
-}
-
-
-/*------------------------------------------------------------*/
-/* checks some primes                                         */
-/*------------------------------------------------------------*/
 void check(long p)
 {
+    SetNumThreads(1);
+
     if (p == 0)
         zz_p::FFTInit(0);
     else
         zz_p::init(p);
-    all_checks();
-}  
+
+    std::vector<long> szs =
+        {
+            1, 10, 20, 30, 40, 50, 100
+        };
+
+    std::vector<long> degs =
+        {
+            100, 150, 200, 250, 300, 350, 400
+        };
+
+    const double thresh = 0.01;
+    for (size_t si = 0; si < szs.size(); si++)
+    {
+        long sz = szs[si];
+        for (size_t di = 0; di < degs.size(); di++)
+        {
+            double t;
+            long nb, deg, prec;
+            Mat<zz_pX> A, b, u, res;
+
+            deg = degs[di];
+            prec = 4 * deg;
+            random_mat_zz_pX(A, sz, sz, deg);
+            random_mat_zz_pX(b, sz, 1, deg);
+
+            cout << sz << " " << deg << " ";
+
+            t = get_time();
+            nb = 0;
+            do
+            {
+                solve_series_low_precision(u, A, b, prec);
+                nb++;
+            }
+            while ((get_time()-t) <= thresh);
+            t = (get_time()-t) / nb;
+            cout << t << " ";
+
+            t = get_time();
+            nb = 0;
+            do
+            {
+                solve_series_high_precision(u, A, b, prec);
+                nb++;
+            }
+            while ((get_time()-t) <= thresh);
+            t = (get_time()-t) / nb;
+            cout << t << " ";
+
+            cout << endl;
+        }
+    }
+}
 
 /*------------------------------------------------------------*/
 /* main calls check                                           */

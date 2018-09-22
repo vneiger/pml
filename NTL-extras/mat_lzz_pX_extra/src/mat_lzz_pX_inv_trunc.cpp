@@ -485,6 +485,7 @@ void inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 /* given src = Si, this computes S_{2i-d}                     */
 /* invA = A^{-1} mod x^d                                      */
 /* note: deg(Si) < 2d-1                                       */
+/* output can alias input                                     */
 /*------------------------------------------------------------*/
 void high_order_lift_inverse_odd(Mat<zz_pX> & next, const Mat<zz_pX>& src, 
                                  std::unique_ptr<mat_lzz_pX_lmultiplier> & A, 

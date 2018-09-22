@@ -1,29 +1,25 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
+#include <NTL/BasicThreadPool.h>
 #include <iomanip>
 #include <vector>
 #include <numeric>
 #include <algorithm>
 #include <random>
-#include <NTL/BasicThreadPool.h>
+
 
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
 
 NTL_CLIENT
 
-/********************************************
- *  tests the determinant algorithms        *
- ********************************************/
-
 /*------------------------------------------------------------*/
 /* tests the determinant algorithms                           */
 /*------------------------------------------------------------*/
-
 int main(int argc, char *argv[])
 {
-    SetNumThreads(4);
+    SetNumThreads(1);
 
     bool verify=false;
 
@@ -38,7 +34,6 @@ int main(int argc, char *argv[])
 
     if (nbits==0)
         zz_p::FFTInit(0);
-        //zz_p::UserFFTInit(23068673);
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
@@ -60,7 +55,7 @@ int main(int argc, char *argv[])
     std::cout << "Time(random mat creation): " << (t2-t1) << "\n";
 
     std::cout << "warming up..." << std::endl;
-    //warmup();
+    warmup();
 
     // generic case
     {
