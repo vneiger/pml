@@ -1022,13 +1022,6 @@ DegVec pmbasis(
                const long order,
                const Shift & shift
               );
-              
-DegVec pmbasis_generic(
-               Mat<zz_pX> & appbas,
-               const Mat<zz_pX> & pmat,
-               const long order,
-               const Shift & shift
-              );
 
 DegVec popov_pmbasis(
                      Mat<zz_pX> &appbas,
@@ -1036,6 +1029,37 @@ DegVec popov_pmbasis(
                      const long order,
                      const Shift & shift
                     );
+
+/*------------------------------------------------------------*/
+/* FIXME in progress: MBASIS/PMBASIS, generic case            */
+/*------------------------------------------------------------*/
+
+// TODO allow non-uniform shifts?
+// TODO several columns
+
+DegVec popov_mbasis1_generic(
+                     Mat<zz_pX> & appbas,
+                     const Mat<zz_pX> & pmat,
+                     const long order,
+                     const Shift & shift
+//                     Mat<zz_p> & kerbas,
+//                     const Mat<zz_p> & pmat,
+//                     const Shift & shift
+                    );
+
+DegVec mbasis_generic(
+                     Mat<zz_pX> & appbas,
+                     const Mat<zz_pX> & pmat,
+                     const long order,
+                     const Shift & shift
+                    );
+
+DegVec pmbasis_generic(
+               Mat<zz_pX> & appbas,
+               const Mat<zz_pX> & pmat,
+               const long order,
+               const Shift & shift
+              );
 
 
 /**********************************************************************

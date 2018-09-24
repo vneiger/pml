@@ -851,11 +851,14 @@ void split_and_multiply (Mat<zz_pX> &res,
     }
 }
 
-DegVec mbasis_generic(
+DegVec popov_mbasis1_generic(
                      Mat<zz_pX> & appbas,
                      const Mat<zz_pX> & pmat,
                      const long order,
                      const Shift & shift
+                     //Mat<zz_p> & kerbas,
+                     //const Mat<zz_p> & pmat,
+                     //const Shift & shift
                     )
 {
     Mat<zz_pX> L;
@@ -899,6 +902,18 @@ DegVec mbasis_generic(
     DegVec dv (L.NumRows());
     for (long i = 0; i < L.NumRows(); i++)
         dv[i] = 1;
+    return dv;
+}
+
+DegVec mbasis_generic(
+                     Mat<zz_pX> & appbas,
+                     const Mat<zz_pX> & pmat,
+                     const long order,
+                     const Shift & shift
+                    )
+{
+    // TODO
+    DegVec dv (pmat.NumRows());
     return dv;
 }
                          
@@ -1016,7 +1031,7 @@ DegVec pmbasis_generic(
     if (order == pmat.NumRows()){
         //cout << "pmat: " << pmat << endl;
         //cout << "blah blah" << endl;
-        return mbasis_generic(appbas,pmat,order,shift);
+        return popov_mbasis1_generic(appbas,pmat,order,shift);
         //cout << "appbas1: " << appbas << endl;
         //auto t = mbasis_vector(appbas,pmat,order,shift);
         //cout << "appbas2: " << appbas << endl;
