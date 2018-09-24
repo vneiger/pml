@@ -201,6 +201,32 @@ static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+// Column partial linearization
+// TODO improve description
+void column_partial_linearization(Mat<zz_pX> &parlin, 
+            const Mat<zz_pX> &pmat, 
+            const long degree,
+            const DegVec & parlin_degree);
+
+// Column partial linearization, uniform target degree
+// TODO improve description
+inline void column_partial_linearization(Mat<zz_pX> &parlin, 
+            const Mat<zz_pX> &pmat, 
+            const long deg,
+            const long parlin_degree)
+{
+    DegVec parlin_degrees(pmat.NumCols(), parlin_degree);
+    column_partial_linearization(parlin, pmat, deg, parlin_degrees);
+}
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* CREATE RANDOM MATRICES                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of degree < d                         */
 /*------------------------------------------------------------*/

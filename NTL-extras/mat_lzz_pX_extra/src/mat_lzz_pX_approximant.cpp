@@ -774,43 +774,47 @@ DegVec popov_mbasis(
     return pivdeg;
 }
 
-void split (Mat<zz_pX> &res, 
-            const Mat<zz_pX> &F, 
-            const long deg,
-            const long deg_sp)
+// TODO later, move this function in a more appropriate place (specific file for linearizations)
+// TODO comment with description?
+void column_partial_linearization(Mat<zz_pX> &parlin, 
+            const Mat<zz_pX> &pmat, 
+            const long degree,
+            const DegVec & parlin_degree)
 {
-    long m = F.NumRows();
-    long n = F.NumCols();
-    
-    // compute the number of columns required for the split
-    long cols_sp = ceil((deg+1.0) / (deg_sp+1));
-    
-    // split requires m rows and cols_sp * n columns
-    Mat<zz_pX> F_sp;
-    F_sp.SetDims(m, cols_sp*n);
-    
-    // copy
-    for (long i = 0; i < n; i++)
+    long m = pmat.NumRows();
+    long n = pmat.NumCols();
+
+    // for each column of pmat, compute the corresponding column indices in the
+    // partial linearization
+    // column j of pmat will be expanded into columns numcols[j] to
+    // numcols[j+1]-1 of parlin
+    DegVec parlin_cols(n+1);
+    parlin_cols[0]=0;
+    for (long j = 1; j < n+1; ++j)
+        parlin_cols[j] = parlin_cols[j-1] + ceil((degree+1.0) / (parlin_degree[j-1]+1));
+
+    // set dimensions of the partial linearization
+    parlin.SetDims(m, parlin_cols[n]);
+
+    // for each column j of the input pmat, expand it into the corresponding
+    // columns of the partial linearization parlin
+    for (long i = 0; i < m; ++i)
     {
-        for (long r = 0; r < m; r++)
+        for (long j = 0; j < n; ++j)
         {
             long deg_at = 0;
-            for (long c = 0; c < cols_sp; c++)
+            for (long c = parlin_cols[j]; c < parlin_cols[j+1]; ++c)
             {
-                long col_at = i*cols_sp + c;
-                zz_pX tmp;
-                for (long t = 0; t <= deg_sp; t++)
-                {
-                    SetCoeff(tmp, t, coeff(F[r][i], deg_at++));
-                }
-                F_sp[r][col_at] = tmp;
+                parlin[i][c].SetLength(parlin_degree[j]+1);
+                for (long t = 0; t <= parlin_degree[j]; ++t)
+                    parlin[i][c][t] = coeff(pmat[i][j], deg_at++);
             }
         }
     }
-    
-    res = F_sp;
 }
 
+// TODO later, move this function in a more appropriate place (specific file for linearizations)
+// TODO comment with description?
 // splits F such that each entry has at most deg_sp
 void split_and_multiply (Mat<zz_pX> &res, 
                          const Mat<zz_pX> &P, 
@@ -822,7 +826,7 @@ void split_and_multiply (Mat<zz_pX> &res,
     long n = F.NumCols();
     
     Mat<zz_pX> F_sp;
-    split(F_sp,F,deg,deg_sp);
+    column_partial_linearization(F_sp,F,deg,deg_sp);
     
     res.SetDims(F_sp.NumRows(), n);
     
@@ -862,7 +866,7 @@ DegVec popov_mbasis1_generic(
                     )
 {
     Mat<zz_pX> L;
-    split (L, pmat, order-1, 0);
+    column_partial_linearization (L, pmat, order-1, 0);
     
     long m = L.NumRows();
     long n = L.NumCols();
