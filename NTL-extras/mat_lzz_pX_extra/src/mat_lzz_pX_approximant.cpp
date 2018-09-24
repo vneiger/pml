@@ -781,26 +781,23 @@ void column_partial_linearization(Mat<zz_pX> &parlin,
             const long degree,
             const DegVec & parlin_degree)
 {
-    long m = pmat.NumRows();
-    long n = pmat.NumCols();
-
     // for each column of pmat, compute the corresponding column indices in the
     // partial linearization
     // column j of pmat will be expanded into columns numcols[j] to
     // numcols[j+1]-1 of parlin
-    DegVec parlin_cols(n+1);
+    DegVec parlin_cols(pmat.NumCols()+1);
     parlin_cols[0]=0;
-    for (long j = 1; j < n+1; ++j)
+    for (long j = 1; j < pmat.NumCols()+1; ++j)
         parlin_cols[j] = parlin_cols[j-1] + ceil((degree+1.0) / (parlin_degree[j-1]+1));
 
     // set dimensions of the partial linearization
-    parlin.SetDims(m, parlin_cols[n]);
+    parlin.SetDims(pmat.NumRows(), parlin_cols[pmat.NumCols()]);
 
     // for each column j of the input pmat, expand it into the corresponding
     // columns of the partial linearization parlin
-    for (long i = 0; i < m; ++i)
+    for (long i = 0; i < pmat.NumRows(); ++i)
     {
-        for (long j = 0; j < n; ++j)
+        for (long j = 0; j < pmat.NumCols(); ++j)
         {
             long deg_at = 0;
             for (long c = parlin_cols[j]; c < parlin_cols[j+1]; ++c)
