@@ -709,16 +709,21 @@ void conv(Mat<zz_pX>& mat, const Mat<zz_p>& coeff)
 long deg(const Mat<zz_pX> & a)
 {
     long d = -1;
-    for (long i = 0; i < a.NumRows(); i++)
-    {
-        for (long j = 0; j < a.NumCols(); j++)
-        {
-            d = max(d, deg(a[i][j]));
-        }
-    }
+    for (long i = 0; i < a.NumRows(); ++i)
+        for (long j = 0; j < a.NumCols(); ++j)
+            if (deg(a[i][j]) > d)
+                d = deg(a[i][j]);
     return d;
 }
 
+long deg(const Vec<zz_pX> & a)
+{
+    long d = -1;
+    for (long j = 0; j < a.length(); ++j)
+        if (deg(a[j]) > d)
+            d = deg(a[j]);
+    return d;
+}
 
 
 /*------------------------------------------------------------*/

@@ -1022,7 +1022,10 @@ DegVec pmbasis_generic(
     right_parlin_multiply(residual, appbas, pmat, order-1, deg_sp);
     for (long r = 0; r < residual.NumRows(); r++)
         for (long c = 0; c < residual.NumCols(); c++)
+        {
             RightShift(residual[r][c], residual[r][c], order1); 
+            trunc(residual[r][c], residual[r][c], order2);
+        }
 
 #ifdef PMBASIS_PROFILE
     t2 = GetWallTime();
