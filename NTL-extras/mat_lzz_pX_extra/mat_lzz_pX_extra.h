@@ -40,6 +40,8 @@ enum PolMatForm {
 
 typedef std::vector<long> Shift;
 typedef std::vector<long> DegVec;
+// TODO type for index tuples?
+// remove those types to be more explicit?
 
 // TODO : kill? swap? vec_lzz_pX ?
 
@@ -208,34 +210,42 @@ static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 
 // Column partial linearization
+// returns vector of linearization parameters
 // TODO improve description
-void column_partial_linearization(Mat<zz_pX> &parlin, 
-            const Mat<zz_pX> &pmat, 
-            const long degree,
-            const DegVec & parlin_degree);
+std::vector<long> column_partial_linearization(
+                                               Mat<zz_pX> &parlin, 
+                                               const Mat<zz_pX> &pmat, 
+                                               const long degree,
+                                               const DegVec & parlin_degree
+                                              );
 
 // Column partial linearization, uniform target degree
+// returns vector of linearization parameters
 // TODO improve description
-inline void column_partial_linearization(Mat<zz_pX> &parlin, 
+inline std::vector<long> column_partial_linearization(Mat<zz_pX> &parlin, 
             const Mat<zz_pX> &pmat, 
             const long degree,
             const long parlin_degree)
 {
     DegVec parlin_degrees(pmat.NumCols(), parlin_degree);
-    column_partial_linearization(parlin, pmat, degree, parlin_degrees);
+    return column_partial_linearization(parlin, pmat, degree, parlin_degrees);
 }
 
-void right_parlin_multiply(Mat<zz_pX> &c,
-                         const Mat<zz_pX> &a,
-                         const Mat<zz_pX> &b,
-                         const long degree,
-                         const DegVec & parlin_degree);
+void right_parlin_multiply(
+                           Mat<zz_pX> &c,
+                           const Mat<zz_pX> &a,
+                           const Mat<zz_pX> &b,
+                           const long degree,
+                           const DegVec & parlin_degree
+                          );
 
-inline void right_parlin_multiply(Mat<zz_pX> &c,
-                         const Mat<zz_pX> &a,
-                         const Mat<zz_pX> &b,
-                         const long degree,
-                         const long parlin_degree)
+inline void right_parlin_multiply(
+                                  Mat<zz_pX> &c,
+                                  const Mat<zz_pX> &a,
+                                  const Mat<zz_pX> &b,
+                                  const long degree,
+                                  const long parlin_degree
+                                 )
 {
     DegVec parlin_degrees(b.NumCols(), parlin_degree);
     right_parlin_multiply(c, a, b, degree, parlin_degrees);

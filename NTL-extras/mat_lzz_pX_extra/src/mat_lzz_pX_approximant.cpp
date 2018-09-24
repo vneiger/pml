@@ -774,73 +774,6 @@ DegVec popov_mbasis(
     return pivdeg;
 }
 
-DegVec popov_mbasis1_generic(
-                     Mat<zz_pX> & appbas,
-                     const Mat<zz_pX> & pmat,
-                     const long order,
-                     const Shift & shift
-                     //Mat<zz_p> & kerbas,
-                     //const Mat<zz_p> & pmat,
-                     //const Shift & shift
-                    )
-{
-    Mat<zz_pX> L;
-    column_partial_linearization (L, pmat, order-1, 0);
-    
-    long m = L.NumRows();
-    long n = L.NumCols();
-    
-    // copy the constant coeffs
-    Mat<zz_p> L_cp;
-    L_cp.SetDims(m,n);
-    for (long r = 0; r < m; r++)
-        for (long c = 0; c < n; c++)
-            L_cp[r][c] = ConstTerm(L[r][c]);
-    
-    
-    Mat<zz_p> inv_L;
-    inv(inv_L, L_cp);
-    
-    Mat<zz_p> Ls;
-    Ls.SetDims(L.NumRows(), L.NumCols());
-    for (long c = 1; c < L.NumCols(); c++)
-        for (long r = 0; r < L.NumRows(); r++)
-            Ls[r][c] = L_cp[r][c-1];
-    
-    L_cp = Ls*inv_L;
-    zz_pX x;
-    SetCoeff(x,1,1);
-    
-    appbas.SetDims(L.NumRows(), L.NumCols());
-    for (long r = 0; r < L.NumRows(); r++)
-    {
-        for (long c = 0; c < L.NumCols(); c++)
-        {
-            zz_pX tmp;
-            SetCoeff(tmp, 0, -L_cp[r][c]);
-            if (r == c) tmp += x;
-            appbas[r][c] = tmp;
-        }
-    }
-    DegVec dv (L.NumRows());
-    for (long i = 0; i < L.NumRows(); i++)
-        dv[i] = 1;
-    return dv;
-}
-
-DegVec mbasis_generic(
-                     Mat<zz_pX> & appbas,
-                     const Mat<zz_pX> & pmat,
-                     const long order,
-                     const Shift & shift
-                    )
-{
-    // TODO
-    DegVec dv (pmat.NumRows());
-    return dv;
-}
-                         
-
 /*------------------------------------------------------------*/
 /* Divide and Conquer: PMBasis                                */
 /*------------------------------------------------------------*/
@@ -925,14 +858,112 @@ DegVec pmbasis(
 }
 
 /*------------------------------------------------------------*/
+/* Divide and Conquer: PMBasis returning Popov                */
+/*------------------------------------------------------------*/
+DegVec popov_pmbasis(
+                     Mat<zz_pX> &appbas,
+                     const Mat<zz_pX> & pmat,
+                     const long order,
+                     const Shift & shift
+                    )
+{
+    DegVec pivdeg = pmbasis(appbas,pmat,order,shift);
+    Shift new_shift( pivdeg );
+    std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
+    clear(appbas);
+    pmbasis(appbas,pmat,order,new_shift);
+    Mat<zz_p> lmat;
+    leading_matrix(lmat, appbas, new_shift, true);
+    inv(lmat, lmat);
+    mul(appbas,lmat,appbas);
+    return pivdeg;
+}
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* PMBASIS-GENERIC                                            */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+DegVec popov_mbasis1_generic(
+                             Mat<zz_pX> & appbas,
+                             const Mat<zz_pX> & pmat,
+                             const long order,
+                             const Shift & shift
+                             //Mat<zz_p> & kerbas,
+                             //const Mat<zz_p> & pmat,
+                             //const Shift & shift
+                            )
+{
+    Mat<zz_pX> L;
+    column_partial_linearization(L, pmat, order-1, 0);
+
+    long m = L.NumRows();
+    long n = L.NumCols();
+
+    // copy the constant coeffs
+    Mat<zz_p> L_cp;
+    L_cp.SetDims(m,n);
+    for (long r = 0; r < m; r++)
+        for (long c = 0; c < n; c++)
+            L_cp[r][c] = ConstTerm(L[r][c]);
+
+
+    Mat<zz_p> inv_L;
+    inv(inv_L, L_cp);
+
+    Mat<zz_p> Ls;
+    Ls.SetDims(L.NumRows(), L.NumCols());
+    for (long c = 1; c < L.NumCols(); c++)
+        for (long r = 0; r < L.NumRows(); r++)
+            Ls[r][c] = L_cp[r][c-1];
+
+    L_cp = Ls*inv_L;
+    zz_pX x;
+    SetCoeff(x,1,1);
+
+    appbas.SetDims(L.NumRows(), L.NumCols());
+    for (long r = 0; r < L.NumRows(); r++)
+    {
+        for (long c = 0; c < L.NumCols(); c++)
+        {
+            zz_pX tmp;
+            SetCoeff(tmp, 0, -L_cp[r][c]);
+            if (r == c) tmp += x;
+            appbas[r][c] = tmp;
+        }
+    }
+    DegVec dv (L.NumRows());
+    for (long i = 0; i < L.NumRows(); i++)
+        dv[i] = 1;
+    return dv;
+}
+
+DegVec mbasis_generic(
+                      Mat<zz_pX> & appbas,
+                      const Mat<zz_pX> & pmat,
+                      const long order,
+                      const Shift & shift
+                     )
+{
+    // TODO
+    DegVec dv (pmat.NumRows());
+    return dv;
+}
+
+
+
+/*------------------------------------------------------------*/
 /* Divide and Conquer: PMBasis                                */
 /*------------------------------------------------------------*/
 DegVec pmbasis_generic(
-               Mat<zz_pX> & appbas,
-               const Mat<zz_pX> & pmat,
-               const long order,
-               const Shift & shift
-              )
+                       Mat<zz_pX> & appbas,
+                       const Mat<zz_pX> & pmat,
+                       const long order,
+                       const Shift & shift
+                      )
 {
 #ifdef PMBASIS_PROFILE
     std::cout << "Order: " << order << std::endl;
@@ -962,8 +993,6 @@ DegVec pmbasis_generic(
     }
 #endif
 
-    //cout << "blah" << endl;
-    
     DegVec pivdeg; // pivot degree, first call
     DegVec pivdeg2; // pivot degree, second call
     DegVec rdeg(pmat.NumRows()); // shifted row degree
@@ -989,12 +1018,12 @@ DegVec pmbasis_generic(
     t1 = GetWallTime();
 #endif
     // residual = (appbas * pmat * X^-order1) mod X^order2
-    long deg_sp = (pmat.NumCols() * (order-1))/ (2*pmat.NumRows());
-    right_parlin_multiply(residual, appbas, pmat, order -1, deg_sp);
+    long deg_sp = (pmat.NumCols() * order)/ (2*pmat.NumRows());
+    right_parlin_multiply(residual, appbas, pmat, order-1, deg_sp);
     for (long r = 0; r < residual.NumRows(); r++)
         for (long c = 0; c < residual.NumCols(); c++)
             RightShift(residual[r][c], residual[r][c], order1); 
-    
+
 #ifdef PMBASIS_PROFILE
     t2 = GetWallTime();
     std::cout << "\tTime(middle-prod): " << (t2-t1) << "s" << std::endl;
@@ -1022,27 +1051,6 @@ DegVec pmbasis_generic(
     return pivdeg;
 }
 
-/*------------------------------------------------------------*/
-/* Divide and Conquer: PMBasis returning Popov                */
-/*------------------------------------------------------------*/
-DegVec popov_pmbasis(
-                     Mat<zz_pX> &appbas,
-                     const Mat<zz_pX> & pmat,
-                     const long order,
-                     const Shift & shift
-                    )
-{
-    DegVec pivdeg = pmbasis(appbas,pmat,order,shift);
-    Shift new_shift( pivdeg );
-    std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
-    clear(appbas);
-    pmbasis(appbas,pmat,order,new_shift);
-    Mat<zz_p> lmat;
-    leading_matrix(lmat, appbas, new_shift, true);
-    inv(lmat, lmat);
-    mul(appbas,lmat,appbas);
-    return pivdeg;
-}
 
 // Local Variables:
 // mode: C++
