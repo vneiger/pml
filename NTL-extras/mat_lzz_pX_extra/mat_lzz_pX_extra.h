@@ -197,8 +197,14 @@ static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* CREATE RANDOM MATRICES                                     */
+/* PARTIAL LINEARIZATION                                      */
 /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* Basic linearizations:                                      */
+/* expand columns (or rows) of the matrix according to a      */
+/* specified degree profile                                   */
 /*------------------------------------------------------------*/
 
 // Column partial linearization
@@ -212,11 +218,27 @@ void column_partial_linearization(Mat<zz_pX> &parlin,
 // TODO improve description
 inline void column_partial_linearization(Mat<zz_pX> &parlin, 
             const Mat<zz_pX> &pmat, 
-            const long deg,
+            const long degree,
             const long parlin_degree)
 {
     DegVec parlin_degrees(pmat.NumCols(), parlin_degree);
-    column_partial_linearization(parlin, pmat, deg, parlin_degrees);
+    column_partial_linearization(parlin, pmat, degree, parlin_degrees);
+}
+
+void right_parlin_multiply(Mat<zz_pX> &c,
+                         const Mat<zz_pX> &a,
+                         const Mat<zz_pX> &b,
+                         const long degree,
+                         const DegVec & parlin_degree);
+
+inline void right_parlin_multiply(Mat<zz_pX> &c,
+                         const Mat<zz_pX> &a,
+                         const Mat<zz_pX> &b,
+                         const long degree,
+                         const long parlin_degree)
+{
+    DegVec parlin_degrees(b.NumCols(), parlin_degree);
+    right_parlin_multiply(c, a, b, degree, parlin_degrees);
 }
 
 
