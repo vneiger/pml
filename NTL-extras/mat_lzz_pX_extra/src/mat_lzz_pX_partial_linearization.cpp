@@ -62,10 +62,8 @@ std::vector<long> column_partial_linearization(
     return parlin_cols;
 }
 
-
-// performs the column partial linearization of the following chunk of pmat:
-//   trunc( pmat div x^dinf,  dsup-dinf)
-//   (degrees dinf...dsup  of pmat)
+// performs the column partial linearization of the chunk of pmat
+// formed by its coefficients of degrees dinf...dsup
 //   TODO
 std::vector<long> column_partial_linearization_chunk(
                                                      Mat<zz_pX> &parlin, 
