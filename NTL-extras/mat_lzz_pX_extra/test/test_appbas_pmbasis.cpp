@@ -108,13 +108,52 @@ int main(int argc, char *argv[])
             std::cout << "\tXGCD --> " << (t2w-t1w) << std::endl;
         }
     }
-
+/*
     // pmbasis
     {
         std::cout << "~~~Testing pmbasis~~~" << std::endl;
         t1w = GetWallTime(); t1 = GetTime();
         Mat<zz_pX> appbas;
         pivdeg = pmbasis(appbas,pmat,order,shift);
+        t2w = GetWallTime(); t2 = GetTime();
+
+        std::cout << "Time(pmbasis computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+
+        if (verify)
+        {
+            std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
+            t1w = GetWallTime(); t1 = GetTime();
+            bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
+            t2w = GetWallTime(); t2 = GetTime();
+            std::cout << (verif?"correct":"wrong") << std::endl;
+            std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+
+            if (rdim*cdim*order < 100)
+            {
+                std::cout << "Print output approx basis..." << std::endl;
+                std::cout << appbas << std::endl;
+                std::cout << "Print final residual..." << std::endl;
+                Mat<zz_pX> residual;
+                multiply_naive(residual,appbas,pmat);
+                std::cout << residual << std::endl;
+            }
+
+            if (std::max(rdim,cdim)<33) {
+                Mat<long> degmat;
+                degree_matrix(degmat,appbas,shift,true);
+                std::cout << "Print degree matrix of approx basis..." << std::endl;
+                std::cout << degmat << std::endl;
+            }
+        }
+    }
+*/
+    
+        // pmbasis
+    {
+        std::cout << "~~~Testing pmbasis generic2~~~" << std::endl;
+        t1w = GetWallTime(); t1 = GetTime();
+        Mat<zz_pX> appbas;
+        pivdeg = pmbasis_generic2(appbas,pmat,order,shift);
         t2w = GetWallTime(); t2 = GetTime();
 
         std::cout << "Time(pmbasis computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
@@ -184,7 +223,9 @@ int main(int argc, char *argv[])
             }
         }
     }
+    
 
+/*
     // popov_pmbasis
     {
         std::cout << "~~~Testing popov_pmbasis~~~" << std::endl;
@@ -222,7 +263,7 @@ int main(int argc, char *argv[])
             }
         }
     }
-
+*/
     return 0;
 }
 

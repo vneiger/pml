@@ -1177,6 +1177,13 @@ DegVec pmbasis_generic(
                const Shift & shift
               );
 
+DegVec pmbasis_generic2(
+               Mat<zz_pX> & appbas,
+               const Mat<zz_pX> & pmat,
+               const long order,
+               const Shift & shift
+              );
+
 
 /**********************************************************************
  *                     MINIMAL INTERPOLANT BASES                      *
