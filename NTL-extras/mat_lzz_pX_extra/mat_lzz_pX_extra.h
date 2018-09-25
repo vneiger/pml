@@ -1046,13 +1046,9 @@ DegVec popov_pmbasis(
 // TODO several columns
 
 DegVec popov_mbasis1_generic(
-                     Mat<zz_pX> & appbas,
-                     const Mat<zz_pX> & pmat,
-                     const long order,
+                     Mat<zz_p> & kerbas,
+                     const Mat<zz_p> & pmat,
                      const Shift & shift
-//                     Mat<zz_p> & kerbas,
-//                     const Mat<zz_p> & pmat,
-//                     const Shift & shift
                     );
 
 DegVec mbasis_generic(
@@ -1063,13 +1059,6 @@ DegVec mbasis_generic(
                     );
 
 DegVec pmbasis_generic(
-               Mat<zz_pX> & appbas,
-               const Mat<zz_pX> & pmat,
-               const long order,
-               const Shift & shift
-              );
-
-DegVec pmbasis_generic2(
                Mat<zz_pX> & appbas,
                const Mat<zz_pX> & pmat,
                const long order,

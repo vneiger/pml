@@ -11,6 +11,25 @@
 
 NTL_CLIENT
 
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* COMPLETE LINEARIZATION                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+// Column linearization
+// transforms matrix into constant matrix of coefficients
+// TODO improve description
+// TODO not implemented yet
+std::vector<long> column_linearization(
+                                       Mat<zz_p> & lin, 
+                                       const Mat<zz_pX> & pmat
+                                      );
+
+
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* PARTIAL LINEARIZATION                                      */
@@ -28,7 +47,7 @@ NTL_CLIENT
 // parlin_degree and target_degree must have length pmat.NumCols()
 // TODO improve description
 std::vector<long> column_partial_linearization(
-                                               Mat<zz_pX> &parlin, 
+                                               Mat<zz_pX> & parlin, 
                                                const Mat<zz_pX> & pmat, 
                                                const DegVec & parlin_degree,
                                                const DegVec & target_degree
