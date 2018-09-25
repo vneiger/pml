@@ -1019,14 +1019,7 @@ DegVec pmbasis_generic(
 #endif
     // residual = (appbas * pmat * X^-order1) mod X^order2
     long deg_sp = (pmat.NumCols() * order)/ (2*pmat.NumRows());
-    right_parlin_multiply(residual, appbas, pmat, order-1, deg_sp);
-    for (long r = 0; r < residual.NumRows(); r++)
-        for (long c = 0; c < residual.NumCols(); c++)
-        {
-            RightShift(residual[r][c], residual[r][c], order1); 
-            trunc(residual[r][c], residual[r][c], order2);
-        }
-
+    right_parlin_middle_product(residual, appbas, pmat, order-1, deg_sp, order1, order2);
 #ifdef PMBASIS_PROFILE
     t2 = GetWallTime();
     std::cout << "\tTime(middle-prod): " << (t2-t1) << "s" << std::endl;

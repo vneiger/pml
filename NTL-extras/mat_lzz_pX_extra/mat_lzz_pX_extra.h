@@ -543,6 +543,7 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
 
 void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long is_prime = 1);
 
+// TODO rename multiply_trunc ?
 inline void mul_trunc(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long n, long is_prime = 1)
 {
     multiply(c, a, b, is_prime);
@@ -723,7 +724,7 @@ inline std::vector<long> column_partial_linearization(
 // TODO
 
 
-// TODO: doc for the two below (parlin_multiply
+// TODO: doc for the functions below (parlin_multiply / middleprod)
 void right_parlin_multiply(
                            Mat<zz_pX> &c,
                            const Mat<zz_pX> &a,
@@ -742,6 +743,31 @@ inline void right_parlin_multiply(
 {
     DegVec column_degree(b.NumCols(), degree);
     right_parlin_multiply(c, a, b, column_degree, parlin_degree);
+}
+
+/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
+void right_parlin_middle_product(
+                           Mat<zz_pX> &c,
+                           const Mat<zz_pX> &a,
+                           const Mat<zz_pX> &b,
+                           const DegVec & column_degree,
+                           const long parlin_degree,
+                           long dA,
+                           long dB
+                          );
+
+inline void right_parlin_middle_product(
+                                  Mat<zz_pX> &c,
+                                  const Mat<zz_pX> &a,
+                                  const Mat<zz_pX> &b,
+                                  const long degree,
+                                  const long parlin_degree,
+                                  long dA,
+                                  long dB
+                                 )
+{
+    DegVec column_degree(b.NumCols(), degree);
+    right_parlin_middle_product(c, a, b, column_degree, parlin_degree, dA, dB);
 }
 
 
