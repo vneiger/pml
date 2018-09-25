@@ -941,6 +941,59 @@ DegVec popov_mbasis1_generic(
     return dv;
 }
 
+
+DegVec popov_mbasis1_generic2(
+                             Mat<zz_pX> & appbas,
+                             const Mat<zz_pX> & pmat,
+                             const long order,
+                             const Shift & shift
+                             //Mat<zz_p> & kerbas,
+                             //const Mat<zz_p> & pmat,
+                             //const Shift & shift
+                            )
+{
+    Mat<zz_pX> L;
+    column_partial_linearization(L, pmat, order-1, 0);
+
+    long m = L.NumRows();
+    long n = L.NumCols();
+            
+    Mat<zz_p> LLs; // contains entries of L over Ls
+    LLs.SetDims(2*L.NumRows(), L.NumCols());
+    // copy L
+    for (long r = 0; r < L.NumRows(); r++)
+        for (long c = 0; c < L.NumCols(); c++)
+            LLs[r][c] = ConstTerm(L[r][c]);
+    // copy Ls
+    for (long c = 1; c < L.NumCols(); c++)
+        for (long r = 0; r < L.NumRows(); r++)
+            LLs[r+L.NumRows()][c] = LLs[r][c-1];
+
+    Mat<zz_p> kern;
+    kernel(kern,LLs);
+    
+    zz_pX x;
+    SetCoeff(x,1,1);
+            
+    appbas.SetDims(L.NumRows(), L.NumCols());
+    for (long r = 0; r < L.NumRows(); r++)
+    {
+        for (long c = 0; c < L.NumCols(); c++)
+        {
+            zz_pX tmp;
+            SetCoeff(tmp, 0, kern[r][c]);
+            if (r == c) tmp += x;
+            appbas[r][c] = tmp;
+        }
+    }
+    
+    DegVec dv (L.NumRows());
+    for (long i = 0; i < L.NumRows(); i++)
+        dv[i] = 1;
+    return dv;
+}
+
+
 DegVec mbasis_generic(
                       Mat<zz_pX> & appbas,
                       const Mat<zz_pX> & pmat,
@@ -985,7 +1038,98 @@ DegVec pmbasis_generic(
     if (order == pmat.NumRows()){
         //cout << "pmat: " << pmat << endl;
         //cout << "blah blah" << endl;
+        //popov_mbasis1_generic2(appbas,pmat,order,shift);
         return popov_mbasis1_generic(appbas,pmat,order,shift);
+        //cout << "appbas1: " << appbas << endl;
+        //auto t = mbasis_vector(appbas,pmat,order,shift);
+        //cout << "appbas2: " << appbas << endl;
+        //return t;
+    }
+#endif
+
+    DegVec pivdeg; // pivot degree, first call
+    DegVec pivdeg2; // pivot degree, second call
+    DegVec rdeg(pmat.NumRows()); // shifted row degree
+    long order1 = order>>1; // order of first call
+    long order2 = order-order1; // order of second call
+    Mat<zz_pX> trunc_pmat; // truncated pmat for first call
+    Mat<zz_pX> appbas2; // basis for second call
+    Mat<zz_pX> residual; // for the residual
+
+    // first recursive call, with 'pmat' and 'shift'
+#ifdef PMBASIS_PROFILE
+    t1 = GetWallTime();
+#endif
+    trunc(trunc_pmat,pmat,order1);
+    pivdeg = pmbasis_generic(appbas,trunc_pmat,order1,shift);
+
+    // shifted row degree = shift for second call = pivdeg+shift
+    std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
+
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(first-call): " << (t2-t1) << "s" << std::endl;
+    t1 = GetWallTime();
+#endif
+    // residual = (appbas * pmat * X^-order1) mod X^order2
+    long deg_sp = (pmat.NumCols() * order)/ (2*pmat.NumRows());
+    right_parlin_middle_product(residual, appbas, pmat, order-1, deg_sp, order1, order2);
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(middle-prod): " << (t2-t1) << "s" << std::endl;
+    t1 = GetWallTime();
+#endif
+
+    // second recursive call, with 'residual' and 'rdeg'
+    pivdeg2 = pmbasis_generic(appbas2,residual,order2,rdeg);
+
+    // final basis = appbas2 * appbas
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(second-call): " << (t2-t1) << "s" << std::endl;
+    t1 = GetWallTime();
+#endif
+    multiply(appbas,appbas2,appbas);
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(basis-mul): " << (t2-t1) << "s" << std::endl;
+#endif
+
+    // final pivot degree = pivdeg1+pivdeg2
+    std::transform(pivdeg.begin(), pivdeg.end(), pivdeg2.begin(), pivdeg.begin(), std::plus<long>());
+
+    return pivdeg;
+}
+
+DegVec pmbasis_generic2(
+                       Mat<zz_pX> & appbas,
+                       const Mat<zz_pX> & pmat,
+                       const long order,
+                       const Shift & shift
+                      )
+{
+#ifdef PMBASIS_PROFILE
+    std::cout << "Order: " << order << std::endl;
+    double t1,t2;
+#endif
+    // TODO thresholds to be determined:
+    //  --> from mbasis (only linalg) to pmbasis with low-degree polmatmul (Karatsuba...)
+    //  --> from this pmbasis to pmbasis with eval-based polmatmul (FFT, geometric..)
+#ifdef PMBASIS_PROFILE
+    if (order <= 32)
+    {
+        t1 = GetWallTime();
+        DegVec rdeg = mbasis_vector(appbas,pmat,order,shift);
+        t2 = GetWallTime();
+        std::cout << "\tTime(base-case): " << (t2-t1) << "s" << std::endl;
+        return rdeg;
+    }
+#else
+    if (order == pmat.NumRows()){
+        //cout << "pmat: " << pmat << endl;
+        //cout << "blah blah" << endl;
+        return popov_mbasis1_generic2(appbas,pmat,order,shift);
+        //return popov_mbasis1_generic(appbas,pmat,order,shift);
         //cout << "appbas1: " << appbas << endl;
         //auto t = mbasis_vector(appbas,pmat,order,shift);
         //cout << "appbas2: " << appbas << endl;
