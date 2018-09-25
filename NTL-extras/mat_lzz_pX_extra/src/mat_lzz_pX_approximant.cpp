@@ -900,17 +900,17 @@ DegVec mbasis_generic(
     // partially linearize pmat into a constant matrix
     Vec<Mat<zz_p>> residuals;
     residuals.SetLength(order/nrows);
-    for (long d = 0; d < order/nrows; ++d)
+    for (long k = 0; k < order/nrows; ++k)
     {
-        residuals[d].SetDims(nrows,nrows);
+        residuals[k].SetDims(nrows,nrows);
         for (long i = 0; i < nrows; ++i)
             for (long j = 0; j < nrows; ++j)
-                residuals[d][i][j] = pmat[i][0][d*nrows+j];
+                residuals[k][i][j] = pmat[i][0][k*nrows+j];
     }
 
     // for storing appbas coefficients
     Vec<Mat<zz_p>> coeffs_appbas;
-    coeffs_appbas.SetLength(order/nrows);
+    coeffs_appbas.SetLength(1+order/nrows);
     // Warning: the largest degree coefficient of appbas is identity matrix,
     // not stored here (for efficiency in computations below)
 
@@ -921,6 +921,10 @@ DegVec mbasis_generic(
     // To store the kernel basis and its leftmost submatrix
     Mat<zz_p> kerbas, kerbas_left;
     kerbas_left.SetDims(nrows, nrows);
+
+    // To store local residuals (XI * res[k])
+    Mat<zz_p> residual;
+    residual.SetDims(nrows,nrows);
 
     for (long d=0; d<order/nrows; ++d)
     {
@@ -949,20 +953,27 @@ DegVec mbasis_generic(
             coeffs_appbas[k] += coeffs_appbas[k-1];
             coeffs_appbas[k-1] = kerbas_left * coeffs_appbas[k-1];
         }
-    std::cout << "here" << std::endl;
 
         // 4. update residual
         // multiply by XId + kerbas-left
         // -> ignore what happens beyond order
         // -> ignore what happens before d and at d
-        for (long k = order-1; k > d; --k)
+        for (long k = order/nrows-1; k > d; --k)
         {
+            for (long i = 0; i < nrows; ++i)
+            {
+                residual[i][0] = residuals[k-1][i][nrows-1];
+                for (long j = 1; j < nrows; ++j)
+                    residual[i][j] = residuals[k][i][j-1];
+            }
             residuals[k] = kerbas_left * residuals[k];
-            residuals[k] += residuals[k-1];
+            residuals[k] += residual;
         }
-    std::cout << "here" << std::endl;
     }
 
+    // finally insert identity for the largest degree coefficient
+    coeffs_appbas[order/nrows] = ident_mat_zz_p(nrows);
+    // and convert to polynomial matrix format
     appbas = conv(coeffs_appbas);
 
     DegVec dv (pmat.NumRows(), order/nrows);
@@ -998,7 +1009,7 @@ DegVec pmbasis_generic(
         return rdeg;
     }
 #else
-    if (order == pmat.NumRows()){
+    if (order <= 16*pmat.NumRows()){
         //cout << "pmat: " << pmat << endl;
         //cout << "blah blah" << endl;
         //popov_mbasis1_generic2(appbas,pmat,order,shift);
