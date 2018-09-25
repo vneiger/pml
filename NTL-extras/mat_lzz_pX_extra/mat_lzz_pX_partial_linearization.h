@@ -122,19 +122,13 @@ inline std::vector<long> column_partial_linearization_cdeg(
     return column_partial_linearization(parlin, pmat, parlin_degrees, cdeg);
 }
 
-
-// performs the column partial linearization of the following chunk of pmat:
-//   trunc( pmat div x^dinf,  dsup-dinf)
-//   (degrees dinf...dsup  of pmat)
-std::vector<long> column_partial_linearization_chunk(
-                                                     Mat<zz_pX> &parlin, 
-                                                     const Mat<zz_pX> &pmat, 
-                                                     const DegVec & target_degree,
-                                                     const DegVec & parlin_degree,
-                                                     const long dinf,
-                                                     const long dsup
-                                                    );
-
+std::vector<long> column_partial_linearization(
+                                               Mat<zz_pX> & parlin, 
+                                               const Mat<zz_pX> & pmat, 
+                                               const DegVec & parlin_degree,
+                                               const DegVec & target_degree,
+                                               const long dinf
+                                              );
 
 /*------------------------------------------------------------*/
 /* Basic row partial linearizations:                          */
@@ -145,32 +139,54 @@ std::vector<long> column_partial_linearization_chunk(
 
 
 // TODO: doc for the functions below (parlin_multiply / middleprod)
+// here, column_degree must be an (non-strict) upper bound on the column degree of b
 void right_parlin_multiply(
                            Mat<zz_pX> &c,
                            const Mat<zz_pX> &a,
                            const Mat<zz_pX> &b,
                            const long parlin_degree,
-                           const DegVec & target_degree = DegVec()
+                           const DegVec & column_degree
                           );
 
+// column degree of b not provided, compute it
+inline void right_parlin_multiply(
+                                  Mat<zz_pX> &c,
+                                  const Mat<zz_pX> &a,
+                                  const Mat<zz_pX> &b,
+                                  const long parlin_degree
+                                 )
+{
+    DegVec cdeg(b.NumCols());
+    col_degree(cdeg, b);
+    right_parlin_multiply(c, a, b, parlin_degree, cdeg);
+}
+
+// global degree provided
 inline void right_parlin_multiply(
                                   Mat<zz_pX> &c,
                                   const Mat<zz_pX> &a,
                                   const Mat<zz_pX> &b,
                                   const long parlin_degree,
-                                  const long target_degree = -1
+                                  const long degree
                                  )
 {
-    if (target_degree==-1)
-        right_parlin_multiply(c, a, b, parlin_degree, DegVec());
-    else
-    {
-        DegVec target_degrees(b.NumCols(), target_degree);
-        right_parlin_multiply(c, a, b, parlin_degree, target_degrees);
-    }
+    DegVec target_degrees(b.NumCols(), degree);
+    right_parlin_multiply(c, a, b, parlin_degree, target_degrees);
 }
 
-/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
+// uses deg(a) as linearization degree parameter
+inline void right_parlin_multiply(
+                                  Mat<zz_pX> &c,
+                                  const Mat<zz_pX> &a,
+                                  const Mat<zz_pX> &b
+                                 )
+{
+    DegVec cdeg(b.NumCols());
+    col_degree(cdeg, b);
+    right_parlin_multiply(c, a, b, deg(a), cdeg);
+}
+
+/* c = trunc( trunc(a, dA+1)*b div x^dA, dB+1 )           */
 void right_parlin_middle_product(
                                  Mat<zz_pX> &c,
                                  const Mat<zz_pX> &a,

@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
             std::cout << "\tXGCD --> " << (t2w-t1w) << std::endl;
         }
     }
-/*
+
     // pmbasis
     {
         std::cout << "~~~Testing pmbasis~~~" << std::endl;
@@ -147,9 +147,9 @@ int main(int argc, char *argv[])
             }
         }
     }
-*/
-    
-        // pmbasis
+
+
+    // pmbasis generic2
     {
         std::cout << "~~~Testing pmbasis generic2~~~" << std::endl;
         t1w = GetWallTime(); t1 = GetTime();
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
             }
         }
     }
-    
+
     // pmbasis
     {
         std::cout << "~~~Testing pmbasis generic~~~" << std::endl;

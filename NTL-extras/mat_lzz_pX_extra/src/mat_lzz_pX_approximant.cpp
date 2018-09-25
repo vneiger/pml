@@ -936,6 +936,7 @@ DegVec popov_mbasis1_generic(
             appbas[r][c] = tmp;
         }
     }
+
     DegVec dv (L.NumRows());
     for (long i = 0; i < L.NumRows(); i++)
         dv[i] = 1;
@@ -1074,7 +1075,7 @@ DegVec pmbasis_generic(
 #endif
     // residual = (appbas * pmat * X^-order1) mod X^order2
     long deg_sp = (pmat.NumCols() * order)/ (2*pmat.NumRows());
-    right_parlin_middle_product(residual, appbas, pmat, deg_sp, order-1, order1, order2);
+    right_parlin_middle_product(residual, appbas, pmat, deg_sp, order-1, order1, order2-1);
 #ifdef PMBASIS_PROFILE
     t2 = GetWallTime();
     std::cout << "\tTime(middle-prod): " << (t2-t1) << "s" << std::endl;
@@ -1164,7 +1165,7 @@ DegVec pmbasis_generic2(
 #endif
     // residual = (appbas * pmat * X^-order1) mod X^order2
     long deg_sp = (pmat.NumCols() * order)/ (2*pmat.NumRows());
-    right_parlin_middle_product(residual, appbas, pmat, deg_sp, order-1, order1, order2);
+    right_parlin_middle_product(residual, appbas, pmat, deg_sp, order-1, order1, order2-1);
 #ifdef PMBASIS_PROFILE
     t2 = GetWallTime();
     std::cout << "\tTime(middle-prod): " << (t2-t1) << "s" << std::endl;
