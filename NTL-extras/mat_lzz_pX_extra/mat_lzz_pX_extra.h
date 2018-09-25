@@ -664,114 +664,6 @@ private:
 /*------------------------------------------------------------*/
 std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, long dB);
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* PARTIAL LINEARIZATION                                      */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* Basic linearizations:                                      */
-/* expand columns of the matrix according to a                */
-/* specified degree profile                                   */
-/*------------------------------------------------------------*/
-
-// Column partial linearization
-// returns vector of linearization parameters
-// TODO improve description
-std::vector<long> column_partial_linearization(
-                                               Mat<zz_pX> &parlin, 
-                                               const Mat<zz_pX> &pmat, 
-                                               const DegVec & column_degree,
-                                               const DegVec & parlin_degree
-                                              );
-
-// Column partial linearization, uniform target degree
-// returns vector of linearization parameters
-// TODO improve description
-inline std::vector<long> column_partial_linearization(
-                                                      Mat<zz_pX> &parlin, 
-                                                      const Mat<zz_pX> &pmat, 
-                                                      const DegVec & column_degree,
-                                                      const long parlin_degree
-                                                     )
-{
-    DegVec parlin_degrees(pmat.NumCols(), parlin_degree);
-    return column_partial_linearization(parlin, pmat, column_degree, parlin_degrees);
-}
-
-// Column partial linearization, uniform degrees
-// returns vector of linearization parameters
-// TODO improve description
-inline std::vector<long> column_partial_linearization(
-                                                      Mat<zz_pX> &parlin, 
-                                                      const Mat<zz_pX> &pmat, 
-                                                      const long degree,
-                                                      const long parlin_degree
-                                                     )
-{
-    DegVec column_degree(pmat.NumCols(), degree);
-    DegVec parlin_degrees(pmat.NumCols(), parlin_degree);
-    return column_partial_linearization(parlin, pmat, column_degree, parlin_degrees);
-}
-
-
-/*------------------------------------------------------------*/
-/* Basic row partial linearizations:                          */
-/* expand rows of the matrix according to a                   */
-/* specified degree profile                                   */
-/*------------------------------------------------------------*/
-// TODO
-
-
-// TODO: doc for the functions below (parlin_multiply / middleprod)
-void right_parlin_multiply(
-                           Mat<zz_pX> &c,
-                           const Mat<zz_pX> &a,
-                           const Mat<zz_pX> &b,
-                           const DegVec & column_degree,
-                           const long parlin_degree
-                          );
-
-inline void right_parlin_multiply(
-                                  Mat<zz_pX> &c,
-                                  const Mat<zz_pX> &a,
-                                  const Mat<zz_pX> &b,
-                                  const long degree,
-                                  const long parlin_degree
-                                 )
-{
-    DegVec column_degree(b.NumCols(), degree);
-    right_parlin_multiply(c, a, b, column_degree, parlin_degree);
-}
-
-/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
-void right_parlin_middle_product(
-                           Mat<zz_pX> &c,
-                           const Mat<zz_pX> &a,
-                           const Mat<zz_pX> &b,
-                           const DegVec & column_degree,
-                           const long parlin_degree,
-                           long dA,
-                           long dB
-                          );
-
-inline void right_parlin_middle_product(
-                                  Mat<zz_pX> &c,
-                                  const Mat<zz_pX> &a,
-                                  const Mat<zz_pX> &b,
-                                  const long degree,
-                                  const long parlin_degree,
-                                  long dA,
-                                  long dB
-                                 )
-{
-    DegVec column_degree(b.NumCols(), degree);
-    right_parlin_middle_product(c, a, b, column_degree, parlin_degree, dA, dB);
-}
-
-
-
 
 
 
@@ -1554,7 +1446,6 @@ bool determinant_generic_las_vegas(zz_pX & det, const Mat<zz_pX> & pmat);
 // --> could rely on x-Smith decomposition of Gupta et al (worth
 // implementing??), cf Appendix of LaNeZh17 
 // --> no randomized faster approach?
-
 
 #endif // MAT_LZZ_PX_EXTRA__H
 

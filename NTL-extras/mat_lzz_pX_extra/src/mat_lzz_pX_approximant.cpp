@@ -7,6 +7,7 @@
 
 #include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_partial_linearization.h"
 #include "lzz_pX_CRT.h"
 
 //#define MBASIS1_PROFILE // FIXME
@@ -898,7 +899,7 @@ DegVec popov_mbasis1_generic(
                             )
 {
     Mat<zz_pX> L;
-    column_partial_linearization(L, pmat, order-1, 0);
+    column_partial_linearization(L, pmat, 0, order-1);
 
     long m = L.NumRows();
     long n = L.NumCols();
@@ -1073,7 +1074,7 @@ DegVec pmbasis_generic(
 #endif
     // residual = (appbas * pmat * X^-order1) mod X^order2
     long deg_sp = (pmat.NumCols() * order)/ (2*pmat.NumRows());
-    right_parlin_middle_product(residual, appbas, pmat, order-1, deg_sp, order1, order2);
+    right_parlin_middle_product(residual, appbas, pmat, deg_sp, order-1, order1, order2);
 #ifdef PMBASIS_PROFILE
     t2 = GetWallTime();
     std::cout << "\tTime(middle-prod): " << (t2-t1) << "s" << std::endl;
