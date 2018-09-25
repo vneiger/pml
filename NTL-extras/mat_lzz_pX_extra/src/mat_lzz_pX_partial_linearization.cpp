@@ -21,18 +21,18 @@ std::vector<long> column_partial_linearization(
 {
     // for each column of pmat, compute the corresponding column indices in the
     // partial linearization
-    // column j of pmat will be expanded into columns numcols[j] to
-    // numcols[j+1]-1 of parlin
+    // column j of pmat will be expanded into columns parlin_cols[j] to
+    // parlin_cols[j+1]-1 of parlin
     std::vector<long> parlin_cols(pmat.NumCols()+1);
+    // expand column j-1 into a matrix with all columns but the last having
+    // degree <= parlin_degree[j-1]
+    // note: if target_degree[j-1] is the degree of column j-1 of pmat,
+    // then all expanded columns *including* the last one have degree <=
+    // parlin_degree[j-1]
+    DegVec max_degree(pmat.NumCols()); // max degree reached for all but the last expanded columns
     parlin_cols[0]=0;
     for (long j = 1; j < pmat.NumCols()+1; ++j)
-    {
-        if (target_degree[j-1] == 0)
-            parlin_cols[j] = parlin_cols[j-1]+1;
-        else
-            parlin_cols[j] = parlin_cols[j-1] + ceil( (double)target_degree[j-1] / parlin_degree[j-1]);
-        std::cout << parlin_cols[j] << std::endl;
-    }
+        parlin_cols[j] = parlin_cols[j-1] + ceil( (target_degree[j-1]+1.0) / (parlin_degree[j-1]+1) );
 
     // set dimensions of the partial linearization
     parlin.SetDims(pmat.NumRows(), parlin_cols[pmat.NumCols()]);
@@ -52,10 +52,10 @@ std::vector<long> column_partial_linearization(
                     parlin[i][jj][dd] = coeff(pmat[i][j], d++);
                 parlin[i][jj].normalize();
             }
-            parlin[i][jj].SetLength(parlin_degree[j]+1);
-            for (long dd=0; dd<=parlin_degree[j]; ++dd)
+            const long reached_deg = d;
+            parlin[i][jj].SetLength(deg(pmat[i][j]) - reached_deg + 1);
+            for (long dd=0; dd<=deg(pmat[i][j]) - reached_deg; ++dd)
                 parlin[i][jj][dd] = coeff(pmat[i][j], d++);
-            parlin[i][jj].normalize();
         }
     }
 
