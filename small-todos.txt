@@ -39,3 +39,6 @@ TODO Vincent
       * improve mbasis so that it always works (see mbasis-approx)
       * pmbasis
       * interpolant basis verification: generation
+   - Improvement of approximants for small n:
+      * generic algo (need some more tuning)
+      * partial linearization solution Storjohann / ZhouLabahn
