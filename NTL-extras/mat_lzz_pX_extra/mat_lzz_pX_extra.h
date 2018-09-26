@@ -41,6 +41,8 @@ enum PolMatForm {
 
 typedef std::vector<long> Shift;
 typedef std::vector<long> DegVec;
+// TODO type for index tuples?
+// remove those types to be more explicit?
 
 // TODO : kill? swap? vec_lzz_pX ?
 
@@ -75,6 +77,7 @@ long IsIdentity(const Mat<zz_pX> & pmat);
 /* maximum degree of the entries of pmat                      */
 /*------------------------------------------------------------*/
 long deg(const Mat<zz_pX> & pmat);
+long deg(const Vec<zz_pX> & pvec); // TODO in its own file
 
 /*------------------------------------------------------------*/
 /* in-place reduction modulo the current prime                */
@@ -235,6 +238,7 @@ static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
     reverse(x, a);
     return x;
 }
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -1105,6 +1109,33 @@ DegVec popov_pmbasis(
                      const Shift & shift
                     );
 
+/*------------------------------------------------------------*/
+/* FIXME in progress: MBASIS/PMBASIS, generic case            */
+/*------------------------------------------------------------*/
+
+// TODO allow non-uniform shifts?
+// TODO several columns
+
+DegVec popov_mbasis1_generic(
+                     Mat<zz_p> & kerbas,
+                     const Mat<zz_p> & pmat,
+                     const Shift & shift
+                    );
+
+DegVec mbasis_generic(
+                     Mat<zz_pX> & appbas,
+                     const Mat<zz_pX> & pmat,
+                     const long order,
+                     const Shift & shift
+                    );
+
+DegVec pmbasis_generic(
+               Mat<zz_pX> & appbas,
+               const Mat<zz_pX> & pmat,
+               const long order,
+               const Shift & shift
+              );
+
 
 /**********************************************************************
  *                     MINIMAL INTERPOLANT BASES                      *
@@ -1257,12 +1288,21 @@ DegVec popov_mbasis(
 //   either compute more in the evaluated world and interpolate intbas at the end,
 //   or compute in the polynomial world and evaluate to obtain the residuals
 // (in any case, there will still be interpolation/evaluation in the middle)
+// TODO input pmat = polynomial matrix, not implemented yet
 DegVec pmbasis(
                Mat<zz_pX> & intbas,
                const Mat<zz_pX> & pmat,
                const Vec<zz_p> & pts,
                const Shift & shift
               );
+
+// input pmat = list of evaluations, implemented
+DegVec pmbasis(
+              Mat<zz_pX> & intbas,
+              const Vec<Mat<zz_p>> & evals,
+              const Vec<zz_p> & pts,
+              const Shift & shift
+             );
 
 DegVec popov_pmbasis(
                      Mat<zz_pX> &intbas,
@@ -1543,7 +1583,6 @@ bool determinant_generic_las_vegas(zz_pX & det, const Mat<zz_pX> & pmat);
 // --> could rely on x-Smith decomposition of Gupta et al (worth
 // implementing??), cf Appendix of LaNeZh17 
 // --> no randomized faster approach?
-
 
 #endif // MAT_LZZ_PX_EXTRA__H
 

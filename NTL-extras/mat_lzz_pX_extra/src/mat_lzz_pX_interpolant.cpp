@@ -4,6 +4,7 @@
 #include <cmath>
 #include <algorithm> // for manipulating std::vector (min, max, ..)
 #include <numeric> // for std::iota
+#include <NTL/BasicThreadPool.h>
 
 #include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
@@ -349,6 +350,91 @@ DegVec mbasis(
     }
 
     conv(intbas,intbas_vec);
+    return pivdeg;
+}
+
+DegVec pmbasis(
+              Mat<zz_pX> & intbas,
+              const Vec<Mat<zz_p>> & evals,
+              const Vec<zz_p> & pts,
+              const Shift & shift
+             )
+{
+
+    const long order = pts.length();
+    zz_pContext context;
+    
+    if (order <= 32)
+        return mbasis(intbas, evals, pts, shift);
+
+    DegVec pivdeg; // pivot degree, first call
+    DegVec pivdeg2; // pivot degree, second call
+    DegVec rdeg(evals[0].NumRows()); // shifted row degree
+    long order1 = order>>1; // order of first call
+    long order2 = order-order1; // order of second call
+    Mat<zz_pX> intbas2; // basis for second call
+
+    // first recursive call
+    Vec<zz_p>  pts1;
+    pts1.SetLength(order1);
+    for (long i = 0; i < order1; i++)
+        pts1[i] = pts[i];
+    pivdeg = pmbasis(intbas, evals, pts1, shift);
+
+    // shifted row degree = shift for second call = pivdeg+shift
+    std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
+
+    // get the product of evaluations intbas(x_i) * pmat(x_i)
+    // for the second half of the points
+    Vec<zz_p> pts2;
+    pts2.SetLength(order2);
+    for (long i=0; i<order2; ++i)
+        pts2[i] = pts[order1+i];
+        
+    zz_pX_Multipoint_General ev(pts2);
+    
+    Vec<Mat<zz_p>> evals2;
+    evals2.SetLength(order2);
+    for (long i = 0; i < order2; i++)
+        evals2[i].SetDims(intbas.NumRows(),intbas.NumCols());
+    
+    context.save();  
+
+    // evaluate and store
+NTL_EXEC_RANGE(intbas.NumRows(),first,last)
+    
+    context.restore();    
+    for (long r = first; r < last; r++)
+        for (long c = 0; c < intbas.NumCols(); c++)
+        {
+            Vec<zz_p> val;
+            ev.evaluate(val, intbas[r][c]);
+            for (long i = 0; i < order2; i++)
+                evals2[i][r][c] = val[i];
+            
+        }
+NTL_EXEC_RANGE_END
+
+    context.save();  
+
+    // multiply and store    
+NTL_EXEC_RANGE(order2,first,last)
+    context.restore();    
+    
+    for (long i = first; i < last; i++)
+    {
+        evals2[i] = evals2[i] * evals[order1+i];
+    }
+NTL_EXEC_RANGE_END
+    
+    // second recursive call
+    pivdeg2 = pmbasis(intbas2, evals2, pts2, rdeg);
+    
+    multiply(intbas,intbas2,intbas);
+    
+    // final pivot degree = pivdeg1+pivdeg2
+    std::transform(pivdeg.begin(), pivdeg.end(), pivdeg2.begin(), pivdeg.begin(), std::plus<long>());
+
     return pivdeg;
 }
 

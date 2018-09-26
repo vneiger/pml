@@ -10,6 +10,7 @@
 
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_partial_linearization.h"
 
 NTL_CLIENT
 
@@ -28,8 +29,7 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
 
 int main(int argc, char *argv[])
 {
-    // --> use several threads if big matrix dimensions
-    //SetNumThreads(4);
+    SetNumThreads(4);
 
     bool verify=false;
 
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
             t1w = GetWallTime();
             NTL::GCD(g, a, b);
             t2w = GetWallTime();
-            std::cout << "\t GCD --> " << (t2-t1) << std::endl;
+            std::cout << "\t GCD --> " << (t2w-t1w) << std::endl;
         }
         {
             zz_pX a,b,g,u,v; 
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
             t1w = GetWallTime();
             NTL::XGCD(g, u, v, a, b);
             t2w = GetWallTime();
-            std::cout << "\tXGCD --> " << (t2-t1) << std::endl;
+            std::cout << "\tXGCD --> " << (t2w-t1w) << std::endl;
         }
     }
 
@@ -148,6 +148,46 @@ int main(int argc, char *argv[])
         }
     }
 
+    // pmbasis generic
+    {
+        std::cout << "~~~Testing pmbasis generic~~~" << std::endl;
+        t1w = GetWallTime(); t1 = GetTime();
+        Mat<zz_pX> appbas;
+        pivdeg = pmbasis_generic(appbas,pmat,order,shift);
+        t2w = GetWallTime(); t2 = GetTime();
+
+        std::cout << "Time(pmbasis computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+
+        if (verify)
+        {
+            std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
+            t1w = GetWallTime(); t1 = GetTime();
+            bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
+            t2w = GetWallTime(); t2 = GetTime();
+            std::cout << (verif?"correct":"wrong") << std::endl;
+            std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+
+            if (rdim*cdim*order < 100)
+            {
+                std::cout << "Print output approx basis..." << std::endl;
+                std::cout << appbas << std::endl;
+                std::cout << "Print final residual..." << std::endl;
+                Mat<zz_pX> residual;
+                multiply_naive(residual,appbas,pmat);
+                std::cout << residual << std::endl;
+            }
+
+            if (std::max(rdim,cdim)<33) {
+                Mat<long> degmat;
+                degree_matrix(degmat,appbas,shift,true);
+                std::cout << "Print degree matrix of approx basis..." << std::endl;
+                std::cout << degmat << std::endl;
+            }
+        }
+    }
+    
+
+/*
     // popov_pmbasis
     {
         std::cout << "~~~Testing popov_pmbasis~~~" << std::endl;
@@ -185,7 +225,7 @@ int main(int argc, char *argv[])
             }
         }
     }
-
+*/
     return 0;
 }
 
