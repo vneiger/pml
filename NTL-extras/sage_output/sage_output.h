@@ -58,9 +58,8 @@ void sage_output(const Mat<zz_p> & v);
 /*------------------------------------------------------------*/
 void sage_assign(const Mat<zz_p> & v, const string & name);
 
-
 /*------------------------------------------------------------*/
-/* prints a poly (or vector) with indeterminate var           */
+/* prints a poly (or vector, matrix) with indeterminate "var" */
 /*------------------------------------------------------------*/
 void sage_output(const ZZX & v, const string & var);
 void sage_output(const zz_pX & v, const string & var);
@@ -76,7 +75,7 @@ void sage_output(const Vec<zz_pX> & v);
 void sage_output(const Mat<zz_pX>& a);
 
 /*------------------------------------------------------------*/
-/* assign a poly with indeterminate var to variable "name"    */
+/* assign a poly with indeterminate "var" to variable "name"  */
 /*------------------------------------------------------------*/
 void sage_assign(const ZZX & v, const string & var, const string & name);
 void sage_assign(const zz_pX & v, const string & var, const string & name);

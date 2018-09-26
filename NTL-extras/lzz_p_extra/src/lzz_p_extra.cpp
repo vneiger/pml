@@ -7,7 +7,7 @@ NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /* multiplicative order of a                                  */
-/* -1 if a = 0                                                */
+/* -1 if a is a non-unit                                      */
 /*------------------------------------------------------------*/
 long order(const zz_p& a)
 {
@@ -19,6 +19,10 @@ long order(const zz_p& a)
     zz_p ap = a;
     while (ap != 1)
     {
+        if (o == zz_p::modulus())
+        {
+            return -1;
+        }
         ap *= a;
         o++;
     }

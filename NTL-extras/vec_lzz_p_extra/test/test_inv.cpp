@@ -14,15 +14,16 @@ void check()
 
     for (long i = 0; i < 1000; i += 1)
     {
-        Vec<zz_p> A, invA1, invA2;
+        Vec<zz_p> A, oldA, invA2;
         random_vec_zz_p(A, i);
+        oldA = A;
 
-        inv(invA1, A);
         inv_naive(invA2, A);
+        inv(A, A);
         for (long j = 0; j < i; j++)
         {
-            assert (invA1[j] == invA2[j]);
-            assert (invA1[j] == 1/A[j]);
+            assert (A[j] == invA2[j]);
+            assert (A[j] == 1/oldA[j]);
         }
     }
 }

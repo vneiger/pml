@@ -7,6 +7,7 @@ NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /* a class that does Taylor shift                             */
+/* TODO: check characteristic                                 */
 /*------------------------------------------------------------*/
 class zz_pX_shift 
 {
@@ -24,21 +25,17 @@ public:
 
     /*------------------------------------------------------------*/
     /* g = f(x+c)                                                 */
+    /* output can alias input                                     */
     /*------------------------------------------------------------*/
     void shift(zz_pX& g, const zz_pX& f);
 };
 
 /*------------------------------------------------------------*/
 /* g = f(x+c)                                                 */
+/* output can alias input                                     */
 /* creates and discards a shift object                        */
 /*------------------------------------------------------------*/
 void shift(zz_pX& g, const zz_pX& f, const zz_p& c);
-
-/*------------------------------------------------------------*/
-/* reverse in degree < d                                      */
-/* TODO: replace by NTL's reverse                             */
-/*------------------------------------------------------------*/
-zz_pX rev(const zz_pX& a, long d);
 
 #endif
 

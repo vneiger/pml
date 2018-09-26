@@ -68,7 +68,7 @@ zz_pX_Multipoint_General::zz_pX_Multipoint_General(const Vec<zz_p>& q)
         cofactors[i] = 1/cofactors[i];
     }
 
-    reverse_root = rev(tree[tree.length()-1][0], n+1);
+    reverse_root = reverse(tree[tree.length()-1][0], n);
     inverse_root = InvTrunc(reverse_root, n);
 }
 
@@ -129,7 +129,7 @@ void zz_pX_Multipoint_General::t_evaluate(zz_pX& f, const Vec<zz_p>& val, long o
 {
     zz_pX rev_num, num;
     up_tree(rev_num, tree, val);
-    num = rev(rev_num, n);
+    num = reverse(rev_num, n-1);
     f = MulTrunc(num, inverse_root, n);
 }
 
@@ -139,7 +139,7 @@ void zz_pX_Multipoint_General::t_evaluate(zz_pX& f, const Vec<zz_p>& val, long o
 void zz_pX_Multipoint_General::t_interpolate(Vec<zz_p>& val, const zz_pX& f)
 {
     zz_pX num = MulTrunc(f, reverse_root, n);
-    zz_pX rev_num = rev(num, n);
+    zz_pX rev_num = reverse(num, n-1);
     evaluate(val, rev_num);
 
     for (long i = 0; i < n; i++)

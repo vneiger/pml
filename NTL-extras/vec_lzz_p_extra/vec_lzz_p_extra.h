@@ -11,25 +11,47 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void random_vec_zz_p(Vec<zz_p>& A, long d);
 
+#if ( (NTL_MAJOR_VERSION < 10) || ((NTL_MAJOR_VERSION == 10) && (NTL_MINOR_VERSION < 4)) )
+inline Vec<zz_p> random_vec_zz_p(long n)
+{ 
+    Vec<zz_p> x; 
+    random_vec_zz_p(x, n); 
+    return x;
+}
+#endif
+
 /*------------------------------------------------------------*/
 /* random matrix of size (d,e)                                */
 /*------------------------------------------------------------*/
 void random_mat_zz_p(mat_zz_p& A, long d, long e);
 
+#if ( (NTL_MAJOR_VERSION < 10) || ((NTL_MAJOR_VERSION == 10) && (NTL_MINOR_VERSION < 4)) )
+inline Mat<zz_p> random_mat_zz_p(long d, long e)
+{ 
+    Mat<zz_p> x; 
+    random_mat_zz_p(x, d, e); 
+    return x;
+}
+#endif
+
 /*------------------------------------------------------------*/
-/* inverts every entry in A -- TODO: CHECK 0                  */
+/* inverts every entry in A                                   */
+/* output can alias input                                     */
 /*------------------------------------------------------------*/
 void inv_naive(Vec<zz_p>& invA, const Vec<zz_p>& A);
 
 /*------------------------------------------------------------*/
-/* inverts every entry in A -- TODO: CHECK 0                  */
+/* inverts every entry in A                                   */
+/* output can alias input                                     */
 /*------------------------------------------------------------*/
 void inv(Vec<zz_p>& invA, const Vec<zz_p>& A);
 
-/*------------------------------------------------------------*/
-/* inverts every entry in A -- TODO: CHECK 0                  */
-/*------------------------------------------------------------*/
-void inv(Vec<zz_p>& A);
+inline Vec<zz_p> inv(const Vec<zz_p>& A)
+{
+    Vec<zz_p> x;
+    inv(x, A);
+    return x;
+}
 
 #endif
 

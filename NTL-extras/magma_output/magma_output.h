@@ -30,7 +30,6 @@ void magma_init_X();
 /*------------------------------------------------------------*/
 void magma_init_ZZX();
 
-
 /*------------------------------------------------------------*/
 /* prints a vector                                            */
 /*------------------------------------------------------------*/
@@ -57,9 +56,8 @@ void magma_output(const Mat<zz_p> & v);
 /*------------------------------------------------------------*/
 void magma_assign(const Mat<zz_p> & v, const string & name);
 
-
 /*------------------------------------------------------------*/
-/* prints a poly (or vector, matrix..) with indeterminate var */
+/* prints a poly (or vector, matrix) with indeterminate "var" */
 /*------------------------------------------------------------*/
 void magma_output(const ZZX & v, const string & var);
 void magma_output(const zz_pX & v, const string & var);
@@ -75,7 +73,7 @@ void magma_output(const Vec<zz_pX> & v);
 void magma_output(const Mat<zz_pX>& a);
 
 /*------------------------------------------------------------*/
-/* assign a poly with indeterminate var to variable "name"    */
+/* assign a poly with indeterminate "var" to variable "name"  */
 /*------------------------------------------------------------*/
 void magma_assign(const ZZX & v, const string & var, const string & name);
 void magma_assign(const zz_pX & v, const string & var, const string & name);

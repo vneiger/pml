@@ -28,10 +28,10 @@ zz_pX_shift::zz_pX_shift(const zz_p& c, long d)
 
 /*------------------------------------------------------------*/
 /* g = f(x+c)                                                 */
+/* output can alias input                                     */
 /*------------------------------------------------------------*/
 void zz_pX_shift::shift(zz_pX& g, const zz_pX& f)
 {
-
     zz_pX u, w;
     u.rep.SetLength(d+1);
     for (long i = 0; i < f.rep.length(); i++)
@@ -52,26 +52,12 @@ void zz_pX_shift::shift(zz_pX& g, const zz_pX& f)
 
 /*------------------------------------------------------------*/
 /* g = f(x+c)                                                 */
+/* output can alias input                                     */
 /*------------------------------------------------------------*/
 void shift(zz_pX& g, const zz_pX& f, const zz_p& c)
 {
     zz_pX_shift s(c, deg(f));
     s.shift(g, f);
-}
-
-/*------------------------------------------------------------*/
-/* reverse in degree < d                                      */
-/*------------------------------------------------------------*/
-zz_pX rev(const zz_pX& a, long d)
-{
-    zz_pX rA;
-    if (deg(a) >= d)
-        LogicError("degree too large to reverse");
-    rA.rep.SetLength(d);
-    for (long i = 0; i < d; i++)
-        rA.rep[i] = coeff(a, d - 1 - i);
-    rA.normalize();
-    return rA;
 }
 
 // Local Variables:

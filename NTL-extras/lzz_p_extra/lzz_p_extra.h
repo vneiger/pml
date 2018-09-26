@@ -5,7 +5,7 @@ NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /* multiplicative order of a                                  */
-/* -1 if a = 0                                                */
+/* -1 if a is a non-unit                                      */
 /*------------------------------------------------------------*/
 long order(const zz_p& a);
 
@@ -17,10 +17,23 @@ long order(const zz_p& a);
 /*------------------------------------------------------------*/
 void element_of_order(zz_p& a, long ord, long nb_trials = 100, long strong = 1);
 
+inline zz_p element_of_order(long ord, long nb_trials = 100, long strong = 1)
+{
+    zz_p a;
+    element_of_order(a, ord, nb_trials, strong);
+    return a;
+}
+
 /*------------------------------------------------------------*/
 /* 1 if the current prime can be used as an FFT prime         */
 /*------------------------------------------------------------*/
 long is_FFT_prime();
+
+/*------------------------------------------------------------*/
+/* 1 if the current prime can be used as an FFT prime         */
+/* with transforms of size up to 2^k                          */
+/*------------------------------------------------------------*/
+long is_FFT_ready(long k);
 
 /*------------------------------------------------------------*/
 /* number of bits for "small primes"                          */
@@ -47,12 +60,6 @@ inline long type_of_prime()
     else
         return TYPE_LARGE_PRIME;
 }
-
-/*------------------------------------------------------------*/
-/* 1 if the current prime can be used as an FFT prime         */
-/* with transforms of size up to 2^k                          */
-/*------------------------------------------------------------*/
-long is_FFT_ready(long k);
 
 #endif
 

@@ -1,6 +1,8 @@
 #include <NTL/vec_lzz_p.h>
 #include <NTL/mat_lzz_p.h>
 
+#include "vec_lzz_p_extra.h"
+
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
@@ -31,7 +33,7 @@ void random_mat_zz_p(mat_zz_p& A, long d, long e)
 }
 
 /*------------------------------------------------------------*/
-/* inverts every entry in A -- TODO: CHECK 0                  */
+/* inverts every entry in A                                   */
 /*------------------------------------------------------------*/
 void inv_naive(Vec<zz_p>& invA, const Vec<zz_p>& A)
 {
@@ -43,10 +45,16 @@ void inv_naive(Vec<zz_p>& invA, const Vec<zz_p>& A)
 }
 
 /*------------------------------------------------------------*/
-/* inverts every entry in A -- TODO: CHECK 0                  */
+/* inverts every entry in A                                   */
 /*------------------------------------------------------------*/
 void inv(Vec<zz_p>& invA, const Vec<zz_p>& A)
 {
+    if (&invA == &A)
+    {
+        invA = inv(A);
+        return;
+    }
+        
     long n = A.length();
     Vec<zz_p> tmp;
     tmp.SetLength(n);
@@ -66,19 +74,6 @@ void inv(Vec<zz_p>& invA, const Vec<zz_p>& A)
     }
     invA[0] = aux;
 }
-
-/*------------------------------------------------------------*/
-/* inverts every entry in A -- TODO: CHECK 0                  */
-/*------------------------------------------------------------*/
-
-void inv(Vec<zz_p>& A)
-{
-    Vec<zz_p> tmp = A;
-    inv(A, tmp);
-}
-
-
-
 
 // Local Variables:
 // mode: C++
