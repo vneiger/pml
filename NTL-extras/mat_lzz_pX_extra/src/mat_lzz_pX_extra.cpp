@@ -42,12 +42,11 @@ long IsZero(const Mat<zz_pX> & pmat)
 }
 
 /*------------------------------------------------------------*/
-/* set pmat to be the identity                                */
-/* keeping same dimensions as pmat (assumes pmat is square)   */
+/* set pmat to be the identity of size dim                    */
 /*------------------------------------------------------------*/
-void set(Mat<zz_pX> & pmat)
+void ident(Mat<zz_pX> & pmat, long dim)
 {
-    long dim = pmat.NumRows();
+    pmat.SetDims(dim, dim);
     for (long i = 0; i < dim; ++i)
     {
         for (long j = 0; j < i; ++j)
@@ -59,30 +58,9 @@ void set(Mat<zz_pX> & pmat)
 }
 
 /*------------------------------------------------------------*/
-/* set pmat to be the identity of size dim                    */
-/*------------------------------------------------------------*/
-void set(Mat<zz_pX> & pmat, long dim)
-{
-    pmat.SetDims(dim, dim);
-    set(pmat);
-}
-
-/*------------------------------------------------------------*/
-/* return identity matrix of size dim                         */
-/*------------------------------------------------------------*/
-Mat<zz_pX> identity(long dim)
-{
-    Mat<zz_pX> pmat;
-    pmat.SetDims(dim,dim);
-    for (long i = 0; i < dim; ++i)
-        set(pmat[i][i]);
-    return pmat;
-}
-
-/*------------------------------------------------------------*/
 /* tests whether pmat is the identity matrix                  */
 /*------------------------------------------------------------*/
-long IsIdentity(const Mat<zz_pX> & pmat)
+long IsIdent(const Mat<zz_pX> & pmat)
 {
     if (pmat.NumRows() != pmat.NumCols())
         return 0;
@@ -97,6 +75,26 @@ long IsIdentity(const Mat<zz_pX> & pmat)
         }
     return 1;
 }
+
+/*------------------------------------------------------------*/
+/* tests whether pmat is the identity matrix of size 'dim'    */
+/*------------------------------------------------------------*/
+long IsIdent(const Mat<zz_pX> & pmat, long dim)
+{
+   if (pmat.NumRows() != dim || pmat.NumCols() != dim)
+      return 0;
+
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        for (long j = 0; j < pmat.NumCols(); ++j)
+        {
+            if (i == j && ! IsOne(pmat[i][j]))
+                return 0;
+            if (i != j && ! IsZero(pmat[i][j]))
+                return 0;
+        }
+    return 1;
+}
+
 
 /*------------------------------------------------------------*/
 /* evaluate at a given point                                  */

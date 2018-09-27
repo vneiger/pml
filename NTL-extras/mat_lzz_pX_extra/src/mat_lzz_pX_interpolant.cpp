@@ -74,7 +74,7 @@ bool is_interpolant_basis(
 //	long cdim = pmat.NumCols();
 //
 //	// initial approximant basis: identity of dimensions 'rdim x rdim'
-//	set(intbas,rdim);
+//	ident(intbas,rdim);
 //
 //	// initial residual: the whole input matrix
 //	Mat<zz_pX> residual( pmat );
@@ -213,10 +213,6 @@ bool is_interpolant_basis(
 //	return pivdeg;
 //}
 
-// code inspired from mbasis_vector (input+output are Vec<Mat<zz_p>>)
-// TODO WARNING this code does not work in all cases currently!!!
-// --> could simply add degree stuff so that it reserves more memory for
-// intbas_vec in case degree is more than expected
 DegVec mbasis(
               Mat<zz_pX> & intbas,
               const Vec<Mat<zz_p>> & evals,
@@ -225,23 +221,19 @@ DegVec mbasis(
              )
 {
     long nrows = evals[0].NumRows();
-    // TODO FIXME expected degree in non-shifted case --> assuming generic and shift==0...
-    // ceiling of nbcols * nbpoints / nbrows
-    long expected_degree = 1 + (evals[0].NumCols()*pts.length() - 1)/nrows;
-    Vec<Mat<zz_p>> intbas_vec;
-    intbas_vec.SetLength(expected_degree+1);
-    for (long d = 0; d < expected_degree+1; ++d)
-        intbas_vec[d].SetDims(nrows,nrows);
-    // initially, intbas_vec is the identity matrix
-    long current_degree = 0;
-    for (long i = 0; i < nrows; ++i)
-        intbas_vec[0].put(i,i,zz_p(1));
 
-    // holds the current shifted row degree of intbas_vec
+    // interpolation basis represented as a vector (polynomial) of constant matrices
+    Vec<Mat<zz_p>> coeffs_intbas;
+
+    // initially, intbas is the identity matrix
+    coeffs_intbas.SetLength(1);
+    ident(coeffs_intbas[0], nrows);
+
+    // holds the current shifted row degree of coeffs_intbas
     // initially, this is exactly shift
-    DegVec rdeg( shift );
+    DegVec rdeg(shift);
 
-    // holds the current pivot degree of intbas_vec
+    // holds the current pivot degree of coeffs_intbas
     // initially tuple of zeroes
     // (note that at all times pivdeg+shift = rdeg entrywise)
     DegVec pivdeg(nrows);
@@ -258,7 +250,7 @@ DegVec mbasis(
 
     // declare matrices
     Mat<zz_p> res_coeff; // will store coefficient matrices used to compute the residual
-    Mat<zz_p> kerapp; // will store constant-kernel * intbas_vec[d]
+    Mat<zz_p> kerapp; // will store constant-kernel * coeffs_intbas[d]
 
     for (long pt = 1; pt <= pts.length(); ++pt)
     {
@@ -268,16 +260,22 @@ DegVec mbasis(
         if (kerbas.NumRows()==0)
         {
             // the basis is simply multiplied by X-pt
-            ++current_degree;
-            intbas_vec[current_degree] = intbas_vec[current_degree-1];
-            for (long d = current_degree-1; d > 0; --d)
+            // new degree is old degree + 1, that is, the length
+            long d = coeffs_intbas.length();
+            coeffs_intbas.SetLength(d+1);
+            if (d>0)
+                coeffs_intbas[d] = coeffs_intbas[d-1];
+            --d;
+            for (; d > 0; --d)
             {
-                intbas_vec[d] *= -pts[pt-1];
-                intbas_vec[d] += intbas_vec[d-1];
+                coeffs_intbas[d] *= -pts[pt-1];
+                coeffs_intbas[d] += coeffs_intbas[d-1];
             }
-            intbas_vec[0] *= -pts[pt-1];
+            coeffs_intbas[0] *= -pts[pt-1];
             // update pivdeg accordingly
             std::for_each(pivdeg.begin(), pivdeg.end(), [](long& a) { ++a; });
+
+            // TODO what about residual??
         }
 
         // kerbas.NumRows()==residual.NumRows() --> interpolant basis is already
@@ -290,66 +288,68 @@ DegVec mbasis(
             std::transform(rdeg.begin(), rdeg.end(), diff_pivdeg.begin(), rdeg.begin(), std::plus<long>());
             // new pivot degree = old pivot_degree + diff_pivdeg
             std::transform(pivdeg.begin(), pivdeg.end(), diff_pivdeg.begin(), pivdeg.begin(), std::plus<long>());
-            // deduce degree of intbas_vec; note that it is a property of this algorithm
-            // that deg(intbas_vec) = max(pivot degree) (i.e. max(degree of diagonal
+            // deduce degree of coeffs_intbas; note that it is a property of this algorithm
+            // that deg(coeffs_intbas) = max(pivot degree) (i.e. max(degree of diagonal
             // entries); this does not hold in general for ordered weak Popov forms
-            long deg_intbas_vec = *std::max_element(pivdeg.begin(), pivdeg.end());
-
-            if (deg_intbas_vec > expected_degree) {
-                std::cout << "~~mbasis-variant not implemented yet, currently assuming generic evals and uniform shift" << std::endl;
-                throw;
-            }
+            long deg_coeffs_intbas = *std::max_element(pivdeg.begin(), pivdeg.end());
 
             // II/ update approximant basis
 
-            // submatrix of rows with diff_pivdeg==0 is replaced by kerbas*intbas_vec
+            // submatrix of rows with diff_pivdeg==0 is replaced by kerbas*coeffs_intbas
             // while rows with diff_pivdeg=1 are multiplied by X-pt
             // --> the loop goes downwards, so that we can do both in the same iteration
             long row;
+            long d = deg_coeffs_intbas;
             // separate treatment of highest degree terms, if degree has increased
-            if (deg_intbas_vec>current_degree)
+            if (d>=coeffs_intbas.length()) // then, it is equal
+            {
+                coeffs_intbas.SetLength(d+1); // increases length by 1
+                coeffs_intbas[d].SetDims(nrows,nrows);
                 for (long i = 0; i < nrows; ++i)
                     if (diff_pivdeg[i]==1)
-                        intbas_vec[deg_intbas_vec][i] = intbas_vec[deg_intbas_vec-1][i];
+                        coeffs_intbas[d][i] = coeffs_intbas[d-1][i];
+                --d;
+            }
+
             // normal treatment of other terms
-            for (long d = current_degree; d >= 0; --d)
+            for (; d >= 0; --d)
             {
-                mul(kerapp,kerbas,intbas_vec[d]);
+                mul(kerapp,kerbas,coeffs_intbas[d]);
                 row=0;
                 for (long i = 0; i < nrows; ++i)
                 {
                     if (diff_pivdeg[i]==0)
                     {
-                        intbas_vec[d][i] = kerapp[row];
+                        coeffs_intbas[d][i] = kerapp[row];
                         ++row;
                     }
                     else  // diff_pivdeg[i]==1 --> multiply by X-pt
                     {
-                        intbas_vec[d][i] *= -pts[pt-1];
+                        coeffs_intbas[d][i] *= -pts[pt-1];
                         if (d>0)
-                            intbas_vec[d][i] += intbas_vec[d-1][i];
+                            coeffs_intbas[d][i] += coeffs_intbas[d-1][i];
                     }
                 }
             }
 
             // III/ compute next residual, if needed
-            // it is intbas_vec(pts[pt]) * evals[pt]
+            // it is coeffs_intbas(pts[pt]) * evals[pt]
             // evaluate with Horner method
             if (pt<pts.length())
             {
-                intbas_eval = intbas_vec[deg_intbas_vec];
-                for (long d = deg_intbas_vec-1; d >= 0; --d)
+                intbas_eval = coeffs_intbas[deg_coeffs_intbas];
+                d = deg_coeffs_intbas-1;
+                for (; d >= 0; --d)
                 {
                     intbas_eval = pts[pt] * intbas_eval;
-                    add(intbas_eval, intbas_eval, intbas_vec[d]);
+                    add(intbas_eval, intbas_eval, coeffs_intbas[d]);
                 }
                 mul(residual,intbas_eval,evals[pt]);
             }
-            current_degree = deg_intbas_vec;
         }
     }
 
-    conv(intbas,intbas_vec);
+    conv(intbas,coeffs_intbas);
     return pivdeg;
 }
 
