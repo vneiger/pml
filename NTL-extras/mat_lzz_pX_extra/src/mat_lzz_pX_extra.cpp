@@ -1260,33 +1260,6 @@ bool is_popov (const Mat<zz_pX> &pmat,
     return true;
 }
 
-/*
-  void weak_popov_form(Mat<zz_pX> &wpf, const Mat<zz_pX> &pmat, const std::vector<long> &shift){
-  wpf = pmat;
-  m = wpf.NumRows();
-  n = wpf.NumCols();
-  trans = identity(m);
-
-// populate shift with zeros if empty
-if (shift.length() == 0){ 
-for (long i = 0; i < n; i++)
-shift.emplace_back(0);
-}
-
-// pivots[i] = shift-pivot index of the row i of wpf
-// degrees = shift-row degree of wpf
-std::vector<long> pivots;
-std::vector<long> degrees;
-pivot_index(pivots,degress,wpf,shift,true);
-
-// rows_with_pivot[p] = indices of the rows that have pivot index p
-std::vector<std::vector<long>> rows_with_pivot(n, std::vector<long>());
-for (long i = 0; i < n; i++)
-rows_with_pivot[pivots[i]].emplace_back(i);
-}
-*/
-
-
 
 
 PolMatForm get_polmatform(
