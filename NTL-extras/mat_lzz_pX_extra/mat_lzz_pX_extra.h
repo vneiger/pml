@@ -60,18 +60,27 @@ long IsZero(const Mat<zz_pX> & pmat);
 /* set pmat to be the identity                                */
 /* (same size, assuming square / size dim)                    */
 /*------------------------------------------------------------*/
-void set(Mat<zz_pX> & pmat);
-void set(Mat<zz_pX> & pmat, long dim);
+void ident(Mat<zz_pX> & pmat, long dim);
 
 /*------------------------------------------------------------*/
 /* return the identity matrix of size dim                     */
 /*------------------------------------------------------------*/
-Mat<zz_pX> identity(long dim);
+inline Mat<zz_pX> ident_mat_zz_pX(long dim)
+{
+    Mat<zz_pX> pmat;
+    ident(pmat, dim);
+    return pmat;
+}
 
 /*------------------------------------------------------------*/
 /* tests whether pmat is the identity matrix                  */
 /*------------------------------------------------------------*/
-long IsIdentity(const Mat<zz_pX> & pmat);
+long IsIdent(const Mat<zz_pX> & pmat);
+
+/*------------------------------------------------------------*/
+/* tests whether pmat is the identity matrix of size 'dim'    */
+/*------------------------------------------------------------*/
+long IsIdent(const Mat<zz_pX> & pmat, long dim);
 
 /*------------------------------------------------------------*/
 /* maximum degree of the entries of pmat                      */

@@ -160,7 +160,7 @@ DegVec appbas_iterative(
     long cdim = pmat.NumCols();
 
     // initial approximant basis: identity of dimensions 'rdim x rdim'
-    set(appbas,rdim);
+    ident(appbas,rdim);
 
     // initial residual: the whole input matrix
     Mat<zz_pX> residual( pmat );
@@ -423,7 +423,7 @@ DegVec mbasis(
              )
 {
     // initially, appbas is the identity matrix
-    set(appbas,pmat.NumRows());
+    ident(appbas,pmat.NumRows());
 
     // holds the current shifted row degree of appbas
     // initially, this is exactly shift
@@ -536,7 +536,7 @@ DegVec mbasis_vector(
 
     // initially, coeffs_appbas is the identity matrix
     coeffs_appbas.SetLength(1);
-    coeffs_appbas[0] = ident_mat_zz_p(nrows);
+    ident(coeffs_appbas[0], nrows);
 
     // holds the current shifted row degree of coeffs_appbas
     // initially, this is exactly shift
@@ -553,7 +553,7 @@ DegVec mbasis_vector(
     // matrix to store the kernels in mbasis1 calls
     Mat<zz_p> kerbas;
     // matrix to store residuals, initially constant coeff of coeffs_pmat
-    Mat<zz_p> residual( coeffs_pmat[0] );
+    Mat<zz_p> residual(coeffs_pmat[0]);
 
     // declare matrices
     Mat<zz_p> res_coeff,res_coeff1,res_coeff2; // will store coefficient matrices used to compute the residual
@@ -645,7 +645,7 @@ DegVec mbasis_resupdate(
                        )
 {
     // initially, appbas is the identity matrix
-    set(appbas,pmat.NumRows());
+    ident(appbas,pmat.NumRows());
 
     // holds the current shifted row degree of appbas
     // initially, this is exactly shift
@@ -972,7 +972,7 @@ DegVec mbasis_generic(
     }
 
     // finally insert identity for the largest degree coefficient
-    coeffs_appbas[order/nrows] = ident_mat_zz_p(nrows);
+    ident(coeffs_appbas[order/nrows], nrows);
     // and convert to polynomial matrix format
     appbas = conv(coeffs_appbas);
 
