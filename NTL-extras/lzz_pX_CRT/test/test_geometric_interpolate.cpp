@@ -17,12 +17,13 @@ void check(long p)
 
     for (long j = 1; j < 500; j++)
     {
-        zz_p a;
+        zz_p a, b;
         zz_pX f, g;
         zz_pX_Multipoint_Geometric ev;
         Vec<zz_p> val;
 
         a = random_zz_p();
+        b = random_zz_p();
         f = random_zz_pX(j);
 
         ev = zz_pX_Multipoint_Geometric(a, j);
@@ -48,6 +49,32 @@ void check(long p)
             cerr << "error for geometric interpolate at j=" << j << endl;
             exit(-1);
         }
+
+        ev = zz_pX_Multipoint_Geometric(a, b, j);
+        ev.set_FFT_evaluate();
+        ev.set_FFT_interpolate();
+        ev.evaluate(val, f);
+        ev.interpolate(g, val);
+
+        if (g != f) 
+        {
+            cerr << "error for geometric interpolate at j=" << j << endl;
+            exit(-1);
+        }
+
+        ev = zz_pX_Multipoint_Geometric(a, b, j);
+        ev.unset_FFT_evaluate();
+        ev.unset_FFT_interpolate();
+        ev.evaluate(val, f);
+        ev.interpolate(g, val);
+
+        if (g != f) 
+        {
+            cerr << "error for geometric interpolate at j=" << j << endl;
+            exit(-1);
+        }
+
+
     }
 }  
 

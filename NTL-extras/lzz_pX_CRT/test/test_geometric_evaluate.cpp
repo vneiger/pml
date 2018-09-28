@@ -21,10 +21,63 @@ void check(long p)
         zz_pX_Multipoint_General evG;
         zz_pX_Multipoint_Geometric ev;
         Vec<zz_p> q, val1, val2, valG;
-        zz_p a;
+        zz_p a, b;
 
         a = random_zz_p();
+        b = random_zz_p();
         q.SetLength(j);
+
+        // with b=random
+        for (long i = 0; i < j; i++)
+        {
+            q[i] = b * power(a, 2*i);
+        }
+
+        evG = zz_pX_Multipoint_General(q);
+        ev = zz_pX_Multipoint_Geometric(a, b, j);
+
+        f = random_zz_pX(j);     
+
+        evG.evaluate(valG, f);
+        ev.set_FFT_evaluate();
+        ev.evaluate(val1, f);
+        ev.unset_FFT_evaluate();
+        ev.evaluate(val2, f);
+
+        if (valG != val1 || valG != val2) 
+        {
+            cerr << "error for j=" << j << endl;
+            exit (-1);
+        }
+
+        f = random_zz_pX(j / 2);
+        evG.evaluate(valG, f);
+
+        ev.set_FFT_evaluate();
+        ev.evaluate(val1, f);
+        ev.unset_FFT_evaluate();
+        ev.evaluate(val2, f);
+
+        if (valG != val1 || valG != val2) 
+        {
+            cerr << "error for j=" << j << endl;
+            exit (-1);
+        }
+
+        ev.prepare_degree((j / 2) - 1);
+        ev.set_FFT_evaluate();
+        ev.evaluate(val1, f);
+        ev.unset_FFT_evaluate();
+        ev.evaluate(val2, f);
+
+        if (valG != val1 || valG != val2) 
+        {
+            cerr << "error for j=" << j << endl;
+            exit (-1);
+        }
+
+
+        // with b=1
         for (long i = 0; i < j; i++)
         {
             q[i] = power(a, 2*i);

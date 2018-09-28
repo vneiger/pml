@@ -75,6 +75,7 @@ void check(long p, long sz, long deg)
 
     cout << p << " " << sz << " " << deg << endl;
     cout << t_eval << " " << t_3primes << " " << t_waksman << " " << t_check << endl;
+
 }
 
 
@@ -101,8 +102,8 @@ int main(int argc, char ** argv)
 
     warmup();
     check(0, sz, deg);
-    // check(23068673, sz, deg);
-    // check(288230376151711813, sz, deg);
+    check(23068673, sz, deg);
+    check(288230376151711813, sz, deg);
     return 0;
 }
 

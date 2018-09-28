@@ -89,8 +89,16 @@ void zz_pX_Multipoint_Geometric::prepare_degree(long d)
 /* constructor for geometric progressions                     */
 /* we interpolate at r^(2*i), i=0..d-1                        */
 /*------------------------------------------------------------*/
-zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, long d){
+zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, long d) :
+    zz_pX_Multipoint_Geometric(r, to_zz_p(1), d)
+{ }
 
+/*------------------------------------------------------------*/
+/* constructor for geometric progressions                     */
+/* we interpolate at s*r^(2*i), i=0..d-1                      */
+/*------------------------------------------------------------*/
+zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, const zz_p& s, long d)
+{
     n = d;
     idx_k = NextPowerOfTwo(2*d - 1);
 
@@ -117,23 +125,32 @@ zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, long d){
 
     // array for evaluate
     x.SetLength(d);
+    xs.SetLength(d);
+    zz_p pow_s = s;
     x[0] = to_zz_p(1);
+    xs[0] = to_zz_p(1);
     tmp = inv_r;
     for (long i = 1; i < d; i++)
     {
         x[i] = x[i-1] * tmp;
+        xs[i] = x[i] * pow_s;
         tmp *= inv_q;
+        pow_s *= s;
     }
 
     w.SetLength(d);
+    ws.SetLength(d);
     y.SetLength(d);
     z.SetLength(d);
+    zs.SetLength(d);
 
     SetCoeff(g1, 0, 1);
     SetCoeff(g2, 0, 1);
     y[0] = 1;
     w[0] = 1;
+    ws[0] = 1;
     z[0] = 1;
+    zs[0] = 1;
 
     inv_q = 1/q;
 
@@ -168,12 +185,17 @@ zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, long d){
     qk = 1;
     zz_p inv_qk = to_zz_p(1);
     zz_p qq = to_zz_p(1);
-    zz_p s = to_zz_p(1);
+    zz_p t = to_zz_p(1);
+
+    zz_p invs = 1/s;
+    zz_p pow_invs = invs;
+
     for (long i = 1; i < d; i++)
     {
         qq *= qk;   // prod q^i
-        s *= inv_qk; // prod 1/q^i
+        t *= inv_qk; // prod 1/q^i
         w[i] = w[i-1] * inv_diff[i]; // prod 1/(q^i-1)
+        ws[i] = w[i] * pow_invs;
         tmp = qq * w[i]; // prod q^i/(q^i-1)
         SetCoeff(g2, i, tmp);
 
@@ -182,17 +204,20 @@ zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, long d){
             SetCoeff(g1, i, -tmp);
             y[i] = -prod_diff[i];
             z[i] = -w[i];
+            zs[i] = -ws[i];
         }
         else
         {
             SetCoeff(g1, i, tmp);
             y[i] = prod_diff[i];
             z[i] = w[i];
+            zs[i] = ws[i];
         }
-        y[i] = y[i] * s;
+        y[i] = y[i] * t;
 
         qk *= q;
         inv_qk *= inv_q;
+        pow_invs *= invs;
     }
 
     // do it as soon as feasible, whether do_FFT_xxx is set or not
@@ -205,6 +230,8 @@ zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, long d){
         TofftRep(g2_fft, g2, idx_k);
     }
 }
+
+
 
 /*------------------------------------------------------------*/
 /* return the ratio q = r^2                                   */
@@ -219,6 +246,16 @@ zz_p zz_pX_Multipoint_Geometric::get_q()
     return q;
 }
 
+/*------------------------------------------------------------*/
+/* return s (points are s*r^(2i))                             */
+/*------------------------------------------------------------*/
+zz_p zz_pX_Multipoint_Geometric::get_s()
+{
+    if (n == 1)
+        return to_zz_p(1);
+    else
+        return xs[1] / x[1];
+}
 
 /*-----------------------------------------------------------*/
 /* val[i] = P(r^(2*i)), i = 0..n-1                           */
@@ -263,7 +300,7 @@ void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const{
 
     for (long i = 0; i <= dp; i++)  
     {
-        SetCoeff(a, dp - i, x[i] * coeff(P, i));  
+        SetCoeff(a, dp - i, xs[i] * coeff(P, i));  
     }
 
     if (FFT_feasible && do_FFT_evaluate)
@@ -360,7 +397,7 @@ void zz_pX_Multipoint_Geometric::interpolate(zz_pX& f, const Vec<zz_p>& val) {
 
     for (long i = 0; i < n; i++)
     {
-        SetCoeff(f, i, coeff(h, n - 1 - i) * z[i]);
+        SetCoeff(f, i, coeff(h, n - 1 - i) * zs[i]);
     }
 
     f.normalize();
@@ -390,13 +427,9 @@ void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long
         return;
     }
 
-    zz_pX Q;
-    for (long i = 0; i < n; i++)
-        SetCoeff(Q, i, val[i]);
-
     zz_pX a;
     for (long i = 0; i < n; i++)  
-        SetCoeff(a, n - 1 - i, x[i] * coeff(Q, i));  
+        SetCoeff(a, n - 1 - i, x[i] * val[i]);  
 
     zz_pX b;
     if (FFT_feasible && do_FFT_evaluate)
@@ -430,7 +463,7 @@ void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long
     }
 
     for (long i = 0; i < output_size; i++)
-        SetCoeff(P, i, x[i] * coeff(b, i));
+        SetCoeff(P, i, xs[i] * coeff(b, i));
 
 }
 
@@ -454,18 +487,50 @@ void zz_pX_Multipoint_Geometric::t_interpolate(Vec<zz_p>& val, const zz_pX& P) {
         return;
     }
 
-    Vec<zz_p> coeffs;
-    coeffs.SetLength(n);
+    zz_pX k, h;
 
     for (long i = 0; i < n; i++)
-        coeffs[i] = coeff(P, i);
+    {
+        SetCoeff(k, i, coeff(P, i) * ws[i]);
+    }
 
-    zz_pX Q;
-    interpolate(Q, coeffs);
+    if (FFT_feasible && do_FFT_interpolate)
+    {
+        fftRep k_fft, h_fft;
+        k_fft = fftRep(INIT_SIZE, idx_k);
+        h_fft = fftRep(INIT_SIZE, idx_k);
+        TofftRep(k_fft, k, idx_k);
+        mul(h_fft, k_fft, g1_fft);
+        FromfftRep(h, h_fft, 0, n-1);
+    }
+    else
+    {
+        h = MulTrunc(k, g1, n);
+    }
 
     for (long i = 0; i < n; i++)
-        val[i] = coeff(Q, i);
+    {
+        SetCoeff(k, n - 1 - i, coeff(h, i) * y[i]);
+    }
 
+    if (FFT_feasible && do_FFT_interpolate)
+    {
+        fftRep k_fft, h_fft;
+        k_fft = fftRep(INIT_SIZE, idx_k);
+        h_fft = fftRep(INIT_SIZE, idx_k);
+        TofftRep(k_fft, k, idx_k);
+        mul(h_fft, k_fft, g2_fft);
+        FromfftRep(h, h_fft, 0, n-1);
+    }
+    else
+    {
+        h = MulTrunc(k, g2, n);
+    }
+
+    for (long i = 0; i < n; i++)
+    {
+        val[i] = coeff(h, n - 1 - i) * z[i];
+    }
 }
 
 /*------------------------------------------------------------*/

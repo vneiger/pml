@@ -133,7 +133,13 @@ public:
     /* constructor for geometric progressions                     */
     /* we interpolate at r^(2*i), i=0..d-1                        */
     /*------------------------------------------------------------*/
-    zz_pX_Multipoint_Geometric(const zz_p& a, long d);
+    zz_pX_Multipoint_Geometric(const zz_p& r, long d);
+
+    /*------------------------------------------------------------*/
+    /* constructor for geometric progressions                     */
+    /* we interpolate at s * r^(2*i), i=0..d-1                    */
+    /*------------------------------------------------------------*/
+    zz_pX_Multipoint_Geometric(const zz_p& r, const zz_p& s, long d);
 
     /*------------------------------------------------------------*/
     /* basic operations                                           */
@@ -170,11 +176,16 @@ public:
     /*------------------------------------------------------------*/
     zz_p get_q();
 
+    /*------------------------------------------------------------*/
+    /* return s (points are s*r^(2i))                             */
+    /*------------------------------------------------------------*/
+    zz_p get_s();
+
 
 private:  
 
     long idx_k, FFT_feasible, do_FFT_evaluate, do_FFT_interpolate;
-    Vec<zz_p> x, t, w, y, z;
+    Vec<zz_p> x, xs, t, w, ws, y, z, zs;
     zz_pX f, g1, g2;
     fftRep g1_fft, g2_fft;  
     map<int, fftRep> known_degrees;
