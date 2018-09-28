@@ -1,34 +1,97 @@
 #ifndef __LZZ_PX_EXTRA__H
 #define __LZZ_PX_EXTRA__H
 
+#include <memory>
 #include <NTL/lzz_pX.h>
 
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* a class that does Taylor shift                             */
-/* TODO: check characteristic                                 */
 /*------------------------------------------------------------*/
-class zz_pX_shift 
+/* an abstract class that does Taylor shift                   */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class zz_pX_shift
 {
-private:
-    Vec<zz_p> fact, ifact;
-    zz_pX v;
-    long d;
-
-public:  
-    /*------------------------------------------------------------*/
-    /* constructor inits a few arrays                             */
-    /* d is an upper bound on the degrees of the inputs           */
-    /*------------------------------------------------------------*/
-    zz_pX_shift(const zz_p& c, long d);
+public:
+    virtual ~zz_pX_shift(){}
 
     /*------------------------------------------------------------*/
     /* g = f(x+c)                                                 */
     /* output can alias input                                     */
     /*------------------------------------------------------------*/
-    void shift(zz_pX& g, const zz_pX& f);
+    virtual void shift(zz_pX& g, const zz_pX& f) const = 0;
+
+protected:
+    long d;
 };
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* a class that does Taylor shift                             */
+/* no assumption on the base ring, DAC algorithm              */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class zz_pX_shift_DAC : public zz_pX_shift
+{
+public:  
+    /*------------------------------------------------------------*/
+    /* constructor inits a few arrays                             */
+    /* d is a (nonstrict) upper bound on the input degree         */
+    /*------------------------------------------------------------*/
+    zz_pX_shift_DAC(long d, const zz_p& c);
+    zz_pX_shift_DAC()
+    {
+        d = -1;
+    }
+
+    /*------------------------------------------------------------*/
+    /* g = f(x+c)                                                 */
+    /* output can alias input                                     */
+    /*------------------------------------------------------------*/
+    void shift(zz_pX& g, const zz_pX& f) const;
+
+private:
+    Vec<zz_pX> precomp;
+    zz_p c, cc, c3;
+};
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* a class that does Taylor shift                             */
+/* requires 1,...,d units mod p                               */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class zz_pX_shift_large_characteristic : public zz_pX_shift
+{
+public:  
+    /*------------------------------------------------------------*/
+    /* constructor inits a few arrays                             */
+    /* d is a (nonstrict) upper bound on the input degree         */
+    /*------------------------------------------------------------*/
+    zz_pX_shift_large_characteristic(long d, const zz_p& c);
+    zz_pX_shift_large_characteristic()
+    {
+        d = -1;
+    }
+
+    /*------------------------------------------------------------*/
+    /* g = f(x+c)                                                 */
+    /* output can alias input                                     */
+    /*------------------------------------------------------------*/
+    void shift(zz_pX& g, const zz_pX& f) const;
+
+private:
+    Vec<zz_p> fact, ifact;
+    zz_pX v;
+};
+
+/*------------------------------------------------------------*/
+/* returns a zz_pX_shift of the right type                    */
+/*------------------------------------------------------------*/
+std::unique_ptr<zz_pX_shift> get_shift(long d, const zz_p& c);
 
 /*------------------------------------------------------------*/
 /* g = f(x+c)                                                 */
@@ -36,6 +99,13 @@ public:
 /* creates and discards a shift object                        */
 /*------------------------------------------------------------*/
 void shift(zz_pX& g, const zz_pX& f, const zz_p& c);
+
+inline zz_pX shift(const zz_pX& f, const zz_p& c)
+{
+    zz_pX g;
+    shift(g, f, c);
+    return g;
+}
 
 #endif
 

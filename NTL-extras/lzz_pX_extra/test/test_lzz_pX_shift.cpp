@@ -18,27 +18,42 @@ void check(long p)
     for (long i = 1; i < 500; i++)
     {
         zz_pX a, b, d;
-        zz_p c = random_zz_p();
-        zz_pX_shift s(c, i);
+        zz_p c, e, u, v;
+        zz_pX_shift_DAC sDac;
+        zz_pX_shift_large_characteristic sLarge;
+        std::unique_ptr<zz_pX_shift> sPtr;
+
         a = random_zz_pX(i);
-        s.shift(b, a);
-        shift(d, a, c);
-
-        if (b != d)
-        {
-            cerr << "Shift inconsistent for i=" << i << endl;
-            exit(-1);
-        }
-
-        zz_p e = random_zz_p();
-        zz_p u, v;
-        u = eval(b, e);
+        c = random_zz_p();
+        e = random_zz_p();
         v = eval(a, e+c);
+
+        sDac = zz_pX_shift_DAC(i-1, c);
+        sDac.shift(b, a);
+        u = eval(b, e);
         if (u != v)
+            LogicError("Error in DAC shift");
+
+        if (p == 0 || p > i)
         {
-            cerr << "Shift error for i=" << i << endl;
-            exit(-1);
+            sLarge = zz_pX_shift_large_characteristic(i-1, c);
+            sLarge.shift(b, a);
+            u = eval(b, e);
+            if (u != v)
+                LogicError("Error in large shift");
         }
+
+        sPtr = get_shift(i-1, c);
+        sPtr->shift(b, a);
+        u = eval(b, e);
+        if (u != v)
+            LogicError("Error in ptr shift");
+
+        b = shift(a, c);
+        u = eval(b, e);
+        if (u != v)
+            LogicError("Error in procedural shift");
+
     }
 }
 
@@ -47,14 +62,9 @@ void check(long p)
 /*------------------------------------------------------------*/
 int main(int argc, char** argv)
 {
-    long p0 = 0;
-    long p1 = 23068673;
-    long p2 = 288230376151711813;
-
-    check(p0);
-    check(p1);
-    check(p2);
-
+    check(0);
+    check(23068673);
+    check(2);
     return 0;
 }
 

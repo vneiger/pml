@@ -159,6 +159,7 @@ void tKarMul_aux(zz_p *b, const long sb, const zz_p *a, const long sa, const zz_
 /*------------------------------------------------------------*/
 /* middle product via FFT                                     */
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
+/* output can alias input                                     */
 /*------------------------------------------------------------*/
 void middle_FFT(zz_pX& x, const zz_pX& a, const zz_pX& c, long dA, long dB)
 {
@@ -173,6 +174,7 @@ void middle_FFT(zz_pX& x, const zz_pX& a, const zz_pX& c, long dA, long dB)
 /*------------------------------------------------------------*/
 /* middle product of (a,c)                                    */
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
+/* output can alias input                                     */
 /*------------------------------------------------------------*/
 void middle_product(zz_pX& b, const zz_pX& a, const zz_pX& c, long dA, long dB)
 {
