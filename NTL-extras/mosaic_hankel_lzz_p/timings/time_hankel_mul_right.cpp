@@ -5,6 +5,7 @@
 #include "util.h"
 #include "vec_lzz_p_extra.h"
 #include "mosaic_hankel_lzz_p.h"
+#include "lzz_pX_middle_product.h"
 
 NTL_CLIENT
 
@@ -23,18 +24,86 @@ void check(long p)
     cout << p << endl;
     for (long i = 1; i < 200; i += 10)
     {
+        zz_pX a, b, c, d;
         Vec<zz_p> dat;
         hankel_lzz_p h;
         Mat<zz_p> M, inputM, outputM, output2M;
         double t;
         long nb;
-        
 
         dat = random_vec_zz_p(i+i-1);
         h = hankel_lzz_p(dat, i, i);
         M = h.to_dense();
+        a = random_zz_pX(i);
+        b = random_zz_pX(i);
+
+        cout << i << " ";
+
+        inputM = random_mat_zz_p(i, 1);
+
+        // poly mult
+        t = get_time();
+        nb = 0;
+        do
+        {
+            c = a * b;
+            nb++;
+        }
+        while ((get_time()-t) <= thresh);
+        t = (get_time()-t) / nb;
+        cout << t << " ";
+
+        // middle product
+        t = get_time();
+        nb = 0;
+        do
+        {
+            d = middle_product(a, c, i);
+            nb++;
+        }
+        while ((get_time()-t) <= thresh);
+        t = (get_time()-t) / nb;
+        cout << t << " ";
+
+        // create dense matrix
+        t = get_time();
+        nb = 0;
+        do
+        {
+            M = h.to_dense();
+            nb++;
+        }
+        while ((get_time()-t) <= thresh);
+        t = (get_time()-t) / nb;
+        cout << t << " ";
+
+        // hankel vector product
+        t = get_time();
+        nb = 0;
+        do
+        {
+            outputM = h.mul_right(inputM);            
+            nb++;
+        }
+        while ((get_time()-t) <= thresh);
+        t = (get_time()-t) / nb;
+        cout << t << " ";
+
+        // dense vector product
+        t = get_time();
+        nb = 0;
+        do
+        {
+            output2M = M*inputM;
+            nb++;
+        }
+        while ((get_time()-t) <= thresh);
+        t = (get_time()-t) / nb;
+        cout << t << " ";
+
         inputM = random_mat_zz_p(i, i);
 
+        // hankel matrix product
         cout << i << " ";
         t = get_time();
         nb = 0;
@@ -47,6 +116,7 @@ void check(long p)
         t = (get_time()-t) / nb;
         cout << t << " ";
 
+        // dense matrix product
         t = get_time();
         nb = 0;
         do
