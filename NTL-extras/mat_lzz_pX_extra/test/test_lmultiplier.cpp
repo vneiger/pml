@@ -115,8 +115,7 @@ void check()
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    while(1)
-        check();
+    check();
     return 0;
 }
 

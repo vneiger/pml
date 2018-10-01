@@ -1,6 +1,5 @@
 
-DIRS = util sage_output magma_output lzz_p_extra vec_lzz_p_extra lzz_pX_extra lzz_pX_middle_product lzz_pX_CRT mat_lzz_pX_extra 
-# cauchy_like_geometric_special mosaic_hankel
+DIRS = util sage_output magma_output lzz_p_extra vec_lzz_p_extra lzz_pX_extra lzz_pX_middle_product lzz_pX_CRT mat_lzz_p_extra mat_lzz_pX_extra mosaic_hankel_lzz_p # cauchy_like_geometric_special 
 
 all:	clean
 	$(foreach dir, $(DIRS), if [ -d $(dir) ]; then cd $(dir)/src ; make ; cd ../.. ; fi ;)

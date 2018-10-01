@@ -22,7 +22,7 @@ void check(long p, long sz, long deg)
     else
         zz_p::init(p);
 
-    const double thres = 0.001;
+    const double thresh = 0.001;
     
     long nb;
     Mat<zz_pX> a, b, c;
@@ -38,7 +38,7 @@ void check(long p, long sz, long deg)
         multiply_evaluate(c, a, b);
         nb++;
     }
-    while ((get_time()-t_eval) <= thres);
+    while ((get_time()-t_eval) <= thresh);
     t_eval = (get_time()-t_eval) / nb;
     
 
@@ -49,7 +49,7 @@ void check(long p, long sz, long deg)
         multiply_3_primes(c, a, b);
         nb++;
     }
-    while ((get_time()-t_3primes) <= thres);
+    while ((get_time()-t_3primes) <= thresh);
     t_3primes = (get_time()-t_3primes) / nb;
                 
     t_waksman = get_time();
@@ -59,7 +59,7 @@ void check(long p, long sz, long deg)
         multiply_waksman(c, a, b);
         nb++;
     }
-            while ((get_time()-t_waksman) <= thres);
+            while ((get_time()-t_waksman) <= thresh);
     t_waksman = (get_time()-t_waksman) / nb;
     
 
@@ -70,7 +70,7 @@ void check(long p, long sz, long deg)
         multiply(c, a, b);
         nb++;
     }
-    while ((get_time()-t_check) <= thres);
+    while ((get_time()-t_check) <= thresh);
     t_check = (get_time()-t_check) / nb;
 
     cout << p << " " << sz << " " << deg << endl;

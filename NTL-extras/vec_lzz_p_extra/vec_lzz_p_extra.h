@@ -3,6 +3,7 @@
 
 #include <NTL/mat_lzz_p.h>
 #include <NTL/vec_lzz_p.h>
+#include <NTL/version.h>
 
 NTL_CLIENT
 
