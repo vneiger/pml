@@ -91,13 +91,15 @@ void hankel_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input)
 
     res.SetLength(n);
 
-    if (min(n, m) <= NTL_zz_pX_MUL_CROSSOVER){
+    if (min(n, m) <= NTL_zz_pX_MUL_CROSSOVER)
+    {
         long sp = Kar_stk_size(max(n, m));
         Vec<zz_p> stk;
         stk.SetLength(sp);
         tKarMul_aux(res.elts(), n, input.elts(), m, data_rev.elts(), n+m-1, stk.elts());
     }
-    else{
+    else
+    {
         long K = NextPowerOfTwo(n+m-1);
         fftRep fft_input = fftRep(INIT_SIZE, K);
 

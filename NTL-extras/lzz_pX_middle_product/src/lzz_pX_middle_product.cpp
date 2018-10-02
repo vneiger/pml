@@ -12,22 +12,45 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* naive transposed product of (a,c)                          */
+/* DIRT: uses undocumented MulMod feature (see sp_arith.h)    */
+/* (taken from NTL zz_pX.cpp                                  */
 /*------------------------------------------------------------*/
-void tPlainMul2(zz_p *b, long sb, const zz_p *a, long sa, const zz_p *c, long sc)
+static inline 
+void reduce(zz_p& r, long a, long p, mulmod_t pinv)
+{
+   r.LoopHole() = MulMod(a, 1L, p, pinv);
+}
+
+/*------------------------------------------------------------*/
+/* naive transposed product of (a,c)                          */
+/* use_long = 1 -> delays reduction                           */
+/*------------------------------------------------------------*/
+void tPlainMul2(zz_p *b, long sb, const zz_p *a, long sa, const zz_p *c, long sc, long use_long)
 {
     long p = zz_p::modulus();
     mulmod_t pinv = PrepMulMod(p);
 
-    for (long i = 0; i < sb; i++)
-        b[i].LoopHole() = 0;
-
-    for (long i = 0; i < sa; i++) 
+    if (use_long == 0)
     {
-        long ai = rep(a[i]);
-        mulmod_precon_t apinv = PrepMulModPrecon(ai, p, pinv); 
+        for (long i = 0; i < sb; i++)
+            b[i].LoopHole() = 0;
+        for (long i = 0; i < sa; i++) 
+        {
+            long ai = rep(a[i]);
+            mulmod_precon_t apinv = PrepMulModPrecon(ai, p, pinv); 
+            for (long j = 0; j < sb; j++) 
+                b[j].LoopHole() = AddMod(MulModPrecon(rep(c[i+j]), ai, p, apinv), rep(b[j]), p);
+        }
+    }
+    else
+    {
         for (long j = 0; j < sb; j++) 
-            b[j].LoopHole() = AddMod(MulModPrecon(rep(c[i+j]), ai, p, apinv), rep(b[j]), p);
+        {
+            long accum = 0;
+            for (long i = 0; i < sa; i++) 
+                accum += rep(c[i+j]) * rep(a[i]);
+            reduce(b[j], accum, p, pinv);
+        }
     }
 }
 
@@ -95,13 +118,13 @@ static inline void KarAdd(zz_p *T, const zz_p *b, const long sb)
 
 /*------------------------------------------------------------*/
 /* Karatsuba transposed product, switches to naive            */
+/* value of use_long forward to tPlainMul2                    */
 /*------------------------------------------------------------*/
-void tKarMul_aux(zz_p *b, const long sb, const zz_p *a, const long sa, const zz_p *c, const long sc, zz_p *stk)
+static void tKarMul_aux(zz_p *b, const long sb, const zz_p *a, const long sa, const zz_p *c, const long sc, zz_p *stk, long use_long)
 {
-
     if (sa < KARX || sb < KARX)
     {
-        tPlainMul2(b, sb, a, sa, c, sc);
+        tPlainMul2(b, sb, a, sa, c, sc, use_long);
         return;
     }
 
@@ -113,8 +136,8 @@ void tKarMul_aux(zz_p *b, const long sb, const zz_p *a, const long sa, const zz_
     {
         zz_p *T = stk; 
         stk += sb;
-        tKarMul_aux(b, sb, a+hsa, sa-hsa, c+hsa, sc-hsa, stk);
-        tKarMul_aux(T, sb, a, hsa, c, min(sb+hsa-1,sc), stk);
+        tKarMul_aux(b, sb, a+hsa, sa-hsa, c+hsa, sc-hsa, stk, use_long);
+        tKarMul_aux(T, sb, a, hsa, c, min(sb+hsa-1,sc), stk, use_long);
         KarAdd(b, T, sb);
         return;
     }
@@ -122,8 +145,8 @@ void tKarMul_aux(zz_p *b, const long sb, const zz_p *a, const long sa, const zz_
     // Degenerate case II
     if (sa < sb && sa <= hsb) 
     {
-        tKarMul_aux(b, hsb, a, sa, c, min(sa+hsb-1,sc), stk);
-        tKarMul_aux(b+hsb, sb - hsb, a, sa, c+hsb, sc-hsb, stk);
+        tKarMul_aux(b, hsb, a, sa, c, min(sa+hsb-1,sc), stk, use_long);
+        tKarMul_aux(b+hsb, sb - hsb, a, sa, c+hsb, sc-hsb, stk, use_long);
         return;
     }
 
@@ -141,7 +164,7 @@ void tKarMul_aux(zz_p *b, const long sb, const zz_p *a, const long sa, const zz_
     zz_p *T2 = T1+hs;
 
     KarFoldSub(T, a, sa, hs);
-    tKarMul_aux(b, hs, T, hs, c+hs, min(hs2-1,sc-hs), stk);
+    tKarMul_aux(b, hs, T, hs, c+hs, min(hs2-1,sc-hs), stk, use_long);
 
     long i = sc - hs;
     KarAdd2(T, c + hs, c, i);
@@ -149,11 +172,21 @@ void tKarMul_aux(zz_p *b, const long sb, const zz_p *a, const long sa, const zz_
         T[i] = c[i];
     for(; i < sa+sb-1-hs; ++i) 
         T[i] = 0;
-    tKarMul_aux(b+hs, sb - hs, a+hs, sa-hs, T1, sa+sb-1-hs2, stk);
+    tKarMul_aux(b+hs, sb - hs, a+hs, sa-hs, T1, sa+sb-1-hs2, stk, use_long);
 
     KarSub(b+hs, b, sb-hs);
-    tKarMul_aux(T2, hs, a, hs, T, hs2-1, stk);
+    tKarMul_aux(T2, hs, a, hs, T, hs2-1, stk, use_long);
     KarAdd(b, T2, hs);
+}
+
+/*------------------------------------------------------------*/
+/* Karatsuba transposed product, switches to naive            */
+/*------------------------------------------------------------*/
+void tKarMul_aux(zz_p *b, const long sb, const zz_p *a, const long sa, const zz_p *c, const long sc, zz_p *stk)
+{
+    long p = zz_p::modulus();
+    long use_long = (p < NTL_SP_BOUND/KARX && p*KARX < NTL_SP_BOUND/p);
+    tKarMul_aux(b, sb, a, sa, c, sc, stk, use_long);
 }
 
 /*------------------------------------------------------------*/
@@ -216,7 +249,9 @@ void middle_product(zz_pX& b, const zz_pX& a, const zz_pX& c, long dA, long dB)
 
     if (min(dA, dB) < KARX)
     {
-        tPlainMul2(bp.elts(), dB + 1, ap.elts(), dA + 1, cp.elts(), dA + dB + 1);
+        long p = zz_p::modulus();
+        long use_long = (p < NTL_SP_BOUND/KARX && p*KARX < NTL_SP_BOUND/p);
+        tPlainMul2(bp.elts(), dB + 1, ap.elts(), dA + 1, cp.elts(), dA + dB + 1, use_long);
     }
     else 
     {

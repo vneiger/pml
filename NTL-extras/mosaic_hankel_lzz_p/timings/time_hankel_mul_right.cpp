@@ -22,7 +22,7 @@ void check(long p)
     const double thresh = 0.01;
 
     cout << p << endl;
-    for (long i = 1; i < 200; i += 10)
+    for (long i = 190; i < 200; i += 10)
     {
         zz_pX a, b, c, d;
         Vec<zz_p> dat;
@@ -53,12 +53,12 @@ void check(long p)
         t = (get_time()-t) / nb;
         cout << t << " ";
 
-        // middle product
+        // hankel vector product
         t = get_time();
         nb = 0;
         do
         {
-            d = middle_product(a, c, i);
+            h.mul_right(outputM, inputM);            
             nb++;
         }
         while ((get_time()-t) <= thresh);
@@ -71,18 +71,6 @@ void check(long p)
         do
         {
             M = h.to_dense();
-            nb++;
-        }
-        while ((get_time()-t) <= thresh);
-        t = (get_time()-t) / nb;
-        cout << t << " ";
-
-        // hankel vector product
-        t = get_time();
-        nb = 0;
-        do
-        {
-            outputM = h.mul_right(inputM);            
             nb++;
         }
         while ((get_time()-t) <= thresh);
@@ -104,7 +92,6 @@ void check(long p)
         inputM = random_mat_zz_p(i, i);
 
         // hankel matrix product
-        cout << i << " ";
         t = get_time();
         nb = 0;
         do
