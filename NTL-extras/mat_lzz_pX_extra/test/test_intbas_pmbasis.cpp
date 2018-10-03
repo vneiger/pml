@@ -120,6 +120,71 @@ int main(int argc, char *argv[])
             }
         }
     }
+    
+
+    
+    // generic uniform shift pmbasis for interpolants
+    {
+        Mat<zz_pX> pmat;
+        random_mat_zz_pX(pmat, rdim, cdim, npoints);
+        zz_p r;
+        random(r);
+        zz_pX_Multipoint_Geometric eval(r,zz_p(1),npoints);
+    
+        // set up pts
+        Vec<zz_p> pts;
+        zz_pX x;
+        SetCoeff(x,1,1);
+        eval.evaluate(pts, x); // just gets powers of r
+    
+        // set up evaluations of pmat
+        Vec<Mat<zz_p>> evals;
+        evals.SetLength(npoints);
+        for (long d = 0; d < npoints; d++)
+            evals[d].SetDims(pmat.NumRows(), pmat.NumCols());
+        for (long r = 0; r < pmat.NumRows(); r++)
+        {
+            for (long c = 0; c < pmat.NumCols(); c++)
+            {
+                Vec<zz_p> vals;
+                eval.evaluate(vals, pmat[r][c]);
+                for (long d = 0; d < npoints; d++)
+                    evals[d][r][c] = vals[d];
+            }
+        }
+    
+        std::vector<long> pivdeg;
+        std::cout << "~~~Testing pmbasis-geometric (generic, uniform shift)~~~" << std::endl;
+        t1w = GetWallTime();
+        Mat<zz_pX> intbas;
+        pivdeg = pmbasis_geometric(intbas,evals,pts,r,shift);
+        t2w = GetWallTime();
+
+        std::cout << "Time(pmbasis-interpolation): " << (t2w-t1w) << std::endl;
+
+        if (verify)
+        {
+            std::cout << "Verifying ordered weak Popov interpolant basis..." << std::endl;
+            t1w = GetWallTime();
+            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,true,false);
+            t2w = GetWallTime();
+            std::cout << (verif?"correct":"wrong") << std::endl;
+            std::cout << "Time(verification): " << (t2w-t1w) << std::endl;
+
+            if (rdim*cdim*npoints < 100)
+            {
+                std::cout << "Print output interpolant basis..." << std::endl;
+                std::cout << intbas << std::endl;
+            }
+
+            if (std::max(rdim,cdim)<33) {
+                Mat<long> degmat;
+                degree_matrix(degmat,intbas,shift,true);
+                std::cout << "Print degree matrix of interpolant basis..." << std::endl;
+                std::cout << degmat << std::endl;
+            }
+        }
+    }
 
     return 0;
 }
