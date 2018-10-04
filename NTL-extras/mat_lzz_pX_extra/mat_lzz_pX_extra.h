@@ -1342,9 +1342,22 @@ DegVec popov_pmbasis(
  *                            KERNEL BASIS                            *
  **********************************************************************/
 
+
 /****************************
  *  Kernel via approximant  *
  ****************************/
+
+DegVec kernel_basis(
+                    Mat<zz_pX> & kerbas,
+                    const Mat<zz_pX> & pmat,
+                    const Shift & shift
+                   );
+                   
+DegVec kernel_basis_intbas(
+                    Mat<zz_pX> & kerbas,
+                    const Mat<zz_pX> & pmat,
+                    const Shift & shift
+                   );
 
 // TODO generic case
 
