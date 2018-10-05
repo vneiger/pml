@@ -358,13 +358,13 @@ DegVec pmbasis_geometric(
                const Mat<zz_pX> & pmat,
                const zz_p & r,
                const long order,
-               const Shift & shift
+               const Shift & shift,
+               Vec<zz_p> &pts
               )
 {
-    zz_pX_Multipoint_Geometric eval(r,zz_p(1),order);
+    zz_pX_Multipoint_Geometric eval(r,order);
     
     // set up pts
-    Vec<zz_p> pts;
     zz_pX x;
     SetCoeff(x,1,1);
     eval.evaluate(pts, x); // just gets powers of r
@@ -414,7 +414,7 @@ DegVec pmbasis_geometric(
     pts1.SetLength(order1);
     for (long i = 0; i < order1; i++)
         pts1[i] = pts[i];
-    pivdeg = pmbasis(intbas, evals, pts1, shift);
+    pivdeg = pmbasis_geometric(intbas, evals, pts1, r, shift);
 
     // shifted row degree = shift for second call = pivdeg+shift
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
@@ -464,7 +464,7 @@ NTL_EXEC_RANGE(order2,first,last)
 NTL_EXEC_RANGE_END
     
     // second recursive call
-    pivdeg2 = pmbasis(intbas2, evals2, pts2, rdeg);
+    pivdeg2 = pmbasis_geometric(intbas2, evals2, pts2, r, rdeg);
     
     multiply(intbas,intbas2,intbas);
     

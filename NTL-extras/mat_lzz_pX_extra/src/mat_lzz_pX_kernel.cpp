@@ -22,14 +22,29 @@ DegVec kernel_basis(
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
     
+    if (pmat.NumRows() == 0)
+    {
+        kerbas = Mat<zz_pX>();
+        return DegVec();
+    } 
+    
     long rho = 0;
     for (long i = m-n; i < m; i++)
         rho += shift[i];
     long lambda = ceil((rho*1.0)/n);
     long order = 3*lambda;
     
-    cout << "rho: " << rho << endl;
-    cout << "order: " << order << endl;
+    if (order == 0)
+    {
+        kerbas = Mat<zz_pX>();
+        kerbas.SetDims(m-n,m);
+        auto res = DegVec();
+        res.resize(m-n);
+        return res;
+    }
+    
+    //cout << "rho: " << rho << endl;
+    //cout << "order: " << order << endl;
     
     Mat<zz_pX> P;
     auto dvec = pmbasis(P, pmat, order, shift);
@@ -37,7 +52,7 @@ DegVec kernel_basis(
     // find row degrees
     DegVec rdegP;
     rdegP.resize(m);
-    cout << "P: " << degree_matrix(P) << endl;
+    //cout << "P: " << degree_matrix(P) << endl;
     row_degree(rdegP,P,shift);
     
     // partition
@@ -71,9 +86,6 @@ DegVec kernel_basis(
             r2++;
         }
     }
-    
-    cout << "P1: " << degree_matrix(P1) << endl;
-    cout << "P2: " << degree_matrix(P2) << endl;
     
     if (n == 1)
     {
@@ -143,25 +155,45 @@ DegVec kernel_basis_intbas(
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
     
+    if (pmat.NumRows() == 0)
+    {
+        kerbas = Mat<zz_pX>();
+        return DegVec();
+    }
+    
     long rho = 0;
     for (long i = m-n; i < m; i++)
         rho += shift[i];
     long lambda = ceil((rho*1.0)/n);
     long order = 3*lambda;
     
-    cout << "rho: " << rho << endl;
-    cout << "order: " << order << endl;
+    //cout << "pmat: " << degree_matrix(pmat) << endl;
+    //cout << "shift: ";
+    //for (auto i : shift) cout << i << " ";
+    //cout << endl;
+    //cout << "rho: " << rho << endl;
+    //cout << "order: " << order << endl;
+    
+    if (order == 0)
+    {
+        kerbas = Mat<zz_pX>();
+        kerbas.SetDims(m-n,m);
+        auto res = DegVec();
+        res.resize(m-n);
+        return res;
+    }
     
     zz_p r;
     random(r);
     
     Mat<zz_pX> P;
-    auto dvec = pmbasis_geometric(P, pmat, r, order, shift);
+    Vec<zz_p> pts;
+    auto dvec = pmbasis_geometric(P, pmat, r, order, shift,pts);
     
     // find row degrees
     DegVec rdegP;
     rdegP.resize(m);
-    cout << "P: " << degree_matrix(P) << endl;
+    //cout << "P: " << degree_matrix(P) << endl;
     row_degree(rdegP,P,shift);
     
     // partition
@@ -196,8 +228,8 @@ DegVec kernel_basis_intbas(
         }
     }
     
-    cout << "P1: " << degree_matrix(P1) << endl;
-    cout << "P2: " << degree_matrix(P2) << endl;
+    //cout << "P1: " << degree_matrix(P1) << endl;
+    //cout << "P2: " << degree_matrix(P2) << endl;
     
     if (n == 1)
     {
@@ -209,7 +241,8 @@ DegVec kernel_basis_intbas(
     for (unsigned long i = 0; i < rdegP2.size(); i++)
         rdegP2[i] -= order; // set rdegP2 = t from paper
     Mat<zz_pX> G;
-    multiply(G,P2,pmat);
+    if (P2.NumRows() != 0)
+        multiply(G,P2,pmat);
     
     // divide by the polynomial we are working over
     zz_pX poly, x;
@@ -218,8 +251,9 @@ DegVec kernel_basis_intbas(
     zz_p pow_r(1);
     for (long i = 0; i < order; i++)
     {
+        if (pow_r != pts[i]) cout << "WRONG POINT" << endl;
         poly *= x-pow_r;
-        pow_r *= r;
+        pow_r *= r*r;
     }
     for (long r = 0; r < G.NumRows(); r++)
         for (long c = 0; c < G.NumCols(); c++)
@@ -242,9 +276,12 @@ DegVec kernel_basis_intbas(
     
     // recursive calls
     Mat<zz_pX> N1, N2;
-    DegVec u = kernel_basis(N1, G1, rdegP2);
+    
+    DegVec u = kernel_basis_intbas(N1, G1, rdegP2);
+    //cout << "N1: " << N1 << endl;
     multiply(G2, N1, G2);
-    DegVec v = kernel_basis(N2, G2, u);
+    
+    DegVec v = kernel_basis_intbas(N2, G2, u);
     
     // collect output
     multiply(G1,N2,N1);

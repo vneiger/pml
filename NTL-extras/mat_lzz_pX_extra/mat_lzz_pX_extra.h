@@ -1310,7 +1310,8 @@ DegVec pmbasis_geometric(
                const Mat<zz_pX> & pmat,
                const zz_p & r,
                const long order,
-               const Shift & shift
+               const Shift & shift,
+               Vec<zz_p> &pts
               );
 
 // requires that pts contain powers of r
