@@ -11,7 +11,7 @@ NTL_CLIENT
 
 
 /*------------------------------------------------------------*/
-/* creates hankel matrices and does some products             */
+/* creates toeplitz matrices and does some products           */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -26,13 +26,13 @@ void check(long p)
     {
         zz_pX a, b, c, d;
         Vec<zz_p> dat;
-        hankel_lzz_p h;
+        toeplitz_lzz_p h;
         Mat<zz_p> M, inputM, outputM, output2M;
         double t;
         long nb;
 
         dat = random_vec_zz_p(i+i-1);
-        h = hankel_lzz_p(dat, i, i);
+        h = toeplitz_lzz_p(dat, i, i);
         M = h.to_dense();
         a = random_zz_pX(i);
         b = random_zz_pX(i);
@@ -54,7 +54,7 @@ void check(long p)
         t = (get_time()-t) / nb;
         cout << t << " ";
 
-        // hankel vector product
+        // toeplitz vector product
         t = get_time();
         nb = 0;
         do
@@ -80,7 +80,7 @@ void check(long p)
 
         inputM = random_mat_zz_p(i, i);
 
-        // hankel matrix product
+        // toeplitz matrix product
         t = get_time();
         nb = 0;
         do

@@ -9,18 +9,18 @@ NTL_CLIENT
 
 /*----------------------------------------------------*/
 /*----------------------------------------------------*/
-/* Hankel matrices                                    */
+/* Toeplitz matrices                                  */
 /* stored as                                          */
-/*       a5 a4 a3 a2                                  */
-/*       a4 a3 a2 a1                                  */
 /*       a3 a2 a1 a0                                  */
+/*       a4 a3 a2 a1                                  */
+/*       a5 a4 a3 a2                                  */
 /*----------------------------------------------------*/
 /*----------------------------------------------------*/
 
 /*----------------------------------------------------*/
 /* sets dimensions to 0                               */
 /*----------------------------------------------------*/
-hankel_lzz_p::hankel_lzz_p()
+toeplitz_lzz_p::toeplitz_lzz_p()
 {
     n = m = 0;
 }
@@ -28,7 +28,7 @@ hankel_lzz_p::hankel_lzz_p()
 /*----------------------------------------------------*/
 /* input vector is as showed above                    */
 /*----------------------------------------------------*/
-hankel_lzz_p::hankel_lzz_p(const Vec<zz_p>& input, long rows, long cols)
+toeplitz_lzz_p::toeplitz_lzz_p(const Vec<zz_p>& input, long rows, long cols)
 {
     n = rows;
     m = cols;
@@ -37,7 +37,7 @@ hankel_lzz_p::hankel_lzz_p(const Vec<zz_p>& input, long rows, long cols)
     zz_pX data_X;
     data_X.rep.SetLength(n+m-1);
     
-    for (long i = 0;i < n+m-1; i++){
+    for (long i = 0; i < n+m-1; i++){
         data_rev[i] = input[n+m-2-i];
         data_X.rep[i] = data_rev[i];
     }    
@@ -51,12 +51,12 @@ hankel_lzz_p::hankel_lzz_p(const Vec<zz_p>& input, long rows, long cols)
 /*----------------------------------------------------*/
 /* getters                                            */
 /*----------------------------------------------------*/
-long hankel_lzz_p::NumCols() const
+long toeplitz_lzz_p::NumCols() const
 {
     return m;
 }
 
-long hankel_lzz_p::NumRows() const
+long toeplitz_lzz_p::NumRows() const
 {
     return n;
 }
@@ -65,22 +65,22 @@ long hankel_lzz_p::NumRows() const
 /*----------------------------------------------------*/
 /* turns M into a dense matrix                        */
 /*----------------------------------------------------*/
-void hankel_lzz_p::to_dense(Mat<zz_p>& Mdense)
+void toeplitz_lzz_p::to_dense(Mat<zz_p>& Mdense)
 {
     Mdense.SetDims(n, m);
     for (long i = 0; i < n; i++)
         for (long j = 0; j < m; j++)
-            Mdense[i][j] = data[m+n-2-i-j];
+            Mdense[i][j] = data[m+i-1-j];
 }
 
 /*----------------------------------------------------*/
 /* right multiplication                               */
 /*----------------------------------------------------*/
-void hankel_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input)
+void toeplitz_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input)
 {
     if (input.length() != m)
     {
-        LogicError("Wrong size for hankel_lzz_p right multiplication.");
+        LogicError("Wrong size for toeplitz_lzz_p right multiplication.");
     }
 
     if (&res == &input)
@@ -114,17 +114,25 @@ void hankel_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input)
         mul(fft_input, fft_input, fft_data);
         FromfftRep(res.elts(), fft_input, m-1, n+m-2);
     }
+
+    for (long i = 0; (i+i) <= n-1; i++)
+    {
+        long ri = res[i].LoopHole();
+        res[i].LoopHole() = res[n-1-i].LoopHole();
+        res[n-1-i].LoopHole() = ri;
+    }
+
 }
 
 
 /*----------------------------------------------------*/
 /* right multiplication                               */
 /*----------------------------------------------------*/
-void hankel_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input)
+void toeplitz_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input)
 {
     if (input.NumRows() != m)
     {
-        LogicError("Wrong size for hankel_lzz_p right matrix multiplication.");
+        LogicError("Wrong size for toeplitz_lzz_p right matrix multiplication.");
     }
 
     if (&res == &input)
@@ -168,7 +176,7 @@ void hankel_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input)
                 in_vec[j] = input[j][i];
             tKarMul_aux(res_vec.elts(), n, in_vec.elts(), m, data_rev.elts(), n+m-1, stk.elts());
             for (long j = 0; j < n; j++)
-                res[j][i] = res_vec[j];
+                res[n-1-j][i] = res_vec[j];
         }
     }
     else
@@ -189,7 +197,7 @@ void hankel_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input)
             mul(fft_input, fft_input, fft_data);
             FromfftRep(res_vec.elts(), fft_input, m-1, n+m-2);
             for (long i = 0; i < n; i++)
-                res[i][j] = res_vec[i];
+                res[n-1-i][j] = res_vec[i];
         }
     }
 }
@@ -199,11 +207,11 @@ void hankel_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input)
 /*----------------------------------------------------*/
 /* left multiplication                                */
 /*----------------------------------------------------*/
-void hankel_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input)
+void toeplitz_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input)
 {
     if (input.length() != n)
     {
-        LogicError("Wrong size for hankel_lzz_p left matrix multiplication.");
+        LogicError("Wrong size for toeplitz_lzz_p left matrix multiplication.");
     }
 
     if (&res == &input)
@@ -215,10 +223,15 @@ void hankel_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input)
     res.SetLength(m);
     if (min(n, m) <= (2*NTL_zz_pX_MUL_CROSSOVER)/4)
     {
+        Vec<zz_p> in_rev;
+        in_rev.SetLength(n);
+        for (long i = 0; i < n; i++)
+            in_rev[i] = input[n-1-i];
+
         long sp = Kar_stk_size(max(n, m));
         Vec<zz_p> stk;
         stk.SetLength(sp);
-        tKarMul_aux(res.elts(), m, input.elts(), n, data_rev.elts(), n+m-1, stk.elts());
+        tKarMul_aux(res.elts(), m, in_rev.elts(), n, data_rev.elts(), n+m-1, stk.elts());
     }
     else
     {
@@ -229,7 +242,7 @@ void hankel_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input)
         input_X.rep.SetLength(n);
         zz_p *cf = input_X.rep.elts();
         for (long i = 0; i < n; i++)
-            cf[i] = input[n-1-i];
+            cf[i] = input[i];
         input_X.normalize();
 
         TofftRep(fft_input, input_X, K);
@@ -241,11 +254,11 @@ void hankel_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input)
 /*----------------------------------------------------*/
 /* left multiplication                                */
 /*----------------------------------------------------*/
-void hankel_lzz_p::mul_left(Mat<zz_p>& res, const Mat<zz_p>& input)
+void toeplitz_lzz_p::mul_left(Mat<zz_p>& res, const Mat<zz_p>& input)
 {
     if (input.NumCols() != n)
     {
-        LogicError("Wrong size for hankel_lzz_p left matrix multiplication.");
+        LogicError("Wrong size for toeplitz_lzz_p left matrix multiplication.");
     }
 
     if (&res == &input)
@@ -285,7 +298,7 @@ void hankel_lzz_p::mul_left(Mat<zz_p>& res, const Mat<zz_p>& input)
         for (long i = 0; i < p; i++)
         {
             for (long j = 0; j < n; j++)
-                in_vec[j] = input[i][j];
+                in_vec[j] = input[i][n-1-j];
             tKarMul_aux(res_vec.elts(), m, in_vec.elts(), n, data_rev.elts(), n+m-1, stk.elts());
             for (long j = 0; j < m; j++)
                 res[i][j] = res_vec[j];
@@ -302,7 +315,7 @@ void hankel_lzz_p::mul_left(Mat<zz_p>& res, const Mat<zz_p>& input)
             input_X.rep.SetLength(n);
             zz_p *cf = input_X.rep.elts();
             for (long j = 0; j < n; j++)
-                cf[j] = input[i][n-1-j];
+                cf[j] = input[i][j];
             input_X.normalize();
 
             TofftRep(fft_input, input_X, K);
