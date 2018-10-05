@@ -11,7 +11,7 @@ NTL_CLIENT
 
 
 /*------------------------------------------------------------*/
-/* creates hankel matrices                                    */
+/* creates hankel matrices and does some products             */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -22,7 +22,7 @@ void check(long p)
     const double thresh = 0.01;
 
     cout << p << endl;
-    for (long i = 190; i < 200; i += 10)
+    for (long i = 10; i < 300; i += 10)
     {
         zz_pX a, b, c, d;
         Vec<zz_p> dat;
@@ -41,12 +41,13 @@ void check(long p)
 
         inputM = random_mat_zz_p(i, 1);
 
-        // poly mult
+
+        // create dense matrix
         t = get_time();
         nb = 0;
         do
         {
-            c = a * b;
+            M = h.to_dense();
             nb++;
         }
         while ((get_time()-t) <= thresh);
@@ -59,18 +60,6 @@ void check(long p)
         do
         {
             h.mul_right(outputM, inputM);            
-            nb++;
-        }
-        while ((get_time()-t) <= thresh);
-        t = (get_time()-t) / nb;
-        cout << t << " ";
-
-        // create dense matrix
-        t = get_time();
-        nb = 0;
-        do
-        {
-            M = h.to_dense();
             nb++;
         }
         while ((get_time()-t) <= thresh);

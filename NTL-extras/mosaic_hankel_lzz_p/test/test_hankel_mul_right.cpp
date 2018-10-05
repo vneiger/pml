@@ -8,7 +8,7 @@ NTL_CLIENT
 
 
 /*------------------------------------------------------------*/
-/* right multiplies by a vector and 2-column matrix           */
+/* right multiplies by a vector and matrix                    */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -17,8 +17,8 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i1 = 1; i1 < 200; i1 += 1)
-        for (long i2 = 1; i2 < 200; i2 += 1)
+    for (long i1 = 1; i1 < 200; i1 += 5)
+        for (long i2 = 1; i2 < 200; i2 += 5)
         {
             Vec<zz_p> dat, input, output, output2;
             hankel_lzz_p h;
@@ -31,14 +31,14 @@ void check(long p)
             input = random_vec_zz_p(i2);
             output = random_vec_zz_p(i1);
             output = h.mul_right(input);
-            output2 = M*input;
+            output2 = M * input;
             if (output != output2)
                 LogicError("Error with hankel mul_right");
 
-            inputM = random_mat_zz_p(i2, 2);
-            outputM = random_mat_zz_p(i1, 2);
+            inputM = random_mat_zz_p(i2, i2);
+            outputM = random_mat_zz_p(i1, i2);
             outputM = h.mul_right(inputM);
-            output2M = M*inputM;
+            output2M = M * inputM;
             if (outputM != output2M)
                 LogicError("Error with hankel mul_right matrix");
         }

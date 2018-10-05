@@ -1,6 +1,7 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/mat_lzz_p.h>
 
+#include "lzz_p_extra.h"
 #include "lzz_pX_middle_product.h"
 #include "mosaic_hankel_lzz_p.h"
 
@@ -21,7 +22,6 @@ NTL_CLIENT
 /*----------------------------------------------------*/
 hankel_lzz_p::hankel_lzz_p()
 {
-    data.SetLength(0);
     n = m = 0;
 }
 
@@ -91,7 +91,7 @@ void hankel_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input)
 
     res.SetLength(n);
 
-    if (min(n, m) <= NTL_zz_pX_MUL_CROSSOVER)
+    if (min(n, m) <= (2*NTL_zz_pX_MUL_CROSSOVER)/4)
     {
         long sp = Kar_stk_size(max(n, m));
         Vec<zz_p> stk;
@@ -134,12 +134,27 @@ void hankel_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input)
     }
 
     long p = input.NumCols();
+
+    if ( (min(m, n) >= max(m, n)/2) && // close enough to a square matrix
+         p >= min(m, n) / 4 )          // close enough to a matrix-matrix product
+    {
+        long t = type_of_prime();
+        if ( (t == TYPE_FFT_PRIME && min(m, n) <= 100)  ||
+             (t == TYPE_SMALL_PRIME && min(m, n) <= 1000) ||
+             (t == TYPE_LARGE_PRIME && min(m, n) <= 300) )
+        {
+            Mat<zz_p> hank = to_dense();
+            res = hank * input;
+            return;
+        }
+    }
+
     res.SetDims(n, p);
 
     Vec<zz_p> res_vec;
     res_vec.SetLength(n);
 
-    if (min(n, m) <= NTL_zz_pX_MUL_CROSSOVER)
+    if (min(n, m) <= (2*NTL_zz_pX_MUL_CROSSOVER)/4)
     {
         Vec<zz_p> in_vec;
         in_vec.SetLength(m);
@@ -181,37 +196,123 @@ void hankel_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input)
 
 
 
-// /*----------------------------------------------------*/
-// /* left multiplication                                */
-// /*----------------------------------------------------*/
-// void mul_left(Vec<zz_p>& res, const hankel_lzz_p& M, const Vec<zz_p>& input){
+/*----------------------------------------------------*/
+/* left multiplication                                */
+/*----------------------------------------------------*/
+void hankel_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input)
+{
+    if (input.length() != n)
+    {
+        LogicError("Wrong size for hankel_lzz_p left matrix multiplication.");
+    }
 
-//     long nM = M.NumRows();
-//     long mM = M.NumCols();
+    if (&res == &input)
+    {
+        res = mul_left(input);
+        return;
+    }
 
-//     res.SetLength(mM);
-//     if (min(nM, mM) <= NTL_zz_pX_MUL_CROSSOVER){
-//         long sp = Kar_stk_size(max(nM, mM));
-//         zz_p *stk = new zz_p[sp];
-//         tKarMul_aux(res._vec__rep.rep, mM, input._vec__rep.rep, nM, M.data_rev._vec__rep.rep, nM+mM-1, stk);
-//         delete[] stk;
-//     }
-//     else{
-//         long K = NextPowerOfTwo(nM+mM-1);
-//         fftRep fft_input = fftRep(INIT_SIZE, K);
+    res.SetLength(m);
+    if (min(n, m) <= (2*NTL_zz_pX_MUL_CROSSOVER)/4)
+    {
+        long sp = Kar_stk_size(max(n, m));
+        Vec<zz_p> stk;
+        stk.SetLength(sp);
+        tKarMul_aux(res.elts(), m, input.elts(), n, data_rev.elts(), n+m-1, stk.elts());
+    }
+    else
+    {
+        long K = NextPowerOfTwo(n+m-1);
+        fftRep fft_input = fftRep(INIT_SIZE, K);
 
-//         zz_pX input_X, output_X;
-//         input_X.rep.SetLength(nM);
-//         zz_p *cf = input_X.rep.elts();
-//         for (long i = 0; i < nM; i++)
-//             cf[i] = input[nM-1-i];
-//         input_X.normalize();
+        zz_pX input_X, output_X;
+        input_X.rep.SetLength(n);
+        zz_p *cf = input_X.rep.elts();
+        for (long i = 0; i < n; i++)
+            cf[i] = input[n-1-i];
+        input_X.normalize();
 
-//         TofftRep(fft_input, input_X, K);
-//         mul(fft_input, fft_input, M.fft_data);
-//         FromfftRep(res._vec__rep.rep, fft_input, nM-1, nM+mM-2);
-//     }
-// }
+        TofftRep(fft_input, input_X, K);
+        mul(fft_input, fft_input, fft_data);
+        FromfftRep(res.elts(), fft_input, n-1, n+m-2);
+    }
+}
+
+/*----------------------------------------------------*/
+/* left multiplication                                */
+/*----------------------------------------------------*/
+void hankel_lzz_p::mul_left(Mat<zz_p>& res, const Mat<zz_p>& input)
+{
+    if (input.NumCols() != n)
+    {
+        LogicError("Wrong size for hankel_lzz_p left matrix multiplication.");
+    }
+
+    if (&res == &input)
+    {
+        res = mul_left(input);
+        return;
+    }
+
+    long p = input.NumRows();
+
+    if ( (min(m, n) >= max(m, n)/2) && // close enough to a square matrix
+         p >= min(m, n) / 4 )          // close enough to a matrix-matrix product
+    {
+        long t = type_of_prime();
+        if ( (t == TYPE_FFT_PRIME && min(m, n) <= 100)  ||
+             (t == TYPE_SMALL_PRIME && min(m, n) <= 1000) ||
+             (t == TYPE_LARGE_PRIME && min(m, n) <= 300) )
+        {
+            Mat<zz_p> hank = to_dense();
+            res = input * hank;
+            return;
+        }
+    }
+
+    res.SetDims(p, m);
+
+    Vec<zz_p> res_vec;
+    res_vec.SetLength(m);
+
+    if (min(n, m) <= (2*NTL_zz_pX_MUL_CROSSOVER)/4)
+    {
+        Vec<zz_p> in_vec;
+        in_vec.SetLength(n);
+        long sp = Kar_stk_size(max(n, m));
+        Vec<zz_p> stk;
+        stk.SetLength(sp);
+        for (long i = 0; i < p; i++)
+        {
+            for (long j = 0; j < n; j++)
+                in_vec[j] = input[i][j];
+            tKarMul_aux(res_vec.elts(), m, in_vec.elts(), n, data_rev.elts(), n+m-1, stk.elts());
+            for (long j = 0; j < m; j++)
+                res[i][j] = res_vec[j];
+        }
+    }
+    else
+    {
+        long K = NextPowerOfTwo(n+m-1);
+        fftRep fft_input = fftRep(INIT_SIZE, K);
+        zz_pX input_X, output_X;
+
+        for (long i = 0; i < p; i++)
+        {
+            input_X.rep.SetLength(n);
+            zz_p *cf = input_X.rep.elts();
+            for (long j = 0; j < n; j++)
+                cf[j] = input[i][n-1-j];
+            input_X.normalize();
+
+            TofftRep(fft_input, input_X, K);
+            mul(fft_input, fft_input, fft_data);
+            FromfftRep(res_vec.elts(), fft_input, n-1, n+m-2);
+            for (long j = 0; j < m; j++)
+                res[i][j] = res_vec[j];
+        }
+    }
+}
 
 
 // Local Variables:
