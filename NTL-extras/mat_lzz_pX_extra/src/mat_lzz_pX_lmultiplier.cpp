@@ -105,11 +105,11 @@ void mat_lzz_pX_lmultiplier_FFT::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b)
 
     fftRep R1(INIT_SIZE, idxk);
     long n = 1L << idxk;
-    Vec<zz_p> mat_valB;
     Vec<Vec<zz_p>> mat_valC;
     
+    Vec<zz_p> mat_valB;
     mat_valB.SetLength(n * t * u);
-    
+
     long st = s*t;
     long tu = t*u;
     for (long i = 0; i < t; i++)
@@ -137,7 +137,7 @@ void mat_lzz_pX_lmultiplier_FFT::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b)
                 vb[i][k] = mat_valB[jtu + i*u + k];
         
         vc = va[j] * vb;
-        
+
         for (long i = 0; i < s; i++)
             for (long k = 0; k < u; k++)
                 mat_valC[i*u + k][j] = vc[i][k];
@@ -212,7 +212,6 @@ void mat_lzz_pX_lmultiplier_geometric::multiply(Mat<zz_pX>& c, const Mat<zz_pX>&
     Vec<Vec<zz_p>> mat_valC;
     
     mat_valB.SetLength(n * t * u);
-    
     long st = s*t;
     long tu = t*u;
     for (long i = 0; i < t; i++)

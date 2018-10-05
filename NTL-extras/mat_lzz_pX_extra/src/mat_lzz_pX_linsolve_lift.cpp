@@ -3,6 +3,7 @@
 #include <NTL/lzz_pX.h>
 #include <memory>
 
+#include "util.h"
 #include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
@@ -99,10 +100,14 @@ void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<z
         solve_series_high_precision(u, trunc(A, prec), trunc(b, prec), prec);
         return;
     }
-    
+
+    double t = get_time();
+
     long dA = deg(A);
     long lenA = dA + 1;
+
     Mat<zz_pX> invA = inv_trunc(A, lenA);
+
     std::unique_ptr<mat_lzz_pX_lmultiplier> multI = get_lmultiplier(invA, dA);
     std::unique_ptr<mat_lzz_pX_lmultiplier> multA = get_lmultiplier(A, dA);
     
@@ -132,6 +137,9 @@ void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<z
 
     long shift = lenA;
     Mat<zz_pX> upper;
+
+    cout << "\nsetup:" << get_time() - t << endl;
+
     for (long i = 1; i < nb; i++)
     {
         multA->multiply(upper, sol);
