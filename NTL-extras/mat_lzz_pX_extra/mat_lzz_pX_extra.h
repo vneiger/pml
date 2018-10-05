@@ -1304,6 +1304,24 @@ DegVec pmbasis(
                const Vec<zz_p> & pts,
                const Shift & shift
               );
+              
+DegVec pmbasis_geometric(
+               Mat<zz_pX> & intbas,
+               const Mat<zz_pX> & pmat,
+               const zz_p & r,
+               const long order,
+               const Shift & shift
+              );
+
+// requires that pts contain powers of r
+// with entries of evals evaluated at pts
+DegVec pmbasis_geometric(
+                         Mat<zz_pX> & intbas,
+                         const Vec<Mat<zz_p>> & evals,
+                         const Vec<zz_p> & pts,
+                         const zz_p & r,
+                         const Shift & shift
+                        );
 
 // input pmat = list of evaluations, implemented
 DegVec pmbasis(
@@ -1324,9 +1342,22 @@ DegVec popov_pmbasis(
  *                            KERNEL BASIS                            *
  **********************************************************************/
 
+
 /****************************
  *  Kernel via approximant  *
  ****************************/
+
+DegVec kernel_basis(
+                    Mat<zz_pX> & kerbas,
+                    const Mat<zz_pX> & pmat,
+                    const Shift & shift
+                   );
+                   
+DegVec kernel_basis_intbas(
+                    Mat<zz_pX> & kerbas,
+                    const Mat<zz_pX> & pmat,
+                    const Shift & shift
+                   );
 
 // TODO generic case
 
