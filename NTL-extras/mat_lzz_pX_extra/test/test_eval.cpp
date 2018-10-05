@@ -85,7 +85,7 @@ int main(int argc, char *argv[]){
         t1w = GetWallTime();
         eval_geo.evaluate(val, rand_pol);
         t2w = GetWallTime();
-        cout << "Time (geo): " << t2w-t1w << endl;
+        cout << "Time (geo FFT): " << t2w-t1w << endl;
     }
     
 }
