@@ -27,19 +27,15 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
 
 int main(int argc, char *argv[])
 {
-    SetNumThreads(4);
+    if (argc!=7)
+        throw std::invalid_argument("Usage: ./test_appbas_mbasis rdim cdim order nbits verify nthreads");
 
-    bool verify=false;
-
-    if (argc!=5 && argc!=6)
-        throw std::invalid_argument("Usage: ./test_appbas_mbasis rdim cdim order nbits (verify)");
-
-    long rdim   = atoi(argv[1]);
-    long cdim   = atoi(argv[2]);
+    long rdim = atoi(argv[1]);
+    long cdim = atoi(argv[2]);
     long order = atoi(argv[3]);
     long nbits = atoi(argv[4]);
-    if (argc==6)
-        verify = (atoi(argv[5])==1);
+    bool verify = (atoi(argv[5])==1);
+    SetNumThreads(atoi(argv[6]));
 
     std::vector<long> shift(rdim,0);
     //std::vector<long> shift {0,1,0,1};
@@ -64,6 +60,7 @@ int main(int argc, char *argv[])
         std::cout << shift << std::endl; 
     else
         std::cout << "length " << shift.size() << std::endl;
+    std::cout << "--nthreads =\t" << AvailableThreads() << std::endl;
 
     double t1,t2,t1w,t2w;
 
@@ -81,19 +78,22 @@ int main(int argc, char *argv[])
     std::cout << "warming up..." << std::endl;
     warmup();
 
-    std::cout << "~~~Testing popov_mbasis1 on constant matrix~~~" << std::endl;
-    t1w = GetWallTime(); t1 = GetTime();
-    pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
-    t2w = GetWallTime(); t2 = GetTime();
-    std::cout << "Time(popov_mbasis1 computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-
     Mat<zz_p> mat;
     mat = random_mat_zz_p(rdim, cdim);
     t1w = GetWallTime(); t1 = GetTime();
     Mat<zz_p> kerbas2;
     kernel(kerbas2,mat);
     t2w = GetWallTime(); t2 = GetTime();
-    std::cout << "Time(kernel same size): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+    double ref_kernel_wall = t2w-t1w;
+    double ref_kernel = t2-t1;
+    std::cout << "Time(kernel same size): " << ref_kernel_wall << "s,  " << ref_kernel << "s\n";
+
+    std::cout << "~~~Testing popov_mbasis1 on constant matrix~~~" << std::endl;
+    t1w = GetWallTime(); t1 = GetTime();
+    pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
+    t2w = GetWallTime(); t2 = GetTime();
+    std::cout << "Time(popov_mbasis1 computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+    std::cout << "Ratio versus kernel: " << ((t2w-t1w)/ref_kernel_wall) << ", " << ((t2-t1)/ref_kernel) << std::endl;
 
     if (verify)
     {
@@ -122,6 +122,9 @@ int main(int argc, char *argv[])
         }
     }
 
+    ref_kernel_wall *= order;
+    ref_kernel *= order;
+
     // mbasis_resupdate
     {
         std::cout << "~~~Testing mbasis_resupdate~~~" << std::endl;
@@ -130,8 +133,8 @@ int main(int argc, char *argv[])
         pivdeg = mbasis_resupdate(appbas,pmat,order,shift);
         t2w = GetWallTime(); t2 = GetTime();
 
-        std::cout << "Time(mbasis_resupdate computation): " <<
-        (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+        std::cout << "Time(mbasis_resupdate computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+        std::cout << "Ratio versus kernel: " << ((t2w-t1w)/ref_kernel_wall) << ", " << ((t2-t1)/ref_kernel) << std::endl;
 
         if (verify)
         {
@@ -167,6 +170,7 @@ int main(int argc, char *argv[])
         pivdeg = mbasis(appbas,pmat,order,shift);
         t2w = GetWallTime(); t2 = GetTime();
         std::cout << "Time(mbasis computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+        std::cout << "Ratio versus kernel: " << ((t2w-t1w)/ref_kernel_wall) << ", " << ((t2-t1)/ref_kernel) << std::endl;
 
         if (verify)
         {
@@ -205,6 +209,7 @@ int main(int argc, char *argv[])
         t2w = GetWallTime(); t2 = GetTime();
 
         std::cout << "Time(mbasis computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+        std::cout << "Ratio versus kernel: " << ((t2w-t1w)/ref_kernel_wall) << ", " << ((t2-t1)/ref_kernel) << std::endl;
 
         if (verify)
         {
@@ -243,6 +248,7 @@ int main(int argc, char *argv[])
         t2w = GetWallTime(); t2 = GetTime();
 
         std::cout << "Time(popov_mbasis computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+        std::cout << "Ratio versus kernel: " << ((t2w-t1w)/ref_kernel_wall) << ", " << ((t2-t1)/ref_kernel) << std::endl;
 
         if (verify)
         {

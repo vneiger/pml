@@ -28,9 +28,6 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* TODO doc currently in .h --> should be moved here??        */
-/*------------------------------------------------------------*/
 // follows ideas from Algorithm 1 in Giorgi-Neiger, ISSAC 2018
 bool is_approximant_basis(
                           const Mat<zz_pX> & appbas,
@@ -307,13 +304,15 @@ DegVec popov_mbasis1(
                      const Shift & shift
                     )
 {
+    long m = pmat.NumRows();
+    long n = pmat.NumCols();
     // compute permutation which realizes stable sort of the shift
     // (i.e. sorts (shift[0],0)....(shift[len],len) lexicographically increasingly)
 #ifdef MBASIS1_PROFILE
     double t_perm1,t_perm2,t_pivind,t_ker,t_now;
     t_now = GetWallTime();
 #endif
-    std::vector<long> perm_shift(pmat.NumRows());
+    std::vector<long> perm_shift(m);
     std::iota(perm_shift.begin(), perm_shift.end(), 0);
     stable_sort(perm_shift.begin(), perm_shift.end(),
                 [&](const long& a, const long& b)->bool
@@ -323,9 +322,8 @@ DegVec popov_mbasis1(
 
     // permute rows of pmat accordingly
     Mat<zz_p> mat;
-    mat.SetDims(pmat.NumRows(),pmat.NumCols());
-    for (long i = 0; i < pmat.NumRows(); ++i)
-        //for (long j = 0; j < mat.NumRows(); ++j)
+    mat.SetDims(m,n);
+    for (long i = 0; i < m; ++i)
         mat[i] = pmat[perm_shift[i]];
 #ifdef MBASIS1_PROFILE
     t_perm1 = GetWallTime() - t_now;
@@ -340,10 +338,11 @@ DegVec popov_mbasis1(
 #ifdef MBASIS1_PROFILE
     t_ker = GetWallTime() - t_now;
 #endif
-    if (p_kerbas.NumRows()==0)
-        return DegVec(pmat.NumRows(),1);
-    if (p_kerbas.NumRows()==pmat.NumRows())
-        return DegVec(pmat.NumRows(),0);
+    long k = p_kerbas.NumRows();
+    if (k==0)
+        return DegVec(m,1);
+    if (k==m)
+        return DegVec(m,0);
 
     // compute the (permuted) pivot indices
     // (NTL doesn't return the pivot indices in Gaussian elimination, we might
@@ -352,13 +351,10 @@ DegVec popov_mbasis1(
 #ifdef MBASIS1_PROFILE
     t_now = GetWallTime();
 #endif
-    std::vector<long> p_pivind(p_kerbas.NumRows(),p_kerbas.NumCols()-1); // pivot indices in permuted kernel basis
-    //p_pivind.back() = p_kerbas.NumCols()-1;
-    for (long i = 0; i<p_kerbas.NumRows(); ++i)
-    {
+    std::vector<long> p_pivind(k,m-1); // pivot indices in permuted kernel basis
+    for (long i = 0; i<k; ++i)
         while (p_pivind[i]>=0 && p_kerbas[i][p_pivind[i]]==0)
             --p_pivind[i];
-    }
 #ifdef MBASIS1_PROFILE
     t_pivind = GetWallTime() - t_now;
 #endif
@@ -369,15 +365,14 @@ DegVec popov_mbasis1(
 #ifdef MBASIS1_PROFILE
     t_now = GetWallTime();
 #endif
-    DegVec pivdeg(pmat.NumRows(),1);
-    std::vector<long> pivind(p_kerbas.NumRows());
-    for (long i = 0; i < p_kerbas.NumRows(); ++i)
-    {
+    std::vector<long> pivind(k);
+    for (long i = 0; i < k; ++i)
         pivind[i] = perm_shift[p_pivind[i]];
+    DegVec pivdeg(m,1);
+    for (long i = 0; i < k; ++i)
         pivdeg[pivind[i]] = 0;
-    }
 
-    std::vector<long> perm_rows_ker(p_kerbas.NumRows());
+    std::vector<long> perm_rows_ker(k);
     std::iota(perm_rows_ker.begin(), perm_rows_ker.end(), 0);
     sort(perm_rows_ker.begin(), perm_rows_ker.end(),
          [&](const long& a, const long& b)->bool
@@ -385,10 +380,9 @@ DegVec popov_mbasis1(
          return (pivind[a] < pivind[b]);
          } );
 
-
-    kerbas.SetDims(p_kerbas.NumRows(),p_kerbas.NumCols());
-    for (long i = 0; i < kerbas.NumRows(); ++i)
-        for (long j = 0; j < kerbas.NumCols(); ++j)
+    kerbas.SetDims(k,m);
+    for (long i = 0; i < k; ++i)
+        for (long j = 0; j < m; ++j)
             kerbas[i][perm_shift[j]] = p_kerbas[perm_rows_ker[i]][j];
 #ifdef MBASIS1_PROFILE
     t_perm2 = GetWallTime() - t_now;
