@@ -27,8 +27,9 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
 
 int main(int argc, char *argv[])
 {
-    if (argc!=7)
-        throw std::invalid_argument("Usage: ./test_appbas_mbasis rdim cdim order nbits verify nthreads");
+    if (argc!=8)
+        throw std::invalid_argument("Usage: ./test_appbas_mbasis rdim cdim order nbits verify nthreads thres");
+    long threshold = atoi(argv[7]);
 
     long rdim = atoi(argv[1]);
     long cdim = atoi(argv[2]);
@@ -159,21 +160,21 @@ int main(int argc, char *argv[])
         ref_kernel_wall *= order;
         ref_kernel *= order;
 
-        // mbasis_resupdate
-        {
-            std::cout << "~~~Testing mbasis_resupdate~~~" << std::endl;
+        { // plain mbasis
+            std::cout << "~~~Testing mbasis_plain~~~" << std::endl;
             t1w = GetWallTime(); t1 = GetTime();
             Mat<zz_pX> appbas;
-            pivdeg = mbasis_resupdate(appbas,pmat,order,shift);
+            pivdeg = mbasis_plain(appbas,pmat,order,shift);
             t2w = GetWallTime(); t2 = GetTime();
-
-            std::cout << "Time(mbasis_resupdate computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+            std::cout << "Time(mbasis computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
             std::cout << "Ratio versus kernel: " << ((t2w-t1w)/ref_kernel_wall) << ", " << ((t2-t1)/ref_kernel) << std::endl;
 
             if (verify)
             {
                 std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
+                t1w = GetWallTime(); t1 = GetTime();
                 bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
+                t2w = GetWallTime(); t2 = GetTime();
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 
@@ -196,13 +197,14 @@ int main(int argc, char *argv[])
             }
         }
 
-        // mbasis "normal" update
+        // mbasis Vec<Mat<zz_p>> version
         {
-            std::cout << "~~~Testing mbasis~~~" << std::endl;
+            std::cout << "~~~Testing mbasis ~~~" << std::endl;
             t1w = GetWallTime(); t1 = GetTime();
             Mat<zz_pX> appbas;
             pivdeg = mbasis(appbas,pmat,order,shift);
             t2w = GetWallTime(); t2 = GetTime();
+
             std::cout << "Time(mbasis computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
             std::cout << "Ratio versus kernel: " << ((t2w-t1w)/ref_kernel_wall) << ", " << ((t2-t1)/ref_kernel) << std::endl;
 
@@ -234,23 +236,20 @@ int main(int argc, char *argv[])
             }
         }
 
-        // mbasis Vec<Mat<zz_p>> version 1
-        {
-            std::cout << "~~~Testing mbasis_vector ~~~" << std::endl;
+        { // mbasis_mix
+            std::cout << "~~~Testing mbasis_mix~~~" << std::endl;
             t1w = GetWallTime(); t1 = GetTime();
             Mat<zz_pX> appbas;
-            pivdeg = mbasis_vector(appbas,pmat,order,shift);
+            pivdeg = mbasis_mix(appbas,pmat,order,shift,threshold);
             t2w = GetWallTime(); t2 = GetTime();
 
-            std::cout << "Time(mbasis computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+            std::cout << "Time(mbasis_mix computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
             std::cout << "Ratio versus kernel: " << ((t2w-t1w)/ref_kernel_wall) << ", " << ((t2-t1)/ref_kernel) << std::endl;
 
             if (verify)
             {
                 std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
-                t1w = GetWallTime(); t1 = GetTime();
                 bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
-                t2w = GetWallTime(); t2 = GetTime();
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 
@@ -272,50 +271,51 @@ int main(int argc, char *argv[])
                 }
             }
         }
+
 
         // mbasis_generic
+        //{
+        //    std::cout << "~~~Testing mbasis_generic~~~" << std::endl;
+        //    std::cout << "WARNING: here coldim must be 1; order must be multiple of rowdim; shift must be uniform" << std::endl;
+        //    t1w = GetWallTime(); t1 = GetTime();
+        //    Mat<zz_pX> appbas;
+        //    pivdeg = mbasis_generic(appbas,pmat,order,shift);
+        //    t2w = GetWallTime(); t2 = GetTime();
+
+        //    std::cout << "Time(mbasis_generic computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+        //    std::cout << "Ratio versus kernel: " << ((t2w-t1w)/ref_kernel_wall) << ", " << ((t2-t1)/ref_kernel) << std::endl;
+
+        //    if (verify)
+        //    {
+        //        std::cout << "Verifying Popov approximant basis..." << std::endl;
+        //        t1w = GetWallTime(); t1 = GetTime();
+        //        bool verif = is_approximant_basis(appbas,pmat,order,shift,POPOV,true,false);
+        //        t2w = GetWallTime(); t2 = GetTime();
+        //        std::cout << (verif?"correct":"wrong") << std::endl;
+        //        std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+
+        //        if (rdim*cdim*order < 100)
+        //        {
+        //            std::cout << "Print output approx basis..." << std::endl;
+        //            std::cout << appbas << std::endl;
+        //            std::cout << "Print final residual..." << std::endl;
+        //            Mat<zz_pX> residual;
+        //            multiply_naive(residual,appbas,pmat);
+        //            std::cout << residual << std::endl;
+        //        }
+
+        //        if (std::max(rdim,cdim)<33) {
+        //            Mat<long> degmat;
+        //            degree_matrix(degmat,appbas,shift,true);
+        //            std::cout << "Print degree matrix of approx basis..." << std::endl;
+        //            std::cout << degmat << std::endl;
+        //        }
+        //    }
+        //}
+
+        // mbasis Popov output
         {
-            std::cout << "~~~Testing mbasis_generic~~~" << std::endl;
-            std::cout << "WARNING: here coldim must be 1; order must be multiple of rowdim; shift must be uniform" << std::endl;
-            t1w = GetWallTime(); t1 = GetTime();
-            Mat<zz_pX> appbas;
-            pivdeg = mbasis_generic(appbas,pmat,order,shift);
-            t2w = GetWallTime(); t2 = GetTime();
-
-            std::cout << "Time(mbasis_generic computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-            std::cout << "Ratio versus kernel: " << ((t2w-t1w)/ref_kernel_wall) << ", " << ((t2-t1)/ref_kernel) << std::endl;
-
-            if (verify)
-            {
-                std::cout << "Verifying Popov approximant basis..." << std::endl;
-                t1w = GetWallTime(); t1 = GetTime();
-                bool verif = is_approximant_basis(appbas,pmat,order,shift,POPOV,true,false);
-                t2w = GetWallTime(); t2 = GetTime();
-                std::cout << (verif?"correct":"wrong") << std::endl;
-                std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-
-                if (rdim*cdim*order < 100)
-                {
-                    std::cout << "Print output approx basis..." << std::endl;
-                    std::cout << appbas << std::endl;
-                    std::cout << "Print final residual..." << std::endl;
-                    Mat<zz_pX> residual;
-                    multiply_naive(residual,appbas,pmat);
-                    std::cout << residual << std::endl;
-                }
-
-                if (std::max(rdim,cdim)<33) {
-                    Mat<long> degmat;
-                    degree_matrix(degmat,appbas,shift,true);
-                    std::cout << "Print degree matrix of approx basis..." << std::endl;
-                    std::cout << degmat << std::endl;
-                }
-            }
-        }
-
-        // mbasis_vector Popov output
-        {
-            std::cout << "~~~Testing popov_mbasis (uses mbasis_vector)~~~" << std::endl;
+            std::cout << "~~~Testing popov_mbasis~~~" << std::endl;
             t1w = GetWallTime(); t1 = GetTime();
             Mat<zz_pX> appbas;
             pivdeg = popov_mbasis(appbas,pmat,order,shift);

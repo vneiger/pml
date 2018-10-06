@@ -1084,15 +1084,13 @@ DegVec mbasis(
               const Shift & shift
              );
 
-// TODO some thresholding to be done, so that mbasis does the
-// resupdate strategy when it is faster
-// --> organize code so that mbasis is always ~the fastest
-DegVec mbasis_resupdate(
-                        Mat<zz_pX> & appbas,
-                        const Mat<zz_pX> & pmat,
-                        const long order,
-                        const Shift & shift
-                       );
+DegVec mbasis_mix(
+              Mat<zz_pX> & appbas,
+              const Mat<zz_pX> & pmat,
+              const long order,
+              const Shift & shift,
+              long thres
+             );
 
 DegVec popov_mbasis(
                     Mat<zz_pX> &appbas,
