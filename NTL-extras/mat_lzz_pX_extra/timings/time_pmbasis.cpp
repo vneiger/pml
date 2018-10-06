@@ -22,7 +22,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* checks some products                                       */
 /*------------------------------------------------------------*/
-void one_bench_pm_basis(long sz, long deg, long nbits)
+void one_bench_pmbasis(long sz, long deg, long nbits)
 {
     long rdim = sz*2;
     long cdim = sz;
@@ -68,7 +68,7 @@ void one_bench_pm_basis(long sz, long deg, long nbits)
         t2w = GetWallTime();
 
         cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << endl;
-        //cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << " (pm_basis)" << endl;
+        //cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << " (pmbasis)" << endl;
     }
     // popov_pmbasis
     //{
@@ -78,7 +78,7 @@ void one_bench_pm_basis(long sz, long deg, long nbits)
     //    pivdeg = popov_pmbasis(appbas,pmat,order,shift);
     //    t2w = GetWallTime(); t2 = GetTime();
 
-    //    cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << "(povov_pm_basis)" << endl;   
+    //    cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << "(povov_pmbasis)" << endl;   
     //}
 }
 
@@ -138,7 +138,7 @@ void run_bench(long nbits)
         cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
     }
     for (size_t i=0;i<szs.size();i++)
-        one_bench_pm_basis(szs[i],degs[i],nbits);
+        one_bench_pmbasis(szs[i],degs[i],nbits);
     cout << endl;
 }
 

@@ -178,16 +178,6 @@ int main(int argc, char *argv[])
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 
-                if (rdim*cdim*order < 100)
-                {
-                    std::cout << "Print output approx basis..." << std::endl;
-                    std::cout << appbas << std::endl;
-                    std::cout << "Print final residual..." << std::endl;
-                    Mat<zz_pX> residual;
-                    multiply_naive(residual,appbas,pmat);
-                    std::cout << residual << std::endl;
-                }
-
                 if (std::max(rdim,cdim)<33) {
                     Mat<long> degmat;
                     degree_matrix(degmat,appbas,shift,true);
@@ -217,16 +207,6 @@ int main(int argc, char *argv[])
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 
-                if (rdim*cdim*order < 100)
-                {
-                    std::cout << "Print output approx basis..." << std::endl;
-                    std::cout << appbas << std::endl;
-                    std::cout << "Print final residual..." << std::endl;
-                    Mat<zz_pX> residual;
-                    multiply_naive(residual,appbas,pmat);
-                    std::cout << residual << std::endl;
-                }
-
                 if (std::max(rdim,cdim)<33) {
                     Mat<long> degmat;
                     degree_matrix(degmat,appbas,shift,true);
@@ -252,16 +232,6 @@ int main(int argc, char *argv[])
                 bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-
-                if (rdim*cdim*order < 100)
-                {
-                    std::cout << "Print output approx basis..." << std::endl;
-                    std::cout << appbas << std::endl;
-                    std::cout << "Print final residual..." << std::endl;
-                    Mat<zz_pX> residual;
-                    multiply_naive(residual,appbas,pmat);
-                    std::cout << residual << std::endl;
-                }
 
                 if (std::max(rdim,cdim)<33) {
                     Mat<long> degmat;
@@ -294,16 +264,6 @@ int main(int argc, char *argv[])
         //        std::cout << (verif?"correct":"wrong") << std::endl;
         //        std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 
-        //        if (rdim*cdim*order < 100)
-        //        {
-        //            std::cout << "Print output approx basis..." << std::endl;
-        //            std::cout << appbas << std::endl;
-        //            std::cout << "Print final residual..." << std::endl;
-        //            Mat<zz_pX> residual;
-        //            multiply_naive(residual,appbas,pmat);
-        //            std::cout << residual << std::endl;
-        //        }
-
         //        if (std::max(rdim,cdim)<33) {
         //            Mat<long> degmat;
         //            degree_matrix(degmat,appbas,shift,true);
@@ -332,16 +292,6 @@ int main(int argc, char *argv[])
                 t2w = GetWallTime(); t2 = GetTime();
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-
-                if (rdim*cdim*order < 100)
-                {
-                    std::cout << "Print output approx basis..." << std::endl;
-                    std::cout << appbas << std::endl;
-                    std::cout << "Print final residual..." << std::endl;
-                    Mat<zz_pX> residual;
-                    multiply_naive(residual,appbas,pmat);
-                    std::cout << residual << std::endl;
-                }
 
                 if (std::max(rdim,cdim)<33) {
                     Mat<long> degmat;
