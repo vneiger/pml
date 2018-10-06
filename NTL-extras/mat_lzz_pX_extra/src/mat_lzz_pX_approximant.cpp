@@ -163,13 +163,13 @@ DegVec appbas_iterative(
     ident(appbas,rdim);
 
     // initial residual: the whole input matrix
-    Mat<zz_pX> residual( pmat );
+    Mat<zz_pX> residual(pmat);
 
     // order that remains to be dealt with
-    Order rem_order( order );
+    Order rem_order(order);
 
     // indices of columns/orders that remain to be dealt with
-    std::vector<long> rem_index( cdim );
+    std::vector<long> rem_index(cdim);
     std::iota(rem_index.begin(), rem_index.end(), 0);
 
     // shifted row degrees of approximant basis
@@ -189,12 +189,7 @@ DegVec appbas_iterative(
 
         long j=0; // value if columnwise (order_wise==False)
         if (order_wise)
-        {
-            // FIXME if seems to slow (e.g. compared to non-order-wise), could be
-            // valuable to simply initially permute the columns of pmat and order:
-            // then 'j' is obvious
             j = std::distance(rem_order.begin(), std::max_element(rem_order.begin(), rem_order.end()));
-        }
 
         long deg = order[rem_index[j]] - rem_order[j];
 
@@ -234,8 +229,7 @@ DegVec appbas_iterative(
 
             // update row piv
             ++rdeg[piv]; // shifted row degree of row piv increases
-            for (long k=0; k<rdim; ++k) // TODO use shiftRow
-                appbas[piv][k] <<= 1; // row piv multiplied by X
+            LeftShiftRow(appbas, appbas, piv, 1); // row piv multiplied by X
             for (long k=0; k<residual.NumCols(); ++k)
             {
                 residual[piv][k] <<= 1; // row piv multiplied by X
@@ -252,9 +246,8 @@ DegVec appbas_iterative(
             rem_index.erase(rem_index.begin() + j);
             if (!rem_order.empty())
             {
-                Mat<zz_pX> buffer( residual );
-                residual.kill();
-                residual.SetDims(rdim,rem_order.size());
+                Mat<zz_pX> buffer(residual);
+                residual.SetDims(rdim,rem_order.size()); // storage is freed+reallocated
                 for (long i=0; i<rdim; ++i)
                 {
                     for (long k=0; k<j; ++k)
@@ -283,17 +276,17 @@ DegVec popov_appbas_iterative(
                               bool order_wise
                              )
 {
-    // TODO: first call can be very slow if strange degrees --> rather implement
-    // BecLab00's "continuous" normalization?
+    // FIXME: first call can be very slow if strange degrees (can it? find example)
+    // --> rather implement BecLab00's "continuous" normalization?
     DegVec pivdeg = appbas_iterative(appbas,pmat,order,shift,order_wise);
-    Shift new_shift( pivdeg );
+    Shift new_shift(pivdeg);
     std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
-    clear(appbas);
+    appbas.kill();
     appbas_iterative(appbas,pmat,order,new_shift,order_wise);
     Mat<zz_p> lmat;
     leading_matrix(lmat, appbas, new_shift, true);
     inv(lmat, lmat);
-    mul(appbas,lmat,appbas);
+    mul(appbas,lmat,appbas); // FIXME special mult (expand columns of appbas)
     return pivdeg;
 }
 

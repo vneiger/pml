@@ -187,7 +187,7 @@ Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n);
 /* versions with different shifting orders on rows/columns    */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-// full matrix, 1 row, 1 col
+
 // full matrix shift
 Mat<zz_pX> operator<< (const Mat<zz_pX> &a, long n);
 Mat<zz_pX> operator>> (const Mat<zz_pX> &a, long n);
@@ -195,16 +195,15 @@ Mat<zz_pX> operator>> (const Mat<zz_pX> &a, long n);
 Mat<zz_pX>& operator<<=(Mat<zz_pX>& x, long n);
 Mat<zz_pX>& operator>>=(Mat<zz_pX>& x, long n);
 
-//// procedural versions:
 // full matrix left shifts
 void LeftShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
 Mat<zz_pX> LeftShift(const Mat<zz_pX>& a, long n);
 
-// single row shifts
+// single row left shifts
 void LeftShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n);
 Mat<zz_pX> LeftShiftRow(const Mat<zz_pX>& a, const long r, long n);
 
-// single col shifts
+// single col left shifts
 void LeftShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
 Mat<zz_pX> LeftShiftCol(const Mat<zz_pX>& a, const long c, long n);
 
@@ -212,11 +211,11 @@ Mat<zz_pX> LeftShiftCol(const Mat<zz_pX>& a, const long c, long n);
 void RightShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
 Mat<zz_pX> RightShift(const Mat<zz_pX>& a, long n);
 
-// single row shifts
+// single row left shifts
 void RightShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n);
 Mat<zz_pX> RightShiftRow(const Mat<zz_pX>& a, const long r, long n);
 
-// single col shifts
+// single col left shifts
 void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
 Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n);
 
