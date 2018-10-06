@@ -21,6 +21,27 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* GENERAL USER INTERFACE                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+DegVec approximant_basis(
+                         Mat<zz_pX> & appbas,
+                         const Mat<zz_pX> & pmat,
+                         const Order & order,
+                         const Shift & shift,
+                         const PolMatForm form,
+                         const bool row_wise,
+                         const bool generic
+                        )
+{
+    std::cout << "NOT IMPLEMENTED YET" << std::endl;
+    DegVec d;
+    return d;
+}
+
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -39,6 +60,9 @@ bool is_approximant_basis(
                           const bool randomized
                          )
 {
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
+
     // TODO far from optimal except in the balanced case
     // (e.g. could be improved when deg(appbas)<<deg(pmat) like in Hermite-Pade,
     // or when appbas has strange column degrees or strange row degrees)
@@ -49,8 +73,8 @@ bool is_approximant_basis(
 
     // test whether appbas has the right dimensions
     if (appbas.NumRows() != appbas.NumCols()
-        || (row_wise && appbas.NumCols() != pmat.NumRows())
-        || ((not row_wise) && appbas.NumRows() != pmat.NumCols()))
+        || (row_wise && appbas.NumCols() != m)
+        || ((not row_wise) && appbas.NumRows() != n))
         return false;
 
     // test whether appbas is shift-reduced with form at least 'form'
@@ -71,9 +95,9 @@ bool is_approximant_basis(
 
     Mat<zz_p> cmat;
     if (row_wise)
-        cmat.SetDims(residual.NumRows(),residual.NumCols()+appbas.NumRows());
+        cmat.SetDims(m,m+n);
     else
-        cmat.SetDims(residual.NumRows()+appbas.NumRows(),residual.NumCols());
+        cmat.SetDims(m+n,n);
 
     for (long i = 0; i < residual.NumRows(); ++i)
     {
@@ -103,32 +127,18 @@ bool is_approximant_basis(
 
     // generation test: verify that [ cmat  P(0) ] has full rank (see Giorgi-Neiger ISSAC 2018)
     if (row_wise)
-        for (long i = 0; i < appbas.NumRows(); ++i)
-            for (long j = 0; j < appbas.NumCols(); ++j)
-                cmat[i][j+residual.NumCols()] = coeff(appbas[i][j],0);
+        for (long i = 0; i < m; ++i)
+            for (long j = 0; j < m; ++j)
+                cmat[i][j+n] = coeff(appbas[i][j],0);
     else
-        for (long i = 0; i < appbas.NumRows(); ++i)
-            for (long j = 0; j < appbas.NumCols(); ++j)
-                cmat[i+residual.NumRows()][j] = coeff(appbas[i][j],0);
+        for (long i = 0; i < n; ++i)
+            for (long j = 0; j < n; ++j)
+                cmat[i+m][j] = coeff(appbas[i][j],0);
     long rank = gauss(cmat);
     if (rank != std::min(cmat.NumRows(),cmat.NumCols()))
         return false;
 
     return true;
-}
-
-bool is_approximant_basis(
-                          const Mat<zz_pX> & appbas,
-                          const Mat<zz_pX> & pmat,
-                          const long order,
-                          const Shift & shift,
-                          const PolMatForm & form,
-                          const bool row_wise,
-                          const bool randomized
-                         )
-{
-    Order orders(pmat.NumRows(),order);
-    return is_approximant_basis(appbas,pmat,orders,shift,form,row_wise,randomized);
 }
 
 /*------------------------------------------------------------*/
@@ -527,7 +537,7 @@ DegVec mbasis_vector(
 
     // holds the current shifted row degree of coeffs_appbas
     // initially, this is exactly shift
-    DegVec rdeg( shift );
+    DegVec rdeg(shift);
 
     // holds the current pivot degree of coeffs_appbas
     // initially tuple of zeroes

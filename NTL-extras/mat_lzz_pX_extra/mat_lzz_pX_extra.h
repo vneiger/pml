@@ -964,20 +964,19 @@ DegVec approximant_basis(
                          const bool generic = false
                         );
 
-// TODO: when the above function is ready, uncomment the definition below
-DegVec approximant_basis(
-                         Mat<zz_pX> & appbas,
-                         const Mat<zz_pX> & pmat,
-                         const long order,
-                         const Shift & shift = Shift(),
-                         const PolMatForm form = ORD_WEAK_POPOV,
-                         const bool row_wise = true,
-                         const bool generic = false
-                        );
-//{
-//  Order orders(mat.NumRows(),order);
-//  return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
-//}
+inline DegVec approximant_basis(
+                                Mat<zz_pX> & appbas,
+                                const Mat<zz_pX> & pmat,
+                                const long order,
+                                const Shift & shift = Shift(),
+                                const PolMatForm form = ORD_WEAK_POPOV,
+                                const bool row_wise = true,
+                                const bool generic = false
+                               )
+{
+    Order orders(pmat.NumCols(),order);
+    return approximant_basis(appbas,pmat,orders,shift,form,row_wise,generic);
+}
 
 
 /*------------------------------------------------------------*/
@@ -1001,7 +1000,7 @@ bool is_approximant_basis(
                           const bool randomized = false
                          );
 
-bool is_approximant_basis(
+inline bool is_approximant_basis(
                           const Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
                           const long order,
@@ -1009,7 +1008,12 @@ bool is_approximant_basis(
                           const PolMatForm & form = ORD_WEAK_POPOV,
                           const bool row_wise = true,
                           const bool randomized = false
-                         );
+                         )
+{
+    Order orders(pmat.NumCols(),order);
+    return is_approximant_basis(appbas,pmat,orders,shift,form,row_wise,randomized);
+}
+
 
 /*------------------------------------------------------------*/
 /* Iterative algorithm for general order and shift            */

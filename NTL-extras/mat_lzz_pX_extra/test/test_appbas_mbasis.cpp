@@ -242,6 +242,7 @@ int main(int argc, char *argv[])
     // mbasis_generic
     {
         std::cout << "~~~Testing mbasis_generic~~~" << std::endl;
+        std::cout << "WARNING: here coldim must be 1; order must be multiple of rowdim; shift must be uniform" << std::endl;
         t1w = GetWallTime(); t1 = GetTime();
         Mat<zz_pX> appbas;
         pivdeg = mbasis_generic(appbas,pmat,order,shift);
