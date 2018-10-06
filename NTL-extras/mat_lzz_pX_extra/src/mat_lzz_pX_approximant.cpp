@@ -10,7 +10,7 @@
 #include "mat_lzz_pX_partial_linearization.h"
 #include "lzz_pX_CRT.h"
 
-#define MBASIS_PROFILE // FIXME
+//#define MBASIS_PROFILE // FIXME
 //#define MBASIS1_PROFILE // FIXME
 //#define PMBASIS_PROFILE // FIXME
 
