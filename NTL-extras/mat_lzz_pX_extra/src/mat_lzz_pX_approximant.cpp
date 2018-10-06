@@ -519,7 +519,6 @@ DegVec mbasis(
 /*------------------------------------------------------------*/
 /* mbasis, using vectors of matrices                          */
 /*------------------------------------------------------------*/
-// FIXME representing output as vector of matrices seems wrong if max degree is large (Hermite-Pade with unbalanced degrees) --> should be avoided in this case???)
 DegVec mbasis_vector(
                      Mat<zz_pX> & appbas,
                      const Mat<zz_pX> & pmat,
