@@ -707,7 +707,7 @@ DegVec mbasis_mix(
     Mat<zz_p> res_coeff,res_coeff1,res_coeff2; // will store coefficient matrices used to compute the residual
     Mat<zz_p> kermul; // will store constant-kernel * coeffs_appbas[d] or coeffs_residual[d]
 
-    for (long ord = 1; ord <= thres; ++ord)
+    for (long ord = 1; ord <= std::min(thres,order); ++ord)
     {
         // call MBasis1 to retrieve kernel and pivdeg
         diff_pivdeg = popov_mbasis1(kerbas,residual,rdeg);
@@ -780,11 +780,14 @@ DegVec mbasis_mix(
 
     // switching to continuous residual update
     // --> initialize the residual via middle product
-    appbas = conv(coeffs_appbas);
-    Mat<zz_pX> midprod;
-    middle_product(midprod, appbas, pmat, thres, order-thres-1);
     Vec<Mat<zz_p>> coeffs_residual;
-    coeffs_residual = conv(midprod);
+    if (order>thres)
+    {
+        appbas = conv(coeffs_appbas);
+        Mat<zz_pX> midprod;
+        middle_product(midprod, appbas, pmat, thres, order-thres-1);
+        coeffs_residual = conv(midprod);
+    }
 
     for (long ord = thres+1; ord <= order; ++ord)
     {
