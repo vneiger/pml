@@ -1066,21 +1066,23 @@ DegVec popov_mbasis1(
 /*   - Jeannerod-Neiger-Villard 2018                          */
 /*          (ensuring s-ordered weak Popov or s-Popov)        */
 /*------------------------------------------------------------*/
+// plain version, not the most efficient
+DegVec mbasis_plain(
+                    Mat<zz_pX> & appbas,
+                    const Mat<zz_pX> & pmat,
+                    const long order,
+                    const Shift & shift
+                   );
+
+// variant which first converts to vector of constant matrices,
+// performs the computations with this storage, and eventually
+// converts back to polynomial matrices
 DegVec mbasis(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
               const long order,
               const Shift & shift
              );
-
-// variant which first converts to vector of constant matrices
-// TODO see if this is ever slower than the above
-DegVec mbasis_vector(
-                     Mat<zz_pX> & appbas,
-                     const Mat<zz_pX> & pmat,
-                     const long order,
-                     const Shift & shift
-                    );
 
 // TODO some thresholding to be done, so that mbasis does the
 // resupdate strategy when it is faster

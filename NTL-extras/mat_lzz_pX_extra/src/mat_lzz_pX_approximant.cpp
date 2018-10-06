@@ -412,12 +412,12 @@ DegVec popov_mbasis1(
 /*------------------------------------------------------------*/
 /* plain mbasis with polynomial matrices                      */
 /*------------------------------------------------------------*/
-DegVec mbasis(
-              Mat<zz_pX> & appbas,
-              const Mat<zz_pX> & pmat,
-              const long order,
-              const Shift & shift
-             )
+DegVec mbasis_plain(
+                     Mat<zz_pX> & appbas,
+                     const Mat<zz_pX> & pmat,
+                     const long order,
+                     const Shift & shift
+                    )
 {
     // initially, appbas is the identity matrix
     ident(appbas,pmat.NumRows());
@@ -519,12 +519,12 @@ DegVec mbasis(
 /*------------------------------------------------------------*/
 /* mbasis, using vectors of matrices                          */
 /*------------------------------------------------------------*/
-DegVec mbasis_vector(
-                     Mat<zz_pX> & appbas,
-                     const Mat<zz_pX> & pmat,
-                     const long order,
-                     const Shift & shift
-                    )
+DegVec mbasis(
+              Mat<zz_pX> & appbas,
+              const Mat<zz_pX> & pmat,
+              const long order,
+              const Shift & shift
+             )
 {
     Vec<Mat<zz_p>> coeffs_pmat = conv(pmat,order);
     long nrows = coeffs_pmat[0].NumRows();
@@ -759,11 +759,11 @@ DegVec popov_mbasis(
                     const Shift & shift
                    )
 {
-    DegVec pivdeg = mbasis_vector(appbas,pmat,order,shift);
+    DegVec pivdeg = mbasis(appbas,pmat,order,shift);
     Shift new_shift( pivdeg );
     std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
     clear(appbas);
-    mbasis_vector(appbas,pmat,order,new_shift);
+    mbasis(appbas,pmat,order,new_shift);
     Mat<zz_p> lmat;
     leading_matrix(lmat, appbas, new_shift, true);
     inv(lmat, lmat);
@@ -792,14 +792,14 @@ DegVec pmbasis(
     if (order <= 32)
     {
         t1 = GetWallTime();
-        DegVec rdeg = mbasis_vector(appbas,pmat,order,shift);
+        DegVec rdeg = mbasis(appbas,pmat,order,shift);
         t2 = GetWallTime();
         std::cout << "\tTime(base-case): " << (t2-t1) << "s" << std::endl;
         return rdeg;
     }
 #else
     if (order <= 32)
-        return mbasis_vector(appbas,pmat,order,shift);
+        return mbasis(appbas,pmat,order,shift);
 #endif
     DegVec pivdeg; // pivot degree, first call
     DegVec pivdeg2; // pivot degree, second call
@@ -1000,7 +1000,7 @@ DegVec pmbasis_generic(
     if (order <= 32)
     {
         t1 = GetWallTime();
-        DegVec rdeg = mbasis_vector(appbas,pmat,order,shift);
+        DegVec rdeg = mbasis(appbas,pmat,order,shift);
         t2 = GetWallTime();
         std::cout << "\tTime(base-case): " << (t2-t1) << "s" << std::endl;
         return rdeg;
@@ -1012,7 +1012,7 @@ DegVec pmbasis_generic(
         //popov_mbasis1_generic2(appbas,pmat,order,shift);
         return mbasis_generic(appbas,pmat,order,shift);
         //cout << "appbas1: " << appbas << endl;
-        //auto t = mbasis_vector(appbas,pmat,order,shift);
+        //auto t = mbasis(appbas,pmat,order,shift);
         //cout << "appbas2: " << appbas << endl;
         //return t;
     }
