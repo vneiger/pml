@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 
     std::vector<Shift> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7};
 
-    std::cout << "Testing approximant basis computation with random input matrix" << std::endl;
+    std::cout << "Testing approximant basis computation (iterative) with random input matrix" << std::endl;
     std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
     std::cout << "--rdim =\t" << rdim << std::endl;
     std::cout << "--cdim =\t" << cdim << std::endl;
@@ -81,7 +81,6 @@ int main(int argc, char *argv[])
     t2w =  GetWallTime(); t2 = GetTime();
     //std::cout << "Time(random mat creation): " << (t2w-t1w) <<  "s,  " << (t2-t1) << "s\n";
 
-    std::cout << "warming up..." << std::endl;
     warmup();
 
     for (Shift shift : shifts)

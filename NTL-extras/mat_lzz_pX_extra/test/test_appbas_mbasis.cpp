@@ -27,9 +27,8 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
 
 int main(int argc, char *argv[])
 {
-    if (argc!=8)
-        throw std::invalid_argument("Usage: ./test_appbas_mbasis rdim cdim order nbits verify nthreads thres");
-    long threshold = atoi(argv[7]);
+    if (argc!=7)
+        throw std::invalid_argument("Usage: ./test_appbas_mbasis rdim cdim order nbits verify nthreads");
 
     long rdim = atoi(argv[1]);
     long cdim = atoi(argv[2]);
@@ -42,14 +41,6 @@ int main(int argc, char *argv[])
         zz_p::FFTInit(0);
     else
         zz_p::init(NTL::GenPrime_long(nbits));
-
-    std::cout << "Testing approximant basis (mbasis) with random input matrix" << std::endl;
-    std::cout << "--prime =\t" << zz_p::modulus();
-    if (nbits==0) std::cout << "  (FFT prime)";
-    std::cout << std::endl;
-    std::cout << "--rdim =\t" << rdim << std::endl;
-    std::cout << "--cdim =\t" << cdim << std::endl;
-    std::cout << "--order =\t" << order << std::endl;
 
     // declare shifts
     Shift shift1(rdim,0); // uniform [0,...,0]
@@ -74,7 +65,7 @@ int main(int argc, char *argv[])
 
     std::vector<Shift> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7};
 
-    std::cout << "Testing approximant basis computation with random input matrix" << std::endl;
+    std::cout << "Testing approximant basis computation (mbasis) with random input matrix" << std::endl;
     std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
     std::cout << "--rdim =\t" << rdim << std::endl;
     std::cout << "--cdim =\t" << cdim << std::endl;
@@ -89,7 +80,6 @@ int main(int argc, char *argv[])
     t2w =  GetWallTime(); t2 = GetTime();
     //std::cout << "Time(random mat creation): " << (t2w-t1w) <<  "s,  " << (t2-t1) << "s\n";
 
-    std::cout << "warming up..." << std::endl;
     warmup();
 
     for (Shift shift : shifts)
@@ -216,14 +206,14 @@ int main(int argc, char *argv[])
             }
         }
 
-        { // mbasis_mix
-            std::cout << "~~~Testing mbasis_mix~~~" << std::endl;
+        { // mbasis_resupdate
+            std::cout << "~~~Testing mbasis_resupdate~~~" << std::endl;
             t1w = GetWallTime(); t1 = GetTime();
             Mat<zz_pX> appbas;
-            pivdeg = mbasis_mix(appbas,pmat,order,shift,threshold);
+            pivdeg = mbasis_resupdate(appbas,pmat,order,shift);
             t2w = GetWallTime(); t2 = GetTime();
 
-            std::cout << "Time(mbasis_mix computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+            std::cout << "Time(mbasis_resupdate computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
             std::cout << "Ratio versus kernel: " << ((t2w-t1w)/ref_kernel_wall) << ", " << ((t2-t1)/ref_kernel) << std::endl;
 
             if (verify)

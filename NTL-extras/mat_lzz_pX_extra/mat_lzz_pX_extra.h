@@ -936,16 +936,9 @@ typedef std::vector<long> Order;
 // approach), see what improvement this brings (will improve, but for what kind
 // of n?)
 
-// TODO mbasis: threshold res_update
 // TODO pmbasis: threshold mbasis
 
-// TODO mbasis (non-res-update): at the beginning, in a single round, gather
-// matrix coefficients a[i], i<order, such that pmat = sum_i a[i] X^i,
-// and work with them
-
-// TODO mbasis parallelize computation of residual (for big matrices)
-
-// TODO mbasis-resupdate: what representation of pmat to use?
+// TODO mbasis insert threads
 
 // Guarantee: output is at least ordered weak Popov
 // return value is pivot degree
@@ -1056,8 +1049,8 @@ DegVec popov_mbasis1(
                     );
 
 // TODO check if serious difference of time if not returning Popov but just
-// minimal, like done in GJV03 and GL14 (implies slightly less permutation
-// work: the final permutation of the rows is not necessary)
+// minimal, like done in LinBox and in GJV03 and GL14 (implies slightly less
+// permutation work: the final permutation of the rows is not necessary)
 
 /*------------------------------------------------------------*/
 /* M-Basis algorithm for uniform approximant order            */
@@ -1085,13 +1078,12 @@ DegVec mbasis(
               const Shift & shift
              );
 
-DegVec mbasis_mix(
-              Mat<zz_pX> & appbas,
-              const Mat<zz_pX> & pmat,
-              const long order,
-              const Shift & shift,
-              long thres
-             );
+DegVec mbasis_resupdate(
+                        Mat<zz_pX> & appbas,
+                        const Mat<zz_pX> & pmat,
+                        const long order,
+                        const Shift & shift
+                       );
 
 DegVec popov_mbasis(
                     Mat<zz_pX> &appbas,
