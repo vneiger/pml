@@ -17,7 +17,7 @@ void check(long m, long n, long d){
     
     Shift s;
     for (long i = 0; i < m; i++)
-        s.emplace_back(d);
+        s.emplace_back(d+i);
     
     Mat<zz_pX> kerbas;
     kernel_basis(kerbas, pmat, s);
