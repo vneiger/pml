@@ -10,7 +10,7 @@
 #include "mat_lzz_pX_partial_linearization.h"
 #include "lzz_pX_CRT.h"
 
-//#define MBASIS_PROFILE // FIXME
+#define MBASIS_PROFILE // FIXME
 //#define MBASIS1_PROFILE // FIXME
 //#define PMBASIS_PROFILE // FIXME
 
@@ -646,10 +646,10 @@ DegVec mbasis(
                     mul(res_coeff, coeffs_appbas[d], coeffs_pmat[ord-d]);
                     add(residual, residual, res_coeff);
                 }
-            }
 #ifdef MBASIS_PROFILE
             t_residual += GetWallTime()-t_now;
 #endif
+            }
         }
     }
 
@@ -677,6 +677,10 @@ DegVec mbasis_resupdate(
                         const Shift & shift
                        )
 {
+#ifdef MBASIS_PROFILE
+    double t_others=0.0,t_residual=0.0,t_appbas=0.0,t_mbasis1=0.0,t_now;
+    t_now = GetWallTime();
+#endif
     Vec<Mat<zz_p>> coeffs_residual = conv(pmat,order);
     long nrows = coeffs_residual[0].NumRows();
     Vec<Mat<zz_p>> coeffs_appbas;
@@ -703,11 +707,20 @@ DegVec mbasis_resupdate(
     // declare matrices
     Mat<zz_p> res_coeff,res_coeff1,res_coeff2; // will store coefficient matrices used to compute the residual
     Mat<zz_p> kermul; // will store constant-kernel * coeffs_appbas[d] or coeffs_residual[d]
+#ifdef MBASIS_PROFILE
+    t_others += GetWallTime()-t_now;
+#endif
 
     for (long ord = 1; ord <= order; ++ord)
     {
+#ifdef MBASIS_PROFILE
+        t_now = GetWallTime();
+#endif
         // call MBasis1 to retrieve kernel and pivdeg
         diff_pivdeg = popov_mbasis1(kerbas,coeffs_residual[ord-1],rdeg);
+#ifdef MBASIS_PROFILE
+        t_mbasis1 += GetWallTime()-t_now;
+#endif
 
         if (kerbas.NumRows()==0)
         {
@@ -724,6 +737,9 @@ DegVec mbasis_resupdate(
 
         if (kerbas.NumRows()<nrows)
         {
+#ifdef MBASIS_PROFILE
+            t_now = GetWallTime();
+#endif
             // I/ Update degrees:
             // new shifted row degree = old rdeg + diff_pivdeg
             std::transform(rdeg.begin(), rdeg.end(), diff_pivdeg.begin(), rdeg.begin(), std::plus<long>());
@@ -735,6 +751,10 @@ DegVec mbasis_resupdate(
             long deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
             coeffs_appbas.SetLength(deg_appbas+1);
             coeffs_appbas[deg_appbas].SetDims(nrows, nrows);
+#ifdef MBASIS_PROFILE
+            t_others += GetWallTime()-t_now;
+            t_now = GetWallTime();
+#endif
 
             // II/ update approximant basis
 
@@ -760,12 +780,18 @@ DegVec mbasis_resupdate(
                     }
                 }
             }
+#ifdef MBASIS_PROFILE
+            t_appbas += GetWallTime()-t_now;
+            t_now = GetWallTime();
+#endif
 
             // III/ update residual, if needed (ord<order):
             // submatrix of rows with diff_pivdeg==0 become kerbas*coeffs_residual,
             // rows with diff_pivdeg=1 are simply multiplied by X
             if (ord<order)
             {
+                // ignore coefficients of degree less than ord: they are zero
+                // (the one of degree ord-1 was made zero in this iteration of the main for loop)
                 for (long d = coeffs_residual.length()-1; d >= ord; --d)
                 {
                     kermul = kerbas * coeffs_residual[d];
@@ -781,11 +807,27 @@ DegVec mbasis_resupdate(
                             coeffs_residual[d][i] = coeffs_residual[d-1][i];
                     }
                 }
+#ifdef MBASIS_PROFILE
+            t_residual += GetWallTime()-t_now;
+#endif
             }
         }
     }
 
+#ifdef MBASIS_PROFILE
+    t_now = GetWallTime();
+#endif
     appbas = conv(coeffs_appbas);
+#ifdef MBASIS_PROFILE
+    t_others += GetWallTime()-t_now;
+#endif
+#ifdef MBASIS_PROFILE
+    double t_total = t_residual + t_appbas + t_mbasis1 + t_others;
+    std::cout << "~~mbasis~~\t (residuals,basis,basecase,others): \t ";
+    std::cout << t_residual/t_total << "," << t_appbas/t_total << "," <<
+            t_mbasis1/t_total << "," << t_others/t_total << std::endl;
+#endif
+
     return pivdeg;
 }
 
