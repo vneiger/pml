@@ -37,12 +37,20 @@ DegVec approximant_basis(
                          const bool generic
                         )
 {
-    std::cout << "NOT IMPLEMENTED YET" << std::endl;
-    DegVec d;
-    return d;
+    std::cout << "==approximant_basis== WARNING: SLOW ITERATIVE ALGO" << std::endl;
+    std::cout << "==approximant_basis== NOT READY FOR USE YET" << std::endl;
+    if (row_wise && not generic)
+    {
+        DegVec pivdeg;
+        if (form<PolMatForm::POPOV)
+            pivdeg = appbas_iterative(appbas,pmat,order,shift);
+        else if (form==PolMatForm::POPOV)
+            pivdeg = popov_appbas_iterative(appbas,pmat,order,shift);
+        return pivdeg;
+    }
+    else
+        throw std::logic_error("==approximant_basis== Not implemented yet");
 }
-
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -974,6 +982,8 @@ DegVec mbasis_generic(
                       const Shift & shift
                      )
 {
+    // TODO just for avoiding the unused error
+    DegVec d = shift;
     // TODO current code specific to n=1 !!
     long nrows = pmat.NumRows();
     // partially linearize pmat into order/nrows constant matrices
