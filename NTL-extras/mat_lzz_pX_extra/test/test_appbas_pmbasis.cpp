@@ -29,19 +29,16 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
 
 int main(int argc, char *argv[])
 {
-    SetNumThreads(4);
 
-    bool verify=false;
-
-    if (argc!=5 && argc!=6)
-        throw std::invalid_argument("Usage: ./test_appbas_pmbasis rdim cdim order nbits (verify)");
+    if (argc!=7)
+        throw std::invalid_argument("Usage: ./test_appbas_pmbasis rdim cdim order nbits verify nthreads");
 
     long rdim = atoi(argv[1]);
     long cdim = atoi(argv[2]);
     long order = atoi(argv[3]);
     long nbits = atoi(argv[4]);
-    if (argc==6)
-        verify = (atoi(argv[5])==1);
+    bool verify = (atoi(argv[5])==1);
+    SetNumThreads(atoi(argv[6]));
 
     std::vector<long> shift(rdim,0);
     //std::vector<long> shift {0,1,0,1};
@@ -68,6 +65,7 @@ int main(int argc, char *argv[])
         std::cout << shift << std::endl; 
     else
         std::cout << "length " << shift.size() << std::endl;
+    std::cout << "--nthreads =\t" << AvailableThreads() << std::endl;
 
     double t1,t2,t1w,t2w;
 

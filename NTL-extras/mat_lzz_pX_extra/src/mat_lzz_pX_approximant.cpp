@@ -750,11 +750,11 @@ DegVec popov_mbasis(
                     const Shift & shift
                    )
 {
-    DegVec pivdeg = mbasis(appbas,pmat,order,shift);
+    DegVec pivdeg = mbasis_vector(appbas,pmat,order,shift);
     Shift new_shift( pivdeg );
     std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
     clear(appbas);
-    mbasis(appbas,pmat,order,new_shift);
+    mbasis_vector(appbas,pmat,order,new_shift);
     Mat<zz_p> lmat;
     leading_matrix(lmat, appbas, new_shift, true);
     inv(lmat, lmat);
@@ -883,8 +883,9 @@ DegVec mbasis_generic(
                       const Shift & shift
                      )
 {
+    // TODO current code specific to n=1 !!
     long nrows = pmat.NumRows();
-    // partially linearize pmat into a constant matrix
+    // partially linearize pmat into order/nrows constant matrices
     Vec<Mat<zz_p>> residuals;
     residuals.SetLength(order/nrows);
     for (long k = 0; k < order/nrows; ++k)
