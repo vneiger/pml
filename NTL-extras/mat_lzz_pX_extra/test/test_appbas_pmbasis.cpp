@@ -78,7 +78,8 @@ int main(int argc, char *argv[])
     double t1,t2,t1w,t2w;
     Mat<zz_pX> pmat;
     t1w = GetWallTime(); t1 = GetTime();
-    random_mat_zz_pX(pmat, rdim, cdim, order);
+    //random_mat_zz_pX(pmat, rdim, cdim, order);
+    pmat.SetDims(rdim,cdim);
     t2w =  GetWallTime(); t2 = GetTime();
     //std::cout << "Time(random mat creation): " << (t2w-t1w) <<  "s,  " << (t2-t1) << "s\n";
 
@@ -119,6 +120,7 @@ int main(int argc, char *argv[])
             Mat<zz_pX> appbas;
             pivdeg = pmbasis(appbas,pmat,order,shift);
             t2w = GetWallTime(); t2 = GetTime();
+            std::cout << degree_matrix(appbas) << std::endl;
 
             std::cout << "Time(pmbasis computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 

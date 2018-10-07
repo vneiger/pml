@@ -72,7 +72,6 @@ int main(int argc, char *argv[])
     std::cout << "--order <\t" << order << std::endl;
     std::cout << "--nthreads =\t" << AvailableThreads() << std::endl;
 
-    // build random matrix
     double t1,t2,t1w,t2w;
 
     warmup();
@@ -115,11 +114,9 @@ int main(int argc, char *argv[])
             // build random matrix
             Mat<zz_pX> pmat;
             random_mat_zz_pX(pmat, rdim, cdim, order);
-            Mat<zz_p> mat = coeff(pmat,0);
-            mat = random_mat_zz_p(rdim, cdim);
             t1w = GetWallTime(); t1 = GetTime();
             Mat<zz_p> kerbas;
-            pivdeg = popov_mbasis1(kerbas,mat,shift);
+            pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
             t2w = GetWallTime(); t2 = GetTime();
             t_mbasis1w += t2w-t1w;
             t_mbasis1 += t2-t1;
@@ -137,20 +134,23 @@ int main(int argc, char *argv[])
 
         if (verify)
         {
+            std::cout << "Verifying Popov approximant basis..." << std::endl;
             Mat<zz_pX> appbas1;
             appbas1.SetDims(rdim,rdim);
             long row=0;
-            for (long i = 0; i < rdim; ++i) {
-                if (pivdeg[i]==0) {
+            std::cout << kerbas_copy << std::endl;
+            for (long i = 0; i < rdim; ++i)
+            {
+                if (pivdeg[i]==0)
+                {
                     for (long j = 0; j < rdim; ++j)
                         appbas1[i][j] = kerbas_copy[row][j];
                     ++row;
-                } else {
-                    SetX(appbas1[i][i]);
                 }
+                else
+                    SetX(appbas1[i][i]);
             }
 
-            std::cout << "Verifying Popov approximant basis..." << std::endl;
             bool verif1 = is_approximant_basis(appbas1,pmat_copy,1,shift,POPOV,true,false);
             std::cout << (verif1?"correct":"wrong") << std::endl;
 

@@ -15,9 +15,9 @@ void check(long m, long n, long d){
 
     cout << "pmat: " << endl << degree_matrix(pmat) << endl;
 
-    Shift s;
-    for (long i = 0; i < m; i++)
-        s.emplace_back(d+i);
+    Shift s(m, d);
+    //for (long i = 0; i < m; i++)
+    //    s.emplace_back(d+i);
 
     Mat<zz_pX> kerbas;
     kernel_basis(kerbas, pmat, s);
@@ -28,13 +28,13 @@ void check(long m, long n, long d){
     multiply(res, kerbas, pmat);
     cout << "product should be zero: " << IsZero(res) << endl;
 
-    kerbas = Mat<zz_pX>();
-    kernel_basis_intbas(kerbas, pmat, s);
+    //kerbas = Mat<zz_pX>();
+    //kernel_basis_intbas(kerbas, pmat, s);
 
-    cout << "kerbas (intbas): " << endl << degree_matrix(kerbas) << endl;
+    //cout << "kerbas (intbas): " << endl << degree_matrix(kerbas) << endl;
 
-    multiply(res, kerbas, pmat);
-    cout << "product should be zero: " << IsZero(res) << endl;
+    //multiply(res, kerbas, pmat);
+    //cout << "product should be zero: " << IsZero(res) << endl;
 }
 
 /*------------------------------------------------------------*/

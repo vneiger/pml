@@ -23,9 +23,16 @@ DegVec kernel_basis(
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
+    std::cout << "Dims: " << m << " x " << n << std::endl;
+    std::cout << "Input degrees:" << std::endl << degree_matrix(pmat) << std::endl;
+    std::cout << "Shift: ";
+    for (auto s : shift)
+        std::cout << s << ",";
+    std::cout << std::endl;
 
     // find parameter: sum of the m-n largest entries of shift
     // TODO assumes m<n ?
+    // all below assumes pmat nonzero?
     Shift sorted_shift(shift);
     std::sort(sorted_shift.begin(), sorted_shift.end());
     long rho = 0;
@@ -39,6 +46,7 @@ DegVec kernel_basis(
     // compute approximant basis
     Mat<zz_pX> appbas;
     DegVec rdeg = pmbasis(appbas, pmat, order, shift);
+    std::cout << "degrees P" << std::endl << degree_matrix(appbas) << std::endl;
 
     // rdeg is now the shift-pivot degree of appbas; deduce shift-row degree
     // which is the componentwise addition pivot degree + shift
@@ -57,25 +65,11 @@ DegVec kernel_basis(
         else
             other_rows.emplace_back(i);
     long m1 = ker_rows.size();
-    long m2 = other_rows.size();
-    Mat<zz_pX> P2;
-    P2.SetDims(m2, m);
-    DegVec rdegP1(m1), rdegP2(m2);
 
-    // copy into P2
-    for (long i = 0; i < m2; ++i)
-        rdegP2[i] = rdeg[other_rows[i]];
-    for (long i = 0; i < m2; ++i)
-        P2[i] = appbas[other_rows[i]]; // FIXME could use swap or something, since appbas will be destroyed?
-
-    std::cout << "degrees P" << std::endl << degree_matrix(appbas) << std::endl;
-    std::cout << "degrees P2" << std::endl << degree_matrix(P2) << std::endl;
-
-    // copy into P1
+    DegVec rdegP1(m1);
     for (long i = 0; i < m1; ++i)
         rdegP1[i] = rdeg[ker_rows[i]];
 
-    // TODO make sure we don't bother about copying P2 in this case
     if (n == 1)
     {
         kerbas.SetDims(m1, m);
@@ -83,6 +77,18 @@ DegVec kernel_basis(
             kerbas[i] = appbas[ker_rows[i]];  // (FIXME cf above could use swap?)
         return rdegP1;
     }
+
+    long m2 = other_rows.size();
+    DegVec rdegP2(m2);
+    for (long i = 0; i < m2; ++i)
+        rdegP2[i] = rdeg[other_rows[i]];
+
+    Mat<zz_pX> P2;
+    P2.SetDims(m2, m);
+    for (long i = 0; i < m2; ++i)
+        P2[i] = appbas[other_rows[i]]; // FIXME could use swap or something, since appbas will be destroyed?
+
+    std::cout << "degrees P2" << std::endl << degree_matrix(P2) << std::endl;
 
     // set up the recursive calls
     for (long i = 0; i < m2; ++i)
@@ -96,6 +102,7 @@ DegVec kernel_basis(
     Mat<zz_pX> G1,G2;
     long n1 = ceil(n/2);
     long n2 = n-n1;
+    std::cout << "Dims of rec calls: " << n1 << " x " << m2 << " and " << n2 << " x " << m2 << std::endl;
     G1.SetDims(m2, n1);
     G2.SetDims(m2, n2);
     for (long r = 0; r < m2; ++r)
