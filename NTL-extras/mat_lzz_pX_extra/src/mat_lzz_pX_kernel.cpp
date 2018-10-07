@@ -12,6 +12,7 @@
 
 NTL_CLIENT
 
+// TODO: use pivdeg/pivind instead of rdeg?
 // TODO: issues when m <= n !! go directly to divide and conquer
 // and if we know the first approximant basis will not give any kernel vector, should we also directly divide and conquer?
 // TODO: doc mentioning requirement: entries of shift should bound row degrees of pmat
@@ -23,12 +24,6 @@ DegVec kernel_basis(
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
-    std::cout << "Dims: " << m << " x " << n << std::endl;
-    std::cout << "Input degrees:" << std::endl << degree_matrix(pmat) << std::endl;
-    std::cout << "Shift: ";
-    for (auto s : shift)
-        std::cout << s << ",";
-    std::cout << std::endl;
 
     // find parameter: sum of the m-n largest entries of shift
     // TODO assumes m<n ?
@@ -46,7 +41,6 @@ DegVec kernel_basis(
     // compute approximant basis
     Mat<zz_pX> appbas;
     DegVec rdeg = pmbasis(appbas, pmat, order, shift);
-    std::cout << "degrees P" << std::endl << degree_matrix(appbas) << std::endl;
 
     // rdeg is now the shift-pivot degree of appbas; deduce shift-row degree
     // which is the componentwise addition pivot degree + shift
@@ -70,7 +64,7 @@ DegVec kernel_basis(
     for (long i = 0; i < m1; ++i)
         rdegP1[i] = rdeg[ker_rows[i]];
 
-    if (n == 1)
+    if (n == 1 || m1 == m)
     {
         kerbas.SetDims(m1, m);
         for (long i = 0; i < m1; i++)
@@ -88,8 +82,6 @@ DegVec kernel_basis(
     for (long i = 0; i < m2; ++i)
         P2[i] = appbas[other_rows[i]]; // FIXME could use swap or something, since appbas will be destroyed?
 
-    std::cout << "degrees P2" << std::endl << degree_matrix(P2) << std::endl;
-
     // set up the recursive calls
     for (long i = 0; i < m2; ++i)
         rdegP2[i] -= order; // set rdegP2 = t from paper
@@ -102,23 +94,22 @@ DegVec kernel_basis(
     Mat<zz_pX> G1,G2;
     long n1 = ceil(n/2);
     long n2 = n-n1;
-    std::cout << "Dims of rec calls: " << n1 << " x " << m2 << " and " << n2 << " x " << m2 << std::endl;
     G1.SetDims(m2, n1);
     G2.SetDims(m2, n2);
     for (long r = 0; r < m2; ++r)
-    {
-        long c = 0;
-        for (; c < n1; ++c)
+        for (long c = 0; c < n1; ++c)
             G1[r][c] = G[r][c];
-        for (; c < n2; ++c)
-            G2[r][c] = G[r][n1+c];
-    }
+    for (long r = 0; r < m2; ++r)
+        for (long c = 0; c < n2; ++c)
+            G2[r][c] = G[r][c+n1];
 
     // recursive calls
     Mat<zz_pX> N1, N2;
     DegVec u = kernel_basis(N1, G1, rdegP2);
+
     multiply(G2, N1, G2);
     DegVec v = kernel_basis(N2, G2, u);
+
     rdegP1.reserve(m1+v.size());
     for (auto &i: v)
         rdegP1.emplace_back(i);
@@ -151,11 +142,19 @@ DegVec kernel_basis_intbas(
         return DegVec();
     }
 
+    // find parameter: sum of the m-n largest entries of shift
+    // TODO assumes m<n ?
+    // all below assumes pmat nonzero?
+    Shift sorted_shift(shift);
+    std::sort(sorted_shift.begin(), sorted_shift.end());
     long rho = 0;
     for (long i = m-n; i < m; i++)
-        rho += shift[i];
-    long lambda = ceil((rho*1.0)/n);
-    long order = 3*lambda;
+        rho += sorted_shift[i];
+
+    // order for call to approximation
+    // TODO threshold ( 3* ?) to determine
+    long order = 3 * ceil( (double)rho / n);
+
 
     //cout << "pmat: " << degree_matrix(pmat) << endl;
     //cout << "shift: ";
