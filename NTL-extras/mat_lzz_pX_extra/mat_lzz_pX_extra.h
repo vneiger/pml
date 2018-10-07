@@ -187,7 +187,7 @@ Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n);
 /* versions with different shifting orders on rows/columns    */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-// full matrix, 1 row, 1 col
+
 // full matrix shift
 Mat<zz_pX> operator<< (const Mat<zz_pX> &a, long n);
 Mat<zz_pX> operator>> (const Mat<zz_pX> &a, long n);
@@ -195,16 +195,15 @@ Mat<zz_pX> operator>> (const Mat<zz_pX> &a, long n);
 Mat<zz_pX>& operator<<=(Mat<zz_pX>& x, long n);
 Mat<zz_pX>& operator>>=(Mat<zz_pX>& x, long n);
 
-//// procedural versions:
 // full matrix left shifts
 void LeftShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
 Mat<zz_pX> LeftShift(const Mat<zz_pX>& a, long n);
 
-// single row shifts
+// single row left shifts
 void LeftShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n);
 Mat<zz_pX> LeftShiftRow(const Mat<zz_pX>& a, const long r, long n);
 
-// single col shifts
+// single col left shifts
 void LeftShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
 Mat<zz_pX> LeftShiftCol(const Mat<zz_pX>& a, const long c, long n);
 
@@ -212,11 +211,11 @@ Mat<zz_pX> LeftShiftCol(const Mat<zz_pX>& a, const long c, long n);
 void RightShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
 Mat<zz_pX> RightShift(const Mat<zz_pX>& a, long n);
 
-// single row shifts
+// single row left shifts
 void RightShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n);
 Mat<zz_pX> RightShiftRow(const Mat<zz_pX>& a, const long r, long n);
 
-// single col shifts
+// single col left shifts
 void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
 Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n);
 
@@ -638,6 +637,7 @@ void middle_product_naive(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX>
 void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+// TODO what is "is_prime" argument?
 void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime = 1);
 
 inline Mat<zz_pX> middle_product(const Mat<zz_pX>& a, const Mat<zz_pX>& c, long dA, long dB, long is_prime = 1)
@@ -936,16 +936,9 @@ typedef std::vector<long> Order;
 // approach), see what improvement this brings (will improve, but for what kind
 // of n?)
 
-// TODO mbasis: threshold res_update
 // TODO pmbasis: threshold mbasis
 
-// TODO mbasis (non-res-update): at the beginning, in a single round, gather
-// matrix coefficients a[i], i<order, such that pmat = sum_i a[i] X^i,
-// and work with them
-
-// TODO mbasis parallelize computation of residual (for big matrices)
-
-// TODO mbasis-resupdate: what representation of pmat to use?
+// TODO mbasis insert threads
 
 // Guarantee: output is at least ordered weak Popov
 // return value is pivot degree
@@ -965,20 +958,19 @@ DegVec approximant_basis(
                          const bool generic = false
                         );
 
-// TODO: when the above function is ready, uncomment the definition below
-DegVec approximant_basis(
-                         Mat<zz_pX> & appbas,
-                         const Mat<zz_pX> & pmat,
-                         const long order,
-                         const Shift & shift = Shift(),
-                         const PolMatForm form = ORD_WEAK_POPOV,
-                         const bool row_wise = true,
-                         const bool generic = false
-                        );
-//{
-//  Order orders(mat.NumRows(),order);
-//  return approximant_basis(appbas,mat,orders,shift,canonical,row_wise,generic);
-//}
+inline DegVec approximant_basis(
+                                Mat<zz_pX> & appbas,
+                                const Mat<zz_pX> & pmat,
+                                const long order,
+                                const Shift & shift = Shift(),
+                                const PolMatForm form = ORD_WEAK_POPOV,
+                                const bool row_wise = true,
+                                const bool generic = false
+                               )
+{
+    Order orders(pmat.NumCols(),order);
+    return approximant_basis(appbas,pmat,orders,shift,form,row_wise,generic);
+}
 
 
 /*------------------------------------------------------------*/
@@ -1002,7 +994,7 @@ bool is_approximant_basis(
                           const bool randomized = false
                          );
 
-bool is_approximant_basis(
+inline bool is_approximant_basis(
                           const Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
                           const long order,
@@ -1010,7 +1002,12 @@ bool is_approximant_basis(
                           const PolMatForm & form = ORD_WEAK_POPOV,
                           const bool row_wise = true,
                           const bool randomized = false
-                         );
+                         )
+{
+    Order orders(pmat.NumCols(),order);
+    return is_approximant_basis(appbas,pmat,orders,shift,form,row_wise,randomized);
+}
+
 
 /*------------------------------------------------------------*/
 /* Iterative algorithm for general order and shift            */
@@ -1052,8 +1049,8 @@ DegVec popov_mbasis1(
                     );
 
 // TODO check if serious difference of time if not returning Popov but just
-// minimal, like done in GJV03 and GL14 (implies slightly less permutation
-// work: the final permutation of the rows is not necessary)
+// minimal, like done in LinBox and in GJV03 and GL14 (implies slightly less
+// permutation work: the final permutation of the rows is not necessary)
 
 /*------------------------------------------------------------*/
 /* M-Basis algorithm for uniform approximant order            */
@@ -1063,6 +1060,17 @@ DegVec popov_mbasis1(
 /*   - Jeannerod-Neiger-Villard 2018                          */
 /*          (ensuring s-ordered weak Popov or s-Popov)        */
 /*------------------------------------------------------------*/
+// plain version, not the most efficient
+DegVec mbasis_plain(
+                    Mat<zz_pX> & appbas,
+                    const Mat<zz_pX> & pmat,
+                    const long order,
+                    const Shift & shift
+                   );
+
+// variant which first converts to vector of constant matrices,
+// performs the computations with this storage, and eventually
+// converts back to polynomial matrices
 DegVec mbasis(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
@@ -1070,18 +1078,6 @@ DegVec mbasis(
               const Shift & shift
              );
 
-// variant which first converts to vector of constant matrices
-// TODO see if this is ever slower than the above
-DegVec mbasis_vector(
-                     Mat<zz_pX> & appbas,
-                     const Mat<zz_pX> & pmat,
-                     const long order,
-                     const Shift & shift
-                    );
-
-// TODO some thresholding to be done, so that mbasis does the
-// resupdate strategy when it is faster
-// --> organize code so that mbasis is always ~the fastest
 DegVec mbasis_resupdate(
                         Mat<zz_pX> & appbas,
                         const Mat<zz_pX> & pmat,
@@ -1310,7 +1306,8 @@ DegVec pmbasis_geometric(
                const Mat<zz_pX> & pmat,
                const zz_p & r,
                const long order,
-               const Shift & shift
+               const Shift & shift,
+               Vec<zz_p> &pts
               );
 
 // requires that pts contain powers of r

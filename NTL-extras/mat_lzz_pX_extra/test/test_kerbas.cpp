@@ -13,27 +13,28 @@ void check(long m, long n, long d){
     Mat<zz_pX> pmat;
     random_mat_zz_pX(pmat, m, n, d);
     
-    cout << "pmat: " << pmat << endl;
+    cout << "pmat: " << degree_matrix(pmat) << endl;
     
     Shift s;
     for (long i = 0; i < m; i++)
-        s.emplace_back(d + i);
+        s.emplace_back(d+i);
     
     Mat<zz_pX> kerbas;
     kernel_basis(kerbas, pmat, s);
     
-    cout << "kerbas (appbas): " << kerbas << endl;
+    cout << "kerbas (appbas): " << degree_matrix(kerbas) << endl;
     
     Mat<zz_pX> res;
     multiply(res, kerbas, pmat);
-    cout << res << endl;
+    cout << degree_matrix(res) << endl;
     
+    kerbas = Mat<zz_pX>();
     kernel_basis_intbas(kerbas, pmat, s);
     
-    cout << "kerbas (intbas): " << kerbas << endl;
+    cout << "kerbas (intbas): " << degree_matrix(kerbas) << endl;
     
     multiply(res, kerbas, pmat);
-    cout << res << endl;
+    cout << degree_matrix(res) << endl;
 }
 
 /*------------------------------------------------------------*/
@@ -43,7 +44,7 @@ int main(int argc, char ** argv)
 {
     //SetNumThreads(4);
     
-    zz_p::init(9001);
+    zz_p::init(NTL::GenPrime_long(60));
 
     if (argc==4)
     {
