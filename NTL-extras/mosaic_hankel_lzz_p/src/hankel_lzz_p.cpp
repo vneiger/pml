@@ -65,7 +65,7 @@ long hankel_lzz_p::NumRows() const
 /*----------------------------------------------------*/
 /* turns M into a dense matrix                        */
 /*----------------------------------------------------*/
-void hankel_lzz_p::to_dense(Mat<zz_p>& Mdense)
+void hankel_lzz_p::to_dense(Mat<zz_p>& Mdense) const
 {
     Mdense.SetDims(n, m);
     for (long i = 0; i < n; i++)
@@ -76,7 +76,7 @@ void hankel_lzz_p::to_dense(Mat<zz_p>& Mdense)
 /*----------------------------------------------------*/
 /* right multiplication                               */
 /*----------------------------------------------------*/
-void hankel_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input)
+void hankel_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input) const
 {
     if (input.length() != m)
     {
@@ -120,7 +120,7 @@ void hankel_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input)
 /*----------------------------------------------------*/
 /* right multiplication                               */
 /*----------------------------------------------------*/
-void hankel_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input)
+void hankel_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input) const
 {
     if (input.NumRows() != m)
     {
@@ -195,11 +195,10 @@ void hankel_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input)
 }
 
 
-
 /*----------------------------------------------------*/
 /* left multiplication                                */
 /*----------------------------------------------------*/
-void hankel_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input)
+void hankel_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const
 {
     if (input.length() != n)
     {
@@ -241,7 +240,7 @@ void hankel_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input)
 /*----------------------------------------------------*/
 /* left multiplication                                */
 /*----------------------------------------------------*/
-void hankel_lzz_p::mul_left(Mat<zz_p>& res, const Mat<zz_p>& input)
+void hankel_lzz_p::mul_left(Mat<zz_p>& res, const Mat<zz_p>& input) const
 {
     if (input.NumCols() != n)
     {

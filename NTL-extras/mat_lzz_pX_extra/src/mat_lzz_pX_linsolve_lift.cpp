@@ -101,8 +101,6 @@ void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<z
         return;
     }
 
-    double t = get_time();
-
     long dA = deg(A);
     long lenA = dA + 1;
 
@@ -137,8 +135,6 @@ void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<z
 
     long shift = lenA;
     Mat<zz_pX> upper;
-
-    cout << "\nsetup:" << get_time() - t << endl;
 
     for (long i = 1; i < nb; i++)
     {

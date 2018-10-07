@@ -1,6 +1,7 @@
 #include <NTL/vec_lzz_p.h>
 #include <assert.h>
 
+#include "vec_lzz_p_extra.h"
 #include "mosaic_hankel_lzz_p.h"
 
 NTL_CLIENT

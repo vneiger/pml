@@ -1,36 +1,34 @@
 #include <NTL/vec_lzz_p.h>
 #include <assert.h>
 
-#include "mosaic_hankel.h"
+#include "vec_lzz_p_extra.h"
+#include "mosaic_hankel_lzz_p.h"
 
 NTL_CLIENT
 
-void random(Vec<zz_p>& v, long n, long m){
-    v.SetLength(n+m-1);
-    for (long i = 0; i < n+m-1; i++)
-        v[i] = random_zz_p();
-}
-
 /*------------------------------------------------------------*/
-/* if opt = 1, runs a check                                   */
-/* else, runs timings                                         */
+/* tests a few products                                       */
 /*------------------------------------------------------------*/
-void check(int opt){
-    zz_p::FFTInit(0);
-    for (long i = 2; i < 1000; i += 1){
+void check(long p)
+{
+    if (p == 0)
+        zz_p::FFTInit(0);
+    else
+        zz_p::init(p);
 
+    for (long i = 2; i < 10; i += 1)
+    {
         Vec<zz_p> dat00, dat01, dat02, dat10, dat11, dat12;
 
-        random(dat00, 2, i);
-        random(dat01, 2, 2);
-        random(dat02, 2, i);
-        random(dat10, i-1, i);
-        random(dat11, i-1, 2);
-        random(dat12, i-1, i);
+        random_vec_zz_p(dat00, 2 + i - 1);
+        random_vec_zz_p(dat01, 2 + 2 - 1);
+        random_vec_zz_p(dat02, 2 + i - 1);
+        random_vec_zz_p(dat10, i-1 + i - 1);
+        random_vec_zz_p(dat11, i-1 + 2 - 1);
+        random_vec_zz_p(dat12, i-1 + i - 1);
 
-        hankel h00(dat00, 2, i), h01(dat01, 2, 2), h02(dat02, 2, i), h10(dat10, i-1, i), h11(dat11, i-1, 2), h12(dat12, i-1, i);
-
-        Vec<hankel> row0, row1;
+        hankel_lzz_p h00(dat00, 2, i), h01(dat01, 2, 2), h02(dat02, 2, i), h10(dat10, i-1, i), h11(dat11, i-1, 2), h12(dat12, i-1, i);
+        Vec<hankel_lzz_p> row0, row1;
 
         row0.SetLength(3);
         row0[0] = h00;
@@ -40,60 +38,34 @@ void check(int opt){
         row1[0] = h10;
         row1[1] = h11;
         row1[2] = h12;
-        Vec< Vec<hankel> > H;
+        Vec< Vec<hankel_lzz_p> > H;
         H.SetLength(2);
         H[0] = row0;
         H[1] = row1;
 
-        mosaic_hankel MH(H);
+        mosaic_hankel_lzz_p MH;
+        MH = mosaic_hankel_lzz_p(H);
 
-        if (opt == 1){
+        Vec<zz_p> input, output;
+        input = random_vec_zz_p(MH.NumRows());
+        output = random_vec_zz_p(MH.NumCols());
+        output = MH.mul_left(input);
 
-            Vec<zz_p> input, output;
-            input.SetLength(MH.NumRows());
-            for (long a = 0; a < MH.NumRows(); a++)
-                input[a] = random_zz_p();
-            output.SetLength(MH.NumCols());
-            for (long a = 0; a < MH.NumCols(); a++)
-                output[a] = random_zz_p();
+        Mat<zz_p> Mdense = MH.to_dense();
+        Vec<zz_p> output2 = input * Mdense;
 
-            mul_left(output, MH, input);
-
-            Vec<zz_p> output2;
-            Mat<zz_p> Mdense;
-            to_dense(Mdense, MH);
-            output2 = input*Mdense;
-
-            assert(output2 == output);
-            cout << i << endl;
-        }
-        else{
-            cout << i << " ";
-
-            double t;
-
-            t = GetTime();
-            for (long j = 0; j < 10000; j++)
-                ;
-            t = GetTime() - t;
-            cout << t << " ";
-
-            cout << endl;
-        }
+        assert(output2 == output);
     }
 }
 
 /*------------------------------------------------------------*/
 /* main just calls check()                                    */
-/* if not argument is given, runs timings                     */
-/* if the argument 1 is given, runs check                     */
 /*------------------------------------------------------------*/
-int main(int argc, char** argv){
-    int opt = 0;
-    if (argc > 1)
-        opt = atoi(argv[1]);
-    check(opt);
-
+int main(int argc, char** argv)
+{
+    check(0);
+    check(786433);
+    check(288230376151711813);
     return 0;
 }
 

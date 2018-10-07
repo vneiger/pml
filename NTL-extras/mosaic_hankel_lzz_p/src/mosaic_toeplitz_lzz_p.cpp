@@ -9,22 +9,22 @@ NTL_CLIENT
 
 /*----------------------------------------------------*/
 /*----------------------------------------------------*/
-/* Mosaic Hankel matrices:                            */
-/* block matrix where each block is Hankel            */
+/* Mosaic Toeplitz matrices:                          */
+/* block matrix where each block is Toeplitz          */
 /*----------------------------------------------------*/
 /*----------------------------------------------------*/
 
 /*----------------------------------------------------*/
 /* dummy constructor                                  */
 /*----------------------------------------------------*/
-mosaic_hankel_lzz_p::mosaic_hankel_lzz_p(){
+mosaic_toeplitz_lzz_p::mosaic_toeplitz_lzz_p(){
     n = m = nb = mb = 0;
 }
 
 /*----------------------------------------------------*/
 /* copies all data                                    */
 /*----------------------------------------------------*/
-mosaic_hankel_lzz_p::mosaic_hankel_lzz_p(const Vec< Vec<hankel_lzz_p> > & init)
+mosaic_toeplitz_lzz_p::mosaic_toeplitz_lzz_p(const Vec< Vec<toeplitz_lzz_p> > & init)
 {
     data = init;
     nb = init.length();
@@ -43,32 +43,32 @@ mosaic_hankel_lzz_p::mosaic_hankel_lzz_p(const Vec< Vec<hankel_lzz_p> > & init)
 /*----------------------------------------------------*/
 /* getters                                            */
 /*----------------------------------------------------*/
-long mosaic_hankel_lzz_p::NumRows() const
+long mosaic_toeplitz_lzz_p::NumRows() const
 {
     return n;
 }
 
-long mosaic_hankel_lzz_p::NumCols() const
+long mosaic_toeplitz_lzz_p::NumCols() const
 {
     return m;
 }
 
-long mosaic_hankel_lzz_p::NumBlockRows() const
+long mosaic_toeplitz_lzz_p::NumBlockRows() const
 {
     return nb;
 }
 
-long mosaic_hankel_lzz_p::NumBlockCols() const
+long mosaic_toeplitz_lzz_p::NumBlockCols() const
 {
     return mb;
 }
 
-long mosaic_hankel_lzz_p::NumRows_of_block(long i) const
+long mosaic_toeplitz_lzz_p::NumRows_of_block(long i) const
 {
     return data[i][0].NumRows();
 }
 
-long mosaic_hankel_lzz_p::NumCols_of_block(long i) const
+long mosaic_toeplitz_lzz_p::NumCols_of_block(long i) const
 {
     return data[0][i].NumCols();
 }
@@ -77,7 +77,7 @@ long mosaic_hankel_lzz_p::NumCols_of_block(long i) const
 /*----------------------------------------------------*/
 /* turns M into a dense matrix                        */
 /*----------------------------------------------------*/
-void mosaic_hankel_lzz_p::to_dense(Mat<zz_p>& Mdense) const
+void mosaic_toeplitz_lzz_p::to_dense(Mat<zz_p>& Mdense) const
 {
     Mdense.SetDims(n, m);
 
@@ -89,7 +89,7 @@ void mosaic_hankel_lzz_p::to_dense(Mat<zz_p>& Mdense) const
 /*----------------------------------------------------*/
 /* right multiplication                               */
 /*----------------------------------------------------*/
-void mosaic_hankel_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input) const
+void mosaic_toeplitz_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input) const
 {
     res.SetLength(n);
     for (long i = 0; i < n; i++)
@@ -121,7 +121,7 @@ void mosaic_hankel_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input) cons
 /*----------------------------------------------------*/
 /* left multiplication                                */
 /*----------------------------------------------------*/
-void mosaic_hankel_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const
+void mosaic_toeplitz_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const
 {
     res.SetLength(m);
     for (long i = 0; i < m; i++)
@@ -154,7 +154,7 @@ void mosaic_hankel_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const
 /*----------------------------------------------------*/
 /* access to particular rows and columns              */
 /*----------------------------------------------------*/
-void mosaic_hankel_lzz_p::first_column_of_block(Vec<zz_p>& res, long i) const
+void mosaic_toeplitz_lzz_p::first_column_of_block(Vec<zz_p>& res, long i) const
 {
     res.SetLength(n);
 
@@ -167,7 +167,7 @@ void mosaic_hankel_lzz_p::first_column_of_block(Vec<zz_p>& res, long i) const
 /*----------------------------------------------------*/
 /* access to particular rows and columns              */
 /*----------------------------------------------------*/
-void mosaic_hankel_lzz_p::last_column_of_block(Vec<zz_p>& res, long i) const
+void mosaic_toeplitz_lzz_p::last_column_of_block(Vec<zz_p>& res, long i) const
 {
     res.SetLength(n);
 
@@ -182,7 +182,7 @@ void mosaic_hankel_lzz_p::last_column_of_block(Vec<zz_p>& res, long i) const
 /*----------------------------------------------------*/
 /* access to particular rows and columns              */
 /*----------------------------------------------------*/
-void mosaic_hankel_lzz_p::first_row_of_block(Vec<zz_p>& res, long i) const
+void mosaic_toeplitz_lzz_p::first_row_of_block(Vec<zz_p>& res, long i) const
 {
     res.SetLength(m);
 
@@ -195,7 +195,7 @@ void mosaic_hankel_lzz_p::first_row_of_block(Vec<zz_p>& res, long i) const
 /*----------------------------------------------------*/
 /* access to particular rows and columns              */
 /*----------------------------------------------------*/
-void mosaic_hankel_lzz_p::last_row_of_block(Vec<zz_p>& res, long i) const
+void mosaic_toeplitz_lzz_p::last_row_of_block(Vec<zz_p>& res, long i) const
 {
     res.SetLength(m);
 
@@ -210,71 +210,71 @@ void mosaic_hankel_lzz_p::last_row_of_block(Vec<zz_p>& res, long i) const
 /*----------------------------------------------------*/
 /* G, H such that Z1 M - Z0^t M = G H^t               */
 /*----------------------------------------------------*/
-static void generators(Mat<zz_p>& G, Mat<zz_p>& H, const mosaic_hankel_lzz_p& M)
+static void generators(Mat<zz_p>& G, Mat<zz_p>& H, const mosaic_toeplitz_lzz_p& M)
 {
-    long n = M.NumRows();
-    long m = M.NumCols();
-    long alpha_r = M.NumBlockRows();
-    long alpha_c = M.NumBlockCols();
-    long alpha = alpha_r + alpha_c;
+    // long n = M.NumRows();
+    // long m = M.NumCols();
+    // long alpha_r = M.NumBlockRows();
+    // long alpha_c = M.NumBlockCols();
+    // long alpha = alpha_r + alpha_c;
 
-    G.SetDims(n, alpha);
-    H.SetDims(m, alpha);
+    // G.SetDims(n, alpha);
+    // H.SetDims(m, alpha);
 
-    Vec<zz_p> tmp_row, tmp_col;
-    long idx;
+    // Vec<zz_p> tmp_row, tmp_col;
+    // long idx;
 
-    idx = 0;
-    for (long i = 0; i < alpha_c; i++)
-    {
-        M.first_column_of_block(tmp_col, i);
-        G[0][i] = tmp_col[n-1];
-        for (long j = 1; j < n; j++)
-            G[j][i] = tmp_col[j-1];
+    // idx = 0;
+    // for (long i = 0; i < alpha_c; i++)
+    // {
+    //     M.first_column_of_block(tmp_col, i);
+    //     G[0][i] = tmp_col[n-1];
+    //     for (long j = 1; j < n; j++)
+    //         G[j][i] = tmp_col[j-1];
 
-        if (i > 0)
-        {
-            M.last_column_of_block(tmp_col, i-1);
-            for (long j = 0; j < n; j++)
-                G[j][i] = G[j][i] - tmp_col[j];
-        }
-    }
-    for (long i = 0; i < alpha_r; i++)
-    {
-        for (long j = 0; j < n; j++)
-            G[j][i+alpha_c] = 0;
-        G[idx][i+alpha_c] = 1;
-        idx += M.NumRows_of_block(i);
-    }
+    //     if (i > 0)
+    //     {
+    //         M.last_column_of_block(tmp_col, i-1);
+    //         for (long j = 0; j < n; j++)
+    //             G[j][i] = G[j][i] - tmp_col[j];
+    //     }
+    // }
+    // for (long i = 0; i < alpha_r; i++)
+    // {
+    //     for (long j = 0; j < n; j++)
+    //         G[j][i+alpha_c] = 0;
+    //     G[idx][i+alpha_c] = 1;
+    //     idx += M.NumRows_of_block(i);
+    // }
 
 
-    idx = 0;
-    for (long i = 0; i < alpha_c; i++)
-    {
-        for (long j = 0; j < m; j++)
-            H[j][i] = 0;
-        H[idx][i] = 1;
-        idx += M.NumCols_of_block(i);
-    }
+    // idx = 0;
+    // for (long i = 0; i < alpha_c; i++)
+    // {
+    //     for (long j = 0; j < m; j++)
+    //         H[j][i] = 0;
+    //     H[idx][i] = 1;
+    //     idx += M.NumCols_of_block(i);
+    // }
 
-    for (long i = 0; i < alpha_r; i++)
-    {
-        if (i == 0)
-            M.last_row_of_block(tmp_row, alpha_r-1);
-        else
-            M.last_row_of_block(tmp_row, i-1);
-        for (long j = 1; j < m; j++)
-            H[j][i+alpha_c] = tmp_row[j];
-        M.first_row_of_block(tmp_row, i);
-        for (long j = 1; j < m; j++)
-            H[j][i+alpha_c] = H[j][i+alpha_c] - tmp_row[j-1];
-        long jdx = 0;
-        for (long j = 0; j < alpha_c; j++)
-        {
-            H[jdx][i+alpha_c] = 0;
-            jdx += M.NumCols_of_block(j);
-        }
-    }
+    // for (long i = 0; i < alpha_r; i++)
+    // {
+    //     if (i == 0)
+    //         M.last_row_of_block(tmp_row, alpha_r-1);
+    //     else
+    //         M.last_row_of_block(tmp_row, i-1);
+    //     for (long j = 1; j < m; j++)
+    //         H[j][i+alpha_c] = tmp_row[j];
+    //     M.first_row_of_block(tmp_row, i);
+    //     for (long j = 1; j < m; j++)
+    //         H[j][i+alpha_c] = H[j][i+alpha_c] - tmp_row[j-1];
+    //     long jdx = 0;
+    //     for (long j = 0; j < alpha_c; j++)
+    //     {
+    //         H[jdx][i+alpha_c] = 0;
+    //         jdx += M.NumCols_of_block(j);
+    //     }
+    // }
 }
 
 // /*------------------------------------------------------------------*/

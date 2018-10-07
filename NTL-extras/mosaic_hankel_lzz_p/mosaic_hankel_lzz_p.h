@@ -18,7 +18,8 @@ NTL_CLIENT
 /*          a3 a2 a1 a0                                       */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-class hankel_lzz_p{
+class hankel_lzz_p
+{
 private:
     // n rows, m columns
     long n, m;
@@ -50,8 +51,8 @@ public:
     /*----------------------------------------------------*/
     /* turns M into a dense matrix                        */
     /*----------------------------------------------------*/
-    void to_dense(Mat<zz_p>& Mdense);
-    inline Mat<zz_p> to_dense()
+    void to_dense(Mat<zz_p>& Mdense) const;
+    inline Mat<zz_p> to_dense() const
     {
         Mat<zz_p> dense;
         to_dense(dense);
@@ -61,16 +62,16 @@ public:
     /*----------------------------------------------------*/
     /* right multiplication                               */
     /*----------------------------------------------------*/
-    void mul_right(Vec<zz_p>& res, const Vec<zz_p>& input);
-    inline Vec<zz_p> mul_right(const Vec<zz_p>& input)
+    void mul_right(Vec<zz_p>& res, const Vec<zz_p>& input)const;
+    inline Vec<zz_p> mul_right(const Vec<zz_p>& input) const
     {
         Vec<zz_p> output;
         mul_right(output, input);
         return output;
     }
 
-    void mul_right(Mat<zz_p>& res, const Mat<zz_p>& input);
-    inline Mat<zz_p> mul_right(const Mat<zz_p>& input)
+    void mul_right(Mat<zz_p>& res, const Mat<zz_p>& input) const;
+    inline Mat<zz_p> mul_right(const Mat<zz_p>& input) const
     {
         Mat<zz_p> output;
         mul_right(output, input);
@@ -80,16 +81,16 @@ public:
     /*----------------------------------------------------*/
     /* left multiplication                                */
     /*----------------------------------------------------*/
-    void mul_left(Vec<zz_p>& res, const Vec<zz_p>& input);
-    inline Vec<zz_p> mul_left(const Vec<zz_p>& input)
+    void mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const;
+    inline Vec<zz_p> mul_left(const Vec<zz_p>& input) const
     {
         Vec<zz_p> output;
         mul_left(output, input);
         return output;
     }
 
-    void mul_left(Mat<zz_p>& res, const Mat<zz_p>& input);
-    inline Mat<zz_p> mul_left(const Mat<zz_p>& input)
+    void mul_left(Mat<zz_p>& res, const Mat<zz_p>& input) const;
+    inline Mat<zz_p> mul_left(const Mat<zz_p>& input) const
     {
         Mat<zz_p> output;
         mul_left(output, input);
@@ -97,7 +98,6 @@ public:
     }
 
 };
-
 
 
 /*------------------------------------------------------------*/
@@ -109,7 +109,8 @@ public:
 /*          a5 a4 a3 a2                                       */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-class toeplitz_lzz_p{
+class toeplitz_lzz_p
+{
 private:
     // n rows, m columns
     long n, m;
@@ -141,8 +142,8 @@ public:
     /*----------------------------------------------------*/
     /* turns M into a dense matrix                        */
     /*----------------------------------------------------*/
-    void to_dense(Mat<zz_p>& Mdense);
-    inline Mat<zz_p> to_dense()
+    void to_dense(Mat<zz_p>& Mdense) const;
+    inline Mat<zz_p> to_dense() const
     {
         Mat<zz_p> dense;
         to_dense(dense);
@@ -152,16 +153,16 @@ public:
     /*----------------------------------------------------*/
     /* right multiplication                               */
     /*----------------------------------------------------*/
-    void mul_right(Vec<zz_p>& res, const Vec<zz_p>& input);
-    inline Vec<zz_p> mul_right(const Vec<zz_p>& input)
+    void mul_right(Vec<zz_p>& res, const Vec<zz_p>& input) const;
+    inline Vec<zz_p> mul_right(const Vec<zz_p>& input) const
     {
         Vec<zz_p> output;
         mul_right(output, input);
         return output;
     }
 
-    void mul_right(Mat<zz_p>& res, const Mat<zz_p>& input);
-    inline Mat<zz_p> mul_right(const Mat<zz_p>& input)
+    void mul_right(Mat<zz_p>& res, const Mat<zz_p>& input) const;
+    inline Mat<zz_p> mul_right(const Mat<zz_p>& input) const
     {
         Mat<zz_p> output;
         mul_right(output, input);
@@ -171,16 +172,16 @@ public:
     /*----------------------------------------------------*/
     /* left multiplication                                */
     /*----------------------------------------------------*/
-    void mul_left(Vec<zz_p>& res, const Vec<zz_p>& input);
-    inline Vec<zz_p> mul_left(const Vec<zz_p>& input)
+    void mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const;
+    inline Vec<zz_p> mul_left(const Vec<zz_p>& input) const
     {
         Vec<zz_p> output;
         mul_left(output, input);
         return output;
     }
 
-    void mul_left(Mat<zz_p>& res, const Mat<zz_p>& input);
-    inline Mat<zz_p> mul_left(const Mat<zz_p>& input)
+    void mul_left(Mat<zz_p>& res, const Mat<zz_p>& input) const;
+    inline Mat<zz_p> mul_left(const Mat<zz_p>& input) const
     {
         Mat<zz_p> output;
         mul_left(output, input);
@@ -190,118 +191,293 @@ public:
 };
 
 
+/*----------------------------------------------------*/
+/*----------------------------------------------------*/
+/* Mosaic Hankel matrices:                            */
+/* block matrix where each block is Hankel            */
+/*----------------------------------------------------*/
+/*----------------------------------------------------*/
+class mosaic_hankel_lzz_p{
+private:
+    long n, m; // numbers of rows / colums
+    long nb, mb; // number of blocks in rows / columns
 
-// /*----------------------------------------------------*/
-// /*----------------------------------------------------*/
-// /* Mosaic Hankel matrices:                            */
-// /* block matrix where each block is Hankel            */
-// /*----------------------------------------------------*/
-// /*----------------------------------------------------*/
-// class mosaic_hankel_lzz_p{
-//     long n, m; // numbers of rows / colums
-//     long nb, mb; // number of blocks in rows / columns
+public:
+    // data[i][j] is the block at i-th row, j-th column
+    Vec< Vec<hankel_lzz_p> > data;
 
-// public:
+    /*----------------------------------------------------*/
+    /* dummy constructor                                  */
+    /*----------------------------------------------------*/
+    mosaic_hankel_lzz_p();
 
-//     // data[i][j] is the block at i-th row, j-th column
-//     Vec< Vec<hankel_lzz_p> > data;
+    /*----------------------------------------------------*/
+    /* copies all data                                    */
+    /*----------------------------------------------------*/
+    mosaic_hankel_lzz_p(const Vec< Vec<hankel_lzz_p> > & init);
 
-//     /*----------------------------------------------------*/
-//     /* dummy constructor                                  */
-//     /*----------------------------------------------------*/
-//     mosaic_hankel_lzz_p(){
-//         data.SetLength(0);
-//         n = m = nb = mb = 0;
-//     }
+    /*----------------------------------------------------*/
+    /* getters                                            */
+    /*----------------------------------------------------*/
+    long NumRows() const;
+    long NumCols() const;
+    long NumBlockRows() const;
+    long NumBlockCols() const;
+    long NumRows_of_block(long i) const;
+    long NumCols_of_block(long i) const;
 
-//     /*----------------------------------------------------*/
-//     /* copies all data                                    */
-//     /*----------------------------------------------------*/
-//     mosaic_hankel_lzz_p(Vec< Vec<hankel_lzz_p> > init){
-//         data = init;
-//         nb = init.length();
-//         mb = init[0].length();
+    zz_p operator ()(long i, long j) const
+    {
+        if (i >= n || j >= m)
+            Error("matrix indices out of bounds\n");
+        long idx, jdx;
 
-//         n = 0;
-//         m = 0;
+        idx = 0;
+        while (i >= data[idx][0].NumRows())
+        {
+            i -= data[idx][0].NumRows();
+            idx++;
+        }
+        
+        jdx = 0;
+        while (j >= data[0][jdx].NumCols())
+        {
+            j -= data[0][jdx].NumCols();
+            jdx++;
+        }
+        return data[idx][jdx](i, j);
+    }
 
-//         for(long i = 0; i < nb; i++)
-//             n += init[i][0].NumRows();
-//         for (long j = 0; j < mb; j++)
-//             m += init[0][j].NumCols();
-//     }
 
-//     /*----------------------------------------------------*/
-//     /* getters                                            */
-//     /*----------------------------------------------------*/
-//     long NumRows() const{
-//         return n;
-//     }
-//     long NumCols() const{
-//         return m;
-//     }
-//     long NumBlockRows() const{
-//         return nb;
-//     }
-//     long NumBlockCols() const{
-//         return mb;
-//     }
-//     long NumRows_of_block(long i) const{
-//         return data[i][0].NumRows();
-//     }
-//     long NumCols_of_block(long i) const{
-//         return data[0][i].NumCols();
-//     }
+    /*----------------------------------------------------*/
+    /* access to particular rows and columns              */
+    /*----------------------------------------------------*/
+    void first_column_of_block(Vec<zz_p>& res, long i) const;
+    inline Vec<zz_p> first_column_of_block(long i) const
+    {
+        Vec<zz_p> res;
+        first_column_of_block(res, i);
+        return res;
+    }
 
-//     const zz_p& operator ()(long i, long j) const{
+    void last_column_of_block(Vec<zz_p>& res, long i) const;
+    inline Vec<zz_p> last_column_of_block(long i) const
+    {
+        Vec<zz_p> res;
+        last_column_of_block(res, i);
+        return res;
+    }
 
-//         if (i >= n || j >= m)
-//             Error("matrix indices out of bounds\n");
-//         long idx, jdx;
+    void first_row_of_block(Vec<zz_p>& res, long i) const;
+    inline Vec<zz_p> first_row_of_block(long i) const
+    {
+        Vec<zz_p> res;
+        first_row_of_block(res, i);
+        return res;
+    }
 
-//         idx = 0;
-//         while (i >= data[idx][0].NumRows()){
-//             i -= data[idx][0].NumRows();
-//             idx++;
-//         }
+    void last_row_of_block(Vec<zz_p>& res, long i) const;
+    inline Vec<zz_p> last_row_of_block(long i) const
+    {
+        Vec<zz_p> res;
+        last_row_of_block(res, i);
+        return res;
+    }
 
-//         jdx = 0;
-//         while (j >= data[0][jdx].NumCols()){
-//             j -= data[0][jdx].NumCols();
-//             jdx++;
-//         }
-//         return data[idx][jdx](i, j);
-//     }
+    /*----------------------------------------------------*/
+    /* turns M into a dense matrix                        */
+    /*----------------------------------------------------*/
+    void to_dense(Mat<zz_p>& Mdense) const;
+    inline Mat<zz_p> to_dense() const
+    { 
+        Mat<zz_p> Mdense;
+        to_dense(Mdense);
+        return Mdense;
+    }
 
-// };
+    /*----------------------------------------------------*/
+    /* right multiplication                               */
+    /*----------------------------------------------------*/
+    void mul_right(Vec<zz_p>& res, const Vec<zz_p>& input) const;
+    Vec<zz_p> mul_right(const Vec<zz_p>& input) const
+    {
+        Vec<zz_p> res;
+        mul_right(res, input);
+        return res;
+    }
 
-// /*----------------------------------------------------*/
-// /* turns M into a dense matrix                        */
-// /*----------------------------------------------------*/
-// void to_dense(Mat<zz_p>& Mdense, const mosaic_hankel_lzz_p& M);
+    void mul_right(Mat<zz_p>& res, const Mat<zz_p>& input) const;
+    Mat<zz_p> mul_right(const Mat<zz_p>& input) const
+    {
+        Mat<zz_p> res;
+        mul_right(res, input);
+        return res;
+    }
 
-// /*----------------------------------------------------*/
-// /* right multiplication                               */
-// /*----------------------------------------------------*/
-// void mul_right(Vec<zz_p>& res, const mosaic_hankel_lzz_p& M, const Vec<zz_p>& input);
+    /*----------------------------------------------------*/
+    /* left multiplication                                */
+    /*----------------------------------------------------*/
+    void mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const;
+    Vec<zz_p> mul_left(const Vec<zz_p>& input) const
+    {
+        Vec<zz_p> res;
+        mul_left(res, input);
+        return res;
+    }
 
-// /*----------------------------------------------------*/
-// /* left multiplication                                */
-// /*----------------------------------------------------*/
-// void mul_left(Vec<zz_p>& res, const mosaic_hankel_lzz_p& M, const Vec<zz_p>& input);
+    void mul_left(Mat<zz_p>& res, const Mat<zz_p>& input) const;
+    Mat<zz_p> mul_left(const Mat<zz_p>& input) const
+    {
+        Mat<zz_p> res;
+        mul_left(res, input);
+        return res;
+    }
+};
 
-// /*----------------------------------------------------*/
-// /* access to particular rows and columns              */
-// /*----------------------------------------------------*/
-// void first_column_of_block(Vec<zz_p>& res, long i, const mosaic_hankel_lzz_p& M);
-// void last_column_of_block(Vec<zz_p>& res, long i, const mosaic_hankel_lzz_p& M);
-// void first_row_of_block(Vec<zz_p>& res, long i, const mosaic_hankel_lzz_p& M);
-// void last_row_of_block(Vec<zz_p>& res, long i, const mosaic_hankel_lzz_p& M);
+/*----------------------------------------------------*/
+/*----------------------------------------------------*/
+/* Mosaic Toeplitz matrices:                          */
+/* block matrix where each block is Toeplitz          */
+/*----------------------------------------------------*/
+/*----------------------------------------------------*/
+class mosaic_toeplitz_lzz_p{
+private:
+    long n, m; // numbers of rows / colums
+    long nb, mb; // number of blocks in rows / columns
 
-// /*----------------------------------------------------*/
-// /* G, H such that Z1 M - Z0^t M = G H^t               */
-// /*----------------------------------------------------*/
-// void generators(Mat<zz_p>& G, Mat<zz_p>& H, const mosaic_hankel_lzz_p& M); 
+public:
+    // data[i][j] is the block at i-th row, j-th column
+    Vec< Vec<toeplitz_lzz_p> > data;
+
+    /*----------------------------------------------------*/
+    /* dummy constructor                                  */
+    /*----------------------------------------------------*/
+    mosaic_toeplitz_lzz_p();
+
+    /*----------------------------------------------------*/
+    /* copies all data                                    */
+    /*----------------------------------------------------*/
+    mosaic_toeplitz_lzz_p(const Vec< Vec<toeplitz_lzz_p> > & init);
+
+    /*----------------------------------------------------*/
+    /* getters                                            */
+    /*----------------------------------------------------*/
+    long NumRows() const;
+    long NumCols() const;
+    long NumBlockRows() const;
+    long NumBlockCols() const;
+    long NumRows_of_block(long i) const;
+    long NumCols_of_block(long i) const;
+
+    zz_p operator ()(long i, long j) const
+    {
+        if (i >= n || j >= m)
+            Error("matrix indices out of bounds\n");
+        long idx, jdx;
+
+        idx = 0;
+        while (i >= data[idx][0].NumRows())
+        {
+            i -= data[idx][0].NumRows();
+            idx++;
+        }
+        
+        jdx = 0;
+        while (j >= data[0][jdx].NumCols())
+        {
+            j -= data[0][jdx].NumCols();
+            jdx++;
+        }
+        return data[idx][jdx](i, j);
+    }
+
+
+    /*----------------------------------------------------*/
+    /* access to particular rows and columns              */
+    /*----------------------------------------------------*/
+    void first_column_of_block(Vec<zz_p>& res, long i) const;
+    inline Vec<zz_p> first_column_of_block(long i) const
+    {
+        Vec<zz_p> res;
+        first_column_of_block(res, i);
+        return res;
+    }
+
+    void last_column_of_block(Vec<zz_p>& res, long i) const;
+    inline Vec<zz_p> last_column_of_block(long i) const
+    {
+        Vec<zz_p> res;
+        last_column_of_block(res, i);
+        return res;
+    }
+
+    void first_row_of_block(Vec<zz_p>& res, long i) const;
+    inline Vec<zz_p> first_row_of_block(long i) const
+    {
+        Vec<zz_p> res;
+        first_row_of_block(res, i);
+        return res;
+    }
+
+    void last_row_of_block(Vec<zz_p>& res, long i) const;
+    inline Vec<zz_p> last_row_of_block(long i) const
+    {
+        Vec<zz_p> res;
+        last_row_of_block(res, i);
+        return res;
+    }
+
+    /*----------------------------------------------------*/
+    /* turns M into a dense matrix                        */
+    /*----------------------------------------------------*/
+    void to_dense(Mat<zz_p>& Mdense) const;
+    inline Mat<zz_p> to_dense() const
+    { 
+        Mat<zz_p> Mdense;
+        to_dense(Mdense);
+        return Mdense;
+    }
+
+    /*----------------------------------------------------*/
+    /* right multiplication                               */
+    /*----------------------------------------------------*/
+    void mul_right(Vec<zz_p>& res, const Vec<zz_p>& input) const;
+    Vec<zz_p> mul_right(const Vec<zz_p>& input) const
+    {
+        Vec<zz_p> res;
+        mul_right(res, input);
+        return res;
+    }
+
+    void mul_right(Mat<zz_p>& res, const Mat<zz_p>& input) const;
+    Mat<zz_p> mul_right(const Mat<zz_p>& input) const
+    {
+        Mat<zz_p> res;
+        mul_right(res, input);
+        return res;
+    }
+
+    /*----------------------------------------------------*/
+    /* left multiplication                                */
+    /*----------------------------------------------------*/
+    void mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const;
+    Vec<zz_p> mul_left(const Vec<zz_p>& input) const
+    {
+        Vec<zz_p> res;
+        mul_left(res, input);
+        return res;
+    }
+
+    void mul_left(Mat<zz_p>& res, const Mat<zz_p>& input) const;
+    Mat<zz_p> mul_left(const Mat<zz_p>& input) const
+    {
+        Mat<zz_p> res;
+        mul_left(res, input);
+        return res;
+    }
+};
+
+
 
 
 // ----- Need work on cauchy like matrices first  ---//
