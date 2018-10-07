@@ -878,7 +878,7 @@ DegVec pmbasis(
     double t1,t2;
 #endif
 #ifdef PMBASIS_PROFILE
-    if (order <= 32) // TODO thresholds to be determined
+    if (order <= 16) // TODO thresholds to be determined
     {
         t1 = GetWallTime();
         DegVec rdeg = mbasis(appbas,pmat,order,shift);
@@ -887,7 +887,7 @@ DegVec pmbasis(
         return rdeg;
     }
 #else
-    if (order <= 32) // TODO thresholds to be determined
+    if (order <= 16) // TODO thresholds to be determined
         return mbasis(appbas,pmat,order,shift);
 #endif
     DegVec pivdeg; // pivot degree, first call
