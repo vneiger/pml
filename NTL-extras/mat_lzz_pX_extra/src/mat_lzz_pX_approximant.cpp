@@ -10,8 +10,8 @@
 #include "mat_lzz_pX_partial_linearization.h"
 #include "lzz_pX_CRT.h"
 
-#define MBASIS_PROFILE // FIXME
 //#define MBASIS1_PROFILE // FIXME
+//#define MBASIS_PROFILE // FIXME
 //#define PMBASIS_PROFILE // FIXME
 
 NTL_CLIENT
@@ -528,11 +528,14 @@ DegVec mbasis_plain(
 /*------------------------------------------------------------*/
 /* mbasis, using vectors of matrices                          */
 /*------------------------------------------------------------*/
-DegVec mbasis(
+
+// version with residual constant matrix computed at each iteration
+DegVec mbasis_rescomp(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
               const long order,
-              const Shift & shift)
+              const Shift & shift
+             )
 {
 #ifdef MBASIS_PROFILE
     double t_others=0.0,t_residual=0.0,t_appbas=0.0,t_mbasis1=0.0,t_now;
@@ -678,6 +681,7 @@ DegVec mbasis(
     return pivdeg;
 }
 
+// version with full residual matrix continuously updated along the iterations
 DegVec mbasis_resupdate(
                         Mat<zz_pX> & appbas,
                         const Mat<zz_pX> & pmat,
@@ -740,7 +744,7 @@ DegVec mbasis_resupdate(
             return pivdeg;
         }
 
-        // kerbas.NumRows()==residual.NumRows() --> approximant basis is already
+        // kerbas.NumRows()==nrows --> approximant basis is already
         // correct for this order, just go to the next
 
         if (kerbas.NumRows()<nrows)
@@ -796,29 +800,26 @@ DegVec mbasis_resupdate(
             // III/ update residual, if needed (ord<order):
             // submatrix of rows with diff_pivdeg==0 become kerbas*coeffs_residual,
             // rows with diff_pivdeg=1 are simply multiplied by X
-            if (ord<order)
+            // Ignore coefficients of degree less than ord: they are zero
+            // (the one of degree ord-1 was made zero in this iteration of the main for loop)
+            for (long d = order-1; d >= ord; --d)
             {
-                // ignore coefficients of degree less than ord: they are zero
-                // (the one of degree ord-1 was made zero in this iteration of the main for loop)
-                for (long d = coeffs_residual.length()-1; d >= ord; --d)
+                kermul = kerbas * coeffs_residual[d];
+                long row=0;
+                for (long i = 0; i < nrows; ++i)
                 {
-                    kermul = kerbas * coeffs_residual[d];
-                    long row=0;
-                    for (long i = 0; i < nrows; ++i)
+                    if (diff_pivdeg[i]==0)
                     {
-                        if (diff_pivdeg[i]==0)
-                        {
-                            coeffs_residual[d][i] = kermul[row];
-                            ++row;
-                        }
-                        else 
-                            coeffs_residual[d][i] = coeffs_residual[d-1][i];
+                        coeffs_residual[d][i] = kermul[row];
+                        ++row;
                     }
+                    else 
+                        coeffs_residual[d][i] = coeffs_residual[d-1][i];
                 }
+            }
 #ifdef MBASIS_PROFILE
             t_residual += GetWallTime()-t_now;
 #endif
-            }
         }
     }
 
@@ -872,14 +873,12 @@ DegVec pmbasis(
               )
 {
 #ifdef PMBASIS_PROFILE
-    std::cout << "Order: " << order << std::endl;
+    std::cout << "\t";
+    std::cout << order << ",";
     double t1,t2;
 #endif
-    // TODO thresholds to be determined:
-    //  --> from mbasis (only linalg) to pmbasis with low-degree polmatmul (Karatsuba...)
-    //  --> from this pmbasis to pmbasis with eval-based polmatmul (FFT, geometric..)
 #ifdef PMBASIS_PROFILE
-    if (order <= 32)
+    if (order <= 32) // TODO thresholds to be determined
     {
         t1 = GetWallTime();
         DegVec rdeg = mbasis(appbas,pmat,order,shift);
@@ -888,7 +887,7 @@ DegVec pmbasis(
         return rdeg;
     }
 #else
-    if (order <= 32)
+    if (order <= 32) // TODO thresholds to be determined
         return mbasis(appbas,pmat,order,shift);
 #endif
     DegVec pivdeg; // pivot degree, first call

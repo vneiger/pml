@@ -54,14 +54,14 @@ int main(int argc, char *argv[])
     std::shuffle(shift4.begin(), shift4.end(), std::mt19937{std::random_device{}()});
     Shift shift5(rdim); // Hermite shift
     for (long i = 0; i < rdim; ++i)
-        shift5[i] = rdim*cdim*order*i;
+        shift5[i] = cdim*order*i;
     Shift shift6(rdim); // reverse Hermite shift
     for (long i = 0; i < rdim; ++i)
-        shift6[i] = rdim*cdim*order*(rdim-1-i);
+        shift6[i] = (cdim*order+1)*(rdim-1-i);
     Shift shift7(rdim);
     for (long i = 0; i < rdim; ++i)
         if (i>=rdim/2)
-            shift7[i] = rdim*cdim*order;
+            shift7[i] = cdim*order;
 
     std::vector<Shift> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7};
 
@@ -74,11 +74,6 @@ int main(int argc, char *argv[])
 
     // build random matrix
     double t1,t2,t1w,t2w;
-    Mat<zz_pX> pmat;
-    t1w = GetWallTime(); t1 = GetTime();
-    random_mat_zz_pX(pmat, rdim, cdim, order);
-    t2w =  GetWallTime(); t2 = GetTime();
-    //std::cout << "Time(random mat creation): " << (t2w-t1w) <<  "s,  " << (t2-t1) << "s\n";
 
     warmup();
 
@@ -89,20 +84,11 @@ int main(int argc, char *argv[])
         else
             std::cout << "--shift =\t" << "<length " << rdim << ">" << std::endl;
 
-        // build random matrix
-        Mat<zz_pX> pmat;
-        t1w = GetWallTime(); t1 = GetTime();
-        random_mat_zz_pX(pmat, rdim, cdim, order);
-        t2w = GetWallTime(); t2 = GetTime();
-
-        std::cout << "Time(random mat creation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-
-        Mat<zz_p> kerbas;
         std::vector<long> pivdeg;
         double ref_kernel_wall=0.0,ref_kernel=0.0;
 
         long nb_iter=0;
-        while (ref_kernel_wall<0.01)
+        while (ref_kernel_wall<0.1)
         {
             Mat<zz_p> mat;
             mat = random_mat_zz_p(rdim, cdim);
@@ -119,16 +105,30 @@ int main(int argc, char *argv[])
         std::cout << "Time(kernel same size): " << ref_kernel_wall << "s,  " << ref_kernel << "s\n";
 
         std::cout << "~~~Testing popov_mbasis1 on constant matrix~~~" << std::endl;
+
+        Mat<zz_pX> pmat_copy;
+        Mat<zz_p> kerbas_copy;
         double t_mbasis1w=0.0,t_mbasis1=0.0;
         nb_iter=0;
-        while (t_mbasis1w<0.01)
+        while (t_mbasis1w<0.1)
         {
+            // build random matrix
+            Mat<zz_pX> pmat;
+            random_mat_zz_pX(pmat, rdim, cdim, order);
+            Mat<zz_p> mat = coeff(pmat,0);
+            mat = random_mat_zz_p(rdim, cdim);
             t1w = GetWallTime(); t1 = GetTime();
-            pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
+            Mat<zz_p> kerbas;
+            pivdeg = popov_mbasis1(kerbas,mat,shift);
             t2w = GetWallTime(); t2 = GetTime();
             t_mbasis1w += t2w-t1w;
             t_mbasis1 += t2-t1;
             ++nb_iter;
+            if (nb_iter==1)
+            {
+                pmat_copy = pmat;
+                kerbas_copy = kerbas;
+            }
         }
         t_mbasis1 /= nb_iter;
         t_mbasis1w /= nb_iter;
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
             for (long i = 0; i < rdim; ++i) {
                 if (pivdeg[i]==0) {
                     for (long j = 0; j < rdim; ++j)
-                        appbas1[i][j] = kerbas[row][j];
+                        appbas1[i][j] = kerbas_copy[row][j];
                     ++row;
                 } else {
                     SetX(appbas1[i][i]);
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
             }
 
             std::cout << "Verifying Popov approximant basis..." << std::endl;
-            bool verif1 = is_approximant_basis(appbas1,pmat,1,shift,POPOV,true,false);
+            bool verif1 = is_approximant_basis(appbas1,pmat_copy,1,shift,POPOV,true,false);
             std::cout << (verif1?"correct":"wrong") << std::endl;
 
             if (std::max(rdim,cdim)<33) {
@@ -163,12 +163,14 @@ int main(int argc, char *argv[])
         }
 
         { // plain mbasis
-            std::cout << "~~~Testing mbasis_plain~~~" << std::endl;
-            Mat<zz_pX> appbas_copy;
+            if (verify) std::cout << "~~~Testing mbasis_plain~~~" << std::endl;
+            Mat<zz_pX> appbas_copy, pmat_copy;
             nb_iter=0;
             double t_mbasisw=0.0, t_mbasis=0.0;
-            while (t_mbasisw<0.01)
+            while (t_mbasisw<0.1)
             {
+                Mat<zz_pX> pmat;
+                random_mat_zz_pX(pmat, rdim, cdim, order);
                 t1w = GetWallTime(); t1 = GetTime();
                 Mat<zz_pX> appbas;
                 pivdeg = mbasis_plain(appbas,pmat,order,shift);
@@ -177,18 +179,21 @@ int main(int argc, char *argv[])
                 t_mbasis += t2-t1;
                 ++nb_iter;
                 if (nb_iter==1)
+                {
+                    pmat_copy = pmat;
                     appbas_copy = appbas;
+                }
             }
             t_mbasis /= nb_iter;
             t_mbasisw /= nb_iter;
-            std::cout << "Time(mbasis computation): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
+            std::cout << "Time(mbasis_plain): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
             //std::cout << "Ratio versus kernel: " << (t_mbasisw/ref_kernel_wall) << ", " << (t_mbasis/ref_kernel) << std::endl;
 
             if (verify)
             {
                 std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
                 t1w = GetWallTime(); t1 = GetTime();
-                bool verif = is_approximant_basis(appbas_copy,pmat,order,shift,ORD_WEAK_POPOV,true,false);
+                bool verif = is_approximant_basis(appbas_copy,pmat_copy,order,shift,ORD_WEAK_POPOV,true,false);
                 t2w = GetWallTime(); t2 = GetTime();
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
@@ -202,34 +207,38 @@ int main(int argc, char *argv[])
             }
         }
 
-        // mbasis Vec<Mat<zz_p>> version
-        {
-            std::cout << "~~~Testing mbasis ~~~" << std::endl;
-            Mat<zz_pX> appbas_copy;
+        { // mbasis Vec<Mat<zz_p>> version
+            if (verify) std::cout << "~~~Testing mbasis_rescomp~~~" << std::endl;
+            Mat<zz_pX> appbas_copy, pmat_copy;
             nb_iter=0;
             double t_mbasisw=0.0, t_mbasis=0.0;
-            while (t_mbasisw<0.01)
+            while (t_mbasisw<0.1)
             {
+                Mat<zz_pX> pmat;
+                random_mat_zz_pX(pmat, rdim, cdim, order);
                 t1w = GetWallTime(); t1 = GetTime();
                 Mat<zz_pX> appbas;
-                pivdeg = mbasis(appbas,pmat,order,shift);
+                pivdeg = mbasis_rescomp(appbas,pmat,order,shift);
                 t2w = GetWallTime(); t2 = GetTime();
                 t_mbasisw += t2w-t1w;
                 t_mbasis += t2-t1;
                 ++nb_iter;
                 if (nb_iter==1)
+                {
+                    pmat_copy = pmat;
                     appbas_copy = appbas;
+                }
             }
             t_mbasis /= nb_iter;
             t_mbasisw /= nb_iter;
-            std::cout << "Time(mbasis computation): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
+            std::cout << "Time(mbasis_rescomp): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
             //std::cout << "Ratio versus kernel: " << (t_mbasisw/ref_kernel_wall) << ", " << (t_mbasis/ref_kernel) << std::endl;
 
             if (verify)
             {
                 std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
                 t1w = GetWallTime(); t1 = GetTime();
-                bool verif = is_approximant_basis(appbas_copy,pmat,order,shift,ORD_WEAK_POPOV,true,false);
+                bool verif = is_approximant_basis(appbas_copy,pmat_copy,order,shift,ORD_WEAK_POPOV,true,false);
                 t2w = GetWallTime(); t2 = GetTime();
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
@@ -244,12 +253,14 @@ int main(int argc, char *argv[])
         }
 
         { // mbasis_resupdate
-            std::cout << "~~~Testing mbasis_resupdate~~~" << std::endl;
-            Mat<zz_pX> appbas_copy;
+            if (verify) std::cout << "~~~Testing mbasis_resupdate~~~" << std::endl;
+            Mat<zz_pX> appbas_copy, pmat_copy;
             nb_iter=0;
             double t_mbasisw=0.0, t_mbasis=0.0;
-            while (t_mbasisw<0.01)
+            while (t_mbasisw<0.1)
             {
+                Mat<zz_pX> pmat;
+                random_mat_zz_pX(pmat, rdim, cdim, order);
                 t1w = GetWallTime(); t1 = GetTime();
                 Mat<zz_pX> appbas;
                 pivdeg = mbasis_resupdate(appbas,pmat,order,shift);
@@ -258,17 +269,20 @@ int main(int argc, char *argv[])
                 t_mbasis += t2-t1;
                 ++nb_iter;
                 if (nb_iter==1)
+                {
+                    pmat_copy = pmat;
                     appbas_copy = appbas;
+                }
             }
             t_mbasis /= nb_iter;
             t_mbasisw /= nb_iter;
-            std::cout << "Time(mbasis computation): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
+            std::cout << "Time(mbasis_resupdate): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
             //std::cout << "Ratio versus kernel: " << (t_mbasisw/ref_kernel_wall) << ", " << (t_mbasis/ref_kernel) << std::endl;
 
             if (verify)
             {
                 std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
-                bool verif = is_approximant_basis(appbas_copy,pmat,order,shift,ORD_WEAK_POPOV,true,false);
+                bool verif = is_approximant_basis(appbas_copy,pmat_copy,order,shift,ORD_WEAK_POPOV,true,false);
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 
@@ -281,6 +295,48 @@ int main(int argc, char *argv[])
             }
         }
 
+        { // mbasis
+            if (verify) std::cout << "~~~Testing mbasis~~~" << std::endl;
+            Mat<zz_pX> appbas_copy, pmat_copy;
+            nb_iter=0;
+            double t_mbasisw=0.0, t_mbasis=0.0;
+            while (t_mbasisw<0.1)
+            {
+                Mat<zz_pX> pmat;
+                random_mat_zz_pX(pmat, rdim, cdim, order);
+                t1w = GetWallTime(); t1 = GetTime();
+                Mat<zz_pX> appbas;
+                pivdeg = mbasis(appbas,pmat,order,shift);
+                t2w = GetWallTime(); t2 = GetTime();
+                t_mbasisw += t2w-t1w;
+                t_mbasis += t2-t1;
+                ++nb_iter;
+                if (nb_iter==1)
+                {
+                    pmat_copy = pmat;
+                    appbas_copy = appbas;
+                }
+            }
+            t_mbasis /= nb_iter;
+            t_mbasisw /= nb_iter;
+            std::cout << "Time(mbasis): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
+            //std::cout << "Ratio versus kernel: " << (t_mbasisw/ref_kernel_wall) << ", " << (t_mbasis/ref_kernel) << std::endl;
+
+            if (verify)
+            {
+                std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
+                bool verif = is_approximant_basis(appbas_copy,pmat_copy,order,shift,ORD_WEAK_POPOV,true,false);
+                std::cout << (verif?"correct":"wrong") << std::endl;
+                std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+
+                if (std::max(rdim,cdim)<33) {
+                    Mat<long> degmat;
+                    degree_matrix(degmat,appbas_copy,shift,true);
+                    std::cout << "Print degree matrix of approx basis..." << std::endl;
+                    std::cout << degmat << std::endl;
+                }
+            }
+        }
 
         // mbasis_generic
         //{
@@ -313,12 +369,14 @@ int main(int argc, char *argv[])
         //}
 
         { // popov_mbasis
-            std::cout << "~~~Testing popov_mbasis~~~" << std::endl;
-            Mat<zz_pX> appbas_copy;
+            if (verify) std::cout << "~~~Testing popov_mbasis~~~" << std::endl;
+            Mat<zz_pX> appbas_copy, pmat_copy;
             nb_iter=0;
             double t_mbasisw=0.0, t_mbasis=0.0;
-            while (t_mbasisw<0.01)
+            while (t_mbasisw<0.1)
             {
+                Mat<zz_pX> pmat;
+                random_mat_zz_pX(pmat, rdim, cdim, order);
                 t1w = GetWallTime(); t1 = GetTime();
                 Mat<zz_pX> appbas;
                 pivdeg = popov_mbasis(appbas,pmat,order,shift);
@@ -327,7 +385,10 @@ int main(int argc, char *argv[])
                 t_mbasis += t2-t1;
                 ++nb_iter;
                 if (nb_iter==1)
+                {
+                    pmat_copy = pmat;
                     appbas_copy = appbas;
+                }
             }
             t_mbasis /= nb_iter;
             t_mbasisw /= nb_iter;
@@ -337,7 +398,7 @@ int main(int argc, char *argv[])
             if (verify)
             {
                 std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
-                bool verif = is_approximant_basis(appbas_copy,pmat,order,shift,ORD_WEAK_POPOV,true,false);
+                bool verif = is_approximant_basis(appbas_copy,pmat_copy,order,shift,ORD_WEAK_POPOV,true,false);
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 

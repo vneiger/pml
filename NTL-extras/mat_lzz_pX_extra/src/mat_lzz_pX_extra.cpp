@@ -865,15 +865,15 @@ void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs)
 /*------------------------------------------------------------*/
 /* convert to / from Vec<Mat<zz_p>>                           */
 /* (user provided truncation order)                           */
+/* coeffs will have length order independently of deg(mat)    */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat, const long order)
 {
-    long d = std::min(order,deg(mat)+1);
-    coeffs.SetLength(d);
+    coeffs.SetLength(order);
     long r = mat.NumRows();
     long s = mat.NumCols();
-    for (long i = 0; i < d; i++)
+    for (long i = 0; i < order; i++)
     {
         coeffs[i].SetDims(r, s);
         for (long a = 0; a < r; a++)
