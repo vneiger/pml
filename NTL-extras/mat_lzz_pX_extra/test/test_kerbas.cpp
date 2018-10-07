@@ -13,7 +13,7 @@ void check(long m, long n, long d){
     Mat<zz_pX> pmat;
     random_mat_zz_pX(pmat, m, n, d);
     
-    cout << "pmat: " << degree_matrix(pmat) << endl;
+    cout << "pmat: " << endl << degree_matrix(pmat) << endl;
     
     Shift s;
     for (long i = 0; i < m; i++)
@@ -22,16 +22,16 @@ void check(long m, long n, long d){
     Mat<zz_pX> kerbas;
     kernel_basis(kerbas, pmat, s);
     
-    cout << "kerbas (appbas): " << degree_matrix(kerbas) << endl;
+    cout << "kerbas (appbas): " << endl << degree_matrix(kerbas) << endl;
     
     Mat<zz_pX> res;
     multiply(res, kerbas, pmat);
-    cout << degree_matrix(res) << endl;
+    cout << "product sould be zero: " << endl << degree_matrix(res) << endl;
     
     kerbas = Mat<zz_pX>();
     kernel_basis_intbas(kerbas, pmat, s);
     
-    cout << "kerbas (intbas): " << degree_matrix(kerbas) << endl;
+    cout << "kerbas (intbas): " << endl << degree_matrix(kerbas) << endl;
     
     multiply(res, kerbas, pmat);
     cout << degree_matrix(res) << endl;
@@ -54,3 +54,11 @@ int main(int argc, char ** argv)
 
     return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

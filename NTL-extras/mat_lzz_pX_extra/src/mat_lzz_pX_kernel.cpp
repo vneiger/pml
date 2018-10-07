@@ -54,7 +54,6 @@ DegVec kernel_basis(
     // compute approximant basis
     Mat<zz_pX> appbas;
     DegVec rdeg = pmbasis(appbas, pmat, order, shift);
-    std::cout << degree_matrix(appbas) << std::endl;
 
     // rdeg is now the shift-pivot degree of appbas; deduce shift-row degree
     // which is the componentwise addition pivot degree + shift
