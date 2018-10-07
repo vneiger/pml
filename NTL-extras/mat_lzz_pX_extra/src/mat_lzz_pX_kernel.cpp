@@ -54,13 +54,11 @@ DegVec kernel_basis(
     // compute approximant basis
     Mat<zz_pX> appbas;
     DegVec rdeg = pmbasis(appbas, pmat, order, shift);
+    std::cout << degree_matrix(appbas) << std::endl;
 
     // rdeg is now the shift-pivot degree of appbas; deduce shift-row degree
     // which is the componentwise addition pivot degree + shift
     std::transform(rdeg.begin(),rdeg.end(),shift.begin(),rdeg.begin(),std::plus<long>());
-
-    // partition
-    Mat<zz_pX> P1,P2;
 
     // identify submatrix of some rows of appbas which are in the kernel
     // (not necessarily all of them; but in most cases yes)
@@ -76,6 +74,7 @@ DegVec kernel_basis(
             other_rows.emplace_back(i);
     long m1 = ker_rows.size();
     long m2 = other_rows.size();
+    Mat<zz_pX> P2;
     P2.SetDims(m2, m);
     DegVec rdegP1(m1), rdegP2(m2);
 
@@ -92,6 +91,7 @@ DegVec kernel_basis(
     // TODO make sure we don't bother about copying P2 in this case
     if (n == 1)
     {
+        kerbas.SetDims(m1, m);
         for (long i = 0; i < m1; i++)
             kerbas[i] = appbas[ker_rows[i]];  // (FIXME cf above could use swap?)
         return rdegP1;
