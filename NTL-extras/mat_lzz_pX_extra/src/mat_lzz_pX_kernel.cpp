@@ -24,15 +24,8 @@ DegVec kernel_basis(
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
 
-    // TODO remove?
-    if (m == 0)
-    {
-        kerbas = Mat<zz_pX>();
-        return DegVec();
-    } 
-
     // find parameter: sum of the m-n largest entries of shift
-    // FIXME m<n ?
+    // TODO assumes m<n ?
     Shift sorted_shift(shift);
     std::sort(sorted_shift.begin(), sorted_shift.end());
     long rho = 0;
@@ -42,14 +35,6 @@ DegVec kernel_basis(
     // order for call to approximation
     // TODO threshold ( 3* ?) to determine
     long order = 3 * ceil( (double)rho / n);
-
-    if (order == 0) // TODO is this happening? means pmat==0; could be check en amont
-    {
-        kerbas.SetDims(m-n,m);
-        auto res = DegVec();
-        res.resize(m-n);
-        return res;
-    }
 
     // compute approximant basis
     Mat<zz_pX> appbas;
@@ -82,6 +67,9 @@ DegVec kernel_basis(
         rdegP2[i] = rdeg[other_rows[i]];
     for (long i = 0; i < m2; ++i)
         P2[i] = appbas[other_rows[i]]; // FIXME could use swap or something, since appbas will be destroyed?
+
+    std::cout << "degrees P" << std::endl << degree_matrix(appbas) << std::endl;
+    std::cout << "degrees P2" << std::endl << degree_matrix(P2) << std::endl;
 
     // copy into P1
     for (long i = 0; i < m1; ++i)
@@ -132,6 +120,7 @@ DegVec kernel_basis(
     multiply(G1,N2,N1);
     if (G1.NumRows() != 0) // FIXME can it be zero??
         multiply(G1,G1,P2);
+
     kerbas.SetDims(m1+G1.NumRows(), m);
     for (long i = 0; i < m1; ++i)
         kerbas[i] = appbas[ker_rows[i]];  // (FIXME cf above could use swap?)

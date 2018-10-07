@@ -26,7 +26,7 @@ void check(long m, long n, long d){
 
     Mat<zz_pX> res;
     multiply(res, kerbas, pmat);
-    cout << "product sould be zero: " << endl << degree_matrix(res) << endl;
+    cout << "product should be zero: " << IsZero(res) << endl;
 
     kerbas = Mat<zz_pX>();
     kernel_basis_intbas(kerbas, pmat, s);
@@ -34,7 +34,7 @@ void check(long m, long n, long d){
     cout << "kerbas (intbas): " << endl << degree_matrix(kerbas) << endl;
 
     multiply(res, kerbas, pmat);
-    cout << degree_matrix(res) << endl;
+    cout << "product should be zero: " << IsZero(res) << endl;
 }
 
 /*------------------------------------------------------------*/
