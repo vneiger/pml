@@ -43,9 +43,6 @@ DegVec kernel_basis(
         return res;
     }
 
-    //cout << "rho: " << rho << endl;
-    //cout << "order: " << order << endl;
-
     Mat<zz_pX> P;
     auto dvec = pmbasis(P, pmat, order, shift);
 

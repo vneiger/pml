@@ -1072,6 +1072,16 @@ DegVec mbasis_plain(
 // converts back to polynomial matrices
 // Residual (constant coeff of X^-d appbas*pmat) is computed from scratch at
 // each iteration
+// Complexity: pmat is m x n
+//   - 'order' calls to popov_mbasis1 with dimension m x n, each one gives a
+//   constant matrix K which is generically m-n x m  (may have more rows in
+//   exceptional cases)
+//   - order products (X Id + K ) * appbas to update the approximant basis
+//   - order computations of "coeff k of appbas*pmat" to find residuals
+// Assuming the degree of appbas at iteration 'ord' is m 'ord' / n (it is at
+// least this almost always; and for the uniform shift it is equal to this for
+// generic pmat), then the third item costs O(m n^2 order^2 / 2) operations,
+// assuming cubic matrix multiplication over the field.
 DegVec mbasis_rescomp(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
@@ -1084,6 +1094,14 @@ DegVec mbasis_rescomp(
 // converts back to polynomial matrices
 // Residual (X^-d appbas*pmat mod X^(order-d)) is continuously updated along
 // the iterations
+// Complexity: pmat is m x n
+//   - 'order' calls to popov_mbasis1 with dimension m x n, each one gives a
+//   constant matrix K which is generically m-n x m  (may have more rows in
+//   exceptional cases)
+//   - order products (X Id + K ) * appbas to update the approximant basis
+//   - order products (X Id + K ) * pmat to update the residual
+// Assuming cubic matrix multiplication over the field, the third item costs
+// O(m n (m-n) order^2/2) operations
 DegVec mbasis_resupdate(
                         Mat<zz_pX> & appbas,
                         const Mat<zz_pX> & pmat,
@@ -1093,7 +1111,7 @@ DegVec mbasis_resupdate(
 
 // main function choosing the most efficient variant depending on parameters
 // warning: may not be the best choice when the shift is not uniform
-// FIXME -->  try to find the threshold?
+// FIXME -->  try to find the threshold for shifted case?
 // FIXME -->  or simply assume the user will choose the right mbasis?
 // FIXME -->  mbasis is anyway not the best approach, at least on the paper,
 //            when cdim << rdim and shift is "highly" non-uniform
@@ -1110,6 +1128,8 @@ inline DegVec mbasis(
         return mbasis_resupdate(appbas, pmat, order, shift);
     else
         return mbasis_rescomp(appbas, pmat, order, shift);
+    // To understand the threshold (cdim > rdim/2 + 1), see the complexities
+    // mentioned above for these two variants of mbasis
 }
 
 
