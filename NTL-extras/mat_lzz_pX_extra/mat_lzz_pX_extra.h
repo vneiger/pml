@@ -130,6 +130,9 @@ inline Mat<zz_pX> horizontal_join(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
     return c;
 }
 
+// TODO vertical join
+// TODO vertical/horizonal splits (then update kernel basis)
+
 /*------------------------------------------------------------*/
 /* collapses s consecutive columns of a into one column of c  */
 /* let t=a.NumCols(). For i=0..t/s-1, the i-th column of c is */
