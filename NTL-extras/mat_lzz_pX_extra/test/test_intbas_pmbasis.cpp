@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
         std::cout << "length " << shift.size() << std::endl;
 
     double t1w,t2w;
-
+/*
     // build random matrix
     Vec<Mat<zz_p>> evals;
     Vec<zz_p> pts;
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
             }
         }
     }
-    
+    */
 
     
     // generic uniform shift pmbasis for interpolants
@@ -160,7 +160,14 @@ int main(int argc, char *argv[])
         pivdeg = pmbasis_geometric(intbas,evals,pts,r,shift);
         t2w = GetWallTime();
 
-        std::cout << "Time(pmbasis-interpolation): " << (t2w-t1w) << std::endl;
+        std::cout << "Time(pmbasis-interpolation geo): " << (t2w-t1w) << std::endl;
+        
+        t1w = GetWallTime();
+        Mat<zz_pX> intbas2;
+        pivdeg = pmbasis(intbas2,evals,pts,shift);
+        t2w = GetWallTime();
+
+        std::cout << "Time(pmbasis-interpolation random): " << (t2w-t1w) << std::endl;
 
         if (verify)
         {

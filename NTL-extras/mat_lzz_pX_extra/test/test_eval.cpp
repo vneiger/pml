@@ -15,6 +15,7 @@
 * how does it compare, in terms of speed, evaluation when points are random, and geometric
 * when base field is FFT prime, how does it compare: random / geometric / FFTpoints
 * when evaluating a bunch of polynomials at the same points, in the polynomial evaluation code (at least for random & geometric points), is there nothing that could be gathered as pre-computation, done once for all polynomials and then apply the rest to each?
+* Mat.elts?
 */
 
 NTL_CLIENT
