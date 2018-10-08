@@ -126,7 +126,7 @@ void toeplitz_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input) const
 
 
 /*----------------------------------------------------*/
-/* right multiplication                               */
+/* right matrix multiplication                        */
 /*----------------------------------------------------*/
 void toeplitz_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input) const
 {
@@ -251,7 +251,7 @@ void toeplitz_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const
 }
 
 /*----------------------------------------------------*/
-/* left multiplication                                */
+/* left matrix multiplication                         */
 /*----------------------------------------------------*/
 void toeplitz_lzz_p::mul_left(Mat<zz_p>& res, const Mat<zz_p>& input) const
 {

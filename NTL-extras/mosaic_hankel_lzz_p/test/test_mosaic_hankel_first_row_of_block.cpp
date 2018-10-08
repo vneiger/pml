@@ -45,22 +45,23 @@ void check(long p)
 
         mosaic_hankel_lzz_p MH(H);
 
-        Vec<zz_p> col;
-        col = MH.first_row_of_block(0);
+        Vec<zz_p> row;
+        row = MH.first_row_of_block(0);
+
         for (long j = 0; j < i; j++)
-            assert (col[j] == h00(j, 0));
+            assert (row[j] == h00(0, j));
         for (long j = 0; j < 2; j++)
-            assert (col[j+i] == h01(j, 0));
+            assert (row[j+i] == h01(0, j));
         for (long j = 0; j < i; j++)
-            assert (col[j+i+2] == h02(j, 0));
+            assert (row[j+i+2] == h02(0, j));
         
-        col = MH.first_row_of_block(1);
+        row = MH.first_row_of_block(1);
         for (long j = 0; j < i; j++)
-            assert (col[j] == h10(j, 0));
+            assert (row[j] == h10(0, j));
         for (long j = 0; j < 2; j++)
-            assert (col[j+i] == h11(j, 0));
+            assert (row[j+i] == h11(0, j));
         for (long j = 0; j < i; j++)
-            assert (col[j+i+2] == h12(j, 0));
+            assert (row[j+i+2] == h12(0, j));
         
     }
 }

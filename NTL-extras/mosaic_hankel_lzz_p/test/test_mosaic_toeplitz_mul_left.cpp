@@ -27,8 +27,8 @@ void check(long p)
         random_vec_zz_p(dat11, i-1 + 2 - 1);
         random_vec_zz_p(dat12, i-1 + i - 1);
 
-        hankel_lzz_p h00(dat00, 2, i), h01(dat01, 2, 2), h02(dat02, 2, i), h10(dat10, i-1, i), h11(dat11, i-1, 2), h12(dat12, i-1, i);
-        Vec<hankel_lzz_p> row0, row1;
+        toeplitz_lzz_p h00(dat00, 2, i), h01(dat01, 2, 2), h02(dat02, 2, i), h10(dat10, i-1, i), h11(dat11, i-1, 2), h12(dat12, i-1, i);
+        Vec<toeplitz_lzz_p> row0, row1;
 
         row0.SetLength(3);
         row0[0] = h00;
@@ -38,28 +38,27 @@ void check(long p)
         row1[0] = h10;
         row1[1] = h11;
         row1[2] = h12;
-        Vec< Vec<hankel_lzz_p> > H;
+        Vec< Vec<toeplitz_lzz_p> > H;
         H.SetLength(2);
         H[0] = row0;
         H[1] = row1;
 
-        mosaic_hankel_lzz_p MH;
-        MH = mosaic_hankel_lzz_p(H);
-
+        mosaic_toeplitz_lzz_p MH;
+        MH = mosaic_toeplitz_lzz_p(H);
         Mat<zz_p> Mdense = MH.to_dense();
 
         Vec<zz_p> input, output;
-        input = random_vec_zz_p(MH.NumCols());
-        output = random_vec_zz_p(MH.NumRows());
-        output = MH.mul_right(input);
-        Vec<zz_p> output2 = Mdense * input;
+        input = random_vec_zz_p(MH.NumRows());
+        output = random_vec_zz_p(MH.NumCols());
+        output = MH.mul_left(input);
+        Vec<zz_p> output2 = input * Mdense;
         assert(output2 == output);
 
         Mat<zz_p> inputM, outputM;
-        inputM = random_mat_zz_p(MH.NumCols(), 3);
-        outputM = random_mat_zz_p(MH.NumRows(), 19);
-        outputM = MH.mul_right(inputM);
-        Mat<zz_p> output2M = Mdense * inputM;
+        inputM = random_mat_zz_p(3, MH.NumRows());
+        outputM = random_mat_zz_p(19, MH.NumCols());
+        outputM = MH.mul_left(inputM);
+        Mat<zz_p> output2M = inputM * Mdense;
         assert(output2M == outputM);
     }
 }

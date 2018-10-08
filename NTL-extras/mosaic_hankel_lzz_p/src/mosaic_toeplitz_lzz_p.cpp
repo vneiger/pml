@@ -91,6 +91,17 @@ void mosaic_toeplitz_lzz_p::to_dense(Mat<zz_p>& Mdense) const
 /*----------------------------------------------------*/
 void mosaic_toeplitz_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input) const
 {
+    if (input.length() != m)
+    {
+        LogicError("Wrong size for mosaic_hankel_lzz_p right multiplication.");
+    }
+
+    if (&res == &input)
+    {
+        res = mul_right(input);
+        return;
+    }
+
     res.SetLength(n);
     for (long i = 0; i < n; i++)
         res[i] = 0;
@@ -119,10 +130,86 @@ void mosaic_toeplitz_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input) co
 }
 
 /*----------------------------------------------------*/
+/* right matrix multiplication                        */
+/*----------------------------------------------------*/
+void mosaic_toeplitz_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input) const
+{
+    if (input.NumRows() != m)
+    {
+        LogicError("Wrong size for mosaic_hankel_lzz_p right matrix multiplication.");
+    }
+
+    if (&res == &input)
+    {
+        res = mul_right(input);
+        return;
+    }
+
+    long p = input.NumCols();
+
+    // check if we simply do a dense matrix product
+    if ( (min(m, n) >= max(m, n)/2) && // close enough to a square matrix
+         p >= min(m, n) / 4 )          // close enough to a matrix-matrix product
+    {
+        long t = type_of_prime();
+        if ( (t == TYPE_FFT_PRIME && min(m, n) <= 100)  ||
+             (t == TYPE_SMALL_PRIME && min(m, n) <= 1000) ||
+             (t == TYPE_LARGE_PRIME && min(m, n) <= 300) )
+        {
+            Mat<zz_p> mosaic = to_dense();
+            res = mosaic * input;
+            return;
+        }
+    }
+
+    res.SetDims(n, p);
+
+    for (long s = 0; s < n; s++)
+        for (long r = 0; r < p; r++)
+            res[s][r] = 0;
+
+    Vec<zz_p> tmp_in, tmp_out;
+
+    for (long r = 0; r < p; r++)
+    {
+        long jdx = 0;
+        for (long j = 0; j < mb; j++)
+        {
+            long ncols = data[0][j].NumCols();
+            tmp_in.SetLength(ncols);
+            for (long ell = 0; ell < ncols; ell++)
+                tmp_in[ell] = input[jdx + ell][r];
+            
+            long idx = 0;
+            for (long i = 0; i < nb; i++)
+            {
+                long nrows = data[i][0].NumRows();
+                data[i][j].mul_right(tmp_out, tmp_in);
+                for (long ell = 0; ell < nrows; ell++)
+                    res[idx + ell][r] += tmp_out[ell];
+                idx += nrows;
+            }
+            jdx += ncols;
+        }
+    }
+}
+
+/*----------------------------------------------------*/
 /* left multiplication                                */
 /*----------------------------------------------------*/
 void mosaic_toeplitz_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const
 {
+    if (input.length() != n)
+    {
+        LogicError("Wrong size for mosaic_hankel_lzz_p left multiplication.");
+    }
+
+    if (&res == &input)
+    {
+        res = mul_left(input);
+        return;
+    }
+
     res.SetLength(m);
     for (long i = 0; i < m; i++)
         res[i] = 0;
@@ -150,6 +237,74 @@ void mosaic_toeplitz_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) con
         idx += nrows;
     }
 }
+
+
+/*----------------------------------------------------*/
+/* left matrix multiplication                         */
+/*----------------------------------------------------*/
+void mosaic_toeplitz_lzz_p::mul_left(Mat<zz_p>& res, const Mat<zz_p>& input) const
+{
+    if (input.NumCols() != n)
+    {
+        LogicError("Wrong size for mosaic_hankel_lzz_p left matrix multiplication.");
+    }
+
+    if (&res == &input)
+    {
+        res = mul_left(input);
+        return;
+    }
+
+    long p = input.NumRows();
+
+    // check if we simply do a dense matrix product
+    if ( (min(m, n) >= max(m, n)/2) && // close enough to a square matrix
+         p >= min(m, n) / 4 )          // close enough to a matrix-matrix product
+    {
+        long t = type_of_prime();
+        if ( (t == TYPE_FFT_PRIME && min(m, n) <= 100)  ||
+             (t == TYPE_SMALL_PRIME && min(m, n) <= 1000) ||
+             (t == TYPE_LARGE_PRIME && min(m, n) <= 300) )
+        {
+            Mat<zz_p> mosaic = to_dense();
+            res = input * mosaic;
+            return;
+        }
+    }
+
+    res.SetDims(p, m);
+
+    for (long s = 0; s < p; s++)
+        for (long r = 0; r < m; r++)
+            res[s][r] = 0;
+
+    Vec<zz_p> tmp_in, tmp_out;
+
+    for (long r = 0; r < p; r++)
+    {
+        long idx = 0;
+        for (long i = 0; i < nb; i++)
+        {
+            long nrows = data[i][0].NumRows();
+            tmp_in.SetLength(nrows);
+            
+            for (long ell = 0; ell < nrows; ell++)
+                tmp_in[ell] = input[r][idx + ell];
+            
+            long jdx = 0;
+            for (long j = 0; j < mb; j++)
+            {
+                long ncols = data[0][j].NumCols();
+                data[i][j].mul_left(tmp_out, tmp_in);
+                for (long ell = 0; ell < ncols; ell++)
+                    res[r][jdx + ell] += tmp_out[ell];
+                jdx += ncols;
+            }
+            idx += nrows;
+        }
+    }
+}
+
 
 /*----------------------------------------------------*/
 /* access to particular rows and columns              */

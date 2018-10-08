@@ -16,7 +16,7 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 2; i < 10; i += 1)
+    for (long i = 2; i < 30; i += 1)
     {
         Vec<zz_p> dat00, dat01, dat02, dat10, dat11, dat12;
 
@@ -45,16 +45,21 @@ void check(long p)
 
         mosaic_hankel_lzz_p MH;
         MH = mosaic_hankel_lzz_p(H);
+        Mat<zz_p> Mdense = MH.to_dense();
 
         Vec<zz_p> input, output;
         input = random_vec_zz_p(MH.NumRows());
         output = random_vec_zz_p(MH.NumCols());
         output = MH.mul_left(input);
-
-        Mat<zz_p> Mdense = MH.to_dense();
         Vec<zz_p> output2 = input * Mdense;
-
         assert(output2 == output);
+
+        Mat<zz_p> inputM, outputM;
+        inputM = random_mat_zz_p(3, MH.NumRows());
+        outputM = random_mat_zz_p(19, MH.NumCols());
+        outputM = MH.mul_left(inputM);
+        Mat<zz_p> output2M = inputM * Mdense;
+        assert(output2M == outputM);
     }
 }
 

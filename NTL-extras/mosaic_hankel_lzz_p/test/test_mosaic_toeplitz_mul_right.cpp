@@ -27,8 +27,8 @@ void check(long p)
         random_vec_zz_p(dat11, i-1 + 2 - 1);
         random_vec_zz_p(dat12, i-1 + i - 1);
 
-        hankel_lzz_p h00(dat00, 2, i), h01(dat01, 2, 2), h02(dat02, 2, i), h10(dat10, i-1, i), h11(dat11, i-1, 2), h12(dat12, i-1, i);
-        Vec<hankel_lzz_p> row0, row1;
+        toeplitz_lzz_p h00(dat00, 2, i), h01(dat01, 2, 2), h02(dat02, 2, i), h10(dat10, i-1, i), h11(dat11, i-1, 2), h12(dat12, i-1, i);
+        Vec<toeplitz_lzz_p> row0, row1;
 
         row0.SetLength(3);
         row0[0] = h00;
@@ -38,13 +38,13 @@ void check(long p)
         row1[0] = h10;
         row1[1] = h11;
         row1[2] = h12;
-        Vec< Vec<hankel_lzz_p> > H;
+        Vec< Vec<toeplitz_lzz_p> > H;
         H.SetLength(2);
         H[0] = row0;
         H[1] = row1;
 
-        mosaic_hankel_lzz_p MH;
-        MH = mosaic_hankel_lzz_p(H);
+        mosaic_toeplitz_lzz_p MH;
+        MH = mosaic_toeplitz_lzz_p(H);
 
         Mat<zz_p> Mdense = MH.to_dense();
 
