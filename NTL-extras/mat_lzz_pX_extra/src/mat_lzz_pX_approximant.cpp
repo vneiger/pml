@@ -10,8 +10,8 @@
 #include "mat_lzz_pX_partial_linearization.h"
 #include "lzz_pX_CRT.h"
 
-#define MBASIS_PROFILE // FIXME
 //#define MBASIS1_PROFILE // FIXME
+//#define MBASIS_PROFILE // FIXME
 //#define PMBASIS_PROFILE // FIXME
 
 NTL_CLIENT
@@ -361,7 +361,12 @@ DegVec popov_mbasis1(
     if (k==0)
         return DegVec(m,1);
     if (k==m)
+    {
+        // kerbas should be the identity, same as p_kerbas
+        // TODO swap with p_kerbas?
+        ident(kerbas, m);
         return DegVec(m,0);
+    }
 
     // compute the (permuted) pivot indices
     // (NTL doesn't return the pivot indices in Gaussian elimination, we might
@@ -435,11 +440,6 @@ DegVec mbasis_plain(
     // initially, this is exactly shift
     DegVec rdeg(shift);
 
-    // TODO should we keep this?
-    // (is the code below really doing something if zero matrix?)
-    if ( IsZero(pmat) )
-        return rdeg;
-
     long deg_pmat = deg(pmat);
 
     // holds the current pivot degree of appbas
@@ -471,9 +471,6 @@ DegVec mbasis_plain(
             std::for_each(pivdeg.begin(), pivdeg.end(), [&order,&ord](long& a) { a+=order-ord+1; });
             return pivdeg;
         }
-
-        // kerbas.NumRows()==residual.NumRows() --> approximant basis is already
-        // correct for this order, just go to the next
 
         if (kerbas.NumRows()<residual.NumRows())
         {
@@ -520,6 +517,30 @@ DegVec mbasis_plain(
                 }
             }
         }
+        else
+        {
+            // Exceptional case:  (kerbas.NumRows()==residual.NumRows()) -->
+            // approximant basis is already correct for this order, no need to
+            // change it or to change pivdeg
+            // Find degree of appbas; note that it is a property of this algorithm
+            // that deg(appbas) = max(pivot degree) (i.e. max(degree of diagonal
+            // entries); this does not hold in general for ordered weak Popov forms
+            long deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
+
+            // compute next residual, if needed (if ord<order)
+            // this is coefficient of degree ord in appbas * pmat
+            if (ord<order)
+            {
+                clear(residual);
+                for (long d = std::max<long>(0,ord-deg_pmat); d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
+                {
+                    res_coeff1 = coeff(appbas,d);
+                    res_coeff2 = coeff(pmat,ord-d);
+                    mul(res_coeff, res_coeff1, res_coeff2);
+                    add(residual, residual, res_coeff);
+                }
+            }
+        }
     }
 
     return pivdeg;
@@ -528,11 +549,14 @@ DegVec mbasis_plain(
 /*------------------------------------------------------------*/
 /* mbasis, using vectors of matrices                          */
 /*------------------------------------------------------------*/
-DegVec mbasis(
+
+// version with residual constant matrix computed at each iteration
+DegVec mbasis_rescomp(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
               const long order,
-              const Shift & shift)
+              const Shift & shift
+             )
 {
 #ifdef MBASIS_PROFILE
     double t_others=0.0,t_residual=0.0,t_appbas=0.0,t_mbasis1=0.0,t_now;
@@ -580,9 +604,9 @@ DegVec mbasis(
 #ifdef MBASIS_PROFILE
         t_mbasis1 += GetWallTime()-t_now;
 #endif
-
         if (kerbas.NumRows()==0)
         {
+            // Exceptional case: residual coeff was zero
             // computation is already finished: the final basis is X^(order-ord+1)*coeffs_appbas
             appbas = conv(coeffs_appbas);
             appbas <<= (order-ord+1);
@@ -590,9 +614,6 @@ DegVec mbasis(
             std::for_each(pivdeg.begin(), pivdeg.end(), [&order,&ord](long& a) { a+=order-ord+1; });
             return pivdeg;
         }
-
-        // kerbas.NumRows()==residual.NumRows() --> approximant basis is already
-        // correct for this order, just go to the next
 
         if (kerbas.NumRows()<residual.NumRows())
         {
@@ -659,6 +680,39 @@ DegVec mbasis(
 #endif
             }
         }
+        else
+        {
+            // Exceptional case:  (kerbas.NumRows()==residual.NumRows()) -->
+            // approximant basis is already correct for this order, no need to
+            // change it or to change pivdeg
+#ifdef MBASIS_PROFILE
+            t_now = GetWallTime();
+#endif
+            // deduce degree of coeffs_appbas; note that it is a property of this algorithm
+            // that deg(coeffs_appbas) = max(pivot degree) (i.e. max(degree of diagonal
+            // entries); this does not hold in general for ordered weak Popov forms
+            long deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
+#ifdef MBASIS_PROFILE
+            t_others += GetWallTime()-t_now;
+#endif
+            // compute next residual, if needed (if ord < order); this is
+            // coefficient of degree ord in appbas * pmat
+            if (ord<order)
+            {
+#ifdef MBASIS_PROFILE
+            t_now = GetWallTime();
+#endif
+                clear(residual);
+                for (long d = std::max<long>(0,ord-coeffs_pmat.length()+1); d <= deg_appbas; ++d) // we have deg_appbas <= ord
+                {
+                    mul(res_coeff, coeffs_appbas[d], coeffs_pmat[ord-d]);
+                    add(residual, residual, res_coeff);
+                }
+#ifdef MBASIS_PROFILE
+                t_residual += GetWallTime()-t_now;
+#endif
+            }
+        }
     }
 
 #ifdef MBASIS_PROFILE
@@ -678,6 +732,7 @@ DegVec mbasis(
     return pivdeg;
 }
 
+// version with full residual matrix continuously updated along the iterations
 DegVec mbasis_resupdate(
                         Mat<zz_pX> & appbas,
                         const Mat<zz_pX> & pmat,
@@ -729,9 +784,9 @@ DegVec mbasis_resupdate(
 #ifdef MBASIS_PROFILE
         t_mbasis1 += GetWallTime()-t_now;
 #endif
-
         if (kerbas.NumRows()==0)
         {
+            // Exceptional case: residual coeff was zero
             // computation is already finished: the final basis is X^(order-ord+1)*coeffs_appbas
             appbas = conv(coeffs_appbas);
             appbas <<= (order-ord+1);
@@ -739,9 +794,6 @@ DegVec mbasis_resupdate(
             std::for_each(pivdeg.begin(), pivdeg.end(), [&order,&ord](long& a) { a+=order-ord+1; });
             return pivdeg;
         }
-
-        // kerbas.NumRows()==residual.NumRows() --> approximant basis is already
-        // correct for this order, just go to the next
 
         if (kerbas.NumRows()<nrows)
         {
@@ -796,30 +848,30 @@ DegVec mbasis_resupdate(
             // III/ update residual, if needed (ord<order):
             // submatrix of rows with diff_pivdeg==0 become kerbas*coeffs_residual,
             // rows with diff_pivdeg=1 are simply multiplied by X
-            if (ord<order)
+            // Ignore coefficients of degree less than ord: they are zero
+            // (the one of degree ord-1 was made zero in this iteration of the main for loop)
+            for (long d = order-1; d >= ord; --d)
             {
-                // ignore coefficients of degree less than ord: they are zero
-                // (the one of degree ord-1 was made zero in this iteration of the main for loop)
-                for (long d = coeffs_residual.length()-1; d >= ord; --d)
+                kermul = kerbas * coeffs_residual[d];
+                long row=0;
+                for (long i = 0; i < nrows; ++i)
                 {
-                    kermul = kerbas * coeffs_residual[d];
-                    long row=0;
-                    for (long i = 0; i < nrows; ++i)
+                    if (diff_pivdeg[i]==0)
                     {
-                        if (diff_pivdeg[i]==0)
-                        {
-                            coeffs_residual[d][i] = kermul[row];
-                            ++row;
-                        }
-                        else 
-                            coeffs_residual[d][i] = coeffs_residual[d-1][i];
+                        coeffs_residual[d][i] = kermul[row];
+                        ++row;
                     }
+                    else 
+                        coeffs_residual[d][i] = coeffs_residual[d-1][i];
                 }
+            }
 #ifdef MBASIS_PROFILE
             t_residual += GetWallTime()-t_now;
 #endif
-            }
         }
+        // else kerbas.NumRows()==nrows --> approximant basis is already
+        // correct for this order, just go to the next
+        // (no residual to update in this version of mbasis
     }
 
 #ifdef MBASIS_PROFILE
@@ -872,14 +924,12 @@ DegVec pmbasis(
               )
 {
 #ifdef PMBASIS_PROFILE
-    std::cout << "Order: " << order << std::endl;
+    std::cout << "\t";
+    std::cout << order << ",";
     double t1,t2;
 #endif
-    // TODO thresholds to be determined:
-    //  --> from mbasis (only linalg) to pmbasis with low-degree polmatmul (Karatsuba...)
-    //  --> from this pmbasis to pmbasis with eval-based polmatmul (FFT, geometric..)
 #ifdef PMBASIS_PROFILE
-    if (order <= 32)
+    if (order <= 16) // TODO thresholds to be determined
     {
         t1 = GetWallTime();
         DegVec rdeg = mbasis(appbas,pmat,order,shift);
@@ -888,7 +938,7 @@ DegVec pmbasis(
         return rdeg;
     }
 #else
-    if (order <= 32)
+    if (order <= 16) // TODO thresholds to be determined
         return mbasis(appbas,pmat,order,shift);
 #endif
     DegVec pivdeg; // pivot degree, first call

@@ -130,6 +130,9 @@ inline Mat<zz_pX> horizontal_join(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
     return c;
 }
 
+// TODO vertical join
+// TODO vertical/horizonal splits (then update kernel basis)
+
 /*------------------------------------------------------------*/
 /* collapses s consecutive columns of a into one column of c  */
 /* let t=a.NumCols(). For i=0..t/s-1, the i-th column of c is */
@@ -505,6 +508,8 @@ inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs)
 /* convert to / from Vec<Mat<zz_p>>                           */
 /* (user provided truncation order)                           */
 /*------------------------------------------------------------*/
+
+// coeffs will have length order independently of deg(mat)
 void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat, const long order);
 
 inline Vec<Mat<zz_p>> conv(const Mat<zz_pX>& mat, const long order)
@@ -932,10 +937,6 @@ typedef std::vector<long> Order;
 // basis; skipping the first call to find the pivot degree (in addition, will
 // this be more efficient because shift is nicer?)
 
-// TODO generic: try base case at nd = m instead of d = 1 (linearization
-// approach), see what improvement this brings (will improve, but for what kind
-// of n?)
-
 // TODO pmbasis: threshold mbasis
 
 // TODO mbasis insert threads
@@ -1060,6 +1061,7 @@ DegVec popov_mbasis1(
 /*   - Jeannerod-Neiger-Villard 2018                          */
 /*          (ensuring s-ordered weak Popov or s-Popov)        */
 /*------------------------------------------------------------*/
+
 // plain version, not the most efficient
 DegVec mbasis_plain(
                     Mat<zz_pX> & appbas,
@@ -1071,19 +1073,68 @@ DegVec mbasis_plain(
 // variant which first converts to vector of constant matrices,
 // performs the computations with this storage, and eventually
 // converts back to polynomial matrices
-DegVec mbasis(
+// Residual (constant coeff of X^-d appbas*pmat) is computed from scratch at
+// each iteration
+// Complexity: pmat is m x n
+//   - 'order' calls to popov_mbasis1 with dimension m x n, each one gives a
+//   constant matrix K which is generically m-n x m  (may have more rows in
+//   exceptional cases)
+//   - order products (X Id + K ) * appbas to update the approximant basis
+//   - order computations of "coeff k of appbas*pmat" to find residuals
+// Assuming the degree of appbas at iteration 'ord' is m 'ord' / n (it is at
+// least this almost always; and for the uniform shift it is equal to this for
+// generic pmat), then the third item costs O(m n^2 order^2 / 2) operations,
+// assuming cubic matrix multiplication over the field.
+DegVec mbasis_rescomp(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
               const long order,
               const Shift & shift
              );
 
+// variant which first converts to vector of constant matrices,
+// performs the computations with this storage, and eventually
+// converts back to polynomial matrices
+// Residual (X^-d appbas*pmat mod X^(order-d)) is continuously updated along
+// the iterations
+// Complexity: pmat is m x n
+//   - 'order' calls to popov_mbasis1 with dimension m x n, each one gives a
+//   constant matrix K which is generically m-n x m  (may have more rows in
+//   exceptional cases)
+//   - order products (X Id + K ) * appbas to update the approximant basis
+//   - order products (X Id + K ) * pmat to update the residual
+// Assuming cubic matrix multiplication over the field, the third item costs
+// O(m n (m-n) order^2/2) operations
 DegVec mbasis_resupdate(
                         Mat<zz_pX> & appbas,
                         const Mat<zz_pX> & pmat,
                         const long order,
                         const Shift & shift
                        );
+
+// main function choosing the most efficient variant depending on parameters
+// warning: may not be the best choice when the shift is not uniform
+// FIXME -->  try to find the threshold for shifted case?
+// FIXME -->  or simply assume the user will choose the right mbasis?
+// FIXME -->  mbasis is anyway not the best approach, at least on the paper,
+//            when cdim << rdim and shift is "highly" non-uniform
+inline DegVec mbasis(
+              Mat<zz_pX> & appbas,
+              const Mat<zz_pX> & pmat,
+              const long order,
+              const Shift & shift
+             )
+{
+    long rdim = pmat.NumRows();
+    long cdim = pmat.NumCols();
+    if (cdim > rdim/2 + 1)
+        return mbasis_resupdate(appbas, pmat, order, shift);
+    else
+        return mbasis_rescomp(appbas, pmat, order, shift);
+    // To understand the threshold (cdim > rdim/2 + 1), see the complexities
+    // mentioned above for these two variants of mbasis
+}
+
 
 DegVec popov_mbasis(
                     Mat<zz_pX> &appbas,

@@ -20,100 +20,93 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* checks some products                                       */
+/* run one bench for specified rdim,cdim,order                */
 /*------------------------------------------------------------*/
 void one_bench_mbasis(long rdim, long cdim, long order)
 {
     std::vector<long> shift(rdim,0);
 
-    double t1w,t2w;
+    double t1,t2;
+    double t_mbasis=0.0;
 
-    // build random matrix
-    Mat<zz_pX> pmat;
-    t1w = GetWallTime();
-    random_mat_zz_pX(pmat, rdim, cdim, order);
-    t2w = GetWallTime();
+    long nb_iter=0;
 
-    std::vector<long> pivdeg;
+    while (t_mbasis<0.1)
+    {
+        Mat<zz_pX> pmat;
+        random_mat_zz_pX(pmat, rdim, cdim, order);
+        std::vector<long> pivdeg;
 
-    { // 1 thread, normal mbasis
-        SetNumThreads(1);
-        t1w = GetWallTime();
+        t1 = GetWallTime();
         Mat<zz_pX> appbas;
         pivdeg = mbasis(appbas,pmat,order,shift);
-        t2w = GetWallTime();
-        cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << ", (" << AvailableThreads() << " threads)" << endl;
+        t2 = GetWallTime();
+
+        t_mbasis += t2-t1;
+        ++nb_iter;
     }
 
-    { // 2 threads, normal mbasis
-        SetNumThreads(2);
-        t1w = GetWallTime();
-        Mat<zz_pX> appbas;
-        pivdeg = mbasis(appbas,pmat,order,shift);
-        t2w = GetWallTime();
-        cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << ", (" << AvailableThreads() << " threads)" << endl;
-    }
+    t_mbasis /= nb_iter;
 
-    { // 3 threads, normal mbasis
-        SetNumThreads(3);
-        t1w = GetWallTime();
-        Mat<zz_pX> appbas;
-        pivdeg = mbasis(appbas,pmat,order,shift);
-        t2w = GetWallTime();
-        cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << ", (" << AvailableThreads() << " threads)" << endl;
-    }
-
-    { // 4 threads, normal mbasis
-        SetNumThreads(4);
-        t1w = GetWallTime();
-        Mat<zz_pX> appbas;
-        pivdeg = mbasis(appbas,pmat,order,shift);
-        t2w = GetWallTime();
-        cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << ", (" << AvailableThreads() << " threads)" << endl;
-    }
-
+    cout << rdim << "," << cdim << "," << order << "," << AvailableThreads() << "," << t_mbasis << endl;
 }
 
 /*------------------------------------------------------------*/
-/* checks some products                                       */
+/* run bench on variety of parameters                         */
 /*------------------------------------------------------------*/
-void run_bench(long nbits)
+void run_bench(long nthreads, long nbits, bool fftprime)
 {
-    std::vector<long> szs = { 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 };
+    SetNumThreads(nthreads);
 
-    // TODO try with non-FFT primes
-    std::cout << "Bench pm-basis (FFT prime)" << std::endl;
-    if (nbits < 25)
+    if (fftprime)
     {
-        zz_p::UserFFTInit(786433); // 20 bits
-        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 20 << ")" << endl;
+        cout << "Bench mbasis, FFT prime p = ";
+        if (nbits < 25)
+        {
+            zz_p::UserFFTInit(786433); // 20 bits
+            cout << zz_p::modulus() << ", bit length = " << 20 << endl;
+        }
+        else if (nbits < 35)
+        {
+            zz_p::UserFFTInit(2013265921); // 31 bits
+            cout << zz_p::modulus() << ", bit length = " << 31 << endl;
+        }
+        else if (nbits < 45)
+        {
+            zz_p::UserFFTInit(2748779069441); // 42 bits
+            cout << zz_p::modulus() << ", bit length = " << 42 << endl;
+        }
+        else if (nbits < 65)
+        {
+            zz_p::UserFFTInit(1139410705724735489); // 60 bits
+            cout << zz_p::modulus() << ", bit length = " << 60 << endl;
+        }
     }
-    else if (nbits < 35)
+    else
     {
-        zz_p::UserFFTInit(2013265921); // 31 bits
-        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 31 << ")" << endl;
+        cout << "Bench mbasis, random prime p = ";
+        zz_p::init(NTL::GenPrime_long(nbits));
+        cout << zz_p::modulus() << ", bit length = " << nbits << endl;
     }
-    else if (nbits < 45)
-    {
-        zz_p::UserFFTInit(2748779069441); // 42 bits
-        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 42 << ")" << endl;
-    }
-    else if (nbits < 65)
-    {
-        zz_p::UserFFTInit(1139410705724735489); // 60 bits
-        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
-    }
+
+    std::vector<long> szs = {2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
+
+    cout << "rdim,cdim,order,nthreads,time" << endl;
     for (size_t i=0;i<szs.size();i++)
     {
-        one_bench_mbasis(szs[i],1,szs[i]);
-        one_bench_mbasis(szs[i],szs[i]/2,1);
-        one_bench_mbasis(szs[i],szs[i]/2,8);
-        one_bench_mbasis(szs[i],szs[i]/2,16);
-        one_bench_mbasis(szs[i],szs[i]/2,32);
-        if (szs[i] < 1025)
-            one_bench_mbasis(szs[i],szs[i]/2,64);
-        if (szs[i] < 513)
-            one_bench_mbasis(szs[i],szs[i]/2,128);
+        long interval = ceil( (double)szs[i] / 20);
+        for (long j=1; j<szs[i]; j+=interval)
+        {
+            long max_order=128;
+            if (szs[i]==512)
+                max_order=64;
+            else if (szs[i]==1024)
+                max_order=32;
+            for (long k=1; k<=max_order; k=2*k)
+            {
+                one_bench_mbasis(szs[i],j,k);
+            }
+        }
     }
     cout << endl;
 }
@@ -125,22 +118,24 @@ int main(int argc, char ** argv)
 {
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
-    
-    cout << "rdim,cdim,order,time" << endl;
 
-    if (argc==1)
-    {
-        warmup();
-        run_bench(60);
-    }
-    if (argc==2)
-    {
-        long nbits = atoi(argv[1]);
-        warmup();
-        run_bench(nbits);
-    }
-    if (argc>3)
-        throw std::invalid_argument("Usage: ./time_mbasis OR ./time_mbasis nbits");
+    std::vector<long> nthreads = {1,2,3,4};
+    std::vector<long> nbits = {20,30,40,60};
+    std::vector<bool> fftprime = {true, false};
+
+    if (argc>=2)
+        nthreads = {atoi(argv[1])};
+    if (argc>=3)
+        nbits = {atoi(argv[2])};
+    if (argc==4)
+        fftprime = {(atoi(argv[3])==1) ? true : false};
+    if (argc>4)
+        throw std::invalid_argument("Usage: ./time_mbasis OR ./time_mbasis nthreads OR ./time_mbasis nthreads nbits fftprime");
+
+    for (size_t i = 0; i < nthreads.size(); ++i)
+        for (size_t j = 0; j < nbits.size(); ++j)
+            for (size_t k = 0; k < fftprime.size(); ++k)
+                run_bench(nthreads[i],nbits[j],fftprime[k]);
 
     return 0;
 }
