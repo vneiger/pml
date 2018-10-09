@@ -4,6 +4,7 @@
 #include <cmath>
 #include <algorithm> // for manipulating std::vector (min, max, ..)
 #include <numeric> // for std::iota
+#include <NTL/BasicThreadPool.h>
 
 #include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
@@ -912,6 +913,41 @@ void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs, const long order)
         }
     }
 }
+
+/*------------------------------------------------------------*/
+/* multipoint evaluation for matrices                         */
+/*------------------------------------------------------------*/
+void matrix_evaluate (Vec<Mat<zz_p>> &evals,
+                      const Mat<zz_pX> &pmat,
+                      const zz_pX_Multipoint &ev){
+    // figure out the length
+    zz_pX x;
+    SetCoeff(x,1,1);
+    Vec<zz_p> pts;
+    ev.evaluate(pts,x);
+    evals.SetLength(pts.length());
+    zz_pContext context;
+
+    context.save();  
+
+    // evaluate and store
+NTL_EXEC_RANGE(pmat.NumRows(),first,last)
+    
+    context.restore();
+
+    for (long i = 0; i < pmat.NumRows(); i++)
+    {
+        for (long j = 0; j < pmat.NumCols(); j++)
+        {
+            evals[i].SetDims(pmat.NumRows(), pmat.NumCols());
+            Vec<zz_p> val;
+            ev.evaluate(val, pmat[i][j]);
+            for (long t = 0; t < val.length(); t++)
+                evals[t][i][j] = val[t];
+        }
+    }  
+NTL_EXEC_RANGE_END     
+}                      
 
 
 /*------------------------------------------------------------*/

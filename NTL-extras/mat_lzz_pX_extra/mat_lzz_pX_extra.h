@@ -180,6 +180,11 @@ void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c, long n);
 Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n);
 
 
+// TODO submatrix
+
+// TODO interpolation middle product
+
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*                        SHIFT OPERATIONS                    */
@@ -260,17 +265,17 @@ static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of degree < d                         */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX(Mat<zz_pX>& pmat, long m, long n, long d);
+void random_mat_zz_pX(Mat<zz_pX> & pmat, long m, long n, long d);
 
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of row degree < rdeg                  */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX_rdeg(Mat<zz_pX>& pmat, long m, long n, DegVec rdeg);
+void random_mat_zz_pX_rdeg(Mat<zz_pX> & pmat, long m, long n, DegVec rdeg);
 
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of column degree < cdeg               */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX_cdeg(Mat<zz_pX>& pmat, long m, long n, DegVec cdeg);
+void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, DegVec cdeg);
 
 // TODO random matrix with given PolMatForm
 
@@ -752,6 +757,14 @@ private:
 std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, long dB);
 
 
+
+/*------------------------------------------------------------*/
+/* multipoint evaluation for matrices                         */
+/*------------------------------------------------------------*/
+void matrix_evaluate (Vec<Mat<zz_p>> &evals,
+                      const Mat<zz_pX> &pmat,
+                      const zz_pX_Multipoint &ev);
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* DEGREES, PIVOTS, LEADING MATRIX                            */
@@ -1049,6 +1062,7 @@ DegVec popov_mbasis1(
                      const Shift & shift
                     );
 
+
 // TODO check if serious difference of time if not returning Popov but just
 // minimal, like done in LinBox and in GJV03 and GL14 (implies slightly less
 // permutation work: the final permutation of the rows is not necessary)
@@ -1086,6 +1100,13 @@ DegVec mbasis_plain(
 // generic pmat), then the third item costs O(m n^2 order^2 / 2) operations,
 // assuming cubic matrix multiplication over the field.
 DegVec mbasis_rescomp(
+              Mat<zz_pX> & appbas,
+              const Mat<zz_pX> & pmat,
+              const long order,
+              const Shift & shift
+             );
+
+DegVec mbasis_rescomp_v2(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
               const long order,
@@ -1351,13 +1372,15 @@ DegVec pmbasis(
                const Vec<zz_p> & pts,
                const Shift & shift
               );
-              
+
+// returns the points and matrix evaluations used       
 DegVec pmbasis_geometric(
                Mat<zz_pX> & intbas,
                const Mat<zz_pX> & pmat,
                const zz_p & r,
                const long order,
                const Shift & shift,
+               Vec<Mat<zz_p>> &evals,
                Vec<zz_p> &pts
               );
 

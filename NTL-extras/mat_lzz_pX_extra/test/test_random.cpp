@@ -7,11 +7,11 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* initializes a zz_pX_Multipoint                             */
+/* creates random polynomial matrix                           */
 /* check takes an extra argument, not used here               */
 /*------------------------------------------------------------*/
-void check(int opt){
-
+void check()
+{
     zz_p::init(1125899906842679);
     Mat<zz_pX> a;
     random_mat_zz_pX(a, 3, 4, 2);
@@ -19,11 +19,9 @@ void check(int opt){
 
 }  
 
-int main(int argc, char ** argv){
-    int opt = 0;
-    if (argc > 1)
-        opt = atoi(argv[1]);
-    check(opt);
+int main()
+{
+    check();
     return 0;
 }
 
