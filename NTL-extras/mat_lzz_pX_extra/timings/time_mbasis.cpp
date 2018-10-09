@@ -27,11 +27,11 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     std::vector<long> shift(rdim,0);
 
     double t1,t2;
-    double t_mbasis=0.0;
 
     long nb_iter=0;
 
-    while (t_mbasis<0.1)
+    double t_mbasis_rescomp=0.0;
+    while (t_mbasis_rescomp<0.1)
     {
         Mat<zz_pX> pmat;
         random_mat_zz_pX(pmat, rdim, cdim, order);
@@ -39,16 +39,76 @@ void one_bench_mbasis(long rdim, long cdim, long order)
 
         t1 = GetWallTime();
         Mat<zz_pX> appbas;
-        pivdeg = mbasis(appbas,pmat,order,shift);
+        pivdeg = mbasis_rescomp(appbas,pmat,order,shift);
         t2 = GetWallTime();
 
-        t_mbasis += t2-t1;
+        t_mbasis_rescomp += t2-t1;
         ++nb_iter;
     }
 
-    t_mbasis /= nb_iter;
+    t_mbasis_rescomp /= nb_iter;
 
-    cout << rdim << "," << cdim << "," << order << "," << AvailableThreads() << "," << t_mbasis << endl;
+    double t_mbasis_rescomp_v2=0.0;
+    nb_iter=0;
+    while (t_mbasis_rescomp_v2<0.1)
+    {
+        Mat<zz_pX> pmat;
+        random_mat_zz_pX(pmat, rdim, cdim, order);
+        std::vector<long> pivdeg;
+
+        t1 = GetWallTime();
+        Mat<zz_pX> appbas;
+        pivdeg = mbasis_rescomp_v2(appbas,pmat,order,shift);
+        t2 = GetWallTime();
+
+        t_mbasis_rescomp_v2 += t2-t1;
+        ++nb_iter;
+    }
+
+    t_mbasis_rescomp_v2 /= nb_iter;
+
+
+    double t_mbasis_resupdate=0.0;
+    nb_iter=0;
+    while (t_mbasis_resupdate<0.1)
+    {
+        Mat<zz_pX> pmat;
+        random_mat_zz_pX(pmat, rdim, cdim, order);
+        std::vector<long> pivdeg;
+
+        t1 = GetWallTime();
+        Mat<zz_pX> appbas;
+        pivdeg = mbasis_resupdate(appbas,pmat,order,shift);
+        t2 = GetWallTime();
+
+        t_mbasis_resupdate += t2-t1;
+        ++nb_iter;
+    }
+
+    t_mbasis_resupdate /= nb_iter;
+
+    double best;
+
+    cout << rdim << "," << cdim << "," << order << "," << AvailableThreads();
+    if (t_mbasis_rescomp <= t_mbasis_rescomp_v2 && t_mbasis_rescomp <= t_mbasis_resupdate)
+    {
+        cout << "," << "rescomp";
+        best = t_mbasis_rescomp;
+    }
+    else if (t_mbasis_rescomp_v2 <= t_mbasis_rescomp && t_mbasis_rescomp_v2 <= t_mbasis_resupdate)
+    {
+        cout << "," << "rescomp_v2";
+        best = t_mbasis_rescomp_v2;
+    }
+    else // (t_mbasis_resupdate <= t_mbasis_rescomp_v2 && t_mbasis_resupdate <= t_mbasis_rescomp)
+    {
+        cout << "," << "resupdate";
+        best = t_mbasis_resupdate;
+    }
+    cout << "," << t_mbasis_rescomp / best;
+    cout << "," << t_mbasis_rescomp_v2 / best;
+    cout << "," << t_mbasis_resupdate / best;
+    cout << endl;
 }
 
 /*------------------------------------------------------------*/

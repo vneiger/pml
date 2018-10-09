@@ -747,56 +747,61 @@ DegVec mbasis_rescomp_v2(
     double t_others=0.0,t_residual=0.0,t_appbas=0.0,t_kernel=0.0,t_now;
     t_now = GetWallTime();
 #endif
+    // A. General
+    // A.1 store context, useful if multiple threads
     zz_pContext context;
     context.save();
     const long nthreads = AvailableThreads();
 
-    const Vec<Mat<zz_p>> coeffs_pmat = conv(pmat,order);
+    // A.2 dimensions of input matrix
     long nrows = pmat.NumRows();
     long ncols = pmat.NumCols();
-    Vec<Mat<zz_p>> coeffs_appbas;
 
-    // initially, coeffs_appbas is the identity matrix
-    coeffs_appbas.SetLength(1);
-    ident(coeffs_appbas[0], nrows);
-
-    // holds the current shifted row degree of coeffs_appbas
-    // initially, this is exactly shift
-    DegVec rdeg(shift);
-
-    // holds the current pivot degree of coeffs_appbas
-    // initially tuple of zeroes
-    // (note that at all times pivdeg+shift = rdeg entrywise)
-    DegVec pivdeg(nrows);
-
-    // will store the pivot degree at each call of mbasis1
-    //DegVec diff_pivdeg;
-
-    // degree of approximant basis, initially zero
-    long deg_appbas = 0;
-
-    // pivot indices in kernel basis, and in permuted kernel basis, in base case
-    // (length may be overestimated for some kernels, which is fine)
-    std::vector<long> pivind(nrows-1);
-    std::vector<long> p_pivind(nrows-1);
-
-    // indicates true for indices of rows in pivot index of kernel
-    std::vector<bool> is_pivind(nrows, false);
-
-    // iota
+    // A.3 store iota since it will be used at each iteration
     std::vector<long> iota(nrows);
     std::iota(iota.begin(), iota.end(), 0);
+
+    // B. Input representation; initialize output
+    // B.1 convert input into vector of constant matrices (its "coefficients")
+    const Vec<Mat<zz_p>> coeffs_pmat = conv(pmat,order);
+
+    // B.3 vector of coefficients of output approximant basis
+    Vec<Mat<zz_p>> coeffs_appbas;
+
+    // B.4 initially, appbas is the identity matrix
+    coeffs_appbas.SetLength(1);
+    ident(coeffs_appbas[0], nrows);
+    // degree of approximant basis, initially zero
+    long deg_appbas = 0;
+    // shifted row degree of appbas, initially equal to shift
+    DegVec rdeg(shift);
+    // pivot degree of appbas, initially zero
+    // (note that along this algorithm we have pivdeg+shift = rdeg, entrywise,
+    // since we will compute appbas in ordered weak Popov form)
+    DegVec pivdeg(nrows);
+
+    // C. For base case (working modulo X, use kernel of constant matrix):
+    // C.1 pivot indices in kernel basis (which is in row echelon form)
+    // Note: length is probably overestimated (usually kernel has nrows-ncols rows),
+    // but this avoids reallocating the right length at each iteration
+    std::vector<long> pivind(nrows-1);
+    // Vector indicating if a given column index appears in this pivot index
+    // i.e. is_pivind[pivind[i]] = true and others are false
+    std::vector<bool> is_pivind(nrows, false);
+
+    // C.2 permutation for the rows of the constant kernel (NTL yields a matrix
+    // in row echelon form up to row permutation)
+    std::vector<long> perm_rows_ker;
+    // pivot indices of row echelon form before permutation
+    std::vector<long> p_pivind(nrows-1);
+
+    // C.3 the constant kernel, and its permuted version
+    Mat<zz_p> kerbas;
+    Mat<zz_p> p_kerbas;
 
     // will store the permutation which stable-sorts the shift
     std::vector<long> p_rdeg;
 
-    // permutation for the rows of the constant kernel
-    std::vector<long> perm_rows_ker;
-
-    // matrix to store the constant kernels (and its permuted version)
-    // in the base case mod X
-    Mat<zz_p> kerbas;
-    Mat<zz_p> p_kerbas;
 
 
     // declare matrices
