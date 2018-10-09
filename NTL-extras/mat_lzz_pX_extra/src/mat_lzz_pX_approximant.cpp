@@ -969,20 +969,27 @@ DegVec mbasis_rescomp_v2(
                     ++pivdeg[i];
                 }
 
-            // deduce degree of coeffs_appbas; note that it is a property of this algorithm
-            // that deg(coeffs_appbas) = max(pivot degree) (i.e. max(degree of diagonal
-            // entries); this does not hold in general for ordered weak Popov forms
+            // Deduce the degree of appbas; it is a property of this algorithm
+            // that deg(appbas) = max(pivot degree) (i.e. max(degree of
+            // diagonal entries); this does not hold in general for shifted
+            // ordered weak Popov approximant bases
             deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
-            coeffs_appbas.SetLength(deg_appbas+1);
-            coeffs_appbas[deg_appbas].SetDims(nrows, nrows);
+            // this new degree is either unchanged (== coeffs_appbas.length()-1),
+            // or is the old one + 1 (== coeffs_appbas.length())
+            if (deg_appbas==coeffs_appbas.length())
+            {
+                coeffs_appbas.SetLength(deg_appbas+1);
+                coeffs_appbas[deg_appbas].SetDims(nrows, nrows);
+            }
 #ifdef MBASIS_PROFILE
             t_others += GetWallTime()-t_now;
             t_now = GetWallTime();
 #endif
 
-            // II/ update approximant basis
+            // Update approximant basis
 
-            // submatrix of rows with is_pivind is replaced by kerbas*coeffs_appbas
+            // Submatrix of rows corresponding to pivind are replaced by
+            // kerbas*coeffs_appbas
             PartitionInfo pinfo(deg_appbas);
             NTL_EXEC_INDEX(pinfo.NumIntervals(), index)
                 context.restore();
@@ -996,27 +1003,22 @@ DegVec mbasis_rescomp_v2(
                 }
             NTL_EXEC_INDEX_END
 
-            // rows with !is_pivind are simply multiplied by X (note: these
-            // rows have degree less than deg_appbas)
+            // rows with !is_pivind are multiplied by X (note: these rows have
+            // degree less than deg_appbas)
             for (long d = deg_appbas-1; d >= 0; --d)
                 for (long i = 0; i < nrows; ++i)
                     if (not is_pivind[i])
                         coeffs_appbas[d+1][i].swap(coeffs_appbas[d][i]);
-            // this puts zero (former row i of d=deg_appbas) in row i of d=0
+            // Note: after this, the row coeffs_appbas[0][i] is zero
+            // since it is the former row coeffs_appbas[deg_appbas][i]
+            // and, as noted above, deg(appbas[i]) = 0 before this loop
 #ifdef MBASIS_PROFILE
             t_appbas += GetWallTime()-t_now;
             t_now = GetWallTime();
 #endif
-            // Restore is_pivind to all false
-            for (long i = 0; i < ker_dim; ++i)
-                is_pivind[pivind[i]] = false;
-#ifdef MBASIS_PROFILE
-            t_others += GetWallTime()-t_now;
-            t_now = GetWallTime();
-#endif
-
-            // III/ compute next residual, if needed
-            // this is coefficient of degree ord in appbas * pmat
+            // Find next residual: coefficient of degree ord in appbas*pmat
+            // (this is not necessary if ord==order, since in this case
+            // we have finished: appbas*pmat is zero mod X^order)
             if (ord<order)
             {
                 long dmin=std::max<long>(0,ord-coeffs_pmat.length()+1);
@@ -1037,6 +1039,14 @@ DegVec mbasis_rescomp_v2(
                     residuals[0] += residuals[i];
 #ifdef MBASIS_PROFILE
             t_residual += GetWallTime()-t_now;
+            t_now = GetWallTime();
+#endif
+            // Restore is_pivind to all false, as it should be at the beginning of
+            // the iteration
+            for (long i = 0; i < ker_dim; ++i)
+                is_pivind[pivind[i]] = false;
+#ifdef MBASIS_PROFILE
+            t_others += GetWallTime()-t_now;
 #endif
             }
         }
@@ -1045,6 +1055,7 @@ DegVec mbasis_rescomp_v2(
 #ifdef MBASIS_PROFILE
     t_now = GetWallTime();
 #endif
+    // Convert approximant basis to polynomial matrix representation
     appbas = conv(coeffs_appbas);
 #ifdef MBASIS_PROFILE
     t_others += GetWallTime()-t_now;
