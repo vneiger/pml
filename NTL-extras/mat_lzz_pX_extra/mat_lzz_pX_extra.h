@@ -260,17 +260,17 @@ static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of degree < d                         */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX(Mat<zz_pX>& pmat, long m, long n, long d);
+void random_mat_zz_pX(Mat<zz_pX> & pmat, long m, long n, long d);
 
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of row degree < rdeg                  */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX_rdeg(Mat<zz_pX>& pmat, long m, long n, DegVec rdeg);
+void random_mat_zz_pX_rdeg(Mat<zz_pX> & pmat, long m, long n, DegVec rdeg);
 
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of column degree < cdeg               */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX_cdeg(Mat<zz_pX>& pmat, long m, long n, DegVec cdeg);
+void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, DegVec cdeg);
 
 // TODO random matrix with given PolMatForm
 
