@@ -842,6 +842,9 @@ DegVec mbasis_rescomp_v2(
         t_now = GetWallTime();
 #endif
         // compute permutation which realizes stable sort of rdeg
+        // --> we need to permute things, to take into account the "priority"
+        // (i.e. "weights") indicated by the shift; at this stage, the input
+        // shift is the shift-row degree 'rdeg' of appbas
         p_rdeg = iota;
         stable_sort(p_rdeg.begin(), p_rdeg.end(),
                     [&](const long& a, const long& b)->bool
@@ -853,17 +856,17 @@ DegVec mbasis_rescomp_v2(
         for (long i = 0; i < nrows; ++i)
             p_residual[i].swap(residuals[0][p_rdeg[i]]);
         // content of residual has been changed --> let's make it zero
-        // (if ord==1, residual is the former p_residual which was zero)
+        // (already the case if ord==1, since residual is then the former p_residual which was zero)
         if (ord>1)
             clear(residuals[0]);
 #ifdef MBASIS_PROFILE
         t_others += GetWallTime()-t_now;
         t_now = GetWallTime();
 #endif
-
         // find the (permuted) left kernel basis in row echelon form;
-        // note it might not exactly be row echelon form but a row-permuted version
-        // --> this is taken into account below in the computation of the pivot indices
+        // note it might not exactly be the usual row echelon form but a
+        // row-permuted version --> this is taken into account below in the
+        // computation of the pivot indices
         kernel(p_kerbas,p_residual);
 #ifdef MBASIS_PROFILE
         t_kernel += GetWallTime()-t_now;
@@ -872,27 +875,28 @@ DegVec mbasis_rescomp_v2(
 
         if (ker_dim==0)
         {
-            // Exceptional case: residual coeff has empty left kernel
-            // computation is already finished: the final basis is X^(order-ord+1)*coeffs_appbas
+            // Exceptional case: the residual matrix has empty left kernel
+            // --> no need to compute more: the final basis is X^(order-ord+1)*coeffs_appbas
             appbas = conv(coeffs_appbas);
             appbas <<= (order-ord+1);
-            // update pivdeg accordingly, and return
             std::for_each(pivdeg.begin(), pivdeg.end(), [&order,&ord](long& a) { a+=order-ord+1; });
             return pivdeg;
         }
 
         else if (ker_dim==nrows)
         {
-            // Exceptional case: residual coeff was zero, kernel 'kerbas' is identity
+            // Exceptional case: residual coeff was zero, and kernel 'kerbas' is identity
             // --> approximant basis is already correct for this order, no need to
             // change it or to change pivdeg
-            // --> remains to compute next residual (unless ord == order: computation finished)
-            // this is coefficient of degree ord in appbas * pmat
+            // --> we just need to compute the next residual
+            // (unless ord == order, in which case the algorithm returns)
+            // this "residual" is the coefficient of degree ord in appbas * pmat:
             if (ord<order)
             {
 #ifdef MBASIS_PROFILE
                 t_now = GetWallTime();
 #endif
+                // TODO make this parallel as below
                 for (long d = std::max<long>(0,ord-coeffs_pmat.length()+1); d <= deg_appbas; ++d)
                 {
                     mul(res_coeff[0], coeffs_appbas[d], coeffs_pmat[ord-d]);
@@ -906,14 +910,16 @@ DegVec mbasis_rescomp_v2(
 
         else
         {
-            // otherwise, in cases where the kernel basis has no special shape,
-            // we should permute everything back
+            // here, we are in the "usual" case, where the left kernel of the
+            // residual has no special shape
+
+            // first, we permute everything back to original order
 
             // compute the (permuted) pivot indices
             // (NTL computes but doesn't return the pivot indices in Gaussian
-            // elimination, we might hack the NTL code to retrieve them directly
-            // but it seems that the next lines have negligible time compared to
-            // the kernel computation)
+            // elimination, we might hack the NTL code to retrieve them
+            // directly but the next lines should have negligible time compared
+            // to the overall computation)
 #ifdef MBASIS_PROFILE
             t_now = GetWallTime();
 #endif
@@ -925,10 +931,9 @@ DegVec mbasis_rescomp_v2(
                     --*piv;
             }
 
-            // permute everything back to original order:
-            // prepare kernel permutation by permuting kernel pivot indices
-            // Also record which rows are pivot index in this kernel; this
-            // is assuming is_pivind is filled with false
+            // prepare kernel permutation by permuting kernel pivot indices;
+            // also record which rows are pivot index in this kernel
+            // (note that before this loop, is_pivind is filled with 'false')
             for (long i = 0; i < ker_dim; ++i)
             {
                 pivind[i] = p_rdeg[p_pivind[i]];
@@ -938,29 +943,25 @@ DegVec mbasis_rescomp_v2(
             // perm_rows_ker = [0 1 2 ... ker_dim-1]
             perm_rows_ker.resize(ker_dim);
             std::copy_n(iota.begin(), ker_dim, perm_rows_ker.begin());
+            // permutation putting the pivot indices pivind in increasing order
             sort(perm_rows_ker.begin(), perm_rows_ker.end(),
                  [&](const long& a, const long& b)->bool
                  {
                  return (pivind[a] < pivind[b]);
                  } );
 
+            // permute rows and columns of kernel back to original order
             kerbas.SetDims(ker_dim,nrows);
             for (long i = 0; i < ker_dim; ++i)
                 for (long j = 0; j < nrows; ++j)
                     kerbas[i][p_rdeg[j]] = p_kerbas[perm_rows_ker[i]][j];
-
-            //    std::cout << "  Initial permutations: " << t_perm1 << std::endl;
-            //    std::cout << "  Computing kernel: " << t_ker << std::endl;
-            //    std::cout << "  Computing pivot indices: " << t_pivind << std::endl;
-            //    std::cout << "  Final permutations: " << t_perm2 << std::endl;
-
 #ifdef MBASIS_PROFILE
             t_others += GetWallTime()-t_now;
             t_now = GetWallTime();
 #endif
-            // I/ Update degrees:
-            // update shifted pivot degree and shifted row degree:
-            // entries corresponding to kernel pivot indices are +0, others are +1
+
+            // Now, update shifted pivot degree and shifted row degree:
+            // entries corresponding to kernel pivot indices are kept, others are +1
             for (long i = 0; i < nrows; ++i)
                 if (not is_pivind[i])
                 {
