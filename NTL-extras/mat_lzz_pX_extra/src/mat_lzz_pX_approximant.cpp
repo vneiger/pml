@@ -27,6 +27,7 @@ NTL_CLIENT
 /* GENERAL USER INTERFACE                                     */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+// TODO check shift and order length, pmat dims (positive), ...
 DegVec approximant_basis(
                          Mat<zz_pX> & appbas,
                          const Mat<zz_pX> & pmat,
