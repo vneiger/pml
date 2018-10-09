@@ -748,6 +748,7 @@ DegVec mbasis_rescomp_v2(
     t_now = GetWallTime();
 #endif
     // A. General
+
     // A.1 store context, useful if multiple threads
     zz_pContext context;
     context.save();
@@ -762,6 +763,7 @@ DegVec mbasis_rescomp_v2(
     std::iota(iota.begin(), iota.end(), 0);
 
     // B. Input representation; initialize output
+
     // B.1 convert input into vector of constant matrices (its "coefficients")
     const Vec<Mat<zz_p>> coeffs_pmat = conv(pmat,order);
 
@@ -780,8 +782,31 @@ DegVec mbasis_rescomp_v2(
     // since we will compute appbas in ordered weak Popov form)
     DegVec pivdeg(nrows);
 
-    // C. For base case (working modulo X, use kernel of constant matrix):
-    // C.1 pivot indices in kernel basis (which is in row echelon form)
+    // C. Residual matrix (nrows x ncols constant matrix, next coefficient
+    // of appbas * pmat which we want to annihilate)
+
+    // C.1 stores the residual (residual is in residuals[0], yet
+    // during some parallel computations it is decomposed into some parts that
+    // are computed in residuals[1], ... residuals[nthreads] and only afterwards
+    // combined into residuals[0]
+    Vec<Mat<zz_p>> residuals;
+    residuals.SetLength(nthreads);
+    residuals[0] = coeffs_pmat[0];
+    for (long i = 0; i < nthreads; ++i)
+        residuals[i].SetDims(nrows, ncols);
+
+    // C.2 temporary matrices used during the computation of residuals[i]
+    Vec<Mat<zz_p>> res_coeff;
+    res_coeff.SetLength(nthreads);
+
+    // C.3 permuted residual, used as input to the kernel at the "base case"
+    Mat<zz_p> p_residual;
+    p_residual.SetDims(nrows, ncols);
+
+    // D. Base case (working modulo X, essentially amounts to finding the left
+    // kernel of the permuted residual p_residual)
+
+    // D.1 pivot indices in kernel basis (which is in row echelon form)
     // Note: length is probably overestimated (usually kernel has nrows-ncols rows),
     // but this avoids reallocating the right length at each iteration
     std::vector<long> pivind(nrows-1);
@@ -789,35 +814,24 @@ DegVec mbasis_rescomp_v2(
     // i.e. is_pivind[pivind[i]] = true and others are false
     std::vector<bool> is_pivind(nrows, false);
 
-    // C.2 permutation for the rows of the constant kernel (NTL yields a matrix
+    // D.2 permutation for the rows of the constant kernel (NTL yields a matrix
     // in row echelon form up to row permutation)
     std::vector<long> perm_rows_ker;
     // pivot indices of row echelon form before permutation
     std::vector<long> p_pivind(nrows-1);
 
-    // C.3 the constant kernel, and its permuted version
+    // D.3 permutation which stable-sorts the shift, used at the base case
+    std::vector<long> p_rdeg;
+
+    // D.4 the constant kernel, and its permuted version
     Mat<zz_p> kerbas;
     Mat<zz_p> p_kerbas;
 
-    // will store the permutation which stable-sorts the shift
-    std::vector<long> p_rdeg;
+    // E. Updating appbas
+    // stores the product "constant-kernel * coeffs_appbas[d]"
+    Vec<Mat<zz_p>> kerapp; 
+    kerapp.SetLength(nthreads);
 
-
-
-    // declare matrices
-    Vec<Mat<zz_p>> res_coeff; // will store coefficient matrices used to compute the residual
-    res_coeff.SetLength(nthreads);
-    Vec<Mat<zz_p>> residuals; // will store coefficient matrices used to compute the residual
-    residuals.SetLength(nthreads);
-    residuals[0] = coeffs_pmat[0];
-    for (long i = 0; i < nthreads; ++i)
-        residuals[i].SetDims(nrows, ncols);
-    // will store permuted residuals
-    Mat<zz_p> p_residual;
-    p_residual.SetDims(nrows, ncols);
-
-    Vec<Mat<zz_p>> kerapp; // will store constant-kernel * coeffs_appbas[d]
-    kerapp.SetLength(nthreads); // no more than this many matrices will be used
 #ifdef MBASIS_PROFILE
     t_others += GetWallTime()-t_now;
 #endif
