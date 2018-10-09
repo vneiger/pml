@@ -180,6 +180,11 @@ void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c, long n);
 Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n);
 
 
+// TODO submatrix
+
+// TODO interpolation middle product
+
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*                        SHIFT OPERATIONS                    */
@@ -751,6 +756,14 @@ private:
 /*------------------------------------------------------------*/
 std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, long dB);
 
+
+
+/*------------------------------------------------------------*/
+/* multipoint evaluation for matrices                         */
+/*------------------------------------------------------------*/
+void matrix_evaluate (Vec<Mat<zz_p>> &evals,
+                      const Mat<zz_pX> &pmat,
+                      const zz_pX_Multipoint &ev);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -1359,13 +1372,15 @@ DegVec pmbasis(
                const Vec<zz_p> & pts,
                const Shift & shift
               );
-              
+
+// returns the points and matrix evaluations used       
 DegVec pmbasis_geometric(
                Mat<zz_pX> & intbas,
                const Mat<zz_pX> & pmat,
                const zz_p & r,
                const long order,
                const Shift & shift,
+               Vec<Mat<zz_p>> &evals,
                Vec<zz_p> &pts
               );
 

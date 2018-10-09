@@ -16,25 +16,31 @@ void check(long m, long n, long d){
     cout << "pmat: " << endl << degree_matrix(pmat) << endl;
 
     // Uniform shift:
-    //Shift s(m, d);
-    // increasing shift:
+    // Shift s(m, d);
+    // uniform shift:
     Shift s;
     for (long i = 0; i < m; ++i)
-        s.emplace_back(d+i);
+        s.emplace_back(d);
+    double t1w,t2w;
 
     Mat<zz_pX> kerbas;
+    t1w = GetWallTime();
     kernel_basis(kerbas, pmat, s);
-
+    t2w = GetWallTime();
     cout << "kerbas (appbas): " << endl << degree_matrix(kerbas) << endl;
+    cout << "time (appbas): " << t2w-t1w << endl;
 
     Mat<zz_pX> res;
     multiply(res, kerbas, pmat);
     cout << "product should be zero: " << IsZero(res) << endl;
 
     kerbas = Mat<zz_pX>();
+    t1w = GetWallTime();
     kernel_basis_intbas(kerbas, pmat, s);
-
+    t2w = GetWallTime();
+    
     cout << "kerbas (intbas): " << endl << degree_matrix(kerbas) << endl;
+    cout << "time (intbas): " << t2w-t1w << endl;
 
     multiply(res, kerbas, pmat);
     cout << "product should be zero: " << IsZero(res) << endl;
