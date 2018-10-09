@@ -1,6 +1,7 @@
 #include <NTL/matrix.h>
 #include <NTL/mat_lzz_p.h>
 #include <NTL/lzz_pX.h>
+#include <NTL/BasicThreadPool.h>
 #include <cmath>
 #include <algorithm> // for manipulating std::vector (min, max, ..)
 #include <numeric> // for std::iota
@@ -590,7 +591,7 @@ DegVec mbasis_rescomp(
     Mat<zz_p> residual(coeffs_pmat[0]);
 
     // declare matrices
-    Mat<zz_p> res_coeff,res_coeff1,res_coeff2; // will store coefficient matrices used to compute the residual
+    Mat<zz_p> res_coeff; // will store coefficient matrices used to compute the residual
     Mat<zz_p> kerapp; // will store constant-kernel * coeffs_appbas[d]
 #ifdef MBASIS_PROFILE
     t_others += GetWallTime()-t_now;
@@ -743,9 +744,12 @@ DegVec mbasis_rescomp_v2(
              )
 {
 #ifdef MBASIS_PROFILE
-    double t_others=0.0,t_residual=0.0,t_appbas=0.0,t_mbasis1=0.0,t_now;
+    double t_others=0.0,t_residual=0.0,t_appbas=0.0,t_kernel=0.0,t_now;
     t_now = GetWallTime();
 #endif
+    zz_pContext context;
+    context.save();
+
     const Vec<Mat<zz_p>> coeffs_pmat = conv(pmat,order);
     long nrows = coeffs_pmat[0].NumRows();
     Vec<Mat<zz_p>> coeffs_appbas;
@@ -777,8 +781,15 @@ DegVec mbasis_rescomp_v2(
     // indicates true for indices of rows in pivot index of kernel
     std::vector<bool> is_pivind(nrows, false);
 
+    // iota
+    std::vector<long> iota(nrows);
+    std::iota(iota.begin(), iota.end(), 0);
+
     // will store the permutation which stable-sorts the shift
-    std::vector<long> p_rdeg(nrows);
+    std::vector<long> p_rdeg;
+
+    // permutation for the rows of the constant kernel
+    std::vector<long> perm_rows_ker;
 
     // matrix to store the constant kernels (and its permuted version)
     // in the base case mod X
@@ -792,8 +803,8 @@ DegVec mbasis_rescomp_v2(
     p_residual.SetDims(nrows,residual.NumCols());
 
     // declare matrices
-    Mat<zz_p> res_coeff,res_coeff1,res_coeff2; // will store coefficient matrices used to compute the residual
-    Mat<zz_p> kerapp; // will store constant-kernel * coeffs_appbas[d]
+    Mat<zz_p> res_coeff; // will store coefficient matrices used to compute the residual
+    //Mat<zz_p> kerapp; // will store constant-kernel * coeffs_appbas[d]
 #ifdef MBASIS_PROFILE
     t_others += GetWallTime()-t_now;
 #endif
@@ -803,11 +814,8 @@ DegVec mbasis_rescomp_v2(
 #ifdef MBASIS_PROFILE
         t_now = GetWallTime();
 #endif
-        // call MBasis1 to retrieve kernel and pivdeg
-        //diff_pivdeg = popov_mbasis1(kerbas,residual,rdeg);
-
         // compute permutation which realizes stable sort of rdeg
-        std::iota(p_rdeg.begin(), p_rdeg.end(), 0);
+        p_rdeg = iota;
         stable_sort(p_rdeg.begin(), p_rdeg.end(),
                     [&](const long& a, const long& b)->bool
                     {
@@ -821,11 +829,18 @@ DegVec mbasis_rescomp_v2(
         // (if ord==1, residual is the former p_residual which was zero)
         if (ord>1)
             clear(residual);
+#ifdef MBASIS_PROFILE
+        t_others += GetWallTime()-t_now;
+        t_now = GetWallTime();
+#endif
 
         // find the (permuted) left kernel basis in row echelon form;
         // note it might not exactly be row echelon form but a row-permuted version
         // --> this is taken into account below in the computation of the pivot indices
         kernel(p_kerbas,p_residual);
+#ifdef MBASIS_PROFILE
+        t_kernel += GetWallTime()-t_now;
+#endif
         long ker_dim = p_kerbas.NumRows();
 
         if (ker_dim==0)
@@ -872,6 +887,9 @@ DegVec mbasis_rescomp_v2(
             // elimination, we might hack the NTL code to retrieve them directly
             // but it seems that the next lines have negligible time compared to
             // the kernel computation)
+#ifdef MBASIS_PROFILE
+            t_now = GetWallTime();
+#endif
             for (long i = 0; i<ker_dim; ++i)
             {
                 long * piv = & p_pivind[i];
@@ -890,8 +908,9 @@ DegVec mbasis_rescomp_v2(
                 is_pivind[pivind[i]] = true;
             }
 
-            std::vector<long> perm_rows_ker(ker_dim);
-            std::iota(perm_rows_ker.begin(), perm_rows_ker.end(), 0);
+            // perm_rows_ker = [0 1 2 ... ker_dim-1]
+            perm_rows_ker.resize(ker_dim);
+            std::copy_n(iota.begin(), ker_dim, perm_rows_ker.begin());
             sort(perm_rows_ker.begin(), perm_rows_ker.end(),
                  [&](const long& a, const long& b)->bool
                  {
@@ -909,7 +928,7 @@ DegVec mbasis_rescomp_v2(
             //    std::cout << "  Final permutations: " << t_perm2 << std::endl;
 
 #ifdef MBASIS_PROFILE
-            t_mbasis1 += GetWallTime()-t_now;
+            t_others += GetWallTime()-t_now;
             t_now = GetWallTime();
 #endif
             // I/ Update degrees:
@@ -936,9 +955,10 @@ DegVec mbasis_rescomp_v2(
             // II/ update approximant basis
 
             // submatrix of rows with is_pivind is replaced by kerbas*coeffs_appbas
-            // while rows with !is_pivind are simply multiplied by X
-            // --> the loop goes downwards, so that we can do both in the same iteration
-            for (long d = deg_appbas-1; d >= 0; --d)
+            NTL_EXEC_RANGE(deg_appbas, first, last)
+            context.restore();
+            Mat<zz_p> kerapp;
+            for (long d = first; d < last; ++d)
             {
                 kerapp = kerbas * coeffs_appbas[d];
                 long row=0;
@@ -946,27 +966,31 @@ DegVec mbasis_rescomp_v2(
                 {
                     if (is_pivind[i])
                     {
-                        coeffs_appbas[d][i] = kerapp[row];
+                        coeffs_appbas[d][i].swap(kerapp[row]);
                         ++row;
-                    }
-                    else  // is_pivind[i] false --> multiply by X
-                    {
-                        coeffs_appbas[d+1][i] = coeffs_appbas[d][i];
-                        if (d==0) // put zero row
-                            clear(coeffs_appbas[0][i]);
                     }
                 }
             }
+            NTL_EXEC_RANGE_END
+
+            // rows with !is_pivind are simply multiplied by X (note: these
+            // rows have degree less than deg_appbas)
+            for (long d = deg_appbas-1; d >= 0; --d)
+                for (long i = 0; i < nrows; ++i)
+                    if (not is_pivind[i])
+                        coeffs_appbas[d+1][i].swap(coeffs_appbas[d][i]);
+            // this puts zero (former row i of d=deg_appbas) in row i of d=0
 #ifdef MBASIS_PROFILE
             t_appbas += GetWallTime()-t_now;
             t_now = GetWallTime();
 #endif
-            // TODO time as others
             // Restore is_pivind to all false
             for (long i = 0; i < ker_dim; ++i)
-            {
                 is_pivind[pivind[i]] = false;
-            }
+#ifdef MBASIS_PROFILE
+            t_others += GetWallTime()-t_now;
+            t_now = GetWallTime();
+#endif
 
             // III/ compute next residual, if needed
             // this is coefficient of degree ord in appbas * pmat
@@ -992,10 +1016,10 @@ DegVec mbasis_rescomp_v2(
     t_others += GetWallTime()-t_now;
 #endif
 #ifdef MBASIS_PROFILE
-    double t_total = t_residual + t_appbas + t_mbasis1 + t_others;
-    std::cout << "~~mbasis~~\t (residuals,basis,basecase,others): \t ";
+    double t_total = t_residual + t_appbas + t_kernel + t_others;
+    std::cout << "~~mbasis~~\t (residuals,basis,kernel,others): \t ";
     std::cout << t_residual/t_total << "," << t_appbas/t_total << "," <<
-            t_mbasis1/t_total << "," << t_others/t_total << std::endl;
+            t_kernel/t_total << "," << t_others/t_total << std::endl;
 #endif
 
     return pivdeg;
@@ -1037,7 +1061,7 @@ DegVec mbasis_resupdate(
     Mat<zz_p> kerbas;
 
     // declare matrices
-    Mat<zz_p> res_coeff,res_coeff1,res_coeff2; // will store coefficient matrices used to compute the residual
+    Mat<zz_p> res_coeff; // will store coefficient matrices used to compute the residual
     Mat<zz_p> kermul; // will store constant-kernel * coeffs_appbas[d] or coeffs_residual[d]
 #ifdef MBASIS_PROFILE
     t_others += GetWallTime()-t_now;
