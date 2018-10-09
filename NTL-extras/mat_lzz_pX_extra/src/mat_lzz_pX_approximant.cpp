@@ -96,9 +96,9 @@ bool is_approximant_basis(
     // (we reserve some additional space in cmat because later it will store the constant coefficient of appbas)
     Mat<zz_pX> residual;
     if (row_wise)
-        multiply_evaluate(residual,appbas,pmat);
+        multiply(residual,appbas,pmat);
     else
-        multiply_evaluate(residual,pmat,appbas);
+        multiply(residual,pmat,appbas);
     // TODO this multiplication could be:
     //   - truncated mod X^{order+1}
     //   - improved by taking degree profile into account
