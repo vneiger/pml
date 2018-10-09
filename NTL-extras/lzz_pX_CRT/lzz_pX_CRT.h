@@ -132,6 +132,7 @@ public:
     /*------------------------------------------------------------*/
     /* constructor for geometric progressions                     */
     /* we interpolate at r^(2*i), i=0..d-1                        */
+    /* polynomials to evaluate must have degree at most d-1       */
     /*------------------------------------------------------------*/
     zz_pX_Multipoint_Geometric(const zz_p& r, long d);
 

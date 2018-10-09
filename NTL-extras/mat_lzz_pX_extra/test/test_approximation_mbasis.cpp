@@ -436,7 +436,7 @@ int main(int argc, char *argv[])
             }
             t_mbasis /= nb_iter;
             t_mbasisw /= nb_iter;
-            std::cout << "Time(mbasis computation): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
+            std::cout << "Time(popov_mbasis): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
             //std::cout << "Ratio versus kernel: " << (t_mbasisw/ref_kernel_wall) << ", " << (t_mbasis/ref_kernel) << std::endl;
 
             if (verify)
