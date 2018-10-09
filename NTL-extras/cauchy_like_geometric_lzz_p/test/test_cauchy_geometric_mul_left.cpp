@@ -8,7 +8,7 @@ NTL_CLIENT
 
 
 /*------------------------------------------------------------*/
-/* does some left vector / matrix multiplications            */
+/* does some left vector / matrix multiplications             */
 /*------------------------------------------------------------*/
 void check(long p)
 {

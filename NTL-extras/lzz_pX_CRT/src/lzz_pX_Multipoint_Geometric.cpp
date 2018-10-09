@@ -261,9 +261,16 @@ zz_p zz_pX_Multipoint_Geometric::get_s()
 /* val[i] = P(r^(2*i)), i = 0..n-1                           */
 /* val may alias P.rep                                       */
 /*-----------------------------------------------------------*/
-void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const{
+void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const
+{
     zz_pX a, b;
     long dp = deg(P);
+
+    if (dp >= n)
+    {
+        Error("Degree to large for geometric evaluate.");
+    }
+
     val.SetLength(n);
 
     if (n == 0)
@@ -339,7 +346,8 @@ void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const{
 /* val[i] = f(r^(2*i)), i = 0..n-1                            */
 /* val may alias f.rep                                        */
 /*------------------------------------------------------------*/
-void zz_pX_Multipoint_Geometric::interpolate(zz_pX& f, const Vec<zz_p>& val) {
+void zz_pX_Multipoint_Geometric::interpolate(zz_pX& f, const Vec<zz_p>& val) 
+{
     f = 0;
 
     if (n == 0)
@@ -409,7 +417,8 @@ void zz_pX_Multipoint_Geometric::interpolate(zz_pX& f, const Vec<zz_p>& val) {
 /* val must have length n                                    */
 /* val may alias P.rep                                       */
 /*-----------------------------------------------------------*/
-void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long output_size) const{
+void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long output_size) const
+{
     P = 0;
 
     if (output_size == -1)
@@ -473,7 +482,8 @@ void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long
 /* val[i] = P(r^(2*i)), i = 0..n-1                            */
 /* val may alias P.rep                                        */
 /*------------------------------------------------------------*/
-void zz_pX_Multipoint_Geometric::t_interpolate(Vec<zz_p>& val, const zz_pX& P) {
+void zz_pX_Multipoint_Geometric::t_interpolate(Vec<zz_p>& val, const zz_pX& P) 
+{
     val.SetLength(n);
 
     if (n == 0)
