@@ -1049,6 +1049,7 @@ DegVec popov_mbasis1(
                      const Shift & shift
                     );
 
+
 // TODO check if serious difference of time if not returning Popov but just
 // minimal, like done in LinBox and in GJV03 and GL14 (implies slightly less
 // permutation work: the final permutation of the rows is not necessary)
@@ -1086,6 +1087,13 @@ DegVec mbasis_plain(
 // generic pmat), then the third item costs O(m n^2 order^2 / 2) operations,
 // assuming cubic matrix multiplication over the field.
 DegVec mbasis_rescomp(
+              Mat<zz_pX> & appbas,
+              const Mat<zz_pX> & pmat,
+              const long order,
+              const Shift & shift
+             );
+
+DegVec mbasis_rescomp_v2(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
               const long order,
