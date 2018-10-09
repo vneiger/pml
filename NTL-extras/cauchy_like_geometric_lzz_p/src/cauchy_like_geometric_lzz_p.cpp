@@ -10,41 +10,46 @@
 
 NTL_CLIENT
 
-/*----------------------------------------------------*/
-/*----------------------------------------------------*/
-/* Cauchy-like matrices on geometric progressions     */
-/*----------------------------------------------------*/
-/*----------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* Cauchy-like matrices on geometric progressions             */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
-/*---------------------------------------------------*/
-/* default constructor                               */
-/*---------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* default constructor                                        */
+/*------------------------------------------------------------*/
 cauchy_like_geometric_lzz_p::cauchy_like_geometric_lzz_p()
 { 
 }
-  
-/*---------------------------------------------------*/
-/* constructor                                       */
-/*---------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* constructor                                                */
+/* let C = 1 / (a1*rho^i - b1*rho^j)                          */
+/* then M = sum_k diag(U[*,k]) C diag(V[*,k])                 */
+/* rho should be a square                                     */
+/*------------------------------------------------------------*/
 cauchy_like_geometric_lzz_p::cauchy_like_geometric_lzz_p(const Mat<zz_p>& U, const Mat<zz_p>& V, 
                                                          const zz_p& a1, const zz_p& b1, const zz_p& rho)
 {
     G = U;
     H = V;
     C = cauchy_geometric_lzz_p(a1, b1, rho, G.NumRows(), H.NumRows());
+    m = C.NumRows();
+    n = C.NumCols();
 }
 
-/*---------------------------------------------------*/
-/* dimensions                                        */
-/*---------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* dimensions                                                 */
+/*------------------------------------------------------------*/
 long cauchy_like_geometric_lzz_p::NumRows() const 
 {
-    return G.NumRows();
+    return m;
 }
 
 long cauchy_like_geometric_lzz_p::NumCols() const 
 {
-    return H.NumRows();
+    return n;
 }
 
 long cauchy_like_geometric_lzz_p::NumGens() const 
@@ -52,13 +57,11 @@ long cauchy_like_geometric_lzz_p::NumGens() const
     return G.NumCols();
 }
 
-/*---------------------------------------------------*/
-/* computes output = M*input                         */
-/*---------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* computes output = M * input                                */
+/*------------------------------------------------------------*/
 void cauchy_like_geometric_lzz_p::mul_right(Vec<zz_p>& output, const Vec<zz_p>& input) const 
 {
-    long m = NumRows();
-    long n = NumCols();
     long alpha = NumGens();
 
     Vec<zz_p> new_in, new_out;
@@ -78,14 +81,12 @@ void cauchy_like_geometric_lzz_p::mul_right(Vec<zz_p>& output, const Vec<zz_p>& 
     }
 }
 
-/*---------------------------------------------------*/
-/* computes output = M*input                         */
-/* straightforward algorithm                         */
-/*---------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* computes output = M*input                                  */
+/* straightforward algorithm                                  */
+/*------------------------------------------------------------*/
 void cauchy_like_geometric_lzz_p::mul_right_direct(Mat<zz_p>& output, const Mat<zz_p>& input) const 
 {
-    long m = NumRows();
-    long n = NumCols();
     long alpha = NumGens();
     long beta = input.NumCols();
     output.SetDims(m, beta);
@@ -125,11 +126,11 @@ void cauchy_like_geometric_lzz_p::mul_right_direct(Mat<zz_p>& output, const Mat<
     }
 }
 
-/*---------------------------------------------------*/
-/* computes output = M*input                         */
-/* switches to toeplitz_like structure               */
-/* uses DAC algorithm for matrix multiplication      */
-/*---------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* computes output = M*input                                  */
+/* switches to toeplitz_like structure                        */
+/* uses DAC algorithm for matrix multiplication               */
+/*------------------------------------------------------------*/
 void cauchy_like_geometric_lzz_p::mul_right_sigma_UL(Mat<zz_p> & output, const Mat<zz_p> & input) 
 {
     // long m = NumRows();
@@ -240,27 +241,25 @@ void cauchy_like_geometric_lzz_p::mul_right_sigma_UL(Mat<zz_p> & output, const M
     // }
 }
 
-/*---------------------------------------------------*/
-/* computes output = M*input                         */
-/* switches to toeplitz_like for large alpha         */
-/*---------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* computes output = M * input                                */
+/* switches to toeplitz_like for large alpha                  */
+/*------------------------------------------------------------*/
 void cauchy_like_geometric_lzz_p::mul_right(Mat<zz_p> & output, const Mat<zz_p> & input) 
 {
     long alpha = NumGens();
     if (alpha < 36)
         mul_right_direct(output, input);
     else
-        mul_right_sigma_UL(output, input);
+        mul_right_direct(output, input);
+//        mul_right_sigma_UL(output, input);
 }
 
-/*---------------------------------------------------*/
-/* computes output = M^t*input                       */
-/*---------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* computes output = M^t * input                              */
+/*------------------------------------------------------------*/
 void cauchy_like_geometric_lzz_p::mul_left(Vec<zz_p>& output, const Vec<zz_p>& input) const 
 {
-
-    long m = NumRows();
-    long n = NumCols();
     long alpha = NumGens();
 
     Vec<zz_p> new_in, new_out;
@@ -281,13 +280,11 @@ void cauchy_like_geometric_lzz_p::mul_left(Vec<zz_p>& output, const Vec<zz_p>& i
 }
 
 
-/*---------------------------------------------------*/
-/* computes output = M^t*input                       */
-/*---------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* computes output = M^t * input                              */
+/*------------------------------------------------------------*/
 void cauchy_like_geometric_lzz_p::mul_left(Mat<zz_p>& output, const Mat<zz_p>& input) const 
 {
-    long m = NumRows();
-    long n = NumCols();
     long alpha = NumGens();
     long beta = input.NumCols();
     output.SetDims(n, beta);
@@ -328,25 +325,21 @@ void cauchy_like_geometric_lzz_p::mul_left(Mat<zz_p>& output, const Mat<zz_p>& i
     }
 }
 
-/*---------------------------------------------------*/
-/* M as a dense matrix                               */
-/*---------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* M as a dense matrix                                        */
+/*------------------------------------------------------------*/
 void cauchy_like_geometric_lzz_p::to_dense(Mat<zz_p>& M) const 
 {
-    long m = NumRows();
-    long n = NumCols();
-
-    M = G*transpose(H);
+    M = G * transpose(H);
     for (long i = 0; i < m; i++)
         for (long j = 0; j < n; j++)
             M[i][j] /= (C.u1*power(C.rho, i)-C.v1*power(C.rho, j));
 }
 
-/*---------------------------------------------------*/
-/* needs much more data!                             */
-/*---------------------------------------------------*/
-static 
-long threshold(long alpha)
+/*------------------------------------------------------------*/
+/* crossover point between quadratic and DAC algorithm        */
+/*------------------------------------------------------------*/
+static long threshold(long alpha)
 {
     if (alpha >= 29)
         return 6000;
@@ -365,12 +358,13 @@ long threshold(long alpha)
     }
 }
 
-
 /*------------------------------------------------------------*/
-/* inverts a special-Cauchy-like matrix                       */
+/* returns the inverse of the leading principal minor         */
 /* assumes generic rank profile                               */
-/* the generators are Yp, Zp                                  */
-/* alpha = displacement rank                                  */
+/* input generators are Yp_in, Zp_in                          */
+/* u1, v1, rho are as in the constructor                      */
+/* returns -1 if not generic rank profile; rank otherwise     */
+/* uses a block algorithm with block-size alpha               */ 
 /*------------------------------------------------------------*/
 static long invert_block_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp_in, const Mat<zz_p>& Zp_in,
                              const zz_p& u1, const zz_p& v1, const zz_p& rho)
@@ -420,7 +414,6 @@ static long invert_block_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_
     long k;
     for (k = 0; k < N; k += step)
     {
-
         step = min(step, N-k);
         gk.SetDims(step, alpha);
         hk.SetDims(step, alpha);
@@ -441,11 +434,11 @@ static long invert_block_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_
         for (long i = 0; i < k; i++)
             for (long j = 0; j < step; j++)
             {
-                // // (y[i]-y[k+j]);
+                // (y[i]-y[k+j]);
                 long ell = MulModPrecon((-A[i][j])._zz_p__rep, inverses_rho[k+j]._zz_p__rep, p, inverses_rho_pre[k+j]);
                 A[i][j]._zz_p__rep = MulModPrecon(ell, inverses_v1_v1[i-(k+j)+N-1]._zz_p__rep, p, inverses_v1_v1_pre[i-(k+j)+N-1]);
 
-                // // (x[i]-x[k+j])
+                // (x[i]-x[k+j])
                 long u = MulModPrecon((-B[i][j])._zz_p__rep, inverses_rho[k+j]._zz_p__rep, p, inverses_rho_pre[k+j]);
                 B[i][j]._zz_p__rep = MulModPrecon(u, inverses_u1_u1[i-(k+j)+N-1]._zz_p__rep, p, inverses_u1_u1_pre[i-(k+j)+N-1]);  
             }
@@ -453,14 +446,14 @@ static long invert_block_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_
         for (long i = k; i < m; i++)
             for (long j = 0; j < step; j++)
             {
-                // // (x[i]-y[k+j])
+                // (x[i]-y[k+j])
                 long ell = MulModPrecon(A[i][j]._zz_p__rep, inverses_rho[i]._zz_p__rep, p, inverses_rho_pre[i]);
                 A[i][j]._zz_p__rep = MulModPrecon(ell, inverses_u1_v1[k+j-i+m-1]._zz_p__rep, p, inverses_u1_v1_pre[k+j-i+m-1]);
             }
         for (long i = k; i < n; i++)
             for (long j = 0; j < step; j++)
             {
-                // // -(x[k+j]-y[i]);
+                // -(x[k+j]-y[i]);
                 long u = MulModPrecon((-B[i][j])._zz_p__rep, inverses_rho[k+j]._zz_p__rep, p, inverses_rho_pre[k+j]);
                 B[i][j]._zz_p__rep = MulModPrecon(u, inverses_u1_v1[-(k+j)+i+m-1]._zz_p__rep, p, inverses_u1_v1_pre[-(k+j)+i+m-1]);
             }
@@ -479,9 +472,8 @@ static long invert_block_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_
                 for (long j = 0; j < rk; j++)
                     d_cp[i][j] = d[i][j];
             long rk2 = gauss(d_cp);
-            if (rk2 != rk)
+            if (rk2 != rk) // the square block does not have grp
             {
-                cerr << "the square block does not have grp\n";
                 return -1;
             }
             k -= rk;  // go back
@@ -512,14 +504,17 @@ static long invert_block_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_
     
         if (early_exit == true)
         {
-      
             Mat<zz_p> Y2, Z2;
             Y2.SetDims(m-(k+step), alpha);
             Z2.SetDims(n-(k+step), alpha);
             for (long i = k+step; i < m; i++)
+            {
                 Y2[i-(k+step)] = Yp_out[i];
+            }
             for (long i = k+step; i < n; i++)
+            {
                 Z2[i-(k+step)] = Zp_out[i];
+            }
 
             if (!IsZero(Y2*transpose(Z2)))
             {
@@ -528,7 +523,7 @@ static long invert_block_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_
 
             Yp_out.SetDims(k+step, alpha);
             Zp_out.SetDims(k+step, alpha);
-            return k+step;
+            return k + step; 
         }
     }
   
@@ -539,13 +534,12 @@ static long invert_block_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_
 
 
 /*------------------------------------------------------------*/
-/* inverts a special-Cauchy-like matrix                       */
+/* returns the inverse of the leading principal minor         */
 /* assumes generic rank profile                               */
-/* the generators are Yp, Zp                                  */
-/* alpha = displacement rank                                  */
-/* overwrites Yp, Zp                                          */
-/* i0, j0 are the initial indices in i, j resp.               */
-/* i1, j1 are the end indices in i, j resp.                   */  
+/* input generators are Yp_in, Zp_in                          */
+/* u1, v1, rho are as in the constructor                      */
+/* returns -1 if not generic rank profile; rank otherwise     */
+/* uses a direct algorithm                                    */ 
 /*------------------------------------------------------------*/
 static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp_in, const Mat<zz_p>& Zp_in, 
                        const zz_p& u1, const zz_p& v1, const zz_p& rho)
@@ -556,8 +550,12 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
     long n = Zp_in.NumRows();
     long N = min(m, n);
 
-    long *Yp = new long[alpha*m];
-    long *Zp = new long[alpha*n];
+    Vec<long> Yp, Zp;
+    Yp.SetLength(alpha * m);
+    Zp.SetLength(alpha * n);
+
+    // long *Yp = new long[alpha*m];
+    // long *Zp = new long[alpha*n];
 
     long idx;
 
@@ -578,9 +576,10 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
 
 
     const long p = zz_p::modulus();
-    mulmod_precon_t *Ypre = new mulmod_precon_t[alpha];
-    mulmod_precon_t *Zpre = new mulmod_precon_t[alpha];
 
+    Vec<mulmod_precon_t> Ypre, Zpre;
+    Ypre.SetLength(alpha);
+    Zpre.SetLength(alpha);
 
     Vec<zz_p> inverses_rho;
     Vec<zz_p> inverses_u1_v1;
@@ -610,14 +609,14 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
     precomp(inverses_v1_v1_pre, inverses_v1_v1);
 
     const mulmod_t pinv = zz_p::ModulusInverse();
-    long *tmpYk = Yp;
-    long *tmpZk = Zp;
+    long *tmpYk = Yp.elts();
+    long *tmpZk = Zp.elts();
 
     for (long k = 0; k < N; k++)
     {
 
-        long *tmpYi = Yp;
-        long *tmpZi = Zp;
+        long *tmpYi = Yp.elts();
+        long *tmpZi = Zp.elts();
 
         for (long j = 0; j < alpha; j++)
         {
@@ -645,10 +644,6 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
                         tmp = AddMod(tmp, MulMod(tmpZ[j], tmpY[j], p, pinv), p);
                     if (tmp != 0) 
                     {
-                        delete[] Ypre;
-                        delete[] Zpre;
-                        delete[] Yp;
-                        delete[] Zp;
                         return -1;  // not generic rank profile
                     }
                     tmpZ += alpha;
@@ -672,10 +667,6 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
                 for (long j = 0; j < alpha; j++)
                     row[j] = Zp[idx++];
             }
-            delete[] Yp;
-            delete[] Zp;
-            delete[] Ypre;
-            delete[] Zpre;
             return k; // OK
         }
 
@@ -693,7 +684,6 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
 
         for (long i = 0; i < k; i++)
         {
-
             long ell = 0, u = 0;
             for (long j = 0; j < alpha; j++)
             {
@@ -732,7 +722,6 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
 
         for (long i = k+1; i < m; i++)
         {
-
             long ell = 0;
             for (long j = 0; j < alpha; j++)
                 ell = AddMod(ell, MulModPrecon(tmpYi[j], tmpZk[j], p, Zpre[j]), p);
@@ -765,7 +754,6 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
             tmpZi += alpha;
         }
 
-
         tmpYk += alpha;
         tmpZk += alpha;
     }
@@ -786,36 +774,30 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
         for (long j = 0; j < alpha; j++)
             row[j] = Zp[idx++];
     }
-    delete[] Yp;
-    delete[] Zp;
-    delete[] Ypre;
-    delete[] Zpre;
-
     return N;
 }
 
-/*---------------------------------------------------*/
-/* iCL = CL^(-1), represented for the dual operator  */
-/* O(alpha^2 M(n)) algorithm                         */
-/*---------------------------------------------------*/
-long invert_rec(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, 
-                const Mat<zz_p>& Yp_in, const Mat<zz_p>& Zp_in, 
-                const zz_p& u1, const zz_p& v1, const zz_p& rho,
-                const long thresh)
+/*------------------------------------------------------------*/
+/* returns the inverse of the leading principal minor         */
+/* assumes generic rank profile                               */
+/* input generators are Yp_in, Zp_in                          */
+/* u1, v1, rho are as in the constructor                      */
+/* returns -1 if not generic rank profile; rank otherwise     */
+/* thresh is threshold for divide-and-conquer                 */
+/* thresh_alpha switches between block and plain quadratic    */
+/*------------------------------------------------------------*/
+static long invert_rec(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, 
+                       const Mat<zz_p>& Yp_in, const Mat<zz_p>& Zp_in, const zz_p& u1, const zz_p& v1, const zz_p& rho,
+                       long thresh, long thresh_alpha)
 {
-
     long m = Yp_in.NumRows();
     long n = Zp_in.NumRows();
     long alpha = Yp_in.NumCols();
     long N = min(m, n);
 
-    long thresh_alpha = 15;
-    if (zz_p::modulus() < (1L << 23))
-        thresh_alpha = 8;
-
     if (N < thresh)
     {
-        if (alpha < thresh_alpha)
+        if (alpha < thresh_alpha || alpha > N)
             return invert_raw(Yp_out, Zp_out, Yp_in, Zp_in, u1, v1, rho);
         else
             return invert_block_raw(Yp_out, Zp_out, Yp_in, Zp_in, u1, v1, rho);
@@ -833,7 +815,7 @@ long invert_rec(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out,
     }
 
     // Yp_out and Zp_out have size (r x alpha)
-    long r = invert_rec(Yp_out, Zp_out, Y1, Z1, u1, v1, rho, thresh);
+    long r = invert_rec(Yp_out, Zp_out, Y1, Z1, u1, v1, rho, thresh, thresh_alpha);
 
     // case 1: we found that we do not have grp. abort.
     if (r == -1)
@@ -881,7 +863,7 @@ long invert_rec(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out,
     // now r=N1
     // iG2 and iH2 have size (s x alpha)
     Mat<zz_p> iG2, iH2;
-    long s = invert_rec(iG2, iH2, G2, H2, u1*power(rho, N1), v1*power(rho, N1), rho, thresh);
+    long s = invert_rec(iG2, iH2, G2, H2, u1*power(rho, N1), v1*power(rho, N1), rho, thresh, thresh_alpha);
 
     if (s == -1)
         return -1;
@@ -911,89 +893,29 @@ long invert_rec(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out,
 }
 
 
-/*---------------------------------------------------*/
-/* iCL = CL^(-1), represented for the dual operator  */
-/* O(alpha n^2) algorithm                            */
-/*---------------------------------------------------*/
-long invert_direct(cauchy_like_geometric_lzz_p& Cinv,
-                   const cauchy_like_geometric_lzz_p& CL)
+/*------------------------------------------------------------*/
+/* returns the inverse of the leading principal minor         */
+/* (for the dual operator)                                    */
+/* assumes generic rank profile                               */
+/* returns -1 if not generic rank profile; rank otherwise     */
+/* thresh is threshold for divide-and-conquer                 */
+/* thresh_alpha switches between block and plain quadratic    */
+/*------------------------------------------------------------*/
+long invert_leading_principal_minor(cauchy_like_geometric_lzz_p& Cinv,
+                                    const cauchy_like_geometric_lzz_p& CL, long thresh, long thresh_alpha)
 {
-
-    Mat<zz_p> Yp_out, Zp_out;
-
-    long r = invert_raw(Yp_out, Zp_out, CL.G, CL.H, CL.C.u1, CL.C.v1, CL.C.rho);
-
-    if (r == -1)
-        return -1;
-
-    Cinv = cauchy_like_geometric_lzz_p(Yp_out, Zp_out, CL.C.v1, CL.C.u1, CL.C.rho);
-    return r;
-}
-
-/*---------------------------------------------------*/
-/* iCL = CL^(-1), represented for the dual operator  */
-/* O(alpha^
-   {omega-2} n^2) algorithm                  */
-/*---------------------------------------------------*/
-long invert_block(cauchy_like_geometric_lzz_p& Cinv,
-                  const cauchy_like_geometric_lzz_p& CL)
-{
-
-    Mat<zz_p> Yp_out, Zp_out;
-
-    long r;
-    if (CL.NumGens() > min(CL.NumRows(), CL.NumCols()))
-    {
-        r = invert_raw(Yp_out, Zp_out, CL.G, CL.H, CL.C.u1, CL.C.v1, CL.C.rho);
-    }
-    else
-    {
-        r = invert_block_raw(Yp_out, Zp_out, CL.G, CL.H, CL.C.u1, CL.C.v1, CL.C.rho);
-    }
-    if (r == -1)
-        return -1;
-
-    Cinv = cauchy_like_geometric_lzz_p(Yp_out, Zp_out, CL.C.v1, CL.C.u1, CL.C.rho);
-
-    return r;
-}
-
-/*---------------------------------------------------*/
-/* iCL = CL^(-1), represented for the dual operator  */
-/* quadratic in n                                    */
-/*---------------------------------------------------*/
-long invert(cauchy_like_geometric_lzz_p& Cinv,
-            const cauchy_like_geometric_lzz_p& CL)
-{
-
-    long thresh_alpha = 15;
-    if (zz_p::modulus() < (1L << 23))
-        thresh_alpha = 8;
-
-    if (CL.NumGens() < thresh_alpha)
-        return invert_direct(Cinv, CL);
-    else
-        return invert_block(Cinv, CL);
-}
-
-/*---------------------------------------------------*/
-/* iCL = CL^(-1), represented for the dual operator  */
-/* O(alpha^2 M(n)log(n)) algorithm                   */
-/* r = -1 if not invertible                          */
-/*---------------------------------------------------*/
-long invert_fast(cauchy_like_geometric_lzz_p& Cinv,
-                 const cauchy_like_geometric_lzz_p& CL, const long thresh)
-{
-
-    long do_thresh;
     if (thresh == -1)
-        do_thresh = threshold(CL.NumGens());
-    else
-        do_thresh = thresh;
+        thresh = threshold(CL.NumGens());
+
+    if (thresh_alpha == -1)
+    {
+        thresh_alpha = 15;
+        if (zz_p::modulus() < (1L << 23))
+            thresh_alpha = 8;
+    }
 
     Mat<zz_p> Yp_out, Zp_out;
-
-    long r = invert_rec(Yp_out, Zp_out, CL.G, CL.H, CL.C.u1, CL.C.v1, CL.C.rho, do_thresh);
+    long r = invert_rec(Yp_out, Zp_out, CL.G, CL.H, CL.C.u1, CL.C.v1, CL.C.rho, thresh, thresh_alpha);
 
     if (r == -1)
     {

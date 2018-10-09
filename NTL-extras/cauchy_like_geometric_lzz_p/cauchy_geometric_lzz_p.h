@@ -38,7 +38,7 @@ public:
     /* M[i][j] = 1 / (u1*rho^i - v1*rho^j)                        */
     /* rho should be a square                                     */
     /*------------------------------------------------------------*/
-    cauchy_geometric_lzz_p(const zz_p& a1, const zz_p& b1, const zz_p& rho, long mm, long nn);
+    cauchy_geometric_lzz_p(const zz_p& u1, const zz_p& v1, const zz_p& rho, long mm, long nn);
 
     /*------------------------------------------------------------*/
     /* dimensions                                                 */
@@ -158,6 +158,9 @@ void prepare_inverses_cauchy(Vec<zz_p>& inverses, const zz_p& u1, const zz_p& v1
 
 class cauchy_like_geometric_lzz_p
 {
+private: 
+    long m, n;
+
 public:
     cauchy_geometric_lzz_p C;
     Mat<zz_p> G, H;
@@ -169,8 +172,11 @@ public:
 
     /*------------------------------------------------------------*/
     /* constructor                                                */
+    /* let C = 1 / (u1*rho^i - v1*rho^j)                          */
+    /* then M = sum_k diag(U[*,k]) C diag(V[*,k])                 */
+    /* rho should be a square                                     */
     /*------------------------------------------------------------*/
-    cauchy_like_geometric_lzz_p(const Mat<zz_p>& U, const Mat<zz_p>& V, const zz_p& a1, const zz_p& b1, const zz_p& rho);
+    cauchy_like_geometric_lzz_p(const Mat<zz_p>& U, const Mat<zz_p>& V, const zz_p& u1, const zz_p& v1, const zz_p& rho);
 
     /*------------------------------------------------------------*/
     /* dimensions                                                 */
@@ -200,13 +206,15 @@ public:
 };
 
 /*------------------------------------------------------------*/
-/* iCL = CL^(-1), represented for the dual operator           */
-/* O(alpha n^2) algorithm                                     */
+/* returns the inverse of the leading principal minor         */
+/* (for the dual operator)                                    */
+/* assumes generic rank profile                               */
+/* returns -1 if not generic rank profile; rank otherwise     */
+/* thresh is threshold for divide-and-conquer                 */
+/* thresh_alpha switches between block and plain quadratic    */
 /*------------------------------------------------------------*/
-long invert_direct(cauchy_like_geometric_lzz_p& Cinv, const cauchy_like_geometric_lzz_p& C);
-long invert_block(cauchy_like_geometric_lzz_p& Cinv, const cauchy_like_geometric_lzz_p& C);
-long invert(cauchy_like_geometric_lzz_p& Cinv, const cauchy_like_geometric_lzz_p& C);
-long invert_fast(cauchy_like_geometric_lzz_p& Cinv, const cauchy_like_geometric_lzz_p& C, const long thresh = -1);
+long invert_leading_principal_minor(cauchy_like_geometric_lzz_p& Cinv,
+                                    const cauchy_like_geometric_lzz_p& CL, long thresh, long thresh_alpha);
 
 
 #endif
