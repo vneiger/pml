@@ -54,6 +54,19 @@ inline Vec<zz_p> inv(const Vec<zz_p>& A)
     return x;
 }
 
+/*------------------------------------------------------------*/
+/* builds the vector of mulmod_precon_t                       */
+/*------------------------------------------------------------*/
+void precomp(Vec<mulmod_precon_t>& out, const Vec<zz_p>& in);
+
+inline Vec<mulmod_precon_t> precomp(const Vec<zz_p>& in)
+{
+    Vec<mulmod_precon_t> out;
+    precomp(out, in);
+    return out;
+}
+
+
 #endif
 
 // Local Variables:

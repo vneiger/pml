@@ -75,6 +75,25 @@ void inv(Vec<zz_p>& invA, const Vec<zz_p>& A)
     invA[0] = aux;
 }
 
+/*------------------------------------------------------------*/
+/* builds the vector of mulmod_precon_t                       */
+/*------------------------------------------------------------*/
+void precomp(Vec<mulmod_precon_t>& out, const Vec<zz_p>& in)
+{
+    const long p = zz_p::modulus();
+    const mulmod_t pinv = zz_p::ModulusInverse();
+    long m = in.length();
+    out.SetLength(m);
+    const zz_p* in_rep = in.elts();
+    for (long i = 0; i < m; i++)
+    {
+        out[i] = PrepMulModPrecon(in_rep[i]._zz_p__rep, p, pinv);
+    }
+}
+
+
+
+
 // Local Variables:
 // mode: C++
 // tab-width: 4

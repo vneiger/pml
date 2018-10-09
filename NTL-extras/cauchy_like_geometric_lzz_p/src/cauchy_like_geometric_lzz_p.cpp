@@ -1,20 +1,12 @@
 #include <NTL/mat_lzz_p.h>
 #include <NTL/lzz_pX.h>
-
-#include "vec_lzz_p_extra.h"
-#include "cauchy_geometric_special.h"
-
-NTL_CLIENT
-
 #include <NTL/mat_lzz_p.h>
 #include <NTL/lzz_pX.h>
 #include <assert.h>
 
 #include "vec_lzz_p_extra.h"
+#include "cauchy_geometric_lzz_p.h"
 #include "lzz_pX_CRT.h"
-#include "lzz_p_toeplitz.h"
-#include "lzz_p_toeplitz_like.h"
-#include "lzz_p_cauchy_geometric.h"
 
 NTL_CLIENT
 
@@ -113,7 +105,7 @@ void cauchy_like_geometric_lzz_p::mul_right_direct(Mat<zz_p>& output, const Mat<
     new_in.SetLength(n);
     vec_out.SetLength(m);
 
-    const lzz_p_toeplitz * t = &(C.t);
+    const toeplitz_lzz_p * t = &(C.t);
 
     for (long i = 0; i < beta; i++)
     {
@@ -403,7 +395,12 @@ static long invert_block_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_
     Vec<mulmod_precon_t> inverses_u1_u1_pre;
     Vec<mulmod_precon_t> inverses_v1_v1_pre;
 
-    inverse_powers(inverses_rho, rho, m);
+    inverses_rho.SetLength(m);
+    zz_p irho  = 1/rho;
+    inverses_rho[0] = to_zz_p(1);
+    for (long i = 1; i < m; i++)
+        inverses_rho[i] = irho * inverses_rho[i-1];
+
     prepare_inverses_cauchy(inverses_u1_v1, u1, v1, rho, m, n); // 1/(u1-v1 rho^(-m+1)) ... 1/(u1-v1 rho^(n-1))
     // so i_u1_v1[i] = 1/1/(u1-v1 rho^(-m+1+i))   0 <= i < m+n-1
     // so i_u1_v1[i-j+m-1] = 1/1/(u1-v1 rho^(i-j))   0 <= i-j+m-1 < m+n-1  <=> i-n < j <= i+m-1
@@ -594,7 +591,12 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
     Vec<mulmod_precon_t> inverses_u1_u1_pre;
     Vec<mulmod_precon_t> inverses_v1_v1_pre;
 
-    inverse_powers(inverses_rho, rho, m);
+    inverses_rho.SetLength(m);
+    zz_p irho  = 1/rho;
+    inverses_rho[0] = to_zz_p(1);
+    for (long i = 1; i < m; i++)
+        inverses_rho[i] = irho * inverses_rho[i-1];
+
     prepare_inverses_cauchy(inverses_u1_v1, u1, v1, rho, m, n); // 1/(u1-v1 rho^(-m+1)) ... 1/(u1-v1 rho^(n-1))
     // so i_u1_v1[i] = 1/1/(u1-v1 rho^(-m+1+i))   0 <= i < m+n-1
     // so i_u1_v1[i-j+m-1] = 1/1/(u1-v1 rho^(i-j))   0 <= i-j+m-1 < m+n-1  <=> i-n < j <= i+m-1
