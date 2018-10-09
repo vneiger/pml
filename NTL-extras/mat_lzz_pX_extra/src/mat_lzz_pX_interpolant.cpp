@@ -359,6 +359,7 @@ DegVec pmbasis_geometric(
                const zz_p & r,
                const long order,
                const Shift & shift,
+               Vec<Mat<zz_p>> &evals,
                Vec<zz_p> &pts
               )
 {
@@ -370,7 +371,6 @@ DegVec pmbasis_geometric(
     eval.evaluate(pts, x); // just gets powers of r
     
     // set up evaluations of pmat
-    Vec<Mat<zz_p>> evals;
     evals.SetLength(order);
     for (long d = 0; d < order; d++)
         evals[d].SetDims(pmat.NumRows(), pmat.NumCols());
@@ -443,8 +443,38 @@ NTL_EXEC_RANGE(intbas.NumRows(),first,last)
     for (long r = first; r < last; r++)
         for (long c = 0; c < intbas.NumCols(); c++)
         {
+            Vec<zz_p> val2;
             Vec<zz_p> val;
-            ev.evaluate(val, intbas[r][c]);
+            ev.evaluate(val2, intbas[r][c]);
+            
+            
+            zz_pX_Multipoint_General ev2(pts2);
+            ev2.evaluate(val, intbas[r][c]);
+            
+            long wrong = -1;
+            if (val != val2){
+                cout << "r: " << r << endl;
+                cout << "WRONG EVAL" << endl;
+                cout << "poly: {";
+                for (long t = 0; t <= deg(intbas[r][c]); t++){
+                    cout << coeff(intbas[r][c],t);
+                    if (t != deg(intbas[r][c])) cout << ",";
+                    else cout << "}" << endl;
+                }
+                zz_pX x;
+                SetCoeff(x,1,1);
+                Vec<zz_p> pts_geo;
+                ev.evaluate(pts_geo,x);
+                cout << "pts: {";
+                for (long t = 0; t < pts2.length(); t++){
+                    cout << pts2[t];
+                    if (t != pts2.length()-1) cout << ",";
+                    else cout << "}" << endl;
+                }
+                
+                cout << endl;
+            }
+            
             for (long i = 0; i < order2; i++)
                 evals2[i][r][c] = val[i];
             
