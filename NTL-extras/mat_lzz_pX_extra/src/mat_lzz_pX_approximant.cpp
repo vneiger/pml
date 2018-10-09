@@ -749,9 +749,11 @@ DegVec mbasis_rescomp_v2(
 #endif
     zz_pContext context;
     context.save();
+    const long nthreads = AvailableThreads();
 
     const Vec<Mat<zz_p>> coeffs_pmat = conv(pmat,order);
-    long nrows = coeffs_pmat[0].NumRows();
+    long nrows = pmat.NumRows();
+    long ncols = pmat.NumCols();
     Vec<Mat<zz_p>> coeffs_appbas;
 
     // initially, coeffs_appbas is the identity matrix
@@ -796,15 +798,21 @@ DegVec mbasis_rescomp_v2(
     Mat<zz_p> kerbas;
     Mat<zz_p> p_kerbas;
 
-    // matrix to store residuals, initially constant coeff of coeffs_pmat
-    Mat<zz_p> residual(coeffs_pmat[0]);
-    // will store permuted residuals
-    Mat<zz_p> p_residual;
-    p_residual.SetDims(nrows,residual.NumCols());
 
     // declare matrices
-    Mat<zz_p> res_coeff; // will store coefficient matrices used to compute the residual
-    //Mat<zz_p> kerapp; // will store constant-kernel * coeffs_appbas[d]
+    Vec<Mat<zz_p>> res_coeff; // will store coefficient matrices used to compute the residual
+    res_coeff.SetLength(nthreads);
+    Vec<Mat<zz_p>> residuals; // will store coefficient matrices used to compute the residual
+    residuals.SetLength(nthreads);
+    residuals[0] = coeffs_pmat[0];
+    for (long i = 0; i < nthreads; ++i)
+        residuals[i].SetDims(nrows, ncols);
+    // will store permuted residuals
+    Mat<zz_p> p_residual;
+    p_residual.SetDims(nrows, ncols);
+
+    Vec<Mat<zz_p>> kerapp; // will store constant-kernel * coeffs_appbas[d]
+    kerapp.SetLength(nthreads); // no more than this many matrices will be used
 #ifdef MBASIS_PROFILE
     t_others += GetWallTime()-t_now;
 #endif
@@ -824,11 +832,11 @@ DegVec mbasis_rescomp_v2(
 
         // permute rows of the residual accordingly
         for (long i = 0; i < nrows; ++i)
-            p_residual[i].swap(residual[p_rdeg[i]]);
+            p_residual[i].swap(residuals[0][p_rdeg[i]]);
         // content of residual has been changed --> let's make it zero
         // (if ord==1, residual is the former p_residual which was zero)
         if (ord>1)
-            clear(residual);
+            clear(residuals[0]);
 #ifdef MBASIS_PROFILE
         t_others += GetWallTime()-t_now;
         t_now = GetWallTime();
@@ -868,8 +876,8 @@ DegVec mbasis_rescomp_v2(
 #endif
                 for (long d = std::max<long>(0,ord-coeffs_pmat.length()+1); d <= deg_appbas; ++d)
                 {
-                    mul(res_coeff, coeffs_appbas[d], coeffs_pmat[ord-d]);
-                    add(residual, residual, res_coeff);
+                    mul(res_coeff[0], coeffs_appbas[d], coeffs_pmat[ord-d]);
+                    add(residuals[0], residuals[0], res_coeff[0]);
                 }
 #ifdef MBASIS_PROFILE
                 t_residual += GetWallTime()-t_now;
@@ -955,23 +963,18 @@ DegVec mbasis_rescomp_v2(
             // II/ update approximant basis
 
             // submatrix of rows with is_pivind is replaced by kerbas*coeffs_appbas
-            NTL_EXEC_RANGE(deg_appbas, first, last)
-            context.restore();
-            Mat<zz_p> kerapp;
-            for (long d = first; d < last; ++d)
-            {
-                kerapp = kerbas * coeffs_appbas[d];
-                long row=0;
-                for (long i = 0; i < nrows; ++i)
+            PartitionInfo pinfo(deg_appbas);
+            NTL_EXEC_INDEX(pinfo.NumIntervals(), index)
+                context.restore();
+                long first, last;
+                pinfo.interval(first, last, index);
+                for (long d = first; d < last; ++d)
                 {
-                    if (is_pivind[i])
-                    {
-                        coeffs_appbas[d][i].swap(kerapp[row]);
-                        ++row;
-                    }
+                    kerapp[index] = kerbas * coeffs_appbas[d];
+                    for (long i = 0; i < ker_dim; ++i)
+                        coeffs_appbas[d][pivind[perm_rows_ker[i]]].swap(kerapp[index][i]);
                 }
-            }
-            NTL_EXEC_RANGE_END
+            NTL_EXEC_INDEX_END
 
             // rows with !is_pivind are simply multiplied by X (note: these
             // rows have degree less than deg_appbas)
@@ -996,11 +999,22 @@ DegVec mbasis_rescomp_v2(
             // this is coefficient of degree ord in appbas * pmat
             if (ord<order)
             {
-                for (long d = std::max<long>(0,ord-coeffs_pmat.length()+1); d <= deg_appbas; ++d) // we have deg_appbas <= ord
-                {
-                    mul(res_coeff, coeffs_appbas[d], coeffs_pmat[ord-d]);
-                    add(residual, residual, res_coeff);
-                }
+                long dmin=std::max<long>(0,ord-coeffs_pmat.length()+1);
+                PartitionInfo pinfo(deg_appbas-dmin+1);
+                for (long i = 0; i < residuals.length(); ++i)
+                    clear(residuals[i]);
+                NTL_EXEC_INDEX(pinfo.NumIntervals(), index)
+                    context.restore();
+                    long first, last;
+                    pinfo.interval(first, last, index);
+                    for (long d = first; d < last; ++d) // we have deg_appbas <= ord
+                    {
+                        mul(res_coeff[index], coeffs_appbas[d+dmin], coeffs_pmat[ord-d-dmin]);
+                        add(residuals[index], residuals[index], res_coeff[index]);
+                    }
+                NTL_EXEC_INDEX_END
+                for (long i = 1; i < residuals.length(); ++i)
+                    residuals[0] += residuals[i];
 #ifdef MBASIS_PROFILE
             t_residual += GetWallTime()-t_now;
 #endif

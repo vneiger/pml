@@ -101,7 +101,7 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
 
         // then compute the product
         Mat<zz_pX> pmatt;
-        multiply_naive(pmatt, kerbas, pmat_r);
+        multiply(pmatt, kerbas, pmat_r);
 
         //std::cout << "pmatt" << std::endl << degree_matrix(pmatt) << std::endl;
 
