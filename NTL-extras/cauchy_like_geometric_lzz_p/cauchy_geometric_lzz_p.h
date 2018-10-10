@@ -85,7 +85,7 @@ public:
     }
 
     /*------------------------------------------------------------*/
-    /* computes output = M^t*input                                */
+    /* computes output = input * M                                */
     /*------------------------------------------------------------*/
     void mul_left(Vec<zz_p>& output, const Vec<zz_p>& input) const;
     inline Vec<zz_p> mul_left(const Vec<zz_p>& input) const
@@ -104,7 +104,7 @@ public:
     }
     
     /*------------------------------------------------------------*/
-    /* computes output = M^t*input, without the diagonal          */
+    /* computes output = input * M, without the diagonal          */
     /*------------------------------------------------------------*/
     void mul_left_simple(Vec<zz_p>& output, const Vec<zz_p>& input) const;
     inline Vec<zz_p> mul_left_simple(const Vec<zz_p>& input) const
@@ -189,20 +189,67 @@ public:
     /* computes output = M*input                                  */
     /*------------------------------------------------------------*/
     void mul_right(Vec<zz_p>& output, const Vec<zz_p>& input) const;
-    void mul_right_direct(Mat<zz_p> & out, const Mat<zz_p> & in) const ;
-    void mul_right_sigma_UL(Mat<zz_p> & out, const Mat<zz_p> & in) ;
-    void mul_right(Mat<zz_p>& output, const Mat<zz_p>& input) ;
+    inline Vec<zz_p> mul_right(const Vec<zz_p>& input) const
+    {
+        Vec<zz_p> output;
+        mul_right(output, input);
+        return output;
+    }
+
+    void mul_right_direct(Mat<zz_p> & out, const Mat<zz_p> & in) const;
+    inline Mat<zz_p> mul_right_direct(const Mat<zz_p>& input) const
+    {
+        Mat<zz_p> output;
+        mul_right_direct(output, input);
+        return output;
+    }
+
+    void mul_right_sigma_UL(Mat<zz_p> & out, const Mat<zz_p> & in) const;
+    inline Mat<zz_p> mul_right_sigma_UL(const Mat<zz_p>& input) const
+    {
+        Mat<zz_p> output;
+        mul_right_sigma_UL(output, input);
+        return output;
+    }
+
+    void mul_right(Mat<zz_p>& output, const Mat<zz_p>& input) const;
+    inline Mat<zz_p> mul_right(const Mat<zz_p>& input) const
+    {
+        Mat<zz_p> output;
+        mul_right(output, input);
+        return output;
+    }
 
     /*------------------------------------------------------------*/
-    /* computes output = M^t*input                                */
+    /* computes output = input * M                                */
     /*------------------------------------------------------------*/
     void mul_left(Vec<zz_p>& output, const Vec<zz_p>& input) const;
+    inline Vec<zz_p> mul_left(const Vec<zz_p>& input) const
+    {
+        Vec<zz_p> output;
+        mul_left(output, input);
+        return output;
+    }
+
     void mul_left(Mat<zz_p>& output, const Mat<zz_p>& input) const;
+    inline Mat<zz_p> mul_left(const Mat<zz_p>& input) const
+    {
+        Mat<zz_p> output;
+        mul_left(output, input);
+        return output;
+    }
 
     /*------------------------------------------------------------*/
     /* M as a dense matrix                                        */
     /*------------------------------------------------------------*/
     void to_dense(Mat<zz_p>& M) const;
+    inline Mat<zz_p> to_dense() const
+    {
+        Mat<zz_p> M;
+        to_dense(M);
+        return M;
+    }
+
 };
 
 /*------------------------------------------------------------*/

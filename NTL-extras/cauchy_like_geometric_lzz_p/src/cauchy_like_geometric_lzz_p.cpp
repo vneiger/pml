@@ -131,7 +131,7 @@ void cauchy_like_geometric_lzz_p::mul_right_direct(Mat<zz_p>& output, const Mat<
 /* switches to toeplitz_like structure                        */
 /* uses DAC algorithm for matrix multiplication               */
 /*------------------------------------------------------------*/
-void cauchy_like_geometric_lzz_p::mul_right_sigma_UL(Mat<zz_p> & output, const Mat<zz_p> & input) 
+void cauchy_like_geometric_lzz_p::mul_right_sigma_UL(Mat<zz_p> & output, const Mat<zz_p> & input) const
 {
     // long m = NumRows();
     // long n = NumCols();
@@ -245,7 +245,7 @@ void cauchy_like_geometric_lzz_p::mul_right_sigma_UL(Mat<zz_p> & output, const M
 /* computes output = M * input                                */
 /* switches to toeplitz_like for large alpha                  */
 /*------------------------------------------------------------*/
-void cauchy_like_geometric_lzz_p::mul_right(Mat<zz_p> & output, const Mat<zz_p> & input) 
+void cauchy_like_geometric_lzz_p::mul_right(Mat<zz_p> & output, const Mat<zz_p> & input) const
 {
     long alpha = NumGens();
     if (alpha < 36)
@@ -281,22 +281,19 @@ void cauchy_like_geometric_lzz_p::mul_left(Vec<zz_p>& output, const Vec<zz_p>& i
 
 
 /*------------------------------------------------------------*/
-/* computes output = M^t * input                              */
+/* computes output = input * M                                */
 /*------------------------------------------------------------*/
 void cauchy_like_geometric_lzz_p::mul_left(Mat<zz_p>& output, const Mat<zz_p>& input) const 
 {
     long alpha = NumGens();
-    long beta = input.NumCols();
-    output.SetDims(n, beta);
+    long beta = input.NumRows();
+    output.SetDims(beta, n);
 
     if (m == 0 || n == 0)
     {
-        for (long i = 0; i < n; i++)
-        {
-            zz_p * elts = output[i].elts();
-            for (long j = 0; j < beta; j++)
-                elts[j] = 0;
-        }
+        for (long j = 0; j < beta; j++)
+            for (long i = 0; i < n; i++)
+                output[j][i] = 0;
         return;
     }
 
@@ -309,7 +306,7 @@ void cauchy_like_geometric_lzz_p::mul_left(Mat<zz_p>& output, const Mat<zz_p>& i
     {
         const zz_p * diag = C.powers_irho.elts();
         for (long j = 0; j < m; j++)
-            new_in_2[j] = input[j][i] * diag[j];
+            new_in_2[j] = input[i][j] * diag[j];
         for (long j = 0; j < n; j++)
             vec_out[j] = 0;
         for (long k = 0; k < alpha; k++)
@@ -321,7 +318,7 @@ void cauchy_like_geometric_lzz_p::mul_left(Mat<zz_p>& output, const Mat<zz_p>& i
                 vec_out[j] += H[j][k]*new_out[j];
         }
         for (long j = 0; j < n; j++)
-            output[j][i] = vec_out[j];
+            output[i][j] = vec_out[j];
     }
 }
 

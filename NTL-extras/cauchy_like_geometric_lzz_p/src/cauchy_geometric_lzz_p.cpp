@@ -133,7 +133,7 @@ void cauchy_geometric_lzz_p::mul_right_simple(Mat<zz_p>& output, const Mat<zz_p>
 }
 
 /*------------------------------------------------------------*/
-/* computes output = M^t*input                                */
+/* computes output = input * M                                */
 /*------------------------------------------------------------*/
 void cauchy_geometric_lzz_p::mul_left(Vec<zz_p>& output, const Vec<zz_p>& input) const 
 {
@@ -146,7 +146,7 @@ void cauchy_geometric_lzz_p::mul_left(Vec<zz_p>& output, const Vec<zz_p>& input)
 }
 
 /*------------------------------------------------------------*/
-/* computes output = M^t*input                                */
+/* computes output = input * M                                */
 /*------------------------------------------------------------*/
 void cauchy_geometric_lzz_p::mul_left(Mat<zz_p>& output, const Mat<zz_p>& input) const 
 {
@@ -164,7 +164,7 @@ void cauchy_geometric_lzz_p::mul_left(Mat<zz_p>& output, const Mat<zz_p>& input)
 }
 
 /*------------------------------------------------------------*/
-/* computes output = M^t*input without the diagonal           */
+/* computes output = input * M without the diagonal           */
 /*------------------------------------------------------------*/
 void cauchy_geometric_lzz_p::mul_left_simple(Vec<zz_p>& output, const Vec<zz_p>& input) const 
 {
@@ -172,7 +172,7 @@ void cauchy_geometric_lzz_p::mul_left_simple(Vec<zz_p>& output, const Vec<zz_p>&
 }
 
 /*------------------------------------------------------------*/
-/* computes output = M^t*input without the diagonal           */
+/* computes output = input * M without the diagonal           */
 /*------------------------------------------------------------*/
 void cauchy_geometric_lzz_p::mul_left_simple(Mat<zz_p>& output, const Mat<zz_p>& input) const 
 {
