@@ -20,7 +20,7 @@ void check(long m, long n, long d){
     // uniform shift:
     Shift s;
     for (long i = 0; i < m; ++i)
-        s.emplace_back(d+i);
+        s.emplace_back(d+i+1);
     double t1w,t2w;
 
     Mat<zz_pX> kerbas;

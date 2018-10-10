@@ -25,6 +25,14 @@ DegVec kernel_basis(
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
 
+    // return an empty matrix for square matrix
+    if (m == n)
+    {   
+        kerbas.SetDims(0,0);
+        auto res = DegVec();
+        return res;
+    }
+    
     // find parameter: sum of the m-n largest entries of shift
     // TODO assumes m<n ?
     // all below assumes pmat nonzero?
@@ -32,7 +40,7 @@ DegVec kernel_basis(
     std::sort(sorted_shift.begin(), sorted_shift.end());
     long rho = 0;
     for (long i = m-n; i < m; i++)
-        rho += sorted_shift[i]+1;
+        rho += sorted_shift[i];
 
     // order for call to approximation
     // TODO threshold ( 3* ?) to determine
@@ -106,7 +114,7 @@ DegVec kernel_basis(
 
     // split G
     Mat<zz_pX> G1,G2;
-    long n1 = ceil(n/2);
+    long n1 = n/2;
     long n2 = n-n1;
     G1.SetDims(m2, n1);
     G2.SetDims(m2, n2);
@@ -124,15 +132,23 @@ DegVec kernel_basis(
     multiply(G2, N1, G2);
     DegVec v = kernel_basis(N2, G2, u);
 
+    // if G2 is square, then there is nothing to append
+    if (N2.NumRows() == 0)
+    {
+        kerbas.SetDims(m1,m);
+        for (long i = 0; i < m1; ++i)
+            kerbas[i] = appbas[ker_rows[i]];
+        return rdegP1;
+    }
+
     rdegP1.reserve(m1+v.size());
     for (auto &i: v)
         rdegP1.emplace_back(i);
 
     // collect output
     multiply(G1,N2,N1);
-    if (G1.NumRows() != 0) // FIXME can it be zero??
-        multiply(G1,G1,P2);
-
+    multiply(G1,G1,P2);
+    
     kerbas.SetDims(m1+G1.NumRows(), m);
     for (long i = 0; i < m1; ++i)
         kerbas[i] = appbas[ker_rows[i]];  // (FIXME cf above could use swap?)
@@ -235,7 +251,7 @@ DegVec kernel_basis_intbas(
     //cout << "P1: " << degree_matrix(P1) << endl;
     //cout << "P2: " << degree_matrix(P2) << endl;
 
-    if (n == 1)
+    if (n == 1 || r1 == m)
     {
         kerbas = P1;
         return rdegP1;
@@ -284,8 +300,21 @@ DegVec kernel_basis_intbas(
     DegVec u = kernel_basis_intbas(N1, G1, rdegP2);
     //cout << "N1: " << N1 << endl;
     multiply(G2, N1, G2);
-
+    
     DegVec v = kernel_basis_intbas(N2, G2, u);
+    
+    if (N2.NumRows() == 0)
+    {
+        kerbas.SetDims(P1.NumRows(), P1.NumCols());
+        for (long r = 0; r < P1.NumRows(); r++)
+        {
+            for (long c = 0; c < kerbas.NumCols(); c++)
+            {
+                kerbas[r][c] = P1[r][c];
+            }
+        }  
+        return rdegP1;
+    }
 
     // collect output
     multiply(G1,N2,N1);
