@@ -13,37 +13,41 @@ void check(long m, long n, long d){
     Mat<zz_pX> pmat;
     random_mat_zz_pX(pmat, m, n, d+1);
 
-    cout << "pmat: " << endl << degree_matrix(pmat) << endl;
+    //cout << "pmat: " << endl << degree_matrix(pmat) << endl;
 
     // Uniform shift:
     // Shift s(m, d);
     // uniform shift:
     Shift s;
     for (long i = 0; i < m; ++i)
-        s.emplace_back(d);
+        s.emplace_back(d+i);
     double t1w,t2w;
 
     Mat<zz_pX> kerbas;
     t1w = GetWallTime();
     kernel_basis(kerbas, pmat, s);
     t2w = GetWallTime();
-    cout << "kerbas (appbas): " << endl << degree_matrix(kerbas) << endl;
+    //cout << "kerbas (appbas): " << endl << degree_matrix(kerbas) << endl;
     cout << "time (appbas): " << t2w-t1w << endl;
 
     Mat<zz_pX> res;
     multiply(res, kerbas, pmat);
-    cout << "product should be zero: " << IsZero(res) << endl;
+    cout << "Dims: " << kerbas.NumRows() << ", " << kerbas.NumCols() << endl;
+    cout << "kerbas shouldn't be zero: " << IsZero(kerbas) << endl;
+    cout << "product should be zero: " << boolalpha << IsZero(res) << endl << endl;
 
     kerbas = Mat<zz_pX>();
     t1w = GetWallTime();
     kernel_basis_intbas(kerbas, pmat, s);
     t2w = GetWallTime();
     
-    cout << "kerbas (intbas): " << endl << degree_matrix(kerbas) << endl;
+    //cout << "kerbas (intbas): " << endl << degree_matrix(kerbas) << endl;
     cout << "time (intbas): " << t2w-t1w << endl;
 
     multiply(res, kerbas, pmat);
+    cout << "kerbas shouldn't be zero: " << IsZero(kerbas) << endl;
     cout << "product should be zero: " << IsZero(res) << endl;
+    cout << "Dims: " << kerbas.NumRows() << ", " << kerbas.NumCols() << endl;
 }
 
 /*------------------------------------------------------------*/
@@ -51,7 +55,7 @@ void check(long m, long n, long d){
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    //SetNumThreads(4);
+    SetNumThreads(4);
 
     zz_p::init(NTL::GenPrime_long(60));
 

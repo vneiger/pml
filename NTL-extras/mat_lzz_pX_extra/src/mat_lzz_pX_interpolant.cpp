@@ -363,17 +363,29 @@ DegVec pmbasis_geometric(
                Vec<zz_p> &pts
               )
 {
-    zz_pX_Multipoint_Geometric eval(r,order);
+    DegVec rdeg;
+    rdeg.resize(pmat.NumRows());
+    row_degree(rdeg, pmat);
+    long max_rowdeg = rdeg[0];
+    for (auto i : rdeg)
+        if (i > max_rowdeg) max_rowdeg = i;
+    max_rowdeg = max(order, max_rowdeg);
+    zz_pX_Multipoint_Geometric eval(r,max_rowdeg+1);
     
     // set up pts
     zz_pX x;
     SetCoeff(x,1,1);
-    eval.evaluate(pts, x); // just gets powers of r
+    Vec<zz_p> pts2;
+    eval.evaluate(pts2, x); // just gets powers of r
     
     // set up evaluations of pmat
     evals.SetLength(order);
+    pts.SetLength(order);
     for (long d = 0; d < order; d++)
+    {
+        pts[d] = pts2[d];
         evals[d].SetDims(pmat.NumRows(), pmat.NumCols());
+    }
     for (long r = 0; r < pmat.NumRows(); r++)
     {
         for (long c = 0; c < pmat.NumCols(); c++)
@@ -416,6 +428,10 @@ DegVec pmbasis_geometric(
         pts1[i] = pts[i];
     pivdeg = pmbasis_geometric(intbas, evals, pts1, r, shift);
 
+    long max_pivdeg = pivdeg[0];
+    for (auto i : pivdeg)
+        if (max_pivdeg < i) max_pivdeg = i;
+        
     // shifted row degree = shift for second call = pivdeg+shift
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
 
@@ -427,7 +443,9 @@ DegVec pmbasis_geometric(
         pts2[i] = pts[order1+i];
         
     // geometric progression of r, starting at pts2[0]
-    zz_pX_Multipoint_Geometric ev(r,pts2[0], order2);
+    // first ensure we have enough points for the degree
+    max_pivdeg = max(order2, max_pivdeg); 
+    zz_pX_Multipoint_Geometric ev(r,pts2[0], max_pivdeg+1);
     
     Vec<Mat<zz_p>> evals2;
     evals2.SetLength(order2);
@@ -443,37 +461,8 @@ NTL_EXEC_RANGE(intbas.NumRows(),first,last)
     for (long r = first; r < last; r++)
         for (long c = 0; c < intbas.NumCols(); c++)
         {
-            Vec<zz_p> val2;
             Vec<zz_p> val;
-            ev.evaluate(val2, intbas[r][c]);
-            
-            
-            zz_pX_Multipoint_General ev2(pts2);
-            ev2.evaluate(val, intbas[r][c]);
-            
-            long wrong = -1;
-            if (val != val2){
-                cout << "r: " << r << endl;
-                cout << "WRONG EVAL" << endl;
-                cout << "poly: {";
-                for (long t = 0; t <= deg(intbas[r][c]); t++){
-                    cout << coeff(intbas[r][c],t);
-                    if (t != deg(intbas[r][c])) cout << ",";
-                    else cout << "}" << endl;
-                }
-                zz_pX x;
-                SetCoeff(x,1,1);
-                Vec<zz_p> pts_geo;
-                ev.evaluate(pts_geo,x);
-                cout << "pts: {";
-                for (long t = 0; t < pts2.length(); t++){
-                    cout << pts2[t];
-                    if (t != pts2.length()-1) cout << ",";
-                    else cout << "}" << endl;
-                }
-                
-                cout << endl;
-            }
+            ev.evaluate(val, intbas[r][c]);
             
             for (long i = 0; i < order2; i++)
                 evals2[i][r][c] = val[i];

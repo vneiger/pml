@@ -32,7 +32,7 @@ DegVec kernel_basis(
     std::sort(sorted_shift.begin(), sorted_shift.end());
     long rho = 0;
     for (long i = m-n; i < m; i++)
-        rho += sorted_shift[i];
+        rho += sorted_shift[i]+1;
 
     // order for call to approximation
     // TODO threshold ( 3* ?) to determine
@@ -92,9 +92,9 @@ DegVec kernel_basis(
     for (long i = 0; i < m2; ++i)
         P2[i] = appbas[other_rows[i]]; // FIXME could use swap or something, since appbas will be destroyed?
 
-    cout << "pmat: " << degree_matrix(pmat) << endl;
-    cout << "P1: " << degree_matrix(kerbas) << endl;
-    cout << "P2: " << degree_matrix(P2) << endl;    
+    //cout << "pmat: " << degree_matrix(pmat) << endl;
+    //cout << "P1: " << degree_matrix(kerbas) << endl;
+    //cout << "P2: " << degree_matrix(P2) << endl;    
 
     // set up the recursive calls
     for (long i = 0; i < m2; ++i)
@@ -120,7 +120,7 @@ DegVec kernel_basis(
     // recursive calls
     Mat<zz_pX> N1, N2;
     DegVec u = kernel_basis(N1, G1, rdegP2);
-
+    
     multiply(G2, N1, G2);
     DegVec v = kernel_basis(N2, G2, u);
 
@@ -163,19 +163,19 @@ DegVec kernel_basis_intbas(
     std::sort(sorted_shift.begin(), sorted_shift.end());
     long rho = 0;
     for (long i = m-n; i < m; i++)
-        rho += sorted_shift[i];
+        rho += sorted_shift[i]+1;
 
     // order for call to approximation
     // TODO threshold ( 3* ?) to determine
     long order = 3 * ceil( (double)rho / n);
 
 
-    cout << "pmat: " << degree_matrix(pmat) << endl;
-    cout << "shift: ";
-    for (auto i : shift) cout << i << " ";
-    cout << endl;
-    cout << "rho: " << rho << endl;
-    cout << "order: " << order << endl;
+    //cout << "pmat: " << degree_matrix(pmat) << endl;
+    //cout << "shift: ";
+    //for (auto i : shift) cout << i << " ";
+    //cout << endl;
+    //cout << "rho: " << rho << endl;
+    //cout << "order: " << order << endl;
 
     if (order == 0)
     {
@@ -232,8 +232,8 @@ DegVec kernel_basis_intbas(
         }
     }
 
-    cout << "P1: " << degree_matrix(P1) << endl;
-    cout << "P2: " << degree_matrix(P2) << endl;
+    //cout << "P1: " << degree_matrix(P1) << endl;
+    //cout << "P2: " << degree_matrix(P2) << endl;
 
     if (n == 1)
     {
