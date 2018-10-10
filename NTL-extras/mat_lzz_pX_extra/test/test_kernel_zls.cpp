@@ -33,7 +33,7 @@ void check(long m, long n, long d){
     Mat<zz_pX> res;
     multiply(res, kerbas, pmat);
     cout << "Dims: " << kerbas.NumRows() << ", " << kerbas.NumCols() << endl;
-    cout << "kerbas shouldn't be zero: " << IsZero(kerbas) << endl;
+    cout << "kerbas zero?: " << IsZero(kerbas) << endl;
     cout << "product should be zero: " << boolalpha << IsZero(res) << endl << endl;
 
     kerbas = Mat<zz_pX>();
@@ -45,7 +45,7 @@ void check(long m, long n, long d){
     cout << "time (intbas): " << t2w-t1w << endl;
 
     multiply(res, kerbas, pmat);
-    cout << "kerbas shouldn't be zero: " << IsZero(kerbas) << endl;
+    cout << "kerbas zero?: " << IsZero(kerbas) << endl;
     cout << "product should be zero: " << IsZero(res) << endl;
     cout << "Dims: " << kerbas.NumRows() << ", " << kerbas.NumCols() << endl;
 }
