@@ -45,16 +45,6 @@ DegVec kernel_basis(
     // order for call to approximation
     // TODO threshold ( 3* ?) to determine
     long order = 3 * ceil( (double)rho / n);
-    
-    // FIXME problems with order = 0
-    if (order == 0)
-    {
-        kerbas = Mat<zz_pX>();
-        kerbas.SetDims(m-n,m);
-        auto res = DegVec();
-        res.resize(m-n);
-        return res;
-    }
 
     // compute approximant basis
     Mat<zz_pX> appbas;
@@ -100,17 +90,12 @@ DegVec kernel_basis(
     for (long i = 0; i < m2; ++i)
         P2[i] = appbas[other_rows[i]]; // FIXME could use swap or something, since appbas will be destroyed?
 
-    //cout << "pmat: " << degree_matrix(pmat) << endl;
-    //cout << "P1: " << degree_matrix(kerbas) << endl;
-    //cout << "P2: " << degree_matrix(P2) << endl;    
-
     // set up the recursive calls
     for (long i = 0; i < m2; ++i)
         rdegP2[i] -= order; // set rdegP2 = t from paper
     Mat<zz_pX> G;
     multiply(G,P2,pmat);
     RightShift(G,G,order);
-    // TODO middleproduct
 
     // split G
     Mat<zz_pX> G1,G2;
@@ -185,23 +170,6 @@ DegVec kernel_basis_intbas(
     // TODO threshold ( 3* ?) to determine
     long order = 3 * ceil( (double)rho / n);
 
-
-    //cout << "pmat: " << degree_matrix(pmat) << endl;
-    //cout << "shift: ";
-    //for (auto i : shift) cout << i << " ";
-    //cout << endl;
-    //cout << "rho: " << rho << endl;
-    //cout << "order: " << order << endl;
-
-    if (order == 0)
-    {
-        kerbas = Mat<zz_pX>();
-        kerbas.SetDims(m-n,m);
-        auto res = DegVec();
-        res.resize(m-n);
-        return res;
-    }
-
     zz_p r;
     random(r);
 
@@ -213,20 +181,20 @@ DegVec kernel_basis_intbas(
     // find row degrees
     DegVec rdegP;
     rdegP.resize(m);
-    //cout << "P: " << degree_matrix(P) << endl;
     row_degree(rdegP,P,shift);
 
     // partition
-    Mat<zz_pX> P1,P2;
+    Mat<zz_pX> &P1 = kerbas;
+    Mat<zz_pX> P2;
     DegVec rdegP1, rdegP2;
 
-    long row_P1 = 0;
+    long m1 = 0;
     for (auto &i : rdegP)
-        if (i < order) row_P1++;
-    P1.SetDims(row_P1, P.NumCols());
-    rdegP1.resize(row_P1);
-    P2.SetDims(m-row_P1, P.NumCols());
-    rdegP2.resize(m-row_P1);
+        if (i < order) m1++;
+    P1.SetDims(m1, P.NumCols());
+    rdegP1.resize(m1);
+    P2.SetDims(m-m1, P.NumCols());
+    rdegP2.resize(m-m1);
 
     // copy into P1,P2
     long r1 = 0;
@@ -248,12 +216,8 @@ DegVec kernel_basis_intbas(
         }
     }
 
-    //cout << "P1: " << degree_matrix(P1) << endl;
-    //cout << "P2: " << degree_matrix(P2) << endl;
-
     if (n == 1 || r1 == m)
     {
-        kerbas = P1;
         return rdegP1;
     }
 
@@ -269,11 +233,10 @@ DegVec kernel_basis_intbas(
     SetCoeff(x,1,1);
     SetCoeff(poly,0,1);
     zz_p pow_r(1);
+
     for (long i = 0; i < order; i++)
     {
-        if (pow_r != pts[i]) cout << "WRONG POINT" << endl;
-        poly *= x-pow_r;
-        pow_r *= r*r;
+        poly *= x-pts[i];
     }
     for (long r = 0; r < G.NumRows(); r++)
         for (long c = 0; c < G.NumCols(); c++)
@@ -298,43 +261,22 @@ DegVec kernel_basis_intbas(
     Mat<zz_pX> N1, N2;
 
     DegVec u = kernel_basis_intbas(N1, G1, rdegP2);
-    //cout << "N1: " << N1 << endl;
     multiply(G2, N1, G2);
     
     DegVec v = kernel_basis_intbas(N2, G2, u);
     
     if (N2.NumRows() == 0)
     {
-        kerbas.SetDims(P1.NumRows(), P1.NumCols());
-        for (long r = 0; r < P1.NumRows(); r++)
-        {
-            for (long c = 0; c < kerbas.NumCols(); c++)
-            {
-                kerbas[r][c] = P1[r][c];
-            }
-        }  
         return rdegP1;
     }
 
     // collect output
     multiply(G1,N2,N1);
-    if (G1.NumRows() != 0)
-        multiply(G1,G1,P2);
+    multiply(G1,G1,P2);
     kerbas.SetDims(P1.NumRows()+G1.NumRows(), P1.NumCols());
-    long r_at = 0;
-    for (long r = 0; r < P1.NumRows(); r++, r_at++)
+    for (long r = 0; r < G1.NumRows(); r++)
     {
-        for (long c = 0; c < kerbas.NumCols(); c++)
-        {
-            kerbas[r_at][c] = P1[r][c];
-        }
-    } 
-    for (long r = 0; r < G1.NumRows(); r++, r_at++)
-    {
-        for (long c = 0; c < kerbas.NumCols(); c++)
-        {
-            kerbas[r_at][c] = G1[r][c];
-        }
+        kerbas[r+m1] = G1[r];
     }
     for (auto &i: v)
         rdegP1.emplace_back(i);
