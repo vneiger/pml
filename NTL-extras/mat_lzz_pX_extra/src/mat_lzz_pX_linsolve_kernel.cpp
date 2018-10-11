@@ -44,7 +44,7 @@ void solve_kerbas (Vec<zz_pX> &a,
         shift[i] = rdeg[i]+1;
         if (max_deg < rdeg[i]) max_deg = rdeg[i];
     }
-    shift[m] = (m+1)*(max_deg+degb+1);
+    shift[m] = (m+1)*(max_deg+1);
 
     pmat.SetDims(m+1, n);
     pmat[m] = b;
@@ -52,6 +52,10 @@ void solve_kerbas (Vec<zz_pX> &a,
     // compute kernel
     Mat<zz_pX> kerbas;
     auto deg = kernel_basis_intbas(kerbas, pmat, shift);
+    
+    Mat<zz_pX> res;
+    multiply(res,kerbas,pmat);
+    cout << "kernel prod: " << degree_matrix(res) << endl;
     
     a.SetLength(n);
     for (long i = 0; i < n; i++)

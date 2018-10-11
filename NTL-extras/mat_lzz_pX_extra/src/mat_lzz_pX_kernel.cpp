@@ -151,7 +151,7 @@ DegVec kernel_basis_intbas(
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
 
-    if (pmat.NumRows() == 0)
+    if (pmat.NumRows() == pmat.NumCols())
     {
         kerbas = Mat<zz_pX>();
         return DegVec();
@@ -169,6 +169,12 @@ DegVec kernel_basis_intbas(
     // order for call to approximation
     // TODO threshold ( 3* ?) to determine
     long order = 3 * ceil( (double)rho / n);
+    
+    cout << "order: " << order << endl;
+    cout << "shift: ";
+    for (auto i : shift)
+        cout << i << " ";
+    cout << endl;
 
     zz_p r;
     random(r);
@@ -182,6 +188,10 @@ DegVec kernel_basis_intbas(
     DegVec rdegP;
     rdegP.resize(m);
     row_degree(rdegP,P,shift);
+    cout << "rdegP: ";
+    for (auto i: rdegP)
+        cout << i << " ";
+    cout << endl;
 
     // partition
     Mat<zz_pX> &P1 = kerbas;
@@ -214,6 +224,16 @@ DegVec kernel_basis_intbas(
                 P2[r2][c] = P[r][c];
             r2++;
         }
+    }
+    
+    cout << "pmat: " << degree_matrix(pmat) << endl;
+    cout << "P1: " << degree_matrix(P1) << endl;
+    cout << "P2: " << degree_matrix(P2) << endl;
+    if (P1.NumRows() != 0)
+    {
+        Mat<zz_pX> tmp;
+        multiply(tmp,P1,pmat);
+        cout << "P1 prod: " << degree_matrix(tmp) << endl;
     }
 
     if (n == 1 || r1 == m)
@@ -260,10 +280,21 @@ DegVec kernel_basis_intbas(
     // recursive calls
     Mat<zz_pX> N1, N2;
 
+    cout << "\n\ncall 1" << endl;
     DegVec u = kernel_basis_intbas(N1, G1, rdegP2);
+    cout << "u: ";
+    for (auto i : u)
+        cout << i << " ";
+    cout << endl;
+        
     multiply(G2, N1, G2);
     
+    cout << "\n\ncall 2" << endl;
     DegVec v = kernel_basis_intbas(N2, G2, u);
+    cout << "v: ";
+    for (auto i : v)
+        cout << i << " ";
+    cout << endl;
     
     if (N2.NumRows() == 0)
     {
@@ -280,6 +311,10 @@ DegVec kernel_basis_intbas(
     }
     for (auto &i: v)
         rdegP1.emplace_back(i);
+    cout << "return degree: ";
+    for (auto i : rdegP1)
+        cout << i << " ";
+    cout << endl;
     return rdegP1;
 }
 

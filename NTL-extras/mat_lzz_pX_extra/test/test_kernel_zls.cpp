@@ -19,8 +19,10 @@ void check(long m, long n, long d){
     // Shift s(m, d);
     // uniform shift:
     Shift s;
-    for (long i = 0; i < m; ++i)
-        s.emplace_back(d+i+1);
+    for (long i = 0; i < m-1; ++i)
+        s.emplace_back(d+1);
+    s.emplace_back(143);
+    
     double t1w,t2w;
 
     Mat<zz_pX> kerbas;
