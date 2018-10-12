@@ -19,7 +19,7 @@ NTL_CLIENT
 /* these are the entries of the toeplitz matrix               */
 /* (with m rows and n columns)                                */
 /*------------------------------------------------------------*/
-void prepare_inverses_cauchy(Vec<zz_p>& inverses, const zz_p& u1, const zz_p& v1, const zz_p& rho, long m, long n)
+static void prepare_inverses_cauchy_reverse(Vec<zz_p>& inverses, const zz_p& u1, const zz_p& v1, const zz_p& rho, long m, long n)
 {
     Vec<zz_p> vec_den;
     zz_p irho = 1/rho;
@@ -68,7 +68,7 @@ cauchy_geometric_lzz_p::cauchy_geometric_lzz_p(const zz_p& a1, const zz_p& b1, c
     }
     else
     {
-        prepare_inverses_cauchy(vec_toeplitz, u1, v1, rho, m, n); 
+        prepare_inverses_cauchy_reverse(vec_toeplitz, u1, v1, rho, m, n); 
 
         powers_irho.SetLength(m);
         zz_p irho = 1/rho;

@@ -5,7 +5,7 @@
 #include <NTL/mat_lzz_p.h>
 
 #include "lzz_pX_CRT.h"
-#include "mosaic_hankel_lzz_p.h"
+#include "hankel_toeplitz_lzz_p.h"
 
 #define THRESHOLD 100
 
@@ -126,7 +126,7 @@ public:
     /* M as a dense matrix                                        */
     /*------------------------------------------------------------*/
     void to_dense(Mat<zz_p>& M) const;
-    inline Mat<zz_p> to_dense()
+    inline Mat<zz_p> to_dense() const
     {
         Mat<zz_p> dense;
         to_dense(dense);
@@ -138,16 +138,6 @@ public:
     /*------------------------------------------------------------*/
     void build_X_Y();
 };
-
-
-/*------------------------------------------------------------*/
-/* computes                                                   */
-/* 1/(u1-v1 rho^(-m+1)) ... 1/(u1-v1 rho^(n-1))               */
-/* these are the entries of the toeplitz matrix               */
-/* (with m rows and n columns)                                */
-/*------------------------------------------------------------*/
-void prepare_inverses_cauchy(Vec<zz_p>& inverses, const zz_p& u1, const zz_p& v1, const zz_p& rho, long m, long n);
-
 
 
 /*------------------------------------------------------------*/
@@ -261,7 +251,7 @@ public:
 /* thresh_alpha switches between block and plain quadratic    */
 /*------------------------------------------------------------*/
 long invert_leading_principal_minor(cauchy_like_geometric_lzz_p& Cinv,
-                                    const cauchy_like_geometric_lzz_p& CL, long thresh, long thresh_alpha);
+                                    const cauchy_like_geometric_lzz_p& CL, long thresh = -1, long thresh_alpha = -1);
 
 
 #endif

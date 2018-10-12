@@ -45,7 +45,6 @@ void check(long p)
         H[1] = row1;
 
         mosaic_hankel_lzz_p MH;
-
         MH = mosaic_hankel_lzz_p(H);
 
         Mat<zz_p> Mdense = MH.to_dense();

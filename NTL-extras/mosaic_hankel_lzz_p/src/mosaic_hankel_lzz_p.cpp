@@ -4,6 +4,7 @@
 #include "lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
 #include "mosaic_hankel_lzz_p.h"
+#include "cauchy_geometric_lzz_p.h"
 
 NTL_CLIENT
 
@@ -430,161 +431,169 @@ static void generators(Mat<zz_p>& G, Mat<zz_p>& H, const mosaic_hankel_lzz_p& M)
     }
 }
 
-// /*------------------------------------------------------------------*/
-// /* finds c such that                                                */
-// /* - c != 0                                                         */
-// /* - a^i - c a^j != 0 for 0 <= i < n and 0 <= j < m                 */
-// /*------------------------------------------------------------------*/
-// static 
-// void find_c(zz_p& c, const zz_p& a, long n, long m){
-//     Vec<zz_p> pow_a, pow_inva;
-//     pow_a.SetLength(n);
-//     pow_inva.SetLength(m);
+/*------------------------------------------------------------------*/
+/* finds c such that                                                */
+/* - c != 0                                                         */
+/* - a^i - c a^j != 0 for 0 <= i < n and 0 <= j < m                 */
+/*------------------------------------------------------------------*/
+static void find_c(zz_p& c, const zz_p& a, long n, long m)
+{
+    Vec<zz_p> pow_a, pow_inva;
+    pow_a.SetLength(n);
+    pow_inva.SetLength(m);
 
-//     pow_a[0] = to_zz_p(1);
-//     pow_inva[0] = to_zz_p(1);
+    pow_a[0] = to_zz_p(1);
+    pow_inva[0] = to_zz_p(1);
 
-//     zz_p inva = 1/a;
-//     for (long i = 1; i < n; i++)
-//         pow_a[i] = a*pow_a[i-1];
-//     for (long i = 1; i < m; i++)
-//         pow_inva[i] = inva*pow_inva[i-1];
+    zz_p inva = 1/a;
+    for (long i = 1; i < n; i++)
+        pow_a[i] = a*pow_a[i-1];
+    for (long i = 1; i < m; i++)
+        pow_inva[i] = inva*pow_inva[i-1];
 
-//     bool done;
-//     do{
-//         c = random_zz_p();
-//         done = true;
-//         if (c == 0)
-//             done = false;
-//         for (long i = 0; i < n; i++)
-//             if (c == pow_a[i])
-//                 done = false;
-//         for (long i = 0; i < m; i++)
-//             if (c == pow_inva[i])
-//                 done = false;
-//     } while (done != true);
-// }
+    bool done;
+    do{
+        c = random_zz_p();
+        done = true;
+        if (c == 0)
+            done = false;
+        for (long i = 0; i < n; i++)
+            if (c == pow_a[i])
+                done = false;
+        for (long i = 0; i < m; i++)
+            if (c == pow_inva[i])
+                done = false;
+    } while (done != true);
+}
 
-// /*------------------------------------------------------------------*/
-// /* preconditions M                                                  */
-// /* builds the matrix CL = (D_e X_int) M (D_f Y_int)^t, where:       */
-// /* - X_int, Y_int are geometric interpolation                       */
-// /* - D_e, D_f are diagonal matrix built on vectors e and f          */
-// /* - CL is cauchy-like special                                      */
-// /* - CL is expected to have generic rank profile                    */
-// /*                                                                  */
-// /* - X_int is built on (1,w,w^2,..)                                 */
-// /* - Y_int is built on (c,cw,cw^2,..)                               */
-// /* If we are over an FFT prime, w = root of unity                   */
-// /*------------------------------------------------------------------*/
-// void to_cauchy_grp(cauchy_like_geometric_special& CL, 
-//                    zz_pX_Multipoint_Geometric& X_int, zz_pX_Multipoint_Geometric& Y_int,
-//                    Vec<zz_p> &e, Vec<zz_p> &f,
-//                    const mosaic_hankel_lzz_p& M){
+/*------------------------------------------------------------------*/
+/* preconditions M                                                  */
+/* builds the matrix CL = (D_e X_int) M (D_f Y_int)^t, where:       */
+/* - X_int, Y_int are geometric interpolation                       */
+/* - D_e, D_f are diagonal matrix built on vectors e and f          */
+/* - CL is cauchy-like geometric                                    */
+/* - CL is expected to have generic rank profile                    */
+/*                                                                  */
+/* - X_int is built on (1,w,w^2,..)                                 */
+/* - Y_int is built on (c,cw,cw^2,..)                               */
+/*------------------------------------------------------------------*/
+void to_cauchy_grp(cauchy_like_geometric_lzz_p& CL, 
+                   zz_pX_Multipoint_Geometric& X_int, zz_pX_Multipoint_Geometric& Y_int,
+                   Vec<zz_p> &e, Vec<zz_p> &f,
+                   const mosaic_hankel_lzz_p& M)
+{
+    Mat<zz_p> X, Y;
+    Mat<zz_p> G, H;
+    generators(G, H, M);
+    zz_p a, b, c;
+    long n = M.NumRows();
+    long m = M.NumCols();
 
+    if (max(m, n) > zz_p::modulus()/ 10)
+    {
+        LogicError("Field too small for preconditioning.");
+    }
 
-//     Mat<zz_p> X, Y;
-//     Mat<zz_p> G, H;
-//     generators(G, H, M);
-//     cauchy_geometric_special C;
-//     zz_p a, b, c;
-//     long n = M.NumRows();
-//     long m = M.NumCols();
+    element_of_order(a, 2 * max(m, n));
+    b = a*a;
+    find_c(c, b, n, m);
+    X_int = zz_pX_Multipoint_Geometric(a, to_zz_p(1), n);
+    Y_int = zz_pX_Multipoint_Geometric(a, c, m);
 
-//     if (max(m, n) > zz_p::modulus())
-//         LogicError("Field too small for preconditioning.");
+    long alpha = G.NumCols();
+    X.SetDims(n, alpha+2);
+    Y.SetDims(m, alpha+2);
 
-//     // zz_pInfoT *info = zz_pInfo;
-//     // if (info->p_info != NULL){  // FFT prime
-//     //   long k = NextPowerOfTwo(max(m, n));
-//     //   long order = 1L << k;
-//     //   long w = find_root_of_unity(zz_p::modulus(), 2*order);
-//     //   a = to_zz_p(w);
-//     // }
-//     // else
-//     element_of_order(a, max(m, n));
+    e.SetLength(n);
+    for (long i = 0; i < n; i++)
+        e[i] = random_zz_p();
 
-//     b = a*a;
-//     find_c(c, b, n, m);
-//     X_int = zz_pX_Multipoint_Geometric(a, n, 0);
-//     Y_int = zz_pX_Multipoint_Geometric(a, m, c);
-//     C = cauchy_geometric_special(to_zz_p(1), c, b, n, m);
+    f.SetLength(m);
+    for (long i = 0; i < m; i++)
+        f[i] = random_zz_p();
 
-//     long alpha = G.NumCols();
-//     X.SetDims(n, alpha+2);
-//     Y.SetDims(m, alpha+2);
+    Vec<zz_p> tmp_v;
+    for (long j = 0; j < alpha; j++)
+    {
+        zz_pX tmp_p;
+        tmp_p.rep.SetLength(n);
+        zz_p* coef_p = tmp_p.rep.elts();
+        for (long i = 0; i < n; i++)
+        {
+            coef_p[i] = G[i][j];
+        }
+        tmp_p.normalize();
+        X_int.evaluate(tmp_v, tmp_p);
+        for (long i = 0; i < n; i++)
+        {
+            X[i][j] = tmp_v[i] * e[i];
+        }
+    }
 
-//     e.SetLength(n);
-//     for (long i = 0; i < n; i++)
-//         e[i] = random_zz_p();
+    zz_p tmp_z = to_zz_p(1);
+    for (long i = 0; i < n; i++)
+    {
+        X[i][alpha] = e[i]*(power(tmp_z, n)-1);
+        tmp_z = tmp_z * b;
+    }
 
-//     f.SetLength(m);
-//     for (long i = 0; i < m; i++)
-//         f[i] = random_zz_p();
+    M.last_column_of_block(tmp_v, M.NumBlockCols()-1);
+    zz_pX tmp_p;
+    tmp_p.rep.SetLength(n);
+    zz_p* coef_p = tmp_p.rep.elts();
+    for (long i = 0; i < n; i++)
+    {
+        coef_p[i] = tmp_v[i];
+    }
+    tmp_p.normalize();
+    X_int.evaluate(tmp_v, tmp_p);
+    for (long i = 0; i < n; i++)
+    {
+        X[i][alpha+1] = tmp_v[i] * e[i];
+    }
 
-//     vec_zz_p tmp_v;
-//     for (long j = 0; j < alpha; j++){
-//         zz_pX tmp_p;
-//         tmp_p.rep.SetLength(n);
-//         zz_p* coef_p = tmp_p.rep.elts();
-//         for (long i = 0; i < n; i++)
-//             coef_p[i] = G[i][j];
-//         tmp_p.normalize();
-//         X_int.evaluate(tmp_v, tmp_p);
-//         for (long i = 0; i < n; i++)
-//             X[i][j] = tmp_v[i] * e[i];
-//     }
+    Vec<zz_p> tmp_w;
+    for (long j = 0; j < alpha; j++)
+    {
+        zz_pX tmp_q;
+        tmp_q.rep.SetLength(m);
+        zz_p* coef_q = tmp_q.rep.elts();
+        for (long i = 0; i < m; i++)
+        {
+            coef_q[i] = H[i][j];
+        }
+        tmp_q.normalize();
+        Y_int.evaluate(tmp_w, tmp_q);
+        for (long i = 0; i < m; i++)
+        {
+            Y[i][j] = tmp_w[i] * f[i];
+        }
+    }
 
-//     zz_p tmp_z = to_zz_p(1);
-//     for (long i = 0; i < n; i++){
-//         X[i][alpha] = e[i]*(power(tmp_z, n)-1);
-//         tmp_z = tmp_z * b;
-//     }
+    M.last_row_of_block(tmp_w, M.NumBlockRows()-1);
+    zz_pX tmp_q;
+    tmp_q.rep.SetLength(m);
+    zz_p* coef_q = tmp_q.rep.elts();
+    for (long i = 0; i < m; i++)
+    {
+        coef_q[i] = tmp_w[i];
+    }
+    tmp_q.normalize();
+    Y_int.evaluate(tmp_w, tmp_q);
+    for (long i = 0; i < m; i++)
+    {
+        Y[i][alpha] = tmp_w[i] * f[i];
+    }
 
-//     last_column_of_block(tmp_v, M.NumBlockCols()-1, M);
-//     zz_pX tmp_p;
-//     tmp_p.rep.SetLength(n);
-//     zz_p* coef_p = tmp_p.rep.elts();
-//     for (long i = 0; i < n; i++)
-//         coef_p[i] = tmp_v[i];
-//     tmp_p.normalize();
-//     X_int.evaluate(tmp_v, tmp_p);
-//     for (long i = 0; i < n; i++)
-//         X[i][alpha+1] = tmp_v[i] * e[i];
+    tmp_z = c;
+    for (long i = 0; i < m; i++)
+    {
+        Y[i][alpha+1] = -f[i]*power(tmp_z, m);
+        tmp_z = tmp_z * b;
+    }
 
-//     vec_zz_p tmp_w;
-//     for (long j = 0; j < alpha; j++){
-//         zz_pX tmp_q;
-//         tmp_q.rep.SetLength(m);
-//         zz_p* coef_q = tmp_q.rep.elts();
-//         for (long i = 0; i < m; i++)
-//             coef_q[i] = H[i][j];
-//         tmp_q.normalize();
-//         Y_int.evaluate(tmp_w, tmp_q);
-//         for (long i = 0; i < m; i++)
-//             Y[i][j] = tmp_w[i] * f[i];
-//     }
-
-//     last_row_of_block(tmp_w, M.NumBlockRows()-1, M);
-//     zz_pX tmp_q;
-//     tmp_q.rep.SetLength(m);
-//     zz_p* coef_q = tmp_q.rep.elts();
-//     for (long i = 0; i < m; i++)
-//         coef_q[i] = tmp_w[i];
-//     tmp_q.normalize();
-//     Y_int.evaluate(tmp_w, tmp_q);
-//     for (long i = 0; i < m; i++)
-//         Y[i][alpha] = tmp_w[i] * f[i];
-
-//     tmp_z = c;
-//     for (long i = 0; i < m; i++){
-//         Y[i][alpha+1] = -f[i]*power(tmp_z, m);
-//         tmp_z = tmp_z * b;
-//     }
-
-//     CL = cauchy_like_geometric_special(X, Y, C);
-// }
-
+    CL = cauchy_like_geometric_lzz_p(X, Y, to_zz_p(1), c, b);
+}
 
 // Local Variables:
 // mode: C++

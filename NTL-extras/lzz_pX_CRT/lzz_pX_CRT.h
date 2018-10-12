@@ -70,6 +70,13 @@ public:
     /*------------------------------------------------------------*/
     void to_dense(Mat<zz_p>& M);
 
+    inline Mat<zz_p> to_dense()
+    {
+        Mat<zz_p> M;
+        to_dense(M);
+        return M;
+    }
+
 protected:
     Vec<zz_p> pts;
     long n;

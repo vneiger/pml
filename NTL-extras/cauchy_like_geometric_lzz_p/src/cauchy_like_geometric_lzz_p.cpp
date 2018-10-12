@@ -4,11 +4,38 @@
 #include <NTL/lzz_pX.h>
 #include <assert.h>
 
+#include "magma_output.h"
+
 #include "vec_lzz_p_extra.h"
 #include "cauchy_geometric_lzz_p.h"
 #include "lzz_pX_CRT.h"
 
 NTL_CLIENT
+
+/*------------------------------------------------------------*/
+/* computes                                                   */
+/* 1/(u1-v1 rho^(-m-1)) ... 1/(u1-v1 rho^(n+1))               */
+/* these are the entries of the toeplitz matrix               */
+/* (with m rows and n columns)                                */
+/*------------------------------------------------------------*/
+static void prepare_inverses_cauchy(Vec<zz_p>& inverses, const zz_p& u1, const zz_p& v1, const zz_p& rho, long m, long n)
+{
+    Vec<zz_p> vec_den;
+    zz_p irho = 1/rho;
+    vec_den.SetLength(m+n-1);
+    if (m+n-1 == 0)
+    {
+        return;
+    }
+    vec_den[0] = -v1*power(irho, m-1);
+    for (long i = 1; i < m+n-1; i++)
+    {
+        vec_den[i] = vec_den[(i-1)]*rho;
+        vec_den[(i-1)] += u1;
+    }
+    vec_den[m+n-2] += u1;
+    inv(inverses, vec_den);
+}
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -551,9 +578,6 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
     Yp.SetLength(alpha * m);
     Zp.SetLength(alpha * n);
 
-    // long *Yp = new long[alpha*m];
-    // long *Zp = new long[alpha*n];
-
     long idx;
 
     idx = 0;
@@ -624,7 +648,10 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
         // computes the top-left entry in the current submatrix
         long rd = 0;
         for (long j = 0; j < alpha; j++)
+        {
             rd = AddMod(rd, MulMod(tmpZk[j], tmpYk[j], p, pinv), p);
+        }
+
 
         // early exit if rank(M) < n
         if (rd == 0)
@@ -666,6 +693,7 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
             }
             return k; // OK
         }
+
 
         rd = MulModPrecon(rd, inverses_rho[k]._zz_p__rep, p, inverses_rho_pre[k]);
         rd = MulModPrecon(rd, inverses_u1_v1[m-1]._zz_p__rep, p, inverses_u1_v1_pre[m-1]);

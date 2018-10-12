@@ -19,8 +19,8 @@ void check(long p)
 
     for (long i = 1; i < 100; i += 1)
     {
-        zz_p a = element_of_order(2*i);
         long j = i+10;
+        zz_p a = element_of_order(2*j);
         long alpha = 4;
         Mat<zz_p> A, B;
         random(A, i, alpha);
