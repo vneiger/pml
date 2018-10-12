@@ -53,7 +53,7 @@ int main(){
     printVec(degs);
 
     degs.resize(pmat.NumCols());
-    col_degree(degs,pmat);
+    column_degree(degs,pmat);
     cout << "col degs: ";
     printVec(degs);
 
@@ -101,7 +101,7 @@ int main(){
     printVec(degs);
 
     degs.resize(pmat.NumCols());
-    col_degree(degs,pmat,cs);
+    column_degree(degs,pmat,cs);
     cout << "shifted col degree: ";
     printVec(degs);
 

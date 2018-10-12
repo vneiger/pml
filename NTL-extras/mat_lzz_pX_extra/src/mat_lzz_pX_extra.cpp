@@ -816,7 +816,10 @@ long deg(const Vec<zz_pX> & a)
 /* (degree deduced from input)                                */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat)
+void conv(
+          Vec<Mat<zz_p>> & coeffs,
+          const Mat<zz_pX> & mat
+         )
 {
     long d = deg(mat);
     coeffs.SetLength(d + 1);
@@ -837,7 +840,10 @@ void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat)
     }
 }
 
-void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs)
+void conv(
+          Mat<zz_pX> & mat,
+          const Vec<Mat<zz_p>> & coeffs
+         )
 {
     long len = coeffs.length();
     if (len == 0)
@@ -869,7 +875,11 @@ void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs)
 /* coeffs will have length order independently of deg(mat)    */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat, const long order)
+void conv(
+          Vec<Mat<zz_p>>& coeffs,
+          const Mat<zz_pX>& mat,
+          const long order
+         )
 {
     coeffs.SetLength(order);
     long r = mat.NumRows();
@@ -889,7 +899,11 @@ void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat, const long order)
     }
 }
 
-void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs, const long order)
+void conv(
+          Mat<zz_pX> & mat,
+          const Vec<Mat<zz_p>> & coeffs,
+          const long order
+         )
 {
     long len = std::min(order,coeffs.length());
     if (len == 0)
@@ -917,9 +931,12 @@ void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs, const long order)
 /*------------------------------------------------------------*/
 /* multipoint evaluation for matrices                         */
 /*------------------------------------------------------------*/
-void matrix_evaluate (Vec<Mat<zz_p>> &evals,
-                      const Mat<zz_pX> &pmat,
-                      const zz_pX_Multipoint &ev){
+void matrix_evaluate(
+                     Vec<Mat<zz_p>> & evals,
+                     const Mat<zz_pX> & pmat,
+                     const zz_pX_Multipoint & ev
+                    )
+{
     // figure out the length
     zz_pX x;
     SetCoeff(x,1,1);
@@ -953,7 +970,12 @@ NTL_EXEC_RANGE_END
 /*------------------------------------------------------------*/
 /* TODO comment                                               */
 /*------------------------------------------------------------*/
-void check_shift(bool &shifted, const std::vector<long> &shift, const Mat<zz_pX> &pmat, const bool row_wise = true)
+void check_shift(
+                 bool & shifted,
+                 const std::vector<long> & shift,
+                 const Mat<zz_pX> & pmat,
+                 const bool row_wise = true
+                )
 {
     shifted = false;
     if (!shift.empty()) 
@@ -974,9 +996,12 @@ void check_shift(bool &shifted, const std::vector<long> &shift, const Mat<zz_pX>
 /* TODO comment                                               */
 /* degmat supposed to be empty, just initialized */
 /*------------------------------------------------------------*/
-void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat, 
+void degree_matrix(
+                   Mat<long> & degmat,
+                   const Mat<zz_pX> & pmat, 
                    const std::vector<long> & shift,
-                   const bool row_wise)
+                   const bool row_wise
+                  )
 {
     // check if shifted + shift dimension
     bool shifted;
@@ -1014,8 +1039,11 @@ void degree_matrix(Mat<long> &degmat, const Mat<zz_pX> &pmat,
 /* TODO comment                                               */
 /* requirement: length of rdeg is correct */
 /*------------------------------------------------------------*/
-void row_degree(std::vector<long> &rdeg, const Mat<zz_pX> &pmat,
-                const std::vector<long> &shift)
+void row_degree(
+                std::vector<long> &rdeg,
+                const Mat<zz_pX> &pmat,
+                const std::vector<long> & shift
+               )
 { 
     // check if shifted + shift dimension
     bool shifted;
@@ -1049,8 +1077,11 @@ void row_degree(std::vector<long> &rdeg, const Mat<zz_pX> &pmat,
 /* TODO comment                                               */
 /* requirement: length of cdeg is correct */
 /*------------------------------------------------------------*/
-void col_degree(std::vector<long> &cdeg, const Mat<zz_pX> &pmat,
-                const std::vector<long> &shift)
+void column_degree(
+                   std::vector<long> &cdeg,
+                   const Mat<zz_pX> &pmat,
+                   const std::vector<long> & shift
+                  )
 {
     // check if shifted + shift dimension
     bool shifted;
@@ -1058,7 +1089,7 @@ void col_degree(std::vector<long> &cdeg, const Mat<zz_pX> &pmat,
 
     // check cdeg has the right length
     if ((long)cdeg.size() != pmat.NumCols()) {
-        throw std::invalid_argument("==col_degree== Provided vector does not have size = NumCols");
+        throw std::invalid_argument("==column_degree== Provided vector does not have size = NumCols");
     }
 
     // retrieve the shifted degree matrix
@@ -1083,10 +1114,12 @@ void col_degree(std::vector<long> &cdeg, const Mat<zz_pX> &pmat,
 /*------------------------------------------------------------*/
 /* TODO comment                                               */
 /*------------------------------------------------------------*/
-void leading_matrix(Mat<zz_p> &lmat,
+void leading_matrix(
+                    Mat<zz_p> &lmat,
                     const Mat<zz_pX> &pmat,
                     const std::vector<long> & shift,
-                    const bool row_wise)
+                    const bool row_wise
+                   )
 {
     // check if shifted + shift dimension
     bool shifted;
@@ -1102,7 +1135,7 @@ void leading_matrix(Mat<zz_p> &lmat,
     else
     {
         degree.resize(pmat.NumCols());
-        col_degree(degree,pmat,shift);
+        column_degree(degree,pmat,shift);
     }
 
     // initialize space for lmat
@@ -1126,7 +1159,11 @@ void leading_matrix(Mat<zz_p> &lmat,
 /*------------------------------------------------------------*/
 /* TODO comment                                               */
 /*------------------------------------------------------------*/
-bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const bool row_wise)
+bool is_reduced(
+                const Mat<zz_pX> & pmat,
+                const std::vector<long> & shift,
+                const bool row_wise
+               )
 {
     Mat<zz_p> lead_mat;
     leading_matrix(lead_mat,pmat,shift,row_wise);
@@ -1137,12 +1174,13 @@ bool is_reduced (const Mat<zz_pX> & pmat,const std::vector<long> & shift, const 
 /*------------------------------------------------------------*/
 /* TODO comment                                               */
 /*------------------------------------------------------------*/
-void pivot_index (
-    std::vector<long> & pivind,
-    std::vector<long> & pivdeg,
-    const Mat<zz_pX> & pmat,
-    const std::vector<long> & shift,
-    const bool row_wise)
+void pivot_index(
+                 std::vector<long> & pivind,
+                 std::vector<long> & pivdeg,
+                 const Mat<zz_pX> & pmat,
+                 const std::vector<long> & shift,
+                 const bool row_wise
+                )
 {
     // check if shifted + shift dimension
     bool shifted;
@@ -1161,7 +1199,7 @@ void pivot_index (
     else
     {
         degree.resize(pmat.NumCols());
-        col_degree(degree,pmat,shift);
+        column_degree(degree,pmat,shift);
     }
 
     long zero_degree = -1;
@@ -1224,10 +1262,11 @@ void pivot_index (
 /* TODO comment                                               */
 /*------------------------------------------------------------*/
 bool is_weak_popov (
-    const Mat<zz_pX> &pmat,
-    const std::vector<long> &shift,
-    const bool row_wise,
-    const bool ordered)
+                    const Mat<zz_pX> &pmat,
+                    const std::vector<long> &shift,
+                    const bool row_wise,
+                    const bool ordered
+                   )
 {
     //retrieve pivot index
     std::vector<long> pivots;
@@ -1261,10 +1300,13 @@ bool is_monic(const zz_pX &p){
 /*------------------------------------------------------------*/
 /* TODO comment                                               */
 /*------------------------------------------------------------*/
-bool is_popov (const Mat<zz_pX> &pmat,
-               const std::vector<long> &shift,
-               const bool row_wise,
-               const bool up_to_permutation){
+bool is_popov(
+              const Mat<zz_pX> &pmat,
+              const std::vector<long> &shift,
+              const bool row_wise,
+              const bool up_to_permutation
+             )
+{
     if (!is_weak_popov(pmat,shift,row_wise,!up_to_permutation))
         return false;
 
@@ -1299,10 +1341,10 @@ bool is_popov (const Mat<zz_pX> &pmat,
 
 
 PolMatForm get_polmatform(
-    const Mat<zz_pX> &pmat,
-    const std::vector<long> &shift,
-    const bool row_wise
-    )
+                          const Mat<zz_pX> &pmat,
+                          const std::vector<long> &shift,
+                          const bool row_wise
+                         )
 {
     if (is_popov(pmat,shift,row_wise)) {   // TODO waiting for is_popov
         return POPOV;
@@ -1318,11 +1360,11 @@ PolMatForm get_polmatform(
 }
 
 bool is_polmatform(
-    const Mat<zz_pX> &pmat,
-    const PolMatForm form,
-    const std::vector<long> &shift,
-    const bool row_wise
-    )
+                   const Mat<zz_pX> &pmat,
+                   const PolMatForm form,
+                   const std::vector<long> &shift,
+                   const bool row_wise
+                  )
 {
     switch (form)
     {

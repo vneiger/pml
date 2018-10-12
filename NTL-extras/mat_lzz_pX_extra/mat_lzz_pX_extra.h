@@ -814,11 +814,11 @@ void row_degree(
 /*------------------------------------------------------------*/
 /* similar function for column degrees (see row_degree)       */
 /*------------------------------------------------------------*/
-void col_degree(
-                DegVec & cdeg,
-                const Mat<zz_pX> &pmat,
-                const Shift & shift = Shift()
-               ); 
+void column_degree(
+                   DegVec & cdeg,
+                   const Mat<zz_pX> &pmat,
+                   const Shift & shift = Shift()
+                  ); 
 
 /*------------------------------------------------------------*/
 /* similar function with row-wise option and returning degree */
@@ -838,7 +838,7 @@ inline DegVec vector_degree(
     else
     {
         degs.resize(pmat.NumCols());
-        col_degree(degs,pmat,shift);
+        column_degree(degs,pmat,shift);
     }
     return degs;
 }
@@ -1181,6 +1181,7 @@ DegVec popov_mbasis(
 /*   - Jeannerod-Neiger-Villard 2018                          */
 /*          (ensuring s-ordered weak Popov or s-Popov)        */
 /*------------------------------------------------------------*/
+// TODO handle different orders via max(order)-order shifting of pmat
 DegVec pmbasis(
                Mat<zz_pX> & appbas,
                const Mat<zz_pX> & pmat,
@@ -1437,6 +1438,8 @@ DegVec kernel_basis(
 /* Kernel basis: naive via large order approximant basis      */
 /*------------------------------------------------------------*/
 // TODO describe input-output?
+// note this can be faster than ZLS for some cases (e.g. if shifts does not
+// correspond at all to row degrees of pmat, or generally if shifts are "bad")
 DegVec kernel_basis_via_approximation(
                                       Mat<zz_pX> & kerbas,
                                       const Mat<zz_pX> & pmat,

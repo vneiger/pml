@@ -21,13 +21,53 @@ DegVec kernel_basis(
     return kernel_basis_via_approximation(kerbas, pmat, shift);
 }
 
+// TODO structure of output: return pivind+pivdeg?
+// TODO write justification for choice of order..
+// this bound was designed having popov bases in mind; is it really sure the
+// approximant basis cannot have degree more than this (even when strange
+// shifts)?
 DegVec kernel_basis_via_approximation(
                                       Mat<zz_pX> & kerbas,
                                       const Mat<zz_pX> & pmat,
                                       const Shift & shift
                                      )
 {
-    return shift;
+    // parameters
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
+
+    // compute the order for approximation:
+    // order = cdeg(pmat) + sum(cdeg(pmat)) + 1
+    Order order(n);
+    column_degree(order, pmat);
+    long sum_cdeg = std::accumulate(order.begin(), order.end(), (long)0);
+    std::transform(order.begin(), order.end(), order.begin(), [&](long ord){return ord+sum_cdeg+1;});
+
+    // compute approximant basis
+    Mat<zz_pX> appbas;
+    DegVec pivdeg;
+    pivdeg = approximant_basis(appbas, pmat, order, shift);
+    std::cout << degree_matrix(appbas) << std::endl;
+
+    // find rows which belong to the kernel
+    std::vector<long> pivot_index;
+    std::vector<long> pivot_degree;
+    std::cout << "pivots: " << std::endl;
+    for (long i = 0; i < m; ++i)
+        if (pivdeg[i] < sum_cdeg)
+        {
+            pivot_index.push_back(i);
+            std::cout << i << ", " << std::endl;
+            pivot_degree.push_back(pivdeg[i]);
+        }
+    long ker_dim = pivot_index.size();
+
+    // move these rows to output basis
+    kerbas.SetDims(ker_dim, m);
+    for (long i = 0; i < ker_dim; ++i)
+        kerbas[i].swap(appbas[pivot_index[i]]);
+
+    return pivot_degree;
 }
 
 
