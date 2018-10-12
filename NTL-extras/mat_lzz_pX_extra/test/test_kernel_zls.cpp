@@ -27,7 +27,7 @@ void check(long m, long n, long d){
 
     Mat<zz_pX> kerbas;
     t1w = GetWallTime();
-    kernel_basis(kerbas, pmat, s);
+    kernel_basis_zls(kerbas, pmat, s);
     t2w = GetWallTime();
     //cout << "kerbas (appbas): " << endl << degree_matrix(kerbas) << endl;
     cout << "time (appbas): " << t2w-t1w << endl;
@@ -40,7 +40,7 @@ void check(long m, long n, long d){
 
     kerbas = Mat<zz_pX>();
     t1w = GetWallTime();
-    kernel_basis_intbas(kerbas, pmat, s);
+    kernel_basis_zls_intbas(kerbas, pmat, s);
     t2w = GetWallTime();
     
     //cout << "kerbas (intbas): " << endl << degree_matrix(kerbas) << endl;

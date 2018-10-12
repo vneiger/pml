@@ -16,11 +16,11 @@ NTL_CLIENT
 // TODO: issues when m <= n !! go directly to divide and conquer
 // and if we know the first approximant basis will not give any kernel vector, should we also directly divide and conquer?
 // TODO: doc mentioning requirement: entries of shift should bound row degrees of pmat
-DegVec kernel_basis(
-                    Mat<zz_pX> & kerbas,
-                    const Mat<zz_pX> & pmat,
-                    const Shift & shift
-                   )
+DegVec kernel_basis_zls(
+                        Mat<zz_pX> & kerbas,
+                        const Mat<zz_pX> & pmat,
+                        const Shift & shift
+                       )
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
@@ -112,10 +112,10 @@ DegVec kernel_basis(
 
     // recursive calls
     Mat<zz_pX> N1, N2;
-    DegVec u = kernel_basis(N1, G1, rdegP2);
+    DegVec u = kernel_basis_zls(N1, G1, rdegP2);
     
     multiply(G2, N1, G2);
-    DegVec v = kernel_basis(N2, G2, u);
+    DegVec v = kernel_basis_zls(N2, G2, u);
 
     // if G2 is square, then there is nothing to append
     if (N2.NumRows() == 0)
@@ -142,7 +142,7 @@ DegVec kernel_basis(
     return rdegP1;
 }
 
-DegVec kernel_basis_intbas(
+DegVec kernel_basis_zls_intbas(
                            Mat<zz_pX> & kerbas,
                            const Mat<zz_pX> & pmat,
                            const Shift & shift
@@ -281,7 +281,7 @@ DegVec kernel_basis_intbas(
     Mat<zz_pX> N1, N2;
 
     cout << "\n\ncall 1" << endl;
-    DegVec u = kernel_basis_intbas(N1, G1, rdegP2);
+    DegVec u = kernel_basis_zls_intbas(N1, G1, rdegP2);
     cout << "u: ";
     for (auto i : u)
         cout << i << " ";
@@ -290,7 +290,7 @@ DegVec kernel_basis_intbas(
     multiply(G2, N1, G2);
     
     cout << "\n\ncall 2" << endl;
-    DegVec v = kernel_basis_intbas(N2, G2, u);
+    DegVec v = kernel_basis_zls_intbas(N2, G2, u);
     cout << "v: ";
     for (auto i : v)
         cout << i << " ";

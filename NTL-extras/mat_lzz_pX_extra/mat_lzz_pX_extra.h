@@ -1420,21 +1420,38 @@ DegVec popov_pmbasis(
  **********************************************************************/
 
 
-/****************************
- *  Kernel via approximant  *
- ****************************/
+/*------------------------------------------------------------*/
+/* Kernel basis: Zhou-Labahn Storjohann algorithm,            */
+/* original version via approximant bases                     */
+/*------------------------------------------------------------*/
+DegVec kernel_basis_zls(
+                        Mat<zz_pX> & kerbas,
+                        const Mat<zz_pX> & pmat,
+                        const Shift & shift
+                       );
 
-DegVec kernel_basis(
-                    Mat<zz_pX> & kerbas,
-                    const Mat<zz_pX> & pmat,
-                    const Shift & shift
-                   );
-                   
-DegVec kernel_basis_intbas(
-                    Mat<zz_pX> & kerbas,
-                    const Mat<zz_pX> & pmat,
-                    const Shift & shift
-                   );
+/*------------------------------------------------------------*/
+/* Kernel basis: Zhou-Labahn Storjohann algorithm,            */
+/* modified version via interpolation bases                   */
+/*------------------------------------------------------------*/
+DegVec kernel_basis_zls_intbas(
+                               Mat<zz_pX> & kerbas,
+                               const Mat<zz_pX> & pmat,
+                               const Shift & shift
+                              );
+
+// solve aM = b via kernel basis
+// return a and denominator d
+// assumes M is invertible
+// TODO: when code has stabilized, move up in linsolve section, and unify
+// name/signature with other linsolve functions
+void linsolve_via_kernel(
+                         Vec<zz_pX> &a,
+                         zz_pX &d,
+                         Mat<zz_pX> pmat,
+                         const Vec<zz_pX> &b
+                        );
+
 
 // TODO generic case
 

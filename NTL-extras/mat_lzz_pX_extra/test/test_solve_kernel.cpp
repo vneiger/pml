@@ -25,7 +25,7 @@ void check(long m, long n, long d1, long d2)
     
     Vec<zz_pX> a;
     zz_pX denom;
-    solve_kerbas(a,denom,pmat,b);
+    linsolve_via_kernel(a,denom,pmat,b);
     
     Mat<zz_pX> amat;
     amat.SetDims(1,n);

@@ -15,10 +15,12 @@
 // solve aM = b via kernel basis
 // return a and denominator d
 // assumes M is invertible
-void solve_kerbas (Vec<zz_pX> &a,
-                   zz_pX &d,
-                   Mat<zz_pX> pmat,
-                   const Vec<zz_pX> &b)
+void linsolve_via_kernel(
+                         Vec<zz_pX> &a,
+                         zz_pX &d,
+                         Mat<zz_pX> pmat,
+                         const Vec<zz_pX> &b
+                        )
 {
     if (b.length() != pmat.NumRows())
         throw std::logic_error("length of b != pmat.NumRows()");
@@ -27,14 +29,14 @@ void solve_kerbas (Vec<zz_pX> &a,
     long n = pmat.NumCols();
     if (m != n)
         throw std::logic_error("pmat must be square");
-    
+
     long degb = deg(b[0]);
     for (long i = 1; i < n; i++)
         if (degb < deg(b[i])) degb = deg(b[i]);
 
     Shift shift;
     shift.resize(m+1);
-    
+
     DegVec rdeg;
     rdeg.resize(m);
     row_degree(rdeg,pmat);
@@ -48,15 +50,16 @@ void solve_kerbas (Vec<zz_pX> &a,
 
     pmat.SetDims(m+1, n);
     pmat[m] = b;
-    
+
     // compute kernel
     Mat<zz_pX> kerbas;
-    auto deg = kernel_basis_intbas(kerbas, pmat, shift);
-    
+    auto deg = kernel_basis_zls(kerbas, pmat, shift);
+    //auto deg = kernel_basis_zls_intbas(kerbas, pmat, shift);
+
     Mat<zz_pX> res;
     multiply(res,kerbas,pmat);
     cout << "kernel prod: " << degree_matrix(res) << endl;
-    
+
     a.SetLength(n);
     for (long i = 0; i < n; i++)
         a[i] = -kerbas[0][i];
@@ -70,10 +73,3 @@ void solve_kerbas (Vec<zz_pX> &a,
 // c-basic-offset: 4
 // End:
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
-
-
-
-
-
-
-
