@@ -14,11 +14,11 @@
 void check(long m, long n, long d1, long d2)
 {
     Mat<zz_pX> pmat;
-    random_mat_zz_pX(pmat,m,n,d1+1);
+    random(pmat,m,n,d1+1);
     cout << "pmat: " << endl << degree_matrix(pmat) << endl;
     
     Mat<zz_pX> bmat;
-    random_mat_zz_pX(bmat,1,n,d2+1);
+    random(bmat,1,n,d2+1);
     Vec<zz_pX> b = bmat[0];
     
     cout << "b:\n " << degree_matrix(bmat) << endl;

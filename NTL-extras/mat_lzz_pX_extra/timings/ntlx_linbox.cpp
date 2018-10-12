@@ -42,8 +42,8 @@ void one_bench_fft(long sz, long deg)
     Mat<zz_pX> a, b, c1, c2;
     double t;
 
-    random_mat_zz_pX(a, sz, sz, deg);
-    random_mat_zz_pX(b, sz, sz, deg);
+    random(a, sz, sz, deg);
+    random(b, sz, sz, deg);
 
     // naive algorithm, if the size is reasonable
     if (sz<=4)
@@ -75,8 +75,8 @@ void one_bench_3primes(long sz, long deg)
     Mat<zz_pX> a, b, c1, c2;
     double t;
 
-    random_mat_zz_pX(a, sz, sz, deg);
-    random_mat_zz_pX(b, sz, sz, deg);
+    random(a, sz, sz, deg);
+    random(b, sz, sz, deg);
 
     // naive algorithm, if the size is reasonable
     if (sz<=4)
@@ -108,8 +108,8 @@ void one_bench_geometric(long sz, long deg)
     Mat<zz_pX> a, b, c0, c1, c2, c4, c5;
     double t;
 
-    random_mat_zz_pX(a, sz, sz, deg);
-    random_mat_zz_pX(b, sz, sz, deg);
+    random(a, sz, sz, deg);
+    random(b, sz, sz, deg);
 
     // naive algorithm, if the size is reasonable
     if (sz<=4)
@@ -144,8 +144,8 @@ void one_bench_multiply(long sz, long deg, Field field)
     {
         Mat<zz_pX> a, b, c;
 
-        random_mat_zz_pX(a, sz, sz, deg);
-        random_mat_zz_pX(b, sz, sz, deg);
+        random(a, sz, sz, deg);
+        random(b, sz, sz, deg);
 
         t_ntlx = GetWallTime();
         multiply(c, a, b);

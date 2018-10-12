@@ -24,7 +24,7 @@ void check_inverse(long sz, long deg)
 
     do
     {
-        random_mat_zz_pX(a, sz, sz, deg+1);
+        random(a, sz, sz, deg+1);
         GetCoeff(a0, a, 0);
     }
     while (determinant(a0) == 0);
@@ -57,12 +57,12 @@ void check_solution(long sz, long deg)
 
     do
     {
-        random_mat_zz_pX(a, sz, sz, deg+1);
+        random(a, sz, sz, deg+1);
         GetCoeff(a0, a, 0);
     }
     while (determinant(a0) == 0);
 
-    random_mat_zz_pX(b, sz, 1, deg);
+    random(b, sz, 1, deg);
     solve_series_high_order_lifting(sol, a, b, sz*deg);
 
     Mat<zz_pX> check = solve_series_high_precision(a, b, sz*deg);

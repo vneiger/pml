@@ -14,7 +14,7 @@ void check()
 {
     zz_p::init(1125899906842679);
     Mat<zz_pX> a;
-    random_mat_zz_pX(a, 3, 4, 2);
+    random(a, 3, 4, 2);
     cout << a << endl;
 
 }  

@@ -15,7 +15,7 @@ NTL_CLIENT
 void one_check(long sz, long deg)
 {
     Mat<zz_pX> a, b, c1, c2;
-    random_mat_zz_pX(a, sz, sz, deg);
+    random(a, sz, sz, deg);
 
     mat_lzz_pX_lmultiplier_geometric mula;
     mula = mat_lzz_pX_lmultiplier_geometric(a, deg-1);
@@ -25,7 +25,7 @@ void one_check(long sz, long deg)
 
     std::unique_ptr<mat_lzz_pX_lmultiplier> mul = get_lmultiplier(a, deg-1);
     
-    random_mat_zz_pX(b, sz, 1, deg);
+    random(b, sz, 1, deg);
     multiply(c1, a, b);
 
     mula.multiply(c2, b);
@@ -49,7 +49,7 @@ void one_check(long sz, long deg)
             LogicError("Error in FFT lmultiplier");
     }
 
-    random_mat_zz_pX(b, sz, sz, deg);
+    random(b, sz, sz, deg);
     multiply(c1, a, b);
 
     mula.multiply(c2, b);

@@ -56,7 +56,7 @@ void check(long p)
             Mat<zz_p> a0;
             do
             {
-                random_mat_zz_pX(a, sz, sz, deg);
+                random(a, sz, sz, deg);
                 GetCoeff(a0, a, 0);
             }
             while (determinant(a0) == 0);

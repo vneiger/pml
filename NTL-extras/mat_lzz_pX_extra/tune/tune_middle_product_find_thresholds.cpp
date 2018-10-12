@@ -50,8 +50,8 @@ void check(long p)
                 double t_eval, t_3primes;
                 dA = degrees[j];
                 dB = degrees[j];
-                random_mat_zz_pX(a, sz, sz, dA + 1);
-                random_mat_zz_pX(c, sz, sz, dA + dB + 1);
+                random(a, sz, sz, dA + 1);
+                random(c, sz, sz, dA + dB + 1);
 
                 t_eval = get_time();
                 nb = 0;
@@ -123,8 +123,8 @@ void check(long p)
 
             dA = degrees[j];
             dB = degrees[j];
-            random_mat_zz_pX(a, sz, sz, dA + 1);
-            random_mat_zz_pX(c, sz, sz, dA + dB + 1);
+            random(a, sz, sz, dA + 1);
+            random(c, sz, sz, dA + dB + 1);
 
             if (dA <= thresholds[i])
             {

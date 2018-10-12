@@ -16,11 +16,11 @@ void one_check(long sz, long deg)
 {
     Mat<zz_pX> A, b, u, res;
 
-    random_mat_zz_pX(A, sz, sz, deg);
+    random(A, sz, sz, deg);
     long hdeg = 5*deg;
 
 
-    random_mat_zz_pX(b, sz, 1, deg);
+    random(b, sz, 1, deg);
 
     solve_series_low_precision(u, A, b, deg);
     multiply(res, A, u);
@@ -35,7 +35,7 @@ void one_check(long sz, long deg)
         LogicError("Bad output for low precision series solve");
 
 
-    random_mat_zz_pX(b, sz, 1, hdeg);
+    random(b, sz, 1, hdeg);
 
     solve_series_low_precision(u, A, b, hdeg);
     multiply(res, A, u);

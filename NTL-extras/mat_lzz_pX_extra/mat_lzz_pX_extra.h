@@ -265,7 +265,13 @@ static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of degree < d                         */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX(Mat<zz_pX> & pmat, long m, long n, long d);
+void random(Mat<zz_pX> & pmat, long m, long n, long d);
+inline Mat<zz_pX> random_mat_zz_pX(long n, long m, long d)
+{
+    Mat<zz_pX> pmat;
+    random(pmat, n, m, d);
+    return pmat;
+}
 
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of row degree < rdeg                  */

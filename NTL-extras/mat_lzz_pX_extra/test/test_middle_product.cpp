@@ -18,8 +18,8 @@ void one_check(long sz, long dg)
     for (long dA = dg - 1; dA < dg + 2; dA++)
         for (long dB = dg - 1; dB < dg + 2; dB++)
         {
-            random_mat_zz_pX(a, sz, sz+1, dA + 1);
-            random_mat_zz_pX(c, sz+1, sz+2, dA + dB + 1);
+            random(a, sz, sz+1, dA + 1);
+            random(c, sz+1, sz+2, dA + dB + 1);
 
             // testing all possible call sequences            
             middle_product(b1, a, c, dA, dB);

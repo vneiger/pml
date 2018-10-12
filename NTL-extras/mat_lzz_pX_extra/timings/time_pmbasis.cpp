@@ -40,7 +40,7 @@ void one_bench_pmbasis(long sz, long deg, long nbits)
     // build random matrix
     Mat<zz_pX> pmat;
     t1w = GetWallTime();
-    random_mat_zz_pX(pmat, rdim, cdim, order);
+    random(pmat, rdim, cdim, order);
     t2w = GetWallTime();
 
     std::vector<long> pivdeg;

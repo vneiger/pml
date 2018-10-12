@@ -16,8 +16,8 @@ void one_check(long sz, long deg)
 {
     Mat<zz_pX> a, b, c1, c2;
 
-    random_mat_zz_pX(a, sz, sz+1, deg);
-    random_mat_zz_pX(b, sz+1, sz+2, deg);
+    random(a, sz, sz+1, deg);
+    random(b, sz+1, sz+2, deg);
 
     // trying all possible call sequences
     // c1 = reference

@@ -21,7 +21,7 @@ void intbas_test(const long rdim, const long cdim, const long deg,
     Mat<zz_pX> pmat;
     bool verify = true;
     auto npoints = order;
-    random_mat_zz_pX(pmat, rdim, cdim, deg+1);
+    random(pmat, rdim, cdim, deg+1);
     zz_p r;
     random(r);
     zz_pX_Multipoint_Geometric eval(r,zz_p(1),npoints);

@@ -34,7 +34,7 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     while (t_mbasis_rescomp<0.1)
     {
         Mat<zz_pX> pmat;
-        random_mat_zz_pX(pmat, rdim, cdim, order);
+        random(pmat, rdim, cdim, order);
         std::vector<long> pivdeg;
 
         t1 = GetWallTime();
@@ -53,7 +53,7 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     while (t_mbasis_rescomp_v2<0.1)
     {
         Mat<zz_pX> pmat;
-        random_mat_zz_pX(pmat, rdim, cdim, order);
+        random(pmat, rdim, cdim, order);
         std::vector<long> pivdeg;
 
         t1 = GetWallTime();
@@ -73,7 +73,7 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     while (t_mbasis_resupdate<0.1)
     {
         Mat<zz_pX> pmat;
-        random_mat_zz_pX(pmat, rdim, cdim, order);
+        random(pmat, rdim, cdim, order);
         std::vector<long> pivdeg;
 
         t1 = GetWallTime();
@@ -191,6 +191,8 @@ int main(int argc, char ** argv)
         fftprime = {(atoi(argv[3])==1) ? true : false};
     if (argc>4)
         throw std::invalid_argument("Usage: ./time_mbasis OR ./time_mbasis nthreads OR ./time_mbasis nthreads nbits fftprime");
+
+    warmup();
 
     for (size_t i = 0; i < nthreads.size(); ++i)
         for (size_t j = 0; j < nbits.size(); ++j)

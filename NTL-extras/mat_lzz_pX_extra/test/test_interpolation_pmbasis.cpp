@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
     // generic uniform shift pmbasis for interpolants
     {
         Mat<zz_pX> pmat;
-        random_mat_zz_pX(pmat, rdim, cdim, npoints);
+        random(pmat, rdim, cdim, npoints);
         zz_p r;
         random(r);
         zz_pX_Multipoint_Geometric eval(r,zz_p(1),npoints);

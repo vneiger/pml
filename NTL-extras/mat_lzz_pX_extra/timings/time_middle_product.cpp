@@ -23,8 +23,8 @@ void one_check(long sz, long deg)
             double t_mid, t_direct, t_naive;
             long nb;
 
-            random_mat_zz_pX(a, sz, sz, dA + 1);
-            random_mat_zz_pX(c, sz, sz, dA + dB + 1);
+            random(a, sz, sz, dA + 1);
+            random(c, sz, sz, dA + dB + 1);
             
             cout << sz << " " << dA << " " << dB << " ";
 
@@ -49,7 +49,7 @@ void one_check(long sz, long deg)
             t_naive = (get_time()-t_naive) / nb;
             cout << (t_mid / t_naive) << " ";
 
-            random_mat_zz_pX(b, sz, sz, dB + 1);
+            random(b, sz, sz, dB + 1);
             t_direct = get_time();
             nb = 0;
             do

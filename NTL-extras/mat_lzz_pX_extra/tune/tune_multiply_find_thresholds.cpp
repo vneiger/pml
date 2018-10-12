@@ -49,8 +49,8 @@ void check(long p)
                 Mat<zz_pX> a, b, c;
                 double t_eval, t_3primes;
                 deg = degrees[j];
-                random_mat_zz_pX(a, sz, sz, deg);
-                random_mat_zz_pX(b, sz, sz, deg);
+                random(a, sz, sz, deg);
+                random(b, sz, sz, deg);
              
                 t_eval = get_time();
                 nb = 0;
@@ -121,8 +121,8 @@ void check(long p)
             long deg, nb;
             
             deg = degrees[j];
-            random_mat_zz_pX(a, sz, sz, deg);
-            random_mat_zz_pX(b, sz, sz, deg);
+            random(a, sz, sz, deg);
+            random(b, sz, sz, deg);
 
             if (deg <= thresholds[i])
             {

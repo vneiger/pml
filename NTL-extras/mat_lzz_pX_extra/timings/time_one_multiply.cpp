@@ -28,8 +28,8 @@ void check(long p, long sz, long deg)
     Mat<zz_pX> a, b, c;
     double t_eval, t_3primes, t_waksman, t_check;
 
-    random_mat_zz_pX(a, sz, sz, deg);
-    random_mat_zz_pX(b, sz, sz, deg);
+    random(a, sz, sz, deg);
+    random(b, sz, sz, deg);
     
     t_eval = get_time();
     nb = 0;

@@ -55,8 +55,8 @@ void check(long p)
             long deg = degs[di];
             Mat<zz_pX> A, b, u, res;
             const double thresh = 0.01;
-            random_mat_zz_pX(A, sz, sz, deg);
-            random_mat_zz_pX(b, sz, 1, deg);
+            random(A, sz, sz, deg);
+            random(b, sz, 1, deg);
 	    
             vector<double> vec;
             for (long i = (1L << start); i <= 64; i = 2*i)

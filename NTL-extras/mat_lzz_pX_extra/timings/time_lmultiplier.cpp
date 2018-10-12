@@ -20,7 +20,7 @@ void one_check(long sz, long deg)
 
     cout << sz << " " << deg << " ";
 
-    random_mat_zz_pX(a, sz, sz, deg);
+    random(a, sz, sz, deg);
     
     mat_lzz_pX_lmultiplier_geometric mulg;
     mulg = mat_lzz_pX_lmultiplier_geometric(a, deg-1);
@@ -28,7 +28,7 @@ void one_check(long sz, long deg)
     mat_lzz_pX_lmultiplier_3_primes mul3;
     mul3 = mat_lzz_pX_lmultiplier_3_primes(a, deg-1);
 
-    random_mat_zz_pX(b, sz, 1, deg);
+    random(b, sz, 1, deg);
     t_plain = get_time();
     nb = 0;
     do

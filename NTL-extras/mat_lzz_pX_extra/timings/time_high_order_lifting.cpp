@@ -20,14 +20,14 @@ void check_solution(long sz, long deg)
 
     do
     {
-        random_mat_zz_pX(a, sz, sz, deg+1);
+        random(a, sz, sz, deg+1);
         GetCoeff(a0, a, 0);
     }
     while (determinant(a0) == 0);
 
     cout << sz << " " << deg << " ";
 
-    random_mat_zz_pX(b, sz, 1, deg);
+    random(b, sz, 1, deg);
 
     t = get_time();
     nb = 0;

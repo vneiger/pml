@@ -18,7 +18,7 @@ void one_check(long sz, long deg)
 
     do
     {
-        random_mat_zz_pX(a, sz, sz, deg);
+        random(a, sz, sz, deg);
         GetCoeff(a0, a, 0);
     }
     while (determinant(a0) == 0);

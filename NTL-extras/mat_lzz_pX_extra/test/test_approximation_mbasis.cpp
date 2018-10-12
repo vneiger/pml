@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
         {
             // build random matrix
             Mat<zz_pX> pmat;
-            random_mat_zz_pX(pmat, rdim, cdim, 1);
+            random(pmat, rdim, cdim, 1);
             t1w = GetWallTime(); t1 = GetTime();
             Mat<zz_p> kerbas;
             pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
             while (t_mbasisw<0.1)
             {
                 Mat<zz_pX> pmat;
-                random_mat_zz_pX(pmat, rdim, cdim, order);
+                random(pmat, rdim, cdim, order);
                 t1w = GetWallTime(); t1 = GetTime();
                 Mat<zz_pX> appbas;
                 pivdeg = mbasis_plain(appbas,pmat,order,shift);
@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
             while (t_mbasisw<0.1)
             {
                 Mat<zz_pX> pmat;
-                random_mat_zz_pX(pmat, rdim, cdim, order);
+                random(pmat, rdim, cdim, order);
                 t1w = GetWallTime(); t1 = GetTime();
                 Mat<zz_pX> appbas;
                 pivdeg = mbasis_rescomp(appbas,pmat,order,shift);
@@ -259,7 +259,7 @@ int main(int argc, char *argv[])
             while (t_mbasisw<0.1)
             {
                 Mat<zz_pX> pmat;
-                random_mat_zz_pX(pmat, rdim, cdim, order);
+                random(pmat, rdim, cdim, order);
                 t1w = GetWallTime(); t1 = GetTime();
                 Mat<zz_pX> appbas;
                 pivdeg = mbasis_rescomp_v2(appbas,pmat,order,shift);
@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
             while (t_mbasisw<0.1)
             {
                 Mat<zz_pX> pmat;
-                random_mat_zz_pX(pmat, rdim, cdim, order);
+                random(pmat, rdim, cdim, order);
                 t1w = GetWallTime(); t1 = GetTime();
                 Mat<zz_pX> appbas;
                 pivdeg = mbasis_resupdate(appbas,pmat,order,shift);
@@ -347,7 +347,7 @@ int main(int argc, char *argv[])
             while (t_mbasisw<0.1)
             {
                 Mat<zz_pX> pmat;
-                random_mat_zz_pX(pmat, rdim, cdim, order);
+                random(pmat, rdim, cdim, order);
                 t1w = GetWallTime(); t1 = GetTime();
                 Mat<zz_pX> appbas;
                 pivdeg = mbasis(appbas,pmat,order,shift);
@@ -420,7 +420,7 @@ int main(int argc, char *argv[])
             while (t_mbasisw<0.1)
             {
                 Mat<zz_pX> pmat;
-                random_mat_zz_pX(pmat, rdim, cdim, order);
+                random(pmat, rdim, cdim, order);
                 t1w = GetWallTime(); t1 = GetTime();
                 Mat<zz_pX> appbas;
                 pivdeg = popov_mbasis(appbas,pmat,order,shift);

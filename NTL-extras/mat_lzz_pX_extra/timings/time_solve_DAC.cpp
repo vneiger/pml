@@ -44,8 +44,8 @@ void check(long p)
 
             deg = degs[di];
             prec = 4 * deg;
-            random_mat_zz_pX(A, sz, sz, deg);
-            random_mat_zz_pX(b, sz, 1, deg);
+            random(A, sz, sz, deg);
+            random(b, sz, 1, deg);
 
             cout << sz << " " << deg << " ";
 

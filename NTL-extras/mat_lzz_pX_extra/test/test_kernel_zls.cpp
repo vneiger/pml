@@ -11,7 +11,7 @@ NTL_CLIENT
 
 void check(long m, long n, long d){
     Mat<zz_pX> pmat;
-    random_mat_zz_pX(pmat, m, n, d+1);
+    random(pmat, m, n, d+1);
 
     //cout << "pmat: " << endl << degree_matrix(pmat) << endl;
 
