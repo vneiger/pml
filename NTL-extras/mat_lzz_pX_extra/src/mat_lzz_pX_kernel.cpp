@@ -12,6 +12,52 @@
 
 NTL_CLIENT
 
+// TODO highly incomplete
+bool is_kernel_basis(
+                     Mat<zz_pX> & kerbas,
+                     const Mat<zz_pX> & pmat,
+                     const Shift & shift,
+                     const PolMatForm & form,
+                     const bool row_wise,
+                     const bool randomized
+                    )
+{
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
+
+    if (not randomized)
+        throw std::invalid_argument("~~is_kernel_basis~~ deterministic not implemented yet");
+    if (not row_wise)
+        throw std::invalid_argument("~~is_kernel_basis~~ column-wise not implemented yet");
+
+    std::cout << "~~is_kernel_basis~~ Warning: randomized verification" << std::endl;
+    std::cout << "~~is_kernel_basis~~ Warning: not checking generation (not implemented yet)" << std::endl;
+
+    // test whether kerbas has the right dimensions
+    if ( (row_wise && kerbas.NumCols() != m)
+        || ((not row_wise) && kerbas.NumRows() != n))
+        return false;
+
+    // test whether appbas is shift-reduced with form at least 'form'
+    if (not is_polmatform(kerbas,form,shift,row_wise))
+        return false;
+
+    // verify that the product is zero
+    // use left and right projections to speed up computations (randomized)
+    Mat<zz_p> left_project, right_project;
+    random(left_project, 1, kerbas.NumRows());
+    random(right_project, pmat.NumCols(), 1);
+    Mat<zz_pX> p_kerbas, p_pmat, product;
+    mul(p_kerbas, left_project, kerbas);
+    mul(p_pmat, pmat, right_project);
+    multiply(product, p_kerbas, p_pmat);
+    if (not IsZero(product))
+        return false;
+
+    return true;
+}
+
+
 DegVec kernel_basis(
                     Mat<zz_pX> & kerbas,
                     const Mat<zz_pX> & pmat,

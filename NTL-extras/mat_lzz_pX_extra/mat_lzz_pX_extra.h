@@ -378,6 +378,7 @@ inline Mat<zz_pX> & operator-=(Mat<zz_pX> & x, const Mat<zz_p>& b)
 /*------------------------------------------------------------*/
 /* constant matrix multiplication                             */
 /*------------------------------------------------------------*/
+// TODO mul/multiply? unify names
 void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b);
 void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b);
 
@@ -1433,6 +1434,19 @@ DegVec kernel_basis(
                     const Mat<zz_pX> & pmat,
                     const Shift & shift
                    );
+
+/*------------------------------------------------------------*/
+/* Verification that a matrix is a shifted-minimal kernel     */
+/* basis                                                      */
+/*------------------------------------------------------------*/
+bool is_kernel_basis(
+                     Mat<zz_pX> & kerbas,
+                     const Mat<zz_pX> & pmat,
+                     const Shift & shift = Shift(),
+                     const PolMatForm & form = ORD_WEAK_POPOV,
+                     const bool row_wise = true,
+                     const bool randomized = false
+                    );
 
 /*------------------------------------------------------------*/
 /* Kernel basis: naive via large order approximant basis      */
