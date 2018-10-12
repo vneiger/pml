@@ -3,7 +3,7 @@
 
 #include "lzz_p_extra.h"
 #include "lzz_pX_middle_product.h"
-#include "mosaic_hankel_lzz_p.h"
+#include "hankel_toeplitz_lzz_p.h"
 
 NTL_CLIENT
 

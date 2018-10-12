@@ -2,13 +2,12 @@
 #include <assert.h>
 
 #include "vec_lzz_p_extra.h"
-#include "mosaic_hankel_lzz_p.h"
+#include "hankel_toeplitz_lzz_p.h"
 
 NTL_CLIENT
 
-
 /*------------------------------------------------------------*/
-/* creates hankel matrices                                    */
+/* creates toeplitz matrices                                  */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -19,11 +18,11 @@ void check(long p)
 
     for (long i = 2; i < 1000; i += 1)
     {
-        hankel_lzz_p h;
+        toeplitz_lzz_p h;
         Vec<zz_p> dat;
         
         dat = random_vec_zz_p(2*i+1);
-        h = hankel_lzz_p(dat, i, i+2);
+        h = toeplitz_lzz_p(dat, i, i+2);
     }
 }
 

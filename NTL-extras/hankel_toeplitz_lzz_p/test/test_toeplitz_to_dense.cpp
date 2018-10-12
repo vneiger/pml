@@ -2,12 +2,12 @@
 #include <assert.h>
 
 #include "vec_lzz_p_extra.h"
-#include "mosaic_hankel_lzz_p.h"
+#include "hankel_toeplitz_lzz_p.h"
 
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* creates hankel matrices and turns them to dense matrices   */
+/* creates toeplitz matrices and turns them to dense matrices */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -18,12 +18,12 @@ void check(long p)
 
     for (long i = 2; i < 20; i += 1)
     {
-        hankel_lzz_p h;
+        toeplitz_lzz_p h;
         Mat<zz_p> H;
         Vec<zz_p> dat;
         
         dat = random_vec_zz_p(2*i+1);
-        h = hankel_lzz_p(dat, i, i+2);
+        h = toeplitz_lzz_p(dat, i, i+2);
         H = h.to_dense();
         cout << H << endl;
     }

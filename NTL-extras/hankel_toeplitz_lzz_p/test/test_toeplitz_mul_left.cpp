@@ -2,7 +2,7 @@
 #include <assert.h>
 
 #include "vec_lzz_p_extra.h"
-#include "mosaic_hankel_lzz_p.h"
+#include "hankel_toeplitz_lzz_p.h"
 
 NTL_CLIENT
 
