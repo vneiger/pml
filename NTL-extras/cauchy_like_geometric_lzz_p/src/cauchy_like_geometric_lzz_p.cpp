@@ -89,6 +89,12 @@ long cauchy_like_geometric_lzz_p::NumGens() const
 /*------------------------------------------------------------*/
 void cauchy_like_geometric_lzz_p::mul_right(Vec<zz_p>& output, const Vec<zz_p>& input) const 
 {
+    if (&output == &input)
+    {
+        output = mul_right(input);
+        return;
+    }
+
     long alpha = NumGens();
 
     Vec<zz_p> new_in, new_out;
@@ -114,6 +120,12 @@ void cauchy_like_geometric_lzz_p::mul_right(Vec<zz_p>& output, const Vec<zz_p>& 
 /*------------------------------------------------------------*/
 void cauchy_like_geometric_lzz_p::mul_right_direct(Mat<zz_p>& output, const Mat<zz_p>& input) const 
 {
+    if (&output == &input)
+    {
+        output = mul_right_direct(input);
+        return;
+    }
+
     long alpha = NumGens();
     long beta = input.NumCols();
     output.SetDims(m, beta);
@@ -287,6 +299,12 @@ void cauchy_like_geometric_lzz_p::mul_right(Mat<zz_p> & output, const Mat<zz_p> 
 /*------------------------------------------------------------*/
 void cauchy_like_geometric_lzz_p::mul_left(Vec<zz_p>& output, const Vec<zz_p>& input) const 
 {
+    if (&output == &input)
+    {
+        output = mul_left(input);
+        return;
+    }
+
     long alpha = NumGens();
 
     Vec<zz_p> new_in, new_out;
@@ -312,6 +330,12 @@ void cauchy_like_geometric_lzz_p::mul_left(Vec<zz_p>& output, const Vec<zz_p>& i
 /*------------------------------------------------------------*/
 void cauchy_like_geometric_lzz_p::mul_left(Mat<zz_p>& output, const Mat<zz_p>& input) const 
 {
+    if (&output == &input)
+    {
+        output = mul_left(input);
+        return;
+    }
+
     long alpha = NumGens();
     long beta = input.NumRows();
     output.SetDims(beta, n);
@@ -929,6 +953,14 @@ static long invert_rec(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out,
 long invert_leading_principal_minor(cauchy_like_geometric_lzz_p& Cinv,
                                     const cauchy_like_geometric_lzz_p& CL, long thresh, long thresh_alpha)
 {
+    if (&Cinv == &CL)
+    {
+        cauchy_like_geometric_lzz_p CCinv;
+        long r = invert_leading_principal_minor(CCinv, CL, thresh, thresh_alpha);
+        Cinv = CCinv;
+        return r;
+    }
+
     if (thresh == -1)
         thresh = threshold(CL.NumGens());
 
@@ -949,6 +981,52 @@ long invert_leading_principal_minor(cauchy_like_geometric_lzz_p& Cinv,
 
     Cinv = cauchy_like_geometric_lzz_p(Yp_out, Zp_out, CL.C.v1, CL.C.u1, CL.C.rho);
     return r;
+}
+
+
+/*------------------------------------------------------------*/
+/* returns a random solution to CL.x = b                      */
+/* assumes generic rank profile, returns 1 if so, -1 if not   */
+/* if generic rank profile, x is empty if no solution found   */
+/* thresh is threshold for divide-and-conquer                 */
+/* thresh_alpha switches between block and plain quadratic    */
+/*------------------------------------------------------------*/
+long solve(Vec<zz_p>& x, const cauchy_like_geometric_lzz_p& CL, const Vec<zz_p> b, long thresh, long thresh_alpha)
+{
+    if (&x == &b)
+    {
+        Vec<zz_p> xx;
+        long r = solve(xx, CL, b, thresh, thresh_alpha);
+        x = xx;
+        return r;
+    }
+
+    cauchy_like_geometric_lzz_p iCL;
+    long r = invert_leading_principal_minor(iCL, CL, thresh, thresh_alpha);
+    if (r == -1)
+        return -1;
+
+    long m = CL.NumCols();
+    Vec<zz_p> tmp_out, top;
+    x.SetLength(m);
+    for (long i = 0; i < r; i++)
+        x[i] = 0;
+    for (long i = r; i < m; i++)
+        x[i] = random_zz_p();
+    
+    CL.mul_right(tmp_out, x);
+    for (long i = 0; i < r; i++)
+        tmp_out[i] = b[i] - tmp_out[i];
+    tmp_out.SetLength(r);
+    
+    iCL.mul_right(top, tmp_out);
+    for (long i = 0; i < r; i++)
+        x[i] = top[i];
+
+    if (CL.mul_right(x) != b)
+        x.SetLength(0);
+
+    return 1;
 }
 
 

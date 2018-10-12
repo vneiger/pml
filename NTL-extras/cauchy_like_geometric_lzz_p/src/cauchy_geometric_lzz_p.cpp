@@ -68,6 +68,7 @@ cauchy_geometric_lzz_p::cauchy_geometric_lzz_p(const zz_p& a1, const zz_p& b1, c
     }
     else
     {
+        Vec<zz_p> vec_toeplitz;
         prepare_inverses_cauchy_reverse(vec_toeplitz, u1, v1, rho, m, n); 
 
         powers_irho.SetLength(m);
@@ -99,6 +100,12 @@ long cauchy_geometric_lzz_p::NumCols() const
 /*------------------------------------------------------------*/
 void cauchy_geometric_lzz_p::mul_right(Vec<zz_p>& output, const Vec<zz_p>& input) const 
 {
+    if (&output == &input)
+    {
+        output = mul_right(input);
+        return;
+    }
+
     t.mul_right(output, input);
     for (long i = 0; i < m; i++)
         output[i] *= powers_irho[i];
@@ -109,6 +116,12 @@ void cauchy_geometric_lzz_p::mul_right(Vec<zz_p>& output, const Vec<zz_p>& input
 /*------------------------------------------------------------*/
 void cauchy_geometric_lzz_p::mul_right(Mat<zz_p>& output, const Mat<zz_p>& input) const 
 {
+    if (&output == &input)
+    {
+        output = mul_right(input);
+        return;
+    }
+
     t.mul_right(output, input);
     long a = input.NumCols();
     for (long i = 0; i < m; i++)
@@ -121,6 +134,12 @@ void cauchy_geometric_lzz_p::mul_right(Mat<zz_p>& output, const Mat<zz_p>& input
 /*------------------------------------------------------------*/
 void cauchy_geometric_lzz_p::mul_right_simple(Vec<zz_p>& output, const Vec<zz_p>& input) const 
 {
+    if (&output == &input)
+    {
+        output = mul_right_simple(input);
+        return;
+    }
+
     t.mul_right(output, input);
 }
 
@@ -129,6 +148,12 @@ void cauchy_geometric_lzz_p::mul_right_simple(Vec<zz_p>& output, const Vec<zz_p>
 /*------------------------------------------------------------*/
 void cauchy_geometric_lzz_p::mul_right_simple(Mat<zz_p>& output, const Mat<zz_p>& input) const 
 {
+    if (&output == &input)
+    {
+        output = mul_right_simple(input);
+        return;
+    }
+
     t.mul_right(output, input);
 }
 
@@ -168,6 +193,12 @@ void cauchy_geometric_lzz_p::mul_left(Mat<zz_p>& output, const Mat<zz_p>& input)
 /*------------------------------------------------------------*/
 void cauchy_geometric_lzz_p::mul_left_simple(Vec<zz_p>& output, const Vec<zz_p>& input) const 
 {
+    if (&output == &input)
+    {
+        output = mul_left_simple(input);
+        return;
+    }
+
     t.mul_left(output, input);
 }
 
@@ -176,6 +207,12 @@ void cauchy_geometric_lzz_p::mul_left_simple(Vec<zz_p>& output, const Vec<zz_p>&
 /*------------------------------------------------------------*/
 void cauchy_geometric_lzz_p::mul_left_simple(Mat<zz_p>& output, const Mat<zz_p>& input) const 
 {
+    if (&output == &input)
+    {
+        output = mul_left_simple(input);
+        return;
+    }
+
     t.mul_left(output, input);
 }
 

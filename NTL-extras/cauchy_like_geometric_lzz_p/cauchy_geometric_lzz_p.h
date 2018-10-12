@@ -7,8 +7,6 @@
 #include "lzz_pX_CRT.h"
 #include "hankel_toeplitz_lzz_p.h"
 
-#define THRESHOLD 100
-
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
@@ -23,7 +21,6 @@ private:
  
 public:
     zz_p u1, v1, rho, sqrt_rho; // see constructor for explanations
-    Vec<zz_p> vec_toeplitz;
     toeplitz_lzz_p t;
     zz_pX_Multipoint_Geometric X, Y; // VdM matrices on u1*rho^i, v1*rho^j
     Vec<zz_p> powers_irho;
@@ -253,6 +250,14 @@ public:
 long invert_leading_principal_minor(cauchy_like_geometric_lzz_p& Cinv,
                                     const cauchy_like_geometric_lzz_p& CL, long thresh = -1, long thresh_alpha = -1);
 
+/*------------------------------------------------------------*/
+/* returns a random solution to CL.x = b                      */
+/* assumes generic rank profile, returns 1 if so, -1 if not   */
+/* if generic rank profile, x is empty if no solution exists  */
+/* thresh is threshold for divide-and-conquer                 */
+/* thresh_alpha switches between block and plain quadratic    */
+/*------------------------------------------------------------*/
+long solve(Vec<zz_p>& x, const cauchy_like_geometric_lzz_p& CL, const Vec<zz_p> b, long thresh = -1, long thresh_alpha = -1);
 
 #endif
 
