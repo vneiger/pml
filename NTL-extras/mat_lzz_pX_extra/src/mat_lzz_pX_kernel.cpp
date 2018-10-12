@@ -12,15 +12,34 @@
 
 NTL_CLIENT
 
+DegVec kernel_basis(
+                    Mat<zz_pX> & kerbas,
+                    const Mat<zz_pX> & pmat,
+                    const Shift & shift
+                   )
+{
+    return kernel_basis_via_approximation(kerbas, pmat, shift);
+}
+
+DegVec kernel_basis_via_approximation(
+                                      Mat<zz_pX> & kerbas,
+                                      const Mat<zz_pX> & pmat,
+                                      const Shift & shift
+                                     )
+{
+    return shift;
+}
+
+
 // TODO: use pivdeg/pivind instead of rdeg?
 // TODO: issues when m <= n !! go directly to divide and conquer
 // and if we know the first approximant basis will not give any kernel vector, should we also directly divide and conquer?
 // TODO: doc mentioning requirement: entries of shift should bound row degrees of pmat
-DegVec kernel_basis_zls(
-                        Mat<zz_pX> & kerbas,
-                        const Mat<zz_pX> & pmat,
-                        const Shift & shift
-                       )
+DegVec kernel_basis_zls_via_approximation(
+                                          Mat<zz_pX> & kerbas,
+                                          const Mat<zz_pX> & pmat,
+                                          const Shift & shift
+                                         )
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
@@ -32,7 +51,7 @@ DegVec kernel_basis_zls(
         auto res = DegVec();
         return res;
     }
-    
+
     // find parameter: sum of the m-n largest entries of shift
     // TODO assumes m<n ?
     // all below assumes pmat nonzero?
@@ -112,10 +131,10 @@ DegVec kernel_basis_zls(
 
     // recursive calls
     Mat<zz_pX> N1, N2;
-    DegVec u = kernel_basis_zls(N1, G1, rdegP2);
-    
+    DegVec u = kernel_basis_zls_via_approximation(N1, G1, rdegP2);
+
     multiply(G2, N1, G2);
-    DegVec v = kernel_basis_zls(N2, G2, u);
+    DegVec v = kernel_basis_zls_via_approximation(N2, G2, u);
 
     // if G2 is square, then there is nothing to append
     if (N2.NumRows() == 0)
@@ -133,7 +152,7 @@ DegVec kernel_basis_zls(
     // collect output
     multiply(G1,N2,N1);
     multiply(G1,G1,P2);
-    
+
     kerbas.SetDims(m1+G1.NumRows(), m);
     for (long i = 0; i < m1; ++i)
         kerbas[i] = appbas[ker_rows[i]];  // (FIXME cf above could use swap?)
@@ -142,11 +161,11 @@ DegVec kernel_basis_zls(
     return rdegP1;
 }
 
-DegVec kernel_basis_zls_intbas(
-                           Mat<zz_pX> & kerbas,
-                           const Mat<zz_pX> & pmat,
-                           const Shift & shift
-                          )
+DegVec kernel_basis_zls_via_interpolation(
+                                          Mat<zz_pX> & kerbas,
+                                          const Mat<zz_pX> & pmat,
+                                          const Shift & shift
+                                         )
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
@@ -169,7 +188,7 @@ DegVec kernel_basis_zls_intbas(
     // order for call to approximation
     // TODO threshold ( 3* ?) to determine
     long order = 3 * ceil( (double)rho / n);
-    
+
     cout << "order: " << order << endl;
     cout << "shift: ";
     for (auto i : shift)
@@ -225,7 +244,7 @@ DegVec kernel_basis_zls_intbas(
             r2++;
         }
     }
-    
+
     cout << "pmat: " << degree_matrix(pmat) << endl;
     cout << "P1: " << degree_matrix(P1) << endl;
     cout << "P2: " << degree_matrix(P2) << endl;
@@ -281,21 +300,21 @@ DegVec kernel_basis_zls_intbas(
     Mat<zz_pX> N1, N2;
 
     cout << "\n\ncall 1" << endl;
-    DegVec u = kernel_basis_zls_intbas(N1, G1, rdegP2);
+    DegVec u = kernel_basis_zls_via_interpolation(N1, G1, rdegP2);
     cout << "u: ";
     for (auto i : u)
         cout << i << " ";
     cout << endl;
-        
+
     multiply(G2, N1, G2);
-    
+
     cout << "\n\ncall 2" << endl;
-    DegVec v = kernel_basis_zls_intbas(N2, G2, u);
+    DegVec v = kernel_basis_zls_via_interpolation(N2, G2, u);
     cout << "v: ";
     for (auto i : v)
         cout << i << " ";
     cout << endl;
-    
+
     if (N2.NumRows() == 0)
     {
         return rdegP1;

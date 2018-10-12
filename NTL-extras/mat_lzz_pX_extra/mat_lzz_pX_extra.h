@@ -963,6 +963,9 @@ typedef std::vector<long> Order;
 // Guarantee: output is at least ordered weak Popov
 // return value is pivot degree
 
+// TODO Names? kernel / approximant ? kernel basis / approximant basis ?
+// keep interpolation or choose better name?
+
 /*------------------------------------------------------------*/
 /* general user-friendly interface                            */
 /*------------------------------------------------------------*/
@@ -1419,26 +1422,49 @@ DegVec popov_pmbasis(
  *                            KERNEL BASIS                            *
  **********************************************************************/
 
+/*------------------------------------------------------------*/
+/* general user-friendly interface                            */
+/*------------------------------------------------------------*/
+// TODO options for row-wise, normal form, etc
+// TODO thresholds, ..
+DegVec kernel_basis(
+                    Mat<zz_pX> & kerbas,
+                    const Mat<zz_pX> & pmat,
+                    const Shift & shift
+                   );
+
+/*------------------------------------------------------------*/
+/* Kernel basis: naive via large order approximant basis      */
+/*------------------------------------------------------------*/
+// TODO describe input-output?
+DegVec kernel_basis_via_approximation(
+                                      Mat<zz_pX> & kerbas,
+                                      const Mat<zz_pX> & pmat,
+                                      const Shift & shift
+                                     );
+// TODO same via interpolant?
 
 /*------------------------------------------------------------*/
 /* Kernel basis: Zhou-Labahn Storjohann algorithm,            */
 /* original version via approximant bases                     */
 /*------------------------------------------------------------*/
-DegVec kernel_basis_zls(
-                        Mat<zz_pX> & kerbas,
-                        const Mat<zz_pX> & pmat,
-                        const Shift & shift
-                       );
+// TODO describe input-output?
+DegVec kernel_basis_zls_via_approximation(
+                                          Mat<zz_pX> & kerbas,
+                                          const Mat<zz_pX> & pmat,
+                                          const Shift & shift
+                                         );
 
 /*------------------------------------------------------------*/
 /* Kernel basis: Zhou-Labahn Storjohann algorithm,            */
 /* modified version via interpolation bases                   */
 /*------------------------------------------------------------*/
-DegVec kernel_basis_zls_intbas(
-                               Mat<zz_pX> & kerbas,
-                               const Mat<zz_pX> & pmat,
-                               const Shift & shift
-                              );
+// TODO describe input-output?
+DegVec kernel_basis_zls_via_interpolation(
+                                          Mat<zz_pX> & kerbas,
+                                          const Mat<zz_pX> & pmat,
+                                          const Shift & shift
+                                         );
 
 // solve aM = b via kernel basis
 // return a and denominator d

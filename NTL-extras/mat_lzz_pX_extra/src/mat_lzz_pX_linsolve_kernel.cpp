@@ -53,8 +53,8 @@ void linsolve_via_kernel(
 
     // compute kernel
     Mat<zz_pX> kerbas;
-    auto deg = kernel_basis_zls(kerbas, pmat, shift);
-    //auto deg = kernel_basis_zls_intbas(kerbas, pmat, shift);
+    auto deg = kernel_basis(kerbas, pmat, shift);
+    //auto deg = kernel_basis_zls_via_approximation(kerbas, pmat, shift);
 
     Mat<zz_pX> res;
     multiply(res,kerbas,pmat);
