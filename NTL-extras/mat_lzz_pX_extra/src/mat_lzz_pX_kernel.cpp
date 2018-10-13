@@ -96,6 +96,7 @@ DegVec kernel_basis(
 
 
 // TODO structure of output: return pivind+pivdeg?
+// TODO avoid computing deg(pmat) all the time... give it as input?
 DegVec kernel_basis_via_approximation(
                                       Mat<zz_pX> & kerbas,
                                       const Mat<zz_pX> & pmat,
@@ -105,29 +106,36 @@ DegVec kernel_basis_via_approximation(
     // parameters
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
+    const long d = deg(pmat);
+
+    // compute amplitude of the shift
+    long amp = amplitude(shift);
 
     // compute the order for approximation:
-    // order = cdeg(pmat) + sum(cdeg(pmat)) + 1
-    Order order(n);
-    column_degree(order, pmat);
-    long sum_cdeg = std::accumulate(order.begin(), order.end(), (long)0);
-    std::transform(order.begin(), order.end(), order.begin(), [&](long ord){return ord+sum_cdeg+1;});
+    const long order = (n+1)*d + amp + 1;
+
+    // FIXME: improvement: better performance if pmat does not have
+    // balanced column degree would be to use a column-degree wise order
+    // (however, this is not handled by fast approximant algorithms for now)
+    // Warning: code below not up-to-date: order is wrong for non-uniform shifts.
+    //Order order(n);
+    //column_degree(order, pmat);
+    //long sum_cdeg = std::accumulate(order.begin(), order.end(), (long)0);
+    //std::transform(order.begin(), order.end(), order.begin(), [&](long ord){return ord+sum_cdeg+1;});
 
     // compute approximant basis
     Mat<zz_pX> appbas;
     DegVec pivdeg;
-    pivdeg = approximant_basis(appbas, pmat, order, shift, POPOV);
-    std::cout << degree_matrix(appbas) << std::endl;
+    pivdeg = pmbasis(appbas, pmat, order, shift);
+    //pivdeg = approximant_basis(appbas, pmat, order, shift);
 
     // find rows which belong to the kernel
     std::vector<long> pivot_index;
     std::vector<long> pivot_degree;
-    std::cout << "pivots: " << std::endl;
     for (long i = 0; i < m; ++i)
-        if (pivdeg[i] <= sum_cdeg)
+        if (pivdeg[i]+amp < order-d)
         {
             pivot_index.push_back(i);
-            std::cout << i << ", " << std::endl;
             pivot_degree.push_back(pivdeg[i]);
         }
     long ker_dim = pivot_index.size();

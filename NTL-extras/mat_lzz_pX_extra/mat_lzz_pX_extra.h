@@ -47,7 +47,7 @@ typedef std::vector<long> DegVec;
 /* Amplitude of a shift: max(shift) - min(shift)              */
 /*------------------------------------------------------------*/
 
-inline void amplitude(long amp, Shift shift)
+inline void amplitude(long & amp, Shift shift)
 {
     auto minmax = std::minmax_element(shift.begin(), shift.end());
     amp = *minmax.second - *minmax.first;
@@ -55,15 +55,17 @@ inline void amplitude(long amp, Shift shift)
 
 inline long amplitude(Shift shift)
 {
-    long amp = 0;
+    long amp;
     amplitude(amp, shift);
     return amp;
 }
 
+// TODO shift reduction (given degdet D, cf ISSAC)
+// --> would be useful, e.g. in naive kernel
+
 // TODO type for index tuples?
 // TODO type for pair (pivot index, pivot degree)?
 // remove those types to be more explicit?
-
 
 /*------------------------------------------------------------*/
 /* clears the matrix  (pmat = 0 with same dimensions)         */
