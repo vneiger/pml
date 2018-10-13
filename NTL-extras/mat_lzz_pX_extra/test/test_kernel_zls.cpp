@@ -32,11 +32,11 @@ void check(long m, long n, long d){
     //cout << "kerbas (appbas): " << endl << degree_matrix(kerbas) << endl;
     cout << "time (appbas): " << t2w-t1w << endl;
 
-    Mat<zz_pX> res;
-    multiply(res, kerbas, pmat);
+    t1w = GetWallTime();
+    bool correct = is_kernel_basis(kerbas, pmat, s, ORD_WEAK_POPOV, true, false);
+    t2w = GetWallTime();
     cout << "Dims: " << kerbas.NumRows() << ", " << kerbas.NumCols() << endl;
-    cout << "kerbas zero?: " << IsZero(kerbas) << endl;
-    cout << "product should be zero: " << boolalpha << IsZero(res) << endl << endl;
+    std::cout << "Verification: " << (correct ? "correct" : "wrong") << ", time " << (t2w-t1w) << std::endl;
 
     kerbas = Mat<zz_pX>();
     t1w = GetWallTime();
@@ -46,10 +46,11 @@ void check(long m, long n, long d){
     //cout << "kerbas (intbas): " << endl << degree_matrix(kerbas) << endl;
     cout << "time (intbas): " << t2w-t1w << endl;
 
-    multiply(res, kerbas, pmat);
-    cout << "kerbas zero?: " << IsZero(kerbas) << endl;
-    cout << "product should be zero: " << IsZero(res) << endl;
+    t1w = GetWallTime();
+    correct = is_kernel_basis(kerbas, pmat, s, ORD_WEAK_POPOV, true, false);
+    t2w = GetWallTime();
     cout << "Dims: " << kerbas.NumRows() << ", " << kerbas.NumCols() << endl;
+    std::cout << "Verification: " << (correct ? "correct" : "wrong") << ", time " << (t2w-t1w) << std::endl;
 }
 
 /*------------------------------------------------------------*/

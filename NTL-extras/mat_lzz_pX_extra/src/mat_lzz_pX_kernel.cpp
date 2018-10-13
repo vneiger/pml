@@ -12,7 +12,9 @@
 
 NTL_CLIENT
 
-// TODO highly incomplete
+// TODO testing generation
+// TODO row_wise
+// FIXME randomized: probability of not detecting that it is not correct?
 bool is_kernel_basis(
                      Mat<zz_pX> & kerbas,
                      const Mat<zz_pX> & pmat,
@@ -25,12 +27,9 @@ bool is_kernel_basis(
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
 
-    if (not randomized)
-        throw std::invalid_argument("~~is_kernel_basis~~ deterministic not implemented yet");
     if (not row_wise)
         throw std::invalid_argument("~~is_kernel_basis~~ column-wise not implemented yet");
 
-    std::cout << "~~is_kernel_basis~~ Warning: randomized verification" << std::endl;
     std::cout << "~~is_kernel_basis~~ Warning: not checking generation (not implemented yet)" << std::endl;
 
     // test whether kerbas has the right dimensions
@@ -43,16 +42,44 @@ bool is_kernel_basis(
         return false;
 
     // verify that the product is zero
-    // use left and right projections to speed up computations (randomized)
-    Mat<zz_p> left_project, right_project;
-    random(left_project, 1, kerbas.NumRows());
-    random(right_project, pmat.NumCols(), 1);
-    Mat<zz_pX> p_kerbas, p_pmat, product;
-    mul(p_kerbas, left_project, kerbas);
-    mul(p_pmat, pmat, right_project);
-    multiply(product, p_kerbas, p_pmat);
-    if (not IsZero(product))
-        return false;
+    if (not randomized)
+    {
+        Mat<zz_pX> product;
+        if (row_wise)
+            multiply(product, kerbas, pmat);
+        else
+            multiply(product, pmat, kerbas);
+        if (not IsZero(product))
+            return false;
+    }
+    else // randomized
+    {
+        // use left and right random constant projections to speeds up computations
+        // --> "projected product" is likely nonzero if product is nonzero
+        Mat<zz_p> left_project, right_project;
+        Mat<zz_pX> projected_kerbas, projected_pmat;
+        zz_pX projected_product;
+        if (row_wise)
+        {
+            random(left_project, 1, kerbas.NumRows());
+            mul(projected_kerbas, left_project, kerbas);
+            random(right_project, pmat.NumCols(), 1);
+            mul(projected_pmat, pmat, right_project);
+            for (long i = 0; i < m; ++i)
+                projected_product += projected_kerbas[0][i] * projected_pmat[i][0];
+        }
+        else
+        {
+            random(left_project, 1, pmat.NumRows());
+            mul(projected_pmat, left_project, pmat);
+            random(right_project, kerbas.NumCols(), 1);
+            mul(projected_kerbas, kerbas, right_project);
+            for (long i = 0; i < m; ++i)
+                projected_product += projected_pmat[0][i] * projected_kerbas[i][0];
+        }
+        if (not IsZero(projected_product))
+            return false;
+    }
 
     return true;
 }
