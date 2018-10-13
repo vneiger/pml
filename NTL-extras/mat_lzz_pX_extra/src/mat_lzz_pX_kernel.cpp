@@ -163,6 +163,7 @@ DegVec kernel_basis_zls_via_approximation(
     const long n = pmat.NumCols();
 
     // return an empty matrix for square matrix
+    // this is wrong if matrix singular!!
     if (m == n)
     {   
         kerbas.SetDims(0,0);

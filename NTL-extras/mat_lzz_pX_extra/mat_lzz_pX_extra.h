@@ -1483,6 +1483,11 @@ DegVec popov_pmbasis(
 // The max of pivot degrees of the kernel also gives a bound on
 // max(rdeg_s(kernel)): pick one of the bounds above for sum of pivot degrees,
 // and add max(s).
+//
+// Case where pmat does not have full column rank: the left kernel of pmat is
+// equal to the left kernel of any column basis of pmat; taking a column
+// reduced form of pmat allows us to reduce to the full column rank case. This
+// shows that the bounds above still hold without full column rank assumption.
 
 /*------------------------------------------------------------*/
 /* general user-friendly interface                            */
