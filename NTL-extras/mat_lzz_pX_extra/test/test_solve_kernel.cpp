@@ -26,22 +26,19 @@ void check(long m, long n, long d1, long d2)
     Vec<zz_pX> a;
     zz_pX denom;
     linsolve_via_kernel(a,denom,pmat,b);
+		// should compute a and denom such that a * pmat = denom * b
     
     Mat<zz_pX> amat;
     amat.SetDims(1,n);
     amat[0] = a;
     
+		// test equality: res = a * pmat, is it denom * b?
     Mat<zz_pX> res;
     multiply(res,amat,pmat);
     for (long i = 0; i < n; i++)
-        divide(res[0][i], res[0][i], denom);
-    cout << "res:\n " << degree_matrix(res) << endl;
+        b[i] = b[i] * denom;
     
-    cout << "equal? ";
-    if (res[0] == b)
-        cout << "TRUE" << endl;
-    else
-        cout << "FALSE" << endl;
+    cout << "Verification: " << (res[0] == b ? "correct" : "wrong") << endl;
 }
 
 int main(int argc, char ** argv)
