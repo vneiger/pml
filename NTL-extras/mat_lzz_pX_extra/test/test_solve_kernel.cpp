@@ -69,7 +69,10 @@ void check(long m, long d1, long d2)
     cout << "Product verification: " << (res[0] == b ? "correct" : "wrong") << endl;
 
     zz_pX det;
+    t1 = GetWallTime();
     determinant_generic_knowing_degree(det, pmat, m*d1);
+    t2 = GetWallTime();
+    std::cout << "Time (determinant): " << (t2-t1) << std::endl;
     MakeMonic(det);
     std::cout << "Denom is determinant? "  << (det == denom ? "yes" : "no") << std::endl;
 }
