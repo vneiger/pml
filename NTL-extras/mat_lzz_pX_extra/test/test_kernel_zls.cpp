@@ -16,14 +16,16 @@ void check(long m, long n, long d){
     //cout << "pmat: " << endl << degree_matrix(pmat) << endl;
 
     // Uniform shift:
-    // Shift s(m, d);
+    Shift s(m, d+1);
     // uniform shift:
-    Shift s;
-    for (long i = 0; i < m-1; ++i)
-        s.emplace_back(d+1);
-    s.emplace_back(143);
+    //Shift s;
+    //for (long i = 0; i < m-1; ++i)
+    //    s.emplace_back(d+1);
+    //s.emplace_back(143);
     
     double t1w,t2w;
+
+    // VIA APPROXIMATION
 
     Mat<zz_pX> kerbas;
     t1w = GetWallTime();
@@ -38,19 +40,21 @@ void check(long m, long n, long d){
     cout << "Dims: " << kerbas.NumRows() << ", " << kerbas.NumCols() << endl;
     std::cout << "Verification: " << (correct ? "correct" : "wrong") << ", time " << (t2w-t1w) << std::endl;
 
-    kerbas = Mat<zz_pX>();
-    t1w = GetWallTime();
-    kernel_basis_zls_via_interpolation(kerbas, pmat, s);
-    t2w = GetWallTime();
-    
-    //cout << "kerbas (intbas): " << endl << degree_matrix(kerbas) << endl;
-    cout << "time (intbas): " << t2w-t1w << endl;
+    // VIA INTERPOLATION
 
-    t1w = GetWallTime();
-    correct = is_kernel_basis(kerbas, pmat, s, ORD_WEAK_POPOV, true, false);
-    t2w = GetWallTime();
-    cout << "Dims: " << kerbas.NumRows() << ", " << kerbas.NumCols() << endl;
-    std::cout << "Verification: " << (correct ? "correct" : "wrong") << ", time " << (t2w-t1w) << std::endl;
+    //kerbas = Mat<zz_pX>();
+    //t1w = GetWallTime();
+    //kernel_basis_zls_via_interpolation(kerbas, pmat, s);
+    //t2w = GetWallTime();
+    //
+    ////cout << "kerbas (intbas): " << endl << degree_matrix(kerbas) << endl;
+    //cout << "time (intbas): " << t2w-t1w << endl;
+
+    //t1w = GetWallTime();
+    //correct = is_kernel_basis(kerbas, pmat, s, ORD_WEAK_POPOV, true, false);
+    //t2w = GetWallTime();
+    //cout << "Dims: " << kerbas.NumRows() << ", " << kerbas.NumCols() << endl;
+    //std::cout << "Verification: " << (correct ? "correct" : "wrong") << ", time " << (t2w-t1w) << std::endl;
 }
 
 /*------------------------------------------------------------*/
