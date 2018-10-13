@@ -38,14 +38,14 @@ void check(long m, long n, long d){
     std::shuffle(shift4.begin(), shift4.end(), std::mt19937{std::random_device{}()});
     Shift shift5(m); // Hermite shift
     for (long i = 0; i < m; ++i)
-        shift5[i] = n*n*d*i;
+        shift5[i] = n*d*i;
     Shift shift6(m); // reverse Hermite shift
     for (long i = 0; i < m; ++i)
-        shift6[i] = (n*n*d+1)*(m-1-i);
+        shift6[i] = (n*d+1)*(m-1-i);
     Shift shift7(m);
     for (long i = 0; i < m; ++i)
         if (i>=m/2)
-            shift7[i] = n*n*d;
+            shift7[i] = n*d;
 
     std::vector<Shift> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7};
 

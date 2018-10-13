@@ -153,6 +153,7 @@ DegVec kernel_basis_via_approximation(
 // TODO: issues when m <= n !! go directly to divide and conquer
 // and if we know the first approximant basis will not give any kernel vector, should we also directly divide and conquer?
 // TODO: doc mentioning requirement: entries of shift should bound row degrees of pmat
+// TODO: why is it currently required that shift STRICTLY bounds degrees? (otherwise crashes)
 DegVec kernel_basis_zls_via_approximation(
                                           Mat<zz_pX> & kerbas,
                                           const Mat<zz_pX> & pmat,
@@ -162,9 +163,9 @@ DegVec kernel_basis_zls_via_approximation(
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
 
-    // return an empty matrix for square matrix
-    // this is wrong if matrix singular!!
-    if (m == n)
+    // return an empty matrix for full row rank matrix
+    // TODO this is wrong if matrix is rank-deficient!!
+    if (n >= m)
     {   
         kerbas.SetDims(0,0);
         auto res = DegVec();
@@ -194,8 +195,8 @@ DegVec kernel_basis_zls_via_approximation(
 
     // identify submatrix of some rows of appbas which are in the kernel
     // (not necessarily all of them; but in most cases yes)
-    // note the criterion: since shift >= rdeg(pmat), we have
-    // rdeg >= rdeg(appbas*pmat) and therefore rows with rdeg[i] < order
+    // note the criterion: since rdeg(pmat) <= shift, we have
+    // rdeg(appbas*pmat) <= rdeg and therefore rows with rdeg[i] < order
     // are such that appbas[i] * pmat = 0.
     std::vector<long> ker_rows;
     std::vector<long> other_rows;
@@ -214,7 +215,7 @@ DegVec kernel_basis_zls_via_approximation(
     {
         kerbas.SetDims(m1, m);
         for (long i = 0; i < m1; i++)
-            kerbas[i] = appbas[ker_rows[i]];  // (FIXME cf above could use swap?)
+            kerbas[i].swap(appbas[ker_rows[i]]);
         return rdegP1;
     }
 
@@ -226,7 +227,7 @@ DegVec kernel_basis_zls_via_approximation(
     Mat<zz_pX> P2;
     P2.SetDims(m2, m);
     for (long i = 0; i < m2; ++i)
-        P2[i] = appbas[other_rows[i]]; // FIXME could use swap or something, since appbas will be destroyed?
+        P2[i].swap(appbas[other_rows[i]]);
 
     // set up the recursive calls
     for (long i = 0; i < m2; ++i)
@@ -260,7 +261,7 @@ DegVec kernel_basis_zls_via_approximation(
     {
         kerbas.SetDims(m1,m);
         for (long i = 0; i < m1; ++i)
-            kerbas[i] = appbas[ker_rows[i]];
+            kerbas[i].swap(appbas[ker_rows[i]]);
         return rdegP1;
     }
 
@@ -274,9 +275,9 @@ DegVec kernel_basis_zls_via_approximation(
 
     kerbas.SetDims(m1+G1.NumRows(), m);
     for (long i = 0; i < m1; ++i)
-        kerbas[i] = appbas[ker_rows[i]];  // (FIXME cf above could use swap?)
+        kerbas[i].swap(appbas[ker_rows[i]]);
     for (long i = 0; i < G1.NumRows(); ++i)
-        kerbas[m1+i] = G1[i];
+        kerbas[m1+i].swap(G1[i]);
     return rdegP1;
 }
 
