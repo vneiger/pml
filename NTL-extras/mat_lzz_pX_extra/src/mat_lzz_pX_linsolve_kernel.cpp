@@ -18,52 +18,42 @@
 void linsolve_via_kernel(
                          Vec<zz_pX> &a,
                          zz_pX &d,
-                         Mat<zz_pX> pmat,
-                         const Vec<zz_pX> &b
+                         const Mat<zz_pX> & pmat,
+                         const Vec<zz_pX> & b
                         )
 {
-    if (b.length() != pmat.NumRows())
-        throw std::logic_error("length of b != pmat.NumRows()");
-
     long m = pmat.NumRows();
     long n = pmat.NumCols();
+
+    // TODO this kind of check should probably be in higher level function
     if (m != n)
-        throw std::logic_error("pmat must be square");
+        throw std::logic_error("==linsolve_via_kernel== pmat must be square");
+    if (b.length() != m)
+        throw std::logic_error("==linsolve_via_kernel== length of b != pmat.NumRows()");
 
-    long degb = deg(b[0]);
-    for (long i = 1; i < n; i++)
-        if (degb < deg(b[i])) degb = deg(b[i]);
+    // compute augmented matrix (block with input matrix and system 'b')
+    Mat<zz_pX> augmented_pmat;
+    augmented_pmat.SetDims(m+1, m);
+    for (long i = 0; i < m; ++i)
+        augmented_pmat[i] = pmat[i];
+    augmented_pmat[m] = b;
 
-    Shift shift;
-    shift.resize(m+1);
-
-    DegVec rdeg;
-    rdeg.resize(m);
-    row_degree(rdeg,pmat);
-    long max_deg = rdeg[0];
-    for (unsigned long i = 0; i < rdeg.size(); i++)
-    {
-        shift[i] = rdeg[i]+1;
-        if (max_deg < rdeg[i]) max_deg = rdeg[i];
-    }
-    shift[m] = (m+1)*(max_deg+1);
-
-    pmat.SetDims(m+1, n);
-    pmat[m] = b;
+    // compute shift to make sure kernel corresponds to solution
+    DegVec shift(m+1);
+    // --> first take strictly larger than row degree of augmented pmat
+    // (requirement of kernel algo, TODO although it should not require strict)
+    row_degree(shift, augmented_pmat);
+    std::transform(shift.begin(), shift.end(), shift.begin(), [&](long d){return d+1;});
 
     // compute kernel
     Mat<zz_pX> kerbas;
-    auto deg = kernel_basis(kerbas, pmat, shift);
-    //auto deg = kernel_basis_zls_via_approximation(kerbas, pmat, shift);
+    kernel_basis_zls_via_approximation(kerbas, augmented_pmat, shift);
 
-    Mat<zz_pX> res;
-    multiply(res,kerbas,pmat);
-    cout << "kernel prod: " << degree_matrix(res) << endl;
-
-    a.SetLength(n);
-    for (long i = 0; i < n; i++)
+    // deduce solution
+    a.SetLength(m);
+    for (long i = 0; i < m; ++i)
         a[i] = -kerbas[0][i];
-    d = kerbas[0][n];
+    d = kerbas[0][m];
 }
 
 // Local Variables:

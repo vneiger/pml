@@ -46,8 +46,10 @@ void check(long m, long n, long d){
     for (long i = 0; i < m; ++i)
         if (i>=m/2)
             shift7[i] = n*d;
+    Shift shift8(m,0);
+    shift8[m-1] = n*d;
 
-    std::vector<Shift> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7};
+    std::vector<Shift> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7, shift8};
 
     for (auto shift: shifts)
     {

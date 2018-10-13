@@ -1556,10 +1556,10 @@ DegVec kernel_basis_zls_via_interpolation(
 // TODO: when code has stabilized, move up in linsolve section, and unify
 // name/signature with other linsolve functions
 void linsolve_via_kernel(
-                         Vec<zz_pX> &a,
-                         zz_pX &d,
-                         Mat<zz_pX> pmat,
-                         const Vec<zz_pX> &b
+                         Vec<zz_pX> & a,
+                         zz_pX & d,
+                         const Mat<zz_pX> & pmat,
+                         const Vec<zz_pX> & b
                         );
 
 
