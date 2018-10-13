@@ -94,11 +94,8 @@ DegVec kernel_basis(
     return kernel_basis_via_approximation(kerbas, pmat, shift);
 }
 
+
 // TODO structure of output: return pivind+pivdeg?
-// TODO write justification for choice of order..
-// this bound was designed having popov bases in mind; is it really sure the
-// approximant basis cannot have degree more than this (even when strange
-// shifts)?
 DegVec kernel_basis_via_approximation(
                                       Mat<zz_pX> & kerbas,
                                       const Mat<zz_pX> & pmat,
@@ -119,7 +116,7 @@ DegVec kernel_basis_via_approximation(
     // compute approximant basis
     Mat<zz_pX> appbas;
     DegVec pivdeg;
-    pivdeg = approximant_basis(appbas, pmat, order, shift);
+    pivdeg = approximant_basis(appbas, pmat, order, shift, POPOV);
     std::cout << degree_matrix(appbas) << std::endl;
 
     // find rows which belong to the kernel
@@ -127,7 +124,7 @@ DegVec kernel_basis_via_approximation(
     std::vector<long> pivot_degree;
     std::cout << "pivots: " << std::endl;
     for (long i = 0; i < m; ++i)
-        if (pivdeg[i] < sum_cdeg)
+        if (pivdeg[i] <= sum_cdeg)
         {
             pivot_index.push_back(i);
             std::cout << i << ", " << std::endl;

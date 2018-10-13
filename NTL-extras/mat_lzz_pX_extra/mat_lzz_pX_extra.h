@@ -1420,9 +1420,48 @@ DegVec popov_pmbasis(
                      const Shift & shift
                     );
 
-/**********************************************************************
- *                            KERNEL BASIS                            *
- **********************************************************************/
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*                     KERNEL BASIS                           */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+////Definition (kernel basis)
+// Given an m x n matrix of univariate polynomials 'pmat',
+// a (left) kernel basis for pmat is a matrix over K[X]
+// whose rows form a basis for the (left) kernel of pmat, that is,
+// the K[X]-module { v in K[X]^{1 x m}  |  v * pmat = 0 }.
+
+// Degree bounds for kernel bases: assuming pmat has full column rank n, an
+// unpublished result by Vu Thi Xuan (Master's research report, Lemma 10) shows
+// that the sum of the pivot degrees of the shifted Popov kernel basis (for any
+// shift) is at most the degree of the determinant of the complement part in
+// 'pmat' (complement: rows not in the shifted pivot support of the kernel).
+// This can probably be derived from knowledge about irreducible fractions.
+//
+// As a result, we have the following non-strict upper bounds on the sum of
+// pivot degree of the shifted Popov kernel basis of pmat:
+//   * pmat.NumCols() * degree(pmat)
+//   * sum of column degrees of pmat
+//   * sum of degrees of the rows in the complement of pmat
+//          (useful if pivot support is known)
+//   * if pivot support is unknown, since the complement has <= n rows, this
+//   can be relaxed as: sum of degrees of the n largest-degree rows of pmat.
+//
+// The max of the pivot degrees, which is also the degree of the pivot part of
+// the shifted Popov kernel, can be equal to the sum of pivot degrees (although
+// this is not expected generically). Hence we have the same bounds on degree
+// of pivot part. This directly gives bounds on the non-pivot part: pick one of
+// the bounds above, and add max(shift) - min(shift). Note that this might be
+// pessimistic for shifts of large amplitude, since we also have bounds on the
+// non-pivot part involving the adjugate of the pivot support complement part
+// of pmat, ensuring in particular that the non-pivot part of the kernel has
+// degree at most n * deg(pmat)   (cf Lemma 12 of Vu Thi Xuan's research
+// report).
+//
+// The max of pivot degrees of the kernel also gives a bound on
+// max(rdeg_s(kernel)): pick one of the bounds above for sum of pivot degrees,
+// and add max(s).
 
 /*------------------------------------------------------------*/
 /* general user-friendly interface                            */
@@ -1452,8 +1491,10 @@ bool is_kernel_basis(
 /* Kernel basis: naive via large order approximant basis      */
 /*------------------------------------------------------------*/
 // TODO describe input-output?
-// note this can be faster than ZLS for some cases (e.g. if shifts does not
+// can this be faster than ZLS for some cases? (e.g. if shifts does not
 // correspond at all to row degrees of pmat, or generally if shifts are "bad")
+
+// The order of approximation is designed as follows.
 DegVec kernel_basis_via_approximation(
                                       Mat<zz_pX> & kerbas,
                                       const Mat<zz_pX> & pmat,

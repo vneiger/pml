@@ -16,11 +16,11 @@ void check(long m, long n, long d){
     //cout << "pmat: " << endl << degree_matrix(pmat) << endl;
 
     // Uniform shift:
-    Shift s(m, d);
+    //Shift s(m, d);
     // non-uniform shift:
-    //Shift s;
-    //for (long i = 0; i < m; ++i)
-    //    s.emplace_back(i);
+    Shift s;
+    for (long i = 0; i < m; ++i)
+        s.emplace_back(i);
 
     double t1w,t2w;
 
