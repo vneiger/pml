@@ -19,11 +19,31 @@ void check(long m, long d1, long d2)
     random(pmat,m,m,d1+1);
     cout << "pmat: " << endl << degree_matrix(pmat) << endl;
 
+    // random rhs
     Mat<zz_pX> bmat;
     random(bmat,1,m,d2+1);
     Vec<zz_pX> b = bmat[0];
+     std::cout << "random right-hand side of degree " << d2 << std::endl;
 
-    cout << "b:\n " << degree_matrix(bmat) << endl;
+    // rhs in row space, constant combination
+    //Vec<zz_pX> b; b.SetLength(m);
+    //for (long i = 0; i < m; ++i)
+    //{
+    //    zz_p a; random(a);
+    //    for (long j = 0; j < m; ++j)
+    //        b[j] += a*pmat[i][j];
+    //}
+    //std::cout << "Right-hand side: random constant linear combination of system matrix" << std::endl;
+
+    // rhs in row space, degree d2/2 linear combination
+    //Vec<zz_pX> b; b.SetLength(m);
+    //for (long i = 0; i < m; ++i)
+    //{
+    //    zz_pX a; random(a, d2/2+1);
+    //    for (long j = 0; j < m; ++j)
+    //        b[j] += a*pmat[i][j];
+    //}
+    //std::cout << "Right-hand side: random linear combination of system matrix, cofactors of degree " << (d2/2) << std::endl;
 
     t1 = GetWallTime();
     Vec<zz_pX> a;
@@ -38,7 +58,7 @@ void check(long m, long d1, long d2)
     amat[0] = a;
 
     std::cout << "Degrees in solution vector\n" << degree_matrix(amat) << std::endl;
-    std::cout << "Degree denominator\n" << deg(b) << std::endl;
+    std::cout << "Degree denominator\n" << deg(denom) << std::endl;
 
     // test equality: res = a * pmat, is it denom * b?
     Mat<zz_pX> res;
@@ -46,7 +66,12 @@ void check(long m, long d1, long d2)
     for (long i = 0; i < m; i++)
         b[i] = b[i] * denom;
 
-    cout << "Verification: " << (res[0] == b ? "correct" : "wrong") << endl;
+    cout << "Product verification: " << (res[0] == b ? "correct" : "wrong") << endl;
+
+    zz_pX det;
+    determinant_generic_knowing_degree(det, pmat, m*d1);
+    MakeMonic(det);
+    std::cout << "Denom is determinant? "  << (det == denom ? "yes" : "no") << std::endl;
 }
 
 int main(int argc, char ** argv)

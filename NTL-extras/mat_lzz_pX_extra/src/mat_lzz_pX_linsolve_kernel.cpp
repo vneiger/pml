@@ -40,10 +40,13 @@ void linsolve_via_kernel(
 
     // compute shift to make sure kernel corresponds to solution
     DegVec shift(m+1);
-    // --> first take strictly larger than row degree of augmented pmat
+    // --> take strictly larger than row degree of augmented pmat
     // (requirement of kernel algo, TODO although it should not require strict)
     row_degree(shift, augmented_pmat);
     std::transform(shift.begin(), shift.end(), shift.begin(), [&](long d){return d+1;});
+    // --> and add sufficiently large value to last entry to ensure that we
+    // retrieve a solution of small degree
+    //shift[m] += deg(b);
 
     // compute kernel
     Mat<zz_pX> kerbas;
