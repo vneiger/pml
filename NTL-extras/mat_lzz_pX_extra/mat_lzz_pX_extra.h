@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector> // std vector, for shifts, degrees, pivot indices
 #include <memory>
+#include <algorithm>
 
 #include "lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
@@ -41,10 +42,28 @@ enum PolMatForm {
 
 typedef std::vector<long> Shift;
 typedef std::vector<long> DegVec;
+
+/*------------------------------------------------------------*/
+/* Amplitude of a shift: max(shift) - min(shift)              */
+/*------------------------------------------------------------*/
+
+inline void amplitude(long amp, Shift shift)
+{
+    auto minmax = std::minmax_element(shift.begin(), shift.end());
+    amp = *minmax.second - *minmax.first;
+}
+
+inline long amplitude(Shift shift)
+{
+    long amp = 0;
+    amplitude(amp, shift);
+    return amp;
+}
+
 // TODO type for index tuples?
+// TODO type for pair (pivot index, pivot degree)?
 // remove those types to be more explicit?
 
-// TODO : kill? swap? vec_lzz_pX ?
 
 /*------------------------------------------------------------*/
 /* clears the matrix  (pmat = 0 with same dimensions)         */
