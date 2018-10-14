@@ -17,7 +17,8 @@ void check(long m, long d1, long d2)
 
     Mat<zz_pX> pmat;
     random(pmat,m,m,d1+1);
-    cout << "pmat: " << endl << degree_matrix(pmat) << endl;
+    if (m<25)
+        cout << "pmat: " << endl << degree_matrix(pmat) << endl;
 
     // random rhs
     Mat<zz_pX> bmat;
@@ -57,8 +58,11 @@ void check(long m, long d1, long d2)
     amat.SetDims(1,m);
     amat[0] = a;
 
-    std::cout << "Degrees in solution vector\n" << degree_matrix(amat) << std::endl;
-    std::cout << "Degree denominator\n" << deg(denom) << std::endl;
+    if (m<20)
+    {
+        std::cout << "Degrees in solution vector\n" << degree_matrix(amat) << std::endl;
+        std::cout << "Degree denominator\n" << deg(denom) << std::endl;
+    }
 
     // test equality: res = a * pmat, is it denom * b?
     Mat<zz_pX> res;

@@ -1797,7 +1797,6 @@ inline zz_pX determinant(const Mat<zz_pX> & pmat)
 // TODO: only randomized implemented for now
 bool verify_determinant(const zz_pX & det, const Mat<zz_pX> & pmat, bool up_to_constant, bool randomized);
 
-
 /*******************************************************************
  *  Labahn-Neiger-Zhou: via diagonal entries of triangularization  *
  *******************************************************************/
@@ -1823,10 +1822,13 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
 // TODO: not implemented yet
 bool determinant_generic_las_vegas(zz_pX & det, const Mat<zz_pX> & pmat);
 
+// Version 3 (randomized; via random linear system solving)
+// TODO first version, should be improved. Make Las Vegas.
+void determinant_via_linsolve(zz_pX & det, const Mat<zz_pX> & pmat);
+
 // TODO other determinant algorithms??
 // --> could rely on x-Smith decomposition of Gupta et al (worth
 // implementing??), cf Appendix of LaNeZh17 
-// --> no randomized faster approach?
 
 #endif // MAT_LZZ_PX_EXTRA__H
 

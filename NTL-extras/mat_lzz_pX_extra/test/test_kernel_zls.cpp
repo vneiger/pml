@@ -100,11 +100,10 @@ int main(int argc, char ** argv)
 
     zz_p::init(NTL::GenPrime_long(60));
 
-    if (argc==4)
-    {
-        check(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
-    }
+    if (argc!=4)
+        throw std::invalid_argument("Usage: ./test_kernel_zls rdim cdim degree");
 
+    check(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
 
     return 0;
 }

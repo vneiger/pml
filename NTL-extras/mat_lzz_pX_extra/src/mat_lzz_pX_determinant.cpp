@@ -151,6 +151,23 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
     
 }
 
+// TODO first version; improve
+// TODO use a more general linsolve instead of specific algo
+void determinant_via_linsolve(zz_pX & det, const Mat<zz_pX> & pmat)
+{
+    const long dim = pmat.NumRows();
+    const long degree = dim*deg(pmat); // expected degree of determinant
+    Mat<zz_pX> rand_vec;
+    random(rand_vec, dim, 1, deg(pmat)+1);
+
+    Mat<zz_pX> sol;
+    solve_series_high_precision(sol, pmat, rand_vec, 2*degree+1);
+
+    zz_pX elt;
+    reverse(elt, sol[0][0], 2*degree);
+    MinPolySeq(det, elt.rep, degree);
+}
+
 // Local Variables:
 // mode: C++
 // tab-width: 4
