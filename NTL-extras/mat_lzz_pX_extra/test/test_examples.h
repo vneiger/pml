@@ -1,3 +1,5 @@
+#ifndef __EXAMPLES_H__
+#define __EXAMPLES_H__
 #include <NTL/BasicThreadPool.h>
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
@@ -9,95 +11,108 @@
 
 NTL_CLIENT
 
-#ifndef __EXAMPLE_H__
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* Examples of matrices for testing polmat functions          */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
-// zero matrix
-Mat<zz_pX> mat_zero_square; // square zero matrix
-Mat<zz_pX> mat_zero_64x63;
-Mat<zz_pX> mat_zero_64x48;
-Mat<zz_pX> mat_zero_64x32;
-Mat<zz_pX> mat_zero_64x16;
-Mat<zz_pX> mat_zero_64x1;
-
-// random matrices
-Mat<zz_pX> mat_square; // square matrix 64x64
-Mat<zz_pX> mat_rect_64x63;
-Mat<zz_pX> mat_rect_64x48;
-Mat<zz_pX> mat_rect_64x32;
-Mat<zz_pX> mat_rect_64x16;
-Mat<zz_pX> mat_rect_64x1;
-
-// rank deficient (square 64x64) matrices
-Mat<zz_pX> mat_square_rank1;
-Mat<zz_pX> mat_square_rank16;
-Mat<zz_pX> mat_square_rank32;
-Mat<zz_pX> mat_square_rank48;
-Mat<zz_pX> mat_square_rank63;
-
-static void rand_rows (Mat<zz_pX> &mat, const long r, const long c, const long rows, const long deg)
+void row_rank_deficient_mat(Mat<zz_pX> &m, const long r, const long c, const long deg)
 {
-  mat = Mat<zz_pX>(r,c);
-  for (long i = 0; i < rows; i++)
-    for (long j = 0; j < c; j++)
-      random(mat[i][j],deg+1);
+    random(m,r-1,c,deg+1);
+    Mat<zz_pX> lvec;
+    random(lvec, 1, r-1,1);
+
+    Mat<zz_pX> new_row;
+    multiply(new_row, lvec, m);
+    m.SetDims(r,c);
+    m[r-1] = new_row[0];
 }
 
-// call these to setup matrices
-void mat_setup_zero()
+void col_rank_deficient_mat(Mat<zz_pX> &m, const long r, const long c, const long deg)
 {
-   mat_zero_square = Mat<zz_pX>(64,64);
-   mat_zero_64x63 = Mat<zz_pX>(64,63);
-   mat_zero_64x48 = Mat<zz_pX>(64,48);
-   mat_zero_64x32 = Mat<zz_pX>(64,32);
-   mat_zero_64x16 = Mat<zz_pX>(64,16);
-   mat_zero_64x1 = Mat<zz_pX>(64,1);
+    random(m,r,c-1,deg+1);
+    Mat<zz_pX> rvec;
+    random(rvec, c-1, 1, 1);
+
+    Mat<zz_pX> new_col;
+    multiply(new_col, m, rvec);
+    m.SetDims(r,c);
+    for (long i = 0; i < r; i++)
+        m[i][c-1] = new_col[i][0];
 }
 
-void mat_setup_rand(long deg = 20)
+void build(std::vector<Mat<zz_pX>> & example_matrices)
 {
-    mat_square = Mat<zz_pX>(64,64); // square matrix 64x64
-    random(mat_square,64,64,deg+1);
-    mat_rect_64x63 = Mat<zz_pX>(64,63);
-    random(mat_rect_64x63,64,63,deg+1);
-    mat_rect_64x48 = Mat<zz_pX>(64,48);
-    random(mat_rect_64x48,64,48,deg+1);
-    mat_rect_64x32 = Mat<zz_pX>(64,32);
-    random(mat_rect_64x32,64,32,deg+1);
-    mat_rect_64x16 = Mat<zz_pX>(64,16);
-    random(mat_rect_64x16,64,16,deg+1);
-    mat_rect_64x1 = Mat<zz_pX>(64,1);
-    random(mat_rect_64x1,64,1,deg+1);
+    // dimensions we will try
+    std::vector<long> rdims = {1, 2, 3, 5, 10, 15, 23};
+    std::vector<long> cdims = {1, 2, 3, 5, 11, 17, 21};
+
+    // degrees we will try
+    std::vector<long> degs = {0, 1, 2, 3, 4, 5, 10, 15, 25, 50, 100};
+
+    // TODO later, a few unbalanced row degrees/column degrees
+    //std::vector<long> rdegs = ..
+    //std::vector<long> cdegs = ..
+
+    // zero matrices
+    for (long rdim : rdims)
+        for (long cdim : cdims)
+        {
+            auto mat = Mat<zz_pX>();
+            mat.SetDims(rdim,cdim);
+            example_matrices.push_back(mat);
+        }
+
+    // random matrices, uniform degree
+    for (long rdim : rdims)
+        for (long cdim : cdims)
+            for (long d : degs)
+            {
+                example_matrices.push_back(random_mat_zz_pX(rdim, cdim, d));
+            }
+
+    // rank deficient square matrices
+    // (take random square of dim > 1 and define one column to be random combination of others
+    for (long rdim : rdims)
+        for (long d: degs)
+        {
+            Mat<zz_pX> tmp;
+            row_rank_deficient_mat(tmp,rdim,rdim,d);
+            example_matrices.push_back(tmp);
+        }
+
+
+    // rank deficient rectangular rdim>cdim matrices
+    // (take random of cdim > 1 and define one column to be random combination of others)
+    for (long rdim: rdims)
+        for (long cdim: cdims)
+            for (long d: degs)
+            {
+                Mat<zz_pX> tmp;
+                if (rdim > cdim)
+                {
+                    col_rank_deficient_mat(tmp,rdim,cdim,d);
+                    example_matrices.push_back(tmp);
+                }
+            }
+
+    // rank deficient rectangular rdim<cdim matrices
+    // (take random of rdim > 1 and define one row to be random combination of others)
+    for (long rdim: rdims)
+        for (long cdim: cdims)
+            for (long d: degs)
+            {
+                Mat<zz_pX> tmp;
+                if (rdim < cdim)
+                {
+                    row_rank_deficient_mat(tmp,rdim,cdim,d);
+                    example_matrices.push_back(tmp);
+                }
+            }
 }
 
-void mat_setup_rank_deficient(long deg=20)
-{
-    rand_rows(mat_square_rank1,64,64,1,20);
-    rand_rows(mat_square_rank16,64,64,16,20);
-    rand_rows(mat_square_rank32,64,64,32,20);
-    rand_rows(mat_square_rank48,64,64,48,20);
-    rand_rows(mat_square_rank63,64,64,63,20);
-}
-
-#define __EXAMPLE_H__
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif // __EXAMPLE_H__
 
 // Local Variables:
 // mode: C++
@@ -106,3 +121,4 @@ void mat_setup_rank_deficient(long deg=20)
 // c-basic-offset: 4
 // End:
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
+
