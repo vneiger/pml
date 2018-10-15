@@ -88,27 +88,54 @@ void one_bench_mbasis(long rdim, long cdim, long order)
 
     t_mbasis_resupdate /= nb_iter;
 
-    double best;
+    double t_mbasis_resupdate_v2=0.0;
+    nb_iter=0;
+    while (t_mbasis_resupdate_v2<0.1)
+    {
+        Mat<zz_pX> pmat;
+        random(pmat, rdim, cdim, order);
+        std::vector<long> pivdeg;
+
+        t1 = GetWallTime();
+        Mat<zz_pX> appbas;
+        pivdeg = mbasis_resupdate_v2(appbas,pmat,order,shift);
+        t2 = GetWallTime();
+
+        t_mbasis_resupdate_v2 += t2-t1;
+        ++nb_iter;
+    }
+
+    t_mbasis_resupdate_v2 /= nb_iter;
+
 
     cout << rdim << "," << cdim << "," << order << "," << AvailableThreads();
-    if (t_mbasis_rescomp <= t_mbasis_rescomp_v2 && t_mbasis_rescomp <= t_mbasis_resupdate)
+    cout << "," << t_mbasis_rescomp << "," << t_mbasis_rescomp_v2 << "," << t_mbasis_resupdate << "," << t_mbasis_resupdate_v2;
+
+    double best;
+    if (t_mbasis_rescomp <= t_mbasis_rescomp_v2 && t_mbasis_rescomp <= t_mbasis_resupdate && t_mbasis_rescomp <= t_mbasis_resupdate_v2)
     {
         cout << "," << "rescomp";
         best = t_mbasis_rescomp;
     }
-    else if (t_mbasis_rescomp_v2 <= t_mbasis_rescomp && t_mbasis_rescomp_v2 <= t_mbasis_resupdate)
+    else if (t_mbasis_rescomp_v2 <= t_mbasis_rescomp && t_mbasis_rescomp_v2 <= t_mbasis_resupdate && t_mbasis_rescomp_v2 <= t_mbasis_resupdate_v2)
     {
         cout << "," << "rescomp_v2";
         best = t_mbasis_rescomp_v2;
     }
-    else // (t_mbasis_resupdate <= t_mbasis_rescomp_v2 && t_mbasis_resupdate <= t_mbasis_rescomp)
+    else if (t_mbasis_resupdate <= t_mbasis_rescomp && t_mbasis_resupdate <= t_mbasis_rescomp_v2 && t_mbasis_resupdate <= t_mbasis_resupdate_v2)
     {
         cout << "," << "resupdate";
         best = t_mbasis_resupdate;
     }
+    else // (t_mbasis_resupdate_v2 <= t_mbasis_rescomp_v2 && t_mbasis_resupdate_v2 <= t_mbasis_rescomp  && t_mbasis_resupdate_v2 <= t_mbasis_resupdate)
+    {
+        cout << "," << "resupdate_v2";
+        best = t_mbasis_resupdate_v2;
+    }
     cout << "," << t_mbasis_rescomp / best;
     cout << "," << t_mbasis_rescomp_v2 / best;
     cout << "," << t_mbasis_resupdate / best;
+    cout << "," << t_mbasis_resupdate_v2 / best;
     cout << endl;
 }
 
