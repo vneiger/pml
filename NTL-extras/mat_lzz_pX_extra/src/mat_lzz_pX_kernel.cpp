@@ -30,7 +30,7 @@ bool is_kernel_basis(
     if (not row_wise)
         throw std::invalid_argument("~~is_kernel_basis~~ column-wise not implemented yet");
 
-    std::cout << "~~is_kernel_basis~~ Warning: not checking generation (not implemented yet)" << std::endl;
+    std::cout << "~~is_kernel_basis~~ Warning: checking generation not implemented yet" << std::endl;
 
     // test whether kerbas has the right dimensions
     if ( (row_wise && kerbas.NumCols() != m)
@@ -80,6 +80,19 @@ bool is_kernel_basis(
         if (not IsZero(projected_product))
             return false;
     }
+
+    // testing generation in generic case
+    // --> compare sum of pivot degrees for input and output
+    long ker_dim = (row_wise ? kerbas.NumRows() : kerbas.NumCols());
+    std::vector<long> pivind(ker_dim);
+    DegVec pivdeg(ker_dim);
+    pivot_index(pivind, pivdeg, kerbas, shift, row_wise);
+    long kerbas_degdet = std::accumulate(pivdeg.begin(), pivdeg.end(), 0);
+    DegVec degs = vector_degree(pmat, Shift(row_wise?m:n,0), not row_wise);
+    long input_degdet = std::accumulate(degs.begin(), degs.end(), 0);
+    std::cout << "~~is_kernel_basis~~ Generation check assuming generic input of given ";
+    std::cout << (row_wise ? "column" : "row") << " degree: ";
+    std::cout << ((kerbas_degdet == input_degdet) ? "correct" : "wrong") << std::endl;
 
     return true;
 }
@@ -148,9 +161,8 @@ DegVec kernel_basis_via_approximation(
     return pivot_degree;
 }
 
-
 // TODO: use pivdeg/pivind instead of rdeg?
-// TODO: issues when m <= n !! go directly to divide and conquer
+// TODO: currently only supports n < m (for m <= n: directly to divide and conquer on columns)
 // and if we know the first approximant basis will not give any kernel vector, should we also directly divide and conquer?
 // TODO: doc mentioning requirement: entries of shift should bound row degrees of pmat
 // TODO: why is it currently required that shift STRICTLY bounds degrees? (otherwise crashes)
@@ -162,15 +174,6 @@ DegVec kernel_basis_zls_via_approximation(
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
-
-    // return an empty matrix for full row rank matrix
-    // TODO this is wrong if matrix is rank-deficient!!
-    if (n >= m)
-    {   
-        kerbas.SetDims(0,0);
-        auto res = DegVec();
-        return res;
-    }
 
     // find parameter: sum of the m-n largest entries of shift
     // TODO assumes m<n ?
