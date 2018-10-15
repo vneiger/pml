@@ -27,7 +27,7 @@ std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
 int main(int argc, char *argv[])
 {
     if (argc!=5)
-        throw std::invalid_argument("Usage: ./test_composition degree expnt nbits nthreads");
+        throw std::invalid_argument("Usage: ./test_charpoly_amodg degree expnt nbits nthreads");
 
     // main parameter: degree
     long n = atoi(argv[1]);
@@ -41,7 +41,6 @@ int main(int argc, char *argv[])
 
     // used for timings
     double t1,t2;
-    double t_comp=0.0;
     double t_charpoly=0.0;
 
     t1 = GetWallTime();
@@ -69,7 +68,7 @@ int main(int argc, char *argv[])
     long d = ceil( (double)n / m );
     t2 = GetWallTime();
 
-    std::cout << "Testing composition algorithm with random input polynomials" << std::endl;
+    std::cout << "Testing charpoly with random input polynomials" << std::endl;
     std::cout << "-- n = " << n << std::endl;
     std::cout << "-- m = " << m << std::endl;
     std::cout << "-- d = " << d << std::endl;
@@ -89,7 +88,7 @@ int main(int argc, char *argv[])
     }
 
 #ifdef SAFETY_CHECKS
-    std::cout << "###~~~Warning~~~### SAFETY_CHECKS is on; use with large degrees may be very slow." << std::endl;
+    std::cout << "###~~~Warning~~~### SAFETY_CHECKS is on; use with non-small degrees may be very slow." << std::endl;
 #endif // SAFETY_CHECKS
 
     std::cout << "TIME ~~ build polynomials and compute parameters: " << (t2-t1) << std::endl;
@@ -99,31 +98,21 @@ int main(int argc, char *argv[])
     zz_pXMultiplier A(a, G); // precompute things to multiply by a mod g
     t2 = GetWallTime();
     std::cout << "TIME ~~ pre-computations to work with a mod g: " << (t2-t1) << std::endl;
-    t_comp += t2-t1; t_charpoly += t2-t1;
+    t_charpoly += t2-t1;
     t1 = GetWallTime();
 
-    // compute powers of a mod g
-    Vec<zz_pX> pows_a;
-    pows_a.SetLength(2*d+1);
-    set(pows_a[0]); // pows_a[0] = 1
-    pows_a[1] = a; // pows_a[1] = a
-    for (long k = 2; k < 2*d+1; ++k)
-        MulMod(pows_a[k], pows_a[k-1], A, G); // pows_a[k] = a^k mod g
-
-    t2 = GetWallTime();
-    std::cout << "TIME ~~ compute powers of a mod g: " << (t2-t1) << std::endl;
-    t_comp += t2-t1; t_charpoly += t2-t1;
-    t1 = GetWallTime();
+    // will hold powers of a, initially it is a
+    zz_pX pow_a = a; 
 
 #ifdef SAFETY_CHECKS
     // compute the block-Wiedemann sequence (naive)
     Vec<Mat<zz_p>> seq_naive;
     seq_naive.SetLength(2*d+1);
-    for (long k = 0; k < 2*d; ++k)
+    ident(seq_naive[2*d], m); // pmat[2*d] = identity m x m
+    for (long k = 2*d-1; k >= 0; --k)
     {
-        //random(seq[k], m, m);
         seq_naive[k].SetDims(m, m);
-        zz_pX f = pows_a[2*d-k];  // a^{2d-k} mod g
+        zz_pX f = pow_a;  // a^{2d-k} mod g
         for (long i = 0; i < m; ++i)
         {
             // here f = x^i * f mod g = x^i a^{2d-k} mod g
@@ -134,15 +123,15 @@ int main(int argc, char *argv[])
             f <<= 1;
             f = f - coeff(f,n) * g;
         }
+        MulMod(pow_a, pow_a, A, G); // a^{2d-(k+1)} mod g
     }
-    ident(seq_naive[2*d], m); // pmat[2*d] = identity m x m
     t2 = GetWallTime();
     std::cout << "TIME ~~ compute sequence for block Wiedemann (naive): " << (t2-t1) << std::endl;
+    pow_a = a; // set back to its state before this #ifdef
     t1 = GetWallTime();
 #endif // SAFETY_CHECKS
 
     // compute the block-Wiedemann sequence (fast)
-
     // Sequence stored as a list of constant matrices
     Vec<Mat<zz_p>> seq;
     seq.SetLength(2*d+1);
@@ -157,16 +146,20 @@ int main(int argc, char *argv[])
     for (long j = 0; j < m; ++j)
         g_high[j] = -g[j+n-m];
 
-    for (long k = 0; k < 2*d; ++k)
+    // pmat[2*d] = identity m x m
+    ident(seq[2*d], m);
+
+    for (long k = 2*d-1; k >= 0; --k)
     {
         seq[k].SetDims(m, m);
         // first m coefficients of a^{2d-k} mod g
         zz_pX f_low;
-        trunc(f_low, pows_a[2*d-k], m);
+        trunc(f_low, pow_a, m);
         // last m coefficients of a^{2d-k} mod g
         Vec<zz_p> f_high; f_high.SetLength(m);
-        for (long j = 0; j < std::min(m,m+deg(pows_a[2*d-k])-n+1); ++j)
-            f_high[j] = pows_a[2*d-k][n-m+j];
+        for (long j = 0; j < std::min(m,m+deg(pow_a)-n+1); ++j)
+            f_high[j] = pow_a[n-m+j];
+
         for (long i = 0; i < m; ++i)
         {
             // here f_low = first m coefficients of x^i a^{2d-k} mod g
@@ -181,8 +174,8 @@ int main(int argc, char *argv[])
             for (long j = m-1; j > 0; --j)
                 f_high[j] = f_high[j-1] + lt * g_high[j];
         }
+        MulMod(pow_a, pow_a, A, G); // a^{2d-(k+1)} mod g
     }
-    ident(seq[2*d], m); // pmat[2*d] = identity m x m
     t2 = GetWallTime();
 #ifdef SAFETY_CHECKS
     bool correct=true;
@@ -195,7 +188,7 @@ int main(int argc, char *argv[])
     std::cout << (correct ? " (correct)" : " (wrong)");
 #endif // SAFETY_CHECKS
     std::cout << std::endl;
-    t_comp += t2-t1; t_charpoly += t2-t1;
+    t_charpoly += t2-t1;
     t1 = GetWallTime();
 
     // convert the sequence into a polynomial matrix
@@ -209,7 +202,7 @@ int main(int argc, char *argv[])
 
     t2 = GetWallTime();
     std::cout << "TIME ~~ convert sequence to polynomial matrix: " << (t2-t1) << std::endl;
-    t_comp += t2-t1; t_charpoly += t2-t1;
+    t_charpoly += t2-t1;
     t1 = GetWallTime();
 
     // reconstruct fraction
@@ -230,7 +223,7 @@ int main(int argc, char *argv[])
 
     t2 = GetWallTime();
     std::cout << "TIME ~~ matrix fraction reconstruction: " << (t2-t1) << std::endl;
-    t_comp += t2-t1; t_charpoly += t2-t1;
+    t_charpoly += t2-t1;
 
 #ifdef SAFETY_CHECKS
     t1 = GetWallTime();
@@ -239,24 +232,22 @@ int main(int argc, char *argv[])
     MakeMonic(det_pmbasis);
     t2 = GetWallTime();
     std::cout << "TIME ~~ determinant for charpoly: " << (t2-t1) << std::endl;
-    t_charpoly += t2-t1;
 #endif // SAFETY_CHECKS
 
     // find determinant by solving system with random right hand side
     t1 = GetWallTime();
     zz_pX det;
-    determinant_generic_knowing_degree(det, basis, n);
+    determinant_via_linsolve(det, basis);
     MakeMonic(det);
     t2 = GetWallTime();
+    t_charpoly += t2-t1;
+
     std::cout << "TIME ~~ determinant for charpoly: " << (t2-t1);
 #ifdef SAFETY_CHECKS
-    std::cout << (det == det_pmbasis ? " (consistent)" : " (not consistent)") << std::endl;;
+    std::cout << (det == det_pmbasis ? " (det consistent)" : " (det not consistent)") << std::endl;;
     correct = correct && (det == det_pmbasis);
 #endif // SAFETY_CHECKS
     std::cout << std::endl;
-    t_charpoly += t2-t1;
-
-    // TODO finish compmod computation
 
     t1 = GetWallTime();
     zz_pX cp;
@@ -264,23 +255,14 @@ int main(int argc, char *argv[])
     t2 = GetWallTime();
     std::cout << "TIME ~~ NTL's charpoly of a mod g: " << (t2-t1) << std::endl;
 
-    t1 = GetWallTime();
-    zz_pX b_ntl;
-    CompMod(b_ntl, h, a, g); // b_ntl = h(a) mod g
-    t2 = GetWallTime();
-    std::cout << "TIME ~~ NTL's modular composition for same degree: " << (t2-t1) << std::endl;
-
     std::cout << "TIME ~~ charpoly of a mod g: " << t_charpoly << ((det == cp) ? " (correct)" : " (wrong)") << std::endl;
-    std::cout << "TIME ~~ CompMod h(a) mod g: " << t_comp << std::endl;
 
 #ifdef SAFETY_CHECKS
+    correct = correct && (det == cp);
     if (not correct)
         std::cout << "An issue was detected. Check messages above." << std::endl;
 #endif // SAFETY_CHECKS
     
-
-    // TODO test b_ntl == b;
-
     return 0;
 }
 
