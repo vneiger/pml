@@ -96,9 +96,9 @@ void check(long m, long n, long d){
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    SetNumThreads(4);
+    SetNumThreads(1);
 
-    zz_p::init(NTL::GenPrime_long(60));
+    zz_p::FFTInit(0);
 
     if (argc!=4)
         throw std::invalid_argument("Usage: ./test_kernel_zls rdim cdim degree");

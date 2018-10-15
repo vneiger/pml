@@ -174,10 +174,10 @@ DegVec kernel_basis_zls_via_approximation(
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
+    //std::cout << "call: " << m << "," << n << "," << deg(pmat) << std::endl;
 
-    // find parameter: sum of the m-n largest entries of shift
-    // TODO assumes m<n ?
-    // all below assumes pmat nonzero?
+    // FIXME assumes m>n
+    // find parameter: sum of the n largest entries of shift
     Shift sorted_shift(shift);
     std::sort(sorted_shift.begin(), sorted_shift.end());
     long rho = 0;
@@ -185,8 +185,11 @@ DegVec kernel_basis_zls_via_approximation(
         rho += sorted_shift[i];
 
     // order for call to approximation
-    // TODO threshold ( 3* ?) to determine
-    long order = 3 * ceil( (double)rho / n);
+    // TODO threshold (factor 2) to be determined
+    // currently, choice is such that the approximant basis should capture the
+    // whole kernel when n <= m/2 and pmat is generic (FIXME including for
+    // strange shifts/degrees?)
+    long order = 2 * ceil( (double)rho / n ) + 1;
 
     // compute approximant basis
     Mat<zz_pX> appbas;
@@ -210,78 +213,102 @@ DegVec kernel_basis_zls_via_approximation(
             other_rows.emplace_back(i);
     long m1 = ker_rows.size();
 
-    DegVec rdegP1(m1);
+    // shifted row degree for the kernel part found by the previous call
+    DegVec rdeg1(m1);
     for (long i = 0; i < m1; ++i)
-        rdegP1[i] = rdeg[ker_rows[i]];
+        rdeg1[i] = rdeg[ker_rows[i]];
 
-    if (n == 1 || m1 == m)
+    // if there was just one column or if the kernel is full (matrix was zero),
+    // then return
+    if (n == 1 || m1 == m )
     {
         kerbas.SetDims(m1, m);
         for (long i = 0; i < m1; i++)
             kerbas[i].swap(appbas[ker_rows[i]]);
-        return rdegP1;
+        return rdeg1;
     }
+    // FIXME it is annoying that even if full basis was found, we still do
+    // multiplications below... the problem being that we cannot assume that
+    // the kernel has dimension m-n. To circumvent this, could test whether sum
+    // of pivot degree is the expected one (?).
 
+    // dimension and shifted row degree (order removed) of the non-kernel part
+    // of the approximant basis
     long m2 = other_rows.size();
-    DegVec rdegP2(m2);
+    DegVec rdeg2(m2);
     for (long i = 0; i < m2; ++i)
-        rdegP2[i] = rdeg[other_rows[i]];
+        rdeg2[i] = rdeg[other_rows[i]] - order;
 
-    Mat<zz_pX> P2;
-    P2.SetDims(m2, m);
+    // retrieve this non-kernel part of the approximant
+    Mat<zz_pX> approx;
+    approx.SetDims(m2, m);
     for (long i = 0; i < m2; ++i)
-        P2[i].swap(appbas[other_rows[i]]);
+        approx[i].swap(appbas[other_rows[i]]);
 
-    // set up the recursive calls
-    for (long i = 0; i < m2; ++i)
-        rdegP2[i] -= order; // set rdegP2 = t from paper
-    Mat<zz_pX> G;
-    multiply(G,P2,pmat);
-    RightShift(G,G,order);
+    // compute residual
+    // TODO use middle product?
+    Mat<zz_pX> pmat2;
+    multiply(pmat2, approx, pmat);
+    RightShift(pmat2, pmat2, order);
 
-    // split G
-    Mat<zz_pX> G1,G2;
+    // column-split into two submatrices of column dimension ~ n/2
+    Mat<zz_pX> pmat2_sub;
     long n1 = n/2;
     long n2 = n-n1;
-    G1.SetDims(m2, n1);
-    G2.SetDims(m2, n2);
+    pmat2_sub.SetDims(m2, n1);
     for (long r = 0; r < m2; ++r)
         for (long c = 0; c < n1; ++c)
-            G1[r][c] = G[r][c];
-    for (long r = 0; r < m2; ++r)
-        for (long c = 0; c < n2; ++c)
-            G2[r][c] = G[r][c+n1];
+            pmat2_sub[r][c] = pmat2[r][c];
 
     // recursive calls
-    Mat<zz_pX> N1, N2;
-    DegVec u = kernel_basis_zls_via_approximation(N1, G1, rdegP2);
+    Mat<zz_pX> kerbas1, kerbas2;
+    rdeg2 = kernel_basis_zls_via_approximation(kerbas1, pmat2_sub, rdeg2);
 
-    multiply(G2, N1, G2);
-    DegVec v = kernel_basis_zls_via_approximation(N2, G2, u);
+    pmat2_sub.SetDims(m2, n2);
+    for (long r = 0; r < m2; ++r)
+        for (long c = 0; c < n2; ++c)
+            pmat2_sub[r][c] = pmat2[r][n1+c];
 
-    // if G2 is square, then there is nothing to append
-    if (N2.NumRows() == 0)
+    multiply(pmat2, kerbas1, pmat2_sub);
+    rdeg2 = kernel_basis_zls_via_approximation(kerbas2, pmat2, rdeg2);
+
+    // if kerbas2 is empty, kerbas1 was already the full kernel; return
+    if (kerbas2.NumRows() == 0)
     {
         kerbas.SetDims(m1,m);
         for (long i = 0; i < m1; ++i)
             kerbas[i].swap(appbas[ker_rows[i]]);
-        return rdegP1;
+        return rdeg1;
     }
 
-    rdegP1.reserve(m1+v.size());
-    for (auto &i: v)
-        rdegP1.emplace_back(i);
+    // otherwise, compute the remaining kernel as
+    // kerbas2 =  kerbas2 * kerbas1 * approx
+    // (using pmat2 as a temp)
+    // v1:
+    //std::cout << "a*b*c, ";
+    //std::cout << kerbas2.NumRows() << "," << kerbas2.NumCols() << "," << deg(kerbas2) << " x ";
+    //std::cout << kerbas1.NumRows() << "," << kerbas1.NumCols() << "," << deg(kerbas1) << " x ";
+    //std::cout << approx.NumRows() << "," << approx.NumCols() << "," << deg(approx) << std::endl;
+    multiply(pmat2, kerbas2, kerbas1);
+    multiply(kerbas2, pmat2, approx);
+    // v2:
+    //multiply(pmat2, kerbas1, approx);
+    //multiply(kerbas2, kerbas2, pmat2);
 
-    // collect output
-    multiply(G1,N2,N1);
-    multiply(G1,G1,P2);
+    // update the shifted row degree
+    rdeg1.reserve(m1+rdeg2.size());
+    for (auto &i: rdeg2)
+        rdeg1.emplace_back(i);
 
-    kerbas.SetDims(m1+G1.NumRows(), m);
+    // copy the kernel basis, joining the kernel rows of the approximant basis
+    // and the newly found rows of kerbas2
+    kerbas.SetDims(m1+kerbas2.NumRows(), m);
     for (long i = 0; i < m1; ++i)
         kerbas[i].swap(appbas[ker_rows[i]]);
-    for (long i = 0; i < G1.NumRows(); ++i)
-        kerbas[m1+i].swap(G1[i]);
-    return rdegP1;
+    for (long i = 0; i < kerbas2.NumRows(); ++i)
+        kerbas[m1+i].swap(kerbas2[i]);
+
+    return rdeg1;
 }
 
 DegVec kernel_basis_zls_via_interpolation(
