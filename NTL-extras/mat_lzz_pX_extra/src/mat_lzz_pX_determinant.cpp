@@ -3,6 +3,7 @@
 #include <NTL/lzz_pX.h>
 
 #include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_approximant.h"
 
 bool verify_determinant(const zz_pX & det, const Mat<zz_pX> & pmat, bool up_to_constant, bool randomized)
 {

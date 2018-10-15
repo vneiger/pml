@@ -10,6 +10,7 @@
 
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_approximant.h"
 #include "mat_lzz_pX_partial_linearization.h"
 
 NTL_CLIENT

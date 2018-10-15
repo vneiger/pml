@@ -8,6 +8,7 @@
 #include "util.h"
 #include "magma_output.h"
 #include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_approximant.h"
 
 std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
 {
