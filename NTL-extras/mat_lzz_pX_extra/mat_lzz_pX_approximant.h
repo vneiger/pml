@@ -1,16 +1,9 @@
 #ifndef MAT_LZZ_PX_APPROXIMANT__H
 #define MAT_LZZ_PX_APPROXIMANT__H
 
-#include <NTL/matrix.h>
-#include <NTL/lzz_pX.h>
-#include <iostream>
-#include <vector>
-#include <numeric> // for 'accumulate'
-
 #include "mat_lzz_pX_extra.h"
 
 NTL_CLIENT
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -18,52 +11,72 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-typedef std::vector<long> Order;
+/*------------------------------------------------------------*/
+/* Definitions (shifted minimal approximant basis)            */
+/*------------------------------------------------------------*/
 
-// TODO write proper docstrings
-
-////Definition (approximant basis)
-// Given:
+// Approximant basis: consider
 //   * m x n matrix of univariate polynomials 'pmat',
 //   * approximation order 'order' (list of n positive integers),
-// An approximant basis for (pmat,order) is a matrix over K[X]
-// whose rows form a basis for the K[X]-module
-// { 'app' in K[X]^{1 x m}  |  the column j of 'app' 'pmat' is 0 modulo X^{order[j]} }
-
-//// Minimal and Popov approximant bases
-// Given in addition:
+// then n approximant basis for (pmat,order) is a matrix over K[X] whose rows
+// form a basis for the K[X]-module
+// { p in K[X]^{1 x m}  |  the column j of p F is 0 modulo X^{order[j]} }
+//
+// Shifted minimal approximant basis: consider furthermore
 //   * a degree shift 'shifts' (list of m integers)
-// then an approximant basis for (pmat,order) is said to be
-// "a shift-minimal" (resp. "the shift-Popov") approximant basis
-// if it shift-reduced (resp. in shift-Popov form)
-// Idem for shift-ordered weak Popov
-// Cf. literature for definitions
+// then an approximant basis for (pmat,order) is said to be "a shift-minimal"
+// (resp. "a shift-ordered weak Popov", resp. "the shift-Popov") approximant
+// basis if it is in shift-reduced form (resp. in shift-ordered weak Popov
+// form, resp. in shift-Popov form)
+// Refer to mat_lzz_pX_extra.h for definitions of these forms.
+
+// type for 'orders', which are lists of integers
+typedef std::vector<long> Order;
 
 /*------------------------------------------------------------*/
-/* TODO: documentation to explain what this computes and what */
-/* are the options                                            */
+/*------------------------------------------------------------*/
+/* TODO                                                       */
+/*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-// TODO generic: from shift, deduce the pivot degree expected generically and
-// use this as a shift instead of 'shift', then obtain directly Popov approx
-// basis; skipping the first call to find the pivot degree (in addition, will
-// this be more efficient because shift is nicer?)
+// ** pmbasis: handle different orders via max(order)-order shifting of pmat
 
-// TODO pmbasis: threshold mbasis
+// ** generic (uniform shift): just do everything without shifts as would
+// happen generically with the uniform shift; might need assumptions on n
+// divide m, etc
 
-// TODO mbasis insert threads
+// ** shifted generic: from shift, deduce the pivot degree expected generically
+// and use this as a shift instead of 'shift', then obtain directly Popov
+// approx basis; skipping the first call to find the pivot degree (in addition,
+// will this be more efficient because shift is nicer?)
 
-// Guarantee: output is at least ordered weak Popov
-// return value is pivot degree
+// ** thresholds:
+//   -- mbasis_resupdate / mbasis_rescomp depending on m/n and nthreads
+//   -- in pmbasis: base case
 
-// TODO Names? kernel / approximant ? kernel basis / approximant basis ?
-// keep interpolation or choose better name?
+// ** threads:
+//   -- in mbasis_resupdate
+//   -- in pmbasis?
+
+// ** form of output? currently, it is at least ordered weak Popov
+// --> check if this makes a difference of time when not returning Popov but
+// just minimal, like done in LinBox and in GJV03 and GL14 (implies slightly
+// less permutation work)
+
+// ** return value is pivot degree.
+//   -- Would shifted row degree be more appropriate?
+//   -- Why return rather than input reference?
+//   -- At least in lower level functions, why not modifying directly the input shift?
+
+// iterative version / mbasis: compare different ways of obtaining Popov
+// (recompute with new shift, or maintain normal form)
+
 
 /*------------------------------------------------------------*/
 /* general user-friendly interface                            */
 /*------------------------------------------------------------*/
 
-// TODO: when algorithms are ready, find threshold and write the definition
+// TODO draft implementation
 DegVec approximant_basis(
                          Mat<zz_pX> & appbas,
                          const Mat<zz_pX> & pmat,
@@ -96,8 +109,6 @@ inline DegVec approximant_basis(
 /* be at least in the form 'form')                            */
 /* 'randomized' says whether using a Monte Carlo or Las Vegas */
 /* verification algorithm is acceptable                       */
-/* Note: currently, deterministic verification is, for most   */
-/* instances, as long as re-computing the basis               */
 /*------------------------------------------------------------*/
 
 bool is_approximant_basis(
@@ -164,11 +175,6 @@ DegVec popov_mbasis1(
                      const Shift & shift
                     );
 
-
-// TODO check if serious difference of time if not returning Popov but just
-// minimal, like done in LinBox and in GJV03 and GL14 (implies slightly less
-// permutation work: the final permutation of the rows is not necessary)
-
 /*------------------------------------------------------------*/
 /* M-Basis algorithm for uniform approximant order            */
 /* References:                                                */
@@ -186,7 +192,7 @@ DegVec mbasis_plain(
                     const Shift & shift
                    );
 
-// variant which first converts to vector of constant matrices,
+// Variant which first converts to vector of constant matrices,
 // performs the computations with this storage, and eventually
 // converts back to polynomial matrices
 // Residual (constant coeff of X^-d appbas*pmat) is computed from scratch at
@@ -208,6 +214,10 @@ DegVec mbasis_rescomp(
               const Shift & shift
              );
 
+// here, same function with:
+//   * popov_mbasis1 directly incorporated into the loop, minimizing some
+//   creation/deletion of objects
+//   * some multi-threading inserted
 DegVec mbasis_rescomp_v2(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
@@ -215,7 +225,7 @@ DegVec mbasis_rescomp_v2(
               const Shift & shift
              );
 
-// variant which first converts to vector of constant matrices,
+// Variant which first converts to vector of constant matrices,
 // performs the computations with this storage, and eventually
 // converts back to polynomial matrices
 // Residual (X^-d appbas*pmat mod X^(order-d)) is continuously updated along
@@ -229,6 +239,17 @@ DegVec mbasis_rescomp_v2(
 // Assuming cubic matrix multiplication over the field, the third item costs
 // O(m n (m-n) order^2/2) operations
 DegVec mbasis_resupdate(
+                        Mat<zz_pX> & appbas,
+                        const Mat<zz_pX> & pmat,
+                        const long order,
+                        const Shift & shift
+                       );
+
+// here, same function with:
+//   * popov_mbasis1 directly incorporated into the loop, minimizing some
+//   creation/deletion of objects
+//   * some multi-threading inserted
+DegVec mbasis_resupdate_v2(
                         Mat<zz_pX> & appbas,
                         const Mat<zz_pX> & pmat,
                         const long order,
@@ -274,7 +295,6 @@ DegVec popov_mbasis(
 /*   - Jeannerod-Neiger-Villard 2018                          */
 /*          (ensuring s-ordered weak Popov or s-Popov)        */
 /*------------------------------------------------------------*/
-// TODO handle different orders via max(order)-order shifting of pmat
 DegVec pmbasis(
                Mat<zz_pX> & appbas,
                const Mat<zz_pX> & pmat,
@@ -292,9 +312,6 @@ DegVec popov_pmbasis(
 /*------------------------------------------------------------*/
 /* FIXME in progress: MBASIS/PMBASIS, generic case            */
 /*------------------------------------------------------------*/
-
-// TODO allow non-uniform shifts?
-// TODO several columns
 
 DegVec popov_mbasis1_generic(
                      Mat<zz_p> & kerbas,
