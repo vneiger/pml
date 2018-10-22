@@ -44,58 +44,59 @@ void slice(Vec<zz_pX> &res, const zz_pX &p, const long len, const long sz){
 
 // generates (t*a^(s*i) mod g) for 0 <= i < l
 void gen_pows (Vec<zz_pX> &pow, 
-               const zz_pX &t,
-               const zz_pX &a,
-               const long s,
-               const zz_pX &g,
-               const long l)
+        const zz_pX &t,
+        const zz_pX &a,
+        const long s,
+        const zz_pX &g,
+        const long l)
 {
     zz_pXModulus g_mod;
     build(g_mod, g);
-    
+
     zz_pX a_pow;
     PowerMod(a_pow, a, s, g_mod); // a_pow = a^s
-    
+
     zz_pXMultiplier a_pow_mul;
     build(a_pow_mul, a_pow, g_mod);
-    
+
     pow.SetLength(l);
     pow[0] = t;
     for (long i = 1; i < l; i++)
     {
         MulMod(pow[i], pow[i-1], a_pow_mul, g_mod);
     }
-    
+
 }
 
 void get_quos (Mat<zz_pX> &quos,
-               const Vec<zz_pX> &alphas,
-               const Vec<zz_pX> &As,
-               const zz_pX &g,
-               const long m)
+        const Vec<zz_pX> &alphas,
+        const Vec<zz_pX> &As,
+        const zz_pX &g,
+        const long m)
 {
     const long n = deg(g);
     const long pad = 2*m - ((n-2*m-1)%(2*m));
-    
+
     const long len = ceil((n*1.0)/(2*m));
     const zz_pX S = InvTrunc(reverse(g,n), n-1);
-    
+
     Mat<zz_pX> mat1,mat2,mat3;
     mat1.SetDims(alphas.length(), len);
     mat2.SetDims(alphas.length(), len);
     mat3.SetDims(alphas.length(), len);
-    
+
     for (long i = 0; i < alphas.length(); i++)
     {
         zz_pX alpha_rev = reverse(alphas[i], n-1);
         zz_pX A_rev = reverse(As[i], n-1);
         zz_pX A_st = MulTrunc(S, A_rev, n-1);
-        LeftShift(A_st, pad);
-        
+        LeftShift(A_st,A_st, pad);
+
+
         Vec<zz_pX> s1,s2;
         slice(s1, alpha_rev, len, 2*m);
         slice(s2, A_st, len, 2*m);
-        
+
         // populate mat1, mat2
         for (long j = 0; j < len; j++)
         {
@@ -109,11 +110,11 @@ void get_quos (Mat<zz_pX> &quos,
     }
     transpose(mat2,mat2);
     transpose(mat3,mat3);
-    
+
     Mat<zz_pX> res1,res2;
     multiply(res1,mat1,mat2);
     multiply(res2,mat1,mat3);
-    
+
     trunc(res1,res1,2*m);
     RightShift(res2,res2,2*m);
     quos = res1+res2;
@@ -132,28 +133,28 @@ void SetDims (Coeffs &res, const long r, const long c, const long d)
 }
 
 void get_first_row (Coeffs &res,
-                    const zz_pX &a,
-                    const zz_pX &g,
-                    const long m)
+        const zz_pX &a,
+        const zz_pX &g,
+        const long m)
 {
     const long n = deg(g);
-    const long d = ceil((n*1.0)/m);
+    const long d = 2*ceil((n*1.0)/m)+1;
     const long sqrt_d = ceil(sqrt(d));
 
     Vec<zz_pX> alphas, As;
     zz_pX t;
     SetCoeff(t,m-1,1);
-    
+
     double t1 = GetWallTime();
     gen_pows(alphas, t, a, 1, g, sqrt_d);
     gen_pows(As, zz_pX(1), a, sqrt_d, g, sqrt_d);
     cout << "pow comp: " << GetWallTime() - t1 << endl;
-    
+
     t1 = GetWallTime();
     Mat<zz_pX> quos;
     get_quos(quos, alphas, As, g, m);
     cout << "quo comp: " << GetWallTime() - t1 << endl;
-    
+
     t1 = GetWallTime();
     SetDims(res, sqrt_d, sqrt_d, 2*m);
     zz_pX g_trunc;
@@ -175,17 +176,17 @@ void get_first_row (Coeffs &res,
 }
 
 void get_coeffs (Vec<Coeffs> &res,
-                 const zz_pX &a,
-                 const zz_pX &g,
-                 const long m)
+        const zz_pX &a,
+        const zz_pX &g,
+        const long m)
 {
     const long n = deg(g);
-    const long d = ceil((n*1.0)/m);
+    const long d = 2*ceil((n*1.0)/m)+1;
     const long sqrt_d = ceil(sqrt(d));
-    
+
     res.SetLength(m);
     get_first_row(res[0],a,g,m);
-    
+
     for (long i = 1; i < m; i++)
     {
         SetDims(res[i],sqrt_d,sqrt_d,2*m-i);
@@ -193,12 +194,46 @@ void get_coeffs (Vec<Coeffs> &res,
             for (long v = 0; v < sqrt_d; v++)
             {
                 zz_p l_n_1 = -(zz_p(1)/ConstTerm(g)) * res[i-1][u][v][0];
-                
+
                 for (long j = 0; j < 2*m-i; j++)
                 {
                     res[i][u][v][j] = res[i-1][u][v][j+1] 
-                                      + coeff(g,j+1)*l_n_1;
+                        + coeff(g,j+1)*l_n_1;
                 }
+            }
+    }
+
+    // format
+    for (long i = 0; i < m; i++)
+        SetDims(res[i],sqrt_d,sqrt_d,m);
+}
+
+void get_coeffs_naive (Vec<Coeffs> &res,
+        const zz_pX &a,
+        const zz_pX &g,
+        const long m)
+{
+    const long n = deg(g);
+    const long d = 2*ceil((n*1.0)/m)+1;
+    const long sqrt_d = ceil(sqrt(d));
+
+    res.SetLength(m);
+
+    zz_pXModulus g_mod;
+    build(g_mod, g);
+    for (long i = 0; i < m; i++)
+    {
+        SetDims(res[i], sqrt_d, sqrt_d, m);
+        for (long u = 0; u < sqrt_d; u++)
+            for (long v = 0; v < sqrt_d; v++)
+            {
+                zz_pX x;
+                SetCoeff(x,m-i-1,1);
+                zz_pX a_temp;
+                PowerMod(a_temp, a, u+v*sqrt_d, g_mod);
+                MulMod(a_temp, a_temp, x, g_mod);
+                for (long t = 0; t < m; t++)
+                    res[i][u][v][t] = coeff(a_temp,t);
             }
     }
 }
@@ -212,7 +247,7 @@ void print(const Vec<Coeffs> &c)
 int main(int argc, char *argv[]){
     if (argc!=5)
         throw std::invalid_argument("Usage: ./test_charpoly_amodg degree expnt nbits nthreads");
-    
+
     long n = atoi(argv[1]);
     // parameter: exponent for m = n^exponent; default = 0.333 ~ 1/omega for omega=3
     double exponent = (atof(argv[2]) <= 0.) ? 0.333 : (atof(argv[2]));
@@ -227,12 +262,14 @@ int main(int argc, char *argv[]){
     // used for timings
     double t1;
 
+    auto prime = NTL::GenPrime_long(nbits);
+    cout << "prime: " << prime << endl;
     t1 = GetWallTime();
     if (nbits==0)
         zz_p::FFTInit(0);
     else
-        zz_p::init(NTL::GenPrime_long(nbits));
-    
+        zz_p::init(prime);
+
     cout << "n: " << n << endl;
     cout << "m: " << m << endl;
 
@@ -245,13 +282,21 @@ int main(int argc, char *argv[]){
     // evaluation point
     zz_pX a;
     random(a, n); // deg < n: assumes a reduced modulo g
-    
+
     Vec<Coeffs> res;
     get_coeffs(res,a,g,m);
     //cout << "res:" << endl;
     //print(res);
-    
+
     cout << "took: " << GetWallTime() - t1 << endl;
+
+    Vec<Coeffs> res_naive;
+    get_coeffs_naive(res_naive,a,g,m);
+    //cout << "res naive:"<<endl;
+    //print(res_naive);
+
+    if (res_naive == res) cout << "CORRECT" << endl;
+    else cout << "WRONG" << endl;
 }
 
 
