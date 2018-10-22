@@ -56,11 +56,14 @@ void gen_pows (Vec<zz_pX> &pow,
     zz_pX a_pow;
     PowerMod(a_pow, a, s, g_mod); // a_pow = a^s
     
+    zz_pXMultiplier a_pow_mul;
+    build(a_pow_mul, a_pow, g_mod);
+    
     pow.SetLength(l);
     pow[0] = t;
     for (long i = 1; i < l; i++)
     {
-        MulMod(pow[i], pow[i-1], a_pow, g_mod);
+        MulMod(pow[i], pow[i-1], a_pow_mul, g_mod);
     }
     
 }
@@ -72,10 +75,7 @@ void get_quos (Mat<zz_pX> &quos,
                const long m)
 {
     const long n = deg(g);
-    
     const long pad = 2*m - ((n-2*m-1)%(2*m));
-    zz_pX x_pad;
-    SetCoeff(x_pad, pad, 1);
     
     const long len = ceil((n*1.0)/(2*m));
     const zz_pX S = InvTrunc(reverse(g,n), n-1);
@@ -90,9 +90,7 @@ void get_quos (Mat<zz_pX> &quos,
         zz_pX alpha_rev = reverse(alphas[i], n-1);
         zz_pX A_rev = reverse(As[i], n-1);
         zz_pX A_st = MulTrunc(S, A_rev, n-1);
-        mul(A_st, A_st, x_pad);
-        
-        cout << "A_st: " << A_st << endl;
+        LeftShift(A_st, pad);
         
         Vec<zz_pX> s1,s2;
         slice(s1, alpha_rev, len, 2*m);
@@ -111,9 +109,6 @@ void get_quos (Mat<zz_pX> &quos,
     }
     transpose(mat2,mat2);
     transpose(mat3,mat3);
-    cout << "mat1: " << mat1 << endl;
-    cout << "mat2: " << mat2 << endl;
-    cout << "mat3: " << mat3 << endl;
     
     Mat<zz_pX> res1,res2;
     multiply(res1,mat1,mat2);
@@ -149,22 +144,34 @@ void get_first_row (Coeffs &res,
     zz_pX t;
     SetCoeff(t,m-1,1);
     
+    double t1 = GetWallTime();
     gen_pows(alphas, t, a, 1, g, sqrt_d);
     gen_pows(As, zz_pX(1), a, sqrt_d, g, sqrt_d);
+    cout << "pow comp: " << GetWallTime() - t1 << endl;
     
+    t1 = GetWallTime();
     Mat<zz_pX> quos;
     get_quos(quos, alphas, As, g, m);
+    cout << "quo comp: " << GetWallTime() - t1 << endl;
     
+    t1 = GetWallTime();
     SetDims(res, sqrt_d, sqrt_d, 2*m);
-    t = zz_pX(0);
-    SetCoeff(t,2*m,1);
+    zz_pX g_trunc;
+    trunc(g_trunc,g,2*m);
     for (long u = 0; u < sqrt_d; u++)
         for (long v = 0; v < sqrt_d; v++)
         {
-            zz_pX rem = (alphas[u] * As[v] - quos[u][v]*g)%t;
+            zz_pX rem1, rem2;
+            auto alpha_trunc = trunc(alphas[u],2*m);
+            auto A_trunc = trunc(As[v],2*m);
+            auto quo_trunc = trunc(quos[u][v],2*m);
+            MulTrunc(rem1, alpha_trunc, A_trunc, 2*m);
+            MulTrunc(rem2, quo_trunc, g_trunc, 2*m);
+            rem1 = rem1 - rem2;
             for (long s = 0; s < 2*m; s++)
-                res[u][v][s] = coeff(rem,s);
+                res[u][v][s] = coeff(rem1,s);
         }
+    cout << "rest from row1: " << GetWallTime() - t1 << endl;
 }
 
 void get_coeffs (Vec<Coeffs> &res,
@@ -202,38 +209,49 @@ void print(const Vec<Coeffs> &c)
         cout << c[i] << endl;
 }
 
-int main(){
-    zz_p::init(13);
-    cout << "enter a:" << endl;
-    zz_pX a;
-    string s;
-    getline(cin, s);
-    istringstream iss{s};
-    long t;
-    long at = 0;
-    while (iss >> t)
-        SetCoeff(a, at++, t);
-        
-    cout << "enter g:" << endl;
-    zz_pX g;
-    getline(cin,s);
-    at = 0;
-    iss = istringstream(s);
-    while(iss >> t)
-        SetCoeff(g, at++, t);
-        
-    cout << "enter m:" << endl;
-    long m;
-    cin >> m;
+int main(int argc, char *argv[]){
+    if (argc!=5)
+        throw std::invalid_argument("Usage: ./test_charpoly_amodg degree expnt nbits nthreads");
+    
+    long n = atoi(argv[1]);
+    // parameter: exponent for m = n^exponent; default = 0.333 ~ 1/omega for omega=3
+    double exponent = (atof(argv[2]) <= 0.) ? 0.333 : (atof(argv[2]));
 
-    cout << "a: " << a << endl;
-    cout << "g: " << g << endl;
+    // size of prime field
+    long nbits = atoi(argv[3]);
+    // whether we should verify the result
+    long m = atoi(argv[4]);
+    SetNumThreads(m);
+    m = pow(n,exponent);
+
+    // used for timings
+    double t1;
+
+    t1 = GetWallTime();
+    if (nbits==0)
+        zz_p::FFTInit(0);
+    else
+        zz_p::init(NTL::GenPrime_long(nbits));
+    
+    cout << "n: " << n << endl;
     cout << "m: " << m << endl;
+
+    // modulus
+    zz_pX g;
+    while (deg(g)<n)
+        random(g, n+1);
+    MakeMonic(g);
+
+    // evaluation point
+    zz_pX a;
+    random(a, n); // deg < n: assumes a reduced modulo g
     
     Vec<Coeffs> res;
     get_coeffs(res,a,g,m);
-    cout << "res:" << endl;
-    print(res);
+    //cout << "res:" << endl;
+    //print(res);
+    
+    cout << "took: " << GetWallTime() - t1 << endl;
 }
 
 
