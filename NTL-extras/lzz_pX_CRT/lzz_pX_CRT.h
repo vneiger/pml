@@ -159,6 +159,15 @@ public:
     void t_interpolate(Vec<zz_p>& val, const zz_pX& f);
 
     /*------------------------------------------------------------*/
+    /* vector version of basic operations                         */
+    /*------------------------------------------------------------*/
+    void mul_right(Vec<zz_p>& val, const Vec<zz_p>& f) const;
+    void inv_mul_right(Vec<zz_p>& f, const Vec<zz_p>& val);
+
+    void mul_left(Vec<zz_p>& f, const Vec<zz_p>& val) const;
+    void inv_mul_left(Vec<zz_p>& val, const Vec<zz_p>& f);
+
+    /*------------------------------------------------------------*/
     /* getters / setters                                          */
     /*------------------------------------------------------------*/
     long FFT_evaluate() const;

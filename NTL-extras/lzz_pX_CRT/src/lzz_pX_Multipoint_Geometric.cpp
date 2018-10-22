@@ -231,8 +231,6 @@ zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, const zz_p
     }
 }
 
-
-
 /*------------------------------------------------------------*/
 /* return the ratio q = r^2                                   */
 /*------------------------------------------------------------*/
@@ -257,10 +255,16 @@ zz_p zz_pX_Multipoint_Geometric::get_s()
         return xs[1] / x[1];
 }
 
-/*-----------------------------------------------------------*/
-/* val[i] = P(r^(2*i)), i = 0..n-1                           */
-/* val may alias P.rep                                       */
-/*-----------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* polynomial operations                                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* val[i] = P(s * r^(2*i)), i = 0..n-1                        */
+/* val may alias P.rep                                        */
+/*------------------------------------------------------------*/
 void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const
 {
     zz_pX a, b;
@@ -338,12 +342,11 @@ void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const
     {
         val[i] = x[i] * coeff(b, i);
     }
-
 }
 
 /*------------------------------------------------------------*/
-/* finds f of degree < d such that                            */
-/* val[i] = f(r^(2*i)), i = 0..n-1                            */
+/* finds f of degree < n such that                            */
+/* val[i] = f(s * r^(2*i)), i = 0..n-1                        */
 /* val may alias f.rep                                        */
 /*------------------------------------------------------------*/
 void zz_pX_Multipoint_Geometric::interpolate(zz_pX& f, const Vec<zz_p>& val) 
@@ -413,7 +416,7 @@ void zz_pX_Multipoint_Geometric::interpolate(zz_pX& f, const Vec<zz_p>& val)
 
 /*-----------------------------------------------------------*/
 /* transpose of                                              */
-/* val[i] = P(r^(2*i)), i = 0..n-1                           */
+/* val[i] = P(s * r^(2*i)), i = 0..n-1                       */
 /* val must have length n                                    */
 /* val may alias P.rep                                       */
 /*-----------------------------------------------------------*/
@@ -478,8 +481,8 @@ void zz_pX_Multipoint_Geometric::t_evaluate(zz_pX& P, const Vec<zz_p>& val, long
 
 /*------------------------------------------------------------*/
 /* transpose of                                               */
-/* finds P of degree < d such that                            */
-/* val[i] = P(r^(2*i)), i = 0..n-1                            */
+/* finds P of degree < n such that                            */
+/* val[i] = P(s * r^(2*i)), i = 0..n-1                        */
 /* val may alias P.rep                                        */
 /*------------------------------------------------------------*/
 void zz_pX_Multipoint_Geometric::t_interpolate(Vec<zz_p>& val, const zz_pX& P) 
@@ -543,8 +546,262 @@ void zz_pX_Multipoint_Geometric::t_interpolate(Vec<zz_p>& val, const zz_pX& P)
     }
 }
 
+
 /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* vector operations                                          */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*-----------------------------------------------------------*/
+/* val[i] = P(s * r^(2*i)), i = 0..n-1                       */
+/* P must have length n                                      */
+/* val may alias P                                           */
+/*-----------------------------------------------------------*/
+void zz_pX_Multipoint_Geometric::mul_right(Vec<zz_p>& val, const Vec<zz_p>& P) const
+{
+    val.SetLength(n);
+    
+    if (n == 0)
+    {
+        return;
+    }
+    
+    if (n == 1)
+    {
+        val[0] = P[0];
+        return;
+    }
+    
+    zz_pX a, b;
+    for (long i = 0; i < n; i++)  
+    {
+        SetCoeff(a, n - 1 - i, xs[i] * P[i]);
+    }
+            
+    if (FFT_feasible && do_FFT_evaluate)
+    {
+        const fftRep& f_fft = known_degrees.find(n-1)->second;
+        fftRep a_fft, b_fft;
+        long k = f_fft.k;
+
+        a_fft = fftRep(INIT_SIZE, k);
+        b_fft = fftRep(INIT_SIZE, k);
+        TofftRep(a_fft, a, k, 0, n - 1);
+        mul(b_fft, a_fft, f_fft);
+        FromfftRep(b, b_fft, n - 1, n - 1 + n - 1);  
+        // for k = 1, the normalization is different in version 11.1.0
+#ifdef __NTL_FIX_SIZE_2_FFT
+        if (k == 1)
+        {
+            b /= 2;
+        }
+#endif
+    }
+    else
+    {
+        b = middle_product(a, f, n - 1, n - 1);
+    }
+
+    for (long i = 0; i < n; i++)
+    {
+        val[i] = x[i] * coeff(b, i);
+    }
+}
+    
+/*------------------------------------------------------------*/
+/* finds f of degree < n such that                            */
+/* val[i] = f(s * r^(2*i)), i = 0..n-1                        */
+/* val may alias f                                            */
+/*------------------------------------------------------------*/
+void zz_pX_Multipoint_Geometric::inv_mul_right(Vec<zz_p>& f, const Vec<zz_p>& val) 
+{
+    f.SetLength(n);
+
+    if (n == 0)
+    {
+        return;
+    }
+
+    if (n == 1)
+    {
+        f[0] = val[0];
+        return;
+    }
+
+    zz_pX k, h;
+
+    for (long i = 0; i < n; i++)
+    {
+        SetCoeff(k, i, val[i] * w[i]);
+    }
+
+    if (FFT_feasible && do_FFT_interpolate)
+    {
+        fftRep k_fft, h_fft;
+        k_fft = fftRep(INIT_SIZE, idx_k);
+        h_fft = fftRep(INIT_SIZE, idx_k);
+        TofftRep(k_fft, k, idx_k);
+        mul(h_fft, k_fft, g1_fft);
+        FromfftRep(h, h_fft, 0, n-1);
+    }
+    else
+    {
+        h = MulTrunc(k, g1, n);
+    }
+
+    for (long i = 0; i < n; i++)
+    {
+        SetCoeff(k, n - 1 - i, coeff(h, i) * y[i]);
+    }
+
+    if (FFT_feasible && do_FFT_interpolate)
+    {
+        fftRep k_fft, h_fft;
+        k_fft = fftRep(INIT_SIZE, idx_k);
+        h_fft = fftRep(INIT_SIZE, idx_k);
+        TofftRep(k_fft, k, idx_k);
+        mul(h_fft, k_fft, g2_fft);
+        FromfftRep(h, h_fft, 0, n-1);
+    }
+    else
+    {
+        h = MulTrunc(k, g2, n);
+    }
+
+    for (long i = 0; i < n; i++)
+    {
+        f[i] = coeff(h, n - 1 - i) * zs[i];
+    }
+}
+
+/*-----------------------------------------------------------*/
+/* transpose of                                              */
+/* val[i] = P(s * r^(2*i)), i = 0..n-1                       */
+/* val must have length n                                    */
+/* val may alias P                                           */
+/*-----------------------------------------------------------*/
+void zz_pX_Multipoint_Geometric::mul_left(Vec<zz_p>& P, const Vec<zz_p>& val) const
+{
+    P.SetLength(n);
+
+    if (n == 0)
+    {
+        return;
+    }
+
+    if (n == 1)
+    {
+        P[0] = val[0];
+        return;
+    }
+
+    zz_pX a;
+    for (long i = 0; i < n; i++)  
+        SetCoeff(a, n - 1 - i, x[i] * val[i]);  
+
+    zz_pX b;
+    if (FFT_feasible && do_FFT_evaluate)
+    {
+        const fftRep& f_fft = known_degrees.find(n - 1)->second;
+        fftRep a_fft, b_fft;
+        long k = f_fft.k;
+        a_fft = fftRep(INIT_SIZE, k);
+        b_fft = fftRep(INIT_SIZE, k);
+        TofftRep(a_fft, a, k, 0, n - 1);
+        mul(b_fft, a_fft, f_fft);
+        FromfftRep(b, b_fft, n - 1, n - 1 + n - 1);  
+        // for k = 1, the normalization is different in version 11.1.0
+#ifdef __NTL_FIX_SIZE_2_FFT
+        if (k == 1)
+        {
+            b /= 2;
+        }
+#endif
+    }
+    else
+    {
+        b = middle_product(a, f, n - 1, n - 1);
+    }
+
+    for (long i = 0; i < n; i++)
+        P[i] = xs[i] * coeff(b, i);
+
+}
+
+/*------------------------------------------------------------*/
+/* transpose of                                               */
+/* finds P of degree < n such that                            */
+/* val[i] = P(s * r^(2*i)), i = 0..n-1                        */
+/* val may alias P                                            */
+/*------------------------------------------------------------*/
+void zz_pX_Multipoint_Geometric::inv_mul_left(Vec<zz_p>& val, const Vec<zz_p>& P) 
+{
+    val.SetLength(n);
+
+    if (n == 0)
+    {
+        return;
+    }
+
+    if (n == 1)
+    {
+        val[0] = P[0];
+        return;
+    }
+
+    zz_pX k, h;
+
+    for (long i = 0; i < n; i++)
+    {
+        SetCoeff(k, i, P[i] * ws[i]);
+    }
+
+    if (FFT_feasible && do_FFT_interpolate)
+    {
+        fftRep k_fft, h_fft;
+        k_fft = fftRep(INIT_SIZE, idx_k);
+        h_fft = fftRep(INIT_SIZE, idx_k);
+        TofftRep(k_fft, k, idx_k);
+        mul(h_fft, k_fft, g1_fft);
+        FromfftRep(h, h_fft, 0, n-1);
+    }
+    else
+    {
+        h = MulTrunc(k, g1, n);
+    }
+
+    for (long i = 0; i < n; i++)
+    {
+        SetCoeff(k, n - 1 - i, coeff(h, i) * y[i]);
+    }
+
+    if (FFT_feasible && do_FFT_interpolate)
+    {
+        fftRep k_fft, h_fft;
+        k_fft = fftRep(INIT_SIZE, idx_k);
+        h_fft = fftRep(INIT_SIZE, idx_k);
+        TofftRep(k_fft, k, idx_k);
+        mul(h_fft, k_fft, g2_fft);
+        FromfftRep(h, h_fft, 0, n-1);
+    }
+    else
+    {
+        h = MulTrunc(k, g2, n);
+    }
+
+    for (long i = 0; i < n; i++)
+    {
+        val[i] = coeff(h, n - 1 - i) * z[i];
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* Misc:                                                      */
 /* returns a zz_pX_Multipoint_Geometric with n points         */
+/*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 zz_pX_Multipoint_Geometric get_geometric_points(long n)
 {
