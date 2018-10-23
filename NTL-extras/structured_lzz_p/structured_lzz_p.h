@@ -199,23 +199,144 @@ public:
 };
 
 
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/* Toeplitz like matrices, where generators G, H are such that*/
+/* Z1 M - M Z0 = G H^t                                        */
+/* -> M = sum_i circ(g_i) L(rev h_i)                          */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 class toeplitz_like_plus_lzz_p : public structured_lzz_p 
 {
+private:
+    // m rows, n columns
+    long m, n;
+    Vec<toeplitz_lzz_p> toeplitz_G;
+    Vec<toeplitz_lzz_p> toeplitz_H;
 
+public:
+    Mat<zz_p> G, H;
+    /*------------------------------------------------------------*/
+    /* sets dimensions to 0                                       */
+    /*------------------------------------------------------------*/
+    toeplitz_like_plus_lzz_p();
+
+    /*------------------------------------------------------------*/
+    /* input vector is as showed above, with G<-U, H<-V           */
+    /*------------------------------------------------------------*/
+    toeplitz_like_plus_lzz_p(const Mat<zz_p>& U, const Mat<zz_p>& V);
+
+    /*------------------------------------------------------------*/
+    /* getters                                                    */
+    /*------------------------------------------------------------*/
+    long NumCols() const;
+    long NumRows() const;
+    long NumGens() const;
+
+    /*------------------------------------------------------------*/
+    /* right multiplication                                       */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::mul_right;
+    void mul_right(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    void mul_right(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* left multiplication                                        */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::mul_left;
+    void mul_left(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    void mul_left(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* turns M into a dense matrix                                */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::to_dense;
+    void to_dense(Mat<zz_p>& Mdense) const;
 };
 
+
+/*------------------------------------------------------------*/
+/* returns Z1^t A - A Z0^t                                    */
+/*------------------------------------------------------------*/
+void toeplitz_lzz_p_phi_plus(Mat<zz_p> & res, const Mat<zz_p>& A);
+
+inline Mat<zz_p> toeplitz_lzz_p_phi_plus(const Mat<zz_p>& A)
+{
+    Mat<zz_p> res;
+    toeplitz_lzz_p_phi_plus(res, A);
+    return res;
+}
+
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/* Toeplitz like matrices, where generators G, H are such that*/
+/* Z0 M - M Z1 = G H^t                                        */
+/* -> M = sum_i L(-g_i) circ (rev h_i)                        */
+/* (dual structure to toeplitz_like_plus_lzz_p)               */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 class toeplitz_like_minus_lzz_p : public structured_lzz_p 
 {
+private:
+    // m rows, n columns
+    long m, n;
+    Vec<toeplitz_lzz_p> toeplitz_G;
+    Vec<toeplitz_lzz_p> toeplitz_H;
 
+public:
+    Mat<zz_p> G, H;
+    /*------------------------------------------------------------*/
+    /* sets dimensions to 0                                       */
+    /*------------------------------------------------------------*/
+    toeplitz_like_minus_lzz_p();
+
+    /*------------------------------------------------------------*/
+    /* input vector is as showed above, with G<-U, H<-V           */
+    /*------------------------------------------------------------*/
+    toeplitz_like_minus_lzz_p(const Mat<zz_p>& U, const Mat<zz_p>& V);
+
+    /*------------------------------------------------------------*/
+    /* getters                                                    */
+    /*------------------------------------------------------------*/
+    long NumCols() const;
+    long NumRows() const;
+    long NumGens() const;
+
+    /*------------------------------------------------------------*/
+    /* right multiplication                                       */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::mul_right;
+    void mul_right(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    void mul_right(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* left multiplication                                        */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::mul_left;
+    void mul_left(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    void mul_left(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* turns M into a dense matrix                                */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::to_dense;
+    void to_dense(Mat<zz_p>& Mdense) const;
 };
+
+/*------------------------------------------------------------*/
+/* returns Z0^t A - A Z1^t                                    */
+/*------------------------------------------------------------*/
+void toeplitz_lzz_p_phi_minus(Mat<zz_p> & res, const Mat<zz_p>& A);
+
+inline Mat<zz_p> toeplitz_lzz_p_phi_minus(const Mat<zz_p>& A)
+{
+    Mat<zz_p> res;
+    toeplitz_lzz_p_phi_minus(res, A);
+    return res;
+}
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

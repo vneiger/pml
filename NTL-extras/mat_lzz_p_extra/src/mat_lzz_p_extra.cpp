@@ -26,117 +26,18 @@ Mat<zz_p> Z_lzz_p(long n, const zz_p& c)
 
 /*------------------------------------------------------------*/
 /* returns                                                    */
-/* [a0 a2 a1 a0 a2]                                           */
-/* [a1 a0 a2 a1 a0]                                           */
-/* [a2 a1 a0 a2 a1]                                           */
-/* in size nrows, ncols. A must have length nrows             */
+/* [0 0 0 1]                                                  */
+/* [0 0 1 0]                                                  */
+/* [0 1 0 0]                                                  */
+/* [1 0 0 0]                                                  */
+/* in size n                                                  */
 /*------------------------------------------------------------*/
-Mat<zz_p> circulant_lzz_p(const Vec<zz_p>& A, long nrows, long ncols)
+Mat<zz_p> J_lzz_p(long n)
 {
-    if (A.length() != nrows)
-        Error("Bad vector size for circulant_lzz_p");
-
     Mat<zz_p> res;
-    res.SetDims(nrows, ncols);
-    for (long j = 0; j < ncols; j++)
-    {
-        long idx = j % nrows;
-        for (long i = 0; i < nrows; i++)
-        {
-            res[idx][j] = A[i];
-            idx++;
-            if (idx == nrows)
-                idx = 0;
-        }
-    }
-    return res;
-}
-
-/*------------------------------------------------------------*/
-/* returns                                                    */
-/* [a0  0  0 0]                                               */
-/* [a1 a0  0 0]                                               */
-/* [a2 a1 a0 0]                                               */
-/* in size nrows, ncols. A must have length nrows             */
-/*------------------------------------------------------------*/
-Mat<zz_p> lower_toeplitz_lzz_p(const Vec<zz_p>& A, long nrows, long ncols)
-{
-    if (A.length() != nrows)
-        Error("Bad vector size for circulant_lzz_p");
-
-    Mat<zz_p> res;
-    res.SetDims(nrows, ncols);
-    for (long j = 0; j < min(nrows, ncols); j++)
-    {
-        for (long i = j; i < nrows; i++)
-            res[i][j] = A[i - j];
-    }
-    return res;
-}
-
-/*------------------------------------------------------------*/
-/* returns                                                    */
-/* [0 0  0  a0]                                               */
-/* [0 0  a0 a1]                                               */
-/* [0 a0 a1 a2]                                               */
-/* in size nrows, ncols. A must have length nrows             */
-/*------------------------------------------------------------*/
-Mat<zz_p> lower_hankel_lzz_p(const Vec<zz_p>& A, long nrows, long ncols)
-{
-    if (A.length() != nrows)
-        Error("Bad vector size for circulant_lzz_p");
-
-    Mat<zz_p> res;
-    res.SetDims(nrows, ncols);
-    for (long j = 0; j < min(nrows, ncols); j++)
-    {
-        for (long i = j; i < nrows; i++)
-            res[i][ncols -1 -j] = A[i - j];
-    }
-    return res;
-}
-
-/*------------------------------------------------------------*/
-/* returns                                                    */
-/* [a2 a1 a0 0]                                               */
-/* [a1 a0  0 0]                                               */
-/* [a0  0  0 0]                                               */
-/* in size nrows, ncols. A must have length nrows             */
-/*------------------------------------------------------------*/
-Mat<zz_p> upper_toeplitz_lzz_p(const Vec<zz_p>& A, long nrows, long ncols)
-{
-    if (A.length() != nrows)
-        Error("Bad vector size for circulant_lzz_p");
-
-    Mat<zz_p> res;
-    res.SetDims(nrows, ncols);
-    for (long j = 0; j < min(nrows, ncols); j++)
-    {
-        for (long i = j; i < nrows; i++)
-            res[nrows -1 -i][j] = A[i - j];
-    }
-    return res;
-}
-
-/*------------------------------------------------------------*/
-/* returns                                                    */
-/* [0 0  0  a0]                                               */
-/* [0 0  a0 a1]                                               */
-/* [0 a0 a1 a2]                                               */
-/* in size nrows, ncols. A must have length nrows             */
-/*------------------------------------------------------------*/
-Mat<zz_p> upper_hankel_lzz_p(const Vec<zz_p>& A, long nrows, long ncols)
-{
-    if (A.length() != nrows)
-        Error("Bad vector size for circulant_lzz_p");
-
-    Mat<zz_p> res;
-    res.SetDims(nrows, ncols);
-    for (long j = 0; j < min(nrows, ncols); j++)
-    {
-        for (long i = j; i < nrows; i++)
-            res[nrows -1 -i][ncols -1 -j] = A[i - j];
-    }
+    res.SetDims(n, n);
+    for (long i = 0; i < n; i++)
+        res[i][n - 1 - i] = 1;
     return res;
 }
 
