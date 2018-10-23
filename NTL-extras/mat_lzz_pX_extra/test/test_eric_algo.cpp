@@ -246,7 +246,7 @@ void print(const Vec<Coeffs> &c)
 
 int main(int argc, char *argv[]){
     if (argc!=5)
-        throw std::invalid_argument("Usage: ./test_charpoly_amodg degree expnt nbits nthreads");
+        throw std::invalid_argument("Usage: ./test_eric_algo degree expnt nbits nthreads");
 
     long n = atoi(argv[1]);
     // parameter: exponent for m = n^exponent; default = 0.333 ~ 1/omega for omega=3
@@ -262,13 +262,12 @@ int main(int argc, char *argv[]){
     // used for timings
     double t1;
 
-    auto prime = NTL::GenPrime_long(nbits);
-    cout << "prime: " << prime << endl;
     t1 = GetWallTime();
     if (nbits==0)
         zz_p::FFTInit(0);
     else
-        zz_p::init(prime);
+        zz_p::init(NTL::GenPrime_long(nbits));
+    cout << "prime: " << zz_p::modulus() << endl;
 
     cout << "n: " << n << endl;
     cout << "m: " << m << endl;
@@ -291,7 +290,7 @@ int main(int argc, char *argv[]){
     cout << "took: " << GetWallTime() - t1 << endl;
 
     Vec<Coeffs> res_naive;
-    get_coeffs_naive(res_naive,a,g,m);
+    //get_coeffs_naive(res_naive,a,g,m);
     //cout << "res naive:"<<endl;
     //print(res_naive);
 
