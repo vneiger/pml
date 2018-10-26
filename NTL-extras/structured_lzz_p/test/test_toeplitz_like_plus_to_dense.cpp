@@ -19,60 +19,36 @@ void check(long p)
     for (long i = 2; i < 100; i += 10)
     {
         long j, alpha;
-        Mat<zz_p> G, H, A, R;
-        toeplitz_like_minus_lzz_p hl;
-        Vec<zz_p> lhs, rhs, rhs2;
+        Mat<zz_p> G, H, tH, A, R;
+        toeplitz_like_plus_lzz_p hl;
         alpha = 4;
 
         j = i;
         G = random_mat_zz_p(i, alpha);
         H = random_mat_zz_p(j, alpha);
-        hl = toeplitz_like_minus_lzz_p(G, H);
+        transpose(tH, H);
+        hl = toeplitz_like_plus_lzz_p(G, H);
         A = hl.to_dense();
-        lhs = random_vec_zz_p(j);
-        rhs = hl.mul_right(lhs);
-        rhs2 = A * lhs;
-        assert (rhs == rhs2);
+        R = toeplitz_lzz_p_phi_plus(A);
+        assert (R == G*tH);
 
         j = max(1, i-4);
         G = random_mat_zz_p(i, alpha);
         H = random_mat_zz_p(j, alpha);
-        hl = toeplitz_like_minus_lzz_p(G, H);
+        transpose(tH, H);
+        hl = toeplitz_like_plus_lzz_p(G, H);
         A = hl.to_dense();
-        lhs = random_vec_zz_p(j);
-        rhs = hl.mul_right(lhs);
-        rhs2 = A * lhs;
-        assert (rhs == rhs2);
+        R = toeplitz_lzz_p_phi_plus(A);
+        assert (R == G*tH);
 
         j = i+4;
         G = random_mat_zz_p(i, alpha);
         H = random_mat_zz_p(j, alpha);
-        hl = toeplitz_like_minus_lzz_p(G, H);
+        transpose(tH, H);
+        hl = toeplitz_like_plus_lzz_p(G, H);
         A = hl.to_dense();
-        lhs = random_vec_zz_p(j);
-        rhs = hl.mul_right(lhs);
-        rhs2 = A * lhs;
-        assert (rhs == rhs2);
-
-        j = max(1, i/4);
-        G = random_mat_zz_p(i, alpha);
-        H = random_mat_zz_p(j, alpha);
-        hl = toeplitz_like_minus_lzz_p(G, H);
-        A = hl.to_dense();
-        lhs = random_vec_zz_p(j);
-        rhs = hl.mul_right(lhs);
-        rhs2 = A * lhs;
-        assert (rhs == rhs2);
-
-        j = i*4;
-        G = random_mat_zz_p(i, alpha);
-        H = random_mat_zz_p(j, alpha);
-        hl = toeplitz_like_minus_lzz_p(G, H);
-        A = hl.to_dense();
-        lhs = random_vec_zz_p(j);
-        rhs = hl.mul_right(lhs);
-        rhs2 = A * lhs;
-        assert (rhs == rhs2);
+        R = toeplitz_lzz_p_phi_plus(A);
+        assert (R == G*tH);
     }
 }
 

@@ -1,14 +1,13 @@
 #include <NTL/vec_lzz_p.h>
 #include <assert.h>
 
-#include "util.h"
 #include "vec_lzz_p_extra.h"
-#include "mat_lzz_p_extra.h"
+#include "structured_lzz_p.h"
 
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* creates hankel matrices                                    */
+/* creates toeplitz matrices                                  */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -16,16 +15,28 @@ void check(long p)
         zz_p::FFTInit(0);
     else
         zz_p::init(p);
-    
+
     for (long i = 1; i < 100; i += 10)
     {
-        Mat<zz_p> z = Z_lzz_p(i, random_zz_p());
-        if (i <= 20 && p < (1L << 30) && p != 0)
-            cout << "(" << i << " x " << i << ") Z:\n" << z << endl;
+        long j, alpha;
+        Mat<zz_p> G, H;
+        toeplitz_like_plus_lzz_p hl;
+        alpha = 4;
 
-        Mat<zz_p> j = J_lzz_p(i);
-        if (i <= 20 && p < (1L << 30) && p != 0)
-            cout << "(" << i << " x " << i << ") J:\n" << j << endl;
+        j = i;
+        G = random_mat_zz_p(i, alpha);
+        H = random_mat_zz_p(j, alpha);
+        hl = toeplitz_like_plus_lzz_p(G, H);
+
+        j = max(1, i-4);
+        G = random_mat_zz_p(i, alpha);
+        H = random_mat_zz_p(j, alpha);
+        hl = toeplitz_like_plus_lzz_p(G, H);
+
+        j = i+4;
+        G = random_mat_zz_p(i, alpha);
+        H = random_mat_zz_p(j, alpha);
+        hl = toeplitz_like_plus_lzz_p(G, H);
     }
 }
 

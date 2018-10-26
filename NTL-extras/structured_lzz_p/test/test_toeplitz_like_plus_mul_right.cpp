@@ -20,14 +20,14 @@ void check(long p)
     {
         long j, alpha;
         Mat<zz_p> G, H, A, R;
-        toeplitz_like_minus_lzz_p hl;
+        toeplitz_like_plus_lzz_p hl;
         Vec<zz_p> lhs, rhs, rhs2;
         alpha = 4;
 
         j = i;
         G = random_mat_zz_p(i, alpha);
         H = random_mat_zz_p(j, alpha);
-        hl = toeplitz_like_minus_lzz_p(G, H);
+        hl = toeplitz_like_plus_lzz_p(G, H);
         A = hl.to_dense();
         lhs = random_vec_zz_p(j);
         rhs = hl.mul_right(lhs);
@@ -37,7 +37,7 @@ void check(long p)
         j = max(1, i-4);
         G = random_mat_zz_p(i, alpha);
         H = random_mat_zz_p(j, alpha);
-        hl = toeplitz_like_minus_lzz_p(G, H);
+        hl = toeplitz_like_plus_lzz_p(G, H);
         A = hl.to_dense();
         lhs = random_vec_zz_p(j);
         rhs = hl.mul_right(lhs);
@@ -47,7 +47,7 @@ void check(long p)
         j = i+4;
         G = random_mat_zz_p(i, alpha);
         H = random_mat_zz_p(j, alpha);
-        hl = toeplitz_like_minus_lzz_p(G, H);
+        hl = toeplitz_like_plus_lzz_p(G, H);
         A = hl.to_dense();
         lhs = random_vec_zz_p(j);
         rhs = hl.mul_right(lhs);
@@ -57,7 +57,7 @@ void check(long p)
         j = max(1, i/4);
         G = random_mat_zz_p(i, alpha);
         H = random_mat_zz_p(j, alpha);
-        hl = toeplitz_like_minus_lzz_p(G, H);
+        hl = toeplitz_like_plus_lzz_p(G, H);
         A = hl.to_dense();
         lhs = random_vec_zz_p(j);
         rhs = hl.mul_right(lhs);
@@ -67,7 +67,7 @@ void check(long p)
         j = i*4;
         G = random_mat_zz_p(i, alpha);
         H = random_mat_zz_p(j, alpha);
-        hl = toeplitz_like_minus_lzz_p(G, H);
+        hl = toeplitz_like_plus_lzz_p(G, H);
         A = hl.to_dense();
         lhs = random_vec_zz_p(j);
         rhs = hl.mul_right(lhs);

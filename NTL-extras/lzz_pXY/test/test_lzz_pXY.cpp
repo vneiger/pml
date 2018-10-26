@@ -1,14 +1,12 @@
 #include <NTL/vec_lzz_p.h>
 #include <assert.h>
 
-#include "util.h"
-#include "vec_lzz_p_extra.h"
-#include "mat_lzz_p_extra.h"
+#include "lzz_pXY.h"
 
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* creates hankel matrices                                    */
+/* creates random bivariate polynomials                       */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -16,16 +14,13 @@ void check(long p)
         zz_p::FFTInit(0);
     else
         zz_p::init(p);
-    
-    for (long i = 1; i < 100; i += 10)
-    {
-        Mat<zz_p> z = Z_lzz_p(i, random_zz_p());
-        if (i <= 20 && p < (1L << 30) && p != 0)
-            cout << "(" << i << " x " << i << ") Z:\n" << z << endl;
 
-        Mat<zz_p> j = J_lzz_p(i);
-        if (i <= 20 && p < (1L << 30) && p != 0)
-            cout << "(" << i << " x " << i << ") J:\n" << j << endl;
+    for (long i = 1; i < 50; i += 1)
+    {
+        for (long j = 1; j < 50; j += 1)
+        {
+            zz_pXY f = random_zz_pXY(i, j);
+        }
     }
 }
 

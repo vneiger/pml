@@ -9,16 +9,16 @@ NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* Hankel like matrices, where generators G, H are such that  */
-/* Z1 M - M Z0^t = G H^t                                      */
-/* -> M = sum_i circ(g_i) L(h_i) J                            */
+/* Toeplitz like matrices, where generators G, H are such that*/
+/* Z1 M - M Z0 = G H^t                                        */
+/* -> M = sum_i circ(g_i) L(rev h_i)                          */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
 /* sets dimensions to 0                                       */
 /*------------------------------------------------------------*/
-hankel_like_plus_lzz_p::hankel_like_plus_lzz_p()
+toeplitz_like_plus_lzz_p::toeplitz_like_plus_lzz_p()
 {
     m = 0;
     n = 0;
@@ -27,7 +27,7 @@ hankel_like_plus_lzz_p::hankel_like_plus_lzz_p()
 /*------------------------------------------------------------*/
 /* input vector is as showed above, with G<-U, H<-V           */
 /*------------------------------------------------------------*/
-hankel_like_plus_lzz_p::hankel_like_plus_lzz_p(const Mat<zz_p>& U, const Mat<zz_p>& V)
+toeplitz_like_plus_lzz_p::toeplitz_like_plus_lzz_p(const Mat<zz_p>& U, const Mat<zz_p>& V)
 {
     G = U;
     H = V;
@@ -36,7 +36,7 @@ hankel_like_plus_lzz_p::hankel_like_plus_lzz_p(const Mat<zz_p>& U, const Mat<zz_
     long alpha = G.NumCols();
 
     toeplitz_G.SetLength(alpha);
-    hankel_H.SetLength(alpha);
+    toeplitz_H.SetLength(alpha);
     
     Vec<zz_p> vecG, vecH;
     vecG.SetLength(m + n - 1);
@@ -44,48 +44,40 @@ hankel_like_plus_lzz_p::hankel_like_plus_lzz_p(const Mat<zz_p>& U, const Mat<zz_
 
     for (long i = 0; i < alpha; i++)
     {
-        for (long j = n, jm = n % m; j < m + n; j++)
+        long idx = 1 % m;
+        for (long j = 0; j < m + n - 1; j++)
         {
-            vecG[j - 1] = G[jm][i];
-            jm++;
-            if (jm == m)
-                jm = 0;
+            vecG[j] = G[idx][i];
+            idx++;
+            if (idx == m)
+                idx = 0;
         }
 
-        if (m > 0 && n > 0)
-            for (long j = 1, c = (n - 1) % m; j < n; j++)
-            {
-                vecG[n - 1 - j] = G[c][i];
-                c--;
-                if (c < 0)
-                    c = m - 1;
-            }
-
         toeplitz_G[i] = toeplitz_lzz_p(vecG, m, n);
-
-        for (long j = 0; j < n; j++)
-            vecH[j] = H[n - 1 - j][i];
-        for (long j = n; j < 2*n - 1; j++)
-            vecH[j] = 0;
         
-        hankel_H[i] = hankel_lzz_p(vecH, n , n);
+        for (long j = 0; j < n - 1; j++)
+            vecH[j] = 0;
+        for (long j = 0; j < n; j++)
+            vecH[j + n - 1] = H[n - 1 - j][i];
+        
+        toeplitz_H[i] = toeplitz_lzz_p(vecH, n , n);
     }
 }
 
 /*------------------------------------------------------------*/
 /* getters                                                    */
 /*------------------------------------------------------------*/
-long hankel_like_plus_lzz_p::NumRows() const
+long toeplitz_like_plus_lzz_p::NumRows() const
 {
     return m;
 }
 
-long hankel_like_plus_lzz_p::NumCols() const
+long toeplitz_like_plus_lzz_p::NumCols() const
 {
     return n;
 }
 
-long hankel_like_plus_lzz_p::NumGens() const
+long toeplitz_like_plus_lzz_p::NumGens() const
 {
     return G.NumCols();
 }
@@ -93,7 +85,7 @@ long hankel_like_plus_lzz_p::NumGens() const
 /*------------------------------------------------------------*/
 /* output = M * input                                         */
 /*------------------------------------------------------------*/
-void hankel_like_plus_lzz_p::mul_right(Vec<zz_p>& output, const Vec<zz_p>& input) const
+void toeplitz_like_plus_lzz_p::mul_right(Vec<zz_p>& output, const Vec<zz_p>& input) const
 {
     if (&output == &input)
     {
@@ -108,58 +100,54 @@ void hankel_like_plus_lzz_p::mul_right(Vec<zz_p>& output, const Vec<zz_p>& input
     Vec<zz_p> tmp1, tmp2;
     for (long i = 0; i < NumGens(); i++)
     {
-        hankel_H[i].mul_right(tmp1, input);
+        toeplitz_H[i].mul_right(tmp1, input);
         toeplitz_G[i].mul_right(tmp2, tmp1);
         for (long j = 0; j < m; j++)
             output[j] += tmp2[j];
     }
 }
 
-void hankel_like_plus_lzz_p::mul_right(Mat<zz_p>& out, const Mat<zz_p>& in) const
+void toeplitz_like_plus_lzz_p::mul_right(Mat<zz_p>& out, const Mat<zz_p>& in) const
 {
 }
 
 /*------------------------------------------------------------*/
 /* left multiplication                                        */
 /*------------------------------------------------------------*/
-void hankel_like_plus_lzz_p::mul_left(Vec<zz_p>& out, const Vec<zz_p>& in) const
+void toeplitz_like_plus_lzz_p::mul_left(Vec<zz_p>& out, const Vec<zz_p>& in) const
 {
 }
 
-void hankel_like_plus_lzz_p::mul_left(Mat<zz_p>& out, const Mat<zz_p>& in) const
+void toeplitz_like_plus_lzz_p::mul_left(Mat<zz_p>& out, const Mat<zz_p>& in) const
 {
 }
 
 /*------------------------------------------------------------*/
 /* turns M into a dense matrix                                */
 /*------------------------------------------------------------*/
-void hankel_like_plus_lzz_p::to_dense(Mat<zz_p>& Mdense) const 
+void toeplitz_like_plus_lzz_p::to_dense(Mat<zz_p>& Mdense) const 
 {
     Mdense.SetDims(m, n);
     for (long i = 0; i < NumGens(); i++)
     {
-        Mdense += toeplitz_G[i].to_dense() * hankel_H[i].to_dense();
+        Mdense += toeplitz_G[i].to_dense() * toeplitz_H[i].to_dense();
     }
 }
 
 /*------------------------------------------------------------*/
-/* returns Z1 A - A Z0^t                                      */
+/* returns Z1 A - A Z0                                        */
 /*------------------------------------------------------------*/
-void hankel_lzz_p_phi_plus(Mat<zz_p> & res, const Mat<zz_p>& A)
+void toeplitz_lzz_p_phi_plus(Mat<zz_p> & res, const Mat<zz_p>& A)
 {
     if (&res == &A)
     {
-        res = hankel_lzz_p_phi_plus(A);
+        res = toeplitz_lzz_p_phi_plus(A);
         return;
     }
 
     long m = A.NumRows();
     long n = A.NumCols();
-    
-    Mat<zz_p> Tz0, z0;
-    z0 = Z_lzz_p(n, to_zz_p(0));
-    transpose(Tz0, z0);
-    res = Z_lzz_p(m, to_zz_p(1)) * A - A * Tz0;
+    res = Z_lzz_p(m, to_zz_p(1)) * A - A * Z_lzz_p(n, to_zz_p(0));
 }
 
 // Local Variables:
