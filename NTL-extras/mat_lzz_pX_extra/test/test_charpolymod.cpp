@@ -373,7 +373,8 @@ int main(int argc, char *argv[])
         pow_a = a; // set back to its state before this #ifdef
         t1 = GetWallTime();
 #endif // SAFETY_CHECKS
-/*
+/*      // semi-naive computation, as in Neiger-Salvy-Villard 2018
+        // DO NOT ERASE, THANK YOU!
         // compute the block-Wiedemann sequence (fast)
         // Sequence stored as a list of constant matrices
         Vec<Mat<zz_p>> seq;
