@@ -565,7 +565,7 @@ void SetDims (Coeffs &res, const long r, const long c, const long d)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-void format (Vec<Mat<zz_pX>> &res, const Vec<Coeffs> &coeffs, const long d, const long m)
+void format (Vec<Mat<zz_p>> &res, const Vec<Coeffs> &coeffs, const long d, const long m)
 {
     res.SetLength(d);
     const long sqrt_d = ceil(sqrt(d));
@@ -643,7 +643,7 @@ void get_first_row (Coeffs &res,
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-void get_coeffs (Vec<Mat<zz_pX>> &mats, Vec<Coeffs> &res,
+void get_coeffs (Vec<Mat<zz_p>> &mats, Vec<Coeffs> &res,
                  const zz_pX &a,
                  const zz_pX &g,
                  const long m)
