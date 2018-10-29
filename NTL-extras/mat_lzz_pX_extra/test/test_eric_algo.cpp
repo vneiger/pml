@@ -584,7 +584,8 @@ void format (Vec<Mat<zz_pX>> &res, const Vec<Coeffs> &coeffs, const long d, cons
                 long pow = sqrt_d * v + u;
                 for (long j = 0; j < m; j++)
                 {
-                    res[pow][i][j] = coeffs[i][u][v][j];
+                    if (pow < d)
+                      res[d-pow-1][m-i-1][j] = coeffs[i][u][v][j];
                 }
             }
         }
@@ -683,7 +684,7 @@ void get_coeffs (Vec<Mat<zz_pX>> &mats, Vec<Coeffs> &res,
     t = GetWallTime();
     for (long i = 0; i < m; i++)
         SetDims(res[i], sqrt_d, sqrt_d, m);
-//    format(mats, res, d, m);
+    format(mats, res, d, m);
     cout << "format: " << GetWallTime() - t << endl;
 }
 
