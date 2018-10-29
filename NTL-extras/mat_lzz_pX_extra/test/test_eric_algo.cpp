@@ -569,6 +569,29 @@ void SetDims (Coeffs &res, const long r, const long c, const long d)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+void format (Vec<Mat<zz_pX>> &res, const Vec<Coeffs> &coeffs, const long d, const long m)
+{
+    res.SetLength(d);
+    const long sqrt_d = ceil(sqrt(d));
+    for (long i = 0; i < d; i++)
+        res[i].SetDims(m, m);
+    for (long i = 0; i < m; i++)
+    {
+        for (long u = 0; u < sqrt_d; u++)
+        {
+            for (long v = 0; v < sqrt_d; v++)
+            {
+                long pow = sqrt_d * v + u;
+                for (long j = 0; j < m; j++)
+                {
+                    res[pow][i][j] = coeffs[i][u][v][j];
+                }
+            }
+        }
+    }
+}
+
+
 void get_first_row (Coeffs &res,
         const zz_pX &a,
         const zz_pX &g,
@@ -623,7 +646,7 @@ void get_first_row (Coeffs &res,
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-void get_coeffs (Vec<Coeffs> &res,
+void get_coeffs (Vec<Mat<zz_pX>> &mats, Vec<Coeffs> &res,
         const zz_pX &a,
         const zz_pX &g,
         const long m)
@@ -660,6 +683,7 @@ void get_coeffs (Vec<Coeffs> &res,
     t = GetWallTime();
     for (long i = 0; i < m; i++)
         SetDims(res[i], sqrt_d, sqrt_d, m);
+//    format(mats, res, d, m);
     cout << "format: " << GetWallTime() - t << endl;
 }
 
@@ -744,7 +768,14 @@ int main(int argc, char *argv[]){
 
     Vec<Coeffs> res;
     t1 = GetWallTime();
-    get_coeffs(res, a, g, m);
+    Vec<Mat<zz_pX>> mats;
+    get_coeffs(mats, res, a, g, m);
+    
+    // cout << "res:" << endl;
+    // print(res);
+    // cout << "Mats: " << endl;
+    // cout << mats << endl;
+
     cout << "took: " << GetWallTime() - t1 << endl;
 
     if (n < 200)
