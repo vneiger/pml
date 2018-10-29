@@ -199,6 +199,174 @@ public:
 };
 
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* matrices such as                                           */
+/* [a0  0  0]                                                 */
+/* [a1 a0  0]                                                 */
+/* [a2 a1 a0]                                                 */
+/* (special case of toeplitz matrix)                          */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class lower_triangular_toeplitz_lzz_p : public structured_lzz_p 
+{
+private:
+    // n rows, n columns
+    long n;
+    Vec<zz_p> data;
+    zz_pX dataX;
+    fftRep fft;
+public:
+    /*------------------------------------------------------------*/
+    /* sets dimensions to 0                                       */
+    /*------------------------------------------------------------*/
+    lower_triangular_toeplitz_lzz_p();
+
+    /*------------------------------------------------------------*/
+    /* input vector is as showed above                            */
+    /*------------------------------------------------------------*/
+    lower_triangular_toeplitz_lzz_p(const Vec<zz_p>& input);
+
+    /*------------------------------------------------------------*/
+    /* getters                                                    */
+    /*------------------------------------------------------------*/
+    long NumCols() const;
+    long NumRows() const;
+
+    /*------------------------------------------------------------*/
+    /* right multiplication                                       */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::mul_right;
+    void mul_right(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    void mul_right(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* left multiplication                                        */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::mul_left;
+    void mul_left(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    void mul_left(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* turns M into a dense matrix                                */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::to_dense;
+    void to_dense(Mat<zz_p>& Mdense) const;
+};
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* matrices such as                                           */
+/* [a3 a2 a1 a0]                                              */
+/* [a0 a3 a2 a1]                                              */
+/* [a1 a0 a3 a2]                                              */
+/* (special case of toeplitz matrix)                          */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class circulant_row_lzz_p : public structured_lzz_p 
+{
+private:
+    // n rows, m columns
+    long n, m;
+    Vec<zz_p> data;
+    fftRep fft1, fft2, fft3;
+
+public:
+    /*------------------------------------------------------------*/
+    /* sets dimensions to 0                                       */
+    /*------------------------------------------------------------*/
+    circulant_row_lzz_p();
+
+    /*------------------------------------------------------------*/
+    /* input vector is as showed above                            */
+    /*------------------------------------------------------------*/
+    circulant_row_lzz_p(const Vec<zz_p>& input, long nrows);
+
+    /*------------------------------------------------------------*/
+    /* getters                                                    */
+    /*------------------------------------------------------------*/
+    long NumCols() const;
+    long NumRows() const;
+
+    /*------------------------------------------------------------*/
+    /* right multiplication                                       */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::mul_right;
+    void mul_right(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    void mul_right(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* left multiplication                                        */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::mul_left;
+    void mul_left(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    void mul_left(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* turns M into a dense matrix                                */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::to_dense;
+    void to_dense(Mat<zz_p>& Mdense) const;
+};
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* matrices such as                                           */
+/* [a0 a2 a1 a0]                                              */
+/* [a1 a0 a2 a1]                                              */
+/* [a2 a1 a0 a2]                                              */
+/* (special case of toeplitz matrix)                          */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class circulant_column_lzz_p : public structured_lzz_p 
+{
+private:
+    // n rows, m columns
+    long n, m;
+    Vec<zz_p> data;
+    fftRep fft1, fft2, fft3;
+
+public:
+    /*------------------------------------------------------------*/
+    /* sets dimensions to 0                                       */
+    /*------------------------------------------------------------*/
+    circulant_column_lzz_p();
+
+    /*------------------------------------------------------------*/
+    /* input vector is as showed above                            */
+    /*------------------------------------------------------------*/
+    circulant_column_lzz_p(const Vec<zz_p>& input, long ncols);
+
+    /*------------------------------------------------------------*/
+    /* getters                                                    */
+    /*------------------------------------------------------------*/
+    long NumCols() const;
+    long NumRows() const;
+
+    /*------------------------------------------------------------*/
+    /* right multiplication                                       */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::mul_right;
+    void mul_right(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    void mul_right(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* left multiplication                                        */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::mul_left;
+    void mul_left(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    void mul_left(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* turns M into a dense matrix                                */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::to_dense;
+    void to_dense(Mat<zz_p>& Mdense) const;
+};
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -212,8 +380,8 @@ class toeplitz_like_plus_lzz_p : public structured_lzz_p
 private:
     // m rows, n columns
     long m, n;
-    Vec<toeplitz_lzz_p> toeplitz_G;
-    Vec<toeplitz_lzz_p> toeplitz_H;
+    Vec<circulant_column_lzz_p> circulant_G;
+    Vec<lower_triangular_toeplitz_lzz_p> lower_triangular_toeplitz_H;
 
 public:
     Mat<zz_p> G, H;
@@ -257,7 +425,7 @@ public:
 
 
 /*------------------------------------------------------------*/
-/* returns Z1^t A - A Z0^t                                    */
+/* returns Z1 A - A Z0                                        */
 /*------------------------------------------------------------*/
 void toeplitz_lzz_p_phi_plus(Mat<zz_p> & res, const Mat<zz_p>& A);
 
@@ -282,8 +450,8 @@ class toeplitz_like_minus_lzz_p : public structured_lzz_p
 private:
     // m rows, n columns
     long m, n;
-    Vec<toeplitz_lzz_p> toeplitz_G;
-    Vec<toeplitz_lzz_p> toeplitz_H;
+    Vec<lower_triangular_toeplitz_lzz_p> toeplitz_G;
+    Vec<circulant_row_lzz_p> circulant_H;
 
 public:
     Mat<zz_p> G, H;
@@ -326,7 +494,7 @@ public:
 };
 
 /*------------------------------------------------------------*/
-/* returns Z0^t A - A Z1^t                                    */
+/* returns Z0 A - A Z1                                        */
 /*------------------------------------------------------------*/
 void toeplitz_lzz_p_phi_minus(Mat<zz_p> & res, const Mat<zz_p>& A);
 
@@ -350,8 +518,8 @@ class hankel_like_plus_lzz_p : public structured_lzz_p
 private:
     // m rows, n columns
     long m, n;
-    Vec<toeplitz_lzz_p> toeplitz_G;
-    Vec<hankel_lzz_p> hankel_H;
+    Vec<circulant_column_lzz_p> circulant_G;
+    Vec<lower_triangular_toeplitz_lzz_p> lower_triangular_toeplitz_H;
 
 public:
     Mat<zz_p> G, H;
@@ -410,7 +578,7 @@ inline Mat<zz_p> hankel_lzz_p_phi_plus(const Mat<zz_p>& A)
 /*------------------------------------------------------------*/
 /* Hankel like matrices, where generators G, H are such that  */
 /* Z0^t M - M Z1 = G H^t                                      */
-/* -> M = - sum_i U(g_i) circ (rev h_i)                       */
+/* -> M = J sum_i L(-g_i) circ (rev h_i)                       */
 /* (dual structure to hankel_like_plus_lzz_p)                 */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -419,8 +587,8 @@ class hankel_like_minus_lzz_p : public structured_lzz_p
 private:
     // m rows, n columns
     long m, n;
-    Vec<hankel_lzz_p> hankel_G;
-    Vec<toeplitz_lzz_p> toeplitz_H;
+    Vec<lower_triangular_toeplitz_lzz_p> lower_triangular_toeplitz_G;
+    Vec<circulant_row_lzz_p> circulant_H;
 
 public:
     Mat<zz_p> G, H;
@@ -896,6 +1064,29 @@ public:
     using structured_lzz_p::mul_left;
     void mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const;
     void mul_left(Mat<zz_p>& res, const Mat<zz_p>& input) const;
+
+    /*------------------------------------------------------------*/
+    /* G, H such that Z1 M - M Z0 = G H^t                         */
+    /*------------------------------------------------------------*/
+    void phi_plus_generators(Mat<zz_p>& G, Mat<zz_p>& H) const; 
+
+    /*------------------------------------------------------------*/
+    /* finds a random solution to M.x = b                         */
+    /* if return value is 0, something went wrong (no grp)        */
+    /* else, return value is 1. Then x is empty if no solution    */
+    /* thresh is threshold for divide-and-conquer                 */
+    /* thresh_alpha switches between block and plain quadratic    */
+    /*------------------------------------------------------------*/
+    long solve(Vec<zz_p>& x, const Vec<zz_p> b, long thresh = -1, long thresh_alpha = -1) const;
+
+    /*------------------------------------------------------------*/
+    /* finds the inverse of this as a topelitz_like_minus matrix  */
+    /* if return value is 0, either no grp or singular            */
+    /* else, return value is 1, and inv is the inverse            */
+    /* thresh is threshold for divide-and-conquer                 */
+    /* thresh_alpha switches between block and plain quadratic    */
+    /*------------------------------------------------------------*/
+    long inv(toeplitz_like_minus_lzz_p& inv, long thresh = -1, long thresh_alpha = -1) const;
 
     /*------------------------------------------------------------*/
     /* turns M into a dense matrix                                */

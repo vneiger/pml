@@ -37,37 +37,34 @@ toeplitz_like_minus_lzz_p::toeplitz_like_minus_lzz_p(const Mat<zz_p>& U, const M
     long alpha = G.NumCols();
 
     toeplitz_G.SetLength(alpha);
-    toeplitz_H.SetLength(alpha);
+    circulant_H.SetLength(alpha);
 
     if (m == 0 || n == 0)
         return;
     
     Vec<zz_p> vecG, vecH;
-    vecG.SetLength(m + m - 1);
-    vecH.SetLength(m + n - 1);
+    vecG.SetLength(m);
+    vecH.SetLength(n);
 
     for (long i = 0; i < alpha; i++)
     {
         long idx;
 
-        idx = 0;
-        for (long j = 0; j < m - 1; j++, idx++)
-            vecG[j] = 0;
-        for (long j = 0; j < m; j++, idx++)
-            vecG[idx] = -G[j][i];
-        toeplitz_G[i] = toeplitz_lzz_p(vecG, m, m);
+        for (long j = 0; j < m; j++)
+            vecG[j] = -G[j][i];
+        toeplitz_G[i] = lower_triangular_toeplitz_lzz_p(vecG);
 
         idx = n - 2;
         if (idx < 0) // happens when n = 1;
             idx += n;
-        for (long j = 0; j < m + n - 1; j++)
+        for (long j = 0; j < n; j++)
         {
             vecH[j] = H[idx][i];
             idx--;
             if (idx < 0)
                 idx += n;
         }
-        toeplitz_H[i] = toeplitz_lzz_p(vecH, m, n);
+        circulant_H[i] = circulant_row_lzz_p(vecH, m);
     }
 }
 
@@ -108,7 +105,7 @@ void toeplitz_like_minus_lzz_p::mul_right(Vec<zz_p>& output, const Vec<zz_p>& in
 
     for (long i = 0; i < NumGens(); i++)
     {
-        toeplitz_H[i].mul_right(tmp1, input);
+        circulant_H[i].mul_right(tmp1, input);
         toeplitz_G[i].mul_right(tmp2, tmp1);
         for (long j = 0; j < m; j++)
             output[j] += tmp2[j];
@@ -138,12 +135,12 @@ void toeplitz_like_minus_lzz_p::to_dense(Mat<zz_p>& Mdense) const
     Mdense.SetDims(m, n);
     for (long i = 0; i < NumGens(); i++)
     {
-        Mdense += toeplitz_G[i].to_dense() * toeplitz_H[i].to_dense();
+        Mdense += toeplitz_G[i].to_dense() * circulant_H[i].to_dense();
     }
 }
 
 /*------------------------------------------------------------*/
-/* returns Z0^t A - A Z1^t                                    */
+/* returns Z0 A - A Z1                                        */
 /*------------------------------------------------------------*/
 void toeplitz_lzz_p_phi_minus(Mat<zz_p> & res, const Mat<zz_p>& A)
 {

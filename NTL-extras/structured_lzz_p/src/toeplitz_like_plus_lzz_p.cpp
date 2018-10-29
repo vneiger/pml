@@ -35,32 +35,28 @@ toeplitz_like_plus_lzz_p::toeplitz_like_plus_lzz_p(const Mat<zz_p>& U, const Mat
     n = H.NumRows();
     long alpha = G.NumCols();
 
-    toeplitz_G.SetLength(alpha);
-    toeplitz_H.SetLength(alpha);
+    circulant_G.SetLength(alpha);
+    lower_triangular_toeplitz_H.SetLength(alpha);
     
     Vec<zz_p> vecG, vecH;
-    vecG.SetLength(m + n - 1);
-    vecH.SetLength(n + n - 1);
+    vecG.SetLength(m);
+    vecH.SetLength(n);
 
     for (long i = 0; i < alpha; i++)
     {
-        long idx = 1 % m;
-        for (long j = 0; j < m + n - 1; j++)
+        long idx = n % m;
+        for (long j = 0; j < m; j++)
         {
             vecG[j] = G[idx][i];
             idx++;
             if (idx == m)
                 idx = 0;
         }
-
-        toeplitz_G[i] = toeplitz_lzz_p(vecG, m, n);
+        circulant_G[i] = circulant_column_lzz_p(vecG, n);
         
-        for (long j = 0; j < n - 1; j++)
-            vecH[j] = 0;
         for (long j = 0; j < n; j++)
-            vecH[j + n - 1] = H[n - 1 - j][i];
-        
-        toeplitz_H[i] = toeplitz_lzz_p(vecH, n , n);
+            vecH[j] = H[n - 1 - j][i];
+        lower_triangular_toeplitz_H[i] = lower_triangular_toeplitz_lzz_p(vecH);
     }
 }
 
@@ -100,8 +96,8 @@ void toeplitz_like_plus_lzz_p::mul_right(Vec<zz_p>& output, const Vec<zz_p>& inp
     Vec<zz_p> tmp1, tmp2;
     for (long i = 0; i < NumGens(); i++)
     {
-        toeplitz_H[i].mul_right(tmp1, input);
-        toeplitz_G[i].mul_right(tmp2, tmp1);
+        lower_triangular_toeplitz_H[i].mul_right(tmp1, input);
+        circulant_G[i].mul_right(tmp2, tmp1);
         for (long j = 0; j < m; j++)
             output[j] += tmp2[j];
     }
@@ -130,7 +126,7 @@ void toeplitz_like_plus_lzz_p::to_dense(Mat<zz_p>& Mdense) const
     Mdense.SetDims(m, n);
     for (long i = 0; i < NumGens(); i++)
     {
-        Mdense += toeplitz_G[i].to_dense() * toeplitz_H[i].to_dense();
+        Mdense += circulant_G[i].to_dense() * lower_triangular_toeplitz_H[i].to_dense();
     }
 }
 

@@ -16,7 +16,7 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 1; i < 100; i += 10)
+    for (long i = 1; i < 100; i += (i < 50 ? 1 : 4))
     {
         long j, alpha;
         Mat<zz_p> G, H;
@@ -34,6 +34,16 @@ void check(long p)
         hl = hankel_like_minus_lzz_p(G, H);
 
         j = i+4;
+        G = random_mat_zz_p(i, alpha);
+        H = random_mat_zz_p(j, alpha);
+        hl = hankel_like_minus_lzz_p(G, H);
+
+        j = max(1, i/4);
+        G = random_mat_zz_p(i, alpha);
+        H = random_mat_zz_p(j, alpha);
+        hl = hankel_like_minus_lzz_p(G, H);
+
+        j = i*4;
         G = random_mat_zz_p(i, alpha);
         H = random_mat_zz_p(j, alpha);
         hl = hankel_like_minus_lzz_p(G, H);

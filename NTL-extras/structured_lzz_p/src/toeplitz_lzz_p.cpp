@@ -102,7 +102,7 @@ void toeplitz_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input) const
         long K = NextPowerOfTwo(n+m-1);
         fftRep fft_input = fftRep(INIT_SIZE, K);
 
-        zz_pX input_X, output_X;
+        zz_pX input_X;
         input_X.rep.SetLength(m);
         zz_p *cf = input_X.rep.elts();
         for (long i = 0; i < m; i++)
@@ -182,7 +182,7 @@ void toeplitz_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input) const
     {
         long K = NextPowerOfTwo(n+m-1);
         fftRep fft_input = fftRep(INIT_SIZE, K);
-        zz_pX input_X, output_X;
+        zz_pX input_X;
 
         for (long j = 0; j < p; j++)
         {
@@ -209,7 +209,7 @@ void toeplitz_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const
 {
     if (input.length() != n)
     {
-        LogicError("Wrong size for toeplitz_lzz_p left matrix multiplication.");
+        LogicError("Wrong size for toeplitz_lzz_p left multiplication.");
     }
 
     if (&res == &input)
@@ -236,7 +236,7 @@ void toeplitz_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const
         long K = NextPowerOfTwo(n+m-1);
         fftRep fft_input = fftRep(INIT_SIZE, K);
 
-        zz_pX input_X, output_X;
+        zz_pX input_X;
         input_X.rep.SetLength(n);
         zz_p *cf = input_X.rep.elts();
         for (long i = 0; i < n; i++)
@@ -306,7 +306,7 @@ void toeplitz_lzz_p::mul_left(Mat<zz_p>& res, const Mat<zz_p>& input) const
     {
         long K = NextPowerOfTwo(n+m-1);
         fftRep fft_input = fftRep(INIT_SIZE, K);
-        zz_pX input_X, output_X;
+        zz_pX input_X;
 
         for (long i = 0; i < p; i++)
         {

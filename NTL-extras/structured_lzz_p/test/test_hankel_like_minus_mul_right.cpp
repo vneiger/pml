@@ -7,7 +7,7 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* creates toeplitz matrices                                  */
+/* creates hankel matrices                                    */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -16,7 +16,7 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 2; i < 100; i += 10)
+    for (long i = 1; i < 300; i += (i < 50 ? 1 : 4))
     {
         long j, alpha;
         Mat<zz_p> G, H, A, R;

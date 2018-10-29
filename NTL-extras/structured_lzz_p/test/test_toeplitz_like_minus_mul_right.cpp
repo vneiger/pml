@@ -16,7 +16,7 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 2; i < 100; i += 10)
+    for (long i = 1; i < 300; i += 1)
     {
         long j, alpha;
         Mat<zz_p> G, H, A, R;

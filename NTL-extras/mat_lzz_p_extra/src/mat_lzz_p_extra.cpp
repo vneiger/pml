@@ -41,6 +41,19 @@ Mat<zz_p> J_lzz_p(long n)
     return res;
 }
 
+/*------------------------------------------------------------*/
+/* diagonal matrix with diagonal d                            */
+/*------------------------------------------------------------*/
+Mat<zz_p> diagonal_matrix(const Vec<zz_p> & d)
+{
+    long n = d.length();
+    Mat<zz_p> res;
+    res.SetDims(n, n);
+    for (long i = 0; i < n; i++)
+        res[i][i] = d[i];
+    return res;
+}
+
 
 // Local Variables:
 // mode: C++

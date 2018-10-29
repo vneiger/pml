@@ -16,7 +16,7 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 2; i < 100; i += 10)
+    for (long i = 1; i < 100; i += (i < 50 ? 1 : 5))
     {
         long j, alpha;
         Mat<zz_p> G, H, tH, A, R;
@@ -42,6 +42,24 @@ void check(long p)
         assert (R == G*tH);
 
         j = i+4;
+        G = random_mat_zz_p(i, alpha);
+        H = random_mat_zz_p(j, alpha);
+        transpose(tH, H);
+        hl = toeplitz_like_minus_lzz_p(G, H);
+        A = hl.to_dense();
+        R = toeplitz_lzz_p_phi_minus(A);
+        assert (R == G*tH);
+
+        j = max(1, i/4);
+        G = random_mat_zz_p(i, alpha);
+        H = random_mat_zz_p(j, alpha);
+        transpose(tH, H);
+        hl = toeplitz_like_minus_lzz_p(G, H);
+        A = hl.to_dense();
+        R = toeplitz_lzz_p_phi_minus(A);
+        assert (R == G*tH);
+
+        j = i*4;
         G = random_mat_zz_p(i, alpha);
         H = random_mat_zz_p(j, alpha);
         transpose(tH, H);

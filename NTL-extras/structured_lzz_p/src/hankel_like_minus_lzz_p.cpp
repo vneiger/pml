@@ -36,38 +36,35 @@ hankel_like_minus_lzz_p::hankel_like_minus_lzz_p(const Mat<zz_p>& U, const Mat<z
     n = H.NumRows();
     long alpha = G.NumCols();
 
-    hankel_G.SetLength(alpha);
-    toeplitz_H.SetLength(alpha);
+    lower_triangular_toeplitz_G.SetLength(alpha);
+    circulant_H.SetLength(alpha);
 
     if (m == 0 || n == 0)
         return;
     
     Vec<zz_p> vecG, vecH;
-    vecG.SetLength(m + m - 1);
-    vecH.SetLength(m + n - 1);
+    vecG.SetLength(m);
+    vecH.SetLength(n);
 
     for (long i = 0; i < alpha; i++)
     {
         long idx;
 
-        idx = 0;
-        for (long j = 0; j < m - 1; j++, idx++)
-            vecG[j] = 0;
-        for (long j = 0; j < m; j++, idx++)
-            vecG[idx] = -G[m - 1 - j][i];
-        hankel_G[i] = hankel_lzz_p(vecG, m, m);
+        for (long j = 0; j < m; j++)
+            vecG[j] = -G[m - 1 - j][i];
+        lower_triangular_toeplitz_G[i] = lower_triangular_toeplitz_lzz_p(vecG);
 
         idx = n - 2;
         if (idx < 0) // happens when n = 1;
             idx += n;
-        for (long j = 0; j < m + n - 1; j++)
+        for (long j = 0; j < n; j++)
         {
             vecH[j] = H[idx][i];
             idx--;
             if (idx < 0)
                 idx += n;
         }
-        toeplitz_H[i] = toeplitz_lzz_p(vecH, m, n);
+        circulant_H[i] = circulant_row_lzz_p(vecH, m);
     }
 }
 
@@ -107,10 +104,10 @@ void hankel_like_minus_lzz_p::mul_right(Vec<zz_p>& output, const Vec<zz_p>& inpu
     Vec<zz_p> tmp1, tmp2;
     for (long i = 0; i < NumGens(); i++)
     {
-        toeplitz_H[i].mul_right(tmp1, input);
-        hankel_G[i].mul_right(tmp2, tmp1);
+        circulant_H[i].mul_right(tmp1, input);
+        lower_triangular_toeplitz_G[i].mul_right(tmp2, tmp1);
         for (long j = 0; j < m; j++)
-            output[j] += tmp2[j];
+            output[j] += tmp2[m - 1 - j];
     }
 }
 
@@ -137,8 +134,9 @@ void hankel_like_minus_lzz_p::to_dense(Mat<zz_p>& Mdense) const
     Mdense.SetDims(m, n);
     for (long i = 0; i < NumGens(); i++)
     {
-        Mdense += hankel_G[i].to_dense() * toeplitz_H[i].to_dense();
+        Mdense += lower_triangular_toeplitz_G[i].to_dense() * circulant_H[i].to_dense();
     }
+    Mdense = J_lzz_p(m) * Mdense;
 }
 
 /*------------------------------------------------------------*/

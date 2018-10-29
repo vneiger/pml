@@ -15,7 +15,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* checks some products                                       */
 /*------------------------------------------------------------*/
-void check(long p, long sz, long deg)
+void check(long p, long sz, long sz2, long sz3, long deg)
 {
     if (p == 0)
         zz_p::FFTInit(0);
@@ -28,8 +28,8 @@ void check(long p, long sz, long deg)
     Mat<zz_pX> a, b, c;
     double t_eval, t_3primes, t_waksman, t_check;
 
-    random(a, sz, sz, deg);
-    random(b, sz, sz, deg);
+    random(a, sz, sz2, deg);
+    random(b, sz2, sz3, deg);
     
     t_eval = get_time();
     nb = 0;
@@ -73,9 +73,8 @@ void check(long p, long sz, long deg)
     while ((get_time()-t_check) <= thresh);
     t_check = (get_time()-t_check) / nb;
 
-    cout << p << " " << sz << " " << deg << endl;
+    cout << p << " " << sz << " " << sz2 << " " << sz3 << " " << deg << endl;
     cout << t_eval << " " << t_3primes << " " << t_waksman << " " << t_check << endl;
-
 }
 
 
@@ -91,19 +90,23 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    long sz = 10;
+    long sz1 = 10;
+    long sz2 = 10;
+    long sz3 = 10;
     long deg = 10;
 
-    if (argc > 1)
+    if (argc ==  5)
     {
-        sz = atoi(argv[1]);
-        deg = atoi(argv[2]);
+        sz1 = atoi(argv[1]);
+        sz2 = atoi(argv[2]);
+        sz3 = atoi(argv[3]);
+        deg = atoi(argv[4]);
     }
 
     warmup();
-    check(0, sz, deg);
-    check(23068673, sz, deg);
-    check(288230376151711813, sz, deg);
+    check(0, sz1, sz2, sz3, deg);
+    check(23068673, sz1, sz2, sz3, deg);
+    check(288230376151711813, sz1, sz2, sz3, deg);
     return 0;
 }
 
@@ -114,3 +117,4 @@ int main(int argc, char ** argv)
 // c-basic-offset: 4
 // End:
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
+
