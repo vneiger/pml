@@ -38,8 +38,7 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
     long st = s*t;
     
     context.save(); // to give the zz_p context to each thread
-
-NTL_EXEC_RANGE(s,first,last)
+    NTL_EXEC_RANGE(s,first,last)
     context.restore(); // now all threads have the right zz_p context
     
     fftRep R(INIT_SIZE, idxk);
@@ -53,11 +52,10 @@ NTL_EXEC_RANGE(s,first,last)
                 mat_valA[rst + i*t + k] = frept[r];
         }
     }
-NTL_EXEC_RANGE_END
+    NTL_EXEC_RANGE_END
 
-long tu = t*u;
-
-NTL_EXEC_RANGE(t,first,last)
+    long tu = t*u;
+    NTL_EXEC_RANGE(t, first, last)
     context.restore();
 
     fftRep R(INIT_SIZE, idxk);
@@ -73,13 +71,13 @@ NTL_EXEC_RANGE(t,first,last)
     }
     
     R1 = R;
-NTL_EXEC_RANGE_END
+    NTL_EXEC_RANGE_END
 
     mat_valC.SetLength(s * u);
     for (long i = 0; i < s * u; i++)
         mat_valC[i].SetLength(n);
 
-NTL_EXEC_RANGE(n,first,last)
+    NTL_EXEC_RANGE(n, first, last)
     context.restore();
     
     Mat<zz_p> va, vb, vc; 
@@ -113,17 +111,15 @@ NTL_EXEC_RANGE(n,first,last)
             }
         }
     }
-NTL_EXEC_RANGE_END
+    NTL_EXEC_RANGE_END
 
     c.SetDims(s, u);
 
-NTL_EXEC_RANGE(s,first,last)
+    NTL_EXEC_RANGE(s, first, last)
     context.restore();
     
     Mat<zz_p> vc; 
-    
     fftRep R = R1;
-    
     for (long i = first; i < last; i++)
     {
         for (long k = 0; k < u; k++)
@@ -136,7 +132,7 @@ NTL_EXEC_RANGE(s,first,last)
             FromfftRep(c[i][k], R, 0, n - 1);
         }
     }
-NTL_EXEC_RANGE_END
+    NTL_EXEC_RANGE_END
 }
 
 // NEW CODE TO BE BENCHMARKED
@@ -169,8 +165,7 @@ void multiply_evaluate_FFT2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p
     long st = s*t;
     
     context.save(); // to give the zz_p context to each thread
-
-NTL_EXEC_RANGE(s,first,last)
+    NTL_EXEC_RANGE(s, first, last)
     context.restore(); // now all threads have the right zz_p context
 
     fftRep R(INIT_SIZE, idxk);
@@ -185,11 +180,11 @@ NTL_EXEC_RANGE(s,first,last)
                 mat_valA[i][k][r] = frept[r];
         }
     }
-NTL_EXEC_RANGE_END
+    NTL_EXEC_RANGE_END
 
-long tu = t*u;
+    long tu = t*u;
 
-NTL_EXEC_RANGE(t,first,last)
+    NTL_EXEC_RANGE(t, first, last)
     context.restore();
 
     fftRep R(INIT_SIZE, idxk);
@@ -206,13 +201,13 @@ NTL_EXEC_RANGE(t,first,last)
     }
     
     R1 = R;
-NTL_EXEC_RANGE_END
+    NTL_EXEC_RANGE_END
 
     mat_valC.SetLength(s * u);
     for (long i = 0; i < s * u; i++)
         mat_valC[i].SetLength(n);
 
-NTL_EXEC_RANGE(n,first,last)
+    NTL_EXEC_RANGE(n, first, last)
     context.restore();
 
     Mat<zz_p> va, vb, vc; 
@@ -246,11 +241,10 @@ NTL_EXEC_RANGE(n,first,last)
             }
         }
     }
-NTL_EXEC_RANGE_END
+    NTL_EXEC_RANGE_END
 
     c.SetDims(s, u);
-
-NTL_EXEC_RANGE(s,first,last)
+    NTL_EXEC_RANGE(s, first, last)
     context.restore();
     
     Mat<zz_p> vc; 
@@ -269,7 +263,7 @@ NTL_EXEC_RANGE(s,first,last)
             FromfftRep(c[i][k], R, 0, n - 1);
         }
     }
-NTL_EXEC_RANGE_END
+    NTL_EXEC_RANGE_END
 }
 // END NEW CODE TO BE BENCHMARKED
 
@@ -282,8 +276,17 @@ NTL_EXEC_RANGE_END
 /*------------------------------------------------------------*/
 void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
-    
-    if (is_FFT_ready(NextPowerOfTwo(deg(a) + deg(b) + 1)))
+    long dA = deg(a);
+    long dB = deg(b);
+
+    if (dA < 0 || dB < 0)
+    {
+        c.SetDims(a.NumRows(), b.NumCols());
+        clear(c);
+        return;
+    }
+
+    if (is_FFT_ready(NextPowerOfTwo(dA + dB + 1)))
     {
         multiply_evaluate_FFT(c, a, b);
     }
@@ -301,6 +304,13 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long i
     long dA = deg(a);
     long dB = deg(b);
     long dmax = max(dA, dB);
+
+    if (dA < 0 || dB < 0)
+    {
+        c.SetDims(a.NumRows(), b.NumCols());
+        clear(c);
+        return;
+    }
 
     long deg_trs = max_degree_transform();
 

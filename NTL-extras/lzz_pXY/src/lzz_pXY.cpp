@@ -193,6 +193,87 @@ void mul_naive(zz_pXY& c, const zz_pXY& a, const zz_pXY& b)
     c = c_tmp;
 }
 
+
+/*------------------------------------------------------------*/
+/* to kronecker substitution                                  */
+/*------------------------------------------------------------*/
+void to_kronecker(zz_pX& out, const Vec<zz_pX>& a, long degX)
+{
+    if (a.length() == 0)
+    {
+        out = 0;
+        return;
+    }
+
+    long dyA = a.length() - 1;
+    out.rep.SetLength((degX+1) * (dyA+1));
+    zz_p * out_e = out.rep.elts();
+    for (long i = 0; i <= dyA; i++)
+    {
+        long d = deg(a[i]);
+        if (d >= 0)
+        {
+            const zz_p * ae = a[i].rep.elts();
+            for (long j = 0; j <= d; j++)
+                out_e[j] = ae[j];
+            for (long j = d+1; j <= degX; j++)
+                out_e[j] = 0;
+        }
+        else
+            for (long j = 0; j <= degX; j++)
+                out_e[j] = 0;
+        out_e += degX + 1;
+    }
+    out.normalize();
+}
+
+/*------------------------------------------------------------*/
+/* from kronecker substitution                                */
+/*------------------------------------------------------------*/
+void from_kronecker(Vec<zz_pX>& c, const zz_pX& a, long degX)
+{
+    if (a == 0)
+    {
+        c.SetLength(0);
+        return;
+    }
+
+    long degY = deg(a) / (degX + 1);
+    long idx = 0;
+    c.SetLength(degY + 1);
+    const zz_p * ae = a.rep.elts();
+    for (long i = 0; i <= degY ; i++)
+    {
+        c[i].rep.SetLength(degX + 1);
+        zz_p * ce = c[i].rep.elts();
+        for (long j = 0; j <= degX; j++)
+            ce[j] = ae[idx++];
+        c[i].normalize();
+    }
+}
+
+/*------------------------------------------------------------*/
+/* to kronecker substitution                                  */
+/*------------------------------------------------------------*/
+void to_kronecker(zz_pX& out, const zz_pXY& a, long degX)
+{
+    if (a.is_zero())
+    {
+        out = 0;
+        return;
+    }
+    to_kronecker(out, a.rep, degX);
+}
+
+/*------------------------------------------------------------*/
+/* from kronecker substitution                                */
+/*------------------------------------------------------------*/
+void from_kronecker(zz_pXY& c, const zz_pX& a, long degX)
+{
+    c.zero();
+    from_kronecker(c.rep, a, degX);
+}
+
 /*------------------------------------------------------------*/
 /* kronecker multiplication                                   */
 /*------------------------------------------------------------*/
@@ -213,63 +294,14 @@ void mul_kronecker(zz_pXY& c, const zz_pXY& a, const zz_pXY& b)
     long dxA = a.degX();
     long dxB = b.degX();
     long dx = dxA + dxB;
-    long dyA = a.degY();
-    long dyB = b.degY();
-    long dy = dyA + dyB;
     zz_pX apX, bpX, cpX;
 
-    apX.rep.SetLength((dx+1) * (dyA+1));
-    zz_p * ape = apX.rep.elts();
-    for (long i = 0; i <= dyA; i++)
-    {
-        long d = deg(a.rep[i]);
-        if (d >= 0)
-        {
-            const zz_p * ae = a.rep[i].rep.elts();
-            for (long j = 0; j <= d; j++)
-                ape[j] = ae[j];
-            for (long j = d+1; j <= dx; j++)
-                ape[j] = 0;
-        }
-        else
-            for (long j = 0; j <= dx; j++)
-                ape[j] = 0;
-        ape += dx + 1;
-    }
-    apX.normalize();
-
-    bpX.rep.SetLength((dx+1) * (dyB+1));
-    zz_p * bpe = bpX.rep.elts();
-    for (long i = 0; i <= dyB; i++)
-    {
-        long d = deg(b.rep[i]);
-        if (d >= 0)
-        {
-            const zz_p * be = b.rep[i].rep.elts();
-            for (long j = 0; j <= d; j++)
-                bpe[j] = be[j];
-            for (long j = d+1; j <= dx; j++)
-                bpe[j] = 0;
-        }
-        else
-            for (long j = 0; j <= dx; j++)
-                bpe[j] = 0;
-        bpe += dx + 1;
-    }
-    bpX.normalize();
+    to_kronecker(apX, a, dx);
+    to_kronecker(bpX, b, dx);
     
     cpX = apX * bpX;
 
-    long idx = 0;
-    c.rep.SetLength(dy + 1);
-    for (long i = 0; i <= dy ; i++)
-    {
-        c.rep[i].rep.SetLength(dx + 1);
-        zz_p * ce = c.rep[i].rep.elts();
-        for (long j = 0; j <= dx; j++)
-            ce[j] = coeff(cpX, idx++);
-        c.rep[i].normalize();
-    }
+    from_kronecker(c, cpX, dx);
 }
 
 
@@ -353,6 +385,32 @@ void trunc_y(zz_pXY& b, const zz_pXY &a, long i)
         b.rep[j] = a.rep[j];
     b.normalize();
 }
+
+/*------------------------------------------------------------*/
+/* setting coefficients                                       */
+/*------------------------------------------------------------*/
+void SetCoeff(zz_pXY& x, long i, const zz_pX& c)
+{
+   long j, m;
+
+   if (i < 0) 
+      LogicError("SetCoeff: negative index");
+
+   m = x.degY();
+
+   if (i > m && IsZero(c)) 
+       return; 
+
+   if (i > m) 
+   {
+      x.rep.SetLength(i + 1);
+      for (j = m + 1; j < i; j++)
+         clear(x.rep[j]);
+   }
+   x.rep[i] = c;
+   x.normalize();
+}
+
 
 // Local Variables:
 // mode: C++

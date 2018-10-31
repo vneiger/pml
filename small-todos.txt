@@ -46,3 +46,12 @@ TODO Vincent
    - Improvement of approximants for small n:
       * generic algo (need some more tuning)
       * partial linearization solution Storjohann / ZhouLabahn
+
+
+TODO Eric
+   - add new multiplication function
+   - fix names (mul / multiply)
+   - Fix is_prime by adding primality testing
+   - use NTL's TFT when available
+   - do rational solve / determinant via lifting
+   - write all missing functions in structured_lzz_p and structured_lzz_pX   

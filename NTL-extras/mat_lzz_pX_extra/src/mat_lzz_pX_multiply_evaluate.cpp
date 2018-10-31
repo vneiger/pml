@@ -32,12 +32,11 @@ static void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const 
     long st = s*t;
 
     
-/*** START PARALLEL ********************************************/ 
+    /*** START PARALLEL ********************************************/ 
     context.save();  
-
-NTL_EXEC_RANGE(s,first,last)
-    
+    NTL_EXEC_RANGE(s, first, last)
     context.restore();
+
     for (long i = first; i < last; i++)
     {
         Vec<zz_p> tmp;
@@ -49,16 +48,14 @@ NTL_EXEC_RANGE(s,first,last)
         }
     }
 
-NTL_EXEC_RANGE_END
-/*** END PARALLEL **********************************************/
+    NTL_EXEC_RANGE_END
+    /*** END PARALLEL **********************************************/
     
     long tu = t*u;
     
-/*** START PARALLEL ********************************************/
+    /*** START PARALLEL ********************************************/
     context.save();
-    
-NTL_EXEC_RANGE(t,first,last)
-    
+    NTL_EXEC_RANGE(t,first,last)
     context.restore();    
     for (long i = first; i < last; i++)
     {
@@ -74,19 +71,14 @@ NTL_EXEC_RANGE(t,first,last)
         
     }
     
-NTL_EXEC_RANGE_END
-/*** END PARALLEL **********************************************/
+    NTL_EXEC_RANGE_END
+    /*** END PARALLEL **********************************************/
+    
     
     mat_valC.SetLength(s * u);
     for (long i = 0; i < s * u; i++)
         mat_valC[i].SetLength(n);
     
-/*** START PARALLEL ********************************************/   
-//    context.save();
-
-//NTL_EXEC_RANGE(n,first,last)    
-
-//    context.restore();
     for (long j = 0, jst = 0, jtu = 0; j < n; j++, jst += st, jtu += tu)
     {
         Mat<zz_p> va, vb, vc;
@@ -119,16 +111,11 @@ NTL_EXEC_RANGE_END
         }
     }
     
-//NTL_EXEC_RANGE_END
-/*** END PARALLEL **********************************************/
-
     c.SetDims(s, u);
 
-/*** START PARALLEL ********************************************/   
+    /*** START PARALLEL ********************************************/   
     context.save();
-
-NTL_EXEC_RANGE(s,first,last)   
-    
+    NTL_EXEC_RANGE(s,first,last)   
     context.restore();
     
     for (long i = first; i < last; i++)
@@ -139,9 +126,10 @@ NTL_EXEC_RANGE(s,first,last)
         }
     }
 
-NTL_EXEC_RANGE_END
-/*** END PARALLEL **********************************************/
+    NTL_EXEC_RANGE_END
+    /*** END PARALLEL **********************************************/
 }
+
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
 /* geometric points, uses FFTs directly                       */
@@ -154,6 +142,13 @@ void multiply_evaluate_geometric_using_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a,
     long dB = deg(b);
     long dC = dA+dB;
     long sz = dC+1;
+
+    if (dA < 0 || dB < 0)
+    {
+        c.SetDims(a.NumRows(), b.NumCols());
+        clear(c);
+        return;
+    }
 
     zz_pX_Multipoint *ev;
     zz_pX_Multipoint_Geometric ev_geometric = get_geometric_points(sz);
@@ -181,6 +176,13 @@ void multiply_evaluate_geometric_no_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, co
     long dC = dA+dB;
     long sz = dC+1;
 
+    if (dA < 0 || dB < 0)
+    {
+        c.SetDims(a.NumRows(), b.NumCols());
+        clear(c);
+        return;
+    }
+
     zz_pX_Multipoint *ev;
     zz_pX_Multipoint_Geometric ev_geometric = get_geometric_points(sz);
 
@@ -205,6 +207,13 @@ void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat
     long dB = deg(b);
     long dC = dA+dB;
     long sz = dC+1;
+
+    if (dA < 0 || dB < 0)
+    {
+        c.SetDims(a.NumRows(), b.NumCols());
+        clear(c);
+        return;
+    }
 
     zz_pX_Multipoint *ev;
     zz_pX_Multipoint_Geometric ev_geometric = get_geometric_points(sz);

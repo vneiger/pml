@@ -23,7 +23,7 @@ void check(long p)
         lower_triangular_toeplitz_lzz_p h = lower_triangular_toeplitz_lzz_p(dat);
         if (p != 0 && p < (1L << 23) && i < 10)
         {
-            cout << "(" << i << " x " << i << ") circulant:\n" << h.to_dense() << endl;
+            cout << "(" << i << " x " << i << ") lower triangular toeplitz:\n" << h.to_dense() << endl;
             cout << dat << endl;
         }
     }

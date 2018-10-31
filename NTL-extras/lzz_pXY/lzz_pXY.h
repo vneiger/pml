@@ -10,7 +10,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* a helper class for bivariate polynomials over zz_p         */
 /* a zz_pXY is simply a vector of zz_pX                       */
-/* with the convention f = sum_i rep[i](X) Y^i              */ 
+/* with the convention f = sum_i rep[i](X) Y^i                */ 
 /* minimal functionalities are provided                       */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -150,6 +150,19 @@ inline zz_pXY mul_naive(const zz_pXY& a, const zz_pXY& b)
     return c;
 }
 
+
+/*------------------------------------------------------------*/
+/* kronecker substitution using vector arguments              */
+/*------------------------------------------------------------*/
+void to_kronecker(zz_pX& out, const Vec<zz_pX>& a, long stepX);
+void from_kronecker(Vec<zz_pX>& out, const zz_pX& a, long stepX);
+
+/*------------------------------------------------------------*/
+/* kronecker substitution                                     */
+/*------------------------------------------------------------*/
+void to_kronecker(zz_pX& out, const zz_pXY& a, long stepX);
+void from_kronecker(zz_pXY& out, const zz_pX& a, long stepX);
+
 /*------------------------------------------------------------*/
 /* kronecker multiplication                                   */
 /*------------------------------------------------------------*/
@@ -246,6 +259,12 @@ inline zz_pXY trunc_y(const zz_pXY &a, long i)
     trunc_y(b, a, i);
     return b;
 }
+
+/*------------------------------------------------------------*/
+/* setting coefficients                                       */
+/*------------------------------------------------------------*/
+void SetCoeff(zz_pXY& a, long i, const zz_pX& c);
+
 
 #endif
 
