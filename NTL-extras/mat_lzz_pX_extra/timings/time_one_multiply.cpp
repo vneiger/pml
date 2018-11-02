@@ -1,9 +1,12 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
+#include <NTL/ZZ.h>
+#include <NTL/tools.h>
+#include <NTL/BasicThreadPool.h>
+
 #include <iomanip>
 #include <limits.h>
-#include <NTL/BasicThreadPool.h>
 
 #include "util.h"
 #include "lzz_p_extra.h"
@@ -26,7 +29,7 @@ void check(long p, long sz, long sz2, long sz3, long deg)
     
     long nb;
     Mat<zz_pX> a, b, c;
-    double t_eval, t_3primes, t_waksman, t_check;
+    double t_eval, t_eval_dense, t_eval_direct, t_3primes, t_waksman, t_check;
 
     random(a, sz, sz2, deg);
     random(b, sz2, sz3, deg);
@@ -52,6 +55,7 @@ void check(long p, long sz, long sz2, long sz3, long deg)
     while ((get_time()-t_3primes) <= thresh);
     t_3primes = (get_time()-t_3primes) / nb;
                 
+
     t_waksman = get_time();
     nb = 0;
     do
@@ -61,7 +65,34 @@ void check(long p, long sz, long sz2, long sz3, long deg)
     }
             while ((get_time()-t_waksman) <= thresh);
     t_waksman = (get_time()-t_waksman) / nb;
+
     
+    if (deg < 100)
+    {
+        t_eval_dense = get_time();
+        nb = 0;
+        do
+        {
+            multiply_evaluate_dense(c, a, b);
+            nb++;
+        }
+        while ((get_time()-t_eval_dense) <= thresh);
+        t_eval_dense = (get_time()-t_eval_dense) / nb;
+    }
+
+    if (p == 0)
+    {
+        t_eval_direct = get_time();
+        nb = 0;
+        do
+        {
+            multiply_evaluate_direct(c, a, b);
+            nb++;
+        }
+        while ((get_time()-t_eval_direct) <= thresh);
+        t_eval_direct = (get_time()-t_eval_direct) / nb;
+        cout << "check " << (c == a*b) << endl;
+    }
 
     t_check = get_time();
     nb = 0;
@@ -74,7 +105,12 @@ void check(long p, long sz, long sz2, long sz3, long deg)
     t_check = (get_time()-t_check) / nb;
 
     cout << p << " " << sz << " " << sz2 << " " << sz3 << " " << deg << endl;
-    cout << t_eval << " " << t_3primes << " " << t_waksman << " " << t_check << endl;
+    cout << t_eval << " " << t_3primes << " " << t_waksman << " " << t_check << "   ";
+    if (deg < 10)
+        cout << " " << t_eval_dense;
+    if (p == 0)
+        cout << " " << t_eval_direct;
+    cout << endl;
 }
 
 

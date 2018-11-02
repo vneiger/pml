@@ -542,7 +542,9 @@ inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs)
 /* (user provided truncation order)                           */
 /*------------------------------------------------------------*/
 
-// coeffs will have length order independently of deg(mat)
+/*------------------------------------------------------------*/
+/* coeffs will have length order independently of deg(mat)    */
+/*------------------------------------------------------------*/
 void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat, const long order);
 
 inline Vec<Mat<zz_p>> conv(const Mat<zz_pX>& mat, const long order)
@@ -572,6 +574,7 @@ class lzz_pX_3_primes
 public:
     /*------------------------------------------------------------*/
     /* constructor of lzz_p_3_primes                              */
+    /* need to know ncols and degrees to choose number of primes  */
     /*------------------------------------------------------------*/
     lzz_pX_3_primes(long ncols, long dA, long dB);
     lzz_pX_3_primes(){};
@@ -588,7 +591,7 @@ public:
 
 private:
     long nb_primes;
-    long fft_p0, fft_p1, fft_p2;
+    long fft_p0, fft_p1, fft_p2; // the fft primes
 };
 
 
@@ -609,6 +612,11 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
 void multiply_evaluate_geometric_using_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_evaluate_geometric_no_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
+void multiply_evaluate_direct_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
+void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
 void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
