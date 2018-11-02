@@ -22,20 +22,49 @@ void check(long p)
         dat.SetLength(i);
         for (long d = 0; d < 300 &&  d*i < 2000; d += (d < 100 ? 1 : 19))
         {
-            for (long j = 0; j < i; j++)
-                dat[j] = random_zz_pX(d);
-            lower_triangular_toeplitz_lzz_pX h = lower_triangular_toeplitz_lzz_pX(dat);
-
+            lower_triangular_toeplitz_lzz_pX h;
             Vec<zz_pX> in, out, out2;
+            Mat<zz_pX> inM, outM;
+
             in.SetLength(i);
             out.SetLength(i);
-           
+
+            for (long j = 0; j < i; j++)
+                dat[j] = random_zz_pX(d);
             for (long j = 0; j < i; j++)
                 in[j] = random_zz_pX(d);
 
+
+            h = lower_triangular_toeplitz_lzz_pX(dat);
+
             out = h.mul_right(in);
             
-            Mat<zz_pX> inM, outM;
+            inM.SetDims(i, 1);
+            for (long j = 0; j < i; j++)
+                inM[j][0] = in[j];
+            outM = h.to_dense() * inM;
+            out2.SetLength(i);
+            for (long j = 0; j < i; j++)
+                out2[j] = outM[j][0];
+            assert (out == out2);
+
+            h.prepare_degree(max(1, d/2));
+            out2 = h.mul_right(in);
+            assert (out == out2);
+
+            h.prepare_degree(d-1);
+            out2 = h.mul_right(in);
+            assert (out == out2);
+
+            for (long j = 0; j < i/3; j++)
+                dat[j] = 0;
+            for (long j = 0; j < i/2; j++)
+                in[j] = 0;
+
+            h = lower_triangular_toeplitz_lzz_pX(dat);
+
+            out = h.mul_right(in);
+            
             inM.SetDims(i, 1);
             for (long j = 0; j < i; j++)
                 inM[j][0] = in[j];
@@ -53,9 +82,6 @@ void check(long p)
             out2 = h.mul_right(in);
             assert (out == out2);
             
-            // cout << i << " " << d << " " << endl;
-            // cout << out << endl;
-            // cout << out2 << endl;
 
 
         }
