@@ -86,7 +86,7 @@ void check(long p, long sz, long sz2, long sz3, long deg)
         nb = 0;
         do
         {
-            multiply_evaluate_direct(c, a, b);
+            multiply_evaluate_direct_FFT(c, a, b);
             nb++;
         }
         while ((get_time()-t_eval_direct) <= thresh);
@@ -153,4 +153,3 @@ int main(int argc, char ** argv)
 // c-basic-offset: 4
 // End:
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
-
