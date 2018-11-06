@@ -208,11 +208,11 @@ static void middle_product_modulo_FFT_prime(Mat<zz_pX> & b, const Mat<zz_pX> & a
         Mat<zz_pX> cp = c;
         reduce_mod_p(ap);
         reduce_mod_p(cp);
-        middle_product_FFT(b, ap, cp, dA, dB);
+        middle_product_evaluate_FFT(b, ap, cp, dA, dB);
     }
     else
     {
-        middle_product_FFT(b, a, c, dA, dB);
+        middle_product_evaluate_FFT(b, a, c, dA, dB);
     }
 }
 
@@ -348,10 +348,6 @@ void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_
         primes.reconstruct(b, bs);
     }
 }
-
-
-
-
 
 // Local Variables:
 // mode: C++

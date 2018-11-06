@@ -33,18 +33,9 @@ void check(long p, long sz, long sz2, long sz3, long deg)
 
     random(a, sz, sz2, deg);
     random(b, sz2, sz3, deg);
-    
-    t_eval = get_time();
-    nb = 0;
-    do
-    {
-        multiply_evaluate(c, a, b);
-        nb++;
-    }
-    while ((get_time()-t_eval) <= thresh);
-    t_eval = (get_time()-t_eval) / nb;
-    
 
+    cout << p << " " << sz << " " << sz2 << " " << sz3 << " " << deg << endl;
+    
     t_3primes = get_time();
     nb = 0;
     do
@@ -55,6 +46,15 @@ void check(long p, long sz, long sz2, long sz3, long deg)
     while ((get_time()-t_3primes) <= thresh);
     t_3primes = (get_time()-t_3primes) / nb;
                 
+    t_eval = get_time();
+    nb = 0;
+    do
+    {
+        multiply_evaluate(c, a, b);
+        nb++;
+    }
+    while ((get_time()-t_eval) <= thresh);
+    t_eval = (get_time()-t_eval) / nb;
 
     t_waksman = get_time();
     nb = 0;
@@ -86,12 +86,34 @@ void check(long p, long sz, long sz2, long sz3, long deg)
         nb = 0;
         do
         {
-            multiply_evaluate_direct(c, a, b);
+            multiply_evaluate_FFT_direct(c, a, b);
             nb++;
         }
         while ((get_time()-t_eval_direct) <= thresh);
         t_eval_direct = (get_time()-t_eval_direct) / nb;
-        cout << "check " << (c == a*b) << endl;
+        cout << t_eval_direct << "  check " << (c == a*b) << endl;
+
+        t_eval_direct = get_time();
+        nb = 0;
+        do
+        {
+            multiply_evaluate_FFT_matmul(c, a, b);
+            nb++;
+        }
+        while ((get_time()-t_eval_direct) <= thresh);
+        t_eval_direct = (get_time()-t_eval_direct) / nb;
+        cout << t_eval_direct << "  check " << (c == a*b) << endl;
+
+        t_eval_direct = get_time();
+        nb = 0;
+        do
+        {
+            multiply_evaluate_FFT(c, a, b);
+            nb++;
+        }
+        while ((get_time()-t_eval_direct) <= thresh);
+        t_eval_direct = (get_time()-t_eval_direct) / nb;
+        cout << t_eval_direct << "  check " << (c == a*b) << endl;
     }
 
     t_check = get_time();
@@ -104,12 +126,9 @@ void check(long p, long sz, long sz2, long sz3, long deg)
     while ((get_time()-t_check) <= thresh);
     t_check = (get_time()-t_check) / nb;
 
-    cout << p << " " << sz << " " << sz2 << " " << sz3 << " " << deg << endl;
     cout << t_eval << " " << t_3primes << " " << t_waksman << " " << t_check << "   ";
     if (deg < 10)
         cout << " " << t_eval_dense;
-    if (p == 0)
-        cout << " " << t_eval_direct;
     cout << endl;
 }
 

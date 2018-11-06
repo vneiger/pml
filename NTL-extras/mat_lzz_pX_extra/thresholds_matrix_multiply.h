@@ -5,8 +5,8 @@
 #include "thresholds_waksman_evaluate.h"
 
 #define MAX_DEGREE_TRANSFORM_FFT 3
-#define MAX_DEGREE_TRANSFORM_SMALL 4 
-#define MAX_DEGREE_TRANSFORM_LARGE 7
+#define MAX_DEGREE_TRANSFORM_SMALL 5 
+#define MAX_DEGREE_TRANSFORM_LARGE 5
 
 /*------------------------------------------------------------*/
 /* max degree for using transforms                            */

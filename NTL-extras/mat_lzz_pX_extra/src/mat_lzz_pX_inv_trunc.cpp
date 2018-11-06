@@ -70,7 +70,6 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
             x[r][s].rep[0] = inv0[r][s];
         }
 
-
     v.SetDims(u, u);
     for (long k = 1; k < m; k++) 
     {
@@ -158,7 +157,6 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
                     mat_val1[rss + i*s + j] = frept[r];
                 }
             }
-
        
         // mat_val2 = FFT of (a mod t^(2k))
         // deg(a_ij mod t^(2k)) <= min(2k-1, deg(a_ij))
@@ -185,8 +183,6 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
                 for (long ell = 0; ell < s; ell++)
                     mat_val3[i*s + ell][j] = v3[i][ell];
         }
-
-
 
         // mat_val2 = values of delta
         for (long i = 0; i < s; i++)

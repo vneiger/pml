@@ -17,20 +17,24 @@ void one_check(long sz, long deg)
     Mat<zz_pX> a, b, c1, c2;
     random(a, sz, sz, deg);
 
-    mat_lzz_pX_lmultiplier_geometric mula;
-    mula = mat_lzz_pX_lmultiplier_geometric(a, deg-1);
-
-    mat_lzz_pX_lmultiplier_3_primes mul3;
-    mul3 = mat_lzz_pX_lmultiplier_3_primes(a, deg-1);
-
+    mat_lzz_pX_lmultiplier_geometric mula(a, deg-1);
+    mat_lzz_pX_lmultiplier_3_primes mul3(a, deg-1);
     std::unique_ptr<mat_lzz_pX_lmultiplier> mul = get_lmultiplier(a, deg-1);
     
     random(b, sz, 1, deg);
-    multiply(c1, a, b);
+    multiply_evaluate_geometric(c1, a, b);
 
     mula.multiply(c2, b);
     if (c1 != c2)
         LogicError("Error in geometric lmultiplier");
+    
+    if (deg < 100)
+    {
+        mat_lzz_pX_lmultiplier_dense muld(a, deg-1);
+        muld.multiply(c2, b);
+        if (c1 != c2)
+            LogicError("Error in dense lmultiplier");
+    }
 
     mul3.multiply(c2, b);
     if (c1 != c2)
@@ -42,19 +46,32 @@ void one_check(long sz, long deg)
 
     if (is_FFT_prime())
     {
-        mat_lzz_pX_lmultiplier_FFT mulF;
-        mulF = mat_lzz_pX_lmultiplier_FFT(a, deg-1);
-        mulF.multiply(c2, b);
+        mat_lzz_pX_lmultiplier_FFT_direct mulFD(a, deg-1);
+        mat_lzz_pX_lmultiplier_FFT_matmul mulFM(a, deg-1);
+
+        mulFD.multiply(c2, b);
         if (c1 != c2)
-            LogicError("Error in FFT lmultiplier");
+            LogicError("Error in FFT direct lmultiplier");
+
+        mulFM.multiply(c2, b);
+        if (c1 != c2)
+            LogicError("Error in FFT matmul lmultiplier");
     }
 
     random(b, sz, sz, deg);
-    multiply(c1, a, b);
+    multiply_evaluate_geometric(c1, a, b);
 
     mula.multiply(c2, b);
     if (c1 != c2)
         LogicError("Error in geometric lmultiplier");
+
+    if (deg < 100)
+    {
+        mat_lzz_pX_lmultiplier_dense muld(a, deg-1);
+        muld.multiply(c2, b);
+        if (c1 != c2)
+            LogicError("Error in dense lmultiplier");
+    }
 
     mul3.multiply(c2, b);
     if (c1 != c2)
@@ -66,11 +83,16 @@ void one_check(long sz, long deg)
 
     if (is_FFT_prime())
     {
-        mat_lzz_pX_lmultiplier_FFT mulF;
-        mulF = mat_lzz_pX_lmultiplier_FFT(a, deg-1);
-        mulF.multiply(c2, b);
+        mat_lzz_pX_lmultiplier_FFT_direct mulFD(a, deg-1);
+        mat_lzz_pX_lmultiplier_FFT_matmul mulFM(a, deg-1);
+
+        mulFD.multiply(c2, b);
         if (c1 != c2)
-            LogicError("Error in FFT lmultiplier");
+            LogicError("Error in FFT direct lmultiplier");
+
+        mulFM.multiply(c2, b);
+        if (c1 != c2)
+            LogicError("Error in FFT matmul lmultiplier");
     }
 }
 
@@ -81,7 +103,7 @@ void all_checks()
 {
     std::vector<long> szs =
         {
-            1, 2, 3, 5, 10, 20, 30
+            1, 2, 3, 5, 10, 20, 30, 80, 100, 150
         };
 
     std::vector<long> degs =
