@@ -1550,6 +1550,21 @@ inline Mat<zz_pX> solve_series(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long pr
 }
 
 /*------------------------------------------------------------*/
+/* solve A u = b mod x^prec                                   */
+/* A must be square, A(0) invertible                          */
+/* output can alias input                                     */
+/*------------------------------------------------------------*/
+void solve_series(Vec<zz_pX> &u, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long prec);
+
+inline Vec<zz_pX> solve_series(const Mat<zz_pX>& A, const Vec<zz_pX>& b, long prec)
+{
+    Vec<zz_pX> u;
+    solve_series(u, A, b, prec);
+    return u;
+}
+
+
+/*------------------------------------------------------------*/
 /* Implements a minor variation of Storjohann's algorithm     */
 /* A must be square, A(0) invertible, deg(b) < deg(A)         */
 /* output can alias input                                     */
@@ -1562,6 +1577,15 @@ inline Mat<zz_pX> solve_series_high_order_lifting(const Mat<zz_pX>& A, const Mat
     solve_series_high_order_lifting(u, A, b, prec);
     return u;
 }
+
+
+/*------------------------------------------------------------*/
+/* solve A (u/den) = b                                        */
+/* A must be square, A(0) invertible                          */
+/* output can alias input                                     */
+/* uses lifting and rational reconstruction                   */
+/*------------------------------------------------------------*/
+long linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const Vec<zz_pX>& b);
 
 
 // TODO: polynomial matrix division with remainder (cf. e.g. Neiger-Vu 2017)
