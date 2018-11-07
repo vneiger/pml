@@ -186,7 +186,7 @@ inline Mat<zz_pX> collapse_nonconsecutive_columns(const Mat<zz_pX>& a, long d, l
 
 /*------------------------------------------------------------*/
 /* truncate mod X^..., for all the matrix / some columns/rows */
-/* TODO: different truncation orders on columns/rows          */
+/* output can alias input */
 /*------------------------------------------------------------*/
 // full matrix versions
 void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
@@ -200,10 +200,7 @@ Mat<zz_pX> truncRow(const Mat<zz_pX>& a, long r, long n);
 void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c, long n);
 Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n);
 
-
-// TODO submatrix
-
-// TODO interpolation middle product
+/* TODO: different truncation orders on columns/rows          */
 
 
 /*------------------------------------------------------------*/
