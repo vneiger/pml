@@ -5,6 +5,7 @@
 
 #include "util.h"
 #include "lzz_p_extra.h"
+#include "structured_lzz_p.h"
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
 
@@ -168,6 +169,95 @@ void solve_series(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long 
     else
         solve_series_high_precision(u, A, b, prec);
 }
+
+
+/*------------------------------------------------------------*/
+/* solve A u = b mod x^prec                                   */
+/* A must be square, A(0) invertible                          */
+/* output can alias input                                     */
+/*------------------------------------------------------------*/
+void solve_series(Vec<zz_pX> &u, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long prec)
+{
+    Mat<zz_pX> bmat, umat;
+    long n = b.length();
+    bmat.SetDims(n, 1);
+    for (long i = 0; i < n; i++)
+        bmat[i][0] = b[i];
+    solve_series(umat, bmat, prec);
+    u.SetLength(n);
+    for (long i = 0; i < n; i++)
+        u[i] = umat[i][0];
+}
+
+
+/*------------------------------------------------------------*/
+/* solve A (u/den) = b                                        */
+/* A must be square, A(0) invertible                          */
+/* output can alias input                                     */
+/* uses lifting and rational reconstruction                   */
+/*------------------------------------------------------------*/
+long linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const Vec<zz_pX>& b)
+{
+    long n = A.NumRows();
+    if (A.NumCols() != n)
+        LogicError("Need square matrix for linsolve series");
+    
+    long dA = deg(A);
+    long dB = deg(b);
+
+    long nb = min(n, 5); // number of linear combinations we are taking
+    long deg_den = n*dA; // deg_den + 1 = number of unknowns
+    long deg_num = (n-1)*dA + dB;
+
+    long first = max(deg_num + 1, deg_den); // first term we can use in each block
+    long sz = (deg_den + nb - 1) / nb;  // size of each block
+    long prec = first + sz;
+
+    Vec<zz_pX> sol_series, lin_comb;
+    solve_series(sol_series, A, b, prec);
+    lin_comb.SetLength(nb);
+    for (long i = 0; i < nb; i++)
+    {
+        zz_pX res;
+        for (long j = 0; j < n; j++)
+            res += random_zz_p() * sol_series[j];
+        lin_comb[i] = res;
+    }
+    Vec<Vec<toeplitz_lzz_p>> sys;
+    sys.SetLength(nb);
+    for (long i = 0; i < nb; i++)
+    {
+        sys[i].SetLength(1);
+        Vec<zz_p> coeffs;
+        coeffs.SetLength(deg_den + sz);
+        for (long j = 0; j < deg_den + sz; j++)
+            coeffs[j] = coeff(lin_comb[j], first - deg_den + j);
+        sys[i][0] = toeplitz_lzz_p(coeffs, sz, deg_den + 1);
+    }
+
+    mosaic_toeplitz_lzz_p MT = mosaic_toeplitz_lzz_p(sys);
+    Vec<zz_p> ker_vec, zero;
+    zero.SetLength(sz * nb);
+    for (long i = 0; i < sz * nb; i++)
+        zero[i] = 0;
+
+    long ans = MT.solve(ker_vec, zero);
+    if (ans == 0)
+        return 0;
+
+    den = 0;
+    for (long i = deg_den; i >= 0; i--)
+        SetCoeff(den, i, ker_vec[i]);
+
+    u.SetLength(n);
+    for (long i = 0; i < n; i++)
+        u[i] = MulTrunc(trunc(sol_series[i], deg_num), trunc(den, deg_num), deg_num);
+
+    return 1;
+}
+
+
+
 
 
 /*------------------------------------------------------------*/
