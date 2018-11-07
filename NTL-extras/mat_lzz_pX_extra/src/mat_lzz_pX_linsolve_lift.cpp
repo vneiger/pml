@@ -106,8 +106,8 @@ void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<z
 
     Mat<zz_pX> invA = inv_trunc(A, lenA);
 
-    std::unique_ptr<mat_lzz_pX_lmultiplier> multI(invA, dA);
-    std::unique_ptr<mat_lzz_pX_lmultiplier> multA(A, dA);
+    std::unique_ptr<mat_lzz_pX_lmultiplier> multI = get_lmultiplier(invA, dA);
+    std::unique_ptr<mat_lzz_pX_lmultiplier> multA = get_lmultiplier(A, dA);
     
     long nb = prec / lenA;
     if (prec > (nb * lenA))
