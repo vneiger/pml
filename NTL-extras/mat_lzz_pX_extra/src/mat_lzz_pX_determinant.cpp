@@ -5,6 +5,8 @@
 #include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_approximant.h"
 
+#define GENERIC_DET_PROFILE
+
 bool verify_determinant(const zz_pX & det, const Mat<zz_pX> & pmat, bool up_to_constant, bool randomized)
 {
     if (not randomized)
@@ -81,17 +83,15 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
         long deg_ker = ceil( cdim1 * deg(pmat_l) / (double)(dim-cdim1) );
         long order = deg_pmat_l + deg_ker + 1;
 
-        //std::cout << "computing approx basis of matrix with degrees:" << std::endl;
-        //std::cout << degree_matrix(pmat_l) << std::endl;
-        //std::cout << "and at order " << order << std::endl;
         Shift shift(dim,0);
+#ifdef TIME_DET
+        double t=GetWallTime();
+#endif // TIME_DET
         pmbasis(appbas, pmat_l, order, shift);
-
-        // FIXME debug
-        //std::cout << "appbas" << std::endl << degree_matrix(appbas) << std::endl;
-        Mat<zz_pX> prod;
-        multiply(prod,appbas,pmat);
-        //std::cout << "prod" << std::endl << degree_matrix(prod) << std::endl;
+#ifdef TIME_DET
+        t=GetWallTime()-t;
+        std::cout << dim << "\t" << deg_pmat_l << "\t" << t << "\t(approx)"std::endl;
+#endif // TIME_DET
 
         // minimal left kernel basis of pmat_r : last rows of app
         Mat<zz_pX> kerbas;
@@ -102,54 +102,17 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
 
         // then compute the product
         Mat<zz_pX> pmatt;
+#ifdef TIME_DET
+        t=GetWallTime();
+#endif // TIME_DET
         multiply(pmatt, kerbas, pmat_r);
-
-        //std::cout << "pmatt" << std::endl << degree_matrix(pmatt) << std::endl;
+#ifdef TIME_DET
+        t=GetWallTime()-t;
+        std::cout << dim << "\t" << deg_pmat_l << "\t" << t << "\t(prod)" << std::endl;
+#endif // TIME_DET
 
         return determinant_generic_knowing_degree(det,pmatt,degree);
     }
-
-//	// recursion
-//	size_t m1 = m>>1; // m1 ~ m/2
-//	size_t m2 = m - m1; // m2 ~ m/2, m1 + m2 = m
-//	vector<int> shift( m, 0 );
-//	const size_t order = 2*sz-1;
-//
-//	// left columns of the matrix
-//	PolMatDom::PMatrix series( this->field(), m, m1, order );
-//	for ( size_t k=0; k<sz; ++k )
-//	for ( size_t i=0; i<m; ++i )
-//	for ( size_t j=0; j<m1; ++j )
-//		series.ref(i,j,k) = pmat.get(i,j,k);
-//
-//	PolMatDom::PMatrix appbas( this->field(), m, m, 0 );
-//	vector<int> rdeg = this->pmbasis( appbas, series, order, shift );
-//
-//	vector<int>::iterator it = rdeg.begin();
-//	advance(it,m1);
-//	size_t sz2 = *max_element(it,rdeg.end())+1;
-//
-//	// product
-//	PolMatDom::PMatrix newpmat( this->field(), m2, m2, sz2+sz-1 );
-//	// right half columns of pmat_sub
-//	PolMatDom::PMatrix pmat_sub( this->field(), m, m2, sz );
-//	for ( size_t k=0; k<sz; ++k )
-//	for ( size_t i=0; i<m; ++i )
-//	for ( size_t j=0; j<m2; ++j )
-//		pmat_sub.ref(i,j,k) = pmat.get(i,j+m1,k);
-//	// bottom half columns of appbas
-//	PolMatDom::PMatrix appbas_sub( this->field(), m2, m, sz2 );
-//	for ( size_t k=0; k<sz2; ++k )
-//	for ( size_t i=0; i<m2; ++i )
-//	for ( size_t j=0; j<m; ++j )
-//		appbas_sub.ref(i,j,k) = appbas.get(i+m1,j,k);
-//	// compute product
-//
-//	this->_PMMD.mul( newpmat, appbas_sub, pmat_sub );
-//
-//	return this->last_diagonal_entry( newpmat );
-//
-    
 }
 
 // TODO first version; improve
