@@ -43,6 +43,18 @@ long IsZero(const Mat<zz_pX> & pmat)
 }
 
 /*------------------------------------------------------------*/
+/* tests whether vec is the zero vector (whatever its dim)    */
+/*------------------------------------------------------------*/
+long IsZero(const Vec<zz_pX> & vec)
+{
+    for (long i = 0; i < vec.length(); ++i)
+        if (!IsZero(vec[i]))
+            return 0;
+    
+    return 1;
+}
+
+/*------------------------------------------------------------*/
 /* set pmat to be the identity of size dim                    */
 /*------------------------------------------------------------*/
 void ident(Mat<zz_pX> & pmat, long dim)
@@ -403,6 +415,17 @@ Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+
+/*------------------------------------------------------------*/
+/* random matrix of length n, degree < d                      */
+/*------------------------------------------------------------*/
+void random(Vec<zz_pX> & pvec, long n, long d)
+{
+    pvec.SetLength(n);
+    for (long i = 0; i < n; i++)
+        random(pvec[i], d);
+}
+
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of degree < d                         */
 /*------------------------------------------------------------*/
@@ -494,6 +517,52 @@ void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/* vector addition                                            */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* zz_pX addition                                             */
+/* c can alias a or b, does not have to be zero               */
+/*------------------------------------------------------------*/
+void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b)
+{
+    long m = a.length();
+
+    if (m != b.length())
+    {
+        LogicError("dimension mismatch in vector addition");
+    }
+
+    c.SetLength(m);
+    for (long i = 0; i < m; i++)
+    {
+        c[i] = a[i] + b[i];
+    }
+}
+
+/*------------------------------------------------------------*/
+/* addition, rhs is constant                                  */
+/*------------------------------------------------------------*/
+void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_p> & b)
+{
+    long m = a.length();
+
+    if (m != b.length())
+    {
+        LogicError("dimension mismatch in vector addition");
+    }
+
+    c.SetLength(m);
+    for (long i = 0; i < m; i++)
+    {
+        c[i] = a[i] + b[i];
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 /* subtraction                                                */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -564,6 +633,70 @@ void sub(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
         {
             c[i][j] = a[i][j] - b[i][j];
         }
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* vector subtraction                                         */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* zz_pX subtraction                                          */
+/*------------------------------------------------------------*/
+void sub(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b)
+{
+    long m = a.length();
+
+    if (m != b.length())
+    {
+        LogicError("dimension mismatch in vector addition");
+    }
+
+    c.SetLength(m);
+    for (long i = 0; i < m; i++)
+    {
+        c[i] = a[i] - b[i];
+    }
+}
+
+/*------------------------------------------------------------*/
+/* subtraction, rhs is constant                               */
+/*------------------------------------------------------------*/
+void sub(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_p> & b)
+{
+    long m = a.length();
+
+    if (m != b.length())
+    {
+        LogicError("dimension mismatch in vector addition");
+    }
+
+    c.SetLength(m);
+    for (long i = 0; i < m; i++)
+    {
+        c[i] = a[i] - b[i];
+    }
+}
+
+/*------------------------------------------------------------*/
+/* subtraction, lhs is constant                               */
+/*------------------------------------------------------------*/
+void sub(Vec<zz_pX> & c, const Vec<zz_p> & a, const Vec<zz_pX> & b)
+{
+    long m = a.length();
+
+    if (m != b.length())
+    {
+        LogicError("dimension mismatch in vector addition");
+    }
+
+    c.SetLength(m);
+    for (long i = 0; i < m; i++)
+    {
+        c[i] = a[i] - b[i];
     }
 }
 
@@ -669,7 +802,48 @@ void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
 /* scalar multiplication                                      */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_p & b)
+{
+    long n = a.length();
+    c.SetLength(n);
+    for (long i = 0; i < n; i++)
+    {
+        c[i] = a[i] * b;
+    }
+}
+
 void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_p & b)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    c.SetDims(m, n);
+
+    for (long u = 0; u < m; u++)
+    {
+        for (long v = 0; v < n; v++)
+        {
+            c[u][v] = b * a[u][v];
+        }
+    }
+}
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* polynomial multiplication                                  */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_pX & b)
+{
+    long n = a.length();
+    c.SetLength(n);
+    for (long i = 0; i < n; i++)
+    {
+        c[i] = a[i] * b;
+    }
+}
+
+void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_pX & b)
 {
     long m = a.NumRows();
     long n = a.NumCols();

@@ -11,7 +11,6 @@
 
 NTL_CLIENT
 
-
 /*------------------------------------------------------------*/
 /* solve A u = b mod x^prec                                   */
 /* A square, A(0) invertible, deg(A), deg(b) < prec           */
@@ -77,9 +76,30 @@ void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz
             LogicError("Unknown prime type in linear solving.");
         }
     }
+
+#ifdef VERBOSE
+    double t = get_time();
+#endif
     Mat<zz_pX> invA = inv_trunc(A, thresh);
+#ifdef VERBOSE
+    cout << "inv_trunc " << get_time()-t << endl;
+#endif
+    
+#ifdef VERBOSE
+    t = get_time();
+#endif
     std::unique_ptr<mat_lzz_pX_lmultiplier> mult = get_lmultiplier(invA, thresh);
+#ifdef VERBOSE
+    cout << "get mult " << get_time()-t << endl;
+#endif
+
+#ifdef VERBOSE
+    t = get_time();
+#endif
     solve_DAC(u, A, b, prec, mult, thresh);
+#ifdef VERBOSE
+    cout << "solve DAC " << get_time()-t << endl;
+#endif
 }
 
 
@@ -105,7 +125,14 @@ void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<z
     long dA = deg(A);
     long lenA = dA + 1;
 
+#ifdef VERBOSE
+    double t = get_time();
+#endif
     Mat<zz_pX> invA = inv_trunc(A, lenA);
+#ifdef VERBOSE
+    cout << "inv_trunc " << get_time()-t << endl;
+#endif
+
 
     std::unique_ptr<mat_lzz_pX_lmultiplier> multI = get_lmultiplier(invA, dA);
     std::unique_ptr<mat_lzz_pX_lmultiplier> multA = get_lmultiplier(A, dA);
@@ -183,7 +210,7 @@ void solve_series(Vec<zz_pX> &u, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long 
     bmat.SetDims(n, 1);
     for (long i = 0; i < n; i++)
         bmat[i][0] = b[i];
-    solve_series(umat, bmat, prec);
+    solve_series(umat, A, bmat, prec);
     u.SetLength(n);
     for (long i = 0; i < n; i++)
         u[i] = umat[i][0];
@@ -196,16 +223,66 @@ void solve_series(Vec<zz_pX> &u, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long 
 /* output can alias input                                     */
 /* uses lifting and rational reconstruction                   */
 /*------------------------------------------------------------*/
-long linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const Vec<zz_pX>& b)
+long linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long nb_max)
 {
     long n = A.NumRows();
+
     if (A.NumCols() != n)
         LogicError("Need square matrix for linsolve series");
-    
+    if (n == 0)
+        LogicError("Empty matrix for linsolve series");
+    if (b.length() != n)
+        LogicError("Bad vector size for linsolve series");
+
+
+#ifdef VERBOSE
+    cout << endl;
+    double t = get_time();
+#endif
+
     long dA = deg(A);
     long dB = deg(b);
 
-    long nb = min(n, 5); // number of linear combinations we are taking
+    if (dA == 0)
+    {
+        Mat<zz_p> iA = inv(coeff(A, 0));  // TODO: check for invertibility
+        u.SetLength(n);
+        for (long i = 0; i < n; i++)
+        {
+            zz_pX tmp;
+            clear(tmp);
+            for (long j = 0; j < n; j++)
+                tmp += iA[i][j] * b[j];
+            u[i] = tmp;
+        }
+        den = 1;
+        return 1;
+    }
+
+    // DIRT: need tuning
+    if (nb_max == -1)
+    {
+        nb_max = 1;
+        long t = type_of_prime();
+        if (t == TYPE_FFT_PRIME)
+        {
+            if (n >= 100)
+                nb_max = 4;
+        }
+        if (t == TYPE_LARGE_PRIME)
+        {
+            if (n >= 100)
+                nb_max = 3;
+        }
+        if (t == TYPE_SMALL_PRIME)
+        {
+            if (n >= 100)
+                nb_max = 3;
+        }
+    }
+
+
+    long nb = min(n, nb_max); // number of linear combinations we are taking
     long deg_den = n*dA; // deg_den + 1 = number of unknowns
     long deg_num = (n-1)*dA + dB;
 
@@ -214,7 +291,18 @@ long linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const V
     long prec = first + sz;
 
     Vec<zz_pX> sol_series, lin_comb;
+
     solve_series(sol_series, A, b, prec);
+
+#ifdef VERBOSE
+    cout << "setup:  " << get_time()-t << endl;
+    cout << "nb=" << nb << endl;
+#endif
+
+#ifdef VERBOSE
+    t = get_time();
+#endif
+
     lin_comb.SetLength(nb);
     for (long i = 0; i < nb; i++)
     {
@@ -223,36 +311,56 @@ long linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const V
             res += random_zz_p() * sol_series[j];
         lin_comb[i] = res;
     }
-    Vec<Vec<toeplitz_lzz_p>> sys;
-    sys.SetLength(nb);
-    for (long i = 0; i < nb; i++)
+
+    if (nb == 1)
     {
-        sys[i].SetLength(1);
-        Vec<zz_p> coeffs;
-        coeffs.SetLength(deg_den + sz);
-        for (long j = 0; j < deg_den + sz; j++)
-            coeffs[j] = coeff(lin_comb[j], first - deg_den + j);
-        sys[i][0] = toeplitz_lzz_p(coeffs, sz, deg_den + 1);
+        zz_pX b;
+        zz_pXMatrix M;
+        zz_p t;
+        SetCoeff(b, deg_den + deg_num + 1);
+        HalfGCD(M, b, trunc(lin_comb[0], deg_den + deg_num + 1), deg_den+1);
+        inv(t, LeadCoeff(M(1,1)));
+        mul(den, M(1,1), t);
+    }
+    else
+    {
+        Vec<Vec<toeplitz_lzz_p>> sys;
+        sys.SetLength(nb);
+        for (long i = 0; i < nb; i++)
+        {
+            sys[i].SetLength(1);
+            Vec<zz_p> coeffs;
+            coeffs.SetLength(deg_den + sz);
+            for (long j = 0; j < deg_den + sz; j++)
+                coeffs[j] = coeff(lin_comb[i], first - deg_den + j);
+            sys[i][0] = toeplitz_lzz_p(coeffs, sz, deg_den + 1);
+        }
+        
+        mosaic_toeplitz_lzz_p MT = mosaic_toeplitz_lzz_p(sys);
+        Vec<zz_p> ker_vec, zero;
+        zero.SetLength(sz * nb);
+        for (long i = 0; i < sz * nb; i++)
+            zero[i] = 0;
+
+        long ans = MT.solve(ker_vec, zero);
+        if (ans == 0)
+        {
+            Error("Error in solving mosaic toeplitz");
+        }
+        den = 0;
+        for (long i = deg_den; i >= 0; i--)
+            SetCoeff(den, i, ker_vec[i]);
+
     }
 
-    mosaic_toeplitz_lzz_p MT = mosaic_toeplitz_lzz_p(sys);
-    Vec<zz_p> ker_vec, zero;
-    zero.SetLength(sz * nb);
-    for (long i = 0; i < sz * nb; i++)
-        zero[i] = 0;
-
-    long ans = MT.solve(ker_vec, zero);
-    if (ans == 0)
-        return 0;
-
-    den = 0;
-    for (long i = deg_den; i >= 0; i--)
-        SetCoeff(den, i, ker_vec[i]);
+#ifdef VERBOSE
+    cout << "find denom " << get_time()-t << endl;
+#endif
 
     u.SetLength(n);
     for (long i = 0; i < n; i++)
-        u[i] = MulTrunc(trunc(sol_series[i], deg_num), trunc(den, deg_num), deg_num);
-
+        u[i] = MulTrunc(trunc(sol_series[i], deg_num+1), trunc(den, deg_num+1), deg_num+1);
+        
     return 1;
 }
 

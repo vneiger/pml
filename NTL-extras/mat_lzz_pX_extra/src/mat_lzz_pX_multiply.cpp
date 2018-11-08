@@ -3,6 +3,7 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/BasicThreadPool.h>
 
+#include "util.h"
 #include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
@@ -63,6 +64,20 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long i
     }
 }
 
+/*------------------------------------------------------------*/
+/* multiply by a vector                                       */
+/*------------------------------------------------------------*/
+void multiply(Vec<zz_pX>& c, const Mat<zz_pX>& a, const Vec<zz_pX>& b, long is_prime)
+{
+    Mat<zz_pX> cmat, bmat;
+    bmat.SetDims(b.length(), 1);
+    for (long i = 0; i < b.length(); i++)
+        bmat[i][0] = b[i];
+    multiply(cmat, a, bmat, is_prime);
+    c.SetLength(cmat.NumRows());
+    for (long i = 0; i < cmat.NumRows(); i++)
+        c[i] = cmat[i][0];
+}
 
 // Local Variables:
 // mode: C++

@@ -18,9 +18,10 @@ void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, 
 {
     long dmax = max(dA, dB);
     long p = zz_p::modulus();
-    long sz = (long) cbrt(a.NumRows() * a.NumCols() * b.NumCols());
+    long sz = (long) cbrt(a.NumRows() * a.NumCols() * c.NumCols());
 
     long deg_naive = max_degree_mp_naive(sz);
+
     if (dmax < deg_naive)
     {
         middle_product_naive(b, a, c, dA, dB);

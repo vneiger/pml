@@ -73,9 +73,10 @@ inline long amplitude(Shift shift)
 void clear(Mat<zz_pX> & pmat);
 
 /*------------------------------------------------------------*/
-/* tests whether pmat is the zero matrix (whatever its dims)  */
+/* tests whether m is zero (whatever its dims)                */
 /*------------------------------------------------------------*/
-long IsZero(const Mat<zz_pX> & pmat);
+long IsZero(const Mat<zz_pX> & m);
+long IsZero(const Vec<zz_pX> & m);
 
 /*------------------------------------------------------------*/
 /* set pmat to be the identity                                */
@@ -281,6 +282,17 @@ static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
+/* random matrix of length n, degree < d                      */
+/*------------------------------------------------------------*/
+void random(Vec<zz_pX> & pvec, long n, long d);
+inline Vec<zz_pX> random_vec_zz_pX(long n, long d)
+{
+    Vec<zz_pX> pvec;
+    random(pvec, n, d);
+    return pvec;
+}
+
+/*------------------------------------------------------------*/
 /* random (m, n) matrix of degree < d                         */
 /*------------------------------------------------------------*/
 void random(Mat<zz_pX> & pmat, long m, long n, long d);
@@ -354,7 +366,57 @@ inline Mat<zz_pX> & operator+=(Mat<zz_pX> & x, const Mat<zz_p>& b)
 
 
 /*------------------------------------------------------------*/
+/* vector addition                                            */
+/*------------------------------------------------------------*/
+void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b);
+void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_p> & b);
+inline void add(Vec<zz_pX> & c, const Vec<zz_p> & a, const Vec<zz_pX> & b)
+{
+    add(c, b, a);
+}
+
+inline Vec<zz_pX> operator+(const Vec<zz_pX>& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    add(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> operator+(const Vec<zz_pX>& a, const Vec<zz_p>& b)
+{ 
+    Vec<zz_pX> x; 
+    add(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> operator+(const Vec<zz_p>& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    add(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> & operator+=(Vec<zz_pX> & x, const Vec<zz_pX>& b)
+{
+    add(x, x, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> & operator+=(Vec<zz_pX> & x, const Vec<zz_p>& b)
+{
+    add(x, x, b); 
+    return x; 
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 /* subtraction                                                */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* matrix subtraction                                         */
 /*------------------------------------------------------------*/
 void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b);
@@ -393,6 +455,47 @@ inline Mat<zz_pX> & operator-=(Mat<zz_pX> & x, const Mat<zz_p>& b)
     return x; 
 }
 
+
+/*------------------------------------------------------------*/
+/* vector subtraction                                         */
+/*------------------------------------------------------------*/
+void sub(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b);
+void sub(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_p> & b);
+void sub(Vec<zz_pX> & c, const Vec<zz_p> & a, const Vec<zz_pX> & b);
+
+inline Vec<zz_pX> operator-(const Vec<zz_pX>& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    sub(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> operator-(const Vec<zz_pX>& a, const Vec<zz_p>& b)
+{ 
+    Vec<zz_pX> x; 
+    sub(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> operator-(const Vec<zz_p>& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    sub(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> & operator-=(Vec<zz_pX> & x, const Vec<zz_pX>& b)
+{
+    sub(x, x, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> & operator-=(Vec<zz_pX> & x, const Vec<zz_p>& b)
+{
+    sub(x, x, b); 
+    return x; 
+}
+
 /*------------------------------------------------------------*/
 /* constant matrix multiplication                             */
 /*------------------------------------------------------------*/
@@ -421,6 +524,30 @@ inline Mat<zz_pX> & operator*=(Mat<zz_pX> & x, const Mat<zz_p>& b)
 }
 
 /*------------------------------------------------------------*/
+/* scalar multiplication for vectors                          */
+/*------------------------------------------------------------*/
+void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_p & b);
+
+inline void mul(Vec<zz_pX> & c, const zz_p & a, const Vec<zz_pX> & b)
+{
+    mul(c, b, a);
+}
+
+inline Vec<zz_pX> operator*(const Vec<zz_pX>& a, const zz_p& b)
+{ 
+    Vec<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> operator*(const zz_p& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+/*------------------------------------------------------------*/
 /* scalar multiplication                                      */
 /*------------------------------------------------------------*/
 void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_p & b);
@@ -443,6 +570,59 @@ inline Mat<zz_pX> operator*(const zz_p& a, const Mat<zz_pX>& b)
     mul(x, a, b); 
     return x; 
 }
+
+/*------------------------------------------------------------*/
+/* polynomial multiplication                                  */
+/*------------------------------------------------------------*/
+void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_pX & b);
+
+inline void mul(Mat<zz_pX> & c, const zz_pX & a, const Mat<zz_pX> & b)
+{
+    mul(c, b, a);
+}
+
+inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const zz_pX& b)
+{ 
+    Mat<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+inline Mat<zz_pX> operator*(const zz_pX& a, const Mat<zz_pX>& b)
+{ 
+    Mat<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+/*------------------------------------------------------------*/
+/* polynomial multiplication for vectors                      */
+/*------------------------------------------------------------*/
+void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_pX & b);
+
+inline void mul(Vec<zz_pX> & c, const zz_pX & a, const Vec<zz_pX> & b)
+{
+    mul(c, b, a);
+}
+
+inline Vec<zz_pX> operator*(const Vec<zz_pX>& a, const zz_pX& b)
+{ 
+    Vec<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> operator*(const zz_pX& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+
+
+
+
 
 /*------------------------------------------------------------*/
 /* TODO                                                       */
@@ -672,7 +852,7 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
 /* main function for c = a*b                                  */
 /* is_prime = 1 assumes that p is known to be prime           */
 /*------------------------------------------------------------*/
-void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long is_prime = 1);
+void multiply(Mat<zz_pX> & c, const Mat<zz_pX>& a, const Mat<zz_pX>& b, long is_prime = 1);
 
 inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
 { 
@@ -680,6 +860,19 @@ inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
     multiply(x, a, b); 
     return x; 
 }
+
+/*------------------------------------------------------------*/
+/* multiply by a vector                                       */
+/*------------------------------------------------------------*/
+void multiply(Vec<zz_pX>& c, const Mat<zz_pX>& a, const Vec<zz_pX>& b, long is_prime = 1);
+
+inline Vec<zz_pX> operator*(const Mat<zz_pX>& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    multiply(x, a, b); 
+    return x; 
+}
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -1584,8 +1777,11 @@ inline Mat<zz_pX> solve_series_high_order_lifting(const Mat<zz_pX>& A, const Mat
 /* A must be square, A(0) invertible                          */
 /* output can alias input                                     */
 /* uses lifting and rational reconstruction                   */
+/* nb_max is the max. number of vectors for use in            */
+/* vector rational reconstruction (we use min(size, nb_max))  */
+/* nb_max = -1 means a look-up table value is used            */
 /*------------------------------------------------------------*/
-long linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const Vec<zz_pX>& b);
+long linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long nb_max = -1);
 
 
 // TODO: polynomial matrix division with remainder (cf. e.g. Neiger-Vu 2017)
