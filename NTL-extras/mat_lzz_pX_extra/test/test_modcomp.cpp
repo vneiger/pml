@@ -918,7 +918,7 @@ int main(int argc, char *argv[])
         }
         
         zz_pX modcomp{zz_p(0)};
-        // we need to actually compute the powers of a mod g
+        //TODO: use the pre-computed powers
         Vec<zz_pX> a_pows;
         Vec<zz_pX> upper;
         gen_pows(a_pows, upper, zz_pX{1}, a, 1, g, d, 0);
