@@ -5,28 +5,6 @@
 #include "thresholds_mp_naive_evaluate.h"
 
 /*------------------------------------------------------------*/
-/* max degree for evaluate                                    */
-/*------------------------------------------------------------*/
-inline long max_degree_mp_evaluate(long sz)
-{
-    long t = type_of_prime();
-    if (t == TYPE_FFT_PRIME)
-        return LONG_MAX;
-
-    long i;
-    for (i = 0; i < MATRIX_MP_THRESHOLDS_LEN - 1; )
-        if (sz > MATRIX_MP_THRESHOLDS_SIZES[i])
-            i++;
-        else 
-            break;
-
-    if (t == TYPE_SMALL_PRIME)
-        return MATRIX_MP_DEGREE_THRESHOLDS_SMALL[i];
-    else
-        return MATRIX_MP_DEGREE_THRESHOLDS_LARGE[i];
-}
-
-/*------------------------------------------------------------*/
 /* max degree for naive                                       */
 /*------------------------------------------------------------*/
 inline long max_degree_mp_naive(long sz)

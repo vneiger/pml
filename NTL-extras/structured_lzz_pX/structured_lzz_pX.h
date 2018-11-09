@@ -162,8 +162,8 @@ private:
     Vec<zz_pX> data, dataRev;
     long dX, dY; // X- and Y-degrees
 
-    Vec<long> rhs_degX;
-    Vec<fftRep> fft;
+    Vec<long> rhs_degX, lhs_degX;
+    Vec<fftRep> fft, fft2, fft3;
 
 public:
     /*------------------------------------------------------------*/

@@ -5,7 +5,7 @@
 #include <assert.h>
 
 #include "magma_output.h"
-
+#include "util.h"
 #include "vec_lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
 #include "structured_lzz_p.h"
@@ -679,7 +679,6 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
             rd = AddMod(rd, MulMod(tmpZk[j], tmpYk[j], p, pinv), p);
         }
 
-
         // early exit if rank(M) < n
         if (rd == 0)
         {
@@ -720,7 +719,6 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
             }
             return k; // OK
         }
-
 
         rd = MulModPrecon(rd, inverses_rho[k]._zz_p__rep, p, inverses_rho_pre[k]);
         rd = MulModPrecon(rd, inverses_u1_v1[m-1]._zz_p__rep, p, inverses_u1_v1_pre[m-1]);
@@ -790,7 +788,6 @@ static long invert_raw(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out, const Mat<zz_p>& Yp
 
         for (long i = k+1; i < n; i++)
         {
-
             long u = 0;
             for (long j = 0; j < alpha; j++)
                 u = AddMod(u, MulModPrecon(tmpZi[j], tmpYk[j], p, Ypre[j]), p);
@@ -959,6 +956,8 @@ static long invert_rec(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out,
 long cauchy_like_geometric_lzz_p::invert_leading_principal_minor_grp(cauchy_like_geometric_lzz_p& Cinv,
                                                                      long thresh, long thresh_alpha) const
 {
+    // double t = get_time();
+
     // check this!
     if (&Cinv == this)
     {
@@ -970,7 +969,8 @@ long cauchy_like_geometric_lzz_p::invert_leading_principal_minor_grp(cauchy_like
 
     if (thresh == -1)
         thresh = threshold(NumGens());
-
+    
+    thresh = 200;
     if (thresh_alpha == -1)
     {
         thresh_alpha = 15;
@@ -987,6 +987,8 @@ long cauchy_like_geometric_lzz_p::invert_leading_principal_minor_grp(cauchy_like
     }
 
     Cinv = cauchy_like_geometric_lzz_p(Yp_out, Zp_out, C.v1, C.u1, C.rho);
+
+    // cout << "solve cauchy " << get_time()-t << " with alpha=" << NumGens() << " size=" << NumRows() << " and thresh=" << thresh << endl;
 
     return 1;
 }

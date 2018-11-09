@@ -14,9 +14,27 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
 /* output may alias input; c does not have to be zero matrix  */
+/* uses Mat<zz_p> matrix multiplication                       */
 /*------------------------------------------------------------*/
-static void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, zz_pX_Multipoint& ev)
+void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
+    long dA = deg(a);
+    long dB = deg(b);
+    long dC = dA+dB;
+    long sz = dC+1;
+
+    if (dA < 0 || dB < 0)
+    {
+        c.SetDims(a.NumRows(), b.NumCols());
+        clear(c);
+        return;
+    }
+
+    zz_pX_Multipoint_Geometric ev = get_geometric_points(sz);
+
+    ev.prepare_degree(dA);
+    ev.prepare_degree(dB);
+
     zz_pContext context;
     long s = a.NumRows();
     long t = a.NumCols();
@@ -70,7 +88,6 @@ static void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const 
         }
         
     }
-    
     NTL_EXEC_RANGE_END
     /*** END PARALLEL **********************************************/
     
@@ -130,100 +147,6 @@ static void multiply_evaluate_do_it(Mat<zz_pX> & c, const Mat<zz_pX> & a, const 
     /*** END PARALLEL **********************************************/
 }
 
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/* geometric points, uses FFTs directly                       */
-/* output may alias input; c does not have to be zero matrix  */
-/* (exists mostly for testing purposes)                       */
-/*------------------------------------------------------------*/
-void multiply_evaluate_geometric_using_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-    long dA = deg(a);
-    long dB = deg(b);
-    long dC = dA+dB;
-    long sz = dC+1;
-
-    if (dA < 0 || dB < 0)
-    {
-        c.SetDims(a.NumRows(), b.NumCols());
-        clear(c);
-        return;
-    }
-
-    zz_pX_Multipoint *ev;
-    zz_pX_Multipoint_Geometric ev_geometric = get_geometric_points(sz);
-
-    ev_geometric.prepare_degree(dA);
-    ev_geometric.prepare_degree(dB);
-
-    ev_geometric.set_FFT_evaluate();
-    ev_geometric.set_FFT_interpolate();
-
-    ev = &ev_geometric;
-    multiply_evaluate_do_it(c, a, b, *ev);
-}
-
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/* geometric points, uses middle product                      */
-/* output may alias input; c does not have to be zero matrix  */
-/* (exists mostly for testing purposes)                       */
-/*------------------------------------------------------------*/
-void multiply_evaluate_geometric_no_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-    long dA = deg(a);
-    long dB = deg(b);
-    long dC = dA+dB;
-    long sz = dC+1;
-
-    if (dA < 0 || dB < 0)
-    {
-        c.SetDims(a.NumRows(), b.NumCols());
-        clear(c);
-        return;
-    }
-
-    zz_pX_Multipoint *ev;
-    zz_pX_Multipoint_Geometric ev_geometric = get_geometric_points(sz);
-
-    ev_geometric.prepare_degree(dA);
-    ev_geometric.prepare_degree(dB);
-
-    ev_geometric.unset_FFT_evaluate();
-    ev_geometric.unset_FFT_interpolate();
-
-    ev = &ev_geometric;
-    multiply_evaluate_do_it(c, a, b, *ev);
-}
-
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/* geometric points, thresholded                              */
-/* output may alias input; c does not have to be zero matrix  */
-/*------------------------------------------------------------*/
-void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-    long dA = deg(a);
-    long dB = deg(b);
-    long dC = dA+dB;
-    long sz = dC+1;
-
-    if (dA < 0 || dB < 0)
-    {
-        c.SetDims(a.NumRows(), b.NumCols());
-        clear(c);
-        return;
-    }
-
-    zz_pX_Multipoint *ev;
-    zz_pX_Multipoint_Geometric ev_geometric = get_geometric_points(sz);
-
-    ev_geometric.prepare_degree(dA);
-    ev_geometric.prepare_degree(dB);
-
-    ev = &ev_geometric;
-    multiply_evaluate_do_it(c, a, b, *ev);
-}
 
 
 

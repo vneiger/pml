@@ -92,6 +92,7 @@ void circulant_row_lzz_pX::prepare_degree(long d)
             return;
     
     rhs_degX.append(d);
+    lhs_degX.append(d);
 
     zz_pX dataK;
     to_kronecker(dataK, dataRev, dX + d);
@@ -99,6 +100,30 @@ void circulant_row_lzz_pX::prepare_degree(long d)
     fftRep fftK(INIT_SIZE, K);
     TofftRep(fftK, dataK, K);
     fft.append(fftK);
+
+    Vec<zz_pX> tmp;
+    zz_pX mat_kro;
+    tmp.SetLength(m);
+    for (long i = 0; i < m; i++)
+        tmp[i] = data[m - 1 - i];
+    to_kronecker(mat_kro, tmp, dX + d);
+
+    long leftover = n % m;
+    long nb = n / m;   // number of size-m chunks
+    if (leftover == 0)
+    {
+        leftover = m;
+        nb--;
+    }
+    long L = NextPowerOfTwo( (m + leftover - 1) * (dX + d + 1));    
+    fftRep fft2_here(INIT_SIZE, L);
+    TofftRep(fft2_here, mat_kro, L);
+    fft2.append(fft2_here);
+
+    K = NextPowerOfTwo( (2 * m - 1) * (dX + d + 1) );
+    fftRep fft3_here(INIT_SIZE, K);
+    TofftRep(fft3_here, mat_kro, K);
+    fft3.append(fft3_here);
 }
 
 /*------------------------------------------------------------*/
@@ -244,7 +269,206 @@ void circulant_row_lzz_pX::mul_left(Vec<zz_pX>& res, const Vec<zz_pX>& input) co
         return;
     }
 
+    long d = -1; // x-deg of lhs
+    for (long i = 0; i < n; i++)
+    {
+        if (deg(input[i]) >= d)
+            d = deg(input[i]);
+    }
+
     res.SetLength(m);
+
+    if (d == -1 || dY == -1)
+    {
+        for (long i = 0; i < m; i++)
+            res[i] = 0;
+        return;
+    }
+
+    long leftover = n % m;
+    long nb = n / m;   // number of size-m chunks
+    if (leftover == 0)
+    {
+        leftover = m;
+        nb--;
+    }
+
+
+    long i0 = -1;
+    for (long i = 0; i < lhs_degX.length(); i++)
+        if ((lhs_degX[i] >= d && i0 == -1) || (lhs_degX[i] >= d && lhs_degX[i] < lhs_degX[i0]))
+            i0 = i;
+
+    // found
+    if (i0 >= 0)
+    {
+        Vec<zz_pX> tmp, out;
+        zz_pX res_kro, input_X;
+        long ell;
+
+        // last chunk
+        long d_found = lhs_degX[i0];
+        long L = NextPowerOfTwo( (m + leftover - 1) * (dX + d_found + 1));
+        fftRep fft_l = fftRep(INIT_SIZE, L);
+
+        tmp.SetLength(leftover);
+        for (long i = 0; i < leftover; i++)
+            tmp[i] = input[i + nb*m];
+        to_kronecker(input_X, tmp, dX + d_found);
+        TofftRep(fft_l, input_X, L);
+
+        mul(fft_l, fft2[i0], fft_l);
+        FromfftRep(res_kro, fft_l, 0, (m + leftover - 1) * (dX + d_found + 1) - 1);
+#ifdef __NTL_FIX_SIZE_2_FFT
+        if (L == 1)
+        {
+            res_kro = (1/to_zz_p(2)) * res_kro;
+        }
+#endif   
+        from_kronecker(out, res_kro, dX + d_found);
+        ell = out.length();
+        out.SetLength(m + leftover);
+        for (long i = ell; i < out.length(); i++)
+            out[i] = 0;
+        
+        for (long i = 0; i < leftover; i++)
+            res[i] = out[i] + out[i + m];
+        for (long i = leftover; i < m; i++)
+            res[i] = out[i];
+
+        tmp.SetLength(m);
+        for (long r = 0; r < nb; r++)
+        {
+            long K = NextPowerOfTwo( (2 * m - 1) * (dX + d_found + 1) );
+            fftRep fft_k = fftRep(INIT_SIZE, K);
+            input_X = 0;
+
+            for (long i = 0; i < m; i++)
+                tmp[i] = input[i + r*m];
+            to_kronecker(input_X, tmp, dX + d_found);
+            TofftRep(fft_k, input_X, K);
+
+            mul(fft_k, fft3[i0], fft_k);
+
+            FromfftRep(res_kro, fft_k, 0, (m + m - 1) * (dX + d_found + 1) - 1);
+#ifdef __NTL_FIX_SIZE_2_FFT
+            if (K == 1)
+            {
+                res_kro = (1/to_zz_p(2)) * res_kro;
+            }
+#endif   
+            from_kronecker(out, res_kro, dX + d_found);
+            ell = out.length();
+            out.SetLength(m + m);
+            for (long i = ell; i < out.length(); i++)
+                out[i] = 0;
+
+            for (long i = 0; i < m; i++)
+                res[i] += (out[i] + out[i + m]);
+        }
+    }
+    else
+    {
+
+        cout << "n=" << n << "\n" << "m=" << m << endl;
+        cout << "leftover=" << leftover << endl;
+        cout << "input=" << input << endl;
+
+        Vec<zz_pX> out, tmp;
+        zz_pX input_X, mat_kro, res_kro;
+
+        // last chunk
+        long L = NextPowerOfTwo( (m + leftover - 1) * (dX + d + 1));
+        fftRep fft_l = fftRep(INIT_SIZE, L), fft2_here = fftRep(INIT_SIZE, L);
+
+        tmp.SetLength(leftover);
+        for (long i = 0; i < leftover; i++)
+            tmp[i] = input[i + nb*m];
+        to_kronecker(input_X, tmp, dX + d);
+        TofftRep(fft_l, input_X, L);
+
+        tmp.SetLength(m);
+        for (long i = 0; i < m; i++)
+            tmp[i] = data[m - 1 - i];
+        to_kronecker(mat_kro, tmp, dX + d);
+        TofftRep(fft2_here, mat_kro, L);
+
+        cout << input_X << endl;
+        cout << mat_kro << endl;
+        cout << "L=" << L << endl;
+        cout << "len =" << ((m + leftover - 1) * (dX + d + 1) - 1) << endl;
+
+        mul(fft_l, fft2_here, fft_l);
+
+        FromfftRep(res_kro, fft_l, 0, (m + leftover - 1) * (dX + d + 1) - 1);
+#ifdef __NTL_FIX_SIZE_2_FFT
+        if (L == 1)
+        {
+            res_kro = (1/to_zz_p(2)) * res_kro;
+        }
+#endif   
+        cout << "res_kro=" << res_kro << endl;
+        from_kronecker(out, res_kro, dX + d);
+        cout << "out=" << out << endl;
+
+        long ell = out.length();
+        out.SetLength(m + leftover);
+        for (long i = ell; i < out.length(); i++)
+            out[i] = 0;
+        
+        for (long i = 0; i < leftover; i++)
+            res[i] = out[i] + out[i + m];
+        for (long i = leftover; i < m; i++)
+            res[i] = out[i];
+
+        cout << "nb=" << nb << endl;
+
+        for (long r = 0; r < nb; r++)
+        {
+            long K = NextPowerOfTwo( (2 * m - 1) * (dX + d + 1) );
+            fftRep fft_k = fftRep(INIT_SIZE, K), fft3_here = fftRep(INIT_SIZE, K);
+
+            input_X = 0;
+            for (long i = 0; i < m; i++)
+                tmp[i] = input[i + r*m];
+            to_kronecker(input_X, tmp, dX + d);
+            TofftRep(fft_k, input_X, K);
+            
+            cout << "input_X=" << input_X << endl;
+
+            mat_kro = 0;
+            for (long i = 0; i < m; i++)
+                tmp[i] = data[m - 1 - i];
+            to_kronecker(mat_kro, tmp, dX + d);
+            TofftRep(fft3_here, mat_kro, K);
+
+            cout << "mat_kro=" << mat_kro << endl;
+
+            mul(fft_k, fft3_here, fft_k);
+            FromfftRep(res_kro, fft_k, 0, (m + m - 1) * (dX + d + 1) - 1);
+            
+            cout << "K=" << K << endl;
+            cout << "len=" << ((m + m - 1) * (dX + d + 1) - 1) << endl;
+
+#ifdef __NTL_FIX_SIZE_2_FFT
+            if (K == 1)
+            {
+                res_kro = (1/to_zz_p(2)) * res_kro;
+            }
+#endif   
+            cout << "res_kro=" << res_kro << endl;
+            from_kronecker(out, res_kro, dX + d);
+            cout << "out=" << out << endl;
+            ell = out.length();
+            out.SetLength(m + m);
+            for (long i = ell; i < out.length(); i++)
+                out[i] = 0;
+
+            for (long i = 0; i < m; i++)
+                res[i] += (out[i] + out[i + m]);
+        }
+
+    }
 }
 
 /*------------------------------------------------------------*/

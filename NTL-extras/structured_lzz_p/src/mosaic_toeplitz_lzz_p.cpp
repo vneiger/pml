@@ -624,6 +624,9 @@ long mosaic_toeplitz_lzz_p::solve(Vec<zz_p>& x, const Vec<zz_p> b, long thresh, 
     zz_pX_Multipoint_Geometric X, Y;
     Vec<zz_p> e, f;
 
+    if (m*n == 0)
+        LogicError("Empty mosaic toeplitz matrix in solve");
+
     long r = to_cauchy_grp(CL, X, Y, e, f, *this);
 
     if (r != 1)

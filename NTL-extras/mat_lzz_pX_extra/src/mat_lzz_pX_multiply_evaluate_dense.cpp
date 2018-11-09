@@ -13,7 +13,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* computes the matrices for evaluation and interpolation     */
 /*------------------------------------------------------------*/
-static void vandermonde(Mat<zz_p>& small_vdm1, Mat<zz_p>& small_vdm2, Mat<zz_p>& inv_vdm, long d1, long d2)
+void vandermonde(Mat<zz_p>& small_vdm1, Mat<zz_p>& small_vdm2, Mat<zz_p>& inv_vdm, long d1, long d2)
 {
     long s1 = d1 + 1;
     long s2 = d2 + 1;
@@ -108,7 +108,7 @@ void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
                     tmp_mat[k][ell] = cBij[k];
                 }
             }
-            for (long k = d+1; k <= dA; k++)
+            for (long k = d+1; k <= dB; k++)
             {
                 tmp_mat[k][ell] = 0;
             }
@@ -160,6 +160,9 @@ void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
             ell++;
         }
 }
+
+
+
 
 
 // Local Variables:

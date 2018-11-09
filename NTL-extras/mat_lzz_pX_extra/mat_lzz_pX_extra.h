@@ -73,9 +73,10 @@ inline long amplitude(Shift shift)
 void clear(Mat<zz_pX> & pmat);
 
 /*------------------------------------------------------------*/
-/* tests whether pmat is the zero matrix (whatever its dims)  */
+/* tests whether m is zero (whatever its dims)                */
 /*------------------------------------------------------------*/
-long IsZero(const Mat<zz_pX> & pmat);
+long IsZero(const Mat<zz_pX> & m);
+long IsZero(const Vec<zz_pX> & m);
 
 /*------------------------------------------------------------*/
 /* set pmat to be the identity                                */
@@ -186,7 +187,7 @@ inline Mat<zz_pX> collapse_nonconsecutive_columns(const Mat<zz_pX>& a, long d, l
 
 /*------------------------------------------------------------*/
 /* truncate mod X^..., for all the matrix / some columns/rows */
-/* TODO: different truncation orders on columns/rows          */
+/* output can alias input */
 /*------------------------------------------------------------*/
 // full matrix versions
 void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
@@ -200,10 +201,7 @@ Mat<zz_pX> truncRow(const Mat<zz_pX>& a, long r, long n);
 void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c, long n);
 Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n);
 
-
-// TODO submatrix
-
-// TODO interpolation middle product
+/* TODO: different truncation orders on columns/rows          */
 
 
 /*------------------------------------------------------------*/
@@ -289,6 +287,17 @@ static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
+/* random matrix of length n, degree < d                      */
+/*------------------------------------------------------------*/
+void random(Vec<zz_pX> & pvec, long n, long d);
+inline Vec<zz_pX> random_vec_zz_pX(long n, long d)
+{
+    Vec<zz_pX> pvec;
+    random(pvec, n, d);
+    return pvec;
+}
+
+/*------------------------------------------------------------*/
 /* random (m, n) matrix of degree < d                         */
 /*------------------------------------------------------------*/
 void random(Mat<zz_pX> & pmat, long m, long n, long d);
@@ -362,7 +371,57 @@ inline Mat<zz_pX> & operator+=(Mat<zz_pX> & x, const Mat<zz_p>& b)
 
 
 /*------------------------------------------------------------*/
+/* vector addition                                            */
+/*------------------------------------------------------------*/
+void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b);
+void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_p> & b);
+inline void add(Vec<zz_pX> & c, const Vec<zz_p> & a, const Vec<zz_pX> & b)
+{
+    add(c, b, a);
+}
+
+inline Vec<zz_pX> operator+(const Vec<zz_pX>& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    add(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> operator+(const Vec<zz_pX>& a, const Vec<zz_p>& b)
+{ 
+    Vec<zz_pX> x; 
+    add(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> operator+(const Vec<zz_p>& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    add(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> & operator+=(Vec<zz_pX> & x, const Vec<zz_pX>& b)
+{
+    add(x, x, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> & operator+=(Vec<zz_pX> & x, const Vec<zz_p>& b)
+{
+    add(x, x, b); 
+    return x; 
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 /* subtraction                                                */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* matrix subtraction                                         */
 /*------------------------------------------------------------*/
 void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b);
@@ -401,6 +460,47 @@ inline Mat<zz_pX> & operator-=(Mat<zz_pX> & x, const Mat<zz_p>& b)
     return x; 
 }
 
+
+/*------------------------------------------------------------*/
+/* vector subtraction                                         */
+/*------------------------------------------------------------*/
+void sub(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b);
+void sub(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_p> & b);
+void sub(Vec<zz_pX> & c, const Vec<zz_p> & a, const Vec<zz_pX> & b);
+
+inline Vec<zz_pX> operator-(const Vec<zz_pX>& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    sub(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> operator-(const Vec<zz_pX>& a, const Vec<zz_p>& b)
+{ 
+    Vec<zz_pX> x; 
+    sub(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> operator-(const Vec<zz_p>& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    sub(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> & operator-=(Vec<zz_pX> & x, const Vec<zz_pX>& b)
+{
+    sub(x, x, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> & operator-=(Vec<zz_pX> & x, const Vec<zz_p>& b)
+{
+    sub(x, x, b); 
+    return x; 
+}
+
 /*------------------------------------------------------------*/
 /* constant matrix multiplication                             */
 /*------------------------------------------------------------*/
@@ -429,6 +529,30 @@ inline Mat<zz_pX> & operator*=(Mat<zz_pX> & x, const Mat<zz_p>& b)
 }
 
 /*------------------------------------------------------------*/
+/* scalar multiplication for vectors                          */
+/*------------------------------------------------------------*/
+void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_p & b);
+
+inline void mul(Vec<zz_pX> & c, const zz_p & a, const Vec<zz_pX> & b)
+{
+    mul(c, b, a);
+}
+
+inline Vec<zz_pX> operator*(const Vec<zz_pX>& a, const zz_p& b)
+{ 
+    Vec<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> operator*(const zz_p& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+/*------------------------------------------------------------*/
 /* scalar multiplication                                      */
 /*------------------------------------------------------------*/
 void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_p & b);
@@ -451,6 +575,59 @@ inline Mat<zz_pX> operator*(const zz_p& a, const Mat<zz_pX>& b)
     mul(x, a, b); 
     return x; 
 }
+
+/*------------------------------------------------------------*/
+/* polynomial multiplication                                  */
+/*------------------------------------------------------------*/
+void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_pX & b);
+
+inline void mul(Mat<zz_pX> & c, const zz_pX & a, const Mat<zz_pX> & b)
+{
+    mul(c, b, a);
+}
+
+inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const zz_pX& b)
+{ 
+    Mat<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+inline Mat<zz_pX> operator*(const zz_pX& a, const Mat<zz_pX>& b)
+{ 
+    Mat<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+/*------------------------------------------------------------*/
+/* polynomial multiplication for vectors                      */
+/*------------------------------------------------------------*/
+void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_pX & b);
+
+inline void mul(Vec<zz_pX> & c, const zz_pX & a, const Vec<zz_pX> & b)
+{
+    mul(c, b, a);
+}
+
+inline Vec<zz_pX> operator*(const Vec<zz_pX>& a, const zz_pX& b)
+{ 
+    Vec<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+inline Vec<zz_pX> operator*(const zz_pX& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    mul(x, a, b); 
+    return x; 
+}
+
+
+
+
+
 
 /*------------------------------------------------------------*/
 /* TODO                                                       */
@@ -569,6 +746,15 @@ inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs, const long order)
 }
 
 
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*             MULTIPLICATION FUNCTIONS                       */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*               A CLASS FOR 3 PRIMES FFTS                    */
@@ -602,27 +788,55 @@ private:
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/*             MULTIPLICATION / MIDDLE PRODUCT                */
+/*               PLAIN MULTIPLICATION                         */
+/* ALL FUNCTIONS: C = A*B, OUTPUT CAN ALIAS INPUT             */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/* output can alias input                                     */
+/* naive algorithm                                            */
 /*------------------------------------------------------------*/
-void multiply_waksman(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
+/*------------------------------------------------------------*/
+/* Waksman's algorithm                                        */
+/*------------------------------------------------------------*/
+void multiply_waksman(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
+/*------------------------------------------------------------*/
+/* assumes FFT prime and p large enough                       */
+/* uses Mat<zz_p> matrix multiplication                       */
+/*------------------------------------------------------------*/
+void multiply_evaluate_FFT_matmul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
+/*------------------------------------------------------------*/
+/* assumes FFT prime and p large enough                       */
+/* does not use Mat<zz_p> matrix multiplication               */
+/*------------------------------------------------------------*/
+void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
+/*------------------------------------------------------------*/
+/* assumes FFT prime and p large enough                       */
+/* chooses one of the two above                               */
+/*------------------------------------------------------------*/
 void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void multiply_evaluate_geometric_using_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void multiply_evaluate_geometric_no_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
+/*------------------------------------------------------------*/
+/* geometric evaluation                                       */
+/* uses Mat<zz_p> matrix multiplication                       */
+/* Note: implementation not using matmul always slower.       */
+/*------------------------------------------------------------*/
 void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
-void multiply_evaluate_direct_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-
+/*------------------------------------------------------------*/
+/* matrix multiplication using the algorithm of Giorgi et al. */
+/* uses matrix multiplication for evaluation and interpolation*/
+/*------------------------------------------------------------*/
 void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-
-void multiply_evaluate(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+/*------------------------------------------------------------*/
+/* computes the matrices for evaluation and interpolation     */
+/*------------------------------------------------------------*/
+void vandermonde(Mat<zz_p>& small_vdm1, Mat<zz_p>& small_vdm2, Mat<zz_p>& inv_vdm, long d1, long d2);
 
 void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
@@ -634,14 +848,16 @@ inline void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<z
     multiply_transform(c, a, b, max(deg(a), deg(b)) + 1);
 }
 
+/*------------------------------------------------------------*/
+/* 3 primes CRT algorithm                                     */
+/*------------------------------------------------------------*/
 void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 /*------------------------------------------------------------*/
 /* main function for c = a*b                                  */
-/* output can alias input                                     */
 /* is_prime = 1 assumes that p is known to be prime           */
 /*------------------------------------------------------------*/
-void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long is_prime = 1);
+void multiply(Mat<zz_pX> & c, const Mat<zz_pX>& a, const Mat<zz_pX>& b, long is_prime = 1);
 
 inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
 { 
@@ -650,6 +866,25 @@ inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
     return x; 
 }
 
+/*------------------------------------------------------------*/
+/* multiply by a vector                                       */
+/*------------------------------------------------------------*/
+void multiply(Vec<zz_pX>& c, const Mat<zz_pX>& a, const Vec<zz_pX>& b, long is_prime = 1);
+
+inline Vec<zz_pX> operator*(const Mat<zz_pX>& a, const Vec<zz_pX>& b)
+{ 
+    Vec<zz_pX> x; 
+    multiply(x, a, b); 
+    return x; 
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*               TRUNCATED MULTIPLICATION                     */
+/* ALL FUNCTIONS: C = A*B MOD X^N, OUTPUT CAN ALIAS INPUT     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
 /* c = a*b mod x^n                                            */
@@ -668,6 +903,16 @@ inline Mat<zz_pX> mul_trunc(const Mat<zz_pX> & a, const Mat<zz_pX> & b, long n, 
 }
 
 /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*                     MIDDLE PRODUCT                         */
+/* all(*) functions (except for geometric)                    */
+/* return trunc( trunc(a, dA+1)*c div x^dA, dB+1 )            */
+/* output can alias input                                     */
+/* todo: ensure degree bounds on a, c                         */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
 /* transpose of b mapsto c = a*b. output is                   */
 /*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
 /* a must have degree at most dA                              */
@@ -676,14 +921,42 @@ inline Mat<zz_pX> mul_trunc(const Mat<zz_pX> & a, const Mat<zz_pX> & b, long n, 
 void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
 /*------------------------------------------------------------*/
-/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
-/* todo: ensure degree bounds on a, c                         */
+/* naive algorithm, uses polynomial middle products           */
 /*------------------------------------------------------------*/
 void middle_product_naive(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
-void middle_product_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+
+/*------------------------------------------------------------*/
+/* 3 primes CRT algorithm                                     */
+/*------------------------------------------------------------*/
 void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
-void middle_product_evaluate(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
-// TODO what is "is_prime" argument?
+
+/*------------------------------------------------------------*/
+/* assumes FFT prime and p large enough                       */
+/* does not use Mat<zz_p> matrix multiplication               */
+/*------------------------------------------------------------*/
+void middle_product_evaluate_FFT_direct(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+
+/*------------------------------------------------------------*/
+/* assumes FFT prime and p large enough                       */
+/* uses Mat<zz_p> matrix multiplication                       */
+/*------------------------------------------------------------*/
+void middle_product_evaluate_FFT_matmul(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+
+/*------------------------------------------------------------*/
+/* assumes FFT prime and p large enough                       */
+/* chooses one of the two above                               */
+/*------------------------------------------------------------*/
+void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+
+/*------------------------------------------------------------*/
+/* uses matrix multiplication for evaluation and interpolation*/
+/*------------------------------------------------------------*/
+void middle_product_evaluate_dense(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+
+/*------------------------------------------------------------*/
+/* main function.                                             */
+/* is_prime = 1 assumes that p is known to be prime           */
+/*------------------------------------------------------------*/
 void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime = 1);
 
 inline Mat<zz_pX> middle_product(const Mat<zz_pX>& a, const Mat<zz_pX>& c, long dA, long dB, long is_prime = 1)
@@ -697,7 +970,7 @@ inline Mat<zz_pX> middle_product(const Mat<zz_pX>& a, const Mat<zz_pX>& c, long 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* CLASSES FOR MULTIPLICATION WITH A GIVEN L.H.S.             */
-/* constructors take an argument dB st r.h.s has degree <= dB */  
+/* CONSTRUCTORS TAKE AN ARGUMENT dB ST R.H.S HAS DEGREE <= dB */  
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 class mat_lzz_pX_lmultiplier
@@ -710,17 +983,19 @@ public:
     virtual ~mat_lzz_pX_lmultiplier(){}
 
     inline Mat<zz_pX> multiply(const Mat<zz_pX>& b)
-        {
-            Mat<zz_pX> c;
-            multiply(c, b);
-            return c;
-        }
-
+    {
+        Mat<zz_pX> c;
+        multiply(c, b);
+        return c;
+    }
     
-    long NumRows() const;
-    long NumCols() const;
-    long degA() const;
-    long degB() const;
+    /*------------------------------------------------------------*/
+    /* getters                                                    */
+    /*------------------------------------------------------------*/
+    long NumRows() const; // dimensions
+    long NumCols() const; // dimensions
+    long degA() const; // degree of current matrix
+    long degB() const; // max degree of rhs
 
 protected:
     long __s, __t; // dimensions
@@ -729,10 +1004,13 @@ protected:
 };
 
 
+
 /*------------------------------------------------------------*/
-/* for use with FFT primes                                    */
 /*------------------------------------------------------------*/
-class mat_lzz_pX_lmultiplier_FFT : public mat_lzz_pX_lmultiplier
+/* for use with FFT primes; direct product                    */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class mat_lzz_pX_lmultiplier_FFT_direct : public mat_lzz_pX_lmultiplier
 {
 public:
     /*------------------------------------------------------------*/
@@ -740,16 +1018,44 @@ public:
     /*------------------------------------------------------------*/
     void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b);
 
-    mat_lzz_pX_lmultiplier_FFT(){}
-    mat_lzz_pX_lmultiplier_FFT(const Mat<zz_pX> & a, long dB);
+    mat_lzz_pX_lmultiplier_FFT_direct(){}
+    mat_lzz_pX_lmultiplier_FFT_direct(const Mat<zz_pX> & a, long dB);
+
+private:
+    Vec<Vec<fftRep>> vala;
+    long len, n0, K, pr, nb_slices, first_slice;
+    sp_reduce_struct red1;
+    sp_ll_reduce_struct red2;
+};
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* for use with FFT primes; matmul product                    */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class mat_lzz_pX_lmultiplier_FFT_matmul : public mat_lzz_pX_lmultiplier
+{
+public:
+    /*------------------------------------------------------------*/
+    /* c = M * b                                                  */
+    /*------------------------------------------------------------*/
+    void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b);
+
+    mat_lzz_pX_lmultiplier_FFT_matmul(){}
+    mat_lzz_pX_lmultiplier_FFT_matmul(const Mat<zz_pX> & a, long dB);
 
 private:
     Vec<Mat<zz_p>> va; // FFT of current matrix
     long idxk; // log-size of FFT
 };
 
+
+/*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* geometric points                                           */
+/*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 class mat_lzz_pX_lmultiplier_geometric : public mat_lzz_pX_lmultiplier
 {
@@ -768,7 +1074,30 @@ private:
 };
 
 /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* dense algorithm                                            */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class mat_lzz_pX_lmultiplier_dense : public mat_lzz_pX_lmultiplier
+{
+public:
+    /*------------------------------------------------------------*/
+    /* c = M * b                                                  */
+    /*------------------------------------------------------------*/
+    void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b);
+
+    mat_lzz_pX_lmultiplier_dense(){}
+    mat_lzz_pX_lmultiplier_dense(const Mat<zz_pX> & a, long dB);
+
+private:
+    Mat<zz_p> vA, vB, iV, valA;
+    long nb_points;
+};
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 /* 3 primes                                                   */
+/*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 class mat_lzz_pX_lmultiplier_3_primes : public mat_lzz_pX_lmultiplier
 {
@@ -781,9 +1110,19 @@ public:
     mat_lzz_pX_lmultiplier_3_primes(){}
     mat_lzz_pX_lmultiplier_3_primes(const Mat<zz_pX> & a, long dB);
 
+
+    /*------------------------------------------------------------*/
+    /* we use unique_ptrs; we don't expect to have to do copies   */
+    /*------------------------------------------------------------*/
+    mat_lzz_pX_lmultiplier_3_primes& operator=(const mat_lzz_pX_lmultiplier_3_primes& orig)
+    {
+        LogicError("no copy allowed");
+        return *this;
+    }
+
 private:
     lzz_pX_3_primes primes;
-    Vec<mat_lzz_pX_lmultiplier_FFT> FFT_muls;
+    Vec<std::unique_ptr<mat_lzz_pX_lmultiplier>> FFT_muls;
 };
 
 
@@ -791,7 +1130,6 @@ private:
 /* returns a multiplier of the right type                     */
 /*------------------------------------------------------------*/
 std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, long dB);
-
 
 
 /*------------------------------------------------------------*/
@@ -1424,6 +1762,21 @@ inline Mat<zz_pX> solve_series(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long pr
 }
 
 /*------------------------------------------------------------*/
+/* solve A u = b mod x^prec                                   */
+/* A must be square, A(0) invertible                          */
+/* output can alias input                                     */
+/*------------------------------------------------------------*/
+void solve_series(Vec<zz_pX> &u, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long prec);
+
+inline Vec<zz_pX> solve_series(const Mat<zz_pX>& A, const Vec<zz_pX>& b, long prec)
+{
+    Vec<zz_pX> u;
+    solve_series(u, A, b, prec);
+    return u;
+}
+
+
+/*------------------------------------------------------------*/
 /* Implements a minor variation of Storjohann's algorithm     */
 /* A must be square, A(0) invertible, deg(b) < deg(A)         */
 /* output can alias input                                     */
@@ -1436,6 +1789,18 @@ inline Mat<zz_pX> solve_series_high_order_lifting(const Mat<zz_pX>& A, const Mat
     solve_series_high_order_lifting(u, A, b, prec);
     return u;
 }
+
+
+/*------------------------------------------------------------*/
+/* solve A (u/den) = b                                        */
+/* A must be square, A(0) invertible                          */
+/* output can alias input                                     */
+/* uses lifting and rational reconstruction                   */
+/* nb_max is the max. number of vectors for use in            */
+/* vector rational reconstruction (we use min(size, nb_max))  */
+/* nb_max = -1 means a look-up table value is used            */
+/*------------------------------------------------------------*/
+long linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long nb_max = -1);
 
 
 // TODO: polynomial matrix division with remainder (cf. e.g. Neiger-Vu 2017)

@@ -2,6 +2,7 @@
 #include <NTL/mat_lzz_p.h>
 #include <NTL/lzz_pX.h>
 
+#include "util.h"
 #include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
@@ -70,7 +71,6 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
             x[r][s].rep[0] = inv0[r][s];
         }
 
-
     v.SetDims(u, u);
     for (long k = 1; k < m; k++) 
     {
@@ -105,7 +105,7 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 /*------------------------------------------------------------*/
 void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thresh)
 {
-    if (x == a)
+    if (&x == &a)
     {
         Mat<zz_pX> y;
         newton_inv_trunc_FFT(y, a, m, thresh);
@@ -158,7 +158,6 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
                     mat_val1[rss + i*s + j] = frept[r];
                 }
             }
-
        
         // mat_val2 = FFT of (a mod t^(2k))
         // deg(a_ij mod t^(2k)) <= min(2k-1, deg(a_ij))
@@ -185,8 +184,6 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
                 for (long ell = 0; ell < s; ell++)
                     mat_val3[i*s + ell][j] = v3[i][ell];
         }
-
-
 
         // mat_val2 = values of delta
         for (long i = 0; i < s; i++)
@@ -254,7 +251,7 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
 /*------------------------------------------------------------*/
 void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thresh)
 {
-    if (x == a)
+    if (&x == &a)
     {
         Mat<zz_pX> y;
         newton_inv_trunc_middle_product(y, a, m);
@@ -275,18 +272,45 @@ void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m,
         }
     }
 
+#ifdef VERBOSE
+    cout << "thresh = " << thresh << endl;
+#endif
+
     long idx, k;
     k = thresh;
     vector<long> all_deg=degrees(m, k);
     k = all_deg[0];
     idx = 1;
+    
+#ifdef VERBOSE
+    double t = get_time();
+#endif
     plain_inv_trunc(x, a, k);
+#ifdef VERBOSE
+    cout << "plain : " << get_time()-t << endl;
+#endif
 
     while (k < m) 
     {
         Mat<zz_pX> y;
-        middle_product(y, x, trunc(a, 2*k), k, k-1);
+#ifdef VERBOSE
+        t = get_time();
+#endif
+        Mat<zz_pX> tr = trunc(a, 2*k);
+#ifdef VERBOSE
+        cout << "trunc " << get_time()-t << endl;
+        t = get_time();
+#endif
+        middle_product(y, x, tr, k, k-1);
+#ifdef VERBOSE
+        cout << "middle " << get_time()-t << endl;
+        t = get_time();
+#endif
         mul_trunc(y, y, x, k);
+#ifdef VERBOSE
+        cout << "trunc " << get_time()-t << endl;
+        t = get_time();
+#endif
         y <<= k;
         x = x - y;
         k = 2 * k;
@@ -296,7 +320,9 @@ void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m,
             trunc(x, x, k);
         }            
         idx++;
-
+#ifdef VERBOSE
+        cout << "rest " << get_time()-t << endl;
+#endif
     }
 
     trunc(x, x, m);

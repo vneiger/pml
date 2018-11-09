@@ -56,7 +56,7 @@ void check(long p)
                 nb = 0;
                 do
                 {
-                    multiply_evaluate(c, a, b);
+                    multiply_evaluate_dense(c, a, b);
                     nb++;
                 }
                 while ((get_time()-t_eval) <= thres);
@@ -130,7 +130,7 @@ void check(long p)
                 nb = 0;
                 do
                 {
-                    multiply_evaluate(c, a, b);
+                    multiply_evaluate_dense(c, a, b);
                     nb++;
                 }
                 while ((get_time()-t_old) <= thres);

@@ -1,5 +1,4 @@
-
-DIRS = util sage_output magma_output lzz_p_extra vec_lzz_p_extra lzz_pX_extra lzz_pX_middle_product lzz_pX_CRT mat_lzz_p_extra structured_lzz_p mat_lzz_pX_extra 
+DIRS = util sage_output magma_output lzz_p_extra vec_lzz_p_extra lzz_pX_extra lzz_pX_middle_product lzz_pX_CRT mat_lzz_p_extra structured_lzz_p mat_lzz_pX_extra lzz_pXY structured_lzz_pX
 
 all:	clean
 	$(foreach dir, $(DIRS), if [ -d $(dir) ]; then cd $(dir)/src ; make ; cd ../.. ; fi ;)

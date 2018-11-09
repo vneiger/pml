@@ -21,16 +21,9 @@ void one_check(long sz, long dg)
             random(a, sz, sz+1, dA + 1);
             random(c, sz+1, sz+2, dA + dB + 1);
 
-            // testing all possible call sequences            
-            middle_product(b1, a, c, dA, dB);
-
-            multiply(b2, a, c);
-            b2 >>= dA;
-            trunc(b2, b2, dB + 1);
-            if (b1 != b2)
-            {
-                LogicError("Error in middle product");
-            }
+            multiply(b1, a, c);
+            b1 >>= dA;
+            trunc(b1, b1, dB + 1);
 
             middle_product_3_primes(b2, a, c, dA, dB);
             if (b1 != b2)
@@ -38,9 +31,27 @@ void one_check(long sz, long dg)
                 LogicError("Error in 3 primes middle product");
             }
 
+            middle_product_evaluate_dense(b2, a, c, dA, dB);
+            if (b1 != b2)
+            {
+                LogicError("Error in dense middle product");
+            }
+
             if (is_FFT_prime())
             {
-                middle_product_FFT(b2, a, c, dA, dB);
+                middle_product_evaluate_FFT_matmul(b2, a, c, dA, dB);
+                if (b1 != b2)
+                {
+                    LogicError("Error in FFT matmul middle product");
+                }
+
+                middle_product_evaluate_FFT_direct(b2, a, c, dA, dB);
+                if (b1 != b2)
+                {
+                    LogicError("Error in FFT direct middle product");
+                }
+
+                middle_product_evaluate_FFT(b2, a, c, dA, dB);
                 if (b1 != b2)
                 {
                     LogicError("Error in FFT middle product");
