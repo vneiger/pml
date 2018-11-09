@@ -246,6 +246,25 @@ void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a, long hi)
             reverse(x[r][s], a[r][s], hi);
 }
 
+void reverse(Mat<zz_pX> &x, 
+             const Mat<zz_pX> &a, 
+             const std::vector<long>& hi,
+             const bool row_wise)
+{
+    long rdim, cdim;
+    rdim = a.NumRows();
+    cdim = a.NumCols();
+    x.SetDims(rdim, cdim);
+
+    for (long r = 0; r < rdim; r++)
+        for (long s = 0; s< cdim; s++)
+        {
+            long h = hi[s];
+            if (row_wise) h = hi[r];
+            reverse(x[r][s], a[r][s], h);
+        }
+}
+
 
 
 /*------------------------------------------------------------*/

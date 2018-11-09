@@ -257,6 +257,11 @@ Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n);
 /*------------------------------------------------------------*/
 void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a, long hi);
 
+void reverse(Mat<zz_pX> &x, 
+             const Mat<zz_pX> &a, 
+             const std::vector<long> &hi,
+             const bool row_wise = true);
+
 static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a, long hi)
 {
     Mat<zz_pX> x;
@@ -795,6 +800,20 @@ std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, lo
 void matrix_evaluate (Vec<Mat<zz_p>> &evals,
                       const Mat<zz_pX> &pmat,
                       const zz_pX_Multipoint &ev);
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* Division with remainder                                    */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+// computes Q,R such that A = BQ + R
+void quo_rem(Mat<zz_pX> &Q, 
+             Mat<zz_pX> &R, 
+             const Mat<zz_pX> &A,
+             const Mat<zz_pX> &B);
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
