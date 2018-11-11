@@ -7,6 +7,14 @@
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
 
+#define TIME(a)         \
+    tt = get_time();    \
+    a                   \
+    tt = get_time()-tt; \
+    cout << tt << "\t";
+
+
+
 NTL_CLIENT
 
 /******************************************************/
@@ -19,69 +27,58 @@ void run_bench(long m, long n, long d)
 {
     double tt;
 
-    tt = get_time();
-    Mat<zz_pX> pmat;
-    random(pmat, m, n, d);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         Mat<zz_pX> pmat;
+         random(pmat, m, n, d);
+        )
 
-    tt = get_time();
-    deg(pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         deg(pmat);
+        )
 
-    tt = get_time();
-    std::vector<long> degs(pmat.NumRows());
-    row_degree(degs,pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         std::vector<long> degs(pmat.NumRows());
+         row_degree(degs,pmat);
+        )
 
-    tt = get_time();
-    degs.resize(pmat.NumCols());
-    column_degree(degs,pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         degs.resize(pmat.NumCols());
+         column_degree(degs,pmat);
+        )
 
-    tt = get_time();
-    Mat<long> deg_mat;
-    degree_matrix(deg_mat, pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         Mat<long> deg_mat;
+         degree_matrix(deg_mat, pmat);
+        )
 
-    tt = get_time();
-    Mat<zz_p> lead_mat;
-    leading_matrix(lead_mat, pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         Mat<zz_p> lead_mat;
+         leading_matrix(lead_mat, pmat);
+        )
 
-    tt = get_time();
-    std::vector<long> pivind(pmat.NumRows());
-    std::vector<long> pivdeg(pmat.NumRows());
-    pivot_index(pivind, pivdeg, pmat, std::vector<long>(), true);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         std::vector<long> pivind(pmat.NumRows());
+         std::vector<long> pivdeg(pmat.NumRows());
+         pivot_index(pivind, pivdeg, pmat, std::vector<long>(), true);
+        )
 
-    tt = get_time();
-    pivind.resize(pmat.NumCols());
-    pivdeg.resize(pmat.NumCols());
-    pivot_index(pivind, pivdeg, pmat, std::vector<long>(), false);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         pivind.resize(pmat.NumCols());
+         pivdeg.resize(pmat.NumCols());
+         pivot_index(pivind, pivdeg, pmat, std::vector<long>(), false);
+        )
 
-    tt = get_time();
-    is_reduced(pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         is_reduced(pmat);
+        )
 
-    tt = get_time();
-    is_weak_popov(pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         is_weak_popov(pmat);
+        )
 
-    tt = get_time();
-    is_popov(pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         is_popov(pmat);
+        )
 
 //    std::vector<long> rs {0,2,1,3};
 //    std::vector<long> cs {4,2,0};
