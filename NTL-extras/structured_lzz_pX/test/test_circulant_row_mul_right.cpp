@@ -6,7 +6,7 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* creates lower triangular toeplitz matrices                 */
+/* creates circulant matrices and right multiplies            */
 /*------------------------------------------------------------*/
 void check(long p)
 {

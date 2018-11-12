@@ -209,72 +209,110 @@ public:
 };
 
 
-// /*------------------------------------------------------------*/
-// /*------------------------------------------------------------*/
-// /* Toeplitz like matrices, where generators G, H are such that*/
-// /* Z0 M - M Z1 = G H^t                                        */
-// /* -> M = sum_i L(-g_i) circ (rev h_i)                        */
-// /*------------------------------------------------------------*/
-// /*------------------------------------------------------------*/
-// class toeplitz_like_minus_lzz_pX : public structured_lzz_pX 
-// {
-// private:
-//     // m rows, n columns
-//     long m, n;
-//     Vec<lower_triangular_toeplitz_lzz_pX> toeplitz_G;
-//     Vec<circulant_row_lzz_pX> circulant_H;
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* Toeplitz like matrices, where generators G, H are such that*/
+/* Z0 M - M Z1 = G H^t                                        */
+/* -> M = sum_i L(-g_i) circ (rev h_i)                        */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class toeplitz_like_minus_lzz_pX : public structured_lzz_pX 
+{
+private:
+    // m rows, n columns
+    long m, n;
+    Vec<lower_triangular_toeplitz_lzz_pX> toeplitz_G;
+    Vec<circulant_row_lzz_pX> circulant_H;
 
-// public:
-//     Mat<zz_pX> G, H;
-//     /*------------------------------------------------------------*/
-//     /* sets dimensions to 0                                       */
-//     /*------------------------------------------------------------*/
-//     toeplitz_like_minus_lzz_pX();
+public:
+    Mat<zz_pX> G, H;
+    /*------------------------------------------------------------*/
+    /* sets dimensions to 0                                       */
+    /*------------------------------------------------------------*/
+    toeplitz_like_minus_lzz_pX();
 
-//     /*------------------------------------------------------------*/
-//     /* input vector is as showed above, with G<-U, H<-V           */
-//     /*------------------------------------------------------------*/
-//     toeplitz_like_minus_lzz_pX(const Mat<zz_pX>& U, const Mat<zz_pX>& V);
+    /*------------------------------------------------------------*/
+    /* input vector is as showed above, with G<-U, H<-V           */
+    /*------------------------------------------------------------*/
+    toeplitz_like_minus_lzz_pX(const Mat<zz_pX>& U, const Mat<zz_pX>& V);
 
-//     /*------------------------------------------------------------*/
-//     /* getters                                                    */
-//     /*------------------------------------------------------------*/
-//     long NumCols() const;
-//     long NumRows() const;
-//     long NumGens() const;
+    /*------------------------------------------------------------*/
+    /* getters                                                    */
+    /*------------------------------------------------------------*/
+    long NumCols() const;
+    long NumRows() const;
+    long NumGens() const;
 
-//     /*------------------------------------------------------------*/
-//     /* right multiplication                                       */
-//     /*------------------------------------------------------------*/
-//     using structured_lzz_pX::mul_right;
-//     void mul_right(Vec<zz_pX>& out, const Vec<zz_pX>& in) const;
-//     void mul_right(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
+    /*------------------------------------------------------------*/
+    /* right multiplication                                       */
+    /*------------------------------------------------------------*/
+    using structured_lzz_pX::mul_right;
+    void mul_right(Vec<zz_pX>& out, const Vec<zz_pX>& in) const;
+    void mul_right(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
 
-//     /*------------------------------------------------------------*/
-//     /* left multiplication                                        */
-//     /*------------------------------------------------------------*/
-//     using structured_lzz_pX::mul_left;
-//     void mul_left(Vec<zz_pX>& out, const Vec<zz_pX>& in) const;
-//     void mul_left(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
+    /*------------------------------------------------------------*/
+    /* right multiplication mod x^d                               */
+    /*------------------------------------------------------------*/
+    void mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long d) const;
+    inline Vec<zz_pX> mul_right_trunc(const Vec<zz_pX>& in, long d) const
+    {
+        Vec<zz_pX> out;
+        mul_right_trunc(out, in, d);
+        return out;
+    }
 
-//     /*------------------------------------------------------------*/
-//     /* turns M into a dense matrix                                */
-//     /*------------------------------------------------------------*/
-//     using structured_lzz_pX::to_dense;
-//     void to_dense(Mat<zz_pX>& Mdense) const;
-// };
+    void mul_right_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long d) const;
+    inline Mat<zz_pX> mul_right_trunc(const Mat<zz_pX>& in, long d) const
+    {
+        Mat<zz_pX> out;
+        mul_right_trunc(out, in, d);
+        return out;
+    }
 
-// /*------------------------------------------------------------*/
-// /* returns Z0 A - A Z1                                        */
-// /*------------------------------------------------------------*/
-// void toeplitz_lzz_pX_phi_minus(Mat<zz_pX> & res, const Mat<zz_pX>& A);
+    /*------------------------------------------------------------*/
+    /* left multiplication                                        */
+    /*------------------------------------------------------------*/
+    using structured_lzz_pX::mul_left;
+    void mul_left(Vec<zz_pX>& out, const Vec<zz_pX>& in) const;
+    void mul_left(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
 
-// inline Mat<zz_pX> toeplitz_lzz_pX_phi_minus(const Mat<zz_pX>& A)
-// {
-//     Mat<zz_pX> res;
-//     toeplitz_lzz_pX_phi_minus(res, A);
-//     return res;
-// }
+    /*------------------------------------------------------------*/
+    /* left multiplication mod x^d                                */
+    /*------------------------------------------------------------*/
+    void mul_left_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long d) const;
+    inline Vec<zz_pX> mul_left_trunc(const Vec<zz_pX>& in, long d) const
+    {
+        Vec<zz_pX> out;
+        mul_left_trunc(out, in, d);
+        return out;
+    }
+
+    void mul_left_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long d) const;
+    inline Mat<zz_pX> mul_left_trunc(const Mat<zz_pX>& in, long d) const
+    {
+        Mat<zz_pX> out;
+        mul_left_trunc(out, in, d);
+        return out;
+    }
+
+    /*------------------------------------------------------------*/
+    /* turns M into a dense matrix                                */
+    /*------------------------------------------------------------*/
+    using structured_lzz_pX::to_dense;
+    void to_dense(Mat<zz_pX>& Mdense) const;
+};
+
+/*------------------------------------------------------------*/
+/* returns Z0 A - A Z1                                        */
+/*------------------------------------------------------------*/
+void toeplitz_lzz_pX_phi_minus(Mat<zz_pX> & res, const Mat<zz_pX>& A);
+
+inline Mat<zz_pX> toeplitz_lzz_pX_phi_minus(const Mat<zz_pX>& A)
+{
+    Mat<zz_pX> res;
+    toeplitz_lzz_pX_phi_minus(res, A);
+    return res;
+}
 
 #endif
 

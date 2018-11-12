@@ -369,11 +369,6 @@ void circulant_row_lzz_pX::mul_left(Vec<zz_pX>& res, const Vec<zz_pX>& input) co
     }
     else
     {
-
-        cout << "n=" << n << "\n" << "m=" << m << endl;
-        cout << "leftover=" << leftover << endl;
-        cout << "input=" << input << endl;
-
         Vec<zz_pX> out, tmp;
         zz_pX input_X, mat_kro, res_kro;
 
@@ -393,11 +388,6 @@ void circulant_row_lzz_pX::mul_left(Vec<zz_pX>& res, const Vec<zz_pX>& input) co
         to_kronecker(mat_kro, tmp, dX + d);
         TofftRep(fft2_here, mat_kro, L);
 
-        cout << input_X << endl;
-        cout << mat_kro << endl;
-        cout << "L=" << L << endl;
-        cout << "len =" << ((m + leftover - 1) * (dX + d + 1) - 1) << endl;
-
         mul(fft_l, fft2_here, fft_l);
 
         FromfftRep(res_kro, fft_l, 0, (m + leftover - 1) * (dX + d + 1) - 1);
@@ -407,9 +397,7 @@ void circulant_row_lzz_pX::mul_left(Vec<zz_pX>& res, const Vec<zz_pX>& input) co
             res_kro = (1/to_zz_p(2)) * res_kro;
         }
 #endif   
-        cout << "res_kro=" << res_kro << endl;
         from_kronecker(out, res_kro, dX + d);
-        cout << "out=" << out << endl;
 
         long ell = out.length();
         out.SetLength(m + leftover);
@@ -420,8 +408,6 @@ void circulant_row_lzz_pX::mul_left(Vec<zz_pX>& res, const Vec<zz_pX>& input) co
             res[i] = out[i] + out[i + m];
         for (long i = leftover; i < m; i++)
             res[i] = out[i];
-
-        cout << "nb=" << nb << endl;
 
         for (long r = 0; r < nb; r++)
         {
@@ -434,31 +420,22 @@ void circulant_row_lzz_pX::mul_left(Vec<zz_pX>& res, const Vec<zz_pX>& input) co
             to_kronecker(input_X, tmp, dX + d);
             TofftRep(fft_k, input_X, K);
             
-            cout << "input_X=" << input_X << endl;
-
             mat_kro = 0;
             for (long i = 0; i < m; i++)
                 tmp[i] = data[m - 1 - i];
             to_kronecker(mat_kro, tmp, dX + d);
             TofftRep(fft3_here, mat_kro, K);
 
-            cout << "mat_kro=" << mat_kro << endl;
-
             mul(fft_k, fft3_here, fft_k);
             FromfftRep(res_kro, fft_k, 0, (m + m - 1) * (dX + d + 1) - 1);
             
-            cout << "K=" << K << endl;
-            cout << "len=" << ((m + m - 1) * (dX + d + 1) - 1) << endl;
-
 #ifdef __NTL_FIX_SIZE_2_FFT
             if (K == 1)
             {
                 res_kro = (1/to_zz_p(2)) * res_kro;
             }
 #endif   
-            cout << "res_kro=" << res_kro << endl;
             from_kronecker(out, res_kro, dX + d);
-            cout << "out=" << out << endl;
             ell = out.length();
             out.SetLength(m + m);
             for (long i = ell; i < out.length(); i++)

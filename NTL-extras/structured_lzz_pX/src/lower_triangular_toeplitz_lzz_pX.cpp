@@ -210,46 +210,25 @@ void lower_triangular_toeplitz_lzz_pX::mul_right(Mat<zz_pX>& res, const Mat<zz_p
 /*------------------------------------------------------------*/
 void lower_triangular_toeplitz_lzz_pX::mul_left(Vec<zz_pX>& res, const Vec<zz_pX>& input) const
 {
-    // if (input.length() != n)
-    // {
-    //     LogicError("Bad size for lower_triangular_toeplitz_lzz_pX left multiplication.");
-    // }
+    if (input.length() != n)
+    {
+        LogicError("Bad size for lower_triangular_toeplitz_lzz_pX left multiplication.");
+    }
 
-    // if (&res == &input)
-    // {
-    //     res = mul_left(input);
-    //     return;
-    // }
+    if (&res == &input)
+    {
+        res = mul_left(input);
+        return;
+    }
 
-
-    // res.SetLength(n);
-
-    // zz_pXX input_X;
-    // input_X.rep.SetLength(n);
-    // zz_pX *cf = input_X.rep.elts();
-    // for (long i = 0; i < n; i++)
-    //     cf[i] = input[n - 1 - i];
-    // input_X.normalize();
-
-    // if (n <= NTL_zz_pXX_MUL_CROSSOVER/2)
-    // {
-    //     zz_pXX tmp;
-    //     MulTrunc(tmp, dataX, input_X, n);
-    //     for (long i = 0; i < n; i++)
-    //         res[i] = coeff(tmp, n - 1 - i);
-    // }
-    // else
-    // {
-    //     Vec<zz_pX> tmp;
-    //     tmp.SetLength(n);
-    //     long K = NextPowerOfTwo(n+n-1);
-    //     fftRep fft_input = fftRep(INIT_SIZE, K);
-    //     TofftRep(fft_input, input_X, K);
-    //     mul(fft_input, fft_input, fft);
-    //     FromfftRep(tmp.elts(), fft_input, 0, n-1);
-    //     for (long i = 0 ; i < n; i++)
-    //         res[i] = tmp[n - 1 - i];
-    // }
+    Vec<zz_pX> in_rev, out_rev;
+    in_rev.SetLength(n);
+    for (long i = 0; i < n; i++)
+        in_rev[i] = in_rev[n - 1 - i];
+    mul_right(out_rev, in_rev);
+    res.SetLength(n);
+    for (long i = 0; i < n; i++)
+        res[i] = out_rev[n - 1 - i];
 
 }
 

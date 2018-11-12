@@ -1097,6 +1097,95 @@ public:
 };
 
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*                   SYLVESTER MATRICES                       */
+/* = (square) matrix of (F,G) \mapsto AF + BG                 */
+/* particular case of mosaic toeplitz                         */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class sylvester_lzz_p : public structured_lzz_p
+{
+private:
+    long n; // number of rows / columns
+    zz_pX a, b, revA, revB, invA, invB, invSerA, invSerB;
+    zz_pXModulus modA, modB;
+    zz_pXMultiplier multIA, multIB;
+    long singular;
+public:
+    /*------------------------------------------------------------*/
+    /* sets dimensions to 0                                       */
+    /*------------------------------------------------------------*/
+    sylvester_lzz_p();
+
+    /*------------------------------------------------------------*/
+    /* dimension = deg(A) + deg(B), A and B as above              */
+    /*------------------------------------------------------------*/
+    sylvester_lzz_p(const zz_pX& A, const zz_pX& B);
+
+    /*------------------------------------------------------------*/
+    /* getters                                                    */
+    /*------------------------------------------------------------*/
+    long NumCols() const;
+    long NumRows() const;
+
+    /*------------------------------------------------------------*/
+    /* right multiplication                                       */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::mul_right;
+    void mul_right(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    void mul_right(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* left multiplication                                        */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::mul_left;
+    void mul_left(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    void mul_left(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* precomputation for system solving                          */
+    /*------------------------------------------------------------*/
+    void prepare_inverse(); 
+
+    /*------------------------------------------------------------*/
+    /* right system solving                                       */
+    /* returns 0 if the matrix is non-invertible                  */
+    /* (even though there may be solutions)                       */
+    /* return 1 otherwise                                         */
+    /*------------------------------------------------------------*/
+    long solve(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    long solve(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+    
+    /*------------------------------------------------------------*/
+    /* left system solving                                        */
+    /* returns 0 if the matrix is non-invertible                  */
+    /* (even though there may be solutions)                       */
+    /* return 1 otherwise                                         */
+    /*------------------------------------------------------------*/
+    long solve_transpose(Vec<zz_p>& out, const Vec<zz_p>& in) const;
+    long solve_transpose(Mat<zz_p>& out, const Mat<zz_p>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* G, H such that Z1 M - M Z0 = G H^t                         */
+    /*------------------------------------------------------------*/
+    void phi_plus_generators(Mat<zz_p>& G, Mat<zz_p>& H) const; 
+
+    /*------------------------------------------------------------*/
+    /* finds the inverse of this as a topelitz_like_minus matrix  */
+    /* if return value is 0, singular matrix                      */
+    /*------------------------------------------------------------*/
+    long inv(toeplitz_like_minus_lzz_p& inv);
+
+    /*------------------------------------------------------------*/
+    /* turns M into a dense matrix                                */
+    /*------------------------------------------------------------*/
+    using structured_lzz_p::to_dense;
+    void to_dense(Mat<zz_p>& Mdense) const;
+};
+
+
+
 
 #endif 
 
