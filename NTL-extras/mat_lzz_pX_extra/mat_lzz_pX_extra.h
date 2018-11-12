@@ -16,114 +16,7 @@
 #include "thresholds_solve_lift.h"
 
 #include "mat_lzz_pX_utils.h"
-
-/*------------------------------------------------------------*/
-/* Shifted reduced forms of polynomials matrices. Recall that */
-/* Popov => ordered weak Popov => weak Popov => Reduced       */
-/*------------------------------------------------------------*/
-
-enum PolMatForm {
-    NONE = 0,
-    REDUCED = 1, 
-    WEAK_POPOV = 2,
-    ORD_WEAK_POPOV = 3,
-    POPOV = 4,
-};
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* DEGREES, PIVOTS, LEADING MATRIX                            */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* Degree matrix: matrix of the degree of each entry          */
-/* Convention: deg(0) = -1, more generally the shifted degree */
-/* of a zero entry is min(shift)-1                            */
-/*------------------------------------------------------------*/
-void degree_matrix(
-                   Mat<long> &degmat,
-                   const Mat<zz_pX> &pmat,
-                   const Shift & shift = Shift(),
-                   const bool row_wise=true
-                  );
-
-inline Mat<long> degree_matrix(
-                               const Mat<zz_pX> &pmat,
-                               const Shift & shift = Shift(),
-                               const bool row_wise=true
-                              )
-{
-    Mat<long> degmat;
-    degree_matrix(degmat,pmat,shift,row_wise);
-    return degmat;
-}
-
-/*------------------------------------------------------------*/
-/* tuple (shifted deg row 1, shifted deg row 2, ...)          */
-/* where shifted deg row k is the maximum of the shifted      */
-/* degrees of the entries of row k                            */
-/*------------------------------------------------------------*/
-void row_degree(
-                DegVec & rdeg,
-                const Mat<zz_pX> &pmat,
-                const Shift & shift = Shift()
-               ); 
-
-/*------------------------------------------------------------*/
-/* similar function for column degrees (see row_degree)       */
-/*------------------------------------------------------------*/
-void column_degree(
-                   DegVec & cdeg,
-                   const Mat<zz_pX> &pmat,
-                   const Shift & shift = Shift()
-                  ); 
-
-/*------------------------------------------------------------*/
-/* similar function with row-wise option and returning degree */
-/*------------------------------------------------------------*/
-inline DegVec vector_degree(
-                            const Mat<zz_pX> &pmat,
-                            const Shift & shift = Shift(),
-                            const bool row_wise = true
-                           )
-{
-    DegVec degs;
-    if (row_wise)
-    {
-        degs.resize(pmat.NumRows());
-        row_degree(degs,pmat,shift);
-    }
-    else
-    {
-        degs.resize(pmat.NumCols());
-        column_degree(degs,pmat,shift);
-    }
-    return degs;
-}
-
-
-/*------------------------------------------------------------*/
-/* finds the pivot indices; returns the row/col degs          */
-/*------------------------------------------------------------*/
-void pivot_index(
-                 std::vector<long> & pivind,
-                 DegVec & pivdeg,
-                 const Mat<zz_pX> & pmat,
-                 const Shift & shift = Shift(),
-                 const bool row_wise = true
-                );
-
-/*------------------------------------------------------------*/
-/* leading matrix of pmat                                     */
-/*------------------------------------------------------------*/
-void leading_matrix(
-                    Mat<zz_p> &lmat,
-                    const Mat<zz_pX> &pmat,
-                    const Shift & shift = Shift(),
-                    const bool row_wise = true
-                   );
-
+#include "mat_lzz_pX_forms.h"
 #include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_partial_linearization.h"
 #include "mat_lzz_pX_approximant.h"
@@ -136,32 +29,6 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-
-// TODO random matrix with given PolMatForm
-
-/*------------------------------------------------------------*/
-/* Amplitude of a shift: max(shift) - min(shift)              */
-/*------------------------------------------------------------*/
-
-inline void amplitude(long & amp, Shift shift)
-{
-    auto minmax = std::minmax_element(shift.begin(), shift.end());
-    amp = *minmax.second - *minmax.first;
-}
-
-inline long amplitude(Shift shift)
-{
-    long amp;
-    amplitude(amp, shift);
-    return amp;
-}
-
-// TODO shift reduction (given degdet D, cf ISSAC)
-// --> would be useful, e.g. in naive kernel
-
-// TODO type for index tuples?
-// TODO type for pair (pivot index, pivot degree)?
-// remove those types to be more explicit?
 
 /*------------------------------------------------------------*/
 /* in-place reduction modulo the current prime                */
@@ -620,61 +487,6 @@ void quo_rem(Mat<zz_pX> &Q,
              const Mat<zz_pX> &A,
              const Mat<zz_pX> &B);
 
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* TESTING REDUCED/NORMAL FORMS                               */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* returns true if b is reduced                               */
-/*------------------------------------------------------------*/
-bool is_reduced(
-                const Mat<zz_pX> &pmat,
-                const Shift & shift = Shift(),
-                const bool row_wise = true
-               );
-
-/*------------------------------------------------------------*/
-/* returns true if b is in weak popov form (forbide 0-row/col */
-/*------------------------------------------------------------*/
-bool is_weak_popov(
-                   const Mat<zz_pX> &pmat,
-                   const Shift & shift = Shift(),
-                   const bool row_wise = true,
-                   const bool ordered= false
-                  );
-
-bool is_popov(
-              const Mat<zz_pX> &pmat,
-              const Shift & shift = Shift(),
-              const bool row_wise = true,
-              const bool up_to_permutation = false
-             );
-
-/*------------------------------------------------------------*/
-/* if b is in some shifted reduced form,                      */
-/* return the strongest detected form                         */
-/* otherwise return NONE (= 0)                                */
-/*------------------------------------------------------------*/
-PolMatForm get_polmatform(
-                          const Mat<zz_pX> & pmat,
-                          const Shift & shift = Shift(),
-                          const bool row_wise = true
-                         );
-
-/*------------------------------------------------------------*/
-/* check that pmat is in the shifted reduced form             */
-/* indicated by argument 'form'                               */
-/*------------------------------------------------------------*/
-bool is_polmatform(
-                   const Mat<zz_pX> & pmat,
-                   const PolMatForm form,
-                   const Shift & shift = Shift(),
-                   const bool row_wise = true
-                  );
 
 
 
