@@ -197,7 +197,7 @@ void sub(Vec<zz_pX> & c, const Vec<zz_p> & a, const Vec<zz_pX> & b)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-void neg(Mat<zz_pX> & x, const Mat<zz_pX> & a)
+void negate(Mat<zz_pX> & x, const Mat<zz_pX> & a)
 {
     long m = a.NumRows();
     long n = a.NumCols();
