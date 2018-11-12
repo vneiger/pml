@@ -12,14 +12,6 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* Types for integer tuples: degrees and shifts               */
-/*------------------------------------------------------------*/
-// TODO replace with NTL's vec??
-typedef std::vector<long> Shift;
-typedef std::vector<long> DegVec;
-
-
-/*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* ZERO MATRIX; IDENTITY MATRIX                               */
 /*------------------------------------------------------------*/
@@ -254,12 +246,13 @@ inline Mat<zz_pX> random_mat_zz_pX(long n, long m, long d)
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of row degree < rdeg                  */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX_rdeg(Mat<zz_pX> & pmat, long m, long n, DegVec rdeg);
+void random_mat_zz_pX_rdeg(Mat<zz_pX> & pmat, long m, long n, std::vector<long> rdeg);
 
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of column degree < cdeg               */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, DegVec cdeg);
+void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, std::vector<long> cdeg);
+// TODO replace with Vec<long> ??
 
 
 
