@@ -246,8 +246,11 @@ void from_kronecker(Vec<zz_pX>& c, const zz_pX& a, long degX)
     {
         c[i].rep.SetLength(degX + 1);
         zz_p * ce = c[i].rep.elts();
-        for (long j = 0; j <= degX; j++)
+        long j;
+        for (j = 0; j <= degX && idx <= deg(a); j++)
             ce[j] = ae[idx++];
+        for (; j <= degX; j++)
+            ce[j] = 0;
         c[i].normalize();
     }
 }
