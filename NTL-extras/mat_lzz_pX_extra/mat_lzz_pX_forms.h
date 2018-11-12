@@ -45,6 +45,29 @@ enum PolMatForm {
 // TODO random matrix with given PolMatForm
 
 /*------------------------------------------------------------*/
+/* check that the shift has the right dimension;              */
+/* return true iff a non-empty shift was given as input       */
+/*------------------------------------------------------------*/
+inline bool check_shift(
+                        const std::vector<long> & shift,
+                        const Mat<zz_pX> & pmat,
+                        const bool row_wise = true
+                       )
+{
+    if (!shift.empty()) 
+    {
+        if (row_wise && (long)shift.size() != pmat.NumCols())
+            throw std::invalid_argument("==check_shift== Provided shift does not have the right dimension (working row-wise)");
+        if (!row_wise && (long)shift.size() != pmat.NumRows())
+            throw std::invalid_argument("==check_shift== Provided shift does not have the right dimension (working column-wise)");
+        return true;
+    }
+    else
+        return false;
+}
+
+
+/*------------------------------------------------------------*/
 /* Amplitude of a shift: max(shift) - min(shift)              */
 /*------------------------------------------------------------*/
 
@@ -78,13 +101,13 @@ void degree_matrix(
                    Mat<long> &degmat,
                    const Mat<zz_pX> &pmat,
                    const Shift & shift = Shift(),
-                   const bool row_wise=true
+                   const bool row_wise = true
                   );
 
 inline Mat<long> degree_matrix(
                                const Mat<zz_pX> &pmat,
                                const Shift & shift = Shift(),
-                               const bool row_wise=true
+                               const bool row_wise = true
                               )
 {
     Mat<long> degmat;
@@ -102,7 +125,7 @@ void row_degree(
                 const Mat<zz_pX> &pmat,
                 const Shift & shift = Shift()
                ); 
-// TODO change the way rdeg is handled (do not require length)
+
 // TODO version which returns rdeg
 
 /*------------------------------------------------------------*/
@@ -113,7 +136,7 @@ void column_degree(
                    const Mat<zz_pX> &pmat,
                    const Shift & shift = Shift()
                   ); 
-// TODO change the way rdeg is handled (do not require length)
+
 // TODO version which returns rdeg
 
 /*------------------------------------------------------------*/
@@ -127,15 +150,9 @@ inline DegVec vector_degree(
 {
     DegVec degs;
     if (row_wise)
-    {
-        degs.resize(pmat.NumRows());
         row_degree(degs,pmat,shift);
-    }
     else
-    {
-        degs.resize(pmat.NumCols());
         column_degree(degs,pmat,shift);
-    }
     return degs;
 }
 
