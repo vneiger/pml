@@ -4,7 +4,6 @@
 #include <algorithm> // for manipulating std::vector (min, max, ..)
 
 #include "mat_lzz_pX_extra.h"
-#include "mat_lzz_pX_partial_linearization.h"
 
 NTL_CLIENT
 

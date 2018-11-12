@@ -7,10 +7,8 @@
 #include <numeric> // for std::iota
 
 #include "lzz_p_extra.h"
-#include "mat_lzz_pX_extra.h"
-#include "mat_lzz_pX_approximant.h"
-#include "mat_lzz_pX_partial_linearization.h"
 #include "lzz_pX_CRT.h"
+#include "mat_lzz_pX_extra.h"
 
 //#define MBASIS1_PROFILE // FIXME
 //#define MBASIS_PROFILE // FIXME

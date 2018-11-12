@@ -7,6 +7,15 @@
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
 
+#define TIME(a)         \
+    tt = get_time();    \
+    a                   \
+    tt = get_time()-tt; \
+    cout << tt << "\t";
+
+#define SMALL_SUITE
+
+
 NTL_CLIENT
 
 /******************************************************/
@@ -19,69 +28,58 @@ void run_bench(long m, long n, long d)
 {
     double tt;
 
-    tt = get_time();
-    Mat<zz_pX> pmat;
-    random(pmat, m, n, d);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         Mat<zz_pX> pmat;
+         random(pmat, m, n, d);
+        )
 
-    tt = get_time();
-    deg(pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         deg(pmat);
+        )
 
-    tt = get_time();
-    std::vector<long> degs(pmat.NumRows());
-    row_degree(degs,pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         std::vector<long> degs(pmat.NumRows());
+         row_degree(degs,pmat);
+        )
 
-    tt = get_time();
-    degs.resize(pmat.NumCols());
-    column_degree(degs,pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         degs.resize(pmat.NumCols());
+         column_degree(degs,pmat);
+        )
 
-    tt = get_time();
-    Mat<long> deg_mat;
-    degree_matrix(deg_mat, pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         Mat<long> deg_mat;
+         degree_matrix(deg_mat, pmat);
+        )
 
-    tt = get_time();
-    Mat<zz_p> lead_mat;
-    leading_matrix(lead_mat, pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         Mat<zz_p> lead_mat;
+         leading_matrix(lead_mat, pmat);
+        )
 
-    tt = get_time();
-    std::vector<long> pivind(pmat.NumRows());
-    std::vector<long> pivdeg(pmat.NumRows());
-    pivot_index(pivind, pivdeg, pmat, std::vector<long>(), true);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         std::vector<long> pivind(pmat.NumRows());
+         std::vector<long> pivdeg(pmat.NumRows());
+         pivot_index(pivind, pivdeg, pmat, std::vector<long>(), true);
+        )
 
-    tt = get_time();
-    pivind.resize(pmat.NumCols());
-    pivdeg.resize(pmat.NumCols());
-    pivot_index(pivind, pivdeg, pmat, std::vector<long>(), false);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         pivind.resize(pmat.NumCols());
+         pivdeg.resize(pmat.NumCols());
+         pivot_index(pivind, pivdeg, pmat, std::vector<long>(), false);
+        )
 
-    tt = get_time();
-    is_reduced(pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         is_reduced(pmat);
+        )
 
-    tt = get_time();
-    is_weak_popov(pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         is_weak_popov(pmat);
+        )
 
-    tt = get_time();
-    is_popov(pmat);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         is_popov(pmat);
+        )
 
 //    std::vector<long> rs {0,2,1,3};
 //    std::vector<long> cs {4,2,0};
@@ -139,15 +137,18 @@ void run_bench(long m, long n, long d)
 //    RightShiftCol(pmat,pmat,1,2);
 //    cout << "col test mutator: " << pmat << endl;
 
-    tt = get_time();
-    trunc(pmat,5*d);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         trunc(pmat,10);
+        )
 
-    tt = get_time();
-    trunc(pmat,10);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         trunc(pmat,d/2);
+        )
+
+    TIME(
+         trunc(pmat,5*d);
+        )
+
 
     //cout << endl << "Test trunc row" << endl;
     //cout << "trunc: " << truncRow(pmat,0,2) << endl;
@@ -165,11 +166,19 @@ int main(int argc, char *argv[])
     std::cout << std::fixed;
     std::cout << std::setprecision(5);
 
+#ifdef SMALL_SUITE
+    std::vector<long> rdims = {5,40,200,1000,};
+    std::vector<long> cdims = {5,40,200,1000,};
+    std::vector<long> degs = {5,50,500,5000,50000,};
+    std::vector<long> nbits = {20,60};
+    std::vector<long> fftprimes = {786433,1139410705724735489,}; // 20, 60 bits
+#else
     std::vector<long> rdims = {5,10,20,40,70,100,150,200,400,1000,};
     std::vector<long> cdims = {5,10,20,40,70,100,150,200,400,1000,};
     std::vector<long> degs = {5,10,20,40,70,100,150,200,400,1000,2000,4000,8000,16000,};
     std::vector<long> nbits = {20,31,42,60};
     std::vector<long> fftprimes = {786433,2013265921,2748779069441,1139410705724735489,}; // 20, 31, 42, 60 bits
+#endif // SMALL_SUITE
 
     warmup();
 
@@ -179,7 +188,7 @@ int main(int argc, char *argv[])
         long p = NTL::GenPrime_long(nbits[b]);
         std::cout << " (normal prime p = " << p << ", fft prime p = " << fftprimes[b] << ")" << std::endl;
 
-        std::cout << "info\trdim\tcdim\tdeg\trand\tdeg\trdeg\tcdeg\tdegmat\tlmat\trpiv\tcpiv\tisred\tisweak\tispop\ttruncL\ttruncS\t" << std::endl;
+        std::cout << "info\trdim\tcdim\tdeg\trand\tdeg\trdeg\tcdeg\tdegmat\tlmat\trpiv\tcpiv\tisred\tisweak\tispop\ttruncS\ttruncM\ttruncL\t" << std::endl;
 
         for (size_t i = 0; i < rdims.size(); ++i)
             for (size_t j = 0; j < cdims.size(); ++j)

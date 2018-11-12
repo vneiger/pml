@@ -13,6 +13,8 @@
 
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_approximant.h"
+#include "sage_output.h"
 
 NTL_CLIENT
 
@@ -725,6 +727,16 @@ void print(const Vec<Coeffs> &c)
         cout << c[i] << endl;
 }
 
+void print(const zz_pX &p)
+{
+    for (long i = 0; i <= deg(p); i++)
+    {
+        cout << coeff(p,i) << "*y^" <<i;
+        if (i != deg(p)) cout << "+";
+        else cout << endl;
+    }
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -758,11 +770,13 @@ int main(int argc, char *argv[])
         while (deg(g)<n)
             random(g, n+1);
         MakeMonic(g);
-        //SetCoeff(g, n, 1);
 
         // evaluation point
         zz_pX a;
         random(a, n); // deg < n: assumes a reduced modulo g
+        
+        zz_pX h;
+        random(h, n);
 
         // parameters
         long m = pow(n,exponent);
@@ -779,11 +793,13 @@ int main(int argc, char *argv[])
         {
             std::cout << "--modulus g = " << g << std::endl;
             std::cout << "--point a = " << a << std::endl;
+            std::cout << "--point h = " << h << std::endl;
         }
         else
         {
             std::cout << "--modulus g = <degree " << n << " polynomial>" << std::endl;
             std::cout << "--point a = <degree " << n << " polynomial>" << std::endl;
+            std::cout << "--point h = <degree " << n << " polynomial>" << std::endl;
         }
         
         
@@ -831,58 +847,7 @@ int main(int argc, char *argv[])
         pow_a = a; // set back to its state before this #ifdef
         t1 = GetWallTime();
 #endif // SAFETY_CHECKS
-/*      // semi-naive computation, as in Neiger-Salvy-Villard 2018
-        // DO NOT ERASE, THANK YOU!
-        // compute the block-Wiedemann sequence (fast)
-        // Sequence stored as a list of constant matrices
-        Vec<Mat<zz_p>> seq;
-        seq.SetLength(2*d+1);
 
-        // first m coefficients of -g
-        zz_pX g_low;
-        trunc(g_low, g, m);
-        NTL::negate(g_low, g_low);
-
-        // last m coefficients of -g
-        Vec<zz_p> g_high; g_high.SetLength(m);
-        for (long j = 0; j < m; ++j)
-            g_high[j] = -g[j+n-m];
-
-        // pmat[2*d] = identity m x m
-        ident(seq[2*d], m);
-
-        for (long k = 2*d-1; k >= 0; --k)
-        {
-            seq[k].SetDims(m, m);
-            // first m coefficients of a^{2d-k} mod g
-            zz_pX f_low;
-            trunc(f_low, pow_a, m);
-            // last m coefficients of a^{2d-k} mod g
-            Vec<zz_p> f_high; f_high.SetLength(m);
-            for (long j = 0; j < std::min(m,m+deg(pow_a)-n+1); ++j)
-                f_high[j] = pow_a[n-m+j];
-
-            for (long i = 0; i < m; ++i)
-            {
-                // here f_low = first m coefficients of x^i a^{2d-k} mod g
-                VectorCopy(seq[k][i], f_low, m);  
-                // now we want to compute the new f_low: first m coefficients
-                // of x^{i+1} a^{2d-k} mod g
-                f_low <<= 1;
-                trunc(f_low, f_low, m);
-                zz_p lt = f_high[m-1];
-                f_low += lt * g_low;
-                // also update f_high
-                for (long j = m-1; j > 0; --j)
-                    f_high[j] = f_high[j-1] + lt * g_high[j];
-            }
-            MulMod(pow_a, pow_a, A, G); // a^{2d-(k+1)} mod g
-        }
-        t2 = GetWallTime();
-        cout << "seq:\n" << seq << endl;
-*/ 
-
-        // TEST ERIC'S ALGO
         Vec<Mat<zz_p>> seq;
         Vec<Coeffs> res;
         get_coeffs(seq,res,a,g,m);
@@ -935,53 +900,59 @@ int main(int argc, char *argv[])
         t2 = GetWallTime();
         std::cout << "TIME ~~ matrix fraction reconstruction: " << (t2-t1) << std::endl;
         t_charpoly += t2-t1;
-
-#ifdef SAFETY_CHECKS
+        
+        // find h(x) mod the balanced basis
         t1 = GetWallTime();
-        zz_pX det_pmbasis;
-        determinant_generic_knowing_degree(det_pmbasis, basis, n);
-        MakeMonic(det_pmbasis);
+        Mat<zz_pX> H_mat;
+        H_mat.SetDims(m,1);
+        H_mat[0][0] = h;
+        Mat<zz_pX> Q,hh;
+        quo_rem(Q,hh, H_mat, basis);
+        
+        Vec<zz_pX> H;
+        H.SetLength(d);
+        for (long k = 0; k < d; k++)
+        {
+            for (long i = 0; i < m; i++)
+                SetCoeff(H[k],i,coeff(hh[i][0],k));
+        }
+        
+        zz_pX modcomp{zz_p(0)};
+        //TODO: use the pre-computed powers
+        Vec<zz_pX> a_pows;
+        Vec<zz_pX> upper;
+        gen_pows(a_pows, upper, zz_pX{1}, a, 1, g, d, 0);
+        for (long i = 0; i < d; i++)
+        {
+            modcomp += H[i] * a_pows[i];
+        }
+        
+        modcomp %= g;
         t2 = GetWallTime();
-        std::cout << "TIME ~~ determinant for charpoly: " << (t2-t1) << std::endl;
-#endif // SAFETY_CHECKS
-
-        // find determinant by solving system with random right hand side
-        t1 = GetWallTime();
-        zz_pX det;
-        determinant_via_linsolve(det, basis);
-        MakeMonic(det);
-        t2 = GetWallTime();
+        std::cout << "TIME ~~ quo_rem and rest: " << (t2-t1) << std::endl;
         t_charpoly += t2-t1;
-
-        std::cout << "TIME ~~ determinant for charpoly: " << (t2-t1);
-#ifdef SAFETY_CHECKS
-        std::cout << (det == det_pmbasis ? " (det consistent)" : " (det not consistent)") << std::endl;;
-        correct = correct && (det == det_pmbasis);
-#endif // SAFETY_CHECKS
-        std::cout << std::endl;
-
-        t1 = GetWallTime();
-        zz_pX cp;
-        CharPolyMod(cp, a, g); // cp = charpoly of a mod g
-        t2 = GetWallTime();
-        std::cout << "TIME ~~ NTL's charpoly of a mod g: " << (t2-t1) << std::endl;
-
-        std::cout << "TIME ~~ charpoly of a mod g: " << t_charpoly << ((det == cp) ? " (correct)" : " (wrong)") << std::endl;
-
-#ifdef SAFETY_CHECKS
-        correct = correct && (det == cp);
-        if (not correct)
-            std::cout << "An issue was detected. Check messages above." << std::endl;
-#endif // SAFETY_CHECKS
+        {
+            zz_pXModulus g_mod;
+            build(g_mod,g);
+            zz_pX modcomp_ntl;
+            t1 = GetWallTime();
+            CompMod(modcomp_ntl, h, a, g_mod);
+            cout << "TIME ~~ NTL h(a) mod g: " << GetWallTime()-t1<< endl;
+            cout << "TIME ~~ h(a) mod g: " << t_charpoly;
+            if (modcomp_ntl == modcomp)
+                cout << " (correct)" << endl;
+            else
+                cout << " (wrong)" << endl;
+        }
     }
-
+    
     return 0;
 }
 
-// Local Variables:
-// mode: C++
-// tab-width: 4
-// indent-tabs-mode: nil
-// c-basic-offset: 4
-// End:
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
+
+
+
+
+
+
+

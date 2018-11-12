@@ -7,8 +7,6 @@
 #include <vector>
 #include <numeric> // for 'accumulate'
 
-#include "mat_lzz_pX_extra.h"
-
 NTL_CLIENT
 
 
