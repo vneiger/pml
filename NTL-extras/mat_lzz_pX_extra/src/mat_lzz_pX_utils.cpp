@@ -190,14 +190,16 @@ void transpose(Mat<zz_pX>& x, const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 /* matrix truncate                                            */
 /*------------------------------------------------------------*/
-void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n){
+void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n)
+{
     x.SetDims(a.NumRows(), a.NumCols()); // does nothing if x is a
     for (long r = 0; r < x.NumRows(); ++r)
         for (long c = 0; c < x.NumCols(); ++c)
             trunc(x[r][c], a[r][c], n);
 }
 
-void truncRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, long r, long n){
+void truncRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, long r, long n)
+{
     x.SetDims(a.NumRows(), a.NumCols()); // does nothing if x is a
     for (long c = 0; c < x.NumCols(); ++c)
         trunc(x[r][c], a[r][c], n);
