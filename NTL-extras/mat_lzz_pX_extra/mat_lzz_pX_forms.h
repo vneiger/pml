@@ -1,5 +1,5 @@
-#ifndef MAT_LZZ_PX_FORMS
-#define MAT_LZZ_PX_FORMS 
+#ifndef MAT_LZZ_PX_FORMS__H
+#define MAT_LZZ_PX_FORMS__H
 
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
