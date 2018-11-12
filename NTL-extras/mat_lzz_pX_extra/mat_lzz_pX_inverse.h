@@ -59,6 +59,24 @@ void high_order_lift_inverse_odd(
                                 );
 
 
+/**********************************************************************
+ *                             INVERSION                              *
+ **********************************************************************/
+
+// TODO evaluation-interpolation approach
+
+// TODO Jeannerod-Villard: worth implementing?
+
+// TODO Storjohann 2015 fast Las Vegas
+
+// TODO Zhou-Labahn-Storjohann 2014 fast deterministic
+
+// TODO high-order lifting is implemented; see if some other consequences of
+// high-order lifting may be worth implementing
+
+
+
+
 #endif /* end of include guard: MAT_LZZ_PX_INVERSE__H */
 
 // Local Variables:

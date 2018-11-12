@@ -136,42 +136,6 @@ void quo_rem(
 
 
 /**********************************************************************
- *                             INVERSION                              *
- **********************************************************************/
-
-// TODO evaluation-interpolation approach
-
-// TODO Jeannerod-Villard: worth implementing?
-
-// TODO Storjohann 2015 fast Las Vegas
-
-// TODO Zhou-Labahn-Storjohann 2014 fast deterministic
-
-// TODO high-order lifting is implemented; see if some other consequences of
-// high-order lifting may be worth implementing
-
-
-
-/**********************************************************************
- *                          BASIS REDUCTION                           *
- *            (shifted reduced form and shifted normal forms)         *
- **********************************************************************/
-
-// TODO general reduction to uniform shift via pre-multiplication
-// worthwile at least when shift close to uniform
-
-// TODO naive algorithms (see Mulders-Storjohann for good reference)
-
-// TODO general shifted Popov form via kernel (itself via approximant basis)
-
-// TODO understand if there is any chance Alekhnovich improves over the
-// kernel approach
-
-// TODO nonsingular: Giorgi-Jeannerod-Villard's Las Vegas reduction
-// (worth implementing for shifts other than uniform?)
-
-
-/**********************************************************************
  *                    TRIANGULARIZATION ALGORITHMS                    *
  **********************************************************************/
 

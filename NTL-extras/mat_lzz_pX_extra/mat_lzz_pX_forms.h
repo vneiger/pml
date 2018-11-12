@@ -8,6 +8,7 @@
 
 NTL_CLIENT
 
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* Tools for dealing with shifted reduced forms and shifted   */
@@ -232,6 +233,27 @@ bool is_polmatform(
                    const Shift & shift = Shift(),
                    const bool row_wise = true
                   );
+
+
+/**********************************************************************
+ *                          TODO: BASIS REDUCTION                     *
+ *            (shifted reduced form and shifted normal forms)         *
+ **********************************************************************/
+
+// TODO general reduction to uniform shift via pre-multiplication
+// worthwile at least when shift close to uniform
+
+// TODO naive algorithms (see Mulders-Storjohann for good reference)
+
+// TODO general shifted Popov form via kernel (itself via approximant basis)
+
+// TODO understand if there is any chance Alekhnovich improves over the
+// kernel approach
+
+// TODO nonsingular: Giorgi-Jeannerod-Villard's Las Vegas reduction
+// (worth implementing for shifts other than uniform?)
+
+
 
 #endif /* ifndef MAT_LZZ_PX_FORMS */
 
