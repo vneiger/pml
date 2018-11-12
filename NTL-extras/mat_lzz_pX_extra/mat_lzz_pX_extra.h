@@ -147,6 +147,11 @@ void quo_rem(
 
 // TODO Zhou-Labahn-Storjohann 2014 fast deterministic
 
+// TODO high-order lifting is implemented; see if some other consequences of
+// high-order lifting may be worth implementing
+
+
+
 /**********************************************************************
  *                          BASIS REDUCTION                           *
  *            (shifted reduced form and shifted normal forms)         *

@@ -20,9 +20,20 @@ NTL_CLIENT
 /* thresh=-1 is the default value, uses lookup table          */
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
-void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec, long thresh = -1);
+void solve_series_low_precision(
+                                Mat<zz_pX> &u,
+                                const Mat<zz_pX>& A,
+                                const Mat<zz_pX>& b,
+                                long prec,
+                                long thresh = -1
+                               );
 
-inline Mat<zz_pX> solve_series_low_precision(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec, long thresh = -1)
+inline Mat<zz_pX> solve_series_low_precision(
+                                             const Mat<zz_pX>& A,
+                                             const Mat<zz_pX>& b,
+                                             long prec,
+                                             long thresh = -1
+                                            )
 {
     Mat<zz_pX> u;
     solve_series_low_precision(u, A, b, prec, thresh);
@@ -34,9 +45,18 @@ inline Mat<zz_pX> solve_series_low_precision(const Mat<zz_pX>& A, const Mat<zz_p
 /* A square, A(0) invertible, deg(A), deg(b) < prec           */
 /* use when deg(A) << prec                                    */
 /*------------------------------------------------------------*/
-void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec);
+void solve_series_high_precision(
+                                 Mat<zz_pX> &u,
+                                 const Mat<zz_pX>& A,
+                                 const Mat<zz_pX>& b,
+                                 long prec
+                                );
 
-inline Mat<zz_pX> solve_series_high_precision(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
+inline Mat<zz_pX> solve_series_high_precision(
+                                              const Mat<zz_pX>& A,
+                                              const Mat<zz_pX>& b,
+                                              long prec
+                                             )
 {
     Mat<zz_pX> u;
     solve_series_high_precision(u, A, b, prec);
@@ -48,9 +68,18 @@ inline Mat<zz_pX> solve_series_high_precision(const Mat<zz_pX>& A, const Mat<zz_
 /* A must be square, A(0) invertible                          */
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
-void solve_series(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec);
+void solve_series(
+                  Mat<zz_pX> &u, 
+                  const Mat<zz_pX>& A, 
+                  const Mat<zz_pX>& b, 
+                  long prec
+                 );
 
-inline Mat<zz_pX> solve_series(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
+inline Mat<zz_pX> solve_series(
+                               const Mat<zz_pX>& A, 
+                               const Mat<zz_pX>& b, 
+                               long prec
+                              )
 {
     Mat<zz_pX> u;
     solve_series(u, A, b, prec);
@@ -62,9 +91,18 @@ inline Mat<zz_pX> solve_series(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long pr
 /* A must be square, A(0) invertible                          */
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
-void solve_series(Vec<zz_pX> &u, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long prec);
+void solve_series(
+                  Vec<zz_pX> &u,
+                  const Mat<zz_pX>& A,
+                  const Vec<zz_pX>& b,
+                  long prec
+                 );
 
-inline Vec<zz_pX> solve_series(const Mat<zz_pX>& A, const Vec<zz_pX>& b, long prec)
+inline Vec<zz_pX> solve_series(
+                               const Mat<zz_pX>& A,
+                               const Vec<zz_pX>& b,
+                               long prec
+                              )
 {
     Vec<zz_pX> u;
     solve_series(u, A, b, prec);
@@ -77,9 +115,18 @@ inline Vec<zz_pX> solve_series(const Mat<zz_pX>& A, const Vec<zz_pX>& b, long pr
 /* A must be square, A(0) invertible, deg(b) < deg(A)         */
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
-void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec);
+void solve_series_high_order_lifting(
+                                     Mat<zz_pX> &u, 
+                                     const Mat<zz_pX>& A, 
+                                     const Mat<zz_pX>& b, 
+                                     long prec
+                                    );
 
-inline Mat<zz_pX> solve_series_high_order_lifting(const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
+inline Mat<zz_pX> solve_series_high_order_lifting(
+                                                  const Mat<zz_pX>& A,
+                                                  const Mat<zz_pX>& b,
+                                                  long prec
+                                                 )
 {
     Mat<zz_pX> u;
     solve_series_high_order_lifting(u, A, b, prec);
@@ -96,8 +143,32 @@ inline Mat<zz_pX> solve_series_high_order_lifting(const Mat<zz_pX>& A, const Mat
 /* vector rational reconstruction (we use min(size, nb_max))  */
 /* nb_max = -1 means a look-up table value is used            */
 /*------------------------------------------------------------*/
-long linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long nb_max = -1);
+long linsolve_via_series(
+                         Vec<zz_pX> &u,
+                         zz_pX& den,
+                         const Mat<zz_pX>& A,
+                         const Vec<zz_pX>& b,
+                         long nb_max = -1
+                        );
 
-// TODO see which other consequences of high-order lifting may be worth implementing
+// solve aM = b via kernel basis
+// return a and denominator d
+// assumes M is invertible
+// TODO not well tested yet
+void linsolve_via_kernel(
+                         Vec<zz_pX> & a,
+                         zz_pX & d,
+                         const Mat<zz_pX> & pmat,
+                         const Vec<zz_pX> & b
+                        );
+
 
 #endif /* ifndef MAT_LZZ_PX_LINSOLVE__H */
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

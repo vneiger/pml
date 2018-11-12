@@ -40,11 +40,7 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
 void inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m);
 
 inline Mat<zz_pX> inv_trunc(const Mat<zz_pX>& a, long m)
-{
-    Mat<zz_pX> y;
-    inv_trunc(y, a, m);
-    return y;
-}
+{ Mat<zz_pX> y; inv_trunc(y, a, m); return y; }
 
 /*------------------------------------------------------------*/
 /* for i >= 0, define Si = coefficients of A^{-1} of degrees  */
@@ -54,9 +50,21 @@ inline Mat<zz_pX> inv_trunc(const Mat<zz_pX>& a, long m)
 /* note: deg(Si) < 2d-1                                       */
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
-void high_order_lift_inverse_odd(Mat<zz_pX> & next, const Mat<zz_pX>& src, 
+void high_order_lift_inverse_odd(
+                                 Mat<zz_pX> & next,
+                                 const Mat<zz_pX>& src, 
                                  std::unique_ptr<mat_lzz_pX_lmultiplier> & A, 
-                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & invA, long d);
+                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & invA,
+                                 long d
+                                );
 
 
 #endif /* end of include guard: MAT_LZZ_PX_INVERSE__H */
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

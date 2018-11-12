@@ -116,19 +116,6 @@ DegVec kernel_basis_zls_via_interpolation(
                                           const Shift & shift
                                          );
 
-// solve aM = b via kernel basis
-// return a and denominator d
-// assumes M is invertible
-// TODO: when code has stabilized, move up in linsolve section, and unify
-// name/signature with other linsolve functions
-void linsolve_via_kernel(
-                         Vec<zz_pX> & a,
-                         zz_pX & d,
-                         const Mat<zz_pX> & pmat,
-                         const Vec<zz_pX> & b
-                        );
-
-
 // TODO generic case
 
 // TODO general case via fast s-Popov appbas (fastest known approach for bad shifts)
