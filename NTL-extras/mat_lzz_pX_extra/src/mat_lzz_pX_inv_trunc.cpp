@@ -53,7 +53,7 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
         LogicError("Non square matrix for truncated inverse\n");
     }
 
-    cst_mat = constant_coefficient(a);
+    cst_mat = coeff(a, 0);
     inv0 = inv(cst_mat);
 
     x.SetDims(u, u);

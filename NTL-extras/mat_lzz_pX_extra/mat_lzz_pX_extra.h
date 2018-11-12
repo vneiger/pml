@@ -15,6 +15,8 @@
 #include "thresholds_newton_inv_trunc.h"
 #include "thresholds_solve_lift.h"
 
+#include "mat_lzz_pX_utils.h"
+
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
@@ -35,13 +37,7 @@ enum PolMatForm {
     ORD_WEAK_POPOV = 3,
     POPOV = 4,
 };
-
-/*------------------------------------------------------------*/
-/* Types for integer tuples: degrees and shifts               */
-/*------------------------------------------------------------*/
-
-typedef std::vector<long> Shift;
-typedef std::vector<long> DegVec;
+// TODO random matrix with given PolMatForm
 
 /*------------------------------------------------------------*/
 /* Amplitude of a shift: max(shift) - min(shift)              */
@@ -68,76 +64,10 @@ inline long amplitude(Shift shift)
 // remove those types to be more explicit?
 
 /*------------------------------------------------------------*/
-/* clears the matrix  (pmat = 0 with same dimensions)         */
-/*------------------------------------------------------------*/
-void clear(Mat<zz_pX> & pmat);
-
-/*------------------------------------------------------------*/
-/* tests whether m is zero (whatever its dims)                */
-/*------------------------------------------------------------*/
-long IsZero(const Mat<zz_pX> & m);
-long IsZero(const Vec<zz_pX> & m);
-
-/*------------------------------------------------------------*/
-/* set pmat to be the identity                                */
-/* (same size, assuming square / size dim)                    */
-/*------------------------------------------------------------*/
-void ident(Mat<zz_pX> & pmat, long dim);
-
-/*------------------------------------------------------------*/
-/* return the identity matrix of size dim                     */
-/*------------------------------------------------------------*/
-inline Mat<zz_pX> ident_mat_zz_pX(long dim)
-{
-    Mat<zz_pX> pmat;
-    ident(pmat, dim);
-    return pmat;
-}
-
-/*------------------------------------------------------------*/
-/* tests whether pmat is the identity matrix                  */
-/*------------------------------------------------------------*/
-long IsIdent(const Mat<zz_pX> & pmat);
-
-/*------------------------------------------------------------*/
-/* tests whether pmat is the identity matrix of size 'dim'    */
-/*------------------------------------------------------------*/
-long IsIdent(const Mat<zz_pX> & pmat, long dim);
-
-/*------------------------------------------------------------*/
-/* maximum degree of the entries of pmat                      */
-/*------------------------------------------------------------*/
-long deg(const Mat<zz_pX> & pmat);
-long deg(const Vec<zz_pX> & pvec); // TODO in its own file
-
-/*------------------------------------------------------------*/
 /* in-place reduction modulo the current prime                */
 /*------------------------------------------------------------*/
 void reduce_mod_p(Mat<zz_pX> & a);
 
-/*------------------------------------------------------------*/
-/* evaluate at a given point                                  */
-/*------------------------------------------------------------*/
-void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt);
-
-inline Mat<zz_p> eval(const Mat<zz_pX> & pmat, zz_p pt)
-{
-    Mat<zz_p> evmat;
-    eval(evmat, pmat, pt);
-    return evmat;
-}
-
-/*------------------------------------------------------------*/
-/* transpose                                                  */
-/*------------------------------------------------------------*/
-void transpose(Mat<zz_pX>& x, const Mat<zz_pX>& a);
-
-inline Mat<zz_pX> transpose(const Mat<zz_pX> & a)
-{ 
-    Mat<zz_pX> x; 
-    transpose(x, a); 
-    return x; 
-}
 
 /*------------------------------------------------------------*/
 /* horizontal join                                            */
@@ -185,140 +115,6 @@ inline Mat<zz_pX> collapse_nonconsecutive_columns(const Mat<zz_pX>& a, long d, l
     return c;
 }
 
-/*------------------------------------------------------------*/
-/* truncate mod X^..., for all the matrix / some columns/rows */
-/* output can alias input */
-/*------------------------------------------------------------*/
-// full matrix versions
-void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
-Mat<zz_pX> trunc(const Mat<zz_pX>& a, long n);
-
-// row versions
-void truncRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, long r, long n);
-Mat<zz_pX> truncRow(const Mat<zz_pX>& a, long r, long n);
-
-// col versions
-void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c, long n);
-Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n);
-
-/* TODO: different truncation orders on columns/rows          */
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/*                        SHIFT OPERATIONS                    */
-/* LeftShift by n means multiplication by X^n                 */
-/* RightShift by n means division by X^n                      */
-/* A negative shift reverses the direction of the shift.      */
-/* TODO                                                       */
-/* versions with different shifting orders on rows/columns    */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-// full matrix shift
-Mat<zz_pX> operator<< (const Mat<zz_pX> &a, long n);
-Mat<zz_pX> operator>> (const Mat<zz_pX> &a, long n);
-
-Mat<zz_pX>& operator<<=(Mat<zz_pX>& x, long n);
-Mat<zz_pX>& operator>>=(Mat<zz_pX>& x, long n);
-
-// full matrix left shifts
-void LeftShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
-Mat<zz_pX> LeftShift(const Mat<zz_pX>& a, long n);
-
-// single row left shifts
-void LeftShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n);
-Mat<zz_pX> LeftShiftRow(const Mat<zz_pX>& a, const long r, long n);
-
-// single col left shifts
-void LeftShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
-Mat<zz_pX> LeftShiftCol(const Mat<zz_pX>& a, const long c, long n);
-
-// full matrix right shifts
-void RightShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
-Mat<zz_pX> RightShift(const Mat<zz_pX>& a, long n);
-
-// single row left shifts
-void RightShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n);
-Mat<zz_pX> RightShiftRow(const Mat<zz_pX>& a, const long r, long n);
-
-// single col left shifts
-void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
-Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n);
-
-
-/*------------------------------------------------------------*/
-/* reverse operations                                         */
-/* x = reverse of a[0]..a[hi] (hi >= -1);                     */
-/* hi defaults to deg(a) in second version                    */
-/* TODO versions with different shifts on different cols/rows */
-/*------------------------------------------------------------*/
-void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a, long hi);
-
-void reverse(Mat<zz_pX> &x, 
-             const Mat<zz_pX> &a, 
-             const std::vector<long> &hi,
-             const bool row_wise = true);
-
-static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a, long hi)
-{
-    Mat<zz_pX> x;
-    reverse(x, a, hi);
-    return x;
-}
-
-static inline void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a)
-{
-    reverse(x, a, deg(a));
-}
-
-static inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
-{
-    Mat<zz_pX> x;
-    reverse(x, a);
-    return x;
-}
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* CREATE RANDOM MATRICES                                     */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* random matrix of length n, degree < d                      */
-/*------------------------------------------------------------*/
-void random(Vec<zz_pX> & pvec, long n, long d);
-inline Vec<zz_pX> random_vec_zz_pX(long n, long d)
-{
-    Vec<zz_pX> pvec;
-    random(pvec, n, d);
-    return pvec;
-}
-
-/*------------------------------------------------------------*/
-/* random (m, n) matrix of degree < d                         */
-/*------------------------------------------------------------*/
-void random(Mat<zz_pX> & pmat, long m, long n, long d);
-inline Mat<zz_pX> random_mat_zz_pX(long n, long m, long d)
-{
-    Mat<zz_pX> pmat;
-    random(pmat, n, m, d);
-    return pmat;
-}
-
-/*------------------------------------------------------------*/
-/* random (m, n) matrix of row degree < rdeg                  */
-/*------------------------------------------------------------*/
-void random_mat_zz_pX_rdeg(Mat<zz_pX> & pmat, long m, long n, DegVec rdeg);
-
-/*------------------------------------------------------------*/
-/* random (m, n) matrix of column degree < cdeg               */
-/*------------------------------------------------------------*/
-void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, DegVec cdeg);
-
-// TODO random matrix with given PolMatForm
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -645,106 +441,6 @@ inline Mat<zz_pX> operator-(const Mat<zz_pX> & a)
     neg(x, a); 
     return x;
 }
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* SETTING AND GETTING COEFFICIENTS                           */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* sets x = ith coefficient of a                              */
-/*------------------------------------------------------------*/
-void GetCoeff(Mat<zz_p>& x, const Mat<zz_pX>& a, long i);
-
-/*------------------------------------------------------------*/
-/* returns ith coefficient matrix of a                        */
-/*------------------------------------------------------------*/
-inline Mat<zz_p> coeff(const Mat<zz_pX>& a, long i)
-{
-    Mat<zz_p> x;
-    GetCoeff(x, a, i);
-    return x;
-}
-
-/*------------------------------------------------------------*/
-/* returns the matrix of leading coefficients                 */
-/*------------------------------------------------------------*/
-Mat<zz_p> matrix_of_leading_coefficients(const Mat<zz_pX>& a);
-
-/*------------------------------------------------------------*/
-/* returns constant coefficient matrix of a                   */
-/*------------------------------------------------------------*/
-inline Mat<zz_p> constant_coefficient(const Mat<zz_pX>& a)
-{
-    return coeff(a, 0);
-}
-
-/*------------------------------------------------------------*/
-/* sets ith coefficient of x to a                             */
-/*------------------------------------------------------------*/
-void SetCoeff(Mat<zz_pX>& x, long i, const Mat<zz_p> &a);
-
-/*------------------------------------------------------------*/
-/* convert from Mat<zz_p>                                     */
-/*------------------------------------------------------------*/
-void conv(Mat<zz_pX>& mat, const Mat<zz_p>& coeff);
-
-inline Mat<zz_pX> conv(const Mat<zz_p>& coeff)
-{
-    Mat<zz_pX> mat;
-    conv(mat, coeff);
-    return mat;
-}
-
-/*------------------------------------------------------------*/
-/* convert to / from Vec<Mat<zz_p>>                           */
-/* (degree deduced from input)                                */
-/*------------------------------------------------------------*/
-void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat);
-
-inline Vec<Mat<zz_p>> conv(const Mat<zz_pX>& mat)
-{
-    Vec<Mat<zz_p>> coeffs;
-    conv(coeffs, mat);
-    return coeffs;
-}
-
-void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs);
-
-inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs)
-{
-    Mat<zz_pX> mat;
-    conv(mat, coeffs);
-    return mat;
-}
-
-/*------------------------------------------------------------*/
-/* convert to / from Vec<Mat<zz_p>>                           */
-/* (user provided truncation order)                           */
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* coeffs will have length order independently of deg(mat)    */
-/*------------------------------------------------------------*/
-void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat, const long order);
-
-inline Vec<Mat<zz_p>> conv(const Mat<zz_pX>& mat, const long order)
-{
-    Vec<Mat<zz_p>> coeffs;
-    conv(coeffs, mat, order);
-    return coeffs;
-}
-
-void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs, const long order);
-
-inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs, const long order)
-{
-    Mat<zz_pX> mat;
-    conv(mat, coeffs, order);
-    return mat;
-}
-
 
 
 

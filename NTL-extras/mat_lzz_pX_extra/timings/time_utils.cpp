@@ -13,6 +13,7 @@
     tt = get_time()-tt; \
     cout << tt << "\t";
 
+#define SMALL_SUITE
 
 
 NTL_CLIENT
@@ -136,15 +137,18 @@ void run_bench(long m, long n, long d)
 //    RightShiftCol(pmat,pmat,1,2);
 //    cout << "col test mutator: " << pmat << endl;
 
-    tt = get_time();
-    trunc(pmat,5*d);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         trunc(pmat,10);
+        )
 
-    tt = get_time();
-    trunc(pmat,10);
-    tt = get_time()-tt;
-    cout << tt << "\t";
+    TIME(
+         trunc(pmat,d/2);
+        )
+
+    TIME(
+         trunc(pmat,5*d);
+        )
+
 
     //cout << endl << "Test trunc row" << endl;
     //cout << "trunc: " << truncRow(pmat,0,2) << endl;
@@ -162,11 +166,19 @@ int main(int argc, char *argv[])
     std::cout << std::fixed;
     std::cout << std::setprecision(5);
 
+#ifdef SMALL_SUITE
+    std::vector<long> rdims = {5,40,200,1000,};
+    std::vector<long> cdims = {5,40,200,1000,};
+    std::vector<long> degs = {5,50,500,5000,50000,};
+    std::vector<long> nbits = {20,60};
+    std::vector<long> fftprimes = {786433,1139410705724735489,}; // 20, 60 bits
+#else
     std::vector<long> rdims = {5,10,20,40,70,100,150,200,400,1000,};
     std::vector<long> cdims = {5,10,20,40,70,100,150,200,400,1000,};
     std::vector<long> degs = {5,10,20,40,70,100,150,200,400,1000,2000,4000,8000,16000,};
     std::vector<long> nbits = {20,31,42,60};
     std::vector<long> fftprimes = {786433,2013265921,2748779069441,1139410705724735489,}; // 20, 31, 42, 60 bits
+#endif // SMALL_SUITE
 
     warmup();
 
@@ -176,7 +188,7 @@ int main(int argc, char *argv[])
         long p = NTL::GenPrime_long(nbits[b]);
         std::cout << " (normal prime p = " << p << ", fft prime p = " << fftprimes[b] << ")" << std::endl;
 
-        std::cout << "info\trdim\tcdim\tdeg\trand\tdeg\trdeg\tcdeg\tdegmat\tlmat\trpiv\tcpiv\tisred\tisweak\tispop\ttruncL\ttruncS\t" << std::endl;
+        std::cout << "info\trdim\tcdim\tdeg\trand\tdeg\trdeg\tcdeg\tdegmat\tlmat\trpiv\tcpiv\tisred\tisweak\tispop\ttruncS\ttruncM\ttruncL\t" << std::endl;
 
         for (size_t i = 0; i < rdims.size(); ++i)
             for (size_t j = 0; j < cdims.size(); ++j)
