@@ -127,7 +127,7 @@ inline Mat<zz_pX> operator-(const Mat<zz_pX> & a)
 /*------------------------------------------------------------*/
 /* multiplication by a constant matrix                        */
 /*------------------------------------------------------------*/
-//
+
 // TODO: for mul with rhs constant
 // -- it seems more efficient to rather expand 'a' as single big constant
 // matrix 'cmat', and compute b*cmat, and retrieve back the entries in 'c'
