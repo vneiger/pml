@@ -61,7 +61,7 @@ void one_check(long sz, long d)
 
 
 /*------------------------------------------------------------*/
-/* for a give prime, checks some (size, degree)               */
+/* for a given prime, checks some (size, degree)               */
 /*------------------------------------------------------------*/
 void all_checks()
 {

@@ -92,6 +92,7 @@ inline Mat<zz_pX> & operator-=(Mat<zz_pX> & x, const Mat<zz_p>& b)
 /*------------------------------------------------------------*/
 /* vector subtraction                                         */
 /*------------------------------------------------------------*/
+// TODO in its own file for Vec<zz_pX>?
 void sub(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b);
 void sub(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_p> & b);
 void sub(Vec<zz_pX> & c, const Vec<zz_p> & a, const Vec<zz_pX> & b);
@@ -129,7 +130,7 @@ inline Mat<zz_pX> operator-(const Mat<zz_pX> & a)
 /*------------------------------------------------------------*/
 
 // TODO: for mul with rhs constant
-// -- it seems more efficient to rather expand 'a' as single big constant
+// -- it seems more efficient to rather expand 'a' as single or several constant
 // matrix 'cmat', and compute b*cmat, and retrieve back the entries in 'c'
 // -- this would require first computing cdeg(a); it may be given by the user
 // as an optional parameter since it is sometimes known from pivdeg and such
@@ -140,6 +141,11 @@ inline Mat<zz_pX> operator-(const Mat<zz_pX> & a)
 // matrix 'cmat', and compute b*cmat, and retrieve back the entries in 'c'
 // -- this would require first computing cdeg(a); it may be given by the user
 // as an optional parameter since it is sometimes known from pivdeg and such
+
+// TODO more generally, how to proceed should depend on the dimensions (not the
+// same thing if the non-constant mat is square and if it is a single vector).
+// Thresholds may be needed. Would rely on complete linearization as constant
+// matrices.
 
 
 // TODO mul/multiply? unify names
