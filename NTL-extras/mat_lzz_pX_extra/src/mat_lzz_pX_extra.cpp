@@ -107,60 +107,6 @@ void collapse_nonconsecutive_columns(Mat<zz_pX>& c, const Mat<zz_pX>& a, long d,
 
 
 /*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* polynomial multiplication                                  */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_pX & b)
-{
-    long n = a.length();
-    c.SetLength(n);
-    for (long i = 0; i < n; i++)
-    {
-        c[i] = a[i] * b;
-    }
-}
-
-void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_pX & b)
-{
-    long m = a.NumRows();
-    long n = a.NumCols();
-
-    c.SetDims(m, n);
-
-    for (long u = 0; u < m; u++)
-    {
-        for (long v = 0; v < n; v++)
-        {
-            c[u][v] = b * a[u][v];
-        }
-    }
-}
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* negate                                                     */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-void neg(Mat<zz_pX> & x, const Mat<zz_pX> & a)
-{
-    long m = a.NumRows();
-    long n = a.NumCols();
-
-    x.SetDims(m, n);
-
-    for (long u = 0; u < m; u++)
-    {
-        for (long v = 0; v < n; v++)
-        {
-            NTL::negate(x[u][v], a[u][v]);
-        }
-    }
-}
-
-
-
-/*------------------------------------------------------------*/
 /* multipoint evaluation for matrices                         */
 /*------------------------------------------------------------*/
 void matrix_evaluate(

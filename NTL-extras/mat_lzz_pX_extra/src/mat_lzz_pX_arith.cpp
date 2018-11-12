@@ -193,6 +193,25 @@ void sub(Vec<zz_pX> & c, const Vec<zz_p> & a, const Vec<zz_pX> & b)
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/* negate                                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+void neg(Mat<zz_pX> & x, const Mat<zz_pX> & a)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    x.SetDims(m, n);
+    for (long u = 0; u < m; ++u)
+        for (long v = 0; v < n; ++v)
+            NTL::negate(x[u][v], a[u][v]);
+}
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 /* multiplication by constant matrix                          */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -262,21 +281,13 @@ void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* scalar multiplication for a vector                         */
-/*------------------------------------------------------------*/
-
 void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_p & b)
 {
     long n = a.length();
     c.SetLength(n);
     for (long i = 0; i < n; ++i)
-        c[i] = a[i] * b;
+        mul(c[i], a[i], b);
 }
-
-/*------------------------------------------------------------*/
-/* scalar multiplication for a matrix                         */
-/*------------------------------------------------------------*/
 
 void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_p & b)
 {
@@ -286,7 +297,32 @@ void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_p & b)
     c.SetDims(m, n);
     for (long u = 0; u < m; ++u)
         for (long v = 0; v < n; ++v)
-            c[u][v] = b * a[u][v];
+            mul(c[u][v], a[u][v], b);
+}
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* polynomial multiplication                                  */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_pX & b)
+{
+    long n = a.length();
+    c.SetLength(n);
+    for (long i = 0; i < n; ++i)
+        mul(c[i], a[i], b);
+}
+
+void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_pX & b)
+{
+    long m = a.NumRows();
+    long n = a.NumCols();
+
+    c.SetDims(m, n);
+    for (long u = 0; u < m; ++u)
+        for (long v = 0; v < n; ++v)
+            mul(c[u][v], a[u][v], b);
 }
 
 

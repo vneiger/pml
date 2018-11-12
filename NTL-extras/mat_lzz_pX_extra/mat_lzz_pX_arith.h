@@ -113,6 +113,17 @@ inline Vec<zz_pX> & operator-=(Vec<zz_pX> & x, const Vec<zz_p>& b)
 
 
 /*------------------------------------------------------------*/
+/* negate                                                     */
+/*------------------------------------------------------------*/
+void neg(Mat<zz_pX> & x, const Mat<zz_pX> & a);
+
+inline Mat<zz_pX> operator-(const Mat<zz_pX> & a)
+{ Mat<zz_pX> x; neg(x, a); return x; }
+
+
+
+
+/*------------------------------------------------------------*/
 /* multiplication by a constant matrix                        */
 /*------------------------------------------------------------*/
 // TODO: for mul with rhs constant
@@ -171,54 +182,32 @@ inline Mat<zz_pX> operator*(const zz_p& a, const Mat<zz_pX>& b)
 { Mat<zz_pX> x; mul(x, a, b); return x; }
 
 /*------------------------------------------------------------*/
-/* polynomial multiplication                                  */
-/*------------------------------------------------------------*/
-void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_pX & b);
-
-inline void mul(Mat<zz_pX> & c, const zz_pX & a, const Mat<zz_pX> & b)
-{
-    mul(c, b, a);
-}
-
-inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const zz_pX& b)
-{ 
-    Mat<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
-
-inline Mat<zz_pX> operator*(const zz_pX& a, const Mat<zz_pX>& b)
-{ 
-    Mat<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
-
-/*------------------------------------------------------------*/
 /* polynomial multiplication for vectors                      */
 /*------------------------------------------------------------*/
 void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_pX & b);
 
 inline void mul(Vec<zz_pX> & c, const zz_pX & a, const Vec<zz_pX> & b)
-{
-    mul(c, b, a);
-}
+{ mul(c, b, a); }
 
 inline Vec<zz_pX> operator*(const Vec<zz_pX>& a, const zz_pX& b)
-{ 
-    Vec<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
+{ Vec<zz_pX> x; mul(x, a, b); return x; }
 
 inline Vec<zz_pX> operator*(const zz_pX& a, const Vec<zz_pX>& b)
-{ 
-    Vec<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
+{ Vec<zz_pX> x; mul(x, a, b); return x; }
 
+/*------------------------------------------------------------*/
+/* polynomial multiplication                                  */
+/*------------------------------------------------------------*/
+void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_pX & b);
 
+inline void mul(Mat<zz_pX> & c, const zz_pX & a, const Mat<zz_pX> & b)
+{ mul(c, b, a); }
+
+inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const zz_pX& b)
+{ Mat<zz_pX> x; mul(x, a, b); return x; }
+
+inline Mat<zz_pX> operator*(const zz_pX& a, const Mat<zz_pX>& b)
+{ Mat<zz_pX> x; mul(x, a, b); return x; }
 
 
 
@@ -227,18 +216,6 @@ inline Vec<zz_pX> operator*(const zz_pX& a, const Vec<zz_pX>& b)
 /* TODO                                                       */
 /* multiply row or column of matrix (vec_lzz_pX) by constant  */
 /*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* negate                                                     */
-/*------------------------------------------------------------*/
-void neg(Mat<zz_pX> & x, const Mat<zz_pX> & a);
-
-inline Mat<zz_pX> operator-(const Mat<zz_pX> & a)
-{
-    Mat<zz_pX> x; 
-    neg(x, a); 
-    return x;
-}
 
 #endif /* ifndef MAT_LZZ_PX_ARITH__H */
 
