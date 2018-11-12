@@ -57,12 +57,40 @@ void run_bench(long m, long n, long d)
     pmat2.kill();
 
     TIME(
+         IsZero(pmat);
+        )
+
+    TIME(
+         IsIdent(pmat);
+        )
+
+    TIME(
+         IsIdent(pmat, m);
+        )
+
+    TIME(
          long dd = deg(pmat);
         )
 
     dd += 1; // to avoid warning "unused variable"
 
-    pmat2 = pmat;
+    TIME(
+         Mat<zz_p> c1;
+         GetCoeff(c1, pmat, d/2);
+        )
+
+    TIME(
+         Mat<zz_p> c2;
+         c2 = coeff(pmat, d/2);
+        )
+
+    TIME(
+         SetCoeff(pmat, d/4, c1);
+        )
+
+    TIME(
+         transpose(pmat2, pmat);
+        )
 
     TIME(
          trunc(pmat2, pmat2,10);
@@ -100,6 +128,27 @@ void run_bench(long m, long n, long d)
 
     TIME(
          LeftShift(pmat2,pmat2,d-4);
+        )
+
+    TIME(
+         reverse(pmat2, pmat, d/2);
+        )
+
+    TIME(
+         reverse(pmat2, pmat);
+        )
+
+    TIME(
+         eval(c1, pmat, random_zz_p());
+        )
+
+    TIME(
+         Vec<Mat<zz_p>> coeffs;
+         conv(coeffs, pmat);
+        )
+
+    TIME(
+         conv(pmat2, coeffs);
         )
 
     TIME(
@@ -181,14 +230,14 @@ void run_bench(long m, long n, long d)
 
 
 
-int main(int argc, char *argv[])
+int main()
 {
     std::cout << std::fixed;
     std::cout << std::setprecision(5);
 
 #ifdef SMALL_SUITE
-    std::vector<long> rdims = {5,200,2000,};
-    std::vector<long> cdims = {5,200,2000,};
+    std::vector<long> rdims = {5,200,1000,};
+    std::vector<long> cdims = {5,200,1000,};
     std::vector<long> degs = {5,500,5000,};
     std::vector<long> nbits = {20,60};
     std::vector<long> fftprimes = {786433,1139410705724735489,}; // 20, 60 bits
@@ -208,8 +257,7 @@ int main(int argc, char *argv[])
         long p = NTL::GenPrime_long(nbits[b]);
         std::cout << " (normal prime p = " << p << ", fft prime p = " << fftprimes[b] << ")" << std::endl;
 
-        //std::cout << "info\trdim\tcdim\tdeg\trand\tdeg\trdeg\tcdeg\tdegmat\tlmat\trpiv\tcpiv\tisred\tisweak\tispop\ttruncS\ttruncM\ttruncL\t" << std::endl;
-        std::cout << "info\trdim\tcdim\tdeg\trand\tsetdim\tcopy\tident\tident2\tdeg\ttruncS\ttruncM\ttruncL\trshiftS\trshiftL\tlshiftS\tlshiftL\tclear\t" << std::endl;
+        std::cout << "info\trdim\tcdim\tdeg\trand\tsetdim\tcopy\tident\tident2\tisZero\tisId\tisIdm\tdeg\tGetCo\tcoeff\tSetCo\ttrsp\ttruncS\ttruncM\ttruncL\trshiftS\trshiftL\tlshiftS\tlshiftL\trevhi\trevdeg\teval\tconvto\tconvfr\tclear\t" << std::endl;
 
         for (size_t i = 0; i < rdims.size(); ++i)
             for (size_t j = 0; j < cdims.size(); ++j)
