@@ -8,7 +8,6 @@
 
 #include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
-#include "mat_lzz_pX_approximant.h"
 #include "lzz_pX_CRT.h"
 
 NTL_CLIENT

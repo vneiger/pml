@@ -13,8 +13,6 @@
 
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
-#include "mat_lzz_pX_utils.h"
-#include "mat_lzz_pX_approximant.h"
 
 NTL_CLIENT
 

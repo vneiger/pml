@@ -17,14 +17,6 @@
 
 #include "mat_lzz_pX_utils.h"
 
-NTL_CLIENT
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* UTILS                                                      */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
 /*------------------------------------------------------------*/
 /* Shifted reduced forms of polynomials matrices. Recall that */
 /* Popov => ordered weak Popov => weak Popov => Reduced       */
@@ -37,6 +29,114 @@ enum PolMatForm {
     ORD_WEAK_POPOV = 3,
     POPOV = 4,
 };
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* DEGREES, PIVOTS, LEADING MATRIX                            */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* Degree matrix: matrix of the degree of each entry          */
+/* Convention: deg(0) = -1, more generally the shifted degree */
+/* of a zero entry is min(shift)-1                            */
+/*------------------------------------------------------------*/
+void degree_matrix(
+                   Mat<long> &degmat,
+                   const Mat<zz_pX> &pmat,
+                   const Shift & shift = Shift(),
+                   const bool row_wise=true
+                  );
+
+inline Mat<long> degree_matrix(
+                               const Mat<zz_pX> &pmat,
+                               const Shift & shift = Shift(),
+                               const bool row_wise=true
+                              )
+{
+    Mat<long> degmat;
+    degree_matrix(degmat,pmat,shift,row_wise);
+    return degmat;
+}
+
+/*------------------------------------------------------------*/
+/* tuple (shifted deg row 1, shifted deg row 2, ...)          */
+/* where shifted deg row k is the maximum of the shifted      */
+/* degrees of the entries of row k                            */
+/*------------------------------------------------------------*/
+void row_degree(
+                DegVec & rdeg,
+                const Mat<zz_pX> &pmat,
+                const Shift & shift = Shift()
+               ); 
+
+/*------------------------------------------------------------*/
+/* similar function for column degrees (see row_degree)       */
+/*------------------------------------------------------------*/
+void column_degree(
+                   DegVec & cdeg,
+                   const Mat<zz_pX> &pmat,
+                   const Shift & shift = Shift()
+                  ); 
+
+/*------------------------------------------------------------*/
+/* similar function with row-wise option and returning degree */
+/*------------------------------------------------------------*/
+inline DegVec vector_degree(
+                            const Mat<zz_pX> &pmat,
+                            const Shift & shift = Shift(),
+                            const bool row_wise = true
+                           )
+{
+    DegVec degs;
+    if (row_wise)
+    {
+        degs.resize(pmat.NumRows());
+        row_degree(degs,pmat,shift);
+    }
+    else
+    {
+        degs.resize(pmat.NumCols());
+        column_degree(degs,pmat,shift);
+    }
+    return degs;
+}
+
+
+/*------------------------------------------------------------*/
+/* finds the pivot indices; returns the row/col degs          */
+/*------------------------------------------------------------*/
+void pivot_index(
+                 std::vector<long> & pivind,
+                 DegVec & pivdeg,
+                 const Mat<zz_pX> & pmat,
+                 const Shift & shift = Shift(),
+                 const bool row_wise = true
+                );
+
+/*------------------------------------------------------------*/
+/* leading matrix of pmat                                     */
+/*------------------------------------------------------------*/
+void leading_matrix(
+                    Mat<zz_p> &lmat,
+                    const Mat<zz_pX> &pmat,
+                    const Shift & shift = Shift(),
+                    const bool row_wise = true
+                   );
+
+#include "mat_lzz_pX_arith.h"
+#include "mat_lzz_pX_partial_linearization.h"
+#include "mat_lzz_pX_approximant.h"
+
+NTL_CLIENT
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* UTILS                                                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+
 // TODO random matrix with given PolMatForm
 
 /*------------------------------------------------------------*/
@@ -114,334 +214,6 @@ inline Mat<zz_pX> collapse_nonconsecutive_columns(const Mat<zz_pX>& a, long d, l
     collapse_nonconsecutive_columns(c, a, d, s);
     return c;
 }
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* BASIC ARITHMETIC                                           */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* addition                                                   */
-/*------------------------------------------------------------*/
-void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b);
-inline void add(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
-{
-    add(c, b, a);
-}
-
-inline Mat<zz_pX> operator+(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
-{ 
-    Mat<zz_pX> x; 
-    add(x, a, b); 
-    return x; 
-}
-
-inline Mat<zz_pX> operator+(const Mat<zz_pX>& a, const Mat<zz_p>& b)
-{ 
-    Mat<zz_pX> x; 
-    add(x, a, b); 
-    return x; 
-}
-
-inline Mat<zz_pX> operator+(const Mat<zz_p>& a, const Mat<zz_pX>& b)
-{ 
-    Mat<zz_pX> x; 
-    add(x, a, b); 
-    return x; 
-}
-
-inline Mat<zz_pX> & operator+=(Mat<zz_pX> & x, const Mat<zz_pX>& b)
-{
-    add(x, x, b); 
-    return x; 
-}
-
-inline Mat<zz_pX> & operator+=(Mat<zz_pX> & x, const Mat<zz_p>& b)
-{
-    add(x, x, b); 
-    return x; 
-}
-
-
-/*------------------------------------------------------------*/
-/* vector addition                                            */
-/*------------------------------------------------------------*/
-void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b);
-void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_p> & b);
-inline void add(Vec<zz_pX> & c, const Vec<zz_p> & a, const Vec<zz_pX> & b)
-{
-    add(c, b, a);
-}
-
-inline Vec<zz_pX> operator+(const Vec<zz_pX>& a, const Vec<zz_pX>& b)
-{ 
-    Vec<zz_pX> x; 
-    add(x, a, b); 
-    return x; 
-}
-
-inline Vec<zz_pX> operator+(const Vec<zz_pX>& a, const Vec<zz_p>& b)
-{ 
-    Vec<zz_pX> x; 
-    add(x, a, b); 
-    return x; 
-}
-
-inline Vec<zz_pX> operator+(const Vec<zz_p>& a, const Vec<zz_pX>& b)
-{ 
-    Vec<zz_pX> x; 
-    add(x, a, b); 
-    return x; 
-}
-
-inline Vec<zz_pX> & operator+=(Vec<zz_pX> & x, const Vec<zz_pX>& b)
-{
-    add(x, x, b); 
-    return x; 
-}
-
-inline Vec<zz_pX> & operator+=(Vec<zz_pX> & x, const Vec<zz_p>& b)
-{
-    add(x, x, b); 
-    return x; 
-}
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* subtraction                                                */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* matrix subtraction                                         */
-/*------------------------------------------------------------*/
-void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b);
-void sub(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b);
-
-inline Mat<zz_pX> operator-(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
-{ 
-    Mat<zz_pX> x; 
-    sub(x, a, b); 
-    return x; 
-}
-
-inline Mat<zz_pX> operator-(const Mat<zz_pX>& a, const Mat<zz_p>& b)
-{ 
-    Mat<zz_pX> x; 
-    sub(x, a, b); 
-    return x; 
-}
-
-inline Mat<zz_pX> operator-(const Mat<zz_p>& a, const Mat<zz_pX>& b)
-{ 
-    Mat<zz_pX> x; 
-    sub(x, a, b); 
-    return x; 
-}
-
-inline Mat<zz_pX> & operator-=(Mat<zz_pX> & x, const Mat<zz_pX>& b)
-{
-    sub(x, x, b); 
-    return x; 
-}
-
-inline Mat<zz_pX> & operator-=(Mat<zz_pX> & x, const Mat<zz_p>& b)
-{
-    sub(x, x, b); 
-    return x; 
-}
-
-
-/*------------------------------------------------------------*/
-/* vector subtraction                                         */
-/*------------------------------------------------------------*/
-void sub(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b);
-void sub(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_p> & b);
-void sub(Vec<zz_pX> & c, const Vec<zz_p> & a, const Vec<zz_pX> & b);
-
-inline Vec<zz_pX> operator-(const Vec<zz_pX>& a, const Vec<zz_pX>& b)
-{ 
-    Vec<zz_pX> x; 
-    sub(x, a, b); 
-    return x; 
-}
-
-inline Vec<zz_pX> operator-(const Vec<zz_pX>& a, const Vec<zz_p>& b)
-{ 
-    Vec<zz_pX> x; 
-    sub(x, a, b); 
-    return x; 
-}
-
-inline Vec<zz_pX> operator-(const Vec<zz_p>& a, const Vec<zz_pX>& b)
-{ 
-    Vec<zz_pX> x; 
-    sub(x, a, b); 
-    return x; 
-}
-
-inline Vec<zz_pX> & operator-=(Vec<zz_pX> & x, const Vec<zz_pX>& b)
-{
-    sub(x, x, b); 
-    return x; 
-}
-
-inline Vec<zz_pX> & operator-=(Vec<zz_pX> & x, const Vec<zz_p>& b)
-{
-    sub(x, x, b); 
-    return x; 
-}
-
-/*------------------------------------------------------------*/
-/* constant matrix multiplication                             */
-/*------------------------------------------------------------*/
-// TODO mul/multiply? unify names
-void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b);
-void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b);
-
-inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const Mat<zz_p>& b)
-{ 
-    Mat<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
-
-inline Mat<zz_pX> operator*(const Mat<zz_p>& a, const Mat<zz_pX>& b)
-{ 
-    Mat<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
-
-inline Mat<zz_pX> & operator*=(Mat<zz_pX> & x, const Mat<zz_p>& b)
-{
-    mul(x, x, b); 
-    return x; 
-}
-
-/*------------------------------------------------------------*/
-/* scalar multiplication for vectors                          */
-/*------------------------------------------------------------*/
-void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_p & b);
-
-inline void mul(Vec<zz_pX> & c, const zz_p & a, const Vec<zz_pX> & b)
-{
-    mul(c, b, a);
-}
-
-inline Vec<zz_pX> operator*(const Vec<zz_pX>& a, const zz_p& b)
-{ 
-    Vec<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
-
-inline Vec<zz_pX> operator*(const zz_p& a, const Vec<zz_pX>& b)
-{ 
-    Vec<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
-
-/*------------------------------------------------------------*/
-/* scalar multiplication                                      */
-/*------------------------------------------------------------*/
-void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_p & b);
-
-inline void mul(Mat<zz_pX> & c, const zz_p & a, const Mat<zz_pX> & b)
-{
-    mul(c, b, a);
-}
-
-inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const zz_p& b)
-{ 
-    Mat<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
-
-inline Mat<zz_pX> operator*(const zz_p& a, const Mat<zz_pX>& b)
-{ 
-    Mat<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
-
-/*------------------------------------------------------------*/
-/* polynomial multiplication                                  */
-/*------------------------------------------------------------*/
-void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_pX & b);
-
-inline void mul(Mat<zz_pX> & c, const zz_pX & a, const Mat<zz_pX> & b)
-{
-    mul(c, b, a);
-}
-
-inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const zz_pX& b)
-{ 
-    Mat<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
-
-inline Mat<zz_pX> operator*(const zz_pX& a, const Mat<zz_pX>& b)
-{ 
-    Mat<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
-
-/*------------------------------------------------------------*/
-/* polynomial multiplication for vectors                      */
-/*------------------------------------------------------------*/
-void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_pX & b);
-
-inline void mul(Vec<zz_pX> & c, const zz_pX & a, const Vec<zz_pX> & b)
-{
-    mul(c, b, a);
-}
-
-inline Vec<zz_pX> operator*(const Vec<zz_pX>& a, const zz_pX& b)
-{ 
-    Vec<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
-
-inline Vec<zz_pX> operator*(const zz_pX& a, const Vec<zz_pX>& b)
-{ 
-    Vec<zz_pX> x; 
-    mul(x, a, b); 
-    return x; 
-}
-
-
-
-
-
-
-/*------------------------------------------------------------*/
-/* TODO                                                       */
-/* multiply row or column of matrix (vec_lzz_pX) by constant  */
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* negate                                                     */
-/*------------------------------------------------------------*/
-void neg(Mat<zz_pX> & x, const Mat<zz_pX> & a);
-
-inline Mat<zz_pX> operator-(const Mat<zz_pX> & a)
-{
-    Mat<zz_pX> x; 
-    neg(x, a); 
-    return x;
-}
-
 
 
 /*------------------------------------------------------------*/
@@ -810,7 +582,7 @@ public:
     /*------------------------------------------------------------*/
     /* we use unique_ptrs; we don't expect to have to do copies   */
     /*------------------------------------------------------------*/
-    mat_lzz_pX_lmultiplier_3_primes& operator=(const mat_lzz_pX_lmultiplier_3_primes& orig)
+    mat_lzz_pX_lmultiplier_3_primes& operator=(const mat_lzz_pX_lmultiplier_3_primes&)
     {
         LogicError("no copy allowed");
         return *this;
@@ -849,99 +621,6 @@ void quo_rem(Mat<zz_pX> &Q,
              const Mat<zz_pX> &B);
 
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* DEGREES, PIVOTS, LEADING MATRIX                            */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* Degree matrix: matrix of the degree of each entry          */
-/* Convention: deg(0) = -1, more generally the shifted degree */
-/* of a zero entry is min(shift)-1                            */
-/*------------------------------------------------------------*/
-void degree_matrix(
-                   Mat<long> &degmat,
-                   const Mat<zz_pX> &pmat,
-                   const Shift & shift = Shift(),
-                   const bool row_wise=true
-                  );
-
-inline Mat<long> degree_matrix(
-                               const Mat<zz_pX> &pmat,
-                               const Shift & shift = Shift(),
-                               const bool row_wise=true
-                              )
-{
-    Mat<long> degmat;
-    degree_matrix(degmat,pmat,shift,row_wise);
-    return degmat;
-}
-
-/*------------------------------------------------------------*/
-/* tuple (shifted deg row 1, shifted deg row 2, ...)          */
-/* where shifted deg row k is the maximum of the shifted      */
-/* degrees of the entries of row k                            */
-/*------------------------------------------------------------*/
-void row_degree(
-                DegVec & rdeg,
-                const Mat<zz_pX> &pmat,
-                const Shift & shift = Shift()
-               ); 
-
-/*------------------------------------------------------------*/
-/* similar function for column degrees (see row_degree)       */
-/*------------------------------------------------------------*/
-void column_degree(
-                   DegVec & cdeg,
-                   const Mat<zz_pX> &pmat,
-                   const Shift & shift = Shift()
-                  ); 
-
-/*------------------------------------------------------------*/
-/* similar function with row-wise option and returning degree */
-/*------------------------------------------------------------*/
-inline DegVec vector_degree(
-                            const Mat<zz_pX> &pmat,
-                            const Shift & shift = Shift(),
-                            const bool row_wise = true
-                           )
-{
-    DegVec degs;
-    if (row_wise)
-    {
-        degs.resize(pmat.NumRows());
-        row_degree(degs,pmat,shift);
-    }
-    else
-    {
-        degs.resize(pmat.NumCols());
-        column_degree(degs,pmat,shift);
-    }
-    return degs;
-}
-
-
-/*------------------------------------------------------------*/
-/* finds the pivot indices; returns the row/col degs          */
-/*------------------------------------------------------------*/
-void pivot_index(
-                 std::vector<long> & pivind,
-                 DegVec & pivdeg,
-                 const Mat<zz_pX> & pmat,
-                 const Shift & shift = Shift(),
-                 const bool row_wise = true
-                );
-
-/*------------------------------------------------------------*/
-/* leading matrix of pmat                                     */
-/*------------------------------------------------------------*/
-void leading_matrix(
-                    Mat<zz_p> &lmat,
-                    const Mat<zz_pX> &pmat,
-                    const Shift & shift = Shift(),
-                    const bool row_wise = true
-                   );
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

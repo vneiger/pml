@@ -3,7 +3,6 @@
 #include <NTL/lzz_pX.h>
 
 #include "mat_lzz_pX_extra.h"
-#include "mat_lzz_pX_approximant.h"
 
 //#define GENERIC_DET_PROFILE
 

@@ -1,14 +1,4 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-#include <cmath>
-#include <algorithm> // for manipulating std::vector (min, max, ..)
-#include <numeric> // for std::iota
-#include <NTL/BasicThreadPool.h>
-
-#include "lzz_p_extra.h"
-#include "mat_lzz_pX_utils.h"
-#include "lzz_pX_CRT.h"
+#include "mat_lzz_pX_extra.h"
 
 NTL_CLIENT
 
@@ -221,117 +211,99 @@ void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c, long n)
 }
 
 /*------------------------------------------------------------*/
-/* shift                                                      */
+/* Left/Right shift of the whole matrix                       */
 /*------------------------------------------------------------*/
-
-Mat<zz_pX>& operator<<=(Mat<zz_pX> & x, long n)
-{
-    for (long r = 0; r < x.NumRows(); ++r)
-        for (long c = 0; c < x.NumCols(); ++c)
-            x[r][c] <<= n;
-    return x;
-}
-
-Mat<zz_pX>& operator>>=(Mat<zz_pX> & x, long n)
-{
-    for (long r = 0; r < x.NumRows(); ++r)
-        for (long c = 0; c < x.NumCols(); ++c)
-            x[r][c] >>= n;
-    return x;
-}
-
-Mat<zz_pX> operator<< (const Mat<zz_pX> & a, long n)
-{
-    Mat<zz_pX> res{a};
-    res <<= n;
-    return res;
-}
-
-Mat<zz_pX> operator>> (const Mat<zz_pX> &a, long n)
-{
-    Mat<zz_pX> res{a};
-    res >>= n;
-    return res;
-}
 
 void LeftShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n)
 {
-    x = a << n;
-}
-
-Mat<zz_pX> LeftShift(const Mat<zz_pX>& a, long n)
-{
-    return a << n;
+    x.SetDims(a.NumRows(), a.NumCols());
+    for (long i = 0; i < a.NumRows(); ++i)
+        for (long j = 0; j < a.NumCols(); ++j)
+            LeftShift(x[i][j], a[i][j], n);
 }
 
 void RightShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n)
 {
-    x = a >> n;
+    x.SetDims(a.NumRows(), a.NumCols());
+    for (long i = 0; i < a.NumRows(); ++i)
+        for (long j = 0; j < a.NumCols(); ++j)
+            RightShift(x[i][j], a[i][j], n);
 }
 
-Mat<zz_pX> RightShift(const Mat<zz_pX>& a, long n)
-{
-    return a >> n;
-}
+/*------------------------------------------------------------*/
+/* Left/Right shift of a row of the matrix                    */
+/*------------------------------------------------------------*/
 
 void LeftShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n)
 {
-    x = a;
-    for (long c = 0; c < x.NumCols(); c++)
-        x[r][c] <<= n;
-}
-
-Mat<zz_pX> LeftShiftRow(const Mat<zz_pX>& a, const long r, long n)
-{
-    auto x = a;
-    for (long c = 0; c < x.NumCols(); c++)
-        x[r][c] <<= n;
-    return x;
+    if (&x == &a)
+        for (long j = 0; j < x.NumCols(); ++j)
+            LeftShift(x[r][j], x[r][j], n);
+    else
+    {
+        x.SetDims(a.NumRows(), a.NumCols());
+        for (long i = 0; i < r; ++i)
+            x[i] = a[i];
+        for (long j = 0; j < x.NumCols(); ++j)
+            LeftShift(x[r][j], a[r][j], n);
+        for (long i = r+1; i < x.NumRows(); ++i)
+            x[i] = a[i];
+    }
 }
 
 void RightShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n)
 {
-    x = a;
-    for (long c = 0; c < x.NumCols(); c++)
-        x[r][c] >>= n;
-}
-
-Mat<zz_pX> RightShiftRow(const Mat<zz_pX>& a, const long r, long n)
-{
-    auto x = a;
-    for (long c = 0; c < x.NumCols(); c++)
-        x[r][c] >>= n;
-    return x;
+    if (&x == &a)
+        for (long j = 0; j < x.NumCols(); ++j)
+            RightShift(x[r][j], x[r][j], n);
+    else
+    {
+        x.SetDims(a.NumRows(), a.NumCols());
+        for (long i = 0; i < r; ++i)
+            x[i] = a[i];
+        for (long j = 0; j < x.NumCols(); ++j)
+            RightShift(x[r][j], a[r][j], n);
+        for (long i = r+1; i < x.NumRows(); ++i)
+            x[i] = a[i];
+    }
 }
 
 void LeftShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n)
 {
-    x = a;
-    for (long r = 0; r < x.NumRows(); r++)
-        x[r][c] <<= n;
-}
-
-Mat<zz_pX> LeftShiftCol(const Mat<zz_pX>& a, const long c, long n)
-{
-    auto x = a;
-    for (long r = 0; r < x.NumCols(); r++)
-        x[r][c] <<= n;
-    return x;
+    if (&x == &a)
+        for (long i = 0; i < x.NumRows(); ++i)
+            LeftShift(x[i][c], x[i][c], n);
+    else
+    {
+        x.SetDims(a.NumRows(), a.NumCols());
+        for (long i = 0; i < x.NumRows(); ++i)
+        {
+            for (long j = 0; j < c; ++j)
+                x[i][j] = a[i][j];
+            LeftShift(x[i][c], a[i][c], n);
+            for (long j = c+1; j < x.NumCols(); ++j)
+                x[i][j] = a[i][j];
+        }
+    }
 }
 
 void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n)
 {
-    x = a;
-    for (long r = 0; r < x.NumRows(); r++)
-        x[r][c] >>= n;
-}
-
-Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n)
-{
-    auto x = a;
-    for (long r = 0; r < x.NumCols(); r++)
-        x[r][c] >>= n;
-    return x;
+    if (&x == &a)
+        for (long i = 0; i < x.NumRows(); ++i)
+            RightShift(x[i][c], x[i][c], n);
+    else
+    {
+        x.SetDims(a.NumRows(), a.NumCols());
+        for (long i = 0; i < x.NumRows(); ++i)
+        {
+            for (long j = 0; j < c; ++j)
+                x[i][j] = a[i][j];
+            RightShift(x[i][c], a[i][c], n);
+            for (long j = c+1; j < x.NumCols(); ++j)
+                x[i][j] = a[i][j];
+        }
+    }
 }
 
 /*------------------------------------------------------------*/

@@ -3,7 +3,6 @@
 #include <NTL/lzz_pX.h>
 
 #include "mat_lzz_pX_extra.h"
-#include "mat_lzz_pX_approximant.h"
 
 void diagonal_of_hermite(Vec<zz_pX> & diag, const Mat<zz_pX> & pmat)
 {
