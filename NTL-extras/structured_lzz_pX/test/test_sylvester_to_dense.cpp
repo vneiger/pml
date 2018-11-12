@@ -3,6 +3,8 @@
 
 #include "vec_lzz_p_extra.h"
 #include "structured_lzz_p.h"
+#include "mat_lzz_pX_extra.h"
+#include "structured_lzz_pX.h"
 
 NTL_CLIENT
 
@@ -16,30 +18,30 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 2; i < 100; i += 3)
+    for (long i = 1; i < 100; i += 2)
     {
-        for (long j = 3; j < 100; j += 3)
+        for (long j = 2; j < 100; j += 2)
         {
-            zz_pX F, G;
-            do 
+            for (long d = 1; (d < 100) && (d*i*j < 20000); d++)
             {
+                Vec<zz_pX> F, G;
                 do
-                    F = random_zz_pX(i);
-                while (deg(F) < 1);
-                
+                    F = random_vec_zz_pX(i, d);
+                while (F[i - 1] == 0);
                 do
-                    G = random_zz_pX(j);
-                while (deg(G) < 1);
+                    G = random_vec_zz_pX(j, d);
+                while (G[j - 1] == 0);
+
+                sylvester_lzz_pX S(F, G);
+                Mat<zz_pX> M = S.to_dense();
+                if (p != 0 && p < (1L << 30) && d*(i+j) < 30)
+                {
+                    cout << "i=" << i << " j=" << j << " d=" << d << endl;
+                    cout << F << endl;
+                    cout << G << endl;
+                    cout << M << endl;
+                }
             }
-            while (deg(GCD(F, G)) != 0);
-
-            sylvester_lzz_p S(F, G);
-            toeplitz_like_minus_lzz_p iS;
-            long r = S.inv(iS);
-
-            assert(r == 1);
-            assert (IsIdent(S.to_dense() * iS.to_dense(), deg(F) + deg(G)));
-
         }
     }
 }

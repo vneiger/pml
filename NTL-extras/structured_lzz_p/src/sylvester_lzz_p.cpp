@@ -68,6 +68,9 @@ void sylvester_lzz_p::mul_right(Vec<zz_p>& out, const Vec<zz_p>& in) const
         out = out2;
         return;
     }
+
+    if (in.length() != n)
+        Error("Bad input length in sylvester_lzz_p mul right");
     
     zz_pX F, G, H;
     for (long i = deg(b) - 1; i >= 0; i--)
@@ -91,6 +94,9 @@ void sylvester_lzz_p::mul_right(Mat<zz_p>& out, const Mat<zz_p>& in) const
         out = out2;
         return;
     }
+
+    if (in.NumRows() != n)
+        Error("Bad dimensions in sylvester_lzz_p matrix mul right");
 
     Vec<zz_p> vec_in, vec_out;
     vec_in.SetLength(n);
@@ -119,8 +125,10 @@ void sylvester_lzz_p::mul_left(Vec<zz_p>& out, const Vec<zz_p>& in) const
         return;
     }
 
-    out.SetLength(n);
+    if (in.length() != n)
+        Error("Bad input length in sylvester_lzz_p mul right");
 
+    out.SetLength(n);
     zz_pX F, poly_in;
     poly_in.SetLength(n);
 
@@ -145,6 +153,9 @@ void sylvester_lzz_p::mul_left(Mat<zz_p>& out, const Mat<zz_p>& in) const
         out = out2;
         return;
     }
+
+    if (in.NumCols() != n)
+        Error("Bad dimensions in sylvester_lzz_p matrix mul left");
 
     Vec<zz_p> vec_in, vec_out;
     vec_in.SetLength(n);

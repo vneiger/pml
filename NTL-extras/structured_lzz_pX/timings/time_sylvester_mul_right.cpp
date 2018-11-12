@@ -1,8 +1,11 @@
 #include <NTL/vec_lzz_p.h>
 #include <assert.h>
 
+#include "util.h"
 #include "vec_lzz_p_extra.h"
 #include "structured_lzz_p.h"
+#include "mat_lzz_pX_extra.h"
+#include "structured_lzz_pX.h"
 
 NTL_CLIENT
 
@@ -16,31 +19,36 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 2; i < 100; i += 3)
+    for (long i = 20; i < 100; i += 10)
     {
-        for (long j = 3; j < 100; j += 3)
-        {
-            zz_pX F, G;
-            do 
-            {
-                do
-                    F = random_zz_pX(i);
-                while (deg(F) < 1);
-                
-                do
-                    G = random_zz_pX(j);
-                while (deg(G) < 1);
-            }
-            while (deg(GCD(F, G)) != 0);
+        long j = i;
+        long d = i;
 
-            sylvester_lzz_p S(F, G);
-            toeplitz_like_minus_lzz_p iS;
-            long r = S.inv(iS);
-
-            assert(r == 1);
-            assert (IsIdent(S.to_dense() * iS.to_dense(), deg(F) + deg(G)));
-
-        }
+        Vec<zz_pX> F, G;
+        do
+            F = random_vec_zz_pX(i, d);
+        while (F[i - 1] == 0);
+        do
+            G = random_vec_zz_pX(j, d);
+        while (G[j - 1] == 0);
+        
+        sylvester_lzz_pX S(F, G);
+        Mat<zz_pX> M = S.to_dense();
+        
+        double u1, u2;
+        
+        Mat<zz_pX> in, out, out2;
+        
+        in = random_mat_zz_pX(S.NumCols(), 2, d);
+        u1 = get_time();
+        out = S.mul_right(in);
+        u1 = get_time() - u1;
+        u2 = get_time();
+        out2 = M * in;
+        u2 = get_time() - u2;
+        assert (out == out2);
+        cout << i << " " << u1 << " " << u2;
+        cout << endl;
     }
 }
 

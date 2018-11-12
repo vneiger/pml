@@ -1100,7 +1100,9 @@ public:
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*                   SYLVESTER MATRICES                       */
-/* = (square) matrix of (F,G) \mapsto AF + BG                 */
+/* sylv(A,B)= (square) matrix of (F,G) \mapsto AF + BG        */
+/* with deg(F) < deg(B), deg(G) < deg(A)                      */
+/* using monomial bases in increasing degrees for rows / cols */
 /* particular case of mosaic toeplitz                         */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

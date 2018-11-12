@@ -317,6 +317,73 @@ inline Mat<zz_pX> toeplitz_lzz_pX_phi_minus(const Mat<zz_pX>& A)
 #endif
 
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*                   SYLVESTER MATRICES                       */
+/* sylv(A,B)= (square) matrix of (F,G) \mapsto AF + BG        */
+/* with deg(F) < deg(B), deg(G) < deg(A)                      */
+/* using monomial bases in increasing degrees for rows / cols */
+/* particular case of mosaic toeplitz                         */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+class sylvester_lzz_pX : public structured_lzz_pX
+{
+private:
+    long n; // number of rows / columns
+    long dAy, dBy; // Y-degrees of a, b (Y is the main variable)
+    long dAx, dBx; // X-degrees of a, b (X is the coefficient variable)
+    Vec<zz_pX> a, b, revA, revB;
+
+    // zz_pX a, b, revA, revB, invA, invB, invSerA, invSerB;
+    // zz_pXModulus modA, modB;
+    // zz_pXMultiplier multIA, multIB;
+    // long singular;
+public:
+    /*------------------------------------------------------------*/
+    /* sets dimensions to 0                                       */
+    /*------------------------------------------------------------*/
+    sylvester_lzz_pX();
+
+    /*------------------------------------------------------------*/
+    /* dimension = deg(A) + deg(B), A and B as above              */
+    /* assumes that the last entries of A and B are non-zero      */
+    /*------------------------------------------------------------*/
+    sylvester_lzz_pX(const Vec<zz_pX>& A, const Vec<zz_pX>& B);
+
+    /*------------------------------------------------------------*/
+    /* getters                                                    */
+    /*------------------------------------------------------------*/
+    long NumCols() const;
+    long NumRows() const;
+
+    /*------------------------------------------------------------*/
+    /* right multiplication                                       */
+    /*------------------------------------------------------------*/
+    using structured_lzz_pX::mul_right;
+    void mul_right(Vec<zz_pX>& out, const Vec<zz_pX>& in) const;
+    void mul_right(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* left multiplication                                        */
+    /*------------------------------------------------------------*/
+    using structured_lzz_pX::mul_left;
+    void mul_left(Vec<zz_pX>& out, const Vec<zz_pX>& in) const;
+    void mul_left(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
+
+    /*------------------------------------------------------------*/
+    /* G, H such that Z1 M - M Z0 = G H^t                         */
+    /*------------------------------------------------------------*/
+    void phi_plus_generators(Mat<zz_pX>& G, Mat<zz_pX>& H) const; 
+
+    /*------------------------------------------------------------*/
+    /* turns M into a dense matrix                                */
+    /*------------------------------------------------------------*/
+    using structured_lzz_pX::to_dense;
+    void to_dense(Mat<zz_pX>& Mdense) const;
+};
+
+
+
 // Local Variables:
 // mode: C++
 // tab-width: 4
