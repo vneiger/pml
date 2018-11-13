@@ -33,127 +33,6 @@ void run_bench(long m, long n, long d)
          random(pmat, m, n, d);
         )
 
-    TIME(
-         Mat<zz_pX> pmat2;
-         pmat2.SetDims(m,n);
-        )
-
-    TIME(
-         pmat2 = pmat;
-        )
-
-    pmat2.kill();
-
-    TIME(
-         ident(pmat2, m);
-        )
-
-    pmat2.kill();
-
-    TIME(
-         pmat2 = ident_mat_zz_pX(m);
-        )
-
-    pmat2.kill();
-
-    TIME(
-         IsZero(pmat);
-        )
-
-    TIME(
-         IsIdent(pmat);
-        )
-
-    TIME(
-         IsIdent(pmat, m);
-        )
-
-    TIME(
-         long dd = deg(pmat);
-        )
-
-    dd += 1; // to avoid warning "unused variable"
-
-    TIME(
-         Mat<zz_p> c1;
-         GetCoeff(c1, pmat, d/2);
-        )
-
-    TIME(
-         Mat<zz_p> c2;
-         c2 = coeff(pmat, d/2);
-        )
-
-    TIME(
-         SetCoeff(pmat, d/4, c1);
-        )
-
-    TIME(
-         transpose(pmat2, pmat);
-        )
-
-    TIME(
-         trunc(pmat2, pmat2,10);
-        )
-
-    pmat2 = pmat;
-
-    TIME(
-         trunc(pmat2,pmat2,d/2);
-        )
-
-    TIME(
-         trunc(pmat2,pmat2,5*d);
-        )
-
-    pmat2 = pmat;
-
-    TIME(
-         RightShift(pmat2,pmat2,2);
-        )
-
-    pmat2 = pmat;
-
-    TIME(
-         RightShift(pmat2,pmat2,d-3);
-        )
-
-    pmat2 = pmat;
-
-    TIME(
-         LeftShift(pmat2,pmat2,2);
-        )
-
-    pmat2 = pmat;
-
-    TIME(
-         LeftShift(pmat2,pmat2,d-4);
-        )
-
-    TIME(
-         reverse(pmat2, pmat, d/2);
-        )
-
-    TIME(
-         reverse(pmat2, pmat);
-        )
-
-    TIME(
-         eval(c1, pmat, random_zz_p());
-        )
-
-    TIME(
-         Vec<Mat<zz_p>> coeffs;
-         conv(coeffs, pmat);
-        )
-
-    TIME(
-         conv(pmat2, coeffs);
-        )
-
-    TIME(
-         clear(pmat);
-        )
 }
 
 
@@ -184,7 +63,7 @@ int main()
         long p = NTL::GenPrime_long(nbits[b]);
         std::cout << " (normal prime p = " << p << ", fft prime p = " << fftprimes[b] << ")" << std::endl;
 
-        std::cout << "info\trdim\tcdim\tdeg\trand\tsetdim\tcopy\tident\tident2\tisZero\tisId\tisIdm\tdeg\tGetCo\tcoeff\tSetCo\ttrsp\ttruncS\ttruncM\ttruncL\trshiftS\trshiftL\tlshiftS\tlshiftL\trevhi\trevdeg\teval\tconvto\tconvfr\tclear\t" << std::endl;
+        std::cout << "info\trdim\tcdim\tdeg\trand\t" << std::endl;
 
         for (size_t i = 0; i < rdims.size(); ++i)
             for (size_t j = 0; j < cdims.size(); ++j)

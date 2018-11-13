@@ -18,7 +18,7 @@
 
 NTL_CLIENT
 
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
+std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
     out << "[ ";
     for (auto &i: s)
@@ -883,8 +883,8 @@ int main(int argc, char *argv[])
 
         // reconstruct fraction
         Mat<zz_pX> appbas;
-        Shift shift(2*m, 0);
-        DegVec pivdeg = pmbasis(appbas, pmat, 2*d+1, shift);
+        VecLong shift(2*m, 0);
+        VecLong pivdeg = pmbasis(appbas, pmat, 2*d+1, shift);
 
         // retrieve balanced basis (leading principal mxm submatrix)
         // be careful if wish to use numerator: here we have "-numer" in top-right submatrix,

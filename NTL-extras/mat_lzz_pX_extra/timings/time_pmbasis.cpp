@@ -10,7 +10,7 @@
 #include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_approximant.h"
 
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
+std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
     out << "[ ";
     for (auto &i: s)
@@ -29,7 +29,7 @@ void one_bench_pmbasis(long sz, long deg, long nbits)
     long cdim = sz;
     long order = 2*deg;
 
-    std::vector<long> shift(rdim,0);
+    VecLong shift(rdim,0);
 
     if (nbits==0)
         zz_p::FFTInit(0);
@@ -44,7 +44,7 @@ void one_bench_pmbasis(long sz, long deg, long nbits)
     random(pmat, rdim, cdim, order);
     t2w = GetWallTime();
 
-    std::vector<long> pivdeg;
+    VecLong pivdeg;
 
     // GCD computation, for reference
     if (rdim==2 && cdim==1)
@@ -87,7 +87,7 @@ void one_bench_pmbasis(long sz, long deg, long nbits)
 /*------------------------------------------------------------*/
 void run_bench(long nbits)
 {
-    std::vector<long> szs =
+    VecLong szs =
     {
         1,1,1,1,1,1,1,1,1,1,1,1,
         2,2,2,2,2,2,2,2,2,2,2,2,
@@ -101,7 +101,7 @@ void run_bench(long nbits)
         512,512,512,
         1024,1024,
     };
-    std::vector<long> degs =
+    VecLong degs =
     {
         32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
         32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,

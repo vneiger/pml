@@ -68,12 +68,12 @@ void all_checks()
     std::cout << std::fixed;
     std::cout << std::setprecision(5);
 
-    std::vector<long> szs =
+    VecLong szs =
     {
         1, 2, 3, 5, 10, 20, 30, 40, 50, 70, 100
     };
 
-    std::vector<long> degs =
+    VecLong degs =
     {
         1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 250, 300, 400, 500, 750, 1000
     };

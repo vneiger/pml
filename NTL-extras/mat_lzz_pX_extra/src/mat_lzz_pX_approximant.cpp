@@ -28,11 +28,11 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 // TODO check shift and order length, pmat dims (positive), ...
-DegVec approximant_basis(
+VecLong approximant_basis(
                          Mat<zz_pX> & appbas,
                          const Mat<zz_pX> & pmat,
-                         const Order & order,
-                         const Shift & shift,
+                         const VecLong & order,
+                         const VecLong & shift,
                          const PolMatForm form,
                          const bool row_wise,
                          const bool generic
@@ -42,7 +42,7 @@ DegVec approximant_basis(
     std::cout << "==approximant_basis== NOT READY FOR USE YET" << std::endl;
     if (row_wise && not generic)
     {
-        DegVec pivdeg;
+        VecLong pivdeg;
         if (form<PolMatForm::POPOV)
             pivdeg = appbas_iterative(appbas,pmat,order,shift);
         else if (form==PolMatForm::POPOV)
@@ -63,8 +63,8 @@ DegVec approximant_basis(
 bool is_approximant_basis(
                           const Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
-                          const Order & order,
-                          const Shift & shift,
+                          const VecLong & order,
+                          const VecLong & shift,
                           const PolMatForm & form,
                           const bool randomized
                          )
@@ -115,7 +115,7 @@ bool is_approximant_basis(
     // test whether det(appbas) is a monomial (power of x):
     // det(appbas) = det(appbas(1)) * X^(deg(det(appbas)))
     // the degree of det(appbas) is known since appbas is reduced:
-    DegVec degs;
+    VecLong degs;
     row_degree(degs, appbas, shift);
     long sum_degs = std::accumulate(degs.begin(), degs.end(), (long)0);
     long sum_shift = std::accumulate(shift.begin(), shift.end(), (long)0);
@@ -149,11 +149,11 @@ bool is_approximant_basis(
 /*------------------------------------------------------------*/
 // TODO not optimized at all; is it ever faster than mbasis and others?
 // (maybe with highly non-uniform orders/shifts?)
-DegVec appbas_iterative(
+VecLong appbas_iterative(
                         Mat<zz_pX> & appbas,
                         const Mat<zz_pX> & pmat,
-                        const Order & order,
-                        const Shift & shift,
+                        const VecLong & order,
+                        const VecLong & shift,
                         bool order_wise
                        )
 {
@@ -172,15 +172,15 @@ DegVec appbas_iterative(
     Mat<zz_pX> residual(pmat);
 
     // order that remains to be dealt with
-    Order rem_order(order);
+    VecLong rem_order(order);
 
     // indices of columns/orders that remain to be dealt with
-    std::vector<long> rem_index(cdim);
+    VecLong rem_index(cdim);
     std::iota(rem_index.begin(), rem_index.end(), 0);
 
     // shifted row degrees of approximant basis
     // (initially, of the identity matrix, i.e. rdeg == shift)
-    DegVec rdeg(shift);
+    VecLong rdeg(shift);
 
     while (not rem_order.empty())
     {
@@ -204,7 +204,7 @@ DegVec appbas_iterative(
         // and among the nonzero ones, which is the first with smallest shift
         Vec<zz_p> const_residual;
         const_residual.SetLength(rdim);
-        std::vector<long> indices_nonzero;
+        VecLong indices_nonzero;
         long piv = -1;
         for (long i = 0; i < rdim; ++i)
         {
@@ -274,18 +274,18 @@ DegVec appbas_iterative(
 /*------------------------------------------------------------*/
 /* general case, output in Popov form                         */
 /*------------------------------------------------------------*/
-DegVec popov_appbas_iterative(
+VecLong popov_appbas_iterative(
                               Mat<zz_pX> & appbas,
                               const Mat<zz_pX> & pmat,
-                              const Order & order,
-                              const Shift & shift,
+                              const VecLong & order,
+                              const VecLong & shift,
                               bool order_wise
                              )
 {
     // FIXME: first call can be very slow if strange degrees (can it? find example)
     // --> rather implement BecLab00's "continuous" normalization?
-    DegVec pivdeg = appbas_iterative(appbas,pmat,order,shift,order_wise);
-    Shift new_shift(pivdeg);
+    VecLong pivdeg = appbas_iterative(appbas,pmat,order,shift,order_wise);
+    VecLong new_shift(pivdeg);
     std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
     appbas.kill();
     appbas_iterative(appbas,pmat,order,new_shift,order_wise);
@@ -307,10 +307,10 @@ DegVec popov_appbas_iterative(
 // (except the next one, popov_mbasis1, where the shift has roughly no
 // influence)
 
-DegVec popov_mbasis1(
+VecLong popov_mbasis1(
                      Mat<zz_p> & kerbas,
                      const Mat<zz_p> & pmat,
-                     const Shift & shift
+                     const VecLong & shift
                     )
 {
     long m = pmat.NumRows();
@@ -321,7 +321,7 @@ DegVec popov_mbasis1(
     double t_perm1,t_perm2,t_pivind,t_ker,t_now;
     t_now = GetWallTime();
 #endif
-    std::vector<long> perm_shift(m);
+    VecLong perm_shift(m);
     std::iota(perm_shift.begin(), perm_shift.end(), 0);
     stable_sort(perm_shift.begin(), perm_shift.end(),
                 [&](const long& a, const long& b)->bool
@@ -349,12 +349,12 @@ DegVec popov_mbasis1(
 #endif
     long k = p_kerbas.NumRows();
     if (k==0)
-        return DegVec(m,1);
+        return VecLong(m,1);
     if (k==m)
     {
         // kerbas should be the identity, same as p_kerbas
         kerbas.move(p_kerbas);
-        return DegVec(m,0);
+        return VecLong(m,0);
     }
 
     // compute the (permuted) pivot indices
@@ -364,7 +364,7 @@ DegVec popov_mbasis1(
 #ifdef MBASIS1_PROFILE
     t_now = GetWallTime();
 #endif
-    std::vector<long> p_pivind(k,m-1); // pivot indices in permuted kernel basis
+    VecLong p_pivind(k,m-1); // pivot indices in permuted kernel basis
     for (long i = 0; i<k; ++i)
         while (p_pivind[i]>=0 && p_kerbas[i][p_pivind[i]]==0)
             --p_pivind[i];
@@ -378,14 +378,14 @@ DegVec popov_mbasis1(
 #ifdef MBASIS1_PROFILE
     t_now = GetWallTime();
 #endif
-    std::vector<long> pivind(k);
+    VecLong pivind(k);
     for (long i = 0; i < k; ++i)
         pivind[i] = perm_shift[p_pivind[i]];
-    DegVec pivdeg(m,1);
+    VecLong pivdeg(m,1);
     for (long i = 0; i < k; ++i)
         pivdeg[pivind[i]] = 0;
 
-    std::vector<long> perm_rows_ker(k);
+    VecLong perm_rows_ker(k);
     std::iota(perm_rows_ker.begin(), perm_rows_ker.end(), 0);
     sort(perm_rows_ker.begin(), perm_rows_ker.end(),
          [&](const long& a, const long& b)->bool
@@ -415,11 +415,11 @@ DegVec popov_mbasis1(
 /*------------------------------------------------------------*/
 /* plain mbasis with polynomial matrices                      */
 /*------------------------------------------------------------*/
-DegVec mbasis_plain(
+VecLong mbasis_plain(
                      Mat<zz_pX> & appbas,
                      const Mat<zz_pX> & pmat,
                      const long order,
-                     const Shift & shift
+                     const VecLong & shift
                     )
 {
     // initially, appbas is the identity matrix
@@ -427,17 +427,17 @@ DegVec mbasis_plain(
 
     // holds the current shifted row degree of appbas
     // initially, this is exactly shift
-    DegVec rdeg(shift);
+    VecLong rdeg(shift);
 
     long deg_pmat = deg(pmat);
 
     // holds the current pivot degree of appbas
     // initially tuple of zeroes
     // (note that at all times pivdeg+shift = rdeg entrywise)
-    DegVec pivdeg(pmat.NumRows());
+    VecLong pivdeg(pmat.NumRows());
 
     // will store the pivot degree at each call of mbasis1
-    DegVec diff_pivdeg;
+    VecLong diff_pivdeg;
 
     // matrix to store the kernels in mbasis1 calls
     Mat<zz_p> kerbas;
@@ -540,11 +540,11 @@ DegVec mbasis_plain(
 /*------------------------------------------------------------*/
 
 // version with residual constant matrix computed at each iteration
-DegVec mbasis_rescomp(
+VecLong mbasis_rescomp(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
               const long order,
-              const Shift & shift
+              const VecLong & shift
              )
 {
 #ifdef MBASIS_PROFILE
@@ -561,15 +561,15 @@ DegVec mbasis_rescomp(
 
     // holds the current shifted row degree of coeffs_appbas
     // initially, this is exactly shift
-    DegVec rdeg(shift);
+    VecLong rdeg(shift);
 
     // holds the current pivot degree of coeffs_appbas
     // initially tuple of zeroes
     // (note that at all times pivdeg+shift = rdeg entrywise)
-    DegVec pivdeg(nrows);
+    VecLong pivdeg(nrows);
 
     // will store the pivot degree at each call of mbasis1
-    DegVec diff_pivdeg;
+    VecLong diff_pivdeg;
 
     // matrix to store the kernels in mbasis1 calls
     Mat<zz_p> kerbas;
@@ -722,11 +722,11 @@ DegVec mbasis_rescomp(
 }
 
 // version with residual constant matrix computed at each iteration
-DegVec mbasis_rescomp_v2(
+VecLong mbasis_rescomp_v2(
                          Mat<zz_pX> & appbas,
                          const Mat<zz_pX> & pmat,
                          const long order,
-                         const Shift & shift
+                         const VecLong & shift
                         )
 {
 #ifdef MBASIS_PROFILE
@@ -745,7 +745,7 @@ DegVec mbasis_rescomp_v2(
     long ncols = pmat.NumCols();
 
     // A.3 store iota since it will be used at each iteration
-    std::vector<long> iota(nrows);
+    VecLong iota(nrows);
     std::iota(iota.begin(), iota.end(), 0);
 
     // B. Input representation; initialize output
@@ -762,11 +762,11 @@ DegVec mbasis_rescomp_v2(
     // degree of approximant basis, initially zero
     long deg_appbas = 0;
     // shifted row degree of appbas, initially equal to shift
-    DegVec rdeg(shift);
+    VecLong rdeg(shift);
     // pivot degree of appbas, initially zero
     // (note that along this algorithm we have pivdeg+shift = rdeg, entrywise,
     // since we will compute appbas in ordered weak Popov form)
-    DegVec pivdeg(nrows);
+    VecLong pivdeg(nrows);
 
     // C. Residual matrix (nrows x ncols constant matrix, next coefficient
     // of appbas * pmat which we want to annihilate)
@@ -795,19 +795,19 @@ DegVec mbasis_rescomp_v2(
     // D.1 pivot indices in kernel basis (which is in row echelon form)
     // Note: length is probably overestimated (usually kernel has nrows-ncols rows),
     // but this avoids reallocating the right length at each iteration
-    std::vector<long> pivind(nrows-1);
+    VecLong pivind(nrows-1);
     // Vector indicating if a given column index appears in this pivot index
     // i.e. is_pivind[pivind[i]] = true and others are false
     std::vector<bool> is_pivind(nrows, false);
 
     // D.2 permutation for the rows of the constant kernel (NTL yields a matrix
     // in row echelon form up to row permutation)
-    std::vector<long> perm_rows_ker;
+    VecLong perm_rows_ker;
     // pivot indices of row echelon form before permutation
-    std::vector<long> p_pivind(nrows-1);
+    VecLong p_pivind(nrows-1);
 
     // D.3 permutation which stable-sorts the shift, used at the base case
-    std::vector<long> p_rdeg;
+    VecLong p_rdeg;
 
     // D.4 the constant kernel, and its permuted version
     Mat<zz_p> kerbas;
@@ -1057,11 +1057,11 @@ DegVec mbasis_rescomp_v2(
 }
 
 // version with full residual matrix continuously updated along the iterations
-DegVec mbasis_resupdate(
+VecLong mbasis_resupdate(
                         Mat<zz_pX> & appbas,
                         const Mat<zz_pX> & pmat,
                         const long order,
-                        const Shift & shift
+                        const VecLong & shift
                        )
 {
 #ifdef MBASIS_PROFILE
@@ -1078,15 +1078,15 @@ DegVec mbasis_resupdate(
 
     // holds the current shifted row degree of coeffs_appbas
     // initially, this is exactly shift
-    DegVec rdeg(shift);
+    VecLong rdeg(shift);
 
     // holds the current pivot degree of coeffs_appbas
     // initially tuple of zeroes
     // (note that at all times pivdeg+shift = rdeg entrywise)
-    DegVec pivdeg(nrows);
+    VecLong pivdeg(nrows);
 
     // will store the pivot degree at each call of mbasis1
-    DegVec diff_pivdeg;
+    VecLong diff_pivdeg;
 
     // matrix to store the kernels in mbasis1 calls
     Mat<zz_p> kerbas;
@@ -1216,11 +1216,11 @@ DegVec mbasis_resupdate(
 }
 
 // version with full residual matrix continuously updated along the iterations
-DegVec mbasis_resupdate_v2(
+VecLong mbasis_resupdate_v2(
                            Mat<zz_pX> & appbas,
                            const Mat<zz_pX> & pmat,
                            const long order,
-                           const Shift & shift
+                           const VecLong & shift
                           )
 {
 #ifdef MBASIS_PROFILE
@@ -1239,7 +1239,7 @@ DegVec mbasis_resupdate_v2(
     long ncols = pmat.NumCols();
 
     // A.3 store iota since it will be used at each iteration
-    std::vector<long> iota(nrows);
+    VecLong iota(nrows);
     std::iota(iota.begin(), iota.end(), 0);
 
     // B. Input representation; initialize output
@@ -1256,11 +1256,11 @@ DegVec mbasis_resupdate_v2(
     // degree of approximant basis, initially zero
     long deg_appbas = 0;
     // shifted row degree of appbas, initially equal to shift
-    DegVec rdeg(shift);
+    VecLong rdeg(shift);
     // pivot degree of appbas, initially zero
     // (note that along this algorithm we have pivdeg+shift = rdeg, entrywise,
     // since we will compute appbas in ordered weak Popov form)
-    DegVec pivdeg(nrows);
+    VecLong pivdeg(nrows);
 
     // C. Residual matrix (nrows x ncols constant matrix, next coefficient
     // of appbas * pmat which we want to annihilate)
@@ -1289,19 +1289,19 @@ DegVec mbasis_resupdate_v2(
     // D.1 pivot indices in kernel basis (which is in row echelon form)
     // Note: length is probably overestimated (usually kernel has nrows-ncols rows),
     // but this avoids reallocating the right length at each iteration
-    std::vector<long> pivind(nrows-1);
+    VecLong pivind(nrows-1);
     // Vector indicating if a given column index appears in this pivot index
     // i.e. is_pivind[pivind[i]] = true and others are false
     std::vector<bool> is_pivind(nrows, false);
 
     // D.2 permutation for the rows of the constant kernel (NTL yields a matrix
     // in row echelon form up to row permutation)
-    std::vector<long> perm_rows_ker;
+    VecLong perm_rows_ker;
     // pivot indices of row echelon form before permutation
-    std::vector<long> p_pivind(nrows-1);
+    VecLong p_pivind(nrows-1);
 
     // D.3 permutation which stable-sorts the shift, used at the base case
-    std::vector<long> p_rdeg;
+    VecLong p_rdeg;
 
     // D.4 the constant kernel, and its permuted version
     Mat<zz_p> kerbas;
@@ -1554,15 +1554,15 @@ DegVec mbasis_resupdate_v2(
 /*------------------------------------------------------------*/
 /* M-Basis returning Popov basis                              */
 /*------------------------------------------------------------*/
-DegVec popov_mbasis(
+VecLong popov_mbasis(
                     Mat<zz_pX> &appbas,
                     const Mat<zz_pX> & pmat,
                     const long order,
-                    const Shift & shift
+                    const VecLong & shift
                    )
 {
-    DegVec pivdeg = mbasis(appbas,pmat,order,shift);
-    Shift new_shift( pivdeg );
+    VecLong pivdeg = mbasis(appbas,pmat,order,shift);
+    VecLong new_shift( pivdeg );
     std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
     clear(appbas);
     mbasis(appbas,pmat,order,new_shift);
@@ -1576,11 +1576,11 @@ DegVec popov_mbasis(
 /*------------------------------------------------------------*/
 /* Divide and Conquer: PMBasis                                */
 /*------------------------------------------------------------*/
-DegVec pmbasis(
+VecLong pmbasis(
                Mat<zz_pX> & appbas,
                const Mat<zz_pX> & pmat,
                const long order,
-               const Shift & shift
+               const VecLong & shift
               )
 {
 #ifdef PMBASIS_PROFILE
@@ -1592,7 +1592,7 @@ DegVec pmbasis(
     if (order <= 16) // TODO thresholds to be determined
     {
         t1 = GetWallTime();
-        DegVec rdeg = mbasis(appbas,pmat,order,shift);
+        VecLong rdeg = mbasis(appbas,pmat,order,shift);
         t2 = GetWallTime();
         std::cout << "\tTime(base-case): " << (t2-t1) << "s" << std::endl;
         return rdeg;
@@ -1601,9 +1601,9 @@ DegVec pmbasis(
     if (order <= 16) // TODO thresholds to be determined
         return mbasis(appbas,pmat,order,shift);
 #endif
-    DegVec pivdeg; // pivot degree, first call
-    DegVec pivdeg2; // pivot degree, second call
-    DegVec rdeg(pmat.NumRows()); // shifted row degree
+    VecLong pivdeg; // pivot degree, first call
+    VecLong pivdeg2; // pivot degree, second call
+    VecLong rdeg(pmat.NumRows()); // shifted row degree
     long order1 = order>>1; // order of first call
     long order2 = order-order1; // order of second call
     Mat<zz_pX> trunc_pmat; // truncated pmat for first call
@@ -1657,15 +1657,15 @@ DegVec pmbasis(
 /*------------------------------------------------------------*/
 /* Divide and Conquer: PMBasis returning Popov                */
 /*------------------------------------------------------------*/
-DegVec popov_pmbasis(
+VecLong popov_pmbasis(
                      Mat<zz_pX> &appbas,
                      const Mat<zz_pX> & pmat,
                      const long order,
-                     const Shift & shift
+                     const VecLong & shift
                     )
 {
-    DegVec pivdeg = pmbasis(appbas,pmat,order,shift);
-    Shift new_shift( pivdeg );
+    VecLong pivdeg = pmbasis(appbas,pmat,order,shift);
+    VecLong new_shift( pivdeg );
     std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
     clear(appbas);
     pmbasis(appbas,pmat,order,new_shift);
@@ -1685,15 +1685,15 @@ DegVec popov_pmbasis(
 /*------------------------------------------------------------*/
 
 // TODO several columns
-DegVec mbasis_generic(
+VecLong mbasis_generic(
                       Mat<zz_pX> & appbas,
                       const Mat<zz_pX> & pmat,
                       const long order,
-                      const Shift & shift
+                      const VecLong & shift
                      )
 {
     // TODO just for avoiding the unused error
-    DegVec d = shift;
+    VecLong d = shift;
     // TODO current code specific to n=1 !!
     long nrows = pmat.NumRows();
     // partially linearize pmat into order/nrows constant matrices
@@ -1775,7 +1775,7 @@ DegVec mbasis_generic(
     // and convert to polynomial matrix format
     appbas = conv(coeffs_appbas);
 
-    DegVec dv (pmat.NumRows(), order/nrows);
+    VecLong dv (pmat.NumRows(), order/nrows);
     return dv;
 }
 
@@ -1784,11 +1784,11 @@ DegVec mbasis_generic(
 /*------------------------------------------------------------*/
 /* Divide and Conquer: PMBasis                                */
 /*------------------------------------------------------------*/
-DegVec pmbasis_generic(
+VecLong pmbasis_generic(
                        Mat<zz_pX> & appbas,
                        const Mat<zz_pX> & pmat,
                        const long order,
-                       const Shift & shift
+                       const VecLong & shift
                       )
 {
 #ifdef PMBASIS_PROFILE
@@ -1802,7 +1802,7 @@ DegVec pmbasis_generic(
     if (order <= 32)
     {
         t1 = GetWallTime();
-        DegVec rdeg = mbasis(appbas,pmat,order,shift);
+        VecLong rdeg = mbasis(appbas,pmat,order,shift);
         t2 = GetWallTime();
         std::cout << "\tTime(base-case): " << (t2-t1) << "s" << std::endl;
         return rdeg;
@@ -1820,9 +1820,9 @@ DegVec pmbasis_generic(
     }
 #endif
 
-    DegVec pivdeg; // pivot degree, first call
-    DegVec pivdeg2; // pivot degree, second call
-    DegVec rdeg(pmat.NumRows()); // shifted row degree
+    VecLong pivdeg; // pivot degree, first call
+    VecLong pivdeg2; // pivot degree, second call
+    VecLong rdeg(pmat.NumRows()); // shifted row degree
     long order1 = order>>1; // order of first call
     long order2 = order-order1; // order of second call
     Mat<zz_pX> trunc_pmat; // truncated pmat for first call

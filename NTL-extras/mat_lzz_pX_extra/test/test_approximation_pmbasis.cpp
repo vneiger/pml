@@ -20,7 +20,7 @@ NTL_CLIENT
  *  tests the approximant basis algorithms  *
  ********************************************/
 
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
+std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
     out << "[ ";
     for (auto &i: s)
@@ -46,27 +46,27 @@ int main(int argc, char *argv[])
         zz_p::init(NTL::GenPrime_long(nbits));
 
     // declare shifts
-    Shift shift1(rdim,0); // uniform [0,...,0]
-    Shift shift2(rdim); // increasing [0,1,2,..,rdim-1]
+    VecLong shift1(rdim,0); // uniform [0,...,0]
+    VecLong shift2(rdim); // increasing [0,1,2,..,rdim-1]
     std::iota(shift2.begin(), shift2.end(),0);
-    Shift shift3(rdim); // decreasing [rdim,..,3,2,1]
+    VecLong shift3(rdim); // decreasing [rdim,..,3,2,1]
     for (long i = 0; i < rdim; ++i)
         shift3[i] = rdim - i;
-    Shift shift4(rdim); // random shuffle of [0,1,...,rdim-1]
+    VecLong shift4(rdim); // random shuffle of [0,1,...,rdim-1]
     std::iota(shift4.begin(), shift4.end(),0);
     std::shuffle(shift4.begin(), shift4.end(), std::mt19937{std::random_device{}()});
-    Shift shift5(rdim); // Hermite shift
+    VecLong shift5(rdim); // Hermite shift
     for (long i = 0; i < rdim; ++i)
         shift5[i] = rdim*cdim*order*i;
-    Shift shift6(rdim); // reverse Hermite shift
+    VecLong shift6(rdim); // reverse Hermite shift
     for (long i = 0; i < rdim; ++i)
         shift6[i] = rdim*cdim*order*(rdim-1-i);
-    Shift shift7(rdim);
+    VecLong shift7(rdim);
     for (long i = 0; i < rdim; ++i)
         if (i>=rdim/2)
             shift7[i] = rdim*cdim*order;
 
-    std::vector<Shift> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7};
+    std::vector<VecLong> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7};
 
     std::cout << "Testing approximant basis computation (pmbasis) with random input matrix" << std::endl;
     std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
     t2w =  GetWallTime(); t2 = GetTime();
     //std::cout << "Time(random mat creation): " << (t2w-t1w) <<  "s,  " << (t2-t1) << "s\n";
 
-    DegVec pivdeg;
+    VecLong pivdeg;
 
     warmup();
 
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    for (Shift shift : shifts)
+    for (VecLong shift : shifts)
     {
         { // pmbasis
             std::cout << "~~~Testing pmbasis~~~" << std::endl;
@@ -129,12 +129,14 @@ int main(int argc, char *argv[])
             {
                 std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
                 t1w = GetWallTime(); t1 = GetTime();
-                bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
+                bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,false);
                 t2w = GetWallTime(); t2 = GetTime();
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 
                 if (std::max(rdim,cdim)<33) {
+                    std::cout << "Print shift..." << std::endl;
+                    std::cout << shift << std::endl;
                     Mat<long> degmat;
                     degree_matrix_rowshifted(degmat,appbas,shift);
                     std::cout << "Print degree matrix of approx basis..." << std::endl;
@@ -156,7 +158,7 @@ int main(int argc, char *argv[])
         //    {
         //        std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
         //        t1w = GetWallTime(); t1 = GetTime();
-        //        bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true,false);
+        //        bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,false);
         //        t2w = GetWallTime(); t2 = GetTime();
         //        std::cout << (verif?"correct":"wrong") << std::endl;
         //        std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
@@ -184,7 +186,7 @@ int main(int argc, char *argv[])
         //    {
         //        std::cout << "Verifying Popov approximant basis..." << std::endl;
         //        t1w = GetWallTime(); t1 = GetTime();
-        //        bool verif = is_approximant_basis(appbas,pmat,order,shift,POPOV,true,false);
+        //        bool verif = is_approximant_basis(appbas,pmat,order,shift,POPOV,false);
         //        t2w = GetWallTime(); t2 = GetTime();
         //        std::cout << (verif?"correct":"wrong") << std::endl;
         //        std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";

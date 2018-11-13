@@ -1,5 +1,4 @@
-#include "mat_lzz_pX_arith.h"
-#include "mat_lzz_pX_utils.h"
+#include "mat_lzz_pX_extra.h"
 
 NTL_CLIENT
 

@@ -82,7 +82,7 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
         long deg_ker = ceil( cdim1 * deg(pmat_l) / (double)(dim-cdim1) );
         long order = deg_pmat_l + deg_ker + 1;
 
-        Shift shift(dim,0);
+        VecLong shift(dim,0);
 #ifdef GENERIC_DET_PROFILE
         double t=GetWallTime();
 #endif // GENERIC_DET_PROFILE

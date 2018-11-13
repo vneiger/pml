@@ -38,7 +38,7 @@ void linsolve_via_kernel(
     augmented_pmat[m] = b;
 
     // compute shift to make sure kernel corresponds to solution
-    DegVec shift(m+1);
+    VecLong shift(m+1);
     // --> take strictly larger than row degree of augmented pmat
     // (requirement of kernel algo, TODO although it should not require strict)
     row_degree(shift, augmented_pmat);

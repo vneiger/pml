@@ -17,7 +17,7 @@ NTL_CLIENT
  *  tests the interpolant basis algorithms  *
  ********************************************/
 
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
+std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
     out << "[ ";
     for (auto &i: s)
@@ -41,9 +41,9 @@ int main(int argc, char *argv[])
     if (argc==6)
         verify = (atoi(argv[5])==1);
 
-    std::vector<long> shift(rdim,0);
-    //std::vector<long> shift {0,1,0,1};
-    //std::vector<long> shift {4,1,0,1};
+    VecLong shift(rdim,0);
+    //VecLong shift {0,1,0,1};
+    //VecLong shift {4,1,0,1};
     //std::iota(shift.begin(), shift.end(),0);
     //std::shuffle(shift.begin(), shift.end(), std::mt19937{std::random_device{}()});
 
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 
     // generic uniform shift pmbasis for interpolants
     {
-        std::vector<long> pivdeg;
+        VecLong pivdeg;
         std::cout << "~~~Testing pmbasis (generic, uniform shift)~~~" << std::endl;
         t1w = GetWallTime();
         Mat<zz_pX> intbas;
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
         {
             std::cout << "Verifying ordered weak Popov interpolant basis..." << std::endl;
             t1w = GetWallTime();
-            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,true,false);
+            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
             t2w = GetWallTime();
             std::cout << (verif?"correct":"wrong") << std::endl;
             std::cout << "Time(verification): " << (t2w-t1w) << std::endl;
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
             }
         }
     
-        std::vector<long> pivdeg;
+        VecLong pivdeg;
         std::cout << "~~~Testing pmbasis-geometric (generic, uniform shift)~~~" << std::endl;
         t1w = GetWallTime();
         Mat<zz_pX> intbas;
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
         {
             std::cout << "Verifying ordered weak Popov interpolant basis..." << std::endl;
             t1w = GetWallTime();
-            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,true,false);
+            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
             t2w = GetWallTime();
             std::cout << (verif?"correct":"wrong") << std::endl;
             std::cout << "Time(verification): " << (t2w-t1w) << std::endl;

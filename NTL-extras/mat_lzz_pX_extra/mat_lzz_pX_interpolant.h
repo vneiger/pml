@@ -3,7 +3,7 @@
 
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
-#include "mat_lzz_pX_forms.h" // for DegVec, Shift, PolMatForm
+#include "mat_lzz_pX_forms.h" // for VecLong, VecLong, PolMatForm
 
 NTL_CLIENT
 
@@ -29,11 +29,11 @@ typedef std::vector<std::vector<std::pair<zz_p,long>>> Points;
 /*------------------------------------------------------------*/
 
 // TODO
-DegVec interpolant_basis(
+VecLong interpolant_basis(
                          Mat<zz_pX> & intbas,
                          const Mat<zz_pX> & pmat,
                          const Points & pts,
-                         const Shift & shift = Shift(),
+                         const VecLong & shift = VecLong(),
                          const PolMatForm form = ORD_WEAK_POPOV,
                          const bool row_wise = true,
                          const bool generic = false
@@ -43,11 +43,11 @@ DegVec interpolant_basis(
 // below, the following is called "uniform interpolation case" (or case with uniform points)
 // this means that we have the same points on all columns, all with multiplicity one)
 // (FIXME could be easily generalized to any constant multiplicity for all...?)
-DegVec interpolant_basis(
+VecLong interpolant_basis(
                          Mat<zz_pX> & intbas,
                          const Mat<zz_pX> & pmat,
                          const Vec<zz_p> & pts,
-                         const Shift & shift = Shift(),
+                         const VecLong & shift = VecLong(),
                          const PolMatForm form = ORD_WEAK_POPOV,
                          const bool row_wise = true,
                          const bool generic = false
@@ -79,7 +79,7 @@ bool is_interpolant_basis(
                           const Mat<zz_pX> & intbas,
                           const Mat<zz_pX> & pmat,
                           const Points & pts,
-                          const Shift & shift,
+                          const VecLong & shift,
                           const PolMatForm & form = ORD_WEAK_POPOV,
                           const bool randomized = false
                          );
@@ -89,7 +89,7 @@ bool is_interpolant_basis(
                           const Mat<zz_pX> & intbas,
                           const Vec<Mat<zz_p>> & pmat, // vector of evaluations
                           const Vec<zz_p> & pts, // "uniform" case
-                          const Shift & shift,
+                          const VecLong & shift,
                           const PolMatForm & form = ORD_WEAK_POPOV,
                           const bool randomized = false
                          );
@@ -101,19 +101,19 @@ bool is_interpolant_basis(
 /*   - Van Barel-Bultheel 1991+1992                           */
 /*   - Beckermann-Labahn 2000 (ensuring s-Popov)              */
 /*------------------------------------------------------------*/
-DegVec intbas_iterative(
+VecLong intbas_iterative(
                         Mat<zz_pX> & intbas,
                         const Mat<zz_pX> & pmat,
                         const Points & pts,
-                        const Shift & shift,
+                        const VecLong & shift,
                         bool point_wise=true // TODO to be thought about
                        );
 
-DegVec popov_intbas_iterative(
+VecLong popov_intbas_iterative(
                               Mat<zz_pX> & intbas,
                               const Mat<zz_pX> & pmat,
                               const Points & pts,
-                              const Shift & shift,
+                              const VecLong & shift,
                               bool point_wise=true // TODO to be thought about
                              );
 
@@ -126,26 +126,26 @@ DegVec popov_intbas_iterative(
 // point)
 
 // TODO input pmat = polynomial matrix, not implemented yet
-DegVec mbasis(
+VecLong mbasis(
               Mat<zz_pX> & intbas,
               const Mat<zz_pX> & pmat,
               const Vec<zz_p> & pts,
-              const Shift & shift
+              const VecLong & shift
              );
 
 // input pmat = list of evaluations, implemented
-DegVec mbasis(
+VecLong mbasis(
               Mat<zz_pX> & intbas,
               const Vec<Mat<zz_p>> & evals,
               const Vec<zz_p> & pts,
-              const Shift & shift
+              const VecLong & shift
              );
 
-DegVec popov_mbasis(
+VecLong popov_mbasis(
                     Mat<zz_pX> &intbas,
                     const Mat<zz_pX> & pmat,
                     const Vec<zz_p> & pts,
-                    const Shift & shift
+                    const VecLong & shift
                    );
 
 /*------------------------------------------------------------*/
@@ -157,47 +157,47 @@ DegVec popov_mbasis(
 //   or compute in the polynomial world and evaluate to obtain the residuals
 // (in any case, there will still be interpolation/evaluation in the middle)
 // TODO input pmat = polynomial matrix, not implemented yet
-DegVec pmbasis(
+VecLong pmbasis(
                Mat<zz_pX> & intbas,
                const Mat<zz_pX> & pmat,
                const Vec<zz_p> & pts,
-               const Shift & shift
+               const VecLong & shift
               );
 
 // returns the points and matrix evaluations used       
-DegVec pmbasis_geometric(
+VecLong pmbasis_geometric(
                Mat<zz_pX> & intbas,
                const Mat<zz_pX> & pmat,
                const zz_p & r,
                const long order,
-               const Shift & shift,
+               const VecLong & shift,
                Vec<Mat<zz_p>> &evals,
                Vec<zz_p> &pts
               );
 
 // requires that pts contain powers of r
 // with entries of evals evaluated at pts
-DegVec pmbasis_geometric(
+VecLong pmbasis_geometric(
                          Mat<zz_pX> & intbas,
                          const Vec<Mat<zz_p>> & evals,
                          const Vec<zz_p> & pts,
                          const zz_p & r,
-                         const Shift & shift
+                         const VecLong & shift
                         );
 
 // input pmat = list of evaluations, implemented
-DegVec pmbasis(
+VecLong pmbasis(
               Mat<zz_pX> & intbas,
               const Vec<Mat<zz_p>> & evals,
               const Vec<zz_p> & pts,
-              const Shift & shift
+              const VecLong & shift
              );
 
-DegVec popov_pmbasis(
+VecLong popov_pmbasis(
                      Mat<zz_pX> &intbas,
                      const Mat<zz_pX> & pmat,
                      const Vec<zz_p> & pts,
-                     const Shift & shift
+                     const VecLong & shift
                     );
 
 #endif /* ifndef MAT_LZZ_PX_INTERPOLANT__H */
