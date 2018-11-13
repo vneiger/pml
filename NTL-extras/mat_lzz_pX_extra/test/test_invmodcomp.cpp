@@ -920,20 +920,7 @@ int main(int argc, char *argv[])
         Mat<zz_pX> appbas;
         Shift shift(2*m+1, 0);
         shift[0] = 2*d+1;
-        DegVec pivdeg = pmbasis(appbas, P, 2*d+1, shift);     
-
-        // retrieve balanced basis (leading principal mxm submatrix)
-        // be careful if wish to use numerator: here we have "-numer" in top-right submatrix,
-        // since we have put identity instead of -identity in pmat
-        Mat<zz_pX> basis;
-        basis.SetDims(m, m);
-
-        /*
-        for (long j = 0; j < m; ++j)
-            for (long i = 0; i < m; ++i)
-                basis[j][i] = appbas[i][j];
-        // note: we have transposed back to column-wise basis
-        */
+        DegVec pivdeg = pmbasis(appbas, P, 2*d+1, shift);
 
         t2 = GetWallTime();
         std::cout << "TIME ~~ matrix fraction reconstruction: " << (t2-t1) << std::endl;
@@ -948,13 +935,24 @@ int main(int argc, char *argv[])
         for (long i = 0; i < m; i++)
             for (long j = 0; j < m-1; j++)
                 sysmat[i+1][j] = appbas[i+1][j+2];
+                
+        cout << "sysmat: " << degree_matrix(sysmat) << endl;
         
-        Mat<zz_pX> kerbas;
+        Mat<zz_pX> kerbas1;
         shift = Shift(m+1, d);
         shift[0] += m*d;
-        kernel_basis_zls_via_interpolation(kerbas, sysmat, shift);
+        kernel_basis_zls_via_interpolation(kerbas1, sysmat, shift);
+        cout << "shift: " << shift << endl;
+        cout << "kerbas: " << degree_matrix(kerbas1) << endl;
         Mat<zz_pX> test_temp;
-        multiply(test_temp, kerbas,sysmat);
+        multiply(test_temp, kerbas1,sysmat);
+        cout << "test_temp: " << degree_matrix(test_temp) << endl;
+        
+        Mat<zz_pX> kerbas;
+        shift = Shift(m+1, 0);
+        shift[0] += m*d;
+        pmbasis(kerbas, sysmat, m*d, shift);
+        cout << "kernel: " << degree_matrix(kerbas) << endl;
         
         zz_pX h = appbas[0][1];
         for (long i = 0; i < m; i++)
