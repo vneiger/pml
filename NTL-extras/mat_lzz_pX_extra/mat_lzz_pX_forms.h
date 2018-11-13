@@ -45,28 +45,6 @@ enum PolMatForm {
 
 // TODO random matrix with given PolMatForm
 
-/*------------------------------------------------------------*/
-/* check that the shift has the right dimension;              */
-/* return true iff a non-empty shift was given as input       */
-/*------------------------------------------------------------*/
-inline bool check_shift(
-                        const Shift & shift,
-                        const Mat<zz_pX> & pmat,
-                        const bool row_wise = true
-                       )
-{
-    if (!shift.empty()) 
-    {
-        if (row_wise && (long)shift.size() != pmat.NumCols())
-            throw std::invalid_argument("==check_shift== Provided shift does not have the right dimension (working row-wise)");
-        if (!row_wise && (long)shift.size() != pmat.NumRows())
-            throw std::invalid_argument("==check_shift== Provided shift does not have the right dimension (working column-wise)");
-        return true;
-    }
-    else
-        return false;
-}
-
 
 /*------------------------------------------------------------*/
 /* Amplitude of a shift: max(shift) - min(shift)              */
