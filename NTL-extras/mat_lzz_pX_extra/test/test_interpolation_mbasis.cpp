@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
         if (verify)
         {
             std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
-            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,true,false);
+            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
             std::cout << (verif?"correct":"wrong") << std::endl;
             std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 

@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
         {
             std::cout << "Verifying ordered weak Popov interpolant basis..." << std::endl;
             t1w = GetWallTime();
-            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,true,false);
+            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
             t2w = GetWallTime();
             std::cout << (verif?"correct":"wrong") << std::endl;
             std::cout << "Time(verification): " << (t2w-t1w) << std::endl;
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
         {
             std::cout << "Verifying ordered weak Popov interpolant basis..." << std::endl;
             t1w = GetWallTime();
-            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,true,false);
+            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
             t2w = GetWallTime();
             std::cout << (verif?"correct":"wrong") << std::endl;
             std::cout << "Time(verification): " << (t2w-t1w) << std::endl;

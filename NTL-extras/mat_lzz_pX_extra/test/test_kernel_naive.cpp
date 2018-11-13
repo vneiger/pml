@@ -64,7 +64,7 @@ void check(long m, long n, long d){
         cout << "time (kernel_naive): " << t2w-t1w << endl;
 
         t1w = GetWallTime();
-        bool correct = is_kernel_basis(kerbas, pmat, shift, ORD_WEAK_POPOV, true, false);
+        bool correct = is_kernel_basis(kerbas, pmat, shift, ORD_WEAK_POPOV, false);
         t2w = GetWallTime();
         std::cout << "Verification: " << (correct ? "correct" : "wrong") << ", time " << (t2w-t1w) << std::endl << std::endl;
     }

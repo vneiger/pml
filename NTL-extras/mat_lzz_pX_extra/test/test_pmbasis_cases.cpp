@@ -62,7 +62,7 @@ void intbas_test(const long rdim, const long cdim, const long deg,
     {
         std::cout << "Verifying ordered weak Popov interpolant basis..." << std::endl;
         t1w = GetWallTime();
-        bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,true,false);
+        bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
         t2w = GetWallTime();
         std::cout << (verif?"correct":"wrong") << std::endl;
         std::cout << "Time(verification): " << (t2w-t1w) << std::endl;
@@ -103,15 +103,10 @@ int main(){
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

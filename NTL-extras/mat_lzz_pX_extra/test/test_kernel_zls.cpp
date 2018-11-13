@@ -68,7 +68,7 @@ void check(long m, long n, long d){
         cout << "time (kernel-zls-approx): " << t2w-t1w << endl;
 
         t1w = GetWallTime();
-        bool correct = is_kernel_basis(kerbas, pmat, shift, ORD_WEAK_POPOV, true, false);
+        bool correct = is_kernel_basis(kerbas, pmat, shift, ORD_WEAK_POPOV, false);
         t2w = GetWallTime();
         cout << "Dims: " << kerbas.NumRows() << ", " << kerbas.NumCols() << endl;
         std::cout << "Verification: " << (correct ? "correct" : "wrong") << ", time " << (t2w-t1w) << std::endl;
@@ -85,7 +85,7 @@ void check(long m, long n, long d){
     //cout << "time (intbas): " << t2w-t1w << endl;
 
     //t1w = GetWallTime();
-    //correct = is_kernel_basis(kerbas, pmat, s, ORD_WEAK_POPOV, true, false);
+    //correct = is_kernel_basis(kerbas, pmat, s, ORD_WEAK_POPOV, false);
     //t2w = GetWallTime();
     //cout << "Dims: " << kerbas.NumRows() << ", " << kerbas.NumCols() << endl;
     //std::cout << "Verification: " << (correct ? "correct" : "wrong") << ", time " << (t2w-t1w) << std::endl;
