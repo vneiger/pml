@@ -79,9 +79,8 @@ bool is_interpolant_basis(
                           const Mat<zz_pX> & intbas,
                           const Mat<zz_pX> & pmat,
                           const Points & pts,
-                          const Shift & shift = Shift(),
+                          const Shift & shift,
                           const PolMatForm & form = ORD_WEAK_POPOV,
-                          const bool row_wise = true,
                           const bool randomized = false
                          );
 
@@ -90,9 +89,8 @@ bool is_interpolant_basis(
                           const Mat<zz_pX> & intbas,
                           const Vec<Mat<zz_p>> & pmat, // vector of evaluations
                           const Vec<zz_p> & pts, // "uniform" case
-                          const Shift & shift = Shift(),
+                          const Shift & shift,
                           const PolMatForm & form = ORD_WEAK_POPOV,
-                          const bool row_wise = true,
                           const bool randomized = false
                          );
 

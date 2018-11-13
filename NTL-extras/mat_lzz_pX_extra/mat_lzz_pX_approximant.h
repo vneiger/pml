@@ -115,9 +115,8 @@ bool is_approximant_basis(
                           const Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
                           const Order & order,
-                          const Shift & shift = Shift(),
+                          const Shift & shift,
                           const PolMatForm & form = ORD_WEAK_POPOV,
-                          const bool row_wise = true,
                           const bool randomized = false
                          );
 
@@ -125,14 +124,13 @@ inline bool is_approximant_basis(
                           const Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
                           const long order,
-                          const Shift & shift = Shift(),
+                          const Shift & shift,
                           const PolMatForm & form = ORD_WEAK_POPOV,
-                          const bool row_wise = true,
                           const bool randomized = false
                          )
 {
     Order orders(pmat.NumCols(),order);
-    return is_approximant_basis(appbas,pmat,orders,shift,form,row_wise,randomized);
+    return is_approximant_basis(appbas,pmat,orders,shift,form,randomized);
 }
 
 

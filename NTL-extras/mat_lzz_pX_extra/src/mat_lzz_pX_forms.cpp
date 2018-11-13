@@ -1,16 +1,304 @@
 #include "mat_lzz_pX_forms.h"
+#include "lzz_pX_extra.h" // for "is_monic(a)"
 
 NTL_CLIENT
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* (SHIFTED) ROW/COLUMN DEGREE                                */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* row degree                                                 */
+/*------------------------------------------------------------*/
+void row_degree(
+                DegVec & rdeg,
+                const Mat<zz_pX> & pmat
+               )
+{ 
+    // empty rdeg and reserve space
+    rdeg.clear();
+    rdeg.reserve(pmat.NumRows());
+
+    // take the max degree in each row of pmat
+    for (long i = 0; i < pmat.NumRows(); ++i)
+    {
+        rdeg.emplace_back(-1);  // rdeg[i] == -1
+        for (long j = 0; j < pmat.NumCols(); ++j)
+            if (rdeg[i] < deg(pmat[i][j])) 
+                rdeg[i] = deg(pmat[i][j]);
+    }
+}
+
+/*------------------------------------------------------------*/
+/* shifted row degree                                         */
+/*------------------------------------------------------------*/
+void row_degree(
+                DegVec & rdeg,
+                const Mat<zz_pX> &pmat,
+                const Shift & shift
+               )
+{
+    if ((long)shift.size() != pmat.NumCols())
+        throw std::invalid_argument("==row_degree== shift must have length pmat.NumCols()");
+
+    // empty rdeg and reserve space
+    rdeg.clear();
+    rdeg.reserve(pmat.NumRows());
+
+    // compute minimum shift entry (used for zero entries)
+    long min_shift = *std::min_element(shift.begin(),shift.end());
+
+    // take the max shifted degree in each row of pmat
+    for (long i = 0; i < pmat.NumRows(); ++i)
+    {
+        rdeg.emplace_back(min_shift-1);  // rdeg[i] == min(shift)-1
+        for (long j = 0; j < pmat.NumCols(); ++j)
+        {
+            long d = deg(pmat[i][j]) + shift[j];
+            if (not IsZero(pmat[i][j]) && rdeg[i] < d)
+                rdeg[i] = d;
+        }
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/* column degree                                              */
+/*------------------------------------------------------------*/
+void col_degree(
+                DegVec &cdeg,
+                const Mat<zz_pX> &pmat
+               )
+{
+    // empty cdeg and reserve space
+    cdeg.clear();
+    cdeg.reserve(pmat.NumCols());
+
+    // take the max degree in each column of pmat
+    for (long j = 0; j < pmat.NumCols(); ++j)
+    {
+        cdeg.emplace_back(-1);  // cdeg[j] == -1
+        for (long i = 0; i < pmat.NumRows(); ++i)
+            if (cdeg[j] < deg(pmat[i][j])) 
+                cdeg[j] = deg(pmat[i][j]);
+    }
+} 
+
+/*------------------------------------------------------------*/
+/* shifted column degree                                      */
+/*------------------------------------------------------------*/
+void col_degree(
+                DegVec & cdeg,
+                const Mat<zz_pX> &pmat,
+                const Shift & shift
+               )
+{
+    if ((long)shift.size() != pmat.NumRows())
+        throw std::invalid_argument("==col_degree== shift must have length pmat.NumRows()");
+
+    // empty cdeg and reserve space
+    cdeg.clear();
+    cdeg.reserve(pmat.NumCols());
+
+    // compute minimum shift entry (used for zero entries)
+    long min_shift = *std::min_element(shift.begin(),shift.end());
+
+    // take the max degree in each column of pmat
+    for (long j = 0; j < pmat.NumCols(); ++j)
+    {
+        cdeg.emplace_back(min_shift-1);  // cdeg[j] == min(shift)-1
+        for (long i = 0; i < pmat.NumRows(); ++i)
+        {
+            long d = deg(pmat[i][j]) + shift[i];
+            if (not IsZero(pmat[i][j]) && cdeg[j] < d) 
+                cdeg[j] = d;
+        }
+    }
+} 
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* (SHIFTED) PIVOT INDEX / DEGREE                             */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+
+/*------------------------------------------------------------*/
+/* row pivot index/degree                                     */
+/*------------------------------------------------------------*/
+void row_pivots(
+                VecLong & pivind,
+                VecLong & pivdeg,
+                const Mat<zz_pX> & pmat
+               )
+{
+    // empty vectors and reserve space
+    pivind.clear();
+    pivind.reserve(pmat.NumRows());
+    pivdeg.clear();
+    pivdeg.reserve(pmat.NumRows());
+
+    for (long i = 0; i < pmat.NumRows(); ++i)
+    {
+        pivind.emplace_back(-1);  // pivind[i] == -1
+        pivdeg.emplace_back(-1);  // pivdeg[i] == -1
+        for (long j = 0; j < pmat.NumCols(); ++j)
+            if (deg(pmat[i][j]) > pivdeg[i])  // hence pmat[i][j] nonzero
+            {
+                pivdeg[i] = deg(pmat[i][j]);
+                pivind[i] = j;
+            }
+            else if (deg(pmat[i][j]) == pivdeg[i] && not IsZero(pmat[i][j]))
+                pivind[i] = j;
+    }
+}
+
+/*------------------------------------------------------------*/
+/* shifted row pivot index/degree                             */
+/*------------------------------------------------------------*/
+void row_pivots(
+                VecLong & pivind,
+                VecLong & pivdeg,
+                const Mat<zz_pX> & pmat,
+                const Shift & shift
+               )
+{
+    if ((long)shift.size() != pmat.NumCols())
+        throw std::invalid_argument("==row_pivots== shift must have length pmat.NumCols()");
+
+    // empty vectors and reserve space
+    pivind.clear();
+    pivind.reserve(pmat.NumRows());
+    pivdeg.clear();
+    pivdeg.reserve(pmat.NumRows());
+
+    // compute minimum shift entry (used for zero entries)
+    long min_shift = *std::min_element(shift.begin(),shift.end());
+
+    // take the max degree in each row of pmat
+    for (long i = 0; i < pmat.NumRows(); ++i)
+    {
+        pivind.emplace_back(-1);  // pivind[i] == -1
+        // for the moment, pivdeg stores the rdeg, pivdeg[i] == min(shift)-1
+        pivdeg.emplace_back(min_shift-1);
+        for (long j = 0; j < pmat.NumCols(); ++j)
+        {
+            long d = deg(pmat[i][j]) + shift[j];
+            if (d > pivdeg[i]) // hence pmat[i][j] nonzero
+            {
+                pivdeg[i] = d;
+                pivind[i] = j;
+            }
+            if (d == pivdeg[i] && not IsZero(pmat[i][j]))
+                pivind[i] = j;
+        }
+        // remove the shift so that pivdeg is not rdeg but pivdeg
+        if (pivind[i]==-1) // zero row
+            pivdeg[i] = -1;
+        else
+            pivdeg[i] = pivdeg[i] - shift[pivind[i]];
+    }
+}
+
+/*------------------------------------------------------------*/
+/* column pivot index/degree                                  */
+/*------------------------------------------------------------*/
+void col_pivots(
+                VecLong & pivind,
+                VecLong & pivdeg,
+                const Mat<zz_pX> & pmat
+               )
+{
+    // empty pivind / pivdeg and reserve space
+    pivind.clear();
+    pivind.reserve(pmat.NumCols());
+    pivdeg.clear();
+    pivdeg.reserve(pmat.NumCols());
+
+    for (long j = 0; j < pmat.NumCols(); ++j)
+    {
+        pivind.emplace_back(-1);  // pivind[j] == -1
+        pivdeg.emplace_back(-1);  // pivdeg[j] == -1
+        for (long i = 0; i < pmat.NumRows(); ++i)
+            if (deg(pmat[i][j]) > pivdeg[j])  // hence pmat[i][j] nonzero
+            {
+                pivdeg[j] = deg(pmat[i][j]);
+                pivind[j] = i;
+            }
+            else if (deg(pmat[i][j]) == pivdeg[j] && not IsZero(pmat[i][j]))
+                pivind[j] = i;
+    }
+} 
+
+/*------------------------------------------------------------*/
+/* shifted column pivot index/degree                          */
+/*------------------------------------------------------------*/
+void col_pivots(
+                VecLong & pivind,
+                VecLong & pivdeg,
+                const Mat<zz_pX> & pmat,
+                const Shift & shift
+               )
+{
+    if ((long)shift.size() != pmat.NumRows())
+        throw std::invalid_argument("==col_pivots== shift must have length pmat.NumRows()");
+
+    // empty vectors and reserve space
+    pivind.clear();
+    pivind.reserve(pmat.NumCols());
+    pivdeg.clear();
+    pivdeg.reserve(pmat.NumCols());
+
+    // compute minimum shift entry (used for zero entries)
+    long min_shift = *std::min_element(shift.begin(),shift.end());
+
+    // take the max degree in each row of pmat
+    for (long j = 0; j < pmat.NumCols(); ++j)
+    {
+        pivind.emplace_back(-1);  // pivind[j] == -1
+        // for the moment, pivdeg stores the cdeg, pivdeg[j] == min(shift)-1
+        pivdeg.emplace_back(min_shift-1);
+        for (long i = 0; i < pmat.NumRows(); ++i)
+        {
+            long d = deg(pmat[i][j]) + shift[i];
+            if (d > pivdeg[j]) // hence pmat[i][j] nonzero
+            {
+                pivdeg[j] = d;
+                pivind[j] = i;
+            }
+            if (d == pivdeg[j] && not IsZero(pmat[i][j]))
+                pivind[j] = i;
+        }
+        // remove the shift so that pivdeg is not cdeg but pivdeg
+        if (pivind[j]==-1) // zero column
+            pivdeg[j] = -1;
+        else
+            pivdeg[j] = pivdeg[j] - shift[pivind[j]];
+    }
+}
+
+
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* (SHIFTED) DEGREE MATRIX                                    */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
 /* degree matrix                                              */
 /*------------------------------------------------------------*/
 void degree_matrix(
                    Mat<long> & degmat,
-                   const Mat<zz_pX> & pmat, 
-                   const Shift & shift,
-                   const bool row_wise
+                   const Mat<zz_pX> & pmat
                   )
 {
     // set the dimensions of degmat and populate it with degrees
@@ -18,352 +306,759 @@ void degree_matrix(
     for (long i = 0; i < pmat.NumRows(); ++i)
         for (long j = 0; j < pmat.NumCols(); ++j)
             degmat[i][j] = deg(pmat[i][j]);
-
-    bool shifted = check_shift(shift, pmat, row_wise);
-    if (shifted)
-    {
-        // we are in a shifted case; shift dimension has been checked
-        // compute minimum shift entry (will be used for degree of zero entries of b)
-        long min_shift = *std::min_element(shift.begin(),shift.end());
-
-        for (long i = 0; i < pmat.NumRows(); ++i)
-            for (long j = 0; j < pmat.NumCols(); ++j)
-                if (degmat[i][j] == -1)
-                    degmat[i][j] += min_shift;
-                else if (row_wise)
-                    degmat[i][j] += shift[j];
-                else
-                    degmat[i][j] += shift[i];
-    }
-}
-
-
-/*------------------------------------------------------------*/
-/* shifted row degree of a matrix                             */
-/*------------------------------------------------------------*/
-void row_degree(
-                DegVec & rdeg,
-                const Mat<zz_pX> & pmat,
-                const Shift & shift
-               )
-{ 
-    rdeg.resize(pmat.NumRows());
-
-    // retrieve the shifted degree matrix
-    Mat<long> degmat;
-    degree_matrix(degmat,pmat,shift,true);
-
-    // take the max of each row of degmat
-    for (long r = 0; r < pmat.NumRows(); ++r)
-    {
-        long max_deg = degmat[r][0];
-        for (long c = 1; c < pmat.NumCols(); ++c)
-            if (max_deg < degmat[r][c]) 
-                max_deg = degmat[r][c];
-        rdeg[r] = max_deg;
-    }
 }
 
 /*------------------------------------------------------------*/
-/* shifted column degree of a matrix                          */
+/* row-shifted degree matrix                                  */
 /*------------------------------------------------------------*/
-void column_degree(
-                   DegVec &cdeg,
-                   const Mat<zz_pX> &pmat,
-                   const Shift & shift
-                  )
+void degree_matrix_rowshifted(
+                              Mat<long> & degmat,
+                              const Mat<zz_pX> & pmat,
+                              const Shift & shift
+                             )
 {
-    cdeg.resize(pmat.NumCols());
+    if ((long)shift.size() != pmat.NumCols())
+        throw std::invalid_argument("==degree_matrix_rowshifted== shift must have length pmat.NumCols()");
 
-    // retrieve the shifted degree matrix
-    Mat<long> degmat;
-    degree_matrix(degmat,pmat,shift,false);
+    // compute minimum shift entry (used for zero entries)
+    long min_shift = *std::min_element(shift.begin(),shift.end());
 
-    // take the max of each column of degmat
-    for (long c = 0; c < pmat.NumCols(); c++)
-    {
-        long max_deg = degmat[0][c];
-        for (long r = 1; r < pmat.NumRows(); r++)
-            if (max_deg < degmat[r][c]) 
-                max_deg = degmat[r][c];
-        cdeg[c] = max_deg;
-    }
-} 
-
-/*------------------------------------------------------------*/
-/* shifted leading matrix                                     */
-/*------------------------------------------------------------*/
-void leading_matrix(
-                    Mat<zz_p> &lmat,
-                    const Mat<zz_pX> &pmat,
-                    const Shift & shift,
-                    const bool row_wise
-                   )
-{
-    // check if shifted + check shift dimension
-    bool shifted = check_shift(shift, pmat, row_wise);
-
-    if (row_wise)
-    {
-        DegVec degree;
-        row_degree(degree,pmat,shift);
-
-        lmat.SetDims(pmat.NumRows(), pmat.NumCols());
-        for (long r = 0; r < pmat.NumRows(); r++)
+    // set the dimensions of degmat and populate it with degrees
+    degmat.SetDims(pmat.NumRows(), pmat.NumCols());
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        for (long j = 0; j < pmat.NumCols(); ++j)
         {
-            for (long c = 0; c < pmat.NumCols(); c++)
-            {
-                long d = deg(pmat[r][c]);
-
-                if (shifted)
-                    d += shift[c];
-
-                if (d == degree[r])
-                    lmat[r][c] = LeadCoeff(pmat[r][c]);
-            }
+            if (IsZero(pmat[i][j]))
+                degmat[i][j] = min_shift-1;
+            else
+                degmat[i][j] = deg(pmat[i][j]) + shift[j];
         }
-    }
-    else
-    {
-        DegVec degree;
-        column_degree(degree,pmat,shift);
-
-        lmat.SetDims(pmat.NumRows(), pmat.NumCols());
-        for (long r = 0; r < pmat.NumRows(); r++)
-        {
-            for (long c = 0; c < pmat.NumCols(); c++)
-            {
-                long d = deg(pmat[r][c]);
-
-                if (shifted)
-                    d += shift[r];
-
-                if (d == degree[c])
-                    lmat[r][c] = LeadCoeff(pmat[r][c]);
-            }
-        }
-    }
 }
 
 /*------------------------------------------------------------*/
-/* test whether pmat is a reduced matrix                      */
+/* column-shifted degree matrix                               */
 /*------------------------------------------------------------*/
-bool is_reduced(
-                const Mat<zz_pX> & pmat,
-                const Shift & shift,
-                const bool row_wise
-               )
+void degree_matrix_colshifted(
+                              Mat<long> & degmat,
+                              const Mat<zz_pX> & pmat,
+                              const Shift & shift
+                             )
+{
+    if ((long)shift.size() != pmat.NumRows())
+        throw std::invalid_argument("==degree_matrix_colshifted== shift must have length pmat.NumRows()");
+
+    // compute minimum shift entry (used for zero entries)
+    long min_shift = *std::min_element(shift.begin(),shift.end());
+
+    // set the dimensions of degmat and populate it with degrees
+    degmat.SetDims(pmat.NumRows(), pmat.NumCols());
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        for (long j = 0; j < pmat.NumCols(); ++j)
+        {
+            if (IsZero(pmat[i][j]))
+                degmat[i][j] = min_shift-1;
+            else
+                degmat[i][j] = deg(pmat[i][j]) + shift[i];
+        }
+}
+
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* (SHIFTED) LEADING MATRIX                                   */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* row-wise leading matrix of pmat                            */
+/*------------------------------------------------------------*/
+void row_leading_matrix(
+                        Mat<zz_p> & lmat,
+                        const Mat<zz_pX> & pmat
+                       )
+{
+    DegVec rdeg;
+    row_degree(rdeg,pmat);
+
+    lmat.SetDims(pmat.NumRows(), pmat.NumCols());
+    for (long r = 0; r < lmat.NumRows(); ++r)
+        for (long c = 0; c < lmat.NumCols(); ++c)
+            if (not IsZero(pmat[r][c]) && deg(pmat[r][c]) == rdeg[r])
+                lmat[r][c] = pmat[r][c][deg(pmat[r][c])];
+            else
+                clear(lmat[r][c]);
+}
+
+/*------------------------------------------------------------*/
+/* row-wise shifted leading matrix of pmat                    */
+/*------------------------------------------------------------*/
+void row_leading_matrix(
+                        Mat<zz_p> & lmat,
+                        const Mat<zz_pX> & pmat,
+                        const Shift & shift
+                       )
+{
+    DegVec rdeg;
+    row_degree(rdeg,pmat,shift);
+
+    lmat.SetDims(pmat.NumRows(), pmat.NumCols());
+    for (long r = 0; r < lmat.NumRows(); ++r)
+        for (long c = 0; c < lmat.NumCols(); ++c)
+            if (not IsZero(pmat[r][c]) && deg(pmat[r][c])+shift[c] == rdeg[r])
+                lmat[r][c] = pmat[r][c][deg(pmat[r][c])];
+            else
+                clear(lmat[r][c]);
+}
+
+/*------------------------------------------------------------*/
+/* column-wise leading matrix of pmat                         */
+/*------------------------------------------------------------*/
+void col_leading_matrix(
+                        Mat<zz_p> & lmat,
+                        const Mat<zz_pX> & pmat
+                       )
+{
+    DegVec cdeg;
+    col_degree(cdeg,pmat);
+
+    lmat.SetDims(pmat.NumRows(), pmat.NumCols());
+    for (long r = 0; r < lmat.NumRows(); ++r)
+        for (long c = 0; c < lmat.NumCols(); ++c)
+            if (not IsZero(pmat[r][c]) && deg(pmat[r][c]) == cdeg[c])
+                lmat[r][c] = pmat[r][c][deg(pmat[r][c])];
+            else
+                clear(lmat[r][c]);
+}
+
+/*------------------------------------------------------------*/
+/* column-wise shifted leading matrix of pmat                 */
+/*------------------------------------------------------------*/
+void col_leading_matrix(
+                        Mat<zz_p> &lmat,
+                        const Mat<zz_pX> &pmat,
+                        const Shift & shift
+                       )
+{
+    DegVec cdeg;
+    col_degree(cdeg,pmat,shift);
+
+    lmat.SetDims(pmat.NumRows(), pmat.NumCols());
+    for (long r = 0; r < lmat.NumRows(); ++r)
+        for (long c = 0; c < lmat.NumCols(); ++c)
+            if (not IsZero(pmat[r][c]) && deg(pmat[r][c])+shift[r] == cdeg[c])
+                lmat[r][c] = pmat[r][c][deg(pmat[r][c])];
+            else
+                clear(lmat[r][c]);
+}
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING SHIFTED REDUCED FORM                              */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* test row reduced                                           */
+/*------------------------------------------------------------*/
+bool is_row_reduced(const Mat<zz_pX> & pmat)
 {
     Mat<zz_p> lmat;
-    leading_matrix(lmat,pmat,shift,row_wise);
+    row_leading_matrix(lmat,pmat);
     long rank = gauss(lmat);
-    return rank == (row_wise ? pmat.NumRows() : pmat.NumCols());
+    return rank == pmat.NumRows();
 }
 
 /*------------------------------------------------------------*/
-/* TODO comment                                               */
+/* test shifted row reduced                                   */
 /*------------------------------------------------------------*/
-void pivot_index(
-                 std::vector<long> & pivind,
-                 DegVec & pivdeg,
-                 const Mat<zz_pX> & pmat,
-                 const Shift & shift,
-                 const bool row_wise
-                )
+bool is_row_reduced(const Mat<zz_pX> & pmat, const Shift & shift)
 {
-    // check if shifted + shift dimension
-    bool shifted = check_shift(shift, pmat, row_wise);
-
-    // retrieve (shifted) degree matrix
-    Mat<long> deg_mat;
-    degree_matrix(deg_mat,pmat,shift,row_wise);
-
-    DegVec degree;
-    if (row_wise)
-    {
-        degree.resize(pmat.NumRows());
-        row_degree(degree,pmat,shift);
-    }
-    else
-    {
-        degree.resize(pmat.NumCols());
-        column_degree(degree,pmat,shift);
-    }
-
-    long zero_degree = -1;
-    if (shifted)
-        zero_degree = *std::min_element(shift.begin(),shift.end()) -1;
-
-    if (row_wise)
-    {
-        if ((long)pivind.size() != pmat.NumRows())
-            throw std::invalid_argument("==pivot_index== Provided vector does not have size = NumRows");
-
-        for (long r = 0; r < pmat.NumRows(); ++r)
-        {
-            if (degree[r] == zero_degree) 
-            {
-                pivdeg[r] = -1;
-                pivind[r] = -1;
-            }
-            else
-            {
-                for (long c = 0; c <pmat.NumCols(); ++c)
-                {
-                    if (deg_mat[r][c] == degree[r]) 
-                    {
-                        pivdeg[r] = deg(pmat[r][c]);
-                        pivind[r] = c;
-                    }
-                }
-            }
-        }
-    }
-    else
-    {
-        if ((long)pivind.size() != pmat.NumCols())
-            throw std::invalid_argument("==pivot_index== Provided vector does not have size = NumCols");
-
-        for(long c = 0; c < pmat.NumCols(); c++)
-        {
-            if (degree[c] == zero_degree) 
-            {
-                pivdeg[c] = -1;
-                pivind[c] = -1;
-            }
-            else
-            {
-                for (long r = 0; r < pmat.NumRows(); r++)
-                {
-                    if (deg_mat[r][c] == degree[c]) 
-                    {
-                        pivdeg[c] = deg(pmat[r][c]);
-                        pivind[c] = r;
-                    }
-                }
-            }
-        }
-    }
+    Mat<zz_p> lmat;
+    row_leading_matrix(lmat,pmat,shift);
+    long rank = gauss(lmat);
+    return rank == pmat.NumRows();
 }
 
 /*------------------------------------------------------------*/
-/* TODO comment                                               */
+/* test column reduced                                        */
 /*------------------------------------------------------------*/
-bool is_weak_popov (
-                    const Mat<zz_pX> &pmat,
-                    const Shift &shift,
-                    const bool row_wise,
-                    const bool ordered
-                   )
+bool is_col_reduced(const Mat<zz_pX> & pmat)
 {
-    //retrieve pivot index
-    std::vector<long> pivots;
-    DegVec pivdeg;
-    pivots.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
-    pivdeg.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
-    pivot_index(pivots, pivdeg, pmat, shift, row_wise);
+    Mat<zz_p> lmat;
+    col_leading_matrix(lmat,pmat);
+    long rank = gauss(lmat);
+    return rank == pmat.NumCols();
+}
 
-    // forbide zero vectors
-    if( std::find(pivots.begin(),pivots.end(),-1) != pivots.end() )
+/*------------------------------------------------------------*/
+/* test shifted column reduced                                */
+/*------------------------------------------------------------*/
+bool is_col_reduced(const Mat<zz_pX> & pmat, const Shift & shift)
+{
+    Mat<zz_p> lmat;
+    col_leading_matrix(lmat,pmat,shift);
+    long rank = gauss(lmat);
+    return rank == pmat.NumCols();
+}
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING SHIFTED WEAK POPOV FORM                            */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* test row-wise weak Popov form                              */
+/*------------------------------------------------------------*/
+bool is_row_weak_popov(const Mat<zz_pX> & pmat)
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    row_pivots(pivind, pivdeg, pmat);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
         return false;
 
-    if (!ordered)
-    { // check for pairwise distinct: sort and check no adjacent equal elements
-        std::sort(pivots.begin(),pivots.end());
-        if (std::adjacent_find(pivots.begin(),pivots.end()) != pivots.end())
-            return false;
-    }
-    else
-    { // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
-        if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
-            return false;
-    }
+    // check for pairwise distinct: sort and check no adjacent equal elements
+    std::sort(pivind.begin(),pivind.end());
+    if (std::adjacent_find(pivind.begin(),pivind.end()) != pivind.end())
+        return false;
+
     return true;
 }
 
-bool is_monic(const zz_pX &p){
-    return IsOne(LeadCoeff(p));
+/*------------------------------------------------------------*/
+/* test row-wise shifted weak Popov form                      */
+/*------------------------------------------------------------*/
+bool is_row_weak_popov(
+                       const Mat<zz_pX> &pmat,
+                       const Shift & shift
+                      )
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    row_pivots(pivind, pivdeg, pmat, shift);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check for pairwise distinct: sort and check no adjacent equal elements
+    std::sort(pivind.begin(),pivind.end());
+    if (std::adjacent_find(pivind.begin(),pivind.end()) != pivind.end())
+        return false;
+
+    return true;
 }
 
 /*------------------------------------------------------------*/
-/* TODO comment                                               */
+/* test column-wise weak Popov form                           */
 /*------------------------------------------------------------*/
-bool is_popov(
-              const Mat<zz_pX> &pmat,
-              const Shift &shift,
-              const bool row_wise,
-              const bool up_to_permutation
-             )
+bool is_col_weak_popov(const Mat<zz_pX> & pmat)
 {
-    if (!is_weak_popov(pmat,shift,row_wise,!up_to_permutation))
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    col_pivots(pivind, pivdeg, pmat);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
         return false;
 
+    // check for pairwise distinct: sort and check no adjacent equal elements
+    std::sort(pivind.begin(),pivind.end());
+    if (std::adjacent_find(pivind.begin(),pivind.end()) != pivind.end())
+        return false;
 
-    std::vector<long> pivots;
-    DegVec degrees;
-    pivots.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
-    degrees.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
-    pivot_index(pivots,degrees,pmat,shift,row_wise);
-    for (unsigned long i = 0; i < pivots.size(); i++){
-        long index = pivots[i];
-        if (index >= 0){
-            if(row_wise){
-                if (!is_monic(pmat[i][index]))
-                    return false;
-                for (long k=0; k < pmat.NumRows(); k++){
-                    if (deg(pmat[k][index]) >= degrees[i] && ((unsigned long)k != i))
-                        return false;
-                }
-            }else{ // col-wise
-                if (!is_monic(pmat[index][i]))
-                    return false;
-                for (long k = 0; k < pmat.NumCols(); k++)
-                    if (deg(pmat[index][k]) >= degrees[i] && ((unsigned long)k != i))
-                        return false;
-            }
-        }
-    }
+    return true;
+}
+
+/*------------------------------------------------------------*/
+/* test column-wise shifted weak Popov form                   */
+/*------------------------------------------------------------*/
+bool is_col_weak_popov(
+                       const Mat<zz_pX> &pmat,
+                       const Shift & shift
+                      )
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    col_pivots(pivind, pivdeg, pmat, shift);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check for pairwise distinct: sort and check no adjacent equal elements
+    std::sort(pivind.begin(),pivind.end());
+    if (std::adjacent_find(pivind.begin(),pivind.end()) != pivind.end())
+        return false;
+
+    return true;
+}
+
+/*------------------------------------------------------------*/
+/* test row-wise ordered weak Popov form                      */
+/*------------------------------------------------------------*/
+bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat)
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    row_pivots(pivind, pivdeg, pmat);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
+        return false;
+
+    return true;
+}
+
+/*------------------------------------------------------------*/
+/* test row-wise shifted ordered weak Popov form              */
+/*------------------------------------------------------------*/
+bool is_row_ordered_weak_popov(
+                               const Mat<zz_pX> &pmat,
+                               const Shift & shift
+                              )
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    row_pivots(pivind, pivdeg, pmat, shift);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
+        return false;
+
+    return true;
+}
+
+/*------------------------------------------------------------*/
+/* test column-wise ordered weak Popov form                   */
+/*------------------------------------------------------------*/
+bool is_col_ordered_weak_popov(const Mat<zz_pX> & pmat)
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    col_pivots(pivind, pivdeg, pmat);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
+        return false;
+
+    return true;
+}
+
+/*------------------------------------------------------------*/
+/* test column-wise shifted ordered weak Popov form           */
+/*------------------------------------------------------------*/
+bool is_col_ordered_weak_popov(
+                               const Mat<zz_pX> &pmat,
+                               const Shift & shift
+                              )
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    col_pivots(pivind, pivdeg, pmat, shift);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
+        return false;
+
     return true;
 }
 
 
 
-PolMatForm get_polmatform(
-                          const Mat<zz_pX> &pmat,
-                          const Shift &shift,
-                          const bool row_wise
-                         )
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING SHIFTED POPOV FORM                                 */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* test row-wise Popov form                                   */
+/*------------------------------------------------------------*/
+bool is_row_popov(const Mat<zz_pX> & pmat)
 {
-    if (is_popov(pmat,shift,row_wise)) {   // TODO waiting for is_popov
-        return POPOV;
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    row_pivots(pivind, pivdeg, pmat);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check pivot index increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
+        return false;
+
+    // --> ordered weak Popov form OK
+    // now test pivot entries monic
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        if (not is_monic(pmat[i][pivind[i]]))
+            return false;
+
+    // finally test degree of non-pivot entries
+    for (long j = 0; j < pmat.NumRows(); ++j)
+    {
+        for (long i = 0; i < j; ++i)
+            if (deg(pmat[i][pivind[j]]) >= pivdeg[j])
+                return false;
+        for (long i = j+1; i < pmat.NumRows(); ++i)
+            if (deg(pmat[i][pivind[j]]) >= pivdeg[j])
+                return false;
     }
-    if (is_weak_popov(pmat,shift,row_wise,true))
-        return ORD_WEAK_POPOV;
-    else if (is_weak_popov(pmat,shift,row_wise))
-        return WEAK_POPOV;
-    else if (is_reduced(pmat,shift,row_wise))
-        return REDUCED;
-    else
-        return NONE;
+
+    return true;
 }
 
-bool is_polmatform(
-                   const Mat<zz_pX> &pmat,
-                   const PolMatForm form,
-                   const Shift &shift,
-                   const bool row_wise
-                  )
+/*------------------------------------------------------------*/
+/* test row-wise shifted Popov form                           */
+/*------------------------------------------------------------*/
+bool is_row_popov(const Mat<zz_pX> & pmat, const Shift & shift)
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    row_pivots(pivind, pivdeg, pmat, shift);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check pivot index increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
+        return false;
+
+    // --> ordered weak Popov form OK
+    // now test pivot entries monic
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        if (not is_monic(pmat[i][pivind[i]]))
+            return false;
+
+    // finally test degree of non-pivot entries
+    for (long j = 0; j < pmat.NumRows(); ++j)
+    {
+        for (long i = 0; i < j; ++i)
+            if (deg(pmat[i][pivind[j]]) >= pivdeg[j])
+                return false;
+        for (long i = j+1; i < pmat.NumRows(); ++i)
+            if (deg(pmat[i][pivind[j]]) >= pivdeg[j])
+                return false;
+    }
+
+    return true;
+}
+
+/////*------------------------------------------------------------*/
+/////* test row-wise Popov form, up to row permutation            */
+/////*------------------------------------------------------------*/
+////bool is_row_popov_up_to_permutation(const Mat<zz_pX> & pmat);
+////
+/////*------------------------------------------------------------*/
+/////* test row-wise shifted Popov form, up to row permutation    */
+/////*------------------------------------------------------------*/
+////bool is_row_popov_up_to_permutation(
+////                                    const Mat<zz_pX> & pmat,
+////                                    const Shift & shift
+////                                    );
+
+/*------------------------------------------------------------*/
+/* test column-wise Popov form                                */
+/*------------------------------------------------------------*/
+bool is_col_popov(const Mat<zz_pX> & pmat)
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    col_pivots(pivind, pivdeg, pmat);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check pivot index increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
+        return false;
+
+    // --> ordered weak Popov form OK
+    // now test pivot entries monic
+    for (long j = 0; j < pmat.NumCols(); ++j)
+        if (not is_monic(pmat[pivind[j]][j]))
+            return false;
+
+    // finally test degree of non-pivot entries
+    for (long i = 0; i < pmat.NumCols(); ++i)
+    {
+        for (long j = 0; j < i; ++j)
+            if (deg(pmat[pivind[i]][j]) >= pivdeg[i])
+                return false;
+        for (long j = i+1; j < pmat.NumRows(); ++j)
+            if (deg(pmat[pivind[i]][j]) >= pivdeg[i])
+                return false;
+    }
+
+    return true;
+}
+
+
+/*------------------------------------------------------------*/
+/* test column-wise shifted Popov form                        */
+/*------------------------------------------------------------*/
+bool is_col_popov(const Mat<zz_pX> & pmat, const Shift & shift)
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    col_pivots(pivind, pivdeg, pmat, shift);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check pivot index increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
+        return false;
+
+    // --> ordered weak Popov form OK
+    // now test pivot entries monic
+    for (long j = 0; j < pmat.NumCols(); ++j)
+        if (not is_monic(pmat[pivind[j]][j]))
+            return false;
+
+    // finally test degree of non-pivot entries
+    for (long i = 0; i < pmat.NumCols(); ++i)
+    {
+        for (long j = 0; j < i; ++j)
+            if (deg(pmat[pivind[i]][j]) >= pivdeg[i])
+                return false;
+        for (long j = i+1; j < pmat.NumRows(); ++j)
+            if (deg(pmat[pivind[i]][j]) >= pivdeg[i])
+                return false;
+    }
+
+    return true;
+}
+
+////*------------------------------------------------------------*/
+////* test column-wise Popov form, up to column permutation      */
+////*------------------------------------------------------------*/
+///bool is_col_popov_up_to_permutation(const Mat<zz_pX> & pmat);
+///
+////*------------------------------------------------------------*/
+////* test column-wise shifted Popov form,                       */
+////* up to column permutation                                   */
+////*------------------------------------------------------------*/
+///bool is_col_popov_up_to_permutation(
+///                                    const Mat<zz_pX> & pmat,
+///                                    const Shift & shift
+///                                    );
+
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING SHIFTED FORMS (FORM SELECTOR)                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+
+/*------------------------------------------------------------*/
+/* Check whether pmat is in the prescribed row-wise form      */
+/*------------------------------------------------------------*/
+
+bool is_row_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
 {
     switch (form)
     {
-    case NONE: return true;
-    case REDUCED: return is_reduced(pmat,shift,row_wise);
-    case WEAK_POPOV: return is_weak_popov(pmat,shift,row_wise,false);
-    case ORD_WEAK_POPOV: return is_weak_popov(pmat,shift,row_wise,true);
-    case POPOV: return is_popov(pmat,shift,row_wise,false);
-    default: throw std::invalid_argument("==is_polmatform== Unknown required polynomial matrix form.");
+    case NONE:
+        return true;
+    case REDUCED:
+        return is_row_reduced(pmat);
+    case WEAK_POPOV:
+        return is_row_weak_popov(pmat);
+    case ORD_WEAK_POPOV:
+        return is_row_ordered_weak_popov(pmat);
+    case POPOV:
+        return is_row_popov(pmat);
+    default:
+        throw std::invalid_argument("==is_row_polmatform== Unknown required polynomial matrix form.");
     }
 }
+
+bool is_row_polmatform(
+                       const Mat<zz_pX> & pmat,
+                       const Shift &shift,
+                       const PolMatForm form
+                      )
+{
+    switch (form)
+    {
+    case NONE:
+        return true;
+    case REDUCED:
+        return is_row_reduced(pmat,shift);
+    case WEAK_POPOV:
+        return is_row_weak_popov(pmat,shift);
+    case ORD_WEAK_POPOV:
+        return is_row_ordered_weak_popov(pmat,shift);
+    case POPOV:
+        return is_row_popov(pmat,shift);
+    default:
+        throw std::invalid_argument("==is_row_polmatform== Unknown required polynomial matrix form.");
+    }
+}
+
+/*------------------------------------------------------------*/
+/* Check whether pmat is in the prescribed column-wise form   */
+/*------------------------------------------------------------*/
+
+bool is_col_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
+{
+    switch (form)
+    {
+    case NONE:
+        return true;
+    case REDUCED:
+        return is_col_reduced(pmat);
+    case WEAK_POPOV:
+        return is_col_weak_popov(pmat);
+    case ORD_WEAK_POPOV:
+        return is_col_ordered_weak_popov(pmat);
+    case POPOV:
+        return is_col_popov(pmat);
+    default:
+        throw std::invalid_argument("==is_col_polmatform== Unknown required polynomial matrix form.");
+    }
+}
+
+bool is_col_polmatform(
+                       const Mat<zz_pX> & pmat,
+                       const Shift &shift,
+                       const PolMatForm form
+                      )
+{
+    switch (form)
+    {
+    case NONE:
+        return true;
+    case REDUCED:
+        return is_col_reduced(pmat,shift);
+    case WEAK_POPOV:
+        return is_col_weak_popov(pmat,shift);
+    case ORD_WEAK_POPOV:
+        return is_col_ordered_weak_popov(pmat,shift);
+    case POPOV:
+        return is_col_popov(pmat,shift);
+    default:
+        throw std::invalid_argument("==is_col_polmatform== Unknown required polynomial matrix form.");
+    }
+}
+
+
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* FIND STRONGEST (SHIFTED) FORM                              */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+
+/*------------------------------------------------------------*/
+/* Return the strongest row-wise form of pmat among:          */
+/* Popov => ordered weak Popov => weak Popov                  */
+/*                                       => reduced => none   */
+/*------------------------------------------------------------*/
+PolMatForm get_row_polmatform(const Mat<zz_pX> & pmat)
+{
+    if (is_row_popov(pmat))
+        return POPOV;
+    if (is_row_ordered_weak_popov(pmat))
+        return ORD_WEAK_POPOV;
+    if (is_row_weak_popov(pmat))
+        return WEAK_POPOV;
+    if (is_row_reduced(pmat))
+        return REDUCED;
+    return NONE;
+}
+
+PolMatForm get_row_polmatform(
+                              const Mat<zz_pX> &pmat,
+                              const Shift &shift
+                             )
+{
+    if (is_row_popov(pmat,shift))
+        return POPOV;
+    if (is_row_ordered_weak_popov(pmat,shift))
+        return ORD_WEAK_POPOV;
+    if (is_row_weak_popov(pmat,shift))
+        return WEAK_POPOV;
+    if (is_row_reduced(pmat,shift))
+        return REDUCED;
+    return NONE;
+}
+
+/*------------------------------------------------------------*/
+/* Return the strongest column-wise form of pmat among:       */
+/* Popov => ordered weak Popov => weak Popov                  */
+/*                                       => reduced => none   */
+/*------------------------------------------------------------*/
+PolMatForm get_col_polmatform(const Mat<zz_pX> & pmat)
+{
+    if (is_col_popov(pmat))
+        return POPOV;
+    if (is_col_ordered_weak_popov(pmat))
+        return ORD_WEAK_POPOV;
+    if (is_col_weak_popov(pmat))
+        return WEAK_POPOV;
+    if (is_col_reduced(pmat))
+        return REDUCED;
+    return NONE;
+}
+
+PolMatForm get_col_polmatform(
+                              const Mat<zz_pX> &pmat,
+                              const Shift &shift
+                             )
+{
+    if (is_col_popov(pmat,shift))
+        return POPOV;
+    if (is_col_ordered_weak_popov(pmat,shift))
+        return ORD_WEAK_POPOV;
+    if (is_col_weak_popov(pmat,shift))
+        return WEAK_POPOV;
+    if (is_col_reduced(pmat,shift))
+        return REDUCED;
+    return NONE;
+}
+
 
 
 // Local Variables:

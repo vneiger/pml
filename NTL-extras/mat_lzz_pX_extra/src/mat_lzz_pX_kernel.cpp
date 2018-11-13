@@ -19,35 +19,27 @@ bool is_kernel_basis(
                      const Mat<zz_pX> & pmat,
                      const Shift & shift,
                      const PolMatForm & form,
-                     const bool row_wise,
                      const bool randomized
                     )
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
 
-    if (not row_wise)
-        throw std::invalid_argument("~~is_kernel_basis~~ column-wise not implemented yet");
-
     std::cout << "~~is_kernel_basis~~ Warning: checking generation not implemented yet" << std::endl;
 
     // test whether kerbas has the right dimensions
-    if ( (row_wise && kerbas.NumCols() != m)
-        || ((not row_wise) && kerbas.NumRows() != n))
+    if (kerbas.NumCols() != m)
         return false;
 
     // test whether appbas is shift-reduced with form at least 'form'
-    if (not is_polmatform(kerbas,form,shift,row_wise))
+    if (not is_row_polmatform(kerbas,shift,form))
         return false;
 
     // verify that the product is zero
     if (not randomized)
     {
         Mat<zz_pX> product;
-        if (row_wise)
-            multiply(product, kerbas, pmat);
-        else
-            multiply(product, pmat, kerbas);
+        multiply(product, kerbas, pmat);
         if (not IsZero(product))
             return false;
     }
@@ -58,39 +50,28 @@ bool is_kernel_basis(
         Mat<zz_p> left_project, right_project;
         Mat<zz_pX> projected_kerbas, projected_pmat;
         zz_pX projected_product;
-        if (row_wise)
-        {
-            random(left_project, 1, kerbas.NumRows());
-            mul(projected_kerbas, left_project, kerbas);
-            random(right_project, pmat.NumCols(), 1);
-            mul(projected_pmat, pmat, right_project);
-            for (long i = 0; i < m; ++i)
-                projected_product += projected_kerbas[0][i] * projected_pmat[i][0];
-        }
-        else
-        {
-            random(left_project, 1, pmat.NumRows());
-            mul(projected_pmat, left_project, pmat);
-            random(right_project, kerbas.NumCols(), 1);
-            mul(projected_kerbas, kerbas, right_project);
-            for (long i = 0; i < m; ++i)
-                projected_product += projected_pmat[0][i] * projected_kerbas[i][0];
-        }
+        random(left_project, 1, kerbas.NumRows());
+        mul(projected_kerbas, left_project, kerbas);
+        random(right_project, pmat.NumCols(), 1);
+        mul(projected_pmat, pmat, right_project);
+        for (long i = 0; i < m; ++i)
+            projected_product += projected_kerbas[0][i] * projected_pmat[i][0];
         if (not IsZero(projected_product))
             return false;
     }
 
     // testing generation in generic case
     // --> compare sum of pivot degrees for input and output
-    long ker_dim = (row_wise ? kerbas.NumRows() : kerbas.NumCols());
+    long ker_dim = kerbas.NumRows();
     std::vector<long> pivind(ker_dim);
     DegVec pivdeg(ker_dim);
-    pivot_index(pivind, pivdeg, kerbas, shift, row_wise);
+    row_pivots(pivind, pivdeg, kerbas, shift);
     long kerbas_degdet = std::accumulate(pivdeg.begin(), pivdeg.end(), 0);
-    DegVec degs = vector_degree(pmat, Shift(row_wise?m:n,0), not row_wise);
+    DegVec degs;
+    row_degree(degs, pmat);
     long input_degdet = std::accumulate(degs.begin(), degs.end(), 0);
     std::cout << "~~is_kernel_basis~~ Generation check assuming generic input of given ";
-    std::cout << (row_wise ? "column" : "row") << " degree: ";
+    std::cout << "column degree: ";
     std::cout << ((kerbas_degdet == input_degdet) ? "correct" : "wrong") << std::endl;
 
     return true;
@@ -131,7 +112,7 @@ DegVec kernel_basis_via_approximation(
     // (however, this is not handled by fast approximant algorithms for now)
     // Warning: code below not up-to-date: order is wrong for non-uniform shifts.
     //Order order(n);
-    //column_degree(order, pmat);
+    //col_degree(order, pmat);
     //long sum_cdeg = std::accumulate(order.begin(), order.end(), (long)0);
     //std::transform(order.begin(), order.end(), order.begin(), [&](long ord){return ord+sum_cdeg+1;});
 

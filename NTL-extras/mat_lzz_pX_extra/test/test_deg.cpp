@@ -52,8 +52,7 @@ int main()
     cout << "row degs: ";
     printVec(degs);
 
-    degs.resize(pmat.NumCols());
-    column_degree(degs,pmat);
+    col_degree(degs,pmat);
     cout << "col degs: ";
     printVec(degs);
 
@@ -62,21 +61,19 @@ int main()
     cout << "deg mat: " << endl << deg_mat << endl;
 
     Mat<zz_p> lead_mat;
-    leading_matrix(lead_mat, pmat);
+    row_leading_matrix(lead_mat, pmat);
     cout << "leading mat: " << endl << lead_mat << endl;
 
-    cout << "is reduced: " << boolalpha << is_reduced(pmat) << endl;
+    cout << "is reduced: " << boolalpha << is_row_reduced(pmat) << endl;
 
     std::vector<long> pivind(pmat.NumRows());
     std::vector<long> pivdeg(pmat.NumRows());
-    pivot_index(pivind, pivdeg, pmat, std::vector<long>(), true);
+    row_pivots(pivind, pivdeg, pmat);
     cout << "row pivot: ";
     printVec(pivind);
     printVec(pivdeg);
 
-    pivind.resize(pmat.NumCols());
-    pivdeg.resize(pmat.NumCols());
-    pivot_index(pivind, pivdeg, pmat, std::vector<long>(), false);
+    col_pivots(pivind, pivdeg, pmat);
     cout << "col pivot: ";
     printVec(pivind);
     printVec(pivdeg);
@@ -90,43 +87,37 @@ int main()
     cout << "col shift: ";
     printVec(cs);
 
-    degree_matrix(deg_mat,pmat,rs,true);
+    degree_matrix_rowshifted(deg_mat,pmat,rs);
     cout << "degree matrix with row wise shift: " << endl << deg_mat<<endl;
-    degree_matrix(deg_mat,pmat,cs,false);
+    degree_matrix_colshifted(deg_mat,pmat,cs);
     cout << "degree matrix with col wise shift: " << endl << deg_mat<<endl;
 
-    degs.resize(pmat.NumRows());
     row_degree(degs,pmat,rs);
     cout << "shifted row degree: ";
     printVec(degs);
 
-    degs.resize(pmat.NumCols());
-    column_degree(degs,pmat,cs);
+    col_degree(degs,pmat,cs);
     cout << "shifted col degree: ";
     printVec(degs);
 
-    leading_matrix(lead_mat,pmat,rs,true);
+    row_leading_matrix(lead_mat,pmat,rs);
     cout << "row shifted leading mat: " << endl << lead_mat << endl;
 
-    leading_matrix(lead_mat,pmat,cs,false);
+    col_leading_matrix(lead_mat,pmat,cs);
     cout << "col shifted leading mat: " << endl << lead_mat << endl;
 
-    pivind.resize(pmat.NumRows());
-    pivdeg.resize(pmat.NumRows());
-    pivot_index(pivind, pivdeg, pmat, rs, true);
+    row_pivots(pivind, pivdeg, pmat, rs);
     cout << "row pivot: ";
     printVec(pivind);
     printVec(pivdeg);
 
-    pivind.resize(pmat.NumCols());
-    pivdeg.resize(pmat.NumCols());
-    pivot_index(pivind, pivdeg, pmat, cs, false);
+    col_pivots(pivind, pivdeg, pmat, cs);
     cout << "col pivot: ";
     printVec(pivind);
     printVec(pivdeg);
 
-    cout << "weak popov? " << is_weak_popov(pmat,rs) << endl;
-    cout << "weak ordered popov? " << is_weak_popov(pmat,rs,true,true) << endl;
+    cout << "weak popov? " << is_row_weak_popov(pmat,rs) << endl;
+    cout << "weak ordered popov? " << is_row_ordered_weak_popov(pmat,rs) << endl;
 
     cout << endl << "testing is_popov" << endl;
     pmat.SetDims(3,3);
@@ -146,7 +137,7 @@ int main()
     cout << "pmat: " << endl << pmat << endl;
     degree_matrix(deg_mat, pmat);
     cout << "deg mat: " << endl << deg_mat << endl;
-    cout << "is_popov: " << boolalpha << is_popov(pmat) << endl;
+    cout << "is_popov: " << boolalpha << is_row_popov(pmat) << endl;
 
     cout << endl << "Test Left shifts" << endl;
     cout << "left shift operator: " << (pmat << 2) << endl;
