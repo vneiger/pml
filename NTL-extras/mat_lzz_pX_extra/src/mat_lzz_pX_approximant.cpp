@@ -303,7 +303,7 @@ DegVec popov_appbas_iterative(
     appbas.kill();
     appbas_iterative(appbas,pmat,order,new_shift,order_wise);
     Mat<zz_p> lmat;
-    row_leading_matrix_shifted(lmat, appbas, new_shift);
+    row_leading_matrix(lmat, appbas, new_shift);
     inv(lmat, lmat);
     mul(appbas,lmat,appbas); // FIXME special mult (expand columns of appbas)
     return pivdeg;
@@ -1580,7 +1580,7 @@ DegVec popov_mbasis(
     clear(appbas);
     mbasis(appbas,pmat,order,new_shift);
     Mat<zz_p> lmat;
-    row_leading_matrix_shifted(lmat, appbas, new_shift);
+    row_leading_matrix(lmat, appbas, new_shift);
     inv(lmat, lmat);
     mul(appbas,lmat,appbas);
     return pivdeg;
@@ -1683,7 +1683,7 @@ DegVec popov_pmbasis(
     clear(appbas);
     pmbasis(appbas,pmat,order,new_shift);
     Mat<zz_p> lmat;
-    row_leading_matrix_shifted(lmat, appbas, new_shift);
+    row_leading_matrix(lmat, appbas, new_shift);
     inv(lmat, lmat);
     mul(appbas,lmat,appbas);
     return pivdeg;

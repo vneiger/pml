@@ -113,17 +113,17 @@ inline DegVec row_degree(const Mat<zz_pX> &pmat)
 /* of pmat[k][j] with a weight shift[j] added on column j     */
 /* (min(shift)-1 if row is zero)                              */
 /*------------------------------------------------------------*/
-void row_degree_shifted(
+void row_degree(
                         DegVec & rdeg,
                         const Mat<zz_pX> &pmat,
                         const Shift & shift
                        ); 
 
-inline DegVec row_degree_shifted(
+inline DegVec row_degree(
                         const Mat<zz_pX> &pmat,
                         const Shift & shift
                        )
-{ DegVec rdeg; row_degree_shifted(rdeg, pmat, shift); return rdeg; }
+{ DegVec rdeg; row_degree(rdeg, pmat, shift); return rdeg; }
 
 
 /*------------------------------------------------------------*/
@@ -147,17 +147,17 @@ inline DegVec col_degree(const Mat<zz_pX> &pmat)
 /* degrees of pmat[i][k] with weight shift[i] added on row i  */
 /* (min(shift)-1 if column is zero)                           */
 /*------------------------------------------------------------*/
-void col_degree_shifted(
+void col_degree(
                         DegVec & cdeg,
                         const Mat<zz_pX> &pmat,
                         const Shift & shift
                        ); 
 
-inline DegVec col_degree_shifted(
+inline DegVec col_degree(
                                  const Mat<zz_pX> &pmat,
                                  const Shift & shift
                                 )
-{ DegVec cdeg; col_degree_shifted(cdeg, pmat, shift); return cdeg; }
+{ DegVec cdeg; col_degree(cdeg, pmat, shift); return cdeg; }
 
 
 /*------------------------------------------------------------*/
@@ -188,7 +188,7 @@ inline std::pair<VecLong,VecLong> row_pivots(const Mat<zz_pX> & pmat)
     return pivots;
 }
 
-void row_pivots_shifted(
+void row_pivots(
                         VecLong & pivind,
                         VecLong & pivdeg,
                         const Mat<zz_pX> & pmat,
@@ -196,13 +196,13 @@ void row_pivots_shifted(
                        );
 
 inline std::pair<VecLong,VecLong>
-row_pivots_shifted(
+row_pivots(
                    const Mat<zz_pX> & pmat,
                    const Shift & shift
                   )
 {
     std::pair<VecLong,VecLong> pivots;
-    row_pivots_shifted(pivots.first, pivots.second, pmat, shift);
+    row_pivots(pivots.first, pivots.second, pmat, shift);
     return pivots;
 }
 
@@ -229,7 +229,7 @@ inline std::pair<VecLong,VecLong> col_pivots(const Mat<zz_pX> & pmat)
     return pivots;
 }
 
-void col_pivots_shifted(
+void col_pivots(
                         VecLong & pivind,
                         VecLong & pivdeg,
                         const Mat<zz_pX> & pmat,
@@ -237,13 +237,13 @@ void col_pivots_shifted(
                        );
 
 inline std::pair<VecLong,VecLong>
-col_pivots_shifted(
+col_pivots(
                    const Mat<zz_pX> & pmat,
                    const Shift & shift
                   )
 {
     std::pair<VecLong,VecLong> pivots;
-    col_pivots_shifted(pivots.first, pivots.second, pmat, shift);
+    col_pivots(pivots.first, pivots.second, pmat, shift);
     return pivots;
 }
 
@@ -343,17 +343,17 @@ inline Mat<zz_p> row_leading_matrix(const Mat<zz_pX> & pmat)
 /* (this is zero if pmat[i][j] does not reach rdeg[i])        */
 /*------------------------------------------------------------*/
 
-void row_leading_matrix_shifted(
+void row_leading_matrix(
                     Mat<zz_p> &lmat,
                     const Mat<zz_pX> &pmat,
                     const Shift & shift
                    );
 
-inline Mat<zz_p> row_leading_matrix_shifted(
+inline Mat<zz_p> row_leading_matrix(
                                             const Mat<zz_pX> & pmat,
                                             const Shift & shift
                                            )
-{ Mat<zz_p> lmat; row_leading_matrix_shifted(lmat, pmat, shift); return lmat; }
+{ Mat<zz_p> lmat; row_leading_matrix(lmat, pmat, shift); return lmat; }
 
 
 /*------------------------------------------------------------*/
@@ -379,17 +379,17 @@ inline Mat<zz_p> col_leading_matrix(const Mat<zz_pX> & pmat)
 /* (this is zero if pmat[i][j] does not reach rdeg[j])        */
 /*------------------------------------------------------------*/
 
-void col_leading_matrix_shifted(
+void col_leading_matrix(
                     Mat<zz_p> &lmat,
                     const Mat<zz_pX> &pmat,
                     const Shift & shift
                    );
 
-inline Mat<zz_p> col_leading_matrix_shifted(
+inline Mat<zz_p> col_leading_matrix(
                                             const Mat<zz_pX> & pmat,
                                             const Shift & shift
                                            )
-{ Mat<zz_p> lmat; col_leading_matrix_shifted(lmat, pmat, shift); return lmat; }
+{ Mat<zz_p> lmat; col_leading_matrix(lmat, pmat, shift); return lmat; }
 
 
 
@@ -406,7 +406,7 @@ inline Mat<zz_p> col_leading_matrix_shifted(
 /* --> note that zero rows or columns are not allowed         */
 /*------------------------------------------------------------*/
 bool is_row_reduced(const Mat<zz_pX> & pmat);
-bool is_row_reduced_shifted(const Mat<zz_pX> & pmat, const Shift & shift);
+bool is_row_reduced(const Mat<zz_pX> & pmat, const Shift & shift);
 
 /*------------------------------------------------------------*/
 /* test (shifted) column reducedness:                         */
@@ -415,7 +415,7 @@ bool is_row_reduced_shifted(const Mat<zz_pX> & pmat, const Shift & shift);
 /* --> note that zero rows or columns are not allowed         */
 /*------------------------------------------------------------*/
 bool is_col_reduced(const Mat<zz_pX> & pmat);
-bool is_col_reduced_shifted(const Mat<zz_pX> & pmat, const Shift & shift);
+bool is_col_reduced(const Mat<zz_pX> & pmat, const Shift & shift);
 
 
 

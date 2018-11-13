@@ -207,7 +207,7 @@ bool is_interpolant_basis(
 //			intbas[i][j] = 0;
 //	intbas_iterative(intbas,pmat,order,new_shift,point_wise);
 //	Mat<zz_p> lmat;
-//	row_leading_matrix_shifted(lmat, intbas, new_shift);
+//	row_leading_matrix(lmat, intbas, new_shift);
 //	inv(lmat, lmat);
 //	mul(intbas,lmat,intbas);
 //	return pivdeg;

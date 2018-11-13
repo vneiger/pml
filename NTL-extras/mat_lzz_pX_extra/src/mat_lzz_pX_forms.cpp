@@ -33,14 +33,14 @@ void row_degree(
 /*------------------------------------------------------------*/
 /* shifted row degree                                         */
 /*------------------------------------------------------------*/
-void row_degree_shifted(
+void row_degree(
                         DegVec & rdeg,
                         const Mat<zz_pX> &pmat,
                         const Shift & shift
                        )
 {
     if ((long)shift.size() != pmat.NumCols())
-        throw std::invalid_argument("==row_degree_shifted== shift must have length pmat.NumCols()");
+        throw std::invalid_argument("==row_degree== shift must have length pmat.NumCols()");
 
     // empty rdeg and reserve space
     rdeg.clear();
@@ -88,14 +88,14 @@ void col_degree(
 /*------------------------------------------------------------*/
 /* shifted column degree                                      */
 /*------------------------------------------------------------*/
-void col_degree_shifted(
+void col_degree(
                         DegVec & cdeg,
                         const Mat<zz_pX> &pmat,
                         const Shift & shift
                        )
 {
     if ((long)shift.size() != pmat.NumRows())
-        throw std::invalid_argument("==col_degree_shifted== shift must have length pmat.NumRows()");
+        throw std::invalid_argument("==col_degree== shift must have length pmat.NumRows()");
 
     // empty cdeg and reserve space
     cdeg.clear();
@@ -160,7 +160,7 @@ void row_pivots(
 /*------------------------------------------------------------*/
 /* shifted row pivot index/degree                             */
 /*------------------------------------------------------------*/
-void row_pivots_shifted(
+void row_pivots(
                         VecLong & pivind,
                         VecLong & pivdeg,
                         const Mat<zz_pX> & pmat,
@@ -168,7 +168,7 @@ void row_pivots_shifted(
                        )
 {
     if ((long)shift.size() != pmat.NumCols())
-        throw std::invalid_argument("==row_pivots_shifted== shift must have length pmat.NumCols()");
+        throw std::invalid_argument("==row_pivots== shift must have length pmat.NumCols()");
 
     // empty vectors and reserve space
     pivind.clear();
@@ -237,7 +237,7 @@ void col_pivots(
 /*------------------------------------------------------------*/
 /* shifted column pivot index/degree                          */
 /*------------------------------------------------------------*/
-void col_pivots_shifted(
+void col_pivots(
                         VecLong & pivind,
                         VecLong & pivdeg,
                         const Mat<zz_pX> & pmat,
@@ -245,7 +245,7 @@ void col_pivots_shifted(
                        )
 {
     if ((long)shift.size() != pmat.NumRows())
-        throw std::invalid_argument("==col_pivots_shifted== shift must have length pmat.NumRows()");
+        throw std::invalid_argument("==col_pivots== shift must have length pmat.NumRows()");
 
     // empty vectors and reserve space
     pivind.clear();
@@ -394,14 +394,14 @@ void row_leading_matrix(
 /*------------------------------------------------------------*/
 /* row-wise shifted leading matrix of pmat                    */
 /*------------------------------------------------------------*/
-void row_leading_matrix_shifted(
+void row_leading_matrix(
                                 Mat<zz_p> &lmat,
                                 const Mat<zz_pX> &pmat,
                                 const Shift & shift
                                )
 {
     DegVec rdeg;
-    row_degree_shifted(rdeg,pmat,shift);
+    row_degree(rdeg,pmat,shift);
 
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
     for (long r = 0; r < lmat.NumRows(); ++r)
@@ -435,14 +435,14 @@ void col_leading_matrix(
 /*------------------------------------------------------------*/
 /* column-wise shifted leading matrix of pmat                 */
 /*------------------------------------------------------------*/
-void col_leading_matrix_shifted(
+void col_leading_matrix(
                                 Mat<zz_p> &lmat,
                                 const Mat<zz_pX> &pmat,
                                 const Shift & shift
                                )
 {
     DegVec cdeg;
-    col_degree_shifted(cdeg,pmat,shift);
+    col_degree(cdeg,pmat,shift);
 
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
     for (long r = 0; r < lmat.NumRows(); ++r)
@@ -476,10 +476,10 @@ bool is_row_reduced(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 /* test shifted row reduced                                   */
 /*------------------------------------------------------------*/
-bool is_row_reduced_shifted(const Mat<zz_pX> & pmat, const Shift & shift)
+bool is_row_reduced(const Mat<zz_pX> & pmat, const Shift & shift)
 {
     Mat<zz_p> lmat;
-    row_leading_matrix_shifted(lmat,pmat,shift);
+    row_leading_matrix(lmat,pmat,shift);
     long rank = gauss(lmat);
     return rank == pmat.NumRows();
 }
@@ -498,10 +498,10 @@ bool is_col_reduced(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 /* test shifted column reduced                                */
 /*------------------------------------------------------------*/
-bool is_col_reduced_shifted(const Mat<zz_pX> & pmat, const Shift & shift)
+bool is_col_reduced(const Mat<zz_pX> & pmat, const Shift & shift)
 {
     Mat<zz_p> lmat;
-    col_leading_matrix_shifted(lmat,pmat,shift);
+    col_leading_matrix(lmat,pmat,shift);
     long rank = gauss(lmat);
     return rank == pmat.NumCols();
 }
@@ -546,7 +546,7 @@ bool is_row_weak_popov(
 {
     // retrieve pivot index
     VecLong pivind, pivdeg;
-    row_pivots_shifted(pivind, pivdeg, pmat, shift);
+    row_pivots(pivind, pivdeg, pmat, shift);
 
     // forbide zero rows
     if( std::find(pivind.begin(),pivind.end(),-1) != pivind.end() )
@@ -591,7 +591,7 @@ bool is_col_weak_popov(
 {
     // retrieve pivot index
     VecLong pivind, pivdeg;
-    col_pivots_shifted(pivind, pivdeg, pmat, shift);
+    col_pivots(pivind, pivdeg, pmat, shift);
 
     // forbide zero rows
     if( std::find(pivind.begin(),pivind.end(),-1) != pivind.end() )
@@ -635,7 +635,7 @@ bool is_row_ordered_weak_popov(
 {
     // retrieve pivot index
     VecLong pivind, pivdeg;
-    row_pivots_shifted(pivind, pivdeg, pmat, shift);
+    row_pivots(pivind, pivdeg, pmat, shift);
 
     // forbide zero rows
     if( std::find(pivind.begin(),pivind.end(),-1) != pivind.end() )
@@ -678,7 +678,7 @@ bool is_row_ordered_weak_popov(
 {
     // retrieve pivot index
     VecLong pivind, pivdeg;
-    col_pivots_shifted(pivind, pivdeg, pmat, shift);
+    col_pivots(pivind, pivdeg, pmat, shift);
 
     // forbide zero rows
     if( std::find(pivind.begin(),pivind.end(),-1) != pivind.end() )

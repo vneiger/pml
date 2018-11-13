@@ -96,31 +96,31 @@ int main()
     cout << "degree matrix with col wise shift: " << endl << deg_mat<<endl;
 
     degs.resize(pmat.NumRows());
-    row_degree_shifted(degs,pmat,rs);
+    row_degree(degs,pmat,rs);
     cout << "shifted row degree: ";
     printVec(degs);
 
     degs.resize(pmat.NumCols());
-    col_degree_shifted(degs,pmat,cs);
+    col_degree(degs,pmat,cs);
     cout << "shifted col degree: ";
     printVec(degs);
 
-    row_leading_matrix_shifted(lead_mat,pmat,rs);
+    row_leading_matrix(lead_mat,pmat,rs);
     cout << "row shifted leading mat: " << endl << lead_mat << endl;
 
-    col_leading_matrix_shifted(lead_mat,pmat,cs);
+    col_leading_matrix(lead_mat,pmat,cs);
     cout << "col shifted leading mat: " << endl << lead_mat << endl;
 
     pivind.resize(pmat.NumRows());
     pivdeg.resize(pmat.NumRows());
-    row_pivots_shifted(pivind, pivdeg, pmat, rs);
+    row_pivots(pivind, pivdeg, pmat, rs);
     cout << "row pivot: ";
     printVec(pivind);
     printVec(pivdeg);
 
     pivind.resize(pmat.NumCols());
     pivdeg.resize(pmat.NumCols());
-    col_pivots_shifted(pivind, pivdeg, pmat, cs);
+    col_pivots(pivind, pivdeg, pmat, cs);
     cout << "col pivot: ";
     printVec(pivind);
     printVec(pivdeg);
