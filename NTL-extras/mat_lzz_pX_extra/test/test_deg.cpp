@@ -65,7 +65,7 @@ int main()
     row_leading_matrix(lead_mat, pmat);
     cout << "leading mat: " << endl << lead_mat << endl;
 
-    cout << "is reduced: " << boolalpha << is_reduced(pmat) << endl;
+    cout << "is reduced: " << boolalpha << is_row_reduced(pmat) << endl;
 
     std::vector<long> pivind(pmat.NumRows());
     std::vector<long> pivdeg(pmat.NumRows());
