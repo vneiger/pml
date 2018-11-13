@@ -509,26 +509,70 @@ bool is_col_popov(const Mat<zz_pX> & pmat, const Shift & shift);
 //                                    );
 
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING SHIFTED FORMS (FORM SELECTOR)                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* Return the strongest form of pmat among those in the       */
-/* enum 'PolMatForm'                                          */
+/* Check whether pmat is in the prescribed row-wise form      */
 /*------------------------------------------------------------*/
-PolMatForm get_polmatform(
-                          const Mat<zz_pX> & pmat,
-                          const Shift & shift = Shift(),
-                          const bool row_wise = true
-                         );
-
-/*------------------------------------------------------------*/
-/* Check whether pmat is in the form indicated by 'form'      */
-/*------------------------------------------------------------*/
-bool is_polmatform(
+bool is_row_polmatform(
                    const Mat<zz_pX> & pmat,
-                   const PolMatForm form,
-                   const Shift & shift = Shift(),
-                   const bool row_wise = true
+                   const PolMatForm form
                   );
+
+bool is_row_polmatform(
+                   const Mat<zz_pX> & pmat,
+                   const Shift & shift,
+                   const PolMatForm form
+                  );
+
+/*------------------------------------------------------------*/
+/* Check whether pmat is in the prescribed column-wise form   */
+/*------------------------------------------------------------*/
+bool is_col_polmatform(
+                   const Mat<zz_pX> & pmat,
+                   const PolMatForm form
+                  );
+
+bool is_col_polmatform(
+                   const Mat<zz_pX> & pmat,
+                   const Shift & shift,
+                   const PolMatForm form
+                  );
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* FIND STRONGEST (SHIFTED) FORM                              */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* Return the strongest row-wise form of pmat among:          */
+/* Popov => ordered weak Popov => weak Popov                  */
+/*                                       => reduced => none   */
+/*------------------------------------------------------------*/
+PolMatForm get_row_polmatform(const Mat<zz_pX> & pmat);
+PolMatForm get_row_polmatform(
+                              const Mat<zz_pX> & pmat,
+                              const Shift & shift
+                             );
+
+/*------------------------------------------------------------*/
+/* Return the strongest column-wise form of pmat among:       */
+/* Popov => ordered weak Popov => weak Popov                  */
+/*                                       => reduced => none   */
+/*------------------------------------------------------------*/
+PolMatForm get_col_polmatform(const Mat<zz_pX> & pmat);
+PolMatForm get_col_polmatform(
+                              const Mat<zz_pX> & pmat,
+                              const Shift & shift
+                             );
 
 
 /**********************************************************************

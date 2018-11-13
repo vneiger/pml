@@ -1,4 +1,5 @@
 #include "mat_lzz_pX_forms.h"
+#include "lzz_pX_extra.h" // for "is_monic(a)"
 
 NTL_CLIENT
 
@@ -619,7 +620,7 @@ bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat)
         return false;
 
     // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
-    if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
         return false;
 
     return true;
@@ -642,7 +643,7 @@ bool is_row_ordered_weak_popov(
         return false;
 
     // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
-    if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
         return false;
 
     return true;
@@ -662,7 +663,7 @@ bool is_col_ordered_weak_popov(const Mat<zz_pX> & pmat)
         return false;
 
     // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
-    if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
         return false;
 
     return true;
@@ -685,7 +686,7 @@ bool is_col_ordered_weak_popov(
         return false;
 
     // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
-    if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
         return false;
 
     return true;
@@ -713,7 +714,7 @@ bool is_row_popov(const Mat<zz_pX> & pmat)
         return false;
 
     // check pivot index increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
-    if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
         return false;
 
     // --> ordered weak Popov form OK
@@ -750,7 +751,7 @@ bool is_row_popov(const Mat<zz_pX> & pmat, const Shift & shift)
         return false;
 
     // check pivot index increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
-    if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
         return false;
 
     // --> ordered weak Popov form OK
@@ -800,7 +801,7 @@ bool is_col_popov(const Mat<zz_pX> & pmat)
         return false;
 
     // check pivot index increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
-    if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
         return false;
 
     // --> ordered weak Popov form OK
@@ -838,7 +839,7 @@ bool is_col_popov(const Mat<zz_pX> & pmat, const Shift & shift)
         return false;
 
     // check pivot index increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
-    if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+    if (std::adjacent_find(pivind.begin(),pivind.end(),std::greater_equal<long>()) != pivind.end())
         return false;
 
     // --> ordered weak Popov form OK
@@ -879,47 +880,185 @@ bool is_col_popov(const Mat<zz_pX> & pmat, const Shift & shift)
 
 
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING SHIFTED FORMS (FORM SELECTOR)                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 
+/*------------------------------------------------------------*/
+/* Check whether pmat is in the prescribed row-wise form      */
+/*------------------------------------------------------------*/
 
-
-
-PolMatForm get_polmatform(
-                          const Mat<zz_pX> &pmat,
-                          const Shift &shift,
-                          const bool row_wise
-                         )
-{
-    if (is_popov(pmat,shift,row_wise)) {   // TODO waiting for is_popov
-        return POPOV;
-    }
-    if (is_weak_popov(pmat,shift,row_wise,true))
-        return ORD_WEAK_POPOV;
-    else if (is_weak_popov(pmat,shift,row_wise))
-        return WEAK_POPOV;
-    else if (is_reduced(pmat,shift,row_wise))
-        return REDUCED;
-    else
-        return NONE;
-}
-
-bool is_polmatform(
-                   const Mat<zz_pX> &pmat,
-                   const PolMatForm form,
-                   const Shift &shift,
-                   const bool row_wise
-                  )
+bool is_row_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
 {
     switch (form)
     {
-    case NONE: return true;
-    case REDUCED: return is_reduced(pmat,shift,row_wise);
-    case WEAK_POPOV: return is_weak_popov(pmat,shift,row_wise,false);
-    case ORD_WEAK_POPOV: return is_weak_popov(pmat,shift,row_wise,true);
-    case POPOV: return is_popov(pmat,shift,row_wise,false);
-    default: throw std::invalid_argument("==is_polmatform== Unknown required polynomial matrix form.");
+    case NONE:
+        return true;
+    case REDUCED:
+        return is_row_reduced(pmat);
+    case WEAK_POPOV:
+        return is_row_weak_popov(pmat);
+    case ORD_WEAK_POPOV:
+        return is_row_ordered_weak_popov(pmat);
+    case POPOV:
+        return is_row_popov(pmat);
+    default:
+        throw std::invalid_argument("==is_row_polmatform== Unknown required polynomial matrix form.");
     }
 }
+
+bool is_row_polmatform(
+                       const Mat<zz_pX> & pmat,
+                       const Shift &shift,
+                       const PolMatForm form
+                      )
+{
+    switch (form)
+    {
+    case NONE:
+        return true;
+    case REDUCED:
+        return is_row_reduced(pmat,shift);
+    case WEAK_POPOV:
+        return is_row_weak_popov(pmat,shift);
+    case ORD_WEAK_POPOV:
+        return is_row_ordered_weak_popov(pmat,shift);
+    case POPOV:
+        return is_row_popov(pmat,shift);
+    default:
+        throw std::invalid_argument("==is_row_polmatform== Unknown required polynomial matrix form.");
+    }
+}
+
+/*------------------------------------------------------------*/
+/* Check whether pmat is in the prescribed column-wise form   */
+/*------------------------------------------------------------*/
+
+bool is_col_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
+{
+    switch (form)
+    {
+    case NONE:
+        return true;
+    case REDUCED:
+        return is_col_reduced(pmat);
+    case WEAK_POPOV:
+        return is_col_weak_popov(pmat);
+    case ORD_WEAK_POPOV:
+        return is_col_ordered_weak_popov(pmat);
+    case POPOV:
+        return is_col_popov(pmat);
+    default:
+        throw std::invalid_argument("==is_col_polmatform== Unknown required polynomial matrix form.");
+    }
+}
+
+bool is_col_polmatform(
+                       const Mat<zz_pX> & pmat,
+                       const Shift &shift,
+                       const PolMatForm form
+                      )
+{
+    switch (form)
+    {
+    case NONE:
+        return true;
+    case REDUCED:
+        return is_col_reduced(pmat,shift);
+    case WEAK_POPOV:
+        return is_col_weak_popov(pmat,shift);
+    case ORD_WEAK_POPOV:
+        return is_col_ordered_weak_popov(pmat,shift);
+    case POPOV:
+        return is_col_popov(pmat,shift);
+    default:
+        throw std::invalid_argument("==is_col_polmatform== Unknown required polynomial matrix form.");
+    }
+}
+
+
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* FIND STRONGEST (SHIFTED) FORM                              */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+
+/*------------------------------------------------------------*/
+/* Return the strongest row-wise form of pmat among:          */
+/* Popov => ordered weak Popov => weak Popov                  */
+/*                                       => reduced => none   */
+/*------------------------------------------------------------*/
+PolMatForm get_row_polmatform(const Mat<zz_pX> & pmat)
+{
+    if (is_row_popov(pmat))
+        return POPOV;
+    if (is_row_ordered_weak_popov(pmat))
+        return ORD_WEAK_POPOV;
+    if (is_row_weak_popov(pmat))
+        return WEAK_POPOV;
+    if (is_row_reduced(pmat))
+        return REDUCED;
+    return NONE;
+}
+
+PolMatForm get_row_polmatform(
+                              const Mat<zz_pX> &pmat,
+                              const Shift &shift
+                             )
+{
+    if (is_row_popov(pmat,shift))
+        return POPOV;
+    if (is_row_ordered_weak_popov(pmat,shift))
+        return ORD_WEAK_POPOV;
+    if (is_row_weak_popov(pmat,shift))
+        return WEAK_POPOV;
+    if (is_row_reduced(pmat,shift))
+        return REDUCED;
+    return NONE;
+}
+
+/*------------------------------------------------------------*/
+/* Return the strongest column-wise form of pmat among:       */
+/* Popov => ordered weak Popov => weak Popov                  */
+/*                                       => reduced => none   */
+/*------------------------------------------------------------*/
+PolMatForm get_col_polmatform(const Mat<zz_pX> & pmat)
+{
+    if (is_col_popov(pmat))
+        return POPOV;
+    if (is_col_ordered_weak_popov(pmat))
+        return ORD_WEAK_POPOV;
+    if (is_col_weak_popov(pmat))
+        return WEAK_POPOV;
+    if (is_col_reduced(pmat))
+        return REDUCED;
+    return NONE;
+}
+
+PolMatForm get_col_polmatform(
+                              const Mat<zz_pX> &pmat,
+                              const Shift &shift
+                             )
+{
+    if (is_col_popov(pmat,shift))
+        return POPOV;
+    if (is_col_ordered_weak_popov(pmat,shift))
+        return ORD_WEAK_POPOV;
+    if (is_col_weak_popov(pmat,shift))
+        return WEAK_POPOV;
+    if (is_col_reduced(pmat,shift))
+        return REDUCED;
+    return NONE;
+}
+
 
 
 // Local Variables:
