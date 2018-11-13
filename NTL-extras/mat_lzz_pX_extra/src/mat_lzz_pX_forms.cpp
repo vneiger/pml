@@ -2,15 +2,18 @@
 
 NTL_CLIENT
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* (SHIFTED) DEGREE MATRIX                                    */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
 /* degree matrix                                              */
 /*------------------------------------------------------------*/
 void degree_matrix(
                    Mat<long> & degmat,
-                   const Mat<zz_pX> & pmat, 
-                   const Shift & shift,
-                   const bool row_wise
+                   const Mat<zz_pX> & pmat
                   )
 {
     // set the dimensions of degmat and populate it with degrees
@@ -18,24 +21,79 @@ void degree_matrix(
     for (long i = 0; i < pmat.NumRows(); ++i)
         for (long j = 0; j < pmat.NumCols(); ++j)
             degmat[i][j] = deg(pmat[i][j]);
-
-    bool shifted = check_shift(shift, pmat, row_wise);
-    if (shifted)
-    {
-        // we are in a shifted case; shift dimension has been checked
-        // compute minimum shift entry (will be used for degree of zero entries of b)
-        long min_shift = *std::min_element(shift.begin(),shift.end());
-
-        for (long i = 0; i < pmat.NumRows(); ++i)
-            for (long j = 0; j < pmat.NumCols(); ++j)
-                if (degmat[i][j] == -1)
-                    degmat[i][j] += min_shift;
-                else if (row_wise)
-                    degmat[i][j] += shift[j];
-                else
-                    degmat[i][j] += shift[i];
-    }
 }
+
+/*------------------------------------------------------------*/
+/* row-shifted degree matrix                                  */
+/*------------------------------------------------------------*/
+void degree_matrix_rowshifted(
+                              Mat<long> & degmat,
+                              const Mat<zz_pX> & pmat,
+                              const Shift & shift
+                             )
+{
+    if ((long)shift.size() != pmat.NumCols())
+        throw std::invalid_argument("==degree_matrix_rowshifted== shift must have length pmat.NumCols()");
+
+    // compute minimum shift entry (used for zero entries)
+    long min_shift = *std::min_element(shift.begin(),shift.end());
+
+    // set the dimensions of degmat and populate it with degrees
+    degmat.SetDims(pmat.NumRows(), pmat.NumCols());
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        for (long j = 0; j < pmat.NumCols(); ++j)
+        {
+            if (IsZero(pmat[i][j]))
+                degmat[i][j] = min_shift-1;
+            else
+                degmat[i][j] = deg(pmat[i][j]) + shift[j];
+        }
+}
+
+/*------------------------------------------------------------*/
+/* column-shifted degree matrix                               */
+/*------------------------------------------------------------*/
+void degree_matrix_colshifted(
+                              Mat<long> & degmat,
+                              const Mat<zz_pX> & pmat,
+                              const Shift & shift
+                             )
+{
+    if ((long)shift.size() != pmat.NumRows())
+        throw std::invalid_argument("==degree_matrix_colshifted== shift must have length pmat.NumRows()");
+
+    // compute minimum shift entry (used for zero entries)
+    long min_shift = *std::min_element(shift.begin(),shift.end());
+
+    // set the dimensions of degmat and populate it with degrees
+    degmat.SetDims(pmat.NumRows(), pmat.NumCols());
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        for (long j = 0; j < pmat.NumCols(); ++j)
+        {
+            if (IsZero(pmat[i][j]))
+                degmat[i][j] = min_shift-1;
+            else
+                degmat[i][j] = deg(pmat[i][j]) + shift[i];
+        }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /*------------------------------------------------------------*/

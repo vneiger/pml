@@ -49,7 +49,7 @@ enum PolMatForm {
 /* return true iff a non-empty shift was given as input       */
 /*------------------------------------------------------------*/
 inline bool check_shift(
-                        const std::vector<long> & shift,
+                        const Shift & shift,
                         const Mat<zz_pX> & pmat,
                         const bool row_wise = true
                        )
@@ -85,7 +85,7 @@ inline long amplitude(Shift shift)
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* SHIFTED DEGREES AND SHIFTED PIVOTS                         */
+/* (SHIFTED) DEGREE MATRIX                                    */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
@@ -95,25 +95,58 @@ inline long amplitude(Shift shift)
 /* of a zero entry is min(shift)-1                            */
 /*------------------------------------------------------------*/
 
-// TODO explain what shifted degree is
-
 void degree_matrix(
-                   Mat<long> &degmat,
-                   const Mat<zz_pX> &pmat,
-                   const Shift & shift = Shift(),
-                   const bool row_wise = true
+                   Mat<long> & degmat,
+                   const Mat<zz_pX> & pmat
                   );
 
-inline Mat<long> degree_matrix(
-                               const Mat<zz_pX> &pmat,
-                               const Shift & shift = Shift(),
-                               const bool row_wise = true
-                              )
+inline Mat<long> degree_matrix(const Mat<zz_pX> &pmat)
+{ Mat<long> degmat; degree_matrix(degmat, pmat); return degmat; }
+
+/*------------------------------------------------------------*/
+/* Row-shifted degree matrix: matrix whose entry (i,j) is the */
+/* degree of pmat[i][j], shifted by adding shift[j]           */
+/* Convention: for a zero entry, its degree is min(shift)-1   */
+/*------------------------------------------------------------*/
+
+void degree_matrix_rowshifted(
+                              Mat<long> &degmat,
+                              const Mat<zz_pX> &pmat,
+                              const Shift & shift
+                             );
+
+inline Mat<long> degree_matrix_rowshifted(
+                                          const Mat<zz_pX> &pmat,
+                                          const Shift & shift
+                                         )
 {
     Mat<long> degmat;
-    degree_matrix(degmat, pmat, shift, row_wise);
+    degree_matrix_rowshifted(degmat, pmat, shift);
     return degmat;
 }
+
+/*------------------------------------------------------------*/
+/* Column-shifted degree matrix: matrix whose entry (i,j) is  */
+/* the degree of pmat[i][j], shifted by adding shift[i]       */
+/* Convention: for a zero entry, its degree is min(shift)-1   */
+/*------------------------------------------------------------*/
+
+void degree_matrix_colshifted(
+                              Mat<long> &degmat,
+                              const Mat<zz_pX> &pmat,
+                              const Shift & shift
+                             );
+
+inline Mat<long> degree_matrix_colshifted(
+                                          const Mat<zz_pX> &pmat,
+                                          const Shift & shift
+                                         )
+{
+    Mat<long> degmat;
+    degree_matrix_colshifted(degmat, pmat, shift);
+    return degmat;
+}
+
 
 /*------------------------------------------------------------*/
 /* tuple (shifted deg row 1, shifted deg row 2, ...)          */
@@ -126,7 +159,6 @@ void row_degree(
                 const Shift & shift = Shift()
                ); 
 
-// TODO version which returns rdeg
 
 /*------------------------------------------------------------*/
 /* similar function for column degrees (see row_degree)       */
