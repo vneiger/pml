@@ -338,11 +338,11 @@ DegVec kernel_basis_zls_via_interpolation(
     // TODO threshold ( 3* ?) to determine
     long order = 3 * ceil( (double)rho / n);
 
-    cout << "order: " << order << endl;
-    cout << "shift: ";
-    for (auto i : shift)
-        cout << i << " ";
-    cout << endl;
+    //cout << "order: " << order << endl;
+    //cout << "shift: ";
+    //for (auto i : shift)
+    //    cout << i << " ";
+    //cout << endl;
 
     zz_p r;
     random(r);
@@ -356,10 +356,10 @@ DegVec kernel_basis_zls_via_interpolation(
     DegVec rdegP;
     rdegP.resize(m);
     row_degree(rdegP,P,shift);
-    cout << "rdegP: ";
-    for (auto i: rdegP)
-        cout << i << " ";
-    cout << endl;
+    //cout << "rdegP: ";
+    //for (auto i: rdegP)
+    //    cout << i << " ";
+    //cout << endl;
 
     // partition
     Mat<zz_pX> &P1 = kerbas;
@@ -394,14 +394,14 @@ DegVec kernel_basis_zls_via_interpolation(
         }
     }
 
-    cout << "pmat: " << degree_matrix(pmat) << endl;
-    cout << "P1: " << degree_matrix(P1) << endl;
-    cout << "P2: " << degree_matrix(P2) << endl;
+    //cout << "pmat: " << degree_matrix(pmat) << endl;
+    //cout << "P1: " << degree_matrix(P1) << endl;
+    //cout << "P2: " << degree_matrix(P2) << endl;
     if (P1.NumRows() != 0)
     {
         Mat<zz_pX> tmp;
         multiply(tmp,P1,pmat);
-        cout << "P1 prod: " << degree_matrix(tmp) << endl;
+        //cout << "P1 prod: " << degree_matrix(tmp) << endl;
     }
 
     if (n == 1 || r1 == m)
@@ -448,21 +448,21 @@ DegVec kernel_basis_zls_via_interpolation(
     // recursive calls
     Mat<zz_pX> N1, N2;
 
-    cout << "\n\ncall 1" << endl;
+    //cout << "\n\ncall 1" << endl;
     DegVec u = kernel_basis_zls_via_interpolation(N1, G1, rdegP2);
-    cout << "u: ";
-    for (auto i : u)
-        cout << i << " ";
-    cout << endl;
+    //cout << "u: ";
+    //for (auto i : u)
+    //    cout << i << " ";
+    //cout << endl;
 
     multiply(G2, N1, G2);
 
-    cout << "\n\ncall 2" << endl;
+    //cout << "\n\ncall 2" << endl;
     DegVec v = kernel_basis_zls_via_interpolation(N2, G2, u);
-    cout << "v: ";
-    for (auto i : v)
-        cout << i << " ";
-    cout << endl;
+    //cout << "v: ";
+    //for (auto i : v)
+    //    cout << i << " ";
+    //cout << endl;
 
     if (N2.NumRows() == 0)
     {
@@ -479,10 +479,10 @@ DegVec kernel_basis_zls_via_interpolation(
     }
     for (auto &i: v)
         rdegP1.emplace_back(i);
-    cout << "return degree: ";
-    for (auto i : rdegP1)
-        cout << i << " ";
-    cout << endl;
+    //cout << "return degree: ";
+    //for (auto i : rdegP1)
+    //    cout << i << " ";
+    //cout << endl;
     return rdegP1;
 }
 
