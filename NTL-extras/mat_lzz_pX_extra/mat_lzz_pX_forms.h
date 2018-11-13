@@ -426,7 +426,7 @@ bool is_col_reduced_shifted(const Mat<zz_pX> & pmat, const Shift & shift);
 /* pairwise distinct entries (i.e. no repetition)             */
 /*------------------------------------------------------------*/
 bool is_row_weak_popov(const Mat<zz_pX> & pmat);
-bool is_row_weak_popov_shifted(
+bool is_row_weak_popov(
                                const Mat<zz_pX> &pmat,
                                const Shift & shift
                               );
@@ -438,7 +438,7 @@ bool is_row_weak_popov_shifted(
 /* of pairwise distinct entries (i.e. no repetition)          */
 /*------------------------------------------------------------*/
 bool is_col_weak_popov(const Mat<zz_pX> & pmat);
-bool is_col_weak_popov_shifted(
+bool is_col_weak_popov(
                                const Mat<zz_pX> &pmat,
                                const Shift & shift
                               );
@@ -450,7 +450,7 @@ bool is_col_weak_popov_shifted(
 /* strictly increasing                                        */
 /*------------------------------------------------------------*/
 bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat);
-bool is_row_ordered_weak_popov_shifted(
+bool is_row_ordered_weak_popov(
                                const Mat<zz_pX> &pmat,
                                const Shift & shift
                               );
@@ -462,7 +462,7 @@ bool is_row_ordered_weak_popov_shifted(
 /* is strictly increasing                                     */
 /*------------------------------------------------------------*/
 bool is_col_ordered_weak_popov(const Mat<zz_pX> & pmat);
-bool is_col_ordered_weak_popov_shifted(
+bool is_col_ordered_weak_popov(
                                const Mat<zz_pX> &pmat,
                                const Shift & shift
                               );

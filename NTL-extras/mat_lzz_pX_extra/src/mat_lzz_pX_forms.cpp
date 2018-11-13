@@ -539,7 +539,7 @@ bool is_row_weak_popov(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 /* test row-wise shifted weak Popov form                      */
 /*------------------------------------------------------------*/
-bool is_row_weak_popov_shifted(
+bool is_row_weak_popov(
                                const Mat<zz_pX> &pmat,
                                const Shift & shift
                               )
@@ -584,7 +584,7 @@ bool is_col_weak_popov(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 /* test column-wise shifted weak Popov form                   */
 /*------------------------------------------------------------*/
-bool is_col_weak_popov_shifted(
+bool is_col_weak_popov(
                                const Mat<zz_pX> &pmat,
                                const Shift & shift
                               )
@@ -628,7 +628,7 @@ bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 /* test row-wise shifted ordered weak Popov form              */
 /*------------------------------------------------------------*/
-bool is_row_ordered_weak_popov_shifted(
+bool is_row_ordered_weak_popov(
                                const Mat<zz_pX> &pmat,
                                const Shift & shift
                               )
@@ -671,7 +671,7 @@ bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 /* test column-wise shifted ordered weak Popov form           */
 /*------------------------------------------------------------*/
-bool is_row_ordered_weak_popov_shifted(
+bool is_row_ordered_weak_popov(
                                const Mat<zz_pX> &pmat,
                                const Shift & shift
                               )

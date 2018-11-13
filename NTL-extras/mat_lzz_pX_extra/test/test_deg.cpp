@@ -125,8 +125,8 @@ int main()
     printVec(pivind);
     printVec(pivdeg);
 
-    cout << "weak popov? " << is_weak_popov(pmat,rs) << endl;
-    cout << "weak ordered popov? " << is_weak_popov(pmat,rs,true,true) << endl;
+    cout << "weak popov? " << is_row_weak_popov(pmat,rs) << endl;
+    cout << "weak ordered popov? " << is_row_ordered_weak_popov(pmat,rs) << endl;
 
     cout << endl << "testing is_popov" << endl;
     pmat.SetDims(3,3);
