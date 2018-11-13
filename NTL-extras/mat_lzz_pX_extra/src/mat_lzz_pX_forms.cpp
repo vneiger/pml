@@ -365,75 +365,110 @@ void degree_matrix_colshifted(
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* (SHIFTED) LEADING MATRIX                                   */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* shifted leading matrix                                     */
+/* row-wise leading matrix of pmat                            */
 /*------------------------------------------------------------*/
-void leading_matrix(
-                    Mat<zz_p> &lmat,
-                    const Mat<zz_pX> &pmat,
-                    const Shift & shift,
-                    const bool row_wise
-                   )
+void row_leading_matrix(
+                        Mat<zz_p> & lmat,
+                        const Mat<zz_pX> & pmat
+                       )
 {
-    // check if shifted + check shift dimension
-    bool shifted = check_shift(shift, pmat, row_wise);
+    DegVec rdeg;
+    row_degree(rdeg,pmat);
 
-    if (row_wise)
-    {
-        DegVec degree;
-        row_degree(degree,pmat,shift);
-
-        lmat.SetDims(pmat.NumRows(), pmat.NumCols());
-        for (long r = 0; r < pmat.NumRows(); r++)
-        {
-            for (long c = 0; c < pmat.NumCols(); c++)
-            {
-                long d = deg(pmat[r][c]);
-
-                if (shifted)
-                    d += shift[c];
-
-                if (d == degree[r])
-                    lmat[r][c] = LeadCoeff(pmat[r][c]);
-            }
-        }
-    }
-    else
-    {
-        DegVec degree;
-        column_degree(degree,pmat,shift);
-
-        lmat.SetDims(pmat.NumRows(), pmat.NumCols());
-        for (long r = 0; r < pmat.NumRows(); r++)
-        {
-            for (long c = 0; c < pmat.NumCols(); c++)
-            {
-                long d = deg(pmat[r][c]);
-
-                if (shifted)
-                    d += shift[r];
-
-                if (d == degree[c])
-                    lmat[r][c] = LeadCoeff(pmat[r][c]);
-            }
-        }
-    }
+    lmat.SetDims(pmat.NumRows(), pmat.NumCols());
+    for (long r = 0; r < lmat.NumRows(); ++r)
+        for (long c = 0; c < lmat.NumCols(); ++c)
+            if (deg(pmat[r][c]) == rdeg[r])
+                lmat[r][c] = pmat[r][c][deg(pmat[r][c])];
+            else
+                clear(lmat[r][c]);
 }
+
+/*------------------------------------------------------------*/
+/* row-wise shifted leading matrix of pmat                    */
+/*------------------------------------------------------------*/
+void row_leading_matrix_shifted(
+                                Mat<zz_p> &lmat,
+                                const Mat<zz_pX> &pmat,
+                                const Shift & shift
+                               )
+{
+    if ((long)shift.size() != pmat.NumCols())
+        throw std::invalid_argument("==row_leading_matrix_shifted== shift must have length pmat.NumCols()");
+
+    DegVec rdeg;
+    row_degree_shifted(rdeg,pmat,shift);
+
+    lmat.SetDims(pmat.NumRows(), pmat.NumCols());
+    for (long r = 0; r < lmat.NumRows(); ++r)
+        for (long c = 0; c < lmat.NumCols(); ++c)
+            if (deg(pmat[r][c])+shift[c] == rdeg[r])
+                lmat[r][c] = pmat[r][c][deg(pmat[r][c])];
+            else
+                clear(lmat[r][c]);
+}
+
+/*------------------------------------------------------------*/
+/* column-wise leading matrix of pmat                         */
+/*------------------------------------------------------------*/
+void col_leading_matrix(
+                        Mat<zz_p> & lmat,
+                        const Mat<zz_pX> & pmat
+                       )
+{
+    DegVec cdeg;
+    col_degree(cdeg,pmat);
+
+    lmat.SetDims(pmat.NumRows(), pmat.NumCols());
+    for (long r = 0; r < lmat.NumRows(); ++r)
+        for (long c = 0; c < lmat.NumCols(); ++c)
+            if (deg(pmat[r][c]) == cdeg[c])
+                lmat[r][c] = pmat[r][c][deg(pmat[r][c])];
+            else
+                clear(lmat[r][c]);
+}
+
+/*------------------------------------------------------------*/
+/* column-wise shifted leading matrix of pmat                 */
+/*------------------------------------------------------------*/
+void col_leading_matrix_shifted(
+                                Mat<zz_p> &lmat,
+                                const Mat<zz_pX> &pmat,
+                                const Shift & shift
+                               )
+{
+    if ((long)shift.size() != pmat.NumRows())
+        throw std::invalid_argument("==col_leading_matrix_shifted== shift must have length pmat.NumRows()");
+
+    DegVec cdeg;
+    col_degree_shifted(cdeg,pmat,shift);
+
+    lmat.SetDims(pmat.NumRows(), pmat.NumCols());
+    for (long r = 0; r < lmat.NumRows(); ++r)
+        for (long c = 0; c < lmat.NumCols(); ++c)
+            if (deg(pmat[r][c])+shift[r] == cdeg[c])
+                lmat[r][c] = pmat[r][c][deg(pmat[r][c])];
+            else
+                clear(lmat[r][c]);
+}
+
+
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING SHIFTED REDUCED FORMS                              */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
 /* test whether pmat is a reduced matrix                      */

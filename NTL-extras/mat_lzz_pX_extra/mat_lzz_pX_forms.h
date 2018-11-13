@@ -316,30 +316,92 @@ inline Mat<long> degree_matrix_colshifted(
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* TESTING SHIFTED REDUCED AND NORMAL FORMS                   */
+/* (SHIFTED) LEADING MATRIX                                   */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* leading matrix of pmat                                     */
+/* row-wise leading matrix of pmat                            */
+/* this is the constant matrix whose entry (i,j) is the       */
+/* coefficient of degree rdeg[i] of the entry (i,j) of pmat,  */
+/* for rdeg the row degree of pmat                            */
+/* (this is zero if pmat[i][j] does not reach rdeg[i])        */
 /*------------------------------------------------------------*/
-void leading_matrix(
+void row_leading_matrix(
+                        Mat<zz_p> & lmat,
+                        const Mat<zz_pX> & pmat
+                       );
+
+inline Mat<zz_p> row_leading_matrix(const Mat<zz_pX> & pmat)
+{ Mat<zz_p> lmat; row_leading_matrix(lmat, pmat); return lmat; }
+
+/*------------------------------------------------------------*/
+/* row-wise shifted leading matrix of pmat                    */
+/* this is the constant matrix whose entry (i,j) is the       */
+/* coefficient of degree rdeg[i]-shift[j] of the entry (i,j)  */
+/* of pmat, for rdeg the shifted row degree of pmat           */
+/* (this is zero if pmat[i][j] does not reach rdeg[i])        */
+/*------------------------------------------------------------*/
+
+void row_leading_matrix_shifted(
                     Mat<zz_p> &lmat,
                     const Mat<zz_pX> &pmat,
-                    const Shift & shift = Shift(),
-                    const bool row_wise = true
+                    const Shift & shift
                    );
 
-inline Mat<zz_p> leading_matrix(
-                                const Mat<zz_pX> &pmat,
-                                const Shift & shift = Shift(),
-                                const bool row_wise = true
-                               )
-{
-    Mat<zz_p> lmat;
-    leading_matrix(lmat, pmat, shift, row_wise);
-    return lmat;
-}
+inline Mat<zz_p> row_leading_matrix_shifted(
+                                            const Mat<zz_pX> & pmat,
+                                            const Shift & shift
+                                           )
+{ Mat<zz_p> lmat; row_leading_matrix_shifted(lmat, pmat, shift); return lmat; }
+
+
+/*------------------------------------------------------------*/
+/* column-wise leading matrix of pmat                         */
+/* this is the constant matrix whose entry (i,j) is the       */
+/* coefficient of degree cdeg[j] of the entry (i,j) of pmat,  */
+/* for cdeg the column degree of pmat                         */
+/* (this is zero if pmat[i][j] does not reach cdeg[j])        */
+/*------------------------------------------------------------*/
+void col_leading_matrix(
+                        Mat<zz_p> & lmat,
+                        const Mat<zz_pX> & pmat
+                       );
+
+inline Mat<zz_p> col_leading_matrix(const Mat<zz_pX> & pmat)
+{ Mat<zz_p> lmat; col_leading_matrix(lmat, pmat); return lmat; }
+
+/*------------------------------------------------------------*/
+/* column-wise shifted leading matrix of pmat                 */
+/* this is the constant matrix whose entry (i,j) is the       */
+/* coefficient of degree cdeg[j]-shift[i] of the entry (i,j)  */
+/* of pmat, for cdeg the shifted column degree of pmat        */
+/* (this is zero if pmat[i][j] does not reach rdeg[j])        */
+/*------------------------------------------------------------*/
+
+void col_leading_matrix_shifted(
+                    Mat<zz_p> &lmat,
+                    const Mat<zz_pX> &pmat,
+                    const Shift & shift
+                   );
+
+inline Mat<zz_p> col_leading_matrix_shifted(
+                                            const Mat<zz_pX> & pmat,
+                                            const Shift & shift
+                                           )
+{ Mat<zz_p> lmat; col_leading_matrix_shifted(lmat, pmat, shift); return lmat; }
+
+
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING SHIFTED REDUCED FORMS                              */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
 
 /*------------------------------------------------------------*/
 /* returns true if pmat is reduced                            */
