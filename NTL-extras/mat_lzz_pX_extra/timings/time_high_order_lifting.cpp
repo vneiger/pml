@@ -63,21 +63,21 @@ void check_solution(long sz, long deg)
 void all_checks()
 {
 
-    std::vector<long> szs =
+    VecLong szs =
     {
         30
     };
 
-    std::vector<long> degs =
+    VecLong degs =
     {
         1000
     };
-    // std::vector<long> szs =
+    // VecLong szs =
     // {
     //     1, 2, 3, 5, 10, 20, 30, 50, 100
     // };
 
-    // std::vector<long> degs =
+    // VecLong degs =
     // {
     //     20, 50, 75, 100, 150, 250, 350
     // };

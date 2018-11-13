@@ -31,7 +31,7 @@ NTL_CLIENT
 VecLong approximant_basis(
                          Mat<zz_pX> & appbas,
                          const Mat<zz_pX> & pmat,
-                         const Order & order,
+                         const VecLong & order,
                          const VecLong & shift,
                          const PolMatForm form,
                          const bool row_wise,
@@ -63,7 +63,7 @@ VecLong approximant_basis(
 bool is_approximant_basis(
                           const Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
-                          const Order & order,
+                          const VecLong & order,
                           const VecLong & shift,
                           const PolMatForm & form,
                           const bool randomized
@@ -152,7 +152,7 @@ bool is_approximant_basis(
 VecLong appbas_iterative(
                         Mat<zz_pX> & appbas,
                         const Mat<zz_pX> & pmat,
-                        const Order & order,
+                        const VecLong & order,
                         const VecLong & shift,
                         bool order_wise
                        )
@@ -172,10 +172,10 @@ VecLong appbas_iterative(
     Mat<zz_pX> residual(pmat);
 
     // order that remains to be dealt with
-    Order rem_order(order);
+    VecLong rem_order(order);
 
     // indices of columns/orders that remain to be dealt with
-    std::vector<long> rem_index(cdim);
+    VecLong rem_index(cdim);
     std::iota(rem_index.begin(), rem_index.end(), 0);
 
     // shifted row degrees of approximant basis
@@ -204,7 +204,7 @@ VecLong appbas_iterative(
         // and among the nonzero ones, which is the first with smallest shift
         Vec<zz_p> const_residual;
         const_residual.SetLength(rdim);
-        std::vector<long> indices_nonzero;
+        VecLong indices_nonzero;
         long piv = -1;
         for (long i = 0; i < rdim; ++i)
         {
@@ -277,7 +277,7 @@ VecLong appbas_iterative(
 VecLong popov_appbas_iterative(
                               Mat<zz_pX> & appbas,
                               const Mat<zz_pX> & pmat,
-                              const Order & order,
+                              const VecLong & order,
                               const VecLong & shift,
                               bool order_wise
                              )
@@ -321,7 +321,7 @@ VecLong popov_mbasis1(
     double t_perm1,t_perm2,t_pivind,t_ker,t_now;
     t_now = GetWallTime();
 #endif
-    std::vector<long> perm_shift(m);
+    VecLong perm_shift(m);
     std::iota(perm_shift.begin(), perm_shift.end(), 0);
     stable_sort(perm_shift.begin(), perm_shift.end(),
                 [&](const long& a, const long& b)->bool
@@ -364,7 +364,7 @@ VecLong popov_mbasis1(
 #ifdef MBASIS1_PROFILE
     t_now = GetWallTime();
 #endif
-    std::vector<long> p_pivind(k,m-1); // pivot indices in permuted kernel basis
+    VecLong p_pivind(k,m-1); // pivot indices in permuted kernel basis
     for (long i = 0; i<k; ++i)
         while (p_pivind[i]>=0 && p_kerbas[i][p_pivind[i]]==0)
             --p_pivind[i];
@@ -378,14 +378,14 @@ VecLong popov_mbasis1(
 #ifdef MBASIS1_PROFILE
     t_now = GetWallTime();
 #endif
-    std::vector<long> pivind(k);
+    VecLong pivind(k);
     for (long i = 0; i < k; ++i)
         pivind[i] = perm_shift[p_pivind[i]];
     VecLong pivdeg(m,1);
     for (long i = 0; i < k; ++i)
         pivdeg[pivind[i]] = 0;
 
-    std::vector<long> perm_rows_ker(k);
+    VecLong perm_rows_ker(k);
     std::iota(perm_rows_ker.begin(), perm_rows_ker.end(), 0);
     sort(perm_rows_ker.begin(), perm_rows_ker.end(),
          [&](const long& a, const long& b)->bool
@@ -745,7 +745,7 @@ VecLong mbasis_rescomp_v2(
     long ncols = pmat.NumCols();
 
     // A.3 store iota since it will be used at each iteration
-    std::vector<long> iota(nrows);
+    VecLong iota(nrows);
     std::iota(iota.begin(), iota.end(), 0);
 
     // B. Input representation; initialize output
@@ -795,19 +795,19 @@ VecLong mbasis_rescomp_v2(
     // D.1 pivot indices in kernel basis (which is in row echelon form)
     // Note: length is probably overestimated (usually kernel has nrows-ncols rows),
     // but this avoids reallocating the right length at each iteration
-    std::vector<long> pivind(nrows-1);
+    VecLong pivind(nrows-1);
     // Vector indicating if a given column index appears in this pivot index
     // i.e. is_pivind[pivind[i]] = true and others are false
     std::vector<bool> is_pivind(nrows, false);
 
     // D.2 permutation for the rows of the constant kernel (NTL yields a matrix
     // in row echelon form up to row permutation)
-    std::vector<long> perm_rows_ker;
+    VecLong perm_rows_ker;
     // pivot indices of row echelon form before permutation
-    std::vector<long> p_pivind(nrows-1);
+    VecLong p_pivind(nrows-1);
 
     // D.3 permutation which stable-sorts the shift, used at the base case
-    std::vector<long> p_rdeg;
+    VecLong p_rdeg;
 
     // D.4 the constant kernel, and its permuted version
     Mat<zz_p> kerbas;
@@ -1239,7 +1239,7 @@ VecLong mbasis_resupdate_v2(
     long ncols = pmat.NumCols();
 
     // A.3 store iota since it will be used at each iteration
-    std::vector<long> iota(nrows);
+    VecLong iota(nrows);
     std::iota(iota.begin(), iota.end(), 0);
 
     // B. Input representation; initialize output
@@ -1289,19 +1289,19 @@ VecLong mbasis_resupdate_v2(
     // D.1 pivot indices in kernel basis (which is in row echelon form)
     // Note: length is probably overestimated (usually kernel has nrows-ncols rows),
     // but this avoids reallocating the right length at each iteration
-    std::vector<long> pivind(nrows-1);
+    VecLong pivind(nrows-1);
     // Vector indicating if a given column index appears in this pivot index
     // i.e. is_pivind[pivind[i]] = true and others are false
     std::vector<bool> is_pivind(nrows, false);
 
     // D.2 permutation for the rows of the constant kernel (NTL yields a matrix
     // in row echelon form up to row permutation)
-    std::vector<long> perm_rows_ker;
+    VecLong perm_rows_ker;
     // pivot indices of row echelon form before permutation
-    std::vector<long> p_pivind(nrows-1);
+    VecLong p_pivind(nrows-1);
 
     // D.3 permutation which stable-sorts the shift, used at the base case
-    std::vector<long> p_rdeg;
+    VecLong p_rdeg;
 
     // D.4 the constant kernel, and its permuted version
     Mat<zz_p> kerbas;

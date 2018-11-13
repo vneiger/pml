@@ -30,9 +30,6 @@ NTL_CLIENT
 // form, resp. in shift-Popov form)
 // Refer to mat_lzz_pX_extra.h for definitions of these forms.
 
-// type for 'orders', which are lists of integers
-typedef std::vector<long> Order;
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* TODO                                                       */
@@ -80,7 +77,7 @@ typedef std::vector<long> Order;
 VecLong approximant_basis(
                          Mat<zz_pX> & appbas,
                          const Mat<zz_pX> & pmat,
-                         const Order & order,
+                         const VecLong & order,
                          const VecLong & shift = VecLong(),
                          const PolMatForm form = ORD_WEAK_POPOV,
                          const bool row_wise = true,
@@ -97,7 +94,7 @@ inline VecLong approximant_basis(
                                 const bool generic = false
                                )
 {
-    Order orders(pmat.NumCols(),order);
+    VecLong orders(pmat.NumCols(),order);
     return approximant_basis(appbas,pmat,orders,shift,form,row_wise,generic);
 }
 
@@ -114,7 +111,7 @@ inline VecLong approximant_basis(
 bool is_approximant_basis(
                           const Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
-                          const Order & order,
+                          const VecLong & order,
                           const VecLong & shift,
                           const PolMatForm & form = ORD_WEAK_POPOV,
                           const bool randomized = false
@@ -129,7 +126,7 @@ inline bool is_approximant_basis(
                           const bool randomized = false
                          )
 {
-    Order orders(pmat.NumCols(),order);
+    VecLong orders(pmat.NumCols(),order);
     return is_approximant_basis(appbas,pmat,orders,shift,form,randomized);
 }
 
@@ -144,7 +141,7 @@ inline bool is_approximant_basis(
 VecLong appbas_iterative(
                         Mat<zz_pX> & appbas,
                         const Mat<zz_pX> & pmat,
-                        const Order & order,
+                        const VecLong & order,
                         const VecLong & shift,
                         bool order_wise=true
                        );
@@ -152,7 +149,7 @@ VecLong appbas_iterative(
 VecLong popov_appbas_iterative(
                               Mat<zz_pX> & appbas,
                               const Mat<zz_pX> & pmat,
-                              const Order & order,
+                              const VecLong & order,
                               const VecLong & shift,
                               bool order_wise=true
                              );

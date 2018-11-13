@@ -24,7 +24,7 @@ typedef Vec<Vec<Vec<zz_p>>> Coeffs;
 
 static long numThreads = 4;
 
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
+std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
     out << "[ ";
     for (auto &i: s)

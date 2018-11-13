@@ -177,7 +177,7 @@ void one_bench_multiply(long sz, long deg, Field field)
 /*------------------------------------------------------------*/
 void run_bench(long test, long nbits)
 {
-    std::vector<long> szs =
+    VecLong szs =
     {
         2,2,2,2,2,2,2,2,2,2,2,2,
         4,4,4,4,4,4,4,4,4,4,4,4,
@@ -190,7 +190,7 @@ void run_bench(long test, long nbits)
         512,512,512,
         1024,1024,
     };
-    std::vector<long> degs =
+    VecLong degs =
     {
         32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
         32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
@@ -258,7 +258,7 @@ void run_bench(long test, long nbits)
 
 void run_bench()
 {
-    std::vector<long> szs =
+    VecLong szs =
     {
         2,2,2,2,2,2,2,2,2,2,2,2,
         4,4,4,4,4,4,4,4,4,4,4,4,
@@ -271,7 +271,7 @@ void run_bench()
         512,512,512,
         1024,
     };
-    std::vector<long> degs =
+    VecLong degs =
     {
         30,60,120,250,510,1020,2040,4090,8190,16380,32760,131070,
         30,60,120,250,510,1020,2040,4090,8190,16380,32760,131070,
@@ -284,7 +284,7 @@ void run_bench()
         30,60,120,
         30,
     };
-    std::vector<long> primes =
+    VecLong primes =
     {
         786433,2013265921,2748779069441,1139410705724735489,   // FFT primes with 20,31,42,60 bits
         20,30,40,50,60 // normal primes with 20, 30, 40, 50, 60 bits

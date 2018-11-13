@@ -333,7 +333,7 @@ void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a, long hi)
 void reverse(
              Mat<zz_pX> &x, 
              const Mat<zz_pX> &a, 
-             const std::vector<long> & hi,
+             const VecLong & hi,
              const bool row_wise
             )
 {

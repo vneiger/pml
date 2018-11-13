@@ -63,7 +63,7 @@ bool is_kernel_basis(
     // testing generation in generic case
     // --> compare sum of pivot degrees for input and output
     long ker_dim = kerbas.NumRows();
-    std::vector<long> pivind(ker_dim);
+    VecLong pivind(ker_dim);
     VecLong pivdeg(ker_dim);
     row_pivots(pivind, pivdeg, kerbas, shift);
     long kerbas_degdet = std::accumulate(pivdeg.begin(), pivdeg.end(), 0);
@@ -111,7 +111,7 @@ VecLong kernel_basis_via_approximation(
     // balanced column degree would be to use a column-degree wise order
     // (however, this is not handled by fast approximant algorithms for now)
     // Warning: code below not up-to-date: order is wrong for non-uniform shifts.
-    //Order order(n);
+    //VecLong order(n);
     //col_degree(order, pmat);
     //long sum_cdeg = std::accumulate(order.begin(), order.end(), (long)0);
     //std::transform(order.begin(), order.end(), order.begin(), [&](long ord){return ord+sum_cdeg+1;});
@@ -123,8 +123,8 @@ VecLong kernel_basis_via_approximation(
     //pivdeg = approximant_basis(appbas, pmat, order, shift);
 
     // find rows which belong to the kernel
-    std::vector<long> pivot_index;
-    std::vector<long> pivot_degree;
+    VecLong pivot_index;
+    VecLong pivot_degree;
     for (long i = 0; i < m; ++i)
         if (pivdeg[i]+amp < order-d)
         {
@@ -184,8 +184,8 @@ VecLong kernel_basis_zls_via_approximation(
     // note the criterion: since rdeg(pmat) <= shift, we have
     // rdeg(appbas*pmat) <= rdeg and therefore rows with rdeg[i] < order
     // are such that appbas[i] * pmat = 0.
-    std::vector<long> ker_rows;
-    std::vector<long> other_rows;
+    VecLong ker_rows;
+    VecLong other_rows;
     for (long i=0; i<m; ++i)
         if (rdeg[i] < order)
             ker_rows.emplace_back(i);

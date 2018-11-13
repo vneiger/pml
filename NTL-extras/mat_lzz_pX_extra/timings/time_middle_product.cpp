@@ -168,12 +168,12 @@ void one_check(long sz, long deg)
 /*------------------------------------------------------------*/
 void check(long p)
 {
-    std::vector<long> sizes =
+    VecLong sizes =
     {
         20, 30, 50, 100, 150, 200, 300
     };
 
-    std::vector<long> degrees =
+    VecLong degrees =
     {
         1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 250, 300
     };

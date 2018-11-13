@@ -49,7 +49,7 @@ void intbas_test(const long rdim, const long cdim, const long deg,
     }
 
     double t1w,t2w;
-    std::vector<long> pivdeg;
+    VecLong pivdeg;
     std::cout << "~~~Testing pmbasis-geometric (generic, uniform shift)~~~" << std::endl;
     t1w = GetWallTime();
     Mat<zz_pX> intbas;

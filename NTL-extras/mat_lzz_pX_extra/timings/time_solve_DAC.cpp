@@ -22,12 +22,12 @@ void check(long p)
     else
         zz_p::init(p);
 
-    std::vector<long> szs =
+    VecLong szs =
         {
             1, 10, 20, 30, 40, 50, 100
         };
 
-    std::vector<long> degs =
+    VecLong degs =
         {
             100, 150, 200, 250, 300, 350, 400
         };

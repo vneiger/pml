@@ -10,7 +10,7 @@
 #include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_approximant.h"
 
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
+std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
     out << "[ ";
     for (auto &i: s)
@@ -25,7 +25,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void one_bench_mbasis(long rdim, long cdim, long order)
 {
-    std::vector<long> shift(rdim,0);
+    VecLong shift(rdim,0);
 
     double t1,t2;
 
@@ -36,7 +36,7 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     {
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, order);
-        std::vector<long> pivdeg;
+        VecLong pivdeg;
 
         t1 = GetWallTime();
         Mat<zz_pX> appbas;
@@ -55,7 +55,7 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     {
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, order);
-        std::vector<long> pivdeg;
+        VecLong pivdeg;
 
         t1 = GetWallTime();
         Mat<zz_pX> appbas;
@@ -75,7 +75,7 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     {
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, order);
-        std::vector<long> pivdeg;
+        VecLong pivdeg;
 
         t1 = GetWallTime();
         Mat<zz_pX> appbas;
@@ -94,7 +94,7 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     {
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, order);
-        std::vector<long> pivdeg;
+        VecLong pivdeg;
 
         t1 = GetWallTime();
         Mat<zz_pX> appbas;
@@ -177,7 +177,7 @@ void run_bench(long nthreads, long nbits, bool fftprime)
         cout << zz_p::modulus() << ", bit length = " << nbits << endl;
     }
 
-    std::vector<long> szs = {2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
+    VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
 
     cout << "rdim,cdim,order,nthreads,time" << endl;
     for (size_t i=0;i<szs.size();i++)
@@ -207,8 +207,8 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    std::vector<long> nthreads = {1,2,3,4};
-    std::vector<long> nbits = {20,30,40,60};
+    VecLong nthreads = {1,2,3,4};
+    VecLong nbits = {20,30,40,60};
     std::vector<bool> fftprime = {true, false};
 
     if (argc>=2)

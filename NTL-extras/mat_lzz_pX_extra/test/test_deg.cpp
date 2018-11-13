@@ -47,7 +47,7 @@ int main()
 
     cout << "Starting tests:" << endl;
 
-    std::vector<long> degs(pmat.NumRows());
+    VecLong degs(pmat.NumRows());
     row_degree(degs,pmat);
     cout << "row degs: ";
     printVec(degs);
@@ -66,8 +66,8 @@ int main()
 
     cout << "is reduced: " << boolalpha << is_row_reduced(pmat) << endl;
 
-    std::vector<long> pivind(pmat.NumRows());
-    std::vector<long> pivdeg(pmat.NumRows());
+    VecLong pivind(pmat.NumRows());
+    VecLong pivdeg(pmat.NumRows());
     row_pivots(pivind, pivdeg, pmat);
     cout << "row pivot: ";
     printVec(pivind);
@@ -80,10 +80,10 @@ int main()
 
     cout << endl << "Tests for shifts: " << endl;
 
-    std::vector<long> rs {0,2,1,3};
+    VecLong rs {0,2,1,3};
     cout << "row shift: ";
     printVec(rs);
-    std::vector<long> cs {4,2,0};
+    VecLong cs {4,2,0};
     cout << "col shift: ";
     printVec(cs);
 

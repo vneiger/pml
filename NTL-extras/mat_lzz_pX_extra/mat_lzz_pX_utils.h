@@ -128,7 +128,7 @@ inline Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n)
 /* TODO: different truncation orders on columns/rows          */
 
 /*------------------------------------------------------------*/
-/* VecLong operations:                                          */
+/* Shift operations:                                          */
 /*  - LeftShift by n means multiplication by X^n              */
 /*  - RightShift by n means division by X^n                   */
 /*  - a negative shift reverses the direction of the shift.   */
@@ -195,7 +195,7 @@ inline Mat<zz_pX> reverse(const Mat<zz_pX>& a, long hi)
 void reverse(
              Mat<zz_pX> &x, 
              const Mat<zz_pX> &a, 
-             const std::vector<long> &hi,
+             const VecLong &hi,
              const bool row_wise = true
             );
 
@@ -246,12 +246,12 @@ inline Mat<zz_pX> random_mat_zz_pX(long n, long m, long d)
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of row degree < rdeg                  */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX_rdeg(Mat<zz_pX> & pmat, long m, long n, std::vector<long> rdeg);
+void random_mat_zz_pX_rdeg(Mat<zz_pX> & pmat, long m, long n, VecLong rdeg);
 
 /*------------------------------------------------------------*/
 /* random (m, n) matrix of column degree < cdeg               */
 /*------------------------------------------------------------*/
-void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, std::vector<long> cdeg);
+void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, VecLong cdeg);
 // TODO replace with Vec<long> ??
 
 

@@ -18,7 +18,7 @@ NTL_CLIENT
  *  tests the approximant basis algorithms  *
  ********************************************/
 
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
+std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
     out << "[ ";
     for (auto &i: s)
@@ -95,8 +95,8 @@ int main(int argc, char *argv[])
             std::cout << "~~~Iterative approximant basis (order-wise)~~~" << std::endl;
             t1w = GetWallTime(); t1 = GetTime();
             Mat<zz_pX> appbas;
-            std::vector<long> orders(cdim,order);
-            std::vector<long> pivdeg = appbas_iterative(appbas,pmat,orders,shift,true);
+            VecLong orders(cdim,order);
+            VecLong pivdeg = appbas_iterative(appbas,pmat,orders,shift,true);
             t2w =    GetWallTime(); t2 = GetTime();
 
             std::cout << "Time(appbas computation): " << (t2w-t1w) << "s,    " << (t2-t1) <<    "s\n";
@@ -134,8 +134,8 @@ int main(int argc, char *argv[])
             std::cout << "~~~Iterative approximant basis (column-wise)~~~" << std::endl;
             t1w = GetWallTime(); t1 = GetTime();
             Mat<zz_pX> appbas;
-            std::vector<long> orders(cdim,order);
-            std::vector<long> pivdeg = appbas_iterative(appbas,pmat,orders,shift,false);
+            VecLong orders(cdim,order);
+            VecLong pivdeg = appbas_iterative(appbas,pmat,orders,shift,false);
             t2w =    GetWallTime(); t2 = GetTime();
 
             std::cout << "Time(appbas computation): " << (t2w-t1w) << "s,    " << (t2-t1) <<    "s\n";
@@ -175,8 +175,8 @@ int main(int argc, char *argv[])
         //    std::cout << "~~~Iterative Popov approximant basis~~~" << std::endl;
         //    t1w = GetWallTime(); t1 = GetTime();
         //    Mat<zz_pX> appbas;
-        //    std::vector<long> orders(cdim,order);
-        //    std::vector<long> pivdeg = popov_appbas_iterative(appbas,pmat,orders,shift,true);
+        //    VecLong orders(cdim,order);
+        //    VecLong pivdeg = popov_appbas_iterative(appbas,pmat,orders,shift,true);
         //    t2w =    GetWallTime(); t2 = GetTime();
 
         //    std::cout << "Time(appbas computation): " << (t2w-t1w) << "s,    " << (t2-t1) <<    "s\n";

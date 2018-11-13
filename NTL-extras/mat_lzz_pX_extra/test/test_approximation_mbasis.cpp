@@ -18,7 +18,7 @@ NTL_CLIENT
  *  tests the approximant basis algorithms  *
  ********************************************/
 
-std::ostream &operator<<(std::ostream &out, const std::vector<long> &s)
+std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
     out << "[ ";
     for (auto &i: s)
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
         else
             std::cout << "--shift =\t" << "<length " << rdim << ">" << std::endl;
 
-        std::vector<long> pivdeg;
+        VecLong pivdeg;
         double ref_kernel_wall=0.0,ref_kernel=0.0;
 
         long nb_iter=0;

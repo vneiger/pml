@@ -130,12 +130,12 @@ void one_check(long sz, long deg)
 void all_checks()
 {
 
-    std::vector<long> szs =
+    VecLong szs =
     {
         5, 10, 20, 30, 40, 50, 60, 75, 100, 150, 200, 250, 300
     };
 
-    std::vector<long> degs =
+    VecLong degs =
     {
         10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250, 300
     };

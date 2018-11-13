@@ -11,7 +11,7 @@ NTL_CLIENT
 // TODO comment with description?
 // reference: Gupta et al 2012.
 // For the precise choice of parameters: Labahn - Neiger - Zhou, 2017, Definition 5.5.
-std::vector<long> column_partial_linearization(
+VecLong column_partial_linearization(
                                                Mat<zz_pX> & parlin, 
                                                const Mat<zz_pX> & pmat, 
                                                const VecLong & parlin_degree,
@@ -22,7 +22,7 @@ std::vector<long> column_partial_linearization(
     // partial linearization
     // column j of pmat will be expanded into columns parlin_cols[j] to
     // parlin_cols[j+1]-1 of parlin
-    std::vector<long> parlin_cols(pmat.NumCols()+1);
+    VecLong parlin_cols(pmat.NumCols()+1);
     // expand column j-1 into a matrix with all columns but the last having
     // degree <= parlin_degree[j-1]
     // note: if target_degree[j-1] is the degree of column j-1 of pmat,
@@ -64,7 +64,7 @@ std::vector<long> column_partial_linearization(
 // TODO comment with description?
 // reference: Gupta et al 2012.
 // For the precise choice of parameters: Labahn - Neiger - Zhou, 2017, Definition 5.5.
-std::vector<long> column_partial_linearization(
+VecLong column_partial_linearization(
                                                Mat<zz_pX> & parlin, 
                                                const Mat<zz_pX> & pmat, 
                                                const VecLong & parlin_degree,
@@ -76,7 +76,7 @@ std::vector<long> column_partial_linearization(
     // partial linearization
     // column j of pmat will be expanded into columns parlin_cols[j] to
     // parlin_cols[j+1]-1 of parlin
-    std::vector<long> parlin_cols(pmat.NumCols()+1);
+    VecLong parlin_cols(pmat.NumCols()+1);
     // expand column j-1 into a matrix with all columns but the last having
     // degree <= parlin_degree[j-1]
     // note: if target_degree[j-1] is the degree of column j-1 of pmat,
@@ -131,7 +131,7 @@ void right_parlin_multiply(
 
     // compute the column partial linearization of b
     Mat<zz_pX> b_parlin;
-    std::vector<long> parlin_cols = column_partial_linearization(b_parlin,b,parlin_degree,column_degree);
+    VecLong parlin_cols = column_partial_linearization(b_parlin,b,parlin_degree,column_degree);
 
     // compute the linearized product c_parlin = a * b_parlin
     Mat<zz_pX> c_parlin;
@@ -173,7 +173,7 @@ void right_parlin_middle_product(
     VecLong parlin_degrees(b.NumCols(),parlin_degree);
     // compute the column partial linearization of b
     Mat<zz_pX> b_parlin;
-    std::vector<long> parlin_cols = column_partial_linearization(b_parlin,b,parlin_degrees,target_degree,d_inf);
+    VecLong parlin_cols = column_partial_linearization(b_parlin,b,parlin_degrees,target_degree,d_inf);
 
     // compute the linearized product c_parlin = a * b_parlin
     Mat<zz_pX> c_parlin;

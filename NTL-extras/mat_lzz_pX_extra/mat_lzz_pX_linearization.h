@@ -21,7 +21,7 @@ NTL_CLIENT
 // transforms matrix into constant matrix of coefficients
 // TODO improve description
 // TODO not implemented yet
-std::vector<long> column_linearization(
+VecLong column_linearization(
                                        Mat<zz_p> & lin, 
                                        const Mat<zz_pX> & pmat
                                       );
@@ -44,7 +44,7 @@ std::vector<long> column_linearization(
 // returns vector of linearization parameters
 // parlin_degree and target_degree must have length pmat.NumCols()
 // TODO improve description
-std::vector<long> column_partial_linearization(
+VecLong column_partial_linearization(
                                                Mat<zz_pX> & parlin, 
                                                const Mat<zz_pX> & pmat, 
                                                const VecLong & parlin_degree,
@@ -53,7 +53,7 @@ std::vector<long> column_partial_linearization(
 
 // same, using cdeg
 // TODO improve description
-inline std::vector<long> column_partial_linearization_cdeg(
+inline VecLong column_partial_linearization_cdeg(
                                                            Mat<zz_pX> &parlin, 
                                                            const Mat<zz_pX> & pmat, 
                                                            const VecLong & parlin_degree
@@ -68,7 +68,7 @@ inline std::vector<long> column_partial_linearization_cdeg(
 // returns vector of linearization parameters
 // target_degree default: set as the col_degree of pmat
 // TODO improve description
-inline std::vector<long> column_partial_linearization(
+inline VecLong column_partial_linearization(
                                                       Mat<zz_pX> &parlin, 
                                                       const Mat<zz_pX> & pmat, 
                                                       const long parlin_degree,
@@ -81,7 +81,7 @@ inline std::vector<long> column_partial_linearization(
 
 // same using cdeg
 // TODO improve description
-inline std::vector<long> column_partial_linearization_cdeg(
+inline VecLong column_partial_linearization_cdeg(
                                                            Mat<zz_pX> &parlin, 
                                                            const Mat<zz_pX> & pmat, 
                                                            const long parlin_degree
@@ -97,7 +97,7 @@ inline std::vector<long> column_partial_linearization_cdeg(
 // Column partial linearization, uniform target and parlin degrees
 // returns vector of linearization parameters
 // TODO improve description
-inline std::vector<long> column_partial_linearization(
+inline VecLong column_partial_linearization(
                                                       Mat<zz_pX> &parlin, 
                                                       const Mat<zz_pX> & pmat, 
                                                       const long parlin_degree,
@@ -112,7 +112,7 @@ inline std::vector<long> column_partial_linearization(
 // Column partial linearization, default degrees
 // returns vector of linearization parameters
 // TODO improve description
-inline std::vector<long> column_partial_linearization(
+inline VecLong column_partial_linearization(
                                                       Mat<zz_pX> &parlin, 
                                                       const Mat<zz_pX> & pmat, 
                                                       const VecLong & target_degree
@@ -126,7 +126,7 @@ inline std::vector<long> column_partial_linearization(
 
 // same with cdeg
 // TODO improve description
-inline std::vector<long> column_partial_linearization_cdeg(
+inline VecLong column_partial_linearization_cdeg(
                                                            Mat<zz_pX> &parlin, 
                                                            const Mat<zz_pX> & pmat
                                                           )
@@ -139,7 +139,7 @@ inline std::vector<long> column_partial_linearization_cdeg(
     return column_partial_linearization(parlin, pmat, parlin_degrees, cdeg);
 }
 
-std::vector<long> column_partial_linearization(
+VecLong column_partial_linearization(
                                                Mat<zz_pX> & parlin, 
                                                const Mat<zz_pX> & pmat, 
                                                const VecLong & parlin_degree,

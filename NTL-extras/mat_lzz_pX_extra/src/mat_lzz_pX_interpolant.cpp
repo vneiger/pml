@@ -82,7 +82,7 @@ bool is_interpolant_basis(
 //	Points rem_pts( pts );
 //
 //	// indices of columns that remain to be dealt with
-//	std::vector<long> rem_index( cdim );
+//	VecLong rem_index( cdim );
 //	std::iota(rem_index.begin(), rem_index.end(), 0);
 //
 //	// shifted row degrees of approximant basis
@@ -118,7 +118,7 @@ bool is_interpolant_basis(
 //		// and among the nonzero ones, which is the first with smallest shift
 //		Vec<zz_p> const_residual;
 //		const_residual.SetLength(rdim);
-//		std::vector<long> indices_nonzero;
+//		VecLong indices_nonzero;
 //		long piv = -1;
 //		for (long i = 0; i < rdim; ++i)
 //		{
