@@ -386,7 +386,7 @@ void row_leading_matrix(
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
     for (long r = 0; r < lmat.NumRows(); ++r)
         for (long c = 0; c < lmat.NumCols(); ++c)
-            if (deg(pmat[r][c]) == rdeg[r])
+            if (not IsZero(pmat[r][c]) && deg(pmat[r][c]) == rdeg[r])
                 lmat[r][c] = pmat[r][c][deg(pmat[r][c])];
             else
                 clear(lmat[r][c]);
@@ -407,7 +407,7 @@ void row_leading_matrix(
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
     for (long r = 0; r < lmat.NumRows(); ++r)
         for (long c = 0; c < lmat.NumCols(); ++c)
-            if (deg(pmat[r][c])+shift[c] == rdeg[r])
+            if (not IsZero(pmat[r][c]) && deg(pmat[r][c])+shift[c] == rdeg[r])
                 lmat[r][c] = pmat[r][c][deg(pmat[r][c])];
             else
                 clear(lmat[r][c]);
@@ -427,7 +427,7 @@ void col_leading_matrix(
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
     for (long r = 0; r < lmat.NumRows(); ++r)
         for (long c = 0; c < lmat.NumCols(); ++c)
-            if (deg(pmat[r][c]) == cdeg[c])
+            if (not IsZero(pmat[r][c]) && deg(pmat[r][c]) == cdeg[c])
                 lmat[r][c] = pmat[r][c][deg(pmat[r][c])];
             else
                 clear(lmat[r][c]);
@@ -448,7 +448,7 @@ void col_leading_matrix(
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
     for (long r = 0; r < lmat.NumRows(); ++r)
         for (long c = 0; c < lmat.NumCols(); ++c)
-            if (deg(pmat[r][c])+shift[r] == cdeg[c])
+            if (not IsZero(pmat[r][c]) && deg(pmat[r][c])+shift[r] == cdeg[c])
                 lmat[r][c] = pmat[r][c][deg(pmat[r][c])];
             else
                 clear(lmat[r][c]);

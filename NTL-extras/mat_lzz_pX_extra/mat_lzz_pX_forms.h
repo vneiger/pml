@@ -313,6 +313,8 @@ void row_leading_matrix(
 inline Mat<zz_p> row_leading_matrix(const Mat<zz_pX> & pmat)
 { Mat<zz_p> lmat; row_leading_matrix(lmat, pmat); return lmat; }
 
+// TODO row_leading_matrix_known_rdeg
+
 /*------------------------------------------------------------*/
 /* row-wise shifted leading matrix of pmat                    */
 /* this is the constant matrix whose entry (i,j) is the       */
@@ -332,6 +334,8 @@ inline Mat<zz_p> row_leading_matrix(
                                             const Shift & shift
                                            )
 { Mat<zz_p> lmat; row_leading_matrix(lmat, pmat, shift); return lmat; }
+
+// TODO row_leading_matrix_known_cdeg
 
 
 /*------------------------------------------------------------*/
