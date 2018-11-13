@@ -152,6 +152,103 @@ void sylvester_lzz_pX::mul_right(Mat<zz_pX>& out, const Mat<zz_pX>& in) const
 }
 
 /*------------------------------------------------------------*/
+/* right multiplication truncated mod x^s                     */
+/*------------------------------------------------------------*/
+void sylvester_lzz_pX::mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const
+{
+    if (in.length() != n)
+        Error("Bad input size for sylvester_lzz_pX mul right");
+
+    zz_pX kro_A, kro_B, kro_F, kro_G;
+    Vec<zz_pX> in_F, in_G;
+
+    in_F.SetLength(dBy);
+    in_G.SetLength(dAy);
+    for (long i = 0; i < dBy; i++)
+        trunc(in_F[i], in[i], s);
+    for (long i = 0; i < dAy; i++)
+        trunc(in_G[i], in[i + dBy], s);
+    long dFx = deg(in_F);    
+    long dGx = deg(in_G);
+
+    Vec<zz_pX> truncA, truncB;
+    truncA.SetLength(a.length());
+    truncB.SetLength(b.length());
+    for (long i = 0; i < a.length(); i++)
+        trunc(truncA[i], a[i], s);
+    for (long i = 0; i < b.length(); i++)
+        trunc(truncB[i], b[i], s);
+    long dTAx = deg(truncA);
+    long dTBx = deg(truncB);
+
+    to_kronecker(kro_A, a, dTAx + dFx);  
+    to_kronecker(kro_F, in_F, dTAx + dFx); 
+    to_kronecker(kro_B, b, dTBx + dGx); 
+    to_kronecker(kro_G, in_G, dTBx + dGx); 
+
+    if ((dTAx + dFx) == (dTBx + dGx))
+    {
+        zz_pX kro_res;
+        kro_res = kro_A * kro_F + kro_B * kro_G;
+        from_kronecker(out, kro_res, dTAx + dFx);
+        long ell = out.length();
+        out.SetLength(n);
+        for (long i = 0; i < ell; i++)
+            trunc(out[i], out[i], s);
+        for (long i = ell; i < n; i++)
+            out[i] = 0;
+    }
+    else
+    {
+        zz_pX kro_res1, kro_res2;
+        Vec<zz_pX> out1, out2;
+        kro_res1 = kro_A * kro_F;
+        from_kronecker(out1, kro_res1, dTAx + dFx);
+        kro_res2 = kro_B * kro_G;
+        from_kronecker(out2, kro_res2, dTBx + dGx);
+        out.SetLength(n);
+        for (long i = 0; i < n; i++)
+        {
+            out[i] = 0;
+            if (i < out1.length())
+                trunc(out[i], out1[i], s);
+            if (i < out2.length())
+                out[i] = out[i] + trunc(out2[i], s);
+        }
+    }
+}
+
+/*------------------------------------------------------------*/
+/* right multiplication mod x^s, matrix version               */
+/*------------------------------------------------------------*/
+void sylvester_lzz_pX::mul_right_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const
+{
+    if (&out == &in)
+    {
+        Mat<zz_pX> out2 = mul_right_trunc(in, s);
+        out = out2;
+        return;
+    }
+
+    if (in.NumRows() != n)
+        Error("Bad dimensions in sylvester_lzz_pX matrix mul right");
+
+    long p = in.NumCols();
+    Vec<zz_pX> vec_in, vec_out;
+    vec_in.SetLength(n);
+    out.SetDims(n, p);
+
+    for (long j = 0; j < p; j++)
+    {
+        for (long i = 0; i < n; i++)
+            vec_in[i] = in[i][j];
+        mul_right_trunc(vec_out, vec_in, s);
+        for (long i = 0; i < n; i++)
+            out[i][j] = vec_out[i];
+    }
+}
+
+/*------------------------------------------------------------*/
 /* left multiplication                                        */
 /*------------------------------------------------------------*/
 void sylvester_lzz_pX::mul_left(Vec<zz_pX>& out, const Vec<zz_pX>& in) const
@@ -166,10 +263,6 @@ void sylvester_lzz_pX::mul_left(Vec<zz_pX>& out, const Vec<zz_pX>& in) const
         return;
     }
 
-
-    cout << a << "     " << revA << endl;
-    cout << b << "     " << revB << endl;
-
     long d = deg(in);
     Vec<zz_pX> outA, outB;
     zz_pX kro_revA, kro_revB;
@@ -180,25 +273,18 @@ void sylvester_lzz_pX::mul_left(Vec<zz_pX>& out, const Vec<zz_pX>& in) const
     {
         zz_pX kro_in, kro_outA, kro_outB;
         to_kronecker(kro_in, in, dAx + d);
-        cout << "kro_in" << kro_in << endl;
-        cout << "kro_revA" << kro_revA << endl;
-        cout << "kro_revB" << kro_revB << endl;
-        middle_product(kro_outA, kro_revA, kro_in, dAy * (dAx + d), dBy * (dAx + d) - 1);
-        middle_product(kro_outB, kro_revB, kro_in, dBy * (dAx + d), dAy * (dAx + d) - 1);
-        cout << "kro_outA" << kro_outA << endl;
-        cout << "kro_outB" << kro_outB << endl;
+        middle_product(kro_outA, kro_revA, kro_in << dAx, dAy * (dAx + d + 1) + dAx, dBy * (dAx + d + 1) - 1);
+        middle_product(kro_outB, kro_revB, kro_in << dBx, dBy * (dAx + d + 1) + dBx, dAy * (dAx + d + 1) - 1);
         from_kronecker(outA, kro_outA, dAx + d);
         from_kronecker(outB, kro_outB, dAx + d);
-        cout << "outA" << outA << endl;
-        cout << "outB" << outB << endl;
     }
     else
     {
         zz_pX kro_inA, kro_inB, kro_outA, kro_outB;
         to_kronecker(kro_inA, in, dAx + d);
         to_kronecker(kro_inB, in, dBx + d);
-        middle_product(kro_outA, kro_revA, kro_inA, dAy * (dAx + d), dBy * (dAx + d) - 1);
-        middle_product(kro_outB, kro_revB, kro_inB, dBy * (dBx + d), dAy * (dBx + d) - 1);
+        middle_product(kro_outA, kro_revA, kro_inA << dAx, dAy * (dAx + d + 1) + dAx, dBy * (dAx + d + 1) - 1);
+        middle_product(kro_outB, kro_revB, kro_inB << dBx, dBy * (dBx + d + 1) + dBx, dAy * (dBx + d + 1) - 1);
         from_kronecker(outA, kro_outA, dAx + d);
         from_kronecker(outB, kro_outB, dBx + d);
     }
@@ -209,9 +295,9 @@ void sylvester_lzz_pX::mul_left(Vec<zz_pX>& out, const Vec<zz_pX>& in) const
     for (long i = outA.length(); i < dBy; i++)
         out[i] = 0;
     for (long i = 0; i < outB.length(); i++)
-        out[i + dAy] = outB[i];
-    for (long i = outB.length(); i < dBy; i++)
-        out[i + dAy] = 0;
+        out[i + dBy] = outB[i];
+    for (long i = outB.length(); i < dAy; i++)
+        out[i + dBy] = 0;
 }
 
 /*------------------------------------------------------------*/
@@ -261,6 +347,105 @@ void sylvester_lzz_pX::to_dense(Mat<zz_pX>& Mdense) const
         for (long j = 0; j <= dBy; j++)
             Mdense[i+j][i + dBy] = b[j];
 }
+
+/*------------------------------------------------------------*/
+/* G, H such that Z1 M - M Z0 = G H^t                         */
+/*------------------------------------------------------------*/
+void sylvester_lzz_pX::phi_plus_generators(Mat<zz_pX>& G, Mat<zz_pX>& H) const
+{
+    G.SetDims(n, 2);
+    H.SetDims(n, 2);
+
+    for (long i = 0; i < n; i++)
+    {
+        H[i][0] = 0;
+        H[i][1] = 0;
+        G[i][0] = 0;
+        G[i][1] = 0;
+    }
+    H[dBy - 1][0] = 1;
+    H[dAy + dBy - 1][1] = 1;
+
+    for (long i = 0; i < dAy; i++)
+        G[i + dBy][0] += a[i];
+    G[0][0] += a[dAy];
+    for (long i = 0; i < dBy; i++)
+    {
+        G[i][0] -= b[i];
+        G[i + dAy][1] += b[i];
+    } 
+    
+    G[dBy % (dAy + dBy)][0] -= b[dBy];   // in case dAy = 0
+    G[0][1] += b[dBy];
+} 
+
+/*------------------------------------------------------------*/
+/* finds a sequence of degrees n0, n1, .. nk                  */
+/* n0 <= 1, ni = {2*n{i-1}, 2*{n-1}-2}, nk >= n               */
+/*------------------------------------------------------------*/
+static vector<long> degrees(long n)
+{
+    vector<long> all_deg;
+
+    while(n > 1)
+    {
+        if (n & 1)
+            n++;
+        all_deg.insert(all_deg.begin(), n);
+        n >>= 1;
+    }
+    all_deg.insert(all_deg.begin(), n);
+    return all_deg;
+}
+
+/*------------------------------------------------------------*/
+/* Newton iteration for inverse                               */
+/* assumes M(0) invertible; error otherwise                   */
+/* return M^-1 mod x^m as a toeplitz_like_minus matrix        */
+/*------------------------------------------------------------*/
+void sylvester_lzz_pX::newton_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long m) const
+{
+    zz_pX a0, b0;
+    for (long i = 0; i < a.length(); i++)
+        SetCoeff(a0, i, coeff(a[i], 0));
+    for (long i = 0; i < b.length(); i++)
+        SetCoeff(b0, i, coeff(b[i], 0));
+
+    sylvester_lzz_p S(a0, b0);
+    toeplitz_like_minus_lzz_p iS;
+    long r = S.inv(iS);
+    
+    if (r == 0)
+        Error("Sylvester matrix not invertible at zero");
+
+    Mat<zz_pX> G, H; // generators of iM;
+    G = conv(iS.G);
+    H = conv(iS.H);
+
+    vector<long> all_deg=degrees(m);
+    long k = all_deg[0];
+    long idx = 1;
+
+    while (k < m) 
+    {
+        // Mat<zz_pX> y;
+        // Mat<zz_pX> tr = trunc(a, 2*k);
+        // middle_product(y, x, tr, k, k-1);
+        // mul_trunc(y, y, x, k);
+        // y <<= k;
+        // x = x - y;
+        k = 2 * k;
+        if (k != all_deg[idx])
+        {
+            k = all_deg[idx];
+            // trunc(x, x, k);
+        }            
+        idx++;
+    }
+    // trunc(x, x, m);
+}
+
+
 
 // Local Variables:
 // mode: C++

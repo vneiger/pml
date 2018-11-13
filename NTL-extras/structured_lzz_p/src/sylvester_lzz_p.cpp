@@ -454,16 +454,16 @@ void sylvester_lzz_p::phi_plus_generators(Mat<zz_p>& G, Mat<zz_p>& H) const
     H[deg(a) + deg(b) - 1][1] = 1;
 
     for (long i = 0; i < deg(a); i++)
-        G[i + deg(b)][0] = coeff(a, i);
-    G[0][0] = coeff(a, deg(a));
+        G[i + deg(b)][0] += coeff(a, i);
+    G[0][0] += coeff(a, deg(a));
     for (long i = 0; i < deg(b); i++)
     {
         G[i][0] -= coeff(b, i);
-        G[i + deg(a)][1] = coeff(b, i);
+        G[i + deg(a)][1] += coeff(b, i);
     }
     
     G[deg(b) % (deg(a) + deg(b))][0] -= coeff(b, deg(b));   // in case deg(a) = 0
-    G[0][1] = coeff(b, deg(b));
+    G[0][1] += coeff(b, deg(b));
 }
 
 /*------------------------------------------------------------*/

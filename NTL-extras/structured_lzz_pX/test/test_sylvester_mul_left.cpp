@@ -19,11 +19,11 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 2; i < 100; i += 7)
+    for (long i = 3; i < 100; i += 7)
     {
         for (long j = 2; j < 100; j += 9)
         {
-            for (long d = 2; (d < 1000) && (d*i*j < 70000); d += 15)
+            for (long d = 3; (d < 1000) && (d*i*j < 70000); d += 15)
             {
                 Vec<zz_pX> F, G;
                 do
@@ -37,14 +37,17 @@ void check(long p)
                 Mat<zz_pX> M = S.to_dense();
                 Mat<zz_pX> in, out, out2;
 
-                cout << F.length()-1 << " " << G.length()-1 << " " << d << endl;
                 in = random_mat_zz_pX(1, S.NumCols(), d);
                 out = S.mul_left(in);
                 multiply(out2, transpose(M), transpose(in), 0);
-                cout << M << endl;
-                cout << in << endl;
-                cout << out << endl;
-                cout << transpose(out2) << endl;
+                // if (out != transpose(out2))
+                // {
+                //     cout << "-----------------------------------------------------\n";
+                //     cout << "M" << M << endl;
+                //     cout << "in" << in << endl;
+                //     cout << "out" << out << endl;
+                //     cout << "tout2" << transpose(out2) << endl;
+                // }
                 assert (out == transpose(out2));
             }
         }

@@ -251,21 +251,21 @@ public:
     void mul_right(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
 
     /*------------------------------------------------------------*/
-    /* right multiplication mod x^d                               */
+    /* right multiplication mod x^s                               */
     /*------------------------------------------------------------*/
-    void mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long d) const;
-    inline Vec<zz_pX> mul_right_trunc(const Vec<zz_pX>& in, long d) const
+    void mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const;
+    inline Vec<zz_pX> mul_right_trunc(const Vec<zz_pX>& in, long s) const
     {
         Vec<zz_pX> out;
-        mul_right_trunc(out, in, d);
+        mul_right_trunc(out, in, s);
         return out;
     }
 
-    void mul_right_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long d) const;
-    inline Mat<zz_pX> mul_right_trunc(const Mat<zz_pX>& in, long d) const
+    void mul_right_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const;
+    inline Mat<zz_pX> mul_right_trunc(const Mat<zz_pX>& in, long s) const
     {
         Mat<zz_pX> out;
-        mul_right_trunc(out, in, d);
+        mul_right_trunc(out, in, s);
         return out;
     }
 
@@ -371,6 +371,25 @@ public:
     void mul_left(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
 
     /*------------------------------------------------------------*/
+    /* right multiplication mod x^s                               */
+    /*------------------------------------------------------------*/
+    void mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const;
+    inline Vec<zz_pX> mul_right_trunc(const Vec<zz_pX>& in, long s) const
+    {
+        Vec<zz_pX> out;
+        mul_right_trunc(out, in, s);
+        return out;
+    }
+
+    void mul_right_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const;
+    inline Mat<zz_pX> mul_right_trunc(const Mat<zz_pX>& in, long s) const
+    {
+        Mat<zz_pX> out;
+        mul_right_trunc(out, in, s);
+        return out;
+    }
+
+    /*------------------------------------------------------------*/
     /* G, H such that Z1 M - M Z0 = G H^t                         */
     /*------------------------------------------------------------*/
     void phi_plus_generators(Mat<zz_pX>& G, Mat<zz_pX>& H) const; 
@@ -380,9 +399,26 @@ public:
     /*------------------------------------------------------------*/
     using structured_lzz_pX::to_dense;
     void to_dense(Mat<zz_pX>& Mdense) const;
+
+    /*------------------------------------------------------------*/
+    /* Newton iteration for inverse                               */
+    /* assumes M(0) invertible; error otherwise                   */
+    /* return M^-1 mod X^d as a toeplitz_like_minus matrix        */
+    /*------------------------------------------------------------*/
+    void newton_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long d) const;
 };
 
+/*------------------------------------------------------------*/
+/* returns Z1 A - A Z0                                        */
+/*------------------------------------------------------------*/
+void toeplitz_lzz_pX_phi_plus(Mat<zz_pX> & res, const Mat<zz_pX>& A);
 
+inline Mat<zz_pX> toeplitz_lzz_pX_phi_plus(const Mat<zz_pX>& A)
+{
+    Mat<zz_pX> res;
+    toeplitz_lzz_pX_phi_plus(res, A);
+    return res;
+}
 
 // Local Variables:
 // mode: C++
