@@ -69,14 +69,14 @@ int main()
 
     std::vector<long> pivind(pmat.NumRows());
     std::vector<long> pivdeg(pmat.NumRows());
-    pivot_index(pivind, pivdeg, pmat, std::vector<long>(), true);
+    row_pivots(pivind, pivdeg, pmat);
     cout << "row pivot: ";
     printVec(pivind);
     printVec(pivdeg);
 
     pivind.resize(pmat.NumCols());
     pivdeg.resize(pmat.NumCols());
-    pivot_index(pivind, pivdeg, pmat, std::vector<long>(), false);
+    col_pivots(pivind, pivdeg, pmat);
     cout << "col pivot: ";
     printVec(pivind);
     printVec(pivdeg);
@@ -113,14 +113,14 @@ int main()
 
     pivind.resize(pmat.NumRows());
     pivdeg.resize(pmat.NumRows());
-    pivot_index(pivind, pivdeg, pmat, rs, true);
+    row_pivots_shifted(pivind, pivdeg, pmat, rs);
     cout << "row pivot: ";
     printVec(pivind);
     printVec(pivdeg);
 
     pivind.resize(pmat.NumCols());
     pivdeg.resize(pmat.NumCols());
-    pivot_index(pivind, pivdeg, pmat, cs, false);
+    col_pivots_shifted(pivind, pivdeg, pmat, cs);
     cout << "col pivot: ";
     printVec(pivind);
     printVec(pivdeg);

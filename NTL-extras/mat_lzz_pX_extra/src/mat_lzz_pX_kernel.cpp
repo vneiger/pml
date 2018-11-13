@@ -85,7 +85,10 @@ bool is_kernel_basis(
     long ker_dim = (row_wise ? kerbas.NumRows() : kerbas.NumCols());
     std::vector<long> pivind(ker_dim);
     DegVec pivdeg(ker_dim);
-    pivot_index(pivind, pivdeg, kerbas, shift, row_wise);
+    if (row_wise)
+        row_pivots_shifted(pivind, pivdeg, kerbas, shift);
+    else
+        col_pivots_shifted(pivind, pivdeg, kerbas, shift);
     long kerbas_degdet = std::accumulate(pivdeg.begin(), pivdeg.end(), 0);
     DegVec degs = vector_degree(pmat, Shift(row_wise?m:n,0), not row_wise);
     long input_degdet = std::accumulate(degs.begin(), degs.end(), 0);
