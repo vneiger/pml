@@ -478,6 +478,7 @@ bool is_row_popov(const Mat<zz_pX> & pmat, const Shift & shift);
 /* (allows definition of Popov with different orderings of    */
 /* the rows, such as by increasing degree)                    */
 /*------------------------------------------------------------*/
+// TODO 
 //bool is_row_popov_up_to_permutation(const Mat<zz_pX> & pmat);
 //bool is_row_popov_up_to_permutation(
 //                                    const Mat<zz_pX> & pmat,
@@ -502,6 +503,7 @@ bool is_col_popov(const Mat<zz_pX> & pmat, const Shift & shift);
 /* (allows definition of Popov with different orderings of    */
 /* the columns, such as by increasing degree)                 */
 /*------------------------------------------------------------*/
+// TODO 
 //bool is_col_popov_up_to_permutation(const Mat<zz_pX> & pmat);
 //bool is_col_popov_up_to_permutation(
 //                                    const Mat<zz_pX> & pmat,

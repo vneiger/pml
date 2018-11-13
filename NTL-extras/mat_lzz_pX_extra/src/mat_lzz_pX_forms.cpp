@@ -35,10 +35,10 @@ void row_degree(
 /* shifted row degree                                         */
 /*------------------------------------------------------------*/
 void row_degree(
-                        DegVec & rdeg,
-                        const Mat<zz_pX> &pmat,
-                        const Shift & shift
-                       )
+                DegVec & rdeg,
+                const Mat<zz_pX> &pmat,
+                const Shift & shift
+               )
 {
     if ((long)shift.size() != pmat.NumCols())
         throw std::invalid_argument("==row_degree== shift must have length pmat.NumCols()");
@@ -90,10 +90,10 @@ void col_degree(
 /* shifted column degree                                      */
 /*------------------------------------------------------------*/
 void col_degree(
-                        DegVec & cdeg,
-                        const Mat<zz_pX> &pmat,
-                        const Shift & shift
-                       )
+                DegVec & cdeg,
+                const Mat<zz_pX> &pmat,
+                const Shift & shift
+               )
 {
     if ((long)shift.size() != pmat.NumRows())
         throw std::invalid_argument("==col_degree== shift must have length pmat.NumRows()");
@@ -162,11 +162,11 @@ void row_pivots(
 /* shifted row pivot index/degree                             */
 /*------------------------------------------------------------*/
 void row_pivots(
-                        VecLong & pivind,
-                        VecLong & pivdeg,
-                        const Mat<zz_pX> & pmat,
-                        const Shift & shift
-                       )
+                VecLong & pivind,
+                VecLong & pivdeg,
+                const Mat<zz_pX> & pmat,
+                const Shift & shift
+               )
 {
     if ((long)shift.size() != pmat.NumCols())
         throw std::invalid_argument("==row_pivots== shift must have length pmat.NumCols()");
@@ -239,11 +239,11 @@ void col_pivots(
 /* shifted column pivot index/degree                          */
 /*------------------------------------------------------------*/
 void col_pivots(
-                        VecLong & pivind,
-                        VecLong & pivdeg,
-                        const Mat<zz_pX> & pmat,
-                        const Shift & shift
-                       )
+                VecLong & pivind,
+                VecLong & pivdeg,
+                const Mat<zz_pX> & pmat,
+                const Shift & shift
+               )
 {
     if ((long)shift.size() != pmat.NumRows())
         throw std::invalid_argument("==col_pivots== shift must have length pmat.NumRows()");
@@ -396,10 +396,10 @@ void row_leading_matrix(
 /* row-wise shifted leading matrix of pmat                    */
 /*------------------------------------------------------------*/
 void row_leading_matrix(
-                                Mat<zz_p> &lmat,
-                                const Mat<zz_pX> &pmat,
-                                const Shift & shift
-                               )
+                        Mat<zz_p> & lmat,
+                        const Mat<zz_pX> & pmat,
+                        const Shift & shift
+                       )
 {
     DegVec rdeg;
     row_degree(rdeg,pmat,shift);
@@ -437,10 +437,10 @@ void col_leading_matrix(
 /* column-wise shifted leading matrix of pmat                 */
 /*------------------------------------------------------------*/
 void col_leading_matrix(
-                                Mat<zz_p> &lmat,
-                                const Mat<zz_pX> &pmat,
-                                const Shift & shift
-                               )
+                        Mat<zz_p> &lmat,
+                        const Mat<zz_pX> &pmat,
+                        const Shift & shift
+                       )
 {
     DegVec cdeg;
     col_degree(cdeg,pmat,shift);
@@ -541,9 +541,9 @@ bool is_row_weak_popov(const Mat<zz_pX> & pmat)
 /* test row-wise shifted weak Popov form                      */
 /*------------------------------------------------------------*/
 bool is_row_weak_popov(
-                               const Mat<zz_pX> &pmat,
-                               const Shift & shift
-                              )
+                       const Mat<zz_pX> &pmat,
+                       const Shift & shift
+                      )
 {
     // retrieve pivot index
     VecLong pivind, pivdeg;
@@ -586,9 +586,9 @@ bool is_col_weak_popov(const Mat<zz_pX> & pmat)
 /* test column-wise shifted weak Popov form                   */
 /*------------------------------------------------------------*/
 bool is_col_weak_popov(
-                               const Mat<zz_pX> &pmat,
-                               const Shift & shift
-                              )
+                       const Mat<zz_pX> &pmat,
+                       const Shift & shift
+                      )
 {
     // retrieve pivot index
     VecLong pivind, pivdeg;
