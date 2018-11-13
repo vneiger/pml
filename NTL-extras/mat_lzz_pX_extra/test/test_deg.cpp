@@ -62,7 +62,7 @@ int main()
     cout << "deg mat: " << endl << deg_mat << endl;
 
     Mat<zz_p> lead_mat;
-    leading_matrix(lead_mat, pmat);
+    row_leading_matrix(lead_mat, pmat);
     cout << "leading mat: " << endl << lead_mat << endl;
 
     cout << "is reduced: " << boolalpha << is_reduced(pmat) << endl;
@@ -105,10 +105,10 @@ int main()
     cout << "shifted col degree: ";
     printVec(degs);
 
-    leading_matrix(lead_mat,pmat,rs,true);
+    row_leading_matrix_shifted(lead_mat,pmat,rs);
     cout << "row shifted leading mat: " << endl << lead_mat << endl;
 
-    leading_matrix(lead_mat,pmat,cs,false);
+    col_leading_matrix_shifted(lead_mat,pmat,cs);
     cout << "col shifted leading mat: " << endl << lead_mat << endl;
 
     pivind.resize(pmat.NumRows());
