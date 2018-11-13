@@ -131,7 +131,7 @@ DegVec kernel_basis_via_approximation(
     // (however, this is not handled by fast approximant algorithms for now)
     // Warning: code below not up-to-date: order is wrong for non-uniform shifts.
     //Order order(n);
-    //column_degree(order, pmat);
+    //col_degree(order, pmat);
     //long sum_cdeg = std::accumulate(order.begin(), order.end(), (long)0);
     //std::transform(order.begin(), order.end(), order.begin(), [&](long ord){return ord+sum_cdeg+1;});
 
@@ -355,7 +355,7 @@ DegVec kernel_basis_zls_via_interpolation(
     // find row degrees
     DegVec rdegP;
     rdegP.resize(m);
-    row_degree(rdegP,P,shift);
+    row_degree_shifted(rdegP,P,shift);
     cout << "rdegP: ";
     for (auto i: rdegP)
         cout << i << " ";

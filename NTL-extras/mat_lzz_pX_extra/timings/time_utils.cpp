@@ -163,7 +163,7 @@ void run_bench(long m, long n, long d)
 
     //TIME(
     //     degs.resize(pmat.NumCols());
-    //     column_degree(degs,pmat);
+    //     col_degree(degs,pmat);
     //    )
 
     //TIME(
@@ -209,10 +209,10 @@ void run_bench(long m, long n, long d)
 //    cout << "degree matrix with col wise shift: " << endl << deg_mat<<endl;
 //
 //    degs.resize(pmat.NumRows());
-//    row_degree(degs,pmat,rs);
+//    row_degree_shifted(degs,pmat,rs);
 //
 //    degs.resize(pmat.NumCols());
-//    column_degree(degs,pmat,cs);
+//    col_degree_shifted(degs,pmat,cs);
 //
 //    leading_matrix(lead_mat,pmat,rs,true);
 //

@@ -60,13 +60,13 @@ inline std::vector<long> column_partial_linearization_cdeg(
                                                           )
 {
     DegVec cdeg(pmat.NumCols());
-    column_degree(cdeg, pmat);
+    col_degree(cdeg, pmat);
     return column_partial_linearization(parlin, pmat, parlin_degree, cdeg);
 }
 
 // Column partial linearization, uniform parlin degree
 // returns vector of linearization parameters
-// target_degree default: set as the column_degree of pmat
+// target_degree default: set as the col_degree of pmat
 // TODO improve description
 inline std::vector<long> column_partial_linearization(
                                                       Mat<zz_pX> &parlin, 
@@ -88,7 +88,7 @@ inline std::vector<long> column_partial_linearization_cdeg(
                                                           )
 {
     DegVec cdeg(pmat.NumCols());
-    column_degree(cdeg, pmat);
+    col_degree(cdeg, pmat);
     DegVec parlin_degrees(pmat.NumCols(), parlin_degree);
     return column_partial_linearization(parlin, pmat, parlin_degrees, cdeg);
 }
@@ -132,7 +132,7 @@ inline std::vector<long> column_partial_linearization_cdeg(
                                                           )
 {
     DegVec cdeg(pmat.NumCols());
-    column_degree(cdeg, pmat);
+    col_degree(cdeg, pmat);
     long parlin_degree = std::accumulate(cdeg.begin(), cdeg.end(), 0);
     parlin_degree = 1 + parlin_degree / cdeg.size();
     DegVec parlin_degrees(pmat.NumCols(), parlin_degree);
@@ -156,13 +156,13 @@ std::vector<long> column_partial_linearization(
 
 
 // TODO: doc for the functions below (parlin_multiply / middleprod)
-// here, column_degree must be an (non-strict) upper bound on the column degree of b
+// here, col_degree must be an (non-strict) upper bound on the column degree of b
 void right_parlin_multiply(
                            Mat<zz_pX> &c,
                            const Mat<zz_pX> &a,
                            const Mat<zz_pX> &b,
                            const long parlin_degree,
-                           const DegVec & column_degree
+                           const DegVec & col_degree
                           );
 
 // column degree of b not provided, compute it
@@ -174,7 +174,7 @@ inline void right_parlin_multiply(
                                  )
 {
     DegVec cdeg(b.NumCols());
-    column_degree(cdeg, b);
+    col_degree(cdeg, b);
     right_parlin_multiply(c, a, b, parlin_degree, cdeg);
 }
 
@@ -199,7 +199,7 @@ inline void right_parlin_multiply(
                                  )
 {
     DegVec cdeg(b.NumCols());
-    column_degree(cdeg, b);
+    col_degree(cdeg, b);
     right_parlin_multiply(c, a, b, deg(a), cdeg);
 }
 
@@ -209,7 +209,7 @@ void right_parlin_middle_product(
                                  const Mat<zz_pX> &a,
                                  const Mat<zz_pX> &b,
                                  const long parlin_degree,
-                                 const DegVec & column_degree,
+                                 const DegVec & col_degree,
                                  long dA,
                                  long dB
                                 );
@@ -224,8 +224,8 @@ inline void right_parlin_middle_product(
                                         long dB
                                        )
 {
-    DegVec column_degree(b.NumCols(), degree);
-    right_parlin_middle_product(c, a, b, parlin_degree, column_degree, dA, dB);
+    DegVec col_degree(b.NumCols(), degree);
+    right_parlin_middle_product(c, a, b, parlin_degree, col_degree, dA, dB);
 }
 
 #endif // MAT_LZZ_PX_PARTIAL_LINEARIZATION__H

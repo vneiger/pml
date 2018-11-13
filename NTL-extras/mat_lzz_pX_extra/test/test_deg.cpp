@@ -53,7 +53,7 @@ int main()
     printVec(degs);
 
     degs.resize(pmat.NumCols());
-    column_degree(degs,pmat);
+    col_degree(degs,pmat);
     cout << "col degs: ";
     printVec(degs);
 
@@ -96,12 +96,12 @@ int main()
     cout << "degree matrix with col wise shift: " << endl << deg_mat<<endl;
 
     degs.resize(pmat.NumRows());
-    row_degree(degs,pmat,rs);
+    row_degree_shifted(degs,pmat,rs);
     cout << "shifted row degree: ";
     printVec(degs);
 
     degs.resize(pmat.NumCols());
-    column_degree(degs,pmat,cs);
+    col_degree_shifted(degs,pmat,cs);
     cout << "shifted col degree: ";
     printVec(degs);
 
