@@ -403,6 +403,7 @@ inline Mat<zz_p> col_leading_matrix_shifted(
 /* test (shifted) row reducedness:                            */
 /* a matrix is (shifted) row reduced if and only if its       */
 /* (shifted) row-wise leading matrix has full row rank        */
+/* --> note that zero rows or columns are not allowed         */
 /*------------------------------------------------------------*/
 bool is_row_reduced(const Mat<zz_pX> & pmat);
 bool is_row_reduced_shifted(const Mat<zz_pX> & pmat, const Shift & shift);
@@ -411,28 +412,68 @@ bool is_row_reduced_shifted(const Mat<zz_pX> & pmat, const Shift & shift);
 /* test (shifted) column reducedness:                         */
 /* a matrix is (shifted) column reduced if and only if its    */
 /* (shifted) column-wise leading matrix has full column rank  */
+/* --> note that zero rows or columns are not allowed         */
 /*------------------------------------------------------------*/
 bool is_col_reduced(const Mat<zz_pX> & pmat);
 bool is_col_reduced_shifted(const Mat<zz_pX> & pmat, const Shift & shift);
 
 
 
-
-
-
+/*------------------------------------------------------------*/
+/* test row-wise (shifted) weak Popov form                    */
+/* a matrix is in row-wise (shifted) weak Popov form if and   */
+/* only if its row-wise (shifted) pivot index consists of     */
+/* pairwise distinct entries (i.e. no repetition)             */
+/*------------------------------------------------------------*/
+bool is_row_weak_popov(const Mat<zz_pX> & pmat);
+bool is_row_weak_popov_shifted(
+                               const Mat<zz_pX> &pmat,
+                               const Shift & shift
+                              );
 
 /*------------------------------------------------------------*/
-/* returns true if pmat is in weak Popov form                 */
-/*   - Note that zero rows or columns are not allowed         */
-/*   - If ordered==true, pivot index must be increasing       */
-/*      (ordered weak Popov form)                             */
+/* test column-wise (shifted) weak Popov form                 */
+/* a matrix is in column-wise (shifted) weak Popov form if    */
+/* and only if its column-wise (shifted) pivot index consists */
+/* of pairwise distinct entries (i.e. no repetition)          */
 /*------------------------------------------------------------*/
-bool is_weak_popov(
-                   const Mat<zz_pX> &pmat,
-                   const Shift & shift = Shift(),
-                   const bool row_wise = true,
-                   const bool ordered= false
-                  );
+bool is_col_weak_popov(const Mat<zz_pX> & pmat);
+bool is_col_weak_popov_shifted(
+                               const Mat<zz_pX> &pmat,
+                               const Shift & shift
+                              );
+
+/*------------------------------------------------------------*/
+/* test row-wise (shifted) ordered weak Popov form            */
+/* a matrix is in row-wise (shifted) ordered weak Popov form  */
+/* if and only if its row-wise (shifted) pivot index is       */
+/* strictly increasing                                        */
+/*------------------------------------------------------------*/
+bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat);
+bool is_row_ordered_weak_popov_shifted(
+                               const Mat<zz_pX> &pmat,
+                               const Shift & shift
+                              );
+
+/*------------------------------------------------------------*/
+/* test column-wise (shifted) ordered weak Popov form         */
+/* a matrix is in column-wise (shifted) ordered weak Popov    */
+/* form if and only if its column-wise (shifted) pivot index  */
+/* is strictly increasing                                     */
+/*------------------------------------------------------------*/
+bool is_col_ordered_weak_popov(const Mat<zz_pX> & pmat);
+bool is_col_ordered_weak_popov_shifted(
+                               const Mat<zz_pX> &pmat,
+                               const Shift & shift
+                              );
+
+
+
+
+
+
+
+
 
 /*------------------------------------------------------------*/
 /* returns true if pmat is in Popov form                      */
