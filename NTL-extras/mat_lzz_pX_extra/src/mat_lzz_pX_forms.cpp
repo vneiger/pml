@@ -4,6 +4,120 @@ NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/* (SHIFTED) ROW/COLUMN DEGREE                                */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* row degree                                                 */
+/*------------------------------------------------------------*/
+void row_degree(
+                DegVec & rdeg,
+                const Mat<zz_pX> & pmat
+               )
+{ 
+    // empty rdeg and reserve space
+    rdeg.clear();
+    rdeg.reserve(pmat.NumRows());
+
+    // take the max degree in each row of pmat
+    for (long i = 0; i < pmat.NumRows(); ++i)
+    {
+        rdeg.emplace_back(-1);  // rdeg[i] == -1
+        for (long j = 0; j < pmat.NumCols(); ++j)
+            if (rdeg[i] < deg(pmat[i][j])) 
+                rdeg[i] = deg(pmat[i][j]);
+    }
+}
+
+/*------------------------------------------------------------*/
+/* shifted row degree                                         */
+/*------------------------------------------------------------*/
+void row_degree_shifted(
+                        DegVec & rdeg,
+                        const Mat<zz_pX> &pmat,
+                        const Shift & shift
+                       )
+{
+    if ((long)shift.size() != pmat.NumCols())
+        throw std::invalid_argument("==row_degree_shifted== shift must have length pmat.NumCols()");
+
+    // compute minimum shift entry (used for zero entries)
+    long min_shift = *std::min_element(shift.begin(),shift.end());
+
+    // empty rdeg and reserve space
+    rdeg.clear();
+    rdeg.reserve(pmat.NumRows());
+
+    // take the max shifted degree in each row of pmat
+    for (long i = 0; i < pmat.NumRows(); ++i)
+    {
+        rdeg.emplace_back(min_shift-1);  // rdeg[i] == min(shift)-1
+        for (long j = 0; j < pmat.NumCols(); ++j)
+        {
+            long d = deg(pmat[i][j]) + shift[j];
+            if (not IsZero(pmat[i][j]) && rdeg[i] < d)
+                rdeg[i] = d;
+        }
+    }
+}
+
+
+/*------------------------------------------------------------*/
+/* column degree                                              */
+/*------------------------------------------------------------*/
+void col_degree(
+                DegVec &cdeg,
+                const Mat<zz_pX> &pmat
+               )
+{
+    // empty cdeg and fill it with -1
+    cdeg.clear();
+    cdeg.resize(pmat.NumCols(), -1);
+
+    // take the max degree in each column of pmat
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        for (long j = 0; j < pmat.NumCols(); ++j)
+            if (cdeg[j] < deg(pmat[i][j])) 
+                cdeg[j] = deg(pmat[i][j]);
+} 
+
+/*------------------------------------------------------------*/
+/* shifted column degree                                      */
+/*------------------------------------------------------------*/
+void col_degree_shifted(
+                        DegVec & cdeg,
+                        const Mat<zz_pX> &pmat,
+                        const Shift & shift
+                       )
+{
+    if ((long)shift.size() != pmat.NumRows())
+        throw std::invalid_argument("==col_degree_shifted== shift must have length pmat.NumRows()");
+
+    // compute minimum shift entry (used for zero entries)
+    long min_shift = *std::min_element(shift.begin(),shift.end());
+
+    // empty cdeg and fill it with -1
+    cdeg.clear();
+    cdeg.resize(pmat.NumCols(), min_shift-1);
+
+    // take the max degree in each column of pmat
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        for (long j = 0; j < pmat.NumCols(); ++j)
+        {
+            long d = deg(pmat[i][j]) + shift[i];
+            if (not IsZero(pmat[i][j]) && cdeg[j] < d) 
+                cdeg[j] = d;
+        }
+} 
+
+
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 /* (SHIFTED) DEGREE MATRIX                                    */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -96,57 +210,6 @@ void degree_matrix_colshifted(
 
 
 
-/*------------------------------------------------------------*/
-/* shifted row degree of a matrix                             */
-/*------------------------------------------------------------*/
-void row_degree(
-                DegVec & rdeg,
-                const Mat<zz_pX> & pmat,
-                const Shift & shift
-               )
-{ 
-    rdeg.resize(pmat.NumRows());
-
-    // retrieve the shifted degree matrix
-    Mat<long> degmat;
-    degree_matrix(degmat,pmat,shift,true);
-
-    // take the max of each row of degmat
-    for (long r = 0; r < pmat.NumRows(); ++r)
-    {
-        long max_deg = degmat[r][0];
-        for (long c = 1; c < pmat.NumCols(); ++c)
-            if (max_deg < degmat[r][c]) 
-                max_deg = degmat[r][c];
-        rdeg[r] = max_deg;
-    }
-}
-
-/*------------------------------------------------------------*/
-/* shifted column degree of a matrix                          */
-/*------------------------------------------------------------*/
-void column_degree(
-                   DegVec &cdeg,
-                   const Mat<zz_pX> &pmat,
-                   const Shift & shift
-                  )
-{
-    cdeg.resize(pmat.NumCols());
-
-    // retrieve the shifted degree matrix
-    Mat<long> degmat;
-    degree_matrix(degmat,pmat,shift,false);
-
-    // take the max of each column of degmat
-    for (long c = 0; c < pmat.NumCols(); c++)
-    {
-        long max_deg = degmat[0][c];
-        for (long r = 1; r < pmat.NumRows(); r++)
-            if (max_deg < degmat[r][c]) 
-                max_deg = degmat[r][c];
-        cdeg[c] = max_deg;
-    }
-} 
 
 /*------------------------------------------------------------*/
 /* shifted leading matrix                                     */

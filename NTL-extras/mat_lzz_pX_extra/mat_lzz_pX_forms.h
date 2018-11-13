@@ -83,6 +83,100 @@ inline long amplitude(Shift shift)
     return *minmax.second - *minmax.first;
 }
 
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* (SHIFTED) ROW/COLUMN DEGREE                                */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+
+/*------------------------------------------------------------*/
+/* the row degree of a matrix is the tuple                    */
+/* (deg(row 1), deg(row 2), ..., deg(row m))                  */
+/* where the degree of row k is the maximum of the degrees    */
+/* of the entries of row k (-1 if row is zero)                */
+/*------------------------------------------------------------*/
+void row_degree(
+                DegVec & rdeg,
+                const Mat<zz_pX> &pmat
+               ); 
+
+inline DegVec row_degree(const Mat<zz_pX> &pmat)
+{ DegVec rdeg; row_degree(rdeg, pmat); return rdeg; }
+
+/*------------------------------------------------------------*/
+/* the shifted row degree of a matrix is the tuple            */
+/* (s-deg(row 1), s-deg(row 2), ..., s-deg(row m))            */
+/* where the s-degree of row k is the maximum of the degrees  */
+/* of pmat[k][j] with a weight shift[j] added on column j     */
+/* (min(shift)-1 if row is zero)                              */
+/*------------------------------------------------------------*/
+void row_degree_shifted(
+                        DegVec & rdeg,
+                        const Mat<zz_pX> &pmat,
+                        const Shift & shift
+                       ); 
+
+inline DegVec row_degree_shifted(
+                        const Mat<zz_pX> &pmat,
+                        const Shift & shift
+                       )
+{ DegVec rdeg; row_degree_shifted(rdeg, pmat, shift); return rdeg; }
+
+
+/*------------------------------------------------------------*/
+/* the column degree of a matrix is the tuple                 */
+/* (deg(col 1), deg(col 2), ..., deg(col m))                  */
+/* where the degree of column k is the maximum of the degrees */
+/* of the entries of column k (-1 if column is zero)          */
+/*------------------------------------------------------------*/
+void col_degree(
+                DegVec & cdeg,
+                const Mat<zz_pX> &pmat
+               ); 
+
+inline DegVec col_degree(const Mat<zz_pX> &pmat)
+{ DegVec cdeg; col_degree(cdeg, pmat); return cdeg; }
+
+/*------------------------------------------------------------*/
+/* the shifted column degree of a matrix is the tuple         */
+/* (s-deg(col 1), s-deg(col 2), ..., s-deg(col m))            */
+/* where the s-degree of column k is the maximum of the       */
+/* degrees of pmat[i][k] with weight shift[i] added on row i  */
+/* (min(shift)-1 if column is zero)                           */
+/*------------------------------------------------------------*/
+void col_degree_shifted(
+                        DegVec & cdeg,
+                        const Mat<zz_pX> &pmat,
+                        const Shift & shift
+                       ); 
+
+inline DegVec col_degree_shifted(
+                                 const Mat<zz_pX> &pmat,
+                                 const Shift & shift
+                                )
+{ DegVec cdeg; col_degree_shifted(cdeg, pmat, shift); return cdeg; }
+
+
+
+/*------------------------------------------------------------*/
+/* similar function with row-wise option and returning degree */
+/*------------------------------------------------------------*/
+inline DegVec vector_degree(
+                            const Mat<zz_pX> &pmat,
+                            const Shift & shift = Shift(),
+                            const bool row_wise = true
+                           )
+{
+    DegVec degs;
+    if (row_wise)
+        row_degree(degs,pmat,shift);
+    else
+        column_degree(degs,pmat,shift);
+    return degs;
+}
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* (SHIFTED) DEGREE MATRIX                                    */
@@ -145,47 +239,6 @@ inline Mat<long> degree_matrix_colshifted(
     Mat<long> degmat;
     degree_matrix_colshifted(degmat, pmat, shift);
     return degmat;
-}
-
-
-/*------------------------------------------------------------*/
-/* tuple (shifted deg row 1, shifted deg row 2, ...)          */
-/* where shifted deg row k is the maximum of the shifted      */
-/* degrees of the entries of row k                            */
-/*------------------------------------------------------------*/
-void row_degree(
-                DegVec & rdeg,
-                const Mat<zz_pX> &pmat,
-                const Shift & shift = Shift()
-               ); 
-
-
-/*------------------------------------------------------------*/
-/* similar function for column degrees (see row_degree)       */
-/*------------------------------------------------------------*/
-void column_degree(
-                   DegVec & cdeg,
-                   const Mat<zz_pX> &pmat,
-                   const Shift & shift = Shift()
-                  ); 
-
-// TODO version which returns rdeg
-
-/*------------------------------------------------------------*/
-/* similar function with row-wise option and returning degree */
-/*------------------------------------------------------------*/
-inline DegVec vector_degree(
-                            const Mat<zz_pX> &pmat,
-                            const Shift & shift = Shift(),
-                            const bool row_wise = true
-                           )
-{
-    DegVec degs;
-    if (row_wise)
-        row_degree(degs,pmat,shift);
-    else
-        column_degree(degs,pmat,shift);
-    return degs;
 }
 
 
