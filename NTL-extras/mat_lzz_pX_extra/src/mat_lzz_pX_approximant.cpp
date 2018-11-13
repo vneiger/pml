@@ -85,7 +85,7 @@ bool is_approximant_basis(
         return false;
 
     // test whether appbas is shift-reduced with form at least 'form'
-    if (not is_row_polmatform(appbas,form,shift))
+    if (not is_row_polmatform(appbas,shift,form))
         return false;
 
     // test whether appbas consists of approximants (if row-wise: appbas * pmat = 0 mod X^order)

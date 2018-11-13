@@ -22,7 +22,6 @@ bool is_interpolant_basis(
                           const Vec<zz_p> & pts,
                           const Shift & shift,
                           const PolMatForm & form,
-                          const bool row_wise,
                           const bool randomized
                          )
 {
@@ -32,7 +31,7 @@ bool is_interpolant_basis(
     std::cout << "==is_interpolant_basis== WARNING: not fully implemented: not checking generation" << std::endl;
 
     // test that appbas is shift-reduced with form at least 'form'
-    if (not is_polmatform(intbas,form,shift,row_wise))
+    if (not is_row_polmatform(intbas,shift,form))
         return false;
 
     // test that the matrix consists of interpolants
