@@ -135,6 +135,8 @@ int main(int argc, char *argv[])
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
 
                 if (std::max(rdim,cdim)<33) {
+                    std::cout << "Print shift..." << std::endl;
+                    std::cout << shift << std::endl;
                     Mat<long> degmat;
                     degree_matrix_rowshifted(degmat,appbas,shift);
                     std::cout << "Print degree matrix of approx basis..." << std::endl;
