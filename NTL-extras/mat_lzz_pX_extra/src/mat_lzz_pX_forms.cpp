@@ -42,12 +42,12 @@ void row_degree_shifted(
     if ((long)shift.size() != pmat.NumCols())
         throw std::invalid_argument("==row_degree_shifted== shift must have length pmat.NumCols()");
 
-    // compute minimum shift entry (used for zero entries)
-    long min_shift = *std::min_element(shift.begin(),shift.end());
-
     // empty rdeg and reserve space
     rdeg.clear();
     rdeg.reserve(pmat.NumRows());
+
+    // compute minimum shift entry (used for zero entries)
+    long min_shift = *std::min_element(shift.begin(),shift.end());
 
     // take the max shifted degree in each row of pmat
     for (long i = 0; i < pmat.NumRows(); ++i)
@@ -71,15 +71,18 @@ void col_degree(
                 const Mat<zz_pX> &pmat
                )
 {
-    // empty cdeg and fill it with -1
+    // empty cdeg and reserve space
     cdeg.clear();
-    cdeg.resize(pmat.NumCols(), -1);
+    cdeg.reserve(pmat.NumCols());
 
     // take the max degree in each column of pmat
-    for (long i = 0; i < pmat.NumRows(); ++i)
-        for (long j = 0; j < pmat.NumCols(); ++j)
+    for (long j = 0; j < pmat.NumCols(); ++j)
+    {
+        cdeg.emplace_back(-1);  // cdeg[j] == -1
+        for (long i = 0; i < pmat.NumRows(); ++i)
             if (cdeg[j] < deg(pmat[i][j])) 
                 cdeg[j] = deg(pmat[i][j]);
+    }
 } 
 
 /*------------------------------------------------------------*/
@@ -94,22 +97,189 @@ void col_degree_shifted(
     if ((long)shift.size() != pmat.NumRows())
         throw std::invalid_argument("==col_degree_shifted== shift must have length pmat.NumRows()");
 
+    // empty cdeg and reserve space
+    cdeg.clear();
+    cdeg.reserve(pmat.NumCols());
+
     // compute minimum shift entry (used for zero entries)
     long min_shift = *std::min_element(shift.begin(),shift.end());
 
-    // empty cdeg and fill it with -1
-    cdeg.clear();
-    cdeg.resize(pmat.NumCols(), min_shift-1);
-
     // take the max degree in each column of pmat
-    for (long i = 0; i < pmat.NumRows(); ++i)
-        for (long j = 0; j < pmat.NumCols(); ++j)
+    for (long j = 0; j < pmat.NumCols(); ++j)
+    {
+        cdeg.emplace_back(min_shift-1);  // cdeg[j] == min(shift)-1
+        for (long i = 0; i < pmat.NumRows(); ++i)
         {
             long d = deg(pmat[i][j]) + shift[i];
             if (not IsZero(pmat[i][j]) && cdeg[j] < d) 
                 cdeg[j] = d;
         }
+    }
 } 
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* (SHIFTED) PIVOT INDEX / DEGREE                             */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+
+/*------------------------------------------------------------*/
+/* row pivot index/degree                                     */
+/*------------------------------------------------------------*/
+void row_pivots(
+                VecLong & pivind,
+                VecLong & pivdeg,
+                const Mat<zz_pX> & pmat
+               )
+{
+    // empty vectors and reserve space
+    pivind.clear();
+    pivind.reserve(pmat.NumRows());
+    pivdeg.clear();
+    pivdeg.reserve(pmat.NumRows());
+
+    for (long i = 0; i < pmat.NumRows(); ++i)
+    {
+        pivind.emplace_back(-1);  // pivind[i] == -1
+        pivdeg.emplace_back(-1);  // pivdeg[i] == -1
+        for (long j = 0; j < pmat.NumCols(); ++j)
+            if (deg(pmat[i][j]) > pivdeg[i])  // hence pmat[i][j] nonzero
+            {
+                pivdeg[i] = deg(pmat[i][j]);
+                pivind[i] = j;
+            }
+            else if (deg(pmat[i][j]) == pivdeg[i] && not IsZero(pmat[i][j]))
+                pivind[i] = j;
+    }
+}
+
+/*------------------------------------------------------------*/
+/* shifted row pivot index/degree                             */
+/*------------------------------------------------------------*/
+void row_pivots_shifted(
+                        VecLong & pivind,
+                        VecLong & pivdeg,
+                        const Mat<zz_pX> & pmat,
+                        const Shift & shift
+                       )
+{
+    if ((long)shift.size() != pmat.NumCols())
+        throw std::invalid_argument("==row_pivots_shifted== shift must have length pmat.NumCols()");
+
+    // empty vectors and reserve space
+    pivind.clear();
+    pivind.reserve(pmat.NumRows());
+    pivdeg.clear();
+    pivdeg.reserve(pmat.NumRows());
+
+    // compute minimum shift entry (used for zero entries)
+    long min_shift = *std::min_element(shift.begin(),shift.end());
+
+    // take the max degree in each row of pmat
+    for (long i = 0; i < pmat.NumRows(); ++i)
+    {
+        pivind.emplace_back(-1);  // pivind[i] == -1
+        // for the moment, pivdeg stores the rdeg, pivdeg[i] == min(shift)-1
+        pivdeg.emplace_back(min_shift-1);
+        for (long j = 0; j < pmat.NumCols(); ++j)
+        {
+            long d = deg(pmat[i][j]) + shift[j];
+            if (d > pivdeg[i]) // hence pmat[i][j] nonzero
+            {
+                pivdeg[i] = d;
+                pivind[i] = j;
+            }
+            if (d == pivdeg[i] && not IsZero(pmat[i][j]))
+                pivind[i] = j;
+        }
+        // remove the shift so that pivdeg is not rdeg but pivdeg
+        if (pivind[i]==-1) // zero row
+            pivdeg[i] = -1;
+        else
+            pivdeg[i] = pivdeg[i] - shift[pivind[i]];
+    }
+}
+
+/*------------------------------------------------------------*/
+/* column pivot index/degree                                  */
+/*------------------------------------------------------------*/
+void col_pivots(
+                VecLong & pivind,
+                VecLong & pivdeg,
+                const Mat<zz_pX> & pmat
+               )
+{
+    // empty pivind / pivdeg and reserve space
+    pivind.clear();
+    pivind.reserve(pmat.NumCols());
+    pivdeg.clear();
+    pivdeg.reserve(pmat.NumCols());
+
+    for (long j = 0; j < pmat.NumCols(); ++j)
+    {
+        pivind.emplace_back(-1);  // pivind[j] == -1
+        pivdeg.emplace_back(-1);  // pivdeg[j] == -1
+        for (long i = 0; i < pmat.NumRows(); ++i)
+            if (deg(pmat[i][j]) > pivdeg[j])  // hence pmat[i][j] nonzero
+            {
+                pivdeg[j] = deg(pmat[i][j]);
+                pivind[j] = i;
+            }
+            else if (deg(pmat[i][j]) == pivdeg[j] && not IsZero(pmat[i][j]))
+                pivind[j] = i;
+    }
+} 
+
+/*------------------------------------------------------------*/
+/* shifted column pivot index/degree                          */
+/*------------------------------------------------------------*/
+void col_pivots_shifted(
+                        VecLong & pivind,
+                        VecLong & pivdeg,
+                        const Mat<zz_pX> & pmat,
+                        const Shift & shift
+                       )
+{
+    if ((long)shift.size() != pmat.NumRows())
+        throw std::invalid_argument("==col_pivots_shifted== shift must have length pmat.NumRows()");
+
+    // empty vectors and reserve space
+    pivind.clear();
+    pivind.reserve(pmat.NumCols());
+    pivdeg.clear();
+    pivdeg.reserve(pmat.NumCols());
+
+    // compute minimum shift entry (used for zero entries)
+    long min_shift = *std::min_element(shift.begin(),shift.end());
+
+    // take the max degree in each row of pmat
+    for (long j = 0; j < pmat.NumCols(); ++j)
+    {
+        pivind.emplace_back(-1);  // pivind[j] == -1
+        // for the moment, pivdeg stores the cdeg, pivdeg[j] == min(shift)-1
+        pivdeg.emplace_back(min_shift-1);
+        for (long i = 0; i < pmat.NumRows(); ++i)
+        {
+            long d = deg(pmat[i][j]) + shift[i];
+            if (d > pivdeg[j]) // hence pmat[i][j] nonzero
+            {
+                pivdeg[j] = d;
+                pivind[j] = i;
+            }
+            if (d == pivdeg[j] && not IsZero(pmat[i][j]))
+                pivind[j] = i;
+        }
+        // remove the shift so that pivdeg is not cdeg but pivdeg
+        if (pivind[j]==-1) // zero column
+            pivdeg[j] = -1;
+        else
+            pivdeg[j] = pivdeg[j] - shift[pivind[j]];
+    }
+}
 
 
 
@@ -210,7 +380,6 @@ void degree_matrix_colshifted(
 
 
 
-
 /*------------------------------------------------------------*/
 /* shifted leading matrix                                     */
 /*------------------------------------------------------------*/
@@ -281,91 +450,6 @@ bool is_reduced(
     return rank == (row_wise ? pmat.NumRows() : pmat.NumCols());
 }
 
-/*------------------------------------------------------------*/
-/* TODO comment                                               */
-/*------------------------------------------------------------*/
-void pivot_index(
-                 std::vector<long> & pivind,
-                 DegVec & pivdeg,
-                 const Mat<zz_pX> & pmat,
-                 const Shift & shift,
-                 const bool row_wise
-                )
-{
-    // check if shifted + shift dimension
-    bool shifted = check_shift(shift, pmat, row_wise);
-
-    // retrieve (shifted) degree matrix
-    Mat<long> deg_mat;
-    degree_matrix(deg_mat,pmat,shift,row_wise);
-
-    DegVec degree;
-    if (row_wise)
-    {
-        degree.resize(pmat.NumRows());
-        row_degree(degree,pmat,shift);
-    }
-    else
-    {
-        degree.resize(pmat.NumCols());
-        column_degree(degree,pmat,shift);
-    }
-
-    long zero_degree = -1;
-    if (shifted)
-        zero_degree = *std::min_element(shift.begin(),shift.end()) -1;
-
-    if (row_wise)
-    {
-        if ((long)pivind.size() != pmat.NumRows())
-            throw std::invalid_argument("==pivot_index== Provided vector does not have size = NumRows");
-
-        for (long r = 0; r < pmat.NumRows(); ++r)
-        {
-            if (degree[r] == zero_degree) 
-            {
-                pivdeg[r] = -1;
-                pivind[r] = -1;
-            }
-            else
-            {
-                for (long c = 0; c <pmat.NumCols(); ++c)
-                {
-                    if (deg_mat[r][c] == degree[r]) 
-                    {
-                        pivdeg[r] = deg(pmat[r][c]);
-                        pivind[r] = c;
-                    }
-                }
-            }
-        }
-    }
-    else
-    {
-        if ((long)pivind.size() != pmat.NumCols())
-            throw std::invalid_argument("==pivot_index== Provided vector does not have size = NumCols");
-
-        for(long c = 0; c < pmat.NumCols(); c++)
-        {
-            if (degree[c] == zero_degree) 
-            {
-                pivdeg[c] = -1;
-                pivind[c] = -1;
-            }
-            else
-            {
-                for (long r = 0; r < pmat.NumRows(); r++)
-                {
-                    if (deg_mat[r][c] == degree[c]) 
-                    {
-                        pivdeg[c] = deg(pmat[r][c]);
-                        pivind[c] = r;
-                    }
-                }
-            }
-        }
-    }
-}
 
 /*------------------------------------------------------------*/
 /* TODO comment                                               */

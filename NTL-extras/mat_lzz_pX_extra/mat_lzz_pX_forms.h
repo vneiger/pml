@@ -19,6 +19,7 @@ NTL_CLIENT
 // TODO replace with NTL's vec??
 typedef std::vector<long> DegVec;
 typedef std::vector<long> Shift;
+typedef std::vector<long> VecLong;
 
 /*------------------------------------------------------------*/
 /* Shifted reduced forms of polynomials matrices. Recall that */
@@ -159,23 +160,94 @@ inline DegVec col_degree_shifted(
 { DegVec cdeg; col_degree_shifted(cdeg, pmat, shift); return cdeg; }
 
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* (SHIFTED) PIVOT INDEX/DEGREE                               */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* similar function with row-wise option and returning degree */
+/* row-wise (shifted) pivot indices and degrees               */
+/* --> tuple of pivot index/degree for each row of pmat       */
+/* For a given row, the pivot index is the index of the       */
+/* rightmost entry which reaches the (shifted) row degree;    */
+/* the pivot degree is the degree of that pivot (not adding   */
+/* the shift)                                                 */
+/* The pivot index of a zero row is -1                        */
 /*------------------------------------------------------------*/
-inline DegVec vector_degree(
-                            const Mat<zz_pX> &pmat,
-                            const Shift & shift = Shift(),
-                            const bool row_wise = true
-                           )
+void row_pivots(
+                VecLong & pivind,
+                VecLong & pivdeg,
+                const Mat<zz_pX> & pmat
+               );
+
+inline std::pair<VecLong,VecLong> row_pivots(const Mat<zz_pX> & pmat)
 {
-    DegVec degs;
-    if (row_wise)
-        row_degree(degs,pmat,shift);
-    else
-        column_degree(degs,pmat,shift);
-    return degs;
+    std::pair<VecLong,VecLong> pivots;
+    row_pivots(pivots.first, pivots.second, pmat);
+    return pivots;
 }
+
+void row_pivots_shifted(
+                        VecLong & pivind,
+                        VecLong & pivdeg,
+                        const Mat<zz_pX> & pmat,
+                        const Shift & shift
+                       );
+
+inline std::pair<VecLong,VecLong>
+row_pivots_shifted(
+                   const Mat<zz_pX> & pmat,
+                   const Shift & shift
+                  )
+{
+    std::pair<VecLong,VecLong> pivots;
+    row_pivots_shifted(pivots.first, pivots.second, pmat, shift);
+    return pivots;
+}
+
+
+/*------------------------------------------------------------*/
+/* column-wise (shifted) pivot indices and degrees            */
+/* --> tuple of pivot index/degree for each column of pmat    */
+/* For a given column, the pivot index is the index of the    */
+/* bottommost entry which reaches the (shifted) column degree;*/
+/* the pivot degree is the degree of that pivot (not adding   */
+/* the shift)                                                 */
+/* The pivot index of a zero column is -1                     */
+/*------------------------------------------------------------*/
+void col_pivots(
+                VecLong & pivind,
+                VecLong & pivdeg,
+                const Mat<zz_pX> & pmat
+               );
+
+inline std::pair<VecLong,VecLong> col_pivots(const Mat<zz_pX> & pmat)
+{
+    std::pair<VecLong,VecLong> pivots;
+    col_pivots(pivots.first, pivots.second, pmat);
+    return pivots;
+}
+
+void col_pivots_shifted(
+                        VecLong & pivind,
+                        VecLong & pivdeg,
+                        const Mat<zz_pX> & pmat,
+                        const Shift & shift
+                       );
+
+inline std::pair<VecLong,VecLong>
+col_pivots_shifted(
+                   const Mat<zz_pX> & pmat,
+                   const Shift & shift
+                  )
+{
+    std::pair<VecLong,VecLong> pivots;
+    col_pivots_shifted(pivots.first, pivots.second, pmat, shift);
+    return pivots;
+}
+
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -240,18 +312,6 @@ inline Mat<long> degree_matrix_colshifted(
     degree_matrix_colshifted(degmat, pmat, shift);
     return degmat;
 }
-
-
-/*------------------------------------------------------------*/
-/* finds the pivot indices; returns the row/col degs          */
-/*------------------------------------------------------------*/
-void pivot_index(
-                 std::vector<long> & pivind,
-                 DegVec & pivdeg,
-                 const Mat<zz_pX> & pmat,
-                 const Shift & shift = Shift(),
-                 const bool row_wise = true
-                );
 
 
 /*------------------------------------------------------------*/
@@ -354,6 +414,25 @@ bool is_polmatform(
 
 // TODO nonsingular: Giorgi-Jeannerod-Villard's Las Vegas reduction
 // (worth implementing for shifts other than uniform?)
+
+
+// TODO remove
+/*------------------------------------------------------------*/
+/* similar function with row-wise option and returning degree */
+/*------------------------------------------------------------*/
+inline DegVec vector_degree(
+                            const Mat<zz_pX> &pmat,
+                            const Shift & shift = Shift(),
+                            const bool row_wise = true
+                           )
+{
+    DegVec degs;
+    if (row_wise)
+        row_degree(degs,pmat,shift);
+    else
+        column_degree(degs,pmat,shift);
+    return degs;
+}
 
 
 
