@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 
                 if (std::max(rdim,cdim)<33) {
                     Mat<long> degmat;
-                    degree_matrix(degmat,appbas,shift,true);
+                    degree_matrix_rowshifted(degmat,appbas,shift);
                     std::cout << "Print degree matrix of approx basis..." << std::endl;
                     std::cout << degmat << std::endl;
                 }
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
 
                 if (std::max(rdim,cdim)<33) {
                     Mat<long> degmat;
-                    degree_matrix(degmat,appbas,shift,true);
+                    degree_matrix_rowshifted(degmat,appbas,shift);
                     std::cout << "Print degree matrix of approx basis..." << std::endl;
                     std::cout << degmat << std::endl;
                 }
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
 
         //        if (std::max(rdim,cdim)<33) {
         //            Mat<long> degmat;
-        //            degree_matrix(degmat,appbas,shift,true);
+        //            degree_matrix_rowshifted(degmat,appbas,shift);
         //            std::cout << "Print degree matrix of approx basis..." << std::endl;
         //            std::cout << degmat << std::endl;
         //        }

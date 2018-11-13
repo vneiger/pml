@@ -90,9 +90,9 @@ int main()
     cout << "col shift: ";
     printVec(cs);
 
-    degree_matrix(deg_mat,pmat,rs,true);
+    degree_matrix_rowshifted(deg_mat,pmat,rs);
     cout << "degree matrix with row wise shift: " << endl << deg_mat<<endl;
-    degree_matrix(deg_mat,pmat,cs,false);
+    degree_matrix_colshifted(deg_mat,pmat,cs);
     cout << "degree matrix with col wise shift: " << endl << deg_mat<<endl;
 
     degs.resize(pmat.NumRows());
