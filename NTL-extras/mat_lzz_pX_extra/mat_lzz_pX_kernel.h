@@ -73,9 +73,8 @@ DegVec kernel_basis(
 bool is_kernel_basis(
                      Mat<zz_pX> & kerbas,
                      const Mat<zz_pX> & pmat,
-                     const Shift & shift = Shift(),
+                     const Shift & shift,
                      const PolMatForm & form = ORD_WEAK_POPOV,
-                     const bool row_wise = true,
                      const bool randomized = false
                     );
 

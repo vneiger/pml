@@ -572,26 +572,6 @@ bool is_polmatform(
 // (worth implementing for shifts other than uniform?)
 
 
-// TODO remove
-/*------------------------------------------------------------*/
-/* similar function with row-wise option and returning degree */
-/*------------------------------------------------------------*/
-inline DegVec vector_degree(
-                            const Mat<zz_pX> &pmat,
-                            const Shift & shift = Shift(),
-                            const bool row_wise = true
-                           )
-{
-    DegVec degs;
-    if (row_wise)
-        row_degree(degs,pmat,shift);
-    else
-        column_degree(degs,pmat,shift);
-    return degs;
-}
-
-
-
 #endif /* ifndef MAT_LZZ_PX_FORMS */
 
 // Local Variables:

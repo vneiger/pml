@@ -66,7 +66,6 @@ bool is_approximant_basis(
                           const Order & order,
                           const Shift & shift,
                           const PolMatForm & form,
-                          const bool row_wise,
                           const bool randomized
                          )
 {
@@ -82,38 +81,30 @@ bool is_approximant_basis(
         std::cout << "==is_approximant_basis== Warning: using *randomized* algorithm for testing generation, in the verification that det(appbas) = c X^d" << std::endl;
 
     // test whether appbas has the right dimensions
-    if (appbas.NumRows() != appbas.NumCols()
-        || (row_wise && appbas.NumCols() != m)
-        || ((not row_wise) && appbas.NumRows() != n))
+    if (appbas.NumRows() != appbas.NumCols() || appbas.NumCols() != m)
         return false;
 
     // test whether appbas is shift-reduced with form at least 'form'
-    if (not is_polmatform(appbas,form,shift,row_wise))
+    if (not is_row_polmatform(appbas,form,shift))
         return false;
 
     // test whether appbas consists of approximants (if row-wise: appbas * pmat = 0 mod X^order)
     // and retrieve the constant coefficient "cmat" of degree order (if row-wise: cmat = (appbas * pmat * X^{-order})  mod X)
     // (we reserve some additional space in cmat because later it will store the constant coefficient of appbas)
     Mat<zz_pX> residual;
-    if (row_wise)
-        multiply(residual,appbas,pmat);
-    else
-        multiply(residual,pmat,appbas);
+    multiply(residual,appbas,pmat);
     // TODO this multiplication could be:
     //   - truncated mod X^{order+1}
     //   - improved by taking degree profile into account
 
     Mat<zz_p> cmat;
-    if (row_wise)
-        cmat.SetDims(m,m+n);
-    else
-        cmat.SetDims(m+n,n);
+    cmat.SetDims(m,m+n);
 
     for (long i = 0; i < residual.NumRows(); ++i)
     {
         for (long j = 0; j < residual.NumCols(); ++j)
         {
-            long ord = row_wise ? order[j] : order[i];
+            long ord = order[j];
             GetCoeff(cmat[i][j],residual[i][j],ord);
             trunc(residual[i][j],residual[i][j],ord);
             if (residual[i][j] != 0)
@@ -124,7 +115,8 @@ bool is_approximant_basis(
     // test whether det(appbas) is a monomial (power of x):
     // det(appbas) = det(appbas(1)) * X^(deg(det(appbas)))
     // the degree of det(appbas) is known since appbas is reduced:
-    DegVec degs = vector_degree(appbas,shift,row_wise);
+    DegVec degs;
+    row_degree(degs, appbas, shift);
     long sum_degs = std::accumulate(degs.begin(), degs.end(), (long)0);
     long sum_shift = std::accumulate(shift.begin(), shift.end(), (long)0);
     long degdet = sum_degs - sum_shift;
@@ -136,16 +128,11 @@ bool is_approximant_basis(
         return false;
 
     // generation test: verify that [ cmat  P(0) ] has full rank (see Giorgi-Neiger ISSAC 2018)
-    if (row_wise)
-        for (long i = 0; i < m; ++i)
-            for (long j = 0; j < m; ++j)
-                cmat[i][j+n] = coeff(appbas[i][j],0);
-    else
-        for (long i = 0; i < n; ++i)
-            for (long j = 0; j < n; ++j)
-                cmat[i+m][j] = coeff(appbas[i][j],0);
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < m; ++j)
+            cmat[i][j+n] = coeff(appbas[i][j],0);
     long rank = gauss(cmat);
-    if (rank != std::min(cmat.NumRows(),cmat.NumCols()))
+    if (rank != m)
         return false;
 
     return true;
