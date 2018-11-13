@@ -462,8 +462,6 @@ void col_leading_matrix_shifted(
 
 
 
-
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* TESTING SHIFTED REDUCED FORMS                              */
@@ -471,18 +469,47 @@ void col_leading_matrix_shifted(
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* test whether pmat is a reduced matrix                      */
+/* test row reduced                                           */
 /*------------------------------------------------------------*/
-bool is_reduced(
-                const Mat<zz_pX> & pmat,
-                const Shift & shift,
-                const bool row_wise
-               )
+bool is_row_reduced(const Mat<zz_pX> & pmat)
 {
     Mat<zz_p> lmat;
-    leading_matrix(lmat,pmat,shift,row_wise);
+    row_leading_matrix(lmat,pmat);
     long rank = gauss(lmat);
-    return rank == (row_wise ? pmat.NumRows() : pmat.NumCols());
+    return rank == pmat.NumRows();
+}
+
+/*------------------------------------------------------------*/
+/* test shifted row reduced                                   */
+/*------------------------------------------------------------*/
+bool is_row_reduced_shifted(const Mat<zz_pX> & pmat, const Shift & shift)
+{
+    Mat<zz_p> lmat;
+    row_leading_matrix_shifted(lmat,pmat,shift);
+    long rank = gauss(lmat);
+    return rank == pmat.NumRows();
+}
+
+/*------------------------------------------------------------*/
+/* test column reduced                                        */
+/*------------------------------------------------------------*/
+bool is_col_reduced(const Mat<zz_pX> & pmat)
+{
+    Mat<zz_p> lmat;
+    col_leading_matrix(lmat,pmat);
+    long rank = gauss(lmat);
+    return rank == pmat.NumCols();
+}
+
+/*------------------------------------------------------------*/
+/* test shifted column reduced                                */
+/*------------------------------------------------------------*/
+bool is_col_reduced_shifted(const Mat<zz_pX> & pmat, const Shift & shift)
+{
+    Mat<zz_p> lmat;
+    col_leading_matrix_shifted(lmat,pmat,shift);
+    long rank = gauss(lmat);
+    return rank == pmat.NumCols();
 }
 
 

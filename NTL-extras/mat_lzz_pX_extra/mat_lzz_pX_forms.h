@@ -393,24 +393,33 @@ inline Mat<zz_p> col_leading_matrix_shifted(
 
 
 
-
-
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* TESTING SHIFTED REDUCED FORMS                              */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+/*------------------------------------------------------------*/
+/* test (shifted) row reducedness:                            */
+/* a matrix is (shifted) row reduced if and only if its       */
+/* (shifted) row-wise leading matrix has full row rank        */
+/*------------------------------------------------------------*/
+bool is_row_reduced(const Mat<zz_pX> & pmat);
+bool is_row_reduced_shifted(const Mat<zz_pX> & pmat, const Shift & shift);
 
 /*------------------------------------------------------------*/
-/* returns true if pmat is reduced                            */
+/* test (shifted) column reducedness:                         */
+/* a matrix is (shifted) column reduced if and only if its    */
+/* (shifted) column-wise leading matrix has full column rank  */
 /*------------------------------------------------------------*/
-bool is_reduced(
-                const Mat<zz_pX> &pmat,
-                const Shift & shift = Shift(),
-                const bool row_wise = true
-               );
+bool is_col_reduced(const Mat<zz_pX> & pmat);
+bool is_col_reduced_shifted(const Mat<zz_pX> & pmat, const Shift & shift);
+
+
+
+
+
+
 
 /*------------------------------------------------------------*/
 /* returns true if pmat is in weak Popov form                 */
