@@ -146,7 +146,7 @@ int main()
     cout << "pmat: " << endl << pmat << endl;
     degree_matrix(deg_mat, pmat);
     cout << "deg mat: " << endl << deg_mat << endl;
-    cout << "is_popov: " << boolalpha << is_popov(pmat) << endl;
+    cout << "is_popov: " << boolalpha << is_row_popov(pmat) << endl;
 
     cout << endl << "Test Left shifts" << endl;
     cout << "left shift operator: " << (pmat << 2) << endl;

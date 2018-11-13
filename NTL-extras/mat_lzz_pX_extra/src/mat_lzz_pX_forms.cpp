@@ -772,18 +772,19 @@ bool is_row_popov(const Mat<zz_pX> & pmat, const Shift & shift)
 
     return true;
 }
-/*------------------------------------------------------------*/
-/* test row-wise Popov form, up to row permutation            */
-/*------------------------------------------------------------*/
-bool is_row_popov_up_to_permutation(const Mat<zz_pX> & pmat);
 
-/*------------------------------------------------------------*/
-/* test row-wise shifted Popov form, up to row permutation    */
-/*------------------------------------------------------------*/
-bool is_row_popov_up_to_permutation(
-                                    const Mat<zz_pX> & pmat,
-                                    const Shift & shift
-                                    );
+/////*------------------------------------------------------------*/
+/////* test row-wise Popov form, up to row permutation            */
+/////*------------------------------------------------------------*/
+////bool is_row_popov_up_to_permutation(const Mat<zz_pX> & pmat);
+////
+/////*------------------------------------------------------------*/
+/////* test row-wise shifted Popov form, up to row permutation    */
+/////*------------------------------------------------------------*/
+////bool is_row_popov_up_to_permutation(
+////                                    const Mat<zz_pX> & pmat,
+////                                    const Shift & shift
+////                                    );
 
 /*------------------------------------------------------------*/
 /* test column-wise Popov form                                */
@@ -859,66 +860,27 @@ bool is_col_popov(const Mat<zz_pX> & pmat, const Shift & shift)
 
     return true;
 }
-/*------------------------------------------------------------*/
-/* test column-wise Popov form, up to column permutation      */
-/*------------------------------------------------------------*/
-bool is_col_popov_up_to_permutation(const Mat<zz_pX> & pmat);
 
-/*------------------------------------------------------------*/
-/* test column-wise shifted Popov form,                       */
-/* up to column permutation                                   */
-/*------------------------------------------------------------*/
-bool is_col_popov_up_to_permutation(
-                                    const Mat<zz_pX> & pmat,
-                                    const Shift & shift
-                                    );
-
-
-
+////*------------------------------------------------------------*/
+////* test column-wise Popov form, up to column permutation      */
+////*------------------------------------------------------------*/
+///bool is_col_popov_up_to_permutation(const Mat<zz_pX> & pmat);
+///
+////*------------------------------------------------------------*/
+////* test column-wise shifted Popov form,                       */
+////* up to column permutation                                   */
+////*------------------------------------------------------------*/
+///bool is_col_popov_up_to_permutation(
+///                                    const Mat<zz_pX> & pmat,
+///                                    const Shift & shift
+///                                    );
 
 
 
 
-/*------------------------------------------------------------*/
-/* TODO comment                                               */
-/*------------------------------------------------------------*/
-bool is_popov(
-              const Mat<zz_pX> &pmat,
-              const Shift &shift,
-              const bool row_wise,
-              const bool up_to_permutation
-             )
-{
-    if (!is_weak_popov(pmat,shift,row_wise,!up_to_permutation))
-        return false;
 
 
-    std::vector<long> pivots;
-    DegVec degrees;
-    pivots.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
-    degrees.resize(row_wise ? pmat.NumRows() : pmat.NumCols());
-    pivot_index(pivots,degrees,pmat,shift,row_wise);
-    for (unsigned long i = 0; i < pivots.size(); i++){
-        long index = pivots[i];
-        if (index >= 0){
-            if(row_wise){
-                if (!is_monic(pmat[i][index]))
-                    return false;
-                for (long k=0; k < pmat.NumRows(); k++){
-                    if (deg(pmat[k][index]) >= degrees[i] && ((unsigned long)k != i))
-                        return false;
-                }
-            }else{ // col-wise
-                if (!is_monic(pmat[index][i]))
-                    return false;
-                for (long k = 0; k < pmat.NumCols(); k++)
-                    if (deg(pmat[index][k]) >= degrees[i] && ((unsigned long)k != i))
-                        return false;
-            }
-        }
-    }
-    return true;
-}
+
 
 
 
