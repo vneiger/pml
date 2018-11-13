@@ -47,8 +47,8 @@ std::vector<long> column_linearization(
 std::vector<long> column_partial_linearization(
                                                Mat<zz_pX> & parlin, 
                                                const Mat<zz_pX> & pmat, 
-                                               const DegVec & parlin_degree,
-                                               const DegVec & target_degree
+                                               const VecLong & parlin_degree,
+                                               const VecLong & target_degree
                                               );
 
 // same, using cdeg
@@ -56,10 +56,10 @@ std::vector<long> column_partial_linearization(
 inline std::vector<long> column_partial_linearization_cdeg(
                                                            Mat<zz_pX> &parlin, 
                                                            const Mat<zz_pX> & pmat, 
-                                                           const DegVec & parlin_degree
+                                                           const VecLong & parlin_degree
                                                           )
 {
-    DegVec cdeg(pmat.NumCols());
+    VecLong cdeg(pmat.NumCols());
     col_degree(cdeg, pmat);
     return column_partial_linearization(parlin, pmat, parlin_degree, cdeg);
 }
@@ -72,10 +72,10 @@ inline std::vector<long> column_partial_linearization(
                                                       Mat<zz_pX> &parlin, 
                                                       const Mat<zz_pX> & pmat, 
                                                       const long parlin_degree,
-                                                      const DegVec & target_degree
+                                                      const VecLong & target_degree
                                                      )
 {
-    DegVec parlin_degrees(pmat.NumCols(), parlin_degree);
+    VecLong parlin_degrees(pmat.NumCols(), parlin_degree);
     return column_partial_linearization(parlin, pmat, parlin_degrees, target_degree);
 }
 
@@ -87,9 +87,9 @@ inline std::vector<long> column_partial_linearization_cdeg(
                                                            const long parlin_degree
                                                           )
 {
-    DegVec cdeg(pmat.NumCols());
+    VecLong cdeg(pmat.NumCols());
     col_degree(cdeg, pmat);
-    DegVec parlin_degrees(pmat.NumCols(), parlin_degree);
+    VecLong parlin_degrees(pmat.NumCols(), parlin_degree);
     return column_partial_linearization(parlin, pmat, parlin_degrees, cdeg);
 }
 
@@ -104,8 +104,8 @@ inline std::vector<long> column_partial_linearization(
                                                       const long target_degree
                                                      )
 {
-    DegVec parlin_degrees(pmat.NumCols(), parlin_degree);
-    DegVec target_degrees(pmat.NumCols(), target_degree);
+    VecLong parlin_degrees(pmat.NumCols(), parlin_degree);
+    VecLong target_degrees(pmat.NumCols(), target_degree);
     return column_partial_linearization(parlin, pmat, parlin_degrees, target_degrees);
 }
 
@@ -115,12 +115,12 @@ inline std::vector<long> column_partial_linearization(
 inline std::vector<long> column_partial_linearization(
                                                       Mat<zz_pX> &parlin, 
                                                       const Mat<zz_pX> & pmat, 
-                                                      const DegVec & target_degree
+                                                      const VecLong & target_degree
                                                      )
 {
     long parlin_degree = std::accumulate(target_degree.begin(), target_degree.end(), 0);
     parlin_degree = 1 + parlin_degree / target_degree.size();
-    DegVec parlin_degrees(pmat.NumCols(), parlin_degree);
+    VecLong parlin_degrees(pmat.NumCols(), parlin_degree);
     return column_partial_linearization(parlin, pmat, parlin_degrees, target_degree);
 }
 
@@ -131,19 +131,19 @@ inline std::vector<long> column_partial_linearization_cdeg(
                                                            const Mat<zz_pX> & pmat
                                                           )
 {
-    DegVec cdeg(pmat.NumCols());
+    VecLong cdeg(pmat.NumCols());
     col_degree(cdeg, pmat);
     long parlin_degree = std::accumulate(cdeg.begin(), cdeg.end(), 0);
     parlin_degree = 1 + parlin_degree / cdeg.size();
-    DegVec parlin_degrees(pmat.NumCols(), parlin_degree);
+    VecLong parlin_degrees(pmat.NumCols(), parlin_degree);
     return column_partial_linearization(parlin, pmat, parlin_degrees, cdeg);
 }
 
 std::vector<long> column_partial_linearization(
                                                Mat<zz_pX> & parlin, 
                                                const Mat<zz_pX> & pmat, 
-                                               const DegVec & parlin_degree,
-                                               const DegVec & target_degree,
+                                               const VecLong & parlin_degree,
+                                               const VecLong & target_degree,
                                                const long dinf
                                               );
 
@@ -162,7 +162,7 @@ void right_parlin_multiply(
                            const Mat<zz_pX> &a,
                            const Mat<zz_pX> &b,
                            const long parlin_degree,
-                           const DegVec & col_degree
+                           const VecLong & col_degree
                           );
 
 // column degree of b not provided, compute it
@@ -173,7 +173,7 @@ inline void right_parlin_multiply(
                                   const long parlin_degree
                                  )
 {
-    DegVec cdeg(b.NumCols());
+    VecLong cdeg(b.NumCols());
     col_degree(cdeg, b);
     right_parlin_multiply(c, a, b, parlin_degree, cdeg);
 }
@@ -187,7 +187,7 @@ inline void right_parlin_multiply(
                                   const long degree
                                  )
 {
-    DegVec target_degrees(b.NumCols(), degree);
+    VecLong target_degrees(b.NumCols(), degree);
     right_parlin_multiply(c, a, b, parlin_degree, target_degrees);
 }
 
@@ -198,7 +198,7 @@ inline void right_parlin_multiply(
                                   const Mat<zz_pX> &b
                                  )
 {
-    DegVec cdeg(b.NumCols());
+    VecLong cdeg(b.NumCols());
     col_degree(cdeg, b);
     right_parlin_multiply(c, a, b, deg(a), cdeg);
 }
@@ -209,7 +209,7 @@ void right_parlin_middle_product(
                                  const Mat<zz_pX> &a,
                                  const Mat<zz_pX> &b,
                                  const long parlin_degree,
-                                 const DegVec & col_degree,
+                                 const VecLong & col_degree,
                                  long dA,
                                  long dB
                                 );
@@ -224,7 +224,7 @@ inline void right_parlin_middle_product(
                                         long dB
                                        )
 {
-    DegVec col_degree(b.NumCols(), degree);
+    VecLong col_degree(b.NumCols(), degree);
     right_parlin_middle_product(c, a, b, parlin_degree, col_degree, dA, dB);
 }
 

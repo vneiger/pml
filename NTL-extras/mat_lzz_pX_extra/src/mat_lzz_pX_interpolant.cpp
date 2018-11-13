@@ -20,7 +20,7 @@ bool is_interpolant_basis(
                           const Mat<zz_pX> & intbas,
                           const Vec<Mat<zz_p>> & evals,
                           const Vec<zz_p> & pts,
-                          const Shift & shift,
+                          const VecLong & shift,
                           const PolMatForm & form,
                           const bool randomized
                          )
@@ -56,11 +56,11 @@ bool is_interpolant_basis(
 
 
 
-//DegVec intbas_iterative(
+//VecLong intbas_iterative(
 //		Mat<zz_pX> & intbas,
 //		const Mat<zz_pX> & pmat,
 //		const Points & pts,
-//		const Shift & shift,
+//		const VecLong & shift,
 //		bool point_wise,
 //		)
 //{
@@ -87,7 +87,7 @@ bool is_interpolant_basis(
 //
 //	// shifted row degrees of approximant basis
 //	// (initially, of the identity matrix, i.e. rdeg == shift)
-//	DegVec rdeg(shift);
+//	VecLong rdeg(shift);
 //
 //	while (not rem_pts.empty())
 //	{
@@ -187,18 +187,18 @@ bool is_interpolant_basis(
 //	return rdeg;
 //}
 //
-//DegVec popov_intbas_iterative(
+//VecLong popov_intbas_iterative(
 //		Mat<zz_pX> & intbas,
 //		const Mat<zz_pX> & pmat,
 //		const Points & pts,
-//		const Shift & shift,
+//		const VecLong & shift,
 //		bool point_wise
 //		)
 //{
 //	// TODO: implement BecLab00's "continuous" normalization and compare timings
 //	// (for various shifts and point configurations)
-//	DegVec pivdeg = intbas_iterative(intbas,pmat,pts,shift,point_wise);
-//	Shift new_shift( pivdeg );
+//	VecLong pivdeg = intbas_iterative(intbas,pmat,pts,shift,point_wise);
+//	VecLong new_shift( pivdeg );
 //	std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
 //	// TODO write zero method for polmats
 //	for (long i = 0; i < intbas.NumCols(); ++i)
@@ -212,11 +212,11 @@ bool is_interpolant_basis(
 //	return pivdeg;
 //}
 
-DegVec mbasis(
+VecLong mbasis(
               Mat<zz_pX> & intbas,
               const Vec<Mat<zz_p>> & evals,
               const Vec<zz_p> & pts,
-              const Shift & shift
+              const VecLong & shift
              )
 {
     long nrows = evals[0].NumRows();
@@ -230,15 +230,15 @@ DegVec mbasis(
 
     // holds the current shifted row degree of coeffs_intbas
     // initially, this is exactly shift
-    DegVec rdeg(shift);
+    VecLong rdeg(shift);
 
     // holds the current pivot degree of coeffs_intbas
     // initially tuple of zeroes
     // (note that at all times pivdeg+shift = rdeg entrywise)
-    DegVec pivdeg(nrows);
+    VecLong pivdeg(nrows);
 
     // will store the pivot degree at each call of mbasis1
-    DegVec diff_pivdeg;
+    VecLong diff_pivdeg;
 
     // matrix to store the kernels in mbasis1 calls
     Mat<zz_p> kerbas;
@@ -352,17 +352,17 @@ DegVec mbasis(
     return pivdeg;
 }
 
-DegVec pmbasis_geometric(
+VecLong pmbasis_geometric(
                Mat<zz_pX> & intbas,
                const Mat<zz_pX> & pmat,
                const zz_p & r,
                const long order,
-               const Shift & shift,
+               const VecLong & shift,
                Vec<Mat<zz_p>> &evals,
                Vec<zz_p> &pts
               )
 {
-    DegVec rdeg;
+    VecLong rdeg;
     rdeg.resize(pmat.NumRows());
     row_degree(rdeg, pmat);
     long max_rowdeg = rdeg[0];
@@ -399,12 +399,12 @@ DegVec pmbasis_geometric(
     return pmbasis_geometric(intbas, evals, pts, r, shift);
 }
 
-DegVec pmbasis_geometric(
+VecLong pmbasis_geometric(
                          Mat<zz_pX> & intbas,
                          const Vec<Mat<zz_p>> & evals,
                          const Vec<zz_p> & pts,
                          const zz_p & r,
-                         const Shift & shift
+                         const VecLong & shift
                         )
 {
     const long order = pts.length();
@@ -413,9 +413,9 @@ DegVec pmbasis_geometric(
     if (order <= 32)
         return mbasis(intbas, evals, pts, shift);
 
-    DegVec pivdeg; // pivot degree, first call
-    DegVec pivdeg2; // pivot degree, second call
-    DegVec rdeg(evals[0].NumRows()); // shifted row degree
+    VecLong pivdeg; // pivot degree, first call
+    VecLong pivdeg2; // pivot degree, second call
+    VecLong rdeg(evals[0].NumRows()); // shifted row degree
     long order1 = order>>1; // order of first call
     long order2 = order-order1; // order of second call
     Mat<zz_pX> intbas2; // basis for second call
@@ -492,11 +492,11 @@ NTL_EXEC_RANGE_END
     return pivdeg;    
 }
 
-DegVec pmbasis(
+VecLong pmbasis(
               Mat<zz_pX> & intbas,
               const Vec<Mat<zz_p>> & evals,
               const Vec<zz_p> & pts,
-              const Shift & shift
+              const VecLong & shift
              )
 {
 
@@ -506,9 +506,9 @@ DegVec pmbasis(
     if (order <= 32)
         return mbasis(intbas, evals, pts, shift);
 
-    DegVec pivdeg; // pivot degree, first call
-    DegVec pivdeg2; // pivot degree, second call
-    DegVec rdeg(evals[0].NumRows()); // shifted row degree
+    VecLong pivdeg; // pivot degree, first call
+    VecLong pivdeg2; // pivot degree, second call
+    VecLong rdeg(evals[0].NumRows()); // shifted row degree
     long order1 = order>>1; // order of first call
     long order2 = order-order1; // order of second call
     Mat<zz_pX> intbas2; // basis for second call

@@ -19,8 +19,8 @@ void quo_rem(Mat<zz_pX> &Q,
     const long n = A.NumCols();
 
     // step 0: find parameter d (delta in Neiger-Vu17)
-    DegVec rdegA;
-    DegVec rdeg;
+    VecLong rdegA;
+    VecLong rdeg;
     rdegA.resize(m);
     rdeg.resize(m);
     row_degree(rdegA, A);
@@ -40,7 +40,7 @@ void quo_rem(Mat<zz_pX> &Q,
 
     // step 1: reverse input matrices
     Mat<zz_pX> Arev, Brev;
-    DegVec Arevdeg;
+    VecLong Arevdeg;
     for (long i = 0; i < m; i++)
         Arevdeg.emplace_back(d+rdeg[i]-1);
     reverse(Arev, A, Arevdeg);

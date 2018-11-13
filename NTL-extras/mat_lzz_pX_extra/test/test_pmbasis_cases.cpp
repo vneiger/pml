@@ -14,7 +14,7 @@
 NTL_CLIENT
 
 void intbas_test(const long rdim, const long cdim, const long deg, 
-        const long order, const DegVec &shift){
+        const long order, const VecLong &shift){
     cout << "STARTING INTBAS TEST: " << rdim << " "
          << cdim << " " << deg << " " << order << endl;
 
@@ -95,7 +95,7 @@ int main(){
         long deg = 11;
         long order = 48;
         long t[10] = {11,12,13,14,15,16,17,18,19,20};
-        DegVec shift;
+        VecLong shift;
         for (long i = 0; i < 10; i++)
             shift.emplace_back(t[i]);
         intbas_test(rdim,cdim,deg,order,shift);

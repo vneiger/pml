@@ -13,7 +13,7 @@ NTL_CLIENT
 /* row degree                                                 */
 /*------------------------------------------------------------*/
 void row_degree(
-                DegVec & rdeg,
+                VecLong & rdeg,
                 const Mat<zz_pX> & pmat
                )
 { 
@@ -35,9 +35,9 @@ void row_degree(
 /* shifted row degree                                         */
 /*------------------------------------------------------------*/
 void row_degree(
-                DegVec & rdeg,
+                VecLong & rdeg,
                 const Mat<zz_pX> &pmat,
-                const Shift & shift
+                const VecLong & shift
                )
 {
     if ((long)shift.size() != pmat.NumCols())
@@ -68,7 +68,7 @@ void row_degree(
 /* column degree                                              */
 /*------------------------------------------------------------*/
 void col_degree(
-                DegVec &cdeg,
+                VecLong &cdeg,
                 const Mat<zz_pX> &pmat
                )
 {
@@ -90,9 +90,9 @@ void col_degree(
 /* shifted column degree                                      */
 /*------------------------------------------------------------*/
 void col_degree(
-                DegVec & cdeg,
+                VecLong & cdeg,
                 const Mat<zz_pX> &pmat,
-                const Shift & shift
+                const VecLong & shift
                )
 {
     if ((long)shift.size() != pmat.NumRows())
@@ -166,7 +166,7 @@ void row_pivots(
                 VecLong & pivind,
                 VecLong & pivdeg,
                 const Mat<zz_pX> & pmat,
-                const Shift & shift
+                const VecLong & shift
                )
 {
     if ((long)shift.size() != pmat.NumCols())
@@ -244,7 +244,7 @@ void col_pivots(
                 VecLong & pivind,
                 VecLong & pivdeg,
                 const Mat<zz_pX> & pmat,
-                const Shift & shift
+                const VecLong & shift
                )
 {
     if ((long)shift.size() != pmat.NumRows())
@@ -316,7 +316,7 @@ void degree_matrix(
 void degree_matrix_rowshifted(
                               Mat<long> & degmat,
                               const Mat<zz_pX> & pmat,
-                              const Shift & shift
+                              const VecLong & shift
                              )
 {
     if ((long)shift.size() != pmat.NumCols())
@@ -343,7 +343,7 @@ void degree_matrix_rowshifted(
 void degree_matrix_colshifted(
                               Mat<long> & degmat,
                               const Mat<zz_pX> & pmat,
-                              const Shift & shift
+                              const VecLong & shift
                              )
 {
     if ((long)shift.size() != pmat.NumRows())
@@ -382,7 +382,7 @@ void row_leading_matrix(
                         const Mat<zz_pX> & pmat
                        )
 {
-    DegVec rdeg;
+    VecLong rdeg;
     row_degree(rdeg,pmat);
 
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
@@ -400,10 +400,10 @@ void row_leading_matrix(
 void row_leading_matrix(
                         Mat<zz_p> & lmat,
                         const Mat<zz_pX> & pmat,
-                        const Shift & shift
+                        const VecLong & shift
                        )
 {
-    DegVec rdeg;
+    VecLong rdeg;
     row_degree(rdeg,pmat,shift);
 
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
@@ -423,7 +423,7 @@ void col_leading_matrix(
                         const Mat<zz_pX> & pmat
                        )
 {
-    DegVec cdeg;
+    VecLong cdeg;
     col_degree(cdeg,pmat);
 
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
@@ -441,10 +441,10 @@ void col_leading_matrix(
 void col_leading_matrix(
                         Mat<zz_p> &lmat,
                         const Mat<zz_pX> &pmat,
-                        const Shift & shift
+                        const VecLong & shift
                        )
 {
-    DegVec cdeg;
+    VecLong cdeg;
     col_degree(cdeg,pmat,shift);
 
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
@@ -479,7 +479,7 @@ bool is_row_reduced(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 /* test shifted row reduced                                   */
 /*------------------------------------------------------------*/
-bool is_row_reduced(const Mat<zz_pX> & pmat, const Shift & shift)
+bool is_row_reduced(const Mat<zz_pX> & pmat, const VecLong & shift)
 {
     Mat<zz_p> lmat;
     row_leading_matrix(lmat,pmat,shift);
@@ -501,7 +501,7 @@ bool is_col_reduced(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 /* test shifted column reduced                                */
 /*------------------------------------------------------------*/
-bool is_col_reduced(const Mat<zz_pX> & pmat, const Shift & shift)
+bool is_col_reduced(const Mat<zz_pX> & pmat, const VecLong & shift)
 {
     Mat<zz_p> lmat;
     col_leading_matrix(lmat,pmat,shift);
@@ -544,7 +544,7 @@ bool is_row_weak_popov(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 bool is_row_weak_popov(
                        const Mat<zz_pX> &pmat,
-                       const Shift & shift
+                       const VecLong & shift
                       )
 {
     // retrieve pivot index
@@ -589,7 +589,7 @@ bool is_col_weak_popov(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 bool is_col_weak_popov(
                        const Mat<zz_pX> &pmat,
-                       const Shift & shift
+                       const VecLong & shift
                       )
 {
     // retrieve pivot index
@@ -633,7 +633,7 @@ bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 bool is_row_ordered_weak_popov(
                                const Mat<zz_pX> &pmat,
-                               const Shift & shift
+                               const VecLong & shift
                               )
 {
     // retrieve pivot index
@@ -676,7 +676,7 @@ bool is_col_ordered_weak_popov(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 bool is_col_ordered_weak_popov(
                                const Mat<zz_pX> &pmat,
-                               const Shift & shift
+                               const VecLong & shift
                               )
 {
     // retrieve pivot index
@@ -742,7 +742,7 @@ bool is_row_popov(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 /* test row-wise shifted Popov form                           */
 /*------------------------------------------------------------*/
-bool is_row_popov(const Mat<zz_pX> & pmat, const Shift & shift)
+bool is_row_popov(const Mat<zz_pX> & pmat, const VecLong & shift)
 {
     // retrieve pivot index
     VecLong pivind, pivdeg;
@@ -786,7 +786,7 @@ bool is_row_popov(const Mat<zz_pX> & pmat, const Shift & shift)
 /////*------------------------------------------------------------*/
 ////bool is_row_popov_up_to_permutation(
 ////                                    const Mat<zz_pX> & pmat,
-////                                    const Shift & shift
+////                                    const VecLong & shift
 ////                                    );
 
 /*------------------------------------------------------------*/
@@ -830,7 +830,7 @@ bool is_col_popov(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 /* test column-wise shifted Popov form                        */
 /*------------------------------------------------------------*/
-bool is_col_popov(const Mat<zz_pX> & pmat, const Shift & shift)
+bool is_col_popov(const Mat<zz_pX> & pmat, const VecLong & shift)
 {
     // retrieve pivot index
     VecLong pivind, pivdeg;
@@ -875,7 +875,7 @@ bool is_col_popov(const Mat<zz_pX> & pmat, const Shift & shift)
 ////*------------------------------------------------------------*/
 ///bool is_col_popov_up_to_permutation(
 ///                                    const Mat<zz_pX> & pmat,
-///                                    const Shift & shift
+///                                    const VecLong & shift
 ///                                    );
 
 
@@ -914,7 +914,7 @@ bool is_row_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
 
 bool is_row_polmatform(
                        const Mat<zz_pX> & pmat,
-                       const Shift &shift,
+                       const VecLong &shift,
                        const PolMatForm form
                       )
 {
@@ -960,7 +960,7 @@ bool is_col_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
 
 bool is_col_polmatform(
                        const Mat<zz_pX> & pmat,
-                       const Shift &shift,
+                       const VecLong &shift,
                        const PolMatForm form
                       )
 {
@@ -1013,7 +1013,7 @@ PolMatForm get_row_polmatform(const Mat<zz_pX> & pmat)
 
 PolMatForm get_row_polmatform(
                               const Mat<zz_pX> &pmat,
-                              const Shift &shift
+                              const VecLong &shift
                              )
 {
     if (is_row_popov(pmat,shift))
@@ -1047,7 +1047,7 @@ PolMatForm get_col_polmatform(const Mat<zz_pX> & pmat)
 
 PolMatForm get_col_polmatform(
                               const Mat<zz_pX> &pmat,
-                              const Shift &shift
+                              const VecLong &shift
                              )
 {
     if (is_col_popov(pmat,shift))

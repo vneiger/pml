@@ -918,9 +918,9 @@ int main(int argc, char *argv[])
 
         // reconstruct fraction
         Mat<zz_pX> appbas;
-        Shift shift(2*m+1, 0);
+        VecLong shift(2*m+1, 0);
         shift[0] = 2*d+1;
-        DegVec pivdeg = pmbasis(appbas, P, 2*d+1, shift);
+        VecLong pivdeg = pmbasis(appbas, P, 2*d+1, shift);
 
         t2 = GetWallTime();
         std::cout << "TIME ~~ matrix fraction reconstruction: " << (t2-t1) << std::endl;
@@ -939,7 +939,7 @@ int main(int argc, char *argv[])
         cout << "sysmat: " << degree_matrix(sysmat) << endl;
         
         Mat<zz_pX> kerbas1;
-        shift = Shift(m+1, d);
+        shift = VecLong(m+1, d);
         shift[0] += m*d;
         kernel_basis_zls_via_interpolation(kerbas1, sysmat, shift);
         cout << "shift: " << shift << endl;
@@ -949,7 +949,7 @@ int main(int argc, char *argv[])
         cout << "test_temp: " << degree_matrix(test_temp) << endl;
         
         Mat<zz_pX> kerbas;
-        shift = Shift(m+1, 0);
+        shift = VecLong(m+1, 0);
         shift[0] += m*d;
         pmbasis(kerbas, sysmat, m*d, shift);
         cout << "kernel: " << degree_matrix(kerbas) << endl;

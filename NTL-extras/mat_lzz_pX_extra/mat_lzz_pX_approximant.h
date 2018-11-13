@@ -22,7 +22,7 @@ NTL_CLIENT
 // form a basis for the K[X]-module
 // { p in K[X]^{1 x m}  |  the column j of p F is 0 modulo X^{order[j]} }
 //
-// Shifted minimal approximant basis: consider furthermore
+// VecLonged minimal approximant basis: consider furthermore
 //   * a degree shift 'shifts' (list of m integers)
 // then an approximant basis for (pmat,order) is said to be "a shift-minimal"
 // (resp. "a shift-ordered weak Popov", resp. "the shift-Popov") approximant
@@ -77,21 +77,21 @@ typedef std::vector<long> Order;
 /*------------------------------------------------------------*/
 
 // TODO draft implementation
-DegVec approximant_basis(
+VecLong approximant_basis(
                          Mat<zz_pX> & appbas,
                          const Mat<zz_pX> & pmat,
                          const Order & order,
-                         const Shift & shift = Shift(),
+                         const VecLong & shift = VecLong(),
                          const PolMatForm form = ORD_WEAK_POPOV,
                          const bool row_wise = true,
                          const bool generic = false
                         );
 
-inline DegVec approximant_basis(
+inline VecLong approximant_basis(
                                 Mat<zz_pX> & appbas,
                                 const Mat<zz_pX> & pmat,
                                 const long order,
-                                const Shift & shift = Shift(),
+                                const VecLong & shift = VecLong(),
                                 const PolMatForm form = ORD_WEAK_POPOV,
                                 const bool row_wise = true,
                                 const bool generic = false
@@ -115,7 +115,7 @@ bool is_approximant_basis(
                           const Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
                           const Order & order,
-                          const Shift & shift,
+                          const VecLong & shift,
                           const PolMatForm & form = ORD_WEAK_POPOV,
                           const bool randomized = false
                          );
@@ -124,7 +124,7 @@ inline bool is_approximant_basis(
                           const Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
                           const long order,
-                          const Shift & shift,
+                          const VecLong & shift,
                           const PolMatForm & form = ORD_WEAK_POPOV,
                           const bool randomized = false
                          )
@@ -141,19 +141,19 @@ inline bool is_approximant_basis(
 /*   - Van Barel-Bultheel 1991+1992                           */
 /*   - Beckermann-Labahn 2000 (ensuring s-Popov)              */
 /*------------------------------------------------------------*/
-DegVec appbas_iterative(
+VecLong appbas_iterative(
                         Mat<zz_pX> & appbas,
                         const Mat<zz_pX> & pmat,
                         const Order & order,
-                        const Shift & shift,
+                        const VecLong & shift,
                         bool order_wise=true
                        );
 
-DegVec popov_appbas_iterative(
+VecLong popov_appbas_iterative(
                               Mat<zz_pX> & appbas,
                               const Mat<zz_pX> & pmat,
                               const Order & order,
-                              const Shift & shift,
+                              const VecLong & shift,
                               bool order_wise=true
                              );
 
@@ -167,10 +167,10 @@ DegVec popov_appbas_iterative(
 // input: kerbas is constant, will contain the left kernel of pmat in reduced REF
 // output: pivot degrees of the approx basis (also indicates where the rows of
 // kernel should appear in approx basis)
-DegVec popov_mbasis1(
+VecLong popov_mbasis1(
                      Mat<zz_p> & kerbas,
                      const Mat<zz_p> & pmat,
-                     const Shift & shift
+                     const VecLong & shift
                     );
 
 /*------------------------------------------------------------*/
@@ -183,11 +183,11 @@ DegVec popov_mbasis1(
 /*------------------------------------------------------------*/
 
 // plain version, not the most efficient
-DegVec mbasis_plain(
+VecLong mbasis_plain(
                     Mat<zz_pX> & appbas,
                     const Mat<zz_pX> & pmat,
                     const long order,
-                    const Shift & shift
+                    const VecLong & shift
                    );
 
 // Variant which first converts to vector of constant matrices,
@@ -205,22 +205,22 @@ DegVec mbasis_plain(
 // least this almost always; and for the uniform shift it is equal to this for
 // generic pmat), then the third item costs O(m n^2 order^2 / 2) operations,
 // assuming cubic matrix multiplication over the field.
-DegVec mbasis_rescomp(
+VecLong mbasis_rescomp(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
               const long order,
-              const Shift & shift
+              const VecLong & shift
              );
 
 // here, same function with:
 //   * popov_mbasis1 directly incorporated into the loop, minimizing some
 //   creation/deletion of objects
 //   * some multi-threading inserted
-DegVec mbasis_rescomp_v2(
+VecLong mbasis_rescomp_v2(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
               const long order,
-              const Shift & shift
+              const VecLong & shift
              );
 
 // Variant which first converts to vector of constant matrices,
@@ -236,22 +236,22 @@ DegVec mbasis_rescomp_v2(
 //   - order products (X Id + K ) * pmat to update the residual
 // Assuming cubic matrix multiplication over the field, the third item costs
 // O(m n (m-n) order^2/2) operations
-DegVec mbasis_resupdate(
+VecLong mbasis_resupdate(
                         Mat<zz_pX> & appbas,
                         const Mat<zz_pX> & pmat,
                         const long order,
-                        const Shift & shift
+                        const VecLong & shift
                        );
 
 // here, same function with:
 //   * popov_mbasis1 directly incorporated into the loop, minimizing some
 //   creation/deletion of objects
 //   * some multi-threading inserted
-DegVec mbasis_resupdate_v2(
+VecLong mbasis_resupdate_v2(
                         Mat<zz_pX> & appbas,
                         const Mat<zz_pX> & pmat,
                         const long order,
-                        const Shift & shift
+                        const VecLong & shift
                        );
 
 // main function choosing the most efficient variant depending on parameters
@@ -260,11 +260,11 @@ DegVec mbasis_resupdate_v2(
 // FIXME -->  or simply assume the user will choose the right mbasis?
 // FIXME -->  mbasis is anyway not the best approach, at least on the paper,
 //            when cdim << rdim and shift is "highly" non-uniform
-inline DegVec mbasis(
+inline VecLong mbasis(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
               const long order,
-              const Shift & shift
+              const VecLong & shift
              )
 {
     long rdim = pmat.NumRows();
@@ -278,11 +278,11 @@ inline DegVec mbasis(
 }
 
 
-DegVec popov_mbasis(
+VecLong popov_mbasis(
                     Mat<zz_pX> &appbas,
                     const Mat<zz_pX> & pmat,
                     const long order,
-                    const Shift & shift
+                    const VecLong & shift
                    );
 
 /*------------------------------------------------------------*/
@@ -293,42 +293,42 @@ DegVec popov_mbasis(
 /*   - Jeannerod-Neiger-Villard 2018                          */
 /*          (ensuring s-ordered weak Popov or s-Popov)        */
 /*------------------------------------------------------------*/
-DegVec pmbasis(
+VecLong pmbasis(
                Mat<zz_pX> & appbas,
                const Mat<zz_pX> & pmat,
                const long order,
-               const Shift & shift
+               const VecLong & shift
               );
 
-DegVec popov_pmbasis(
+VecLong popov_pmbasis(
                      Mat<zz_pX> &appbas,
                      const Mat<zz_pX> & pmat,
                      const long order,
-                     const Shift & shift
+                     const VecLong & shift
                     );
 
 /*------------------------------------------------------------*/
 /* FIXME in progress: MBASIS/PMBASIS, generic case            */
 /*------------------------------------------------------------*/
 
-DegVec popov_mbasis1_generic(
+VecLong popov_mbasis1_generic(
                      Mat<zz_p> & kerbas,
                      const Mat<zz_p> & pmat,
-                     const Shift & shift
+                     const VecLong & shift
                     );
 
-DegVec mbasis_generic(
+VecLong mbasis_generic(
                      Mat<zz_pX> & appbas,
                      const Mat<zz_pX> & pmat,
                      const long order,
-                     const Shift & shift
+                     const VecLong & shift
                     );
 
-DegVec pmbasis_generic(
+VecLong pmbasis_generic(
                Mat<zz_pX> & appbas,
                const Mat<zz_pX> & pmat,
                const long order,
-               const Shift & shift
+               const VecLong & shift
               );
 
 

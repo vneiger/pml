@@ -44,27 +44,27 @@ int main(int argc, char *argv[])
         zz_p::init(NTL::GenPrime_long(nbits));
 
     // declare shifts
-    Shift shift1(rdim,0); // uniform [0,...,0]
-    Shift shift2(rdim); // increasing [0,1,2,..,rdim-1]
+    VecLong shift1(rdim,0); // uniform [0,...,0]
+    VecLong shift2(rdim); // increasing [0,1,2,..,rdim-1]
     std::iota(shift2.begin(), shift2.end(),0);
-    Shift shift3(rdim); // decreasing [rdim,..,3,2,1]
+    VecLong shift3(rdim); // decreasing [rdim,..,3,2,1]
     for (long i = 0; i < rdim; ++i)
         shift3[i] = rdim - i;
-    Shift shift4(rdim); // random shuffle of [0,1,...,rdim-1]
+    VecLong shift4(rdim); // random shuffle of [0,1,...,rdim-1]
     std::iota(shift4.begin(), shift4.end(),0);
     std::shuffle(shift4.begin(), shift4.end(), std::mt19937{std::random_device{}()});
-    Shift shift5(rdim); // Hermite shift
+    VecLong shift5(rdim); // Hermite shift
     for (long i = 0; i < rdim; ++i)
         shift5[i] = cdim*order*i;
-    Shift shift6(rdim); // reverse Hermite shift
+    VecLong shift6(rdim); // reverse Hermite shift
     for (long i = 0; i < rdim; ++i)
         shift6[i] = (cdim*order+1)*(rdim-1-i);
-    Shift shift7(rdim);
+    VecLong shift7(rdim);
     for (long i = 0; i < rdim; ++i)
         if (i>=rdim/2)
             shift7[i] = cdim*order;
 
-    std::vector<Shift> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7};
+    std::vector<VecLong> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7};
 
     std::cout << "Testing approximant basis computation (mbasis) with random input matrix" << std::endl;
     std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 
     warmup();
 
-    for (Shift shift : shifts)
+    for (VecLong shift : shifts)
     {
         if (rdim<40)
             std::cout << "--shift =\t" << shift << std::endl;

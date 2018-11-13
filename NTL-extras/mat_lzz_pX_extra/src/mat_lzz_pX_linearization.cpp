@@ -14,8 +14,8 @@ NTL_CLIENT
 std::vector<long> column_partial_linearization(
                                                Mat<zz_pX> & parlin, 
                                                const Mat<zz_pX> & pmat, 
-                                               const DegVec & parlin_degree,
-                                               const DegVec & target_degree
+                                               const VecLong & parlin_degree,
+                                               const VecLong & target_degree
                                               )
 {
     // for each column of pmat, compute the corresponding column indices in the
@@ -67,8 +67,8 @@ std::vector<long> column_partial_linearization(
 std::vector<long> column_partial_linearization(
                                                Mat<zz_pX> & parlin, 
                                                const Mat<zz_pX> & pmat, 
-                                               const DegVec & parlin_degree,
-                                               const DegVec & target_degree,
+                                               const VecLong & parlin_degree,
+                                               const VecLong & target_degree,
                                                const long d_inf
                                               )
 {
@@ -125,7 +125,7 @@ void right_parlin_multiply(
                            const Mat<zz_pX> &a,
                            const Mat<zz_pX> &b,
                            const long parlin_degree,
-                           const DegVec & column_degree
+                           const VecLong & column_degree
                           )
 {
 
@@ -164,13 +164,13 @@ void right_parlin_middle_product(
                                  const Mat<zz_pX> &a,
                                  const Mat<zz_pX> &b,
                                  const long parlin_degree,
-                                 const DegVec & target_degree,
+                                 const VecLong & target_degree,
                                  long dA,
                                  long dB
                                 )
 {
     long d_inf = dA-deg(a);
-    DegVec parlin_degrees(b.NumCols(),parlin_degree);
+    VecLong parlin_degrees(b.NumCols(),parlin_degree);
     // compute the column partial linearization of b
     Mat<zz_pX> b_parlin;
     std::vector<long> parlin_cols = column_partial_linearization(b_parlin,b,parlin_degrees,target_degree,d_inf);

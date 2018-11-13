@@ -25,27 +25,27 @@ void check(long m, long n, long d){
     std::cout << "Computing kernel basis, dimensions " << m << " x " << n << ", degree " << d << std::endl;
 
     // declare shifts
-    Shift shift1(m,0); // uniform [0,...,0]
-    Shift shift2(m); // increasing [0,1,2,..,m-1]
+    VecLong shift1(m,0); // uniform [0,...,0]
+    VecLong shift2(m); // increasing [0,1,2,..,m-1]
     std::iota(shift2.begin(), shift2.end(),0);
-    Shift shift3(m); // decreasing [m,..,3,2,1]
+    VecLong shift3(m); // decreasing [m,..,3,2,1]
     for (long i = 0; i < m; ++i)
         shift3[i] = m - i;
-    Shift shift4(m); // random shuffle of [0,1,...,m-1]
+    VecLong shift4(m); // random shuffle of [0,1,...,m-1]
     std::iota(shift4.begin(), shift4.end(),0);
     std::shuffle(shift4.begin(), shift4.end(), std::mt19937{std::random_device{}()});
-    Shift shift5(m); // Hermite shift
+    VecLong shift5(m); // Hermite shift
     for (long i = 0; i < m; ++i)
         shift5[i] = n*d*i;
-    Shift shift6(m); // reverse Hermite shift
+    VecLong shift6(m); // reverse Hermite shift
     for (long i = 0; i < m; ++i)
         shift6[i] = (n*d+1)*(m-1-i);
-    Shift shift7(m);
+    VecLong shift7(m);
     for (long i = 0; i < m; ++i)
         if (i>=m/2)
             shift7[i] = n*d;
 
-    std::vector<Shift> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7};
+    std::vector<VecLong> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7};
 
     double t1w,t2w;
 

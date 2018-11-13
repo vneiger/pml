@@ -128,7 +128,7 @@ inline Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n)
 /* TODO: different truncation orders on columns/rows          */
 
 /*------------------------------------------------------------*/
-/* Shift operations:                                          */
+/* VecLong operations:                                          */
 /*  - LeftShift by n means multiplication by X^n              */
 /*  - RightShift by n means division by X^n                   */
 /*  - a negative shift reverses the direction of the shift.   */

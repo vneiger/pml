@@ -17,12 +17,10 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 
 // TODO replace with NTL's vec??
-typedef std::vector<long> DegVec;
-typedef std::vector<long> Shift;
 typedef std::vector<long> VecLong;
 
 /*------------------------------------------------------------*/
-/* Shifted reduced forms of polynomials matrices. Recall that */
+/* VecLonged reduced forms of polynomials matrices. Recall that */
 /* Popov => ordered weak Popov => weak Popov => Reduced       */
 /*------------------------------------------------------------*/
 
@@ -50,13 +48,13 @@ enum PolMatForm {
 /* Amplitude of a shift: max(shift) - min(shift)              */
 /*------------------------------------------------------------*/
 
-inline void amplitude(long & amp, Shift shift)
+inline void amplitude(long & amp, VecLong shift)
 {
     auto minmax = std::minmax_element(shift.begin(), shift.end());
     amp = *minmax.second - *minmax.first;
 }
 
-inline long amplitude(Shift shift)
+inline long amplitude(VecLong shift)
 {
     auto minmax = std::minmax_element(shift.begin(), shift.end());
     return *minmax.second - *minmax.first;
@@ -77,12 +75,12 @@ inline long amplitude(Shift shift)
 /* of the entries of row k (-1 if row is zero)                */
 /*------------------------------------------------------------*/
 void row_degree(
-                DegVec & rdeg,
+                VecLong & rdeg,
                 const Mat<zz_pX> &pmat
                ); 
 
-inline DegVec row_degree(const Mat<zz_pX> &pmat)
-{ DegVec rdeg; row_degree(rdeg, pmat); return rdeg; }
+inline VecLong row_degree(const Mat<zz_pX> &pmat)
+{ VecLong rdeg; row_degree(rdeg, pmat); return rdeg; }
 
 /*------------------------------------------------------------*/
 /* the shifted row degree of a matrix is the tuple            */
@@ -92,16 +90,16 @@ inline DegVec row_degree(const Mat<zz_pX> &pmat)
 /* (min(shift)-1 if row is zero)                              */
 /*------------------------------------------------------------*/
 void row_degree(
-                        DegVec & rdeg,
-                        const Mat<zz_pX> &pmat,
-                        const Shift & shift
-                       ); 
+                VecLong & rdeg,
+                const Mat<zz_pX> &pmat,
+                const VecLong & shift
+               ); 
 
-inline DegVec row_degree(
-                        const Mat<zz_pX> &pmat,
-                        const Shift & shift
-                       )
-{ DegVec rdeg; row_degree(rdeg, pmat, shift); return rdeg; }
+inline VecLong row_degree(
+                          const Mat<zz_pX> &pmat,
+                          const VecLong & shift
+                         )
+{ VecLong rdeg; row_degree(rdeg, pmat, shift); return rdeg; }
 
 
 /*------------------------------------------------------------*/
@@ -111,12 +109,12 @@ inline DegVec row_degree(
 /* of the entries of column k (-1 if column is zero)          */
 /*------------------------------------------------------------*/
 void col_degree(
-                DegVec & cdeg,
+                VecLong & cdeg,
                 const Mat<zz_pX> &pmat
                ); 
 
-inline DegVec col_degree(const Mat<zz_pX> &pmat)
-{ DegVec cdeg; col_degree(cdeg, pmat); return cdeg; }
+inline VecLong col_degree(const Mat<zz_pX> &pmat)
+{ VecLong cdeg; col_degree(cdeg, pmat); return cdeg; }
 
 /*------------------------------------------------------------*/
 /* the shifted column degree of a matrix is the tuple         */
@@ -126,16 +124,16 @@ inline DegVec col_degree(const Mat<zz_pX> &pmat)
 /* (min(shift)-1 if column is zero)                           */
 /*------------------------------------------------------------*/
 void col_degree(
-                        DegVec & cdeg,
-                        const Mat<zz_pX> &pmat,
-                        const Shift & shift
-                       ); 
+                VecLong & cdeg,
+                const Mat<zz_pX> &pmat,
+                const VecLong & shift
+               ); 
 
-inline DegVec col_degree(
-                                 const Mat<zz_pX> &pmat,
-                                 const Shift & shift
-                                )
-{ DegVec cdeg; col_degree(cdeg, pmat, shift); return cdeg; }
+inline VecLong col_degree(
+                          const Mat<zz_pX> &pmat,
+                          const VecLong & shift
+                         )
+{ VecLong cdeg; col_degree(cdeg, pmat, shift); return cdeg; }
 
 
 /*------------------------------------------------------------*/
@@ -167,17 +165,17 @@ inline std::pair<VecLong,VecLong> row_pivots(const Mat<zz_pX> & pmat)
 }
 
 void row_pivots(
-                        VecLong & pivind,
-                        VecLong & pivdeg,
-                        const Mat<zz_pX> & pmat,
-                        const Shift & shift
-                       );
+                VecLong & pivind,
+                VecLong & pivdeg,
+                const Mat<zz_pX> & pmat,
+                const VecLong & shift
+               );
 
 inline std::pair<VecLong,VecLong>
 row_pivots(
-                   const Mat<zz_pX> & pmat,
-                   const Shift & shift
-                  )
+           const Mat<zz_pX> & pmat,
+           const VecLong & shift
+          )
 {
     std::pair<VecLong,VecLong> pivots;
     row_pivots(pivots.first, pivots.second, pmat, shift);
@@ -208,17 +206,17 @@ inline std::pair<VecLong,VecLong> col_pivots(const Mat<zz_pX> & pmat)
 }
 
 void col_pivots(
-                        VecLong & pivind,
-                        VecLong & pivdeg,
-                        const Mat<zz_pX> & pmat,
-                        const Shift & shift
-                       );
+                VecLong & pivind,
+                VecLong & pivdeg,
+                const Mat<zz_pX> & pmat,
+                const VecLong & shift
+               );
 
 inline std::pair<VecLong,VecLong>
 col_pivots(
-                   const Mat<zz_pX> & pmat,
-                   const Shift & shift
-                  )
+           const Mat<zz_pX> & pmat,
+           const VecLong & shift
+          )
 {
     std::pair<VecLong,VecLong> pivots;
     col_pivots(pivots.first, pivots.second, pmat, shift);
@@ -256,12 +254,12 @@ inline Mat<long> degree_matrix(const Mat<zz_pX> &pmat)
 void degree_matrix_rowshifted(
                               Mat<long> &degmat,
                               const Mat<zz_pX> &pmat,
-                              const Shift & shift
+                              const VecLong & shift
                              );
 
 inline Mat<long> degree_matrix_rowshifted(
                                           const Mat<zz_pX> &pmat,
-                                          const Shift & shift
+                                          const VecLong & shift
                                          )
 {
     Mat<long> degmat;
@@ -278,12 +276,12 @@ inline Mat<long> degree_matrix_rowshifted(
 void degree_matrix_colshifted(
                               Mat<long> &degmat,
                               const Mat<zz_pX> &pmat,
-                              const Shift & shift
+                              const VecLong & shift
                              );
 
 inline Mat<long> degree_matrix_colshifted(
                                           const Mat<zz_pX> &pmat,
-                                          const Shift & shift
+                                          const VecLong & shift
                                          )
 {
     Mat<long> degmat;
@@ -324,15 +322,15 @@ inline Mat<zz_p> row_leading_matrix(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 
 void row_leading_matrix(
-                    Mat<zz_p> &lmat,
-                    const Mat<zz_pX> &pmat,
-                    const Shift & shift
-                   );
+                        Mat<zz_p> &lmat,
+                        const Mat<zz_pX> &pmat,
+                        const VecLong & shift
+                       );
 
 inline Mat<zz_p> row_leading_matrix(
-                                            const Mat<zz_pX> & pmat,
-                                            const Shift & shift
-                                           )
+                                    const Mat<zz_pX> & pmat,
+                                    const VecLong & shift
+                                   )
 { Mat<zz_p> lmat; row_leading_matrix(lmat, pmat, shift); return lmat; }
 
 // TODO row_leading_matrix_known_cdeg
@@ -362,15 +360,15 @@ inline Mat<zz_p> col_leading_matrix(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 
 void col_leading_matrix(
-                    Mat<zz_p> &lmat,
-                    const Mat<zz_pX> &pmat,
-                    const Shift & shift
-                   );
+                        Mat<zz_p> &lmat,
+                        const Mat<zz_pX> &pmat,
+                        const VecLong & shift
+                       );
 
 inline Mat<zz_p> col_leading_matrix(
-                                            const Mat<zz_pX> & pmat,
-                                            const Shift & shift
-                                           )
+                                    const Mat<zz_pX> & pmat,
+                                    const VecLong & shift
+                                   )
 { Mat<zz_p> lmat; col_leading_matrix(lmat, pmat, shift); return lmat; }
 
 
@@ -388,7 +386,7 @@ inline Mat<zz_p> col_leading_matrix(
 /* --> note that zero rows are not allowed                    */
 /*------------------------------------------------------------*/
 bool is_row_reduced(const Mat<zz_pX> & pmat);
-bool is_row_reduced(const Mat<zz_pX> & pmat, const Shift & shift);
+bool is_row_reduced(const Mat<zz_pX> & pmat, const VecLong & shift);
 
 /*------------------------------------------------------------*/
 /* test (shifted) column reducedness:                         */
@@ -397,7 +395,7 @@ bool is_row_reduced(const Mat<zz_pX> & pmat, const Shift & shift);
 /* --> note that zero columns are not allowed                 */
 /*------------------------------------------------------------*/
 bool is_col_reduced(const Mat<zz_pX> & pmat);
-bool is_col_reduced(const Mat<zz_pX> & pmat, const Shift & shift);
+bool is_col_reduced(const Mat<zz_pX> & pmat, const VecLong & shift);
 
 
 /*------------------------------------------------------------*/
@@ -415,9 +413,9 @@ bool is_col_reduced(const Mat<zz_pX> & pmat, const Shift & shift);
 /*------------------------------------------------------------*/
 bool is_row_weak_popov(const Mat<zz_pX> & pmat);
 bool is_row_weak_popov(
-                               const Mat<zz_pX> &pmat,
-                               const Shift & shift
-                              );
+                       const Mat<zz_pX> &pmat,
+                       const VecLong & shift
+                      );
 
 /*------------------------------------------------------------*/
 /* test column-wise (shifted) weak Popov form                 */
@@ -428,9 +426,9 @@ bool is_row_weak_popov(
 /*------------------------------------------------------------*/
 bool is_col_weak_popov(const Mat<zz_pX> & pmat);
 bool is_col_weak_popov(
-                               const Mat<zz_pX> &pmat,
-                               const Shift & shift
-                              );
+                       const Mat<zz_pX> &pmat,
+                       const VecLong & shift
+                      );
 
 /*------------------------------------------------------------*/
 /* test row-wise (shifted) ordered weak Popov form            */
@@ -442,7 +440,7 @@ bool is_col_weak_popov(
 bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat);
 bool is_row_ordered_weak_popov(
                                const Mat<zz_pX> &pmat,
-                               const Shift & shift
+                               const VecLong & shift
                               );
 
 /*------------------------------------------------------------*/
@@ -455,7 +453,7 @@ bool is_row_ordered_weak_popov(
 bool is_col_ordered_weak_popov(const Mat<zz_pX> & pmat);
 bool is_col_ordered_weak_popov(
                                const Mat<zz_pX> &pmat,
-                               const Shift & shift
+                               const VecLong & shift
                               );
 
 
@@ -475,7 +473,7 @@ bool is_col_ordered_weak_popov(
 /* --> note that zero rows are not allowed                    */
 /*------------------------------------------------------------*/
 bool is_row_popov(const Mat<zz_pX> & pmat);
-bool is_row_popov(const Mat<zz_pX> & pmat, const Shift & shift);
+bool is_row_popov(const Mat<zz_pX> & pmat, const VecLong & shift);
 
 /*------------------------------------------------------------*/
 /* same test but relaxing ordered weak Popov --> weak Popov   */
@@ -486,7 +484,7 @@ bool is_row_popov(const Mat<zz_pX> & pmat, const Shift & shift);
 //bool is_row_popov_up_to_permutation(const Mat<zz_pX> & pmat);
 //bool is_row_popov_up_to_permutation(
 //                                    const Mat<zz_pX> & pmat,
-//                                    const Shift & shift
+//                                    const VecLong & shift
 //                                    );
 
 
@@ -500,7 +498,7 @@ bool is_row_popov(const Mat<zz_pX> & pmat, const Shift & shift);
 /* --> note that zero columns are not allowed                 */
 /*------------------------------------------------------------*/
 bool is_col_popov(const Mat<zz_pX> & pmat);
-bool is_col_popov(const Mat<zz_pX> & pmat, const Shift & shift);
+bool is_col_popov(const Mat<zz_pX> & pmat, const VecLong & shift);
 
 /*------------------------------------------------------------*/
 /* same test but relaxing ordered weak Popov --> weak Popov   */
@@ -511,7 +509,7 @@ bool is_col_popov(const Mat<zz_pX> & pmat, const Shift & shift);
 //bool is_col_popov_up_to_permutation(const Mat<zz_pX> & pmat);
 //bool is_col_popov_up_to_permutation(
 //                                    const Mat<zz_pX> & pmat,
-//                                    const Shift & shift
+//                                    const VecLong & shift
 //                                    );
 
 
@@ -525,29 +523,29 @@ bool is_col_popov(const Mat<zz_pX> & pmat, const Shift & shift);
 /* Check whether pmat is in the prescribed row-wise form      */
 /*------------------------------------------------------------*/
 bool is_row_polmatform(
-                   const Mat<zz_pX> & pmat,
-                   const PolMatForm form
-                  );
+                       const Mat<zz_pX> & pmat,
+                       const PolMatForm form
+                      );
 
 bool is_row_polmatform(
-                   const Mat<zz_pX> & pmat,
-                   const Shift & shift,
-                   const PolMatForm form
-                  );
+                       const Mat<zz_pX> & pmat,
+                       const VecLong & shift,
+                       const PolMatForm form
+                      );
 
 /*------------------------------------------------------------*/
 /* Check whether pmat is in the prescribed column-wise form   */
 /*------------------------------------------------------------*/
 bool is_col_polmatform(
-                   const Mat<zz_pX> & pmat,
-                   const PolMatForm form
-                  );
+                       const Mat<zz_pX> & pmat,
+                       const PolMatForm form
+                      );
 
 bool is_col_polmatform(
-                   const Mat<zz_pX> & pmat,
-                   const Shift & shift,
-                   const PolMatForm form
-                  );
+                       const Mat<zz_pX> & pmat,
+                       const VecLong & shift,
+                       const PolMatForm form
+                      );
 
 
 
@@ -566,7 +564,7 @@ bool is_col_polmatform(
 PolMatForm get_row_polmatform(const Mat<zz_pX> & pmat);
 PolMatForm get_row_polmatform(
                               const Mat<zz_pX> & pmat,
-                              const Shift & shift
+                              const VecLong & shift
                              );
 
 /*------------------------------------------------------------*/
@@ -577,7 +575,7 @@ PolMatForm get_row_polmatform(
 PolMatForm get_col_polmatform(const Mat<zz_pX> & pmat);
 PolMatForm get_col_polmatform(
                               const Mat<zz_pX> & pmat,
-                              const Shift & shift
+                              const VecLong & shift
                              );
 
 

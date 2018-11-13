@@ -3,7 +3,7 @@
 
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
-#include "mat_lzz_pX_forms.h" // for DegVec, Shift, PolMatForm
+#include "mat_lzz_pX_forms.h" // for VecLong, VecLong, PolMatForm
 
 NTL_CLIENT
 
@@ -60,10 +60,10 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 // TODO options for row-wise, normal form, etc
 // TODO thresholds, ..
-DegVec kernel_basis(
+VecLong kernel_basis(
                     Mat<zz_pX> & kerbas,
                     const Mat<zz_pX> & pmat,
-                    const Shift & shift
+                    const VecLong & shift
                    );
 
 /*------------------------------------------------------------*/
@@ -73,7 +73,7 @@ DegVec kernel_basis(
 bool is_kernel_basis(
                      Mat<zz_pX> & kerbas,
                      const Mat<zz_pX> & pmat,
-                     const Shift & shift,
+                     const VecLong & shift,
                      const PolMatForm & form = ORD_WEAK_POPOV,
                      const bool randomized = false
                     );
@@ -86,10 +86,10 @@ bool is_kernel_basis(
 // correspond at all to row degrees of pmat, or generally if shifts are "bad")
 
 // The order of approximation is designed as follows.
-DegVec kernel_basis_via_approximation(
+VecLong kernel_basis_via_approximation(
                                       Mat<zz_pX> & kerbas,
                                       const Mat<zz_pX> & pmat,
-                                      const Shift & shift
+                                      const VecLong & shift
                                      );
 // TODO same via interpolant?
 
@@ -98,10 +98,10 @@ DegVec kernel_basis_via_approximation(
 /* original version via approximant bases                     */
 /*------------------------------------------------------------*/
 // TODO describe input-output?
-DegVec kernel_basis_zls_via_approximation(
+VecLong kernel_basis_zls_via_approximation(
                                           Mat<zz_pX> & kerbas,
                                           const Mat<zz_pX> & pmat,
-                                          const Shift & shift
+                                          const VecLong & shift
                                          );
 
 /*------------------------------------------------------------*/
@@ -109,10 +109,10 @@ DegVec kernel_basis_zls_via_approximation(
 /* modified version via interpolation bases                   */
 /*------------------------------------------------------------*/
 // TODO describe input-output?
-DegVec kernel_basis_zls_via_interpolation(
+VecLong kernel_basis_zls_via_interpolation(
                                           Mat<zz_pX> & kerbas,
                                           const Mat<zz_pX> & pmat,
-                                          const Shift & shift
+                                          const VecLong & shift
                                          );
 
 // TODO generic case
