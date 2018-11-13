@@ -403,7 +403,7 @@ inline Mat<zz_p> col_leading_matrix(
 /* test (shifted) row reducedness:                            */
 /* a matrix is (shifted) row reduced if and only if its       */
 /* (shifted) row-wise leading matrix has full row rank        */
-/* --> note that zero rows or columns are not allowed         */
+/* --> note that zero rows are not allowed                    */
 /*------------------------------------------------------------*/
 bool is_row_reduced(const Mat<zz_pX> & pmat);
 bool is_row_reduced(const Mat<zz_pX> & pmat, const Shift & shift);
@@ -412,18 +412,24 @@ bool is_row_reduced(const Mat<zz_pX> & pmat, const Shift & shift);
 /* test (shifted) column reducedness:                         */
 /* a matrix is (shifted) column reduced if and only if its    */
 /* (shifted) column-wise leading matrix has full column rank  */
-/* --> note that zero rows or columns are not allowed         */
+/* --> note that zero columns are not allowed                 */
 /*------------------------------------------------------------*/
 bool is_col_reduced(const Mat<zz_pX> & pmat);
 bool is_col_reduced(const Mat<zz_pX> & pmat, const Shift & shift);
 
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING SHIFTED WEAK POPOV FORMS                           */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
 /* test row-wise (shifted) weak Popov form                    */
 /* a matrix is in row-wise (shifted) weak Popov form if and   */
 /* only if its row-wise (shifted) pivot index consists of     */
 /* pairwise distinct entries (i.e. no repetition)             */
+/* --> note that zero rows are not allowed                    */
 /*------------------------------------------------------------*/
 bool is_row_weak_popov(const Mat<zz_pX> & pmat);
 bool is_row_weak_popov(
@@ -436,6 +442,7 @@ bool is_row_weak_popov(
 /* a matrix is in column-wise (shifted) weak Popov form if    */
 /* and only if its column-wise (shifted) pivot index consists */
 /* of pairwise distinct entries (i.e. no repetition)          */
+/* --> note that zero columns are not allowed                 */
 /*------------------------------------------------------------*/
 bool is_col_weak_popov(const Mat<zz_pX> & pmat);
 bool is_col_weak_popov(
@@ -448,6 +455,7 @@ bool is_col_weak_popov(
 /* a matrix is in row-wise (shifted) ordered weak Popov form  */
 /* if and only if its row-wise (shifted) pivot index is       */
 /* strictly increasing                                        */
+/* --> note that zero rows are not allowed                    */
 /*------------------------------------------------------------*/
 bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat);
 bool is_row_ordered_weak_popov(
@@ -460,6 +468,7 @@ bool is_row_ordered_weak_popov(
 /* a matrix is in column-wise (shifted) ordered weak Popov    */
 /* form if and only if its column-wise (shifted) pivot index  */
 /* is strictly increasing                                     */
+/* --> note that zero columns are not allowed                 */
 /*------------------------------------------------------------*/
 bool is_col_ordered_weak_popov(const Mat<zz_pX> & pmat);
 bool is_col_ordered_weak_popov(
@@ -468,25 +477,60 @@ bool is_col_ordered_weak_popov(
                               );
 
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING SHIFTED POPOV FORMS                                */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
+/*------------------------------------------------------------*/
+/* test row-wise (shifted) Popov form                         */
+/* a matrix is in row-wise (shifted) Popov form iff:          */
+/*   - it is in row-wise (shifted) ordered weak Popov form    */
+/*   - its pivot entries are monic                            */
+/*   - its entries below and above a pivot entry have degree  */
+/*   less than this pivot entry                               */
+/* --> note that zero rows are not allowed                    */
+/*------------------------------------------------------------*/
+bool is_row_popov(const Mat<zz_pX> & pmat);
+bool is_row_popov(const Mat<zz_pX> & pmat, const Shift & shift);
 
-
-
-
+/*------------------------------------------------------------*/
+/* same test but relaxing ordered weak Popov --> weak Popov   */
+/* (allows definition of Popov with different orderings of    */
+/* the rows, such as by increasing degree)                    */
+/*------------------------------------------------------------*/
+bool is_row_popov_up_to_permutation(const Mat<zz_pX> & pmat);
+bool is_row_popov_up_to_permutation(
+                                    const Mat<zz_pX> & pmat,
+                                    const Shift & shift
+                                    );
 
 
 /*------------------------------------------------------------*/
-/* returns true if pmat is in Popov form                      */
-/*   - Note that zero rows or columns are not allowed         */
-/*   - If up_to_permutation==true, relaxes the check to allow */
-/*     Popov up to row permutation (if row_wise)              */
+/* test column-wise (shifted) Popov form                      */
+/* a matrix is in column-wise (shifted) Popov form iff:       */
+/*   - it is in column-wise (shifted) ordered weak Popov form */
+/*   - its pivot entries are monic                            */
+/*   - its entries to the left and to the right of a pivot    */
+/*    entry have degree less than this pivot entry            */
+/* --> note that zero columns are not allowed                 */
 /*------------------------------------------------------------*/
-bool is_popov(
-              const Mat<zz_pX> &pmat,
-              const Shift & shift = Shift(),
-              const bool row_wise = true,
-              const bool up_to_permutation = false
-             );
+bool is_col_popov(const Mat<zz_pX> & pmat);
+bool is_col_popov(const Mat<zz_pX> & pmat, const Shift & shift);
+
+/*------------------------------------------------------------*/
+/* same test but relaxing ordered weak Popov --> weak Popov   */
+/* (allows definition of Popov with different orderings of    */
+/* the columns, such as by increasing degree)                 */
+/*------------------------------------------------------------*/
+bool is_col_popov_up_to_permutation(const Mat<zz_pX> & pmat);
+bool is_col_popov_up_to_permutation(
+                                    const Mat<zz_pX> & pmat,
+                                    const Shift & shift
+                                    );
+
+
 
 /*------------------------------------------------------------*/
 /* Return the strongest form of pmat among those in the       */

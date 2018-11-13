@@ -525,7 +525,7 @@ bool is_row_weak_popov(const Mat<zz_pX> & pmat)
     row_pivots(pivind, pivdeg, pmat);
 
     // forbide zero rows
-    if( std::find(pivind.begin(),pivind.end(),-1) != pivind.end() )
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
         return false;
 
     // check for pairwise distinct: sort and check no adjacent equal elements
@@ -549,7 +549,7 @@ bool is_row_weak_popov(
     row_pivots(pivind, pivdeg, pmat, shift);
 
     // forbide zero rows
-    if( std::find(pivind.begin(),pivind.end(),-1) != pivind.end() )
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
         return false;
 
     // check for pairwise distinct: sort and check no adjacent equal elements
@@ -570,7 +570,7 @@ bool is_col_weak_popov(const Mat<zz_pX> & pmat)
     col_pivots(pivind, pivdeg, pmat);
 
     // forbide zero rows
-    if( std::find(pivind.begin(),pivind.end(),-1) != pivind.end() )
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
         return false;
 
     // check for pairwise distinct: sort and check no adjacent equal elements
@@ -594,7 +594,7 @@ bool is_col_weak_popov(
     col_pivots(pivind, pivdeg, pmat, shift);
 
     // forbide zero rows
-    if( std::find(pivind.begin(),pivind.end(),-1) != pivind.end() )
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
         return false;
 
     // check for pairwise distinct: sort and check no adjacent equal elements
@@ -615,7 +615,7 @@ bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat)
     row_pivots(pivind, pivdeg, pmat);
 
     // forbide zero rows
-    if( std::find(pivind.begin(),pivind.end(),-1) != pivind.end() )
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
         return false;
 
     // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
@@ -638,7 +638,7 @@ bool is_row_ordered_weak_popov(
     row_pivots(pivind, pivdeg, pmat, shift);
 
     // forbide zero rows
-    if( std::find(pivind.begin(),pivind.end(),-1) != pivind.end() )
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
         return false;
 
     // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
@@ -651,14 +651,14 @@ bool is_row_ordered_weak_popov(
 /*------------------------------------------------------------*/
 /* test column-wise ordered weak Popov form                   */
 /*------------------------------------------------------------*/
-bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat)
+bool is_col_ordered_weak_popov(const Mat<zz_pX> & pmat)
 {
     // retrieve pivot index
     VecLong pivind, pivdeg;
     col_pivots(pivind, pivdeg, pmat);
 
     // forbide zero rows
-    if( std::find(pivind.begin(),pivind.end(),-1) != pivind.end() )
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
         return false;
 
     // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
@@ -671,7 +671,7 @@ bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat)
 /*------------------------------------------------------------*/
 /* test column-wise shifted ordered weak Popov form           */
 /*------------------------------------------------------------*/
-bool is_row_ordered_weak_popov(
+bool is_col_ordered_weak_popov(
                                const Mat<zz_pX> &pmat,
                                const Shift & shift
                               )
@@ -681,7 +681,7 @@ bool is_row_ordered_weak_popov(
     col_pivots(pivind, pivdeg, pmat, shift);
 
     // forbide zero rows
-    if( std::find(pivind.begin(),pivind.end(),-1) != pivind.end() )
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
         return false;
 
     // check for strictly increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
@@ -693,10 +693,191 @@ bool is_row_ordered_weak_popov(
 
 
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING SHIFTED POPOV FORM                                 */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
-bool is_monic(const zz_pX &p){
-    return IsOne(LeadCoeff(p));
+/*------------------------------------------------------------*/
+/* test row-wise Popov form                                   */
+/*------------------------------------------------------------*/
+bool is_row_popov(const Mat<zz_pX> & pmat)
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    row_pivots(pivind, pivdeg, pmat);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check pivot index increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+    if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+        return false;
+
+    // --> ordered weak Popov form OK
+    // now test pivot entries monic
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        if (not is_monic(pmat[i][pivind[i]]))
+            return false;
+
+    // finally test degree of non-pivot entries
+    for (long j = 0; j < pmat.NumRows(); ++j)
+    {
+        for (long i = 0; i < j; ++i)
+            if (deg(pmat[i][pivind[j]]) >= pivdeg[j])
+                return false;
+        for (long i = j+1; i < pmat.NumRows(); ++i)
+            if (deg(pmat[i][pivind[j]]) >= pivdeg[j])
+                return false;
+    }
+
+    return true;
 }
+
+/*------------------------------------------------------------*/
+/* test row-wise shifted Popov form                           */
+/*------------------------------------------------------------*/
+bool is_row_popov(const Mat<zz_pX> & pmat, const Shift & shift)
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    row_pivots(pivind, pivdeg, pmat, shift);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check pivot index increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+    if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+        return false;
+
+    // --> ordered weak Popov form OK
+    // now test pivot entries monic
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        if (not is_monic(pmat[i][pivind[i]]))
+            return false;
+
+    // finally test degree of non-pivot entries
+    for (long j = 0; j < pmat.NumRows(); ++j)
+    {
+        for (long i = 0; i < j; ++i)
+            if (deg(pmat[i][pivind[j]]) >= pivdeg[j])
+                return false;
+        for (long i = j+1; i < pmat.NumRows(); ++i)
+            if (deg(pmat[i][pivind[j]]) >= pivdeg[j])
+                return false;
+    }
+
+    return true;
+}
+/*------------------------------------------------------------*/
+/* test row-wise Popov form, up to row permutation            */
+/*------------------------------------------------------------*/
+bool is_row_popov_up_to_permutation(const Mat<zz_pX> & pmat);
+
+/*------------------------------------------------------------*/
+/* test row-wise shifted Popov form, up to row permutation    */
+/*------------------------------------------------------------*/
+bool is_row_popov_up_to_permutation(
+                                    const Mat<zz_pX> & pmat,
+                                    const Shift & shift
+                                    );
+
+/*------------------------------------------------------------*/
+/* test column-wise Popov form                                */
+/*------------------------------------------------------------*/
+bool is_col_popov(const Mat<zz_pX> & pmat)
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    col_pivots(pivind, pivdeg, pmat);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check pivot index increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+    if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+        return false;
+
+    // --> ordered weak Popov form OK
+    // now test pivot entries monic
+    for (long j = 0; j < pmat.NumCols(); ++j)
+        if (not is_monic(pmat[pivind[j]][j]))
+            return false;
+
+    // finally test degree of non-pivot entries
+    for (long i = 0; i < pmat.NumCols(); ++i)
+    {
+        for (long j = 0; j < i; ++j)
+            if (deg(pmat[pivind[i]][j]) >= pivdeg[i])
+                return false;
+        for (long j = i+1; j < pmat.NumRows(); ++j)
+            if (deg(pmat[pivind[i]][j]) >= pivdeg[i])
+                return false;
+    }
+
+    return true;
+}
+
+
+/*------------------------------------------------------------*/
+/* test column-wise shifted Popov form                        */
+/*------------------------------------------------------------*/
+bool is_col_popov(const Mat<zz_pX> & pmat, const Shift & shift)
+{
+    // retrieve pivot index
+    VecLong pivind, pivdeg;
+    col_pivots(pivind, pivdeg, pmat, shift);
+
+    // forbide zero rows
+    if (std::find(pivind.begin(),pivind.end(),-1) != pivind.end())
+        return false;
+
+    // check pivot index increasing: no adjacent elements elt1,elt2 with elt1 >= elt2
+    if (std::adjacent_find(pivots.begin(),pivots.end(),std::greater_equal<long>()) != pivots.end())
+        return false;
+
+    // --> ordered weak Popov form OK
+    // now test pivot entries monic
+    for (long j = 0; j < pmat.NumCols(); ++j)
+        if (not is_monic(pmat[pivind[j]][j]))
+            return false;
+
+    // finally test degree of non-pivot entries
+    for (long i = 0; i < pmat.NumCols(); ++i)
+    {
+        for (long j = 0; j < i; ++j)
+            if (deg(pmat[pivind[i]][j]) >= pivdeg[i])
+                return false;
+        for (long j = i+1; j < pmat.NumRows(); ++j)
+            if (deg(pmat[pivind[i]][j]) >= pivdeg[i])
+                return false;
+    }
+
+    return true;
+}
+/*------------------------------------------------------------*/
+/* test column-wise Popov form, up to column permutation      */
+/*------------------------------------------------------------*/
+bool is_col_popov_up_to_permutation(const Mat<zz_pX> & pmat);
+
+/*------------------------------------------------------------*/
+/* test column-wise shifted Popov form,                       */
+/* up to column permutation                                   */
+/*------------------------------------------------------------*/
+bool is_col_popov_up_to_permutation(
+                                    const Mat<zz_pX> & pmat,
+                                    const Shift & shift
+                                    );
+
+
+
+
+
+
 
 /*------------------------------------------------------------*/
 /* TODO comment                                               */
