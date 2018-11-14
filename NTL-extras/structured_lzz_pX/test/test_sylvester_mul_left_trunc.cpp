@@ -23,7 +23,7 @@ void check(long p)
     {
         for (long j = 2; j < 100; j += 9)
         {
-            for (long d = 7; (d < 1000) && (d*i*j < 70000); d += 15)
+            for (long d = 7; (d < 300) && (d*i*j < 70000); d += 15)
             {
                 Vec<zz_pX> F, G;
                 do
@@ -34,13 +34,13 @@ void check(long p)
                 while (G[j - 1] == 0);
 
                 sylvester_lzz_pX S(F, G);
-                toeplitz_like_minus_lzz_pX iS;
-                S.newton_inv_trunc(iS, d);
-                Mat<zz_pX> M = trunc(S.to_dense(), d);
-                Mat<zz_pX> iM = trunc(iS.to_dense(), d);
-                Mat<zz_pX> Id = trunc(M * iM, d);
-                cout << Id << endl;
-                exit(0);
+                Mat<zz_pX> M = S.to_dense();
+                Mat<zz_pX> in, out, out2;
+
+                in = random_mat_zz_pX(2, S.NumCols(), d);
+                out = S.mul_left_trunc(in, d/2);
+                out2 = in * M;
+                assert (out == trunc(out2, d/2));
             }
         }
     }
@@ -51,7 +51,7 @@ void check(long p)
 /*------------------------------------------------------------*/
 int main(int argc, char** argv)
 {
-    check(786433);
+    check(7);
     check(0);
     check(288230376151711813);
     return 0;

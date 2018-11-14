@@ -412,9 +412,9 @@ void sylvester_lzz_pX::newton_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long m) 
 
     Mat<zz_pX> G, H; // generators of iM;
     G = conv(iS.G);  
-    H = conv(iS.H);  
+    H = transpose(conv(iS.H));  
 
-    iM = toeplitz_like_minus_lzz_pX(G, H);
+    iM = toeplitz_like_minus_lzz_pX(G, transpose(H));
 
     vector<long> all_deg=degrees(m);
     long k = all_deg[0];
@@ -424,22 +424,78 @@ void sylvester_lzz_pX::newton_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long m) 
     {
         Mat<zz_pX> y, z;
         mul_right_trunc(y, G, 2*k); // G = - M^-1 U so  M G = -U
-        y = (y + U) >> k;           // residual term for U
+        y = (y + trunc(U, 2*k)) >> k;           // residual term for U
         mul_left_trunc(z, H, 2*k);  // H = M^-t V   so  M^t H = V
-        z = (z - V) >> k;           // residual term for V
+        z = (z - transpose(trunc(V, 2*k))) >> k;           // residual term for V
         iM.mul_right_trunc(y, y, k);
         iM.mul_left_trunc(z, z, k);
+        
+        G = G - (y << k);
+        H = H - (z << k);
 
         k = 2 * k;
         if (k != all_deg[idx])
         {
             k = all_deg[idx];
-            trunc(y, y, k);
-            trunc(z, z, k);
+            trunc(G, G, k);
+            trunc(H, H, k);
         }         
-        iM = toeplitz_like_minus_lzz_pX(y, z);
+        iM = toeplitz_like_minus_lzz_pX(G, transpose(H));
         idx++;
     }
+}
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+void sylvester_lzz_pX::inv_trunc_high_precision(toeplitz_like_minus_lzz_pX& iM, long m) const
+{
+    long dx = max(dAx, dBx);
+    newton_inv_trunc(iM, dx+1);
+
+    long nb = m / (dx+1);
+    if (m > (nb * (dx+1)))
+        nb++;
+
+    Mat<zz_pX> G = iM.G;            // deg(G) <= dx
+    Mat<zz_pX> H = transpose(iM.H); // deg(H) <= dx
+    Mat<zz_pX> Gsol = G;
+    Mat<zz_pX> Hsol = H;
+
+    long r = b.NumRows();
+    long s = b.NumCols();
+    u.SetDims(r, s);
+    for (long a = 0; a < r; a++)
+        for (long c = 0; c < s; c++)
+        {
+            u[a][c] = 0;
+            u[a][c].SetMaxLength(prec);
+        }
+
+    for (long i = 1; i < nb; i++)
+    {
+        Mat<zz_pX> y, z;
+        mul_right(y, G);  // deg(G) <= d so deg(y) <= 2d
+        mul_left(z, H);   // deg(H) <= d so deg(z) <= 2d
+        y = y >> (dx+1);           // U is zero at this precision
+        z = z >> (dx+1);           // V is zero at this precision
+        iM.mul_right_trunc(y, y, dx+1);
+        iM.mul_left_trunc(z, z, dx+1);
+
+        // multA->multiply(upper, sol);
+        // upper = upper >> lenA;
+        for (long a = 0; a < r; a++)
+            for (long c = 0; c < s; c++)
+                for (long k = 0; k <= dA; k++)
+                    SetCoeff(upper[a][c], k, coeff(b[a][c], k + shift) - coeff(upper[a][c], k));
+        multI->multiply(sol, upper);
+        trunc(sol, sol, lenA);
+        for (long a = 0; a < r; a++)
+            for (long c = 0; c < s; c++)
+                for (long k = 0; k <= dA; k++)
+                    SetCoeff(u[a][c], k + shift, coeff(sol[a][c], k));
+
+    }
+    trunc(u, u, prec);
 }
 
 

@@ -187,24 +187,6 @@ void lower_triangular_toeplitz_lzz_pX::mul_right(Vec<zz_pX>& res, const Vec<zz_p
 }
 
 /*------------------------------------------------------------*/
-/* right matrix multiplication                                */
-/*------------------------------------------------------------*/
-void lower_triangular_toeplitz_lzz_pX::mul_right(Mat<zz_pX>& res, const Mat<zz_pX>& input) const
-{
-    if (input.NumRows() != n)
-    {
-        LogicError("Bad size for lower_triangular_toeplitz_lzz_pX right matrix multiplication.");
-    }
-
-    if (&res == &input)
-    {
-        res = mul_right(input);
-        return;
-    }
-    Error("right toeplitz_lzz_pX matrix multiplication not implemented.");
-}
-
-/*------------------------------------------------------------*/
 /* right multiplication mod x^s                               */
 /*------------------------------------------------------------*/
 void lower_triangular_toeplitz_lzz_pX::mul_right_trunc(Vec<zz_pX>& res, const Vec<zz_pX>& input, long s) const
@@ -300,23 +282,6 @@ void lower_triangular_toeplitz_lzz_pX::mul_left_trunc(Vec<zz_pX>& res, const Vec
         res[i] = out_rev[n - 1 - i];
 }
 
-/*------------------------------------------------------------*/
-/* left matrix multiplication mod x^s                         */
-/*------------------------------------------------------------*/
-void lower_triangular_toeplitz_lzz_pX::mul_left_trunc(Mat<zz_pX>& res, const Mat<zz_pX>& input, long s) const
-{
-    if (input.NumRows() != n)
-    {
-        LogicError("Bad size for lower_triangular_toeplitz_lzz_pX left matrix multiplication.");
-    }
-
-    if (&res == &input)
-    {
-        res = mul_left_trunc(input, s);
-        return;
-    }
-    Error("left toeplitz_lzz_pX matrix multiplication not implemented.");
-}
 
 // Local Variables:
 // mode: C++
