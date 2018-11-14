@@ -110,6 +110,11 @@ inline Mat<zz_pX> transpose(const Mat<zz_pX> & a)
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
 
+// vector versions
+void trunc(Vec<zz_pX>& x, const Vec<zz_pX>& a, long n);
+inline Vec<zz_pX> trunc(const Vec<zz_pX>& a, long n)
+{ Vec<zz_pX> x; trunc(x, a, n); return x; }
+
 // full matrix versions
 void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
 inline Mat<zz_pX> trunc(const Mat<zz_pX>& a, long n)
@@ -180,6 +185,13 @@ inline Mat<zz_pX>& operator>>=(Mat<zz_pX>& x, long n)
 { RightShift(x, x, n); return x; }
 
 
+/*------------------------------------------------------------*/
+/* reverse the order of the entries in a vector               */
+/* x = a[n - 1 -i], i=0..n-1, with n=length(a)                */
+/*------------------------------------------------------------*/
+void reverse_vector(Vec<zz_pX>& x, const Vec<zz_pX>& a);
+inline Vec<zz_pX> reverse_vector(const Vec<zz_pX>& a)
+{ Vec<zz_pX> x; reverse_vector(x, a); return x; }
 
 /*------------------------------------------------------------*/
 /* Reverse operations:                                        */

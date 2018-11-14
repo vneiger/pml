@@ -165,6 +165,7 @@ void circulant_row_lzz_p::mul_right(Mat<zz_p>& res, const Mat<zz_p>& input) cons
         res = mul_right(input);
         return;
     }
+    Error ("not implemented yet."); // todo: move to structured_lzz_p.cpp
 }
 
 /*------------------------------------------------------------*/

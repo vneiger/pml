@@ -40,7 +40,7 @@ public:
         return out;
     }
 
-    virtual void mul_right(Mat<zz_pX>& out, const Mat<zz_pX>& in) const = 0;
+    void mul_right(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
     inline Mat<zz_pX> mul_right(const Mat<zz_pX>& in) const
     {
         Mat<zz_pX> out;
@@ -59,11 +59,49 @@ public:
         return out;
     }
 
-    virtual void mul_left(Mat<zz_pX>& out, const Mat<zz_pX>& in) const = 0;
+    void mul_left(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
     inline Mat<zz_pX> mul_left(const Mat<zz_pX>& in) const
     {
         Mat<zz_pX> out;
         mul_left(out, in);
+        return out;
+    }
+
+    /*------------------------------------------------------------*/
+    /* right multiplication mod x^s                               */
+    /*------------------------------------------------------------*/
+    virtual void mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const = 0;
+    inline Vec<zz_pX> mul_right_trunc(const Vec<zz_pX>& in, long s) const
+    {
+        Vec<zz_pX> out;
+        mul_right_trunc(out, in, s);
+        return out;
+    }
+
+    void mul_right_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const;
+    inline Mat<zz_pX> mul_right_trunc(const Mat<zz_pX>& in, long s) const
+    {
+        Mat<zz_pX> out;
+        mul_right_trunc(out, in, s);
+        return out;
+    }
+
+    /*------------------------------------------------------------*/
+    /* left multiplication mod x^s                                */
+    /*------------------------------------------------------------*/
+    virtual void mul_left_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const = 0;
+    inline Vec<zz_pX> mul_left_trunc(const Vec<zz_pX>& in, long s) const
+    {
+        Vec<zz_pX> out;
+        mul_left_trunc(out, in, s);
+        return out;
+    }
+
+    void mul_left_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const;
+    inline Mat<zz_pX> mul_left_trunc(const Mat<zz_pX>& in, long s) const
+    {
+        Mat<zz_pX> out;
+        mul_left_trunc(out, in, s);
         return out;
     }
 
@@ -137,6 +175,20 @@ public:
     void mul_left(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
 
     /*------------------------------------------------------------*/
+    /* right multiplication mod x^s                               */
+    /*------------------------------------------------------------*/
+    using structured_lzz_pX::mul_right_trunc;
+    void mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const;
+    void mul_right_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const;
+
+    /*------------------------------------------------------------*/
+    /* left multiplication mod x^s                                */
+    /*------------------------------------------------------------*/
+    using structured_lzz_pX::mul_left_trunc;
+    void mul_left_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const;
+    void mul_left_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const;
+
+    /*------------------------------------------------------------*/
     /* turns M into a dense matrix                                */
     /*------------------------------------------------------------*/
     using structured_lzz_pX::to_dense;
@@ -202,6 +254,20 @@ public:
     void mul_left(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
 
     /*------------------------------------------------------------*/
+    /* right multiplication mod x^s                               */
+    /*------------------------------------------------------------*/
+    using structured_lzz_pX::mul_right_trunc;
+    void mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const;
+    void mul_right_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const;
+
+    /*------------------------------------------------------------*/
+    /* left multiplication mod x^s                                */
+    /*------------------------------------------------------------*/
+    using structured_lzz_pX::mul_left_trunc;
+    void mul_left_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const;
+    void mul_left_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const;
+
+    /*------------------------------------------------------------*/
     /* turns M into a dense matrix                                */
     /*------------------------------------------------------------*/
     using structured_lzz_pX::to_dense;
@@ -251,25 +317,6 @@ public:
     void mul_right(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
 
     /*------------------------------------------------------------*/
-    /* right multiplication mod x^s                               */
-    /*------------------------------------------------------------*/
-    void mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const;
-    inline Vec<zz_pX> mul_right_trunc(const Vec<zz_pX>& in, long s) const
-    {
-        Vec<zz_pX> out;
-        mul_right_trunc(out, in, s);
-        return out;
-    }
-
-    void mul_right_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const;
-    inline Mat<zz_pX> mul_right_trunc(const Mat<zz_pX>& in, long s) const
-    {
-        Mat<zz_pX> out;
-        mul_right_trunc(out, in, s);
-        return out;
-    }
-
-    /*------------------------------------------------------------*/
     /* left multiplication                                        */
     /*------------------------------------------------------------*/
     using structured_lzz_pX::mul_left;
@@ -277,23 +324,18 @@ public:
     void mul_left(Mat<zz_pX>& out, const Mat<zz_pX>& in) const;
 
     /*------------------------------------------------------------*/
-    /* left multiplication mod x^d                                */
+    /* right multiplication mod x^s                               */
     /*------------------------------------------------------------*/
-    void mul_left_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long d) const;
-    inline Vec<zz_pX> mul_left_trunc(const Vec<zz_pX>& in, long d) const
-    {
-        Vec<zz_pX> out;
-        mul_left_trunc(out, in, d);
-        return out;
-    }
+    using structured_lzz_pX::mul_right_trunc;
+    void mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const;
+    void mul_right_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const;
 
-    void mul_left_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long d) const;
-    inline Mat<zz_pX> mul_left_trunc(const Mat<zz_pX>& in, long d) const
-    {
-        Mat<zz_pX> out;
-        mul_left_trunc(out, in, d);
-        return out;
-    }
+    /*------------------------------------------------------------*/
+    /* left multiplication mod x^s                                */
+    /*------------------------------------------------------------*/
+    using structured_lzz_pX::mul_left_trunc;
+    void mul_left_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const;
+    void mul_left_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const;
 
     /*------------------------------------------------------------*/
     /* turns M into a dense matrix                                */
@@ -334,10 +376,6 @@ private:
     long dAx, dBx; // X-degrees of a, b (X is the coefficient variable)
     Vec<zz_pX> a, b, revA, revB;
 
-    // zz_pX a, b, revA, revB, invA, invB, invSerA, invSerB;
-    // zz_pXModulus modA, modB;
-    // zz_pXMultiplier multIA, multIB;
-    // long singular;
 public:
     /*------------------------------------------------------------*/
     /* sets dimensions to 0                                       */
@@ -373,21 +411,16 @@ public:
     /*------------------------------------------------------------*/
     /* right multiplication mod x^s                               */
     /*------------------------------------------------------------*/
+    using structured_lzz_pX::mul_right_trunc;
     void mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const;
-    inline Vec<zz_pX> mul_right_trunc(const Vec<zz_pX>& in, long s) const
-    {
-        Vec<zz_pX> out;
-        mul_right_trunc(out, in, s);
-        return out;
-    }
-
     void mul_right_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const;
-    inline Mat<zz_pX> mul_right_trunc(const Mat<zz_pX>& in, long s) const
-    {
-        Mat<zz_pX> out;
-        mul_right_trunc(out, in, s);
-        return out;
-    }
+
+    /*------------------------------------------------------------*/
+    /* left multiplication mod x^s                                */
+    /*------------------------------------------------------------*/
+    using structured_lzz_pX::mul_left_trunc;
+    void mul_left_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const;
+    void mul_left_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const;
 
     /*------------------------------------------------------------*/
     /* G, H such that Z1 M - M Z0 = G H^t                         */

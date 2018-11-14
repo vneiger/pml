@@ -237,23 +237,6 @@ void circulant_row_lzz_pX::mul_right(Vec<zz_pX>& res, const Vec<zz_pX>& input) c
 }
 
 /*------------------------------------------------------------*/
-/* right matrix multiplication                                */
-/*------------------------------------------------------------*/
-void circulant_row_lzz_pX::mul_right(Mat<zz_pX>& res, const Mat<zz_pX>& input) const
-{
-    if (input.NumRows() != m)
-    {
-        LogicError("Wrong size for circulant_row_lzz_pX right matrix multiplication.");
-    }
-
-    if (&res == &input)
-    {
-        res = mul_right(input);
-        return;
-    }
-}
-
-/*------------------------------------------------------------*/
 /* left multiplication                                        */
 /*------------------------------------------------------------*/
 void circulant_row_lzz_pX::mul_left(Vec<zz_pX>& res, const Vec<zz_pX>& input) const
@@ -449,21 +432,149 @@ void circulant_row_lzz_pX::mul_left(Vec<zz_pX>& res, const Vec<zz_pX>& input) co
 }
 
 /*------------------------------------------------------------*/
-/* left matrix multiplication                                 */
+/* right multiplication mod x^s                               */
 /*------------------------------------------------------------*/
-void circulant_row_lzz_pX::mul_left(Mat<zz_pX>& res, const Mat<zz_pX>& input) const
+void circulant_row_lzz_pX::mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const
 {
-    if (input.NumCols() != n)
+    if (in.length() != m)
     {
-        LogicError("Wrong size for circulant_row_lzz_pX left matrix multiplication.");
+        LogicError("Wrong size for circulant_row_lzz_pX right trunc multiplication.");
     }
 
-    if (&res == &input)
+    Vec<zz_pX> data_trunc;
+    trunc(data_trunc, dataRev, s);
+    Vec<zz_pX> input_trunc;
+    trunc(input_trunc, in, s);
+
+    long dAx = deg(data_trunc);
+    long d = deg(input_trunc);
+
+    if (dAx == -1 || d == -1)
     {
-        res = mul_left(input);
+        out.SetLength(n);
+        for (long i = 0; i < n; i++)
+            out[i] = 0;
         return;
     }
 
+
+    Vec<zz_pX> res;
+    zz_pX kro_in, kro_A, kro_res;
+    to_kronecker(kro_in, input_trunc, dAx + d);
+    to_kronecker(kro_A, data_trunc, dAx + d);
+    kro_res = kro_in * kro_A;
+    from_kronecker(res, kro_res, dAx + d);
+    long ell = res.length();
+    res.SetLength(m + m);
+    for (long i = 0; i < ell; i++)
+        trunc(res[i], res[i], s);
+    for (long i = ell; i < m + m; i++)
+        res[i] = 0;
+
+    out.SetLength(n);
+    long todo = min(n, m);
+    for (long i = 0; i < todo; i++)
+        out[i] = res[i] + res[i + m];
+
+    if (m < n)
+    {
+        long done = m;
+        long left = n-m;
+        do 
+        {
+            todo = min(left, m);
+            for (long i = done; i < done + todo; i++)
+                out[i] = out[i-m];
+            done += todo;
+            left -= todo;
+        } 
+        while (left >= 1);
+    }
+}
+
+/*------------------------------------------------------------*/
+/* left multiplication mod x^s                                */
+/*------------------------------------------------------------*/
+void circulant_row_lzz_pX::mul_left_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const
+{
+    if (&out == &in)
+    {
+        out = mul_left_trunc(in, s);
+        return;
+    }
+
+    if (in.length() != n)
+    {
+        LogicError("Wrong size for circulant_row_lzz_pX left trunc multiplication.");
+    }
+    out.SetLength(m);
+
+    Vec<zz_pX> data_trunc; 
+    reverse_vector(data_trunc, data);
+    trunc(data_trunc, data_trunc, s);
+    Vec<zz_pX> input_trunc;
+    trunc(input_trunc, in, s);
+    long dAx = deg(data_trunc);
+    long d = deg(input_trunc);
+
+    if (dAx == -1 || d == -1)
+    {
+        for (long i = 0; i < m; i++)
+            out[i] = 0;
+        return;
+    }
+
+    long leftover = n % m;
+    long nb = n / m;   // number of size-m chunks
+
+    if (leftover == 0)
+    {
+        leftover = m;
+        nb--;
+    }
+
+
+    Vec<zz_pX> res;
+    zz_pX kro_in, kro_A, kro_res;
+    Vec<zz_pX> input_slice;
+    input_slice.SetLength(leftover);
+    for(long i = 0; i < leftover; i++)
+        input_slice[i] = input_trunc[i + nb * m];
+
+    to_kronecker(kro_in, input_slice, dAx + d);
+    to_kronecker(kro_A, data_trunc, dAx + d);
+    kro_res = kro_in * kro_A;
+    from_kronecker(res, kro_res, dAx + d);
+    long ell = res.length();
+    res.SetLength(m + leftover);
+    for (long i = 0; i < ell; i++)
+        trunc(res[i], res[i], s);
+    for (long i = ell; i < m + leftover; i++)
+        res[i] = 0;
+
+    for (long i = 0; i < leftover; i++)
+        out[i] = res[i] + res[i + m];
+    for (long i = leftover; i < m; i++)
+        out[i] = res[i];
+
+    for (long r = 0; r < nb; r++)
+    {
+        input_slice.SetLength(m);
+        for (long i = 0; i < m; i++)
+            input_slice[i] = input_trunc[i + r * m];
+        to_kronecker(kro_in, input_slice, dAx + d);
+        kro_res = kro_in * kro_A;
+        from_kronecker(res, kro_res, dAx + d);
+        long ell = res.length();
+        res.SetLength(m + m);
+        for (long i = 0; i < ell; i++)
+            trunc(res[i], res[i], s);
+        for (long i = ell; i < m + m; i++)
+            res[i] = 0;
+    
+        for (long i = 0; i < m; i++)
+            out[i] += (res[i] + res[i + m]);
+    }
 }
 
 

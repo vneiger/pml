@@ -30,16 +30,9 @@ void check(long p)
 
             in = random_mat_zz_pX(i, 2, d);
             h = lower_triangular_toeplitz_lzz_pX(dat);
-            out = h.mul_right(in);
+            out = h.mul_right_trunc(in, d/2);
             out2 = h.to_dense() * in;
-            assert (out == out2);
-
-            h.prepare_degree(max(1, d/2));
-            out2 = h.mul_right(in);
-            assert (out == out2);
-
-            h.prepare_degree(d-1);
-            out2 = h.mul_right(in);
+            out2 = trunc(out2, d/2);
             assert (out == out2);
 
             for (long j = 0; j < i/3; j++)
@@ -48,16 +41,9 @@ void check(long p)
                 in[j][0] = 0;
 
             h = lower_triangular_toeplitz_lzz_pX(dat);
-            out = h.mul_right(in);
+            out = h.mul_right_trunc(in, d/2);
             out2 = h.to_dense() * in;
-            assert (out == out2);
-
-            h.prepare_degree(max(1, d/2));
-            out2 = h.mul_right(in);
-            assert (out == out2);
-
-            h.prepare_degree(d-1);
-            out2 = h.mul_right(in);
+            out2 = trunc(out2, d/2);
             assert (out == out2);
         }
     }

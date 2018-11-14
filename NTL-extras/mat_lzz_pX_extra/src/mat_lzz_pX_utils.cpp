@@ -188,8 +188,15 @@ void transpose(Mat<zz_pX>& x, const Mat<zz_pX>& a)
 }
 
 /*------------------------------------------------------------*/
-/* matrix truncate                                            */
+/* matrix / vector truncate                                   */
 /*------------------------------------------------------------*/
+void trunc(Vec<zz_pX>& x, const Vec<zz_pX>& a, long n)
+{
+    x.SetLength(a.length());  // does nothing if x is a; aliasing is OK
+    for (long i = 0; i < a.length(); i++)
+        trunc(x[i], a[i], n);
+}
+
 void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n)
 {
     x.SetDims(a.NumRows(), a.NumCols()); // does nothing if x is a
@@ -309,6 +316,30 @@ void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n)
 }
 
 /*------------------------------------------------------------*/
+/* reverse the order of the entries in a vector               */
+/* x = a[n - 1 -i], i=0..n-1, with n=length(a)                */
+/*------------------------------------------------------------*/
+void reverse_vector(Vec<zz_pX>& x, const Vec<zz_pX>& a)
+{
+    long n = a.length();
+    if (&x == &a)
+    {
+        Vec<zz_pX> tmp;
+        tmp.SetLength(n);
+        for (long i = 0; i < n; i++)
+            tmp[i] = a[n - 1 - i];
+        x = tmp;
+        return;
+    }
+    else
+    {
+        x.SetLength(n);
+        for (long i = 0; i < n; i++)
+            x[i] = a[n - 1 - i];
+    }
+}
+
+/*------------------------------------------------------------*/
 /* reverse operations                                         */
 /* x = reverse of a[0]..a[hi] (hi >= -1);                     */
 /*------------------------------------------------------------*/
@@ -413,6 +444,7 @@ void random_mat_zz_pX_cdeg(Mat<zz_pX>& pmat, long m, long n, VecLong cdeg)
 void conv(Mat<zz_pX>& mat, const Mat<zz_p>& coeff)
 {
     clear(mat);
+    mat.SetDims(coeff.NumRows(), coeff.NumCols());
     SetCoeff(mat, 0, coeff);
 }
 

@@ -113,86 +113,6 @@ void toeplitz_like_minus_lzz_pX::mul_right(Vec<zz_pX>& output, const Vec<zz_pX>&
 }
 
 /*------------------------------------------------------------*/
-/* output = M * input, matrix version                         */
-/*------------------------------------------------------------*/
-void toeplitz_like_minus_lzz_pX::mul_right(Mat<zz_pX>& output, const Mat<zz_pX>& input) const
-{
-    if (&output == &input)
-    {
-        output = mul_right(input);
-        return;
-    }
-    
-    long p = input.NumCols();
-    output.SetDims(m, p);
-
-    Vec<zz_pX> input_vec, output_vec;
-    input_vec.SetLength(NumCols());
-    for (long j = 0; j < p; j++)
-    {
-        for (long k = 0; k < NumCols(); k++)
-            input_vec[k] = input[k][j];
-        mul_right(output_vec, input_vec);
-        for (long k = 0; k < NumRows(); k++)
-            output[k][j] = output_vec[k];
-    }
-}
-
-/*------------------------------------------------------------*/
-/* output = M * input mod x^d                                 */
-/*------------------------------------------------------------*/
-void toeplitz_like_minus_lzz_pX::mul_right_trunc(Vec<zz_pX>& output, const Vec<zz_pX>& input, long d) const
-{
-    if (&output == &input)
-    {
-        output = mul_right_trunc(input, d);
-        return;
-    }
-
-    output.SetLength(m);
-    for (long i = 0; i < m; i++)
-        output[i] = 0;
-
-    Vec<zz_pX> tmp1, tmp2;
-
-    for (long i = 0; i < NumGens(); i++)
-    {
-        circulant_H[i].mul_right(tmp1, input);
-        for (long j = 0; j < tmp1.length(); j++)
-            trunc(tmp1[j], tmp1[j], d);
-        toeplitz_G[i].mul_right(tmp2, tmp1);
-        for (long j = 0; j < m; j++)
-            output[j] += trunc(tmp2[j], d);
-    }
-}
-
-/*------------------------------------------------------------*/
-/* output = M * input mod x^d, matrix version                 */
-/*------------------------------------------------------------*/
-void toeplitz_like_minus_lzz_pX::mul_right_trunc(Mat<zz_pX>& output, const Mat<zz_pX>& input, long d) const
-{
-    if (&output == &input)
-    {
-        output = mul_right_trunc(input, d);
-        return;
-    }
-    
-    long p = input.NumCols();
-    output.SetDims(m, p);
-
-    Vec<zz_pX> input_vec, output_vec;
-    input_vec.SetLength(NumCols());
-    for (long j = 0; j < p; j++)
-    {
-        for (long k = 0; k < NumCols(); k++)
-            input_vec[k] = input[k][j];
-        mul_right_trunc(output_vec, input_vec, d);
-        for (long k = 0; k < NumRows(); k++)
-            output[k][j] = output_vec[k];
-    }
-}
-
-/*------------------------------------------------------------*/
 /* left multiplication                                        */
 /*------------------------------------------------------------*/
 void toeplitz_like_minus_lzz_pX::mul_left(Vec<zz_pX>& output, const Vec<zz_pX>& input) const
@@ -219,28 +139,28 @@ void toeplitz_like_minus_lzz_pX::mul_left(Vec<zz_pX>& output, const Vec<zz_pX>& 
 }
 
 /*------------------------------------------------------------*/
-/* left multiplication, matrix version                        */
+/* output = M * input mod x^d                                 */
 /*------------------------------------------------------------*/
-void toeplitz_like_minus_lzz_pX::mul_left(Mat<zz_pX>& output, const Mat<zz_pX>& input) const
+void toeplitz_like_minus_lzz_pX::mul_right_trunc(Vec<zz_pX>& output, const Vec<zz_pX>& input, long d) const
 {
     if (&output == &input)
     {
-        output = mul_right(input);
+        output = mul_right_trunc(input, d);
         return;
     }
-    
-    long p = input.NumRows();
-    output.SetDims(p, n);
 
-    Vec<zz_pX> input_vec, output_vec;
-    input_vec.SetLength(NumRows());
-    for (long j = 0; j < p; j++)
+    output.SetLength(m);
+    for (long i = 0; i < m; i++)
+        output[i] = 0;
+
+    Vec<zz_pX> tmp1, tmp2;
+
+    for (long i = 0; i < NumGens(); i++)
     {
-        for (long k = 0; k < NumRows(); k++)
-            input_vec[k] = input[j][k];
-        mul_left(output_vec, input_vec);
-        for (long k = 0; k < NumCols(); k++)
-            output[j][k] = output_vec[k];
+        circulant_H[i].mul_right_trunc(tmp1, input, d);
+        toeplitz_G[i].mul_right_trunc(tmp2, tmp1, d);
+        for (long j = 0; j < m; j++)
+            output[j] += tmp2[j];
     }
 }
 
@@ -251,7 +171,7 @@ void toeplitz_like_minus_lzz_pX::mul_left_trunc(Vec<zz_pX>& output, const Vec<zz
 {
     if (&output == &input)
     {
-        output = mul_left(input);
+        output = mul_left_trunc(input, d);
         return;
     }
 
@@ -263,40 +183,13 @@ void toeplitz_like_minus_lzz_pX::mul_left_trunc(Vec<zz_pX>& output, const Vec<zz
 
     for (long i = 0; i < NumGens(); i++)
     {
-        toeplitz_G[i].mul_left(tmp1, input);
-        for (long j = 0; j < tmp1.length(); j++)
-            trunc(tmp1[j], tmp1[j], d);
-        circulant_H[i].mul_left(tmp2, tmp1);
+        toeplitz_G[i].mul_left_trunc(tmp1, input, d);
+        circulant_H[i].mul_left_trunc(tmp2, tmp1, d);
         for (long j = 0; j < n; j++)
-            output[j] += trunc(tmp2[j], d);
+            output[j] += tmp2[j];
     }
 }
 
-/*------------------------------------------------------------*/
-/* left multiplication mod x^d, matrix version                */
-/*------------------------------------------------------------*/
-void toeplitz_like_minus_lzz_pX::mul_left_trunc(Mat<zz_pX>& output, const Mat<zz_pX>& input, long d) const
-{
-    if (&output == &input)
-    {
-        output = mul_right(input);
-        return;
-    }
-    
-    long p = input.NumRows();
-    output.SetDims(p, n);
-
-    Vec<zz_pX> input_vec, output_vec;
-    input_vec.SetLength(NumRows());
-    for (long j = 0; j < p; j++)
-    {
-        for (long k = 0; k < NumRows(); k++)
-            input_vec[k] = input[j][k];
-        mul_left_trunc(output_vec, input_vec, d);
-        for (long k = 0; k < NumCols(); k++)
-            output[j][k] = output_vec[k];
-    }
-}
 
 /*------------------------------------------------------------*/
 /* turns M into a dense matrix                                */

@@ -121,35 +121,6 @@ void sylvester_lzz_pX::mul_right(Vec<zz_pX>& out, const Vec<zz_pX>& in) const
     }
 }
 
-/*------------------------------------------------------------*/
-/* right multiplication, matrix version                       */
-/*------------------------------------------------------------*/
-void sylvester_lzz_pX::mul_right(Mat<zz_pX>& out, const Mat<zz_pX>& in) const
-{
-    if (&out == &in)
-    {
-        Mat<zz_pX> out2 = mul_right(in);
-        out = out2;
-        return;
-    }
-
-    if (in.NumRows() != n)
-        Error("Bad dimensions in sylvester_lzz_pX matrix mul right");
-
-    long p = in.NumCols();
-    Vec<zz_pX> vec_in, vec_out;
-    vec_in.SetLength(n);
-    out.SetDims(n, p);
-
-    for (long j = 0; j < p; j++)
-    {
-        for (long i = 0; i < n; i++)
-            vec_in[i] = in[i][j];
-        mul_right(vec_out, vec_in);
-        for (long i = 0; i < n; i++)
-            out[i][j] = vec_out[i];
-    }
-}
 
 /*------------------------------------------------------------*/
 /* right multiplication truncated mod x^s                     */
@@ -181,9 +152,9 @@ void sylvester_lzz_pX::mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, lo
     long dTAx = deg(truncA);
     long dTBx = deg(truncB);
 
-    to_kronecker(kro_A, a, dTAx + dFx);  
+    to_kronecker(kro_A, truncA, dTAx + dFx);  
     to_kronecker(kro_F, in_F, dTAx + dFx); 
-    to_kronecker(kro_B, b, dTBx + dGx); 
+    to_kronecker(kro_B, truncB, dTBx + dGx); 
     to_kronecker(kro_G, in_G, dTBx + dGx); 
 
     if ((dTAx + dFx) == (dTBx + dGx))
@@ -215,36 +186,6 @@ void sylvester_lzz_pX::mul_right_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, lo
             if (i < out2.length())
                 out[i] = out[i] + trunc(out2[i], s);
         }
-    }
-}
-
-/*------------------------------------------------------------*/
-/* right multiplication mod x^s, matrix version               */
-/*------------------------------------------------------------*/
-void sylvester_lzz_pX::mul_right_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, long s) const
-{
-    if (&out == &in)
-    {
-        Mat<zz_pX> out2 = mul_right_trunc(in, s);
-        out = out2;
-        return;
-    }
-
-    if (in.NumRows() != n)
-        Error("Bad dimensions in sylvester_lzz_pX matrix mul right");
-
-    long p = in.NumCols();
-    Vec<zz_pX> vec_in, vec_out;
-    vec_in.SetLength(n);
-    out.SetDims(n, p);
-
-    for (long j = 0; j < p; j++)
-    {
-        for (long i = 0; i < n; i++)
-            vec_in[i] = in[i][j];
-        mul_right_trunc(vec_out, vec_in, s);
-        for (long i = 0; i < n; i++)
-            out[i][j] = vec_out[i];
     }
 }
 
@@ -300,35 +241,77 @@ void sylvester_lzz_pX::mul_left(Vec<zz_pX>& out, const Vec<zz_pX>& in) const
         out[i + dBy] = 0;
 }
 
+
 /*------------------------------------------------------------*/
-/* left multiplication, matrix version                        */
+/* left multiplication mod x^s                                */
 /*------------------------------------------------------------*/
-void sylvester_lzz_pX::mul_left(Mat<zz_pX>& out, const Mat<zz_pX>& in) const
+void sylvester_lzz_pX::mul_left_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in, long s) const
 {
+    if (in.length() != n)
+        Error("Bad input size for sylvester_lzz_pX mul left");
+
     if (&out == &in)
     {
-        Mat<zz_pX> out2 = mul_left(in);
+        Vec<zz_pX> out2 = mul_left_trunc(in, s);
         out = out2;
         return;
     }
 
-    if (in.NumCols() != n)
-        Error("Bad dimensions in sylvester_lzz_pX matrix mul left");
+    Vec<zz_pX> in_trunc;
+    in_trunc.SetLength(in.length());
+    for (long i = 0; i < in.length(); i++)
+        trunc(in_trunc[i], in[i], s);
 
-    Vec<zz_pX> vec_in, vec_out;
-    vec_in.SetLength(n);
-    long p = in.NumRows();
-    out.SetDims(p, n);
+    Vec<zz_pX> revA_trunc;
+    revA_trunc.SetLength(revA.length());
+    for (long i = 0; i < revA.length(); i++)
+        trunc(revA_trunc[i], revA[i], s);
 
-    for (long j = 0; j < p; j++)
+    Vec<zz_pX> revB_trunc;
+    revB_trunc.SetLength(revB.length());
+    for (long i = 0; i < revB.length(); i++)
+        trunc(revB_trunc[i], revB[i], s);
+
+    long d = deg(in_trunc);
+    long dTAx = deg(revA_trunc);
+    long dTBx = deg(revB_trunc);
+
+    Vec<zz_pX> outA, outB;
+    zz_pX kro_revA, kro_revB;
+    to_kronecker(kro_revA, revA_trunc, dTAx + d);  
+    to_kronecker(kro_revB, revB_trunc, dTBx + d);  
+    
+    if (dTAx == dTBx)
     {
-        for (long i = 0; i < n; i++)
-            vec_in[i] = in[j][i];
-        mul_left(vec_out, vec_in);
-        for (long i = 0; i < n; i++)
-            out[j][i] = vec_out[i];
+        zz_pX kro_in, kro_outA, kro_outB;
+        to_kronecker(kro_in, in_trunc, dTAx + d);
+        middle_product(kro_outA, kro_revA, kro_in << dTAx, dAy * (dTAx + d + 1) + dTAx, dBy * (dTAx + d + 1) - 1);
+        middle_product(kro_outB, kro_revB, kro_in << dTBx, dBy * (dTAx + d + 1) + dTBx, dAy * (dTAx + d + 1) - 1);
+        from_kronecker(outA, kro_outA, dTAx + d);
+        from_kronecker(outB, kro_outB, dTAx + d);
     }
+    else
+    {
+        zz_pX kro_inA, kro_inB, kro_outA, kro_outB;
+        to_kronecker(kro_inA, in_trunc, dTAx + d);
+        to_kronecker(kro_inB, in_trunc, dTBx + d);
+        middle_product(kro_outA, kro_revA, kro_inA << dTAx, dAy * (dTAx + d + 1) + dTAx, dBy * (dTAx + d + 1) - 1);
+        middle_product(kro_outB, kro_revB, kro_inB << dTBx, dBy * (dTBx + d + 1) + dTBx, dAy * (dTBx + d + 1) - 1);
+        from_kronecker(outA, kro_outA, dTAx + d);
+        from_kronecker(outB, kro_outB, dTBx + d);
+    }
+
+    out.SetLength(n);
+    for (long i = 0; i < outA.length(); i++)
+        trunc(out[i], outA[i], s);
+    for (long i = outA.length(); i < dBy; i++)
+        out[i] = 0;
+    for (long i = 0; i < outB.length(); i++)
+        trunc(out[i + dBy], outB[i], s);
+    for (long i = outB.length(); i < dAy; i++)
+        out[i + dBy] = 0;
 }
+
 
 /*------------------------------------------------------------*/
 /* turns M into a dense matrix                                */
@@ -389,9 +372,9 @@ static vector<long> degrees(long n)
 
     while(n > 1)
     {
+        all_deg.insert(all_deg.begin(), n);
         if (n & 1)
             n++;
-        all_deg.insert(all_deg.begin(), n);
         n >>= 1;
     }
     all_deg.insert(all_deg.begin(), n);
@@ -405,22 +388,33 @@ static vector<long> degrees(long n)
 /*------------------------------------------------------------*/
 void sylvester_lzz_pX::newton_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long m) const
 {
+    // generators of M
+    Mat<zz_pX> U, V;
+    phi_plus_generators(U, V);
+
+    // M at x=0
     zz_pX a0, b0;
     for (long i = 0; i < a.length(); i++)
         SetCoeff(a0, i, coeff(a[i], 0));
     for (long i = 0; i < b.length(); i++)
         SetCoeff(b0, i, coeff(b[i], 0));
 
+    if (deg(a0) == 0 || deg(b0) == 0)
+    {
+        Error("Degree must be positive in newton_inv_trunc");
+    }
     sylvester_lzz_p S(a0, b0);
     toeplitz_like_minus_lzz_p iS;
     long r = S.inv(iS);
-    
+
     if (r == 0)
         Error("Sylvester matrix not invertible at zero");
 
     Mat<zz_pX> G, H; // generators of iM;
-    G = conv(iS.G);
-    H = conv(iS.H);
+    G = conv(iS.G);  
+    H = conv(iS.H);  
+
+    iM = toeplitz_like_minus_lzz_pX(G, H);
 
     vector<long> all_deg=degrees(m);
     long k = all_deg[0];
@@ -428,21 +422,24 @@ void sylvester_lzz_pX::newton_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long m) 
 
     while (k < m) 
     {
-        // Mat<zz_pX> y;
-        // Mat<zz_pX> tr = trunc(a, 2*k);
-        // middle_product(y, x, tr, k, k-1);
-        // mul_trunc(y, y, x, k);
-        // y <<= k;
-        // x = x - y;
+        Mat<zz_pX> y, z;
+        mul_right_trunc(y, G, 2*k); // G = - M^-1 U so  M G = -U
+        y = (y + U) >> k;           // residual term for U
+        mul_left_trunc(z, H, 2*k);  // H = M^-t V   so  M^t H = V
+        z = (z - V) >> k;           // residual term for V
+        iM.mul_right_trunc(y, y, k);
+        iM.mul_left_trunc(z, z, k);
+
         k = 2 * k;
         if (k != all_deg[idx])
         {
             k = all_deg[idx];
-            // trunc(x, x, k);
-        }            
+            trunc(y, y, k);
+            trunc(z, z, k);
+        }         
+        iM = toeplitz_like_minus_lzz_pX(y, z);
         idx++;
     }
-    // trunc(x, x, m);
 }
 
 
