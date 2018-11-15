@@ -1467,40 +1467,24 @@ VecLong mbasis_resupdate_v2(
             t_now = GetWallTime();
 #endif
             // Update residual[ord...order-1] similarly
-            // does not consider residual[ord-1], since it is known
+            // We do not consider residual[ord-1], since it is known
             // that its update will be zero (and it will not be used
             // in further iterations on ord)
-            for (long d = order-1; d >= ord; --d)
-            {
-                kerapp = kerbas * residuals[d];
-                long row=0;
-                for (long i = 0; i < nrows; ++i)
-                {
-                    if (is_pivind[i])
-                    {
-                        residuals[d][i] = kerapp[row];
-                        ++row;
-                    }
-                    else 
-                        residuals[d][i] = residuals[d-1][i];
-                }
-            }
 
             // Submatrix of rows corresponding to pivind are replaced by
-            // kerbas*coeffs_appbas
-            ///for (long d = 0; d < deg_appbas; ++d)
-            ///{
-            ///    kerapp = kerbas * coeffs_appbas[d];
-            ///    for (long i = 0; i < ker_dim; ++i)
-            ///        coeffs_appbas[d][pivind[perm_rows_ker[i]]].swap(kerapp[i]);
-            ///}
+            // kerbas*residuals
+            for (long d = ord; d < order; ++d)
+            {
+                kerapp = kerbas * residuals[d];
+                for (long i = 0; i < ker_dim; ++i)
+                    residuals[d][pivind[perm_rows_ker[i]]].swap(kerapp[i]);
+            }
 
-            ///// rows with !is_pivind are multiplied by X (note: these rows have
-            ///// degree less than deg_appbas)
-            ///for (long d = deg_appbas-1; d >= 0; --d)
-            ///    for (long i = 0; i < nrows; ++i)
-            ///        if (not is_pivind[i])
-            ///            coeffs_appbas[d+1][i].swap(coeffs_appbas[d][i]);
+            // rows with !is_pivind are multiplied by X
+            for (long d = order-2; d >= ord-1; --d)
+                for (long i = 0; i < nrows; ++i)
+                    if (not is_pivind[i])
+                        residuals[d+1][i].swap(residuals[d][i]);
 #ifdef MBASIS_PROFILE
             t_residual += GetWallTime()-t_now;
             t_now = GetWallTime();
