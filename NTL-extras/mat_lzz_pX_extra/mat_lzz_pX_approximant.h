@@ -31,42 +31,15 @@ NTL_CLIENT
 // Refer to mat_lzz_pX_extra.h for definitions of these forms.
 
 /*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* TODO                                                       */
-/*------------------------------------------------------------*/
+/* Conventions                                                */
 /*------------------------------------------------------------*/
 
-// ** pmbasis: handle different orders via max(order)-order shifting of pmat
+// Most functions below use the following parameters:
+//   - Mat<zz_pX> appbas : the output matrix (size does not need to be initialized; cannot be pmat)
+//   - const Mat<zz_pX> & pmat : the input matrix (no constraint)
+//   - const VecLong & order : the input order (list of strictly positive integers, length must be pmat.NumCols())
+//   - const VecLong & shift : the input shift (list of integers, length must be pmat.NumRows())
 
-// ** generic (uniform shift): just do everything without shifts as would
-// happen generically with the uniform shift; might need assumptions on n
-// divide m, etc
-
-// ** shifted generic: from shift, deduce the pivot degree expected generically
-// and use this as a shift instead of 'shift', then obtain directly Popov
-// approx basis; skipping the first call to find the pivot degree (in addition,
-// will this be more efficient because shift is nicer?)
-
-// ** thresholds:
-//   -- mbasis_resupdate / mbasis_rescomp depending on m/n and nthreads
-//   -- in pmbasis: base case
-
-// ** threads:
-//   -- in mbasis_resupdate
-//   -- in pmbasis?
-
-// ** form of output? currently, it is at least ordered weak Popov
-// --> check if this makes a difference of time when not returning Popov but
-// just minimal, like done in LinBox and in GJV03 and GL14 (implies slightly
-// less permutation work)
-
-// ** return value is pivot degree.
-//   -- Would shifted row degree be more appropriate?
-//   -- Why return rather than input reference?
-//   -- At least in lower level functions, why not modifying directly the input shift?
-
-// iterative version / mbasis: compare different ways of obtaining Popov
-// (recompute with new shift, or maintain normal form)
 
 
 /*------------------------------------------------------------*/
@@ -325,6 +298,47 @@ VecLong pmbasis_generic_onecolumn(
                const long order,
                const VecLong & shift
               );
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TODO                                                       */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+// ** pmbasis: handle different orders via max(order)-order shifting of pmat
+
+// ** generic (uniform shift): just do everything without shifts as would
+// happen generically with the uniform shift; might need assumptions on n
+// divide m, etc
+
+// ** shifted generic: from shift, deduce the pivot degree expected generically
+// and use this as a shift instead of 'shift', then obtain directly Popov
+// approx basis; skipping the first call to find the pivot degree (in addition,
+// will this be more efficient because shift is nicer?)
+
+// ** thresholds:
+//   -- mbasis_resupdate / mbasis_rescomp depending on m/n and nthreads
+//   -- in pmbasis: base case
+
+// ** threads:
+//   -- in mbasis_resupdate
+//   -- in pmbasis?
+
+// ** form of output? currently, it is at least ordered weak Popov
+// --> check if this makes a difference of time when not returning Popov but
+// just minimal, like done in LinBox and in GJV03 and GL14 (implies slightly
+// less permutation work)
+
+// ** return value is pivot degree.
+//   -- Would shifted row degree be more appropriate?
+//   -- Why return rather than input reference?
+//   -- At least in lower level functions, why not modifying directly the input shift?
+
+// iterative version / mbasis: compare different ways of obtaining Popov
+// (recompute with new shift, or maintain normal form)
 
 
 #endif // MAT_LZZ_PX_APPROXIMANT__H

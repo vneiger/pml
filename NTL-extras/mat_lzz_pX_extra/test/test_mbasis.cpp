@@ -59,7 +59,11 @@ int main(int argc, char *argv[])
         long rdim = pmat->NumRows();
         long cdim = pmat->NumCols();
         long d = deg(*pmat);
-        VecLong orders = {d/2, d+1, 2*d};
+        VecLong orders;
+        if (d <= 1)
+            orders = {1, 2, 5}; // recall the order must be (strictly) positive
+        else
+            orders = {d/2,d+1,2*d};
 
         for (long order : orders)
         {
@@ -106,6 +110,9 @@ int main(int argc, char *argv[])
                     std::cout << "--deg =\t" << d << std::endl;
                     std::cout << "--order =\t" << order << std::endl;
                     std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << *pmat << std::endl;
+                    std::cout << appbas << std::endl;
                     return 0;
                 }
 #ifdef VERBOSE
@@ -128,6 +135,9 @@ int main(int argc, char *argv[])
                     std::cout << "--deg =\t" << d << std::endl;
                     std::cout << "--order =\t" << order << std::endl;
                     std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << *pmat << std::endl;
+                    std::cout << appbas << std::endl;
                     return 0;
                 }
 #ifdef VERBOSE
@@ -150,6 +160,9 @@ int main(int argc, char *argv[])
                     std::cout << "--deg =\t" << d << std::endl;
                     std::cout << "--order =\t" << order << std::endl;
                     std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << *pmat << std::endl;
+                    std::cout << appbas << std::endl;
                     return 0;
                 }
 #ifdef VERBOSE
@@ -172,6 +185,9 @@ int main(int argc, char *argv[])
                     std::cout << "--deg =\t" << d << std::endl;
                     std::cout << "--order =\t" << order << std::endl;
                     std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << *pmat << std::endl;
+                    std::cout << appbas << std::endl;
                     return 0;
                 }
 #ifdef VERBOSE
@@ -194,6 +210,9 @@ int main(int argc, char *argv[])
                     std::cout << "--deg =\t" << d << std::endl;
                     std::cout << "--order =\t" << order << std::endl;
                     std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << *pmat << std::endl;
+                    std::cout << appbas << std::endl;
                     return 0;
                 }
 #ifdef VERBOSE
@@ -201,8 +220,8 @@ int main(int argc, char *argv[])
 #endif // VERBOSE
             }
         }
-        return 0;
     }
+    return 0;
 }
 
 // Local Variables:
