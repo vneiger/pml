@@ -28,15 +28,16 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 
 int main(int argc, char *argv[])
 {
-    if (argc!=7)
-        throw std::invalid_argument("Usage: ./test_appbas_mbasis rdim cdim order nbits verify nthreads");
+    if (argc!=8)
+        throw std::invalid_argument("Usage: ./test_appbas_mbasis rdim cdim order nbits verify verbose nthreads");
 
     long rdim = atoi(argv[1]);
     long cdim = atoi(argv[2]);
     long order = atoi(argv[3]);
     long nbits = atoi(argv[4]);
     bool verify = (atoi(argv[5])==1);
-    SetNumThreads(atoi(argv[6]));
+    bool verbose = (atoi(argv[6])==1);
+    SetNumThreads(atoi(argv[7]));
 
     if (nbits==0)
         zz_p::FFTInit(0);
@@ -154,7 +155,8 @@ int main(int argc, char *argv[])
             bool verif1 = is_approximant_basis(appbas1,pmat_copy,1,shift,POPOV,false);
             std::cout << (verif1?"correct":"wrong") << std::endl;
 
-            if (std::max(rdim,cdim)<33) {
+            if (verbose)
+            {
                 Mat<long> degmat;
                 degree_matrix_rowshifted(degmat,appbas1,shift);
                 std::cout << "Print degree matrix of approx basis..." << std::endl;
@@ -187,7 +189,6 @@ int main(int argc, char *argv[])
             t_mbasis /= nb_iter;
             t_mbasisw /= nb_iter;
             std::cout << "Time(mbasis_plain): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
-            //std::cout << "Ratio versus kernel: " << (t_mbasisw/ref_kernel_wall) << ", " << (t_mbasis/ref_kernel) << std::endl;
 
             if (verify)
             {
@@ -197,17 +198,18 @@ int main(int argc, char *argv[])
                 t2w = GetWallTime(); t2 = GetTime();
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+            }
 
-                if (std::max(rdim,cdim)<33) {
-                    Mat<long> degmat;
-                    degree_matrix_rowshifted(degmat,appbas_copy,shift);
-                    std::cout << "Print degree matrix of approx basis..." << std::endl;
-                    std::cout << degmat << std::endl;
-                }
+            if (verbose)
+            {
+                Mat<long> degmat;
+                degree_matrix_rowshifted(degmat,appbas_copy,shift);
+                std::cout << "Print degree matrix of approx basis..." << std::endl;
+                std::cout << degmat << std::endl;
             }
         }
 
-        { // mbasis Vec<Mat<zz_p>> version
+        { // mbasis Vec<Mat<zz_p>> version 1
             if (verify) std::cout << "~~~Testing mbasis_rescomp~~~" << std::endl;
             Mat<zz_pX> appbas_copy, pmat_copy;
             nb_iter=0;
@@ -232,7 +234,6 @@ int main(int argc, char *argv[])
             t_mbasis /= nb_iter;
             t_mbasisw /= nb_iter;
             std::cout << "Time(mbasis_rescomp): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
-            //std::cout << "Ratio versus kernel: " << (t_mbasisw/ref_kernel_wall) << ", " << (t_mbasis/ref_kernel) << std::endl;
 
             if (verify)
             {
@@ -242,17 +243,18 @@ int main(int argc, char *argv[])
                 t2w = GetWallTime(); t2 = GetTime();
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+            }
 
-                if (std::max(rdim,cdim)<33) {
-                    Mat<long> degmat;
-                    degree_matrix_rowshifted(degmat,appbas_copy,shift);
-                    std::cout << "Print degree matrix of approx basis..." << std::endl;
-                    std::cout << degmat << std::endl;
-                }
+            if (verbose)
+            {
+                Mat<long> degmat;
+                degree_matrix_rowshifted(degmat,appbas_copy,shift);
+                std::cout << "Print degree matrix of approx basis..." << std::endl;
+                std::cout << degmat << std::endl;
             }
         }
 
-        { // mbasis Vec<Mat<zz_p>> version, v2
+        { // mbasis Vec<Mat<zz_p>> version v2
             if (verify) std::cout << "~~~Testing mbasis_rescomp_v2~~~" << std::endl;
             Mat<zz_pX> appbas_copy, pmat_copy;
             nb_iter=0;
@@ -277,7 +279,6 @@ int main(int argc, char *argv[])
             t_mbasis /= nb_iter;
             t_mbasisw /= nb_iter;
             std::cout << "Time(mbasis_rescomp_v2): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
-            //std::cout << "Ratio versus kernel: " << (t_mbasisw/ref_kernel_wall) << ", " << (t_mbasis/ref_kernel) << std::endl;
 
             if (verify)
             {
@@ -287,17 +288,18 @@ int main(int argc, char *argv[])
                 t2w = GetWallTime(); t2 = GetTime();
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+            }
 
-                if (std::max(rdim,cdim)<33) {
-                    Mat<long> degmat;
-                    degree_matrix_rowshifted(degmat,appbas_copy,shift);
-                    std::cout << "Print degree matrix of approx basis..." << std::endl;
-                    std::cout << degmat << std::endl;
-                }
+            if (verbose)
+            {
+                Mat<long> degmat;
+                degree_matrix_rowshifted(degmat,appbas_copy,shift);
+                std::cout << "Print degree matrix of approx basis..." << std::endl;
+                std::cout << degmat << std::endl;
             }
         }
 
-        { // mbasis_resupdate
+        { // mbasis_resupdate version 1
             if (verify) std::cout << "~~~Testing mbasis_resupdate~~~" << std::endl;
             Mat<zz_pX> appbas_copy, pmat_copy;
             nb_iter=0;
@@ -322,7 +324,6 @@ int main(int argc, char *argv[])
             t_mbasis /= nb_iter;
             t_mbasisw /= nb_iter;
             std::cout << "Time(mbasis_resupdate): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
-            //std::cout << "Ratio versus kernel: " << (t_mbasisw/ref_kernel_wall) << ", " << (t_mbasis/ref_kernel) << std::endl;
 
             if (verify)
             {
@@ -330,18 +331,19 @@ int main(int argc, char *argv[])
                 bool verif = is_approximant_basis(appbas_copy,pmat_copy,order,shift,ORD_WEAK_POPOV,false);
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+            }
 
-                if (std::max(rdim,cdim)<33) {
-                    Mat<long> degmat;
-                    degree_matrix_rowshifted(degmat,appbas_copy,shift);
-                    std::cout << "Print degree matrix of approx basis..." << std::endl;
-                    std::cout << degmat << std::endl;
-                }
+            if (verbose)
+            {
+                Mat<long> degmat;
+                degree_matrix_rowshifted(degmat,appbas_copy,shift);
+                std::cout << "Print degree matrix of approx basis..." << std::endl;
+                std::cout << degmat << std::endl;
             }
         }
 
         { // mbasis
-            if (verify) std::cout << "~~~Testing mbasis~~~" << std::endl;
+            if (verify) std::cout << "~~~Testing mbasis (thresholds between different algos)~~~" << std::endl;
             Mat<zz_pX> appbas_copy, pmat_copy;
             nb_iter=0;
             double t_mbasisw=0.0, t_mbasis=0.0;
@@ -365,7 +367,6 @@ int main(int argc, char *argv[])
             t_mbasis /= nb_iter;
             t_mbasisw /= nb_iter;
             std::cout << "Time(mbasis): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
-            //std::cout << "Ratio versus kernel: " << (t_mbasisw/ref_kernel_wall) << ", " << (t_mbasis/ref_kernel) << std::endl;
 
             if (verify)
             {
@@ -373,45 +374,16 @@ int main(int argc, char *argv[])
                 bool verif = is_approximant_basis(appbas_copy,pmat_copy,order,shift,ORD_WEAK_POPOV,false);
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+            }
 
-                if (std::max(rdim,cdim)<33) {
-                    Mat<long> degmat;
-                    degree_matrix_rowshifted(degmat,appbas_copy,shift);
-                    std::cout << "Print degree matrix of approx basis..." << std::endl;
-                    std::cout << degmat << std::endl;
-                }
+            if (verbose)
+            {
+                Mat<long> degmat;
+                degree_matrix_rowshifted(degmat,appbas_copy,shift);
+                std::cout << "Print degree matrix of approx basis..." << std::endl;
+                std::cout << degmat << std::endl;
             }
         }
-
-        // mbasis_generic
-        //{
-        //    std::cout << "~~~Testing mbasis_generic~~~" << std::endl;
-        //    std::cout << "WARNING: here coldim must be 1; order must be multiple of rowdim; shift must be uniform" << std::endl;
-        //    t1w = GetWallTime(); t1 = GetTime();
-        //    Mat<zz_pX> appbas;
-        //    pivdeg = mbasis_generic(appbas,pmat,order,shift);
-        //    t2w = GetWallTime(); t2 = GetTime();
-
-        //    std::cout << "Time(mbasis_generic computation): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-        //    std::cout << "Ratio versus kernel: " << ((t2w-t1w)/ref_kernel_wall) << ", " << ((t2-t1)/ref_kernel) << std::endl;
-
-        //    if (verify)
-        //    {
-        //        std::cout << "Verifying Popov approximant basis..." << std::endl;
-        //        t1w = GetWallTime(); t1 = GetTime();
-        //        bool verif = is_approximant_basis(appbas,pmat,order,shift,POPOV,false);
-        //        t2w = GetWallTime(); t2 = GetTime();
-        //        std::cout << (verif?"correct":"wrong") << std::endl;
-        //        std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-
-        //        if (std::max(rdim,cdim)<33) {
-        //            Mat<long> degmat;
-        //            degree_matrix_rowshifted(degmat,appbas,shift);
-        //            std::cout << "Print degree matrix of approx basis..." << std::endl;
-        //            std::cout << degmat << std::endl;
-        //        }
-        //    }
-        //}
 
         { // popov_mbasis
             if (verify) std::cout << "~~~Testing popov_mbasis~~~" << std::endl;
@@ -446,13 +418,14 @@ int main(int argc, char *argv[])
                 bool verif = is_approximant_basis(appbas_copy,pmat_copy,order,shift,ORD_WEAK_POPOV,false);
                 std::cout << (verif?"correct":"wrong") << std::endl;
                 std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
+            }
 
-                if (std::max(rdim,cdim)<33) {
-                    Mat<long> degmat;
-                    degree_matrix_rowshifted(degmat,appbas_copy,shift);
-                    std::cout << "Print degree matrix of approx basis..." << std::endl;
-                    std::cout << degmat << std::endl;
-                }
+            if (verbose)
+            {
+                Mat<long> degmat;
+                degree_matrix_rowshifted(degmat,appbas_copy,shift);
+                std::cout << "Print degree matrix of approx basis..." << std::endl;
+                std::cout << degmat << std::endl;
             }
         }
         std::cout << std::endl;

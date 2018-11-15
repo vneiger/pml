@@ -161,9 +161,10 @@ VecLong popov_appbas_iterative(
 /*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shift)  */
 /*   - Jeannerod-Neiger-Villard 2018 (ensuring s-Popov)       */
 /*------------------------------------------------------------*/
-// input: kerbas is constant, will contain the left kernel of pmat in reduced REF
-// output: pivot degrees of the approx basis (also indicates where the rows of
-// kernel should appear in approx basis)
+// input: kerbas is constant, will contain the left kernel of pmat in reduced
+// row echelon form
+// output: pivot degrees of the approximant basis (also indicates where the
+// rows of kernel should appear in the approximant basis)
 VecLong popov_mbasis1(
                      Mat<zz_p> & kerbas,
                      const Mat<zz_p> & pmat,
@@ -209,16 +210,25 @@ VecLong mbasis_rescomp(
               const VecLong & shift
              );
 
-// here, same function with:
-//   * popov_mbasis1 directly incorporated into the loop, minimizing some
-//   creation/deletion of objects
-//   * some multi-threading inserted
+// same as mbasis_rescomp, with popov_mbasis1 directly incorporated into the
+// loop, minimizing some creation/deletion of objects
 VecLong mbasis_rescomp_v2(
               Mat<zz_pX> & appbas,
               const Mat<zz_pX> & pmat,
               const long order,
               const VecLong & shift
              );
+
+// TODO
+// same as mbasis_rescomp_v2, with some multi-threading inserted (prototype
+// for the moment: not properly tuned and tested)
+VecLong mbasis_rescomp_v2_multithread(
+                                      Mat<zz_pX> & appbas,
+                                      const Mat<zz_pX> & pmat,
+                                      const long order,
+                                      const VecLong & shift
+                                     );
+
 
 // Variant which first converts to vector of constant matrices,
 // performs the computations with this storage, and eventually
