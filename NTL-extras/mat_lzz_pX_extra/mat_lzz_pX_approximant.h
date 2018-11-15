@@ -219,9 +219,8 @@ VecLong mbasis_rescomp_v2(
               const VecLong & shift
              );
 
-// TODO
-// same as mbasis_rescomp_v2, with some multi-threading inserted (prototype
-// for the moment: not properly tuned and tested)
+// same as mbasis_rescomp_v2, with some multi-threading inserted 
+// TODO prototype for the moment: not properly tuned and tested
 VecLong mbasis_rescomp_v2_multithread(
                                       Mat<zz_pX> & appbas,
                                       const Mat<zz_pX> & pmat,
@@ -244,22 +243,30 @@ VecLong mbasis_rescomp_v2_multithread(
 // Assuming cubic matrix multiplication over the field, the third item costs
 // O(m n (m-n) order^2/2) operations
 VecLong mbasis_resupdate(
-                        Mat<zz_pX> & appbas,
-                        const Mat<zz_pX> & pmat,
-                        const long order,
-                        const VecLong & shift
-                       );
+                         Mat<zz_pX> & appbas,
+                         const Mat<zz_pX> & pmat,
+                         const long order,
+                         const VecLong & shift
+                        );
 
-// here, same function with:
-//   * popov_mbasis1 directly incorporated into the loop, minimizing some
-//   creation/deletion of objects
-//   * some multi-threading inserted
+// same as mbasis_resupdate, with popov_mbasis1 directly incorporated into the
+// loop, minimizing some creation/deletion of objects
 VecLong mbasis_resupdate_v2(
-                        Mat<zz_pX> & appbas,
-                        const Mat<zz_pX> & pmat,
-                        const long order,
-                        const VecLong & shift
-                       );
+                            Mat<zz_pX> & appbas,
+                            const Mat<zz_pX> & pmat,
+                            const long order,
+                            const VecLong & shift
+                           );
+
+// same as mbasis_resupdate_v2, with some multi-threading inserted 
+// TODO not implemented
+//VecLong mbasis_resupdate_v2_multithread(
+//                                        Mat<zz_pX> & appbas,
+//                                        const Mat<zz_pX> & pmat,
+//                                        const long order,
+//                                        const VecLong & shift
+//                                       );
+
 
 // main function choosing the most efficient variant depending on parameters
 // warning: may not be the best choice when the shift is not uniform
@@ -268,11 +275,11 @@ VecLong mbasis_resupdate_v2(
 // FIXME -->  mbasis is anyway not the best approach, at least on the paper,
 //            when cdim << rdim and shift is "highly" non-uniform
 inline VecLong mbasis(
-              Mat<zz_pX> & appbas,
-              const Mat<zz_pX> & pmat,
-              const long order,
-              const VecLong & shift
-             )
+                      Mat<zz_pX> & appbas,
+                      const Mat<zz_pX> & pmat,
+                      const long order,
+                      const VecLong & shift
+                     )
 {
     long rdim = pmat.NumRows();
     long cdim = pmat.NumCols();
