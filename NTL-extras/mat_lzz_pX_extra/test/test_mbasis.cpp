@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
     size_t i=0;
     for (auto pmat = test_examples.first.begin(); pmat!= test_examples.first.end(); ++pmat, ++i)
     {
+        std::cout << i << std::endl;
         long rdim = pmat->NumRows();
         long cdim = pmat->NumCols();
         long d = deg(*pmat);

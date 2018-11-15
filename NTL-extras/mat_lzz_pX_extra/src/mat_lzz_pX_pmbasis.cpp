@@ -72,7 +72,11 @@ VecLong popov_mbasis1(
 #endif
     long k = p_kerbas.NumRows();
     if (k==0)
+    {
+        // kerbas is empty
+        kerbas.SetDims(0,m);
         return VecLong(m,1);
+    }
     if (k==m)
     {
         // kerbas should be the identity, same as p_kerbas
@@ -231,9 +235,11 @@ VecLong mbasis_plain(
         }
         else
         {
-            // Exceptional case:  (kerbas.NumRows()==residual.NumRows()) -->
-            // approximant basis is already correct for this order, no need to
-            // change it or to change pivdeg
+            // Exceptional case:  kerbas.NumRows()==residual.NumRows())
+            // --> residual is zero, kerbas is identity
+            // --> approximant basis is already correct for this order, no need
+            // to change it or to change pivdeg
+
             // Find degree of appbas; note that it is a property of this algorithm
             // that deg(appbas) = max(pivot degree) (i.e. max(degree of diagonal
             // entries); this does not hold in general for ordered weak Popov forms
@@ -243,7 +249,7 @@ VecLong mbasis_plain(
             // this is coefficient of degree ord in appbas * pmat
             if (ord<order)
             {
-                clear(residual);
+                // at this point, before the following loop, residual is zero
                 for (long d = std::max<long>(0,ord-deg_pmat); d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
                 {
                     res_coeff1 = coeff(appbas,d);
