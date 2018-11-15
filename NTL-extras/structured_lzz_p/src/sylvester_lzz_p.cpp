@@ -373,7 +373,6 @@ long sylvester_lzz_p::solve_transpose(Vec<zz_p>& out, const Vec<zz_p>& in) const
 
     zz_pX numerA = MulTrunc(FA, revA, deg(a));
     zz_pX numerB = MulTrunc(FB, revB, deg(b));
-    
 
     if (singular == 0)
     {

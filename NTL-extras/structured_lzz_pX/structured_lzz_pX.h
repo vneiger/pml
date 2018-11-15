@@ -420,9 +420,14 @@ public:
     /*------------------------------------------------------------*/
     /* Newton iteration for inverse                               */
     /* assumes M(0) invertible; error otherwise                   */
-    /* return M^-1 mod X^d as a toeplitz_like_minus matrix        */
+    /* return M^-1 mod X^m as a toeplitz_like_minus matrix        */
     /*------------------------------------------------------------*/
-    void newton_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long d) const;
+    void newton_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long m) const;
+
+    /*------------------------------------------------------------*/
+    /*------------------------------------------------------------*/
+    void high_precision_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long m) const;
+
 };
 
 /*------------------------------------------------------------*/

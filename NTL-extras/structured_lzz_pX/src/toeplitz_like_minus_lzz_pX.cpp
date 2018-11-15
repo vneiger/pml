@@ -1,6 +1,7 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/mat_lzz_p.h>
 
+#include "util.h"
 #include "lzz_p_extra.h"
 #include "mat_lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"

@@ -1,6 +1,7 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/mat_lzz_p.h>
 
+#include "util.h"
 #include "lzz_p_extra.h"
 #include "mat_lzz_p_extra.h"
 #include "lzz_pX_middle_product.h"
@@ -403,6 +404,7 @@ void sylvester_lzz_pX::newton_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long m) 
     {
         Error("Degree must be positive in newton_inv_trunc");
     }
+
     sylvester_lzz_p S(a0, b0);
     toeplitz_like_minus_lzz_p iS;
     long r = S.inv(iS);
@@ -429,7 +431,7 @@ void sylvester_lzz_pX::newton_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long m) 
         z = (z - transpose(trunc(V, 2*k))) >> k;           // residual term for V
         iM.mul_right_trunc(y, y, k);
         iM.mul_left_trunc(z, z, k);
-        
+
         G = G - (y << k);
         H = H - (z << k);
 
@@ -447,29 +449,37 @@ void sylvester_lzz_pX::newton_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long m) 
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-void sylvester_lzz_pX::inv_trunc_high_precision(toeplitz_like_minus_lzz_pX& iM, long m) const
+void sylvester_lzz_pX::high_precision_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long m) const
 {
     long dx = max(dAx, dBx);
     newton_inv_trunc(iM, dx+1);
-
+    
     long nb = m / (dx+1);
     if (m > (nb * (dx+1)))
         nb++;
 
     Mat<zz_pX> G = iM.G;            // deg(G) <= dx
     Mat<zz_pX> H = transpose(iM.H); // deg(H) <= dx
-    Mat<zz_pX> Gsol = G;
-    Mat<zz_pX> Hsol = H;
 
-    long r = b.NumRows();
-    long s = b.NumCols();
-    u.SetDims(r, s);
-    for (long a = 0; a < r; a++)
-        for (long c = 0; c < s; c++)
+    Mat <zz_pX> Gsol, Hsol;
+    Gsol.SetDims(n, 2);
+    Hsol.SetDims(n, 2);
+    for (long a = 0; a < n; a++)
+        for (long c = 0; c < 2; c++)
         {
-            u[a][c] = 0;
-            u[a][c].SetMaxLength(prec);
+            Gsol[a][c].SetMaxLength(nb * (dx + 1));
+            Hsol[a][c].SetMaxLength(nb * (dx + 1));
         }
+
+    for (long a = 0; a < n; a++)
+        for (long c = 0; c < 2; c++)
+            for (long k = 0; k <= dx; k++)
+            {
+                SetCoeff(Gsol[a][c], k, coeff(G[a][c], k));
+                SetCoeff(Hsol[a][c], k, coeff(H[c][a], k));
+            }
+
+    long shift = dx + 1;
 
     for (long i = 1; i < nb; i++)
     {
@@ -478,24 +488,23 @@ void sylvester_lzz_pX::inv_trunc_high_precision(toeplitz_like_minus_lzz_pX& iM, 
         mul_left(z, H);   // deg(H) <= d so deg(z) <= 2d
         y = y >> (dx+1);           // U is zero at this precision
         z = z >> (dx+1);           // V is zero at this precision
+
         iM.mul_right_trunc(y, y, dx+1);
         iM.mul_left_trunc(z, z, dx+1);
-
-        // multA->multiply(upper, sol);
-        // upper = upper >> lenA;
-        for (long a = 0; a < r; a++)
-            for (long c = 0; c < s; c++)
-                for (long k = 0; k <= dA; k++)
-                    SetCoeff(upper[a][c], k, coeff(b[a][c], k + shift) - coeff(upper[a][c], k));
-        multI->multiply(sol, upper);
-        trunc(sol, sol, lenA);
-        for (long a = 0; a < r; a++)
-            for (long c = 0; c < s; c++)
-                for (long k = 0; k <= dA; k++)
-                    SetCoeff(u[a][c], k + shift, coeff(sol[a][c], k));
-
+        G = -y;
+        H = -z;
+        for (long a = 0; a < n; a++)
+            for (long c = 0; c < 2; c++)
+                for (long k = 0; k <= dx; k++)
+                {
+                    SetCoeff(Gsol[a][c], k + shift, coeff(G[a][c], k));
+                    SetCoeff(Hsol[a][c], k + shift, coeff(H[c][a], k));
+                }
+        shift += dx + 1;
     }
-    trunc(u, u, prec);
+    trunc(Gsol, Gsol, m);
+    trunc(Hsol, Hsol, m);
+    iM = toeplitz_like_minus_lzz_pX(Gsol, Hsol);
 }
 
 
