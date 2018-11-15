@@ -304,11 +304,12 @@ VecLong mbasis_rescomp(
     // degree of approximant basis, initially zero
     long deg_appbas = 0;
     // shifted row degree of appbas, initially equal to shift
-    VecLong rdeg(shift);
+    VecLong srdeg(shift);
     // pivot degree of appbas, initially zero
-    // (note that along this algorithm we have pivdeg+shift = rdeg, entrywise,
+    // (note that along this algorithm we have pivdeg+shift = srdeg, entrywise,
     // since we will compute appbas in ordered weak Popov form)
     VecLong pivdeg(nrows);
+    VecLong rdeg(nrows); // the actual rdeg
 
     // C. Residual matrix (nrows x ncols constant matrix, next coefficient
     // of appbas * pmat which we want to annihilate)
@@ -341,7 +342,7 @@ VecLong mbasis_rescomp(
     VecLong p_pivind(nrows-1);
 
     // D.3 permutation which stable-sorts the shift, used at the base case
-    VecLong p_rdeg;
+    VecLong p_srdeg;
 
     // D.4 the constant kernel, and its permuted version
     Mat<zz_p> kerbas;
@@ -357,23 +358,26 @@ VecLong mbasis_rescomp(
 
     for (long ord = 1; ord <= order; ++ord)
     {
+        std::cout << "Iteration " << ord << std::endl;
+        std::cout << "Appbas:" << std::endl << conv(coeffs_appbas) << std::endl;
+        std::cout << "Residual:" << std::endl << residuals << std::endl;
 #ifdef MBASIS_PROFILE
         t_now = GetWallTime();
 #endif
-        // compute permutation which realizes stable sort of rdeg
+        // compute permutation which realizes stable sort of srdeg
         // --> we need to permute things, to take into account the "priority"
         // (i.e. "weights") indicated by the shift; at this stage, the input
-        // shift is the shift-row degree 'rdeg' of appbas
-        p_rdeg = iota;
-        stable_sort(p_rdeg.begin(), p_rdeg.end(),
+        // shift is the shift-row degree 'srdeg' of appbas
+        p_srdeg = iota;
+        stable_sort(p_srdeg.begin(), p_srdeg.end(),
                     [&](const long& a, const long& b)->bool
                     {
-                    return (rdeg[a] < rdeg[b]);
+                    return (srdeg[a] < srdeg[b]);
                     } );
 
         // permute rows of the residual accordingly
         for (long i = 0; i < nrows; ++i)
-            p_residual[i].swap(residuals[p_rdeg[i]]);
+            p_residual[i].swap(residuals[p_srdeg[i]]);
         // content of residual has been changed --> let's make it zero
         // (already the case if ord==1, since residual is then the former p_residual which was zero)
         if (ord>1)
@@ -398,7 +402,7 @@ VecLong mbasis_rescomp(
             // --> no need to compute more: the final basis is X^(order-ord+1)*coeffs_appbas
             appbas = conv(coeffs_appbas);
             appbas <<= (order-ord+1);
-            std::for_each(pivdeg.begin(), pivdeg.end(), [&order,&ord](long& a) { a+=order-ord+1; });
+            std::for_each(pivdeg.begin(), pivdeg.end(), [&](long& a) { a+=order-ord+1; });
             return pivdeg;
         }
 
@@ -415,7 +419,6 @@ VecLong mbasis_rescomp(
 #ifdef MBASIS_PROFILE
                 t_now = GetWallTime();
 #endif
-                // TODO make this parallel as below
                 for (long d = std::max<long>(0,ord-coeffs_pmat.length()+1); d <= deg_appbas; ++d)
                 {
                     mul(res_coeff, coeffs_appbas[d], coeffs_pmat[ord-d]);
@@ -455,7 +458,7 @@ VecLong mbasis_rescomp(
             // (note that before this loop, is_pivind is filled with 'false')
             for (long i = 0; i < ker_dim; ++i)
             {
-                pivind[i] = p_rdeg[p_pivind[i]];
+                pivind[i] = p_srdeg[p_pivind[i]];
                 is_pivind[pivind[i]] = true;
             }
 
@@ -473,7 +476,7 @@ VecLong mbasis_rescomp(
             kerbas.SetDims(ker_dim,nrows);
             for (long i = 0; i < ker_dim; ++i)
                 for (long j = 0; j < nrows; ++j)
-                    kerbas[i][p_rdeg[j]] = p_kerbas[perm_rows_ker[i]][j];
+                    kerbas[i][p_srdeg[j]] = p_kerbas[perm_rows_ker[i]][j];
 #ifdef MBASIS_PROFILE
             t_others += GetWallTime()-t_now;
             t_now = GetWallTime();
@@ -484,15 +487,18 @@ VecLong mbasis_rescomp(
             for (long i = 0; i < nrows; ++i)
                 if (not is_pivind[i])
                 {
-                    ++rdeg[i];
+                    ++srdeg[i];
                     ++pivdeg[i];
+                    ++rdeg[i];
                 }
 
             // Deduce the degree of appbas; it is a property of this algorithm
             // that deg(appbas) = max(pivot degree) (i.e. max(degree of
             // diagonal entries); this does not hold in general for shifted
             // ordered weak Popov approximant bases
-            deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
+            std::cout << "Old degree: " << rdeg[0] << "  " << rdeg[1];
+            deg_appbas = *std::max_element(rdeg.begin(), rdeg.end());
+            std::cout << "New degree: " << rdeg[0] << "  " << rdeg[1] << std::endl;
             // this new degree is either unchanged (== coeffs_appbas.length()-1),
             // or is the old one + 1 (== coeffs_appbas.length())
             if (deg_appbas==coeffs_appbas.length())
@@ -515,6 +521,12 @@ VecLong mbasis_rescomp(
                 for (long i = 0; i < ker_dim; ++i)
                     coeffs_appbas[d][pivind[perm_rows_ker[i]]].swap(kerapp[i]);
             }
+            if(ord==4)
+            {
+                std::cout << "Appbas after kerbas mul:" << std::endl;
+                std::cout << conv(coeffs_appbas) << std::endl;
+                std::cout << deg_appbas << std::endl;
+            }
 
             // rows with !is_pivind are multiplied by X (note: these rows have
             // degree less than deg_appbas)
@@ -523,6 +535,12 @@ VecLong mbasis_rescomp(
                     if (not is_pivind[i])
                         coeffs_appbas[d+1][i].swap(coeffs_appbas[d][i]);
             // Note: after this, the row coeffs_appbas[0][i] is zero
+            if(ord==4)
+            {
+                std::cout << "Appbas after swap:" << std::endl;
+                std::cout << conv(coeffs_appbas) << std::endl;
+                std::cout << deg_appbas << std::endl;
+            }
 #ifdef MBASIS_PROFILE
             t_appbas += GetWallTime()-t_now;
             t_now = GetWallTime();

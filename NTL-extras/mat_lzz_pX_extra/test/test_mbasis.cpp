@@ -42,6 +42,35 @@ int main(int argc, char *argv[])
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
+    {
+        zz_p::init(3);
+        Mat<zz_pX> pmat;
+        pmat.SetDims(2,1);
+        SetCoeff(pmat[0][0], 0, 1);
+        SetCoeff(pmat[0][0], 2, 2);
+        SetCoeff(pmat[1][0], 1, 2);
+        SetCoeff(pmat[1][0], 2, 1);
+        SetCoeff(pmat[1][0], 3, 1);
+
+        VecLong shift = {0,1};
+
+        std::cout << "Input matrix:" << std::endl;
+        std::cout << pmat << std::endl;
+        std::cout << "Input shift:" << std::endl;
+        std::cout << shift << std::endl;
+        std::cout << "Working modulo 3, at order 4" << std::endl;
+
+        Mat<zz_pX> appbas;
+        VecLong ddd = mbasis_rescomp(appbas,pmat,4,shift);
+        if (not is_approximant_basis(appbas,pmat,4,shift,ORD_WEAK_POPOV,true))
+            std::cout << "WRONG" << std::endl;
+        else
+            std::cout << "CORRECT" << std::endl;
+        
+        std::cout << appbas << std::endl;
+        return 0;
+    }
+
     // build couple (test_matrices, test_shifts)
     std::pair<std::vector<Mat<zz_pX>>, std::vector<std::vector<VecLong>>>
     test_examples = build_test_examples();
