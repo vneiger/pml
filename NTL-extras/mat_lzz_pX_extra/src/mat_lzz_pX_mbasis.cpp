@@ -1283,8 +1283,8 @@ VecLong mbasis_resupdate_v2(
     // in this version "resupdate", this will be our residual
     Vec<Mat<zz_p>> residuals = conv(pmat,order);
 
-    // C.2 temporary matrices used during the computation of residuals[i]
-    Mat<zz_p> res_coeff;
+    // C.2 temporary matrices used during the update of residuals: kernel * residual
+    Mat<zz_p> kerres;
 
     // C.3 permuted residual, used as input to the kernel at the "base case"
     Mat<zz_p> p_residual;
@@ -1475,9 +1475,9 @@ VecLong mbasis_resupdate_v2(
             // kerbas*residuals
             for (long d = ord; d < order; ++d)
             {
-                kerapp = kerbas * residuals[d];
+                kerres = kerbas * residuals[d];
                 for (long i = 0; i < ker_dim; ++i)
-                    residuals[d][pivind[perm_rows_ker[i]]].swap(kerapp[i]);
+                    residuals[d][pivind[perm_rows_ker[i]]].swap(kerres[i]);
             }
 
             // rows with !is_pivind are multiplied by X
