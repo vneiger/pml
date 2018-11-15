@@ -191,43 +191,6 @@ void gen_pows (Vec<zz_pX> &pow, Vec<zz_pX>&upper,
 }
 
 /*------------------------------------------------------------*/
-/* computes the matrices for evaluation and interpolation     */
-/*------------------------------------------------------------*/
-/*
-void vandermonde(Mat<zz_p>& small_vdm1, Mat<zz_p>& small_vdm2, Mat<zz_p>& inv_vdm, long d1, long d2)
-{
-    long s1 = d1 + 1;
-    long s2 = d2 + 1;
-    long d = d1 + d2;
-    long nb_points = d + 1;
-    
-    Vec<zz_p> points;
-    points.SetLength(nb_points);
-    small_vdm1.SetDims(nb_points, s1);
-    small_vdm2.SetDims(nb_points, s2);
-    
-    Mat<zz_p> vdm;
-    vdm.SetDims(nb_points, nb_points);
-    
-    for (long i = 0; i < nb_points; i++)
-    {
-        zz_p p1 = to_zz_p(i);
-        zz_p tmp = to_zz_p(1);
-        for (long j = 0; j < nb_points; j++)
-        {
-            vdm[i][j] = tmp;
-            if (j < s1)
-                small_vdm1[i][j] = tmp;
-            if (j < s2)
-                small_vdm2[i][j] = tmp;
-            tmp *= p1;
-        }
-    }
-    inv(inv_vdm, vdm);
-}
-*/
-
-/*------------------------------------------------------------*/
 /* matrix multiplication using the algorithm of Giorgi et al. */
 /* uses matrix multiplication for evaluation and interpolation*/
 /*------------------------------------------------------------*/
