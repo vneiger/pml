@@ -8,8 +8,12 @@
 
 #include "mat_lzz_pX_extra.h"
 
-//#define MBASIS1_PROFILE // FIXME
-//#define MBASIS_PROFILE // FIXME
+//#define MBASIS1_PROFILE
+//#define MBASIS_PROFILE
+//#define PMBASIS_PROFILE
+
+NTL_CLIENT
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -1204,6 +1208,113 @@ VecLong popov_mbasis(
     mul(appbas,lmat,appbas);
     return pivdeg;
 }
+
+
+
+
+/*------------------------------------------------------------*/
+/* Divide and Conquer: PMBasis                                */
+/*------------------------------------------------------------*/
+VecLong pmbasis(
+               Mat<zz_pX> & appbas,
+               const Mat<zz_pX> & pmat,
+               const long order,
+               const VecLong & shift
+              )
+{
+#ifdef PMBASIS_PROFILE
+    std::cout << "\t";
+    std::cout << order << ",";
+    double t1,t2;
+#endif
+#ifdef PMBASIS_PROFILE
+    if (order <= 16) // TODO thresholds to be determined
+    {
+        t1 = GetWallTime();
+        VecLong rdeg = mbasis(appbas,pmat,order,shift);
+        t2 = GetWallTime();
+        std::cout << "\tTime(base-case): " << (t2-t1) << "s" << std::endl;
+        return rdeg;
+    }
+#else
+    if (order <= 16) // TODO thresholds to be determined
+        return mbasis(appbas,pmat,order,shift);
+#endif
+    VecLong pivdeg; // pivot degree, first call
+    VecLong pivdeg2; // pivot degree, second call
+    VecLong rdeg(pmat.NumRows()); // shifted row degree
+    long order1 = order>>1; // order of first call
+    long order2 = order-order1; // order of second call
+    Mat<zz_pX> trunc_pmat; // truncated pmat for first call
+    Mat<zz_pX> appbas2; // basis for second call
+    Mat<zz_pX> residual; // for the residual
+
+    // first recursive call, with 'pmat' and 'shift'
+#ifdef PMBASIS_PROFILE
+    t1 = GetWallTime();
+#endif
+    trunc(trunc_pmat,pmat,order1);
+    pivdeg = pmbasis(appbas,trunc_pmat,order1,shift);
+
+    // shifted row degree = shift for second call = pivdeg+shift
+    std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
+
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(first-call): " << (t2-t1) << "s" << std::endl;
+    t1 = GetWallTime();
+#endif
+    // residual = (appbas * pmat * X^-order1) mod X^order2
+    middle_product(residual, appbas, pmat, order1, order2-1);
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(middle-prod): " << (t2-t1) << "s" << std::endl;
+    t1 = GetWallTime();
+#endif
+
+    // second recursive call, with 'residual' and 'rdeg'
+    pivdeg2 = pmbasis(appbas2,residual,order2,rdeg);
+
+    // final basis = appbas2 * appbas
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(second-call): " << (t2-t1) << "s" << std::endl;
+    t1 = GetWallTime();
+#endif
+    multiply(appbas,appbas2,appbas);
+#ifdef PMBASIS_PROFILE
+    t2 = GetWallTime();
+    std::cout << "\tTime(basis-mul): " << (t2-t1) << "s" << std::endl;
+#endif
+
+    // final pivot degree = pivdeg1+pivdeg2
+    std::transform(pivdeg.begin(), pivdeg.end(), pivdeg2.begin(), pivdeg.begin(), std::plus<long>());
+
+    return pivdeg;
+}
+
+/*------------------------------------------------------------*/
+/* Divide and Conquer: PMBasis returning Popov                */
+/*------------------------------------------------------------*/
+VecLong popov_pmbasis(
+                     Mat<zz_pX> &appbas,
+                     const Mat<zz_pX> & pmat,
+                     const long order,
+                     const VecLong & shift
+                    )
+{
+    VecLong pivdeg = pmbasis(appbas,pmat,order,shift);
+    VecLong new_shift( pivdeg );
+    std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
+    clear(appbas);
+    pmbasis(appbas,pmat,order,new_shift);
+    Mat<zz_p> lmat;
+    row_leading_matrix(lmat, appbas, new_shift);
+    inv(lmat, lmat);
+    mul(appbas,lmat,appbas);
+    return pivdeg;
+}
+
 
 // Local Variables:
 // mode: C++

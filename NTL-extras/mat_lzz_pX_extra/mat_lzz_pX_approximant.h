@@ -303,24 +303,23 @@ VecLong popov_pmbasis(
                      const VecLong & shift
                     );
 
+
+
+
+
+
 /*------------------------------------------------------------*/
-/* FIXME in progress: MBASIS/PMBASIS, generic case            */
+/* FIXME in progress: MBASIS/PMBASIS, generic case, one column            */
 /*------------------------------------------------------------*/
 
-VecLong popov_mbasis1_generic(
-                     Mat<zz_p> & kerbas,
-                     const Mat<zz_p> & pmat,
-                     const VecLong & shift
-                    );
-
-VecLong mbasis_generic(
+VecLong mbasis_generic_onecolumn(
                      Mat<zz_pX> & appbas,
                      const Mat<zz_pX> & pmat,
                      const long order,
                      const VecLong & shift
                     );
 
-VecLong pmbasis_generic(
+VecLong pmbasis_generic_onecolumn(
                Mat<zz_pX> & appbas,
                const Mat<zz_pX> & pmat,
                const long order,
