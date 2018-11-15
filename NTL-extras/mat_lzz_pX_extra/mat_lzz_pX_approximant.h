@@ -210,24 +210,14 @@ VecLong mbasis_rescomp(
               const VecLong & shift
              );
 
-// same as mbasis_rescomp, with popov_mbasis1 directly incorporated into the
-// loop, minimizing some creation/deletion of objects
-VecLong mbasis_rescomp_v2(
-              Mat<zz_pX> & appbas,
-              const Mat<zz_pX> & pmat,
-              const long order,
-              const VecLong & shift
-             );
-
-// same as mbasis_rescomp_v2, with some multi-threading inserted 
+// same as mbasis_rescomp, with some multi-threading inserted 
 // TODO prototype for the moment: not properly tuned and tested
-VecLong mbasis_rescomp_v2_multithread(
-                                      Mat<zz_pX> & appbas,
-                                      const Mat<zz_pX> & pmat,
-                                      const long order,
-                                      const VecLong & shift
-                                     );
-
+VecLong mbasis_rescomp_multithread(
+                                   Mat<zz_pX> & appbas,
+                                   const Mat<zz_pX> & pmat,
+                                   const long order,
+                                   const VecLong & shift
+                                  );
 
 // Variant which first converts to vector of constant matrices,
 // performs the computations with this storage, and eventually
@@ -249,18 +239,9 @@ VecLong mbasis_resupdate(
                          const VecLong & shift
                         );
 
-// same as mbasis_resupdate, with popov_mbasis1 directly incorporated into the
-// loop, minimizing some creation/deletion of objects
-VecLong mbasis_resupdate_v2(
-                            Mat<zz_pX> & appbas,
-                            const Mat<zz_pX> & pmat,
-                            const long order,
-                            const VecLong & shift
-                           );
-
-// same as mbasis_resupdate_v2, with some multi-threading inserted 
+// same as mbasis_resupdate, with some multi-threading inserted 
 // TODO not implemented
-//VecLong mbasis_resupdate_v2_multithread(
+//VecLong mbasis_resupdate_multithread(
 //                                        Mat<zz_pX> & appbas,
 //                                        const Mat<zz_pX> & pmat,
 //                                        const long order,
