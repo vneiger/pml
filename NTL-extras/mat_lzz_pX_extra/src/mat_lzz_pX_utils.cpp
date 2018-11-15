@@ -57,7 +57,7 @@ long IsZero(const Vec<zz_pX> & vec)
 long IsZero(const Mat<zz_pX> & pmat)
 {
     for (long i = 0; i < pmat.NumRows(); ++i)
-        for (long j = 0; j < pmat.NumRows(); ++j)
+        for (long j = 0; j < pmat.NumCols(); ++j)
             if (!IsZero(pmat[i][j]))
                 return 0;
     return 1;
@@ -90,12 +90,12 @@ long IsIdent(const Mat<zz_pX> & pmat, long dim)
     if (pmat.NumRows() != dim || pmat.NumCols() != dim)
         return 0;
 
-    for (long i = 0; i < pmat.NumRows(); ++i)
-        for (long j = 0; j < pmat.NumCols(); ++j)
+    for (long i = 0; i < dim; ++i)
+        for (long j = 0; j < dim; ++j)
         {
-            if (i == j && ! IsOne(pmat[i][j]))
+            if (i == j && !IsOne(pmat[i][j]))
                 return 0;
-            if (i != j && ! IsZero(pmat[i][j]))
+            if (i != j && !IsZero(pmat[i][j]))
                 return 0;
         }
     return 1;

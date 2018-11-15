@@ -32,7 +32,7 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 int main(int argc, char *argv[])
 {
     if (argc!=3)
-        throw std::invalid_argument("Usage: ./test_appbas_mbasis nbits nthreads");
+        throw std::invalid_argument("Usage: ./test_mbasis nbits nthreads");
 
     long nbits = atoi(argv[1]);
     SetNumThreads(atoi(argv[2]));
@@ -49,8 +49,6 @@ int main(int argc, char *argv[])
     std::cout << "Testing approximant basis computation (mbasis)." << std::endl;
     std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
     std::cout << "--nthreads =\t" << AvailableThreads() << std::endl;
-
-    warmup();
 
     VecLong pivdeg; 
     Mat<zz_pX> appbas;
