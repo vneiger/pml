@@ -191,43 +191,6 @@ void gen_pows (Vec<zz_pX> &pow, Vec<zz_pX>&upper,
 }
 
 /*------------------------------------------------------------*/
-/* computes the matrices for evaluation and interpolation     */
-/*------------------------------------------------------------*/
-/*
-void vandermonde(Mat<zz_p>& small_vdm1, Mat<zz_p>& small_vdm2, Mat<zz_p>& inv_vdm, long d1, long d2)
-{
-    long s1 = d1 + 1;
-    long s2 = d2 + 1;
-    long d = d1 + d2;
-    long nb_points = d + 1;
-    
-    Vec<zz_p> points;
-    points.SetLength(nb_points);
-    small_vdm1.SetDims(nb_points, s1);
-    small_vdm2.SetDims(nb_points, s2);
-    
-    Mat<zz_p> vdm;
-    vdm.SetDims(nb_points, nb_points);
-    
-    for (long i = 0; i < nb_points; i++)
-    {
-        zz_p p1 = to_zz_p(i);
-        zz_p tmp = to_zz_p(1);
-        for (long j = 0; j < nb_points; j++)
-        {
-            vdm[i][j] = tmp;
-            if (j < s1)
-                small_vdm1[i][j] = tmp;
-            if (j < s2)
-                small_vdm2[i][j] = tmp;
-            tmp *= p1;
-        }
-    }
-    inv(inv_vdm, vdm);
-}
-*/
-
-/*------------------------------------------------------------*/
 /* matrix multiplication using the algorithm of Giorgi et al. */
 /* uses matrix multiplication for evaluation and interpolation*/
 /*------------------------------------------------------------*/
@@ -591,7 +554,7 @@ void format (Vec<Mat<zz_p>> &res, const Vec<Coeffs> &coeffs, const long d, const
     }
 }
 
-
+/*
 void get_first_row (Coeffs &res,
                     const zz_pX &a,
                     const zz_pX &g,
@@ -642,6 +605,57 @@ void get_first_row (Coeffs &res,
         }
     cout << "-rest from row1: " << GetWallTime() - t1 << endl;
 }
+*/
+
+void get_first_row (Coeffs &res,
+                    const zz_pX &t,
+                    const zz_pX &a,
+                    const zz_pX &g,
+                    const long m)
+{
+    const long n = deg(g);
+    const long d = 2*ceil((n*1.0)/m)+1;
+    const long sqrt_d = ceil(sqrt(d));
+    
+    Vec<zz_pX> alphas, As;
+    
+    double t0, t1;
+    
+    t1 = GetWallTime();
+    t0 = GetWallTime();
+    Vec<zz_pX> upper;
+    cout << "-enter pows\n";
+    gen_pows(alphas, upper, t, a, 1, g, sqrt_d, 0);
+    cout << "pow1: " << GetWallTime() - t1 << endl;
+    t1 = GetWallTime();
+    gen_pows(As, upper, zz_pX(1), a, sqrt_d, g, sqrt_d, 1);
+    cout << "pow2: " << GetWallTime() - t1 << endl;
+    cout << "-total pow: " << GetWallTime() - t0 << endl;
+
+    t1 = GetWallTime();
+    Mat<zz_pX> quos;
+    get_quos(quos, alphas, As, upper, g, m);
+    cout << "-total quos: " << GetWallTime() - t1 << endl;
+
+    t1 = GetWallTime();
+    SetDims(res, sqrt_d, sqrt_d, 2*m);
+    zz_pX g_trunc;
+    trunc(g_trunc,g,2*m);
+    for (long u = 0; u < sqrt_d; u++)
+        for (long v = 0; v < sqrt_d; v++)
+        {
+            zz_pX rem1, rem2;
+            auto alpha_trunc = trunc(alphas[u],2*m);
+            auto A_trunc = trunc(As[v],2*m);
+            auto quo_trunc = trunc(quos[u][v],2*m);
+            MulTrunc(rem1, alpha_trunc, A_trunc, 2*m);
+            MulTrunc(rem2, quo_trunc, g_trunc, 2*m);
+            rem1 = rem1 - rem2;
+            for (long s = 0; s < 2*m; s++)
+                res[u][v][s] = coeff(rem1,s);
+        }
+    cout << "-rest from row1: " << GetWallTime() - t1 << endl;
+}
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -659,7 +673,9 @@ void get_coeffs (Vec<Mat<zz_p>> &mats, Vec<Coeffs> &res,
     
     t = GetWallTime();
     res.SetLength(m);
-    get_first_row(res[0],a,g,m);
+		zz_pX x_poly;
+		SetCoeff(x_poly, m-1, zz_p(1));
+    get_first_row(res[0],x_poly,a,g,m);
     cout << "--all first row: " << GetWallTime() - t << endl;
     
     t = GetWallTime();
@@ -873,20 +889,30 @@ int main(int argc, char *argv[])
         // make Sb
         Vec<Mat<zz_p>> Sb;
         Sb.SetLength(2*d + 1);
-        zz_pX running = b;
         
+				Coeffs coeffs;
+        get_first_row(coeffs,b,a,g,m);
+
+				long row = 0;
+				long col = 0;
         for (long i = 0; i < 2*d+1; i++)
         {
-            auto temp = trunc(running,m);
+            auto &temp = coeffs[row][col];
             Sb[Sb.length() - 1 - i].SetDims(m,1);
-            for (long j = 0; j <= deg(temp); j++)
-                Sb[Sb.length() - 1 - i][j][0] = coeff(temp,j);
-            running = a*running % g;
+            for (long j = 0; j < m; j++)
+                Sb[Sb.length() - 1 - i][j][0] = temp[j];
+						row++;
+						if (row == coeffs.length())
+						{
+							row = 0;
+							col++;
+						}
         }
-        t2 = GetWallTime();
+				t2 = GetWallTime();
         std::cout << "TIME ~~ compute rhs sequence: " << (t2-t1) << endl;
         t_charpoly += t2-t1;
         
+				
         t1 = GetWallTime();
 
         // convert the sequence into a polynomial matrix
@@ -936,9 +962,10 @@ int main(int argc, char *argv[])
             for (long j = 0; j < m-1; j++)
                 sysmat[i+1][j] = appbas[i+1][j+2];
                 
-        cout << "sysmat: " << degree_matrix(sysmat) << endl;
+        //cout << "sysmat: " << degree_matrix(sysmat) << endl;
         
-        Mat<zz_pX> kerbas1;
+        /*
+				Mat<zz_pX> kerbas1;
         shift = VecLong(m+1, d);
         shift[0] += m*d;
         kernel_basis_zls_via_interpolation(kerbas1, sysmat, shift);
@@ -947,12 +974,13 @@ int main(int argc, char *argv[])
         Mat<zz_pX> test_temp;
         multiply(test_temp, kerbas1,sysmat);
         cout << "test_temp: " << degree_matrix(test_temp) << endl;
-        
+        */
+
         Mat<zz_pX> kerbas;
         shift = VecLong(m+1, 0);
         shift[0] += m*d;
         pmbasis(kerbas, sysmat, m*d, shift);
-        cout << "kernel: " << degree_matrix(kerbas) << endl;
+       // cout << "kernel: " << degree_matrix(kerbas) << endl;
         
         zz_pX h = appbas[0][1];
         for (long i = 0; i < m; i++)
@@ -974,15 +1002,10 @@ int main(int argc, char *argv[])
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

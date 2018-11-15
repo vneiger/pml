@@ -5,8 +5,6 @@
 #include <NTL/lzz_pX.h>
 #include <iostream>
 #include <vector> // std vector, for shifts, degrees, pivot indices
-#include <memory> // for std::unique_ptr
-#include <algorithm>
 
 #include "lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
@@ -17,29 +15,21 @@
 
 typedef std::vector<long> VecLong;
 
-#include "mat_lzz_pX_utils.h"
-#include "mat_lzz_pX_forms.h"
-#include "mat_lzz_pX_arith.h"
-#include "mat_lzz_pX_linearization.h"
-#include "mat_lzz_pX_multiply.h"
-#include "mat_lzz_pX_inverse.h"
-#include "mat_lzz_pX_linsolve.h"
-#include "mat_lzz_pX_approximant.h"
-#include "mat_lzz_pX_interpolant.h"
-#include "mat_lzz_pX_kernel.h"
+#include "mat_lzz_pX_utils.h"  // TODO: test
+#include "mat_lzz_pX_forms.h"  // TODO: test, time
+#include "mat_lzz_pX_arith.h"  // TODO: test, time
+#include "mat_lzz_pX_linearization.h"  // TODO: still draft
+#include "mat_lzz_pX_multiply.h"  // TODO: check if anything todo
+#include "mat_lzz_pX_inverse.h"  // TODO: check if anything todo
+#include "mat_lzz_pX_linsolve.h"  // TODO: check if anything todo
+#include "mat_lzz_pX_approximant.h"  // TODO: improve, test, time
+#include "mat_lzz_pX_interpolant.h"  // TODO: still draft
+#include "mat_lzz_pX_kernel.h"  // TODO: still draft
 
 NTL_CLIENT
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* UTILS                                                      */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* in-place reduction modulo the current prime                */
-/*------------------------------------------------------------*/
-void reduce_mod_p(Mat<zz_pX> & a);
+// TODO in the future, these functions will be moved to "linearization/compression" files
 
 
 /*------------------------------------------------------------*/
@@ -88,15 +78,6 @@ inline Mat<zz_pX> collapse_nonconsecutive_columns(const Mat<zz_pX>& a, long d, l
     return c;
 }
 
-
-
-/*------------------------------------------------------------*/
-/* multipoint evaluation for matrices                         */
-/*------------------------------------------------------------*/
-// TODO seems unused for the moment
-void matrix_evaluate (Vec<Mat<zz_p>> &evals,
-                      const Mat<zz_pX> &pmat,
-                      const zz_pX_Multipoint &ev);
 
 
 /*------------------------------------------------------------*/

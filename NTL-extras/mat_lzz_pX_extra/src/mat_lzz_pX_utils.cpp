@@ -382,6 +382,7 @@ void reverse(
                 reverse(x[r][s], a[r][s], hi[s]);
 }
 
+
 /*------------------------------------------------------------*/
 /* evaluate at a given point                                  */
 /*------------------------------------------------------------*/
@@ -392,7 +393,6 @@ void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt)
         for (long j = 0; j < pmat.NumCols(); ++j)
             eval(evmat[i][j], pmat[i][j], pt);
 }
-
 
 
 /*------------------------------------------------------------*/

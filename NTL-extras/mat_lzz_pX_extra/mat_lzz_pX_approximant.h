@@ -161,9 +161,10 @@ VecLong popov_appbas_iterative(
 /*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shift)  */
 /*   - Jeannerod-Neiger-Villard 2018 (ensuring s-Popov)       */
 /*------------------------------------------------------------*/
-// input: kerbas is constant, will contain the left kernel of pmat in reduced REF
-// output: pivot degrees of the approx basis (also indicates where the rows of
-// kernel should appear in approx basis)
+// input: kerbas is constant, will contain the left kernel of pmat in reduced
+// row echelon form
+// output: pivot degrees of the approximant basis (also indicates where the
+// rows of kernel should appear in the approximant basis)
 VecLong popov_mbasis1(
                      Mat<zz_p> & kerbas,
                      const Mat<zz_p> & pmat,
@@ -209,16 +210,14 @@ VecLong mbasis_rescomp(
               const VecLong & shift
              );
 
-// here, same function with:
-//   * popov_mbasis1 directly incorporated into the loop, minimizing some
-//   creation/deletion of objects
-//   * some multi-threading inserted
-VecLong mbasis_rescomp_v2(
-              Mat<zz_pX> & appbas,
-              const Mat<zz_pX> & pmat,
-              const long order,
-              const VecLong & shift
-             );
+// same as mbasis_rescomp, with some multi-threading inserted 
+// TODO prototype for the moment: not properly tuned and tested
+VecLong mbasis_rescomp_multithread(
+                                   Mat<zz_pX> & appbas,
+                                   const Mat<zz_pX> & pmat,
+                                   const long order,
+                                   const VecLong & shift
+                                  );
 
 // Variant which first converts to vector of constant matrices,
 // performs the computations with this storage, and eventually
@@ -234,22 +233,21 @@ VecLong mbasis_rescomp_v2(
 // Assuming cubic matrix multiplication over the field, the third item costs
 // O(m n (m-n) order^2/2) operations
 VecLong mbasis_resupdate(
-                        Mat<zz_pX> & appbas,
-                        const Mat<zz_pX> & pmat,
-                        const long order,
-                        const VecLong & shift
-                       );
+                         Mat<zz_pX> & appbas,
+                         const Mat<zz_pX> & pmat,
+                         const long order,
+                         const VecLong & shift
+                        );
 
-// here, same function with:
-//   * popov_mbasis1 directly incorporated into the loop, minimizing some
-//   creation/deletion of objects
-//   * some multi-threading inserted
-VecLong mbasis_resupdate_v2(
-                        Mat<zz_pX> & appbas,
-                        const Mat<zz_pX> & pmat,
-                        const long order,
-                        const VecLong & shift
-                       );
+// same as mbasis_resupdate, with some multi-threading inserted 
+// TODO not implemented
+//VecLong mbasis_resupdate_multithread(
+//                                        Mat<zz_pX> & appbas,
+//                                        const Mat<zz_pX> & pmat,
+//                                        const long order,
+//                                        const VecLong & shift
+//                                       );
+
 
 // main function choosing the most efficient variant depending on parameters
 // warning: may not be the best choice when the shift is not uniform
@@ -258,11 +256,11 @@ VecLong mbasis_resupdate_v2(
 // FIXME -->  mbasis is anyway not the best approach, at least on the paper,
 //            when cdim << rdim and shift is "highly" non-uniform
 inline VecLong mbasis(
-              Mat<zz_pX> & appbas,
-              const Mat<zz_pX> & pmat,
-              const long order,
-              const VecLong & shift
-             )
+                      Mat<zz_pX> & appbas,
+                      const Mat<zz_pX> & pmat,
+                      const long order,
+                      const VecLong & shift
+                     )
 {
     long rdim = pmat.NumRows();
     long cdim = pmat.NumCols();
