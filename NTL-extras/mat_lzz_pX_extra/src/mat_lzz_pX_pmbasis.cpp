@@ -268,6 +268,11 @@ VecLong mbasis_plain(
 /* mbasis, using vectors of matrices                          */
 /*------------------------------------------------------------*/
 
+// TODO:
+//   * handle degree better (?)
+//   * issue about kernel which doesn't always have the pivots where we would like, in non-generic cases
+//   * check about unnecessary tmp variables
+
 // version with residual constant matrix computed at each iteration
 VecLong mbasis_rescomp(
                        Mat<zz_pX> & appbas,
@@ -309,7 +314,6 @@ VecLong mbasis_rescomp(
     // (note that along this algorithm we have pivdeg+shift = srdeg, entrywise,
     // since we will compute appbas in ordered weak Popov form)
     VecLong pivdeg(nrows);
-    VecLong rdeg(nrows); // the actual rdeg
 
     // C. Residual matrix (nrows x ncols constant matrix, next coefficient
     // of appbas * pmat which we want to annihilate)
@@ -358,9 +362,6 @@ VecLong mbasis_rescomp(
 
     for (long ord = 1; ord <= order; ++ord)
     {
-        std::cout << "Iteration " << ord << std::endl;
-        std::cout << "Appbas:" << std::endl << conv(coeffs_appbas) << std::endl;
-        std::cout << "Residual:" << std::endl << residuals << std::endl;
 #ifdef MBASIS_PROFILE
         t_now = GetWallTime();
 #endif
@@ -484,6 +485,8 @@ VecLong mbasis_rescomp(
 
             // Now, update shifted pivot degree and shifted row degree:
             // entries corresponding to kernel pivot indices are kept, others are +1
+            VecLong rdeg;
+            row_degree(rdeg, conv(coeffs_appbas));
             for (long i = 0; i < nrows; ++i)
                 if (not is_pivind[i])
                 {
@@ -496,9 +499,7 @@ VecLong mbasis_rescomp(
             // that deg(appbas) = max(pivot degree) (i.e. max(degree of
             // diagonal entries); this does not hold in general for shifted
             // ordered weak Popov approximant bases
-            std::cout << "Old degree: " << rdeg[0] << "  " << rdeg[1];
             deg_appbas = *std::max_element(rdeg.begin(), rdeg.end());
-            std::cout << "New degree: " << rdeg[0] << "  " << rdeg[1] << std::endl;
             // this new degree is either unchanged (== coeffs_appbas.length()-1),
             // or is the old one + 1 (== coeffs_appbas.length())
             if (deg_appbas==coeffs_appbas.length())
@@ -513,19 +514,20 @@ VecLong mbasis_rescomp(
 
             // Update approximant basis
 
+            std::cout << "Appbas before modify:" << std::endl;
+            std::cout << conv(coeffs_appbas) << std::endl;
             // Submatrix of rows corresponding to pivind are replaced by
             // kerbas*coeffs_appbas
+            std::cout << "Residual:" << std::endl << residuals << std::endl;
+            std::cout << "Kerbas:" << std::endl << kerbas << std::endl;
             for (long d = 0; d < deg_appbas; ++d)
             {
                 kerapp = kerbas * coeffs_appbas[d];
                 for (long i = 0; i < ker_dim; ++i)
+                {
+                    std::cout << pivind[perm_rows_ker[i]] << std::endl;
                     coeffs_appbas[d][pivind[perm_rows_ker[i]]].swap(kerapp[i]);
-            }
-            if(ord==4)
-            {
-                std::cout << "Appbas after kerbas mul:" << std::endl;
-                std::cout << conv(coeffs_appbas) << std::endl;
-                std::cout << deg_appbas << std::endl;
+                }
             }
 
             // rows with !is_pivind are multiplied by X (note: these rows have
@@ -533,14 +535,14 @@ VecLong mbasis_rescomp(
             for (long d = deg_appbas-1; d >= 0; --d)
                 for (long i = 0; i < nrows; ++i)
                     if (not is_pivind[i])
+                    {
+                        std::cout << i << std::endl;
                         coeffs_appbas[d+1][i].swap(coeffs_appbas[d][i]);
+                    }
+            std::cout << "new degree " << deg_appbas << std::endl;
+            std::cout << "After modify:" << std::endl;
+            std::cout << conv(coeffs_appbas) << std::endl;
             // Note: after this, the row coeffs_appbas[0][i] is zero
-            if(ord==4)
-            {
-                std::cout << "Appbas after swap:" << std::endl;
-                std::cout << conv(coeffs_appbas) << std::endl;
-                std::cout << deg_appbas << std::endl;
-            }
 #ifdef MBASIS_PROFILE
             t_appbas += GetWallTime()-t_now;
             t_now = GetWallTime();
@@ -570,6 +572,8 @@ VecLong mbasis_rescomp(
 #endif
             }
         }
+        std::cout << " -------    iteration " << ord << "------" << std::endl;
+        is_approximant_basis(conv(coeffs_appbas), pmat, ord, shift, ORD_WEAK_POPOV, true);
     }
 
 #ifdef MBASIS_PROFILE

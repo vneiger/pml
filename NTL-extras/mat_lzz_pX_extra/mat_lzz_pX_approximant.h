@@ -138,6 +138,8 @@ VecLong popov_appbas_iterative(
 // row echelon form
 // output: pivot degrees of the approximant basis (also indicates where the
 // rows of kernel should appear in the approximant basis)
+// Note: NTL does not guarantee that the pivots in kerbas are 1 !
+// --> gives the s-Popov form up to making the diagonal entries monic
 VecLong popov_mbasis1(
                      Mat<zz_p> & kerbas,
                      const Mat<zz_p> & pmat,
