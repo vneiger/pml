@@ -668,12 +668,12 @@ void get_first_row (Coeffs &res,
     gen_pows(As, upper, zz_pX(1), a, sqrt_d, g, sqrt_d, 1);
     cout << "pow2: " << GetWallTime() - t1 << endl;
     cout << "-total pow: " << GetWallTime() - t0 << endl;
-    
+
     t1 = GetWallTime();
     Mat<zz_pX> quos;
     get_quos(quos, alphas, As, upper, g, m);
     cout << "-total quos: " << GetWallTime() - t1 << endl;
-    
+
     t1 = GetWallTime();
     SetDims(res, sqrt_d, sqrt_d, 2*m);
     zz_pX g_trunc;
@@ -1039,15 +1039,10 @@ int main(int argc, char *argv[])
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

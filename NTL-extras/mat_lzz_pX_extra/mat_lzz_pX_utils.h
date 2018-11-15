@@ -93,7 +93,7 @@ void SetCoeff(Mat<zz_pX>& x, long i, const Mat<zz_p> &a);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* TRANSPOSE, TRUNC, SHIFT, REVERSE, EVAL                     */
+/* TRANSPOSE, TRUNC, SHIFT, REVERSE                           */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
@@ -224,6 +224,12 @@ inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
 
 
 /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* EVALUATE (SINGLE/MULTIPOINT)                               */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
 /* Evaluate at one point                                      */
 /*------------------------------------------------------------*/
 void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt);
@@ -231,6 +237,9 @@ void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt);
 inline Mat<zz_p> eval(const Mat<zz_pX> & pmat, zz_p pt)
 { Mat<zz_p> evmat; eval(evmat, pmat, pt); return evmat; }
 
+
+// TODO matrix-wide multipoint evaluation functions?
+// (general, geometric, ..)
 
 
 

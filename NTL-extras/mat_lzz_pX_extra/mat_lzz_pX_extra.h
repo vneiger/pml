@@ -5,8 +5,6 @@
 #include <NTL/lzz_pX.h>
 #include <iostream>
 #include <vector> // std vector, for shifts, degrees, pivot indices
-#include <memory> // for std::unique_ptr
-#include <algorithm>
 
 #include "lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
@@ -29,17 +27,6 @@ typedef std::vector<long> VecLong;
 #include "mat_lzz_pX_kernel.h"
 
 NTL_CLIENT
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* UTILS                                                      */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* in-place reduction modulo the current prime                */
-/*------------------------------------------------------------*/
-void reduce_mod_p(Mat<zz_pX> & a);
 
 
 /*------------------------------------------------------------*/
@@ -88,15 +75,6 @@ inline Mat<zz_pX> collapse_nonconsecutive_columns(const Mat<zz_pX>& a, long d, l
     return c;
 }
 
-
-
-/*------------------------------------------------------------*/
-/* multipoint evaluation for matrices                         */
-/*------------------------------------------------------------*/
-// TODO seems unused for the moment
-void matrix_evaluate (Vec<Mat<zz_p>> &evals,
-                      const Mat<zz_pX> &pmat,
-                      const zz_pX_Multipoint &ev);
 
 
 /*------------------------------------------------------------*/
