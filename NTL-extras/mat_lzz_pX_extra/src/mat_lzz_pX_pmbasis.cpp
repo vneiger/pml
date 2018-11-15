@@ -73,8 +73,8 @@ VecLong popov_mbasis1(
     long k = p_kerbas.NumRows();
     if (k==0)
     {
-        // kerbas is empty
-        kerbas.SetDims(0,m);
+        // kerbas is empty, same as p_kerbas
+        kerbas.move(p_kerbas);
         return VecLong(m,1);
     }
     if (k==m)

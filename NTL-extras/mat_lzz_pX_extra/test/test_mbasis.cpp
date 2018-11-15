@@ -13,7 +13,7 @@
 #include "mat_lzz_pX_approximant.h"
 #include "test_examples.h"
 
-#define VERBOSE
+//#define VERBOSE
 
 NTL_CLIENT
 
@@ -56,7 +56,10 @@ int main(int argc, char *argv[])
     size_t i=0;
     for (auto pmat = test_examples.first.begin(); pmat!= test_examples.first.end(); ++pmat, ++i)
     {
+#ifdef VERBOSE
         std::cout << i << std::endl;
+#endif // VERBOSE
+        
         long rdim = pmat->NumRows();
         long cdim = pmat->NumCols();
         long d = deg(*pmat);
@@ -86,18 +89,19 @@ int main(int argc, char *argv[])
                 pivdeg = popov_mbasis1(kerbas,coeff(*pmat,0),shift);
 
                 // build approx basis from kerbas
+                clear(appbas);
                 appbas.SetDims(rdim,rdim);
                 long row=0;
-                for (long i = 0; i < rdim; ++i)
+                for (long r = 0; r < rdim; ++r)
                 {
-                    if (pivdeg[i]==0)
+                    if (pivdeg[r]==0)
                     {
                         for (long j = 0; j < rdim; ++j)
-                            appbas[i][j] = kerbas[row][j];
+                            appbas[r][j] = kerbas[row][j];
                         ++row;
                     }
                     else
-                        SetX(appbas[i][i]);
+                        SetX(appbas[r][r]);
                 }
 #ifdef VERBOSE
                 std::cout << "OK. Testing... ";
