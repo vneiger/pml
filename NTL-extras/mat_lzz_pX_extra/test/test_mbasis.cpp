@@ -11,6 +11,9 @@
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_approximant.h"
+#include "test_examples.h"
+
+#define VERBOSE
 
 NTL_CLIENT
 
@@ -28,364 +31,180 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 
 int main(int argc, char *argv[])
 {
-    if (argc!=8)
-        throw std::invalid_argument("Usage: ./test_appbas_mbasis rdim cdim order nbits verify verbose nthreads");
+    if (argc!=3)
+        throw std::invalid_argument("Usage: ./test_appbas_mbasis nbits nthreads");
 
-    long rdim = atoi(argv[1]);
-    long cdim = atoi(argv[2]);
-    long order = atoi(argv[3]);
-    long nbits = atoi(argv[4]);
-    bool verify = (atoi(argv[5])==1);
-    bool verbose = (atoi(argv[6])==1);
-    SetNumThreads(atoi(argv[7]));
+    long nbits = atoi(argv[1]);
+    SetNumThreads(atoi(argv[2]));
 
     if (nbits==0)
         zz_p::FFTInit(0);
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
-    // declare shifts
-    VecLong shift1(rdim,0); // uniform [0,...,0]
-    VecLong shift2(rdim); // increasing [0,1,2,..,rdim-1]
-    std::iota(shift2.begin(), shift2.end(),0);
-    VecLong shift3(rdim); // decreasing [rdim,..,3,2,1]
-    for (long i = 0; i < rdim; ++i)
-        shift3[i] = rdim - i;
-    VecLong shift4(rdim); // random shuffle of [0,1,...,rdim-1]
-    std::iota(shift4.begin(), shift4.end(),0);
-    std::shuffle(shift4.begin(), shift4.end(), std::mt19937{std::random_device{}()});
-    VecLong shift5(rdim); // Hermite shift
-    for (long i = 0; i < rdim; ++i)
-        shift5[i] = cdim*order*i;
-    VecLong shift6(rdim); // reverse Hermite shift
-    for (long i = 0; i < rdim; ++i)
-        shift6[i] = (cdim*order+1)*(rdim-1-i);
-    VecLong shift7(rdim);
-    for (long i = 0; i < rdim; ++i)
-        if (i>=rdim/2)
-            shift7[i] = cdim*order;
+    // build couple (test_matrices, test_shifts)
+    std::pair<std::vector<Mat<zz_pX>>, std::vector<std::vector<VecLong>>>
+    test_examples = build_test_examples();
 
-    std::vector<VecLong> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7};
-
-    std::cout << "Testing approximant basis computation (mbasis) with random input matrix" << std::endl;
+    std::cout << "Testing approximant basis computation (mbasis)." << std::endl;
     std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
-    std::cout << "--rdim =\t" << rdim << std::endl;
-    std::cout << "--cdim =\t" << cdim << std::endl;
-    std::cout << "--order <\t" << order << std::endl;
     std::cout << "--nthreads =\t" << AvailableThreads() << std::endl;
-
-    double t1,t2,t1w,t2w;
 
     warmup();
 
-    for (VecLong shift : shifts)
+    VecLong pivdeg; 
+    Mat<zz_pX> appbas;
+
+    size_t i=0;
+    for (auto pmat = test_examples.first.begin(); pmat!= test_examples.first.end(); ++pmat, ++i)
     {
-        if (rdim<40)
-            std::cout << "--shift =\t" << shift << std::endl;
-        else
-            std::cout << "--shift =\t" << "<length " << rdim << ">" << std::endl;
+        long rdim = pmat->NumRows();
+        long cdim = pmat->NumCols();
+        long d = deg(*pmat);
+        VecLong orders = {d/2, d+1, 2*d};
 
-        VecLong pivdeg;
-        double ref_kernel_wall=0.0,ref_kernel=0.0;
-
-        long nb_iter=0;
-        while (ref_kernel_wall<0.1)
+        for (long order : orders)
         {
-            Mat<zz_p> mat;
-            mat = random_mat_zz_p(rdim, cdim);
-            t1w = GetWallTime(); t1 = GetTime();
-            Mat<zz_p> kerbas2;
-            kernel(kerbas2,mat);
-            t2w = GetWallTime(); t2 = GetTime();
-            ref_kernel_wall += t2w-t1w;
-            ref_kernel += t2-t1;
-            ++nb_iter;
-        }
-        ref_kernel /= nb_iter;
-        ref_kernel_wall /= nb_iter;
-        std::cout << "Time(kernel same size): " << ref_kernel_wall << "s,  " << ref_kernel << "s\n";
-
-        std::cout << "~~~Testing popov_mbasis1 on constant matrix~~~" << std::endl;
-
-        Mat<zz_pX> pmat_copy;
-        Mat<zz_p> kerbas_copy;
-        double t_mbasis1w=0.0,t_mbasis1=0.0;
-        nb_iter=0;
-        while (t_mbasis1w<0.1)
-        {
-            // build random matrix
-            Mat<zz_pX> pmat;
-            random(pmat, rdim, cdim, 1);
-            t1w = GetWallTime(); t1 = GetTime();
-            Mat<zz_p> kerbas;
-            pivdeg = popov_mbasis1(kerbas,coeff(pmat,0),shift);
-            t2w = GetWallTime(); t2 = GetTime();
-            t_mbasis1w += t2w-t1w;
-            t_mbasis1 += t2-t1;
-            ++nb_iter;
-            if (nb_iter==1)
+            for (VecLong shift : test_examples.second[i])
             {
-                pmat_copy = pmat;
-                kerbas_copy = kerbas;
-            }
-        }
-        t_mbasis1 /= nb_iter;
-        t_mbasis1w /= nb_iter;
-        std::cout << "Time(popov_mbasis1 computation): " << t_mbasis1w << "s,  " << t_mbasis1 << "s\n";
-        std::cout << "Ratio versus kernel: " << (t_mbasis1w/ref_kernel_wall) << ", " << (t_mbasis1/ref_kernel) << std::endl;
+#ifdef VERBOSE
+                std::cout << "--rdim =\t" << rdim << std::endl;
+                std::cout << "--cdim =\t" << cdim << std::endl;
+                std::cout << "--deg =\t" << d << std::endl;
+                std::cout << "--order =\t" << order << std::endl;
+                std::cout << "--shift =\t" << shift << std::endl;
+#endif // VERBOSE
 
-        if (verify)
-        {
-            std::cout << "Verifying Popov approximant basis..." << std::endl;
-            Mat<zz_pX> appbas1;
-            appbas1.SetDims(rdim,rdim);
-            long row=0;
-            for (long i = 0; i < rdim; ++i)
-            {
-                if (pivdeg[i]==0)
+#ifdef VERBOSE
+                std::cout << "Computation popov_mbasis1... ";
+#endif // VERBOSE
+                // popov_mbasis1
+                Mat<zz_p> kerbas;
+                pivdeg = popov_mbasis1(kerbas,coeff(*pmat,0),shift);
+
+                // build approx basis from kerbas
+                appbas.SetDims(rdim,rdim);
+                long row=0;
+                for (long i = 0; i < rdim; ++i)
                 {
-                    for (long j = 0; j < rdim; ++j)
-                        appbas1[i][j] = kerbas_copy[row][j];
-                    ++row;
+                    if (pivdeg[i]==0)
+                    {
+                        for (long j = 0; j < rdim; ++j)
+                            appbas[i][j] = kerbas[row][j];
+                        ++row;
+                    }
+                    else
+                        SetX(appbas[i][i]);
                 }
-                else
-                    SetX(appbas1[i][i]);
-            }
+#ifdef VERBOSE
+                std::cout << "OK. Testing... ";
+#endif // VERBOSE
 
-            bool verif1 = is_approximant_basis(appbas1,pmat_copy,1,shift,POPOV,false);
-            std::cout << (verif1?"correct":"wrong") << std::endl;
-
-            if (verbose)
-            {
-                Mat<long> degmat;
-                degree_matrix_rowshifted(degmat,appbas1,shift);
-                std::cout << "Print degree matrix of approx basis..." << std::endl;
-                std::cout << degmat << std::endl;
-            }
-        }
-
-        { // plain mbasis
-            if (verify) std::cout << "~~~Testing mbasis_plain~~~" << std::endl;
-            Mat<zz_pX> appbas_copy, pmat_copy;
-            nb_iter=0;
-            double t_mbasisw=0.0, t_mbasis=0.0;
-            while (t_mbasisw<0.1)
-            {
-                Mat<zz_pX> pmat;
-                random(pmat, rdim, cdim, order);
-                t1w = GetWallTime(); t1 = GetTime();
-                Mat<zz_pX> appbas;
-                pivdeg = mbasis_plain(appbas,pmat,order,shift);
-                t2w = GetWallTime(); t2 = GetTime();
-                t_mbasisw += t2w-t1w;
-                t_mbasis += t2-t1;
-                ++nb_iter;
-                if (nb_iter==1)
+                if (not is_approximant_basis(appbas,*pmat,1,shift,POPOV,true))
                 {
-                    pmat_copy = pmat;
-                    appbas_copy = appbas;
+                    std::cout << "Error in popov_mbasis1." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--order =\t" << order << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    return 0;
                 }
-            }
-            t_mbasis /= nb_iter;
-            t_mbasisw /= nb_iter;
-            std::cout << "Time(mbasis_plain): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
+#ifdef VERBOSE
+                std::cout << "OK." << std::endl;
+#endif // VERBOSE
 
-            if (verify)
-            {
-                std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
-                t1w = GetWallTime(); t1 = GetTime();
-                bool verif = is_approximant_basis(appbas_copy,pmat_copy,order,shift,ORD_WEAK_POPOV,false);
-                t2w = GetWallTime(); t2 = GetTime();
-                std::cout << (verif?"correct":"wrong") << std::endl;
-                std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-            }
-
-            if (verbose)
-            {
-                Mat<long> degmat;
-                degree_matrix_rowshifted(degmat,appbas_copy,shift);
-                std::cout << "Print degree matrix of approx basis..." << std::endl;
-                std::cout << degmat << std::endl;
-            }
-        }
-
-        { // mbasis Vec<Mat<zz_p>> version 1
-            if (verify) std::cout << "~~~Testing mbasis_rescomp~~~" << std::endl;
-            Mat<zz_pX> appbas_copy, pmat_copy;
-            nb_iter=0;
-            double t_mbasisw=0.0, t_mbasis=0.0;
-            while (t_mbasisw<0.1)
-            {
-                Mat<zz_pX> pmat;
-                random(pmat, rdim, cdim, order);
-                t1w = GetWallTime(); t1 = GetTime();
-                Mat<zz_pX> appbas;
-                pivdeg = mbasis_rescomp(appbas,pmat,order,shift);
-                t2w = GetWallTime(); t2 = GetTime();
-                t_mbasisw += t2w-t1w;
-                t_mbasis += t2-t1;
-                ++nb_iter;
-                if (nb_iter==1)
+                // plain mbasis
+#ifdef VERBOSE
+                std::cout << "Computation mbasis_plain... ";
+#endif // VERBOSE
+                pivdeg = mbasis_plain(appbas,*pmat,order,shift);
+#ifdef VERBOSE
+                std::cout << "OK. Testing... ";
+#endif // VERBOSE
+                if (not is_approximant_basis(appbas,*pmat,order,shift,ORD_WEAK_POPOV,true))
                 {
-                    pmat_copy = pmat;
-                    appbas_copy = appbas;
+                    std::cout << "Error in mbasis_plain." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--order =\t" << order << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    return 0;
                 }
-            }
-            t_mbasis /= nb_iter;
-            t_mbasisw /= nb_iter;
-            std::cout << "Time(mbasis_rescomp): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
+#ifdef VERBOSE
+                std::cout << "OK." << std::endl;
+#endif // VERBOSE
 
-            if (verify)
-            {
-                std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
-                t1w = GetWallTime(); t1 = GetTime();
-                bool verif = is_approximant_basis(appbas_copy,pmat_copy,order,shift,ORD_WEAK_POPOV,false);
-                t2w = GetWallTime(); t2 = GetTime();
-                std::cout << (verif?"correct":"wrong") << std::endl;
-                std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-            }
-
-            if (verbose)
-            {
-                Mat<long> degmat;
-                degree_matrix_rowshifted(degmat,appbas_copy,shift);
-                std::cout << "Print degree matrix of approx basis..." << std::endl;
-                std::cout << degmat << std::endl;
-            }
-        }
-
-        { // mbasis_resupdate version 1
-            if (verify) std::cout << "~~~Testing mbasis_resupdate~~~" << std::endl;
-            Mat<zz_pX> appbas_copy, pmat_copy;
-            nb_iter=0;
-            double t_mbasisw=0.0, t_mbasis=0.0;
-            while (t_mbasisw<0.1)
-            {
-                Mat<zz_pX> pmat;
-                random(pmat, rdim, cdim, order);
-                t1w = GetWallTime(); t1 = GetTime();
-                Mat<zz_pX> appbas;
-                pivdeg = mbasis_resupdate(appbas,pmat,order,shift);
-                t2w = GetWallTime(); t2 = GetTime();
-                t_mbasisw += t2w-t1w;
-                t_mbasis += t2-t1;
-                ++nb_iter;
-                if (nb_iter==1)
+                // mbasis Vec<Mat<zz_p>>, rescomp
+#ifdef VERBOSE
+                std::cout << "Computation mbasis_rescomp... ";
+#endif // VERBOSE
+                pivdeg = mbasis_rescomp(appbas,*pmat,order,shift);
+#ifdef VERBOSE
+                std::cout << "OK. Testing... ";
+#endif // VERBOSE
+                if (not is_approximant_basis(appbas,*pmat,order,shift,ORD_WEAK_POPOV,true))
                 {
-                    pmat_copy = pmat;
-                    appbas_copy = appbas;
+                    std::cout << "Error in mbasis_rescomp." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--order =\t" << order << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    return 0;
                 }
-            }
-            t_mbasis /= nb_iter;
-            t_mbasisw /= nb_iter;
-            std::cout << "Time(mbasis_resupdate): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
+#ifdef VERBOSE
+                std::cout << "OK." << std::endl;
+#endif // VERBOSE
 
-            if (verify)
-            {
-                std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
-                bool verif = is_approximant_basis(appbas_copy,pmat_copy,order,shift,ORD_WEAK_POPOV,false);
-                std::cout << (verif?"correct":"wrong") << std::endl;
-                std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-            }
-
-            if (verbose)
-            {
-                Mat<long> degmat;
-                degree_matrix_rowshifted(degmat,appbas_copy,shift);
-                std::cout << "Print degree matrix of approx basis..." << std::endl;
-                std::cout << degmat << std::endl;
-            }
-        }
-        
-        { // mbasis
-            if (verify) std::cout << "~~~Testing mbasis (thresholds between different algos)~~~" << std::endl;
-            Mat<zz_pX> appbas_copy, pmat_copy;
-            nb_iter=0;
-            double t_mbasisw=0.0, t_mbasis=0.0;
-            while (t_mbasisw<0.1)
-            {
-                Mat<zz_pX> pmat;
-                random(pmat, rdim, cdim, order);
-                t1w = GetWallTime(); t1 = GetTime();
-                Mat<zz_pX> appbas;
-                pivdeg = mbasis(appbas,pmat,order,shift);
-                t2w = GetWallTime(); t2 = GetTime();
-                t_mbasisw += t2w-t1w;
-                t_mbasis += t2-t1;
-                ++nb_iter;
-                if (nb_iter==1)
+                // mbasis_resupdate version 1
+#ifdef VERBOSE
+                std::cout << "Computation mbasis_resupdate... ";
+#endif // VERBOSE
+                pivdeg = mbasis_resupdate(appbas,*pmat,order,shift);
+#ifdef VERBOSE
+                std::cout << "OK. Testing...";
+#endif // VERBOSE
+                if (not is_approximant_basis(appbas,*pmat,order,shift,ORD_WEAK_POPOV,true))
                 {
-                    pmat_copy = pmat;
-                    appbas_copy = appbas;
+                    std::cout << "Error in mbasis_resupdate." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--order =\t" << order << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    return 0;
                 }
-            }
-            t_mbasis /= nb_iter;
-            t_mbasisw /= nb_iter;
-            std::cout << "Time(mbasis): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
+#ifdef VERBOSE
+                std::cout << "OK." << std::endl;
+#endif // VERBOSE
 
-            if (verify)
-            {
-                std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
-                bool verif = is_approximant_basis(appbas_copy,pmat_copy,order,shift,ORD_WEAK_POPOV,false);
-                std::cout << (verif?"correct":"wrong") << std::endl;
-                std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-            }
-
-            if (verbose)
-            {
-                Mat<long> degmat;
-                degree_matrix_rowshifted(degmat,appbas_copy,shift);
-                std::cout << "Print degree matrix of approx basis..." << std::endl;
-                std::cout << degmat << std::endl;
-            }
-        }
-
-        { // popov_mbasis
-            if (verify) std::cout << "~~~Testing popov_mbasis~~~" << std::endl;
-            Mat<zz_pX> appbas_copy, pmat_copy;
-            nb_iter=0;
-            double t_mbasisw=0.0, t_mbasis=0.0;
-            while (t_mbasisw<0.1)
-            {
-                Mat<zz_pX> pmat;
-                random(pmat, rdim, cdim, order);
-                t1w = GetWallTime(); t1 = GetTime();
-                Mat<zz_pX> appbas;
-                pivdeg = popov_mbasis(appbas,pmat,order,shift);
-                t2w = GetWallTime(); t2 = GetTime();
-                t_mbasisw += t2w-t1w;
-                t_mbasis += t2-t1;
-                ++nb_iter;
-                if (nb_iter==1)
+                // popov_mbasis
+#ifdef VERBOSE
+                std::cout << "Computation popov_mbasis... ";
+#endif // VERBOSE
+                pivdeg = popov_mbasis(appbas,*pmat,order,shift);
+#ifdef VERBOSE
+                std::cout << "OK. Testing...";
+#endif // VERBOSE
+                if (not is_approximant_basis(appbas,*pmat,order,shift,POPOV,true))
                 {
-                    pmat_copy = pmat;
-                    appbas_copy = appbas;
+                    std::cout << "Error in popov_mbasis." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--order =\t" << order << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    return 0;
                 }
-            }
-            t_mbasis /= nb_iter;
-            t_mbasisw /= nb_iter;
-            std::cout << "Time(popov_mbasis): " << t_mbasisw << "s,  " << t_mbasis << "s\n";
-            //std::cout << "Ratio versus kernel: " << (t_mbasisw/ref_kernel_wall) << ", " << (t_mbasis/ref_kernel) << std::endl;
-
-            if (verify)
-            {
-                std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
-                bool verif = is_approximant_basis(appbas_copy,pmat_copy,order,shift,ORD_WEAK_POPOV,false);
-                std::cout << (verif?"correct":"wrong") << std::endl;
-                std::cout << "Time(verification): " << (t2w-t1w) << "s,  " << (t2-t1) << "s\n";
-            }
-
-            if (verbose)
-            {
-                Mat<long> degmat;
-                degree_matrix_rowshifted(degmat,appbas_copy,shift);
-                std::cout << "Print degree matrix of approx basis..." << std::endl;
-                std::cout << degmat << std::endl;
+#ifdef VERBOSE
+                std::cout << "OK." << std::endl;
+#endif // VERBOSE
             }
         }
-        std::cout << std::endl;
+        return 0;
     }
-    return 0;
 }
 
 // Local Variables:

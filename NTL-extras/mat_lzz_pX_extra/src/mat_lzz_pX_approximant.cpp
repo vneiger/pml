@@ -71,10 +71,9 @@ bool is_approximant_basis(
     // TODO far from optimal except in the balanced case
     // (e.g. could be improved when deg(appbas)<<deg(pmat) like in Hermite-Pade,
     // or when appbas has strange column degrees or strange row degrees)
-    if (randomized)
-        throw std::logic_error("==is_approximant_basis== Fast randomized approximant basis verification not implemented yet");
-    else
-        std::cout << "==is_approximant_basis== Warning: using *randomized* algorithm for testing generation" << std::endl;
+
+    if (not randomized)
+        throw std::logic_error("==is_approximant_basis== Deterministic approximant basis verification not implemented.");
 
     // test whether appbas has the right dimensions
     if (appbas.NumRows() != appbas.NumCols() || appbas.NumCols() != m)
