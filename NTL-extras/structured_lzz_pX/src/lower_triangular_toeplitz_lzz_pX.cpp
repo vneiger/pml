@@ -2,6 +2,7 @@
 #include <NTL/mat_lzz_p.h>
 #include <limits.h>
 
+#include "util.h"
 #include "lzz_p_extra.h"
 #include "lzz_pX_middle_product.h"
 #include "structured_lzz_p.h"

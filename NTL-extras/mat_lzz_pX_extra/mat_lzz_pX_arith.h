@@ -116,13 +116,10 @@ inline Vec<zz_pX> & operator-=(Vec<zz_pX> & x, const Vec<zz_p>& b)
 /*------------------------------------------------------------*/
 /* negate                                                     */
 /*------------------------------------------------------------*/
-namespace NTL
-{
-    void negate(Mat<zz_pX> & x, const Mat<zz_pX> & a);
-}
+void negate_matrix(Mat<zz_pX> & x, const Mat<zz_pX> & a);
 
 inline Mat<zz_pX> operator-(const Mat<zz_pX> & a)
-{ Mat<zz_pX> x; NTL::negate(x, a); return x; }
+{ Mat<zz_pX> x; negate_matrix(x, a); return x; }
 
 
 /*------------------------------------------------------------*/
