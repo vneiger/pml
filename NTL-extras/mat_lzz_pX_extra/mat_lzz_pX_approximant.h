@@ -229,7 +229,8 @@ VecLong mbasis_rescomp_multithread(
 //   constant matrix K which is generically m-n x m  (may have more rows in
 //   exceptional cases)
 //   - order products (X Id + K ) * appbas to update the approximant basis
-//   - order products (X Id + K ) * pmat to update the residual
+//   - order-1 products (X Id + K ) * (matrix of degree order-ord) to update
+//   the residual, for ord=1...order-1
 // Assuming cubic matrix multiplication over the field, the third item costs
 // O(m n (m-n) order^2/2) operations
 VecLong mbasis_resupdate(
