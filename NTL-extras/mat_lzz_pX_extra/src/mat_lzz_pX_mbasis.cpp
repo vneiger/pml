@@ -9,7 +9,7 @@
 #include "mat_lzz_pX_extra.h"
 
 //#define MBASIS1_PROFILE // FIXME
-//#define MBASIS_PROFILE // FIXME
+#define MBASIS_PROFILE // FIXME
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -432,7 +432,7 @@ VecLong mbasis_rescomp(
 #endif
 #ifdef MBASIS_PROFILE
     double t_total = t_residual + t_appbas + t_mbasis1 + t_others;
-    std::cout << "~~mbasis~~\t (residuals,basis,basecase,others): \t ";
+    std::cout << "~~mbasis-rescomp~~\t (residuals,basis,kernel,others): \t ";
     std::cout << t_residual/t_total << "," << t_appbas/t_total << "," <<
     t_mbasis1/t_total << "," << t_others/t_total << std::endl;
 #endif
@@ -736,7 +736,7 @@ VecLong mbasis_rescomp_v2(
 #endif
 #ifdef MBASIS_PROFILE
     double t_total = t_residual + t_appbas + t_kernel + t_others;
-    std::cout << "~~mbasis~~\t (residuals,basis,kernel,others): \t ";
+    std::cout << "~~mbasis_rescomp~~\t (residuals,basis,kernel,others): \t ";
     std::cout << t_residual/t_total << "," << t_appbas/t_total << "," <<
     t_kernel/t_total << "," << t_others/t_total << std::endl;
 #endif
@@ -1070,7 +1070,7 @@ VecLong mbasis_rescomp_v2_multithread(
 #endif
 #ifdef MBASIS_PROFILE
     double t_total = t_residual + t_appbas + t_kernel + t_others;
-    std::cout << "~~mbasis~~\t (residuals,basis,kernel,others): \t ";
+    std::cout << "~~mbasis_rescomp~~\t (residuals,basis,kernel,others): \t ";
     std::cout << t_residual/t_total << "," << t_appbas/t_total << "," <<
     t_kernel/t_total << "," << t_others/t_total << std::endl;
 #endif
@@ -1229,7 +1229,7 @@ VecLong mbasis_resupdate(
 #endif
 #ifdef MBASIS_PROFILE
     double t_total = t_residual + t_appbas + t_mbasis1 + t_others;
-    std::cout << "~~mbasis~~\t (residuals,basis,basecase,others): \t ";
+    std::cout << "~~mbasis-resupdate~~\t (residuals,basis,kernel,others): \t ";
     std::cout << t_residual/t_total << "," << t_appbas/t_total << "," <<
     t_mbasis1/t_total << "," << t_others/t_total << std::endl;
 #endif
@@ -1515,7 +1515,7 @@ VecLong mbasis_resupdate_v2(
 #endif
 #ifdef MBASIS_PROFILE
     double t_total = t_residual + t_appbas + t_kernel + t_others;
-    std::cout << "~~mbasis~~\t (residuals,basis,kernel,others): \t ";
+    std::cout << "~~mbasis_resupdate~~\t (residuals,basis,kernel,others): \t ";
     std::cout << t_residual/t_total << "," << t_appbas/t_total << "," <<
     t_kernel/t_total << "," << t_others/t_total << std::endl;
 #endif

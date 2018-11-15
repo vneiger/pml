@@ -1,4 +1,3 @@
-// NTLX
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
@@ -207,12 +206,13 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    VecLong nthreads = {1,2,3,4};
+    // TODO one thread for the moment
+    VecLong nthreads = {1}; // {1,2,3,4};
     VecLong nbits = {20,30,40,60};
     std::vector<bool> fftprime = {true, false};
 
     if (argc>=2)
-        nthreads = {atoi(argv[1])};
+        nthreads = {1}; // {atoi(argv[1])};
     if (argc>=3)
         nbits = {atoi(argv[2])};
     if (argc==4)
