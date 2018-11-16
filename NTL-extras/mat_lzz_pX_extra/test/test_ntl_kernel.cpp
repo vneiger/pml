@@ -13,8 +13,8 @@ int main(int , char * argv[])
 	double tt1, tt2;
 	long nb_iter=0;
 
-	while (nb_iter<40000)
-	//while (t1<1)
+	//while (nb_iter<40000)
+	while (t1<1)
 	{
 		Mat<zz_p> mat;
 		random(mat,m,n);

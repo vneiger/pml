@@ -67,22 +67,48 @@ void one_bench_mbasis(long rdim, long cdim, long order)
 
     t_mbasis_resupdate /= nb_iter;
 
+
+    double t_mbasis_generic_rescomp=0.0;
+    nb_iter=0;
+    while (t_mbasis_generic_rescomp<0.1)
+    {
+        Mat<zz_pX> pmat;
+        random(pmat, rdim, cdim, order);
+        VecLong pivdeg;
+
+        t1 = GetWallTime();
+        Mat<zz_pX> appbas;
+        mbasis_generic_2n_n_rescomp(appbas,pmat,order);
+        t2 = GetWallTime();
+
+        t_mbasis_generic_rescomp += t2-t1;
+        ++nb_iter;
+    }
+
+    t_mbasis_generic_rescomp /= nb_iter;
+
     cout << rdim << "," << cdim << "," << order << "," << AvailableThreads();
-    cout << "," << t_mbasis_rescomp << "," << t_mbasis_resupdate;
+    cout << "," << t_mbasis_rescomp << "," << t_mbasis_resupdate << "," << t_mbasis_generic_rescomp;
 
     double best;
-    if (t_mbasis_rescomp <= t_mbasis_rescomp)
+    if (t_mbasis_rescomp <= t_mbasis_rescomp and t_mbasis_rescomp <= t_mbasis_generic_rescomp)
     {
         cout << "," << "rescomp";
         best = t_mbasis_rescomp;
     }
-    else // (t_mbasis_resupdate <= t_mbasis_rescomp)
+    else if (t_mbasis_resupdate <= t_mbasis_rescomp and t_mbasis_resupdate <= t_mbasis_generic_rescomp)
     {
         cout << "," << "resupdate";
         best = t_mbasis_resupdate;
     }
+    else
+    {
+        cout << "," << "generic";
+        best = t_mbasis_generic_rescomp;
+    }
     cout << "," << t_mbasis_rescomp / best;
     cout << "," << t_mbasis_resupdate / best;
+    cout << "," << t_mbasis_generic_rescomp / best;
     cout << endl;
 }
 
@@ -129,18 +155,19 @@ void run_bench(long nthreads, long nbits, bool fftprime)
     cout << "rdim,cdim,order,nthreads,time" << endl;
     for (size_t i=0;i<szs.size();i++)
     {
-        long interval = ceil( (double)szs[i] / 20);
-        for (long j=1; j<szs[i]; j+=interval)
+        // for generic, currently we can only use dimensions n=2m
+
+        //long interval = ceil( (double)szs[i] / 20);
+        //for (long j=1; j<szs[i]; j+=interval)
         {
+            long j=szs[i]/2;
             long max_order=128;
             if (szs[i]==512)
                 max_order=64;
             else if (szs[i]==1024)
                 max_order=32;
-            for (long k=1; k<=max_order; k=2*k)
-            {
+            for (long k=2; k<=max_order; k=2*k)
                 one_bench_mbasis(szs[i],j,k);
-            }
         }
     }
     cout << endl;

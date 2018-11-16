@@ -514,18 +514,18 @@ VecLong mbasis_rescomp(
 
             // Update approximant basis
 
-            std::cout << "Appbas before modify:" << std::endl;
-            std::cout << conv(coeffs_appbas) << std::endl;
+            //std::cout << "Appbas before modify:" << std::endl;
+            //std::cout << conv(coeffs_appbas) << std::endl;
             // Submatrix of rows corresponding to pivind are replaced by
             // kerbas*coeffs_appbas
-            std::cout << "Residual:" << std::endl << residuals << std::endl;
-            std::cout << "Kerbas:" << std::endl << kerbas << std::endl;
+            //std::cout << "Residual:" << std::endl << residuals << std::endl;
+            //std::cout << "Kerbas:" << std::endl << kerbas << std::endl;
             for (long d = 0; d < deg_appbas; ++d)
             {
                 kerapp = kerbas * coeffs_appbas[d];
                 for (long i = 0; i < ker_dim; ++i)
                 {
-                    std::cout << pivind[perm_rows_ker[i]] << std::endl;
+                    //std::cout << pivind[perm_rows_ker[i]] << std::endl;
                     coeffs_appbas[d][pivind[perm_rows_ker[i]]].swap(kerapp[i]);
                 }
             }
@@ -536,12 +536,12 @@ VecLong mbasis_rescomp(
                 for (long i = 0; i < nrows; ++i)
                     if (not is_pivind[i])
                     {
-                        std::cout << i << std::endl;
+                        //std::cout << i << std::endl;
                         coeffs_appbas[d+1][i].swap(coeffs_appbas[d][i]);
                     }
-            std::cout << "new degree " << deg_appbas << std::endl;
-            std::cout << "After modify:" << std::endl;
-            std::cout << conv(coeffs_appbas) << std::endl;
+            //std::cout << "new degree " << deg_appbas << std::endl;
+            //std::cout << "After modify:" << std::endl;
+            //std::cout << conv(coeffs_appbas) << std::endl;
             // Note: after this, the row coeffs_appbas[0][i] is zero
 #ifdef MBASIS_PROFILE
             t_appbas += GetWallTime()-t_now;
@@ -572,8 +572,8 @@ VecLong mbasis_rescomp(
 #endif
             }
         }
-        std::cout << " -------    iteration " << ord << "------" << std::endl;
-        is_approximant_basis(conv(coeffs_appbas), pmat, ord, shift, ORD_WEAK_POPOV, true);
+        //std::cout << " -------    iteration " << ord << "------" << std::endl;
+        //is_approximant_basis(conv(coeffs_appbas), pmat, ord, shift, ORD_WEAK_POPOV, true);
     }
 
 #ifdef MBASIS_PROFILE
