@@ -22,6 +22,83 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 
 
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* UTIL FUNCTIONS                                             */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* convert to / from Vec<Mat<zz_p>>                           */
+/* (degree deduced from input)                                */
+/* split into first half rows, second half rows               */
+/*------------------------------------------------------------*/
+void conv_top_bot(
+                  Vec<Mat<zz_p>> & coeffs_top,
+                  Vec<Mat<zz_p>> & coeffs_bot,
+                  const Mat<zz_pX> & mat
+                 )
+{
+    long d = deg(mat);
+    long m1 = mat.NumRows()/2;
+    long m2 = mat.NumRows()-m1;
+    long n = mat.NumCols();
+
+    coeffs_top.SetLength(d+1);
+    for (long k = 0; k <= d; ++k)
+    {
+        coeffs_top[k].SetDims(m1, n);
+        for (long i = 0; i < m1; ++i)
+            for (long j = 0; j < n; ++j)
+                coeffs_top[k][i][j] = coeff(mat[i][j], k);
+    }
+
+    coeffs_bot.SetLength(d+1);
+    for (long k = 0; k <= d; ++k)
+    {
+        coeffs_bot[k].SetDims(m2, n);
+        for (long i = 0; i < m2; ++i)
+            for (long j = 0; j < n; ++j)
+                coeffs_bot[k][i][j] = coeff(mat[m1+i][j], k);
+    }
+}
+
+void conv_top_bot(
+                  Mat<zz_pX> & mat,
+                  const Vec<Mat<zz_p>> & coeffs_top,
+                  const Vec<Mat<zz_p>> & coeffs_bot
+                 )
+{
+    long len = coeffs_top.length();
+    // requires coeffs_bot has same length
+    if (len == 0)
+    {
+        // TODO this is a choice --> indicate it in comments
+        // (zero-length sequence could be zero matrix of any dimension)
+        mat.SetDims(0, 0);
+        return;
+    }
+    long n = coeffs_top[0].NumCols();
+    // requires coeffs_bot has same numcols, and all other coeffs_top/bot as well
+    long m1 = coeffs_top[0].NumRows();
+    long m2 = coeffs_top[0].NumRows();
+
+    mat.SetDims(m1+m2, n);
+
+    for (long i = 0; i < m1; ++i)
+        for (long j = 0; j < n; ++j)
+            for (long k = 0; k < len; ++k)
+                SetCoeff(mat[i][j], k, coeffs_top[k][i][j]);
+
+    for (long i = 0; i < m2; ++i)
+        for (long j = 0; j < n; ++j)
+            for (long k = 0; k < len; ++k)
+                SetCoeff(mat[m1+i][j], k, coeffs_bot[k][i][j]);
+}
+
+
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* MBASIS -- GENERIC INPUT -- UNIFORM SHIFT                   */
@@ -34,7 +111,7 @@ NTL_CLIENT
 // TODO try resupdate (m=2n is borderline between the two)
 // TODO compare with mbasis_generic for m = t n based on Krylov
 // requirement 1: m = 2*n
-// requirement 2: order is even
+// requirement 2: order is even and strictly positive
 // output: appbas is in 0-Popov form with row degree (d,.., d) *GEN*,
 // where d = order/2
 void mbasis_generic_2n_n_rescomp(
@@ -43,173 +120,138 @@ void mbasis_generic_2n_n_rescomp(
                                  const long order
                                 )
 {
-    long m = pmat.NumRows();
     long n = pmat.NumCols();
     long d = order/2;
-    if (m != 2*n)
+    if (pmat.NumRows() != 2*n)
         throw std::invalid_argument("~~mbasis_generic_2n_n~~ bad dimensions of pmat");
-    if (order % 2 != 0)
+    if (order==0 || order % 2 != 0)
         throw std::invalid_argument("~~mbasis_generic_2n_n~~ order must be even");
 
     // coefficient matrices of input polynomial matrix
-    Vec<Mat<zz_p>> coeffs_pmat;
-    conv(coeffs_pmat, pmat);
-    long deg_pmat = coeffs_pmat.length()-1;
-    if (deg_pmat < d)
+    Vec<Mat<zz_p>> F_top, F_bot;
+    conv_top_bot(F_top, F_bot, pmat);
+    long degF = F_top.length()-1;
+    if (degF < d)
         throw std::invalid_argument("~~mbasis_generic_2n_n~~ too low degree for input matrix");
 
-    // residual matrix, initially the constant coefficient of pmat
-    Mat<zz_p> residual(coeff(pmat,0));
+    // residual matrix 0, initially coefficient of pmat of degree 0
+    Mat<zz_p> R0_top(F_top[0]);
+    Mat<zz_p> R0_bot(F_bot[0]);
+    // residual matrix 1, initially coefficient of pmat of degree 1
+    Mat<zz_p> R1_top(F_top[1]);
+    Mat<zz_p> R1_bot(F_bot[1]);
 
     // coefficient matrices of output approximant basis
-    Vec<Mat<zz_p>> coeffs_appbas_top;
-    Vec<Mat<zz_p>> coeffs_appbas_bottom;
-    coeffs_appbas_top.SetLength(d+1);
-    coeffs_appbas_bottom.SetLength(d+1);
-    for (long dd = 0; dd < d+1; ++dd)
+    // *GEN* --> appbas will be computed in the form
+    // [ [X^d I + P_ltop,  P_rtop], [P_lbot, X^d I + P_rbot]]
+    // where P_ltop, P_rtop, P_rbot have d-1 and P_lbot has degree d
+    Vec<Mat<zz_p>> P_ltop, P_rtop, P_lbot, P_rbot;
+    P_ltop.SetLength(d);
+    P_rtop.SetLength(d);
+    P_lbot.SetLength(d+1);
+    P_rbot.SetLength(d);
+    for (long k = 0; k < d; ++k)
     {
-        coeffs_appbas_top[dd].SetDims(n,m);
-        coeffs_appbas_bottom[dd].SetDims(n,m);
+        P_ltop[k].SetDims(n,n);
+        P_rtop[k].SetDims(n,n);
+        P_lbot[k].SetDims(n,n);
+        P_rbot[k].SetDims(n,n);
     }
-    // *GEN* --> appbas is of the form X^d Id + P, for some m x m matrix P
-    // which has degree less than d
-    // For efficiency reasons, we split appbas into its top n rows and
-    // its bottom n rows
+    P_lbot[d].SetDims(n,n);
 
-    // To store the constant kernel basis and its lefthand square submatrix
+    // To store the kernel of the residuals 0 and 1, and their lefthand square
+    // submatrices
     // *GEN* --> dimension of kernel is n x m, its n x n righthand submatrix is
     // the identity
-    Mat<zz_p> kerbas, kerbas_left;
-    kerbas.SetDims(n, m);
-    kerbas_left.SetDims(n, n);
+    Mat<zz_p> ker, ker0, ker1;
+    ker.SetDims(n, 2*n);
+    ker0.SetDims(n, n);
+    ker1.SetDims(n, n);
 
     // buffer, to store products and sums
-    Mat<zz_p> buf1, buf2, buf3;
-    buf1.SetDims(n, m);
-    buf2.SetDims(n, n);
+    Mat<zz_p> bufR, buf, buf3;
+    bufR.SetDims(2*n, n);
+    buf.SetDims(n, n);
     buf3.SetDims(n, n);
 
     for (long k=0; k<d; ++k)
     {
-        // --> At the beginning of this iteration, appbas + X^k Id
-        // is the 0-Popov approximant basis for pmat at order 2k,
-        // and residual is the coefficient of degree k of appbas*pmat
-        // --> At the end of this iteration, appbas + X^(k+1) Id
-        // is the 0-Popov approximant basis for pmat at order 2k
-        // and residual is the coefficient of degree k+1 of appbas*pmat
+        // *GEN* --> currently, the computed approximant basis has the form
+        // [ [X^k I + P_ltop,  P_rtop], [P_lbot, X^k I + P_rbot]]
+        // where P_ltop, P_rtop, P_rbot have degree k-1 and P_lbot has degree k
+        // It is a 0-ordered weak Popov approximant basis for pmat at order 2*k
+        // For k==0: the last four matrices are in fact zero, and appbas = I
+        // --> residuals R0 and R1 are respectively the coefficients of degree
+        // 2*k and 2*k+1 of appbas*pmat
 
-        // 1. compute kernel of residual
-        kernel(kerbas,residual);
+        // 1. compute left kernel of residual 0
+        for (long i = 0; i < n; ++i)
+            bufR[i].swap(R0_top[i]);
+        for (long i = 0; i < n; ++i)
+            bufR[n+i].swap(R0_bot[i]);
+        kernel(ker,bufR);
         // (GEN) the right n x n submatrix of kerbas is identity
         // --> retrieve the left part
         for (long i = 0; i < n; ++i)
             for (long j = 0; j < n; ++j)
-                kerbas_left[i][j] = kerbas[i][j];
+                ker0[i][j] = ker[i][j];
 
-        // 2. update approximant basis
+        // 2. Update residual 1
+        // it is currently   [ [R1_top], [R1_bot] ]
+        // it should be [ [R0_top], [ker0 * R1_top + R1_bot] ]
+        mul(buf, ker0, R1_top);
+        add(R1_bot, R1_bot, buf);
+        R1_top.swap(R0_top); // we do not need the old R1_top anymore, and we won't use R0_top either
 
-        // 2.1/ appbas_bottom = kerbas * appbas, that is,
-        // appbas_bottom += kerbas_left * appbas_top
-
-        // as we will observe below, the constant coeff dd=0 of bottom is 0
-        // (except for k==0, where it is a "hidden" identity)
-        if (k>0)
-            mul(coeffs_appbas_bottom[0], kerbas_left, coeffs_appbas_top[0]);
-
-        for (long dd = 1; dd < k; ++dd)
-        {
-            mul(buf1, kerbas_left, coeffs_appbas_top[dd]);
-            add(coeffs_appbas_bottom[dd], coeffs_appbas_bottom[dd], buf1);
-        }
-        // And remember X^k identity in the top-left corner of the approx basis:
+        // 3. compute kernel of residual 1
+        // we permute the two blocks top-bottom, to respect the (implicit) shift
         for (long i = 0; i < n; ++i)
-            for (long j = 0; j < n; ++j)
-                coeffs_appbas_bottom[k][i][j] += kerbas_left[i][j];
-        // TODO could be optimized for k=0: simply copy kerbas_left
-
-        // 2.2/ appbas_top *= X
-        for (long dd = k-1; dd >= 0; --dd)
-            coeffs_appbas_top[dd+1].swap(coeffs_appbas_top[dd]);
-        // note: since coeffs_appbas_top[k] = 0 before this loop,
-        // this ensures coeffs_appbas_top[0] = 0 at the end of this loop
-
-        // 3. find new residual
-        // rescomp: compute the coefficient of degree 2*k+1 of appbas*pmat
-        // -- remember that appbas has degree <= k and the actual approximant
-        // basis is:
-        //     top    ==>   appbas_top + [ X^{k+1} id  |   0 ]
-        //     bottom ==>   appbas_bottom + [ 0    |   X^{k} id ]
-        // -- remember that pmat has degree deg_pmat, and that we required
-        // deg_pmat >= d > k
-
-        // Note that the next kernel will ask us to permute the top and bottom
-        // of residual --> directly compute it permuted
-
-        // 3.1/ compute the bottom part of residual (the top part of coeff(appbas*pmat,2k+1))
-        clear(buf3);
-        for (long dd=std::max<long>(0,2*k+1-deg_pmat); dd<=k; ++dd)
-        {
-            mul(buf2, coeffs_appbas_top[dd], coeffs_pmat[2*k+1-dd]);
-            add(buf3, buf3, buf2);
-        }
-        // buf3 is almost the bottom part of residual, except that we have
-        // missed dd == k+1, with coeffs_appbas_top[k+1] = [ id | 0 ]
-        // --> add top part of coeffs_pmat[k];
+            bufR[i].swap(R0_bot[i]);
         for (long i = 0; i < n; ++i)
-        {
-            residual[n+i].swap(buf3[i]);
-            add(residual[n+i], residual[n+i], coeffs_pmat[k][i]);
-        }
-
-        // 3.2/ compute the top part of residual (the bottom part of coeff(appbas*pmat,2k+1))
-        clear(buf3);
-        for (long dd=std::max<long>(0,2*k+1-deg_pmat); dd<k; ++dd)
-        {
-            mul(buf2, coeffs_appbas_bottom[dd], coeffs_pmat[2*k+1-dd]);
-            add(buf3, buf3, buf2);
-        }
-        // buf3 is almost the top part of residual, except that we have
-        // missed dd == k, with coeffs_appbas_bottom[k] = [ 0 | id ]:
-        // --> add bottom part of coeffs_pmat[k+1];
-        for (long i = 0; i < n; ++i)
-        {
-            residual[i].swap(buf3[i]);
-            add(residual[i], residual[i], coeffs_pmat[k+1][n+i]);
-        }
-
-        // 4. compute kernel of residual
-        kernel(kerbas,residual);
+            bufR[n+i].swap(R0_top[i]);
+        kernel(ker,bufR);
         // (GEN) the right n x n submatrix of kerbas is identity
         // --> retrieve the left part
         for (long i = 0; i < n; ++i)
             for (long j = 0; j < n; ++j)
-                kerbas_left[i][j] = kerbas[i][j];
+                ker1[i][j] = ker[i][j];
         // because of the permutation of the residual above, this should
         // in fact be seen as the right part of the kernel
         // --> it will multiply the bottom rows of appbas
 
-        // 5. update approximant basis
+        // 4. update approximant basis
 
-        // 5.1/ appbas_top = permuted_kerbas * appbas, that is,
-        // appbas_top += kerbas_left * appbas_bottom
-        // Remember coeffs_appbas_top[0] == 0:
-        mul(coeffs_appbas_top[0], kerbas_left, coeffs_appbas_bottom[0]);
-        for (long dd = 1; dd <= k-1; ++dd)
+        // 4.1 update by first computed basis [ [XI, 0], [ker0, I] ]
+        // Recall: currently, appbas has the form
+        // [ [X^k I + P_ltop,  P_rtop], [P_lbot, X^k I + P_rbot]]
+        for (long kk = 0; kk < k; ++kk)
         {
-            mul(buf1, kerbas_left, coeffs_appbas_bottom[dd]);
-            add(coeffs_appbas_top[dd], coeffs_appbas_top[dd], buf1);
+            mul(buf, ker0, P_ltop[kk]);
+            add(P_lbot[kk], P_lbot[kk], P_ltop[kk]);
         }
-        // And remember X^k identity in the bottom-right corner of appbas:
-        for (long i = 0; i < n; ++i)
-            for (long j = 0; j < n; ++j)
-                coeffs_appbas_top[k][i][n+j] += kerbas_left[i][j];
-        // TODO could be optimized for k=0: simple copy
+        for (long kk = 0; kk < k; ++kk)
+        {
+            mul(buf, ker0, P_rtop[kk]);
+            add(P_rbot[kk], P_rbot[kk], P_rtop[kk]);
+        }
+        for (long kk = k; kk >=0; --kk)
+            P_ltop[kk+1].swap(P_ltop[kk]);
+        // since the X^k I was actually not stored in P_ltop[k], that
+        // matrix was zero and therefore this effectively puts the zero
+        // matrix in P_ltop[0]
+        for (long kk = k; kk >=0; --kk)
+            P_rtop[kk+1].swap(P_rtop[kk]);
 
-        // 5.2/ appbas_bottom *= X
-        for (long dd = k; dd >= 0; --dd)
-            coeffs_appbas_bottom[dd+1].swap(coeffs_appbas_bottom[dd]);
-        // note: since coeffs_appbas_bottom[k] = 0 before this loop,
-        // this ensures coeffs_appbas_bottom[0] = 0 at the end of this loop
+        // 4.2 update by second computed basis [ [I, ker0], [0, XI] ]
+
+
+
+
+        // --> now appbas is a 0-ordered weak Popov approximant basis of pmat
+        // at order 2*k+2, of the form
+        // [ [X^(k+1) I + P_ltop,  P_rtop], [P_lbot, X^(k+1) I + P_rbot]]
+        // where P_ltop, P_rtop, P_rbot have degree k and P_lbot has degree k+1
+
 
         // 6. find new residual
         // rescomp: compute the coefficient of degree 2*k+2 of appbas*pmat
@@ -217,12 +259,12 @@ void mbasis_generic_2n_n_rescomp(
         // basis is:
         //     top    ==>   appbas_top + [ X^{k+1} id  |   0 ]
         //     bottom ==>   appbas_bottom + [ 0    |   X^{k+1} id ]
-        // -- remember that pmat has degree deg_pmat, and that we required
-        // deg_pmat >= d > k
+        // -- remember that pmat has degree degF, and that we required
+        // degF >= d > k
 
         // 6.1/ compute the top part of residual
         clear(buf3);
-        for (long dd=std::max<long>(0,2*k+2-deg_pmat); dd<=k; ++dd)
+        for (long dd=std::max<long>(0,2*k+2-degF); dd<=k; ++dd)
         {
             mul(buf2, coeffs_appbas_top[dd], coeffs_pmat[2*k+2-dd]);
             add(buf3, buf3, buf2);
@@ -238,7 +280,7 @@ void mbasis_generic_2n_n_rescomp(
 
         // 6.2/ compute the bottom part of residual
         clear(buf3);
-        for (long dd=std::max<long>(0,2*k+2-deg_pmat); dd<k; ++dd)
+        for (long dd=std::max<long>(0,2*k+2-degF); dd<k; ++dd)
         {
             mul(buf2, coeffs_appbas_bottom[dd], coeffs_pmat[2*k+2-dd]);
             add(buf3, buf3, buf2);
@@ -251,6 +293,33 @@ void mbasis_generic_2n_n_rescomp(
             residual[n+i].swap(buf3[i]);
             add(residual[n+i], residual[n+i], coeffs_pmat[k+1][n+i]);
         }
+        //{
+        //    std::cout << "----------------------------" << std::endl;
+        //    std::cout << "ITER " << k << std::endl;
+        //    std::cout << "TOP: " << std::endl;
+        //    std::cout << coeffs_appbas_top << std::endl;
+        //    std::cout << "BOT: " << std::endl;
+        //    std::cout << coeffs_appbas_bottom << std::endl;
+        //    // TODO temporary, for testing
+        //    // convert to polynomial matrix format
+        //    Mat<zz_pX> appbas_top;
+        //    conv(appbas_top, coeffs_appbas_top);
+        //    Mat<zz_pX> appbas_bottom;
+        //    conv(appbas_bottom, coeffs_appbas_bottom);
+
+        //    appbas.SetDims(2*n,2*n);
+        //    for (long i = 0; i < n; ++i)
+        //        appbas[i] = appbas_top[i];
+        //    for (long i = 0; i < n; ++i)
+        //        appbas[n+i] = appbas_bottom[i];
+
+        //    // insert identity for the coefficient matrix of degree k
+        //    for (long i = 0; i < 2*n; ++i)
+        //        SetCoeff(appbas[i][i], k+1);
+
+        //    is_approximant_basis(appbas,pmat,2*(k+1),VecLong(2*n,0),ORD_WEAK_POPOV,true);
+        //    std::cout << "----------------------------" << std::endl;
+        //}
     }
 
     // convert to polynomial matrix format
@@ -259,15 +328,15 @@ void mbasis_generic_2n_n_rescomp(
     Mat<zz_pX> appbas_bottom;
     conv(appbas_bottom, coeffs_appbas_bottom);
 
-    appbas.SetDims(m,m);
+    appbas.SetDims(2*n,2*n);
     for (long i = 0; i < n; ++i)
         appbas[i].swap(appbas_top[i]);
     for (long i = 0; i < n; ++i)
         appbas[n+i].swap(appbas_bottom[i]);
 
     // insert identity for the coefficient matrix of degree d
-    for (long i = 0; i < m; ++i)
-        SetCoeff(appbas[i][i], d, 1);
+    for (long i = 0; i < 2*n; ++i)
+        SetCoeff(appbas[i][i], d);
 }
 
 

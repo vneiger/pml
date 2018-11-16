@@ -269,7 +269,7 @@ VecLong mbasis_plain(
 /*------------------------------------------------------------*/
 
 // TODO:
-//   * handle degree better (?)
+//   * handle degree better, just need to check leading coeff of coeffs_appbas and estimate the new degree
 //   * issue about kernel which doesn't always have the pivots where we would like, in non-generic cases
 //   * check about unnecessary tmp variables
 
@@ -485,21 +485,19 @@ VecLong mbasis_rescomp(
 
             // Now, update shifted pivot degree and shifted row degree:
             // entries corresponding to kernel pivot indices are kept, others are +1
-            VecLong rdeg;
-            row_degree(rdeg, conv(coeffs_appbas));
             for (long i = 0; i < nrows; ++i)
                 if (not is_pivind[i])
                 {
                     ++srdeg[i];
                     ++pivdeg[i];
-                    ++rdeg[i];
                 }
 
             // Deduce the degree of appbas; it is a property of this algorithm
             // that deg(appbas) = max(pivot degree) (i.e. max(degree of
             // diagonal entries); this does not hold in general for shifted
             // ordered weak Popov approximant bases
-            deg_appbas = *std::max_element(rdeg.begin(), rdeg.end());
+            // TODO work to do here: incorrect for strange shifts and non-generic
+            deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
             // this new degree is either unchanged (== coeffs_appbas.length()-1),
             // or is the old one + 1 (== coeffs_appbas.length())
             if (deg_appbas==coeffs_appbas.length())

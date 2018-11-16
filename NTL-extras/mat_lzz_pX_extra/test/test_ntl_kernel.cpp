@@ -3,8 +3,10 @@
 
 using namespace NTL;
 
-int main(int , char * argv[])
+int main(int argc, char * argv[])
 {
+    if (argc != 4)
+        throw std::invalid_argument("Usage: ./test_ntl_kernel rdim cdim bitsize");
     long m = atoi(argv[1]);
     long n = atoi(argv[2]);
 	zz_p::init(GenPrime_long(atoi(argv[3])));
@@ -13,8 +15,8 @@ int main(int , char * argv[])
 	double tt1, tt2;
 	long nb_iter=0;
 
-	//while (nb_iter<40000)
-	while (t1<1)
+	while (nb_iter<1)
+	//while (t1<1)
 	{
 		Mat<zz_p> mat;
 		random(mat,m,n);
@@ -24,6 +26,15 @@ int main(int , char * argv[])
 		kernel(ker,mat);
 		tt2 = GetWallTime();
 		t1 += tt2 - tt1;
+
+        Mat<zz_p> im;
+        image(im, mat);
+        std::cout << "Matrix: " << std::endl;
+        std::cout << mat << std::endl;
+        std::cout << "Kernel: " << std::endl;
+        std::cout << ker << std::endl;
+        std::cout << "Image: " << std::endl;
+        std::cout << im << std::endl;
 
 		tt1 = GetWallTime();
         long k = ker.NumRows();
