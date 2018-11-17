@@ -312,10 +312,23 @@ void mbasis_generic_2n_n_rescomp(
         // [ [X^{k+1} I + P00,  P01], [X P10, X^{k+1} I + X P11]]
         // where P00, P01, P10 have degree k and P11 has degree k-1
 
-        // 5. compute new residuals (rescomp variant)
+        // 5. if not finished (k<d-1), compute the next residuals (rescomp variant)
         // --> residuals R0 and R1 must be, respectively, the coefficients of
         // degree 2k+2 and 2*k+3 of appbas*pmat
-        // TODO 
+        if (k<d-1)
+        {
+            // R0_top = coeff of degree 2k+2 of (X^{k+1} I + P00) F_top + P01 F_bot,
+            // where P00 and P01 have degree k
+
+            // R0_bot = coeff of degree 2k+2 of X P10 F_top + (X^{k+1} I + X P11) F_bot,
+            // where P10 has degree k and P11 has degree k-1
+
+            // R0_top = coeff of degree 2k+3 of (X^{k+1} I + P00) F_top + P01 F_bot,
+            // where P00 and P01 have degree k
+
+            // R0_bot = coeff of degree 2k+3 of X P10 F_top + (X^{k+1} I + X P11) F_bot,
+            // where P10 has degree k and P11 has degree k-1
+        }
     }
 
     // convert to polynomial matrix format
