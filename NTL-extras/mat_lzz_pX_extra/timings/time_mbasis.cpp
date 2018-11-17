@@ -153,7 +153,7 @@ void run_bench(long nthreads, long nbits, bool fftprime)
     VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
 
     cout << "rdim,cdim,order,nthreads,time" << endl;
-    for (size_t i=0;i<szs.size();i++)
+    for (size_t i=0; i<szs.size(); ++i)
     {
         // for generic, currently we can only use dimensions n=2m
 

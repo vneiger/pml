@@ -12,6 +12,7 @@
 
 //#define MBASIS_GEN_PROFILE
 //#define PMBASIS_GEN_PROFILE
+#define VERBOSE_MBASISGEN
 
 NTL_CLIENT
 
@@ -170,13 +171,51 @@ void mbasis_generic_2n_n_rescomp(
     K1.SetDims(n, n);
 
     // buffer, to store products and sums
-    Mat<zz_p> bufR, buf, buf3;
+    Mat<zz_p> bufR, buf;
     bufR.SetDims(2*n, n);
     buf.SetDims(n, n);
-    buf3.SetDims(n, n);
 
     for (long k=0; k<d; ++k)
     {
+#ifdef VERBOSE_MBASISGEN
+        std::cout << "===========" << std::endl;
+        std::cout << "Iter " << k << ", start" << std::endl;
+#endif // VERBOSE_MBASISGEN
+
+#ifdef VERBOSE_MBASISGEN
+        // convert to polynomial matrix format
+
+        // appbas = [ [P00,  P01], [X P10, X P11]]
+        // where P00, P01, P10 have degree k-1 and P11 has degree k-2
+        appbas.SetDims(2*n,2*n);
+        clear(appbas);
+        for (long i = 0; i < n; ++i)
+        {
+            for (long j = 0; j < n; ++j)
+                for (long kk = 0; kk < k; ++kk)
+                    SetCoeff(appbas[i][j], kk, P00[kk][i][j]);
+            for (long j = n; j < 2*n; ++j)
+                for (long kk = 0; kk < k; ++kk)
+                    SetCoeff(appbas[i][j], kk, P01[kk][i][j-n]);
+        }
+        for (long i = n; i < 2*n; ++i)
+        {
+            for (long j = 0; j < n; ++j)
+                for (long kk = 1; kk < k+1; ++kk)
+                    SetCoeff(appbas[i][j], kk, P10[kk][i-n][j]);
+            for (long j = n; j < 2*n; ++j)
+                for (long kk = 1; kk < k; ++kk)
+                    SetCoeff(appbas[i][j], kk, P11[kk][i-n][j-n]);
+        }
+
+        // add X^d I
+        for (long i = 0; i < 2*n; ++i)
+            SetCoeff(appbas[i][i], k);
+        std::cout << "degree matrix of appbas: " << std::endl << degree_matrix(appbas) << std::endl;
+        is_approximant_basis(appbas, pmat, k, VecLong(2*n,0), ORD_WEAK_POPOV, true);
+#endif // VERBOSE_MBASISGEN
+
+
         // *GEN* --> currently, the computed approximant basis has the form
         // [ [X^k I + P00,  P01], [X P10, X^k I + X P11]]
         // where P00, P01, P10 have degree k-1 and P11 has degree k-2
@@ -187,9 +226,9 @@ void mbasis_generic_2n_n_rescomp(
 
         // 1. compute left kernel of residual 0
         for (long i = 0; i < n; ++i)
-            bufR[i].swap(R0_top[i]);
+            bufR[i] = R0_top[i]; // TODO VectorCopy ??
         for (long i = 0; i < n; ++i)
-            bufR[n+i].swap(R0_bot[i]);
+            bufR[n+i] = R0_bot[i]; // TODO VectorCopy ??
         kernel(ker,bufR);
         // (GEN) the right n x n submatrix of kerbas is identity
         // --> retrieve the left part
@@ -197,28 +236,40 @@ void mbasis_generic_2n_n_rescomp(
             for (long j = 0; j < n; ++j)
                 K0[i][j] = ker[i][j];
 
+#ifdef VERBOSE_MBASISGEN
+        std::cout << "...Ker0 computed " << std::endl;
+#endif // VERBOSE_MBASISGEN
+
         // 2. Update residual 1
         // it is currently   [ [R1_top], [R1_bot] ]
         // it should be [ [R0_top], [K0 * R1_top + R1_bot] ]
         mul(buf, K0, R1_top);
         add(R1_bot, R1_bot, buf);
-        R1_top.swap(R0_top); // we do not need the old R1_top anymore, and we won't use R0_top either
+        //R1_top.swap(R0_top); // we do not need the old R1_top anymore, and we won't use R0_top either
+        R1_top = R0_top; // TODO swap
+
+#ifdef VERBOSE_MBASISGEN
+        std::cout << "...R1 updated " << std::endl;
+#endif // VERBOSE_MBASISGEN
 
         // 3. compute kernel of residual 1
         // we permute the two blocks top-bottom, to respect the (implicit) shift
         for (long i = 0; i < n; ++i)
-            bufR[i].swap(R0_bot[i]);
+            //bufR[i].swap(R1_bot[i]);
+            bufR[i] = R1_bot[i];
         for (long i = 0; i < n; ++i)
-            bufR[n+i].swap(R0_top[i]);
+            //bufR[n+i].swap(R1_top[i]);
+            bufR[n+i] = R1_top[i];
         kernel(ker,bufR);
         // (GEN) the right n x n submatrix of kerbas is identity
         // --> retrieve the left part
         for (long i = 0; i < n; ++i)
             for (long j = 0; j < n; ++j)
                 K1[i][j] = ker[i][j];
-        // because of the permutation of the residual above, this should
-        // in fact be seen as the right part of the kernel
-        // --> it will multiply the bottom rows of appbas
+
+#ifdef VERBOSE_MBASISGEN
+        std::cout << "...Ker1 computed " << std::endl;
+#endif // VERBOSE_MBASISGEN
 
         // 4. update approximant basis
 
@@ -264,6 +315,11 @@ void mbasis_generic_2n_n_rescomp(
         for (long kk = k-1; kk >=0; --kk)
             P01[kk+1].swap(P01[kk]);
         // note: this loop does put the zero matrix in P01[0]
+
+#ifdef VERBOSE_MBASISGEN
+        std::cout << "...appbas, first update done" << std::endl;
+#endif // VERBOSE_MBASISGEN
+
 
         // 4.2 update by second computed basis [ [I, K1], [0, X I] ]
         // From step 4.1, appbas has the form
@@ -311,6 +367,10 @@ void mbasis_generic_2n_n_rescomp(
         // at order 2*k+2, of the form
         // [ [X^{k+1} I + P00,  P01], [X P10, X^{k+1} I + X P11]]
         // where P00, P01, P10 have degree k and P11 has degree k-1
+
+#ifdef VERBOSE_MBASISGEN
+        std::cout << "...appbas, second update done" << std::endl;
+#endif // VERBOSE_MBASISGEN
 
         // 5. if not finished (k<d-1), compute the next residuals (rescomp variant)
         // --> residuals R0 and R1 must be, respectively, the coefficients of
@@ -377,7 +437,14 @@ void mbasis_generic_2n_n_rescomp(
                 add(R1_bot, R1_bot, buf);
             }
             add(R1_bot, R1_bot, F_bot[k+2]);
+#ifdef VERBOSE_MBASISGEN
+        std::cout << "... residuals updated" << std::endl;
+#endif // VERBOSE_MBASISGEN
         }
+#ifdef VERBOSE_MBASISGEN
+        else
+            std::cout << "... last iteration: no residual update needed" << std::endl;
+#endif // VERBOSE_MBASISGEN
     }
 
     // convert to polynomial matrix format
@@ -385,6 +452,7 @@ void mbasis_generic_2n_n_rescomp(
     // appbas = [ [P00,  P01], [X P10, X P11]]
     // where P00, P01, P10 have degree d-1 and P11 has degree d-2
     appbas.SetDims(2*n,2*n);
+    clear(appbas); // TODO remove
     for (long i = 0; i < n; ++i)
     {
         for (long j = 0; j < n; ++j)
@@ -407,12 +475,11 @@ void mbasis_generic_2n_n_rescomp(
     // add X^d I
     for (long i = 0; i < 2*n; ++i)
         SetCoeff(appbas[i][i], d);
+
+#ifdef VERBOSE_MBASISGEN
+    is_approximant_basis(appbas, pmat, order, VecLong(2*n,0), ORD_WEAK_POPOV, true);
+#endif // VERBOSE_MBASISGEN
 }
-
-
-
-
-
 
 
 /*------------------------------------------------------------*/

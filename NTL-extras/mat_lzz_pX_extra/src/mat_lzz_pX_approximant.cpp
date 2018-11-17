@@ -111,7 +111,7 @@ bool is_approximant_basis(
             if (residual[i][j] != 0)
             {
                 std::cout << "~~is_approx~~ not approx (" << i << "," << j << "): " << std::endl;
-                //std::cout << residual << std::endl;
+                std::cout << residual << std::endl;
                 return false;
             }
         }
