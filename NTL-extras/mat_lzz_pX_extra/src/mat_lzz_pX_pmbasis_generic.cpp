@@ -238,7 +238,7 @@ void mbasis_generic_2n_n_rescomp(
         for (long kk = 1; kk < k; ++kk)
         {
             mul(buf, K0, P00[kk]);
-            add(P10[kk], P10[kk], P00[kk]);
+            add(P10[kk], P10[kk], buf);
         }
         add(P10[k], P10[k], K0); // add K0 to coeff of degree k
         // TODO could be optimized when k==0: no add, just assign
@@ -250,7 +250,7 @@ void mbasis_generic_2n_n_rescomp(
         for (long kk = 1; kk < k; ++kk)
         {
             mul(buf, K0, P01[kk]);
-            add(P11[kk], P11[kk], P01[kk]);
+            add(P11[kk], P11[kk], buf);
         }
         // TODO could be optimized when k==1: no add, just assign, because P11[kk]==0
 
@@ -274,7 +274,27 @@ void mbasis_generic_2n_n_rescomp(
         // [ [X^{k+1} I + X P00 + K1 P10,  X P01 + X^k K1 + K1 P11],
         //   [X P10, X^{k+1} I + X P11] ]
 
-        // TODO
+        // top left
+        // add constant term of K1 P10
+        mul(P00[0], K1, P10[0]); 
+        // add terms of degree 1 ... k of K1 P10
+        for (long kk = 1; kk <= k; ++kk)
+        {
+            mul(buf, K1, P10[kk]);
+            add(P00[kk], P00[kk], buf);
+        }
+
+        // top right
+        // add constant term of K1 P11
+        mul(P00[0], K1, P10[0]); 
+        // add terms of degree 1 ... k-1 of K1 P11
+        for (long kk = 1; kk < k; ++kk)
+        {
+            mul(buf, K1, P11[kk]);
+            add(P01[kk], P00[kk], buf);
+        }
+        // add X^k K1
+        add(P01[k], P01[k], K1);
 
         // bottom left: P10 <- X P10  (P10 has degree k)
         for (long kk = k; kk >=0; --kk)
