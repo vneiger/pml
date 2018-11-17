@@ -128,6 +128,7 @@ void mbasis_generic_2n_n_rescomp(
         throw std::invalid_argument("~~mbasis_generic_2n_n~~ order must be even");
 
     // coefficient matrices of input polynomial matrix
+    // pmat = [[Ft], [Fb]]
     Vec<Mat<zz_p>> F_top, F_bot;
     conv_top_bot(F_top, F_bot, pmat);
     long degF = F_top.length()-1;
@@ -143,30 +144,29 @@ void mbasis_generic_2n_n_rescomp(
 
     // coefficient matrices of output approximant basis
     // *GEN* --> appbas will be computed in the form
-    // [ [X^d I + P_ltop,  P_rtop], [P_lbot, X^d I + P_rbot]]
-    // where P_ltop, P_rtop, P_rbot have d-1 and P_lbot has degree d
-    Vec<Mat<zz_p>> P_ltop, P_rtop, P_lbot, P_rbot;
-    P_ltop.SetLength(d);
-    P_rtop.SetLength(d);
-    P_lbot.SetLength(d+1);
-    P_rbot.SetLength(d);
+    // [ [X^d I + P00,  P01], [X P10, X^d I + P11]]
+    // where P00, P01, P11, P10 have degree d-1
+    Vec<Mat<zz_p>> P00, P01, P10, P11;
+    P00.SetLength(d);
+    P01.SetLength(d);
+    P10.SetLength(d);
+    P11.SetLength(d);
     for (long k = 0; k < d; ++k)
     {
-        P_ltop[k].SetDims(n,n);
-        P_rtop[k].SetDims(n,n);
-        P_lbot[k].SetDims(n,n);
-        P_rbot[k].SetDims(n,n);
+        P00[k].SetDims(n,n);
+        P01[k].SetDims(n,n);
+        P10[k].SetDims(n,n);
+        P11[k].SetDims(n,n);
     }
-    P_lbot[d].SetDims(n,n);
 
     // To store the kernel of the residuals 0 and 1, and their lefthand square
     // submatrices
     // *GEN* --> dimension of kernel is n x m, its n x n righthand submatrix is
     // the identity
-    Mat<zz_p> ker, ker0, ker1;
+    Mat<zz_p> ker, K0, K1;
     ker.SetDims(n, 2*n);
-    ker0.SetDims(n, n);
-    ker1.SetDims(n, n);
+    K0.SetDims(n, n);
+    K1.SetDims(n, n);
 
     // buffer, to store products and sums
     Mat<zz_p> bufR, buf, buf3;
@@ -177,10 +177,10 @@ void mbasis_generic_2n_n_rescomp(
     for (long k=0; k<d; ++k)
     {
         // *GEN* --> currently, the computed approximant basis has the form
-        // [ [X^k I + P_ltop,  P_rtop], [P_lbot, X^k I + P_rbot]]
-        // where P_ltop, P_rtop, P_rbot have degree k-1 and P_lbot has degree k
+        // [ [X^k I + P00,  P01], [X P10, X^k I + P11]]
+        // where P00, P01, P11, P10 have degree k-1
         // It is a 0-ordered weak Popov approximant basis for pmat at order 2*k
-        // For k==0: the last four matrices are in fact zero, and appbas = I
+        // (For k==0: the last four matrices are in fact zero, and appbas = I)
         // --> residuals R0 and R1 are respectively the coefficients of degree
         // 2*k and 2*k+1 of appbas*pmat
 
@@ -194,12 +194,12 @@ void mbasis_generic_2n_n_rescomp(
         // --> retrieve the left part
         for (long i = 0; i < n; ++i)
             for (long j = 0; j < n; ++j)
-                ker0[i][j] = ker[i][j];
+                K0[i][j] = ker[i][j];
 
         // 2. Update residual 1
         // it is currently   [ [R1_top], [R1_bot] ]
-        // it should be [ [R0_top], [ker0 * R1_top + R1_bot] ]
-        mul(buf, ker0, R1_top);
+        // it should be [ [R0_top], [K0 * R1_top + R1_bot] ]
+        mul(buf, K0, R1_top);
         add(R1_bot, R1_bot, buf);
         R1_top.swap(R0_top); // we do not need the old R1_top anymore, and we won't use R0_top either
 
@@ -214,43 +214,54 @@ void mbasis_generic_2n_n_rescomp(
         // --> retrieve the left part
         for (long i = 0; i < n; ++i)
             for (long j = 0; j < n; ++j)
-                ker1[i][j] = ker[i][j];
+                K1[i][j] = ker[i][j];
         // because of the permutation of the residual above, this should
         // in fact be seen as the right part of the kernel
         // --> it will multiply the bottom rows of appbas
 
         // 4. update approximant basis
 
-        // 4.1 update by first computed basis [ [XI, 0], [ker0, I] ]
+        // 4.1 update by first computed basis [ [XI, 0], [K0, I] ]
         // Recall: currently, appbas has the form
-        // [ [X^k I + P_ltop,  P_rtop], [P_lbot, X^k I + P_rbot]]
-        for (long kk = 0; kk < k; ++kk)
-        {
-            mul(buf, ker0, P_ltop[kk]);
-            add(P_lbot[kk], P_lbot[kk], P_ltop[kk]);
-        }
-        for (long kk = 0; kk < k; ++kk)
-        {
-            mul(buf, ker0, P_rtop[kk]);
-            add(P_rbot[kk], P_rbot[kk], P_rtop[kk]);
-        }
-        for (long kk = k; kk >=0; --kk)
-            P_ltop[kk+1].swap(P_ltop[kk]);
-        // since the X^k I was actually not stored in P_ltop[k], that
-        // matrix was zero and therefore this effectively puts the zero
-        // matrix in P_ltop[0]
-        for (long kk = k; kk >=0; --kk)
-            P_rtop[kk+1].swap(P_rtop[kk]);
+        // [ [X^k I + P00,  P01], [X P10, X^k I + P11]]
+        // --> update it as
+        // [ [X^{k+1} I + X P00,  XP01],
+        //   [K0 P00 + X^k K0 + X P10, K0 P01 + X^k I + P11] ]
 
-        // 4.2 update by second computed basis [ [I, ker0], [0, XI] ]
+        // bottom left
+        for (long kk = 0; kk < k; ++kk)
+        {
+            mul(buf, K0, P00[kk]);
+            add(P10[kk], P10[kk], P00[kk]);
+        }
+        add(P10[k], P10[k], K0); // TODO could be optimized when k==0: no add, just assign
+
+        // bottom right
+        for (long kk = 0; kk < k; ++kk)
+        {
+            mul(buf, K0, P01[kk]);
+            add(P11[kk], P11[kk], P01[kk]);
+        }
+
+        // top left
+        for (long kk = k-1; kk >=0; --kk)
+            P00[kk+1].swap(P00[kk]);
+        // since the X^k I was actually not stored in P00[k], that matrix was
+        // zero and therefore this effectively puts the zero matrix in P00[0]
+
+        // top right
+        for (long kk = k-1; kk >=0; --kk)
+            P01[kk+1].swap(P01[kk]);
+
+        // 4.2 update by second computed basis [ [I, K0], [0, XI] ]
 
 
 
 
         // --> now appbas is a 0-ordered weak Popov approximant basis of pmat
         // at order 2*k+2, of the form
-        // [ [X^(k+1) I + P_ltop,  P_rtop], [P_lbot, X^(k+1) I + P_rbot]]
-        // where P_ltop, P_rtop, P_rbot have degree k and P_lbot has degree k+1
+        // [ [X^(k+1) I + P00,  P01], [P10, X^(k+1) I + P11]]
+        // where P00, P01, P11 have degree k and P10 has degree k+1
 
 
         // 6. find new residual
