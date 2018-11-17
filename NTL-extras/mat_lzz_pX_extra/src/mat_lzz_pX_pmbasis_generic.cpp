@@ -315,18 +315,43 @@ void mbasis_generic_2n_n_rescomp(
         // 5. if not finished (k<d-1), compute the next residuals (rescomp variant)
         // --> residuals R0 and R1 must be, respectively, the coefficients of
         // degree 2k+2 and 2*k+3 of appbas*pmat
+        // TODO improve to deal with F having degree smaller than 2d-1??
         if (k<d-1)
         {
             // R0_top = coeff of degree 2k+2 of (X^{k+1} I + P00) F_top + P01 F_bot,
             // where P00 and P01 have degree k
+            mul(R0_top, P00[0], F_top[2*k+2]);
+            for (long kk = 1; kk < k+1; ++kk)
+            {
+                mul(buf, P00[kk], F_top[2*k+2-kk]);
+                add(R0_top, R0_top, buf);
+            }
+            add(R0_top, R0_top, F_top[k+1]);
+            for (long kk = 0; kk < k+1; ++kk)
+            {
+                mul(buf, P01[kk], F_bot[2*k+2-kk]);
+                add(R0_top, R0_top, buf);
+            }
+
+            // R1_top = coeff of degree 2k+3 of (X^{k+1} I + P00) F_top + P01 F_bot,
+            // where P00 and P01 have degree k
+            mul(R1_top, P00[0], F_top[2*k+3]);
+            for (long kk = 1; kk < k+1; ++kk)
+            {
+                mul(buf, P00[kk], F_top[2*k+3-kk]);
+                add(R1_top, R1_top, buf);
+            }
+            add(R1_top, R1_top, F_top[k+2]);
+            for (long kk = 0; kk < k+1; ++kk)
+            {
+                mul(buf, P01[kk], F_bot[2*k+3-kk]);
+                add(R1_top, R1_top, buf);
+            }
 
             // R0_bot = coeff of degree 2k+2 of X P10 F_top + (X^{k+1} I + X P11) F_bot,
             // where P10 has degree k and P11 has degree k-1
 
-            // R0_top = coeff of degree 2k+3 of (X^{k+1} I + P00) F_top + P01 F_bot,
-            // where P00 and P01 have degree k
-
-            // R0_bot = coeff of degree 2k+3 of X P10 F_top + (X^{k+1} I + X P11) F_bot,
+            // R1_bot = coeff of degree 2k+3 of X P10 F_top + (X^{k+1} I + X P11) F_bot,
             // where P10 has degree k and P11 has degree k-1
         }
     }
