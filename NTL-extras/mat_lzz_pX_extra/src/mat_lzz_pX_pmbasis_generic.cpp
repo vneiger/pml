@@ -144,20 +144,21 @@ void mbasis_generic_2n_n_rescomp(
 
     // coefficient matrices of output approximant basis
     // *GEN* --> appbas will be computed in the form
-    // [ [X^d I + P00,  P01], [X P10, X^d I + P11]]
-    // where P00, P01, P11, P10 have degree d-1
+    // [ [X^d I + P00,  P01], [X P10, X^d I + X P11]]
+    // where P00, P01, P10 have degree d-1 and P11 has degree d-2
     Vec<Mat<zz_p>> P00, P01, P10, P11;
     P00.SetLength(d);
-    P01.SetLength(d);
-    P10.SetLength(d);
-    P11.SetLength(d);
     for (long k = 0; k < d; ++k)
-    {
         P00[k].SetDims(n,n);
+    P01.SetLength(d);
+    for (long k = 0; k < d; ++k)
         P01[k].SetDims(n,n);
-        P10[k].SetDims(n,n);
+    P10.SetLength(d+1); // we still store the degree 0 coeff (which will eventually be zero)
+    for (long k = 0; k < d+1; ++k)
+        P01[k].SetDims(n,n);
+    P11.SetLength(d); // we still store the degree 0 coeff (which will eventually be zero)
+    for (long k = 0; k < d; ++k)
         P11[k].SetDims(n,n);
-    }
 
     // To store the kernel of the residuals 0 and 1, and their lefthand square
     // submatrices
@@ -177,8 +178,8 @@ void mbasis_generic_2n_n_rescomp(
     for (long k=0; k<d; ++k)
     {
         // *GEN* --> currently, the computed approximant basis has the form
-        // [ [X^k I + P00,  P01], [X P10, X^k I + P11]]
-        // where P00, P01, P11, P10 have degree k-1
+        // [ [X^k I + P00,  P01], [X P10, X^k I + X P11]]
+        // where P00, P01, P10 have degree k-1 and P11 has degree k-2
         // It is a 0-ordered weak Popov approximant basis for pmat at order 2*k
         // (For k==0: the last four matrices are in fact zero, and appbas = I)
         // --> residuals R0 and R1 are respectively the coefficients of degree
@@ -223,48 +224,75 @@ void mbasis_generic_2n_n_rescomp(
 
         // 4.1 update by first computed basis [ [XI, 0], [K0, I] ]
         // Recall: currently, appbas has the form
-        // [ [X^k I + P00,  P01], [X P10, X^k I + P11]]
+        // [ [X^k I + P00,  P01], [X P10, X^k I + X P11]]
+        // where P00, P01, P10 have degree k-1 and P11 has degree k-2
+        // (negative k-1 or k-2 means zero matrix)
         // --> update it as
-        // [ [X^{k+1} I + X P00,  XP01],
-        //   [K0 P00 + X^k K0 + X P10, K0 P01 + X^k I + P11] ]
+        // [ [X^{k+1} I + X P00,  X P01],
+        //   [K0 P00 + X^k K0 + X P10, K0 P01 + X^k I + X P11] ]
 
         // bottom left
-        for (long kk = 0; kk < k; ++kk)
+        // add constant term of K0 P00
+        mul(P10[0], K0, P00[0]); 
+        // add terms of degree 1 ... k-1 of K0 P00
+        for (long kk = 1; kk < k; ++kk)
         {
             mul(buf, K0, P00[kk]);
             add(P10[kk], P10[kk], P00[kk]);
         }
-        add(P10[k], P10[k], K0); // TODO could be optimized when k==0: no add, just assign
+        add(P10[k], P10[k], K0); // add K0 to coeff of degree k
+        // TODO could be optimized when k==0: no add, just assign
 
         // bottom right
-        for (long kk = 0; kk < k; ++kk)
+        // add constant term of K0 P01
+        mul(P11[0], K0, P01[0]); 
+        // add terms of degree 1 ... k-1 of K0 P01
+        for (long kk = 1; kk < k; ++kk)
         {
             mul(buf, K0, P01[kk]);
             add(P11[kk], P11[kk], P01[kk]);
         }
+        // TODO could be optimized when k==1: no add, just assign, because P11[kk]==0
 
-        // top left
+        // top left: P00 <- X P00  (P00 has degree k-1)
         for (long kk = k-1; kk >=0; --kk)
             P00[kk+1].swap(P00[kk]);
         // since the X^k I was actually not stored in P00[k], that matrix was
-        // zero and therefore this effectively puts the zero matrix in P00[0]
+        // zero and therefore this loop does put the zero matrix in P00[0]
 
-        // top right
+        // top right: P01 <- X P01  (P01 has degree k-1)
         for (long kk = k-1; kk >=0; --kk)
             P01[kk+1].swap(P01[kk]);
+        // note: this loop does put the zero matrix in P01[0]
 
-        // 4.2 update by second computed basis [ [I, K0], [0, XI] ]
+        // 4.2 update by second computed basis [ [I, K1], [0, X I] ]
+        // From step 4.1, appbas has the form
+        // [ [X^{k+1} I + X P00,  X P01],
+        //   [P10, X^k I + P11] ]
+        // where P00, P01, P11 have degree k-1 and P10 has degree k
+        // --> update it as
+        // [ [X^{k+1} I + X P00 + K1 P10,  X P01 + X^k K1 + K1 P11],
+        //   [X P10, X^{k+1} I + X P11] ]
 
+        // TODO
 
+        // bottom left: P10 <- X P10  (P10 has degree k)
+        for (long kk = k; kk >=0; --kk)
+            P10[kk+1].swap(P10[kk]);
+        // note: this loop does put the zero matrix in P10[0]
 
+        // bottom right: P11 <- X P11  (P11 has degree k-1)
+        for (long kk = k-1; kk >=0; --kk)
+            P11[kk+1].swap(P11[kk]);
+        // note: since the X^k I was not stored in P11, this loop does put the
+        // zero matrix in P11[0]
 
         // --> now appbas is a 0-ordered weak Popov approximant basis of pmat
         // at order 2*k+2, of the form
-        // [ [X^(k+1) I + P00,  P01], [P10, X^(k+1) I + P11]]
-        // where P00, P01, P11 have degree k and P10 has degree k+1
+        // [ [X^{k+1} I + P00,  P01], [X P10, X^{k+1} I + X P11]]
+        // where P00, P01, P10 have degree k and P11 has degree k-1
 
-
-        // 6. find new residual
+        // 5. find new residual
         // rescomp: compute the coefficient of degree 2*k+2 of appbas*pmat
         // -- remember that appbas has degree = k and the actual approximant
         // basis is:
