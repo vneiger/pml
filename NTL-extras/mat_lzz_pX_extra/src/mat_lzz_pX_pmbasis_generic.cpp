@@ -350,9 +350,33 @@ void mbasis_generic_2n_n_rescomp(
 
             // R0_bot = coeff of degree 2k+2 of X P10 F_top + (X^{k+1} I + X P11) F_bot,
             // where P10 has degree k and P11 has degree k-1
+            mul(R0_bot, P10[1], F_top[2*k+1]);
+            for (long kk = 2; kk < k+2; ++kk)
+            {
+                mul(buf, P10[kk], F_top[2*k+2-kk]);
+                add(R0_bot, R0_bot, buf);
+            }
+            for (long kk = 1; kk < k+1; ++kk)
+            {
+                mul(buf, P11[kk], F_bot[2*k+2-kk]);
+                add(R0_bot, R0_bot, buf);
+            }
+            add(R0_bot, R0_bot, F_bot[k+1]);
 
             // R1_bot = coeff of degree 2k+3 of X P10 F_top + (X^{k+1} I + X P11) F_bot,
             // where P10 has degree k and P11 has degree k-1
+            mul(R1_bot, P10[1], F_top[2*k+2]);
+            for (long kk = 2; kk < k+2; ++kk)
+            {
+                mul(buf, P10[kk], F_top[2*k+3-kk]);
+                add(R1_bot, R1_bot, buf);
+            }
+            for (long kk = 1; kk < k+1; ++kk)
+            {
+                mul(buf, P11[kk], F_bot[2*k+3-kk]);
+                add(R1_bot, R1_bot, buf);
+            }
+            add(R1_bot, R1_bot, F_bot[k+2]);
         }
     }
 
