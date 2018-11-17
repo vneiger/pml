@@ -312,88 +312,37 @@ void mbasis_generic_2n_n_rescomp(
         // [ [X^{k+1} I + P00,  P01], [X P10, X^{k+1} I + X P11]]
         // where P00, P01, P10 have degree k and P11 has degree k-1
 
-        // 5. find new residual
-        // rescomp: compute the coefficient of degree 2*k+2 of appbas*pmat
-        // -- remember that appbas has degree = k and the actual approximant
-        // basis is:
-        //     top    ==>   appbas_top + [ X^{k+1} id  |   0 ]
-        //     bottom ==>   appbas_bottom + [ 0    |   X^{k+1} id ]
-        // -- remember that pmat has degree degF, and that we required
-        // degF >= d > k
-
-        // 6.1/ compute the top part of residual
-        clear(buf3);
-        for (long dd=std::max<long>(0,2*k+2-degF); dd<=k; ++dd)
-        {
-            mul(buf2, coeffs_appbas_top[dd], coeffs_pmat[2*k+2-dd]);
-            add(buf3, buf3, buf2);
-        }
-        // buf3 is almost the top part of residual, except that we have
-        // missed dd == k+1, with coeffs_appbas_top[k+1] = [ id | 0 ]
-        // --> add top part of coeffs_pmat[k+1];
-        for (long i = 0; i < n; ++i)
-        {
-            residual[i].swap(buf3[i]);
-            add(residual[i], residual[i], coeffs_pmat[k+1][i]);
-        }
-
-        // 6.2/ compute the bottom part of residual
-        clear(buf3);
-        for (long dd=std::max<long>(0,2*k+2-degF); dd<k; ++dd)
-        {
-            mul(buf2, coeffs_appbas_bottom[dd], coeffs_pmat[2*k+2-dd]);
-            add(buf3, buf3, buf2);
-        }
-        // buf3 is almost the bottom part of residual, except that we have
-        // missed dd == k+1, with coeffs_appbas_bottom[k] = [ 0 | id ]:
-        // --> add bottom part of coeffs_pmat[k+1];
-        for (long i = 0; i < n; ++i)
-        {
-            residual[n+i].swap(buf3[i]);
-            add(residual[n+i], residual[n+i], coeffs_pmat[k+1][n+i]);
-        }
-        //{
-        //    std::cout << "----------------------------" << std::endl;
-        //    std::cout << "ITER " << k << std::endl;
-        //    std::cout << "TOP: " << std::endl;
-        //    std::cout << coeffs_appbas_top << std::endl;
-        //    std::cout << "BOT: " << std::endl;
-        //    std::cout << coeffs_appbas_bottom << std::endl;
-        //    // TODO temporary, for testing
-        //    // convert to polynomial matrix format
-        //    Mat<zz_pX> appbas_top;
-        //    conv(appbas_top, coeffs_appbas_top);
-        //    Mat<zz_pX> appbas_bottom;
-        //    conv(appbas_bottom, coeffs_appbas_bottom);
-
-        //    appbas.SetDims(2*n,2*n);
-        //    for (long i = 0; i < n; ++i)
-        //        appbas[i] = appbas_top[i];
-        //    for (long i = 0; i < n; ++i)
-        //        appbas[n+i] = appbas_bottom[i];
-
-        //    // insert identity for the coefficient matrix of degree k
-        //    for (long i = 0; i < 2*n; ++i)
-        //        SetCoeff(appbas[i][i], k+1);
-
-        //    is_approximant_basis(appbas,pmat,2*(k+1),VecLong(2*n,0),ORD_WEAK_POPOV,true);
-        //    std::cout << "----------------------------" << std::endl;
-        //}
+        // 5. compute new residuals (rescomp variant)
+        // --> residuals R0 and R1 must be, respectively, the coefficients of
+        // degree 2k+2 and 2*k+3 of appbas*pmat
+        // TODO 
     }
 
     // convert to polynomial matrix format
-    Mat<zz_pX> appbas_top;
-    conv(appbas_top, coeffs_appbas_top);
-    Mat<zz_pX> appbas_bottom;
-    conv(appbas_bottom, coeffs_appbas_bottom);
 
+    // appbas = [ [P00,  P01], [X P10, X P11]]
+    // where P00, P01, P10 have degree d-1 and P11 has degree d-2
     appbas.SetDims(2*n,2*n);
     for (long i = 0; i < n; ++i)
-        appbas[i].swap(appbas_top[i]);
-    for (long i = 0; i < n; ++i)
-        appbas[n+i].swap(appbas_bottom[i]);
+    {
+        for (long j = 0; j < n; ++j)
+            for (long k = 0; k < d; ++k)
+                SetCoeff(appbas[i][j], k, P00[k][i][j]);
+        for (long j = n; j < 2*n; ++j)
+            for (long k = 0; k < d; ++k)
+                SetCoeff(appbas[i][j], k, P01[k][i][j-n]);
+    }
+    for (long i = n; i < 2*n; ++i)
+    {
+        for (long j = 0; j < n; ++j)
+            for (long k = 1; k < d+1; ++k)
+                SetCoeff(appbas[i][j], k, P10[k][i-n][j]);
+        for (long j = n; j < 2*n; ++j)
+            for (long k = 1; k < d; ++k)
+                SetCoeff(appbas[i][j], k, P11[k][i-n][j-n]);
+    }
 
-    // insert identity for the coefficient matrix of degree d
+    // add X^d I
     for (long i = 0; i < 2*n; ++i)
         SetCoeff(appbas[i][i], d);
 }
