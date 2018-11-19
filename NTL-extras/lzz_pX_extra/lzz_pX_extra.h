@@ -6,6 +6,15 @@
 
 NTL_CLIENT
 
+
+/*------------------------------------------------------------*/
+/* power series division                                      */
+/* x = b/a mod x^m                                            */
+/*------------------------------------------------------------*/
+void InvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m);
+inline zz_pX InvTruncMul(const zz_pX& b, const zz_pX& a, long m)
+{ zz_pX x; InvTruncMul(x, b, a, m); return x; }
+
 /*------------------------------------------------------------*/
 /* test if polynomial is monic                                */
 /*------------------------------------------------------------*/
