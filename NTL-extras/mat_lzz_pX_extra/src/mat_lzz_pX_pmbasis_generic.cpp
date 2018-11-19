@@ -10,7 +10,7 @@
 #include "lzz_pX_CRT.h"
 #include "mat_lzz_pX_extra.h"
 
-//#define MBASIS_GEN_PROFILE
+#define MBASIS_GEN_PROFILE
 //#define PMBASIS_GEN_PROFILE
 //#define VERBOSE_MBASISGEN
 
@@ -108,7 +108,7 @@ void conv_top_bot(
 
 /*------------------------------------------------------------*/
 /* Rescomp version, requiring m = 2 n and order even          */
-/* works with n x n submatrices                               */
+/* --computations done with n x n submatrices                 */
 /*------------------------------------------------------------*/
 // TODO try resupdate (m=2n is borderline between the two)
 // TODO compare with mbasis_generic for m = t n based on Krylov
@@ -196,7 +196,7 @@ void mbasis_generic_2n_n_rescomp(
         for (long i = 0; i < n; ++i)
             bufR[i] = R0_top[i]; // TODO VectorCopy ??
         for (long i = 0; i < n; ++i)
-            bufR[n+i] = R0_bot[i]; // TODO VectorCopy ??
+            bufR[n+i].swap(R0_bot[i]);
 #ifdef MBASIS_GEN_PROFILE
         t_others += GetWallTime()-tt;
         tt = GetWallTime();

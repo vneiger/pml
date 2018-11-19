@@ -9,7 +9,7 @@
 #include "mat_lzz_pX_extra.h"
 
 //#define MBASIS1_PROFILE
-//#define MBASIS_PROFILE
+#define MBASIS_PROFILE
 //#define PMBASIS_PROFILE
 
 NTL_CLIENT
