@@ -931,11 +931,11 @@ VecLong mbasis_resupdate(
     // A. General
 
     // A.1 dimensions of input matrix
-    long nrows = pmat.NumRows();
-    long ncols = pmat.NumCols();
+    long m = pmat.NumRows();
+    long n = pmat.NumCols();
 
     // A.2 store iota since it will be used at each iteration
-    VecLong iota(nrows);
+    VecLong iota(m);
     std::iota(iota.begin(), iota.end(), 0);
 
     // B. Initialize output
@@ -945,7 +945,7 @@ VecLong mbasis_resupdate(
 
     // B.2 initially, appbas is the identity matrix
     coeffs_appbas.SetLength(1);
-    ident(coeffs_appbas[0], nrows);
+    ident(coeffs_appbas[0], m);
     // degree of approximant basis, initially zero
     long deg_appbas = 0;
     // shifted row degree of appbas, initially equal to shift
@@ -962,24 +962,24 @@ VecLong mbasis_resupdate(
 
     // C.3 permuted residual, used as input to the kernel at the "base case"
     Mat<zz_p> p_residual;
-    p_residual.SetDims(nrows, ncols);
+    p_residual.SetDims(m, n);
 
     // D. Base case (working modulo X, essentially amounts to finding the left
     // kernel of the permuted residual p_residual)
 
     // D.1 pivot indices in kernel basis (which is in row echelon form)
-    // Note: length is probably overestimated (usually kernel has nrows-ncols rows),
+    // Note: length is probably overestimated (usually kernel has m-n rows),
     // but this avoids reallocating the right length at each iteration
-    VecLong pivind(nrows-1);
+    VecLong pivind(m-1);
     // Vector indicating if a given column index appears in this pivot index
     // i.e. is_pivind[pivind[i]] = true and others are false
-    std::vector<bool> is_pivind(nrows, false);
+    std::vector<bool> is_pivind(m, false);
 
     // D.2 permutation for the rows of the constant kernel (NTL yields a matrix
     // in row echelon form up to row permutation)
     VecLong perm_rows_ker;
     // pivot indices of row echelon form before permutation
-    VecLong p_pivind(nrows-1);
+    VecLong p_pivind(m-1);
 
     // D.3 permutation which stable-sorts the shift, used at the base case
     VecLong p_rdeg;
@@ -1013,7 +1013,7 @@ VecLong mbasis_resupdate(
                     } );
 
         // permute rows of the residual accordingly
-        for (long i = 0; i < nrows; ++i)
+        for (long i = 0; i < m; ++i)
             p_residual[i] = residuals[ord-1][p_rdeg[i]];
         // Note: not using swap here, since we will need residuals[ord-1] for updating the residual
 #ifdef MBASIS_PROFILE
@@ -1037,12 +1037,12 @@ VecLong mbasis_resupdate(
             // TODO improve: simultaneous convert+shift!!
             appbas = conv(coeffs_appbas);
             appbas <<= (order-ord+1);
-            for (long i = 0; i < nrows; ++i)
+            for (long i = 0; i < m; ++i)
                 rdeg[i] += order-ord+1-shift[i];
             return rdeg;
         }
 
-        if (ker_dim < nrows)
+        if (ker_dim < m)
         {
             // here, we are in the "usual" case, where the left kernel of the
             // residual has no special shape
@@ -1060,7 +1060,7 @@ VecLong mbasis_resupdate(
             for (long i = 0; i<ker_dim; ++i)
             {
                 long * piv = & p_pivind[i];
-                *piv = nrows-1;
+                *piv = m-1;
                 while (*piv>=0 && p_kerbas[i][*piv]==0)
                     --*piv;
             }
@@ -1085,9 +1085,9 @@ VecLong mbasis_resupdate(
                  } );
 
             // permute rows and columns of kernel back to original order
-            kerbas.SetDims(ker_dim,nrows);
+            kerbas.SetDims(ker_dim,m);
             for (long i = 0; i < ker_dim; ++i)
-                for (long j = 0; j < nrows; ++j)
+                for (long j = 0; j < m; ++j)
                     kerbas[i][p_rdeg[j]] = p_kerbas[perm_rows_ker[i]][j];
 #ifdef MBASIS_PROFILE
             t_others += GetWallTime()-t_now;
@@ -1096,12 +1096,12 @@ VecLong mbasis_resupdate(
 
             // Now, update shifted row degree:
             // entries corresponding to kernel pivot indices are kept, others are +1
-            for (long i = 0; i < nrows; ++i)
+            for (long i = 0; i < m; ++i)
                 if (not is_pivind[i])
                     ++rdeg[i];
 
             // Deduce the degree of appbas
-            for (long i = 0; i < nrows; ++i)
+            for (long i = 0; i < m; ++i)
                 if (not is_pivind[i] && not IsZero(coeffs_appbas[deg_appbas][i]))
                 {
                     ++deg_appbas;
@@ -1113,7 +1113,7 @@ VecLong mbasis_resupdate(
             if (deg_appbas==coeffs_appbas.length())
             {
                 coeffs_appbas.SetLength(deg_appbas+1);
-                coeffs_appbas[deg_appbas].SetDims(nrows, nrows);
+                coeffs_appbas[deg_appbas].SetDims(m, m);
             }
 #ifdef MBASIS_PROFILE
             t_others += GetWallTime()-t_now;
@@ -1134,7 +1134,7 @@ VecLong mbasis_resupdate(
             // rows with !is_pivind are multiplied by X (note: these rows have
             // degree less than deg_appbas)
             for (long d = deg_appbas-1; d >= 0; --d)
-                for (long i = 0; i < nrows; ++i)
+                for (long i = 0; i < m; ++i)
                     if (not is_pivind[i])
                         coeffs_appbas[d+1][i].swap(coeffs_appbas[d][i]);
             // Note: after this, the row coeffs_appbas[0][i] is zero
@@ -1158,7 +1158,7 @@ VecLong mbasis_resupdate(
 
             // rows with !is_pivind are multiplied by X
             for (long d = order-2; d >= ord-1; --d)
-                for (long i = 0; i < nrows; ++i)
+                for (long i = 0; i < m; ++i)
                     if (not is_pivind[i])
                         residuals[d+1][i].swap(residuals[d][i]);
 #ifdef MBASIS_PROFILE
@@ -1173,7 +1173,7 @@ VecLong mbasis_resupdate(
             t_others += GetWallTime()-t_now;
 #endif
         }
-        // if (ker_dim==nrows)
+        // if (ker_dim==m)
         // Exceptional case: residual coeff was zero, and kernel 'kerbas' is identity
         // --> approximant basis is already correct for this order, no need to
         // change it or to change rdeg
@@ -1195,7 +1195,7 @@ VecLong mbasis_resupdate(
     t_kernel/t_total << "," << t_others/t_total << std::endl;
 #endif
 
-    for (long i = 0; i < nrows; ++i)
+    for (long i = 0; i < m; ++i)
         rdeg[i] -= shift[i];
     return rdeg;
 }
