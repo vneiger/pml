@@ -490,34 +490,25 @@ VecLong mbasis_rescomp(
 
             // Update approximant basis
 
-            //std::cout << "Appbas before modify:" << std::endl;
-            //std::cout << conv(coeffs_appbas) << std::endl;
             // Submatrix of rows corresponding to pivind are replaced by
-            // kerbas*coeffs_appbas
-            //std::cout << "Residual:" << std::endl << residuals << std::endl;
-            //std::cout << "Kerbas:" << std::endl << kerbas << std::endl;
-            for (long d = 0; d < deg_appbas; ++d)
+            // kerbas*coeffs_appbas (note: these rows currently have degree
+            // at most deg_appbas)
+            // TODO possible small improvement for uniform shift: these rows
+            // have degree less than deg_appbas, in this case (and deg_appbas
+            // is reached on the diagonal, among the pivot degrees)
+            for (long d = 0; d <= deg_appbas; ++d)
             {
                 kerapp = kerbas * coeffs_appbas[d];
                 for (long i = 0; i < ker_dim; ++i)
-                {
-                    //std::cout << pivind[perm_rows_ker[i]] << std::endl;
                     coeffs_appbas[d][pivind[perm_rows_ker[i]]].swap(kerapp[i]);
-                }
             }
 
-            // rows with !is_pivind are multiplied by X (note: these rows have
-            // degree less than deg_appbas)
+            // rows with !is_pivind are multiplied by X (note: these rows
+            // currently have degree less than deg_appbas)
             for (long d = deg_appbas-1; d >= 0; --d)
                 for (long i = 0; i < m; ++i)
                     if (not is_pivind[i])
-                    {
-                        //std::cout << i << std::endl;
                         coeffs_appbas[d+1][i].swap(coeffs_appbas[d][i]);
-                    }
-            //std::cout << "new degree " << deg_appbas << std::endl;
-            //std::cout << "After modify:" << std::endl;
-            //std::cout << conv(coeffs_appbas) << std::endl;
             // Note: after this, the row coeffs_appbas[0][i] is zero
 #ifdef MBASIS_PROFILE
             t_appbas += GetWallTime()-t_now;
@@ -548,8 +539,6 @@ VecLong mbasis_rescomp(
 #endif
             }
         }
-        //std::cout << " -------    iteration " << ord << "------" << std::endl;
-        //is_approximant_basis(conv(coeffs_appbas), pmat, ord, shift, ORD_WEAK_POPOV, true);
     }
 
 #ifdef MBASIS_PROFILE
@@ -567,11 +556,11 @@ VecLong mbasis_rescomp(
     t_kernel/t_total << "," << t_others/t_total << std::endl;
 #endif
 
+    // deduce pivot degree
     for (long i = 0; i < m; ++i)
         rdeg[i] -= shift[i];
     return rdeg;
 }
-
 
 // version with residual constant matrix computed at each iteration, multi-threaded
 // TODO work in progress
@@ -1101,8 +1090,12 @@ VecLong mbasis_resupdate(
             // Update approximant basis
 
             // Submatrix of rows corresponding to pivind are replaced by
-            // kerbas*coeffs_appbas
-            for (long d = 0; d < deg_appbas; ++d)
+            // kerbas*coeffs_appbas (note: these rows have degree at most
+            // deg_appbas)
+            // TODO possible small improvement for uniform shift: these rows
+            // have degree less than deg_appbas, in this case (and deg_appbas
+            // is reached on the diagonal, among the pivot degrees)
+            for (long d = 0; d <= deg_appbas; ++d)
             {
                 kerapp = kerbas * coeffs_appbas[d];
                 for (long i = 0; i < ker_dim; ++i)
