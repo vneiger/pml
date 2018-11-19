@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
+    if (false)
     {
         zz_p::init(3);
         Mat<zz_pX> pmat;
@@ -115,52 +116,52 @@ int main(int argc, char *argv[])
                 std::cout << "--shift =\t" << shift << std::endl;
 #endif // VERBOSE
 
-#ifdef VERBOSE
-                std::cout << "Computation popov_mbasis1... ";
-#endif // VERBOSE
-                // popov_mbasis1
-                Mat<zz_p> kerbas;
-                pivdeg = popov_mbasis1(kerbas,coeff(*pmat,0),shift);
-
-                // build approx basis from kerbas
-                clear(appbas);
-                appbas.SetDims(rdim,rdim);
-                long row=0;
-                for (long r = 0; r < rdim; ++r)
-                {
-                    if (pivdeg[r]==0)
-                    {
-                        for (long j = 0; j < rdim; ++j)
-                            appbas[r][j] = kerbas[row][j];
-                        ++row;
-                    }
-                    else
-                        SetX(appbas[r][r]);
-                }
-#ifdef VERBOSE
-                std::cout << "OK. Testing... ";
-#endif // VERBOSE
-
-                if (not is_approximant_basis(appbas,*pmat,1,shift,ORD_WEAK_POPOV,true))
-                {
-                    std::cout << "Error in popov_mbasis1." << std::endl;
-                    std::cout << "--rdim =\t" << rdim << std::endl;
-                    std::cout << "--cdim =\t" << cdim << std::endl;
-                    std::cout << "--deg =\t" << d << std::endl;
-                    std::cout << "--order =\t" << order << std::endl;
-                    std::cout << "--shift =\t" << shift << std::endl;
-                    std::cout << zz_p::modulus() << std::endl;
-                    std::cout << coeff(*pmat,0) << std::endl;
-                    std::cout << appbas << std::endl;
-                    std::cout << kerbas << std::endl;
-                    std::cout << pivdeg << std::endl;
-                    return 0;
-                }
-#ifdef VERBOSE
-                std::cout << "OK." << std::endl;
-#endif // VERBOSE
-
-                // plain mbasis
+//#ifdef VERBOSE
+//                std::cout << "Computation popov_mbasis1... ";
+//#endif // VERBOSE
+//                // popov_mbasis1
+//                Mat<zz_p> kerbas;
+//                pivdeg = popov_mbasis1(kerbas,coeff(*pmat,0),shift);
+//
+//                // build approx basis from kerbas
+//                clear(appbas);
+//                appbas.SetDims(rdim,rdim);
+//                long row=0;
+//                for (long r = 0; r < rdim; ++r)
+//                {
+//                    if (pivdeg[r]==0)
+//                    {
+//                        for (long j = 0; j < rdim; ++j)
+//                            appbas[r][j] = kerbas[row][j];
+//                        ++row;
+//                    }
+//                    else
+//                        SetX(appbas[r][r]);
+//                }
+//#ifdef VERBOSE
+//                std::cout << "OK. Testing... ";
+//#endif // VERBOSE
+//
+//                if (not is_approximant_basis(appbas,*pmat,1,shift,ORD_WEAK_POPOV,true))
+//                {
+//                    std::cout << "Error in popov_mbasis1." << std::endl;
+//                    std::cout << "--rdim =\t" << rdim << std::endl;
+//                    std::cout << "--cdim =\t" << cdim << std::endl;
+//                    std::cout << "--deg =\t" << d << std::endl;
+//                    std::cout << "--order =\t" << order << std::endl;
+//                    std::cout << "--shift =\t" << shift << std::endl;
+//                    std::cout << zz_p::modulus() << std::endl;
+//                    std::cout << coeff(*pmat,0) << std::endl;
+//                    std::cout << appbas << std::endl;
+//                    std::cout << kerbas << std::endl;
+//                    std::cout << pivdeg << std::endl;
+//                    return 0;
+//                }
+//#ifdef VERBOSE
+//                std::cout << "OK." << std::endl;
+//#endif // VERBOSE
+//
+//                // plain mbasis
 //#ifdef VERBOSE
 //                std::cout << "Computation mbasis_plain... ";
 //#endif // VERBOSE

@@ -158,11 +158,6 @@ VecLong mbasis_plain(
 
     long deg_pmat = deg(pmat);
 
-    // holds the current pivot degree of appbas
-    // initially tuple of zeroes
-    // (note that at all times pivdeg+shift = rdeg entrywise)
-    VecLong pivdeg(pmat.NumRows());
-
     // will store the pivot degree at each call of mbasis1
     VecLong diff_pivdeg;
 
@@ -183,9 +178,10 @@ VecLong mbasis_plain(
         {
             // computation is already finished: the final basis is X^(order-ord+1)*appbas
             appbas <<= (order-ord+1);
-            // update pivdeg accordingly, and return
-            std::for_each(pivdeg.begin(), pivdeg.end(), [&order,&ord](long& a) { a+=order-ord+1; });
-            return pivdeg;
+            // compute pivot degree, and return
+            for (long i = 0; i < pmat.NumRows(); ++i)
+                rdeg[i] += order-ord+1-shift[i];
+            return rdeg;
         }
 
         if (kerbas.NumRows()<residual.NumRows())
@@ -193,27 +189,23 @@ VecLong mbasis_plain(
             // I/ Update degrees:
             // new shifted row degree = old rdeg + diff_pivdeg
             std::transform(rdeg.begin(), rdeg.end(), diff_pivdeg.begin(), rdeg.begin(), std::plus<long>());
-            // new pivot degree = old pivot_degree + diff_pivdeg
-            std::transform(pivdeg.begin(), pivdeg.end(), diff_pivdeg.begin(), pivdeg.begin(), std::plus<long>());
 
             // II/ update approximant basis
 
-            // submatrix of rows with diff_pivdeg==0 is replaced by kerbas*appbas
+            //--> submatrix of rows with diff_pivdeg==0 is replaced by kerbas*appbas
+            //--> rows with diff_pivdeg=1 are simply multiplied by X
             mul(kerapp,kerbas,appbas);
             long row=0;
-            // TODO have function to copy into submatrix??
             for (long i = 0; i < appbas.NumRows(); ++i)
             {
                 if (diff_pivdeg[i]==0)
                 {
-                    appbas[i] = kerapp[row];
+                    appbas[i].swap(kerapp[row]);
                     ++row;
                 }
-            }
-            // rows with diff_pivdeg=1 are simply multiplied by X
-            for (long i = 0; i < appbas.NumRows(); ++i)
-                if (diff_pivdeg[i]==1)
+                else
                     LeftShiftRow(appbas,appbas,i,1);
+            }
 
             // III/ compute next residual, if needed
             // this is coefficient of degree ord in appbas * pmat
@@ -237,10 +229,8 @@ VecLong mbasis_plain(
             // --> approximant basis is already correct for this order, no need
             // to change it or to change pivdeg
 
-            // Find degree of appbas; note that it is a property of this algorithm
-            // that deg(appbas) = max(pivot degree) (i.e. max(degree of diagonal
-            // entries); this does not hold in general for ordered weak Popov forms
-            long deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
+            // Find degree of appbas
+            long deg_appbas = deg(appbas);
 
             // compute next residual, if needed (if ord<order)
             // this is coefficient of degree ord in appbas * pmat
@@ -258,7 +248,9 @@ VecLong mbasis_plain(
         }
     }
 
-    return pivdeg;
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        rdeg[i] -= shift[i];
+    return rdeg;
 }
 
 /*------------------------------------------------------------*/
