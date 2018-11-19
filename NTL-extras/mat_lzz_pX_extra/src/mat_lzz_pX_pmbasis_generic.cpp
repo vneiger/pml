@@ -156,7 +156,7 @@ void mbasis_generic_2n_n_rescomp(
         P01[k].SetDims(n,n);
     P10.SetLength(d+1); // we still store the degree 0 coeff (which will eventually be zero)
     for (long k = 0; k < d+1; ++k)
-        P01[k].SetDims(n,n);
+        P10[k].SetDims(n,n);
     P11.SetLength(d); // we still store the degree 0 coeff (which will eventually be zero)
     for (long k = 0; k < d; ++k)
         P11[k].SetDims(n,n);
@@ -212,7 +212,8 @@ void mbasis_generic_2n_n_rescomp(
         for (long i = 0; i < 2*n; ++i)
             SetCoeff(appbas[i][i], k);
         std::cout << "degree matrix of appbas: " << std::endl << degree_matrix(appbas) << std::endl;
-        is_approximant_basis(appbas, pmat, k, VecLong(2*n,0), ORD_WEAK_POPOV, true);
+        if (is_approximant_basis(appbas, pmat, 2*k, VecLong(2*n,0), ORD_WEAK_POPOV, true))
+            std::cout << "is approx: OK" << std::endl;
 #endif // VERBOSE_MBASISGEN
 
 
@@ -245,8 +246,7 @@ void mbasis_generic_2n_n_rescomp(
         // it should be [ [R0_top], [K0 * R1_top + R1_bot] ]
         mul(buf, K0, R1_top);
         add(R1_bot, R1_bot, buf);
-        //R1_top.swap(R0_top); // we do not need the old R1_top anymore, and we won't use R0_top either
-        R1_top = R0_top; // TODO swap
+        R1_top.swap(R0_top); // we do not need the old R1_top anymore, and we won't use R0_top either
 
 #ifdef VERBOSE_MBASISGEN
         std::cout << "...R1 updated " << std::endl;
@@ -410,6 +410,8 @@ void mbasis_generic_2n_n_rescomp(
 
             // R0_bot = coeff of degree 2k+2 of X P10 F_top + (X^{k+1} I + X P11) F_bot,
             // where P10 has degree k and P11 has degree k-1
+            // Recall that here the vector "P10" stores the coefficients of X P10,
+            // and similarly for X P11
             mul(R0_bot, P10[1], F_top[2*k+1]);
             for (long kk = 2; kk < k+2; ++kk)
             {
@@ -439,6 +441,14 @@ void mbasis_generic_2n_n_rescomp(
             add(R1_bot, R1_bot, F_bot[k+2]);
 #ifdef VERBOSE_MBASISGEN
         std::cout << "... residuals updated" << std::endl;
+        std::cout << "R0top" << std::endl;
+        std::cout << R0_top << std::endl;
+        std::cout << "R0bot" << std::endl;
+        std::cout << R0_bot << std::endl;
+        std::cout << "R1top" << std::endl;
+        std::cout << R1_top << std::endl;
+        std::cout << "R1bot" << std::endl;
+        std::cout << R1_bot << std::endl;
 #endif // VERBOSE_MBASISGEN
         }
 #ifdef VERBOSE_MBASISGEN

@@ -94,6 +94,8 @@ bool is_approximant_basis(
     // (we reserve some additional space in cmat because later it will store the constant coefficient of appbas)
     Mat<zz_pX> residual;
     multiply(residual,appbas,pmat);
+    std::cout << "residual:" << std::endl;
+    std::cout << residual << std::endl;
     // TODO this multiplication could be:
     //   - truncated mod X^{order+1}
     //   - improved by taking degree profile into account
@@ -108,7 +110,7 @@ bool is_approximant_basis(
             long ord = order[j];
             GetCoeff(cmat[i][j],residual[i][j],ord);
             trunc(residual[i][j],residual[i][j],ord);
-            if (residual[i][j] != 0)
+            if (not IsZero(residual[i][j]))
             {
                 std::cout << "~~is_approx~~ not approx (" << i << "," << j << "): " << std::endl;
                 std::cout << residual << std::endl;
