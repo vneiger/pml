@@ -163,8 +163,9 @@ VecLong mbasis_plain(
 
     // matrix to store the kernels in mbasis1 calls
     Mat<zz_p> kerbas;
+
     // matrix to store residuals, initially constant coeff of pmat
-    Mat<zz_p> residual( coeff(pmat,0) );
+    Mat<zz_p> residual(coeff(pmat,0));
 
     // declare matrices
     Mat<zz_p> res_coeff,res_coeff1,res_coeff2; // will store coefficient matrices used to compute the residual
@@ -258,7 +259,6 @@ VecLong mbasis_plain(
 /*------------------------------------------------------------*/
 
 // TODO:
-//   * handle degree better, just need to check leading coeff of coeffs_appbas and estimate the new degree
 //   * issue about kernel which doesn't always have the pivots where we would like, in non-generic cases
 //   * check about unnecessary tmp variables
 
@@ -277,11 +277,11 @@ VecLong mbasis_rescomp(
     // A. General
 
     // A.1 dimensions of input matrix
-    long nrows = pmat.NumRows();
-    long ncols = pmat.NumCols();
+    long m = pmat.NumRows();
+    long n = pmat.NumCols();
 
     // A.2 store iota since it will be used at each iteration
-    VecLong iota(nrows);
+    VecLong iota(m);
     std::iota(iota.begin(), iota.end(), 0);
 
     // B. Input representation; initialize output
@@ -294,13 +294,13 @@ VecLong mbasis_rescomp(
 
     // B.3 initially, appbas is the identity matrix
     coeffs_appbas.SetLength(1);
-    ident(coeffs_appbas[0], nrows);
+    ident(coeffs_appbas[0], m);
     // degree of approximant basis, initially zero
     long deg_appbas = 0;
     // shifted row degree of appbas, initially equal to shift
     VecLong rdeg(shift);
 
-    // C. Residual matrix (nrows x ncols constant matrix, next coefficient
+    // C. Residual matrix (m x n constant matrix, next coefficient
     // of appbas * pmat which we want to annihilate)
 
     // C.1 stores the residual, initially coeffs_pmat[0]
@@ -311,24 +311,24 @@ VecLong mbasis_rescomp(
 
     // C.3 permuted residual, used as input to the kernel at the "base case"
     Mat<zz_p> p_residual;
-    p_residual.SetDims(nrows, ncols);
+    p_residual.SetDims(m, n);
 
     // D. Base case (working modulo X, essentially amounts to finding the left
     // kernel of the permuted residual p_residual)
 
     // D.1 pivot indices in kernel basis (which is in row echelon form)
-    // Note: length is probably overestimated (usually kernel has nrows-ncols rows),
+    // Note: length is probably overestimated (usually kernel has m-n rows),
     // but this avoids reallocating the right length at each iteration
-    VecLong pivind(nrows-1);
+    VecLong pivind(m-1);
     // Vector indicating if a given column index appears in this pivot index
     // i.e. is_pivind[pivind[i]] = true and others are false
-    std::vector<bool> is_pivind(nrows, false);
+    std::vector<bool> is_pivind(m, false);
 
     // D.2 permutation for the rows of the constant kernel (NTL yields a matrix
     // in row echelon form up to row permutation)
     VecLong perm_rows_ker;
     // pivot indices of row echelon form before permutation
-    VecLong p_pivind(nrows-1);
+    VecLong p_pivind(m-1);
 
     // D.3 permutation which stable-sorts the shift, used at the base case
     VecLong p_rdeg;
@@ -362,7 +362,7 @@ VecLong mbasis_rescomp(
                     } );
 
         // permute rows of the residual accordingly
-        for (long i = 0; i < nrows; ++i)
+        for (long i = 0; i < m; ++i)
             p_residual[i].swap(residuals[p_rdeg[i]]);
         // content of residual has been changed --> let's make it zero
         // (already the case if ord==1, since residual is then the former p_residual which was zero)
@@ -389,12 +389,12 @@ VecLong mbasis_rescomp(
             // TODO improve: simultaneous convert+shift!!
             appbas = conv(coeffs_appbas);
             appbas <<= (order-ord+1);
-            for (long i = 0; i < nrows; ++i)
+            for (long i = 0; i < m; ++i)
                 rdeg[i] += order-ord+1-shift[i];
             return rdeg;
         }
 
-        else if (ker_dim==nrows)
+        else if (ker_dim==m)
         {
             // Exceptional case: residual coeff was zero, and kernel 'kerbas' is identity
             // --> approximant basis is already correct for this order, no need to
@@ -436,7 +436,7 @@ VecLong mbasis_rescomp(
             for (long i = 0; i<ker_dim; ++i)
             {
                 long * piv = & p_pivind[i];
-                *piv = nrows-1;
+                *piv = m-1;
                 while (*piv>=0 && p_kerbas[i][*piv]==0)
                     --*piv;
             }
@@ -461,9 +461,9 @@ VecLong mbasis_rescomp(
                  } );
 
             // permute rows and columns of kernel back to original order
-            kerbas.SetDims(ker_dim,nrows);
+            kerbas.SetDims(ker_dim,m);
             for (long i = 0; i < ker_dim; ++i)
-                for (long j = 0; j < nrows; ++j)
+                for (long j = 0; j < m; ++j)
                     kerbas[i][p_rdeg[j]] = p_kerbas[perm_rows_ker[i]][j];
 #ifdef MBASIS_PROFILE
             t_others += GetWallTime()-t_now;
@@ -472,12 +472,12 @@ VecLong mbasis_rescomp(
 
             // Now, update shifted row degree:
             // entries corresponding to kernel pivot indices are kept, others are +1
-            for (long i = 0; i < nrows; ++i)
+            for (long i = 0; i < m; ++i)
                 if (not is_pivind[i])
                     ++rdeg[i];
 
             // Deduce the degree of appbas
-            for (long i = 0; i < nrows; ++i)
+            for (long i = 0; i < m; ++i)
                 if (not is_pivind[i] && not IsZero(coeffs_appbas[deg_appbas][i]))
                 {
                     ++deg_appbas;
@@ -489,7 +489,7 @@ VecLong mbasis_rescomp(
             if (deg_appbas==coeffs_appbas.length())
             {
                 coeffs_appbas.SetLength(deg_appbas+1);
-                coeffs_appbas[deg_appbas].SetDims(nrows, nrows);
+                coeffs_appbas[deg_appbas].SetDims(m, m);
             }
 #ifdef MBASIS_PROFILE
             t_others += GetWallTime()-t_now;
@@ -517,7 +517,7 @@ VecLong mbasis_rescomp(
             // rows with !is_pivind are multiplied by X (note: these rows have
             // degree less than deg_appbas)
             for (long d = deg_appbas-1; d >= 0; --d)
-                for (long i = 0; i < nrows; ++i)
+                for (long i = 0; i < m; ++i)
                     if (not is_pivind[i])
                     {
                         //std::cout << i << std::endl;
@@ -575,7 +575,7 @@ VecLong mbasis_rescomp(
     t_kernel/t_total << "," << t_others/t_total << std::endl;
 #endif
 
-    for (long i = 0; i < nrows; ++i)
+    for (long i = 0; i < m; ++i)
         rdeg[i] -= shift[i];
     return rdeg;
 }
@@ -603,11 +603,11 @@ VecLong mbasis_rescomp_multithread(
     const long nthreads = AvailableThreads();
 
     // A.2 dimensions of input matrix
-    long nrows = pmat.NumRows();
-    long ncols = pmat.NumCols();
+    long m = pmat.NumRows();
+    long n = pmat.NumCols();
 
     // A.3 store iota since it will be used at each iteration
-    VecLong iota(nrows);
+    VecLong iota(m);
     std::iota(iota.begin(), iota.end(), 0);
 
     // B. Input representation; initialize output
@@ -620,7 +620,7 @@ VecLong mbasis_rescomp_multithread(
 
     // B.3 initially, appbas is the identity matrix
     coeffs_appbas.SetLength(1);
-    ident(coeffs_appbas[0], nrows);
+    ident(coeffs_appbas[0], m);
     // degree of approximant basis, initially zero
     long deg_appbas = 0;
     // shifted row degree of appbas, initially equal to shift
@@ -628,9 +628,9 @@ VecLong mbasis_rescomp_multithread(
     // pivot degree of appbas, initially zero
     // (note that along this algorithm we have pivdeg+shift = rdeg, entrywise,
     // since we will compute appbas in ordered weak Popov form)
-    VecLong pivdeg(nrows);
+    VecLong pivdeg(m);
 
-    // C. Residual matrix (nrows x ncols constant matrix, next coefficient
+    // C. Residual matrix (m x n constant matrix, next coefficient
     // of appbas * pmat which we want to annihilate)
 
     // C.1 stores the residual (residual is in residuals[0], yet
@@ -641,7 +641,7 @@ VecLong mbasis_rescomp_multithread(
     residuals.SetLength(nthreads);
     residuals[0] = coeffs_pmat[0];
     for (long i = 0; i < nthreads; ++i)
-        residuals[i].SetDims(nrows, ncols);
+        residuals[i].SetDims(m, n);
 
     // C.2 temporary matrices used during the computation of residuals[i]
     Vec<Mat<zz_p>> res_coeff;
@@ -649,24 +649,24 @@ VecLong mbasis_rescomp_multithread(
 
     // C.3 permuted residual, used as input to the kernel at the "base case"
     Mat<zz_p> p_residual;
-    p_residual.SetDims(nrows, ncols);
+    p_residual.SetDims(m, n);
 
     // D. Base case (working modulo X, essentially amounts to finding the left
     // kernel of the permuted residual p_residual)
 
     // D.1 pivot indices in kernel basis (which is in row echelon form)
-    // Note: length is probably overestimated (usually kernel has nrows-ncols rows),
+    // Note: length is probably overestimated (usually kernel has m-n rows),
     // but this avoids reallocating the right length at each iteration
-    VecLong pivind(nrows-1);
+    VecLong pivind(m-1);
     // Vector indicating if a given column index appears in this pivot index
     // i.e. is_pivind[pivind[i]] = true and others are false
-    std::vector<bool> is_pivind(nrows, false);
+    std::vector<bool> is_pivind(m, false);
 
     // D.2 permutation for the rows of the constant kernel (NTL yields a matrix
     // in row echelon form up to row permutation)
     VecLong perm_rows_ker;
     // pivot indices of row echelon form before permutation
-    VecLong p_pivind(nrows-1);
+    VecLong p_pivind(m-1);
 
     // D.3 permutation which stable-sorts the shift, used at the base case
     VecLong p_rdeg;
@@ -701,7 +701,7 @@ VecLong mbasis_rescomp_multithread(
                     } );
 
         // permute rows of the residual accordingly
-        for (long i = 0; i < nrows; ++i)
+        for (long i = 0; i < m; ++i)
             p_residual[i].swap(residuals[0][p_rdeg[i]]);
         // content of residual has been changed --> let's make it zero
         // (already the case if ord==1, since residual is then the former p_residual which was zero)
@@ -731,7 +731,7 @@ VecLong mbasis_rescomp_multithread(
             return pivdeg;
         }
 
-        else if (ker_dim==nrows)
+        else if (ker_dim==m)
         {
             // Exceptional case: residual coeff was zero, and kernel 'kerbas' is identity
             // --> approximant basis is already correct for this order, no need to
@@ -774,7 +774,7 @@ VecLong mbasis_rescomp_multithread(
             for (long i = 0; i<ker_dim; ++i)
             {
                 long * piv = & p_pivind[i];
-                *piv = nrows-1;
+                *piv = m-1;
                 while (*piv>=0 && p_kerbas[i][*piv]==0)
                     --*piv;
             }
@@ -799,9 +799,9 @@ VecLong mbasis_rescomp_multithread(
                  } );
 
             // permute rows and columns of kernel back to original order
-            kerbas.SetDims(ker_dim,nrows);
+            kerbas.SetDims(ker_dim,m);
             for (long i = 0; i < ker_dim; ++i)
-                for (long j = 0; j < nrows; ++j)
+                for (long j = 0; j < m; ++j)
                     kerbas[i][p_rdeg[j]] = p_kerbas[perm_rows_ker[i]][j];
 #ifdef MBASIS_PROFILE
             t_others += GetWallTime()-t_now;
@@ -810,7 +810,7 @@ VecLong mbasis_rescomp_multithread(
 
             // Now, update shifted pivot degree and shifted row degree:
             // entries corresponding to kernel pivot indices are kept, others are +1
-            for (long i = 0; i < nrows; ++i)
+            for (long i = 0; i < m; ++i)
                 if (not is_pivind[i])
                 {
                     ++rdeg[i];
@@ -827,7 +827,7 @@ VecLong mbasis_rescomp_multithread(
             if (deg_appbas==coeffs_appbas.length())
             {
                 coeffs_appbas.SetLength(deg_appbas+1);
-                coeffs_appbas[deg_appbas].SetDims(nrows, nrows);
+                coeffs_appbas[deg_appbas].SetDims(m, m);
             }
 #ifdef MBASIS_PROFILE
             t_others += GetWallTime()-t_now;
@@ -854,7 +854,7 @@ VecLong mbasis_rescomp_multithread(
             // rows with !is_pivind are multiplied by X (note: these rows have
             // degree less than deg_appbas)
             for (long d = deg_appbas-1; d >= 0; --d)
-                for (long i = 0; i < nrows; ++i)
+                for (long i = 0; i < m; ++i)
                     if (not is_pivind[i])
                         coeffs_appbas[d+1][i].swap(coeffs_appbas[d][i]);
             // Note: after this, the row coeffs_appbas[0][i] is zero
