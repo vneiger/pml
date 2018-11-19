@@ -9,7 +9,7 @@
 #include "mat_lzz_pX_extra.h"
 
 //#define MBASIS1_PROFILE
-#define MBASIS_PROFILE
+//#define MBASIS_PROFILE
 //#define PMBASIS_PROFILE
 
 NTL_CLIENT
@@ -195,10 +195,6 @@ VecLong mbasis_plain(
             std::transform(rdeg.begin(), rdeg.end(), diff_pivdeg.begin(), rdeg.begin(), std::plus<long>());
             // new pivot degree = old pivot_degree + diff_pivdeg
             std::transform(pivdeg.begin(), pivdeg.end(), diff_pivdeg.begin(), pivdeg.begin(), std::plus<long>());
-            // deduce degree of appbas; note that it is a property of this algorithm
-            // that deg(appbas) = max(pivot degree) (i.e. max(degree of diagonal
-            // entries); this does not hold in general for ordered weak Popov forms
-            long deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
 
             // II/ update approximant basis
 
@@ -223,6 +219,7 @@ VecLong mbasis_plain(
             // this is coefficient of degree ord in appbas * pmat
             if (ord<order)
             {
+                long deg_appbas = deg(appbas);
                 clear(residual);
                 for (long d = std::max<long>(0,ord-deg_pmat); d <= deg_appbas; ++d) // note that deg_appbas <= ord holds
                 {
@@ -397,6 +394,7 @@ VecLong mbasis_rescomp(
         {
             // Exceptional case: the residual matrix has empty left kernel
             // --> no need to compute more: the final basis is X^(order-ord+1)*coeffs_appbas
+            // TODO improve: simultaneous convert+shift!!
             appbas = conv(coeffs_appbas);
             appbas <<= (order-ord+1);
             for (long i = 0; i < nrows; ++i)
@@ -493,6 +491,7 @@ VecLong mbasis_rescomp(
                     ++deg_appbas;
                     break;
                 }
+
             // this new degree is either unchanged (== coeffs_appbas.length()-1),
             // or is the old one + 1 (== coeffs_appbas.length())
             if (deg_appbas==coeffs_appbas.length())
@@ -591,6 +590,8 @@ VecLong mbasis_rescomp(
 
 
 // version with residual constant matrix computed at each iteration, multi-threaded
+// TODO work in progress
+// before more work, should be merged with updated rescomp above
 VecLong mbasis_rescomp_multithread(
                                    Mat<zz_pX> & appbas,
                                    const Mat<zz_pX> & pmat,
@@ -958,11 +959,6 @@ VecLong mbasis_resupdate(
     // shifted row degree of appbas, initially equal to shift
     VecLong rdeg(shift);
 
-    // pivot degree of appbas, initially zero
-    // (note that along this algorithm we have pivdeg+shift = rdeg, entrywise,
-    // since we will compute appbas in ordered weak Popov form)
-    VecLong pivdeg(nrows);
-
     // C. Residual matrix (holds the next constant matrix we want to annihilate; in this version, also holds further matrices that are continuously updated)
 
     // C.1 convert input into vector of constant matrices (its "coefficients")
@@ -1046,10 +1042,12 @@ VecLong mbasis_resupdate(
         {
             // Exceptional case: the residual matrix has empty left kernel
             // --> no need to compute more: the final basis is X^(order-ord+1)*coeffs_appbas
+            // TODO improve: simultaneous convert+shift!!
             appbas = conv(coeffs_appbas);
             appbas <<= (order-ord+1);
-            std::for_each(pivdeg.begin(), pivdeg.end(), [&order,&ord](long& a) { a+=order-ord+1; });
-            return pivdeg;
+            for (long i = 0; i < nrows; ++i)
+                rdeg[i] += order-ord+1-shift[i];
+            return rdeg;
         }
 
         if (ker_dim < nrows)
@@ -1104,20 +1102,20 @@ VecLong mbasis_resupdate(
             t_now = GetWallTime();
 #endif
 
-            // Now, update shifted pivot degree and shifted row degree:
+            // Now, update shifted row degree:
             // entries corresponding to kernel pivot indices are kept, others are +1
             for (long i = 0; i < nrows; ++i)
                 if (not is_pivind[i])
-                {
                     ++rdeg[i];
-                    ++pivdeg[i];
+
+            // Deduce the degree of appbas
+            for (long i = 0; i < nrows; ++i)
+                if (not is_pivind[i] && not IsZero(coeffs_appbas[deg_appbas][i]))
+                {
+                    ++deg_appbas;
+                    break;
                 }
 
-            // Deduce the degree of appbas; it is a property of this algorithm
-            // that deg(appbas) = max(pivot degree) (i.e. max(degree of
-            // diagonal entries); this does not hold in general for shifted
-            // ordered weak Popov approximant bases
-            deg_appbas = *std::max_element(pivdeg.begin(), pivdeg.end());
             // this new degree is either unchanged (== coeffs_appbas.length()-1),
             // or is the old one + 1 (== coeffs_appbas.length())
             if (deg_appbas==coeffs_appbas.length())
@@ -1186,9 +1184,8 @@ VecLong mbasis_resupdate(
         // if (ker_dim==nrows)
         // Exceptional case: residual coeff was zero, and kernel 'kerbas' is identity
         // --> approximant basis is already correct for this order, no need to
-        // change it or to change pivdeg
+        // change it or to change rdeg
         // --> we just advance to the next residual matrix
-
     }
 
 #ifdef MBASIS_PROFILE
@@ -1206,7 +1203,9 @@ VecLong mbasis_resupdate(
     t_kernel/t_total << "," << t_others/t_total << std::endl;
 #endif
 
-    return pivdeg;
+    for (long i = 0; i < nrows; ++i)
+        rdeg[i] -= shift[i];
+    return rdeg;
 }
 
 
