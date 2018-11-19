@@ -324,8 +324,7 @@ VecLong mbasis_rescomp(
     // i.e. is_pivind[pivind[i]] = true and others are false
     std::vector<bool> is_pivind(m, false);
 
-    // D.2 permutation for the rows of the constant kernel (NTL yields a matrix
-    // in row echelon form up to row permutation)
+    // D.2 permutation for the rows of the constant kernel
     VecLong perm_rows_ker;
     // pivot indices of row echelon form before permutation
     VecLong p_pivind(m-1);
@@ -426,19 +425,14 @@ VecLong mbasis_rescomp(
             // first, we permute everything back to original order
 
             // compute the (permuted) pivot indices
-            // (NTL computes but doesn't return the pivot indices in Gaussian
-            // elimination, we might hack the NTL code to retrieve them
-            // directly but the next lines should have negligible time compared
-            // to the overall computation)
 #ifdef MBASIS_PROFILE
             t_now = GetWallTime();
 #endif
             for (long i = 0; i<ker_dim; ++i)
             {
-                long * piv = & p_pivind[i];
-                *piv = m-1;
-                while (*piv>=0 && p_kerbas[i][*piv]==0)
-                    --*piv;
+                p_pivind[i] = m-1;
+                while (p_pivind[i]>=0 && p_kerbas[i][p_pivind[i]]==0)
+                    --p_pivind[i];
             }
 
             // prepare kernel permutation by permuting kernel pivot indices;
@@ -472,16 +466,14 @@ VecLong mbasis_rescomp(
 
             // Now, update shifted row degree:
             // entries corresponding to kernel pivot indices are kept, others are +1
+            // Also, deduce the degree of appbas
+            bool deg_updated=false;
             for (long i = 0; i < m; ++i)
                 if (not is_pivind[i])
-                    ++rdeg[i];
-
-            // Deduce the degree of appbas
-            for (long i = 0; i < m; ++i)
-                if (not is_pivind[i] && not IsZero(coeffs_appbas[deg_appbas][i]))
                 {
-                    ++deg_appbas;
-                    break;
+                    ++rdeg[i];
+                    if (not deg_updated && not IsZero(coeffs_appbas[deg_appbas][i]))
+                    { ++deg_appbas; deg_updated=true; }
                 }
 
             // this new degree is either unchanged (== coeffs_appbas.length()-1),
@@ -662,8 +654,7 @@ VecLong mbasis_rescomp_multithread(
     // i.e. is_pivind[pivind[i]] = true and others are false
     std::vector<bool> is_pivind(m, false);
 
-    // D.2 permutation for the rows of the constant kernel (NTL yields a matrix
-    // in row echelon form up to row permutation)
+    // D.2 permutation for the rows of the constant kernel
     VecLong perm_rows_ker;
     // pivot indices of row echelon form before permutation
     VecLong p_pivind(m-1);
@@ -764,19 +755,14 @@ VecLong mbasis_rescomp_multithread(
             // first, we permute everything back to original order
 
             // compute the (permuted) pivot indices
-            // (NTL computes but doesn't return the pivot indices in Gaussian
-            // elimination, we might hack the NTL code to retrieve them
-            // directly but the next lines should have negligible time compared
-            // to the overall computation)
 #ifdef MBASIS_PROFILE
             t_now = GetWallTime();
 #endif
             for (long i = 0; i<ker_dim; ++i)
             {
-                long * piv = & p_pivind[i];
-                *piv = m-1;
-                while (*piv>=0 && p_kerbas[i][*piv]==0)
-                    --*piv;
+                p_pivind[i] = m-1;
+                while (p_pivind[i]>=0 && p_kerbas[i][p_pivind[i]]==0)
+                    --p_pivind[i];
             }
 
             // prepare kernel permutation by permuting kernel pivot indices;
@@ -975,8 +961,7 @@ VecLong mbasis_resupdate(
     // i.e. is_pivind[pivind[i]] = true and others are false
     std::vector<bool> is_pivind(m, false);
 
-    // D.2 permutation for the rows of the constant kernel (NTL yields a matrix
-    // in row echelon form up to row permutation)
+    // D.2 permutation for the rows of the constant kernel
     VecLong perm_rows_ker;
     // pivot indices of row echelon form before permutation
     VecLong p_pivind(m-1);
@@ -1050,19 +1035,14 @@ VecLong mbasis_resupdate(
             // first, we permute everything back to original order
 
             // compute the (permuted) pivot indices
-            // (NTL computes but doesn't return the pivot indices in Gaussian
-            // elimination, we might hack the NTL code to retrieve them
-            // directly but the next lines should have negligible time compared
-            // to the overall computation)
 #ifdef MBASIS_PROFILE
             t_now = GetWallTime();
 #endif
             for (long i = 0; i<ker_dim; ++i)
             {
-                long * piv = & p_pivind[i];
-                *piv = m-1;
-                while (*piv>=0 && p_kerbas[i][*piv]==0)
-                    --*piv;
+                p_pivind[i] = m-1;
+                while (p_pivind[i]>=0 && p_kerbas[i][p_pivind[i]]==0)
+                    --p_pivind[i];
             }
 
             // prepare kernel permutation by permuting kernel pivot indices;
@@ -1096,16 +1076,14 @@ VecLong mbasis_resupdate(
 
             // Now, update shifted row degree:
             // entries corresponding to kernel pivot indices are kept, others are +1
+            // Also, deduce the new degree of appbas
+            bool deg_updated = false;
             for (long i = 0; i < m; ++i)
                 if (not is_pivind[i])
-                    ++rdeg[i];
-
-            // Deduce the degree of appbas
-            for (long i = 0; i < m; ++i)
-                if (not is_pivind[i] && not IsZero(coeffs_appbas[deg_appbas][i]))
                 {
-                    ++deg_appbas;
-                    break;
+                    ++rdeg[i];
+                    if (not deg_updated && not IsZero(coeffs_appbas[deg_appbas][i]))
+                    { ++deg_appbas; deg_updated=true; }
                 }
 
             // this new degree is either unchanged (== coeffs_appbas.length()-1),
