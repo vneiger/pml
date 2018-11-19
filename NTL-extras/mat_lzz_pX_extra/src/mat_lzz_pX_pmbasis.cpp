@@ -309,9 +309,9 @@ VecLong mbasis_rescomp(
     // degree of approximant basis, initially zero
     long deg_appbas = 0;
     // shifted row degree of appbas, initially equal to shift
-    VecLong srdeg(shift);
+    VecLong rdeg(shift);
     // pivot degree of appbas, initially zero
-    // (note that along this algorithm we have pivdeg+shift = srdeg, entrywise,
+    // (note that along this algorithm we have pivdeg+shift = rdeg, entrywise,
     // since we will compute appbas in ordered weak Popov form)
     VecLong pivdeg(nrows);
 
@@ -346,7 +346,7 @@ VecLong mbasis_rescomp(
     VecLong p_pivind(nrows-1);
 
     // D.3 permutation which stable-sorts the shift, used at the base case
-    VecLong p_srdeg;
+    VecLong p_rdeg;
 
     // D.4 the constant kernel, and its permuted version
     Mat<zz_p> kerbas;
@@ -365,20 +365,20 @@ VecLong mbasis_rescomp(
 #ifdef MBASIS_PROFILE
         t_now = GetWallTime();
 #endif
-        // compute permutation which realizes stable sort of srdeg
+        // compute permutation which realizes stable sort of rdeg
         // --> we need to permute things, to take into account the "priority"
         // (i.e. "weights") indicated by the shift; at this stage, the input
-        // shift is the shift-row degree 'srdeg' of appbas
-        p_srdeg = iota;
-        stable_sort(p_srdeg.begin(), p_srdeg.end(),
+        // shift is the shift-row degree 'rdeg' of appbas
+        p_rdeg = iota;
+        stable_sort(p_rdeg.begin(), p_rdeg.end(),
                     [&](const long& a, const long& b)->bool
                     {
-                    return (srdeg[a] < srdeg[b]);
+                    return (rdeg[a] < rdeg[b]);
                     } );
 
         // permute rows of the residual accordingly
         for (long i = 0; i < nrows; ++i)
-            p_residual[i].swap(residuals[p_srdeg[i]]);
+            p_residual[i].swap(residuals[p_rdeg[i]]);
         // content of residual has been changed --> let's make it zero
         // (already the case if ord==1, since residual is then the former p_residual which was zero)
         if (ord>1)
@@ -459,7 +459,7 @@ VecLong mbasis_rescomp(
             // (note that before this loop, is_pivind is filled with 'false')
             for (long i = 0; i < ker_dim; ++i)
             {
-                pivind[i] = p_srdeg[p_pivind[i]];
+                pivind[i] = p_rdeg[p_pivind[i]];
                 is_pivind[pivind[i]] = true;
             }
 
@@ -477,7 +477,7 @@ VecLong mbasis_rescomp(
             kerbas.SetDims(ker_dim,nrows);
             for (long i = 0; i < ker_dim; ++i)
                 for (long j = 0; j < nrows; ++j)
-                    kerbas[i][p_srdeg[j]] = p_kerbas[perm_rows_ker[i]][j];
+                    kerbas[i][p_rdeg[j]] = p_kerbas[perm_rows_ker[i]][j];
 #ifdef MBASIS_PROFILE
             t_others += GetWallTime()-t_now;
             t_now = GetWallTime();
@@ -488,7 +488,7 @@ VecLong mbasis_rescomp(
             for (long i = 0; i < nrows; ++i)
                 if (not is_pivind[i])
                 {
-                    ++srdeg[i];
+                    ++rdeg[i];
                     ++pivdeg[i];
                 }
 
