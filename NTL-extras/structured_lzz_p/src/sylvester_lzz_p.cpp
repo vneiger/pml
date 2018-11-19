@@ -2,6 +2,8 @@
 #include <NTL/mat_lzz_p.h>
 
 #include "lzz_p_extra.h"
+#include "lzz_pX_extra.h"
+#include "mat_lzz_p_extra.h"
 #include "lzz_pX_middle_product.h"
 #include "structured_lzz_p.h"
 
@@ -479,6 +481,95 @@ long sylvester_lzz_p::inv(toeplitz_like_minus_lzz_p& inv)
     solve(iU, U);
     solve_transpose(iV, transpose(V));
     inv = toeplitz_like_minus_lzz_p(-iU, transpose(iV));
+    return 1;
+}
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+long sylvester_lzz_p::top_right_block_inverse(long m)
+{
+    zz_pX d, s, t;
+    XGCD(d, s, t, a, b); // 1.70
+    if (deg(d) != 0)
+        return 0;
+
+    zz_pX invA, invB;
+    zz_p id = 1 / coeff(d, 0);
+
+    if (id != 1)
+    {
+        s *= id;
+        t *= id;
+    }
+
+    long dA = deg(a), dB = deg(b);
+    Vec<zz_p> V0(INIT_SIZE, dA+dB);
+    Vec<zz_p> V1(INIT_SIZE, dA+dB);
+    Vec<zz_p> U0(INIT_SIZE, dA+dB);
+    Vec<zz_p> U1(INIT_SIZE, dA+dB); // 1.70
+
+    zz_pX rS;
+    rS.rep.SetLength(dB);
+    for (long i = 0; i < dB; i++)
+        rS[i] = s[dB - 1 - i];
+    rS.normalize();
+
+    zz_pX rT;
+    rT.rep.SetLength(dA);
+    for (long i = 0; i < dA; i++)
+        rT[i] = t[dA - 1 - i];
+    rT.normalize();
+
+    zz_pX rS_over_rB, R_rS_rB, rT_over_rA, R_rT_rA;
+    zz_pX top, bottom;   // 1.70
+
+    InvTruncMul(rS_over_rB, rS, revB, n);    // 2.35
+    for (long i = 0; i <= deg(rS_over_rB); i++)
+        V0[i] = rS_over_rB[i];
+    for (long i = deg(rS_over_rB)+1; i < n; i++)
+        V0[i] = 0;
+    R_rS_rB.rep.SetLength(n);
+    for (long i = 0; i < dB; i++)
+        R_rS_rB[i] = coeff(rS_over_rB, n - 1 - i);
+    R_rS_rB.normalize();                    // 2.36
+    MulTrunc(top, R_rS_rB, b, dB+1);     // 2.5
+
+    InvTruncMul(rT_over_rA, rT, revA, n);
+    for (long i = 0; i <= deg(rT_over_rA); i++)
+        V1[i] = rT_over_rA[i];
+    for (long i = deg(rT_over_rA)+1; i < n; i++)
+        V1[i] = 0;
+    R_rT_rA.rep.SetLength(n);
+    for (long i = 0; i < dA; i++)
+        R_rT_rA[i] = coeff(rT_over_rA, n - 1 - i);
+    R_rT_rA.normalize();
+    MulTrunc(bottom, R_rT_rA, a, dA+1);
+
+    zz_p lC = -coeff(a, dA) * coeff(b, dB);
+    for (long i = 0; i < dB; i++)
+    {
+        U0[i] = U1[i] = lC * (coeff(s, i) + coeff(top, i));
+        U0[i] += coeff(b, i);
+    }
+    for (long i = 0; i < dA; i++)
+    {
+        U0[i + dB] = U1[i + dB] = lC * (coeff(t, i) + coeff(bottom, i));
+        U1[i + dB] += coeff(a, i);
+    }
+    U0[dB] += coeff(b, dB);
+    
+    if (0)
+    {
+        Mat<zz_p> TSinv;
+        TSinv.SetDims(n, n);
+        for (long i = 0; i < n; i++)
+            for (long j = 0; j < n; j++)
+                TSinv[i][j] = U0[i]*V0[j] + U1[i]*V1[j];
+        
+        Mat<zz_p> S = to_dense();
+        Mat<zz_p> Sinv = NTL::inv(S);
+        cout << ((Z_lzz_p(n, to_zz_p(0))*Sinv - Sinv*Z_lzz_p(n, to_zz_p(1))) == TSinv) << endl;
+    }
     return 1;
 }
 

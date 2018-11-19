@@ -3,9 +3,12 @@
 
 #include "util.h"
 #include "vec_lzz_p_extra.h"
+#include "lzz_pX_extra.h"
 #include "structured_lzz_p.h"
 #include "mat_lzz_pX_extra.h"
 #include "structured_lzz_pX.h"
+
+
 
 NTL_CLIENT
 
@@ -19,7 +22,7 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 142; i < 200; i += 700)
+    for (long i = 500; i < 600; i += 700)
     {
         long d = i;
         long j = i;
@@ -36,7 +39,7 @@ void check(long p)
         double t;
         cout << i << " " << j << " " << d << " ";
 
-        long factor = 20;
+        long factor = 2;
 
         zz_pX a0, b0;
         for (long i = 0; i < F.length(); i++)
@@ -48,22 +51,8 @@ void check(long p)
         t = get_time();
         for (long nb = 0; nb < factor * d; nb++)
         {
-            zz_pX d, s, t;
-            XGCD(d, s, t, a0, b0);
-            long n = deg(a0) + deg(b0);
-            zz_pX revA, revB;
-            revA.rep.SetLength(deg(a0) + 1);
-            for (long i = deg(a0); i >= 0; i--)
-                SetCoeff(revA, i, coeff(a0, deg(a0) - i));
-            revB.rep.SetLength(deg(b0) + 1);
-            for (long i = deg(b0); i >= 0; i--)
-                SetCoeff(revB, i, coeff(b0, deg(b0) - i));
-            zz_pX invSerA = InvTrunc(revA, n);
-            zz_pX invSerB = InvTrunc(revB, n);
-            MulTrunc(a0, invSerA, n);
-            MulTrunc(a0, invSerA, n);
-            MulTrunc(b0, invSerA, n);
-            MulTrunc(b0, invSerA, n);
+            sylvester_lzz_p S(a0, b0);
+            long r = S.top_right_block_inverse(0);
         }
         cout << get_time()-t << " ";
 
@@ -92,7 +81,7 @@ void check(long p)
 /*------------------------------------------------------------*/
 int main(int argc, char** argv)
 {
-    warmup();
+    // warmup();
     check(786433);
     check(0);
     check(288230376151711813);
