@@ -23,7 +23,7 @@ bool is_kernel_basis(
                     )
 {
     const long m = pmat.NumRows();
-    const long n = pmat.NumCols();
+    //const long n = pmat.NumCols();
 
     std::cout << "~~is_kernel_basis~~ Warning: checking generation not implemented yet" << std::endl;
 

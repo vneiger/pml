@@ -138,6 +138,8 @@ VecLong popov_appbas_iterative(
 // row echelon form
 // output: pivot degrees of the approximant basis (also indicates where the
 // rows of kernel should appear in the approximant basis)
+// Note: NTL does not guarantee that the pivots in kerbas are 1 !
+// --> gives the s-Popov form up to making the diagonal entries monic
 VecLong popov_mbasis1(
                      Mat<zz_p> & kerbas,
                      const Mat<zz_p> & pmat,
@@ -276,6 +278,33 @@ VecLong popov_pmbasis(
                      const VecLong & shift
                     );
 
+
+
+
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* MBASIS -- GENERIC INPUT -- UNIFORM SHIFT                   */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* Rescomp version, requiring m = 2 n and order even          */
+/*------------------------------------------------------------*/
+// TODO try resupdate (m=2n is borderline between the two)
+// TODO compare with mbasis_generic for m = t n based on Krylov
+// requirement 1: m = 2*n
+// requirement 2: order is even
+// output: appbas is in 0-Popov form with row degree (d,.., d) *GEN*,
+// where d = order/2
+void mbasis_generic_2n_n_rescomp(
+                                 Mat<zz_pX> & appbas,
+                                 const Mat<zz_pX> & pmat,
+                                 const long order
+                                );
 
 
 

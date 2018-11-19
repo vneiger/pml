@@ -77,11 +77,17 @@ bool is_approximant_basis(
 
     // test whether appbas has the right dimensions
     if (appbas.NumRows() != appbas.NumCols() || appbas.NumCols() != m)
+    {
+        std::cout << "~~is_approx~~ wrong dimensions" << std::endl;
         return false;
+    }
 
     // test whether appbas is shift-reduced with form at least 'form'
     if (not is_row_polmatform(appbas,shift,form))
+    {
+        std::cout << "~~is_approx~~ not in the required shifted form" << std::endl;
         return false;
+    }
 
     // test whether appbas consists of approximants (if row-wise: appbas * pmat = 0 mod X^order)
     // and retrieve the constant coefficient "cmat" of degree order (if row-wise: cmat = (appbas * pmat * X^{-order})  mod X)
@@ -102,8 +108,11 @@ bool is_approximant_basis(
             long ord = order[j];
             GetCoeff(cmat[i][j],residual[i][j],ord);
             trunc(residual[i][j],residual[i][j],ord);
-            if (residual[i][j] != 0)
+            if (not IsZero(residual[i][j]))
+            {
+                std::cout << "~~is_approx~~ not approx (" << i << "," << j << "): " << std::endl;
                 return false;
+            }
         }
     }
 
@@ -120,7 +129,10 @@ bool is_approximant_basis(
     zz_p det_pt = determinant(eval(appbas, pt));
     zz_p det_one = determinant(eval(appbas, zz_p(1)));
     if (det_pt != det_one * power(pt,degdet))
+    {
+        std::cout << "~~is_approx~~ wrong det" << std::endl;
         return false;
+    }
 
     // generation test: verify that [ cmat  P(0) ] has full rank (see Giorgi-Neiger ISSAC 2018)
     for (long i = 0; i < m; ++i)
@@ -128,7 +140,10 @@ bool is_approximant_basis(
             cmat[i][j+n] = coeff(appbas[i][j],0);
     long rank = gauss(cmat);
     if (rank != m)
+    {
+        std::cout << "~~is_approx~~ cmat not full rank" << std::endl;
         return false;
+    }
 
     return true;
 }
