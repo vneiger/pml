@@ -10,12 +10,13 @@ int main(int argc, char * argv[])
     long m = atoi(argv[1]);
     long n = atoi(argv[2]);
 	zz_p::init(GenPrime_long(atoi(argv[3])));
+    //zz_p::init(3);
 
 	double t1=0.0, t2=0.0;
 	double tt1, tt2;
 	long nb_iter=0;
 
-	while (nb_iter<1)
+	while (nb_iter<10000000)
 	//while (t1<1)
 	{
 		Mat<zz_p> mat;
@@ -27,21 +28,21 @@ int main(int argc, char * argv[])
 		tt2 = GetWallTime();
 		t1 += tt2 - tt1;
 
-        Mat<zz_p> im;
-        image(im, mat);
-        std::cout << "Matrix: " << std::endl;
-        std::cout << mat << std::endl;
-        std::cout << "Kernel: " << std::endl;
-        std::cout << ker << std::endl;
-        std::cout << "Image: " << std::endl;
-        std::cout << im << std::endl;
-        image(im, ker);
-        std::cout << "Image of kernel: " << std::endl;
-        std::cout << im << std::endl;
+        //Mat<zz_p> im;
+        //image(im, mat);
+        //std::cout << "Matrix: " << std::endl;
+        //std::cout << mat << std::endl;
+        //std::cout << "Kernel: " << std::endl;
+        //std::cout << ker << std::endl;
+        //std::cout << "Image: " << std::endl;
+        //std::cout << im << std::endl;
+        //image(im, ker);
+        //std::cout << "Image of kernel: " << std::endl;
+        //std::cout << im << std::endl;
 
 		tt1 = GetWallTime();
         long k = ker.NumRows();
-        std::vector<long> pcol(k,m);
+        std::vector<long> pcol(k,m-1);
         Vec<zz_p> pval;
         pval.SetLength(k);
         bool flag = false;
@@ -52,29 +53,29 @@ int main(int argc, char * argv[])
                 --pcol[i];
             pval[i] = ker[i][pcol[i]];
 
-            //if (pval[i] != zz_p(1) and pcol[i] == m-k+i)
-            //{
-            //    std::cout << i << "," << pcol[i] << "," << pval[i] << std::endl;
-            //    flag = true;
-            //}
             //--> this does not happen ==> if pivot is at expected location, it is 1
+            if (pval[i] != zz_p(1) and pcol[i] == m-k+i)
+            {
+                std::cout << i << "," << pcol[i] << "," << pval[i] << std::endl;
+                flag = true;
+            }
 
-            //if (pcol[i] == m-k+i)
-            //{
-            //    for (long ii = 0; ii < k; ++ii)
-            //    {
-            //        if (ii != i)
-            //        {
-            //            if (not IsZero(ker[ii][pcol[i]]))
-            //            {
-            //                flag = true;
-            //            }
-            //        }
-            //    }
-            //    if (flag)
-            //        std::cout << i << "," << pcol[i] << "," << pval[i] << std::endl;
-            //}
             //--> this does not happen ==> if pivot is at expected location, the rest of column is zero
+            if (pcol[i] == m-k+i)
+            {
+                for (long ii = 0; ii < k; ++ii)
+                {
+                    if (ii != i)
+                    {
+                        if (not IsZero(ker[ii][pcol[i]]))
+                        {
+                            flag = true;
+                        }
+                    }
+                }
+                if (flag)
+                    std::cout << i << "," << pcol[i] << "," << pval[i] << std::endl;
+            }
         }
         if (flag)
         {

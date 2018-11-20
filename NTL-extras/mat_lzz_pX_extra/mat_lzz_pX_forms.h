@@ -17,7 +17,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* VecLonged reduced forms of polynomials matrices. Recall that */
+/* Shifted reduced forms of polynomials matrices. Recall that */
 /* Popov => ordered weak Popov => weak Popov => Reduced       */
 /*------------------------------------------------------------*/
 

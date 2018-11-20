@@ -94,8 +94,6 @@ bool is_approximant_basis(
     // (we reserve some additional space in cmat because later it will store the constant coefficient of appbas)
     Mat<zz_pX> residual;
     multiply(residual,appbas,pmat);
-    std::cout << "RESIDUAL" << std::endl;
-    std::cout << residual << std::endl;
     // TODO this multiplication could be:
     //   - truncated mod X^{order+1}
     //   - improved by taking degree profile into account
@@ -108,9 +106,7 @@ bool is_approximant_basis(
         for (long j = 0; j < n; ++j)
         {
             long ord = order[j];
-            std::cout << i << ", " << j << " : " << ord;
             GetCoeff(cmat[i][j],residual[i][j],ord);
-            std::cout << ", coeff " << cmat[i][j] << std::endl;
             trunc(residual[i][j],residual[i][j],ord);
             if (not IsZero(residual[i][j]))
             {
@@ -119,7 +115,6 @@ bool is_approximant_basis(
             }
         }
     }
-    std::cout << cmat << std::endl;
 
     // test whether det(appbas) is a monomial (power of x):
     // det(appbas) = det(appbas(1)) * X^(deg(det(appbas)))
@@ -143,7 +138,6 @@ bool is_approximant_basis(
     for (long i = 0; i < m; ++i)
         for (long j = 0; j < m; ++j)
             cmat[i][j+n] = coeff(appbas[i][j],0);
-    std::cout << cmat << std::endl;
     long rank = gauss(cmat);
     if (rank != m)
     {
