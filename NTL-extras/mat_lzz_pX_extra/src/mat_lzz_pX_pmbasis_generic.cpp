@@ -114,31 +114,18 @@ void mbasis_generic_2n_n_rescomp(
     // where P00, P01, P10 have degree d-1 and P11 has degree d-2
     Vec<Mat<zz_p>> P00, P01, P10, P11;
     P00.SetLength(d);
-    for (long k = 0; k < d; ++k)
-        P00[k].SetDims(n,n);
     P01.SetLength(d);
-    for (long k = 0; k < d; ++k)
-        P01[k].SetDims(n,n);
     P10.SetLength(d+1); // we still store the degree 0 coeff (which will eventually be zero)
-    for (long k = 0; k < d+1; ++k)
-        P10[k].SetDims(n,n);
     P11.SetLength(d); // we still store the degree 0 coeff (which will eventually be zero)
-    for (long k = 0; k < d; ++k)
-        P11[k].SetDims(n,n);
 
     // To store the kernel of the residuals 0 and 1, and their lefthand square
     // submatrices
     // *GEN* --> dimension of kernel is n x m, its n x n righthand submatrix is
     // the identity
     Mat<zz_p> ker, K0, K1;
-    ker.SetDims(n, 2*n);
-    K0.SetDims(n, n);
-    K1.SetDims(n, n);
 
     // buffer, to store products and sums
     Mat<zz_p> bufR, buf;
-    bufR.SetDims(2*n, n);
-    buf.SetDims(n, n);
 
 #ifdef MBASIS_GEN_PROFILE
     t_others += GetWallTime()-tt;
@@ -153,6 +140,7 @@ void mbasis_generic_2n_n_rescomp(
     tt = GetWallTime();
 #endif // MBASIS_GEN_PROFILE
     // 1. compute left kernel of coeff 0 of pmat
+    bufR.SetDims(2*n, n);
     for (long i = 0; i < n; ++i)
         VectorCopy(bufR[i], F_top[0][i], n);
     for (long i = 0; i < n; ++i)
@@ -164,6 +152,7 @@ void mbasis_generic_2n_n_rescomp(
     kernel(ker,bufR);
     // (GEN) the right n x n submatrix of kerbas is identity
     // --> retrieve the left part
+    K0.SetDims(n, n);
     for (long i = 0; i < n; ++i)
         for (long j = 0; j < n; ++j)
             K0[i][j] = ker[i][j];
@@ -192,6 +181,7 @@ void mbasis_generic_2n_n_rescomp(
     kernel(ker,bufR);
     // (GEN) the right n x n submatrix of kerbas is identity
     // --> retrieve the left part
+    K1.SetDims(n, n);
     for (long i = 0; i < n; ++i)
         for (long j = 0; j < n; ++j)
             K1[i][j] = ker[i][j];
