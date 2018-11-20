@@ -221,55 +221,55 @@ int main(int argc, char *argv[])
                 std::cout << "OK." << std::endl;
 #endif // VERBOSE
 
-//                // mbasis_resupdate version 1
-//#ifdef VERBOSE
-//                std::cout << "Computation mbasis_resupdate... ";
-//#endif // VERBOSE
-//                pivdeg = mbasis_resupdate(appbas,*pmat,order,shift);
-//#ifdef VERBOSE
-//                std::cout << "OK. Testing...";
-//#endif // VERBOSE
-//                if (not is_approximant_basis(appbas,*pmat,order,shift,ORD_WEAK_POPOV,true))
-//                {
-//                    std::cout << "Error in mbasis_resupdate." << std::endl;
-//                    std::cout << "--rdim =\t" << rdim << std::endl;
-//                    std::cout << "--cdim =\t" << cdim << std::endl;
-//                    std::cout << "--deg =\t" << d << std::endl;
-//                    std::cout << "--order =\t" << order << std::endl;
-//                    std::cout << "--shift =\t" << shift << std::endl;
-//                    std::cout << zz_p::modulus() << std::endl;
-//                    std::cout << *pmat << std::endl;
-//                    std::cout << appbas << std::endl;
-//                    return 0;
-//                }
-//#ifdef VERBOSE
-//                std::cout << "OK." << std::endl;
-//#endif // VERBOSE
-//
-//              // popov_mbasis
-//#ifdef VERBOSE
-//                std::cout << "Computation popov_mbasis... ";
-//#endif // VERBOSE
-//                pivdeg = popov_mbasis(appbas,*pmat,order,shift);
-//#ifdef VERBOSE
-//                std::cout << "OK. Testing...";
-//#endif // VERBOSE
-//                if (not is_approximant_basis(appbas,*pmat,order,shift,POPOV,true))
-//                {
-//                    std::cout << "Error in popov_mbasis." << std::endl;
-//                    std::cout << "--rdim =\t" << rdim << std::endl;
-//                    std::cout << "--cdim =\t" << cdim << std::endl;
-//                    std::cout << "--deg =\t" << d << std::endl;
-//                    std::cout << "--order =\t" << order << std::endl;
-//                    std::cout << "--shift =\t" << shift << std::endl;
-//                    std::cout << zz_p::modulus() << std::endl;
-//                    std::cout << *pmat << std::endl;
-//                    std::cout << appbas << std::endl;
-//                    return 0;
-//                }
-//#ifdef VERBOSE
-//                std::cout << "OK." << std::endl;
-//#endif // VERBOSE
+                // mbasis_resupdate version 1
+#ifdef VERBOSE
+                std::cout << "Computation mbasis_resupdate... ";
+#endif // VERBOSE
+                pivdeg = mbasis_resupdate(appbas,*pmat,order,shift);
+#ifdef VERBOSE
+                std::cout << "OK. Testing...";
+#endif // VERBOSE
+                if (not is_approximant_basis(appbas,*pmat,order,shift,ORD_WEAK_POPOV,true))
+                {
+                    std::cout << "Error in mbasis_resupdate." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--order =\t" << order << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << *pmat << std::endl;
+                    std::cout << appbas << std::endl;
+                    return 0;
+                }
+#ifdef VERBOSE
+                std::cout << "OK." << std::endl;
+#endif // VERBOSE
+
+              // popov_mbasis
+#ifdef VERBOSE
+                std::cout << "Computation popov_mbasis... ";
+#endif // VERBOSE
+                pivdeg = popov_mbasis(appbas,*pmat,order,shift);
+#ifdef VERBOSE
+                std::cout << "OK. Testing...";
+#endif // VERBOSE
+                if (not is_approximant_basis(appbas,*pmat,order,shift,POPOV,true))
+                {
+                    std::cout << "Error in popov_mbasis." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--order =\t" << order << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << *pmat << std::endl;
+                    std::cout << appbas << std::endl;
+                    return 0;
+                }
+#ifdef VERBOSE
+                std::cout << "OK." << std::endl;
+#endif // VERBOSE
             }
         }
     }

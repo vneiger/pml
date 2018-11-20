@@ -806,6 +806,7 @@ VecLong mbasis_rescomp(
 // version with residual constant matrix computed at each iteration, multi-threaded
 // TODO work in progress
 // before more work, should be merged with updated rescomp above
+// (among others, it is probably wrong for some non-generic-rank-profile inputs)
 VecLong mbasis_rescomp_multithread(
                                    Mat<zz_pX> & appbas,
                                    const Mat<zz_pX> & pmat,
@@ -1259,22 +1260,66 @@ VecLong mbasis_resupdate(
 
         if (ker_dim < m)
         {
-            // here, we are in the "usual" case, where the left kernel of the
-            // residual has no special shape
-
-            // first, we permute everything back to original order
-
-            // compute the (permuted) pivot indices
 #ifdef MBASIS_PROFILE
             t_now = GetWallTime();
 #endif
+            // Compute pivots indices (pivot = rightmost nonzero entry)
+            // Experiments show that:
+            //   * kernel is expected to be of the form [ K | Id ]
+            //   * in general it is a column-permutation of such a matrix
+            // However note that a column-permutation is not sufficient for our needs
+            // Another property: if pivots are in the expected location (diagonal of
+            // rightmost square submatrix), then the corresponding column is the identity column.
+            bool expected_pivots = true;
             for (long i = 0; i<ker_dim; ++i)
             {
                 p_pivind[i] = m-1;
                 while (IsZero(p_kerbas[i][p_pivind[i]]))
                     --p_pivind[i];
+                if (p_pivind[i] != m-ker_dim+i)
+                    expected_pivots = false;
             }
 
+            if (not expected_pivots)
+            {
+                // find whether p_pivind has pairwise distinct entries
+                // (use pivind as temp space)
+                pivind = p_pivind;
+                std::sort(pivind.begin(), pivind.end());
+                // if pairwise distinct, then fine, the basis will not
+                // be Popov but will be ordered weak Popov (the goal of
+                // expected_pivots above was just to avoid this call to
+                // sort in the most usual case)
+
+                if (std::adjacent_find(pivind.begin(),pivind.end()) != pivind.end())
+                {
+                    // the kernel is not in a shape we can deduce the appbas from (some pivots collide)
+                    // --> let's compute its lower triangular row echelon form
+                    // (use kerbas as temporary space)
+                    kerbas.SetDims(ker_dim,m);
+                    for (long i = 0; i < ker_dim; ++i)
+                        for (long j = 0; j < m; ++j)
+                            kerbas[i][j] = p_kerbas[i][m-1-j];
+                    image(kerbas, kerbas);
+                    // now column_permuted_ker is in upper triangular row echelon form
+                    for (long i = 0; i < ker_dim; ++i)
+                        for (long j = 0; j < m; ++j)
+                            p_kerbas[i][j] = kerbas[ker_dim-i-1][m-1-j];
+                    // and now p_kerbas is the sought lower triangular row echelon kernel
+
+                    // compute the actual pivot indices
+                    for (long i = 0; i<ker_dim; ++i)
+                    {
+                        p_pivind[i] = m-1;
+                        while (IsZero(p_kerbas[i][p_pivind[i]]))
+                            --p_pivind[i];
+                    }
+                }
+            }
+
+
+            // up to row permutation, the kernel is in "lower triangular" row
+            // echelon form (almost there: we want the non-permuted one)
             // prepare kernel permutation by permuting kernel pivot indices;
             // also record which rows are pivot index in this kernel
             // (note that before this loop, is_pivind is filled with 'false')
