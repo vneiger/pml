@@ -196,31 +196,31 @@ int main(int argc, char *argv[])
                 std::cout << "OK." << std::endl;
 #endif // VERBOSE
 
-//                // mbasis Vec<Mat<zz_p>>, rescomp
-//#ifdef VERBOSE
-//                std::cout << "Computation mbasis_rescomp... ";
-//#endif // VERBOSE
-//                pivdeg = mbasis_rescomp(appbas,*pmat,order,shift);
-//#ifdef VERBOSE
-//                std::cout << "OK. Testing... ";
-//#endif // VERBOSE
-//                if (not is_approximant_basis(appbas,*pmat,order,shift,ORD_WEAK_POPOV,true))
-//                {
-//                    std::cout << "Error in mbasis_rescomp." << std::endl;
-//                    std::cout << "--rdim =\t" << rdim << std::endl;
-//                    std::cout << "--cdim =\t" << cdim << std::endl;
-//                    std::cout << "--deg =\t" << d << std::endl;
-//                    std::cout << "--order =\t" << order << std::endl;
-//                    std::cout << "--shift =\t" << shift << std::endl;
-//                    std::cout << zz_p::modulus() << std::endl;
-//                    std::cout << *pmat << std::endl;
-//                    std::cout << appbas << std::endl;
-//                    return 0;
-//                }
-//#ifdef VERBOSE
-//                std::cout << "OK." << std::endl;
-//#endif // VERBOSE
-//
+                // mbasis Vec<Mat<zz_p>>, rescomp
+#ifdef VERBOSE
+                std::cout << "Computation mbasis_rescomp... ";
+#endif // VERBOSE
+                pivdeg = mbasis_rescomp(appbas,*pmat,order,shift);
+#ifdef VERBOSE
+                std::cout << "OK. Testing... ";
+#endif // VERBOSE
+                if (not is_approximant_basis(appbas,*pmat,order,shift,ORD_WEAK_POPOV,true))
+                {
+                    std::cout << "Error in mbasis_rescomp." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--order =\t" << order << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << *pmat << std::endl;
+                    std::cout << appbas << std::endl;
+                    return 0;
+                }
+#ifdef VERBOSE
+                std::cout << "OK." << std::endl;
+#endif // VERBOSE
+
 //                // mbasis_resupdate version 1
 //#ifdef VERBOSE
 //                std::cout << "Computation mbasis_resupdate... ";
