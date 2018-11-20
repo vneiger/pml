@@ -23,7 +23,6 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 
 
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* UTIL FUNCTIONS                                             */
@@ -65,40 +64,6 @@ void conv_top_bot(
     }
 }
 
-void conv_top_bot(
-                  Mat<zz_pX> & mat,
-                  const Vec<Mat<zz_p>> & coeffs_top,
-                  const Vec<Mat<zz_p>> & coeffs_bot
-                 )
-{
-    long len = coeffs_top.length();
-    // requires coeffs_bot has same length
-    if (len == 0)
-    {
-        // TODO this is a choice --> indicate it in comments
-        // (zero-length sequence could be zero matrix of any dimension)
-        mat.SetDims(0, 0);
-        return;
-    }
-    long n = coeffs_top[0].NumCols();
-    // requires coeffs_bot has same numcols, and all other coeffs_top/bot as well
-    long m1 = coeffs_top[0].NumRows();
-    long m2 = coeffs_top[0].NumRows();
-
-    mat.SetDims(m1+m2, n);
-
-    for (long i = 0; i < m1; ++i)
-        for (long j = 0; j < n; ++j)
-            for (long k = 0; k < len; ++k)
-                SetCoeff(mat[i][j], k, coeffs_top[k][i][j]);
-
-    for (long i = 0; i < m2; ++i)
-        for (long j = 0; j < n; ++j)
-            for (long k = 0; k < len; ++k)
-                SetCoeff(mat[m1+i][j], k, coeffs_bot[k][i][j]);
-}
-
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -134,14 +99,14 @@ void mbasis_generic_2n_n_rescomp(
     // pmat = [[Ft], [Fb]]
     Vec<Mat<zz_p>> F_top, F_bot;
     conv_top_bot(F_top, F_bot, pmat);
-    //long degF = F_top.length()-1; // TODO
+    //long degF = F_top.length()-1; // TODO handle the case where F has degree lower (probably still >= d?)
 
-    // residual matrix 0, initially coefficient of pmat of degree 0
-    Mat<zz_p> R0_top(F_top[0]);
-    Mat<zz_p> R0_bot(F_bot[0]);
-    // residual matrix 1, initially coefficient of pmat of degree 1
-    Mat<zz_p> R1_top(F_top[1]);
-    Mat<zz_p> R1_bot(F_bot[1]);
+    // residual matrix 0
+    // will hold coefficients of pmat of degree 2*k
+    Mat<zz_p> R0_top, R0_bot;
+    // residual matrix 1
+    // will hold coefficients of pmat of degree 2*k+1
+    Mat<zz_p> R1_top, R1_bot;
 
     // coefficient matrices of output approximant basis
     // *GEN* --> appbas will be computed in the form
@@ -179,7 +144,122 @@ void mbasis_generic_2n_n_rescomp(
     t_others += GetWallTime()-tt;
 #endif // MBASIS_GEN_PROFILE
 
-    for (long k=0; k<d; ++k)
+    // Iteration k==0:
+    // --> compute approximant basis at order 2
+    // --> update residuals R0 and R1 as the coefficients of degree 2*k and
+    // 2*k+1 of appbas*pmat
+
+#ifdef MBASIS_GEN_PROFILE
+    tt = GetWallTime();
+#endif // MBASIS_GEN_PROFILE
+    // 1. compute left kernel of coeff 0 of pmat
+    for (long i = 0; i < n; ++i)
+        VectorCopy(bufR[i], F_top[0][i], n);
+    for (long i = 0; i < n; ++i)
+        VectorCopy(bufR[n+i], F_bot[0][i], n);
+#ifdef MBASIS_GEN_PROFILE
+    t_others += GetWallTime()-tt;
+    tt = GetWallTime();
+#endif // MBASIS_GEN_PROFILE
+    kernel(ker,bufR);
+    // (GEN) the right n x n submatrix of kerbas is identity
+    // --> retrieve the left part
+    for (long i = 0; i < n; ++i)
+        for (long j = 0; j < n; ++j)
+            K0[i][j] = ker[i][j];
+#ifdef MBASIS_GEN_PROFILE
+    t_ker += GetWallTime()-tt;
+    tt = GetWallTime();
+#endif // MBASIS_GEN_PROFILE
+
+    // 2. and 3. Second kernel, of coeff of degree 1 of appbas * pmat, that
+    // is, [ [F_top[0]], [K0 * F_top[1] + F_bot[1]] ]
+    // we permute the two blocks top-bottom, to respect the (implicit) shift
+    mul(buf, K0, F_top[1]);
+    add(buf, buf, F_bot[1]);
+#ifdef MBASIS_GEN_PROFILE
+    t_res += GetWallTime()-tt;
+    tt = GetWallTime();
+#endif // MBASIS_GEN_PROFILE
+    for (long i = 0; i < n; ++i)
+        bufR[i].swap(buf[i]);
+    for (long i = 0; i < n; ++i)
+        VectorCopy(bufR[n+i], F_top[0][i], n);
+#ifdef MBASIS_GEN_PROFILE
+    t_others += GetWallTime()-tt;
+    tt = GetWallTime();
+#endif // MBASIS_GEN_PROFILE
+    kernel(ker,bufR);
+    // (GEN) the right n x n submatrix of kerbas is identity
+    // --> retrieve the left part
+    for (long i = 0; i < n; ++i)
+        for (long j = 0; j < n; ++j)
+            K1[i][j] = ker[i][j];
+#ifdef MBASIS_GEN_PROFILE
+    t_ker += GetWallTime()-tt;
+    tt = GetWallTime();
+#endif // MBASIS_GEN_PROFILE
+
+    // 4. update approximant basis
+
+    // 4.1 update by first computed basis [ [XI, 0], [K0, I] ]
+    // 4.2 update by second computed basis [ [I, K1], [0, X I] ]
+    // appbas is currently the identity matrix
+    // --> update it as
+    // [ [X I + K1 K0,  K1],
+    //   [X K0,        X I] ]
+    //   (remember the identity terms are not stored)
+    mul(P00[0], K1, K0); 
+    P01[0] = K1;
+    P10[1] = K0;
+
+    // --> now appbas is a 0-ordered weak Popov approximant basis of pmat
+    // at order 2, of the form
+    // [ [X I + P00,  P01], [X P10, X^{k+1} I + X P11]]
+    // where P00, P01, P10 have degree 0 and P11 == 0
+
+#ifdef MBASIS_GEN_PROFILE
+    t_app += GetWallTime()-tt;
+    tt = GetWallTime();
+#endif // MBASIS_GEN_PROFILE
+
+    // 5. if not finished (d>1), compute the next residuals (rescomp variant)
+    // --> residuals R0 and R1 must be, respectively, the coefficients of
+    // degree 2 and 3 of appbas*pmat
+    if (d>1)
+    {
+        // R0_top = coeff of degree 2 of (X I + P00) F_top + P01 F_bot,
+        // where P00 and P01 have degree 0
+        mul(R0_top, P00[0], F_top[2]);
+        add(R0_top, R0_top, F_top[1]);
+        mul(buf, K1, F_bot[2]);
+        add(R0_top, R0_top, buf);
+
+        // R1_top = coeff of degree 3 of (X I + P00) F_top + P01 F_bot,
+        // where P00 and P01 have degree 0
+        mul(R1_top, P00[0], F_top[3]);
+        add(R1_top, R1_top, F_top[2]);
+        mul(buf, K1, F_bot[3]);
+        add(R1_top, R1_top, buf);
+
+        // R0_bot = coeff of degree 2 of X P10 F_top + X I F_bot,
+        // where P10 has degree 0
+        // Recall that here the vector "P10" stores the coefficients of X P10,
+        mul(R0_bot, P10[1], F_top[1]);
+        add(R0_bot, R0_bot, F_bot[1]);
+
+        // R1_bot = coeff of degree 3 of X P10 F_top + X I F_bot,
+        // where P10 has degree 0
+        mul(R1_bot, P10[1], F_top[2]);
+        add(R1_bot, R1_bot, F_bot[2]);
+
+#ifdef MBASIS_GEN_PROFILE
+        t_res += GetWallTime()-tt;
+#endif // MBASIS_GEN_PROFILE
+    }
+
+    // Iterations k==1...d-1
+    for (long k=1; k<d; ++k)
     {
         // *GEN* --> currently, the computed approximant basis has the form
         // [ [X^k I + P00,  P01], [X P10, X^k I + X P11]]
@@ -194,7 +274,7 @@ void mbasis_generic_2n_n_rescomp(
 #endif // MBASIS_GEN_PROFILE
         // 1. compute left kernel of residual 0
         for (long i = 0; i < n; ++i)
-            bufR[i] = R0_top[i]; // TODO VectorCopy ??
+            VectorCopy(bufR[i], R0_top[i], n);
         for (long i = 0; i < n; ++i)
             bufR[n+i].swap(R0_bot[i]);
 #ifdef MBASIS_GEN_PROFILE
@@ -223,10 +303,6 @@ void mbasis_generic_2n_n_rescomp(
         t_res += GetWallTime()-tt;
         tt = GetWallTime();
 #endif // MBASIS_GEN_PROFILE
-
-#ifdef VERBOSE_MBASISGEN
-        std::cout << "...R1 updated " << std::endl;
-#endif // VERBOSE_MBASISGEN
 
         // 3. compute kernel of residual 1
         // we permute the two blocks top-bottom, to respect the (implicit) shift
@@ -415,7 +491,7 @@ void mbasis_generic_2n_n_rescomp(
             add(R1_bot, R1_bot, F_bot[k+2]);
 
 #ifdef MBASIS_GEN_PROFILE
-        t_res += GetWallTime()-tt;
+            t_res += GetWallTime()-tt;
 #endif // MBASIS_GEN_PROFILE
         }
     }
@@ -454,7 +530,7 @@ void mbasis_generic_2n_n_rescomp(
 #ifdef MBASIS_GEN_PROFILE
     t_others += GetWallTime()-tt;
     double t_total = t_res + t_app + t_ker + t_others;
-    std::cout << "~~mbasis_rescomp~~\t (residuals,basis,kernel,others): \t ";
+    std::cout << "~~mbasisgen_rescomp~~\t (residuals,basis,kernel,others): \t ";
     std::cout << t_res/t_total << "," << t_app/t_total << "," <<
     t_ker/t_total << "," << t_others/t_total << std::endl;
 #endif // MBASIS_GEN_PROFILE
