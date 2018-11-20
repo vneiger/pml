@@ -7,7 +7,7 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* checks a shift by evaluation                               */
+/* checks a power series division                             */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -24,12 +24,6 @@ void check(long p)
 
         InvTruncMul(c, b, a, 2*i);
         assert (IsZero(trunc(c*a - b, 2*i)));
-
-        // t = get_time();
-        // for (long j = 0; j < 1000; j++)
-        //     InvTrunc(c, b, 2*i);
-        // cout << get_time()-t << " ";
-        // cout << endl;
     }
 }
 

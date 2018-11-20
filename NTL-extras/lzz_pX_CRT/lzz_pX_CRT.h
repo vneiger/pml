@@ -145,7 +145,8 @@ public:
 
     /*------------------------------------------------------------*/
     /* constructor for geometric progressions                     */
-    /* we interpolate at s * r^(2*i), i=0..d-1                    */
+    /* we evaluate / interpolate at s * r^(2*i), i=0..d-1         */
+    /* for evaluation, deg(f) must be < d                         */
     /*------------------------------------------------------------*/
     zz_pX_Multipoint_Geometric(const zz_p& r, const zz_p& s, long d);
 
@@ -168,6 +169,12 @@ public:
     void inv_mul_left(Vec<zz_p>& val, const Vec<zz_p>& f);
 
     /*------------------------------------------------------------*/
+    /* evaluates f at s * r^(2*i), i=0..nb-1                      */
+    /* still needs deg(f) < d                                     */ 
+    /*------------------------------------------------------------*/
+    void evaluate(Vec<zz_p>& val, const zz_pX& f, long nb) const;
+
+    /*------------------------------------------------------------*/
     /* getters / setters                                          */
     /*------------------------------------------------------------*/
     long FFT_evaluate() const;
@@ -185,18 +192,19 @@ public:
 
     /*------------------------------------------------------------*/
     /* adds a new FFT for repeated evaluations in degree d < n    */
+    /* (not necessary, but provides a speed-up)                   */
     /*------------------------------------------------------------*/
     void prepare_degree(long d);
 
     /*------------------------------------------------------------*/
     /* return the ratio q = r^2                                   */
     /*------------------------------------------------------------*/
-    zz_p get_q();
+    zz_p get_q() const; 
 
     /*------------------------------------------------------------*/
     /* return s (points are s*r^(2i))                             */
     /*------------------------------------------------------------*/
-    zz_p get_s();
+    zz_p get_s() const;
 
 
 private:  

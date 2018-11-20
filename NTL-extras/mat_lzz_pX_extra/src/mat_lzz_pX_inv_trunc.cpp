@@ -393,7 +393,7 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
 
         Vec<zz_p> power_x;
         power_x.SetLength(n);
-        zz_p q = ev.get_q();
+        const zz_p q = ev.get_q();
         zz_p inv_q = 1/q;
         
         power_x[0] = to_zz_p(1);

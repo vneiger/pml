@@ -8,11 +8,12 @@
 #include "mat_lzz_pX_extra.h"
 #include "structured_lzz_pX.h"
 
+
+
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /* creates sylvester matrices                                 */
-/* checks the truncated inverse                               */
 /*------------------------------------------------------------*/
 void check(long p)
 {
@@ -21,7 +22,7 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 5; i < 50; i += 9)
+    for (long i = 5; i < 600; i += 100)
     {
         long d = i;
         long j = i;
@@ -35,8 +36,10 @@ void check(long p)
         
         sylvester_lzz_pX S(F, G);
         toeplitz_like_minus_lzz_pX iS;
+        double t;
+        cout << i << " " << j << " " << d << " ";
 
-        long factor = 5;
+        long factor = 2;
 
         zz_pX a0, b0;
         for (long i = 0; i < F.length(); i++)
@@ -44,12 +47,25 @@ void check(long p)
         for (long i = 0; i < G.length(); i++)
             SetCoeff(b0, i, coeff(G[i], 0));
 
+        t = get_time();
+        for (long nb = 0; nb < factor * d; nb++)
+        {
+            Mat<zz_p> block;
+            sylvester_lzz_p S(a0, b0);
+            S.top_right_block_inverse(block, (long) cbrt(d));
+        }
+        cout << get_time()-t << " ";
+
+        t = get_time();
+        for (long nb = 0; nb < factor * d; nb++)
+            resultant(a0, b0);
+        cout << get_time()-t << " ";
+
+        t = get_time();
         S.high_precision_inv_trunc(iS, factor * d);
-        
-        Mat<zz_pX> M = trunc(S.to_dense(), factor * d);
-        Mat<zz_pX> iM = trunc(iS.to_dense(), factor * d);
-        Mat<zz_pX> Id = trunc(M * iM, factor * d);
-        assert (IsIdent(Id, M.NumRows()));
+        cout << get_time()-t << " ";
+
+        cout << endl;
     }
 }
 
@@ -58,9 +74,10 @@ void check(long p)
 /*------------------------------------------------------------*/
 int main(int argc, char** argv)
 {
-    check(786433);
+    warmup();
     check(0);
     check(288230376151711813);
+    check(786433);
     return 0;
 }
 
