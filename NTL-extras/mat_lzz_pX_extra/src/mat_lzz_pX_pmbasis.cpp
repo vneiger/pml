@@ -99,7 +99,7 @@ VecLong popov_mbasis1(
     VecLong p_pivind(k,m-1);
     for (long i = 0; i<k; ++i)
     {
-        while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
+        while (IsZero(p_kerbas[i][p_pivind[i]]))
             --p_pivind[i];
         if (p_pivind[i] != m-k+i)
         { expected_pivots=false; break; }
@@ -158,7 +158,7 @@ VecLong popov_mbasis1(
         for (long i = 0; i<k; ++i)
         {
             p_pivind[i] = m-1;
-            while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
+            while (IsZero(p_kerbas[i][p_pivind[i]]))
                 --p_pivind[i];
         }
 
@@ -277,7 +277,7 @@ VecLong mbasis1(
     // rightmost square submatrix), then the corresponding column is the identity column.
     VecLong p_pivind(k,m-1);
     for (long i = 0; i<k; ++i)
-        while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
+        while (IsZero(p_kerbas[i][p_pivind[i]]))
             --p_pivind[i];
 
     // will eventually store the correct (non-permuted) pivots,
@@ -334,7 +334,7 @@ VecLong mbasis1(
         for (long i = 0; i<k; ++i)
         {
             p_pivind[i] = m-1;
-            while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
+            while (IsZero(p_kerbas[i][p_pivind[i]]))
                 --p_pivind[i];
         }
 
@@ -601,10 +601,7 @@ VecLong mbasis_rescomp(
         t_others += GetWallTime()-t_now;
         t_now = GetWallTime();
 #endif
-        // find the (permuted) left kernel basis in row echelon form;
-        // note it might not exactly be the usual row echelon form but a
-        // row-permuted version --> this is taken into account below in the
-        // computation of the pivot indices
+        // find the (permuted) left kernel basis, hopefully in row echelon form;
         kernel(p_kerbas,p_residual);
 #ifdef MBASIS_PROFILE
         t_kernel += GetWallTime()-t_now;
@@ -661,7 +658,7 @@ VecLong mbasis_rescomp(
             for (long i = 0; i<ker_dim; ++i)
             {
                 p_pivind[i] = m-1;
-                while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
+                while (IsZero(p_kerbas[i][p_pivind[i]]))
                     --p_pivind[i];
             }
 
@@ -980,7 +977,7 @@ VecLong mbasis_rescomp_multithread(
             for (long i = 0; i<ker_dim; ++i)
             {
                 p_pivind[i] = m-1;
-                while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
+                while (IsZero(p_kerbas[i][p_pivind[i]]))
                     --p_pivind[i];
             }
 
@@ -1260,7 +1257,7 @@ VecLong mbasis_resupdate(
             for (long i = 0; i<ker_dim; ++i)
             {
                 p_pivind[i] = m-1;
-                while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
+                while (IsZero(p_kerbas[i][p_pivind[i]]))
                     --p_pivind[i];
             }
 
