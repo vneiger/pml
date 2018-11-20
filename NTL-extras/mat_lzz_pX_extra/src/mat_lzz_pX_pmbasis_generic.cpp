@@ -10,7 +10,7 @@
 #include "lzz_pX_CRT.h"
 #include "mat_lzz_pX_extra.h"
 
-#define MBASIS_GEN_PROFILE
+//#define MBASIS_GEN_PROFILE
 //#define PMBASIS_GEN_PROFILE
 //#define VERBOSE_MBASISGEN
 

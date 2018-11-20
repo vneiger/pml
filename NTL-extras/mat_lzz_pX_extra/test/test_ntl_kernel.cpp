@@ -35,6 +35,9 @@ int main(int argc, char * argv[])
         std::cout << ker << std::endl;
         std::cout << "Image: " << std::endl;
         std::cout << im << std::endl;
+        image(im, ker);
+        std::cout << "Image of kernel: " << std::endl;
+        std::cout << im << std::endl;
 
 		tt1 = GetWallTime();
         long k = ker.NumRows();
