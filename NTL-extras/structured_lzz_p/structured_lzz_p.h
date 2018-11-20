@@ -1179,7 +1179,7 @@ public:
     /*------------------------------------------------------------*/
     long inv(toeplitz_like_minus_lzz_p& inv);
 
-    long top_right_block_inverse(long m);
+    long top_right_block_inverse(Mat<zz_p>& block, long m);
 
 
     /*------------------------------------------------------------*/

@@ -16,27 +16,20 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 10; i < 500; i++)
+    for (long i = 200; i < 500; i++)
     {
         zz_pX a, b, c;
         a = random_zz_pX(i);
         b = random_zz_pX(i);
-        double t;
-        cout << i << " ";
 
-        t = get_time();
-        for (long j = 0; j < 1000; j++)
-            InvTruncMul(c, b, a, 2*i);
-        cout << get_time()-t << " ";
+        InvTruncMul(c, b, a, 2*i);
         assert (IsZero(trunc(c*a - b, 2*i)));
 
-        t = get_time();
-        for (long j = 0; j < 1000; j++)
-            InvTrunc(c, b, 2*i);
-        cout << get_time()-t << " ";
-        cout << endl;
-
-
+        // t = get_time();
+        // for (long j = 0; j < 1000; j++)
+        //     InvTrunc(c, b, 2*i);
+        // cout << get_time()-t << " ";
+        // cout << endl;
     }
 }
 
@@ -45,7 +38,6 @@ void check(long p)
 /*------------------------------------------------------------*/
 int main(int argc, char** argv)
 {
-    warmup();
     check(288230376151711813);
     check(0);
     check(786433);

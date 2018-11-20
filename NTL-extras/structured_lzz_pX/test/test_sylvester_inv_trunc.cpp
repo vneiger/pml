@@ -51,8 +51,9 @@ void check(long p)
         t = get_time();
         for (long nb = 0; nb < factor * d; nb++)
         {
+            Mat<zz_p> block;
             sylvester_lzz_p S(a0, b0);
-            long r = S.top_right_block_inverse(0);
+            long r = S.top_right_block_inverse(block, (long) cbrt(d));
         }
         cout << get_time()-t << " ";
 
