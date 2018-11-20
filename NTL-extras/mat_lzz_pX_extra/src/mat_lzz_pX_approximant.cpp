@@ -101,9 +101,9 @@ bool is_approximant_basis(
     Mat<zz_p> cmat;
     cmat.SetDims(m,m+n);
 
-    for (long i = 0; i < residual.NumRows(); ++i)
+    for (long i = 0; i < m; ++i)
     {
-        for (long j = 0; j < residual.NumCols(); ++j)
+        for (long j = 0; j < n; ++j)
         {
             long ord = order[j];
             GetCoeff(cmat[i][j],residual[i][j],ord);

@@ -84,52 +84,106 @@ VecLong popov_mbasis1(
         return VecLong(m,0);
     }
 
-    // compute the (permuted) pivot indices
-    // (NTL doesn't return the pivot indices in Gaussian elimination, we might
-    // hack the NTL code to retrieve them directly but it seems that the next
-    // lines have negligible time compared to the kernel computation)
 #ifdef MBASIS1_PROFILE
     t_now = GetWallTime();
 #endif
-    VecLong p_pivind(k,m-1); // pivot indices in permuted kernel basis
+    // Check whether we have pairwise distinct pivot indices in permuted kernel
+    // (pivot = rightmost nonzero entry)
+    // Experiments show that:
+    //   * kernel is expected to be of the form [ K | Id ]
+    //   * in general it is a column-permutation of such a matrix
+    // However note that a column-permutation is not good for our needs (return Popov).
+    // Another property: if pivots are in the expected location (diagonal of
+    // rightmost square submatrix), then the corresponding column is the identity column.
+    VecLong p_pivind(k,m-1);
     for (long i = 0; i<k; ++i)
-        while (p_pivind[i]>=0 && p_kerbas[i][p_pivind[i]]==0)
+        while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
             --p_pivind[i];
-#ifdef MBASIS1_PROFILE
-    t_pivind = GetWallTime() - t_now;
-#endif
 
-    // permute everything back to original order:
-    // prepare kernel permutation by permuting kernel pivot indices
-    // pivot degrees corresponding to kernel pivot indices are 0, others are 1
-#ifdef MBASIS1_PROFILE
-    t_now = GetWallTime();
-#endif
-    VecLong pivind(k);
-    for (long i = 0; i < k; ++i)
-        pivind[i] = perm_shift[p_pivind[i]];
+    // will eventually store the correct (non-permuted) pivots,
+    // and the pivot degree
+    VecLong pivind(p_pivind);
     VecLong pivdeg(m,1);
-    for (long i = 0; i < k; ++i)
-        pivdeg[pivind[i]] = 0;
+    // for the moment, pivind used as temporary space
+    // --> stores a sorted p_pivind, which will be used to see if p_pivind had
+    // pairwise distinct entries
+    std::sort(pivind.begin(), pivind.end());
 
-    VecLong perm_rows_ker(k);
-    std::iota(perm_rows_ker.begin(), perm_rows_ker.end(), 0);
-    sort(perm_rows_ker.begin(), perm_rows_ker.end(),
-         [&](const long& a, const long& b)->bool
-         {
-         return (pivind[a] < pivind[b]);
-         } );
+    if (std::adjacent_find(pivind.begin(),pivind.end()) == pivind.end())
+    {
+        // up to row permutation, the kernel is in "lower triangular" reduced
+        // row echelon form (almost there: we want the non-permuted one)
+        // permute everything back to original order:
+        // prepare kernel permutation by permuting kernel pivot indices
+        // pivot degrees corresponding to kernel pivot indices are 0, others are 1
+        for (long i = 0; i < k; ++i)
+            pivind[i] = perm_shift[p_pivind[i]];
+        for (long i = 0; i < k; ++i)
+            pivdeg[pivind[i]] = 0;
 
-    kerbas.SetDims(k,m);
-    for (long i = 0; i < k; ++i)
-        for (long j = 0; j < m; ++j)
-            kerbas[i][perm_shift[j]] = p_kerbas[perm_rows_ker[i]][j];
+        VecLong perm_rows_ker(k);
+        std::iota(perm_rows_ker.begin(), perm_rows_ker.end(), 0);
+        std::sort(perm_rows_ker.begin(), perm_rows_ker.end(),
+            [&](const long& a, const long& b)->bool
+            {
+            return (pivind[a] < pivind[b]);
+            } );
+
+        kerbas.SetDims(k,m);
+        for (long i = 0; i < k; ++i)
+            for (long j = 0; j < m; ++j)
+                kerbas[i][perm_shift[j]] = p_kerbas[perm_rows_ker[i]][j];
+    }
+    else
+    {
+        // the kernel is not in a nice shape (some pivots collide)
+        // --> let's compute its lower triangular reduced row echelon form
+        Mat<zz_p> column_permuted_ker;
+        column_permuted_ker.SetDims(k,m);
+        for (long i = 0; i < k; ++i)
+            for (long j = 0; j < m; ++j)
+                column_permuted_ker[i][j] = p_kerbas[i][m-1-j];
+        image(column_permuted_ker, column_permuted_ker);
+        // now column_permuted_ker is in upper triangular reduced row echelon form
+        for (long i = 0; i < k; ++i)
+            for (long j = 0; j < m; ++j)
+                p_kerbas[i][j] = column_permuted_ker[k-i-1][m-1-j];
+        // and now p_kerbas is the sought upper triangular reduced row echelon kernel
+
+        // compute the actual pivot indices
+        for (long i = 0; i<k; ++i)
+        {
+            p_pivind[i] = m-1;
+            while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
+                --p_pivind[i];
+        }
+
+        // permute everything back to original order:
+        // pivot degrees corresponding to kernel pivot indices are 0, others are 1
+        for (long i = 0; i < k; ++i)
+            pivind[i] = perm_shift[p_pivind[i]];
+        for (long i = 0; i < k; ++i)
+            pivdeg[pivind[i]] = 0;
+
+        VecLong perm_rows_ker(k);
+        std::iota(perm_rows_ker.begin(), perm_rows_ker.end(), 0);
+        std::sort(perm_rows_ker.begin(), perm_rows_ker.end(),
+            [&](const long& a, const long& b)->bool
+            {
+            return (pivind[a] < pivind[b]);
+            } );
+
+        kerbas.SetDims(k,m);
+        for (long i = 0; i < k; ++i)
+            for (long j = 0; j < m; ++j)
+                kerbas[i][perm_shift[j]] = p_kerbas[perm_rows_ker[i]][j];
+    }
 #ifdef MBASIS1_PROFILE
     t_perm2 = GetWallTime() - t_now;
 #endif
 
 #ifdef MBASIS1_PROFILE
-    std::cout << "~~popov_mbasis1~~ input dimensions " << pmat.NumRows() << " x " << pmat.NumCols() << std::endl;
+    std::cout << "~~popov_mbasis1~~ input dimensions " << m << " x " << n << std::endl;
     std::cout << "  Initial permutations: " << t_perm1 << std::endl;
     std::cout << "  Computing kernel: " << t_ker << std::endl;
     std::cout << "  Computing pivot indices: " << t_pivind << std::endl;
@@ -257,10 +311,6 @@ VecLong mbasis_plain(
 /*------------------------------------------------------------*/
 /* mbasis, using vectors of matrices                          */
 /*------------------------------------------------------------*/
-
-// TODO:
-//   * issue about kernel which doesn't always have the pivots where we would like, in non-generic cases
-//   * check about unnecessary tmp variables
 
 // version with residual constant matrix computed at each iteration
 VecLong mbasis_rescomp(
@@ -431,7 +481,7 @@ VecLong mbasis_rescomp(
             for (long i = 0; i<ker_dim; ++i)
             {
                 p_pivind[i] = m-1;
-                while (p_pivind[i]>=0 && p_kerbas[i][p_pivind[i]]==0)
+                while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
                     --p_pivind[i];
             }
 
@@ -750,7 +800,7 @@ VecLong mbasis_rescomp_multithread(
             for (long i = 0; i<ker_dim; ++i)
             {
                 p_pivind[i] = m-1;
-                while (p_pivind[i]>=0 && p_kerbas[i][p_pivind[i]]==0)
+                while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
                     --p_pivind[i];
             }
 
@@ -1030,7 +1080,7 @@ VecLong mbasis_resupdate(
             for (long i = 0; i<ker_dim; ++i)
             {
                 p_pivind[i] = m-1;
-                while (p_pivind[i]>=0 && p_kerbas[i][p_pivind[i]]==0)
+                while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
                     --p_pivind[i];
             }
 
