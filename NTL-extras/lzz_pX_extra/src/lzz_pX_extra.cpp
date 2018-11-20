@@ -4,9 +4,17 @@
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*         ALGORITHMS FOR POWER SERIES DIVISION               */
+/* compute b/a mod t^m                                        */
+/* (sligthly faster than b * (1/a mod t^m) mod t^m            */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
 /* power series division, naive algorithm                     */
 /* &x == &a not allowed                                       */
-/* x = b/a mod x^m                                            */
+/* x = b/a mod t^m                                            */
 /*------------------------------------------------------------*/
 static void PlainInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 {
@@ -69,7 +77,7 @@ static void PlainInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 /* power series division, Newton iteration                    */
 /* adapted from the Tellegen package, Lecerf-Schost           */
 /* aliasing not allowed                                       */
-/* x = b/a mod x^m                                            */
+/* x = b/a mod t^m                                            */
 /*------------------------------------------------------------*/
 static void NewtonInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 { 
@@ -139,12 +147,8 @@ static void NewtonInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
       FromfftRep(r1, R3, 0, 2*k-2); 
       sub(r1, r1, b);
 
-      // TofftRep(R3, r0, t+1);
-      // TofftRep(R2, a, t+1);  
-      // mul(R3, R3, R2);
-      // FromfftRep(r1, R3, k, l-1); 
-      
-      if (l-k < NTL_zz_pX_MUL_CROSSOVER && 0)
+      // not very useful, somehow
+      if (l-k < NTL_zz_pX_MUL_CROSSOVER/2 && 0)
       {
           r1 = MulTrunc(trunc(r1, l-k), trunc(x, l-k), l-k);
       }
@@ -212,8 +216,8 @@ static void NewtonInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 }
 
 /*------------------------------------------------------------*/
-/* power series division                                      */
-/* x = b/a mod x^m                                            */
+/* power series division, main function                       */
+/* x = b/a mod t^m                                            */
 /*------------------------------------------------------------*/
 void InvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 {

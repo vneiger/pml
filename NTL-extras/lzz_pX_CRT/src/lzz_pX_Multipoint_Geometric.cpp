@@ -234,7 +234,7 @@ zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, const zz_p
 /*------------------------------------------------------------*/
 /* return the ratio q = r^2                                   */
 /*------------------------------------------------------------*/
-zz_p zz_pX_Multipoint_Geometric::get_q()
+zz_p zz_pX_Multipoint_Geometric::get_q() const
 {
     zz_p q;
     if (n == 1)
@@ -247,7 +247,7 @@ zz_p zz_pX_Multipoint_Geometric::get_q()
 /*------------------------------------------------------------*/
 /* return s (points are s*r^(2i))                             */
 /*------------------------------------------------------------*/
-zz_p zz_pX_Multipoint_Geometric::get_s()
+zz_p zz_pX_Multipoint_Geometric::get_s() const
 {
     if (n == 1)
         return to_zz_p(1);
@@ -342,6 +342,41 @@ void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const
     {
         val[i] = x[i] * coeff(b, i);
     }
+}
+
+
+/*------------------------------------------------------------*/
+/* evaluates f at s * r^(2*i), i=0..nb-1                      */
+/* still needs deg(f) < d                                     */ 
+/*------------------------------------------------------------*/
+void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& f, long nb) const
+{
+    val.SetLength(nb + n);
+
+    if (nb == 0) 
+    {
+        return;
+    }
+    
+    long idx = 0;
+    Vec<zz_p> tmp;
+    zz_pX f_loc = f;
+    zz_p pow = power(get_q(), n);
+    do
+    {
+        evaluate(tmp, f_loc);
+        for (long i = 0; i < n; i++)
+            val[idx + i] = tmp[i];
+        zz_p pow_loc = to_zz_p(1);
+        for (long i = 0; i <= deg(f); i++)
+        {
+            SetCoeff(f_loc, i, coeff(f_loc, i) * pow_loc);
+            pow_loc *= pow;
+        }
+        idx += n;
+    }
+    while (idx < nb);
+    val.SetLength(nb);
 }
 
 /*------------------------------------------------------------*/

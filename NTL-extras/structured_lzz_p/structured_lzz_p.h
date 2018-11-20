@@ -1179,8 +1179,12 @@ public:
     /*------------------------------------------------------------*/
     long inv(toeplitz_like_minus_lzz_p& inv);
 
+    /*------------------------------------------------------------*/
+    /* compute the size-m top-right block of M^(-1)               */
+    /* r = 0 if matrix non invertible, r = 1 otherwise            */
+    /* reasonably fast                                            */
+    /*------------------------------------------------------------*/
     long top_right_block_inverse(Mat<zz_p>& block, long m);
-
 
     /*------------------------------------------------------------*/
     /* turns M into a dense matrix                                */

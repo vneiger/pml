@@ -8,6 +8,7 @@ NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /* creates sylvester matrices                                 */
+/* computes top-right block of their inverses and checks      */
 /*------------------------------------------------------------*/
 void check(long p)
 {

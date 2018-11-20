@@ -397,8 +397,6 @@ long sylvester_lzz_p::solve_transpose(Vec<zz_p>& out, const Vec<zz_p>& in) const
     return 1;
 }
 
-
-
 /*------------------------------------------------------------*/
 /* left system solving, matrix version                        */
 /*------------------------------------------------------------*/
@@ -485,11 +483,16 @@ long sylvester_lzz_p::inv(toeplitz_like_minus_lzz_p& inv)
 }
 
 /*------------------------------------------------------------*/
+/* compute the size-m top-right block of M^(-1)               */
+/* r = 0 if matrix non invertible, r = 1 otherwise            */
 /*------------------------------------------------------------*/
 long sylvester_lzz_p::top_right_block_inverse(Mat<zz_p>& block, long m)
 {
+    if (m > NumCols())
+        Error("Bad size for sylvester top right block inverse");
+
     zz_pX d, s, t;
-    XGCD(d, s, t, a, b); // 1.70
+    XGCD(d, s, t, a, b); 
     if (deg(d) != 0)
         return 0;
 
@@ -506,7 +509,7 @@ long sylvester_lzz_p::top_right_block_inverse(Mat<zz_p>& block, long m)
     Vec<zz_p> V0(INIT_SIZE, dA+dB);
     Vec<zz_p> V1(INIT_SIZE, dA+dB);
     Vec<zz_p> U0(INIT_SIZE, dA+dB);
-    Vec<zz_p> U1(INIT_SIZE, dA+dB); // 1.70
+    Vec<zz_p> U1(INIT_SIZE, dA+dB);
 
     zz_pX rS;
     rS.rep.SetLength(dB);
@@ -521,9 +524,9 @@ long sylvester_lzz_p::top_right_block_inverse(Mat<zz_p>& block, long m)
     rT.normalize();
 
     zz_pX rS_over_rB, R_rS_rB, rT_over_rA, R_rT_rA;
-    zz_pX top, bottom;   // 1.70
+    zz_pX top, bottom;  
 
-    InvTruncMul(rS_over_rB, rS, revB, n);    // 2.35
+    InvTruncMul(rS_over_rB, rS, revB, n);   
     for (long i = 0; i <= deg(rS_over_rB); i++)
         V0[i] = rS_over_rB[i];
     for (long i = deg(rS_over_rB)+1; i < n; i++)
@@ -532,8 +535,8 @@ long sylvester_lzz_p::top_right_block_inverse(Mat<zz_p>& block, long m)
     R_rS_rB.rep.SetLength(n);
     for (long i = 0; i < max(m, dB); i++)
         R_rS_rB[i] = coeff(rS_over_rB, n - 1 - i);
-    R_rS_rB.normalize();                    // 2.36
-    MulTrunc(top, R_rS_rB, trunc(b, max(m, dB)), max(m, dB));     // 2.5
+    R_rS_rB.normalize();                    
+    MulTrunc(top, R_rS_rB, trunc(b, max(m, dB)), max(m, dB)); 
 
     InvTruncMul(rT_over_rA, rT, revA, n);
     for (long i = 0; i <= deg(rT_over_rA); i++)
@@ -563,7 +566,6 @@ long sylvester_lzz_p::top_right_block_inverse(Mat<zz_p>& block, long m)
             U1[i + dB] -= coeff(a, i);
         }
     U0[dB] -= coeff(b, dB);
-
 
     Mat<zz_p> L0, R0, L1, R1;
     L0.SetDims(m, m);
