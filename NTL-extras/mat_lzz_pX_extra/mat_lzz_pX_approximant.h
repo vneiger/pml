@@ -134,17 +134,37 @@ VecLong popov_appbas_iterative(
 /*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shift)  */
 /*   - Jeannerod-Neiger-Villard 2018 (ensuring s-Popov)       */
 /*------------------------------------------------------------*/
+
 // input: kerbas is constant, will contain the left kernel of pmat in reduced
 // row echelon form
+// (not exactly of pmat: permutations involved, depending on the shift)
 // output: pivot degrees of the approximant basis (also indicates where the
 // rows of kernel should appear in the approximant basis)
-// Note: NTL does not guarantee that the pivots in kerbas are 1 !
-// --> gives the s-Popov form up to making the diagonal entries monic
+// FIXME: this is currently not optimized when matrices with non-generic
+// rank profiles are given in input (pmat)
+// --> for this, it would probably be better to rely on a library which
+// provides precisely the decomposition we want (probably PLE, or PLUQ)
 VecLong popov_mbasis1(
                      Mat<zz_p> & kerbas,
                      const Mat<zz_p> & pmat,
                      const VecLong & shift
                     );
+
+// input: kerbas is constant, will contain the left kernel of pmat in row
+// echelon form
+// (not exactly of pmat: permutations involved, depending on the shift)
+// output: pivot degrees of the approximant basis (also indicates where the
+// rows of kernel should appear in the approximant basis)
+// FIXME: this is currently not optimized when non-generic matrices
+// are given in input (pmat)
+// --> for this, it would probably be better to rely on a library which
+// provides precisely the decomposition we want (probably PLE, or PLUQ)
+VecLong mbasis1(
+                Mat<zz_p> & kerbas,
+                const Mat<zz_p> & pmat,
+                const VecLong & shift
+               );
+
 
 /*------------------------------------------------------------*/
 /* M-Basis algorithm for uniform approximant order            */
@@ -169,7 +189,7 @@ VecLong mbasis_plain(
 // Residual (constant coeff of X^-d appbas*pmat) is computed from scratch at
 // each iteration
 // Complexity: pmat is m x n
-//   - 'order' calls to popov_mbasis1 with dimension m x n, each one gives a
+//   - 'order' calls to mbasis1 with dimension m x n, each one gives a
 //   constant matrix K which is generically m-n x m  (may have more rows in
 //   exceptional cases)
 //   - order products (X Id + K ) * appbas to update the approximant basis
@@ -200,7 +220,7 @@ VecLong mbasis_rescomp_multithread(
 // Residual (X^-d appbas*pmat mod X^(order-d)) is continuously updated along
 // the iterations
 // Complexity: pmat is m x n
-//   - 'order' calls to popov_mbasis1 with dimension m x n, each one gives a
+//   - 'order' calls to mbasis1 with dimension m x n, each one gives a
 //   constant matrix K which is generically m-n x m  (may have more rows in
 //   exceptional cases)
 //   - order products (X Id + K ) * appbas to update the approximant basis

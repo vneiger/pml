@@ -23,11 +23,11 @@ NTL_CLIENT
 
 // These algorithms are defined for arbitrary shifts, but work best for shifts
 // close to uniform
-// (except the next one, popov_mbasis1, where the shift has
-// roughly no influence)
+// (except popov_mbasis1/mbasis1, where the shift has roughly no influence)
 
 /*------------------------------------------------------------*/
 /* base case: order 1, i.e. working modulo X                  */
+/* returning Popov form                                       */
 /*------------------------------------------------------------*/
 
 VecLong popov_mbasis1(
@@ -67,8 +67,186 @@ VecLong popov_mbasis1(
 #endif
     Mat<zz_p> p_kerbas;
     kernel(p_kerbas,mat);
-    std::cout << "Matrix :" << std::endl << mat << std::endl;
-    std::cout << "Kernel :" << std::endl << p_kerbas << std::endl;
+#ifdef MBASIS1_PROFILE
+    t_ker = GetWallTime() - t_now;
+#endif
+    long k = p_kerbas.NumRows();
+    if (k==0)
+    {
+        // kerbas is empty, same as p_kerbas
+        kerbas.move(p_kerbas);
+        return VecLong(m,1);
+    }
+    if (k==m)
+    {
+        // kerbas should be the identity, same as p_kerbas
+        kerbas.move(p_kerbas);
+        return VecLong(m,0);
+    }
+
+#ifdef MBASIS1_PROFILE
+    t_now = GetWallTime();
+#endif
+    // Check whether we have the expected pivot indices in permuted kernel
+    // (pivot = rightmost nonzero entry)
+    // NTL ensures that (according to experiments):
+    //   * kernel is expected to be of the form [ K | Id ]
+    //   * in general it is a column-permutation of such a matrix
+    // However note that a column-permutation is not sufficient for our needs.
+    // Another property: if pivots are in the expected location (diagonal of
+    // rightmost square submatrix), then the corresponding column is the identity column.
+    bool expected_pivots = true;
+    VecLong p_pivind(k,m-1);
+    for (long i = 0; i<k; ++i)
+    {
+        while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
+            --p_pivind[i];
+        if (p_pivind[i] != m-k+i)
+        { expected_pivots=false; break; }
+    }
+
+    // will eventually store the correct (non-permuted) pivots,
+    // and the pivot degree
+    VecLong pivind(k);
+    VecLong pivdeg(m,1);
+
+    if (expected_pivots)
+    {
+        // the kernel is in "lower triangular" reduced row echelon form, in fact [ * | Id ]
+        // permute everything back to original order:
+        // prepare kernel permutation by permuting kernel pivot indices
+        // pivot degrees corresponding to kernel pivot indices are 0, others are 1
+        for (long i = 0; i < k; ++i)
+            pivind[i] = perm_shift[p_pivind[i]];
+        for (long i = 0; i < k; ++i)
+            pivdeg[pivind[i]] = 0;
+
+        VecLong perm_rows_ker(k);
+        std::iota(perm_rows_ker.begin(), perm_rows_ker.end(), 0);
+        std::sort(perm_rows_ker.begin(), perm_rows_ker.end(),
+            [&](const long& a, const long& b)->bool
+            {
+            return (pivind[a] < pivind[b]);
+            } );
+
+        kerbas.SetDims(k,m);
+        for (long i = 0; i < k; ++i)
+            for (long j = 0; j < m; ++j)
+                kerbas[i][perm_shift[j]] = p_kerbas[perm_rows_ker[i]][j];
+    }
+    else
+    {
+        // the kernel is not in the wanted shape
+        // --> let's compute its lower triangular reduced row echelon form
+        Mat<zz_p> column_permuted_ker;
+        column_permuted_ker.SetDims(k,m);
+        for (long i = 0; i < k; ++i)
+            for (long j = 0; j < m; ++j)
+                column_permuted_ker[i][j] = p_kerbas[i][m-1-j];
+        image(column_permuted_ker, column_permuted_ker);
+        // now column_permuted_ker is in upper triangular row echelon form
+        for (long i = 0; i < k; ++i)
+            for (long j = 0; j < m; ++j)
+                p_kerbas[i][j] = column_permuted_ker[k-i-1][m-1-j];
+        // and now p_kerbas is in lower triangular row echelon form
+        // it remains to make it reduced
+        // --> we use a rather naive way, which should not impact timings
+        // too much for most use cases, since this case (non-generic kernel) is
+        // rare over large fields with not-too-special input:
+
+        // compute the actual pivot indices
+        for (long i = 0; i<k; ++i)
+        {
+            p_pivind[i] = m-1;
+            while (p_pivind[i]>=0 && IsZero(p_kerbas[i][p_pivind[i]]))
+                --p_pivind[i];
+        }
+
+        Mat<zz_p> tmat;
+        tmat.SetDims(k,k);
+        for (long i = 0; i < k; ++i)
+            for (long j = 0; j < k; ++j)
+                tmat[i][j] = p_kerbas[i][p_pivind[j]];
+        inv(tmat, tmat);
+        mul(p_kerbas, tmat, p_kerbas);
+
+        // permute everything back to original order:
+        // pivot degrees corresponding to kernel pivot indices are 0, others are 1
+        for (long i = 0; i < k; ++i)
+            pivind[i] = perm_shift[p_pivind[i]];
+        for (long i = 0; i < k; ++i)
+            pivdeg[pivind[i]] = 0;
+
+        VecLong perm_rows_ker(k);
+        std::iota(perm_rows_ker.begin(), perm_rows_ker.end(), 0);
+        std::sort(perm_rows_ker.begin(), perm_rows_ker.end(),
+            [&](const long& a, const long& b)->bool
+            {
+            return (pivind[a] < pivind[b]);
+            } );
+
+        kerbas.SetDims(k,m);
+        for (long i = 0; i < k; ++i)
+            for (long j = 0; j < m; ++j)
+                kerbas[i][perm_shift[j]] = p_kerbas[perm_rows_ker[i]][j];
+    }
+#ifdef MBASIS1_PROFILE
+    t_perm2 = GetWallTime() - t_now;
+#endif
+
+#ifdef MBASIS1_PROFILE
+    std::cout << "~~popov_mbasis1~~ input dimensions " << m << " x " << n << std::endl;
+    std::cout << "  Initial permutations: " << t_perm1 << std::endl;
+    std::cout << "  Computing kernel: " << t_ker << std::endl;
+    std::cout << "  Computing pivot indices: " << t_pivind << std::endl;
+    std::cout << "  Final permutations: " << t_perm2 << std::endl;
+#endif
+
+    return pivdeg;
+}
+
+/*------------------------------------------------------------*/
+/* base case: order 1, i.e. working modulo X                  */
+/* returning ordered weak Popov form                          */
+/*------------------------------------------------------------*/
+
+VecLong mbasis1(
+                Mat<zz_p> & kerbas,
+                const Mat<zz_p> & pmat,
+                const VecLong & shift
+               )
+{
+    long m = pmat.NumRows();
+    long n = pmat.NumCols();
+    // compute permutation which realizes stable sort of the shift
+    // (i.e. sorts (shift[0],0)....(shift[len],len) lexicographically increasingly)
+#ifdef MBASIS1_PROFILE
+    double t_perm1,t_perm2,t_pivind,t_ker,t_now;
+    t_now = GetWallTime();
+#endif
+    VecLong perm_shift(m);
+    std::iota(perm_shift.begin(), perm_shift.end(), 0);
+    stable_sort(perm_shift.begin(), perm_shift.end(),
+                [&](const long& a, const long& b)->bool
+                {
+                return (shift[a] < shift[b]);
+                } );
+
+    // permute rows of pmat accordingly
+    Mat<zz_p> mat;
+    mat.SetDims(m,n);
+    for (long i = 0; i < m; ++i)
+        mat[i] = pmat[perm_shift[i]];
+#ifdef MBASIS1_PROFILE
+    t_perm1 = GetWallTime() - t_now;
+#endif
+
+    // find the permuted kernel basis in row echelon form
+#ifdef MBASIS1_PROFILE
+    t_now = GetWallTime();
+#endif
+    Mat<zz_p> p_kerbas;
+    kernel(p_kerbas,mat);
 #ifdef MBASIS1_PROFILE
     t_ker = GetWallTime() - t_now;
 #endif
@@ -185,7 +363,7 @@ VecLong popov_mbasis1(
 #endif
 
 #ifdef MBASIS1_PROFILE
-    std::cout << "~~popov_mbasis1~~ input dimensions " << m << " x " << n << std::endl;
+    std::cout << "~~mbasis1~~ input dimensions " << m << " x " << n << std::endl;
     std::cout << "  Initial permutations: " << t_perm1 << std::endl;
     std::cout << "  Computing kernel: " << t_ker << std::endl;
     std::cout << "  Computing pivot indices: " << t_pivind << std::endl;
@@ -229,7 +407,7 @@ VecLong mbasis_plain(
 
     for (long ord = 1; ord <= order; ++ord)
     {
-        diff_pivdeg = popov_mbasis1(kerbas,residual,rdeg);
+        diff_pivdeg = mbasis1(kerbas,residual,rdeg);
 
         if (kerbas.NumRows()==0)
         {

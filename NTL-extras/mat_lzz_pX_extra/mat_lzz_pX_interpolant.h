@@ -122,7 +122,7 @@ VecLong popov_intbas_iterative(
 /* Adaptation of M-Basis for uniform interpolation points     */
 /*------------------------------------------------------------*/
 
-// --> popov_mbasis1 can be called as such (with, as input, pmat evaluated at a
+// --> mbasis1 can be called as such (with, as input, pmat evaluated at a
 // point)
 
 // TODO input pmat = polynomial matrix, not implemented yet
