@@ -16,7 +16,7 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 2; i < 700; i += 30)
+    for (long i = 2; i < 200; i += 30)
     {
         zz_pX F, G;
         do 
@@ -32,9 +32,36 @@ void check(long p)
         while (deg(GCD(F, G)) != 0);
         
         sylvester_lzz_p S(F, G);
-        long r = S.top_right_block_inverse(3);
-        
-        assert(r == 1);
+        Mat<zz_p> block;
+        long m;
+
+        m = 3;
+        if (S.NumRows() >= m)
+        {
+            long r = S.top_right_block_inverse(block, m);
+            assert(r == 1);
+            Mat<zz_p> Sinv = inv(S.to_dense());
+            Mat<zz_p> subSinv;
+            subSinv.SetDims(m, m);
+            for (long i = 0; i < m; i++)
+                for (long j = 0; j < m; j++)
+                    subSinv[i][j] = Sinv[i][j + S.NumCols() - m];
+            assert(block == subSinv);
+        }
+
+        m = S.NumRows()-3;
+        if (m > 0)
+        {
+            long r = S.top_right_block_inverse(block, m);
+            assert(r == 1);
+            Mat<zz_p> Sinv = inv(S.to_dense());
+            Mat<zz_p> subSinv;
+            subSinv.SetDims(m, m);
+            for (long i = 0; i < m; i++)
+                for (long j = 0; j < m; j++)
+                    subSinv[i][j] = Sinv[i][j + S.NumCols() - m];
+            assert(block == subSinv);
+        }
     }
 }
 

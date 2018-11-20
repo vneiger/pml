@@ -101,11 +101,11 @@ static void NewtonInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
       TofftRep(R2, a, t+1, 0, l-1); 
       mul(R2, R2, R1);
       FromfftRep(P1, R2, k, l-1);
-      
+
       TofftRep(R2, P1, t+1);
       mul(R2, R2, R1);
       FromfftRep(P1, R2, 0, l-k-1);
-      
+            
       x.rep.SetLength(l);
       long y_len = P1.rep.length();
       for (i = k; i < l; i++) {
@@ -143,10 +143,17 @@ static void NewtonInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
       // TofftRep(R2, a, t+1);  
       // mul(R3, R3, R2);
       // FromfftRep(r1, R3, k, l-1); 
-
-      TofftRep(R3, r1, t+1);
-      mul(R3, R3, R1);
-      FromfftRep(r1, R3, 0, l-k-1); 
+      
+      if (l-k < NTL_zz_pX_MUL_CROSSOVER && 0)
+      {
+          r1 = MulTrunc(trunc(r1, l-k), trunc(x, l-k), l-k);
+      }
+      else
+      {
+          TofftRep(R3, r1, t+1);
+          mul(R3, R3, R1);
+          FromfftRep(r1, R3, 0, l-k-1); 
+      }
       
       x.rep.SetLength(l);
       for (i = 0; i < k; i++) 
