@@ -173,7 +173,9 @@ VecLong mbasis_plain(
 
     for (long ord = 1; ord <= order; ++ord)
     {
+        std::cout << ord << ",   " << " ,   " << std::endl << residual << std::endl;
         diff_pivdeg = popov_mbasis1(kerbas,residual,rdeg);
+        std::cout << ord << ",   " << " ,   " << std::endl << kerbas << std::endl;
 
         if (kerbas.NumRows()==0)
         {
@@ -257,10 +259,6 @@ VecLong mbasis_plain(
 /*------------------------------------------------------------*/
 /* mbasis, using vectors of matrices                          */
 /*------------------------------------------------------------*/
-
-// TODO:
-//   * issue about kernel which doesn't always have the pivots where we would like, in non-generic cases
-//   * check about unnecessary tmp variables
 
 // version with residual constant matrix computed at each iteration
 VecLong mbasis_rescomp(
