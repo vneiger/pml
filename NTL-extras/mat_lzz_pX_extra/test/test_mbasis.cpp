@@ -56,6 +56,44 @@ int main(int argc, char *argv[])
 
     if (false)
     {
+        Mat<zz_p> mat;
+        mat.SetDims(5,2);
+        mat[0][0] = 1;
+        mat[0][1] = 1;
+        mat[1][1] = 2;
+        mat[2][0] = 2;
+        mat[3][1] = 1;
+
+        VecLong shift{3,0,4,1,2};
+        Mat<zz_p> kerbas;
+        pivdeg = popov_mbasis1(kerbas, mat, shift);
+
+        Mat<zz_pX> pmat;
+        pmat.SetDims(5,2);
+        SetCoeff(pmat, 0, mat);
+        appbas.SetDims(5,5);
+        long row=0;
+        for (long r = 0; r < 5; ++r)
+        {
+            if (pivdeg[r]==0)
+            {
+                for (long j = 0; j < 5; ++j)
+                    appbas[r][j] = kerbas[row][j];
+                ++row;
+            }
+            else
+                SetX(appbas[r][r]);
+        }
+
+        is_approximant_basis(appbas, pmat, 1, shift, POPOV, true);
+        std::cout << "degree matrix input:" << std::endl << degree_matrix(pmat) << std::endl;
+        std::cout << "degree matrix output:" << std::endl << degree_matrix(appbas) << std::endl;
+
+        return 0;
+    }
+
+    if (false)
+    {
         //--prime =       3
         //~~is_approx~~ cmat not full rank
         //Error in mbasis_rescomp.
@@ -282,10 +320,10 @@ int main(int argc, char *argv[])
                     std::cout << "--order =\t" << order << std::endl;
                     std::cout << "--shift =\t" << shift << std::endl;
                     std::cout << zz_p::modulus() << std::endl;
-                    std::cout << coeff(*pmat,0) << std::endl;
-                    std::cout << appbas << std::endl;
-                    std::cout << kerbas << std::endl;
-                    std::cout << pivdeg << std::endl;
+                    std::cout << "Input: " << std::endl << coeff(*pmat,0) << std::endl;
+                    std::cout << "Approx basis: " << std::endl << appbas << std::endl;
+                    std::cout << "Kernel : " << std::endl << kerbas << std::endl;
+                    std::cout << std::endl << pivdeg << std::endl;
                     return 0;
                 }
 #ifdef VERBOSE

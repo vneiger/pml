@@ -67,6 +67,8 @@ VecLong popov_mbasis1(
 #endif
     Mat<zz_p> p_kerbas;
     kernel(p_kerbas,mat);
+    std::cout << "Matrix :" << std::endl << mat << std::endl;
+    std::cout << "Kernel :" << std::endl << p_kerbas << std::endl;
 #ifdef MBASIS1_PROFILE
     t_ker = GetWallTime() - t_now;
 #endif
@@ -111,8 +113,8 @@ VecLong popov_mbasis1(
 
     if (std::adjacent_find(pivind.begin(),pivind.end()) == pivind.end())
     {
-        // up to row permutation, the kernel is in "lower triangular" reduced
-        // row echelon form (almost there: we want the non-permuted one)
+        // up to row permutation, the kernel is in "lower triangular" row
+        // echelon form (almost there: we want the non-permuted one)
         // permute everything back to original order:
         // prepare kernel permutation by permuting kernel pivot indices
         // pivot degrees corresponding to kernel pivot indices are 0, others are 1
@@ -144,11 +146,11 @@ VecLong popov_mbasis1(
             for (long j = 0; j < m; ++j)
                 column_permuted_ker[i][j] = p_kerbas[i][m-1-j];
         image(column_permuted_ker, column_permuted_ker);
-        // now column_permuted_ker is in upper triangular reduced row echelon form
+        // now column_permuted_ker is in upper triangular row echelon form
         for (long i = 0; i < k; ++i)
             for (long j = 0; j < m; ++j)
                 p_kerbas[i][j] = column_permuted_ker[k-i-1][m-1-j];
-        // and now p_kerbas is the sought upper triangular reduced row echelon kernel
+        // and now p_kerbas is the sought lower triangular row echelon kernel
 
         // compute the actual pivot indices
         for (long i = 0; i<k; ++i)
