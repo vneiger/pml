@@ -1,5 +1,7 @@
 #include <NTL/lzz_pX.h>
 
+#include "lzz_pX_CRT.h"
+#include "structured_lzz_p.h"
 #include "lzz_pXY.h"
 
 NTL_CLIENT
@@ -412,6 +414,173 @@ void SetCoeff(zz_pXY& x, long i, const zz_pX& c)
    }
    x.rep[i] = c;
    x.normalize();
+}
+
+
+/*------------------------------------------------------------*/
+/* computes the resultant of f and g                          */
+/* returns 0 iff the computation failed                       */
+/*------------------------------------------------------------*/
+long resultant(zz_pX& res, const zz_pXY& f, const zz_pXY& g)
+{
+    long dyf = f.degY();
+    long dyg = g.degY();
+
+    long dxf = f.degX();
+    long dxg = g.degX();
+    
+    long df = f.tdeg();
+    long dg = g.tdeg();
+
+    long xtra = 10;
+    long dr = df*dg + xtra;
+
+    Vec<zz_p> val_res, val_lcf, val_lcg;
+    Vec<zz_pX> val_f, val_g;
+
+    val_res.SetLength(dr);
+    val_f.SetLength(dr);
+    val_g.SetLength(dr);
+
+    zz_p a0, b0;
+    long OK = 0;
+    long nb = 0;
+    zz_pX_Multipoint_Geometric evG;
+    do
+    {
+        nb++;
+        OK = 1;
+        a0 = random_zz_p();
+        b0 = random_zz_p();
+        evG = zz_pX_Multipoint_Geometric(a0, b0, max(dxf, dxg)+1);
+        evG.evaluate(val_lcf, f.rep[dyf], dr);
+        evG.evaluate(val_lcg, g.rep[dyg], dr);
+        for (long i = 0; i < dr; i++)
+            if (val_lcf[i] == 0 || val_lcg[i] == 0)
+            {
+                OK = 0;
+                break;
+            }
+    }
+    while (OK == 0 && nb < 5);
+  
+    if (nb == 5)
+        return 0;
+
+    for (long i = 0; i < dr; i++)
+    {
+        val_f[i].rep.SetLength(dyf + 1);
+        val_f[i][dyf] = val_lcf[i];
+        val_g[i].rep.SetLength(dyg + 1);
+        val_g[i][dyg] = val_lcg[i];
+    }
+
+    Vec<zz_p> tmp;
+    for (long i = 0; i < dyf; i++)
+    {
+        evG.evaluate(tmp, f.rep[i], dr);
+        for (long j = 0; j < dr; j++)
+            val_f[j][i] = tmp[j];
+    }
+    for (long i = 0; i < dyg; i++)
+    {
+        evG.evaluate(tmp, g.rep[i], dr);
+        for (long j = 0; j < dr; j++)
+            val_g[j][i] = tmp[j];
+    }
+
+    for (long i = 0; i < dr; i++)
+        resultant(val_res[i], val_f[i], val_g[i]);
+
+    zz_pX_Multipoint_Geometric evG_long(a0, b0, dr);
+    evG_long.interpolate(res, val_res);
+    return 1;
+}
+
+/*------------------------------------------------------------*/
+/* computes the resultant of f and g, Villard's algorithm     */
+/* returns 0 iff the computation failed                       */
+/*------------------------------------------------------------*/
+long resultant_villard(zz_pX& res, const zz_pXY& f, const zz_pXY& g)
+{
+    long nf = f.degY();
+    long ng = g.degY();
+    long n = max(nf, ng);
+
+    long df = f.degX();
+    long dg = g.degX();
+    long d = max(df, dg);
+
+    long m = (long) cbrt(n);
+    long delta = 2 * d * ((n + m - 1)/m);
+
+    Vec<zz_p> val_res, val_lcf, val_lcg;
+    Vec<zz_pX> val_f, val_g;
+
+    val_f.SetLength(delta);
+    val_g.SetLength(delta);
+
+    zz_p a0, b0;
+    long OK = 0;
+    long nb = 0;
+    zz_pX_Multipoint_Geometric evG;
+    do
+    {
+        nb++;
+        OK = 1;
+        a0 = random_zz_p();
+        b0 = random_zz_p();
+        evG = zz_pX_Multipoint_Geometric(a0, b0, max(df, dg)+1);
+        evG.evaluate(val_lcf, f.rep[nf], delta);
+        evG.evaluate(val_lcg, g.rep[ng], delta);
+        for (long i = 0; i < delta; i++)
+            if (val_lcf[i] == 0 || val_lcg[i] == 0)
+            {
+                OK = 0;
+                break;
+            }
+    }
+    while (OK == 0 && nb < 5);
+  
+    if (nb == 5)
+        return 0;
+
+    for (long i = 0; i < delta; i++)
+    {
+        val_f[i].rep.SetLength(nf + 1);
+        val_f[i][nf] = val_lcf[i];
+        val_g[i].rep.SetLength(ng + 1);
+        val_g[i][ng] = val_lcg[i];
+    }
+
+    Vec<zz_p> tmp;
+    for (long i = 0; i < nf; i++)
+    {
+        evG.evaluate(tmp, f.rep[i], delta);
+        for (long j = 0; j < delta; j++)
+            val_f[j][i] = tmp[j];
+    }
+    for (long i = 0; i < ng; i++)
+    {
+        evG.evaluate(tmp, g.rep[i], delta);
+        for (long j = 0; j < delta; j++)
+            val_g[j][i] = tmp[j];
+    }
+
+    // blocks have size mxm
+    Vec<Mat<zz_p>> blocks;
+    blocks.SetLength(delta);
+    for (long i = 0; i < delta; i++)
+    {
+        sylvester_lzz_p S(val_f[i], val_g[i]);
+        long r = S.top_right_block_inverse(blocks[i], m);
+        if (r == 0)
+            return 0;
+    }
+
+    // todo: finish!
+
+    return 1;
 }
 
 

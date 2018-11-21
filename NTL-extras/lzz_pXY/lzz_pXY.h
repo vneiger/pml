@@ -266,6 +266,13 @@ inline zz_pXY trunc_y(const zz_pXY &a, long i)
 void SetCoeff(zz_pXY& a, long i, const zz_pX& c);
 
 
+/*------------------------------------------------------------*/
+/* computes the resultant of f and g                          */
+/* returns 0 iff the computation failed                       */
+/*------------------------------------------------------------*/
+long resultant(zz_pX& res, const zz_pXY& f, const zz_pXY& g);
+
+
 #endif
 
 // Local Variables:
