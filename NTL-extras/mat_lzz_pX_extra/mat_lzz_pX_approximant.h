@@ -314,8 +314,8 @@ VecLong popov_pmbasis(
 /*------------------------------------------------------------*/
 /* Rescomp version, requiring m = 2 n and order even          */
 /*------------------------------------------------------------*/
-// TODO try resupdate (m=2n is borderline between the two)
-// TODO compare with mbasis_generic for m = t n based on Krylov
+// Assumes that the entry has genericity properties: precisely, that the
+// computed kernels (base cases at order 1) are of the form [ * | Id ]
 // requirement 1: m = 2*n
 // requirement 2: order is even
 // output: appbas is in 0-Popov form with row degree (d,.., d) *GEN*,
@@ -326,6 +326,20 @@ void mbasis_generic_2n_n_rescomp(
                                  const long order
                                 );
 
+/*------------------------------------------------------------*/
+/* Rescomp version, requiring m = 2 n and order even          */
+/*------------------------------------------------------------*/
+// Assumes that the entry has genericity properties: precisely, that the
+// computed kernels (base cases at order 1) are of the form [ * | Id ]
+// requirement 1: m = 2*n
+// requirement 2: order is even
+// output: appbas is in 0-Popov form with row degree (d,.., d) *GEN*,
+// where d = order/2
+void mbasis_generic_2n_n_resupdate(
+                                   Mat<zz_pX> & appbas,
+                                   const Mat<zz_pX> & pmat,
+                                   const long order
+                                  );
 
 
 

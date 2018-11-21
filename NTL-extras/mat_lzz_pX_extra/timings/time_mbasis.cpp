@@ -87,28 +87,50 @@ void one_bench_mbasis(long rdim, long cdim, long order)
 
     t_mbasis_generic_rescomp /= nb_iter;
 
-    cout << rdim << "," << cdim << "," << order << "," << AvailableThreads();
-    cout << "," << t_mbasis_rescomp << "," << t_mbasis_resupdate << "," << t_mbasis_generic_rescomp;
+    double t_mbasis_generic_resupdate=0.0;
+    nb_iter=0;
+    while (t_mbasis_generic_resupdate<0.1)
+    {
+        Mat<zz_pX> pmat;
+        random(pmat, rdim, cdim, order);
+        VecLong pivdeg;
 
-    double best;
-    if (t_mbasis_rescomp <= t_mbasis_rescomp and t_mbasis_rescomp <= t_mbasis_generic_rescomp)
-    {
-        cout << "," << "rescomp";
-        best = t_mbasis_rescomp;
+        t1 = GetWallTime();
+        Mat<zz_pX> appbas;
+        mbasis_generic_2n_n_resupdate(appbas,pmat,order);
+        t2 = GetWallTime();
+
+        t_mbasis_generic_resupdate += t2-t1;
+        ++nb_iter;
     }
-    else if (t_mbasis_resupdate <= t_mbasis_rescomp and t_mbasis_resupdate <= t_mbasis_generic_rescomp)
-    {
-        cout << "," << "resupdate";
-        best = t_mbasis_resupdate;
-    }
-    else
-    {
-        cout << "," << "generic";
-        best = t_mbasis_generic_rescomp;
-    }
-    cout << "," << t_mbasis_rescomp / best;
-    cout << "," << t_mbasis_resupdate / best;
-    cout << "," << t_mbasis_generic_rescomp / best;
+
+    t_mbasis_generic_resupdate /= nb_iter;
+
+
+
+    cout << rdim << "\t" << cdim << "\t" << order << "\t" << AvailableThreads();
+    cout << "\t" << t_mbasis_rescomp << "\t" << t_mbasis_resupdate << "\t" << t_mbasis_generic_rescomp << "\t" << t_mbasis_generic_resupdate;
+
+    double best = t_mbasis_generic_resupdate;
+    //if (t_mbasis_rescomp <= t_mbasis_rescomp && t_mbasis_rescomp <= t_mbasis_generic_rescomp)
+    //{
+    //    cout << "," << "rescomp";
+    //    best = t_mbasis_rescomp;
+    //}
+    //else if (t_mbasis_resupdate <= t_mbasis_rescomp and t_mbasis_resupdate <= t_mbasis_generic_rescomp)
+    //{
+    //    cout << "," << "resupdate";
+    //    best = t_mbasis_resupdate;
+    //}
+    //else
+    //{
+    //    cout << "," << "generic";
+    //    best = t_mbasis_generic_rescomp;
+    //}
+    cout << "\t" << t_mbasis_rescomp / best;
+    cout << "\t" << t_mbasis_resupdate / best;
+    cout << "\t" << t_mbasis_generic_rescomp / best;
+    cout << "\t" << t_mbasis_generic_resupdate / best;
     cout << endl;
 }
 
@@ -152,7 +174,7 @@ void run_bench(long nthreads, long nbits, bool fftprime)
 
     VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
 
-    cout << "rdim,cdim,order,nthreads,time" << endl;
+    cout << "rdim\tcdim\torder\tnthread\tr-cmp\tr-upd\tg-rcmp\tg-rupd\tratios versus generic resupdate" << endl;
     for (size_t i=0; i<szs.size(); ++i)
     {
         // for generic, currently we can only use dimensions n=2m
@@ -179,7 +201,7 @@ void run_bench(long nthreads, long nbits, bool fftprime)
 int main(int argc, char ** argv)
 {
     std::cout << std::fixed;
-    std::cout << std::setprecision(8);
+    std::cout << std::setprecision(5);
 
     // TODO one thread for the moment
     VecLong nthreads = {1}; // {1,2,3,4};

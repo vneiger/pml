@@ -115,6 +115,35 @@ int main(int argc, char *argv[])
         std::cout << degmat << std::endl;
     }
 
+    // mbasis_generic_2n_n_resupdate
+    std::cout << "~~~Testing mbasis_generic_2n_n_resupdate~~~" << std::endl;
+    tt=0.0; nb_iter=0;
+    while (tt<0.5)
+    {
+        clear(appbas);
+        t1 = GetWallTime();
+        mbasis_generic_2n_n_resupdate(appbas,pmat,order);
+        t2 = GetWallTime();
+        tt += t2-t1;
+        ++nb_iter;
+    }
+    std::cout << "Time(mbasis_generic_2n_n_resupdate): " << tt/nb_iter << std::endl;
+
+    if (verify)
+    {
+        std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
+        bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true);
+        std::cout << (verif?"correct":"wrong") << std::endl;
+    }
+
+    if (verbose)
+    {
+        Mat<long> degmat;
+        degree_matrix(degmat,appbas);
+        std::cout << "Print degree matrix of approx basis..." << std::endl;
+        std::cout << degmat << std::endl;
+    }
+
     // timing mbasis_rescomp, for comparison
     tt=0.0; nb_iter=0;
     while (tt<0.5)
