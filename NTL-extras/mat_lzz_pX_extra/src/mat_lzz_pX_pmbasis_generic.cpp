@@ -180,9 +180,11 @@ void mbasis_generic_2n_n_rescomp(
     // 1. compute left kernel of coeff 0 of pmat
     bufR.SetDims(2*n, n);
     for (long i = 0; i < n; ++i)
-        VectorCopy(bufR[i], F_top[0][i], n);
+        for (long j = 0; j < n; ++j)
+            bufR[i][j] = F_top[0][i][j];
     for (long i = 0; i < n; ++i)
-        VectorCopy(bufR[n+i], F_bot[0][i], n);
+        for (long j = 0; j < n; ++j)
+            bufR[n+i][j] = F_bot[0][i][j];
 #ifdef MBASIS_GEN_PROFILE
     t_others += GetWallTime()-tt;
     tt = GetWallTime();
@@ -208,10 +210,10 @@ void mbasis_generic_2n_n_rescomp(
     t_res += GetWallTime()-tt;
     tt = GetWallTime();
 #endif // MBASIS_GEN_PROFILE
-    for (long i = 0; i < n; ++i)
+    for (long i = 0; i < n; ++i) // bufR bottom <- F_top[0]
+        bufR[n+i].swap(bufR[i]);
+    for (long i = 0; i < n; ++i) // bufR top <- K0*F_top[1] + F_bot[1]
         bufR[i].swap(buf[i]);
-    for (long i = 0; i < n; ++i)
-        VectorCopy(bufR[n+i], F_top[0][i], n);
 #ifdef MBASIS_GEN_PROFILE
     t_others += GetWallTime()-tt;
     tt = GetWallTime();
@@ -299,7 +301,8 @@ void mbasis_generic_2n_n_rescomp(
 #endif // MBASIS_GEN_PROFILE
         // 1. compute left kernel of residual 0
         for (long i = 0; i < n; ++i)
-            VectorCopy(bufR[i], R0_top[i], n);
+            for (long j=0; j<n; ++j)
+                bufR[i][j] = R0_top[i][j];
         for (long i = 0; i < n; ++i)
             bufR[n+i].swap(R0_bot[i]);
 #ifdef MBASIS_GEN_PROFILE
@@ -530,20 +533,35 @@ void mbasis_generic_2n_n_rescomp(
     for (long i = 0; i < n; ++i)
     {
         for (long j = 0; j < n; ++j)
+        {
+            appbas[i][j].SetLength(d);
             for (long k = 0; k < d; ++k)
-                SetCoeff(appbas[i][j], k, P00[k][i][j]);
+                appbas[i][j][k] = P00[k][i][j];
+        }
         for (long j = n; j < 2*n; ++j)
+        {
+            long jmn = j-n;
+            appbas[i][j].SetLength(d);
             for (long k = 0; k < d; ++k)
-                SetCoeff(appbas[i][j], k, P01[k][i][j-n]);
+                appbas[i][j][k] = P01[k][i][jmn];
+        }
     }
     for (long i = n; i < 2*n; ++i)
     {
+        long imn = i-n;
         for (long j = 0; j < n; ++j)
+        {
+            appbas[i][j].SetLength(d+1);
             for (long k = 1; k < d+1; ++k)
-                SetCoeff(appbas[i][j], k, P10[k][i-n][j]);
+                appbas[i][j][k] = P10[k][imn][j];
+        }
         for (long j = n; j < 2*n; ++j)
+        {
+            long jmn = j-n;
+            appbas[i][j].SetLength(d);
             for (long k = 1; k < d; ++k)
-                SetCoeff(appbas[i][j], k, P11[k][i-n][j-n]);
+                appbas[i][j][k] = P11[k][imn][jmn];
+        }
     }
 
     // add X^d I
@@ -627,9 +645,11 @@ void mbasis_generic_2n_n_resupdate(
     // 1. compute left kernel of coeff 0 of pmat
     bufR.SetDims(2*n, n);
     for (long i = 0; i < n; ++i)
-        VectorCopy(bufR[i], R_top[0][i], n);
+        for (long j = 0; j < n; ++j)
+            bufR[i][j] = R_top[0][i][j];
     for (long i = 0; i < n; ++i)
-        VectorCopy(bufR[n+i], R_bot[0][i], n);
+        for (long j = 0; j < n; ++j)
+            bufR[n+i][j] = R_bot[0][i][j];
 #ifdef MBASIS_GEN_PROFILE
     t_others += GetWallTime()-tt;
     tt = GetWallTime();
@@ -655,10 +675,10 @@ void mbasis_generic_2n_n_resupdate(
     t_res += GetWallTime()-tt;
     tt = GetWallTime();
 #endif // MBASIS_GEN_PROFILE
-    for (long i = 0; i < n; ++i)
+    for (long i = 0; i < n; ++i) // bufR bottom <- F_top[0]
+        bufR[n+i].swap(bufR[i]);
+    for (long i = 0; i < n; ++i) // bufR top <- K0*F_top[1] + F_bot[1]
         bufR[i].swap(buf[i]);
-    for (long i = 0; i < n; ++i)
-        VectorCopy(bufR[n+i], R_top[0][i], n);
 #ifdef MBASIS_GEN_PROFILE
     t_others += GetWallTime()-tt;
     tt = GetWallTime();
@@ -751,9 +771,11 @@ void mbasis_generic_2n_n_resupdate(
 #endif // MBASIS_GEN_PROFILE
         // 1. compute left kernel of residual
         for (long i = 0; i < n; ++i)
-            VectorCopy(bufR[i], R_top[2*k][i], n);
+            for (long j = 0; j < n; ++j)
+                bufR[i][j] = R_top[2*k][i][j];
         for (long i = 0; i < n; ++i)
-            VectorCopy(bufR[n+i], R_bot[2*k][i], n);
+            for (long j = 0; j < n; ++j)
+                bufR[n+i][j] = R_bot[2*k][i][j];
 #ifdef MBASIS_GEN_PROFILE
         t_others += GetWallTime()-tt;
         tt = GetWallTime();
@@ -781,10 +803,10 @@ void mbasis_generic_2n_n_resupdate(
 
         // 3. compute kernel of residual 1
         // we permute the two blocks top-bottom, to respect the (implicit) shift
-        for (long i = 0; i < n; ++i)
+        for (long i = 0; i < n; ++i) // bufR bottom <- R_top[2*k]
+            bufR[n+i].swap(bufR[i]);
+        for (long i = 0; i < n; ++i) // bufR top <- K0 R_top[2*k+1] + R_bot[2*k+1]
             bufR[i].swap(buf[i]);
-        for (long i = 0; i < n; ++i)
-            VectorCopy(bufR[n+i], R_top[2*k][i], n);
 #ifdef MBASIS_GEN_PROFILE
         t_others += GetWallTime()-tt;
         tt = GetWallTime();
@@ -940,20 +962,35 @@ void mbasis_generic_2n_n_resupdate(
     for (long i = 0; i < n; ++i)
     {
         for (long j = 0; j < n; ++j)
+        {
+            appbas[i][j].SetLength(d);
             for (long k = 0; k < d; ++k)
-                SetCoeff(appbas[i][j], k, P00[k][i][j]);
+                appbas[i][j][k] = P00[k][i][j];
+        }
         for (long j = n; j < 2*n; ++j)
+        {
+            long jmn = j-n;
+            appbas[i][j].SetLength(d);
             for (long k = 0; k < d; ++k)
-                SetCoeff(appbas[i][j], k, P01[k][i][j-n]);
+                appbas[i][j][k] = P01[k][i][jmn];
+        }
     }
     for (long i = n; i < 2*n; ++i)
     {
+        long imn = i-n;
         for (long j = 0; j < n; ++j)
+        {
+            appbas[i][j].SetLength(d+1);
             for (long k = 1; k < d+1; ++k)
-                SetCoeff(appbas[i][j], k, P10[k][i-n][j]);
+                appbas[i][j][k] = P10[k][imn][j];
+        }
         for (long j = n; j < 2*n; ++j)
+        {
+            long jmn = j-n;
+            appbas[i][j].SetLength(d);
             for (long k = 1; k < d; ++k)
-                SetCoeff(appbas[i][j], k, P11[k][i-n][j-n]);
+                appbas[i][j][k] = P11[k][imn][jmn];
+        }
     }
 
     // add X^d I
@@ -990,7 +1027,7 @@ void pmbasis_generic_2n_n(
                           const long order
                          )
 {
-    if (order <= 16) // TODO thresholds to be determined
+    if (order <= 32) // TODO thresholds to be determined
     {
         mbasis_generic_2n_n_resupdate(appbas,pmat,order);
         return;
