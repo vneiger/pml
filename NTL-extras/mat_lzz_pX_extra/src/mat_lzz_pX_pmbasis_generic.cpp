@@ -763,8 +763,6 @@ void mbasis_generic_2n_n_resupdate(
         // where P00, P01, P10 have degree k-1 and P11 has degree k-2
         // It is a 0-ordered weak Popov approximant basis for pmat at order 2*k
         // (For k==0: the last four matrices are in fact zero, and appbas = I)
-        // --> residuals R0 and R1 are respectively the coefficients of degree
-        // 2*k and 2*k+1 of appbas*pmat
 
 #ifdef MBASIS_GEN_PROFILE
         tt = GetWallTime();
@@ -1052,6 +1050,370 @@ void pmbasis_generic_2n_n(
 
     // final basis = appbas2 * appbas
     multiply(appbas,appbas2,appbas);
+}
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* MATRIX-PADE APPROXIMATION -- GENERIC INPUT -- no shift     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* Iterative algorithm, for low approximation order           */
+/*------------------------------------------------------------*/
+// requirement: order is even // TODO remove this requirement?
+void matrix_pade_generic_iterative(
+                                   Mat<zz_pX> & den1,
+                                   Mat<zz_pX> & den2,
+                                   const Mat<zz_pX> & pmat,
+                                   const long order
+                                  )
+{
+#ifdef MATRIX_PADE_GEN_PROFILE
+    double t_ker=0.0, t_res=0.0, t_app=0.0, t_others=0.0;
+    double tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+
+    long n = pmat.NumCols(); // == pmat.NumRows()
+    long d = order/2;
+
+    // residual = coefficient matrices of [[pmat], [-Id]]
+    // written as [[R_top], [R_bot]]
+    Vec<Mat<zz_p>> R_top, R_bot;
+    conv(R_top, pmat, order);
+    R_bot.SetLength(order);
+    // R_bot should currently be identity and will be initialized later, after
+    // the first iteration
+
+    // coefficient matrices of output matrices den1 and den2
+    // *GEN* --> den1 will be computed in the form X^d I + D1 (Popov form)
+    //       --> den2 will be computed in the form X D2
+    //       where D1 and D2 have degree d-1
+    // Along this algorithm, these are often seen as the left two blocks P00
+    // and P10 of the algorithm mbasis_generic_2n_n_resupdate above; in other
+    // words, we simply follow this algorithm but not storing the right columns
+    // since they are not needed thanks to the special shape of the input
+    // [[pmat],[-Id]]
+    Vec<Mat<zz_p>> D1, D2;
+    D1.SetLength(d); // we don't store the identity
+    D2.SetLength(d+1); // we still store the degree 0 coeff (which will eventually be zero)
+
+    // To store the kernel of the residuals 0 and 1, and their lefthand square
+    // submatrices
+    // *GEN* --> dimension of kernel is n x 2n, its n x n righthand submatrix is
+    // the identity
+    Mat<zz_p> ker, K0, K1;
+    K0.SetDims(n,n);
+
+    // buffer, to store products and sums
+    Mat<zz_p> bufR, buf;
+
+#ifdef MATRIX_PADE_GEN_PROFILE
+    t_others += GetWallTime()-tt;
+#endif // MATRIX_PADE_GEN_PROFILE
+
+    // Iteration k==0:
+    // --> compute approximant basis at order 2
+    // --> update residuals R0 and R1 as the coefficients of degree 2*k and
+    // 2*k+1 of appbas*pmat
+
+#ifdef MATRIX_PADE_GEN_PROFILE
+    tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+    // 1. compute left kernel of coeff 0 of [[pmat], [-Id]]
+    // --> this is simply [[inverse(pmat(0)), Id]]
+    // K0 = inverse(pmat(0)) is stored directly into D2[1]  (see below the appbas update)
+    inv(D2[1],R_top[0]);
+#ifdef MATRIX_PADE_GEN_PROFILE
+    t_ker += GetWallTime()-tt;
+    tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+
+    // 2. and 3. Second kernel, of coeff of degree 1 of appbas * pmat, that
+    // is, [ [R_top[0]], [K0 * R_top[1] + R_bot[1]] ], with R_bot[1] == 0 here
+    // we permute the two blocks top-bottom, to respect the (implicit) shift
+    mul(buf, D2[1], R_top[1]);
+#ifdef MATRIX_PADE_GEN_PROFILE
+    t_res += GetWallTime()-tt;
+    tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+    bufR.SetDims(2*n, n);
+    for (long i = 0; i < n; ++i) // bufR top <- K0*R_top[1]
+        bufR[i].swap(buf[i]);
+    for (long i = 0; i < n; ++i) // bufR bottom <- R_top[0]
+        for (long j = 0; j < n; ++j)
+            bufR[n+i][j] = R_top[0][i][j];
+#ifdef MATRIX_PADE_GEN_PROFILE
+    t_others += GetWallTime()-tt;
+    tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+    kernel(ker,bufR);
+    // (GEN) the right n x n submatrix of kerbas is identity
+    // --> retrieve the left part
+    K1.SetDims(n, n);
+    for (long i = 0; i < n; ++i)
+        for (long j = 0; j < n; ++j)
+            K1[i][j] = ker[i][j];
+#ifdef MATRIX_PADE_GEN_PROFILE
+    t_ker += GetWallTime()-tt;
+    tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+
+    // 4. update approximant basis
+
+    // 4.1 update by first computed basis [ [XI, 0], [K0, I] ]
+    // 4.2 update by second computed basis [ [I, K1], [0, X I] ]
+    // appbas is currently the identity matrix
+    // --> update it as
+    // [ [X I + K1 K0,  K1],  [X K0, X I] ]
+    //   (remember the identity terms are not stored)
+    mul(D1[0], K1, D2[1]); 
+    // D2[1] was already used to store K0
+
+    // --> now appbas is a 0-ordered weak Popov approximant basis of pmat
+    // at order 2, of the form
+    // [ [X I + P00,  P01], [X P10, X^{k+1} I + X P11]]
+    // where P00, P01, P10 have degree 0 and P11 == 0
+
+#ifdef MATRIX_PADE_GEN_PROFILE
+    t_app += GetWallTime()-tt;
+    tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+
+    // 5. if not finished (d>1), update the residuals
+    // that is, left-multiply by [ [X I + K1 K0,  K1],  [X K0, X I] ]
+    // --> to minimize the number of muls, do it in two steps:
+    //       1/ left-mul by [ [X I, 0], [K0, I] ]
+    //       2/ left-mul by [ [I, K1], [0, X I] ]
+    if (d>1)
+    {
+        // [note] eventually, we don't need terms of order <= 2 of the residual
+        // since they are known to be zero
+        // Step 1/
+        // [note] ==> here, no need for updating:
+        //              R_top[0], R_top[1], R_bot[0]
+        // R_bot = K0 R_top
+        for (long kk = 1; kk < order; ++kk)
+            mul(R_bot[kk], D2[1], R_top[kk]);
+        // R_top *= X
+        for (long kk = order-1; kk >= 2; --kk)
+            R_top[kk].swap(R_top[kk-1]);
+        // Step 2/
+        // [note] ==> here, no need for updating:
+        //              R_top[0], R_top[1], R_bot[0], R_bot[1]
+        // R_top += K1 * R_bot
+        for (long kk = 2; kk < order; ++kk)
+        {
+            mul(buf, K1, R_bot[kk]);
+            add(R_top[kk], R_top[kk], buf);
+        }
+        // R_bot *= X
+        for (long kk = order-1; kk >= 2; --kk)
+            R_bot[kk].swap(R_bot[kk-1]);
+#ifdef MATRIX_PADE_GEN_PROFILE
+        t_res += GetWallTime()-tt;
+#endif // MATRIX_PADE_GEN_PROFILE
+    }
+
+    // Iterations k==1...d-1
+    for (long k=1; k<d; ++k)
+    {
+        // *GEN* --> currently, the computed approximant basis has the form
+        // [ [X^k I + P00,  P01], [X P10, X^k I + X P11]]
+        // where P00, P01, P10 have degree k-1 and P11 has degree k-2
+        // It is a 0-ordered weak Popov approximant basis for pmat at order 2*k
+        // (For k==0: the last four matrices are in fact zero, and appbas = I)
+        // Recall that D1 corresponds to X^k I + P00 (Identity not stored),
+        // and D2 corresponds to X P10  (constant zero term stored)
+
+#ifdef MATRIX_PADE_GEN_PROFILE
+        tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+        // 1. compute left kernel of residual
+        for (long i = 0; i < n; ++i)
+            for (long j = 0; j < n; ++j)
+                bufR[i][j] = R_top[2*k][i][j];
+        for (long i = 0; i < n; ++i)
+            for (long j = 0; j < n; ++j)
+                bufR[n+i][j] = R_bot[2*k][i][j];
+#ifdef MATRIX_PADE_GEN_PROFILE
+        t_others += GetWallTime()-tt;
+        tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+        kernel(ker,bufR);
+        // (GEN) the right n x n submatrix of kerbas is identity
+        // --> retrieve the left part
+        for (long i = 0; i < n; ++i)
+            for (long j = 0; j < n; ++j)
+                K0[i][j] = ker[i][j];
+#ifdef MATRIX_PADE_GEN_PROFILE
+        t_ker += GetWallTime()-tt;
+        tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+
+        // 2. Second kernel, of coeff of degree 2*k+1 of appbas * pmat, that is,
+        // [ [R_top[2*k]], [K0 * R_top[2*k+1] + R_bot[2*k+1]] ]
+        mul(buf, K0, R_top[2*k+1]);
+        add(buf, buf, R_bot[2*k+1]);
+
+#ifdef MATRIX_PADE_GEN_PROFILE
+        t_res += GetWallTime()-tt;
+        tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+
+        // 3. compute kernel of residual 1
+        // we permute the two blocks top-bottom, to respect the (implicit) shift
+        for (long i = 0; i < n; ++i) // bufR bottom <- R_top[2*k]
+            bufR[n+i].swap(bufR[i]);
+        for (long i = 0; i < n; ++i) // bufR top <- K0 R_top[2*k+1] + R_bot[2*k+1]
+            bufR[i].swap(buf[i]);
+#ifdef MATRIX_PADE_GEN_PROFILE
+        t_others += GetWallTime()-tt;
+        tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+        kernel(ker,bufR);
+        // (GEN) the right n x n submatrix of kerbas is identity
+        // --> retrieve the left part
+        for (long i = 0; i < n; ++i)
+            for (long j = 0; j < n; ++j)
+                K1[i][j] = ker[i][j];
+#ifdef MATRIX_PADE_GEN_PROFILE
+        t_ker += GetWallTime()-tt;
+        tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+
+        // 4. update approximant basis
+
+        // 4.1 update by first computed basis [ [XI, 0], [K0, I] ]
+        // Recall: currently, appbas has the form
+        // [ [X^k I + P00,  P01], [X P10, X^k I + X P11]]
+        // where P00, P01, P10 have degree k-1 and P11 has degree k-2
+        // (negative k-1 or k-2 means zero matrix)
+        // --> update it as
+        // [ [X^{k+1} I + X P00,  X P01],
+        //   [K0 P00 + X^k K0 + X P10, K0 P01 + X^k I + X P11] ]
+
+        // bottom left
+        // add constant term of K0 D1
+        mul(D2[0], K0, D1[0]); 
+        // add terms of degree 1 ... k-1 of K0 D1
+        for (long kk = 1; kk < k; ++kk)
+        {
+            mul(buf, K0, D1[kk]);
+            add(D2[kk], D2[kk], buf);
+        }
+        add(D2[k], D2[k], K0); // add K0 to coeff of degree k
+
+        // top left: D1 <- X D1  (D1 has degree k-1)
+        for (long kk = k-1; kk >=0; --kk)
+            D1[kk+1].swap(D1[kk]);
+        // since the X^k I was actually not stored in D1[k], that matrix was
+        // zero and therefore this loop does put the zero matrix in D1[0]
+
+        // 4.2 update by second computed basis [ [I, K1], [0, X I] ]
+        // From step 4.1, appbas has the form
+        // [ [X^{k+1} I + X P00,  X P01],
+        //   [P10, X^k I + P11] ]
+        // where P00, P01, P11 have degree k-1 and P10 has degree k
+        // --> update it as
+        // [ [X^{k+1} I + X P00 + K1 P10,  X P01 + X^k K1 + K1 P11],
+        //   [X P10, X^{k+1} I + X P11] ]
+
+        // top left
+        // add constant term of K1 D2
+        mul(D1[0], K1, D2[0]); 
+        // add terms of degree 1 ... k of K1 D2
+        for (long kk = 1; kk <= k; ++kk)
+        {
+            mul(buf, K1, D2[kk]);
+            add(D1[kk], D1[kk], buf);
+        }
+
+        // bottom left: D2 <- X D2  (D2 has degree k)
+        for (long kk = k; kk >=0; --kk)
+            D2[kk+1].swap(D2[kk]);
+        // note: this loop does put the zero matrix in P10[0]
+
+        // --> now appbas is a 0-ordered weak Popov approximant basis of pmat
+        // at order 2*k+2, of the form
+        // [ [X^{k+1} I + P00,  P01], [X P10, X^{k+1} I + X P11]]
+        // where P00, P01, P10 have degree k and P11 has degree k-1
+        // recall the left blocks are stored in D1 and D2, the right blocks are
+        // ignored
+
+#ifdef MATRIX_PADE_GEN_PROFILE
+        t_app += GetWallTime()-tt;
+        tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+
+        // 5. if not finished (k<d-1), update the residuals
+        if (k<d-1)
+        {
+            // --> left-multiply by [ [X I, 0], [K0, I] ]
+            // here, no need for updating R_top[0...2*k+1], R_bot[0...2*k]
+            // R_bot += K0 R_top
+            for (long kk = 2*k+1; kk < order; ++kk)
+            {
+                mul(buf, K0, R_top[kk]);
+                add(R_bot[kk], R_bot[kk], buf);
+            }
+            // R_top *= X
+            for (long kk = order-1; kk >= 2*k+2; --kk)
+                R_top[kk].swap(R_top[kk-1]);
+
+            // --> left-multiply by [[I, K1], [0, X I]]
+            // here, no need for updating R_top[0...2*k+1], R_bot[0...2*k+1]
+            // R_top += K1 * R_bot
+            for (long kk = 2*k+2; kk < order; ++kk)
+            {
+                mul(buf, K1, R_bot[kk]);
+                add(R_top[kk], R_top[kk], buf);
+            }
+            // R_bot *= X
+            for (long kk = order-1; kk >= 2*k+2; --kk)
+                R_bot[kk].swap(R_bot[kk-1]);
+#ifdef MATRIX_PADE_GEN_PROFILE
+            t_res += GetWallTime()-tt;
+#endif // MATRIX_PADE_GEN_PROFILE
+        }
+    }
+
+#ifdef MATRIX_PADE_GEN_PROFILE
+    tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+    // convert to polynomial matrix format
+    // appbas = [ [P00,  P01], [X P10, X P11]]
+    // where P00, P01, P10 have degree d-1 and P11 has degree d-2
+    den1.SetDims(n,n);
+    for (long i = 0; i < n; ++i)
+        for (long j = 0; j < n; ++j)
+        {
+            den1[i][j].SetLength(d);
+            for (long k = 0; k < d; ++k)
+                den1[i][j][k] = D1[k][i][j];
+        }
+    // add X^d I
+    for (long i = 0; i < n; ++i)
+        SetCoeff(den1[i][i], d);
+
+    den2.SetDims(n,n);
+    for (long i = 0; i < n; ++i)
+        for (long j = 0; j < n; ++j)
+        {
+            den2[i][j].SetLength(d+1);
+            for (long k = 1; k < d+1; ++k)
+                den2[i][j][k] = D2[k][i][j];
+        }
+
+#ifdef MATRIX_PADE_GEN_PROFILE
+    t_others += GetWallTime()-tt;
+    double t_total = t_res + t_app + t_ker + t_others;
+    std::cout << "~~mbasisgen_rescomp~~\t (residuals,basis,kernel,others): \t ";
+    std::cout << t_res/t_total << "," << t_app/t_total << "," <<
+    t_ker/t_total << "," << t_others/t_total << std::endl;
+#endif // MATRIX_PADE_GEN_PROFILE
 }
 
 

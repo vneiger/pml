@@ -364,6 +364,12 @@ void pmbasis_generic_2n_n(
 
 
 
+
+
+
+
+
+
 /*------------------------------------------------------------*/
 /* FIXME in progress: MBASIS/PMBASIS, generic case, one column */
 /*------------------------------------------------------------*/
@@ -381,6 +387,88 @@ VecLong pmbasis_generic_onecolumn(
                const long order,
                const VecLong & shift
               );
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* MATRIX-PADE APPROXIMATION -- GENERIC INPUT -- no shift     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+// typical use: matrix fraction reconstruction in the context
+// of block-Wiedemann-like algorithms
+
+// Input: a square n x n matrix pmat of degree < order
+// Output: a square n x n matrix den of degree <= order/2 such that
+// den * pmat has degree < order/2
+
+// Note: this can be found as the leading principal n x n submatrix of a
+// 0-ordered weak Popov approximant basis for [[pmat], [-Id]] at order 'order'
+// Here we aim at deriving algorithms close to mbasis_resupdate and pmbasis but
+// which exploit the fact that there is this identity matrix in the input.
+
+/*------------------------------------------------------------*/
+/* Iterative algorithm, for low approximation order           */
+/*------------------------------------------------------------*/
+
+// Assumes that the input has genericity properties: precisely, that the
+// computed kernels (base cases at order 1) are of the form [ * | Id ]
+// requirement: order is even // TODO remove requirement?
+
+// computes both den1 and den2, such that [[den1], [den2]] is the first
+// block-column of a 0-ordered weak Popov approximant basis for [[pmat], [-Id]]
+// at order 'order'
+// Note: den1 is in Popov form.
+void matrix_pade_generic_iterative(
+                                   Mat<zz_pX> & den1,
+                                   Mat<zz_pX> & den2,
+                                   const Mat<zz_pX> & pmat,
+                                   const long order
+                                  );
+
+// Note: den is in Popov form.
+inline void matrix_pade_generic_iterative(
+                                          Mat<zz_pX> & den,
+                                          const Mat<zz_pX> & pmat,
+                                          const long order
+                                         )
+{
+    Mat<zz_pX> den2;
+    matrix_pade_generic_iterative(den, den2, pmat, order);
+}
+
+/*------------------------------------------------------------*/
+/* Divide and conquer algorithm                               */
+/*------------------------------------------------------------*/
+
+// computes both den1 and den2, such that [[den1], [den2]] is the first
+// block-column of a 0-ordered weak Popov approximant basis for [[pmat], [-Id]]
+// at order 'order'
+// Note: den1 is in Popov form.
+void matrix_pade_generic(
+                         Mat<zz_pX> & den1,
+                         Mat<zz_pX> & den2,
+                         const Mat<zz_pX> & pmat,
+                         const long order
+                        );
+
+// Note: den is in Popov form.
+inline void matrix_pade_generic(
+                                Mat<zz_pX> & den,
+                                const Mat<zz_pX> & pmat,
+                                const long order
+                               )
+{
+    Mat<zz_pX> den2;
+    matrix_pade_generic_iterative(den, den2, pmat, order);
+}
+
+
+
+
+
+
 
 
 

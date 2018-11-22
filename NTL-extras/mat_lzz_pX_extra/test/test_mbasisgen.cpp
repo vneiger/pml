@@ -58,7 +58,6 @@ int main(int argc, char *argv[])
     tt=0.0;
     Mat<zz_pX> pmat;
     random(pmat, rdim, cdim, order);
-    pmat.SetDims(rdim,cdim);
 
     // GCD computation, for reference
     if (rdim==2 && cdim==1)
@@ -206,6 +205,7 @@ int main(int argc, char *argv[])
     }
 
     std::cout << "time(mbasis_plain): " << tt/nb_iter << std::endl;
+
 
     return 0;
 }
