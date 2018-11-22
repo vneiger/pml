@@ -327,7 +327,7 @@ void mbasis_generic_2n_n_rescomp(
                                 );
 
 /*------------------------------------------------------------*/
-/* Rescomp version, requiring m = 2 n and order even          */
+/* Resupdate version, requiring m = 2 n and order even        */
 /*------------------------------------------------------------*/
 // Assumes that the entry has genericity properties: precisely, that the
 // computed kernels (base cases at order 1) are of the form [ * | Id ]
@@ -341,11 +341,31 @@ void mbasis_generic_2n_n_resupdate(
                                    const long order
                                   );
 
+/*------------------------------------------------------------*/
+/* Divide and Conquer: PMBasis                                */
+/* Via mbasis-resupdate, requiring m = 2 n and order even     */
+/* --all computations done with n x n submatrices             */
+/*------------------------------------------------------------*/
+// requirement 1: m = 2*n
+// requirement 2: order is even and strictly positive (TODO remove)
+// output: appbas is in 0-ordered weak Popov form with row degree (d,.., d) *GEN*,
+// where d = order/2
+// --> in fact a more precise form is obtained,
+// appbas = [ [X^k I + P00,  P01], [X P10, X^k I + X P11]]
+// where P00, P01, P10 have degree k-1 and P11 has degree k-2
+// (in particular, its top-left and bottom-right blocks are 0-Popov)
+void pmbasis_generic_2n_n(
+                          Mat<zz_pX> & appbas,
+                          const Mat<zz_pX> & pmat,
+                          const long order
+                         );
+
+
 
 
 
 /*------------------------------------------------------------*/
-/* FIXME in progress: MBASIS/PMBASIS, generic case, one column            */
+/* FIXME in progress: MBASIS/PMBASIS, generic case, one column */
 /*------------------------------------------------------------*/
 
 VecLong mbasis_generic_onecolumn(

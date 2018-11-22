@@ -113,8 +113,12 @@ void conv_top_bot(
 // TODO compare with mbasis_generic for m = t n based on Krylov (not implemented yet)
 // requirement 1: m = 2*n
 // requirement 2: order is even and strictly positive
-// output: appbas is in 0-Popov form with row degree (d,.., d) *GEN*,
+// output: appbas is in 0-ordered weak Popov form with row degree (d,.., d) *GEN*,
 // where d = order/2
+// --> in fact a more precise form is obtained,
+// appbas = [ [X^k I + P00,  P01], [X P10, X^k I + X P11]]
+// where P00, P01, P10 have degree k-1 and P11 has degree k-2
+// (in particular, its top-left and bottom-right blocks are 0-Popov)
 void mbasis_generic_2n_n_rescomp(
                                  Mat<zz_pX> & appbas,
                                  const Mat<zz_pX> & pmat,
@@ -239,7 +243,7 @@ void mbasis_generic_2n_n_rescomp(
 
     // --> now appbas is a 0-ordered weak Popov approximant basis of pmat
     // at order 2, of the form
-    // [ [X I + P00,  P01], [X P10, X^{k+1} I + X P11]]
+    // [ [X I + P00,  P01], [X P10, X I + X P11]]
     // where P00, P01, P10 have degree 0 and P11 == 0
 
 #ifdef MBASIS_GEN_PROFILE
@@ -563,8 +567,12 @@ void mbasis_generic_2n_n_rescomp(
 // TODO compare with mbasis_generic for m = t n based on Krylov (not implemented yet)
 // requirement 1: m = 2*n
 // requirement 2: order is even and strictly positive
-// output: appbas is in 0-Popov form with row degree (d,.., d) *GEN*,
+// output: appbas is in 0-ordered weak Popov form with row degree (d,.., d) *GEN*,
 // where d = order/2
+// --> in fact a more precise form is obtained,
+// appbas = [ [X^k I + P00,  P01], [X P10, X^k I + X P11]]
+// where P00, P01, P10 have degree k-1 and P11 has degree k-2
+// (in particular, its top-left and bottom-right blocks are 0-Popov)
 void mbasis_generic_2n_n_resupdate(
                                    Mat<zz_pX> & appbas,
                                    const Mat<zz_pX> & pmat,
@@ -963,7 +971,51 @@ void mbasis_generic_2n_n_resupdate(
 
 
 
+/*------------------------------------------------------------*/
+/* Divide and Conquer: PMBasis                                */
+/* Via mbasis-resupdate, requiring m = 2 n and order even     */
+/* --all computations done with n x n submatrices             */
+/*------------------------------------------------------------*/
+// requirement 1: m = 2*n
+// requirement 2: order is even and strictly positive
+// output: appbas is in 0-ordered weak Popov form with row degree (d,.., d) *GEN*,
+// where d = order/2
+// --> in fact a more precise form is obtained,
+// appbas = [ [X^k I + P00,  P01], [X P10, X^k I + X P11]]
+// where P00, P01, P10 have degree k-1 and P11 has degree k-2
+// (in particular, its top-left and bottom-right blocks are 0-Popov)
+void pmbasis_generic_2n_n(
+                          Mat<zz_pX> & appbas,
+                          const Mat<zz_pX> & pmat,
+                          const long order
+                         )
+{
+    if (order <= 16) // TODO thresholds to be determined
+    {
+        mbasis_generic_2n_n_resupdate(appbas,pmat,order);
+        return;
+    }
 
+    long order1 = order>>1; // order of first call
+    long order2 = order-order1; // order of second call
+
+    Mat<zz_pX> trunc_pmat; // truncated pmat for first call
+    Mat<zz_pX> appbas2; // basis for second call
+    Mat<zz_pX> residual; // for the residual
+
+    // first recursive call, with 'pmat'
+    trunc(trunc_pmat,pmat,order1);
+    pmbasis_generic_2n_n(appbas,trunc_pmat,order1);
+
+    // residual = (appbas * pmat * X^-order1) mod X^order2
+    middle_product(residual, appbas, pmat, order1, order2-1);
+
+    // second recursive call, with 'residual' and 'rdeg'
+    pmbasis_generic_2n_n(appbas2,residual,order2);
+
+    // final basis = appbas2 * appbas
+    multiply(appbas,appbas2,appbas);
+}
 
 
 
