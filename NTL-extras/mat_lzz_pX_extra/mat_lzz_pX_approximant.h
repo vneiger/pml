@@ -330,7 +330,7 @@ VecLong popov_pmbasis(
 //      appbas = [ [X^d I + P00,  P01], [X P10, X^d I + X P11]]
 // where P00, P01, P10 have degree d-1 and P11 has degree d-2
 // if order = 2d+1, then
-//      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^k I + P11] ]
+//      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^d I + P11] ]
 // where P00, P01, P11 have degree d-1 and P10 has degree d
 //
 // In particular, in both cases, the leading and trailing principal nxn
@@ -353,7 +353,7 @@ void mbasis_generic_2n_n_rescomp(
 /*------------------------------------------------------------*/
 /* Iterative, resupdate version                               */
 /*------------------------------------------------------------*/
-// Requirement: m = 2*n ; pmat generic
+// Requirement: m = 2*n ; pmat generic ; order >= 2
 // Requirement: order>=2
 // A residual matrix (polynomial matrix mxn) is initialized as pmat, and
 // updated at each iteration with the same operations as those performed to

@@ -114,7 +114,7 @@ void conv_top_bot(
 //      appbas = [ [X^d I + P00,  P01], [X P10, X^d I + X P11]]
 // where P00, P01, P10 have degree d-1 and P11 has degree d-2
 // if order = 2d+1, then
-//      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^k I + P11] ]
+//      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^d I + P11] ]
 // where P00, P01, P11 have degree d-1 and P10 has degree d
 
 // TODO clean
@@ -560,6 +560,7 @@ void mbasis_generic_2n_n_rescomp(
         {
             long jmn = j-n;
             appbas[i][j].SetLength(d);
+            clear(appbas[i][j][0]);
             for (long k = 1; k < d; ++k)
                 appbas[i][j][k] = P11[k][imn][jmn];
         }
@@ -586,7 +587,7 @@ void mbasis_generic_2n_n_rescomp(
 //      appbas = [ [X^d I + P00,  P01], [X P10, X^d I + X P11]]
 // where P00, P01, P10 have degree d-1 and P11 has degree d-2
 // if order = 2d+1, then
-//      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^k I + P11] ]
+//      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^d I + P11] ]
 // where P00, P01, P11 have degree d-1 and P10 has degree d
 // TODO better handle pmat of degree << order
 void mbasis_generic_2n_n_resupdate(
@@ -613,7 +614,7 @@ void mbasis_generic_2n_n_resupdate(
     Vec<Mat<zz_p>> P00, P01, P10, P11;
     if (odd_order)
     {
-        // appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^k I + P11] ]
+        // appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^d I + P11] ]
         // where P00, P01, P11 have degree d-1 and P10 has degree d
         P00.SetLength(d+1); // we still store the degree 0 coeff (which will eventually be zero)
         P01.SetLength(d+1); // we still store the degree 0 coeff (which will eventually be zero)
@@ -1007,7 +1008,7 @@ void mbasis_generic_2n_n_resupdate(
 
         // update approximant basis, by  [ [XI, 0], [K0, I] ]
         // Recall: currently, appbas has the form
-        // [ [X^k I + P00,  P01], [X P10, X^k I + X P11]]
+        // [ [X^d I + P00,  P01], [X P10, X^d I + X P11]]
         // where P00, P01, P10 have degree d-1 and P11 has degree d-2
         // (negative d-1 or d-2 means zero matrix)
         // --> update it as
@@ -1038,18 +1039,18 @@ void mbasis_generic_2n_n_resupdate(
         // top left: P00 <- X P00  (P00 has degree d-1)
         for (long kk = d-1; kk >=0; --kk)
             P00[kk+1].swap(P00[kk]);
-        // since the X^d I was actually not stored in P00[k], that matrix was
-        // zero and therefore this loop does put the zero matrix in P00[0]
+        // since the X^d I was actually not stored in P00[d], that matrix was
+        // not initialized and therefore after this loop P00[0] is non-initialized
 
         // top right: P01 <- X P01  (P01 has degree d-1)
         for (long kk = d-1; kk >=0; --kk)
             P01[kk+1].swap(P01[kk]);
-        // note: this loop does put the zero matrix in P01[0]
+        // note: this loop does put a non-initialized matrix in P01[0]
 #ifdef MBASIS_GEN_PROFILE
         t_app += GetWallTime()-tt;
         tt = GetWallTime();
 #endif // MBASIS_GEN_PROFILE
-        // Now appbas has the form [ [X^{d+1} I + X P00,  X P01], [P10, X^k I + P11] ]
+        // Now appbas has the form [ [X^{d+1} I + X P00,  X P01], [P10, X^d I + P11] ]
         // where P00, P01, P11 have degree d-1 and P10 has degree d
         // (the identity matrices were not stored, and the constant zero matrices were)
         // --> convert to polynomial matrix format
@@ -1060,6 +1061,7 @@ void mbasis_generic_2n_n_resupdate(
             for (long j = 0; j < n; ++j)
             {
                 appbas[i][j].SetLength(d+1);
+                clear(appbas[i][j][0]);
                 for (long k = 1; k < d+1; ++k)
                     appbas[i][j][k] = P00[k][i][j];
             }
@@ -1067,6 +1069,7 @@ void mbasis_generic_2n_n_resupdate(
             {
                 long jmn = j-n;
                 appbas[i][j].SetLength(d+1);
+                clear(appbas[i][j][0]);
                 for (long k = 1; k < d+1; ++k)
                     appbas[i][j][k] = P01[k][i][jmn];
             }
@@ -1128,6 +1131,7 @@ void mbasis_generic_2n_n_resupdate(
             for (long j = 0; j < n; ++j)
             {
                 appbas[i][j].SetLength(d+1);
+                clear(appbas[i][j][0]);
                 for (long k = 1; k < d+1; ++k)
                     appbas[i][j][k] = P10[k][imn][j];
             }
@@ -1591,13 +1595,10 @@ void matrix_pade_generic_iterative(
         for (long j = 0; j < n; ++j)
         {
             den2[i][j].SetLength(d+1);
+            clear(den2[i][j][0]);
             for (long k = 1; k < d+1; ++k)
                 den2[i][j][k] = D2[k][i][j];
         }
-
-    Mat<zz_pX> num1, num2;
-    multiply(num1, den1, pmat);
-    multiply(num2, den2, pmat);
 
 #ifdef MATRIX_PADE_GEN_PROFILE
     t_others += GetWallTime()-tt;

@@ -94,18 +94,18 @@ int main(int argc, char *argv[])
     }
 
     // pmbasis
-    //t = 0.0;
-    //nb_iter=0;
-    //while (t<0.5)
-    //{
-    //    Mat<zz_pX> pmat;
-    //    random(pmat, rdim, cdim, order);
-    //    tt = GetWallTime();
-    //    Mat<zz_pX> appbas;
-    //    pmbasis(appbas,pmat,order,shift);
-    //    t += GetWallTime() - tt;
-    //    ++nb_iter;
-    //}
+    t = 0.0;
+    nb_iter=0;
+    while (t<0.5)
+    {
+        Mat<zz_pX> pmat;
+        random(pmat, rdim, cdim, order);
+        tt = GetWallTime();
+        Mat<zz_pX> appbas;
+        pmbasis(appbas,pmat,order,shift);
+        t += GetWallTime() - tt;
+        ++nb_iter;
+    }
 
     std::cout << "pmbasis   \t" << t/nb_iter << std::endl;
 
