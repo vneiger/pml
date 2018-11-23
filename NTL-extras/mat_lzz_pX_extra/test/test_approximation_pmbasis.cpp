@@ -132,12 +132,12 @@ int main(int argc, char *argv[])
         random(pmat, rdim, cdim, order);
         tt = GetWallTime();
         Mat<zz_pX> appbas;
-        pmbasis_generic_2n_n(appbas,pmat,order);
+        pmbasis_generic_2n_n_top_rows(appbas,pmat,order);
         t += GetWallTime() - tt;
         ++nb_iter;
     }
 
-    std::cout << "pmbasis gen leftcols\t" << t/nb_iter << std::endl;
+    std::cout << "pmbasis gen toprows\t" << t/nb_iter << std::endl;
 
     return 0;
 }

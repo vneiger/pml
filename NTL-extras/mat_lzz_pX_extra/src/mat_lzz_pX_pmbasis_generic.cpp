@@ -1051,6 +1051,43 @@ void pmbasis_generic_2n_n(
     multiply(appbas,appbas2,appbas);
 }
 
+// TODO doc if this turns out useful
+// returns just the n top rows of the appbas (saves a bit on the matrix
+// products)
+void pmbasis_generic_2n_n_top_rows(
+                          Mat<zz_pX> & appbas,
+                          const Mat<zz_pX> & pmat,
+                          const long order
+                         )
+{
+    if (order <= 32) // TODO thresholds to be determined
+    {
+        mbasis_generic_2n_n_resupdate(appbas,pmat,order);
+        appbas.SetDims(pmat.NumCols(), pmat.NumRows());
+        // TODO could do better by modifying mbasis, but this
+        // will be called just once, so...
+        return;
+    }
+
+    long order1 = order>>1; // order of first call
+    long order2 = order-order1; // order of second call
+
+    // first recursive call, with 'pmat'
+    Mat<zz_pX> trunc_pmat;
+    trunc(trunc_pmat,pmat,order1);
+    pmbasis_generic_2n_n(appbas,trunc_pmat,order1);
+
+    // residual = (appbas * pmat * X^-order1) mod X^order2
+    Mat<zz_pX> residual;
+    middle_product(residual, appbas, pmat, order1, order2-1);
+
+    // second recursive call, with 'residual'
+    Mat<zz_pX> appbas2;
+    pmbasis_generic_2n_n_top_rows(appbas2,residual,order2);
+
+    // final basis = appbas2 * appbas
+    multiply(appbas,appbas2,appbas);
+}
 
 
 /*------------------------------------------------------------*/
@@ -1432,76 +1469,88 @@ void matrix_pade_generic_iterative(
 // Note: den1 is in Popov form.
 // Note: den2 is used for computing residuals.
 void matrix_pade_generic(
-                         Mat<zz_pX> & den1,
-                         Mat<zz_pX> & den2,
+                         Mat<zz_pX> & den,
                          const Mat<zz_pX> & pmat,
                          const long order
                         )
 {
     if (order <= 32) // TODO thresholds to be determined
     {
-        matrix_pade_generic_iterative(den1, den2, pmat, order);
+        matrix_pade_generic_iterative(den, pmat, order);
         return;
     }
-
-    long n = pmat.NumCols();
 
     long order1 = order/2; // order of first call
     long order2 = order-order1; // order of second call
 
-    // first recursive call, with 'pmat' truncated at order1
-    Mat<zz_pX> trunc_pmat;
+    // first recursive call, matrix Pade with 'pmat' truncated at order1
+    Mat<zz_pX> trunc_pmat, den2;
     trunc(trunc_pmat,pmat,order1);
-    matrix_pade_generic(den1, den2, trunc_pmat, order1);
+    matrix_pade_generic_recursion(den, trunc_pmat, order1);
+    // den = both left blocks of the approx basis (not just the top left one)
 
-    // res1 = den1 * pmat
-    // --> coefficients of degree < order1 are the numerator num1
-    // --> coefficients of degree >= order1 are the residual res1
-    Mat<zz_pX> res1;
-    multiply(res1, den1, pmat); // TODO could we compute this truncated mod X^order ??
+    // residual = (full appbas1 * [[pmat], [-Id]] * X^-order1) mod X^order2
+    // hence the residual here actually only depends on the left blocks of appbas1,
+    // in other words, on den as computed above
+    // (the right blocks are multiplied by identity, and since they have degree
+    // order1/2 this gives only coefficients of degree < order1)
+    Mat<zz_pX> residual;
+    middle_product(residual, den, pmat, order1, order2-1);
 
-    // res2 = den2 * pmat
-    // --> coefficients of degree < order1 are the numerator num2
-    // --> coefficients of degree >= order1 are the residual res2
-    Mat<zz_pX> res2;
-    multiply(res2, den2, pmat); // TODO could we compute this truncated mod X^order ??
-    // TODO re-use evaluations of pmat
-
-    // build the full appbas1 = [[den1, res1 % x^order1], [den2, res2 % x^order2]]
-    Mat<zz_pX> appbas1;
-    appbas1.SetDims(2*n, 2*n);
-    for (long i = 0; i < n; ++i)
-    {
-        for (long j = 0; j < n; ++j)
-            appbas1[i][j].swap(den1[i][j]);
-        for (long j = n; j < 2*n; ++j)
-            trunc(appbas1[i][j], res1[i][j-n], order1);
-    }
-    for (long i = n; i < 2*n; ++i)
-    {
-        for (long j = 0; j < n; ++j)
-            appbas1[i][j].swap(den2[i-n][j]);
-        for (long j = n; j < 2*n; ++j)
-            trunc(appbas1[i][j], res2[i-n][j-n], order1);
-    }
-
-    // build the residual [[x^-order1 res1], [res2]]
-    Mat<zz_pX> res;
-    res.SetDims(2*n, n);
-    for (long i = 0; i < n; ++i)
-        RightShift(res[i], res1[i], order1);
-    for (long i = n; i < 2*n; ++i)
-        RightShift(res[i], res2[i-n], order1);
-
-    // second recursive call, approximant basis with 'res'
-    // just returns the left block of columns
+    // second recursive call, approximant basis with 'residual'
+    // just returns the top block of rows
     Mat<zz_pX> appbas2;
-    pmbasis_generic_2n_n(appbas2, res, order2);
+    pmbasis_generic_2n_n_top_rows(appbas2, residual, order2);
 
-    // final basis = appbas2 * appbas
-    //multiply(appbas,appbas2,appbas);
+    // final matrix Pade denominator = appbas2 * appbas1
+    multiply(den,appbas2,den);
 }
 
+void matrix_pade_generic_recursion(
+                                   Mat<zz_pX> & den,
+                                   const Mat<zz_pX> & pmat,
+                                   const long order
+                                  )
+{
+    if (order <= 32) // TODO thresholds to be determined
+    {
+        long n = pmat.NumCols();
+        Mat<zz_pX> den1, den2;
+        matrix_pade_generic_iterative(den1, den2, pmat, order);
+        den.SetDims(2*n, n);
+        for (long i = 0; i < n; ++i)
+            den[i].swap(den1[i]);
+        for (long i = n; i < 2*n; ++i)
+            den[i].swap(den2[i-n]);
+        // FIXME could be very slightly faster, matrix Pade could return den
+        // directly
+        return;
+    }
+
+    long order1 = order/2; // order of first call
+    long order2 = order-order1; // order of second call
+
+    // first recursive call, matrix Pade with 'pmat' truncated at order1
+    // we need both left blocks of the approx basis
+    Mat<zz_pX> trunc_pmat;
+    trunc(trunc_pmat,pmat,order1);
+    matrix_pade_generic_recursion(den, trunc_pmat, order1);
+
+    // residual = (full appbas1 * [[pmat], [-Id]] * X^-order1) mod X^order2
+    // hence the residual here actually only depends on the left blocks of appbas1,
+    // in other words, on den as computed above
+    // (the right blocks are multiplied by identity, and since they have degree
+    // order1/2 this gives only coefficients of degree < order1)
+    Mat<zz_pX> residual;
+    middle_product(residual, den, pmat, order1, order2-1);
+
+    // second recursive call, approximant basis with 'residual'
+    Mat<zz_pX> appbas2;
+    pmbasis_generic_2n_n(appbas2, residual, order2);
+
+    // final matrix Pade denominator = appbas2 * appbas1
+    multiply(den,appbas2,den);
+}
 
 
 
@@ -1675,7 +1724,6 @@ VecLong pmbasis_generic_onecolumn(
 
     return pivdeg;
 }
-
 
 // Local Variables:
 // mode: C++

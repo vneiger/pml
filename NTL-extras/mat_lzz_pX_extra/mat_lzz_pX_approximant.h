@@ -360,6 +360,13 @@ void pmbasis_generic_2n_n(
                           const long order
                          );
 
+// TODO doc if this turns out useful
+void pmbasis_generic_2n_n_top_rows(
+                                   Mat<zz_pX> & appbas,
+                                   const Mat<zz_pX> & pmat,
+                                   const long order
+                                  );
+
 
 
 
@@ -452,28 +459,21 @@ inline void matrix_pade_generic_iterative(
 // computes both den1 and den2, such that [[den1], [den2]] is the first
 // block-column of a 0-ordered weak Popov approximant basis for [[pmat], [-Id]]
 // at order 'order'
-// Note: den1 is in Popov form.
+
+// Note: den is in Popov form.
 void matrix_pade_generic(
-                         Mat<zz_pX> & den1,
-                         Mat<zz_pX> & den2,
+                         Mat<zz_pX> & den,
                          const Mat<zz_pX> & pmat,
                          const long order
                         );
 
-// Note: den is in Popov form.
-inline void matrix_pade_generic(
-                                Mat<zz_pX> & den,
-                                const Mat<zz_pX> & pmat,
-                                const long order
-                               )
-{
-    Mat<zz_pX> den2;
-    matrix_pade_generic_iterative(den, den2, pmat, order);
-}
-
-
-
-
+// version computing den as 2n x n, storing the two left blocks
+// [[den1], [den2]] above (den1 in Popov form).
+void matrix_pade_generic_recursion(
+                                   Mat<zz_pX> & den,
+                                   const Mat<zz_pX> & pmat,
+                                   const long order
+                                  );
 
 
 

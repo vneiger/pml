@@ -6,7 +6,6 @@
 #include <numeric>
 #include <algorithm>
 #include <random>
-#include <NTL/BasicThreadPool.h>
 
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
@@ -28,15 +27,13 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 
 int main(int argc, char *argv[])
 {
-    if (argc!=7)
-        throw std::invalid_argument("Usage: ./test_matpadegen rdim order nbits verify verbose nthreads");
+    if (argc!=5)
+        throw std::invalid_argument("Usage: ./test_matpadegen rdim order nbits verify");
 
     long rdim = atoi(argv[1]);
     long order = atoi(argv[2]);
     long nbits = atoi(argv[3]);
     bool verify = (atoi(argv[4])==1);
-    bool verbose = (atoi(argv[5])==1);
-    SetNumThreads(atoi(argv[6]));
 
     VecLong shift(2*rdim,0);
 
@@ -45,11 +42,10 @@ int main(int argc, char *argv[])
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
-    std::cout << "Testing matrix_pade_generic_iterative with random input matrix" << std::endl;
+    std::cout << "Testing matrix_pade_generic with random input matrix" << std::endl;
     std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
     std::cout << "--rdim =\t" << rdim << std::endl;
     std::cout << "--order <\t" << order << std::endl;
-    std::cout << "--nthreads =\t" << AvailableThreads() << std::endl;
 
     // build random matrix
     double t1,t2,tt;
@@ -65,63 +61,139 @@ int main(int argc, char *argv[])
         pmat_approx[rdim+i][i] = zz_p(-1);
 
 
-    // via mbasis_generic_2n_n_resupdate
-    std::cout << "~~~Testing matrix Pade via mbasis_generic_2n_n_resupdate~~~" << std::endl;
     Mat<zz_pX> appbas;
+
+    if (0)
+    {
+        // via mbasis_generic_2n_n_resupdate
+        while (tt<0.5)
+        {
+            clear(appbas);
+            t1 = GetWallTime();
+            mbasis_generic_2n_n_resupdate(appbas,pmat_approx,order);
+            t2 = GetWallTime();
+            tt += t2-t1;
+            ++nb_iter;
+        }
+        std::cout << "Time(mbasis_generic_2n_n_resupdate): " << tt/nb_iter << ", ";
+
+        if (verify)
+        {
+            bool verif = is_approximant_basis(appbas,pmat_approx,order,shift,ORD_WEAK_POPOV,true);
+            std::cout << (verif?"correct":"wrong");
+        }
+        std::cout << std::endl;
+    }
+
+    // via general pmbasis
+    tt=0.0; nb_iter=0;
     while (tt<0.5)
     {
         clear(appbas);
         t1 = GetWallTime();
-        mbasis_generic_2n_n_resupdate(appbas,pmat_approx,order);
+        pmbasis(appbas,pmat_approx,order,shift);
         t2 = GetWallTime();
         tt += t2-t1;
         ++nb_iter;
     }
-    std::cout << "Time(mbasis_generic_2n_n_resupdate): " << tt/nb_iter << std::endl;
+    std::cout << "Time(pmbasis): " << tt/nb_iter << ", ";
 
     if (verify)
     {
-        std::cout << "Verifying ordered weak Popov approximant basis..." << std::endl;
         bool verif = is_approximant_basis(appbas,pmat_approx,order,shift,ORD_WEAK_POPOV,true);
-        std::cout << (verif?"correct":"wrong") << std::endl;
+        std::cout << (verif?"correct":"wrong");
     }
+    std::cout << std::endl;
 
-    if (verbose)
+
+    // via pmbasis_generic_2n_n
+    tt=0.0; nb_iter=0;
+    while (tt<0.5)
     {
-        Mat<long> degmat;
-        degree_matrix(degmat,appbas);
-        std::cout << "Print degree matrix of approx basis..." << std::endl;
-        std::cout << degmat << std::endl;
+        clear(appbas);
+        t1 = GetWallTime();
+        pmbasis_generic_2n_n(appbas,pmat_approx,order);
+        t2 = GetWallTime();
+        tt += t2-t1;
+        ++nb_iter;
     }
+    std::cout << "Time(pmbasis_generic_2n_n): " << tt/nb_iter << ", ";
 
+    if (verify)
+    {
+        bool verif = is_approximant_basis(appbas,pmat_approx,order,shift,ORD_WEAK_POPOV,true);
+        std::cout << (verif?"correct":"wrong");
+    }
+    std::cout << std::endl;
+
+    if (0)
+    {
+        // timing matrix_pade_generic_iterative
+        tt=0.0; nb_iter=0;
+        Mat<zz_pX> den1, den2;
+        while (tt<0.5)
+        {
+            clear(den1); clear(den2);
+            t1 = GetWallTime();
+            matrix_pade_generic_iterative(den1, den2, pmat, order);
+            t2 = GetWallTime();
+            tt += t2-t1;
+            ++nb_iter;
+        }
+
+        std::cout << "time(matrix_pade_generic_iterative): " << tt/nb_iter << ", ";
+
+        if (verify)
+        {
+            bool verif = true;
+            for (long i = 0; i < rdim; ++i)
+            {
+                for (long j = 0; j < rdim; ++j)
+                    if (appbas[i][j] != den1[i][j])
+                    {
+                        verif = false;
+                        break;
+                    }
+                if (not verif)
+                    break;
+            }
+            std::cout << (verif?"correct":"wrong");
+        }
+        std::cout << std::endl;
+    }
 
     // timing matrix_pade_generic
     tt=0.0; nb_iter=0;
-    Mat<zz_pX> den1, den2;
+    Mat<zz_pX> den;
     while (tt<0.5)
     {
-        clear(den1); clear(den2);
+        clear(den);
         t1 = GetWallTime();
-        matrix_pade_generic_iterative(den1, den2, pmat, order);
+        matrix_pade_generic(den, pmat, order);
         t2 = GetWallTime();
         tt += t2-t1;
         ++nb_iter;
     }
 
-    //if (verify)
-    //{
-    //    std::cout << "mbasis_plain: ";
-    //    bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true);
-    //    std::cout << (verif?"correct, ":"wrong, ");
-    //}
+    std::cout << "time(matrix_pade_generic_iterative): " << tt/nb_iter << ", ";
 
-    std::cout << "time(matrix_pade_generic_iterative): " << tt/nb_iter << std::endl;
-    //std::cout << "appbas" << std::endl;
-    //std::cout << appbas << std::endl;
-    //std::cout << "den1" << std::endl;
-    //std::cout << den1 << std::endl;
-    //std::cout << "den2" << std::endl;
-    //std::cout << den2 << std::endl;
+    if (verify)
+    {
+        bool verif = true;
+        for (long i = 0; i < rdim; ++i)
+        {
+            for (long j = 0; j < rdim; ++j)
+                if (appbas[i][j] != den[i][j])
+                {
+                    verif = false;
+                    break;
+                }
+            if (not verif)
+                break;
+        }
+        std::cout << (verif?"correct":"wrong");
+    }
+    std::cout << std::endl;
 }
 
 
