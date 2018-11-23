@@ -1430,6 +1430,7 @@ void pmbasis_generic_2n_n_top_rows(
 // that only the left-block-column of appbas is computed
 // (namely P00, here D1, and P10, here D2)
 // requirement: order is even // TODO remove this requirement?
+// TODO try rescomp version
 void matrix_pade_generic_iterative(
                                    Mat<zz_pX> & den1,
                                    Mat<zz_pX> & den2,

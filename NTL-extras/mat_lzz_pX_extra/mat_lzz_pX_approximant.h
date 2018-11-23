@@ -423,17 +423,47 @@ VecLong pmbasis_generic_onecolumn(
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-// typical use: matrix fraction reconstruction in the context
+// Example use: matrix fraction reconstruction in the context
 // of block-Wiedemann-like algorithms
 
 // Input: a square n x n matrix pmat of degree < order
 // Output: a square n x n matrix den of degree <= order/2 such that
-// den * pmat has degree < order/2
+// num = den * pmat has degree < order/2
+// (den for denominator, num for numerator: pmat = den^{-1} num
+// is a proper irreducible left fraction description)
 
 // Note: this can be found as the leading principal n x n submatrix of a
 // 0-ordered weak Popov approximant basis for [[pmat], [-Id]] at order 'order'
-// Here we aim at deriving algorithms close to mbasis_resupdate and pmbasis but
-// which exploit the fact that there is this identity matrix in the input.
+// Here we aim at deriving algorithms close to mbasis and pmbasis but which
+// exploit the fact that there is this identity matrix in the input.
+
+// The algorithms below share the following requirements and properties:
+// *Requirement: the input matrix pmat is square, n x n
+// *Requirement: the input matrix pmat has some genericity property: the
+// algorithms compute kernels of constant 2nxn matrices, which should all have
+// the form [ * | I ] ; in other words the bottom nxn submatrix of these
+// matrices should be invertible. This is equivalent to the fact that a certain
+// block-Hankel matrix of dimension n*order x n*order built from pmat is
+// invertible.
+// *This holds with proba very close to 1 for a random matrix pmat, but note
+// that here no check is performed and the algorithm may throw an error if
+// in fact pmat did not have the required genericity property.
+// 
+// Some algorithms return:
+// *Output: den, the denominator in 0-Popov form, of the form
+// X^dd I + D, where deg(D) < dd and dd = ceil(order/2)
+// This is exactly the leading principal n x n submatrix of the
+// approximant basis computed by the functions mbasis_generic_2n_n above, on
+// input order and [[pmat], [-I]]
+//
+// Some algorithms return:
+// *Output: (den1,den2), where 
+//    -- den1 is in 0-Popov form, of the form X^dd I + D, where
+//    deg(D) < dd and dd = ceil(order/2) (same as the matrix den above)
+//    -- den2 is a matrix of degree floor(order/2) such that
+//    [[den1], [den2]] form the left 2n x n submatrix of the approximant basis
+//    computed by the functions mbasis_generic_2n_n above, on input order and
+//    [[pmat], [-I]]  (in particular, if order is even then den2(0) == 0)
 
 /*------------------------------------------------------------*/
 /* Iterative algorithm, for low approximation order           */
@@ -443,13 +473,7 @@ VecLong pmbasis_generic_onecolumn(
 // It is roughly the same as Berlekamp-Massey (on square matrices), except that
 // it is "reversed": it goes from low degree to high degrees.
 
-// Assumes that the input has genericity properties: precisely, that the
-// computed kernels (base cases at order 1) are of the form [ * | Id ]
-
-// computes both den1 and den2, such that [[den1], [den2]] is the first
-// block-column of a 0-ordered weak Popov approximant basis for [[pmat], [-Id]]
-// at order 'order'
-// Note: den1 is in Popov form.
+// computes both den1 and den2
 void matrix_pade_generic_iterative(
                                    Mat<zz_pX> & den1,
                                    Mat<zz_pX> & den2,
@@ -458,9 +482,9 @@ void matrix_pade_generic_iterative(
                                   );
 
 // Note: den is in Popov form.
-// Note: could be made slightly faster by taking the same algorithm as the one
-// just above, but not computing den2 at all. Yet, our main focus is the divide
-// and conquer version, in which this is used at the base case of the
+// TODO could be made slightly faster by taking the same algorithm as the one
+// just above, but not computing den2 at all. Not urgent: our main focus is the
+// divide and conquer version, in which this is used at the base case of the
 // recursion, and for which we need den2.
 inline void matrix_pade_generic_iterative(
                                           Mat<zz_pX> & den,
