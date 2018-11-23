@@ -311,30 +311,53 @@ VecLong popov_pmbasis(
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+// The algorithms below share the following requirements and properties:
+// *Requirement: the input matrix pmat is m x n with m = 2*n
+// *Requirement: the input matrix pmat has some genericity property: the
+// algorithms compute kernels of constant 2nxn matrices, which should all have
+// the form [ * | I ] ; in other words the bottom nxn submatrix of these
+// matrices should be invertible. This is equivalent to the fact that a certain
+// block-Hankel matrix of dimension n*order x n*order built from pmat is
+// invertible.
+// *This holds with proba very close to 1 for a random matrix pmat, but note
+// that here no check is performed and the algorithm may throw an error if
+// in fact pmat did not have the required genericity property.
+// 
+// *Output: appbas is in 0-ordered weak Popov form with degree ceil(order/2)
+//
+// Precisely,
+// if order = 2d, then 
+//      appbas = [ [X^d I + P00,  P01], [X P10, X^d I + X P11]]
+// where P00, P01, P10 have degree d-1 and P11 has degree d-2
+// if order = 2d+1, then
+//      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^k I + P11] ]
+// where P00, P01, P11 have degree d-1 and P10 has degree d
+//
+// In particular, in both cases, the leading and trailing principal nxn
+// submatrices of appbas are in 0-Popov form
+
 /*------------------------------------------------------------*/
-/* Rescomp version, requiring m = 2 n and order even          */
+/* Iterative, rescomp version                                 */
 /*------------------------------------------------------------*/
-// Assumes that the entry has genericity properties: precisely, that the
-// computed kernels (base cases at order 1) are of the form [ * | Id ]
-// requirement 1: m = 2*n
-// requirement 2: order is even
-// output: appbas is in 0-Popov form with row degree (d,.., d) *GEN*,
-// where d = order/2
+// Requirement: m = 2*n ; pmat generic ; order >= 2
+// At each iteration a residual matrix (constant mxn) is computed from appbas
+// and pmat
+// TODO currently requires order to be even
 void mbasis_generic_2n_n_rescomp(
                                  Mat<zz_pX> & appbas,
                                  const Mat<zz_pX> & pmat,
                                  const long order
                                 );
+// TODO throw away if never faster than resupdate
 
 /*------------------------------------------------------------*/
-/* Resupdate version, requiring m = 2 n and order even        */
+/* Iterative, resupdate version                               */
 /*------------------------------------------------------------*/
-// Assumes that the entry has genericity properties: precisely, that the
-// computed kernels (base cases at order 1) are of the form [ * | Id ]
-// requirement 1: m = 2*n
-// requirement 2: order is even
-// output: appbas is in 0-Popov form with row degree (d,.., d) *GEN*,
-// where d = order/2
+// Requirement: m = 2*n ; pmat generic
+// Requirement: order>=2
+// A residual matrix (polynomial matrix mxn) is initialized as pmat, and
+// updated at each iteration with the same operations as those performed to
+// update appbas
 void mbasis_generic_2n_n_resupdate(
                                    Mat<zz_pX> & appbas,
                                    const Mat<zz_pX> & pmat,
@@ -342,23 +365,21 @@ void mbasis_generic_2n_n_resupdate(
                                   );
 
 /*------------------------------------------------------------*/
-/* Divide and Conquer: PMBasis                                */
-/* Via mbasis-resupdate, requiring m = 2 n and order even     */
-/* --all computations done with n x n submatrices             */
+/* Divide and conquer pmbasis, via mbasis-resupdate           */
 /*------------------------------------------------------------*/
-// requirement 1: m = 2*n
-// requirement 2: order is even and strictly positive (TODO remove)
-// output: appbas is in 0-ordered weak Popov form with row degree (d,.., d) *GEN*,
-// where d = order/2
-// --> in fact a more precise form is obtained,
-// appbas = [ [X^k I + P00,  P01], [X P10, X^k I + X P11]]
-// where P00, P01, P10 have degree k-1 and P11 has degree k-2
-// (in particular, its top-left and bottom-right blocks are 0-Popov)
+// Requirement: m = 2*n ; pmat generic
 void pmbasis_generic_2n_n(
                           Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
                           const long order
                          );
+
+
+
+
+
+
+
 
 // TODO doc if this turns out useful
 void pmbasis_generic_2n_n_top_rows(
@@ -429,7 +450,6 @@ VecLong pmbasis_generic_onecolumn(
 // block-column of a 0-ordered weak Popov approximant basis for [[pmat], [-Id]]
 // at order 'order'
 // Note: den1 is in Popov form.
-// requirement: order is even // TODO remove requirement?
 void matrix_pade_generic_iterative(
                                    Mat<zz_pX> & den1,
                                    Mat<zz_pX> & den2,
