@@ -16,12 +16,6 @@
 
 NTL_CLIENT
 
-/*------------------------------------------------------------*/
-/* when a comment in the code indicates *GEN*, this means     */
-/* that this holds thanks to the assumption that the input    */
-/* matrix behaves like a generic matrix                       */
-/*------------------------------------------------------------*/
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -820,8 +814,7 @@ void mbasis_generic_2n_n_resupdate(
 
     // Iteration k==0:
     // --> compute approximant basis at order 2
-    // --> update residuals R0 and R1 as the coefficients of degree 2*k and
-    // 2*k+1 of appbas*pmat
+    // --> update residuals
 
 #ifdef MBASIS_GEN_PROFILE
     tt = GetWallTime();
@@ -1445,6 +1438,7 @@ void matrix_pade_generic_iterative(
 
     long n = pmat.NumCols(); // == pmat.NumRows()
     long d = order/2;
+    bool odd_order = (order%2);
 
     // residual = coefficient matrices of [[pmat], [-Id]]
     // written as [[R_top], [R_bot]]
@@ -1455,17 +1449,21 @@ void matrix_pade_generic_iterative(
     // the first iteration
 
     // coefficient matrices of output matrices den1 and den2
-    // *GEN* --> den1 will be computed in the form X^d I + D1 (Popov form)
-    //       --> den2 will be computed in the form X D2
+    // If order is even:
+    //   --> den1 will be computed in the form X^d I + D1
+    //   --> den2 will be computed in the form X D2
     //       where D1 and D2 have degree d-1
-    // Along this algorithm, these are often seen as the left two blocks P00
-    // and P10 of the algorithm mbasis_generic_2n_n_resupdate above; in other
-    // words, we simply follow this algorithm but not storing the right columns
-    // since they are not needed thanks to the special shape of the input
-    // [[pmat],[-Id]]
+    // If order is odd:
+    //   --> den1 will be computed in the form X^{d+1} I + D1
+    //   --> den2 will be computed in the form D2
+    //       where D1 and D2 have degree d
+    // These matrices are the left blocks P00 and P10 in the algorithm
+    // mbasis_generic_2n_n_resupdate above on the input [[pmat],[-I]]
+    // --> we simply follow this algorithm but not storing the right
+    // columns since they are not needed here
     Vec<Mat<zz_p>> D1, D2;
-    D1.SetLength(d); // we don't store the identity
-    D2.SetLength(d+1); // we still store the degree 0 coeff (which will eventually be zero)
+    D1.SetLength(odd_order ? d+1 : d); // we don't store the identity
+    D2.SetLength(d+1); // we store the degree 0 coeff (even for even order, when it is zero)
 
     // To store the kernel of the residuals 0 and 1, and their lefthand square
     // submatrices
@@ -1483,8 +1481,7 @@ void matrix_pade_generic_iterative(
 
     // Iteration k==0:
     // --> compute approximant basis at order 2
-    // --> update residuals R0 and R1 as the coefficients of degree 2*k and
-    // 2*k+1 of appbas*pmat
+    // --> update residuals
 
 #ifdef MATRIX_PADE_GEN_PROFILE
     tt = GetWallTime();
@@ -1747,33 +1744,144 @@ void matrix_pade_generic_iterative(
         }
     }
 
+    if (odd_order) // order==2d+1: one more iteration
+    {
 #ifdef MATRIX_PADE_GEN_PROFILE
     tt = GetWallTime();
 #endif // MATRIX_PADE_GEN_PROFILE
-    // convert to polynomial matrix format
-    // appbas = [ [P00,  P01], [X P10, X P11]]
-    // where P00, P01, P10 have degree d-1 and P11 has degree d-2
-    den1.SetDims(n,n);
-    for (long i = 0; i < n; ++i)
-        for (long j = 0; j < n; ++j)
-        {
-            den1[i][j].SetLength(d);
-            for (long k = 0; k < d; ++k)
-                den1[i][j][k] = D1[k][i][j];
-        }
-    // add X^d I
-    for (long i = 0; i < n; ++i)
-        SetCoeff(den1[i][i], d);
+        // update the residual
+        // --> left-multiply by [ [X I, 0], [K0, I] ]
+        // here, no need for updating R_top[0...order-2], R_bot[0...order-3]
+        // R_bot += K0 R_top
+        mul(buf, K0, R_top[order-2]);
+        add(R_bot[order-2], R_bot[order-2], buf);
+        mul(buf, K0, R_top[order-1]);
+        add(R_bot[order-1], R_bot[order-1], buf);
+        // R_top *= X
+        R_top[order-1].swap(R_top[order-2]);
 
-    den2.SetDims(n,n);
-    for (long i = 0; i < n; ++i)
-        for (long j = 0; j < n; ++j)
+        // --> left-multiply by [[I, K1], [0, X I]]
+        // here, no need for updating R_top[0...order-2], R_bot[0...order-2]
+        // R_top += K1 * R_bot
+        mul(buf, K1, R_bot[order-1]);
+        add(R_top[order-1], R_top[order-1], buf);
+        // R_bot *= X
+        R_bot[order-1].swap(R_bot[order-2]);
+#ifdef MATRIX_PADE_GEN_PROFILE
+        t_res += GetWallTime()-tt;
+        tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+        // compute left kernel of residual
+        for (long i = 0; i < n; ++i)
+            for (long j = 0; j < n; ++j)
+                bufR[i][j] = R_top[order-1][i][j];
+        for (long i = 0; i < n; ++i)
+            for (long j = 0; j < n; ++j)
+                bufR[n+i][j] = R_bot[order-1][i][j];
+#ifdef MATRIX_PADE_GEN_PROFILE
+        t_others += GetWallTime()-tt;
+        tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+        kernel(ker,bufR);
+        // (GEN) the right n x n submatrix of kerbas is identity
+        // --> retrieve the left part
+        for (long i = 0; i < n; ++i)
+            for (long j = 0; j < n; ++j)
+                K0[i][j] = ker[i][j];
+#ifdef MATRIX_PADE_GEN_PROFILE
+        t_ker += GetWallTime()-tt;
+        tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+
+        // update approximant basis, by  [ [XI, 0], [K0, I] ]
+        // Recall: currently, appbas has the form
+        // [ [X^d I + D1,  P01], [X D2, X^d I + X P11]]
+        // where D1, D2, P10 have degree d-1 and P11 has degree d-2
+        // (negative d-1 or d-2 means zero matrix)
+        // --> update it as
+        // [ [X^{d+1} I + X D1,  X P01],
+        //   [K0 D1 + X^d K0 + X D2, K0 P01 + X^d I + X P11] ]
+
+        // bottom left
+        // add constant term of K0 P00
+        mul(D2[0], K0, D1[0]); 
+        // add terms of degree 1 ... d-1 of K0 P00
+        for (long kk = 1; kk < d; ++kk)
         {
-            den2[i][j].SetLength(d+1);
-            clear(den2[i][j][0]);
-            for (long k = 1; k < d+1; ++k)
-                den2[i][j][k] = D2[k][i][j];
+            mul(buf, K0, D1[kk]);
+            add(D2[kk], D2[kk], buf);
         }
+        add(D2[d], D2[d], K0); // add K0 to coeff of degree d
+
+        // top left: P00 <- X P00  (P00 has degree d-1)
+        for (long kk = d-1; kk >=0; --kk)
+            D1[kk+1].swap(D1[kk]);
+#ifdef MATRIX_PADE_GEN_PROFILE
+        t_app += GetWallTime()-tt;
+        tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+        // Now appbas has the form [ [X^{d+1} I + X P00,  X P01], [P10, X^d I + P11] ]
+        // where P00, P01, P11 have degree d-1 and P10 has degree d
+        // (the identity matrices were not stored, and the constant zero matrices were)
+        // --> convert to polynomial matrix format
+        // first, without the identity matrix
+        den1.SetDims(n,n);
+        for (long i = 0; i < n; ++i)
+        {
+            for (long j = 0; j < n; ++j)
+            {
+                den1[i][j].SetLength(d+1);
+                clear(den1[i][j][0]);
+                for (long k = 1; k < d+1; ++k)
+                    den1[i][j][k] = D1[k][i][j];
+            }
+        }
+
+        // add X^{d+1} I to leading principal submatrix
+        for (long i = 0; i < n; ++i)
+            SetCoeff(den1[i][i], d+1);
+
+        den2.SetDims(n,n);
+        for (long i = 0; i < n; ++i)
+        {
+            for (long j = 0; j < n; ++j)
+            {
+                den2[i][j].SetLength(d+1);
+                for (long k = 0; k < d+1; ++k)
+                    den2[i][j][k] = D2[k][i][j];
+            }
+        }
+    }
+    else // order==2d: iterations finished
+    {
+#ifdef MATRIX_PADE_GEN_PROFILE
+        tt = GetWallTime();
+#endif // MATRIX_PADE_GEN_PROFILE
+        // convert to polynomial matrix format
+        // appbas = [ [P00,  P01], [X P10, X P11]]
+        // where P00, P01, P10 have degree d-1 and P11 has degree d-2
+        den1.SetDims(n,n);
+        for (long i = 0; i < n; ++i)
+            for (long j = 0; j < n; ++j)
+            {
+                den1[i][j].SetLength(d);
+                for (long k = 0; k < d; ++k)
+                    den1[i][j][k] = D1[k][i][j];
+            }
+        // add X^d I
+        for (long i = 0; i < n; ++i)
+            SetCoeff(den1[i][i], d);
+
+        den2.SetDims(n,n);
+        for (long i = 0; i < n; ++i)
+            for (long j = 0; j < n; ++j)
+            {
+                den2[i][j].SetLength(d+1);
+                clear(den2[i][j][0]);
+                for (long k = 1; k < d+1; ++k)
+                    den2[i][j][k] = D2[k][i][j];
+            }
+    }
 
 #ifdef MATRIX_PADE_GEN_PROFILE
     t_others += GetWallTime()-tt;

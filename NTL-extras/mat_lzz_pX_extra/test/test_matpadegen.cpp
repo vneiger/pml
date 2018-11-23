@@ -63,12 +63,11 @@ int main(int argc, char *argv[])
 
     Mat<zz_pX> appbas;
 
-    if (0)
+    if (1)
     {
         // via mbasis_generic_2n_n_resupdate
         while (tt<0.5)
         {
-            clear(appbas);
             t1 = GetWallTime();
             mbasis_generic_2n_n_resupdate(appbas,pmat_approx,order);
             t2 = GetWallTime();
@@ -89,7 +88,6 @@ int main(int argc, char *argv[])
     tt=0.0; nb_iter=0;
     while (tt<0.5)
     {
-        clear(appbas);
         t1 = GetWallTime();
         pmbasis(appbas,pmat_approx,order,shift);
         t2 = GetWallTime();
@@ -110,9 +108,8 @@ int main(int argc, char *argv[])
     tt=0.0; nb_iter=0;
     while (tt<0.5)
     {
-        clear(appbas);
         t1 = GetWallTime();
-        pmbasis_generic_2n_n(appbas,pmat_approx,order);
+        //pmbasis_generic_2n_n(appbas,pmat_approx,order);
         t2 = GetWallTime();
         tt += t2-t1;
         ++nb_iter;
@@ -126,14 +123,13 @@ int main(int argc, char *argv[])
     }
     std::cout << std::endl;
 
-    if (0)
+    if (1)
     {
         // timing matrix_pade_generic_iterative
         tt=0.0; nb_iter=0;
         Mat<zz_pX> den1, den2;
         while (tt<0.5)
         {
-            clear(den1); clear(den2);
             t1 = GetWallTime();
             matrix_pade_generic_iterative(den1, den2, pmat, order);
             t2 = GetWallTime();
@@ -167,7 +163,6 @@ int main(int argc, char *argv[])
     Mat<zz_pX> den;
     while (tt<0.5)
     {
-        clear(den);
         t1 = GetWallTime();
         matrix_pade_generic(den, pmat, order);
         t2 = GetWallTime();
@@ -175,7 +170,7 @@ int main(int argc, char *argv[])
         ++nb_iter;
     }
 
-    std::cout << "time(matrix_pade_generic_iterative): " << tt/nb_iter << ", ";
+    std::cout << "time(matrix_pade_generic): " << tt/nb_iter << ", ";
 
     if (verify)
     {
