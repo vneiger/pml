@@ -143,6 +143,17 @@ inline Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n)
 /* versions with different shifting orders on rows/columns    */
 /* shiftAdd, shiftSub                                         */
 
+// left shift, vector
+void LeftShift(Vec<zz_pX>& x, const Vec<zz_pX>& a, long n);
+inline Vec<zz_pX> LeftShift(const Vec<zz_pX>& a, long n)
+{ Vec<zz_pX> x; LeftShift(x, a, n); return x; }
+
+// right shift, vector
+void RightShift(Vec<zz_pX>& x, const Vec<zz_pX>& a, long n);
+inline Vec<zz_pX> RightShift(const Vec<zz_pX>& a, long n)
+{ Vec<zz_pX> x; RightShift(x, a, n); return x; }
+
+
 // left shift, full matrix 
 void LeftShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
 inline Mat<zz_pX> LeftShift(const Mat<zz_pX>& a, long n)

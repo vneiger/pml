@@ -219,6 +219,28 @@ void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c, long n)
         trunc(x[r][c], a[r][c], n);
 }
 
+
+/*------------------------------------------------------------*/
+/* Left/Right shift of a vector                               */
+/*------------------------------------------------------------*/
+
+// left shift, vector
+void LeftShift(Vec<zz_pX>& x, const Vec<zz_pX>& a, long n)
+{
+    x.SetLength(a.length());
+    for (long i = 0; i < a.length(); ++i)
+        LeftShift(x[i], a[i], n);
+}
+
+// right shift, vector
+void RightShift(Vec<zz_pX>& x, const Vec<zz_pX>& a, long n)
+{
+    x.SetLength(a.length());
+    for (long i = 0; i < a.length(); ++i)
+        RightShift(x[i], a[i], n);
+}
+
+
 /*------------------------------------------------------------*/
 /* Left/Right shift of the whole matrix                       */
 /*------------------------------------------------------------*/

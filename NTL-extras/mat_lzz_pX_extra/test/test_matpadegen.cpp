@@ -116,12 +116,12 @@ int main(int argc, char *argv[])
     //}
 
     std::cout << "time(matrix_pade_generic_iterative): " << tt/nb_iter << std::endl;
-    std::cout << "appbas" << std::endl;
-    std::cout << appbas << std::endl;
-    std::cout << "den1" << std::endl;
-    std::cout << den1 << std::endl;
-    std::cout << "den2" << std::endl;
-    std::cout << den2 << std::endl;
+    //std::cout << "appbas" << std::endl;
+    //std::cout << appbas << std::endl;
+    //std::cout << "den1" << std::endl;
+    //std::cout << den1 << std::endl;
+    //std::cout << "den2" << std::endl;
+    //std::cout << den2 << std::endl;
 }
 
 

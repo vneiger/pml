@@ -369,7 +369,6 @@ void pmbasis_generic_2n_n(
 
 
 
-
 /*------------------------------------------------------------*/
 /* FIXME in progress: MBASIS/PMBASIS, generic case, one column */
 /*------------------------------------------------------------*/
@@ -412,14 +411,18 @@ VecLong pmbasis_generic_onecolumn(
 /* Iterative algorithm, for low approximation order           */
 /*------------------------------------------------------------*/
 
+// This algorithm could also be called "Matrix Berlekamp-Massey, iterative".
+// It is roughly the same as Berlekamp-Massey (on square matrices), except that
+// it is "reversed": it goes from low degree to high degrees.
+
 // Assumes that the input has genericity properties: precisely, that the
 // computed kernels (base cases at order 1) are of the form [ * | Id ]
-// requirement: order is even // TODO remove requirement?
 
 // computes both den1 and den2, such that [[den1], [den2]] is the first
 // block-column of a 0-ordered weak Popov approximant basis for [[pmat], [-Id]]
 // at order 'order'
 // Note: den1 is in Popov form.
+// requirement: order is even // TODO remove requirement?
 void matrix_pade_generic_iterative(
                                    Mat<zz_pX> & den1,
                                    Mat<zz_pX> & den2,
@@ -428,6 +431,10 @@ void matrix_pade_generic_iterative(
                                   );
 
 // Note: den is in Popov form.
+// Note: could be made slightly faster by taking the same algorithm as the one
+// just above, but not computing den2 at all. Yet, our main focus is the divide
+// and conquer version, in which this is used at the base case of the
+// recursion, and for which we need den2.
 inline void matrix_pade_generic_iterative(
                                           Mat<zz_pX> & den,
                                           const Mat<zz_pX> & pmat,
