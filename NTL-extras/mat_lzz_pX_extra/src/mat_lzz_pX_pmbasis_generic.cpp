@@ -1968,7 +1968,7 @@ void matrix_pade_generic(
     long order2 = order-order1; // order of second call
 
     // first recursive call, matrix Pade with 'pmat' truncated at order1
-    Mat<zz_pX> trunc_pmat, den2;
+    Mat<zz_pX> trunc_pmat;
     trunc(trunc_pmat,pmat,order1);
     matrix_pade_generic_recursion(den, trunc_pmat, order1);
     // den = both left blocks of the approx basis (not just the top left one)
@@ -1986,7 +1986,8 @@ void matrix_pade_generic(
     Mat<zz_pX> appbas2;
     pmbasis_generic_2n_n_top_rows(appbas2, residual, order2);
 
-    // final matrix Pade denominator = appbas2 * appbas1
+    // final matrix Pade denominator = appbas2 * den
+    // this is a nx2n * 2nxn product
     multiply(den,appbas2,den);
 }
 
@@ -2054,89 +2055,6 @@ void matrix_pade_generic_recursion(
     // final matrix Pade denominator = appbas2 * appbas1
     multiply(den,appbas2,den);
 }
-
-
-
-// essentially: one call to matpadegen_rec2, one residual, one mul by truncated
-// inverse, one call to itself, deduce numerator, find result by product
-void matrix_pade_generic2(
-                          Mat<zz_pX> & den,
-                          const Mat<zz_pX> & pmat,
-                          const long order
-                         )
-{
-    if (order <= 32) // TODO thresholds to be determined
-    {
-        matrix_pade_generic_iterative(den, pmat, order);
-        return;
-    }
-
-    // to avoid having to deal with shifts, we use the following
-    // orders order1+order2 = order for the recursive calls (see remarks
-    // in the header file):
-    // if order is odd: order1 is the one of floor(order/2) and ceil(order/2)
-    // which is odd
-    // if order is even: choose both order1 and order2 even and
-    // approximately order/2
-    long order1 = order/2; // floor(order/2)
-    if (order%2)
-    {
-        // order is odd; if order1 is even, change it to ceil(order/2),
-        // this way order2 will be even
-        if (order1%2) ++order1;
-    }
-    else
-    {
-        // order is even; if order1 is odd, change it to order/2 - 1
-        // this way order1 and order2 will be even
-        if (order1%2) --order1;
-    }
-    long order2 = order-order1; // order of second call
-    long n = pmat.NumCols();
-
-    // first recursive call, matrix Pade with 'pmat' truncated at order1
-    Mat<zz_pX> trunc_pmat, den2;
-    trunc(trunc_pmat,pmat,order1);
-    matrix_pade_generic_recursion(den, trunc_pmat, order1);
-    // FIXME use new rec when written
-    // den = both left blocks of the approx basis (not just the top left one)
-
-    // residual = (full appbas1 * [[pmat], [-Id]] * X^-order1) mod X^order2
-    // hence the residual here actually only depends on the left blocks of appbas1,
-    // in other words, on den as computed above
-    // (the right blocks are multiplied by identity, and since they have degree
-    // order1/2 this gives only coefficients of degree < order1)
-    Mat<zz_pX> residual;
-    middle_product(residual, den, pmat, order1, order2-1);
-
-    // extract top coefficient
-    Mat<zz_pX> res_top;
-    res_top.SetDims(n, n);
-    for (long i = 0; i < n; ++i)
-        res_top[i].swap(residual[i]);
-    // extract bottom coefficient, negated
-    Mat<zz_pX> res_bot;
-    res_bot.SetDims(n, n);
-    for (long i = 0; i < n; ++i)
-        res_bot[i].swap(residual[n+i]);
-    NTL::negate(res_bot, res_bot);
-
-    // second recursive call, approximant basis with 'residual'
-    // just returns the top block of rows
-    Mat<zz_pX> appbas2;
-    pmbasis_generic_2n_n_top_rows(appbas2, residual, order2);
-
-    // final matrix Pade denominator = appbas2 * appbas1
-    multiply(den,appbas2,den);
-}
-
-// version computing den as 2n x n, storing the two left blocks
-// [[den1], [den2]] above (den1 in Popov form).
-void matrix_pade_generic_recursion2(
-                                    Mat<zz_pX> & den,
-                                    const Mat<zz_pX> & pmat,
-                                    const long order
-                                   );
 
 
 

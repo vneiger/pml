@@ -510,28 +510,6 @@ void matrix_pade_generic_recursion(
                                    const long order
                                   );
 
-// FIXME in progress: experiment to see if it is a good idea to right-multiply
-// by truncated inverse so as to bring the residual in the form [[res], [-I]]
-// therefore allowing to use matrix Pade recursively
-
-// essentially: one call to matpadegen_rec2, one residual, one mul by truncated
-// inverse, one call to itself, deduce numerator, find result by product
-void matrix_pade_generic2(
-                          Mat<zz_pX> & den,
-                          const Mat<zz_pX> & pmat,
-                          const long order
-                         );
-
-// version computing den as 2n x n, storing the two left blocks
-// [[den1], [den2]] above (den1 in Popov form).
-void matrix_pade_generic_recursion2(
-                                    Mat<zz_pX> & den,
-                                    const Mat<zz_pX> & pmat,
-                                    const long order
-                                   );
-
-
-
 
 
 
