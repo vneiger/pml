@@ -1373,8 +1373,11 @@ void pmbasis_generic_2n_n(
     pmbasis_generic_2n_n(appbas,trunc_pmat,order1);
 
     // residual = (appbas * pmat * X^-order1) mod X^order2
-    Mat<zz_pX> residual;
-    middle_product(residual, appbas, pmat, order1, order2-1);
+    // residual = (appbas * RightShift(pmat, order1/2) * X^-ceil(order1/2)) mod X^order2
+    // (right shift allowed since deg(appbas) = ceil(order1 / 2) )
+    Mat<zz_pX> shift_pmat, residual;
+    RightShift(shift_pmat, pmat, order1/2);
+    middle_product(residual, appbas, shift_pmat, order1 - order1/2, order2-1);
 
     // second recursive call, with 'residual'
     Mat<zz_pX> appbas2;
@@ -1430,8 +1433,11 @@ void pmbasis_generic_2n_n_top_rows(
     pmbasis_generic_2n_n(appbas,trunc_pmat,order1);
 
     // residual = (appbas * pmat * X^-order1) mod X^order2
-    Mat<zz_pX> residual;
-    middle_product(residual, appbas, pmat, order1, order2-1);
+    // residual = (appbas * RightShift(pmat, order1/2) * X^-ceil(order1/2)) mod X^order2
+    // (right shift allowed since deg(appbas) = ceil(order1 / 2) )
+    Mat<zz_pX> shift_pmat, residual;
+    RightShift(shift_pmat, pmat, order1/2);
+    middle_product(residual, appbas, shift_pmat, order1 - order1/2, order2-1);
 
     // second recursive call, with 'residual'
     Mat<zz_pX> appbas2;
@@ -1981,8 +1987,13 @@ void matrix_pade_generic(
     // in other words, on den as computed above
     // (the right blocks are multiplied by identity, and since they have degree
     // order1/2 this gives only coefficients of degree < order1)
-    Mat<zz_pX> residual;
-    middle_product(residual, den, pmat, order1, order2-1);
+    // As in pmbasis_generic above, since den has degree ceil(order1/2), we
+    // can actually first right shift pmat by order1/2 to make the middle product
+    // more efficient
+    // --> residual = (den * RightShift(pmat, order1/2) * X^-ceil(order1/2)) mod X^order2
+    Mat<zz_pX> shift_pmat, residual;
+    RightShift(shift_pmat, pmat, order1/2);
+    middle_product(residual, den, shift_pmat, order1 - order1/2, order2-1);
 
     // second recursive call, approximant basis with 'residual'
     // just returns the top block of rows
@@ -2046,8 +2057,13 @@ void matrix_pade_generic_recursion(
     // in other words, on den as computed above
     // (the right blocks are multiplied by identity, and since they have degree
     // order1/2 this gives only coefficients of degree < order1)
-    Mat<zz_pX> residual;
-    middle_product(residual, den, pmat, order1, order2-1);
+    // As above, since den has degree ceil(order1/2), we
+    // can actually first right shift pmat by order1/2 to make the middle product
+    // more efficient
+    // --> residual = (den * RightShift(pmat, order1/2) * X^-ceil(order1/2)) mod X^order2
+    Mat<zz_pX> shift_pmat, residual;
+    RightShift(shift_pmat, pmat, order1/2);
+    middle_product(residual, den, shift_pmat, order1 - order1/2, order2-1);
 
     // second recursive call, approximant basis with 'residual'
     Mat<zz_pX> appbas2;
