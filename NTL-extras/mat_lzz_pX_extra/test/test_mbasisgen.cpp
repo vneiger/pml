@@ -205,7 +205,20 @@ int main(int argc, char *argv[])
     }
 
     std::cout << "time(mbasis_plain): " << tt/nb_iter << std::endl;
-
+ 
+    // timing mbasis_plain, for comparison
+    tt=0.0; nb_iter=0;
+    {
+        clear(appbas);
+        t1 = GetWallTime();
+        pmbasis_generic_2n_n(appbas,pmat,order);
+        t2 = GetWallTime();
+        tt += t2-t1;
+        ++nb_iter;
+    }
+    bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true);
+    std::cout << (verif?"correct, ":"wrong, ");
+    std::cout << "time(pmbasis_gen): " << tt/nb_iter << std::endl;
 
     return 0;
 }

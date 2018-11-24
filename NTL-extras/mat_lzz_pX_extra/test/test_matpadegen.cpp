@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 
     // via pmbasis_generic_2n_n
     tt=0.0; nb_iter=0;
-    while (tt<0.5)
+    //while (tt<0.5)
     {
         t1 = GetWallTime();
         pmbasis_generic_2n_n(appbas,pmat_approx,order);
