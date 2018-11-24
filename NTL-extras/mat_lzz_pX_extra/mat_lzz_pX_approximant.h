@@ -480,9 +480,7 @@ void matrix_pade_generic_iterative(
 
 // Note: den is in Popov form.
 // TODO could be made slightly faster by taking the same algorithm as the one
-// just above, but not computing den2 at all. Not urgent: our main focus is the
-// divide and conquer version, in which this is used at the base case of the
-// recursion, and for which we need den2.
+// just above, but not computing den2 at all.
 inline void matrix_pade_generic_iterative(
                                           Mat<zz_pX> & den,
                                           const Mat<zz_pX> & pmat,
@@ -497,11 +495,7 @@ inline void matrix_pade_generic_iterative(
 /* Divide and conquer algorithm                               */
 /*------------------------------------------------------------*/
 
-// computes both den1 and den2, such that [[den1], [den2]] is the first
-// block-column of a 0-ordered weak Popov approximant basis for [[pmat], [-Id]]
-// at order 'order'
-
-// Note: den is in Popov form.
+// essentially: one call to matpadegen_rec, one residual, one call to pmbasis_toprows, find result by product
 void matrix_pade_generic(
                          Mat<zz_pX> & den,
                          const Mat<zz_pX> & pmat,
@@ -515,6 +509,28 @@ void matrix_pade_generic_recursion(
                                    const Mat<zz_pX> & pmat,
                                    const long order
                                   );
+
+// FIXME in progress: experiment to see if it is a good idea to right-multiply
+// by truncated inverse so as to bring the residual in the form [[res], [-I]]
+// therefore allowing to use matrix Pade recursively
+
+// essentially: one call to matpadegen_rec2, one residual, one mul by truncated
+// inverse, one call to itself, deduce numerator, find result by product
+void matrix_pade_generic2(
+                          Mat<zz_pX> & den,
+                          const Mat<zz_pX> & pmat,
+                          const long order
+                         );
+
+// version computing den as 2n x n, storing the two left blocks
+// [[den1], [den2]] above (den1 in Popov form).
+void matrix_pade_generic_recursion2(
+                                    Mat<zz_pX> & den,
+                                    const Mat<zz_pX> & pmat,
+                                    const long order
+                                   );
+
+
 
 
 

@@ -27,12 +27,13 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 
 int main(int argc, char *argv[])
 {
-    if (argc!=5)
-        throw std::invalid_argument("Usage: ./test_matpadegen rdim order nbits verify");
+    if (argc!=6)
+        throw std::invalid_argument("Usage: ./test_matpadegen rdim order nbits iter verify");
 
     long rdim = atoi(argv[1]);
     long order = atoi(argv[2]);
     long nbits = atoi(argv[3]);
+    bool iter = (atoi(argv[5])==1);
     bool verify = (atoi(argv[4])==1);
 
     VecLong shift(2*rdim,0);
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
 
     Mat<zz_pX> appbas;
 
-    if (1)
+    if (iter)
     {
         // via mbasis_generic_2n_n_resupdate
         while (tt<0.5)
@@ -106,7 +107,7 @@ int main(int argc, char *argv[])
 
     // via pmbasis_generic_2n_n
     tt=0.0; nb_iter=0;
-    //while (tt<0.5)
+    while (tt<0.5)
     {
         t1 = GetWallTime();
         pmbasis_generic_2n_n(appbas,pmat_approx,order);
@@ -123,7 +124,7 @@ int main(int argc, char *argv[])
     }
     std::cout << std::endl;
 
-    if (1)
+    if (iter)
     {
         // timing matrix_pade_generic_iterative
         tt=0.0; nb_iter=0;
