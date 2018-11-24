@@ -9,7 +9,7 @@
 #include <NTL/BasicThreadPool.h>
 #include <cmath>
 
-//#define SAFETY_CHECKS
+#define SAFETY_CHECKS
 
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
@@ -28,18 +28,20 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 
 int main(int argc, char *argv[])
 {
-    if (argc!=5)
-        throw std::invalid_argument("Usage: ./test_charpoly_amodg degree expnt nbits nthreads");
+    if (argc!=3)
+        throw std::invalid_argument("Usage: ./test_charpoly_mod deg expnt");
 
     // main parameter: degree
     long n = atoi(argv[1]);
     // parameter: exponent for m = n^exponent; default = 0.333 ~ 1/omega for omega=3
     double exponent = (atof(argv[2]) <= 0.) ? 0.333 : (atof(argv[2]));
 
-    // size of prime field
-    long nbits = atoi(argv[3]);
-    // whether we should verify the result
-    SetNumThreads(atoi(argv[4]));
+    //// size of prime field
+    //long nbits = atoi(argv[3]);
+    //// whether we should verify the result
+    //SetNumThreads(atoi(argv[4]));
+    long nbits = 0;
+    SetNumThreads(1);
 
     // used for timings
     double t1,t2;
@@ -108,15 +110,15 @@ int main(int argc, char *argv[])
 #ifdef SAFETY_CHECKS
         // compute the block-Wiedemann sequence (naive)
         Vec<Mat<zz_p>> seq_naive;
-        seq_naive.SetLength(2*d+1);
-        ident(seq_naive[2*d], m); // pmat[2*d] = identity m x m
-        for (long k = 2*d-1; k >= 0; --k)
+        seq_naive.SetLength(2*d);
+        ident(seq_naive[2*d-1], m); // pmat[2*d-1] = identity m x m
+        for (long k = 2*d-2; k >= 0; --k)
         {
             seq_naive[k].SetDims(m, m);
-            zz_pX f = pow_a;  // a^{2d-k} mod g
+            zz_pX f = pow_a;  // a^{2d-1-k} mod g
             for (long i = 0; i < m; ++i)
             {
-                // here f = x^i * f mod g = x^i a^{2d-k} mod g
+                // here f = x^i * f mod g = x^i a^{2d-1-k} mod g
                 for (long j = 0; j < m; ++j)
                     seq_naive[k][i][j] = coeff(f, j);  
                 // note: here we have tranposed, because pmbasis works row-wise
@@ -124,7 +126,7 @@ int main(int argc, char *argv[])
                 f <<= 1;
                 f = f - coeff(f,n) * g;
             }
-            MulMod(pow_a, pow_a, A, G); // a^{2d-(k+1)} mod g
+            MulMod(pow_a, pow_a, A, G); // a^{2d-1-(k+1)} mod g
         }
         t2 = GetWallTime();
         std::cout << "TIME ~~ compute sequence for block Wiedemann (naive): " << (t2-t1) << std::endl;
@@ -132,6 +134,7 @@ int main(int argc, char *argv[])
         t1 = GetWallTime();
 #endif // SAFETY_CHECKS
 /*      // semi-naive computation, as in Neiger-Salvy-Villard 2018
+        // warning: has not been modified with 2d instead of 2d+1
         // DO NOT ERASE, THANK YOU!
         // compute the block-Wiedemann sequence (fast)
         // Sequence stored as a list of constant matrices
@@ -182,15 +185,21 @@ int main(int argc, char *argv[])
         cout << "seq:\n" << seq << endl;
 */ 
 
-        // TEST ERIC'S ALGO
+        // Faster algo
         Vec<Mat<zz_p>> seq;
         Vec<Coeffs> res;
         gen_sequence(seq,res,a,g,m);
         t2 = GetWallTime();
-       
+        // TODO temporary fix, because gen_sequence currently computes 2d+1 terms
+        for (long k = 0; k < 2*d; ++k)
+        {
+            seq[k+1].swap(seq[k]);
+        }
+        seq.SetLength(2*d);
+
 #ifdef SAFETY_CHECKS
         bool correct=true;
-        for (long k = 0; k < 2*d+1; ++k)
+        for (long k = 0; k < 2*d; ++k)
             if (seq[k] != seq_naive[k])
                 correct=false;
 #endif // SAFETY_CHECKS
@@ -204,7 +213,7 @@ int main(int argc, char *argv[])
 
         // convert the sequence into a polynomial matrix
         Mat<zz_pX> pmat;
-        conv(pmat, seq, 2*d+1);
+        conv(pmat, seq, 2*d);
 
         // Matrix fraction reconstruction: add identity below pmat
         pmat.SetDims(2*m, m);
@@ -219,7 +228,8 @@ int main(int argc, char *argv[])
         // reconstruct fraction
         Mat<zz_pX> appbas;
         VecLong shift(2*m, 0);
-        VecLong pivdeg = pmbasis(appbas, pmat, 2*d+1, shift);
+        VecLong pivdeg = pmbasis(appbas, pmat, 2*d, shift);
+        //pmbasis_generic_2n_n(appbas, pmat, 2*d+1);
 
         // retrieve balanced basis (leading principal mxm submatrix)
         // be careful if wish to use numerator: here we have "-numer" in top-right submatrix,
