@@ -86,6 +86,7 @@ bool is_approximant_basis(
     if (not is_row_polmatform(appbas,shift,form))
     {
         std::cout << "~~is_approx~~ not in the required shifted form" << std::endl;
+        std::cout << degree_matrix(appbas) << std::endl;
         return false;
     }
 

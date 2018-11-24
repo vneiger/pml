@@ -1328,17 +1328,32 @@ void mbasis_generic_2n_n_resupdate(
 
 /*------------------------------------------------------------*/
 /* Divide and Conquer: PMBasis                                */
-/* Via mbasis-resupdate, requiring m = 2 n and order even     */
-/* --all computations done with n x n submatrices             */
+/* (Base case: mbasis-resupdate)                              */
 /*------------------------------------------------------------*/
-// requirement 1: m = 2*n
-// requirement 2: order is even and strictly positive
-// output: appbas is in 0-ordered weak Popov form with row degree (d,.., d) *GEN*,
-// where d = order/2
-// --> in fact a more precise form is obtained,
-// appbas = [ [X^k I + P00,  P01], [X P10, X^k I + X P11]]
-// where P00, P01, P10 have degree k-1 and P11 has degree k-2
-// (in particular, its top-left and bottom-right blocks are 0-Popov)
+// Requirement: m = 2*n ; pmat generic ; order >= 2
+// if order = 2d, then 
+//      appbas = [ [X^d I + P00,  P01], [X P10, X^d I + X P11]]
+// where P00, P01, P10 have degree d-1 and P11 has degree d-2
+// if order = 2d+1, then
+//      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^d I + P11] ]
+// where P00, P01, P11 have degree d-1 and P10 has degree d
+//
+// Note:
+//   * the product of two bases of the first type above (with respective
+//   degrees d1 and d2) remains of this first type (degree d1 + d2)
+//   * the product of a basis of the second type (degree d1) by one of the
+//   first type (degree d2) is a basis of the second type (degree d1+d2)
+//
+// We use this remark to choose specific orders order1 and order2 for the
+// recursive calls, so that we never have to deal with degree shifts:
+// --> if order is even, all orders of recursive calls are even
+// (as a result, the final basis is a product of forms 1 above, and
+// has form 1 itself)
+// --> if order is odd, then only the first leaf of the recursive tree
+// will be with odd order, the others will be with even order (the first
+// leaf gives the leftmost basis in the product yielding the final basis,
+// which means all bases will have form 1 above except the leftmost one which
+// has form 2, hence the final one has form 2)
 void pmbasis_generic_2n_n(
                           Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
@@ -1351,8 +1366,26 @@ void pmbasis_generic_2n_n(
         return;
     }
 
-    long order1 = order>>1; // order of first call
-    long order2 = order-order1; // order of second call
+    // to avoid having to deal with shifts, we use the following
+    // orders order1+order2 = order for the recursive calls (see remarks
+    // in the header file):
+    // if order is odd: order1 is the one of floor(order/2) and ceil(order/2)
+    // which is odd
+    // if order is even: choose both order1 and order2 even and
+    // approximately order/2
+    long order1 = order/2; // floor(order/2)
+    if (order%2)
+    {
+        // order is odd; if order1 is odd too, change it to ceil(order/2)
+        if (order1%2) ++order1;
+    }
+    else
+    {
+        // order is even; if order1 is odd, change it to order/2 - 1
+        if (order1%2)
+            --order1;
+    }
+    long order2 = order-order1;
 
     // first recursive call, with 'pmat'
     Mat<zz_pX> trunc_pmat;

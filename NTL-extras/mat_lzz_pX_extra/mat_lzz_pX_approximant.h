@@ -367,19 +367,36 @@ void mbasis_generic_2n_n_resupdate(
 /*------------------------------------------------------------*/
 /* Divide and conquer pmbasis, via mbasis-resupdate           */
 /*------------------------------------------------------------*/
-// Requirement: m = 2*n ; pmat generic
+// Requirement: m = 2*n ; pmat generic ; order >= 2
+// We recall that the basis is returned like this:
+// if order = 2d, then 
+//      appbas = [ [X^d I + P00,  P01], [X P10, X^d I + X P11]]
+// where P00, P01, P10 have degree d-1 and P11 has degree d-2
+// if order = 2d+1, then
+//      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^d I + P11] ]
+// where P00, P01, P11 have degree d-1 and P10 has degree d
+//
+// Note:
+//   * the product of two bases of the first type above (with respective
+//   degrees d1 and d2) remains of this first type (degree d1 + d2)
+//   * the product of a basis of the second type (degree d1) by one of the
+//   first type (degree d2) is a basis of the second type (degree d1+d2)
+//
+// We use this remark to choose specific orders order1 and order2 for the
+// recursive calls, so that we never have to deal with degree shifts:
+// --> if order is even, all orders of recursive calls are even
+// (as a result, the final basis is a product of forms 1 above, and
+// has form 1 itself)
+// --> if order is odd, then only the first leaf of the recursive tree
+// will be with odd order, the others will be with even order (the first
+// leaf gives the leftmost basis in the product yielding the final basis,
+// which means all bases will have form 1 above except the leftmost one which
+// has form 2, hence the final one has form 2)
 void pmbasis_generic_2n_n(
                           Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
                           const long order
                          );
-
-
-
-
-
-
-
 
 // TODO doc if this turns out useful
 void pmbasis_generic_2n_n_top_rows(
@@ -394,26 +411,6 @@ void pmbasis_generic_2n_n_top_rows(
 
 
 
-
-
-
-/*------------------------------------------------------------*/
-/* FIXME in progress: MBASIS/PMBASIS, generic case, one column */
-/*------------------------------------------------------------*/
-
-VecLong mbasis_generic_onecolumn(
-                     Mat<zz_pX> & appbas,
-                     const Mat<zz_pX> & pmat,
-                     const long order,
-                     const VecLong & shift
-                    );
-
-VecLong pmbasis_generic_onecolumn(
-               Mat<zz_pX> & appbas,
-               const Mat<zz_pX> & pmat,
-               const long order,
-               const VecLong & shift
-              );
 
 
 
@@ -521,6 +518,26 @@ void matrix_pade_generic_recursion(
 
 
 
+
+
+
+/*------------------------------------------------------------*/
+/* FIXME in progress: MBASIS/PMBASIS, generic case, one column */
+/*------------------------------------------------------------*/
+
+VecLong mbasis_generic_onecolumn(
+                     Mat<zz_pX> & appbas,
+                     const Mat<zz_pX> & pmat,
+                     const long order,
+                     const VecLong & shift
+                    );
+
+VecLong pmbasis_generic_onecolumn(
+               Mat<zz_pX> & appbas,
+               const Mat<zz_pX> & pmat,
+               const long order,
+               const VecLong & shift
+              );
 
 
 

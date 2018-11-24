@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
     while (tt<0.5)
     {
         t1 = GetWallTime();
-        //pmbasis_generic_2n_n(appbas,pmat_approx,order);
+        pmbasis_generic_2n_n(appbas,pmat_approx,order);
         t2 = GetWallTime();
         tt += t2-t1;
         ++nb_iter;
