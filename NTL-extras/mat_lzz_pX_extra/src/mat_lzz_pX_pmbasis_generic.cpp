@@ -1454,8 +1454,10 @@ void pmbasis_generic_2n_n_top_rows(
 // Note: it is precisely mbasis_generic_2n_n_resupdate above, except
 // that only the left-block-column of appbas is computed
 // (namely P00, here D1, and P10, here D2)
-// requirement: order is even // TODO remove this requirement?
-// TODO try rescomp version
+// TODO try rescomp version --> not urgent: this has roughly no impact on the
+// interesting case (large order) since in the divide and conquer this base
+// case will almost never be called, most base cases will be regular pm-basis
+// base cases
 void matrix_pade_generic_iterative(
                                    Mat<zz_pX> & den1,
                                    Mat<zz_pX> & den2,
@@ -1924,6 +1926,7 @@ void matrix_pade_generic_iterative(
 #endif // MATRIX_PADE_GEN_PROFILE
 }
 
+
 /*------------------------------------------------------------*/
 /* Divide and conquer algorithm                               */
 /*------------------------------------------------------------*/
@@ -2007,8 +2010,6 @@ void matrix_pade_generic_recursion(
             den[i].swap(den1[i]);
         for (long i = n; i < 2*n; ++i)
             den[i].swap(den2[i-n]);
-        // FIXME could be very slightly faster, matrix Pade could return den
-        // directly
         return;
     }
 

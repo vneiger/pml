@@ -479,8 +479,8 @@ void matrix_pade_generic_iterative(
                                   );
 
 // Note: den is in Popov form.
-// TODO could be made slightly faster by taking the same algorithm as the one
-// just above, but not computing den2 at all.
+// we use the above version with den1==den, discarding den2
+// (den2 is used during all along the iterations to update den1)
 inline void matrix_pade_generic_iterative(
                                           Mat<zz_pX> & den,
                                           const Mat<zz_pX> & pmat,
