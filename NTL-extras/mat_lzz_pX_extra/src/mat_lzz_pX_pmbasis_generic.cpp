@@ -758,6 +758,8 @@ void mbasis_generic_2n_n_rescomp(
 // if order = 2d+1, then
 //      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^d I + P11] ]
 // where P00, P01, P11 have degree d-1 and P10 has degree d
+// TODO this shift-middle-product is not very satisfactory, should be
+// handled by middle-product itself
 // TODO better handle pmat of degree << order
 void mbasis_generic_2n_n_resupdate(
                                    Mat<zz_pX> & appbas,
