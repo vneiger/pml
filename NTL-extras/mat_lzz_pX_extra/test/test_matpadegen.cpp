@@ -190,38 +190,6 @@ int main(int argc, char *argv[])
         std::cout << (verif?"correct":"wrong");
     }
     std::cout << std::endl;
-
-    // timing matrix_pade_generic2
-    tt=0.0; nb_iter=0;
-    Mat<zz_pX> den2;
-    while (tt<0.5)
-    {
-        t1 = GetWallTime();
-        matrix_pade_generic2(den2, pmat, order);
-        t2 = GetWallTime();
-        tt += t2-t1;
-        ++nb_iter;
-    }
-
-    std::cout << "time(matrix_pade_generic2): " << tt/nb_iter << ", ";
-
-    if (verify)
-    {
-        bool verif = true;
-        for (long i = 0; i < rdim; ++i)
-        {
-            for (long j = 0; j < rdim; ++j)
-                if (appbas[i][j] != den2[i][j])
-                {
-                    verif = false;
-                    break;
-                }
-            if (not verif)
-                break;
-        }
-        std::cout << (verif?"correct":"wrong");
-    }
-    std::cout << std::endl;
 }
 
 
