@@ -111,6 +111,7 @@ void mul(Mat<zz_pX>& c, const Mat<zz_pX>& a, const Mat<zz_pX>& b)
 {
     long dA = deg(a);
     long dB = deg(b);
+    long min_dAdB = std::min<long>(dA,dB);
     long m = a.NumRows();
     long n = a.NumCols();
     long p = b.NumCols();
@@ -129,81 +130,78 @@ void mul(Mat<zz_pX>& c, const Mat<zz_pX>& a, const Mat<zz_pX>& b)
     // a[i][j] (padded with zeroes up to length dA+1 if necessary)
     ell = 0;
     for (long i = 0; i < m; ++i)
-        for (long j = 0; j < n; ++j)
-        {
-            long d = deg(a[i][j]);
-            for (long k = 0; k <= d; ++k)
+        for (long j = 0; j < n; ++j, ++ell)
+            for (long k = 0; k <= deg(a[i][j]); ++k)
                 tmp_mat[k][ell] = a[i][j][k];
-            for (long k = d+1; k <= dA; ++k)
-                tmp_mat[k][ell] = 0;
-            ++ell;
-        }
-    valA = vA * tmp_mat;
+    // note: d = deg(a[i][j]) is -1 if a[i][j] == 0
+    // all non-touched entries already zero since tmp_mat was initialized as zero
 
+    // valA: column ell = i*n + j contains the evaluations of a[i][j]
+    mul(valA, vA, tmp_mat);
+
+    // evaluation of matrix b:
+    // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
+    // a[i][j] (padded with zeroes up to length dA+1 if necessary)
     tmp_mat.SetDims(dB+1, n * p);
     ell = 0;
-    for (long i = 0; i < n; i++)
-        for (long j = 0; j < p; j++)
+    for (long i = 0; i < n; ++i)
+        for (long j = 0; j < p; ++j, ++ell)
         {
-            long d = deg(b[i][j]);
-            if (d >= 0)
-            {
-                const zz_p * cBij = b[i][j].rep.elts();
-                long k;
-                for (k = 0; k <= d; k++)  // k <= d-2 so k+1 <= d-1
-                {
-                    tmp_mat[k][ell] = cBij[k];
-                }
-            }
-            for (long k = d+1; k <= dA; k++)
-            {
-                tmp_mat[k][ell] = 0;
-            }
-            ell++;
+            long d = deg(b[i][j]); // -1 if b[i][j] == 0
+            for (long k = 0; k <= d; ++k)
+                tmp_mat[k][ell] = b[i][j][k];
+            // make sure remaining entries are zero
+            //    those for k<=dB, k>dA are (if any),
+            //    those for d < k <= min(dA,dB) might not be
+            for (long k = d+1; k <= min_dAdB; ++k)
+                clear(tmp_mat[k][ell]);
         }
-    valB = vB * tmp_mat;
 
+    // valB: column ell = i*n + j contains the evaluations of b[i][j]
+    mul(valB, vB, tmp_mat);
+
+    // perform the pointwise products
     valAp.SetDims(m, n);
     valBp.SetDims(n, p);
     valC.SetDims(nb_points, m * p);
-    for (long i = 0; i < nb_points; i++)
+    for (long i = 0; i < nb_points; ++i)
     {
+        // a evaluated at point i
         ell = 0;
-        for (long u = 0; u < m; u++)
-            for (long v = 0; v < n; v++)
-            {
-                valAp[u][v] = valA[i][ell++];
-            }
+        for (long u = 0; u < m; ++u)
+            for (long v = 0; v < n; ++v, ++ell)
+                valAp[u][v] = valA[i][ell];
 
+        // b evaluated at point i
         ell = 0;
-        for (long u = 0; u < n; u++)
-            for (long v = 0; v < p; v++)
-            {
-                valBp[u][v] = valB[i][ell++];
-            }
+        for (long u = 0; u < n; ++u)
+            for (long v = 0; v < p; ++v, ++ell)
+                valBp[u][v] = valB[i][ell];
 
-        valCp = valAp * valBp;
+        // a*b evaluated at point i
+        mul(valCp, valAp, valBp);
 
+        // copy this into valC: column ell = i*n + j contains the evaluations
+        // of the entry i,j of c = a*b
         ell = 0;
-        for (long u = 0; u < m; u++)
-            for (long v = 0; v < p; v++)
-            {
-                valC[i][ell++] = valCp[u][v];
-            }
+        for (long u = 0; u < m; ++u)
+            for (long v = 0; v < p; ++v, ++ell)
+                valC[i][ell] = valCp[u][v];
     }
-    tmp_mat = iv*valC;
 
+    // interpolate to find the entries of c
+    mul(tmp_mat, iv, valC);
+
+    // copy to output (reorganize these entries into c)
     c.SetDims(m, p);
     ell = 0;
-    for (long u = 0; u < m; u++)
-        for (long v = 0; v < p; v++)
+    for (long u = 0; u < m; ++u)
+        for (long v = 0; v < p; ++v, ++ell)
         {
-            c[u][v].rep.SetLength(nb_points);
-            zz_p * cc = c[u][v].rep.elts();
-            for (long i = 0; i < nb_points; i++)
-                cc[i] = tmp_mat[i][ell];
+            c[u][v].SetLength(nb_points);
+            for (long i = 0; i < nb_points; ++i)
+                c[u][v][i] = tmp_mat[i][ell];
             c[u][v].normalize();
-            ell++;
         }
 }
 
