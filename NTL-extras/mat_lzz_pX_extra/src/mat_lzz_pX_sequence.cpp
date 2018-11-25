@@ -10,21 +10,21 @@
 
 void MulMod_local(zz_pX& x, zz_pX& upper, const zz_pX& a, const zz_pXMultiplier& B, const zz_pXModulus& F)
 {
-    
+
     long n = F.n;
     long da;
-    
+
     da = deg(a);
-    
+
     if (da >= n)
         LogicError(" bad args to MulMod_local(zz_pX, zz_pX, zz_pXMultiplier, zz_pXModulus)");
-    
+
     if (da < 0)
     {
         clear(x);
         return;
     }
-    
+
     if (!B.UseFFT || !F.UseFFT || da <= NTL_zz_pX_MOD_CROSSOVER)
     {
         zz_pX P1;
@@ -34,29 +34,29 @@ void MulMod_local(zz_pX& x, zz_pX& upper, const zz_pX& a, const zz_pXMultiplier&
         upper = 0;
         return;
     }
-    
+
     zz_pX P1(INIT_SIZE, n), P2(INIT_SIZE, n);
     fftRep R1(INIT_SIZE, F.l), R2(INIT_SIZE, F.l);
-    
+
     long len;
     if (zz_p::IsFFTPrime())
         len = n;
     else
         len = 1L << F.k;
-    
+
     TofftRep_trunc(R1, a, F.l, max(1L << F.k, 2*n-2));
     mul(R2, R1, B.B1);
     FromfftRep(P1, R2, n-1, 2*n-3);
-    
+
     mul(R2, R1, F.HRep);
     FromfftRep(upper, R2, n-1, 2*n-3);
-    
+
     reduce(R1, R1, F.k);
     mul(R1, R1, B.B2);
     TofftRep_trunc(R2, P1, F.k, len);
     mul(R2, R2, F.FRep);
     sub(R1, R1, R2);
-    
+
     FromfftRep(x, R1, 0, n-1);
 }
 
@@ -69,17 +69,17 @@ void gen_pows (Vec<zz_pX> &pow, Vec<zz_pX>&upper,
 {
     zz_pXModulus g_mod;
     build(g_mod, g);
-    
+
     zz_pX a_pow;
     PowerMod(a_pow, a, s, g_mod); // a_pow = a^s
-    
+
     zz_pXMultiplier a_pow_mul;
     build(a_pow_mul, a_pow, g_mod);
-    
+
     pow.SetLength(l);
     pow[0] = t;
-    
-    
+
+
     if (need_upper_products)
     {
         upper.SetLength(l);
@@ -100,7 +100,7 @@ void gen_pows (Vec<zz_pX> &pow, Vec<zz_pX>&upper,
             MulMod(pow[i], pow[i - 1], a_pow_mul, g_mod);
         }
     }
-    
+
 }
 
 /*------------------------------------------------------------*/
@@ -111,45 +111,36 @@ void mul(Mat<zz_pX>& c, const Mat<zz_pX>& a, const Mat<zz_pX>& b)
 {
     long dA = deg(a);
     long dB = deg(b);
-    long sA = dA + 1;
-    long sB = dB + 1;
     long m = a.NumRows();
     long n = a.NumCols();
     long p = b.NumCols();
     long ell;
-    
-    Mat<zz_p> tmp_mat(INIT_SIZE, sA, m * n);
+
+    Mat<zz_p> tmp_mat(INIT_SIZE, dA+1, m * n);
     Mat<zz_p> valA, valB, valC;
     Mat<zz_p> vA, vB, iv;
     Mat<zz_p> valAp, valBp, valCp;
-    
+
     vandermonde(vA, vB, iv, dA, dB);
     long nb_points = vA.NumRows();
-    
+
+    // evaluation of matrix a:
+    // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
+    // a[i][j] (padded with zeroes up to length dA+1 if necessary)
     ell = 0;
-    for (long i = 0; i < m; i++)
-        for (long j = 0; j < n; j++)
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < n; ++j)
         {
             long d = deg(a[i][j]);
-            if (d >= 0)
-            {
-                const zz_p * cAij = a[i][j].rep.elts();
-                long k;
-                for (k = 0; k <= d; k++)  // k <= d-2 so k+1 <= d-1
-                {
-                    tmp_mat[k][ell] = cAij[k];
-                }
-            }
-            for (long k = d+1; k <= dA; k++)
-            {
+            for (long k = 0; k <= d; ++k)
+                tmp_mat[k][ell] = a[i][j][k];
+            for (long k = d+1; k <= dA; ++k)
                 tmp_mat[k][ell] = 0;
-            }
-            
-            ell++;
+            ++ell;
         }
     valA = vA * tmp_mat;
-    
-    tmp_mat.SetDims(sB, n * p);
+
+    tmp_mat.SetDims(dB+1, n * p);
     ell = 0;
     for (long i = 0; i < n; i++)
         for (long j = 0; j < p; j++)
@@ -171,29 +162,28 @@ void mul(Mat<zz_pX>& c, const Mat<zz_pX>& a, const Mat<zz_pX>& b)
             ell++;
         }
     valB = vB * tmp_mat;
-    
+
     valAp.SetDims(m, n);
     valBp.SetDims(n, p);
     valC.SetDims(nb_points, m * p);
     for (long i = 0; i < nb_points; i++)
     {
-        long ell;
         ell = 0;
         for (long u = 0; u < m; u++)
             for (long v = 0; v < n; v++)
             {
                 valAp[u][v] = valA[i][ell++];
             }
-        
+
         ell = 0;
         for (long u = 0; u < n; u++)
             for (long v = 0; v < p; v++)
             {
                 valBp[u][v] = valB[i][ell++];
             }
-        
+
         valCp = valAp * valBp;
-        
+
         ell = 0;
         for (long u = 0; u < m; u++)
             for (long v = 0; v < p; v++)
@@ -202,7 +192,7 @@ void mul(Mat<zz_pX>& c, const Mat<zz_pX>& a, const Mat<zz_pX>& b)
             }
     }
     tmp_mat = iv*valC;
-    
+
     c.SetDims(m, p);
     ell = 0;
     for (long u = 0; u < m; u++)
@@ -227,15 +217,15 @@ void mul_special(Mat<zz_pX>& c, Mat<zz_pX>& cs, const Mat<zz_pX>& a, const Mat<z
     long n = a.NumCols();
     long p = b.NumCols();
     long ell;
-    
+
     Mat<zz_p> tmp_mat(INIT_SIZE, sA, m * n);
     Mat<zz_p> valA, valB, valC, valCs;
     Mat<zz_p> vA, vB, iv;
     Mat<zz_p> valAp, valBp, valBsp, valCp, valCsp;
-    
+
     vandermonde(vA, vB, iv, dA, dB);
     long nb_points = vA.NumRows();
-    
+
     ell = 0;
     for (long i = 0; i < m; i++)
         for (long j = 0; j < n; j++)
@@ -256,7 +246,7 @@ void mul_special(Mat<zz_pX>& c, Mat<zz_pX>& cs, const Mat<zz_pX>& a, const Mat<z
             ell++;
         }
     valA = vA * tmp_mat;
-    
+
     tmp_mat.SetDims(sB, n * p);
     ell = 0;
     for (long i = 0; i < n; i++)
@@ -278,7 +268,7 @@ void mul_special(Mat<zz_pX>& c, Mat<zz_pX>& cs, const Mat<zz_pX>& a, const Mat<z
             ell++;
         }
     valB = vB * tmp_mat;
-    
+
     valAp.SetDims(m, n);
     valBp.SetDims(n, p);
     valBsp.SetDims(n, p);
@@ -293,7 +283,7 @@ void mul_special(Mat<zz_pX>& c, Mat<zz_pX>& cs, const Mat<zz_pX>& a, const Mat<z
             {
                 valAp[u][v] = valA[i][ell++];
             }
-        
+
         ell = 0;
         for (long u = 0; u < n-1; u++)
             for (long v = 0; v < p; v++)
@@ -306,7 +296,7 @@ void mul_special(Mat<zz_pX>& c, Mat<zz_pX>& cs, const Mat<zz_pX>& a, const Mat<z
             valBsp[n-1][v] = 0;
             valBp[n-1][v] = valB[i][ell++];
         }
-        
+
         valCp = valAp * valBp;
         ell = 0;
         for (long u = 0; u < m; u++)
@@ -314,7 +304,7 @@ void mul_special(Mat<zz_pX>& c, Mat<zz_pX>& cs, const Mat<zz_pX>& a, const Mat<z
             {
                 valC[i][ell++] = valCp[u][v];
             }
-        
+
         valCsp = valAp * valBsp;
         ell = 0;
         for (long u = 0; u < m; u++)
@@ -336,7 +326,7 @@ void mul_special(Mat<zz_pX>& c, Mat<zz_pX>& cs, const Mat<zz_pX>& a, const Mat<z
             c[u][v].normalize();
             ell++;
         }
-    
+
     tmp_mat = iv*valCs;
     cs.SetDims(m, p);
     ell = 0;
@@ -361,7 +351,7 @@ void get_quos (Mat<zz_pX> &quos,
 {
     cout << "-enter quos\n";
     double t;
-    
+
     t = GetWallTime();
     const long n = deg(g);
     const long pad = 2*m - ((n-2*m-1) % (2*m));
@@ -370,13 +360,13 @@ void get_quos (Mat<zz_pX> &quos,
     mat1.SetDims(alphas.length(), len);
     mat2.SetDims(len, alphas.length());
     cout << "setup: " << GetWallTime()-t << endl;
-    
+
     t = GetWallTime();
     for (long i = 0; i < alphas.length(); i++)
     {
         zz_pX alpha_rev = reverse(alphas[i], n-1);
         long at;
-        
+
         at = -pad;
         for (long j = 0; j < len; j++)
         {
@@ -386,7 +376,7 @@ void get_quos (Mat<zz_pX> &quos,
                 c[k] = coeff(alpha_rev, at++);
             mat1[i][j].normalize();
         }
-        
+
         // not sure we need to make this so complicated.
         at = 0;
         const zz_p * s = upper[i].rep.elts();
@@ -403,12 +393,12 @@ void get_quos (Mat<zz_pX> &quos,
         }
     }
     cout << "build matrices: " << GetWallTime()-t << endl;
-    
+
     t = GetWallTime();
     Mat<zz_pX> res1, res2;
     mul_special(res1, res2, mat1, mat2);
     cout << "mat mul: " << GetWallTime()-t << endl;
-    
+
     t = GetWallTime();
     trunc(res1, res1, 2*m);
     RightShift(res2, res2, 2*m);
@@ -459,19 +449,19 @@ void format (Vec<Mat<zz_p>> &res, const Vec<Coeffs> &coeffs, const long d, const
 }
 
 void gen_sequence (Coeffs &res,
-                    const zz_pX &t,
-                    const zz_pX &a,
-                    const zz_pX &g,
-                    const long m)
+                   const zz_pX &t,
+                   const zz_pX &a,
+                   const zz_pX &g,
+                   const long m)
 {
     const long n = deg(g);
     const long d = 2*ceil((n*1.0)/m)+1;
     const long sqrt_d = ceil(sqrt(d));
-    
+
     Vec<zz_pX> alphas, As;
-    
+
     double t0, t1;
-    
+
     t1 = GetWallTime();
     t0 = GetWallTime();
     Vec<zz_pX> upper;
@@ -516,16 +506,16 @@ void gen_sequence (Vec<Mat<zz_p>> &mats, Vec<Coeffs> &res,
     const long n = deg(g);
     const long d = 2*ceil((n*1.0)/m)+1;
     const long sqrt_d = ceil(sqrt(d));
-    
+
     double t;
-    
+
     t = GetWallTime();
     res.SetLength(m);
-		zz_pX x_poly;
-		SetCoeff(x_poly, m-1, zz_p(1));
+    zz_pX x_poly;
+    SetCoeff(x_poly, m-1, zz_p(1));
     gen_sequence(res[0],x_poly,a,g,m);
     cout << "--all first row: " << GetWallTime() - t << endl;
-    
+
     t = GetWallTime();
     const zz_p inv_c0 = -(zz_p(1)/ConstTerm(g));
     for (long i = 1; i < m; i++)
@@ -542,7 +532,7 @@ void gen_sequence (Vec<Mat<zz_p>> &mats, Vec<Coeffs> &res,
             }
     }
     cout << "fill all: " << GetWallTime() - t << endl;
-    
+
     // format
     t = GetWallTime();
     for (long i = 0; i < m; i++)
@@ -559,9 +549,9 @@ void gen_sequence_naive (Vec<Coeffs> &res,
     const long n = deg(g);
     const long d = 2*ceil((n*1.0)/m)+1;
     const long sqrt_d = ceil(sqrt(d));
-    
+
     res.SetLength(m);
-    
+
     zz_pXModulus g_mod;
     build(g_mod, g);
     for (long i = 0; i < m; i++)
@@ -581,32 +571,11 @@ void gen_sequence_naive (Vec<Coeffs> &res,
     }
 }
 
-void print(const Vec<Coeffs> &c)
-{
-    for (long i = 0; i < c.length(); i++)
-        cout << c[i] << endl;
-}
 
-void print(const zz_pX &p)
-{
-    for (long i = 0; i <= deg(p); i++)
-    {
-        cout << coeff(p,i) << "*y^" <<i;
-        if (i != deg(p)) cout << "+";
-        else cout << endl;
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -11,9 +11,9 @@ NTL_CLIENT
 
 void one_bench_fft(long sz, long deg)
 {
-    double t1=0.0, t2=0.0, t3=0.0, t4=0.0;
+    double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0;
 
-    long nb1=0, nb2=0, nb3=0, nb4=0;
+    long nb1=0, nb2=0, nb3=0, nb4=0, nb5=0;
 
     while (t1<0.2)
     {
@@ -79,15 +79,40 @@ void one_bench_fft(long sz, long deg)
     }
     t4 = t4/nb4;
 
-    cout << sz << "\t" << deg << "\t" << t1 << "\t" << t2 << "\t" << t3 << "\t" << t4 << "\t";
-    if (t1<t2 && t1<t3 && t1<t4)
-        cout << 1 << "\t" << t1/t2 << "\t" << t1/t3 << "\t" << t1/t4 << endl;
-    else if (t2<t1 && t2<t3 && t2<t4)
-        cout << 2 << "\t" << t2/t1 << "\t" << t2/t3 << "\t" << t2/t4 << endl;
-    else if (t3<t1 && t3<t2 && t3<t4)
-        cout << 3 << "\t" << t3/t1 << "\t" << t3/t2 << "\t" << t3/t4 << endl;
+    while (t5<0.2)
+    {
+        double t;
+        Mat<zz_pX> a, b, c;
+
+        random(a, sz, sz, deg);
+        random(b, sz, sz, deg);
+
+        t = GetWallTime();
+        mul(c, a, b);
+        t = GetWallTime()-t;
+        t5 += t;
+        ++nb5;
+        Mat<zz_pX> tmp;
+        multiply(tmp,a,b);
+        if (c!=tmp)
+        {
+            std::cout << "error" << std::endl;
+            return;
+        }
+    }
+    t5 = t5/nb5;
+
+    cout << sz << "\t" << deg << "\t" << t1 << "\t" << t2 << "\t" << t3 << "\t" << t4 << "\t" << t5 << "\t";
+    if (t1<t2 && t1<t3 && t1<t4 && t1<t5)
+        cout << 1 << "\t" << t1/t2 << "\t" << t1/t3 << "\t" << t1/t4 << "\t" << t1/t5 << endl;
+    else if (t2<t1 && t2<t3 && t2<t4 && t2<t5)
+        cout << 2 << "\t" << t2/t1 << "\t" << t2/t3 << "\t" << t2/t4 << "\t" << t2/t5 << endl;
+    else if (t3<t1 && t3<t2 && t3<t4 && t3<t5)
+        cout << 3 << "\t" << t3/t1 << "\t" << t3/t2 << "\t" << t3/t4 << "\t" << t3/t5 << endl;
+    else if (t4<t1 && t4<t2 && t4<t3 && t4<t5)
+        cout << 4 << "\t" << t4/t1 << "\t" << t4/t2 << "\t" << t4/t3 << "\t" << t4/t5 << endl;
     else
-        cout << 4 << "\t" << t4/t1 << "\t" << t4/t2 << "\t" << t4/t3 << endl;
+        cout << 5 << "\t" << t5/t1 << "\t" << t5/t2 << "\t" << t5/t3 << "\t" << t5/t4 << endl;
 }
 
 /*------------------------------------------------------------*/
@@ -143,7 +168,7 @@ void run_bench(long nbits)
         zz_p::UserFFTInit(1139410705724735489); // 60 bits
         cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
     }
-    std::cout << "size\tdegree\tfft1\tfft2\tfft3\tfft\twin\tspeedups" << std::endl;
+    std::cout << "size\tdegree\tfft1\tfft2\tfft3\tfft\tvdmd\twin\tspeedups" << std::endl;
     for (size_t i=0;i<szs.size();i++)
         one_bench_fft(szs[i],degs[i]);
     cout << endl;
@@ -193,7 +218,7 @@ void run_bench()
             case 2: cout << 42 << ")" << endl; break;
             case 3: cout << 60 << ")" << endl; break;
         }
-        std::cout << "size\tdegree\tfft1\tfft2\tfft3\tfft\twin\tspeedups" << std::endl;
+        std::cout << "size\tdegree\tfft1\tfft2\tfft3\tfft\tvdmd\twin\tspeedups" << std::endl;
 
         // NTLx initialize field
         zz_p::UserFFTInit(primes[p]);
@@ -218,6 +243,8 @@ int main(int argc, char ** argv)
 {
     std::cout << std::fixed;
     std::cout << std::setprecision(5);
+
+    std::cout << "Usage: ./time_FFTx OR ./time_FFTx nthreads OR ./time_FFTx nbits OR ./time_FFTx sz deg" << std::endl;
 
     if (argc==1)
     {
@@ -254,9 +281,11 @@ int main(int argc, char ** argv)
     if (argc==3)
     {
         SetNumThreads(1);
-        zz_p::UserFFTInit(1139410705724735489); // 60 bits
+        //zz_p::UserFFTInit(1139410705724735489); // 60 bits
+        //std::cout << "Bench polynomial matrix multiplication (FFT prime, 60 bits)" << std::endl;
         zz_p::UserFFTInit(786433); // 20 bits
-        std::cout << "size\tdegree\tfft1\tfft2\tfft3\tfft\twin\tspeedups" << std::endl;
+        std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
+        std::cout << "size\tdegree\tfft1\tfft2\tfft3\tfft\tvdmd\twin\tspeedups" << std::endl;
         warmup();
         one_bench_fft(atoi(argv[1]),atoi(argv[2]));
     }
