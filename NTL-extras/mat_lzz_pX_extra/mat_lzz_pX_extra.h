@@ -28,6 +28,13 @@ typedef std::vector<long> VecLong;
 
 NTL_CLIENT
 
+// TODO experimental mul functions
+void multiply_evaluate_FFT1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_evaluate_FFT2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_evaluate_FFT3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
+
+
 
 // TODO in the future, these functions will be moved to "linearization/compression" files
 
