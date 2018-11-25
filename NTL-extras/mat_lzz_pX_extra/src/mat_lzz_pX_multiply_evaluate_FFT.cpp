@@ -65,7 +65,7 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
     pr = zz_p::modulus();
     red1 = sp_PrepRem(pr);
     red2 = make_sp_ll_reduce_struct(pr);
-    
+
     m = a.NumRows();
     n = a.NumCols();
     p = b.NumCols();
@@ -81,7 +81,7 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
         for (long j = 0; j < n; j++)
             TofftRep(valb[i][j], b[j][i], K);
     }
-    
+
     len = 1L << K;
     c.SetDims(m, p);
     vala.SetLength(n);
@@ -113,7 +113,7 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
                 mul(tmp, vala[0], vb[0]);
                 for (long j = 1; j < first_slice; j++)
                     mul_add(tmp, vala[j], vb[j]);
-                
+
                 long start = first_slice;
                 for (long jj = 0; jj < nb_slices; jj++)
                 {
@@ -148,7 +148,7 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
                 mul(tmp, vala[0], vb[0]);
                 for (long j = 1; j < first_slice; j++)
                     mul_add(tmp, vala[j], vb[j]);
-                
+
                 long start = first_slice;
                 for (long jj = 0; jj < nb_slices; jj++)
                 {
@@ -231,7 +231,7 @@ void multiply_evaluate_FFT_matmul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
     long idxk = NextPowerOfTwo(dA + dB + 1);
     fftRep R1(INIT_SIZE, idxk);
     long n = 1 << idxk;
-    
+
 
     Vec<zz_p> mat_valA, mat_valB;
     Vec<Vec<zz_p>> mat_valC;
@@ -240,11 +240,11 @@ void multiply_evaluate_FFT_matmul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
     mat_valB.SetLength(n * t * u);
 
     long st = s*t;
-    
+
     context.save(); // to give the zz_p context to each thread
     NTL_EXEC_RANGE(s,first,last)
     context.restore(); // now all threads have the right zz_p context
-    
+
     fftRep R(INIT_SIZE, idxk);
     for (long i = first; i < last; i++)
     {
@@ -273,7 +273,7 @@ void multiply_evaluate_FFT_matmul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
                 mat_valB[rtu + i*u + k] = frept[r];
         }
     }
-    
+
     R1 = R;
     NTL_EXEC_RANGE_END
 
@@ -283,7 +283,7 @@ void multiply_evaluate_FFT_matmul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
 
     NTL_EXEC_RANGE(n, first, last)
     context.restore();
-    
+
     Mat<zz_p> va, vb, vc; 
     va.SetDims(s, t);
     vb.SetDims(t, u);
@@ -321,7 +321,7 @@ void multiply_evaluate_FFT_matmul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
 
     NTL_EXEC_RANGE(s, first, last)
     context.restore();
-    
+
     Mat<zz_p> vc; 
     fftRep R = R1;
     for (long i = first; i < last; i++)
@@ -359,7 +359,7 @@ void multiply_evaluate_FFT_matmul2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
     long idxk = NextPowerOfTwo(dA + dB + 1);
     fftRep R1(INIT_SIZE, idxk);
     long n = 1 << idxk;
-    
+
 
     Mat<Vec<zz_p>> mat_valA, mat_valB;
     Vec<Vec<zz_p>> mat_valC;
@@ -368,7 +368,7 @@ void multiply_evaluate_FFT_matmul2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
     mat_valB.SetDims(t,u);
 
     long st = s*t;
-    
+
     context.save(); // to give the zz_p context to each thread
     NTL_EXEC_RANGE(s, first, last)
     context.restore(); // now all threads have the right zz_p context
@@ -404,7 +404,7 @@ void multiply_evaluate_FFT_matmul2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
                 mat_valB[i][k][r] = frept[r];
         }
     }
-    
+
     R1 = R;
     NTL_EXEC_RANGE_END
 
@@ -451,11 +451,11 @@ void multiply_evaluate_FFT_matmul2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
     c.SetDims(s, u);
     NTL_EXEC_RANGE(s, first, last)
     context.restore();
-    
+
     Mat<zz_p> vc; 
-    
+
     fftRep R = R1;
-    
+
     for (long i = first; i < last; i++)
     {
         for (long k = 0; k < u; k++)
@@ -483,15 +483,24 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
     long s = a.NumRows();
     long t = a.NumCols();
     long u = b.NumCols();
-    
+
     long thresh;
+    // TODO tune better
     if (NumBits(zz_p::modulus()) < 30)
         thresh = 20 * 20 * 20;
     else
         thresh = 45 * 45 * 45;
 
-    if ((s * t * u) < thresh)  // fine for close-to-square matrices
+    if ((s * t * u) < thresh)  // fine for close-to-square matrices // FIXME tune better?
         multiply_evaluate_FFT_direct(c, a, b);
     else
         multiply_evaluate_FFT_matmul(c, a, b);
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

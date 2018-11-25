@@ -1,10 +1,7 @@
 #include <NTL/matrix.h>
 #include <NTL/mat_lzz_p.h>
 #include <NTL/lzz_pX.h>
-#include <NTL/BasicThreadPool.h>
 #include <cmath>
-#include <algorithm> // for manipulating std::vector (min, max, ..)
-#include <numeric> // for std::iota
 
 #include "lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
