@@ -281,10 +281,10 @@ int main(int argc, char ** argv)
     if (argc==3)
     {
         SetNumThreads(1);
-        //zz_p::UserFFTInit(1139410705724735489); // 60 bits
-        //std::cout << "Bench polynomial matrix multiplication (FFT prime, 60 bits)" << std::endl;
-        zz_p::UserFFTInit(786433); // 20 bits
-        std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
+        zz_p::UserFFTInit(1139410705724735489); // 60 bits
+        std::cout << "Bench polynomial matrix multiplication (FFT prime, 60 bits)" << std::endl;
+        //zz_p::UserFFTInit(786433); // 20 bits
+        //std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
         std::cout << "size\tdegree\tfft1\tfft2\tfft3\tfft\tvdmd\twin\tspeedups" << std::endl;
         warmup();
         one_bench_fft(atoi(argv[1]),atoi(argv[2]));
