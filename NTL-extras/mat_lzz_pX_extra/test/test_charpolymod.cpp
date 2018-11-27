@@ -132,58 +132,57 @@ int main(int argc, char *argv[])
         std::cout << "TIME ~~ compute sequence for block Wiedemann (naive): " << (t2-t1) << std::endl;
         pow_a = a; // set back to its state before this #ifdef
         t1 = GetWallTime();
+//        // semi-naive computation, as in Neiger-Salvy-Villard 2018
+//        // warning: has not been modified with 2d instead of 2d+1
+//        // DO NOT ERASE, THANK YOU!
+//        // compute the block-Wiedemann sequence (fast)
+//        // Sequence stored as a list of constant matrices
+//
+//        Vec<Mat<zz_p>> seq;
+//        seq.SetLength(2*d+1);
+//
+//        // first m coefficients of -g
+//        zz_pX g_low;
+//        trunc(g_low, g, m);
+//        NTL::negate(g_low, g_low);
+//
+//        // last m coefficients of -g
+//        Vec<zz_p> g_high; g_high.SetLength(m);
+//        for (long j = 0; j < m; ++j)
+//            g_high[j] = -g[j+n-m];
+//
+//        // pmat[2*d] = identity m x m
+//        ident(seq[2*d], m);
+//
+//        for (long k = 2*d-1; k >= 0; --k)
+//        {
+//            seq[k].SetDims(m, m);
+//            // first m coefficients of a^{2d-k} mod g
+//            zz_pX f_low;
+//            trunc(f_low, pow_a, m);
+//            // last m coefficients of a^{2d-k} mod g
+//            Vec<zz_p> f_high; f_high.SetLength(m);
+//            for (long j = 0; j < std::min(m,m+deg(pow_a)-n+1); ++j)
+//                f_high[j] = pow_a[n-m+j];
+//
+//            for (long i = 0; i < m; ++i)
+//            {
+//                // here f_low = first m coefficients of x^i a^{2d-k} mod g
+//                VectorCopy(seq[k][i], f_low, m);  
+//                // now we want to compute the new f_low: first m coefficients
+//                // of x^{i+1} a^{2d-k} mod g
+//                f_low <<= 1;
+//                trunc(f_low, f_low, m);
+//                zz_p lt = f_high[m-1];
+//                f_low += lt * g_low;
+//                // also update f_high
+//                for (long j = m-1; j > 0; --j)
+//                    f_high[j] = f_high[j-1] + lt * g_high[j];
+//            }
+//            MulMod(pow_a, pow_a, A, G); // a^{2d-(k+1)} mod g
+//        }
+//        t2 = GetWallTime();
 #endif // SAFETY_CHECKS
-/*      // semi-naive computation, as in Neiger-Salvy-Villard 2018
-        // warning: has not been modified with 2d instead of 2d+1
-        // DO NOT ERASE, THANK YOU!
-        // compute the block-Wiedemann sequence (fast)
-        // Sequence stored as a list of constant matrices
-        Vec<Mat<zz_p>> seq;
-        seq.SetLength(2*d+1);
-
-        // first m coefficients of -g
-        zz_pX g_low;
-        trunc(g_low, g, m);
-        NTL::negate(g_low, g_low);
-
-        // last m coefficients of -g
-        Vec<zz_p> g_high; g_high.SetLength(m);
-        for (long j = 0; j < m; ++j)
-            g_high[j] = -g[j+n-m];
-
-        // pmat[2*d] = identity m x m
-        ident(seq[2*d], m);
-
-        for (long k = 2*d-1; k >= 0; --k)
-        {
-            seq[k].SetDims(m, m);
-            // first m coefficients of a^{2d-k} mod g
-            zz_pX f_low;
-            trunc(f_low, pow_a, m);
-            // last m coefficients of a^{2d-k} mod g
-            Vec<zz_p> f_high; f_high.SetLength(m);
-            for (long j = 0; j < std::min(m,m+deg(pow_a)-n+1); ++j)
-                f_high[j] = pow_a[n-m+j];
-
-            for (long i = 0; i < m; ++i)
-            {
-                // here f_low = first m coefficients of x^i a^{2d-k} mod g
-                VectorCopy(seq[k][i], f_low, m);  
-                // now we want to compute the new f_low: first m coefficients
-                // of x^{i+1} a^{2d-k} mod g
-                f_low <<= 1;
-                trunc(f_low, f_low, m);
-                zz_p lt = f_high[m-1];
-                f_low += lt * g_low;
-                // also update f_high
-                for (long j = m-1; j > 0; --j)
-                    f_high[j] = f_high[j-1] + lt * g_high[j];
-            }
-            MulMod(pow_a, pow_a, A, G); // a^{2d-(k+1)} mod g
-        }
-        t2 = GetWallTime();
-        cout << "seq:\n" << seq << endl;
-*/ 
 
         // Faster algo
         Vec<Mat<zz_p>> seq;
@@ -213,7 +212,25 @@ int main(int argc, char *argv[])
 
         Mat<zz_pX> basis;
         //matrix_pade_generic(basis, pmat, 2*d);
-				matrix_recon_approximation(basis,seq);
+
+        if (m*d == n)
+            matrix_recon_approximation(basis,seq);
+        else
+        {
+            std::cout << "      (using pmbasis non generic, because m*d != n)" << std::endl;
+            // TODO temporary fix, because matrix_pade_generic does not support non-generic input
+            Mat<zz_pX> pmat;
+            conv(pmat, seq, 2*d);
+            pmat.SetDims(2*m,m);
+            for (long i = 0; i < m; ++i)
+                pmat[i+m][i] = to_zz_p(-1);
+            Mat<zz_pX> appbas;
+            pmbasis(appbas, pmat, 2*d, VecLong(2*m,0));
+            basis.SetDims(m,m);
+            for (long i = 0; i < m; ++i)
+                for (long j = 0; j < m; ++j)
+                    basis[i][j] = appbas[i][j];
+        }
 
         t2 = GetWallTime();
         std::cout << "TIME ~~ matrix fraction reconstruction: " << (t2-t1) << std::endl;
