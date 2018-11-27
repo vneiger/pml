@@ -475,6 +475,34 @@ void matrix_recon_approximation(Mat<zz_pX> &basis,
 	// reconstruct fraction
 	matrix_pade_generic(basis,pmat,seq.length());
 }
+
+// NOTE: will mutate seq!!
+void matrix_recon_interpolation(Mat<zz_pX> &basis,
+		                            const Vec<zz_p> &pts,
+		                            Vec<Mat<zz_p>> &seq)
+{
+	long m = seq[0].NumRows();
+	VecLong shift(2*m,0);
+
+	// add identity at the bottom of each matrix in seq
+	for (auto &mat: seq)
+	{
+		mat.SetDims(2*m,m);
+		for (long i = 0; i < m; i++)
+			mat[m+i][i] = zz_p(1);
+	}
+	
+	// call pmbasis
+	Mat<zz_pX> intbas;
+	pmbasis(intbas, seq, pts, shift);
+
+	basis.SetDims(m,m);
+	for (long j = 0; j < m; j++)
+		for (long i = 0; i < m; i++)
+			basis[i][j] = intbas[i][j];
+}
+
+
 // Local Variables:
 // mode: C++
 // tab-width: 4
