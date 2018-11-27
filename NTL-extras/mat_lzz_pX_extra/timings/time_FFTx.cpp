@@ -79,28 +79,33 @@ void one_bench_fft(long sz, long deg)
     }
     t4 = t4/nb4;
 
-    while (t5<0.2)
+    if (deg<70)
     {
-        double t;
-        Mat<zz_pX> a, b, c;
-
-        random(a, sz, sz, deg);
-        random(b, sz, sz, deg);
-
-        t = GetWallTime();
-        mul(c, a, b);
-        t = GetWallTime()-t;
-        t5 += t;
-        ++nb5;
-        Mat<zz_pX> tmp;
-        multiply(tmp,a,b);
-        if (c!=tmp)
+        while (t5<0.2)
         {
-            std::cout << "error" << std::endl;
-            return;
+            double t;
+            Mat<zz_pX> a, b, c;
+
+            random(a, sz, sz, deg);
+            random(b, sz, sz, deg);
+
+            t = GetWallTime();
+            mul(c, a, b);
+            t = GetWallTime()-t;
+            t5 += t;
+            ++nb5;
+            Mat<zz_pX> c2;
+            multiply_naive(c2, a, b);
+            if (c2 != c)
+                std::cout << "WRONG" << std::endl;
         }
+        t5 = t5/nb5;
     }
-    t5 = t5/nb5;
+    else
+    {
+        nb5=1; // to avoid div by zero
+        t5=INFINITY; // to make sure this is not the best below
+    }
 
     cout << sz << "\t" << deg << "\t" << t1 << "\t" << t2 << "\t" << t3 << "\t" << t4 << "\t" << t5 << "\t";
     if (t1<t2 && t1<t3 && t1<t4 && t1<t5)
@@ -244,7 +249,7 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(5);
 
-    std::cout << "Usage: ./time_FFTx OR ./time_FFTx nthreads OR ./time_FFTx nbits OR ./time_FFTx sz deg" << std::endl;
+    std::cout << "Usage: ./time_FFTx OR ./time_FFTx nbits OR ./time_FFTx sz deg" << std::endl;
 
     if (argc==1)
     {
@@ -275,6 +280,7 @@ int main(int argc, char ** argv)
     }
     if (argc==2)
     {
+        SetNumThreads(1);
         warmup();
         run_bench(atoi(argv[1]));
     }

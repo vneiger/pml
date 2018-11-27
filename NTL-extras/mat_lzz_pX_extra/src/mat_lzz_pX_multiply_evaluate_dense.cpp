@@ -13,35 +13,46 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* computes the matrices for evaluation and interpolation     */
 /*------------------------------------------------------------*/
-void vandermonde(Mat<zz_p>& small_vdm1, Mat<zz_p>& small_vdm2, Mat<zz_p>& inv_vdm, long d1, long d2)
+void vandermonde(Mat<zz_p>& vdm1, Mat<zz_p>& vdm2, Mat<zz_p>& inv_vdm, long d1, long d2)
 {
-    long s1 = d1 + 1;
-    long s2 = d2 + 1;
-    long d = d1 + d2;
-    long nb_points = d + 1;
-    
-    Vec<zz_p> points;
-    points.SetLength(nb_points);
-    small_vdm1.SetDims(nb_points, s1);
-    small_vdm2.SetDims(nb_points, s2);
-    
+    // sizes = degree + 1
+    const long s1 = d1 + 1;
+    const long s2 = d2 + 1;
+    // nb points, which is sum of degrees + 1
+    const long nb_points = d1 + d2 + 1;
+
+    // will be Vandermonde matrix with nb_points, chosen as 0, 1, .., nb_points-1
+    // row i contains 1, i, i^2, .., i^{sk-1} for k=1,2
+    vdm1.SetDims(nb_points, s1);
+    vdm2.SetDims(nb_points, s2);
+
+    // vdm: square Vandermonde matrix with nb_points
+    // points chosen as 0, 1, .., nb_points-1
+    // --> row i contains 1, i, i^2, .., i^{nb_points-1}
+    // vdm1: nb_points x s1 submatrix of vdm
+    // vdm2: nb_points x s2 submatrix of vdm
     Mat<zz_p> vdm;
     vdm.SetDims(nb_points, nb_points);
-    
-    for (long i = 0; i < nb_points; i++)
+    vdm[0][0].LoopHole() = 1;
+    vdm1[0][0].LoopHole() = 1;
+    vdm2[0][0].LoopHole() = 1;
+    for (long i = 1; i < nb_points; ++i)
     {
-        zz_p p1 = to_zz_p(i);
-        zz_p tmp = to_zz_p(1);
-        for (long j = 0; j < nb_points; j++)
+        const zz_p p1(i);
+        vdm[i][0].LoopHole() = 1;
+        vdm1[i][0].LoopHole() = 1;
+        vdm2[i][0].LoopHole() = 1;
+        for (long j = 1; j < nb_points; ++j)
         {
-            vdm[i][j] = tmp;
-            if (j < s1)
-                small_vdm1[i][j] = tmp;
-            if (j < s2)
-                small_vdm2[i][j] = tmp;
-            tmp *= p1;
+            mul(vdm[i][j], vdm[i][j-1], p1);
+            if (j<s1)
+                vdm1[i][j] = vdm[i][j];
+            if (j<s2)
+                vdm2[i][j] = vdm[i][j];
         }
     }
+
+    // inv_vdm is the inverse of vdm
     inv(inv_vdm, vdm);
 }
 
@@ -55,114 +66,99 @@ void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
 {
     long dA = deg(a);
     long dB = deg(b);
-    long sA = dA + 1;
-    long sB = dB + 1;
+    long min_dAdB = std::min<long>(dA,dB);
     long m = a.NumRows();
     long n = a.NumCols();
     long p = b.NumCols();
     long ell;
-    
-    Mat<zz_p> tmp_mat(INIT_SIZE, sA, m * n);
+
+    Mat<zz_p> tmp_mat(INIT_SIZE, dA+1, m * n);
     Mat<zz_p> valA, valB, valC;
     Mat<zz_p> vA, vB, iv;
     Mat<zz_p> valAp, valBp, valCp;
-    
+
     vandermonde(vA, vB, iv, dA, dB);
     long nb_points = vA.NumRows();
-    
+
+    // evaluation of matrix a:
+    // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
+    // a[i][j] (padded with zeroes up to length dA+1 if necessary)
     ell = 0;
-    for (long i = 0; i < m; i++)
-        for (long j = 0; j < n; j++)
-        {
-            long d = deg(a[i][j]);
-            if (d >= 0)
-            {
-                const zz_p * cAij = a[i][j].rep.elts();
-                long k;
-                for (k = 0; k <= d; k++)  // k <= d-2 so k+1 <= d-1
-                {
-                    tmp_mat[k][ell] = cAij[k];
-                }
-            }
-            for (long k = d+1; k <= dA; k++)
-            {
-                tmp_mat[k][ell] = 0;
-            }
-            
-            ell++;
-        }
-    valA = vA * tmp_mat;
-    
-    tmp_mat.SetDims(sB, n * p);
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < n; ++j, ++ell)
+            for (long k = 0; k <= deg(a[i][j]); ++k)
+                tmp_mat[k][ell] = a[i][j][k];
+    // note: d = deg(a[i][j]) is -1 if a[i][j] == 0
+    // all non-touched entries already zero since tmp_mat was initialized as zero
+
+    // valA: column ell = i*n + j contains the evaluations of a[i][j]
+    mul(valA, vA, tmp_mat);
+
+    // evaluation of matrix b:
+    // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
+    // a[i][j] (padded with zeroes up to length dA+1 if necessary)
+    tmp_mat.SetDims(dB+1, n * p);
     ell = 0;
-    for (long i = 0; i < n; i++)
-        for (long j = 0; j < p; j++)
+    for (long i = 0; i < n; ++i)
+        for (long j = 0; j < p; ++j, ++ell)
         {
-            long d = deg(b[i][j]);
-            if (d >= 0)
-            {
-                const zz_p * cBij = b[i][j].rep.elts();
-                long k;
-                for (k = 0; k <= d; k++)  // k <= d-2 so k+1 <= d-1
-                {
-                    tmp_mat[k][ell] = cBij[k];
-                }
-            }
-            for (long k = d+1; k <= dB; k++)
-            {
-                tmp_mat[k][ell] = 0;
-            }
-            ell++;
+            long d = deg(b[i][j]); // -1 if b[i][j] == 0
+            for (long k = 0; k <= d; ++k)
+                tmp_mat[k][ell] = b[i][j][k];
+            // make sure remaining entries are zero
+            //    those for k<=dB, k>dA are (if any),
+            //    those for d < k <= min(dA,dB) might not be
+            for (long k = d+1; k <= min_dAdB; ++k)
+                clear(tmp_mat[k][ell]);
         }
-    valB = vB * tmp_mat;
-    
+
+    // valB: column ell = i*n + j contains the evaluations of b[i][j]
+    mul(valB, vB, tmp_mat);
+
+    // perform the pointwise products
     valAp.SetDims(m, n);
     valBp.SetDims(n, p);
     valC.SetDims(nb_points, m * p);
-    for (long i = 0; i < nb_points; i++)
+    for (long i = 0; i < nb_points; ++i)
     {
-        long ell;
+        // a evaluated at point i
         ell = 0;
-        for (long u = 0; u < m; u++)
-            for (long v = 0; v < n; v++)
-            {
-                valAp[u][v] = valA[i][ell++];
-            }
-        
+        for (long u = 0; u < m; ++u)
+            for (long v = 0; v < n; ++v, ++ell)
+                valAp[u][v] = valA[i][ell];
+
+        // b evaluated at point i
         ell = 0;
-        for (long u = 0; u < n; u++)
-            for (long v = 0; v < p; v++)
-            {
-                valBp[u][v] = valB[i][ell++];
-            }
-        
-        valCp = valAp * valBp;
-        
+        for (long u = 0; u < n; ++u)
+            for (long v = 0; v < p; ++v, ++ell)
+                valBp[u][v] = valB[i][ell];
+
+        // a*b evaluated at point i
+        mul(valCp, valAp, valBp);
+
+        // copy this into valC: column ell = i*n + j contains the evaluations
+        // of the entry i,j of c = a*b
         ell = 0;
-        for (long u = 0; u < m; u++)
-            for (long v = 0; v < p; v++)
-            {
-                valC[i][ell++] = valCp[u][v];
-            }
+        for (long u = 0; u < m; ++u)
+            for (long v = 0; v < p; ++v, ++ell)
+                valC[i][ell] = valCp[u][v];
     }
-    tmp_mat = iv*valC;
-    
+
+    // interpolate to find the entries of c
+    mul(tmp_mat, iv, valC);
+
+    // copy to output (reorganize these entries into c)
     c.SetDims(m, p);
     ell = 0;
-    for (long u = 0; u < m; u++)
-        for (long v = 0; v < p; v++)
+    for (long u = 0; u < m; ++u)
+        for (long v = 0; v < p; ++v, ++ell)
         {
-            c[u][v].rep.SetLength(nb_points);
-            zz_p * cc = c[u][v].rep.elts();
-            for (long i = 0; i < nb_points; i++)
-                cc[i] = tmp_mat[i][ell];
+            c[u][v].SetLength(nb_points);
+            for (long i = 0; i < nb_points; ++i)
+                c[u][v][i] = tmp_mat[i][ell];
             c[u][v].normalize();
-            ell++;
         }
 }
-
-
-
 
 
 // Local Variables:

@@ -103,108 +103,6 @@ void gen_pows (Vec<zz_pX> &pow, Vec<zz_pX>&upper,
 
 }
 
-/*------------------------------------------------------------*/
-/* matrix multiplication using the algorithm of Giorgi et al. */
-/* uses matrix multiplication for evaluation and interpolation*/
-/*------------------------------------------------------------*/
-void mul(Mat<zz_pX>& c, const Mat<zz_pX>& a, const Mat<zz_pX>& b)
-{
-    long dA = deg(a);
-    long dB = deg(b);
-    long min_dAdB = std::min<long>(dA,dB);
-    long m = a.NumRows();
-    long n = a.NumCols();
-    long p = b.NumCols();
-    long ell;
-
-    Mat<zz_p> tmp_mat(INIT_SIZE, dA+1, m * n);
-    Mat<zz_p> valA, valB, valC;
-    Mat<zz_p> vA, vB, iv;
-    Mat<zz_p> valAp, valBp, valCp;
-
-    vandermonde(vA, vB, iv, dA, dB);
-    long nb_points = vA.NumRows();
-
-    // evaluation of matrix a:
-    // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
-    // a[i][j] (padded with zeroes up to length dA+1 if necessary)
-    ell = 0;
-    for (long i = 0; i < m; ++i)
-        for (long j = 0; j < n; ++j, ++ell)
-            for (long k = 0; k <= deg(a[i][j]); ++k)
-                tmp_mat[k][ell] = a[i][j][k];
-    // note: d = deg(a[i][j]) is -1 if a[i][j] == 0
-    // all non-touched entries already zero since tmp_mat was initialized as zero
-
-    // valA: column ell = i*n + j contains the evaluations of a[i][j]
-    mul(valA, vA, tmp_mat);
-
-    // evaluation of matrix b:
-    // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
-    // a[i][j] (padded with zeroes up to length dA+1 if necessary)
-    tmp_mat.SetDims(dB+1, n * p);
-    ell = 0;
-    for (long i = 0; i < n; ++i)
-        for (long j = 0; j < p; ++j, ++ell)
-        {
-            long d = deg(b[i][j]); // -1 if b[i][j] == 0
-            for (long k = 0; k <= d; ++k)
-                tmp_mat[k][ell] = b[i][j][k];
-            // make sure remaining entries are zero
-            //    those for k<=dB, k>dA are (if any),
-            //    those for d < k <= min(dA,dB) might not be
-            for (long k = d+1; k <= min_dAdB; ++k)
-                clear(tmp_mat[k][ell]);
-        }
-
-    // valB: column ell = i*n + j contains the evaluations of b[i][j]
-    mul(valB, vB, tmp_mat);
-
-    // perform the pointwise products
-    valAp.SetDims(m, n);
-    valBp.SetDims(n, p);
-    valC.SetDims(nb_points, m * p);
-    for (long i = 0; i < nb_points; ++i)
-    {
-        // a evaluated at point i
-        ell = 0;
-        for (long u = 0; u < m; ++u)
-            for (long v = 0; v < n; ++v, ++ell)
-                valAp[u][v] = valA[i][ell];
-
-        // b evaluated at point i
-        ell = 0;
-        for (long u = 0; u < n; ++u)
-            for (long v = 0; v < p; ++v, ++ell)
-                valBp[u][v] = valB[i][ell];
-
-        // a*b evaluated at point i
-        mul(valCp, valAp, valBp);
-
-        // copy this into valC: column ell = i*n + j contains the evaluations
-        // of the entry i,j of c = a*b
-        ell = 0;
-        for (long u = 0; u < m; ++u)
-            for (long v = 0; v < p; ++v, ++ell)
-                valC[i][ell] = valCp[u][v];
-    }
-
-    // interpolate to find the entries of c
-    mul(tmp_mat, iv, valC);
-
-    // copy to output (reorganize these entries into c)
-    c.SetDims(m, p);
-    ell = 0;
-    for (long u = 0; u < m; ++u)
-        for (long v = 0; v < p; ++v, ++ell)
-        {
-            c[u][v].SetLength(nb_points);
-            for (long i = 0; i < nb_points; ++i)
-                c[u][v][i] = tmp_mat[i][ell];
-            c[u][v].normalize();
-        }
-}
-
 void mul_special(Mat<zz_pX>& c, Mat<zz_pX>& cs, const Mat<zz_pX>& a, const Mat<zz_pX>& b)
 {
     long dA = deg(a);
@@ -404,7 +302,6 @@ void get_quos (Mat<zz_pX> &quos,
     reverse(quos, quos, 2 * m - 1);
     cout << "clean up: " << GetWallTime()-t << endl;
 }
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
