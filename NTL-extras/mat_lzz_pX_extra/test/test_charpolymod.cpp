@@ -211,38 +211,9 @@ int main(int argc, char *argv[])
         t_charpoly += t2-t1;
         t1 = GetWallTime();
 
-        // convert the sequence into a polynomial matrix
-        Mat<zz_pX> pmat;
-        conv(pmat, seq, 2*d);
-
-        //// Matrix fraction reconstruction: add identity below pmat
-        //pmat.SetDims(2*m, m);
-        //for (long i = 0; i < m; ++i)
-        //    set(pmat[i+m][i]);
-        // --> not needed if using matrix_pade
-
-        t2 = GetWallTime();
-        std::cout << "TIME ~~ convert sequence to polynomial matrix: " << (t2-t1) << std::endl;
-        t_charpoly += t2-t1;
-        t1 = GetWallTime();
-
-        // reconstruct fraction
-        //Mat<zz_pX> appbas;
-        //VecLong shift(2*m, 0);
-        //VecLong pivdeg = pmbasis(appbas, pmat, 2*d, shift);
-
-        //// retrieve balanced basis (leading principal mxm submatrix)
-        //Mat<zz_pX> basis;
-        //basis.SetDims(m, m);
-
-        //for (long j = 0; j < m; ++j)
-        //    for (long i = 0; i < m; ++i)
-        //        basis[j][i] = appbas[i][j];
-        //// note: we have transposed back to column-wise basis
-
-        // matrix Pade gives directly the denominator
         Mat<zz_pX> basis;
-        matrix_pade_generic(basis, pmat, 2*d);
+        //matrix_pade_generic(basis, pmat, 2*d);
+				matrix_recon_approximation(basis,seq);
 
         t2 = GetWallTime();
         std::cout << "TIME ~~ matrix fraction reconstruction: " << (t2-t1) << std::endl;

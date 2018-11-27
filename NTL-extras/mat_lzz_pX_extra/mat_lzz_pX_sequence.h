@@ -81,6 +81,12 @@ void get_sequence_naive (Vec<Coeffs> &res,
 void print(const Vec<Coeffs> &c);
 void print(const zz_pX &p);
 
+/*------------------------------------------------------------*/
+/* MATRIX RECONSTRUCTION                                      */
+/*------------------------------------------------------------*/
+
+void matrix_recon_approximation(Mat<zz_pX> &basis, const Vec<Mat<zz_p>> &seq);
+
 #endif /* ifndef MAT_LZZ_PX_SEQUENCE__H */
 
 // Local Variables:
