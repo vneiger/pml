@@ -2,6 +2,7 @@
 
 #include "lzz_pX_CRT.h"
 #include "structured_lzz_p.h"
+#include "mat_lzz_pX_extra.h"
 #include "lzz_pXY.h"
 
 NTL_CLIENT
@@ -425,15 +426,14 @@ long resultant(zz_pX& res, const zz_pXY& f, const zz_pXY& g)
 {
     long dyf = f.degY();
     long dyg = g.degY();
+    long n = max(dyf, dyg);
 
     long dxf = f.degX();
     long dxg = g.degX();
-    
-    long df = f.tdeg();
-    long dg = g.tdeg();
+    long d = max(dxf, dxg);
 
-    long xtra = 10;
-    long dr = df*dg + xtra;
+    long xtra = 2;
+    long dr = 2*n*d + xtra;
 
     Vec<zz_p> val_res, val_lcf, val_lcg;
     Vec<zz_pX> val_f, val_g;
@@ -511,8 +511,10 @@ long resultant_villard(zz_pX& res, const zz_pXY& f, const zz_pXY& g)
     long dg = g.degX();
     long d = max(df, dg);
 
+    long xtra = 2;
     long m = (long) cbrt(n);
-    long delta = 2 * d * ((n + m - 1)/m);
+    long delta = 2 * 2 * d * ((n + m - 1)/m) + xtra;
+
 
     Vec<zz_p> val_res, val_lcf, val_lcg;
     Vec<zz_pX> val_f, val_g;
@@ -529,8 +531,8 @@ long resultant_villard(zz_pX& res, const zz_pXY& f, const zz_pXY& g)
         nb++;
         OK = 1;
         a0 = random_zz_p();
-        b0 = random_zz_p();
-        evG = zz_pX_Multipoint_Geometric(a0, b0, max(df, dg)+1);
+        // TODO: add randomness by using b0 as well
+        evG = zz_pX_Multipoint_Geometric(a0, max(df, dg)+1);
         evG.evaluate(val_lcf, f.rep[nf], delta);
         evG.evaluate(val_lcg, g.rep[ng], delta);
         for (long i = 0; i < delta; i++)
@@ -578,8 +580,20 @@ long resultant_villard(zz_pX& res, const zz_pXY& f, const zz_pXY& g)
             return 0;
     }
 
-    // todo: finish!
+    Mat<zz_pX> basis;
 
+    // set up pts
+    zz_pX x;
+    SetCoeff(x, 1, 1);
+    Vec<zz_p> pts;
+    evG.evaluate(pts, x, delta); // just gets powers of r
+
+    if (0)
+        matrix_recon_interpolation(basis, pts, blocks);
+    else
+        matrix_recon_interpolation_geometric(basis, pts, a0, blocks);
+
+    determinant_via_linsolve(res, basis);
     return 1;
 }
 

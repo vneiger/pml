@@ -369,11 +369,11 @@ VecLong pmbasis_geometric(
     for (auto i : rdeg)
         if (i > max_rowdeg) max_rowdeg = i;
     max_rowdeg = max(order, max_rowdeg);
-    zz_pX_Multipoint_Geometric eval(r,max_rowdeg+1);
+    zz_pX_Multipoint_Geometric eval(r, max_rowdeg+1);
     
     // set up pts
     zz_pX x;
-    SetCoeff(x,1,1);
+    SetCoeff(x, 1, 1);
     Vec<zz_p> pts2;
     eval.evaluate(pts2, x); // just gets powers of r
     

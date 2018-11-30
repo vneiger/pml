@@ -272,6 +272,11 @@ void SetCoeff(zz_pXY& a, long i, const zz_pX& c);
 /*------------------------------------------------------------*/
 long resultant(zz_pX& res, const zz_pXY& f, const zz_pXY& g);
 
+/*------------------------------------------------------------*/
+/* computes the resultant of f and g, Villard's algorithm     */
+/* returns 0 iff the computation failed                       */
+/*------------------------------------------------------------*/
+long resultant_villard(zz_pX& res, const zz_pXY& f, const zz_pXY& g);
 
 #endif
 

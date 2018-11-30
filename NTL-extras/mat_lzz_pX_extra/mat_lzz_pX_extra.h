@@ -26,6 +26,9 @@ typedef std::vector<long> VecLong;
 #include "mat_lzz_pX_interpolant.h"  // TODO: still draft
 #include "mat_lzz_pX_kernel.h"  // TODO: still draft
 
+#include "mat_lzz_pX_sequence.h"  // TODO: still draft
+
+
 NTL_CLIENT
 
 // TODO experimental mul FFT functions

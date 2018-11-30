@@ -89,7 +89,13 @@ void matrix_recon_approximation(Mat<zz_pX> &basis, const Vec<Mat<zz_p>> &seq);
 
 void matrix_recon_interpolation(Mat<zz_pX> &basis,
                                 const Vec<zz_p> &pts,
-                                Vec<Mat<zz_p>> &seq);
+                                const Vec<Mat<zz_p>> &seq);
+
+void matrix_recon_interpolation_geometric(Mat<zz_pX> &basis,
+                                          const Vec<zz_p> &pts,
+                                          const zz_p& r,
+                                          const Vec<Mat<zz_p>> &seq);
+
 #endif /* ifndef MAT_LZZ_PX_SEQUENCE__H */
 
 // Local Variables:

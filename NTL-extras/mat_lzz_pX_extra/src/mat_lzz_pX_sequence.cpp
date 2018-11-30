@@ -8,6 +8,9 @@
 #include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_sequence.h"
 
+/*------------------------------------------------------------*/
+/* TODO: what is this?                                        */
+/*------------------------------------------------------------*/
 void MulMod_local(zz_pX& x, zz_pX& upper, const zz_pX& a, const zz_pXMultiplier& B, const zz_pXModulus& F)
 {
 
@@ -60,6 +63,10 @@ void MulMod_local(zz_pX& x, zz_pX& upper, const zz_pX& a, const zz_pXMultiplier&
 	FromfftRep(x, R1, 0, n-1);
 }
 
+
+/*------------------------------------------------------------*/
+/* TODO: what is this?                                        */
+/*------------------------------------------------------------*/
 void gen_pows (Vec<zz_pX> &pow, Vec<zz_pX>&upper,
 		const zz_pX &t,
 		const zz_pX &a,
@@ -103,6 +110,9 @@ void gen_pows (Vec<zz_pX> &pow, Vec<zz_pX>&upper,
 
 }
 
+/*------------------------------------------------------------*/
+/* TODO: what is this?                                        */
+/*------------------------------------------------------------*/
 void mul_special(Mat<zz_pX>& c, Mat<zz_pX>& cs, const Mat<zz_pX>& a, const Mat<zz_pX>& b)
 {
 	long dA = deg(a);
@@ -238,6 +248,9 @@ void mul_special(Mat<zz_pX>& c, Mat<zz_pX>& cs, const Mat<zz_pX>& a, const Mat<z
 		}
 }
 
+/*------------------------------------------------------------*/
+/* TODO: what is this?                                        */
+/*------------------------------------------------------------*/
 void get_quos (Mat<zz_pX> &quos,
 		const Vec<zz_pX> &alphas,
 		const Vec<zz_pX> &As,
@@ -304,7 +317,7 @@ void get_quos (Mat<zz_pX> &quos,
 }
 
 /*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
+/* TODO: what is this?                                        */
 /*------------------------------------------------------------*/
 void SetDims (Coeffs &res, const long r, const long c, const long d)
 {
@@ -318,7 +331,7 @@ void SetDims (Coeffs &res, const long r, const long c, const long d)
 }
 
 /*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
+/* TODO: what is this?                                        */
 /*------------------------------------------------------------*/
 void format (Vec<Mat<zz_p>> &res, const Vec<Coeffs> &coeffs, const long d, const long m)
 {
@@ -343,6 +356,9 @@ void format (Vec<Mat<zz_p>> &res, const Vec<Coeffs> &coeffs, const long d, const
 	}
 }
 
+/*------------------------------------------------------------*/
+/* TODO: what is this?                                        */
+/*------------------------------------------------------------*/
 void gen_sequence (Coeffs &res,
 		const zz_pX &t,
 		const zz_pX &a,
@@ -393,6 +409,9 @@ void gen_sequence (Coeffs &res,
 	cout << "-rest from row1: " << GetWallTime() - t1 << endl;
 }
 
+/*------------------------------------------------------------*/
+/* TODO: what is this?                                        */
+/*------------------------------------------------------------*/
 void gen_sequence (Vec<Mat<zz_p>> &mats, Vec<Coeffs> &res,
 		const zz_pX &a,
 		const zz_pX &g,
@@ -436,6 +455,9 @@ void gen_sequence (Vec<Mat<zz_p>> &mats, Vec<Coeffs> &res,
 	cout << "format: " << GetWallTime() - t << endl;
 }
 
+/*------------------------------------------------------------*/
+/* TODO: what is this?                                        */
+/*------------------------------------------------------------*/
 void gen_sequence_naive (Vec<Coeffs> &res,
 		const zz_pX &a,
 		const zz_pX &g,
@@ -466,6 +488,9 @@ void gen_sequence_naive (Vec<Coeffs> &res,
 	}
 }
 
+/*------------------------------------------------------------*/
+/* TODO: what is this?                                        */
+/*------------------------------------------------------------*/
 void matrix_recon_approximation(Mat<zz_pX> &basis,
 		const Vec<Mat<zz_p>> &seq)
 {
@@ -476,27 +501,83 @@ void matrix_recon_approximation(Mat<zz_pX> &basis,
 	matrix_pade_generic(basis,pmat,seq.length());
 }
 
-// NOTE: will mutate seq!!
+/*------------------------------------------------------------*/
+/* TODO: what is this?                                        */
+/*------------------------------------------------------------*/
 void matrix_recon_interpolation(Mat<zz_pX> &basis,
 		                            const Vec<zz_p> &pts,
-		                            Vec<Mat<zz_p>> &seq)
+		                            const Vec<Mat<zz_p>> &seq)
 {
+    long len = seq.length();
+    if (len == 0)
+        Error("empty sequence for matrix reconstruction");
+
 	long m = seq[0].NumRows();
-	VecLong shift(2*m,0);
+	VecLong shift(2*m, 0);
+
+    Vec<Mat<zz_p>> seq_id;
+    seq_id.SetLength(len);
 
 	// add identity at the bottom of each matrix in seq
-	for (auto &mat: seq)
+	for (long j = 0; j < len; j++)
 	{
-		mat.SetDims(2*m,m);
+        Mat<zz_p> mat = seq[j];
+		mat.SetDims(2*m, m);
 		for (long i = 0; i < m; i++)
-			mat[m+i][i] = zz_p(1);
+            for (long k = 0; k < m; k++)
+                mat[m+i][k] = 0;
+		for (long i = 0; i < m; i++)
+			mat[m+i][i] = 1;
+        seq_id[j] = mat;
 	}
 	
 	// call pmbasis
 	Mat<zz_pX> intbas;
-	pmbasis(intbas, seq, pts, shift);
+	pmbasis(intbas, seq_id, pts, shift);
 
-	basis.SetDims(m,m);
+	basis.SetDims(m, m);
+	for (long j = 0; j < m; j++)
+		for (long i = 0; i < m; i++)
+			basis[i][j] = intbas[i][j];
+}
+
+/*------------------------------------------------------------*/
+/* matrix reconstruction by geometric interpolants            */
+/* TODO: why do we need pts and r?                            */
+/*------------------------------------------------------------*/
+void matrix_recon_interpolation_geometric(Mat<zz_pX> &basis,
+                                          const Vec<zz_p> &pts,
+                                          const zz_p& r,
+                                          const Vec<Mat<zz_p>> &seq)
+{
+    long len = seq.length();
+    if (len == 0)
+        Error("empty sequence for matrix reconstruction");
+
+	long m = seq[0].NumRows();
+	VecLong shift(2*m, 0);
+
+    Vec<Mat<zz_p>> seq_id;
+    seq_id.SetLength(len);
+
+	// add identity at the bottom of each matrix in seq
+	for (long j = 0; j < len; j++)
+	{
+        Mat<zz_p> mat = seq[j];
+		mat.SetDims(2*m, m);
+		for (long i = 0; i < m; i++)
+            for (long k = 0; k < m; k++)
+                mat[m+i][k] = 0;
+		for (long i = 0; i < m; i++)
+			mat[m+i][i] = 1;
+        seq_id[j] = mat;
+	}
+	
+	// call pmbasis
+	Mat<zz_pX> intbas;
+    pmbasis_geometric(intbas, seq_id, pts, r, shift);
+
+	basis.SetDims(m, m);
 	for (long j = 0; j < m; j++)
 		for (long i = 0; i < m; i++)
 			basis[i][j] = intbas[i][j];
