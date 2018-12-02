@@ -55,7 +55,7 @@ void one_bench_multiply(long sz, long deg, Field field)
 
         t = GetWallTime();
         Mat<zz_pX> c;
-        multiply(c, a, b);
+        multiply_evaluate_FFT_matmul2(c, a, b);
         t_ntlx += GetWallTime()-t;
 
         ++nb_iter;

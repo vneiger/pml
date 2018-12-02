@@ -97,7 +97,7 @@ void check(long p, long sz, long sz2, long sz3, long deg)
         nb = 0;
         do
         {
-            multiply_evaluate_FFT_matmul(c, a, b);
+            multiply_evaluate_FFT_matmul1(c, a, b);
             nb++;
         }
         while ((get_time()-t_eval_direct) <= thresh);
