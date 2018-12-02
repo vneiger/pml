@@ -220,7 +220,7 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
 /* --> for each matrix (a,b,c), list of all evaluations is    */
 /* stored in a single array                                   */
 /*------------------------------------------------------------*/
-void multiply_evaluate_FFT_matmul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
     // dimensions
     const long s = a.NumRows();
@@ -360,7 +360,7 @@ void multiply_evaluate_FFT_matmul2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
             for (long k = 0; k < u; k++)
                 vb[i][k].LoopHole() = mat_valB[i*u+k][j];
 
-        vc = va * vb;
+        mul(vc, va, vb);
 
         for (long i = 0; i < s; ++i)
             for (long k = 0; k < u; ++k)
@@ -381,249 +381,67 @@ void multiply_evaluate_FFT_matmul2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
 /* c = a*b                                                    */
 /* assumes FFT prime and p large enough                       */
 /* output may alias input; c does not have to be zero matrix  */
+/* uses Mat<zz_p> matrix multiplication                       */
+/* --> for each matrix (a,b), evaluations are stored in an    */
+/* array of matrices: e.g., for a, the j-th entry of the      */
+/* array contains the matrix of a evaluated at the j-th point */
 /*------------------------------------------------------------*/
 void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
-#ifdef FFT_PROFILE
-    double tm;
-    tm = GetWallTime();
-#endif // FFT_PROFILE
-    zz_pContext context;
+    // dimensions
     long s = a.NumRows();
     long t = a.NumCols();
     long u = b.NumCols();
-
-    long dA = deg(a);
-    long dB = deg(b);
-
-    long idxk = NextPowerOfTwo(dA + dB + 1);
-    fftRep R(INIT_SIZE, idxk);
+    // points for FFT representation
+    long idxk = NextPowerOfTwo(deg(a) + deg(b) + 1);
     long n = 1 << idxk;
+    fftRep R(INIT_SIZE, idxk);
 
-
-    Vec<Mat<zz_p>> mat_valA, mat_valB;
-
-    mat_valA.SetLength(n);
+    // matrix of evaluations of a: mat_valA[j] contains
+    // the evaluation of a at the j-th point
+    Vec<Mat<zz_p>> mat_valA(INIT_SIZE, n);
     for (long j = 0; j < n; ++j)
         mat_valA[j].SetDims(s,t);
-    mat_valB.SetLength(n);
-    for (long j = 0; j < n; ++j)
-        mat_valB[j].SetDims(t,u);
-    
-    context.save(); // to give the zz_p context to each thread
 
-#ifdef FFT_PROFILE
-    tm = GetWallTime()-tm;
-    std::cout << "init:\t" << tm << std::endl;
-    tm = GetWallTime();
-#endif // FFT_PROFILE
-
-NTL_EXEC_RANGE(s,first,last)
-    context.restore(); // now all threads have the right zz_p context
-
-    fftRep Rt(INIT_SIZE, idxk);
-    for (long i = first; i < last; ++i)
-    {
+    for (long i = 0; i < s; ++i)
         for (long k = 0; k < t; ++k)
         {
-            TofftRep(Rt, a[i][k], idxk);
-            long *frept = & Rt.tbl[0][0];
+            TofftRep(R, a[i][k], idxk);
             for (long r = 0; r < n; ++r)
-                mat_valA[r][i][k] = frept[r];
+                mat_valA[r][i][k].LoopHole() = R.tbl[0][r];
         }
-    }
-    R = Rt;
-NTL_EXEC_RANGE_END
 
-#ifdef FFT_PROFILE
-    tm = GetWallTime()-tm;
-    std::cout << "toFFTa:\t" << tm << std::endl;
-    tm = GetWallTime();
-#endif // FFT_PROFILE
-
-NTL_EXEC_RANGE(t,first,last)
-    context.restore();
-
-    fftRep Rt = R;
-    for (long i = first; i < last; ++i)
-    {
-        for (long k = 0; k < u; ++k)
-        {
-            TofftRep(Rt, b[i][k], idxk);
-            long *frept = & Rt.tbl[0][0];
-            for (long r = 0; r < n; ++r)
-                mat_valB[r][i][k] = frept[r];
-        }
-    }
-NTL_EXEC_RANGE_END
-
-#ifdef FFT_PROFILE
-    tm = GetWallTime()-tm;
-    std::cout << "toFFTb:\t" << tm << std::endl;
-    tm = GetWallTime();
-#endif // FFT_PROFILE
-
-NTL_EXEC_RANGE(n,first,last)
-    context.restore();
-    for (long j = first; j < last; ++j)
-        mat_valA[j] = mat_valA[j] * mat_valB[j];
-NTL_EXEC_RANGE_END
-
-#ifdef FFT_PROFILE
-    tm = GetWallTime()-tm;
-    std::cout << "ptwise:\t" << tm << std::endl;
-    tm = GetWallTime();
-#endif // FFT_PROFILE
-
-    c.SetDims(s, u);
-
-NTL_EXEC_RANGE(s,first,last)
-    context.restore();
-    
-    fftRep Rt = R;
-    
-    for (long i = first; i < last; ++i)
-    {
-        for (long k = 0; k < u; ++k)
-        {
-            long *frept = & Rt.tbl[0][0];
-            for (long r = 0; r < n; ++r)
-                frept[r] = rep(mat_valA[r][i][k]);
-            FromfftRep(c[i][k], Rt, 0, n - 1);
-        }
-    }
-NTL_EXEC_RANGE_END
-#ifdef FFT_PROFILE
-    tm = GetWallTime()-tm;
-    std::cout << "frmFFT:\t" << tm << std::endl;
-#endif // FFT_PROFILE
-}
-
-/*------------------------------------------------------------*/
-/* c = a*b                                                    */
-/* assumes FFT prime and p large enough                       */
-/* output may alias input; c does not have to be zero matrix  */
-/*------------------------------------------------------------*/
-void multiply_evaluate_FFT3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-#ifdef FFT_PROFILE
-    double tm;
-    tm = GetWallTime();
-#endif // FFT_PROFILE
-    zz_pContext context;
-    long s = a.NumRows();
-    long t = a.NumCols();
-    long u = b.NumCols();
-
-    long dA = deg(a);
-    long dB = deg(b);
-
-    long idxk = NextPowerOfTwo(dA + dB + 1);
-    fftRep R(INIT_SIZE, idxk);
-    long n = 1 << idxk;
-
-
-    Vec<Mat<zz_p>> mat_valA, mat_valB;
-
-    mat_valA.SetLength(n);
-    for (long j = 0; j < n; ++j)
-        mat_valA[j].SetDims(s,t);
-    mat_valB.SetLength(n);
+    // matrix of evaluations of b: mat_valB[j] contains
+    // the evaluation of b at the j-th point
+    Vec<Mat<zz_p>> mat_valB(INIT_SIZE, n);
     for (long j = 0; j < n; ++j)
         mat_valB[j].SetDims(t,u);
-    
-    context.save(); // to give the zz_p context to each thread
-
-#ifdef FFT_PROFILE
-    tm = GetWallTime()-tm;
-    std::cout << "init:\t" << tm << std::endl;
-    tm = GetWallTime();
-#endif // FFT_PROFILE
-
-NTL_EXEC_RANGE(s,first,last)
-    context.restore(); // now all threads have the right zz_p context
-
-    fftRep Rt(INIT_SIZE, idxk);
-    for (long i = first; i < last; ++i)
-    {
-        for (long k = 0; k < t; ++k)
-        {
-            TofftRep(Rt, a[i][k], idxk);
-            long *frept = & Rt.tbl[0][0];
-            for (long r = 0; r < n; ++r)
-                mat_valA[r][i][k] = frept[r];
-        }
-    }
-    R = Rt;
-NTL_EXEC_RANGE_END
-
-#ifdef FFT_PROFILE
-    tm = GetWallTime()-tm;
-    std::cout << "toFFTa:\t" << tm << std::endl;
-    tm = GetWallTime();
-#endif // FFT_PROFILE
-
-NTL_EXEC_RANGE(t,first,last)
-    context.restore();
-
-    fftRep Rt = R;
-    for (long i = first; i < last; ++i)
-    {
+    for (long i = 0; i < t; ++i)
         for (long k = 0; k < u; ++k)
         {
-            TofftRep(Rt, b[i][k], idxk);
-            long *frept = & Rt.tbl[0][0];
+            TofftRep(R, b[i][k], idxk);
             for (long r = 0; r < n; ++r)
-                mat_valB[r][i][k] = frept[r];
+                mat_valB[r][i][k].LoopHole() = R.tbl[0][r];
         }
-    }
-NTL_EXEC_RANGE_END
 
-#ifdef FFT_PROFILE
-    tm = GetWallTime()-tm;
-    std::cout << "toFFTb:\t" << tm << std::endl;
-    tm = GetWallTime();
-#endif // FFT_PROFILE
+    // compute pointwise products and store in mat_valA
+    for (long j = 0; j < n; ++j)
+        mul(mat_valA[j], mat_valA[j], mat_valB[j]);
 
-NTL_EXEC_RANGE(n,first,last)
-    context.restore();
-    for (long j = first; j < last; ++j)
-        mat_valA[j] = mat_valA[j] * mat_valB[j];
-NTL_EXEC_RANGE_END
-
-#ifdef FFT_PROFILE
-    tm = GetWallTime()-tm;
-    std::cout << "ptwise:\t" << tm << std::endl;
-    tm = GetWallTime();
-#endif // FFT_PROFILE
-
+    // interpolate c from the values in mat_valA
     c.SetDims(s, u);
-
-NTL_EXEC_RANGE(s,first,last)
-    context.restore();
-    
-    fftRep Rt = R;
-    
-    for (long i = first; i < last; ++i)
-    {
+    for (long i = 0; i < s; ++i)
         for (long k = 0; k < u; ++k)
         {
-            long *frept = & Rt.tbl[0][0];
             for (long r = 0; r < n; ++r)
-                frept[r] = rep(mat_valA[r][i][k]);
-            FromfftRep(c[i][k], Rt, 0, n - 1);
+                R.tbl[0][r] = mat_valA[r][i][k]._zz_p__rep;
+            FromfftRep(c[i][k], R, 0, n - 1);
         }
-    }
-NTL_EXEC_RANGE_END
-#ifdef FFT_PROFILE
-    tm = GetWallTime()-tm;
-    std::cout << "frmFFT:\t" << tm << std::endl;
-#endif // FFT_PROFILE
 }
 
 
-
-// TODO: multi-threaded version of the above: currently not integrated, needs more work
+// TODO: multi-threaded version of FFT_matmul: currently not integrated, needs more work, and other versions should
+// be done as well
 //void multiply_evaluate_FFT_matmul_threads(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 //{
 //    zz_pContext context;
@@ -767,7 +585,7 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
     if ((s * t * u) < thresh)  // fine for close-to-square matrices // FIXME tune better?
         multiply_evaluate_FFT_direct(c, a, b);
     else
-        multiply_evaluate_FFT_matmul(c, a, b);
+        multiply_evaluate_FFT_matmul1(c, a, b);
 }
 
 // Local Variables:
