@@ -33,6 +33,7 @@ NTL_CLIENT
 
 // TODO experimental mul FFT functions
 void multiply_evaluate_FFT3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 // mul function with Vandermonde
 void mul(Mat<zz_pX>& c, const Mat<zz_pX>& a, const Mat<zz_pX>& b);
 

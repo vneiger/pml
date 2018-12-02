@@ -51,13 +51,13 @@ void one_bench_fft(long sz, long deg)
         t = GetWallTime()-t;
         t2 += t;
         ++nb2;
-        //Mat<zz_pX> test;
-        //multiply(test, a, b);
-        //if (test!=c)
-        //{
-        //    std::cout << "BIGISSUE" << std::endl;
-        //    return;
-        //}
+        Mat<zz_pX> test;
+        multiply(test, a, b);
+        if (test!=c)
+        {
+            std::cout << "BIGISSUE" << std::endl;
+            return;
+        }
     }
     t2 = t2/nb2;
 
