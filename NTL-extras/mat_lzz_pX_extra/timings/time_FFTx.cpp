@@ -11,25 +11,9 @@ NTL_CLIENT
 
 void one_bench_fft(long sz, long deg)
 {
-    double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0;
+    double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0;
 
-    long nb1=0, nb2=0, nb3=0, nb4=0, nb5=0;
-
-    while (t1<0.2)
-    {
-        double t;
-        Mat<zz_pX> a, b, c;
-
-        random(a, sz, sz, deg);
-        random(b, sz, sz, deg);
-
-        t = GetWallTime();
-        multiply_evaluate_FFT(c, a, b);
-        t = GetWallTime()-t;
-        t1 += t;
-        ++nb1;
-    }
-    t1 = t1/nb1;
+    long nb1=0, nb2=0, nb3=0, nb4=0, nb5=0, nb6=0;
 
     while (t2<0.2)
     {
@@ -72,16 +56,32 @@ void one_bench_fft(long sz, long deg)
         random(b, sz, sz, deg);
 
         t = GetWallTime();
-        multiply_evaluate_FFT(c, a, b);
+        multiply_evaluate_FFT_matmul(c, a, b);
         t = GetWallTime()-t;
         t4 += t;
         ++nb4;
     }
     t4 = t4/nb4;
 
+    while (t5<0.2)
+    {
+        double t;
+        Mat<zz_pX> a, b, c;
+
+        random(a, sz, sz, deg);
+        random(b, sz, sz, deg);
+
+        t = GetWallTime();
+        multiply_evaluate_FFT_direct(c, a, b);
+        t = GetWallTime()-t;
+        t5 += t;
+        ++nb5;
+    }
+    t5 = t5/nb5;
+
     if (deg<70)
     {
-        while (t5<0.2)
+        while (t6<0.2)
         {
             double t;
             Mat<zz_pX> a, b, c;
@@ -90,34 +90,33 @@ void one_bench_fft(long sz, long deg)
             random(b, sz, sz, deg);
 
             t = GetWallTime();
-            mul(c, a, b);
+            multiply_evaluate_dense(c, a, b);
             t = GetWallTime()-t;
-            t5 += t;
-            ++nb5;
-            Mat<zz_pX> c2;
-            multiply_naive(c2, a, b);
-            if (c2 != c)
-                std::cout << "WRONG" << std::endl;
+            t6 += t;
+            ++nb6;
         }
-        t5 = t5/nb5;
+        t6 = t6/nb6;
     }
     else
     {
-        nb5=1; // to avoid div by zero
-        t5=INFINITY; // to make sure this is not the best below
+        nb6=1; // to avoid div by zero
+        t6=INFINITY; // to make sure this is not the best below
     }
 
-    cout << sz << "\t" << deg << "\t" << t1 << "\t" << t2 << "\t" << t3 << "\t" << t4 << "\t" << t5 << "\t";
-    if (t1<t2 && t1<t3 && t1<t4 && t1<t5)
-        cout << 1 << "\t" << t1/t2 << "\t" << t1/t3 << "\t" << t1/t4 << "\t" << t1/t5 << endl;
-    else if (t2<t1 && t2<t3 && t2<t4 && t2<t5)
-        cout << 2 << "\t" << t2/t1 << "\t" << t2/t3 << "\t" << t2/t4 << "\t" << t2/t5 << endl;
-    else if (t3<t1 && t3<t2 && t3<t4 && t3<t5)
-        cout << 3 << "\t" << t3/t1 << "\t" << t3/t2 << "\t" << t3/t4 << "\t" << t3/t5 << endl;
-    else if (t4<t1 && t4<t2 && t4<t3 && t4<t5)
-        cout << 4 << "\t" << t4/t1 << "\t" << t4/t2 << "\t" << t4/t3 << "\t" << t4/t5 << endl;
-    else
-        cout << 5 << "\t" << t5/t1 << "\t" << t5/t2 << "\t" << t5/t3 << "\t" << t5/t4 << endl;
+    std::vector<double> times = {t2, t3, t4, t5, t6};
+
+    // timings
+    cout << sz << "\t" << deg << "\t";
+    for (size_t i = 0; i < times.size(); ++i)
+        cout << times[i] << "\t";
+
+    // ratios
+    auto min = std::min_element(times.begin(), times.end());
+    for (size_t i = 0; i < times.size(); ++i)
+        cout << times[i] / *min << "\t";
+
+    // winner
+    cout << (min - times.begin() + 1) << endl;
 }
 
 /*------------------------------------------------------------*/
@@ -173,7 +172,7 @@ void run_bench(long nbits)
         zz_p::UserFFTInit(1139410705724735489); // 60 bits
         cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
     }
-    std::cout << "size\tdegree\tfft1\tfft2\tfft3\tfft\tvdmd\twin\tspeedups" << std::endl;
+    std::cout << "size\tdegree\tfft1\tfft2\tfft3\tfftmm\tfftdir\tvdmd\tspeedups\t\t\t\t\twin" << std::endl;
     for (size_t i=0;i<szs.size();i++)
         one_bench_fft(szs[i],degs[i]);
     cout << endl;
@@ -223,7 +222,7 @@ void run_bench()
             case 2: cout << 42 << ")" << endl; break;
             case 3: cout << 60 << ")" << endl; break;
         }
-        std::cout << "size\tdegree\tfft1\tfft2\tfft3\tfft\tvdmd\twin\tspeedups" << std::endl;
+        std::cout << "size\tdegree\tfft1\tfft2\tfft3\tfftmm\tfftdir\tvdmd\tspeedups\t\t\t\t\twin" << std::endl;
 
         // NTLx initialize field
         zz_p::UserFFTInit(primes[p]);
@@ -291,12 +290,12 @@ int main(int argc, char ** argv)
         std::cout << "Bench polynomial matrix multiplication (FFT prime, 60 bits)" << std::endl;
         //zz_p::UserFFTInit(786433); // 20 bits
         //std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
-        std::cout << "size\tdegree\tfft1\tfft2\tfft3\tfft\tvdmd\twin\tspeedups" << std::endl;
+        std::cout << "size\tdegree\tfft1\tfft2\tfft3\tfftmm\tfftdir\tvdmd\tspeedups\t\t\t\t\twin" << std::endl;
         warmup();
         one_bench_fft(atoi(argv[1]),atoi(argv[2]));
     }
     else
-        throw std::invalid_argument("Usage: ./time_FFTx OR ./time_FFTx nbits OR ./time_FFTx nbits test");
+        throw std::invalid_argument("Usage: ./time_FFTx OR ./time_FFTx nbits OR ./time_FFTx sz deg");
 
     return 0;
 }
