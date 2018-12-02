@@ -16,52 +16,52 @@ void one_bench_fft(long sz, long deg)
     long nb0=0, nb1=0, nb2=0, nb3=0, nb4=0, nb5=0, nb6=0;
 
     // warmup
-    while (t0<0.2)
-    {
-        double t;
-        Mat<zz_pX> a, b, c;
+    //while (t0<0.2)
+    //{
+    //    double t;
+    //    Mat<zz_pX> a, b, c;
 
-        random(a, sz, sz, deg);
-        random(b, sz, sz, deg);
+    //    random(a, sz, sz, deg);
+    //    random(b, sz, sz, deg);
 
-        t = GetWallTime();
-        multiply(c, a, b);
-        t = GetWallTime()-t;
-        t0 += t;
-    }
+    //    t = GetWallTime();
+    //    multiply(c, a, b);
+    //    t = GetWallTime()-t;
+    //    t0 += t;
+    //}
 
-    t0 = 0.0;
-    while (t0<0.2)
-    {
-        double t;
-        Mat<zz_pX> a, b, c;
+    //t0 = 0.0;
+    //while (t0<0.2)
+    //{
+    //    double t;
+    //    Mat<zz_pX> a, b, c;
 
-        random(a, sz, sz, deg);
-        random(b, sz, sz, deg);
+    //    random(a, sz, sz, deg);
+    //    random(b, sz, sz, deg);
 
-        t = GetWallTime();
-        multiply(c, a, b);
-        t = GetWallTime()-t;
-        t0 += t;
-        ++nb0;
-    }
-    t0 = t0/nb0;
+    //    t = GetWallTime();
+    //    multiply(c, a, b);
+    //    t = GetWallTime()-t;
+    //    t0 += t;
+    //    ++nb0;
+    //}
+    //t0 = t0/nb0;
 
-    while (t1<0.2)
-    {
-        double t;
-        Mat<zz_pX> a, b, c;
+    //while (t1<0.2)
+    //{
+    //    double t;
+    //    Mat<zz_pX> a, b, c;
 
-        random(a, sz, sz, deg);
-        random(b, sz, sz, deg);
+    //    random(a, sz, sz, deg);
+    //    random(b, sz, sz, deg);
 
-        t = GetWallTime();
-        multiply_evaluate_FFT_matmul1(c, a, b);
-        t = GetWallTime()-t;
-        t1 += t;
-        ++nb1;
-    }
-    t1 = t1/nb1;
+    //    t = GetWallTime();
+    //    multiply_evaluate_FFT_matmul1(c, a, b);
+    //    t = GetWallTime()-t;
+    //    t1 += t;
+    //    ++nb1;
+    //}
+    //t1 = t1/nb1;
 
     while (t2<0.2)
     {
@@ -79,77 +79,77 @@ void one_bench_fft(long sz, long deg)
     }
     t2 = t2/nb2;
 
-    while (t3<0.2)
-    {
-        double t;
-        Mat<zz_pX> a, b, c;
+    //while (t3<0.2)
+    //{
+    //    double t;
+    //    Mat<zz_pX> a, b, c;
 
-        random(a, sz, sz, deg);
-        random(b, sz, sz, deg);
+    //    random(a, sz, sz, deg);
+    //    random(b, sz, sz, deg);
 
-        t = GetWallTime();
-        multiply_evaluate_FFT_matmul3(c, a, b);
-        t = GetWallTime()-t;
-        t3 += t;
-        ++nb3;
-    }
-    t3 = t3/nb3;
+    //    t = GetWallTime();
+    //    multiply_evaluate_FFT_matmul3(c, a, b);
+    //    t = GetWallTime()-t;
+    //    t3 += t;
+    //    ++nb3;
+    //}
+    //t3 = t3/nb3;
 
-    while (t4<0.2)
-    {
-        double t;
-        Mat<zz_pX> a, b, c;
+    //while (t4<0.2)
+    //{
+    //    double t;
+    //    Mat<zz_pX> a, b, c;
 
-        random(a, sz, sz, deg);
-        random(b, sz, sz, deg);
+    //    random(a, sz, sz, deg);
+    //    random(b, sz, sz, deg);
 
-        t = GetWallTime();
-        multiply_evaluate_FFT_direct(c, a, b);
-        t = GetWallTime()-t;
-        t4 += t;
-        ++nb4;
-    }
-    t4 = t4/nb4;
+    //    t = GetWallTime();
+    //    multiply_evaluate_FFT_direct(c, a, b);
+    //    t = GetWallTime()-t;
+    //    t4 += t;
+    //    ++nb4;
+    //}
+    //t4 = t4/nb4;
 
-    while (t6<0.2)
-    {
-        double t;
-        Mat<zz_pX> a, b, c;
+    //while (t6<0.2)
+    //{
+    //    double t;
+    //    Mat<zz_pX> a, b, c;
 
-        random(a, sz, sz, deg);
-        random(b, sz, sz, deg);
+    //    random(a, sz, sz, deg);
+    //    random(b, sz, sz, deg);
 
-        t = GetWallTime();
-        multiply_evaluate_FFT_direct_no_ll(c, a, b);
-        t = GetWallTime()-t;
-        t6 += t;
-        ++nb6;
-    }
-    t6 = t6/nb6;
+    //    t = GetWallTime();
+    //    multiply_evaluate_FFT_direct_no_ll(c, a, b);
+    //    t = GetWallTime()-t;
+    //    t6 += t;
+    //    ++nb6;
+    //}
+    //t6 = t6/nb6;
 
-    if (deg<70)
-    {
-        while (t5<0.2)
-        {
-            double t;
-            Mat<zz_pX> a, b, c;
+    //if (deg<70)
+    //{
+    //    while (t5<0.2)
+    //    {
+    //        double t;
+    //        Mat<zz_pX> a, b, c;
 
-            random(a, sz, sz, deg);
-            random(b, sz, sz, deg);
+    //        random(a, sz, sz, deg);
+    //        random(b, sz, sz, deg);
 
-            t = GetWallTime();
-            multiply_evaluate_dense(c, a, b);
-            t = GetWallTime()-t;
-            t5 += t;
-            ++nb5;
-        }
-        t5 = t5/nb5;
-    }
-    else
-    {
-        nb5=1; // to avoid div by zero
-        t5=INFINITY; // to make sure this is not the best below
-    }
+    //        t = GetWallTime();
+    //        multiply_evaluate_dense(c, a, b);
+    //        t = GetWallTime()-t;
+    //        t5 += t;
+    //        ++nb5;
+    //    }
+    //    t5 = t5/nb5;
+    //}
+    //else
+    //{
+    //    nb5=1; // to avoid div by zero
+    //    t5=INFINITY; // to make sure this is not the best below
+    //}
 
     //std::vector<double> times = {t1, t2, t3, t4, t5, t6};
     std::vector<double> times = {t0, t1, t2, t3, t4, t6, t5};
@@ -346,10 +346,10 @@ int main(int argc, char ** argv)
     if (argc==3)
     {
         SetNumThreads(1);
-        zz_p::UserFFTInit(1139410705724735489); // 60 bits
-        std::cout << "Bench polynomial matrix multiplication (FFT prime, 60 bits)" << std::endl;
-        //zz_p::UserFFTInit(786433); // 20 bits
-        //std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
+        //zz_p::UserFFTInit(1139410705724735489); // 60 bits
+        //std::cout << "Bench polynomial matrix multiplication (FFT prime, 60 bits)" << std::endl;
+        zz_p::UserFFTInit(786433); // 20 bits
+        std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
         std::cout << "size\tdegree\tmult.\tmatmul1\tmatmul2\tmatmul3\tdirect\tdirect2\tvdmd\tratios versus mult.\t\t\t\twin" << std::endl;
         warmup();
         one_bench_fft(atoi(argv[1]),atoi(argv[2]));
