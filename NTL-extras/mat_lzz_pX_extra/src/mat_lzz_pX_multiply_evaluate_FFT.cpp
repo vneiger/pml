@@ -24,7 +24,7 @@ static inline void mul(Vec<ll_type>& z, const fftRep& x, const fftRep& y)
 }
 
 /*------------------------------------------------------------*/
-/* pairwise product of two fftReps using long long's          */
+/* pairwise mul-add of two fftReps using long long's          */
 /*------------------------------------------------------------*/
 static inline void mul_add(Vec<ll_type>& z, const fftRep& x, const fftRep& y)
 {
@@ -36,7 +36,6 @@ static inline void mul_add(Vec<ll_type>& z, const fftRep& x, const fftRep& y)
 }
 
 #endif
-
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
@@ -170,18 +169,18 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
         }
     }
 #else
-    Vec<Vec<fftRep>> valb;
-    Vec<fftRep> vala;
-
+    // dimensions
     long m = a.NumRows();
     long n = a.NumCols();
     long p = b.NumCols();
 
-    long dA = deg(a);
-    long dB = deg(b);
-    long K = NextPowerOfTwo(dA + dB + 1);
+    // degrees
+    long d = deg(a) + deg(b);
+    long K = NextPowerOfTwo(d + 1);
 
-    valb.SetLength(p);
+    // evaluate matrix b
+    // valb[i][j] = evaluations of b[j][i]
+    Vec<Vec<fftRep>> valb(INIT_SIZE, p);
     for (long i = 0; i < p; i++)
     {
         valb[i].SetLength(n);
@@ -190,13 +189,16 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
     }
 
     c.SetDims(m, p);
-    vala.SetLength(n);
+    Vec<fftRep> vala(INIT_SIZE, n);
     fftRep tmp1 = fftRep(INIT_SIZE, K);
     fftRep tmp2 = fftRep(INIT_SIZE, K);
+    // compute each row of the product c = a*b
     for (long i = 0; i < m; i++)
     {
+        // vala[j] contains the evaluations of a[i][j]
         for (long j = 0; j < n; j++)
             TofftRep(vala[j], a[i][j], K);
+        // compute c[i][k] = vala * valb[:][j]
         for (long k = 0; k < p; k++)
         {
             fftRep * vb = valb[k].elts();
@@ -206,10 +208,69 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
                 mul(tmp2, vala[j], vb[j]);
                 add(tmp1, tmp1, tmp2);
             }
-            FromfftRep(c[i][k], tmp1, 0, dA + dB);
+            FromfftRep(c[i][k], tmp1, 0, d);
         }
     }
 #endif
+}
+
+/*------------------------------------------------------------*/
+/* c = a*b                                                    */
+/* output may alias input; c does not have to be zero matrix  */
+/* does not use Mat<zz_p> matrix multiplication               */
+/*------------------------------------------------------------*/
+void multiply_evaluate_FFT_direct_no_ll(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{
+    if (&c == &a || &c == &b)
+    {
+        Mat<zz_pX> c2;
+        multiply_evaluate_FFT_direct(c2, a, b);
+        c = c2;
+        return;
+    }
+
+    // dimensions
+    long m = a.NumRows();
+    long n = a.NumCols();
+    long p = b.NumCols();
+
+    // degrees
+    long d = deg(a) + deg(b);
+    long K = NextPowerOfTwo(d + 1);
+
+    // evaluate matrix b
+    // valb[i][j] = evaluations of b[j][i]
+    Vec<Vec<fftRep>> valb(INIT_SIZE, p);
+    for (long i = 0; i < p; i++)
+    {
+        valb[i].SetLength(n);
+        for (long j = 0; j < n; j++)
+            TofftRep(valb[i][j], b[j][i], K);
+    }
+
+    c.SetDims(m, p);
+    Vec<fftRep> vala(INIT_SIZE, n);
+    fftRep tmp1 = fftRep(INIT_SIZE, K);
+    fftRep tmp2 = fftRep(INIT_SIZE, K);
+    // compute each row of the product c = a*b
+    for (long i = 0; i < m; i++)
+    {
+        // vala[j] contains the evaluations of a[i][j]
+        for (long j = 0; j < n; j++)
+            TofftRep(vala[j], a[i][j], K);
+        // compute c[i][k] = vala * valb[:][j]
+        for (long k = 0; k < p; k++)
+        {
+            fftRep * vb = valb[k].elts();
+            mul(tmp1, vala[0], vb[0]);
+            for (long j = 1; j < n; j++)
+            {
+                mul(tmp2, vala[j], vb[j]);
+                add(tmp1, tmp1, tmp2);
+            }
+            FromfftRep(c[i][k], tmp1, 0, d);
+        }
+    }
 }
 
 /*------------------------------------------------------------*/
@@ -226,8 +287,10 @@ void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
     const long s = a.NumRows();
     const long t = a.NumCols();
     const long u = b.NumCols();
+    // degree of output
+    const long d = deg(a) + deg(b);
     // points for FFT representation
-    const long idxk = NextPowerOfTwo(deg(a) + deg(b) + 1);
+    const long idxk = NextPowerOfTwo(d + 1);
     const long n = 1 << idxk;
     fftRep R(INIT_SIZE, idxk);
 
@@ -291,7 +354,7 @@ void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
         for (long k = 0; k < u; ++k)
         {
             R.tbl[0].swap(mat_valC[i*u + k]);
-            FromfftRep(c[i][k], R, 0, n-1);
+            FromfftRep(c[i][k], R, 0, d);
         }
     }
 }
@@ -312,8 +375,10 @@ void multiply_evaluate_FFT_matmul2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
     long s = a.NumRows();
     long t = a.NumCols();
     long u = b.NumCols();
+    // degree of output
+    const long d = deg(a) + deg(b);
     // points for FFT representation
-    long idxk = NextPowerOfTwo(deg(a) + deg(b) + 1);
+    long idxk = NextPowerOfTwo(d + 1);
     long n = 1 << idxk;
     fftRep R(INIT_SIZE, idxk);
 
@@ -373,7 +438,7 @@ void multiply_evaluate_FFT_matmul2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
         for (long k = 0; k < u; ++k)
         {
             R.tbl[0].swap(mat_valC[i*u + k]);
-            FromfftRep(c[i][k], R, 0, n - 1);
+            FromfftRep(c[i][k], R, 0, d);
         }
 }
 
@@ -392,8 +457,10 @@ void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
     long s = a.NumRows();
     long t = a.NumCols();
     long u = b.NumCols();
+    // degree of output
+    const long d = deg(a) + deg(b);
     // points for FFT representation
-    long idxk = NextPowerOfTwo(deg(a) + deg(b) + 1);
+    long idxk = NextPowerOfTwo(d + 1);
     long n = 1 << idxk;
     fftRep R(INIT_SIZE, idxk);
 
@@ -435,7 +502,7 @@ void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
         {
             for (long r = 0; r < n; ++r)
                 R.tbl[0][r] = mat_valA[r][i][k]._zz_p__rep;
-            FromfftRep(c[i][k], R, 0, n - 1);
+            FromfftRep(c[i][k], R, 0, d);
         }
 }
 

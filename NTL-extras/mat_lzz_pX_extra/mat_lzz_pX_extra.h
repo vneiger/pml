@@ -31,6 +31,8 @@ typedef std::vector<long> VecLong;
 
 NTL_CLIENT
 
+void multiply_evaluate_FFT_direct_no_ll(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
 // TODO in the future, these functions will be moved to "linearization/compression" files
 /*------------------------------------------------------------*/
 /* horizontal join                                            */

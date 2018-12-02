@@ -43,6 +43,24 @@ void one_check(long sz, long deg)
             LogicError("FFT matmul mismatch");
         }
 
+        multiply_evaluate_FFT_matmul2(c2, a, b);
+        if (c1 != c2)
+        {
+            LogicError("FFT direct mismatch");
+        }
+
+        multiply_evaluate_FFT_matmul3(c2, a, b);
+        if (c1 != c2)
+        {
+            LogicError("FFT direct mismatch");
+        }
+
+        multiply_evaluate_FFT_direct2(c2, a, b);
+        if (c1 != c2)
+        {
+            LogicError("FFT direct mismatch");
+        }
+
         multiply_evaluate_FFT(c2, a, b);
         if (c1 != c2)
         {
