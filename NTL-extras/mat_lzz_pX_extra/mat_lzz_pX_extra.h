@@ -13,8 +13,6 @@
 #include "thresholds_newton_inv_trunc.h"
 #include "thresholds_solve_lift.h"
 
-typedef std::vector<long> VecLong;
-
 #include "mat_lzz_pX_utils.h"  // TODO: test
 #include "mat_lzz_pX_forms.h"  // TODO: test, time
 #include "mat_lzz_pX_arith.h"  // TODO: test, time

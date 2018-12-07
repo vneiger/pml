@@ -1,86 +1,150 @@
 #ifndef MAT_LZZ_PX_APPROXIMANT__H
 #define MAT_LZZ_PX_APPROXIMANT__H
 
-#include "mat_lzz_pX_extra.h"
+/** Minimal approximant bases.
+ *
+ * \file mat_lzz_pX_approximant.h
+ * \author Vincent Neiger
+ * \version 0.1
+ * \date 2018-12-07
+ *
+ */
 
-NTL_CLIENT
+/** \file mat_lzz_pX_approximant.h
+ * Definition (approximant basis).
+ * -------------------------------
+ * Consider
+ *   - an m x n matrix of univariate polynomials F,
+ *   - an approximation order d (list of n positive integers).
+ *
+ * Then an approximant basis for (F,d) is a matrix over the univariate
+ * polynomials whose rows form a basis for the following module:
+ * { p in K[X]^{1 x m}  |  the column j of p F is 0 modulo X^{d[j]} }.
+ * Note that such a matrix is square, m x m, and nonsingular.
+ */
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* MINIMAL APPROXIMANT BASES                                  */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
+/** \file mat_lzz_pX_approximant.h
+ * Definition (shifted minimal approximant basis).
+ * -----------------------------------------------
+ * Considering furthermore:
+ *   - a degree shift s (a list of m integers).
+ *
+ * Then an approximant basis for (F,d) is said to be <em>a shift-minimal</em>
+ * (resp. <em>a shift-ordered weak Popov</em>, resp. <em>the shift-Popov</em>)
+ * approximant basis if it is in shift-reduced form (resp. in shift-ordered
+ * weak Popov form, resp. in shift-Popov form). See mat_lzz_pX_forms.h
+ * for definitions of these forms.
+ */
 
-/*------------------------------------------------------------*/
-/* Definitions (shifted minimal approximant basis)            */
-/*------------------------------------------------------------*/
+/** \file mat_lzz_pX_approximant.h
+ * Conventions.
+ * ------------
+ * Apart from the general interfaces which offer the choice between left or
+ * right approximants, all other functions compute left approximant bases
+ * (approximants operate on the left of the matrix F; the basis elements are
+ * the rows of the matrix).
+ *
+ * Most functions below use the following parameters.
+ *
+ * \param[out] appbas the output approximant basis (cannot alias `pmat`)
+ * \param[in] pmat the input polynomial matrix (no restriction)
+ * \param[in] order the input order (list of strictly positive integers, length must be `pmat.NumCols()`)
+ * \param[in] shift the input shift (list of integers, length must be `pmat.NumRows()`)
+ *
+ * Note that the latter two restrictions on the lengths of the lists are
+ * assuming left approximants; for right approximants, they are swapped.
+ */
 
-// Approximant basis: consider
-//   * m x n matrix of univariate polynomials 'pmat',
-//   * approximation order 'order' (list of n positive integers),
-// then n approximant basis for (pmat,order) is a matrix over K[X] whose rows
-// form a basis for the K[X]-module
-// { p in K[X]^{1 x m}  |  the column j of p F is 0 modulo X^{order[j]} }
-//
-// VecLonged minimal approximant basis: consider furthermore
-//   * a degree shift 'shifts' (list of m integers)
-// then an approximant basis for (pmat,order) is said to be "a shift-minimal"
-// (resp. "a shift-ordered weak Popov", resp. "the shift-Popov") approximant
-// basis if it is in shift-reduced form (resp. in shift-ordered weak Popov
-// form, resp. in shift-Popov form)
-// Refer to mat_lzz_pX_extra.h for definitions of these forms.
+#include "mat_lzz_pX_arith.h"
+#include "mat_lzz_pX_forms.h"
+#include "mat_lzz_pX_multiply.h"
 
-/*------------------------------------------------------------*/
-/* Conventions                                                */
-/*------------------------------------------------------------*/
+NTL_CLIENT;
 
-// Most functions below use the following parameters:
-//   - Mat<zz_pX> appbas : the output matrix (size does not need to be initialized; cannot be pmat)
-//   - const Mat<zz_pX> & pmat : the input matrix (no constraint)
-//   - const VecLong & order : the input order (list of strictly positive integers, length must be pmat.NumCols())
-//   - const VecLong & shift : the input shift (list of integers, length must be pmat.NumRows())
+/** General user-friendly interface for approximant basis computation.
+ *
+ * Computes a `shift`-minimal approximant basis `appbas` for (`pmat`,`order`).
+ * If the user requires a specific shifted form (minimal, ordered weak Popov,
+ * Popov), the algorithm returns an approximant basis which has the required
+ * form (possibly a stronger one). Approximants can be considered either as
+ * left approximants (`row_wise` set to `true`) or as right approximants
+ * (`row_wise` set to `false`).
+ *
+ * If the user knows that the input matrix is sufficiently generic (for
+ * example, it was randomly generated, working over a large prime field), then
+ * it may be beneficial to set `generic` to `true`, which indicates that
+ * specific code for this case may be used. For the moment, specific code has
+ * been written only for matrices of dimensions n = 2m, with uniform shift and
+ * uniform order; this does speed up computations by a factor ranging from
+ * about 1x to about 2x (larger speed-up when the order is not very large).
+ * Setting the generic flag in other contexts will have no effect (falling back
+ * to the general algorithms).
+ *
+ * \todo With `generic` set to `true`, correctness is currently not guaranteed
+ * (Monte Carlo algorithm). The user may want to use is_approximant_basis to
+ * verify correctness.
+ *
+ * \param[out] appbas output approximant basis
+ * \param[in] pmat input polynomial matrix
+ * \param[in] order input order
+ * \param[in] shift input shift
+ * \param[in] form indicates the required form for the output basis (see #PolMatForm)
+ * \param[in] row_wise indicates whether to compute left approximants (working row-wise) or right approximants (working column-wise)
+ * \param[in] generic if `true`, specific code for generic instances may be used
+ * \todo The `row_wise` and `generic` flags are currently not supported.
+ */
+void approximant_basis(
+                       Mat<zz_pX> & appbas,
+                       const Mat<zz_pX> & pmat,
+                       const VecLong & order,
+                       const VecLong & shift = VecLong(),
+                       const PolMatForm form = ORD_WEAK_POPOV,
+                       const bool row_wise = true,
+                       const bool generic = false
+                      );
 
-
-
-/*------------------------------------------------------------*/
-/* general user-friendly interface                            */
-/*------------------------------------------------------------*/
-
-// TODO draft implementation
-VecLong approximant_basis(
-                         Mat<zz_pX> & appbas,
-                         const Mat<zz_pX> & pmat,
-                         const VecLong & order,
-                         const VecLong & shift = VecLong(),
-                         const PolMatForm form = ORD_WEAK_POPOV,
-                         const bool row_wise = true,
-                         const bool generic = false
-                        );
-
-inline VecLong approximant_basis(
-                                Mat<zz_pX> & appbas,
-                                const Mat<zz_pX> & pmat,
-                                const long order,
-                                const VecLong & shift = VecLong(),
-                                const PolMatForm form = ORD_WEAK_POPOV,
-                                const bool row_wise = true,
-                                const bool generic = false
-                               )
+/** General user-friendly interface for approximant basis computation.
+ *
+ * Same function as above, but taking a single positive integer for the
+ * parameter `order` instead of a list. This simply interprets this as
+ * specifying a list of integers all equal to `order` (with the right length),
+ * and then calls the function above.
+ * \todo `row_wise` false not handled
+ */
+inline void approximant_basis(
+                              Mat<zz_pX> & appbas,
+                              const Mat<zz_pX> & pmat,
+                              const long order,
+                              const VecLong & shift = VecLong(),
+                              const PolMatForm form = ORD_WEAK_POPOV,
+                              const bool row_wise = true,
+                              const bool generic = false
+                             )
 {
     VecLong orders(pmat.NumCols(),order);
     return approximant_basis(appbas,pmat,orders,shift,form,row_wise,generic);
 }
 
-
-/*------------------------------------------------------------*/
-/* Verifying that appbas is a shift-minimal approximant       */
-/* basis for input matrix 'pmat' and order 'order'            */
-/* 'form' gives the minimal requirement to check (matrix must */
-/* be at least in the form 'form')                            */
-/* 'randomized' says whether using a Monte Carlo or Las Vegas */
-/* verification algorithm is acceptable                       */
-/*------------------------------------------------------------*/
-
+/** Verifying if a matrix is a minimal approximant basis.
+ *
+ * This checks whether the matrix `appbas` is indeed a `shift`-minimal
+ * approximant basis for (`pmat`,`order`) for the required form `form`. One may
+ * consider left approximants (default, with `row_wise` set to `true`) or right
+ * approximants (with `row_wise` set to `false`).
+ *
+ * \param[in] appbas approximant basis
+ * \param[in] pmat polynomial matrix
+ * \param[in] order order
+ * \param[in] shift shift
+ * \param[in] form required form for `appbas` (see #PolMatForm)
+ * \param[in] row_wise indicates whether to compute left approximants (working row-wise) or right approximants (working column-wise)
+ * \param[in] randomized if `true`, the algorithm may use a Monte Carlo or Las Vegas verification algorithm
+ *
+ * \return boolean, result of the verification
+ *
+ * \todo add row_wise
+ * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
+ */
 bool is_approximant_basis(
                           const Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
@@ -90,6 +154,13 @@ bool is_approximant_basis(
                           const bool randomized = false
                          );
 
+/** Verifying if a matrix is a minimal approximant basis.
+ *
+ * Same function as above, but taking a single positive integer for the
+ * parameter `order` instead of a list. This simply interprets this as
+ * specifying a list of integers all equal to `order` (with the right length),
+ * and then calls the function above.
+ */
 inline bool is_approximant_basis(
                           const Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,

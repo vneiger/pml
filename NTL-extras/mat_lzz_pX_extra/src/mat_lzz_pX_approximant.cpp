@@ -24,7 +24,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 // TODO check shift and order length, pmat dims (positive), ...
-VecLong approximant_basis(
+void approximant_basis(
                          Mat<zz_pX> & appbas,
                          const Mat<zz_pX> & pmat,
                          const VecLong & order,
@@ -43,7 +43,6 @@ VecLong approximant_basis(
             pivdeg = appbas_iterative(appbas,pmat,order,shift);
         else if (form==PolMatForm::POPOV)
             pivdeg = popov_appbas_iterative(appbas,pmat,order,shift);
-        return pivdeg;
     }
     else
         throw std::logic_error("==approximant_basis== Not implemented yet");

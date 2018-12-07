@@ -1,13 +1,31 @@
 #ifndef MAT_LZZ_PX_FORMS__H
 #define MAT_LZZ_PX_FORMS__H
 
+/** Shifted reduced/normal forms of polynomial matrices.
+ *
+ * \file mat_lzz_pX_forms.h
+ * \author Seung Gyu Hyun, Vincent Neiger
+ * \version 0.1
+ * \date 2018-12-07
+ *
+ * Basic functions to deal with shifted reduced and shifted
+ * normal forms of polynomials matrices: test if a matrix is
+ * in some given form, compute shifted row/column degrees and
+ * shifted pivot degrees, compute shifted leading matrix.
+ *
+ * \todo definitions
+ *
+ */
+
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
 #include <vector>
 #include <algorithm>
 
-NTL_CLIENT
+/** Vectors of long's, for representing shifts and list of degrees. */
+typedef std::vector<long> VecLong;
 
+NTL_CLIENT;
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -16,17 +34,17 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* Shifted reduced forms of polynomials matrices. Recall that */
-/* Popov => ordered weak Popov => weak Popov => Reduced       */
-/*------------------------------------------------------------*/
-
+/** Shifted reduced forms of polynomial matrices.
+ *
+ * Recall that Popov => ordered weak Popov => weak Popov => Reduced.
+ *  
+ */
 enum PolMatForm {
-    NONE = 0,
-    REDUCED = 1, 
-    WEAK_POPOV = 2,
-    ORD_WEAK_POPOV = 3,
-    POPOV = 4,
+    NONE = 0, /**< Arbitrary matrix, no specific form */
+    REDUCED = 1, /**< Matrix in (shifted) reduced form */
+    WEAK_POPOV = 2, /**< Matrix in (shifted) weak Popov form */
+    ORD_WEAK_POPOV = 3, /**< Matrix in (shifted) ordered weak Popov form */
+    POPOV = 4, /**< Matrix in (shifted) Popov form */
 };
 
 
