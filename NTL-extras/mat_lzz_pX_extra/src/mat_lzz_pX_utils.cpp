@@ -463,11 +463,12 @@ void random_mat_zz_pX_cdeg(Mat<zz_pX>& pmat, long m, long n, VecLong cdeg)
 /*------------------------------------------------------------*/
 /* convert from Mat<zz_p>                                     */
 /*------------------------------------------------------------*/
-void conv(Mat<zz_pX>& mat, const Mat<zz_p>& coeff)
+void conv(Mat<zz_pX>& pmat, const Mat<zz_p>& mat)
 {
-    clear(mat);
-    mat.SetDims(coeff.NumRows(), coeff.NumCols());
-    SetCoeff(mat, 0, coeff);
+    pmat.SetDims(mat.NumRows(), mat.NumCols());
+    for (long i = 0; i < mat.NumRows(); ++i)
+        for (long j = 0; j < mat.NumCols(); ++j)
+            conv(pmat[i][j], mat[i][j]);
 }
 
 
@@ -476,114 +477,100 @@ void conv(Mat<zz_pX>& mat, const Mat<zz_p>& coeff)
 /* (degree deduced from input)                                */
 /*------------------------------------------------------------*/
 void conv(
-          Vec<Mat<zz_p>> & coeffs,
-          const Mat<zz_pX> & mat
+          Vec<Mat<zz_p>> & matp,
+          const Mat<zz_pX> & pmat
          )
 {
-    long d = deg(mat);
-    coeffs.SetLength(d + 1);
-    long r = mat.NumRows();
-    long s = mat.NumCols();
-    for (long i = 0; i <= d; ++i)
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
+    const long d = deg(pmat);
+    matp.SetLength(d + 1);
+    // if d==-1, matp is the length-0 vector and the following loop does
+    // nothing
+    for (long k = 0; k <= d; ++k)
     {
-        coeffs[i].SetDims(r, s);
-        for (long a = 0; a < r; ++a)
-        {
-            // TODO does this actually help the compiler, or is it smart enough to
-            // remain efficient if we use more readable code?
-            zz_p * entries = coeffs[i][a].elts(); 
-            const zz_pX * entries_mat = mat[a].elts();
-            for (long b = 0; b < s; ++b)
-                entries[b] = coeff(entries_mat[b], i);
-        }
+        matp[k].SetDims(m, n);
+        for (long i = 0; i < m; ++i)
+            for (long j = 0; j < n; ++j)
+                matp[k][i][j] = coeff(pmat[i][j], k);
     }
+    // Note: may be improved when degrees in pmat are unbalanced (e.g. if only
+    // few entries reach degree d)
 }
 
 void conv(
-          Mat<zz_pX> & mat,
-          const Vec<Mat<zz_p>> & coeffs
+          Mat<zz_pX> & pmat,
+          const Vec<Mat<zz_p>> & matp
          )
 {
-    long len = coeffs.length();
+    const long len = matp.length();
     if (len == 0)
     {
-        // TODO this is a choice --> indicate it in comments
-        // (zero-length sequence could be zero matrix)
-        mat.SetDims(0, 0);
+        clear(pmat); // keeping the same dimensions
         return;
     }
-    long r = coeffs[0].NumRows();
-    long s = coeffs[0].NumCols();
-    mat.SetDims(r, s);
 
-    for (long a = 0; a < r; ++a)
-    {
-        for (long b = 0; b < s; ++b)
+    const long m = matp[0].NumRows();
+    const long n = matp[0].NumCols();
+    pmat.SetDims(m, n);
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < n; ++j)
         {
-            zz_pX & entry = mat[a][b];
-            for (long i = 0; i < len; ++i)
-            {
-                SetCoeff(entry, i, coeffs[i][a][b]);
-            }
+            pmat[i][j].SetLength(len);
+            for (long k = 0; k < len; ++k)
+                pmat[i][j][k] = matp[k][i][j];
+            pmat[i][j].normalize();
         }
-    }
 }
 
 /*------------------------------------------------------------*/
 /* convert to / from Vec<Mat<zz_p>>                           */
 /* (user provided truncation order)                           */
-/* coeffs will have length order independently of deg(mat)    */
+/* matp will have length order independently of deg(mat)      */
 /*------------------------------------------------------------*/
 void conv(
-          Vec<Mat<zz_p>>& coeffs,
-          const Mat<zz_pX>& mat,
+          Vec<Mat<zz_p>>& matp,
+          const Mat<zz_pX>& pmat,
           const long order
          )
 {
-    coeffs.SetLength(order);
-    long r = mat.NumRows();
-    long s = mat.NumCols();
-    for (long i = 0; i < order; ++i)
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
+    matp.SetLength(order);
+    for (long k = 0; k < order; ++k)
     {
-        coeffs[i].SetDims(r, s);
-        for (long a = 0; a < r; ++a)
-        {
-            zz_p * entries = coeffs[i][a].elts();
-            const zz_pX * entries_mat = mat[a].elts();
-            for (long b = 0; b < s; ++b)
-                entries[b] = coeff(entries_mat[b], i);
-        }
+        matp[k].SetDims(m, n);
+        for (long i = 0; i < m; ++i)
+            for (long j = 0; j < n; ++j)
+                matp[k][i][j] = coeff(pmat[i][j], k);
     }
 }
 
 void conv(
-          Mat<zz_pX> & mat,
-          const Vec<Mat<zz_p>> & coeffs,
+          Mat<zz_pX> & pmat,
+          const Vec<Mat<zz_p>> & matp,
           const long order
          )
 {
-    long len = std::min(order,coeffs.length());
+    const long len = std::min(order,matp.length());
     if (len == 0)
     {
-        mat.SetDims(0, 0);
+        clear(pmat); // keeping the same dimensions
         return;
     }
-    long r = coeffs[0].NumRows();
-    long s = coeffs[0].NumCols();
-    mat.SetDims(r, s);
 
-    for (long a = 0; a < r; ++a)
-    {
-        for (long b = 0; b < s; ++b)
+    const long m = matp[0].NumRows();
+    const long n = matp[0].NumCols();
+    pmat.SetDims(m, n);
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < n; ++j)
         {
-            zz_pX & entry = mat[a][b];
-            for (long i = 0; i < len; ++i)
-                SetCoeff(entry, i, coeffs[i][a][b]);
+            pmat[i][j].SetLength(len);
+            for (long k = 0; k < len; ++k)
+                pmat[i][j][k] = matp[k][i][j];
+            pmat[i][j].normalize();
         }
-    }
 }
-
-
 
 
 // Local Variables:

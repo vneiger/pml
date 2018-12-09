@@ -19,6 +19,12 @@ typedef std::vector<long> VecLong;
 
 NTL_CLIENT
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* ZERO MATRIX AND IDENTITY MATRIX                            */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
 /** @name Zero matrix and identity matrix.
  *
  *  Functions to deal with the zero matrix (clear, test if zero)
@@ -61,10 +67,7 @@ long IsIdent(const Mat<zz_pX> & pmat);
  */
 long IsIdent(const Mat<zz_pX> & pmat, long dim);
 
-//@}   // group: Zero matrix and identity matrix
-
-
-
+//@} // doxygen group: Zero matrix and identity matrix
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -72,11 +75,21 @@ long IsIdent(const Mat<zz_pX> & pmat, long dim);
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* maximum degree of the entries of pmat                      */
-/*------------------------------------------------------------*/
+/** @name Matrix degree
+ *
+ *  The degree of a polynomial matrix is the maximum of the degrees of all its
+ *  entries; by convention, the zero matrix has degree -1 (thus, except for the
+ *  zero matrix, the degree of a polynomial matrix is always nonnegative).
+ */
+//@{
+
+/** Compute and return the degree of a polynomial vector `pvec` */
+long deg(const Vec<zz_pX> & pvec);
+
+/** Compute and return the degree of a polynomial matrix `pmat` */
 long deg(const Mat<zz_pX> & pmat);
-long deg(const Vec<zz_pX> & pvec); // TODO in its own file
+
+//@} // doxygen group: Matrix degree
 
 
 /*------------------------------------------------------------*/
@@ -85,24 +98,25 @@ long deg(const Vec<zz_pX> & pvec); // TODO in its own file
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* sets x = ith coefficient of a                              */
-/*------------------------------------------------------------*/
-void GetCoeff(Mat<zz_p>& x, const Mat<zz_pX>& a, long i);
+/** @name Setting and getting coefficients
+ *
+ *  Seeing a polynomial matrix in `Mat<zz_pX>` as a univariate polynomial with
+ *  matrix coefficients in `Mat<zz_p>`, these functions allow one to get or set
+ *  one of these coefficients, for a given polynomial matrix.
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* returns ith coefficient matrix of a                        */
-/*------------------------------------------------------------*/
-inline Mat<zz_p> coeff(const Mat<zz_pX>& a, long i)
-{ Mat<zz_p> x; GetCoeff(x, a, i); return x; }
+/** Sets `coeff` to be the coefficient of `pmat` of degree `i` */
+void GetCoeff(Mat<zz_p> & coeff, const Mat<zz_pX> & pmat, long i);
 
-/*------------------------------------------------------------*/
-/* sets ith coefficient of x to a                             */
-/*------------------------------------------------------------*/
-void SetCoeff(Mat<zz_pX>& x, long i, const Mat<zz_p> &a);
+/** Builds and returns the coefficient of `pmat` of degree `i` */
+inline Mat<zz_p> coeff(const Mat<zz_pX> & pmat, long i)
+{ Mat<zz_p> coeff; GetCoeff(coeff, pmat, i); return coeff; }
 
+/** Sets the coefficient of `pmat` of degree `i` to be `coeff` */
+void SetCoeff(Mat<zz_pX> & pmat, long i, const Mat<zz_p> & coeff);
 
-
+//@} // doxygen group: Setting and getting coefficients
 
 
 /*------------------------------------------------------------*/
@@ -114,7 +128,7 @@ void SetCoeff(Mat<zz_pX>& x, long i, const Mat<zz_p> &a);
 /*------------------------------------------------------------*/
 /* Transpose                                                  */
 /*------------------------------------------------------------*/
-void transpose(Mat<zz_pX>& x, const Mat<zz_pX>& a);
+void transpose(Mat<zz_pX> & x, const Mat<zz_pX> & a);
 
 inline Mat<zz_pX> transpose(const Mat<zz_pX> & a)
 { Mat<zz_pX> x; transpose(x, a); return x; }
@@ -125,23 +139,23 @@ inline Mat<zz_pX> transpose(const Mat<zz_pX> & a)
 /*------------------------------------------------------------*/
 
 // vector versions
-void trunc(Vec<zz_pX>& x, const Vec<zz_pX>& a, long n);
-inline Vec<zz_pX> trunc(const Vec<zz_pX>& a, long n)
+void trunc(Vec<zz_pX> & x, const Vec<zz_pX> & a, long n);
+inline Vec<zz_pX> trunc(const Vec<zz_pX> & a, long n)
 { Vec<zz_pX> x; trunc(x, a, n); return x; }
 
 // full matrix versions
-void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
-inline Mat<zz_pX> trunc(const Mat<zz_pX>& a, long n)
+void trunc(Mat<zz_pX> & x, const Mat<zz_pX> & a, long n);
+inline Mat<zz_pX> trunc(const Mat<zz_pX> & a, long n)
 { Mat<zz_pX> x; trunc(x, a, n); return x; }
 
 // row versions
-void truncRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, long r, long n);
-inline Mat<zz_pX> truncRow(const Mat<zz_pX>& a, long r, long n)
+void truncRow(Mat<zz_pX> & x, const Mat<zz_pX> & a, long r, long n);
+inline Mat<zz_pX> truncRow(const Mat<zz_pX> & a, long r, long n)
 { Mat<zz_pX> x; truncRow(x, a, r, n); return x; }
 
 // col versions
-void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c, long n);
-inline Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n)
+void truncCol(Mat<zz_pX> & x, const Mat<zz_pX> & a, long c, long n);
+inline Mat<zz_pX> truncCol(const Mat<zz_pX> & a, long c, long n)
 { Mat<zz_pX> x; truncCol(x, a, c, n); return x; }
 
 /* TODO: different truncation orders on columns/rows          */
@@ -158,55 +172,55 @@ inline Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n)
 /* shiftAdd, shiftSub                                         */
 
 // left shift, vector
-void LeftShift(Vec<zz_pX>& x, const Vec<zz_pX>& a, long n);
-inline Vec<zz_pX> LeftShift(const Vec<zz_pX>& a, long n)
+void LeftShift(Vec<zz_pX> & x, const Vec<zz_pX> & a, long n);
+inline Vec<zz_pX> LeftShift(const Vec<zz_pX> & a, long n)
 { Vec<zz_pX> x; LeftShift(x, a, n); return x; }
 
 // right shift, vector
-void RightShift(Vec<zz_pX>& x, const Vec<zz_pX>& a, long n);
-inline Vec<zz_pX> RightShift(const Vec<zz_pX>& a, long n)
+void RightShift(Vec<zz_pX> & x, const Vec<zz_pX> & a, long n);
+inline Vec<zz_pX> RightShift(const Vec<zz_pX> & a, long n)
 { Vec<zz_pX> x; RightShift(x, a, n); return x; }
 
 
 // left shift, full matrix 
-void LeftShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
-inline Mat<zz_pX> LeftShift(const Mat<zz_pX>& a, long n)
+void LeftShift(Mat<zz_pX> & x, const Mat<zz_pX> & a, long n);
+inline Mat<zz_pX> LeftShift(const Mat<zz_pX> & a, long n)
 { Mat<zz_pX> x; LeftShift(x, a, n); return x; }
 
 // right shift, full matrix 
-void RightShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
-inline Mat<zz_pX> RightShift(const Mat<zz_pX>& a, long n)
+void RightShift(Mat<zz_pX> & x, const Mat<zz_pX> & a, long n);
+inline Mat<zz_pX> RightShift(const Mat<zz_pX> & a, long n)
 { Mat<zz_pX> x; RightShift(x, a, n); return x; }
 
 // left shift, single row
-void LeftShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n);
-inline Mat<zz_pX> LeftShiftRow(const Mat<zz_pX>& a, const long r, long n)
+void LeftShiftRow(Mat<zz_pX> & x, const Mat<zz_pX> & a, const long r, long n);
+inline Mat<zz_pX> LeftShiftRow(const Mat<zz_pX> & a, const long r, long n)
 { Mat<zz_pX> x; LeftShiftRow(x, a, r, n); return x; }
 
 // right shifts, single row
-void RightShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n);
-inline Mat<zz_pX> RightShiftRow(const Mat<zz_pX>& a, const long r, long n)
+void RightShiftRow(Mat<zz_pX> & x, const Mat<zz_pX> & a, const long r, long n);
+inline Mat<zz_pX> RightShiftRow(const Mat<zz_pX> & a, const long r, long n)
 { Mat<zz_pX> x; RightShiftRow(x, a, r, n); return x; }
 
 // left shift, single column
-void LeftShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
-inline Mat<zz_pX> LeftShiftCol(const Mat<zz_pX>& a, const long c, long n)
+void LeftShiftCol(Mat<zz_pX> & x, const Mat<zz_pX> & a, const long c, long n);
+inline Mat<zz_pX> LeftShiftCol(const Mat<zz_pX> & a, const long c, long n)
 { Mat<zz_pX> x; LeftShiftCol(x, a, c, n); return x; }
 
 // right shifts, single column
-void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
-inline Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n)
+void RightShiftCol(Mat<zz_pX> & x, const Mat<zz_pX> & a, const long c, long n);
+inline Mat<zz_pX> RightShiftCol(const Mat<zz_pX> & a, const long c, long n)
 { Mat<zz_pX> x; RightShiftCol(x, a, c, n); return x; }
 
 // operators for full matrix shift
-inline Mat<zz_pX> operator<<(const Mat<zz_pX> &a, long n)
+inline Mat<zz_pX> operator<<(const Mat<zz_pX> & a, long n)
 { Mat<zz_pX> x; LeftShift(x, a, n); return x; }
-inline Mat<zz_pX> operator>>(const Mat<zz_pX> &a, long n)
+inline Mat<zz_pX> operator>>(const Mat<zz_pX> & a, long n)
 { Mat<zz_pX> x; RightShift(x, a, n); return x; }
 
-inline Mat<zz_pX>& operator<<=(Mat<zz_pX>& x, long n)
+inline Mat<zz_pX> & operator<<=(Mat<zz_pX> & x, long n)
 { LeftShift(x, x, n); return x; }
-inline Mat<zz_pX>& operator>>=(Mat<zz_pX>& x, long n)
+inline Mat<zz_pX> & operator>>=(Mat<zz_pX> & x, long n)
 { RightShift(x, x, n); return x; }
 
 
@@ -214,8 +228,8 @@ inline Mat<zz_pX>& operator>>=(Mat<zz_pX>& x, long n)
 /* reverse the order of the entries in a vector               */
 /* x = a[n - 1 -i], i=0..n-1, with n=length(a)                */
 /*------------------------------------------------------------*/
-void reverse_vector(Vec<zz_pX>& x, const Vec<zz_pX>& a);
-inline Vec<zz_pX> reverse_vector(const Vec<zz_pX>& a)
+void reverse_vector(Vec<zz_pX> & x, const Vec<zz_pX> & a);
+inline Vec<zz_pX> reverse_vector(const Vec<zz_pX> & a)
 { Vec<zz_pX> x; reverse_vector(x, a); return x; }
 
 /*------------------------------------------------------------*/
@@ -223,16 +237,16 @@ inline Vec<zz_pX> reverse_vector(const Vec<zz_pX>& a)
 /* x = reverse of a[0]..a[hi] (hi >= -1);                     */
 /* user provided 'hi'                                         */
 /*------------------------------------------------------------*/
-void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a, long hi);
+void reverse(Mat<zz_pX> & x, const Mat<zz_pX> & a, long hi);
 
-inline Mat<zz_pX> reverse(const Mat<zz_pX>& a, long hi)
+inline Mat<zz_pX> reverse(const Mat<zz_pX> & a, long hi)
 { Mat<zz_pX> x; reverse(x, a, hi); return x; }
 
 /* TODO versions with different degree on different cols/rows */
 void reverse(
-             Mat<zz_pX> &x, 
-             const Mat<zz_pX> &a, 
-             const VecLong &hi,
+             Mat<zz_pX> & x, 
+             const Mat<zz_pX> & a, 
+             const VecLong & hi,
              const bool row_wise = true
             );
 
@@ -241,10 +255,10 @@ void reverse(
 /* x = reverse of a[0]..a[deg(a)]                             */
 /*------------------------------------------------------------*/
 
-inline void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a)
+inline void reverse(Mat<zz_pX> & x, const Mat<zz_pX> & a)
 { reverse(x, a, deg(a)); }
 
-inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
+inline Mat<zz_pX> reverse(const Mat<zz_pX> & a)
 { Mat<zz_pX> x; reverse(x, a, deg(a)); return x; }
 
 
@@ -310,45 +324,104 @@ void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, VecLong cdeg);
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* convert from Mat<zz_p>                                     */
-/*------------------------------------------------------------*/
-void conv(Mat<zz_pX>& mat, const Mat<zz_p>& coeff);
+/** @name Conversion from constant matrix.
+ */
+//@{
 
-inline Mat<zz_pX> conv(const Mat<zz_p>& coeff)
+/** Conversion from a constant matrix `mat` into a polynomial matrix `pmat`
+ * (which is constant, equal to `mat`).
+ */
+void conv(Mat<zz_pX> & pmat, const Mat<zz_p> & mat);
+
+/** Forms a polynomial matrix equal to the constant matrix `mat`, and returns
+ * it.
+ */
+inline Mat<zz_pX> conv(const Mat<zz_p> & coeff)
 { Mat<zz_pX> mat; conv(mat, coeff); return mat; }
 
-/*------------------------------------------------------------*/
-/* convert to / from Vec<Mat<zz_p>>                           */
-/* (degree deduced from input)                                */
-/*------------------------------------------------------------*/
-void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat);
+//@} // doxygen group: Conversion from constant matrix
 
-inline Vec<Mat<zz_p>> conv(const Mat<zz_pX>& mat)
-{ Vec<Mat<zz_p>> coeffs; conv(coeffs, mat); return coeffs; }
 
-void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs);
 
-inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs)
-{ Mat<zz_pX> mat; conv(mat, coeffs); return mat; }
+/** @name Conversion to/from Vec<Mat<zz_p>>
+ *
+ *  Two main representations are used for polynomial matrices:
+ *     - a polynomial matrix stored as a matrix with polynomial entries, that
+ *     is, of type `Mat<zz_pX>` (currently the default representation)
+ *     - a polynomial matrix stored as a polynomial with matrix coefficients,
+ *     that is, of type `Vec<Mat<zz_p>>`
+ *
+ *  In the latter representation, the vector has length at least `deg(mat)+1`;
+ *  in particular, the zero matrix might be represented by the vector of length
+ *  0, although this does not give access to the dimensions of this zero
+ *  matrix. Note also the following requirement: in the second representation,
+ *  all the matrix coefficients have the same row and column dimensions; this
+ *  is currently assumed to hold, and not checked by the algorithms.
+ *
+ *  The following functions perform conversions between these types, with two
+ *  variants: either the degree is deduced from the input, or a user-provided
+ *  truncation order is used.
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* convert to / from Vec<Mat<zz_p>>                           */
-/* (user provided truncation order)                           */
-/*------------------------------------------------------------*/
+/** Converts from matrix with polynomial entries `pmat` to polynomial with
+ * matrix coefficients `matp`; the zero matrix is converted to the length-0
+ * vector, losing information on the row and column dimensions.
+ */
+void conv(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat);
 
-/*------------------------------------------------------------*/
-/* coeffs will have length order independently of deg(mat)    */
-/*------------------------------------------------------------*/
-void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat, const long order);
+/** Returns the conversion of a matrix with polynomial entries `pmat` into a
+ * polynomial with matrix coefficients; the zero matrix is converted to the
+ * length-0 vector, losing information on the row and column dimensions.
+ */
+inline Vec<Mat<zz_p>> conv(const Mat<zz_pX> & pmat)
+{ Vec<Mat<zz_p>> matp; conv(matp, pmat); return matp; }
 
-inline Vec<Mat<zz_p>> conv(const Mat<zz_pX>& mat, const long order)
-{ Vec<Mat<zz_p>> coeffs; conv(coeffs, mat, order); return coeffs; }
+/** Converts from polynomial with matrix coefficients `matp` to matrix with
+ * polynomial entries `pmat`; if `matp` has length 0 then `pmat` is cleared
+ * (set to zero without changing its dimensions).
+ */
+void conv(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp);
 
-void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs, const long order);
+/** Returns the conversion of a polynomial with matrix coefficients `matp` into
+ * a matrix with polynomial entries; if `matp` has length 0 then it returns a
+ * `Mat<zz_pX>` of dimensions 0 x 0.
+ */
+inline Mat<zz_pX> conv(const Vec<Mat<zz_p>> & matp)
+{ Mat<zz_pX> pmat; conv(pmat, matp); return pmat; }
 
-inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs, const long order)
-{ Mat<zz_pX> mat; conv(mat, coeffs, order); return mat; }
+
+/** Converts from matrix with polynomial entries `pmat`, truncated at the
+ * specified `order`, to polynomial with matrix coefficients `matp`. The
+ * integer `order` must be nonnegative, and it is guaranteed that the vector
+ * `matp` has length `order`.
+ */
+void conv(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat, const long order);
+
+/** Returns the conversion of a matrix with polynomial entries `pmat`,
+ * truncated at the specified `order`, to a polynomial with matrix
+ * coefficients. The integer `order` must be nonnegative, and the output
+ * vector is guaranteed to have length `order`.
+ */
+inline Vec<Mat<zz_p>> conv(const Mat<zz_pX> & pmat, const long order)
+{ Vec<Mat<zz_p>> matp; conv(matp, pmat, order); return matp; }
+
+/** Converts from polynomial with matrix coefficients `matp`, truncated at the
+ * specified `order` (nonnegative integer), to matrix with polynomial entries
+ * `pmat`; if `matp` has length 0 then `pmat` is cleared (set to zero without
+ * changing its dimensions).
+ */
+void conv(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp, const long order);
+
+/** Returns the conversion from polynomial with matrix coefficients `matp`,
+ * truncated at the specified `order` (nonnegative integer), to matrix with
+ * polynomial entries; if `matp` has length 0 then it returns a `Mat<zz_pX>` of
+ * dimensions 0 x 0.
+ */
+inline Mat<zz_pX> conv(const Vec<Mat<zz_p>> & matp, const long order)
+{ Mat<zz_pX> pmat; conv(pmat, matp, order); return pmat; }
+
+//@} // doxygen group: Conversion to/from Vec<Mat<zz_p>>
 
 #endif // MAT_LZZ_PX_UTILS__H
 
