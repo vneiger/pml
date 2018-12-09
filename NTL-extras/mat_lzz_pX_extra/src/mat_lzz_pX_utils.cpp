@@ -188,6 +188,25 @@ void transpose(Mat<zz_pX>& x, const Mat<zz_pX>& a)
 }
 
 /*------------------------------------------------------------*/
+/* mirror: reverse the order of the entries in a vector       */
+/*------------------------------------------------------------*/
+void mirror(Vec<zz_pX>& mvec, const Vec<zz_pX>& pvec)
+{
+    const long n = pvec.length();
+    if (n==0)
+    {
+        mvec.SetLength(0);
+        return;
+    }
+
+    // rely on reverse from Algorithm library of standard C++
+    if (&mvec != &pvec)
+        mvec = pvec;
+
+    std::reverse(&mvec[0], &mvec[n]);
+}
+
+/*------------------------------------------------------------*/
 /* matrix / vector truncate                                   */
 /*------------------------------------------------------------*/
 void trunc(Vec<zz_pX>& x, const Vec<zz_pX>& a, long n)
@@ -337,29 +356,6 @@ void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n)
     }
 }
 
-/*------------------------------------------------------------*/
-/* reverse the order of the entries in a vector               */
-/* x = a[n - 1 -i], i=0..n-1, with n=length(a)                */
-/*------------------------------------------------------------*/
-void reverse_vector(Vec<zz_pX>& x, const Vec<zz_pX>& a)
-{
-    long n = a.length();
-    if (&x == &a)
-    {
-        Vec<zz_pX> tmp;
-        tmp.SetLength(n);
-        for (long i = 0; i < n; i++)
-            tmp[i] = a[n - 1 - i];
-        x = tmp;
-        return;
-    }
-    else
-    {
-        x.SetLength(n);
-        for (long i = 0; i < n; i++)
-            x[i] = a[n - 1 - i];
-    }
-}
 
 /*------------------------------------------------------------*/
 /* reverse operations                                         */

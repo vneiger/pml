@@ -55,6 +55,7 @@
  * assuming left approximants; for right approximants, they are swapped.
  */
 
+#include "mat_lzz_pX_utils.h"
 #include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_forms.h"
 #include "mat_lzz_pX_multiply.h"
