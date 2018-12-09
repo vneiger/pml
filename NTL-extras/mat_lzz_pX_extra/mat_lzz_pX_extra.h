@@ -1,6 +1,19 @@
 #ifndef MAT_LZZ_PX_EXTRA__H
 #define MAT_LZZ_PX_EXTRA__H
 
+/** Main header for `Mat<zz_pX>`, matrices over the univariate polynomials.
+ *
+ * \file mat_lzz_pX_extra.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
+ * \version 0.1
+ * \date 2018-12-07
+ *
+ * Declarations are mostly in other headers, which are included in this file.
+ * This file contains a few declarations that do not require a separate header
+ * (for the moment).
+ *
+ */
+
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
 #include <iostream>
@@ -26,8 +39,9 @@
 
 #include "mat_lzz_pX_sequence.h"  // TODO: still draft
 
+// TODO all the doc
 
-NTL_CLIENT
+NTL_CLIENT;
 
 void multiply_evaluate_FFT_direct_no_ll(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 

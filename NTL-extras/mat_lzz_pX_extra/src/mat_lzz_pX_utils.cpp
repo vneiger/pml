@@ -29,7 +29,7 @@ void ident(Mat<zz_pX> & pmat, long dim)
 }
 
 /*------------------------------------------------------------*/
-/* set pmat to be the identity of size dim                    */
+/* build and return the identity of size dim                  */
 /*------------------------------------------------------------*/
 Mat<zz_pX> ident_mat_zz_pX(long dim)
 {

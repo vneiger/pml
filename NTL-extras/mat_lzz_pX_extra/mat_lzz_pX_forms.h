@@ -22,9 +22,6 @@
 #include <vector>
 #include <algorithm>
 
-/** Vectors of long's, for representing shifts and list of degrees. */
-typedef std::vector<long> VecLong;
-
 NTL_CLIENT;
 
 /*------------------------------------------------------------*/

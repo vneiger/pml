@@ -1,53 +1,67 @@
 #ifndef MAT_LZZ_PX_UTILS__H
 #define MAT_LZZ_PX_UTILS__H
 
+/** Some basic routines for handling `Mat<zz_pX>`.
+ *
+ * \file mat_lzz_pX_utils.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost.
+ * \version 0.1
+ * \date 2018-12-09
+ *
+ */
+
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
 #include <vector>
 
+/** Vectors of long's, for representing lists of degrees, list of indices, degree shifts, etc. */
+typedef std::vector<long> VecLong;
+
 NTL_CLIENT
 
-/*------------------------------------------------------------*/
-/* Basic routines for handling Mat<zz_pX>                     */
-/*------------------------------------------------------------*/
+/** @name Zero matrix and identity matrix.
+ *
+ *  Functions to deal with the zero matrix (clear, test if zero)
+ *  and the identity matrix (set to identity, test if identity). 
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* ZERO MATRIX; IDENTITY MATRIX                               */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* clears the matrix  (pmat = 0 with same dimensions)         */
-/*------------------------------------------------------------*/
+/** Clears the matrix, that is, sets `pmat` to be zero without modifying its
+ * row and column dimensions.
+ */
 void clear(Mat<zz_pX> & pmat);
 
-/*------------------------------------------------------------*/
-/* set pmat to be the identity                                */
-/* (same size, assuming square / size dim)                    */
-/*------------------------------------------------------------*/
+/** Sets the matrix `pmat` to be the (square) identity matrix with `dim`
+ * rows and `dim` columns.
+ */
 void ident(Mat<zz_pX> & pmat, long dim);
 
-/*------------------------------------------------------------*/
-/* return the identity matrix of size dim                     */
-/*------------------------------------------------------------*/
+/** Build the identity matrix of the specified dimension `dim`, and return it.
+ */
 Mat<zz_pX> ident_mat_zz_pX(long dim);
 
-/*------------------------------------------------------------*/
-/* tests whether m is zero (whatever its dims)                */
-/*------------------------------------------------------------*/
+/** Test whether `pvec` is the zero vector (whatever its dimension).
+ * \return 1 if `pvec` is zero, 0 otherwise
+ */
 long IsZero(const Vec<zz_pX> & pvec);
+
+/** Test whether `pmat` is the zero matrix (whatever its dimensions).
+ * \return 1 if `pmat` is zero, 0 otherwise
+ */
 long IsZero(const Mat<zz_pX> & pmat);
 
-/*------------------------------------------------------------*/
-/* tests whether pmat is the identity matrix                  */
-/*------------------------------------------------------------*/
+/** Tests whether `pmat` is a square matrix of some dimension, and is the
+ * identity matrix of that dimension.
+ * \return 1 if `pmat` is the identity matrix, 0 otherwise.
+ */
 long IsIdent(const Mat<zz_pX> & pmat);
 
-/*------------------------------------------------------------*/
-/* tests whether pmat is the identity matrix of size 'dim'    */
-/*------------------------------------------------------------*/
+/** Tests whether `pmat` is the identity matrix of the specified dimension.
+ * \return 1 if `pmat` is the identity matrix of dimension `dim`, 0 otherwise.
+ */
 long IsIdent(const Mat<zz_pX> & pmat, long dim);
+
+//@}   // group: Zero matrix and identity matrix
 
 
 
