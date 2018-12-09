@@ -359,45 +359,55 @@ void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n)
 
 /*------------------------------------------------------------*/
 /* reverse operations                                         */
-/* x = reverse of a[0]..a[hi] (hi >= -1);                     */
+/* x = reverse of a[0]..a[hi]                                 */
 /*------------------------------------------------------------*/
 void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a, long hi)
 {
-    long rdim, cdim;
-    rdim = a.NumRows();
-    cdim = a.NumCols();
+    long rdim = a.NumRows();
+    long cdim = a.NumCols();
     x.SetDims(rdim, cdim);
 
-    for (long r = 0; r < rdim; r++)
-        for (long s = 0; s< cdim; s++)
+    for (long r = 0; r < rdim; ++r)
+        for (long s = 0; s < cdim; ++s)
             reverse(x[r][s], a[r][s], hi);
 }
 
 /*------------------------------------------------------------*/
-/* row-wise reverse                                           */
-/* length of 'hi' must be the number of rows of a if row-wise,*/
-/* its number of columns otherwise                            */
+/* column-wise reverse                                        */
+/* length of 'hi' must be the number of columns of a          */
 /*------------------------------------------------------------*/
-
-void reverse(
+void col_reverse(
              Mat<zz_pX> &x, 
              const Mat<zz_pX> &a, 
-             const VecLong & hi,
-             const bool row_wise
+             const VecLong & hi
             )
 {
     long rdim = a.NumRows();
     long cdim = a.NumCols();
     x.SetDims(rdim, cdim);
 
-    if (row_wise)
-        for (long r = 0; r < rdim; ++r)
-            for (long s = 0; s < cdim; ++s)
-                reverse(x[r][s], a[r][s], hi[r]);
-    else
-        for (long r = 0; r < rdim; ++r)
-            for (long s = 0; s < cdim; ++s)
-                reverse(x[r][s], a[r][s], hi[s]);
+    for (long r = 0; r < rdim; ++r)
+        for (long s = 0; s < cdim; ++s)
+            reverse(x[r][s], a[r][s], hi[s]);
+}
+
+/*------------------------------------------------------------*/
+/* row-wise reverse                                           */
+/* length of 'hi' must be the number of rows of a             */
+/*------------------------------------------------------------*/
+void row_reverse(
+                 Mat<zz_pX> &x, 
+                 const Mat<zz_pX> &a, 
+                 const VecLong & hi
+                )
+{
+    long rdim = a.NumRows();
+    long cdim = a.NumCols();
+    x.SetDims(rdim, cdim);
+
+    for (long r = 0; r < rdim; ++r)
+        for (long s = 0; s < cdim; ++s)
+            reverse(x[r][s], a[r][s], hi[r]);
 }
 
 

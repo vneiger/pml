@@ -75,7 +75,7 @@ long IsIdent(const Mat<zz_pX> & pmat, long dim);
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/** @name Matrix degree
+/** @name Degree
  *
  *  The degree of a polynomial matrix is the maximum of the degrees of all its
  *  entries; by convention, the zero matrix has degree -1 (thus, except for the
@@ -89,7 +89,7 @@ long deg(const Vec<zz_pX> & pvec);
 /** Compute and return the degree of a polynomial matrix `pmat` */
 long deg(const Mat<zz_pX> & pmat);
 
-//@} // doxygen group: Matrix degree
+//@} // doxygen group: Degree
 
 
 /*------------------------------------------------------------*/
@@ -152,10 +152,10 @@ void mirror(Vec<zz_pX> & mvec, const Vec<zz_pX> & pvec);
 inline Vec<zz_pX> mirror(const Vec<zz_pX> & pvec)
 { Vec<zz_pX> mvec; mirror(mvec, pvec); return mvec; }
 
-//@} // doxygen group: Transpose
+//@} // doxygen group: Transpose and mirror
 
 
-/** @name Matrix truncate
+/** @name Truncate
  *
  *  Truncate a polynomial vector, a polynomial matrix, or a specific row or
  *  column of a polynomial matrix.
@@ -195,7 +195,7 @@ void truncCol(Mat<zz_pX> & tmat, const Mat<zz_pX> & pmat, long j, long n);
 inline Mat<zz_pX> truncCol(const Mat<zz_pX> & pmat, long j, long n)
 { Mat<zz_pX> tmat; truncCol(tmat, pmat, j, n); return tmat; }
 
-//@} // doxygen group: Matrix truncate
+//@} // doxygen group: Truncate
 
 
 /** @name Shifts (multiplication by powers of the variable)
@@ -206,7 +206,8 @@ inline Mat<zz_pX> truncCol(const Mat<zz_pX> & pmat, long j, long n)
  *  - a negative shift reverses the direction of the shift.
  *
  *  In all the following functions which involve an OUT parameter (`svec` or
- *  `smat`), this parameter may alias the IN parameter (`pvec` or `pmat`).
+ *  `smat`), this parameter may alias the corresponding IN parameter (`pvec` or
+ *  `pmat`).
  *
  * \todo 
  *   - versions with different shifting orders on rows/columns; 
@@ -310,47 +311,82 @@ inline Mat<zz_pX> RightShiftCol(const Mat<zz_pX> & pmat, const long j, long n)
 //@} // doxygen group: Shifts (multiplication by powers of the variable)
 
 
-/** @name Matrix reverse
+/** @name Reverse
+ * \anchor Reverse
  *
  *  The reverse, sometimes called mirror, of a polynomial is the operation of
  *  reversing the order of its coefficients. This is usually either done with
- *  respect to the degree of that polynomial, or with respect to some specified
- *  bound. The latter case may involve padding with zeroes or truncating the
- *  vector of coefficients.
+ *  respect to the degree of that polynomial, or more generally with respect to
+ *  some specified bound. The reverse of a polynomial matrix is defined
+ *  analogously, with either the degree of the matrix or a specified bound. We
+ *  also consider row-wise and column-wise variants, in which such a bound is
+ *  specified for each row, or for each column.
+ *
+ *  Explicitly, for a polynomial `f` of degree `d` with coefficients `f[i]`,
+ *  and for a given nonnegative integer bound `hi`, the reverse of `f` with
+ *  respect to `hi` is the polynomial of degree at most `hi` whose coefficients
+ *  are `f[hi]`, `f[hi-1]`, ..., `f[0]`. This definition can be extended for
+ *  negative `hi` by considering that this reverse polynomial is zero.
+ *
+ *  In the functions below, when there is an OUT parameter `rmat`, it may alias
+ *  the IN parameter `pmat`.
  *
  */
 //@{
 
-/*------------------------------------------------------------*/
-/* Reverse operations:                                        */
-/* x = reverse of a[0]..a[hi] (hi >= -1);                     */
-/* user provided 'hi'                                         */
-/*------------------------------------------------------------*/
-void reverse(Mat<zz_pX> & x, const Mat<zz_pX> & a, long hi);
+/** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
+ * respect to a bound `hi` (see @ref Reverse for more details).
+ */
+void reverse(Mat<zz_pX> & rmat, const Mat<zz_pX> & pmat, long hi);
 
-inline Mat<zz_pX> reverse(const Mat<zz_pX> & a, long hi)
-{ Mat<zz_pX> x; reverse(x, a, hi); return x; }
+/** Computes and returns the matrix reverse of a polynomial matrix `pmat`, with
+ * respect to a bound `hi` (see @ref Reverse for more details).
+ */
+inline Mat<zz_pX> reverse(const Mat<zz_pX> & pmat, long hi)
+{ Mat<zz_pX> rmat; reverse(rmat, pmat, hi); return rmat; }
 
-/* TODO versions with different degree on different cols/rows */
-void reverse(
-             Mat<zz_pX> & x, 
-             const Mat<zz_pX> & a, 
-             const VecLong & hi,
-             const bool row_wise = true
-            );
+/** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
+ * respect to the degree of `pmat` (see @ref Reverse for more details).
+ */
+inline void reverse(Mat<zz_pX> & rmat, const Mat<zz_pX> & pmat)
+{ reverse(rmat, pmat, deg(pmat)); }
 
-/*------------------------------------------------------------*/
-/* Reverse operations:                                        */
-/* x = reverse of a[0]..a[deg(a)]                             */
-/*------------------------------------------------------------*/
+/** Computes and returns the matrix reverse of a polynomial matrix `pmat`, with
+ * respect to the degree of `pmat` (see @ref Reverse for more details).
+ */
+inline Mat<zz_pX> reverse(const Mat<zz_pX> & pmat)
+{ Mat<zz_pX> rmat; reverse(rmat, pmat, deg(pmat)); return rmat; }
 
-inline void reverse(Mat<zz_pX> & x, const Mat<zz_pX> & a)
-{ reverse(x, a, deg(a)); }
+/** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
+ * respect to a list of bounds `hi` for each row (see @ref Reverse for more
+ * details). The length of `hi` must be the number of rows of `pmat`.
+ */
+void row_reverse(Mat<zz_pX> & rmat, const Mat<zz_pX> & pmat, const VecLong & hi);
 
-inline Mat<zz_pX> reverse(const Mat<zz_pX> & a)
-{ Mat<zz_pX> x; reverse(x, a, deg(a)); return x; }
+/** Computes and returns the matrix reverse of a polynomial matrix `pmat`, with
+ * respect to a list of bounds `hi` for each row (see @ref Reverse for more
+ * details). The length of `hi` must be the number of rows of `pmat`.
+ 
+ */
+inline Mat<zz_pX> row_reverse(const Mat<zz_pX> & pmat, const VecLong & hi)
+{ Mat<zz_pX> rmat; row_reverse(rmat, pmat, hi); return rmat; }
 
-//@} // doxygen group: Matrix reverse
+/** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
+ * respect to a list of bounds `hi` for each column (see @ref Reverse for more
+ * details). The length of `hi` must be the number of columns of `pmat`.
+ */
+void col_reverse(Mat<zz_pX> & rmat, const Mat<zz_pX> & pmat, const VecLong & hi);
+
+/** Computes and returns the matrix reverse of a polynomial matrix `pmat`, with
+ * respect to a list of bounds `hi` for each column (see @ref Reverse for more
+ * details). The length of `hi` must be the number of columns of `pmat`.
+ */
+inline Mat<zz_pX> col_reverse(const Mat<zz_pX> & pmat, const VecLong & hi)
+{ Mat<zz_pX> rmat; col_reverse(rmat, pmat, hi); return rmat; }
+
+
+
+//@} // doxygen group: Reverse
 
 
 /*------------------------------------------------------------*/
