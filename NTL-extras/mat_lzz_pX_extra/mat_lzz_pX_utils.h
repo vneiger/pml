@@ -48,26 +48,19 @@ void ident(Mat<zz_pX> & pmat, long dim);
  */
 Mat<zz_pX> ident_mat_zz_pX(long dim);
 
-/** Test whether `pvec` is the zero vector (whatever its dimension).
- * \return 1 if `pvec` is zero, 0 otherwise
- */
-long IsZero(const Vec<zz_pX> & pvec);
+/** Test whether `pvec` is the zero vector (whatever its dimension). */
+bool IsZero(const Vec<zz_pX> & pvec);
 
-/** Test whether `pmat` is the zero matrix (whatever its dimensions).
- * \return 1 if `pmat` is zero, 0 otherwise
- */
-long IsZero(const Mat<zz_pX> & pmat);
+/** Test whether `pmat` is the zero matrix (whatever its dimensions). */
+bool IsZero(const Mat<zz_pX> & pmat);
 
 /** Tests whether `pmat` is a square matrix of some dimension, and is the
  * identity matrix of that dimension.
- * \return 1 if `pmat` is the identity matrix, 0 otherwise.
  */
-long IsIdent(const Mat<zz_pX> & pmat);
+bool IsIdent(const Mat<zz_pX> & pmat);
 
-/** Tests whether `pmat` is the identity matrix of the specified dimension.
- * \return 1 if `pmat` is the identity matrix of dimension `dim`, 0 otherwise.
- */
-long IsIdent(const Mat<zz_pX> & pmat, long dim);
+/** Tests whether `pmat` is the identity matrix of the specified dimension. */
+bool IsIdent(const Mat<zz_pX> & pmat, long dim);
 
 //@} // doxygen group: Zero matrix and identity matrix
 
@@ -90,6 +83,9 @@ long deg(const Vec<zz_pX> & pvec);
 
 /** Compute and return the degree of a polynomial matrix `pmat` */
 long deg(const Mat<zz_pX> & pmat);
+
+/** Tests whether `pmat` is a constant matrix, that is, of degree 0. */
+bool IsConstant(const Mat<zz_pX> & pmat);
 
 //@} // doxygen group: Degree
 

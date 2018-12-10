@@ -40,23 +40,21 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
     {
         Mat<zz_pX> y;
         plain_inv_trunc(y, a, m);
-        x = y;
+        x.swap(y);
         return;
     }
 
-    long n, u;
-    Mat<zz_p> cst_mat, inv0, v, xi, ai, t;
-
-    u = a.NumRows();
+    const long u = a.NumRows();
     if (u != a.NumCols())
         LogicError("Non square matrix for truncated inverse\n");
+
+    Mat<zz_p> cst_mat, inv0, v, xi, ai, t;
 
     cst_mat = coeff(a, 0);
     inv0 = inv(cst_mat);
 
     x.SetDims(u, u);
-    n = deg(a);
-    if (n == 0)
+    if (IsConstant(a))
     {
         conv(x, inv0);
         return;

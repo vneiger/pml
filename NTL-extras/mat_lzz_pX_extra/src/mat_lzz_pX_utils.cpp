@@ -44,62 +44,62 @@ Mat<zz_pX> ident_mat_zz_pX(long dim)
 /*------------------------------------------------------------*/
 /* tests whether vec is the zero vector (whatever its dim)    */
 /*------------------------------------------------------------*/
-long IsZero(const Vec<zz_pX> & vec)
+bool IsZero(const Vec<zz_pX> & vec)
 {
     for (long i = 0; i < vec.length(); ++i)
         if (!IsZero(vec[i]))
-            return 0;
-    return 1;
+            return false;
+    return true;
 }
 
 /*------------------------------------------------------------*/
 /* tests whether pmat is the zero matrix (whatever its dims)  */
 /*------------------------------------------------------------*/
-long IsZero(const Mat<zz_pX> & pmat)
+bool IsZero(const Mat<zz_pX> & pmat)
 {
     for (long i = 0; i < pmat.NumRows(); ++i)
         for (long j = 0; j < pmat.NumCols(); ++j)
             if (!IsZero(pmat[i][j]))
-                return 0;
-    return 1;
+                return false;
+    return true;
 }
 
 /*------------------------------------------------------------*/
 /* tests whether pmat is the identity matrix                  */
 /*------------------------------------------------------------*/
-long IsIdent(const Mat<zz_pX> & pmat)
+bool IsIdent(const Mat<zz_pX> & pmat)
 {
     if (pmat.NumRows() != pmat.NumCols())
-        return 0;
+        return false;
 
     for (long i = 0; i < pmat.NumRows(); ++i)
-        for (long j = 0; j < pmat.NumCols(); ++j)
+        for (long j = 0; j < pmat.NumRows(); ++j)
         {
             if (i == j && ! IsOne(pmat[i][j]))
-                return 0;
+                return false;
             if (i != j && ! IsZero(pmat[i][j]))
-                return 0;
+                return false;
         }
-    return 1;
+    return true;
 }
 
 /*------------------------------------------------------------*/
 /* tests whether pmat is the identity matrix of size 'dim'    */
 /*------------------------------------------------------------*/
-long IsIdent(const Mat<zz_pX> & pmat, long dim)
+bool IsIdent(const Mat<zz_pX> & pmat, long dim)
 {
     if (pmat.NumRows() != dim || pmat.NumCols() != dim)
-        return 0;
+        return false;
 
     for (long i = 0; i < dim; ++i)
         for (long j = 0; j < dim; ++j)
         {
             if (i == j && !IsOne(pmat[i][j]))
-                return 0;
+                return false;
             if (i != j && !IsZero(pmat[i][j]))
-                return 0;
+                return false;
         }
-    return 1;
+    return true;
 }
 
 /*------------------------------------------------------------*/
@@ -123,6 +123,19 @@ long deg(const Mat<zz_pX> & a)
                 d = deg(a[i][j]);
     return d;
 }
+
+/*------------------------------------------------------------*/
+/* tests whether pmat is a constant matrix                    */
+/*------------------------------------------------------------*/
+bool IsConstant(const Mat<zz_pX> & pmat)
+{
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        for (long j = 0; j < pmat.NumCols(); ++j)
+            if (deg(pmat[i][j]) > 0)
+                return false;
+    return true;
+}
+
 
 /*------------------------------------------------------------*/
 /* sets x = ith coefficient of a                              */
