@@ -261,32 +261,48 @@ col_pivots(const Mat<zz_pX> & pmat, const VecLong & shift)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* Degree matrix: matrix of the degree of each entry          */
-/* Convention: deg(0) = -1, more generally the shifted degree */
-/* of a zero entry is min(shift)-1                            */
-/*------------------------------------------------------------*/
+/** @name (Shifted) degree matrix
+ * \anchor DegreeMatrix
+ *
+ * The _degree matrix_ of an `m x n` polynomial matrix `pmat` is the integer
+ * matrix of dimensions `m x n` whose entry `(i,j)` is the degree of the entry
+ * `(i,j)` of `pmat`. We recall that by convention, the zero polynomial has
+ * degree -1.
+ *
+ * For a given shift `shift` of length `n`, the row-wise `shift`-degree matrix
+ * of `pmat` is the `m x n` integer matrix whose entry `(i,j)` is
+ * `deg(pmat[i][j]) + shift[j]` if `pmat[i][j]` is nonzero, and `min(shift)-1`
+ * otherwise. For a given shift `shift` of length `m`, the column-wise
+ * `shift`-degree matrix of `pmat` is the `m x n` integer matrix whose entry
+ * `(i,j)` is `deg(pmat[i][j]) + shift[i]` if `pmat[i][j]` is nonzero, and
+ * `min(shift)-1` otherwise.
+ *
+ */
+//@{
 
-void degree_matrix(
-                   Mat<long> & degmat,
-                   const Mat<zz_pX> & pmat
-                  );
+/** Computes the degree matrix `degmat` of a polynomial matrix `pmat` (see @ref
+ * DegreeMatrix)
+ */
+void degree_matrix(Mat<long> & degmat, const Mat<zz_pX> & pmat);
 
+/** Computes and returns the degree matrix of a polynomial matrix `pmat` (see
+ * @ref DegreeMatrix)
+ */
 inline Mat<long> degree_matrix(const Mat<zz_pX> &pmat)
 { Mat<long> degmat; degree_matrix(degmat, pmat); return degmat; }
 
-/*------------------------------------------------------------*/
-/* Row-shifted degree matrix: matrix whose entry (i,j) is the */
-/* degree of pmat[i][j], shifted by adding shift[j]           */
-/* Convention: for a zero entry, its degree is min(shift)-1   */
-/*------------------------------------------------------------*/
-
+/** Computes the row-wise `shift`-degree matrix `degmat` of a polynomial matrix
+ * `pmat` (see @ref DegreeMatrix)
+ */
 void degree_matrix_rowshifted(
                               Mat<long> &degmat,
                               const Mat<zz_pX> &pmat,
                               const VecLong & shift
                              );
 
+/** Computes and returns row-wise the `shift`-degree matrix of a polynomial
+ * matrix `pmat` (see @ref DegreeMatrix)
+ */
 inline Mat<long> degree_matrix_rowshifted(
                                           const Mat<zz_pX> &pmat,
                                           const VecLong & shift
@@ -297,18 +313,18 @@ inline Mat<long> degree_matrix_rowshifted(
     return degmat;
 }
 
-/*------------------------------------------------------------*/
-/* Column-shifted degree matrix: matrix whose entry (i,j) is  */
-/* the degree of pmat[i][j], shifted by adding shift[i]       */
-/* Convention: for a zero entry, its degree is min(shift)-1   */
-/*------------------------------------------------------------*/
-
+/** Computes the column-wise `shift`-degree matrix `degmat` of a polynomial
+ * matrix `pmat` (see @ref DegreeMatrix)
+ */
 void degree_matrix_colshifted(
                               Mat<long> &degmat,
                               const Mat<zz_pX> &pmat,
                               const VecLong & shift
                              );
 
+/** Computes and returns column-wise the `shift`-degree matrix of a polynomial
+ * matrix `pmat` (see @ref DegreeMatrix)
+ */
 inline Mat<long> degree_matrix_colshifted(
                                           const Mat<zz_pX> &pmat,
                                           const VecLong & shift
@@ -319,6 +335,7 @@ inline Mat<long> degree_matrix_colshifted(
     return degmat;
 }
 
+//@} // doxygen group: (Shifted) degree matrix
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
