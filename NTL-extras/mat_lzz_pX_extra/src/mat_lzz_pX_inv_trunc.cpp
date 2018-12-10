@@ -36,60 +36,58 @@ static VecLong degrees(long n, long thresh)
 /*------------------------------------------------------------*/
 void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 {
-    if (&x == &a)
+    // no problem if &x == &a: anyway, we do computations in a temp `x_coeffs`
+    // and assign the result to x at the very end
+
+    // degree of a
+    const long d = deg(a);
+    if (d==-1)
+        LogicError("Zero matrix as input of truncated inverse\n");
+
+    // convert a to Vec<Mat<zz_p>> representation
+    Vec<Mat<zz_p>> x_coeffs, a_coeffs;
+    conv(a_coeffs, a, std::min(d+1,m));
+
+    // compute the inverse of the constant coefficient
+    x_coeffs.SetLength(m);
+    inv(x_coeffs[0], a_coeffs[0]); // throws if a not square or a(0) not invertible
+
+    // if a is constant, finished (we have the actual inverse)
+    if (d==0)
     {
-        Mat<zz_pX> y;
-        plain_inv_trunc(y, a, m);
-        x.swap(y);
+        conv(x, x_coeffs[0]);
         return;
     }
 
-    const long u = a.NumRows();
-    if (u != a.NumCols())
-        LogicError("Non square matrix for truncated inverse\n");
-
-    Mat<zz_p> cst_mat, inv0, v, xi, ai, t;
-
-    cst_mat = coeff(a, 0);
-    inv0 = inv(cst_mat);
-
-    x.SetDims(u, u);
-    if (IsConstant(a))
+    // if a not constant, let's continue
+    Mat<zz_p> buf;
+    for (long k = 1; k < m; ++k)
     {
-        conv(x, inv0);
-        return;
+        // compute x_coeffs[k]
+        // this is -(sum_{1 <= i <= k} x_coeffs[k-i] a_coeffs[i]) * x_coeffs[0]
+
+        const long minkd = std::min(k,d);
+
+        // first, compute x_coeffs[k] as the sum:
+        // sum_{1 <= i <= k} x_coeffs[k-i] a_coeffs[i]
+        mul(x_coeffs[k], x_coeffs[k-1], a_coeffs[1]);
+        for (long i = 2; i <= minkd; ++i)
+        {
+            mul(buf, x_coeffs[k-i], a_coeffs[i]);
+            add(x_coeffs[k], x_coeffs[k], buf);
+        }
+
+        // right multiply by x_coeffs[0]
+        mul(x_coeffs[k], x_coeffs[k], x_coeffs[0]);
+
+        // finally, negate x_coeffs[k]
+        NTL::negate(x_coeffs[k], x_coeffs[k]);
     }
 
-    for (long r = 0; r < u; r++)
-        for (long s = 0; s < u; s++)
-        {
-            x[r][s].rep.SetLength(m);
-            x[r][s].rep[0] = inv0[r][s];
-        }
-
-    v.SetDims(u, u);
-    for (long k = 1; k < m; k++)
-    {
-        clear(v);
-        for (long i = 0; i <= k-1; i++)
-        {
-            GetCoeff(xi, x, i);
-            GetCoeff(ai, a, k - i);
-            mul(t, xi, ai);
-            add(v, v, t);
-        }
-        v = v * inv0;
-        for (long r = 0; r < u; r++)
-            for (long s = 0; s < u; s++)
-                x[r][s].rep[k] = -v[r][s];
-    }
-
-    for (long r = 0; r < u; r++)
-        for (long s = 0; s < u; s++)
-        {
-            x[r][s].normalize();
-        }
+    // deduce output x
+    conv(x, x_coeffs);
 }
+
 
 
 /*------------------------------------------------------------*/
