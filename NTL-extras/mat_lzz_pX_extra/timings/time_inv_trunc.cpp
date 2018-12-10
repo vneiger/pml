@@ -73,12 +73,12 @@ void all_checks()
 
     VecLong szs =
     {
-        1, 2, 3, 5, 10, 20, 30
+        1, 2, 3, 5, 10, 20, 30, 50, 100
     };
 
     VecLong degs =
     {
-        20, 50, 75, 99, 150, 200
+        20, 50, 75, 99, 150, 200, 500, 1000
     };
 
     cout << "p=" << zz_p::modulus() << "\nFFT=" << is_FFT_prime() << endl;
@@ -97,12 +97,12 @@ void check()
 {
     zz_p::FFTInit(0);
     all_checks();
-    zz_p::UserFFTInit(786433);
-    all_checks();
-    zz_p::init(288230376151711813);
-    all_checks();
-    zz_p::init(786433);
-    all_checks();
+    //zz_p::UserFFTInit(786433);
+    //all_checks();
+    //zz_p::init(288230376151711813);
+    //all_checks();
+    //zz_p::init(786433);
+    //all_checks();
 }  
 
 /*------------------------------------------------------------*/

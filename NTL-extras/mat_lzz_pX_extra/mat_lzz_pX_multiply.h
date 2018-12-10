@@ -2,10 +2,8 @@
 #define MAT_LZZ_PX_MULTIPLY__H
 
 #include <memory> // for unique_ptr
-#include <NTL/matrix.h>
-#include <NTL/lzz_pX.h>
+#include "mat_lzz_pX_utils.h" // for deg() (and maybe others)
 #include "lzz_pX_CRT.h"
-#include "mat_lzz_pX_utils.h"
 
 NTL_CLIENT
 

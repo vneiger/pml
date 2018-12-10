@@ -4,7 +4,7 @@
 /** Shifted reduced/normal forms of polynomial matrices.
  *
  * \file mat_lzz_pX_forms.h
- * \author Seung Gyu Hyun, Vincent Neiger
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
  * \version 0.1
  * \date 2018-12-07
  *
@@ -20,7 +20,7 @@
 #include "mat_lzz_pX_utils.h"
 #include <algorithm>
 
-NTL_CLIENT;
+NTL_CLIENT
 
 /** Shifted reduced forms of polynomial matrices.
  *

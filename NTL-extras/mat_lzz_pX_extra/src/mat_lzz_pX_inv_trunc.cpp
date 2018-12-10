@@ -1,11 +1,12 @@
-#include <NTL/matrix.h>
 #include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
 
 #include "util.h"
-#include "lzz_p_extra.h"
-#include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
+#include "mat_lzz_pX_utils.h"
+#include "mat_lzz_pX_arith.h"
+#include "mat_lzz_pX_inverse.h" // includes matrix multiply
+#include "thresholds_matrix_multiply.h"
+#include "thresholds_newton_inv_trunc.h"
 
 NTL_CLIENT
 
@@ -13,10 +14,9 @@ NTL_CLIENT
 /* finds a sequence of degrees n0, n1, .. nk                  */
 /* n0 <= thresh, ni = {2*n{i-1}, 2*{n-1}-2}, nk >= n          */
 /*------------------------------------------------------------*/
-static vector<long> degrees(long n, long thresh)
+static VecLong degrees(long n, long thresh)
 {
-    vector<long> all_deg;
-    
+    VecLong all_deg;
 
     while(n > thresh)
     {
@@ -36,7 +36,7 @@ static vector<long> degrees(long n, long thresh)
 /*------------------------------------------------------------*/
 void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 {
-    if (x == a)
+    if (&x == &a)
     {
         Mat<zz_pX> y;
         plain_inv_trunc(y, a, m);
@@ -46,24 +46,22 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 
     long n, u;
     Mat<zz_p> cst_mat, inv0, v, xi, ai, t;
-    
+
     u = a.NumRows();
     if (u != a.NumCols())
-    {
         LogicError("Non square matrix for truncated inverse\n");
-    }
 
     cst_mat = coeff(a, 0);
     inv0 = inv(cst_mat);
 
     x.SetDims(u, u);
     n = deg(a);
-    if (n == 0) 
+    if (n == 0)
     {
         conv(x, inv0);
         return;
     }
-    
+
     for (long r = 0; r < u; r++)
         for (long s = 0; s < u; s++)
         {
@@ -72,10 +70,10 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
         }
 
     v.SetDims(u, u);
-    for (long k = 1; k < m; k++) 
+    for (long k = 1; k < m; k++)
     {
         clear(v);
-        for (long i = 0; i <= k-1; i++) 
+        for (long i = 0; i <= k-1; i++)
         {
             GetCoeff(xi, x, i);
             GetCoeff(ai, a, k - i);
@@ -87,7 +85,7 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
             for (long s = 0; s < u; s++)
                 x[r][s].rep[k] = -v[r][s];
     }
-    
+
     for (long r = 0; r < u; r++)
         for (long s = 0; s < u; s++)
         {
@@ -115,7 +113,7 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
 
     if (thresh == -1)
         thresh = MATRIX_INV_TRUNC_PLAIN_THRESHOLD_FFT;
-    
+
     long n, k, s, ss, t;
     Mat<zz_pX> P1;
     Vec<zz_p> mat_val1, mat_val2;
@@ -125,7 +123,7 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
     fftRep R1(INIT_SIZE, NextPowerOfTwo(2*m-1));
 
     k = thresh;
-    plain_inv_trunc(x, a, k);    
+    plain_inv_trunc(x, a, k); // throws if a not square or a(0) not invertible
     s = a.NumRows();
     ss = s * s;
 
@@ -135,7 +133,7 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
     P1.SetDims(s, s);
     x.SetDims(s, s);
 
-    while (k < m) 
+    while (k < m)
     {
         t = NextPowerOfTwo(2 * k);
         n = 1L << t;
@@ -158,7 +156,7 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
                     mat_val1[rss + i*s + j] = frept[r];
                 }
             }
-       
+
         // mat_val2 = FFT of (a mod t^(2k))
         // deg(a_ij mod t^(2k)) <= min(2k-1, deg(a_ij))
         for (long i = 0; i < s; i++)
@@ -226,7 +224,7 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
 
                 x[i][ell].rep.SetLength(2*k);
                 long y_len = P.rep.length();
-                for (long ii = k; ii < 2*k; ii++) 
+                for (long ii = k; ii < 2*k; ii++)
                 {
                     if (ii-k >= y_len)
                         clear(x[i][ell].rep[ii]);
@@ -235,7 +233,7 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
                 }
                 x[i][ell].normalize();
             }
-        
+
         k = 2*k;
     }
 
@@ -263,13 +261,9 @@ void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m,
     {
         long t = type_of_prime();
         if (t == TYPE_SMALL_PRIME)
-        {
             thresh = MATRIX_INV_TRUNC_PLAIN_THRESHOLD_MIDDLE_SMALL;
-        }
         else
-        {
             thresh = MATRIX_INV_TRUNC_PLAIN_THRESHOLD_MIDDLE_LARGE;
-        }
     }
 
 #ifdef VERBOSE
@@ -278,19 +272,19 @@ void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m,
 
     long idx, k;
     k = thresh;
-    vector<long> all_deg=degrees(m, k);
+    VecLong all_deg=degrees(m, k);
     k = all_deg[0];
     idx = 1;
-    
+
 #ifdef VERBOSE
     double t = get_time();
 #endif
-    plain_inv_trunc(x, a, k);
+    plain_inv_trunc(x, a, k); // throws if a not square or a(0) not invertible
 #ifdef VERBOSE
     cout << "plain : " << get_time()-t << endl;
 #endif
 
-    while (k < m) 
+    while (k < m)
     {
         Mat<zz_pX> y;
 #ifdef VERBOSE
@@ -318,7 +312,7 @@ void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m,
         {
             k = all_deg[idx];
             trunc(x, x, k);
-        }            
+        }
         idx++;
 #ifdef VERBOSE
         cout << "rest " << get_time()-t << endl;
@@ -354,20 +348,16 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
     {
         long t = type_of_prime();
         if (t == TYPE_SMALL_PRIME)
-        {
             thresh = MATRIX_INV_TRUNC_PLAIN_THRESHOLD_GEOMETRIC_SMALL;
-        }
         else
-        {
             thresh = MATRIX_INV_TRUNC_PLAIN_THRESHOLD_GEOMETRIC_LARGE;
-        }
     }
 
     k = thresh;
-    vector<long> all_deg=degrees(m, k);
+    VecLong all_deg=degrees(m, k);
     k = all_deg[0];
     idx = 1;
-    plain_inv_trunc(x, a, k);
+    plain_inv_trunc(x, a, k); // throws if a not square or a(0) not invertible
 
     s = a.NumRows();
     ss = s * s;
@@ -376,7 +366,7 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
     v2.SetDims(s, s);
     v3.SetDims(s, s);
 
-    while (k < m) 
+    while (k < m)
     {
         long n = 3*k - 2;
         zz_pX_Multipoint_Geometric ev = get_geometric_points(n);
@@ -395,7 +385,7 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
         power_x.SetLength(n);
         const zz_p q = ev.get_q();
         zz_p inv_q = 1/q;
-        
+
         power_x[0] = to_zz_p(1);
         for (long i = 1; i < n; i++)
             power_x[i] = power_x[i-1] * inv_q;
@@ -441,7 +431,7 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
                         v3[i][ell] = (v3[i][ell] - 1) * coeff;
                     else
                         v3[i][ell] = v3[i][ell] * coeff;
-            v3 = v3 * v1; 
+            v3 = v3 * v1;
             for (long i = 0; i < s; i++)
                 for (long ell = 0; ell < s; ell++)
                     mat_val3[i*s + ell][j] = v3[i][ell];
@@ -455,7 +445,7 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
                 ev.interpolate(P, mat_val3[i*s + ell]);
                 x[i][ell].rep.SetLength(2*k);
                 long y_len = P.rep.length();
-                for (long ii = k; ii < 2*k; ii++) 
+                for (long ii = k; ii < 2*k; ii++)
                 {
                     if (ii-k >= y_len)
                         clear(x[i][ell].rep[ii]);
@@ -469,7 +459,7 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
         {
             k = all_deg[idx];
             trunc(x, x, k);
-        }            
+        }
         idx++;
 
     }
@@ -485,23 +475,14 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
 void inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 {
     if (is_FFT_ready(NextPowerOfTwo(m+2)))
-    {
         newton_inv_trunc_FFT(x, a, m);
-        return;
-    }
     else
     {
         long m_middle = max_degree_middle_product_inv_trunc();
         if (m <= m_middle)
-        {
             newton_inv_trunc_middle_product(x, a, m);
-            return;
-        }
         else
-        {
             newton_inv_trunc_geometric(x, a, m);
-            return;
-        }
     }
 }
 
@@ -513,8 +494,8 @@ void inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 /* note: deg(Si) < 2d-1                                       */
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
-void high_order_lift_inverse_odd(Mat<zz_pX> & next, const Mat<zz_pX>& src, 
-                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & A, 
+void high_order_lift_inverse_odd(Mat<zz_pX> & next, const Mat<zz_pX>& src,
+                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & A,
                                  std::unique_ptr<mat_lzz_pX_lmultiplier> & invA, long d)
 {
     Mat<zz_pX> b = A->multiply(trunc(src, d)); // deg-argument < d

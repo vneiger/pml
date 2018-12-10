@@ -42,7 +42,7 @@
 
 // TODO all the doc
 
-NTL_CLIENT;
+NTL_CLIENT
 
 void multiply_evaluate_FFT_direct_no_ll(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 

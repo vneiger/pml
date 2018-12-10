@@ -4,7 +4,7 @@
 /** Minimal approximant bases.
  *
  * \file mat_lzz_pX_approximant.h
- * \author Vincent Neiger
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
  * \version 0.1
  * \date 2018-12-07
  *
