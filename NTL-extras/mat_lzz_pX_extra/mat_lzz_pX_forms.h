@@ -13,8 +13,6 @@
  * in some given form, compute shifted row/column degrees and
  * shifted pivot degrees, compute shifted leading matrix.
  *
- * \todo definitions
- *
  * \todo random matrix with given PolMatForm
  *
  */
@@ -459,9 +457,24 @@ inline Mat<zz_p> col_leading_matrix(
  *
  * A polynomial matrix is said to be in row-wise _(shifted) weak Popov form_ if
  * it has no zero rows and there is no repetition in its row-wise (shifted)
- * pivot index (that is, its entries are pairwise distinct). The definition of
- * column-wise (shifted, ordered) weak Popov forms is analogous.
- 
+ * pivot index (that is, its entries are pairwise distinct). Such a form is
+ * furthermore said to be _ordered_ if this (shifted) pivot index is strictly
+ * increasing. The definition of column-wise (shifted, ordered) weak Popov
+ * forms is analogous.
+ *
+ * A polynomial matrix is said to be in row-wise (shifted) Popov form if:
+ *   - it is in row-wise (shifted) ordered weak Popov form
+ *   - its (shifted) pivot entries are monic
+ *   - its entries below and above a (shifted) pivot entry have degree less
+ *   than this pivot entry
+ * In particular, such a matrix cannot have a zero row.
+ *
+ * A polynomial matrix is said to be in column-wise (shifted) Popov form if:
+ *   - it is in column-wise (shifted) ordered weak Popov form
+ *   - its (shifted) pivot entries are monic
+ *   - its entries to the left and to the right of a (shifted) pivot entry have
+ *   degree less than this pivot entry
+ * In particular, such a matrix cannot have a zero column.
  *
  * The functions below which involve a `shift` among its parameters throw
  * an error if this `shift` does not have the right length.
@@ -510,76 +523,66 @@ bool is_col_weak_popov(const Mat<zz_pX> & pmat);
  */
 bool is_col_weak_popov(const Mat<zz_pX> &pmat, const VecLong & shift);
 
-/*------------------------------------------------------------*/
-/* test row-wise (shifted) ordered weak Popov form            */
-/* a matrix is in row-wise (shifted) ordered weak Popov form  */
-/* if and only if its row-wise (shifted) pivot index is       */
-/* strictly increasing                                        */
-/* --> note that zero rows are not allowed                    */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * ordered weak Popov form (see @ref MatrixForms)
+ */
 bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat);
+
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * `shift`-ordered weak Popov form (see @ref MatrixForms)
+ */
 bool is_row_ordered_weak_popov(
                                const Mat<zz_pX> &pmat,
                                const VecLong & shift
                               );
 
-/*------------------------------------------------------------*/
-/* test column-wise (shifted) ordered weak Popov form         */
-/* a matrix is in column-wise (shifted) ordered weak Popov    */
-/* form if and only if its column-wise (shifted) pivot index  */
-/* is strictly increasing                                     */
-/* --> note that zero columns are not allowed                 */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * ordered weak Popov form (see @ref MatrixForms)
+ */
 bool is_col_ordered_weak_popov(const Mat<zz_pX> & pmat);
+
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * `shift`-ordered weak Popov form (see @ref MatrixForms)
+ */
 bool is_col_ordered_weak_popov(
                                const Mat<zz_pX> &pmat,
                                const VecLong & shift
                               );
 
-
-/*------------------------------------------------------------*/
-/* test row-wise (shifted) Popov form                         */
-/* a matrix is in row-wise (shifted) Popov form iff:          */
-/*   - it is in row-wise (shifted) ordered weak Popov form    */
-/*   - its pivot entries are monic                            */
-/*   - its entries below and above a pivot entry have degree  */
-/*   less than this pivot entry                               */
-/* --> note that zero rows are not allowed                    */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * Popov form (see @ref MatrixForms)
+ *
+ * \todo provide same test but relaxing ordered weak Popov to weak Popov in the
+ * definition? This allows easier support for definitions of Popov with
+ * different orderings of the rows, such as by increasing degree
+ */
 bool is_row_popov(const Mat<zz_pX> & pmat);
+
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * `shift`-Popov form (see @ref MatrixForms)
+ */
 bool is_row_popov(const Mat<zz_pX> & pmat, const VecLong & shift);
 
-/*------------------------------------------------------------*/
-/* same test but relaxing ordered weak Popov --> weak Popov   */
-/* (allows definition of Popov with different orderings of    */
-/* the rows, such as by increasing degree)                    */
-/*------------------------------------------------------------*/
-// TODO 
 //bool is_row_popov_up_to_permutation(const Mat<zz_pX> & pmat);
 //bool is_row_popov_up_to_permutation(
 //                                    const Mat<zz_pX> & pmat,
 //                                    const VecLong & shift
 //                                    );
 
-
-/*------------------------------------------------------------*/
-/* test column-wise (shifted) Popov form                      */
-/* a matrix is in column-wise (shifted) Popov form iff:       */
-/*   - it is in column-wise (shifted) ordered weak Popov form */
-/*   - its pivot entries are monic                            */
-/*   - its entries to the left and to the right of a pivot    */
-/*    entry have degree less than this pivot entry            */
-/* --> note that zero columns are not allowed                 */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * Popov form (see @ref MatrixForms)
+ *
+ * \todo provide same test but relaxing ordered weak Popov to weak Popov in the
+ * definition? This allows easier support for definitions of Popov with
+ * different orderings of the rows, such as by increasing degree
+ */
 bool is_col_popov(const Mat<zz_pX> & pmat);
+
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * `shift`-Popov form (see @ref MatrixForms)
+ */
 bool is_col_popov(const Mat<zz_pX> & pmat, const VecLong & shift);
 
-/*------------------------------------------------------------*/
-/* same test but relaxing ordered weak Popov --> weak Popov   */
-/* (allows definition of Popov with different orderings of    */
-/* the columns, such as by increasing degree)                 */
-/*------------------------------------------------------------*/
-// TODO 
 //bool is_col_popov_up_to_permutation(const Mat<zz_pX> & pmat);
 //bool is_col_popov_up_to_permutation(
 //                                    const Mat<zz_pX> & pmat,
@@ -587,76 +590,75 @@ bool is_col_popov(const Mat<zz_pX> & pmat, const VecLong & shift);
 //                                    );
 
 
-/*------------------------------------------------------------*/
-/* Check whether pmat is in the prescribed row-wise form      */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * (non-shifted) form indicated by `form` (see @ref MatrixForms and
+ * #PolMatForm). Throws an error if `form` is not among the forms defined in
+ * the enumeration #PolMatForm.
+ */
 bool is_row_polmatform(
-                       const Mat<zz_pX> & pmat,
-                       const PolMatForm form
+                       const PolMatForm form,
+                       const Mat<zz_pX> & pmat
                       );
 
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * `shift`-shifted form indicated by `form` (see @ref MatrixForms and
+ * #PolMatForm). Throws an error if `form` is not among the forms defined
+ * in the enumeration #PolMatForm.
+ */
 bool is_row_polmatform(
+                       const PolMatForm form,
                        const Mat<zz_pX> & pmat,
-                       const VecLong & shift,
-                       const PolMatForm form
+                       const VecLong & shift
                       );
 
-/*------------------------------------------------------------*/
-/* Check whether pmat is in the prescribed column-wise form   */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * (non-shifted) form indicated by `form` (see @ref MatrixForms and
+ * #PolMatForm). Throws an error if `form` is not among the forms defined in
+ * the enumeration #PolMatForm.
+ */
 bool is_col_polmatform(
-                       const Mat<zz_pX> & pmat,
-                       const PolMatForm form
+                       const PolMatForm form,
+                       const Mat<zz_pX> & pmat
                       );
 
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * `shift`-shifted form indicated by `form` (see @ref MatrixForms and
+ * #PolMatForm). Throws an error if `form` is not among the forms defined in
+ * the enumeration #PolMatForm.
+ */
 bool is_col_polmatform(
+                       const PolMatForm form,
                        const Mat<zz_pX> & pmat,
-                       const VecLong & shift,
-                       const PolMatForm form
+                       const VecLong & shift
                       );
 
-/*------------------------------------------------------------*/
-/* Return the strongest row-wise form of pmat among:          */
-/* Popov => ordered weak Popov => weak Popov                  */
-/*                                       => reduced => none   */
-/*------------------------------------------------------------*/
+/** Computes and returns the strongest row-wise form that `pmat` has, among
+ * those defined in the enumeration #PolMatForm.
+ */
 PolMatForm get_row_polmatform(const Mat<zz_pX> & pmat);
+
+/** Computes and returns the strongest row-wise `shift`-shifted form that
+ * `pmat` has, among those defined in the enumeration #PolMatForm.
+ */
 PolMatForm get_row_polmatform(
                               const Mat<zz_pX> & pmat,
                               const VecLong & shift
                              );
 
-/*------------------------------------------------------------*/
-/* Return the strongest column-wise form of pmat among:       */
-/* Popov => ordered weak Popov => weak Popov                  */
-/*                                       => reduced => none   */
-/*------------------------------------------------------------*/
+/** Computes and returns the strongest column-wise form that `pmat` has, among
+ * those defined in the enumeration #PolMatForm.
+ */
 PolMatForm get_col_polmatform(const Mat<zz_pX> & pmat);
+
+/** Computes and returns the strongest column-wise `shift`-shifted form that
+ * `pmat` has, among those defined in the enumeration #PolMatForm.
+ */
 PolMatForm get_col_polmatform(
                               const Mat<zz_pX> & pmat,
                               const VecLong & shift
                              );
 
 //@} // doxygen group: Testing polynomial matrix forms
-
-/**********************************************************************
- *                          TODO: BASIS REDUCTION                     *
- *            (shifted reduced form and shifted normal forms)         *
- **********************************************************************/
-
-// TODO general reduction to uniform shift via pre-multiplication
-// worthwile at least when shift close to uniform
-
-// TODO naive algorithms (see Mulders-Storjohann for good reference)
-
-// TODO general shifted Popov form via kernel (itself via approximant basis)
-
-// TODO understand if there is any chance Alekhnovich improves over the
-// kernel approach
-
-// TODO nonsingular: Giorgi-Jeannerod-Villard's Las Vegas reduction
-// (worth implementing for shifts other than uniform?)
-
 
 #endif /* ifndef MAT_LZZ_PX_FORMS */
 

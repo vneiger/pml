@@ -8,9 +8,10 @@
  * \version 0.1
  * \date 2018-12-07
  *
- * Declarations are mostly in other headers, which are included in this file.
- * This file contains a few declarations that do not require a separate header
- * (for the moment).
+ * This is the main header for polynomial matrix functions. It mostly includes
+ * other headers which gather functions for a specific kind of tasks. This file
+ * contains general TODOs, and still contains a few declarations that do not
+ * require a separate header (for the moment).
  *
  */
 
@@ -150,6 +151,25 @@ void diagonal_of_hermite(Vec<zz_pX> & diag, const Mat<zz_pX> & pmat);
  ***********************************************/
 
 // TODO (requires partial linearization + basis reduction)
+
+/**********************************************************************
+ *                          TODO: BASIS REDUCTION                     *
+ *            (shifted reduced form and shifted normal forms)         *
+ **********************************************************************/
+
+// TODO general reduction to uniform shift via pre-multiplication
+// worthwile at least when shift close to uniform
+
+// TODO naive algorithms (see Mulders-Storjohann for good reference)
+
+// TODO general shifted Popov form via kernel (itself via approximant basis)
+
+// TODO understand if there is any chance Alekhnovich improves over the
+// kernel approach
+
+// TODO nonsingular: Giorgi-Jeannerod-Villard's Las Vegas reduction
+// (worth implementing for shifts other than uniform?)
+
 
 
 /**********************************************************************

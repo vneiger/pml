@@ -893,7 +893,7 @@ bool is_col_popov(const Mat<zz_pX> & pmat, const VecLong & shift)
 /* Check whether pmat is in the prescribed row-wise form      */
 /*------------------------------------------------------------*/
 
-bool is_row_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
+bool is_row_polmatform(const PolMatForm form, const Mat<zz_pX> & pmat)
 {
     switch (form)
     {
@@ -913,9 +913,9 @@ bool is_row_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
 }
 
 bool is_row_polmatform(
+                       const PolMatForm form,
                        const Mat<zz_pX> & pmat,
-                       const VecLong &shift,
-                       const PolMatForm form
+                       const VecLong &shift
                       )
 {
     switch (form)
@@ -939,7 +939,7 @@ bool is_row_polmatform(
 /* Check whether pmat is in the prescribed column-wise form   */
 /*------------------------------------------------------------*/
 
-bool is_col_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
+bool is_col_polmatform(const PolMatForm form, const Mat<zz_pX> & pmat)
 {
     switch (form)
     {
@@ -959,9 +959,9 @@ bool is_col_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
 }
 
 bool is_col_polmatform(
+                       const PolMatForm form,
                        const Mat<zz_pX> & pmat,
-                       const VecLong &shift,
-                       const PolMatForm form
+                       const VecLong &shift
                       )
 {
     switch (form)
