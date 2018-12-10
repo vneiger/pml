@@ -404,7 +404,7 @@ void row_leading_matrix(
                        )
 {
     VecLong rdeg;
-    row_degree(rdeg,pmat,shift);
+    row_degree(rdeg,pmat,shift); // throws if shift doesn't have the right length
 
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
     for (long r = 0; r < lmat.NumRows(); ++r)
@@ -445,7 +445,7 @@ void col_leading_matrix(
                        )
 {
     VecLong cdeg;
-    col_degree(cdeg,pmat,shift);
+    col_degree(cdeg,pmat,shift); // throws if shift doesn't have the right length
 
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
     for (long r = 0; r < lmat.NumRows(); ++r)
