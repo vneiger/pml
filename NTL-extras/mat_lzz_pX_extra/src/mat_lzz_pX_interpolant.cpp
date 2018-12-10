@@ -31,7 +31,7 @@ bool is_interpolant_basis(
     std::cout << "==is_interpolant_basis== WARNING: not fully implemented: not checking generation" << std::endl;
 
     // test that appbas is shift-reduced with form at least 'form'
-    if (not is_row_polmatform(intbas,shift,form))
+    if (not is_row_polmatform(form,intbas,shift))
         return false;
 
     // test that the matrix consists of interpolants

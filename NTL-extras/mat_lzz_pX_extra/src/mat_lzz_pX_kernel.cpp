@@ -32,7 +32,7 @@ bool is_kernel_basis(
         return false;
 
     // test whether appbas is shift-reduced with form at least 'form'
-    if (not is_row_polmatform(kerbas,shift,form))
+    if (not is_row_polmatform(form,kerbas,shift))
         return false;
 
     // verify that the product is zero
