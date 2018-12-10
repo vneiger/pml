@@ -14,7 +14,9 @@
 #include <NTL/lzz_pX.h>
 #include <vector>
 
-/** Vectors of long's, for representing lists of degrees, list of indices, degree shifts, etc. */
+/** Vectors of long's, for representing lists of degrees, list of indices,
+ * degree shifts, etc.
+ */
 typedef std::vector<long> VecLong;
 
 NTL_CLIENT
@@ -490,8 +492,8 @@ void conv(Mat<zz_pX> & pmat, const Mat<zz_p> & mat);
 /** Forms a polynomial matrix equal to the constant matrix `mat`, and returns
  * it.
  */
-inline Mat<zz_pX> conv(const Mat<zz_p> & coeff)
-{ Mat<zz_pX> mat; conv(mat, coeff); return mat; }
+inline Mat<zz_pX> conv(const Mat<zz_p> & mat)
+{ Mat<zz_pX> pmat; conv(pmat, mat); return pmat; }
 
 //@} // doxygen group: Conversion from constant matrix
 
