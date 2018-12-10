@@ -15,26 +15,19 @@
  *
  * \todo definitions
  *
+ * \todo random matrix with given PolMatForm
+ *
  */
 
-#include <NTL/matrix.h>
-#include <NTL/lzz_pX.h>
-#include <vector>
+#include "mat_lzz_pX_utils.h"
 #include <algorithm>
 
 NTL_CLIENT;
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* Tools for dealing with shifted reduced forms and shifted   */
-/* normal forms of polynomial matrices                        */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
 /** Shifted reduced forms of polynomial matrices.
  *
- * Recall that Popov => ordered weak Popov => weak Popov => Reduced.
- *  
+ * Note that these numbers follow the "strength" of these forms: Popov implies
+ * ordered weak Popov, which implies weak Popov, which implies reduced.
  */
 enum PolMatForm {
     NONE = 0, /**< Arbitrary matrix, no specific form */
@@ -45,33 +38,32 @@ enum PolMatForm {
 };
 
 
+/** @name Helper functions for shifts
+ *
+ * \todo reduction of the shift entries for a given determinantal degree (would
+ * be useful, for example in kernel via approximation)
+ */
+//@{
 
-// TODO shift reduction (given degdet D, cf ISSAC)
-// --> would be useful, e.g. in naive kernel
-
-// TODO type for index tuples?
-// TODO type for pair (pivot index, pivot degree)?
-// remove those types to be more explicit?
-
-// TODO random matrix with given PolMatForm
-
-
-/*------------------------------------------------------------*/
-/* Amplitude of a shift: max(shift) - min(shift)              */
-/*------------------------------------------------------------*/
-
+/** Computes the amplitude `amp` of a shift `shift`, that is, the difference
+ * between its largest entry and its smallest entry
+ */
 inline void amplitude(long & amp, VecLong shift)
 {
     auto minmax = std::minmax_element(shift.begin(), shift.end());
     amp = *minmax.second - *minmax.first;
 }
 
+/** Computes and returns the amplitude of a shift `shift`, that is, the
+ * difference between its largest entry and its smallest entry
+ */
 inline long amplitude(VecLong shift)
 {
     auto minmax = std::minmax_element(shift.begin(), shift.end());
     return *minmax.second - *minmax.first;
 }
 
+//@} // doxygen group: Helper functions for shifts
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -79,96 +71,124 @@ inline long amplitude(VecLong shift)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+/** @name (Shifted) row and column degree
+ * \anchor RowAndColumnDegrees
+ *
+ * The degree of a (row or column) vector is the maximum of the degrees of the
+ * entries of this vector; by convention, it is -1 if the vector is zero.  The
+ * _row degree_ of a matrix is the tuple of the degrees of its rows, and
+ * similarly the _column degree_ of a matrix is the tuple of the degrees of its
+ * columns.
+ *
+ * In this context, a shift is a tuple of signed integers. For a given `shift`
+ * of length `m`, the <em>`shift`-degree</em> of a (row or column) vector
+ * `pvec` of length `m` is the maximum of the degrees of the entries of that
+ * vector to which we add the corresponding shift entry, that is, the maximum
+ * of `deg(pvec[i]) + shift[i]` for `0 <= i < m`. By convention, this is
+ * `min(shift)-1` if the vector is zero, thus ensuring that the `shift`-degree
+ * of a nonzero vector is always strictly larger than the `shift`-degree of the
+ * zero vector.
+ *
+ * Then, the <em>`shift`-row degree</em> of a polynomial matrix is the tuple of
+ * `shift`-degrees of its rows, and similarly the <em>`shift`-column
+ * degree</em> is the tuple of `shift`-degrees of its columns.
+ *
+ * In particular, for the zero shift `shift = [0,...,0]`, these notions of
+ * shifted degree of a vector and of shifted row/column degree of a matrix
+ * coincide with the usual non-shifted notions defined above.
+ *  
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* the row degree of a matrix is the tuple                    */
-/* (deg(row 1), deg(row 2), ..., deg(row m))                  */
-/* where the degree of row k is the maximum of the degrees    */
-/* of the entries of row k (-1 if row is zero)                */
-/*------------------------------------------------------------*/
-void row_degree(
-                VecLong & rdeg,
-                const Mat<zz_pX> &pmat
-               ); 
+/** Computes the row degree `rdeg` of a polynomial matrix `pmat` (see
+ * @ref RowAndColumnDegrees)
+ */
+void row_degree(VecLong & rdeg, const Mat<zz_pX> & pmat); 
 
-inline VecLong row_degree(const Mat<zz_pX> &pmat)
+/** Computes and returns the row degree of a polynomial matrix `pmat` (see
+ * @ref RowAndColumnDegrees)
+ */
+inline VecLong row_degree(const Mat<zz_pX> & pmat)
 { VecLong rdeg; row_degree(rdeg, pmat); return rdeg; }
 
-/*------------------------------------------------------------*/
-/* the shifted row degree of a matrix is the tuple            */
-/* (s-deg(row 1), s-deg(row 2), ..., s-deg(row m))            */
-/* where the s-degree of row k is the maximum of the degrees  */
-/* of pmat[k][j] with a weight shift[j] added on column j     */
-/* (min(shift)-1 if row is zero)                              */
-/*------------------------------------------------------------*/
+/** Computes the `shift`-row degree `rdeg` of a polynomial matrix `pmat` (see
+ * @ref RowAndColumnDegrees)
+ */
 void row_degree(
                 VecLong & rdeg,
-                const Mat<zz_pX> &pmat,
+                const Mat<zz_pX> & pmat,
                 const VecLong & shift
                ); 
 
-inline VecLong row_degree(
-                          const Mat<zz_pX> &pmat,
-                          const VecLong & shift
-                         )
+/** Computes and returns the `shift`-row degree of a polynomial matrix `pmat`
+ * (see @ref RowAndColumnDegrees)
+ */
+inline VecLong row_degree(const Mat<zz_pX> & pmat, const VecLong & shift)
 { VecLong rdeg; row_degree(rdeg, pmat, shift); return rdeg; }
 
+/** Computes the column degree `cdeg` of a polynomial matrix `pmat` (see
+ * @ref RowAndColumnDegrees)
+ */
+void col_degree(VecLong & cdeg, const Mat<zz_pX> & pmat); 
 
-/*------------------------------------------------------------*/
-/* the column degree of a matrix is the tuple                 */
-/* (deg(col 1), deg(col 2), ..., deg(col m))                  */
-/* where the degree of column k is the maximum of the degrees */
-/* of the entries of column k (-1 if column is zero)          */
-/*------------------------------------------------------------*/
-void col_degree(
-                VecLong & cdeg,
-                const Mat<zz_pX> &pmat
-               ); 
-
-inline VecLong col_degree(const Mat<zz_pX> &pmat)
+/** Computes and returns the column degree of a polynomial matrix `pmat` (see
+ * @ref RowAndColumnDegrees)
+ */
+inline VecLong col_degree(const Mat<zz_pX> & pmat)
 { VecLong cdeg; col_degree(cdeg, pmat); return cdeg; }
 
-/*------------------------------------------------------------*/
-/* the shifted column degree of a matrix is the tuple         */
-/* (s-deg(col 1), s-deg(col 2), ..., s-deg(col m))            */
-/* where the s-degree of column k is the maximum of the       */
-/* degrees of pmat[i][k] with weight shift[i] added on row i  */
-/* (min(shift)-1 if column is zero)                           */
-/*------------------------------------------------------------*/
+/** Computes the `shift`-column degree `cdeg` of a polynomial matrix `pmat`
+ * (see @ref RowAndColumnDegrees)
+ */
 void col_degree(
                 VecLong & cdeg,
-                const Mat<zz_pX> &pmat,
+                const Mat<zz_pX> & pmat,
                 const VecLong & shift
                ); 
 
-inline VecLong col_degree(
-                          const Mat<zz_pX> &pmat,
-                          const VecLong & shift
-                         )
+/** Computes and returns the `shift`-column degree of a polynomial matrix
+ * `pmat` (see @ref RowAndColumnDegrees)
+ */
+inline VecLong col_degree(const Mat<zz_pX> & pmat, const VecLong & shift)
 { VecLong cdeg; col_degree(cdeg, pmat, shift); return cdeg; }
 
+//@} // doxygen group: (Shifted) row and column degree
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* (SHIFTED) PIVOT INDEX/DEGREE                               */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/** @name (Shifted) pivot index and pivot degree
+ * \anchor Pivots
+ *
+ * row-wise (shifted) pivot indices and degrees
+ * --> tuple of pivot index/degree for each row of pmat
+ * For a given row, the pivot index is the index of the
+ * rightmost entry which reaches the (shifted) row degree;
+ * the pivot degree is the degree of that pivot (not adding
+ * the shift)
+ * The pivot index of a zero row is -1
+ *  
+ * column-wise (shifted) pivot indices and degrees
+ * --> tuple of pivot index/degree for each column of pmat
+ * For a given column, the pivot index is the index of the
+ * bottommost entry which reaches the (shifted) column
+ * the pivot degree is the degree of that pivot (not adding
+ * the shift)
+ * The pivot index of a zero column is -1
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* row-wise (shifted) pivot indices and degrees               */
-/* --> tuple of pivot index/degree for each row of pmat       */
-/* For a given row, the pivot index is the index of the       */
-/* rightmost entry which reaches the (shifted) row degree;    */
-/* the pivot degree is the degree of that pivot (not adding   */
-/* the shift)                                                 */
-/* The pivot index of a zero row is -1                        */
-/*------------------------------------------------------------*/
-void row_pivots(
-                VecLong & pivind,
-                VecLong & pivdeg,
-                const Mat<zz_pX> & pmat
-               );
+/** Computes the row-wise pivot index `pivind` and pivot degree `pivdeg` of a
+ * polynomial matrix `pmat` (see @ref Pivots)
+ */
+void row_pivots(VecLong & pivind, VecLong & pivdeg, const Mat<zz_pX> & pmat);
 
+/** Computes and return a pair whose first element is the row-wise pivot index
+ * of a polynomial matrix `pmat` and whose second element is the row-wise pivot
+ * degree of `pmat` (see @ref Pivots)
+ */
 inline std::pair<VecLong,VecLong> row_pivots(const Mat<zz_pX> & pmat)
 {
     std::pair<VecLong,VecLong> pivots;
@@ -176,6 +196,9 @@ inline std::pair<VecLong,VecLong> row_pivots(const Mat<zz_pX> & pmat)
     return pivots;
 }
 
+/** Computes the row-wise `shift`-pivot index `pivind` and `shift`-pivot degree
+ * `pivdeg` of a polynomial matrix `pmat` (see @ref Pivots)
+ */
 void row_pivots(
                 VecLong & pivind,
                 VecLong & pivdeg,
@@ -183,33 +206,27 @@ void row_pivots(
                 const VecLong & shift
                );
 
+/** Computes and return a pair whose first element is the row-wise
+ * `shift`-pivot index of a polynomial matrix `pmat` and whose second element
+ * is the row-wise `shift`-pivot degree of `pmat` (see @ref Pivots)
+ */
 inline std::pair<VecLong,VecLong>
-row_pivots(
-           const Mat<zz_pX> & pmat,
-           const VecLong & shift
-          )
+row_pivots(const Mat<zz_pX> & pmat, const VecLong & shift)
 {
     std::pair<VecLong,VecLong> pivots;
     row_pivots(pivots.first, pivots.second, pmat, shift);
     return pivots;
 }
 
+/** Computes the column-wise pivot index `pivind` and pivot degree `pivdeg` of
+ * a polynomial matrix `pmat` (see @ref Pivots)
+ */
+void col_pivots(VecLong & pivind, VecLong & pivdeg, const Mat<zz_pX> & pmat);
 
-/*------------------------------------------------------------*/
-/* column-wise (shifted) pivot indices and degrees            */
-/* --> tuple of pivot index/degree for each column of pmat    */
-/* For a given column, the pivot index is the index of the    */
-/* bottommost entry which reaches the (shifted) column degree;*/
-/* the pivot degree is the degree of that pivot (not adding   */
-/* the shift)                                                 */
-/* The pivot index of a zero column is -1                     */
-/*------------------------------------------------------------*/
-void col_pivots(
-                VecLong & pivind,
-                VecLong & pivdeg,
-                const Mat<zz_pX> & pmat
-               );
-
+/** Computes and return a pair whose first element is the column-wise pivot
+ * index of a polynomial matrix `pmat` and whose second element is the
+ * column-wise pivot degree of `pmat` (see @ref Pivots)
+ */
 inline std::pair<VecLong,VecLong> col_pivots(const Mat<zz_pX> & pmat)
 {
     std::pair<VecLong,VecLong> pivots;
@@ -217,6 +234,9 @@ inline std::pair<VecLong,VecLong> col_pivots(const Mat<zz_pX> & pmat)
     return pivots;
 }
 
+/** Computes the column-wise `shift`-pivot index `pivind` and `shift`-pivot
+ * degree `pivdeg` of a polynomial matrix `pmat` (see @ref Pivots)
+ */
 void col_pivots(
                 VecLong & pivind,
                 VecLong & pivdeg,
@@ -224,17 +244,19 @@ void col_pivots(
                 const VecLong & shift
                );
 
+/** Computes and return a pair whose first element is the column-wise
+ * `shift`-pivot index of a polynomial matrix `pmat` and whose second element
+ * is the column-wise `shift`-pivot degree of `pmat` (see @ref Pivots)
+ */
 inline std::pair<VecLong,VecLong>
-col_pivots(
-           const Mat<zz_pX> & pmat,
-           const VecLong & shift
-          )
+col_pivots(const Mat<zz_pX> & pmat, const VecLong & shift)
 {
     std::pair<VecLong,VecLong> pivots;
     col_pivots(pivots.first, pivots.second, pmat, shift);
     return pivots;
 }
 
+//@} // doxygen group: (Shifted) pivot index and pivot degree
 
 
 /*------------------------------------------------------------*/
