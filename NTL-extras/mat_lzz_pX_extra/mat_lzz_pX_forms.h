@@ -162,21 +162,17 @@ inline VecLong col_degree(const Mat<zz_pX> & pmat, const VecLong & shift)
 /** @name (Shifted) pivot index and pivot degree
  * \anchor Pivots
  *
- * row-wise (shifted) pivot indices and degrees
- * --> tuple of pivot index/degree for each row of pmat
- * For a given row, the pivot index is the index of the
- * rightmost entry which reaches the (shifted) row degree;
- * the pivot degree is the degree of that pivot (not adding
- * the shift)
- * The pivot index of a zero row is -1
- *  
- * column-wise (shifted) pivot indices and degrees
- * --> tuple of pivot index/degree for each column of pmat
- * For a given column, the pivot index is the index of the
- * bottommost entry which reaches the (shifted) column
- * the pivot degree is the degree of that pivot (not adding
- * the shift)
- * The pivot index of a zero column is -1
+ * For a given shift and a given (row or column) polynomial vector, its _shifted
+ * pivot index_ is the largest index corresponding to an entry which reaches the
+ * shifted degree of the vector, and its _shifted pivot degree_ is the degree of
+ * that entry (without adding the shift entry). By convention, both the shifted
+ * pivot index and the shifted pivot degree of a zero vector are -1.
+ *
+ * Then, the row-wise shifted pivot index (resp. degree) of a polynomial matrix
+ * is the tuple of the shifted pivot indices (resp. degrees) of the rows of
+ * this matrix. Similarly, the column-wise shifted pivot index (resp. degree)
+ * of a polynomial matrix is the tuple of the shifted pivot indices (resp.
+ * degrees) of the columns of this matrix.
  */
 //@{
 
