@@ -371,9 +371,7 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
             {
                 ev.evaluate(tmp, trunc(a[i][j], 2*k)); // degree = 2k - 1
                 for (long r = 0, rss = 0; r < n; r++, rss += ss)
-                {
                     mat_val2[rss + i*s + j] = tmp[r];
-                }
             }
 
         // let y = x (a mod t^(2k)
@@ -390,14 +388,14 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
             for (long i = 0; i < s; i++)
                 for (long ell = 0; ell < s; ell++)
                     v2[i][ell] = mat_val2[jss + i*s + ell];
-            v3 = v1 * v2;
+            mul(v3, v1, v2);
             for (long i = 0; i < s; i++)
                 for (long ell = 0; ell < s; ell++)
                     if (i == ell)
                         v3[i][ell] = (v3[i][ell] - 1) * coeff;
                     else
                         v3[i][ell] = v3[i][ell] * coeff;
-            v3 = v3 * v1;
+            mul(v3, v3, v1);
             for (long i = 0; i < s; i++)
                 for (long ell = 0; ell < s; ell++)
                     mat_val3[i*s + ell][j] = v3[i][ell];
