@@ -1,41 +1,43 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-
-#include "lzz_p_extra.h"
-#include "mat_lzz_pX_extra.h"
-#include "lzz_pX_CRT.h"
+#include <algorithm> // for minmax
+#include "mat_lzz_pX_multiply.h"
 
 NTL_CLIENT
-
-
 
 /*------------------------------------------------------------*/
 /* in-place reduction modulo the current prime                */
 /*------------------------------------------------------------*/
 void reduce_mod_p(Mat<zz_pX> & a)
 {
-    long r = a.NumRows();
-    long s = a.NumCols();
-    long p = zz_p::modulus();
+    const long p = zz_p::modulus();
     sp_reduce_struct red_struct = zz_pInfo->red_struct;
- 
-    for (long i = 0; i < r; i++) 
-    {
-        for (long j = 0; j < s; j++)
+    for (long i = 0; i < a.NumRows(); ++i) 
+        for (long j = 0; j < a.NumCols(); ++j)
         {
-            long dg = deg(a[i][j]);
-            if (dg >= 0)
-            {
-                zz_p * coeffs = a[i][j].rep.elts();
-                for (long k = 0; k <= dg; k++)
-                {
-                    coeffs[k].LoopHole() = rem(coeffs[k].LoopHole(), p, red_struct);
-                }
-                a[i][j].normalize();
-            }
+            for (long k = 0; k <= deg(a[i][j]); ++k)
+                a[i][j][k].LoopHole() = rem(a[i][j][k]._zz_p__rep, p, red_struct);
+            a[i][j].normalize();
         }
-    }
+}
+
+/*------------------------------------------------------------*/
+/* copy and reduce modulo the current prime                   */
+/*------------------------------------------------------------*/
+void reduce_mod_p(Mat<zz_pX> & ap, const Mat<zz_pX> & a)
+{
+    const long m = a.NumRows();
+    const long n = a.NumCols();
+    const long p = zz_p::modulus();
+    sp_reduce_struct red_struct = zz_pInfo->red_struct;
+    ap.SetDims(m,n);
+    for (long i = 0; i < m; ++i) 
+        for (long j = 0; j < n; ++j)
+        {
+            const long d = deg(a[i][j]);
+            ap[i][j].SetLength(d+1);
+            for (long k = 0; k <= d; ++k)
+                ap[i][j][k].LoopHole() = rem(a[i][j][k]._zz_p__rep, p, red_struct);
+            ap[i][j].normalize();
+        }
 }
 
 /*------------------------------------------------------------*/
@@ -44,41 +46,49 @@ void reduce_mod_p(Mat<zz_pX> & a)
 /*------------------------------------------------------------*/
 static void reconstruct_2CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, const Mat<zz_pX> & c1, long p1)
 {
-    if (p0 > p1) // ensures that p0 < p1
+    if (p0 > p1) // ensures that p0 <= p1
     {
         reconstruct_2CRT(c, c1, p1, c0, p0);
         return;
     }
 
-    long r = c0.NumRows();
-    long s = c0.NumCols();
-    c.SetDims(r, s);
-
-    long p0_inv = InvMod(p0, p1);
+    const long p0_inv = InvMod(p0, p1);
     mulmod_precon_t p0_inv_prec = PrepMulModPrecon(p0_inv, p1, PrepMulMod(p1)); 
 
-    long p = zz_p::modulus();
+    const long p = zz_p::modulus();
     sp_reduce_struct red_struct = zz_pInfo->red_struct;
-    long p0_red = rem(p0, p, red_struct);
+    const long p0_red = rem(p0, p, red_struct);
     mulmod_precon_t p0_prec = PrepMulModPrecon(p0_red, p, PrepMulMod(p)); 
 
-    for (long i = 0; i < r; i++)
+    const long r = c0.NumRows();
+    const long s = c0.NumCols();
+    c.SetDims(r, s);
+
+    for (long i = 0; i < r; ++i)
     {
-        for (long j = 0; j < s; j++)
+        for (long j = 0; j < s; ++j)
         {
-            c[i][j] = 0;
-            long d = max(deg(c0[i][j]), deg(c1[i][j]));
-            for (long k = 0; k <= d; k++)
+            const std::pair<long,long> degs = std::minmax(deg(c0[i][j]), deg(c1[i][j]));
+            c[i][j].SetLength(degs.second+1);
+            for (long k = 0; k <= degs.first; ++k)
             {
-                long m0 = rep(coeff(c0[i][j], k));
-                long m1 = rep(coeff(c1[i][j], k));
-                long alpha = SubMod(m1, m0, p1);
+                long m0 = c0[i][j][k]._zz_p__rep;
+                long alpha = SubMod(c1[i][j][k]._zz_p__rep, m0, p1);
                 alpha = MulModPrecon(alpha, p0_inv, p1, p0_inv_prec);
                 alpha = rem(alpha, p, red_struct);
                 m0 = rem(m0, p, red_struct);
-                alpha = MulModPrecon(alpha, p0_red, p, p0_prec); 
-                SetCoeff(c[i][j], k, AddMod(m0, alpha, p));
+                c[i][j][k] = AddMod(m0, MulModPrecon(alpha, p0_red, p, p0_prec), p);
             }
+            for (long k = degs.first+1; k <= degs.second; ++k)
+            {
+                long m0 = coeff(c0[i][j], k)._zz_p__rep;
+                long alpha = SubMod(coeff(c1[i][j], k)._zz_p__rep, m0, p1);
+                alpha = MulModPrecon(alpha, p0_inv, p1, p0_inv_prec);
+                alpha = rem(alpha, p, red_struct);
+                m0 = rem(m0, p, red_struct);
+                c[i][j][k] = AddMod(m0, MulModPrecon(alpha, p0_red, p, p0_prec), p);
+            }
+            c[i][j].normalize();
         }
     }
 }
@@ -90,21 +100,18 @@ static void reconstruct_2CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, con
 static void reconstruct_3CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, const Mat<zz_pX> & c1, long p1, const Mat<zz_pX> & c2, long p2)
 {
 
-    if (p0 > p1) // ensures that p0 < p1
+    // ensure that p0 <= p1 <= p2
+    if (p0 > p1) // ensures that p0 <= p1
     {
         reconstruct_3CRT(c, c1, p1, c0, p0, c2, p2);
         return;
     }
 
-    if (p1 > p2) // ensures that p1 < p2
+    if (p1 > p2) // ensures that p1 <= p2
     {
         reconstruct_3CRT(c, c0, p0, c2, p2, c1, p1);
         return;
     }	
-
-    long r = c0.NumRows();
-    long s = c0.NumCols();
-    c.SetDims(r, s);
 
     long p = zz_p::modulus();
     sp_reduce_struct red_struct = zz_pInfo->red_struct;
@@ -130,22 +137,24 @@ static void reconstruct_3CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, con
     long p0p1_inv_p2 = InvMod(p0p1_p2, p2);
     mulmod_precon_t p0p1_inv_p2_prec = PrepMulModPrecon(p0p1_inv_p2, p2, PrepMulMod(p2)); 
 
-    for (long i = 0; i < r; i++)
+    long r = c0.NumRows();
+    long s = c0.NumCols();
+    c.SetDims(r, s);
+
+    for (long i = 0; i < r; ++i)
     {
-        for (long j = 0; j < s; j++)
+        for (long j = 0; j < s; ++j)
         {
-            c[i][j] = 0;
-            long d = max(max(deg(c0[i][j]), deg(c1[i][j])), deg(c2[i][j]));
-            for (long k = 0; k <= d; k++)
+            const std::pair<long,long> degs = minmax({deg(c0[i][j]), deg(c1[i][j]), deg(c2[i][j])});
+            c[i][j].SetLength(degs.second+1);
+            for (long k = 0; k <= degs.first; ++k)
             {
-                long m0 = rep(coeff(c0[i][j], k));
-                long m1 = rep(coeff(c1[i][j], k));
-                long m2 = rep(coeff(c2[i][j], k));
-
                 // find coefficients alpha0, alpha1, alpha2 s.t. c = alpha0 + p0 alpha1 + p0 p1 alpha2
-                long alpha0 = m0;
+                long alpha0 = c0[i][j][k]._zz_p__rep;
+                long m1 = c1[i][j][k]._zz_p__rep;
+                long m2 = c2[i][j][k]._zz_p__rep;
 
-                long alpha1 = SubMod(m1, m0, p1);
+                long alpha1 = SubMod(m1, alpha0, p1);
                 alpha1 = MulModPrecon(alpha1, p0_inv_p1, p1, p0_inv_p1_prec);
 
                 // p0 < p1 < p2 so alpha0, alpha1 reduced mod p2
@@ -159,10 +168,36 @@ static void reconstruct_3CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, con
                 alpha1 = rem(alpha1, p, red_struct);
                 alpha2 = rem(alpha2, p, red_struct);
 
-                SetCoeff(c[i][j], k, AddMod(alpha0, 
-                                            AddMod(MulModPrecon(alpha1, p0_p, p, p0_p_prec), 
-                                                   MulModPrecon(alpha2, p0p1_p, p, p0p1_p_prec), p), p));
+                c[i][j][k] = AddMod(alpha0, 
+                                    AddMod(MulModPrecon(alpha1, p0_p, p, p0_p_prec), 
+                                           MulModPrecon(alpha2, p0p1_p, p, p0p1_p_prec), p), p);
             }
+            for (long k = degs.first+1; k <= degs.second; ++k)
+            {
+                // find coefficients alpha0, alpha1, alpha2 s.t. c = alpha0 + p0 alpha1 + p0 p1 alpha2
+                long alpha0 = coeff(c0[i][j], k)._zz_p__rep;
+                long m1 = coeff(c1[i][j], k)._zz_p__rep;
+                long m2 = coeff(c2[i][j], k)._zz_p__rep;
+
+                long alpha1 = SubMod(m1, alpha0, p1);
+                alpha1 = MulModPrecon(alpha1, p0_inv_p1, p1, p0_inv_p1_prec);
+
+                // p0 < p1 < p2 so alpha0, alpha1 reduced mod p2
+                long alpha1_p0_p2 = MulModPrecon(alpha1, p0, p2, p0_p2_prec);
+                alpha1_p0_p2 = AddMod(alpha0, alpha1_p0_p2, p2);
+                long alpha2 = SubMod(m2, alpha1_p0_p2, p2);
+                alpha2 = MulModPrecon(alpha2, p0p1_inv_p2, p2, p0p1_inv_p2_prec);
+
+                // reduce everything mod p
+                alpha0 = rem(alpha0, p, red_struct);
+                alpha1 = rem(alpha1, p, red_struct);
+                alpha2 = rem(alpha2, p, red_struct);
+
+                c[i][j][k] = AddMod(alpha0, 
+                                    AddMod(MulModPrecon(alpha1, p0_p, p, p0_p_prec), 
+                                           MulModPrecon(alpha2, p0p1_p, p, p0p1_p_prec), p), p);
+            }
+            c[i][j].normalize();
         }
     }
 }
@@ -180,10 +215,9 @@ static void multiply_modulo_FFT_prime(Mat<zz_pX> & c, const Mat<zz_pX> & a, cons
 
     if (fft_p < p) // entries may not be reduced mod fft_p
     {
-        Mat<zz_pX> ap = a;
-        Mat<zz_pX> bp = b;
-        reduce_mod_p(ap);
-        reduce_mod_p(bp);
+        Mat<zz_pX> ap, bp;
+        reduce_mod_p(ap, a);
+        reduce_mod_p(bp, b);
         multiply_evaluate_FFT(c, ap, bp);
     }
     else
@@ -204,10 +238,9 @@ static void middle_product_modulo_FFT_prime(Mat<zz_pX> & b, const Mat<zz_pX> & a
 
     if (fft_p < p) // entries may not be reduced mod fft_p
     {
-        Mat<zz_pX> ap = a;
-        Mat<zz_pX> cp = c;
-        reduce_mod_p(ap);
-        reduce_mod_p(cp);
+        Mat<zz_pX> ap, cp;
+        reduce_mod_p(ap, a);
+        reduce_mod_p(cp, c);
         middle_product_evaluate_FFT(b, ap, cp, dA, dB);
     }
     else
@@ -235,31 +268,14 @@ lzz_pX_3_primes::lzz_pX_3_primes(long ncols, long dA, long dB)
 
     nb_primes = 0;
     if (ZZ(fft_p0) > max_coeff)
-    {
         nb_primes = 1;
-    }
     else if (ZZ(fft_p0)*ZZ(fft_p1) > 2*max_coeff)
-    {
         nb_primes = 2;
-    }
     else if (ZZ(fft_p0)*ZZ(fft_p1)*ZZ(fft_p2) > 2*max_coeff)   // x2 so that normalized remainders are in [0..p0p1p2/2]
-    {
         nb_primes = 3;
-    }
     else
-    {
         LogicError("size too large for 3 primes FFT");
-    }
 }
-
-/*------------------------------------------------------------*/
-/* returns the number of primes                               */
-/*------------------------------------------------------------*/
-long lzz_pX_3_primes::nb() const
-{
-    return nb_primes;
-}
-
 
 /*------------------------------------------------------------*/
 /* reconstructs c from its images                             */

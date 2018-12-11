@@ -31,36 +31,35 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+/** Class for 3-primes FFT
+ * \todo use smaller FFT primes if possible?
+ */
 class lzz_pX_3_primes
 {
 public:
-    /*------------------------------------------------------------*/
-    /* constructor of lzz_p_3_primes                              */
-    /* need to know ncols and degrees to choose number of primes  */
-    /*------------------------------------------------------------*/
-    lzz_pX_3_primes(long ncols, long dA, long dB);
+    /** Constructor, which uses the product inner dimension and the degrees to
+     * choose the number of primes and the primes */
+    lzz_pX_3_primes(long indim, long dA, long dB);
+
+    /** Empty construct (should not be used?) */
     lzz_pX_3_primes(){};
 
-    /*------------------------------------------------------------*/
-    /* returns the number of primes                               */
-    /*------------------------------------------------------------*/
-    long nb() const;
+    /** Accessor: number of primes */
+    long nb() const { return nb_primes; }
 
-    /*------------------------------------------------------------*/
-    /* reconstructs c from its images                             */
-    /*------------------------------------------------------------*/
+    /** Reconstructs c from its images modulo the primes */
     void reconstruct(Mat<zz_pX>& c, const Vec<Mat<zz_pX>>& cs);
 
 private:
-    long nb_primes;
-    long fft_p0, fft_p1, fft_p2; // the fft primes
+    long nb_primes; /**< number of FFT primes */
+    long fft_p0, fft_p1, fft_p2; /**< the FFT primes */
 };
 
-/*------------------------------------------------------------*/
-/* 3-primes: in-place reduction modulo the current prime      */
-/*------------------------------------------------------------*/
+/** Used for 3-primes FFT: in-place reduction of `a` modulo the current prime */
 void reduce_mod_p(Mat<zz_pX> & a);
 
+/** Used for 3-primes FFT: compute `ap`, the reduction of `a` modulo the current prime */
+void reduce_mod_p(Mat<zz_pX> & ap, const Mat<zz_pX> & a);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
