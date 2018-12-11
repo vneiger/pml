@@ -80,10 +80,8 @@ void plain_inv_trunc(Mat<zz_pX> & imat, const Mat<zz_pX> & pmat, long d);
  * prime; Newton iteration is implemented using FFT evaluation and
  * interpolation. This function calls the naive algo #plain_inv_trunc for
  * starting the iteration or if the order `d` is small; the crossover point is
- * for `d = 2^thresh`; predetermined values are used if thresh = -1, which is
- * the default value.
- *
- * \todo Sure about this crossover point?
+ * for `d = thresh`; predetermined values are used if thresh = -1, which is the
+ * default value.
  */
 void newton_inv_trunc_FFT(
                           Mat<zz_pX> & imat,
@@ -96,10 +94,8 @@ void newton_inv_trunc_FFT(
  * TruncatedInverse) by Newton iteration, whose cost is quasi-linear in `d`,
  * implemented using the #middle_product function. This function calls the naive
  * algo #plain_inv_trunc for starting the iteration or if the order `d` is
- * small; the crossover point is for `d = 2^thresh`; predetermined values are
+ * small; the crossover point is for `d = thresh`; predetermined values are
  * used if thresh = -1, which is the default value.
- *
- * \todo Sure about this crossover point?
  */
 void newton_inv_trunc_middle_product(
                                      Mat<zz_pX> & imat,
@@ -113,10 +109,8 @@ void newton_inv_trunc_middle_product(
  * The iteration is implemented using evaluation and interpolation at geometric
  * points. This function calls the naive algo #plain_inv_trunc for starting the
  * iteration or if the order `d` is small; the crossover point is for `d =
- * 2^thresh`; predetermined values are used if thresh = -1, which is the
+ * thresh`; predetermined values are used if thresh = -1, which is the
  * default value.
- *
- * \todo Sure about this crossover point?
  */
 void newton_inv_trunc_geometric(
                                 Mat<zz_pX> & imat,

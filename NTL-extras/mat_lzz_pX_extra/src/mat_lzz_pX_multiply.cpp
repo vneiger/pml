@@ -65,19 +65,32 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long i
 }
 
 /*------------------------------------------------------------*/
-/* multiply by a vector                                       */
+/* right multiply by a column vector                          */
 /*------------------------------------------------------------*/
 void multiply(Vec<zz_pX>& c, const Mat<zz_pX>& a, const Vec<zz_pX>& b, long is_prime)
 {
     Mat<zz_pX> cmat, bmat;
     bmat.SetDims(b.length(), 1);
-    for (long i = 0; i < b.length(); i++)
+    for (long i = 0; i < b.length(); ++i)
         bmat[i][0] = b[i];
     multiply(cmat, a, bmat, is_prime);
     c.SetLength(cmat.NumRows());
-    for (long i = 0; i < cmat.NumRows(); i++)
-        c[i] = cmat[i][0];
+    for (long i = 0; i < cmat.NumRows(); ++i)
+        c[i].swap(cmat[i][0]);
 }
+
+/*------------------------------------------------------------*/
+/* left-multiply by a row vector                              */
+/*------------------------------------------------------------*/
+void multiply(Vec<zz_pX>& c, const Vec<zz_pX>& a, const Mat<zz_pX>& b, long is_prime)
+{
+    Mat<zz_pX> amat(INIT_SIZE, 1, a.length());
+    amat[0] = a;
+    Mat<zz_pX> cmat;
+    multiply(cmat, amat, b, is_prime);
+    c.swap(cmat[0]);
+}
+
 
 // Local Variables:
 // mode: C++

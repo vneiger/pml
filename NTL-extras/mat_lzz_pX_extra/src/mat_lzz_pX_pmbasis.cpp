@@ -1496,27 +1496,25 @@ VecLong pmbasis(
     if (order <= 16) // TODO thresholds to be determined
         return mbasis(appbas,pmat,order,shift);
 
-    VecLong pivdeg; // pivot degree, first call
-    VecLong pivdeg2; // pivot degree, second call
-    VecLong rdeg(pmat.NumRows()); // shifted row degree
     long order1 = order>>1; // order of first call
     long order2 = order-order1; // order of second call
-    Mat<zz_pX> trunc_pmat; // truncated pmat for first call
-    Mat<zz_pX> appbas2; // basis for second call
-    Mat<zz_pX> residual; // for the residual
 
     // first recursive call, with 'pmat' and 'shift'
+    Mat<zz_pX> trunc_pmat; // truncated pmat for first call
     trunc(trunc_pmat,pmat,order1);
-    pivdeg = pmbasis(appbas,trunc_pmat,order1,shift);
+    VecLong pivdeg = pmbasis(appbas,trunc_pmat,order1,shift);
 
     // shifted row degree = shift for second call = pivdeg+shift
+    VecLong rdeg(pmat.NumRows()); // shifted row degree
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
 
     // residual = (appbas * pmat * X^-order1) mod X^order2
+    Mat<zz_pX> residual; // for the residual
     middle_product(residual, appbas, pmat, order1, order2-1);
 
     // second recursive call, with 'residual' and 'rdeg'
-    pivdeg2 = pmbasis(appbas2,residual,order2,rdeg);
+    Mat<zz_pX> appbas2; // basis for second call
+    VecLong pivdeg2 = pmbasis(appbas2,residual,order2,rdeg);
 
     // final basis = appbas2 * appbas
     multiply(appbas,appbas2,appbas);
