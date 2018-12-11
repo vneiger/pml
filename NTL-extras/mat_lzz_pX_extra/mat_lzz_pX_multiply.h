@@ -8,7 +8,7 @@
  * \version 0.1
  * \date 2018-12-11
  *
- * Functions for computing products and middle products of two unvariate
+ * Functions for computing products and middle products of univariate
  * polynomial matrices.
  *
  */

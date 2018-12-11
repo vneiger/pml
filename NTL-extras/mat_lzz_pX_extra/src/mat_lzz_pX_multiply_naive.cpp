@@ -95,28 +95,32 @@ void multiply_waksman(Mat<zz_pX> &Cout, const Mat<zz_pX> &A, const Mat<zz_pX> &B
 /* naive algorithm                                            */
 /* output may alias input; c does not have to be zero matrix  */
 /*------------------------------------------------------------*/
-void multiply_naive(Mat<zz_pX> & c_out, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
+    if (&c == &a || &c == &b)
+    {
+        Mat<zz_pX> c2;
+        multiply_naive(c2, a, b);
+        c.swap(c2);
+        return;
+    }
 
-    Mat<zz_pX> c;
-    long u = a.NumRows();
-    long v = a.NumCols();
-    long w = b.NumCols();
+    const long u = a.NumRows();
+    const long v = a.NumCols();
+    const long w = b.NumCols();
 
     c.SetDims(u, w);
-
-    for (long i = 0; i < u; i++)
-    {
-        for (long j = 0; j < w; j++)
+    zz_pX buf;
+    for (long i = 0; i < u; ++i)
+        for (long j = 0; j < w; ++j)
         {
-            c[i][j] = 0;
-            for (long k = 0; k < v; k++)
+            clear(c[i][j]);
+            for (long k = 0; k < v; ++k)
             {
-                c[i][j] += a[i][k]*b[k][j];
+                mul(buf, a[i][k], b[k][j]);
+                add(c[i][j], c[i][j], buf);
             }
         }
-    }
-    c_out = c;
 }
 
 
