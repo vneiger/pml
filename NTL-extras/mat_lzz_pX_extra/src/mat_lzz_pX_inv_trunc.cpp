@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <NTL/mat_lzz_p.h>
 
 #include "util.h"
@@ -18,14 +19,15 @@ static VecLong degrees(long n, long thresh)
 {
     VecLong all_deg;
 
-    while(n > thresh)
+    while (n > thresh)
     {
-        if (n & 1)
+        if (n % 2) // n is odd, add 1
             n++;
-        all_deg.insert(all_deg.begin(), n);
+        all_deg.push_back(n);
         n >>= 1;
     }
-    all_deg.insert(all_deg.begin(), n);
+    all_deg.push_back(n);
+    std::reverse(all_deg.begin(), all_deg.end());
     return all_deg;
 }
 
@@ -89,7 +91,6 @@ void plain_inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 }
 
 
-
 /*------------------------------------------------------------*/
 /* returns x = 1/a mod z^m, Newton iteration                  */
 /* throws an error if a(0) not invertible                     */
@@ -103,7 +104,7 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
     {
         Mat<zz_pX> y;
         newton_inv_trunc_FFT(y, a, m, thresh);
-        x = y;
+        x.swap(y);
         return;
     }
 
@@ -146,11 +147,8 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
             for (long j = 0; j < s; j++)
             {
                 TofftRep(R1, x[i][j], t);
-                long *frept = & R1.tbl[0][0];
                 for (long r = 0, rss = 0; r < n; r++, rss += ss)
-                {
-                    mat_val1[rss + i*s + j] = frept[r];
-                }
+                    mat_val1[rss + i*s + j] = R1.tbl[0][r];
             }
 
         // mat_val2 = FFT of (a mod t^(2k))
@@ -159,9 +157,8 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
             for (long j = 0; j < s; j++)
             {
                 TofftRep(R1, a[i][j], t, 0, min(2*k - 1, deg(a[i][j])));
-                long *frept = & R1.tbl[0][0];
                 for (long r = 0, rss = 0; r < n; r++, rss += ss)
-                    mat_val2[rss + i*s + j] = frept[r];
+                    mat_val2[rss + i*s + j] = R1.tbl[0][r];
             }
 
         // mat_val3 = values of ( x (a mod t^2k) ) = ___ + t^k delta
@@ -173,7 +170,7 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
             for (long i = 0; i < s; i++)
                 for (long ell = 0; ell < s; ell++)
                     v2[i][ell] = mat_val2[jss + i*s + ell];
-            v3 = v1 * v2;
+            mul(v3, v1, v2);
             for (long i = 0; i < s; i++)
                 for (long ell = 0; ell < s; ell++)
                     mat_val3[i*s + ell][j] = v3[i][ell];
@@ -183,15 +180,14 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
         for (long i = 0; i < s; i++)
             for (long ell = 0; ell < s; ell++)
             {
-                zz_pX P;
-                long *frept = & R1.tbl[0][0];
                 for (long r = 0; r < n; r++)
-                    frept[r] = rep(mat_val3[i*s + ell][r]);
+                    R1.tbl[0][r] = rep(mat_val3[i*s + ell][r]);
+
+                zz_pX P;
                 FromfftRep(P, R1, k, 2*k - 1);
                 TofftRep(R1, P, t);
-                frept = & R1.tbl[0][0];
                 for (long r = 0, rss = 0; r < n; r++, rss += ss)
-                    mat_val2[rss + i*s + ell] = frept[r];
+                    mat_val2[rss + i*s + ell] = R1.tbl[0][r];
             }
 
         // mat_val3 = values of (delta x)
@@ -203,7 +199,7 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
             for (long i = 0; i < s; i++)
                 for (long ell = 0; ell < s; ell++)
                     v2[i][ell] = mat_val2[jss + i*s + ell];
-            v3 = v2 * v1;
+            mul(v3, v2, v1);
             for (long i = 0; i < s; i++)
                 for (long ell = 0; ell < s; ell++)
                     mat_val3[i*s + ell][j] = v3[i][ell];
@@ -212,10 +208,10 @@ void newton_inv_trunc_FFT(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long thres
         for (long i = 0; i < s; i++)
             for (long ell = 0; ell < s; ell++)
             {
-                zz_pX P;
-                long *frept = & R1.tbl[0][0];
                 for (long r = 0; r < n; r++)
-                    frept[r] = rep(mat_val3[i*s + ell][r]);
+                    R1.tbl[0][r] = rep(mat_val3[i*s + ell][r]);
+
+                zz_pX P;
                 FromfftRep(P, R1, 0, k - 1);
 
                 x[i][ell].rep.SetLength(2*k);
@@ -249,7 +245,7 @@ void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m,
     {
         Mat<zz_pX> y;
         newton_inv_trunc_middle_product(y, a, m);
-        x = y;
+        x.swap(y);
         return;
     }
 
@@ -262,57 +258,31 @@ void newton_inv_trunc_middle_product(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m,
             thresh = MATRIX_INV_TRUNC_PLAIN_THRESHOLD_MIDDLE_LARGE;
     }
 
-#ifdef VERBOSE
-    cout << "thresh = " << thresh << endl;
-#endif
+    VecLong all_deg = degrees(m, thresh);
 
-    long idx, k;
-    k = thresh;
-    VecLong all_deg=degrees(m, k);
-    k = all_deg[0];
-    idx = 1;
+    long k = all_deg[0];
+    long idx = 1;
 
-#ifdef VERBOSE
-    double t = get_time();
-#endif
     plain_inv_trunc(x, a, k); // throws if a not square or a(0) not invertible
-#ifdef VERBOSE
-    cout << "plain : " << get_time()-t << endl;
-#endif
 
+    Mat<zz_pX> y, tr;
     while (k < m)
     {
-        Mat<zz_pX> y;
-#ifdef VERBOSE
-        t = get_time();
-#endif
-        Mat<zz_pX> tr = trunc(a, 2*k);
-#ifdef VERBOSE
-        cout << "trunc " << get_time()-t << endl;
-        t = get_time();
-#endif
+        trunc(tr, a, 2*k);
         middle_product(y, x, tr, k, k-1);
-#ifdef VERBOSE
-        cout << "middle " << get_time()-t << endl;
-        t = get_time();
-#endif
         mul_trunc(y, y, x, k);
-#ifdef VERBOSE
-        cout << "trunc " << get_time()-t << endl;
-        t = get_time();
-#endif
-        y <<= k;
-        x = x - y;
-        k = 2 * k;
+        // next two could be slightly improved since this is essentiall copying
+        // -y into the upper part of x, but this is a small fraction of the
+        // total time (up to 2%)
+        LeftShift(y, y, k);
+        sub(x, x, y);
+        k = 2*k;
         if (k != all_deg[idx])
         {
             k = all_deg[idx];
             trunc(x, x, k);
         }
         idx++;
-#ifdef VERBOSE
-        cout << "rest " << get_time()-t << endl;
-#endif
     }
 
     trunc(x, x, m);
@@ -331,7 +301,7 @@ void newton_inv_trunc_geometric(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m, long
     {
         Mat<zz_pX> y;
         newton_inv_trunc_geometric(y, a, m);
-        x = y;
+        x.swap(y);
         return;
     }
 
