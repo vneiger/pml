@@ -135,64 +135,13 @@ inline Mat<zz_pX> middle_product(
 
 
 
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/*                     3 PRIMES FFTS                          */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/** @name 3-primes FFT
- *
- *  Functions for polynomial matrix multiplication using the so-called
- *  _3-primes FFT_.
- */
-//@{
-
-/** Class for 3-primes FFT
- *
- * \todo use smaller primes when/if possible? (currently uses the FFT primes 0,
- * 1, 2 of NTL)
- */
-class lzz_pX_3_primes
-{
-public:
-    /** Constructor, which uses the product inner dimension and the degrees to
-     * choose the number of primes and the primes */
-    lzz_pX_3_primes(long indim, long dA, long dB);
-
-    /** Empty constructor is forbidden */
-    lzz_pX_3_primes() = delete;
-
-    /** Accessor: number of primes */
-    long nb() const { return nb_primes; }
-
-    /** Reconstructs c from its images modulo the primes */
-    void reconstruct(Mat<zz_pX>& c, const Vec<Mat<zz_pX>>& cs) const;
-
-private:
-    long nb_primes; /**< number of FFT primes */
-    long fft_p0, fft_p1, fft_p2; /**< the FFT primes */
-};
-
-/** Compute the reduction of a polynomial matrix `a` modulo the current prime,
- * in-place */
-void reduce_mod_p(Mat<zz_pX> & a);
-
-/** Compute `amodp`, the reduction of a polynomial matrix `a` modulo the
- * current prime */
-void reduce_mod_p(Mat<zz_pX> & amodp, const Mat<zz_pX> & a);
-
-//@} // doxygen group: 3-primes FFT
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/*               PLAIN MULTIPLICATION                         */
-/* ALL FUNCTIONS: C = A*B, OUTPUT CAN ALIAS INPUT             */
+/*                   MATRIX MULTIPLICATION                    */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/** @name Polynomial matrix multiplication, quadratic in the degree
+/** @name Non-FFT-based polynomial matrix multiplication
  *
  *   \todo write doc
  */
@@ -229,9 +178,9 @@ inline void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<z
     multiply_transform(c, a, b, max(deg(a), deg(b)) + 1);
 }
 
-//@} // doxygen group: Polynomial matrix multiplication
+//@} // doxygen group: Non-FFT-based polynomial matrix multiplication
 
-/** @name Polynomial matrix multiplication, FFT based, quasi-linear
+/** @name FFT-based polynomial matrix multiplication
  *
  *  \todo doc
  */
@@ -271,25 +220,22 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
 /*------------------------------------------------------------*/
 void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
-//@} // doxygen group: Polynomial matrix multiplication, FFT based
+//@} // doxygen group: FFT-based polynomial matrix multiplication
+
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*                     MIDDLE PRODUCT                         */
-/* all(*) functions (except for geometric)                    */
-/* return trunc( trunc(a, dA+1)*c div x^dA, dB+1 )            */
-/* output can alias input                                     */
-/* todo: ensure degree bounds on a, c                         */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* transpose of b mapsto c = a*b. output is                   */
-/*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
-/* a must have degree at most dA                              */
-/* c must have degree at most dA + dB                         */
-/*------------------------------------------------------------*/
-void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+/** @name Middle product
+ *
+ *  bla.
+ *
+ * \todo ensure degree bounds on a, c
+ */
+//@{
 
 /*------------------------------------------------------------*/
 /* naive algorithm, uses polynomial middle products           */
@@ -323,6 +269,52 @@ void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat
 /* uses matrix multiplication for evaluation and interpolation*/
 /*------------------------------------------------------------*/
 void middle_product_evaluate_dense(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+
+/*------------------------------------------------------------*/
+/* transpose of b mapsto c = a*b. output is                   */
+/*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
+/* a must have degree at most dA                              */
+/* c must have degree at most dA + dB                         */
+/*------------------------------------------------------------*/
+void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+
+//@} // doxygen group: Middle product
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*                CLASS FOR 3 PRIMES FFTS                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/** Class for 3-primes FFT
+ *
+ * \todo use smaller primes when/if possible? (currently uses the FFT primes 0,
+ * 1, 2 of NTL)
+ */
+class lzz_pX_3_primes
+{
+public:
+    /** Constructor, which uses the product inner dimension and the degrees to
+     * choose the number of primes and the primes */
+    lzz_pX_3_primes(long indim, long dA, long dB);
+
+    /** Empty constructor is forbidden */
+    lzz_pX_3_primes() = delete;
+
+    /** Accessor: number of primes */
+    long nb() const { return nb_primes; }
+
+    /** Reconstructs c from its images modulo the primes */
+    void reconstruct(Mat<zz_pX>& c, const Vec<Mat<zz_pX>>& cs) const;
+
+private:
+    long nb_primes; /**< number of FFT primes */
+    long fft_p0, fft_p1, fft_p2; /**< the FFT primes */
+};
+
+
+
 
 
 /*------------------------------------------------------------*/
@@ -478,11 +470,24 @@ private:
     Vec<std::unique_ptr<mat_lzz_pX_lmultiplier>> FFT_muls;
 };
 
+/** @name Helper functions
+ *
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* returns a multiplier of the right type                     */
-/*------------------------------------------------------------*/
-std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, long dB);
+/** Compute the reduction of a polynomial matrix `a` modulo the current prime,
+ * in-place (used in 3-primes FFT) */
+void reduce_mod_p(Mat<zz_pX> & a);
+
+/** Compute `amodp`, the reduction of a polynomial matrix `a` modulo the
+ * current prime (used in 3-primes FFT) */
+void reduce_mod_p(Mat<zz_pX> & amodp, const Mat<zz_pX> & a);
+
+/** \todo DOC returns a multiplier of the right type */
+std::unique_ptr<mat_lzz_pX_lmultiplier>
+get_lmultiplier(const Mat<zz_pX> & a, long dB);
+
+//@} // doxygen group: Helper functions
 
 #endif /* ifndef MAT_LZZ_PX_MULTIPLY__H */
 
