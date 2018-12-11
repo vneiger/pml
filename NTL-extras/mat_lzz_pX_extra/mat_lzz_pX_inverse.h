@@ -55,9 +55,11 @@ void plain_inv_trunc(Mat<zz_pX> & imat, const Mat<zz_pX> & pmat, long d);
 
 /** Computes the truncated inverse `imat` of `pmat` at order `d` (see @ref
  * TruncatedInverse) by Newton iteration, whose cost is quasi-linear in `d`.
- * It uses the naive algo plain_inv_trunc for small order `d`; the crossover
- * point is for `d = 2^thresh`; predetermined values are used if thresh = -1,
- * which is the default value
+ * It calls the naive algo plain_inv_trunc for starting the iteration or if the
+ * order `d` is small; the crossover point is for `d = 2^thresh`; predetermined
+ * values are used if thresh = -1, which is the default value
+ *
+ * \todo Sure about this crossover point?
  */
 void newton_inv_trunc_FFT(
                           Mat<zz_pX> & imat,
