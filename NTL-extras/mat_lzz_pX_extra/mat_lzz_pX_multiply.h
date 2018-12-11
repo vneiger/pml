@@ -143,13 +143,20 @@ inline Mat<zz_pX> middle_product(
 
 /** @name Non-FFT-based polynomial matrix multiplication
  *
- *   \todo write doc
+ * All these functions take the following parameters:
+ *  \param[out] c polynomial matrix  
+ *  \param[in] a polynomial matrix  
+ *  \param[in] b polynomial matrix  
+ *
+ * They compute `c` as the product `a*b` of the input `a` and `b`. The
+ * parameter `c` does not have to be zero, and may alias `a` or `b`.
+ *
  */
 //@{
 
-/*------------------------------------------------------------*/
-/* naive algorithm                                            */
-/*------------------------------------------------------------*/
+/** Uses the naive cubic matrix multiplication algorithm (three for loops)
+ * along with NTL's polynomial multiplication for multiplying the entries of
+ * the matrices */
 void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 /*------------------------------------------------------------*/
@@ -237,9 +244,8 @@ void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat
  */
 //@{
 
-/*------------------------------------------------------------*/
-/* naive algorithm, uses polynomial middle products           */
-/*------------------------------------------------------------*/
+/** Uses the naive cubic matrix multiplication algorithm (three for loops)
+ * along with NTL's middle product */
 void middle_product_naive(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
 /*------------------------------------------------------------*/
