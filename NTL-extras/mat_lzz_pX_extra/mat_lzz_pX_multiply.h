@@ -27,12 +27,13 @@ NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/*               A CLASS FOR 3 PRIMES FFTS                    */
+/*                     3 PRIMES FFTS                          */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
 /** Class for 3-primes FFT
- * \todo use smaller FFT primes if possible?
+ *
+ * \todo use smaller FFT primes when possible?
  */
 class lzz_pX_3_primes
 {
@@ -41,14 +42,14 @@ public:
      * choose the number of primes and the primes */
     lzz_pX_3_primes(long indim, long dA, long dB);
 
-    /** Empty construct (should not be used?) */
-    lzz_pX_3_primes(){};
+    /** Empty constructor is forbidden */
+    lzz_pX_3_primes() = delete;
 
     /** Accessor: number of primes */
     long nb() const { return nb_primes; }
 
     /** Reconstructs c from its images modulo the primes */
-    void reconstruct(Mat<zz_pX>& c, const Vec<Mat<zz_pX>>& cs);
+    void reconstruct(Mat<zz_pX>& c, const Vec<Mat<zz_pX>>& cs) const;
 
 private:
     long nb_primes; /**< number of FFT primes */
@@ -60,6 +61,15 @@ void reduce_mod_p(Mat<zz_pX> & a);
 
 /** Used for 3-primes FFT: compute `ap`, the reduction of `a` modulo the current prime */
 void reduce_mod_p(Mat<zz_pX> & ap, const Mat<zz_pX> & a);
+
+//// currently not documented:
+//static void reconstruct_2CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, const Mat<zz_pX> & c1, long p1);
+//static void reconstruct_3CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, const Mat<zz_pX> & c1, long p1, const Mat<zz_pX> & c2, long p2);
+//static void multiply_modulo_FFT_prime(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long idx);
+//static void middle_product_modulo_FFT_prime(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long idx);
+
+
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -98,6 +108,14 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
 /*------------------------------------------------------------*/
 void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
+
+/*------------------------------------------------------------*/
+/* 3 primes CRT algorithm                                     */
+/*------------------------------------------------------------*/
+void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
+
+
 /*------------------------------------------------------------*/
 /* geometric evaluation                                       */
 /* uses Mat<zz_p> matrix multiplication                       */
@@ -110,6 +128,7 @@ void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat
 /* uses matrix multiplication for evaluation and interpolation*/
 /*------------------------------------------------------------*/
 void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
 /*------------------------------------------------------------*/
 /* computes the matrices for evaluation and interpolation     */
 /*------------------------------------------------------------*/
@@ -124,11 +143,6 @@ inline void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<z
 {
     multiply_transform(c, a, b, max(deg(a), deg(b)) + 1);
 }
-
-/*------------------------------------------------------------*/
-/* 3 primes CRT algorithm                                     */
-/*------------------------------------------------------------*/
-void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 /*------------------------------------------------------------*/
 /* main function for c = a*b                                  */
@@ -386,18 +400,13 @@ public:
     /*------------------------------------------------------------*/
     void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b);
 
-    mat_lzz_pX_lmultiplier_3_primes(){}
     mat_lzz_pX_lmultiplier_3_primes(const Mat<zz_pX> & a, long dB);
-
+    mat_lzz_pX_lmultiplier_3_primes() = delete;
 
     /*------------------------------------------------------------*/
     /* we use unique_ptrs; we don't expect to have to do copies   */
     /*------------------------------------------------------------*/
-    mat_lzz_pX_lmultiplier_3_primes& operator=(const mat_lzz_pX_lmultiplier_3_primes&)
-    {
-        LogicError("no copy allowed");
-        return *this;
-    }
+    mat_lzz_pX_lmultiplier_3_primes& operator=(const mat_lzz_pX_lmultiplier_3_primes&) = delete;
 
 private:
     lzz_pX_3_primes primes;
