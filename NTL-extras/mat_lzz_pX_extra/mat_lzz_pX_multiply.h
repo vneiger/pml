@@ -1,6 +1,18 @@
 #ifndef MAT_LZZ_PX_MULTIPLY__H
 #define MAT_LZZ_PX_MULTIPLY__H
 
+/** Multiplication of polynomial matrices.
+ *
+ * \file mat_lzz_pX_multiply.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
+ * \version 0.1
+ * \date 2018-12-11
+ *
+ * Functions for computing products and middle products of two unvariate
+ * polynomial matrices.
+ *
+ */
+
 #include <memory> // for unique_ptr
 #include "mat_lzz_pX_utils.h" // for deg() (and maybe others)
 #include "lzz_pX_CRT.h"
@@ -223,8 +235,10 @@ void middle_product_evaluate_dense(Mat<zz_pX> & b, const Mat<zz_pX> & a, const M
 /* main function.                                             */
 /* is_prime = 1 assumes that p is known to be prime           */
 /*------------------------------------------------------------*/
+/** TODO */
 void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime = 1);
 
+/** TODO */
 inline Mat<zz_pX> middle_product(const Mat<zz_pX>& a, const Mat<zz_pX>& c, long dA, long dB, long is_prime = 1)
 { 
     Mat<zz_pX> b; 

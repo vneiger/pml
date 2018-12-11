@@ -49,15 +49,39 @@ NTL_CLIENT
 //@{
 
 /** Computes the truncated inverse `imat` of `pmat` at order `d` (see @ref
+ * TruncatedInverse) by Newton iteration, whose cost is quasi-linear in `d`.
+ * This function is the main interface, which chooses the fastest between
+ * the available implementations. Currently, these are:
+ *   - if the modulus is a sufficiently large FFT prime, it relies on FFT
+ *   evaluation-interpolation
+ *   - otherwise, depending on how `d` compares to the relevant threshold
+ *   value, it chooses between the middle product approach or the
+ *   evaluation-interpolation at geometric points.
+ */
+void inv_trunc(Mat<zz_pX> & imat, const Mat<zz_pX> & pmat, long d);
+
+/** Computes and returns the truncated inverse of `pmat` at order `d` (see @ref
+ * TruncatedInverse) by Newton iteration, whose cost is quasi-linear in `d`.
+ * This function is the main interface, which chooses the fastest between the
+ * available implementations; see #inv_trunc for more details.
+ */
+inline Mat<zz_pX> inv_trunc(const Mat<zz_pX> & pmat, long d)
+{ Mat<zz_pX> imat; inv_trunc(imat, pmat, d); return imat; }
+
+
+/** Computes the truncated inverse `imat` of `pmat` at order `d` (see @ref
  * TruncatedInverse) by the naive algorithm, whose cost is quadratic in `d`
  */
 void plain_inv_trunc(Mat<zz_pX> & imat, const Mat<zz_pX> & pmat, long d);
 
 /** Computes the truncated inverse `imat` of `pmat` at order `d` (see @ref
  * TruncatedInverse) by Newton iteration, whose cost is quasi-linear in `d`.
- * It calls the naive algo plain_inv_trunc for starting the iteration or if the
- * order `d` is small; the crossover point is for `d = 2^thresh`; predetermined
- * values are used if thresh = -1, which is the default value
+ * This function is specifically for the case where the modulus is an FFT
+ * prime; Newton iteration is implemented using FFT evaluation and
+ * interpolation. This function calls the naive algo #plain_inv_trunc for
+ * starting the iteration or if the order `d` is small; the crossover point is
+ * for `d = 2^thresh`; predetermined values are used if thresh = -1, which is
+ * the default value.
  *
  * \todo Sure about this crossover point?
  */
@@ -68,6 +92,15 @@ void newton_inv_trunc_FFT(
                           long thresh = -1
                          );
 
+/** Computes the truncated inverse `imat` of `pmat` at order `d` (see @ref
+ * TruncatedInverse) by Newton iteration, whose cost is quasi-linear in `d`,
+ * implemented using the #middle_product function. This function calls the naive
+ * algo #plain_inv_trunc for starting the iteration or if the order `d` is
+ * small; the crossover point is for `d = 2^thresh`; predetermined values are
+ * used if thresh = -1, which is the default value.
+ *
+ * \todo Sure about this crossover point?
+ */
 void newton_inv_trunc_middle_product(
                                      Mat<zz_pX> & imat,
                                      const Mat<zz_pX> & pmat,
@@ -75,6 +108,16 @@ void newton_inv_trunc_middle_product(
                                      long thresh = -1
                                     );
 
+/** Computes the truncated inverse `imat` of `pmat` at order `d` (see @ref
+ * TruncatedInverse) by Newton iteration, whose cost is quasi-linear in `d`.
+ * The iteration is implemented using evaluation and interpolation at geometric
+ * points. This function calls the naive algo #plain_inv_trunc for starting the
+ * iteration or if the order `d` is small; the crossover point is for `d =
+ * 2^thresh`; predetermined values are used if thresh = -1, which is the
+ * default value.
+ *
+ * \todo Sure about this crossover point?
+ */
 void newton_inv_trunc_geometric(
                                 Mat<zz_pX> & imat,
                                 const Mat<zz_pX> & pmat,
@@ -82,36 +125,45 @@ void newton_inv_trunc_geometric(
                                 long thresh = -1
                                );
 
-/** Computes the truncated inverse `imat` of `pmat` at order `d` (see @ref
- * TruncatedInverse): chooses 
+//@} // doxygen group: Truncated inverse expansion
+
+
+/** @name High-order lifting
+ *
+ *  Computes a high-degree slice of the inverse expansion of a matrix.
+ *
+ *  \todo incomplete: for the moment, only what is needed for system solving
+ *  via high order lifting
  */
-void inv_trunc(Mat<zz_pX> & imat, const Mat<zz_pX> & pmat, long d);
+//@{
 
-inline Mat<zz_pX> inv_trunc(const Mat<zz_pX> & pmat, long d)
-{ Mat<zz_pX> imat; inv_trunc(imat, pmat, d); return imat; }
-
-/*------------------------------------------------------------*/
-/* for i >= 0, define Si = coefficients of A^{-1} of degrees  */
-/*             i-(2d-1) .. i-1, with d=deg(A)                 */
-/* given src = Si, this computes S_{2i-d}                     */
-/* invA = A^{-1} mod x^d                                      */
-/* note: deg(Si) < 2d-1                                       */
-/* output can alias input                                     */
-/*------------------------------------------------------------*/
+/** Helper for high order lifting. As input, we have a polynomial matrix `pmat`
+ * of degree `d`, and its truncated inverse `inv` at order `d`, that is, `inv =
+ * pmat^{-1} mod x^d` (see #TruncatedInverse).
+ *
+ * For a given nonnegative integer `i`, we define `Si` to be the slice of the
+ * expansion of `pmat^{-1}` of its terms of degree between `i-(2d-1)` and `i-1`
+ * (both included).  Given `src = Si`, this function computes `next =
+ * S_{2i-d}`. Note that deg(Si) < 2d-1.
+ *
+ * The OUT parameter `next` can alias the IN parameter `src`.
+ */
 void high_order_lift_inverse_odd(
                                  Mat<zz_pX> & next,
-                                 const Mat<zz_pX>& src, 
-                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & A, 
-                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & invA,
+                                 const Mat<zz_pX> & src, 
+                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & pmat, 
+                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & inv,
                                  long d
                                 );
 
-//@} // doxygen group: Truncated inverse expansion
+//@} // doxygen group: High-order lifting
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*                         INVERSION                          */
 /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
 
 
 #endif /* end of include guard: MAT_LZZ_PX_INVERSE__H */
