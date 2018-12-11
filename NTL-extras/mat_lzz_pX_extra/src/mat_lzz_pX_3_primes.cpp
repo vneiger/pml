@@ -307,12 +307,9 @@ void lzz_pX_3_primes::reconstruct(Mat<zz_pX>& c, const Vec<Mat<zz_pX>>& cs)
 /*------------------------------------------------------------*/
 void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
-    long s = a.NumCols();
-    long dA = deg(a);
-    long dB = deg(b);
-    lzz_pX_3_primes primes(s, dA, dB);
+    lzz_pX_3_primes primes(a.NumCols(), deg(a), deg(b));
     long nb = primes.nb();
-    
+
     if (nb == 1)
     {
         multiply_modulo_FFT_prime(c, a, b, 0); // no need to copy stuff around
@@ -324,11 +321,7 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
         Vec<Mat<zz_pX>> cs;
         cs.SetLength(nb);
         for (long i = 0; i < nb; i++)
-        {
-            Mat<zz_pX> ci;
-            multiply_modulo_FFT_prime(ci, a, b, i);
-            cs[i] = ci;
-        }
+            multiply_modulo_FFT_prime(cs[i], a, b, i);
         primes.reconstruct(c, cs);
     }
 }
@@ -341,9 +334,8 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
 /*------------------------------------------------------------*/
 void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {
-    long s = a.NumCols();
-    lzz_pX_3_primes primes(s, dA, dB);
-    long nb = primes.nb();
+    lzz_pX_3_primes primes(a.NumCols(), dA, dB);
+    const long nb = primes.nb();
 
     if (nb == 1)
     {
@@ -356,11 +348,7 @@ void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_
         Vec<Mat<zz_pX>> bs;
         bs.SetLength(nb);
         for (long i = 0; i < nb; i++)
-        {
-            Mat<zz_pX> bi;
-            middle_product_modulo_FFT_prime(bi, a, c, dA, dB, i);
-            bs[i] = bi;
-        }
+            middle_product_modulo_FFT_prime(bs[i], a, c, dA, dB, i);
         primes.reconstruct(b, bs);
     }
 }
