@@ -159,9 +159,8 @@ inline Mat<zz_pX> middle_product(
  * the matrices */
 void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
-/*------------------------------------------------------------*/
-/* Waksman's algorithm                                        */
-/*------------------------------------------------------------*/
+/** Uses Waksman's cubic matrix multiplication algorithm along with NTL's
+ * polynomial multiplication */
 void multiply_waksman(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 /*------------------------------------------------------------*/
