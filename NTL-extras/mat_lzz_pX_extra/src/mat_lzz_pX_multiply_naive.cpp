@@ -63,8 +63,8 @@ void multiply_waksman(Mat<zz_pX> &c, const Mat<zz_pX> &a, const Mat<zz_pX> &b)
         mul(e[l], buf2, buf3);
     }
 
-    for (long k=1; k<p; ++k)
-        for (long l=1; l<m; ++l)
+    for (long l=1; l<m; ++l)
+        for (long k=1; k<p; ++k)
         {
             add(buf0, a[l][0], b[1][k]);
             add(buf1, a[l][1], b[0][k]);
@@ -104,8 +104,8 @@ void multiply_waksman(Mat<zz_pX> &c, const Mat<zz_pX> &a, const Mat<zz_pX> &b)
             add(e[l], e[l], buf4);
         }
 
-        for (long k=1; k<p; ++k)
-            for (long l=1; l<m; ++l)
+        for (long l=1; l<m; ++l)
+            for (long k=1; k<p; ++k)
             {
                 add(buf0, a[l][j2-1], b[j2][k]);
                 add(buf1, a[l][j2], b[j2-1][k]);
@@ -114,27 +114,43 @@ void multiply_waksman(Mat<zz_pX> &c, const Mat<zz_pX> &a, const Mat<zz_pX> &b)
             }
     }
 
-    for (long l=1; l<m; l++)
+    zz_p inv2;
+    inv(inv2, to_zz_p(2));
+    for (long l=1; l<m; ++l)
     {
-        e[l] = (e[l]+c[l][0])/2;
-        c[l][0] -= e[l];
+        // e[l] = (e[l]+c[l][0])/2;
+        add(e[l], e[l], c[l][0]);
+        mul(e[l], e[l], inv2);
+        sub(c[l][0], c[l][0], e[l]);
     }
 
-    buf0 = (d[0]+c[0][0])/2;
-    c[0][0] -= buf0;
-    for (long k=1; k<p; k++)
+    // buf0 = (e[0]+c[0][0])/2;
+    add(buf0, d[0], c[0][0]);
+    mul(buf0, buf0, inv2);
+    sub(c[0][0], c[0][0], buf0);
+    for (long k=1; k<p; ++k)
     {
-        buf1 = (d[k]+c[0][k])/2;
-        c[0][k] -= buf1;
-        buf1 -= buf0;
-        for (long l=1; l<m; l++)
-            c[l][k] -= buf1 + e[l];
+        // buf1 = (d[k]+c[0][k])/2;
+        add(buf1, d[k], c[0][k]);
+        mul(buf1, buf1, inv2);
+        sub(c[0][k], c[0][k], buf1);
+        sub(buf1, buf1, buf0);
+        for (long l=1; l<m; ++l)
+        {
+            // c[l][k] -= buf1 + e[l];
+            add(buf2, buf1, e[l]);
+            sub(c[l][k], c[l][k], buf2);
+        }
     }
 
-    if ( (n&1) == 1)
-        for (long l=0; l<m; l++)
-            for (long k=0; k<p; k++)
-                c[l][k] += a[l][n-1]*b[n-1][k];
+    if (n%2) // n is odd
+        for (long l=0; l<m; ++l)
+            for (long k=0; k<p; ++k)
+            {
+                // c[l][k] += a[l][n-1]*b[n-1][k];
+                mul(buf0, a[l][n-1], b[n-1][k]);
+                add(c[l][k], c[l][k], buf0);
+            }
 }
 
 
