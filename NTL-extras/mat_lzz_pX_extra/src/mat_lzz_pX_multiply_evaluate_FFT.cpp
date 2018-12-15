@@ -350,13 +350,11 @@ void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
     c.SetDims(s, u);
 
     for (long i = 0; i < s; ++i)
-    {
         for (long k = 0; k < u; ++k)
         {
             R.tbl[0].swap(mat_valC[i*u + k]);
             FromfftRep(c[i][k], R, 0, d);
         }
-    }
 }
 
 /*------------------------------------------------------------*/

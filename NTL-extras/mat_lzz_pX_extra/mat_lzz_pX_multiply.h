@@ -225,6 +225,7 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
 /* Note: implementation not using matmul always slower.       */
 /*------------------------------------------------------------*/
 void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+// TODO versions similar to matmul2 and matmul3, cf FFT file
 
 //@} // doxygen group: FFT-based polynomial matrix multiplication
 

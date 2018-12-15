@@ -32,7 +32,8 @@ int main(int argc, char *argv[])
     verify = (atoi(argv[5])==1);
 
     if (nbits==0)
-        zz_p::FFTInit(0);
+        //zz_p::FFTInit(0);
+        zz_p::UserFFTInit(786433);
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
