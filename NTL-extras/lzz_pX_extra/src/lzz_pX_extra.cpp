@@ -3,6 +3,7 @@
 
 NTL_CLIENT
 
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*         ALGORITHMS FOR POWER SERIES DIVISION               */
@@ -241,17 +242,6 @@ void InvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
     else
         PlainInvTruncMul(x, b, a, m);
 }    
-
-/*------------------------------------------------------------*/
-/* test if polynomial is monic                                */
-/*------------------------------------------------------------*/
-bool is_monic(const zz_pX & a)
-{
-   if (IsZero(a))
-      return false;
-   else
-      return IsOne(a.rep[deg(a)]);
-}
 
 
 /*------------------------------------------------------------*/

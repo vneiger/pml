@@ -1,7 +1,7 @@
 #ifndef __LZZ_PX_EXTRA__H
 #define __LZZ_PX_EXTRA__H
 
-/** Additional functionalities for polynomials lzz_pX.
+/** Additional functionalities for polynomials (lzz_pX).
  *
  * \file lzz_pX_extra.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
@@ -10,10 +10,14 @@
  *
  */
 
-#include <memory>
+#include <memory> // for unique_ptr
 #include <NTL/lzz_pX.h>
 
 NTL_CLIENT
+
+/** Returns `true` if the polynomial `a` is monic, and `false` otherwise */
+inline bool is_monic(const zz_pX & a)
+{ return (a.rep.length() > 0 && IsOne(a.rep[deg(a)])); }
 
 
 /*------------------------------------------------------------*/
@@ -23,11 +27,6 @@ NTL_CLIENT
 void InvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m);
 inline zz_pX InvTruncMul(const zz_pX& b, const zz_pX& a, long m)
 { zz_pX x; InvTruncMul(x, b, a, m); return x; }
-
-/*------------------------------------------------------------*/
-/* test if polynomial is monic                                */
-/*------------------------------------------------------------*/
-bool is_monic(const zz_pX & a);
 
 
 /*------------------------------------------------------------*/
