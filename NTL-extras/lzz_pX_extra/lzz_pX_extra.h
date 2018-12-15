@@ -20,20 +20,28 @@ inline bool is_monic(const zz_pX & a)
 { return (a.rep.length() > 0 && IsOne(a.rep[deg(a)])); }
 
 
-/*------------------------------------------------------------*/
-/* power series division                                      */
-/* x = b/a mod x^m                                            */
-/*------------------------------------------------------------*/
-void InvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m);
-inline zz_pX InvTruncMul(const zz_pX& b, const zz_pX& a, long m)
-{ zz_pX x; InvTruncMul(x, b, a, m); return x; }
+/** @name Power series division
+ * \anchor PowerSeriesDivision
+ *
+ *  Given two polynomials `a` and `b` and an integer `d`, with `a` invertible
+ *  modulo `x^d` (that is, invertible constant coefficient), these functions
+ *  compute the truncated power series division `f = b * a^{-1} mod x^d`.
+ */
+//@{
 
+/** Computes `f = b * a^{-1} mod x^d`, requiring that the constant coefficient
+ * of `a` is invertible (see @ref PowerSeriesDivision). The OUT parameter `f`
+ * may alias the IN parameters `a` or `b`. */
+void InvTruncMul(zz_pX & f, const zz_pX & b, const zz_pX & a, long d);
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* an abstract class that does Taylor shift                   */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
+/** Computes and returns `b * a^{-1} mod x^d`, requiring that the constant coefficient
+ * of `a` is invertible (see @ref PowerSeriesDivision). */
+inline zz_pX InvTruncMul(const zz_pX & b, const zz_pX & a, long d)
+{ zz_pX f; InvTruncMul(f, b, a, d); return f; }
+
+//@} // doxygen group: Power series division
+
+/** An abstract class for Taylor shift */
 class zz_pX_shift
 {
 public:
@@ -46,7 +54,7 @@ public:
     virtual void shift(zz_pX& g, const zz_pX& f) const = 0;
 
 protected:
-    long d;
+    long d; /**< Member description */
 };
 
 

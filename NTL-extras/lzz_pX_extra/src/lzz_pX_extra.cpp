@@ -27,18 +27,18 @@ static void PlainInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 
     na = deg(a);
     nb = deg(b);
-    
+
     if (na < 0) 
         Error("division by zero");
-    
+
     inv(s, ConstTerm(a));
     long is_one = IsOne(s);
-    
+
     ap = a.rep.elts();
     bp = b.rep.elts();
     x.rep.SetLength(m);
     xp = x.rep.elts();
-    
+
     if (na == 0) 
     {  
         if (is_one)
@@ -50,7 +50,7 @@ static void PlainInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
         x.normalize();
         return;
     }
-    
+
     for (k = 0; k < min(m, nb+1); k++) 
         xp[k] = bp[k];
     for (; k < m; k++) 
@@ -83,137 +83,137 @@ static void PlainInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 static void NewtonInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 { 
 
-  x.SetMaxLength(m);
-  long i, t;
+    x.SetMaxLength(m);
+    long i, t;
 
-  t = NextPowerOfTwo(m);
-  
-  fftRep R1(INIT_SIZE, t), R2(INIT_SIZE, t);
-  zz_pX P1(INIT_SIZE, m / 2);
+    t = NextPowerOfTwo(m);
 
-  // -3 seems to be a reasonbable choice for many p's
-  long log2_newton = NextPowerOfTwo(NTL_zz_pX_NEWTON_CROSSOVER)-3;
+    fftRep R1(INIT_SIZE, t), R2(INIT_SIZE, t);
+    zz_pX P1(INIT_SIZE, m / 2);
 
-  long k = 1L << log2_newton;
-  PlainInvTrunc(x, a, k);  // assumes m large enough
+    // -3 seems to be a reasonbable choice for many p's
+    long log2_newton = NextPowerOfTwo(NTL_zz_pX_NEWTON_CROSSOVER)-3;
 
-  t = log2_newton;
-  long l = 0;
-  while (k < m) 
-  {
-      l = min(2 * k, m);
+    long k = 1L << log2_newton;
+    PlainInvTrunc(x, a, k);  // assumes m large enough
 
-      if (l >= m) 
-          break;
+    t = log2_newton;
+    long l = 0;
+    while (k < m) 
+    {
+        l = min(2 * k, m);
 
-      TofftRep(R1, x, t+1);
-      TofftRep(R2, a, t+1, 0, l-1); 
-      mul(R2, R2, R1);
-      FromfftRep(P1, R2, k, l-1);
+        if (l >= m) 
+            break;
 
-      TofftRep(R2, P1, t+1);
-      mul(R2, R2, R1);
-      FromfftRep(P1, R2, 0, l-k-1);
-            
-      x.rep.SetLength(l);
-      long y_len = P1.rep.length();
-      for (i = k; i < l; i++) {
-          if (i-k >= y_len)
-              clear(x.rep[i]);
-          else
-              NTL::negate(x.rep[i], P1.rep[i-k]);
-      }
-      x.normalize();
-      t++;
-      k = l;
-  }
+        TofftRep(R1, x, t+1);
+        TofftRep(R2, a, t+1, 0, l-1); 
+        mul(R2, R2, R1);
+        FromfftRep(P1, R2, k, l-1);
 
-// k < m <= 2k, l = m, 2^(t+1) = 2k
-// if m = 2 deg(b) = deg(a) + deg(b) + 1
-// then deg(b) <= k, deg(a) < k
+        TofftRep(R2, P1, t+1);
+        mul(R2, R2, R1);
+        FromfftRep(P1, R2, 0, l-k-1);
 
-  if (deg(a) < k && deg(b) < k && l == m && 1)
-  {
-      fftRep R3(INIT_SIZE, t+1);
-      zz_pX r0(INIT_SIZE, k);
-      zz_pX r1(INIT_SIZE, l-k);
-      TofftRep(R1, x, t+1);
-      TofftRep(R2, b, t+1);  
-      mul(R3, R1, R2);
-      FromfftRep(r0, R3, 0, k-1); 
+        x.rep.SetLength(l);
+        long y_len = P1.rep.length();
+        for (i = k; i < l; i++) {
+            if (i-k >= y_len)
+                clear(x.rep[i]);
+            else
+                NTL::negate(x.rep[i], P1.rep[i-k]);
+        }
+        x.normalize();
+        t++;
+        k = l;
+    }
 
-      TofftRep(R3, r0, t);
-      TofftRep(R2, a, t);  
-      mul(R3, R3, R2);
-      FromfftRep(r1, R3, 0, 2*k-2); 
-      sub(r1, r1, b);
+    // k < m <= 2k, l = m, 2^(t+1) = 2k
+    // if m = 2 deg(b) = deg(a) + deg(b) + 1
+    // then deg(b) <= k, deg(a) < k
 
-      // not very useful, somehow
-      if (l-k < NTL_zz_pX_MUL_CROSSOVER/2 && 0)
-      {
-          r1 = MulTrunc(trunc(r1, l-k), trunc(x, l-k), l-k);
-      }
-      else
-      {
-          TofftRep(R3, r1, t+1);
-          mul(R3, R3, R1);
-          FromfftRep(r1, R3, 0, l-k-1); 
-      }
-      
-      x.rep.SetLength(l);
-      for (i = 0; i < k; i++) 
-          x.rep[i] = coeff(r0, i);
+    if (deg(a) < k && deg(b) < k && l == m && 1)
+    {
+        fftRep R3(INIT_SIZE, t+1);
+        zz_pX r0(INIT_SIZE, k);
+        zz_pX r1(INIT_SIZE, l-k);
+        TofftRep(R1, x, t+1);
+        TofftRep(R2, b, t+1);  
+        mul(R3, R1, R2);
+        FromfftRep(r0, R3, 0, k-1); 
 
-      for (i = k; i < l; i++) 
-          x.rep[i] = -coeff(r1, i-k);
-      
-      x.normalize();
-  }
-  else
-  {
-      fftRep R3(INIT_SIZE, t);
-      zz_pX P2l(INIT_SIZE, k);
-      zz_pX P2h(INIT_SIZE, l-k);
+        TofftRep(R3, r0, t);
+        TofftRep(R2, a, t);  
+        mul(R3, R3, R2);
+        FromfftRep(r1, R3, 0, 2*k-2); 
+        sub(r1, r1, b);
 
-      TofftRep(R1, x, t+1);
-      
-      if (deg(b) >= k)
-      {
-          TofftRep(R2, b, t+1, k, l-1);  
-          mul(R3, R1, R2);
-          FromfftRep(P2h, R3, 0, l-k-1); // high part
-      }
-      
-      TofftRep(R2, b, t+1, 0, k-1);  
-      mul(R3, R1, R2);
-      FromfftRep(P2l, R3, 0, l-1); // low part
+        // not very useful, somehow
+        if (l-k < NTL_zz_pX_MUL_CROSSOVER/2 && 0)
+        {
+            r1 = MulTrunc(trunc(r1, l-k), trunc(x, l-k), l-k);
+        }
+        else
+        {
+            TofftRep(R3, r1, t+1);
+            mul(R3, R3, R1);
+            FromfftRep(r1, R3, 0, l-k-1); 
+        }
 
-      TofftRep(R2, a, t+1, 0, l-1); 
-      mul(R2, R1, R2);
-      FromfftRep(P1, R2, k, l-1);
-      
-      /*   P1 = P1*P2l */
-      TofftRep(R2, P1, t+1, 0, l-k-1); 
-      TofftRep(R3, P2l, t+1, 0, l-k-1); 
-      mul(R1, R2, R3);
-      FromfftRep(P1, R1, 0, l-k-1); 
+        x.rep.SetLength(l);
+        for (i = 0; i < k; i++) 
+            x.rep[i] = coeff(r0, i);
 
-      x.rep.SetLength(l);
-      for (i = 0; i < k; i++) 
-          x.rep[i]=P2l.rep[i];
-      
-      if (deg(b) >= k)
-          for (i = k; i < l; i++) 
-              add(x.rep[i], P2l.rep[i], P2h.rep[i-k]);
-      else
-          for (i = k; i < l; i++) 
-              x.rep[i] = P2l.rep[i];
-      
-      for (i = k; i < l; i++) 
-          sub(x.rep[i], x.rep[i], P1.rep[i-k]);
-      
-      x.normalize();
-  }
+        for (i = k; i < l; i++) 
+            x.rep[i] = -coeff(r1, i-k);
+
+        x.normalize();
+    }
+    else
+    {
+        fftRep R3(INIT_SIZE, t);
+        zz_pX P2l(INIT_SIZE, k);
+        zz_pX P2h(INIT_SIZE, l-k);
+
+        TofftRep(R1, x, t+1);
+
+        if (deg(b) >= k)
+        {
+            TofftRep(R2, b, t+1, k, l-1);  
+            mul(R3, R1, R2);
+            FromfftRep(P2h, R3, 0, l-k-1); // high part
+        }
+
+        TofftRep(R2, b, t+1, 0, k-1);  
+        mul(R3, R1, R2);
+        FromfftRep(P2l, R3, 0, l-1); // low part
+
+        TofftRep(R2, a, t+1, 0, l-1); 
+        mul(R2, R1, R2);
+        FromfftRep(P1, R2, k, l-1);
+
+        /*   P1 = P1*P2l */
+        TofftRep(R2, P1, t+1, 0, l-k-1); 
+        TofftRep(R3, P2l, t+1, 0, l-k-1); 
+        mul(R1, R2, R3);
+        FromfftRep(P1, R1, 0, l-k-1); 
+
+        x.rep.SetLength(l);
+        for (i = 0; i < k; i++) 
+            x.rep[i]=P2l.rep[i];
+
+        if (deg(b) >= k)
+            for (i = k; i < l; i++) 
+                add(x.rep[i], P2l.rep[i], P2h.rep[i-k]);
+        else
+            for (i = k; i < l; i++) 
+                x.rep[i] = P2l.rep[i];
+
+        for (i = k; i < l; i++) 
+            sub(x.rep[i], x.rep[i], P1.rep[i-k]);
+
+        x.normalize();
+    }
 }
 
 /*------------------------------------------------------------*/
@@ -224,7 +224,7 @@ void InvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 {
     if (m < 0) 
         LogicError("InvTruncMul: precision must be >= 0");
-    
+
     if (m == 0) 
     {
         clear(x);
@@ -233,10 +233,12 @@ void InvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 
     if (&x == &a || &x == &b)
     {
-        x = InvTruncMul(b, a, m);
+        zz_pX f;
+        InvTruncMul(f, b, a, m);
+        x.swap(f);
         return;
     }
-        
+
     if (m > NTL_zz_pX_NEWTON_CROSSOVER && deg(a) > 0)
         NewtonInvTruncMul(x, b, a, m);
     else
@@ -293,12 +295,12 @@ void zz_pX_shift_DAC::shift(zz_pX& g, const zz_pX& f) const
 
     if (deg(f) > d)
         LogicError("Degree too large for shift");
-    
+
     long lf = d + 1;
     long lv = lf >> 2;
     if (lf > 4 * lv)
         lv++;
-    
+
     Vec<zz_pX> v;
     v.SetLength(lv);
     for (long i = 0, j = 0; i <= d; i+=4, j++)
