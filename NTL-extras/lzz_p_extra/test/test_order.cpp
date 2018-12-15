@@ -5,6 +5,32 @@
 
 NTL_CLIENT
 
+bool test_order(const long order, const zz_p & a)
+{
+    if (a==1 && order==0)
+        return true;
+
+    long ainv;
+    long status = InvModStatus(ainv, a._zz_p__rep, zz_p::modulus());
+    if (status == 1)
+        return (order == -1) ? true : false;
+
+    zz_p pow;
+    power(pow, a, order);
+    if (pow != 1)
+        return false;
+
+    pow = a;
+    for (long k = 1; k < order; ++k)
+    {
+        if (pow==1)
+            return false;
+        pow = pow*a;
+    }
+
+    return true;
+}
+
 /*------------------------------------------------------------*/
 /* computes a few orders                                      */
 /*------------------------------------------------------------*/
@@ -12,13 +38,37 @@ void check()
 {
     long p = 65537;
     zz_p::init(p);
-    zz_p a;
 
-    a = to_zz_p(-1);
-    order(a);
+    {
+        std::cout << "p = " << zz_p::modulus() << std::endl;
+        zz_p a;
 
-    a = random_zz_p();
-    order(a);
+        a = to_zz_p(-1);
+        std::cout << "order of " << a << ", " << test_order(order(a), a) << std::endl;
+
+        a = random_zz_p();
+        std::cout << "order of " << a << ", " << test_order(order(a), a) << std::endl;
+
+        a = 50;
+        std::cout << "order of " << a << ", " << test_order(order(a), a) << std::endl;
+    }
+
+    p = 65537*2;
+    zz_p::init(p);
+
+    {
+        std::cout << "p = " << zz_p::modulus() << std::endl;
+        zz_p a;
+
+        a = to_zz_p(-1);
+        std::cout << "order of " << a << ", " << test_order(order(a), a) << std::endl;
+
+        a = random_zz_p();
+        std::cout << "order of " << a << ", " << test_order(order(a), a) << std::endl;
+
+        a = 50;
+        std::cout << "order of " << a << ", " << test_order(order(a), a) << std::endl;
+    }
 }  
 
 /*------------------------------------------------------------*/

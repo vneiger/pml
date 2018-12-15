@@ -12,19 +12,17 @@ NTL_CLIENT
 long order(const zz_p& a)
 {
     if (a == 0)
-    {
         return -1;
-    }
+
     long o = 1;
     zz_p ap = a;
     while (ap != 1)
     {
         if (o == zz_p::modulus())
-        {
             return -1;
-        }
-        ap *= a;
-        o++;
+
+        mul(ap, ap, a);
+        ++o;
     }
     return o;
 }
@@ -35,14 +33,11 @@ long order(const zz_p& a)
 /* does (by default) 100 trials                               */
 /* by default, asks that all (a^i-1) are units, i=1..ord-1    */
 /*------------------------------------------------------------*/
-void element_of_order(zz_p& a, long ord, long nb_trials, long strong)
+void element_of_order(zz_p& a, long ord, long nb_trials, bool strong)
 {
-
     long p = zz_p::modulus();
     if ((p - 1) < ord)
-    {
         LogicError("order too large with respect to p");
-    }
 
     long nb = 0;
     while (nb < nb_trials)
@@ -74,25 +69,6 @@ void element_of_order(zz_p& a, long ord, long nb_trials, long strong)
     }
     a = 0;
 }
-
-
-/*------------------------------------------------------------*/
-/* 1 if the current prime can be used as an FFT prime         */
-/*------------------------------------------------------------*/
-long is_FFT_prime()
-{
-    return (zz_pInfo->p_info != NULL);
-}
-
-/*------------------------------------------------------------*/
-/* 1 if the current prime can be used as an FFT prime         */
-/* with transforms of size up to 2^k                          */
-/*------------------------------------------------------------*/
-long is_FFT_ready(long k)
-{
-    return (is_FFT_prime() && k <= zz_pInfo->MaxRoot);
-}
-
 
 // Local Variables:
 // mode: C++

@@ -1,6 +1,15 @@
 #ifndef __LZZ_PX_EXTRA__H
 #define __LZZ_PX_EXTRA__H
 
+/** Additional functionalities for polynomials lzz_pX.
+ *
+ * \file lzz_pX_extra.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
+ * \version 0.1
+ * \date 2018-12-15
+ *
+ */
+
 #include <memory>
 #include <NTL/lzz_pX.h>
 

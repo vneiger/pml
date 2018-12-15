@@ -272,7 +272,7 @@ void zz_pX_Multipoint_Geometric::evaluate(Vec<zz_p>& val, const zz_pX& P) const
 
     if (dp >= n)
     {
-        Error("Degree to large for geometric evaluate.");
+        Error("Degree too large for geometric evaluate.");
     }
 
     val.SetLength(n);
