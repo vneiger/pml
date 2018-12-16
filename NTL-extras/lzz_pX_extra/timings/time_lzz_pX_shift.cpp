@@ -1,4 +1,5 @@
 #include <iomanip>
+#include <vector>
 
 #include "util.h"
 #include "lzz_pX_extra.h"
@@ -18,7 +19,9 @@ void time_one(long p)
     cout << "prime " << p << endl;
     std::cout << "i\tDACprecomp\tDACshift\tLargePrecomp\tLargeShift" << std::endl;
 
-    for (long i = 1; i < 100; i++)
+    std::vector<long> degs = {1,2,5,10,20,50,100,200,500,1000,5000,10000,50000,250000,1000000};
+
+    for (long i : degs)
     {
         zz_pX a, b;
         zz_p c;
