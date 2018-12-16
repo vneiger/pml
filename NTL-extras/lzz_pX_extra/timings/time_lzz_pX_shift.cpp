@@ -1,16 +1,14 @@
 #include <iomanip>
-#include <assert.h>
-#include <NTL/lzz_pX.h>
 
 #include "util.h"
 #include "lzz_pX_extra.h"
 
 NTL_CLIENT
 
-/*------------------------------------------------------------*/
-/* checks a shift by evaluation                               */
-/*------------------------------------------------------------*/
-void check(long p)
+/*--------------*/
+/* time a shift */
+/*--------------*/
+void time_one(long p)
 {
     if (p == 0)
         zz_p::FFTInit(0);
@@ -88,14 +86,14 @@ void check(long p)
 /*------------------------------------------------------------*/
 /* main just calls check()                                    */
 /*------------------------------------------------------------*/
-int main(int argc, char** argv)
+int main()
 {
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
     warmup(); 
-    check(0);
-    check(23068673);
-    check(288230376151711813);
+    time_one(0);
+    time_one(23068673);
+    time_one(288230376151711813);
     return 0;
 }
 

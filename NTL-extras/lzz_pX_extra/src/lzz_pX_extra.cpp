@@ -17,59 +17,65 @@ NTL_CLIENT
 /* &x == &a not allowed                                       */
 /* x = b/a mod t^m                                            */
 /*------------------------------------------------------------*/
-static void PlainInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
+void PlainInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 {
-    long i, k, na, nb;
-    zz_p s, v, t;
-    const zz_p* ap;
-    const zz_p* bp;
-    zz_p* xp;
-
-    na = deg(a);
-    nb = deg(b);
+    // degree of input
+    const long na = deg(a);
+    const long nb = deg(b);
 
     if (na < 0) 
         Error("division by zero");
 
-    inv(s, ConstTerm(a));
-    long is_one = IsOne(s);
+    // compute inverse of constant term of a,
+    // and record whether this constant term is one
+    const zz_p s = inv(ConstTerm(a));
+    const long is_one = IsOne(s);
 
-    ap = a.rep.elts();
-    bp = b.rep.elts();
-    x.rep.SetLength(m);
-    xp = x.rep.elts();
-
+    // if a is constant, not much more to do
     if (na == 0) 
-    {  
+    {
+        x.SetLength(std::min(m, nb+1));
+        // if a is constant one, just copy
         if (is_one)
-            for (k = 0; k < min(m, nb+1); k++) 
-                xp[k] = bp[k];
+            for (long k = 0; k < x.rep.length(); ++k) 
+                x[k] = b[k];
+        // if a is constant non-one: multiply by inverse of constant term
+        // TODO could be made faster with MulModPrecon
+        // (but a constant is unusual case)
         else
-            for (k = 0; k < min(m, nb+1); k++) 
-                mul(xp[k], bp[k], s);
+            for (long k = 0; k < x.rep.length(); ++k) 
+                mul(x[k], b[k], s);
         x.normalize();
         return;
     }
 
-    for (k = 0; k < min(m, nb+1); k++) 
-        xp[k] = bp[k];
-    for (; k < m; k++) 
-        clear(xp[k]);
+    // set the length of x to be m (degree m-1)
+    x.SetLength(m);
 
-    xp[0] *= s;
+    // truncate: x = s*b mod x^m
+    long kk;
+    for (kk = 0; kk < std::min(m, nb+1); ++kk) 
+        x[kk] = b[kk];
+    for (; kk < m; ++kk) 
+        clear(x[kk]);
 
-    for (k = 1; k < m; k++) 
+    mul(x[0], x[0], s);
+
+    // iterate up to order m
+    zz_p buf1, buf2;
+    for (long k = 1; k < m; ++k) 
     {
-        v = xp[k];
-        long lb = max(k - na, 0);
-        for (i = lb; i <= k-1; i++) 
+        buf1 = x[k];
+        for (long i = std::max(k - na, (long)0); i < k; ++i) 
         {
-            mul(t, xp[i], ap[k-i]);
-            sub(v, v, t);
+            mul(buf2, x[i], a[k-i]);
+            sub(buf1, buf1, buf2);
         }
         if (!is_one) 
-            mul(v, v, s);
-        xp[k] = v;
+            mul(x[k], buf1, s);
+        else
+            x[k] = buf1;
+
     } 
     x.normalize();
 }
@@ -80,7 +86,7 @@ static void PlainInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 /* aliasing not allowed                                       */
 /* x = b/a mod t^m                                            */
 /*------------------------------------------------------------*/
-static void NewtonInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
+void NewtonInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 { 
 
     x.SetMaxLength(m);

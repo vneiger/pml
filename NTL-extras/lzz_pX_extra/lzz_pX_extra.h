@@ -30,14 +30,28 @@ inline bool is_monic(const zz_pX & a)
 //@{
 
 /** Computes `f = b * a^{-1} mod x^d`, requiring that the constant coefficient
- * of `a` is invertible (see @ref PowerSeriesDivision). The OUT parameter `f`
- * may alias the IN parameters `a` or `b`. */
+ * of `a` is invertible (see @ref PowerSeriesDivision). Uses threshold to
+ * choose between the naive algorithm and Newton iteration. The OUT parameter
+ * `f` may alias the IN parameters `a` or `b`. */
 void InvTruncMul(zz_pX & f, const zz_pX & b, const zz_pX & a, long d);
 
-/** Computes and returns `b * a^{-1} mod x^d`, requiring that the constant coefficient
- * of `a` is invertible (see @ref PowerSeriesDivision). */
+/** Computes and returns `b * a^{-1} mod x^d`, requiring that the constant
+ * coefficient of `a` is invertible (see @ref PowerSeriesDivision). Uses
+ * threshold to choose between the naive algorithm and Newton iteration. */
 inline zz_pX InvTruncMul(const zz_pX & b, const zz_pX & a, long d)
 { zz_pX f; InvTruncMul(f, b, a, d); return f; }
+
+/** Computes `f = b * a^{-1} mod x^d` by the plain algorithm, requiring that
+ * the constant coefficient of `a` is invertible (see @ref
+ * PowerSeriesDivision). The OUT parameter `f` may not alias the IN parameters
+ * `a` or `b`. */
+void PlainInvTruncMul(zz_pX & f, const zz_pX & b, const zz_pX & a, long d);
+
+/** Computes `f = b * a^{-1} mod x^d` by Newton iteration, requiring that the
+ * constant coefficient of `a` is invertible (see @ref PowerSeriesDivision).
+ * The OUT parameter `f` may not alias the IN parameters `a` or `b`. This
+ * is adapted from the Tellegen package by Lecerf and Schost */
+void NewtonInvTruncMul(zz_pX & f, const zz_pX & b, const zz_pX & a, long d);
 
 //@} // doxygen group: Power series division
 
@@ -47,14 +61,12 @@ class zz_pX_shift
 public:
     virtual ~zz_pX_shift(){}
 
-    /*------------------------------------------------------------*/
-    /* g = f(x+c)                                                 */
-    /* output can alias input                                     */
-    /*------------------------------------------------------------*/
+    /** Computes the Taylor shift `g` of `f` and `c` (attribute in derived
+     * classes); `g` may alias `f` */
     virtual void shift(zz_pX& g, const zz_pX& f) const = 0;
 
 protected:
-    long d; /**< Member description */
+    long d; /**< non-strict upper bound on the degree of the polynomials `f` to be shifted */
 };
 
 
