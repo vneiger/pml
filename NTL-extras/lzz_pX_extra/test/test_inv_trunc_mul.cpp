@@ -16,7 +16,7 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 200; i < 500; i++)
+    for (long i = 200; i < 1000; i++)
     {
         zz_pX a, b, c;
         a = random_zz_pX(i);

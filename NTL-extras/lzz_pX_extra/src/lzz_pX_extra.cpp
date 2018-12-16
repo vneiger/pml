@@ -17,7 +17,7 @@ NTL_CLIENT
 /* &x == &a not allowed                                       */
 /* x = b/a mod t^m                                            */
 /*------------------------------------------------------------*/
-void PlainInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
+static void PlainInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 {
     // degree of input
     const long na = deg(a);
@@ -86,51 +86,47 @@ void PlainInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 /* aliasing not allowed                                       */
 /* x = b/a mod t^m                                            */
 /*------------------------------------------------------------*/
-void NewtonInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
+static void NewtonInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 { 
-
+    // set length of x to m (i.e. degree to <= m-1)
     x.SetMaxLength(m);
-    long i, t;
 
-    t = NextPowerOfTwo(m);
-
+    // initialize FFT representations
+    long t = NextPowerOfTwo(m);
     fftRep R1(INIT_SIZE, t), R2(INIT_SIZE, t);
-    zz_pX P1(INIT_SIZE, m / 2);
 
-    // -3 seems to be a reasonbable choice for many p's
-    long log2_newton = NextPowerOfTwo(NTL_zz_pX_NEWTON_CROSSOVER)-3;
+    zz_pX P1(INIT_SIZE, m/2);
 
-    long k = 1L << log2_newton;
+    // -3 seems to be a reasonable choice for many p's
+    t = NextPowerOfTwo(NTL_zz_pX_NEWTON_CROSSOVER)-3;
+
+    long k = 1L << t;
     PlainInvTrunc(x, a, k);  // assumes m large enough
 
-    t = log2_newton;
     long l = 0;
     while (k < m) 
     {
-        l = min(2 * k, m);
-
-        if (l >= m) 
+        l = std::min(2*k, m);
+        if (l >= m) // we have l==m, 2*k was >= m
             break;
 
-        TofftRep(R1, x, t+1);
-        TofftRep(R2, a, t+1, 0, l-1); 
+        ++t;
+        TofftRep(R1, x, t);
+        TofftRep(R2, a, t, 0, l-1); 
         mul(R2, R2, R1);
         FromfftRep(P1, R2, k, l-1);
 
-        TofftRep(R2, P1, t+1);
+        TofftRep(R2, P1, t);
         mul(R2, R2, R1);
         FromfftRep(P1, R2, 0, l-k-1);
 
         x.rep.SetLength(l);
-        long y_len = P1.rep.length();
-        for (i = k; i < l; i++) {
-            if (i-k >= y_len)
-                clear(x.rep[i]);
-            else
-                NTL::negate(x.rep[i], P1.rep[i-k]);
-        }
+        const long k_ylen = k+P1.rep.length();
+        for (long i = k; i < k_ylen; ++i)
+            NTL::negate(x.rep[i], P1.rep[i-k]);
+        for (long i = k_ylen; i < l; ++i)
+            clear(x.rep[i]);
         x.normalize();
-        t++;
         k = l;
     }
 
@@ -138,7 +134,7 @@ void NewtonInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
     // if m = 2 deg(b) = deg(a) + deg(b) + 1
     // then deg(b) <= k, deg(a) < k
 
-    if (deg(a) < k && deg(b) < k && l == m && 1)
+    if (deg(a) < k && deg(b) < k && l == m)
     {
         fftRep R3(INIT_SIZE, t+1);
         zz_pX r0(INIT_SIZE, k);
@@ -156,9 +152,7 @@ void NewtonInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 
         // not very useful, somehow
         if (l-k < NTL_zz_pX_MUL_CROSSOVER/2 && 0)
-        {
             r1 = MulTrunc(trunc(r1, l-k), trunc(x, l-k), l-k);
-        }
         else
         {
             TofftRep(R3, r1, t+1);
@@ -167,56 +161,56 @@ void NewtonInvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
         }
 
         x.rep.SetLength(l);
-        for (i = 0; i < k; i++) 
-            x.rep[i] = coeff(r0, i);
-
-        for (i = k; i < l; i++) 
-            x.rep[i] = -coeff(r1, i-k);
-
+        for (long i = 0; i < k; ++i) 
+            x[i] = coeff(r0, i);
+        for (long i = k; i < l; ++i) 
+            x[i] = -coeff(r1, i-k);
         x.normalize();
     }
     else
     {
+        ++t; --l;
+        const long lmk = l-k;
         fftRep R3(INIT_SIZE, t);
         zz_pX P2l(INIT_SIZE, k);
-        zz_pX P2h(INIT_SIZE, l-k);
+        zz_pX P2h(INIT_SIZE, lmk+1);
 
-        TofftRep(R1, x, t+1);
+        TofftRep(R1, x, t);
 
         if (deg(b) >= k)
         {
-            TofftRep(R2, b, t+1, k, l-1);  
+            TofftRep(R2, b, t, k, l);  
             mul(R3, R1, R2);
-            FromfftRep(P2h, R3, 0, l-k-1); // high part
+            FromfftRep(P2h, R3, 0, lmk); // high part
         }
 
-        TofftRep(R2, b, t+1, 0, k-1);  
+        TofftRep(R2, b, t, 0, k-1);  
         mul(R3, R1, R2);
-        FromfftRep(P2l, R3, 0, l-1); // low part
+        FromfftRep(P2l, R3, 0, l); // low part
 
-        TofftRep(R2, a, t+1, 0, l-1); 
+        TofftRep(R2, a, t, 0, l); 
         mul(R2, R1, R2);
-        FromfftRep(P1, R2, k, l-1);
+        FromfftRep(P1, R2, k, l);
 
         /*   P1 = P1*P2l */
-        TofftRep(R2, P1, t+1, 0, l-k-1); 
-        TofftRep(R3, P2l, t+1, 0, l-k-1); 
+        TofftRep(R2, P1, t, 0, lmk); 
+        TofftRep(R3, P2l, t, 0, lmk); 
         mul(R1, R2, R3);
-        FromfftRep(P1, R1, 0, l-k-1); 
+        FromfftRep(P1, R1, 0, lmk); 
 
-        x.rep.SetLength(l);
-        for (i = 0; i < k; i++) 
-            x.rep[i]=P2l.rep[i];
+        x.rep.SetLength(l+1);
+        for (long i = 0; i < k; ++i)
+            x[i]=P2l[i];
 
         if (deg(b) >= k)
-            for (i = k; i < l; i++) 
-                add(x.rep[i], P2l.rep[i], P2h.rep[i-k]);
+            for (long i = k; i <= l; ++i) 
+                add(x[i], P2l[i], P2h[i-k]);
         else
-            for (i = k; i < l; i++) 
-                x.rep[i] = P2l.rep[i];
+            for (long i = k; i <= l; ++i) 
+                x[i] = P2l[i];
 
-        for (i = k; i < l; i++) 
-            sub(x.rep[i], x.rep[i], P1.rep[i-k]);
+        for (long i = k; i <= l; ++i) 
+            sub(x[i], x[i], P1[i-k]);
 
         x.normalize();
     }

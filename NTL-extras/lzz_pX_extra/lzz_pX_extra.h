@@ -41,18 +41,6 @@ void InvTruncMul(zz_pX & f, const zz_pX & b, const zz_pX & a, long d);
 inline zz_pX InvTruncMul(const zz_pX & b, const zz_pX & a, long d)
 { zz_pX f; InvTruncMul(f, b, a, d); return f; }
 
-/** Computes `f = b * a^{-1} mod x^d` by the plain algorithm, requiring that
- * the constant coefficient of `a` is invertible (see @ref
- * PowerSeriesDivision). The OUT parameter `f` may not alias the IN parameters
- * `a` or `b`. */
-void PlainInvTruncMul(zz_pX & f, const zz_pX & b, const zz_pX & a, long d);
-
-/** Computes `f = b * a^{-1} mod x^d` by Newton iteration, requiring that the
- * constant coefficient of `a` is invertible (see @ref PowerSeriesDivision).
- * The OUT parameter `f` may not alias the IN parameters `a` or `b`. This
- * is adapted from the Tellegen package by Lecerf and Schost */
-void NewtonInvTruncMul(zz_pX & f, const zz_pX & b, const zz_pX & a, long d);
-
 //@} // doxygen group: Power series division
 
 /** An abstract class for Taylor shift */
