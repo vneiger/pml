@@ -336,21 +336,24 @@ void zz_pX_shift_DAC::shift(zz_pX& g, const zz_pX& f) const
 /* d is an upper bound on the degrees of the inputs           */
 /*------------------------------------------------------------*/
 zz_pX_shift_large_characteristic::zz_pX_shift_large_characteristic(long d, const zz_p& c) 
+    : zz_pX_shift(d)
 {
     // TODO: assert that d+1 is a unit in zz_p
-    this->d = d;
+    // fact contains the factorials 0!, 1!, 2!, ..., d!
     fact.SetLength(d+1);
-    fact[0] = to_zz_p(1);
-    for (long i = 1; i <= d; i++)
-        fact[i] = i * fact[i-1];
+    set(fact[0]);
+    for (long i = 1; i < d+1; ++i)
+        mul(fact[i], i, fact[i-1]);
+    // ifact is the entry-wise inverse of fact
     inv(ifact, fact);
 
-    v.rep.SetLength(d+1);  
-    v.rep[0] = to_zz_p(1);
-    for (long i = 1; i <= d; i++)
-        v.rep[i] = c * v.rep[i-1];
-    for (long i = 0; i <= d; i++)
-        v.rep[i] *= ifact[i];
+    // v is the sum of (c**i / i!) x^i for i<=d
+    v.SetLength(d+1);  
+    set(v[0]);
+    for (long i = 1; i < d+1; ++i)
+        mul(v[i], c, v[i-1]);
+    for (long i = 0; i < d+1; ++i)
+        mul(v[i], v[i], ifact[i]);
 }
 
 /*------------------------------------------------------------*/

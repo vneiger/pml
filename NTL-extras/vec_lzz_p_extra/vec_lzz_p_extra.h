@@ -45,14 +45,10 @@ void inv_naive(Vec<zz_p>& invA, const Vec<zz_p>& A);
 /* inverts every entry in A                                   */
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
-void inv(Vec<zz_p>& invA, const Vec<zz_p>& A);
+void inv(Vec<zz_p> & invA, const Vec<zz_p> & A);
 
 inline Vec<zz_p> inv(const Vec<zz_p>& A)
-{
-    Vec<zz_p> x;
-    inv(x, A);
-    return x;
-}
+{ Vec<zz_p> x; inv(x, A); return x; }
 
 /*------------------------------------------------------------*/
 /* builds the vector of mulmod_precon_t                       */

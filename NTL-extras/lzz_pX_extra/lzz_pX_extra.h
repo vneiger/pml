@@ -73,15 +73,16 @@ public:
     zz_pX_shift_DAC() { };
 
     /** Main constructor. Initializes the attributes `d` and `c` with the given
-     * parameters, and initializes the other attributes `cc`, `c3`, `precomp`
-     * as indicated in their description. */
+     * parameters, and performs some pre-computations stored in the other
+     * attributes `cc`, `c3`, `precomp` defined as indicated in their
+     * description */
     zz_pX_shift_DAC(long d, const zz_p& c);
 
     /** Computes the Taylor shift `g = f(x+c)`. The OUT parameter `g` may alias
      * the IN parameter `f` */
     void shift(zz_pX& g, const zz_pX& f) const;
 
-private:
+protected:
     Vec<zz_pX> precomp; /**< contains `(x+c)^{2**k}` for all integers `k` such
                           that `2**k` is at least `4` and strictly less than
                           `(d+1)/2` */
@@ -96,28 +97,27 @@ private:
 /* requires 1,...,d units mod p                               */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/** A class for Taylor shift with a divide and conquer algorithm, assuming that
+ * `1,...,d` are units in `zz_p` */
 class zz_pX_shift_large_characteristic : public zz_pX_shift
 {
 public:  
-    /*------------------------------------------------------------*/
-    /* constructor inits a few arrays                             */
-    /* d is a (nonstrict) upper bound on the input degree         */
-    /*------------------------------------------------------------*/
-    zz_pX_shift_large_characteristic(long d, const zz_p& c);
-    zz_pX_shift_large_characteristic()
-    {
-        d = -1;
-    }
+    /** Empty constructor, sets the degree bound to `-1` */
+    zz_pX_shift_large_characteristic() { };
 
-    /*------------------------------------------------------------*/
-    /* g = f(x+c)                                                 */
-    /* output can alias input                                     */
-    /*------------------------------------------------------------*/
+    /** Main constructor. Initializes the attribute `d` with the given
+     * parameters, and uses `c` to do some precomputation stored in protected
+     * attributes `fact`, `ifact`, `v` as indicated in their description */
+    zz_pX_shift_large_characteristic(long d, const zz_p & c);
+
+    /** Computes the Taylor shift `g = f(x+c)`. The OUT parameter `g` may alias
+     * the IN parameter `f` */
     void shift(zz_pX& g, const zz_pX& f) const;
 
-private:
-    Vec<zz_p> fact, ifact;
-    zz_pX v;
+protected:
+    Vec<zz_p> fact; /**< `fact` contains the factorials `0!, 1!, 2!, ..., d!` */
+    Vec<zz_p> ifact; /**< `ifact` is the entry-wise inverse of `fact`: entry `i` is `1/(i!)` */
+    zz_pX v; /**< `v` is the sum of `(c**i / i!) x**i` for `0<=i<=d` */
 };
 
 /*------------------------------------------------------------*/
