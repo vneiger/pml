@@ -15,7 +15,8 @@ void time_one(long p)
     else
         zz_p::init(p);
 
-    cout << p << endl;
+    cout << "prime " << p << endl;
+    std::cout << "i\tDACprecomp\tDACshift\tLargePrecomp\tLargeShift" << std::endl;
 
     for (long i = 1; i < 100; i++)
     {
@@ -27,10 +28,10 @@ void time_one(long p)
         a = random_zz_pX(i);
         c = random_zz_p();
 
-        cout << i << " ";
+        cout << i << "\t";
         double t;
         long nb;
-        const double thresh = 0.02;
+        const double thresh = 0.1;
 
         nb = 0;
         t = get_time();
@@ -41,7 +42,7 @@ void time_one(long p)
         }
         while ( (get_time() - t) < thresh);
         t = (get_time() - t) / nb;
-        cout << t << " ";
+        cout << t << "\t";
 
 
         nb = 0;
@@ -53,7 +54,7 @@ void time_one(long p)
         }
         while ( (get_time() - t) < thresh);
         t = (get_time() - t) / nb;
-        cout << t << " ";
+        cout << t << "\t";
 
 
         nb = 0;
@@ -65,7 +66,7 @@ void time_one(long p)
         }
         while ( (get_time() - t) < thresh);
         t = (get_time() - t) / nb;
-        cout << t << " ";
+        cout << t << "\t";
 
 
         nb = 0;
@@ -77,7 +78,7 @@ void time_one(long p)
         }
         while ( (get_time() - t) < thresh);
         t = (get_time() - t) / nb;
-        cout << t << " ";
+        cout << t << "\t";
         
         cout << endl;
     }

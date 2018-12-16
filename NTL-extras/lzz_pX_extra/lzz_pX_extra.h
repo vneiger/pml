@@ -47,47 +47,48 @@ inline zz_pX InvTruncMul(const zz_pX & b, const zz_pX & a, long d)
 class zz_pX_shift
 {
 public:
+    /** Empty constructor sets the bound to `-1` */
+    zz_pX_shift() : d(-1) { };
+    /** Constructor for a given bound */
+    zz_pX_shift(long d) : d(d) { };
+
+    /** Destructor */
     virtual ~zz_pX_shift(){}
 
-    /** Computes the Taylor shift `g` of `f` and `c` (attribute in derived
-     * classes); `g` may alias `f` */
-    virtual void shift(zz_pX& g, const zz_pX& f) const = 0;
+    /** Computes the Taylor shift `g = f(x+c)` (`c` will be an attribute in
+     * derived classes); `g` may alias `f` */
+    virtual void shift(zz_pX & g, const zz_pX & f) const = 0;
 
 protected:
     long d; /**< non-strict upper bound on the degree of the polynomials `f` to be shifted */
 };
 
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* a class that does Taylor shift                             */
-/* no assumption on the base ring, DAC algorithm              */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
+/** A class for Taylor shift with a divide and conquer algorithm, making no
+ * assumption on the base ring `zz_p` */
 class zz_pX_shift_DAC : public zz_pX_shift
 {
 public:  
-    /*------------------------------------------------------------*/
-    /* constructor inits a few arrays                             */
-    /* d is a (nonstrict) upper bound on the input degree         */
-    /*------------------------------------------------------------*/
-    zz_pX_shift_DAC(long d, const zz_p& c);
-    zz_pX_shift_DAC()
-    {
-        d = -1;
-    }
+    /** Empty constructor, sets the degree bound to `-1` */
+    zz_pX_shift_DAC() { };
 
-    /*------------------------------------------------------------*/
-    /* g = f(x+c)                                                 */
-    /* output can alias input                                     */
-    /*------------------------------------------------------------*/
+    /** Main constructor. Initializes the attributes `d` and `c` with the given
+     * parameters, and initializes the other attributes `cc`, `c3`, `precomp`
+     * as indicated in their description. */
+    zz_pX_shift_DAC(long d, const zz_p& c);
+
+    /** Computes the Taylor shift `g = f(x+c)`. The OUT parameter `g` may alias
+     * the IN parameter `f` */
     void shift(zz_pX& g, const zz_pX& f) const;
 
 private:
-    Vec<zz_pX> precomp;
-    zz_p c, cc, c3;
+    Vec<zz_pX> precomp; /**< contains `(x+c)^{2**k}` for all integers `k` such
+                          that `2**k` is at least `4` and strictly less than
+                          `(d+1)/2` */
+    zz_p c; /**< the shifting parameter */
+    zz_p cc; /**< `cc = c*c`, the square of `c` */
+    zz_p c3; /**< `c3 = 3*c` */
 };
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

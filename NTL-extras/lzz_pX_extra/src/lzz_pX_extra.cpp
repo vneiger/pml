@@ -258,26 +258,26 @@ void InvTruncMul(zz_pX& x, const zz_pX& b, const zz_pX& a, long m)
 /* d is a (nonstrict) upper bound on the input degree         */
 /*------------------------------------------------------------*/
 zz_pX_shift_DAC::zz_pX_shift_DAC(long d_in, const zz_p& c_in)
+    : zz_pX_shift(d_in), c(c_in)
 {
-    d = d_in;
+    sqr(cc, c); // cc = c*c
+    mul(c3, to_zz_p(3), c); // c3 = 3*c
+
     zz_pX pow;
+    SetX(pow); // pow = x
+    pow[0] = c; // pow = x+c
+    sqr(pow, pow); sqr(pow, pow); // pow = (x+c)^4
 
-    c = c_in;
-    cc = c * c;
-    c3 = 3 * c;
+    // in precomp, store `(x+c)^{2**k}` for all integers `k` such that `2**k`
+    // is at least `4` and strictly less than `(d+1)/2` *//
+    const long ell = NumBits(d);
+    precomp.SetLength(std::max((long)1,ell-2));
 
-    SetX(pow);
-    SetCoeff(pow, 0, c); // pow = x+c
-    pow = pow * pow;
-    pow = pow * pow;  // pow = (x+c)^4
-
-    precomp.SetLength(1);
     precomp[0] = pow;
-
-    while ( 2 *deg(pow) - 1 < d )
+    for (long k=3; k<ell; ++k)
     {
-        pow = pow * pow;
-        precomp.append(pow);
+        sqr(pow, pow);
+        precomp[k-2] = pow;
     }
 }
 
