@@ -1,3 +1,4 @@
+#include <vector>
 #include <NTL/vec_lzz_p.h>
 #include <assert.h>
 
@@ -9,21 +10,24 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* runs timings up to size 1000                               */
 /*------------------------------------------------------------*/
-void check(int opt)
+void bench()
 {
     zz_p::FFTInit(0);
     long p = zz_p::modulus();
 
-    for (long i = 0; i < 1000; i += 1)
+    std::vector<long> lengths = {0, 1, 2, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000};
+    std::cout << "prime\t\tlength\t\tfast\t\tnaive" << std::endl;
+
+    for (long i : lengths)
     {
         vec_zz_p A, invA1, invA2;
         random(A, i);
 
-        cout << p << " ";
-        cout << i << " ";
+        cout << p << "\t";
+        cout << i << "\t";
         double t;
         long nb;
-        const double thresh = 0.05;
+        const double thresh = 0.1;
 
         nb = 0;
         t = get_time();
@@ -34,7 +38,7 @@ void check(int opt)
         }
         while ( (get_time() - t) < thresh);
         t = (get_time() - t) / nb;
-        cout << t << " ";
+        cout << t << "\t";
 
         nb = 0;
         t = get_time();
@@ -45,7 +49,7 @@ void check(int opt)
         }
         while ( (get_time() - t) < thresh);
         t = (get_time() - t) / nb;
-        cout << t << " ";
+        cout << t << "\t";
 
         cout << endl;
     }
@@ -58,10 +62,7 @@ void check(int opt)
 /*------------------------------------------------------------*/
 int main(int argc, char** argv)
 {
-    int opt = 0;
-    if (argc > 1)
-        opt = atoi(argv[1]);
-    check(opt);
+    bench();
 
     return 0;
 }

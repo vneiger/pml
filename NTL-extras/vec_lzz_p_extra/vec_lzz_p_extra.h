@@ -35,20 +35,17 @@ void inv_naive(Vec<zz_p> & invA, const Vec<zz_p> & A);
 void inv(Vec<zz_p> & invA, const Vec<zz_p> & A);
 
 /** Computes and returns the vector which is `A` with each entry inverted. */
-inline Vec<zz_p> inv(const Vec<zz_p>& A)
+inline Vec<zz_p> inv(const Vec<zz_p> & A)
 { Vec<zz_p> x; inv(x, A); return x; }
 
-/*------------------------------------------------------------*/
-/* builds the vector of mulmod_precon_t                       */
-/*------------------------------------------------------------*/
-void precomp(Vec<mulmod_precon_t>& out, const Vec<zz_p>& in);
+/** Computes a vector `precon` containing the `mulmod_precon_t` object
+ * for each entry of the input vector `A`  */
+void precomp(Vec<mulmod_precon_t> & precon, const Vec<zz_p> & A);
 
-inline Vec<mulmod_precon_t> precomp(const Vec<zz_p>& in)
-{
-    Vec<mulmod_precon_t> out;
-    precomp(out, in);
-    return out;
-}
+/** Computes and returns a vector containing the `mulmod_precon_t` object for
+ * each entry of the input vector `A`  */
+inline Vec<mulmod_precon_t> precomp(const Vec<zz_p> & A)
+{ Vec<mulmod_precon_t> precon; precomp(precon, A); return precon; }
 
 
 #endif
