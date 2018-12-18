@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "vec_lzz_p_extra.h"
 #include "lzz_pX_extra.h"
 
@@ -391,24 +393,25 @@ void zz_pX_shift_large_characteristic::shift(zz_pX& g, const zz_pX& f) const
 {
     if (d == -1)
     {
-        g = 0;
+        clear(g);
         return;
     }
 
-    zz_pX u, w;
-    u.rep.SetLength(d+1);
-    for (long i = 0; i < f.rep.length(); i++)
-        u.rep[d-i] = f.rep[i] * fact[i];
+    zz_pX u;
+    u.SetLength(d+1);
+    for (long i = 0; i <= deg(f); ++i)
+        mul(u[d-i], f[i], fact[i]);
     u.normalize();
 
-    w = trunc(u * v, d + 1);
+    zz_pX w;
+    MulTrunc(w, u, v, d+1);
 
     g.rep.SetLength(d+1);
+    for (long i = 0; i < w.rep.length(); ++i)
+        mul(g[d-i], w[i], ifact[d-i]);
+    for (long i = w.rep.length(); i <= d; ++i)
+        clear(g[d-i]);
 
-    for (long i = 0; i < w.rep.length(); i++)
-        g.rep[d-i] = w.rep[i] * ifact[d-i];
-    for (long i = w.rep.length(); i <= d; i++)
-        g.rep[d-i] = 0;
     g.normalize();
 }
 
