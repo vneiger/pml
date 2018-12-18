@@ -30,7 +30,7 @@ void check(long p)
         // with b = 1
         ev = zz_pX_Multipoint_Geometric(a, j);
         f = random_zz_pX(j);
-        random_vec_zz_p(rnd, j);
+        random(rnd, j);
 
         ev.evaluate(valF, f);
 
@@ -86,7 +86,7 @@ void check(long p)
         // same with b = random
         ev = zz_pX_Multipoint_Geometric(a, b, j);
         f = random_zz_pX(j);
-        random_vec_zz_p(rnd, j);
+        random(rnd, j);
 
         ev.evaluate(valF, f);
 

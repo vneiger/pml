@@ -27,7 +27,7 @@ void check(long p)
         b = random_zz_p();
         ev = zz_pX_Multipoint_Geometric(a, b, j);
         M = ev.to_dense();
-        in = random_vec_zz_p(j);
+        in = random(j);
         
         ev.mul_right(out, in);
         out2 = M * in;

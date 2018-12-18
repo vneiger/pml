@@ -54,11 +54,11 @@ void check(long p)
         dat00.SetLength(2 + i - 1);
         for (long k = 0; k < 2 + i -1; k++)
             dat00[k] = 0;
-        random_vec_zz_p(dat01, 2 + 2 - 1);
-        random_vec_zz_p(dat02, 2 + i - 1);
-        random_vec_zz_p(dat10, i-1 + i - 1);
-        random_vec_zz_p(dat11, i-1 + 2 - 1);
-        random_vec_zz_p(dat12, i-1 + i - 1);
+        random(dat01, 2 + 2 - 1);
+        random(dat02, 2 + i - 1);
+        random(dat10, i-1 + i - 1);
+        random(dat11, i-1 + 2 - 1);
+        random(dat12, i-1 + i - 1);
 
         hankel_lzz_p h00(dat00, 2, i), h01(dat01, 2, 2), h02(dat02, 2, i), h10(dat10, i-1, i), h11(dat11, i-1, 2), h12(dat12, i-1, i);
         Vec<hankel_lzz_p> row0, row1;

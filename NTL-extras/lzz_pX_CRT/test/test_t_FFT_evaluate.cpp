@@ -23,7 +23,7 @@ void check(){
 
         ev = get_FFT_points(j);
         f = random_zz_pX(j);
-        random_vec_zz_p(rnd, ev.length());
+        random(rnd, ev.length());
 
         ev.evaluate(valF, f);
         ev.t_evaluate(g, rnd);

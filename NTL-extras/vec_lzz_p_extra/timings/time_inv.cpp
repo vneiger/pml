@@ -17,7 +17,7 @@ void check(int opt)
     for (long i = 0; i < 1000; i += 1)
     {
         vec_zz_p A, invA1, invA2;
-        random_vec_zz_p(A, i);
+        random(A, i);
 
         cout << p << " ";
         cout << i << " ";
