@@ -338,7 +338,6 @@ void zz_pX_shift_DAC::shift(zz_pX& g, const zz_pX& f) const
 zz_pX_shift_large_characteristic::zz_pX_shift_large_characteristic(long d, const zz_p& c) 
     : zz_pX_shift(d)
 {
-    // TODO: assert that d+1 is a unit in zz_p
     // fact contains the factorials 0!, 1!, 2!, ..., d!
     fact.SetLength(d+1);
     set(fact[0]);
@@ -390,18 +389,15 @@ void zz_pX_shift_large_characteristic::shift(zz_pX& g, const zz_pX& f) const
 /*------------------------------------------------------------*/
 std::unique_ptr<zz_pX_shift> get_shift(long d, const zz_p& c)
 {
-    zz_p prod;
-    for (long i = 1; i <= d; i++)
-        prod *= i;
+    // build factorial d! to test whether 1,2,...,d are units in zz_p
+    zz_p prod(2);
+    for (long i = 3; i <= d; ++i)
+        mul(prod, prod, i);
     long tmp;
     if (InvModStatus(tmp, prod.LoopHole(), zz_p::modulus()) == 0) // gcd = 1
-    {
         return std::unique_ptr<zz_pX_shift>(new zz_pX_shift_large_characteristic(d, c));
-    }
     else
-    {
         return std::unique_ptr<zz_pX_shift>(new zz_pX_shift_DAC(d, c));
-    }
 }
 
 

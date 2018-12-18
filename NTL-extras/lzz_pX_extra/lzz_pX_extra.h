@@ -98,7 +98,7 @@ protected:
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /** A class for Taylor shift with a divide and conquer algorithm, assuming that
- * `1,...,d` are units in `zz_p` */
+ * `2,...,d` are units in `zz_p` */
 class zz_pX_shift_large_characteristic : public zz_pX_shift
 {
 public:  
@@ -120,24 +120,20 @@ protected:
     zz_pX v; /**< `v` is the sum of `(c**i / i!) x**i` for `0<=i<=d` */
 };
 
-/*------------------------------------------------------------*/
-/* returns a zz_pX_shift of the right type                    */
-/*------------------------------------------------------------*/
-std::unique_ptr<zz_pX_shift> get_shift(long d, const zz_p& c);
+/** Constructs a `zz_pX_shift` object of the right type, and returns a pointer
+ * to it; if `2,...,d` are units in `zz_p` then it is a
+ * `zz_pX_shift_large_characteristic` object, otherwise it is a
+ * `zz_pX_shift_DAC` object */
+std::unique_ptr<zz_pX_shift> get_shift(long d, const zz_p & c);
 
-/*------------------------------------------------------------*/
-/* g = f(x+c)                                                 */
-/* output can alias input                                     */
-/* creates and discards a shift object                        */
-/*------------------------------------------------------------*/
-void shift(zz_pX& g, const zz_pX& f, const zz_p& c);
+/** Computes the Taylor shift `g = f(x+c)`. The OUT parameter `g` may alias the
+ * IN parameter `f`. This creates and discards a `zz_pX_shift` object */
+void shift(zz_pX& g, const zz_pX & f, const zz_p & c);
 
-inline zz_pX shift(const zz_pX& f, const zz_p& c)
-{
-    zz_pX g;
-    shift(g, f, c);
-    return g;
-}
+/** Computes and returns the Taylor shift `f(x+c)`. This creates and discards a
+ * `zz_pX_shift` object */
+inline zz_pX shift(const zz_pX & f, const zz_p & c)
+{ zz_pX g; shift(g, f, c); return g; }
 
 #endif
 
