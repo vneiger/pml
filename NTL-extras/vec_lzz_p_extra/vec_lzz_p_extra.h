@@ -17,11 +17,15 @@
 NTL_CLIENT
 
 #if ( (NTL_MAJOR_VERSION < 10) || ((NTL_MAJOR_VERSION == 10) && (NTL_MINOR_VERSION < 4)) )
+/** Builds and returns a random vector over `zz_p` of length `n` (defined only
+ * for versions of NTL that do not include this feature) */
 inline Vec<zz_p> random_vec_zz_p(long n)
 { Vec<zz_p> x; random(x, n); return x; }
 #endif
 
 #if ( (NTL_MAJOR_VERSION < 10) || ((NTL_MAJOR_VERSION == 10) && (NTL_MINOR_VERSION < 4)) )
+/** Builds and returns a random matrix vector over `zz_p`'s of dimensions `d x
+ * e` (defined only for versions of NTL that do not include this feature) */
 inline Mat<zz_p> random_mat_zz_p(long d, long e)
 { Mat<zz_p> x; random(x, d, e); return x; }
 #endif
