@@ -1,7 +1,7 @@
 #ifndef MAT_LZZ_PX_MULTIPLY__H
 #define MAT_LZZ_PX_MULTIPLY__H
 
-/** Multiplication of polynomial matrices.
+/** Multiplication of univariate polynomial matrices over `zz_p`
  *
  * \file mat_lzz_pX_multiply.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost

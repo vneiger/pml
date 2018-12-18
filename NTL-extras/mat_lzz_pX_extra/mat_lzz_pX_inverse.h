@@ -1,7 +1,7 @@
 #ifndef MAT_LZZ_PX_INVERSE__H
 #define MAT_LZZ_PX_INVERSE__H
 
-/** Inverse of a polynomial matrix
+/** \brief Inverse of a univariate polynomial matrix over `zz_p`
  *
  * \file mat_lzz_pX_inverse.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost

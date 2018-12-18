@@ -1,7 +1,7 @@
 #ifndef MAT_LZZ_PX_ARITH__H
 #define MAT_LZZ_PX_ARITH__H
 
-/** Basic arithmetic for polynomial matrices.
+/** \brief Basic arithmetic for univariate polynomial matrices over `zz_p`
  *
  * \file mat_lzz_pX_arith.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost

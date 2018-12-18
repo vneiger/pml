@@ -1,7 +1,8 @@
 #ifndef MAT_LZZ_PX_FORMS__H
 #define MAT_LZZ_PX_FORMS__H
 
-/** Shifted reduced/normal forms of polynomial matrices.
+/** \brief Shifted reduced forms and shifted normal forms of univariate
+ * polynomial matrices over `zz_p`
  *
  * \file mat_lzz_pX_forms.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost

@@ -1,7 +1,7 @@
 #ifndef MAT_LZZ_PX_UTILS__H
 #define MAT_LZZ_PX_UTILS__H
 
-/** Some basic routines for handling `Mat<zz_pX>`.
+/** \brief Basic routines for univariate polynomial matrices over `zz_p`
  *
  * \file mat_lzz_pX_utils.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost.
