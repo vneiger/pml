@@ -1,15 +1,22 @@
 #ifndef __LZZ_PX_MIDDLE_PRODUCT__H
 #define __LZZ_PX_MIDDLE_PRODUCT__H
 
+/** Middle product for univariate polynomials over `zz_p`
+ *
+ * \file lzz_pX_middle_product.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
+ * \version 0.1
+ * \date 2018-12-19
+ *
+ */
+
 #define KARX (32)
 
 #include <NTL/lzz_pX.h>
 
 NTL_CLIENT
 
-/*------------------------------------------------------------*/
-/* naive transposed product of (a,b)                          */
-/*------------------------------------------------------------*/
+/** Computes the transposed product `xp` of `a` by `b` (naive algorithm) */
 void tPlainMul(zz_p *xp, const zz_p *ap, const zz_p *bp, long N);
 
 /*------------------------------------------------------------*/

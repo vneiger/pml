@@ -1,7 +1,7 @@
 #ifndef MAT_LZZ_P_EXTRA__H
 #define MAT_LZZ_P_EXTRA__H
 
-/** Additional functions for matrices over `zz_p`.
+/** \brief Additional functions for matrices over `zz_p`
  *
  * \file mat_lzz_p_extra.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost

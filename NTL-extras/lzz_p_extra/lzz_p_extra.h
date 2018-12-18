@@ -1,7 +1,7 @@
 #ifndef __LZZ_P_EXTRA__H
 #define __LZZ_P_EXTRA__H
 
-/** Some additional functions for lzz_p.
+/** \brief Additional functions for `lzz_p`
  *
  * \file lzz_p_extra.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost

@@ -1,7 +1,7 @@
 #ifndef __VEC_LZZ_P_EXTRA_H
 #define __VEC_LZZ_P_EXTRA_H
 
-/** Additional functions for `vec_lzz_p`.
+/** \brief Additional functions for vectors over `zz_p`
  *
  * \file vec_lzz_p_extra.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost

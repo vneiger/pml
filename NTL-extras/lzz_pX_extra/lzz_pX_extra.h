@@ -1,7 +1,7 @@
 #ifndef __LZZ_PX_EXTRA__H
 #define __LZZ_PX_EXTRA__H
 
-/** Additional functionalities for polynomials (lzz_pX).
+/** \brief Additional functions for univariate polynomials over `zz_p`
  *
  * \file lzz_pX_extra.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
