@@ -79,7 +79,10 @@ public:
     zz_pX_shift_DAC(long d, const zz_p& c);
 
     /** Computes the Taylor shift `g = f(x+c)`. The OUT parameter `g` may alias
-     * the IN parameter `f` */
+     * the IN parameter `f`
+     *
+     * \todo speed-up : precompute for repeated right-multiplication by `precomp[idx]`
+     */
     void shift(zz_pX& g, const zz_pX& f) const;
 
 protected:

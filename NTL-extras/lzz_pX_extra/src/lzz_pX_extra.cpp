@@ -284,43 +284,71 @@ void zz_pX_shift_DAC::shift(zz_pX& g, const zz_pX& f) const
 {
     if (d == -1)
     {
-        g = 0;
+        clear(g);
         return;
     }
 
     if (deg(f) > d)
         LogicError("Degree too large for shift");
 
-    long lf = d + 1;
-    long lv = lf >> 2;
-    if (lf > 4 * lv)
-        lv++;
+    Vec<zz_pX> v(INIT_SIZE, ((d+1) % 4) ? (1+(d+1)/4) : ((d+1)/4));
 
-    Vec<zz_pX> v;
-    v.SetLength(lv);
-    for (long i = 0, j = 0; i <= d; i+=4, j++)
+    long i, j;
+    zz_p buf,f0,f1,f2,f3;
+    for (i=0, j=0; i <= deg(f)-3; i+=4, ++j)
     {
-        SetCoeff(v[j], 0, coeff(f, i) + c * coeff(f, i+1) + cc * (coeff(f, i+2) + c * coeff(f, i+3)));
-        SetCoeff(v[j], 1, coeff(f, i+1) + c * (2*coeff(f, i+2) + c3 * coeff(f, i+3)));
-        SetCoeff(v[j], 2, coeff(f, i+2) + c3 * coeff(f, i+3));
-        SetCoeff(v[j], 3, coeff(f, i+3));
+        v[j].SetLength(4);
+        f0 = f[i]; f1 = f[i+1]; f2 = f[i+2]; f3 = f[i+3];
+        // v[j][0] = f[i] + c * f1 + cc * (f2 + c * f3);
+        mul(buf, c, f1);
+        mul(v[j][0], c, f3);
+        add(v[j][0], v[j][0], f2);
+        mul(v[j][0], v[j][0], cc);
+        add(v[j][0], v[j][0], buf);
+        add(v[j][0], v[j][0], f0);
+        // v[j][1] = f1 + c * (2*f2 + c3 * f3);
+        mul(buf, c3, f3);
+        add(buf, buf, f2);
+        add(v[j][1], buf, f2);
+        mul(v[j][1], v[j][1], c);
+        add(v[j][1], v[j][1], f1);
+        // v[j][2] = f2 + c3 * f3;
+        v[j][2] = buf;
+        // v[j][3] = f3;
+        v[j][3] = f3;
+        v[j].normalize();
     }
-    long idx = 0;
+    if (i<=deg(f))
+    {
+        f0 = f[i]; f1 = coeff(f, i+1); f2 = coeff(f, i+2); f3 = coeff(f, i+3);
+        v[j].SetLength(4);
+        v[j][0] = f0 + c * f1 + cc * (f2 + c * f3);
+        v[j][1] = f1 + c * (2*f2 + c3 * f3);
+        v[j][2] = f2 + c3 * f3;
+        v[j][3] = f3;
+        v[j].normalize();
+    }
 
+    long idx = 0;
     while (v.length() > 1)
     {
-        long i, j;
-        for (i = 0, j = 0; j+1 < v.length(); i++, j+=2)
-            v[i] = v[j] + precomp[idx] * v[j+1];
-        if (j == v.length() - 1)
+        // TODO speed-up : precompute for repeated right-multiplication by `precomp[idx]`
+        mul(v[1], v[1], precomp[idx]);
+        add(v[0], v[0], v[1]);
+        for (i = 1, j = 2; j+1 < v.length(); ++i, j+=2)
         {
-            v[i] = v[j];
-            i++;
+            mul(v[i], precomp[idx], v[j+1]);
+            add(v[i], v[i], v[j]);
         }
-        idx++;
+        if (j+1 == v.length())
+        {
+            v[i].swap(v[j]);
+            ++i;
+        }
         v.SetLength(i);
+        ++idx;
     }
-    g = v[0];
+    g.swap(v[0]);
 }
 
 
