@@ -638,7 +638,7 @@ void pmbasis_generic_2n_n_top_rows(
  *   these matrices should be invertible. This is equivalent to the fact that a
  *   certain block-Hankel matrix of dimension `n*order x n*order` built from
  *   `pmat` is invertible.
- * The latter holds with high probabili for a random matrix `pmat`, if the
+ * The latter holds with high probability for a random matrix `pmat`, if the
  * field is sufficiently large. Note that here no check is performed and the
  * algorithm may throw an error if `pmat` does not have the required genericity
  * property.
@@ -646,7 +646,7 @@ void pmbasis_generic_2n_n_top_rows(
  * Some of these functions return only the denominator `den`, in Popov form.
  * Precisely it has the form `X^dd I + D`, where `deg(D) < dd` and `dd =
  * ceil(order/2)`, and it is exactly the leading principal `n x n` submatrix of
- * the approximant basis computed by the functions #mbasis_generic_2n_n above,
+ * the approximant basis computed by the functions #pmbasis_generic_2n_n above,
  * on input `order` and `[[pmat], [-I]]`.
  *
  * The other functions return a couple `(den1,den2)`, where:
@@ -659,15 +659,11 @@ void pmbasis_generic_2n_n_top_rows(
  */
 //@{
 
-/*------------------------------------------------------------*/
-/* Iterative algorithm, for low approximation order           */
-/*------------------------------------------------------------*/
-
-// This algorithm could also be called "Matrix Berlekamp-Massey, iterative".
-// It is roughly the same as Berlekamp-Massey (on square matrices), except that
-// it is "reversed": it goes from low degree to high degrees.
-
-// computes both den1 and den2
+/** Computes the denominators `(den1,den2)` for `(pmat,order)` iteratively,
+ * with the properties and under the requirements detailed in @ref
+ * matrix_pade. This algorithm may be seen as Berlekamp-Massey performed on
+ * square matrices, and reversed (it goes from low degree to high degree).
+ * */
 void matrix_pade_generic_iterative(
                                    Mat<zz_pX> & den1,
                                    Mat<zz_pX> & den2,
@@ -675,9 +671,10 @@ void matrix_pade_generic_iterative(
                                    const long order
                                   );
 
-// Note: den is in Popov form.
-// we use the above version with den1==den, discarding den2
-// (den2 is used during all along the iterations to update den1)
+/** Computes the denominator `den` for `(pmat,order)` iteratively, with the
+ * properties and under the requirements detailed in @ref matrix_pade. This
+ * simply calls the function of the same name which computes both `den1` and
+ * `den2`, and then discards `den2`. */
 inline void matrix_pade_generic_iterative(
                                           Mat<zz_pX> & den,
                                           const Mat<zz_pX> & pmat,
@@ -688,35 +685,43 @@ inline void matrix_pade_generic_iterative(
     matrix_pade_generic_iterative(den, den2, pmat, order);
 }
 
-/*------------------------------------------------------------*/
-/* Divide and conquer algorithm                               */
-/*------------------------------------------------------------*/
-
-// essentially: one call to matpadegen_rec, one residual, one call to pmbasis_toprows, find result by product
-void matrix_pade_generic(
-                         Mat<zz_pX> & den,
-                         const Mat<zz_pX> & pmat,
-                         const long order
-                        );
-
-// version computing den as 2n x n, storing the two left blocks
-// [[den1], [den2]] above (den1 in Popov form).
+/** Computes the denominators `(den1,den2)` for `(pmat,order)` by a divide and
+ * conquer approach (the matrix `den` is `2n x n` and stores `[[den1],
+ * [den2]]`), with the properties and under the requirements detailed in @ref
+ * matrix_pade. This is essentially a specialization of `pmbasis` to the
+ * present situation, where we need just the left half of the columns of the
+ * output approximant basis, and where the input contains an identity matrix.
+ */
 void matrix_pade_generic_recursion(
                                    Mat<zz_pX> & den,
                                    const Mat<zz_pX> & pmat,
                                    const long order
                                   );
 
+/** Computes the denominator `den` for `(pmat,order)` by a divide and conquer
+ * algorithm, with the properties and under the requirements detailed in @ref
+ * matrix_pade. This fundamentally relies on #matrix_pade_generic_recursion
+ * with the recursion tree slightly modified with the branch from the root to
+ * the last leaf computing just the top denominator instead of both `den1` and
+ * `den2`, thanks to a call to #pmbasis_generic_2n_n_top_rows. */
+void matrix_pade_generic(
+                         Mat<zz_pX> & den,
+                         const Mat<zz_pX> & pmat,
+                         const long order
+                        );
+
 //@} // doxygen group: Matrix-Padé approximation
 
 
 
-
-
 /*------------------------------------------------------------*/
-/* FIXME in progress: MBASIS/PMBASIS, generic case, one column */
+/* TODO in progress: (P)MBASIS, generic case, few columns     */
 /*------------------------------------------------------------*/
 
+/** Using partial linearization to handle the case where the number of columns
+ * is quite smaller than the number of rows. Iterative.
+ *
+ * \todo Currently a prototype. Not tuned and barely tested. */
 VecLong mbasis_generic_onecolumn(
                                  Mat<zz_pX> & appbas,
                                  const Mat<zz_pX> & pmat,
@@ -724,6 +729,10 @@ VecLong mbasis_generic_onecolumn(
                                  const VecLong & shift
                                 );
 
+/** Using partial linearization to handle the case where the number of columns
+ * is quite smaller than the number of rows. Divide and conquer.
+ *
+ * \todo Currently a prototype. Not tuned and barely tested. */
 VecLong pmbasis_generic_onecolumn(
                                   Mat<zz_pX> & appbas,
                                   const Mat<zz_pX> & pmat,

@@ -28,13 +28,13 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 int main(int argc, char *argv[])
 {
     if (argc!=6)
-        throw std::invalid_argument("Usage: ./test_matpadegen rdim order nbits iter verify");
+        throw std::invalid_argument("Usage: ./test_matpadegen rdim order nbits verify iter");
 
     long rdim = atoi(argv[1]);
     long order = atoi(argv[2]);
     long nbits = atoi(argv[3]);
-    bool iter = (atoi(argv[5])==1);
     bool verify = (atoi(argv[4])==1);
+    bool iter = (atoi(argv[5])==1);
 
     VecLong shift(2*rdim,0);
 
