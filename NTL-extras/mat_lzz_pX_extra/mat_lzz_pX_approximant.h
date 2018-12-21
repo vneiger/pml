@@ -574,11 +574,11 @@ void mbasis_generic_2n_n_resupdate(
  * with the uniform shift `(0,...,0)`):
  *   - if `order` is even, all orders of recursive calls are even (as a result,
  *   the final basis is a product of forms 1, and thus has form 1 itself)
- *   - if `order` is odd, then only the very first leaf of the recursive tree
- *   will be with odd order, the others will be with even order (the first leaf
- *   gives the leftmost basis in the product which yields the final basis,
- *   which means all bases will have form 1 except the leftmost one which has
- *   form 2, hence the final one has form 2).
+ *   - if `order` is odd, then only the very last leaf of the recursive tree
+ *   will be with odd order, the others will be with even order; since the last
+ *   leaf gives the leftmost basis in the product which yields the final basis,
+ *   this means all bases will have form 1 except the leftmost one which has
+ *   form 2, hence the final one has form 2.
  * */
 void pmbasis_generic_2n_n(
                           Mat<zz_pX> & appbas,
@@ -586,7 +586,12 @@ void pmbasis_generic_2n_n(
                           const long order
                          );
 
-// TODO doc if this turns out useful
+/** Computes the top half `appbas` of the rows of an ordered weak Popov
+ * approximant basis for `(pmat,order)`, under the requirements and with the
+ * properties detailed in @ref pmbasis_generic. Fundamentally relies on
+ * #pmbasis_generic_2n_n, with a slightly modified recursion tree on top (the
+ * branch from the root to the last leaf computes only the top rows, the others
+ * are unchanged). */
 void pmbasis_generic_2n_n_top_rows(
                                    Mat<zz_pX> & appbas,
                                    const Mat<zz_pX> & pmat,

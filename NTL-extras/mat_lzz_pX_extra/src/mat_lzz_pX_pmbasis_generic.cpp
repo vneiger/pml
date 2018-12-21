@@ -1349,23 +1349,11 @@ void pmbasis_generic_2n_n(
     // order1+order2 = order for the recursive calls (see remarks in the
     // documentation):
     // if order is odd: order1 is the one of floor(order/2) and ceil(order/2)
-    // which is odd
+    // which is even
     // if order is even: choose both order1 and order2 even and
-    // approximately order/2
-    long order1 = order/2; // floor(order/2)
-    if (order%2)
-    {
-        // order is odd; if order1 is even, change it to ceil(order/2),
-        // this way order2 will be even
-        if (order1%2) ++order1;
-    }
-    else
-    {
-        // order is even; if order1 is odd, change it to order/2 - 1
-        // this way order1 and order2 will be even
-        if (order1%2) --order1;
-    }
-    long order2 = order-order1;
+    // equal to order/2 +- 1
+    const long order1 = (order%4==0 || order%4==1) ? (order/2) : (order/2+1);
+    const long order2 = order-order1;
 
     // first recursive call, with 'pmat'
     Mat<zz_pX> trunc_pmat;
