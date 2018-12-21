@@ -60,9 +60,12 @@
 #include "mat_lzz_pX_forms.h"
 #include "mat_lzz_pX_multiply.h"
 
-NTL_CLIENT;
+NTL_CLIENT
 
-/** General user-friendly interface for approximant basis computation.
+/** @name General interfaces for approximant basis computation and verification */
+//@{
+
+/** General interface for approximant basis computation.
  *
  * Computes a `shift`-minimal approximant basis `appbas` for (`pmat`,`order`).
  * If the user requires a specific shifted form (minimal, ordered weak Popov,
@@ -163,103 +166,179 @@ bool is_approximant_basis(
  * and then calls the function above.
  */
 inline bool is_approximant_basis(
-                          const Mat<zz_pX> & appbas,
-                          const Mat<zz_pX> & pmat,
-                          const long order,
-                          const VecLong & shift,
-                          const PolMatForm & form = ORD_WEAK_POPOV,
-                          const bool randomized = false
-                         )
+                                 const Mat<zz_pX> & appbas,
+                                 const Mat<zz_pX> & pmat,
+                                 const long order,
+                                 const VecLong & shift,
+                                 const PolMatForm & form = ORD_WEAK_POPOV,
+                                 const bool randomized = false
+                                )
 {
     VecLong orders(pmat.NumCols(),order);
     return is_approximant_basis(appbas,pmat,orders,shift,form,randomized);
 }
 
+//@} // doxygen group: General interfaces for approximant basis computation and verification
 
-/*------------------------------------------------------------*/
-/* Iterative algorithm for general order and shift            */
-/* References:                                                */
-/*   - Beckermann 1992                                        */
-/*   - Van Barel-Bultheel 1991+1992                           */
-/*   - Beckermann-Labahn 2000 (ensuring s-Popov)              */
-/*------------------------------------------------------------*/
+/** @name Iterative algorithms
+ *
+ * These functions implement iterative approximant basis algorithms inspired
+ * from:
+ * - B. Beckermann. J. Comput. Appl. Math. 40 (1992) 19-42
+ * - B. Beckermann, G. Labahn. SIAM J. Matrix Anal. Appl. 15 (1994) 804-823
+ * - M. Van Barel, A. Bultheel. Numer. Algorithms 3 (1992) 451-462
+ */
+//@{
+
+/** Computes an `shift`-ordered weak Popov approximant basis for
+ * `(pmat,order)`. The parameter `order_wise` allows one to choose between two
+ * strategies for choosing the next coefficient to deal with during the
+ * iteration, which may have some impact on the timings depending on the input:
+ * - process `pmat` order-wise (choose column with largest order)
+ * - process `pmat` column-wise (choose leftmost column not yet completed). */
 VecLong appbas_iterative(
-                        Mat<zz_pX> & appbas,
-                        const Mat<zz_pX> & pmat,
-                        const VecLong & order,
-                        const VecLong & shift,
-                        bool order_wise=true
-                       );
+                         Mat<zz_pX> & appbas,
+                         const Mat<zz_pX> & pmat,
+                         const VecLong & order,
+                         const VecLong & shift,
+                         bool order_wise=true
+                        );
 
+/** Computes an `shift`-Popov approximant basis for `(pmat,order)`. The
+ * parameter `order_wise` allows one to choose between two strategies for
+ * choosing the next coefficient to deal with during the iteration, which may
+ * have some impact on the timings depending on the input:
+ * - process `pmat` order-wise (choose column with largest order)
+ * - process `pmat` column-wise (choose leftmost column not yet completed).
+ *
+ * \todo currently, this is based on the approach "compute a first basis which
+ * gives the pivot degrees and re-compute with these degrees as the shift to
+ * obtain the normal form". It would be interesting to implement the strategy
+ * of Beckermann-Labahn 2000 which ensures Popov normal form, and compare it
+ * with the current technique.
+ */
 VecLong popov_appbas_iterative(
-                              Mat<zz_pX> & appbas,
-                              const Mat<zz_pX> & pmat,
-                              const VecLong & order,
-                              const VecLong & shift,
-                              bool order_wise=true
-                             );
+                               Mat<zz_pX> & appbas,
+                               const Mat<zz_pX> & pmat,
+                               const VecLong & order,
+                               const VecLong & shift,
+                               bool order_wise=true
+                              );
+//@} // doxygen group: Iterative algorithms
 
-/*------------------------------------------------------------*/
-/* M-Basis algorithm for approximant order = 1                */
-/* References:                                                */
-/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
-/*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shift)  */
-/*   - Jeannerod-Neiger-Villard 2018 (ensuring s-Popov)       */
-/*------------------------------------------------------------*/
+/** @name Approximant basis via linear algebra
+ * \anchor mbasis1
+ *
+ *  These functions compute a shifted minimal or shifted Popov approximant
+ *  basis using fast linear algebra on constant matrices.
+ *
+ *  Currently, this is only implemented for the uniform order `(1,...,1)`, following
+ *  the algorithm _mbasis_ described in
+ *  - P. Giorgi, C.-P. Jeannerod, G. Villard. Proceeding ISSAC 2003,
+ *  - P. Giorgi, R. Lebreton. Proceedings ISSAC 2014,
+ *  - C.-P. Jeannerod, V. Neiger, G. Villard. Preprint 2018.
+ *  The latter reference explicitly shows how to ensure that we obtain the
+ *  canonical s-Popov approximant basis.
+ *
+ *  \todo implement the general Krylov-based approach from JNSV17, which
+ *  efficiently solves the problem when the sum of the orders is small
+ */
+//@{
 
-// input: kerbas is constant, will contain the left kernel of pmat in reduced
-// row echelon form
-// (not exactly of pmat: permutations involved, depending on the shift)
-// output: pivot degrees of the approximant basis (also indicates where the
-// rows of kernel should appear in the approximant basis)
-// FIXME: this is currently not optimized when matrices with non-generic
-// rank profiles are given in input (pmat)
-// --> for this, it would probably be better to rely on a library which
-// provides precisely the decomposition we want (probably PLE, or PLUQ)
+/** Computes a shifted Popov approximant basis at order `(1,...,1)` using fast
+ * linear algebra on constant matrices. Thus, in this context, the input matrix
+ * `pmat` is a constant matrix. This approximant basis consists of two sets of
+ * rows:
+ * - rows forming a left kernel basis in reduced row echelon form of some
+ *   row-permutation of `pmat` (the permutation depends on the shift)
+ * - the other rows are coordinate vectors multiplied by the variable `x`;
+ *   there is one such row at each index `i` which is not among the pivot
+ *   indices of the left kernel basis above.
+ * The first set of rows is what is stored in the OUT parameter `kerbas`.
+ *
+ * \param[out] kerbas matrix over the base field `zz_p`
+ * \param[in] pmat matrix over the base field `zz_p`
+ * \param[in] shift shift (vector of integers)
+ *
+ * \todo This is currently not optimized when matrices with non-generic rank
+ * profiles are given in input (pmat). For this, it would be much easier to
+ * rely on a library which provides precisely the needed decomposition (such as
+ * PLE or PLUQ), e.g. LinBox but this becomes less efficient if working over a
+ * field with a prime of 30 bits or more.
+ */
 VecLong popov_mbasis1(
-                     Mat<zz_p> & kerbas,
-                     const Mat<zz_p> & pmat,
-                     const VecLong & shift
-                    );
+                      Mat<zz_p> & kerbas,
+                      const Mat<zz_p> & pmat,
+                      const VecLong & shift
+                     );
 
-// input: kerbas is constant, will contain the left kernel of pmat in row
-// echelon form
-// (not exactly of pmat: permutations involved, depending on the shift)
-// output: pivot degrees of the approximant basis (also indicates where the
-// rows of kernel should appear in the approximant basis)
-// FIXME: this is currently not optimized when non-generic matrices
-// are given in input (pmat)
-// --> for this, it would probably be better to rely on a library which
-// provides precisely the decomposition we want (probably PLE, or PLUQ)
+/** Computes a shifted-ordered weak Popov approximant basis at order
+ * `(1,...,1)` using fast linear algebra on constant matrices. Thus, in this
+ * context, the input matrix `pmat` is a constant matrix. This approximant
+ * basis consists of two sets of rows:
+ * - rows forming a left kernel basis in (non-reduced) row echelon form of some
+ *   row-permutation of `pmat` (the permutation depends on the shift)
+ * - the other rows are coordinate vectors multiplied by the variable `x`;
+ *   there is one such row at each index `i` which is not among the pivot
+ *   indices of the left kernel basis above.
+ * The first set of rows is what is stored in the OUT parameter `kerbas`.
+ *
+ * \param[out] kerbas matrix over the base field `zz_p`
+ * \param[in] pmat matrix over the base field `zz_p`
+ * \param[in] shift shift (vector of integers)
+ *
+ * \todo This is currently not optimized when matrices with non-generic rank
+ * profiles are given in input (pmat). For this, it would be much easier to
+ * rely on a library which provides precisely the needed decomposition (such as
+ * PLE or PLUQ), e.g. LinBox but this becomes less efficient if working over a
+ * field with a prime of 30 bits or more.
+ */
 VecLong mbasis1(
                 Mat<zz_p> & kerbas,
                 const Mat<zz_p> & pmat,
                 const VecLong & shift
                );
 
+//@} // doxygen group: Approximant basis 
 
-/*------------------------------------------------------------*/
-/* M-Basis algorithm for uniform approximant order            */
-/* References:                                                */
-/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
-/*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shift)  */
-/*   - Jeannerod-Neiger-Villard 2018                          */
-/*          (ensuring s-ordered weak Popov or s-Popov)        */
-/*------------------------------------------------------------*/
+/** @name M-Basis algorithm (uniform approximant order)
+ * \anchor mbasis
+ *
+ * These functions compute a `shift`-minimal ordered weak Popov approximant
+ * basis for `(pmat,orders)` in the case where `orders` is given by a single
+ * integer `orders = (order,...order)`. They iterate from `1` to `order`,
+ * computing at each step a basis at order `1` (see @ref mbasis1) and using to
+ * update the output `appbas`, the so-called _residual matrix_, and the
+ * considered shift. At step `d`, we have `appbas*pmat = 0 mod x^{d-1}`, and we
+ * want to update `appbas` so that this becomes zero modulo `x^d`.
+ *
+ * In this context, the residual matrix is a constant matrix with the same
+ * dimensions as `pmat` which, at the iteration `d`, is equal to the
+ * coefficient of degree `d` of `appbas*pmat` (the coefficients of lower degree
+ * being already zero).
+ *
+ * This is inspired from the algorithm _mbasis_ described in
+ *  - P. Giorgi, C.-P. Jeannerod, G. Villard. Proceeding ISSAC 2003,
+ *  - P. Giorgi, R. Lebreton. Proceedings ISSAC 2014.
+ */
+//@{
 
-// plain version, not the most efficient
+/** Plain version of `mbasis` (see @ref mbasis), where the input `pmat` is
+ * represented as `Vec<Vec<zz_p>>`. This is almost always less efficient than
+ * other provided variants, but is kept here for legacy, being a direct
+ * implementation of the algorithm from the references in @ref mbasis. */
 VecLong mbasis_plain(
-                    Mat<zz_pX> & appbas,
-                    const Mat<zz_pX> & pmat,
-                    const long order,
-                    const VecLong & shift
-                   );
+                     Mat<zz_pX> & appbas,
+                     const Mat<zz_pX> & pmat,
+                     const long order,
+                     const VecLong & shift
+                    );
 
-// Variant which first converts to vector of constant matrices,
-// performs the computations with this storage, and eventually
-// converts back to polynomial matrices
-// Residual (constant coeff of X^-d appbas*pmat) is computed from scratch at
-// each iteration
+/** Variant of `mbasis` (see @ref mbasis) which first converts `pmat` to its
+ * representation by a vector of constant matrices `Vec<Mat<zz_p>>`, then
+ * performs the computations with this storage, and eventually converts back to
+ * the polynomial matrix `Mat<zz_pX>` representation. In this variant, the
+ * residual matrix is computed from `appbas` and `pmat` at each iteration. */
 // Complexity: pmat is m x n
 //   - 'order' calls to mbasis1 with dimension m x n, each one gives a
 //   constant matrix K which is generically m-n x m  (may have more rows in
@@ -271,14 +350,15 @@ VecLong mbasis_plain(
 // generic pmat), then the third item costs O(m n^2 order^2 / 2) operations,
 // assuming cubic matrix multiplication over the field.
 VecLong mbasis_rescomp(
-              Mat<zz_pX> & appbas,
-              const Mat<zz_pX> & pmat,
-              const long order,
-              const VecLong & shift
-             );
+                       Mat<zz_pX> & appbas,
+                       const Mat<zz_pX> & pmat,
+                       const long order,
+                       const VecLong & shift
+                      );
 
-// same as mbasis_rescomp, with some multi-threading inserted 
-// TODO prototype for the moment: not properly tuned and tested
+/** Same as #mbasis_rescomp, with some multi-threading inserted.
+ *
+ * \todo prototype for the moment: not properly tuned and tested */
 VecLong mbasis_rescomp_multithread(
                                    Mat<zz_pX> & appbas,
                                    const Mat<zz_pX> & pmat,
@@ -286,6 +366,13 @@ VecLong mbasis_rescomp_multithread(
                                    const VecLong & shift
                                   );
 
+/** Variant of `mbasis` (see @ref mbasis) which first converts `pmat` to its
+ * representation by a vector of constant matrices `Vec<Mat<zz_p>>`, then
+ * performs the computations with this storage, and eventually converts back to
+ * the polynomial matrix `Mat<zz_pX>` representation. In this variant, we store
+ * a vector of residual matrices, initially the coefficients of `pmat`, and we
+ * update all of them at each iteration; at the iteration `d` we use the `d`-th
+ * matrix in this vector. */
 // Variant which first converts to vector of constant matrices,
 // performs the computations with this storage, and eventually
 // converts back to polynomial matrices
@@ -317,12 +404,17 @@ VecLong mbasis_resupdate(
 //                                       );
 
 
-// main function choosing the most efficient variant depending on parameters
-// warning: may not be the best choice when the shift is not uniform
-// FIXME -->  try to find the threshold for shifted case?
-// FIXME -->  or simply assume the user will choose the right mbasis?
-// FIXME -->  mbasis is anyway not the best approach, at least on the paper,
-//            when cdim << rdim and shift is "highly" non-uniform
+/** Main `mbasis` function which chooses the most efficient variant depending
+ * on the parameters (dimensions and order).
+ *
+ * \todo current choice is not perfectly tuned
+ *    - might be wrong for a very small number of columns (but this is not the
+ *    best algorithm in that case; one should rely on partial linearization,
+ *    not implemented yet)
+ *    - might be wrong for large orders (but one should call `pmbasis` in this case)
+ *    - might not be right when the shift is far from uniform (todo: perform
+ *    some tests; again, this is not the best known algorithm in this case)
+ */
 inline VecLong mbasis(
                       Mat<zz_pX> & appbas,
                       const Mat<zz_pX> & pmat,
@@ -330,9 +422,7 @@ inline VecLong mbasis(
                       const VecLong & shift
                      )
 {
-    long rdim = pmat.NumRows();
-    long cdim = pmat.NumCols();
-    if (cdim > rdim/2 + 1)
+    if (pmat.NumCols() > pmat.NumRows()/2 + 1)
         return mbasis_resupdate(appbas, pmat, order, shift);
     else
         return mbasis_rescomp(appbas, pmat, order, shift);
@@ -340,42 +430,67 @@ inline VecLong mbasis(
     // mentioned above for these two variants of mbasis
 }
 
-
+/** Computes the `shift`-Popov approximant basis for `(pmat,order)`,
+ * relying on the `mbasis` approach.
+ *
+ * \todo currently, this is based on the approach "compute a first basis which
+ * gives the pivot degrees and re-compute with these degrees as the shift to
+ * obtain the normal form". It would be interesting to implement a strategy
+ * which maintains a shifted Popov form along the iterations, and compare it
+ * with the current technique.
+ */
 VecLong popov_mbasis(
-                    Mat<zz_pX> &appbas,
-                    const Mat<zz_pX> & pmat,
-                    const long order,
-                    const VecLong & shift
-                   );
-
-/*------------------------------------------------------------*/
-/* PM-Basis algorithm for uniform approximant order           */
-/* References:                                                */
-/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
-/*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shifts) */
-/*   - Jeannerod-Neiger-Villard 2018                          */
-/*          (ensuring s-ordered weak Popov or s-Popov)        */
-/*------------------------------------------------------------*/
-VecLong pmbasis(
-               Mat<zz_pX> & appbas,
-               const Mat<zz_pX> & pmat,
-               const long order,
-               const VecLong & shift
-              );
-
-VecLong popov_pmbasis(
                      Mat<zz_pX> &appbas,
                      const Mat<zz_pX> & pmat,
                      const long order,
                      const VecLong & shift
                     );
+//@} // doxygen group: M-Basis algorithm (uniform approximant order)
 
+/** @name PM-Basis algorithm (uniform approximant order)
+ * \anchor pmbasis
+ *
+ * These functions compute a `shift`-minimal ordered weak Popov approximant
+ * basis for `(pmat,orders)` in the case where `orders` is given by a single
+ * integer `orders = (order,...order)`. They use a divide and conquer approach,
+ * computing a first basis at order `order/2`, finding the so-called _residual
+ * matrix_, computing a second basis at order `order/2`, and deducing the
+ * sought basis by multiplying the two obtained bases.
+ *
+ * The first recursive call returns an approximant basis `appbas1` such that
+ * `appbas1*pmat = 0 mod x^{order/2}`, and the residual matrix has the same
+ * dimensions as `pmat` and which is defined by the matrix middle product
+ * `(x^{-order/2} appbas*pmat) mod x^{order/2}`.
+ *
+ * This is inspired from the algorithm _pmbasis_ described in
+ *  - P. Giorgi, C.-P. Jeannerod, G. Villard. Proceeding ISSAC 2003,
+ *  - P. Giorgi, R. Lebreton. Proceedings ISSAC 2014.
+ */
+//@{
+/** Computes a `shift`-ordered weak Popov approximant basis for `(pmat,order)`
+ * using the algorithm PM-Basis (see @ref pmbasis) */
+VecLong pmbasis(
+                Mat<zz_pX> & appbas,
+                const Mat<zz_pX> & pmat,
+                const long order,
+                const VecLong & shift
+               );
 
-
-
-
-
-
+/** Computes a `shift`-Popov approximant basis for `(pmat,order)` using the
+ * algorithm PM-Basis (see @ref pmbasis) twice: the first call yields an
+ * ordered weak Popov form which indicates the `shift`-pivot degree, which is
+ * then used as a shift in the second call to obtain the sought canonical
+ * basis.
+ *
+ * \todo often (generic case), the second call is not necessary and one just
+ * has to multiply by the inverse of the leading matrix. Implement this(?).  */
+VecLong popov_pmbasis(
+                      Mat<zz_pX> &appbas,
+                      const Mat<zz_pX> & pmat,
+                      const long order,
+                      const VecLong & shift
+                     );
+//@} // doxygen group: PM-Basis algorithm (uniform approximant order)
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -592,18 +707,18 @@ void matrix_pade_generic_recursion(
 /*------------------------------------------------------------*/
 
 VecLong mbasis_generic_onecolumn(
-                     Mat<zz_pX> & appbas,
-                     const Mat<zz_pX> & pmat,
-                     const long order,
-                     const VecLong & shift
-                    );
+                                 Mat<zz_pX> & appbas,
+                                 const Mat<zz_pX> & pmat,
+                                 const long order,
+                                 const VecLong & shift
+                                );
 
 VecLong pmbasis_generic_onecolumn(
-               Mat<zz_pX> & appbas,
-               const Mat<zz_pX> & pmat,
-               const long order,
-               const VecLong & shift
-              );
+                                  Mat<zz_pX> & appbas,
+                                  const Mat<zz_pX> & pmat,
+                                  const long order,
+                                  const VecLong & shift
+                                 );
 
 
 
