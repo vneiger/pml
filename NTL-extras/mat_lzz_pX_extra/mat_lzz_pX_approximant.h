@@ -467,6 +467,7 @@ VecLong popov_mbasis(
  *  - P. Giorgi, R. Lebreton. Proceedings ISSAC 2014.
  */
 //@{
+
 /** Computes a `shift`-ordered weak Popov approximant basis for `(pmat,order)`
  * using the algorithm PM-Basis (see @ref pmbasis) */
 VecLong pmbasis(
@@ -492,93 +493,93 @@ VecLong popov_pmbasis(
                      );
 //@} // doxygen group: PM-Basis algorithm (uniform approximant order)
 
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* MBASIS -- GENERIC INPUT -- UNIFORM SHIFT                   */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-// The algorithms below share the following requirements and properties:
-// *Requirement: the input matrix pmat is m x n with m = 2*n
-// *Requirement: the input matrix pmat has some genericity property: the
-// algorithms compute kernels of constant 2nxn matrices, which should all have
-// the form [ * | I ] ; in other words the bottom nxn submatrix of these
-// matrices should be invertible. This is equivalent to the fact that a certain
-// block-Hankel matrix of dimension n*order x n*order built from pmat is
-// invertible.
-// *This holds with proba very close to 1 for a random matrix pmat, but note
-// that here no check is performed and the algorithm may throw an error if
-// in fact pmat did not have the required genericity property.
-// 
-// *Output: appbas is in 0-ordered weak Popov form with degree ceil(order/2)
-//
-// Precisely,
-// if order = 2d, then 
-//      appbas = [ [X^d I + P00,  P01], [X P10, X^d I + X P11]]
-// where P00, P01, P10 have degree d-1 and P11 has degree d-2
-// if order = 2d+1, then
-//      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^d I + P11] ]
-// where P00, P01, P11 have degree d-1 and P10 has degree d
-//
-// In particular, in both cases, the leading and trailing principal nxn
-// submatrices of appbas are in 0-Popov form
+/** @name M-Basis/PM-Basis for generic input and uniform shift
+ * \anchor pmbasis_generic
+ *
+ * The functions below take only the parameters `(appbas,pmat,order)` and they
+ * compute an ordered weak Popov approximant basis `appbas` for `pmat` and the
+ * uniform order `order` (here, we use the uniform shift `(0,...,0)`). It is
+ * required that `pmat` is generic, in a sense detailed below; this holds with
+ * high probability for a random matrix `pmat` if the field has sufficiently
+ * large cardinality.
+ *
+ * They share the following requirements and properties:
+ * - Requirement: the input matrix `pmat` is `m x n` with `m = 2*n`
+ * - Requirement: the order is at least 2
+ * - Requirement: the input matrix `pmat` has some genericity property: the
+ *   algorithms compute kernels of constant `2n x n` matrices, which should all
+ *   have the form `[ * | I ]` ; in other words the bottom `n x n` submatrix of
+ *   these matrices should be invertible. This is equivalent to the fact that a
+ *   certain block-Hankel matrix of dimension `n*order x n*order` built from
+ *   `pmat` is invertible.
+ * - Property: the output basis `appbas` is in ordered weak Popov form with
+ *   degree `ceil(order/2)`. More precisely:
+ *     - if `order = 2d`, then `appbas = [[X^d I + P00,  P01], [X P10, X^d I +
+ *     X P11]]` where `P00`, `P01`, `P10` have degree `d-1` and `P11` has
+ *     degree `d-2`
+ *     - if `order = 2d+1`, then `appbas = [[X^{d+1} I + X P00,  X P01], [P10,
+ *     X^d I + P11]]` where `P00`, `P01`, `P11` have degree `d-1` and `P10` has
+ *     degree `d`
+ *   In particular, in both cases, the leading and trailing principal `n x n`
+ *   submatrices of appbas are in Popov form.
+ *
+ * \todo Currently, no check is performed concerning these requirements and the
+ * algorithm may throw an error or have undefined behavior if `pmat` does not
+ * have the required genericity property.
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* Iterative, rescomp version                                 */
-/*------------------------------------------------------------*/
-// Requirement: m = 2*n ; pmat generic ; order >= 2
-// At each iteration a residual matrix (constant mxn) is computed from appbas
-// and pmat
-// TODO currently requires order to be even
+/** Computes an ordered weak Popov approximant basis `appbas` for
+ * `(pmat,order)` iteratively, similarly to #mbasis_rescomp, under the
+ * requirements and with the properties detailed in @ref pmbasis_generic.
+ *
+ * \todo throw away if never faster than the _resupdate_ version.
+ */
 void mbasis_generic_2n_n_rescomp(
                                  Mat<zz_pX> & appbas,
                                  const Mat<zz_pX> & pmat,
                                  const long order
                                 );
-// TODO throw away if never faster than resupdate
 
-/*------------------------------------------------------------*/
-/* Iterative, resupdate version                               */
-/*------------------------------------------------------------*/
-// Requirement: m = 2*n ; pmat generic ; order >= 2
-// Requirement: order>=2
-// A residual matrix (polynomial matrix mxn) is initialized as pmat, and
-// updated at each iteration with the same operations as those performed to
-// update appbas
+/** Computes an ordered weak Popov approximant basis `appbas` for
+ * `(pmat,order)` iteratively, similarly to #mbasis_resupdate, under the
+ * requirements and with the properties detailed in @ref pmbasis_generic. */
 void mbasis_generic_2n_n_resupdate(
                                    Mat<zz_pX> & appbas,
                                    const Mat<zz_pX> & pmat,
                                    const long order
                                   );
 
-/*------------------------------------------------------------*/
-/* Divide and conquer pmbasis, via mbasis-resupdate           */
-/*------------------------------------------------------------*/
-// Requirement: m = 2*n ; pmat generic ; order >= 2
-// We recall that the basis is returned like this:
-// if order = 2d, then 
-//      appbas = [ [X^d I + P00,  P01], [X P10, X^d I + X P11]]
-// where P00, P01, P10 have degree d-1 and P11 has degree d-2
-// if order = 2d+1, then
-//      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^d I + P11] ]
-// where P00, P01, P11 have degree d-1 and P10 has degree d
-//
-// Note:
-//   * the product of two bases of the first type above (with respective
-//   degrees d1 and d2) remains of this first type (degree d1 + d2)
-//   * the product of a basis of the second type (degree d1) by one of the
-//   first type (degree d2) is a basis of the second type (degree d1+d2)
-//
-// We use this remark to choose specific orders order1 and order2 for the
-// recursive calls, so that we never have to deal with degree shifts:
-// --> if order is even, all orders of recursive calls are even
-// (as a result, the final basis is a product of forms 1 above, and
-// has form 1 itself)
-// --> if order is odd, then only the first leaf of the recursive tree
-// will be with odd order, the others will be with even order (the first
-// leaf gives the leftmost basis in the product yielding the final basis,
-// which means all bases will have form 1 above except the leftmost one which
-// has form 2, hence the final one has form 2)
+/** Computes an ordered weak Popov approximant basis `appbas` for
+ * `(pmat,order)` by a divide and conquer algorithm, similar to #pmbasis, under
+ * the requirements and with the properties detailed in @ref pmbasis_generic.
+ *
+ * Considering the two forms of bases described in @ref pmbasis_generic, which
+ * we call form 1 and form 2 respectively, we note that:
+ *  - the product of two bases having form 1 (with respective degrees `d1` and
+ *  `d2`) also has form 1 (with degree `d1 + d2`)
+ *  - the product of a basis having form 2 (with degree `d1`) by one having
+ *  form 1 (with degree `d2`) is a basis with form 2 (and degree `d1+d2`)
+ *
+ * We use this remark to choose specific orders `order1` and `order2` close to
+ * `order/2` for the recursive calls, allowing us to never have to deal with
+ * shifts (which usually appear during the computations even when one starts
+ * with the uniform shift `(0,...,0)`):
+ *   - if `order` is even, all orders of recursive calls are even (as a result,
+ *   the final basis is a product of forms 1, and thus has form 1 itself)
+ *   - if `order` is odd, then only the very first leaf of the recursive tree
+ *   will be with odd order, the others will be with even order (the first leaf
+ *   gives the leftmost basis in the product which yields the final basis,
+ *   which means all bases will have form 1 except the leftmost one which has
+ *   form 2, hence the final one has form 2).
+ * */
 void pmbasis_generic_2n_n(
                           Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
@@ -592,14 +593,7 @@ void pmbasis_generic_2n_n_top_rows(
                                    const long order
                                   );
 
-
-
-
-
-
-
-
-
+//@} // doxygen group: M-Basis/PM-Basis for generic input and uniform shift
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -607,47 +601,58 @@ void pmbasis_generic_2n_n_top_rows(
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-// Example use: matrix fraction reconstruction in the context
-// of block-Wiedemann-like algorithms
-
-// Input: a square n x n matrix pmat of degree < order
-// Output: a square n x n matrix den of degree <= order/2 such that
-// num = den * pmat has degree < order/2
-// (den for denominator, num for numerator: pmat = den^{-1} num
-// is a proper irreducible left fraction description)
-
-// Note: this can be found as the leading principal n x n submatrix of a
-// 0-ordered weak Popov approximant basis for [[pmat], [-Id]] at order 'order'
-// Here we aim at deriving algorithms close to mbasis and pmbasis but which
-// exploit the fact that there is this identity matrix in the input.
-
-// The algorithms below share the following requirements and properties:
-// *Requirement: the input matrix pmat is square, n x n
-// *Requirement: the input matrix pmat has some genericity property: the
-// algorithms compute kernels of constant 2nxn matrices, which should all have
-// the form [ * | I ] ; in other words the bottom nxn submatrix of these
-// matrices should be invertible. This is equivalent to the fact that a certain
-// block-Hankel matrix of dimension n*order x n*order built from pmat is
-// invertible.
-// *This holds with proba very close to 1 for a random matrix pmat, but note
-// that here no check is performed and the algorithm may throw an error if
-// in fact pmat did not have the required genericity property.
-// 
-// Some algorithms return:
-// *Output: den, the denominator in 0-Popov form, of the form
-// X^dd I + D, where deg(D) < dd and dd = ceil(order/2)
-// This is exactly the leading principal n x n submatrix of the
-// approximant basis computed by the functions mbasis_generic_2n_n above, on
-// input order and [[pmat], [-I]]
-//
-// Some algorithms return:
-// *Output: (den1,den2), where 
-//    -- den1 is in 0-Popov form, of the form X^dd I + D, where
-//    deg(D) < dd and dd = ceil(order/2) (same as the matrix den above)
-//    -- den2 is a matrix of degree floor(order/2) such that
-//    [[den1], [den2]] form the left 2n x n submatrix of the approximant basis
-//    computed by the functions mbasis_generic_2n_n above, on input order and
-//    [[pmat], [-I]]  (in particular, if order is even then den2(0) == 0)
+/** @name Matrix-Padé approximation
+ * \anchor matrix_pade
+ *
+ * _Example use_: matrix fraction reconstruction in the context of
+ * block-Wiedemann-like algorithms.
+ *
+ * The problem is the following:
+ * - Input: a square `n x n` matrix `pmat` of degree less than `order`,
+ * - Output: a square `n x n` matrix `den` of degree at most `order/2` and in
+ *   row reduced form such that `num = den * pmat` has degree less than
+ *   `order/2`.
+ * Here, `den` stands for denominator, `num` stands for numerator, and if
+ * the order is large enough, `pmat = den^{-1} num` is a proper irreducible
+ * left fraction description.
+ *
+ * Note that this can be solved by taking the leading principal `n x n`
+ * submatrix of an ordered weak Popov approximant basis for `[[pmat], [-Id]]`
+ * at order `order`. Here we aim at deriving algorithms close to `mbasis` and
+ * `pmbasis` but which exploit the fact that there is this identity matrix in
+ * the input and that we only want a submatrix of the final approximant basis.
+ *
+ * \todo implement general Matrix-Pade (for the moment, only the generic case
+ * is implemented).
+ *
+ * The functions below share the following requirements:
+ * - Requirement: the input matrix `pmat` is square, `n x n`
+ * - Requirement: the input matrix `pmat` has some genericity property: the
+ *   algorithms compute kernels of constant `2n x n` matrices, which should all
+ *   have the form `[ * | I ]` ; in other words the bottom `n x n` submatrix of
+ *   these matrices should be invertible. This is equivalent to the fact that a
+ *   certain block-Hankel matrix of dimension `n*order x n*order` built from
+ *   `pmat` is invertible.
+ * The latter holds with high probabili for a random matrix `pmat`, if the
+ * field is sufficiently large. Note that here no check is performed and the
+ * algorithm may throw an error if `pmat` does not have the required genericity
+ * property.
+ * 
+ * Some of these functions return only the denominator `den`, in Popov form.
+ * Precisely it has the form `X^dd I + D`, where `deg(D) < dd` and `dd =
+ * ceil(order/2)`, and it is exactly the leading principal `n x n` submatrix of
+ * the approximant basis computed by the functions #mbasis_generic_2n_n above,
+ * on input `order` and `[[pmat], [-I]]`.
+ *
+ * The other functions return a couple `(den1,den2)`, where:
+ *    - `den1` is as in the previous paragraph,
+ *    - `den2` is a matrix of degree `floor(order/2)` such that `[[den1],
+ *    [den2]]` forms the left `2n x n` submatrix of the approximant basis
+ *    computed by the functions `mbasis_generic_2n_n` above, on input `order` and
+ *    `[[pmat], [-I]]` (in particular, if `order` is even then `den2(0)` is zero).
+ *  
+ */
+//@{
 
 /*------------------------------------------------------------*/
 /* Iterative algorithm, for low approximation order           */
@@ -697,6 +702,7 @@ void matrix_pade_generic_recursion(
                                    const long order
                                   );
 
+//@} // doxygen group: Matrix-Padé approximation
 
 
 

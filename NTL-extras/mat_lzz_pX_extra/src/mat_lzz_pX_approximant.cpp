@@ -160,11 +160,6 @@ VecLong appbas_iterative(
                         bool order_wise
                        )
 {
-    /** Two possibilities (among others) for next coefficient to deal with:
-     *   - process 'pmat' order-wise (choose column with largest order)
-     *   - process 'pmat' column-wise (choose leftmost column not yet completed)
-     */
-
     long rdim = pmat.NumRows();
     long cdim = pmat.NumCols();
 

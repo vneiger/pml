@@ -6,9 +6,8 @@
 #include <algorithm> // for manipulating std::vector (min, max, ..)
 #include <numeric> // for std::iota
 
-#include "lzz_p_extra.h"
-#include "lzz_pX_CRT.h"
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_approximant.h"
+#include "mat_lzz_pX_linearization.h"
 
 //#define MBASIS_GEN_PROFILE
 //#define PMBASIS_GEN_PROFILE
@@ -28,7 +27,7 @@ NTL_CLIENT
 /* (degree deduced from input)                                */
 /* split into first half rows, second half rows               */
 /*------------------------------------------------------------*/
-void conv_top_bot(
+static void conv_top_bot(
                   Vec<Mat<zz_p>> & coeffs_top,
                   Vec<Mat<zz_p>> & coeffs_bot,
                   const Mat<zz_pX> & mat
@@ -63,7 +62,7 @@ void conv_top_bot(
 /* (degree bound d given by user; Vecs will have length d)    */
 /* split into first half rows, second half rows               */
 /*------------------------------------------------------------*/
-void conv_top_bot(
+static void conv_top_bot(
                   Vec<Mat<zz_p>> & coeffs_top,
                   Vec<Mat<zz_p>> & coeffs_bot,
                   const Mat<zz_pX> & mat,
@@ -112,8 +111,7 @@ void conv_top_bot(
 // where P00, P01, P11 have degree d-1 and P10 has degree d
 
 // TODO clean
-// TODO requirement order is even
-// TODO better handle pmat of degree << order
+// TODO better handle pmat of degree << order ?
 void mbasis_generic_2n_n_rescomp(
                                  Mat<zz_pX> & appbas,
                                  const Mat<zz_pX> & pmat,
@@ -760,7 +758,7 @@ void mbasis_generic_2n_n_rescomp(
 // where P00, P01, P11 have degree d-1 and P10 has degree d
 // TODO this shift-middle-product is not very satisfactory, should be
 // handled by middle-product itself
-// TODO better handle pmat of degree << order
+// TODO better handle pmat of degree << order ?
 void mbasis_generic_2n_n_resupdate(
                                    Mat<zz_pX> & appbas,
                                    const Mat<zz_pX> & pmat,
@@ -1347,9 +1345,9 @@ void pmbasis_generic_2n_n(
         return;
     }
 
-    // to avoid having to deal with shifts, we use the following
-    // orders order1+order2 = order for the recursive calls (see remarks
-    // in the header file):
+    // to avoid having to deal with shifts, we use the following orders
+    // order1+order2 = order for the recursive calls (see remarks in the
+    // documentation):
     // if order is odd: order1 is the one of floor(order/2) and ceil(order/2)
     // which is odd
     // if order is even: choose both order1 and order2 even and
