@@ -237,6 +237,7 @@ VecLong popov_appbas_iterative(
  *  - P. Giorgi, C.-P. Jeannerod, G. Villard. Proceeding ISSAC 2003,
  *  - P. Giorgi, R. Lebreton. Proceedings ISSAC 2014,
  *  - C.-P. Jeannerod, V. Neiger, G. Villard. Preprint 2018.
+ *
  *  The latter reference explicitly shows how to ensure that we obtain the
  *  canonical s-Popov approximant basis.
  *
@@ -254,6 +255,7 @@ VecLong popov_appbas_iterative(
  * - the other rows are coordinate vectors multiplied by the variable `x`;
  *   there is one such row at each index `i` which is not among the pivot
  *   indices of the left kernel basis above.
+ *
  * The first set of rows is what is stored in the OUT parameter `kerbas`.
  *
  * \param[out] kerbas matrix over the base field `zz_p`
@@ -281,6 +283,7 @@ VecLong popov_mbasis1(
  * - the other rows are coordinate vectors multiplied by the variable `x`;
  *   there is one such row at each index `i` which is not among the pivot
  *   indices of the left kernel basis above.
+ *
  * The first set of rows is what is stored in the OUT parameter `kerbas`.
  *
  * \param[out] kerbas matrix over the base field `zz_p`
@@ -324,7 +327,7 @@ VecLong mbasis1(
 //@{
 
 /** Plain version of `mbasis` (see @ref mbasis), where the input `pmat` is
- * represented as `Vec<Vec<zz_p>>`. This is almost always less efficient than
+ * represented as `Vec<Vec<zz_pX>>`. This is almost always less efficient than
  * other provided variants, but is kept here for legacy, being a direct
  * implementation of the algorithm from the references in @ref mbasis. */
 VecLong mbasis_plain(
@@ -516,9 +519,9 @@ VecLong popov_pmbasis(
  * - Requirement: the input matrix `pmat` has some genericity property: the
  *   algorithms compute kernels of constant `2n x n` matrices, which should all
  *   have the form `[ * | I ]` ; in other words the bottom `n x n` submatrix of
- *   these matrices should be invertible. This is equivalent to the fact that a
- *   certain block-Hankel matrix of dimension `n*order x n*order` built from
- *   `pmat` is invertible.
+ *   these matrices should be invertible. (This can be rewritten as an
+ *   invertibility condition on the principal minors of a block-Hankel matrix
+ *   of dimension `n*order x n*order` built from `pmat`.)
  * - Property: the output basis `appbas` is in ordered weak Popov form with
  *   degree `ceil(order/2)`. More precisely:
  *     - if `order = 2d`, then `appbas = [[X^d I + P00,  P01], [X P10, X^d I +
@@ -617,6 +620,7 @@ void pmbasis_generic_2n_n_top_rows(
  * - Output: a square `n x n` matrix `den` of degree at most `order/2` and in
  *   row reduced form such that `num = den * pmat` has degree less than
  *   `order/2`.
+ *
  * Here, `den` stands for denominator, `num` stands for numerator, and if
  * the order is large enough, `pmat = den^{-1} num` is a proper irreducible
  * left fraction description.
@@ -635,9 +639,10 @@ void pmbasis_generic_2n_n_top_rows(
  * - Requirement: the input matrix `pmat` has some genericity property: the
  *   algorithms compute kernels of constant `2n x n` matrices, which should all
  *   have the form `[ * | I ]` ; in other words the bottom `n x n` submatrix of
- *   these matrices should be invertible. This is equivalent to the fact that a
- *   certain block-Hankel matrix of dimension `n*order x n*order` built from
- *   `pmat` is invertible.
+ *   these matrices should be invertible. (This can be rewritten as an
+ *   invertibility condition on the principal minors of a block-Hankel matrix
+ *   of dimension `n*order x n*order` built from `pmat`.)
+ *
  * The latter holds with high probability for a random matrix `pmat`, if the
  * field is sufficiently large. Note that here no check is performed and the
  * algorithm may throw an error if `pmat` does not have the required genericity
