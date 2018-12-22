@@ -28,7 +28,7 @@ bool is_interpolant_basis(
     if (randomized)
         throw std::logic_error("==is_interpolant_basis== Fast randomized interpolant basis verification not implemented yet");
 
-    std::cout << "==is_interpolant_basis== WARNING: not fully implemented: not checking generation" << std::endl;
+    //std::cout << "==is_interpolant_basis== WARNING: not fully implemented: not checking generation" << std::endl;
 
     // test that appbas is shift-reduced with form at least 'form'
     if (not is_row_polmatform(form,intbas,shift))
