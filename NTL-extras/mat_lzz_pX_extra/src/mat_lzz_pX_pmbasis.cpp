@@ -472,8 +472,8 @@ VecLong mbasis_rescomp(
     // A. General
 
     // A.1 dimensions of input matrix
-    long m = pmat.NumRows();
-    long n = pmat.NumCols();
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
 
     // A.2 store iota since it will be used at each iteration
     VecLong iota(m);
@@ -501,12 +501,11 @@ VecLong mbasis_rescomp(
     // C.1 stores the residual, initially coeffs_pmat[0]
     Mat<zz_p> residuals(coeffs_pmat[0]);
 
-    // C.2 temporary matrices used during the computation of residuals[i]
+    // C.2 temporary matrices used during the computation of residuals
     Mat<zz_p> res_coeff;
 
     // C.3 permuted residual, used as input to the kernel at the "base case"
-    Mat<zz_p> p_residual;
-    p_residual.SetDims(m, n);
+    Mat<zz_p> p_residual(INIT_SIZE, m, n);
 
     // D. Base case (working modulo X, essentially amounts to finding the left
     // kernel of the permuted residual p_residual)
@@ -571,7 +570,7 @@ VecLong mbasis_rescomp(
 #ifdef MBASIS_PROFILE
         t_kernel += GetWallTime()-t_now;
 #endif
-        long ker_dim = p_kerbas.NumRows();
+        const long ker_dim = p_kerbas.NumRows();
 
         if (ker_dim==0)
         {
@@ -826,8 +825,8 @@ VecLong mbasis_rescomp_multithread(
     const long nthreads = AvailableThreads();
 
     // A.2 dimensions of input matrix
-    long m = pmat.NumRows();
-    long n = pmat.NumCols();
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
 
     // A.3 store iota since it will be used at each iteration
     VecLong iota(m);
@@ -1148,8 +1147,8 @@ VecLong mbasis_resupdate(
     // A. General
 
     // A.1 dimensions of input matrix
-    long m = pmat.NumRows();
-    long n = pmat.NumCols();
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
 
     // A.2 store iota since it will be used at each iteration
     VecLong iota(m);

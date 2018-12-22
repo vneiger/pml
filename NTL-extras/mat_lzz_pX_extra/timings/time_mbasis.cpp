@@ -1,12 +1,7 @@
-#include <NTL/lzz_pX.h>
-#include <NTL/matrix.h>
-#include <NTL/vector.h>
 #include <iomanip>
 #include <NTL/BasicThreadPool.h>
 
 #include "util.h"
-#include "magma_output.h"
-#include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_approximant.h"
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)

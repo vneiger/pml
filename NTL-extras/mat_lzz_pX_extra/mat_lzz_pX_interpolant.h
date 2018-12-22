@@ -1,8 +1,15 @@
 #ifndef MAT_LZZ_PX_INTERPOLANT__H
 #define MAT_LZZ_PX_INTERPOLANT__H
 
-#include <NTL/matrix.h>
-#include <NTL/lzz_pX.h>
+/** Minimal interpolant bases.
+ *
+ * \file mat_lzz_pX_interpolant.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
+ * \version 0.1
+ * \date 2018-12-22
+ *
+ */
+
 #include "mat_lzz_pX_forms.h" // for VecLong, VecLong, PolMatForm
 
 NTL_CLIENT
@@ -29,29 +36,28 @@ typedef std::vector<std::vector<std::pair<zz_p,long>>> Points;
 /*------------------------------------------------------------*/
 
 // TODO
-VecLong interpolant_basis(
-                         Mat<zz_pX> & intbas,
-                         const Mat<zz_pX> & pmat,
-                         const Points & pts,
-                         const VecLong & shift = VecLong(),
-                         const PolMatForm form = ORD_WEAK_POPOV,
-                         const bool row_wise = true,
-                         const bool generic = false
-                        );
+//VecLong interpolant_basis(
+//                         Mat<zz_pX> & intbas,
+//                         const Mat<zz_pX> & pmat,
+//                         const Points & pts,
+//                         const VecLong & shift = VecLong(),
+//                         const PolMatForm form = ORD_WEAK_POPOV,
+//                         const bool row_wise = true,
+//                         const bool generic = false
+//                        );
 
-// TODO uncomment below when above is ready
 // below, the following is called "uniform interpolation case" (or case with uniform points)
 // this means that we have the same points on all columns, all with multiplicity one)
 // (FIXME could be easily generalized to any constant multiplicity for all...?)
-VecLong interpolant_basis(
-                         Mat<zz_pX> & intbas,
-                         const Mat<zz_pX> & pmat,
-                         const Vec<zz_p> & pts,
-                         const VecLong & shift = VecLong(),
-                         const PolMatForm form = ORD_WEAK_POPOV,
-                         const bool row_wise = true,
-                         const bool generic = false
-                        );
+//VecLong interpolant_basis(
+//                         Mat<zz_pX> & intbas,
+//                         const Mat<zz_pX> & pmat,
+//                         const Vec<zz_p> & pts,
+//                         const VecLong & shift = VecLong(),
+//                         const PolMatForm form = ORD_WEAK_POPOV,
+//                         const bool row_wise = true,
+//                         const bool generic = false
+//                        );
 //{
 //  std::vector<std::pair<zz_p,long>> list_pts(pts.size());
 //  for ( long i=0; i<list_pts.size(); ++i )
@@ -61,7 +67,6 @@ VecLong interpolant_basis(
 //  Points points(mat.NumCols(),list_pts);
 //  return interpolant_basis(appbas,mat,points,shift,canonical,row_wise,generic);
 //}
-
 
 /*------------------------------------------------------------*/
 /* Verifying that intbas is a shift-minimal interpolant       */
@@ -75,14 +80,14 @@ VecLong interpolant_basis(
 /*------------------------------------------------------------*/
 
 // TODO not implemented yet
-bool is_interpolant_basis(
-                          const Mat<zz_pX> & intbas,
-                          const Mat<zz_pX> & pmat,
-                          const Points & pts,
-                          const VecLong & shift,
-                          const PolMatForm & form = ORD_WEAK_POPOV,
-                          const bool randomized = false
-                         );
+//bool is_interpolant_basis(
+//                          const Mat<zz_pX> & intbas,
+//                          const Mat<zz_pX> & pmat,
+//                          const Points & pts,
+//                          const VecLong & shift,
+//                          const PolMatForm & form = ORD_WEAK_POPOV,
+//                          const bool randomized = false
+//                         );
 
 // TODO (naive version written)
 bool is_interpolant_basis(
@@ -101,21 +106,21 @@ bool is_interpolant_basis(
 /*   - Van Barel-Bultheel 1991+1992                           */
 /*   - Beckermann-Labahn 2000 (ensuring s-Popov)              */
 /*------------------------------------------------------------*/
-VecLong intbas_iterative(
-                        Mat<zz_pX> & intbas,
-                        const Mat<zz_pX> & pmat,
-                        const Points & pts,
-                        const VecLong & shift,
-                        bool point_wise=true // TODO to be thought about
-                       );
-
-VecLong popov_intbas_iterative(
-                              Mat<zz_pX> & intbas,
-                              const Mat<zz_pX> & pmat,
-                              const Points & pts,
-                              const VecLong & shift,
-                              bool point_wise=true // TODO to be thought about
-                             );
+//VecLong intbas_iterative(
+//                        Mat<zz_pX> & intbas,
+//                        const Mat<zz_pX> & pmat,
+//                        const Points & pts,
+//                        const VecLong & shift,
+//                        bool point_wise=true // TODO to be thought about
+//                       );
+//
+//VecLong popov_intbas_iterative(
+//                              Mat<zz_pX> & intbas,
+//                              const Mat<zz_pX> & pmat,
+//                              const Points & pts,
+//                              const VecLong & shift,
+//                              bool point_wise=true // TODO to be thought about
+//                             );
 
 
 /*------------------------------------------------------------*/
@@ -126,12 +131,12 @@ VecLong popov_intbas_iterative(
 // point)
 
 // TODO input pmat = polynomial matrix, not implemented yet
-VecLong mbasis(
-              Mat<zz_pX> & intbas,
-              const Mat<zz_pX> & pmat,
-              const Vec<zz_p> & pts,
-              const VecLong & shift
-             );
+//VecLong mbasis(
+//              Mat<zz_pX> & intbas,
+//              const Mat<zz_pX> & pmat,
+//              const Vec<zz_p> & pts,
+//              const VecLong & shift
+//             );
 
 // input pmat = list of evaluations, implemented
 VecLong mbasis(
@@ -140,6 +145,14 @@ VecLong mbasis(
               const Vec<zz_p> & pts,
               const VecLong & shift
              );
+
+// REQUIREMENT : len(evals) == len(pts) > 0
+VecLong mbasis_rescomp(
+                       Mat<zz_pX> & intbas,
+                       const Vec<Mat<zz_p>> & evals,
+                       const Vec<zz_p> & pts,
+                       const VecLong & shift
+                      );
 
 VecLong popov_mbasis(
                     Mat<zz_pX> &intbas,
