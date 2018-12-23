@@ -42,6 +42,10 @@ NTL_CLIENT
  * In the multiplication functions, the OUT parameter `c` may alias the IN
  * parameter `a` or the IN parameter `b`; in the middle product functions, the
  * OUT parameter `b` may alias the IN parameter `a` or the IN parameter `c`. 
+ *
+ * \todo Currently, the code has not been optimized much for matrix-vector and
+ * vector-matrix products, or for the case where the left-operand is a column
+ * vector.
  */
 //@{
 
@@ -151,6 +155,7 @@ inline Mat<zz_pX> middle_product(
  * They compute `c` as the product `a*b` of the input `a` and `b`. The
  * parameter `c` does not have to be zero, and may alias `a` or `b`.
  *
+ * Note: Waksman currently requires that `a` has at least two columns.
  */
 //@{
 
@@ -160,7 +165,7 @@ inline Mat<zz_pX> middle_product(
 void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 /** Uses Waksman's cubic matrix multiplication algorithm along with NTL's
- * polynomial multiplication */
+ * polynomial multiplication. Requires that `a` has at least two columns. */
 void multiply_waksman(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 /*------------------------------------------------------------*/

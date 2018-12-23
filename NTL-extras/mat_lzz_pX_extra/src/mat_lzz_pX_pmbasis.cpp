@@ -592,6 +592,7 @@ VecLong mbasis_rescomp(
             // --> we just need to compute the next residual
             // (unless ord == order, in which case the algorithm returns)
             // this "residual" is the coefficient of degree ord in appbas * pmat:
+            // Note: at this point, residuals==0
             if (ord<order)
             {
 #ifdef MBASIS_PROFILE
@@ -757,10 +758,10 @@ VecLong mbasis_rescomp(
             // Find next residual: coefficient of degree ord in appbas*pmat
             // (this is not necessary if ord==order, since in this case
             // we have finished: appbas*pmat is zero mod X^order)
+            // Note: at this point, residuals==0
             if (ord<order)
             {
                 long dmin=std::max<long>(0,ord-coeffs_pmat.length()+1);
-                clear(residuals);
                 for (long d = dmin; d < deg_appbas+1; ++d) // we have deg_appbas <= ord
                 {
                     mul(res_coeff, coeffs_appbas[d], coeffs_pmat[ord-d]);

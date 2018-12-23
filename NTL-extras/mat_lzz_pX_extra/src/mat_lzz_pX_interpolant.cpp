@@ -244,7 +244,7 @@ VecLong mbasis_rescomp(
     Mat<zz_p> residuals(evals[0]);
 
     // C.2 temporary matrices used during the computation of residuals
-    Mat<zz_p> res_coeff; // TODO change name (intbas_eval ?)
+    Mat<zz_p> intbas_eval; // TODO change name (intbas_eval ?)
 
     // C.3 permuted residual, used as input to the kernel at the "base case"
     Mat<zz_p> p_residual(INIT_SIZE, m, n);
@@ -299,10 +299,6 @@ VecLong mbasis_rescomp(
         // permute rows of the residual accordingly
         for (long i = 0; i < m; ++i)
             p_residual[i].swap(residuals[p_rdeg[i]]);
-        // content of residual has been changed --> let's make it zero
-        // (already the case if ord==0, since residual is then the former p_residual which was zero)
-        if (ord>0)
-            clear(residuals);
 #ifdef MBASIS_PROFILE
         t_others += GetWallTime()-t_now;
         t_now = GetWallTime();
@@ -344,8 +340,8 @@ VecLong mbasis_rescomp(
             // update residual, if not the last iteration
             if (ord<order-1)
             {
-                eval(res_coeff, coeffs_intbas, pts[ord+1]);
-                mul(residuals, res_coeff, evals[ord+1]);
+                eval(intbas_eval, coeffs_intbas, pts[ord+1]);
+                mul(residuals, intbas_eval, evals[ord+1]);
             }
 
             //// FOR RESUPDATE
@@ -365,16 +361,16 @@ VecLong mbasis_rescomp(
             // change it or to change rdeg
             // --> we just need to compute the next residual
             // (unless we are at the last iteration, in which case the algorithm returns)
-            // this "residual" is the coefficient of degree ord in intbas * pmat:
-            if (ord<order)
+            if (ord<order-1)
             {
 #ifdef MBASIS_PROFILE
                 t_now = GetWallTime();
 #endif
-                for (long d = std::max<long>(0,ord-coeffs_pmat.length()+1); d <= deg_intbas; ++d)
+                // update residual, if not the last iteration
+                if (ord<order-1)
                 {
-                    mul(res_coeff, coeffs_intbas[d], coeffs_pmat[ord-d]);
-                    add(residuals, residuals, res_coeff);
+                    eval(intbas_eval, coeffs_intbas, pts[ord+1]);
+                    mul(residuals, intbas_eval, evals[ord+1]);
                 }
 #ifdef MBASIS_PROFILE
                 t_residual += GetWallTime()-t_now;
@@ -446,7 +442,6 @@ VecLong mbasis_rescomp(
                 }
             }
 
-
             // up to row permutation, the kernel is in "lower triangular" row
             // echelon form (almost there: we want the non-permuted one)
             // prepare kernel permutation by permuting kernel pivot indices;
@@ -502,7 +497,7 @@ VecLong mbasis_rescomp(
             t_now = GetWallTime();
 #endif
 
-            // Update approximant basis
+            // Update interpolant basis
 
             // Submatrix of rows corresponding to pivind are replaced by
             // kerbas*coeffs_intbas (note: these rows currently have degree
@@ -517,29 +512,34 @@ VecLong mbasis_rescomp(
                     coeffs_intbas[d][pivind[perm_rows_ker[i]]].swap(kerint[i]);
             }
 
-            // rows with !is_pivind are multiplied by X (note: these rows
+            // rows with !is_pivind are multiplied by X-pt (note: these rows
             // currently have degree less than deg_intbas)
-            for (long d = deg_intbas-1; d >= 0; --d)
+            const zz_p pt(-pts[ord]);
+            for (long i = 0; i < m; ++i)
+                if (not is_pivind[i])
+                    coeffs_intbas[deg_intbas][i] = coeffs_intbas[deg_intbas-1][i];
+            for (long d = deg_intbas-1; d > 0; --d)
                 for (long i = 0; i < m; ++i)
                     if (not is_pivind[i])
-                        coeffs_intbas[d+1][i].swap(coeffs_intbas[d][i]);
+                    {
+                        mul(coeffs_intbas[d][i], coeffs_intbas[d][i], pt);
+                        add(coeffs_intbas[d][i], coeffs_intbas[d][i], coeffs_intbas[d-1][i]);
+                    }
+            for (long i = 0; i < m; ++i)
+                if (not is_pivind[i])
+                    mul(coeffs_intbas[0][i], coeffs_intbas[0][i], pt);
             // Note: after this, the row coeffs_intbas[0][i] is zero
 #ifdef MBASIS_PROFILE
             t_intbas += GetWallTime()-t_now;
             t_now = GetWallTime();
 #endif
-            // Find next residual: coefficient of degree ord in intbas*pmat
-            // (this is not necessary if ord==order, since in this case
+            // Find next residual: evaluation at pts[ord+1] of intbas*pmat
+            // (this is not necessary if we are at the last iteration, i.e. ord==order-1)
             // we have finished: intbas*pmat is zero mod X^order)
-            if (ord<order)
+            if (ord<order-1)
             {
-                long dmin=std::max<long>(0,ord-coeffs_pmat.length()+1);
-                clear(residuals);
-                for (long d = dmin; d < deg_intbas+1; ++d) // we have deg_intbas <= ord
-                {
-                    mul(res_coeff, coeffs_intbas[d], coeffs_pmat[ord-d]);
-                    add(residuals, residuals, res_coeff);
-                }
+                eval(intbas_eval, coeffs_intbas, pts[ord+1]);
+                mul(residuals, intbas_eval, evals[ord+1]);
 #ifdef MBASIS_PROFILE
                 t_residual += GetWallTime()-t_now;
                 t_now = GetWallTime();
@@ -558,7 +558,7 @@ VecLong mbasis_rescomp(
 #ifdef MBASIS_PROFILE
     t_now = GetWallTime();
 #endif
-    // Convert approximant basis to polynomial matrix representation
+    // Convert interpolant basis to polynomial matrix representation
     intbas = conv(coeffs_intbas);
 #ifdef MBASIS_PROFILE
     t_others += GetWallTime()-t_now;

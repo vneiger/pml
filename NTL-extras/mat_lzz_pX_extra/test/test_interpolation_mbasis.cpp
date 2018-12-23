@@ -61,9 +61,8 @@ int main(int argc, char *argv[])
 
     warmup();
 
-    // uniform shift mbasis for interpolants
-    {
-        std::cout << "~~~Testing mbasis (generic, uniform shift)~~~" << std::endl;
+    { // plain mbasis
+        std::cout << "plain mbasis, time:\t";
         nb_iter=0; t=0.0;
         Mat<zz_pX> intbas;
         while (t<0.5)
@@ -78,7 +77,7 @@ int main(int argc, char *argv[])
             ++nb_iter;
         }
 
-        std::cout << "Time(mbasisint): " << t/nb_iter;
+        std::cout << t/nb_iter;
 
         if (verify)
         {
@@ -88,6 +87,31 @@ int main(int argc, char *argv[])
         std::cout << std::endl;
     }
 
+    { // mbasis_rescomp
+        std::cout << "mbasis_rescomp, time:\t";
+        nb_iter=0; t=0.0;
+        Mat<zz_pX> intbas;
+        while (t<0.5)
+        {
+            evals.SetLength(npoints);
+            for (long pt = 0; pt < npoints; ++pt)
+                random(evals[pt], rdim, cdim);
+            random(pts, npoints);
+            tt = GetWallTime();
+            mbasis_rescomp(intbas,evals,pts,shift);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+        }
+
+        std::cout << t/nb_iter;
+
+        if (verify)
+        {
+            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
+            std::cout << (verif?", correct":", wrong");
+        }
+        std::cout << std::endl;
+    }
     return 0;
 }
 

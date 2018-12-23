@@ -15,9 +15,9 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long is_prime)
 {
-    long dA = deg(a);
-    long dB = deg(b);
-    long dmax = max(dA, dB);
+    const long dA = deg(a);
+    const long dB = deg(b);
+    const long dmax = max(dA, dB);
 
     if (dA < 0 || dB < 0)
     {
@@ -26,39 +26,68 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long i
         return;
     }
 
-    long deg_trs = max_degree_transform();
+    // if one of the matrices is constant, rely directly on
+    // the corresponding function
+    if (dA==0)
+    {
+        Mat<zz_p> a_cst;
+        GetCoeff(a_cst, a, 0);
+        mul(c, a_cst, b);
+        return;
+    }
+    if (dB==0)
+    {
+        Mat<zz_p> b_cst;
+        GetCoeff(b_cst, b, 0);
+        mul(c, a, b_cst);
+        return;
+    }
+
+    // if the left-operand has just one column, use naive multiplication
+    if (a.NumCols()==1)
+    {
+        multiply_naive(c, a, b);
+        return;
+    }
+
+    const long deg_trs = max_degree_transform();
 
     if (dmax <= deg_trs)
     {
+        //std::cout << "transform" << std::endl;
         multiply_transform(c, a, b, dmax + 1);
         return;
     }
 
     // only calibrated for square matrices; here's a hack
-    long sz = (long) cbrt(a.NumRows() * a.NumCols() * b.NumCols());
-    long deg_wak = max_degree_waksman(sz);
+    const long sz = (long) cbrt(a.NumRows() * a.NumCols() * b.NumCols());
+    const long deg_wak = max_degree_waksman(sz);
 
     if (dmax <= deg_wak)
     {
+        //std::cout << "waksman" << std::endl;
         multiply_waksman(c, a, b);
         return;
     }
 
     if (is_FFT_ready(NextPowerOfTwo(dA + dB + 1)))
     {
+        //std::cout << "fft" << std::endl;
         multiply_evaluate_FFT(c, a, b);
         return;
     }
 
-    long p = zz_p::modulus();
-    long deg_ev = max_degree_evaluate(sz);
+    const long p = zz_p::modulus();
+    const long deg_ev = max_degree_evaluate(sz);
     if (is_prime && p > 2 * (dA + dB + 1) && dmax <= deg_ev)
     {
+        //std::cout << "dense" << std::endl;
         multiply_evaluate_dense(c, a, b);
         return;
     }
     else
     {
+        //std::cout << "3primes" << std::endl;
         multiply_3_primes(c, a, b);
         return;
     }
