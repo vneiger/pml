@@ -2,6 +2,7 @@
 
 #include <NTL/BasicThreadPool.h>
 #include "util.h"
+#include "lzz_pX_CRT.h"
 #include "mat_lzz_pX_interpolant.h"
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)
@@ -43,6 +44,26 @@ void one_bench_pmbasis(long sz, long order)
         tt = GetWallTime();
         Mat<zz_pX> intbas;
         pmbasis(intbas,evals,pts,shift,0,pts.length());
+        t += GetWallTime()-tt;
+        ++nb_iter;
+    }
+    std::cout << t/nb_iter << "\t";
+
+    Mat<zz_pX> pmat;
+    nb_iter=0; t=0.0;
+    while (t<0.5)
+    {
+        random(pmat, rdim, cdim, order);
+        zz_p r;
+        random(r);
+        zz_pX_Multipoint_Geometric eval(r,zz_p(1),order);
+        Vec<zz_p> pts;
+        for (long k = 0; k < order; ++k)
+            eval.get_point(pts[k], k);
+
+        tt = GetWallTime();
+        Mat<zz_pX> intbas;
+        pmbasis_geometric(intbas,pmat,r,order,shift);
         t += GetWallTime()-tt;
         ++nb_iter;
     }
