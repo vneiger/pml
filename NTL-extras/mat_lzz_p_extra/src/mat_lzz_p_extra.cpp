@@ -48,6 +48,20 @@ Mat<zz_p> diagonal_matrix(const Vec<zz_p> & d)
     return res;
 }
 
+/*------------------------------------------------------------*/
+/* clears a matrix window starting at (r_offset,c_offset) and */
+/* with dimensions nrows x ncols                              */
+/*------------------------------------------------------------*/
+void clear(Mat<zz_p> & mat, long r_offset, long c_offset, long nrows, long ncols)
+{
+    const long r_end = std::min(r_offset+nrows,mat.NumRows());
+    const long c_end = std::min(c_offset+ncols,mat.NumCols());
+    for (long i=r_offset; i<r_end; ++i)
+        for (long j=c_offset; j<c_end; ++j)
+            clear(mat[i][j]);
+}
+
+
 // Local Variables:
 // mode: C++
 // tab-width: 4

@@ -244,7 +244,7 @@ VecLong mbasis_rescomp(
     Mat<zz_p> residuals(evals[0]);
 
     // C.2 temporary matrices used during the computation of residuals
-    Mat<zz_p> res_coeff;
+    Mat<zz_p> res_coeff; // TODO change name (intbas_eval ?)
 
     // C.3 permuted residual, used as input to the kernel at the "base case"
     Mat<zz_p> p_residual(INIT_SIZE, m, n);
@@ -318,6 +318,9 @@ VecLong mbasis_rescomp(
         {
             // Exceptional case: the residual matrix has empty left kernel
             // --> left-multiply intbas by (x-pt[ord])
+            // --> compute next residual
+            //
+            // FOR RESUPDATE:
             // --> if the next point is different from pt[ord], the residual
             // becomes the next matrix in evals (no need to multiply all
             // entries by the same nonzero constant pt[ord]-pt[ord+1]); while
@@ -339,12 +342,20 @@ VecLong mbasis_rescomp(
             std::for_each(rdeg.begin(), rdeg.end(), [](long& a) { ++a; });
 
             // update residual, if not the last iteration
-            while (ord<order-1 && pts[ord]==pts[ord+1])
-                ++ord;
-
-            // if we have found a different point, take the next residual
             if (ord<order-1)
-                residuals = evals[ord+1];
+            {
+                eval(res_coeff, coeffs_intbas, pts[ord+1]);
+                mul(residuals, res_coeff, evals[ord+1]);
+            }
+
+            //// FOR RESUPDATE
+            //// update residual, if not the last iteration
+            //while (ord<order-1 && pts[ord]==pts[ord+1])
+            //    ++ord;
+
+            //// if we have found a different point, take the next residual
+            //if (ord<order-1)
+            //    residuals = evals[ord+1];
         }
 
         else if (ker_dim==m)

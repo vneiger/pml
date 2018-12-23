@@ -39,6 +39,13 @@ NTL_CLIENT
  */
 void clear(Mat<zz_pX> & pmat);
 
+/** Clears the submatrix of the matrix `pmat` starting at `(r_offset,c_offset)`
+ * and with dimensions `nrows x ncols`. If this involves indices that are out
+ * of the bounds defined by the dimensions of `pmat`, then we discard them and
+ * restrict to the submatrix indeed contained in `pmat`. The four integer
+ * parameters should be nonnegative (this is not checked by the function). */
+void clear(Mat<zz_pX> & pmat, long r_offset, long c_offset, long nrows, long ncols);
+
 /** Sets the matrix `pmat` to be the (square) identity matrix with `dim`
  * rows and `dim` columns.
  */
@@ -404,15 +411,24 @@ inline Mat<zz_pX> col_reverse(const Mat<zz_pX> & pmat, const VecLong & hi)
 //@{
 
 /** Computes the evaluation `evmat` of the polynomial matrix `pmat` at the
- * point `pt`
- */
-void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt);
+ * point `pt` (`pmat` stored as a matrix of polynomials) */
+void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, const zz_p & pt);
 
 /** Computes and returns the evaluation of the polynomial matrix `pmat` at the
- * point `pt`
- */
-inline Mat<zz_p> eval(const Mat<zz_pX> & pmat, zz_p pt)
+ * point `pt` (`pmat` stored as a matrix of polynomials) */
+inline Mat<zz_p> eval(const Mat<zz_pX> & pmat, const zz_p & pt)
 { Mat<zz_p> evmat; eval(evmat, pmat, pt); return evmat; }
+
+/** Computes the evaluation `evmat` of the polynomial matrix `matp` at the
+ * point `pt` (polynomial matrix stored as a vector of constant matrices). If
+ * `matp` has length zero, `eval` is the `0x0` matrix. */
+void eval(Mat<zz_p> & evmat, const Vec<Mat<zz_p>> & matp, const zz_p & pt);
+
+/** Computes and returns the evaluation of the polynomial matrix `matp` at the
+ * point `pt` (polyomial matrix stored as a vector of constant matrices). If
+ * `matp` has length zero, this returns the `0x0` matrix.  */
+inline Mat<zz_p> eval(const Vec<Mat<zz_p>> & matp, const zz_p & pt)
+{ Mat<zz_p> evmat; eval(evmat, matp, pt); return evmat; }
 
 //@} // doxygen group: Evaluation at one or multiple points
 

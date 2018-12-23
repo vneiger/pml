@@ -39,6 +39,15 @@ Mat<zz_p> J_lzz_p(long n);
  * d[n-1])` */
 Mat<zz_p> diagonal_matrix(const Vec<zz_p> & d);
 
+/** Clears the submatrix of the matrix `mat` starting at `(r_offset,c_offset)`
+ * and with dimensions `nrows x ncols`. If this involves indices that are out
+ * of the bounds defined by the dimensions of `pmat`, then we discard them and
+ * restrict to the submatrix indeed contained in `pmat`. The four integer
+ * parameters should be nonnegative (this is not checked by the function). */
+void clear(Mat<zz_p> & mat, long r_offset, long c_offset, long nrows, long ncols);
+
+
+
 #endif
 
 // Local Variables:

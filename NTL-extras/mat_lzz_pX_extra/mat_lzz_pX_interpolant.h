@@ -147,6 +147,8 @@ VecLong mbasis(
              );
 
 // REQUIREMENT : len(evals) == len(pts) > 0
+// Will work if repeated points, but not optimized (one could e.g. do a
+// cleaning of pts beforehand)
 VecLong mbasis_rescomp(
                        Mat<zz_pX> & intbas,
                        const Vec<Mat<zz_p>> & evals,

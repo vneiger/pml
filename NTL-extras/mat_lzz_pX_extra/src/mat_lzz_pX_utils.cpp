@@ -1,4 +1,5 @@
 #include "mat_lzz_pX_utils.h"
+#include "mat_lzz_p_extra.h"
 #include <algorithm> // for std::reverse
 
 NTL_CLIENT
@@ -10,6 +11,19 @@ void clear(Mat<zz_pX> & pmat)
 {
     for (long i=0; i<pmat.NumRows(); ++i)
         for (long j=0; j<pmat.NumCols(); ++j)
+            clear(pmat[i][j]);
+}
+
+/*------------------------------------------------------------*/
+/* clears a matrix window starting at (r_offset,c_offset) and */
+/* with dimensions nrows x ncols                              */
+/*------------------------------------------------------------*/
+void clear(Mat<zz_pX> & pmat, long r_offset, long c_offset, long nrows, long ncols)
+{
+    const long r_end = std::min(r_offset+nrows,pmat.NumRows());
+    const long c_end = std::min(c_offset+ncols,pmat.NumCols());
+    for (long i=r_offset; i<r_end; ++i)
+        for (long j=c_offset; j<c_end; ++j)
             clear(pmat[i][j]);
 }
 
@@ -428,7 +442,7 @@ void row_reverse(
 /*------------------------------------------------------------*/
 /* evaluate at a given point                                  */
 /*------------------------------------------------------------*/
-void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt)
+void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, const zz_p & pt)
 {
     evmat.SetDims(pmat.NumRows(),pmat.NumCols());
     for (long i = 0; i < pmat.NumRows(); ++i)
@@ -436,6 +450,24 @@ void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt)
             eval(evmat[i][j], pmat[i][j], pt);
 }
 
+/*------------------------------------------------------------*/
+/* evaluate at a given point (rep = vector of matrices)       */
+/*------------------------------------------------------------*/
+void eval(Mat<zz_p> & evmat, const Vec<Mat<zz_p>> & matp, const zz_p & pt)
+{
+    long d = matp.length()-1; // degree
+    if (d==-1) // zero matrix, dimensions unknown
+    {
+        evmat.SetDims(0,0);
+        return;
+    }
+    evmat = matp[d];
+    for (--d; d >= 0; --d)
+    {
+        mul(evmat, evmat, pt);
+        add(evmat, evmat, matp[d]);
+    }
+}
 
 /*------------------------------------------------------------*/
 /* random matrix of length n, degree < d                      */
