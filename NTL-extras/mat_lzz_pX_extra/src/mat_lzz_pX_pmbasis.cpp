@@ -739,7 +739,7 @@ VecLong mbasis_rescomp(
             // is reached on the diagonal, among the pivot degrees)
             for (long d = 0; d <= deg_appbas; ++d)
             {
-                kerapp = kerbas * coeffs_appbas[d];
+                mul(kerapp, kerbas, coeffs_appbas[d]);
                 for (long i = 0; i < ker_dim; ++i)
                     coeffs_appbas[d][pivind[perm_rows_ker[i]]].swap(kerapp[i]);
             }
@@ -1383,7 +1383,7 @@ VecLong mbasis_resupdate(
             // is reached on the diagonal, among the pivot degrees)
             for (long d = 0; d <= deg_appbas; ++d)
             {
-                kerapp = kerbas * coeffs_appbas[d];
+                mul(kerapp, kerbas, coeffs_appbas[d]);
                 for (long i = 0; i < ker_dim; ++i)
                     coeffs_appbas[d][pivind[perm_rows_ker[i]]].swap(kerapp[i]);
             }
@@ -1408,7 +1408,7 @@ VecLong mbasis_resupdate(
             // kerbas*residuals
             for (long d = ord; d < order; ++d)
             {
-                kerres = kerbas * residuals[d];
+                mul(kerres, kerbas, residuals[d]);
                 for (long i = 0; i < ker_dim; ++i)
                     residuals[d][pivind[perm_rows_ker[i]]].swap(kerres[i]);
             }
@@ -1441,7 +1441,7 @@ VecLong mbasis_resupdate(
     t_now = GetWallTime();
 #endif
     // Convert approximant basis to polynomial matrix representation
-    appbas = conv(coeffs_appbas);
+    conv(appbas, coeffs_appbas);
 #ifdef MBASIS_PROFILE
     t_others += GetWallTime()-t_now;
 #endif

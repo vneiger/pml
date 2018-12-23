@@ -40,8 +40,7 @@ int main(int argc, char *argv[])
     if (nbits==0)
         zz_p::FFTInit(0);
     else
-        //zz_p::init(NTL::GenPrime_long(nbits));
-        zz_p::init(3);
+        zz_p::init(NTL::GenPrime_long(nbits));
 
     // build couple (test_matrices, test_shifts)
     std::pair<std::vector<Mat<zz_pX>>, std::vector<std::vector<VecLong>>>

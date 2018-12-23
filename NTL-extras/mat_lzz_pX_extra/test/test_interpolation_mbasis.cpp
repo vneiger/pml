@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 
         std::cout << t/nb_iter;
 
-        if (verify)
+        if (verify) // checks the last iteration of the while loop
         {
             bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
             std::cout << (verif?", correct":", wrong");
@@ -99,6 +99,33 @@ int main(int argc, char *argv[])
             random(pts, npoints);
             tt = GetWallTime();
             mbasis_rescomp(intbas,evals,pts,shift);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+        }
+
+        std::cout << t/nb_iter;
+
+        if (verify)
+        {
+            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
+            std::cout << (verif?", correct":", wrong");
+        }
+        std::cout << std::endl;
+    }
+
+
+    { // mbasis_resupdate
+        std::cout << "mbasis_resupdate, time:\t";
+        nb_iter=0; t=0.0;
+        Mat<zz_pX> intbas;
+        while (t<0.5)
+        {
+            evals.SetLength(npoints);
+            for (long pt = 0; pt < npoints; ++pt)
+                random(evals[pt], rdim, cdim);
+            random(pts, npoints);
+            tt = GetWallTime();
+            mbasis_resupdate(intbas,evals,pts,shift);
             t += GetWallTime()-tt;
             ++nb_iter;
         }
