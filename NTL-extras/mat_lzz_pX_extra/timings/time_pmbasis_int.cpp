@@ -54,16 +54,33 @@ void one_bench_pmbasis(long sz, long order)
     while (t<0.5)
     {
         random(pmat, rdim, cdim, order);
+        evals.kill();
+        pts.kill();
         zz_p r;
         random(r);
         zz_pX_Multipoint_Geometric eval(r,zz_p(1),order);
-        Vec<zz_p> pts;
+        pts.SetLength(order);
         for (long k = 0; k < order; ++k)
             eval.get_point(pts[k], k);
 
+        Vec<Mat<zz_p>> evals;
+        evals.SetLength(order);
+        for (long d = 0; d < order; d++)
+            evals[d].SetDims(pmat.NumRows(), pmat.NumCols());
+        for (long r = 0; r < pmat.NumRows(); r++)
+        {
+            for (long c = 0; c < pmat.NumCols(); c++)
+            {
+                Vec<zz_p> vals;
+                eval.evaluate(vals, pmat[r][c]);
+                for (long d = 0; d < order; d++)
+                    evals[d][r][c] = vals[d];
+            }
+        }
+
         tt = GetWallTime();
         Mat<zz_pX> intbas;
-        pmbasis_geometric(intbas,pmat,r,order,shift);
+        pmbasis_geometric(intbas,evals,pts,r,shift);
         t += GetWallTime()-tt;
         ++nb_iter;
     }
@@ -127,7 +144,7 @@ void run_bench(long nbits)
         zz_p::UserFFTInit(1139410705724735489); // 60 bits
         cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
     }
-    std::cout << "rdim\tcdim\torder\tpmbasis\t" << std::endl;
+    std::cout << "rdim\tcdim\torder\tpmbasis\tgeom\t" << std::endl;
     for (size_t i=0;i<szs.size();++i)
         one_bench_pmbasis(szs[i],degs[i]);
     cout << endl;

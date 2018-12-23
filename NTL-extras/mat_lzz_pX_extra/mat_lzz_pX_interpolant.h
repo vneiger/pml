@@ -247,15 +247,15 @@ VecLong pmbasis_geometric(
                const zz_p & r,
                const long order,
                const VecLong & shift,
-               Vec<Mat<zz_p>> &evals,
-               Vec<zz_p> &pts
+               Vec<Mat<zz_p>> & evals,
+               Vec<zz_p> & pts
               );
 
 // requires that pts contain powers of r
 // with entries of evals evaluated at pts
 VecLong pmbasis_geometric(
                          Mat<zz_pX> & intbas,
-                         const Vec<Mat<zz_p>> & evals,
+                         Vec<Mat<zz_p>> & evals,
                          const Vec<zz_p> & pts,
                          const zz_p & r,
                          const VecLong & shift,

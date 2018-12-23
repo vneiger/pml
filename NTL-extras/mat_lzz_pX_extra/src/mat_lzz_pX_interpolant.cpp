@@ -30,24 +30,23 @@ bool is_interpolant_basis(
 
     // test that appbas is shift-reduced with form at least 'form'
     if (not is_row_polmatform(form,intbas,shift))
+    {
+        std::cout << "not polmatform" << std::endl;
         return false;
+    }
 
     // test that the matrix consists of interpolants
     Vec<Mat<zz_p>> intbas_vec;
     conv(intbas_vec,intbas);
-    long deg = intbas_vec.length()-1;
     for (long pt=0; pt<pts.length(); ++pt)
     {
-        // evaluate with Horner
-        Mat<zz_p> ev = intbas_vec[deg];
-        for (long d = deg-1; d >= 0; --d)
-        {
-            ev = pts[pt] * ev;
-            add(ev, ev, intbas_vec[d]);
-        }
-        mul(ev, ev, evals[pt]);
+        Mat<zz_p> ev;
+        eval(ev, intbas, pts[pt]);
         if (not IsZero(ev))
+        {
+            std::cout << "nonzero eval " << pt << std::endl;
             return false;
+        }
     }
     return true;
 }
@@ -1129,7 +1128,7 @@ VecLong pmbasis_geometric(
         }
     }
 
-    return pmbasis_geometric(intbas, evals, pts, r, shift);
+    return pmbasis_geometric(intbas, evals, pts, r, shift, 0, order);
 }
 
 VecLong pmbasis_geometric(
@@ -1146,70 +1145,38 @@ VecLong pmbasis_geometric(
         return mbasis(intbas, evals, pts, shift, offset, order);
 
     // orders for recursive calls
-    long order1 = order>>1;
-    long order2 = order-order1;
+    const long order1 = order>>1;
+    const long offset2 = offset+order1;
+    const long order2 = order-order1;
 
     // first recursive call
-    VecLong pivdeg = pmbasis_geometric(intbas, evals, pts1, r, shift);
-
-    long max_pivdeg = pivdeg[0];
-    for (auto i : pivdeg)
-        if (max_pivdeg < i) max_pivdeg = i;
+    VecLong pivdeg = pmbasis_geometric(intbas, evals, pts, r, shift, offset, order1);
 
     // shifted row degree = shift for second call = pivdeg+shift
-    VecLong rdeg(m); // shifted row degree
+    VecLong rdeg(evals[0].NumRows()); // shifted row degree
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
 
     // get the product of evaluations intbas(x_i) * pmat(x_i)
     // for the second half of the points
+
+    // geometric progression of r, starting at pts2[0]
+    // first ensure we have enough points for the degree
     Vec<zz_p> pts2;
     pts2.SetLength(order2);
     for (long i=0; i<order2; ++i)
         pts2[i] = pts[order1+i];
-
-    // geometric progression of r, starting at pts2[0]
-    // first ensure we have enough points for the degree
+    long max_pivdeg = *std::max_element(pivdeg.begin(), pivdeg.end());
+    // TODO necessary? or sufficient to ensure order2>=order1 (>= max_pivdeg)
     max_pivdeg = max(order2, max_pivdeg); 
     zz_pX_Multipoint_Geometric ev(r,pts2[0], max_pivdeg+1);
-
-    Vec<Mat<zz_p>> evals2;
-    evals2.SetLength(order2);
-    for (long i = 0; i < order2; i++)
-        evals2[i].SetDims(intbas.NumRows(),intbas.NumCols());
-
-    context.save();  
-
-    // evaluate and store
-    NTL_EXEC_RANGE(intbas.NumRows(),first,last)
-
-    context.restore();    
-    for (long r = first; r < last; r++)
-        for (long c = 0; c < intbas.NumCols(); c++)
-        {
-            Vec<zz_p> val;
-            ev.evaluate(val, intbas[r][c]);
-
-            for (long i = 0; i < order2; i++)
-                evals2[i][r][c] = val[i];
-
-        }
-    NTL_EXEC_RANGE_END
-
-    context.save();  
-
-    // multiply and store    
-    NTL_EXEC_RANGE(order2,first,last)
-    context.restore();    
-
-    for (long i = first; i < last; i++)
-    {
-        evals2[i] = evals2[i] * evals[order1+i];
-    }
-    NTL_EXEC_RANGE_END
+    Vec<Mat<zz_p>> intbas_eval;
+    ev.evaluate_matrix(intbas_eval, intbas);
+    for (long k = offset2; k < offset2+order2; ++k)
+        mul(evals[k], intbas_eval[k-offset2], evals[k]);
 
     // second recursive call
     Mat<zz_pX> intbas2;
-    VecLong pivdeg2 = pmbasis_geometric(intbas2, evals2, pts2, r, rdeg);
+    VecLong pivdeg2 = pmbasis_geometric(intbas2, evals, pts, r, rdeg, offset2, order2);
 
     multiply(intbas,intbas2,intbas);
 
@@ -1239,10 +1206,6 @@ VecLong pmbasis(
     // first recursive call
     VecLong pivdeg = pmbasis(intbas, evals, pts, shift, offset, order1);
 
-    // shifted row degree = shift for second call = pivdeg+shift
-    VecLong rdeg(evals[0].NumRows());
-    std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
-
     // Residual:  update the evaluations, for the second part of the points
     // --> product of evaluations intbas(x_i) * pmat(x_i)
     zz_pX_Multipoint_General ev(pts, offset2, order2);
@@ -1250,6 +1213,10 @@ VecLong pmbasis(
     ev.evaluate_matrix(intbas_eval, intbas);
     for (long k = offset2; k < offset2+order2; ++k)
         mul(evals[k], intbas_eval[k-offset2], evals[k]);
+
+    // shifted row degree = shift for second call = pivdeg+shift
+    VecLong rdeg(evals[0].NumRows());
+    std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
 
     // second recursive call
     Mat<zz_pX> intbas2;
@@ -1259,7 +1226,6 @@ VecLong pmbasis(
 
     // final pivot degree = pivdeg1+pivdeg2
     std::transform(pivdeg.begin(), pivdeg.end(), pivdeg2.begin(), pivdeg.begin(), std::plus<long>());
-
     return pivdeg;
 }
 

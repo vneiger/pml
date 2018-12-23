@@ -577,7 +577,7 @@ void matrix_recon_interpolation_geometric(Mat<zz_pX> &basis,
 
     // call pmbasis
     Mat<zz_pX> intbas;
-    pmbasis_geometric(intbas, seq_id, pts, r, shift);
+    pmbasis_geometric(intbas, seq_id, pts, r, shift, 0, len);
 
     basis.SetDims(m, m);
     for (long j = 0; j < m; j++)
