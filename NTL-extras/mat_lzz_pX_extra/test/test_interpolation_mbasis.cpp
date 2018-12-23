@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     std::cout << "--rdim =\t" << rdim << std::endl;
     std::cout << "--cdim =\t" << cdim << std::endl;
     std::cout << "--npoints =\t" << npoints << std::endl;
-    std::cout << "--shift = uniform\t";
+    std::cout << "--shift = uniform\t" << std::endl;
 
     double tt,t;
     long nb_iter;

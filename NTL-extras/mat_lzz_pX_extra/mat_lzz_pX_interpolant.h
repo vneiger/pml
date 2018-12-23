@@ -139,13 +139,6 @@ bool is_interpolant_basis(
 //             );
 
 // input pmat = list of evaluations, implemented
-VecLong mbasis(
-              Mat<zz_pX> & intbas,
-              const Vec<Mat<zz_p>> & evals,
-              const Vec<zz_p> & pts,
-              const VecLong & shift
-             );
-
 // REQUIREMENT : len(evals) == len(pts) > 0
 // Will work if repeated points, but not optimized (one could e.g. do a
 // cleaning of pts beforehand)
@@ -155,6 +148,18 @@ VecLong mbasis_rescomp(
                        const Vec<zz_p> & pts,
                        const VecLong & shift
                       );
+
+// chooses
+inline VecLong mbasis(
+                      Mat<zz_pX> & intbas,
+                      const Vec<Mat<zz_p>> & evals,
+                      const Vec<zz_p> & pts,
+                      const VecLong & shift
+                     )
+{
+    return mbasis_rescomp(intbas,evals,pts,shift);
+}
+
 
 VecLong popov_mbasis(
                     Mat<zz_pX> &intbas,
