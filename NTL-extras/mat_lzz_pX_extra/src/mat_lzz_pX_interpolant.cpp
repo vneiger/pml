@@ -1,13 +1,10 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-#include <cmath>
 #include <algorithm> // for manipulating std::vector (min, max, ..)
 #include <numeric> // for std::iota
 #include <NTL/BasicThreadPool.h>
 
+#include "lzz_pX_CRT.h"
 #include "mat_lzz_pX_interpolant.h"
-#include "mat_lzz_pX_approximant.h"
+#include "mat_lzz_pX_multiply.h"
 
 //#define MBASIS_PROFILE
 
@@ -1230,62 +1227,41 @@ VecLong pmbasis_geometric(
 
 VecLong pmbasis(
                 Mat<zz_pX> & intbas,
-                const Vec<Mat<zz_p>> & evals,
+                Vec<Mat<zz_p>> & evals,
                 const Vec<zz_p> & pts,
-                const VecLong & shift
+                const VecLong & shift,
+                long offset,
+                long order
                )
 {
-    const long m = evals[0].NumRows();
-    const long order = pts.length();
-
     if (order <= 32)
-        return mbasis(intbas, evals, pts, shift);
+        return mbasis(intbas, evals, pts, shift, offset, order);
 
+    // dimension of input
+    const long m = evals[0].NumRows();
     // orders for the recursive calls
     const long order1 = order>>1;
+    const long offset2 = offset+order1;
     const long order2 = order-order1;
 
-    // points for the recursive calls
-    Vec<zz_p> pts1(INIT_SIZE, order1);
-    Vec<zz_p> pts2(INIT_SIZE, order2);
-    for (long k=0; k<order1; ++k)
-        pts1[k] = pts[k];
-    for (long k=0; k<order2; ++k)
-        pts2[k] = pts[order1+k];
-
     // first recursive call
-    VecLong pivdeg = pmbasis(intbas, evals, pts1, shift);
+    VecLong pivdeg = pmbasis(intbas, evals, pts, shift, offset, order1);
 
     // shifted row degree = shift for second call = pivdeg+shift
     VecLong rdeg(m);
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
 
-    // update the evaluations, for the second half of the points
+    // Residual:  update the evaluations, for the second part of the points
     // --> product of evaluations intbas(x_i) * pmat(x_i)
-    zz_pX_Multipoint_General ev(pts2);
-
-    Vec<Mat<zz_p>> evals2;
-    evals2.SetLength(order2);
-    for (long i = 0; i < order2; i++)
-        evals2[i].SetDims(intbas.NumRows(),intbas.NumCols());
-
-    for (long r = 0; r < intbas.NumRows(); ++r)
-        for (long c = 0; c < intbas.NumCols(); ++c)
-        {
-            Vec<zz_p> val;
-            ev.evaluate(val, intbas[r][c]);
-            for (long i = 0; i < order2; i++)
-                evals2[i][r][c] = val[i];
-
-        }
-
-    // multiply and store
-    for (long i = 0; i < order2; ++i)
-        mul(evals2[i], evals2[i], evals[order1+i]);
+    zz_pX_Multipoint_General ev(pts, offset2, order2);
+    Vec<Mat<zz_p>> intbas_eval;
+    ev.evaluate_matrix(intbas_eval, intbas);
+    for (long k = offset2; k < offset2+order2; ++k)
+        mul(evals[k], intbas_eval[k-offset2], evals[k]);
 
     // second recursive call
     Mat<zz_pX> intbas2;
-    VecLong pivdeg2 = pmbasis(intbas2, evals2, pts2, rdeg);
+    VecLong pivdeg2 = pmbasis(intbas2, evals, pts, rdeg, offset2, order2);
 
     multiply(intbas,intbas2,intbas);
 

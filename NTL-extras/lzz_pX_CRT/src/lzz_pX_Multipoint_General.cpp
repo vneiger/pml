@@ -72,6 +72,36 @@ zz_pX_Multipoint_General::zz_pX_Multipoint_General(const Vec<zz_p>& q)
     inverse_root = InvTrunc(reverse_root, n);
 }
 
+/*------------------------------------------------------------*/
+/* constructor from points[offset]...points[offset+length-1]  */
+/*------------------------------------------------------------*/
+zz_pX_Multipoint_General::zz_pX_Multipoint_General(const Vec<zz_p>& q, long offset, long length)
+{
+    n = length;
+    pts.SetLength(n);
+    for (long i = 0; i < n; ++i)
+        pts[i] = q[offset+i];
+
+    Vec<zz_pX> qpol;
+    qpol.SetLength(n);
+    for (long i = 0; i < n; i++)
+    {
+        SetCoeff(qpol[i], 0, -q[i]);
+        SetCoeff(qpol[i], 1, 1);
+    }
+    build_subproduct_tree(tree, qpol);
+
+    evaluate(cofactors, diff(tree[tree.length()-1][0]));
+    for (long i = 0; i < n; i++)
+    {
+        cofactors[i] = 1/cofactors[i];
+    }
+
+    reverse_root = reverse(tree[tree.length()-1][0], n);
+    inverse_root = InvTrunc(reverse_root, n);
+}
+
+
 
 /*------------------------------------------------------------*/
 /* multipoint evaluation                                      */

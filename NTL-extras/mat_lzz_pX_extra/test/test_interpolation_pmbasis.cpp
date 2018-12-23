@@ -1,15 +1,10 @@
-#include <NTL/lzz_pX.h>
-#include <NTL/matrix.h>
-#include <NTL/vector.h>
 #include <iomanip>
-#include <vector>
-#include <numeric>
-#include <algorithm>
-#include <random>
+
 #include <NTL/BasicThreadPool.h>
 
 #include "util.h"
-#include "mat_lzz_pX_extra.h"
+#include "lzz_pX_CRT.h"
+#include "mat_lzz_pX_interpolant.h"
 
 NTL_CLIENT
 
@@ -99,9 +94,10 @@ int main(int argc, char *argv[])
         }
         std::cout << std::endl;
 
+        Vec<Mat<zz_p>> copy_evals(evals); // since this one changes its input
         t1w = GetWallTime();
         Mat<zz_pX> intbas2;
-        pivdeg = pmbasis(intbas2,evals,pts,shift);
+        pivdeg = pmbasis(intbas2,copy_evals,pts,shift,0,npoints);
         t2w = GetWallTime();
 
         std::cout << "pmbasis-general, time:\t\t" << (t2w-t1w);

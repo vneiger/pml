@@ -535,7 +535,7 @@ void matrix_recon_interpolation(Mat<zz_pX> &basis,
 
     // call pmbasis
     Mat<zz_pX> intbas;
-    pmbasis(intbas, seq_id, pts, shift);
+    pmbasis(intbas, seq_id, pts, shift, 0, pts.length());
 
     basis.SetDims(m, m);
     for (long j = 0; j < m; j++)

@@ -262,11 +262,13 @@ VecLong pmbasis_geometric(
                         );
 
 // input pmat = list of evaluations, implemented
+// note evals can be modified
 VecLong pmbasis(
                 Mat<zz_pX> & intbas,
-                const Vec<Mat<zz_p>> & evals,
+                Vec<Mat<zz_p>> & evals,
                 const Vec<zz_p> & pts,
                 const VecLong & shift,
+                long offset,
                 long order
                );
 
