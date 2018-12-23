@@ -9,6 +9,8 @@
 #include "mat_lzz_pX_interpolant.h"
 #include "mat_lzz_pX_approximant.h"
 
+//#define MBASIS_PROFILE
+
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
@@ -84,13 +86,13 @@ VecLong mbasis_rescomp(
 
     // B. Input representation; initialize output
 
-    // B.1 vector of coefficients of output approximant basis
+    // B.1 vector of coefficients of output interpolant basis
     Vec<Mat<zz_p>> coeffs_intbas;
 
     // B.2 initially, intbas is the identity matrix
     coeffs_intbas.SetLength(1);
     ident(coeffs_intbas[0], m);
-    // degree of approximant basis, initially zero
+    // degree of interpolant basis, initially zero
     long deg_intbas = 0;
     // shifted row degree of intbas, initially equal to shift
     VecLong rdeg(shift);
@@ -200,7 +202,7 @@ VecLong mbasis_rescomp(
         else if (ker_dim==m)
         {
             // Exceptional case: residual coeff was zero, and kernel 'kerbas' is identity
-            // --> approximant basis is already correct for this point, no need to
+            // --> interpolant basis is already correct for this point, no need to
             // change it or to change rdeg
             // --> we just need to compute the next residual
             // (unless we are at the last iteration, in which case the algorithm returns)
@@ -209,12 +211,8 @@ VecLong mbasis_rescomp(
 #ifdef MBASIS_PROFILE
                 t_now = GetWallTime();
 #endif
-                // update residual, if not the last iteration
-                if (ord<order-1)
-                {
-                    eval(intbas_eval, coeffs_intbas, pts[ord+1]);
-                    mul(residuals, intbas_eval, evals[ord+1]);
-                }
+                eval(intbas_eval, coeffs_intbas, pts[ord+1]);
+                mul(residuals, intbas_eval, evals[ord+1]);
 #ifdef MBASIS_PROFILE
                 t_residual += GetWallTime()-t_now;
 #endif
@@ -418,6 +416,7 @@ VecLong mbasis_rescomp(
     return rdeg;
 }
 
+// version with vector residuals continuously updated
 VecLong mbasis_resupdate(
                          Mat<zz_pX> & intbas,
                          const Vec<Mat<zz_p>> & evals,
@@ -444,13 +443,13 @@ VecLong mbasis_resupdate(
 
     // B. Initialize output
 
-    // B.1 vector of coefficients of output approximant basis
+    // B.1 vector of coefficients of output interpolant basis
     Vec<Mat<zz_p>> coeffs_intbas;
 
     // B.2 initially, intbas is the identity matrix
     coeffs_intbas.SetLength(1);
     ident(coeffs_intbas[0], m);
-    // degree of approximant basis, initially zero
+    // degree of interpolant basis, initially zero
     long deg_intbas = 0;
     // shifted row degree of intbas, initially equal to shift
     VecLong rdeg(shift);
@@ -771,6 +770,321 @@ VecLong mbasis_resupdate(
     return rdeg;
 }
 
+// version with residual constant matrix computed at each iteration,
+// intbas is stored as evaluations at the points in pts
+// TODO currently experimental, not properly tested
+// TODO deal with case where intbas reaches degree = nbpoints
+VecLong mbasis_rescomp(
+                       Vec<Mat<zz_p>> & intbas,
+                       const Vec<Mat<zz_p>> & evals,
+                       const Vec<zz_p> & pts,
+                       const VecLong & shift
+                      )
+{
+#ifdef MBASIS_PROFILE
+    double t_others=0.0,t_residual=0.0,t_intbas=0.0,t_kernel=0.0,t_now;
+    t_now = GetWallTime();
+#endif
+    // A. General
+
+    // A.1 dimensions of input matrix
+    const long m = evals[0].NumRows();
+    const long n = evals[0].NumCols();
+
+    // A.2 order of interpolation (number of points)
+    const long order = evals.length();
+
+    // A.3 store iota since it will be used at each iteration
+    VecLong iota(m);
+    std::iota(iota.begin(), iota.end(), 0);
+
+    // B. Input representation; initialize output
+
+    // B.1 initially, intbas is the identity matrix --> all evaluations are zero
+    intbas.SetLength(order);
+    for (long k = 0; k < order; ++k)
+        ident(intbas[k], m);
+    // shifted row degree of intbas, initially equal to shift
+    VecLong rdeg(shift);
+
+    // C. Residual matrix (m x n constant matrix, next coefficient
+    // of intbas * pmat which we want to annihilate)
+
+    // C.1 stores the residual, initially evals[0]
+    Mat<zz_p> residuals(evals[0]);
+
+    // C.2 permuted residual, used as input to the kernel at the "base case"
+    Mat<zz_p> p_residual(INIT_SIZE, m, n);
+
+    // D. Base case (essentially amounts to finding the left kernel of the
+    // permuted residual p_residual)
+
+    // D.1 pivot indices in kernel basis (which is in row echelon form)
+    // Note: length is probably overestimated (usually kernel has m-n rows),
+    // but this avoids reallocating the right length at each iteration
+    VecLong pivind(m-1);
+    // Vector indicating if a given column index appears in this pivot index
+    // i.e. is_pivind[pivind[i]] = true and others are false
+    std::vector<bool> is_pivind(m, false);
+
+    // D.2 permutation for the rows of the constant kernel
+    VecLong perm_rows_ker;
+    // pivot indices of row echelon form before permutation
+    VecLong p_pivind(m-1);
+
+    // D.3 permutation which stable-sorts the shift, used at the base case
+    VecLong p_rdeg;
+
+    // D.4 the constant kernel, and its permuted version
+    Mat<zz_p> kerbas;
+    Mat<zz_p> p_kerbas;
+
+    // E. Updating intbas
+    // stores the product "constant-kernel * coeffs_intbas[d]"
+    Mat<zz_p> kerint; 
+
+#ifdef MBASIS_PROFILE
+    t_others += GetWallTime()-t_now;
+#endif
+
+    for (long ord = 0; ord < order; ++ord)
+    {
+#ifdef MBASIS_PROFILE
+        t_now = GetWallTime();
+#endif
+        // compute permutation which realizes stable sort of rdeg
+        // --> we need to permute things, to take into account the "priority"
+        // (i.e. "weights") indicated by the shift; at this stage, the input
+        // shift is the shift-row degree 'rdeg' of intbas
+        p_rdeg = iota;
+        stable_sort(p_rdeg.begin(), p_rdeg.end(),
+                    [&](const long& a, const long& b)->bool
+                    {
+                    return (rdeg[a] < rdeg[b]);
+                    } );
+
+        // permute rows of the residual accordingly
+        for (long i = 0; i < m; ++i)
+            p_residual[i].swap(residuals[p_rdeg[i]]);
+#ifdef MBASIS_PROFILE
+        t_others += GetWallTime()-t_now;
+        t_now = GetWallTime();
+#endif
+        // find the (permuted) left kernel basis, hopefully in row echelon form;
+        kernel(p_kerbas,p_residual);
+#ifdef MBASIS_PROFILE
+        t_kernel += GetWallTime()-t_now;
+#endif
+        const long ker_dim = p_kerbas.NumRows();
+
+        if (ker_dim==0)
+        {
+            // Exceptional case: the residual matrix has empty left kernel
+            // --> left-multiply intbas by (x-pt[ord])
+            // --> compute next residual
+
+            // update intbas
+            for (long k=0; k<ord; ++k)
+                mul(intbas[k], intbas[k], pts[k]-pts[ord]);
+            for (long k=ord+1; k<order; ++k)
+                mul(intbas[k], intbas[k], pts[k]-pts[ord]);
+
+            // update residual, if not the last iteration
+            if (ord<order-1)
+                mul(residuals, intbas[ord+1], evals[ord+1]);
+
+            // update rdeg
+            std::for_each(rdeg.begin(), rdeg.end(), [](long& a) { ++a; });
+        }
+
+        else if (ker_dim==m)
+        {
+            // Exceptional case: residual coeff was zero, and kernel 'kerbas' is identity
+            // --> interpolant basis is already correct for this point, no need to
+            // change it or to change rdeg
+            // --> we just need to compute the next residual
+            // (unless we are at the last iteration, in which case the algorithm returns)
+            if (ord<order-1)
+            {
+#ifdef MBASIS_PROFILE
+                t_now = GetWallTime();
+#endif
+                mul(residuals, intbas[ord+1], evals[ord+1]);
+#ifdef MBASIS_PROFILE
+                t_residual += GetWallTime()-t_now;
+#endif
+            }
+        }
+
+        else
+        {
+            // here, we are in the "usual" case, where the left kernel of the
+            // residual has no special shape
+
+            // first, we permute everything back to original order
+#ifdef MBASIS_PROFILE
+            t_now = GetWallTime();
+#endif
+            // Compute pivots indices (pivot = rightmost nonzero entry)
+            // Experiments show that:
+            //   * kernel is expected to be of the form [ K | Id ]
+            //   * in general it is a column-permutation of such a matrix
+            // However note that a column-permutation is not sufficient for our needs
+            // Another property: if pivots are in the expected location (diagonal of
+            // rightmost square submatrix), then the corresponding column is the identity column.
+            bool expected_pivots = true;
+            for (long i = 0; i<ker_dim; ++i)
+            {
+                p_pivind[i] = m-1;
+                while (IsZero(p_kerbas[i][p_pivind[i]]))
+                    --p_pivind[i];
+                if (p_pivind[i] != m-ker_dim+i)
+                    expected_pivots = false;
+            }
+
+            if (not expected_pivots)
+            {
+                // find whether p_pivind has pairwise distinct entries
+                // (use pivind as temp space)
+                pivind = p_pivind;
+                std::sort(pivind.begin(), pivind.end());
+                // if pairwise distinct, then fine, the basis will not
+                // be Popov but will be ordered weak Popov (the goal of
+                // expected_pivots above was just to avoid this call to
+                // sort in the most usual case)
+
+                if (std::adjacent_find(pivind.begin(),pivind.end()) != pivind.end())
+                {
+                    // the kernel is not in a shape we can deduce the intbas from (some pivots collide)
+                    // --> let's compute its lower triangular row echelon form
+                    // (use kerbas as temporary space)
+                    kerbas.SetDims(ker_dim,m);
+                    for (long i = 0; i < ker_dim; ++i)
+                        for (long j = 0; j < m; ++j)
+                            kerbas[i][j] = p_kerbas[i][m-1-j];
+                    image(kerbas, kerbas);
+                    // now column_permuted_ker is in upper triangular row echelon form
+                    for (long i = 0; i < ker_dim; ++i)
+                        for (long j = 0; j < m; ++j)
+                            p_kerbas[i][j] = kerbas[ker_dim-i-1][m-1-j];
+                    // and now p_kerbas is the sought lower triangular row echelon kernel
+
+                    // compute the actual pivot indices
+                    for (long i = 0; i<ker_dim; ++i)
+                    {
+                        p_pivind[i] = m-1;
+                        while (IsZero(p_kerbas[i][p_pivind[i]]))
+                            --p_pivind[i];
+                    }
+                }
+            }
+
+            // up to row permutation, the kernel is in "lower triangular" row
+            // echelon form (almost there: we want the non-permuted one)
+            // prepare kernel permutation by permuting kernel pivot indices;
+            // also record which rows are pivot index in this kernel
+            // (note that before this loop, is_pivind is filled with 'false')
+            for (long i = 0; i < ker_dim; ++i)
+            {
+                pivind[i] = p_rdeg[p_pivind[i]];
+                is_pivind[pivind[i]] = true;
+            }
+
+            // perm_rows_ker = [0 1 2 ... ker_dim-1]
+            perm_rows_ker.resize(ker_dim);
+            std::copy_n(iota.begin(), ker_dim, perm_rows_ker.begin());
+            // permutation putting the pivot indices pivind in increasing order
+            sort(perm_rows_ker.begin(), perm_rows_ker.end(),
+                    [&](const long& a, const long& b)->bool
+                    {
+                    return (pivind[a] < pivind[b]);
+                    } );
+
+            // permute rows and columns of kernel back to original order
+            kerbas.SetDims(ker_dim,m);
+            for (long i = 0; i < ker_dim; ++i)
+                for (long j = 0; j < m; ++j)
+                    kerbas[i][p_rdeg[j]] = p_kerbas[perm_rows_ker[i]][j];
+#ifdef MBASIS_PROFILE
+            t_others += GetWallTime()-t_now;
+            t_now = GetWallTime();
+#endif
+
+            // Now, update shifted row degree:
+            // entries corresponding to kernel pivot indices are kept, others are +1
+            for (long i = 0; i < m; ++i)
+                if (not is_pivind[i])
+                    ++rdeg[i];
+#ifdef MBASIS_PROFILE
+            t_others += GetWallTime()-t_now;
+            t_now = GetWallTime();
+#endif
+
+            // Update interpolant basis
+
+            // Submatrix of rows corresponding to pivind are replaced by
+            // kerbas*intbas
+            for (long d = 0; d < order; ++d)
+            {
+                mul(kerint, kerbas, intbas[d]);
+                for (long i = 0; i < ker_dim; ++i)
+                    intbas[d][pivind[perm_rows_ker[i]]].swap(kerint[i]);
+            }
+
+            // rows with !is_pivind are multiplied by pts[k]-pts[ord]
+            for (long k = 0; k < ord; ++k)
+            {
+                const zz_p pt(pts[k]-pts[ord]);
+                for (long i = 0; i < m; ++i)
+                    if (not is_pivind[i])
+                        mul(intbas[k][i], intbas[k][i], pt);
+            }
+            for (long i = 0; i < m; ++i)
+                if (not is_pivind[i])
+                    clear(intbas[ord][i]);
+            for (long k = ord+1; k < order; ++k)
+            {
+                const zz_p pt(pts[k]-pts[ord]);
+                for (long i = 0; i < m; ++i)
+                    if (not is_pivind[i])
+                        mul(intbas[k][i], intbas[k][i], pt);
+            }
+#ifdef MBASIS_PROFILE
+            t_intbas += GetWallTime()-t_now;
+            t_now = GetWallTime();
+#endif
+            // Find next residual: evaluation at pts[ord+1] of intbas*pmat
+            // (this is not necessary if we are at the last iteration, i.e. ord==order-1)
+            // we have finished: intbas*pmat is zero mod X^order)
+            if (ord<order-1)
+            {
+                mul(residuals, intbas[ord+1], evals[ord+1]);
+#ifdef MBASIS_PROFILE
+                t_residual += GetWallTime()-t_now;
+                t_now = GetWallTime();
+#endif
+                // Restore is_pivind to all false, as it should be at the beginning of
+                // the iteration
+                for (long i = 0; i < ker_dim; ++i)
+                    is_pivind[pivind[i]] = false;
+#ifdef MBASIS_PROFILE
+                t_others += GetWallTime()-t_now;
+#endif
+            }
+        }
+    }
+#ifdef MBASIS_PROFILE
+    double t_total = t_residual + t_intbas + t_kernel + t_others;
+    std::cout << "~~mbasis_rescomp~~\t (residuals,basis,kernel,others): \t ";
+    std::cout << t_residual/t_total << "," << t_intbas/t_total << "," <<
+    t_kernel/t_total << "," << t_others/t_total << std::endl;
+#endif
+
+    // deduce pivot degree
+    for (long i = 0; i < m; ++i)
+        rdeg[i] -= shift[i];
+    return rdeg;
+}
 
 
 
@@ -922,15 +1236,12 @@ VecLong pmbasis(
                 const VecLong & shift
                )
 {
-
     const long order = pts.length();
     zz_pContext context;
 
     if (order <= 32)
         return mbasis(intbas, evals, pts, shift);
 
-    VecLong pivdeg; // pivot degree, first call
-    VecLong pivdeg2; // pivot degree, second call
     VecLong rdeg(evals[0].NumRows()); // shifted row degree
     long order1 = order>>1; // order of first call
     long order2 = order-order1; // order of second call
@@ -941,7 +1252,7 @@ VecLong pmbasis(
     pts1.SetLength(order1);
     for (long i = 0; i < order1; i++)
         pts1[i] = pts[i];
-    pivdeg = pmbasis(intbas, evals, pts1, shift);
+    VecLong pivdeg = pmbasis(intbas, evals, pts1, shift);
 
     // shifted row degree = shift for second call = pivdeg+shift
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
@@ -990,7 +1301,7 @@ VecLong pmbasis(
     NTL_EXEC_RANGE_END
 
     // second recursive call
-    pivdeg2 = pmbasis(intbas2, evals2, pts2, rdeg);
+    VecLong pivdeg2 = pmbasis(intbas2, evals2, pts2, rdeg);
 
     multiply(intbas,intbas2,intbas);
 

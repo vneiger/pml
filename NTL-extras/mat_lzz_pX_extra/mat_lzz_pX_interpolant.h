@@ -160,7 +160,25 @@ VecLong mbasis_resupdate(
                          const VecLong & shift
                         );
 
+
+// input pmat = list of evaluations, implemented
+// REQUIREMENT : len(evals) == len(pts) > 0
+// assumes no repeated points (will not fail but undefined behaviour)
+// (one could e.g. do a cleaning of pts beforehand)
+// intbas represented as evaluations
+// TODO currently experimental, not properly tested
+// TODO deal with case where intbas reaches degree = nbpoints
+VecLong mbasis_rescomp(
+                       Vec<Mat<zz_p>> & intbas,
+                       const Vec<Mat<zz_p>> & evals,
+                       const Vec<zz_p> & pts,
+                       const VecLong & shift
+                      );
+
+
 // chooses
+// TODO tune threshold (currently only ensures to choose resupdate in
+// the "almost square" case)
 inline VecLong mbasis(
                       Mat<zz_pX> & intbas,
                       const Vec<Mat<zz_p>> & evals,
@@ -168,7 +186,10 @@ inline VecLong mbasis(
                       const VecLong & shift
                      )
 {
-    return mbasis_rescomp(intbas,evals,pts,shift);
+    if (evals[0].NumCols() == evals[0].NumRows()-1)
+        return mbasis_resupdate(intbas,evals,pts,shift);
+    else
+        return mbasis_rescomp(intbas,evals,pts,shift);
 }
 
 

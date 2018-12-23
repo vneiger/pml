@@ -139,6 +139,42 @@ int main(int argc, char *argv[])
         }
         std::cout << std::endl;
     }
+
+    { // mbasis_rescomp, eval rep
+        std::cout << "mbasis_rescomp (eval), time:\t";
+        nb_iter=0; t=0.0;
+        Vec<Mat<zz_p>> intbas_ev;
+        while (t<0.5)
+        {
+            evals.SetLength(npoints);
+            for (long pt = 0; pt < npoints; ++pt)
+                random(evals[pt], rdim, cdim);
+            random(pts, npoints);
+            tt = GetWallTime();
+            mbasis_rescomp(intbas_ev,evals,pts,shift);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+        }
+
+        std::cout << t/nb_iter;
+
+        if (verify)
+        {
+            Mat<zz_pX> intbas;
+            intbas.SetDims(rdim, rdim);
+            for (long i = 0; i < rdim; ++i)
+                for (long j = 0; j < rdim; ++j)
+                {
+                    Vec<zz_p> evs(INIT_SIZE, npoints);
+                    for (long k = 0; k < npoints; ++k)
+                        evs[k] = intbas_ev[k][i][j];
+                    interpolate(intbas[i][j], pts, evs);
+                }
+            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
+            std::cout << (verif?", correct":", wrong");
+        }
+        std::cout << std::endl;
+    }
     return 0;
 }
 
