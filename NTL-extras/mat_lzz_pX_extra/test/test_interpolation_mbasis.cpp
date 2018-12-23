@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
                 random(evals[pt], rdim, cdim);
             random(pts, npoints);
             tt = GetWallTime();
-            mbasis_rescomp(intbas,evals,pts,shift);
+            mbasis_rescomp(intbas,evals,pts,shift,0,npoints);
             t += GetWallTime()-tt;
             ++nb_iter;
         }
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
                 random(evals[pt], rdim, cdim);
             random(pts, npoints);
             tt = GetWallTime();
-            mbasis_resupdate(intbas,evals,pts,shift);
+            mbasis_resupdate(intbas,evals,pts,shift,0,npoints);
             t += GetWallTime()-tt;
             ++nb_iter;
         }
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
                 random(evals[pt], rdim, cdim);
             random(pts, npoints);
             tt = GetWallTime();
-            mbasis_rescomp(intbas_ev,evals,pts,shift);
+            mbasis_rescomp(intbas_ev,evals,pts,shift,0,npoints);
             t += GetWallTime()-tt;
             ++nb_iter;
         }

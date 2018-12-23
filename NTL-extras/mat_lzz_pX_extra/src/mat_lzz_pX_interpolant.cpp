@@ -64,7 +64,9 @@ VecLong mbasis_rescomp(
                        Mat<zz_pX> & intbas,
                        const Vec<Mat<zz_p>> & evals,
                        const Vec<zz_p> & pts,
-                       const VecLong & shift
+                       const VecLong & shift,
+                       long offset,
+                       long order
                       )
 {
 #ifdef MBASIS_PROFILE
@@ -74,11 +76,8 @@ VecLong mbasis_rescomp(
     // A. General
 
     // A.1 dimensions of input matrix
-    const long m = evals[0].NumRows();
-    const long n = evals[0].NumCols();
-
-    // A.2 order of interpolation (number of points)
-    const long order = evals.length();
+    const long m = evals[offset].NumRows();
+    const long n = evals[offset].NumCols();
 
     // A.3 store iota since it will be used at each iteration
     VecLong iota(m);
@@ -100,11 +99,11 @@ VecLong mbasis_rescomp(
     // C. Residual matrix (m x n constant matrix, next coefficient
     // of intbas * pmat which we want to annihilate)
 
-    // C.1 stores the residual, initially evals[0]
-    Mat<zz_p> residuals(evals[0]);
+    // C.1 stores the residual, initially the first evaluation
+    Mat<zz_p> residuals(evals[offset]);
 
     // C.2 temporary matrices used during the computation of residuals
-    Mat<zz_p> intbas_eval; // TODO change name (intbas_eval ?)
+    Mat<zz_p> intbas_eval;
 
     // C.3 permuted residual, used as input to the kernel at the "base case"
     Mat<zz_p> p_residual(INIT_SIZE, m, n);
@@ -140,7 +139,7 @@ VecLong mbasis_rescomp(
     t_others += GetWallTime()-t_now;
 #endif
 
-    for (long ord = 0; ord < order; ++ord)
+    for (long ord = offset; ord < offset+order; ++ord)
     {
 #ifdef MBASIS_PROFILE
         t_now = GetWallTime();
@@ -189,7 +188,7 @@ VecLong mbasis_rescomp(
             mul(coeffs_intbas[0], coeffs_intbas[0], pt);
 
             // update residual, if not the last iteration
-            if (ord<order-1)
+            if (ord<offset+order-1)
             {
                 eval(intbas_eval, coeffs_intbas, pts[ord+1]);
                 mul(residuals, intbas_eval, evals[ord+1]);
@@ -206,7 +205,7 @@ VecLong mbasis_rescomp(
             // change it or to change rdeg
             // --> we just need to compute the next residual
             // (unless we are at the last iteration, in which case the algorithm returns)
-            if (ord<order-1)
+            if (ord<offset+order-1)
             {
 #ifdef MBASIS_PROFILE
                 t_now = GetWallTime();
@@ -376,7 +375,7 @@ VecLong mbasis_rescomp(
             // Find next residual: evaluation at pts[ord+1] of intbas*pmat
             // (this is not necessary if we are at the last iteration, i.e. ord==order-1)
             // we have finished: intbas*pmat is zero mod X^order)
-            if (ord<order-1)
+            if (ord<offset+order-1)
             {
                 eval(intbas_eval, coeffs_intbas, pts[ord+1]);
                 mul(residuals, intbas_eval, evals[ord+1]);
@@ -421,7 +420,9 @@ VecLong mbasis_resupdate(
                          Mat<zz_pX> & intbas,
                          const Vec<Mat<zz_p>> & evals,
                          const Vec<zz_p> & pts,
-                         const VecLong & shift
+                         const VecLong & shift,
+                         long offset,
+                         long order
                         )
 {
 #ifdef MBASIS_PROFILE
@@ -434,10 +435,7 @@ VecLong mbasis_resupdate(
     const long m = evals[0].NumRows();
     const long n = evals[0].NumCols();
 
-    // A.2 order of interpolation (number of points)
-    const long order = evals.length();
-
-    // A.3 store iota since it will be used at each iteration
+    // A.2 store iota since it will be used at each iteration
     VecLong iota(m);
     std::iota(iota.begin(), iota.end(), 0);
 
@@ -458,7 +456,9 @@ VecLong mbasis_resupdate(
 
     // C.1 copy the input vector of evaluations: in this version "resupdate",
     // we will continuously update this to get our residuals
-    Vec<Mat<zz_p>> residuals(evals);
+    Vec<Mat<zz_p>> residuals(INIT_SIZE, order);
+    for (long k = 0; k < order; ++k)
+        residuals[k] = evals[offset+k];
 
     // C.2 temporary matrices used during the update of residuals: kernel * residual
     Mat<zz_p> kerres;
@@ -548,7 +548,7 @@ VecLong mbasis_resupdate(
             ++deg_intbas; // note that this degree is now > 0
             coeffs_intbas.SetLength(deg_intbas+1);
             coeffs_intbas[deg_intbas] = coeffs_intbas[deg_intbas-1];
-            const zz_p pt(-pts[ord]);
+            const zz_p pt(-pts[ord-offset]);
             for (long d=deg_intbas-1; d > 0; --d)
             {
                 mul(coeffs_intbas[d], coeffs_intbas[d], pt);
@@ -691,7 +691,7 @@ VecLong mbasis_resupdate(
 
             // rows with !is_pivind are multiplied by X-pts[ord] (note: these rows
             // currently have degree less than deg_intbas)
-            const zz_p pt(-pts[ord]);
+            const zz_p pt(-pts[ord-offset]);
             for (long i = 0; i < m; ++i)
                 if (not is_pivind[i])
                     coeffs_intbas[deg_intbas][i] = coeffs_intbas[deg_intbas-1][i];
@@ -726,7 +726,7 @@ VecLong mbasis_resupdate(
             // rows with !is_pivind are multiplied by pts[k]-pts[ord]
             for (long k = ord+1; k < order; ++k)
             {
-                const zz_p mulpt(pts[k]+pt);
+                const zz_p mulpt(pts[k-offset]+pt);
                 for (long i = 0; i < m; ++i)
                     if (not is_pivind[i])
                         mul(residuals[k][i], residuals[k][i], mulpt);
@@ -778,7 +778,9 @@ VecLong mbasis_rescomp(
                        Vec<Mat<zz_p>> & intbas,
                        const Vec<Mat<zz_p>> & evals,
                        const Vec<zz_p> & pts,
-                       const VecLong & shift
+                       const VecLong & shift,
+                       long offset,
+                       long order
                       )
 {
 #ifdef MBASIS_PROFILE
@@ -791,10 +793,7 @@ VecLong mbasis_rescomp(
     const long m = evals[0].NumRows();
     const long n = evals[0].NumCols();
 
-    // A.2 order of interpolation (number of points)
-    const long order = evals.length();
-
-    // A.3 store iota since it will be used at each iteration
+    // A.2 store iota since it will be used at each iteration
     VecLong iota(m);
     std::iota(iota.begin(), iota.end(), 0);
 
@@ -811,7 +810,7 @@ VecLong mbasis_rescomp(
     // of intbas * pmat which we want to annihilate)
 
     // C.1 stores the residual, initially evals[0]
-    Mat<zz_p> residuals(evals[0]);
+    Mat<zz_p> residuals(evals[offset]);
 
     // C.2 permuted residual, used as input to the kernel at the "base case"
     Mat<zz_p> p_residual(INIT_SIZE, m, n);
@@ -847,7 +846,7 @@ VecLong mbasis_rescomp(
     t_others += GetWallTime()-t_now;
 #endif
 
-    for (long ord = 0; ord < order; ++ord)
+    for (long ord = offset; ord < offset+order; ++ord)
     {
 #ifdef MBASIS_PROFILE
         t_now = GetWallTime();
@@ -880,18 +879,18 @@ VecLong mbasis_rescomp(
         if (ker_dim==0)
         {
             // Exceptional case: the residual matrix has empty left kernel
-            // --> left-multiply intbas by (x-pt[ord])
+            // --> left-multiply intbas by (x-pts[ord])
             // --> compute next residual
 
             // update intbas
-            for (long k=0; k<ord; ++k)
-                mul(intbas[k], intbas[k], pts[k]-pts[ord]);
-            for (long k=ord+1; k<order; ++k)
-                mul(intbas[k], intbas[k], pts[k]-pts[ord]);
+            for (long k=0; k<ord-offset; ++k)
+                mul(intbas[k], intbas[k], pts[offset+k]-pts[ord]);
+            for (long k=ord-offset+1; k<order; ++k)
+                mul(intbas[k], intbas[k], pts[offset+k]-pts[ord]);
 
             // update residual, if not the last iteration
-            if (ord<order-1)
-                mul(residuals, intbas[ord+1], evals[ord+1]);
+            if (ord<offset+order-1)
+                mul(residuals, intbas[ord-offset+1], evals[ord+1]);
 
             // update rdeg
             std::for_each(rdeg.begin(), rdeg.end(), [](long& a) { ++a; });
@@ -904,12 +903,12 @@ VecLong mbasis_rescomp(
             // change it or to change rdeg
             // --> we just need to compute the next residual
             // (unless we are at the last iteration, in which case the algorithm returns)
-            if (ord<order-1)
+            if (ord<offset+order-1)
             {
 #ifdef MBASIS_PROFILE
                 t_now = GetWallTime();
 #endif
-                mul(residuals, intbas[ord+1], evals[ord+1]);
+                mul(residuals, intbas[ord-offset+1], evals[ord+1]);
 #ifdef MBASIS_PROFILE
                 t_residual += GetWallTime()-t_now;
 #endif
@@ -1032,19 +1031,19 @@ VecLong mbasis_rescomp(
             }
 
             // rows with !is_pivind are multiplied by pts[k]-pts[ord]
-            for (long k = 0; k < ord; ++k)
+            for (long k = 0; k < ord-offset; ++k)
             {
-                const zz_p pt(pts[k]-pts[ord]);
+                const zz_p pt(pts[k+offset]-pts[ord]);
                 for (long i = 0; i < m; ++i)
                     if (not is_pivind[i])
                         mul(intbas[k][i], intbas[k][i], pt);
             }
             for (long i = 0; i < m; ++i)
                 if (not is_pivind[i])
-                    clear(intbas[ord][i]);
-            for (long k = ord+1; k < order; ++k)
+                    clear(intbas[ord-offset][i]);
+            for (long k = ord-offset+1; k < order; ++k)
             {
-                const zz_p pt(pts[k]-pts[ord]);
+                const zz_p pt(pts[offset+k]-pts[ord]);
                 for (long i = 0; i < m; ++i)
                     if (not is_pivind[i])
                         mul(intbas[k][i], intbas[k][i], pt);
@@ -1056,9 +1055,9 @@ VecLong mbasis_rescomp(
             // Find next residual: evaluation at pts[ord+1] of intbas*pmat
             // (this is not necessary if we are at the last iteration, i.e. ord==order-1)
             // we have finished: intbas*pmat is zero mod X^order)
-            if (ord<order-1)
+            if (ord<offset+order-1)
             {
-                mul(residuals, intbas[ord+1], evals[ord+1]);
+                mul(residuals, intbas[ord-offset+1], evals[ord+1]);
 #ifdef MBASIS_PROFILE
                 t_residual += GetWallTime()-t_now;
                 t_now = GetWallTime();
@@ -1236,34 +1235,33 @@ VecLong pmbasis(
                 const VecLong & shift
                )
 {
+    const long m = evals[0].NumRows();
     const long order = pts.length();
-    zz_pContext context;
 
     if (order <= 32)
         return mbasis(intbas, evals, pts, shift);
 
-    VecLong rdeg(evals[0].NumRows()); // shifted row degree
-    long order1 = order>>1; // order of first call
-    long order2 = order-order1; // order of second call
-    Mat<zz_pX> intbas2; // basis for second call
+    // orders for the recursive calls
+    const long order1 = order>>1;
+    const long order2 = order-order1;
+
+    // points for the recursive calls
+    Vec<zz_p> pts1(INIT_SIZE, order1);
+    Vec<zz_p> pts2(INIT_SIZE, order2);
+    for (long k=0; k<order1; ++k)
+        pts1[k] = pts[k];
+    for (long k=0; k<order2; ++k)
+        pts2[k] = pts[order1+k];
 
     // first recursive call
-    Vec<zz_p>  pts1;
-    pts1.SetLength(order1);
-    for (long i = 0; i < order1; i++)
-        pts1[i] = pts[i];
     VecLong pivdeg = pmbasis(intbas, evals, pts1, shift);
 
     // shifted row degree = shift for second call = pivdeg+shift
+    VecLong rdeg(m);
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
 
-    // get the product of evaluations intbas(x_i) * pmat(x_i)
-    // for the second half of the points
-    Vec<zz_p> pts2;
-    pts2.SetLength(order2);
-    for (long i=0; i<order2; ++i)
-        pts2[i] = pts[order1+i];
-
+    // update the evaluations, for the second half of the points
+    // --> product of evaluations intbas(x_i) * pmat(x_i)
     zz_pX_Multipoint_General ev(pts2);
 
     Vec<Mat<zz_p>> evals2;
@@ -1271,14 +1269,8 @@ VecLong pmbasis(
     for (long i = 0; i < order2; i++)
         evals2[i].SetDims(intbas.NumRows(),intbas.NumCols());
 
-    context.save();  
-
-    // evaluate and store
-    NTL_EXEC_RANGE(intbas.NumRows(),first,last)
-
-    context.restore();    
-    for (long r = first; r < last; r++)
-        for (long c = 0; c < intbas.NumCols(); c++)
+    for (long r = 0; r < intbas.NumRows(); ++r)
+        for (long c = 0; c < intbas.NumCols(); ++c)
         {
             Vec<zz_p> val;
             ev.evaluate(val, intbas[r][c]);
@@ -1286,21 +1278,13 @@ VecLong pmbasis(
                 evals2[i][r][c] = val[i];
 
         }
-    NTL_EXEC_RANGE_END
 
-    context.save();  
-
-    // multiply and store    
-    NTL_EXEC_RANGE(order2,first,last)
-    context.restore();    
-
-    for (long i = first; i < last; i++)
-    {
-        evals2[i] = evals2[i] * evals[order1+i];
-    }
-    NTL_EXEC_RANGE_END
+    // multiply and store
+    for (long i = 0; i < order2; ++i)
+        mul(evals2[i], evals2[i], evals[order1+i]);
 
     // second recursive call
+    Mat<zz_pX> intbas2;
     VecLong pivdeg2 = pmbasis(intbas2, evals2, pts2, rdeg);
 
     multiply(intbas,intbas2,intbas);
@@ -1310,6 +1294,89 @@ VecLong pmbasis(
 
     return pivdeg;
 }
+
+//VecLong pmbasis_multithread(
+//                Mat<zz_pX> & intbas,
+//                const Vec<Mat<zz_p>> & evals,
+//                const Vec<zz_p> & pts,
+//                const VecLong & shift
+//               )
+//{
+//    const long order = pts.length();
+//    zz_pContext context;
+//
+//    if (order <= 32)
+//        return mbasis(intbas, evals, pts, shift);
+//
+//    VecLong rdeg(evals[0].NumRows()); // shifted row degree
+//    long order1 = order>>1; // order of first call
+//    long order2 = order-order1; // order of second call
+//    Mat<zz_pX> intbas2; // basis for second call
+//
+//    // first recursive call
+//    Vec<zz_p>  pts1;
+//    pts1.SetLength(order1);
+//    for (long i = 0; i < order1; i++)
+//        pts1[i] = pts[i];
+//    VecLong pivdeg = pmbasis_multithread(intbas, evals, pts1, shift);
+//
+//    // shifted row degree = shift for second call = pivdeg+shift
+//    std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
+//
+//    // get the product of evaluations intbas(x_i) * pmat(x_i)
+//    // for the second half of the points
+//    Vec<zz_p> pts2;
+//    pts2.SetLength(order2);
+//    for (long i=0; i<order2; ++i)
+//        pts2[i] = pts[order1+i];
+//
+//    zz_pX_Multipoint_General ev(pts2);
+//
+//    Vec<Mat<zz_p>> evals2;
+//    evals2.SetLength(order2);
+//    for (long i = 0; i < order2; i++)
+//        evals2[i].SetDims(intbas.NumRows(),intbas.NumCols());
+//
+//    context.save();  
+//
+//    // evaluate and store
+//    NTL_EXEC_RANGE(intbas.NumRows(),first,last)
+//
+//    context.restore();    
+//    for (long r = first; r < last; r++)
+//        for (long c = 0; c < intbas.NumCols(); c++)
+//        {
+//            Vec<zz_p> val;
+//            ev.evaluate(val, intbas[r][c]);
+//            for (long i = 0; i < order2; i++)
+//                evals2[i][r][c] = val[i];
+//
+//        }
+//    NTL_EXEC_RANGE_END
+//
+//    context.save();  
+//
+//    // multiply and store    
+//    NTL_EXEC_RANGE(order2,first,last)
+//    context.restore();    
+//
+//    for (long i = first; i < last; i++)
+//    {
+//        evals2[i] = evals2[i] * evals[order1+i];
+//    }
+//    NTL_EXEC_RANGE_END
+//
+//    // second recursive call
+//    VecLong pivdeg2 = pmbasis_multithread(intbas2, evals2, pts2, rdeg);
+//
+//    multiply(intbas,intbas2,intbas);
+//
+//    // final pivot degree = pivdeg1+pivdeg2
+//    std::transform(pivdeg.begin(), pivdeg.end(), pivdeg2.begin(), pivdeg.begin(), std::plus<long>());
+//
+//    return pivdeg;
+//}
+
 
 // Local Variables:
 // mode: C++

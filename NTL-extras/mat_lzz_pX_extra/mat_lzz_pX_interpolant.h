@@ -146,7 +146,9 @@ VecLong mbasis_rescomp(
                        Mat<zz_pX> & intbas,
                        const Vec<Mat<zz_p>> & evals,
                        const Vec<zz_p> & pts,
-                       const VecLong & shift
+                       const VecLong & shift,
+                       long offset,
+                       long order
                       );
 
 // input pmat = list of evaluations, implemented
@@ -157,7 +159,9 @@ VecLong mbasis_resupdate(
                          Mat<zz_pX> & intbas,
                          const Vec<Mat<zz_p>> & evals,
                          const Vec<zz_p> & pts,
-                         const VecLong & shift
+                         const VecLong & shift,
+                         long offset,
+                         long order
                         );
 
 
@@ -172,13 +176,33 @@ VecLong mbasis_rescomp(
                        Vec<Mat<zz_p>> & intbas,
                        const Vec<Mat<zz_p>> & evals,
                        const Vec<zz_p> & pts,
-                       const VecLong & shift
+                       const VecLong & shift,
+                       long offset,
+                       long order
                       );
 
 
-// chooses
+// chooses fastest one
 // TODO tune threshold (currently only ensures to choose resupdate in
 // the "almost square" case)
+// Req: order>0, offset>=0, offset+order <= length of pts,
+// length of pts == length of evals, ... (not checked)
+// Considers pts/evals from offset to offset+order-1
+inline VecLong mbasis(
+                      Mat<zz_pX> & intbas,
+                      const Vec<Mat<zz_p>> & evals,
+                      const Vec<zz_p> & pts,
+                      const VecLong & shift,
+                      long offset,
+                      long order
+                     )
+{
+    if (evals[0].NumCols() == evals[0].NumRows()-1)
+        return mbasis_resupdate(intbas,evals,pts,shift,offset,order);
+    else
+        return mbasis_rescomp(intbas,evals,pts,shift,offset,order);
+}
+
 inline VecLong mbasis(
                       Mat<zz_pX> & intbas,
                       const Vec<Mat<zz_p>> & evals,
@@ -187,9 +211,9 @@ inline VecLong mbasis(
                      )
 {
     if (evals[0].NumCols() == evals[0].NumRows()-1)
-        return mbasis_resupdate(intbas,evals,pts,shift);
+        return mbasis_resupdate(intbas,evals,pts,shift,0,pts.length());
     else
-        return mbasis_rescomp(intbas,evals,pts,shift);
+        return mbasis_rescomp(intbas,evals,pts,shift,0,pts.length());
 }
 
 
@@ -239,11 +263,12 @@ VecLong pmbasis_geometric(
 
 // input pmat = list of evaluations, implemented
 VecLong pmbasis(
-              Mat<zz_pX> & intbas,
-              const Vec<Mat<zz_p>> & evals,
-              const Vec<zz_p> & pts,
-              const VecLong & shift
-             );
+                Mat<zz_pX> & intbas,
+                const Vec<Mat<zz_p>> & evals,
+                const Vec<zz_p> & pts,
+                const VecLong & shift,
+                long order
+               );
 
 VecLong popov_pmbasis(
                      Mat<zz_pX> &intbas,

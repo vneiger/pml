@@ -27,25 +27,18 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 
 int main(int argc, char *argv[])
 {
-    SetNumThreads(4);
+    SetNumThreads(1);
 
-    bool verify=false;
-
-    if (argc!=5 && argc!=6)
-        throw std::invalid_argument("Usage: ./test_intbas_pmbasis rdim cdim npoints nbits (verify)");
+    if (argc!=6)
+        throw std::invalid_argument("Usage: ./test_intbas_pmbasis rdim cdim npoints nbits verify");
 
     long rdim = atoi(argv[1]);
     long cdim = atoi(argv[2]);
     long npoints = atoi(argv[3]);
     long nbits = atoi(argv[4]);
-    if (argc==6)
-        verify = (atoi(argv[5])==1);
+    bool verify = (atoi(argv[5])==1);
 
     VecLong shift(rdim,0);
-    //VecLong shift {0,1,0,1};
-    //VecLong shift {4,1,0,1};
-    //std::iota(shift.begin(), shift.end(),0);
-    //std::shuffle(shift.begin(), shift.end(), std::mt19937{std::random_device{}()});
 
     if (nbits==0)
         zz_p::FFTInit(0);
@@ -59,71 +52,11 @@ int main(int argc, char *argv[])
     std::cout << "--rdim =\t" << rdim << std::endl;
     std::cout << "--cdim =\t" << cdim << std::endl;
     std::cout << "--npoints =\t" << npoints << std::endl;
-    std::cout << "--shift =\t";
-    if (shift.size()<50)
-        std::cout << shift << std::endl; 
-    else
-        std::cout << "length " << shift.size() << std::endl;
+    std::cout << "--shift = uniform" << std::endl;
 
     double t1w,t2w;
-/*
-    // build random matrix
-    Vec<Mat<zz_p>> evals;
-    Vec<zz_p> pts;
-    t1w = GetWallTime();
-    evals.SetLength(npoints);
-    for (long pt = 0; pt < npoints; ++pt)
-        random(evals[pt], rdim, cdim);
-    random(pts, npoints);
-    t2w = GetWallTime();
-
-    std::cout << "Time(random matrix/points): " << (t2w-t1w) << std::endl;
-
-    if (pts.length()<50 && zz_p::modulus() < 100)
-        std::cout << "Points: " << pts << std::endl;
-
-    // to warm up
-    std::cout << "warming up..." << std::endl;
-    warmup();
-
-    // generic uniform shift pmbasis for interpolants
-    {
-        VecLong pivdeg;
-        std::cout << "~~~Testing pmbasis (generic, uniform shift)~~~" << std::endl;
-        t1w = GetWallTime();
-        Mat<zz_pX> intbas;
-        pivdeg = pmbasis(intbas,evals,pts,shift);
-        t2w = GetWallTime();
-
-        std::cout << "Time(pmbasis-interpolation): " << (t2w-t1w) << std::endl;
-
-        if (verify)
-        {
-            std::cout << "Verifying ordered weak Popov interpolant basis..." << std::endl;
-            t1w = GetWallTime();
-            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
-            t2w = GetWallTime();
-            std::cout << (verif?"correct":"wrong") << std::endl;
-            std::cout << "Time(verification): " << (t2w-t1w) << std::endl;
-
-            if (rdim*cdim*npoints < 100)
-            {
-                std::cout << "Print output interpolant basis..." << std::endl;
-                std::cout << intbas << std::endl;
-            }
-
-            if (std::max(rdim,cdim)<33) {
-                Mat<long> degmat;
-                degree_matrix_rowshifted(degmat,intbas,shift);
-                std::cout << "Print degree matrix of interpolant basis..." << std::endl;
-                std::cout << degmat << std::endl;
-            }
-        }
-    }
-    */
-
     
-    // generic uniform shift pmbasis for interpolants
+    // pmbasis for interpolants
     {
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, npoints);
@@ -154,43 +87,31 @@ int main(int argc, char *argv[])
         }
     
         VecLong pivdeg;
-        std::cout << "~~~Testing pmbasis-geometric (generic, uniform shift)~~~" << std::endl;
         t1w = GetWallTime();
         Mat<zz_pX> intbas;
         pivdeg = pmbasis_geometric(intbas,evals,pts,r,shift);
         t2w = GetWallTime();
+        std::cout << "pmbasis-geometric, time:\t" << (t2w-t1w);
+        if (verify)
+        {
+            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
+            std::cout << (verif?", correct":", wrong");
+        }
+        std::cout << std::endl;
 
-        std::cout << "Time(pmbasis-interpolation geo): " << (t2w-t1w) << std::endl;
-        
         t1w = GetWallTime();
         Mat<zz_pX> intbas2;
         pivdeg = pmbasis(intbas2,evals,pts,shift);
         t2w = GetWallTime();
 
-        std::cout << "Time(pmbasis-interpolation random): " << (t2w-t1w) << std::endl;
-
+        std::cout << "pmbasis-general, time:\t\t" << (t2w-t1w);
         if (verify)
         {
-            std::cout << "Verifying ordered weak Popov interpolant basis..." << std::endl;
-            t1w = GetWallTime();
             bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
-            t2w = GetWallTime();
-            std::cout << (verif?"correct":"wrong") << std::endl;
-            std::cout << "Time(verification): " << (t2w-t1w) << std::endl;
-
-            if (rdim*cdim*npoints < 100)
-            {
-                std::cout << "Print output interpolant basis..." << std::endl;
-                std::cout << intbas << std::endl;
-            }
-
-            if (std::max(rdim,cdim)<33) {
-                Mat<long> degmat;
-                degree_matrix_rowshifted(degmat,intbas,shift);
-                std::cout << "Print degree matrix of interpolant basis..." << std::endl;
-                std::cout << degmat << std::endl;
-            }
+            std::cout << (verif?", correct":", wrong");
         }
+        std::cout << std::endl;
+
     }
 
     return 0;
