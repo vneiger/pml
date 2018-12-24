@@ -80,7 +80,7 @@ void one_bench_pmbasis(long sz, long order)
 
         tt = GetWallTime();
         Mat<zz_pX> intbas;
-        pmbasis_geometric(intbas,evals,pts,r,shift);
+        pmbasis_geometric(intbas,evals,pts,r,shift,0,order);
         t += GetWallTime()-tt;
         ++nb_iter;
     }

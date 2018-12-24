@@ -1160,16 +1160,10 @@ VecLong pmbasis_geometric(
     // get the product of evaluations intbas(x_i) * pmat(x_i)
     // for the second half of the points
 
-    // geometric progression of r, starting at pts2[0]
-    // first ensure we have enough points for the degree
-    Vec<zz_p> pts2;
-    pts2.SetLength(order2);
-    for (long i=0; i<order2; ++i)
-        pts2[i] = pts[order1+i];
-    long max_pivdeg = *std::max_element(pivdeg.begin(), pivdeg.end());
-    // TODO necessary? or sufficient to ensure order2>=order1 (>= max_pivdeg)
-    max_pivdeg = max(order2, max_pivdeg); 
-    zz_pX_Multipoint_Geometric ev(r,pts2[0], max_pivdeg+1);
+    // geometric progression of r, starting at pts[offset2]
+    // note that we have by construction order2 >= order1 >= deg(intbas),
+    // hence we can construct the evaluator with parameter order2+1
+    zz_pX_Multipoint_Geometric ev(r, pts[offset2], order2+1);
     Vec<Mat<zz_p>> intbas_eval;
     ev.evaluate_matrix(intbas_eval, intbas);
     for (long k = offset2; k < offset2+order2; ++k)
