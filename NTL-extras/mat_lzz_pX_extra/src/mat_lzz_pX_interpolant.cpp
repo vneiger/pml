@@ -42,6 +42,7 @@ bool is_interpolant_basis(
     {
         Mat<zz_p> ev;
         eval(ev, intbas, pts[pt]);
+        mul(ev, ev, evals[pt]);
         if (not IsZero(ev))
         {
             std::cout << "nonzero eval " << pt << std::endl;
@@ -370,7 +371,7 @@ VecLong mbasis_rescomp(
 #endif
             // Find next residual: evaluation at pts[ord+1] of intbas*pmat
             // (this is not necessary if we are at the last iteration, i.e. ord==order-1)
-            // we have finished: intbas*pmat is zero mod X^order)
+            // we have finished: intbas*pmat is zero mod (X-pts[offset])...(X-pts[offset+order-1])
             if (ord<offset+order-1)
             {
                 eval(intbas_eval, coeffs_intbas, pts[ord+1]);
