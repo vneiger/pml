@@ -78,7 +78,6 @@ int main(int argc, char *argv[])
             std::cout << (verif?", correct":", wrong");
         }
         std::cout << std::endl;
-        std::cout << degree_matrix(intbas) << std::endl;
     }
 
     {
@@ -98,6 +97,29 @@ int main(int argc, char *argv[])
         std::cout << "pmbasis-general, time:\t\t" << (t2w-t1w);
         if (verify)
         {
+            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
+            std::cout << (verif?", correct":", wrong");
+        }
+        std::cout << std::endl;
+    }
+
+    {
+        Mat<zz_pX> pmat;
+        random(pmat, rdim, cdim, npoints);
+        zz_p r = random_zz_p();
+        Vec<zz_p> pts;
+        t1w = GetWallTime();
+        Mat<zz_pX> intbas;
+        VecLong pivdeg = pmbasis_geometric(intbas,pmat,r,npoints,shift,pts);
+        t2w = GetWallTime();
+
+        std::cout << "pmbasis-geom, time:\t\t" << (t2w-t1w);
+        if (verify)
+        {
+            zz_pX_Multipoint_Geometric eval(r, npoints);
+            Vec<Mat<zz_p>> evals;
+            eval.evaluate_matrix(evals, pmat);
+
             bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
             std::cout << (verif?", correct":", wrong");
         }

@@ -330,8 +330,7 @@ VecLong kernel_basis_zls_via_interpolation(
 
     Mat<zz_pX> P;
     Vec<zz_p> pts;
-    Vec<Mat<zz_p>> evals;
-    auto dvec = pmbasis_geometric(P,pmat,r,order,shift,evals,pts);
+    auto dvec = pmbasis_geometric(P,pmat,r,order,shift,pts);
 
     // find row degrees
     VecLong rdegP;

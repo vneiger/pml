@@ -1091,43 +1091,16 @@ VecLong pmbasis_geometric(
                           const zz_p & r,
                           const long order,
                           const VecLong & shift,
-                          Vec<Mat<zz_p>> & evals,
                           Vec<zz_p> & pts
                          )
 {
-    VecLong rdeg;
-    rdeg.resize(pmat.NumRows());
-    row_degree(rdeg, pmat);
-    long max_rowdeg = rdeg[0];
-    for (auto i : rdeg)
-        if (i > max_rowdeg) max_rowdeg = i;
-    max_rowdeg = max(order, max_rowdeg);
-    zz_pX_Multipoint_Geometric eval(r, max_rowdeg+1);
-
-    // set up pts
-    zz_pX x;
-    SetCoeff(x, 1, 1);
-    Vec<zz_p> pts2;
-    eval.evaluate(pts2, x); // just gets powers of r
-
-    // set up evaluations of pmat
-    evals.SetLength(order);
+    zz_pX_Multipoint_Geometric eval(r, order);
+    // TODO retrieve points: use getter from class (write if doesn't exist)
     pts.SetLength(order);
-    for (long d = 0; d < order; d++)
-    {
-        pts[d] = pts2[d];
-        evals[d].SetDims(pmat.NumRows(), pmat.NumCols());
-    }
-    for (long r = 0; r < pmat.NumRows(); r++)
-    {
-        for (long c = 0; c < pmat.NumCols(); c++)
-        {
-            Vec<zz_p> vals;
-            eval.evaluate(vals, pmat[r][c]);
-            for (long d = 0; d < order; d++)
-                evals[d][r][c] = vals[d];
-        }
-    }
+    for (long k = 0; k < order; ++k)
+        eval.get_point(pts[k], k);
+    Vec<Mat<zz_p>> evals;
+    eval.evaluate_matrix(evals, pmat);
 
     return pmbasis_geometric(intbas, evals, pts, r, shift, 0, order);
 }
@@ -1179,6 +1152,21 @@ VecLong pmbasis_geometric(
     std::transform(pivdeg.begin(), pivdeg.end(), pivdeg2.begin(), pivdeg.begin(), std::plus<long>());
 
     return pivdeg;    
+}
+
+
+VecLong pmbasis(
+                Mat<zz_pX> & intbas,
+                const Mat<zz_pX> & pmat,
+                const Vec<zz_p> & pts,
+                const VecLong & shift
+               )
+{
+    zz_pX_Multipoint_General eval(pts);
+    Vec<Mat<zz_p>> evals;
+    eval.evaluate_matrix(evals, pmat);
+
+    return pmbasis(intbas, evals, pts, shift, 0, pts.length());
 }
 
 VecLong pmbasis(

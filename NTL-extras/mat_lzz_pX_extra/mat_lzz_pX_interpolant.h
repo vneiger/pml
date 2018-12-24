@@ -232,24 +232,23 @@ VecLong popov_mbasis(
 //   either compute more in the evaluated world and interpolate intbas at the end,
 //   or compute in the polynomial world and evaluate to obtain the residuals
 // (in any case, there will still be interpolation/evaluation in the middle)
-// TODO input pmat = polynomial matrix, not implemented yet
 VecLong pmbasis(
-               Mat<zz_pX> & intbas,
-               const Mat<zz_pX> & pmat,
-               const Vec<zz_p> & pts,
-               const VecLong & shift
-              );
+                Mat<zz_pX> & intbas,
+                const Mat<zz_pX> & pmat,
+                const Vec<zz_p> & pts,
+                const VecLong & shift
+               );
 
 // returns the points and matrix evaluations used       
+// requires deg(pmat)<order
 VecLong pmbasis_geometric(
-               Mat<zz_pX> & intbas,
-               const Mat<zz_pX> & pmat,
-               const zz_p & r,
-               const long order,
-               const VecLong & shift,
-               Vec<Mat<zz_p>> & evals,
-               Vec<zz_p> & pts
-              );
+                          Mat<zz_pX> & intbas,
+                          const Mat<zz_pX> & pmat,
+                          const zz_p & r,
+                          const long order,
+                          const VecLong & shift,
+                          Vec<zz_p> & pts
+                         );
 
 // requires that pts contain powers of r
 // with entries of evals evaluated at pts
