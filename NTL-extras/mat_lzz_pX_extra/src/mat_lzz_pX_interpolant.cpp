@@ -295,10 +295,10 @@ VecLong mbasis_rescomp(
             std::copy_n(iota.begin(), ker_dim, perm_rows_ker.begin());
             // permutation putting the pivot indices pivind in increasing order
             sort(perm_rows_ker.begin(), perm_rows_ker.end(),
-                    [&](const long& a, const long& b)->bool
-                    {
-                    return (pivind[a] < pivind[b]);
-                    } );
+                 [&](const long& a, const long& b)->bool
+                 {
+                 return (pivind[a] < pivind[b]);
+                 } );
 
             // permute rows and columns of kernel back to original order
             kerbas.SetDims(ker_dim,m);
@@ -991,10 +991,10 @@ VecLong mbasis_rescomp(
             std::copy_n(iota.begin(), ker_dim, perm_rows_ker.begin());
             // permutation putting the pivot indices pivind in increasing order
             sort(perm_rows_ker.begin(), perm_rows_ker.end(),
-                    [&](const long& a, const long& b)->bool
-                    {
-                    return (pivind[a] < pivind[b]);
-                    } );
+                 [&](const long& a, const long& b)->bool
+                 {
+                 return (pivind[a] < pivind[b]);
+                 } );
 
             // permute rows and columns of kernel back to original order
             kerbas.SetDims(ker_dim,m);
@@ -1091,8 +1091,8 @@ VecLong pmbasis_geometric(
                           const zz_p & r,
                           const long order,
                           const VecLong & shift,
-                          Vec<Mat<zz_p>> &evals,
-                          Vec<zz_p> &pts
+                          Vec<Mat<zz_p>> & evals,
+                          Vec<zz_p> & pts
                          )
 {
     VecLong rdeg;
