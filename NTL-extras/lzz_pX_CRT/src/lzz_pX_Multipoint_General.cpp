@@ -86,7 +86,7 @@ zz_pX_Multipoint_General::zz_pX_Multipoint_General(const Vec<zz_p>& q, long offs
     qpol.SetLength(n);
     for (long i = 0; i < n; i++)
     {
-        SetCoeff(qpol[i], 0, -q[i]);
+        SetCoeff(qpol[i], 0, -pts[i]);
         SetCoeff(qpol[i], 1, 1);
     }
     build_subproduct_tree(tree, qpol);

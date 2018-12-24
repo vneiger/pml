@@ -1216,7 +1216,7 @@ VecLong pmbasis(
         mul(evals[k], intbas_eval[k-offset2], evals[k]);
 
     // shifted row degree = shift for second call = pivdeg+shift
-    VecLong rdeg(evals[0].NumRows());
+    VecLong rdeg(evals[0].NumRows()); // TODO don't use evals[0] here
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
 
     // second recursive call
