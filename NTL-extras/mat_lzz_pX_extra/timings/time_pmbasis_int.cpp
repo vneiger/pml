@@ -80,7 +80,7 @@ void one_bench_pmbasis(long sz, long order)
 /*------------------------------------------------------------*/
 /* checks some products                                       */
 /*------------------------------------------------------------*/
-void run_bench(long nbits)
+void run_bench(long nbits, bool fftprime)
 {
     VecLong szs =
     {
@@ -111,26 +111,34 @@ void run_bench(long nbits)
         32
     };
 
-    std::cout << "Bench pm-basis (FFT prime)" << std::endl;
-    if (nbits < 25)
+    if (fftprime)
     {
-        zz_p::UserFFTInit(786433); // 20 bits
-        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 20 << ")" << endl;
+        std::cout << "Bench pm-basis (FFT prime)" << std::endl;
+        if (nbits < 25)
+        {
+            zz_p::UserFFTInit(786433); // 20 bits
+            cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 20 << ")" << endl;
+        }
+        else if (nbits < 35)
+        {
+            zz_p::UserFFTInit(2013265921); // 31 bits
+            cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 31 << ")" << endl;
+        }
+        else if (nbits < 45)
+        {
+            zz_p::UserFFTInit(2748779069441); // 42 bits
+            cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 42 << ")" << endl;
+        }
+        else if (nbits < 65)
+        {
+            zz_p::UserFFTInit(1139410705724735489); // 60 bits
+            cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
+        }
     }
-    else if (nbits < 35)
+    else
     {
-        zz_p::UserFFTInit(2013265921); // 31 bits
-        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 31 << ")" << endl;
-    }
-    else if (nbits < 45)
-    {
-        zz_p::UserFFTInit(2748779069441); // 42 bits
-        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 42 << ")" << endl;
-    }
-    else if (nbits < 65)
-    {
-        zz_p::UserFFTInit(1139410705724735489); // 60 bits
-        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
+        zz_p::init(GenPrime_long(nbits));
+        cout << "p = " << zz_p::modulus() << "  (normal prime, bit length = " << nbits << ")" << endl;
     }
     std::cout << "rdim\tcdim\torder\tapp\tint-gen\tint-geo" << std::endl;
     for (size_t i=0;i<szs.size();++i)
@@ -148,18 +156,13 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(5);
 
-    if (argc==1)
-    {
-        warmup();
-        run_bench(60);
-    }
-    if (argc==2)
-    {
-        warmup();
-        run_bench(atoi(argv[1]));
-    }
-    if (argc>3)
-        throw std::invalid_argument("Usage: ./time_pmbasis OR ./time_pmbasis nbits");
+    if (argc!=3)
+        throw std::invalid_argument("Usage: ./time_pmbasis nbits fftprime");
+
+    bool fftprime = (atoi(argv[2]) == 1);
+
+    warmup();
+    run_bench(atoi(argv[1]),fftprime);
 
     return 0;
 }

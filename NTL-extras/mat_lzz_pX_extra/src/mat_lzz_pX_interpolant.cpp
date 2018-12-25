@@ -1135,7 +1135,7 @@ VecLong pmbasis_geometric(
 
     // geometric progression of r, starting at pts[offset2]
     // note that we have by construction order2 >= order1 >= deg(intbas),
-    // hence we can construct the evaluator with parameter order2+1
+    // hence we can construct the multipoint object with parameter order2+1
     zz_pX_Multipoint_Geometric ev(r, pts[offset2], order2+1);
     Vec<Mat<zz_p>> intbas_eval;
     ev.evaluate_matrix(intbas_eval, intbas);

@@ -21,7 +21,7 @@ NTL_CLIENT
 // list of points: for each column, we have a list of points (elt from zz_p and
 // multiplicity)
 // FIXME not thought thorougly yet, subject to change
-typedef std::vector<std::vector<std::pair<zz_p,long>>> Points;
+//typedef std::vector<std::vector<std::pair<zz_p,long>>> Points;
 
 ////Definition (interpolant basis)
 // Given:
