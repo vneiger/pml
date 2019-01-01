@@ -356,6 +356,7 @@ VecLong pmbasis_geometric(
                          long order
                         );
 
+
 /** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
  * `(pmat,pts)`, where `evals` is the list of evaluations of `pmat` at these
  * points. The positive integers `offset` and `order` indicate that we consider
