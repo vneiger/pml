@@ -1,23 +1,39 @@
 #ifndef MAT_LZZ_PX_KERNEL__H
 #define MAT_LZZ_PX_KERNEL__H
 
-#include <NTL/matrix.h>
-#include <NTL/lzz_pX.h>
+/** Minimal kernel basis.
+ *
+ * \file mat_lzz_pX_kernel.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
+ * \version 0.1
+ * \date 2019-01-01
+ *
+ */
+
 #include "mat_lzz_pX_forms.h" // for VecLong, VecLong, PolMatForm
 
 NTL_CLIENT
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/*                     KERNEL BASIS                           */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
+/** \file mat_lzz_pX_kernel.h
+ *
+ * Definition (kernel basis).
+ * --------------------------
+ * For an m x n matrix of univariate polynomials A, a (left) kernel basis for A
+ * is a matrix of univariate polynomials whose rows form a basis for the (left)
+ * kernel of pmat, that is, of the module { v in K[X]^{1 x m}  |  v * A = 0 }.
+ *
+ */
 
-////Definition (kernel basis)
-// Given an m x n matrix of univariate polynomials 'pmat',
-// a (left) kernel basis for pmat is a matrix over K[X]
-// whose rows form a basis for the (left) kernel of pmat, that is,
-// the K[X]-module { v in K[X]^{1 x m}  |  v * pmat = 0 }.
+/** \file mat_lzz_pX_kernel.h
+ * Definition (shifted minimal kernel basis).
+ * ------------------------------------------
+ * Considering furthermore a degree shift s (a list of m integers), a kernel
+ * basis for F is said to be <em>a shift-minimal</em> (resp.  <em>a
+ * shift-ordered weak Popov</em>, resp. <em>the shift-Popov</em>) kernel basis
+ * if it is in shift-reduced form (resp. in shift-ordered weak Popov form,
+ * resp. in shift-Popov form). See mat_lzz_pX_forms.h for definitions of these
+ * forms.
+ */
 
 // Degree bounds for kernel bases: assuming pmat has full column rank n, an
 // unpublished result by Vu Thi Xuan (Master's research report, Lemma 10) shows
@@ -55,21 +71,23 @@ NTL_CLIENT
 // reduced form of pmat allows us to reduce to the full column rank case. This
 // shows that the bounds above still hold without full column rank assumption.
 
-/*------------------------------------------------------------*/
-/* general user-friendly interface                            */
-/*------------------------------------------------------------*/
-// TODO options for row-wise, normal form, etc
-// TODO thresholds, ..
+/** Computes a `shift`-minimal kernel basis `kerbas` for `pmat`. General
+ * interface, tries to choose the fastest available method.
+ *
+ * \todo options for row-wise, required form, etc
+ * \todo thresholds (currently uses direct method via approximation)
+ **/
 VecLong kernel_basis(
-                    Mat<zz_pX> & kerbas,
-                    const Mat<zz_pX> & pmat,
-                    const VecLong & shift
-                   );
+                     Mat<zz_pX> & kerbas,
+                     const Mat<zz_pX> & pmat,
+                     const VecLong & shift
+                    );
 
-/*------------------------------------------------------------*/
-/* Verification that a matrix is a shifted-minimal kernel     */
-/* basis                                                      */
-/*------------------------------------------------------------*/
+/** Verifies that `kerbas` is a `shift`-minimal kernel basis for `pmat` with
+ * form at least `form`. Uses a Monte-Carlo randomized algorithm if
+ * `randomized` is `true` (left and right projections, Freivalds-like); default
+ * is `false`, that is, the check is deterministic.
+ */
 bool is_kernel_basis(
                      Mat<zz_pX> & kerbas,
                      const Mat<zz_pX> & pmat,
@@ -78,53 +96,35 @@ bool is_kernel_basis(
                      const bool randomized = false
                     );
 
-/*------------------------------------------------------------*/
-/* Kernel basis: naive via large order approximant basis      */
-/*------------------------------------------------------------*/
-// TODO describe input-output?
-// can this be faster than ZLS for some cases? (e.g. if shifts does not
-// correspond at all to row degrees of pmat, or generally if shifts are "bad")
-
-// The order of approximation is designed as follows.
+/** Computes a `shift`-minimal kernel basis `kerbas` for `pmat`, using a single
+ * call to minimal appoximant basis at sufficiently large order.
+ *
+ * \todo same approach via interpolant basis may bring some speed up in some
+ * cases.
+ */
 VecLong kernel_basis_via_approximation(
-                                      Mat<zz_pX> & kerbas,
-                                      const Mat<zz_pX> & pmat,
-                                      const VecLong & shift
-                                     );
-// TODO same via interpolant?
+                                       Mat<zz_pX> & kerbas,
+                                       const Mat<zz_pX> & pmat,
+                                       const VecLong & shift
+                                      );
 
-/*------------------------------------------------------------*/
-/* Kernel basis: Zhou-Labahn Storjohann algorithm,            */
-/* original version via approximant bases                     */
-/*------------------------------------------------------------*/
-// TODO describe input-output?
+/** Computes a `shift`-minimal kernel basis `kerbas` for `pmat` using the
+ * Zhou-Labahn-Storjohann algorithm, as described in the Proceedings ISSAC
+ * 2012. */
 VecLong kernel_basis_zls_via_approximation(
-                                          Mat<zz_pX> & kerbas,
-                                          const Mat<zz_pX> & pmat,
-                                          const VecLong & shift
-                                         );
+                                           Mat<zz_pX> & kerbas,
+                                           const Mat<zz_pX> & pmat,
+                                           const VecLong & shift
+                                          );
 
-/*------------------------------------------------------------*/
-/* Kernel basis: Zhou-Labahn Storjohann algorithm,            */
-/* modified version via interpolation bases                   */
-/*------------------------------------------------------------*/
-// TODO describe input-output?
+/** Computes a `shift`-minimal kernel basis `kerbas` for `pmat` using the
+ * modified Zhou-Labahn-Storjohann algorithm (described in the Proceedings
+ * ISSAC 2012), relying on interpolant bases rather than approximant bases. */
 VecLong kernel_basis_zls_via_interpolation(
-                                          Mat<zz_pX> & kerbas,
-                                          const Mat<zz_pX> & pmat,
-                                          const VecLong & shift
-                                         );
-
-// TODO generic case
-
-// TODO general case via fast s-Popov appbas (fastest known approach for bad shifts)
-
-
-/*************************************************
- *  Fast left kernel for small column dimension  *
- *************************************************/
-
-// TODO-long shot via relation basis (itself todo), cf work with Xuan
+                                           Mat<zz_pX> & kerbas,
+                                           const Mat<zz_pX> & pmat,
+                                           const VecLong & shift
+                                          );
 
 #endif /* ifndef MAT_LZZ_PX_KERNEL__H */
 

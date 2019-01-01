@@ -1,25 +1,9 @@
-#include <NTL/lzz_pX.h>
-#include <NTL/matrix.h>
-#include <NTL/vector.h>
-#include <iomanip>
-#include <vector>
-#include <numeric>
-#include <algorithm>
-#include <random>
-#include <NTL/BasicThreadPool.h>
-
-#include "util.h"
-#include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_approximant.h"
 #include "test_examples.h"
 
 //#define VERBOSE
 
 NTL_CLIENT
-
-/********************************************
- *  tests the approximant basis algorithms  *
- ********************************************/
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
@@ -31,11 +15,10 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 
 int main(int argc, char *argv[])
 {
-    if (argc!=3)
-        throw std::invalid_argument("Usage: ./test_mbasis nbits nthreads");
+    if (argc!=2)
+        throw std::invalid_argument("Usage: ./test_mbasis nbits");
 
     long nbits = atoi(argv[1]);
-    SetNumThreads(atoi(argv[2]));
 
     if (nbits==0)
         zz_p::FFTInit(0);
@@ -48,7 +31,6 @@ int main(int argc, char *argv[])
 
     std::cout << "Testing approximant basis computation (mbasis)." << std::endl;
     std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
-    std::cout << "--nthreads =\t" << AvailableThreads() << std::endl;
 
     VecLong pivdeg; 
     Mat<zz_pX> appbas;

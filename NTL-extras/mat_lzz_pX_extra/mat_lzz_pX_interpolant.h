@@ -1,7 +1,7 @@
 #ifndef MAT_LZZ_PX_INTERPOLANT__H
 #define MAT_LZZ_PX_INTERPOLANT__H
 
-/** Minimal interpolant bases.
+/** \brief Minimal interpolant bases.
  *
  * \file mat_lzz_pX_interpolant.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost

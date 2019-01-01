@@ -5,9 +5,10 @@
 #include <algorithm> // for manipulating std::vector (min, max, ..)
 #include <numeric> // for std::iota
 
-#include "lzz_p_extra.h"
-#include "mat_lzz_pX_extra.h"
-#include "lzz_pX_CRT.h"
+#include "mat_lzz_pX_utils.h"
+#include "mat_lzz_pX_approximant.h"
+#include "mat_lzz_pX_interpolant.h"
+#include "mat_lzz_pX_kernel.h"
 
 NTL_CLIENT
 
@@ -23,7 +24,6 @@ bool is_kernel_basis(
                     )
 {
     const long m = pmat.NumRows();
-    //const long n = pmat.NumCols();
 
     std::cout << "~~is_kernel_basis~~ Warning: checking generation not implemented yet" << std::endl;
 
@@ -45,6 +45,7 @@ bool is_kernel_basis(
     }
     else // randomized
     {
+        // Freivalds like:
         // use left and right random constant projections to speeds up computations
         // --> "projected product" is likely nonzero if product is nonzero
         Mat<zz_p> left_project, right_project;
@@ -79,48 +80,44 @@ bool is_kernel_basis(
 
 
 VecLong kernel_basis(
-                    Mat<zz_pX> & kerbas,
-                    const Mat<zz_pX> & pmat,
-                    const VecLong & shift
-                   )
+                     Mat<zz_pX> & kerbas,
+                     const Mat<zz_pX> & pmat,
+                     const VecLong & shift
+                    )
 {
     return kernel_basis_via_approximation(kerbas, pmat, shift);
 }
 
 
-// TODO structure of output: return pivind+pivdeg?
-// TODO avoid computing deg(pmat) all the time... give it as input?
+// TODO improvement: better performance if pmat does not have balanced column
+// degree would be to use a column-degree wise order (however, this is not
+// handled by fast approximant algorithms for now)
 VecLong kernel_basis_via_approximation(
-                                      Mat<zz_pX> & kerbas,
-                                      const Mat<zz_pX> & pmat,
-                                      const VecLong & shift
-                                     )
+                                       Mat<zz_pX> & kerbas,
+                                       const Mat<zz_pX> & pmat,
+                                       const VecLong & shift
+                                      )
 {
     // parameters
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
     const long d = deg(pmat);
 
+    if (d==-1)
+    {
+        ident(kerbas, m);
+        return VecLong(m);
+    }
+
     // compute amplitude of the shift
-    long amp = amplitude(shift);
+    const long amp = amplitude(shift);
 
     // compute the order for approximation:
     const long order = (n+1)*d + amp + 1;
 
-    // FIXME: improvement: better performance if pmat does not have
-    // balanced column degree would be to use a column-degree wise order
-    // (however, this is not handled by fast approximant algorithms for now)
-    // Warning: code below not up-to-date: order is wrong for non-uniform shifts.
-    //VecLong order(n);
-    //col_degree(order, pmat);
-    //long sum_cdeg = std::accumulate(order.begin(), order.end(), (long)0);
-    //std::transform(order.begin(), order.end(), order.begin(), [&](long ord){return ord+sum_cdeg+1;});
-
     // compute approximant basis
     Mat<zz_pX> appbas;
-    VecLong pivdeg;
-    pivdeg = pmbasis(appbas, pmat, order, shift);
-    //pivdeg = approximant_basis(appbas, pmat, order, shift);
+    VecLong pivdeg = pmbasis(appbas, pmat, order, shift);
 
     // find rows which belong to the kernel
     VecLong pivot_index;
@@ -131,7 +128,7 @@ VecLong kernel_basis_via_approximation(
             pivot_index.push_back(i);
             pivot_degree.push_back(pivdeg[i]);
         }
-    long ker_dim = pivot_index.size();
+    const long ker_dim = pivot_index.size();
 
     // move these rows to output basis
     kerbas.SetDims(ker_dim, m);
@@ -147,10 +144,10 @@ VecLong kernel_basis_via_approximation(
 // TODO: doc mentioning requirement: entries of shift should bound row degrees of pmat
 // TODO: why is it currently required that shift STRICTLY bounds degrees? (otherwise crashes)
 VecLong kernel_basis_zls_via_approximation(
-                                          Mat<zz_pX> & kerbas,
-                                          const Mat<zz_pX> & pmat,
-                                          const VecLong & shift
-                                         )
+                                           Mat<zz_pX> & kerbas,
+                                           const Mat<zz_pX> & pmat,
+                                           const VecLong & shift
+                                          )
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
@@ -292,10 +289,10 @@ VecLong kernel_basis_zls_via_approximation(
 }
 
 VecLong kernel_basis_zls_via_interpolation(
-                                          Mat<zz_pX> & kerbas,
-                                          const Mat<zz_pX> & pmat,
-                                          const VecLong & shift
-                                         )
+                                           Mat<zz_pX> & kerbas,
+                                           const Mat<zz_pX> & pmat,
+                                           const VecLong & shift
+                                          )
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
