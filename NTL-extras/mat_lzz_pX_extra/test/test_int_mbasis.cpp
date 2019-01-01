@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
                 random(evals[pt], rdim, cdim);
             random(pts, npoints);
             tt = GetWallTime();
-            mbasis_rescomp(intbas_ev,evals,pts,shift,0,npoints);
+            mbasis_rescomp_eval(intbas_ev,evals,pts,shift,0,npoints);
             t += GetWallTime()-tt;
             ++nb_iter;
         }

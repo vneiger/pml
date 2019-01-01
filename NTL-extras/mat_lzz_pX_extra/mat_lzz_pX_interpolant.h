@@ -14,22 +14,387 @@
 
 NTL_CLIENT
 
-/**********************************************************************
- *                     MINIMAL INTERPOLANT BASES                      *
- **********************************************************************/
+/** \file mat_lzz_pX_interpolant.h
+ * Definition (interpolant basis).
+ * -------------------------------
+ * Consider
+ *   - an m x n matrix of univariate polynomials F,
+ *   - a list of d elements pts = (x_0,...,x_{d-1}) from the base field.
+ *
+ * Then an interpolant basis for (F,pts) is a matrix over the univariate
+ * polynomials whose rows form a basis for the following module:
+ * { p in K[X]^{1 x m}  |  p(x_i) F(x_i) = 0 for 0 <= i < d }.
+ * Note that such a matrix is square, m x m, and nonsingular.
+ */
+
+/** \file mat_lzz_pX_interpolant.h
+ * Definition (shifted minimal approximant basis).
+ * -----------------------------------------------
+ * Considering furthermore:
+ *   - a degree shift s (a list of m integers).
+ *
+ * Then an interpolant basis for (F,d) is said to be <em>a shift-minimal</em>
+ * (resp. <em>a shift-ordered weak Popov</em>, resp. <em>the shift-Popov</em>)
+ * interpolant basis if it is in shift-reduced form (resp. in shift-ordered
+ * weak Popov form, resp. in shift-Popov form). See mat_lzz_pX_forms.h
+ * for definitions of these forms.
+ */
+
+/** \file mat_lzz_pX_interpolant.h
+ * Conventions.
+ * ------------
+ * Apart from the general interfaces which offer the choice between left or
+ * right interpolants, all other functions compute left interpolant bases
+ * (interpolants operate on the left of the matrix F; the basis elements are
+ * the rows of the matrix).
+ *
+ * Most functions below use the following parameters.
+ *
+ * \param[out] intbas the output interpolant basis (cannot alias `pmat`)
+ * \param[in] pmat the input polynomial matrix (no restriction)
+ * \param[in] pts the input points (list of field elements)
+ * \param[in] shift the input shift (list of integers, length must be `pmat.NumRows()`)
+ *
+ * Note that the latter restriction on the length of the list is assuming left
+ * interpolants (for right interpolants, it would be `pmat.NumCols()`).
+ *
+ */
+
+/** \file mat_lzz_pX_interpolant.h
+ * Not implemented yet -- possible future work.
+ * --------------------------------------------
+ * Currently, only interpolants with matrix-wise points and no multiplicity are
+ * considered; future work may extend functionalities to more general cases,
+ * namely:
+ *  - column-wise points: instead of requiring that `p(x_i) F(x_i) = 0`, one
+ *  may more generally ask that each column of `p F` vanishes at a given point
+ *  (which can differ from column to column)
+ *  - multiplicities: one may further ask that each column vanishes with a given
+ *  multiplicity.
+ *
+ *  Put together, these two generalizations would allow one to consider
+ *  interpolant equations where each column of `p F` vanishes modulo some
+ *  polynomial which splits, with known roots and multiplicities.
+ *
+ */
+
+
+/** Verifies that `intbas` is a `shift`-minimal interpolant basis for `(pmat,pts)`
+ * with the given form `form`.
+ *
+ * \param[in] intbas approximant basis
+ * \param[in] pmat polynomial matrix
+ * \param[in] pts interpolation points
+ * \param[in] shift shift
+ * \param[in] form required form for `intbas` (see #PolMatForm)
+ * \param[in] row_wise indicates whether we consider left interpolants (working row-wise) or right interpolants (working column-wise)
+ * \param[in] randomized if `true`, the algorithm may use a Monte Carlo or Las Vegas verification algorithm
+ *
+ * \return boolean, result of the verification
+ *
+ * \todo add parameter row_wise
+ * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
+ * \todo currently naive algorithm, may be slow for non-small input
+ *
+ **/
+bool is_interpolant_basis(
+                          const Mat<zz_pX> & intbas,
+                          const Vec<Mat<zz_p>> & pmat, // vector of evaluations
+                          const Vec<zz_p> & pts, // "uniform" case
+                          const VecLong & shift,
+                          const PolMatForm & form = ORD_WEAK_POPOV,
+                          const bool randomized = false
+                         );
+
+
+/** @name M-Basis algorithm
+ *
+ * These functions compute a `shift`-minimal ordered weak Popov approximant
+ * basis for `(pmat,pts)`. They use an iteration on the points, computing at
+ * each step a basis for a single point (using #mbasis1 with input matrix an
+ * evaluation of `pmat` at this point), and using it to update the output
+ * `intbas`, the so-called _residual matrix_, and the considered shift. After
+ * `d` iterations, `intbas*pmat` is zero at the first `d` points.
+ *
+ * In this context, the residual matrix is a constant matrix with the same
+ * dimensions as `pmat` which, at the iteration `d`, is equal to the evaluation
+ * of `intbas*pmat` at the `d`-th point.
+ *
+ */
+//@{
+
+/** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
+ * `(pmat,pts)`, with the matrix `pmat` given by its list of evaluations
+ * `evals` at all the points in `pts`. Variant where the residual is computed
+ * at each iteration, by evaluating `intbas` and multiplying by the
+ * corresponding evaluation in `evals`. The positive integers `offset` and
+ * `order` indicate that we consider the entries `offset, offset+1, ..,
+ * offset+order-1` of `evals` and `pts` (no check is performed to verify that
+ * these indices stay within the allowed bounds).
+ *
+ * Requirements: this function assumes that there are no repeated points in
+ * `pts` (undefined behaviour otherwise), that `evals` and `pts` have the
+ * same strictly positive length, and that all matrices in `evals` have the
+ * same dimensions.
+ * 
+ **/
+VecLong mbasis_rescomp(
+                       Mat<zz_pX> & intbas,
+                       const Vec<Mat<zz_p>> & evals,
+                       const Vec<zz_p> & pts,
+                       const VecLong & shift,
+                       long offset,
+                       long order
+                      );
+
+/** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
+ * `(pmat,pts)`, with the matrix `pmat` given by its list of evaluations
+ * `evals` at all the points in `pts`. Variant where the evaluations in `evals`
+ * are continuously updated along the iterations. The positive integers
+ * `offset` and `order` indicate that we consider the entries `offset,
+ * offset+1, .., offset+order-1` of `evals` and `pts` (no check is performed to
+ * verify that these indices stay within the allowed bounds).
+ *
+ * Requirements: this function assumes that there are no repeated points in
+ * `pts` (undefined behaviour otherwise), and that `evals` and `pts` have the
+ * same strictly positive length, and that all matrices in `evals` have the
+ * same dimensions.
+ * 
+ **/
+VecLong mbasis_resupdate(
+                         Mat<zz_pX> & intbas,
+                         const Vec<Mat<zz_p>> & evals,
+                         const Vec<zz_p> & pts,
+                         const VecLong & shift,
+                         long offset,
+                         long order
+                        );
+
+
+// input pmat = list of evaluations, implemented
+// REQUIREMENT : len(evals) == len(pts) > 0
+// assumes no repeated points (will not fail but undefined behaviour)
+// (one could e.g. do a cleaning of pts beforehand)
+// 
+/** `intbas` represented as evaluations
+ *
+ * \todo currently experimental, not properly tested
+ * \todo deal with case where intbas reaches degree = nbpoints
+ **/
+VecLong mbasis_rescomp_eval(
+                            Vec<Mat<zz_p>> & intbas,
+                            const Vec<Mat<zz_p>> & evals,
+                            const Vec<zz_p> & pts,
+                            const VecLong & shift,
+                            long offset,
+                            long order
+                           );
+
+
+/** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
+ * `(pmat,pts)`, with the matrix `pmat` given by its list of evaluations
+ * `evals` at all the points in `pts`. Tries to choose the fastest of the
+ * available `mbasis` variants. The positive integers `offset` and `order`
+ * indicate that we consider the entries `offset, offset+1, .., offset+order-1`
+ * of `evals` and `pts` (no check is performed to verify that these indices
+ * stay within the allowed bounds).
+ *
+ * Requirements: this function assumes that there are no repeated points in
+ * `pts` (undefined behaviour otherwise), and that `evals` and `pts` have the
+ * same strictly positive length, and that all matrices in `evals` have the
+ * same dimensions.
+ *
+ * \todo tune threshold (currently only ensures to choose the residual update
+ * variant in the "almost square" case)
+ *
+ * \todo add checks and allow repeated points
+ * 
+ **/
+inline VecLong mbasis(
+                      Mat<zz_pX> & intbas,
+                      const Vec<Mat<zz_p>> & evals,
+                      const Vec<zz_p> & pts,
+                      const VecLong & shift,
+                      long offset,
+                      long order
+                     )
+{
+    if (evals[0].NumCols() == evals[0].NumRows()-1)
+        return mbasis_resupdate(intbas,evals,pts,shift,offset,order);
+    else
+        return mbasis_rescomp(intbas,evals,pts,shift,offset,order);
+}
+
+/** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
+ * `(pmat,pts)`, with the matrix `pmat` given by its list of evaluations
+ * `evals` at all the points in `pts`. Tries to choose the fastest of the
+ * available `mbasis` variants.
+ *
+ * Requirements: this function assumes that there are no repeated points in
+ * `pts` (undefined behaviour otherwise), and that `evals` and `pts` have the
+ * same strictly positive length, and that all matrices in `evals` have the
+ * same dimensions.
+ *
+ * \todo tune threshold (currently only ensures to choose the residual update
+ * variant in the "almost square" case)
+ *
+ * \todo add checks and allow repeated points
+ * 
+ **/
+inline VecLong mbasis(
+                      Mat<zz_pX> & intbas,
+                      const Vec<Mat<zz_p>> & evals,
+                      const Vec<zz_p> & pts,
+                      const VecLong & shift
+                     )
+{
+    if (evals[0].NumCols() == evals[0].NumRows()-1)
+        return mbasis_resupdate(intbas,evals,pts,shift,0,pts.length());
+    else
+        return mbasis_rescomp(intbas,evals,pts,shift,0,pts.length());
+}
+
+
+/** Computes a `shift`-Popov interpolant basis `intbas` for `(pmat,pts)`, with
+ * the matrix `pmat` given by its list of evaluations `evals` at all the points
+ * in `pts`.
+ *
+ * Requirements: this function assumes that there are no repeated points in
+ * `pts` (undefined behaviour otherwise), and that `evals` and `pts` have the
+ * same strictly positive length, and that all matrices in `evals` have the
+ * same dimensions.
+ *
+ * \todo tune threshold (currently only ensures to choose the residual update
+ * variant in the "almost square" case)
+ *
+ * \todo add checks and allow repeated points
+ * 
+ **/
+VecLong popov_mbasis(
+                     Mat<zz_pX> &intbas,
+                     const Mat<zz_pX> & pmat,
+                     const Vec<zz_p> & pts,
+                     const VecLong & shift
+                    );
+
+//@} // doxygen group: M-Basis algorithm
+
+
+/** @name PM-Basis algorithm
+ *
+ * These functions compute a `shift`-minimal ordered weak Popov interpolant
+ * basis for `(pmat,pts)`. They use a divide and conquer approach,
+ * computing a first basis for the first half of the points, finding the
+ * so-called _residual matrix_, computing a second basis for the remaining
+ * half of the points, and deducing the sought basis by multiplying the two
+ * obtained bases.
+ *
+ * The first recursive call returns an interpolant basis `intbas1` such that
+ * `intbas1*pmat` vanishes at the first half of the points, and the residual
+ * matrix has the same dimensions as `pmat` and is a matrix whose evaluations
+ * at the second half of the points are the same as the evaluations of
+ * `intbas1*pmat` at these points.
+ */
+//@{
+
+/** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
+ * `(pmat,pts)`.
+ *
+ * Requirements: this function assumes that there are no repeated points in
+ * `pts` (undefined behaviour otherwise).
+ *
+ * \todo tune threshold for call to `mbasis`
+ * \todo add checks and allow repeated points
+ * 
+ **/
+VecLong pmbasis(
+                Mat<zz_pX> & intbas,
+                const Mat<zz_pX> & pmat,
+                const Vec<zz_p> & pts,
+                const VecLong & shift
+               );
+
+/** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
+ * `(pmat,pts)`, where the points are geometric sequence defined by `r` and
+ * length `order`. This fills the vector `pts` with the actual list of points.
+ *
+ * Requirement: the degree of `pmat` must be less than `order` (if that is not
+ * the case, one may reduce `pmat` modulo the `order` interpolation points).
+ *
+ * \todo tune threshold for call to `mbasis`
+ * 
+ **/
+VecLong pmbasis_geometric(
+                          Mat<zz_pX> & intbas,
+                          const Mat<zz_pX> & pmat,
+                          const zz_p & r,
+                          const long order,
+                          const VecLong & shift,
+                          Vec<zz_p> & pts
+                         );
+
+/** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
+ * `(pmat,pts)`, where the points `pts` are geometric sequence defined by `r`
+ * and length `order`, and `evals` is the list of evaluations of `pmat` at
+ * these points. The positive integers `offset` and `order` indicate that we
+ * consider the entries `offset, offset+1, .., offset+order-1` of `evals` and
+ * `pts` (no check is performed to verify that these indices stay within the
+ * allowed bounds).
+ *
+ * Note that `evals` is not `const`.
+ *
+ * \todo tune threshold for call to `mbasis`
+ * 
+ **/
+VecLong pmbasis_geometric(
+                         Mat<zz_pX> & intbas,
+                         Vec<Mat<zz_p>> & evals,
+                         const Vec<zz_p> & pts,
+                         const zz_p & r,
+                         const VecLong & shift,
+                         long offset,
+                         long order
+                        );
+
+/** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
+ * `(pmat,pts)`, where `evals` is the list of evaluations of `pmat` at these
+ * points. The positive integers `offset` and `order` indicate that we consider
+ * the entries `offset, offset+1, .., offset+order-1` of `evals` and `pts` (no
+ * check is performed to verify that these indices stay within the allowed
+ * bounds).
+ *
+ * Note that `evals` is not `const`.
+ *
+ * \todo tune threshold for call to `mbasis`
+ * 
+ **/
+VecLong pmbasis(
+                Mat<zz_pX> & intbas,
+                Vec<Mat<zz_p>> & evals,
+                const Vec<zz_p> & pts,
+                const VecLong & shift,
+                long offset,
+                long order
+               );
+
+/** Computes a `shift`-Popov interpolant basis `intbas` for `(pmat,pts)`.
+ *
+ * \todo tune threshold for call to `mbasis`
+ **/
+VecLong popov_pmbasis(
+                      Mat<zz_pX> & intbas,
+                      const Mat<zz_pX> & pmat,
+                      const Vec<zz_p> & pts,
+                      const VecLong & shift
+                     );
+
+//@} // doxygen group: PM-Basis algorithm
+
 
 // list of points: for each column, we have a list of points (elt from zz_p and
 // multiplicity)
 // FIXME not thought thorougly yet, subject to change
 //typedef std::vector<std::vector<std::pair<zz_p,long>>> Points;
-
-////Definition (interpolant basis)
-// Given:
-//   * m x n matrix of univariate polynomials 'pmat',
-//   * list 'points' of n pairs [root,multiplicity], which define n products of linear factors M_0,...,M_{n-1},
-// An interpolant basis for (pmat,points) is a matrix over K[X]
-// whose rows form a basis for the K[X]-module
-// { 'int' in K[X]^{1 x m}  |  the column j of 'app' 'pmat' is 0 modulo M_j }
 
 /*------------------------------------------------------------*/
 /* general user-friendly interface                            */
@@ -69,37 +434,6 @@ NTL_CLIENT
 //}
 
 /*------------------------------------------------------------*/
-/* Verifying that intbas is a shift-minimal interpolant       */
-/* basis for input matrix 'pmat' and points 'points'          */
-/* 'form' gives the minimal requirement to check (matrix must */
-/* be at least in the form 'form')                            */
-/* 'randomized' says whether using a Monte Carlo or Las Vegas */
-/* verification algorithm is acceptable                       */
-/* Note: currently, deterministic verification is, for most   */
-/* instances, as long as re-computing the basis               */
-/*------------------------------------------------------------*/
-
-// TODO not implemented yet
-//bool is_interpolant_basis(
-//                          const Mat<zz_pX> & intbas,
-//                          const Mat<zz_pX> & pmat,
-//                          const Points & pts,
-//                          const VecLong & shift,
-//                          const PolMatForm & form = ORD_WEAK_POPOV,
-//                          const bool randomized = false
-//                         );
-
-// TODO (naive version written)
-bool is_interpolant_basis(
-                          const Mat<zz_pX> & intbas,
-                          const Vec<Mat<zz_p>> & pmat, // vector of evaluations
-                          const Vec<zz_p> & pts, // "uniform" case
-                          const VecLong & shift,
-                          const PolMatForm & form = ORD_WEAK_POPOV,
-                          const bool randomized = false
-                         );
-
-/*------------------------------------------------------------*/
 /* Iterative algorithm for arbitrary points and shift         */
 /* References:                                                */
 /*   - Beckermann 1992                                        */
@@ -123,162 +457,6 @@ bool is_interpolant_basis(
 //                             );
 
 
-/*------------------------------------------------------------*/
-/* Adaptation of M-Basis for uniform interpolation points     */
-/*------------------------------------------------------------*/
-
-// --> mbasis1 can be called as such (with, as input, pmat evaluated at a
-// point)
-
-// TODO input pmat = polynomial matrix, not implemented yet
-//VecLong mbasis(
-//              Mat<zz_pX> & intbas,
-//              const Mat<zz_pX> & pmat,
-//              const Vec<zz_p> & pts,
-//              const VecLong & shift
-//             );
-
-// input pmat = list of evaluations, implemented
-// REQUIREMENT : len(evals) == len(pts) > 0
-// assumes no repeated points (will not fail but undefined behaviour)
-// (one could e.g. do a cleaning of pts beforehand)
-VecLong mbasis_rescomp(
-                       Mat<zz_pX> & intbas,
-                       const Vec<Mat<zz_p>> & evals,
-                       const Vec<zz_p> & pts,
-                       const VecLong & shift,
-                       long offset,
-                       long order
-                      );
-
-// input pmat = list of evaluations, implemented
-// REQUIREMENT : len(evals) == len(pts) > 0
-// assumes no repeated points (will not fail but undefined behaviour)
-// (one could e.g. do a cleaning of pts beforehand)
-VecLong mbasis_resupdate(
-                         Mat<zz_pX> & intbas,
-                         const Vec<Mat<zz_p>> & evals,
-                         const Vec<zz_p> & pts,
-                         const VecLong & shift,
-                         long offset,
-                         long order
-                        );
-
-
-// input pmat = list of evaluations, implemented
-// REQUIREMENT : len(evals) == len(pts) > 0
-// assumes no repeated points (will not fail but undefined behaviour)
-// (one could e.g. do a cleaning of pts beforehand)
-// intbas represented as evaluations
-// TODO currently experimental, not properly tested
-// TODO deal with case where intbas reaches degree = nbpoints
-VecLong mbasis_rescomp(
-                       Vec<Mat<zz_p>> & intbas,
-                       const Vec<Mat<zz_p>> & evals,
-                       const Vec<zz_p> & pts,
-                       const VecLong & shift,
-                       long offset,
-                       long order
-                      );
-
-
-// chooses fastest one
-// TODO tune threshold (currently only ensures to choose resupdate in
-// the "almost square" case)
-// Req: order>0, offset>=0, offset+order <= length of pts,
-// length of pts == length of evals, ... (not checked)
-// Considers pts/evals from offset to offset+order-1
-inline VecLong mbasis(
-                      Mat<zz_pX> & intbas,
-                      const Vec<Mat<zz_p>> & evals,
-                      const Vec<zz_p> & pts,
-                      const VecLong & shift,
-                      long offset,
-                      long order
-                     )
-{
-    if (evals[0].NumCols() == evals[0].NumRows()-1)
-        return mbasis_resupdate(intbas,evals,pts,shift,offset,order);
-    else
-        return mbasis_rescomp(intbas,evals,pts,shift,offset,order);
-}
-
-inline VecLong mbasis(
-                      Mat<zz_pX> & intbas,
-                      const Vec<Mat<zz_p>> & evals,
-                      const Vec<zz_p> & pts,
-                      const VecLong & shift
-                     )
-{
-    if (evals[0].NumCols() == evals[0].NumRows()-1)
-        return mbasis_resupdate(intbas,evals,pts,shift,0,pts.length());
-    else
-        return mbasis_rescomp(intbas,evals,pts,shift,0,pts.length());
-}
-
-
-VecLong popov_mbasis(
-                    Mat<zz_pX> &intbas,
-                    const Mat<zz_pX> & pmat,
-                    const Vec<zz_p> & pts,
-                    const VecLong & shift
-                   );
-
-/*------------------------------------------------------------*/
-/* PM-Basis algorithm for uniform interpolation points        */
-/*------------------------------------------------------------*/
-
-// TODO there are two variants, test them to be sure if they are similar / which is faster
-//   either compute more in the evaluated world and interpolate intbas at the end,
-//   or compute in the polynomial world and evaluate to obtain the residuals
-// (in any case, there will still be interpolation/evaluation in the middle)
-VecLong pmbasis(
-                Mat<zz_pX> & intbas,
-                const Mat<zz_pX> & pmat,
-                const Vec<zz_p> & pts,
-                const VecLong & shift
-               );
-
-// returns the points and matrix evaluations used       
-// requires deg(pmat)<order
-VecLong pmbasis_geometric(
-                          Mat<zz_pX> & intbas,
-                          const Mat<zz_pX> & pmat,
-                          const zz_p & r,
-                          const long order,
-                          const VecLong & shift,
-                          Vec<zz_p> & pts
-                         );
-
-// requires that pts contain powers of r
-// with entries of evals evaluated at pts
-VecLong pmbasis_geometric(
-                         Mat<zz_pX> & intbas,
-                         Vec<Mat<zz_p>> & evals,
-                         const Vec<zz_p> & pts,
-                         const zz_p & r,
-                         const VecLong & shift,
-                         long offset,
-                         long order
-                        );
-
-// input pmat = list of evaluations, implemented
-// note evals can be modified
-VecLong pmbasis(
-                Mat<zz_pX> & intbas,
-                Vec<Mat<zz_p>> & evals,
-                const Vec<zz_p> & pts,
-                const VecLong & shift,
-                long offset,
-                long order
-               );
-
-VecLong popov_pmbasis(
-                     Mat<zz_pX> &intbas,
-                     const Mat<zz_pX> & pmat,
-                     const Vec<zz_p> & pts,
-                     const VecLong & shift
-                    );
 
 #endif /* ifndef MAT_LZZ_PX_INTERPOLANT__H */
 

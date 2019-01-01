@@ -771,14 +771,14 @@ VecLong mbasis_resupdate(
 // intbas is stored as evaluations at the points in pts
 // TODO currently experimental, not properly tested
 // TODO deal with case where intbas reaches degree = nbpoints
-VecLong mbasis_rescomp(
-                       Vec<Mat<zz_p>> & intbas,
-                       const Vec<Mat<zz_p>> & evals,
-                       const Vec<zz_p> & pts,
-                       const VecLong & shift,
-                       long offset,
-                       long order
-                      )
+VecLong mbasis_rescomp_eval(
+                            Vec<Mat<zz_p>> & intbas,
+                            const Vec<Mat<zz_p>> & evals,
+                            const Vec<zz_p> & pts,
+                            const VecLong & shift,
+                            long offset,
+                            long order
+                           )
 {
 #ifdef MBASIS_PROFILE
     double t_others=0.0,t_residual=0.0,t_intbas=0.0,t_kernel=0.0,t_now;

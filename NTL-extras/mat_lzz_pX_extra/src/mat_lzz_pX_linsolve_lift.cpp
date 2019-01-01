@@ -1,13 +1,8 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-#include <memory>
-
-#include "util.h"
-#include "lzz_p_extra.h"
 #include "structured_lzz_p.h"
 #include "mat_lzz_pX_extra.h"
-#include "lzz_pX_CRT.h"
+#include "mat_lzz_pX_inverse.h"
+#include "mat_lzz_pX_multiply.h"
+#include "mat_lzz_pX_linsolve.h"
 
 NTL_CLIENT
 
@@ -34,6 +29,7 @@ static void solve_DAC(Mat<zz_pX>& sol, const Mat<zz_pX>& A, const Mat<zz_pX>& b,
     residue = transpose(residue);
     solve_DAC(rest, trunc(A, kprec), (b >> hprec) - residue, kprec, invA, thresh);
     sol += (rest << hprec);
+    // TODO add shift
 }
 
 /*------------------------------------------------------------*/

@@ -131,9 +131,9 @@ inline void approximant_basis(
 
 /** Verifying if a matrix is a minimal approximant basis.
  *
- * This checks whether the matrix `appbas` is indeed a `shift`-minimal
- * approximant basis for (`pmat`,`order`) for the required form `form`. One may
- * consider left approximants (default, with `row_wise` set to `true`) or right
+ * This checks whether the matrix `appbas` is a `shift`-minimal approximant
+ * basis for (`pmat`,`order`) for the required form `form`. One may consider
+ * left approximants (default, with `row_wise` set to `true`) or right
  * approximants (with `row_wise` set to `false`).
  *
  * \param[in] appbas approximant basis
@@ -146,7 +146,7 @@ inline void approximant_basis(
  *
  * \return boolean, result of the verification
  *
- * \todo add row_wise
+ * \todo add parameter row_wise
  * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
  */
 bool is_approximant_basis(
@@ -310,8 +310,8 @@ VecLong mbasis1(
  * These functions compute a `shift`-minimal ordered weak Popov approximant
  * basis for `(pmat,orders)` in the case where `orders` is given by a single
  * integer `orders = (order,...order)`. They iterate from `1` to `order`,
- * computing at each step a basis at order `1` (see @ref mbasis1) and using to
- * update the output `appbas`, the so-called _residual matrix_, and the
+ * computing at each step a basis at order `1` (see @ref mbasis1) and using it
+ * to update the output `appbas`, the so-called _residual matrix_, and the
  * considered shift. At step `d`, we have `appbas*pmat = 0 mod x^{d-1}`, and we
  * want to update `appbas` so that this becomes zero modulo `x^d`.
  *
@@ -462,8 +462,8 @@ VecLong popov_mbasis(
  *
  * The first recursive call returns an approximant basis `appbas1` such that
  * `appbas1*pmat = 0 mod x^{order/2}`, and the residual matrix has the same
- * dimensions as `pmat` and which is defined by the matrix middle product
- * `(x^{-order/2} appbas*pmat) mod x^{order/2}`.
+ * dimensions as `pmat` and is defined by the matrix middle product
+ * `(x^{-order/2} appbas1*pmat) mod x^{order/2}`.
  *
  * This is inspired from the algorithm _pmbasis_ described in
  *  - P. Giorgi, C.-P. Jeannerod, G. Villard. Proceeding ISSAC 2003,
