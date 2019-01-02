@@ -1,7 +1,7 @@
 #include "mat_lzz_pX_kernel.h"
 #include "test_examples.h"
 
-#define VERBOSE
+//#define VERBOSE
 
 NTL_CLIENT
 
@@ -16,7 +16,7 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 int main(int argc, char *argv[])
 {
     if (argc!=2)
-        throw std::invalid_argument("Usage: ./test_mbasis nbits");
+        throw std::invalid_argument("Usage: ./test_kernel_direct nbits");
 
     long nbits = atoi(argv[1]);
 
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 
             if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
             {
-                std::cout << "Error in popov_mbasis1." << std::endl;
+                std::cout << "Error in kernel_basis_via_approximation." << std::endl;
                 std::cout << "--rdim =\t" << rdim << std::endl;
                 std::cout << "--cdim =\t" << cdim << std::endl;
                 std::cout << "--deg =\t" << d << std::endl;

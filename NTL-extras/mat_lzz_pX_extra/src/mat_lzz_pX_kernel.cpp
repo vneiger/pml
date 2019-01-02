@@ -61,19 +61,19 @@ bool is_kernel_basis(
             return false;
     }
 
-    // testing generation in generic case
-    // --> compare sum of pivot degrees for input and output
-    long ker_dim = kerbas.NumRows();
-    VecLong pivind(ker_dim);
-    VecLong pivdeg(ker_dim);
-    row_pivots(pivind, pivdeg, kerbas, shift);
-    long kerbas_degdet = std::accumulate(pivdeg.begin(), pivdeg.end(), 0);
-    VecLong degs;
-    row_degree(degs, pmat);
-    long input_degdet = std::accumulate(degs.begin(), degs.end(), 0);
-    std::cout << "~~is_kernel_basis~~ Generation check assuming generic input of given ";
-    std::cout << "column degree: ";
-    std::cout << ((kerbas_degdet == input_degdet) ? "correct" : "wrong") << std::endl;
+    //// testing generation in generic case
+    //// --> compare sum of pivot degrees for input and output
+    //long ker_dim = kerbas.NumRows();
+    //VecLong pivind(ker_dim);
+    //VecLong pivdeg(ker_dim);
+    //row_pivots(pivind, pivdeg, kerbas, shift);
+    //long kerbas_degdet = std::accumulate(pivdeg.begin(), pivdeg.end(), 0);
+    //VecLong degs;
+    //row_degree(degs, pmat);
+    //long input_degdet = std::accumulate(degs.begin(), degs.end(), 0);
+    //std::cout << "~~is_kernel_basis~~ Generation check assuming generic input of given ";
+    //std::cout << "column degree: ";
+    //std::cout << ((kerbas_degdet == input_degdet) ? "correct" : "wrong") << std::endl;
 
     return true;
 }
