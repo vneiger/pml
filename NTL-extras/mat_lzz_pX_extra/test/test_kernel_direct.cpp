@@ -1,7 +1,7 @@
 #include "mat_lzz_pX_kernel.h"
 #include "test_examples.h"
 
-//#define VERBOSE
+#define VERBOSE
 
 NTL_CLIENT
 
@@ -54,33 +54,88 @@ int main(int argc, char *argv[])
             std::cout << "--shift =\t" << shift << std::endl;
 #endif // VERBOSE
 
+            { // direct via approximation
 #ifdef VERBOSE
-            std::cout << "Computation of the kernel via approximation... ";
+                std::cout << "Computation of the kernel via approximation... ";
 #endif // VERBOSE
-            // direct via approximation
-            Mat<zz_pX> kerbas;
-            pivdeg = kernel_basis_via_approximation(kerbas,*pmat,shift);
+                Mat<zz_pX> kerbas;
+                pivdeg = kernel_basis_via_approximation(kerbas,*pmat,shift);
 #ifdef VERBOSE
-            std::cout << "OK. Testing... ";
+                std::cout << "OK. Testing... ";
 #endif // VERBOSE
-
-            if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
-            {
-                std::cout << "Error in kernel_basis_via_approximation." << std::endl;
-                std::cout << "--rdim =\t" << rdim << std::endl;
-                std::cout << "--cdim =\t" << cdim << std::endl;
-                std::cout << "--deg =\t" << d << std::endl;
-                std::cout << "--shift =\t" << shift << std::endl;
-                std::cout << zz_p::modulus() << std::endl;
-                std::cout << "Input: " << std::endl << coeff(*pmat,0) << std::endl;
-                std::cout << "Approx basis: " << std::endl << kerbas << std::endl;
-                std::cout << "Kernel : " << std::endl << kerbas << std::endl;
-                std::cout << std::endl << pivdeg << std::endl;
-                return 0;
+                if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
+                {
+                    std::cout << "Error in kernel_basis_via_approximation." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << "Input: " << std::endl << *pmat << std::endl;
+                    std::cout << "Kernel : " << std::endl << kerbas << std::endl;
+                    std::cout << "pivot degree: " << std::endl << pivdeg << std::endl;
+                    return 0;
+                }
+#ifdef VERBOSE
+                std::cout << "OK." << std::endl;
+#endif // VERBOSE
             }
+
+            if (0)
+            { // zls - approximation
 #ifdef VERBOSE
-            std::cout << "OK." << std::endl;
+                std::cout << "Computation of the kernel via ZLS algorithm (using approximation)... ";
 #endif // VERBOSE
+                Mat<zz_pX> kerbas;
+                pivdeg = kernel_basis_zls_via_approximation(kerbas,*pmat,shift);
+#ifdef VERBOSE
+                std::cout << "OK. Testing... ";
+#endif // VERBOSE
+                if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
+                {
+                    std::cout << "Error in kernel_basis_zls_via_approximation." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << "Input: " << std::endl << *pmat << std::endl;
+                    std::cout << "Kernel : " << std::endl << kerbas << std::endl;
+                    std::cout << "pivot degree: " << std::endl << pivdeg << std::endl;
+                    return 0;
+                }
+#ifdef VERBOSE
+                std::cout << "OK." << std::endl;
+#endif // VERBOSE
+            }
+
+            if (0)
+            { // zls - interpolation
+#ifdef VERBOSE
+                std::cout << "Computation of the kernel via ZLS algorithm (using interpolation)... ";
+#endif // VERBOSE
+                Mat<zz_pX> kerbas;
+                pivdeg = kernel_basis_zls_via_interpolation(kerbas,*pmat,shift);
+#ifdef VERBOSE
+                std::cout << "OK. Testing... ";
+#endif // VERBOSE
+                if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
+                {
+                    std::cout << "Error in kernel_basis_zls_via_interpolation." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << "Input: " << std::endl << *pmat << std::endl;
+                    std::cout << "Kernel : " << std::endl << kerbas << std::endl;
+                    std::cout << "pivot degree: " << std::endl << pivdeg << std::endl;
+                    return 0;
+                }
+#ifdef VERBOSE
+                std::cout << "OK." << std::endl;
+#endif // VERBOSE
+            }
         }
     }
     return 0;

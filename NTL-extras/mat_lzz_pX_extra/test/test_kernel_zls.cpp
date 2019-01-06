@@ -19,7 +19,7 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
     return out << "]";
 }
 
-void check(long m, long n, long d){
+void check(long m, long n, long d, bool verify){
     Mat<zz_pX> pmat;
     random(pmat, m, n, d+1);
     std::cout << "Computing kernel basis, dimensions " << m << " x " << n << ", degree " << d << std::endl;
@@ -34,18 +34,8 @@ void check(long m, long n, long d){
     VecLong shift4(m); // random shuffle of [0,1,...,m-1]
     std::iota(shift4.begin(), shift4.end(),0);
     std::shuffle(shift4.begin(), shift4.end(), std::mt19937{std::random_device{}()});
-    VecLong shift5(m); // Hermite shift
-    for (long i = 0; i < m; ++i)
-        shift5[i] = n*d*i;
-    VecLong shift6(m); // reverse Hermite shift
-    for (long i = 0; i < m; ++i)
-        shift6[i] = (n*d+1)*(m-1-i);
-    VecLong shift7(m);
-    for (long i = 0; i < m; ++i)
-        if (i>=m/2)
-            shift7[i] = n*d;
 
-    std::vector<VecLong> shifts = {shift1, shift2, shift3, shift4, shift5, shift6, shift7};
+    std::vector<VecLong> shifts = {shift1, shift2, shift3, shift4};
 
     double t1w,t2w;
 
@@ -56,39 +46,48 @@ void check(long m, long n, long d){
         // make shift larger than row degree of pmat
         std::transform(shift.begin(), shift.end(), shift.begin(), [&](long s){ return s+d+1; });
 
-        if (m<40)
-            std::cout << "--shift =\t" << shift << std::endl;
-        else
-            std::cout << "--shift =\t" << "<length " << m << ">" << std::endl;
+        //if (m<30)
+        //    std::cout << "--shift =\t" << shift << "\t";
+        //else
+        //    std::cout << "--shift =\t" << "<length " << m << ">\t";
 
-        Mat<zz_pX> kerbas;
-        t1w = GetWallTime();
-        kernel_basis_zls_via_approximation(kerbas, pmat, shift);
-        t2w = GetWallTime();
-        cout << "time (kernel-zls-approx): " << t2w-t1w << endl;
+        { // zls-approx
+            Mat<zz_pX> kerbas;
+            t1w = GetWallTime();
+            Mat<zz_pX> copy_pmat(pmat);
+            kernel_basis_zls_via_approximation(kerbas, copy_pmat, shift);
+            t2w = GetWallTime();
+            cout << "time (kernel-zls-approx): " << t2w-t1w << "\t";
 
-        t1w = GetWallTime();
-        bool correct = is_kernel_basis(kerbas, pmat, shift, ORD_WEAK_POPOV, false);
-        t2w = GetWallTime();
-        cout << "Dims: " << kerbas.NumRows() << ", " << kerbas.NumCols() << endl;
-        std::cout << "Verification: " << (correct ? "correct" : "wrong") << ", time " << (t2w-t1w) << std::endl;
+            if (verify)
+            {
+                t1w = GetWallTime();
+                bool correct = is_kernel_basis(kerbas, pmat, shift, ORD_WEAK_POPOV, false);
+                t2w = GetWallTime();
+                std::cout << (correct ? "correct (" : "wrong (") << (t2w-t1w) << ")";
+            }
+            cout << endl;
+        }
+
+        if (0)
+        { // zls-interp
+            Mat<zz_pX> kerbas;
+            t1w = GetWallTime();
+            Mat<zz_pX> copy_pmat(pmat);
+            kernel_basis_zls_via_interpolation(kerbas, copy_pmat, shift);
+            t2w = GetWallTime();
+            cout << "time (kernel-zls-interp): " << t2w-t1w << "\t";
+
+            if (verify)
+            {
+                t1w = GetWallTime();
+                bool correct = is_kernel_basis(kerbas, pmat, shift, ORD_WEAK_POPOV, false);
+                t2w = GetWallTime();
+                std::cout << (correct ? "correct (" : "wrong (") << (t2w-t1w) << ")";
+            }
+            cout << endl;
+        }
     }
-
-    // VIA INTERPOLATION
-
-    //kerbas = Mat<zz_pX>();
-    //t1w = GetWallTime();
-    //kernel_basis_zls_via_interpolation(kerbas, pmat, s);
-    //t2w = GetWallTime();
-    //
-    ////cout << "kerbas (intbas): " << endl << degree_matrix(kerbas) << endl;
-    //cout << "time (intbas): " << t2w-t1w << endl;
-
-    //t1w = GetWallTime();
-    //correct = is_kernel_basis(kerbas, pmat, s, ORD_WEAK_POPOV, false);
-    //t2w = GetWallTime();
-    //cout << "Dims: " << kerbas.NumRows() << ", " << kerbas.NumCols() << endl;
-    //std::cout << "Verification: " << (correct ? "correct" : "wrong") << ", time " << (t2w-t1w) << std::endl;
 }
 
 /*------------------------------------------------------------*/
@@ -100,10 +99,10 @@ int main(int argc, char ** argv)
 
     zz_p::FFTInit(0);
 
-    if (argc!=4)
-        throw std::invalid_argument("Usage: ./test_kernel_zls rdim cdim degree");
+    if (argc!=5)
+        throw std::invalid_argument("Usage: ./test_kernel_zls rdim cdim degree verify");
 
-    check(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]));
+    check(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), (atoi(argv[4])==1));
 
     return 0;
 }
