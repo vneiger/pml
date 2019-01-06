@@ -280,63 +280,50 @@ VecLong kernel_basis_zls_via_approximation(
     const long n1 = n/2;
     const long n2 = n-n1;
 
-    // recursive call 1
-    Mat<zz_pX> pmat2_sub(INIT_SIZE, m2, n1);
+    // recursive call 1, with left submatrix of the residual pmat
+    Mat<zz_pX> pmat_sub(INIT_SIZE, m2, n1);
     for (long i = 0; i < m2; ++i)
         for (long j = 0; j < n1; ++j)
-            pmat2_sub[i][j] = pmat[i][j];
+            pmat_sub[i][j] = pmat[i][j];
 
     Mat<zz_pX> kerbas1;
-    rdeg2 = kernel_basis_zls_via_approximation(kerbas1, pmat2_sub, rdeg2);
+    rdeg2 = kernel_basis_zls_via_approximation(kerbas1, pmat_sub, rdeg2);
 
-    pmat2_sub.SetDims(m2, n2);
-    for (long r = 0; r < m2; ++r)
-        for (long c = 0; c < n2; ++c)
-            pmat2_sub[r][c] = pmat[r][n1+c];
-
-    multiply(pmat, kerbas1, pmat2_sub);
+    // recursive call 2, with right submatrix of the residual pmat
+    pmat_sub.SetDims(m2, n2);
+    for (long i = 0; i < m2; ++i)
+        for (long j = 0; j < n2; ++j)
+            pmat_sub[i][j] = pmat[i][n1+j];
+    multiply(pmat, kerbas1, pmat_sub);
+    pmat_sub.kill();
 
     // recursive call 2
-    Mat<zz_pX> kerbas2;
-    rdeg2 = kernel_basis_zls_via_approximation(kerbas2, pmat, rdeg2);
+    rdeg2 = kernel_basis_zls_via_approximation(kerbas, pmat, rdeg2);
 
-    // if kerbas2 is empty, kerbas1 was already the full kernel; return
-    if (kerbas2.NumRows() == 0)
+    // if kerbas is non-empty, it corresponds to new kernel rows: complete
+    // the computation of these rows via kerbas =  kerbas * kerbas1 * approx
+    // (otherwise, the approximant basis already captured the whole kernel)
+    if (kerbas.NumRows() != 0)
     {
-        kerbas.SetDims(m1,m);
-        for (long i = 0; i < m1; ++i)
-            kerbas[i].swap(appbas[ker_rows[i]]);
-        return rdeg1;
+        // (using pmat as a temp)
+        // v1:
+        //multiply(pmat, kerbas, kerbas1);
+        //multiply(kerbas, pmat, approx);
+        // v2:
+        multiply(pmat, kerbas1, approx);
+        multiply(kerbas, kerbas, pmat);
     }
 
-    // otherwise, compute the remaining kernel as
-    // kerbas2 =  kerbas2 * kerbas1 * approx
-    // (using pmat as a temp)
-    // v1:
-    //std::cout << "a*b*c, ";
-    //std::cout << kerbas2.NumRows() << "," << kerbas2.NumCols() << "," << deg(kerbas2) << " x ";
-    //std::cout << kerbas1.NumRows() << "," << kerbas1.NumCols() << "," << deg(kerbas1) << " x ";
-    //std::cout << approx.NumRows() << "," << approx.NumCols() << "," << deg(approx) << std::endl;
-    multiply(pmat, kerbas2, kerbas1);
-    multiply(kerbas2, pmat, approx);
-    // v2:
-    //multiply(pmat, kerbas1, approx);
-    //multiply(kerbas2, kerbas2, pmat);
-
     // update the shifted row degree
-    rdeg1.reserve(m1+rdeg2.size());
-    for (auto &i: rdeg2)
-        rdeg1.emplace_back(i);
+    rdeg2.reserve(m1+rdeg2.size());
+    rdeg2.insert(rdeg2.end(), rdeg1.begin(), rdeg1.end());
 
-    // copy the kernel basis, joining the kernel rows of the approximant basis
-    // and the newly found rows of kerbas2
-    kerbas.SetDims(m1+kerbas2.NumRows(), m);
+    // insert the kernel rows of the approximant basis
+    kerbas.SetDims(m1+kerbas.NumRows(), m);
     for (long i = 0; i < m1; ++i)
-        kerbas[i].swap(appbas[ker_rows[i]]);
-    for (long i = 0; i < kerbas2.NumRows(); ++i)
-        kerbas[m1+i].swap(kerbas2[i]);
+        kerbas[kerbas.NumRows()-m1+i].swap(appbas[ker_rows[i]]);
 
-    return rdeg1;
+    return rdeg2;
 }
 
 VecLong kernel_basis_zls_via_interpolation(
