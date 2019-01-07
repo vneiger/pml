@@ -64,7 +64,7 @@ void check(long m, long n, long d, bool verify){
             if (verify)
             {
                 t1w = GetWallTime();
-                bool correct = is_kernel_basis(kerbas, pmat, shift, REDUCED, false);
+                bool correct = is_kernel_basis(kerbas, pmat, shift, ORD_WEAK_POPOV, false);
                 t2w = GetWallTime();
                 std::cout << (correct ? "correct (" : "wrong (") << (t2w-t1w) << ")";
             }

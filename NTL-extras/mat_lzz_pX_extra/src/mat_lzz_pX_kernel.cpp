@@ -198,11 +198,6 @@ VecLong kernel_basis_via_approximation(
 
 
 
-
-
-// TODO: currently only supports n < m (for m <= n: directly to divide and conquer on columns)
-// and if we know the first approximant basis will not give any kernel vector, should we also directly divide and conquer?
-// TODO: doc mentioning requirement: entries of shift should bound row degrees of pmat
 VecLong kernel_basis_zls_via_approximation(
                                            Mat<zz_pX> & kerbas,
                                            Mat<zz_pX> & pmat,
@@ -212,7 +207,7 @@ VecLong kernel_basis_zls_via_approximation(
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
 
-    std::cout << m << "\t" << n << "\t" << deg(pmat) << std::endl;
+    //std::cout << m << "\t" << n << "\t" << deg(pmat) << std::endl;
 
     // if m==1, just check whether pmat is zero
     if (m==1)
@@ -264,10 +259,27 @@ VecLong kernel_basis_zls_via_approximation(
         return rdeg;
     }
 
-    // here, we are in the case m>=2 and n <= m/2 (in particular n < m)
+    // Here, we are in the case m>=2 and n <= m/2 (in particular n < m)
+
+    VecLong rdeg; // buffer, used to store shifts/row degrees
+
+    // add a constant to all the shift entries to ensure that the difference
+    // diff_shift = min(shift - rdeg(pmat))  is zero
+    row_degree(rdeg, pmat);
+    long diff_shift = shift[0] - rdeg[0];
+    for (long i = 1; i < m; ++i)
+    {
+        const long diff = shift[i]-rdeg[i];
+        if (diff_shift > diff)
+            diff_shift = diff;
+    }
+    VecLong reduced_shift(m);
+    std::transform(shift.begin(), shift.end(), reduced_shift.begin(),
+                   [diff_shift](long x) -> long { return x - diff_shift;});
+
 
     // find parameter rho: sum of the n largest entries of shift
-    VecLong rdeg(shift);
+    rdeg = reduced_shift;
     std::sort(rdeg.begin(), rdeg.end());
     const long rho = std::accumulate(rdeg.begin()+m-n, rdeg.end(), 0);
 
@@ -280,14 +292,14 @@ VecLong kernel_basis_zls_via_approximation(
     // --> it does not necessarily capture the whole kernel; but does in two
     // notable cases: if n=1, or in the generic situation mentioned above
     Mat<zz_pX> appbas;
-    rdeg = pmbasis(appbas, pmat, order, shift); // does not change pmat or shift
+    rdeg = pmbasis(appbas, pmat, order, reduced_shift); // does not change pmat or reduced_shift
 
-    // rdeg is now the shift-pivot degree of appbas; deduce shift-row degree
-    // which is the componentwise addition pivot degree + shift
-    std::transform(rdeg.begin(),rdeg.end(),shift.begin(),rdeg.begin(),std::plus<long>());
+    // rdeg is now the shift-pivot degree of appbas; deduce reduced_shift-row degree
+    // which is the componentwise addition pivot degree + reduced_shift
+    std::transform(rdeg.begin(),rdeg.end(),reduced_shift.begin(),rdeg.begin(),std::plus<long>());
 
     // Identify submatrix of some rows of appbas which are in the kernel
-    // Note the criterion: since rdeg(pmat) <= shift, we have
+    // Note the criterion: since rdeg(pmat) <= reduced_shift, we have
     // rdeg(appbas*pmat) <= rdeg and therefore rows with rdeg[i] < order
     // are such that appbas[i] * pmat = 0.
     // Note that this may miss rows in the kernel but with rdeg >= order
@@ -298,7 +310,7 @@ VecLong kernel_basis_zls_via_approximation(
     for (long i=0; i<m; ++i)
         if (rdeg[i] < order)
         {
-            sum_pivdeg += rdeg[i]-shift[i];
+            sum_pivdeg += rdeg[i]-reduced_shift[i];
             ker_rows.emplace_back(i);
         }
         else
@@ -319,6 +331,7 @@ VecLong kernel_basis_zls_via_approximation(
     // no new kernel row to be found)
     VecLong cdeg; col_degree(cdeg, pmat);
     const bool early_exit = (std::accumulate(cdeg.begin(), cdeg.end(),0) == sum_pivdeg);
+    //std::cout << "\tsum_pivdeg = " << sum_pivdeg << " ; sum cdeg = " << std::accumulate(cdeg.begin(), cdeg.end(),0) << std::endl;
 
     // if the whole kernel was captured according to the above test, or if
     // there was just one column, or if the kernel is full (matrix was zero),
@@ -388,6 +401,8 @@ VecLong kernel_basis_zls_via_approximation(
     // update the shifted row degree
     rdeg2.reserve(m1+rdeg2.size());
     rdeg2.insert(rdeg2.end(), rdeg1.begin(), rdeg1.end());
+    std::transform(rdeg2.begin(), rdeg2.end(), rdeg2.begin(),
+                   [diff_shift](long x) -> long {return x+diff_shift;});
 
     // insert the kernel rows of the approximant basis
     kerbas.SetDims(m1+kerbas.NumRows(), m);
