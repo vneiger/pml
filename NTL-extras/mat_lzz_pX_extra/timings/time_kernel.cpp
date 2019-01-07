@@ -13,10 +13,6 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void one_bench_kernel(long rdim, long cdim, long deg)
 {
-    // uniform shift with entries deg
-    // (recall, for ZLS, the shift should bound rdeg(pmat))
-    const VecLong shift(rdim,deg);
-
     double t,tt;
     long nb_iter;
 
@@ -29,8 +25,10 @@ void one_bench_kernel(long rdim, long cdim, long deg)
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, deg);
         tt = GetWallTime();
+        VecLong shift(rdim); // uniform shift
         Mat<zz_pX> kerbas;
-        VecLong rdeg = kernel_basis_zls_via_approximation(kerbas,pmat,shift);
+        VecLong pivind,pivdeg;
+        kernel_basis_zls_via_approximation_new(kerbas,pmat,shift,pivind,pivdeg);
         t += GetWallTime()-tt;
         ++nb_iter;
     }

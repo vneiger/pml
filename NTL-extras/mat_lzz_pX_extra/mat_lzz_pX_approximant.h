@@ -480,6 +480,20 @@ VecLong pmbasis(
                 const VecLong & shift
                );
 
+// TODO unify then remove the other one
+inline void pmbasis_new(
+             Mat<zz_pX> & appbas,
+             const Mat<zz_pX> & pmat,
+             const long order,
+             VecLong & shift,
+             VecLong & pivdeg
+            )
+{
+    pivdeg = pmbasis(appbas, pmat, order, shift);
+    std::transform(shift.begin(), shift.end(), pivdeg.begin(), shift.begin(), std::plus<long>());
+}
+
+
 /** Computes a `shift`-Popov approximant basis for `(pmat,order)` using the
  * algorithm PM-Basis (see @ref pmbasis) twice: the first call yields an
  * ordered weak Popov form which indicates the `shift`-pivot degree, which is

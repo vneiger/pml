@@ -7,7 +7,7 @@
 #include <random>
 
 #include "util.h"
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_kernel.h"
 
 NTL_CLIENT
 
@@ -43,24 +43,20 @@ void check(long m, long n, long d, bool verify){
 
     for (auto shift: shifts)
     {
-        // make shift larger than row degree of pmat
-        std::transform(shift.begin(), shift.end(), shift.begin(), [&](long s){ return s+d; });
-
-        //if (m<30)
-        //    std::cout << "--shift =\t" << shift << "\t";
-        //else
-        //    std::cout << "--shift =\t" << "<length " << m << ">\t";
-
         { // zls-approx
             Mat<zz_pX> kerbas;
             t1w = GetWallTime();
             Mat<zz_pX> copy_pmat(pmat);
-            VecLong rdeg = kernel_basis_zls_via_approximation(kerbas, copy_pmat, shift);
+            VecLong rdeg(shift);
+            VecLong pivind, pivdeg;
+            kernel_basis_zls_via_approximation_new(kerbas, copy_pmat, rdeg, pivind, pivdeg);
             t2w = GetWallTime();
             cout << "time (kernel-zls-approx): " << t2w-t1w << "\t";
             cout << endl << "rdeg: " << rdeg << endl;
 
-            //std::cout << degree_matrix(kerbas) << std::endl;
+            std::cout << degree_matrix(kerbas) << std::endl;
+            std::cout << "pivind : " << pivind << std::endl;
+            std::cout << "pivdeg : " << pivdeg << std::endl;
             if (verify)
             {
                 t1w = GetWallTime();

@@ -22,9 +22,6 @@
 
 #include "lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
-#include "thresholds_matrix_multiply.h"
-#include "thresholds_matrix_middle_product.h"
-#include "thresholds_newton_inv_trunc.h"
 #include "thresholds_solve_lift.h"
 
 #include "mat_lzz_pX_utils.h"  // TODO: test
