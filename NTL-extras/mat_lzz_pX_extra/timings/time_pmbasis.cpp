@@ -41,7 +41,7 @@ void one_bench_pmbasis(long sz, long deg, long nbits)
     // build random matrix
     Mat<zz_pX> pmat;
     t1w = GetWallTime();
-    random(pmat, rdim, cdim, order);
+    random(pmat, rdim, cdim, deg);
     t2w = GetWallTime();
 
     VecLong pivdeg;
@@ -61,25 +61,50 @@ void one_bench_pmbasis(long sz, long deg, long nbits)
 
     // pmbasis
     {
-        //std::cout << "~~~Testing pmbasis~~~" << std::endl;
+        // order = deg
         t1w = GetWallTime();
         Mat<zz_pX> appbas;
+        order = deg;
         pivdeg = pmbasis(appbas,pmat,order,shift);
         t2w = GetWallTime();
-
-        cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << endl;
-        //cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << " (pmbasis)" << endl;
+        double t_app = t2w-t1w;
+        
+        double npoints = order;
+        zz_p r = random_zz_p();
+        Vec<zz_p> pts;
+        t1w = GetWallTime();
+        Mat<zz_pX> intbas;
+        VecLong pivdeg = pmbasis_geometric(intbas,pmat,r,npoints,shift,pts);
+        t2w = GetWallTime();
+        double t_int = t2w - t1w;
+        
+        cout  << rdim << "," << cdim << "," << deg << "," <<
+        order << "," << t_app << "," << t_int << "," <<
+        t_app/t_int << endl;
     }
-    // popov_pmbasis
-    //{
-    //    //std::cout << "~~~Testing popov_pmbasis~~~" << std::endl;
-    //    t1w = GetWallTime(); t1 = GetTime();
-    //    Mat<zz_pX> appbas;
-    //    pivdeg = popov_pmbasis(appbas,pmat,order,shift);
-    //    t2w = GetWallTime(); t2 = GetTime();
-
-    //    cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << "(povov_pmbasis)" << endl;   
-    //}
+    {
+        // order= 2*deg
+        t1w = GetWallTime();
+        Mat<zz_pX> appbas;
+        order = 2*deg;
+        pivdeg = pmbasis(appbas,pmat,order,shift);
+        t2w = GetWallTime();
+        double t_app = t2w-t1w;
+        
+        // intbas
+        long npoints = order;
+        zz_p r = random_zz_p();
+        Vec<zz_p> pts;
+        t1w = GetWallTime();
+        Mat<zz_pX> intbas;
+        VecLong pivdeg = pmbasis_geometric(intbas,pmat,r,npoints,shift,pts);
+        t2w = GetWallTime();
+        double t_int = t2w - t1w;
+        
+        cout  << rdim << "," << cdim << "," << deg << "," <<
+        order << "," << t_app << "," << t_int << "," <<
+        t_app/t_int << endl;
+    }
 }
 
 /*------------------------------------------------------------*/
@@ -87,6 +112,7 @@ void one_bench_pmbasis(long sz, long deg, long nbits)
 /*------------------------------------------------------------*/
 void run_bench(long nbits)
 {
+    /*
     VecLong szs =
     {
         1,1,1,1,1,1,1,1,1,1,1,1,
@@ -108,6 +134,25 @@ void run_bench(long nbits)
         32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
         32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
         32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
+        32,64,128,256,512,1024,2048,4096,8192,16384,32768,
+        32,64,128,256,512,1024,2048,4096,8192,
+        32,64,128,256,512,1024,2048,
+        32,64,128,256,512,
+        32,64,128,
+        32,64,
+    };
+    */
+    VecLong szs =
+    {
+        32,32,32,32,32,32,32,32,32,32,32,
+        64,64,64,64,64,64,64,64,64,
+        128,128,128,128,128,128,128,
+        256,256,256,256,256,
+        512,512,512,
+        1024,1024,
+    };
+    VecLong degs =
+    {
         32,64,128,256,512,1024,2048,4096,8192,16384,32768,
         32,64,128,256,512,1024,2048,4096,8192,
         32,64,128,256,512,1024,2048,
@@ -152,7 +197,7 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
     
-    cout << "rdim,cdim,order,time" << endl;
+    cout << "rdim,cdim,deg,order,time(app), time(int)" << endl;
 
     if (argc==1)
     {
