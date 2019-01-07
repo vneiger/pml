@@ -352,22 +352,12 @@ void mbasis_plain(
 // least this almost always; and for the uniform shift it is equal to this for
 // generic pmat), then the third item costs O(m n^2 order^2 / 2) operations,
 // assuming cubic matrix multiplication over the field.
-VecLong mbasis_rescomp(
-                       Mat<zz_pX> & appbas,
-                       const Mat<zz_pX> & pmat,
-                       const long order,
-                       const VecLong & shift
-                      );
-
-/** Same as #mbasis_rescomp, with some multi-threading inserted.
- *
- * \todo prototype for the moment: not properly tuned and tested */
-VecLong mbasis_rescomp_multithread(
-                                   Mat<zz_pX> & appbas,
-                                   const Mat<zz_pX> & pmat,
-                                   const long order,
-                                   const VecLong & shift
-                                  );
+void mbasis_rescomp(
+                    Mat<zz_pX> & appbas,
+                    const Mat<zz_pX> & pmat,
+                    const long order,
+                    VecLong & shift
+                   );
 
 /** Variant of `mbasis` (see @ref mbasis) which first converts `pmat` to its
  * representation by a vector of constant matrices `Vec<Mat<zz_p>>`, then
@@ -390,21 +380,12 @@ VecLong mbasis_rescomp_multithread(
 //   the residual, for ord=1...order-1
 // Assuming cubic matrix multiplication over the field, the third item costs
 // O(m n (m-n) order^2/2) operations
-VecLong mbasis_resupdate(
-                         Mat<zz_pX> & appbas,
-                         const Mat<zz_pX> & pmat,
-                         const long order,
-                         const VecLong & shift
-                        );
-
-// same as mbasis_resupdate, with some multi-threading inserted 
-// TODO not implemented
-//VecLong mbasis_resupdate_multithread(
-//                                        Mat<zz_pX> & appbas,
-//                                        const Mat<zz_pX> & pmat,
-//                                        const long order,
-//                                        const VecLong & shift
-//                                       );
+void mbasis_resupdate(
+                      Mat<zz_pX> & appbas,
+                      const Mat<zz_pX> & pmat,
+                      const long order,
+                      VecLong & shift
+                     );
 
 
 /** Main `mbasis` function which chooses the most efficient variant depending
@@ -418,17 +399,17 @@ VecLong mbasis_resupdate(
  *    - might not be right when the shift is far from uniform (todo: perform
  *    some tests; again, this is not the best known algorithm in this case)
  */
-inline VecLong mbasis(
-                      Mat<zz_pX> & appbas,
-                      const Mat<zz_pX> & pmat,
-                      const long order,
-                      const VecLong & shift
-                     )
+inline void mbasis(
+                   Mat<zz_pX> & appbas,
+                   const Mat<zz_pX> & pmat,
+                   const long order,
+                   VecLong & shift
+                  )
 {
     if (pmat.NumCols() > pmat.NumRows()/2 + 1)
-        return mbasis_resupdate(appbas, pmat, order, shift);
+        mbasis_resupdate(appbas, pmat, order, shift);
     else
-        return mbasis_rescomp(appbas, pmat, order, shift);
+        mbasis_rescomp(appbas, pmat, order, shift);
     // To understand the threshold (cdim > rdim/2 + 1), see the complexities
     // mentioned above for these two variants of mbasis
 }
@@ -442,12 +423,12 @@ inline VecLong mbasis(
  * which maintains a shifted Popov form along the iterations, and compare it
  * with the current technique.
  */
-VecLong popov_mbasis(
-                     Mat<zz_pX> &appbas,
-                     const Mat<zz_pX> & pmat,
-                     const long order,
-                     const VecLong & shift
-                    );
+void popov_mbasis(
+                  Mat<zz_pX> &appbas,
+                  const Mat<zz_pX> & pmat,
+                  const long order,
+                  VecLong & shift
+                 );
 //@} // doxygen group: M-Basis algorithm (uniform approximant order)
 
 /** @name PM-Basis algorithm (uniform approximant order)

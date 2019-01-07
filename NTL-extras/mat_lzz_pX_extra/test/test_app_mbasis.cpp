@@ -182,7 +182,8 @@ int main(int argc, char *argv[])
 #ifdef VERBOSE
                 std::cout << "Computation mbasis_rescomp... ";
 #endif // VERBOSE
-                pivdeg = mbasis_rescomp(appbas,*pmat,order,shift);
+                VecLong rdeg_rescomp(shift);
+                mbasis_rescomp(appbas,*pmat,order,rdeg_rescomp);
 #ifdef VERBOSE
                 std::cout << "OK. Testing... ";
 #endif // VERBOSE
@@ -207,7 +208,8 @@ int main(int argc, char *argv[])
 #ifdef VERBOSE
                 std::cout << "Computation mbasis_resupdate... ";
 #endif // VERBOSE
-                pivdeg = mbasis_resupdate(appbas,*pmat,order,shift);
+                VecLong rdeg_resupdate(shift);
+                mbasis_resupdate(appbas,*pmat,order,rdeg_resupdate);
 #ifdef VERBOSE
                 std::cout << "OK. Testing...";
 #endif // VERBOSE
@@ -232,7 +234,8 @@ int main(int argc, char *argv[])
 #ifdef VERBOSE
                 std::cout << "Computation popov_mbasis... ";
 #endif // VERBOSE
-                pivdeg = popov_mbasis(appbas,*pmat,order,shift);
+                VecLong rdeg_popov(shift);
+                popov_mbasis(appbas,*pmat,order,rdeg_popov);
 #ifdef VERBOSE
                 std::cout << "OK. Testing...";
 #endif // VERBOSE
