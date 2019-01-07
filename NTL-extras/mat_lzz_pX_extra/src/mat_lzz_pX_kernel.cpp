@@ -75,11 +75,17 @@ bool is_kernel_basis(
 
     // test whether kerbas has the right dimensions
     if (kerbas.NumCols() != m)
+    {
+        std::cout << "Wrong dimension" << std::endl;
         return false;
+    }
 
     // test whether appbas is shift-reduced with form at least 'form'
     if (not is_row_polmatform(form,kerbas,shift))
+    {
+        std::cout << "Wrong polmatform" << std::endl;
         return false;
+    }
 
     // verify that the product is zero
     if (not randomized)
@@ -87,7 +93,10 @@ bool is_kernel_basis(
         Mat<zz_pX> product;
         multiply(product, kerbas, pmat);
         if (not IsZero(product))
+        {
+            std::cout << "Not in kernel" << std::endl;
             return false;
+        }
     }
     else // randomized
     {
@@ -104,7 +113,10 @@ bool is_kernel_basis(
         for (long i = 0; i < m; ++i)
             projected_product += projected_kerbas[0][i] * projected_pmat[i][0];
         if (not IsZero(projected_product))
+        {
+            std::cout << "Not in kernel" << std::endl;
             return false;
+        }
     }
 
     //// testing generation in generic case
@@ -188,7 +200,6 @@ VecLong kernel_basis_via_approximation(
 
 
 
-// TODO: use pivdeg/pivind instead of rdeg?
 // TODO: currently only supports n < m (for m <= n: directly to divide and conquer on columns)
 // and if we know the first approximant basis will not give any kernel vector, should we also directly divide and conquer?
 // TODO: doc mentioning requirement: entries of shift should bound row degrees of pmat
@@ -200,9 +211,61 @@ VecLong kernel_basis_zls_via_approximation(
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
-    //std::cout << "call: " << m << "," << n << "," << deg(pmat) << std::endl;
 
-    // Here, assumes m>n
+    std::cout << m << "\t" << n << "\t" << deg(pmat) << std::endl;
+
+    // if m==1, just check whether pmat is zero
+    if (m==1)
+    {
+        if (IsZero(pmat))
+        {
+            ident(kerbas, m);
+            return VecLong(1);
+        }
+        else
+        {
+            kerbas.SetDims(0,1);
+            return VecLong();
+        }
+    }
+
+    // if n > m/2 (with m>=2), just split the columns into two submatrices or
+    // roughly equal dimensions, and call the algorithm recursively
+    if (2*n > m)
+    {
+        // pmat will be column-splitted into two submatrices of column dimension ~ n/2
+        const long n1 = n/2;
+        const long n2 = n-n1;
+
+        // recursive call 1, with left submatrix of pmat
+        Mat<zz_pX> pmat_sub(INIT_SIZE, m, n1);
+        for (long i = 0; i < m; ++i)
+            for (long j = 0; j < n1; ++j)
+                pmat_sub[i][j] = pmat[i][j];
+
+        Mat<zz_pX> kerbas1;
+        VecLong rdeg = kernel_basis_zls_via_approximation(kerbas1, pmat_sub, shift);
+
+        // recursive call 2, with residual (kerbas * right submatrix of pmat)
+        pmat_sub.SetDims(m, n2);
+        for (long i = 0; i < m; ++i)
+            for (long j = 0; j < n2; ++j)
+                pmat_sub[i][j] = pmat[i][n1+j];
+        multiply(pmat, kerbas1, pmat_sub);
+        pmat_sub.kill();
+
+        // recursive call 2
+        rdeg = kernel_basis_zls_via_approximation(kerbas, pmat, rdeg);
+
+        // multiply bases
+        multiply(kerbas, kerbas, kerbas1);
+
+        // return shifted degree
+        return rdeg;
+    }
+
+    // here, we are in the case m>=2 and n <= m/2 (in particular n < m)
+
     // find parameter rho: sum of the n largest entries of shift
     VecLong rdeg(shift);
     std::sort(rdeg.begin(), rdeg.end());
@@ -255,7 +318,7 @@ VecLong kernel_basis_zls_via_approximation(
     // the two recursive calls (which only lead to the conclusion that there is
     // no new kernel row to be found)
     VecLong cdeg; col_degree(cdeg, pmat);
-    const bool early_exit = std::accumulate(cdeg.begin(), cdeg.end(),0) == sum_pivdeg;
+    const bool early_exit = (std::accumulate(cdeg.begin(), cdeg.end(),0) == sum_pivdeg);
 
     // if the whole kernel was captured according to the above test, or if
     // there was just one column, or if the kernel is full (matrix was zero),

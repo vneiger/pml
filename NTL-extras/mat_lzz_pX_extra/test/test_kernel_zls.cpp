@@ -55,14 +55,16 @@ void check(long m, long n, long d, bool verify){
             Mat<zz_pX> kerbas;
             t1w = GetWallTime();
             Mat<zz_pX> copy_pmat(pmat);
-            kernel_basis_zls_via_approximation(kerbas, copy_pmat, shift);
+            VecLong rdeg = kernel_basis_zls_via_approximation(kerbas, copy_pmat, shift);
             t2w = GetWallTime();
             cout << "time (kernel-zls-approx): " << t2w-t1w << "\t";
+            cout << endl << "rdeg: " << rdeg << endl;
 
+            //std::cout << degree_matrix(kerbas) << std::endl;
             if (verify)
             {
                 t1w = GetWallTime();
-                bool correct = is_kernel_basis(kerbas, pmat, shift, ORD_WEAK_POPOV, false);
+                bool correct = is_kernel_basis(kerbas, pmat, shift, REDUCED, false);
                 t2w = GetWallTime();
                 std::cout << (correct ? "correct (" : "wrong (") << (t2w-t1w) << ")";
             }
@@ -81,7 +83,7 @@ void check(long m, long n, long d, bool verify){
             if (verify)
             {
                 t1w = GetWallTime();
-                bool correct = is_kernel_basis(kerbas, pmat, shift, ORD_WEAK_POPOV, false);
+                bool correct = is_kernel_basis(kerbas, pmat, shift, REDUCED, false);
                 t2w = GetWallTime();
                 std::cout << (correct ? "correct (" : "wrong (") << (t2w-t1w) << ")";
             }
