@@ -45,8 +45,8 @@ void linsolve_via_kernel(
 
     // compute kernel
     Mat<zz_pX> kerbas;
-    VecLong pivind, pivdeg;
-    kernel_basis_zls_via_approximation(kerbas, augmented_pmat, shift, pivind, pivdeg);
+    VecLong pivind;
+    kernel_basis_zls_via_approximation(kerbas, pivind, augmented_pmat, shift);
 
     // deduce solution
     a.SetLength(m);

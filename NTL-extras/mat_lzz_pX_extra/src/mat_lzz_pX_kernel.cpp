@@ -137,34 +137,39 @@ bool is_kernel_basis(
 }
 
 
-VecLong kernel_basis(
-                     Mat<zz_pX> & kerbas,
-                     const Mat<zz_pX> & pmat,
-                     const VecLong & shift
-                    )
+void kernel_basis(
+                  Mat<zz_pX> & kerbas,
+                  VecLong & pivind,
+                  const Mat<zz_pX> & pmat,
+                  const VecLong & shift
+                 )
 {
-    return kernel_basis_via_approximation(kerbas, pmat, shift);
+    VecLong rdeg(shift);
+    kernel_basis_via_approximation(kerbas, pivind, pmat, rdeg);
 }
 
 
 // TODO improvement: better performance if pmat has very unbalanced column
 // degree would be to use a column-degree wise order (however, this is not
 // handled by fast approximant algorithms for now)
-VecLong kernel_basis_via_approximation(
-                                       Mat<zz_pX> & kerbas,
-                                       const Mat<zz_pX> & pmat,
-                                       const VecLong & shift
-                                      )
+void kernel_basis_via_approximation(
+                                    Mat<zz_pX> & kerbas,
+                                    VecLong & pivind,
+                                    const Mat<zz_pX> & pmat,
+                                    VecLong & shift
+                                   )
 {
     // parameters
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
     const long d = deg(pmat);
 
-    if (d==-1)
+    if (d==-1) // matrix is zero
     {
         ident(kerbas, m);
-        return VecLong(m);
+        pivind.resize(m);
+        std::iota(pivind.begin(), pivind.end(), 0);
+        return;
     }
 
     // compute amplitude of the shift
@@ -173,43 +178,41 @@ VecLong kernel_basis_via_approximation(
     // compute the order for approximation:
     const long order = (n+1)*d + amp + 1;
 
-    // compute approximant basis
+    // compute approximant basis and shifted row degree
     Mat<zz_pX> appbas;
-    VecLong pivdeg = pmbasis(appbas, pmat, order, shift);
+    VecLong rdeg(shift);
+    pmbasis(appbas, pmat, order, rdeg);
 
-    // find rows which belong to the kernel
-    VecLong pivot_index;
-    VecLong pivot_degree;
+    // find rows which belong to the kernel and record their pivot index
+    // (since appbas is in ordered weak Popov form, the pivot index is also
+    // the index of the row in appbas)
+    pivind.clear();
     for (long i = 0; i < m; ++i)
-        if (pivdeg[i]+amp < order-d)
-        {
-            pivot_index.push_back(i);
-            pivot_degree.push_back(pivdeg[i]);
-        }
-    const long ker_dim = pivot_index.size();
+        if (rdeg[i]-shift[i]+amp < order-d)
+            pivind.emplace_back(i);
 
-    // move these rows to output basis
+    // copy the kernel rows and the corresponding shifted row degrees
+    const size_t ker_dim = pivind.size();
+    shift.resize(ker_dim);
     kerbas.SetDims(ker_dim, m);
-    for (long i = 0; i < ker_dim; ++i)
-        kerbas[i].swap(appbas[pivot_index[i]]);
-
-    return pivot_degree;
+    for (size_t i = 0; i < ker_dim; ++i)
+    {
+        shift[i] = rdeg[pivind[i]];
+        kerbas[i].swap(appbas[pivind[i]]);
+    }
 }
 
 
 
 void kernel_basis_zls_via_approximation(
                                         Mat<zz_pX> & kerbas,
-                                        Mat<zz_pX> & pmat,
-                                        VecLong & shift,
                                         VecLong & pivind,
-                                        VecLong & pivdeg
+                                        Mat<zz_pX> & pmat,
+                                        VecLong & shift
                                        )
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
-
-    //std::cout << m << "\t" << n << "\t" << deg(pmat) << std::endl;
 
     // if m==1, just check whether pmat is zero
     if (m==1)
@@ -218,13 +221,11 @@ void kernel_basis_zls_via_approximation(
         {
             kerbas.SetDims(0,1);
             pivind.clear();
-            pivdeg.clear();
             return;
         }
         // pmat is the zero 1 x n matrix
         ident(kerbas, 1);
         pivind.resize(1); pivind[0] = 0;
-        pivdeg.resize(1); pivdeg[0] = 0;
         return;
     }
 
@@ -243,8 +244,8 @@ void kernel_basis_zls_via_approximation(
                 pmat_sub[i][j] = pmat[i][j];
 
         Mat<zz_pX> kerbas1;
-        VecLong pivind1, pivdeg1;
-        kernel_basis_zls_via_approximation(kerbas1, pmat_sub, shift, pivind1, pivdeg1);
+        VecLong pivind1;
+        kernel_basis_zls_via_approximation(kerbas1, pivind1, pmat_sub, shift);
 
         // recursive call 2, with residual (kerbas * right submatrix of pmat)
         pmat_sub.SetDims(m, n2);
@@ -255,15 +256,12 @@ void kernel_basis_zls_via_approximation(
         pmat_sub.kill();
 
         // recursive call 2
-        kernel_basis_zls_via_approximation(kerbas, pmat, shift, pivind, pivdeg);
+        kernel_basis_zls_via_approximation(kerbas, pivind, pmat, shift);
 
         // multiply bases and combine pivots
         multiply(kerbas, kerbas, kerbas1);
         for (size_t i = 0; i < pivind.size(); ++i)
-        {
-            pivdeg[i] += pivdeg1[pivind[i]];
             pivind[i] = pivind1[pivind[i]];
-        }
 
         return;
     }
@@ -300,7 +298,8 @@ void kernel_basis_zls_via_approximation(
     // --> it does not necessarily capture the whole kernel; but does in two
     // notable cases: if n=1, or in the generic situation mentioned above
     Mat<zz_pX> appbas;
-    pmbasis_new(appbas, pmat, order, shift, pivdeg); // does not change pmat
+    pmbasis(appbas, pmat, order, shift); // does not change pmat
+
 
     // Identify submatrix of some rows of appbas which are in the kernel
     // Note the criterion: since before the call we have rdeg(pmat) <= shift,
@@ -308,20 +307,18 @@ void kernel_basis_zls_via_approximation(
     // with shift[i] < order are such that appbas[i] * pmat = 0.
     // Note that this may miss rows in the kernel, if there are some with shift >= order
     // which are in this appbas (this is usually not the case)
-    VecLong rdeg1, pivind_app, pivdeg_app;
-    VecLong rdeg2, pivind0, pivdeg0;
+    VecLong rdeg1, pivind_app;
+    VecLong rdeg2, pivind0;
     for (long i=0; i<m; ++i)
     {
         if (shift[i] < order)
         {
             rdeg1.emplace_back(shift[i]);
-            pivdeg_app.emplace_back(pivdeg[i]);
             pivind_app.emplace_back(i);
         }
         else
         {
             rdeg2.emplace_back(shift[i]);
-            pivdeg0.emplace_back(pivdeg[i]);
             pivind0.emplace_back(i);
         }
     }
@@ -340,9 +337,9 @@ void kernel_basis_zls_via_approximation(
     // no new kernel row to be found)
     // TODO use row degree? valuation stuff?
     VecLong cdeg; col_degree(cdeg, pmat);
-    const bool early_exit =
-        (std::accumulate(cdeg.begin(), cdeg.end(),0)
-         == std::accumulate(pivdeg_app.begin(), pivdeg_app.end(), 0));
+    const bool early_exit = false;
+        //(std::accumulate(cdeg.begin(), cdeg.end(),0)
+        // == std::accumulate(pivdeg_app.begin(), pivdeg_app.end(), 0));
     //std::cout << "\tsum_pivdeg = " << sum_pivdeg << " ; sum cdeg = " << std::accumulate(cdeg.begin(), cdeg.end(),0) << std::endl;
 
     // if the whole kernel was captured according to the above test, or if
@@ -355,7 +352,6 @@ void kernel_basis_zls_via_approximation(
             kerbas[i].swap(appbas[pivind_app[i]]);
         shift = rdeg1;
         pivind = pivind_app;
-        pivdeg = pivdeg_app;
         return;
     }
 
@@ -379,8 +375,8 @@ void kernel_basis_zls_via_approximation(
             pmat_sub[i][j] = pmat[i][j];
 
     Mat<zz_pX> kerbas1;
-    VecLong pivind1, pivdeg1;
-    kernel_basis_zls_via_approximation(kerbas1, pmat_sub, rdeg2, pivind1, pivdeg1);
+    VecLong pivind1;
+    kernel_basis_zls_via_approximation(kerbas1, pivind1, pmat_sub, rdeg2);
 
     // recursive call 2, with right submatrix of the residual pmat
     pmat_sub.SetDims(m2, n2);
@@ -391,8 +387,8 @@ void kernel_basis_zls_via_approximation(
     pmat_sub.kill();
 
     // recursive call 2
-    VecLong pivind2, pivdeg2;
-    kernel_basis_zls_via_approximation(kerbas, pmat, rdeg2, pivind2, pivdeg2);
+    VecLong pivind2;
+    kernel_basis_zls_via_approximation(kerbas, pivind2, pmat, rdeg2);
 
     // if kerbas is empty: (i.e. the approximant basis already captured the
     // whole kernel, although we had not guessed it with early_exit)
@@ -404,7 +400,6 @@ void kernel_basis_zls_via_approximation(
             kerbas[i].swap(appbas[pivind_app[i]]);
         shift = rdeg1;
         pivind = pivind_app;
-        pivdeg = pivdeg_app;
         return;
     }
 
@@ -427,10 +422,7 @@ void kernel_basis_zls_via_approximation(
 
     // II/ complete the computation of the pivots of the new kernel rows
     for (size_t i = 0; i < pivind.size(); ++i)
-    {
-        pivdeg2[i] += (pivdeg0[pivind1[pivind2[i]]] + pivdeg1[pivind2[i]]);
         pivind2[i] = pivind0[pivind1[pivind2[i]]];
-    }
 
     // III/ merge with previously obtained kernel rows, ensuring that
     // the resulting basis is in shifted ordered weak Popov form
@@ -439,7 +431,7 @@ void kernel_basis_zls_via_approximation(
     // removed from the input shift
     const long ker_dim = m1 + approx.NumRows();
     kerbas.SetDims(ker_dim, m);
-    shift.resize(ker_dim); pivind.resize(ker_dim); pivdeg.resize(ker_dim);
+    shift.resize(ker_dim); pivind.resize(ker_dim);
     long i=0, i_appbas=0, i_approx=0;
     while (i_appbas < m1 && i_approx < approx.NumRows())
     {
@@ -449,7 +441,6 @@ void kernel_basis_zls_via_approximation(
             kerbas[i].swap(appbas[pivind_app[i_appbas]]);
             shift[i] = rdeg1[i_appbas]+diff_shift;
             pivind[i] = pivind_app[i_appbas];
-            pivdeg[i] = pivdeg_app[i_appbas];
             ++i_appbas; ++i;
         }
         else
@@ -458,7 +449,6 @@ void kernel_basis_zls_via_approximation(
             kerbas[i].swap(approx[i_approx]);
             shift[i] = rdeg2[i_approx]+diff_shift;
             pivind[i] = pivind2[i_approx];
-            pivdeg[i] = pivdeg2[i_approx];
             ++i_approx; ++i;
         }
     }
@@ -468,7 +458,6 @@ void kernel_basis_zls_via_approximation(
         kerbas[i].swap(appbas[pivind_app[i_appbas]]);
         shift[i] = rdeg1[i_appbas]+diff_shift;
         pivind[i] = pivind_app[i_appbas];
-        pivdeg[i] = pivdeg_app[i_appbas];
         ++i_appbas; ++i;
     }
     while (i_approx < approx.NumRows())
@@ -477,11 +466,8 @@ void kernel_basis_zls_via_approximation(
         kerbas[i].swap(approx[i_approx]);
         shift[i] = rdeg2[i_approx]+diff_shift;
         pivind[i] = pivind2[i_approx];
-        pivdeg[i] = pivdeg2[i_approx];
         ++i_approx; ++i;
     }
-
-    return;
 }
 
 VecLong kernel_basis_zls_via_interpolation(

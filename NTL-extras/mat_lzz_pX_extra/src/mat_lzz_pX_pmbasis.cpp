@@ -1482,18 +1482,17 @@ void popov_mbasis(
 /*------------------------------------------------------------*/
 /* Divide and Conquer: PMBasis                                */
 /*------------------------------------------------------------*/
-VecLong pmbasis(
-                Mat<zz_pX> & appbas,
-                const Mat<zz_pX> & pmat,
-                const long order,
-                const VecLong & shift
-               )
+void pmbasis(
+             Mat<zz_pX> & appbas,
+             const Mat<zz_pX> & pmat,
+             const long order,
+             VecLong & shift
+            )
 {
     if (order <= 16) // TODO thresholds to be determined
     {
-        VecLong rdeg(shift);
-        mbasis(appbas,pmat,order,rdeg);
-        return shift;
+        mbasis(appbas,pmat,order,shift);
+        return;
     }
 
     long order1 = order>>1; // order of first call
@@ -1502,11 +1501,10 @@ VecLong pmbasis(
     // first recursive call, with 'pmat' and 'shift'
     Mat<zz_pX> trunc_pmat; // truncated pmat for first call
     trunc(trunc_pmat,pmat,order1);
-    VecLong pivdeg = pmbasis(appbas,trunc_pmat,order1,shift);
+    pmbasis(appbas,trunc_pmat,order1,shift);
 
-    // shifted row degree = shift for second call = pivdeg+shift
-    VecLong rdeg(pmat.NumRows()); // shifted row degree
-    std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
+    // shift is now the shifted row degree of appbas,
+    // which is the shift for second call
 
     // residual = (appbas * pmat * X^-order1) mod X^order2
     Mat<zz_pX> residual; // for the residual
@@ -1514,39 +1512,46 @@ VecLong pmbasis(
 
     // second recursive call, with 'residual' and 'rdeg'
     Mat<zz_pX> appbas2; // basis for second call
-    VecLong pivdeg2 = pmbasis(appbas2,residual,order2,rdeg);
+    pmbasis(appbas2,residual,order2,shift);
 
     // final basis = appbas2 * appbas
     multiply(appbas,appbas2,appbas);
-
-    // final pivot degree = pivdeg1+pivdeg2
-    std::transform(pivdeg.begin(), pivdeg.end(), pivdeg2.begin(), pivdeg.begin(), std::plus<long>());
-
-    return pivdeg;
 }
 
 /*------------------------------------------------------------*/
 /* Divide and Conquer: PMBasis returning Popov                */
 /*------------------------------------------------------------*/
-VecLong popov_pmbasis(
-                      Mat<zz_pX> &appbas,
-                      const Mat<zz_pX> & pmat,
-                      const long order,
-                      const VecLong & shift
-                     )
+void popov_pmbasis(
+                   Mat<zz_pX> &appbas,
+                   const Mat<zz_pX> & pmat,
+                   const long order,
+                   VecLong & shift
+                  )
 {
-    VecLong pivdeg = pmbasis(appbas,pmat,order,shift);
-    VecLong new_shift( pivdeg );
-    std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
-    clear(appbas);
-    pmbasis(appbas,pmat,order,new_shift);
+    // compute first basis, copy the shift because we need it afterwards
+    VecLong rdeg(shift);
+    pmbasis(appbas,pmat,order,rdeg);
+
+    // shift for second call: negated pivot degree
+    VecLong popov_shift(pmat.NumRows());
+    std::transform(shift.begin(), shift.end(), rdeg.begin(),
+                   popov_shift.begin(), std::minus<long>());
+
+    // output shifted row degree
+    shift=rdeg;
+
+    // save `popov_shift` using `rdeg` as a buffer
+    rdeg=popov_shift;
+
+    // second call, basis shifted Popov up to constant transformation
+    pmbasis(appbas,pmat,order,popov_shift);
+
+    // perform the constant transformation
     Mat<zz_p> lmat;
-    row_leading_matrix(lmat, appbas, new_shift);
+    row_leading_matrix(lmat, appbas, rdeg);
     inv(lmat, lmat);
     mul(appbas,lmat,appbas);
-    return pivdeg;
 }
-
 
 // Local Variables:
 // mode: C++

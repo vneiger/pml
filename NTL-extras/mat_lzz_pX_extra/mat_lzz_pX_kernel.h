@@ -41,11 +41,12 @@ NTL_CLIENT
  * \todo options for row-wise, required form, etc
  * \todo thresholds (currently uses direct method via approximation)
  **/
-VecLong kernel_basis(
-                     Mat<zz_pX> & kerbas,
-                     const Mat<zz_pX> & pmat,
-                     const VecLong & shift
-                    );
+void kernel_basis(
+                  Mat<zz_pX> & kerbas,
+                  VecLong & pivind,
+                  const Mat<zz_pX> & pmat,
+                  const VecLong & shift
+                 );
 
 /** Verifies that `kerbas` is a `shift`-minimal kernel basis for `pmat` with
  * form at least `form`. Uses a Monte-Carlo randomized algorithm if
@@ -68,11 +69,12 @@ bool is_kernel_basis(
  * on these entries, and they may be reduced depending on the
  * degrees/dimensions of pmat)
  */
-VecLong kernel_basis_via_approximation(
-                                       Mat<zz_pX> & kerbas,
-                                       const Mat<zz_pX> & pmat,
-                                       const VecLong & shift
-                                      );
+void kernel_basis_via_approximation(
+                                    Mat<zz_pX> & kerbas,
+                                    VecLong & pivind,
+                                    const Mat<zz_pX> & pmat,
+                                    VecLong & shift
+                                   );
 
 /** Computes a `shift`-minimal kernel basis `kerbas` for `pmat` using the
  * Zhou-Labahn-Storjohann algorithm, as described in the Proceedings ISSAC
@@ -85,10 +87,9 @@ VecLong kernel_basis_via_approximation(
  */
 void kernel_basis_zls_via_approximation(
                                         Mat<zz_pX> & kerbas,
-                                        Mat<zz_pX> & pmat,
-                                        VecLong & shift,
                                         VecLong & pivind,
-                                        VecLong & pivdeg
+                                        Mat<zz_pX> & pmat,
+                                        VecLong & shift
                                        );
 
 

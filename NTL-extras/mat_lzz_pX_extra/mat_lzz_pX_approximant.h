@@ -454,26 +454,12 @@ void popov_mbasis(
 
 /** Computes a `shift`-ordered weak Popov approximant basis for `(pmat,order)`
  * using the algorithm PM-Basis (see @ref pmbasis) */
-VecLong pmbasis(
-                Mat<zz_pX> & appbas,
-                const Mat<zz_pX> & pmat,
-                const long order,
-                const VecLong & shift
-               );
-
-// TODO unify then remove the other one
-inline void pmbasis_new(
+void pmbasis(
              Mat<zz_pX> & appbas,
              const Mat<zz_pX> & pmat,
              const long order,
-             VecLong & shift,
-             VecLong & pivdeg
-            )
-{
-    pivdeg = pmbasis(appbas, pmat, order, shift);
-    std::transform(shift.begin(), shift.end(), pivdeg.begin(), shift.begin(), std::plus<long>());
-}
-
+             VecLong & shift
+            );
 
 /** Computes a `shift`-Popov approximant basis for `(pmat,order)` using the
  * algorithm PM-Basis (see @ref pmbasis) twice: the first call yields an
@@ -483,12 +469,12 @@ inline void pmbasis_new(
  *
  * \todo often (generic case), the second call is not necessary and one just
  * has to multiply by the inverse of the leading matrix. Implement this(?).  */
-VecLong popov_pmbasis(
-                      Mat<zz_pX> &appbas,
-                      const Mat<zz_pX> & pmat,
-                      const long order,
-                      const VecLong & shift
-                     );
+void popov_pmbasis(
+                   Mat<zz_pX> &appbas,
+                   const Mat<zz_pX> & pmat,
+                   const long order,
+                   VecLong & shift
+                  );
 //@} // doxygen group: PM-Basis algorithm (uniform approximant order)
 
 

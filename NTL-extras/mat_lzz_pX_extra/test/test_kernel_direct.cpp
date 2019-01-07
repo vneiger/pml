@@ -59,7 +59,9 @@ int main(int argc, char *argv[])
                 std::cout << "Computation of the kernel via approximation... ";
 #endif // VERBOSE
                 Mat<zz_pX> kerbas;
-                pivdeg = kernel_basis_via_approximation(kerbas,*pmat,shift);
+                VecLong pivind;
+                VecLong rdeg(shift);
+                kernel_basis_via_approximation(kerbas,pivind,*pmat,rdeg);
 #ifdef VERBOSE
                 std::cout << "OK. Testing... ";
 #endif // VERBOSE
@@ -87,7 +89,9 @@ int main(int argc, char *argv[])
                 std::cout << "Computation of the kernel via ZLS algorithm (using approximation)... ";
 #endif // VERBOSE
                 Mat<zz_pX> kerbas;
-                pivdeg = kernel_basis_zls_via_approximation(kerbas,*pmat,shift);
+                VecLong rdeg(shift);
+                VecLong pivind;
+                kernel_basis_zls_via_approximation(kerbas,pivind,*pmat,rdeg);
 #ifdef VERBOSE
                 std::cout << "OK. Testing... ";
 #endif // VERBOSE
