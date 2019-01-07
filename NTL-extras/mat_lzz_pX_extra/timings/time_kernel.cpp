@@ -18,6 +18,22 @@ void one_bench_kernel(long rdim, long cdim, long deg)
 
     std::cout << rdim << "\t" << cdim << "\t" << deg << "\t";
 
+    // kernel direct via approx
+    t = 0.0; nb_iter = 0;
+    while (t < 0.2)
+    {
+        Mat<zz_pX> pmat;
+        random(pmat, rdim, cdim, deg);
+        tt = GetWallTime();
+        VecLong shift(rdim); // uniform shift
+        Mat<zz_pX> kerbas;
+        VecLong pivind;
+        kernel_basis_via_approximation(kerbas,pivind,pmat,shift);
+        t += GetWallTime()-tt;
+        ++nb_iter;
+    }
+    std::cout << t/nb_iter << "\t";
+
     // kernel ZLS via approx
     t = 0.0; nb_iter = 0;
     while (t < 0.2)
@@ -27,12 +43,12 @@ void one_bench_kernel(long rdim, long cdim, long deg)
         tt = GetWallTime();
         VecLong shift(rdim); // uniform shift
         Mat<zz_pX> kerbas;
-        VecLong pivind,pivdeg;
-        kernel_basis_zls_via_approximation(kerbas,pmat,shift,pivind,pivdeg);
+        VecLong pivind;
+        kernel_basis_zls_via_approximation(kerbas,pivind,pmat,shift);
         t += GetWallTime()-tt;
         ++nb_iter;
     }
-    std::cout << t/nb_iter << "\t" << std::endl;
+    std::cout << t/nb_iter << "\t";
 
 //    // kernel ZLS via interp
 //    t = 0.0; nb_iter = 0;
@@ -47,6 +63,8 @@ void one_bench_kernel(long rdim, long cdim, long deg)
 //        ++nb_iter;
 //    }
 //    std::cout << t/nb_iter << "\t" << std::endl;
+//
+      std::cout << std::endl;
 }
 
 /*------------------------------------------------------------*/
