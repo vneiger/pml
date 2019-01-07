@@ -44,7 +44,7 @@ void check(long m, long n, long d, bool verify){
     for (auto shift: shifts)
     {
         // make shift larger than row degree of pmat
-        std::transform(shift.begin(), shift.end(), shift.begin(), [&](long s){ return s+d+1; });
+        std::transform(shift.begin(), shift.end(), shift.begin(), [&](long s){ return s+d; });
 
         //if (m<30)
         //    std::cout << "--shift =\t" << shift << "\t";

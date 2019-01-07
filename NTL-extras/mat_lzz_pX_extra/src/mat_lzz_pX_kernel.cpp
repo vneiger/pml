@@ -192,7 +192,6 @@ VecLong kernel_basis_via_approximation(
 // TODO: currently only supports n < m (for m <= n: directly to divide and conquer on columns)
 // and if we know the first approximant basis will not give any kernel vector, should we also directly divide and conquer?
 // TODO: doc mentioning requirement: entries of shift should bound row degrees of pmat
-// TODO: why is it currently required that shift STRICTLY bounds degrees? (otherwise crashes)
 VecLong kernel_basis_zls_via_approximation(
                                            Mat<zz_pX> & kerbas,
                                            Mat<zz_pX> & pmat,
@@ -203,23 +202,22 @@ VecLong kernel_basis_zls_via_approximation(
     const long n = pmat.NumCols();
     //std::cout << "call: " << m << "," << n << "," << deg(pmat) << std::endl;
 
-    // FIXME here, assumes m>n
+    // Here, assumes m>n
     // find parameter rho: sum of the n largest entries of shift
-    VecLong sorted_shift(shift);
-    std::sort(sorted_shift.begin(), sorted_shift.end());
-    const long rho = std::accumulate(sorted_shift.begin()+m-n, sorted_shift.end(), 0);
+    VecLong rdeg(shift);
+    std::sort(rdeg.begin(), rdeg.end());
+    const long rho = std::accumulate(rdeg.begin()+m-n, rdeg.end(), 0);
 
     // order for call to approximation
-    // TODO threshold (factor 2) to be determined
-    // choosing 2 ensures that the approximant basis captures the whole kernel
-    // when n <= m/2, pmat is sufficiently generic, and shift is uniform
+    // choosing threshold 2 ensures that the approximant basis captures the
+    // whole kernel when n <= m/2 and pmat is sufficiently generic
     const long order = 2 * ceil((double)rho / n) + 1;
 
     // compute approximant basis
     // --> it does not necessarily capture the whole kernel; but does in two
     // notable cases: if n=1, or in the generic situation mentioned above
     Mat<zz_pX> appbas;
-    VecLong rdeg = pmbasis(appbas, pmat, order, shift); // does not change pmat or shift
+    rdeg = pmbasis(appbas, pmat, order, shift); // does not change pmat or shift
 
     // rdeg is now the shift-pivot degree of appbas; deduce shift-row degree
     // which is the componentwise addition pivot degree + shift
@@ -233,9 +231,13 @@ VecLong kernel_basis_zls_via_approximation(
     // (this is usually not the case).
     VecLong ker_rows;
     VecLong other_rows;
+    long sum_pivdeg = 0; // stores sum of pivot degree of kernel part
     for (long i=0; i<m; ++i)
         if (rdeg[i] < order)
+        {
+            sum_pivdeg += rdeg[i]-shift[i];
             ker_rows.emplace_back(i);
+        }
         else
             other_rows.emplace_back(i);
     const long m1 = ker_rows.size();
@@ -245,19 +247,26 @@ VecLong kernel_basis_zls_via_approximation(
     for (long i = 0; i < m1; ++i)
         rdeg1[i] = rdeg[ker_rows[i]];
 
-    // if there was just one column or if the kernel is full (matrix was zero),
-    // then return
-    if (n == 1 || m1 == m )
+    // if the sum of pivot degrees in the part of kernel basis computed is
+    // equal to the sum of column degrees of pmat, then we know that we have
+    // captured the whole kernel
+    // --> this is often the case (e.g. in the generic situation mentioned
+    // above), and testing this avoids going through a few multiplications and
+    // the two recursive calls (which only lead to the conclusion that there is
+    // no new kernel row to be found)
+    VecLong cdeg; col_degree(cdeg, pmat);
+    const bool early_exit = std::accumulate(cdeg.begin(), cdeg.end(),0) == sum_pivdeg;
+
+    // if the whole kernel was captured according to the above test, or if
+    // there was just one column, or if the kernel is full (matrix was zero),
+    // then we have the whole kernel: just copy and return
+    if (early_exit || n == 1 || m1 == m)
     {
         kerbas.SetDims(m1, m);
         for (long i = 0; i < m1; ++i)
             kerbas[i].swap(appbas[ker_rows[i]]);
         return rdeg1;
     }
-    // FIXME it is annoying that even if full basis was found, we still do
-    // multiplications below... the problem being that we cannot assume that
-    // the kernel has dimension m-n. To circumvent this, could test whether sum
-    // of pivot degree is the expected one (?).
 
     // dimension and shifted row degree (order removed) of the non-kernel part
     // of the approximant basis
@@ -271,10 +280,9 @@ VecLong kernel_basis_zls_via_approximation(
     for (long i = 0; i < m2; ++i)
         approx[i].swap(appbas[other_rows[i]]);
 
-    // compute residual
-    // TODO use middle product?
-    multiply(pmat, approx, pmat);
-    RightShift(pmat, pmat, order);
+    // compute residual:
+    // pmat = trunc(trunc(approx, dA+1)*pmat div x^order, deg(pmat)+deg(approx)-order+1)
+    middle_product(pmat,approx,pmat,order,deg(pmat)+deg(approx)-order);
 
     // pmat will be column-splitted into two submatrices of column dimension ~ n/2
     const long n1 = n/2;
