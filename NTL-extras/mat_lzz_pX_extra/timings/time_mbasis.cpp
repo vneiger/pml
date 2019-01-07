@@ -3,6 +3,7 @@
 
 #include "util.h"
 #include "mat_lzz_pX_approximant.h"
+#include "mat_lzz_pX_interpolant.h"
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
@@ -30,17 +31,16 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     {
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, order);
-        VecLong pivdeg;
 
         t1 = GetWallTime();
         Mat<zz_pX> appbas;
-        pivdeg = mbasis_rescomp(appbas,pmat,order,shift);
+        VecLong rdeg(shift);
+        mbasis_rescomp(appbas,pmat,order,rdeg);
         t2 = GetWallTime();
 
         t_mbasis_rescomp += t2-t1;
         ++nb_iter;
     }
-
     t_mbasis_rescomp /= nb_iter;
 
     double t_mbasis_resupdate=0.0;
@@ -53,79 +53,59 @@ void one_bench_mbasis(long rdim, long cdim, long order)
 
         t1 = GetWallTime();
         Mat<zz_pX> appbas;
-        pivdeg = mbasis_resupdate(appbas,pmat,order,shift);
+        VecLong rdeg(shift);
+        mbasis_resupdate(appbas,pmat,order,rdeg);
         t2 = GetWallTime();
 
         t_mbasis_resupdate += t2-t1;
         ++nb_iter;
     }
-
     t_mbasis_resupdate /= nb_iter;
 
-
-    double t_mbasis_generic_rescomp=0.0;
+    double t_mbasis_int_rescomp=0.0;
     nb_iter=0;
-    while (t_mbasis_generic_rescomp<0.1)
+    while (t_mbasis_int_rescomp<0.1)
     {
-        Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, order);
-        VecLong pivdeg;
+        Vec<zz_p> pts(INIT_SIZE, order);
+        random(pts, order);
+        Vec<Mat<zz_p>> evals(INIT_SIZE, order);
+        for (long i = 0; i < order; ++i)
+            random(evals[i], rdim, cdim);
 
         t1 = GetWallTime();
-        Mat<zz_pX> appbas;
-        mbasis_generic_2n_n_rescomp(appbas,pmat,order);
+        Mat<zz_pX> intbas;
+        mbasis_rescomp(intbas,evals,pts,shift,0,order);
         t2 = GetWallTime();
 
-        t_mbasis_generic_rescomp += t2-t1;
+        t_mbasis_int_rescomp += t2-t1;
         ++nb_iter;
     }
+    t_mbasis_int_rescomp /= nb_iter;
 
-    t_mbasis_generic_rescomp /= nb_iter;
-
-    double t_mbasis_generic_resupdate=0.0;
+    double t_mbasis_int_resupdate=0.0;
     nb_iter=0;
-    while (t_mbasis_generic_resupdate<0.1)
+    while (t_mbasis_int_resupdate<0.1)
     {
-        Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, order);
-        VecLong pivdeg;
+        Vec<zz_p> pts(INIT_SIZE, order);
+        random(pts, order);
+        Vec<Mat<zz_p>> evals(INIT_SIZE, order);
+        for (long i = 0; i < order; ++i)
+            random(evals[i], rdim, cdim);
 
         t1 = GetWallTime();
-        Mat<zz_pX> appbas;
-        mbasis_generic_2n_n_resupdate(appbas,pmat,order);
+        Mat<zz_pX> intbas;
+        mbasis_resupdate(intbas,evals,pts,shift,0,order);
         t2 = GetWallTime();
 
-        t_mbasis_generic_resupdate += t2-t1;
+        t_mbasis_int_resupdate += t2-t1;
         ++nb_iter;
     }
-
-    t_mbasis_generic_resupdate /= nb_iter;
-
+    t_mbasis_int_resupdate /= nb_iter;
 
 
-    cout << rdim << "\t" << cdim << "\t" << order << "\t" << AvailableThreads();
-    cout << "\t" << t_mbasis_rescomp << "\t" << t_mbasis_resupdate << "\t" << t_mbasis_generic_rescomp << "\t" << t_mbasis_generic_resupdate;
-
-    double best = t_mbasis_generic_resupdate;
-    //if (t_mbasis_rescomp <= t_mbasis_rescomp && t_mbasis_rescomp <= t_mbasis_generic_rescomp)
-    //{
-    //    cout << "," << "rescomp";
-    //    best = t_mbasis_rescomp;
-    //}
-    //else if (t_mbasis_resupdate <= t_mbasis_rescomp and t_mbasis_resupdate <= t_mbasis_generic_rescomp)
-    //{
-    //    cout << "," << "resupdate";
-    //    best = t_mbasis_resupdate;
-    //}
-    //else
-    //{
-    //    cout << "," << "generic";
-    //    best = t_mbasis_generic_rescomp;
-    //}
-    cout << "\t" << t_mbasis_rescomp / best;
-    cout << "\t" << t_mbasis_resupdate / best;
-    cout << "\t" << t_mbasis_generic_rescomp / best;
-    cout << "\t" << t_mbasis_generic_resupdate / best;
+    cout << rdim << "\t" << cdim << "\t" << order;
+    cout << "\t" << t_mbasis_rescomp << "\t" << t_mbasis_resupdate;
+    cout << "\t" << t_mbasis_int_rescomp << "\t" << t_mbasis_int_resupdate;
     cout << endl;
 }
 
@@ -154,10 +134,15 @@ void run_bench(long nthreads, long nbits, bool fftprime)
             zz_p::UserFFTInit(2748779069441); // 42 bits
             cout << zz_p::modulus() << ", bit length = " << 42 << endl;
         }
-        else if (nbits < 65)
+        else if (nbits < 61)
         {
-            zz_p::UserFFTInit(1139410705724735489); // 60 bits
-            cout << zz_p::modulus() << ", bit length = " << 60 << endl;
+            zz_p::FFTInit(0); // 60 bits
+            cout << zz_p::modulus() << ", bit length = " << NumBits(zz_p::modulus()) << endl;
+        }
+        else
+        {
+            std::cout << "Asking for FFT prime with too large bitsize (> 60). Exiting." << std::endl;
+            return;
         }
     }
     else
@@ -169,15 +154,12 @@ void run_bench(long nthreads, long nbits, bool fftprime)
 
     VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
 
-    cout << "rdim\tcdim\torder\tnthread\tr-cmp\tr-upd\tg-rcmp\tg-rupd\tratios versus generic resupdate" << endl;
+    cout << "rdim\tcdim\torder\tapp-rcmp\tapp-rupd\tint-rcmp\tint-rupd" << endl;
     for (size_t i=0; i<szs.size(); ++i)
     {
-        // for generic, currently we can only use dimensions n=2m
-
-        //long interval = ceil( (double)szs[i] / 20);
-        //for (long j=1; j<szs[i]; j+=interval)
+        long interval = ceil( (double)szs[i] / 20);
+        for (long j=1; j<szs[i]; j+=interval)
         {
-            long j=szs[i]/2;
             long max_order=128;
             if (szs[i]==512)
                 max_order=64;
@@ -196,28 +178,15 @@ void run_bench(long nthreads, long nbits, bool fftprime)
 int main(int argc, char ** argv)
 {
     std::cout << std::fixed;
-    std::cout << std::setprecision(5);
+    std::cout << std::setprecision(8);
 
-    // TODO one thread for the moment
-    VecLong nthreads = {1}; // {1,2,3,4};
-    VecLong nbits = {20,30,40,60};
-    std::vector<bool> fftprime = {true, false};
+    if (argc!=3)
+        throw std::invalid_argument("Usage: ./time_mbasis nbits fftprime");
 
-    //if (argc>=2)
-    //     nthreads = {atoi(argv[1])};
-    if (argc>=3)
-        nbits = {atoi(argv[2])};
-    if (argc==4)
-        fftprime = {(atoi(argv[3])==1) ? true : false};
-    if (argc>4)
-        throw std::invalid_argument("Usage: ./time_mbasis OR ./time_mbasis nthreads OR ./time_mbasis nthreads nbits fftprime");
+    long nbits = atoi(argv[1]);
+    bool fftprime = (atoi(argv[2])==1);
 
-    warmup();
-
-    for (size_t i = 0; i < nthreads.size(); ++i)
-        for (size_t j = 0; j < nbits.size(); ++j)
-            for (size_t k = 0; k < fftprime.size(); ++k)
-                run_bench(nthreads[i],nbits[j],fftprime[k]);
+    run_bench(1,nbits,fftprime);
 
     return 0;
 }
