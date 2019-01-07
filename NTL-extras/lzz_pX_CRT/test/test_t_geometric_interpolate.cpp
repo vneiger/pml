@@ -28,7 +28,7 @@ void check(long p)
         b = random_zz_p();
 
         ev = zz_pX_Multipoint_Geometric(a, j);
-        random_vec_zz_p(rnd1, j);
+        random(rnd1, j);
         ev.t_evaluate(g, rnd1);
         ev.t_interpolate(rnd2, g);
         if (rnd1 != rnd2) 
@@ -38,7 +38,7 @@ void check(long p)
         }
 
         ev = zz_pX_Multipoint_Geometric(a, b, j);
-        random_vec_zz_p(rnd1, j);
+        random(rnd1, j);
         ev.t_evaluate(g, rnd1);
         ev.t_interpolate(rnd2, g);
         if (rnd1 != rnd2) 

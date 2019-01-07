@@ -1,10 +1,10 @@
 #ifndef MAT_LZZ_PX_APPROXIMANT__H
 #define MAT_LZZ_PX_APPROXIMANT__H
 
-/** Minimal approximant bases.
+/** \brief Minimal approximant bases.
  *
  * \file mat_lzz_pX_approximant.h
- * \author Vincent Neiger
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
  * \version 0.1
  * \date 2018-12-07
  *
@@ -55,13 +55,17 @@
  * assuming left approximants; for right approximants, they are swapped.
  */
 
+#include "mat_lzz_pX_utils.h"
 #include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_forms.h"
 #include "mat_lzz_pX_multiply.h"
 
-NTL_CLIENT;
+NTL_CLIENT
 
-/** General user-friendly interface for approximant basis computation.
+/** @name General interfaces for approximant basis computation and verification */
+//@{
+
+/** General interface for approximant basis computation.
  *
  * Computes a `shift`-minimal approximant basis `appbas` for (`pmat`,`order`).
  * If the user requires a specific shifted form (minimal, ordered weak Popov,
@@ -127,9 +131,9 @@ inline void approximant_basis(
 
 /** Verifying if a matrix is a minimal approximant basis.
  *
- * This checks whether the matrix `appbas` is indeed a `shift`-minimal
- * approximant basis for (`pmat`,`order`) for the required form `form`. One may
- * consider left approximants (default, with `row_wise` set to `true`) or right
+ * This checks whether the matrix `appbas` is a `shift`-minimal approximant
+ * basis for (`pmat`,`order`) for the required form `form`. One may consider
+ * left approximants (default, with `row_wise` set to `true`) or right
  * approximants (with `row_wise` set to `false`).
  *
  * \param[in] appbas approximant basis
@@ -142,7 +146,7 @@ inline void approximant_basis(
  *
  * \return boolean, result of the verification
  *
- * \todo add row_wise
+ * \todo add parameter row_wise
  * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
  */
 bool is_approximant_basis(
@@ -162,103 +166,182 @@ bool is_approximant_basis(
  * and then calls the function above.
  */
 inline bool is_approximant_basis(
-                          const Mat<zz_pX> & appbas,
-                          const Mat<zz_pX> & pmat,
-                          const long order,
-                          const VecLong & shift,
-                          const PolMatForm & form = ORD_WEAK_POPOV,
-                          const bool randomized = false
-                         )
+                                 const Mat<zz_pX> & appbas,
+                                 const Mat<zz_pX> & pmat,
+                                 const long order,
+                                 const VecLong & shift,
+                                 const PolMatForm & form = ORD_WEAK_POPOV,
+                                 const bool randomized = false
+                                )
 {
     VecLong orders(pmat.NumCols(),order);
     return is_approximant_basis(appbas,pmat,orders,shift,form,randomized);
 }
 
+//@} // doxygen group: General interfaces for approximant basis computation and verification
 
-/*------------------------------------------------------------*/
-/* Iterative algorithm for general order and shift            */
-/* References:                                                */
-/*   - Beckermann 1992                                        */
-/*   - Van Barel-Bultheel 1991+1992                           */
-/*   - Beckermann-Labahn 2000 (ensuring s-Popov)              */
-/*------------------------------------------------------------*/
+/** @name Iterative algorithms
+ *
+ * These functions implement iterative approximant basis algorithms inspired
+ * from:
+ * - B. Beckermann. J. Comput. Appl. Math. 40 (1992) 19-42
+ * - B. Beckermann, G. Labahn. SIAM J. Matrix Anal. Appl. 15 (1994) 804-823
+ * - M. Van Barel, A. Bultheel. Numer. Algorithms 3 (1992) 451-462
+ */
+//@{
+
+/** Computes an `shift`-ordered weak Popov approximant basis for
+ * `(pmat,order)`. The parameter `order_wise` allows one to choose between two
+ * strategies for choosing the next coefficient to deal with during the
+ * iteration, which may have some impact on the timings depending on the input:
+ * - process `pmat` order-wise (choose column with largest order)
+ * - process `pmat` column-wise (choose leftmost column not yet completed). */
 VecLong appbas_iterative(
-                        Mat<zz_pX> & appbas,
-                        const Mat<zz_pX> & pmat,
-                        const VecLong & order,
-                        const VecLong & shift,
-                        bool order_wise=true
-                       );
+                         Mat<zz_pX> & appbas,
+                         const Mat<zz_pX> & pmat,
+                         const VecLong & order,
+                         const VecLong & shift,
+                         bool order_wise=true
+                        );
 
+/** Computes an `shift`-Popov approximant basis for `(pmat,order)`. The
+ * parameter `order_wise` allows one to choose between two strategies for
+ * choosing the next coefficient to deal with during the iteration, which may
+ * have some impact on the timings depending on the input:
+ * - process `pmat` order-wise (choose column with largest order)
+ * - process `pmat` column-wise (choose leftmost column not yet completed).
+ *
+ * \todo currently, this is based on the approach "compute a first basis which
+ * gives the pivot degrees and re-compute with these degrees as the shift to
+ * obtain the normal form". It would be interesting to implement the strategy
+ * of Beckermann-Labahn 2000 which ensures Popov normal form, and compare it
+ * with the current technique.
+ */
 VecLong popov_appbas_iterative(
-                              Mat<zz_pX> & appbas,
-                              const Mat<zz_pX> & pmat,
-                              const VecLong & order,
-                              const VecLong & shift,
-                              bool order_wise=true
-                             );
+                               Mat<zz_pX> & appbas,
+                               const Mat<zz_pX> & pmat,
+                               const VecLong & order,
+                               const VecLong & shift,
+                               bool order_wise=true
+                              );
+//@} // doxygen group: Iterative algorithms
 
-/*------------------------------------------------------------*/
-/* M-Basis algorithm for approximant order = 1                */
-/* References:                                                */
-/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
-/*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shift)  */
-/*   - Jeannerod-Neiger-Villard 2018 (ensuring s-Popov)       */
-/*------------------------------------------------------------*/
+/** @name Approximant basis via linear algebra
+ * \anchor mbasis1
+ *
+ *  These functions compute a shifted minimal or shifted Popov approximant
+ *  basis using fast linear algebra on constant matrices.
+ *
+ *  Currently, this is only implemented for the uniform order `(1,...,1)`, following
+ *  the algorithm _mbasis_ described in
+ *  - P. Giorgi, C.-P. Jeannerod, G. Villard. Proceeding ISSAC 2003,
+ *  - P. Giorgi, R. Lebreton. Proceedings ISSAC 2014,
+ *  - C.-P. Jeannerod, V. Neiger, G. Villard. Preprint 2018.
+ *
+ *  The latter reference explicitly shows how to ensure that we obtain the
+ *  canonical s-Popov approximant basis.
+ *
+ *  \todo implement the general Krylov-based approach from JNSV17, which
+ *  efficiently solves the problem when the sum of the orders is small
+ */
+//@{
 
-// input: kerbas is constant, will contain the left kernel of pmat in reduced
-// row echelon form
-// (not exactly of pmat: permutations involved, depending on the shift)
-// output: pivot degrees of the approximant basis (also indicates where the
-// rows of kernel should appear in the approximant basis)
-// FIXME: this is currently not optimized when matrices with non-generic
-// rank profiles are given in input (pmat)
-// --> for this, it would probably be better to rely on a library which
-// provides precisely the decomposition we want (probably PLE, or PLUQ)
+/** Computes a shifted Popov approximant basis at order `(1,...,1)` using fast
+ * linear algebra on constant matrices. Thus, in this context, the input matrix
+ * `pmat` is a constant matrix. This approximant basis consists of two sets of
+ * rows:
+ * - rows forming a left kernel basis in reduced row echelon form of some
+ *   row-permutation of `pmat` (the permutation depends on the shift)
+ * - the other rows are coordinate vectors multiplied by the variable `x`;
+ *   there is one such row at each index `i` which is not among the pivot
+ *   indices of the left kernel basis above.
+ *
+ * The first set of rows is what is stored in the OUT parameter `kerbas`.
+ *
+ * \param[out] kerbas matrix over the base field `zz_p`
+ * \param[in] pmat matrix over the base field `zz_p`
+ * \param[in] shift shift (vector of integers)
+ *
+ * \todo This is currently not optimized when matrices with non-generic rank
+ * profiles are given in input (pmat). For this, it would be much easier to
+ * rely on a library which provides precisely the needed decomposition (such as
+ * PLE or PLUQ), e.g. LinBox but this becomes less efficient if working over a
+ * field with a prime of 30 bits or more.
+ */
 VecLong popov_mbasis1(
-                     Mat<zz_p> & kerbas,
-                     const Mat<zz_p> & pmat,
-                     const VecLong & shift
-                    );
+                      Mat<zz_p> & kerbas,
+                      const Mat<zz_p> & pmat,
+                      const VecLong & shift
+                     );
 
-// input: kerbas is constant, will contain the left kernel of pmat in row
-// echelon form
-// (not exactly of pmat: permutations involved, depending on the shift)
-// output: pivot degrees of the approximant basis (also indicates where the
-// rows of kernel should appear in the approximant basis)
-// FIXME: this is currently not optimized when non-generic matrices
-// are given in input (pmat)
-// --> for this, it would probably be better to rely on a library which
-// provides precisely the decomposition we want (probably PLE, or PLUQ)
+/** Computes a shifted-ordered weak Popov approximant basis at order
+ * `(1,...,1)` using fast linear algebra on constant matrices. Thus, in this
+ * context, the input matrix `pmat` is a constant matrix. This approximant
+ * basis consists of two sets of rows:
+ * - rows forming a left kernel basis in (non-reduced) row echelon form of some
+ *   row-permutation of `pmat` (the permutation depends on the shift)
+ * - the other rows are coordinate vectors multiplied by the variable `x`;
+ *   there is one such row at each index `i` which is not among the pivot
+ *   indices of the left kernel basis above.
+ *
+ * The first set of rows is what is stored in the OUT parameter `kerbas`.
+ *
+ * \param[out] kerbas matrix over the base field `zz_p`
+ * \param[in] pmat matrix over the base field `zz_p`
+ * \param[in] shift shift (vector of integers)
+ *
+ * \todo This is currently not optimized when matrices with non-generic rank
+ * profiles are given in input (pmat). For this, it would be much easier to
+ * rely on a library which provides precisely the needed decomposition (such as
+ * PLE or PLUQ), e.g. LinBox but this becomes less efficient if working over a
+ * field with a prime of 30 bits or more.
+ */
 VecLong mbasis1(
                 Mat<zz_p> & kerbas,
                 const Mat<zz_p> & pmat,
                 const VecLong & shift
                );
 
+//@} // doxygen group: Approximant basis 
 
-/*------------------------------------------------------------*/
-/* M-Basis algorithm for uniform approximant order            */
-/* References:                                                */
-/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
-/*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shift)  */
-/*   - Jeannerod-Neiger-Villard 2018                          */
-/*          (ensuring s-ordered weak Popov or s-Popov)        */
-/*------------------------------------------------------------*/
+/** @name M-Basis algorithm (uniform approximant order)
+ * \anchor mbasis
+ *
+ * These functions compute a `shift`-minimal ordered weak Popov approximant
+ * basis for `(pmat,orders)` in the case where `orders` is given by a single
+ * integer `orders = (order,...order)`. They iterate from `1` to `order`,
+ * computing at each step a basis at order `1` (see @ref mbasis1) and using it
+ * to update the output `appbas`, the so-called _residual matrix_, and the
+ * considered shift. At step `d`, we have `appbas*pmat = 0 mod x^{d-1}`, and we
+ * want to update `appbas` so that this becomes zero modulo `x^d`.
+ *
+ * In this context, the residual matrix is a constant matrix with the same
+ * dimensions as `pmat` which, at the iteration `d`, is equal to the
+ * coefficient of degree `d` of `appbas*pmat` (the coefficients of lower degree
+ * being already zero).
+ *
+ * This is inspired from the algorithm _mbasis_ described in
+ *  - P. Giorgi, C.-P. Jeannerod, G. Villard. Proceeding ISSAC 2003,
+ *  - P. Giorgi, R. Lebreton. Proceedings ISSAC 2014.
+ */
+//@{
 
-// plain version, not the most efficient
+/** Plain version of `mbasis` (see @ref mbasis), where the input `pmat` is
+ * represented as `Vec<Vec<zz_pX>>`. This is almost always less efficient than
+ * other provided variants, but is kept here for legacy, being a direct
+ * implementation of the algorithm from the references in @ref mbasis. */
 VecLong mbasis_plain(
-                    Mat<zz_pX> & appbas,
-                    const Mat<zz_pX> & pmat,
-                    const long order,
-                    const VecLong & shift
-                   );
+                     Mat<zz_pX> & appbas,
+                     const Mat<zz_pX> & pmat,
+                     const long order,
+                     const VecLong & shift
+                    );
 
-// Variant which first converts to vector of constant matrices,
-// performs the computations with this storage, and eventually
-// converts back to polynomial matrices
-// Residual (constant coeff of X^-d appbas*pmat) is computed from scratch at
-// each iteration
+/** Variant of `mbasis` (see @ref mbasis) which first converts `pmat` to its
+ * representation by a vector of constant matrices `Vec<Mat<zz_p>>`, then
+ * performs the computations with this storage, and eventually converts back to
+ * the polynomial matrix `Mat<zz_pX>` representation. In this variant, the
+ * residual matrix is computed from `appbas` and `pmat` at each iteration. */
 // Complexity: pmat is m x n
 //   - 'order' calls to mbasis1 with dimension m x n, each one gives a
 //   constant matrix K which is generically m-n x m  (may have more rows in
@@ -270,14 +353,15 @@ VecLong mbasis_plain(
 // generic pmat), then the third item costs O(m n^2 order^2 / 2) operations,
 // assuming cubic matrix multiplication over the field.
 VecLong mbasis_rescomp(
-              Mat<zz_pX> & appbas,
-              const Mat<zz_pX> & pmat,
-              const long order,
-              const VecLong & shift
-             );
+                       Mat<zz_pX> & appbas,
+                       const Mat<zz_pX> & pmat,
+                       const long order,
+                       const VecLong & shift
+                      );
 
-// same as mbasis_rescomp, with some multi-threading inserted 
-// TODO prototype for the moment: not properly tuned and tested
+/** Same as #mbasis_rescomp, with some multi-threading inserted.
+ *
+ * \todo prototype for the moment: not properly tuned and tested */
 VecLong mbasis_rescomp_multithread(
                                    Mat<zz_pX> & appbas,
                                    const Mat<zz_pX> & pmat,
@@ -285,6 +369,13 @@ VecLong mbasis_rescomp_multithread(
                                    const VecLong & shift
                                   );
 
+/** Variant of `mbasis` (see @ref mbasis) which first converts `pmat` to its
+ * representation by a vector of constant matrices `Vec<Mat<zz_p>>`, then
+ * performs the computations with this storage, and eventually converts back to
+ * the polynomial matrix `Mat<zz_pX>` representation. In this variant, we store
+ * a vector of residual matrices, initially the coefficients of `pmat`, and we
+ * update all of them at each iteration; at the iteration `d` we use the `d`-th
+ * matrix in this vector. */
 // Variant which first converts to vector of constant matrices,
 // performs the computations with this storage, and eventually
 // converts back to polynomial matrices
@@ -316,12 +407,17 @@ VecLong mbasis_resupdate(
 //                                       );
 
 
-// main function choosing the most efficient variant depending on parameters
-// warning: may not be the best choice when the shift is not uniform
-// FIXME -->  try to find the threshold for shifted case?
-// FIXME -->  or simply assume the user will choose the right mbasis?
-// FIXME -->  mbasis is anyway not the best approach, at least on the paper,
-//            when cdim << rdim and shift is "highly" non-uniform
+/** Main `mbasis` function which chooses the most efficient variant depending
+ * on the parameters (dimensions and order).
+ *
+ * \todo current choice is not perfectly tuned
+ *    - might be wrong for a very small number of columns (but this is not the
+ *    best algorithm in that case; one should rely on partial linearization,
+ *    not implemented yet)
+ *    - might be wrong for large orders (but one should call `pmbasis` in this case)
+ *    - might not be right when the shift is far from uniform (todo: perform
+ *    some tests; again, this is not the best known algorithm in this case)
+ */
 inline VecLong mbasis(
                       Mat<zz_pX> & appbas,
                       const Mat<zz_pX> & pmat,
@@ -329,9 +425,7 @@ inline VecLong mbasis(
                       const VecLong & shift
                      )
 {
-    long rdim = pmat.NumRows();
-    long cdim = pmat.NumCols();
-    if (cdim > rdim/2 + 1)
+    if (pmat.NumCols() > pmat.NumRows()/2 + 1)
         return mbasis_resupdate(appbas, pmat, order, shift);
     else
         return mbasis_rescomp(appbas, pmat, order, shift);
@@ -339,41 +433,82 @@ inline VecLong mbasis(
     // mentioned above for these two variants of mbasis
 }
 
-
+/** Computes the `shift`-Popov approximant basis for `(pmat,order)`,
+ * relying on the `mbasis` approach.
+ *
+ * \todo currently, this is based on the approach "compute a first basis which
+ * gives the pivot degrees and re-compute with these degrees as the shift to
+ * obtain the normal form". It would be interesting to implement a strategy
+ * which maintains a shifted Popov form along the iterations, and compare it
+ * with the current technique.
+ */
 VecLong popov_mbasis(
-                    Mat<zz_pX> &appbas,
-                    const Mat<zz_pX> & pmat,
-                    const long order,
-                    const VecLong & shift
-                   );
-
-/*------------------------------------------------------------*/
-/* PM-Basis algorithm for uniform approximant order           */
-/* References:                                                */
-/*   - Giorgi-Jeannerod-Villard ISSAC 2003 (algo)             */
-/*   - Giorgi-Lebreton ISSAC 2014 (algo with explicit shifts) */
-/*   - Jeannerod-Neiger-Villard 2018                          */
-/*          (ensuring s-ordered weak Popov or s-Popov)        */
-/*------------------------------------------------------------*/
-VecLong pmbasis(
-               Mat<zz_pX> & appbas,
-               const Mat<zz_pX> & pmat,
-               const long order,
-               const VecLong & shift
-              );
-
-VecLong popov_pmbasis(
                      Mat<zz_pX> &appbas,
                      const Mat<zz_pX> & pmat,
                      const long order,
                      const VecLong & shift
                     );
+//@} // doxygen group: M-Basis algorithm (uniform approximant order)
+
+/** @name PM-Basis algorithm (uniform approximant order)
+ * \anchor pmbasis
+ *
+ * These functions compute a `shift`-minimal ordered weak Popov approximant
+ * basis for `(pmat,orders)` in the case where `orders` is given by a single
+ * integer `orders = (order,...order)`. They use a divide and conquer approach,
+ * computing a first basis at order `order/2`, finding the so-called _residual
+ * matrix_, computing a second basis at order `order/2`, and deducing the
+ * sought basis by multiplying the two obtained bases.
+ *
+ * The first recursive call returns an approximant basis `appbas1` such that
+ * `appbas1*pmat = 0 mod x^{order/2}`, and the residual matrix has the same
+ * dimensions as `pmat` and is defined by the matrix middle product
+ * `(x^{-order/2} appbas1*pmat) mod x^{order/2}`.
+ *
+ * This is inspired from the algorithm _pmbasis_ described in
+ *  - P. Giorgi, C.-P. Jeannerod, G. Villard. Proceeding ISSAC 2003,
+ *  - P. Giorgi, R. Lebreton. Proceedings ISSAC 2014.
+ */
+//@{
+
+/** Computes a `shift`-ordered weak Popov approximant basis for `(pmat,order)`
+ * using the algorithm PM-Basis (see @ref pmbasis) */
+VecLong pmbasis(
+                Mat<zz_pX> & appbas,
+                const Mat<zz_pX> & pmat,
+                const long order,
+                const VecLong & shift
+               );
+
+// TODO unify then remove the other one
+inline void pmbasis_new(
+             Mat<zz_pX> & appbas,
+             const Mat<zz_pX> & pmat,
+             const long order,
+             VecLong & shift,
+             VecLong & pivdeg
+            )
+{
+    pivdeg = pmbasis(appbas, pmat, order, shift);
+    std::transform(shift.begin(), shift.end(), pivdeg.begin(), shift.begin(), std::plus<long>());
+}
 
 
-
-
-
-
+/** Computes a `shift`-Popov approximant basis for `(pmat,order)` using the
+ * algorithm PM-Basis (see @ref pmbasis) twice: the first call yields an
+ * ordered weak Popov form which indicates the `shift`-pivot degree, which is
+ * then used as a shift in the second call to obtain the sought canonical
+ * basis.
+ *
+ * \todo often (generic case), the second call is not necessary and one just
+ * has to multiply by the inverse of the leading matrix. Implement this(?).  */
+VecLong popov_pmbasis(
+                      Mat<zz_pX> &appbas,
+                      const Mat<zz_pX> & pmat,
+                      const long order,
+                      const VecLong & shift
+                     );
+//@} // doxygen group: PM-Basis algorithm (uniform approximant order)
 
 
 /*------------------------------------------------------------*/
@@ -382,108 +517,105 @@ VecLong popov_pmbasis(
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-// The algorithms below share the following requirements and properties:
-// *Requirement: the input matrix pmat is m x n with m = 2*n
-// *Requirement: the input matrix pmat has some genericity property: the
-// algorithms compute kernels of constant 2nxn matrices, which should all have
-// the form [ * | I ] ; in other words the bottom nxn submatrix of these
-// matrices should be invertible. This is equivalent to the fact that a certain
-// block-Hankel matrix of dimension n*order x n*order built from pmat is
-// invertible.
-// *This holds with proba very close to 1 for a random matrix pmat, but note
-// that here no check is performed and the algorithm may throw an error if
-// in fact pmat did not have the required genericity property.
-// 
-// *Output: appbas is in 0-ordered weak Popov form with degree ceil(order/2)
-//
-// Precisely,
-// if order = 2d, then 
-//      appbas = [ [X^d I + P00,  P01], [X P10, X^d I + X P11]]
-// where P00, P01, P10 have degree d-1 and P11 has degree d-2
-// if order = 2d+1, then
-//      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^d I + P11] ]
-// where P00, P01, P11 have degree d-1 and P10 has degree d
-//
-// In particular, in both cases, the leading and trailing principal nxn
-// submatrices of appbas are in 0-Popov form
+/** @name M-Basis/PM-Basis for generic input and uniform shift
+ * \anchor pmbasis_generic
+ *
+ * The functions below take only the parameters `(appbas,pmat,order)` and they
+ * compute an ordered weak Popov approximant basis `appbas` for `pmat` and the
+ * uniform order `order` (here, we use the uniform shift `(0,...,0)`). It is
+ * required that `pmat` is generic, in a sense detailed below; this holds with
+ * high probability for a random matrix `pmat` if the field has sufficiently
+ * large cardinality.
+ *
+ * They share the following requirements and properties:
+ * - Requirement: the input matrix `pmat` is `m x n` with `m = 2*n`
+ * - Requirement: the order is at least 2
+ * - Requirement: the input matrix `pmat` has some genericity property: the
+ *   algorithms compute kernels of constant `2n x n` matrices, which should all
+ *   have the form `[ * | I ]` ; in other words the bottom `n x n` submatrix of
+ *   these matrices should be invertible. (This can be rewritten as an
+ *   invertibility condition on the principal minors of a block-Hankel matrix
+ *   of dimension `n*order x n*order` built from `pmat`.)
+ * - Property: the output basis `appbas` is in ordered weak Popov form with
+ *   degree `ceil(order/2)`. More precisely:
+ *     - if `order = 2d`, then `appbas = [[X^d I + P00,  P01], [X P10, X^d I +
+ *     X P11]]` where `P00`, `P01`, `P10` have degree `d-1` and `P11` has
+ *     degree `d-2`
+ *     - if `order = 2d+1`, then `appbas = [[X^{d+1} I + X P00,  X P01], [P10,
+ *     X^d I + P11]]` where `P00`, `P01`, `P11` have degree `d-1` and `P10` has
+ *     degree `d`
+ *   In particular, in both cases, the leading and trailing principal `n x n`
+ *   submatrices of appbas are in Popov form.
+ *
+ * \todo Currently, no check is performed concerning these requirements and the
+ * algorithm may throw an error or have undefined behavior if `pmat` does not
+ * have the required genericity property.
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* Iterative, rescomp version                                 */
-/*------------------------------------------------------------*/
-// Requirement: m = 2*n ; pmat generic ; order >= 2
-// At each iteration a residual matrix (constant mxn) is computed from appbas
-// and pmat
-// TODO currently requires order to be even
+/** Computes an ordered weak Popov approximant basis `appbas` for
+ * `(pmat,order)` iteratively, similarly to #mbasis_rescomp, under the
+ * requirements and with the properties detailed in @ref pmbasis_generic.
+ *
+ * \todo throw away if never faster than the _resupdate_ version.
+ */
 void mbasis_generic_2n_n_rescomp(
                                  Mat<zz_pX> & appbas,
                                  const Mat<zz_pX> & pmat,
                                  const long order
                                 );
-// TODO throw away if never faster than resupdate
 
-/*------------------------------------------------------------*/
-/* Iterative, resupdate version                               */
-/*------------------------------------------------------------*/
-// Requirement: m = 2*n ; pmat generic ; order >= 2
-// Requirement: order>=2
-// A residual matrix (polynomial matrix mxn) is initialized as pmat, and
-// updated at each iteration with the same operations as those performed to
-// update appbas
+/** Computes an ordered weak Popov approximant basis `appbas` for
+ * `(pmat,order)` iteratively, similarly to #mbasis_resupdate, under the
+ * requirements and with the properties detailed in @ref pmbasis_generic. */
 void mbasis_generic_2n_n_resupdate(
                                    Mat<zz_pX> & appbas,
                                    const Mat<zz_pX> & pmat,
                                    const long order
                                   );
 
-/*------------------------------------------------------------*/
-/* Divide and conquer pmbasis, via mbasis-resupdate           */
-/*------------------------------------------------------------*/
-// Requirement: m = 2*n ; pmat generic ; order >= 2
-// We recall that the basis is returned like this:
-// if order = 2d, then 
-//      appbas = [ [X^d I + P00,  P01], [X P10, X^d I + X P11]]
-// where P00, P01, P10 have degree d-1 and P11 has degree d-2
-// if order = 2d+1, then
-//      appbas = [ [X^{d+1} I + X P00,  X P01], [P10, X^d I + P11] ]
-// where P00, P01, P11 have degree d-1 and P10 has degree d
-//
-// Note:
-//   * the product of two bases of the first type above (with respective
-//   degrees d1 and d2) remains of this first type (degree d1 + d2)
-//   * the product of a basis of the second type (degree d1) by one of the
-//   first type (degree d2) is a basis of the second type (degree d1+d2)
-//
-// We use this remark to choose specific orders order1 and order2 for the
-// recursive calls, so that we never have to deal with degree shifts:
-// --> if order is even, all orders of recursive calls are even
-// (as a result, the final basis is a product of forms 1 above, and
-// has form 1 itself)
-// --> if order is odd, then only the first leaf of the recursive tree
-// will be with odd order, the others will be with even order (the first
-// leaf gives the leftmost basis in the product yielding the final basis,
-// which means all bases will have form 1 above except the leftmost one which
-// has form 2, hence the final one has form 2)
+/** Computes an ordered weak Popov approximant basis `appbas` for
+ * `(pmat,order)` by a divide and conquer algorithm, similar to #pmbasis, under
+ * the requirements and with the properties detailed in @ref pmbasis_generic.
+ *
+ * Considering the two forms of bases described in @ref pmbasis_generic, which
+ * we call form 1 and form 2 respectively, we note that:
+ *  - the product of two bases having form 1 (with respective degrees `d1` and
+ *  `d2`) also has form 1 (with degree `d1 + d2`)
+ *  - the product of a basis having form 2 (with degree `d1`) by one having
+ *  form 1 (with degree `d2`) is a basis with form 2 (and degree `d1+d2`)
+ *
+ * We use this remark to choose specific orders `order1` and `order2` close to
+ * `order/2` for the recursive calls, allowing us to never have to deal with
+ * shifts (which usually appear during the computations even when one starts
+ * with the uniform shift `(0,...,0)`):
+ *   - if `order` is even, all orders of recursive calls are even (as a result,
+ *   the final basis is a product of forms 1, and thus has form 1 itself)
+ *   - if `order` is odd, then only the very last leaf of the recursive tree
+ *   will be with odd order, the others will be with even order; since the last
+ *   leaf gives the leftmost basis in the product which yields the final basis,
+ *   this means all bases will have form 1 except the leftmost one which has
+ *   form 2, hence the final one has form 2.
+ * */
 void pmbasis_generic_2n_n(
                           Mat<zz_pX> & appbas,
                           const Mat<zz_pX> & pmat,
                           const long order
                          );
 
-// TODO doc if this turns out useful
+/** Computes the top half `appbas` of the rows of an ordered weak Popov
+ * approximant basis for `(pmat,order)`, under the requirements and with the
+ * properties detailed in @ref pmbasis_generic. Fundamentally relies on
+ * #pmbasis_generic_2n_n, with a slightly modified recursion tree on top (the
+ * branch from the root to the last leaf computes only the top rows, the others
+ * are unchanged). */
 void pmbasis_generic_2n_n_top_rows(
                                    Mat<zz_pX> & appbas,
                                    const Mat<zz_pX> & pmat,
                                    const long order
                                   );
 
-
-
-
-
-
-
-
-
+//@} // doxygen group: M-Basis/PM-Basis for generic input and uniform shift
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -491,57 +623,66 @@ void pmbasis_generic_2n_n_top_rows(
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-// Example use: matrix fraction reconstruction in the context
-// of block-Wiedemann-like algorithms
+/** @name Matrix-Padé approximation
+ * \anchor matrix_pade
+ *
+ * _Example use_: matrix fraction reconstruction in the context of
+ * block-Wiedemann-like algorithms.
+ *
+ * The problem is the following:
+ * - Input: a square `n x n` matrix `pmat` of degree less than `order`,
+ * - Output: a square `n x n` matrix `den` of degree at most `order/2` and in
+ *   row reduced form such that `num = den * pmat` has degree less than
+ *   `order/2`.
+ *
+ * Here, `den` stands for denominator, `num` stands for numerator, and if
+ * the order is large enough, `pmat = den^{-1} num` is a proper irreducible
+ * left fraction description.
+ *
+ * Note that this can be solved by taking the leading principal `n x n`
+ * submatrix of an ordered weak Popov approximant basis for `[[pmat], [-Id]]`
+ * at order `order`. Here we aim at deriving algorithms close to `mbasis` and
+ * `pmbasis` but which exploit the fact that there is this identity matrix in
+ * the input and that we only want a submatrix of the final approximant basis.
+ *
+ * \todo implement general Matrix-Pade (for the moment, only the generic case
+ * is implemented).
+ *
+ * The functions below share the following requirements:
+ * - Requirement: the input matrix `pmat` is square, `n x n`
+ * - Requirement: the input matrix `pmat` has some genericity property: the
+ *   algorithms compute kernels of constant `2n x n` matrices, which should all
+ *   have the form `[ * | I ]` ; in other words the bottom `n x n` submatrix of
+ *   these matrices should be invertible. (This can be rewritten as an
+ *   invertibility condition on the principal minors of a block-Hankel matrix
+ *   of dimension `n*order x n*order` built from `pmat`.)
+ *
+ * The latter holds with high probability for a random matrix `pmat`, if the
+ * field is sufficiently large. Note that here no check is performed and the
+ * algorithm may throw an error if `pmat` does not have the required genericity
+ * property.
+ * 
+ * Some of these functions return only the denominator `den`, in Popov form.
+ * Precisely it has the form `X^dd I + D`, where `deg(D) < dd` and `dd =
+ * ceil(order/2)`, and it is exactly the leading principal `n x n` submatrix of
+ * the approximant basis computed by the functions #pmbasis_generic_2n_n above,
+ * on input `order` and `[[pmat], [-I]]`.
+ *
+ * The other functions return a couple `(den1,den2)`, where:
+ *    - `den1` is as in the previous paragraph,
+ *    - `den2` is a matrix of degree `floor(order/2)` such that `[[den1],
+ *    [den2]]` forms the left `2n x n` submatrix of the approximant basis
+ *    computed by the functions `mbasis_generic_2n_n` above, on input `order` and
+ *    `[[pmat], [-I]]` (in particular, if `order` is even then `den2(0)` is zero).
+ *  
+ */
+//@{
 
-// Input: a square n x n matrix pmat of degree < order
-// Output: a square n x n matrix den of degree <= order/2 such that
-// num = den * pmat has degree < order/2
-// (den for denominator, num for numerator: pmat = den^{-1} num
-// is a proper irreducible left fraction description)
-
-// Note: this can be found as the leading principal n x n submatrix of a
-// 0-ordered weak Popov approximant basis for [[pmat], [-Id]] at order 'order'
-// Here we aim at deriving algorithms close to mbasis and pmbasis but which
-// exploit the fact that there is this identity matrix in the input.
-
-// The algorithms below share the following requirements and properties:
-// *Requirement: the input matrix pmat is square, n x n
-// *Requirement: the input matrix pmat has some genericity property: the
-// algorithms compute kernels of constant 2nxn matrices, which should all have
-// the form [ * | I ] ; in other words the bottom nxn submatrix of these
-// matrices should be invertible. This is equivalent to the fact that a certain
-// block-Hankel matrix of dimension n*order x n*order built from pmat is
-// invertible.
-// *This holds with proba very close to 1 for a random matrix pmat, but note
-// that here no check is performed and the algorithm may throw an error if
-// in fact pmat did not have the required genericity property.
-// 
-// Some algorithms return:
-// *Output: den, the denominator in 0-Popov form, of the form
-// X^dd I + D, where deg(D) < dd and dd = ceil(order/2)
-// This is exactly the leading principal n x n submatrix of the
-// approximant basis computed by the functions mbasis_generic_2n_n above, on
-// input order and [[pmat], [-I]]
-//
-// Some algorithms return:
-// *Output: (den1,den2), where 
-//    -- den1 is in 0-Popov form, of the form X^dd I + D, where
-//    deg(D) < dd and dd = ceil(order/2) (same as the matrix den above)
-//    -- den2 is a matrix of degree floor(order/2) such that
-//    [[den1], [den2]] form the left 2n x n submatrix of the approximant basis
-//    computed by the functions mbasis_generic_2n_n above, on input order and
-//    [[pmat], [-I]]  (in particular, if order is even then den2(0) == 0)
-
-/*------------------------------------------------------------*/
-/* Iterative algorithm, for low approximation order           */
-/*------------------------------------------------------------*/
-
-// This algorithm could also be called "Matrix Berlekamp-Massey, iterative".
-// It is roughly the same as Berlekamp-Massey (on square matrices), except that
-// it is "reversed": it goes from low degree to high degrees.
-
-// computes both den1 and den2
+/** Computes the denominators `(den1,den2)` for `(pmat,order)` iteratively,
+ * with the properties and under the requirements detailed in @ref
+ * matrix_pade. This algorithm may be seen as Berlekamp-Massey performed on
+ * square matrices, and reversed (it goes from low degree to high degree).
+ * */
 void matrix_pade_generic_iterative(
                                    Mat<zz_pX> & den1,
                                    Mat<zz_pX> & den2,
@@ -549,9 +690,10 @@ void matrix_pade_generic_iterative(
                                    const long order
                                   );
 
-// Note: den is in Popov form.
-// we use the above version with den1==den, discarding den2
-// (den2 is used during all along the iterations to update den1)
+/** Computes the denominator `den` for `(pmat,order)` iteratively, with the
+ * properties and under the requirements detailed in @ref matrix_pade. This
+ * simply calls the function of the same name which computes both `den1` and
+ * `den2`, and then discards `den2`. */
 inline void matrix_pade_generic_iterative(
                                           Mat<zz_pX> & den,
                                           const Mat<zz_pX> & pmat,
@@ -562,47 +704,60 @@ inline void matrix_pade_generic_iterative(
     matrix_pade_generic_iterative(den, den2, pmat, order);
 }
 
-/*------------------------------------------------------------*/
-/* Divide and conquer algorithm                               */
-/*------------------------------------------------------------*/
-
-// essentially: one call to matpadegen_rec, one residual, one call to pmbasis_toprows, find result by product
-void matrix_pade_generic(
-                         Mat<zz_pX> & den,
-                         const Mat<zz_pX> & pmat,
-                         const long order
-                        );
-
-// version computing den as 2n x n, storing the two left blocks
-// [[den1], [den2]] above (den1 in Popov form).
+/** Computes the denominators `(den1,den2)` for `(pmat,order)` by a divide and
+ * conquer approach (the matrix `den` is `2n x n` and stores `[[den1],
+ * [den2]]`), with the properties and under the requirements detailed in @ref
+ * matrix_pade. This is essentially a specialization of `pmbasis` to the
+ * present situation, where we need just the left half of the columns of the
+ * output approximant basis, and where the input contains an identity matrix.
+ */
 void matrix_pade_generic_recursion(
                                    Mat<zz_pX> & den,
                                    const Mat<zz_pX> & pmat,
                                    const long order
                                   );
 
+/** Computes the denominator `den` for `(pmat,order)` by a divide and conquer
+ * algorithm, with the properties and under the requirements detailed in @ref
+ * matrix_pade. This fundamentally relies on #matrix_pade_generic_recursion
+ * with the recursion tree slightly modified with the branch from the root to
+ * the last leaf computing just the top denominator instead of both `den1` and
+ * `den2`, thanks to a call to #pmbasis_generic_2n_n_top_rows. */
+void matrix_pade_generic(
+                         Mat<zz_pX> & den,
+                         const Mat<zz_pX> & pmat,
+                         const long order
+                        );
 
-
+//@} // doxygen group: Matrix-Padé approximation
 
 
 
 /*------------------------------------------------------------*/
-/* FIXME in progress: MBASIS/PMBASIS, generic case, one column */
+/* TODO in progress: (P)MBASIS, generic case, few columns     */
 /*------------------------------------------------------------*/
 
+/** Using partial linearization to handle the case where the number of columns
+ * is quite smaller than the number of rows. Iterative.
+ *
+ * \todo Currently a prototype. Not tuned and barely tested. */
 VecLong mbasis_generic_onecolumn(
-                     Mat<zz_pX> & appbas,
-                     const Mat<zz_pX> & pmat,
-                     const long order,
-                     const VecLong & shift
-                    );
+                                 Mat<zz_pX> & appbas,
+                                 const Mat<zz_pX> & pmat,
+                                 const long order,
+                                 const VecLong & shift
+                                );
 
+/** Using partial linearization to handle the case where the number of columns
+ * is quite smaller than the number of rows. Divide and conquer.
+ *
+ * \todo Currently a prototype. Not tuned and barely tested. */
 VecLong pmbasis_generic_onecolumn(
-               Mat<zz_pX> & appbas,
-               const Mat<zz_pX> & pmat,
-               const long order,
-               const VecLong & shift
-              );
+                                  Mat<zz_pX> & appbas,
+                                  const Mat<zz_pX> & pmat,
+                                  const long order,
+                                  const VecLong & shift
+                                 );
 
 
 

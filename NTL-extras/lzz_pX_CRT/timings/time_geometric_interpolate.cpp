@@ -35,7 +35,7 @@ void check(long p)
         long nb;
         const double thresh = 0.02;
 
-        random_vec_zz_p(val, j);
+        random(val, j);
 
         // FFT        
         ev.set_FFT_interpolate();

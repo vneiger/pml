@@ -472,8 +472,8 @@ VecLong mbasis_rescomp(
     // A. General
 
     // A.1 dimensions of input matrix
-    long m = pmat.NumRows();
-    long n = pmat.NumCols();
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
 
     // A.2 store iota since it will be used at each iteration
     VecLong iota(m);
@@ -501,12 +501,11 @@ VecLong mbasis_rescomp(
     // C.1 stores the residual, initially coeffs_pmat[0]
     Mat<zz_p> residuals(coeffs_pmat[0]);
 
-    // C.2 temporary matrices used during the computation of residuals[i]
+    // C.2 temporary matrices used during the computation of residuals
     Mat<zz_p> res_coeff;
 
     // C.3 permuted residual, used as input to the kernel at the "base case"
-    Mat<zz_p> p_residual;
-    p_residual.SetDims(m, n);
+    Mat<zz_p> p_residual(INIT_SIZE, m, n);
 
     // D. Base case (working modulo X, essentially amounts to finding the left
     // kernel of the permuted residual p_residual)
@@ -571,7 +570,7 @@ VecLong mbasis_rescomp(
 #ifdef MBASIS_PROFILE
         t_kernel += GetWallTime()-t_now;
 #endif
-        long ker_dim = p_kerbas.NumRows();
+        const long ker_dim = p_kerbas.NumRows();
 
         if (ker_dim==0)
         {
@@ -593,6 +592,7 @@ VecLong mbasis_rescomp(
             // --> we just need to compute the next residual
             // (unless ord == order, in which case the algorithm returns)
             // this "residual" is the coefficient of degree ord in appbas * pmat:
+            // Note: at this point, residuals==0
             if (ord<order)
             {
 #ifdef MBASIS_PROFILE
@@ -739,7 +739,7 @@ VecLong mbasis_rescomp(
             // is reached on the diagonal, among the pivot degrees)
             for (long d = 0; d <= deg_appbas; ++d)
             {
-                kerapp = kerbas * coeffs_appbas[d];
+                mul(kerapp, kerbas, coeffs_appbas[d]);
                 for (long i = 0; i < ker_dim; ++i)
                     coeffs_appbas[d][pivind[perm_rows_ker[i]]].swap(kerapp[i]);
             }
@@ -758,10 +758,10 @@ VecLong mbasis_rescomp(
             // Find next residual: coefficient of degree ord in appbas*pmat
             // (this is not necessary if ord==order, since in this case
             // we have finished: appbas*pmat is zero mod X^order)
+            // Note: at this point, residuals==0
             if (ord<order)
             {
                 long dmin=std::max<long>(0,ord-coeffs_pmat.length()+1);
-                clear(residuals);
                 for (long d = dmin; d < deg_appbas+1; ++d) // we have deg_appbas <= ord
                 {
                     mul(res_coeff, coeffs_appbas[d], coeffs_pmat[ord-d]);
@@ -826,8 +826,8 @@ VecLong mbasis_rescomp_multithread(
     const long nthreads = AvailableThreads();
 
     // A.2 dimensions of input matrix
-    long m = pmat.NumRows();
-    long n = pmat.NumCols();
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
 
     // A.3 store iota since it will be used at each iteration
     VecLong iota(m);
@@ -1148,8 +1148,8 @@ VecLong mbasis_resupdate(
     // A. General
 
     // A.1 dimensions of input matrix
-    long m = pmat.NumRows();
-    long n = pmat.NumCols();
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
 
     // A.2 store iota since it will be used at each iteration
     VecLong iota(m);
@@ -1383,7 +1383,7 @@ VecLong mbasis_resupdate(
             // is reached on the diagonal, among the pivot degrees)
             for (long d = 0; d <= deg_appbas; ++d)
             {
-                kerapp = kerbas * coeffs_appbas[d];
+                mul(kerapp, kerbas, coeffs_appbas[d]);
                 for (long i = 0; i < ker_dim; ++i)
                     coeffs_appbas[d][pivind[perm_rows_ker[i]]].swap(kerapp[i]);
             }
@@ -1408,7 +1408,7 @@ VecLong mbasis_resupdate(
             // kerbas*residuals
             for (long d = ord; d < order; ++d)
             {
-                kerres = kerbas * residuals[d];
+                mul(kerres, kerbas, residuals[d]);
                 for (long i = 0; i < ker_dim; ++i)
                     residuals[d][pivind[perm_rows_ker[i]]].swap(kerres[i]);
             }
@@ -1441,7 +1441,7 @@ VecLong mbasis_resupdate(
     t_now = GetWallTime();
 #endif
     // Convert approximant basis to polynomial matrix representation
-    appbas = conv(coeffs_appbas);
+    conv(appbas, coeffs_appbas);
 #ifdef MBASIS_PROFILE
     t_others += GetWallTime()-t_now;
 #endif
@@ -1496,27 +1496,25 @@ VecLong pmbasis(
     if (order <= 16) // TODO thresholds to be determined
         return mbasis(appbas,pmat,order,shift);
 
-    VecLong pivdeg; // pivot degree, first call
-    VecLong pivdeg2; // pivot degree, second call
-    VecLong rdeg(pmat.NumRows()); // shifted row degree
     long order1 = order>>1; // order of first call
     long order2 = order-order1; // order of second call
-    Mat<zz_pX> trunc_pmat; // truncated pmat for first call
-    Mat<zz_pX> appbas2; // basis for second call
-    Mat<zz_pX> residual; // for the residual
 
     // first recursive call, with 'pmat' and 'shift'
+    Mat<zz_pX> trunc_pmat; // truncated pmat for first call
     trunc(trunc_pmat,pmat,order1);
-    pivdeg = pmbasis(appbas,trunc_pmat,order1,shift);
+    VecLong pivdeg = pmbasis(appbas,trunc_pmat,order1,shift);
 
     // shifted row degree = shift for second call = pivdeg+shift
+    VecLong rdeg(pmat.NumRows()); // shifted row degree
     std::transform(pivdeg.begin(), pivdeg.end(), shift.begin(), rdeg.begin(), std::plus<long>());
 
     // residual = (appbas * pmat * X^-order1) mod X^order2
+    Mat<zz_pX> residual; // for the residual
     middle_product(residual, appbas, pmat, order1, order2-1);
 
     // second recursive call, with 'residual' and 'rdeg'
-    pivdeg2 = pmbasis(appbas2,residual,order2,rdeg);
+    Mat<zz_pX> appbas2; // basis for second call
+    VecLong pivdeg2 = pmbasis(appbas2,residual,order2,rdeg);
 
     // final basis = appbas2 * appbas
     multiply(appbas,appbas2,appbas);

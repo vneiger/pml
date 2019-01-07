@@ -6,9 +6,10 @@
 #include <NTL/vector.h>
 #include <iomanip>
 #include <random>
+#include <algorithm>
 
 #include "util.h"
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_multiply.h"
 
 NTL_CLIENT
 
@@ -22,7 +23,7 @@ void row_rank_deficient_mat(Mat<zz_pX> &m, const long r, const long c, const lon
 {
     random(m,r-1,c,deg+1);
     Mat<zz_pX> lvec;
-    random(lvec, 1, r-1,1);
+    random(lvec, 1, r-1,3);
 
     Mat<zz_pX> new_row;
     multiply(new_row, lvec, m);

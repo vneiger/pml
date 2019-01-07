@@ -1,6 +1,20 @@
 #ifndef MAT_LZZ_PX_EXTRA__H
 #define MAT_LZZ_PX_EXTRA__H
 
+/** Main header for `Mat<zz_pX>`, matrices over the univariate polynomials.
+ *
+ * \file mat_lzz_pX_extra.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
+ * \version 0.1
+ * \date 2018-12-07
+ *
+ * This is the main header for polynomial matrix functions. It mostly includes
+ * other headers which gather functions for a specific kind of tasks. This file
+ * contains general TODOs, and still contains a few declarations that do not
+ * require a separate header (for the moment).
+ *
+ */
+
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
 #include <iostream>
@@ -8,9 +22,6 @@
 
 #include "lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
-#include "thresholds_matrix_multiply.h"
-#include "thresholds_matrix_middle_product.h"
-#include "thresholds_newton_inv_trunc.h"
 #include "thresholds_solve_lift.h"
 
 #include "mat_lzz_pX_utils.h"  // TODO: test
@@ -26,6 +37,7 @@
 
 #include "mat_lzz_pX_sequence.h"  // TODO: still draft
 
+// TODO all the doc
 
 NTL_CLIENT
 
@@ -136,6 +148,25 @@ void diagonal_of_hermite(Vec<zz_pX> & diag, const Mat<zz_pX> & pmat);
  ***********************************************/
 
 // TODO (requires partial linearization + basis reduction)
+
+/**********************************************************************
+ *                          TODO: BASIS REDUCTION                     *
+ *            (shifted reduced form and shifted normal forms)         *
+ **********************************************************************/
+
+// TODO general reduction to uniform shift via pre-multiplication
+// worthwile at least when shift close to uniform
+
+// TODO naive algorithms (see Mulders-Storjohann for good reference)
+
+// TODO general shifted Popov form via kernel (itself via approximant basis)
+
+// TODO understand if there is any chance Alekhnovich improves over the
+// kernel approach
+
+// TODO nonsingular: Giorgi-Jeannerod-Villard's Las Vegas reduction
+// (worth implementing for shifts other than uniform?)
+
 
 
 /**********************************************************************

@@ -510,7 +510,7 @@ void circulant_row_lzz_pX::mul_left_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in,
     out.SetLength(m);
 
     Vec<zz_pX> data_trunc; 
-    reverse_vector(data_trunc, data);
+    mirror(data_trunc, data);
     trunc(data_trunc, data_trunc, s);
     Vec<zz_pX> input_trunc;
     trunc(input_trunc, in, s);

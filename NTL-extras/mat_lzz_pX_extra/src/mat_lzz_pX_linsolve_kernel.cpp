@@ -21,8 +21,8 @@ void linsolve_via_kernel(
                          const Vec<zz_pX> & b
                         )
 {
-    long m = pmat.NumRows();
-    long n = pmat.NumCols();
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
 
     // TODO this kind of check should probably be in higher level function
     if (m != n)

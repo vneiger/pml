@@ -1,11 +1,21 @@
 #ifndef MAT_LZZ_PX_MULTIPLY__H
 #define MAT_LZZ_PX_MULTIPLY__H
 
+/** Multiplication of univariate polynomial matrices over `zz_p`
+ *
+ * \file mat_lzz_pX_multiply.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
+ * \version 0.1
+ * \date 2018-12-11
+ *
+ * Functions for computing products and middle products of univariate
+ * polynomial matrices.
+ *
+ */
+
 #include <memory> // for unique_ptr
-#include <NTL/matrix.h>
-#include <NTL/lzz_pX.h>
+#include "mat_lzz_pX_utils.h" // for deg() (and maybe others)
 #include "lzz_pX_CRT.h"
-#include "mat_lzz_pX_utils.h"
 
 NTL_CLIENT
 
@@ -15,92 +25,155 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+/** @name General interface for multiplication and middle product
+ * \anchor MiddleProduct
+ *
+ * These are the general functions for polynomial matrix multiplication and
+ * polynomial matrix middle product: they choose the fastest of the available
+ * methods, depending on the degrees and dimensions of the input matrices.
+ *
+ * The middle product `b` of `a` and `c` with respect to nonnegative integers
+ * `dA` and `dB` is defined here as:
+ * `b == trunc(trunc(a, dA+1)*c div x^dA, dB+1)`
+ * where `div` means that we divide by `x^dA`, discarding terms of negative
+ * degree. All functions below which have `middle_product` in their name follow
+ * this definition.
+ *
+ * In the multiplication functions, the OUT parameter `c` may alias the IN
+ * parameter `a` or the IN parameter `b`; in the middle product functions, the
+ * OUT parameter `b` may alias the IN parameter `a` or the IN parameter `c`. 
+ *
+ * \todo Currently, the code has not been optimized much for matrix-vector and
+ * vector-matrix products, or for the case where the left-operand is a column
+ * vector.
+ */
+//@{
+
+/** Computes the product `c = a*b` of two polynomial matrices `a` and `b`. The
+ * parameter `is_prime` is set to 1 (the default) if the modulus is known to be
+ * prime */
+void multiply(
+              Mat<zz_pX> & c,
+              const Mat<zz_pX>& a,
+              const Mat<zz_pX>& b,
+              long is_prime = 1
+             );
+
+/** Computes the product `c = a*b` of a polynomial matrix `a` by a polynomial
+ * column vector `b`. The parameter `is_prime` is set to 1 (the default) if the
+ * modulus is known to be prime */
+void multiply(Vec<zz_pX>& c, const Mat<zz_pX> & a, const Vec<zz_pX> & b, long is_prime = 1);
+
+/** Computes the product `c = a*b` of a polynomial row vector `a` by a
+ * polynomial matrix `b`. The parameter `is_prime` is set to 1 (the default) if
+ * the modulus is known to be prime */
+void multiply(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Mat<zz_pX> & b, long is_prime = 1);
+
+/** Computes and returns the product `a*b` of two polynomial matrices `a` and `b` */
+inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
+{ Mat<zz_pX> c; multiply(c, a, b); return c; }
+
+/** Computes and returns the product `a*b` of a polynomial matrix `a` by a
+ * polynomial column vector `b` */
+inline Vec<zz_pX> operator*(const Mat<zz_pX> & a, const Vec<zz_pX> & b)
+{ Vec<zz_pX> c; multiply(c, a, b); return c; }
+
+/** Computes and returns the product `a*b` of a polynomial row vector `a` by a
+ * polynomial matrix `b` */
+inline Vec<zz_pX> operator*(const Vec<zz_pX> & a, const Mat<zz_pX> & b)
+{ Vec<zz_pX> c; multiply(c, a, b); return c; }
+
+/** Computes the truncated product `c = a*b % x^d` of two polynomial matrices
+ * `a` and `b` at order `d`. The parameter `is_prime` is set to 1 (the default)
+ * if the modulus is known to be prime */
+inline void mul_trunc(
+                      Mat<zz_pX> & c, 
+                      const Mat<zz_pX> & a, 
+                      const Mat<zz_pX> & b, 
+                      long d, 
+                      long is_prime = 1
+                     )
+{ multiply(c, a, b, is_prime); trunc(c, c, d); }
+
+/** Computes and returns the truncated product `a*b % x^d` of two polynomial
+ * matrices `a` and `b` at order `d`. The parameter `is_prime` is set to 1 (the
+ * default) if the modulus is known to be prime */
+inline Mat<zz_pX> mul_trunc(
+                            const Mat<zz_pX> & a, 
+                            const Mat<zz_pX> & b, 
+                            long n,
+                            long is_prime = 1
+                           )
+{ Mat<zz_pX> c; mul_trunc(c, a, b, n, is_prime); return c; }
+
+/** Computes the middle product `b` of polynomial matrices `a` and `c` with
+ * respective to nonnegative integers `dA` and `dB` (see @ref MiddleProduct).
+ * The parameter `is_prime` is set to 1 (the default) if the modulus is known
+ * to be prime */
+void middle_product(
+                    Mat<zz_pX> & b,
+                    const Mat<zz_pX> & a,
+                    const Mat<zz_pX> & c,
+                    long dA,
+                    long dB,
+                    long is_prime = 1
+                   );
+
+/** Computes and returns the middle product of polynomial matrices `a` and `c`
+ * with respective to nonnegative integers `dA` and `dB` (see @ref
+ * MiddleProduct). The parameter `is_prime` is set to 1 (the default) if the
+ * modulus is known to be prime */
+inline Mat<zz_pX> middle_product(
+                                 const Mat<zz_pX>& a,
+                                 const Mat<zz_pX>& c,
+                                 long dA,
+                                 long dB,
+                                 long is_prime = 1
+                                )
+{ Mat<zz_pX> b; middle_product(b, a, c, dA, dB, is_prime); return b; }
+
+//@} // doxygen group: General interface for multiplication and middle product
+
+
+
+
+
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/*               A CLASS FOR 3 PRIMES FFTS                    */
+/*                   MATRIX MULTIPLICATION                    */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-class lzz_pX_3_primes
-{
-public:
-    /*------------------------------------------------------------*/
-    /* constructor of lzz_p_3_primes                              */
-    /* need to know ncols and degrees to choose number of primes  */
-    /*------------------------------------------------------------*/
-    lzz_pX_3_primes(long ncols, long dA, long dB);
-    lzz_pX_3_primes(){};
+/** @name Non-FFT-based polynomial matrix multiplication
+ *
+ * All these functions take the following parameters:
+ *  \param[out] c polynomial matrix  
+ *  \param[in] a polynomial matrix  
+ *  \param[in] b polynomial matrix  
+ *
+ * They compute `c` as the product `a*b` of the input `a` and `b`. The
+ * parameter `c` does not have to be zero, and may alias `a` or `b`.
+ *
+ * Note: Waksman currently requires that `a` has at least two columns.
+ */
+//@{
 
-    /*------------------------------------------------------------*/
-    /* returns the number of primes                               */
-    /*------------------------------------------------------------*/
-    long nb() const;
-
-    /*------------------------------------------------------------*/
-    /* reconstructs c from its images                             */
-    /*------------------------------------------------------------*/
-    void reconstruct(Mat<zz_pX>& c, const Vec<Mat<zz_pX>>& cs);
-
-private:
-    long nb_primes;
-    long fft_p0, fft_p1, fft_p2; // the fft primes
-};
-
-/*------------------------------------------------------------*/
-/* 3-primes: in-place reduction modulo the current prime      */
-/*------------------------------------------------------------*/
-void reduce_mod_p(Mat<zz_pX> & a);
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/*               PLAIN MULTIPLICATION                         */
-/* ALL FUNCTIONS: C = A*B, OUTPUT CAN ALIAS INPUT             */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* naive algorithm                                            */
-/*------------------------------------------------------------*/
+/** Uses the naive cubic matrix multiplication algorithm (three for loops)
+ * along with NTL's polynomial multiplication for multiplying the entries of
+ * the matrices */
 void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
-/*------------------------------------------------------------*/
-/* Waksman's algorithm                                        */
-/*------------------------------------------------------------*/
+/** Uses Waksman's cubic matrix multiplication algorithm along with NTL's
+ * polynomial multiplication. Requires that `a` has at least two columns. */
 void multiply_waksman(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-
-/*------------------------------------------------------------*/
-/* assumes FFT prime and p large enough                       */
-/* uses Mat<zz_p> matrix multiplication                       */
-/*------------------------------------------------------------*/
-void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void multiply_evaluate_FFT_matmul2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-
-/*------------------------------------------------------------*/
-/* assumes FFT prime and p large enough                       */
-/* does not use Mat<zz_p> matrix multiplication               */
-/*------------------------------------------------------------*/
-void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-
-/*------------------------------------------------------------*/
-/* assumes FFT prime and p large enough                       */
-/* chooses one of the two above                               */
-/*------------------------------------------------------------*/
-void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-
-/*------------------------------------------------------------*/
-/* geometric evaluation                                       */
-/* uses Mat<zz_p> matrix multiplication                       */
-/* Note: implementation not using matmul always slower.       */
-/*------------------------------------------------------------*/
-void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 /*------------------------------------------------------------*/
 /* matrix multiplication using the algorithm of Giorgi et al. */
 /* uses matrix multiplication for evaluation and interpolation*/
 /*------------------------------------------------------------*/
 void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
 /*------------------------------------------------------------*/
 /* computes the matrices for evaluation and interpolation     */
 /*------------------------------------------------------------*/
@@ -116,81 +189,68 @@ inline void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<z
     multiply_transform(c, a, b, max(deg(a), deg(b)) + 1);
 }
 
+//@} // doxygen group: Non-FFT-based polynomial matrix multiplication
+
+/** @name FFT-based polynomial matrix multiplication
+ *
+ *  \todo doc
+ */
+//@{
+
+/*------------------------------------------------------------*/
+/* assumes FFT prime and p large enough                       */
+/* chooses one of the two above                               */
+/*------------------------------------------------------------*/
+void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
 /*------------------------------------------------------------*/
 /* 3 primes CRT algorithm                                     */
 /*------------------------------------------------------------*/
 void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
-/*------------------------------------------------------------*/
-/* main function for c = a*b                                  */
-/* is_prime = 1 assumes that p is known to be prime           */
-/*------------------------------------------------------------*/
-void multiply(Mat<zz_pX> & c, const Mat<zz_pX>& a, const Mat<zz_pX>& b, long is_prime = 1);
-
-inline Mat<zz_pX> operator*(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
-{ 
-    Mat<zz_pX> x; 
-    multiply(x, a, b); 
-    return x; 
-}
 
 /*------------------------------------------------------------*/
-/* multiply by a vector                                       */
+/* assumes FFT prime and p large enough                       */
+/* uses Mat<zz_p> matrix multiplication                       */
 /*------------------------------------------------------------*/
-void multiply(Vec<zz_pX>& c, const Mat<zz_pX>& a, const Vec<zz_pX>& b, long is_prime = 1);
+void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_evaluate_FFT_matmul2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
-inline Vec<zz_pX> operator*(const Mat<zz_pX>& a, const Vec<zz_pX>& b)
-{ 
-    Vec<zz_pX> x; 
-    multiply(x, a, b); 
-    return x; 
-}
+/*------------------------------------------------------------*/
+/* assumes FFT prime and p large enough                       */
+/* does not use Mat<zz_p> matrix multiplication               */
+/*------------------------------------------------------------*/
+void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 
 /*------------------------------------------------------------*/
+/* geometric evaluation                                       */
+/* uses Mat<zz_p> matrix multiplication                       */
+/* Note: implementation not using matmul always slower.       */
 /*------------------------------------------------------------*/
-/*               TRUNCATED MULTIPLICATION                     */
-/* ALL FUNCTIONS: C = A*B MOD X^N, OUTPUT CAN ALIAS INPUT     */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
+void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+// TODO versions similar to matmul2 and matmul3, cf FFT file
 
-/*------------------------------------------------------------*/
-/* c = a*b mod x^n                                            */
-/*------------------------------------------------------------*/
-inline void mul_trunc(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long n, long is_prime = 1)
-{
-    multiply(c, a, b, is_prime);
-    trunc(c, c, n);
-}
+//@} // doxygen group: FFT-based polynomial matrix multiplication
 
-inline Mat<zz_pX> mul_trunc(const Mat<zz_pX> & a, const Mat<zz_pX> & b, long n, long is_prime = 1)
-{
-    Mat<zz_pX> c;
-    mul_trunc(c, a, b, n, is_prime);
-    return c;
-}
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*                     MIDDLE PRODUCT                         */
-/* all(*) functions (except for geometric)                    */
-/* return trunc( trunc(a, dA+1)*c div x^dA, dB+1 )            */
-/* output can alias input                                     */
-/* todo: ensure degree bounds on a, c                         */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/** @name Middle product
+ *
+ *  bla.
+ *
+ * \todo ensure degree bounds on a, c
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* transpose of b mapsto c = a*b. output is                   */
-/*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
-/* a must have degree at most dA                              */
-/* c must have degree at most dA + dB                         */
-/*------------------------------------------------------------*/
-void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
-
-/*------------------------------------------------------------*/
-/* naive algorithm, uses polynomial middle products           */
-/*------------------------------------------------------------*/
+/** Uses the naive cubic matrix multiplication algorithm (three for loops)
+ * along with NTL's middle product */
 void middle_product_naive(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
 /*------------------------------------------------------------*/
@@ -222,17 +282,50 @@ void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat
 void middle_product_evaluate_dense(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
 /*------------------------------------------------------------*/
-/* main function.                                             */
-/* is_prime = 1 assumes that p is known to be prime           */
+/* transpose of b mapsto c = a*b. output is                   */
+/*    trunc( rev(a, dA)*c div x^dA, dB+1 )                    */
+/* a must have degree at most dA                              */
+/* c must have degree at most dA + dB                         */
 /*------------------------------------------------------------*/
-void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime = 1);
+void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
-inline Mat<zz_pX> middle_product(const Mat<zz_pX>& a, const Mat<zz_pX>& c, long dA, long dB, long is_prime = 1)
-{ 
-    Mat<zz_pX> b; 
-    middle_product(b, a, c, dA, dB, is_prime); 
-    return b; 
-}
+//@} // doxygen group: Middle product
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*                CLASS FOR 3 PRIMES FFTS                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/** Class for 3-primes FFT
+ *
+ * \todo use smaller primes when/if possible? (currently uses the FFT primes 0,
+ * 1, 2 of NTL)
+ */
+class lzz_pX_3_primes
+{
+public:
+    /** Constructor, which uses the product inner dimension and the degrees to
+     * choose the number of primes and the primes */
+    lzz_pX_3_primes(long indim, long dA, long dB);
+
+    /** Empty constructor is forbidden */
+    lzz_pX_3_primes() = delete;
+
+    /** Accessor: number of primes */
+    long nb() const { return nb_primes; }
+
+    /** Reconstructs c from its images modulo the primes */
+    void reconstruct(Mat<zz_pX>& c, const Vec<Mat<zz_pX>>& cs) const;
+
+private:
+    long nb_primes; /**< number of FFT primes */
+    long fft_p0, fft_p1, fft_p2; /**< the FFT primes */
+};
+
+
+
 
 
 /*------------------------------------------------------------*/
@@ -375,29 +468,37 @@ public:
     /*------------------------------------------------------------*/
     void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b);
 
-    mat_lzz_pX_lmultiplier_3_primes(){}
     mat_lzz_pX_lmultiplier_3_primes(const Mat<zz_pX> & a, long dB);
-
+    mat_lzz_pX_lmultiplier_3_primes() = delete;
 
     /*------------------------------------------------------------*/
     /* we use unique_ptrs; we don't expect to have to do copies   */
     /*------------------------------------------------------------*/
-    mat_lzz_pX_lmultiplier_3_primes& operator=(const mat_lzz_pX_lmultiplier_3_primes&)
-    {
-        LogicError("no copy allowed");
-        return *this;
-    }
+    mat_lzz_pX_lmultiplier_3_primes& operator=(const mat_lzz_pX_lmultiplier_3_primes&) = delete;
 
 private:
     lzz_pX_3_primes primes;
     Vec<std::unique_ptr<mat_lzz_pX_lmultiplier>> FFT_muls;
 };
 
+/** @name Helper functions
+ *
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* returns a multiplier of the right type                     */
-/*------------------------------------------------------------*/
-std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, long dB);
+/** Compute the reduction of a polynomial matrix `a` modulo the current prime,
+ * in-place (used in 3-primes FFT) */
+void reduce_mod_p(Mat<zz_pX> & a);
+
+/** Compute `amodp`, the reduction of a polynomial matrix `a` modulo the
+ * current prime (used in 3-primes FFT) */
+void reduce_mod_p(Mat<zz_pX> & amodp, const Mat<zz_pX> & a);
+
+/** \todo DOC returns a multiplier of the right type */
+std::unique_ptr<mat_lzz_pX_lmultiplier>
+get_lmultiplier(const Mat<zz_pX> & a, long dB);
+
+//@} // doxygen group: Helper functions
 
 #endif /* ifndef MAT_LZZ_PX_MULTIPLY__H */
 

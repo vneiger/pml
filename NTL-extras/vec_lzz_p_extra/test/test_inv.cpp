@@ -15,7 +15,7 @@ void check()
     for (long i = 0; i < 1000; i += 1)
     {
         Vec<zz_p> A, oldA, invA2;
-        random_vec_zz_p(A, i);
+        random(A, i);
         oldA = A;
 
         inv_naive(invA2, A);

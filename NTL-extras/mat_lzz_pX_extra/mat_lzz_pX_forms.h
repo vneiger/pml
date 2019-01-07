@@ -1,10 +1,11 @@
 #ifndef MAT_LZZ_PX_FORMS__H
 #define MAT_LZZ_PX_FORMS__H
 
-/** Shifted reduced/normal forms of polynomial matrices.
+/** \brief Shifted reduced forms and shifted normal forms of univariate
+ * polynomial matrices over `zz_p`
  *
  * \file mat_lzz_pX_forms.h
- * \author Seung Gyu Hyun, Vincent Neiger
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
  * \version 0.1
  * \date 2018-12-07
  *
@@ -13,31 +14,19 @@
  * in some given form, compute shifted row/column degrees and
  * shifted pivot degrees, compute shifted leading matrix.
  *
- * \todo definitions
+ * \todo random matrix with given PolMatForm
  *
  */
 
-#include <NTL/matrix.h>
-#include <NTL/lzz_pX.h>
-#include <vector>
+#include "mat_lzz_pX_utils.h"
 #include <algorithm>
 
-/** Vectors of long's, for representing shifts and list of degrees. */
-typedef std::vector<long> VecLong;
-
-NTL_CLIENT;
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* Tools for dealing with shifted reduced forms and shifted   */
-/* normal forms of polynomial matrices                        */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
+NTL_CLIENT
 
 /** Shifted reduced forms of polynomial matrices.
  *
- * Recall that Popov => ordered weak Popov => weak Popov => Reduced.
- *  
+ * Note that these numbers follow the "strength" of these forms: Popov implies
+ * ordered weak Popov, which implies weak Popov, which implies reduced.
  */
 enum PolMatForm {
     NONE = 0, /**< Arbitrary matrix, no specific form */
@@ -48,33 +37,32 @@ enum PolMatForm {
 };
 
 
+/** @name Helper functions for shifts
+ *
+ * \todo reduction of the shift entries for a given determinantal degree (would
+ * be useful, for example in kernel via approximation)
+ */
+//@{
 
-// TODO shift reduction (given degdet D, cf ISSAC)
-// --> would be useful, e.g. in naive kernel
-
-// TODO type for index tuples?
-// TODO type for pair (pivot index, pivot degree)?
-// remove those types to be more explicit?
-
-// TODO random matrix with given PolMatForm
-
-
-/*------------------------------------------------------------*/
-/* Amplitude of a shift: max(shift) - min(shift)              */
-/*------------------------------------------------------------*/
-
+/** Computes the amplitude `amp` of a shift `shift`, that is, the difference
+ * between its largest entry and its smallest entry
+ */
 inline void amplitude(long & amp, VecLong shift)
 {
     auto minmax = std::minmax_element(shift.begin(), shift.end());
     amp = *minmax.second - *minmax.first;
 }
 
+/** Computes and returns the amplitude of a shift `shift`, that is, the
+ * difference between its largest entry and its smallest entry
+ */
 inline long amplitude(VecLong shift)
 {
     auto minmax = std::minmax_element(shift.begin(), shift.end());
     return *minmax.second - *minmax.first;
 }
 
+//@} // doxygen group: Helper functions for shifts
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -82,96 +70,126 @@ inline long amplitude(VecLong shift)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+/** @name (Shifted) row and column degree
+ * \anchor RowAndColumnDegrees
+ *
+ * The degree of a (row or column) vector is the maximum of the degrees of the
+ * entries of this vector; by convention, it is -1 if the vector is zero.  The
+ * _row degree_ of a matrix is the tuple of the degrees of its rows, and
+ * similarly the _column degree_ of a matrix is the tuple of the degrees of its
+ * columns.
+ *
+ * In this context, a shift is a tuple of signed integers. For a given `shift`
+ * of length `m`, the <em>`shift`-degree</em> of a (row or column) vector
+ * `pvec` of length `m` is the maximum of the degrees of the entries of that
+ * vector to which we add the corresponding shift entry, that is, the maximum
+ * of `deg(pvec[i]) + shift[i]` for `0 <= i < m`. By convention, this is
+ * `min(shift)-1` if the vector is zero, thus ensuring that the `shift`-degree
+ * of a nonzero vector is always strictly larger than the `shift`-degree of the
+ * zero vector.
+ *
+ * Then, the <em>`shift`-row degree</em> of a polynomial matrix is the tuple of
+ * `shift`-degrees of its rows, and similarly the <em>`shift`-column
+ * degree</em> is the tuple of `shift`-degrees of its columns.
+ *
+ * In particular, for the zero shift `shift = [0,...,0]`, these notions of
+ * shifted degree of a vector and of shifted row/column degree of a matrix
+ * coincide with the usual non-shifted notions defined above.
+ *
+ * The functions below which involve a `shift` among its parameters throw
+ * an error if this `shift` does not have the right length.
+ *  
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* the row degree of a matrix is the tuple                    */
-/* (deg(row 1), deg(row 2), ..., deg(row m))                  */
-/* where the degree of row k is the maximum of the degrees    */
-/* of the entries of row k (-1 if row is zero)                */
-/*------------------------------------------------------------*/
-void row_degree(
-                VecLong & rdeg,
-                const Mat<zz_pX> &pmat
-               ); 
+/** Computes the row degree `rdeg` of a polynomial matrix `pmat` (see
+ * @ref RowAndColumnDegrees)
+ */
+void row_degree(VecLong & rdeg, const Mat<zz_pX> & pmat); 
 
-inline VecLong row_degree(const Mat<zz_pX> &pmat)
+/** Computes and returns the row degree of a polynomial matrix `pmat` (see
+ * @ref RowAndColumnDegrees)
+ */
+inline VecLong row_degree(const Mat<zz_pX> & pmat)
 { VecLong rdeg; row_degree(rdeg, pmat); return rdeg; }
 
-/*------------------------------------------------------------*/
-/* the shifted row degree of a matrix is the tuple            */
-/* (s-deg(row 1), s-deg(row 2), ..., s-deg(row m))            */
-/* where the s-degree of row k is the maximum of the degrees  */
-/* of pmat[k][j] with a weight shift[j] added on column j     */
-/* (min(shift)-1 if row is zero)                              */
-/*------------------------------------------------------------*/
+/** Computes the `shift`-row degree `rdeg` of a polynomial matrix `pmat` (see
+ * @ref RowAndColumnDegrees)
+ */
 void row_degree(
                 VecLong & rdeg,
-                const Mat<zz_pX> &pmat,
+                const Mat<zz_pX> & pmat,
                 const VecLong & shift
                ); 
 
-inline VecLong row_degree(
-                          const Mat<zz_pX> &pmat,
-                          const VecLong & shift
-                         )
+/** Computes and returns the `shift`-row degree of a polynomial matrix `pmat`
+ * (see @ref RowAndColumnDegrees)
+ */
+inline VecLong row_degree(const Mat<zz_pX> & pmat, const VecLong & shift)
 { VecLong rdeg; row_degree(rdeg, pmat, shift); return rdeg; }
 
+/** Computes the column degree `cdeg` of a polynomial matrix `pmat` (see
+ * @ref RowAndColumnDegrees)
+ */
+void col_degree(VecLong & cdeg, const Mat<zz_pX> & pmat); 
 
-/*------------------------------------------------------------*/
-/* the column degree of a matrix is the tuple                 */
-/* (deg(col 1), deg(col 2), ..., deg(col m))                  */
-/* where the degree of column k is the maximum of the degrees */
-/* of the entries of column k (-1 if column is zero)          */
-/*------------------------------------------------------------*/
-void col_degree(
-                VecLong & cdeg,
-                const Mat<zz_pX> &pmat
-               ); 
-
-inline VecLong col_degree(const Mat<zz_pX> &pmat)
+/** Computes and returns the column degree of a polynomial matrix `pmat` (see
+ * @ref RowAndColumnDegrees)
+ */
+inline VecLong col_degree(const Mat<zz_pX> & pmat)
 { VecLong cdeg; col_degree(cdeg, pmat); return cdeg; }
 
-/*------------------------------------------------------------*/
-/* the shifted column degree of a matrix is the tuple         */
-/* (s-deg(col 1), s-deg(col 2), ..., s-deg(col m))            */
-/* where the s-degree of column k is the maximum of the       */
-/* degrees of pmat[i][k] with weight shift[i] added on row i  */
-/* (min(shift)-1 if column is zero)                           */
-/*------------------------------------------------------------*/
+/** Computes the `shift`-column degree `cdeg` of a polynomial matrix `pmat`
+ * (see @ref RowAndColumnDegrees)
+ */
 void col_degree(
                 VecLong & cdeg,
-                const Mat<zz_pX> &pmat,
+                const Mat<zz_pX> & pmat,
                 const VecLong & shift
                ); 
 
-inline VecLong col_degree(
-                          const Mat<zz_pX> &pmat,
-                          const VecLong & shift
-                         )
+/** Computes and returns the `shift`-column degree of a polynomial matrix
+ * `pmat` (see @ref RowAndColumnDegrees)
+ */
+inline VecLong col_degree(const Mat<zz_pX> & pmat, const VecLong & shift)
 { VecLong cdeg; col_degree(cdeg, pmat, shift); return cdeg; }
 
+//@} // doxygen group: (Shifted) row and column degree
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* (SHIFTED) PIVOT INDEX/DEGREE                               */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/** @name (Shifted) pivot index and pivot degree
+ * \anchor Pivots
+ *
+ * For a given shift and a given (row or column) polynomial vector, its _shifted
+ * pivot index_ is the largest index corresponding to an entry which reaches the
+ * shifted degree of the vector, and its _shifted pivot degree_ is the degree of
+ * that entry (without adding the shift entry). By convention, both the shifted
+ * pivot index and the shifted pivot degree of a zero vector are -1.
+ *
+ * Then, the row-wise shifted pivot index (resp. degree) of a polynomial matrix
+ * is the tuple of the shifted pivot indices (resp. degrees) of the rows of
+ * this matrix. Similarly, the column-wise shifted pivot index (resp. degree)
+ * of a polynomial matrix is the tuple of the shifted pivot indices (resp.
+ * degrees) of the columns of this matrix.
+ *
+ * The functions below which involve a `shift` among its parameters throw
+ * an error if this `shift` does not have the right length.
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* row-wise (shifted) pivot indices and degrees               */
-/* --> tuple of pivot index/degree for each row of pmat       */
-/* For a given row, the pivot index is the index of the       */
-/* rightmost entry which reaches the (shifted) row degree;    */
-/* the pivot degree is the degree of that pivot (not adding   */
-/* the shift)                                                 */
-/* The pivot index of a zero row is -1                        */
-/*------------------------------------------------------------*/
-void row_pivots(
-                VecLong & pivind,
-                VecLong & pivdeg,
-                const Mat<zz_pX> & pmat
-               );
+/** Computes the row-wise pivot index `pivind` and pivot degree `pivdeg` of a
+ * polynomial matrix `pmat` (see @ref Pivots)
+ */
+void row_pivots(VecLong & pivind, VecLong & pivdeg, const Mat<zz_pX> & pmat);
 
+/** Computes and return a pair whose first element is the row-wise pivot index
+ * of a polynomial matrix `pmat` and whose second element is the row-wise pivot
+ * degree of `pmat` (see @ref Pivots)
+ */
 inline std::pair<VecLong,VecLong> row_pivots(const Mat<zz_pX> & pmat)
 {
     std::pair<VecLong,VecLong> pivots;
@@ -179,6 +197,9 @@ inline std::pair<VecLong,VecLong> row_pivots(const Mat<zz_pX> & pmat)
     return pivots;
 }
 
+/** Computes the row-wise `shift`-pivot index `pivind` and `shift`-pivot degree
+ * `pivdeg` of a polynomial matrix `pmat` (see @ref Pivots)
+ */
 void row_pivots(
                 VecLong & pivind,
                 VecLong & pivdeg,
@@ -186,33 +207,27 @@ void row_pivots(
                 const VecLong & shift
                );
 
+/** Computes and return a pair whose first element is the row-wise
+ * `shift`-pivot index of a polynomial matrix `pmat` and whose second element
+ * is the row-wise `shift`-pivot degree of `pmat` (see @ref Pivots)
+ */
 inline std::pair<VecLong,VecLong>
-row_pivots(
-           const Mat<zz_pX> & pmat,
-           const VecLong & shift
-          )
+row_pivots(const Mat<zz_pX> & pmat, const VecLong & shift)
 {
     std::pair<VecLong,VecLong> pivots;
     row_pivots(pivots.first, pivots.second, pmat, shift);
     return pivots;
 }
 
+/** Computes the column-wise pivot index `pivind` and pivot degree `pivdeg` of
+ * a polynomial matrix `pmat` (see @ref Pivots)
+ */
+void col_pivots(VecLong & pivind, VecLong & pivdeg, const Mat<zz_pX> & pmat);
 
-/*------------------------------------------------------------*/
-/* column-wise (shifted) pivot indices and degrees            */
-/* --> tuple of pivot index/degree for each column of pmat    */
-/* For a given column, the pivot index is the index of the    */
-/* bottommost entry which reaches the (shifted) column degree;*/
-/* the pivot degree is the degree of that pivot (not adding   */
-/* the shift)                                                 */
-/* The pivot index of a zero column is -1                     */
-/*------------------------------------------------------------*/
-void col_pivots(
-                VecLong & pivind,
-                VecLong & pivdeg,
-                const Mat<zz_pX> & pmat
-               );
-
+/** Computes and return a pair whose first element is the column-wise pivot
+ * index of a polynomial matrix `pmat` and whose second element is the
+ * column-wise pivot degree of `pmat` (see @ref Pivots)
+ */
 inline std::pair<VecLong,VecLong> col_pivots(const Mat<zz_pX> & pmat)
 {
     std::pair<VecLong,VecLong> pivots;
@@ -220,6 +235,9 @@ inline std::pair<VecLong,VecLong> col_pivots(const Mat<zz_pX> & pmat)
     return pivots;
 }
 
+/** Computes the column-wise `shift`-pivot index `pivind` and `shift`-pivot
+ * degree `pivdeg` of a polynomial matrix `pmat` (see @ref Pivots)
+ */
 void col_pivots(
                 VecLong & pivind,
                 VecLong & pivdeg,
@@ -227,17 +245,19 @@ void col_pivots(
                 const VecLong & shift
                );
 
+/** Computes and return a pair whose first element is the column-wise
+ * `shift`-pivot index of a polynomial matrix `pmat` and whose second element
+ * is the column-wise `shift`-pivot degree of `pmat` (see @ref Pivots)
+ */
 inline std::pair<VecLong,VecLong>
-col_pivots(
-           const Mat<zz_pX> & pmat,
-           const VecLong & shift
-          )
+col_pivots(const Mat<zz_pX> & pmat, const VecLong & shift)
 {
     std::pair<VecLong,VecLong> pivots;
     col_pivots(pivots.first, pivots.second, pmat, shift);
     return pivots;
 }
 
+//@} // doxygen group: (Shifted) pivot index and pivot degree
 
 
 /*------------------------------------------------------------*/
@@ -246,32 +266,50 @@ col_pivots(
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* Degree matrix: matrix of the degree of each entry          */
-/* Convention: deg(0) = -1, more generally the shifted degree */
-/* of a zero entry is min(shift)-1                            */
-/*------------------------------------------------------------*/
+/** @name (Shifted) degree matrix
+ * \anchor DegreeMatrix
+ *
+ * The _degree matrix_ of an `m x n` polynomial matrix `pmat` is the integer
+ * matrix of dimensions `m x n` whose entry `(i,j)` is the degree of the entry
+ * `(i,j)` of `pmat`. We recall that by convention, the zero polynomial has
+ * degree -1.
+ *
+ * For a given shift `shift` of length `n`, the row-wise `shift`-degree matrix
+ * of `pmat` is the `m x n` integer matrix whose entry `(i,j)` is
+ * `deg(pmat[i][j]) + shift[j]` if `pmat[i][j]` is nonzero, and `min(shift)-1`
+ * otherwise. For a given shift `shift` of length `m`, the column-wise
+ * `shift`-degree matrix of `pmat` is the `m x n` integer matrix whose entry
+ * `(i,j)` is `deg(pmat[i][j]) + shift[i]` if `pmat[i][j]` is nonzero, and
+ * `min(shift)-1` otherwise.
+ *
+ * The functions below which involve a `shift` among its parameters throw
+ * an error if this `shift` does not have the right length.
+ */
+//@{
 
-void degree_matrix(
-                   Mat<long> & degmat,
-                   const Mat<zz_pX> & pmat
-                  );
+/** Computes the degree matrix `degmat` of a polynomial matrix `pmat` (see @ref
+ * DegreeMatrix)
+ */
+void degree_matrix(Mat<long> & degmat, const Mat<zz_pX> & pmat);
 
+/** Computes and returns the degree matrix of a polynomial matrix `pmat` (see
+ * @ref DegreeMatrix)
+ */
 inline Mat<long> degree_matrix(const Mat<zz_pX> &pmat)
 { Mat<long> degmat; degree_matrix(degmat, pmat); return degmat; }
 
-/*------------------------------------------------------------*/
-/* Row-shifted degree matrix: matrix whose entry (i,j) is the */
-/* degree of pmat[i][j], shifted by adding shift[j]           */
-/* Convention: for a zero entry, its degree is min(shift)-1   */
-/*------------------------------------------------------------*/
-
+/** Computes the row-wise `shift`-degree matrix `degmat` of a polynomial matrix
+ * `pmat` (see @ref DegreeMatrix)
+ */
 void degree_matrix_rowshifted(
                               Mat<long> &degmat,
                               const Mat<zz_pX> &pmat,
                               const VecLong & shift
                              );
 
+/** Computes and returns row-wise the `shift`-degree matrix of a polynomial
+ * matrix `pmat` (see @ref DegreeMatrix)
+ */
 inline Mat<long> degree_matrix_rowshifted(
                                           const Mat<zz_pX> &pmat,
                                           const VecLong & shift
@@ -282,18 +320,18 @@ inline Mat<long> degree_matrix_rowshifted(
     return degmat;
 }
 
-/*------------------------------------------------------------*/
-/* Column-shifted degree matrix: matrix whose entry (i,j) is  */
-/* the degree of pmat[i][j], shifted by adding shift[i]       */
-/* Convention: for a zero entry, its degree is min(shift)-1   */
-/*------------------------------------------------------------*/
-
+/** Computes the column-wise `shift`-degree matrix `degmat` of a polynomial
+ * matrix `pmat` (see @ref DegreeMatrix)
+ */
 void degree_matrix_colshifted(
                               Mat<long> &degmat,
                               const Mat<zz_pX> &pmat,
                               const VecLong & shift
                              );
 
+/** Computes and returns column-wise the `shift`-degree matrix of a polynomial
+ * matrix `pmat` (see @ref DegreeMatrix)
+ */
 inline Mat<long> degree_matrix_colshifted(
                                           const Mat<zz_pX> &pmat,
                                           const VecLong & shift
@@ -304,223 +342,248 @@ inline Mat<long> degree_matrix_colshifted(
     return degmat;
 }
 
+//@} // doxygen group: (Shifted) degree matrix
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* (SHIFTED) LEADING MATRIX                                   */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/** @name (Shifted) leading matrix
+ * \anchor LeadingMatrix
+ *
+ * Consider a polynomial matrix `pmat` of dimension `m x n`, with row degree
+ * `rdeg` (see @ref RowAndColumnDegrees). Then, the row-wise leading matrix of
+ * `pmat` is the `m x n` matrix over the base field whose entry `(i,j)` is the
+ * coefficient of degree `rdeg[i]` of the entry `pmat[i][j]` (this is zero if
+ * `pmat[i][j]` does not reach `rdeg[i]`). Similarly, writing `cdeg` for the
+ * column degree of `pmat`, the column-wise leading matrix of `pmat` is the `m
+ * x n` matrix over the base field whose entry `(i,j)` is the coefficient of
+ * degree `cdeg[j]` of the entry `pmat[i][j]` (this is zero if `pmat[i][j]`
+ * does not reach `cdeg[j]`).
+ *  
+ * More generally, given a shift `shift` of length `n`, the row-wise
+ * `shift`-leading matrix of `pmat` is the `m x n` matrix over the base field
+ * whose entry `(i,j)` is the coefficient of degree `rdeg[i]-shift[j]` of the
+ * entry `pmat[i][j]`, where `rdeg` is now the `shift`-row degree of `pmat`.
+ * For a shift `shift` of length `m`, the column-wise `shift`-leading matrix of
+ * `pmat` is the `m x n` matrix over the base field whose entry `(i,j)` is the
+ * coefficient of degree `cdeg[j]-shift[i]` of the entry `pmat[i][j]`, where
+ * `cdeg` is now the `shift`-column degree of `pmat`.
+ *
+ * The functions below which involve a `shift` among its parameters throw
+ * an error if this `shift` does not have the right length.
+ *
+ * \todo minor improvement: offer row-wise (resp column-wise) leading matrix
+ * when the row degree (resp column degree) is already known?
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* row-wise leading matrix of pmat                            */
-/* this is the constant matrix whose entry (i,j) is the       */
-/* coefficient of degree rdeg[i] of the entry (i,j) of pmat,  */
-/* for rdeg the row degree of pmat                            */
-/* (this is zero if pmat[i][j] does not reach rdeg[i])        */
-/*------------------------------------------------------------*/
-void row_leading_matrix(
-                        Mat<zz_p> & lmat,
-                        const Mat<zz_pX> & pmat
-                       );
+/** Computes the row-wise leading matrix `lmat` of a polynomial matrix `pmat`
+ * (see @ref LeadingMatrix)
+ */
+void row_leading_matrix(Mat<zz_p> & lmat, const Mat<zz_pX> & pmat);
 
+/** Computes and returns the row-wise leading matrix of a polynomial matrix
+ * `pmat` (see @ref LeadingMatrix)
+ */
 inline Mat<zz_p> row_leading_matrix(const Mat<zz_pX> & pmat)
 { Mat<zz_p> lmat; row_leading_matrix(lmat, pmat); return lmat; }
 
-// TODO row_leading_matrix_known_rdeg
-
-/*------------------------------------------------------------*/
-/* row-wise shifted leading matrix of pmat                    */
-/* this is the constant matrix whose entry (i,j) is the       */
-/* coefficient of degree rdeg[i]-shift[j] of the entry (i,j)  */
-/* of pmat, for rdeg the shifted row degree of pmat           */
-/* (this is zero if pmat[i][j] does not reach rdeg[i])        */
-/*------------------------------------------------------------*/
-
+/** Computes the row-wise `shift`-leading matrix `lmat` of a polynomial matrix
+ * `pmat` (see @ref LeadingMatrix)
+ */
 void row_leading_matrix(
                         Mat<zz_p> &lmat,
                         const Mat<zz_pX> &pmat,
                         const VecLong & shift
                        );
 
+/** Computes and returns the row-wise `shift`-leading matrix of a polynomial
+ * matrix `pmat` (see @ref LeadingMatrix)
+ */
 inline Mat<zz_p> row_leading_matrix(
                                     const Mat<zz_pX> & pmat,
                                     const VecLong & shift
                                    )
 { Mat<zz_p> lmat; row_leading_matrix(lmat, pmat, shift); return lmat; }
 
-// TODO row_leading_matrix_known_cdeg
-
-
-/*------------------------------------------------------------*/
-/* column-wise leading matrix of pmat                         */
-/* this is the constant matrix whose entry (i,j) is the       */
-/* coefficient of degree cdeg[j] of the entry (i,j) of pmat,  */
-/* for cdeg the column degree of pmat                         */
-/* (this is zero if pmat[i][j] does not reach cdeg[j])        */
-/*------------------------------------------------------------*/
+/** Computes the column-wise leading matrix `lmat` of a polynomial matrix
+ * `pmat` (see @ref LeadingMatrix)
+ */
 void col_leading_matrix(
                         Mat<zz_p> & lmat,
                         const Mat<zz_pX> & pmat
                        );
 
+/** Computes and returns the column-wise leading matrix of a polynomial matrix
+ * `pmat` (see @ref LeadingMatrix)
+ */
 inline Mat<zz_p> col_leading_matrix(const Mat<zz_pX> & pmat)
 { Mat<zz_p> lmat; col_leading_matrix(lmat, pmat); return lmat; }
 
-/*------------------------------------------------------------*/
-/* column-wise shifted leading matrix of pmat                 */
-/* this is the constant matrix whose entry (i,j) is the       */
-/* coefficient of degree cdeg[j]-shift[i] of the entry (i,j)  */
-/* of pmat, for cdeg the shifted column degree of pmat        */
-/* (this is zero if pmat[i][j] does not reach rdeg[j])        */
-/*------------------------------------------------------------*/
-
+/** Computes the column-wise `shift`-leading matrix `lmat` of a polynomial
+ * matrix `pmat` (see @ref LeadingMatrix)
+ */
 void col_leading_matrix(
                         Mat<zz_p> &lmat,
                         const Mat<zz_pX> &pmat,
                         const VecLong & shift
                        );
 
+/** Computes and returns the column-wise `shift`-leading matrix of a polynomial
+ * matrix `pmat` (see @ref LeadingMatrix)
+ */
 inline Mat<zz_p> col_leading_matrix(
                                     const Mat<zz_pX> & pmat,
                                     const VecLong & shift
                                    )
 { Mat<zz_p> lmat; col_leading_matrix(lmat, pmat, shift); return lmat; }
 
+//@} // doxygen group: (Shifted) leading matrix
 
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* TESTING SHIFTED REDUCED FORMS                              */
+/* TESTING MATRIX FORMS                                       */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/** @name Testing polynomial matrix forms
+ * \anchor MatrixForms
+ *
+ * A polynomial matrix is said to be in _(shifted) row reduced form_ if its
+ * row-wise (shifted) leading matrix has full row rank; note that zero rows are
+ * not allowed in this definition. The definition of (shifted) column reduced
+ * forms is analogous.
+ *
+ * A polynomial matrix is said to be in row-wise _(shifted) weak Popov form_ if
+ * it has no zero rows and there is no repetition in its row-wise (shifted)
+ * pivot index (that is, its entries are pairwise distinct). Such a form is
+ * furthermore said to be _ordered_ if this (shifted) pivot index is strictly
+ * increasing. The definition of column-wise (shifted, ordered) weak Popov
+ * forms is analogous.
+ *
+ * A polynomial matrix is said to be in row-wise (shifted) Popov form if:
+ *   - it is in row-wise (shifted) ordered weak Popov form
+ *   - its (shifted) pivot entries are monic
+ *   - its entries below and above a (shifted) pivot entry have degree less
+ *   than this pivot entry
+ * In particular, such a matrix cannot have a zero row.
+ *
+ * A polynomial matrix is said to be in column-wise (shifted) Popov form if:
+ *   - it is in column-wise (shifted) ordered weak Popov form
+ *   - its (shifted) pivot entries are monic
+ *   - its entries to the left and to the right of a (shifted) pivot entry have
+ *   degree less than this pivot entry
+ * In particular, such a matrix cannot have a zero column.
+ *
+ * The functions below which involve a `shift` among its parameters throw
+ * an error if this `shift` does not have the right length.
+ *  
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* test (shifted) row reducedness:                            */
-/* a matrix is (shifted) row reduced if and only if its       */
-/* (shifted) row-wise leading matrix has full row rank        */
-/* --> note that zero rows are not allowed                    */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in row reduced
+ * form (see @ref MatrixForms)
+ */
 bool is_row_reduced(const Mat<zz_pX> & pmat);
+
+/** Computes and returns a boolean indicating whether `pmat` is in `shift`-row
+ * reduced form (see @ref MatrixForms)
+ */
 bool is_row_reduced(const Mat<zz_pX> & pmat, const VecLong & shift);
 
-/*------------------------------------------------------------*/
-/* test (shifted) column reducedness:                         */
-/* a matrix is (shifted) column reduced if and only if its    */
-/* (shifted) column-wise leading matrix has full column rank  */
-/* --> note that zero columns are not allowed                 */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in column
+ * reduced form (see @ref MatrixForms)
+ */
 bool is_col_reduced(const Mat<zz_pX> & pmat);
+
+/** Computes and returns a boolean indicating whether `pmat` is in
+ * `shift`-column reduced form (see @ref MatrixForms)
+ */
 bool is_col_reduced(const Mat<zz_pX> & pmat, const VecLong & shift);
 
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* TESTING SHIFTED WEAK POPOV FORMS                           */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* test row-wise (shifted) weak Popov form                    */
-/* a matrix is in row-wise (shifted) weak Popov form if and   */
-/* only if its row-wise (shifted) pivot index consists of     */
-/* pairwise distinct entries (i.e. no repetition)             */
-/* --> note that zero rows are not allowed                    */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * weak Popov form (see @ref MatrixForms)
+ */
 bool is_row_weak_popov(const Mat<zz_pX> & pmat);
-bool is_row_weak_popov(
-                       const Mat<zz_pX> &pmat,
-                       const VecLong & shift
-                      );
 
-/*------------------------------------------------------------*/
-/* test column-wise (shifted) weak Popov form                 */
-/* a matrix is in column-wise (shifted) weak Popov form if    */
-/* and only if its column-wise (shifted) pivot index consists */
-/* of pairwise distinct entries (i.e. no repetition)          */
-/* --> note that zero columns are not allowed                 */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * `shift`-weak Popov form (see @ref MatrixForms)
+ */
+bool is_row_weak_popov(const Mat<zz_pX> & pmat, const VecLong & shift);
+
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * weak Popov form (see @ref MatrixForms)
+ */
 bool is_col_weak_popov(const Mat<zz_pX> & pmat);
-bool is_col_weak_popov(
-                       const Mat<zz_pX> &pmat,
-                       const VecLong & shift
-                      );
 
-/*------------------------------------------------------------*/
-/* test row-wise (shifted) ordered weak Popov form            */
-/* a matrix is in row-wise (shifted) ordered weak Popov form  */
-/* if and only if its row-wise (shifted) pivot index is       */
-/* strictly increasing                                        */
-/* --> note that zero rows are not allowed                    */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * `shift`-weak Popov form (see @ref MatrixForms)
+ */
+bool is_col_weak_popov(const Mat<zz_pX> &pmat, const VecLong & shift);
+
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * ordered weak Popov form (see @ref MatrixForms)
+ */
 bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat);
+
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * `shift`-ordered weak Popov form (see @ref MatrixForms)
+ */
 bool is_row_ordered_weak_popov(
                                const Mat<zz_pX> &pmat,
                                const VecLong & shift
                               );
 
-/*------------------------------------------------------------*/
-/* test column-wise (shifted) ordered weak Popov form         */
-/* a matrix is in column-wise (shifted) ordered weak Popov    */
-/* form if and only if its column-wise (shifted) pivot index  */
-/* is strictly increasing                                     */
-/* --> note that zero columns are not allowed                 */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * ordered weak Popov form (see @ref MatrixForms)
+ */
 bool is_col_ordered_weak_popov(const Mat<zz_pX> & pmat);
+
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * `shift`-ordered weak Popov form (see @ref MatrixForms)
+ */
 bool is_col_ordered_weak_popov(
                                const Mat<zz_pX> &pmat,
                                const VecLong & shift
                               );
 
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* TESTING SHIFTED POPOV FORMS                                */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* test row-wise (shifted) Popov form                         */
-/* a matrix is in row-wise (shifted) Popov form iff:          */
-/*   - it is in row-wise (shifted) ordered weak Popov form    */
-/*   - its pivot entries are monic                            */
-/*   - its entries below and above a pivot entry have degree  */
-/*   less than this pivot entry                               */
-/* --> note that zero rows are not allowed                    */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * Popov form (see @ref MatrixForms)
+ *
+ * \todo provide same test but relaxing ordered weak Popov to weak Popov in the
+ * definition? This allows easier support for definitions of Popov with
+ * different orderings of the rows, such as by increasing degree
+ */
 bool is_row_popov(const Mat<zz_pX> & pmat);
+
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * `shift`-Popov form (see @ref MatrixForms)
+ */
 bool is_row_popov(const Mat<zz_pX> & pmat, const VecLong & shift);
 
-/*------------------------------------------------------------*/
-/* same test but relaxing ordered weak Popov --> weak Popov   */
-/* (allows definition of Popov with different orderings of    */
-/* the rows, such as by increasing degree)                    */
-/*------------------------------------------------------------*/
-// TODO 
 //bool is_row_popov_up_to_permutation(const Mat<zz_pX> & pmat);
 //bool is_row_popov_up_to_permutation(
 //                                    const Mat<zz_pX> & pmat,
 //                                    const VecLong & shift
 //                                    );
 
-
-/*------------------------------------------------------------*/
-/* test column-wise (shifted) Popov form                      */
-/* a matrix is in column-wise (shifted) Popov form iff:       */
-/*   - it is in column-wise (shifted) ordered weak Popov form */
-/*   - its pivot entries are monic                            */
-/*   - its entries to the left and to the right of a pivot    */
-/*    entry have degree less than this pivot entry            */
-/* --> note that zero columns are not allowed                 */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * Popov form (see @ref MatrixForms)
+ *
+ * \todo provide same test but relaxing ordered weak Popov to weak Popov in the
+ * definition? This allows easier support for definitions of Popov with
+ * different orderings of the rows, such as by increasing degree
+ */
 bool is_col_popov(const Mat<zz_pX> & pmat);
+
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * `shift`-Popov form (see @ref MatrixForms)
+ */
 bool is_col_popov(const Mat<zz_pX> & pmat, const VecLong & shift);
 
-/*------------------------------------------------------------*/
-/* same test but relaxing ordered weak Popov --> weak Popov   */
-/* (allows definition of Popov with different orderings of    */
-/* the columns, such as by increasing degree)                 */
-/*------------------------------------------------------------*/
-// TODO 
 //bool is_col_popov_up_to_permutation(const Mat<zz_pX> & pmat);
 //bool is_col_popov_up_to_permutation(
 //                                    const Mat<zz_pX> & pmat,
@@ -528,90 +591,75 @@ bool is_col_popov(const Mat<zz_pX> & pmat, const VecLong & shift);
 //                                    );
 
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* TESTING SHIFTED FORMS (FORM SELECTOR)                      */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* Check whether pmat is in the prescribed row-wise form      */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * (non-shifted) form indicated by `form` (see @ref MatrixForms and
+ * #PolMatForm). Throws an error if `form` is not among the forms defined in
+ * the enumeration #PolMatForm.
+ */
 bool is_row_polmatform(
-                       const Mat<zz_pX> & pmat,
-                       const PolMatForm form
+                       const PolMatForm form,
+                       const Mat<zz_pX> & pmat
                       );
 
+/** Computes and returns a boolean indicating whether `pmat` is in row-wise
+ * `shift`-shifted form indicated by `form` (see @ref MatrixForms and
+ * #PolMatForm). Throws an error if `form` is not among the forms defined
+ * in the enumeration #PolMatForm.
+ */
 bool is_row_polmatform(
+                       const PolMatForm form,
                        const Mat<zz_pX> & pmat,
-                       const VecLong & shift,
-                       const PolMatForm form
+                       const VecLong & shift
                       );
 
-/*------------------------------------------------------------*/
-/* Check whether pmat is in the prescribed column-wise form   */
-/*------------------------------------------------------------*/
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * (non-shifted) form indicated by `form` (see @ref MatrixForms and
+ * #PolMatForm). Throws an error if `form` is not among the forms defined in
+ * the enumeration #PolMatForm.
+ */
 bool is_col_polmatform(
-                       const Mat<zz_pX> & pmat,
-                       const PolMatForm form
+                       const PolMatForm form,
+                       const Mat<zz_pX> & pmat
                       );
 
+/** Computes and returns a boolean indicating whether `pmat` is in column-wise
+ * `shift`-shifted form indicated by `form` (see @ref MatrixForms and
+ * #PolMatForm). Throws an error if `form` is not among the forms defined in
+ * the enumeration #PolMatForm.
+ */
 bool is_col_polmatform(
+                       const PolMatForm form,
                        const Mat<zz_pX> & pmat,
-                       const VecLong & shift,
-                       const PolMatForm form
+                       const VecLong & shift
                       );
 
-
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* FIND STRONGEST (SHIFTED) FORM                              */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* Return the strongest row-wise form of pmat among:          */
-/* Popov => ordered weak Popov => weak Popov                  */
-/*                                       => reduced => none   */
-/*------------------------------------------------------------*/
+/** Computes and returns the strongest row-wise form that `pmat` has, among
+ * those defined in the enumeration #PolMatForm.
+ */
 PolMatForm get_row_polmatform(const Mat<zz_pX> & pmat);
+
+/** Computes and returns the strongest row-wise `shift`-shifted form that
+ * `pmat` has, among those defined in the enumeration #PolMatForm.
+ */
 PolMatForm get_row_polmatform(
                               const Mat<zz_pX> & pmat,
                               const VecLong & shift
                              );
 
-/*------------------------------------------------------------*/
-/* Return the strongest column-wise form of pmat among:       */
-/* Popov => ordered weak Popov => weak Popov                  */
-/*                                       => reduced => none   */
-/*------------------------------------------------------------*/
+/** Computes and returns the strongest column-wise form that `pmat` has, among
+ * those defined in the enumeration #PolMatForm.
+ */
 PolMatForm get_col_polmatform(const Mat<zz_pX> & pmat);
+
+/** Computes and returns the strongest column-wise `shift`-shifted form that
+ * `pmat` has, among those defined in the enumeration #PolMatForm.
+ */
 PolMatForm get_col_polmatform(
                               const Mat<zz_pX> & pmat,
                               const VecLong & shift
                              );
 
-
-/**********************************************************************
- *                          TODO: BASIS REDUCTION                     *
- *            (shifted reduced form and shifted normal forms)         *
- **********************************************************************/
-
-// TODO general reduction to uniform shift via pre-multiplication
-// worthwile at least when shift close to uniform
-
-// TODO naive algorithms (see Mulders-Storjohann for good reference)
-
-// TODO general shifted Popov form via kernel (itself via approximant basis)
-
-// TODO understand if there is any chance Alekhnovich improves over the
-// kernel approach
-
-// TODO nonsingular: Giorgi-Jeannerod-Villard's Las Vegas reduction
-// (worth implementing for shifts other than uniform?)
-
+//@} // doxygen group: Testing polynomial matrix forms
 
 #endif /* ifndef MAT_LZZ_PX_FORMS */
 

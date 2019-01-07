@@ -43,8 +43,8 @@ void quo_rem(Mat<zz_pX> &Q,
     VecLong Arevdeg;
     for (long i = 0; i < m; i++)
         Arevdeg.emplace_back(d+rdeg[i]-1);
-    reverse(Arev, A, Arevdeg);
-    reverse(Brev, B, rdeg);
+    row_reverse(Arev, A, Arevdeg);
+    row_reverse(Brev, B, rdeg);
     
     // step 2: compute quotient
     solve_series_high_precision(Q, Brev, Arev, d);

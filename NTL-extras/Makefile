@@ -5,8 +5,11 @@ all:	clean
 
 clean:
 	rm -f lib/*
-	rm -f include/*
+	rm -f include/*.h
 	$(foreach dir, $(DIRS), if [ -d $(dir)/src ]; then cd $(dir)/src ; make clean ; cd ../.. ; fi ;)
 	$(foreach dir, $(DIRS), if [ -d $(dir)/test ]; then cd $(dir)/test ; make clean ; cd ../.. ; fi ;)
 	$(foreach dir, $(DIRS), if [ -d $(dir)/timings ]; then cd $(dir)/timings ; make clean ; cd ../.. ; fi ;)
 	$(foreach dir, $(DIRS), if [ -d $(dir)/tune ]; then cd $(dir)/tune ; make clean ; cd ../.. ; fi ;)
+
+doc:
+	cd include/ ; doxygen doxygen.conf ; cd ../

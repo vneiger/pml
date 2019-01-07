@@ -1,10 +1,21 @@
 #ifndef MAT_LZZ_PX_LINSOLVE__H
 #define MAT_LZZ_PX_LINSOLVE__H
 
+/** Functions for linear system solving.
+ *
+ * \file mat_lzz_pX_linsolve.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
+ * \version 0.1
+ * \date 2019-01-01
+ *
+ */
+
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
 
 NTL_CLIENT
+
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -21,24 +32,20 @@ NTL_CLIENT
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
 void solve_series_low_precision(
-                                Mat<zz_pX> &u,
-                                const Mat<zz_pX>& A,
-                                const Mat<zz_pX>& b,
+                                Mat<zz_pX> & u,
+                                const Mat<zz_pX> & A,
+                                const Mat<zz_pX> & b,
                                 long prec,
                                 long thresh = -1
                                );
 
 inline Mat<zz_pX> solve_series_low_precision(
-                                             const Mat<zz_pX>& A,
-                                             const Mat<zz_pX>& b,
+                                             const Mat<zz_pX> & A,
+                                             const Mat<zz_pX> & b,
                                              long prec,
                                              long thresh = -1
                                             )
-{
-    Mat<zz_pX> u;
-    solve_series_low_precision(u, A, b, prec, thresh);
-    return u;
-}
+{ Mat<zz_pX> u; solve_series_low_precision(u, A, b, prec, thresh); return u; }
 
 /*------------------------------------------------------------*/
 /* solve A u = b mod x^prec                                   */
@@ -69,22 +76,18 @@ inline Mat<zz_pX> solve_series_high_precision(
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
 void solve_series(
-                  Mat<zz_pX> &u, 
-                  const Mat<zz_pX>& A, 
-                  const Mat<zz_pX>& b, 
+                  Mat<zz_pX> & u, 
+                  const Mat<zz_pX> & A,
+                  const Mat<zz_pX> & b,
                   long prec
                  );
 
 inline Mat<zz_pX> solve_series(
-                               const Mat<zz_pX>& A, 
-                               const Mat<zz_pX>& b, 
+                               const Mat<zz_pX> & A,
+                               const Mat<zz_pX> & b,
                                long prec
                               )
-{
-    Mat<zz_pX> u;
-    solve_series(u, A, b, prec);
-    return u;
-}
+{ Mat<zz_pX> u; solve_series(u, A, b, prec); return u; }
 
 /*------------------------------------------------------------*/
 /* solve A u = b mod x^prec                                   */
@@ -92,22 +95,18 @@ inline Mat<zz_pX> solve_series(
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
 void solve_series(
-                  Vec<zz_pX> &u,
-                  const Mat<zz_pX>& A,
-                  const Vec<zz_pX>& b,
+                  Vec<zz_pX> & u,
+                  const Mat<zz_pX> & A,
+                  const Vec<zz_pX> & b,
                   long prec
                  );
 
 inline Vec<zz_pX> solve_series(
-                               const Mat<zz_pX>& A,
-                               const Vec<zz_pX>& b,
+                               const Mat<zz_pX> & A,
+                               const Vec<zz_pX> & b,
                                long prec
                               )
-{
-    Vec<zz_pX> u;
-    solve_series(u, A, b, prec);
-    return u;
-}
+{ Vec<zz_pX> u; solve_series(u, A, b, prec); return u; }
 
 
 /*------------------------------------------------------------*/
@@ -116,22 +115,18 @@ inline Vec<zz_pX> solve_series(
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
 void solve_series_high_order_lifting(
-                                     Mat<zz_pX> &u, 
-                                     const Mat<zz_pX>& A, 
-                                     const Mat<zz_pX>& b, 
+                                     Mat<zz_pX> & u,
+                                     const Mat<zz_pX> & A,
+                                     const Mat<zz_pX> & b,
                                      long prec
                                     );
 
 inline Mat<zz_pX> solve_series_high_order_lifting(
-                                                  const Mat<zz_pX>& A,
-                                                  const Mat<zz_pX>& b,
+                                                  const Mat<zz_pX> & A,
+                                                  const Mat<zz_pX> & b,
                                                   long prec
                                                  )
-{
-    Mat<zz_pX> u;
-    solve_series_high_order_lifting(u, A, b, prec);
-    return u;
-}
+{ Mat<zz_pX> u; solve_series_high_order_lifting(u, A, b, prec); return u; }
 
 
 /*------------------------------------------------------------*/
@@ -144,10 +139,10 @@ inline Mat<zz_pX> solve_series_high_order_lifting(
 /* nb_max = -1 means a look-up table value is used            */
 /*------------------------------------------------------------*/
 long linsolve_via_series(
-                         Vec<zz_pX> &u,
-                         zz_pX& den,
-                         const Mat<zz_pX>& A,
-                         const Vec<zz_pX>& b,
+                         Vec<zz_pX> & u,
+                         zz_pX & den,
+                         const Mat<zz_pX> & A,
+                         const Vec<zz_pX> & b,
                          long nb_max = -1
                         );
 

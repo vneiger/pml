@@ -105,6 +105,11 @@ int main(int argc, char *argv[])
         pmbasis(appbas,pmat,order,shift);
         t += GetWallTime() - tt;
         ++nb_iter;
+        //if (nb_iter < 5)
+        //{
+        //    bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true);
+        //    std::cout << (verif?"correct":"wrong") << std::endl;
+        //}
     }
 
     std::cout << "pmbasis   \t" << t/nb_iter << std::endl;
@@ -120,6 +125,11 @@ int main(int argc, char *argv[])
         pmbasis_generic_2n_n(appbas,pmat,order);
         t += GetWallTime() - tt;
         ++nb_iter;
+        //if (nb_iter < 5)
+        //{
+        //    bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true);
+        //    std::cout << (verif?"correct":"wrong") << std::endl;
+        //}
     }
 
     std::cout << "pmbasis_gen\t" << t/nb_iter << std::endl;
@@ -135,6 +145,11 @@ int main(int argc, char *argv[])
         pmbasis_generic_2n_n_top_rows(appbas,pmat,order);
         t += GetWallTime() - tt;
         ++nb_iter;
+        //if (nb_iter < 5)
+        //{
+        //    bool verif = is_approximant_basis(appbas,pmat,order,shift,ORD_WEAK_POPOV,true);
+        //    std::cout << (verif?"correct":"wrong") << std::endl;
+        //}
     }
 
     std::cout << "pmbasis gen toprows\t" << t/nb_iter << std::endl;

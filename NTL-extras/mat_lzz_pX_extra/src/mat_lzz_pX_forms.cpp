@@ -1,4 +1,4 @@
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_forms.h"
 #include "lzz_pX_extra.h" // for "is_monic(a)"
 
 NTL_CLIENT
@@ -404,7 +404,7 @@ void row_leading_matrix(
                        )
 {
     VecLong rdeg;
-    row_degree(rdeg,pmat,shift);
+    row_degree(rdeg,pmat,shift); // throws if shift doesn't have the right length
 
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
     for (long r = 0; r < lmat.NumRows(); ++r)
@@ -445,7 +445,7 @@ void col_leading_matrix(
                        )
 {
     VecLong cdeg;
-    col_degree(cdeg,pmat,shift);
+    col_degree(cdeg,pmat,shift); // throws if shift doesn't have the right length
 
     lmat.SetDims(pmat.NumRows(), pmat.NumCols());
     for (long r = 0; r < lmat.NumRows(); ++r)
@@ -893,7 +893,7 @@ bool is_col_popov(const Mat<zz_pX> & pmat, const VecLong & shift)
 /* Check whether pmat is in the prescribed row-wise form      */
 /*------------------------------------------------------------*/
 
-bool is_row_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
+bool is_row_polmatform(const PolMatForm form, const Mat<zz_pX> & pmat)
 {
     switch (form)
     {
@@ -913,9 +913,9 @@ bool is_row_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
 }
 
 bool is_row_polmatform(
+                       const PolMatForm form,
                        const Mat<zz_pX> & pmat,
-                       const VecLong &shift,
-                       const PolMatForm form
+                       const VecLong &shift
                       )
 {
     switch (form)
@@ -939,7 +939,7 @@ bool is_row_polmatform(
 /* Check whether pmat is in the prescribed column-wise form   */
 /*------------------------------------------------------------*/
 
-bool is_col_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
+bool is_col_polmatform(const PolMatForm form, const Mat<zz_pX> & pmat)
 {
     switch (form)
     {
@@ -959,9 +959,9 @@ bool is_col_polmatform(const Mat<zz_pX> & pmat, const PolMatForm form)
 }
 
 bool is_col_polmatform(
+                       const PolMatForm form,
                        const Mat<zz_pX> & pmat,
-                       const VecLong &shift,
-                       const PolMatForm form
+                       const VecLong &shift
                       )
 {
     switch (form)

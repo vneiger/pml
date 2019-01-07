@@ -1,4 +1,6 @@
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_utils.h"
+#include "mat_lzz_p_extra.h"
+#include <algorithm> // for std::reverse
 
 NTL_CLIENT
 
@@ -9,6 +11,19 @@ void clear(Mat<zz_pX> & pmat)
 {
     for (long i=0; i<pmat.NumRows(); ++i)
         for (long j=0; j<pmat.NumCols(); ++j)
+            clear(pmat[i][j]);
+}
+
+/*------------------------------------------------------------*/
+/* clears a matrix window starting at (r_offset,c_offset) and */
+/* with dimensions nrows x ncols                              */
+/*------------------------------------------------------------*/
+void clear(Mat<zz_pX> & pmat, long r_offset, long c_offset, long nrows, long ncols)
+{
+    const long r_end = std::min(r_offset+nrows,pmat.NumRows());
+    const long c_end = std::min(c_offset+ncols,pmat.NumCols());
+    for (long i=r_offset; i<r_end; ++i)
+        for (long j=c_offset; j<c_end; ++j)
             clear(pmat[i][j]);
 }
 
@@ -29,7 +44,7 @@ void ident(Mat<zz_pX> & pmat, long dim)
 }
 
 /*------------------------------------------------------------*/
-/* set pmat to be the identity of size dim                    */
+/* build and return the identity of size dim                  */
 /*------------------------------------------------------------*/
 Mat<zz_pX> ident_mat_zz_pX(long dim)
 {
@@ -43,62 +58,62 @@ Mat<zz_pX> ident_mat_zz_pX(long dim)
 /*------------------------------------------------------------*/
 /* tests whether vec is the zero vector (whatever its dim)    */
 /*------------------------------------------------------------*/
-long IsZero(const Vec<zz_pX> & vec)
+bool IsZero(const Vec<zz_pX> & vec)
 {
     for (long i = 0; i < vec.length(); ++i)
         if (!IsZero(vec[i]))
-            return 0;
-    return 1;
+            return false;
+    return true;
 }
 
 /*------------------------------------------------------------*/
 /* tests whether pmat is the zero matrix (whatever its dims)  */
 /*------------------------------------------------------------*/
-long IsZero(const Mat<zz_pX> & pmat)
+bool IsZero(const Mat<zz_pX> & pmat)
 {
     for (long i = 0; i < pmat.NumRows(); ++i)
         for (long j = 0; j < pmat.NumCols(); ++j)
             if (!IsZero(pmat[i][j]))
-                return 0;
-    return 1;
+                return false;
+    return true;
 }
 
 /*------------------------------------------------------------*/
 /* tests whether pmat is the identity matrix                  */
 /*------------------------------------------------------------*/
-long IsIdent(const Mat<zz_pX> & pmat)
+bool IsIdent(const Mat<zz_pX> & pmat)
 {
     if (pmat.NumRows() != pmat.NumCols())
-        return 0;
+        return false;
 
     for (long i = 0; i < pmat.NumRows(); ++i)
-        for (long j = 0; j < pmat.NumCols(); ++j)
+        for (long j = 0; j < pmat.NumRows(); ++j)
         {
             if (i == j && ! IsOne(pmat[i][j]))
-                return 0;
+                return false;
             if (i != j && ! IsZero(pmat[i][j]))
-                return 0;
+                return false;
         }
-    return 1;
+    return true;
 }
 
 /*------------------------------------------------------------*/
 /* tests whether pmat is the identity matrix of size 'dim'    */
 /*------------------------------------------------------------*/
-long IsIdent(const Mat<zz_pX> & pmat, long dim)
+bool IsIdent(const Mat<zz_pX> & pmat, long dim)
 {
     if (pmat.NumRows() != dim || pmat.NumCols() != dim)
-        return 0;
+        return false;
 
     for (long i = 0; i < dim; ++i)
         for (long j = 0; j < dim; ++j)
         {
             if (i == j && !IsOne(pmat[i][j]))
-                return 0;
+                return false;
             if (i != j && !IsZero(pmat[i][j]))
-                return 0;
+                return false;
         }
-    return 1;
+    return true;
 }
 
 /*------------------------------------------------------------*/
@@ -122,6 +137,19 @@ long deg(const Mat<zz_pX> & a)
                 d = deg(a[i][j]);
     return d;
 }
+
+/*------------------------------------------------------------*/
+/* tests whether pmat is a constant matrix                    */
+/*------------------------------------------------------------*/
+bool IsConstant(const Mat<zz_pX> & pmat)
+{
+    for (long i = 0; i < pmat.NumRows(); ++i)
+        for (long j = 0; j < pmat.NumCols(); ++j)
+            if (deg(pmat[i][j]) > 0)
+                return false;
+    return true;
+}
+
 
 /*------------------------------------------------------------*/
 /* sets x = ith coefficient of a                              */
@@ -185,6 +213,25 @@ void transpose(Mat<zz_pX>& x, const Mat<zz_pX>& a)
             for (j = 1; j <= m; j++)
                 x(j, i) = a(i, j);
     }
+}
+
+/*------------------------------------------------------------*/
+/* mirror: reverse the order of the entries in a vector       */
+/*------------------------------------------------------------*/
+void mirror(Vec<zz_pX>& mvec, const Vec<zz_pX>& pvec)
+{
+    const long n = pvec.length();
+    if (n==0)
+    {
+        mvec.SetLength(0);
+        return;
+    }
+
+    // rely on reverse from Algorithm library of standard C++
+    if (&mvec != &pvec)
+        mvec = pvec;
+
+    std::reverse(&mvec[0], &mvec[n]);
 }
 
 /*------------------------------------------------------------*/
@@ -337,78 +384,65 @@ void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n)
     }
 }
 
-/*------------------------------------------------------------*/
-/* reverse the order of the entries in a vector               */
-/* x = a[n - 1 -i], i=0..n-1, with n=length(a)                */
-/*------------------------------------------------------------*/
-void reverse_vector(Vec<zz_pX>& x, const Vec<zz_pX>& a)
-{
-    long n = a.length();
-    if (&x == &a)
-    {
-        Vec<zz_pX> tmp;
-        tmp.SetLength(n);
-        for (long i = 0; i < n; i++)
-            tmp[i] = a[n - 1 - i];
-        x = tmp;
-        return;
-    }
-    else
-    {
-        x.SetLength(n);
-        for (long i = 0; i < n; i++)
-            x[i] = a[n - 1 - i];
-    }
-}
 
 /*------------------------------------------------------------*/
 /* reverse operations                                         */
-/* x = reverse of a[0]..a[hi] (hi >= -1);                     */
+/* x = reverse of a[0]..a[hi]                                 */
 /*------------------------------------------------------------*/
 void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a, long hi)
 {
-    long rdim, cdim;
-    rdim = a.NumRows();
-    cdim = a.NumCols();
+    long rdim = a.NumRows();
+    long cdim = a.NumCols();
     x.SetDims(rdim, cdim);
 
-    for (long r = 0; r < rdim; r++)
-        for (long s = 0; s< cdim; s++)
+    for (long r = 0; r < rdim; ++r)
+        for (long s = 0; s < cdim; ++s)
             reverse(x[r][s], a[r][s], hi);
 }
 
 /*------------------------------------------------------------*/
-/* row-wise reverse                                           */
-/* length of 'hi' must be the number of rows of a if row-wise,*/
-/* its number of columns otherwise                            */
+/* column-wise reverse                                        */
+/* length of 'hi' must be the number of columns of a          */
 /*------------------------------------------------------------*/
-
-void reverse(
+void col_reverse(
              Mat<zz_pX> &x, 
              const Mat<zz_pX> &a, 
-             const VecLong & hi,
-             const bool row_wise
+             const VecLong & hi
             )
 {
     long rdim = a.NumRows();
     long cdim = a.NumCols();
     x.SetDims(rdim, cdim);
 
-    if (row_wise)
-        for (long r = 0; r < rdim; ++r)
-            for (long s = 0; s < cdim; ++s)
-                reverse(x[r][s], a[r][s], hi[r]);
-    else
-        for (long r = 0; r < rdim; ++r)
-            for (long s = 0; s < cdim; ++s)
-                reverse(x[r][s], a[r][s], hi[s]);
+    for (long r = 0; r < rdim; ++r)
+        for (long s = 0; s < cdim; ++s)
+            reverse(x[r][s], a[r][s], hi[s]);
+}
+
+/*------------------------------------------------------------*/
+/* row-wise reverse                                           */
+/* length of 'hi' must be the number of rows of a             */
+/*------------------------------------------------------------*/
+void row_reverse(
+                 Mat<zz_pX> &x, 
+                 const Mat<zz_pX> &a, 
+                 const VecLong & hi
+                )
+{
+    long rdim = a.NumRows();
+    long cdim = a.NumCols();
+    x.SetDims(rdim, cdim);
+
+    for (long r = 0; r < rdim; ++r)
+        for (long s = 0; s < cdim; ++s)
+            reverse(x[r][s], a[r][s], hi[r]);
 }
 
 
 /*------------------------------------------------------------*/
 /* evaluate at a given point                                  */
 /*------------------------------------------------------------*/
-void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt)
+void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, const zz_p & pt)
 {
     evmat.SetDims(pmat.NumRows(),pmat.NumCols());
     for (long i = 0; i < pmat.NumRows(); ++i)
@@ -416,6 +450,24 @@ void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt)
             eval(evmat[i][j], pmat[i][j], pt);
 }
 
+/*------------------------------------------------------------*/
+/* evaluate at a given point (rep = vector of matrices)       */
+/*------------------------------------------------------------*/
+void eval(Mat<zz_p> & evmat, const Vec<Mat<zz_p>> & matp, const zz_p & pt)
+{
+    long d = matp.length()-1; // degree
+    if (d==-1) // zero matrix, dimensions unknown
+    {
+        evmat.SetDims(0,0);
+        return;
+    }
+    evmat = matp[d];
+    for (--d; d >= 0; --d)
+    {
+        mul(evmat, evmat, pt);
+        add(evmat, evmat, matp[d]);
+    }
+}
 
 /*------------------------------------------------------------*/
 /* random matrix of length n, degree < d                      */
@@ -463,11 +515,12 @@ void random_mat_zz_pX_cdeg(Mat<zz_pX>& pmat, long m, long n, VecLong cdeg)
 /*------------------------------------------------------------*/
 /* convert from Mat<zz_p>                                     */
 /*------------------------------------------------------------*/
-void conv(Mat<zz_pX>& mat, const Mat<zz_p>& coeff)
+void conv(Mat<zz_pX>& pmat, const Mat<zz_p>& mat)
 {
-    clear(mat);
-    mat.SetDims(coeff.NumRows(), coeff.NumCols());
-    SetCoeff(mat, 0, coeff);
+    pmat.SetDims(mat.NumRows(), mat.NumCols());
+    for (long i = 0; i < mat.NumRows(); ++i)
+        for (long j = 0; j < mat.NumCols(); ++j)
+            conv(pmat[i][j], mat[i][j]);
 }
 
 
@@ -476,114 +529,100 @@ void conv(Mat<zz_pX>& mat, const Mat<zz_p>& coeff)
 /* (degree deduced from input)                                */
 /*------------------------------------------------------------*/
 void conv(
-          Vec<Mat<zz_p>> & coeffs,
-          const Mat<zz_pX> & mat
+          Vec<Mat<zz_p>> & matp,
+          const Mat<zz_pX> & pmat
          )
 {
-    long d = deg(mat);
-    coeffs.SetLength(d + 1);
-    long r = mat.NumRows();
-    long s = mat.NumCols();
-    for (long i = 0; i <= d; ++i)
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
+    const long d = deg(pmat);
+    matp.SetLength(d + 1);
+    // if d==-1, matp is the length-0 vector and the following loop does
+    // nothing
+    for (long k = 0; k <= d; ++k)
     {
-        coeffs[i].SetDims(r, s);
-        for (long a = 0; a < r; ++a)
-        {
-            // TODO does this actually help the compiler, or is it smart enough to
-            // remain efficient if we use more readable code?
-            zz_p * entries = coeffs[i][a].elts(); 
-            const zz_pX * entries_mat = mat[a].elts();
-            for (long b = 0; b < s; ++b)
-                entries[b] = coeff(entries_mat[b], i);
-        }
+        matp[k].SetDims(m, n);
+        for (long i = 0; i < m; ++i)
+            for (long j = 0; j < n; ++j)
+                matp[k][i][j] = coeff(pmat[i][j], k);
     }
+    // Note: may be improved when degrees in pmat are unbalanced (e.g. if only
+    // few entries reach degree d)
 }
 
 void conv(
-          Mat<zz_pX> & mat,
-          const Vec<Mat<zz_p>> & coeffs
+          Mat<zz_pX> & pmat,
+          const Vec<Mat<zz_p>> & matp
          )
 {
-    long len = coeffs.length();
+    const long len = matp.length();
     if (len == 0)
     {
-        // TODO this is a choice --> indicate it in comments
-        // (zero-length sequence could be zero matrix)
-        mat.SetDims(0, 0);
+        clear(pmat); // keeping the same dimensions
         return;
     }
-    long r = coeffs[0].NumRows();
-    long s = coeffs[0].NumCols();
-    mat.SetDims(r, s);
 
-    for (long a = 0; a < r; ++a)
-    {
-        for (long b = 0; b < s; ++b)
+    const long m = matp[0].NumRows();
+    const long n = matp[0].NumCols();
+    pmat.SetDims(m, n);
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < n; ++j)
         {
-            zz_pX & entry = mat[a][b];
-            for (long i = 0; i < len; ++i)
-            {
-                SetCoeff(entry, i, coeffs[i][a][b]);
-            }
+            pmat[i][j].SetLength(len);
+            for (long k = 0; k < len; ++k)
+                pmat[i][j][k] = matp[k][i][j];
+            pmat[i][j].normalize();
         }
-    }
 }
 
 /*------------------------------------------------------------*/
 /* convert to / from Vec<Mat<zz_p>>                           */
 /* (user provided truncation order)                           */
-/* coeffs will have length order independently of deg(mat)    */
+/* matp will have length order independently of deg(mat)      */
 /*------------------------------------------------------------*/
 void conv(
-          Vec<Mat<zz_p>>& coeffs,
-          const Mat<zz_pX>& mat,
+          Vec<Mat<zz_p>>& matp,
+          const Mat<zz_pX>& pmat,
           const long order
          )
 {
-    coeffs.SetLength(order);
-    long r = mat.NumRows();
-    long s = mat.NumCols();
-    for (long i = 0; i < order; ++i)
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
+    matp.SetLength(order);
+    for (long k = 0; k < order; ++k)
     {
-        coeffs[i].SetDims(r, s);
-        for (long a = 0; a < r; ++a)
-        {
-            zz_p * entries = coeffs[i][a].elts();
-            const zz_pX * entries_mat = mat[a].elts();
-            for (long b = 0; b < s; ++b)
-                entries[b] = coeff(entries_mat[b], i);
-        }
+        matp[k].SetDims(m, n);
+        for (long i = 0; i < m; ++i)
+            for (long j = 0; j < n; ++j)
+                matp[k][i][j] = coeff(pmat[i][j], k);
     }
 }
 
 void conv(
-          Mat<zz_pX> & mat,
-          const Vec<Mat<zz_p>> & coeffs,
+          Mat<zz_pX> & pmat,
+          const Vec<Mat<zz_p>> & matp,
           const long order
          )
 {
-    long len = std::min(order,coeffs.length());
+    const long len = std::min(order,matp.length());
     if (len == 0)
     {
-        mat.SetDims(0, 0);
+        clear(pmat); // keeping the same dimensions
         return;
     }
-    long r = coeffs[0].NumRows();
-    long s = coeffs[0].NumCols();
-    mat.SetDims(r, s);
 
-    for (long a = 0; a < r; ++a)
-    {
-        for (long b = 0; b < s; ++b)
+    const long m = matp[0].NumRows();
+    const long n = matp[0].NumCols();
+    pmat.SetDims(m, n);
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < n; ++j)
         {
-            zz_pX & entry = mat[a][b];
-            for (long i = 0; i < len; ++i)
-                SetCoeff(entry, i, coeffs[i][a][b]);
+            pmat[i][j].SetLength(len);
+            for (long k = 0; k < len; ++k)
+                pmat[i][j][k] = matp[k][i][j];
+            pmat[i][j].normalize();
         }
-    }
 }
-
-
 
 
 // Local Variables:

@@ -12,36 +12,13 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* random vector of length d                                  */
-/*------------------------------------------------------------*/
-void random_vec_zz_p(Vec<zz_p>& A, long d)
-{
-    A.SetLength(d);
-    for (long i = 0; i < A.length(); i++)
-        A[i] = random_zz_p();
-}
-
-/*------------------------------------------------------------*/
-/* random matrix of size (d,e)                                */
-/*------------------------------------------------------------*/
-void random_mat_zz_p(mat_zz_p& A, long d, long e)
-{
-    A.SetDims(d, e);
-    for (long i = 0; i < d; i++)
-        for (long j = 0; j < e; j++)
-            A[i][j] = random_zz_p();
-}
-
-/*------------------------------------------------------------*/
 /* inverts every entry in A                                   */
 /*------------------------------------------------------------*/
 void inv_naive(Vec<zz_p>& invA, const Vec<zz_p>& A)
 {
-    long n = A.length();
-    invA.SetLength(n);
-
-    for (long i = 0; i < n; i++)
-        invA[i] = 1/A[i];
+    invA.SetLength(A.length());
+    for (long i = 0; i < A.length(); ++i)
+        inv(invA[i], A[i]);
 }
 
 /*------------------------------------------------------------*/
@@ -54,23 +31,27 @@ void inv(Vec<zz_p>& invA, const Vec<zz_p>& A)
         invA = inv(A);
         return;
     }
-        
-    long n = A.length();
-    Vec<zz_p> tmp;
-    tmp.SetLength(n);
+
+    const long n = A.length();
     invA.SetLength(n);
 
     if (n == 0)
         return;
 
+    Vec<zz_p> tmp(INIT_SIZE, n);
+
+    // tmp[i] = A[0] * A[1] * ... * A[i]
     tmp[0] = A[0];
-    for (long i = 1; i < n; i++)
-        tmp[i] = tmp[i-1]*A[i];
-    zz_p aux = 1/tmp[n-1];
-    for (long i = n-1; i >= 1; i--)
+    for (long i = 1; i < n; ++i)
+        mul(tmp[i], tmp[i-1], A[i]);
+
+    // aux = (A[0] * A[1] * ... * A[i])^{-1}
+    zz_p aux = inv(tmp[n-1]);
+
+    for (long i = n-1; i >= 1; --i)
     {
-        invA[i] = aux*tmp[i-1];
-        aux *= A[i];
+        mul(invA[i], aux, tmp[i-1]);
+        mul(aux, aux, A[i]);
     }
     invA[0] = aux;
 }
@@ -82,13 +63,9 @@ void precomp(Vec<mulmod_precon_t>& out, const Vec<zz_p>& in)
 {
     const long p = zz_p::modulus();
     const mulmod_t pinv = zz_p::ModulusInverse();
-    long m = in.length();
-    out.SetLength(m);
-    const zz_p* in_rep = in.elts();
-    for (long i = 0; i < m; i++)
-    {
-        out[i] = PrepMulModPrecon(in_rep[i]._zz_p__rep, p, pinv);
-    }
+    out.SetLength(in.length());
+    for (long i = 0; i < in.length(); ++i)
+        out[i] = PrepMulModPrecon(in[i]._zz_p__rep, p, pinv);
 }
 
 

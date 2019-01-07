@@ -6,9 +6,8 @@
 #include <algorithm> // for manipulating std::vector (min, max, ..)
 #include <numeric> // for std::iota
 
-#include "lzz_p_extra.h"
-#include "lzz_pX_CRT.h"
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_approximant.h"
+#include "mat_lzz_pX_linearization.h"
 
 //#define MBASIS_GEN_PROFILE
 //#define PMBASIS_GEN_PROFILE
@@ -28,7 +27,7 @@ NTL_CLIENT
 /* (degree deduced from input)                                */
 /* split into first half rows, second half rows               */
 /*------------------------------------------------------------*/
-void conv_top_bot(
+static void conv_top_bot(
                   Vec<Mat<zz_p>> & coeffs_top,
                   Vec<Mat<zz_p>> & coeffs_bot,
                   const Mat<zz_pX> & mat
@@ -63,7 +62,7 @@ void conv_top_bot(
 /* (degree bound d given by user; Vecs will have length d)    */
 /* split into first half rows, second half rows               */
 /*------------------------------------------------------------*/
-void conv_top_bot(
+static void conv_top_bot(
                   Vec<Mat<zz_p>> & coeffs_top,
                   Vec<Mat<zz_p>> & coeffs_bot,
                   const Mat<zz_pX> & mat,
@@ -112,8 +111,7 @@ void conv_top_bot(
 // where P00, P01, P11 have degree d-1 and P10 has degree d
 
 // TODO clean
-// TODO requirement order is even
-// TODO better handle pmat of degree << order
+// TODO better handle pmat of degree << order ?
 void mbasis_generic_2n_n_rescomp(
                                  Mat<zz_pX> & appbas,
                                  const Mat<zz_pX> & pmat,
@@ -760,7 +758,7 @@ void mbasis_generic_2n_n_rescomp(
 // where P00, P01, P11 have degree d-1 and P10 has degree d
 // TODO this shift-middle-product is not very satisfactory, should be
 // handled by middle-product itself
-// TODO better handle pmat of degree << order
+// TODO better handle pmat of degree << order ?
 void mbasis_generic_2n_n_resupdate(
                                    Mat<zz_pX> & appbas,
                                    const Mat<zz_pX> & pmat,
@@ -1347,27 +1345,15 @@ void pmbasis_generic_2n_n(
         return;
     }
 
-    // to avoid having to deal with shifts, we use the following
-    // orders order1+order2 = order for the recursive calls (see remarks
-    // in the header file):
+    // to avoid having to deal with shifts, we use the following orders
+    // order1+order2 = order for the recursive calls (see remarks in the
+    // documentation):
     // if order is odd: order1 is the one of floor(order/2) and ceil(order/2)
-    // which is odd
+    // which is even
     // if order is even: choose both order1 and order2 even and
-    // approximately order/2
-    long order1 = order/2; // floor(order/2)
-    if (order%2)
-    {
-        // order is odd; if order1 is even, change it to ceil(order/2),
-        // this way order2 will be even
-        if (order1%2) ++order1;
-    }
-    else
-    {
-        // order is even; if order1 is odd, change it to order/2 - 1
-        // this way order1 and order2 will be even
-        if (order1%2) --order1;
-    }
-    long order2 = order-order1;
+    // equal to order/2 +- 1
+    const long order1 = (order%4==0 || order%4==1) ? (order/2) : (order/2+1);
+    const long order2 = order-order1;
 
     // first recursive call, with 'pmat'
     Mat<zz_pX> trunc_pmat;
@@ -1407,27 +1393,15 @@ void pmbasis_generic_2n_n_top_rows(
         return;
     }
 
-    // to avoid having to deal with shifts, we use the following
-    // orders order1+order2 = order for the recursive calls (see remarks
-    // in the header file):
+    // to avoid having to deal with shifts, we use the following orders
+    // order1+order2 = order for the recursive calls (see remarks in the
+    // documentation):
     // if order is odd: order1 is the one of floor(order/2) and ceil(order/2)
-    // which is odd
+    // which is even
     // if order is even: choose both order1 and order2 even and
-    // approximately order/2
-    long order1 = order/2; // floor(order/2)
-    if (order%2)
-    {
-        // order is odd; if order1 is even, change it to ceil(order/2),
-        // this way order2 will be even
-        if (order1%2) ++order1;
-    }
-    else
-    {
-        // order is even; if order1 is odd, change it to order/2 - 1
-        // this way order1 and order2 will be even
-        if (order1%2) --order1;
-    }
-    long order2 = order-order1; // order of second call
+    // equal to order/2 +- 1
+    const long order1 = (order%4==0 || order%4==1) ? (order/2) : (order/2+1);
+    const long order2 = order-order1;
 
     // first recursive call, with 'pmat'
     Mat<zz_pX> trunc_pmat;
@@ -1956,27 +1930,15 @@ void matrix_pade_generic(
         return;
     }
 
-    // to avoid having to deal with shifts, we use the following
-    // orders order1+order2 = order for the recursive calls (see remarks
-    // in the header file):
+    // to avoid having to deal with shifts, we use the following orders
+    // order1+order2 = order for the recursive calls (see remarks in the
+    // documentation):
     // if order is odd: order1 is the one of floor(order/2) and ceil(order/2)
-    // which is odd
+    // which is even
     // if order is even: choose both order1 and order2 even and
-    // approximately order/2
-    long order1 = order/2; // floor(order/2)
-    if (order%2)
-    {
-        // order is odd; if order1 is even, change it to ceil(order/2),
-        // this way order2 will be even
-        if (order1%2) ++order1;
-    }
-    else
-    {
-        // order is even; if order1 is odd, change it to order/2 - 1
-        // this way order1 and order2 will be even
-        if (order1%2) --order1;
-    }
-    long order2 = order-order1; // order of second call
+    // equal to order/2 +- 1
+    const long order1 = (order%4==0 || order%4==1) ? (order/2) : (order/2+1);
+    const long order2 = order-order1;
 
     // first recursive call, matrix Pade with 'pmat' truncated at order1
     Mat<zz_pX> trunc_pmat;
@@ -2026,27 +1988,15 @@ void matrix_pade_generic_recursion(
         return;
     }
 
-    // to avoid having to deal with shifts, we use the following
-    // orders order1+order2 = order for the recursive calls (see remarks
-    // in the header file):
+    // to avoid having to deal with shifts, we use the following orders
+    // order1+order2 = order for the recursive calls (see remarks in the
+    // documentation):
     // if order is odd: order1 is the one of floor(order/2) and ceil(order/2)
-    // which is odd
+    // which is even
     // if order is even: choose both order1 and order2 even and
-    // approximately order/2
-    long order1 = order/2; // floor(order/2)
-    if (order%2)
-    {
-        // order is odd; if order1 is even, change it to ceil(order/2),
-        // this way order2 will be even
-        if (order1%2) ++order1;
-    }
-    else
-    {
-        // order is even; if order1 is odd, change it to order/2 - 1
-        // this way order1 and order2 will be even
-        if (order1%2) --order1;
-    }
-    long order2 = order-order1; // order of second call
+    // equal to order/2 +- 1
+    const long order1 = (order%4==0 || order%4==1) ? (order/2) : (order/2+1);
+    const long order2 = order-order1;
 
     // first recursive call, matrix Pade with 'pmat' truncated at order1
     // we need both left blocks of the approx basis

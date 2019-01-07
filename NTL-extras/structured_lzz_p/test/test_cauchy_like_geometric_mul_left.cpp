@@ -29,7 +29,7 @@ void check(long p)
         Mat<zz_p> MD = M.to_dense();
 
         Vec<zz_p> in, out, out2;
-        random_vec_zz_p(in, i);
+        random(in, i);
         out = M.mul_left(in);
         out2 = in * MD;
         assert (out2 == out);

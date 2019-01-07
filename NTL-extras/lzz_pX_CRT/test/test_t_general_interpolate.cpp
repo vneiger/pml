@@ -23,7 +23,7 @@ void check()
         Vec<zz_p> rnd1, rnd2;
 
         ev = get_general_points(j);
-        random_vec_zz_p(rnd1, j);
+        random(rnd1, j);
 
         ev.t_evaluate(g, rnd1);
         ev.t_interpolate(rnd2, g);

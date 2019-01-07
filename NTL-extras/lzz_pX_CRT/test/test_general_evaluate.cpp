@@ -21,7 +21,7 @@ void check(){
         zz_pX_Multipoint_General ev;
         Vec<zz_p> q, val;
 
-        random_vec_zz_p(q, j);
+        random(q, j);
         ev = zz_pX_Multipoint_General(q);
         f = random_zz_pX(2*j);
 

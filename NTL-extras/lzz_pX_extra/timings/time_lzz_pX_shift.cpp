@@ -1,25 +1,27 @@
 #include <iomanip>
-#include <assert.h>
-#include <NTL/lzz_pX.h>
+#include <vector>
 
 #include "util.h"
 #include "lzz_pX_extra.h"
 
 NTL_CLIENT
 
-/*------------------------------------------------------------*/
-/* checks a shift by evaluation                               */
-/*------------------------------------------------------------*/
-void check(long p)
+/*--------------*/
+/* time a shift */
+/*--------------*/
+void time_one(long p)
 {
     if (p == 0)
         zz_p::FFTInit(0);
     else
         zz_p::init(p);
 
-    cout << p << endl;
+    cout << "prime " << p << endl;
+    std::cout << "i\tDACprecomp\tDACshift\tLargePrecomp\tLargeShift" << std::endl;
 
-    for (long i = 1; i < 100; i++)
+    std::vector<long> degs = {1,2,5,10,20,50,100,200,500,1000,5000,10000,50000,250000,1000000};
+
+    for (long i : degs)
     {
         zz_pX a, b;
         zz_p c;
@@ -29,10 +31,10 @@ void check(long p)
         a = random_zz_pX(i);
         c = random_zz_p();
 
-        cout << i << " ";
+        cout << i << "\t";
         double t;
         long nb;
-        const double thresh = 0.02;
+        const double thresh = 0.1;
 
         nb = 0;
         t = get_time();
@@ -43,7 +45,7 @@ void check(long p)
         }
         while ( (get_time() - t) < thresh);
         t = (get_time() - t) / nb;
-        cout << t << " ";
+        cout << t << "\t";
 
 
         nb = 0;
@@ -55,7 +57,7 @@ void check(long p)
         }
         while ( (get_time() - t) < thresh);
         t = (get_time() - t) / nb;
-        cout << t << " ";
+        cout << t << "\t";
 
 
         nb = 0;
@@ -67,7 +69,7 @@ void check(long p)
         }
         while ( (get_time() - t) < thresh);
         t = (get_time() - t) / nb;
-        cout << t << " ";
+        cout << t << "\t";
 
 
         nb = 0;
@@ -79,7 +81,7 @@ void check(long p)
         }
         while ( (get_time() - t) < thresh);
         t = (get_time() - t) / nb;
-        cout << t << " ";
+        cout << t << "\t";
         
         cout << endl;
     }
@@ -88,14 +90,14 @@ void check(long p)
 /*------------------------------------------------------------*/
 /* main just calls check()                                    */
 /*------------------------------------------------------------*/
-int main(int argc, char** argv)
+int main()
 {
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
     warmup(); 
-    check(0);
-    check(23068673);
-    check(288230376151711813);
+    time_one(0);
+    time_one(23068673);
+    time_one(288230376151711813);
     return 0;
 }
 

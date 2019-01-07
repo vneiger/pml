@@ -24,7 +24,7 @@ void check()
 
         ev = get_general_points(j);
         f = random_zz_pX(j);
-        random_vec_zz_p(rnd, j);
+        random(rnd, j);
 
         ev.evaluate(valF, f);
         ev.t_evaluate(g, rnd);

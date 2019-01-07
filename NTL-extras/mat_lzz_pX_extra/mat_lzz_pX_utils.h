@@ -1,56 +1,75 @@
 #ifndef MAT_LZZ_PX_UTILS__H
 #define MAT_LZZ_PX_UTILS__H
 
+/** \brief Basic routines for univariate polynomial matrices over `zz_p`
+ *
+ * \file mat_lzz_pX_utils.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost.
+ * \version 0.1
+ * \date 2018-12-09
+ *
+ */
+
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
 #include <vector>
 
+/** Vectors of long's, for representing lists of degrees, list of indices,
+ * degree shifts, etc.
+ */
+typedef std::vector<long> VecLong;
+
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* Basic routines for handling Mat<zz_pX>                     */
 /*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* ZERO MATRIX; IDENTITY MATRIX                               */
+/* ZERO MATRIX AND IDENTITY MATRIX                            */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* clears the matrix  (pmat = 0 with same dimensions)         */
-/*------------------------------------------------------------*/
+/** @name Zero matrix and identity matrix.
+ *
+ *  Functions to deal with the zero matrix (clear, test if zero)
+ *  and the identity matrix (set to identity, test if identity). 
+ */
+//@{
+
+/** Clears the matrix, that is, sets `pmat` to be zero without modifying its
+ * row and column dimensions.
+ */
 void clear(Mat<zz_pX> & pmat);
 
-/*------------------------------------------------------------*/
-/* set pmat to be the identity                                */
-/* (same size, assuming square / size dim)                    */
-/*------------------------------------------------------------*/
+/** Clears the submatrix of the matrix `pmat` starting at `(r_offset,c_offset)`
+ * and with dimensions `nrows x ncols`. If this involves indices that are out
+ * of the bounds defined by the dimensions of `pmat`, then we discard them and
+ * restrict to the submatrix indeed contained in `pmat`. The four integer
+ * parameters should be nonnegative (this is not checked by the function). */
+void clear(Mat<zz_pX> & pmat, long r_offset, long c_offset, long nrows, long ncols);
+
+/** Sets the matrix `pmat` to be the (square) identity matrix with `dim`
+ * rows and `dim` columns.
+ */
 void ident(Mat<zz_pX> & pmat, long dim);
 
-/*------------------------------------------------------------*/
-/* return the identity matrix of size dim                     */
-/*------------------------------------------------------------*/
+/** Build the identity matrix of the specified dimension `dim`, and return it.
+ */
 Mat<zz_pX> ident_mat_zz_pX(long dim);
 
-/*------------------------------------------------------------*/
-/* tests whether m is zero (whatever its dims)                */
-/*------------------------------------------------------------*/
-long IsZero(const Vec<zz_pX> & pvec);
-long IsZero(const Mat<zz_pX> & pmat);
+/** Test whether `pvec` is the zero vector (whatever its dimension). */
+bool IsZero(const Vec<zz_pX> & pvec);
 
-/*------------------------------------------------------------*/
-/* tests whether pmat is the identity matrix                  */
-/*------------------------------------------------------------*/
-long IsIdent(const Mat<zz_pX> & pmat);
+/** Test whether `pmat` is the zero matrix (whatever its dimensions). */
+bool IsZero(const Mat<zz_pX> & pmat);
 
-/*------------------------------------------------------------*/
-/* tests whether pmat is the identity matrix of size 'dim'    */
-/*------------------------------------------------------------*/
-long IsIdent(const Mat<zz_pX> & pmat, long dim);
+/** Tests whether `pmat` is a square matrix of some dimension, and is the
+ * identity matrix of that dimension.
+ */
+bool IsIdent(const Mat<zz_pX> & pmat);
 
+/** Tests whether `pmat` is the identity matrix of the specified dimension. */
+bool IsIdent(const Mat<zz_pX> & pmat, long dim);
 
-
+//@} // doxygen group: Zero matrix and identity matrix
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -58,11 +77,24 @@ long IsIdent(const Mat<zz_pX> & pmat, long dim);
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* maximum degree of the entries of pmat                      */
-/*------------------------------------------------------------*/
+/** @name Degree
+ *
+ *  The degree of a polynomial matrix is the maximum of the degrees of all its
+ *  entries; by convention, the zero matrix has degree -1 (thus, except for the
+ *  zero matrix, the degree of a polynomial matrix is always nonnegative).
+ */
+//@{
+
+/** Compute and return the degree of a polynomial vector `pvec` */
+long deg(const Vec<zz_pX> & pvec);
+
+/** Compute and return the degree of a polynomial matrix `pmat` */
 long deg(const Mat<zz_pX> & pmat);
-long deg(const Vec<zz_pX> & pvec); // TODO in its own file
+
+/** Tests whether `pmat` is a constant matrix, that is, of degree 0. */
+bool IsConstant(const Mat<zz_pX> & pmat);
+
+//@} // doxygen group: Degree
 
 
 /*------------------------------------------------------------*/
@@ -71,24 +103,25 @@ long deg(const Vec<zz_pX> & pvec); // TODO in its own file
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* sets x = ith coefficient of a                              */
-/*------------------------------------------------------------*/
-void GetCoeff(Mat<zz_p>& x, const Mat<zz_pX>& a, long i);
+/** @name Setting and getting coefficients
+ *
+ *  Seeing a polynomial matrix in `Mat<zz_pX>` as a univariate polynomial with
+ *  matrix coefficients in `Mat<zz_p>`, these functions allow one to get or set
+ *  one of these coefficients, for a given polynomial matrix.
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* returns ith coefficient matrix of a                        */
-/*------------------------------------------------------------*/
-inline Mat<zz_p> coeff(const Mat<zz_pX>& a, long i)
-{ Mat<zz_p> x; GetCoeff(x, a, i); return x; }
+/** Sets `coeff` to be the coefficient of `pmat` of degree `i` */
+void GetCoeff(Mat<zz_p> & coeff, const Mat<zz_pX> & pmat, long i);
 
-/*------------------------------------------------------------*/
-/* sets ith coefficient of x to a                             */
-/*------------------------------------------------------------*/
-void SetCoeff(Mat<zz_pX>& x, long i, const Mat<zz_p> &a);
+/** Builds and returns the coefficient of `pmat` of degree `i` */
+inline Mat<zz_p> coeff(const Mat<zz_pX> & pmat, long i)
+{ Mat<zz_p> coeff; GetCoeff(coeff, pmat, i); return coeff; }
 
+/** Sets the coefficient of `pmat` of degree `i` to be `coeff` */
+void SetCoeff(Mat<zz_pX> & pmat, long i, const Mat<zz_p> & coeff);
 
-
+//@} // doxygen group: Setting and getting coefficients
 
 
 /*------------------------------------------------------------*/
@@ -100,138 +133,265 @@ void SetCoeff(Mat<zz_pX>& x, long i, const Mat<zz_p> &a);
 /*------------------------------------------------------------*/
 /* Transpose                                                  */
 /*------------------------------------------------------------*/
-void transpose(Mat<zz_pX>& x, const Mat<zz_pX>& a);
+/** @name Transpose and mirror
+ *
+ *  Transpose of a polynomial matrix, and mirror of a vector.
+ */
+//@{
+/** Computes the transpose `tmat` or the polynomial matrix `pmat`; `tmat`
+ * may alias `pmat` */
+void transpose(Mat<zz_pX> & tmat, const Mat<zz_pX> & pmat);
 
-inline Mat<zz_pX> transpose(const Mat<zz_pX> & a)
-{ Mat<zz_pX> x; transpose(x, a); return x; }
+/** Computes and returns the transpose or the polynomial matrix `pmat` */
+inline Mat<zz_pX> transpose(const Mat<zz_pX> & pmat)
+{ Mat<zz_pX> tmat; transpose(tmat, pmat); return tmat; }
 
-/*------------------------------------------------------------*/
-/* Truncate mod X^..., for all the matrix / some columns/rows */
-/* output can alias input                                     */
-/*------------------------------------------------------------*/
+/** Computes the mirror `mvec` of the polynomial vector `pvec`, meaning that
+ * `mvec[i]` is `pvec[n-1-i]` for `0<=i<n`, where `n` is the length of `pvec`
+ */
+void mirror(Vec<zz_pX> & mvec, const Vec<zz_pX> & pvec);
 
-// vector versions
-void trunc(Vec<zz_pX>& x, const Vec<zz_pX>& a, long n);
-inline Vec<zz_pX> trunc(const Vec<zz_pX>& a, long n)
-{ Vec<zz_pX> x; trunc(x, a, n); return x; }
+/** Computes and returns the mirror of the polynomial vector `pvec`, as
+ * defined above (see #mirror(Vec<zz_pX> & mvec, const Vec<zz_pX> & pvec))
+ */
+inline Vec<zz_pX> mirror(const Vec<zz_pX> & pvec)
+{ Vec<zz_pX> mvec; mirror(mvec, pvec); return mvec; }
 
-// full matrix versions
-void trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
-inline Mat<zz_pX> trunc(const Mat<zz_pX>& a, long n)
-{ Mat<zz_pX> x; trunc(x, a, n); return x; }
-
-// row versions
-void truncRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, long r, long n);
-inline Mat<zz_pX> truncRow(const Mat<zz_pX>& a, long r, long n)
-{ Mat<zz_pX> x; truncRow(x, a, r, n); return x; }
-
-// col versions
-void truncCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, long c, long n);
-inline Mat<zz_pX> truncCol(const Mat<zz_pX>& a, long c, long n)
-{ Mat<zz_pX> x; truncCol(x, a, c, n); return x; }
-
-/* TODO: different truncation orders on columns/rows          */
-
-/*------------------------------------------------------------*/
-/* Shift operations:                                          */
-/*  - LeftShift by n means multiplication by X^n              */
-/*  - RightShift by n means division by X^n                   */
-/*  - a negative shift reverses the direction of the shift.   */
-/*------------------------------------------------------------*/
-
-/* TODO                                                       */
-/* versions with different shifting orders on rows/columns    */
-/* shiftAdd, shiftSub                                         */
-
-// left shift, vector
-void LeftShift(Vec<zz_pX>& x, const Vec<zz_pX>& a, long n);
-inline Vec<zz_pX> LeftShift(const Vec<zz_pX>& a, long n)
-{ Vec<zz_pX> x; LeftShift(x, a, n); return x; }
-
-// right shift, vector
-void RightShift(Vec<zz_pX>& x, const Vec<zz_pX>& a, long n);
-inline Vec<zz_pX> RightShift(const Vec<zz_pX>& a, long n)
-{ Vec<zz_pX> x; RightShift(x, a, n); return x; }
+//@} // doxygen group: Transpose and mirror
 
 
-// left shift, full matrix 
-void LeftShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
-inline Mat<zz_pX> LeftShift(const Mat<zz_pX>& a, long n)
-{ Mat<zz_pX> x; LeftShift(x, a, n); return x; }
+/** @name Truncate
+ *
+ *  Truncate a polynomial vector, a polynomial matrix, or a specific row or
+ *  column of a polynomial matrix.
+ *
+ *  In all the following functions which involve an OUT parameter (`tvec` or
+ *  `tmat`), this parameter may alias the IN parameter (`pvec` or `pmat`).
+ *
+ * \todo different truncation orders on columns/rows
+ */
+//@{
 
-// right shift, full matrix 
-void RightShift(Mat<zz_pX>& x, const Mat<zz_pX>& a, long n);
-inline Mat<zz_pX> RightShift(const Mat<zz_pX>& a, long n)
-{ Mat<zz_pX> x; RightShift(x, a, n); return x; }
+/** Computes the truncation `tvec` of a polynomial vector `pvec` at order `n` */
+void trunc(Vec<zz_pX> & tvec, const Vec<zz_pX> & pvec, long n);
+/** Computes and returns the truncation of a polynomial vector `pvec` at order `n` */
+inline Vec<zz_pX> trunc(const Vec<zz_pX> & pvec, long n)
+{ Vec<zz_pX> tvec; trunc(tvec, pvec, n); return tvec; }
 
-// left shift, single row
-void LeftShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n);
-inline Mat<zz_pX> LeftShiftRow(const Mat<zz_pX>& a, const long r, long n)
-{ Mat<zz_pX> x; LeftShiftRow(x, a, r, n); return x; }
+/** Computes the truncation `tmat` of a polynomial matrix `pmat` at order `n` */
+void trunc(Mat<zz_pX> & tmat, const Mat<zz_pX> & pmat, long n);
+/** Computes and returns the truncation of a polynomial matrix `pmat` at order `n` */
+inline Mat<zz_pX> trunc(const Mat<zz_pX> & pmat, long n)
+{ Mat<zz_pX> tmat; trunc(tmat, pmat, n); return tmat; }
 
-// right shifts, single row
-void RightShiftRow(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long r, long n);
-inline Mat<zz_pX> RightShiftRow(const Mat<zz_pX>& a, const long r, long n)
-{ Mat<zz_pX> x; RightShiftRow(x, a, r, n); return x; }
+/** Computes the matrix `tmat` which is the polynomial matrix `pmat` with its
+ * row `i` truncated at order `n` */
+void truncRow(Mat<zz_pX> & tmat, const Mat<zz_pX> & pmat, long i, long n);
+/** Computes and returns (a copy of) the polynomial matrix `pmat` with its row
+ * `i` truncated at order `n` */
+inline Mat<zz_pX> truncRow(const Mat<zz_pX> & pmat, long i, long n)
+{ Mat<zz_pX> tmat; truncRow(tmat, pmat, i, n); return tmat; }
 
-// left shift, single column
-void LeftShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
-inline Mat<zz_pX> LeftShiftCol(const Mat<zz_pX>& a, const long c, long n)
-{ Mat<zz_pX> x; LeftShiftCol(x, a, c, n); return x; }
+/** Computes the matrix `tmat` which is the polynomial matrix `pmat` with its
+ * column `j` truncated at order `n` */
+void truncCol(Mat<zz_pX> & tmat, const Mat<zz_pX> & pmat, long j, long n);
+/** Computes and returns (a copy of) the polynomial matrix `pmat` with its
+ * column `j` truncated at order `n` */
+inline Mat<zz_pX> truncCol(const Mat<zz_pX> & pmat, long j, long n)
+{ Mat<zz_pX> tmat; truncCol(tmat, pmat, j, n); return tmat; }
 
-// right shifts, single column
-void RightShiftCol(Mat<zz_pX>& x, const Mat<zz_pX>& a, const long c, long n);
-inline Mat<zz_pX> RightShiftCol(const Mat<zz_pX>& a, const long c, long n)
-{ Mat<zz_pX> x; RightShiftCol(x, a, c, n); return x; }
-
-// operators for full matrix shift
-inline Mat<zz_pX> operator<<(const Mat<zz_pX> &a, long n)
-{ Mat<zz_pX> x; LeftShift(x, a, n); return x; }
-inline Mat<zz_pX> operator>>(const Mat<zz_pX> &a, long n)
-{ Mat<zz_pX> x; RightShift(x, a, n); return x; }
-
-inline Mat<zz_pX>& operator<<=(Mat<zz_pX>& x, long n)
-{ LeftShift(x, x, n); return x; }
-inline Mat<zz_pX>& operator>>=(Mat<zz_pX>& x, long n)
-{ RightShift(x, x, n); return x; }
+//@} // doxygen group: Truncate
 
 
-/*------------------------------------------------------------*/
-/* reverse the order of the entries in a vector               */
-/* x = a[n - 1 -i], i=0..n-1, with n=length(a)                */
-/*------------------------------------------------------------*/
-void reverse_vector(Vec<zz_pX>& x, const Vec<zz_pX>& a);
-inline Vec<zz_pX> reverse_vector(const Vec<zz_pX>& a)
-{ Vec<zz_pX> x; reverse_vector(x, a); return x; }
+/** @name Shifts (multiplication by powers of the variable)
+ *
+ * Left and right shift operations (X is the variable):
+ *  - LeftShift by n means multiplication by X^n
+ *  - RightShift by n means division by X^n
+ *  - a negative shift reverses the direction of the shift.
+ *
+ *  In all the following functions which involve an OUT parameter (`svec` or
+ *  `smat`), this parameter may alias the corresponding IN parameter (`pvec` or
+ *  `pmat`).
+ *
+ * \todo 
+ *   - versions with different shifting orders on rows/columns; 
+ *   - shiftAdd, shiftSub
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* Reverse operations:                                        */
-/* x = reverse of a[0]..a[hi] (hi >= -1);                     */
-/* user provided 'hi'                                         */
-/*------------------------------------------------------------*/
-void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a, long hi);
+/** Computes the left `n`-shift `svec` of the polynomial vector `pvec` */
+void LeftShift(Vec<zz_pX> & svec, const Vec<zz_pX> & pvec, long n);
+/** Computes and returns the left `n`-shift of the polynomial vector `pvec` */
+inline Vec<zz_pX> LeftShift(const Vec<zz_pX> & pvec, long n)
+{ Vec<zz_pX> svec; LeftShift(svec, pvec, n); return svec; }
+/** Operator equivalent of #LeftShift(const Vec<zz_pX> & pvec, long n) */
+inline Vec<zz_pX> operator<<(const Vec<zz_pX> & pvec, long n)
+{ Vec<zz_pX> svec; LeftShift(svec, pvec, n); return svec; }
+/** Operator: `pvec <<= n;` performs a left `n`-shift on the polynomial vector `pvec` */
+inline Vec<zz_pX> & operator<<=(Vec<zz_pX> & pvec, long n)
+{ LeftShift(pvec, pvec, n); return pvec; }
 
-inline Mat<zz_pX> reverse(const Mat<zz_pX>& a, long hi)
-{ Mat<zz_pX> x; reverse(x, a, hi); return x; }
+/** Computes the right `n`-shift `svec` of the polynomial vector `pvec` */
+void RightShift(Vec<zz_pX> & svec, const Vec<zz_pX> & pvec, long n);
+/** Computes and returns the right `n`-shift of the polynomial vector `pvec` */
+inline Vec<zz_pX> RightShift(const Vec<zz_pX> & pvec, long n)
+{ Vec<zz_pX> svec; RightShift(svec, pvec, n); return svec; }
+/** Operator equivalent of #RightShift(const Vec<zz_pX> & pvec, long n) */
+inline Vec<zz_pX> operator>>(const Vec<zz_pX> & pvec, long n)
+{ Vec<zz_pX> svec; RightShift(svec, pvec, n); return svec; }
+/** Operator: `pvec >>= n;` performs a right `n`-shift on the polynomial vector `pvec` */
+inline Vec<zz_pX> & operator>>=(Vec<zz_pX> & pvec, long n)
+{ RightShift(pvec, pvec, n); return pvec; }
 
-/* TODO versions with different degree on different cols/rows */
-void reverse(
-             Mat<zz_pX> &x, 
-             const Mat<zz_pX> &a, 
-             const VecLong &hi,
-             const bool row_wise = true
-            );
+/** Computes the left `n`-shift `smat` of the polynomial matrix `pmat` */
+void LeftShift(Mat<zz_pX> & smat, const Mat<zz_pX> & pmat, long n);
+/** Computes and returns the left `n`-shift of the polynomial matrix `pmat` */
+inline Mat<zz_pX> LeftShift(const Mat<zz_pX> & pmat, long n)
+{ Mat<zz_pX> smat; LeftShift(smat, pmat, n); return smat; }
+/** Operator equivalent of #LeftShift(const Mat<zz_pX> & pmat, long n) */
+inline Mat<zz_pX> operator<<(const Mat<zz_pX> & pmat, long n)
+{ Mat<zz_pX> smat; LeftShift(smat, pmat, n); return smat; }
+/** Operator: `pmat <<= n;` performs a left `n`-shift on the polynomial matrix `pmat` */
+inline Mat<zz_pX> & operator<<=(Mat<zz_pX> & pmat, long n)
+{ LeftShift(pmat, pmat, n); return pmat; }
 
-/*------------------------------------------------------------*/
-/* Reverse operations:                                        */
-/* x = reverse of a[0]..a[deg(a)]                             */
-/*------------------------------------------------------------*/
+/** Computes the right `n`-shift `smat` of the polynomial matrix `pmat` */
+void RightShift(Mat<zz_pX> & smat, const Mat<zz_pX> & pmat, long n);
+/** Computes and returns the right `n`-shift of the polynomial matrix `pmat` */
+inline Mat<zz_pX> RightShift(const Mat<zz_pX> & pmat, long n)
+{ Mat<zz_pX> smat; RightShift(smat, pmat, n); return smat; }
+/** Operator equivalent of #RightShift(const Mat<zz_pX> & pmat, long n) */
+inline Mat<zz_pX> operator>>(const Mat<zz_pX> & pmat, long n)
+{ Mat<zz_pX> smat; RightShift(smat, pmat, n); return smat; }
+/** Operator: `pmat >>= n;` performs a right `n`-shift on the polynomial matrix `pmat` */
+inline Mat<zz_pX> & operator>>=(Mat<zz_pX> & pmat, long n)
+{ RightShift(pmat, pmat, n); return pmat; }
 
-inline void reverse(Mat<zz_pX>& x, const Mat<zz_pX>& a)
-{ reverse(x, a, deg(a)); }
 
-inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
-{ Mat<zz_pX> x; reverse(x, a, deg(a)); return x; }
+/** Computes the matrix `smat` which is the same as the polynomial matrix
+ * `pmat` but with its `i`-th row replaced by its left `n`-shift
+ */
+void LeftShiftRow(Mat<zz_pX> & smat, const Mat<zz_pX> & pmat, const long i, long n);
+
+/** Computes and returns the matrix which is the same as the polynomial matrix
+ * `pmat` but with its `i`-th row replaced by its right `n`-shift
+ */
+inline Mat<zz_pX> LeftShiftRow(const Mat<zz_pX> & pmat, const long i, long n)
+{ Mat<zz_pX> smat; LeftShiftRow(smat, pmat, i, n); return smat; }
+
+/** Computes the matrix `smat` which is the same as the polynomial matrix
+ * `pmat` but with its `i`-th row replaced by its right `n`-shift
+ */
+void RightShiftRow(Mat<zz_pX> & smat, const Mat<zz_pX> & pmat, const long i, long n);
+
+/** Computes and returns the matrix which is the same as the polynomial matrix
+ * `pmat` but with its `i`-th row replaced by its right `n`-shift
+ */
+inline Mat<zz_pX> RightShiftRow(const Mat<zz_pX> & pmat, const long i, long n)
+{ Mat<zz_pX> smat; RightShiftRow(smat, pmat, i, n); return smat; }
+
+/** Computes the matrix `smat` which is the same as the polynomial matrix
+ * `pmat` but with its `j`-th column replaced by its left `n`-shift
+ */
+void LeftShiftCol(Mat<zz_pX> & smat, const Mat<zz_pX> & pmat, const long j, long n);
+
+/** Computes and returns the matrix which is the same as the polynomial matrix
+ * `pmat` but with its `j`-th column replaced by its left `n`-shift
+ */
+inline Mat<zz_pX> LeftShiftCol(const Mat<zz_pX> & pmat, const long j, long n)
+{ Mat<zz_pX> smat; LeftShiftCol(smat, pmat, j, n); return smat; }
+
+/** Computes the matrix `smat` which is the same as the polynomial matrix
+ * `pmat` but with its `j`-th column replaced by its right `n`-shift
+ */
+void RightShiftCol(Mat<zz_pX> & smat, const Mat<zz_pX> & pmat, const long j, long n);
+
+/** Computes and returns the matrix which is the same as the polynomial matrix
+ * `pmat` but with its `j`-th column replaced by its right `n`-shift
+ */
+inline Mat<zz_pX> RightShiftCol(const Mat<zz_pX> & pmat, const long j, long n)
+{ Mat<zz_pX> smat; RightShiftCol(smat, pmat, j, n); return smat; }
+
+//@} // doxygen group: Shifts (multiplication by powers of the variable)
+
+
+/** @name Reverse
+ * \anchor Reverse
+ *
+ *  The reverse, sometimes called mirror, of a polynomial is the operation of
+ *  reversing the order of its coefficients. This is usually either done with
+ *  respect to the degree of that polynomial, or more generally with respect to
+ *  some specified bound. The reverse of a polynomial matrix is defined
+ *  analogously, with either the degree of the matrix or a specified bound. We
+ *  also consider row-wise and column-wise variants, in which such a bound is
+ *  specified for each row, or for each column.
+ *
+ *  Explicitly, for a polynomial `f` of degree `d` with coefficients `f[i]`,
+ *  and for a given nonnegative integer bound `hi`, the reverse of `f` with
+ *  respect to `hi` is the polynomial of degree at most `hi` whose coefficients
+ *  are `f[hi]`, `f[hi-1]`, ..., `f[0]`. This definition can be extended for
+ *  negative `hi` by considering that this reverse polynomial is zero.
+ *
+ *  In the functions below, when there is an OUT parameter `rmat`, it may alias
+ *  the IN parameter `pmat`.
+ *
+ */
+//@{
+
+/** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
+ * respect to a bound `hi` (see @ref Reverse for more details).
+ */
+void reverse(Mat<zz_pX> & rmat, const Mat<zz_pX> & pmat, long hi);
+
+/** Computes and returns the matrix reverse of a polynomial matrix `pmat`, with
+ * respect to a bound `hi` (see @ref Reverse for more details).
+ */
+inline Mat<zz_pX> reverse(const Mat<zz_pX> & pmat, long hi)
+{ Mat<zz_pX> rmat; reverse(rmat, pmat, hi); return rmat; }
+
+/** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
+ * respect to the degree of `pmat` (see @ref Reverse for more details).
+ */
+inline void reverse(Mat<zz_pX> & rmat, const Mat<zz_pX> & pmat)
+{ reverse(rmat, pmat, deg(pmat)); }
+
+/** Computes and returns the matrix reverse of a polynomial matrix `pmat`, with
+ * respect to the degree of `pmat` (see @ref Reverse for more details).
+ */
+inline Mat<zz_pX> reverse(const Mat<zz_pX> & pmat)
+{ Mat<zz_pX> rmat; reverse(rmat, pmat, deg(pmat)); return rmat; }
+
+/** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
+ * respect to a list of bounds `hi` for each row (see @ref Reverse for more
+ * details). The length of `hi` must be the number of rows of `pmat`.
+ */
+void row_reverse(Mat<zz_pX> & rmat, const Mat<zz_pX> & pmat, const VecLong & hi);
+
+/** Computes and returns the matrix reverse of a polynomial matrix `pmat`, with
+ * respect to a list of bounds `hi` for each row (see @ref Reverse for more
+ * details). The length of `hi` must be the number of rows of `pmat`.
+ 
+ */
+inline Mat<zz_pX> row_reverse(const Mat<zz_pX> & pmat, const VecLong & hi)
+{ Mat<zz_pX> rmat; row_reverse(rmat, pmat, hi); return rmat; }
+
+/** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
+ * respect to a list of bounds `hi` for each column (see @ref Reverse for more
+ * details). The length of `hi` must be the number of columns of `pmat`.
+ */
+void col_reverse(Mat<zz_pX> & rmat, const Mat<zz_pX> & pmat, const VecLong & hi);
+
+/** Computes and returns the matrix reverse of a polynomial matrix `pmat`, with
+ * respect to a list of bounds `hi` for each column (see @ref Reverse for more
+ * details). The length of `hi` must be the number of columns of `pmat`.
+ */
+inline Mat<zz_pX> col_reverse(const Mat<zz_pX> & pmat, const VecLong & hi)
+{ Mat<zz_pX> rmat; col_reverse(rmat, pmat, hi); return rmat; }
+
+
+
+//@} // doxygen group: Reverse
 
 
 /*------------------------------------------------------------*/
@@ -240,19 +400,37 @@ inline Mat<zz_pX> reverse(const Mat<zz_pX>& a)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* Evaluate at one point                                      */
-/*------------------------------------------------------------*/
-void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, zz_p pt);
+/** @name Evaluation at one or multiple points
+ *
+ *  Functions for computing the evaluation of a polynomial matrix at a single
+ *  point (element of the base field, that is, of type `zz_p`) or at multiple
+ *  points.
+ *
+ * \todo add multipoint evaluation (general points, geometric points, ..)
+ */
+//@{
 
-inline Mat<zz_p> eval(const Mat<zz_pX> & pmat, zz_p pt)
+/** Computes the evaluation `evmat` of the polynomial matrix `pmat` at the
+ * point `pt` (`pmat` stored as a matrix of polynomials) */
+void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, const zz_p & pt);
+
+/** Computes and returns the evaluation of the polynomial matrix `pmat` at the
+ * point `pt` (`pmat` stored as a matrix of polynomials) */
+inline Mat<zz_p> eval(const Mat<zz_pX> & pmat, const zz_p & pt)
 { Mat<zz_p> evmat; eval(evmat, pmat, pt); return evmat; }
 
+/** Computes the evaluation `evmat` of the polynomial matrix `matp` at the
+ * point `pt` (polynomial matrix stored as a vector of constant matrices). If
+ * `matp` has length zero, `eval` is the `0x0` matrix. */
+void eval(Mat<zz_p> & evmat, const Vec<Mat<zz_p>> & matp, const zz_p & pt);
 
-// TODO matrix-wide multipoint evaluation functions?
-// (general, geometric, ..)
+/** Computes and returns the evaluation of the polynomial matrix `matp` at the
+ * point `pt` (polyomial matrix stored as a vector of constant matrices). If
+ * `matp` has length zero, this returns the `0x0` matrix.  */
+inline Mat<zz_p> eval(const Vec<Mat<zz_p>> & matp, const zz_p & pt)
+{ Mat<zz_p> evmat; eval(evmat, matp, pt); return evmat; }
 
-
+//@} // doxygen group: Evaluation at one or multiple points
 
 
 /*------------------------------------------------------------*/
@@ -261,32 +439,50 @@ inline Mat<zz_p> eval(const Mat<zz_pX> & pmat, zz_p pt)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* random vector of length n, degree < d                      */
-/*------------------------------------------------------------*/
+/** @name Generation of random matrices
+ *
+ *  Functions for generating a random polynomial matrix of given
+ *  dimensions and degree; the degree bound can either be a global
+ *  degree bound, or a list of bounds for the degree of each row
+ *  (respectively, of each column).
+ *
+ *  \todo complete this doc with ref to function for random matrix with given form
+ */
+//@{
+
+/** Computes a random polynomial vector `pvec` of length `n` and degree less
+ * than `d`
+ */
 void random(Vec<zz_pX> & pvec, long n, long d);
+
+/** Computes and returns a random polynomial vector of length `n` and degree
+ * less than `d`
+ */
 inline Vec<zz_pX> random_vec_zz_pX(long n, long d)
 { Vec<zz_pX> pvec; random(pvec, n, d); return pvec; }
 
-/*------------------------------------------------------------*/
-/* random (m, n) matrix of degree < d                         */
-/*------------------------------------------------------------*/
+/** Computes a random polynomial matrix `pmat` with `m` rows, `n` columns, and
+ * degree less than `d`
+ */
 void random(Mat<zz_pX> & pmat, long m, long n, long d);
-inline Mat<zz_pX> random_mat_zz_pX(long n, long m, long d)
-{ Mat<zz_pX> pmat; random(pmat, n, m, d); return pmat; }
 
-/*------------------------------------------------------------*/
-/* random (m, n) matrix of row degree < rdeg                  */
-/*------------------------------------------------------------*/
+/** Computes and returns a random polynomial matrix with `m` rows, `n` columns,
+ * and degree less than `d`
+ */
+inline Mat<zz_pX> random_mat_zz_pX(long m, long n, long d)
+{ Mat<zz_pX> pmat; random(pmat, m, n, d); return pmat; }
+
+/** Computes a random polynomial matrix `pmat` with `m` rows, `n` columns, and
+ * degree of `i`th row less than `rdeg[i]` for all `i`
+ */
 void random_mat_zz_pX_rdeg(Mat<zz_pX> & pmat, long m, long n, VecLong rdeg);
 
-/*------------------------------------------------------------*/
-/* random (m, n) matrix of column degree < cdeg               */
-/*------------------------------------------------------------*/
+/** Computes a random polynomial matrix `pmat` with `m` rows, `n` columns, and
+ * degree of `j`th column less than `cdeg[j]` for all `j`
+ */
 void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, VecLong cdeg);
-// TODO replace with Vec<long> ??
 
-
+//@} // doxygen group: Generation of random matrices
 
 
 
@@ -296,45 +492,105 @@ void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, VecLong cdeg);
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* convert from Mat<zz_p>                                     */
-/*------------------------------------------------------------*/
-void conv(Mat<zz_pX>& mat, const Mat<zz_p>& coeff);
+/** @name Conversion from constant matrix.
+ */
+//@{
 
-inline Mat<zz_pX> conv(const Mat<zz_p>& coeff)
-{ Mat<zz_pX> mat; conv(mat, coeff); return mat; }
+/** Conversion from a constant matrix `mat` into a polynomial matrix `pmat`
+ * (which is constant, equal to `mat`).
+ */
+void conv(Mat<zz_pX> & pmat, const Mat<zz_p> & mat);
 
-/*------------------------------------------------------------*/
-/* convert to / from Vec<Mat<zz_p>>                           */
-/* (degree deduced from input)                                */
-/*------------------------------------------------------------*/
-void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat);
+/** Forms a polynomial matrix equal to the constant matrix `mat`, and returns
+ * it.
+ */
+inline Mat<zz_pX> conv(const Mat<zz_p> & mat)
+{ Mat<zz_pX> pmat; conv(pmat, mat); return pmat; }
 
-inline Vec<Mat<zz_p>> conv(const Mat<zz_pX>& mat)
-{ Vec<Mat<zz_p>> coeffs; conv(coeffs, mat); return coeffs; }
+//@} // doxygen group: Conversion from constant matrix
 
-void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs);
 
-inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs)
-{ Mat<zz_pX> mat; conv(mat, coeffs); return mat; }
 
-/*------------------------------------------------------------*/
-/* convert to / from Vec<Mat<zz_p>>                           */
-/* (user provided truncation order)                           */
-/*------------------------------------------------------------*/
+/** @name Conversion to/from Vec<Mat<zz_p>>
+ *
+ *  Two main representations are used for polynomial matrices:
+ *     - a polynomial matrix stored as a matrix with polynomial entries, that
+ *     is, of type `Mat<zz_pX>` (currently the default representation)
+ *     - a polynomial matrix stored as a polynomial with matrix coefficients,
+ *     that is, of type `Vec<Mat<zz_p>>`
+ *
+ *  In the latter representation, the vector has length at least `deg(mat)+1`;
+ *  in particular, the zero matrix might be represented by the vector of length
+ *  0, although this does not give access to the dimensions of this zero
+ *  matrix. Note also the following requirement: in the second representation,
+ *  all the matrix coefficients have the same row and column dimensions; this
+ *  is currently assumed to hold, and not checked by the algorithms.
+ *
+ *  The following functions perform conversions between these types, with two
+ *  variants: either the degree is deduced from the input, or a user-provided
+ *  truncation order is used.
+ */
+//@{
 
-/*------------------------------------------------------------*/
-/* coeffs will have length order independently of deg(mat)    */
-/*------------------------------------------------------------*/
-void conv(Vec<Mat<zz_p>>& coeffs, const Mat<zz_pX>& mat, const long order);
+/** Converts from matrix with polynomial entries `pmat` to polynomial with
+ * matrix coefficients `matp`; the zero matrix is converted to the length-0
+ * vector, losing information on the row and column dimensions.
+ */
+void conv(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat);
 
-inline Vec<Mat<zz_p>> conv(const Mat<zz_pX>& mat, const long order)
-{ Vec<Mat<zz_p>> coeffs; conv(coeffs, mat, order); return coeffs; }
+/** Returns the conversion of a matrix with polynomial entries `pmat` into a
+ * polynomial with matrix coefficients; the zero matrix is converted to the
+ * length-0 vector, losing information on the row and column dimensions.
+ */
+inline Vec<Mat<zz_p>> conv(const Mat<zz_pX> & pmat)
+{ Vec<Mat<zz_p>> matp; conv(matp, pmat); return matp; }
 
-void conv(Mat<zz_pX>& mat, const Vec<Mat<zz_p>>& coeffs, const long order);
+/** Converts from polynomial with matrix coefficients `matp` to matrix with
+ * polynomial entries `pmat`; if `matp` has length 0 then `pmat` is cleared
+ * (set to zero without changing its dimensions).
+ */
+void conv(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp);
 
-inline Mat<zz_pX> conv(const Vec<Mat<zz_p>>& coeffs, const long order)
-{ Mat<zz_pX> mat; conv(mat, coeffs, order); return mat; }
+/** Returns the conversion of a polynomial with matrix coefficients `matp` into
+ * a matrix with polynomial entries; if `matp` has length 0 then it returns a
+ * `Mat<zz_pX>` of dimensions 0 x 0.
+ */
+inline Mat<zz_pX> conv(const Vec<Mat<zz_p>> & matp)
+{ Mat<zz_pX> pmat; conv(pmat, matp); return pmat; }
+
+
+/** Converts from matrix with polynomial entries `pmat`, truncated at the
+ * specified `order`, to polynomial with matrix coefficients `matp`. The
+ * integer `order` must be nonnegative (this is currently not verified by the
+ * code), and it is guaranteed that the vector `matp` has length `order`.
+ */
+void conv(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat, const long order);
+
+/** Returns the conversion of a matrix with polynomial entries `pmat`,
+ * truncated at the specified `order`, to a polynomial with matrix
+ * coefficients. The integer `order` must be nonnegative (this is currently not
+ * verified by the code), and the output vector is guaranteed to have length
+ * `order`.
+ */
+inline Vec<Mat<zz_p>> conv(const Mat<zz_pX> & pmat, const long order)
+{ Vec<Mat<zz_p>> matp; conv(matp, pmat, order); return matp; }
+
+/** Converts from polynomial with matrix coefficients `matp`, truncated at the
+ * specified `order` (a nonnegative integer), to matrix with polynomial entries
+ * `pmat`; if `matp` has length 0 then `pmat` is cleared (set to zero without
+ * changing its dimensions).
+ */
+void conv(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp, const long order);
+
+/** Returns the conversion from polynomial with matrix coefficients `matp`,
+ * truncated at the specified `order` (a nonnegative integer), to matrix with
+ * polynomial entries; if `matp` has length 0 then it returns a `Mat<zz_pX>` of
+ * dimensions 0 x 0.
+ */
+inline Mat<zz_pX> conv(const Vec<Mat<zz_p>> & matp, const long order)
+{ Mat<zz_pX> pmat; conv(pmat, matp, order); return pmat; }
+
+//@} // doxygen group: Conversion to/from Vec<Mat<zz_p>>
 
 #endif // MAT_LZZ_PX_UTILS__H
 

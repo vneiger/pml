@@ -1,8 +1,12 @@
+#include <NTL/lzz_pX.h>
+#include <NTL/matrix.h>
+#include <NTL/vector.h>
 #include <iomanip>
 #include <NTL/BasicThreadPool.h>
 
 #include "util.h"
 #include "mat_lzz_pX_approximant.h"
+#include "mat_lzz_pX_interpolant.h"
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
@@ -17,7 +21,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* run one bench for specified rdim,cdim,order                */
 /*------------------------------------------------------------*/
-void one_bench_mbasis(long rdim, long cdim, long order)
+void one_bench_mbasis(long rdim, long cdim, long npoints)
 {
     VecLong shift(rdim,0);
 
@@ -28,13 +32,16 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     double t_mbasis_rescomp=0.0;
     while (t_mbasis_rescomp<0.1)
     {
-        Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, order);
-        VecLong pivdeg;
+        Vec<Mat<zz_p>> evals;
+        Vec<zz_p> pts;
+        evals.SetLength(npoints);
+        for (long pt = 0; pt < npoints; ++pt)
+            random(evals[pt], rdim, cdim);
+        random(pts, npoints);
 
         t1 = GetWallTime();
-        Mat<zz_pX> appbas;
-        pivdeg = mbasis_rescomp(appbas,pmat,order,shift);
+        Mat<zz_pX> intbas;
+        VecLong pivdeg = mbasis_rescomp(intbas,evals,pts,shift,0,npoints);
         t2 = GetWallTime();
 
         t_mbasis_rescomp += t2-t1;
@@ -47,13 +54,16 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     nb_iter=0;
     while (t_mbasis_resupdate<0.1)
     {
-        Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, order);
-        VecLong pivdeg;
+        Vec<Mat<zz_p>> evals;
+        Vec<zz_p> pts;
+        evals.SetLength(npoints);
+        for (long pt = 0; pt < npoints; ++pt)
+            random(evals[pt], rdim, cdim);
+        random(pts, npoints);
 
         t1 = GetWallTime();
-        Mat<zz_pX> appbas;
-        pivdeg = mbasis_resupdate(appbas,pmat,order,shift);
+        Mat<zz_pX> intbas;
+        VecLong pivdeg = mbasis_resupdate(intbas,evals,pts,shift,0,npoints);
         t2 = GetWallTime();
 
         t_mbasis_resupdate += t2-t1;
@@ -64,49 +74,49 @@ void one_bench_mbasis(long rdim, long cdim, long order)
 
 
     double t_mbasis_generic_rescomp=0.0;
-    nb_iter=0;
-    while (t_mbasis_generic_rescomp<0.1)
-    {
-        Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, order);
-        VecLong pivdeg;
+    //nb_iter=0;
+    //while (t_mbasis_generic_rescomp<0.1)
+    //{
+    //    Mat<zz_pX> pmat;
+    //    random(pmat, rdim, cdim, npoints);
+    //    VecLong pivdeg;
 
-        t1 = GetWallTime();
-        Mat<zz_pX> appbas;
-        mbasis_generic_2n_n_rescomp(appbas,pmat,order);
-        t2 = GetWallTime();
+    //    t1 = GetWallTime();
+    //    Mat<zz_pX> intbas;
+    //    mbasis_generic_2n_n_rescomp(intbas,pmat,npoints);
+    //    t2 = GetWallTime();
 
-        t_mbasis_generic_rescomp += t2-t1;
-        ++nb_iter;
-    }
+    //    t_mbasis_generic_rescomp += t2-t1;
+    //    ++nb_iter;
+    //}
 
-    t_mbasis_generic_rescomp /= nb_iter;
+    //t_mbasis_generic_rescomp /= nb_iter;
 
     double t_mbasis_generic_resupdate=0.0;
-    nb_iter=0;
-    while (t_mbasis_generic_resupdate<0.1)
-    {
-        Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, order);
-        VecLong pivdeg;
+    //nb_iter=0;
+    //while (t_mbasis_generic_resupdate<0.1)
+    //{
+    //    Mat<zz_pX> pmat;
+    //    random(pmat, rdim, cdim, npoints);
+    //    VecLong pivdeg;
 
-        t1 = GetWallTime();
-        Mat<zz_pX> appbas;
-        mbasis_generic_2n_n_resupdate(appbas,pmat,order);
-        t2 = GetWallTime();
+    //    t1 = GetWallTime();
+    //    Mat<zz_pX> intbas;
+    //    mbasis_generic_2n_n_resupdate(intbas,pmat,npoints);
+    //    t2 = GetWallTime();
 
-        t_mbasis_generic_resupdate += t2-t1;
-        ++nb_iter;
-    }
+    //    t_mbasis_generic_resupdate += t2-t1;
+    //    ++nb_iter;
+    //}
 
-    t_mbasis_generic_resupdate /= nb_iter;
+    //t_mbasis_generic_resupdate /= nb_iter;
 
 
 
-    cout << rdim << "\t" << cdim << "\t" << order << "\t" << AvailableThreads();
+    cout << rdim << "\t" << cdim << "\t" << npoints << "\t" << AvailableThreads();
     cout << "\t" << t_mbasis_rescomp << "\t" << t_mbasis_resupdate << "\t" << t_mbasis_generic_rescomp << "\t" << t_mbasis_generic_resupdate;
 
-    double best = t_mbasis_generic_resupdate;
+    double best = t_mbasis_rescomp;
     //if (t_mbasis_rescomp <= t_mbasis_rescomp && t_mbasis_rescomp <= t_mbasis_generic_rescomp)
     //{
     //    cout << "," << "rescomp";
@@ -200,17 +210,8 @@ int main(int argc, char ** argv)
 
     // TODO one thread for the moment
     VecLong nthreads = {1}; // {1,2,3,4};
-    VecLong nbits = {20,30,40,60};
-    std::vector<bool> fftprime = {true, false};
-
-    //if (argc>=2)
-    //     nthreads = {atoi(argv[1])};
-    if (argc>=3)
-        nbits = {atoi(argv[2])};
-    if (argc==4)
-        fftprime = {(atoi(argv[3])==1) ? true : false};
-    if (argc>4)
-        throw std::invalid_argument("Usage: ./time_mbasis OR ./time_mbasis nthreads OR ./time_mbasis nthreads nbits fftprime");
+    VecLong nbits = {55};
+    std::vector<bool> fftprime = {true};
 
     warmup();
 

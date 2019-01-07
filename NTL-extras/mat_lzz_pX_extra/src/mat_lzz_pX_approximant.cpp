@@ -1,14 +1,7 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-#include <NTL/BasicThreadPool.h>
-#include <cmath>
 #include <algorithm> // for manipulating std::vector (min, max, ..)
 #include <numeric> // for std::iota
 
-#include "lzz_p_extra.h"
-#include "lzz_pX_CRT.h"
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_approximant.h"
 
 NTL_CLIENT
 
@@ -82,7 +75,7 @@ bool is_approximant_basis(
     }
 
     // test whether appbas is shift-reduced with form at least 'form'
-    if (not is_row_polmatform(appbas,shift,form))
+    if (not is_row_polmatform(form,appbas,shift))
     {
         std::cout << "~~is_approx~~ not in the required shifted form" << std::endl;
         std::cout << degree_matrix(appbas) << std::endl;
@@ -167,11 +160,6 @@ VecLong appbas_iterative(
                         bool order_wise
                        )
 {
-    /** Two possibilities (among others) for next coefficient to deal with:
-     *   - process 'pmat' order-wise (choose column with largest order)
-     *   - process 'pmat' column-wise (choose leftmost column not yet completed)
-     **/
-
     long rdim = pmat.NumRows();
     long cdim = pmat.NumCols();
 

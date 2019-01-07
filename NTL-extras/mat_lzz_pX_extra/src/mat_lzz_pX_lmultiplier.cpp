@@ -590,17 +590,17 @@ void mat_lzz_pX_lmultiplier_dense::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b)
 /*------------------------------------------------------------*/
 /* constructor: builds up to 3 FFT multipliers                */
 /*------------------------------------------------------------*/
-mat_lzz_pX_lmultiplier_3_primes::mat_lzz_pX_lmultiplier_3_primes(const Mat<zz_pX> & a, long dB)
+mat_lzz_pX_lmultiplier_3_primes::mat_lzz_pX_lmultiplier_3_primes(const Mat<zz_pX> & a, long dB):
+    primes(a.NumCols(), deg(a), dB)
 {
-    primes = lzz_pX_3_primes(a.NumCols(), deg(a), dB);
     long nb = primes.nb();
     FFT_muls.SetLength(nb);
     for (long i = 0; i < nb; i++)
     {
         zz_pPush push;
         zz_p::FFTInit(i);
-        Mat<zz_pX> ap = a;
-        reduce_mod_p(ap);
+        Mat<zz_pX> ap;
+        reduce_mod_p(ap, a);
         FFT_muls[i] = get_lmultiplier(ap, dB);
     }
 }
@@ -629,16 +629,15 @@ void mat_lzz_pX_lmultiplier_3_primes::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& 
         }
         else
         {
-            Mat<zz_pX> bi = b;
-            reduce_mod_p(bi);
+            Mat<zz_pX> bi;
+            reduce_mod_p(bi, b);
             FFT_muls[i]->multiply(cs[i], bi);
         }        
     }
 
     if (nb == 1)
     {
-        c = cs[0];
-        reduce_mod_p(c);
+        reduce_mod_p(c, cs[0]);
     }
     else
     {

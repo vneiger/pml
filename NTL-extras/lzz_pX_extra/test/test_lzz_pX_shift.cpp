@@ -19,8 +19,6 @@ void check(long p)
     {
         zz_pX a, b, d;
         zz_p c, e, u, v;
-        zz_pX_shift_DAC sDac;
-        zz_pX_shift_large_characteristic sLarge;
         std::unique_ptr<zz_pX_shift> sPtr;
 
         a = random_zz_pX(i);
@@ -28,7 +26,7 @@ void check(long p)
         e = random_zz_p();
         v = eval(a, e+c);
 
-        sDac = zz_pX_shift_DAC(i-1, c);
+        zz_pX_shift_DAC sDac(i-1, c);
         sDac.shift(b, a);
         u = eval(b, e);
         if (u != v)
@@ -36,7 +34,7 @@ void check(long p)
 
         if (p == 0 || p > i)
         {
-            sLarge = zz_pX_shift_large_characteristic(i-1, c);
+            zz_pX_shift_large_characteristic sLarge(i-1, c);
             sLarge.shift(b, a);
             u = eval(b, e);
             if (u != v)

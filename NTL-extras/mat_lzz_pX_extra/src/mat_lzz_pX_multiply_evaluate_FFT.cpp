@@ -350,13 +350,11 @@ void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
     c.SetDims(s, u);
 
     for (long i = 0; i < s; ++i)
-    {
         for (long k = 0; k < u; ++k)
         {
             R.tbl[0].swap(mat_valC[i*u + k]);
             FromfftRep(c[i][k], R, 0, d);
         }
-    }
 }
 
 /*------------------------------------------------------------*/
@@ -638,16 +636,12 @@ void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
 /*------------------------------------------------------------*/
 void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
-    long s = a.NumRows();
-    long t = a.NumCols();
-    long u = b.NumCols();
+    const long s = a.NumRows();
+    const long t = a.NumCols();
+    const long u = b.NumCols();
 
-    long thresh;
-    // TODO tune better
-    if (NumBits(zz_p::modulus()) < 30)
-        thresh = 20 * 20 * 20;
-    else
-        thresh = 45 * 45 * 45;
+    // TODO tune better this threshold
+    const long thresh = (NumBits(zz_p::modulus()) < 30) ? (20 * 20 * 20) : (45 * 45 * 45);
 
     if ((s * t * u) < thresh)  // fine for close-to-square matrices // FIXME tune better?
         multiply_evaluate_FFT_direct(c, a, b);

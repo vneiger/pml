@@ -1,27 +1,38 @@
 #ifndef __UTIL_H
 #define __UTIL_H
 
-#include <NTL/version.h>
+/** \brief Some useful functions and macros
+ *
+ * \file util.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
+ * \version 0.1
+ * \date 2018-12-19
+ *
+ */
 
-/*------------------------------------------------------------*/
-/* bug in size-2 lzz_pX FFT in version 11.1.0                 */
-/*------------------------------------------------------------*/
+#include <NTL/version.h>
+#include <NTL/tools.h>
+
+NTL_CLIENT
+
 #if ((NTL_MAJOR_VERSION == 11) && (NTL_MINOR_VERSION == 1) && (NTL_REVISION == 0))
+/** If NTL's version is 11.1.0, define the macro `__NTL_FIX_SIZE_2_FFT` to fix
+ * a bug in size-2 FFT in `lzz_pX` */
 #define __NTL_FIX_SIZE_2_FFT
 #endif
 
-/*------------------------------------------------------------*/
-/* wraps either GetTime (old NTL's) or GetWallTime (>= 11)    */
-/*------------------------------------------------------------*/
 #if (NTL_MAJOR_VERSION >= 11)
+/** Macro `get_time` which wraps either GetTime (NTL prior to v11) or
+ * GetWallTime (NTL from v11) */
 #define get_time GetWallTime
 #else
+/** Macro `get_time` which wraps either GetTime (NTL prior to v11) or
+ * GetWallTime (NTL from v11) */
 #define get_time GetTime
 #endif
 
-/*------------------------------------------------------------*/
-/* warm-up the CPU                                            */
-/*------------------------------------------------------------*/
+/** Warms the CPU up (currently naive: while loop with empty body, lasting one
+ * second) */
 void warmup();
 
 #endif

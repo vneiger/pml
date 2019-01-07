@@ -1,10 +1,4 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-
-#include "lzz_p_extra.h"
-#include "mat_lzz_pX_extra.h"
-#include "lzz_pX_CRT.h"
+#include "mat_lzz_pX_multiply.h"
 
 NTL_CLIENT
 
@@ -27,9 +21,7 @@ void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
     long len = trs_naive.transform_length();
     valC.SetLength(len);
     for (long i = 0; i < len; i++)
-    {
         mul(valC[i], valA[i], valB[i]);
-    }
 
     trs_naive.backward_matrix(c, valC);
 }
@@ -49,9 +41,7 @@ void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
     long len = trs_karatsuba.transform_length();
     valC.SetLength(len);
     for (long i = 0; i < len; i++)
-    {
         mul(valC[i], valA[i], valB[i]);
-    }
 
     trs_karatsuba.backward_matrix(c, valC);
 }
@@ -71,9 +61,7 @@ void multiply_transform_montgomery3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const 
     long len = trs_montgomery3.transform_length();
     valC.SetLength(len);
     for (long i = 0; i < len; i++)
-    {
         mul(valC[i], valA[i], valB[i]);
-    }
 
     trs_montgomery3.backward_matrix(c, valC);
 }
@@ -93,9 +81,7 @@ void multiply_transform_karatsuba4(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
     long len = trs_karatsuba4.transform_length();
     valC.SetLength(len);
     for (long i = 0; i < len; i++)
-    {
         mul(valC[i], valA[i], valB[i]);
-    }
 
     trs_karatsuba4.backward_matrix(c, valC);
 }

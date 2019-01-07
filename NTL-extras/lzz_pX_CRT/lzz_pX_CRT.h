@@ -100,6 +100,10 @@ public:
     /* constructor from points                                    */
     /*------------------------------------------------------------*/
     zz_pX_Multipoint_General(const Vec<zz_p>& q);
+    /*------------------------------------------------------------*/
+    /* constructor from points[offset]...points[offset+length-1]  */
+    /*------------------------------------------------------------*/
+    zz_pX_Multipoint_General(const Vec<zz_p>& q, long offset, long length);
 
     /*------------------------------------------------------------*/
     /* basic operations                                           */
