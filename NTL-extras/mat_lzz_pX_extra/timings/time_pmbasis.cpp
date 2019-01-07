@@ -1,14 +1,9 @@
-// NTLX
-#include <NTL/lzz_pX.h>
-#include <NTL/matrix.h>
-#include <NTL/vector.h>
 #include <iomanip>
 #include <NTL/BasicThreadPool.h>
 
 #include "util.h"
-#include "magma_output.h"
-#include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_approximant.h"
+#include "mat_lzz_pX_interpolant.h"
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
@@ -21,169 +16,142 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
-/* checks some products                                       */
+/* run one bench for specified rdim,cdim,order                */
 /*------------------------------------------------------------*/
-void one_bench_pmbasis(long sz, long deg, long nbits)
+void one_bench_pmbasis(long rdim, long cdim, long deg, long order)
 {
-    long rdim = sz*2;
-    long cdim = sz;
-    long order = 2*deg;
-
     VecLong shift(rdim,0);
 
-    if (nbits==0)
-        zz_p::FFTInit(0);
-    else
-        zz_p::init(NTL::GenPrime_long(nbits));
+    double t1,t2;
 
-    double t1w,t2w;
+    long nb_iter=0;
 
-    // build random matrix
-    Mat<zz_pX> pmat;
-    t1w = GetWallTime();
-    random(pmat, rdim, cdim, deg);
-    t2w = GetWallTime();
-
-    VecLong pivdeg;
-
-    // GCD computation, for reference
-    if (rdim==2 && cdim==1)
+    double t_pmbasis_app=0.0;
+    while (t_pmbasis_app<0.2)
     {
-        long deg_gcd = (order>>1);
-        zz_pX a,b,g,u,v; 
-        random(a, deg_gcd);
-        random(b, deg_gcd);
-        t1w = GetWallTime();
-        NTL::XGCD(g, u, v, a, b);
-        t2w = GetWallTime();
-        cout << rdim << "," << cdim << "," << order << "," << (t2w-t1w) << " (ntl xgcd)" << endl;
-    }
+        Mat<zz_pX> pmat;
+        random(pmat, rdim, cdim, deg+1);
 
-    // pmbasis
-    {
-        // order = deg
-        t1w = GetWallTime();
+        t1 = GetWallTime();
         Mat<zz_pX> appbas;
-        order = deg;
-        pivdeg = pmbasis(appbas,pmat,order,shift);
-        t2w = GetWallTime();
-        double t_app = t2w-t1w;
-        
-        double npoints = order;
-        zz_p r = random_zz_p();
-        Vec<zz_p> pts;
-        t1w = GetWallTime();
-        Mat<zz_pX> intbas;
-        VecLong pivdeg = pmbasis_geometric(intbas,pmat,r,npoints,shift,pts);
-        t2w = GetWallTime();
-        double t_int = t2w - t1w;
-        
-        cout  << rdim << "," << cdim << "," << deg << "," <<
-        order << "," << t_app << "," << t_int << "," <<
-        t_app/t_int << endl;
+        VecLong rdeg(shift);
+        pmbasis(appbas,pmat,order,rdeg);
+        t2 = GetWallTime();
+
+        t_pmbasis_app += t2-t1;
+        ++nb_iter;
     }
+    t_pmbasis_app /= nb_iter;
+
+    double t_pmbasis_int=0.0;
+    nb_iter=0;
+    while (t_pmbasis_int<0.2)
     {
-        // order= 2*deg
-        t1w = GetWallTime();
-        Mat<zz_pX> appbas;
-        order = 2*deg;
-        pivdeg = pmbasis(appbas,pmat,order,shift);
-        t2w = GetWallTime();
-        double t_app = t2w-t1w;
-        
-        // intbas
-        long npoints = order;
-        zz_p r = random_zz_p();
-        Vec<zz_p> pts;
-        t1w = GetWallTime();
+        Mat<zz_pX> pmat;
+        random(pmat, rdim, cdim, deg+1);
+        Vec<zz_p> pts(INIT_SIZE, order);
+        random(pts, order);
+
+        t1 = GetWallTime();
         Mat<zz_pX> intbas;
-        VecLong pivdeg = pmbasis_geometric(intbas,pmat,r,npoints,shift,pts);
-        t2w = GetWallTime();
-        double t_int = t2w - t1w;
-        
-        cout  << rdim << "," << cdim << "," << deg << "," <<
-        order << "," << t_app << "," << t_int << "," <<
-        t_app/t_int << endl;
+        VecLong pivdeg = pmbasis(intbas,pmat,pts,shift);
+        t2 = GetWallTime();
+
+        t_pmbasis_int += t2-t1;
+        ++nb_iter;
     }
+    t_pmbasis_int /= nb_iter;
+
+    double t_pmbasis_intgeom=0.0;
+    nb_iter=0;
+    while (t_pmbasis_intgeom<0.2)
+    {
+        Mat<zz_pX> pmat;
+        random(pmat, rdim, cdim, deg+1);
+        zz_p r = random_zz_p();
+
+        t1 = GetWallTime();
+        Vec<zz_p> pts;
+        Mat<zz_pX> intbas;
+        pmbasis_geometric(intbas,pmat,r,order,shift,pts);
+        t2 = GetWallTime();
+
+        t_pmbasis_intgeom += t2-t1;
+        ++nb_iter;
+    }
+    t_pmbasis_intgeom /= nb_iter;
+
+    cout << rdim << "\t" << cdim << "\t" << deg << "\t" << order;
+    cout << "\t" << t_pmbasis_app << "\t" << t_pmbasis_int << "\t" << t_pmbasis_intgeom;
+
+    cout << endl;
 }
 
 /*------------------------------------------------------------*/
-/* checks some products                                       */
+/* run bench on variety of parameters                         */
 /*------------------------------------------------------------*/
-void run_bench(long nbits)
+void run_bench(long nthreads, long nbits, bool fftprime)
 {
-    /*
-    VecLong szs =
-    {
-        1,1,1,1,1,1,1,1,1,1,1,1,
-        2,2,2,2,2,2,2,2,2,2,2,2,
-        4,4,4,4,4,4,4,4,4,4,4,4,
-        8,8,8,8,8,8,8,8,8,8,8,8,
-        16,16,16,16,16,16,16,16,16,16,16,16,
-        32,32,32,32,32,32,32,32,32,32,32,
-        64,64,64,64,64,64,64,64,64,
-        128,128,128,128,128,128,128,
-        256,256,256,256,256,
-        512,512,512,
-        1024,1024,
-    };
-    VecLong degs =
-    {
-        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
-        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
-        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
-        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
-        32,64,128,256,512,1024,2048,4096,8192,16384,32768,131072,
-        32,64,128,256,512,1024,2048,4096,8192,16384,32768,
-        32,64,128,256,512,1024,2048,4096,8192,
-        32,64,128,256,512,1024,2048,
-        32,64,128,256,512,
-        32,64,128,
-        32,64,
-    };
-    */
-    VecLong szs =
-    {
-        32,32,32,32,32,32,32,32,32,32,32,
-        64,64,64,64,64,64,64,64,64,
-        128,128,128,128,128,128,128,
-        256,256,256,256,256,
-        512,512,512,
-        1024,1024,
-    };
-    VecLong degs =
-    {
-        32,64,128,256,512,1024,2048,4096,8192,16384,32768,
-        32,64,128,256,512,1024,2048,4096,8192,
-        32,64,128,256,512,1024,2048,
-        32,64,128,256,512,
-        32,64,128,
-        32,64,
-    };
+    SetNumThreads(nthreads);
 
-    std::cout << "Bench pm-basis (FFT prime)" << std::endl;
-    if (nbits < 25)
+    if (fftprime)
     {
-        zz_p::UserFFTInit(786433); // 20 bits
-        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 20 << ")" << endl;
+        cout << "Bench mbasis, FFT prime p = ";
+        if (nbits < 25)
+        {
+            zz_p::UserFFTInit(786433); // 20 bits
+            cout << zz_p::modulus() << ", bit length = " << 20 << endl;
+        }
+        else if (nbits < 35)
+        {
+            zz_p::UserFFTInit(2013265921); // 31 bits
+            cout << zz_p::modulus() << ", bit length = " << 31 << endl;
+        }
+        else if (nbits < 45)
+        {
+            zz_p::UserFFTInit(2748779069441); // 42 bits
+            cout << zz_p::modulus() << ", bit length = " << 42 << endl;
+        }
+        else if (nbits < 61)
+        {
+            zz_p::FFTInit(0);
+            std::cout << zz_p::modulus() << ", bit length = " << NumBits(zz_p::modulus()) << std::endl;
+        }
+        else
+        {
+            std::cout << "Asking for FFT prime with too large bitsize (> 60). Exiting." << std::endl;
+            return;
+        }
     }
-    else if (nbits < 35)
+    else
     {
-        zz_p::UserFFTInit(2013265921); // 31 bits
-        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 31 << ")" << endl;
+        cout << "Bench mbasis, random prime p = ";
+        zz_p::init(NTL::GenPrime_long(nbits));
+        cout << zz_p::modulus() << ", bit length = " << nbits << endl;
     }
-    else if (nbits < 45)
+
+    VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256, 512};
+
+    cout << "rdim\tcdim\tdeg\torder\tapp\t\tint\t\tint-geo" << endl;
+    for (size_t i=0; i<szs.size(); ++i)
     {
-        zz_p::UserFFTInit(2748779069441); // 42 bits
-        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 42 << ")" << endl;
+        long interval = ceil( (double)szs[i] / 20);
+        for (long j=1; j<szs[i]; j+=interval)
+        {
+            long max_order=16384;
+            if (szs[i]==128)
+                max_order=2048;
+            if (szs[i]==256)
+                max_order=256;
+            if (szs[i]==512)
+                max_order=64;
+            for (long k=2; k<=max_order; k=2*k)
+            {
+                one_bench_pmbasis(szs[i],j,k-1,k); // degree=order
+                one_bench_pmbasis(szs[i],j,k-1,2*k); // degree=order/2
+            }
+        }
     }
-    else if (nbits < 65)
-    {
-        zz_p::UserFFTInit(1139410705724735489); // 60 bits
-        cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
-    }
-    for (size_t i=0;i<szs.size();i++)
-        one_bench_pmbasis(szs[i],degs[i],nbits);
     cout << endl;
 }
 
@@ -192,26 +160,16 @@ void run_bench(long nbits)
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    SetNumThreads(1);
-
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
-    
-    cout << "rdim,cdim,deg,order,time(app), time(int)" << endl;
 
-    if (argc==1)
-    {
-        warmup();
-        run_bench(60);
-    }
-    if (argc==2)
-    {
-        long nbits = atoi(argv[1]);
-        warmup();
-        run_bench(nbits);
-    }
-    if (argc>3)
-        throw std::invalid_argument("Usage: ./time_pmbasis OR ./time_pmbasis nbits");
+    if (argc!=3)
+        throw std::invalid_argument("Usage: ./time_pmbasis nbits fftprime");
+
+    long nbits = atoi(argv[1]);
+    bool fftprime = (atoi(argv[2])==1);
+
+    run_bench(1,nbits,fftprime);
 
     return 0;
 }
