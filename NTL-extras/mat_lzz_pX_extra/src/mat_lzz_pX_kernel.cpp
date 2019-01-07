@@ -172,6 +172,15 @@ void kernel_basis_via_approximation(
         return;
     }
 
+    // if m==1, the kernel basis is empty (since pmat is nonzero)
+    if (m==1)
+    {
+        kerbas.SetDims(0,1);
+        shift.clear();
+        pivind.clear();
+        return;
+    }
+
     // compute amplitude of the shift
     const long amp = amplitude(shift);
 
@@ -220,12 +229,25 @@ void kernel_basis_zls_via_approximation(
         if (not IsZero(pmat))
         {
             kerbas.SetDims(0,1);
+            shift.clear();
             pivind.clear();
             return;
         }
         // pmat is the zero 1 x n matrix
+        // --> kerbas is [1], shift is unchanged
         ident(kerbas, 1);
         pivind.resize(1); pivind[0] = 0;
+        return;
+    }
+
+    // compute row degree of pmat, and make sure pmat is nonzero
+    const VecLong rdeg = row_degree(pmat);
+    if (*max_element(rdeg.begin(), rdeg.end()) == -1)
+    {
+        // pmat is zero: kernel is identity
+        ident(kerbas, m);
+        pivind.resize(m);
+        std::iota(pivind.begin(), pivind.end(), 0);
         return;
     }
 
@@ -246,6 +268,15 @@ void kernel_basis_zls_via_approximation(
         Mat<zz_pX> kerbas1;
         VecLong pivind1;
         kernel_basis_zls_via_approximation(kerbas1, pivind1, pmat_sub, shift);
+
+        // if kerbas1 is empty, just return empty kernel
+        if (kerbas1.NumRows() == 0)
+        {
+            kerbas.SetDims(0, m);
+            pivind.clear();
+            shift.clear();
+            return;
+        }
 
         // recursive call 2, with residual (kerbas * right submatrix of pmat)
         pmat_sub.SetDims(m, n2);
@@ -268,11 +299,9 @@ void kernel_basis_zls_via_approximation(
 
     // Here, we are in the case m>=2 and n <= m/2 (in particular n < m)
 
-    VecLong rdeg; // buffer, used to store shifts/row degrees
-
     // add a constant to all the shift entries to ensure that the difference
     // diff_shift = min(shift - rdeg(pmat))  is zero
-    row_degree(rdeg, pmat);
+    // Recall that currently rdeg is rdeg(pmat)
     long diff_shift = shift[0] - rdeg[0];
     for (long i = 1; i < m; ++i)
     {
@@ -284,9 +313,9 @@ void kernel_basis_zls_via_approximation(
                    [diff_shift](long x) -> long { return x - diff_shift;});
 
     // find parameter rho: sum of the n largest entries of (reduced) shift
-    rdeg = shift;
-    std::sort(rdeg.begin(), rdeg.end());
-    const long rho = std::accumulate(rdeg.begin()+m-n, rdeg.end(), 0);
+    VecLong rdeg1(shift); // rdeg1 will be re-used later for another purpose, hence the name
+    std::sort(rdeg1.begin(), rdeg1.end());
+    const long rho = std::accumulate(rdeg1.begin()+m-n, rdeg1.end(), 0);
 
     // order for call to approximation
     // choosing this order (with factor 2) is sufficient to ensure that the
@@ -307,7 +336,8 @@ void kernel_basis_zls_via_approximation(
     // with shift[i] < order are such that appbas[i] * pmat = 0.
     // Note that this may miss rows in the kernel, if there are some with shift >= order
     // which are in this appbas (this is usually not the case)
-    VecLong rdeg1, pivind_app;
+    rdeg1.clear();
+    VecLong pivind_app;
     VecLong rdeg2, pivind0;
     for (long i=0; i<m; ++i)
     {
@@ -329,18 +359,20 @@ void kernel_basis_zls_via_approximation(
     const long m2 = pivind0.size();
 
     // if the sum of pivot degrees in the part of kernel basis computed is
-    // equal to the sum of column degrees of pmat, then we know that we have
-    // captured the whole kernel
+    // equal to one of the upper bounds (here, sum of row degrees of pmat for
+    // non-pivot rows), then we know that we have captured the whole kernel
     // --> this is often the case (e.g. in the generic situation mentioned
     // above), and testing this avoids going through a few multiplications and
     // the two recursive calls (which only lead to the conclusion that there is
     // no new kernel row to be found)
-    // TODO use row degree? valuation stuff?
-    VecLong cdeg; col_degree(cdeg, pmat);
-    const bool early_exit = false;
-        //(std::accumulate(cdeg.begin(), cdeg.end(),0)
-        // == std::accumulate(pivdeg_app.begin(), pivdeg_app.end(), 0));
-    //std::cout << "\tsum_pivdeg = " << sum_pivdeg << " ; sum cdeg = " << std::accumulate(cdeg.begin(), cdeg.end(),0) << std::endl;
+    long sum_matdeg = 0;
+    for (long i = 0; i < m2; ++i)
+        sum_matdeg += rdeg[pivind0[i]];
+    long sum_kerdeg = 0;
+    for (long i = 0; i < m1; ++i)
+        sum_kerdeg += deg(appbas[pivind_app[i]][pivind_app[i]]);
+
+    const bool early_exit = (sum_kerdeg == sum_matdeg);
 
     // if the whole kernel was captured according to the above test, or if
     // there was just one column, or if the kernel is full (matrix was zero),

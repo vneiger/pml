@@ -42,8 +42,8 @@ int main(int argc, char *argv[])
         std::cout << i << std::endl;
 #endif // VERBOSE
         
-        long rdim = pmat->NumRows();
-        long cdim = pmat->NumCols();
+        const long rdim = pmat->NumRows();
+        const long cdim = pmat->NumCols();
         long d = deg(*pmat);
         for (VecLong shift : test_examples.second[i])
         {
@@ -58,10 +58,11 @@ int main(int argc, char *argv[])
 #ifdef VERBOSE
                 std::cout << "Computation of the kernel via approximation... ";
 #endif // VERBOSE
+                Mat<zz_pX> copy_pmat(*pmat);
                 Mat<zz_pX> kerbas;
                 VecLong pivind;
                 VecLong rdeg(shift);
-                kernel_basis_via_approximation(kerbas,pivind,*pmat,rdeg);
+                kernel_basis_via_approximation(kerbas,pivind,copy_pmat,rdeg);
 #ifdef VERBOSE
                 std::cout << "OK. Testing... ";
 #endif // VERBOSE
@@ -83,15 +84,15 @@ int main(int argc, char *argv[])
 #endif // VERBOSE
             }
 
-            if (0)
             { // zls - approximation
 #ifdef VERBOSE
                 std::cout << "Computation of the kernel via ZLS algorithm (using approximation)... ";
 #endif // VERBOSE
+                Mat<zz_pX> copy_pmat(*pmat);
                 Mat<zz_pX> kerbas;
                 VecLong rdeg(shift);
                 VecLong pivind;
-                kernel_basis_zls_via_approximation(kerbas,pivind,*pmat,rdeg);
+                kernel_basis_zls_via_approximation(kerbas,pivind,copy_pmat,rdeg);
 #ifdef VERBOSE
                 std::cout << "OK. Testing... ";
 #endif // VERBOSE
@@ -118,8 +119,9 @@ int main(int argc, char *argv[])
 #ifdef VERBOSE
                 std::cout << "Computation of the kernel via ZLS algorithm (using interpolation)... ";
 #endif // VERBOSE
+                Mat<zz_pX> copy_pmat(*pmat);
                 Mat<zz_pX> kerbas;
-                pivdeg = kernel_basis_zls_via_interpolation(kerbas,*pmat,shift);
+                pivdeg = kernel_basis_zls_via_interpolation(kerbas,copy_pmat,shift);
 #ifdef VERBOSE
                 std::cout << "OK. Testing... ";
 #endif // VERBOSE
