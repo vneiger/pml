@@ -69,36 +69,12 @@ void one_bench_pmbasis(long sz, long deg, long nbits)
         t2w = GetWallTime();
         double t_app = t2w-t1w;
         
-        // intbas
-        long npoints = order;
-        zz_p r;
-        random(r);
-        zz_pX_Multipoint_Geometric eval(r,zz_p(1),npoints);
-        
-        // set up pts
+        double npoints = order;
+        zz_p r = random_zz_p();
         Vec<zz_p> pts;
-        zz_pX x;
-        SetCoeff(x,1,1);
-        eval.evaluate(pts, x); // just gets powers of r
-        
-        // set up evaluations of pmat
-        Vec<Mat<zz_p>> evals;
-        evals.SetLength(npoints);
-        for (long d = 0; d < npoints; d++)
-            evals[d].SetDims(pmat.NumRows(), pmat.NumCols());
-        for (long r = 0; r < pmat.NumRows(); r++)
-        {
-            for (long c = 0; c < pmat.NumCols(); c++)
-            {
-                Vec<zz_p> vals;
-                eval.evaluate(vals, pmat[r][c]);
-                for (long d = 0; d < npoints; d++)
-                    evals[d][r][c] = vals[d];
-            }
-        }
         t1w = GetWallTime();
         Mat<zz_pX> intbas;
-        pivdeg = pmbasis_geometric(intbas,evals,pts,r,shift);
+        VecLong pivdeg = pmbasis_geometric(intbas,pmat,r,npoints,shift,pts);
         t2w = GetWallTime();
         double t_int = t2w - t1w;
         
@@ -117,34 +93,11 @@ void one_bench_pmbasis(long sz, long deg, long nbits)
         
         // intbas
         long npoints = order;
-        zz_p r;
-        random(r);
-        zz_pX_Multipoint_Geometric eval(r,zz_p(1),npoints);
-        
-        // set up pts
+        zz_p r = random_zz_p();
         Vec<zz_p> pts;
-        zz_pX x;
-        SetCoeff(x,1,1);
-        eval.evaluate(pts, x); // just gets powers of r
-        
-        // set up evaluations of pmat
-        Vec<Mat<zz_p>> evals;
-        evals.SetLength(npoints);
-        for (long d = 0; d < npoints; d++)
-            evals[d].SetDims(pmat.NumRows(), pmat.NumCols());
-        for (long r = 0; r < pmat.NumRows(); r++)
-        {
-            for (long c = 0; c < pmat.NumCols(); c++)
-            {
-                Vec<zz_p> vals;
-                eval.evaluate(vals, pmat[r][c]);
-                for (long d = 0; d < npoints; d++)
-                    evals[d][r][c] = vals[d];
-            }
-        }
         t1w = GetWallTime();
         Mat<zz_pX> intbas;
-        pivdeg = pmbasis_geometric(intbas,evals,pts,r,shift);
+        VecLong pivdeg = pmbasis_geometric(intbas,pmat,r,npoints,shift,pts);
         t2w = GetWallTime();
         double t_int = t2w - t1w;
         
