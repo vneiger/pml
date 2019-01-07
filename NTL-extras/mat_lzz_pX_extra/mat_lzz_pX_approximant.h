@@ -330,12 +330,12 @@ VecLong mbasis1(
  * represented as `Vec<Vec<zz_pX>>`. This is almost always less efficient than
  * other provided variants, but is kept here for legacy, being a direct
  * implementation of the algorithm from the references in @ref mbasis. */
-VecLong mbasis_plain(
-                     Mat<zz_pX> & appbas,
-                     const Mat<zz_pX> & pmat,
-                     const long order,
-                     const VecLong & shift
-                    );
+void mbasis_plain(
+                  Mat<zz_pX> & appbas,
+                  const Mat<zz_pX> & pmat,
+                  const long order,
+                  VecLong & shift
+                 );
 
 /** Variant of `mbasis` (see @ref mbasis) which first converts `pmat` to its
  * representation by a vector of constant matrices `Vec<Mat<zz_p>>`, then

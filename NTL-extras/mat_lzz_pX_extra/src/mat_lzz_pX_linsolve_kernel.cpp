@@ -38,18 +38,15 @@ void linsolve_via_kernel(
     augmented_pmat[m] = b;
 
     // compute shift to make sure kernel corresponds to solution
+    // --> row degree of augmented matrix, with large value added to last entry
     VecLong shift(m+1);
-    // --> take strictly larger than row degree of augmented pmat
-    // (requirement of kernel algo, TODO although it should not require strict)
     row_degree(shift, augmented_pmat);
-    std::transform(shift.begin(), shift.end(), shift.begin(), [&](long d){return d+1;});
-    // --> and add sufficiently large value to last entry to ensure that we
-    // retrieve a solution of small degree
-    //shift[m] += deg(b);
+    shift[m] += deg(b);
 
     // compute kernel
     Mat<zz_pX> kerbas;
-    kernel_basis_zls_via_approximation(kerbas, augmented_pmat, shift);
+    VecLong pivind, pivdeg;
+    kernel_basis_zls_via_approximation(kerbas, augmented_pmat, shift, pivind, pivdeg);
 
     // deduce solution
     a.SetLength(m);

@@ -156,7 +156,8 @@ int main(int argc, char *argv[])
 #ifdef VERBOSE
                 std::cout << "Computation mbasis_plain... ";
 #endif // VERBOSE
-                pivdeg = mbasis_plain(appbas,*pmat,order,shift);
+                VecLong rdeg_plain(shift);
+                mbasis_plain(appbas,*pmat,order,rdeg_plain);
 #ifdef VERBOSE
                 std::cout << "OK. Testing... ";
 #endif // VERBOSE

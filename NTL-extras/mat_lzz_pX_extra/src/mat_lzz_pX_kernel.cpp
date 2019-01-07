@@ -198,7 +198,7 @@ VecLong kernel_basis_via_approximation(
 
 
 
-void kernel_basis_zls_via_approximation_new(
+void kernel_basis_zls_via_approximation(
                                         Mat<zz_pX> & kerbas,
                                         Mat<zz_pX> & pmat,
                                         VecLong & shift,
@@ -244,7 +244,7 @@ void kernel_basis_zls_via_approximation_new(
 
         Mat<zz_pX> kerbas1;
         VecLong pivind1, pivdeg1;
-        kernel_basis_zls_via_approximation_new(kerbas1, pmat_sub, shift, pivind1, pivdeg1);
+        kernel_basis_zls_via_approximation(kerbas1, pmat_sub, shift, pivind1, pivdeg1);
 
         // recursive call 2, with residual (kerbas * right submatrix of pmat)
         pmat_sub.SetDims(m, n2);
@@ -255,7 +255,7 @@ void kernel_basis_zls_via_approximation_new(
         pmat_sub.kill();
 
         // recursive call 2
-        kernel_basis_zls_via_approximation_new(kerbas, pmat, shift, pivind, pivdeg);
+        kernel_basis_zls_via_approximation(kerbas, pmat, shift, pivind, pivdeg);
 
         // multiply bases and combine pivots
         multiply(kerbas, kerbas, kerbas1);
@@ -380,7 +380,7 @@ void kernel_basis_zls_via_approximation_new(
 
     Mat<zz_pX> kerbas1;
     VecLong pivind1, pivdeg1;
-    kernel_basis_zls_via_approximation_new(kerbas1, pmat_sub, rdeg2, pivind1, pivdeg1);
+    kernel_basis_zls_via_approximation(kerbas1, pmat_sub, rdeg2, pivind1, pivdeg1);
 
     // recursive call 2, with right submatrix of the residual pmat
     pmat_sub.SetDims(m2, n2);
@@ -392,7 +392,7 @@ void kernel_basis_zls_via_approximation_new(
 
     // recursive call 2
     VecLong pivind2, pivdeg2;
-    kernel_basis_zls_via_approximation_new(kerbas, pmat, rdeg2, pivind2, pivdeg2);
+    kernel_basis_zls_via_approximation(kerbas, pmat, rdeg2, pivind2, pivdeg2);
 
     // if kerbas is empty: (i.e. the approximant basis already captured the
     // whole kernel, although we had not guessed it with early_exit)

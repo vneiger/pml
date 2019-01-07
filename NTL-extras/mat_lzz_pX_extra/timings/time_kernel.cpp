@@ -28,7 +28,7 @@ void one_bench_kernel(long rdim, long cdim, long deg)
         VecLong shift(rdim); // uniform shift
         Mat<zz_pX> kerbas;
         VecLong pivind,pivdeg;
-        kernel_basis_zls_via_approximation_new(kerbas,pmat,shift,pivind,pivdeg);
+        kernel_basis_zls_via_approximation(kerbas,pmat,shift,pivind,pivdeg);
         t += GetWallTime()-tt;
         ++nb_iter;
     }

@@ -341,19 +341,19 @@ VecLong mbasis1(
 /*------------------------------------------------------------*/
 /* plain mbasis with polynomial matrices                      */
 /*------------------------------------------------------------*/
-VecLong mbasis_plain(
-                     Mat<zz_pX> & appbas,
-                     const Mat<zz_pX> & pmat,
-                     const long order,
-                     const VecLong & shift
-                    )
+void mbasis_plain(
+                  Mat<zz_pX> & appbas,
+                  const Mat<zz_pX> & pmat,
+                  const long order,
+                  VecLong & shift
+                 )
 {
     // initially, appbas is the identity matrix
     ident(appbas,pmat.NumRows());
 
-    // holds the current shifted row degree of appbas
-    // initially, this is exactly shift
-    VecLong rdeg(shift);
+    // `shift` will be updated along the algorithm,
+    // to always be the shifted row degree of appbas
+    // (initially this is exactly the input shift)
 
     long deg_pmat = deg(pmat);
 
@@ -372,7 +372,7 @@ VecLong mbasis_plain(
 
     for (long ord = 1; ord <= order; ++ord)
     {
-        diff_pivdeg = mbasis1(kerbas,residual,rdeg);
+        diff_pivdeg = mbasis1(kerbas,residual,shift);
 
         if (kerbas.NumRows()==0)
         {
@@ -380,15 +380,15 @@ VecLong mbasis_plain(
             appbas <<= (order-ord+1);
             // compute pivot degree, and return
             for (long i = 0; i < pmat.NumRows(); ++i)
-                rdeg[i] += order-ord+1-shift[i];
-            return rdeg;
+                shift[i] += order-ord+1;
+            return;
         }
 
         if (kerbas.NumRows()<residual.NumRows())
         {
             // I/ Update degrees:
-            // new shifted row degree = old rdeg + diff_pivdeg
-            std::transform(rdeg.begin(), rdeg.end(), diff_pivdeg.begin(), rdeg.begin(), std::plus<long>());
+            // new shifted row degree = old one + diff_pivdeg
+            std::transform(shift.begin(), shift.end(), diff_pivdeg.begin(), shift.begin(), std::plus<long>());
 
             // II/ update approximant basis
 
@@ -447,10 +447,6 @@ VecLong mbasis_plain(
             }
         }
     }
-
-    for (long i = 0; i < pmat.NumRows(); ++i)
-        rdeg[i] -= shift[i];
-    return rdeg;
 }
 
 /*------------------------------------------------------------*/

@@ -83,27 +83,14 @@ VecLong kernel_basis_via_approximation(
  * degrees/dimensions of pmat)
  * \todo 
  */
-void kernel_basis_zls_via_approximation_new(
-                                            Mat<zz_pX> & kerbas,
-                                            Mat<zz_pX> & pmat,
-                                            VecLong & shift,
-                                            VecLong & pivind,
-                                            VecLong & pivdeg
-                                           );
+void kernel_basis_zls_via_approximation(
+                                        Mat<zz_pX> & kerbas,
+                                        Mat<zz_pX> & pmat,
+                                        VecLong & shift,
+                                        VecLong & pivind,
+                                        VecLong & pivdeg
+                                       );
 
-// TODO unify and remove
-inline VecLong kernel_basis_zls_via_approximation(
-                                                  Mat<zz_pX> & kerbas,
-                                                  const Mat<zz_pX> & pmat,
-                                                  const VecLong & shift
-                                                 )
-{
-    VecLong pivind, pivdeg;
-    VecLong copys(shift);
-    Mat<zz_pX> copym(pmat);
-    kernel_basis_zls_via_approximation_new(kerbas, copym, copys, pivind, pivdeg);
-    return pivdeg;
-}
 
 /** Computes a `shift`-minimal kernel basis `kerbas` for `pmat` using the
  * modified Zhou-Labahn-Storjohann algorithm (described in the Proceedings

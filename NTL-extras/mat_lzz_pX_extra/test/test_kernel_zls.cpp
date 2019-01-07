@@ -49,7 +49,7 @@ void check(long m, long n, long d, bool verify){
             Mat<zz_pX> copy_pmat(pmat);
             VecLong rdeg(shift);
             VecLong pivind, pivdeg;
-            kernel_basis_zls_via_approximation_new(kerbas, copy_pmat, rdeg, pivind, pivdeg);
+            kernel_basis_zls_via_approximation(kerbas, copy_pmat, rdeg, pivind, pivdeg);
             t2w = GetWallTime();
             cout << "time (kernel-zls-approx): " << t2w-t1w << "\t";
             cout << endl << "rdeg: " << rdeg << endl;
