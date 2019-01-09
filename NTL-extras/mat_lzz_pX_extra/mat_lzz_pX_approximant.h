@@ -99,6 +99,7 @@ NTL_CLIENT
  */
 void approximant_basis(
                        Mat<zz_pX> & appbas,
+                       VecLong & rdeg,
                        const Mat<zz_pX> & pmat,
                        const VecLong & order,
                        const VecLong & shift = VecLong(),
@@ -117,6 +118,7 @@ void approximant_basis(
  */
 inline void approximant_basis(
                               Mat<zz_pX> & appbas,
+                              VecLong & rdeg,
                               const Mat<zz_pX> & pmat,
                               const long order,
                               const VecLong & shift = VecLong(),
@@ -126,7 +128,7 @@ inline void approximant_basis(
                              )
 {
     VecLong orders(pmat.NumCols(),order);
-    return approximant_basis(appbas,pmat,orders,shift,form,row_wise,generic);
+    return approximant_basis(appbas,rdeg,pmat,orders,shift,form,row_wise,generic);
 }
 
 /** Verifying if a matrix is a minimal approximant basis.
@@ -196,13 +198,13 @@ inline bool is_approximant_basis(
  * iteration, which may have some impact on the timings depending on the input:
  * - process `pmat` order-wise (choose column with largest order)
  * - process `pmat` column-wise (choose leftmost column not yet completed). */
-VecLong appbas_iterative(
-                         Mat<zz_pX> & appbas,
-                         const Mat<zz_pX> & pmat,
-                         const VecLong & order,
-                         const VecLong & shift,
-                         bool order_wise=true
-                        );
+void appbas_iterative(
+                      Mat<zz_pX> & appbas,
+                      const Mat<zz_pX> & pmat,
+                      const VecLong & order,
+                      VecLong & shift,
+                      bool order_wise=true
+                     );
 
 /** Computes an `shift`-Popov approximant basis for `(pmat,order)`. The
  * parameter `order_wise` allows one to choose between two strategies for
@@ -217,13 +219,13 @@ VecLong appbas_iterative(
  * of Beckermann-Labahn 2000 which ensures Popov normal form, and compare it
  * with the current technique.
  */
-VecLong popov_appbas_iterative(
-                               Mat<zz_pX> & appbas,
-                               const Mat<zz_pX> & pmat,
-                               const VecLong & order,
-                               const VecLong & shift,
-                               bool order_wise=true
-                              );
+void popov_appbas_iterative(
+                            Mat<zz_pX> & appbas,
+                            const Mat<zz_pX> & pmat,
+                            const VecLong & order,
+                            VecLong & shift,
+                            bool order_wise=true
+                           );
 //@} // doxygen group: Iterative algorithms
 
 /** @name Approximant basis via linear algebra

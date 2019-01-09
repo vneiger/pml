@@ -18,24 +18,32 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 // TODO check shift and order length, pmat dims (positive), ...
 void approximant_basis(
-                         Mat<zz_pX> & appbas,
-                         const Mat<zz_pX> & pmat,
-                         const VecLong & order,
-                         const VecLong & shift,
-                         const PolMatForm form,
-                         const bool row_wise,
-                         const bool generic
-                        )
+                       Mat<zz_pX> & appbas,
+                       VecLong & rdeg,
+                       const Mat<zz_pX> & pmat,
+                       const VecLong & order,
+                       const VecLong & shift,
+                       const PolMatForm form,
+                       const bool row_wise,
+                       const bool generic
+                      )
 {
     std::cout << "==approximant_basis== WARNING: SLOW ITERATIVE ALGO" << std::endl;
     std::cout << "==approximant_basis== NOT READY FOR USE YET" << std::endl;
     if (row_wise && not generic)
     {
-        VecLong pivdeg;
+        rdeg = shift;
         if (form<PolMatForm::POPOV)
-            pivdeg = appbas_iterative(appbas,pmat,order,shift);
-        else if (form==PolMatForm::POPOV)
-            pivdeg = popov_appbas_iterative(appbas,pmat,order,shift);
+        {
+            appbas_iterative(appbas,pmat,order,rdeg);
+            return;
+        }
+        if (form==PolMatForm::POPOV)
+        {
+            popov_appbas_iterative(appbas,pmat,order,rdeg);
+            return;
+        }
+        throw std::logic_error("==approximant_basis== PolMatForm > POPOV: Not implemented yet");
     }
     else
         throw std::logic_error("==approximant_basis== Not implemented yet");
@@ -152,16 +160,16 @@ bool is_approximant_basis(
 /*------------------------------------------------------------*/
 // TODO not optimized at all; is it ever faster than mbasis and others?
 // (maybe with highly non-uniform orders/shifts?)
-VecLong appbas_iterative(
-                        Mat<zz_pX> & appbas,
-                        const Mat<zz_pX> & pmat,
-                        const VecLong & order,
-                        const VecLong & shift,
-                        bool order_wise
-                       )
+void appbas_iterative(
+                      Mat<zz_pX> & appbas,
+                      const Mat<zz_pX> & pmat,
+                      const VecLong & order,
+                      VecLong & shift,
+                      bool order_wise
+                     )
 {
-    long rdim = pmat.NumRows();
-    long cdim = pmat.NumCols();
+    const long rdim = pmat.NumRows();
+    const long cdim = pmat.NumCols();
 
     // initial approximant basis: identity of dimensions 'rdim x rdim'
     ident(appbas,rdim);
@@ -176,9 +184,8 @@ VecLong appbas_iterative(
     VecLong rem_index(cdim);
     std::iota(rem_index.begin(), rem_index.end(), 0);
 
-    // shifted row degrees of approximant basis
-    // (initially, of the identity matrix, i.e. rdeg == shift)
-    VecLong rdeg(shift);
+    // all along the algorithm, shift = shifted row degrees of approximant basis
+    // (initially, input shift = shifted row degree of the identity matrix)
 
     while (not rem_order.empty())
     {
@@ -187,9 +194,9 @@ VecLong appbas_iterative(
          *  (pmat,reached_order) where doneorder is the tuple such that
          *  -->reached_order[j] + rem_order[j] == order[j] for j appearing in rem_index
          *  -->reached_order[j] == order[j] for j not appearing in rem_index
-         *  - rdeg == the shift-row degree of appbas
+         *  - shift == the "input shift"-row degree of appbas
          *  - residual == submatrix of columns (appbas * pmat)[:,j] for all j such that reached_order[j] < order[j]
-         **/
+         */
 
         long j=0; // value if columnwise (order_wise==False)
         if (order_wise)
@@ -210,7 +217,7 @@ VecLong appbas_iterative(
             if (const_residual[i] != 0)
             {
                 indices_nonzero.push_back(i);
-                if (piv<0 || rdeg[i] < rdeg[piv])
+                if (piv<0 || shift[i] < shift[piv])
                     piv = i;
             }
         }
@@ -232,7 +239,7 @@ VecLong appbas_iterative(
             }
 
             // update row piv
-            ++rdeg[piv]; // shifted row degree of row piv increases
+            ++shift[piv]; // shifted row degree of row piv increases
             LeftShiftRow(appbas, appbas, piv, 1); // row piv multiplied by X
             for (long k=0; k<residual.NumCols(); ++k)
             {
@@ -262,40 +269,43 @@ VecLong appbas_iterative(
             }
         }
     }
-
-    // make rdeg contain the pivot degree rather than shifted row degree, i.e.:
-    // rdeg = rdeg-shift   , done entry-wise
-    std::transform(rdeg.begin(),rdeg.end(),shift.begin(),rdeg.begin(),std::minus<long>());
-    return rdeg;
 }
 
 /*------------------------------------------------------------*/
 /* general case, output in Popov form                         */
 /*------------------------------------------------------------*/
-VecLong popov_appbas_iterative(
-                              Mat<zz_pX> & appbas,
-                              const Mat<zz_pX> & pmat,
-                              const VecLong & order,
-                              const VecLong & shift,
-                              bool order_wise
-                             )
+void popov_appbas_iterative(
+                            Mat<zz_pX> & appbas,
+                            const Mat<zz_pX> & pmat,
+                            const VecLong & order,
+                            VecLong & shift,
+                            bool order_wise
+                           )
 {
-    // FIXME: first call can be very slow if strange degrees (can it? find example)
-    // --> rather implement BecLab00's "continuous" normalization?
-    VecLong pivdeg = appbas_iterative(appbas,pmat,order,shift,order_wise);
-    VecLong new_shift(pivdeg);
-    std::transform(new_shift.begin(), new_shift.end(), new_shift.begin(), std::negate<long>());
-    appbas.kill();
-    appbas_iterative(appbas,pmat,order,new_shift,order_wise);
+    // compute first basis, copy the shift because we need it afterwards
+    VecLong rdeg(shift);
+    appbas_iterative(appbas,pmat,order,rdeg,order_wise);
+
+    // shift for second call: negated pivot degree
+    VecLong popov_shift(pmat.NumRows());
+    std::transform(shift.begin(), shift.end(), rdeg.begin(),
+                   popov_shift.begin(), std::minus<long>());
+
+    // output shifted row degree
+    shift=rdeg;
+
+    // save `popov_shift` using `rdeg` as a buffer
+    rdeg=popov_shift;
+
+    // second call, basis shifted Popov up to constant transformation
+    appbas_iterative(appbas,pmat,order,popov_shift,order_wise);
+
+    // perform the constant transformation
     Mat<zz_p> lmat;
-    row_leading_matrix(lmat, appbas, new_shift);
+    row_leading_matrix(lmat, appbas, rdeg);
     inv(lmat, lmat);
-    mul(appbas,lmat,appbas); // FIXME special mult (expand columns of appbas)
-    return pivdeg;
+    mul(appbas,lmat,appbas);
 }
-
-
-
 
 // Local Variables:
 // mode: C++

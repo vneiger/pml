@@ -24,6 +24,13 @@ int main(int argc, char *argv[])
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
+    if (!verbose)
+    {
+        std::cout << "Launching tests on many orders / shifts / dimensions / types of matrices." << std::endl;
+        std::cout << "If nothing gets printed below, this means all tests were passed." << std::endl;
+        std::cout << "This may take several minutes." << std::endl;
+    }
+
     // build couple (test_matrices, test_shifts)
     std::pair<std::vector<Mat<zz_pX>>, std::vector<std::vector<VecLong>>>
     test_examples = build_test_examples();
