@@ -27,7 +27,6 @@ int main(int argc, char *argv[])
     if (!verbose)
     {
         std::cout << "Launching tests on many shifts / dimensions / types of matrices." << std::endl;
-        std::cout << "If nothing gets printed below, this means all tests were passed." << std::endl;
         std::cout << "This may take several minutes." << std::endl;
     }
 
