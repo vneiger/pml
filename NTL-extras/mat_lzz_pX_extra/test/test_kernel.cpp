@@ -119,14 +119,15 @@ int main(int argc, char *argv[])
                     std::cout << "OK." << std::endl;
             }
 
-            if (0)
             { // zls - interpolation
                 if (verbose)
                     std::cout << "Computation of the kernel via ZLS algorithm (using interpolation)... ";
 
                 Mat<zz_pX> copy_pmat(*pmat);
+                VecLong rdeg(shift);
                 Mat<zz_pX> kerbas;
-                pivdeg = kernel_basis_zls_via_interpolation(kerbas,copy_pmat,shift);
+                VecLong pivind;
+                kernel_basis_zls_via_interpolation(kerbas,pivind,copy_pmat,rdeg);
 
                 if (verbose)
                     std::cout << "OK. Testing... ";

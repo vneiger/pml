@@ -96,11 +96,12 @@ void kernel_basis_zls_via_approximation(
 /** Computes a `shift`-minimal kernel basis `kerbas` for `pmat` using the
  * modified Zhou-Labahn-Storjohann algorithm (described in the Proceedings
  * ISSAC 2012), relying on interpolant bases rather than approximant bases. */
-VecLong kernel_basis_zls_via_interpolation(
-                                           Mat<zz_pX> & kerbas,
-                                           const Mat<zz_pX> & pmat,
-                                           const VecLong & shift
-                                          );
+void kernel_basis_zls_via_interpolation(
+                                        Mat<zz_pX> & kerbas,
+                                        VecLong & pivind,
+                                        Mat<zz_pX> & pmat,
+                                        VecLong & shift
+                                       );
 
 #endif /* ifndef MAT_LZZ_PX_KERNEL__H */
 

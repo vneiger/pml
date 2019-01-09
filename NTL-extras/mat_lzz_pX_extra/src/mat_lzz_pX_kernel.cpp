@@ -502,179 +502,302 @@ void kernel_basis_zls_via_approximation(
     }
 }
 
-VecLong kernel_basis_zls_via_interpolation(
-                                           Mat<zz_pX> & kerbas,
-                                           const Mat<zz_pX> & pmat,
-                                           const VecLong & shift
-                                          )
+void kernel_basis_zls_via_interpolation(
+                                        Mat<zz_pX> & kerbas,
+                                        VecLong & pivind,
+                                        Mat<zz_pX> & pmat,
+                                        VecLong & shift
+                                       )
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
 
-    if (pmat.NumRows() == pmat.NumCols())
+    // if m==1, just check whether pmat is zero
+    if (m==1)
     {
-        kerbas = Mat<zz_pX>();
-        return VecLong();
+        if (not IsZero(pmat))
+        {
+            kerbas.SetDims(0,1);
+            shift.clear();
+            pivind.clear();
+            return;
+        }
+        // pmat is the zero 1 x n matrix
+        // --> kerbas is [1], shift is unchanged
+        ident(kerbas, 1);
+        pivind.resize(1); pivind[0] = 0;
+        return;
     }
 
-    // find parameter: sum of the m-n largest entries of shift
-    // TODO assumes m<n ?
-    // all below assumes pmat nonzero?
-    VecLong sorted_shift(shift);
-    std::sort(sorted_shift.begin(), sorted_shift.end());
-    long rho = 0;
-    for (long i = m-n; i < m; i++)
-        rho += sorted_shift[i]+1;
+    // compute row degree of pmat, and make sure pmat is nonzero
+    const VecLong rdeg = row_degree(pmat);
+    if (*max_element(rdeg.begin(), rdeg.end()) == -1)
+    {
+        // pmat is zero: kernel is identity
+        ident(kerbas, m);
+        pivind.resize(m);
+        std::iota(pivind.begin(), pivind.end(), 0);
+        return;
+    }
+
+    // if n > m/2 (with m>=2), just split the columns into two submatrices or
+    // roughly equal dimensions, and call the algorithm recursively
+    if (2*n > m)
+    {
+        // pmat will be column-splitted into two submatrices of column dimension ~ n/2
+        const long n1 = n/2;
+        const long n2 = n-n1;
+
+        // recursive call 1, with left submatrix of pmat
+        Mat<zz_pX> pmat_sub(INIT_SIZE, m, n1);
+        for (long i = 0; i < m; ++i)
+            for (long j = 0; j < n1; ++j)
+                pmat_sub[i][j] = pmat[i][j];
+
+        Mat<zz_pX> kerbas1;
+        VecLong pivind1;
+        kernel_basis_zls_via_interpolation(kerbas1, pivind1, pmat_sub, shift);
+
+        // if kerbas1 is empty, just return empty kernel
+        if (kerbas1.NumRows() == 0)
+        {
+            kerbas.SetDims(0, m);
+            pivind.clear();
+            shift.clear();
+            return;
+        }
+
+        // recursive call 2, with residual (kerbas * right submatrix of pmat)
+        pmat_sub.SetDims(m, n2);
+        for (long i = 0; i < m; ++i)
+            for (long j = 0; j < n2; ++j)
+                pmat_sub[i][j] = pmat[i][n1+j];
+        multiply(pmat, kerbas1, pmat_sub);
+        pmat_sub.kill();
+
+        // recursive call 2
+        kernel_basis_zls_via_interpolation(kerbas, pivind, pmat, shift);
+
+        // multiply bases and combine pivots
+        multiply(kerbas, kerbas, kerbas1);
+        for (size_t i = 0; i < pivind.size(); ++i)
+            pivind[i] = pivind1[pivind[i]];
+
+        return;
+    }
+
+    // Here, we are in the case m>=2 and n <= m/2 (in particular n < m)
+
+    // add a constant to all the shift entries to ensure that the difference
+    // diff_shift = min(shift - rdeg(pmat))  is zero
+    // Recall that currently rdeg is rdeg(pmat)
+    long diff_shift = shift[0] - rdeg[0];
+    for (long i = 1; i < m; ++i)
+    {
+        const long diff = shift[i]-rdeg[i];
+        if (diff_shift > diff)
+            diff_shift = diff;
+    }
+    std::transform(shift.begin(), shift.end(), shift.begin(),
+                   [diff_shift](long x) -> long { return x - diff_shift;});
+
+    // find parameter rho: sum of the n largest entries of (reduced) shift
+    VecLong rdeg1(shift); // rdeg1 will be re-used later for another purpose, hence the name
+    std::sort(rdeg1.begin(), rdeg1.end());
+    const long rho = std::accumulate(rdeg1.begin()+m-n, rdeg1.end(), 0);
 
     // order for call to approximation
-    // TODO threshold ( 3* ?) to determine
-    long order = 3 * ceil( (double)rho / n);
+    // choosing this order (with factor 2) is sufficient to ensure that the
+    // approximant basis captures the whole kernel when n <= m/2 and pmat is
+    // sufficiently generic
+    const long order = 2 * ceil((double)rho / n) + 1;
 
-    //cout << "order: " << order << endl;
-    //cout << "shift: ";
-    //for (auto i : shift)
-    //    cout << i << " ";
-    //cout << endl;
-
-    zz_p r;
-    random(r);
-
-    Mat<zz_pX> P;
+    // compute interpolant basis, along with shift-row degree and pivot degree
+    // --> it does not necessarily capture the whole kernel; but does in two
+    // notable cases: if n=1, or in the generic situation mentioned above
+    zz_p r; // defining geometric points r, r^2, r^3...
+    random(r); // TODO better choice?
+    Mat<zz_pX> intbas;
     Vec<zz_p> pts;
-    auto dvec = pmbasis_geometric(P,pmat,r,order,shift,pts);
+    pmbasis_geometric(intbas,pmat,r,order,shift,pts); // does not change pmat
 
-    // find row degrees
-    VecLong rdegP;
-    rdegP.resize(m);
-    row_degree(rdegP,P,shift);
-    //cout << "rdegP: ";
-    //for (auto i: rdegP)
-    //    cout << i << " ";
-    //cout << endl;
+    // construct the polynomial (x-pts[0]) ... (x-pts[order-1])
+    const zz_pX modulus = BuildFromRoots(pts);
 
-    // partition
-    Mat<zz_pX> &P1 = kerbas;
-    Mat<zz_pX> P2;
-    VecLong rdegP1, rdegP2;
-
-    long m1 = 0;
-    for (auto &i : rdegP)
-        if (i < order) m1++;
-    P1.SetDims(m1, P.NumCols());
-    rdegP1.resize(m1);
-    P2.SetDims(m-m1, P.NumCols());
-    rdegP2.resize(m-m1);
-
-    // copy into P1,P2
-    long r1 = 0;
-    long r2 = 0;
-    for (long r = 0; r < m; r++)
+    // Identify submatrix of some rows of intbas which are in the kernel
+    // Note the criterion: since before the call we have rdeg(pmat) <= shift,
+    // the after the call we have rdeg(intbas*pmat) <= shift and therefore rows
+    // with shift[i] < order are such that intbas[i] * pmat = 0.
+    // Note that this may miss rows in the kernel, if there are some with shift >= order
+    // which are in this intbas (this is usually not the case)
+    rdeg1.clear();
+    VecLong pivind_app;
+    VecLong rdeg2, pivind0;
+    for (long i=0; i<m; ++i)
     {
-        if (rdegP[r] < order) // copy into P1
+        if (shift[i] < order)
         {
-            rdegP1[r1] = rdegP[r];
-            for (long c = 0; c < P.NumCols(); c++)
-                P1[r1][c] = P[r][c];
-            r1++;
-        }else // copy into P2
+            rdeg1.emplace_back(shift[i]);
+            pivind_app.emplace_back(i);
+        }
+        else
         {
-            rdegP2[r2] = rdegP[r];
-            for (long c = 0; c < P.NumCols(); c++)
-                P2[r2][c] = P[r][c];
-            r2++;
+            rdeg2.emplace_back(shift[i]);
+            pivind0.emplace_back(i);
         }
     }
 
-    //cout << "pmat: " << degree_matrix(pmat) << endl;
-    //cout << "P1: " << degree_matrix(P1) << endl;
-    //cout << "P2: " << degree_matrix(P2) << endl;
-    if (P1.NumRows() != 0)
+    // number of found kernel rows
+    const long m1 = rdeg1.size();
+    // number of non-kernel rows in the approximant basis
+    const long m2 = pivind0.size();
+
+    // if the sum of pivot degrees in the part of kernel basis computed is
+    // equal to one of the upper bounds (here, sum of row degrees of pmat for
+    // non-pivot rows), then we know that we have captured the whole kernel
+    // --> this is often the case (e.g. in the generic situation mentioned
+    // above), and testing this avoids going through a few multiplications and
+    // the two recursive calls (which only lead to the conclusion that there is
+    // no new kernel row to be found)
+    long sum_matdeg = 0;
+    for (long i = 0; i < m2; ++i)
+        sum_matdeg += rdeg[pivind0[i]];
+    long sum_kerdeg = 0;
+    for (long i = 0; i < m1; ++i)
+        sum_kerdeg += deg(intbas[pivind_app[i]][pivind_app[i]]);
+
+    const bool early_exit = (sum_kerdeg == sum_matdeg);
+
+    // if the whole kernel was captured according to the above test, or if
+    // there was just one column, or if the kernel is full (matrix was zero),
+    // then we have the whole kernel: just copy and return
+    if (early_exit || n == 1 || m1 == m)
     {
-        Mat<zz_pX> tmp;
-        multiply(tmp,P1,pmat);
-        //cout << "P1 prod: " << degree_matrix(tmp) << endl;
+        kerbas.SetDims(m1, m);
+        for (long i = 0; i < m1; ++i)
+            kerbas[i].swap(intbas[pivind_app[i]]);
+        shift = rdeg1;
+        pivind = pivind_app;
+        return;
     }
 
-    if (n == 1 || r1 == m)
+    // retrieve the non-kernel part of the approximant
+    Mat<zz_pX> approx(INIT_SIZE, m2, m);
+    for (long i = 0; i < m2; ++i)
+        approx[i].swap(intbas[pivind0[i]]);
+
+    // compute residual:
+    // pmat = (pmat*approx) div (x-pts[0])...(x-pts[order-1])
+    multiply(pmat,approx,pmat);
+    for (long i = 0; i < m2; ++i)
+        for (long j = 0; j < n; ++j)
+            divide(pmat[i][j], pmat[i][j], modulus);
+
+
+    // pmat will be column-splitted into two submatrices of column dimension ~ n/2
+    const long n1 = n/2;
+    const long n2 = n-n1;
+
+    // recursive call 1, with left submatrix of the residual pmat
+    Mat<zz_pX> pmat_sub(INIT_SIZE, m2, n1);
+    for (long i = 0; i < m2; ++i)
+        for (long j = 0; j < n1; ++j)
+            pmat_sub[i][j] = pmat[i][j];
+
+    Mat<zz_pX> kerbas1;
+    VecLong pivind1;
+    kernel_basis_zls_via_interpolation(kerbas1, pivind1, pmat_sub, rdeg2);
+
+    // recursive call 2, with right submatrix of the residual pmat
+    pmat_sub.SetDims(m2, n2);
+    for (long i = 0; i < m2; ++i)
+        for (long j = 0; j < n2; ++j)
+            pmat_sub[i][j] = pmat[i][n1+j];
+    multiply(pmat, kerbas1, pmat_sub);
+    pmat_sub.kill();
+
+    // recursive call 2
+    VecLong pivind2;
+    kernel_basis_zls_via_interpolation(kerbas, pivind2, pmat, rdeg2);
+
+    // if kerbas is empty: (i.e. the approximant basis already captured the
+    // whole kernel, although we had not guessed it with early_exit)
+    // --> just copy and return
+    if (kerbas.NumRows() == 0)
     {
-        return rdegP1;
+        kerbas.SetDims(m1, m);
+        for (long i = 0; i < m1; ++i)
+            kerbas[i].swap(intbas[pivind_app[i]]);
+        shift = rdeg1;
+        pivind = pivind_app;
+        return;
     }
 
-    // set up the recursive calls
-    for (unsigned long i = 0; i < rdegP2.size(); i++)
-        rdegP2[i] -= order; // set rdegP2 = t from paper
-    Mat<zz_pX> G;
-    if (P2.NumRows() != 0)
-        multiply(G,P2,pmat);
+    // kerbas is non-empty: we have found new kernel rows
+    // I/ complete the computation of these rows via
+    // kerbas =  kerbas * kerbas1 * approx
+    // II/ update also the pivot index / pivot degree
+    // III/ merge this with rows / pivots from the kernel part of intbas
 
-    // divide by the polynomial we are working over
-    zz_pX poly, x;
-    SetCoeff(x,1,1);
-    SetCoeff(poly,0,1);
-    zz_p pow_r(1);
+    // I/ complete the computation of new kernel rows
+    // We use pmat as a temp, and store the result in approx
+    // v1:
+    //multiply(pmat, kerbas, kerbas1);
+    //multiply(approx, pmat, approx);
+    // v2:
+    multiply(pmat, kerbas1, approx);
+    multiply(approx, kerbas, pmat);
+    // TODO when FFT / eval is used, this kind of product may be faster by
+    // avoiding interpolation in the middle (?)
 
-    for (long i = 0; i < order; i++)
+    // II/ complete the computation of the pivots of the new kernel rows
+    for (size_t i = 0; i < pivind.size(); ++i)
+        pivind2[i] = pivind0[pivind1[pivind2[i]]];
+
+    // III/ merge with previously obtained kernel rows, ensuring that
+    // the resulting basis is in shifted ordered weak Popov form
+    // Note concerning shift: to ensure that shift contains the correct shifted
+    // row degree of kerbas, we add the constant diff_shift that had been
+    // removed from the input shift
+    const long ker_dim = m1 + approx.NumRows();
+    kerbas.SetDims(ker_dim, m);
+    shift.resize(ker_dim); pivind.resize(ker_dim);
+    long i=0, i_intbas=0, i_approx=0;
+    while (i_intbas < m1 && i_approx < approx.NumRows())
     {
-        poly *= x-pts[i];
+        if (pivind_app[i_intbas] < pivind2[i_approx])
+        {
+            // row already captured in preliminary intbas computation
+            kerbas[i].swap(intbas[pivind_app[i_intbas]]);
+            shift[i] = rdeg1[i_intbas]+diff_shift;
+            pivind[i] = pivind_app[i_intbas];
+            ++i_intbas; ++i;
+        }
+        else
+        {
+            // row computed via recursive calls and stored in `approx`
+            kerbas[i].swap(approx[i_approx]);
+            shift[i] = rdeg2[i_approx]+diff_shift;
+            pivind[i] = pivind2[i_approx];
+            ++i_approx; ++i;
+        }
     }
-    for (long r = 0; r < G.NumRows(); r++)
-        for (long c = 0; c < G.NumCols(); c++)
-            divide(G[r][c], G[r][c], poly);
-
-    // split G
-    Mat<zz_pX> G1,G2;
-    long n1 = ceil(n/2);
-    long n2 = n-n1;
-    G1.SetDims(P2.NumRows(), n1);
-    G2.SetDims(P2.NumRows(), n2);
-    for (long r = 0; r < P2.NumRows(); r++)
+    while (i_intbas < m1)
     {
-        long c_at = 0;
-        for (long c = 0; c < n1; c++, c_at++)
-            G1[r][c] = G[r][c_at];
-        for (long c = 0; c < n2; c++, c_at++)
-            G2[r][c] = G[r][c_at];
+        // row already captured in preliminary intbas computation
+        kerbas[i].swap(intbas[pivind_app[i_intbas]]);
+        shift[i] = rdeg1[i_intbas]+diff_shift;
+        pivind[i] = pivind_app[i_intbas];
+        ++i_intbas; ++i;
     }
-
-    // recursive calls
-    Mat<zz_pX> N1, N2;
-
-    //cout << "\n\ncall 1" << endl;
-    VecLong u = kernel_basis_zls_via_interpolation(N1, G1, rdegP2);
-    //cout << "u: ";
-    //for (auto i : u)
-    //    cout << i << " ";
-    //cout << endl;
-
-    multiply(G2, N1, G2);
-
-    //cout << "\n\ncall 2" << endl;
-    VecLong v = kernel_basis_zls_via_interpolation(N2, G2, u);
-    //cout << "v: ";
-    //for (auto i : v)
-    //    cout << i << " ";
-    //cout << endl;
-
-    if (N2.NumRows() == 0)
+    while (i_approx < approx.NumRows())
     {
-        return rdegP1;
+        // row computed via recursive calls and stored in `approx`
+        kerbas[i].swap(approx[i_approx]);
+        shift[i] = rdeg2[i_approx]+diff_shift;
+        pivind[i] = pivind2[i_approx];
+        ++i_approx; ++i;
     }
-
-    // collect output
-    multiply(G1,N2,N1);
-    multiply(G1,G1,P2);
-    kerbas.SetDims(P1.NumRows()+G1.NumRows(), P1.NumCols());
-    for (long r = 0; r < G1.NumRows(); r++)
-    {
-        kerbas[r+m1] = G1[r];
-    }
-    for (auto &i: v)
-        rdegP1.emplace_back(i);
-    //cout << "return degree: ";
-    //for (auto i : rdegP1)
-    //    cout << i << " ";
-    //cout << endl;
-    return rdegP1;
 }
 
 // Local Variables:

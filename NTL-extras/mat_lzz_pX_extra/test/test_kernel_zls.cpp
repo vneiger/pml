@@ -52,11 +52,7 @@ void check(long m, long n, long d, bool verify){
             kernel_basis_zls_via_approximation(kerbas, pivind, copy_pmat, rdeg);
             t2w = GetWallTime();
             cout << "time (kernel-zls-approx): " << t2w-t1w << "\t";
-            cout << endl << "rdeg: " << rdeg << endl;
 
-            std::cout << degree_matrix(kerbas) << std::endl;
-            std::cout << "pivind : " << pivind << std::endl;
-            std::cout << "pivdeg : " << pivdeg << std::endl;
             if (verify)
             {
                 t1w = GetWallTime();
@@ -67,12 +63,13 @@ void check(long m, long n, long d, bool verify){
             cout << endl;
         }
 
-        if (0)
         { // zls-interp
             Mat<zz_pX> kerbas;
+            VecLong pivind;
             t1w = GetWallTime();
+            VecLong rdeg(shift);
             Mat<zz_pX> copy_pmat(pmat);
-            kernel_basis_zls_via_interpolation(kerbas, copy_pmat, shift);
+            kernel_basis_zls_via_interpolation(kerbas, pivind, copy_pmat, rdeg);
             t2w = GetWallTime();
             cout << "time (kernel-zls-interp): " << t2w-t1w << "\t";
 
