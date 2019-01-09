@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     for (auto pmat = test_examples.first.begin(); pmat!= test_examples.first.end(); ++pmat, ++i)
     {
         if (verbose)
-            std::cout << i << std::endl;
+            std::cout << "instance number " << i << ":" << std::endl;
         
         const long rdim = pmat->NumRows();
         const long cdim = pmat->NumCols();
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
                     std::cout << "--cdim =\t" << cdim << std::endl;
                     std::cout << "--deg =\t" << d << std::endl;
                     std::cout << "--shift =\t" << shift << std::endl;
-                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << "--modulus = \t" << zz_p::modulus() << std::endl;
                     std::cout << "Input: " << std::endl << *pmat << std::endl;
                     std::cout << "Kernel : " << std::endl << kerbas << std::endl;
                     std::cout << "pivot degree: " << std::endl << pivdeg << std::endl;
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
                     std::cout << "--cdim =\t" << cdim << std::endl;
                     std::cout << "--deg =\t" << d << std::endl;
                     std::cout << "--shift =\t" << shift << std::endl;
-                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << "--modulus = \t" << zz_p::modulus() << std::endl;
                     std::cout << "Input: " << std::endl << *pmat << std::endl;
                     std::cout << "Kernel : " << std::endl << kerbas << std::endl;
                     std::cout << "pivot degree: " << std::endl << pivdeg << std::endl;
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
                     std::cout << "--cdim =\t" << cdim << std::endl;
                     std::cout << "--deg =\t" << d << std::endl;
                     std::cout << "--shift =\t" << shift << std::endl;
-                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << "--modulus = \t" << zz_p::modulus() << std::endl;
                     std::cout << "Input: " << std::endl << *pmat << std::endl;
                     std::cout << "Kernel : " << std::endl << kerbas << std::endl;
                     std::cout << "pivot degree: " << std::endl << pivdeg << std::endl;

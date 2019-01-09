@@ -1,16 +1,9 @@
-#include <iomanip>
+#include "mat_lzz_pX_approximant.h"
+#include "test_examples.h"
 
-#include <NTL/BasicThreadPool.h>
-
-#include "util.h"
-#include "lzz_pX_CRT.h"
-#include "mat_lzz_pX_interpolant.h"
+#define VERBOSE
 
 NTL_CLIENT
-
-/********************************************
- *  tests the interpolant basis algorithms  *
- ********************************************/
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
@@ -22,113 +15,112 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 
 int main(int argc, char *argv[])
 {
-    SetNumThreads(1);
+    if (argc!=3)
+        throw std::invalid_argument("Usage: ./test_app_pmbasis nbits verbose\n\t--nbits: 0 for FFT prime, between 3 and 60 for normal prime\n\t--verbose: 0/1");
 
-    if (argc!=6)
-        throw std::invalid_argument("Usage: ./test_intbas_pmbasis rdim cdim npoints nbits verify");
-
-    long rdim = atoi(argv[1]);
-    long cdim = atoi(argv[2]);
-    long npoints = atoi(argv[3]);
-    long nbits = atoi(argv[4]);
-    bool verify = (atoi(argv[5])==1);
-
-    VecLong shift(rdim,0);
+    const long nbits = atoi(argv[1]);
+    const bool verbose = (atoi(argv[2])==1);
 
     if (nbits==0)
         zz_p::FFTInit(0);
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
-    std::cout << "Testing interpolant basis (pmbasis) with random points/matrix" << std::endl;
-    std::cout << "--prime =\t" << zz_p::modulus();
-    if (nbits==0) std::cout << "  (FFT prime)";
-    std::cout << std::endl;
-    std::cout << "--rdim =\t" << rdim << std::endl;
-    std::cout << "--cdim =\t" << cdim << std::endl;
-    std::cout << "--npoints =\t" << npoints << std::endl;
-    std::cout << "--shift = uniform" << std::endl;
-
-    double t1w,t2w;
-
+    if (!verbose)
     {
-        // pmbasis for interpolants
-        zz_p r;
-        random(r);
-        zz_pX_Multipoint_Geometric eval(r,zz_p(1),npoints);
-        Vec<zz_p> pts(INIT_SIZE, npoints);
-        for (long i = 0; i < npoints; ++i)
-            eval.get_point(pts[i], i);
-
-        // set up evaluations of pmat
-        Vec<Mat<zz_p>> evals;
-        evals.SetLength(npoints);
-        for (long d = 0; d < npoints; d++)
-            random(evals[d], rdim, cdim);
-
-        Vec<Mat<zz_p>> copy_evals(evals); // since this one changes its input
-        t1w = GetWallTime();
-        Mat<zz_pX> intbas;
-        VecLong rdeg(shift);
-        pmbasis_geometric(intbas,copy_evals,pts,r,rdeg,0,npoints);
-        t2w = GetWallTime();
-        std::cout << "pmbasis-geometric, time:\t" << (t2w-t1w);
-        if (verify)
-        {
-            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
-            std::cout << (verif?", correct":", wrong");
-        }
-        std::cout << std::endl;
+        std::cout << "Launching tests on many orders / shifts / dimensions / types of matrices." << std::endl;
+        std::cout << "If nothing gets printed below, this means all tests were passed." << std::endl;
+        std::cout << "This may take several minutes." << std::endl;
     }
 
+    // build couple (test_matrices, test_shifts)
+    std::pair<std::vector<Mat<zz_pX>>, std::vector<std::vector<VecLong>>>
+    test_examples = build_test_examples();
+
+    std::cout << "Testing approximant basis computation (pmbasis)." << std::endl;
+    std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
+
+    Mat<zz_pX> appbas;
+
+    size_t i=0;
+    for (auto pmat = test_examples.first.begin(); pmat!= test_examples.first.end(); ++pmat, ++i)
     {
-        Vec<zz_p> pts;
-        random(pts, npoints);
-        Vec<Mat<zz_p>> evals;
-        evals.SetLength(npoints);
-        for (long d = 0; d < npoints; d++)
-            random(evals[d], rdim, cdim);
+        
+        if (verbose)
+            std::cout << "instance number " << i << ":" << std::endl;
 
-        Vec<Mat<zz_p>> copy_evals(evals); // since this one changes its input
-        t1w = GetWallTime();
-        Mat<zz_pX> intbas;
-        VecLong rdeg(shift);
-        pmbasis(intbas,copy_evals,pts,rdeg,0,npoints);
-        t2w = GetWallTime();
+        long rdim = pmat->NumRows();
+        long cdim = pmat->NumCols();
+        long d = deg(*pmat);
+        VecLong orders;
+        if (d <= 1)
+            orders = {1, 2, 5}; // recall the order must be (strictly) positive
+        else
+            orders = {d/2,d+1,2*d};
 
-        std::cout << "pmbasis-general, time:\t\t" << (t2w-t1w);
-        if (verify)
+        for (long order : orders)
         {
-            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
-            std::cout << (verif?", correct":", wrong");
+            for (VecLong shift : test_examples.second[i])
+            {
+                // PMBASIS
+                if (verbose)
+                {
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--order =\t" << order << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << "Computation pmbasis... ";
+                }
+
+                VecLong rdeg_pmbasis(shift);
+                pmbasis(appbas,*pmat,order,rdeg_pmbasis);
+
+                if (verbose)
+                    std::cout << "OK. Testing... ";
+                if (not is_approximant_basis(appbas,*pmat,order,shift,ORD_WEAK_POPOV,true))
+                {
+                    std::cout << "Error in pmbasis." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--order =\t" << order << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << *pmat << std::endl;
+                    std::cout << appbas << std::endl;
+                    return 0;
+                }
+                if (verbose)
+                    std::cout << "OK." << std::endl;
+
+                // POPOV_PMBASIS
+                if (verbose)
+                    std::cout << "Computation popov_pmbasis... ";
+
+                VecLong rdeg_popov_pmbasis(shift);
+                popov_pmbasis(appbas,*pmat,order,rdeg_popov_pmbasis);
+
+                if (verbose)
+                    std::cout << "OK. Testing... ";
+                if (not is_approximant_basis(appbas,*pmat,order,shift,POPOV,true))
+                {
+                    std::cout << "Error in popov_pmbasis." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--order =\t" << order << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << zz_p::modulus() << std::endl;
+                    std::cout << *pmat << std::endl;
+                    std::cout << appbas << std::endl;
+                    return 0;
+                }
+                if (verbose)
+                    std::cout << "OK." << std::endl;
+            }
         }
-        std::cout << std::endl;
     }
-
-    {
-        Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, npoints);
-        zz_p r = random_zz_p();
-        Vec<zz_p> pts;
-        t1w = GetWallTime();
-        Mat<zz_pX> intbas;
-        VecLong rdeg(shift);
-        pmbasis_geometric(intbas,pmat,r,npoints,rdeg,pts);
-        t2w = GetWallTime();
-
-        std::cout << "pmbasis-geom, time:\t\t" << (t2w-t1w);
-        if (verify)
-        {
-            zz_pX_Multipoint_Geometric eval(r, npoints);
-            Vec<Mat<zz_p>> evals;
-            eval.evaluate_matrix(evals, pmat);
-
-            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
-            std::cout << (verif?", correct":", wrong");
-        }
-        std::cout << std::endl;
-    }
-
     return 0;
 }
 

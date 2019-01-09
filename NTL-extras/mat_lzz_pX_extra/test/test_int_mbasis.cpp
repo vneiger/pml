@@ -1,21 +1,8 @@
-#include <NTL/lzz_pX.h>
-#include <NTL/matrix.h>
-#include <NTL/vector.h>
-#include <iomanip>
-#include <vector>
-#include <numeric>
-#include <algorithm>
-#include <random>
-
-#include "util.h"
-#include "mat_lzz_pX_approximant.h"
+#include "lzz_pX_CRT.h"
 #include "mat_lzz_pX_interpolant.h"
+#include "test_examples.h"
 
 NTL_CLIENT
-
-/********************************************
- *  tests the interpolant basis algorithms  *
- ********************************************/
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
@@ -27,128 +14,158 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 
 int main(int argc, char *argv[])
 {
-    if (argc!=5 && argc!=6)
-        throw std::invalid_argument("Usage: ./test_intbas_mbasis rdim cdim npoints nbits verify");
+    if (argc!=3)
+        throw std::invalid_argument("Usage: ./test_int_mbasis nbits verbose\n\t--nbits: 0 for FFT prime, between 3 and 60 for normal prime\n\t--verbose: 0/1");
 
-    const long rdim = atoi(argv[1]);
-    const long cdim = atoi(argv[2]);
-    const long npoints = atoi(argv[3]);
-    const long nbits = atoi(argv[4]);
-    const bool verify = (atoi(argv[5])==1);
-
-    VecLong shift(rdim,0);
+    const long nbits = atoi(argv[1]);
+    const bool verbose = (atoi(argv[2])==1);
 
     if (nbits==0)
         zz_p::FFTInit(0);
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
-    std::cout << "Testing interpolant basis (mbasis) with random points/matrix" << std::endl;
-    std::cout << "--prime =\t" << zz_p::modulus();
-    if (nbits==0) std::cout << "  (FFT prime)";
-    std::cout << std::endl;
-    std::cout << "--rdim =\t" << rdim << std::endl;
-    std::cout << "--cdim =\t" << cdim << std::endl;
-    std::cout << "--npoints =\t" << npoints << std::endl;
-    std::cout << "--shift = uniform\t" << std::endl;
-
-    double tt,t;
-    long nb_iter;
-
-    // will contain random matrix and random points
-    Vec<Mat<zz_p>> evals;
-    Vec<zz_p> pts;
-
-    warmup();
-
-    { // plain mbasis
-        std::cout << "plain mbasis, time:\t";
-        nb_iter=0; t=0.0;
-        Mat<zz_pX> intbas;
-        VecLong rdeg;
-        while (t<0.5)
-        {
-            evals.SetLength(npoints);
-            for (long pt = 0; pt < npoints; ++pt)
-                random(evals[pt], rdim, cdim);
-            random(pts, npoints);
-            tt = GetWallTime();
-            rdeg = shift;
-            mbasis(intbas,evals,pts,rdeg);
-            t += GetWallTime()-tt;
-            ++nb_iter;
-        }
-
-        std::cout << t/nb_iter;
-
-        if (verify) // checks the last iteration of the while loop
-        {
-            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
-            bool verif2 = (rdeg == row_degree(intbas, shift));
-            std::cout << (verif?", correct":", wrong");
-            std::cout << (verif2?", rdeg correct":", rdeg wrong");
-        }
-        std::cout << std::endl;
+    if (!verbose)
+    {
+        std::cout << "Launching tests on many orders / shifts / dimensions / types of matrices." << std::endl;
+        std::cout << "If nothing gets printed below, this means all tests were passed." << std::endl;
+        std::cout << "This may take several minutes." << std::endl;
     }
 
-    { // mbasis_rescomp
-        std::cout << "mbasis_rescomp, time:\t";
-        nb_iter=0; t=0.0;
-        Mat<zz_pX> intbas;
-        while (t<0.5)
-        {
-            evals.SetLength(npoints);
-            for (long pt = 0; pt < npoints; ++pt)
-                random(evals[pt], rdim, cdim);
-            random(pts, npoints);
-            tt = GetWallTime();
-            VecLong rdeg(shift);
-            mbasis_rescomp(intbas,evals,pts,rdeg,0,npoints);
-            t += GetWallTime()-tt;
-            ++nb_iter;
-        }
+    // build couple (test_matrices, test_shifts)
+    std::pair<std::vector<Mat<zz_pX>>, std::vector<std::vector<VecLong>>>
+    test_examples = build_test_examples();
 
-        std::cout << t/nb_iter;
+    std::cout << "Testing interpolant basis computation (mbasis)." << std::endl;
+    std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
 
-        if (verify)
+    Mat<zz_pX> intbas;
+
+    size_t i=0;
+    for (auto pmat = test_examples.first.begin(); pmat!= test_examples.first.end(); ++pmat, ++i)
+    {
+        if (verbose)
+            std::cout << "instance number " << i << ":" << std::endl;
+
+        const long rdim = pmat->NumRows();
+        const long cdim = pmat->NumCols();
+        const long d = deg(*pmat);
+        VecLong orders;
+        if (d <= 1)
+            orders = {1, 2, 5}; // recall the order must be (strictly) positive
+        else
+            orders = {d/2,d+1,2*d};
+
+        for (long order : orders)
         {
-            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
-            std::cout << (verif?", correct":", wrong");
+            for (VecLong shift : test_examples.second[i])
+            {
+                if (verbose)
+                {
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--order =\t" << order << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                }
+
+                { // MBASIS_RESCOMP
+                    if (verbose)
+                        std::cout << "Computation mbasis_rescomp... ";
+
+                    VecLong rdeg_rescomp(shift);
+                    const Vec<zz_p> pts = random_vec_zz_p(order);
+                    zz_pX_Multipoint_General ev(pts);
+                    Vec<Mat<zz_p>> evals;
+                    ev.evaluate_matrix(evals, *pmat);
+                    mbasis_rescomp(intbas,evals,pts,rdeg_rescomp,0,order);
+
+                    if (verbose)
+                        std::cout << "OK. Testing... ";
+                    if (not is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,true))
+                    {
+                        std::cout << "Error in mbasis_rescomp." << std::endl;
+                        std::cout << "--rdim =\t" << rdim << std::endl;
+                        std::cout << "--cdim =\t" << cdim << std::endl;
+                        std::cout << "--deg =\t" << d << std::endl;
+                        std::cout << "--order =\t" << order << std::endl;
+                        std::cout << "--shift =\t" << shift << std::endl;
+                        std::cout << "--modulus = \t" << zz_p::modulus() << std::endl;
+                        std::cout << pts << std::endl;
+                        std::cout << *pmat << std::endl;
+                        std::cout << intbas << std::endl;
+                        return 0;
+                    }
+                    if (verbose)
+                        std::cout << "OK." << std::endl;
+                }
+
+                {
+                    // MBASIS_RESUPDATE
+                    if (verbose)
+                        std::cout << "Computation mbasis_resupdate... ";
+
+                    VecLong rdeg_resupdate(shift);
+                    const Vec<zz_p> pts = random_vec_zz_p(order);
+                    zz_pX_Multipoint_General ev(pts);
+                    Vec<Mat<zz_p>> evals;
+                    ev.evaluate_matrix(evals, *pmat);
+                    Vec<Mat<zz_p>> copy_evals(evals);
+                    mbasis_resupdate(intbas,copy_evals,pts,rdeg_resupdate,0,order);
+
+                    if (verbose)
+                        std::cout << "OK. Testing...";
+                    if (not is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,true))
+                    {
+                        std::cout << "Error in mbasis_resupdate." << std::endl;
+                        std::cout << "--rdim =\t" << rdim << std::endl;
+                        std::cout << "--cdim =\t" << cdim << std::endl;
+                        std::cout << "--deg =\t" << d << std::endl;
+                        std::cout << "--order =\t" << order << std::endl;
+                        std::cout << "--shift =\t" << shift << std::endl;
+                        std::cout << "--modulus = \t" << zz_p::modulus() << std::endl;
+                        std::cout << pts << std::endl;
+                        std::cout << *pmat << std::endl;
+                        std::cout << intbas << std::endl;
+                        return 0;
+                    }
+                    if (verbose)
+                        std::cout << "OK." << std::endl;
+                }
+
+                { // POPOV_MBASIS
+                    if (verbose)
+                        std::cout << "Computation popov_mbasis... ";
+
+                    VecLong rdeg_popov(shift);
+                    const Vec<zz_p> pts = random_vec_zz_p(order);
+                    popov_mbasis(intbas,*pmat,pts,rdeg_popov);
+
+                    if (verbose)
+                        std::cout << "OK. Testing...";
+                    zz_pX_Multipoint_General ev(pts);
+                    Vec<Mat<zz_p>> evals;
+                    ev.evaluate_matrix(evals, *pmat);
+                    if (not is_interpolant_basis(intbas,evals,pts,shift,POPOV,true))
+                    {
+                        std::cout << "Error in popov_mbasis." << std::endl;
+                        std::cout << "--rdim =\t" << rdim << std::endl;
+                        std::cout << "--cdim =\t" << cdim << std::endl;
+                        std::cout << "--deg =\t" << d << std::endl;
+                        std::cout << "--order =\t" << order << std::endl;
+                        std::cout << "--shift =\t" << shift << std::endl;
+                        std::cout << "--modulus = \t" << zz_p::modulus() << std::endl;
+                        std::cout << pts << std::endl;
+                        std::cout << *pmat << std::endl;
+                        std::cout << intbas << std::endl;
+                        return 0;
+                    }
+                    if (verbose)
+                        std::cout << "OK." << std::endl;
+                }
+            }
         }
-        std::cout << std::endl;
     }
-
-
-    { // mbasis_resupdate
-        std::cout << "mbasis_resupdate, time:\t";
-        nb_iter=0; t=0.0;
-        Mat<zz_pX> intbas;
-        VecLong rdeg;
-        while (t<0.5)
-        {
-            evals.SetLength(npoints);
-            for (long pt = 0; pt < npoints; ++pt)
-                random(evals[pt], rdim, cdim);
-            random(pts, npoints);
-            tt = GetWallTime();
-            rdeg = shift;
-            mbasis_resupdate(intbas,evals,pts,rdeg,0,npoints);
-            t += GetWallTime()-tt;
-            ++nb_iter;
-        }
-
-        std::cout << t/nb_iter;
-
-        if (verify)
-        {
-            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
-            bool verif2 = (rdeg == row_degree(intbas, shift));
-            std::cout << (verif?", correct":", wrong");
-            std::cout << (verif2?", rdeg correct":", rdeg wrong");
-        }
-        std::cout << std::endl;
-    }
-    
     return 0;
 }
 

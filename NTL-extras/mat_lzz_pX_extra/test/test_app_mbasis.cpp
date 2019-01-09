@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     for (auto pmat = test_examples.first.begin(); pmat!= test_examples.first.end(); ++pmat, ++i)
     {
         if (verbose)
-            std::cout << i << std::endl;
+            std::cout << "instance number " << i << ":" << std::endl;
 
         long rdim = pmat->NumRows();
         long cdim = pmat->NumCols();
@@ -67,10 +67,12 @@ int main(int argc, char *argv[])
                     std::cout << "--deg =\t" << d << std::endl;
                     std::cout << "--order =\t" << order << std::endl;
                     std::cout << "--shift =\t" << shift << std::endl;
-                    std::cout << "Computation popov_mbasis1... ";
                 }
 
                 // POPOV_MBASIS1
+                if (verbose)
+                    std::cout << "Computation popov_mbasis1... ";
+
                 Mat<zz_p> kerbas;
                 pivdeg = popov_mbasis1(kerbas,coeff(*pmat,0),shift);
 

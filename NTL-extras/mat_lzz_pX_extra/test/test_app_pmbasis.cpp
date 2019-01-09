@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     {
         
         if (verbose)
-            std::cout << i << std::endl;
+            std::cout << "instance number " << i << ":" << std::endl;
 
         long rdim = pmat->NumRows();
         long cdim = pmat->NumCols();
