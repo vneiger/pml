@@ -138,14 +138,14 @@ bool is_interpolant_basis(
  * same dimensions.
  * 
  **/
-VecLong mbasis_rescomp(
-                       Mat<zz_pX> & intbas,
-                       const Vec<Mat<zz_p>> & evals,
-                       const Vec<zz_p> & pts,
-                       const VecLong & shift,
-                       long offset,
-                       long order
-                      );
+void mbasis_rescomp(
+                    Mat<zz_pX> & intbas,
+                    const Vec<Mat<zz_p>> & evals,
+                    const Vec<zz_p> & pts,
+                    VecLong & shift,
+                    long offset,
+                    long order
+                   );
 
 /** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
  * `(pmat,pts)`, with the matrix `pmat` given by its list of evaluations
@@ -161,14 +161,14 @@ VecLong mbasis_rescomp(
  * same dimensions.
  * 
  **/
-VecLong mbasis_resupdate(
-                         Mat<zz_pX> & intbas,
-                         const Vec<Mat<zz_p>> & evals,
-                         const Vec<zz_p> & pts,
-                         const VecLong & shift,
-                         long offset,
-                         long order
-                        );
+void mbasis_resupdate(
+                      Mat<zz_pX> & intbas,
+                      const Vec<Mat<zz_p>> & evals,
+                      const Vec<zz_p> & pts,
+                      VecLong & shift,
+                      long offset,
+                      long order
+                     );
 
 
 // input pmat = list of evaluations, implemented
@@ -176,19 +176,19 @@ VecLong mbasis_resupdate(
 // assumes no repeated points (will not fail but undefined behaviour)
 // (one could e.g. do a cleaning of pts beforehand)
 // 
-/** `intbas` represented as evaluations
- *
- * \todo currently experimental, not properly tested
- * \todo deal with case where intbas reaches degree = nbpoints
- **/
-VecLong mbasis_rescomp_eval(
-                            Vec<Mat<zz_p>> & intbas,
-                            const Vec<Mat<zz_p>> & evals,
-                            const Vec<zz_p> & pts,
-                            const VecLong & shift,
-                            long offset,
-                            long order
-                           );
+///** `intbas` represented as evaluations
+// *
+// * \todo currently experimental, not properly tested
+// * \todo deal with case where intbas reaches degree = nbpoints
+// **/
+//void mbasis_rescomp_eval(
+//                         Vec<Mat<zz_p>> & intbas,
+//                         const Vec<Mat<zz_p>> & evals,
+//                         const Vec<zz_p> & pts,
+//                         VecLong & shift,
+//                         long offset,
+//                         long order
+//                        );
 
 
 /** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
@@ -210,19 +210,19 @@ VecLong mbasis_rescomp_eval(
  * \todo add checks and allow repeated points
  * 
  **/
-inline VecLong mbasis(
-                      Mat<zz_pX> & intbas,
-                      const Vec<Mat<zz_p>> & evals,
-                      const Vec<zz_p> & pts,
-                      const VecLong & shift,
-                      long offset,
-                      long order
-                     )
+inline void mbasis(
+                   Mat<zz_pX> & intbas,
+                   const Vec<Mat<zz_p>> & evals,
+                   const Vec<zz_p> & pts,
+                   VecLong & shift,
+                   long offset,
+                   long order
+                  )
 {
     if (evals[0].NumCols() == evals[0].NumRows()-1)
-        return mbasis_resupdate(intbas,evals,pts,shift,offset,order);
+        mbasis_resupdate(intbas,evals,pts,shift,offset,order);
     else
-        return mbasis_rescomp(intbas,evals,pts,shift,offset,order);
+        mbasis_rescomp(intbas,evals,pts,shift,offset,order);
 }
 
 /** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
@@ -241,17 +241,17 @@ inline VecLong mbasis(
  * \todo add checks and allow repeated points
  * 
  **/
-inline VecLong mbasis(
-                      Mat<zz_pX> & intbas,
-                      const Vec<Mat<zz_p>> & evals,
-                      const Vec<zz_p> & pts,
-                      const VecLong & shift
-                     )
+inline void mbasis(
+                   Mat<zz_pX> & intbas,
+                   const Vec<Mat<zz_p>> & evals,
+                   const Vec<zz_p> & pts,
+                   VecLong & shift
+                  )
 {
     if (evals[0].NumCols() == evals[0].NumRows()-1)
-        return mbasis_resupdate(intbas,evals,pts,shift,0,pts.length());
+        mbasis_resupdate(intbas,evals,pts,shift,0,pts.length());
     else
-        return mbasis_rescomp(intbas,evals,pts,shift,0,pts.length());
+        mbasis_rescomp(intbas,evals,pts,shift,0,pts.length());
 }
 
 
@@ -270,12 +270,12 @@ inline VecLong mbasis(
  * \todo add checks and allow repeated points
  * 
  **/
-VecLong popov_mbasis(
-                     Mat<zz_pX> &intbas,
-                     const Mat<zz_pX> & pmat,
-                     const Vec<zz_p> & pts,
-                     const VecLong & shift
-                    );
+void popov_mbasis(
+                  Mat<zz_pX> &intbas,
+                  const Mat<zz_pX> & pmat,
+                  const Vec<zz_p> & pts,
+                  VecLong & shift
+                 );
 
 //@} // doxygen group: M-Basis algorithm
 
@@ -307,12 +307,12 @@ VecLong popov_mbasis(
  * \todo add checks and allow repeated points
  * 
  **/
-VecLong pmbasis(
-                Mat<zz_pX> & intbas,
-                const Mat<zz_pX> & pmat,
-                const Vec<zz_p> & pts,
-                const VecLong & shift
-               );
+void pmbasis(
+             Mat<zz_pX> & intbas,
+             const Mat<zz_pX> & pmat,
+             const Vec<zz_p> & pts,
+             VecLong & shift
+            );
 
 /** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
  * `(pmat,pts)`, where the points are geometric sequence defined by `r` and
@@ -324,14 +324,14 @@ VecLong pmbasis(
  * \todo tune threshold for call to `mbasis`
  * 
  **/
-VecLong pmbasis_geometric(
-                          Mat<zz_pX> & intbas,
-                          const Mat<zz_pX> & pmat,
-                          const zz_p & r,
-                          const long order,
-                          const VecLong & shift,
-                          Vec<zz_p> & pts
-                         );
+void pmbasis_geometric(
+                       Mat<zz_pX> & intbas,
+                       const Mat<zz_pX> & pmat,
+                       const zz_p & r,
+                       const long order,
+                       VecLong & shift,
+                       Vec<zz_p> & pts
+                      );
 
 /** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
  * `(pmat,pts)`, where the points `pts` are geometric sequence defined by `r`
@@ -346,15 +346,15 @@ VecLong pmbasis_geometric(
  * \todo tune threshold for call to `mbasis`
  * 
  **/
-VecLong pmbasis_geometric(
-                         Mat<zz_pX> & intbas,
-                         Vec<Mat<zz_p>> & evals,
-                         const Vec<zz_p> & pts,
-                         const zz_p & r,
-                         const VecLong & shift,
-                         long offset,
-                         long order
-                        );
+void pmbasis_geometric(
+                       Mat<zz_pX> & intbas,
+                       Vec<Mat<zz_p>> & evals,
+                       const Vec<zz_p> & pts,
+                       const zz_p & r,
+                       VecLong & shift,
+                       long offset,
+                       long order
+                      );
 
 
 /** Computes a `shift`-ordered weak Popov interpolant basis `intbas` for
@@ -369,25 +369,25 @@ VecLong pmbasis_geometric(
  * \todo tune threshold for call to `mbasis`
  * 
  **/
-VecLong pmbasis(
-                Mat<zz_pX> & intbas,
-                Vec<Mat<zz_p>> & evals,
-                const Vec<zz_p> & pts,
-                const VecLong & shift,
-                long offset,
-                long order
-               );
+void pmbasis(
+             Mat<zz_pX> & intbas,
+             Vec<Mat<zz_p>> & evals,
+             const Vec<zz_p> & pts,
+             VecLong & shift,
+             long offset,
+             long order
+            );
 
 /** Computes a `shift`-Popov interpolant basis `intbas` for `(pmat,pts)`.
  *
  * \todo tune threshold for call to `mbasis`
  **/
-VecLong popov_pmbasis(
-                      Mat<zz_pX> & intbas,
-                      const Mat<zz_pX> & pmat,
-                      const Vec<zz_p> & pts,
-                      const VecLong & shift
-                     );
+void popov_pmbasis(
+                   Mat<zz_pX> & intbas,
+                   const Mat<zz_pX> & pmat,
+                   const Vec<zz_p> & pts,
+                   VecLong & shift
+                  );
 
 //@} // doxygen group: PM-Basis algorithm
 
