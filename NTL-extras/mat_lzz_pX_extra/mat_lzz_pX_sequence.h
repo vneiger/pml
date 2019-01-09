@@ -18,12 +18,6 @@ void MulMod_local(zz_pX& x, zz_pX& upper, const zz_pX& a, const zz_pXMultiplier&
 /*------------------------------------------------------------*/
 /* matrix multiplication using the algorithm of Giorgi et al. */
 /* uses matrix multiplication for evaluation and interpolation*/
-/*------------------------------------------------------------*/
-void mul(Mat<zz_pX>& c, const Mat<zz_pX>& a, const Mat<zz_pX>& b);
-
-/*------------------------------------------------------------*/
-/* matrix multiplication using the algorithm of Giorgi et al. */
-/* uses matrix multiplication for evaluation and interpolation*/
 /*                                                            */
 /* variant does one product and a row-shifted product at once */
 /*------------------------------------------------------------*/
