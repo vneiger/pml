@@ -16,7 +16,7 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 int main(int argc, char *argv[])
 {
     if (argc!=3)
-        throw std::invalid_argument("Usage: ./test_pmbasis nbits verbose\n\t--nbits: 0 for FFT prime, between 3 and 60 for normal prime\n\t--verbose: 0/1");
+        throw std::invalid_argument("Usage: ./test_app_pmbasis nbits verbose\n\t--nbits: 0 for FFT prime, between 3 and 60 for normal prime\n\t--verbose: 0/1");
 
     const long nbits = atoi(argv[1]);
     const bool verbose = (atoi(argv[2])==1);

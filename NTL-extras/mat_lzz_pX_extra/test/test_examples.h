@@ -98,7 +98,7 @@ build_test_examples()
     std::vector<long> cdims = {1, 2, 3, 5, 11, 17, 21};
 
     // degrees we will try
-    std::vector<long> degs = {0, 1, 2, 3, 4, 5, 10, 15, 25, 50, 100};
+    std::vector<long> degs = {0, 1, 2, 3, 4, 5, 10, 15, 25, 50, 75, 100, 125};
 
     // TODO later, a few unbalanced row degrees/column degrees
     //std::vector<long> rdegs = ..

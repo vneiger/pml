@@ -1,8 +1,6 @@
 #include "mat_lzz_pX_kernel.h"
 #include "test_examples.h"
 
-#define VERBOSE
-
 NTL_CLIENT
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)
@@ -15,21 +13,29 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 
 int main(int argc, char *argv[])
 {
-    if (argc!=2)
-        throw std::invalid_argument("Usage: ./test_kernel_direct nbits");
+    if (argc!=3)
+        throw std::invalid_argument("Usage: ./test_kernel nbits verbose\n\t--nbits: 0 for FFT prime, between 3 and 60 for normal prime\n\t--verbose: 0/1");
 
-    long nbits = atoi(argv[1]);
+    const long nbits = atoi(argv[1]);
+    const bool verbose = (atoi(argv[2])==1);
 
     if (nbits==0)
         zz_p::FFTInit(0);
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
+    if (!verbose)
+    {
+        std::cout << "Launching tests on many shifts / dimensions / types of matrices." << std::endl;
+        std::cout << "If nothing gets printed below, this means all tests were passed." << std::endl;
+        std::cout << "This may take several minutes." << std::endl;
+    }
+
     // build couple (test_matrices, test_shifts)
     std::pair<std::vector<Mat<zz_pX>>, std::vector<std::vector<VecLong>>>
     test_examples = build_test_examples();
 
-    std::cout << "Testing kernel basis computation (direct via approximation/interpolation)." << std::endl;
+    std::cout << "Testing kernel basis computation." << std::endl;
     std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
 
     VecLong pivdeg; 
@@ -38,34 +44,35 @@ int main(int argc, char *argv[])
     size_t i=0;
     for (auto pmat = test_examples.first.begin(); pmat!= test_examples.first.end(); ++pmat, ++i)
     {
-#ifdef VERBOSE
-        std::cout << i << std::endl;
-#endif // VERBOSE
+        if (verbose)
+            std::cout << i << std::endl;
         
         const long rdim = pmat->NumRows();
         const long cdim = pmat->NumCols();
-        long d = deg(*pmat);
+        const long d = deg(*pmat);
+
         for (VecLong shift : test_examples.second[i])
         {
-#ifdef VERBOSE
-            std::cout << "--rdim =\t" << rdim << std::endl;
-            std::cout << "--cdim =\t" << cdim << std::endl;
-            std::cout << "--deg =\t" << d << std::endl;
-            std::cout << "--shift =\t" << shift << std::endl;
-#endif // VERBOSE
+            if (verbose)
+            {
+                std::cout << "--rdim =\t" << rdim << std::endl;
+                std::cout << "--cdim =\t" << cdim << std::endl;
+                std::cout << "--deg =\t" << d << std::endl;
+                std::cout << "--shift =\t" << shift << std::endl;
+            }
 
             { // direct via approximation
-#ifdef VERBOSE
-                std::cout << "Computation of the kernel via approximation... ";
-#endif // VERBOSE
+                if (verbose)
+                    std::cout << "Computation of the kernel via approximation... ";
+
                 Mat<zz_pX> copy_pmat(*pmat);
                 Mat<zz_pX> kerbas;
                 VecLong pivind;
                 VecLong rdeg(shift);
                 kernel_basis_via_approximation(kerbas,pivind,copy_pmat,rdeg);
-#ifdef VERBOSE
-                std::cout << "OK. Testing... ";
-#endif // VERBOSE
+
+                if (verbose)
+                    std::cout << "OK. Testing... ";
                 if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
                 {
                     std::cout << "Error in kernel_basis_via_approximation." << std::endl;
@@ -79,23 +86,22 @@ int main(int argc, char *argv[])
                     std::cout << "pivot degree: " << std::endl << pivdeg << std::endl;
                     return 0;
                 }
-#ifdef VERBOSE
-                std::cout << "OK." << std::endl;
-#endif // VERBOSE
+                if (verbose)
+                    std::cout << "OK." << std::endl;
             }
 
             { // zls - approximation
-#ifdef VERBOSE
-                std::cout << "Computation of the kernel via ZLS algorithm (using approximation)... ";
-#endif // VERBOSE
+                if (verbose)
+                    std::cout << "Computation of the kernel via ZLS algorithm (using approximation)... ";
+
                 Mat<zz_pX> copy_pmat(*pmat);
                 Mat<zz_pX> kerbas;
                 VecLong rdeg(shift);
                 VecLong pivind;
                 kernel_basis_zls_via_approximation(kerbas,pivind,copy_pmat,rdeg);
-#ifdef VERBOSE
-                std::cout << "OK. Testing... ";
-#endif // VERBOSE
+
+                if (verbose)
+                    std::cout << "OK. Testing... ";
                 if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
                 {
                     std::cout << "Error in kernel_basis_zls_via_approximation." << std::endl;
@@ -109,22 +115,21 @@ int main(int argc, char *argv[])
                     std::cout << "pivot degree: " << std::endl << pivdeg << std::endl;
                     return 0;
                 }
-#ifdef VERBOSE
-                std::cout << "OK." << std::endl;
-#endif // VERBOSE
+                if (verbose)
+                    std::cout << "OK." << std::endl;
             }
 
             if (0)
             { // zls - interpolation
-#ifdef VERBOSE
-                std::cout << "Computation of the kernel via ZLS algorithm (using interpolation)... ";
-#endif // VERBOSE
+                if (verbose)
+                    std::cout << "Computation of the kernel via ZLS algorithm (using interpolation)... ";
+
                 Mat<zz_pX> copy_pmat(*pmat);
                 Mat<zz_pX> kerbas;
                 pivdeg = kernel_basis_zls_via_interpolation(kerbas,copy_pmat,shift);
-#ifdef VERBOSE
-                std::cout << "OK. Testing... ";
-#endif // VERBOSE
+
+                if (verbose)
+                    std::cout << "OK. Testing... ";
                 if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
                 {
                     std::cout << "Error in kernel_basis_zls_via_interpolation." << std::endl;
@@ -138,9 +143,8 @@ int main(int argc, char *argv[])
                     std::cout << "pivot degree: " << std::endl << pivdeg << std::endl;
                     return 0;
                 }
-#ifdef VERBOSE
-                std::cout << "OK." << std::endl;
-#endif // VERBOSE
+                if (verbose)
+                    std::cout << "OK." << std::endl;
             }
         }
     }
