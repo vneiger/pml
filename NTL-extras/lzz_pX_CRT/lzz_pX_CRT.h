@@ -65,6 +65,9 @@ public:
     /*------------------------------------------------------------*/
     void get_point(zz_p& pt, long i);  // sets the array pts if needed
 
+    // get all points (sets the array pts if needed)
+    void get_points(Vec<zz_p> & points);
+
     /*------------------------------------------------------------*/
     /* a naive conversion to a dense matrix                       */
     /*------------------------------------------------------------*/
@@ -145,6 +148,7 @@ public:
     /* we interpolate at r^(2*i), i=0..d-1                        */
     /* polynomials to evaluate must have degree at most d-1       */
     /*------------------------------------------------------------*/
+    // r must have order at least 2*(d-1)+1
     zz_pX_Multipoint_Geometric(const zz_p& r, long d);
 
     /*------------------------------------------------------------*/
@@ -152,6 +156,7 @@ public:
     /* we evaluate / interpolate at s * r^(2*i), i=0..d-1         */
     /* for evaluation, deg(f) must be < d                         */
     /*------------------------------------------------------------*/
+    // r must have order at least 2*(d-1)+1
     zz_pX_Multipoint_Geometric(const zz_p& r, const zz_p& s, long d);
 
     /*------------------------------------------------------------*/

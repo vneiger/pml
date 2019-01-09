@@ -1120,10 +1120,7 @@ void pmbasis_geometric(
                       )
 {
     zz_pX_Multipoint_Geometric eval(r, order);
-    // TODO retrieve points: use getter from class (write if doesn't exist)
-    pts.SetLength(order);
-    for (long k = 0; k < order; ++k)
-        eval.get_point(pts[k], k);
+    eval.get_points(pts);
     Vec<Mat<zz_p>> evals;
     eval.evaluate_matrix(evals, pmat);
 
@@ -1142,7 +1139,7 @@ void pmbasis_geometric(
 {
     if (order <= 32)
     {
-        mbasis_rescomp(intbas, evals, pts, shift, offset, order);
+        mbasis(intbas, evals, pts, shift, offset, order);
         return;
     }
 

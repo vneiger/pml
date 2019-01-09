@@ -32,6 +32,22 @@ void zz_pX_Multipoint::get_point(zz_p& pt, long i)
 }
 
 /*------------------------------------------------------------*/
+/* get a copy of the vector of points                         */
+/*------------------------------------------------------------*/
+void zz_pX_Multipoint::get_points(Vec<zz_p> & points) 
+{
+    if (pts.length() == 0) // initializes if needed
+    {
+        pts.SetLength(n);
+        zz_pX X;
+        SetCoeff(X, 1, to_zz_p(1));
+        evaluate(pts, X);
+    }
+
+    points = pts;
+}
+
+/*------------------------------------------------------------*/
 /* evaluates all entries of a vector                          */
 /*------------------------------------------------------------*/
 void zz_pX_Multipoint::evaluate_vector(Vec<Vec<zz_p>>& val, const Vec<zz_pX>& f) const

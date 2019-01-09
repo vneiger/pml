@@ -35,15 +35,14 @@ long order(const zz_p& a)
 /*------------------------------------------------------------*/
 void element_of_order(zz_p& a, long ord, long nb_trials, bool strong)
 {
-    long p = zz_p::modulus();
-    if ((p - 1) < ord)
-        LogicError("order too large with respect to p");
+    if ((zz_p::modulus() - 1) < ord)
+        LogicError("order too large with respect to field cardinality");
 
     long nb = 0;
     while (nb < nb_trials)
     {
-        a = random_zz_p();
-        long ok = 1;
+        random(a);
+        bool ok = true;
         zz_p prod = a;
         zz_p ap = a;
 
@@ -52,22 +51,22 @@ void element_of_order(zz_p& a, long ord, long nb_trials, bool strong)
             prod *= (1 - ap);
             if (ap == 1)
             {
-                ok = 0;
+                ok = false;
                 break;
             }
             ap *= a;
         }
 
-        if (ok == 1)
+        if (ok)
         {
             if (! strong)
                 return;
-            if (strong && GCD(prod.LoopHole(), p) == 1)
+            if (strong && GCD(prod.LoopHole(), zz_p::modulus()) == 1)
                 return;
         }
         nb++;
     }
-    a = 0;
+    clear(a);
 }
 
 // Local Variables:

@@ -102,6 +102,16 @@ zz_pX_Multipoint_Geometric::zz_pX_Multipoint_Geometric(const zz_p& r, const zz_p
     n = d;
     idx_k = NextPowerOfTwo(2*d - 1);
 
+    // if n==1, build sequence of points 'pts'
+    // (otherwise, the method get_point could try to evaluate the degree 1
+    // polynomial X to obtain all sequence values: this will fail since
+    // evaluate degree 1 polynomials is not allowed when n==1)
+    if (n==1)
+    {
+        pts.SetLength(1);
+        mul(pts[0], s, r);
+    }
+
     // bad case: we have an FFT prime of low order
     if (is_FFT_prime() && idx_k > zz_pInfo->MaxRoot)
         FFT_feasible = 0;
