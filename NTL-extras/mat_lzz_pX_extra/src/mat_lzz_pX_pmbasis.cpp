@@ -1489,7 +1489,7 @@ void pmbasis(
              VecLong & shift
             )
 {
-    if (order <= 16) // TODO thresholds to be determined
+    if (order <= 32) // TODO thresholds to be determined
     {
         mbasis(appbas,pmat,order,shift);
         return;
