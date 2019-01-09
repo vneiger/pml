@@ -411,7 +411,7 @@ void mbasis_rescomp(
 // version with vector residuals continuously updated
 void mbasis_resupdate(
                       Mat<zz_pX> & intbas,
-                      const Vec<Mat<zz_p>> & evals,
+                      Vec<Mat<zz_p>> & evals,
                       const Vec<zz_p> & pts,
                       VecLong & shift,
                       long offset,
@@ -448,16 +448,13 @@ void mbasis_resupdate(
 
     // C. Residual matrix (holds the next constant matrix we want to annihilate; in this version, also holds further matrices that are continuously updated)
 
-    // C.1 copy the input vector of evaluations: in this version "resupdate",
-    // we will continuously update this to get our residuals
-    Vec<Mat<zz_p>> residuals(INIT_SIZE, order);
-    for (long k = 0; k < order; ++k)
-        residuals[k] = evals[offset+k];
+    // in this version "resupdate", we will continuously update
+    // evals[offset],...,evals[offset+order-1] to get our residuals
 
-    // C.2 temporary matrices used during the update of residuals: kernel * residual
+    // C.1 temporary matrices used during the update of residuals: kernel * residual
     Mat<zz_p> kerres;
 
-    // C.3 permuted residual, used as input to the kernel at the "base case"
+    // C.2 permuted residual, used as input to the kernel at the "base case"
     Mat<zz_p> p_residual;
     p_residual.SetDims(m, n);
 
@@ -510,8 +507,8 @@ void mbasis_resupdate(
 
         // permute rows of the residual accordingly
         for (long i = 0; i < m; ++i)
-            p_residual[i] = residuals[ord][p_shift[i]];
-        // Note: not using swap here, since we will need residuals[ord] for
+            p_residual[i] = evals[offset+ord][p_shift[i]];
+        // Note: not using swap here, since we will need evals[offset] for
         // updating the residual
 #ifdef MBASIS_PROFILE
         t_others += GetWallTime()-t_now;
@@ -530,10 +527,10 @@ void mbasis_resupdate(
         if (ker_dim==0)
         {
             // Exceptional case: the residual matrix has empty left kernel
-            // --> left-multiply intbas by (x-pt[ord])
+            // --> left-multiply intbas by (x-pt[offset+ord])
             // --> no need to update the residual:
-            //    its j-th entry should be left-multiplied by (pt[j]-pt[ord])
-            //    (==> if pt[j] == pt[ord], just set to zero --> now assuming
+            //    its j-th entry should be left-multiplied by (pt[j]-pt[offset+ord])
+            //    (==> if pt[j] == pt[offset+ord], just set to zero --> now assuming
             //    points pairwise distinct)
             //    ==> but changing residual[j] by multiplying all its entries
             //    by the same nonzero constant does not change the interpolants
@@ -542,7 +539,7 @@ void mbasis_resupdate(
             ++deg_intbas; // note that this degree is now > 0
             coeffs_intbas.SetLength(deg_intbas+1);
             coeffs_intbas[deg_intbas] = coeffs_intbas[deg_intbas-1];
-            const zz_p pt(-pts[ord-offset]);
+            const zz_p pt(-pts[offset+ord]);
             for (long d=deg_intbas-1; d > 0; --d)
             {
                 mul(coeffs_intbas[d], coeffs_intbas[d], pt);
@@ -683,9 +680,9 @@ void mbasis_resupdate(
                     coeffs_intbas[d][pivind[perm_rows_ker[i]]].swap(kerint[i]);
             }
 
-            // rows with !is_pivind are multiplied by X-pts[ord] (note: these rows
-            // currently have degree less than deg_intbas)
-            const zz_p pt(-pts[ord-offset]);
+            // rows with !is_pivind are multiplied by X-pts[offset+ord] (note:
+            // these rows currently have degree less than deg_intbas)
+            const zz_p pt(-pts[offset+ord]);
             for (long i = 0; i < m; ++i)
                 if (not is_pivind[i])
                     coeffs_intbas[deg_intbas][i] = coeffs_intbas[deg_intbas-1][i];
@@ -703,27 +700,27 @@ void mbasis_resupdate(
             t_intbas += GetWallTime()-t_now;
             t_now = GetWallTime();
 #endif
-            // Update residual[ord+1...order-1]
-            // We do not consider residual[ord], since it is known that its
-            // update will be zero (and it will not be used in further
+            // Update the evaluations offset+ord+1...offset+order-1
+            // We do not consider the evals offset+ord, since it is known that
+            // its update will be zero (and it will not be used in further
             // iterations)
 
-            // Submatrix of rows of residuals[k] corresponding to pivind are
-            // replaced by kerbas*residuals[k]
-            for (long k = ord+1; k < order; ++k)
+            // Submatrix of rows of evals[k] corresponding to pivind are
+            // replaced by kerbas*evals[k]
+            for (long k = offset+ord+1; k < offset+order; ++k)
             {
-                mul(kerres, kerbas, residuals[k]);
+                mul(kerres, kerbas, evals[k]);
                 for (long i = 0; i < ker_dim; ++i)
-                    residuals[k][pivind[perm_rows_ker[i]]].swap(kerres[i]);
+                    evals[k][pivind[perm_rows_ker[i]]].swap(kerres[i]);
             }
 
-            // rows with !is_pivind are multiplied by pts[k]-pts[ord]
-            for (long k = ord+1; k < order; ++k)
+            // rows with !is_pivind are multiplied by pts[k]-pts[offset+ord]
+            for (long k = offset+ord+1; k < offset+order; ++k)
             {
-                const zz_p mulpt(pts[k-offset]+pt);
+                const zz_p mulpt(pts[k]+pt);
                 for (long i = 0; i < m; ++i)
                     if (not is_pivind[i])
-                        mul(residuals[k][i], residuals[k][i], mulpt);
+                        mul(evals[k][i], evals[k][i], mulpt);
             }
 #ifdef MBASIS_PROFILE
             t_residual += GetWallTime()-t_now;
@@ -1108,12 +1105,12 @@ void pmbasis_geometric(
 {
     if (order <= 32)
     {
-        mbasis(intbas, evals, pts, shift, offset, order);
+        mbasis_rescomp(intbas, evals, pts, shift, offset, order);
         return;
     }
 
     // orders for recursive calls
-    const long order1 = order>>1;
+    const long order1 = order/2;
     const long offset2 = offset+order1;
     const long order2 = order-order1;
 
@@ -1170,7 +1167,7 @@ void pmbasis(
     }
 
     // orders for the recursive calls
-    const long order1 = order>>1;
+    const long order1 = order/2;
     const long offset2 = offset+order1;
     const long order2 = order-order1;
 
@@ -1209,7 +1206,7 @@ void pmbasis(
 //    VecLong pivdeg; // pivot degree, first call
 //    VecLong pivdeg2; // pivot degree, second call
 //    VecLong rdeg(evals[0].NumRows()); // shifted row degree
-//    long order1 = order>>1; // order of first call
+//    long order1 = order/2; // order of first call
 //    long order2 = order-order1; // order of second call
 //    Mat<zz_pX> intbas2; // basis for second call
 //
@@ -1300,7 +1297,7 @@ void pmbasis(
 //        return mbasis(intbas, evals, pts, shift);
 //
 //    VecLong rdeg(evals[0].NumRows()); // shifted row degree
-//    long order1 = order>>1; // order of first call
+//    long order1 = order/2; // order of first call
 //    long order2 = order-order1; // order of second call
 //    Mat<zz_pX> intbas2; // basis for second call
 //

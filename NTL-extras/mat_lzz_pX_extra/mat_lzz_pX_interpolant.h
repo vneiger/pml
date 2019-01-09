@@ -163,7 +163,7 @@ void mbasis_rescomp(
  **/
 void mbasis_resupdate(
                       Mat<zz_pX> & intbas,
-                      const Vec<Mat<zz_p>> & evals,
+                      Vec<Mat<zz_p>> & evals,
                       const Vec<zz_p> & pts,
                       VecLong & shift,
                       long offset,
@@ -212,7 +212,7 @@ void mbasis_resupdate(
  **/
 inline void mbasis(
                    Mat<zz_pX> & intbas,
-                   const Vec<Mat<zz_p>> & evals,
+                   Vec<Mat<zz_p>> & evals,
                    const Vec<zz_p> & pts,
                    VecLong & shift,
                    long offset,
@@ -243,7 +243,7 @@ inline void mbasis(
  **/
 inline void mbasis(
                    Mat<zz_pX> & intbas,
-                   const Vec<Mat<zz_p>> & evals,
+                   Vec<Mat<zz_p>> & evals,
                    const Vec<zz_p> & pts,
                    VecLong & shift
                   )

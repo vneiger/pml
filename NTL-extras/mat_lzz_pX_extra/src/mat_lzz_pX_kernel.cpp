@@ -606,9 +606,9 @@ void kernel_basis_zls_via_interpolation(
     std::sort(rdeg1.begin(), rdeg1.end());
     const long rho = std::accumulate(rdeg1.begin()+m-n, rdeg1.end(), 0);
 
-    // order for call to approximation
+    // order for call to interpolation
     // choosing this order (with factor 2) is sufficient to ensure that the
-    // approximant basis captures the whole kernel when n <= m/2 and pmat is
+    // interpolant basis captures the whole kernel when n <= m/2 and pmat is
     // sufficiently generic
     const long order = 2 * ceil((double)rho / n) + 1;
 
@@ -649,7 +649,7 @@ void kernel_basis_zls_via_interpolation(
 
     // number of found kernel rows
     const long m1 = rdeg1.size();
-    // number of non-kernel rows in the approximant basis
+    // number of non-kernel rows in the interpolant basis
     const long m2 = pivind0.size();
 
     // if the sum of pivot degrees in the part of kernel basis computed is
@@ -681,14 +681,14 @@ void kernel_basis_zls_via_interpolation(
         return;
     }
 
-    // retrieve the non-kernel part of the approximant
-    Mat<zz_pX> approx(INIT_SIZE, m2, m);
+    // retrieve the non-kernel part of the interpolant
+    Mat<zz_pX> interp(INIT_SIZE, m2, m);
     for (long i = 0; i < m2; ++i)
-        approx[i].swap(intbas[pivind0[i]]);
+        interp[i].swap(intbas[pivind0[i]]);
 
     // compute residual:
-    // pmat = (pmat*approx) div (x-pts[0])...(x-pts[order-1])
-    multiply(pmat,approx,pmat);
+    // pmat = (pmat*interp) div (x-pts[0])...(x-pts[order-1])
+    multiply(pmat,interp,pmat);
     for (long i = 0; i < m2; ++i)
         for (long j = 0; j < n; ++j)
             divide(pmat[i][j], pmat[i][j], modulus);
@@ -720,7 +720,7 @@ void kernel_basis_zls_via_interpolation(
     VecLong pivind2;
     kernel_basis_zls_via_interpolation(kerbas, pivind2, pmat, rdeg2);
 
-    // if kerbas is empty: (i.e. the approximant basis already captured the
+    // if kerbas is empty: (i.e. the interpolant basis already captured the
     // whole kernel, although we had not guessed it with early_exit)
     // --> just copy and return
     if (kerbas.NumRows() == 0)
@@ -735,18 +735,18 @@ void kernel_basis_zls_via_interpolation(
 
     // kerbas is non-empty: we have found new kernel rows
     // I/ complete the computation of these rows via
-    // kerbas =  kerbas * kerbas1 * approx
+    // kerbas =  kerbas * kerbas1 * interp
     // II/ update also the pivot index / pivot degree
     // III/ merge this with rows / pivots from the kernel part of intbas
 
     // I/ complete the computation of new kernel rows
-    // We use pmat as a temp, and store the result in approx
+    // We use pmat as a temp, and store the result in interp
     // v1:
     //multiply(pmat, kerbas, kerbas1);
-    //multiply(approx, pmat, approx);
+    //multiply(interp, pmat, interp);
     // v2:
-    multiply(pmat, kerbas1, approx);
-    multiply(approx, kerbas, pmat);
+    multiply(pmat, kerbas1, interp);
+    multiply(interp, kerbas, pmat);
     // TODO when FFT / eval is used, this kind of product may be faster by
     // avoiding interpolation in the middle (?)
 
@@ -759,13 +759,13 @@ void kernel_basis_zls_via_interpolation(
     // Note concerning shift: to ensure that shift contains the correct shifted
     // row degree of kerbas, we add the constant diff_shift that had been
     // removed from the input shift
-    const long ker_dim = m1 + approx.NumRows();
+    const long ker_dim = m1 + interp.NumRows();
     kerbas.SetDims(ker_dim, m);
     shift.resize(ker_dim); pivind.resize(ker_dim);
-    long i=0, i_intbas=0, i_approx=0;
-    while (i_intbas < m1 && i_approx < approx.NumRows())
+    long i=0, i_intbas=0, i_interp=0;
+    while (i_intbas < m1 && i_interp < interp.NumRows())
     {
-        if (pivind_app[i_intbas] < pivind2[i_approx])
+        if (pivind_app[i_intbas] < pivind2[i_interp])
         {
             // row already captured in preliminary intbas computation
             kerbas[i].swap(intbas[pivind_app[i_intbas]]);
@@ -775,11 +775,11 @@ void kernel_basis_zls_via_interpolation(
         }
         else
         {
-            // row computed via recursive calls and stored in `approx`
-            kerbas[i].swap(approx[i_approx]);
-            shift[i] = rdeg2[i_approx]+diff_shift;
-            pivind[i] = pivind2[i_approx];
-            ++i_approx; ++i;
+            // row computed via recursive calls and stored in `interp`
+            kerbas[i].swap(interp[i_interp]);
+            shift[i] = rdeg2[i_interp]+diff_shift;
+            pivind[i] = pivind2[i_interp];
+            ++i_interp; ++i;
         }
     }
     while (i_intbas < m1)
@@ -790,13 +790,13 @@ void kernel_basis_zls_via_interpolation(
         pivind[i] = pivind_app[i_intbas];
         ++i_intbas; ++i;
     }
-    while (i_approx < approx.NumRows())
+    while (i_interp < interp.NumRows())
     {
-        // row computed via recursive calls and stored in `approx`
-        kerbas[i].swap(approx[i_approx]);
-        shift[i] = rdeg2[i_approx]+diff_shift;
-        pivind[i] = pivind2[i_approx];
-        ++i_approx; ++i;
+        // row computed via recursive calls and stored in `interp`
+        kerbas[i].swap(interp[i_interp]);
+        shift[i] = rdeg2[i_interp]+diff_shift;
+        pivind[i] = pivind2[i_interp];
+        ++i_interp; ++i;
     }
 }
 

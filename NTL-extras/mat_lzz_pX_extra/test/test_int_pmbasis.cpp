@@ -69,7 +69,8 @@ int main(int argc, char *argv[])
         Vec<Mat<zz_p>> copy_evals(evals); // since this one changes its input
         t1w = GetWallTime();
         Mat<zz_pX> intbas;
-        VecLong pivdeg = pmbasis_geometric(intbas,copy_evals,pts,r,shift,0,npoints);
+        VecLong rdeg(shift);
+        pmbasis_geometric(intbas,copy_evals,pts,r,rdeg,0,npoints);
         t2w = GetWallTime();
         std::cout << "pmbasis-geometric, time:\t" << (t2w-t1w);
         if (verify)
@@ -91,7 +92,8 @@ int main(int argc, char *argv[])
         Vec<Mat<zz_p>> copy_evals(evals); // since this one changes its input
         t1w = GetWallTime();
         Mat<zz_pX> intbas;
-        VecLong pivdeg = pmbasis(intbas,copy_evals,pts,shift,0,npoints);
+        VecLong rdeg(shift);
+        pmbasis(intbas,copy_evals,pts,rdeg,0,npoints);
         t2w = GetWallTime();
 
         std::cout << "pmbasis-general, time:\t\t" << (t2w-t1w);
@@ -110,7 +112,8 @@ int main(int argc, char *argv[])
         Vec<zz_p> pts;
         t1w = GetWallTime();
         Mat<zz_pX> intbas;
-        VecLong pivdeg = pmbasis_geometric(intbas,pmat,r,npoints,shift,pts);
+        VecLong rdeg(shift);
+        pmbasis_geometric(intbas,pmat,r,npoints,rdeg,pts);
         t2w = GetWallTime();
 
         std::cout << "pmbasis-geom, time:\t\t" << (t2w-t1w);

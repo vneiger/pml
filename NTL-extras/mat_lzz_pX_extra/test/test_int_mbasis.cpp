@@ -30,11 +30,11 @@ int main(int argc, char *argv[])
     if (argc!=5 && argc!=6)
         throw std::invalid_argument("Usage: ./test_intbas_mbasis rdim cdim npoints nbits verify");
 
-    long rdim = atoi(argv[1]);
-    long cdim = atoi(argv[2]);
-    long npoints = atoi(argv[3]);
-    long nbits = atoi(argv[4]);
-    bool verify = (atoi(argv[5])==1);
+    const long rdim = atoi(argv[1]);
+    const long cdim = atoi(argv[2]);
+    const long npoints = atoi(argv[3]);
+    const long nbits = atoi(argv[4]);
+    const bool verify = (atoi(argv[5])==1);
 
     VecLong shift(rdim,0);
 
@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
         std::cout << "plain mbasis, time:\t";
         nb_iter=0; t=0.0;
         Mat<zz_pX> intbas;
+        VecLong rdeg;
         while (t<0.5)
         {
             evals.SetLength(npoints);
@@ -72,7 +73,8 @@ int main(int argc, char *argv[])
                 random(evals[pt], rdim, cdim);
             random(pts, npoints);
             tt = GetWallTime();
-            mbasis(intbas,evals,pts,shift);
+            rdeg = shift;
+            mbasis(intbas,evals,pts,rdeg);
             t += GetWallTime()-tt;
             ++nb_iter;
         }
@@ -82,7 +84,9 @@ int main(int argc, char *argv[])
         if (verify) // checks the last iteration of the while loop
         {
             bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
+            bool verif2 = (rdeg == row_degree(intbas, shift));
             std::cout << (verif?", correct":", wrong");
+            std::cout << (verif2?", rdeg correct":", rdeg wrong");
         }
         std::cout << std::endl;
     }
@@ -98,7 +102,8 @@ int main(int argc, char *argv[])
                 random(evals[pt], rdim, cdim);
             random(pts, npoints);
             tt = GetWallTime();
-            mbasis_rescomp(intbas,evals,pts,shift,0,npoints);
+            VecLong rdeg(shift);
+            mbasis_rescomp(intbas,evals,pts,rdeg,0,npoints);
             t += GetWallTime()-tt;
             ++nb_iter;
         }
@@ -118,6 +123,7 @@ int main(int argc, char *argv[])
         std::cout << "mbasis_resupdate, time:\t";
         nb_iter=0; t=0.0;
         Mat<zz_pX> intbas;
+        VecLong rdeg;
         while (t<0.5)
         {
             evals.SetLength(npoints);
@@ -125,7 +131,8 @@ int main(int argc, char *argv[])
                 random(evals[pt], rdim, cdim);
             random(pts, npoints);
             tt = GetWallTime();
-            mbasis_resupdate(intbas,evals,pts,shift,0,npoints);
+            rdeg = shift;
+            mbasis_resupdate(intbas,evals,pts,rdeg,0,npoints);
             t += GetWallTime()-tt;
             ++nb_iter;
         }
@@ -135,46 +142,13 @@ int main(int argc, char *argv[])
         if (verify)
         {
             bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
+            bool verif2 = (rdeg == row_degree(intbas, shift));
             std::cout << (verif?", correct":", wrong");
+            std::cout << (verif2?", rdeg correct":", rdeg wrong");
         }
         std::cout << std::endl;
     }
-
-    { // mbasis_rescomp, eval rep
-        std::cout << "mbasis_rescomp (eval), time:\t";
-        nb_iter=0; t=0.0;
-        Vec<Mat<zz_p>> intbas_ev;
-        while (t<0.5)
-        {
-            evals.SetLength(npoints);
-            for (long pt = 0; pt < npoints; ++pt)
-                random(evals[pt], rdim, cdim);
-            random(pts, npoints);
-            tt = GetWallTime();
-            mbasis_rescomp_eval(intbas_ev,evals,pts,shift,0,npoints);
-            t += GetWallTime()-tt;
-            ++nb_iter;
-        }
-
-        std::cout << t/nb_iter;
-
-        if (verify)
-        {
-            Mat<zz_pX> intbas;
-            intbas.SetDims(rdim, rdim);
-            for (long i = 0; i < rdim; ++i)
-                for (long j = 0; j < rdim; ++j)
-                {
-                    Vec<zz_p> evs(INIT_SIZE, npoints);
-                    for (long k = 0; k < npoints; ++k)
-                        evs[k] = intbas_ev[k][i][j];
-                    interpolate(intbas[i][j], pts, evs);
-                }
-            bool verif = is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false);
-            std::cout << (verif?", correct":", wrong");
-        }
-        std::cout << std::endl;
-    }
+    
     return 0;
 }
 
