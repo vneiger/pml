@@ -219,7 +219,7 @@ inline void mbasis(
                    long order
                   )
 {
-    if (evals[0].NumCols() == evals[0].NumRows()-1)
+    if (order <= 5 || (evals[0].NumCols() == evals[0].NumRows()-1 && evals[0].NumRows()>20))
         mbasis_resupdate(intbas,evals,pts,shift,offset,order);
     else
         mbasis_rescomp(intbas,evals,pts,shift,offset,order);
@@ -248,7 +248,7 @@ inline void mbasis(
                    VecLong & shift
                   )
 {
-    if (evals[0].NumCols() == evals[0].NumRows()-1)
+    if (pts.length() <= 5 || (evals[0].NumCols() == evals[0].NumRows()-1 && evals[0].NumRows()>20))
         mbasis_resupdate(intbas,evals,pts,shift,0,pts.length());
     else
         mbasis_rescomp(intbas,evals,pts,shift,0,pts.length());

@@ -54,7 +54,8 @@ void one_bench_pmbasis(long rdim, long cdim, long deg, long order)
 
         t1 = GetWallTime();
         Mat<zz_pX> intbas;
-        VecLong pivdeg = pmbasis(intbas,pmat,pts,shift);
+        VecLong rdeg(shift);
+        pmbasis(intbas,pmat,pts,rdeg);
         t2 = GetWallTime();
 
         t_pmbasis_int += t2-t1;
@@ -73,7 +74,8 @@ void one_bench_pmbasis(long rdim, long cdim, long deg, long order)
         t1 = GetWallTime();
         Vec<zz_p> pts;
         Mat<zz_pX> intbas;
-        pmbasis_geometric(intbas,pmat,r,order,shift,pts);
+        VecLong rdeg(shift);
+        pmbasis_geometric(intbas,pmat,r,order,rdeg,pts);
         t2 = GetWallTime();
 
         t_pmbasis_intgeom += t2-t1;
