@@ -272,7 +272,7 @@ inline void mbasis(
  **/
 void popov_mbasis(
                   Mat<zz_pX> & intbas,
-                  const Mat<zz_pX> & pmat,
+                  Vec<Mat<zz_p>> & evals,
                   const Vec<zz_p> & pts,
                   VecLong & shift
                  );

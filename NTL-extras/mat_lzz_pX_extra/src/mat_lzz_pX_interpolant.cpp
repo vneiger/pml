@@ -3,8 +3,9 @@
 //#include <NTL/BasicThreadPool.h>
 
 #include "lzz_pX_CRT.h"
-#include "mat_lzz_pX_interpolant.h"
+#include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_multiply.h"
+#include "mat_lzz_pX_interpolant.h"
 
 //#define MBASIS_PROFILE
 
@@ -757,6 +758,42 @@ void mbasis_resupdate(
 #endif
 }
 
+void popov_mbasis(
+                  Mat<zz_pX> & intbas,
+                  Vec<Mat<zz_p>> & evals,
+                  const Vec<zz_p> & pts,
+                  VecLong & shift
+                 )
+{
+    // compute first basis, after saving the evaluations and the shift
+    Vec<Mat<zz_p>> copy_evals(evals);
+    VecLong rdeg(shift);
+    pmbasis(intbas,copy_evals,pts,rdeg,0,pts.length());
+    copy_evals.kill();
+
+    // shift for second call: negated pivot degree
+    VecLong popov_shift(intbas.NumCols());
+    std::transform(shift.begin(), shift.end(), rdeg.begin(),
+                   popov_shift.begin(), std::minus<long>());
+
+    // output shifted row degree
+    shift=rdeg;
+
+    // save `popov_shift` using `rdeg` as a buffer
+    rdeg=popov_shift;
+
+    // second call, basis shifted Popov up to constant transformation
+    pmbasis(intbas,evals,pts,popov_shift,0,pts.length());
+
+    // perform the constant transformation
+    Mat<zz_p> lmat;
+    row_leading_matrix(lmat, intbas, rdeg);
+    inv(lmat, lmat);
+    mul(intbas,lmat,intbas);
+}
+
+
+
 // version with residual constant matrix computed at each iteration,
 // intbas is stored as evaluations at the points in pts
 // TODO currently experimental, not properly tested
@@ -1187,6 +1224,46 @@ void pmbasis(
     pmbasis(intbas2, evals, pts, shift, offset2, order2);
 
     multiply(intbas,intbas2,intbas);
+}
+
+void popov_pmbasis(
+                   Mat<zz_pX> & intbas,
+                   const Mat<zz_pX> & pmat,
+                   const Vec<zz_p> & pts,
+                   VecLong & shift
+                  )
+{
+    // calling pmbasis twice on pmat would involve evaluating
+    // it twice at the point --> avoid this, rather evaluate once for all
+    zz_pX_Multipoint_General eval(pts);
+    Vec<Mat<zz_p>> evals;
+    eval.evaluate_matrix(evals, pmat);
+
+    // compute first basis, after saving the evaluations and the shift
+    Vec<Mat<zz_p>> copy_evals(evals);
+    VecLong rdeg(shift);
+    pmbasis(intbas,copy_evals,pts,rdeg,0,pts.length());
+    copy_evals.kill();
+
+    // shift for second call: negated pivot degree
+    VecLong popov_shift(pmat.NumRows());
+    std::transform(shift.begin(), shift.end(), rdeg.begin(),
+                   popov_shift.begin(), std::minus<long>());
+
+    // output shifted row degree
+    shift=rdeg;
+
+    // save `popov_shift` using `rdeg` as a buffer
+    rdeg=popov_shift;
+
+    // second call, basis shifted Popov up to constant transformation
+    pmbasis(intbas,evals,pts,popov_shift,0,pts.length());
+
+    // perform the constant transformation
+    Mat<zz_p> lmat;
+    row_leading_matrix(lmat, intbas, rdeg);
+    inv(lmat, lmat);
+    mul(intbas,lmat,intbas);
 }
 
 //VecLong pmbasis_geometric_multithread(

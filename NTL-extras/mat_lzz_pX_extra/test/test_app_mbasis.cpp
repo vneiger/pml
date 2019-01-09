@@ -42,14 +42,12 @@ int main(int argc, char *argv[])
     Mat<zz_pX> appbas;
 
     size_t i=0;
+    size_t inst=0;
     for (auto pmat = test_examples.first.begin(); pmat!= test_examples.first.end(); ++pmat, ++i)
     {
-        if (verbose)
-            std::cout << "instance number " << i << ":" << std::endl;
-
-        long rdim = pmat->NumRows();
-        long cdim = pmat->NumCols();
-        long d = deg(*pmat);
+        const long rdim = pmat->NumRows();
+        const long cdim = pmat->NumCols();
+        const long d = deg(*pmat);
         VecLong orders;
         if (d <= 1)
             orders = {1, 2, 5}; // recall the order must be (strictly) positive
@@ -60,6 +58,9 @@ int main(int argc, char *argv[])
         {
             for (VecLong shift : test_examples.second[i])
             {
+                if (verbose)
+                    std::cout << std::endl << "instance number " << ++inst << ":" << std::endl;
+
                 if (verbose)
                 {
                     std::cout << "--rdim =\t" << rdim << std::endl;
@@ -258,6 +259,7 @@ int main(int argc, char *argv[])
             }
         }
     }
+    std::cout << inst << " instances processed with success." << std::endl;
     return 0;
 }
 

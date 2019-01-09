@@ -42,11 +42,9 @@ int main(int argc, char *argv[])
     Mat<zz_pX> intbas;
 
     size_t i=0;
+    size_t inst=0;
     for (auto pmat = test_examples.first.begin(); pmat!= test_examples.first.end(); ++pmat, ++i)
     {
-        if (verbose)
-            std::cout << "instance number " << i << ":" << std::endl;
-
         const long rdim = pmat->NumRows();
         const long cdim = pmat->NumCols();
         const long d = deg(*pmat);
@@ -60,6 +58,9 @@ int main(int argc, char *argv[])
         {
             for (VecLong shift : test_examples.second[i])
             {
+                if (verbose)
+                    std::cout << std::endl << "instance number " << ++inst << ":" << std::endl;
+
                 if (verbose)
                 {
                     std::cout << "--rdim =\t" << rdim << std::endl;
@@ -78,11 +79,11 @@ int main(int argc, char *argv[])
                     zz_pX_Multipoint_General ev(pts);
                     Vec<Mat<zz_p>> evals;
                     ev.evaluate_matrix(evals, *pmat);
-                    mbasis_rescomp(intbas,evals,pts,rdeg_rescomp,0,order);
+                    mbasis_rescomp(intbas,evals,pts,rdeg_rescomp,0,order); // does not modify evals
 
                     if (verbose)
                         std::cout << "OK. Testing... ";
-                    if (not is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,true))
+                    if (not is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false))
                     {
                         std::cout << "Error in mbasis_rescomp." << std::endl;
                         std::cout << "--rdim =\t" << rdim << std::endl;
@@ -115,7 +116,7 @@ int main(int argc, char *argv[])
 
                     if (verbose)
                         std::cout << "OK. Testing...";
-                    if (not is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,true))
+                    if (not is_interpolant_basis(intbas,evals,pts,shift,ORD_WEAK_POPOV,false))
                     {
                         std::cout << "Error in mbasis_resupdate." << std::endl;
                         std::cout << "--rdim =\t" << rdim << std::endl;
@@ -139,14 +140,15 @@ int main(int argc, char *argv[])
 
                     VecLong rdeg_popov(shift);
                     const Vec<zz_p> pts = random_vec_zz_p(order);
-                    popov_mbasis(intbas,*pmat,pts,rdeg_popov);
-
-                    if (verbose)
-                        std::cout << "OK. Testing...";
                     zz_pX_Multipoint_General ev(pts);
                     Vec<Mat<zz_p>> evals;
                     ev.evaluate_matrix(evals, *pmat);
-                    if (not is_interpolant_basis(intbas,evals,pts,shift,POPOV,true))
+                    Vec<Mat<zz_p>> copy_evals(evals);
+                    popov_mbasis(intbas,copy_evals,pts,rdeg_popov);
+
+                    if (verbose)
+                        std::cout << "OK. Testing...";
+                    if (not is_interpolant_basis(intbas,evals,pts,shift,POPOV,false))
                     {
                         std::cout << "Error in popov_mbasis." << std::endl;
                         std::cout << "--rdim =\t" << rdim << std::endl;
@@ -166,6 +168,7 @@ int main(int argc, char *argv[])
             }
         }
     }
+    std::cout << inst << " instances processed with success." << std::endl;
     return 0;
 }
 
