@@ -57,8 +57,9 @@ int main(int argc, char *argv[])
         {
             for (VecLong shift : test_examples.second[i])
             {
+                ++inst;
                 if (verbose)
-                    std::cout << std::endl << "instance number " << ++inst << ":" << std::endl;
+                    std::cout << std::endl << "instance number " << inst << ":" << std::endl;
 
                 if (verbose)
                 {
