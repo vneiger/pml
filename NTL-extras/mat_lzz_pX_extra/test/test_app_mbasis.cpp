@@ -1,8 +1,6 @@
 #include "mat_lzz_pX_approximant.h"
 #include "test_examples.h"
 
-//#define VERBOSE
-
 NTL_CLIENT
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)
@@ -15,10 +13,11 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 
 int main(int argc, char *argv[])
 {
-    if (argc!=2)
-        throw std::invalid_argument("Usage: ./test_mbasis nbits");
+    if (argc!=3)
+        throw std::invalid_argument("Usage: ./test_mbasis nbits verbose\n\t--nbits: 0 for FFT prime, between 3 and 60 for normal prime\n\t--verbose: 0/1");
 
-    long nbits = atoi(argv[1]);
+    const long nbits = atoi(argv[1]);
+    const bool verbose = (atoi(argv[2])==1);
 
     if (nbits==0)
         zz_p::FFTInit(0);
@@ -38,10 +37,9 @@ int main(int argc, char *argv[])
     size_t i=0;
     for (auto pmat = test_examples.first.begin(); pmat!= test_examples.first.end(); ++pmat, ++i)
     {
-#ifdef VERBOSE
-        std::cout << i << std::endl;
-#endif // VERBOSE
-        
+        if (verbose)
+            std::cout << i << std::endl;
+
         long rdim = pmat->NumRows();
         long cdim = pmat->NumCols();
         long d = deg(*pmat);
@@ -55,20 +53,22 @@ int main(int argc, char *argv[])
         {
             for (VecLong shift : test_examples.second[i])
             {
-#ifdef VERBOSE
-                std::cout << "--rdim =\t" << rdim << std::endl;
-                std::cout << "--cdim =\t" << cdim << std::endl;
-                std::cout << "--deg =\t" << d << std::endl;
-                std::cout << "--order =\t" << order << std::endl;
-                std::cout << "--shift =\t" << shift << std::endl;
-#endif // VERBOSE
+                if (verbose)
+                {
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--order =\t" << order << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << "Computation popov_mbasis1... ";
+                }
 
-#ifdef VERBOSE
-                std::cout << "Computation popov_mbasis1... ";
-#endif // VERBOSE
-                // popov_mbasis1
+                // POPOV_MBASIS1
                 Mat<zz_p> kerbas;
                 pivdeg = popov_mbasis1(kerbas,coeff(*pmat,0),shift);
+
+                if (verbose)
+                    std::cout << "OK. Testing... ";
 
                 // build approx basis from kerbas
                 clear(appbas);
@@ -85,9 +85,6 @@ int main(int argc, char *argv[])
                     else
                         SetX(appbas[r][r]);
                 }
-#ifdef VERBOSE
-                std::cout << "OK. Testing... ";
-#endif // VERBOSE
 
                 if (not is_approximant_basis(appbas,*pmat,1,shift,POPOV,true))
                 {
@@ -104,15 +101,17 @@ int main(int argc, char *argv[])
                     std::cout << std::endl << pivdeg << std::endl;
                     return 0;
                 }
-#ifdef VERBOSE
-                std::cout << "OK." << std::endl;
-#endif // VERBOSE
+                if (verbose)
+                    std::cout << "OK." << std::endl;
 
-#ifdef VERBOSE
-                std::cout << "Computation mbasis1... ";
-#endif // VERBOSE
-                // mbasis1
+                // MBASIS1
+                if (verbose)
+                    std::cout << "Computation mbasis1... ";
+
                 pivdeg = mbasis1(kerbas,coeff(*pmat,0),shift);
+
+                if (verbose)
+                    std::cout << "OK. Testing... ";
 
                 // build approx basis from kerbas
                 clear(appbas);
@@ -129,9 +128,6 @@ int main(int argc, char *argv[])
                     else
                         SetX(appbas[r][r]);
                 }
-#ifdef VERBOSE
-                std::cout << "OK. Testing... ";
-#endif // VERBOSE
 
                 if (not is_approximant_basis(appbas,*pmat,1,shift,ORD_WEAK_POPOV,true))
                 {
@@ -148,19 +144,18 @@ int main(int argc, char *argv[])
                     std::cout << std::endl << pivdeg << std::endl;
                     return 0;
                 }
-#ifdef VERBOSE
-                std::cout << "OK." << std::endl;
-#endif // VERBOSE
+                if (verbose)
+                    std::cout << "OK." << std::endl;
 
-                // plain mbasis
-#ifdef VERBOSE
-                std::cout << "Computation mbasis_plain... ";
-#endif // VERBOSE
+                // PLAIN MBASIS
+                if (verbose)
+                    std::cout << "Computation mbasis_plain... ";
+
                 VecLong rdeg_plain(shift);
                 mbasis_plain(appbas,*pmat,order,rdeg_plain);
-#ifdef VERBOSE
-                std::cout << "OK. Testing... ";
-#endif // VERBOSE
+
+                if (verbose)
+                    std::cout << "OK. Testing... ";
                 if (not is_approximant_basis(appbas,*pmat,order,shift,ORD_WEAK_POPOV,true))
                 {
                     std::cout << "Error in mbasis_plain." << std::endl;
@@ -174,19 +169,18 @@ int main(int argc, char *argv[])
                     std::cout << appbas << std::endl;
                     return 0;
                 }
-#ifdef VERBOSE
-                std::cout << "OK." << std::endl;
-#endif // VERBOSE
+                if (verbose)
+                    std::cout << "OK." << std::endl;
 
-                // mbasis Vec<Mat<zz_p>>, rescomp
-#ifdef VERBOSE
-                std::cout << "Computation mbasis_rescomp... ";
-#endif // VERBOSE
+                // MBASIS_RESCOMP
+                if (verbose)
+                    std::cout << "Computation mbasis_rescomp... ";
+
                 VecLong rdeg_rescomp(shift);
                 mbasis_rescomp(appbas,*pmat,order,rdeg_rescomp);
-#ifdef VERBOSE
-                std::cout << "OK. Testing... ";
-#endif // VERBOSE
+
+                if (verbose)
+                    std::cout << "OK. Testing... ";
                 if (not is_approximant_basis(appbas,*pmat,order,shift,ORD_WEAK_POPOV,true))
                 {
                     std::cout << "Error in mbasis_rescomp." << std::endl;
@@ -200,19 +194,18 @@ int main(int argc, char *argv[])
                     std::cout << appbas << std::endl;
                     return 0;
                 }
-#ifdef VERBOSE
-                std::cout << "OK." << std::endl;
-#endif // VERBOSE
+                if (verbose)
+                    std::cout << "OK." << std::endl;
 
-                // mbasis_resupdate version 1
-#ifdef VERBOSE
-                std::cout << "Computation mbasis_resupdate... ";
-#endif // VERBOSE
+                // MBASIS_RESUPDATE
+                if (verbose)
+                    std::cout << "Computation mbasis_resupdate... ";
+
                 VecLong rdeg_resupdate(shift);
                 mbasis_resupdate(appbas,*pmat,order,rdeg_resupdate);
-#ifdef VERBOSE
-                std::cout << "OK. Testing...";
-#endif // VERBOSE
+
+                if (verbose)
+                    std::cout << "OK. Testing...";
                 if (not is_approximant_basis(appbas,*pmat,order,shift,ORD_WEAK_POPOV,true))
                 {
                     std::cout << "Error in mbasis_resupdate." << std::endl;
@@ -226,19 +219,18 @@ int main(int argc, char *argv[])
                     std::cout << appbas << std::endl;
                     return 0;
                 }
-#ifdef VERBOSE
-                std::cout << "OK." << std::endl;
-#endif // VERBOSE
+                if (verbose)
+                    std::cout << "OK." << std::endl;
 
-              // popov_mbasis
-#ifdef VERBOSE
-                std::cout << "Computation popov_mbasis... ";
-#endif // VERBOSE
+              // POPOV_MBASIS
+                if (verbose)
+                    std::cout << "Computation popov_mbasis... ";
+
                 VecLong rdeg_popov(shift);
                 popov_mbasis(appbas,*pmat,order,rdeg_popov);
-#ifdef VERBOSE
-                std::cout << "OK. Testing...";
-#endif // VERBOSE
+
+                if (verbose)
+                    std::cout << "OK. Testing...";
                 if (not is_approximant_basis(appbas,*pmat,order,shift,POPOV,true))
                 {
                     std::cout << "Error in popov_mbasis." << std::endl;
@@ -252,9 +244,8 @@ int main(int argc, char *argv[])
                     std::cout << appbas << std::endl;
                     return 0;
                 }
-#ifdef VERBOSE
-                std::cout << "OK." << std::endl;
-#endif // VERBOSE
+                if (verbose)
+                    std::cout << "OK." << std::endl;
             }
         }
     }
