@@ -12,7 +12,7 @@ RUN = $(patsubst %.cpp, %.chk, $(patsubst test_%, %, $(SRC)))
 
 CXX = g++
 CXXFLAGS = -Wall -std=c++11 -O3 -march=native -I$(INC_DIR)
-LIBS = -lntl -lpthread -lgmp -lm -pg
+LIBS = -lntl -lpthread -lgmp -lm
 
 .PHONY: clean
 

@@ -225,7 +225,8 @@ int main(int argc, char *argv[])
             for (long i = 0; i < m; ++i)
                 pmat[i+m][i] = to_zz_p(-1);
             Mat<zz_pX> appbas;
-            pmbasis(appbas, pmat, 2*d, VecLong(2*m,0));
+            VecLong shift(2*m,0);
+            pmbasis(appbas, pmat, 2*d, shift);
             basis.SetDims(m,m);
             for (long i = 0; i < m; ++i)
                 for (long j = 0; j < m; ++j)
