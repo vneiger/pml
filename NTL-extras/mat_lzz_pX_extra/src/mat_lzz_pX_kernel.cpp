@@ -776,9 +776,6 @@ void kernel_basis_zls_via_interpolation(
     Vec<zz_p> pts;
     pmbasis_geometric(intbas,pmat,r,order,shift,pts); // does not change pmat
 
-    // construct the polynomial (x-pts[0]) ... (x-pts[order-1])
-    const zz_pX modulus = BuildFromRoots(pts);
-
     // Identify submatrix of some rows of intbas which are in the kernel
     // Note the criterion: since before the call we have rdeg(pmat) <= shift,
     // the after the call we have rdeg(intbas*pmat) <= shift and therefore rows
@@ -843,11 +840,14 @@ void kernel_basis_zls_via_interpolation(
 
     // compute residual:
     // pmat = (pmat*interp) div (x-pts[0])...(x-pts[order-1])
+
+    // construct the modulus polynomial (x-pts[0]) ... (x-pts[order-1])
+    const zz_pX mod = BuildFromRoots(pts);
+    zz_pXModulus Mod(mod);
     multiply(pmat,interp,pmat);
     for (long i = 0; i < m2; ++i)
         for (long j = 0; j < n; ++j)
-            divide(pmat[i][j], pmat[i][j], modulus);
-
+            div(pmat[i][j], pmat[i][j], Mod);
 
     // pmat will be column-splitted into two submatrices of column dimension ~ n/2
     const long n1 = n/2;
