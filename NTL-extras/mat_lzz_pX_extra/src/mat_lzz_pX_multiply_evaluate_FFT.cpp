@@ -48,7 +48,7 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
     {
         Mat<zz_pX> c2;
         multiply_evaluate_FFT_direct(c2, a, b);
-        c = c2;
+        c.swap(c2);
         return;
     }
 
@@ -225,7 +225,7 @@ void multiply_evaluate_FFT_direct_no_ll(Mat<zz_pX> & c, const Mat<zz_pX> & a, co
     {
         Mat<zz_pX> c2;
         multiply_evaluate_FFT_direct(c2, a, b);
-        c = c2;
+        c.swap(c2);
         return;
     }
 

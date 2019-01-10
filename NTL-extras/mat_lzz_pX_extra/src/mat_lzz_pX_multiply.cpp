@@ -21,6 +21,14 @@ void multiply(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long i
         return;
     }
 
+    if (&c == &a || &c == &b)
+    {
+        Mat<zz_pX> c2;
+        multiply(c2, a, b);
+        c.swap(c2);
+        return;
+    }
+
     // if one of the matrices is constant, rely directly on
     // the corresponding function
     if (dA==0)

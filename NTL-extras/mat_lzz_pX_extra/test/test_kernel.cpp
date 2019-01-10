@@ -1,4 +1,5 @@
 #include "mat_lzz_pX_kernel.h"
+#include "mat_lzz_pX_forms.h" // for degree_matrix
 #include "test_examples.h"
 
 NTL_CLIENT
@@ -11,6 +12,14 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
     return out << "]";
 }
 
+void get_mat(Mat<zz_pX> & pmat, std::vector<std::vector<std::vector<long>>> std_pmat)
+{
+    for (size_t i = 0; i < std_pmat.size(); ++i)
+        for (size_t j = 0; j < std_pmat[i].size(); ++j)
+            for (size_t k = 0; k < std_pmat[i][j].size(); ++k)
+                SetCoeff(pmat[i][j], k, std_pmat[i][j][k]);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc!=3)
@@ -19,8 +28,70 @@ int main(int argc, char *argv[])
     const long nbits = atoi(argv[1]);
     const bool verbose = (atoi(argv[2])==1);
 
+//  --rdim =        10
+//  --cdim =        5
+//  --deg = 2
+//  --shift =       [ 0 0 0 0 0 0 0 0 0 0 ]
+//  --modulus =     5
+//  Input:
+//  [[[3 3 2] [3] [4 3 3] [4 0 2] [3 0 3]]
+//  [[2] [2 4 3] [0 4 4] [1 4] [4 2 2]]
+//  [[3 4] [0 2] [0 0 2] [0 2] [4 1 1]]
+//  [[3 3 2] [1 0 2] [4 3 1] [0 1 2] [3 2 1]]
+//  [[4 4 1] [1 3] [4 2] [2 1 2] [3 1 4]]
+//  [[1 2 2] [4 4] [4 4 2] [4 1] [4 4 2]]
+//  [[3 2 2] [1 2 2] [3 2 2] [0 3 4] [0 0 4]]
+//  [[2 2 2] [2 0 2] [1 1 4] [1 4 2] [1 2 1]]
+//  [[0 1 3] [3 2 2] [4 2 2] [1 2 1] [0 3 4]]
+//  [[2 1 3] [2 0 3] [3 2] [1 2 2] [2 0 4]]
+//  ]
+//  Kernel :
+//  [[[2 3 1 4] [0 2 0 2] [3 0 3 1] [2 4 1 1] [4 4 4 2] [2 2 3] [3 2] [1 4 1] [0 1 3 1] [0 3 4]]
+//  [[2 2 2] [1 1 1] [2 1 1] [2 2 1] [1 2 2] [0 1 1] [1 1] [] [0 3] [4 3]]
+//  [[4] [0 1 1] [3 2 2] [1 2] [4 2 3] [2 4] [1 3 1] [2 1] [3] [3 2]]
+//  [[0 4 4] [3 4 4] [4 1 1] [3 2] [2 3 4] [3 1] [3 3 3] [3 3 1] [2] [1 2]]
+//  [[1] [4 1] [4 4] [3] [2] [1 3] [3 2] [4 1] [4 2] [1 4]]
+//  ]
+//  Degree matrix:
+//  [[3 3 3 3 3 2 1 2 3 2]
+//  [2 2 2 2 2 2 1 -1 1 1]
+//  [0 2 2 1 2 1 2 1 0 1]
+//  [2 2 2 1 2 1 2 2 0 1]
+//  [0 1 1 0 0 1 1 1 1 1]
+//  ]
+    //zz_p::init(5);
+    //VecLong shift(10);
+    //VecLong rdeg(shift);
+    //Mat<zz_pX> pmat(INIT_SIZE, 10, 5);
+    //std::vector<std::vector<std::vector<long>>> F;
+    //F = {
+    //    {{3,3,2}, {3},     {4,3,3}, {4,0,2}, {3,0,3}},
+    //    {{2},     {2,4,3}, {0,4,4}, {1,4},   {4,2,2}},
+    //    {{3,4},   {0,2},   {0,0,2}, {0,2},   {4,1,1}},
+    //    {{3,3,2}, {1,0,2}, {4,3,1}, {0,1,2}, {3,2,1}},
+    //    {{4,4,1}, {1,3},   {4,2},   {2,1,2}, {3,1,4}},
+    //    {{1,2,2}, {4,4},   {4,4,2}, {4,1},   {4,4,2}},
+    //    {{3,2,2}, {1,2,2}, {3,2,2}, {0,3,4}, {0,0,4}},
+    //    {{2,2,2}, {2,0,2}, {1,1,4}, {1,4,2}, {1,2,1}},
+    //    {{0,1,3}, {3,2,2}, {4,2,2}, {1,2,1}, {0,3,4}},
+    //    {{2,1,3}, {2,0,3}, {3,2},   {1,2,2}, {2,0,4}},
+    //};
+    //get_mat(pmat, F);
+    //Mat<zz_pX> ker; VecLong pivind;
+    //Mat<zz_pX> copy_pmat(pmat);
+    //kernel_basis_zls_via_approximation(ker, pivind, copy_pmat, rdeg);
+
+    //std::cout << degree_matrix(ker) << std::endl;
+
+    //if (not is_kernel_basis(ker,pmat,shift,ORD_WEAK_POPOV,true))
+    //    std::cout << "NOT KERBAS!" << std::endl;
+
+    //return 0;
+
     if (nbits==0)
         zz_p::FFTInit(0);
+    else if (nbits==2)
+        zz_p::init(3); // make sure modulus!=2
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
@@ -84,7 +155,7 @@ int main(int argc, char *argv[])
                     std::cout << "--modulus = \t" << zz_p::modulus() << std::endl;
                     std::cout << "Input: " << std::endl << *pmat << std::endl;
                     std::cout << "Kernel : " << std::endl << kerbas << std::endl;
-                    std::cout << "pivot degree: " << std::endl << pivdeg << std::endl;
+                    std::cout << "Degree matrix: " << std::endl << degree_matrix(kerbas) << std::endl;
                     return 0;
                 }
                 if (verbose)
@@ -113,7 +184,7 @@ int main(int argc, char *argv[])
                     std::cout << "--modulus = \t" << zz_p::modulus() << std::endl;
                     std::cout << "Input: " << std::endl << *pmat << std::endl;
                     std::cout << "Kernel : " << std::endl << kerbas << std::endl;
-                    std::cout << "pivot degree: " << std::endl << pivdeg << std::endl;
+                    std::cout << "Degree matrix: " << std::endl << degree_matrix(kerbas) << std::endl;
                     return 0;
                 }
                 if (verbose)
@@ -142,7 +213,7 @@ int main(int argc, char *argv[])
                     std::cout << "--modulus = \t" << zz_p::modulus() << std::endl;
                     std::cout << "Input: " << std::endl << *pmat << std::endl;
                     std::cout << "Kernel : " << std::endl << kerbas << std::endl;
-                    std::cout << "pivot degree: " << std::endl << pivdeg << std::endl;
+                    std::cout << "Degree matrix: " << std::endl << degree_matrix(kerbas) << std::endl;
                     return 0;
                 }
                 if (verbose)

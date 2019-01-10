@@ -12,7 +12,6 @@
 
 NTL_CLIENT
 
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*            DEGREE BOUNDS FOR KERNEL BASES                  */
@@ -71,7 +70,7 @@ bool is_kernel_basis(
 {
     const long m = pmat.NumRows();
 
-    std::cout << "~~is_kernel_basis~~ Warning: checking generation not implemented yet" << std::endl;
+    //std::cout << "~~is_kernel_basis~~ Warning: checking generation not implemented yet" << std::endl;
 
     // test whether kerbas has the right dimensions
     if (kerbas.NumCols() != m)
@@ -181,6 +180,21 @@ void kernel_basis_via_approximation(
         return;
     }
 
+    // more generally, if m<=n, check whether coefficient of degree 0 has full
+    // rank, if yes then kernel is empty
+    if (m <= n)
+    {
+        Mat<zz_p> coeff0 = coeff(pmat, 0);
+        const long r = gauss(coeff0);
+        if (r == m)
+        {
+            kerbas.SetDims(0,m);
+            shift.clear();
+            pivind.clear();
+            return;
+        }
+    }
+
     // compute amplitude of the shift
     const long amp = amplitude(shift);
 
@@ -240,16 +254,36 @@ void kernel_basis_zls_via_approximation(
         return;
     }
 
-    // compute row degree of pmat, and make sure pmat is nonzero
+    // if m<=n, check whether coefficient of degree 0 has full rank, if yes
+    // then kernel is empty
+    if (m <= n)
+    {
+        Mat<zz_p> coeff0 = coeff(pmat, 0);
+        const long r = gauss(coeff0);
+        if (r == m)
+        {
+            kerbas.SetDims(0,m);
+            shift.clear();
+            pivind.clear();
+            return;
+        }
+    }
+
+    // compute row degree of pmat (will be used afterwards for making the
+    // shift such that shift >= rdeg)
     const VecLong rdeg = row_degree(pmat);
+
+    // if matrix is zero, kernel is identity
     if (*max_element(rdeg.begin(), rdeg.end()) == -1)
     {
-        // pmat is zero: kernel is identity
         ident(kerbas, m);
         pivind.resize(m);
         std::iota(pivind.begin(), pivind.end(), 0);
         return;
     }
+    // TODO handle constant case with NTL's kernel? (involves permutations to
+    // respect the shift... not so easy... is the current algo much slower than
+    // NTL's kernel?
 
     // if n > m/2 (with m>=2), just split the columns into two submatrices or
     // roughly equal dimensions, and call the algorithm recursively
@@ -328,7 +362,6 @@ void kernel_basis_zls_via_approximation(
     // notable cases: if n=1, or in the generic situation mentioned above
     Mat<zz_pX> appbas;
     pmbasis(appbas, pmat, order, shift); // does not change pmat
-
 
     // Identify submatrix of some rows of appbas which are in the kernel
     // Note the criterion: since before the call we have rdeg(pmat) <= shift,
@@ -418,7 +451,6 @@ void kernel_basis_zls_via_approximation(
     multiply(pmat, kerbas1, pmat_sub);
     pmat_sub.kill();
 
-    // recursive call 2
     VecLong pivind2;
     kernel_basis_zls_via_approximation(kerbas, pivind2, pmat, rdeg2);
 
@@ -453,7 +485,7 @@ void kernel_basis_zls_via_approximation(
     // avoiding interpolation in the middle (?)
 
     // II/ complete the computation of the pivots of the new kernel rows
-    for (size_t i = 0; i < pivind.size(); ++i)
+    for (size_t i = 0; i < pivind2.size(); ++i)
         pivind2[i] = pivind0[pivind1[pivind2[i]]];
 
     // III/ merge with previously obtained kernel rows, ensuring that
@@ -462,6 +494,7 @@ void kernel_basis_zls_via_approximation(
     // row degree of kerbas, we add the constant diff_shift that had been
     // removed from the input shift
     const long ker_dim = m1 + approx.NumRows();
+
     kerbas.SetDims(ker_dim, m);
     shift.resize(ker_dim); pivind.resize(ker_dim);
     long i=0, i_appbas=0, i_approx=0;
@@ -529,11 +562,28 @@ void kernel_basis_zls_via_interpolation(
         return;
     }
 
-    // compute row degree of pmat, and make sure pmat is nonzero
+    // if m<=n, check whether coefficient of degree 0 has full rank, if yes
+    // then kernel is empty
+    if (m <= n)
+    {
+        Mat<zz_p> coeff0 = coeff(pmat, 0);
+        const long r = gauss(coeff0);
+        if (r == m)
+        {
+            kerbas.SetDims(0,m);
+            shift.clear();
+            pivind.clear();
+            return;
+        }
+    }
+
+    // compute row degree of pmat (will be used afterwards for making the
+    // shift such that shift >= rdeg)
     const VecLong rdeg = row_degree(pmat);
+
+    // if matrix is zero, kernel is identity
     if (*max_element(rdeg.begin(), rdeg.end()) == -1)
     {
-        // pmat is zero: kernel is identity
         ident(kerbas, m);
         pivind.resize(m);
         std::iota(pivind.begin(), pivind.end(), 0);
@@ -615,8 +665,21 @@ void kernel_basis_zls_via_interpolation(
     // compute interpolant basis, along with shift-row degree and pivot degree
     // --> it does not necessarily capture the whole kernel; but does in two
     // notable cases: if n=1, or in the generic situation mentioned above
-    zz_p r; // defining geometric points r, r^2, r^3...
-    random(r); // TODO better choice?
+    zz_p r; // defining geometric points r^2, r^4, r^6...
+    if (2*order >= zz_p::modulus()) // small field --> approximation
+    {
+        kernel_basis_zls_via_approximation(kerbas, pivind, pmat, shift);
+        return;
+    }
+
+    element_of_order(r, 2*order);
+    if (IsZero(r))
+    {
+        std::cout << "Could not find element of sufficiently large order; field is probably too small for kernel via interpolation with such degrees --> calling the approximation version" << std::endl;
+        kernel_basis_zls_via_approximation(kerbas, pivind, pmat, shift);
+        return;
+    }
+
     Mat<zz_pX> intbas;
     Vec<zz_p> pts;
     pmbasis_geometric(intbas,pmat,r,order,shift,pts); // does not change pmat
@@ -716,7 +779,6 @@ void kernel_basis_zls_via_interpolation(
     multiply(pmat, kerbas1, pmat_sub);
     pmat_sub.kill();
 
-    // recursive call 2
     VecLong pivind2;
     kernel_basis_zls_via_interpolation(kerbas, pivind2, pmat, rdeg2);
 
@@ -751,7 +813,7 @@ void kernel_basis_zls_via_interpolation(
     // avoiding interpolation in the middle (?)
 
     // II/ complete the computation of the pivots of the new kernel rows
-    for (size_t i = 0; i < pivind.size(); ++i)
+    for (size_t i = 0; i < pivind2.size(); ++i)
         pivind2[i] = pivind0[pivind1[pivind2[i]]];
 
     // III/ merge with previously obtained kernel rows, ensuring that
