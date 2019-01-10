@@ -1,5 +1,7 @@
 #include <iomanip>
 #include <NTL/BasicThreadPool.h>
+#include <numeric>
+#include <random>
 
 #include "util.h"
 #include "mat_lzz_pX_approximant.h"
@@ -44,44 +46,63 @@ void one_bench_pmbasis(long rdim, long cdim, long deg, long order)
     t_pmbasis_app /= nb_iter;
 
     double t_pmbasis_int=0.0;
-    nb_iter=0;
-    while (t_pmbasis_int<0.2)
+    if (order<zz_p::modulus())
     {
-        Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, deg+1);
-        Vec<zz_p> pts(INIT_SIZE, order);
-        random(pts, order);
-
-        t1 = GetWallTime();
-        Mat<zz_pX> intbas;
-        VecLong rdeg(shift);
-        pmbasis(intbas,pmat,pts,rdeg);
-        t2 = GetWallTime();
-
-        t_pmbasis_int += t2-t1;
-        ++nb_iter;
+        nb_iter=0;
+        while (t_pmbasis_int<0.2)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, rdim, cdim, deg+1);
+            Vec<zz_p> pts(INIT_SIZE, order);
+            std::iota(pts.begin(), pts.end(), 0);
+            std::shuffle(pts.begin(), pts.end(), std::mt19937{std::random_device{}()});
+        
+            t1 = GetWallTime();
+            Mat<zz_pX> intbas;
+            VecLong rdeg(shift);
+            pmbasis(intbas,pmat,pts,rdeg);
+            t2 = GetWallTime();
+        
+            t_pmbasis_int += t2-t1;
+            ++nb_iter;
+        }
+        t_pmbasis_int /= nb_iter;
     }
-    t_pmbasis_int /= nb_iter;
+    else
+        t_pmbasis_int=-1.0;
 
     double t_pmbasis_intgeom=0.0;
-    nb_iter=0;
-    while (t_pmbasis_intgeom<0.2)
+    if (2*order+1 < zz_p::modulus())
     {
-        Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, deg+1);
-        zz_p r = random_zz_p();
+        nb_iter=0;
+        while (t_pmbasis_intgeom<0.2)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, rdim, cdim, deg+1);
+            // geometric in degree 'order' (bound on degree of intbas) requires an
+            // element order at least 2*deg+1
+            zz_p r;
+            element_of_order(r, 2*order+1); 
+            if (IsZero(r))
+            {
+                t_pmbasis_intgeom=-1.0; nb_iter=1;
+                break;
+            }
 
-        t1 = GetWallTime();
-        Vec<zz_p> pts;
-        Mat<zz_pX> intbas;
-        VecLong rdeg(shift);
-        pmbasis_geometric(intbas,pmat,r,order,rdeg,pts);
-        t2 = GetWallTime();
-
-        t_pmbasis_intgeom += t2-t1;
-        ++nb_iter;
+            t1 = GetWallTime();
+            Vec<zz_p> pts;
+            Mat<zz_pX> intbas;
+            VecLong rdeg(shift);
+            pmbasis_geometric(intbas,pmat,r,order,rdeg,pts);
+            t2 = GetWallTime();
+        
+            t_pmbasis_intgeom += t2-t1;
+            ++nb_iter;
+        }
+        t_pmbasis_intgeom /= nb_iter;
     }
-    t_pmbasis_intgeom /= nb_iter;
+    else
+        t_pmbasis_intgeom=-1.0;
 
     cout << rdim << "\t" << cdim << "\t" << deg << "\t" << order;
     cout << "\t" << t_pmbasis_app << "\t" << t_pmbasis_int << "\t" << t_pmbasis_intgeom;
@@ -133,6 +154,8 @@ void run_bench(long nthreads, long nbits, bool fftprime)
     }
 
     VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256, 512};
+
+    std::cout << "Note: negative timings for interpolant variants indicate that not enough interpolation points could be found in the base field." << std::endl;
 
     cout << "rdim\tcdim\tdeg\torder\tapp\t\tint\t\tint-geo" << endl;
     for (size_t i=0; i<szs.size(); ++i)

@@ -1,5 +1,7 @@
 #include <iomanip>
 #include <NTL/BasicThreadPool.h>
+#include <numeric> // for std::iota
+#include <random> // for mt19937
 
 #include "util.h"
 #include "mat_lzz_pX_approximant.h"
@@ -63,44 +65,56 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     t_mbasis_resupdate /= nb_iter;
 
     double t_mbasis_int_rescomp=0.0;
-    nb_iter=0;
-    while (t_mbasis_int_rescomp<0.1)
+    if (order<zz_p::modulus())
     {
-        Vec<zz_p> pts(INIT_SIZE, order);
-        random(pts, order);
-        Vec<Mat<zz_p>> evals(INIT_SIZE, order);
-        for (long i = 0; i < order; ++i)
-            random(evals[i], rdim, cdim);
+        nb_iter=0;
+        while (t_mbasis_int_rescomp<0.1)
+        {
+            Vec<zz_p> pts(INIT_SIZE, order);
+            std::iota(pts.begin(), pts.end(), 0);
+            std::shuffle(pts.begin(), pts.end(), std::mt19937{std::random_device{}()});
+            Vec<Mat<zz_p>> evals(INIT_SIZE, order);
+            for (long i = 0; i < order; ++i)
+                random(evals[i], rdim, cdim);
 
-        t1 = GetWallTime();
-        Mat<zz_pX> intbas;
-        mbasis_rescomp(intbas,evals,pts,shift,0,order);
-        t2 = GetWallTime();
+            t1 = GetWallTime();
+            Mat<zz_pX> intbas;
+            mbasis_rescomp(intbas,evals,pts,shift,0,order);
+            t2 = GetWallTime();
 
-        t_mbasis_int_rescomp += t2-t1;
-        ++nb_iter;
+            t_mbasis_int_rescomp += t2-t1;
+            ++nb_iter;
+        }
+        t_mbasis_int_rescomp /= nb_iter;
     }
-    t_mbasis_int_rescomp /= nb_iter;
+    else // not enough distinct points can be found
+        t_mbasis_int_rescomp = -1.0;
 
     double t_mbasis_int_resupdate=0.0;
-    nb_iter=0;
-    while (t_mbasis_int_resupdate<0.1)
+    if (order<zz_p::modulus())
     {
-        Vec<zz_p> pts(INIT_SIZE, order);
-        random(pts, order);
-        Vec<Mat<zz_p>> evals(INIT_SIZE, order);
-        for (long i = 0; i < order; ++i)
-            random(evals[i], rdim, cdim);
+        nb_iter=0;
+        while (t_mbasis_int_resupdate<0.1)
+        {
+            Vec<zz_p> pts(INIT_SIZE, order);
+            std::iota(pts.begin(), pts.end(), 0);
+            std::shuffle(pts.begin(), pts.end(), std::mt19937{std::random_device{}()});
+            Vec<Mat<zz_p>> evals(INIT_SIZE, order);
+            for (long i = 0; i < order; ++i)
+                random(evals[i], rdim, cdim);
 
-        t1 = GetWallTime();
-        Mat<zz_pX> intbas;
-        mbasis_resupdate(intbas,evals,pts,shift,0,order);
-        t2 = GetWallTime();
+            t1 = GetWallTime();
+            Mat<zz_pX> intbas;
+            mbasis_resupdate(intbas,evals,pts,shift,0,order);
+            t2 = GetWallTime();
 
-        t_mbasis_int_resupdate += t2-t1;
-        ++nb_iter;
+            t_mbasis_int_resupdate += t2-t1;
+            ++nb_iter;
+        }
+        t_mbasis_int_resupdate /= nb_iter;
     }
-    t_mbasis_int_resupdate /= nb_iter;
+    else // not enough distinct points can be found
+        t_mbasis_int_resupdate = -1.0;
 
 
     cout << rdim << "\t" << cdim << "\t" << order;
@@ -153,6 +167,8 @@ void run_bench(long nthreads, long nbits, bool fftprime)
     }
 
     VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
+
+    std::cout << "Note: negative timings for interpolant variants indicate that not enough interpolation points could be found in the base field." << std::endl;
 
     cout << "rdim\tcdim\torder\tapp-rcmp\tapp-rupd\tint-rcmp\tint-rupd" << endl;
     for (size_t i=0; i<szs.size(); ++i)
