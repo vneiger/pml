@@ -225,6 +225,98 @@ void kernel_basis_via_approximation(
     }
 }
 
+// TODO improvement mentioned above approx variant could be adapted here as
+// well (?)
+void kernel_basis_via_interpolation(
+                                    Mat<zz_pX> & kerbas,
+                                    VecLong & pivind,
+                                    const Mat<zz_pX> & pmat,
+                                    VecLong & shift
+                                   )
+{
+    // parameters
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
+    const long d = deg(pmat);
+
+    if (d==-1) // matrix is zero
+    {
+        ident(kerbas, m);
+        pivind.resize(m);
+        std::iota(pivind.begin(), pivind.end(), 0);
+        return;
+    }
+
+    // if m==1, the kernel basis is empty (since pmat is nonzero)
+    if (m==1)
+    {
+        kerbas.SetDims(0,1);
+        shift.clear();
+        pivind.clear();
+        return;
+    }
+
+    // more generally, if m<=n, check whether coefficient of degree 0 has full
+    // rank, if yes then kernel is empty
+    if (m <= n)
+    {
+        Mat<zz_p> coeff0 = coeff(pmat, 0);
+        const long r = gauss(coeff0);
+        if (r == m)
+        {
+            kerbas.SetDims(0,m);
+            shift.clear();
+            pivind.clear();
+            return;
+        }
+    }
+
+    // compute amplitude of the shift
+    const long amp = amplitude(shift);
+
+    // compute the order for approximation:
+    const long order = (n+1)*d + amp + 1;
+
+    // define geometric points r^2, r^4, r^6...
+    zz_p r;
+    if (2*order >= zz_p::modulus()) // small field --> approximation
+    {
+        kernel_basis_via_approximation(kerbas, pivind, pmat, shift);
+        return;
+    }
+
+    element_of_order(r, 2*order);
+    if (IsZero(r))
+    {
+        std::cout << "Could not find element of sufficiently large order; field is probably too small for kernel via interpolation with such degrees --> calling the approximation version" << std::endl;
+        kernel_basis_via_approximation(kerbas, pivind, pmat, shift);
+        return;
+    }
+
+    // compute interpolant basis and shifted row degree
+    VecLong rdeg(shift);
+    Mat<zz_pX> intbas;
+    Vec<zz_p> pts;
+    pmbasis_geometric(intbas,pmat,r,order,rdeg,pts);
+
+    // find rows which belong to the kernel and record their pivot index
+    // (since appbas is in ordered weak Popov form, the pivot index is also
+    // the index of the row in appbas)
+    pivind.clear();
+    for (long i = 0; i < m; ++i)
+        if (rdeg[i]-shift[i]+amp < order-d)
+            pivind.emplace_back(i);
+
+    // copy the kernel rows and the corresponding shifted row degrees
+    const size_t ker_dim = pivind.size();
+    shift.resize(ker_dim);
+    kerbas.SetDims(ker_dim, m);
+    for (size_t i = 0; i < ker_dim; ++i)
+    {
+        shift[i] = rdeg[pivind[i]];
+        kerbas[i].swap(intbas[pivind[i]]);
+    }
+}
 
 
 void kernel_basis_zls_via_approximation(

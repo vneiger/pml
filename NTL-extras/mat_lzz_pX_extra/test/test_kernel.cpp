@@ -28,66 +28,6 @@ int main(int argc, char *argv[])
     const long nbits = atoi(argv[1]);
     const bool verbose = (atoi(argv[2])==1);
 
-//  --rdim =        10
-//  --cdim =        5
-//  --deg = 2
-//  --shift =       [ 0 0 0 0 0 0 0 0 0 0 ]
-//  --modulus =     5
-//  Input:
-//  [[[3 3 2] [3] [4 3 3] [4 0 2] [3 0 3]]
-//  [[2] [2 4 3] [0 4 4] [1 4] [4 2 2]]
-//  [[3 4] [0 2] [0 0 2] [0 2] [4 1 1]]
-//  [[3 3 2] [1 0 2] [4 3 1] [0 1 2] [3 2 1]]
-//  [[4 4 1] [1 3] [4 2] [2 1 2] [3 1 4]]
-//  [[1 2 2] [4 4] [4 4 2] [4 1] [4 4 2]]
-//  [[3 2 2] [1 2 2] [3 2 2] [0 3 4] [0 0 4]]
-//  [[2 2 2] [2 0 2] [1 1 4] [1 4 2] [1 2 1]]
-//  [[0 1 3] [3 2 2] [4 2 2] [1 2 1] [0 3 4]]
-//  [[2 1 3] [2 0 3] [3 2] [1 2 2] [2 0 4]]
-//  ]
-//  Kernel :
-//  [[[2 3 1 4] [0 2 0 2] [3 0 3 1] [2 4 1 1] [4 4 4 2] [2 2 3] [3 2] [1 4 1] [0 1 3 1] [0 3 4]]
-//  [[2 2 2] [1 1 1] [2 1 1] [2 2 1] [1 2 2] [0 1 1] [1 1] [] [0 3] [4 3]]
-//  [[4] [0 1 1] [3 2 2] [1 2] [4 2 3] [2 4] [1 3 1] [2 1] [3] [3 2]]
-//  [[0 4 4] [3 4 4] [4 1 1] [3 2] [2 3 4] [3 1] [3 3 3] [3 3 1] [2] [1 2]]
-//  [[1] [4 1] [4 4] [3] [2] [1 3] [3 2] [4 1] [4 2] [1 4]]
-//  ]
-//  Degree matrix:
-//  [[3 3 3 3 3 2 1 2 3 2]
-//  [2 2 2 2 2 2 1 -1 1 1]
-//  [0 2 2 1 2 1 2 1 0 1]
-//  [2 2 2 1 2 1 2 2 0 1]
-//  [0 1 1 0 0 1 1 1 1 1]
-//  ]
-    //zz_p::init(5);
-    //VecLong shift(10);
-    //VecLong rdeg(shift);
-    //Mat<zz_pX> pmat(INIT_SIZE, 10, 5);
-    //std::vector<std::vector<std::vector<long>>> F;
-    //F = {
-    //    {{3,3,2}, {3},     {4,3,3}, {4,0,2}, {3,0,3}},
-    //    {{2},     {2,4,3}, {0,4,4}, {1,4},   {4,2,2}},
-    //    {{3,4},   {0,2},   {0,0,2}, {0,2},   {4,1,1}},
-    //    {{3,3,2}, {1,0,2}, {4,3,1}, {0,1,2}, {3,2,1}},
-    //    {{4,4,1}, {1,3},   {4,2},   {2,1,2}, {3,1,4}},
-    //    {{1,2,2}, {4,4},   {4,4,2}, {4,1},   {4,4,2}},
-    //    {{3,2,2}, {1,2,2}, {3,2,2}, {0,3,4}, {0,0,4}},
-    //    {{2,2,2}, {2,0,2}, {1,1,4}, {1,4,2}, {1,2,1}},
-    //    {{0,1,3}, {3,2,2}, {4,2,2}, {1,2,1}, {0,3,4}},
-    //    {{2,1,3}, {2,0,3}, {3,2},   {1,2,2}, {2,0,4}},
-    //};
-    //get_mat(pmat, F);
-    //Mat<zz_pX> ker; VecLong pivind;
-    //Mat<zz_pX> copy_pmat(pmat);
-    //kernel_basis_zls_via_approximation(ker, pivind, copy_pmat, rdeg);
-
-    //std::cout << degree_matrix(ker) << std::endl;
-
-    //if (not is_kernel_basis(ker,pmat,shift,ORD_WEAK_POPOV,true))
-    //    std::cout << "NOT KERBAS!" << std::endl;
-
-    //return 0;
-
     if (nbits==0)
         zz_p::FFTInit(0);
     else if (nbits==2)
@@ -137,17 +77,44 @@ int main(int argc, char *argv[])
                 if (verbose)
                     std::cout << "Computation of the kernel via approximation... ";
 
-                Mat<zz_pX> copy_pmat(*pmat);
                 Mat<zz_pX> kerbas;
                 VecLong pivind;
                 VecLong rdeg(shift);
-                kernel_basis_via_approximation(kerbas,pivind,copy_pmat,rdeg);
+                kernel_basis_via_approximation(kerbas,pivind,*pmat,rdeg);
 
                 if (verbose)
                     std::cout << "OK. Testing... ";
                 if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
                 {
                     std::cout << "Error in kernel_basis_via_approximation." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--shift =\t" << shift << std::endl;
+                    std::cout << "--modulus = \t" << zz_p::modulus() << std::endl;
+                    std::cout << "Input: " << std::endl << *pmat << std::endl;
+                    std::cout << "Kernel : " << std::endl << kerbas << std::endl;
+                    std::cout << "Degree matrix: " << std::endl << degree_matrix(kerbas) << std::endl;
+                    return 0;
+                }
+                if (verbose)
+                    std::cout << "OK." << std::endl;
+            }
+
+            { // direct via interpolation
+                if (verbose)
+                    std::cout << "Computation of the kernel via interpolation... ";
+
+                Mat<zz_pX> kerbas;
+                VecLong pivind;
+                VecLong rdeg(shift);
+                kernel_basis_via_interpolation(kerbas,pivind,*pmat,rdeg);
+
+                if (verbose)
+                    std::cout << "OK. Testing... ";
+                if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
+                {
+                    std::cout << "Error in kernel_basis_via_interpolation." << std::endl;
                     std::cout << "--rdim =\t" << rdim << std::endl;
                     std::cout << "--cdim =\t" << cdim << std::endl;
                     std::cout << "--deg =\t" << d << std::endl;

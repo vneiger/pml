@@ -173,8 +173,8 @@ void run_bench(long nthreads, long nbits, bool fftprime)
     cout << "rdim\tcdim\torder\tapp-rcmp\tapp-rupd\tint-rcmp\tint-rupd" << endl;
     for (size_t i=0; i<szs.size(); ++i)
     {
-        long interval = ceil( (double)szs[i] / 20);
-        for (long j=1; j<szs[i]; j+=interval)
+        long interval = ceil( (double)szs[i] / 4);
+        for (long j=1; 2*j<3*szs[i]; j+=interval)
         {
             long max_order=128;
             if (szs[i]==512)

@@ -64,12 +64,26 @@ bool is_kernel_basis(
 /** Computes a `shift`-minimal kernel basis `kerbas` for `pmat`, using a single
  * call to minimal appoximant basis at sufficiently large order.
  *
- * \todo implement same approach via interpolant basis
  * \todo implement/use shift entries reduction (the approximation order depends
  * on these entries, and they may be reduced depending on the
  * degrees/dimensions of pmat)
  */
 void kernel_basis_via_approximation(
+                                    Mat<zz_pX> & kerbas,
+                                    VecLong & pivind,
+                                    const Mat<zz_pX> & pmat,
+                                    VecLong & shift
+                                   );
+
+/** Computes a `shift`-minimal kernel basis `kerbas` for `pmat`, using a single
+ * call to minimal interpolant basis at sufficiently long sequence of geometric
+ * points.
+ *
+ * \todo implement/use shift entries reduction (the approximation order depends
+ * on these entries, and they may be reduced depending on the
+ * degrees/dimensions of pmat)
+ */
+void kernel_basis_via_interpolation(
                                     Mat<zz_pX> & kerbas,
                                     VecLong & pivind,
                                     const Mat<zz_pX> & pmat,

@@ -19,37 +19,36 @@ void one_bench_kernel(long rdim, long cdim, long deg)
     std::cout << rdim << "\t" << cdim << "\t" << deg << "\t";
 
     // kernel direct via approx
-    //t = 0.0; nb_iter = 0;
-    //while (t < 0.2)
-    //{
-    //    Mat<zz_pX> pmat;
-    //    random(pmat, rdim, cdim, deg);
-    //    tt = GetWallTime();
-    //    VecLong shift(rdim); // uniform shift
-    //    Mat<zz_pX> kerbas;
-    //    VecLong pivind;
-    //    kernel_basis_via_approximation(kerbas,pivind,pmat,shift);
-    //    t += GetWallTime()-tt;
-    //    ++nb_iter;
-    //}
-    std::cout << "\t\t";
+    t = 0.0; nb_iter = 0;
+    while (t < 0.2)
+    {
+        Mat<zz_pX> pmat;
+        random(pmat, rdim, cdim, deg);
+        tt = GetWallTime();
+        VecLong shift(rdim); // uniform shift
+        Mat<zz_pX> kerbas;
+        VecLong pivind;
+        kernel_basis_via_approximation(kerbas,pivind,pmat,shift);
+        t += GetWallTime()-tt;
+        ++nb_iter;
+    }
+    std::cout << t/nb_iter << "\t";
 
-    // kernel direct via approx
-    //t = 0.0; nb_iter = 0;
-    //while (t < 0.2)
-    //{
-    //    Mat<zz_pX> pmat;
-    //    random(pmat, rdim, cdim, deg);
-    //    tt = GetWallTime();
-    //    VecLong shift(rdim); // uniform shift
-    //    Mat<zz_pX> kerbas;
-    //    VecLong pivind;
-    //    kernel_basis_via_approximation(kerbas,pivind,pmat,shift);
-    //    t += GetWallTime()-tt;
-    //    ++nb_iter;
-    //}
-    std::cout << "\t\t";
-
+    // kernel direct via interpolation
+    t = 0.0; nb_iter = 0;
+    while (t < 0.2)
+    {
+        Mat<zz_pX> pmat;
+        random(pmat, rdim, cdim, deg);
+        tt = GetWallTime();
+        VecLong shift(rdim); // uniform shift
+        Mat<zz_pX> kerbas;
+        VecLong pivind;
+        kernel_basis_via_interpolation(kerbas,pivind,pmat,shift);
+        t += GetWallTime()-tt;
+        ++nb_iter;
+    }
+    std::cout << t/nb_iter << "\t";
 
     // kernel ZLS via approx
     t = 0.0; nb_iter = 0;
@@ -67,21 +66,23 @@ void one_bench_kernel(long rdim, long cdim, long deg)
     }
     std::cout << t/nb_iter << "\t";
 
-//    // kernel ZLS via interp
-//    t = 0.0; nb_iter = 0;
-//    while (t<0.2)
-//    {
-//        Mat<zz_pX> pmat;
-//        random(pmat, rdim, cdim, deg);
-//        tt = GetWallTime();
-//        Mat<zz_pX> kerbas;
-//        VecLong rdeg = kernel_basis_zls_via_interpolation(kerbas,pmat,shift);
-//        t += GetWallTime()-tt;
-//        ++nb_iter;
-//    }
-//    std::cout << t/nb_iter << "\t" << std::endl;
-//
-      std::cout << std::endl;
+    // kernel ZLS via interp
+    t = 0.0; nb_iter = 0;
+    while (t<0.2)
+    {
+        Mat<zz_pX> pmat;
+        random(pmat, rdim, cdim, deg);
+        tt = GetWallTime();
+        Mat<zz_pX> kerbas;
+        VecLong shift(rdim);
+        VecLong pivind;
+        kernel_basis_zls_via_interpolation(kerbas,pivind,pmat,shift);
+        t += GetWallTime()-tt;
+        ++nb_iter;
+    }
+    std::cout << t/nb_iter;
+
+    std::cout << std::endl;
 }
 
 /*------------------------------------------------------------*/
@@ -132,10 +133,11 @@ void run_bench(long nthreads, long nbits, bool fftprime)
     cout << "rdim\tcdim\tdeg\tdirect-app\tdirect-int\tzls-app\t\tzls-int" << endl;
     for (size_t i=0; i<szs.size(); ++i)
     {
-        long interval = ceil( (double)szs[i] / 20);
-        for (long j=1; j<szs[i]; j+=interval)
+        long interval = ceil( (double)szs[i] / 4);
+        //for (long j=1; 2*j<3*szs[i]; j+=interval)
+        for (long j=1; j<szs[i]; j+=interval) // only rdim<cdim for the moment
         {
-            long max_order=8192;
+            long max_order=4096;
             for (long k=2; k<=max_order; k=2*k)
                 one_bench_kernel(szs[i],j,k);
         }
@@ -152,7 +154,7 @@ int main(int argc, char ** argv)
     std::cout << std::setprecision(8);
 
     if (argc!=3)
-        throw std::invalid_argument("Usage: ./time_kernel (long)nbits (0/1)fftprime");
+        throw std::invalid_argument("Usage: ./time_kernel nbits fftprime");
 
     const long nbits = {atoi(argv[1])};
     const bool fftprime = {(atoi(argv[2])==1) ? true : false};
