@@ -512,6 +512,9 @@ void kernel_basis_zls_via_approximation(
         return;
     }
 
+    // for most input, the following code will not be executed because we will
+    // have taken early exit
+
     // retrieve the non-kernel part of the approximant
     Mat<zz_pX> approx(INIT_SIZE, m2, m);
     for (long i = 0; i < m2; ++i)
