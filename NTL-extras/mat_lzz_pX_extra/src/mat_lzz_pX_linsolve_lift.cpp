@@ -6,6 +6,9 @@
 #include "mat_lzz_pX_multiply.h"
 #include "mat_lzz_pX_linsolve.h"
 
+#include "util.h"
+#define VERBOSE
+
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
