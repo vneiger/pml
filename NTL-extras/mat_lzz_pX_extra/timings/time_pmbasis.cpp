@@ -113,7 +113,7 @@ void one_bench_pmbasis(long rdim, long cdim, long deg, long order)
 /*------------------------------------------------------------*/
 /* run bench on variety of parameters                         */
 /*------------------------------------------------------------*/
-void run_bench(long nthreads, long nbits, bool fftprime)
+void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim=-1, long order=-1)
 {
     SetNumThreads(nthreads);
 
@@ -153,31 +153,36 @@ void run_bench(long nthreads, long nbits, bool fftprime)
         cout << zz_p::modulus() << ", bit length = " << nbits << endl;
     }
 
-    VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256, 512};
-
     std::cout << "Note: negative timings for interpolant variants indicate that not enough interpolation points could be found in the base field." << std::endl;
-
     cout << "rdim\tcdim\tdeg\torder\tapp\t\tint\t\tint-geo" << endl;
-    for (size_t i=0; i<szs.size(); ++i)
+
+    if (rdim==-1) // then cdim==-1 && order==-1, default case
     {
-        long interval = ceil( (double)szs[i] / 4);
-        for (long j=1; 2*j<3*szs[i]; j+=interval)
+        VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256, 512};
+
+        for (size_t i=0; i<szs.size(); ++i)
         {
-            long max_order=16384;
-            if (szs[i]==128)
-                max_order=2048;
-            if (szs[i]==256)
-                max_order=256;
-            if (szs[i]==512)
-                max_order=64;
-            for (long k=2; k<=max_order; k=2*k)
+            long interval = ceil( (double)szs[i] / 4);
+            for (long j=1; 2*j<3*szs[i]; j+=interval)
             {
-                one_bench_pmbasis(szs[i],j,k-1,k); // degree=order
-                one_bench_pmbasis(szs[i],j,k-1,2*k); // degree=order/2
+                long max_order=16384;
+                if (szs[i]==128)
+                    max_order=2048;
+                if (szs[i]==256)
+                    max_order=256;
+                if (szs[i]==512)
+                    max_order=64;
+                for (long k=2; k<=max_order; k=2*k)
+                {
+                    one_bench_pmbasis(szs[i],j,k-1,k); // degree ~ order
+                    one_bench_pmbasis(szs[i],j,k-1,2*k); // degree ~ order/2
+                }
             }
         }
+        cout << endl;
     }
-    cout << endl;
+    else
+        one_bench_pmbasis(rdim,cdim,order-1,order); // degree ~ order
 }
 
 /*------------------------------------------------------------*/
@@ -188,13 +193,22 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    if (argc!=3)
-        throw std::invalid_argument("Usage: ./time_pmbasis nbits fftprime");
+    if (argc!=3 and argc!=6)
+        throw std::invalid_argument("Usage: ./time_pmbasis nbits fftprime (rdim cdim order)");
+    // assume rdim>0 , cdim>0, order>0
 
-    long nbits = atoi(argv[1]);
-    bool fftprime = (atoi(argv[2])==1);
+    const long nbits = atoi(argv[1]);
+    const bool fftprime = (atoi(argv[2])==1);
 
-    run_bench(1,nbits,fftprime);
+    if (argc==6)
+    {
+        const long rdim = atoi(argv[3]);
+        const long cdim = atoi(argv[4]);
+        const long order = atoi(argv[5]);
+        run_bench(1,nbits,fftprime,rdim,cdim,order);
+    }
+    else
+        run_bench(1,nbits,fftprime);
 
     return 0;
 }

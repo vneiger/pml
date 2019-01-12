@@ -1,51 +1,94 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
+#include <NTL/BasicThreadPool.h>
 #include <iomanip>
 
 #include "util.h"
 #include "lzz_p_extra.h"
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_utils.h"
+#include "mat_lzz_pX_linsolve.h"
 
 NTL_CLIENT
 
-/*------------------------------------------------------------*/
-/* checks an (sz,sz) matrix in degree < deg                   */
-/*------------------------------------------------------------*/
-void one_check(long sz, long deg)
+void one_bench(long sz, long deg)
 {
     Mat<zz_pX> A;
-    Vec<zz_pX> b, b2, u, res;
+    Vec<zz_pX> b, u;
     zz_pX den;
-    double t, tmin;
-    long idx;
 
-    random(A, sz, sz, deg);
-    random(b, sz, deg);
-    
-    cout << sz << " " << deg << " ";
-    tmin = 10000.0;
-    idx = -1;
-    for (long nb = 1; nb < 6; nb++)
+    // to record timings
+    double t, tt;
+    long nb_iter;
+
+    // to record the best option
+    double tmin = 1000000.0;
+    long idx=-1;
+
+    for (long nb = 1; nb < 6; ++nb)
     {
-        t = get_time();
-        linsolve_via_series(u, den, A, b, nb);
-        t = get_time()-t;
-        cout << t << " ";
+        nb_iter = 0; t=0.0;
+        while (t<0.2)
+        {
+            random(A, sz, sz, deg);
+            random(b, sz, deg);
+            tt = get_time();
+            linsolve_via_series(u, den, A, b, nb);
+            t += get_time()-tt;
+            ++nb_iter;
+        }
+        t /= nb_iter;
+        cout << t << "\t";
         if (t < tmin)
         {
             tmin = t;
             idx = nb;
         }
     }
-    cout << "   " << idx << endl;
+
+    cout << idx << endl;
 }
 
-/*------------------------------------------------------------*/
-/* for a give prime, checks some (size, degree)               */
-/*------------------------------------------------------------*/
-void all_checks()
+void run_bench(long nthreads, long nbits, bool fftprime)
 {
+    SetNumThreads(nthreads);
+
+    if (fftprime)
+    {
+        cout << "Bench linsolve, FFT prime p = ";
+        if (nbits < 25)
+        {
+            zz_p::UserFFTInit(786433); // 20 bits
+            cout << zz_p::modulus() << ", bit length = " << 20 << endl;
+        }
+        else if (nbits < 35)
+        {
+            zz_p::UserFFTInit(2013265921); // 31 bits
+            cout << zz_p::modulus() << ", bit length = " << 31 << endl;
+        }
+        else if (nbits < 45)
+        {
+            zz_p::UserFFTInit(2748779069441); // 42 bits
+            cout << zz_p::modulus() << ", bit length = " << 42 << endl;
+        }
+        else if (nbits < 61)
+        {
+            zz_p::FFTInit(0); // 60 bits
+            cout << zz_p::modulus() << ", bit length = " << NumBits(zz_p::modulus()) << endl;
+        }
+        else
+        {
+            std::cout << "Asking for FFT prime with too large bitsize (> 60). Exiting." << std::endl;
+            return;
+        }
+    }
+    else
+    {
+        cout << "Bench mbasis, random prime p = ";
+        zz_p::init(NTL::GenPrime_long(nbits));
+        cout << zz_p::modulus() << ", bit length = " << nbits << endl;
+    }
+
     VecLong szs =
     {
         5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100
@@ -57,34 +100,31 @@ void all_checks()
         500, 750, 1000
     };
 
-    cout << zz_p::modulus() << " " << is_FFT_prime() << endl;
-    for (size_t si = 0; si < szs.size(); si++)
-        for (size_t di = 0; di < degs.size(); di++)
-            if (szs[si] * degs[di] < 150000)
-                one_check(szs[si], degs[di]);
+    std::cout << "sz\tdeg\t" << std::endl;
+
+    for (long sz : szs)
+        for (long deg : degs)
+            if (sz * deg < 15000)
+            {
+                std::cout << sz << "\t" << deg << "\t";
+                one_bench(sz, deg);
+            }
 
 }
 
-
-/*------------------------------------------------------------*/
-/* checks some primes                                         */
-/*------------------------------------------------------------*/
-void check()
-{
-    zz_p::FFTInit(0);
-    all_checks();
-    zz_p::init(288230376151711813);
-    all_checks();
-    // zz_p::init(786433);
-    // all_checks();
-}  
-
-/*------------------------------------------------------------*/
-/* main calls check                                           */
-/*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    check();
+    std::cout << std::fixed;
+    std::cout << std::setprecision(8);
+
+    if (argc!=3)
+        throw std::invalid_argument("Usage: ./time_linsolve nbits fftprime");
+
+    const long nbits = atoi(argv[1]);
+    const bool fftprime = (atoi(argv[2])==1);
+
+    run_bench(1,nbits,fftprime);
+
     return 0;
 }
 

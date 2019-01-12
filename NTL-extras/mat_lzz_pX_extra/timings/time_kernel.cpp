@@ -88,7 +88,7 @@ void one_bench_kernel(long rdim, long cdim, long deg)
 /*------------------------------------------------------------*/
 /* runs bench on variety of parameters                        */
 /*------------------------------------------------------------*/
-void run_bench(long nthreads, long nbits, bool fftprime)
+void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim=-1, long degree=-1)
 {
     SetNumThreads(nthreads);
 
@@ -128,21 +128,27 @@ void run_bench(long nthreads, long nbits, bool fftprime)
         cout << zz_p::modulus() << ", bit length = " << nbits << endl;
     }
 
-    VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256};
-
     cout << "rdim\tcdim\tdeg\tdirect-app\tdirect-int\tzls-app\t\tzls-int" << endl;
-    for (size_t i=0; i<szs.size(); ++i)
+
+    if (rdim==-1) // means cdim==-1 and degree==-1 as well
     {
-        long interval = ceil( (double)szs[i] / 4);
-        //for (long j=1; 2*j<3*szs[i]; j+=interval)
-        for (long j=1; j<szs[i]; j+=interval) // only rdim<cdim for the moment
+        VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256};
+
+        for (size_t i=0; i<szs.size(); ++i)
         {
-            long max_order=4096;
-            for (long k=2; k<=max_order; k=2*k)
-                one_bench_kernel(szs[i],j,k);
+            long interval = ceil( (double)szs[i] / 4);
+            //for (long j=1; 2*j<3*szs[i]; j+=interval)
+            for (long j=1; j<szs[i]; j+=interval) // only rdim<cdim for the moment
+            {
+                long max_order=4096;
+                for (long k=2; k<=max_order; k=2*k)
+                    one_bench_kernel(szs[i],j,k);
+            }
         }
+        cout << endl;
     }
-    cout << endl;
+    else
+        one_bench_kernel(rdim,cdim,degree);
 }
 
 /*------------------------------------------------------------*/
@@ -153,15 +159,22 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    if (argc!=3)
-        throw std::invalid_argument("Usage: ./time_kernel nbits fftprime");
+    if (argc!=3 && argc!=6)
+        throw std::invalid_argument("Usage: ./time_kernel nbits fftprime (rdim cdim degree)");
+    // assume rdim>0 , cdim>0, degree>0
 
-    const long nbits = {atoi(argv[1])};
-    const bool fftprime = {(atoi(argv[2])==1) ? true : false};
+    const long nbits = atoi(argv[1]);
+    const bool fftprime = (atoi(argv[2])==1);
 
-    warmup();
-
-    run_bench(1,nbits,fftprime);
+    if (argc==6)
+    {
+        const long rdim = atoi(argv[3]);
+        const long cdim = atoi(argv[4]);
+        const long degree = atoi(argv[5]);
+        run_bench(1,nbits,fftprime,rdim,cdim,degree);
+    }
+    else
+        run_bench(1,nbits,fftprime);
 
     return 0;
 }

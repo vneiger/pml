@@ -20,8 +20,8 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
-    long m = a.NumRows();
-    long n = a.NumCols();
+    const long m = a.NumRows();
+    const long n = a.NumCols();
 
     if (m != b.NumRows() || n != b.NumCols())
         LogicError("dimension mismatch in matrix addition");
@@ -37,8 +37,8 @@ void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 /*------------------------------------------------------------*/
 void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
 {
-    long m = a.NumRows();
-    long n = a.NumCols();
+    const long m = a.NumRows();
+    const long n = a.NumCols();
 
     if (m != b.NumRows() || n != b.NumCols())
         LogicError("dimension mismatch in matrix addition");
@@ -55,7 +55,7 @@ void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
 /*------------------------------------------------------------*/
 void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b)
 {
-    long m = a.length();
+    const long m = a.length();
 
     if (m != b.length())
         LogicError("dimension mismatch in vector addition");
@@ -70,7 +70,7 @@ void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b)
 /*------------------------------------------------------------*/
 void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_p> & b)
 {
-    long m = a.length();
+    const long m = a.length();
 
     if (m != b.length())
         LogicError("dimension mismatch in vector addition");

@@ -1,6 +1,8 @@
 #include "structured_lzz_p.h"
+#include "thresholds_solve_lift.h"
 #include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_inverse.h"
+#include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_multiply.h"
 #include "mat_lzz_pX_linsolve.h"
 
@@ -11,6 +13,7 @@ NTL_CLIENT
 /* A square, A(0) invertible, deg(A), deg(b) < prec           */
 /* invA = multiplier for A^(-1) mod x^thresh                  */
 /*------------------------------------------------------------*/
+// recursion used in solve_series_low_precision
 static void solve_DAC(Mat<zz_pX>& sol, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec,
                std::unique_ptr<mat_lzz_pX_lmultiplier> & invA, long thresh)
 {
@@ -22,14 +25,14 @@ static void solve_DAC(Mat<zz_pX>& sol, const Mat<zz_pX>& A, const Mat<zz_pX>& b,
     }
     
     Mat<zz_pX> residue, rest;
-    long hprec = prec / 2;
-    long kprec = prec - hprec;
+    const long hprec = prec / 2;
+    const long kprec = prec - hprec;
     solve_DAC(sol, trunc(A, hprec), trunc(b, hprec), hprec, invA, thresh);
     middle_product(residue, transpose(sol), transpose(A), hprec, kprec - 1);
     residue = transpose(residue);
     solve_DAC(rest, trunc(A, kprec), (b >> hprec) - residue, kprec, invA, thresh);
     sol += (rest << hprec);
-    // TODO add shift
+    // TODO function for add+shift
 }
 
 /*------------------------------------------------------------*/
@@ -56,8 +59,7 @@ void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz
 
     if (thresh == -1)
     {
-        long t = type_of_prime();
-        switch(t)
+        switch(type_of_prime())
         {
         case TYPE_FFT_PRIME:
             thresh = THRESHOLDS_SOLVE_LOW_PRECISION_FFT;
@@ -214,6 +216,45 @@ void solve_series(Vec<zz_pX> &u, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long 
 
 
 /*------------------------------------------------------------*/
+/* Implements a minor variation of Storjohann's algorithm     */
+/* A must be square, A(0) invertible, deg(b) < deg(A)         */
+/* output can alias input                                     */
+/*------------------------------------------------------------*/
+void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
+{
+    Mat<zz_pX> slice, sol;
+    std::unique_ptr<mat_lzz_pX_lmultiplier> ma, minvA;
+    long d = deg(A);
+    long ncols = prec / d;
+    if (prec > ncols*d)
+        ncols++;
+    long bcols = b.NumCols();
+
+    if (deg(b) >= deg(A))
+        LogicError("Bad degrees for high order lifting");
+
+    ma = get_lmultiplier(A, d-1);
+    minvA = get_lmultiplier(inv_trunc(A, d), d-1);
+
+    slice = inv_trunc(A, 2*d) >> 1;
+    sol = b;
+   
+    while( sol.NumCols() < ncols*bcols )
+    {
+        Mat<zz_pX> next = transpose(middle_product(transpose(sol), transpose(slice), d-1, d-1)); // deg(next) < d
+        sol = horizontal_join(sol, trunc(ma->multiply(next), d)); // deg(sol) < d
+        if (sol.NumCols() < ncols*bcols)
+            high_order_lift_inverse_odd(slice, slice, ma, minvA, d);
+    }
+    sol = trunc(minvA->multiply(sol), d);
+    u = collapse_nonconsecutive_columns(sol, d, bcols);
+    trunc(u, u, prec);
+}
+
+
+
+
+/*------------------------------------------------------------*/
 /* solve A (u/den) = b                                        */
 /* A must be square, A(0) invertible                          */
 /* output can alias input                                     */
@@ -358,46 +399,6 @@ long linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const V
         u[i] = MulTrunc(trunc(sol_series[i], deg_num+1), trunc(den, deg_num+1), deg_num+1);
         
     return 1;
-}
-
-
-
-
-
-/*------------------------------------------------------------*/
-/* Implements a minor variation of Storjohann's algorithm     */
-/* A must be square, A(0) invertible, deg(b) < deg(A)         */
-/* output can alias input                                     */
-/*------------------------------------------------------------*/
-void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
-{
-    Mat<zz_pX> slice, sol;
-    std::unique_ptr<mat_lzz_pX_lmultiplier> ma, minvA;
-    long d = deg(A);
-    long ncols = prec / d;
-    if (prec > ncols*d)
-        ncols++;
-    long bcols = b.NumCols();
-
-    if (deg(b) >= deg(A))
-        LogicError("Bad degrees for high order lifting");
-
-    ma = get_lmultiplier(A, d-1);
-    minvA = get_lmultiplier(inv_trunc(A, d), d-1);
-
-    slice = inv_trunc(A, 2*d) >> 1;
-    sol = b;
-   
-    while( sol.NumCols() < ncols*bcols )
-    {
-        Mat<zz_pX> next = transpose(middle_product(transpose(sol), transpose(slice), d-1, d-1)); // deg(next) < d
-        sol = horizontal_join(sol, trunc(ma->multiply(next), d)); // deg(sol) < d
-        if (sol.NumCols() < ncols*bcols)
-            high_order_lift_inverse_odd(slice, slice, ma, minvA, d);
-    }
-    sol = trunc(minvA->multiply(sol), d);
-    u = collapse_nonconsecutive_columns(sol, d, bcols);
-    trunc(u, u, prec);
 }
 
 

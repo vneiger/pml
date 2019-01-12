@@ -43,7 +43,7 @@ void check(long p)
             Mat<zz_pX> A, b, u, res;
 
             deg = degs[di];
-            prec = 4 * deg;
+            prec = deg+1;
             random(A, sz, sz, deg);
             random(b, sz, 1, deg);
 
