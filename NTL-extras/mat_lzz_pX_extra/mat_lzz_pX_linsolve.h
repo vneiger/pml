@@ -15,22 +15,22 @@
 
 NTL_CLIENT
 
+/** @name Solve linear system over the power series
+ * \anchor SeriesSolve
+ *
+ * These functions take as input a matrix `A`, a matrix or vector `b`, a
+ * precision `prec`, and compute the power series linear system solution `u =
+ * A^{-1} b mod X^prec`. The OUT parameter `u` can alias the IN parameters `A`
+ * or `b`. The matrix `A` must be square, and most of these functions also
+ * require that the constant coefficient of `A` is invertible.
+ */
+//@{
 
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* x-adic algorithms for solving systems                      */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* solve A u = b mod x^prec                                   */
-/* A square, A(0) invertible                                  */
-/* use when deg(A) close to prec                              */
-/* computes A^-1 mod x^{2^thresh}                             */
-/* thresh=-1 is the default value, uses lookup table          */
-/* output can alias input                                     */
-/*------------------------------------------------------------*/
+/** Computes `u = A^{-1} b mod X^prec` (see @ref SeriesSolve). The constant
+ * coefficient `A(0)` must be invertible. To be used when the precision `prec`
+ * is close to the degree of `A`. This starts by computing the truncated
+ * inverse A^-1 mod x^thresh; thresh=-1 is the default value, uses lookup table
+ * (see @ref TruncatedInverse). */
 void solve_series_low_precision(
                                 Mat<zz_pX> & u,
                                 const Mat<zz_pX> & A,
@@ -39,6 +39,11 @@ void solve_series_low_precision(
                                 long thresh = -1
                                );
 
+/** Computes and returns `A^{-1} b mod X^prec` (see @ref SeriesSolve). The
+ * constant coefficient `A(0)` must be invertible. To be used when the
+ * precision `prec` is close to the degree of `A`. This starts by computing the
+ * truncated inverse A^-1 mod x^thresh; thresh=-1 is the default value, uses
+ * lookup table (see @ref TruncatedInverse). */
 inline Mat<zz_pX> solve_series_low_precision(
                                              const Mat<zz_pX> & A,
                                              const Mat<zz_pX> & b,
@@ -47,11 +52,9 @@ inline Mat<zz_pX> solve_series_low_precision(
                                             )
 { Mat<zz_pX> u; solve_series_low_precision(u, A, b, prec, thresh); return u; }
 
-/*------------------------------------------------------------*/
-/* solve A u = b mod x^prec                                   */
-/* A square, A(0) invertible, deg(A), deg(b) < prec           */
-/* use when deg(A) << prec                                    */
-/*------------------------------------------------------------*/
+/** Computes `u = A^{-1} b mod X^prec` (see @ref SeriesSolve). The constant
+ * coefficient `A(0)` must be invertible. To be used when the precision `prec`
+ * is significantly larger than the degree of `A`. */
 void solve_series_high_precision(
                                  Mat<zz_pX> &u,
                                  const Mat<zz_pX>& A,
@@ -59,6 +62,9 @@ void solve_series_high_precision(
                                  long prec
                                 );
 
+/** Computes and returns `A^{-1} b mod X^prec` (see @ref SeriesSolve). The
+ * constant coefficient `A(0)` must be invertible. To be used when the
+ * precision `prec` is significantly larger than the degree of `A`. */
 inline Mat<zz_pX> solve_series_high_precision(
                                               const Mat<zz_pX>& A,
                                               const Mat<zz_pX>& b,
@@ -70,50 +76,14 @@ inline Mat<zz_pX> solve_series_high_precision(
     return u;
 }
 
-/*------------------------------------------------------------*/
-/* solve A u = b mod x^prec                                   */
-/* A must be square, A(0) invertible                          */
-/* output can alias input                                     */
-/*------------------------------------------------------------*/
-void solve_series(
-                  Mat<zz_pX> & u, 
-                  const Mat<zz_pX> & A,
-                  const Mat<zz_pX> & b,
-                  long prec
-                 );
-
-inline Mat<zz_pX> solve_series(
-                               const Mat<zz_pX> & A,
-                               const Mat<zz_pX> & b,
-                               long prec
-                              )
-{ Mat<zz_pX> u; solve_series(u, A, b, prec); return u; }
-
-/*------------------------------------------------------------*/
-/* solve A u = b mod x^prec                                   */
-/* A must be square, A(0) invertible                          */
-/* output can alias input                                     */
-/*------------------------------------------------------------*/
-void solve_series(
-                  Vec<zz_pX> & u,
-                  const Mat<zz_pX> & A,
-                  const Vec<zz_pX> & b,
-                  long prec
-                 );
-
-inline Vec<zz_pX> solve_series(
-                               const Mat<zz_pX> & A,
-                               const Vec<zz_pX> & b,
-                               long prec
-                              )
-{ Vec<zz_pX> u; solve_series(u, A, b, prec); return u; }
-
-
-/*------------------------------------------------------------*/
-/* Implements a minor variation of Storjohann's algorithm     */
-/* A must be square, A(0) invertible, deg(b) < deg(A)         */
-/* output can alias input                                     */
-/*------------------------------------------------------------*/
+/** Computes `u = A^{-1} b mod X^prec` (see @ref SeriesSolve). The constant
+ * coefficient `A(0)` must be invertible, and `deg(b)` must be less than
+ * `deg(A)`. To be used when the precision `prec` is significantly larger than
+ * the degree of `A`. Implements a minor variation of Storjohann's algorithm
+ *
+ * Note: for the moment, this is slower than #solve_series_high_precision for
+ * most input (if not all).
+ */
 void solve_series_high_order_lifting(
                                      Mat<zz_pX> & u,
                                      const Mat<zz_pX> & A,
@@ -121,6 +91,14 @@ void solve_series_high_order_lifting(
                                      long prec
                                     );
 
+/** Computes and returns `u = A^{-1} b mod X^prec` (see @ref SeriesSolve). The
+ * constant coefficient `A(0)` must be invertible, and `deg(b)` must be less
+ * than `deg(A)`. To be used when the precision `prec` is significantly larger
+ * than the degree of `A`.
+ *
+ * Note: for the moment, this is slower than #solve_series_high_precision for
+ * most input (if not all).
+ */
 inline Mat<zz_pX> solve_series_high_order_lifting(
                                                   const Mat<zz_pX> & A,
                                                   const Mat<zz_pX> & b,
@@ -128,6 +106,65 @@ inline Mat<zz_pX> solve_series_high_order_lifting(
                                                  )
 { Mat<zz_pX> u; solve_series_high_order_lifting(u, A, b, prec); return u; }
 
+
+
+/** Computes `u = A^{-1} b mod X^prec` (see @ref SeriesSolve). The constant
+ * coefficient `A(0)` must be invertible. Interface which tries to choose the
+ * fastest available algorithm.
+ *
+ * \todo not properly tuned yet: relies on high precision variant when `prec`
+ * exceeds `4 deg(A)`
+ */
+void solve_series(
+                  Mat<zz_pX> & u, 
+                  const Mat<zz_pX> & A,
+                  const Mat<zz_pX> & b,
+                  long prec
+                 );
+
+/** Computes and returns `A^{-1} b mod X^prec` (see @ref SeriesSolve). The
+ * constant coefficient `A(0)` must be invertible. Interface which tries to
+ * choose the fastest available algorithm.
+ *
+ * \todo not properly tuned yet: relies on high precision variant when `prec`
+ * exceeds `4 deg(A)`
+ */
+inline Mat<zz_pX> solve_series(
+                               const Mat<zz_pX> & A,
+                               const Mat<zz_pX> & b,
+                               long prec
+                              )
+{ Mat<zz_pX> u; solve_series(u, A, b, prec); return u; }
+
+/** Computes `u = A^{-1} b mod X^prec` (see @ref SeriesSolve). The constant
+ * coefficient `A(0)` must be invertible. Interface which tries to choose the
+ * fastest available algorithm.
+ *
+ * \todo not properly tuned yet: relies on high precision variant when `prec`
+ * exceeds `4 deg(A)`
+ */
+void solve_series(
+                  Vec<zz_pX> & u,
+                  const Mat<zz_pX> & A,
+                  const Vec<zz_pX> & b,
+                  long prec
+                 );
+
+/** Computes and returns `A^{-1} b mod X^prec` (see @ref SeriesSolve). The
+ * constant coefficient `A(0)` must be invertible. Interface which tries to
+ * choose the fastest available algorithm.
+ *
+ * \todo not properly tuned yet: relies on high precision variant when `prec`
+ * exceeds `4 deg(A)`
+ */
+inline Vec<zz_pX> solve_series(
+                               const Mat<zz_pX> & A,
+                               const Vec<zz_pX> & b,
+                               long prec
+                              )
+{ Vec<zz_pX> u; solve_series(u, A, b, prec); return u; }
+
+//@} // doxygen group: Solve linear system over the power series
 
 /*------------------------------------------------------------*/
 /* solve A (u/den) = b                                        */

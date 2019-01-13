@@ -112,7 +112,7 @@ void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz
 
 /*------------------------------------------------------------*/
 /* solve A u = b mod x^prec                                   */
-/* A square, A(0) invertible, deg(A), deg(b) < prec           */
+/* A square, A(0) invertible                                  */
 /* use when deg(A) << prec                                    */
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
