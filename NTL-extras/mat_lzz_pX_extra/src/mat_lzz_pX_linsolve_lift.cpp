@@ -98,29 +98,14 @@ void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz
         }
     }
 
-#ifdef VERBOSE
-    double t = get_time();
-#endif
+    // compute inverse of A mod X^thresh
     Mat<zz_pX> invA = inv_trunc(A, thresh);
-#ifdef VERBOSE
-    cout << "inv_trunc " << get_time()-t << endl;
-#endif
-    
-#ifdef VERBOSE
-    t = get_time();
-#endif
-    std::unique_ptr<mat_lzz_pX_lmultiplier> mult = get_lmultiplier(invA, thresh);
-#ifdef VERBOSE
-    cout << "get mult " << get_time()-t << endl;
-#endif
 
-#ifdef VERBOSE
-    t = get_time();
-#endif
+    // prepare the left-multiplier by A^{-1} mod X^thresh
+    std::unique_ptr<mat_lzz_pX_lmultiplier> mult = get_lmultiplier(invA, thresh);
+
+    // run the actual recursion
     solve_DAC(u, A, b, prec, mult, thresh);
-#ifdef VERBOSE
-    cout << "solve DAC " << get_time()-t << endl;
-#endif
 }
 
 
