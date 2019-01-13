@@ -4,7 +4,9 @@
 #include <iomanip>
 
 #include "util.h"
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_utils.h"
+#include "mat_lzz_pX_multiply.h"
+#include "mat_lzz_pX_linsolve.h"
 
 NTL_CLIENT
 

@@ -1,10 +1,13 @@
-#include "structured_lzz_p.h" // for mosaic system solving
 #include "thresholds_solve_lift.h"
+
+#include "structured_lzz_p.h" // for mosaic system solving
 #include "mat_lzz_pX_utils.h"
-#include "mat_lzz_pX_inverse.h"
+#include "mat_lzz_pX_inverse.h" // for inv_trunc
 #include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_multiply.h"
 #include "mat_lzz_pX_linearization.h" // for collapse and join
+#include "mat_lzz_pX_kernel.h" // for kernel basis
+
 #include "mat_lzz_pX_linsolve.h"
 
 NTL_CLIENT
@@ -435,6 +438,50 @@ void linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const V
         trunc(sol_series[i], sol_series[i], deg_num+1);
         MulTrunc(u[i], sol_series[i], trunc_den, deg_num+1);
     }
+}
+
+
+// solve aM = b via kernel basis
+// return a and denominator d
+// assumes M is invertible
+void linsolve_via_kernel(
+                         Vec<zz_pX> &a,
+                         zz_pX &d,
+                         const Mat<zz_pX> & pmat,
+                         const Vec<zz_pX> & b
+                        )
+{
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
+
+    // TODO this kind of check should probably be in higher level function
+    if (m != n)
+        throw std::logic_error("==linsolve_via_kernel== pmat must be square");
+    if (b.length() != m)
+        throw std::logic_error("==linsolve_via_kernel== length of b != pmat.NumRows()");
+
+    // compute augmented matrix (block with input matrix and system 'b')
+    Mat<zz_pX> augmented_pmat;
+    augmented_pmat.SetDims(m+1, m);
+    for (long i = 0; i < m; ++i)
+        augmented_pmat[i] = pmat[i];
+    augmented_pmat[m] = b;
+
+    // compute shift to make sure kernel corresponds to solution
+    // --> row degree of augmented matrix, with large value added to last entry
+    VecLong shift;
+    row_degree(shift, augmented_pmat);
+
+    // compute kernel
+    Mat<zz_pX> kerbas;
+    VecLong pivind;
+    kernel_basis_zls_via_approximation(kerbas, pivind, augmented_pmat, shift);
+
+    // deduce solution
+    a.SetLength(m);
+    for (long i = 0; i < m; ++i)
+        a[i] = -kerbas[0][i];
+    d = kerbas[0][m];
 }
 
 
