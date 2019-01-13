@@ -101,8 +101,8 @@ void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz
     // compute inverse of A mod X^thresh
     Mat<zz_pX> invA = inv_trunc(A, thresh);
 
-    // prepare the left-multiplier by A^{-1} mod X^thresh
-    std::unique_ptr<mat_lzz_pX_lmultiplier> mult = get_lmultiplier(invA, thresh);
+    // prepare the left-multiplier by A^{-1}
+    std::unique_ptr<mat_lzz_pX_lmultiplier> mult = get_lmultiplier(invA, thresh-1);
 
     // run the actual recursion
     solve_DAC(u, A, b, prec, mult, thresh);
@@ -119,7 +119,9 @@ void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<z
 {
     if (&u == &A || &u == &b)
     {
-        u = solve_series_high_precision(A, b, prec);
+        Mat<zz_pX> v;
+        solve_series_high_precision(v, A, b, prec);
+        u.swap(v);
         return;
     }
     if (deg(A) >= prec || deg(b) >= prec)
@@ -128,62 +130,66 @@ void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<z
         return;
     }
 
-    long dA = deg(A);
-    long lenA = dA + 1;
+    const long dA = deg(A);
+    const long lenA = dA + 1;
 
 #ifdef VERBOSE
     double t = get_time();
 #endif
+    // compute inverse of A truncated at X^lenA
     Mat<zz_pX> invA = inv_trunc(A, lenA);
 #ifdef VERBOSE
     cout << "inv_trunc " << get_time()-t << endl;
 #endif
 
-
+    // prepare left-multipliers for multiplication by invA and by A
     std::unique_ptr<mat_lzz_pX_lmultiplier> multI = get_lmultiplier(invA, dA);
     std::unique_ptr<mat_lzz_pX_lmultiplier> multA = get_lmultiplier(A, dA);
     
+    // nb = quotient prec/lenA, +1 if does not divide
     long nb = prec / lenA;
     if (prec > (nb * lenA))
         nb++;
 
-    long r = b.NumRows();
-    long s = b.NumCols();
+    const long r = b.NumRows();
+    const long s = b.NumCols();
 
+    // initialize u to the right dimension, and reserve space
     u.SetDims(r, s);
-
-    for (long a = 0; a < r; a++)
-        for (long c = 0; c < s; c++)
+    for (long i = 0; i < r; ++i)
+        for (long j = 0; j < s; ++j)
         {
-            u[a][c] = 0;
-            u[a][c].SetMaxLength(prec);
+            clear(u[i][j]);
+            u[i][j].SetMaxLength(prec);
         }
 
-    Mat<zz_pX> sol;
-    multI->multiply(sol, trunc(b, lenA));
-    trunc(sol, sol, lenA);
-    for (long a = 0; a < r; a++)
-        for (long c = 0; c < s; c++)
-            for (long i = 0; i <= dA; i++)
-                SetCoeff(u[a][c], i, coeff(sol[a][c], i));
+    // u = A^{-1} b mod X^lenA
+    multI->multiply(u, trunc(b, lenA));
+    trunc(u, u, lenA);
 
-    long shift = lenA;
+    // temporary matrix, initially copy of u
+    Mat<zz_pX> sol(u);
+    // will store high-degree part of A*sol
     Mat<zz_pX> upper;
 
-    for (long i = 1; i < nb; i++)
+    // we will left shift by lenA, 2lenA, 3lenA, ...
+    long shift = lenA;
+
+    for (long it = 1; it < nb; ++it)
     {
+        // upper = part of nonnegative degree of X^{-lenA} A*sol
         multA->multiply(upper, sol);
-        upper = upper >> lenA;
-        for (long a = 0; a < r; a++)
-            for (long c = 0; c < s; c++)
-                for (long k = 0; k <= dA; k++)
-                    SetCoeff(upper[a][c], k, coeff(b[a][c], k + shift) - coeff(upper[a][c], k));
+        RightShift(upper, upper, lenA);
+        // upper = - upper + (X^{-shift} b % X^lenA)
+        for (long i = 0; i < r; ++i)
+            for (long j = 0; j < s; ++j)
+                for (long k = 0; k <= dA; ++k)
+                    SetCoeff(upper[i][j], k, coeff(b[i][j], k + shift) - coeff(upper[i][j], k));
+        // sol = A^{-1} * upper mod X^lenA
         multI->multiply(sol, upper);
         trunc(sol, sol, lenA);
-        for (long a = 0; a < r; a++)
-            for (long c = 0; c < s; c++)
-                for (long k = 0; k <= dA; k++)
-                    SetCoeff(u[a][c], k + shift, coeff(sol[a][c], k));
+        // u += (sol << shift)
+        add_LeftShift(u, u, sol, shift);
         shift += lenA;
     }
     trunc(u, u, prec);
@@ -211,14 +217,14 @@ void solve_series(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long 
 void solve_series(Vec<zz_pX> &u, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long prec)
 {
     Mat<zz_pX> bmat, umat;
-    long n = b.length();
+    const long n = b.length();
     bmat.SetDims(n, 1);
     for (long i = 0; i < n; i++)
         bmat[i][0] = b[i];
     solve_series(umat, A, bmat, prec);
     u.SetLength(n);
     for (long i = 0; i < n; i++)
-        u[i] = umat[i][0];
+        u[i].swap(umat[i][0]);
 }
 
 
