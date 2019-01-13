@@ -6,9 +6,6 @@
 #include "mat_lzz_pX_multiply.h"
 #include "mat_lzz_pX_linsolve.h"
 
-#include "util.h"
-#define VERBOSE
-
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
@@ -191,8 +188,7 @@ void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<z
 /*------------------------------------------------------------*/
 void solve_series(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
 {
-    long dA = deg(A);
-    if (prec <= 4 * dA)  // seems reasonable
+    if (prec <= 4 * deg(A))  // seems reasonable
         solve_series_low_precision(u, A, b, prec);
     else
         solve_series_high_precision(u, A, b, prec);

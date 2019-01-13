@@ -11,8 +11,10 @@
 
 NTL_CLIENT
 
-void one_bench(long sz, long deg)
+void one_bench(long sz, long degmat, long degvec)
 {
+    std::cout << sz << "\t" << degmat << "\t" << degvec << "\t";
+
     Mat<zz_pX> A;
     Vec<zz_pX> b, u;
     zz_pX den;
@@ -30,8 +32,8 @@ void one_bench(long sz, long deg)
         nb_iter = 0; t=0.0;
         while (t<0.2)
         {
-            random(A, sz, sz, deg);
-            random(b, sz, deg);
+            random(A, sz, sz, degmat);
+            random(b, sz, degvec);
             tt = get_time();
             linsolve_via_series(u, den, A, b, nb);
             t += get_time()-tt;
@@ -46,10 +48,25 @@ void one_bench(long sz, long deg)
         }
     }
 
-    cout << idx << endl;
+    //cout << idx << endl;
+
+    nb_iter = 0; t=0.0;
+    while (t<0.2)
+    {
+        random(A, sz, sz, degmat);
+        random(b, sz, degvec);
+        tt = get_time();
+        linsolve_via_kernel(u, den, A, b);
+        t += get_time()-tt;
+        ++nb_iter;
+    }
+    t /= nb_iter;
+    cout << t << "\t";
+
+    cout << endl;
 }
 
-void run_bench(long nthreads, long nbits, bool fftprime)
+void run_bench(long nthreads, long nbits, bool fftprime, long dim=-1, long degmat=-1, long degvec=-1)
 {
     SetNumThreads(nthreads);
 
@@ -100,16 +117,20 @@ void run_bench(long nthreads, long nbits, bool fftprime)
         500, 750, 1000
     };
 
-    std::cout << "sz\tdeg\t" << std::endl;
+    std::cout << "sz\tdegmat\tdegvec\tvia series 1\tvia series 2\tvia series 3\tvia series 4\tvia series 5\tvia app-kernel" << std::endl;
 
-    for (long sz : szs)
-        for (long deg : degs)
-            if (sz * deg < 15000)
-            {
-                std::cout << sz << "\t" << deg << "\t";
-                one_bench(sz, deg);
-            }
-
+    if (dim==-1) // then degmat==-1 && degvec==-1, default case
+    {
+        for (long sz : szs)
+            for (long deg : degs)
+                if (sz * deg < 15000)
+                {
+                    one_bench(sz, deg, deg);
+                    one_bench(sz, deg, sz*deg);
+                }
+    }
+    else
+        one_bench(dim, degmat, degvec);
 }
 
 int main(int argc, char ** argv)
@@ -117,13 +138,22 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    if (argc!=3)
-        throw std::invalid_argument("Usage: ./time_linsolve nbits fftprime");
+    if (argc!=3 && argc!=6)
+        throw std::invalid_argument("Usage: ./time_linsolve nbits fftprime (dim degmat degvec)");
+    // assume rdim>0 , cdim>0, order>0
 
     const long nbits = atoi(argv[1]);
     const bool fftprime = (atoi(argv[2])==1);
 
-    run_bench(1,nbits,fftprime);
+    if (argc==6)
+    {
+        const long dim = atoi(argv[3]);
+        const long degmat = atoi(argv[4]);
+        const long degvec = atoi(argv[5]);
+        run_bench(1,nbits,fftprime,dim,degmat,degvec);
+    }
+    else
+        run_bench(1,nbits,fftprime);
 
     return 0;
 }

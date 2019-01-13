@@ -39,9 +39,8 @@ void linsolve_via_kernel(
 
     // compute shift to make sure kernel corresponds to solution
     // --> row degree of augmented matrix, with large value added to last entry
-    VecLong shift(m+1);
+    VecLong shift;
     row_degree(shift, augmented_pmat);
-    shift[m] += deg(b);
 
     // compute kernel
     Mat<zz_pX> kerbas;
