@@ -175,7 +175,7 @@ inline Vec<zz_pX> solve_series(
 /* vector rational reconstruction (we use min(size, nb_max))  */
 /* nb_max = -1 means a look-up table value is used            */
 /*------------------------------------------------------------*/
-long linsolve_via_series(
+void linsolve_via_series(
                          Vec<zz_pX> & u,
                          zz_pX & den,
                          const Mat<zz_pX> & A,
