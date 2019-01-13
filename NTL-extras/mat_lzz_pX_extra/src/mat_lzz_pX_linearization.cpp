@@ -3,7 +3,8 @@
 #include <NTL/lzz_pX.h>
 #include <algorithm> // for manipulating std::vector (min, max, ..)
 
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_multiply.h"
+#include "mat_lzz_pX_linearization.h"
 
 NTL_CLIENT
 
@@ -12,11 +13,11 @@ NTL_CLIENT
 // reference: Gupta et al 2012.
 // For the precise choice of parameters: Labahn - Neiger - Zhou, 2017, Definition 5.5.
 VecLong column_partial_linearization(
-                                               Mat<zz_pX> & parlin, 
-                                               const Mat<zz_pX> & pmat, 
-                                               const VecLong & parlin_degree,
-                                               const VecLong & target_degree
-                                              )
+                                     Mat<zz_pX> & parlin, 
+                                     const Mat<zz_pX> & pmat, 
+                                     const VecLong & parlin_degree,
+                                     const VecLong & target_degree
+                                    )
 {
     // for each column of pmat, compute the corresponding column indices in the
     // partial linearization
@@ -65,12 +66,12 @@ VecLong column_partial_linearization(
 // reference: Gupta et al 2012.
 // For the precise choice of parameters: Labahn - Neiger - Zhou, 2017, Definition 5.5.
 VecLong column_partial_linearization(
-                                               Mat<zz_pX> & parlin, 
-                                               const Mat<zz_pX> & pmat, 
-                                               const VecLong & parlin_degree,
-                                               const VecLong & target_degree,
-                                               const long d_inf
-                                              )
+                                     Mat<zz_pX> & parlin, 
+                                     const Mat<zz_pX> & pmat, 
+                                     const VecLong & parlin_degree,
+                                     const VecLong & target_degree,
+                                     const long d_inf
+                                    )
 {
     // for each column of pmat, compute the corresponding column indices in the
     // partial linearization

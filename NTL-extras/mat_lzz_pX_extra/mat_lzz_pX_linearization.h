@@ -1,13 +1,64 @@
 #ifndef MAT_LZZ_PX_PARTIAL_LINEARIZATION__H
 #define MAT_LZZ_PX_PARTIAL_LINEARIZATION__H
 
-#include <NTL/matrix.h>
-#include <NTL/lzz_pX.h>
-#include <iostream>
-#include <vector>
 #include <numeric> // for 'accumulate'
 
+#include "mat_lzz_pX_forms.h" // for VecLong
+
 NTL_CLIENT
+
+
+/*------------------------------------------------------------*/
+/* horizontal join                                            */
+/* requires a.NumRows() == b.NumRows()                        */
+/*------------------------------------------------------------*/
+void horizontal_join(Mat<zz_pX>& c, const Mat<zz_pX>& a, const Mat<zz_pX>& b);
+
+inline Mat<zz_pX> horizontal_join(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
+{
+    Mat<zz_pX> c;
+    horizontal_join(c, a, b);
+    return c;
+}
+
+// TODO vertical join
+// TODO vertical/horizontal splits (then update kernel basis)
+
+/*------------------------------------------------------------*/
+/* collapses s consecutive columns of a into one column of c  */
+/* let t=a.NumCols(). For i=0..t/s-1, the i-th column of c is */
+/* a[i*s] + x^d a[i*s+1] + ... + x^{(s-1)*d} a[i*s+s-1)]      */
+/* requires that s divides t exactly                          */
+/*------------------------------------------------------------*/
+void collapse_consecutive_columns(Mat<zz_pX>& c, const Mat<zz_pX>& a, long d, long s);
+
+inline Mat<zz_pX> collapse_consecutive_columns(const Mat<zz_pX>& a, long d, long s)
+{
+    Mat<zz_pX> c;
+    collapse_consecutive_columns(c, a, d, s);
+    return c;
+}
+
+/*------------------------------------------------------------*/
+/* collapses columns with stepsize s of a into a column of c  */
+/* let t=a.NumCols(). For i=0..s-1, the i-th column of c is   */
+/* a[i] + x^d a[i+s] + ... + x^{(t/s-1)*d} a[i+(t/s-1)*s)]    */
+/* requires that s divides t exactly                          */
+/*------------------------------------------------------------*/
+void collapse_nonconsecutive_columns(Mat<zz_pX>& c, const Mat<zz_pX>& a, long d, long s);
+
+inline Mat<zz_pX> collapse_nonconsecutive_columns(const Mat<zz_pX>& a, long d, long s)
+{
+    Mat<zz_pX> c;
+    collapse_nonconsecutive_columns(c, a, d, s);
+    return c;
+}
+
+
+
+
+// TODO all the functions below are experimental and have not well
+// been tested; they are not used in other functions for the moment
 
 
 
@@ -22,9 +73,9 @@ NTL_CLIENT
 // TODO improve description
 // TODO not implemented yet
 VecLong column_linearization(
-                                       Mat<zz_p> & lin, 
-                                       const Mat<zz_pX> & pmat
-                                      );
+                             Mat<zz_p> & lin, 
+                             const Mat<zz_pX> & pmat
+                            );
 
 
 
@@ -45,19 +96,19 @@ VecLong column_linearization(
 // parlin_degree and target_degree must have length pmat.NumCols()
 // TODO improve description
 VecLong column_partial_linearization(
-                                               Mat<zz_pX> & parlin, 
-                                               const Mat<zz_pX> & pmat, 
-                                               const VecLong & parlin_degree,
-                                               const VecLong & target_degree
-                                              );
+                                     Mat<zz_pX> & parlin, 
+                                     const Mat<zz_pX> & pmat, 
+                                     const VecLong & parlin_degree,
+                                     const VecLong & target_degree
+                                    );
 
 // same, using cdeg
 // TODO improve description
 inline VecLong column_partial_linearization_cdeg(
-                                                           Mat<zz_pX> &parlin, 
-                                                           const Mat<zz_pX> & pmat, 
-                                                           const VecLong & parlin_degree
-                                                          )
+                                                 Mat<zz_pX> &parlin, 
+                                                 const Mat<zz_pX> & pmat, 
+                                                 const VecLong & parlin_degree
+                                                )
 {
     VecLong cdeg(pmat.NumCols());
     col_degree(cdeg, pmat);
@@ -69,11 +120,11 @@ inline VecLong column_partial_linearization_cdeg(
 // target_degree default: set as the col_degree of pmat
 // TODO improve description
 inline VecLong column_partial_linearization(
-                                                      Mat<zz_pX> &parlin, 
-                                                      const Mat<zz_pX> & pmat, 
-                                                      const long parlin_degree,
-                                                      const VecLong & target_degree
-                                                     )
+                                            Mat<zz_pX> &parlin, 
+                                            const Mat<zz_pX> & pmat, 
+                                            const long parlin_degree,
+                                            const VecLong & target_degree
+                                           )
 {
     VecLong parlin_degrees(pmat.NumCols(), parlin_degree);
     return column_partial_linearization(parlin, pmat, parlin_degrees, target_degree);
@@ -82,10 +133,10 @@ inline VecLong column_partial_linearization(
 // same using cdeg
 // TODO improve description
 inline VecLong column_partial_linearization_cdeg(
-                                                           Mat<zz_pX> &parlin, 
-                                                           const Mat<zz_pX> & pmat, 
-                                                           const long parlin_degree
-                                                          )
+                                                 Mat<zz_pX> &parlin, 
+                                                 const Mat<zz_pX> & pmat, 
+                                                 const long parlin_degree
+                                                )
 {
     VecLong cdeg(pmat.NumCols());
     col_degree(cdeg, pmat);
@@ -98,11 +149,11 @@ inline VecLong column_partial_linearization_cdeg(
 // returns vector of linearization parameters
 // TODO improve description
 inline VecLong column_partial_linearization(
-                                                      Mat<zz_pX> &parlin, 
-                                                      const Mat<zz_pX> & pmat, 
-                                                      const long parlin_degree,
-                                                      const long target_degree
-                                                     )
+                                            Mat<zz_pX> &parlin, 
+                                            const Mat<zz_pX> & pmat, 
+                                            const long parlin_degree,
+                                            const long target_degree
+                                           )
 {
     VecLong parlin_degrees(pmat.NumCols(), parlin_degree);
     VecLong target_degrees(pmat.NumCols(), target_degree);
@@ -113,10 +164,10 @@ inline VecLong column_partial_linearization(
 // returns vector of linearization parameters
 // TODO improve description
 inline VecLong column_partial_linearization(
-                                                      Mat<zz_pX> &parlin, 
-                                                      const Mat<zz_pX> & pmat, 
-                                                      const VecLong & target_degree
-                                                     )
+                                            Mat<zz_pX> &parlin, 
+                                            const Mat<zz_pX> & pmat, 
+                                            const VecLong & target_degree
+                                           )
 {
     long parlin_degree = std::accumulate(target_degree.begin(), target_degree.end(), 0);
     parlin_degree = 1 + parlin_degree / target_degree.size();
@@ -127,9 +178,9 @@ inline VecLong column_partial_linearization(
 // same with cdeg
 // TODO improve description
 inline VecLong column_partial_linearization_cdeg(
-                                                           Mat<zz_pX> &parlin, 
-                                                           const Mat<zz_pX> & pmat
-                                                          )
+                                                 Mat<zz_pX> &parlin, 
+                                                 const Mat<zz_pX> & pmat
+                                                )
 {
     VecLong cdeg(pmat.NumCols());
     col_degree(cdeg, pmat);
@@ -140,12 +191,12 @@ inline VecLong column_partial_linearization_cdeg(
 }
 
 VecLong column_partial_linearization(
-                                               Mat<zz_pX> & parlin, 
-                                               const Mat<zz_pX> & pmat, 
-                                               const VecLong & parlin_degree,
-                                               const VecLong & target_degree,
-                                               const long dinf
-                                              );
+                                     Mat<zz_pX> & parlin, 
+                                     const Mat<zz_pX> & pmat, 
+                                     const VecLong & parlin_degree,
+                                     const VecLong & target_degree,
+                                     const long dinf
+                                    );
 
 /*------------------------------------------------------------*/
 /* Basic row partial linearizations:                          */

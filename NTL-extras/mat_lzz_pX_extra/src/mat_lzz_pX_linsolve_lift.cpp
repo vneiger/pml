@@ -1,10 +1,10 @@
-#include "structured_lzz_p.h"
+#include "structured_lzz_p.h" // for mosaic system solving
 #include "thresholds_solve_lift.h"
-#include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_utils.h"
 #include "mat_lzz_pX_inverse.h"
 #include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_multiply.h"
+#include "mat_lzz_pX_linearization.h" // for collapse and join
 #include "mat_lzz_pX_linsolve.h"
 
 NTL_CLIENT
@@ -47,6 +47,7 @@ static void solve_DAC(Mat<zz_pX>& sol, const Mat<zz_pX>& A, const Mat<zz_pX>& b,
     middle_product(residue, bufB, bufA, hprec, kprec-1);
     transpose(bufB, residue);
 
+    // second recursive call
     trunc(bufA, A, kprec);
     RightShift(residue,b,hprec);
     sub(bufB, residue, bufB);
@@ -133,23 +134,15 @@ void solve_series_high_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<z
     const long dA = deg(A);
     const long lenA = dA + 1;
 
-#ifdef VERBOSE
-    double t = get_time();
-#endif
     // compute inverse of A truncated at X^lenA
     Mat<zz_pX> invA = inv_trunc(A, lenA);
-#ifdef VERBOSE
-    cout << "inv_trunc " << get_time()-t << endl;
-#endif
 
     // prepare left-multipliers for multiplication by invA and by A
     std::unique_ptr<mat_lzz_pX_lmultiplier> multI = get_lmultiplier(invA, dA);
     std::unique_ptr<mat_lzz_pX_lmultiplier> multA = get_lmultiplier(A, dA);
     
-    // nb = quotient prec/lenA, +1 if does not divide
-    long nb = prec / lenA;
-    if (prec > (nb * lenA))
-        nb++;
+    // nb = ceil(prec/lenA)
+    const long nb = 1 + (prec-1) / lenA;
 
     const long r = b.NumRows();
     const long s = b.NumCols();
@@ -219,11 +212,11 @@ void solve_series(Vec<zz_pX> &u, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long 
     Mat<zz_pX> bmat, umat;
     const long n = b.length();
     bmat.SetDims(n, 1);
-    for (long i = 0; i < n; i++)
+    for (long i = 0; i < n; ++i)
         bmat[i][0] = b[i];
     solve_series(umat, A, bmat, prec);
     u.SetLength(n);
-    for (long i = 0; i < n; i++)
+    for (long i = 0; i < n; ++i)
         u[i].swap(umat[i][0]);
 }
 
@@ -235,28 +228,50 @@ void solve_series(Vec<zz_pX> &u, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long 
 /*------------------------------------------------------------*/
 void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec)
 {
-    Mat<zz_pX> slice, sol;
-    std::unique_ptr<mat_lzz_pX_lmultiplier> ma, minvA;
-    long d = deg(A);
-    long ncols = prec / d;
-    if (prec > ncols*d)
-        ncols++;
-    long bcols = b.NumCols();
+    // degree of A and number of columns of b
+    const long d = deg(A);
 
-    if (deg(b) >= deg(A))
-        LogicError("Bad degrees for high order lifting");
+    // check requirement
+    if (d <= deg(b))
+        LogicError("Bad degrees for linsolve via high order lifting: requires deg(b) < deg(A)");
+    // if A is constant, just compute u = A^{-1} b
+    else if (d==0)
+    {
+        Mat<zz_p> invA;
+        inv(invA, coeff(A, 0));
+        mul(u, invA, b);
+        return;
+    }
 
-    ma = get_lmultiplier(A, d-1);
-    minvA = get_lmultiplier(inv_trunc(A, d), d-1);
+    // numbers of columns of b
+    const long bcols = b.NumCols();
+    // number of columns in linearized solution (ceil(prec/d) * bcols)
+    std::cout << prec << "\t" << d << "\t" << bcols << std::endl;
+    const long nbcols = (1 + (prec-1) / d) * bcols;
 
-    slice = inv_trunc(A, 2*d) >> 1;
-    sol = b;
+    // buffer for temporary matrices
+    Mat<zz_pX> buf;
+
+    // compute buf = A^{-1} mod X^{2d},
+    // initialize slice to (A^{-1} mod X^{2d}) div X,
+    // and truncate buf to A^{-1} mod X^d
+    inv_trunc(buf, A, 2*d);
+    Mat<zz_pX> slice;
+    RightShift(slice, buf, 1);
+    trunc(buf, buf, d);
+
+    // prepare left multipliers for A and (A^{-1} mod X^d)
+    const std::unique_ptr<mat_lzz_pX_lmultiplier> ma = get_lmultiplier(A, d-1);
+    const std::unique_ptr<mat_lzz_pX_lmultiplier> minvA = get_lmultiplier(buf, d-1);
+
+    // sol is initially a copy of b
+    Mat<zz_pX> sol(b);
    
-    while( sol.NumCols() < ncols*bcols )
+    while (sol.NumCols() < nbcols)
     {
         Mat<zz_pX> next = transpose(middle_product(transpose(sol), transpose(slice), d-1, d-1)); // deg(next) < d
         sol = horizontal_join(sol, trunc(ma->multiply(next), d)); // deg(sol) < d
-        if (sol.NumCols() < ncols*bcols)
+        if (sol.NumCols() < nbcols)
             high_order_lift_inverse_odd(slice, slice, ma, minvA, d);
     }
     sol = trunc(minvA->multiply(sol), d);

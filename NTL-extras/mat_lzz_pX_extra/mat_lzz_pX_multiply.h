@@ -223,6 +223,9 @@ void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
 /*------------------------------------------------------------*/
 void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
+// TODO experimental function, which happens to be efficient in small dimensions (also depends on the bitsize)
+void multiply_evaluate_FFT_direct_no_ll(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
 
 /*------------------------------------------------------------*/
 /* geometric evaluation                                       */

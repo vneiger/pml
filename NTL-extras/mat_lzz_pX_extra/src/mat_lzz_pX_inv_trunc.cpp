@@ -458,9 +458,12 @@ void inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 /* note: deg(Si) < 2d-1                                       */
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
-void high_order_lift_inverse_odd(Mat<zz_pX> & next, const Mat<zz_pX>& src,
-                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & A,
-                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & invA, long d)
+void high_order_lift_inverse_odd(
+                                 Mat<zz_pX> & next, const Mat<zz_pX>& src,
+                                 const std::unique_ptr<mat_lzz_pX_lmultiplier> & A,
+                                 const std::unique_ptr<mat_lzz_pX_lmultiplier> & invA,
+                                 long d
+                                )
 {
     Mat<zz_pX> b = A->multiply(trunc(src, d)); // deg-argument < d
     trunc(b, b, d); // deg(b) < d

@@ -24,71 +24,20 @@
 #include "lzz_pX_CRT.h"
 #include "thresholds_solve_lift.h"
 
-#include "mat_lzz_pX_utils.h"  // TODO: test
-#include "mat_lzz_pX_forms.h"  // TODO: test, time
-#include "mat_lzz_pX_arith.h"  // TODO: test, time
-#include "mat_lzz_pX_linearization.h"  // TODO: still draft
-#include "mat_lzz_pX_multiply.h"  // TODO: check if anything todo
-#include "mat_lzz_pX_inverse.h"  // TODO: check if anything todo
-#include "mat_lzz_pX_linsolve.h"  // TODO: check if anything todo
-#include "mat_lzz_pX_approximant.h"  // TODO: improve, test, time
-#include "mat_lzz_pX_interpolant.h"  // TODO: still draft
-#include "mat_lzz_pX_kernel.h"  // TODO: still draft
+#include "mat_lzz_pX_utils.h"
+#include "mat_lzz_pX_forms.h"
+#include "mat_lzz_pX_arith.h"
+#include "mat_lzz_pX_linearization.h"
+#include "mat_lzz_pX_multiply.h"
+#include "mat_lzz_pX_inverse.h"
+#include "mat_lzz_pX_linsolve.h"
+#include "mat_lzz_pX_approximant.h"
+#include "mat_lzz_pX_interpolant.h"
+#include "mat_lzz_pX_kernel.h"
 
 #include "mat_lzz_pX_sequence.h"  // TODO: still draft
 
-// TODO all the doc
-
 NTL_CLIENT
-
-void multiply_evaluate_FFT_direct_no_ll(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-
-// TODO in the future, these functions will be moved to "linearization/compression" files
-/*------------------------------------------------------------*/
-/* horizontal join                                            */
-/* requires a.NumRows() == b.NumRows()                        */
-/*------------------------------------------------------------*/
-void horizontal_join(Mat<zz_pX>& c, const Mat<zz_pX>& a, const Mat<zz_pX>& b);
-
-inline Mat<zz_pX> horizontal_join(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
-{
-    Mat<zz_pX> c;
-    horizontal_join(c, a, b);
-    return c;
-}
-
-// TODO vertical join
-// TODO vertical/horizonal splits (then update kernel basis)
-
-/*------------------------------------------------------------*/
-/* collapses s consecutive columns of a into one column of c  */
-/* let t=a.NumCols(). For i=0..t/s-1, the i-th column of c is */
-/* a[i*s] + x^d a[i*s+1] + ... + x^{(s-1)*d} a[i*s+s-1)]      */
-/* requires that s divides t exactly                          */
-/*------------------------------------------------------------*/
-void collapse_consecutive_columns(Mat<zz_pX>& c, const Mat<zz_pX>& a, long d, long s);
-
-inline Mat<zz_pX> collapse_consecutive_columns(const Mat<zz_pX>& a, long d, long s)
-{
-    Mat<zz_pX> c;
-    collapse_consecutive_columns(c, a, d, s);
-    return c;
-}
-
-/*------------------------------------------------------------*/
-/* collapses columns with stepsize s of a into a column of c  */
-/* let t=a.NumCols(). For i=0..s-1, the i-th column of c is   */
-/* a[i] + x^d a[i+s] + ... + x^{(t/s-1)*d} a[i+(t/s-1)*s)]    */
-/* requires that s divides t exactly                          */
-/*------------------------------------------------------------*/
-void collapse_nonconsecutive_columns(Mat<zz_pX>& c, const Mat<zz_pX>& a, long d, long s);
-
-inline Mat<zz_pX> collapse_nonconsecutive_columns(const Mat<zz_pX>& a, long d, long s)
-{
-    Mat<zz_pX> c;
-    collapse_nonconsecutive_columns(c, a, d, s);
-    return c;
-}
 
 
 

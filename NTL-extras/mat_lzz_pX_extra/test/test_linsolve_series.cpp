@@ -12,43 +12,58 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* checks an (sz,sz) matrix in degree < deg                   */
 /*------------------------------------------------------------*/
-void one_check(long sz, long deg)
+void one_check(long sz, long len)
 {
     Mat<zz_pX> A, b, u, res;
 
-    random(A, sz, sz, deg);
-    long hdeg = 5*deg;
+    long deg = len-1;
+    long hlen = 5*len;
 
+    do
+        random(A, sz, sz, len);
+    while (determinant(coeff(A,0)) == 0);
 
-    random(b, sz, 1, deg);
+    random(b, sz, 1, len);
+    Mat<zz_pX> truncB = trunc(b,deg); // for high-order lifting
 
-    solve_series_low_precision(u, A, b, deg);
+    solve_series_low_precision(u, A, b, len);
     multiply(res, A, u);
-    res = trunc(res - b, deg);
+    res = trunc(res - b, len);
     if (!IsZero(res))
         LogicError("Bad output for low precision series solve");
 
-    solve_series_high_precision(u, A, b, deg);
+    solve_series_high_precision(u, A, b, len);
     multiply(res, A, u);
-    res = trunc(res - b, deg);
+    res = trunc(res - b, len);
     if (!IsZero(res))
         LogicError("Bad output for low precision series solve");
 
-
-    random(b, sz, 1, hdeg);
-
-    solve_series_low_precision(u, A, b, hdeg);
+    solve_series_high_order_lifting(u, A, truncB, len);
     multiply(res, A, u);
-    res = trunc(res - b, hdeg);
+    res = trunc(res - truncB, len);
+    if (!IsZero(res))
+        LogicError("Bad output for high-order-lifting series solve");
+
+    random(b, sz, 1, hlen);
+    trunc(truncB, b, deg); // for high-order lifting
+
+    solve_series_low_precision(u, A, b, hlen);
+    multiply(res, A, u);
+    res = trunc(res - b, hlen);
     if (!IsZero(res))
         LogicError("Bad output for high precision series solve");
 
-    solve_series_high_precision(u, A, b, hdeg);
+    solve_series_high_precision(u, A, b, hlen);
     multiply(res, A, u);
-    res = trunc(res - b, hdeg);
+    res = trunc(res - b, hlen);
     if (!IsZero(res))
         LogicError("Bad output for high precision series solve");
 
+    solve_series_high_order_lifting(u, A, truncB, hlen);
+    multiply(res, A, u);
+    res = trunc(res - truncB, hlen);
+    if (!IsZero(res))
+        LogicError("Bad output for high-order-lifting series solve");
 }
 
 /*------------------------------------------------------------*/

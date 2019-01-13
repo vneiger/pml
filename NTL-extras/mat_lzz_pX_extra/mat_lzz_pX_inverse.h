@@ -145,8 +145,8 @@ void newton_inv_trunc_geometric(
 void high_order_lift_inverse_odd(
                                  Mat<zz_pX> & next,
                                  const Mat<zz_pX> & src, 
-                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & pmat, 
-                                 std::unique_ptr<mat_lzz_pX_lmultiplier> & inv,
+                                 const std::unique_ptr<mat_lzz_pX_lmultiplier> & pmat, 
+                                 const std::unique_ptr<mat_lzz_pX_lmultiplier> & inv,
                                  long d
                                 );
 
