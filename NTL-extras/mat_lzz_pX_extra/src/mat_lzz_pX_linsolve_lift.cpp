@@ -34,8 +34,6 @@ static void solve_DAC(Mat<zz_pX>& sol, const Mat<zz_pX>& A, const Mat<zz_pX>& b,
     Mat<zz_pX> bufA;
     // buffer for matrices related to b
     Mat<zz_pX> bufB;
-    // buffer for matrices related to residue;
-    Mat<zz_pX> bufres;
 
     // first recursive call
     trunc(bufA, A, hprec);
@@ -45,16 +43,17 @@ static void solve_DAC(Mat<zz_pX>& sol, const Mat<zz_pX>& A, const Mat<zz_pX>& b,
     // compute residue
     transpose(bufA, A);
     transpose(bufB, sol);
-    middle_product(bufres, bufB, bufA, hprec, kprec-1);
-    transpose(bufB, bufres);
+    Mat<zz_pX> residue;
+    middle_product(residue, bufB, bufA, hprec, kprec-1);
+    transpose(bufB, residue);
 
     trunc(bufA, A, kprec);
-    RightShift(bufres,b,hprec);
-    sub(bufB, bufres, bufB);
-    solve_DAC(bufres, bufA, bufB, kprec, invA, thresh);
+    RightShift(residue,b,hprec);
+    sub(bufB, residue, bufB);
+    solve_DAC(residue, bufA, bufB, kprec, invA, thresh);
 
     // sol += (bufres << hprec);
-    add_LeftShift(sol, sol, bufres, hprec);
+    add_LeftShift(sol, sol, residue, hprec);
 }
 
 /*------------------------------------------------------------*/
@@ -69,7 +68,9 @@ void solve_series_low_precision(Mat<zz_pX> &u, const Mat<zz_pX>& A, const Mat<zz
 {
     if (&u == &A || &u == &b)
     {
-        u = solve_series_low_precision(A, b, prec, thresh);
+        Mat<zz_pX> v;
+        solve_series_low_precision(v, A, b, prec, thresh);
+        u.swap(v);
         return;
     }
 
