@@ -403,6 +403,7 @@ void linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const V
     }
     else
     {
+        // set lin_comb[i] to random constant linear combination of sol_series
         Vec<zz_pX> lin_comb(INIT_SIZE, nb);
         zz_pX buf;
         for (long j = 0; j < n; ++j)
@@ -414,33 +415,30 @@ void linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const V
             }
         }
 
+        // build mosaic Toeplitz system for reconstruction of the nb
+        // linear combinations
         Vec<Vec<toeplitz_lzz_p>> sys;
         sys.SetLength(nb);
-        for (long i = 0; i < nb; i++)
+        Vec<zz_p> coeffs(INIT_SIZE, deg_den + sz);
+        for (long i = 0; i < nb; ++i)
         {
+            for (long j = 0; j < deg_den + sz; ++j)
+                GetCoeff(coeffs[j], lin_comb[i], first - deg_den + j);
             sys[i].SetLength(1);
-            Vec<zz_p> coeffs;
-            coeffs.SetLength(deg_den + sz);
-            for (long j = 0; j < deg_den + sz; j++)
-                coeffs[j] = coeff(lin_comb[i], first - deg_den + j);
             sys[i][0] = toeplitz_lzz_p(coeffs, sz, deg_den + 1);
         }
-        
-        mosaic_toeplitz_lzz_p MT = mosaic_toeplitz_lzz_p(sys);
-        Vec<zz_p> ker_vec, zero;
-        zero.SetLength(sz * nb);
-        for (long i = 0; i < sz * nb; i++)
-            zero[i] = 0;
 
+        mosaic_toeplitz_lzz_p MT = mosaic_toeplitz_lzz_p(sys);
+
+        // reconstruction of denominator: solve homogeneous mosaic Toeplitz system
+        Vec<zz_p> zero(INIT_SIZE, sz*nb);
+        Vec<zz_p> ker_vec;
         long ans = MT.solve(ker_vec, zero);
         if (ans == 0)
-        {
             Error("Error in solving mosaic toeplitz");
-        }
-        den = 0;
-        for (long i = deg_den; i >= 0; i--)
-            SetCoeff(den, i, ker_vec[i]);
 
+        // den = sum( ker_vec[i] x^i ,  0 <= i <= deg_den )
+        VectorCopy(den.rep, ker_vec, deg_den+1);
     }
 
 #ifdef VERBOSE
