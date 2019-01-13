@@ -73,6 +73,15 @@ inline Vec<zz_pX> & operator+=(Vec<zz_pX> & x, const Vec<zz_p> & a)
 
 //@} // doxygen group:  Addition of polynomial vectors
 
+/** Computes the addition of the left shift `c = a + (b << k)`. The OUT
+ * parameter `c` may alias the IN parameter `a`, but not `b`. The integer `k`
+ * must be positive. */
+void add_LeftShift(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b, long k);
+/** Computes the addition of the left shift `c = a + (b << k)`. The OUT
+ * parameter `c` may alias the IN parameter `a`, but not `b`. The integer `k`
+ * must be positive. */
+void add_LeftShift(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long k);
+
 /*------------------------------------------------------------*/
 /* vector subtraction                                         */
 /*------------------------------------------------------------*/

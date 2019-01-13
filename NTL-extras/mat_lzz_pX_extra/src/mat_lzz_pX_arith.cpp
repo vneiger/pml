@@ -1,3 +1,4 @@
+#include "lzz_pX_extra.h"
 #include "mat_lzz_pX_utils.h"
 #include "mat_lzz_pX_arith.h"
 
@@ -80,6 +81,37 @@ void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_p> & b)
         add(c[i], a[i], b[i]);
 }
 
+/*------------------------------------------------------------*/
+/* Vec<zz_pX> addition of left shift                          */
+/* c can alias a but not b                                    */
+/*------------------------------------------------------------*/
+void add_LeftShift(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b, long k)
+{
+    const long m = a.length();
+    if (m != b.length())
+        LogicError("dimension mismatch in vector leftshift-addition");
+
+    c.SetLength(m);
+    for (long i = 0; i < m; ++i)
+        add_LeftShift(c[i], a[i], b[i], k);
+}
+
+/*------------------------------------------------------------*/
+/* Mat<zz_pX> addition of left shift                          */
+/* c can alias a but not b                                    */
+/*------------------------------------------------------------*/
+void add_LeftShift(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long k)
+{
+    const long m = a.NumRows();
+    const long n = a.NumCols();
+    if (m != b.NumRows() || n != b.NumCols())
+        LogicError("dimension mismatch in matrix leftshift-addition");
+
+    c.SetDims(m, n);
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < n; ++j)
+            add_LeftShift(c[i][j], a[i][j], b[i][j], k);
+}
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

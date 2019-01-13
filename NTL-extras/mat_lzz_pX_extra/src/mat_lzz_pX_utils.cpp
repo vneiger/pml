@@ -184,34 +184,30 @@ void SetCoeff(Mat<zz_pX>& x, long i, const Mat<zz_p> &a)
 /*------------------------------------------------------------*/
 void transpose(Mat<zz_pX>& x, const Mat<zz_pX>& a)
 {
-    long n = a.NumRows();
-    long m = a.NumCols();
-
-    long i, j;
+    const long n = a.NumRows();
+    const long m = a.NumCols();
 
     if (&x == &a) 
     {
         if (n == m)
-            for (i = 1; i <= n; i++)
-                for (j = i+1; j <= n; j++)
-                    swap(x(i, j), x(j, i));
+            for (long i = 0; i < n; ++i)
+                for (long j = i+1; j < n; ++j)
+                    swap(x[i][j], x[j][i]);
         else 
         {
-            Mat<zz_pX> tmp;
-            tmp.SetDims(m, n);
-            for (i = 1; i <= n; i++)
-                for (j = 1; j <= m; j++)
-                    tmp(j, i) = a(i, j);
-            x.kill();
-            x = tmp;
+            Mat<zz_pX> tmp(INIT_SIZE, m, n);
+            for (long i = 0; i < n; ++i)
+                for (long j = 0; j < m; ++j)
+                    tmp[j][i] = a[i][j];
+            x.swap(tmp);
         }
     }
     else 
     {
         x.SetDims(m, n);
-        for (i = 1; i <= n; i++)
-            for (j = 1; j <= m; j++)
-                x(j, i) = a(i, j);
+        for (long i = 0; i < n; ++i)
+            for (long j = 0; j < m; ++j)
+                x[j][i] = a[i][j];
     }
 }
 

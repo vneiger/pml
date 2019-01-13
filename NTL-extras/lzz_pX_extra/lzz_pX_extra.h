@@ -138,6 +138,10 @@ void shift(zz_pX& g, const zz_pX & f, const zz_p & c);
 inline zz_pX shift(const zz_pX & f, const zz_p & c)
 { zz_pX g; shift(g, f, c); return g; }
 
+/** Computes `c = a + (b << k)`, where the left shift means multiplication by
+ * `X^k`. The OUT parameter `c` may alias `a` or `b`. */
+void add_LeftShift(zz_pX & c, const zz_pX & a, const zz_pX & b, const long k);
+
 #endif
 
 // Local Variables:

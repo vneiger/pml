@@ -442,6 +442,48 @@ void shift(zz_pX& g, const zz_pX& f, const zz_p& c)
     s->shift(g, f);
 }
 
+/** Computes `c = a + (b << k)`, where the left shift means multiplication by
+ * `X^k`. The integer `k` must be nonnegative. The OUT parameter `c` may alias
+ * `a` but not `b`. */
+void add_LeftShift(zz_pX & c, const zz_pX & a, const zz_pX & b, const long k)
+{
+   const long da = deg(a);
+   const long db = deg(b)+k;
+   const long minab = min(da, db);
+   const long maxab = max(da, db);
+   c.rep.SetLength(maxab+1);
+
+   const long p = zz_p::modulus();
+
+   long i;
+
+   // first, low-degree range where coefficients are just copied
+   if (&c != &a)
+       for (i = 0; i <= min(da,k-1); ++i)
+           c[i] = a[i];
+   else
+       i = min(da,k-1)+1;
+
+   // if da < k-1, go up to k
+   for (; i<k; ++i)
+       clear(c[i]);
+
+   // then, middle-degree range where we actually add coefficients
+   for (; i <= minab; ++i)
+       c[i].LoopHole() = AddMod(a[i]._zz_p__rep, b[i-k]._zz_p__rep, p);
+
+   // finally, high-degree range where coefficients are just copied
+   if (da > minab && &c != &a)
+      for (; i<=maxab; ++i)
+         c[i] = a[i];
+   else if (db > minab)
+      for (; i<=maxab; ++i)
+         c[i] = b[i-k];
+   else
+      c.normalize();
+}
+
+
 // Local Variables:
 // mode: C++
 // tab-width: 4

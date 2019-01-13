@@ -1,6 +1,7 @@
 #include "structured_lzz_p.h"
 #include "thresholds_solve_lift.h"
 #include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_utils.h"
 #include "mat_lzz_pX_inverse.h"
 #include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_multiply.h"
@@ -15,24 +16,45 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 // recursion used in solve_series_low_precision
 static void solve_DAC(Mat<zz_pX>& sol, const Mat<zz_pX>& A, const Mat<zz_pX>& b, long prec,
-               std::unique_ptr<mat_lzz_pX_lmultiplier> & invA, long thresh)
+               const std::unique_ptr<mat_lzz_pX_lmultiplier> & invA, long thresh)
 {
+    // if precision is small enough, just multiply by A^(-1) mod x^thresh
     if (prec <= thresh)
     {
         invA->multiply(sol, b);
         trunc(sol, sol, prec);
         return;
     }
+
+    // precision for recursive calls
+    const long hprec = prec/2;
+    const long kprec = prec-hprec;
     
-    Mat<zz_pX> residue, rest;
-    const long hprec = prec / 2;
-    const long kprec = prec - hprec;
-    solve_DAC(sol, trunc(A, hprec), trunc(b, hprec), hprec, invA, thresh);
-    middle_product(residue, transpose(sol), transpose(A), hprec, kprec - 1);
-    residue = transpose(residue);
-    solve_DAC(rest, trunc(A, kprec), (b >> hprec) - residue, kprec, invA, thresh);
-    sol += (rest << hprec);
-    // TODO function for add+shift
+    // buffer for matrices related to A
+    Mat<zz_pX> bufA;
+    // buffer for matrices related to b
+    Mat<zz_pX> bufB;
+    // buffer for matrices related to residue;
+    Mat<zz_pX> bufres;
+
+    // first recursive call
+    trunc(bufA, A, hprec);
+    trunc(bufB, b, hprec);
+    solve_DAC(sol, bufA, bufB, hprec, invA, thresh);
+
+    // compute residue
+    transpose(bufA, A);
+    transpose(bufB, sol);
+    middle_product(bufres, bufB, bufA, hprec, kprec-1);
+    transpose(bufB, bufres);
+
+    trunc(bufA, A, kprec);
+    RightShift(bufres,b,hprec);
+    sub(bufB, bufres, bufB);
+    solve_DAC(bufres, bufA, bufB, kprec, invA, thresh);
+
+    // sol += (bufres << hprec);
+    add_LeftShift(sol, sol, bufres, hprec);
 }
 
 /*------------------------------------------------------------*/
