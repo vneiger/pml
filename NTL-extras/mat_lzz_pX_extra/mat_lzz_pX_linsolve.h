@@ -166,15 +166,32 @@ inline Vec<zz_pX> solve_series(
 
 //@} // doxygen group: Solve linear system over the power series
 
-/*------------------------------------------------------------*/
-/* solve A (u/den) = b                                        */
-/* A must be square, A(0) invertible                          */
-/* output can alias input                                     */
-/* uses lifting and rational reconstruction                   */
-/* nb_max is the max. number of vectors for use in            */
-/* vector rational reconstruction (we use min(size, nb_max))  */
-/* nb_max = -1 means a look-up table value is used            */
-/*------------------------------------------------------------*/
+/** @name Solving linear systems
+ *
+ *  These functions compute a vector `u` and a denominator polynomial
+ *  `den` such that `A*u = den*b`.
+ */
+//@{
+
+/** Compute `u` and `den` such that `A*u = den*b`. The matrix `A` must be
+ * square and its constant coefficient `A(0)` must be invertible (this is not
+ * checked). The OUT vector `u` can alias the IN vector `b`. This solves the
+ * system over the power series (see @ref SeriesSolve) at sufficiently high
+ * precision and then reconstruct the solution `u`. The optional argument
+ * `nb_max` specifies the maximum number of vectors for use in vector rational
+ * reconstruction, which speeds-up the first step when the dimensions are
+ * sufficiently large; the default value `-1` means that the default thresholds
+ * are used.
+ *
+ * \todo a deterministic variant will be provided in the future, but currently
+ * the reconstruction is randomized (on two levels: using random linear
+ * combinations, and in the resolution of a mosaic Toeplitz system)
+ *
+ * \todo compare speed of mosaic Toeplitz versus pmbasis in this kind of
+ * instance (vector rational reconstruction)
+ *
+ * \todo better tuning of number of vectors for rational reconstruction
+ */
 void linsolve_via_series(
                          Vec<zz_pX> & u,
                          zz_pX & den,
@@ -188,12 +205,13 @@ void linsolve_via_series(
 // assumes M is invertible
 // TODO not well tested yet
 void linsolve_via_kernel(
-                         Vec<zz_pX> & a,
-                         zz_pX & d,
-                         const Mat<zz_pX> & pmat,
+                         Vec<zz_pX> & u,
+                         zz_pX & den,
+                         const Mat<zz_pX> & A,
                          const Vec<zz_pX> & b
                         );
 
+//@} // doxygen group: Solving linear systems
 
 #endif /* ifndef MAT_LZZ_PX_LINSOLVE__H */
 

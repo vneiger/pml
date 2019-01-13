@@ -7,9 +7,6 @@
 #include "mat_lzz_pX_linearization.h" // for collapse and join
 #include "mat_lzz_pX_linsolve.h"
 
-//#include "util.h"
-//#define VERBOSE
-
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
@@ -303,14 +300,11 @@ void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const M
 /* uses lifting and rational reconstruction                   */
 /* TODO this is randomized! make it clear, and offer          */
 /* deterministic version                                      */
+/* TODO compare speed of mosaic Toeplitz versus pmbasis in    */
+/* kind of instance                                           */
 /*------------------------------------------------------------*/
 void linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long nb_max)
 {
-#ifdef VERBOSE
-    cout << endl;
-    double t = get_time();
-#endif
-
     // dimensions and degrees
     const long n = A.NumRows(); // == A.NumCols() == b.length()
     const long dA = deg(A);
@@ -368,15 +362,6 @@ void linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const V
 
     Vec<zz_pX> sol_series;
     solve_series(sol_series, A, b, prec);
-
-#ifdef VERBOSE
-    cout << "setup:  " << get_time()-t << endl;
-    cout << "nb=" << nb << endl;
-#endif
-
-#ifdef VERBOSE
-    t = get_time();
-#endif
 
     if (nb == 1)
     {
@@ -441,13 +426,7 @@ void linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const V
         VectorCopy(den.rep, ker_vec, deg_den+1);
     }
 
-#ifdef VERBOSE
-    cout << "find denom " << get_time()-t << endl;
-#endif
-
-#ifdef VERBOSE
-    t = get_time();
-#endif
+    // find the numerator u
     zz_pX trunc_den;
     trunc(trunc_den, den, deg_num+1);
     u.SetLength(n);
@@ -456,11 +435,6 @@ void linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const V
         trunc(sol_series[i], sol_series[i], deg_num+1);
         MulTrunc(u[i], sol_series[i], trunc_den, deg_num+1);
     }
-#ifdef VERBOSE
-    cout << "deduce numer " << get_time()-t << endl;
-#endif
-
-    return;
 }
 
 
