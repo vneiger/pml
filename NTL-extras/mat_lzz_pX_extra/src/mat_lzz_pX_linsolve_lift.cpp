@@ -240,6 +240,7 @@ void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const M
         Mat<zz_p> invA;
         inv(invA, coeff(A, 0));
         mul(u, invA, b);
+        trunc(u, u, prec);
         return;
     }
 

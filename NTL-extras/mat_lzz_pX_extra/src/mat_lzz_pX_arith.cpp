@@ -266,24 +266,25 @@ NTL_CLOSE_NNS
 /*------------------------------------------------------------*/
 void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
 {
-    long d = deg(a);
+    const long d = deg(a);
 
-    long m = a.NumRows();
-    long n = a.NumCols();
-    long p = b.NumCols();
+    const long m = a.NumRows();
+    const long n = a.NumCols();
+    const long p = b.NumCols();
 
     if (n != b.NumRows())
         LogicError("dimension mismatch in multiplication by constant matrix");
 
     c.SetDims(m, p);
-    Mat<zz_p> tmp, res;
-    tmp.SetDims(m, n);
+    clear(c);
+    Mat<zz_p> tmp(INIT_SIZE, m, n);
+    Mat<zz_p> res(INIT_SIZE, m, p);
     for (long i = 0; i <= d; ++i)
     {
         for (long u = 0; u < m; ++u)
             for (long v = 0; v < n; ++v)
                 tmp[u][v] = coeff(a[u][v], i);
-        res = tmp * b;
+        mul(res, tmp, b);
         for (long u = 0; u < m; ++u)
             for (long v = 0; v < p; ++v)
                 SetCoeff(c[u][v], i, res[u][v]);
@@ -295,24 +296,26 @@ void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
 /*------------------------------------------------------------*/
 void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
 {
-    long d = deg(b);
+    const long d = deg(b);
 
-    long m = a.NumRows();
-    long n = a.NumCols();
-    long p = b.NumCols();
+    const long m = a.NumRows();
+    const long n = a.NumCols();
+    const long p = b.NumCols();
 
     if (n != b.NumRows())
         LogicError("dimension mismatch in multiplication by constant matrix");
 
     c.SetDims(m, p);
-    Mat<zz_p> tmp, res;
-    tmp.SetDims(n, p);
+    clear(c);
+
+    Mat<zz_p> tmp(INIT_SIZE, n, p);
+    Mat<zz_p> res(INIT_SIZE, m, p);
     for (long i = 0; i <= d; ++i)
     {
         for (long u = 0; u < n; ++u)
             for (long v = 0; v < p; ++v)
                 tmp[u][v] = coeff(b[u][v], i);
-        res = a * tmp;
+        mul(res, a, tmp);
         for (long u = 0; u < m; ++u)
             for (long v = 0; v < p; ++v)
                 SetCoeff(c[u][v], i, res[u][v]);
