@@ -247,40 +247,50 @@ void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const M
     // numbers of columns of b
     const long bcols = b.NumCols();
     // number of columns in linearized solution (ceil(prec/d) * bcols)
-    std::cout << prec << "\t" << d << "\t" << bcols << std::endl;
     const long nbcols = (1 + (prec-1) / d) * bcols;
 
-    // buffer for temporary matrices
-    Mat<zz_pX> buf;
+    // buffers for temporary matrices
+    Mat<zz_pX> buf1, buf2;
 
     // compute buf = A^{-1} mod X^{2d},
     // initialize slice to (A^{-1} mod X^{2d}) div X,
     // and truncate buf to A^{-1} mod X^d
-    inv_trunc(buf, A, 2*d);
+    inv_trunc(buf1, A, 2*d);
     Mat<zz_pX> slice;
-    RightShift(slice, buf, 1);
-    trunc(buf, buf, d);
+    RightShift(slice, buf1, 1);
+    trunc(buf1, buf1, d);
 
     // prepare left multipliers for A and (A^{-1} mod X^d)
     const std::unique_ptr<mat_lzz_pX_lmultiplier> ma = get_lmultiplier(A, d-1);
-    const std::unique_ptr<mat_lzz_pX_lmultiplier> minvA = get_lmultiplier(buf, d-1);
+    const std::unique_ptr<mat_lzz_pX_lmultiplier> minvA = get_lmultiplier(buf1, d-1);
 
     // sol is initially a copy of b
     Mat<zz_pX> sol(b);
-   
+
+    // next terms to deal with
+    Mat<zz_pX> next;
+
     while (sol.NumCols() < nbcols)
     {
-        Mat<zz_pX> next = transpose(middle_product(transpose(sol), transpose(slice), d-1, d-1)); // deg(next) < d
-        sol = horizontal_join(sol, trunc(ma->multiply(next), d)); // deg(sol) < d
+        // compute next = middle product
+        transpose(buf1, sol);
+        transpose(buf2, slice);
+        middle_product(next, buf1, buf2, d-1, d-1); // deg(next) < d
+        transpose(next, next);
+
+        ma->multiply(buf1, next);
+        trunc(buf2, buf1, d);
+        horizontal_join(buf1, sol, buf2);
+        sol.swap(buf1); // deg(sol) < d
+
         if (sol.NumCols() < nbcols)
             high_order_lift_inverse_odd(slice, slice, ma, minvA, d);
     }
-    sol = trunc(minvA->multiply(sol), d);
-    u = collapse_nonconsecutive_columns(sol, d, bcols);
+    minvA->multiply(buf1, sol);
+    trunc(sol, buf1, d);
+    collapse_nonconsecutive_columns(u, sol, d, bcols);
     trunc(u, u, prec);
 }
-
-
 
 
 /*------------------------------------------------------------*/

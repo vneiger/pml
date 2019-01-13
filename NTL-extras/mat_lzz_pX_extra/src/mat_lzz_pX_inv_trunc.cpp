@@ -459,7 +459,8 @@ void inv_trunc(Mat<zz_pX>& x, const Mat<zz_pX>& a, long m)
 /* output can alias input                                     */
 /*------------------------------------------------------------*/
 void high_order_lift_inverse_odd(
-                                 Mat<zz_pX> & next, const Mat<zz_pX>& src,
+                                 Mat<zz_pX> & next,
+                                 const Mat<zz_pX>& src,
                                  const std::unique_ptr<mat_lzz_pX_lmultiplier> & A,
                                  const std::unique_ptr<mat_lzz_pX_lmultiplier> & invA,
                                  long d

@@ -15,11 +15,7 @@ NTL_CLIENT
 void horizontal_join(Mat<zz_pX>& c, const Mat<zz_pX>& a, const Mat<zz_pX>& b);
 
 inline Mat<zz_pX> horizontal_join(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
-{
-    Mat<zz_pX> c;
-    horizontal_join(c, a, b);
-    return c;
-}
+{ Mat<zz_pX> c; horizontal_join(c, a, b); return c; }
 
 // TODO vertical join
 // TODO vertical/horizontal splits (then update kernel basis)
@@ -33,11 +29,7 @@ inline Mat<zz_pX> horizontal_join(const Mat<zz_pX>& a, const Mat<zz_pX>& b)
 void collapse_consecutive_columns(Mat<zz_pX>& c, const Mat<zz_pX>& a, long d, long s);
 
 inline Mat<zz_pX> collapse_consecutive_columns(const Mat<zz_pX>& a, long d, long s)
-{
-    Mat<zz_pX> c;
-    collapse_consecutive_columns(c, a, d, s);
-    return c;
-}
+{ Mat<zz_pX> c; collapse_consecutive_columns(c, a, d, s); return c; }
 
 /*------------------------------------------------------------*/
 /* collapses columns with stepsize s of a into a column of c  */
@@ -48,11 +40,7 @@ inline Mat<zz_pX> collapse_consecutive_columns(const Mat<zz_pX>& a, long d, long
 void collapse_nonconsecutive_columns(Mat<zz_pX>& c, const Mat<zz_pX>& a, long d, long s);
 
 inline Mat<zz_pX> collapse_nonconsecutive_columns(const Mat<zz_pX>& a, long d, long s)
-{
-    Mat<zz_pX> c;
-    collapse_nonconsecutive_columns(c, a, d, s);
-    return c;
-}
+{ Mat<zz_pX> c; collapse_nonconsecutive_columns(c, a, d, s); return c; }
 
 
 
