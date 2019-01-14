@@ -105,10 +105,10 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
         t_pmbasis_intgeom=-1.0;
 
     // just for test, works only with very specific dimensions
-    bool applin=false; // for disabling printing timing below in function
+    bool applin=true; // for disabling printing timing below in function
+    double t_pmbasis_applin=0.0;
     if (applin)
     {
-        double t_pmbasis_applin=0.0;
         nb_iter=0;
         while (t_pmbasis_applin<0.2)
         {
