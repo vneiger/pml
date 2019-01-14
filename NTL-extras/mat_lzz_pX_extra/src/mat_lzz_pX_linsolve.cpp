@@ -12,6 +12,14 @@
 
 NTL_CLIENT
 
+std::ostream &operator<<(std::ostream &out, const VecLong &s)
+{
+    out << "[ ";
+    for (auto &i: s)
+        out << i << " ";
+    return out << "]";
+}
+
 /*------------------------------------------------------------*/
 /* solve A u = b mod x^prec                                   */
 /* A square, A(0) invertible, deg(A), deg(b) < prec           */
@@ -301,10 +309,6 @@ void solve_series_high_order_lifting(Mat<zz_pX> &u, const Mat<zz_pX>& A, const M
 /* A must be square, A(0) invertible                          */
 /* output can alias input                                     */
 /* uses lifting and rational reconstruction                   */
-/* TODO this is randomized! make it clear, and offer          */
-/* deterministic version                                      */
-/* TODO compare speed of mosaic Toeplitz versus pmbasis in    */
-/* kind of instance                                           */
 /*------------------------------------------------------------*/
 void linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const Vec<zz_pX>& b, long nb_max)
 {
@@ -440,48 +444,73 @@ void linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const V
     }
 }
 
-
 // solve aM = b via kernel basis
 // return a and denominator d
 // assumes M is invertible
-void linsolve_via_kernel(
-                         Vec<zz_pX> &a,
-                         zz_pX &d,
-                         const Mat<zz_pX> & pmat,
+long linsolve_via_kernel(
+                         Vec<zz_pX> & u,
+                         zz_pX & den,
+                         const Mat<zz_pX> & A,
                          const Vec<zz_pX> & b
                         )
 {
-    const long m = pmat.NumRows();
-    const long n = pmat.NumCols();
+    // dimensions
+    const long m = A.NumRows(); // == b.length()
+    const long n = A.NumCols();
 
-    // TODO this kind of check should probably be in higher level function
-    if (m != n)
-        throw std::logic_error("==linsolve_via_kernel== pmat must be square");
-    if (b.length() != m)
-        throw std::logic_error("==linsolve_via_kernel== length of b != pmat.NumRows()");
+    // compute augmented matrix: transpose of A, with b below it
+    // ("transpose"/"below" because kernel algos compute *left* kernels) 
+    Mat<zz_pX> pmat;
+    transpose(pmat, A);
+    pmat.SetDims(n+1,m); // add one row below for storing b
+    pmat[n] = b;
 
-    // compute augmented matrix (block with input matrix and system 'b')
-    Mat<zz_pX> augmented_pmat;
-    augmented_pmat.SetDims(m+1, m);
-    for (long i = 0; i < m; ++i)
-        augmented_pmat[i] = pmat[i];
-    augmented_pmat[m] = b;
-
-    // compute shift to make sure kernel corresponds to solution
-    // --> row degree of augmented matrix, with large value added to last entry
+    // shift = row degree of augmented matrix, +1 on the entry corresponding to b
+    // --> this is the shift which ensures good efficiency for the used kernel
+    // algorithm (Zhou-Labahn-Storjohann ISSAC 2012)
+    // --> with this shift, we are sure to obtain a vector in the kernel of
+    // the form [ -- u -- | den ] with deg(den) > deg(u)
     VecLong shift;
-    row_degree(shift, augmented_pmat);
+    row_degree(shift, pmat);
+    ++shift[n];
+    VecLong copy(shift);
+    Mat<zz_pX> copymat(pmat);
 
     // compute kernel
     Mat<zz_pX> kerbas;
     VecLong pivind;
-    kernel_basis_zls_via_approximation(kerbas, pivind, augmented_pmat, shift);
+    kernel_basis_zls_via_approximation(kerbas, pivind, pmat, shift);
+
+    // if kernel is empty, there is no solution
+    // (may happen only if m > n)
+    // TODO remove (covered below
+    if (kerbas.NumRows()==0)
+        return 0;
+
+    // find index of row of kerbas with pivot index in the last entry
+    VecLong::const_iterator pivind_n = std::find(pivind.begin(), pivind.end(), n);
+    // if no such row, there is no solution
+    // --> may happen if kernel is empty, which itself may happen only if m > n
+    // --> may also happen if A is rank-deficient but b is not in the
+    // K(x)-column space of A, then kerbas is simply a kernel basis for A
+    if (pivind_n==pivind.end())
+    {
+        std::cout << "!!!!!NOSOL-PIVIND!!!!!" << std::endl;
+        std::cout << "Degree matrix kernel: " << std::endl << degree_matrix(kerbas) << std::endl;
+        std::cout << "Degree matrix input: " << std::endl << degree_matrix(copymat) << std::endl;
+        std::cout << "pivind : " << pivind << std::endl;
+        std::cout << "shift : " << copy << std::endl;
+        LogicError("BLA");
+        return 0;
+    }
+    const long row = pivind_n - pivind.begin();
 
     // deduce solution
-    a.SetLength(m);
-    for (long i = 0; i < m; ++i)
-        a[i] = -kerbas[0][i];
-    d = kerbas[0][m];
+    u.SetLength(n);
+    for (long j = 0; j < n; ++j)
+        NTL::negate(u[j], kerbas[row][j]);
+    den.swap(kerbas[row][n]);
+    return 1;
 }
 
 

@@ -343,7 +343,10 @@ void mbasis_plain(
  * representation by a vector of constant matrices `Vec<Mat<zz_p>>`, then
  * performs the computations with this storage, and eventually converts back to
  * the polynomial matrix `Mat<zz_pX>` representation. In this variant, the
- * residual matrix is computed from `appbas` and `pmat` at each iteration. */
+ * residual matrix is computed from `appbas` and `pmat` at each iteration.
+ *
+ * \todo improve when `deg(pmat) << order` 
+ */
 // Complexity: pmat is m x n
 //   - 'order' calls to mbasis1 with dimension m x n, each one gives a
 //   constant matrix K which is generically m-n x m  (may have more rows in
@@ -367,7 +370,10 @@ void mbasis_rescomp(
  * the polynomial matrix `Mat<zz_pX>` representation. In this variant, we store
  * a vector of residual matrices, initially the coefficients of `pmat`, and we
  * update all of them at each iteration; at the iteration `d` we use the `d`-th
- * matrix in this vector. */
+ * matrix in this vector.
+ *
+ * \todo improve when `deg(pmat) << order` 
+ */
 // Variant which first converts to vector of constant matrices,
 // performs the computations with this storage, and eventually
 // converts back to polynomial matrices

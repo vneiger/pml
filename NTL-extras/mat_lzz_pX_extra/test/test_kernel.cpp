@@ -1,10 +1,10 @@
 #include "mat_lzz_pX_kernel.h"
-#include "mat_lzz_pX_forms.h" // for degree_matrix
+#include "mat_lzz_pX_forms.h" // for degree_matrix, row_pivots
 #include "test_examples.h"
 
 NTL_CLIENT
 
-std::ostream &operator<<(std::ostream &out, const VecLong &s)
+static std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
     out << "[ ";
     for (auto &i: s)
@@ -84,7 +84,11 @@ int main(int argc, char *argv[])
 
                 if (verbose)
                     std::cout << "OK. Testing... ";
-                if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
+
+                VecLong pivind_test, pivdeg_test;
+                row_pivots(pivind_test, pivdeg_test, kerbas, shift);
+
+                if (pivind != pivind_test || not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
                 {
                     std::cout << "Error in kernel_basis_via_approximation." << std::endl;
                     std::cout << "--rdim =\t" << rdim << std::endl;
@@ -95,6 +99,7 @@ int main(int argc, char *argv[])
                     std::cout << "Input: " << std::endl << *pmat << std::endl;
                     std::cout << "Kernel : " << std::endl << kerbas << std::endl;
                     std::cout << "Degree matrix: " << std::endl << degree_matrix(kerbas) << std::endl;
+                    std::cout << "Pivot index: " << std::endl << pivind << std::endl;
                     return 0;
                 }
                 if (verbose)
@@ -112,7 +117,11 @@ int main(int argc, char *argv[])
 
                 if (verbose)
                     std::cout << "OK. Testing... ";
-                if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
+
+                VecLong pivind_test, pivdeg_test;
+                row_pivots(pivind_test, pivdeg_test, kerbas, shift);
+
+                if (pivind != pivind_test || not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
                 {
                     std::cout << "Error in kernel_basis_via_interpolation." << std::endl;
                     std::cout << "--rdim =\t" << rdim << std::endl;
@@ -141,7 +150,11 @@ int main(int argc, char *argv[])
 
                 if (verbose)
                     std::cout << "OK. Testing... ";
-                if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
+
+                VecLong pivind_test, pivdeg_test;
+                row_pivots(pivind_test, pivdeg_test, kerbas, shift);
+
+                if (pivind != pivind_test || not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
                 {
                     std::cout << "Error in kernel_basis_zls_via_approximation." << std::endl;
                     std::cout << "--rdim =\t" << rdim << std::endl;
@@ -170,7 +183,11 @@ int main(int argc, char *argv[])
 
                 if (verbose)
                     std::cout << "OK. Testing... ";
-                if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
+
+                VecLong pivind_test, pivdeg_test;
+                row_pivots(pivind_test, pivdeg_test, kerbas, shift);
+
+                if (pivind != pivind_test || not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
                 {
                     std::cout << "Error in kernel_basis_zls_via_interpolation." << std::endl;
                     std::cout << "--rdim =\t" << rdim << std::endl;

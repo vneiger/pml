@@ -12,6 +12,14 @@
 
 NTL_CLIENT
 
+static std::ostream &operator<<(std::ostream &out, const VecLong &s)
+{
+    out << "[ ";
+    for (auto &i: s)
+        out << i << " ";
+    return out << "]";
+}
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*            DEGREE BOUNDS FOR KERNEL BASES                  */
@@ -334,11 +342,13 @@ void kernel_basis_zls_via_approximation(
     {
         if (not IsZero(pmat))
         {
+            std::cout << "m==1 nonzero" << std::endl;
             kerbas.SetDims(0,1);
             shift.clear();
             pivind.clear();
             return;
         }
+        std::cout << "m==1 zero" << std::endl;
         // pmat is the zero 1 x n matrix
         // --> kerbas is [1], shift is unchanged
         ident(kerbas, 1);
@@ -354,11 +364,13 @@ void kernel_basis_zls_via_approximation(
         const long r = gauss(coeff0);
         if (r == m)
         {
+            std::cout << "m<=n rank m" << std::endl;
             kerbas.SetDims(0,m);
             shift.clear();
             pivind.clear();
             return;
         }
+        std::cout << "m<=n rank<m" << std::endl;
     }
 
     // compute row degree of pmat (will be used afterwards for making the
@@ -368,6 +380,7 @@ void kernel_basis_zls_via_approximation(
     // if matrix is zero, kernel is identity
     if (*max_element(rdeg.begin(), rdeg.end()) == -1)
     {
+        std::cout << "max elt == -1" << std::endl;
         ident(kerbas, m);
         pivind.resize(m);
         std::iota(pivind.begin(), pivind.end(), 0);
@@ -381,6 +394,7 @@ void kernel_basis_zls_via_approximation(
     // roughly equal dimensions, and call the algorithm recursively
     if (2*n > m)
     {
+        std::cout << "entering 2n>=m \t" << m << "\t" << n<< std::endl;
         // pmat will be column-splitted into two submatrices of column dimension ~ n/2
         const long n1 = n/2;
         const long n2 = n-n1;
@@ -393,11 +407,16 @@ void kernel_basis_zls_via_approximation(
 
         Mat<zz_pX> kerbas1;
         VecLong pivind1;
+        VecLong copy_shift(shift);
         kernel_basis_zls_via_approximation(kerbas1, pivind1, pmat_sub, shift);
+        std::cout << "shift1 " << copy_shift << std::endl;
+        std::cout << "pivind1: " << kerbas.NumCols() << "\t" << pivind1 << std::endl;
+        std::cout << "Kerbas1:\n" << degree_matrix(kerbas1) << std::endl;
 
         // if kerbas1 is empty, just return empty kernel
         if (kerbas1.NumRows() == 0)
         {
+            std::cout << "kerbas1 == empty" << std::endl;
             kerbas.SetDims(0, m);
             pivind.clear();
             shift.clear();
@@ -413,12 +432,20 @@ void kernel_basis_zls_via_approximation(
         pmat_sub.kill();
 
         // recursive call 2
+        copy_shift = shift;
         kernel_basis_zls_via_approximation(kerbas, pivind, pmat, shift);
+        std::cout << "shift " << copy_shift << std::endl;
+        std::cout << "PIVIND before: " << kerbas.NumCols() << "\t" << pivind << std::endl;
+        std::cout << "Kerbas:\n" << degree_matrix(kerbas) << std::endl;
 
         // multiply bases and combine pivots
         multiply(kerbas, kerbas, kerbas1);
+
+        std::cout << "PIVIND1: " << pivind1 << std::endl;
         for (size_t i = 0; i < pivind.size(); ++i)
             pivind[i] = pivind1[pivind[i]];
+        std::cout << "PIVIND after: " << pivind << std::endl;
+
 
         return;
     }
@@ -511,6 +538,8 @@ void kernel_basis_zls_via_approximation(
         pivind = pivind_app;
         return;
     }
+    std::cout << "not early exit" << std::endl;
+    std::cout << m2 << "\t" << m << "\t" << std::endl;
 
     // for most input, the following code will not be executed because we will
     // have taken early exit
@@ -554,6 +583,7 @@ void kernel_basis_zls_via_approximation(
     // --> just copy and return
     if (kerbas.NumRows() == 0)
     {
+        std::cout << "kerbas empty" << std::endl;
         kerbas.SetDims(m1, m);
         for (long i = 0; i < m1; ++i)
             kerbas[i].swap(appbas[pivind_app[i]]);
@@ -581,7 +611,10 @@ void kernel_basis_zls_via_approximation(
 
     // II/ complete the computation of the pivots of the new kernel rows
     for (size_t i = 0; i < pivind2.size(); ++i)
+    {
         pivind2[i] = pivind0[pivind1[pivind2[i]]];
+        std::cout << "piv : " << pivind2[i] << std::endl;
+    }
 
     // III/ merge with previously obtained kernel rows, ensuring that
     // the resulting basis is in shifted ordered weak Popov form
@@ -589,6 +622,7 @@ void kernel_basis_zls_via_approximation(
     // row degree of kerbas, we add the constant diff_shift that had been
     // removed from the input shift
     const long ker_dim = m1 + approx.NumRows();
+    std::cout << "ker dim " << ker_dim << std::endl;
 
     kerbas.SetDims(ker_dim, m);
     shift.resize(ker_dim); pivind.resize(ker_dim);
@@ -623,9 +657,11 @@ void kernel_basis_zls_via_approximation(
     while (i_approx < approx.NumRows())
     {
         // row computed via recursive calls and stored in `approx`
+        std::cout << "here, " << i << "\t" << i_approx << std::endl;
         kerbas[i].swap(approx[i_approx]);
         shift[i] = rdeg2[i_approx]+diff_shift;
         pivind[i] = pivind2[i_approx];
+        std::cout << pivind[i] << std::endl;
         ++i_approx; ++i;
     }
 }

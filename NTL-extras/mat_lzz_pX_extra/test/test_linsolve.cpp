@@ -9,72 +9,216 @@
 #include "mat_lzz_pX_multiply.h"
 #include "mat_lzz_pX_linsolve.h"
 
+#include "test_examples.h"
+
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /* checks an (sz,sz) matrix in degree < deg                   */
 /*------------------------------------------------------------*/
-void one_check(long sz, long deg)
+void one_check_via_series(long sz, long deg)
 {
     Mat<zz_pX> A;
     Vec<zz_pX> b, b2, u, res;
     zz_pX den;
 
-    random(A, sz, sz, deg);
+    do
+        random(A, sz, sz, deg);
+    while (determinant(coeff(A,0))==0);
     random(b, sz, deg);
 
     linsolve_via_series(u, den, A, b);
-    b2.SetLength(sz);
-    for (long i = 0; i < sz; i++)
-        b2[i] = b[i] * den;
-    multiply(res, A, u);
-    res = res - b2;
-    if (!IsZero(res))
+
+    if (A*u != den*b)
         Error("non-zero residue in linsolve via series");
 }
 
 /*------------------------------------------------------------*/
 /* for a give prime, checks some (size, degree)               */
 /*------------------------------------------------------------*/
-void all_checks()
+void all_checks_via_series()
 {
     VecLong szs =
     {
-        1, 2, 3, 5, 10, 20, 30
+        1, 2, 3, 5, 10, 20
     };
 
     VecLong degs =
     {
-        1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 250, 300, 400
+        1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 300, 400
     };
 
     for (size_t si = 0; si < szs.size(); si++)
         for (size_t di = 0; di < degs.size(); di++)
-            one_check(szs[si], degs[di]);
+            one_check_via_series(szs[si], degs[di]);
+
+    std::cout << "Solve via series: all instances processed with success" << std::endl;
+}
+
+void all_checks_via_kernel(bool verbose)
+{
+    // build couple (test_matrices, test_shifts)
+    // shifts will not be used here
+    std::pair<std::vector<Mat<zz_pX>>, std::vector<std::vector<VecLong>>>
+    test_examples = build_test_examples();
+
+    Vec<zz_pX> u;
+    zz_pX den;
+
+    size_t i=0;
+    size_t inst=0;
+    for (auto pmat = test_examples.first.begin(); pmat!= test_examples.first.end(); ++pmat, ++i)
+    {
+        const long rdim = pmat->NumRows();
+        const long cdim = pmat->NumCols();
+        const long d = deg(*pmat);
+
+        // for each matrix, test for four vectors b:
+        std::vector<Vec<zz_pX>> rhs(4);
+        // first vector b: zero
+        rhs[0].SetLength(rdim);
+        // second vector b: random combination of columns of pmat (den==1)
+        rhs[1].SetLength(rdim);
+        for (long j = 0; j < cdim; ++j)
+        {
+            zz_pX comb;
+            random(comb, max(d/2,1));
+            for (long i = 0; i < rdim; ++i)
+                rhs[1][i] += comb * (*pmat)[i][j];
+        }
+        // third vector b: random of degree deg(pmat)
+        random(rhs[2], rdim, d+1);
+        // fourth vector b: random of degree 3*deg(pmat)
+        // (if d==-1, if pmat==0, just use the three first)
+        if (d>=0)
+            random(rhs[3], rdim, 3*d+1);
+        else
+            rhs.pop_back();
+
+        for (size_t i_b=0; i_b<rhs.size(); ++i_b)
+        {
+            ++inst;
+            if (verbose)
+            {
+                std::cout << std::endl << "instance number " << inst;
+                switch (i_b)
+                {
+                case 0:
+                    std::cout << " (rhs=zero):" << std::endl;
+                    break;
+                case 1:
+                    std::cout << " (rhs=comb):" << std::endl;
+                    break;
+                case 2:
+                    std::cout << " (rhs=rd_d):" << std::endl;
+                    break;
+                case 3:
+                    std::cout << " (rhs=rd_3d):" << std::endl;
+                    break;
+                }
+            }
+
+            Vec<zz_pX> b = rhs[i_b];
+
+            if (verbose)
+            {
+                std::cout << "--rdim =\t" << rdim << std::endl;
+                std::cout << "--cdim =\t" << cdim << std::endl;
+                std::cout << "--deg =\t" << d << std::endl;
+            }
+
+            if (verbose)
+                std::cout << "Computation of system solution... ";
+
+            if (inst==1794)
+            {
+                std::cout << "Input matrix: " << std::endl << *pmat << std::endl;
+                std::cout << "Input vector: " << std::endl << b << std::endl;
+
+                long success = linsolve_via_kernel(u, den, *pmat, b);
+
+                if (verbose)
+                    std::cout << "OK. Testing... ";
+
+                if (success==0)
+                {
+                    std::cout << "no solution found" << std::endl;
+                }
+                else
+                {
+                    // TODO
+                    if (deg(u) >= deg(den))
+                        std::cout << "linsolve_via_kernel: degree not like wished" << std::endl;
+
+                    if ((*pmat)*u != den*b)
+                    {
+                        std::cout << "Error in linsolve_via_kernel." << std::endl;
+                        std::cout << "--rdim =\t" << rdim << std::endl;
+                        std::cout << "--cdim =\t" << cdim << std::endl;
+                        std::cout << "--deg =\t" << d << std::endl;
+                        std::cout << "--modulus = \t" << zz_p::modulus() << std::endl;
+                        std::cout << "Input matrix: " << std::endl << *pmat << std::endl;
+                        std::cout << "Input vector: " << std::endl << b << std::endl;
+                        std::cout << "Output vector: " << std::endl << u << std::endl;
+                        std::cout << "Output denominator: " << std::endl << den << std::endl;
+                        return;
+                    }
+                }
+                if (verbose)
+                    std::cout << "OK." << std::endl;
+            }
+        }
+    }
+    std::cout << "Solve via kernel: all " << inst << " instances processed with success." << std::endl;
 }
 
 
 /*------------------------------------------------------------*/
 /* checks some primes                                         */
 /*------------------------------------------------------------*/
-void check()
+void check(bool verbose)
 {
     zz_p::FFTInit(0);
-    all_checks();
+    zz_pX rd;
+    std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
+    std::cout << "Testing system solving via series..." << std::endl;
+    all_checks_via_series();
+    std::cout << "Testing system solving via kernel basis..." << std::endl;
+    all_checks_via_kernel(verbose);
+
     zz_p::UserFFTInit(786433);
-    all_checks();
+    std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
+    std::cout << "Testing system solving via series..." << std::endl;
+    all_checks_via_series();
+    std::cout << "Testing system solving via kernel basis..." << std::endl;
+    all_checks_via_kernel(verbose);
+
     zz_p::init(288230376151711813);
-    all_checks();
+    std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
+    std::cout << "Testing system solving via series..." << std::endl;
+    all_checks_via_series();
+    std::cout << "Testing system solving via kernel basis..." << std::endl;
+    all_checks_via_kernel(verbose);
+
     zz_p::init(786433);
-    all_checks();
+    std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
+    std::cout << "Testing system solving via series..." << std::endl;
+    all_checks_via_series();
+    std::cout << "Testing system solving via kernel basis..." << std::endl;
+    all_checks_via_kernel(verbose);
 }  
 
 /*------------------------------------------------------------*/
 /* main calls check                                           */
 /*------------------------------------------------------------*/
-int main()
+int main(int argc, char * argv[])
 {
-    check();
+    if (argc>2)
+        LogicError("Usage: ./test_linsolve OR ./test_linsolve verbose");
+
+    bool verbose = (argc==2 && (atoi(argv[1])==1));
+    check(verbose);
+
     return 0;
 }
 

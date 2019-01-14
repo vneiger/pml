@@ -7,7 +7,7 @@
 #include "mat_lzz_pX_approximant.h"
 #include "mat_lzz_pX_interpolant.h"
 
-std::ostream &operator<<(std::ostream &out, const VecLong &s)
+static std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
     out << "[ ";
     for (auto &i: s)
@@ -20,7 +20,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* run one bench for specified rdim,cdim,order                */
 /*------------------------------------------------------------*/
-void one_bench_pmbasis(long rdim, long cdim, long deg, long order)
+void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
 {
     VecLong shift(rdim,0);
 
@@ -32,7 +32,7 @@ void one_bench_pmbasis(long rdim, long cdim, long deg, long order)
     while (t_pmbasis_app<0.2)
     {
         Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, deg+1);
+        random(pmat, rdim, cdim, degree+1);
 
         t1 = GetWallTime();
         Mat<zz_pX> appbas;
@@ -52,7 +52,7 @@ void one_bench_pmbasis(long rdim, long cdim, long deg, long order)
         while (t_pmbasis_int<0.2)
         {
             Mat<zz_pX> pmat;
-            random(pmat, rdim, cdim, deg+1);
+            random(pmat, rdim, cdim, degree+1);
             Vec<zz_p> pts(INIT_SIZE, order);
             std::iota(pts.begin(), pts.end(), 0);
             std::shuffle(pts.begin(), pts.end(), std::mt19937{std::random_device{}()});
@@ -78,7 +78,7 @@ void one_bench_pmbasis(long rdim, long cdim, long deg, long order)
         while (t_pmbasis_intgeom<0.2)
         {
             Mat<zz_pX> pmat;
-            random(pmat, rdim, cdim, deg+1);
+            random(pmat, rdim, cdim, degree+1);
             // geometric in degree 'order' (bound on degree of intbas) requires an
             // element order at least 2*deg+1
             zz_p r;
@@ -104,8 +104,34 @@ void one_bench_pmbasis(long rdim, long cdim, long deg, long order)
     else
         t_pmbasis_intgeom=-1.0;
 
-    cout << rdim << "\t" << cdim << "\t" << deg << "\t" << order;
+    // just for test, works only with very specific dimensions
+    bool applin=false; // for disabling printing timing below in function
+    if (applin)
+    {
+        double t_pmbasis_applin=0.0;
+        nb_iter=0;
+        while (t_pmbasis_applin<0.2)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, rdim, cdim, degree+1);
+
+            t1 = GetWallTime();
+            Mat<zz_pX> appbas;
+            VecLong rdeg(shift);
+            pmbasis_generic_onecolumn(appbas,pmat,order,rdeg);
+            t2 = GetWallTime();
+
+            t_pmbasis_applin += t2-t1;
+            ++nb_iter;
+        }
+        t_pmbasis_applin /= nb_iter;
+    }
+
+    cout << rdim << "\t" << cdim << "\t" << degree << "\t" << order;
     cout << "\t" << t_pmbasis_app << "\t" << t_pmbasis_int << "\t" << t_pmbasis_intgeom;
+
+    if (applin)
+        std::cout << "\t" << t_pmbasis_applin;
 
     cout << endl;
 }
@@ -113,13 +139,13 @@ void one_bench_pmbasis(long rdim, long cdim, long deg, long order)
 /*------------------------------------------------------------*/
 /* run bench on variety of parameters                         */
 /*------------------------------------------------------------*/
-void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim=-1, long order=-1)
+void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim=-1, long degree=-1, long order=-1)
 {
     SetNumThreads(nthreads);
 
     if (fftprime)
     {
-        cout << "Bench mbasis, FFT prime p = ";
+        cout << "Bench pmbasis, FFT prime p = ";
         if (nbits < 25)
         {
             zz_p::UserFFTInit(786433); // 20 bits
@@ -148,7 +174,7 @@ void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim
     }
     else
     {
-        cout << "Bench mbasis, random prime p = ";
+        cout << "Bench pmbasis, random prime p = ";
         zz_p::init(NTL::GenPrime_long(nbits));
         cout << zz_p::modulus() << ", bit length = " << nbits << endl;
     }
@@ -182,7 +208,7 @@ void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim
         cout << endl;
     }
     else
-        one_bench_pmbasis(rdim,cdim,order-1,order); // degree ~ order
+        one_bench_pmbasis(rdim,cdim,degree,order);
 }
 
 /*------------------------------------------------------------*/
@@ -193,19 +219,20 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    if (argc!=3 and argc!=6)
-        throw std::invalid_argument("Usage: ./time_pmbasis nbits fftprime (rdim cdim order)");
+    if (argc!=3 and argc!=7)
+        throw std::invalid_argument("Usage: ./time_pmbasis nbits fftprime (rdim cdim degree order)");
     // assume rdim>0 , cdim>0, order>0
 
     const long nbits = atoi(argv[1]);
     const bool fftprime = (atoi(argv[2])==1);
 
-    if (argc==6)
+    if (argc==7)
     {
         const long rdim = atoi(argv[3]);
         const long cdim = atoi(argv[4]);
-        const long order = atoi(argv[5]);
-        run_bench(1,nbits,fftprime,rdim,cdim,order);
+        const long degree = atoi(argv[5]);
+        const long order = atoi(argv[6]);
+        run_bench(1,nbits,fftprime,rdim,cdim,degree,order);
     }
     else
         run_bench(1,nbits,fftprime);

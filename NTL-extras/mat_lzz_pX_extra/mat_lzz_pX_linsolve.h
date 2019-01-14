@@ -204,7 +204,8 @@ void linsolve_via_series(
 // return a and denominator d
 // assumes M is invertible
 // TODO not well tested yet
-void linsolve_via_kernel(
+// returns 0 if no solution, 1 otherwise
+long linsolve_via_kernel(
                          Vec<zz_pX> & u,
                          zz_pX & den,
                          const Mat<zz_pX> & A,

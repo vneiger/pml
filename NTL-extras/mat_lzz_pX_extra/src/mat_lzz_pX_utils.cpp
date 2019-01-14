@@ -466,7 +466,7 @@ void eval(Mat<zz_p> & evmat, const Vec<Mat<zz_p>> & matp, const zz_p & pt)
 }
 
 /*------------------------------------------------------------*/
-/* random matrix of length n, degree < d                      */
+/* random vector of length n, degree < d                      */
 /*------------------------------------------------------------*/
 void random(Vec<zz_pX> & pvec, long n, long d)
 {

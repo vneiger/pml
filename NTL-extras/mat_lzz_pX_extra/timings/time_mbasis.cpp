@@ -7,7 +7,7 @@
 #include "mat_lzz_pX_approximant.h"
 #include "mat_lzz_pX_interpolant.h"
 
-std::ostream &operator<<(std::ostream &out, const VecLong &s)
+static std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
     out << "[ ";
     for (auto &i: s)
@@ -20,7 +20,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /* run one bench for specified rdim,cdim,order                */
 /*------------------------------------------------------------*/
-void one_bench_mbasis(long rdim, long cdim, long order)
+void one_bench_mbasis(long rdim, long cdim, long degree, long order)
 {
     VecLong shift(rdim,0);
 
@@ -32,7 +32,7 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     while (t_mbasis_rescomp<0.1)
     {
         Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, order);
+        random(pmat, rdim, cdim, degree+1);
 
         t1 = GetWallTime();
         Mat<zz_pX> appbas;
@@ -50,7 +50,7 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     while (t_mbasis_resupdate<0.1)
     {
         Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, order);
+        random(pmat, rdim, cdim, degree+1);
         VecLong pivdeg;
 
         t1 = GetWallTime();
@@ -64,6 +64,8 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     }
     t_mbasis_resupdate /= nb_iter;
 
+    // TODO : when degree<order-1, should probably take a matrix of degree 'degree'
+    // and evaluate at 'order' points
     double t_mbasis_int_rescomp=0.0;
     if (order<zz_p::modulus())
     {
@@ -90,6 +92,8 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     else // not enough distinct points can be found
         t_mbasis_int_rescomp = -1.0;
 
+    // TODO : when degree<order-1, should probably take a matrix of degree 'degree'
+    // and evaluate at 'order' points
     double t_mbasis_int_resupdate=0.0;
     if (order<zz_p::modulus())
     {
@@ -116,8 +120,7 @@ void one_bench_mbasis(long rdim, long cdim, long order)
     else // not enough distinct points can be found
         t_mbasis_int_resupdate = -1.0;
 
-
-    cout << rdim << "\t" << cdim << "\t" << order;
+    cout << rdim << "\t" << cdim << "\t" << order << "\t" << degree;
     cout << "\t" << t_mbasis_rescomp << "\t" << t_mbasis_resupdate;
     cout << "\t" << t_mbasis_int_rescomp << "\t" << t_mbasis_int_resupdate;
     cout << endl;
@@ -126,7 +129,7 @@ void one_bench_mbasis(long rdim, long cdim, long order)
 /*------------------------------------------------------------*/
 /* run bench on variety of parameters                         */
 /*------------------------------------------------------------*/
-void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim=-1, long order=-1)
+void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim=-1, long degree=-1, long order=-1)
 {
     SetNumThreads(nthreads);
 
@@ -167,7 +170,7 @@ void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim
     }
 
     std::cout << "Note: negative timings for interpolant variants indicate that not enough interpolation points could be found in the base field." << std::endl;
-    cout << "rdim\tcdim\torder\tapp-rcmp\tapp-rupd\tint-rcmp\tint-rupd" << endl;
+    cout << "rdim\tcdim\tdegree\torder\tapp-rcmp\tapp-rupd\tint-rcmp\tint-rupd" << endl;
     
     if (rdim==-1) // then cdim==-1 && order==-1, default case
     {
@@ -184,13 +187,16 @@ void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim
                 else if (szs[i]==1024)
                     max_order=32;
                 for (long k=2; k<=max_order; k=2*k)
-                    one_bench_mbasis(szs[i],j,k);
+                {
+                    one_bench_mbasis(szs[i],j,k-1,k); // degree ~ order
+                    one_bench_mbasis(szs[i],j,k-1,2*k); // degree ~ order/2
+                }
             }
         }
         cout << endl;
     }
     else
-        one_bench_mbasis(rdim,cdim,order);
+        one_bench_mbasis(rdim,cdim,degree,order);
 }
 
 /*------------------------------------------------------------*/
@@ -201,19 +207,20 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    if (argc!=3 and argc!=6)
-        throw std::invalid_argument("Usage: ./time_mbasis nbits fftprime (rdim cdim order)");
-    // assume rdim>0 , cdim>0, order>0
+    if (argc!=3 and argc!=7)
+        throw std::invalid_argument("Usage: ./time_mbasis nbits fftprime (rdim cdim degree order)");
+    // assume rdim>0 , cdim>0, degree>0, order>0
 
     const long nbits = atoi(argv[1]);
     const bool fftprime = (atoi(argv[2])==1);
 
-    if (argc==6)
+    if (argc==7)
     {
         const long rdim = atoi(argv[3]);
         const long cdim = atoi(argv[4]);
-        const long order = atoi(argv[5]);
-        run_bench(1,nbits,fftprime,rdim,cdim,order);
+        const long degree = atoi(argv[5]);
+        const long order = atoi(argv[6]);
+        run_bench(1,nbits,fftprime,rdim,cdim,degree,order);
     }
     else
         run_bench(1,nbits,fftprime);
