@@ -43,7 +43,6 @@ NTL_CLIENT
  **/
 void kernel_basis(
                   Mat<zz_pX> & kerbas,
-                  VecLong & pivind,
                   const Mat<zz_pX> & pmat,
                   const VecLong & shift
                  );
@@ -62,7 +61,8 @@ bool is_kernel_basis(
                     );
 
 /** Computes a `shift`-minimal kernel basis `kerbas` for `pmat`, using a single
- * call to minimal appoximant basis at sufficiently large order.
+ * call to minimal appoximant basis at sufficiently large order. Returns the
+ * `shift`-pivot index, and `shift` becomes the shifted row degree.
  *
  * \todo implement/use shift entries reduction (the approximation order depends
  * on these entries, and they may be reduced depending on the
@@ -77,7 +77,8 @@ void kernel_basis_via_approximation(
 
 /** Computes a `shift`-minimal kernel basis `kerbas` for `pmat`, using a single
  * call to minimal interpolant basis at sufficiently long sequence of geometric
- * points.
+ * points. Returns the `shift`-pivot index, and `shift` becomes the shifted row
+ * degree.
  *
  * \todo implement/use shift entries reduction (the approximation order depends
  * on these entries, and they may be reduced depending on the
@@ -101,7 +102,6 @@ void kernel_basis_via_interpolation(
  */
 void kernel_basis_zls_via_approximation(
                                         Mat<zz_pX> & kerbas,
-                                        VecLong & pivind,
                                         Mat<zz_pX> & pmat,
                                         VecLong & shift
                                        );
@@ -112,7 +112,6 @@ void kernel_basis_zls_via_approximation(
  * ISSAC 2012), relying on interpolant bases rather than approximant bases. */
 void kernel_basis_zls_via_interpolation(
                                         Mat<zz_pX> & kerbas,
-                                        VecLong & pivind,
                                         Mat<zz_pX> & pmat,
                                         VecLong & shift
                                        );

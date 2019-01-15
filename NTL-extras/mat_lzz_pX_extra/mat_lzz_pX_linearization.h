@@ -1,5 +1,5 @@
-#ifndef MAT_LZZ_PX_PARTIAL_LINEARIZATION__H
-#define MAT_LZZ_PX_PARTIAL_LINEARIZATION__H
+#ifndef MAT_LZZ_PX_LINEARIZATION__H
+#define MAT_LZZ_PX_LINEARIZATION__H
 
 #include <numeric> // for 'accumulate'
 
@@ -267,7 +267,7 @@ inline void right_parlin_middle_product(
     right_parlin_middle_product(c, a, b, parlin_degree, col_degree, dA, dB);
 }
 
-#endif // MAT_LZZ_PX_PARTIAL_LINEARIZATION__H
+#endif // MAT_LZZ_PX_LINEARIZATION__H
 
 // Local Variables:
 // mode: C++

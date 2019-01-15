@@ -44,7 +44,7 @@ void col_rank_deficient_mat(Mat<zz_pX> &m, const long r, const long c, const lon
         m[i][c-1] = new_col[i][0];
 }
 
-std::vector<VecLong> build_test_shifts(long rdim, long cdim, long order)
+std::vector<VecLong> build_test_shifts(long rdim, long cdim, long order, bool bigamp_shifts)
 {
     std::vector<VecLong> shifts;
 
@@ -66,32 +66,34 @@ std::vector<VecLong> build_test_shifts(long rdim, long cdim, long order)
     std::iota(shifts.back().begin(), shifts.back().end(), 0);
     std::shuffle(shifts.back().begin(), shifts.back().end(), std::mt19937{std::random_device{}()});
 
-    // Hermite shift
-    shifts.emplace_back(rdim);
-    i = 0;
-    for (auto it = shifts.back().begin(); it != shifts.back().end(); ++it, i+=cdim*order)
-        *it = i;
-
-    // reverse Hermite shift
-    shifts.emplace_back(rdim);
-    for (auto it = shifts.back().begin(); it != shifts.back().end(); ++it, i-=cdim*order)
-        *it = i;
-
-    // "plateau" shift   [0 ... 0  inf ... inf]
-    shifts.emplace_back(rdim);
-    auto it = shifts.back().begin();
-    std::advance(it, rdim/2);
-    for (; it != shifts.back().end(); ++it)
-        *it = cdim*order;
+    if (bigamp_shifts)
+    {
+        // Hermite shift
+        shifts.emplace_back(rdim);
+        i = 0;
+        for (auto it = shifts.back().begin(); it != shifts.back().end(); ++it, i+=cdim*order)
+            *it = i;
+        
+        // reverse Hermite shift
+        shifts.emplace_back(rdim);
+        for (auto it = shifts.back().begin(); it != shifts.back().end(); ++it, i-=cdim*order)
+            *it = i;
+        
+        // "plateau" shift   [0 ... 0  inf ... inf]
+        shifts.emplace_back(rdim);
+        auto it = shifts.back().begin();
+        std::advance(it, rdim/2);
+        for (; it != shifts.back().end(); ++it)
+            *it = cdim*order;
+    }
 
     return shifts;
 }
 
-
 // build test matrices and test (row-wise) shifts
 // (this is not optimized in terms of memory..)
 std::pair<std::vector<Mat<zz_pX>>, std::vector<std::vector<VecLong>>>
-build_test_examples()
+build_test_examples(bool bigamp_shifts=false)
 {
     // dimensions we will try
     std::vector<long> rdims = {1, 2, 3, 5, 10, 15, 23};
@@ -114,7 +116,7 @@ build_test_examples()
             auto mat = Mat<zz_pX>();
             mat.SetDims(rdim,cdim);
             test_matrices.push_back(mat);
-            test_shifts.emplace_back(build_test_shifts(rdim,cdim,2));
+            test_shifts.emplace_back(build_test_shifts(rdim,cdim,2,bigamp_shifts));
         }
 
     // random matrices, uniform degree
@@ -123,7 +125,7 @@ build_test_examples()
             for (long d : degs)
             {
                 test_matrices.push_back(random_mat_zz_pX(rdim, cdim, d));
-                test_shifts.emplace_back(build_test_shifts(rdim,cdim,d+3));
+                test_shifts.emplace_back(build_test_shifts(rdim,cdim,d+3,bigamp_shifts));
             }
 
     // rank deficient square matrices
@@ -134,7 +136,7 @@ build_test_examples()
             Mat<zz_pX> tmp;
             row_rank_deficient_mat(tmp,rdim,rdim,d);
             test_matrices.push_back(tmp);
-            test_shifts.emplace_back(build_test_shifts(rdim,rdim,d+2));
+            test_shifts.emplace_back(build_test_shifts(rdim,rdim,d+2,bigamp_shifts));
         }
 
 
@@ -149,7 +151,7 @@ build_test_examples()
                 {
                     col_rank_deficient_mat(tmp,rdim,cdim,d);
                     test_matrices.push_back(tmp);
-                    test_shifts.emplace_back(build_test_shifts(rdim,cdim,d+1));
+                    test_shifts.emplace_back(build_test_shifts(rdim,cdim,d+1,bigamp_shifts));
                 }
             }
 
@@ -164,7 +166,7 @@ build_test_examples()
                 {
                     row_rank_deficient_mat(tmp,rdim,cdim,d);
                     test_matrices.push_back(tmp);
-                    test_shifts.emplace_back(build_test_shifts(rdim,cdim,d+7));
+                    test_shifts.emplace_back(build_test_shifts(rdim,cdim,d+7,bigamp_shifts));
                 }
             }
 

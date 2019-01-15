@@ -42,8 +42,9 @@ int main(int argc, char *argv[])
     }
 
     // build couple (test_matrices, test_shifts)
+    // without large amplitude shifts (otherwise, too long)
     std::pair<std::vector<Mat<zz_pX>>, std::vector<std::vector<VecLong>>>
-    test_examples = build_test_examples();
+    test_examples = build_test_examples(false);
 
     std::cout << "Testing kernel basis computation." << std::endl;
     std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
@@ -145,16 +146,12 @@ int main(int argc, char *argv[])
                 Mat<zz_pX> copy_pmat(*pmat);
                 Mat<zz_pX> kerbas;
                 VecLong rdeg(shift);
-                VecLong pivind;
-                kernel_basis_zls_via_approximation(kerbas,pivind,copy_pmat,rdeg);
+                kernel_basis_zls_via_approximation(kerbas,copy_pmat,rdeg);
 
                 if (verbose)
                     std::cout << "OK. Testing... ";
 
-                VecLong pivind_test, pivdeg_test;
-                row_pivots(pivind_test, pivdeg_test, kerbas, shift);
-
-                if (pivind != pivind_test || not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
+                if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
                 {
                     std::cout << "Error in kernel_basis_zls_via_approximation." << std::endl;
                     std::cout << "--rdim =\t" << rdim << std::endl;
@@ -178,16 +175,12 @@ int main(int argc, char *argv[])
                 Mat<zz_pX> copy_pmat(*pmat);
                 VecLong rdeg(shift);
                 Mat<zz_pX> kerbas;
-                VecLong pivind;
-                kernel_basis_zls_via_interpolation(kerbas,pivind,copy_pmat,rdeg);
+                kernel_basis_zls_via_interpolation(kerbas,copy_pmat,rdeg);
 
                 if (verbose)
                     std::cout << "OK. Testing... ";
 
-                VecLong pivind_test, pivdeg_test;
-                row_pivots(pivind_test, pivdeg_test, kerbas, shift);
-
-                if (pivind != pivind_test || not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
+                if (not is_kernel_basis(kerbas,*pmat,shift,ORD_WEAK_POPOV,true))
                 {
                     std::cout << "Error in kernel_basis_zls_via_interpolation." << std::endl;
                     std::cout << "--rdim =\t" << rdim << std::endl;

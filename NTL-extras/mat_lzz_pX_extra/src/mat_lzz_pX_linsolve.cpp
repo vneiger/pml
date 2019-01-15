@@ -473,13 +473,19 @@ long linsolve_via_kernel(
     VecLong shift;
     row_degree(shift, pmat);
     ++shift[n];
-    VecLong copy(shift);
+    VecLong copy_shift(shift);
     Mat<zz_pX> copymat(pmat);
 
     // compute kernel
     Mat<zz_pX> kerbas;
+    kernel_basis_zls_via_approximation(kerbas, pmat, shift);
+
+    // compute shifted pivot index of kernel
+    // Note that here copy_shift is a copy of the initial shift while `shift`
+    // is merely used as a temporary variable which will hold the pivot
+    // degrees, which we just ignore (they are not needed)
     VecLong pivind;
-    kernel_basis_zls_via_approximation(kerbas, pivind, pmat, shift);
+    row_pivots(pivind, shift, kerbas, copy_shift);
 
     // if kernel is empty, there is no solution
     // (may happen only if m > n)
@@ -499,7 +505,7 @@ long linsolve_via_kernel(
         std::cout << "Degree matrix kernel: " << std::endl << degree_matrix(kerbas) << std::endl;
         std::cout << "Degree matrix input: " << std::endl << degree_matrix(copymat) << std::endl;
         std::cout << "pivind : " << pivind << std::endl;
-        std::cout << "shift : " << copy << std::endl;
+        std::cout << "shift : " << copy_shift << std::endl;
         LogicError("BLA");
         return 0;
     }
