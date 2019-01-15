@@ -1506,9 +1506,14 @@ void pmbasis(
     // shift is now the shifted row degree of appbas,
     // which is the shift for second call
 
+    // TODO remove once middle_product has been fixed? (currently that's why
+    // it's here)
+    // TODO require this for the input?
+    trunc(trunc_pmat, pmat, order);
+
     // residual = (appbas * pmat * X^-order1) mod X^order2
     Mat<zz_pX> residual; // for the residual
-    middle_product(residual, appbas, pmat, order1, order2-1);
+    middle_product(residual, appbas, trunc_pmat, order1, order2-1);
 
     // second recursive call, with 'residual' and 'rdeg'
     Mat<zz_pX> appbas2; // basis for second call

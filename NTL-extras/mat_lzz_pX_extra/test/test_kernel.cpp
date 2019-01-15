@@ -12,13 +12,13 @@ static std::ostream &operator<<(std::ostream &out, const VecLong &s)
     return out << "]";
 }
 
-void get_mat(Mat<zz_pX> & pmat, std::vector<std::vector<std::vector<long>>> std_pmat)
-{
-    for (size_t i = 0; i < std_pmat.size(); ++i)
-        for (size_t j = 0; j < std_pmat[i].size(); ++j)
-            for (size_t k = 0; k < std_pmat[i][j].size(); ++k)
-                SetCoeff(pmat[i][j], k, std_pmat[i][j][k]);
-}
+//void get_mat(Mat<zz_pX> & pmat, std::vector<std::vector<std::vector<long>>> std_pmat)
+//{
+//    for (size_t i = 0; i < std_pmat.size(); ++i)
+//        for (size_t j = 0; j < std_pmat[i].size(); ++j)
+//            for (size_t k = 0; k < std_pmat[i][j].size(); ++k)
+//                SetCoeff(pmat[i][j], k, std_pmat[i][j][k]);
+//}
 
 int main(int argc, char *argv[])
 {

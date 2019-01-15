@@ -58,9 +58,9 @@ void all_checks_via_series()
 void all_checks_via_kernel(bool verbose)
 {
     // build couple (test_matrices, test_shifts)
-    // shifts will not be used here
+    // Note: shifts will not be used here, so don't build the large amplitude ones
     std::pair<std::vector<Mat<zz_pX>>, std::vector<std::vector<VecLong>>>
-    test_examples = build_test_examples();
+    test_examples = build_test_examples(false);
 
     Vec<zz_pX> u;
     zz_pX den;
@@ -130,43 +130,31 @@ void all_checks_via_kernel(bool verbose)
             if (verbose)
                 std::cout << "Computation of system solution... ";
 
-            if (inst==1794)
+            long success = linsolve_via_kernel(u, den, *pmat, b);
+
+            if (verbose)
+                std::cout << "OK. Testing... ";
+
+            // TODO check there is no solution if it returned 0 !!
+            // TODO check irreducible solution !!
+            if (success!=0)
             {
-                std::cout << "Input matrix: " << std::endl << *pmat << std::endl;
-                std::cout << "Input vector: " << std::endl << b << std::endl;
-
-                long success = linsolve_via_kernel(u, den, *pmat, b);
-
-                if (verbose)
-                    std::cout << "OK. Testing... ";
-
-                if (success==0)
+                if ((*pmat)*u != den*b)
                 {
-                    std::cout << "no solution found" << std::endl;
+                    std::cout << "Error in linsolve_via_kernel." << std::endl;
+                    std::cout << "--rdim =\t" << rdim << std::endl;
+                    std::cout << "--cdim =\t" << cdim << std::endl;
+                    std::cout << "--deg =\t" << d << std::endl;
+                    std::cout << "--modulus = \t" << zz_p::modulus() << std::endl;
+                    std::cout << "Input matrix: " << std::endl << *pmat << std::endl;
+                    std::cout << "Input vector: " << std::endl << b << std::endl;
+                    std::cout << "Output vector: " << std::endl << u << std::endl;
+                    std::cout << "Output denominator: " << std::endl << den << std::endl;
+                    return;
                 }
-                else
-                {
-                    // TODO
-                    if (deg(u) >= deg(den))
-                        std::cout << "linsolve_via_kernel: degree not like wished" << std::endl;
-
-                    if ((*pmat)*u != den*b)
-                    {
-                        std::cout << "Error in linsolve_via_kernel." << std::endl;
-                        std::cout << "--rdim =\t" << rdim << std::endl;
-                        std::cout << "--cdim =\t" << cdim << std::endl;
-                        std::cout << "--deg =\t" << d << std::endl;
-                        std::cout << "--modulus = \t" << zz_p::modulus() << std::endl;
-                        std::cout << "Input matrix: " << std::endl << *pmat << std::endl;
-                        std::cout << "Input vector: " << std::endl << b << std::endl;
-                        std::cout << "Output vector: " << std::endl << u << std::endl;
-                        std::cout << "Output denominator: " << std::endl << den << std::endl;
-                        return;
-                    }
-                }
-                if (verbose)
-                    std::cout << "OK." << std::endl;
             }
+            if (verbose)
+                std::cout << "OK." << std::endl;
         }
     }
     std::cout << "Solve via kernel: all " << inst << " instances processed with success." << std::endl;

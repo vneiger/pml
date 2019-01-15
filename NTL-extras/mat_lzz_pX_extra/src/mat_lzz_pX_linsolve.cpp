@@ -12,14 +12,6 @@
 
 NTL_CLIENT
 
-std::ostream &operator<<(std::ostream &out, const VecLong &s)
-{
-    out << "[ ";
-    for (auto &i: s)
-        out << i << " ";
-    return out << "]";
-}
-
 /*------------------------------------------------------------*/
 /* solve A u = b mod x^prec                                   */
 /* A square, A(0) invertible, deg(A), deg(b) < prec           */
@@ -465,18 +457,18 @@ long linsolve_via_kernel(
     pmat.SetDims(n+1,m); // add one row below for storing b
     pmat[n] = b;
 
-    // shift = row degree of augmented matrix, +1 on the entry corresponding to b
+    // shift = row degree of augmented matrix
     // --> this is the shift which ensures good efficiency for the used kernel
     // algorithm (Zhou-Labahn-Storjohann ISSAC 2012)
     // --> with this shift, we are sure to obtain a vector in the kernel of
-    // the form [ -- u -- | den ] with deg(den) > deg(u)
+    // the form [ -- u -- | den ] with den being the pivot entry (hence,
+    // gives an irreducible solution)
     VecLong shift;
     row_degree(shift, pmat);
-    ++shift[n];
     VecLong copy_shift(shift);
-    Mat<zz_pX> copymat(pmat);
 
     // compute kernel
+    // TODO via ZLS-approx... for larger dimensions sometimes interp might be better: needs tuning
     Mat<zz_pX> kerbas;
     kernel_basis_zls_via_approximation(kerbas, pmat, shift);
 
@@ -487,28 +479,16 @@ long linsolve_via_kernel(
     VecLong pivind;
     row_pivots(pivind, shift, kerbas, copy_shift);
 
-    // if kernel is empty, there is no solution
-    // (may happen only if m > n)
-    // TODO remove (covered below
-    if (kerbas.NumRows()==0)
-        return 0;
-
     // find index of row of kerbas with pivot index in the last entry
     VecLong::const_iterator pivind_n = std::find(pivind.begin(), pivind.end(), n);
+
     // if no such row, there is no solution
     // --> may happen if kernel is empty, which itself may happen only if m > n
     // --> may also happen if A is rank-deficient but b is not in the
     // K(x)-column space of A, then kerbas is simply a kernel basis for A
     if (pivind_n==pivind.end())
-    {
-        std::cout << "!!!!!NOSOL-PIVIND!!!!!" << std::endl;
-        std::cout << "Degree matrix kernel: " << std::endl << degree_matrix(kerbas) << std::endl;
-        std::cout << "Degree matrix input: " << std::endl << degree_matrix(copymat) << std::endl;
-        std::cout << "pivind : " << pivind << std::endl;
-        std::cout << "shift : " << copy_shift << std::endl;
-        LogicError("BLA");
         return 0;
-    }
+
     const long row = pivind_n - pivind.begin();
 
     // deduce solution
