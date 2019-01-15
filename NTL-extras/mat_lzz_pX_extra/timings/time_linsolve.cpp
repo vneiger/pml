@@ -50,18 +50,18 @@ void one_bench(long sz, long degmat, long degvec)
 
     //cout << idx << endl;
 
-    //nb_iter = 0; t=0.0;
-    //while (t<0.2)
-    //{
-    //    random(A, sz, sz, degmat);
-    //    random(b, sz, degvec);
-    //    tt = get_time();
-    //    linsolve_via_kernel(u, den, A, b);
-    //    t += get_time()-tt;
-    //    ++nb_iter;
-    //}
-    //t /= nb_iter;
-    //cout << t << "\t";
+    nb_iter = 0; t=0.0;
+    while (t<0.2)
+    {
+        random(A, sz, sz, degmat);
+        random(b, sz, degvec);
+        tt = get_time();
+        linsolve_via_kernel(u, den, A, b);
+        t += get_time()-tt;
+        ++nb_iter;
+    }
+    t /= nb_iter;
+    cout << t << "\t";
 
     cout << endl;
 }
