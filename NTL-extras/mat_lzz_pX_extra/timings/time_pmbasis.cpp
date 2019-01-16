@@ -7,14 +7,6 @@
 #include "mat_lzz_pX_approximant.h"
 #include "mat_lzz_pX_interpolant.h"
 
-static std::ostream &operator<<(std::ostream &out, const VecLong &s)
-{
-    out << "[ ";
-    for (auto &i: s)
-        out << i << " ";
-    return out << "]";
-}
-
 NTL_CLIENT
 
 /*------------------------------------------------------------*/

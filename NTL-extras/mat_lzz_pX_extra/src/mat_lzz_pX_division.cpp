@@ -35,6 +35,7 @@ void quo_rem(
         R = A;
         Q.SetDims(m,n);
         clear(Q);
+        return;
     }
 
     // step 1: reverse input matrices
