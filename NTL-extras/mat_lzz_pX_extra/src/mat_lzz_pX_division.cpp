@@ -1,82 +1,68 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-#include <NTL/BasicThreadPool.h>
-
-#include "util.h"
-#include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
-#include "lzz_pX_CRT.h"
 
 NTL_CLIENT
 
-void quo_rem(Mat<zz_pX> &Q, 
-             Mat<zz_pX> &R, 
-             const Mat<zz_pX> &A,
-             const Mat<zz_pX> &B)
+// Left division: 
+// B must be row reduced
+// computes Q,R such that A = BQ + R
+// Follows classical algorithm: reverse and truncated inverse
+// (e.g. detailed in Algorithm 1 in [Neiger-Vu ISSAC 17])
+void quo_rem(
+             Mat<zz_pX> & Q,
+             Mat<zz_pX> & R,
+             const Mat<zz_pX> & A,
+             const Mat<zz_pX> & B
+            )
 {
     const long m = B.NumRows();
     const long n = A.NumCols();
 
-    // step 0: find parameter d (delta in Neiger-Vu17)
+    // step 0: find parameter d = max(rdeg(A) - rdeg(B))
+    // (corresponds to delta-1 in [Neiger-Vu ISSAC 17]
     VecLong rdegA;
-    VecLong rdeg;
-    rdegA.resize(m);
-    rdeg.resize(m);
     row_degree(rdegA, A);
-    row_degree(rdeg, B);
-    long d = rdegA[0] - rdeg[0] + 1;
-    for (long i = 1; i < m; i++)
-    {
-        if (rdegA[i] - rdeg[i] + 1 > d)
-            d = rdegA[i] - rdeg[i] + 1;
-    }
-    if (d <= 0) // A already reduce mod B, Q = 0
+    VecLong rdegB;
+    row_degree(rdegB, B);
+    long d = rdegA[0] - rdegB[0];
+    for (long i = 1; i < m; ++i)
+        if (rdegA[i] - rdegB[i] > d)
+            d = rdegA[i] - rdegB[i];
+
+    // if rdeg(A) < rdeg(B), then A is already reduced
+    // modulo B: quotient is 0, remainder is A
+    if (d < 0)
     {
         R = A;
-        Q = Mat<zz_pX>();
         Q.SetDims(m,n);
+        clear(Q);
     }
 
     // step 1: reverse input matrices
-    Mat<zz_pX> Arev, Brev;
-    VecLong Arevdeg;
-    for (long i = 0; i < m; i++)
-        Arevdeg.emplace_back(d+rdeg[i]-1);
-    row_reverse(Arev, A, Arevdeg);
-    row_reverse(Brev, B, rdeg);
-    
+    // B is reversed w.r.t. its row degree rdegB
+    Mat<zz_pX> Brev;
+    row_reverse(Brev, B, rdegB);
+    // A is reversed w.r.t. d + rdegB
+    // we directly modify rdegB += d, since it is not used afterwards
+    std::for_each(rdegB.begin(), rdegB.end(), [&](long & r){r+=d;});
+    Mat<zz_pX> buf;
+    row_reverse(buf, A, rdegB);
+
     // step 2: compute quotient
-    solve_series_high_precision(Q, Brev, Arev, d);
-    reverse(Q,Q,d-1);
-    
+    // Qrev = Brev^{-1} R mod X^{d+1}
+    // (we use R to store the reversed quotient Qrev)
+    solve_series(R, Brev, buf, d+1);
+    reverse(Q, R, d);
+
     // step 3: deduce remainder
-    Mat<zz_pX> T;
-    multiply(T, B, Q);
-    R = A - T;
+    // R = A - B*Q
+    multiply(buf, B, Q);
+    sub(R, A, buf);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

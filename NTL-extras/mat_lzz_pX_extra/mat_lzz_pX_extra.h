@@ -47,16 +47,23 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-// TODO to be tested, improved, then moved to a relevant file
-
-// computes Q,R such that A = BQ + R
+/** Given a matrix `B` (square, row reduced) and a matrix `A` (same row
+ * dimension as `B`), computes the quotient and remainder in the polynomial
+ * matrix left division of A by B. Precisely, `A = B*Q + R`, with the row-wise
+ * degree constraint that `row_degree(R) < row_degree(B)`.
+ *
+ * This is based on the classical fast division algorithm for univariate
+ * polynomials: obtain the quotient by a multiplication of the reverse of `A`
+ * by the truncated inverse of the reverse of `B`, and then deduce the
+ * remainder. See for example [Neiger - Vu, ISSAC 2017] for a more detailed
+ * description. Note that this currently does not incorporate optimizations
+ * (partial linearization, ...) when the row degree of `B` is not balanced. */
 void quo_rem(
-             Mat<zz_pX> &Q, 
-             Mat<zz_pX> &R, 
-             const Mat<zz_pX> &A,
-             const Mat<zz_pX> &B
+             Mat<zz_pX> & Q,
+             Mat<zz_pX> & R,
+             const Mat<zz_pX> & A,
+             const Mat<zz_pX> & B
             );
-
 
 
 
