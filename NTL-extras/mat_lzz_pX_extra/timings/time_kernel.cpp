@@ -24,8 +24,10 @@ void one_bench_kernel(long rdim, long cdim, long deg)
     {
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, deg);
-        tt = GetWallTime();
         VecLong shift(rdim); // uniform shift
+        //for (long i = rdim/2; i < rdim; ++i) // basis reduction-like shift
+        //    shift[i] = cdim*deg;
+        tt = GetWallTime();
         Mat<zz_pX> kerbas;
         VecLong pivind;
         kernel_basis_via_approximation(kerbas,pivind,pmat,shift);
@@ -40,8 +42,10 @@ void one_bench_kernel(long rdim, long cdim, long deg)
     {
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, deg);
-        tt = GetWallTime();
         VecLong shift(rdim); // uniform shift
+        //for (long i = rdim/2; i < rdim; ++i) // basis reduction-like shift
+        //    shift[i] = cdim*deg;
+        tt = GetWallTime();
         Mat<zz_pX> kerbas;
         VecLong pivind;
         kernel_basis_via_interpolation(kerbas,pivind,pmat,shift);
@@ -56,11 +60,12 @@ void one_bench_kernel(long rdim, long cdim, long deg)
     {
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, deg);
-        tt = GetWallTime();
         VecLong shift(rdim); // uniform shift
+        //for (long i = rdim/2; i < rdim; ++i) // basis reduction-like shift
+        //    shift[i] = cdim*deg;
+        tt = GetWallTime();
         Mat<zz_pX> kerbas;
-        VecLong pivind;
-        kernel_basis_zls_via_approximation(kerbas,pivind,pmat,shift);
+        kernel_basis_zls_via_approximation(kerbas,pmat,shift);
         t += GetWallTime()-tt;
         ++nb_iter;
     }
@@ -72,11 +77,12 @@ void one_bench_kernel(long rdim, long cdim, long deg)
     {
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, deg);
+        VecLong shift(rdim); // uniform shift
+        //for (long i = rdim/2; i < rdim; ++i) // basis reduction-like shift
+        //    shift[i] = cdim*deg;
         tt = GetWallTime();
         Mat<zz_pX> kerbas;
-        VecLong shift(rdim);
-        VecLong pivind;
-        kernel_basis_zls_via_interpolation(kerbas,pivind,pmat,shift);
+        kernel_basis_zls_via_interpolation(kerbas,pmat,shift);
         t += GetWallTime()-tt;
         ++nb_iter;
     }
