@@ -120,7 +120,7 @@ void one_bench_mbasis(long rdim, long cdim, long degree, long order)
     else // not enough distinct points can be found
         t_mbasis_int_resupdate = -1.0;
 
-    cout << rdim << "\t" << cdim << "\t" << order << "\t" << degree;
+    cout << rdim << "\t" << cdim << "\t" << degree << "\t" << order;
     cout << "\t" << t_mbasis_rescomp << "\t" << t_mbasis_resupdate;
     cout << "\t" << t_mbasis_int_rescomp << "\t" << t_mbasis_int_resupdate;
     cout << endl;
