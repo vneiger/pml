@@ -133,7 +133,8 @@ void newton_inv_trunc_geometric(
 
 /** Helper for high order lifting. As input, we have a polynomial matrix `pmat`
  * of degree `d`, and its truncated inverse `inv` at order `d`, that is, `inv =
- * pmat^{-1} mod x^d` (see #TruncatedInverse).
+ * pmat^{-1} mod x^d` (see #TruncatedInverse). In particular, the constant
+ * coefficient `pmat(0)` must be invertible.
  *
  * For a given nonnegative integer `i`, we define `Si` to be the slice of the
  * expansion of `pmat^{-1}` of its terms of degree between `i-(2d-1)` and `i-1`

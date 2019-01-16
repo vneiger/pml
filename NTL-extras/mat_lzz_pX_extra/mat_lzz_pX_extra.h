@@ -120,8 +120,25 @@ void diagonal_of_hermite(Vec<zz_pX> & diag, const Mat<zz_pX> & pmat);
 // TODO understand if there is any chance Alekhnovich improves over the
 // kernel approach
 
-// TODO nonsingular: Giorgi-Jeannerod-Villard's Las Vegas reduction
 // (worth implementing for shifts other than uniform?)
+/** Computation of a row reduced form `reduced` of `pmat` by the Las Vegas
+ * randomized algorithm of [Giorgi - Jeannerod - Villard, ISSAC 2003].
+ * Requirements: `pmat` is square (not checked) and `pmat(0)` is invertible
+ * (checked). Returns 0 if `pmat(0)` was not invertible, otherwise the
+ * computation succeeds and this function returns 1.
+ *
+ * \todo if `pmat(0)` is not invertible, should this function try again by
+ * shifting with a random point? (yes if this is negligible compared to the
+ * rest, otherwise, leave this choice to the user)
+ *
+ * \todo any shifted variant better than the trivial reduction to the uniform
+ * shift? A shifted variant may require more terms of the truncated inverse of
+ * the matrix.
+ */
+long reduced_form_gjv(
+                      Mat<zz_pX> & reduced,
+                      const Mat<zz_pX> & pmat
+                     );
 
 
 
