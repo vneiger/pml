@@ -1,50 +1,76 @@
+#include <iomanip>
 #include "mat_lzz_pX_extra.h"
 
 NTL_CLIENT
 
-int main(int argc, char *argv[])
+int main()
 {
-    //if (argc!=3)
-    //    throw std::invalid_argument("Usage: ./test_reduction nbits verbose\n\t--nbits: 0 for FFT prime, between 3 and 60 for normal prime\n\t--verbose: 0/1");
+    zz_p::FFTInit(0);
 
-    const long nbits = atoi(argv[1]);
-    const long dim = atoi(argv[2]);
-    const long deg = atoi(argv[3]);
+    std::cout << std::fixed;
+    std::cout << std::setprecision(8);
 
-    if (nbits==0)
-        zz_p::FFTInit(0);
-    else if (nbits==2)
-        zz_p::init(3); // make sure modulus!=2
-    else
-        zz_p::init(NTL::GenPrime_long(nbits));
+    std::cout << "Basis reduction, FFT prime (FFTInit(0))" << std::endl;
+    std::cout << "dim\tdeg\tinvtrunc\tHOL\t\treconstruct\ttotal\t\towP?\tright deg?" << std::endl;
 
-    // random matrix, degree deg
-    Mat<zz_pX> pmat;
-    random(pmat, dim, dim, deg);
+    VecLong szs = {2,3,4,5,7,10,15,20,30,40,50,75,100,150,200,300,400,500};
 
-    // random unit lower triangular, degree deg
-    Mat<zz_pX> trans;
-    random(trans, dim, dim, deg);
-    for (long i = 0; i < dim; ++i)
+    for (size_t i=0; i<szs.size(); ++i)
     {
-        set(trans[i][i]);
-        for (long j = i+1; j < dim; ++j)
-            clear(trans[i][j]);
+        const long dim = szs[i];
+        long max_deg=16384;
+        if (szs[i]==128)
+            max_deg=2048;
+        if (szs[i]==256)
+            max_deg=256;
+        if (szs[i]==512)
+            max_deg=64;
+
+        for (long d = 32; d <= max_deg; d=2*d)
+        {
+            // random matrix, degree deg
+            Mat<zz_pX> pmat;
+            random(pmat, dim, dim, d+1);
+
+            // random unit lower triangular, degree deg
+            Mat<zz_pX> trans;
+            random(trans, dim, dim, d);
+            for (long i = 0; i < dim; ++i)
+            {
+                set(trans[i][i]);
+                for (long j = i+1; j < dim; ++j)
+                    clear(trans[i][j]);
+            }
+
+            // random unit upper triangular, degree deg
+            Mat<zz_pX> trans2;
+            random(trans2, dim, dim, d);
+            for (long i = 0; i < dim; ++i)
+            {
+                set(trans2[i][i]);
+                for (long j = 0; j < i; ++j)
+                    clear(trans2[i][j]);
+            }
+
+            // somehow random unimodular matrix of degree 2d
+            multiply(trans, trans2, trans);
+
+            // artificially non-reduced pmat
+            Mat<zz_pX> trans_pmat;
+            multiply(trans_pmat, trans, pmat);
+            //std::cout << "\ndegree input:\n" << degree_matrix(trans_pmat) << std::endl;
+
+            double t=GetWallTime();
+            Mat<zz_pX> reduced;
+            reduced_form_gjv(reduced, trans_pmat);
+            std::cout << GetWallTime()-t << "\t";
+            //std::cout << "\ndegree output:\n" << degree_matrix(reduced) << std::endl;
+
+            // tests form
+            std::cout << is_row_ordered_weak_popov(reduced) << "\t";
+            std::cout << (deg(reduced) == d) << std::endl;
+        }
     }
-
-    // artificially non-reduced pmat
-    Mat<zz_pX> trans_pmat;
-    multiply(trans_pmat, trans, pmat);
-    std::cout << "degree input:\n" << degree_matrix(trans_pmat) << std::endl;
-
-    double t=GetWallTime();
-    Mat<zz_pX> reduced;
-    reduced_form_gjv(reduced, trans_pmat);
-    std::cout << GetWallTime()-t << std::endl;
-
-    std::cout << degree_matrix(reduced) << std::endl;
-    std::cout << is_row_reduced(reduced) << std::endl;
-    std::cout << is_row_ordered_weak_popov(reduced) << std::endl;
 
     return 0;
 }
