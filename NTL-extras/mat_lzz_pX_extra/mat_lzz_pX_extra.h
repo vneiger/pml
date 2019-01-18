@@ -110,17 +110,13 @@ void diagonal_of_hermite(Vec<zz_pX> & diag, const Mat<zz_pX> & pmat);
  *            (shifted reduced form and shifted normal forms)         *
  **********************************************************************/
 
-// TODO general reduction to uniform shift via pre-multiplication
-// worthwile at least when shift close to uniform
+// possible TODOs:
+//   - general reduction to uniform shift via pre-multiplication (worthwile at
+//   least when shift close to uniform)
+//   - iterative algorithms for reduced, Popov, Hermite (Mulders-Storjohann is
+//   a good reference)
+//   - general shifted Popov form via kernel (itself via approximant basis)
 
-// TODO naive algorithms (see Mulders-Storjohann for good reference)
-
-// TODO general shifted Popov form via kernel (itself via approximant basis)
-
-// TODO understand if there is any chance Alekhnovich improves over the
-// kernel approach
-
-// (worth implementing for shifts other than uniform?)
 /** Computation of a row reduced form `reduced` of `pmat` by the Las Vegas
  * randomized algorithm of [Giorgi - Jeannerod - Villard, ISSAC 2003].
  * Requirements: `pmat` is square (not checked) and `pmat(0)` is invertible
@@ -141,60 +137,6 @@ long reduced_form_gjv(
                      );
 
 
-
-/**********************************************************************
- *                       DETERMINANT ALGORITHMS                       *
- **********************************************************************/
-
-// general user interface
-// TODO (not implemented yet)
-void determinant(zz_pX & det, const Mat<zz_pX> & pmat);
-
-inline zz_pX determinant(const Mat<zz_pX> & pmat)
-{
-    zz_pX det;
-    determinant(det, pmat);
-    return det;
-}
-
-// verifies that det = c det(pmat),
-// for some c a nonzero field element if up_to_constant==false; and c=1 otherwise
-// if randomized==true, it is allowed to use a Monte Carlo randomized approach
-// TODO: only randomized implemented for now
-bool verify_determinant(const zz_pX & det, const Mat<zz_pX> & pmat, bool up_to_constant, bool randomized);
-
-/*******************************************************************
- *  Labahn-Neiger-Zhou: via diagonal entries of triangularization  *
- *******************************************************************/
-
-void determinant_via_diagonal_of_hermite(zz_pX & det, const Mat<zz_pX> & pmat);
-
-// TODO version assuming diagonal of (lower triangular) Hermite form is
-// [det 1 .. 1] and that we have generic degree profiles in the partial
-// triangularization of Labahn-Neiger-Zhou
-
-// Version 1 (deterministic algorithm): degree of determinant is known (e.g. if
-// matrix is reduced or if the determinant corresponds to some invariant of an
-// object with known degree). Runs the partial triangularization and returns
-// false if the computed diagonal entry of Hermite form does not have the right
-// degree. True is returned iff determinant is correct. 
-// TODO currently returns determinant up to constant factor!!
-bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, long degree);
-
-// Version 2 (Las Vegas randomized algorithm): runs the partial
-// triangularization and checks determinant by Zippel-Schwartz; returns false
-// if determinant is wrong or if field size is too small for allowing the
-// Zippel-Schwartz check. If true is returned, then determinant is correct.
-// TODO: not implemented yet
-bool determinant_generic_las_vegas(zz_pX & det, const Mat<zz_pX> & pmat);
-
-// Version 3 (randomized; via random linear system solving)
-// TODO first version, should be improved. Make Las Vegas.
-void determinant_via_linsolve(zz_pX & det, const Mat<zz_pX> & pmat);
-
-// TODO other determinant algorithms??
-// --> could rely on x-Smith decomposition of Gupta et al (worth
-// implementing??), cf Appendix of LaNeZh17 
 
 #endif // MAT_LZZ_PX_EXTRA__H
 

@@ -1,8 +1,10 @@
-#include <NTL/matrix.h>
 #include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
 
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_determinant.h"
+
+#include "mat_lzz_pX_utils.h"
+#include "mat_lzz_pX_approximant.h"
+#include "mat_lzz_pX_linsolve.h"
 
 //#define GENERIC_DET_PROFILE
 
@@ -35,14 +37,14 @@ bool verify_determinant(const zz_pX & det, const Mat<zz_pX> & pmat, bool up_to_c
     }
 }
 
-void determinant_via_diagonal_of_hermite(zz_pX & det, const Mat<zz_pX> & pmat)
-{
-    Vec<zz_pX> diag;
-    diagonal_of_hermite(diag, pmat);
-    set(det); // det = 1
-    for (long i = 0; i < diag.length(); ++i)
-        det *= diag[i];
-}
+//void determinant_via_diagonal_of_hermite(zz_pX & det, const Mat<zz_pX> & pmat)
+//{
+//    Vec<zz_pX> diag;
+//    diagonal_of_hermite(diag, pmat);
+//    set(det); // det = 1
+//    for (long i = 0; i < diag.length(); ++i)
+//        det *= diag[i];
+//}
 
 bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, long degree)
 {
