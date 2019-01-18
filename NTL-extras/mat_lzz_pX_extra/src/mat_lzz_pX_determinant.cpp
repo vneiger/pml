@@ -2,6 +2,7 @@
 
 #include "mat_lzz_pX_determinant.h"
 
+#include "lzz_pX_CRT.h"
 #include "mat_lzz_pX_utils.h"
 #include "mat_lzz_pX_approximant.h"
 #include "mat_lzz_pX_linsolve.h"
@@ -46,91 +47,167 @@ bool verify_determinant(const zz_pX & det, const Mat<zz_pX> & pmat, bool up_to_c
 //        det *= diag[i];
 //}
 
-bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, long degree)
+void determinant_expansion_by_minors(zz_pX & det, const Mat<zz_pX> & pmat)
 {
-    long dim = pmat.NumRows();
+    const long dim = pmat.NumRows();
     if (dim==1)
     {
         det = pmat[0][0];
-        return (degree==deg(det));
+        return;
     }
-    else
+
+    // dim >= 2
+    Mat<zz_pX> buf(INIT_SIZE, dim-1, dim-1);
+    zz_pX tmp;
+    clear(det);
+    for (long k = 0; k < dim; ++k)
     {
-        long cdim1 = (dim>>1);  // cdim1 ~ dim/2
-        long cdim2 = dim-cdim1;  // cdim2 ~ dim/2, cdim1+cdim2 = dim
-        // TODO write and use "generic" kernel
-        Mat<zz_pX> pmat_l;
-        Mat<zz_pX> pmat_r;
-        pmat_l.SetDims(dim,cdim1);
-        pmat_r.SetDims(dim,cdim2);
-
-        for (long i = 0; i < dim; ++i)
-        {
-            for (long j = 0; j < cdim1; ++j)
-                pmat_l[i][j] = pmat[i][j];
-            for (long j = 0; j < cdim2; ++j)
-                pmat_r[i][j] = pmat[i][j+cdim1];
-        }
-
-        // compute the kernel via approximant basis at high order
-        // TODO is computing the degree at each recursion level necessary?
-        // (goes over the whole matrix each time... info could be transmitted
-        // through the successive calls)
-        Mat<zz_pX> appbas;
-        // degree of kernel basis will be (generically)  D = dim * deg(pmat_l) / (dim - cdim1)
-        // --> compute approximants at order deg(pmat_l) + D + 1
-        // (cf for example Neiger-Rosenkilde-Solomatov, Lemma 4.3) <-- find better reference
-        long deg_pmat_l = deg(pmat_l);
-        long deg_ker = ceil( cdim1 * deg(pmat_l) / (double)(dim-cdim1) );
-        long order = deg_pmat_l + deg_ker + 1;
-
-        VecLong shift(dim,0);
-#ifdef GENERIC_DET_PROFILE
-        double t=GetWallTime();
-#endif // GENERIC_DET_PROFILE
-        pmbasis(appbas, pmat_l, order, shift);
-#ifdef GENERIC_DET_PROFILE
-        t=GetWallTime()-t;
-        std::cout << dim << "\t" << deg_pmat_l << "\t" << t << "\t(approx)" << std::endl;
-#endif // GENERIC_DET_PROFILE
-
-        // minimal left kernel basis of pmat_r : last rows of app
-        Mat<zz_pX> kerbas;
-        kerbas.SetDims(cdim2,dim);
-        for (long i = 0; i < cdim2; ++i)
-            for (long j = 0; j < dim; ++j)
-                kerbas[i][j] = appbas[i+cdim1][j];
-
-        // then compute the product
-        Mat<zz_pX> pmatt;
-#ifdef GENERIC_DET_PROFILE
-        t=GetWallTime();
-#endif // GENERIC_DET_PROFILE
-        multiply(pmatt, kerbas, pmat_r);
-#ifdef GENERIC_DET_PROFILE
-        t=GetWallTime()-t;
-        std::cout << dim << "\t" << deg_pmat_l << "\t" << t << "\t(prod)" << std::endl;
-#endif // GENERIC_DET_PROFILE
-
-        return determinant_generic_knowing_degree(det,pmatt,degree);
+        for (long i = 0; i < k; ++i)
+            for (long j = 0; j < dim-1; ++j)
+                buf[i][j] = pmat[i][j+1];
+        for (long i = k+1; i < dim; ++i)
+            for (long j = 0; j < dim-1; ++j)
+                buf[i-1][j] = pmat[i][j+1];
+        determinant_expansion_by_minors(tmp, buf);
+        mul(tmp, pmat[k][0], tmp);
+        if (k%2 == 0) // k even
+            add(det, det, tmp);
+        else // k odd
+            sub(det, det, tmp);
     }
 }
 
-// TODO first version; improve
-// TODO use a more general linsolve instead of specific algo
-void determinant_via_linsolve(zz_pX & det, const Mat<zz_pX> & pmat)
+bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, long degree)
 {
     const long dim = pmat.NumRows();
-    const long degree = dim*deg(pmat); // expected degree of determinant
-    Mat<zz_pX> rand_vec;
-    random(rand_vec, dim, 1, deg(pmat)+1);
+    if (dim<=5)
+    {
+        determinant_expansion_by_minors(det, pmat);
+        return (degree==deg(det));
+    }
 
-    Mat<zz_pX> sol;
-    solve_series_high_precision(sol, pmat, rand_vec, 2*degree+1);
+    const long cdim1 = (dim>>1);  // cdim1 ~ dim/2
+    const long cdim2 = dim-cdim1;  // cdim2 ~ dim/2, cdim1+cdim2 = dim
+    // TODO write and use "generic" kernel
+    Mat<zz_pX> pmat_l;
+    Mat<zz_pX> pmat_r;
+    pmat_l.SetDims(dim,cdim1);
+    pmat_r.SetDims(dim,cdim2);
 
-    zz_pX elt;
-    reverse(elt, sol[0][0], 2*degree);
-    MinPolySeq(det, elt.rep, degree);
+    for (long i = 0; i < dim; ++i)
+    {
+        for (long j = 0; j < cdim1; ++j)
+            pmat_l[i][j] = pmat[i][j];
+        for (long j = 0; j < cdim2; ++j)
+            pmat_r[i][j] = pmat[i][j+cdim1];
+    }
+
+    // compute the kernel via approximant basis at high order
+    Mat<zz_pX> appbas;
+    // degree of kernel basis will be (generically)  D = dim * deg(pmat_l) / (dim - cdim1)
+    // --> compute approximants at order deg(pmat_l) + D + 1
+    // (cf for example Neiger-Rosenkilde-Solomatov ISSAC 2018, Lemma 4.3)
+    long deg_pmat_l = deg(pmat_l);
+    long deg_ker = ceil( cdim1 * deg(pmat_l) / (double)(dim-cdim1) );
+    long order = deg_pmat_l + deg_ker + 1;
+
+    VecLong shift(dim,0);
+#ifdef GENERIC_DET_PROFILE
+    double t=GetWallTime();
+#endif // GENERIC_DET_PROFILE
+    pmbasis(appbas, pmat_l, order, shift);
+#ifdef GENERIC_DET_PROFILE
+    t=GetWallTime()-t;
+    std::cout << dim << "\t" << deg_pmat_l << "\t" << t << "\t(approx)" << std::endl;
+#endif // GENERIC_DET_PROFILE
+
+    // minimal left kernel basis of pmat_r : last rows of app
+    Mat<zz_pX> kerbas;
+    kerbas.SetDims(cdim2,dim);
+    for (long i = 0; i < cdim2; ++i)
+        for (long j = 0; j < dim; ++j)
+            kerbas[i][j] = appbas[i+cdim1][j];
+
+    // then compute the product
+    Mat<zz_pX> pmatt;
+#ifdef GENERIC_DET_PROFILE
+    t=GetWallTime();
+#endif // GENERIC_DET_PROFILE
+    multiply(pmatt, kerbas, pmat_r);
+#ifdef GENERIC_DET_PROFILE
+    t=GetWallTime()-t;
+    std::cout << dim << "\t" << deg_pmat_l << "\t" << t << "\t(prod)" << std::endl;
+#endif // GENERIC_DET_PROFILE
+
+    return determinant_generic_knowing_degree(det,pmatt,degree);
+}
+
+// Determinant via linear system solving with random right-hand side
+void determinant_via_linsolve(zz_pX & det, const Mat<zz_pX> & pmat)
+{
+    Vec<zz_pX> u, v;
+    random(v, pmat.NumRows(), max(1,deg(pmat)));
+    linsolve_via_series(u, det, pmat, v);
+}
+
+void determinant_via_evaluation_general(zz_pX & det, const Mat<zz_pX> & pmat)
+{
+    const long nb_points = pmat.NumRows() * deg(pmat) + 1;
+    zz_pX_Multipoint_General ev = get_general_points(nb_points);
+    Vec<Mat<zz_p>> evals;
+    ev.evaluate_matrix(evals, pmat);
+    Vec<zz_p> det_evals(INIT_SIZE, nb_points);
+    for (long k = 0; k < nb_points; ++k)
+        determinant(det_evals[k], evals[k]);
+    ev.interpolate(det, det_evals);
+}
+
+void determinant_via_evaluation_geometric(zz_pX & det, const Mat<zz_pX> & pmat)
+{
+    const long d = deg(pmat);
+    const long nb_points = pmat.NumRows() * d + 1;
+    zz_pX_Multipoint_Geometric ev = get_geometric_points(nb_points);
+    ev.prepare_degree(d);
+    Vec<Mat<zz_p>> evals;
+    ev.evaluate_matrix(evals, pmat);
+    Vec<zz_p> det_evals(INIT_SIZE, nb_points);
+    for (long k = 0; k < nb_points; ++k)
+        determinant(det_evals[k], evals[k]);
+    ev.interpolate(det, det_evals);
+}
+
+void determinant_via_evaluation_FFT(zz_pX & det, const Mat<zz_pX> & pmat)
+{
+    // degree and dimension
+    const long d = deg(pmat);
+    const long dim = pmat.NumRows();
+
+    // prepare FFT representation
+    const long idxk = NextPowerOfTwo(pmat.NumRows() * d + 1);
+    const long nb_points = 1 << idxk;
+    fftRep R(INIT_SIZE, idxk);
+
+    // matrix of evaluations of pmat: evals[k] contains
+    // the evaluation of a at the k-th point
+    Vec<Mat<zz_p>> evals(INIT_SIZE, nb_points);
+    for (long k = 0; k < nb_points; ++k)
+        evals[k].SetDims(dim,dim);
+
+    for (long i = 0; i < dim; ++i)
+        for (long j = 0; j < dim; ++j)
+        {
+            TofftRep(R, pmat[i][j], idxk);
+            for (long k = 0; k < nb_points; ++k)
+                evals[k][i][j].LoopHole() = R.tbl[0][k];
+        }
+
+    zz_p detk;
+    for (long k = 0; k < nb_points; ++k)
+    {
+        determinant(detk, evals[k]);
+        R.tbl[0][k] = detk._zz_p__rep;
+    }
+    FromfftRep(det, R, 0, pmat.NumRows() * d);
 }
 
 // Local Variables:

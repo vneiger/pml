@@ -57,8 +57,8 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
 // TODO: not implemented yet
 //bool determinant_generic_las_vegas(zz_pX & det, const Mat<zz_pX> & pmat);
 
-// Version 3 (randomized; via random linear system solving)
-// TODO first version, should be improved. Make Las Vegas.
+// Determinant via linear system solving with random right-hand side
+// Currently requires that pmat(0) is invertible (uses solving via series)
 void determinant_via_linsolve(zz_pX & det, const Mat<zz_pX> & pmat);
 
 // Determinant via multipoint evaluation, general points. Requires the field to
@@ -71,15 +71,23 @@ void determinant_via_linsolve(zz_pX & det, const Mat<zz_pX> & pmat);
 void determinant_via_evaluation_general(zz_pX & det, const Mat<zz_pX> & pmat);
 
 // Determinant via multipoint evaluation, geometric points. Requires the field to
-// be sufficiently large (namely, with the current version, ????? up to
-// deg(pmat)*pmat.NumRows()+1 points are required, independently of the degree
-// profile of pmat).
+// be sufficiently large (namely, with the current version, how large?????)
 //
 // TODO improve with better bounds on degdet, such as sum of cdeg or rdeg, or
 // even the generic-degdet bound)
 void determinant_via_evaluation_geometric(zz_pX & det, const Mat<zz_pX> & pmat);
 
 
+// Determinant via multipoint evaluation, FFT points. Requires the field to
+// be sufficiently large (namely, with the current version, how large?????)
+//
+// TODO improve with better bounds on degdet, such as sum of cdeg or rdeg, or
+// even the generic-degdet bound)
+void determinant_via_evaluation_FFT(zz_pX & det, const Mat<zz_pX> & pmat);
+
+// determinant via "expansion by minors", with essentially n recursive calls to
+// submatrices of dimensions n-1 x n-1
+void determinant_expansion_by_minors(zz_pX & det, const Mat<zz_pX> & pmat);
 
 // TODO other determinant algorithms??
 // --> could rely on x-Smith decomposition of Gupta et al (worth

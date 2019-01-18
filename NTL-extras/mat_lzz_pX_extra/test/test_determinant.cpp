@@ -1,16 +1,9 @@
-#include <NTL/lzz_pX.h>
-#include <NTL/matrix.h>
 #include <NTL/vector.h>
-#include <NTL/BasicThreadPool.h>
 #include <iomanip>
-#include <vector>
-#include <numeric>
-#include <algorithm>
-#include <random>
-
 
 #include "util.h"
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_utils.h"
+#include "mat_lzz_pX_determinant.h"
 
 NTL_CLIENT
 
@@ -19,106 +12,129 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 int main(int argc, char *argv[])
 {
+    std::cout << std::fixed;
+    std::cout << std::setprecision(8);
 
-    bool verify=false;
+    if (argc!=3)
+        throw std::invalid_argument("Usage: ./test_determinant rdim degree");
 
-    if (argc!=6)
-        throw std::invalid_argument("Usage: ./test_determinant rdim degree nbits nthreads verify");
+    const long rdim = atoi(argv[1]);
+    const long degree = atoi(argv[2]);
 
-    long rdim = atoi(argv[1]);
-    long degree = atoi(argv[2]);
-    long nbits = atoi(argv[3]);
-    SetNumThreads(atoi(argv[4]));
-    verify = (atoi(argv[5])==1);
-
-    if (nbits==0)
-        //zz_p::FFTInit(0);
-        zz_p::UserFFTInit(786433);
-    else
-        zz_p::init(NTL::GenPrime_long(nbits));
+    zz_p::FFTInit(0);
+    //zz_p::init(NTL::GenPrime_long(nbits));
 
     std::cout << "Testing determinant with random input matrix" << std::endl;
-    std::cout << "--prime =\t" << zz_p::modulus();
-    if (nbits==0) std::cout << "  (FFT prime)";
-    std::cout << std::endl;
+    std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
     std::cout << "--rdim =\t" << rdim << std::endl;
     std::cout << "--degree =\t" << degree << std::endl;
 
-    double t1,t2;
+    double t,tt;
+    long nb_iter;
 
-    // build random matrix
-    Mat<zz_pX> pmat;
-    t1 = GetWallTime();
-    random(pmat, rdim, rdim, degree+1);
-    t2 = GetWallTime();
-
-    std::cout << "Time(random mat creation): " << (t2-t1) << "\n";
-
-    std::cout << "warming up..." << std::endl;
-    warmup();
-
-    // generic case
-    {
-        std::cout << "~~~computing determinant, algorithm for generic case with known degree~~~" << std::endl;
-        t1 = GetWallTime();
-        zz_pX det;
-        bool b = determinant_generic_knowing_degree(det, pmat, rdim*degree);
-        t2 = GetWallTime();
-
-        std::cout << "Time(determinant-triangular): " << (t2-t1) << "s\n";
-        std::cout << "Issue detected during computation? " << (b?"no":"yes") << std::endl;
-
-        if (verify)
+    { // generic case
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<0.2)
         {
-            std::cout << "Verifying computed determinant:" << std::endl;
-            t1 = GetWallTime();
-            bool correct = verify_determinant(det, pmat, true, true);
-            t2 = GetWallTime();
-            std::cout << "Time(verification): " << (t2-t1) << "\n";
-            std::cout << "Correctness: " << (correct?"correct":"wrong") << std::endl;
-
-            if (rdim*rdim*degree<200)
-            {
-                std::cout << "Input matrix:" << std::endl;
-                //std::cout << pmat << std::endl;
-                std::cout << "Output determinant:" << std::endl;
-                MakeMonic(det);
-                std::cout << det << std::endl;
-            }
+            Mat<zz_pX> pmat;
+            random(pmat, rdim, rdim, degree+1);
+            tt = GetWallTime();
+            zz_pX det;
+            ok = ok && determinant_generic_knowing_degree(det, pmat, rdim*degree);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = ok && verify_determinant(det, pmat, true, true);
         }
+        std::cout << "Time(triangular):\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
     }
 
-    // via random system, high prec
-    {
-        std::cout << "~~~computing determinant, via random system solving~~~" << std::endl;
-        double t_det=0.0;
-        t1 = GetWallTime();
-        zz_pX det;
-        determinant_via_linsolve(det, pmat);
-        t2 = GetWallTime();
-        t_det += t2-t1;
-
-        std::cout << "Time(determinant-linsolve: total): " << t_det << "s\n";
-
-        if (verify)
+    { // via random linear system
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<0.2)
         {
-            std::cout << "Verifying computed determinant:" << std::endl;
-            t1 = GetWallTime();
-            bool correct = verify_determinant(det, pmat, true, true);
-            t2 = GetWallTime();
-            std::cout << "Time(verification): " << (t2-t1) << "\n";
-            std::cout << "Correctness: " << (correct?"correct":"wrong") << std::endl;
-
-            if (rdim*rdim*degree<200)
-            {
-                std::cout << "Input matrix:" << std::endl;
-                //std::cout << pmat << std::endl;
-                std::cout << "Output determinant:" << deg(det) << std::endl;
-                std::cout << det << std::endl;
-            }
+            Mat<zz_pX> pmat;
+            random(pmat, rdim, rdim, degree+1);
+            tt = GetWallTime();
+            zz_pX det;
+            determinant_via_linsolve(det, pmat);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = verify_determinant(det, pmat, true, true);
         }
+        std::cout << "Time(system-solve):\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
     }
 
+    if (0)
+    { // via evaluation, general points
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<0.2)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, rdim, rdim, degree+1);
+            tt = GetWallTime();
+            zz_pX det;
+            determinant_via_evaluation_general(det, pmat);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = verify_determinant(det, pmat, true, true);
+        }
+        std::cout << "Time(ev-general):\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
+    }
+
+    { // via evaluation, geometric points
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<0.2)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, rdim, rdim, degree+1);
+            tt = GetWallTime();
+            zz_pX det;
+            determinant_via_evaluation_geometric(det, pmat);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = verify_determinant(det, pmat, true, true);
+        }
+        std::cout << "Time(ev-geometric):\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
+    }
+
+    { // via evaluation, FFT points
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<0.2)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, rdim, rdim, degree+1);
+            tt = GetWallTime();
+            zz_pX det;
+            determinant_via_evaluation_FFT(det, pmat);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = verify_determinant(det, pmat, true, true);
+        }
+        std::cout << "Time(ev-FFT):\t\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
+    }
+
+    if (rdim<7)
+    { // naive
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<0.2)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, rdim, rdim, degree+1);
+            tt = GetWallTime();
+            zz_pX det;
+            determinant_expansion_by_minors(det, pmat);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = verify_determinant(det, pmat, true, true);
+        }
+        std::cout << "Time(minors):\t\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
+    }
     return 0;
 }
 

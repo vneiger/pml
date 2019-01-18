@@ -34,6 +34,7 @@
 #include "mat_lzz_pX_approximant.h"
 #include "mat_lzz_pX_interpolant.h"
 #include "mat_lzz_pX_kernel.h"
+#include "mat_lzz_pX_determinant.h"
 
 #include "mat_lzz_pX_sequence.h"  // TODO: still draft
 
