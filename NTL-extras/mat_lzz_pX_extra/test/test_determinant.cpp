@@ -128,6 +128,24 @@ int main(int argc, char *argv[])
             random(pmat, rdim, rdim, degree+1);
             tt = GetWallTime();
             zz_pX det;
+            determinant_expansion_by_minors_rec(det, pmat);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = verify_determinant(det, pmat, true, true);
+        }
+        std::cout << "Time(minors-rec):\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
+    }
+
+    if (rdim<7)
+    { // naive
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<0.2)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, rdim, rdim, degree+1);
+            tt = GetWallTime();
+            zz_pX det;
             determinant_expansion_by_minors(det, pmat);
             t += GetWallTime()-tt;
             ++nb_iter;

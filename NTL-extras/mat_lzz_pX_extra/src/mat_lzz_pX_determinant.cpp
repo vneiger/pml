@@ -56,6 +56,138 @@ void determinant_expansion_by_minors(zz_pX & det, const Mat<zz_pX> & pmat)
         return;
     }
 
+    if (dim==2)
+    {
+        zz_pX buf;
+        mul(det, pmat[0][0], pmat[1][1]);
+        mul(buf, pmat[0][1], pmat[1][0]);
+        sub(det, det, buf);
+        return;
+    }
+
+    if (dim==3)
+    {
+        // buffer for multiplications and for 2x2 determinants
+        zz_pX buf, det22;
+
+        // initialize det as pmat[2][0] * det(pmat[0,1][1,2])
+        mul(det22, pmat[0][1], pmat[1][2]);
+        mul(buf, pmat[0][2], pmat[1][1]);
+        sub(det22, det22, buf);
+        mul(det, pmat[2][0], det22);
+
+        // det += pmat[2][1] * (-det(pmat[0,1][0,2]))
+        mul(det22, pmat[0][2], pmat[1][0]);
+        mul(buf, pmat[0][0], pmat[1][2]);
+        sub(det22, det22, buf);
+        mul(buf, pmat[2][1], det22);
+        add(det, det, buf);
+
+        // det += pmat[2][2] * det(pmat[0,1][0,1])
+        mul(det22, pmat[0][0], pmat[1][1]);
+        mul(buf, pmat[0][1], pmat[1][0]);
+        sub(det22, det22, buf);
+        mul(buf, pmat[2][2], det22);
+        add(det, det, buf);
+
+        return;
+    }
+
+    if (dim==4)
+    {
+        // buffer for multiplications and for 3x3 determinants
+        zz_pX buf, det33;
+
+        // store the six 2x2 determinants
+        Vec<zz_pX> det22(INIT_SIZE, 6);
+
+        // det22[0] = det(pmat[0,1][0,1])
+        mul(det22[0], pmat[0][0], pmat[1][1]);
+        mul(buf, pmat[0][1], pmat[1][0]);
+        sub(det22[0], det22[0], buf);
+
+        // det22[1] = det(pmat[0,1][0,2])
+        mul(det22[1], pmat[0][0], pmat[1][2]);
+        mul(buf, pmat[0][2], pmat[1][0]);
+        sub(det22[1], det22[1], buf);
+
+        // det22[2] = det(pmat[0,1][0,3])
+        mul(det22[2], pmat[0][0], pmat[1][3]);
+        mul(buf, pmat[0][3], pmat[1][0]);
+        sub(det22[2], det22[2], buf);
+
+        // det22[3] = det(pmat[0,1][1,2])
+        mul(det22[3], pmat[0][1], pmat[1][2]);
+        mul(buf, pmat[0][2], pmat[1][1]);
+        sub(det22[3], det22[3], buf);
+
+        // det22[4] = det(pmat[0,1][1,3])
+        mul(det22[4], pmat[0][1], pmat[1][3]);
+        mul(buf, pmat[0][3], pmat[1][1]);
+        sub(det22[4], det22[4], buf);
+
+        // det22[5] = det(pmat[0,1][2,3])
+        mul(det22[5], pmat[0][2], pmat[1][3]);
+        mul(buf, pmat[0][3], pmat[1][2]);
+        sub(det22[5], det22[5], buf);
+
+        // deduce the determinant
+        // initialize det as pmat[3][0] * det(pmat[0,1,2][1,2,3])
+        mul(det33, pmat[2][1], det22[5]);
+        mul(buf, pmat[2][2], det22[4]);
+        sub(det33, det33, buf);
+        mul(buf, pmat[2][3], det22[3]);
+        add(det33, det33, buf);
+
+        mul(det, pmat[3][0], det33);
+        NTL::negate(det, det);
+
+        // det +=  pmat[3][1] * det(pmat[0,1,2][0,2,3])
+        mul(det33, pmat[2][0], det22[5]);
+        mul(buf, pmat[2][2], det22[2]);
+        sub(det33, det33, buf);
+        mul(buf, pmat[2][3], det22[1]);
+        add(det33, det33, buf);
+
+        mul(buf, pmat[3][1], det33);
+        add(det, det, buf);
+
+        // det -=  pmat[3][2] * det(pmat[0,1,2][0,1,3])
+        mul(det33, pmat[2][0], det22[4]);
+        mul(buf, pmat[2][1], det22[2]);
+        sub(det33, det33, buf);
+        mul(buf, pmat[2][3], det22[0]);
+        add(det33, det33, buf);
+
+        mul(buf, pmat[3][2], det33);
+        NTL::negate(buf, buf);
+        add(det, det, buf);
+
+        // det +=  pmat[3][3] * det(pmat[0,1,2][1,2,3])
+        mul(det33, pmat[2][0], det22[3]);
+        mul(buf, pmat[2][1], det22[1]);
+        sub(det33, det33, buf);
+        mul(buf, pmat[2][2], det22[0]);
+        add(det33, det33, buf);
+
+        mul(buf, pmat[3][3], det33);
+        add(det, det, buf);
+
+        return;
+    }
+
+    std::cout << "naive det not implemented for this dimension" << std::endl;
+}
+
+void determinant_expansion_by_minors_rec(zz_pX & det, const Mat<zz_pX> & pmat)
+{
+    const long dim = pmat.NumRows();
+    if (dim==1)
+    {
+        det = pmat[0][0];
+        return;
+    }
+
     // dim >= 2
     Mat<zz_pX> buf(INIT_SIZE, dim-1, dim-1);
     zz_pX tmp;

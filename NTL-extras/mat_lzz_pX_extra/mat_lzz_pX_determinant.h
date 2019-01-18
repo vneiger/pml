@@ -87,6 +87,9 @@ void determinant_via_evaluation_FFT(zz_pX & det, const Mat<zz_pX> & pmat);
 
 // determinant via "expansion by minors", with essentially n recursive calls to
 // submatrices of dimensions n-1 x n-1
+void determinant_expansion_by_minors_rec(zz_pX & det, const Mat<zz_pX> & pmat);
+// determinant via "expansion by minors", with specific code for n<=??
+// (otherwise should probably not be used, quite slow)
 void determinant_expansion_by_minors(zz_pX & det, const Mat<zz_pX> & pmat);
 
 // TODO other determinant algorithms??
