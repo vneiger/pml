@@ -88,7 +88,7 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
 
     const long cdim1 = (dim>>1);  // cdim1 ~ dim/2
     const long cdim2 = dim-cdim1;  // cdim2 ~ dim/2, cdim1+cdim2 = dim
-    // TODO write and use "generic" kernel
+
     Mat<zz_pX> pmat_l;
     Mat<zz_pX> pmat_r;
     pmat_l.SetDims(dim,cdim1);
@@ -104,7 +104,7 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
 
     // compute the kernel via approximant basis at high order
     Mat<zz_pX> appbas;
-    // degree of kernel basis will be (generically)  D = dim * deg(pmat_l) / (dim - cdim1)
+    // degree of kernel basis will be (generically)  D = cdim1 * deg(pmat_l) / (dim - cdim1)
     // --> compute approximants at order deg(pmat_l) + D + 1
     // (cf for example Neiger-Rosenkilde-Solomatov ISSAC 2018, Lemma 4.3)
     long deg_pmat_l = deg(pmat_l);
@@ -112,14 +112,7 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
     long order = deg_pmat_l + deg_ker + 1;
 
     VecLong shift(dim,0);
-#ifdef GENERIC_DET_PROFILE
-    double t=GetWallTime();
-#endif // GENERIC_DET_PROFILE
     pmbasis(appbas, pmat_l, order, shift);
-#ifdef GENERIC_DET_PROFILE
-    t=GetWallTime()-t;
-    std::cout << dim << "\t" << deg_pmat_l << "\t" << t << "\t(approx)" << std::endl;
-#endif // GENERIC_DET_PROFILE
 
     // minimal left kernel basis of pmat_r : last rows of app
     Mat<zz_pX> kerbas;
@@ -130,14 +123,7 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
 
     // then compute the product
     Mat<zz_pX> pmatt;
-#ifdef GENERIC_DET_PROFILE
-    t=GetWallTime();
-#endif // GENERIC_DET_PROFILE
     multiply(pmatt, kerbas, pmat_r);
-#ifdef GENERIC_DET_PROFILE
-    t=GetWallTime()-t;
-    std::cout << dim << "\t" << deg_pmat_l << "\t" << t << "\t(prod)" << std::endl;
-#endif // GENERIC_DET_PROFILE
 
     return determinant_generic_knowing_degree(det,pmatt,degree);
 }
