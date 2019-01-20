@@ -22,7 +22,8 @@ int main(int argc, char *argv[])
     if (nbits==0)
         zz_p::FFTInit(0);
     else if (nbits==2)
-        zz_p::init(3); // make sure modulus!=2
+        //zz_p::init(3); // make sure modulus!=2
+        zz_p::init(2);
     else
         zz_p::init(NTL::GenPrime_long(nbits));
 
