@@ -16,7 +16,7 @@ void one_bench_fft(long sz, long deg)
     long nb0=0, nb1=0, nb2=0, nb3=0, nb4=0, nb5=0, nb6=0, nb7=0;
 
     // warmup
-    while (t0<0.2)
+    while (t0<0.1)
     {
         double t;
         Mat<zz_pX> a, b, c;
@@ -31,7 +31,7 @@ void one_bench_fft(long sz, long deg)
     }
 
     t0 = 0.0;
-    while (t0<0.2)
+    while (t0<0.1)
     {
         double t;
         Mat<zz_pX> a, b, c;
@@ -47,7 +47,7 @@ void one_bench_fft(long sz, long deg)
     }
     t0 = t0/nb0;
 
-    while (t1<0.2)
+    while (t1<0.1)
     {
         double t;
         Mat<zz_pX> a, b, c;
@@ -63,7 +63,7 @@ void one_bench_fft(long sz, long deg)
     }
     t1 = t1/nb1;
 
-    while (t2<0.2)
+    while (t2<0.1)
     {
         double t;
         Mat<zz_pX> a, b, c;
@@ -79,7 +79,7 @@ void one_bench_fft(long sz, long deg)
     }
     t2 = t2/nb2;
 
-    while (t3<0.2)
+    while (t3<0.1)
     {
         double t;
         Mat<zz_pX> a, b, c;
@@ -95,7 +95,7 @@ void one_bench_fft(long sz, long deg)
     }
     t3 = t3/nb3;
 
-    while (t4<0.2)
+    while (t4<0.1)
     {
         double t;
         Mat<zz_pX> a, b, c;
@@ -111,7 +111,7 @@ void one_bench_fft(long sz, long deg)
     }
     t4 = t4/nb4;
 
-    while (t6<0.2)
+    while (t6<0.1)
     {
         double t;
         Mat<zz_pX> a, b, c;
@@ -129,7 +129,7 @@ void one_bench_fft(long sz, long deg)
 
     if (deg<70)
     {
-        while (t5<0.2)
+        while (t5<0.1)
         {
             double t;
             Mat<zz_pX> a, b, c;
@@ -153,7 +153,7 @@ void one_bench_fft(long sz, long deg)
 
     if (deg<70)
     {
-        while (t7<0.2)
+        while (t7<0.1)
         {
             double t;
             Mat<zz_pX> a, b, c;
@@ -256,7 +256,7 @@ void run_bench(long nbits)
         zz_p::UserFFTInit(1139410705724735489); // 60 bits
         cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
     }
-    std::cout << "size\tdegree\tmult.\tmatmul1\tmatmul2\tmatmul3\tdirect\tdirect2\tvdmd\tratios versus mult.\t\t\t\twin" << std::endl;
+    std::cout << "size\tdegree\tmult.\tmatmul1\tmatmul2\tmatmul3\tdirect\tdirect2\tvdmd\tvdmd2\twinner" << std::endl;
     for (size_t i=0;i<szs.size();i++)
         one_bench_fft(szs[i],degs[i]);
     cout << endl;
@@ -306,7 +306,7 @@ void run_bench()
         case 2: cout << 42 << ")" << endl; break;
         case 3: cout << 60 << ")" << endl; break;
         }
-        std::cout << "size\tdegree\tmult.\tmatmul1\tmatmul2\tmatmul3\tdirect\tdirect2\tvdmd\tratios versus mult.\t\t\t\twin" << std::endl;
+        std::cout << "size\tdegree\tmult.\tmatmul1\tmatmul2\tmatmul3\tdirect\tdirect2\tvdmd\tvdmd2\twinner" << std::endl;
 
         // NTLx initialize field
         zz_p::UserFFTInit(primes[p]);
@@ -377,7 +377,7 @@ int main(int argc, char ** argv)
         //std::cout << "Bench polynomial matrix multiplication (FFT prime, 60 bits)" << std::endl;
         zz_p::UserFFTInit(786433); // 20 bits
         std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
-        std::cout << "size\tdegree\tmult.\tmatmul1\tmatmul2\tmatmul3\tdirect\tdirect2\tvdmd\tratios versus mult.\t\t\t\twin" << std::endl;
+        std::cout << "size\tdegree\tmult.\tmatmul1\tmatmul2\tmatmul3\tdirect\tdirect2\tvdmd\tvdmd2\twinner" << std::endl;
         warmup();
         one_bench_fft(atoi(argv[1]),atoi(argv[2]));
     }

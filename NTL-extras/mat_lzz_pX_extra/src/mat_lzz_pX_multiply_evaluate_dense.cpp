@@ -8,6 +8,8 @@
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
 
+//#define PROFILE_ON
+
 NTL_CLIENT
 
 /*------------------------------------------------------------*/
@@ -77,13 +79,20 @@ void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
     Mat<zz_p> vA, vB, iv;
     Mat<zz_p> valAp, valBp, valCp;
 
+#ifdef PROFILE_ON
     double t = GetWallTime();
+#endif // PROFILE_ON
+    
     vandermonde(vA, vB, iv, dA, dB);
     const long nb_points = vA.NumRows();
+
+#ifdef PROFILE_ON
     t = GetWallTime()-t;
     std::cout << std::endl << "Build vdmd mat: " << t << std::endl;
-
+    
     t = GetWallTime();
+#endif // PROFILE_ON
+    
 
     // evaluation of matrix a:
     // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
@@ -120,10 +129,13 @@ void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
     // valB: column ell = i*n + j contains the evaluations of b[i][j]
     mul(valB, vB, tmp_mat);
 
+#ifdef PROFILE_ON
     t = GetWallTime()-t;
     std::cout << "Evals of a and b: " << t << std::endl;
-
+    
     t = GetWallTime();
+#endif // PROFILE_ON
+
     // perform the pointwise products
     valAp.SetDims(m, n);
     valBp.SetDims(n, p);
@@ -152,10 +164,13 @@ void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
             for (long v = 0; v < p; ++v, ++ell)
                 valC[i][ell] = valCp[u][v];
     }
+#ifdef PROFILE_ON
     t = GetWallTime()-t;
     std::cout << "Pointwise prods: " << t << std::endl;
 
     t = GetWallTime();
+#endif // PROFILE_ON
+
     // interpolate to find the entries of c
     mul(tmp_mat, iv, valC);
 
@@ -170,8 +185,11 @@ void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
                 c[u][v][i] = tmp_mat[i][ell];
             c[u][v].normalize();
         }
+#ifdef PROFILE_ON
     t = GetWallTime()-t;
     std::cout << "Interpolate: " << t << std::endl;
+#endif // PROFILE_ON
+
 }
 
 /*------------------------------------------------------------*/
@@ -240,13 +258,21 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
 
     Mat<zz_p> vA, vB, iv;
 
+#ifdef VERBOSE_ON
     double t = GetWallTime();
+#endif // VERBOSE_ON
     vandermonde2(vA, vB, iv, dA, dB);
+#ifdef VERBOSE_ON
     t = GetWallTime()-t;
     std::cout << std::endl << "Build vdmd mat: " << t << std::endl;
+#endif // VERBOSE_ON
+
     const long nb_points = vA.NumRows();
 
+#ifdef VERBOSE_ON
     t = GetWallTime();
+#endif // VERBOSE_ON
+
     // evaluation of matrix a (even part):
     // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
     // the even part of a[i][j] (padded with zeroes up to length dA/2+1 if
@@ -333,11 +359,14 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
     Mat<zz_p> valBodd;
     mul(valBodd, vB, tmp_mat);
 
+#ifdef VERBOSE_ON
     t = GetWallTime()-t;
     std::cout << "Evals of a and b: " << t << std::endl;
-
+    
     // TODO try merging the two pointwise product loops together
     t = GetWallTime();
+#endif // VERBOSE_ON
+
     // perform the pointwise products for the points 1, 2, ..., nb_points
     Mat<zz_p> valAp(INIT_SIZE, m, n);
     Mat<zz_p> valBp(INIT_SIZE, n, p);
@@ -446,10 +475,12 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
         //std::cout << "Before, computed:\n" << valCodd[i] << std::endl;
     }
 
+#ifdef VERBOSE_ON
     t = GetWallTime()-t;
     std::cout << "Pointwise prods: " << t << std::endl;
 
     t = GetWallTime();
+#endif // VERBOSE_ON
 
     // valCeven = (even + odd)/2
     // valCodd = (even - odd)/2x
@@ -524,8 +555,11 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
                 c[u][v][2*i+1] = tmp_mat[i][ell];
             c[u][v].normalize();
         }
+#ifdef VERBOSE_ON
     t = GetWallTime()-t;
     std::cout << "Interpolate: " << t << std::endl;
+#endif // VERBOSE_ON
+
 }
 
 
