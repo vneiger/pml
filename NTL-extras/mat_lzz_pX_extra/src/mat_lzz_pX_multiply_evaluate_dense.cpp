@@ -336,6 +336,7 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
     t = GetWallTime()-t;
     std::cout << "Evals of a and b: " << t << std::endl;
 
+    // TODO try merging the two pointwise product loops together
     t = GetWallTime();
     // perform the pointwise products for the points 1, 2, ..., nb_points
     Mat<zz_p> valAp(INIT_SIZE, m, n);
