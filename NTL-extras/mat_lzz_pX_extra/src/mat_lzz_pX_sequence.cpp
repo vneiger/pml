@@ -308,7 +308,7 @@ void get_quos (Mat<zz_pX> &quos,
     t = GetWallTime();
     Mat<zz_pX> res1, res2;
     mul_special(res1, res2, mat1, mat2);
-    cout << "mat mul: " << GetWallTime()-t << endl;
+    cout << "mat mul ("  << mat1.NumRows() << " x " << mat2.NumRows() << " x " << mat2.NumCols() << ", deg " << max(deg(mat1),deg(mat2)) << "): " << GetWallTime()-t << endl;
 
     t = GetWallTime();
     trunc(res1, res1, 2*m);

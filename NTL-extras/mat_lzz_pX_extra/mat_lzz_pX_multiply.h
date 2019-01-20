@@ -169,15 +169,21 @@ void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_waksman(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 /*------------------------------------------------------------*/
-/* matrix multiplication using the algorithm of Giorgi et al. */
+/* matrix multiplication using the algorithm of Doliskani et al. */
 /* uses matrix multiplication for evaluation and interpolation*/
 /*------------------------------------------------------------*/
+// FIXME: should complain if field not large enough (how large should it be?)
 void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 /*------------------------------------------------------------*/
 /* computes the matrices for evaluation and interpolation     */
 /*------------------------------------------------------------*/
 void vandermonde(Mat<zz_p>& small_vdm1, Mat<zz_p>& small_vdm2, Mat<zz_p>& inv_vdm, long d1, long d2);
+void vandermonde2(Mat<zz_p>& small_vdm1, Mat<zz_p>& small_vdm2, Mat<zz_p>& inv_vdm, long d1, long d2);
+
+
+
 
 void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);

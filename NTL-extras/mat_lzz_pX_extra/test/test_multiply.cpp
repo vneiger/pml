@@ -74,6 +74,12 @@ void one_check(long sz, long deg)
         LogicError("dense mismatch");
     }
 
+    multiply_evaluate_dense2(c2, a, b);
+    if (c1 != c2)
+    {
+        LogicError("dense2 mismatch");
+    }
+
     long do_transform = (deg <= 10) || ((sz <= 400) && (deg <= 10)) || ((sz <= 50) && (deg <= 20));
     if (do_transform)
     {
@@ -118,7 +124,6 @@ void all_checks()
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    SetNumThreads(1);
     zz_p::FFTInit(0);
     all_checks();
     zz_p::UserFFTInit(786433);
