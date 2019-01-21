@@ -8,7 +8,7 @@
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
 
-#define PROFILE_ON
+//#define PROFILE_ON
 
 NTL_CLIENT
 
