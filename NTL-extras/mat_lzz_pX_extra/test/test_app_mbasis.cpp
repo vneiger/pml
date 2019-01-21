@@ -78,6 +78,7 @@ int main(int argc, char *argv[])
                     std::cout << "Computation popov_mbasis1... ";
 
                 Mat<zz_p> kerbas;
+
                 pivdeg = popov_mbasis1(kerbas,coeff(*pmat,0),shift);
 
                 if (verbose)

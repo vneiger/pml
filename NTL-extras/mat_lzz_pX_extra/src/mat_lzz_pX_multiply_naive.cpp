@@ -24,6 +24,12 @@ void multiply_waksman(Mat<zz_pX> &c, const Mat<zz_pX> &a, const Mat<zz_pX> &b)
         return;
     }
 
+    if (zz_p::modulus() == 2)
+    {
+        multiply_naive(c, a, b);
+        return;
+    }
+
     Vec<zz_pX> d, e;
     zz_pX buf0, buf1, buf2, buf3, buf4;
 

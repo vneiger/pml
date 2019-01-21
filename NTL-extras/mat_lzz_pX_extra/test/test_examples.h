@@ -128,6 +128,8 @@ build_test_examples(bool bigamp_shifts=false)
                 test_shifts.emplace_back(build_test_shifts(rdim,cdim,d+3,bigamp_shifts));
             }
 
+
+
     // rank deficient square matrices
     // (take random square of dim > 1 and define one column to be random combination of others
     for (long rdim : rdims)
@@ -138,7 +140,6 @@ build_test_examples(bool bigamp_shifts=false)
             test_matrices.push_back(tmp);
             test_shifts.emplace_back(build_test_shifts(rdim,rdim,d+2,bigamp_shifts));
         }
-
 
     // rank deficient rectangular rdim>cdim matrices
     // (take random of cdim > 1 and define one column to be random combination of others)
@@ -154,6 +155,8 @@ build_test_examples(bool bigamp_shifts=false)
                     test_shifts.emplace_back(build_test_shifts(rdim,cdim,d+1,bigamp_shifts));
                 }
             }
+
+
 
     // rank deficient rectangular rdim<cdim matrices
     // (take random of rdim > 1 and define one row to be random combination of others)
@@ -172,6 +175,7 @@ build_test_examples(bool bigamp_shifts=false)
 
     return std::make_pair(test_matrices,test_shifts);
 }
+
 
 #endif // __EXAMPLE_H__
 

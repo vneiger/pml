@@ -78,6 +78,7 @@ int main(int argc, char *argv[])
                     std::cout << "Computation pmbasis... ";
 
                 VecLong rdeg_pmbasis(shift);
+
                 pmbasis(appbas,*pmat,order,rdeg_pmbasis);
 
                 if (verbose)
