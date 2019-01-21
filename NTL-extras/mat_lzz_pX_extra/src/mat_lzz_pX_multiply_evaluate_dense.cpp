@@ -8,7 +8,7 @@
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
 
-//#define PROFILE_ON
+#define PROFILE_ON
 
 NTL_CLIENT
 
@@ -258,90 +258,59 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
 
     Mat<zz_p> vA, vB, iv;
 
-#ifdef VERBOSE_ON
+#ifdef PROFILE_ON
     double t = GetWallTime();
-#endif // VERBOSE_ON
+#endif // PROFILE_ON
     vandermonde2(vA, vB, iv, dA, dB);
-#ifdef VERBOSE_ON
+#ifdef PROFILE_ON
     t = GetWallTime()-t;
     std::cout << std::endl << "Build vdmd mat: " << t << std::endl;
-#endif // VERBOSE_ON
+#endif // PROFILE_ON
 
     const long nb_points = vA.NumRows();
 
-#ifdef VERBOSE_ON
+#ifdef PROFILE_ON
     t = GetWallTime();
-#endif // VERBOSE_ON
+#endif // PROFILE_ON
 
-    // evaluation of matrix a (even part):
-    // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
-    // the even part of a[i][j] (padded with zeroes up to length dA/2+1 if
-    // necessary)
-    Mat<zz_p> tmp_mat;
-    tmp_mat.SetDims(sA, m * n);
-    ell = 0;
-    for (long i = 0; i < m; ++i)
-        for (long j = 0; j < n; ++j, ++ell)
-            for (long k = 0; 2*k <= deg(a[i][j]); ++k)
-                tmp_mat[k][ell] = a[i][j][2*k];
-
-    // note: d = deg(a[i][j]) is -1 if a[i][j] == 0
-    // all non-touched entries already zero since tmp_mat was initialized as zero
-
-    // valAeven: column ell = i*n + j contains the evaluations of even part of a[i][j]
-    Mat<zz_p> valAeven;
-    mul(valAeven, vA, tmp_mat);
-
-    // evaluation of matrix a (odd part):
-    // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
-    // the odd part of a[i][j] (padded with zeroes up to length (dA-1)/2+1 if
-    // necessary)
-    // --> in fact we keep dimension dA/2+1, even though this should be
-    // (dA-1)/2+1; this is slightly non-optimal but this way we avoid storing
-    // four matrices for vAeven, vAodd, vBeven, vBodd
+    // evaluation of matrix a (even/odd part):
+    // build tmp_mat_even/odd, whose column ell = i*n + j is the coefficient
+    // vector of the even/odd part of a[i][j] (padded with zeroes up to length
+    // dA/2+1 if necessary)
+    Mat<zz_p> tmp_mat_even(INIT_SIZE, sA, m*n);
+    Mat<zz_p> tmp_mat_odd(INIT_SIZE, sA, m*n);
+    // --> we use dimension sA=dA/2+1 for odd part, even though this should be
+    // (dA-1)/2+1; this is slightly non-optimal...
     ell = 0;
     for (long i = 0; i < m; ++i)
         for (long j = 0; j < n; ++j, ++ell)
         {
             const long d = deg(a[i][j]);
-            long k = 0;
-            for (; 2*k < d; ++k)
-                tmp_mat[k][ell] = a[i][j][2*k+1];
-            for (; k < sA; ++k)
-                clear(tmp_mat[k][ell]);
+            for (long k = 0; 2*k < d; ++k)
+            {
+                tmp_mat_even[k][ell] = a[i][j][2*k];
+                tmp_mat_odd[k][ell] = a[i][j][2*k+1];
+            }
+            if (d % 2 == 0) // d even
+                tmp_mat_even[d/2][ell] = a[i][j][d];
         }
 
+    // note: d = deg(a[i][j]) is -1 if a[i][j] == 0
+    // all non-touched entries already zero since tmp_mat was initialized as zero
+
+    // valAeven: column ell = i*n + j contains the evaluations of even part of a[i][j]
     // valAodd: column ell = i*n + j contains the evaluations of odd part of a[i][j]
-    Mat<zz_p> valAodd;
-    mul(valAodd, vA, tmp_mat);
+    Mat<zz_p> valAeven, valAodd;
+    mul(valAeven, vA, tmp_mat_even);
+    mul(valAodd, vA, tmp_mat_odd);
 
-    // evaluation of matrix b (even part):
-    // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
-    // the even part of b[i][j] (padded with zeroes up to length dB/2+1 if
-    // necessary)
-    tmp_mat.SetDims(sB, n * p);
-    ell = 0;
-    for (long i = 0; i < n; ++i)
-        for (long j = 0; j < p; ++j, ++ell)
-        {
-            const long d = deg(b[i][j]); // -1 if b[i][j] == 0
-            long k = 0;
-            for (; 2*k <= d; ++k)
-                tmp_mat[k][ell] = b[i][j][2*k];
-            for (; k < sB; ++k)
-                clear(tmp_mat[k][ell]);
-        }
+    // evaluation of matrix b (even/odd part): build tmp_mat_even/odd, whose
+    // column ell = i*n + j is the coefficient vector of the even/odd part of
+    // b[i][j] (padded with zeroes up to length dB/2+1 if necessary); as above,
+    // we use dimension dB/2+1 although we know it should be (dB-1)/2+1)
 
-    // valBeven: column ell = i*n + j contains the evaluations of the even part
-    // of b[i][j]
-    Mat<zz_p> valBeven;
-    mul(valBeven, vB, tmp_mat);
-
-    // evaluation of matrix b (odd part):
-    // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
-    // the odd part of b[i][j] (padded with zeroes up to length dB/2+1 if
-    // necessary; as above, we use dimension dB/2+1 although we know it should
-    // be (dB-1)/2+1)
+    tmp_mat_even.SetDims(sB, n * p);
+    tmp_mat_odd.SetDims(sB, n * p);
     ell = 0;
     for (long i = 0; i < n; ++i)
         for (long j = 0; j < p; ++j, ++ell)
@@ -349,23 +318,36 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
             const long d = deg(b[i][j]); // -1 if b[i][j] == 0
             long k = 0;
             for (; 2*k < d; ++k)
-                tmp_mat[k][ell] = b[i][j][2*k+1];
+            {
+                tmp_mat_even[k][ell] = b[i][j][2*k];
+                tmp_mat_odd[k][ell] = b[i][j][2*k+1];
+            }
+            if (2*k == d)
+            {
+                tmp_mat_even[k][ell] = b[i][j][d];
+                clear(tmp_mat_odd[k][ell]);
+                ++k;
+            }
             for (; k < sB; ++k)
-                clear(tmp_mat[k][ell]);
+            {
+                clear(tmp_mat_even[k][ell]);
+                clear(tmp_mat_odd[k][ell]);
+            }
         }
 
-    // valBodd: column ell = i*n + j contains the evaluations of the odd part
-    // of b[i][j]
-    Mat<zz_p> valBodd;
-    mul(valBodd, vB, tmp_mat);
+    // valBeven/odd: column ell = i*n + j contains the evaluations of the
+    // even/odd part of b[i][j]
+    Mat<zz_p> valBeven, valBodd;
+    mul(valBeven, vB, tmp_mat_even);
+    mul(valBodd, vB, tmp_mat_odd);
 
-#ifdef VERBOSE_ON
+#ifdef PROFILE_ON
     t = GetWallTime()-t;
     std::cout << "Evals of a and b: " << t << std::endl;
     
     // TODO try merging the two pointwise product loops together
     t = GetWallTime();
-#endif // VERBOSE_ON
+#endif // PROFILE_ON
 
     // perform the pointwise products for the points 1, 2, ..., nb_points
     Mat<zz_p> valAp(INIT_SIZE, m, n);
@@ -475,26 +457,25 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
         //std::cout << "Before, computed:\n" << valCodd[i] << std::endl;
     }
 
-#ifdef VERBOSE_ON
+#ifdef PROFILE_ON
     t = GetWallTime()-t;
     std::cout << "Pointwise prods: " << t << std::endl;
 
     t = GetWallTime();
-#endif // VERBOSE_ON
+#endif // PROFILE_ON
 
     // valCeven = (even + odd)/2
     // valCodd = (even - odd)/2x
     for (long i = 0; i < nb_points; ++i)
-        for (long j = 0; j < m*p; ++j)
-        {
-            // TODO precompute inverse of 2
-            zz_p tmp;
-            add(tmp, valCeven[i][j], valCodd[i][j]);
-            sub(valCodd[i][j], valCeven[i][j], valCodd[i][j]);
-            div(valCeven[i][j], tmp, 2);
-            mul(tmp, 2, to_zz_p(i+1));
-            div(valCodd[i][j], valCodd[i][j], tmp);
-        }
+    {
+        zz_p inv2; inv(inv2, to_zz_p(2));
+        zz_p inv2pt; inv(inv2pt, to_zz_p(2*(i+1)));
+        Vec<zz_p> tmp;
+        add(tmp, valCeven[i], valCodd[i]);
+        sub(valCodd[i], valCeven[i], valCodd[i]);
+        mul(valCeven[i], tmp, inv2);
+        mul(valCodd[i], valCodd[i], inv2pt);
+    }
 
     //Mat<zz_pX> even(INIT_SIZE, m, p);
     //Mat<zz_pX> ab; multiply(ab, a,b);
@@ -528,10 +509,12 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
     //std::cout << "Actual eval of odd:\n" << tmp_eval << std::endl;
     //std::cout << "Computed eval of odd:\n" << valCodd[1] << std::endl;
 
-    // interpolate to find the even part of c, and copy it into c
-    mul(tmp_mat, iv, valCeven);
+    // interpolate to find the even/odd parts of c
+    mul(tmp_mat_even, iv, valCeven);
+    mul(tmp_mat_odd, iv, valCodd);
 
     //std::cout << "tmp_mat even:\n" << tmp_mat << std::endl;
+    //std::cout << "tmp_mat odd:\n" << tmp_mat << std::endl;
 
     c.SetDims(m, p);
     ell = 0;
@@ -540,26 +523,17 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
         {
             c[u][v].SetLength(2*nb_points);
             for (long i = 0; i < nb_points; ++i)
-                c[u][v][2*i] = tmp_mat[i][ell];
-        }
-
-    // interpolate to find the odd part of c, and copy it into c
-    mul(tmp_mat, iv, valCodd);
-    //std::cout << "tmp_mat odd:\n" << tmp_mat << std::endl;
-
-    ell = 0;
-    for (long u = 0; u < m; ++u)
-        for (long v = 0; v < p; ++v, ++ell)
-        {
-            for (long i = 0; i < nb_points; ++i)
-                c[u][v][2*i+1] = tmp_mat[i][ell];
+            {
+                c[u][v][2*i] = tmp_mat_even[i][ell];
+                c[u][v][2*i+1] = tmp_mat_odd[i][ell];
+            }
             c[u][v].normalize();
         }
-#ifdef VERBOSE_ON
+
+#ifdef PROFILE_ON
     t = GetWallTime()-t;
     std::cout << "Interpolate: " << t << std::endl;
-#endif // VERBOSE_ON
-
+#endif // PROFILE_ON
 }
 
 
