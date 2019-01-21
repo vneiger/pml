@@ -345,33 +345,36 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
     t = GetWallTime()-t;
     std::cout << "Evals of a and b: " << t << std::endl;
     
-    // TODO try merging the two pointwise product loops together
     t = GetWallTime();
 #endif // PROFILE_ON
 
     // perform the pointwise products for the points 1, 2, ..., nb_points
-    Mat<zz_p> valAp(INIT_SIZE, m, n);
-    Mat<zz_p> valBp(INIT_SIZE, n, p);
+    Mat<zz_p> valApeven(INIT_SIZE, m, n);
+    Mat<zz_p> valApodd(INIT_SIZE, m, n);
+    Mat<zz_p> valBpeven(INIT_SIZE, n, p);
+    Mat<zz_p> valBpodd(INIT_SIZE, n, p);
     Mat<zz_p> valCeven(INIT_SIZE, nb_points, m * p);
-    Mat<zz_p> valCp;
-    Mat<zz_p> valAs(valAeven);
-    for (long i = 0; i < nb_points; ++i)
-        valAs[i] += (i+1)*valAodd[i];
-    Mat<zz_p> valBs(valBeven);
-    for (long i = 0; i < nb_points; ++i)
-        valBs[i] += (i+1)*valBodd[i];
+    Mat<zz_p> valCodd(INIT_SIZE, nb_points, m * p);
+    Mat<zz_p> valCpeven, valCpodd;
+    
+    // from now on we will only use valAodd with row i multiplied by i+1
     for (long i = 0; i < nb_points; ++i)
     {
         zz_p pt(i+1);
+        mul(valAodd[i], pt, valAodd[i]);
+        mul(valBodd[i], pt, valBodd[i]);
+    }
+
+    zz_p inv2; inv(inv2, to_zz_p(2));
+    for (long i = 0; i < nb_points; ++i)
+    {
         // a evaluated at point i (which is i+1)
         ell = 0;
         for (long u = 0; u < m; ++u)
             for (long v = 0; v < n; ++v, ++ell)
             {
-                // valAp[u][v] = valAeven[i][ell] + pt[i] * valAodd[i][ell];
-                //mul(valAp[u][v], pt, valAodd[i][ell]);
-                //add(valAp[u][v], valAp[u][v], valAeven[i][ell]);
-                valAp[u][v] = valAs[i][ell];
+                add(valApeven[u][v], valAeven[i][ell], valAodd[i][ell]);
+                sub(valApodd[u][v], valAeven[i][ell], valAodd[i][ell]);
             }
 
         // b evaluated at point i (which is i+1)
@@ -379,10 +382,8 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
         for (long u = 0; u < n; ++u)
             for (long v = 0; v < p; ++v, ++ell)
             {
-                // valBp[u][v] = valBeven[i][ell] + pt[i] * valBodd[i][ell];
-                //mul(valBp[u][v], pt, valBodd[i][ell]);
-                //add(valBp[u][v], valBp[u][v], valBeven[i][ell]);
-                valBp[u][v] = valBs[i][ell];
+                add(valBpeven[u][v], valBeven[i][ell], valBodd[i][ell]);
+                sub(valBpodd[u][v], valBeven[i][ell], valBodd[i][ell]);
             }
 
         //Mat<zz_p> tmp_eval = eval(a, to_zz_p(i+1));
@@ -393,68 +394,25 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
         //std::cout << "actual(B,pos):\n" << tmp_eval << std::endl;
 
         // a*b evaluated at point i (which is i+1)
-        mul(valCp, valAp, valBp);
+        mul(valCpeven, valApeven, valBpeven);
+        mul(valCpodd, valApodd, valBpodd);
 
         // copy this into valC: column ell = i*n + j contains the evaluations
         // of the entry i,j of c = a*b
+        // valCeven = (even + odd)/2
+        // valCodd = (even - odd)/2x
         ell = 0;
+        zz_p inv2pt; inv(inv2pt, to_zz_p(2*(i+1)));
         for (long u = 0; u < m; ++u)
-            for (long v = 0; v < p; ++v, ++ell)
-                valCeven[i][ell] = valCp[u][v];
-    }
-
-    // perform the pointwise products for the points -1, -2, ..., -nb_points
-    Mat<zz_p> valCodd(INIT_SIZE, nb_points, m * p);
-    for (long i = 0; i < nb_points; ++i)
-        valAs[i] -= 2*(i+1)*valAodd[i];
-    for (long i = 0; i < nb_points; ++i)
-        valBs[i] -= 2*(i+1)*valBodd[i];
-    for (long i = 0; i < nb_points; ++i)
-    {
-        zz_p pt(-i-1);
-        // a evaluated at point nb_points+i (which is -i-1)
-        ell = 0;
-        for (long u = 0; u < m; ++u)
-            for (long v = 0; v < n; ++v, ++ell)
-            {
-                // valAp[u][v] = valAeven[i][ell] + pt[i] * valAodd[i][ell];
-                //mul(valAp[u][v], pt, valAodd[i][ell]);
-                //add(valAp[u][v], valAp[u][v], valAeven[i][ell]);
-                valAp[u][v] = valAs[i][ell];
-            }
-
-        // b evaluated at point nb_points+i (which is -i-1)
-        ell = 0;
-        for (long u = 0; u < n; ++u)
             for (long v = 0; v < p; ++v, ++ell)
             {
-                // valBp[u][v] = valBeven[i][ell] + pt[i] * valBodd[i][ell];
-                //mul(valBp[u][v], pt, valBodd[i][ell]);
-                //add(valBp[u][v], valBp[u][v], valBeven[i][ell]);
-                valBp[u][v] = valBs[i][ell];
+                add(valCeven[i][ell], valCpeven[u][v], valCpodd[u][v]);
+                sub(valCodd[i][ell], valCpeven[u][v], valCpodd[u][v]);
+                //mul(valCeven[i][ell], inv2, valCeven[i][ell]);
+                //mul(valCodd[i][ell], inv2pt, valCodd[i][ell]);
             }
-
-        //Mat<zz_p> tmp_eval = eval(a, -to_zz_p(i+1));
-        //std::cout << "computed(A,neg):\n" << valAp << std::endl;
-        //std::cout << "actual(A,neg):\n" << tmp_eval << std::endl;
-        //tmp_eval = eval(b, -to_zz_p(i+1));
-        //std::cout << "computed(B,neg):\n" << valBp << std::endl;
-        //std::cout << "actual(B,neg):\n" << tmp_eval << std::endl;
-
-        // a*b evaluated at point nb_points+i (which is -i-1)
-        mul(valCp, valAp, valBp);
-
-        // copy this into valC: column ell = i*n + j contains the evaluations
-        // of the entry i,j of c = a*b
-        ell = 0;
-        for (long u = 0; u < m; ++u)
-            for (long v = 0; v < p; ++v, ++ell)
-                valCodd[i][ell] = valCp[u][v];
-
-        //Mat<zz_pX> ab; multiply(ab, a,b);
-        //tmp_eval = eval(ab, -to_zz_p(i+1));
-        //std::cout << "Before, actual:\n" << tmp_eval << std::endl;
-        //std::cout << "Before, computed:\n" << valCodd[i] << std::endl;
+        mul(valCeven[i], valCeven[i], inv2);
+        mul(valCodd[i], valCodd[i], inv2pt);
     }
 
 #ifdef PROFILE_ON
@@ -463,19 +421,6 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
 
     t = GetWallTime();
 #endif // PROFILE_ON
-
-    // valCeven = (even + odd)/2
-    // valCodd = (even - odd)/2x
-    for (long i = 0; i < nb_points; ++i)
-    {
-        zz_p inv2; inv(inv2, to_zz_p(2));
-        zz_p inv2pt; inv(inv2pt, to_zz_p(2*(i+1)));
-        Vec<zz_p> tmp;
-        add(tmp, valCeven[i], valCodd[i]);
-        sub(valCodd[i], valCeven[i], valCodd[i]);
-        mul(valCeven[i], tmp, inv2);
-        mul(valCodd[i], valCodd[i], inv2pt);
-    }
 
     //Mat<zz_pX> even(INIT_SIZE, m, p);
     //Mat<zz_pX> ab; multiply(ab, a,b);
