@@ -445,18 +445,18 @@ int main(int argc, char ** argv)
     omp_set_num_threads(1);
     //omp_set_num_threads(4);
 
-    if (argc!=4)
+    if (argc!=3)
     {
-        std::cout << "Usage: ./ntlx_linbox ./ntlx_linbox nbits test fftprime" << std::endl;
+        std::cout << "Usage: ./ntlx_linbox ./ntlx_linbox nbits test" << std::endl;
         std::cout << "nbits : integer from 3 to 63, number of bits in prime defining the base field" << std::endl;
         std::cout << "test = {0: all; 1: polynomial matrix multiplication; 2: pmbasis}" << std::endl;
-        std::cout << "fftprime = {0,1} : whether to use an FFT prime, if possible" << std::endl;
+        //std::cout << "fftprime = {0,1} : whether to use an FFT prime, if possible" << std::endl;
         return 0;
     }
 
     long nbits = atoi(argv[1]);
     long test = atoi(argv[2]);
-    bool fftprime = (atoi(argv[3])==1);
+    //bool fftprime = (atoi(argv[3])==1);
 
     if (test < 0 || test > 2)
     {
@@ -469,7 +469,8 @@ int main(int argc, char ** argv)
         return 0;
     }
 
-    run_bench(test,nbits,fftprime);
+    //run_bench(test,nbits,fftprime);
+    run_bench(test,nbits,true);
 
     return 0;
 }
