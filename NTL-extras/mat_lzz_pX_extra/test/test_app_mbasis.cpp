@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
                 if (verbose)
                     std::cout << "OK." << std::endl;
 
-              // POPOV_MBASIS
+                // POPOV_MBASIS
                 if (verbose)
                     std::cout << "Computation popov_mbasis... ";
 

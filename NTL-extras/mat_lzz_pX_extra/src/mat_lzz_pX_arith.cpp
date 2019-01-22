@@ -266,6 +266,14 @@ NTL_CLOSE_NNS
 /*------------------------------------------------------------*/
 void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
 {
+    if (&c == &a)
+    {
+        Mat<zz_pX> c2;
+        mul(c2, a, b);
+        c.swap(c2);
+        return;
+    }
+
     const long d = deg(a);
 
     const long m = a.NumRows();
@@ -296,6 +304,14 @@ void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b)
 /*------------------------------------------------------------*/
 void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
 {
+    if (&c == &b)
+    {
+        Mat<zz_pX> c2;
+        mul(c2, a, b);
+        c.swap(c2);
+        return;
+    }
+
     const long d = deg(b);
 
     const long m = a.NumRows();
