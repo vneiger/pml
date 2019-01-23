@@ -364,9 +364,9 @@ int main(int argc, char ** argv)
         SetNumThreads(1);
         //zz_p::UserFFTInit(1139410705724735489); // 60 bits, FFT
         //std::cout << "Bench polynomial matrix multiplication (FFT prime, 60 bits)" << std::endl;
-        zz_p::init(1139410705724735489); // 60 bits, non FFT
-        std::cout << "Bench polynomial matrix multiplication (normal prime, 60 bits)" << std::endl;
-        //zz_p::UserFFTInit(786433); // FFT, 20 bits
+        //zz_p::init(1139410705724735489); // 60 bits, non FFT
+        //std::cout << "Bench polynomial matrix multiplication (normal prime, 60 bits)" << std::endl;
+        zz_p::UserFFTInit(786433); // FFT, 20 bits
         std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
         std::cout << "size\tdegree\tmult.\tmatmul1\tmatmul2\tmatmul3\tdirect\tdirect2\tvdmd\tvdmd2\twinner" << std::endl;
         warmup();
