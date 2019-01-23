@@ -26,26 +26,24 @@
 
 
 TODO Vincent
-   - Finishing PM-Basis (power series version):
-      * build set of various types of matrices for input of kernel / approximant tests
-      * improve mbasis_resupdate (incorporate popov_mbasis1, and threads)
+   - PM-Basis (power series version):
       * work on thresholds (mbasis_rescomp/resupdate, and pmbasis base case)
-      * algorithms for generic case in mbasis / pmbasis (uniform order and shift, no partial linearization for now)
-      * compare with LinBox's pmbasis
-      * compare dimension=2x1 with NTL's GCD and NTL's BerlekampMassey 
-      * specific pmbasis for matrix fraction reconstruction? (input has identity)
-   - Matrix multiplication:
-      * FFT: decide on which algo (more thresholds?)
-      * do similar improvement for geometric and others
-      * test on a machine with more cores
+			* specific code for dimension 2x1 (and compare with NTL's GCD / BerlekampMassey)
+			* is writing our own LSP decomposition good for small dimension?
+   - Multiplication:
+			* make thresholds for the variants of FFTx
+		  * Clean middle product and look at variants as was done for multiplication
+			* middle product: minor issue when degree of input is small (should start by shifting)
    - Uniform interpolants:
-      * mbasis: correct bug that was in mbasis_approx
-      * pmbasis
       * interpolant basis verification: generation
       * algorithms for generic case in mbasis / pmbasis (uniform shift)
    - Improvement of approximants for small n:
       * generic algo (need some more tuning)
       * partial linearization solution Storjohann / ZhouLabahn
+	 - Determinant:
+		  * clean (finish naive algo if necessary) + threshold
+   - Multi-thread (long-term work):
+		  * try to speed up everything when several threads
 
 
 TODO Eric
