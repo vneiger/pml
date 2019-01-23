@@ -640,10 +640,14 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
     const long t = a.NumCols();
     const long u = b.NumCols();
 
-    // TODO tune better this threshold
     const long thresh = (NumBits(zz_p::modulus()) < 30) ? (20 * 20 * 20) : (45 * 45 * 45);
+    const long cube_dim = s*t*u;
 
-    if ((s * t * u) < thresh)  // fine for close-to-square matrices // FIXME tune better?
+    // TODO needs better tuning
+    // (seems relatively fine for close-to-square matrices, on one machine...)
+    if (cube_dim <= 8)
+        multiply_evaluate_FFT_direct_no_ll(c, a, b);
+    else if (cube_dim < thresh)
         multiply_evaluate_FFT_direct(c, a, b);
     else
         multiply_evaluate_FFT_matmul1(c, a, b);

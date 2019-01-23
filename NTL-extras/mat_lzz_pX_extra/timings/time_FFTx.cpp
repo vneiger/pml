@@ -310,19 +310,8 @@ void run_bench()
 
         // NTLx initialize field
         zz_p::UserFFTInit(primes[p]);
-        //    if (p==0) // FFT prime with 20 bits
-        //    {
-        //        for (size_t i=0; i<szs.size(); ++i)
-        //            one_bench_fft(szs[i],degs[i]);
-        //    }
-        //    else // FFT prime with > 28 bits
-        //    {
-        //        for (size_t i=0; i<szs.size(); ++i)
-        //            one_bench_fft(szs[i],degs[i]);
-        //    }
-        for (size_t sz=2; sz<513; sz*=2)
-            for (size_t d=2; d<60; ++d)
-                one_bench_fft(sz,d);
+        for (size_t i=0; i<szs.size(); ++i)
+            one_bench_fft(szs[i],degs[i]);
         cout << endl << endl;
     }
 }
@@ -373,9 +362,11 @@ int main(int argc, char ** argv)
     if (argc==3)
     {
         SetNumThreads(1);
-        //zz_p::UserFFTInit(1139410705724735489); // 60 bits
+        //zz_p::UserFFTInit(1139410705724735489); // 60 bits, FFT
         //std::cout << "Bench polynomial matrix multiplication (FFT prime, 60 bits)" << std::endl;
-        zz_p::UserFFTInit(786433); // 20 bits
+        zz_p::init(1139410705724735489); // 60 bits, non FFT
+        std::cout << "Bench polynomial matrix multiplication (normal prime, 60 bits)" << std::endl;
+        //zz_p::UserFFTInit(786433); // FFT, 20 bits
         std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
         std::cout << "size\tdegree\tmult.\tmatmul1\tmatmul2\tmatmul3\tdirect\tdirect2\tvdmd\tvdmd2\twinner" << std::endl;
         warmup();
