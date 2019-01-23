@@ -65,7 +65,25 @@ void one_bench_vdmd(long m, long n, long p, long deg)
         t += GetWallTime()-tt;
         ++nb;
     }
+    std::cout << t/nb << "\t";
+
+    // via Mat<zz_p> mult
+    t = 0.0;
+    nb = 0;
+    while (t<0.2)
+    {
+        Mat<zz_pX> a, b, c;
+
+        random(a, m, n, deg);
+        random(b, n, p, deg);
+
+        tt = GetWallTime();
+        multiply_evaluate_FFT_matmul3(c, a, b);
+        t += GetWallTime()-tt;
+        ++nb;
+    }
     std::cout << t/nb;
+
 
     cout << endl;
 }
@@ -85,7 +103,7 @@ int main(int argc, char ** argv)
 
     SetNumThreads(1);
     zz_p::FFTInit(0); // 20 bits
-    std::cout << "m\tn\tp\tdeg\tdense1\tdense2" << std::endl;
+    std::cout << "m\tn\tp\tdeg\tdense1\tdense2\tmatmul3" << std::endl;
     one_bench_vdmd(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
 
     return 0;
