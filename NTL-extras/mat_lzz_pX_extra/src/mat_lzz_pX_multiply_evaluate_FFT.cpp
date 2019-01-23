@@ -645,8 +645,10 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
     // (seems relatively fine for close-to-square matrices, on one machine...)
     if (NumBits(zz_p::modulus()) < 30)
     {
-        if (cube_dim <= 8*8*8)
+        if (cube_dim <= 6*6*6)
             multiply_evaluate_FFT_direct_no_ll(c, a, b);
+        else if (cube_dim <= 8*8*8)
+            multiply_evaluate_FFT_direct(c, a, b);
         else if (cube_dim <= 22*22*22)
             multiply_evaluate_FFT_matmul2(c, a, b);
         else
