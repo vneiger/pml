@@ -212,7 +212,7 @@ void determinant_expansion_by_minors_rec(zz_pX & det, const Mat<zz_pX> & pmat)
 bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, long degree)
 {
     const long dim = pmat.NumRows();
-    if (dim<=5)
+    if (dim<=4)
     {
         determinant_expansion_by_minors(det, pmat);
         return (degree==deg(det));
