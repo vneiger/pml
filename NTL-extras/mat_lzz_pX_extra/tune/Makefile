@@ -30,7 +30,8 @@ run:	$(RUN)
 %.exe:
 	if test -e tune_$*.cpp; then $(CXX) -o tune_$* tune_$*.cpp $(OBJS) $(CXXFLAGS) $(LIBS); fi
 
-%.dat: 
+%.dat: 	
+	if test -e tune_$*.cpp; then $(CXX) -o tune_$* tune_$*.cpp $(OBJS) $(CXXFLAGS) $(LIBS); fi
 	if test -e tune_$*; then ./tune_$* > tune_$*.dat; fi
 	if test -e tune_$*.awk; then \
 		if test -e tune_$*.dat; then \
