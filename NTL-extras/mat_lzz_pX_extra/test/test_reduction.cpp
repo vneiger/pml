@@ -13,7 +13,7 @@ int main()
     std::cout << "Basis reduction, FFT prime (FFTInit(0))" << std::endl;
     std::cout << "dim\tdeg\tinvtrunc\tHOL\t\treconstruct\ttotal\t\towP?\tright deg?" << std::endl;
 
-    VecLong szs = {2,3,4,5,7,10,15,20,30,40,50,75,100,150,200,300,400,500};
+    VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256, 512};
 
     for (size_t i=0; i<szs.size(); ++i)
     {
@@ -26,7 +26,7 @@ int main()
         if (szs[i]==512)
             max_deg=64;
 
-        for (long d = 32; d <= max_deg; d=2*d)
+        for (long d=16; d<=max_deg; d=2*d)
         {
             // random matrix, degree deg
             Mat<zz_pX> pmat;
