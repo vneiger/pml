@@ -87,7 +87,7 @@ int main(int argc, char ** argv)
         Mat<zz_pX> b = random_mat_zz_pX(2,2,d);
         Mat<zz_pX> c;
         t_now = GetWallTime();
-            multiply_evaluate_FFT_direct(c,a,b);
+            multiply(c,a,b);
         t_ours += GetWallTime()-t_now;
         ++iter;
     }

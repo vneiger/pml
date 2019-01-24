@@ -59,31 +59,6 @@ int main(int argc, char *argv[])
     Mat<zz_pX> pmat;
     random(pmat, rdim, cdim, order);
 
-    // GCD computation, for reference
-    if (rdim==2 && cdim==1)
-    {
-        long deg_gcd = (order>>1);
-        std::cout << "For reference, timings for GCD computation (degree " << deg_gcd << "):" << std::endl;
-        {
-            zz_pX a,b,g;
-            random(a, deg_gcd);
-            random(b, deg_gcd);
-            t1 = GetWallTime();
-            NTL::GCD(g, a, b);
-            t2 = GetWallTime();
-            std::cout << "\t GCD --> " << (t2-t1) << std::endl;
-        }
-        {
-            zz_pX a,b,g,u,v; 
-            random(a, deg_gcd);
-            random(b, deg_gcd);
-            t1 = GetWallTime();
-            NTL::XGCD(g, u, v, a, b);
-            t2 = GetWallTime();
-            std::cout << "\tXGCD --> " << (t2-t1) << std::endl;
-        }
-    }
-
     // mbasis_generic_2n_n_rescomp
     Mat<zz_pX> appbas;
     std::cout << "~~~Testing mbasis_generic_2n_n_rescomp~~~" << std::endl;
