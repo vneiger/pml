@@ -5,7 +5,8 @@ NTL_CLIENT
 
 int main()
 {
-    zz_p::FFTInit(0);
+    //zz_p::FFTInit(0);
+    zz_p::init(GenPrime_long(60));
 
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
@@ -26,7 +27,7 @@ int main()
         if (szs[i]==512)
             max_deg=64;
 
-        for (long d=16; d<=max_deg; d=2*d)
+        for (long d=1024/szs[i]; d<=max_deg; d=2*d)
         {
             // random matrix, degree deg
             Mat<zz_pX> pmat;
