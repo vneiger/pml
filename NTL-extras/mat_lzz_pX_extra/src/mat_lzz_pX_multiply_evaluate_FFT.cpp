@@ -640,19 +640,24 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
     //const long t = a.NumCols();
     //const long u = b.NumCols();
     const long cube_dim = a.NumRows() * a.NumCols() * b.NumCols();
+    const long d = (deg(a)+deg(b))/2;
 
     // TODO needs better tuning
-    // (seems relatively fine for close-to-square matrices, on one machine...)
-    if (NumBits(zz_p::modulus()) < 30)
+    // (seems relatively fine for close-to-square matrices, with similar degrees...)
+    if (NumBits(zz_p::modulus()) < SMALL_PRIME_SIZE)
     {
         if (cube_dim <= 6*6*6)
             multiply_evaluate_FFT_direct_no_ll(c, a, b);
         else if (cube_dim <= 8*8*8)
             multiply_evaluate_FFT_direct(c, a, b);
-        else if (cube_dim <= 22*22*22)
+        else if (cube_dim <= 20*20*20)
             multiply_evaluate_FFT_matmul2(c, a, b);
+        else if (d < 32)
+                multiply_evaluate_dense(c, a, b);
+        else if (d < 300)
+                multiply_evaluate_dense2(c, a, b);
         else
-            multiply_evaluate_FFT_matmul1(c, a, b);
+                multiply_evaluate_FFT_matmul1(c, a, b);
     }
     else
     {
@@ -660,6 +665,8 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
             multiply_evaluate_FFT_direct_no_ll(c, a, b);
         else if (cube_dim < 45*45*45)
             multiply_evaluate_FFT_direct(c, a, b);
+        else if (d < 150)
+            multiply_evaluate_FFT_matmul3(c, a, b);
         else
             multiply_evaluate_FFT_matmul1(c, a, b);
     }

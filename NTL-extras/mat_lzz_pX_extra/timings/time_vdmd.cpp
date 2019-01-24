@@ -17,7 +17,7 @@ void one_bench_vdmd(long m, long n, long p, long deg)
 
     std::cout << m << "\t" << n << "\t" << p << "\t" << deg << "\t";
 
-    // warmup
+    // warmup with multiply
     t = 0.0;
     nb = 0;
     while (t<0.2)
@@ -32,6 +32,7 @@ void one_bench_vdmd(long m, long n, long p, long deg)
         t += GetWallTime()-tt;
         ++nb;
     }
+    std::cout << t/nb << "\t";
 
     // dense1
     t = 0.0;
@@ -102,8 +103,8 @@ int main(int argc, char ** argv)
     }
 
     SetNumThreads(1);
-    zz_p::FFTInit(0); // 20 bits
-    std::cout << "m\tn\tp\tdeg\tdense1\tdense2\tmatmul3" << std::endl;
+    zz_p::FFTInit(0);
+    std::cout << "m\tn\tp\tdeg\tmult\tdense1\tdense2\tmatmul3" << std::endl;
     one_bench_vdmd(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
 
     return 0;

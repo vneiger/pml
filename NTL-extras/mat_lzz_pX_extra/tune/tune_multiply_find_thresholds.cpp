@@ -1,12 +1,8 @@
-#include <NTL/lzz_pX.h>
-#include <NTL/matrix.h>
-#include <NTL/vector.h>
 #include <iomanip>
 #include <limits.h>
 
 #include "util.h"
-#include "lzz_p_extra.h"
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_multiply.h"
 
 vector<long> sizes = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
 
@@ -22,11 +18,11 @@ void check(long p)
     else
         zz_p::init(p);
 
-    const double thres = 0.001;
-    
+    const double thres = 0.1;
+
     // first, find the crossover between evaluate and 3 primes 
     // need it only for non-FFT primes
-    vector<long> degrees = {1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
+    vector<long> degrees = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 15, 17, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250};
     vector<long> thresholds;
 
     if (p != 0)
@@ -35,7 +31,7 @@ void check(long p)
             cout << "static long MATRIX_DEGREE_THRESHOLDS_SMALL[" << sizes.size() << "] = {";
         else
             cout << "static long MATRIX_DEGREE_THRESHOLDS_LARGE[" << sizes.size() << "] = {";
-        
+
         for (size_t i = 0; i < sizes.size(); i++)
         {
             long done = 0;
@@ -51,7 +47,7 @@ void check(long p)
                 deg = degrees[j];
                 random(a, sz, sz, deg);
                 random(b, sz, sz, deg);
-             
+
                 t_eval = get_time();
                 nb = 0;
                 do
@@ -71,7 +67,7 @@ void check(long p)
                 }
                 while ((get_time()-t_3primes) <= thres);
                 t_3primes = (get_time()-t_3primes) / nb;
-                
+
                 if (t_3primes < t_eval)
                     nb_in_a_row++;
                 else 
@@ -92,87 +88,138 @@ void check(long p)
         }
         cout << "};\n";
     }
-    else
-    {
-        for (size_t i = 0; i < sizes.size(); i++)
-            thresholds.push_back(9999999);
-    }
 
     if (p == 0)
+    {
         cout << "static long MATRIX_WAKSMAN_THRESHOLDS_FFT[" << sizes.size() << "] = {";
+
+        // find degree threshold for waksman 
+        for (size_t i = 0; i < sizes.size(); i++)
+        {
+            double t_fft, t_waksman;
+            size_t j;
+            bool done = false;
+            long nb_in_a_row = 0;
+            long sz = sizes[i];
+            for (j = 0; (not done) && j < degrees.size(); j++)
+            {
+                Mat<zz_pX> a, b, c;
+                long deg, nb;
+
+                deg = degrees[j];
+                random(a, sz, sz, deg);
+                random(b, sz, sz, deg);
+
+                t_fft = get_time();
+                nb = 0;
+                do
+                {
+                    multiply_evaluate_FFT(c, a, b);
+                    nb++;
+                }
+                while ((get_time()-t_fft) <= thres);
+                t_fft = (get_time()-t_fft) / nb;
+
+                t_waksman = get_time();
+                nb = 0;
+                do
+                {
+                    multiply_waksman(c, a, b);
+                    nb++;
+                }
+                while ((get_time()-t_waksman) <= thres);
+                t_waksman = (get_time()-t_waksman) / nb;
+
+                if (t_waksman > t_fft)
+                    nb_in_a_row++;
+                else 
+                    nb_in_a_row = 0;
+                if (nb_in_a_row == 3)
+                    done = true;
+            }             
+            if (nb_in_a_row == 0)
+                cout << LONG_MAX;
+            else
+                cout << degrees[j - nb_in_a_row];
+
+            if (i < sizes.size() - 1)
+                cout << ", ";
+        }
+    }
     else 
+    {
         if (NumBits(p) <= SMALL_PRIME_SIZE)
             cout << "static long MATRIX_WAKSMAN_THRESHOLDS_SMALL[" << sizes.size() << "] = {";
         else
             cout << "static long MATRIX_WAKSMAN_THRESHOLDS_LARGE[" << sizes.size() << "] = {";
-    
-    
-    // find degree threshold for waksman 
-    for (size_t i = 0; i < sizes.size(); i++)
-    {
-        double t_old, t_waksman;
-        size_t j;
-        long done = 0;
-        long nb_in_a_row = 0;
-        long sz = sizes[i];
-        for (j = 0; done == 0 && j < degrees.size(); j++)
+
+        // find degree threshold for waksman 
+        for (size_t i = 0; i < sizes.size(); i++)
         {
-            Mat<zz_pX> a, b, c;
-            long deg, nb;
-            
-            deg = degrees[j];
-            random(a, sz, sz, deg);
-            random(b, sz, sz, deg);
-
-            if (deg <= thresholds[i])
+            double t_old, t_waksman;
+            size_t j;
+            long done = 0;
+            long nb_in_a_row = 0;
+            long sz = sizes[i];
+            for (j = 0; done == 0 && j < degrees.size(); j++)
             {
-                t_old = get_time();
+                Mat<zz_pX> a, b, c;
+                long deg, nb;
+
+                deg = degrees[j];
+                random(a, sz, sz, deg);
+                random(b, sz, sz, deg);
+
+                if (deg <= thresholds[i])
+                {
+                    t_old = get_time();
+                    nb = 0;
+                    do
+                    {
+                        multiply_evaluate_dense(c, a, b);
+                        nb++;
+                    }
+                    while ((get_time()-t_old) <= thres);
+                    t_old = (get_time()-t_old) / nb;
+                }
+                else
+                {
+                    t_old = get_time();
+                    nb = 0;
+                    do
+                    {
+                        multiply_3_primes(c, a, b);
+                        nb++;
+                    }
+                    while ((get_time()-t_old) <= thres);
+                    t_old = (get_time()-t_old) / nb;
+                }
+
+                t_waksman = get_time();
                 nb = 0;
                 do
                 {
-                    multiply_evaluate_dense(c, a, b);
+                    multiply_waksman(c, a, b);
                     nb++;
                 }
-                while ((get_time()-t_old) <= thres);
-                t_old = (get_time()-t_old) / nb;
-            }
+                while ((get_time()-t_waksman) <= thres);
+                t_waksman = (get_time()-t_waksman) / nb;
+
+                if (t_waksman > t_old)
+                    nb_in_a_row++;
+                else 
+                    nb_in_a_row = 0;
+                if (nb_in_a_row == 3)
+                    done = 1;
+            }             
+            if (nb_in_a_row == 0)
+                cout << LONG_MAX;
             else
-            {
-                t_old = get_time();
-                nb = 0;
-                do
-                {
-                    multiply_3_primes(c, a, b);
-                    nb++;
-                }
-                while ((get_time()-t_old) <= thres);
-                t_old = (get_time()-t_old) / nb;
-            }
+                cout << degrees[j - nb_in_a_row];
 
-            t_waksman = get_time();
-            nb = 0;
-            do
-            {
-                multiply_waksman(c, a, b);
-                nb++;
-            }
-            while ((get_time()-t_waksman) <= thres);
-            t_waksman = (get_time()-t_waksman) / nb;
-
-            if (t_waksman > t_old)
-                nb_in_a_row++;
-            else 
-                nb_in_a_row = 0;
-            if (nb_in_a_row == 3)
-                done = 1;
-        }             
-        if (nb_in_a_row == 0)
-            cout << LONG_MAX;
-        else
-            cout << degrees[j - nb_in_a_row];
-
-        if (i < sizes.size() - 1)
-            cout << ", ";
+            if (i < sizes.size() - 1)
+                cout << ", ";
+        }
     }
     cout << "};\n";
 }
@@ -183,7 +230,7 @@ void check(long p)
 /*------------------------------------------------------------*/
 /* main calls check                                           */
 /*------------------------------------------------------------*/
-int main(int argc, char ** argv)
+int main()
 {
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
@@ -204,3 +251,11 @@ int main(int argc, char ** argv)
     check(288230376151711813);
     return 0;
 }
+
+// Local Variables:
+// mode: C++
+// tab-width: 4
+// indent-tabs-mode: nil
+// c-basic-offset: 4
+// End:
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
