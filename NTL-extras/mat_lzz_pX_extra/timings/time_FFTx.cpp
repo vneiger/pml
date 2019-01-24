@@ -175,32 +175,7 @@ void one_bench_fft(long sz, long deg)
         t7=INFINITY; // to make sure this is not the best below
     }
 
-    double t8=0.0; long nb8=0;
-    if (sz<8)
-    {
-        while (t8<0.1)
-        {
-            double t;
-            Mat<zz_pX> a, b, c;
-
-            random(a, sz, sz, deg);
-            random(b, sz, sz, deg);
-
-            t = GetWallTime();
-            multiply_waksman(c, a, b);
-            t = GetWallTime()-t;
-            t8 += t;
-            ++nb8;
-        }
-        t8 = t8/nb8;
-    }
-    else
-    {
-        nb8=1; // to avoid div by zero
-        t8=INFINITY; // to make sure this is not the best below
-    }
-
-    std::vector<double> times = {t0, t1, t2, t3, t4, t6, t5, t7, t8};
+    std::vector<double> times = {t0, t1, t2, t3, t4, t6, t5, t7};
 
     // timings
     cout << sz << "\t" << deg << "\t";
@@ -224,7 +199,6 @@ void one_bench_fft(long sz, long deg)
         case 5: cout << "direct no LL"; break;
         case 6: cout << "vandermonde"; break;
         case 7: cout << "vandermonde2"; break;
-        case 8: cout << "waksman"; break;
     }
     cout << endl;
 }
