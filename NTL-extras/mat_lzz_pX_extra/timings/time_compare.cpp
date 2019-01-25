@@ -104,6 +104,61 @@ int main(int argc, char *argv[])
     }
 
     cout << "block Hankel:\t" << t/nb_iter << endl;
+
+    std::cout << std::endl << "Comparing:" << std::endl;
+    std::cout << "-- computing approximant basis of [[F], [-1]] at order 2md, with F random 1 x m matrix of degree < 2md" << std::endl;
+    std::cout << "-- solving a block Hankel system with 1 x m random Hankel blocks, each md x d" << std::endl;
+    std::cout << "-- m = " << m << ", d = " << d << std::endl;
+
+
+    // pmbasis
+    nb_iter = 0; t = 0.0;
+    while (t<0.5)
+    {
+        // set pmat to [[F], [-1]] with F random 1 x m of degree < 2md
+        Mat<zz_pX> pmat;
+        random(pmat, 1, m, 2*m*d);
+        pmat.SetDims(m+1, m);
+        for (long i = 0; i < m; ++i)
+            pmat[i+1][i] = -1;
+
+        // compute approx basis
+        tt = GetWallTime();
+        VecLong shift(m+1,0);
+        Mat<zz_pX> appbas;
+        pmbasis(appbas, pmat, 2*m*d, shift);
+        t += GetWallTime() - tt;
+        ++nb_iter;
+    }
+    cout << "pmbasis:\t" << t/nb_iter << endl;
+
+    // structured matrix
+    nb_iter = 0; t = 0.0;
+    while (t<0.5)
+    {
+        Vec<Vec<hankel_lzz_p>> h_vec; //set to m blocks by m blocks
+        h_vec.SetLength(1);
+        //for (long i = 0; i < 1 ; i++)
+            h_vec[0].SetLength(m);
+
+        //for (long i = 0; i < 1; i++)
+            for (long j = 0; j < m; j++)
+                h_vec[0][j] = hankel_lzz_p(random_vec_zz_p(m*d+d-1),m*d,d);
+
+        mosaic_hankel_lzz_p mh{h_vec};
+
+        Vec<zz_p> b;
+        random(b, m*d);
+
+        tt = GetWallTime();
+        Vec<zz_p> x;
+        mh.solve(x,b);
+        t += GetWallTime() - tt;
+
+        ++nb_iter;
+    }
+
+    cout << "block Hankel:\t" << t/nb_iter << endl;
 }
 
 
