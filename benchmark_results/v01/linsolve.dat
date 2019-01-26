@@ -1,0 +1,18 @@
+Bench mbasis, random prime p = 750587430681008801, bit length = 60
+sz	degmat	degvec	via series 1	via series 2	via series 3	via series 4	via series 5	via app-kernel
+16	1024	1024	0.70759668	1.52568365	1.80013627	2.19034923	2.65312612	2.07306602	
+Bench mbasis, random prime p = 1055313478888531157, bit length = 60
+sz	degmat	degvec	via series 1	via series 2	via series 3	via series 4	via series 5	via app-kernel
+32	1024	1024	3.50486129	4.94405798	5.63859729	6.53091895	7.63200030	9.45227712	
+Bench mbasis, random prime p = 969808474883729989, bit length = 60
+sz	degmat	degvec	via series 1	via series 2	via series 3	via series 4	via series 5	via app-kernel
+64	1024	1024	17.77074589	19.54561748	20.65471882	22.39979931	24.70563403	46.52199208	
+Bench mbasis, random prime p = 1128730349993156513, bit length = 60
+sz	degmat	degvec	via series 1	via series 2	via series 3	via series 4	via series 5	via app-kernel
+128	512	512	60.93602134	55.23962683	53.73976892	54.43543560	56.24693194	108.02536645	
+Bench mbasis, random prime p = 1019287975950709649, bit length = 60
+sz	degmat	degvec	via series 1	via series 2	via series 3	via series 4	via series 5	via app-kernel
+run_linsolve.sh: line 5:  6090 Terminated              ./time_linsolve 60 0 256 512 512
+Bench mbasis, random prime p = 747245845765069351, bit length = 60
+sz	degmat	degvec	via series 1	via series 2	via series 3	via series 4	via series 5	via app-kernel
+256	128	128	58.61049480	49.57704227	46.86314383	45.86861598	45.97385406	117.18088390	
