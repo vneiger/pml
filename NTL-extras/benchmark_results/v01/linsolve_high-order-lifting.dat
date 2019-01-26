@@ -1,0 +1,19 @@
+Bench mbasis, random prime p = 1095693021742660169, bit length = 60
+sz	degmat	degvec	via series 1	via series 2	via series 3	via series 4	via series 5	via app-kernel
+16	1024	1023	2.39206295	5.65369564	9.26399832	13.28579025	17.78072344	
+
+Bench mbasis, random prime p = 796704907585597027, bit length = 60
+sz	degmat	degvec	via series 1	via series 2	via series 3	via series 4	via series 5	via app-kernel
+32	1024	1023	13.86133643	29.54307347	46.03861360	63.50139576	82.05455869	
+
+Bench mbasis, random prime p = 1003413413298165437, bit length = 60
+sz	degmat	degvec	via series 1	via series 2	via series 3	via series 4	via series 5	via app-kernel
+64	1024	1023	94.70047630	193.93187263	295.38169707	398.87245294	504.96228113	
+
+Bench mbasis, random prime p = 1151304211939344917, bit length = 60
+sz	degmat	degvec	via series 1	via series 2	via series 3	via series 4	via series 5	via app-kernel
+128	512	511	266.34841582	537.26109162	809.78456247	1084.63229059	1362.29377531	
+
+Bench mbasis, random prime p = 665936534693272021, bit length = 60
+sz	degmat	degvec	via series 1	via series 2	via series 3	via series 4	via series 5	via app-kernel
+run_linsolve.sh: line 5:  8250 Segmentation fault      (core dumped) ./time_linsolve 60 0 256 128 127

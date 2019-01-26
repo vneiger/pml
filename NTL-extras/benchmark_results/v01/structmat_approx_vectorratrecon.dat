@@ -1,0 +1,11 @@
+-- m = 5, d = 8000
+pmbasis:	2.19509
+block Hankel:	3.82001
+
+-- m = 12, d = 1000
+pmbasis:	2.33262
+block Hankel:	2.28506
+
+-- m = 30, d = 500
+pmbasis:	19.5388
+block Hankel:	11.5693
