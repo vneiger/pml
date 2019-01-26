@@ -1,5 +1,8 @@
 # ntl-extra
+
 Additions to Shoup's NTL, with a focus on univariate polynomial matrices, constant structured matrices, and their applications.
+
+Authors: Seung Gyu Hyun, Vincent Neiger, Éric Schost
 
 Version 0.0
 
