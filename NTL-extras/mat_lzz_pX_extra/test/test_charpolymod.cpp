@@ -28,30 +28,35 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 
 int main(int argc, char *argv[])
 {
-    if (argc!=3)
-        throw std::invalid_argument("Usage: ./test_charpoly_mod deg expnt");
+    if (argc!=6)
+        throw std::invalid_argument("Usage: ./test_charpoly_mod deg expnt nbits fftprime nthreads");
 
     // main parameter: degree
     long n = atoi(argv[1]);
-    // parameter: exponent for m = n^exponent; default = 0.333 ~ 1/omega for omega=3
-    double exponent = (atof(argv[2]) <= 0.) ? 0.333 : (atof(argv[2]));
+    // parameter: exponent for m = n^exponent; default = 0.2 if provided invalid
+    double exponent = (atof(argv[2]) <= 0. || atof(argv[2])>=1.) ? 0.2 : (atof(argv[2]));
 
     //// size of prime field
-    //long nbits = atoi(argv[3]);
-    //// whether we should verify the result
-    //SetNumThreads(atoi(argv[4]));
-    long nbits = 0;
-    SetNumThreads(1);
+    long nbits = atoi(argv[3]);
+    bool fftprime = (atoi(argv[4]) == 1);
+    if (fftprime)
+    {
+        if (nbits < 24)
+            zz_p::UserFFTInit(786433);
+        else
+            zz_p::FFTInit(0);
+    }
+    else
+        zz_p::init(NTL::GenPrime_long(nbits));
+
+    SetNumThreads(atoi(argv[5]));
+
 
     // used for timings
     double t1,t2;
     double t_charpoly=0.0;
 
     t1 = GetWallTime();
-    if (nbits==0)
-        zz_p::FFTInit(0);
-    else
-        zz_p::init(NTL::GenPrime_long(nbits));
 
     {
         t_charpoly=0.0;
