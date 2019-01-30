@@ -1,4 +1,3 @@
-#include "lzz_p_extra.h"
 #include "thresholds_matrix_multiply.h"
 #include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_multiply.h"

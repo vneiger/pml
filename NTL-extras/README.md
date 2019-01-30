@@ -1,6 +1,6 @@
-# ntl-extra
+# PML (Polynomial Matrix Library)
 
-Additions to Shoup's NTL, with a focus on univariate polynomial matrices, constant structured matrices, and their applications.
+Additions to Shoup's NTL, with a focus on univariate polynomial matrices, structured matrices, and their applications.
 
 Authors: Seung Gyu Hyun, Vincent Neiger, Éric Schost
 

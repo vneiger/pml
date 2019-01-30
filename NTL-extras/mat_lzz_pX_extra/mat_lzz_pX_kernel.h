@@ -1,7 +1,7 @@
 #ifndef MAT_LZZ_PX_KERNEL__H
 #define MAT_LZZ_PX_KERNEL__H
 
-/** Minimal kernel basis.
+/** \brief Minimal kernel basis.
  *
  * \file mat_lzz_pX_kernel.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
@@ -39,7 +39,7 @@ NTL_CLIENT
  * interface, tries to choose the fastest available method.
  *
  * \todo options for row-wise, required form, etc
- * \todo thresholds (currently uses direct method via approximation)
+ * \todo thresholds (currently uses Zhou-Labahn-Storjohann via approximation)
  **/
 void kernel_basis(
                   Mat<zz_pX> & kerbas,
@@ -51,6 +51,8 @@ void kernel_basis(
  * form at least `form`. Uses a Monte-Carlo randomized algorithm if
  * `randomized` is `true` (left and right projections, Freivalds-like); default
  * is `false`, that is, the check is deterministic.
+ *
+ * \todo testing generation; support row wise
  */
 bool is_kernel_basis(
                      Mat<zz_pX> & kerbas,
@@ -61,12 +63,16 @@ bool is_kernel_basis(
                     );
 
 /** Computes a `shift`-minimal kernel basis `kerbas` for `pmat`, using a single
- * call to minimal appoximant basis at sufficiently large order. Returns the
+ * call to minimal approximant basis at sufficiently large order. Returns the
  * `shift`-pivot index, and `shift` becomes the shifted row degree.
  *
  * \todo implement/use shift entries reduction (the approximation order depends
  * on these entries, and they may be reduced depending on the
  * degrees/dimensions of pmat)
+ *
+ * \todo better performance if `pmat` has unbalanced column degrees would be to
+ * use a column-degree wise order (however, this is not handled by fast
+ * approximant algorithms for now)
  */
 void kernel_basis_via_approximation(
                                     Mat<zz_pX> & kerbas,
@@ -92,8 +98,7 @@ void kernel_basis_via_interpolation(
                                    );
 
 /** Computes a `shift`-minimal kernel basis `kerbas` for `pmat` using the
- * Zhou-Labahn-Storjohann algorithm, as described in the Proceedings ISSAC
- * 2012. 
+ * Zhou-Labahn-Storjohann algorithm (described in the Proceedings ISSAC 2012).
  *
  * \todo implement/use shift entries reduction (the approximation order depends
  * on these entries, and they may be reduced depending on the
@@ -107,7 +112,7 @@ void kernel_basis_zls_via_approximation(
                                        );
 
 
-/** Computes a `shift`-minimal kernel basis `kerbas` for `pmat` using the
+/** Computes a `shift`-minimal kernel basis `kerbas` for `pmat` using a
  * modified Zhou-Labahn-Storjohann algorithm (described in the Proceedings
  * ISSAC 2012), relying on interpolant bases rather than approximant bases. */
 void kernel_basis_zls_via_interpolation(
