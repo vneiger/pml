@@ -1,5 +1,6 @@
 #include <NTL/lzz_pX.h>
 
+#include "lzz_p_extra.h" // type_of_prime
 #include "mat_lzz_pX_multiply.h"
 #include "thresholds_lmultiplier.h"
 
