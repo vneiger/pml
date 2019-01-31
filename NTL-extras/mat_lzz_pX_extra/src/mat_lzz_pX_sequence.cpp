@@ -414,7 +414,7 @@ void gen_sequence (Coeffs &res,
 /*------------------------------------------------------------*/
 /* TODO: what is this?                                        */
 /*------------------------------------------------------------*/
-void gen_sequence (Vec<Mat<zz_p>> &mats, Vec<Coeffs> &res,
+void gen_sequence (Vec<Mat<zz_p>> &mats,
                    const zz_pX &a,
                    const zz_pX &g,
                    const long m)
@@ -426,6 +426,7 @@ void gen_sequence (Vec<Mat<zz_p>> &mats, Vec<Coeffs> &res,
     double t;
 
     t = GetWallTime();
+	Vec<Coeffs> res;
     res.SetLength(m);
     zz_pX x_poly;
     SetCoeff(x_poly, m-1, zz_p(1));
