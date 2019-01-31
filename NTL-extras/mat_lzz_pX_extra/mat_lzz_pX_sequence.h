@@ -2,32 +2,20 @@
 #define MAT_LZZ_PX_SEQUENCE__H
 
 typedef Vec<Vec<Vec<zz_p>>> Coeffs;
-
-static inline void MulMod_simple(zz_pX& upper, const zz_pX& a, const zz_pXModulus& F)
-{
-    long n = F.n;
-    zz_pX P1(INIT_SIZE, n);
-    fftRep R1(INIT_SIZE, F.l);
-    TofftRep_trunc(R1, a, F.l, max(1L << F.k, 2*n-2));
-    mul(R1, R1, F.HRep);
-    FromfftRep(upper, R1, n-1, 2*n-3);
-}
-
-void MulMod_local(zz_pX& x, zz_pX& upper, const zz_pX& a, const zz_pXMultiplier& B, const zz_pXModulus& F);
-
-/*------------------------------------------------------------*/
-/* matrix multiplication using the algorithm of Giorgi et al. */
-/* uses matrix multiplication for evaluation and interpolation*/
-/*                                                            */
-/* variant does one product and a row-shifted product at once */
-/*------------------------------------------------------------*/
-void mul_special(Mat<zz_pX>& c, Mat<zz_pX>& cs, const Mat<zz_pX>& a, const Mat<zz_pX>& b);
-
-/*------------------------------------------------------------*/
-/* generates (t*a^(s*i) mod g) for 0 <= i < l                 */
-/* if need_upper_product = 1, also returns                    */
-/*   S * rev(t * a^(s*i) mod g) mod x^(n-1), 0 <= i < l       */
-/*------------------------------------------------------------*/
+/** For generating special Block-Wiedemann sequences.
+* 
+* This generates (t*a^(s*i) mod g) for 0 <= i < l;              
+* if need_upper_product = 1, also returns                    
+* S * rev(t * a^(s*i) mod g) mod x^(n-1), 0 <= i < l.
+* \param[out] pow vector of polynomials such that pow[i] = t*a^(s*i) mod g
+* \param[out] upper vector of polynomials holding the "upper products"
+* \param[in] t pre-multiplier
+* \param[in] a polynomial to be powered
+* \param[in] s starting power of a
+* \param[in] g modulus
+* \parma[in] l number of powers needed
+* \param[in] need_upper_products set to 1 if "upper products" are needed
+*/
 void gen_pows (Vec<zz_pX> &pow, Vec<zz_pX>&upper,
                const zz_pX &t,
                const zz_pX &a,
@@ -35,33 +23,20 @@ void gen_pows (Vec<zz_pX> &pow, Vec<zz_pX>&upper,
                const zz_pX &g,
                const long l, const long need_upper_products = 0);
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-void get_quos (Mat<zz_pX> &quos,
-               const Vec<zz_pX> &alphas,
-               const Vec<zz_pX> &As,
-               const Vec<zz_pX> &upper,
-               const zz_pX &g,
-               const long m);
-/*------------------------------------------------------------*/
-/* Generates the sequence of first mxm coefficients of        */
-/* t a^k mod g for 0 <= k <= 2(n/m)                           */
-/*------------------------------------------------------------*/
-void gen_sequence (Coeffs &res,
-                   const zz_pX &t,
-                   const zz_pX &a,
-                   const zz_pX &g,
-                   const long m);
-
-/*------------------------------------------------------------*/
-/* Generates the sequence of first mxm coefficients of        */
-/* x^j a^k mod g for 0 <= k <= 2(n/m), 0 <= j < m.            */
-/* Output is stored in a vector of matrices such that (i,j)-th*/
-/* entry of the k-th matrix holds the j-th coefficient of     */
-/* x^i a^(2d-k) mod g                                         */
-/*------------------------------------------------------------*/
-void gen_sequence (Vec<Mat<zz_p>> &mats, Vec<Coeffs> &res,
+/** For generating special Block-Wiedemann sequences.
+*
+* Generates the sequence of first mxm coefficients of        
+* x^j a^k mod g for 0 <= k <= 2(n/m), 0 <= j < m.            
+* Output is stored in a vector of matrices such that (i,j)-th
+* entry of the k-th matrix holds the j-th coefficient of     
+* x^i a^(2d-k) mod g 
+*
+* \param[out] mat stores the output 
+* \param[in] t pre-multiplier
+* \param[in] a polynomial to be powered
+* \param[in] g modulus
+*/
+void gen_sequence (Vec<Mat<zz_p>> &mats,
                    const zz_pX &a,
                    const zz_pX &g,
                    const long m);
