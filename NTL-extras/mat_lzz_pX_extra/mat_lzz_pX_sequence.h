@@ -31,7 +31,7 @@ void gen_pows (Vec<zz_pX> &pow, Vec<zz_pX>&upper,
 * entry of the k-th matrix holds the j-th coefficient of     
 * x^i a^(2d-k) mod g 
 *
-* \param[out] mat stores the output 
+* \param[out] mats stores the output 
 * \param[in] t pre-multiplier
 * \param[in] a polynomial to be powered
 * \param[in] g modulus
