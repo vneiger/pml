@@ -191,8 +191,7 @@ int main(int argc, char *argv[])
 
         // Faster algo
         Vec<Mat<zz_p>> seq;
-        Vec<Coeffs> res;
-        gen_sequence(seq,res,a,g,m);
+        gen_sequence(seq,a,g,m);
         t2 = GetWallTime();
         // TODO temporary fix, because gen_sequence currently computes 2d+1 terms
         for (long k = 0; k < 2*d; ++k)
