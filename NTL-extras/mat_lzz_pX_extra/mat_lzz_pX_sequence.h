@@ -29,7 +29,7 @@ void gen_pows (Vec<zz_pX> &pow, Vec<zz_pX>&upper,
 * x^j a^k mod g for 0 <= k <= 2(n/m), 0 <= j < m.            
 * Output is stored in a vector of matrices such that (i,j)-th
 * entry of the k-th matrix holds the j-th coefficient of     
-* x^i a^(2d-k) mod g 
+* x^i a^(2d-k) mod g. Uses the baby step giant step algorithm
 *
 * \param[out] mats stores the output 
 * \param[in] t pre-multiplier
@@ -41,6 +41,20 @@ void gen_sequence (Vec<Mat<zz_p>> &mats,
                    const zz_pX &g,
                    const long m);
 
+
+/** For generating special Block-Wiedemann sequences.
+*
+* Generates the sequence of first mxm coefficients of        
+* x^j a^k mod g for 0 <= k <= 2(n/m), 0 <= j < m.            
+* Output is stored in a vector of matrices such that (i,j)-th
+* entry of the k-th matrix holds the j-th coefficient of     
+* x^i a^(2d-k) mod g. Uses the naive algorithm
+*
+* \param[out] res stores the output 
+* \param[in] t pre-multiplier
+* \param[in] a polynomial to be powered
+* \param[in] g modulus
+*/
 void get_sequence_naive (Vec<Coeffs> &res,
                          const zz_pX &a,
                          const zz_pX &g,
@@ -53,13 +67,41 @@ void print(const zz_pX &p);
 /*------------------------------------------------------------*/
 /* MATRIX RECONSTRUCTION                                      */
 /*------------------------------------------------------------*/
-
+/** Computes the matrix reconstruction
+* 
+* Given a sequence of (scalar) matrices, computes the matrix
+* denominator using approximant basis
+*
+* \param[out] basis basis of the sequence
+* \param[in] seq sequence of matrices
+*/
 void matrix_recon_approximation(Mat<zz_pX> &basis, const Vec<Mat<zz_p>> &seq);
 
+/** Computes the matrix reconstruction
+* 
+* Given a set of matrix evaluations,
+* evaluated at some points `pts`, this reconstructs the 
+* matrix denominator using interpolant basis
+*
+* \param[out] basis basis of the sequence
+* \param[in] pts evaluation points
+* \param[in] seq matrix evaluations
+*/
 void matrix_recon_interpolation(Mat<zz_pX> &basis,
                                 const Vec<zz_p> &pts,
                                 const Vec<Mat<zz_p>> &seq);
 
+/** Computes the matrix reconstruction
+* 
+* Given a set of matrix evaluations,
+* evaluated at some points `pts`, this reconstructs the 
+* matrix denominator using interpolant basis with geometric
+* points based on `r`
+*
+* \param[out] basis basis of the sequence
+* \param[in] pts evaluation points
+* \param[in] seq matrix evaluations
+*/
 void matrix_recon_interpolation_geometric(Mat<zz_pX> &basis,
                                           const Vec<zz_p> &pts,
                                           const zz_p& r,
