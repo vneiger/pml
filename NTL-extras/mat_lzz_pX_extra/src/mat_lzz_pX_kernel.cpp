@@ -52,9 +52,6 @@ NTL_CLIENT
 
 
 
-// TODO testing generation
-// TODO row_wise
-// FIXME randomized: probability of not detecting that it is not correct?
 bool is_kernel_basis(
                      Mat<zz_pX> & kerbas,
                      const Mat<zz_pX> & pmat,
@@ -138,14 +135,11 @@ void kernel_basis(
                  )
 {
     VecLong rdeg(shift);
-    VecLong pivind;
-    kernel_basis_via_approximation(kerbas, pivind, pmat, rdeg);
+    Mat<zz_pX> copy_mat(pmat);
+    kernel_basis_zls_via_approximation(kerbas, copy_mat, rdeg);
 }
 
 
-// TODO improvement: better performance if pmat has very unbalanced column
-// degree would be to use a column-degree wise order (however, this is not
-// handled by fast approximant algorithms for now)
 void kernel_basis_via_approximation(
                                     Mat<zz_pX> & kerbas,
                                     VecLong & pivind,
@@ -220,8 +214,6 @@ void kernel_basis_via_approximation(
     }
 }
 
-// TODO improvement mentioned above approx variant could be adapted here as
-// well (?)
 void kernel_basis_via_interpolation(
                                     Mat<zz_pX> & kerbas,
                                     VecLong & pivind,

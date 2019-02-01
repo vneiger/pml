@@ -145,15 +145,10 @@ inline Mat<zz_pX> middle_product(
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/** @name Non-FFT-based polynomial matrix multiplication
+/** @name Cubic-time polynomial matrix multiplication
  *
- * All these functions take the following parameters:
- *  \param[out] c polynomial matrix  
- *  \param[in] a polynomial matrix  
- *  \param[in] b polynomial matrix  
- *
- * They compute `c` as the product `a*b` of the input `a` and `b`. The
- * parameter `c` does not have to be zero, and may alias `a` or `b`.
+ * These functions use algorithms of complexity cubic in the dimension, and
+ * relying on polynomial arithmetic.
  */
 //@{
 
@@ -166,36 +161,56 @@ void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
  * polynomial multiplication. */
 void multiply_waksman(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
-/*------------------------------------------------------------*/
-/* matrix multiplication using the algorithm of Doliskani et al. */
-/* uses matrix multiplication for evaluation and interpolation*/
-/*------------------------------------------------------------*/
-// FIXME: should complain if field not large enough (how large should it be?)
+//@} // doxygen group: Cubic-time polynomial matrix multiplication
+
+/** @name Small degree polynomial matrix multiplication
+ * 
+ * Algorithms specialized for small degree matrices.
+ */
+//@{
+/** \todo doc  */
+void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+/** \todo doc  */
+void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+/** \todo doc  */
+void multiply_transform_montgomery3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+/** \todo doc  */
+void multiply_transform_karatsuba4(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+/** \todo doc  */
+void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long len);
+/** \todo doc  */
+inline void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{ multiply_transform(c, a, b, max(deg(a), deg(b)) + 1); }
+
+/**
+ * Uses the algorithm of [Doliskani, Giorgi, Lebreton, Schost. 2018], which
+ * relies on matrix multiplication with Vandermonde matrices for evaluation and
+ * interpolation.
+ *                                    
+ * \todo check field is large enough to take the points
+ */
 void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+/**
+ * Uses the algorithm of [Doliskani, Giorgi, Lebreton, Schost. 2018], with
+ * relies on matrix multiplication with Vandermonde matrices for evaluation and
+ * interpolation; uses points 1,-1,2,-2, .. in order to speed-up (similar to
+ * first step of an FFT). 
+ *                                    
+ * \todo check field is large enough to take the points
+ */
 void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
-/*------------------------------------------------------------*/
-/* computes the matrices for evaluation and interpolation     */
-/*------------------------------------------------------------*/
+/** Computes the Vandermonde matrices for evaluation and interpolation in the
+ * [Doliskani et al] approach. */
 void vandermonde(Mat<zz_p>& small_vdm1, Mat<zz_p>& small_vdm2, Mat<zz_p>& inv_vdm, long d1, long d2);
+/** Computes the Vandermonde matrices for evaluation and interpolation in the
+ * [Doliskani et al] approach speeded-up with opposite points. */
 void vandermonde2(Mat<zz_p>& small_vdm1, Mat<zz_p>& small_vdm2, Mat<zz_p>& inv_vdm, long d1, long d2);
 
+//@} // doxygen group: Small degree polynomial matrix multiplication
 
 
-
-void multiply_transform_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void multiply_transform_karatsuba(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void multiply_transform_montgomery3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void multiply_transform_karatsuba4(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long len);
-inline void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
-{
-    multiply_transform(c, a, b, max(deg(a), deg(b)) + 1);
-}
-
-//@} // doxygen group: Non-FFT-based polynomial matrix multiplication
-
-/** @name FFT-based polynomial matrix multiplication
+/** @name Evaluation/interpolation polynomial matrix multiplication (FFT points)
  *
  *  \todo doc
  */
@@ -206,12 +221,6 @@ inline void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<z
 /* chooses one of the two above                               */
 /*------------------------------------------------------------*/
 void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-
-/*------------------------------------------------------------*/
-/* 3 primes CRT algorithm                                     */
-/*------------------------------------------------------------*/
-void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-
 
 /*------------------------------------------------------------*/
 /* assumes FFT prime and p large enough                       */
@@ -230,6 +239,18 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
 // TODO experimental function, which happens to be efficient in small dimensions (also depends on the bitsize)
 void multiply_evaluate_FFT_direct_no_ll(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
+//@} // doxygen group: Evaluation/interpolation polynomial matrix multiplication (FFT points)
+
+/** @name Evaluation/interpolation polynomial matrix multiplication (non-FFT points)
+ *
+ *  
+ */
+//@{
+/*------------------------------------------------------------*/
+/* 3 primes CRT algorithm                                     */
+/*------------------------------------------------------------*/
+void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+
 
 /*------------------------------------------------------------*/
 /* geometric evaluation                                       */
@@ -239,7 +260,7 @@ void multiply_evaluate_FFT_direct_no_ll(Mat<zz_pX> & c, const Mat<zz_pX> & a, co
 void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 // TODO versions similar to matmul2 and matmul3, cf FFT file
 
-//@} // doxygen group: FFT-based polynomial matrix multiplication
+//@} // doxygen group: Evaluation/interpolation polynomial matrix multiplication (non-FFT points)
 
 
 
@@ -250,9 +271,9 @@ void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat
 /*------------------------------------------------------------*/
 /** @name Middle product
  *
- *  bla.
+ * \todo doc
  *
- * \todo ensure degree bounds on a, c
+ * \todo ensure degree bounds on a, c (?)
  */
 //@{
 

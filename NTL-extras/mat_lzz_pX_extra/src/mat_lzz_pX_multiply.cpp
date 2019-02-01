@@ -1,4 +1,4 @@
-#include "lzz_p_extra.h"
+#include "lzz_p_extra.h" // type_of_prime
 #include "thresholds_matrix_multiply.h"
 #include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_multiply.h"

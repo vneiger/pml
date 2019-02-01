@@ -1,11 +1,7 @@
-#include <memory>
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
 #include <NTL/lzz_pX.h>
 
-#include "lzz_p_extra.h"
-#include "mat_lzz_pX_extra.h"
-#include "lzz_pX_CRT.h"
+#include "lzz_p_extra.h" // type_of_prime
+#include "mat_lzz_pX_multiply.h"
 #include "thresholds_lmultiplier.h"
 
 NTL_CLIENT
