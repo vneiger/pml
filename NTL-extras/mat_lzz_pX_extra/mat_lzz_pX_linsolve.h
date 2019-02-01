@@ -1,7 +1,7 @@
 #ifndef MAT_LZZ_PX_LINSOLVE__H
 #define MAT_LZZ_PX_LINSOLVE__H
 
-/** Functions for linear system solving.
+/** \brief Functions for linear system solving.
  *
  * \file mat_lzz_pX_linsolve.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
@@ -200,11 +200,13 @@ void linsolve_via_series(
                          long nb_max = -1
                         );
 
-// solve aM = b via kernel basis
-// return a and denominator d
-// assumes M is invertible
-// TODO not well tested yet
-// returns 0 if no solution, 1 otherwise
+/** Solves A u = den * b via kernel basis.
+ *
+ * \todo improve documentation and clean code
+ *
+ * \todo provide more complete function (should more generally return the computed
+ * kernel, which in particular will be (u,den) when A is square invertible.
+ */
 long linsolve_via_kernel(
                          Vec<zz_pX> & u,
                          zz_pX & den,
