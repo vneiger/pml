@@ -49,13 +49,12 @@
  * \param[out] appbas the output approximant basis (cannot alias `pmat`)
  * \param[in] pmat the input polynomial matrix (no restriction)
  * \param[in] order the input order (list of strictly positive integers, length must be `pmat.NumCols()`)
- * \param[in] shift the input shift (list of integers, length must be `pmat.NumRows()`)
+ * \param[in,out] shift the input shift and the output shifted row degree of `appbas` (list of integers, length must be `pmat.NumRows()`)
  *
  * Note that the latter two restrictions on the lengths of the lists are
  * assuming left approximants; for right approximants, they are swapped.
  */
 
-#include "mat_lzz_pX_utils.h"
 #include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_forms.h"
 #include "mat_lzz_pX_multiply.h"
@@ -89,12 +88,14 @@ NTL_CLIENT
  * verify correctness.
  *
  * \param[out] appbas output approximant basis
+ * \param[out] rdeg the `shifts`-row degree of `appbas`
  * \param[in] pmat input polynomial matrix
  * \param[in] order input order
  * \param[in] shift input shift
  * \param[in] form indicates the required form for the output basis (see #PolMatForm)
  * \param[in] row_wise indicates whether to compute left approximants (working row-wise) or right approximants (working column-wise)
  * \param[in] generic if `true`, specific code for generic instances may be used
+ *
  * \todo The `row_wise` and `generic` flags are currently not supported.
  */
 void approximant_basis(
@@ -114,6 +115,7 @@ void approximant_basis(
  * parameter `order` instead of a list. This simply interprets this as
  * specifying a list of integers all equal to `order` (with the right length),
  * and then calls the function above.
+ *
  * \todo `row_wise` false not handled
  */
 inline void approximant_basis(
@@ -192,10 +194,12 @@ inline bool is_approximant_basis(
  */
 //@{
 
-/** Computes an `shift`-ordered weak Popov approximant basis for
- * `(pmat,order)`. The parameter `order_wise` allows one to choose between two
- * strategies for choosing the next coefficient to deal with during the
- * iteration, which may have some impact on the timings depending on the input:
+/** Computes a `shift`-ordered weak Popov approximant basis for
+ * `(pmat,order)`. At the end of the computation, the vector `shift` contains
+ * the shifted row degree of `appbas`, for the input shift. The parameter
+ * `order_wise` allows one to choose between two strategies for choosing the
+ * next coefficient to deal with during the iteration, which may have some
+ * impact on the timings depending on the input:
  * - process `pmat` order-wise (choose column with largest order)
  * - process `pmat` column-wise (choose leftmost column not yet completed). */
 void appbas_iterative(
@@ -206,10 +210,12 @@ void appbas_iterative(
                       bool order_wise=true
                      );
 
-/** Computes an `shift`-Popov approximant basis for `(pmat,order)`. The
- * parameter `order_wise` allows one to choose between two strategies for
- * choosing the next coefficient to deal with during the iteration, which may
- * have some impact on the timings depending on the input:
+/** Computes a `shift`-Popov approximant basis for `(pmat,order)`. At the end
+ * of the computation, the vector `shift` contains the shifted row degree of
+ * `appbas`, for the input shift. The parameter `order_wise` allows one to
+ * choose between two strategies for choosing the next coefficient to deal with
+ * during the iteration, which may have some impact on the timings depending on
+ * the input:
  * - process `pmat` order-wise (choose column with largest order)
  * - process `pmat` column-wise (choose leftmost column not yet completed).
  *
@@ -321,6 +327,9 @@ VecLong mbasis1(
  * dimensions as `pmat` which, at the iteration `d`, is equal to the
  * coefficient of degree `d` of `appbas*pmat` (the coefficients of lower degree
  * being already zero).
+ *
+ * At the end of the computation, the vector `shift` contains the shifted row
+ * degree of `appbas`, for the input shift. 
  *
  * This is inspired from the algorithm _mbasis_ described in
  *  - P. Giorgi, C.-P. Jeannerod, G. Villard. Proceeding ISSAC 2003,
@@ -453,6 +462,9 @@ void popov_mbasis(
  * `appbas1*pmat = 0 mod x^{order/2}`, and the residual matrix has the same
  * dimensions as `pmat` and is defined by the matrix middle product
  * `(x^{-order/2} appbas1*pmat) mod x^{order/2}`.
+ *
+ * At the end of the computation, the vector `shift` contains the shifted row
+ * degree of `appbas`, for the input shift. 
  *
  * This is inspired from the algorithm _pmbasis_ described in
  *  - P. Giorgi, C.-P. Jeannerod, G. Villard. Proceeding ISSAC 2003,
@@ -746,7 +758,7 @@ VecLong pmbasis_generic_onecolumn(
 
 // ** generic (uniform shift): just do everything without shifts as would
 // happen generically with the uniform shift; might need assumptions on n
-// divide m, etc
+// divide m, etc  (--> does not look very promising, from the 2nxn case)
 
 // ** shifted generic: from shift, deduce the pivot degree expected generically
 // and use this as a shift instead of 'shift', then obtain directly Popov
@@ -760,16 +772,6 @@ VecLong pmbasis_generic_onecolumn(
 // ** threads:
 //   -- in mbasis_resupdate
 //   -- in pmbasis?
-
-// ** form of output? currently, it is at least ordered weak Popov
-// --> check if this makes a difference of time when not returning Popov but
-// just minimal, like done in LinBox and in GJV03 and GL14 (implies slightly
-// less permutation work)
-
-// ** return value is pivot degree.
-//   -- Would shifted row degree be more appropriate?
-//   -- Why return rather than input reference?
-//   -- At least in lower level functions, why not modifying directly the input shift?
 
 // iterative version / mbasis: compare different ways of obtaining Popov
 // (recompute with new shift, or maintain normal form)
