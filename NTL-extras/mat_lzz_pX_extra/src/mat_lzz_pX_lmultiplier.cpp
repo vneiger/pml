@@ -41,38 +41,6 @@ static inline void mul_add(Vec<ll_type>& z, const fftRep& x, const fftRep& y)
 /*------------------------------------------------------------*/
 
 /*------------------------------------------------------------*/
-/* current number of rows                                     */
-/*------------------------------------------------------------*/
-long mat_lzz_pX_lmultiplier::NumRows() const
-{
-    return __s;
-}
-
-/*------------------------------------------------------------*/
-/* current number of columns                                  */
-/*------------------------------------------------------------*/
-long mat_lzz_pX_lmultiplier::NumCols() const
-{
-    return __t;
-}
-
-/*------------------------------------------------------------*/
-/* degree of current matrix                                   */
-/*------------------------------------------------------------*/
-long mat_lzz_pX_lmultiplier::degA() const
-{
-    return __dA;
-}
-
-/*------------------------------------------------------------*/
-/* max degree of rhs argument                                 */
-/*------------------------------------------------------------*/
-long mat_lzz_pX_lmultiplier::degB() const
-{
-    return __dB;
-}
-
-/*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*           FFT-BASED LMULTIPLIER (DIRECT)                   */
 /*------------------------------------------------------------*/
@@ -81,22 +49,15 @@ long mat_lzz_pX_lmultiplier::degB() const
 /*------------------------------------------------------------*/
 /* constructor: computes FFT of a                             */
 /*------------------------------------------------------------*/
-mat_lzz_pX_lmultiplier_FFT_direct::mat_lzz_pX_lmultiplier_FFT_direct(const Mat<zz_pX> & a, long dB)
+mat_lzz_pX_lmultiplier_FFT_direct::mat_lzz_pX_lmultiplier_FFT_direct(const Mat<zz_pX> & a, long dB) :
+    mat_lzz_pX_lmultiplier(a, dB)
 {
-    __s = a.NumRows();
-    __t = a.NumCols();
-    __dA = deg(a);
-    __dB = dB;
-
-    long m = __s;
-    long n = __t;
-    
     K = NextPowerOfTwo(__dA + dB + 1);
     len = 1L << K;
 
     n0 = (1L << (2*(NTL_BITS_PER_LONG - NTL_SP_NBITS))) - 1;
-    first_slice = n % n0;
-    nb_slices = n / n0;
+    first_slice = __t % n0;
+    nb_slices = __t / n0;
     if (first_slice == 0)
     {
         first_slice = n0;
@@ -107,11 +68,11 @@ mat_lzz_pX_lmultiplier_FFT_direct::mat_lzz_pX_lmultiplier_FFT_direct(const Mat<z
     red1 = sp_PrepRem(pr);
     red2 = make_sp_ll_reduce_struct(pr);
 
-    vala.SetLength(m);
-    for (long i = 0; i < m; i++)
+    vala.SetLength(__s);
+    for (long i = 0; i < __s; i++)
     {
-        vala[i].SetLength(n);
-        for (long j = 0; j < n; j++)
+        vala[i].SetLength(__t);
+        for (long j = 0; j < __t; j++)
             TofftRep(vala[i][j], a[i][j], K);
     }
 }
@@ -255,13 +216,9 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply(Mat<zz_pX>& c, const Mat<zz_pX>
 /*------------------------------------------------------------*/
 /* constructor: computes FFT of a                             */
 /*------------------------------------------------------------*/
-mat_lzz_pX_lmultiplier_FFT_matmul::mat_lzz_pX_lmultiplier_FFT_matmul(const Mat<zz_pX> & a, long dB)
+mat_lzz_pX_lmultiplier_FFT_matmul::mat_lzz_pX_lmultiplier_FFT_matmul(const Mat<zz_pX> & a, long dB) :
+    mat_lzz_pX_lmultiplier(a, dB)
 {
-    __s = a.NumRows();
-    __t = a.NumCols();
-    __dA = deg(a);
-    __dB = dB;
-    
     idxk = NextPowerOfTwo(__dA + __dB + 1);
     long n = 1L << idxk;
     fftRep R1(INIT_SIZE, idxk);
@@ -361,13 +318,9 @@ void mat_lzz_pX_lmultiplier_FFT_matmul::multiply(Mat<zz_pX>& c, const Mat<zz_pX>
 /*------------------------------------------------------------*/
 /* constructor: computes evaluation of a                      */
 /*------------------------------------------------------------*/
-mat_lzz_pX_lmultiplier_geometric::mat_lzz_pX_lmultiplier_geometric(const Mat<zz_pX> & a, long dB)
+mat_lzz_pX_lmultiplier_geometric::mat_lzz_pX_lmultiplier_geometric(const Mat<zz_pX> & a, long dB) :
+    mat_lzz_pX_lmultiplier(a, dB)
 {
-    __s = a.NumRows();
-    __t = a.NumCols();
-    __dA = deg(a);
-    __dB = dB;
-
     long n = __dA + __dB + 1;
     ev = get_geometric_points(n);
     ev.prepare_degree(__dB);
@@ -460,14 +413,10 @@ void mat_lzz_pX_lmultiplier_geometric::multiply(Mat<zz_pX>& c, const Mat<zz_pX>&
 /*------------------------------------------------------------*/
 /* computes vandermonde-s and evaluates a                     */
 /*------------------------------------------------------------*/
-mat_lzz_pX_lmultiplier_dense::mat_lzz_pX_lmultiplier_dense(const Mat<zz_pX> & a, long dB)
+mat_lzz_pX_lmultiplier_dense::mat_lzz_pX_lmultiplier_dense(const Mat<zz_pX> & a, long dB) :
+    mat_lzz_pX_lmultiplier(a, dB)
 {
     long ell;
-
-    __s = a.NumRows();
-    __t = a.NumCols();
-    __dA = deg(a);
-    __dB = dB;
 
     vandermonde(vA, vB, iV, __dA, __dB);
     nb_points = vA.NumRows();
@@ -587,7 +536,7 @@ void mat_lzz_pX_lmultiplier_dense::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b)
 /* constructor: builds up to 3 FFT multipliers                */
 /*------------------------------------------------------------*/
 mat_lzz_pX_lmultiplier_3_primes::mat_lzz_pX_lmultiplier_3_primes(const Mat<zz_pX> & a, long dB):
-    primes(a.NumCols(), deg(a), dB)
+    mat_lzz_pX_lmultiplier(a, dB), primes(a.NumCols(), deg(a), dB) // TODO improve: this computes twice deg(a)...
 {
     long nb = primes.nb();
     FFT_muls.SetLength(nb);

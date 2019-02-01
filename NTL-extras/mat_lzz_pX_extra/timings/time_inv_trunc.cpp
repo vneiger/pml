@@ -95,12 +95,12 @@ void all_checks()
 /*------------------------------------------------------------*/
 void check()
 {
-    //zz_p::FFTInit(0);
-    //all_checks();
+    zz_p::FFTInit(0);
+    all_checks();
     //zz_p::UserFFTInit(786433);
     //all_checks();
-    zz_p::init(288230376151711813);
-    all_checks();
+    //zz_p::init(288230376151711813);
+    //all_checks();
     //zz_p::init(786433);
     //all_checks();
 }  
