@@ -8,6 +8,9 @@
  * \version 0.1
  * \date 2019-01-01
  *
+ * Algorithms for computing shifted minimal kernel bases of polynomial
+ * matrices.
+ *
  */
 
 #include "mat_lzz_pX_forms.h" // for VecLong, VecLong, PolMatForm
@@ -63,8 +66,9 @@ bool is_kernel_basis(
                     );
 
 /** Computes a `shift`-minimal kernel basis `kerbas` for `pmat`, using a single
- * call to minimal approximant basis at sufficiently large order. Returns the
- * `shift`-pivot index, and `shift` becomes the shifted row degree.
+ * call to minimal approximant basis at sufficiently large order. Computes the
+ * `shift`-pivot index `pivind` of `kerbas`, and `shift` becomes the shifted
+ * row degree of `kerbas` (for the input shift).
  *
  * \todo implement/use shift entries reduction (the approximation order depends
  * on these entries, and they may be reduced depending on the
@@ -83,8 +87,8 @@ void kernel_basis_via_approximation(
 
 /** Computes a `shift`-minimal kernel basis `kerbas` for `pmat`, using a single
  * call to minimal interpolant basis at sufficiently long sequence of geometric
- * points. Returns the `shift`-pivot index, and `shift` becomes the shifted row
- * degree.
+ * points. Computes the `shift`-pivot index `pivind` of `kerbas`, and `shift`
+ * becomes the shifted row degree of `kerbas` (for the input shift).
  *
  * \todo implement/use shift entries reduction (the approximation order depends
  * on these entries, and they may be reduced depending on the
@@ -99,6 +103,8 @@ void kernel_basis_via_interpolation(
 
 /** Computes a `shift`-minimal kernel basis `kerbas` for `pmat` using the
  * Zhou-Labahn-Storjohann algorithm (described in the Proceedings ISSAC 2012).
+ * At the end of the computation, `shift` is the shifted row degree of `kerbas`
+ * (for the input shift).
  *
  * \todo implement/use shift entries reduction (the approximation order depends
  * on these entries, and they may be reduced depending on the
@@ -114,7 +120,10 @@ void kernel_basis_zls_via_approximation(
 
 /** Computes a `shift`-minimal kernel basis `kerbas` for `pmat` using a
  * modified Zhou-Labahn-Storjohann algorithm (described in the Proceedings
- * ISSAC 2012), relying on interpolant bases rather than approximant bases. */
+ * ISSAC 2012), relying on interpolant bases rather than approximant bases.
+ * At the end of the computation, `shift` is the shifted row degree of `kerbas`
+ * (for the input shift).
+ */
 void kernel_basis_zls_via_interpolation(
                                         Mat<zz_pX> & kerbas,
                                         Mat<zz_pX> & pmat,
