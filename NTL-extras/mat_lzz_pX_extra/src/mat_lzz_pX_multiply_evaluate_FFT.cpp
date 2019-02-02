@@ -7,6 +7,12 @@
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pX_CRT.h"
 
+// FIXME work in progress:
+// constant used to reduce cache misses
+// (must be power of 2)
+// right now harcoded for L1 cache line 64B...
+#define COPY_CACHE_FRIENDLY_SIZE 8
+
 NTL_CLIENT
 
 #if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES)
@@ -362,6 +368,98 @@ void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
 /* assumes FFT prime and p large enough                       */
 /* output may alias input; c does not have to be zero matrix  */
 /* uses Mat<zz_p> matrix multiplication                       */
+/* --> for each matrix (a,b,c), list of all evaluations is    */
+/* stored in a single array                                   */
+/*------------------------------------------------------------*/
+void multiply_evaluate_FFT_matmul2bis(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+{
+    // dimensions
+    long s = a.NumRows();
+    long t = a.NumCols();
+    long u = b.NumCols();
+    // degree of output
+    const long d = deg(a) + deg(b);
+    // points for FFT representation
+    long idxk = NextPowerOfTwo(d + 1);
+    long n = 1 << idxk;
+    fftRep R(INIT_SIZE, idxk);
+
+    // L1 cache line size / size of long
+    const long len = std::min((long)COPY_CACHE_FRIENDLY_SIZE, d);
+
+    // matrix of evaluations of a: mat_valA[i*t+k][r] contains
+    // the evaluation of a[i][k] at the r-th point
+    Vec<UniqueArray<long>> mat_valA(INIT_SIZE, s*t);
+    for (long i = 0; i < s; ++i)
+        for (long k = 0; k < t; ++k)
+        {
+            R.tbl[0].SetLength(n);
+            TofftRep(R, a[i][k], idxk);
+            R.tbl[0].swap(mat_valA[i*t+k]);
+        }
+
+    // matrix of evaluations of b: mat_valB[i*u+k][r] contains
+    // the evaluation of a[i][k] at the r-th point
+    Vec<UniqueArray<long>> mat_valB(INIT_SIZE, t*u);
+    for (long i = 0; i < t; ++i)
+        for (long k = 0; k < u; ++k)
+        {
+            R.tbl[0].SetLength(n);
+            TofftRep(R, b[i][k], idxk);
+            R.tbl[0].swap(mat_valB[i*u+k]);
+        }
+
+    // vector containing the evaluations of the product c=a*b:
+    // mat_valC[i*u+k][j] contains the evaluation of c[i][k]
+    // at the j-th point
+    Vec<UniqueArray<long>> mat_valC(INIT_SIZE, s*u);
+    for (long i = 0; i < mat_valC.length(); ++i)
+        mat_valC[i].SetLength(n);
+
+    Vec<Mat<zz_p>> va(INIT_SIZE, len);
+    for (long jj = 0; jj < len; ++jj)
+        va[jj].SetDims(s,t);
+    Vec<Mat<zz_p>> vb(INIT_SIZE, len);
+    for (long jj = 0; jj < len; ++jj)
+        vb[jj].SetDims(t,u);
+    Vec<Mat<zz_p>> vc(INIT_SIZE, len);
+
+    // for each point, compute the evaluation of c
+    for (long j = 0; j < n; j+=len)
+    {
+        for (long i = 0; i < s; ++i)
+            for (long k = 0; k < t; ++k)
+                for (long jj=0; jj<len; ++jj)
+                    va[jj][i][k].LoopHole() = mat_valA[i*t+k][j+jj];
+        for (long i = 0; i < t; i++)
+            for (long k = 0; k < u; k++)
+                for (long jj=0; jj<len; ++jj)
+                    vb[jj][i][k].LoopHole() = mat_valB[i*u+k][j+jj];
+
+        for (long jj=0; jj<len; ++jj)
+            mul(vc[jj], va[jj], vb[jj]);
+
+        for (long i = 0; i < s; ++i)
+            for (long k = 0; k < u; ++k)
+                for (long jj=0; jj<len; ++jj)
+                    mat_valC[i*u + k][j+jj] = vc[jj][i][k]._zz_p__rep;
+    }
+
+    // interpolate the evaluations mat_valC back into c
+    c.SetDims(s, u);
+    for (long i = 0; i < s; ++i)
+        for (long k = 0; k < u; ++k)
+        {
+            R.tbl[0].swap(mat_valC[i*u + k]);
+            FromfftRep(c[i][k], R, 0, d);
+        }
+}
+
+/*------------------------------------------------------------*/
+/* c = a*b                                                    */
+/* assumes FFT prime and p large enough                       */
+/* output may alias input; c does not have to be zero matrix  */
+/* uses Mat<zz_p> matrix multiplication                       */
 /* --> for each matrix (a,b,c), evaluations are stored in an  */
 /* array: e.g., for a, the entry i*t+j of the corresponding   */
 /* array is itself an array containing all evaluations of the */
@@ -650,25 +748,23 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
             multiply_evaluate_FFT_direct_no_ll(c, a, b);
         else if (cube_dim <= 8*8*8)
             multiply_evaluate_FFT_direct(c, a, b);
-        else if (cube_dim <= 20*20*20)
-            multiply_evaluate_FFT_matmul2(c, a, b);
         else if (d < 32)
-                multiply_evaluate_dense(c, a, b);
-        else if (d < 300)
-                multiply_evaluate_dense2(c, a, b);
+            multiply_evaluate_dense(c, a, b);
+        else if (d < 256)
+            multiply_evaluate_dense2(c, a, b);
         else
-                multiply_evaluate_FFT_matmul1(c, a, b);
+            multiply_evaluate_FFT_matmul2bis(c, a, b);
     }
     else
     {
         if (cube_dim <= 8*8*8)
             multiply_evaluate_FFT_direct_no_ll(c, a, b);
-        else if (cube_dim < 45*45*45)
+        else if (cube_dim < 25*25*25)
             multiply_evaluate_FFT_direct(c, a, b);
         else if (d < 150)
             multiply_evaluate_FFT_matmul3(c, a, b);
         else
-            multiply_evaluate_FFT_matmul1(c, a, b);
+            multiply_evaluate_FFT_matmul2bis(c, a, b);
     }
 }
 
