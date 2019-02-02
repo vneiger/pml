@@ -11,9 +11,9 @@ NTL_CLIENT
 
 void one_bench_fft(long sz, long deg)
 {
-    double t0=0.0, t1=0.0, t2bis=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0, t7=0.0;
+    double t0=0.0, t1=0.0, t2bis=0.0, t2=0.0, t3bis=0.0, t32=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0, t7=0.0;
 
-    long nb0=0, nb1=0, nb2bis=0, nb2=0, nb3=0, nb4=0, nb5=0, nb6=0, nb7=0;
+    long nb0=0, nb1=0, nb2bis=0, nb2=0, nb3bis=0, nb32=0, nb3=0, nb4=0, nb5=0, nb6=0, nb7=0;
 
     // warmup
     while (t0<0.1)
@@ -95,6 +95,22 @@ void one_bench_fft(long sz, long deg)
     }
     t2bis = t2bis/nb2bis;
 
+    while (t3bis<0.1)
+    {
+        double t;
+        Mat<zz_pX> a, b, c;
+
+        random(a, sz, sz, deg);
+        random(b, sz, sz, deg);
+
+        t = GetWallTime();
+        multiply_evaluate_FFT_matmul3bis(c, a, b);
+        t = GetWallTime()-t;
+        t3bis += t;
+        ++nb3bis;
+    }
+    t3bis = t3bis/nb3bis;
+
     while (t3<0.1)
     {
         double t;
@@ -110,6 +126,22 @@ void one_bench_fft(long sz, long deg)
         ++nb3;
     }
     t3 = t3/nb3;
+
+    while (t32<0.1)
+    {
+        double t;
+        Mat<zz_pX> a, b, c;
+
+        random(a, sz, sz, deg);
+        random(b, sz, sz, deg);
+
+        t = GetWallTime();
+        multiply_evaluate_FFT_matmul32(c, a, b);
+        t = GetWallTime()-t;
+        t32 += t;
+        ++nb32;
+    }
+    t32 = t32/nb32;
 
     while (t4<0.1)
     {
@@ -191,7 +223,7 @@ void one_bench_fft(long sz, long deg)
         t7=INFINITY; // to make sure this is not the best below
     }
 
-    std::vector<double> times = {t0, t1, t2, t2bis, t3, t4, t6, t5, t7};
+    std::vector<double> times = {t0, t1, t2, t2bis, t3, t3bis, t32, t4, t6, t5, t7};
 
     // timings
     cout << sz << "\t" << deg << "\t";
@@ -212,10 +244,12 @@ void one_bench_fft(long sz, long deg)
         case 2: cout << "mm2"; break;
         case 3: cout << "mm2bis"; break;
         case 4: cout << "mm3"; break;
-        case 5: cout << "direct"; break;
-        case 6: cout << "direct no LL"; break;
-        case 7: cout << "vandermonde"; break;
-        case 8: cout << "vandermonde2"; break;
+        case 5: cout << "mm3bis"; break;
+        case 6: cout << "mm32"; break;
+        case 7: cout << "direct"; break;
+        case 8: cout << "direct no LL"; break;
+        case 9: cout << "vandermonde"; break;
+        case 10: cout << "vandermonde2"; break;
     }
     cout << endl;
 }
@@ -273,7 +307,7 @@ void run_bench(long nbits)
         zz_p::UserFFTInit(1139410705724735489); // 60 bits
         cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
     }
-    std::cout << "size\tdegree\tmult.\tmatmul1\tmatmul2\tmatmul3\tdirect\tdirect2\tvdmd\tvdmd2\twinner" << std::endl;
+    std::cout << "size\tdegree\tmult.\tmm1\tmm2\tmm2bis\tmm3\tmm3bis\tmm32\tdirect\tdirect2\tvdmd\tvdmd2\twinner" << std::endl;
     for (size_t i=0;i<szs.size();i++)
         one_bench_fft(szs[i],degs[i]);
     cout << endl;
@@ -323,7 +357,7 @@ void run_bench()
         case 2: cout << 42 << ")" << endl; break;
         case 3: cout << 60 << ")" << endl; break;
         }
-        std::cout << "size\tdegree\tmult.\tmatmul1\tmatmul2\tmm2bis\tmatmul3\tdirect\tdirect2\tvdmd\tvdmd2\twinner" << std::endl;
+        std::cout << "size\tdegree\tmult.\tmm1\tmm2\tmm2bis\tmm3\tmm3bis\tmm32\tdirect\tdirect2\tvdmd\tvdmd2\twinner" << std::endl;
 
         // NTLx initialize field
         zz_p::UserFFTInit(primes[p]);
@@ -383,7 +417,7 @@ int main(int argc, char ** argv)
         std::cout << "Bench polynomial matrix multiplication (FFT prime, 60 bits)" << std::endl;
         //zz_p::UserFFTInit(786433); // FFT, 20 bits
         //std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
-        std::cout << "size\tdegree\tmult.\tmatmul1\tmatmul2\tmm2bis\tmatmul3\tdirect\tdirect2\tvdmd\tvdmd2\twinner" << std::endl;
+        std::cout << "size\tdegree\tmult.\tmm1\tmm2\tmm2bis\tmm3\tmm3bis\tmm32\tdirect\tdirect2\tvdmd\tvdmd2\twinner" << std::endl;
         warmup();
         one_bench_fft(atoi(argv[1]),atoi(argv[2]));
     }
