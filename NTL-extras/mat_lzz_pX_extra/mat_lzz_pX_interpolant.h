@@ -95,17 +95,102 @@ NTL_CLIENT
  *
  * \todo add parameter row_wise
  * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
- * \todo currently naive algorithm, may be slow for non-small input
  *
  **/
 bool is_interpolant_basis(
                           const Mat<zz_pX> & intbas,
-                          const Vec<Mat<zz_p>> & pmat, // vector of evaluations
+                          const Mat<zz_pX> & pmat,
                           const Vec<zz_p> & pts, // "uniform" case
                           const VecLong & shift,
                           const PolMatForm & form = ORD_WEAK_POPOV,
                           const bool randomized = false
                          );
+
+
+/** Verifies that `intbas` is a `shift`-minimal interpolant basis for `(pmat,pts)`
+ * with the given form `form`.
+ *
+ * \param[in] intbas approximant basis
+ * \param[in] evals evaluation matrices
+ * \param[in] pts interpolation points
+ * \param[in] shift shift
+ * \param[in] form required form for `intbas` (see #PolMatForm)
+ * \param[in] row_wise indicates whether we consider left interpolants (working row-wise) or right interpolants (working column-wise)
+ * \param[in] randomized if `true`, the algorithm may use a Monte Carlo or Las Vegas verification algorithm
+ *
+ * \return boolean, result of the verification
+ *
+ * \todo add parameter row_wise
+ * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
+ *
+ **/
+bool is_interpolant_basis(
+                          const Mat<zz_pX> & intbas,
+                          const Vec<Mat<zz_p>> & evals, // vector of evaluations
+                          const Vec<zz_p> & pts, // "uniform" case
+                          const VecLong & shift,
+                          const PolMatForm & form = ORD_WEAK_POPOV,
+                          const bool randomized = false
+                         );
+
+/** Verifies that `intbas` is a `shift`-minimal interpolant basis for `(pmat,pts)`
+ * with the given form `form`, where `pts` is the geometric sequence defined by
+ * `pt` and `order`.
+ *
+ * \param[in] intbas approximant basis
+ * \param[in] pmat polynomial matrix
+ * \param[in] pt interpolation initial point
+ * \param[in] order length of sequence
+ * \param[in] shift shift
+ * \param[in] form required form for `intbas` (see #PolMatForm)
+ * \param[in] row_wise indicates whether we consider left interpolants (working row-wise) or right interpolants (working column-wise)
+ * \param[in] randomized if `true`, the algorithm may use a Monte Carlo or Las Vegas verification algorithm
+ *
+ * \return boolean, result of the verification
+ *
+ * \todo add parameter row_wise
+ * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
+ *
+ **/
+bool is_interpolant_basis_geometric(
+                                    const Mat<zz_pX> & intbas,
+                                    const Mat<zz_pX> & pmat,
+                                    const zz_p & pt, // geometric case
+                                    const long order,
+                                    const VecLong & shift,
+                                    const PolMatForm & form = ORD_WEAK_POPOV,
+                                    const bool randomized = false
+                                   );
+
+/** Verifies that `intbas` is a `shift`-minimal interpolant basis for `(pmat,pts)`
+ * with the given form `form`, where `pts` is the geometric sequence defined by
+ * `pt` and `order`.
+ *
+ * \param[in] intbas approximant basis
+ * \param[in] evals evaluation matrices
+ * \param[in] pt interpolation initial point
+ * \param[in] order length of sequence
+ * \param[in] shift shift
+ * \param[in] form required form for `intbas` (see #PolMatForm)
+ * \param[in] row_wise indicates whether we consider left interpolants (working row-wise) or right interpolants (working column-wise)
+ * \param[in] randomized if `true`, the algorithm may use a Monte Carlo or Las Vegas verification algorithm
+ *
+ * \return boolean, result of the verification
+ *
+ * \todo add parameter row_wise
+ * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
+ *
+ **/
+bool is_interpolant_basis_geometric(
+                                    const Mat<zz_pX> & intbas,
+                                    const Vec<Mat<zz_p>> & evals,
+                                    const zz_p & pt, // geometric case
+                                    const long order,
+                                    const VecLong & shift,
+                                    const PolMatForm & form = ORD_WEAK_POPOV,
+                                    const bool randomized = false
+                                   );
+
 
 
 /** @name M-Basis algorithm
