@@ -43,16 +43,10 @@ void one_check(long sz, long deg)
             LogicError("FFT matmul1 mismatch");
         }
 
-        multiply_evaluate_FFT_matmul1bis(c2, a, b);
+        multiply_evaluate_FFT_matmul1new(c2, a, b);
         if (c1 != c2)
         {
-            LogicError("FFT matmul1bis mismatch");
-        }
-
-        multiply_evaluate_FFT_matmul1ter(c2, a, b);
-        if (c1 != c2)
-        {
-            LogicError("FFT matmul1ter mismatch");
+            LogicError("FFT matmul1new mismatch");
         }
 
         multiply_evaluate_FFT_matmul2(c2, a, b);
@@ -71,6 +65,12 @@ void one_check(long sz, long deg)
         if (c1 != c2)
         {
             LogicError("FFT matmul2ter mismatch");
+        }
+
+        multiply_evaluate_FFT_matmul2new(c2, a, b);
+        if (c1 != c2)
+        {
+            LogicError("FFT matmul2new mismatch");
         }
 
         multiply_evaluate_FFT_matmul3(c2, a, b);
