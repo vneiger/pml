@@ -40,7 +40,19 @@ void one_check(long sz, long deg)
         multiply_evaluate_FFT_matmul1(c2, a, b);
         if (c1 != c2)
         {
-            LogicError("FFT matmul mismatch");
+            LogicError("FFT matmul1 mismatch");
+        }
+
+        multiply_evaluate_FFT_matmul1bis(c2, a, b);
+        if (c1 != c2)
+        {
+            LogicError("FFT matmul1bis mismatch");
+        }
+
+        multiply_evaluate_FFT_matmul1ter(c2, a, b);
+        if (c1 != c2)
+        {
+            LogicError("FFT matmul1ter mismatch");
         }
 
         multiply_evaluate_FFT_matmul2(c2, a, b);
@@ -53,6 +65,12 @@ void one_check(long sz, long deg)
         if (c1 != c2)
         {
             LogicError("FFT matmul2bis mismatch");
+        }
+
+        multiply_evaluate_FFT_matmul2ter(c2, a, b);
+        if (c1 != c2)
+        {
+            LogicError("FFT matmul2ter mismatch");
         }
 
         multiply_evaluate_FFT_matmul3(c2, a, b);
@@ -127,7 +145,12 @@ void all_checks()
 
     for (size_t si = 0; si < szs.size(); si++)
         for (size_t di = 0; di < degs.size(); di++)
+        {
+            //std::cout << szs[si] << "\t" << degs[di] << "...\t";
+            //std::cout << std::flush;
             one_check(szs[si], degs[di]);
+            //std::cout << "ok." << std::endl;
+        }
 }
 
 
