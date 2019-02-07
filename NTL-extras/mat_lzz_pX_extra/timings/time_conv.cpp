@@ -2,15 +2,6 @@
 #include "util.h"
 #include "mat_lzz_pX_utils.h"
 
-#define TIME(a)         \
-tt = get_time();    \
-a                   \
-tt = get_time()-tt; \
-cout << tt << "\t";
-
-#define SMALL_SUITE
-
-
 NTL_CLIENT
 
 /******************************************************/
@@ -23,6 +14,8 @@ void run_bench(long m, long n, long d)
 {
     double tt, t;
     long nb_iter;
+
+    double tconv1, tconv2;
 
     std::cout << m << "\t" << n << "\t" << d << "\t";
 
@@ -67,7 +60,8 @@ void run_bench(long m, long n, long d)
             t += GetWallTime()-tt;
             ++nb_iter;
         }
-        std::cout << t / nb_iter << "\t";
+        //std::cout << t / nb_iter << "\t";
+        tconv1 = t/nb_iter;
     }
 
     { // NEW pmat --> matp
@@ -82,7 +76,8 @@ void run_bench(long m, long n, long d)
             t += GetWallTime()-tt;
             ++nb_iter;
         }
-        std::cout << t / nb_iter << "\t";
+        t /= nb_iter;
+        std::cout << t / tconv1 << "\t";
     }
 
 
@@ -98,7 +93,8 @@ void run_bench(long m, long n, long d)
             t += GetWallTime()-tt;
             ++nb_iter;
         }
-        std::cout << t / nb_iter << "\t";
+        t /= nb_iter;
+        std::cout << t / tconv1 << "\t";
     }
 
 
@@ -113,7 +109,8 @@ void run_bench(long m, long n, long d)
             t += GetWallTime()-tt;
             ++nb_iter;
         }
-        std::cout << t / nb_iter << "\t";
+        tconv2 = t/nb_iter;
+        //std::cout << t / nb_iter << "\t";
     }
 
     { // NEW matp --> pmat
@@ -127,7 +124,8 @@ void run_bench(long m, long n, long d)
             t += GetWallTime()-tt;
             ++nb_iter;
         }
-        std::cout << t / nb_iter << "\t";
+        t /= nb_iter;
+        std::cout << t / tconv2 << "\t";
     }
 
 
@@ -142,7 +140,8 @@ void run_bench(long m, long n, long d)
             t += GetWallTime()-tt;
             ++nb_iter;
         }
-        std::cout << t / nb_iter << "\t";
+        t /= nb_iter;
+        std::cout << t / tconv2 << "\t";
     }
 
 
@@ -157,13 +156,14 @@ int main(int argc, char * argv[])
         throw std::invalid_argument("Usage: ./time_conv nbits (rdim cdim deg)");
 
     std::cout << std::fixed;
-    std::cout << std::setprecision(8);
+    std::cout << std::setprecision(5);
 
     const long nbits = atoi(argv[1]);
     zz_p::init(NTL::GenPrime_long(nbits));
 
     std::cout << "Bench conv, nbits = " << nbits << ", prime p = " << zz_p::modulus() << std::endl;
-    std::cout << "rdim\tcdim\tdeg\tpm->mp(old)\tpm->mp(new)\tpm->mp(new2)\tmp->pm(old)\tmp->pm(new)\tmp->pm(new2)" << std::endl;
+    //std::cout << "rdim\tcdim\tdeg\tpm->mp(old)\tpm->mp(new)\tpm->mp(new2)\tmp->pm(old)\tmp->pm(new)\tmp->pm(new2)" << std::endl;
+    std::cout << "rdim\tcdim\tdeg\tpm->mp1\tpm->mp2\tmp->pm1\tmp->pm2" << std::endl;
 
     if (argc==5)
     {
@@ -175,14 +175,15 @@ int main(int argc, char * argv[])
     }
     else
     {
-        VecLong rdims = {5,10,20,40,70,100,150,200,400,1000,};
-        VecLong cdims = {5,10,20,40,70,100,150,200,400,1000,};
-        VecLong degs = {5,10,20,40,70,100,150,200,400,1000,2000,4000,8000,16000,};
+        VecLong rdims = {5,10,20,50,100,200,400,1000,};
+        VecLong cdims = {5,10,20,50,100,200,400,1000,};
+        VecLong degs = {5,10,20,50,100,200,400,1000,2000,4000,8000,16000,};
 
-        for (size_t i = 0; i < rdims.size(); ++i)
-            for (size_t j = 0; j < cdims.size(); ++j)
-                for (size_t k = 0; k < degs.size(); ++k)
-                    run_bench(rdims[i], cdims[j], degs[k]);
+        for (size_t m : rdims)
+            for (size_t n : cdims)
+                for (size_t d : degs)
+                    if (m*n*d < 500000000)
+                        run_bench(m, n, d);
     }
 
     return 0;

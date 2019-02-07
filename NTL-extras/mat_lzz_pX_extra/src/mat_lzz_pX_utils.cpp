@@ -540,47 +540,10 @@ void conv(Mat<zz_pX>& pmat, const Mat<zz_p>& mat)
 /* convert to / from Vec<Mat<zz_p>>                           */
 /* (degree deduced from input)                                */
 /*------------------------------------------------------------*/
+
+// Note: may be improved when degrees in pmat are unbalanced (e.g. if only
+// few entries reach degree d)
 void conv(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat)
-{
-    const long m = pmat.NumRows();
-    const long n = pmat.NumCols();
-    const long d = deg(pmat);
-    matp.SetLength(d + 1);
-    // if d==-1, matp is the length-0 vector and the following loop does
-    // nothing
-    for (long k = 0; k < d+1; ++k)
-    {
-        matp[k].SetDims(m, n);
-        for (long i = 0; i < m; ++i)
-            for (long j = 0; j < n; ++j)
-                matp[k][i][j] = coeff(pmat[i][j], k);
-    }
-    // Note: may be improved when degrees in pmat are unbalanced (e.g. if only
-    // few entries reach degree d)
-}
-
-// Note: may be improved when degrees in pmat are unbalanced (e.g. if only
-// few entries reach degree d)
-void conv_new(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat)
-{
-    const long m = pmat.NumRows();
-    const long n = pmat.NumCols();
-    const long len = deg(pmat)+1;
-    matp.SetLength(len);
-    // if len==0, matp is the length-0 vector and the following loop does
-    // nothing
-    for (long k = 0; k < len; ++k)
-        matp[k].SetDims(m, n);
-
-    for (long i = 0; i < m; ++i)
-        for (long j = 0; j < n; ++j)
-            for (long k = 0; k <= deg(pmat[i][j]); ++k)
-                matp[k][i][j] = pmat[i][j][k];
-}
-
-// Note: may be improved when degrees in pmat are unbalanced (e.g. if only
-// few entries reach degree d)
-void conv_new2(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat)
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
@@ -602,67 +565,7 @@ void conv_new2(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat)
     }
 }
 
-
 void conv(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp)
-{
-    const long len = matp.length();
-    if (len == 0)
-    {
-        clear(pmat); // keeping the same dimensions
-        return;
-    }
-
-    const long m = matp[0].NumRows();
-    const long n = matp[0].NumCols();
-    pmat.SetDims(m, n);
-    for (long i = 0; i < m; ++i)
-        for (long j = 0; j < n; ++j)
-        {
-            pmat[i][j].SetLength(len);
-            for (long k = 0; k < len; ++k)
-                pmat[i][j][k] = matp[k][i][j];
-            pmat[i][j].normalize();
-        }
-}
-
-void conv_new(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp)
-{
-    const long len = matp.length();
-    if (len == 0)
-    {
-        // matp is zero; convention: do not change dimension of pmat
-        clear(pmat);
-        return;
-    }
-    if (len == 1)
-    {
-        // matp is constant, rely on the dedicated conversion
-        conv(pmat, matp[0]);
-        return;
-    }
-
-    // now, len >= 2
-    const long m = matp[0].NumRows();
-    const long n = matp[0].NumCols();
-    pmat.SetDims(m, n);
-    for (long i = 0; i < m; ++i)
-    {
-        // initialize vectors
-        for (long j = 0; j < n; ++j)
-            pmat[i][j].SetLength(len);
-
-        // fill data
-        for (long k = 0; k < len; ++k)
-            for (long j = 0; j < n; ++j)
-                pmat[i][j][k] = matp[k][i][j];
-
-        // strip away leading zeroes
-        for (long j = 0; j < n; ++j)
-            pmat[i][j].normalize();
-    }
-}
-
-void conv_new2(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp)
 {
     const long len = matp.length();
     if (len == 0)
@@ -696,8 +599,8 @@ void conv_new2(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp)
             for (long k = 0; k < len; k+=MATRIX_BLOCK_SIZE)
             {
                 const long k_bound = std::min((long)MATRIX_BLOCK_SIZE, len-k);
-                for (long kk = 0; kk < k_bound; ++kk)
-                    for (long jj = 0; jj < j_bound; ++jj)
+                for (long jj = 0; jj < j_bound; ++jj)
+                    for (long kk = 0; kk < k_bound; ++kk)
                         pmat[i][j+jj][k+kk] = matp[k+kk][i][j+jj];
             }
 
@@ -707,7 +610,6 @@ void conv_new2(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp)
         }
     }
 }
-
 
 
 /*------------------------------------------------------------*/
