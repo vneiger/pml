@@ -476,7 +476,7 @@ void random(Vec<zz_pX> & pvec, long n, long d)
 }
 
 /*------------------------------------------------------------*/
-/* random (m, n) matrix of degree < d                         */
+/* random (m, n) matrix of degree < d, pmat version           */
 /*------------------------------------------------------------*/
 void random(Mat<zz_pX> & pmat, long m, long n, long d)
 {
@@ -484,6 +484,16 @@ void random(Mat<zz_pX> & pmat, long m, long n, long d)
     for (long i = 0; i < m; ++i)
         for (long j = 0; j < n; ++j)
             random(pmat[i][j], d);
+}
+
+/*------------------------------------------------------------*/
+/* random (m, n) matrix of degree < d, matp version           */
+/*------------------------------------------------------------*/
+void random(Vec<Mat<zz_p>> & matp, long m, long n, long d)
+{
+    matp.SetLength(d);
+    for (long k = 0; k < d; ++k)
+        random(matp[k], m, n);
 }
 
 /*------------------------------------------------------------*/
