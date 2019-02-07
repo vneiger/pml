@@ -5,7 +5,8 @@
 // FIXME work in progress:
 // constant used to reduce cache misses in conversions
 // for the moment, experimentally chosen...
-#define CACHE_LINE_SIZE 32
+#define CACHE_FRIENDLY_SIZE 32
+#define MATRIX_BLOCK_SIZE 8
 
 NTL_CLIENT
 
@@ -588,9 +589,9 @@ void conv_new2(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat)
     // if len==0, matp is the length-0 vector and the following loop does
     // nothing
 
-    for (long k = 0; k < len; k+=CACHE_LINE_SIZE)
+    for (long k = 0; k < len; k+=CACHE_FRIENDLY_SIZE)
     {
-        const long k_bound = std::min((long)CACHE_LINE_SIZE, len-k);
+        const long k_bound = std::min((long)CACHE_FRIENDLY_SIZE, len-k);
         for (long kk=0; kk<k_bound; ++kk)
             matp[k+kk].SetDims(m, n);
 
@@ -681,20 +682,29 @@ void conv_new2(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp)
     const long m = matp[0].NumRows();
     const long n = matp[0].NumCols();
     pmat.SetDims(m, n);
+
     for (long i = 0; i < m; ++i)
     {
-        // initialize vectors
-        for (long j = 0; j < n; ++j)
-            pmat[i][j].SetLength(len);
+        for (long j = 0; j < n; j+=CACHE_FRIENDLY_SIZE)
+        {
+            const long j_bound = std::min((long)CACHE_FRIENDLY_SIZE, n-j);
+            // initialize vectors
+            for (long jj = 0; jj < j_bound; ++jj)
+                pmat[i][j+jj].SetLength(len);
 
-        // fill data
-        for (long k = 0; k < len; ++k)
-            for (long j = 0; j < n; ++j)
-                pmat[i][j][k] = matp[k][i][j];
+            // fill data
+            for (long k = 0; k < len; k+=MATRIX_BLOCK_SIZE)
+            {
+                const long k_bound = std::min((long)MATRIX_BLOCK_SIZE, len-k);
+                for (long kk = 0; kk < k_bound; ++kk)
+                    for (long jj = 0; jj < j_bound; ++jj)
+                        pmat[i][j+jj][k+kk] = matp[k+kk][i][j+jj];
+            }
 
-        // strip away leading zeroes
-        for (long j = 0; j < n; ++j)
-            pmat[i][j].normalize();
+            // strip away leading zeroes
+            for (long jj = 0; jj < j_bound; ++jj)
+                pmat[i][j+jj].normalize();
+        }
     }
 }
 
