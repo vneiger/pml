@@ -534,10 +534,7 @@ void conv(Mat<zz_pX>& pmat, const Mat<zz_p>& mat)
 /* convert to / from Vec<Mat<zz_p>>                           */
 /* (degree deduced from input)                                */
 /*------------------------------------------------------------*/
-void conv(
-          Vec<Mat<zz_p>> & matp,
-          const Mat<zz_pX> & pmat
-         )
+void conv(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat)
 {
     const long m = pmat.NumRows();
     const long n = pmat.NumCols();
@@ -545,7 +542,7 @@ void conv(
     matp.SetLength(d + 1);
     // if d==-1, matp is the length-0 vector and the following loop does
     // nothing
-    for (long k = 0; k <= d; ++k)
+    for (long k = 0; k < d+1; ++k)
     {
         matp[k].SetDims(m, n);
         for (long i = 0; i < m; ++i)
@@ -556,10 +553,26 @@ void conv(
     // few entries reach degree d)
 }
 
-void conv(
-          Mat<zz_pX> & pmat,
-          const Vec<Mat<zz_p>> & matp
-         )
+void conv_new(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat)
+{
+    const long m = pmat.NumRows();
+    const long n = pmat.NumCols();
+    const long d = deg(pmat);
+    matp.SetLength(d + 1);
+    // if d==-1, matp is the length-0 vector and the following loop does
+    // nothing
+    for (long k = 0; k < d+1; ++k)
+    {
+        matp[k].SetDims(m, n);
+        for (long i = 0; i < m; ++i)
+            for (long j = 0; j < n; ++j)
+                matp[k][i][j] = coeff(pmat[i][j], k);
+    }
+    // Note: may be improved when degrees in pmat are unbalanced (e.g. if only
+    // few entries reach degree d)
+}
+
+void conv(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp)
 {
     const long len = matp.length();
     if (len == 0)
@@ -580,6 +593,30 @@ void conv(
             pmat[i][j].normalize();
         }
 }
+
+void conv_new(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp)
+{
+    const long len = matp.length();
+    if (len == 0)
+    {
+        clear(pmat); // keeping the same dimensions
+        return;
+    }
+
+    const long m = matp[0].NumRows();
+    const long n = matp[0].NumCols();
+    pmat.SetDims(m, n);
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < n; ++j)
+        {
+            pmat[i][j].SetLength(len);
+            for (long k = 0; k < len; ++k)
+                pmat[i][j][k] = matp[k][i][j];
+            pmat[i][j].normalize();
+        }
+}
+
+
 
 /*------------------------------------------------------------*/
 /* convert to / from Vec<Mat<zz_p>>                           */
