@@ -14,7 +14,7 @@
  */
 
 #include <memory> // for unique_ptr
-#include "mat_lzz_pX_utils.h" // for deg() (and maybe others)
+#include "mat_lzz_pX_utils.h" // for deg(), macros CACHE_LINE_SIZE (and maybe other things)
 #include "lzz_pX_CRT.h"
 
 NTL_CLIENT

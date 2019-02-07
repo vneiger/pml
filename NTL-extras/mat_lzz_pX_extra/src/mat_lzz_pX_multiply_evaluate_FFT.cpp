@@ -1,11 +1,5 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-#include <NTL/BasicThreadPool.h>
-
-#include "lzz_p_extra.h"
-#include "mat_lzz_pX_extra.h"
-#include "lzz_pX_CRT.h"
+//#include <NTL/BasicThreadPool.h>
+#include "mat_lzz_pX_multiply.h"
 
 // FIXME work in progress:
 // constant used to reduce cache misses

@@ -26,6 +26,35 @@ void run_bench(long m, long n, long d)
 
     std::cout << m << "\t" << n << "\t" << d << "\t";
 
+
+    { // WARMUP pmat --> matp
+        Mat<zz_pX> pmat; random(pmat, m, n, d);
+        t=0.0, nb_iter=0;
+        while (t<0.2)
+        {
+            tt = GetWallTime();
+            Vec<Mat<zz_p>> matp;
+            conv(matp, pmat);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+        }
+    }
+
+    { // WARMUP NEW pmat --> matp
+        Mat<zz_pX> pmat; random(pmat, m, n, d);
+        t=0.0, nb_iter=0;
+        while (t<0.2)
+        {
+
+            tt = GetWallTime();
+            Vec<Mat<zz_p>> matp;
+            conv_new(matp, pmat);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+        }
+    }
+
+
     { // pmat --> matp
         Mat<zz_pX> pmat; random(pmat, m, n, d);
         t=0.0, nb_iter=0;
@@ -41,6 +70,38 @@ void run_bench(long m, long n, long d)
         std::cout << t / nb_iter << "\t";
     }
 
+    { // NEW pmat --> matp
+        Mat<zz_pX> pmat; random(pmat, m, n, d);
+        t=0.0, nb_iter=0;
+        while (t<0.2)
+        {
+
+            tt = GetWallTime();
+            Vec<Mat<zz_p>> matp;
+            conv_new(matp, pmat);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+        }
+        std::cout << t / nb_iter << "\t";
+    }
+
+
+    { // NEWNEW pmat --> matp
+        Mat<zz_pX> pmat; random(pmat, m, n, d);
+        t=0.0, nb_iter=0;
+        while (t<0.2)
+        {
+
+            tt = GetWallTime();
+            Vec<Mat<zz_p>> matp;
+            conv_new2(matp, pmat);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+        }
+        std::cout << t / nb_iter << "\t";
+    }
+
+
     { // matp --> pmat
         Vec<Mat<zz_p>> matp; random(matp, m, n, d);
         t=0.0, nb_iter=0;
@@ -54,6 +115,37 @@ void run_bench(long m, long n, long d)
         }
         std::cout << t / nb_iter << "\t";
     }
+
+    { // NEW matp --> pmat
+        Vec<Mat<zz_p>> matp; random(matp, m, n, d);
+        t=0.0, nb_iter=0;
+        while (t<0.2)
+        {
+            tt = GetWallTime();
+            Mat<zz_pX> pmat;
+            conv_new(pmat, matp);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+        }
+        std::cout << t / nb_iter << "\t";
+    }
+
+
+    { // NEW2 matp --> pmat
+        Vec<Mat<zz_p>> matp; random(matp, m, n, d);
+        t=0.0, nb_iter=0;
+        while (t<0.2)
+        {
+            tt = GetWallTime();
+            Mat<zz_pX> pmat;
+            conv_new2(pmat, matp);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+        }
+        std::cout << t / nb_iter << "\t";
+    }
+
+
 
     std::cout << std::endl;
 }
@@ -71,13 +163,14 @@ int main(int argc, char * argv[])
     zz_p::init(NTL::GenPrime_long(nbits));
 
     std::cout << "Bench conv, nbits = " << nbits << ", prime p = " << zz_p::modulus() << std::endl;
-    std::cout << "rdim\tcdim\tdeg\tpm->mp\t\tpm->mp(new)\t\tmp->pm\t\tmp->pm(new)" << std::endl;
+    std::cout << "rdim\tcdim\tdeg\tpm->mp(old)\tpm->mp(new)\tpm->mp(new2)\tmp->pm(old)\tmp->pm(new)\tmp->pm(new2)" << std::endl;
 
     if (argc==5)
     {
         const long m = atoi(argv[2]);
         const long n = atoi(argv[3]);
         const long d = atoi(argv[4]);
+        warmup();
         run_bench(m, n, d);
     }
     else
@@ -85,8 +178,6 @@ int main(int argc, char * argv[])
         VecLong rdims = {5,10,20,40,70,100,150,200,400,1000,};
         VecLong cdims = {5,10,20,40,70,100,150,200,400,1000,};
         VecLong degs = {5,10,20,40,70,100,150,200,400,1000,2000,4000,8000,16000,};
-
-        warmup();
 
         for (size_t i = 0; i < rdims.size(); ++i)
             for (size_t j = 0; j < cdims.size(); ++j)

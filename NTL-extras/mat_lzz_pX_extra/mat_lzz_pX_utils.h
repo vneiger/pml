@@ -549,6 +549,7 @@ inline Mat<zz_pX> conv(const Mat<zz_p> & mat)
  */
 void conv(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat);
 void conv_new(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat);
+void conv_new2(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat);
 
 /** Returns the conversion of a matrix with polynomial entries `pmat` into a
  * polynomial with matrix coefficients; the zero matrix is converted to the
@@ -563,6 +564,7 @@ inline Vec<Mat<zz_p>> conv(const Mat<zz_pX> & pmat)
  */
 void conv(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp);
 void conv_new(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp);
+void conv_new2(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp);
 
 /** Returns the conversion of a polynomial with matrix coefficients `matp` into
  * a matrix with polynomial entries; if `matp` has length 0 then it returns a
