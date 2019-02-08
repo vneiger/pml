@@ -13,6 +13,7 @@
 
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_sequence.h"
 #include "mat_lzz_pX_approximant.h"
 #include "sage_output.h"
 
@@ -160,7 +161,7 @@ int main(int argc, char *argv[])
 
         Vec<Mat<zz_p>> seq;
         Vec<Coeffs> res;
-        gen_sequence(seq,res,a,g,m);
+        gen_sequence(seq,a,g,m);
         t2 = GetWallTime();
 
 #ifdef SAFETY_CHECKS

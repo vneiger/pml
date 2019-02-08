@@ -234,14 +234,14 @@ void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
 
 /** Computes `c = a*b` via FFT evaluation/interpolation, but without relying on
  * `Mat<zz_p>` multiplication */
-void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_evaluate_FFT_direct_ll_type(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 /** Computes `c = a*b` via FFT evaluation/interpolation, but without relying on
  * `Mat<zz_p>` multiplication.
  *
  * \todo explain difference with other similar one.
  */
-void multiply_evaluate_FFT_direct_no_ll(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
+void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 //@} // doxygen group: Evaluation/interpolation polynomial matrix multiplication (FFT points)
 

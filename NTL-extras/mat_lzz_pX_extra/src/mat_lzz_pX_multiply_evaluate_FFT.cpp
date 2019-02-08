@@ -45,12 +45,12 @@ static inline void mul_add(Vec<ll_type>& z, const fftRep& x, const fftRep& y)
 /* output may alias input; c does not have to be zero matrix  */
 /* does not use Mat<zz_p> matrix multiplication               */
 /*------------------------------------------------------------*/
-void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+void multiply_evaluate_FFT_direct_ll_type(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
     if (&c == &a || &c == &b)
     {
         Mat<zz_pX> c2;
-        multiply_evaluate_FFT_direct(c2, a, b);
+        multiply_evaluate_FFT_direct_ll_type(c2, a, b);
         c.swap(c2);
         return;
     }
@@ -222,7 +222,7 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
 /* output may alias input; c does not have to be zero matrix  */
 /* does not use Mat<zz_p> matrix multiplication               */
 /*------------------------------------------------------------*/
-void multiply_evaluate_FFT_direct_no_ll(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
+void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
     if (&c == &a || &c == &b)
     {
@@ -243,13 +243,10 @@ void multiply_evaluate_FFT_direct_no_ll(Mat<zz_pX> & c, const Mat<zz_pX> & a, co
 
     // evaluate matrix b
     // valb[i][j] = evaluations of b[j][i]
-    Vec<Vec<fftRep>> valb(INIT_SIZE, p);
+    Mat<fftRep> valb(INIT_SIZE, p, n);
     for (long i = 0; i < p; i++)
-    {
-        valb[i].SetLength(n);
         for (long j = 0; j < n; j++)
             TofftRep(valb[i][j], b[j][i], K);
-    }
 
     c.SetDims(m, p);
     Vec<fftRep> vala(INIT_SIZE, n);
@@ -721,9 +718,9 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
     if (NumBits(zz_p::modulus()) < SMALL_PRIME_SIZE)
     {
         if (cube_dim <= 6*6*6)
-            multiply_evaluate_FFT_direct_no_ll(c, a, b);
-        else if (cube_dim <= 8*8*8)
             multiply_evaluate_FFT_direct(c, a, b);
+        else if (cube_dim <= 8*8*8)
+            multiply_evaluate_FFT_direct_ll_type(c, a, b);
         else if (d < 32)
             multiply_evaluate_dense(c, a, b);
         else if (d < 256)
@@ -734,9 +731,9 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
     else
     {
         if (cube_dim <= 8*8*8)
-            multiply_evaluate_FFT_direct_no_ll(c, a, b);
-        else if (cube_dim < 25*25*25)
             multiply_evaluate_FFT_direct(c, a, b);
+        else if (cube_dim < 25*25*25)
+            multiply_evaluate_FFT_direct_ll_type(c, a, b);
         else if (d < 150)
             multiply_evaluate_FFT_matmul3(c, a, b);
         else
