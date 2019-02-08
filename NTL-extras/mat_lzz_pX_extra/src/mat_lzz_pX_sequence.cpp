@@ -68,26 +68,27 @@ void MulMod_local(zz_pX& x, zz_pX& upper, const zz_pX& a, const zz_pXMultiplier&
 /* TODO: what is this?                                        */
 /*------------------------------------------------------------*/
 void gen_pows (
-               Vec<zz_pX> &pow, Vec<zz_pX>&upper,
+               Vec<zz_pX> &pow,
+               Vec<zz_pX>&upper,
                const zz_pX &t,
                const zz_pX &a,
                const long s,
                const zz_pX &g,
-               const long l, const long need_upper_products
+               const long l,
+               const bool need_upper_products
               )
 {
-    zz_pXModulus g_mod;
-    build(g_mod, g);
+    // build modulus for g
+    zz_pXModulus g_mod(g);
 
+    // build multiplier for a^s
     zz_pX a_pow;
     PowerMod(a_pow, a, s, g_mod); // a_pow = a^s
+    zz_pXMultiplier a_pow_mul(a_pow, g_mod);
 
-    zz_pXMultiplier a_pow_mul;
-    build(a_pow_mul, a_pow, g_mod);
-
+    // initialize list of powers with t * a**0 == t
     pow.SetLength(l);
     pow[0] = t;
-
 
     if (need_upper_products)
     {
@@ -95,20 +96,16 @@ void gen_pows (
         long n = deg(g);
         for (long i = 1; i < l; i++)
         {
-            MulMod_local(pow[i], upper[i - 1], pow[i - 1], a_pow_mul, g_mod);
-            reverse(upper[i - 1], upper[i - 1], n - 2);
+            MulMod_local(pow[i], upper[i-1], pow[i-1], a_pow_mul, g_mod);
+            reverse(upper[i-1], upper[i-1], n-2);
         }
         zz_pX tmp;
-        MulMod_local(tmp, upper[l - 1], pow[l - 1], a_pow_mul, g_mod);
-        reverse(upper[l - 1], upper[l - 1], n - 2);
+        MulMod_local(tmp, upper[l-1], pow[l-1], a_pow_mul, g_mod);
+        reverse(upper[l-1], upper[l-1], n-2);
     }
     else
-    {
-        for (long i = 1; i < l; i++)
-        {
-            MulMod(pow[i], pow[i - 1], a_pow_mul, g_mod);
-        }
-    }
+        for (long i = 1; i < l; ++i)
+            MulMod(pow[i], pow[i-1], a_pow_mul, g_mod);
 
 }
 
@@ -507,58 +504,56 @@ void matrix_recon_approximation(Mat<zz_pX> &basis,
 /*------------------------------------------------------------*/
 /* TODO: what is this?                                        */
 /*------------------------------------------------------------*/
-void matrix_recon_interpolation(Mat<zz_pX> &basis,
-                                const Vec<zz_p> &pts,
-                                const Vec<Mat<zz_p>> &seq)
+void matrix_recon_interpolation(Mat<zz_pX> & basis,
+                                const Vec<zz_p> & pts,
+                                Vec<Mat<zz_p>> & seq)
 {
-    long len = seq.length();
+    // length of sequence
+    const long len = seq.length();
     if (len == 0)
         Error("empty sequence for matrix reconstruction");
 
-    long m = seq[0].NumRows();
-    VecLong shift(2*m, 0);
-
-    Vec<Mat<zz_p>> seq_id;
-    seq_id.SetLength(len);
+    // dimension
+    const long m = seq[0].NumRows();
+    // uniform shift (0,..,0)
+    VecLong shift(2*m);
 
     // add identity at the bottom of each matrix in seq
-    for (long j = 0; j < len; j++)
+    for (long j = 0; j < len; ++j)
     {
-        Mat<zz_p> mat = seq[j];
-        mat.SetDims(2*m, m);
-        for (long i = 0; i < m; i++)
-            for (long k = 0; k < m; k++)
-                mat[m+i][k] = 0;
-        for (long i = 0; i < m; i++)
-            mat[m+i][i] = 1;
-        seq_id[j] = mat;
+        seq[j].SetDims(2*m, m);
+        for (long i = 0; i < m; ++i)
+            set(seq[j][m+i][i]);
     }
 
     // call pmbasis
     Mat<zz_pX> intbas;
-    pmbasis(intbas, seq_id, pts, shift, 0, pts.length());
+    pmbasis(intbas, seq, pts, shift, 0, pts.length());
 
     basis.SetDims(m, m);
-    for (long j = 0; j < m; j++)
-        for (long i = 0; i < m; i++)
-            basis[i][j] = intbas[i][j];
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < m; ++j)
+            basis[i][j].swap(intbas[i][j]);
 }
 
 /*------------------------------------------------------------*/
 /* matrix reconstruction by geometric interpolants            */
 /* TODO: why do we need pts and r?                            */
 /*------------------------------------------------------------*/
-void matrix_recon_interpolation_geometric(Mat<zz_pX> &basis,
-                                          const Vec<zz_p> &pts,
-                                          const zz_p& r,
-                                          const Vec<Mat<zz_p>> &seq)
+void matrix_recon_interpolation_geometric(Mat<zz_pX> & basis,
+                                          const Vec<zz_p> & pts,
+                                          const zz_p & r,
+                                          Vec<Mat<zz_p>> & seq)
 {
-    long len = seq.length();
+    // length of sequence
+    const long len = seq.length();
     if (len == 0)
         Error("empty sequence for matrix reconstruction");
 
+    // dimension
     long m = seq[0].NumRows();
-    VecLong shift(2*m, 0);
+    // uniform shift (0,..,0)
+    VecLong shift(2*m);
 
     Vec<Mat<zz_p>> seq_id;
     seq_id.SetLength(len);
@@ -566,14 +561,9 @@ void matrix_recon_interpolation_geometric(Mat<zz_pX> &basis,
     // add identity at the bottom of each matrix in seq
     for (long j = 0; j < len; j++)
     {
-        Mat<zz_p> mat = seq[j];
-        mat.SetDims(2*m, m);
+        seq[j].SetDims(2*m, m);
         for (long i = 0; i < m; i++)
-            for (long k = 0; k < m; k++)
-                mat[m+i][k] = 0;
-        for (long i = 0; i < m; i++)
-            mat[m+i][i] = 1;
-        seq_id[j] = mat;
+            set(seq[j][m+i][i]);
     }
 
     // call pmbasis
@@ -581,9 +571,9 @@ void matrix_recon_interpolation_geometric(Mat<zz_pX> &basis,
     pmbasis_geometric(intbas, seq_id, pts, r, shift, 0, len);
 
     basis.SetDims(m, m);
-    for (long j = 0; j < m; j++)
-        for (long i = 0; i < m; i++)
-            basis[i][j] = intbas[i][j];
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < m; ++j)
+            basis[i][j].swap(intbas[i][j]);
 }
 
 

@@ -1,7 +1,7 @@
 #include "util.h"
 #include "mat_lzz_pX_multiply.h"
 
-#define PROFILE_ON
+//#define PROFILE_ON
 
 NTL_CLIENT
 

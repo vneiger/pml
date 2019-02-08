@@ -20,38 +20,40 @@ NTL_CLIENT
 
 typedef Vec<Vec<Vec<zz_p>>> Coeffs;
 /** For generating special Block-Wiedemann sequences.
- * 
- * This generates (t*a^(s*i) mod g) for 0 <= i < l;              
- * if need_upper_product = 1, also returns                    
+ *
+ * This generates (t*a**(s*i) mod g) for 0 <= i < l;
+ * if `need_upper_product` is true, also returns
  * S * rev(t * a^(s*i) mod g) mod x^(n-1), 0 <= i < l.
  *
- * \param[out] pow vector of polynomials such that pow[i] = t*a^(s*i) mod g
+ * \param[out] pow vector of polynomials such that pow[i] = t*a**(s*i) mod g
  * \param[out] upper vector of polynomials holding the "upper products"
  * \param[in] t pre-multiplier
  * \param[in] a polynomial to be powered
  * \param[in] s starting power of a
  * \param[in] g modulus
  * \param[in] l number of powers needed
- * \param[in] need_upper_products set to 1 if "upper products" are needed
+ * \param[in] need_upper_products set to `true` if "upper products" are needed
  */
 void gen_pows(
-              Vec<zz_pX> &pow, Vec<zz_pX>&upper,
+              Vec<zz_pX> &pow,
+              Vec<zz_pX>&upper,
               const zz_pX &t,
               const zz_pX &a,
               const long s,
               const zz_pX &g,
-              const long l, const long need_upper_products = 0
+              const long l,
+              const bool need_upper_products = false
              );
 
 /** For generating special Block-Wiedemann sequences.
  *
- * Generates the sequence of first mxm coefficients of        
- * x^j a^k mod g for 0 <= k <= 2(n/m), 0 <= j < m.            
+ * Generates the sequence of first mxm coefficients of
+ * x^j a^k mod g for 0 <= k <= 2(n/m), 0 <= j < m.
  * Output is stored in a vector of matrices such that (i,j)-th
- * entry of the k-th matrix holds the j-th coefficient of     
+ * entry of the k-th matrix holds the j-th coefficient of
  * x^i a^(2d-k) mod g. Uses a baby step giant step approach
  *
- * \param[out] mats stores the output 
+ * \param[out] mats stores the output
  * \param[in] t pre-multiplier
  * \param[in] a polynomial to be powered
  * \param[in] g modulus
@@ -66,13 +68,13 @@ void gen_sequence(
 
 /** For generating special Block-Wiedemann sequences.
  *
- * Generates the sequence of first mxm coefficients of        
- * x^j a^k mod g for 0 <= k <= 2(n/m), 0 <= j < m.            
+ * Generates the sequence of first mxm coefficients of
+ * x^j a^k mod g for 0 <= k <= 2(n/m), 0 <= j < m.
  * Output is stored in a vector of matrices such that (i,j)-th
- * entry of the k-th matrix holds the j-th coefficient of     
+ * entry of the k-th matrix holds the j-th coefficient of
  * x^i a^(2d-k) mod g. Uses the naive algorithm
  *
- * \param[out] res stores the output 
+ * \param[out] res stores the output
  * \param[in] t pre-multiplier
  * \param[in] a polynomial to be powered
  * \param[in] g modulus
@@ -86,7 +88,7 @@ void get_sequence_naive(
 
 
 /** Computes the matrix reconstruction
- * 
+ *
  * Given a sequence of (scalar) matrices, computes the matrix
  * denominator using approximant basis
  *
@@ -96,7 +98,7 @@ void get_sequence_naive(
 void matrix_recon_approximation(Mat<zz_pX> &basis, const Vec<Mat<zz_p>> &seq);
 
 /** Computes the matrix reconstruction
- * 
+ *
  * Given a set of matrix evaluations, evaluated at some points `pts`, this
  * reconstructs the matrix denominator using interpolant basis
  *
@@ -107,11 +109,11 @@ void matrix_recon_approximation(Mat<zz_pX> &basis, const Vec<Mat<zz_p>> &seq);
 void matrix_recon_interpolation(
                                 Mat<zz_pX> &basis,
                                 const Vec<zz_p> &pts,
-                                const Vec<Mat<zz_p>> &seq
+                                Vec<Mat<zz_p>> &seq
                                );
 
 /** Computes the matrix reconstruction
- * 
+ *
  * Given a set of matrix evaluations, evaluated at some points `pts`, this
  * reconstructs the matrix denominator using interpolant basis with geometric
  * points based on `r`
@@ -124,7 +126,7 @@ void matrix_recon_interpolation_geometric(
                                           Mat<zz_pX> &basis,
                                           const Vec<zz_p> &pts,
                                           const zz_p& r,
-                                          const Vec<Mat<zz_p>> &seq
+                                          Vec<Mat<zz_p>> &seq
                                          );
 
 #endif /* ifndef MAT_LZZ_PX_SEQUENCE__H */
