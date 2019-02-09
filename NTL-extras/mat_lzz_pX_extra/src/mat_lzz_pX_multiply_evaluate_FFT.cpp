@@ -1,4 +1,8 @@
 //#include <NTL/BasicThreadPool.h>
+#include <NTL/tools.h>
+#include <NTL/new.h>
+#include <cmath>
+#include <cstdlib>
 #include <NTL/FFT_impl.h>
 #include "mat_lzz_pX_multiply.h"
 
@@ -22,8 +26,8 @@ static inline void mul(Vec<ll_type>& z, const fftRep& x, const fftRep& y)
 {
     const long *xp = &x.tbl[0][0];
     const long *yp = &y.tbl[0][0];
-    long len = min(x.len, y.len);
-    for (long j = 0; j < len; j++)
+    const long len = min(x.len, y.len);
+    for (long j = 0; j < len; ++j)
         ll_mul(z[j], xp[j], yp[j]);
 }
 
@@ -34,8 +38,8 @@ static inline void mul_add(Vec<ll_type>& z, const fftRep& x, const fftRep& y)
 {
     const long *xp = &x.tbl[0][0];
     const long *yp = &y.tbl[0][0];
-    long len = min(x.len, y.len);
-    for (long j = 0; j < len; j++)
+    const long len = min(x.len, y.len);
+    for (long j = 0; j < len; ++j)
         ll_mul_add(z[j], xp[j], yp[j]);
 }
 
@@ -48,6 +52,7 @@ static inline void mul_add(Vec<ll_type>& z, const fftRep& x, const fftRep& y)
 /*------------------------------------------------------------*/
 void multiply_evaluate_FFT_direct_ll_type(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
+#if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES)
     if (&c == &a || &c == &b)
     {
         Mat<zz_pX> c2;
@@ -56,69 +61,55 @@ void multiply_evaluate_FFT_direct_ll_type(Mat<zz_pX> & c, const Mat<zz_pX> & a, 
         return;
     }
 
-#if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES)
-    Vec<Vec<fftRep>> valb;
-    Vec<fftRep> vala;
-    sp_reduce_struct red1;
-    sp_ll_reduce_struct red2;
-    long len, m, n, p, n0, dA, dB, K, pr, nb_slices, first_slice;
-    Vec<ll_type> tmp;
-    fftRep tmp_r;
+    // for computations mod pr
+    const long pr = zz_p::modulus();
+    const sp_reduce_struct red1 = sp_PrepRem(pr);
+    const sp_ll_reduce_struct red2 = make_sp_ll_reduce_struct(pr);
 
-    pr = zz_p::modulus();
-    red1 = sp_PrepRem(pr);
-    red2 = make_sp_ll_reduce_struct(pr);
+    // dimensions
+    const long m = a.NumRows();
+    const long n = a.NumCols();
+    const long p = b.NumCols();
 
-    m = a.NumRows();
-    n = a.NumCols();
-    p = b.NumCols();
+    // actual length of output (degree + 1)
+    const long len_actual = deg(a) + deg(b) + 1;
+    // length (number of points) for FFT representation
+    const long K = NextPowerOfTwo(len_actual);
+    const long len = FFTRoundUp(len_actual, K);
 
-    dA = deg(a);
-    dB = deg(b);
-    K = NextPowerOfTwo(dA + dB + 1);
+    const long n0 = (1L << (2*(NTL_BITS_PER_LONG - NTL_SP_NBITS))) - 1;
+    const long first_slice = (n % n0 != 0) ? (n%n0) : n0;
+    const long nb_slices = (n % n0 != 0) ? (n / n0) : (n/n0 - 1);
 
-    valb.SetLength(p);
+    Mat<fftRep> valb(INIT_SIZE, p, n);
     for (long i = 0; i < p; i++)
-    {
-        valb[i].SetLength(n);
         for (long j = 0; j < n; j++)
-            TofftRep(valb[i][j], b[j][i], K);
-    }
+            TofftRep_trunc(valb[i][j], b[j][i], K, len);
 
-    len = 1L << K;
     c.SetDims(m, p);
-    vala.SetLength(n);
+    Vec<fftRep> vala(INIT_SIZE, n);
 
-    tmp.SetLength(len);
-    tmp_r = fftRep(INIT_SIZE, K);
-    TofftRep(tmp_r, a[0][0], K);
+    fftRep tmp_r(INIT_SIZE, K);
+    TofftRep_trunc(tmp_r, a[0][0], K, len);
 
-    n0 = (1L << (2*(NTL_BITS_PER_LONG - NTL_SP_NBITS))) - 1;
-    first_slice = n % n0;
-    nb_slices = n / n0;
-    if (first_slice == 0)
-    {
-        first_slice = n0;
-        nb_slices--;
-    }
-
+    Vec<ll_type> tmp(INIT_SIZE, len);
     if (NumBits(pr) == NTL_SP_NBITS) // we can use normalized remainders; may be a bit faster
     {
         for (long i = 0; i < m; i++)
         {
             for (long j = 0; j < n; j++)
-                TofftRep(vala[j], a[i][j], K);
+                TofftRep_trunc(vala[j], a[i][j], K, len);
 
             for (long k = 0; k < p; k++)
             {
                 fftRep * vb = valb[k].elts();
 
                 mul(tmp, vala[0], vb[0]);
-                for (long j = 1; j < first_slice; j++)
+                for (long j = 1; j < first_slice; ++j)
                     mul_add(tmp, vala[j], vb[j]);
 
                 long start = first_slice;
-                for (long jj = 0; jj < nb_slices; jj++)
+                for (long jj = 0; jj < nb_slices; ++jj)
                 {
                     for (long x = 0; x < len; x++)
                     {
@@ -133,7 +124,7 @@ void multiply_evaluate_FFT_direct_ll_type(Mat<zz_pX> & c, const Mat<zz_pX> & a, 
                 long *tmp_ptr = &tmp_r.tbl[0][0];
                 for (long x = 0; x < len; x++) 
                     tmp_ptr[x] = sp_ll_red_21_normalized(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
-                FromfftRep(c[i][k], tmp_r, 0, dA + dB);
+                FromfftRep(c[i][k], tmp_r, 0, len_actual-1);
             }
         }
     }
@@ -142,7 +133,7 @@ void multiply_evaluate_FFT_direct_ll_type(Mat<zz_pX> & c, const Mat<zz_pX> & a, 
         for (long i = 0; i < m; i++)
         {
             for (long j = 0; j < n; j++)
-                TofftRep(vala[j], a[i][j], K);
+                TofftRep_trunc(vala[j], a[i][j], K, len);
 
             for (long k = 0; k < p; k++)
             {
@@ -168,53 +159,12 @@ void multiply_evaluate_FFT_direct_ll_type(Mat<zz_pX> & c, const Mat<zz_pX> & a, 
                 long *tmp_ptr = &tmp_r.tbl[0][0];
                 for (long x = 0; x < len; x++) 
                     tmp_ptr[x] = sp_ll_red_21(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
-                FromfftRep(c[i][k], tmp_r, 0, dA + dB);
+                FromfftRep(c[i][k], tmp_r, 0, len_actual-1);
             }
         }
     }
 #else
-    // dimensions
-    long m = a.NumRows();
-    long n = a.NumCols();
-    long p = b.NumCols();
-
-    // degrees
-    long d = deg(a) + deg(b);
-    long K = NextPowerOfTwo(d + 1);
-
-    // evaluate matrix b
-    // valb[i][j] = evaluations of b[j][i]
-    Vec<Vec<fftRep>> valb(INIT_SIZE, p);
-    for (long i = 0; i < p; i++)
-    {
-        valb[i].SetLength(n);
-        for (long j = 0; j < n; j++)
-            TofftRep(valb[i][j], b[j][i], K);
-    }
-
-    c.SetDims(m, p);
-    Vec<fftRep> vala(INIT_SIZE, n);
-    fftRep tmp1 = fftRep(INIT_SIZE, K);
-    fftRep tmp2 = fftRep(INIT_SIZE, K);
-    // compute each row of the product c = a*b
-    for (long i = 0; i < m; i++)
-    {
-        // vala[j] contains the evaluations of a[i][j]
-        for (long j = 0; j < n; j++)
-            TofftRep(vala[j], a[i][j], K);
-        // compute c[i][k] = vala * valb[:][j]
-        for (long k = 0; k < p; k++)
-        {
-            fftRep * vb = valb[k].elts();
-            mul(tmp1, vala[0], vb[0]);
-            for (long j = 1; j < n; j++)
-            {
-                mul(tmp2, vala[j], vb[j]);
-                add(tmp1, tmp1, tmp2);
-            }
-            FromfftRep(c[i][k], tmp1, 0, d);
-        }
-    }
+    multiply_evaluate_FFT_direct(c,a,b);
 #endif
 }
 
@@ -238,37 +188,39 @@ void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Ma
     const long n = a.NumCols();
     const long p = b.NumCols();
 
-    // degrees
-    const long d = deg(a) + deg(b);
-    const long K = NextPowerOfTwo(d + 1);
+    // actual length of output (degree + 1)
+    const long len_actual = deg(a) + deg(b) + 1;
+    // actual length (number of points) for FFT
+    const long K = NextPowerOfTwo(len_actual);
+    const long len = FFTRoundUp(len_actual, K);
 
     // evaluate matrix b
     // valb[i][j] = evaluations of b[j][i]
     Mat<fftRep> valb(INIT_SIZE, p, n);
-    for (long i = 0; i < p; i++)
-        for (long j = 0; j < n; j++)
-            TofftRep(valb[i][j], b[j][i], K);
+    for (long i = 0; i < p; ++i)
+        for (long j = 0; j < n; ++j)
+            TofftRep_trunc(valb[i][j], b[j][i], K, len);
 
     c.SetDims(m, p);
     Vec<fftRep> vala(INIT_SIZE, n);
     fftRep tmp1(INIT_SIZE, K);
     fftRep tmp2(INIT_SIZE, K);
     // compute each row of the product c = a*b
-    for (long i = 0; i < m; i++)
+    for (long i = 0; i < m; ++i)
     {
         // vala[j] contains the evaluations of a[i][j]
-        for (long j = 0; j < n; j++)
-            TofftRep(vala[j], a[i][j], K);
+        for (long j = 0; j < n; ++j)
+            TofftRep_trunc(vala[j], a[i][j], K, len);
         // compute c[i][k] = vala * valb[:][j]
-        for (long k = 0; k < p; k++)
+        for (long k = 0; k < p; ++k)
         {
             mul(tmp1, vala[0], valb[k][0]);
-            for (long j = 1; j < n; j++)
+            for (long j = 1; j < n; ++j)
             {
                 mul(tmp2, vala[j], valb[k][j]);
                 add(tmp1, tmp1, tmp2);
             }
-            FromfftRep(c[i][k], tmp1, 0, d);
+            FromfftRep(c[i][k], tmp1, 0, len_actual-1);
         }
     }
 }
