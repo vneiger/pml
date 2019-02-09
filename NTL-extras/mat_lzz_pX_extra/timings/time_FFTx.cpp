@@ -14,7 +14,7 @@
         Mat<zz_pX> a, b;                 \
         random(a, sz, sz, deg);          \
         random(b, sz, sz, deg);          \
-        while (t<0.1)                    \
+        while (t<0.2)                    \
         {                                \
             tt = GetWallTime();          \
             Mat<zz_pX> c;                \
@@ -71,19 +71,20 @@ void one_bench_fft(long sz, long deg)
 
     cout << sz << "\t" << deg << "\t";
 
-    { // warmup
-        t=0.0;
-        Mat<zz_pX> a, b;
-        random(a, sz, sz, deg);
-        random(b, sz, sz, deg);
-        while (t<0.2)
-        {
-            tt = GetWallTime();
-            Mat<zz_pX> c;
-            multiply(c, a, b);
-            t += GetWallTime()-tt;
-        }
-    }
+    warmup();
+    //{ // warmup
+    //    t=0.0;
+    //    Mat<zz_pX> a, b;
+    //    random(a, sz, sz, deg);
+    //    random(b, sz, sz, deg);
+    //    while (t<0.5)
+    //    {
+    //        tt = GetWallTime();
+    //        Mat<zz_pX> c;
+    //        multiply(c, a, b);
+    //        t += GetWallTime()-tt;
+    //    }
+    //}
 
     double tmul = 0.0;
     {
@@ -91,7 +92,7 @@ void one_bench_fft(long sz, long deg)
         Mat<zz_pX> a, b;
         random(a, sz, sz, deg);
         random(b, sz, sz, deg);
-        while (tmul<0.1)
+        while (tmul<0.2)
         {
             tt = GetWallTime();
             Mat<zz_pX> c;
@@ -102,38 +103,31 @@ void one_bench_fft(long sz, long deg)
         tmul /= nb_iter;
     }
 
-    COMPARE(multiply_evaluate_FFT_matmul1,
-            multiply_evaluate_FFT_matmul1_trunc)
-    COMPARE(multiply_evaluate_FFT_matmul2,
-            multiply_evaluate_FFT_matmul2_trunc)
-    COMPARE(multiply_evaluate_FFT_matmul3,
-            multiply_evaluate_FFT_matmul3_trunc)
+    TIME(multiply_evaluate_FFT_matmul1)
 
-    //TIME(multiply_evaluate_FFT_matmul1)
+    TIME(multiply_evaluate_FFT_matmul2)
 
-    //TIME(multiply_evaluate_FFT_matmul2)
+    TIME(multiply_evaluate_FFT_matmul3)
 
-    //TIME(multiply_evaluate_FFT_matmul3)
+    if (sz < 80)
+        TIME(multiply_evaluate_FFT_direct_ll_type)
+    else
+        std::cout << "inf" << "\t";
 
-    //if (sz < 80)
-    //    TIME(multiply_evaluate_FFT_direct_ll_type)
-    //else
-    //    std::cout << "inf" << "\t";
+    if (sz < 80)
+        TIME(multiply_evaluate_FFT_direct)
+    else
+        std::cout << "inf" << "\t";
 
-    //if (sz < 80)
-    //    TIME(multiply_evaluate_FFT_direct)
-    //else
-    //    std::cout << "inf" << "\t";
+    if (deg<60)
+        TIME(multiply_evaluate_dense)
+    else
+        std::cout << "inf" << "\t";
 
-    //if (deg<400)
-    //    TIME(multiply_evaluate_dense)
-    //else
-    //    std::cout << "inf" << "\t";
-
-    //if (deg<500)
-    //    TIME(multiply_evaluate_dense2)
-    //else
-    //    std::cout << "inf" << "\t";
+    if (deg<100)
+        TIME(multiply_evaluate_dense2)
+    else
+        std::cout << "inf" << "\t";
 
     cout << endl;
 }
@@ -144,11 +138,9 @@ void one_bench_fft(long sz, long deg)
 void run_bench(long nbits)
 {
     //std::vector<long> szs = { 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, };
-    std::vector<long> szs = { 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, };
+    std::vector<long> szs = { 20, 22, 24, 26, 28, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, };
     std::vector<long> degs =
     {
-        2, 
-        4, 6,
         8, 10, 12, 14,
         16, 20, 24, 28,
         32, 40, 48, 56,
@@ -158,10 +150,10 @@ void run_bench(long nbits)
         512, 640, 768, 896,
         1024, 1280, 1536, 1792,
         2048, 2560, 3072, 3584,
-        4096, 5120, 6144, 7168,
-        8192, 10240, 12288, 14336,
-        16384, 20480, 24576, 28672,
-        32768, 40960, 49152, 57344
+        //4096, 5120, 6144, 7168,
+        //8192, 10240, 12288, 14336,
+        //16384, 20480, 24576, 28672,
+        //32768, 40960, 49152, 57344
     };
 
     std::cout << "Bench polynomial matrix multiplication (FFT prime)" << std::endl;
@@ -186,12 +178,11 @@ void run_bench(long nbits)
         zz_p::UserFFTInit(1139410705724735489); // 60 bits
         cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
     }
-    //std::cout << "size\tdegree\tmm1\tmm2\tmm3\tdir_ll\tdirect\tvdmd\tvdmd2" << std::endl;
-    std::cout << "size\tdegree\tmm1\tmm1-tr\tmm2\tmm2-tr\tmm3\tmm3-tr\tdir_ll\tdirect\tvdmd\tvdmd2" << std::endl;
+    std::cout << "size\tdegree\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
     for (size_t sz : szs)
         for (size_t d : degs)
-            if (sz*sz*d < 100000000)
-                one_bench_fft(sz,d);
+            //if (sz*sz*d < 1000000)
+            one_bench_fft(sz,d);
     cout << endl;
 }
 
@@ -200,8 +191,6 @@ void run_bench()
     std::vector<long> szs = { 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, };
     std::vector<long> degs =
     {
-        2, 
-        4, 6,
         8, 10, 12, 14,
         16, 20, 24, 28,
         32, 40, 48, 56,
@@ -234,8 +223,7 @@ void run_bench()
         case 2: cout << 42 << ")" << endl; break;
         case 3: cout << 60 << ")" << endl; break;
         }
-        //std::cout << "size\tdegree\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
-        std::cout << "size\tdegree\tmm1\tmm1-tr\tmm2\tmm2-tr\tmm3\tmm3-tr\tdir_ll\tdirect\tvdmd\tvdmd2" << std::endl;
+        std::cout << "size\tdegree\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
 
         zz_p::UserFFTInit(primes[p]);
         for (size_t sz : szs)
@@ -294,7 +282,7 @@ int main(int argc, char ** argv)
         //zz_p::UserFFTInit(786433); // FFT, 20 bits
         //std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
         std::cout << "(ratios versus multiply)" << std::endl;
-        std::cout << "size\tdegree\tmm1\tmm1-tr\tmm2\tmm2-tr\tmm3\tmm3-tr\tdir_ll\tdirect\tvdmd\tvdmd2" << std::endl;
+        std::cout << "size\tdegree\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
         warmup();
         one_bench_fft(atoi(argv[1]),atoi(argv[2]));
     }

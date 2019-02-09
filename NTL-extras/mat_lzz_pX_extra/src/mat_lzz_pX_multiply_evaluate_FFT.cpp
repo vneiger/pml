@@ -664,8 +664,10 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
     const long cube_dim = a.NumRows() * a.NumCols() * b.NumCols();
     const long d = (deg(a)+deg(b))/2;
 
-    // TODO needs better tuning
-    // (seems relatively fine for close-to-square matrices, with similar degrees...)
+    // could do automatic tuning?
+    // (these thresholds should be reasonable on most recent machines;
+    // note they were mostly designed by using close-to-square matrices, with
+    // deg(a) and deg(b) similar)
     if (NumBits(zz_p::modulus()) < SMALL_PRIME_SIZE)
     {
         if (cube_dim <= 6*6*6)
@@ -681,14 +683,29 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
     }
     else
     {
-        if (cube_dim <= 8*8*8)
+        // if < 4*4*4, or if <= 8*8*8 under some conditions, use direct
+        if (cube_dim < 4*4*4 || (cube_dim == 4*4*4 && d>=90) || (cube_dim <= 8*8*8 && d >= 65))
             multiply_evaluate_FFT_direct(c, a, b);
-        else if (cube_dim < 25*25*25)
+
+        // if <= 8*8*8 and direct was not used,
+        // or if < 20*20*20,
+        // or if < 25*25*25 and d>=1300,
+        // use direct_ll
+        else if (cube_dim < 20*20*20 || (cube_dim < 25*25*25 && d>=1300))
             multiply_evaluate_FFT_direct_ll_type(c, a, b);
-        else if (d < 150)
-            multiply_evaluate_FFT_matmul3(c, a, b);
+
+        // if between 20*20*20 and 25*25*25 and direct_ll was not used,
+        // or if > 25*25*25 and degree not small,
+        // use matmul1
+        else if (cube_dim < 25*25*25 ||
+                 (cube_dim<48*48*48 && d>32) ||
+                 (cube_dim<80*80*80 && d>128) ||
+                 (cube_dim>=80*80*80 && d>512))
+            multiply_evaluate_FFT_matmul1(c, a, b);
+
+        // else, not small dimension and small degree: use matmul3
         else
-            multiply_evaluate_FFT_matmul2(c, a, b);
+            multiply_evaluate_FFT_matmul3(c, a, b);
     }
 }
 
