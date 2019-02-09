@@ -695,12 +695,11 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
             multiply_evaluate_FFT_direct_ll_type(c, a, b);
 
         // if between 20*20*20 and 25*25*25 and direct_ll was not used,
-        // or if > 25*25*25 and degree not small,
+        // or if degree not too small,
         // use matmul1
-        else if (cube_dim < 25*25*25 ||
+        else if (cube_dim < 25*25*25 || d>512 ||
                  (cube_dim<48*48*48 && d>32) ||
-                 (cube_dim<80*80*80 && d>128) ||
-                 (cube_dim>=80*80*80 && d>512))
+                 (cube_dim<128*128*128 && d>256))
             multiply_evaluate_FFT_matmul1(c, a, b);
 
         // else, not small dimension and small degree: use matmul3

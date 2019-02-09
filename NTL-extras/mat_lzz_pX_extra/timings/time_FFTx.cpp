@@ -66,7 +66,8 @@ NTL_CLIENT
 
 void one_bench_fft(long sz, long deg)
 {
-    double t, tt, tcomp;
+    //double t, tt, tcomp;
+    double t, tt;
     long nb_iter;
 
     cout << sz << "\t" << deg << "\t";
@@ -105,29 +106,29 @@ void one_bench_fft(long sz, long deg)
 
     TIME(multiply_evaluate_FFT_matmul1)
 
-    TIME(multiply_evaluate_FFT_matmul2)
+    //TIME(multiply_evaluate_FFT_matmul2)
 
     TIME(multiply_evaluate_FFT_matmul3)
 
-    if (sz < 80)
-        TIME(multiply_evaluate_FFT_direct_ll_type)
-    else
-        std::cout << "inf" << "\t";
+    //if (sz < 80)
+    //    TIME(multiply_evaluate_FFT_direct_ll_type)
+    //else
+    //    std::cout << "inf" << "\t";
 
-    if (sz < 80)
-        TIME(multiply_evaluate_FFT_direct)
-    else
-        std::cout << "inf" << "\t";
+    //if (sz < 80)
+    //    TIME(multiply_evaluate_FFT_direct)
+    //else
+    //    std::cout << "inf" << "\t";
 
-    if (deg<60)
-        TIME(multiply_evaluate_dense)
-    else
-        std::cout << "inf" << "\t";
+    //if (deg<60)
+    //    TIME(multiply_evaluate_dense)
+    //else
+    //    std::cout << "inf" << "\t";
 
-    if (deg<100)
-        TIME(multiply_evaluate_dense2)
-    else
-        std::cout << "inf" << "\t";
+    //if (deg<100)
+    //    TIME(multiply_evaluate_dense2)
+    //else
+    //    std::cout << "inf" << "\t";
 
     cout << endl;
 }
@@ -138,22 +139,33 @@ void one_bench_fft(long sz, long deg)
 void run_bench(long nbits)
 {
     //std::vector<long> szs = { 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, };
-    std::vector<long> szs = { 20, 22, 24, 26, 28, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, };
+    std::vector<long> szs = { 32, 36, 40, 44, 48, 52, 58, 64, 75, 85, 96, 105, 115, 128, 140, 155, 168, 180, 192, 256, 384, 512, };
+//    std::vector<long> degs =
+//    {
+//        8, 10, 12, 14,
+//        16, 20, 24, 28,
+//        32, 40, 48, 56,
+//        64, 80, 96, 112,
+//        128, 160, 192, 224,
+//        256, 320, 384, 448,
+//        512, 640, 768, 896,
+//        1024, 1280, 1536, 1792,
+//        2048, 2560, 3072, 3584,
+//        4096, 5120, 6144, 7168,
+//        8192, 10240, 12288, 14336,
+//        16384, 20480, 24576, 28672,
+//        32768, 40960, 49152, 57344
+//    };
     std::vector<long> degs =
     {
-        8, 10, 12, 14,
-        16, 20, 24, 28,
-        32, 40, 48, 56,
-        64, 80, 96, 112,
-        128, 160, 192, 224,
-        256, 320, 384, 448,
-        512, 640, 768, 896,
-        1024, 1280, 1536, 1792,
-        2048, 2560, 3072, 3584,
-        //4096, 5120, 6144, 7168,
-        //8192, 10240, 12288, 14336,
-        //16384, 20480, 24576, 28672,
-        //32768, 40960, 49152, 57344
+        32, 48,
+        64, 96,
+        128, 192,
+        256, 384,
+        512, 768,
+        1024, 1536,
+        2048, 3072,
+        4192
     };
 
     std::cout << "Bench polynomial matrix multiplication (FFT prime)" << std::endl;
@@ -179,59 +191,18 @@ void run_bench(long nbits)
         cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
     }
     std::cout << "size\tdegree\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
-    for (size_t sz : szs)
-        for (size_t d : degs)
-            //if (sz*sz*d < 1000000)
-            one_bench_fft(sz,d);
-    cout << endl;
-}
-
-void run_bench()
-{
-    std::vector<long> szs = { 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, };
-    std::vector<long> degs =
+    for (long sz : szs)
     {
-        8, 10, 12, 14,
-        16, 20, 24, 28,
-        32, 40, 48, 56,
-        64, 80, 96, 112,
-        128, 160, 192, 224,
-        256, 320, 384, 448,
-        512, 640, 768, 896,
-        1024, 1280, 1536, 1792,
-        2048, 2560, 3072, 3584,
-        4096, 5120, 6144, 7168,
-        8192, 10240, 12288, 14336,
-        16384, 20480, 24576, 28672,
-        32768, 40960, 49152, 57344
-    };
-
-    std::vector<long> primes =
-    {
-        786433,2013265921,2748779069441,1139410705724735489,   // FFT primes with 20,31,42,60 bits
-    };
-
-    std::cout << "Bench polynomial matrix multiplication (FFT prime)" << std::endl;
-    std::cout << "(ratios versus multiply)" << std::endl;
-    for (long p = 0; p < 4; ++p)
-    {
-        cout << "p = " << primes[p] << "  (FFT prime, bit length = ";
-        switch (p)
-        {
-        case 0: cout << 20 << ")" << endl; break;
-        case 1: cout << 31 << ")" << endl; break;
-        case 2: cout << 42 << ")" << endl; break;
-        case 3: cout << 60 << ")" << endl; break;
-        }
-        std::cout << "size\tdegree\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
-
-        zz_p::UserFFTInit(primes[p]);
-        for (size_t sz : szs)
-            for (size_t d : degs)
-                if (sz*sz*d < 100000000)
-                    one_bench_fft(sz,d);
-        cout << endl << endl;
+        long maxdeg = 5000;
+        if (sz > 128)
+            maxdeg = 1600;
+        if (sz > 256)
+            maxdeg = 800;
+        for (long d : degs)
+            if (d < maxdeg)
+                one_bench_fft(sz,d);
     }
+    cout << endl;
 }
 
 /*------------------------------------------------------------*/
