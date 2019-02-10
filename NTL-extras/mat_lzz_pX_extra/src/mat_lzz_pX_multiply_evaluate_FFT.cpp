@@ -664,22 +664,32 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
     const long cube_dim = a.NumRows() * a.NumCols() * b.NumCols();
     const long d = (deg(a)+deg(b))/2;
 
+    // TODO refine for degrees 1...50 (around 50)
+    // --> evaluate dense is sometimes nice, then use it
+
     // could do automatic tuning?
     // (these thresholds should be reasonable on most recent machines;
     // note they were mostly designed by using close-to-square matrices, with
     // deg(a) and deg(b) similar)
     if (NumBits(zz_p::modulus()) < SMALL_PRIME_SIZE)
     {
-        if (cube_dim <= 6*6*6)
+        if (cube_dim < 4*4*4 || (cube_dim <= 6*6*6 && d > 100))
             multiply_evaluate_FFT_direct(c, a, b);
         else if (cube_dim <= 8*8*8)
             multiply_evaluate_FFT_direct_ll_type(c, a, b);
-        else if (d < 32)
+        else if (d<32)
             multiply_evaluate_dense(c, a, b);
-        else if (d < 256)
+        else if (cube_dim <= 16*16*16)
+        {
+            if (d>50)
+                multiply_evaluate_FFT_matmul2(c, a, b);
+            else // 32...50
+                multiply_evaluate_dense2(c, a, b);
+        }
+        else if (d > 100 || (cube_dim < 64*64*64 && d > 80))
+            multiply_evaluate_FFT_matmul1(c, a, b);
+        else // dim = 16..63, d = 32..80  ||  dim = 65..., d=32..100
             multiply_evaluate_dense2(c, a, b);
-        else
-            multiply_evaluate_FFT_matmul2(c, a, b);
     }
     else
     {
