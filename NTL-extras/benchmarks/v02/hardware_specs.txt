@@ -1,0 +1,9 @@
+Ubuntu 18.04.1 LTS
+16GB memory
+Intel® Core™ i7-7600U CPU @ 2.80GHz × 4 
+(all timings using a single thread, except if noted otherwise)
+
+NTL version: 11.3.1
+
+LinBox timings: on 10 February 2019, using up-to-date versions of LinBox /
+fflas-ffpack / Givaro from their git repositories.
