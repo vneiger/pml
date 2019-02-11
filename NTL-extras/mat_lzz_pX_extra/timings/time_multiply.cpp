@@ -14,12 +14,12 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void one_check(long sz, long deg)
 {
-    const double thresh = 0.001;
+    const double thresh = 0.1;
     long nb;
     Mat<zz_pX> a, b, c1, c2;
     double t_FFT, t_waksman, t_transform, t_geometric, t_dense, t_3_primes, t_multiply;
 
-    cout << " " << sz << " " << deg << " ";
+    cout << sz << "\t" << deg << "\t";
     random(a, sz, sz, deg);
     random(b, sz, sz, deg);
 
@@ -34,10 +34,10 @@ void one_check(long sz, long deg)
         }
         while ((get_time()-t_waksman) <= thresh);
         t_waksman = (get_time()-t_waksman) / nb;
+        cout << t_waksman << "\t";
     }
     else
-        t_waksman = 10000.0;
-    cout << t_waksman << " ";
+        cout << "inf\t";
 
     if (deg < 8)
     {
@@ -50,10 +50,10 @@ void one_check(long sz, long deg)
         }
         while ((get_time()-t_transform) <= thresh);
         t_transform = (get_time()-t_transform) / nb;
+        cout << t_transform << "\t";
     }
     else
-        t_transform = 10000.0;
-    cout << t_transform << " ";
+        cout << "inf\t";
 
     t_geometric = get_time();
     nb = 0;
@@ -64,7 +64,7 @@ void one_check(long sz, long deg)
     }
     while ((get_time()-t_geometric) <= thresh);
     t_geometric = (get_time()-t_geometric) / nb;
-    cout << t_geometric << " ";
+    cout << t_geometric << "\t";
 
     if (deg <= 300)
     {
@@ -77,10 +77,10 @@ void one_check(long sz, long deg)
         }
         while ((get_time()-t_dense) <= thresh);
         t_dense = (get_time()-t_dense) / nb;
+        cout << t_dense << "\t";
     }
     else
-        t_dense = 10000.0;
-    cout << t_dense << "(" << (c2 == c1) << ") ";
+        cout << "inf\t";
 
     t_3_primes = get_time();
     nb = 0;
@@ -91,7 +91,7 @@ void one_check(long sz, long deg)
     }
     while ((get_time()-t_3_primes) <= thresh);
     t_3_primes = (get_time()-t_3_primes) / nb;
-    cout << t_3_primes << " ";
+    cout << t_3_primes << "\t";
 
     if (is_FFT_ready(NextPowerOfTwo(2*deg - 1)))
     {
@@ -104,10 +104,10 @@ void one_check(long sz, long deg)
         }
         while ((get_time()-t_FFT) <= thresh);
         t_FFT = (get_time()-t_FFT) / nb;
+        cout << t_FFT << "\t";
     }
     else
-        t_FFT = 10000.0;
-    cout << t_FFT << " ";
+        cout << "inf\t";
 
     t_multiply = get_time();
     nb = 0;
@@ -118,7 +118,8 @@ void one_check(long sz, long deg)
     }
     while ((get_time()-t_multiply) <= thresh);
     t_multiply = (get_time()-t_multiply) / nb;
-    cout << "   " << t_multiply << " ";
+
+    cout << t_multiply;
 
     cout << endl;
 }
@@ -131,12 +132,12 @@ void all_checks()
 {
     VecLong szs =
     {
-        20, 30, 50, 100, 150, 200, 300
+        2, 4, 8, 14, 20, 30, 50, 100, 150, 200
     };
 
     VecLong degs =
     {
-        1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 250, 300, 400
+        1, 2, 3, 4, 5, 10, 15, 20, 25, 50, 60, 70, 100, 150, 200, 250, 300, 400, 1000, 2000
     };
 
     for (size_t si = 0; si < szs.size(); si++)
@@ -153,15 +154,18 @@ void check()
 {
     // over an FFT prime, FFT always wins
     zz_p::FFTInit(0);
-    cout << 0 << endl;
+    cout << endl << "60 bit FFT prime" << endl;
+    cout << "sz\tdeg\twak\ttrsf\tgeom\tdens\t3prm\tfft\tmult" << endl;
     all_checks();
 
     zz_p::init(288230376151711813);
-    cout << zz_p::modulus() << endl;
+    cout << endl << "60 bit prime " << zz_p::modulus() << endl;
+    cout << "sz\tdeg\twak\ttrsf\tgeom\tdens\t3prm\tfft\tmult" << endl;
     all_checks();
 
     zz_p::init(23068673);
-    cout << zz_p::modulus() << endl;
+    cout << endl << "20 bit prime " << zz_p::modulus() << endl;
+    cout << "sz\tdeg\twak\ttrsf\tgeom\tdens\t3prm\tfft\tmult" << endl;
     all_checks();
 }  
 
@@ -170,6 +174,8 @@ void check()
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
+    cout << std::fixed;
+    cout << std::setprecision(5);
     warmup();
     check();
     return 0;

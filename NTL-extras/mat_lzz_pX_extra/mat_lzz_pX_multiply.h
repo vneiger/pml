@@ -260,7 +260,8 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
 /** Computes `c = a*b` via evaluation/interpolation at geometric points,
  * relying on Mat<zz_p> matrix multiplication.
  *
- * \todo attempt versions similar to the FFT ones (matmul2, matmul3,..)
+ * \todo write other versions (similar to the FFT ones: matmul2, matmul3,..)
+ * \todo make more cache-friendly (essentially copy-paste from the FFT ones)
  */
 void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
