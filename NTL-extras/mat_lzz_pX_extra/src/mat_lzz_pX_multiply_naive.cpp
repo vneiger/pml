@@ -1,11 +1,5 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-
-#include "lzz_p_extra.h"
 #include "lzz_pX_middle_product.h"
-#include "mat_lzz_pX_extra.h"
-#include "lzz_pX_CRT.h"
+#include "mat_lzz_pX_multiply.h"
 
 NTL_CLIENT
 

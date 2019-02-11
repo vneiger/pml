@@ -1,11 +1,7 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-#include <cmath>
-
-#include "lzz_p_extra.h"
-#include "lzz_pX_CRT.h"
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_utils.h"
+#include "mat_lzz_pX_arith.h"
+#include "mat_lzz_pX_approximant.h"
+#include "mat_lzz_pX_interpolant.h"
 #include "mat_lzz_pX_sequence.h"
 
 /*------------------------------------------------------------*/
@@ -250,12 +246,11 @@ void mul_special(Mat<zz_pX>& c, Mat<zz_pX>& cs, const Mat<zz_pX>& a, const Mat<z
 /*------------------------------------------------------------*/
 /* TODO: what is this?                                        */
 /*------------------------------------------------------------*/
-void get_quos (Mat<zz_pX> &quos,
-               const Vec<zz_pX> &alphas,
-               const Vec<zz_pX> &As,
-               const Vec<zz_pX> &upper,
-               const zz_pX &g,
-               const long m)
+static void get_quos (Mat<zz_pX> &quos,
+                      const Vec<zz_pX> &alphas,
+                      const Vec<zz_pX> &upper,
+                      const zz_pX &g,
+                      const long m)
 {
     cout << "-enter quos\n";
     double t;
@@ -385,7 +380,7 @@ void gen_sequence (Coeffs &res,
 
     t1 = GetWallTime();
     Mat<zz_pX> quos;
-    get_quos(quos, alphas, As, upper, g, m);
+    get_quos(quos, alphas, upper, g, m);
     cout << "-total quos: " << GetWallTime() - t1 << endl;
 
     t1 = GetWallTime();

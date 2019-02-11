@@ -1,12 +1,4 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-#include <NTL/BasicThreadPool.h>
-
-#include "util.h"
-#include "lzz_p_extra.h"
-#include "mat_lzz_pX_extra.h"
-#include "lzz_pX_CRT.h"
+#include "mat_lzz_pX_multiply.h"
 
 NTL_CLIENT
 
@@ -121,10 +113,6 @@ void middle_product_evaluate_dense(Mat<zz_pX> & b, const Mat<zz_pX> & a, const M
             ell++;
         }
 }
-
-
-
-
 
 // Local Variables:
 // mode: C++

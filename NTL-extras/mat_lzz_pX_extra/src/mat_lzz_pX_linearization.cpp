@@ -1,13 +1,7 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-#include <algorithm> // for manipulating std::vector (min, max, ..)
-
-#include "mat_lzz_pX_multiply.h"
 #include "mat_lzz_pX_linearization.h"
+#include "mat_lzz_pX_multiply.h"
 
 NTL_CLIENT
-
 
 /*------------------------------------------------------------*/
 /* horizontal join                                            */

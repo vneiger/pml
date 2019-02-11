@@ -1,12 +1,6 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-#include <NTL/BasicThreadPool.h>
-#include <cmath>
-#include <algorithm> // for manipulating std::vector (min, max, ..)
 #include <numeric> // for std::iota
 
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_approximant.h"
 
 //#define MBASIS1_PROFILE
 //#define MBASIS_PROFILE

@@ -413,13 +413,6 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
                 sub(valBpodd[u][v], valBeven[i][ell], valBodd[i][ell]);
             }
 
-        //Mat<zz_p> tmp_eval = eval(a, to_zz_p(i+1));
-        //std::cout << "computed(A,pos):\n" << valAp << std::endl;
-        //std::cout << "actual(A,pos):\n" << tmp_eval << std::endl;
-        //tmp_eval = eval(b, to_zz_p(i+1));
-        //std::cout << "computed(B,pos):\n" << valBp << std::endl;
-        //std::cout << "actual(B,pos):\n" << tmp_eval << std::endl;
-
         // a*b evaluated at point i (which is i+1)
         mul(valCpeven, valApeven, valBpeven);
         mul(valCpodd, valApodd, valBpodd);
@@ -435,8 +428,6 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
             {
                 add(valCeven[i][ell], valCpeven[u][v], valCpodd[u][v]);
                 sub(valCodd[i][ell], valCpeven[u][v], valCpodd[u][v]);
-                //mul(valCeven[i][ell], inv2, valCeven[i][ell]);
-                //mul(valCodd[i][ell], inv2pt, valCodd[i][ell]);
             }
         mul(valCeven[i], valCeven[i], inv2);
         mul(valCodd[i], valCodd[i], inv2pt);
@@ -449,44 +440,9 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
     t = GetWallTime();
 #endif // PROFILE_ON
 
-    //Mat<zz_pX> even(INIT_SIZE, m, p);
-    //Mat<zz_pX> ab; multiply(ab, a,b);
-    //for (long u = 0; u < m; ++u)
-    //{
-    //    for (long v = 0; v < p; ++v)
-    //    {
-    //        even[u][v].SetLength(deg(ab[u][v])/2+1);
-    //        for (long k = 0; k <= deg(ab[u][v])/2; ++k)
-    //        {
-    //            even[u][v][k] = ab[u][v][2*k];
-    //        }
-    //    }
-    //}
-    //Mat<zz_p> tmp_eval = eval(even, to_zz_p(4));
-    //std::cout << "Actual eval of even:\n" << tmp_eval << std::endl;
-    //std::cout << "Computed eval of even:\n" << valCeven[1] << std::endl;
-
-    //Mat<zz_pX> odd(INIT_SIZE, m, p);
-    //for (long u = 0; u < m; ++u)
-    //{
-    //    for (long v = 0; v < p; ++v)
-    //    {
-    //        for (long k = 0; 2*k+1 <= deg(ab[u][v]); ++k)
-    //        {
-    //            SetCoeff(odd[u][v], k, ab[u][v][2*k+1]);
-    //        }
-    //    }
-    //}
-    //tmp_eval = eval(odd, to_zz_p(4));
-    //std::cout << "Actual eval of odd:\n" << tmp_eval << std::endl;
-    //std::cout << "Computed eval of odd:\n" << valCodd[1] << std::endl;
-
     // interpolate to find the even/odd parts of c
     mul(tmp_mat_even, iv, valCeven);
     mul(tmp_mat_odd, iv, valCodd);
-
-    //std::cout << "tmp_mat even:\n" << tmp_mat << std::endl;
-    //std::cout << "tmp_mat odd:\n" << tmp_mat << std::endl;
 
     c.SetDims(m, p);
     ell = 0;
@@ -508,6 +464,7 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
 #endif // PROFILE_ON
 }
 
+//// attempt with just one matrix; doesn't seem to really gain something
 //void multiply_evaluate_dense2_new(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 //{
 //    // dimensions and degrees

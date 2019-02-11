@@ -1,8 +1,3 @@
-//#include <NTL/BasicThreadPool.h>
-#include <NTL/tools.h>
-#include <NTL/new.h>
-#include <cmath>
-#include <cstdlib>
 #include <NTL/FFT_impl.h>
 #include "mat_lzz_pX_multiply.h"
 

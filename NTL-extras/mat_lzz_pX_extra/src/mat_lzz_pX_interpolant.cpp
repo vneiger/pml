@@ -2,7 +2,6 @@
 #include <numeric> // for std::iota
 //#include <NTL/BasicThreadPool.h>
 
-#include "lzz_pX_CRT.h"
 #include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_multiply.h"
 #include "mat_lzz_pX_interpolant.h"

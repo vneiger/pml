@@ -1,5 +1,5 @@
-#include "mat_lzz_pX_forms.h"
 #include "lzz_pX_extra.h" // for "is_monic(a)"
+#include "mat_lzz_pX_forms.h"
 
 NTL_CLIENT
 

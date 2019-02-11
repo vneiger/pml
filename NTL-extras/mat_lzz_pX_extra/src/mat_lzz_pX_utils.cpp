@@ -1,5 +1,4 @@
 #include "mat_lzz_pX_utils.h"
-#include "mat_lzz_p_extra.h"
 #include <algorithm> // for std::reverse
 
 // FIXME work in progress:
