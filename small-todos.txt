@@ -1,47 +1,27 @@
-* indent = soft tab, 4 spaces
-* please avoid spaces/tabs at end of line
-
-* please insert emacs+vim modelines at the end of new files, as follows:
-// Local Variables:
-// mode: C++
-// tab-width: 4
-// indent-tabs-mode: nil
-// c-basic-offset: 4
-// End:
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
-
-* when there is a todo (functionality, doc, comment to write...): write "todo"
-  in a comment
-
-* delimiters {..} :
-  -- not required for "one-line" if/for/... , for example
-		  for(blabla)
-		    if(bli)
-		      one instruction;
-  -- at beginning of line:
-       for (blabla)
-       {
-           blibli
-       }
-
-
 TODO Vincent
-   - PM-Basis (power series version):
+	 - ensure cache efficient algorithms:
+		   * mat_lzz_pX_extra/src/mat_lzz_pX_t_multiply_evaluate.cpp
+			 * lzz_pX_CRT/src/lzz_pX_Transform*
+			 * evaluate_vector and evaluate_matrix, in lzz_pX_CRT
+			 * middle_product
+			 * lmultiplier
+   - PM-Basis (power series version, some remarks shared with interpolants):
       * work on thresholds (mbasis_rescomp/resupdate, and pmbasis base case)
 			* specific code for dimension 2x1 (and compare with NTL's GCD / BerlekampMassey)
-			* is writing our own LSP decomposition good for small dimension?
+			* try writing our own LSP decomposition for small dimension
+			* can we use inv_trunc to pre-modify the input matrix, and then get an
+				 "easier" instance?
    - Multiplication:
-			* make thresholds for the variants of FFTx
+			* automatic thresholds for the variants of FFTx
 		  * Clean middle product and look at variants as was done for multiplication
 			* middle product: minor issue when degree of input is small (should start by shifting)
-   - Uniform interpolants:
-      * interpolant basis verification: generation
-      * algorithms for generic case in mbasis / pmbasis (uniform shift)
-   - Improvement of approximants for small n:
-      * generic algo (need some more tuning)
-      * partial linearization solution Storjohann / ZhouLabahn
 	 - Determinant:
 		  * clean (finish naive algo if necessary) + threshold
+	 - System solving:
+		  * via evaluation-interpolation?
+   - Improvement of approximants for small n (long term work):
+      * generic algo (need some more tuning)
+      * partial linearization solution Storjohann / ZhouLabahn
    - Multi-thread (long-term work):
 		  * try to speed up everything when several threads
 
