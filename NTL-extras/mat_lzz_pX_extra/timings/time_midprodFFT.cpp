@@ -11,7 +11,7 @@
         Mat<zz_pX> a, c;                     \
         random(a, sz, sz, deg+1);            \
         random(c, sz, sz, 2*deg+1);          \
-        while (t<0.1)                        \
+        while (t<0.2)                        \
         {                                    \
             tt = GetWallTime();              \
             Mat<zz_pX> b;                    \
@@ -69,19 +69,20 @@ void one_bench_fft(long sz, long deg)
 
     cout << sz << "\t" << deg << "\t";
 
-    //{ // warmup
-    //    t=0.0;
-    //    Mat<zz_pX> a, b;
-    //    random(a, sz, sz, deg);
-    //    random(b, sz, sz, deg);
-    //    while (t<0.5)
-    //    {
-    //        tt = GetWallTime();
-    //        Mat<zz_pX> c;
-    //        multiply(c, a, b);
-    //        t += GetWallTime()-tt;
-    //    }
-    //}
+    { // warmup
+        double t = 0;
+        nb_iter = 0;
+        Mat<zz_pX> a, c;
+        random(a, sz, sz, deg+1);
+        random(c, sz, sz, 2*deg+1);
+        while (t<0.2)
+        {
+            tt = GetWallTime();
+            Mat<zz_pX> b;
+            middle_product_evaluate_FFT(b, a, c, deg, deg);
+            t += GetWallTime()-tt;
+        }
+    }
 
     double tmul = 0.0;
     {
@@ -89,16 +90,18 @@ void one_bench_fft(long sz, long deg)
         Mat<zz_pX> a, c;
         random(a, sz, sz, deg+1);
         random(c, sz, sz, 2*deg+1);
-        while (tmul<0.5)
+        while (tmul<0.2)
         {
             tt = GetWallTime();
             Mat<zz_pX> b;
-            middle_product(b, a, c, deg, deg);
+            middle_product_evaluate_FFT_new(b, a, c, deg, deg);
             tmul += GetWallTime()-tt;
             ++nb_iter;
         }
         tmul /= nb_iter;
     }
+
+    TIME(middle_product_evaluate_FFT)
 
     TIME(middle_product_evaluate_FFT_matmul)
 
@@ -118,7 +121,7 @@ void one_bench_fft(long sz, long deg)
     else
         std::cout << "inf" << "\t";
 
-    if (deg<60)
+    if (deg<100)
         TIME(middle_product_evaluate_dense)
     else
         std::cout << "inf" << "\t";
@@ -191,7 +194,7 @@ void run_bench(long nbits)
         zz_p::UserFFTInit(1139410705724735489); // 60 bits
         cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
     }
-    std::cout << "size\tdegree\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
+    std::cout << "size\tdegree\tmpfft\tmm_old\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
     for (long sz : szs)
     {
         long maxdeg = 5000;
@@ -255,7 +258,7 @@ int main(int argc, char ** argv)
         zz_p::UserFFTInit(786433); // FFT, 20 bits
         std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
         std::cout << "(ratios versus multiply)" << std::endl;
-        std::cout << "size\tdegree\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
+        std::cout << "size\tdegree\tmpfft\tmm_old\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
         warmup();
         one_bench_fft(atoi(argv[1]),atoi(argv[2]));
     }

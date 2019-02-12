@@ -606,6 +606,70 @@ void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat
         middle_product_evaluate_FFT_matmul(b, a, c, dA, dB);
 }
 
+void middle_product_evaluate_FFT_new(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+{
+    //const long s = a.NumRows();
+    //const long t = a.NumCols();
+    //const long u = c.NumCols();
+    const long cube_dim = a.NumRows() * a.NumCols() * c.NumCols();
+    const long d = (dA+dB)/2;
+
+    // TODO refine for degrees 1...50 (around 50)
+    // --> evaluate dense is sometimes nice, then use it
+
+    // could do automatic tuning?
+    // (these thresholds should be reasonable on most recent machines;
+    // note they were mostly designed by using close-to-square matrices, with
+    // deg(a) and deg(b) similar)
+    if (NumBits(zz_p::modulus()) < SMALL_PRIME_SIZE)
+    {
+        if (cube_dim < 4*4*4 || (cube_dim <= 6*6*6 && d > 100))
+            middle_product_evaluate_FFT_direct(b, a, c, dA, dB);
+        else if (cube_dim <= 8*8*8)
+            middle_product_evaluate_FFT_direct_ll_type(b, a, c, dA, dB);
+        else if (d<32)
+            middle_product_evaluate_dense(b, a, c, dA, dB);
+        else if (cube_dim <= 16*16*16)
+        {
+            if (d>50)
+                middle_product_evaluate_FFT_matmul2(b, a, c, dA, dB);
+            else // 32...50
+                //middle_product_evaluate_dense2(b, a, c, dA, dB);
+                middle_product_evaluate_dense(b, a, c, dA, dB);
+        }
+        else if (d > 100 || (cube_dim < 64*64*64 && d > 80))
+            middle_product_evaluate_FFT_matmul1(b, a, c, dA, dB);
+        else // dim = 16..63, d = 32..80  ||  dim = 65..., d=32..100
+            //middle_product_evaluate_dense2(b, a, c, dA, dB);
+            middle_product_evaluate_dense(b, a, c, dA, dB);
+    }
+    else
+    {
+        // if < 4*4*4, or if <= 8*8*8 under some conditions, use direct
+        if (cube_dim < 4*4*4 || (cube_dim == 4*4*4 && d>=90) || (cube_dim <= 8*8*8 && d >= 65))
+            middle_product_evaluate_FFT_direct(b, a, c, dA, dB);
+
+        // if <= 8*8*8 and direct was not used,
+        // or if < 20*20*20,
+        // or if < 25*25*25 and d>=1300,
+        // use direct_ll
+        else if (cube_dim < 20*20*20 || (cube_dim < 25*25*25 && d>=1300))
+            middle_product_evaluate_FFT_direct_ll_type(b, a, c, dA, dB);
+
+        // if between 20*20*20 and 25*25*25 and direct_ll was not used,
+        // or if degree not too small,
+        // use matmul1
+        else if (cube_dim < 25*25*25 || d>512 ||
+                 (cube_dim<48*48*48 && d>32) ||
+                 (cube_dim<128*128*128 && d>256))
+            middle_product_evaluate_FFT_matmul1(b, a, c, dA, dB);
+
+        // else, not small dimension and small degree: use matmul3
+        else
+            middle_product_evaluate_FFT_matmul3(b, a, c, dA, dB);
+    }
+}
+
 // Local Variables:
 // mode: C++
 // tab-width: 4
