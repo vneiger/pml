@@ -1,3 +1,4 @@
+#include <NTL/FFT_impl.h>
 #include "mat_lzz_pX_multiply.h"
 
 NTL_CLIENT
@@ -11,8 +12,8 @@ static inline void mul(Vec<ll_type>& z, const fftRep& x, const fftRep& y)
 {
     const long *xp = &x.tbl[0][0];
     const long *yp = &y.tbl[0][0];
-    long len = min(x.len, y.len);
-    for (long j = 0; j < len; j++)
+    const long len = min(x.len, y.len);
+    for (long j = 0; j < len; ++j)
         ll_mul(z[j], xp[j], yp[j]);
 }
 
@@ -23,13 +24,135 @@ static inline void mul_add(Vec<ll_type>& z, const fftRep& x, const fftRep& y)
 {
     const long *xp = &x.tbl[0][0];
     const long *yp = &y.tbl[0][0];
-    long len = min(x.len, y.len);
-    for (long j = 0; j < len; j++)
+    const long len = min(x.len, y.len);
+    for (long j = 0; j < len; ++j)
         ll_mul_add(z[j], xp[j], yp[j]);
 }
 
 #endif
 
+
+/*------------------------------------------------------------*/
+/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
+/* assumes FFT prime and p large enough                       */
+/* output may alias input; b does not have to be zero matrix  */
+/* does not use Mat<zz_p> matrix multiplication               */
+/*------------------------------------------------------------*/
+void middle_product_evaluate_FFT_direct_ll_type(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+{
+#if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES)
+    if (&b == &a || &b == &c)
+    {
+        Mat<zz_pX> b2;
+        middle_product_evaluate_FFT_direct_ll_type(b2, a, c, dA, dB);
+        b.swap(b2);
+        return;
+    }
+
+    // for computations mod pr
+    const long pr = zz_p::modulus();
+    const sp_reduce_struct red1 = sp_PrepRem(pr);
+    const sp_ll_reduce_struct red2 = make_sp_ll_reduce_struct(pr);
+
+    // dimensions
+    const long m = a.NumRows();
+    const long n = a.NumCols();
+    const long p = c.NumCols();
+
+    // sum of degree, length of FFT
+    const long K = NextPowerOfTwo(dA+dB+1);
+    const long len = (1<<K);
+
+    const long n0 = (1L << (2*(NTL_BITS_PER_LONG - NTL_SP_NBITS))) - 1;
+    const long first_slice = (n % n0 != 0) ? (n%n0) : n0;
+    const long nb_slices = (n % n0 != 0) ? (n / n0) : (n/n0 - 1);
+
+    Mat<fftRep> valc(INIT_SIZE, p, n);
+    for (long i = 0; i < p; ++i)
+        for (long j = 0; j < n; j++)
+            TofftRep_trunc(valc[i][j], c[j][i], K, len);
+
+    b.SetDims(m, p);
+    Vec<fftRep> vala(INIT_SIZE, n);
+
+    fftRep tmp_r(INIT_SIZE, K);
+    TofftRep_trunc(tmp_r, a[0][0], K, len);
+
+    Vec<ll_type> tmp(INIT_SIZE, len);
+    if (NumBits(pr) == NTL_SP_NBITS) // we can use normalized remainders; may be a bit faster
+    {
+        for (long i = 0; i < m; ++i)
+        {
+            for (long j = 0; j < n; ++j)
+                TofftRep_trunc(vala[j], a[i][j], K, len);
+
+            for (long k = 0; k < p; ++k)
+            {
+                fftRep * vc = valc[k].elts();
+
+                mul(tmp, vala[0], vc[0]);
+                for (long j = 1; j < first_slice; ++j)
+                    mul_add(tmp, vala[j], vc[j]);
+
+                long start = first_slice;
+                for (long jj = 0; jj < nb_slices; ++jj)
+                {
+                    for (long x = 0; x < len; ++x)
+                    {
+                        tmp[x].lo = sp_ll_red_21_normalized(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
+                        tmp[x].hi = 0;
+                    }
+                    for (long j = 0; j < n0; ++j)
+                        mul_add(tmp, vala[j+start], vc[j+start]);
+                    start += n0;
+                }
+
+                long *tmp_ptr = &tmp_r.tbl[0][0];
+                for (long x = 0; x < len; ++x)
+                    tmp_ptr[x] = sp_ll_red_21_normalized(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
+                FromfftRep(b[i][k], tmp_r, dA, dA+dB);
+            }
+        }
+    }
+    else
+    {
+        for (long i = 0; i < m; ++i)
+        {
+            for (long j = 0; j < n; ++j)
+                TofftRep_trunc(vala[j], a[i][j], K, len);
+
+            for (long k = 0; k < p; ++k)
+            {
+                fftRep * vc = valc[k].elts();
+
+                mul(tmp, vala[0], vc[0]);
+                for (long j = 1; j < first_slice; ++j)
+                    mul_add(tmp, vala[j], vc[j]);
+
+                long start = first_slice;
+                for (long jj = 0; jj < nb_slices; ++jj)
+                {
+                    for (long x = 0; x < len; ++x)
+                    {
+                        tmp[x].lo = sp_ll_red_21(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
+                        tmp[x].hi = 0;
+                    }
+                    for (long j = 0; j < n0; ++j)
+                        mul_add(tmp, vala[j+start], vc[j+start]);
+                    start += n0;
+                }
+
+                long *tmp_ptr = &tmp_r.tbl[0][0];
+                for (long x = 0; x < len; ++x)
+                    tmp_ptr[x] = sp_ll_red_21(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
+                FromfftRep(b[i][k], tmp_r, dA, dA+dB);
+            }
+        }
+    }
+#else
+    middle_product_evaluate_FFT_direct(b, a, c, dA, dB);
+#endif
+}
 
 /*------------------------------------------------------------*/
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
@@ -43,163 +166,44 @@ void middle_product_evaluate_FFT_direct(Mat<zz_pX> & b, const Mat<zz_pX> & a, co
     {
         Mat<zz_pX> b2;
         middle_product_evaluate_FFT_direct(b2, a, c, dA, dB);
-        b = b2;
+        b.swap(b2);
         return;
     }
 
-#if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES)
-    Vec<Vec<fftRep>> valc;
-    Vec<fftRep> vala;
-    sp_reduce_struct red1;
-    sp_ll_reduce_struct red2;
-    long len, m, n, p, n0, K, pr, nb_slices, first_slice;
-    Vec<ll_type> tmp;
-    fftRep tmp_r;
+    // dimensions
+    const long m = a.NumRows();
+    const long n = a.NumCols();
+    const long p = c.NumCols();
+    // number of points for FFT
+    const long K = NextPowerOfTwo(dA + dB + 1);
+    const long len = (1<<K);
 
-    pr = zz_p::modulus();
-    red1 = sp_PrepRem(pr);
-    red2 = make_sp_ll_reduce_struct(pr);
-    
-    m = a.NumRows();
-    n = a.NumCols();
-    p = c.NumCols();
-
-    K = NextPowerOfTwo(dA + dB + 1);
-
-    valc.SetLength(p);
-    for (long i = 0; i < p; i++)
-    {
-        valc[i].SetLength(n);
-        for (long j = 0; j < n; j++)
-            TofftRep(valc[i][j], c[j][i], K);
-    }
-    
-    len = 1L << K;
-    b.SetDims(m, p);
-    vala.SetLength(n);
-
-    tmp.SetLength(len);
-    tmp_r = fftRep(INIT_SIZE, K);
-    TofftRep(tmp_r, a[0][0], K);
-
-    n0 = (1L << (2*(NTL_BITS_PER_LONG - NTL_SP_NBITS))) - 1;
-    first_slice = n % n0;
-    nb_slices = n / n0;
-    if (first_slice == 0)
-    {
-        first_slice = n0;
-        nb_slices--;
-    }
-
-    if (NumBits(pr) == NTL_SP_NBITS) // we can use normalized remainders; may be a bit faster
-    {
-        for (long i = 0; i < m; i++)
-        {
-            for (long j = 0; j < n; j++)
-                TofftRep(vala[j], a[i][j], K);
-
-            for (long k = 0; k < p; k++)
-            {
-                fftRep * vc = valc[k].elts();
-
-                mul(tmp, vala[0], vc[0]);
-                for (long j = 1; j < first_slice; j++)
-                    mul_add(tmp, vala[j], vc[j]);
-                
-                long start = first_slice;
-                for (long jj = 0; jj < nb_slices; jj++)
-                {
-                    for (long x = 0; x < len; x++)
-                    {
-                        tmp[x].lo = sp_ll_red_21_normalized(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
-                        tmp[x].hi = 0;
-                    }
-                    for (long j = 0; j < n0; j++)
-                        mul_add(tmp, vala[j+start], vc[j+start]);
-                    start += n0;
-                }
-
-                long *tmp_ptr = &tmp_r.tbl[0][0];
-                for (long x = 0; x < len; x++) 
-                    tmp_ptr[x] = sp_ll_red_21_normalized(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
-                FromfftRep(b[i][k], tmp_r, dA, dA + dB);
-            }
-        }
-    }
-    else
-    {
-        for (long i = 0; i < m; i++)
-        {
-            for (long j = 0; j < n; j++)
-                TofftRep(vala[j], a[i][j], K);
-
-            for (long k = 0; k < p; k++)
-            {
-                fftRep * vc = valc[k].elts();
-
-                mul(tmp, vala[0], vc[0]);
-                for (long j = 1; j < first_slice; j++)
-                    mul_add(tmp, vala[j], vc[j]);
-                
-                long start = first_slice;
-                for (long jj = 0; jj < nb_slices; jj++)
-                {
-                    for (long x = 0; x < len; x++)
-                    {
-                        tmp[x].lo = sp_ll_red_21(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
-                        tmp[x].hi = 0;
-                    }
-                    for (long j = 0; j < n0; j++)
-                        mul_add(tmp, vala[j+start], vc[j+start]);
-                    start += n0;
-                }
-
-                long *tmp_ptr = &tmp_r.tbl[0][0];
-                for (long x = 0; x < len; x++) 
-                    tmp_ptr[x] = sp_ll_red_21(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
-                FromfftRep(b[i][k], tmp_r, dA, dA + dB);
-            }
-        }
-    }
-#else
-    Vec<Vec<fftRep>> valc;
-    Vec<fftRep> vala;
-
-    long m = a.NumRows();
-    long n = a.NumCols();
-    long p = c.NumCols();
-    long K = NextPowerOfTwo(dA + dB + 1);
-
-    valc.SetLength(p);
-    for (long i = 0; i < p; i++)
-    {
-        valc[i].SetLength(n);
-        for (long j = 0; j < n; j++)
-            TofftRep(valc[i][j], c[j][i], K);
-    }
+    Mat<fftRep> valc(INIT_SIZE, p, n);
+    for (long i = 0; i < p; ++i)
+        for (long j = 0; j < n; ++j)
+            TofftRep_trunc(valc[i][j], c[j][i], K, len);
 
     b.SetDims(m, p);
-    vala.SetLength(n);
-    fftRep tmp1 = fftRep(INIT_SIZE, K);
-    fftRep tmp2 = fftRep(INIT_SIZE, K);
-    for (long i = 0; i < m; i++)
+    Vec<fftRep> vala(INIT_SIZE, n);
+    fftRep tmp1(INIT_SIZE, K);
+    fftRep tmp2(INIT_SIZE, K);
+    for (long i = 0; i < m; ++i)
     {
-        for (long j = 0; j < n; j++)
-            TofftRep(vala[j], a[i][j], K);
-        for (long k = 0; k < p; k++)
+        for (long j = 0; j < n; ++j)
+            TofftRep_trunc(vala[j], a[i][j], K, len);
+        for (long k = 0; k < p; ++k)
         {
-            fftRep * vc = valc[k].elts();
-            mul(tmp1, vala[0], vc[0]);
-            for (long j = 1; j < n; j++)
+            mul(tmp1, vala[0], valc[k][0]);
+            for (long j = 1; j < n; ++j)
             {
-                mul(tmp2, vala[j], vc[j]);
+                mul(tmp2, vala[j], valc[k][j]);
                 add(tmp1, tmp1, tmp2);
             }
             FromfftRep(b[i][k], tmp1, dA, dA + dB);
         }
     }
-#endif
 }
+
 
 /*------------------------------------------------------------*/
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
@@ -300,6 +304,7 @@ void middle_product_evaluate_FFT_matmul(Mat<zz_pX> & b, const Mat<zz_pX> & a, co
     }
 }
 
+
 /*------------------------------------------------------------*/
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
 /* assumes FFT prime and p large enough                       */
@@ -311,7 +316,7 @@ void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat
     long s = a.NumRows();
     long t = a.NumCols();
     long u = c.NumCols();
-    
+
     long thresh;
     if (NumBits(zz_p::modulus()) < 30)
         thresh = 20 * 20 * 20;

@@ -106,18 +106,18 @@ void multiply_evaluate_FFT_direct_ll_type(Mat<zz_pX> & c, const Mat<zz_pX> & a, 
                 long start = first_slice;
                 for (long jj = 0; jj < nb_slices; ++jj)
                 {
-                    for (long x = 0; x < len; x++)
+                    for (long x = 0; x < len; ++x)
                     {
                         tmp[x].lo = sp_ll_red_21_normalized(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
                         tmp[x].hi = 0;
                     }
-                    for (long j = 0; j < n0; j++)
+                    for (long j = 0; j < n0; ++j)
                         mul_add(tmp, vala[j+start], vb[j+start]);
                     start += n0;
                 }
 
                 long *tmp_ptr = &tmp_r.tbl[0][0];
-                for (long x = 0; x < len; x++) 
+                for (long x = 0; x < len; ++x)
                     tmp_ptr[x] = sp_ll_red_21_normalized(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
                 FromfftRep(c[i][k], tmp_r, 0, len_actual-1);
             }
@@ -125,34 +125,34 @@ void multiply_evaluate_FFT_direct_ll_type(Mat<zz_pX> & c, const Mat<zz_pX> & a, 
     }
     else
     {
-        for (long i = 0; i < m; i++)
+        for (long i = 0; i < m; ++i)
         {
-            for (long j = 0; j < n; j++)
+            for (long j = 0; j < n; ++j)
                 TofftRep_trunc(vala[j], a[i][j], K, len);
 
-            for (long k = 0; k < p; k++)
+            for (long k = 0; k < p; ++k)
             {
                 fftRep * vb = valb[k].elts();
 
                 mul(tmp, vala[0], vb[0]);
-                for (long j = 1; j < first_slice; j++)
+                for (long j = 1; j < first_slice; ++j)
                     mul_add(tmp, vala[j], vb[j]);
 
                 long start = first_slice;
-                for (long jj = 0; jj < nb_slices; jj++)
+                for (long jj = 0; jj < nb_slices; ++jj)
                 {
-                    for (long x = 0; x < len; x++)
+                    for (long x = 0; x < len; ++x)
                     {
                         tmp[x].lo = sp_ll_red_21(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
                         tmp[x].hi = 0;
                     }
-                    for (long j = 0; j < n0; j++)
+                    for (long j = 0; j < n0; ++j)
                         mul_add(tmp, vala[j+start], vb[j+start]);
                     start += n0;
                 }
 
                 long *tmp_ptr = &tmp_r.tbl[0][0];
-                for (long x = 0; x < len; x++) 
+                for (long x = 0; x < len; ++x)
                     tmp_ptr[x] = sp_ll_red_21(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
                 FromfftRep(c[i][k], tmp_r, 0, len_actual-1);
             }
@@ -590,7 +590,7 @@ void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
 //    NTL_EXEC_RANGE(n, first, last)
 //    context.restore();
 //
-//    Mat<zz_p> va, vb, vc; 
+//    Mat<zz_p> va, vb, vc;
 //    va.SetDims(s, t);
 //    vb.SetDims(t, u);
 //
@@ -628,7 +628,7 @@ void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
 //    NTL_EXEC_RANGE(s, first, last)
 //    context.restore();
 //
-//    Mat<zz_p> vc; 
+//    Mat<zz_p> vc;
 //    fftRep R = R1;
 //    for (long i = first; i < last; i++)
 //    {
