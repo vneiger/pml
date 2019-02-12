@@ -106,8 +106,6 @@ void one_bench_fft(long sz, long deg)
 
     TIME(middle_product_evaluate_FFT_matmul2)
 
-    TIME(middle_product_evaluate_FFT_matmul2_new)
-
     TIME(middle_product_evaluate_FFT_matmul3)
 
     if (sz < 80)
