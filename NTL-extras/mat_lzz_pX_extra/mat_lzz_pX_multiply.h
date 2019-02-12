@@ -227,13 +227,10 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
 
 /** Computes `c = a*b`. \todo short algorithm description  */
 void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void multiply_evaluate_FFT_matmul1_trunc(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 /** Computes `c = a*b`. \todo short algorithm description  */
 void multiply_evaluate_FFT_matmul2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void multiply_evaluate_FFT_matmul2_trunc(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 /** Computes `c = a*b`. \todo short algorithm description  */
 void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void multiply_evaluate_FFT_matmul3_trunc(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 /** Computes `c = a*b` via FFT evaluation/interpolation, but without relying on
  * `Mat<zz_p>` multiplication */
@@ -304,6 +301,7 @@ void middle_product_evaluate_FFT_matmul(Mat<zz_pX> & b, const Mat<zz_pX> & a, co
 void middle_product_evaluate_FFT_matmul1(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_evaluate_FFT_matmul2(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_evaluate_FFT_matmul3(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+void middle_product_evaluate_FFT_matmul3_new(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
 /** Based on evaluation/interpolation at FFT points; assumes FFT prime and p
  * large enough; chooses the expected fastest of the available algorithm.
@@ -311,6 +309,7 @@ void middle_product_evaluate_FFT_matmul3(Mat<zz_pX> & b, const Mat<zz_pX> & a, c
  * \todo once all variants written, redo the thresholds
  */
 void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+void middle_product_evaluate_FFT_new(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
 /** Based on evaluation/interpolation, using multiplication by Vandermonde
  * matrices (fast when degree is small and dimension not so small). */

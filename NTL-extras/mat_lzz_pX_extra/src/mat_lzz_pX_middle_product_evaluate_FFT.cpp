@@ -1,6 +1,13 @@
 #include <NTL/FFT_impl.h>
 #include "mat_lzz_pX_multiply.h"
 
+// FIXME work in progress:
+// constants used to improve cache efficiency
+#define CACHE_LINE_SIZE 8
+#define MATRIX_BLOCK_SIZE 16
+// right now these are chosen harcoded for L1 cache line 64B (8 long's) and L1
+// total cache 32k --> 512 ~ 16*16 cache lines
+
 NTL_CLIENT
 
 #if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES)
@@ -315,6 +322,7 @@ void middle_product_evaluate_FFT_matmul1(Mat<zz_pX> & b, const Mat<zz_pX> & a, c
     const long len = 1 << idxk;
 
     fftRep R(INIT_SIZE, idxk);
+    Vec<UniqueArray<long>> RR(INIT_SIZE, CACHE_LINE_SIZE);
 
     // stores evaluations in a single vector for a, same for b
     const long st = s*t;
@@ -325,24 +333,36 @@ void middle_product_evaluate_FFT_matmul1(Mat<zz_pX> & b, const Mat<zz_pX> & a, c
     // evals of a
     for (long i = 0; i < s; ++i)
     {
-        for (long k = 0; k < t; ++k)
+        for (long k = 0; k < t; k+=CACHE_LINE_SIZE)
         {
-            TofftRep(R, a[i][k], idxk);
-            long *frept = & R.tbl[0][0];
-            for (long r = 0, rst = 0; r < len; r++, rst += st)
-                mat_valA[rst + i*t + k] = frept[r];
+            const long kk_bnd = std::min((long)CACHE_LINE_SIZE, t-k);
+            for (long kk = 0; kk < kk_bnd; ++kk)
+            {
+                R.tbl[0].SetLength(len);
+                TofftRep(R, a[i][k+kk], idxk);
+                R.tbl[0].swap(RR[kk]);
+            }
+            for (long r = 0, rst = 0; r < len; ++r, rst += st)
+                for (long kk=0; kk < kk_bnd; ++kk)
+                    mat_valA[rst + i*t + k+kk] = RR[kk][r];
         }
     }
 
     // evals of c
     for (long i = 0; i < t; ++i)
     {
-        for (long k = 0; k < u; ++k)
+        for (long k = 0; k < u; k+=CACHE_LINE_SIZE)
         {
-            TofftRep(R, c[i][k], idxk);
-            long *frept = & R.tbl[0][0];
+            const long kk_bnd = std::min((long)CACHE_LINE_SIZE, u-k);
+            for (long kk = 0; kk < kk_bnd; ++kk)
+            {
+                R.tbl[0].SetLength(len);
+                TofftRep(R, c[i][k+kk], idxk);
+                R.tbl[0].swap(RR[kk]);
+            }
             for (long r = 0, rtu = 0; r < len; r++, rtu += tu)
-                mat_valC[rtu + i*u + k] = frept[r];
+                for (long kk = 0; kk < kk_bnd; ++kk)
+                    mat_valC[rtu + i*u + k+kk] = RR[kk][r];
         }
     }
 
@@ -350,7 +370,7 @@ void middle_product_evaluate_FFT_matmul1(Mat<zz_pX> & b, const Mat<zz_pX> & a, c
     Mat<zz_p> va(INIT_SIZE, s, t);
     Mat<zz_p> vc(INIT_SIZE, t, u);
     // store va*vc
-    Mat<zz_p> vb;
+    Vec<Mat<zz_p>> vb(INIT_SIZE, CACHE_LINE_SIZE);
 
     // stores the evaluations for b
     Vec<UniqueArray<long>> mat_valB(INIT_SIZE, s * u);
@@ -358,29 +378,36 @@ void middle_product_evaluate_FFT_matmul1(Mat<zz_pX> & b, const Mat<zz_pX> & a, c
         mat_valB[i].SetLength(len);
 
     // compute pairwise products
-    for (long j = 0, jst = 0, jtu = 0; j < len; ++j, jst += st, jtu += tu)
+    for (long j = 0, jst = 0, jtu = 0; j < len; j+=CACHE_LINE_SIZE)
     {
-        for (long i = 0; i < s; ++i)
-            for (long k = 0; k < t; ++k)
-                va[i][k].LoopHole() = mat_valA[jst + i*t + k];
-        for (long i = 0; i < t; ++i)
-            for (long k = 0; k < u; ++k)
-                vc[i][k].LoopHole() = mat_valC[jtu + i*u + k];
+        const long jj_bnd = std::min((long)CACHE_LINE_SIZE, len-j);
+        for (long jj = 0; jj < jj_bnd; ++jj, jst += st, jtu += tu)
+        {
+            for (long i = 0; i < s; ++i)
+                for (long k = 0; k < t; ++k)
+                    va[i][k].LoopHole() = mat_valA[jst + i*t + k];
+            for (long i = 0; i < t; ++i)
+                for (long k = 0; k < u; ++k)
+                    vc[i][k].LoopHole() = mat_valC[jtu + i*u + k];
+            mul(vb[jj], va, vc);
+        }
 
-        mul(vb, va, vc);
-
         for (long i = 0; i < s; ++i)
-            for (long k = 0; k < u; ++k)
-                mat_valB[i*u + k][j] = vb[i][k]._zz_p__rep;
+            for (long k = 0; k < u; k+=MATRIX_BLOCK_SIZE)
+            {
+                const long kk_bnd = std::min((long)MATRIX_BLOCK_SIZE, u-k);
+                for (long jj = 0; jj < jj_bnd; ++jj)
+                    for (long kk = 0; kk < kk_bnd; ++kk)
+                        mat_valB[i*u + k+kk][j+jj] = vb[jj][i][k+kk]._zz_p__rep;
+            }
     }
 
+    // interpolate
     b.SetDims(s, u);
     for (long i = 0; i < s; ++i)
         for (long k = 0; k < u; ++k)
         {
-            long *frept = & R.tbl[0][0];
-            for (long r = 0; r < len; ++r)
-                frept[r] = mat_valB[i*u + k][r];
+            R.tbl[0].swap(mat_valB[i*u+k]);
             FromfftRep(b[i][k], R, dA, dA + dB);
         }
 }
@@ -417,30 +444,53 @@ void middle_product_evaluate_FFT_matmul2(Mat<zz_pX> & b, const Mat<zz_pX> & a, c
         }
 
     // evaluated matrices for a and c
-    Mat<zz_p> va(INIT_SIZE, s, t);
-    Mat<zz_p> vc(INIT_SIZE, t, u);
-    // vb = va * vc
-    Mat<zz_p> vb;
+    Vec<Mat<zz_p>> va(INIT_SIZE, CACHE_LINE_SIZE);
+    for (long jj = 0; jj < CACHE_LINE_SIZE; ++jj)
+         va[jj].SetDims(s, t);
+    Vec<Mat<zz_p>> vc(INIT_SIZE, CACHE_LINE_SIZE);
+    for (long jj = 0; jj < CACHE_LINE_SIZE; ++jj)
+        vc[jj].SetDims(t, u);
 
+    // will store vb[jj] = va[jj] * vc[jj]
+    Vec<Mat<zz_p>> vb(INIT_SIZE, CACHE_LINE_SIZE);
+
+    // vector containing evaluations of result
     Vec<UniqueArray<long>> mat_valB(INIT_SIZE, s * u);
     for (long i = 0; i < s * u; ++i)
         mat_valB[i].SetLength(len);
 
     // pointwise products
-    for (long j = 0; j < len; ++j)
+    for (long j = 0; j < len; j+=CACHE_LINE_SIZE)
     {
+        const long jj_bnd = std::min((long)CACHE_LINE_SIZE, len-j);
         for (long i = 0; i < s; ++i)
-            for (long k = 0; k < t; ++k)
-                va[i][k].LoopHole() = mat_valA[i*t + k][j];
+            for (long k = 0; k < t; k+=MATRIX_BLOCK_SIZE)
+            {
+                const long kk_bnd = std::min((long)MATRIX_BLOCK_SIZE, t-k);
+                for (long jj=0; jj<jj_bnd; ++jj)
+                    for (long kk = 0; kk < kk_bnd; ++kk)
+                        va[jj][i][k+kk].LoopHole() = mat_valA[i*t + k+kk][j+jj];
+            }
         for (long i = 0; i < t; i++)
-            for (long k = 0; k < u; ++k)
-                vc[i][k].LoopHole() = mat_valC[i*u + k][j];
+            for (long k = 0; k < u; k+=MATRIX_BLOCK_SIZE)
+            {
+                const long kk_bnd = std::min((long)MATRIX_BLOCK_SIZE, u-k);
+                for (long jj=0; jj<jj_bnd; ++jj)
+                    for (long kk = 0; kk < kk_bnd; ++kk)
+                        vc[jj][i][k+kk].LoopHole() = mat_valC[i*u + k+kk][j+jj];
+            }
 
-        mul(vb, va, vc);
+        for (long jj=0; jj<jj_bnd; ++jj)
+            mul(vb[jj], va[jj], vc[jj]);
 
         for (long i = 0; i < s; ++i)
-            for (long k = 0; k < u; ++k)
-                mat_valB[i*u + k][j] = vb[i][k]._zz_p__rep;
+            for (long k = 0; k < u; k+=MATRIX_BLOCK_SIZE)
+            {
+                const long kk_bnd = std::min((long)MATRIX_BLOCK_SIZE, u-k);
+                for (long kk = 0; kk < kk_bnd; ++kk)
+                    for (long jj=0; jj<jj_bnd; ++jj)
+                        mat_valB[i*u + k+kk][j+jj] = vb[jj][i][k+kk]._zz_p__rep;
+            }
     }
 
     // interpolate
@@ -512,6 +562,64 @@ void middle_product_evaluate_FFT_matmul3(Mat<zz_pX> & b, const Mat<zz_pX> & a, c
         }
 }
 
+void middle_product_evaluate_FFT_matmul3_new(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+{
+    // dimensions
+    const long s = a.NumRows();
+    const long t = a.NumCols();
+    const long u = c.NumCols();
+
+    // number of points in FFT representation
+    const long idxk = NextPowerOfTwo(dA + dB + 1);
+    const long len = 1 << idxk;
+
+    fftRep R(INIT_SIZE, idxk);
+
+    // matrix of evaluations of a: mat_valA[j] contains
+    // the evaluation of a at the j-th point
+    Vec<Mat<zz_p>> mat_valA(INIT_SIZE, len);
+    for (long j = 0; j < len; ++j)
+        mat_valA[j].SetDims(s,t);
+
+    for (long i = 0; i < s; ++i)
+        for (long k = 0; k < t; ++k)
+        {
+            TofftRep(R, a[i][k], idxk);
+            long *frept = & R.tbl[0][0];
+            for (long r = 0; r < len; ++r)
+                mat_valA[r][i][k].LoopHole() = frept[r];
+        }
+
+    // matrix of evaluations of c, similar
+    Vec<Mat<zz_p>> mat_valC(INIT_SIZE, len);
+    for (long j = 0; j < len; ++j)
+        mat_valC[j].SetDims(t,u);
+    for (long i = 0; i < t; ++i)
+        for (long k = 0; k < u; ++k)
+        {
+            TofftRep(R, c[i][k], idxk);
+            long *frept = & R.tbl[0][0];
+            for (long r = 0; r < len; ++r)
+                mat_valC[r][i][k].LoopHole() = frept[r];
+        }
+
+    Mat<zz_p> tmp;
+    for (long j = 0; j < len; ++j)
+    {
+        mul(tmp, mat_valA[j], mat_valC[j]);
+        tmp.swap(mat_valA[j]);
+    }
+
+    b.SetDims(s, u);
+    for (long i = 0; i < s; ++i)
+        for (long k = 0; k < u; ++k)
+        {
+            long *frept = & R.tbl[0][0];
+            for (long r = 0; r < len; ++r)
+                frept[r] = mat_valA[r][i][k]._zz_p__rep;
+            FromfftRep(b[i][k], R, dA, dA + dB);
+        }
+}
 
 
 /*------------------------------------------------------------*/

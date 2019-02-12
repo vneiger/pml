@@ -138,7 +138,7 @@ void one_bench_fft(long sz, long deg)
 void run_bench(long nbits)
 {
     //std::vector<long> szs = { 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, };
-    std::vector<long> szs = { 32, 36, 40, 44, 48, 52, 58, 64, 75, 85, 96, 105, 115, 128, 140, 155, 168, 180, 192, 256, 384, 512, };
+    std::vector<long> szs = { 2, 4, 10, 20, 32, 75, 180 };
     //std::vector<long> degs =
     //{
     //    8, 10, 12, 14,
@@ -157,15 +157,12 @@ void run_bench(long nbits)
     //};
     std::vector<long> degs =
     {
-        8, 12, 16, 24,
-        32, 48,
-        64, 96,
-        128, 192,
-        256, 384,
-        512, 768,
-        1024, 1536,
-        2048, 3072,
-        4192
+        8,
+        32,
+        128,
+        512,
+        2048,
+        8192,
     };
 
     std::cout << "Bench polynomial matrix multiplication (FFT prime)" << std::endl;

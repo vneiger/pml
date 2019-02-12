@@ -2,10 +2,8 @@
 #include "mat_lzz_pX_multiply.h"
 
 // FIXME work in progress:
-// constant used to reduce cache misses
-// (must be power of 2)
+// constants used to reduce cache misses
 #define CACHE_LINE_SIZE 8
-// Matrix block size for cache friendlier code
 #define MATRIX_BLOCK_SIZE 16
 // right now these are chosen harcoded for L1 cache line 64B (8 long's) and L1
 // total cache 32k --> 512 ~ 16*16 cache lines
@@ -251,6 +249,7 @@ void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
 
     // mat_valA[r*s*t + i*t + k] is a[i][k] evaluated at the r-th point
     for (long i = 0; i < s; ++i)
+    {
         for (long k = 0; k < t; k+=CACHE_LINE_SIZE)
         {
             const long kk_bnd = std::min((long)CACHE_LINE_SIZE, t-k);
@@ -264,6 +263,7 @@ void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
                 for (long kk = 0; kk < kk_bnd; ++kk)
                     mat_valA[rst + i*t+k+kk] = RR[kk][r];
         }
+    }
 
     // mat_valB[r*s*t + i*t + k] is b[i][k] evaluated at the r-th point
     for (long i = 0; i < t; ++i)
@@ -327,6 +327,7 @@ void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
             FromfftRep(c[i][k], R, 0, len_actual-1);
         }
 }
+
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
