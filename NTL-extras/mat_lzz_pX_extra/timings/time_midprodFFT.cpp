@@ -11,7 +11,7 @@
         Mat<zz_pX> a, c;                     \
         random(a, sz, sz, deg+1);            \
         random(c, sz, sz, 2*deg+1);          \
-        while (t<0.05)                        \
+        while (t<0.1)                        \
         {                                    \
             tt = GetWallTime();              \
             Mat<zz_pX> b;                    \
@@ -100,11 +100,13 @@ void one_bench_fft(long sz, long deg)
         tmul /= nb_iter;
     }
 
-    //TIME(multiply_evaluate_FFT_matmul1)
+    TIME(middle_product_evaluate_FFT_matmul)
 
-    //TIME(multiply_evaluate_FFT_matmul2)
+    TIME(middle_product_evaluate_FFT_matmul1)
 
-    //TIME(multiply_evaluate_FFT_matmul3)
+    TIME(middle_product_evaluate_FFT_matmul2)
+
+    TIME(middle_product_evaluate_FFT_matmul3)
 
     if (sz < 80)
         TIME(middle_product_evaluate_FFT_direct_ll_type)
@@ -136,21 +138,35 @@ void run_bench(long nbits)
 {
     std::vector<long> szs = { 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, };
     //std::vector<long> szs = { 32, 36, 40, 44, 48, 52, 58, 64, 75, 85, 96, 105, 115, 128, 140, 155, 168, 180, 192, 256, 384, 512, };
+    //std::vector<long> degs =
+    //{
+    //    8, 10, 12, 14,
+    //    16, 20, 24, 28,
+    //    32, 40, 48, 56,
+    //    64, 80, 96, 112,
+    //    128, 160, 192, 224,
+    //    256, 320, 384, 448,
+    //    512, 640, 768, 896,
+    //    1024, 1280, 1536, 1792,
+    //    2048, 2560, 3072, 3584,
+    //    4096, 5120, 6144, 7168,
+    //    8192, 10240, 12288, 14336,
+    //    16384, 20480, 24576, 28672,
+    //    32768, 40960, 49152, 57344
+    //};
     std::vector<long> degs =
     {
-        8, 10, 12, 14,
-        16, 20, 24, 28,
-        32, 40, 48, 56,
-        64, 80, 96, 112,
-        128, 160, 192, 224,
-        256, 320, 384, 448,
-        512, 640, 768, 896,
-        1024, 1280, 1536, 1792,
-        2048, 2560, 3072, 3584,
-        4096, 5120, 6144, 7168,
-        8192, 10240, 12288, 14336,
-        16384, 20480, 24576, 28672,
-        32768, 40960, 49152, 57344
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        4096,
+        8192,
     };
 
     std::cout << "Bench polynomial matrix multiplication (FFT prime)" << std::endl;

@@ -301,6 +301,9 @@ void middle_product_evaluate_FFT_direct(Mat<zz_pX> & b, const Mat<zz_pX> & a, co
  * \todo make "matmul2, matmul3" versions
  */
 void middle_product_evaluate_FFT_matmul(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+void middle_product_evaluate_FFT_matmul1(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+void middle_product_evaluate_FFT_matmul2(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+void middle_product_evaluate_FFT_matmul3(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
 /** Based on evaluation/interpolation at FFT points; assumes FFT prime and p
  * large enough; chooses the expected fastest of the available algorithm.

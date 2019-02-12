@@ -45,6 +45,24 @@ void one_check(long sz, long dg)
                     LogicError("Error in FFT matmul middle product");
                 }
 
+                middle_product_evaluate_FFT_matmul1(b2, a, c, dA, dB);
+                if (b1 != b2)
+                {
+                    LogicError("Error in FFT matmul1 middle product");
+                }
+
+                middle_product_evaluate_FFT_matmul2(b2, a, c, dA, dB);
+                if (b1 != b2)
+                {
+                    LogicError("Error in FFT matmul2 middle product");
+                }
+
+                middle_product_evaluate_FFT_matmul3(b2, a, c, dA, dB);
+                if (b1 != b2)
+                {
+                    LogicError("Error in FFT matmul3 middle product");
+                }
+
                 middle_product_evaluate_FFT_direct_ll_type(b2, a, c, dA, dB);
                 if (b1 != b2)
                 {

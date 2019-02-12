@@ -304,6 +304,275 @@ void middle_product_evaluate_FFT_matmul(Mat<zz_pX> & b, const Mat<zz_pX> & a, co
     }
 }
 
+void middle_product_evaluate_FFT_matmul1(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+{
+    // dimensions
+    const long s = a.NumRows();
+    const long t = a.NumCols();
+    const long u = c.NumCols();
+
+    // number of points for FFT
+    const long idxk = NextPowerOfTwo(dA + dB + 1);
+    const long len = 1 << idxk;
+
+    fftRep R(INIT_SIZE, idxk);
+
+    // stores evaluations in a single vector for a, same for b
+    const long st = s*t;
+    const long tu = t*u;
+    Vec<long> mat_valA(INIT_SIZE, len * st);
+    Vec<long> mat_valC(INIT_SIZE, len * tu);
+
+    // evals of a
+    for (long i = 0; i < s; ++i)
+    {
+        for (long k = 0; k < t; ++k)
+        {
+            TofftRep(R, a[i][k], idxk);
+            long *frept = & R.tbl[0][0];
+            for (long r = 0, rst = 0; r < len; r++, rst += st)
+                mat_valA[rst + i*t + k] = frept[r];
+        }
+    }
+
+    // evals of c
+    for (long i = 0; i < t; ++i)
+    {
+        for (long k = 0; k < u; ++k)
+        {
+            TofftRep(R, c[i][k], idxk);
+            long *frept = & R.tbl[0][0];
+            for (long r = 0, rtu = 0; r < len; r++, rtu += tu)
+                mat_valC[rtu + i*u + k] = frept[r];
+        }
+    }
+
+    // will store a evaluated at the r-th point, same for c
+    Mat<zz_p> va(INIT_SIZE, s, t);
+    Mat<zz_p> vc(INIT_SIZE, t, u);
+    // store va*vc
+    Mat<zz_p> vb;
+
+    // stores the evaluations for b
+    Vec<UniqueArray<long>> mat_valB(INIT_SIZE, s * u);
+    for (long i = 0; i < s * u; ++i)
+        mat_valB[i].SetLength(len);
+
+    // compute pairwise products
+    for (long j = 0, jst = 0, jtu = 0; j < len; ++j, jst += st, jtu += tu)
+    {
+        for (long i = 0; i < s; ++i)
+            for (long k = 0; k < t; ++k)
+                va[i][k].LoopHole() = mat_valA[jst + i*t + k];
+        for (long i = 0; i < t; ++i)
+            for (long k = 0; k < u; ++k)
+                vc[i][k].LoopHole() = mat_valC[jtu + i*u + k];
+
+        mul(vb, va, vc);
+
+        for (long i = 0; i < s; ++i)
+            for (long k = 0; k < u; ++k)
+                mat_valB[i*u + k][j] = vb[i][k]._zz_p__rep;
+    }
+
+    b.SetDims(s, u);
+    for (long i = 0; i < s; ++i)
+        for (long k = 0; k < u; ++k)
+        {
+            long *frept = & R.tbl[0][0];
+            for (long r = 0; r < len; ++r)
+                frept[r] = mat_valB[i*u + k][r];
+            FromfftRep(b[i][k], R, dA, dA + dB);
+        }
+}
+
+void middle_product_evaluate_FFT_matmul2(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+{
+    long s = a.NumRows();
+    long t = a.NumCols();
+    long u = c.NumCols();
+
+    long idxk = NextPowerOfTwo(dA + dB + 1);
+    fftRep R1(INIT_SIZE, idxk);
+
+    long n = 1 << idxk;
+
+    Vec<zz_p> mat_valA, mat_valC;
+    Vec<Vec<zz_p>> mat_valB;
+
+    mat_valA.SetLength(n * s * t);
+    mat_valC.SetLength(n * t * u);
+
+    Vec<zz_p> tmp;
+    long st = s*t;
+    for (long i = 0; i < s; i++)
+    {
+        for (long k = 0; k < t; k++)
+        {
+            TofftRep(R1, a[i][k], idxk);
+            long *frept = & R1.tbl[0][0];
+            for (long r = 0, rst = 0; r < n; r++, rst += st)
+                mat_valA[rst + i*t + k] = frept[r];
+        }
+    }
+
+    long tu = t*u;
+    for (long i = 0; i < t; i++)
+    {
+        for (long k = 0; k < u; k++)
+        {
+            TofftRep(R1, c[i][k], idxk);
+            long *frept = & R1.tbl[0][0];
+            for (long r = 0, rtu = 0; r < n; r++, rtu += tu)
+                mat_valC[rtu + i*u + k] = frept[r];
+        }
+    }
+
+    Mat<zz_p> va, vb, vc;
+    va.SetDims(s, t);
+    vc.SetDims(t, u);
+
+    mat_valB.SetLength(s * u);
+    for (long i = 0; i < s * u; i++)
+        mat_valB[i].SetLength(n);
+
+    for (long j = 0, jst = 0, jtu = 0; j < n; j++, jst += st, jtu += tu)
+    {
+        for (long i = 0; i < s; i++)
+        {
+            for (long k = 0; k < t; k++)
+            {
+                va[i][k] = mat_valA[jst + i*t + k];
+            }
+        }
+        for (long i = 0; i < t; i++)
+        {
+            for (long k = 0; k < u; k++)
+            {
+                vc[i][k] = mat_valC[jtu + i*u + k];
+            }
+        }
+
+        vb = va * vc;
+
+        for (long i = 0; i < s; i++)
+        {
+            for (long k = 0; k < u; k++)
+            {
+                mat_valB[i*u + k][j] = vb[i][k];
+            }
+        }
+    }
+
+    b.SetDims(s, u);
+    for (long i = 0; i < s; i++)
+    {
+        for (long k = 0; k < u; k++)
+        {
+            long *frept = & R1.tbl[0][0];
+            for (long r = 0; r < n; r++)
+            {
+                frept[r] = rep(mat_valB[i*u + k][r]);
+            }
+            FromfftRep(b[i][k], R1, dA, dA + dB);
+        }
+    }
+}
+
+void middle_product_evaluate_FFT_matmul3(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
+{
+    long s = a.NumRows();
+    long t = a.NumCols();
+    long u = c.NumCols();
+
+    long idxk = NextPowerOfTwo(dA + dB + 1);
+    fftRep R1(INIT_SIZE, idxk);
+
+    long n = 1 << idxk;
+
+    Vec<zz_p> mat_valA, mat_valC;
+    Vec<Vec<zz_p>> mat_valB;
+
+    mat_valA.SetLength(n * s * t);
+    mat_valC.SetLength(n * t * u);
+
+    Vec<zz_p> tmp;
+    long st = s*t;
+    for (long i = 0; i < s; i++)
+    {
+        for (long k = 0; k < t; k++)
+        {
+            TofftRep(R1, a[i][k], idxk);
+            long *frept = & R1.tbl[0][0];
+            for (long r = 0, rst = 0; r < n; r++, rst += st)
+                mat_valA[rst + i*t + k] = frept[r];
+        }
+    }
+
+    long tu = t*u;
+    for (long i = 0; i < t; i++)
+    {
+        for (long k = 0; k < u; k++)
+        {
+            TofftRep(R1, c[i][k], idxk);
+            long *frept = & R1.tbl[0][0];
+            for (long r = 0, rtu = 0; r < n; r++, rtu += tu)
+                mat_valC[rtu + i*u + k] = frept[r];
+        }
+    }
+
+    Mat<zz_p> va, vb, vc;
+    va.SetDims(s, t);
+    vc.SetDims(t, u);
+
+    mat_valB.SetLength(s * u);
+    for (long i = 0; i < s * u; i++)
+        mat_valB[i].SetLength(n);
+
+    for (long j = 0, jst = 0, jtu = 0; j < n; j++, jst += st, jtu += tu)
+    {
+        for (long i = 0; i < s; i++)
+        {
+            for (long k = 0; k < t; k++)
+            {
+                va[i][k] = mat_valA[jst + i*t + k];
+            }
+        }
+        for (long i = 0; i < t; i++)
+        {
+            for (long k = 0; k < u; k++)
+            {
+                vc[i][k] = mat_valC[jtu + i*u + k];
+            }
+        }
+
+        vb = va * vc;
+
+        for (long i = 0; i < s; i++)
+        {
+            for (long k = 0; k < u; k++)
+            {
+                mat_valB[i*u + k][j] = vb[i][k];
+            }
+        }
+    }
+
+    b.SetDims(s, u);
+    for (long i = 0; i < s; i++)
+    {
+        for (long k = 0; k < u; k++)
+        {
+            long *frept = & R1.tbl[0][0];
+            for (long r = 0; r < n; r++)
+            {
+                frept[r] = rep(mat_valB[i*u + k][r]);
+            }
+            FromfftRep(b[i][k], R1, dA, dA + dB);
+        }
+    }
+}
+
+
 
 /*------------------------------------------------------------*/
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
@@ -326,7 +595,7 @@ void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat
     if ((s * t * u) < thresh)  // fine for close-to-square matrices
         middle_product_evaluate_FFT_direct(b, a, c, dA, dB);
     else
-        middle_product_evaluate_FFT_matmul(b, a, c, dA, dB);
+        middle_product_evaluate_FFT_matmul1(b, a, c, dA, dB);
 }
 
 // Local Variables:

@@ -245,8 +245,8 @@ void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
 
     // stores evaluations in a single vector for a, same for b
     const long st = s*t;
-    Vec<long> mat_valA(INIT_SIZE, len * st);
     const long tu = t*u;
+    Vec<long> mat_valA(INIT_SIZE, len * st);
     Vec<long> mat_valB(INIT_SIZE, len * tu);
 
     // mat_valA[r*s*t + i*t + k] is a[i][k] evaluated at the r-th point
