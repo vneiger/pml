@@ -388,95 +388,70 @@ void middle_product_evaluate_FFT_matmul1(Mat<zz_pX> & b, const Mat<zz_pX> & a, c
 
 void middle_product_evaluate_FFT_matmul2(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
 {
-    long s = a.NumRows();
-    long t = a.NumCols();
-    long u = c.NumCols();
+    // dimensions
+    const long s = a.NumRows();
+    const long t = a.NumCols();
+    const long u = c.NumCols();
 
-    long idxk = NextPowerOfTwo(dA + dB + 1);
-    fftRep R1(INIT_SIZE, idxk);
+    // initialize FFT representation
+    const long idxk = NextPowerOfTwo(dA + dB + 1);
+    const long len = 1 << idxk;
 
-    long n = 1 << idxk;
+    fftRep R(INIT_SIZE, idxk);
 
-    Vec<zz_p> mat_valA, mat_valC;
-    Vec<Vec<zz_p>> mat_valB;
-
-    mat_valA.SetLength(n * s * t);
-    mat_valC.SetLength(n * t * u);
-
-    Vec<zz_p> tmp;
-    long st = s*t;
-    for (long i = 0; i < s; i++)
-    {
-        for (long k = 0; k < t; k++)
+    Vec<UniqueArray<long>> mat_valA(INIT_SIZE, s*t);
+    for (long i = 0; i < s; ++i)
+        for (long k = 0; k < t; ++k)
         {
-            TofftRep(R1, a[i][k], idxk);
-            long *frept = & R1.tbl[0][0];
-            for (long r = 0, rst = 0; r < n; r++, rst += st)
-                mat_valA[rst + i*t + k] = frept[r];
+            R.tbl[0].SetLength(len);
+            TofftRep(R, a[i][k], idxk);
+            R.tbl[0].swap(mat_valA[i*t + k]);
         }
-    }
 
-    long tu = t*u;
-    for (long i = 0; i < t; i++)
-    {
-        for (long k = 0; k < u; k++)
+    Vec<UniqueArray<long>> mat_valC(INIT_SIZE, t*u);
+    for (long i = 0; i < t; ++i)
+        for (long k = 0; k < u; ++k)
         {
-            TofftRep(R1, c[i][k], idxk);
-            long *frept = & R1.tbl[0][0];
-            for (long r = 0, rtu = 0; r < n; r++, rtu += tu)
-                mat_valC[rtu + i*u + k] = frept[r];
+            R.tbl[0].SetLength(len);
+            TofftRep(R, c[i][k], idxk);
+            R.tbl[0].swap(mat_valC[i*u + k]);
         }
-    }
 
-    Mat<zz_p> va, vb, vc;
-    va.SetDims(s, t);
-    vc.SetDims(t, u);
+    // evaluated matrices for a and c
+    Mat<zz_p> va(INIT_SIZE, s, t);
+    Mat<zz_p> vc(INIT_SIZE, t, u);
+    // vb = va * vc
+    Mat<zz_p> vb;
 
-    mat_valB.SetLength(s * u);
-    for (long i = 0; i < s * u; i++)
-        mat_valB[i].SetLength(n);
+    Vec<UniqueArray<long>> mat_valB(INIT_SIZE, s * u);
+    for (long i = 0; i < s * u; ++i)
+        mat_valB[i].SetLength(len);
 
-    for (long j = 0, jst = 0, jtu = 0; j < n; j++, jst += st, jtu += tu)
+    // pointwise products
+    for (long j = 0; j < len; ++j)
     {
-        for (long i = 0; i < s; i++)
-        {
-            for (long k = 0; k < t; k++)
-            {
-                va[i][k] = mat_valA[jst + i*t + k];
-            }
-        }
+        for (long i = 0; i < s; ++i)
+            for (long k = 0; k < t; ++k)
+                va[i][k].LoopHole() = mat_valA[i*t + k][j];
         for (long i = 0; i < t; i++)
-        {
-            for (long k = 0; k < u; k++)
-            {
-                vc[i][k] = mat_valC[jtu + i*u + k];
-            }
-        }
+            for (long k = 0; k < u; ++k)
+                vc[i][k].LoopHole() = mat_valC[i*u + k][j];
 
-        vb = va * vc;
+        mul(vb, va, vc);
 
-        for (long i = 0; i < s; i++)
-        {
-            for (long k = 0; k < u; k++)
-            {
-                mat_valB[i*u + k][j] = vb[i][k];
-            }
-        }
+        for (long i = 0; i < s; ++i)
+            for (long k = 0; k < u; ++k)
+                mat_valB[i*u + k][j] = vb[i][k]._zz_p__rep;
     }
 
+    // interpolate
     b.SetDims(s, u);
-    for (long i = 0; i < s; i++)
-    {
-        for (long k = 0; k < u; k++)
+    for (long i = 0; i < s; ++i)
+        for (long k = 0; k < u; ++k)
         {
-            long *frept = & R1.tbl[0][0];
-            for (long r = 0; r < n; r++)
-            {
-                frept[r] = rep(mat_valB[i*u + k][r]);
-            }
-            FromfftRep(b[i][k], R1, dA, dA + dB);
+            R.tbl[0].swap(mat_valB[i*u + k]);
+            FromfftRep(b[i][k], R, dA, dA + dB);
         }
-    }
 }
 
 void middle_product_evaluate_FFT_matmul3(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
@@ -595,7 +570,7 @@ void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat
     if ((s * t * u) < thresh)  // fine for close-to-square matrices
         middle_product_evaluate_FFT_direct(b, a, c, dA, dB);
     else
-        middle_product_evaluate_FFT_matmul1(b, a, c, dA, dB);
+        middle_product_evaluate_FFT_matmul(b, a, c, dA, dB);
 }
 
 // Local Variables:
