@@ -52,6 +52,51 @@ void vandermonde(Mat<zz_p>& vdm1, Mat<zz_p>& vdm2, Mat<zz_p>& inv_vdm, long d1, 
 }
 
 /*------------------------------------------------------------*/
+/* computes the matrices for evaluation and interpolation     */
+/*------------------------------------------------------------*/
+void vandermonde2(
+                  Mat<zz_p> & vdm1,
+                  Mat<zz_p> & vdm2,
+                  Mat<zz_p> & inv_vdm,
+                  long d1,
+                  long d2
+                 )
+{
+    // sizes (for even part)
+    const long s1 = d1/2+1;
+    const long s2 = d2/2+1;
+    // nb points, such that 2*nb_points >= d1+d2+1
+    const long nb_points = (d1 + d2) / 2 + 1;
+
+    // vdm: square Vandermonde matrix with nb_points
+    // points chosen as the squares of 1, 2, .., nb_points
+    // --> row i contains 1, (i+1)^2, (i+1)^4, .., (i+1)^{2*nb_points-2}
+    // vdm1: nb_points x s1 submatrix of vdm
+    // vdm2: nb_points x s2 submatrix of vdm
+    vdm1.SetDims(nb_points, s1);
+    vdm2.SetDims(nb_points, s2);
+    Mat<zz_p> vdm(INIT_SIZE, nb_points, nb_points);
+    for (long i = 0; i < nb_points; ++i)
+    {
+        const zz_p pt = sqr(to_zz_p(i+1));
+        vdm[i][0].LoopHole() = 1;
+        vdm1[i][0].LoopHole() = 1;
+        vdm2[i][0].LoopHole() = 1;
+        for (long j = 1; j < nb_points; ++j)
+        {
+            mul(vdm[i][j], vdm[i][j-1], pt);
+            if (j<s1)
+                vdm1[i][j] = vdm[i][j];
+            if (j<s2)
+                vdm2[i][j] = vdm[i][j];
+        }
+    }
+
+    // inv_vdm is the inverse of vdm
+    inv(inv_vdm, vdm);
+}
+
+/*------------------------------------------------------------*/
 /* c = a*b                                                    */
 /* output may alias input; c does not have to be zero matrix  */
 /* matrix multiplication using the algorithm of Doliskani et al. */
@@ -59,12 +104,12 @@ void vandermonde(Mat<zz_p>& vdm1, Mat<zz_p>& vdm2, Mat<zz_p>& inv_vdm, long d1, 
 /*------------------------------------------------------------*/
 void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
-    long dA = deg(a);
-    long dB = deg(b);
-    long min_dAdB = std::min<long>(dA,dB);
-    long m = a.NumRows();
-    long n = a.NumCols();
-    long p = b.NumCols();
+    const long dA = deg(a);
+    const long dB = deg(b);
+    const long min_dAdB = std::min<long>(dA,dB);
+    const long m = a.NumRows();
+    const long n = a.NumCols();
+    const long p = b.NumCols();
     long ell;
 
 #ifdef PROFILE_ON
@@ -204,50 +249,6 @@ void multiply_evaluate_dense(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_
 
 }
 
-/*------------------------------------------------------------*/
-/* computes the matrices for evaluation and interpolation     */
-/*------------------------------------------------------------*/
-void vandermonde2(
-                  Mat<zz_p> & vdm1,
-                  Mat<zz_p> & vdm2,
-                  Mat<zz_p> & inv_vdm,
-                  long d1,
-                  long d2
-                 )
-{
-    // sizes (for even part)
-    const long s1 = d1/2+1;
-    const long s2 = d2/2+1;
-    // nb points, such that 2*nb_points >= d1+d2+1
-    const long nb_points = (d1 + d2) / 2 + 1;
-
-    // vdm: square Vandermonde matrix with nb_points
-    // points chosen as the squares of 1, 2, .., nb_points
-    // --> row i contains 1, (i+1)^2, (i+1)^4, .., (i+1)^{2*nb_points-2}
-    // vdm1: nb_points x s1 submatrix of vdm
-    // vdm2: nb_points x s2 submatrix of vdm
-    vdm1.SetDims(nb_points, s1);
-    vdm2.SetDims(nb_points, s2);
-    Mat<zz_p> vdm(INIT_SIZE, nb_points, nb_points);
-    for (long i = 0; i < nb_points; ++i)
-    {
-        const zz_p pt = sqr(to_zz_p(i+1));
-        vdm[i][0].LoopHole() = 1;
-        vdm1[i][0].LoopHole() = 1;
-        vdm2[i][0].LoopHole() = 1;
-        for (long j = 1; j < nb_points; ++j)
-        {
-            mul(vdm[i][j], vdm[i][j-1], pt);
-            if (j<s1)
-                vdm1[i][j] = vdm[i][j];
-            if (j<s2)
-                vdm2[i][j] = vdm[i][j];
-        }
-    }
-
-    // inv_vdm is the inverse of vdm
-    inv(inv_vdm, vdm);
-}
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
