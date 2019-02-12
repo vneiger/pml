@@ -278,24 +278,23 @@ void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat
 //@{
 
 /** Uses the naive cubic matrix multiplication algorithm (three for loops)
- * along with NTL's middle product */
+ * along with NTL's middle product.  Requires `deg(a) <= dA` and `deg(c) <=
+ * dA+dB`. */
 void middle_product_naive(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
-/** Uses the 3 primes CRT algorithm */
+/** Uses the 3 primes CRT algorithm. Requires `deg(a) <= dA` and `deg(c) <= dA+dB`. */
 void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
 /** Based on evaluation/interpolation at FFT points; assumes FFT prime and p
- * large enough; does not use Mat<zz_p> matrix multiplication.
- *
- * \todo make a "no ll" version, for small primes
+ * large enough; does not use Mat<zz_p> matrix multiplication. Requires `deg(a)
+ * <= dA` and `deg(c) <= dA+dB`.
  */
 void middle_product_evaluate_FFT_direct_ll_type(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_evaluate_FFT_direct(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
 /** Based on evaluation/interpolation at FFT points; assumes FFT prime and p
- * large enough; relies on Mat<zz_p> matrix multiplication.
- *
- * \todo make "matmul2, matmul3" versions
+ * large enough; relies on Mat<zz_p> matrix multiplication. Requires `deg(a)
+ * <= dA` and `deg(c) <= dA+dB`.
  */
 void middle_product_evaluate_FFT_matmul(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_evaluate_FFT_matmul1(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
@@ -304,15 +303,26 @@ void middle_product_evaluate_FFT_matmul3(Mat<zz_pX> & b, const Mat<zz_pX> & a, c
 
 /** Based on evaluation/interpolation at FFT points; assumes FFT prime and p
  * large enough; chooses the expected fastest of the available algorithm.
- * 
- * \todo once all variants written, redo the thresholds
+ * Requires `deg(a) <= dA` and `deg(c) <= dA+dB`. 
+ *
+ * \todo improve/automatic thresholds
  */
 void middle_product_evaluate_FFT(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 void middle_product_evaluate_FFT_new(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
 /** Based on evaluation/interpolation, using multiplication by Vandermonde
- * matrices (fast when degree is small and dimension not so small). */
+ * matrices (fast when degree is small and dimension not so small).  Requires
+ * `deg(a) <= dA` and `deg(c) <= dA+dB`.  */
 void middle_product_evaluate_dense(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+
+/** Based on evaluation/interpolation, using multiplication by Vandermonde
+ * matrices for evaluation and interpolation (fast when degree is small and
+ * dimension not so small). This version uses points 1,-1,2,-2, .. in order to
+ * speed-up (similar to first step of an FFT). Requires `deg(a) <= dA` and `deg(c) <= dA+dB`.
+ *                                    
+ * \todo check field is large enough to take the points
+ */
+void middle_product_evaluate_dense2(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
 /** Transpose of b mapsto c = a*b. Output is
  *    trunc( rev(a, dA)*c div x^dA, dB+1 )

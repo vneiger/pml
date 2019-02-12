@@ -126,10 +126,10 @@ void one_bench_fft(long sz, long deg)
     else
         std::cout << "inf" << "\t";
 
-    //if (deg<100)
-    //    TIME(multiply_evaluate_dense2)
-    //else
-    //    std::cout << "inf" << "\t";
+    if (deg<400)
+        TIME(middle_product_evaluate_dense2)
+    else
+        std::cout << "inf" << "\t";
 
     cout << endl;
 }

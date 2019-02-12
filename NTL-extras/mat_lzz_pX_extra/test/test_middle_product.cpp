@@ -18,13 +18,21 @@ void one_check(long sz, long dg)
     for (long dA = dg - 1; dA < dg + 2; dA++)
         for (long dB = dg - 1; dB < dg + 2; dB++)
         {
-            random(a, sz, sz+1, max(1,dA - 1));
-            //random(a, sz, sz+1, dA + 1);
+            random(a, sz, sz+1, dA + 1);
             random(c, sz+1, sz+2, dA + dB + 1);
 
             multiply(b1, a, c);
             b1 >>= dA;
             trunc(b1, b1, dB + 1);
+
+            if (sz <= 10 || max(dA, dB) <= 8)
+            {
+                middle_product_naive(b2, a, c, dA, dB);
+                if (b1 != b2)
+                {
+                    LogicError("Error in naive middle product");
+                }
+            }
 
             middle_product_3_primes(b2, a, c, dA, dB);
             if (b1 != b2)
@@ -77,15 +85,6 @@ void one_check(long sz, long dg)
                 }
 
                 middle_product_evaluate_FFT(b2, a, c, dA, dB);
-                if (b1 != b2)
-                {
-                    LogicError("Error in FFT middle product");
-                }
-            }
-
-            if (sz <= 10 || max(dA, dB) <= 8)
-            {
-                middle_product_naive(b2, a, c, dA, dB);
                 if (b1 != b2)
                 {
                     LogicError("Error in FFT middle product");
