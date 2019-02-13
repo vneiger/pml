@@ -42,8 +42,7 @@ void check(long p)
             deg = degrees[j];
             random(a, sz, sz, deg);
             
-            mat_lzz_pX_lmultiplier_geometric mulg;
-            mulg = mat_lzz_pX_lmultiplier_geometric(a, deg-1);
+            mat_lzz_pX_lmultiplier_geometric mulg(a, deg-1);
             mat_lzz_pX_lmultiplier_3_primes mul3(a, deg-1);
             
             random(b, sz, 1, deg);
