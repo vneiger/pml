@@ -3,6 +3,14 @@
 #include "mat_lzz_pX_multiply.h"
 #include "thresholds_lmultiplier.h"
 
+// FIXME work in progress:
+// constants used to reduce cache misses
+#define CACHE_LINE_SIZE 8
+#define MATRIX_BLOCK_SIZE 16
+// right now these are chosen harcoded for L1 cache line 64B (8 long's) and L1
+// total cache 32k --> 512 ~ 16*16 cache lines
+
+
 NTL_CLIENT
 
 #if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES)
@@ -84,8 +92,12 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply(Mat<zz_pX>& c, const Mat<zz_pX>
         return;
     }
 
+    const long dB = deg(b);
+    if (dB > __dB)
+        LogicError("Rhs degree too large in lmultiplier");
+
     const long cube_dim = NumRows() * NumCols() * b.NumCols();
-    const long d = (__dA+deg(b))/2;
+    const long d = (__dA+dB)/2;
     if (NumBits(zz_p::modulus()) < SMALL_PRIME_SIZE)
     {
         if (cube_dim < 4*4*4 || (cube_dim <= 6*6*6 && d > 100))
@@ -245,26 +257,31 @@ mat_lzz_pX_lmultiplier_FFT_matmul::mat_lzz_pX_lmultiplier_FFT_matmul(const Mat<z
     mat_lzz_pX_lmultiplier(a, dB)
 {
     idxk = NextPowerOfTwo(__dA + __dB + 1);
-    long n = 1L << idxk;
-    long len = FFTRoundUp(__dA + __dB + 1, idxk);
-    fftRep R(INIT_SIZE, idxk);
 
-    va.SetLength(n);
-    for (long i = 0; i < n; ++i)
+    // initialize fftRep tools
+    fftRep R(INIT_SIZE, idxk);
+    Vec<UniqueArray<long>> RR(INIT_SIZE, MATRIX_BLOCK_SIZE);
+
+    const long n = 1<<idxk;
+    const long len = FFTRoundUp(__dA + __dB + 1, idxk);
+    va.SetLength(len);
+    for (long i = 0; i < len; ++i)
         va[i].SetDims(__s, __t);
 
-    long st = __s * __t;
-    for (long i = 0; i < __s; i++)
-    {
-        for (long k = 0; k < __t; k++)
+    for (long i = 0; i < __s; ++i)
+        for (long k = 0; k < __t; k+=MATRIX_BLOCK_SIZE)
         {
-            TofftRep(R, a[i][k], idxk);
-            long *frept = & R.tbl[0][0];
-            for (long r = 0, rst = 0; r < n; r++, rst += st)
-                va[r][i][k] = frept[r];
+            const long kk_bnd = std::min((long)MATRIX_BLOCK_SIZE, __t-k);
+            for (long kk=0; kk<kk_bnd; ++kk)
+            {
+                R.tbl[0].SetLength(n);
+                TofftRep_trunc(R, a[i][k+kk], idxk, len);
+                RR[kk].swap(R.tbl[0]);
+            }
+            for (long r = 0; r < len; ++r)
+                for (long kk=0; kk<kk_bnd; ++kk)
+                    va[r][i][k+kk].LoopHole() = RR[kk][r];
         }
-    }
-
 }
 
 /*------------------------------------------------------------*/
@@ -273,23 +290,25 @@ mat_lzz_pX_lmultiplier_FFT_matmul::mat_lzz_pX_lmultiplier_FFT_matmul(const Mat<z
 /*------------------------------------------------------------*/
 void mat_lzz_pX_lmultiplier_FFT_matmul::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b)
 {
-    long s = NumRows();
-    long t = NumCols();
-    long u = b.NumCols();
+    const long s = NumRows();
+    const long t = NumCols();
+    const long u = b.NumCols();
 
-    long dB = deg(b);
+    const long dB = deg(b);
 
     if (dB > degB())
-    {
         LogicError("Rhs degree too large in multiplier");
-    }
+
+    // actual wanted length for truncated FFT
+    const long len = FFTRoundUp(__dA+dB+1, idxk);
+    const long n = 1 << idxk;
 
     fftRep R1(INIT_SIZE, idxk);
-    long n = 1L << idxk;
+
     Vec<Vec<zz_p>> mat_valC;
 
     Vec<zz_p> mat_valB;
-    mat_valB.SetLength(n * t * u);
+    mat_valB.SetLength(len * t * u);
 
     long st = s*t;
     long tu = t*u;
@@ -297,9 +316,9 @@ void mat_lzz_pX_lmultiplier_FFT_matmul::multiply(Mat<zz_pX>& c, const Mat<zz_pX>
     {
         for (long k = 0; k < u; k++)
         {
-            TofftRep(R1, b[i][k], idxk);
+            TofftRep_trunc(R1, b[i][k], idxk, len);
             long *frept = & R1.tbl[0][0];
-            for (long r = 0, rtu = 0; r < n; r++, rtu += tu)
+            for (long r = 0, rtu = 0; r < len; r++, rtu += tu)
                 mat_valB[rtu + i*u + k] = frept[r];
         }
     }
@@ -309,15 +328,15 @@ void mat_lzz_pX_lmultiplier_FFT_matmul::multiply(Mat<zz_pX>& c, const Mat<zz_pX>
 
     mat_valC.SetLength(s * u);
     for (long i = 0; i < s * u; i++)
-        mat_valC[i].SetLength(n);
+        mat_valC[i].SetLength(len);
 
-    for (long j = 0, jst = 0, jtu = 0; j < n; j++, jst += st, jtu += tu)
+    for (long j = 0, jst = 0, jtu = 0; j < len; j++, jst += st, jtu += tu)
     {
         for (long i = 0; i < t; i++)
             for (long k = 0; k < u; k++)
                 vb[i][k] = mat_valB[jtu + i*u + k];
 
-        vc = va[j] * vb;
+        mul(vc, va[j], vb);
 
         for (long i = 0; i < s; i++)
             for (long k = 0; k < u; k++)
@@ -329,9 +348,9 @@ void mat_lzz_pX_lmultiplier_FFT_matmul::multiply(Mat<zz_pX>& c, const Mat<zz_pX>
         for (long k = 0; k < u; k++)
         {
             long *frept = & R1.tbl[0][0];
-            for (long r = 0; r < n; r++)
+            for (long r = 0; r < len; r++)
                 frept[r] = rep(mat_valC[i*u + k][r]);
-            FromfftRep(c[i][k], R1, 0, n - 1);
+            FromfftRep(c[i][k], R1, 0, __dA+dB);
         }
 }
 
