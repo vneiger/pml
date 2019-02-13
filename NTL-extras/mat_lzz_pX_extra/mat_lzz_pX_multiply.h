@@ -455,7 +455,7 @@ private:
     void multiply_direct_ll_type(Mat<zz_pX>& c, const Mat<zz_pX>& b);
     void multiply_direct(Mat<zz_pX>& c, const Mat<zz_pX>& b);
     Vec<Vec<fftRep>> vala; /**< FFT evaluations */
-    long len, n0, K, pr, nb_slices, first_slice; /**< precomputations for multiply */
+    long n0, K, pr, nb_slices, first_slice; /**< precomputations for multiply */
     sp_reduce_struct red1; /**< precomputations for multiply */
     sp_ll_reduce_struct red2; /**< precomputations for multiply */
 };

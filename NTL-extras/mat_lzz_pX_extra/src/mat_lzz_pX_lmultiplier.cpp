@@ -52,7 +52,6 @@ mat_lzz_pX_lmultiplier_FFT_direct::mat_lzz_pX_lmultiplier_FFT_direct(const Mat<z
     mat_lzz_pX_lmultiplier(a, dB)
 {
     K = NextPowerOfTwo(__dA + dB + 1);
-    len = FFTRoundUp(__dA + dB + 1, K);
 
     n0 = (1L << (2*(NTL_BITS_PER_LONG - NTL_SP_NBITS))) - 1;
     first_slice = (__t % n0 != 0) ? (__t%n0) : n0;
@@ -62,6 +61,7 @@ mat_lzz_pX_lmultiplier_FFT_direct::mat_lzz_pX_lmultiplier_FFT_direct(const Mat<z
     red1 = sp_PrepRem(pr);
     red2 = make_sp_ll_reduce_struct(pr);
 
+    const long len = FFTRoundUp(__dA + dB + 1, K);
     vala.SetLength(__s);
     for (long i = 0; i < __s; ++i)
     {
@@ -111,6 +111,10 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct_ll_type(Mat<zz_pX>& c, c
     const long m = NumRows();
     const long n = NumCols();
     const long p = b.NumCols();
+
+    // actual wanted length for truncated FFT
+    const long len_actual = __dA+deg(b)+1;
+    const long len = FFTRoundUp(len_actual, K);
 
     c.SetDims(m, p);
     Vec<fftRep> valb(INIT_SIZE, n);
@@ -185,7 +189,7 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct_ll_type(Mat<zz_pX>& c, c
                 long *tmp_ptr = &tmp_r.tbl[0][0];
                 for (long x = 0; x < len; x++)
                     tmp_ptr[x] = sp_ll_red_21(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
-                FromfftRep(c[k][i], tmp_r, 0, __dA + deg(b));
+                FromfftRep(c[k][i], tmp_r, 0, len_actual-1);
             }
         }
     }
@@ -200,6 +204,10 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct(Mat<zz_pX>& c, const Mat
     const long m = NumRows();
     const long n = NumCols();
     const long p = b.NumCols();
+
+    // actual wanted length for truncated FFT
+    const long len_actual = __dA+deg(b)+1;
+    const long len = FFTRoundUp(len_actual, K);
 
     c.SetDims(m, p);
     Vec<fftRep> valb(INIT_SIZE, n);
@@ -218,7 +226,7 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct(Mat<zz_pX>& c, const Mat
                 mul(tmp2, valb[j], va[j]);
                 add(tmp1, tmp1, tmp2);
             }
-            FromfftRep(c[k][i], tmp1, 0, __dA + deg(b));
+            FromfftRep(c[k][i], tmp1, 0, len_actual-1);
         }
     }
 }
@@ -238,10 +246,11 @@ mat_lzz_pX_lmultiplier_FFT_matmul::mat_lzz_pX_lmultiplier_FFT_matmul(const Mat<z
 {
     idxk = NextPowerOfTwo(__dA + __dB + 1);
     long n = 1L << idxk;
-    fftRep R1(INIT_SIZE, idxk);
+    long len = FFTRoundUp(__dA + __dB + 1, idxk);
+    fftRep R(INIT_SIZE, idxk);
 
     va.SetLength(n);
-    for (long i = 0; i < n; i++)
+    for (long i = 0; i < n; ++i)
         va[i].SetDims(__s, __t);
 
     long st = __s * __t;
@@ -249,8 +258,8 @@ mat_lzz_pX_lmultiplier_FFT_matmul::mat_lzz_pX_lmultiplier_FFT_matmul(const Mat<z
     {
         for (long k = 0; k < __t; k++)
         {
-            TofftRep(R1, a[i][k], idxk);
-            long *frept = & R1.tbl[0][0];
+            TofftRep(R, a[i][k], idxk);
+            long *frept = & R.tbl[0][0];
             for (long r = 0, rst = 0; r < n; r++, rst += st)
                 va[r][i][k] = frept[r];
         }

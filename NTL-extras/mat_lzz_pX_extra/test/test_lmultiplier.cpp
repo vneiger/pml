@@ -21,7 +21,7 @@ void one_check(long sz, long deg)
     mat_lzz_pX_lmultiplier_3_primes mul3(a, deg-1);
     std::unique_ptr<mat_lzz_pX_lmultiplier> mul = get_lmultiplier(a, deg-1);
     
-    random(b, sz, 1, deg);
+    random(b, sz, 1, 1);
     multiply_evaluate_geometric(c1, a, b);
 
     mula.multiply(c2, b);
