@@ -235,7 +235,6 @@ void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
 /** Computes `c = a*b` via FFT evaluation/interpolation, but without relying on
  * `Mat<zz_p>` multiplication */
 void multiply_evaluate_FFT_direct_ll_type(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void multiply_evaluate_FFT_direct_ll_type_trunc(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 /** Computes `c = a*b` via FFT evaluation/interpolation, but without relying on
  * `Mat<zz_p>` multiplication.
@@ -243,7 +242,6 @@ void multiply_evaluate_FFT_direct_ll_type_trunc(Mat<zz_pX> & c, const Mat<zz_pX>
  * \todo explain difference with other similar one.
  */
 void multiply_evaluate_FFT_direct(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-void multiply_evaluate_FFT_direct_trunc(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
 //@} // doxygen group: Evaluation/interpolation polynomial matrix multiplication (FFT points)
 
@@ -382,6 +380,11 @@ private:
  * and changes and better thresholds for multiplication...)
  *
  * \todo change accessor degA to a less specific name
+ *
+ * \todo is there an easy way to avoid virtual method here? (it can
+ * have consequences such as bad pipelining / branch predicting, and
+ * bad cache efficiency). CRTP does not seem an option with the current
+ * design. Maybe re-design...
  */
 class mat_lzz_pX_lmultiplier
 {
@@ -441,10 +444,16 @@ public:
      * for right-hand side to be multiplied */
     mat_lzz_pX_lmultiplier_FFT_direct(const Mat<zz_pX> & a, long dB);
 
-    /** Computes `c = this * b`. */
+    /** Computes `c = this * b`. Chooses between two available methods
+     * according to thresholds.
+     *
+     * \todo thresholds copied from regular matrix multiplication. Needs
+     * tuning. */
     void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b);
 
 private:
+    void multiply_direct_ll_type(Mat<zz_pX>& c, const Mat<zz_pX>& b);
+    void multiply_direct(Mat<zz_pX>& c, const Mat<zz_pX>& b);
     Vec<Vec<fftRep>> vala; /**< FFT evaluations */
     long len, n0, K, pr, nb_slices, first_slice; /**< precomputations for multiply */
     sp_reduce_struct red1; /**< precomputations for multiply */

@@ -1,5 +1,3 @@
-#include <NTL/lzz_pX.h>
-
 #include "lzz_p_extra.h" // type_of_prime
 #include "mat_lzz_pX_multiply.h"
 #include "thresholds_lmultiplier.h"
@@ -86,19 +84,41 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply(Mat<zz_pX>& c, const Mat<zz_pX>
     {
         Mat<zz_pX> c2;
         multiply(c2, b);
-        c = c2;
+        c.swap(c2);
         return;
     }
 
+    const long cube_dim = NumRows() * NumCols() * b.NumCols();
+    const long d = (__dA+deg(b))/2;
+    if (NumBits(zz_p::modulus()) < SMALL_PRIME_SIZE)
+    {
+        if (cube_dim < 4*4*4 || (cube_dim <= 6*6*6 && d > 100))
+            multiply_direct(c, b);
+        else
+            multiply_direct_ll_type(c, b);
+    }
+    else
+    {
+        // if < 4*4*4, or if <= 8*8*8 under some conditions, use direct
+        if (cube_dim < 4*4*4 || (cube_dim == 4*4*4 && d>=90) || (cube_dim <= 8*8*8 && d >= 65))
+            multiply_direct(c, b);
+        // otherwise use direct_ll
+        else
+            multiply_direct_ll_type(c, b);
+    }
+}
+
+// note: c cannot alias b
+void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct_ll_type(Mat<zz_pX>& c, const Mat<zz_pX>& b)
+{
 #if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES)
+    const long m = NumRows();
+    const long n = NumCols();
+    const long p = b.NumCols();
+
     Vec<fftRep> valb;
-    long m, n, p;
     Vec<ll_type> tmp;
     fftRep tmp_r;
-
-    m = NumRows();
-    n = NumCols();
-    p = b.NumCols();
 
     c.SetDims(m, p);
     tmp.SetLength(len);
@@ -177,25 +197,29 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply(Mat<zz_pX>& c, const Mat<zz_pX>
         }
     }
 #else
-    Vec<fftRep> valb;
+    multiply_direct(c, b);
+#endif
+}
 
-    long m = NumRows();
-    long n = NumCols();
-    long p = b.NumCols();
+void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct(Mat<zz_pX>& c, const Mat<zz_pX>& b)
+{
+    const long m = NumRows();
+    const long n = NumCols();
+    const long p = b.NumCols();
 
     c.SetDims(m, p);
-    valb.SetLength(n);
-    fftRep tmp1 = fftRep(INIT_SIZE, K);
-    fftRep tmp2 = fftRep(INIT_SIZE, K);
-    for (long i = 0; i < p; i++)
+    Vec<fftRep> valb(INIT_SIZE, n);
+    fftRep tmp1(INIT_SIZE, K);
+    fftRep tmp2(INIT_SIZE, K);
+    for (long i = 0; i < p; ++i)
     {
-        for (long j = 0; j < n; j++)
+        for (long j = 0; j < n; ++j)
             TofftRep(valb[j], b[j][i], K);
-        for (long k = 0; k < m; k++)
+        for (long k = 0; k < m; ++k)
         {
             fftRep * va = vala[k].elts();
             mul(tmp1, valb[0], va[0]);
-            for (long j = 1; j < n; j++)
+            for (long j = 1; j < n; ++j)
             {
                 mul(tmp2, valb[j], va[j]);
                 add(tmp1, tmp1, tmp2);
@@ -203,7 +227,6 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply(Mat<zz_pX>& c, const Mat<zz_pX>
             FromfftRep(c[k][i], tmp1, 0, __dA + __dB);
         }
     }
-#endif
 }
 
 
