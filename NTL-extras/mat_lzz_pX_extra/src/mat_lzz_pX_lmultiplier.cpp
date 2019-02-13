@@ -477,34 +477,16 @@ void mat_lzz_pX_lmultiplier_geometric::multiply(Mat<zz_pX>& c, const Mat<zz_pX>&
 mat_lzz_pX_lmultiplier_dense::mat_lzz_pX_lmultiplier_dense(const Mat<zz_pX> & a, long dB) :
     mat_lzz_pX_lmultiplier(a, dB)
 {
-    long ell;
-
     vandermonde(vA, vB, iV, __dA, __dB);
     nb_points = vA.NumRows();
 
     Mat<zz_p> tmp_mat(INIT_SIZE, __dA + 1, __s * __t);
-    ell = 0;
-    for (long i = 0; i < __s; i++)
-        for (long j = 0; j < __t; j++)
-        {
-            long d = deg(a[i][j]);
-            if (d >= 0)
-            {
-                const zz_p * cAij = a[i][j].rep.elts();
-                long k;
-                for (k = 0; k <= d; k++)  // k <= d-2 so k+1 <= d-1
-                {
-                    tmp_mat[k][ell] = cAij[k];
-                }
-            }
-            for (long k = d+1; k <= __dA; k++)
-            {
-                tmp_mat[k][ell] = 0;
-            }
-
-            ell++;
-        }
-    valA = vA * tmp_mat;
+    long ell = 0;
+    for (long i = 0; i < __s; ++i)
+        for (long j = 0; j < __t; ++j, ++ell)
+            for (long k = 0; k <= deg(a[i][j]); ++k)
+                tmp_mat[k][ell] = a[i][j][k];
+    mul(valA, vA, tmp_mat);
 }
 
 /*------------------------------------------------------------*/
