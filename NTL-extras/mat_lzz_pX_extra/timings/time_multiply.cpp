@@ -17,11 +17,23 @@ void one_check(long sz, long deg)
     const double thresh = 0.1;
     long nb;
     Mat<zz_pX> a, b, c1, c2;
-    double t_FFT, t_waksman, t_transform, t_geometric, t_dense, t_3_primes, t_multiply;
+    double t_FFT, t_waksman, t_transform, t_geometric, t_dense, t_dense2, t_3_primes, t_multiply;
 
     cout << sz << "\t" << deg << "\t";
     random(a, sz, sz, deg);
     random(b, sz, sz, deg);
+
+    t_multiply = get_time();
+    nb = 0;
+    do
+    {
+        multiply(c2, a, b);
+        nb++;
+    }
+    while ((get_time()-t_multiply) <= 2*thresh);
+    t_multiply = (get_time()-t_multiply) / nb;
+
+    cout << t_multiply << "\t";
 
     if (sz < 20)
     {
@@ -34,7 +46,10 @@ void one_check(long sz, long deg)
         }
         while ((get_time()-t_waksman) <= thresh);
         t_waksman = (get_time()-t_waksman) / nb;
-        cout << t_waksman << "\t";
+        if (t_waksman/t_multiply<10.)
+            cout << t_waksman/t_multiply << "\t";
+        else
+            std::cout << ">10" << "\t";
     }
     else
         cout << "inf\t";
@@ -50,7 +65,10 @@ void one_check(long sz, long deg)
         }
         while ((get_time()-t_transform) <= thresh);
         t_transform = (get_time()-t_transform) / nb;
-        cout << t_transform << "\t";
+        if (t_transform/t_multiply<10.)
+            cout << t_transform/t_multiply << "\t";
+        else
+            std::cout << ">10" << "\t";
     }
     else
         cout << "inf\t";
@@ -64,7 +82,10 @@ void one_check(long sz, long deg)
     }
     while ((get_time()-t_geometric) <= thresh);
     t_geometric = (get_time()-t_geometric) / nb;
-    cout << t_geometric << "\t";
+    if (t_geometric/t_multiply<10.)
+        cout << t_geometric/t_multiply << "\t";
+    else
+        std::cout << ">10" << "\t";
 
     if (deg <= 300)
     {
@@ -77,7 +98,29 @@ void one_check(long sz, long deg)
         }
         while ((get_time()-t_dense) <= thresh);
         t_dense = (get_time()-t_dense) / nb;
-        cout << t_dense << "\t";
+        if (t_dense/t_multiply<10.)
+            cout << t_dense/t_multiply << "\t";
+        else
+            std::cout << ">10" << "\t";
+    }
+    else
+        cout << "inf\t";
+
+    if (deg <= 300)
+    {
+        t_dense2 = get_time();
+        nb = 0;
+        do
+        {
+            multiply_evaluate_dense2(c1, a, b);
+            nb++;
+        }
+        while ((get_time()-t_dense2) <= thresh);
+        t_dense2 = (get_time()-t_dense2) / nb;
+        if (t_dense2/t_multiply<10.)
+            cout << t_dense2/t_multiply << "\t";
+        else
+            std::cout << ">10" << "\t";
     }
     else
         cout << "inf\t";
@@ -91,7 +134,10 @@ void one_check(long sz, long deg)
     }
     while ((get_time()-t_3_primes) <= thresh);
     t_3_primes = (get_time()-t_3_primes) / nb;
-    cout << t_3_primes << "\t";
+    if (t_3_primes/t_multiply<10.)
+        cout << t_3_primes/t_multiply << "\t";
+    else
+        std::cout << ">10" << "\t";
 
     if (is_FFT_ready(NextPowerOfTwo(2*deg - 1)))
     {
@@ -104,22 +150,13 @@ void one_check(long sz, long deg)
         }
         while ((get_time()-t_FFT) <= thresh);
         t_FFT = (get_time()-t_FFT) / nb;
-        cout << t_FFT << "\t";
+        if (t_FFT/t_multiply<10.)
+            cout << t_FFT/t_multiply << "\t";
+        else
+            std::cout << ">10" << "\t";
     }
     else
         cout << "inf\t";
-
-    t_multiply = get_time();
-    nb = 0;
-    do
-    {
-        multiply(c2, a, b);
-        nb++;
-    }
-    while ((get_time()-t_multiply) <= thresh);
-    t_multiply = (get_time()-t_multiply) / nb;
-
-    cout << t_multiply;
 
     cout << endl;
 }
@@ -155,17 +192,17 @@ void check()
     // over an FFT prime, FFT always wins
     zz_p::FFTInit(0);
     cout << endl << "60 bit FFT prime" << endl;
-    cout << "sz\tdeg\twak\ttrsf\tgeom\tdens\t3prm\tfft\tmult" << endl;
+    cout << "sz\tdeg\ttmul\twak\ttrsf\tgeom\tdens\tdens2\t3prm\tfft" << endl;
     all_checks();
 
     zz_p::init(288230376151711813);
     cout << endl << "60 bit prime " << zz_p::modulus() << endl;
-    cout << "sz\tdeg\twak\ttrsf\tgeom\tdens\t3prm\tfft\tmult" << endl;
+    cout << "sz\tdeg\ttmul\twak\ttrsf\tgeom\tdens\tdens2\t3prm\tfft" << endl;
     all_checks();
 
     zz_p::init(23068673);
     cout << endl << "20 bit prime " << zz_p::modulus() << endl;
-    cout << "sz\tdeg\twak\ttrsf\tgeom\tdens\t3prm\tfft\tmult" << endl;
+    cout << "sz\tdeg\ttmul\twak\ttrsf\tgeom\tdens\tdens2\t3prm\tfft" << endl;
     all_checks();
 }  
 
