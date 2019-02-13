@@ -301,56 +301,72 @@ void mat_lzz_pX_lmultiplier_FFT_matmul::multiply(Mat<zz_pX>& c, const Mat<zz_pX>
 
     // actual wanted length for truncated FFT
     const long len = FFTRoundUp(__dA+dB+1, idxk);
-    const long n = 1 << idxk;
+    const long n = 1<<idxk;
 
-    fftRep R1(INIT_SIZE, idxk);
+    // fft representation
+    fftRep R(INIT_SIZE, idxk);
+    Vec<UniqueArray<long>> RR(INIT_SIZE, CACHE_LINE_SIZE);
 
-    Vec<Vec<zz_p>> mat_valC;
-
-    Vec<zz_p> mat_valB;
-    mat_valB.SetLength(len * t * u);
-
-    long st = s*t;
-    long tu = t*u;
-    for (long i = 0; i < t; i++)
+    // stores evaluations in a single vector for a, same for b
+    // mat_valB[r*t*u + i*t + k] is b[i][k] evaluated at the r-th point
+    const long tu = t*u;
+    Vec<long> mat_valB(INIT_SIZE, len * tu);
+    for (long i = 0; i < t; ++i)
     {
-        for (long k = 0; k < u; k++)
+        for (long k = 0; k < u; k+=CACHE_LINE_SIZE)
         {
-            TofftRep_trunc(R1, b[i][k], idxk, len);
-            long *frept = & R1.tbl[0][0];
-            for (long r = 0, rtu = 0; r < len; r++, rtu += tu)
-                mat_valB[rtu + i*u + k] = frept[r];
+            const long kk_bnd = std::min((long)CACHE_LINE_SIZE, u-k);
+            for (long kk = 0; kk < kk_bnd; ++kk)
+            {
+                R.tbl[0].SetLength(n);
+                TofftRep_trunc(R, b[i][k+kk], idxk, len);
+                R.tbl[0].swap(RR[kk]);
+            }
+            for (long r = 0, rtu = 0; r < len; ++r, rtu += tu)
+                for (long kk = 0; kk < kk_bnd; ++kk)
+                    mat_valB[rtu + i*u + k+kk] = RR[kk][r];
         }
     }
 
-    Mat<zz_p> vb, vc;
-    vb.SetDims(t, u);
+    // will store a evaluated at the r-th point, same for b
+    Mat<zz_p> vb(INIT_SIZE, t, u);
+    // will store the product evaluated at the r-th point, i.e. va*vb
+    Vec<Mat<zz_p>> vc(INIT_SIZE, CACHE_LINE_SIZE);
 
-    mat_valC.SetLength(s * u);
-    for (long i = 0; i < s * u; i++)
-        mat_valC[i].SetLength(len);
+    // stores all evaluations of product c = a*b
+    Vec<UniqueArray<long>> mat_valC(INIT_SIZE, s*u);
+    for (long i = 0; i < s * u; ++i)
+        mat_valC[i].SetLength(n);
 
-    for (long j = 0, jst = 0, jtu = 0; j < len; j++, jst += st, jtu += tu)
+    // compute pairwise products
+    for (long j = 0, jtu = 0; j < len; j+=CACHE_LINE_SIZE)
     {
-        for (long i = 0; i < t; i++)
-            for (long k = 0; k < u; k++)
-                vb[i][k] = mat_valB[jtu + i*u + k];
-
-        mul(vc, va[j], vb);
+        const long jj_bnd = std::min((long)CACHE_LINE_SIZE, len-j);
+        for (long jj = 0; jj < jj_bnd; ++jj, jtu += tu)
+        {
+            for (long i = 0; i < t; ++i)
+                for (long k = 0; k < u; ++k)
+                    vb[i][k].LoopHole() = mat_valB[jtu + i*u + k];
+            mul(vc[jj], va[j+jj], vb);
+        }
 
         for (long i = 0; i < s; i++)
-            for (long k = 0; k < u; k++)
-                mat_valC[i*u + k][j] = vc[i][k];
+            for (long k = 0; k < u; k+=MATRIX_BLOCK_SIZE)
+            {
+                const long kk_bnd = std::min((long)MATRIX_BLOCK_SIZE, u-k);
+                for (long jj = 0; jj < jj_bnd; ++jj)
+                    for (long kk = 0; kk < kk_bnd; ++kk)
+                        mat_valC[i*u + k+kk][j+jj] = vc[jj][i][k+kk]._zz_p__rep;
+            }
     }
 
+    // interpolate the evaluations stored in mat_valC back into c
     c.SetDims(s, u);
-    for (long i = 0; i < s; i++)
-        for (long k = 0; k < u; k++)
+    for (long i = 0; i < s; ++i)
+        for (long k = 0; k < u; ++k)
         {
-            long *frept = & R1.tbl[0][0];
-            for (long r = 0; r < len; r++)
-                frept[r] = rep(mat_valC[i*u + k][r]);
-            FromfftRep(c[i][k], R1, 0, __dA+dB);
+            R.tbl[0].swap(mat_valC[i*u+k]);
+            FromfftRep(c[i][k], R, 0, __dA+dB);
         }
 }
 

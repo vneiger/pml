@@ -255,8 +255,10 @@ void multiply_3_primes(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & 
 /** Computes `c = a*b` via evaluation/interpolation at geometric points,
  * relying on Mat<zz_p> matrix multiplication.
  *
- * \todo write other versions (similar to the FFT ones: matmul2, matmul3,..)
- * \todo make more cache-friendly (essentially copy-paste from the FFT ones)
+ * \todo since it seems to most often be slower than 3primes, this has
+ * not been optimized (several variants, cache efficiency, etc). This
+ * should be re-examined after improvements in geometric matrix
+ * evaluation.
  */
 void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
 
@@ -492,7 +494,10 @@ private:
  *
  * See documentation for parent class.
  *
- * \todo improve with more variants of multiply
+ * \todo since it seems to most often be slower than 3primes, this has
+ * not been optimized (several variants, cache efficiency, etc). This
+ * should be re-examined after improvements in geometric matrix
+ * evaluation.
  */
 class mat_lzz_pX_lmultiplier_geometric : public mat_lzz_pX_lmultiplier
 {

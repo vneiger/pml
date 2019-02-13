@@ -265,7 +265,7 @@ void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
         }
     }
 
-    // mat_valB[r*s*t + i*t + k] is b[i][k] evaluated at the r-th point
+    // mat_valB[r*t*u + i*t + k] is b[i][k] evaluated at the r-th point
     for (long i = 0; i < t; ++i)
         for (long k = 0; k < u; k+=CACHE_LINE_SIZE)
         {
@@ -313,7 +313,7 @@ void multiply_evaluate_FFT_matmul1(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
                 const long kk_bnd = std::min((long)MATRIX_BLOCK_SIZE, u-k);
                 for (long jj = 0; jj < jj_bnd; ++jj)
                     for (long kk = 0; kk < kk_bnd; ++kk)
-                        mat_valC[i*u + (k+kk)][j+jj] = vc[jj][i][k+kk]._zz_p__rep;
+                        mat_valC[i*u + k+kk][j+jj] = vc[jj][i][k+kk]._zz_p__rep;
             }
     }
 
