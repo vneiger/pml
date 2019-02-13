@@ -18,6 +18,7 @@ void one_check(long sz, long dg)
     for (long dA = dg - 1; dA < dg + 2; dA++)
         for (long dB = dg - 1; dB < dg + 2; dB++)
         {
+            std::cout << dA << "\t" << dB << "\t";
             random(a, sz, sz+1, dA + 1);
             random(c, sz+1, sz+2, dA + dB + 1);
 
@@ -44,6 +45,12 @@ void one_check(long sz, long dg)
             if (b1 != b2)
             {
                 LogicError("Error in dense middle product");
+            }
+
+            middle_product_evaluate_dense2(b2, a, c, dA, dB);
+            if (b1 != b2)
+            {
+                LogicError("Error in dense2 middle product");
             }
 
             if (is_FFT_prime())

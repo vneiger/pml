@@ -40,9 +40,7 @@ void middle_FFT(zz_pX& x, const zz_pX& a, const zz_pX& c, long dA, long dB);
 /* returns x=(a*b div x^(N-1)) mod x^N                        */
 /*------------------------------------------------------------*/
 inline void middle_FFT(zz_pX& x, const zz_pX& a, const zz_pX& b, long N)
-{
-    middle_FFT(x, a, b, N-1, N-1);
-}
+{ middle_FFT(x, a, b, N-1, N-1); }
 
 /*------------------------------------------------------------*/
 /* middle product of (a,c)                                    */

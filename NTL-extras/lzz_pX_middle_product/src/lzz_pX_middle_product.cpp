@@ -1,4 +1,5 @@
 #include "lzz_pX_middle_product.h"
+#include <NTL/FFT_impl.h>
 
 NTL_CLIENT
 
