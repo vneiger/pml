@@ -494,78 +494,53 @@ mat_lzz_pX_lmultiplier_dense::mat_lzz_pX_lmultiplier_dense(const Mat<zz_pX> & a,
 /*------------------------------------------------------------*/
 void mat_lzz_pX_lmultiplier_dense::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b)
 {
-    Mat<zz_p> valAp, valBp, valCp, valC, valB, tmp_mat;
-    long ell, m, n, p;
+    const long m = NumRows();
+    const long n = NumCols();
+    const long p = b.NumCols();
 
-    m = NumRows();
-    n = NumCols();
-    p = b.NumCols();
+    Mat<zz_p> tmp_mat(INIT_SIZE, __dB + 1, n * p);
+    long ell = 0;
+    for (long i = 0; i < n; ++i)
+        for (long j = 0; j < p; ++j, ++ell)
+            for (long k = 0; k <= deg(b[i][j]); ++k)
+                tmp_mat[k][ell] = b[i][j][k];
+    Mat<zz_p> valB;
+    mul(valB, vB, tmp_mat);
 
-    tmp_mat.SetDims(__dB + 1, n * p);
-    ell = 0;
-    for (long i = 0; i < n; i++)
-        for (long j = 0; j < p; j++)
-        {
-            long d = deg(b[i][j]);
-            if (d >= 0)
-            {
-                const zz_p * cBij = b[i][j].rep.elts();
-                long k;
-                for (k = 0; k <= d; k++)  // k <= d-2 so k+1 <= d-1
-                {
-                    tmp_mat[k][ell] = cBij[k];
-                }
-            }
-            for (long k = d+1; k <= __dA; k++)
-            {
-                tmp_mat[k][ell] = 0;
-            }
-            ell++;
-        }
-    valB = vB * tmp_mat;
-
-    valAp.SetDims(m, n);
-    valBp.SetDims(n, p);
-    valC.SetDims(nb_points, m * p);
-    for (long i = 0; i < nb_points; i++)
+    Mat<zz_p> valAp(INIT_SIZE, m, n);
+    Mat<zz_p> valBp(INIT_SIZE, n, p);
+    Mat<zz_p> valC(INIT_SIZE, nb_points, m * p);
+    Mat<zz_p> valCp;
+    for (long i = 0; i < nb_points; ++i)
     {
-        long ell;
         ell = 0;
-        for (long u = 0; u < m; u++)
-            for (long v = 0; v < n; v++)
-            {
-                valAp[u][v] = valA[i][ell++];
-            }
+        for (long u = 0; u < m; ++u)
+            for (long v = 0; v < n; ++v, ++ell)
+                valAp[u][v] = valA[i][ell];
 
         ell = 0;
-        for (long u = 0; u < n; u++)
-            for (long v = 0; v < p; v++)
-            {
-                valBp[u][v] = valB[i][ell++];
-            }
+        for (long u = 0; u < n; ++u)
+            for (long v = 0; v < p; ++v, ++ell)
+                valBp[u][v] = valB[i][ell];
 
-        valCp = valAp * valBp;
+        mul(valCp, valAp, valBp);
 
         ell = 0;
-        for (long u = 0; u < m; u++)
-            for (long v = 0; v < p; v++)
-            {
-                valC[i][ell++] = valCp[u][v];
-            }
+        for (long u = 0; u < m; ++u)
+            for (long v = 0; v < p; ++v, ++ell)
+                valC[i][ell] = valCp[u][v];
     }
-    tmp_mat = iV*valC;
+    mul(tmp_mat, iV, valC);
 
     c.SetDims(m, p);
     ell = 0;
-    for (long u = 0; u < m; u++)
-        for (long v = 0; v < p; v++)
+    for (long u = 0; u < m; ++u)
+        for (long v = 0; v < p; ++v, ++ell)
         {
-            c[u][v].rep.SetLength(nb_points);
-            zz_p * cc = c[u][v].rep.elts();
-            for (long i = 0; i < nb_points; i++)
-                cc[i] = tmp_mat[i][ell];
+            c[u][v].SetLength(nb_points);
+            for (long i = 0; i < nb_points; ++i)
+                c[u][v][i] = tmp_mat[i][ell];
             c[u][v].normalize();
-            ell++;
         }
 }
 
