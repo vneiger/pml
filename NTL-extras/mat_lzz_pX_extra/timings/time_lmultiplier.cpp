@@ -80,7 +80,8 @@ void one_check(long sz, long deg)
         t_3 = (get_time()-t_3) / nb;
         cout << t_3 << "\t";
         
-        mat_lzz_pX_lmultiplier_geometric mulg(a, deg-1);    t_g = get_time();
+        mat_lzz_pX_lmultiplier_geometric mulg(a, deg-1);
+        t_g = get_time();
         nb = 0;
         do
         {
@@ -135,7 +136,7 @@ void all_checks()
 
     VecLong degs =
     {
-        10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250, 300, 400, 500, 1000, 2000
+        10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250, 300, 400, 500, 1000,
     };
 
     cout << "p=" << zz_p::modulus() << " FFT=" << is_FFT_prime() << endl;
@@ -155,8 +156,8 @@ void all_checks()
 /*------------------------------------------------------------*/
 void check()
 {
-    zz_p::FFTInit(0);
-    all_checks();
+    //zz_p::FFTInit(0);
+    //all_checks();
     zz_p::init(288230376151711813);
     all_checks();
     zz_p::init(786433);

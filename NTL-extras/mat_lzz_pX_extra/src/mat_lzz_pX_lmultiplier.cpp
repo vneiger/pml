@@ -415,9 +415,7 @@ void mat_lzz_pX_lmultiplier_geometric::multiply(Mat<zz_pX>& c, const Mat<zz_pX>&
     long dB = deg(b);
 
     if (dB > degB())
-    {
         LogicError("Rhs degree too large in multiplier");
-    }
 
     long n = ev.length();
     Vec<zz_p> mat_valB;
@@ -477,16 +475,32 @@ void mat_lzz_pX_lmultiplier_geometric::multiply(Mat<zz_pX>& c, const Mat<zz_pX>&
 mat_lzz_pX_lmultiplier_dense::mat_lzz_pX_lmultiplier_dense(const Mat<zz_pX> & a, long dB) :
     mat_lzz_pX_lmultiplier(a, dB)
 {
+    Mat<zz_p> vA;
     vandermonde(vA, vB, iV, __dA, __dB);
     nb_points = vA.NumRows();
 
+    // evaluate a: reorganize data
     Mat<zz_p> tmp_mat(INIT_SIZE, __dA + 1, __s * __t);
     long ell = 0;
     for (long i = 0; i < __s; ++i)
         for (long j = 0; j < __t; ++j, ++ell)
             for (long k = 0; k <= deg(a[i][j]); ++k)
                 tmp_mat[k][ell] = a[i][j][k];
+
+    // evaluate a: use Mat<zz_p> multiplication
+    Mat<zz_p> valA;
     mul(valA, vA, tmp_mat);
+
+    // reorganize data into valAp
+    valAp.SetLength(nb_points);
+    for (long i = 0; i < nb_points; ++i)
+    {
+        valAp[i].SetDims(__s, __t);
+        ell = 0;
+        for (long u = 0; u < __s; ++u)
+            for (long v = 0; v < __t; ++v, ++ell)
+                valAp[i][u][v] = valA[i][ell];
+    }
 }
 
 /*------------------------------------------------------------*/
@@ -507,23 +521,17 @@ void mat_lzz_pX_lmultiplier_dense::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b)
     Mat<zz_p> valB;
     mul(valB, vB, tmp_mat);
 
-    Mat<zz_p> valAp(INIT_SIZE, m, n);
     Mat<zz_p> valBp(INIT_SIZE, n, p);
     Mat<zz_p> valC(INIT_SIZE, nb_points, m * p);
     Mat<zz_p> valCp;
     for (long i = 0; i < nb_points; ++i)
     {
         ell = 0;
-        for (long u = 0; u < m; ++u)
-            for (long v = 0; v < n; ++v, ++ell)
-                valAp[u][v] = valA[i][ell];
-
-        ell = 0;
         for (long u = 0; u < n; ++u)
             for (long v = 0; v < p; ++v, ++ell)
                 valBp[u][v] = valB[i][ell];
 
-        mul(valCp, valAp, valBp);
+        mul(valCp, valAp[i], valBp);
 
         ell = 0;
         for (long u = 0; u < m; ++u)
@@ -614,6 +622,7 @@ void mat_lzz_pX_lmultiplier_3_primes::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& 
 std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, long dB)
 {
     long t = type_of_prime();
+    long dA = deg(a);
 
     if (t == TYPE_FFT_PRIME)
     {
@@ -624,9 +633,7 @@ std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, lo
     }
     if (t == TYPE_LARGE_PRIME)
     {
-        if (a.NumRows() <= 30)
-            return std::unique_ptr<mat_lzz_pX_lmultiplier>(new mat_lzz_pX_lmultiplier_3_primes(a, dB));
-        if (deg(a) <= 150)
+        if ((a.NumRows() <= 20 && dA <= 30) || (a.NumRows() <= 40 && dA <= 90) || dA <= 150)
             return std::unique_ptr<mat_lzz_pX_lmultiplier>(new mat_lzz_pX_lmultiplier_dense(a, dB));
         if (a.NumRows() <= 200)
             return std::unique_ptr<mat_lzz_pX_lmultiplier>(new mat_lzz_pX_lmultiplier_3_primes(a, dB));
@@ -635,9 +642,7 @@ std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, lo
     }
     else
     {
-        if (a.NumRows() <= 30)
-            return std::unique_ptr<mat_lzz_pX_lmultiplier>(new mat_lzz_pX_lmultiplier_3_primes(a, dB));
-        if (deg(a) <= 150)
+        if ((a.NumRows() <= 20 && dA <= 30) || (a.NumRows() <= 40 && dA <= 90) || dA <= 150)
             return std::unique_ptr<mat_lzz_pX_lmultiplier>(new mat_lzz_pX_lmultiplier_dense(a, dB));
         else
             return std::unique_ptr<mat_lzz_pX_lmultiplier>(new mat_lzz_pX_lmultiplier_3_primes(a, dB));

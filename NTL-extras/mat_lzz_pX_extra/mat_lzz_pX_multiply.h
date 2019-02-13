@@ -539,7 +539,8 @@ public:
     void multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b);
 
 private:
-    Mat<zz_p> vA, vB, iV, valA; /**< Vandermonde matrices, inverse Vandermonde, and values of "this" */
+    Mat<zz_p> vB, iV; /**< Vandermonde matrix for rhs, and inverse Vandermonde */
+    Vec<Mat<zz_p>> valAp; /**< Store evaluations of `a` */
     long nb_points; /**< Number of evaluation points */
 };
 
