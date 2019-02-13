@@ -1,3 +1,4 @@
+#include <NTL/FFT_impl.h>
 #include "lzz_p_extra.h" // type_of_prime
 #include "mat_lzz_pX_multiply.h"
 #include "thresholds_lmultiplier.h"
@@ -51,27 +52,22 @@ mat_lzz_pX_lmultiplier_FFT_direct::mat_lzz_pX_lmultiplier_FFT_direct(const Mat<z
     mat_lzz_pX_lmultiplier(a, dB)
 {
     K = NextPowerOfTwo(__dA + dB + 1);
-    len = 1L << K;
+    len = FFTRoundUp(__dA + dB + 1, K);
 
     n0 = (1L << (2*(NTL_BITS_PER_LONG - NTL_SP_NBITS))) - 1;
-    first_slice = __t % n0;
-    nb_slices = __t / n0;
-    if (first_slice == 0)
-    {
-        first_slice = n0;
-        nb_slices--;
-    }
+    first_slice = (__t % n0 != 0) ? (__t%n0) : n0;
+    nb_slices = (__t % n0 != 0) ? (__t / n0) : (__t/n0 - 1);
 
     pr = zz_p::modulus();
     red1 = sp_PrepRem(pr);
     red2 = make_sp_ll_reduce_struct(pr);
 
     vala.SetLength(__s);
-    for (long i = 0; i < __s; i++)
+    for (long i = 0; i < __s; ++i)
     {
         vala[i].SetLength(__t);
-        for (long j = 0; j < __t; j++)
-            TofftRep(vala[i][j], a[i][j], K);
+        for (long j = 0; j < __t; ++j)
+            TofftRep_trunc(vala[i][j], a[i][j], K, len);
     }
 }
 
@@ -116,22 +112,19 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct_ll_type(Mat<zz_pX>& c, c
     const long n = NumCols();
     const long p = b.NumCols();
 
-    Vec<fftRep> valb;
-    Vec<ll_type> tmp;
-    fftRep tmp_r;
-
     c.SetDims(m, p);
-    tmp.SetLength(len);
-    tmp_r = fftRep(INIT_SIZE, K);
-    TofftRep(tmp_r, b[0][0], K);
+    Vec<fftRep> valb(INIT_SIZE, n);
 
-    valb.SetLength(n);
+    fftRep tmp_r(INIT_SIZE, K);
+    TofftRep_trunc(tmp_r, b[0][0], K, len);
+
+    Vec<ll_type> tmp(INIT_SIZE, len);
     if (NumBits(pr) == NTL_SP_NBITS) // we can use normalized remainders; may be a bit faster
     {
         for (long i = 0; i < p; i++)
         {
             for (long j = 0; j < n; j++)
-                TofftRep(valb[j], b[j][i], K);
+                TofftRep_trunc(valb[j], b[j][i], K, len);
 
             for (long k = 0; k < m; k++)
             {
@@ -140,7 +133,7 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct_ll_type(Mat<zz_pX>& c, c
                 mul(tmp, valb[0], va[0]);
                 for (long j = 1; j < first_slice; j++)
                     mul_add(tmp, valb[j], va[j]);
-                
+
                 long start = first_slice;
                 for (long jj = 0; jj < nb_slices; jj++)
                 {
@@ -155,9 +148,9 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct_ll_type(Mat<zz_pX>& c, c
                 }
 
                 long *tmp_ptr = &tmp_r.tbl[0][0];
-                for (long x = 0; x < len; x++) 
+                for (long x = 0; x < len; x++)
                     tmp_ptr[x] = sp_ll_red_21_normalized(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
-                FromfftRep(c[k][i], tmp_r, 0, __dA + __dB);
+                FromfftRep(c[k][i], tmp_r, 0, __dA + deg(b));
             }
         }
     }
@@ -166,7 +159,7 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct_ll_type(Mat<zz_pX>& c, c
         for (long i = 0; i < p; i++)
         {
             for (long j = 0; j < n; j++)
-                TofftRep(valb[j], b[j][i], K);
+                TofftRep_trunc(valb[j], b[j][i], K, len);
 
             for (long k = 0; k < m; k++)
             {
@@ -175,7 +168,7 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct_ll_type(Mat<zz_pX>& c, c
                 mul(tmp, valb[0], va[0]);
                 for (long j = 1; j < first_slice; j++)
                     mul_add(tmp, valb[j], va[j]);
-                
+
                 long start = first_slice;
                 for (long jj = 0; jj < nb_slices; jj++)
                 {
@@ -190,9 +183,9 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct_ll_type(Mat<zz_pX>& c, c
                 }
 
                 long *tmp_ptr = &tmp_r.tbl[0][0];
-                for (long x = 0; x < len; x++) 
+                for (long x = 0; x < len; x++)
                     tmp_ptr[x] = sp_ll_red_21(rem(tmp[x].hi, pr, red1), tmp[x].lo, pr, red2);
-                FromfftRep(c[k][i], tmp_r, 0, __dA + __dB);
+                FromfftRep(c[k][i], tmp_r, 0, __dA + deg(b));
             }
         }
     }
@@ -203,6 +196,7 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct_ll_type(Mat<zz_pX>& c, c
 
 void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct(Mat<zz_pX>& c, const Mat<zz_pX>& b)
 {
+    // dimensions
     const long m = NumRows();
     const long n = NumCols();
     const long p = b.NumCols();
@@ -214,7 +208,7 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct(Mat<zz_pX>& c, const Mat
     for (long i = 0; i < p; ++i)
     {
         for (long j = 0; j < n; ++j)
-            TofftRep(valb[j], b[j][i], K);
+            TofftRep_trunc(valb[j], b[j][i], K, len);
         for (long k = 0; k < m; ++k)
         {
             fftRep * va = vala[k].elts();
@@ -224,7 +218,7 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct(Mat<zz_pX>& c, const Mat
                 mul(tmp2, valb[j], va[j]);
                 add(tmp1, tmp1, tmp2);
             }
-            FromfftRep(c[k][i], tmp1, 0, __dA + __dB);
+            FromfftRep(c[k][i], tmp1, 0, __dA + deg(b));
         }
     }
 }
@@ -249,7 +243,7 @@ mat_lzz_pX_lmultiplier_FFT_matmul::mat_lzz_pX_lmultiplier_FFT_matmul(const Mat<z
     va.SetLength(n);
     for (long i = 0; i < n; i++)
         va[i].SetDims(__s, __t);
-    
+
     long st = __s * __t;
     for (long i = 0; i < __s; i++)
     {
@@ -284,7 +278,7 @@ void mat_lzz_pX_lmultiplier_FFT_matmul::multiply(Mat<zz_pX>& c, const Mat<zz_pX>
     fftRep R1(INIT_SIZE, idxk);
     long n = 1L << idxk;
     Vec<Vec<zz_p>> mat_valC;
-    
+
     Vec<zz_p> mat_valB;
     mat_valB.SetLength(n * t * u);
 
@@ -303,24 +297,24 @@ void mat_lzz_pX_lmultiplier_FFT_matmul::multiply(Mat<zz_pX>& c, const Mat<zz_pX>
 
     Mat<zz_p> vb, vc;
     vb.SetDims(t, u);
-    
+
     mat_valC.SetLength(s * u);
     for (long i = 0; i < s * u; i++)
         mat_valC[i].SetLength(n);
-    
+
     for (long j = 0, jst = 0, jtu = 0; j < n; j++, jst += st, jtu += tu)
     {
         for (long i = 0; i < t; i++)
             for (long k = 0; k < u; k++)
                 vb[i][k] = mat_valB[jtu + i*u + k];
-        
+
         vc = va[j] * vb;
 
         for (long i = 0; i < s; i++)
             for (long k = 0; k < u; k++)
                 mat_valC[i*u + k][j] = vc[i][k];
     }
-    
+
     c.SetDims(s, u);
     for (long i = 0; i < s; i++)
         for (long k = 0; k < u; k++)
@@ -351,7 +345,7 @@ mat_lzz_pX_lmultiplier_geometric::mat_lzz_pX_lmultiplier_geometric(const Mat<zz_
     va.SetLength(n);
     for (long i = 0; i < n; i++)
         va[i].SetDims(__s, __t);
-    
+
     long st = __s * __t;
     for (long i = 0; i < __s; i++)
     {
@@ -368,7 +362,7 @@ mat_lzz_pX_lmultiplier_geometric::mat_lzz_pX_lmultiplier_geometric(const Mat<zz_
 /*------------------------------------------------------------*/
 /* right multiplication                                       */
 /*------------------------------------------------------------*/
-void mat_lzz_pX_lmultiplier_geometric::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b) 
+void mat_lzz_pX_lmultiplier_geometric::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b)
 {
     long s = NumRows();
     long t = NumCols();
@@ -384,7 +378,7 @@ void mat_lzz_pX_lmultiplier_geometric::multiply(Mat<zz_pX>& c, const Mat<zz_pX>&
     long n = ev.length();
     Vec<zz_p> mat_valB;
     Vec<Vec<zz_p>> mat_valC;
-    
+
     mat_valB.SetLength(n * t * u);
     long st = s*t;
     long tu = t*u;
@@ -401,29 +395,29 @@ void mat_lzz_pX_lmultiplier_geometric::multiply(Mat<zz_pX>& c, const Mat<zz_pX>&
 
     Mat<zz_p> vb, vc;
     vb.SetDims(t, u);
-    
+
     mat_valC.SetLength(s * u);
     for (long i = 0; i < s * u; i++)
         mat_valC[i].SetLength(n);
-    
+
     for (long j = 0, jst = 0, jtu = 0; j < n; j++, jst += st, jtu += tu)
     {
         for (long i = 0; i < t; i++)
             for (long k = 0; k < u; k++)
                 vb[i][k] = mat_valB[jtu + i*u + k];
-        
+
         vc = va[j] * vb;
-        
+
         for (long i = 0; i < s; i++)
             for (long k = 0; k < u; k++)
                 mat_valC[i*u + k][j] = vc[i][k];
     }
-    
+
     c.SetDims(s, u);
     for (long i = 0; i < s; i++)
         for (long k = 0; k < u; k++)
             ev.interpolate(c[i][k], mat_valC[i*u + k]);
-    
+
 }
 
 
@@ -463,7 +457,7 @@ mat_lzz_pX_lmultiplier_dense::mat_lzz_pX_lmultiplier_dense(const Mat<zz_pX> & a,
             {
                 tmp_mat[k][ell] = 0;
             }
-            
+
             ell++;
         }
     valA = vA * tmp_mat;
@@ -472,11 +466,11 @@ mat_lzz_pX_lmultiplier_dense::mat_lzz_pX_lmultiplier_dense(const Mat<zz_pX> & a,
 /*------------------------------------------------------------*/
 /* right multiplication                                       */
 /*------------------------------------------------------------*/
-void mat_lzz_pX_lmultiplier_dense::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b) 
+void mat_lzz_pX_lmultiplier_dense::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b)
 {
     Mat<zz_p> valAp, valBp, valCp, valC, valB, tmp_mat;
     long ell, m, n, p;
-    
+
     m = NumRows();
     n = NumCols();
     p = b.NumCols();
@@ -516,16 +510,16 @@ void mat_lzz_pX_lmultiplier_dense::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b)
             {
                 valAp[u][v] = valA[i][ell++];
             }
-        
+
         ell = 0;
         for (long u = 0; u < n; u++)
             for (long v = 0; v < p; v++)
             {
                 valBp[u][v] = valB[i][ell++];
             }
-        
+
         valCp = valAp * valBp;
-        
+
         ell = 0;
         for (long u = 0; u < m; u++)
             for (long v = 0; v < p; v++)
@@ -534,7 +528,7 @@ void mat_lzz_pX_lmultiplier_dense::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b)
             }
     }
     tmp_mat = iV*valC;
-    
+
     c.SetDims(m, p);
     ell = 0;
     for (long u = 0; u < m; u++)
@@ -576,7 +570,7 @@ mat_lzz_pX_lmultiplier_3_primes::mat_lzz_pX_lmultiplier_3_primes(const Mat<zz_pX
 /*------------------------------------------------------------*/
 /* right multiplication                                       */
 /*------------------------------------------------------------*/
-void mat_lzz_pX_lmultiplier_3_primes::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b) 
+void mat_lzz_pX_lmultiplier_3_primes::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& b)
 {
     long nb = primes.nb();
     Vec<Mat<zz_pX>> cs;
@@ -600,7 +594,7 @@ void mat_lzz_pX_lmultiplier_3_primes::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& 
             Mat<zz_pX> bi;
             reduce_mod_p(bi, b);
             FFT_muls[i]->multiply(cs[i], bi);
-        }        
+        }
     }
 
     if (nb == 1)
@@ -619,7 +613,7 @@ void mat_lzz_pX_lmultiplier_3_primes::multiply(Mat<zz_pX>& c, const Mat<zz_pX>& 
 std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, long dB)
 {
     long t = type_of_prime();
-    
+
     if (t == TYPE_FFT_PRIME)
     {
         if (a.NumRows() <= 100)
@@ -638,7 +632,7 @@ std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, lo
         else
             return std::unique_ptr<mat_lzz_pX_lmultiplier>(new mat_lzz_pX_lmultiplier_geometric(a, dB));
     }
-    else 
+    else
     {
         if (a.NumRows() <= 30)
             return std::unique_ptr<mat_lzz_pX_lmultiplier>(new mat_lzz_pX_lmultiplier_3_primes(a, dB));

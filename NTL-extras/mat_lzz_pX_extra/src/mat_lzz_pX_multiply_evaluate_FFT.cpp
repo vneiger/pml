@@ -654,9 +654,6 @@ void multiply_evaluate_FFT_matmul3(Mat<zz_pX> & c, const Mat<zz_pX> & a, const M
 /*------------------------------------------------------------*/
 void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
-    //const long s = a.NumRows();
-    //const long t = a.NumCols();
-    //const long u = b.NumCols();
     const long cube_dim = a.NumRows() * a.NumCols() * b.NumCols();
     const long d = (deg(a)+deg(b))/2;
 
