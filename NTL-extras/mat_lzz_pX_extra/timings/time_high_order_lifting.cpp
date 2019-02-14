@@ -14,7 +14,7 @@ void check_solution(long sz, long deg)
 {
     double t;
     long nb;
-    const double thresh = 0.01;
+    const double thresh = 0.2;
     Mat<zz_pX> a, b, sol;
     Mat<zz_p> a0;
 
@@ -65,12 +65,12 @@ void all_checks()
 
     VecLong szs =
     {
-        30
+        32
     };
 
     VecLong degs =
     {
-        1000
+        1024
     };
     // VecLong szs =
     // {
@@ -95,12 +95,12 @@ void all_checks()
 /*------------------------------------------------------------*/
 void check()
 {
-    zz_p::FFTInit(0);
-    all_checks();
+    //zz_p::FFTInit(0);
+    //all_checks();
     // zz_p::UserFFTInit(786433);
     // all_checks();
-    // zz_p::init(288230376151711813);
-    // all_checks();
+    zz_p::init(288230376151711813);
+    all_checks();
     // zz_p::init(786433);
     // all_checks();
 }  

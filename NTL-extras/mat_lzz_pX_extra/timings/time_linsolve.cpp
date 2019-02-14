@@ -27,10 +27,10 @@ void one_bench(long sz, long degmat, long degvec)
     double tmin = 1000000.0;
     long idx=-1;
 
-    for (long nb = 1; nb < 6; ++nb)
+    for (long nb = 1; nb < 2; ++nb)
     {
         nb_iter = 0; t=0.0;
-        while (t<0.2)
+        while (t<0.3)
         {
             random(A, sz, sz, degmat);
             random(b, sz, degvec);
@@ -51,7 +51,7 @@ void one_bench(long sz, long degmat, long degvec)
     //cout << idx << endl;
 
     nb_iter = 0; t=0.0;
-    while (t<0.2)
+    while (t<0.3)
     {
         random(A, sz, sz, degmat);
         random(b, sz, degvec);
@@ -63,18 +63,18 @@ void one_bench(long sz, long degmat, long degvec)
     t /= nb_iter;
     cout << t << "\t";
 
-    nb_iter = 0; t=0.0;
-    while (t<0.2)
-    {
-        random(A, sz, sz, degmat);
-        random(b, sz, degvec);
-        tt = get_time();
-        linsolve_via_evaluation(u, den, A, b);
-        t += get_time()-tt;
-        ++nb_iter;
-    }
-    t /= nb_iter;
-    cout << t << "\t";
+    //nb_iter = 0; t=0.0;
+    //while (t<0.2)
+    //{
+    //    random(A, sz, sz, degmat);
+    //    random(b, sz, degvec);
+    //    tt = get_time();
+    //    linsolve_via_evaluation(u, den, A, b);
+    //    t += get_time()-tt;
+    //    ++nb_iter;
+    //}
+    //t /= nb_iter;
+    //cout << t << "\t";
 
 
     cout << endl;
