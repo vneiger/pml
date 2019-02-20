@@ -75,9 +75,9 @@ void gen_sequence(
  * x^i a^(2d-k) mod g. Uses the naive algorithm
  *
  * \param[out] res stores the output
- * \param[in] t pre-multiplier
  * \param[in] a polynomial to be powered
  * \param[in] g modulus
+ * \param[in] m dimension
  */
 void get_sequence_naive(
                         Vec<Coeffs> &res,

@@ -3,9 +3,7 @@ TODO Vincent
 		   * mat_lzz_pX_extra/src/mat_lzz_pX_t_multiply_evaluate.cpp
 			 * lzz_pX_CRT/src/lzz_pX_Transform*
 			 * evaluate_vector and evaluate_matrix, in lzz_pX_CRT
-			 * middle_product
-			 * lmultiplier
-			 * automatic tuning for polmatmul is not so good for small degrees and 20 bit fft primes (the FFT matmul versions seem substantially faster than what is chosen by the tuner)
+			 * (still true?) automatic tuning for polmatmul is not so good for small degrees and 20 bit fft primes (the FFT matmul versions seem substantially faster than what is chosen by the tuner)
    - PM-Basis (power series version, some remarks shared with interpolants):
       * work on thresholds (mbasis_rescomp/resupdate, and pmbasis base case)
 			* specific code for dimension 2x1 (and compare with NTL's GCD / BerlekampMassey)
