@@ -1,9 +1,4 @@
 TODO Vincent
-	 - ensure cache efficient algorithms:
-		   * mat_lzz_pX_extra/src/mat_lzz_pX_t_multiply_evaluate.cpp
-			 * lzz_pX_CRT/src/lzz_pX_Transform*
-			 * evaluate_vector and evaluate_matrix, in lzz_pX_CRT
-			 * (still true?) automatic tuning for polmatmul is not so good for small degrees and 20 bit fft primes (the FFT matmul versions seem substantially faster than what is chosen by the tuner)
    - PM-Basis (power series version, some remarks shared with interpolants):
       * work on thresholds (mbasis_rescomp/resupdate, and pmbasis base case)
 			* specific code for dimension 2x1 (and compare with NTL's GCD / BerlekampMassey)
@@ -12,12 +7,9 @@ TODO Vincent
 				 "easier" instance?
    - Multiplication:
 			* automatic thresholds for the variants of FFTx
-		  * Clean middle product and look at variants as was done for multiplication
 			* middle product: minor issue when degree of input is small (should start by shifting)
 	 - Determinant:
 		  * clean (finish naive algo if necessary) + threshold
-	 - System solving:
-		  * via evaluation-interpolation?
    - Improvement of approximants for small n (long term work):
       * generic algo (need some more tuning)
       * partial linearization solution Storjohann / ZhouLabahn
