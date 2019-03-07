@@ -13,13 +13,10 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB, long is_prime)
 {
-    long dmax = max(dA, dB);
-    long p = zz_p::modulus();
-    long sz = (long) cbrt(a.NumRows() * a.NumCols() * c.NumCols());
+    const long dmax = max(dA, dB);
+    const long sz = cbrt(a.NumRows() * a.NumCols() * c.NumCols());
 
-    long deg_naive = max_degree_mp_naive(sz);
-
-    if (dmax < deg_naive)
+    if (dmax < max_degree_mp_naive(sz))
     {
         middle_product_naive(b, a, c, dA, dB);
         return;
@@ -31,8 +28,9 @@ void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, 
         return;
     }
 
-    long deg_ev = max_degree_evaluate(sz);
-    if (is_prime && p > 2 * (dA + dB + 1) && dmax <= deg_ev)
+    if (is_prime
+        && dmax <= max_degree_evaluate(sz)
+        && zz_p::modulus() > 2 * (dA + dB + 1))
     {
         middle_product_evaluate_dense(b, a, c, dA, dB);
         return;

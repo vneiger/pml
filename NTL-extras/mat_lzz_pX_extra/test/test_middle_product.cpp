@@ -47,11 +47,11 @@ void one_check(long sz, long dg)
                 LogicError("Error in dense middle product");
             }
 
-            middle_product_evaluate_dense2(b2, a, c, dA, dB);
-            if (b1 != b2)
-            {
-                LogicError("Error in dense2 middle product");
-            }
+            //middle_product_evaluate_dense2(b2, a, c, dA, dB);
+            //if (b1 != b2)
+            //{
+            //    LogicError("Error in dense2 middle product");
+            //}
 
             if (is_FFT_prime())
             {

@@ -315,14 +315,14 @@ void middle_product_evaluate_FFT_new(Mat<zz_pX> & b, const Mat<zz_pX> & a, const
  * `deg(a) <= dA` and `deg(c) <= dA+dB`.  */
 void middle_product_evaluate_dense(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
-/** Based on evaluation/interpolation, using multiplication by Vandermonde
- * matrices for evaluation and interpolation (fast when degree is small and
- * dimension not so small). This version uses points 1,-1,2,-2, .. in order to
- * speed-up (similar to first step of an FFT). Requires `deg(a) <= dA` and `deg(c) <= dA+dB`.
- *                                    
- * \todo check field is large enough to take the points
- */
-void middle_product_evaluate_dense2(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
+// /** Based on evaluation/interpolation, using multiplication by Vandermonde
+// * matrices for evaluation and interpolation (fast when degree is small and
+// * dimension not so small). This version uses points 1,-1,2,-2, .. in order to
+// * speed-up (similar to first step of an FFT). Requires `deg(a) <= dA` and `deg(c) <= dA+dB`.
+// *                                    
+// * \todo check field is large enough to take the points
+// */
+//void middle_product_evaluate_dense2(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB);
 
 /** Transpose of b mapsto c = a*b. Output is
  *    trunc( rev(a, dA)*c div x^dA, dB+1 )
