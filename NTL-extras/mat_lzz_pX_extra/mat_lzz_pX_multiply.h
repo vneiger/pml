@@ -109,7 +109,14 @@ inline Mat<zz_pX> mul_trunc(
 /** Computes the middle product `b` of polynomial matrices `a` and `c` with
  * respective to nonnegative integers `dA` and `dB` (see @ref MiddleProduct).
  * The parameter `is_prime` is set to 1 (the default) if the modulus is known
- * to be prime */
+ * to be prime.
+ *
+ * \todo Currently, if `deg(a)<dA` then we right shift `c` by `dA-deg(a)` and
+ * then apply this function with `a`, the shifted `c`, `dA-deg(a)` and `dB`.
+ * We should do some tests and timings to see if this really has an interest
+ * when `deg(a)` is very close to `dA` (still, currently with the jumps of FFT
+ * at powers of 2, the question is mostly whether this argument reduction will
+ * allow us to work with a smaller FFT size...). */
 void middle_product(
                     Mat<zz_pX> & b,
                     const Mat<zz_pX> & a,

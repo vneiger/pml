@@ -16,6 +16,18 @@ void middle_product(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, 
     const long dmax = max(dA, dB);
     const long sz = cbrt(a.NumRows() * a.NumCols() * c.NumCols());
 
+    // if the degree of a or c is smaller than dA, reduce
+    // TODO do proper timing to find some better threshold (maybe all the
+    // copying when we just have degA == dA-1 is not a good idea)
+    const long degA = deg(a);
+    if (degA < dA)
+    {
+        Mat<zz_pX> cc;
+        RightShift(cc, c, dA-degA);
+        middle_product(b, a, cc, degA, dB, is_prime);
+        return;
+    }
+
     if (dmax < max_degree_mp_naive(sz))
     {
         middle_product_naive(b, a, c, dA, dB);

@@ -19,12 +19,21 @@ void one_check(long sz, long dg)
         for (long dB = dg - 1; dB < dg + 2; dB++)
         {
             std::cout << dA << "\t" << dB << "\t";
-            random(a, sz, sz+1, dA + 1);
+            if (dA > 3)
+                random(a, sz, sz+1, dA);
+            else
+                random(a, sz, sz+1, dA + 1);
             random(c, sz+1, sz+2, dA + dB + 1);
 
             multiply(b1, a, c);
             b1 >>= dA;
             trunc(b1, b1, dB + 1);
+
+            middle_product(b2, a, c, dA, dB);
+            if (b1 != b2)
+            {
+                LogicError("Error in interface middle product");
+            }
 
             if (sz <= 10 || max(dA, dB) <= 8)
             {
