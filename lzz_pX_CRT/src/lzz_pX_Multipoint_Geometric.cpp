@@ -1,8 +1,3 @@
-#include <NTL/lzz_pX.h>
-#include <NTL/vector.h>
-
-#include "util.h"
-#include "lzz_p_extra.h"
 #include "lzz_pX_middle_product.h"
 #include "lzz_pX_CRT.h"
 

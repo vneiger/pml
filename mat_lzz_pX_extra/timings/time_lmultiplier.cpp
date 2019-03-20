@@ -16,9 +16,9 @@ void one_check(long sz, long deg)
     Mat<zz_pX> a, b, c1, c2;
     double s, t_plain;
     long nb;
-    const double thres = 0.01;
+    const double thres = 0.1;
 
-    cout << sz << " " << deg << " ";
+    cout << sz << "\t" << deg << "\t";
 
     random(a, sz, sz, deg);
     random(b, sz, 1, deg);
@@ -32,7 +32,7 @@ void one_check(long sz, long deg)
     }
     while ((get_time()-t_plain) <= thres);
     t_plain = (get_time()-t_plain) / nb;
-    cout << t_plain << "   ";
+    cout << t_plain << "\t";
 
     if (is_FFT_prime())
     {
@@ -48,7 +48,7 @@ void one_check(long sz, long deg)
         }
         while ((get_time()-t_FD) <= thres);
         t_FD = (get_time()-t_FD) / nb;
-        cout << t_FD << " ";
+        cout << t_FD << "\t";
 
         mat_lzz_pX_lmultiplier_FFT_matmul mulFM(a, deg-1);
         t_FM = get_time();
@@ -60,10 +60,9 @@ void one_check(long sz, long deg)
         }
         while ((get_time()-t_FM) <= thres);
         t_FM = (get_time()-t_FM) / nb;
-        cout << t_FM << "   ";
+        cout << t_FM << "\t";
         
         s = min(t_FM, t_FD);
-        cout << s << "   ";
     }
     else
     {
@@ -79,9 +78,10 @@ void one_check(long sz, long deg)
         }
         while ((get_time()-t_3) <= thres);
         t_3 = (get_time()-t_3) / nb;
-        cout << t_3 << " ";
+        cout << t_3 << "\t";
         
-        mat_lzz_pX_lmultiplier_geometric mulg(a, deg-1);    t_g = get_time();
+        mat_lzz_pX_lmultiplier_geometric mulg(a, deg-1);
+        t_g = get_time();
         nb = 0;
         do
         {
@@ -90,7 +90,7 @@ void one_check(long sz, long deg)
         }
         while ((get_time()-t_g) <= thres);
         t_g = (get_time()-t_g) / nb;
-        cout << t_g << " ";
+        cout << t_g << "\t";
 
         mat_lzz_pX_lmultiplier_dense muld(a, deg-1);
         t_d = get_time();
@@ -102,10 +102,9 @@ void one_check(long sz, long deg)
         }
         while ((get_time()-t_d) <= thres);
         t_d = (get_time()-t_d) / nb;
-        cout << t_d << "   ";
+        cout << t_d << "\t";
         
         s = min(t_d, min(t_g, t_3));
-        cout << s << "   ";
     }
 
     double t_get;
@@ -119,7 +118,7 @@ void one_check(long sz, long deg)
     }
     while ((get_time()-t_get) <= thres);
     t_get = (get_time()-t_get) / nb;
-    cout << t_get << " (" << t_get/s << ")";
+    cout << t_get << "(" << t_get/s << ")";
 
     cout << endl;
 }
@@ -132,15 +131,20 @@ void all_checks()
 
     VecLong szs =
     {
-        5, 10, 20, 30, 40, 50, 60, 75, 100, 150, 200, 250, 300
+        5, 10, 20, 30, 40, 50, 60, 75, 100, 150, 200, 300
     };
 
     VecLong degs =
     {
-        10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250, 300
+        10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 250, 300, 400, 500, 1000,
     };
 
     cout << "p=" << zz_p::modulus() << " FFT=" << is_FFT_prime() << endl;
+    if (is_FFT_prime())
+        std::cout << "sz\tdeg\tplain\tf_dir\tf_mm\tmul" << std::endl;
+    else
+        std::cout << "sz\tdeg\tplain\t3pri\tgeom\tdens\tmul" << std::endl;
+
     for (size_t si = 0; si < szs.size(); si++)
         for (size_t di = 0; di < degs.size(); di++)
             one_check(szs[si], degs[di]);
@@ -152,8 +156,8 @@ void all_checks()
 /*------------------------------------------------------------*/
 void check()
 {
-    zz_p::FFTInit(0);
-    all_checks();
+    //zz_p::FFTInit(0);
+    //all_checks();
     zz_p::init(288230376151711813);
     all_checks();
     zz_p::init(786433);
@@ -166,7 +170,7 @@ void check()
 int main(int argc, char ** argv)
 {
     std::cout << std::fixed;
-    std::cout << std::setprecision(8);
+    std::cout << std::setprecision(5);
     warmup();
     check();
     return 0;

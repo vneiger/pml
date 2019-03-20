@@ -499,6 +499,47 @@ long linsolve_via_kernel(
     return 1;
 }
 
+/*------------------------------------------------------------*/
+/* solve A (u/den) = b                                        */
+/* A must be square and nonsingular                           */
+/* output can alias input                                     */
+/* uses evaluation/interpolation                              */
+/*------------------------------------------------------------*/
+//long linsolve_via_evaluation(
+//                             Vec<zz_pX> & u,
+//                             zz_pX & den,
+//                             const Mat<zz_pX> & A,
+//                             const Vec<zz_pX> & b
+//                            )
+//{
+//    // dimensions and degrees
+//    const long n = A.NumRows(); // == A.NumCols() == b.length()
+//    const long dA = deg(A);
+//    const long dB = deg(b);
+//
+//    const long deg_den = n*dA; // expected denominator degree, deg_den + 1 = number of unknowns
+//    const long deg_num = deg_den-dA + dB; // expected numerator degree
+//
+//    const long first = max(deg_num + 1, deg_den); // first term we can use in each block
+//    const long prec = first + deg_den; // precision for solve_series
+//
+//    zz_pX_Multipoint_Geometric ev = get_geometric_points(prec);
+//    ev.prepare_degree(dA);
+//    ev.prepare_degree(dB);
+//
+//    Vec<Mat<zz_p>> evalsA;
+//    ev.evaluate_matrix(evalsA, A);
+//
+//    Vec<Vec<zz_p>> evalsB;
+//    ev.evaluate_vector(evalsB, b);
+//
+//    zz_p d;
+//    for (long i = 0; i < prec; ++i)
+//        solve(d, evalsA[i], evalsB[i], evalsB[i]);
+//
+//    return 0;
+//}
+
 
 // Local Variables:
 // mode: C++

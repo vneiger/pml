@@ -1,8 +1,5 @@
-#include <NTL/mat_lzz_p.h>
-
 #include "mat_lzz_pX_determinant.h"
 
-#include "lzz_pX_CRT.h"
 #include "mat_lzz_pX_utils.h"
 #include "mat_lzz_pX_approximant.h"
 #include "mat_lzz_pX_linsolve.h"

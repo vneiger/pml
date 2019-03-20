@@ -1,8 +1,6 @@
 #include <algorithm>
-#include <NTL/mat_lzz_p.h>
 
 #include "util.h"
-#include "lzz_pX_CRT.h"
 #include "mat_lzz_pX_utils.h"
 #include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_inverse.h" // includes matrix multiply

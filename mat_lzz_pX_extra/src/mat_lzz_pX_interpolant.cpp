@@ -2,7 +2,6 @@
 #include <numeric> // for std::iota
 //#include <NTL/BasicThreadPool.h>
 
-#include "lzz_pX_CRT.h"
 #include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_multiply.h"
 #include "mat_lzz_pX_interpolant.h"
@@ -13,8 +12,8 @@ NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /* interpolant basis verification                             */
-/* TODO incomplete                                            */
 /*------------------------------------------------------------*/
+
 bool is_interpolant_basis(
                           const Mat<zz_pX> & intbas,
                           const Vec<Mat<zz_p>> & evals,
@@ -27,31 +26,134 @@ bool is_interpolant_basis(
     if (randomized)
         throw std::logic_error("==is_interpolant_basis== Fast randomized interpolant basis verification not implemented yet");
 
-    //std::cout << "==is_interpolant_basis== WARNING: not fully implemented: not checking generation" << std::endl;
-
-    // test that appbas is shift-reduced with form at least 'form'
+    // test that intbas is shift-reduced with form at least 'form'
     if (not is_row_polmatform(form,intbas,shift))
-    {
-        std::cout << "not polmatform" << std::endl;
         return false;
-    }
 
     // test that the matrix consists of interpolants
-    Vec<Mat<zz_p>> intbas_vec;
-    conv(intbas_vec,intbas);
+    zz_pX_Multipoint_General ev(pts);
+    Vec<Mat<zz_p>> intbas_evals;
+    ev.evaluate_matrix(intbas_evals, intbas);
+    Mat<zz_p> res;
     for (long pt=0; pt<pts.length(); ++pt)
     {
-        Mat<zz_p> ev;
-        eval(ev, intbas, pts[pt]);
-        mul(ev, ev, evals[pt]);
-        if (not IsZero(ev))
-        {
-            std::cout << "nonzero eval " << pt << std::endl;
+        mul(res, intbas_evals[pt], evals[pt]);
+        if (not IsZero(res))
             return false;
-        }
     }
+
+    // test that intbas generates all interpolant, or equivalently,
+    // that intbas has the right degree of determinant
+    // --> since intbas is reduced, we can find the degree of determinant as
+    // the sum of shifted row degrees minus the sum of shifts
+
+    // compute degree of determinant of intbas
+    VecLong rdeg;
+    row_degree(rdeg, intbas, shift);
+    long actual_degdet = std::accumulate(rdeg.begin(), rdeg.end(), 0) - std::accumulate(shift.begin(), shift.end(), 0);
+
+    // compute sum of ranks of input matrices: this should be the
+    // degree of determinant of intbas
+    long target_degdet=0;
+    for (long pt = 0; pt < pts.length(); ++pt)
+    {
+        Mat<zz_p> evals_pt(evals[pt]);
+        long rank = gauss(evals_pt);
+        target_degdet += rank;
+    }
+
+    if (actual_degdet != target_degdet)
+        return false;
+
     return true;
 }
+
+bool is_interpolant_basis_geometric(
+                                    const Mat<zz_pX> & intbas,
+                                    const Vec<Mat<zz_p>> & evals,
+                                    const zz_p & pt, // geometric case
+                                    const long order,
+                                    const VecLong & shift,
+                                    const PolMatForm & form,
+                                    const bool randomized
+                                   )
+{
+    if (randomized)
+        throw std::logic_error("==is_interpolant_basis== Fast randomized interpolant basis verification not implemented yet");
+
+    // test that intbas is shift-reduced with form at least 'form'
+    if (not is_row_polmatform(form,intbas,shift))
+        return false;
+
+    // test that the matrix consists of interpolants
+    zz_pX_Multipoint_Geometric ev(pt, order);
+    Vec<Mat<zz_p>> intbas_evals;
+    ev.evaluate_matrix(intbas_evals, intbas);
+    Mat<zz_p> res;
+    for (long pt=0; pt<order; ++pt)
+    {
+        mul(res, intbas_evals[pt], evals[pt]);
+        if (not IsZero(res))
+            return false;
+    }
+
+    // test that intbas generates all interpolant, or equivalently,
+    // that intbas has the right degree of determinant
+    // --> since intbas is reduced, we can find the degree of determinant as
+    // the sum of shifted row degrees minus the sum of shifts
+
+    // compute degree of determinant of intbas
+    VecLong rdeg;
+    row_degree(rdeg, intbas, shift);
+    long actual_degdet = std::accumulate(rdeg.begin(), rdeg.end(), 0) - std::accumulate(shift.begin(), shift.end(), 0);
+
+    // compute sum of ranks of input matrices: this should be the
+    // degree of determinant of intbas
+    long target_degdet=0;
+    for (long pt = 0; pt < order; ++pt)
+    {
+        Mat<zz_p> evals_pt(evals[pt]);
+        long rank = gauss(evals_pt);
+        target_degdet += rank;
+    }
+
+    if (actual_degdet != target_degdet)
+        return false;
+
+    return true;
+}
+
+bool is_interpolant_basis(
+                          const Mat<zz_pX> & intbas,
+                          const Mat<zz_pX> & pmat,
+                          const Vec<zz_p> & pts,
+                          const VecLong & shift,
+                          const PolMatForm & form,
+                          const bool randomized
+                         )
+{
+    zz_pX_Multipoint_General ev(pts);
+    Vec<Mat<zz_p>> evals;
+    ev.evaluate_matrix(evals, pmat);
+    return is_interpolant_basis(intbas,evals,pts,shift,form,randomized);
+}
+
+bool is_interpolant_basis_geometric(
+                                    const Mat<zz_pX> & intbas,
+                                    const Mat<zz_pX> & pmat,
+                                    const zz_p & pt, // geometric case
+                                    const long order,
+                                    const VecLong & shift,
+                                    const PolMatForm & form,
+                                    const bool randomized
+                                   )
+{
+    zz_pX_Multipoint_Geometric ev(pt, order);
+    Vec<Mat<zz_p>> evals;
+    ev.evaluate_matrix(evals, pmat);
+    return is_interpolant_basis_geometric(intbas,evals,pt,order,shift,form,randomized);
+}
+
 
 /*------------------------------------------------------------*/
 /* M-Basis for interpolation points                           */

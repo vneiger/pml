@@ -18,12 +18,31 @@ void one_check(long sz, long dg)
     for (long dA = dg - 1; dA < dg + 2; dA++)
         for (long dB = dg - 1; dB < dg + 2; dB++)
         {
-            random(a, sz, sz+1, dA + 1);
+            std::cout << dA << "\t" << dB << "\t";
+            if (dA > 3)
+                random(a, sz, sz+1, dA);
+            else
+                random(a, sz, sz+1, dA + 1);
             random(c, sz+1, sz+2, dA + dB + 1);
 
             multiply(b1, a, c);
             b1 >>= dA;
             trunc(b1, b1, dB + 1);
+
+            middle_product(b2, a, c, dA, dB);
+            if (b1 != b2)
+            {
+                LogicError("Error in interface middle product");
+            }
+
+            if (sz <= 10 || max(dA, dB) <= 8)
+            {
+                middle_product_naive(b2, a, c, dA, dB);
+                if (b1 != b2)
+                {
+                    LogicError("Error in naive middle product");
+                }
+            }
 
             middle_product_3_primes(b2, a, c, dA, dB);
             if (b1 != b2)
@@ -37,12 +56,42 @@ void one_check(long sz, long dg)
                 LogicError("Error in dense middle product");
             }
 
+            //middle_product_evaluate_dense2(b2, a, c, dA, dB);
+            //if (b1 != b2)
+            //{
+            //    LogicError("Error in dense2 middle product");
+            //}
+
             if (is_FFT_prime())
             {
                 middle_product_evaluate_FFT_matmul(b2, a, c, dA, dB);
                 if (b1 != b2)
                 {
                     LogicError("Error in FFT matmul middle product");
+                }
+
+                middle_product_evaluate_FFT_matmul1(b2, a, c, dA, dB);
+                if (b1 != b2)
+                {
+                    LogicError("Error in FFT matmul1 middle product");
+                }
+
+                middle_product_evaluate_FFT_matmul2(b2, a, c, dA, dB);
+                if (b1 != b2)
+                {
+                    LogicError("Error in FFT matmul2 middle product");
+                }
+
+                middle_product_evaluate_FFT_matmul3(b2, a, c, dA, dB);
+                if (b1 != b2)
+                {
+                    LogicError("Error in FFT matmul3 middle product");
+                }
+
+                middle_product_evaluate_FFT_direct_ll_type(b2, a, c, dA, dB);
+                if (b1 != b2)
+                {
+                    LogicError("Error in FFT direct_ll middle product");
                 }
 
                 middle_product_evaluate_FFT_direct(b2, a, c, dA, dB);
@@ -52,15 +101,6 @@ void one_check(long sz, long dg)
                 }
 
                 middle_product_evaluate_FFT(b2, a, c, dA, dB);
-                if (b1 != b2)
-                {
-                    LogicError("Error in FFT middle product");
-                }
-            }
-
-            if (sz <= 10 || max(dA, dB) <= 8)
-            {
-                middle_product_naive(b2, a, c, dA, dB);
                 if (b1 != b2)
                 {
                     LogicError("Error in FFT middle product");

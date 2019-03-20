@@ -36,7 +36,6 @@ void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat
     // vector to store evaluations
     Vec<zz_p> evs(INIT_SIZE, n);
 
-
     // stores evaluations in a single vector for a, same for b
     const long st = s*t;
     Vec<zz_p> mat_valA(INIT_SIZE, n*st);

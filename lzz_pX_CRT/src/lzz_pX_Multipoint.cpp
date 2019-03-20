@@ -1,7 +1,4 @@
 #include <memory>
-#include <NTL/lzz_pX.h>
-#include <NTL/matrix.h>
-
 #include "lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
 
@@ -52,12 +49,10 @@ void zz_pX_Multipoint::get_points(Vec<zz_p> & points)
 /*------------------------------------------------------------*/
 void zz_pX_Multipoint::evaluate_vector(Vec<Vec<zz_p>>& val, const Vec<zz_pX>& f) const
 {
-    long s = f.length();
+    const long s = f.length();
     val.SetLength(n);
-    for (long i = 0; i < n; i++)
-    {
+    for (long i = 0; i < n; ++i)
         val[i].SetLength(s);
-    }
 
     Vec<zz_p> tmp;
     for (long i = 0; i < s; i++)
@@ -105,23 +100,6 @@ void zz_pX_Multipoint::evaluate_matrix(Vec<Mat<zz_p>>& val, const Mat<zz_pX>& f)
             }
         }
     }
-
-
-
-    // Vec<zz_p> tmp;
-    // for (long i = 0; i < s; i++)
-    // {
-    //     for (long k = 0; k < t; k++)
-    //     {
-    //         evaluate(tmp, f[i][k]);
-    //         for (long j = 0; j < n; j++)
-    //         {
-    //             val[j][i][k] = tmp[j];
-    //         }
-    //     }
-    // }
-
-
 }
 
 /*------------------------------------------------------------*/

@@ -1,6 +1,6 @@
-# ntl-extra
+# PML (Polynomial Matrix Library)
 
-Additions to Shoup's NTL, with a focus on univariate polynomial matrices, constant structured matrices, and their applications.
+Additions to Shoup's NTL, with a focus on univariate polynomial matrices, structured matrices, and their applications.
 
 Authors: Seung Gyu Hyun, Vincent Neiger, Éric Schost
 
@@ -16,23 +16,23 @@ Each directory should contain one or more .h file and subdirectories src/, test/
 
 Running "make" at the root, where this README is, (re)builds the entire library from scratch. Running "make doc" (after "make") builds a Doxygen documentation that can be found in ROOT/include/html/index.html
 
-In src/, "make" -> compile and install the header / object files.
-         "make clean" -> removes the object files.
+In `src/`,
+ - "make" -> compile and install the header / object files.
+ - "make clean" -> removes the object files.
 
-In test/, test files should be called test-something.cpp
-          "make" or "make clean" -> removes all executables and check files (.chk)
-          "make all" -> compiles all test files
-          "make run" -> runs all executables, outputs results to something.chk
-                        something.chk should be empty if all goes well
-          "make something.exe" -> compiles only test-something.cpp
-          "make something.chk" -> runs only test-something
+In `test/`, test files should be called test-something.cpp
+ - "make" or "make clean" -> removes all executables and check files (.chk)
+ - "make all" -> compiles all test files
+ - "make run" -> runs all executables, outputs results to something.chk
+ - "make something.exe" -> compiles only test-something.cpp
+ - "make something.chk" -> runs only test-something
 
-In timings/, timing files should be called time-something.cpp
-          "make" or "make clean" -> removes all executables and data files (.dat)
-          "make all" -> compiles all timing files
-          "make run" -> runs all executables, outputs results to something.dat
-          "make something.exe" -> compiles only time-something.cpp
-          "make something.chk" -> runs only time-something
+In `timings/`, timing files should be called time-something.cpp
+ - "make" or "make clean" -> removes all executables and data files (.dat)
+ - "make all" -> compiles all timing files
+ - "make run" -> runs all executables, outputs results to something.dat
+ - "make something.exe" -> compiles only time-something.cpp
+ - "make something.chk" -> runs only time-something
 
 # For developers
 
@@ -42,3 +42,8 @@ Code style:
   - soft tabulations = 4 spaces
   - scope delimiter { } on their own line
   - scope delimiters are not required here when they are not required by C++ (e.g. for one-line if/for)
+  - when creating a new file, add the modelines at the bottom of the file:
+```
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
+```

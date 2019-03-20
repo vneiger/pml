@@ -1,0 +1,5 @@
+Ubuntu
+32GB memory
+Intel Core i7-4790 CPU
+
+NTL version: 11.3.1

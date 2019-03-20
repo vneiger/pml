@@ -178,20 +178,21 @@ void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim
 
         for (size_t i=0; i<szs.size(); ++i)
         {
-            long interval = ceil( (double)szs[i] / 4);
-            for (long j=1; 2*j<3*szs[i]; j+=interval)
-            {
-                long max_order=128;
-                if (szs[i]==512)
-                    max_order=64;
-                else if (szs[i]==1024)
-                    max_order=32;
-                for (long k=2; k<=max_order; k=2*k)
+            VecLong cdims = {szs[i]/4, szs[i]/2, 3*szs[i]/4};
+            for (long j : cdims)
+                if (j > 0)
                 {
-                    one_bench_mbasis(szs[i],j,k-1,k); // degree ~ order
-                    one_bench_mbasis(szs[i],j,k-1,2*k); // degree ~ order/2
+                    long max_order=128;
+                    if (szs[i]==512)
+                        max_order=64;
+                    else if (szs[i]==1024)
+                        max_order=32;
+                    for (long k=2; k<=max_order; k=2*k)
+                    {
+                        one_bench_mbasis(szs[i],j,k-1,k); // degree ~ order
+                        //one_bench_mbasis(szs[i],j,k-1,2*k); // degree ~ order/2
+                    }
                 }
-            }
         }
         cout << endl;
     }

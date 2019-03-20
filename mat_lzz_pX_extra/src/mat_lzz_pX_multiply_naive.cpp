@@ -1,11 +1,4 @@
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include <NTL/lzz_pX.h>
-
-#include "lzz_p_extra.h"
-#include "lzz_pX_middle_product.h"
-#include "mat_lzz_pX_extra.h"
-#include "lzz_pX_CRT.h"
+#include "mat_lzz_pX_multiply.h"
 
 NTL_CLIENT
 
@@ -194,45 +187,5 @@ void multiply_naive(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
         }
 }
 
-
-/*------------------------------------------------------------*/
-/* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
-/* naive algorithm                                            */
-/* output may alias input; b does not have to be zero matrix  */
-/*------------------------------------------------------------*/
-void middle_product_naive(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_pX> & c, long dA, long dB)
-{
-    if (&b == &a || &b == &c)
-    {
-        Mat<zz_pX> b2;
-        middle_product_naive(b2, a, c, dA, dB);
-        b.swap(b2);
-        return;
-    }
-
-    long u = a.NumRows();
-    long v = a.NumCols();
-    long w = c.NumCols();
-
-    b.SetDims(u, w);
-    zz_pX buf;
-    for (long i = 0; i < u; ++i)
-        for (long j = 0; j < w; ++j)
-        {
-            middle_product(b[i][j], a[i][0], c[0][j], dA, dB);
-            for (long k = 1; k < v; ++k)
-            {
-                middle_product(buf, a[i][k], c[k][j], dA, dB);
-                add(b[i][j], b[i][j], buf);
-            }
-        }
-}
-
-
-// Local Variables:
-// mode: C++
-// tab-width: 4
-// indent-tabs-mode: nil
-// c-basic-offset: 4
-// End:
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

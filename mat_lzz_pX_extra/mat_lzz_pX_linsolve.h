@@ -1,7 +1,7 @@
 #ifndef MAT_LZZ_PX_LINSOLVE__H
 #define MAT_LZZ_PX_LINSOLVE__H
 
-/** Functions for linear system solving.
+/** \brief Functions for linear system solving.
  *
  * \file mat_lzz_pX_linsolve.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
@@ -187,8 +187,8 @@ inline Vec<zz_pX> solve_series(
  * the reconstruction is randomized (on two levels: using random linear
  * combinations, and in the resolution of a mosaic Toeplitz system)
  *
- * \todo compare speed of mosaic Toeplitz versus pmbasis in this kind of
- * instance (vector rational reconstruction)
+ * \todo several vectors: see if mosaic Toeplitz (or pmbasis) could be
+ * accelerated for this kind of instance (vector rational reconstruction)
  *
  * \todo better tuning of number of vectors for rational reconstruction
  */
@@ -200,17 +200,32 @@ void linsolve_via_series(
                          long nb_max = -1
                         );
 
-// solve aM = b via kernel basis
-// return a and denominator d
-// assumes M is invertible
-// TODO not well tested yet
-// returns 0 if no solution, 1 otherwise
+/** Solves `A u = den * b` via kernel basis.
+ *
+ * \todo What is the return value?
+ *
+ * \todo improve documentation and clean code
+ *
+ * \todo provide more complete function (should more generally return the computed
+ * kernel, which in particular will be (u,den) when A is square invertible.
+ */
 long linsolve_via_kernel(
                          Vec<zz_pX> & u,
                          zz_pX & den,
                          const Mat<zz_pX> & A,
                          const Vec<zz_pX> & b
                         );
+
+///** Solves `A u = den * b` by evaluation/interpolation. The matrix `A` must be
+// * square and nonsingular. If return value is not zero, the computation did not
+// * complete (because lack of points `alpha` such that `A(alpha)` is invertible,
+// * perhaps because field too small). */
+//long linsolve_via_evaluation(
+//                             Vec<zz_pX> & u,
+//                             zz_pX & den,
+//                             const Mat<zz_pX> & A,
+//                             const Vec<zz_pX> & b
+//                            );
 
 //@} // doxygen group: Solving linear systems
 

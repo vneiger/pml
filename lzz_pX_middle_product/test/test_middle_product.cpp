@@ -39,6 +39,26 @@ void check(long p)
                 LogicError("Error in middle product.");
             }
         }
+        if (p==0 && dA > 3)
+        {
+            std::cout << dA << "\t" << "entering variant..." << std::endl;
+            for (long dB = 3; dB < 300; dB++)
+            {
+                std::cout << dB << std::endl;
+                zz_pX a, b, c;
+                a = random_zz_pX(dA + 1);
+                //c = random_zz_pX(dA + dB + 1);
+                c = random_zz_pX(2*dA + 1);
+
+                middle_FFT_variant(b, a, c, dA, dA);
+                if (b != trunc(RightShift(a*c, dA), dA + 1))
+                {
+                    std::cout << b << std::endl;
+                    std::cout << trunc(RightShift(a*c, dA), dA + 1) << std::endl;
+                    LogicError("Error in middle product.");
+                }
+            }
+        }
     }
 }
 
@@ -46,7 +66,7 @@ void check(long p)
 /*------------------------------------------------------------*/
 /* main just calls check()                                    */
 /*------------------------------------------------------------*/
-int main(int argc, char** argv)
+int main()
 {
     check(0);
     check(23068673);

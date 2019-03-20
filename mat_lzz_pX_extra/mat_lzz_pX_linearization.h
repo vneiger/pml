@@ -1,9 +1,18 @@
 #ifndef MAT_LZZ_PX_LINEARIZATION__H
 #define MAT_LZZ_PX_LINEARIZATION__H
 
-#include <numeric> // for 'accumulate'
+/** \brief Experimental code for partial linearization.
+ *
+ * \file mat_lzz_pX_linearization.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
+ * \version 0.1
+ * \date 2019-02-01
+ *
+ * \todo Not documented yet. Will be when the functions become more stable.
+ */
 
-#include "mat_lzz_pX_forms.h" // for VecLong
+#include <numeric> // for 'accumulate'
+#include "mat_lzz_pX_forms.h" // for VecLong and col_degree()
 
 NTL_CLIENT
 

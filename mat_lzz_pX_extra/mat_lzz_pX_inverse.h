@@ -125,9 +125,6 @@ void newton_inv_trunc_geometric(
 /** @name High-order lifting
  *
  *  Computes a high-degree slice of the inverse expansion of a matrix.
- *
- *  \todo incomplete: for the moment, only what is needed for system solving
- *  via high order lifting
  */
 //@{
 

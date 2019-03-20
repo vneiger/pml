@@ -31,6 +31,12 @@ void one_check(long sz, long deg)
 
     if (is_FFT_ready(NextPowerOfTwo(2*deg - 1)))
     {
+        multiply_evaluate_FFT_direct_ll_type(c2, a, b);
+        if (c1 != c2)
+        {
+            LogicError("FFT direct_ll_type mismatch");
+        }
+
         multiply_evaluate_FFT_direct(c2, a, b);
         if (c1 != c2)
         {
@@ -40,19 +46,25 @@ void one_check(long sz, long deg)
         multiply_evaluate_FFT_matmul1(c2, a, b);
         if (c1 != c2)
         {
-            LogicError("FFT matmul mismatch");
+            LogicError("FFT matmul1 mismatch");
+        }
+
+        multiply_evaluate_FFT_matmul1_new(c2, a, b);
+        if (c1 != c2)
+        {
+            LogicError("FFT matmul1_new mismatch");
         }
 
         multiply_evaluate_FFT_matmul2(c2, a, b);
         if (c1 != c2)
         {
-            LogicError("FFT direct mismatch");
+            LogicError("FFT matmul2 mismatch");
         }
 
         multiply_evaluate_FFT_matmul3(c2, a, b);
         if (c1 != c2)
         {
-            LogicError("FFT direct mismatch");
+            LogicError("FFT matmul3 mismatch");
         }
 
         multiply_evaluate_FFT(c2, a, b);
@@ -115,7 +127,12 @@ void all_checks()
 
     for (size_t si = 0; si < szs.size(); si++)
         for (size_t di = 0; di < degs.size(); di++)
+        {
+            std::cout << szs[si] << "\t" << degs[di] << "...\t";
+            std::cout << std::flush;
             one_check(szs[si], degs[di]);
+            std::cout << "ok." << std::endl;
+        }
 }
 
 

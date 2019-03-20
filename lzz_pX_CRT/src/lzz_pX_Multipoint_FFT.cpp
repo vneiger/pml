@@ -1,7 +1,3 @@
-#include <NTL/lzz_pX.h>
-#include <NTL/vector.h>
-
-#include "util.h"
 #include "lzz_pX_CRT.h"
 
 NTL_CLIENT

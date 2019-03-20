@@ -482,6 +482,17 @@ void random_mat_zz_pX_rdeg(Mat<zz_pX> & pmat, long m, long n, VecLong rdeg);
  */
 void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, VecLong cdeg);
 
+/** Computes a random polynomial matrix `matp` with `m` rows, `n` columns,
+ * and degree less than `d`, represented as a vector of constant matrices.
+ */
+void random(Vec<Mat<zz_p>> & matp, long m, long n, long d);
+
+/** Computes and returns a random polynomial matrix with `m` rows, `n` columns,
+ * and degree less than `d`, represented as a vector of constant matrices.
+ */
+inline Vec<Mat<zz_p>> random_vec_mat_zz_p(long m, long n, long d)
+{ Vec<Mat<zz_p>> matp; random(matp, m, n, d); return matp; }
+
 //@} // doxygen group: Generation of random matrices
 
 

@@ -21,10 +21,12 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
     long nb_iter=0;
 
     double t_pmbasis_app=0.0;
+    double t_verif_app=0.0;
     while (t_pmbasis_app<0.2)
     {
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, degree+1);
+        Mat<zz_pX> copy(pmat);
 
         t1 = GetWallTime();
         Mat<zz_pX> appbas;
@@ -33,37 +35,21 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
         t2 = GetWallTime();
 
         t_pmbasis_app += t2-t1;
+
+        t1 = GetWallTime();
+        is_approximant_basis(appbas, copy, order, shift, ORD_WEAK_POPOV, true);
+        t2 = GetWallTime();
+
+        t_verif_app += t2-t1;
+
         ++nb_iter;
     }
     t_pmbasis_app /= nb_iter;
+    t_verif_app /= nb_iter;
 
-    double t_pmbasis_int=0.0;
-    if (order<zz_p::modulus())
-    {
-        nb_iter=0;
-        while (t_pmbasis_int<0.2)
-        {
-            Mat<zz_pX> pmat;
-            random(pmat, rdim, cdim, degree+1);
-            Vec<zz_p> pts(INIT_SIZE, order);
-            std::iota(pts.begin(), pts.end(), 0);
-            std::shuffle(pts.begin(), pts.end(), std::mt19937{std::random_device{}()});
-        
-            t1 = GetWallTime();
-            Mat<zz_pX> intbas;
-            VecLong rdeg(shift);
-            pmbasis(intbas,pmat,pts,rdeg);
-            t2 = GetWallTime();
-        
-            t_pmbasis_int += t2-t1;
-            ++nb_iter;
-        }
-        t_pmbasis_int /= nb_iter;
-    }
-    else
-        t_pmbasis_int=-1.0;
-
+    nb_iter=0;
     double t_pmbasis_intgeom=0.0;
+    double t_verif_int=0.0;
     if (2*order+1 < zz_p::modulus())
     {
         nb_iter=0;
@@ -89,43 +75,24 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
             t2 = GetWallTime();
         
             t_pmbasis_intgeom += t2-t1;
+
+            t1 = GetWallTime();
+            is_interpolant_basis_geometric(intbas, pmat, r, order, shift, ORD_WEAK_POPOV, false);
+            t2 = GetWallTime();
+
+            t_verif_int += t2-t1;
+
             ++nb_iter;
         }
         t_pmbasis_intgeom /= nb_iter;
+        t_verif_int /= nb_iter;
     }
     else
         t_pmbasis_intgeom=-1.0;
 
-    // just for test, works only with very specific dimensions
-    bool applin=false; // for disabling printing timing below in function
-    double t_pmbasis_applin=0.0;
-    if (applin)
-    {
-        nb_iter=0;
-        while (t_pmbasis_applin<0.2)
-        {
-            Mat<zz_pX> pmat;
-            random(pmat, rdim, cdim, degree+1);
-
-            t1 = GetWallTime();
-            Mat<zz_pX> appbas;
-            VecLong rdeg(shift);
-            pmbasis_generic_onecolumn(appbas,pmat,order,rdeg);
-            t2 = GetWallTime();
-
-            t_pmbasis_applin += t2-t1;
-            ++nb_iter;
-        }
-        t_pmbasis_applin /= nb_iter;
-    }
-
-    cout << rdim << "\t" << cdim << "\t" << degree << "\t" << order;
-    cout << "\t" << t_pmbasis_app << "\t" << t_pmbasis_int << "\t" << t_pmbasis_intgeom;
-
-    if (applin)
-        std::cout << "\t" << t_pmbasis_applin;
-
-    cout << endl;
+    std::cout << rdim << "\t" << cdim << "\t" << order << "\t";
+    std::cout << t_pmbasis_app << "\t" << t_verif_app << "\t";
+    std::cout << t_pmbasis_intgeom << "\t" << t_verif_int << "\t" << std::endl;
 }
 
 /*------------------------------------------------------------*/
@@ -172,7 +139,7 @@ void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim
     }
 
     std::cout << "Note: negative timings for interpolant variants indicate that not enough interpolation points could be found in the base field." << std::endl;
-    cout << "rdim\tcdim\tdeg\torder\tapp\t\tint\t\tint-geo" << endl;
+    cout << "rdim\tcdim\torder\tapp\t\tverif-app\tint\t\tverif-int" << endl;
 
     if (rdim==-1) // then cdim==-1 && order==-1, default case
     {
@@ -180,29 +147,17 @@ void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim
 
         for (size_t i=0; i<szs.size(); ++i)
         {
-            VecLong cdims = {szs[i]/4, szs[i]/2, 3*szs[i]/4};
-            for (long j : cdims)
-                if (j > 0)
+            //long interval = ceil( (double)szs[i] / 4);
+            //for (long j=1; 2*j<3*szs[i]; j+=interval)
+            long j = szs[i]/2;
+            {
+                long max_order= 65536/szs[i];
+                for (long k=32; k<=max_order; k=2*k)
                 {
-                    long max_order=65536;
-                    if (szs[i]==16)
-                        max_order=32768;
-                    if (szs[i]==32)
-                        max_order=16384;
-                    if (szs[i]==64)
-                        max_order=4096;
-                    if (szs[i]==128)
-                        max_order=1024;
-                    if (szs[i]==256)
-                        max_order=256;
-                    if (szs[i]==512)
-                        max_order=64;
-                    for (long k=2; k<=max_order; k=2*k)
-                    {
-                        one_bench_pmbasis(szs[i],j,k-1,k); // degree ~ order
-                        //one_bench_pmbasis(szs[i],j,k-1,2*k); // degree ~ order/2
-                    }
+                    one_bench_pmbasis(szs[i],j,k-1,k); // degree ~ order
+                    //one_bench_pmbasis(szs[i],j,k-1,2*k); // degree ~ order/2
                 }
+            }
         }
         cout << endl;
     }
@@ -219,7 +174,7 @@ int main(int argc, char ** argv)
     std::cout << std::setprecision(8);
 
     if (argc!=3 and argc!=7)
-        throw std::invalid_argument("Usage: ./time_pmbasis nbits fftprime (rdim cdim degree order)");
+        throw std::invalid_argument("Usage: ./time_verif nbits fftprime (rdim cdim degree order)");
     // assume rdim>0 , cdim>0, order>0
 
     const long nbits = atoi(argv[1]);

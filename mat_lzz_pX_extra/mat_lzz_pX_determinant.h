@@ -1,12 +1,22 @@
 #ifndef MAT_LZZ_PX_DETERMINANT__H
 #define MAT_LZZ_PX_DETERMINANT__H
 
-/** Determinant.
+/** \brief Determinant algorithms for polynomial matrices over `zz_p`.
  *
  * \file mat_lzz_pX_determinant.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
  * \version 0.1
  * \date 2019-01-01
+ *
+ * Implement determinant algorithms: via linear system solving, via
+ * triangularization, via evaluation/interpolation, and via expansion by
+ * minors.
+ *
+ * \todo finish non-plain expansion by minors for dimensions 5, 6 (7 is
+ * probably too much?).
+ *
+ * \todo another algorithm: rely on x-Smith decomposition of Gupta et al, cf
+ * Appendix of LaNeZh17 
  *
  */
 
@@ -15,14 +25,18 @@
 
 NTL_CLIENT
 
-/**********************************************************************
- *                       DETERMINANT ALGORITHMS                       *
- **********************************************************************/
-
-// general user interface
-// TODO (not implemented yet)
+/** Computes the determinant `det` of `pmat`. Chooses the fastest available
+ * option according to some given thresholds.
+ *
+ * \todo Not implemented yet (thresholding mechanism not done yet)
+ */
 void determinant(zz_pX & det, const Mat<zz_pX> & pmat);
 
+/** Computes and returns the determinant `det` of `pmat`. Chooses the fastest
+ * available option according to some given thresholds.
+ *
+ * \todo Not implemented yet
+ */
 inline zz_pX determinant(const Mat<zz_pX> & pmat)
 {
     zz_pX det;
@@ -30,24 +44,29 @@ inline zz_pX determinant(const Mat<zz_pX> & pmat)
     return det;
 }
 
-// verifies that det = c det(pmat),
-// for some c a nonzero field element if up_to_constant==false; and c=1 otherwise
-// if randomized==true, it is allowed to use a Monte Carlo randomized approach
-// TODO: only randomized implemented for now
+/** Verifies whether `det` is the determinant of `pmat`. If `up_to_constant` is
+ * `true`, the check is up to a multiplicative constant. If `randomized` is `true`,
+ * a randomized algorithm may be used.
+ *
+ * \todo be more explicit on randomized (Monte Carlo ? one sided ?)
+ *
+ * \todo only randomized is implemented for now
+ */
 bool verify_determinant(const zz_pX & det, const Mat<zz_pX> & pmat, bool up_to_constant, bool randomized);
 
 /*******************************************************************
  *  Labahn-Neiger-Zhou: via diagonal entries of triangularization  *
  *******************************************************************/
 
-void determinant_via_diagonal_of_hermite(zz_pX & det, const Mat<zz_pX> & pmat);
+//void determinant_via_diagonal_of_hermite(zz_pX & det, const Mat<zz_pX> & pmat);
 
-// Version 1 (deterministic algorithm): degree of determinant is known (e.g. if
-// matrix is reduced or if the determinant corresponds to some invariant of an
-// object with known degree). Runs the partial triangularization and returns
-// false if the computed diagonal entry of Hermite form does not have the right
-// degree. True is returned iff determinant is correct. 
-// TODO currently returns determinant up to constant factor!!
+/** Tries to compute the determinant `det` of `pmat`, assuming its degree is
+ * known and provided as input, by running [Labahn-Neiger-Zhou 2017] partial
+ * triangularization algorithm, assuming all encountered row bases are
+ * unimodular, hence ignoring them (this is correct for generic `pmat`).
+ * Assuming the provided `degree` is correct, returns `true` if and only if the
+ * computation was successful (i.e. `det` is the determinant of `pmat` up to a
+ * constant). */
 bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, long degree);
 
 // Version 2 (Las Vegas randomized algorithm): runs the partial
@@ -57,44 +76,57 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
 // TODO: not implemented yet
 //bool determinant_generic_las_vegas(zz_pX & det, const Mat<zz_pX> & pmat);
 
-// Determinant via linear system solving with random right-hand side
-// Currently requires that pmat(0) is invertible (uses solving via series)
+/** Computes the determinant `det` of `pmat` by solving a linear system with
+ * random right-hand side of degree `deg(pmat)` and taking the denominator. 
+ *
+ * \todo this currently requires `pmat(0)` to be invertible; support other
+ * cases by using kernel based system solving
+ *
+ * \todo determinant only up to constant?
+ */
 void determinant_via_linsolve(zz_pX & det, const Mat<zz_pX> & pmat);
 
-// Determinant via multipoint evaluation, general points. Requires the field to
-// be sufficiently large (namely, with the current version, up to
-// deg(pmat)*pmat.NumRows()+1 points are required, independently of the degree
-// profile of pmat).
-//
-// TODO improve with better bounds on degdet, such as sum of cdeg or rdeg, or
-// even the generic-degdet bound)
+/** Computes the determinant `det` of `pmat` by evaluation/interpolation at
+ * general points. This requires the field to be sufficiently large (namely,
+ * with the current version, `deg(pmat)*pmat.NumRows()+1` points are required,
+ * independently of the degree profile of pmat).
+ *
+ * \todo improve with better bounds on degdet, such as sum of cdeg or rdeg, or
+ * even the generic-degdet bound)
+ */
 void determinant_via_evaluation_general(zz_pX & det, const Mat<zz_pX> & pmat);
 
-// Determinant via multipoint evaluation, geometric points. Requires the field to
-// be sufficiently large (namely, with the current version, how large?????)
-//
-// TODO improve with better bounds on degdet, such as sum of cdeg or rdeg, or
-// even the generic-degdet bound)
+/** Computes the determinant `det` of `pmat` by evaluation/interpolation at
+ * a geometric sequence. This requires the field to be sufficiently large.
+ *
+ * \todo improve doc: give required field size
+ *
+ * \todo improve this required size with better bounds on degdet, such as sum
+ * of cdeg or rdeg, or even the generic-degdet bound)
+ */
 void determinant_via_evaluation_geometric(zz_pX & det, const Mat<zz_pX> & pmat);
 
 
-// Determinant via multipoint evaluation, FFT points. Requires the field to
-// be sufficiently large (namely, with the current version, how large?????)
-//
-// TODO improve with better bounds on degdet, such as sum of cdeg or rdeg, or
-// even the generic-degdet bound)
+/** Computes the determinant `det` of `pmat` by evaluation/interpolation at FFT
+ * points. This requires the field to be sufficiently large.
+ *
+ * \todo improve doc: give required field size
+ *
+ * \todo improve this required size with better bounds on degdet, such as sum
+ * of cdeg or rdeg, or even the generic-degdet bound)
+ */
 void determinant_via_evaluation_FFT(zz_pX & det, const Mat<zz_pX> & pmat);
 
-// determinant via "expansion by minors", with essentially n recursive calls to
-// submatrices of dimensions n-1 x n-1
+/** Computes the determinant `det` of `pmat` by the plain expansion by minors
+ * (recursive, with `n` recursive calls to submatrices of dimensions `n-1 x
+ * n-1`, where `n` is the dimension of the input `pmat`). Should not be used
+ * for dimensions above 5 or 6. */
 void determinant_expansion_by_minors_rec(zz_pX & det, const Mat<zz_pX> & pmat);
-// determinant via "expansion by minors", with specific code for n<=??
-// (otherwise should probably not be used, quite slow)
-void determinant_expansion_by_minors(zz_pX & det, const Mat<zz_pX> & pmat);
 
-// TODO other determinant algorithms??
-// --> could rely on x-Smith decomposition of Gupta et al (worth
-// implementing??), cf Appendix of LaNeZh17 
+/** Computes the determinant `det` of `pmat` by expansion by minors, avoiding
+ * some redundant computations (currently, supports size up to `4 x 4`).
+ */
+void determinant_expansion_by_minors(zz_pX & det, const Mat<zz_pX> & pmat);
 
 #endif // MAT_LZZ_PX_DETERMINANT__H
 
