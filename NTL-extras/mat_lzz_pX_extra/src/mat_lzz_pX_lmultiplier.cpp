@@ -13,7 +13,9 @@
 
 NTL_CLIENT
 
-#if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES)
+#if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES) \
+     && defined(__GNUC__) && (__GNUC__ >= 4) && !defined(__INTEL_COMPILER)  && !defined(__clang__) \
+     && defined (__x86_64__) && NTL_BITS_PER_LONG == 64
 
 /*------------------------------------------------------------*/
 /* pairwise product of two fftReps using long long's          */
@@ -119,7 +121,9 @@ void mat_lzz_pX_lmultiplier_FFT_direct::multiply(Mat<zz_pX>& c, const Mat<zz_pX>
 // note: c cannot alias b
 void mat_lzz_pX_lmultiplier_FFT_direct::multiply_direct_ll_type(Mat<zz_pX>& c, const Mat<zz_pX>& b)
 {
-#if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES)
+#if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES) \
+     && defined(__GNUC__) && (__GNUC__ >= 4) && !defined(__INTEL_COMPILER)  && !defined(__clang__) \
+     && defined (__x86_64__) && NTL_BITS_PER_LONG == 64
     const long m = NumRows();
     const long n = NumCols();
     const long p = b.NumCols();

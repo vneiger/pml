@@ -10,7 +10,9 @@
 
 NTL_CLIENT
 
-#if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES)
+#if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES) \
+     && defined(__GNUC__) && (__GNUC__ >= 4) && !defined(__INTEL_COMPILER)  && !defined(__clang__) \
+     && defined (__x86_64__) && NTL_BITS_PER_LONG == 64
 
 /*------------------------------------------------------------*/
 /* pairwise product of two fftReps using long long's          */
@@ -45,7 +47,9 @@ static inline void mul_add(Vec<ll_type>& z, const fftRep& x, const fftRep& y)
 /*------------------------------------------------------------*/
 void multiply_evaluate_FFT_direct_ll_type(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b)
 {
-#if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES)
+#if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES) \
+     && defined(__GNUC__) && (__GNUC__ >= 4) && !defined(__INTEL_COMPILER)  && !defined(__clang__) \
+     && defined (__x86_64__) && NTL_BITS_PER_LONG == 64
     if (&c == &a || &c == &b)
     {
         Mat<zz_pX> c2;
