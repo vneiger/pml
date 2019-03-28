@@ -32,7 +32,6 @@ int main(int argc, char *argv[])
     double t,tt;
     long nb_iter;
 
-    if (0)
     { // generic case
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -50,7 +49,6 @@ int main(int argc, char *argv[])
         std::cout << "Time(triangular):\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
     }
 
-    if (0)
     { // via random linear system
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -68,7 +66,6 @@ int main(int argc, char *argv[])
         std::cout << "Time(system-solve):\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
     }
 
-    if (0)
     { // via evaluation, general points
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -120,7 +117,7 @@ int main(int argc, char *argv[])
         std::cout << "Time(ev-FFT):\t\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
     }
 
-    if (rdim<7)
+    if (rdim<=6)
     { // naive
         t=0.0; nb_iter=0;
         bool ok = true;
