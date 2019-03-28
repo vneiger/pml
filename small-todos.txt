@@ -16,13 +16,6 @@ TODO Vincent
    - Multi-thread (long-term work):
 		  * try to speed up everything when several threads
 
-Input from Mohab:
-  - préciser à partir de quelle version de NTL, pml fonctionne
-		(j'ai dû télécharger et réinstaller NTL pour que tout soit ok ; j'avais une 11.2.*)
-	- je suis un peu naze en Makefile donc je n'ai pas intuité facilement comment
-	 générer les binaires pour les fichiers de tests => mettre un commentaire dans les .cpp? 
-
-
 TODO Eric
    - add new multiplication function
    - fix names (mul / multiply)
