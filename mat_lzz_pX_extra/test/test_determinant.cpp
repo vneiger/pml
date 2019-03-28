@@ -15,24 +15,26 @@ int main(int argc, char *argv[])
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    if (argc!=3)
-        throw std::invalid_argument("Usage: ./test_determinant rdim degree");
+    if (argc!=3 && argc!=4)
+        throw std::invalid_argument("Usage: ./test_determinant rdim degree (fftprime?)");
 
     const long rdim = atoi(argv[1]);
     const long degree = atoi(argv[2]);
+    const bool fftprime = (argc==3) ? false : (atoi(argv[3])==1);
 
-    //zz_p::FFTInit(0);
-    zz_p::init(NTL::GenPrime_long(60));
+    if (fftprime)
+        zz_p::FFTInit(0);
+    else
+        zz_p::init(NTL::GenPrime_long(60));
 
     std::cout << "Testing determinant with random input matrix" << std::endl;
-    std::cout << "--prime =\t" << zz_p::modulus() << std::endl;
+    std::cout << "--prime =\t" << zz_p::modulus() << (fftprime?"  (FFT prime)":"") << std::endl;
     std::cout << "--rdim =\t" << rdim << std::endl;
     std::cout << "--degree =\t" << degree << std::endl;
 
     double t,tt;
     long nb_iter;
 
-    if (0)
     { // generic case
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -50,7 +52,6 @@ int main(int argc, char *argv[])
         std::cout << "Time(triangular):\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
     }
 
-    if (0)
     { // via random linear system
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -68,7 +69,6 @@ int main(int argc, char *argv[])
         std::cout << "Time(system-solve):\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
     }
 
-    if (0)
     { // via evaluation, general points
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -103,6 +103,7 @@ int main(int argc, char *argv[])
         std::cout << "Time(ev-geometric):\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
     }
 
+    if (fftprime)
     { // via evaluation, FFT points
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -120,7 +121,7 @@ int main(int argc, char *argv[])
         std::cout << "Time(ev-FFT):\t\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
     }
 
-    if (rdim<7)
+    if (rdim<=6)
     { // naive
         t=0.0; nb_iter=0;
         bool ok = true;

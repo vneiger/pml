@@ -197,7 +197,7 @@ void determinant_expansion_by_minors_rec(zz_pX & det, const Mat<zz_pX> & pmat)
         for (long i = k+1; i < dim; ++i)
             for (long j = 0; j < dim-1; ++j)
                 buf[i-1][j] = pmat[i][j+1];
-        determinant_expansion_by_minors(tmp, buf);
+        determinant_expansion_by_minors_rec(tmp, buf);
         mul(tmp, pmat[k][0], tmp);
         if (k%2 == 0) // k even
             add(det, det, tmp);

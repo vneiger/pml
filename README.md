@@ -8,7 +8,7 @@ Version 0.0
 
 # Installation
 
-NTL should be installed.
+NTL should be installed, version >=11.3.1 required.
 
 For the moment, this has only been tested on some linux distributions, with NTL installed in default location. Installation relies on "make" and documentation is built via Doxygen.
 
