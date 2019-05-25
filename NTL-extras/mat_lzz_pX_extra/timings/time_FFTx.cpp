@@ -103,6 +103,8 @@ void one_bench_fft(long sz, long deg)
         tmul /= nb_iter;
     }
 
+    TIME(multiply)
+
     TIME(multiply_evaluate_FFT_matmul1)
 
     TIME(multiply_evaluate_FFT_matmul2)
@@ -187,7 +189,7 @@ void run_bench(long nbits)
         zz_p::UserFFTInit(1139410705724735489); // 60 bits
         cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << 60 << ")" << endl;
     }
-    std::cout << "size\tdegree\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
+    std::cout << "size\tdegree\tmult\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
     for (long sz : szs)
     {
         long maxdeg = 5000;
@@ -251,7 +253,7 @@ int main(int argc, char ** argv)
         zz_p::UserFFTInit(786433); // FFT, 20 bits
         std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
         std::cout << "(ratios versus multiply)" << std::endl;
-        std::cout << "size\tdegree\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
+        std::cout << "size\tdegree\tmult\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
         warmup();
         one_bench_fft(atoi(argv[1]),atoi(argv[2]));
     }
