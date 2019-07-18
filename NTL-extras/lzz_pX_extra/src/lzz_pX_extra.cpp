@@ -1,5 +1,5 @@
 #include <algorithm>
-
+#include <iostream>
 #include "vec_lzz_p_extra.h"
 #include "lzz_pX_extra.h"
 
@@ -483,7 +483,402 @@ void add_LeftShift(zz_pX & c, const zz_pX & a, const zz_pX & b, const long k)
       c.normalize();
 }
 
+// FFT
+// bitwise reverse of n wrt s
+long bitwise_rev(long n, const long s)
+{
+	long pow2 = pow(2,s-1);
+	long res = 0;	
+	for (long i = 0; i < s; i++)
+	{
+		res += pow2 * (n % 2);
+		n = n/2;
+		pow2 = pow2/2;
+	}
+	return res;
+}
 
+long find_pow(long n)
+{
+	long res = 1;
+	long pow = 0;
+	while (n > res)
+	{
+		res *= 2;
+		pow++;
+	}
+	return pow;
+}
+
+zz_p find_root_of_unity(const long &prime, const long p)
+{
+	long max_pow2 = pow(2,p);
+	//long left = (p-1)/max_pow2; // leftover factor
+	
+	zz_p w{2}; // max_pow2-th root of unity
+	power(w,w,max_pow2);
+	return w;
+		
+}
+zz_pX_FFT::~zz_pX_FFT()
+{
+	for (long i = 0; i <= p; i++)
+	{
+		delete[] wtab[i];
+		delete[] inv_wtab[i];
+	}
+	delete[] wtab;
+	delete[] inv_wtab;
+}
+
+long factor_pow2(long p)
+{
+	long pow = 0;
+	while(p % 2 == 0)
+	{
+		pow++;
+		p /= 2;
+	}
+	return pow;
+}
+
+zz_pX_FFT::zz_pX_FFT(const long &prime, const long p):
+	p{p}
+{
+	cout << "max order: " << p << endl;
+	long n = pow(2,p);
+	auto w = find_root_of_unity(prime,n);
+	if (w == 0) throw std::invalid_argument("no n-th root of unity");
+	wtab = new zz_p*[p+1];
+	inv_wtab = new zz_p*[p+1];
+	
+	long t = p;	
+	while (t >= 0)
+	{
+		wtab[t] = new zz_p[n];
+		inv_wtab[t] = new zz_p[n];
+		auto inv_w = inv(w);
+
+		// compute the powers of w
+		wtab[t][0] = zz_p{1};
+		inv_wtab[t][0] = zz_p{1};
+		for (long i = 1; i < n; i++)
+		{
+			mul(wtab[t][i], w, wtab[t][i-1]);
+			mul(inv_wtab[t][i], inv_w, inv_wtab[t][i-1]);
+		}
+		
+		// set up for next
+		n /= 2;
+		w *= w;
+		t--;
+
+	}
+}
+
+void zz_pX_FFT::FFT(Vec<zz_p> &f, const long l, const long p)
+{
+	long n = pow(2,p);
+	long m = n;
+	for (long s = 1; s <= p; s++)
+	{
+		m /= 2;
+		for (long i = 0; i < n/m; i+=2)
+		{
+			if (i*m >= l) break;
+			for (long j = 0; j < m; j++)
+			{
+				auto cur_w = wtab[p][bitwise_rev(i,s)*m % n];
+				auto f1 = f[i*m+j];	
+				auto f2 = f[(i+1)*m+j]*cur_w;
+				f[i*m+j] = f1+f2;
+				f[(i+1)*m+j] = f1-f2;
+			}
+		}
+	}
+	f.SetLength(l);
+}
+
+void zz_pX_FFT::FFT_t(Vec<zz_p> &f, const long l, const long p)
+{
+	long n = pow(2,p);
+	long m = 1;
+	for (long s = p; s > 0; s--)
+	{
+		for (long i = 0; i < n/m; i+=2)
+		{
+			if (i*m >= l) 
+			{
+				break;
+			}
+			for (long j = 0; j < m; j++)
+			{
+				auto &cur_w = wtab[p][bitwise_rev(i,s)*m % n];
+				auto f1 = f[i*m+j];	
+				auto f2 = f[(i+1)*m+j];
+				f[i*m+j] = f1+f2;
+				f[(i+1)*m+j] = cur_w*(f1-f2);
+			}
+		}
+		m *= 2;
+	}
+	f.SetLength(l);
+}
+
+void zz_pX_FFT::iFFT(Vec<zz_p> &f,
+		             const long p,
+		             long start, long end)
+{
+	if (end == -1) end = f.length();
+	long n = pow(2,p);
+	long m = 1;
+	for (long s = p; s > 0; s--)
+	{
+		for (long i = 0; i < n/m; i+=2)
+		{
+			for (long j = 0; j < m; j++)
+			{
+				if (!(i*m+j >= start && (i+1)*m+j <= end))
+				{
+					break;
+				}
+				auto cur_w = inv_wtab[p][bitwise_rev(i,s)*m % n];
+				auto f1 = f[i*m+j]/2;	
+				auto f2 = f[(i+1)*m+j]/2;
+				f[i*m+j] = f1+f2;
+				f[(i+1)*m+j] = (f1-f2)*cur_w;
+			}
+		}
+		m *= 2;
+	}
+
+}	
+
+void zz_pX_FFT::iFFT_t(Vec<zz_p> &f,
+		             const long p,
+		             long start, long end)
+{
+	if (end == -1) end = f.length();
+	long n = pow(2,p);
+	long m = pow(2,p-1);
+	for (long s = 1; s <= p; s++)
+	{
+		for (long i = 0; i < n/m; i+=2)
+		{
+			for (long j = 0; j < m; j++)
+			{
+				if (!(i*m+j >= start && (i+1)*m+j <= end))
+				{
+					break;
+				}
+				auto cur_w = inv_wtab[p][bitwise_rev(i,s)*m % n]/2;
+				auto f1 = f[i*m+j]/2;	
+				auto f2 = f[(i+1)*m+j]*cur_w;
+				f[i*m+j] = f1+f2;
+				f[(i+1)*m+j] = (f1-f2);
+			}
+		}
+		m /= 2;
+	}
+
+}
+
+void zz_pX_FFT::iTFT(Vec<zz_p> &f, long head, long tail, long last,
+		            long s, const long p)
+{
+	long leftMiddle = floor( (last-head)/2.0 + head);
+	long rightMiddle = leftMiddle + 1;
+	long m = pow(2, p-s);
+
+	if (head > tail) return;
+
+	if (tail >= leftMiddle)
+	{
+		iFFT(f,p,head,leftMiddle);
+		
+		for (long k = tail+1; k <= last; k++)
+		{
+			long i = k / m;
+			long j = k % m;
+			auto cur_w = wtab[p][bitwise_rev(i-1,s)*m];
+			f[i*m+j] = f[(i-1)*m+j]-2*cur_w*f[i*m+j];
+		}
+
+		iTFT(f,rightMiddle,tail,last,s+1,p);
+
+		s = p - find_pow(leftMiddle-head+1);
+		m = pow(2,p-s);
+
+		for (long k = head; k <= leftMiddle; k++)
+		{
+			long i = k/m;
+			auto cur_w = inv_wtab[p][bitwise_rev(i,s)*m];
+			auto f1 = f[k]/2;
+			auto f2 = f[k+m]/2;
+			f[k] = (f1+f2);
+			f[k+m] = (f1-f2)*cur_w;
+		}
+	}else
+	{
+		for (long k = tail+1; k <= leftMiddle; k++)
+		{
+			long i = k/m;
+			long j = k%m;
+			auto cur_w = wtab[p][bitwise_rev(i,s)*m];
+			f[i*m+j] = f[i*m+j] + cur_w*f[(i+1)*m+j];
+		}
+		iTFT(f,head,tail,leftMiddle,s+1,p);
+		for (long k = head; k <= leftMiddle; k++)
+		{
+			long i = k/m;
+			long j = k%m;
+			auto cur_w = wtab[p][bitwise_rev(i,s)*m];
+			f[i*m+j] = f[i*m+j]-cur_w*f[(i+1)*m+j];
+		}
+	}
+}
+
+void zz_pX_FFT::iTFT_t(Vec<zz_p> &f, long head, long tail, long last,
+		            long s, const long p)
+{
+	long leftMiddle = floor( (last-head)/2.0 + head);
+	long rightMiddle = leftMiddle + 1;
+	long m = pow(2, p-s);
+	if (head > tail) return;
+	if (tail >= leftMiddle)
+	{
+		for (long k = rightMiddle; k <= tail; k++)
+		{
+			long i = (k-m) / m;
+			auto cur_w = inv_wtab[p][bitwise_rev(i,s)*m]/2;
+			auto a = f[k-m]/2;
+			auto b = f[k]*cur_w;
+			f[k-m] = a+b;
+			f[k] = a-b;
+		}
+
+		iTFT_t(f,rightMiddle,tail,last,s+1,p);
+
+		for (long k = tail+1; k <= last; k++)
+		{
+			long i = (k-m) / m;
+			auto cur_w = wtab[p][bitwise_rev(i,s)*m];
+			
+			f[k-m] = f[k-m] - f[k];
+			f[k] = cur_w*(f[k-m] - f[k]);
+		}
+
+		iFFT_t(f,p,head,leftMiddle);
+
+	}
+	if (tail < leftMiddle)
+	{
+		for (long k = head; k < tail+1; k++)
+		{
+			long i = k / m;
+			auto cur_w = wtab[p][bitwise_rev(i,s)*m];
+
+			f[k+m] = cur_w*f[k];
+		}
+
+		iTFT_t(f,head,tail,leftMiddle,s+1,p);
+
+		for (long k = tail+1; k < rightMiddle; k++)
+		{
+			long i = k / m;
+			auto cur_w = wtab[p][bitwise_rev(i,s)*m];
+
+			f[k+m] = cur_w*f[k];
+		}
+	}
+}
+
+void zz_pX_FFT::forward(Vec<zz_p> &out, const Vec<zz_p> &in)
+{
+	long l = in.length(); // true size of the array
+	long p = find_pow(l); // bounding exponent of l
+	long n = pow(2,p); // padded size
+	Vec<zz_p> tmp;
+	tmp.SetLength(n);
+
+	for (long i = 0; i < n; i++)
+		tmp[i] = zz_p{0};
+
+	// pad the input with zeroes
+	for (long i = 0; i < in.length(); i++)
+		tmp[i] = in[i];
+	FFT(tmp,l,p);
+	out = tmp;
+}
+
+void zz_pX_FFT::forward_t(Vec<zz_p> &out, const Vec<zz_p> &in)
+{
+	long l = in.length(); // true size of the array
+	long p = find_pow(l); // bounding exponent of l
+	long n = pow(2,p); // padded size
+	Vec<zz_p> tmp;
+	tmp.SetLength(n);
+
+	for (long i = 0; i < n; i++)
+		tmp[i] = zz_p{0};
+
+	// pad the input with zeroes
+	for (long i = 0; i < in.length(); i++)
+		tmp[i] = in[i];
+
+	FFT_t(tmp,l,p);
+	out = tmp;
+}
+
+void zz_pX_FFT::inverse(Vec<zz_p> &out, const Vec<zz_p> &in)
+{
+	long l = in.length(); // true size of the array
+	long p = find_pow(l); // bounding exponent of l
+	long n = pow(2,p); // padded size
+	Vec<zz_p> tmp;
+	tmp.SetLength(n);
+
+	for (long i = 0; i < n; i++)
+		tmp[i] = zz_p{0};
+
+	// pad the input with zeroes
+	for (long i = 0; i < in.length(); i++)
+		tmp[i] = in[i];
+
+	if (l == n) // at a power of 2
+		iFFT(tmp,p);
+	else
+	{
+		iTFT(tmp,0,l-1,n-1,1,p);
+		tmp.SetLength(l);
+	}
+	out = tmp;
+}
+
+void zz_pX_FFT::inverse_t(Vec<zz_p> &out, const Vec<zz_p> &in)
+{
+	long l = in.length(); // true size of the array
+	long p = find_pow(l); // bounding exponent of l
+	long n = pow(2,p); // padded size
+	Vec<zz_p> tmp;
+	tmp.SetLength(n);
+
+	for (long i = 0; i < n; i++)
+		tmp[i] = zz_p{0};
+
+	// pad the input with zeroes
+	for (long i = 0; i < in.length(); i++)
+		tmp[i] = in[i];
+
+	if (l == n) // at a power of 2
+		iFFT_t(tmp,p);
+	else
+	{
+		iTFT_t(tmp,0,l-1,n-1,1,p);
+		tmp.SetLength(l);
+	}
+	out = tmp;
+}
 // Local Variables:
 // mode: C++
 // tab-width: 4
