@@ -2,6 +2,7 @@
 #include <iostream>
 #include "vec_lzz_p_extra.h"
 #include "lzz_pX_extra.h"
+#include <NTL/lzz_pXFactoring.h>
 
 NTL_CLIENT
 
@@ -510,16 +511,6 @@ long find_pow(long n)
 	return pow;
 }
 
-zz_p find_root_of_unity(const long &prime, const long p)
-{
-	long max_pow2 = pow(2,p);
-	//long left = (p-1)/max_pow2; // leftover factor
-	
-	zz_p w{2}; // max_pow2-th root of unity
-	power(w,w,max_pow2);
-	return w;
-		
-}
 zz_pX_FFT::~zz_pX_FFT()
 {
 	for (long i = 0; i <= p; i++)
@@ -542,13 +533,37 @@ long factor_pow2(long p)
 	return pow;
 }
 
+// we want to find 2^p-th root of unity
+zz_p find_root_of_unity(const long p)
+{
+	long at = 1; // we are currently at 2^at-th root
+	zz_p w{-1}; // root of unity
+	while(at++ < p)
+	{
+		//cout << "w: " << w << endl;
+		zz_pX f;
+		SetCoeff(f,0,-w);
+		SetCoeff(f,2,zz_p(1));
+		//cout << "f: " << f << endl;
+		Vec<zz_p> factors;
+		FindRoots(factors, f);
+		//cout << "roots: " << factors << endl;
+		auto &a = factors[0];
+		auto &b = factors[1];
+		if (a*a == w) w = a;
+		else w = b;
+	}
+	return w;
+}
+
 zz_pX_FFT::zz_pX_FFT(const long &prime, const long p):
 	p{p}
 {
 	cout << "max order: " << p << endl;
 	long n = pow(2,p);
-	auto w = find_root_of_unity(prime,n);
+	auto w = find_root_of_unity(p);
 	if (w == 0) throw std::invalid_argument("no n-th root of unity");
+	cout << "root of unity: " << w << endl;
 	wtab = new zz_p*[p+1];
 	inv_wtab = new zz_p*[p+1];
 	
@@ -567,6 +582,9 @@ zz_pX_FFT::zz_pX_FFT(const long &prime, const long p):
 			mul(wtab[t][i], w, wtab[t][i-1]);
 			mul(inv_wtab[t][i], inv_w, inv_wtab[t][i-1]);
 		}
+		//for (long i = 1; i < n; i++)
+		//	cout << " " << wtab[t][i];
+		//cout << endl;
 		
 		// set up for next
 		n /= 2;
@@ -593,8 +611,10 @@ void zz_pX_FFT::FFT(Vec<zz_p> &f, const long l, const long p)
 				auto f2 = f[(i+1)*m+j]*cur_w;
 				f[i*m+j] = f1+f2;
 				f[(i+1)*m+j] = f1-f2;
+				//cout << "cur_w: " << cur_w << endl;
 			}
 		}
+		//cout << "f: " << f << endl;
 	}
 	f.SetLength(l);
 }
@@ -632,6 +652,9 @@ void zz_pX_FFT::iFFT(Vec<zz_p> &f,
 	if (end == -1) end = f.length();
 	long n = pow(2,p);
 	long m = 1;
+	//cout << "start: " << start << " end: " << end << " p: "
+	//	 << p << endl;
+	//cout << "f: " << f << endl;
 	for (long s = p; s > 0; s--)
 	{
 		for (long i = 0; i < n/m; i+=2)
@@ -695,7 +718,7 @@ void zz_pX_FFT::iTFT(Vec<zz_p> &f, long head, long tail, long last,
 	if (tail >= leftMiddle)
 	{
 		iFFT(f,p,head,leftMiddle);
-		
+		//cout << "f1: " << f << endl;
 		for (long k = tail+1; k <= last; k++)
 		{
 			long i = k / m;
@@ -703,9 +726,9 @@ void zz_pX_FFT::iTFT(Vec<zz_p> &f, long head, long tail, long last,
 			auto cur_w = wtab[p][bitwise_rev(i-1,s)*m];
 			f[i*m+j] = f[(i-1)*m+j]-2*cur_w*f[i*m+j];
 		}
-
+		//cout << "f2: " << f << endl;
 		iTFT(f,rightMiddle,tail,last,s+1,p);
-
+		//cout << "f3: " << f << endl;
 		s = p - find_pow(leftMiddle-head+1);
 		m = pow(2,p-s);
 
@@ -718,6 +741,7 @@ void zz_pX_FFT::iTFT(Vec<zz_p> &f, long head, long tail, long last,
 			f[k] = (f1+f2);
 			f[k+m] = (f1-f2)*cur_w;
 		}
+		//cout << "f4: " << f << endl;
 	}else
 	{
 		for (long k = tail+1; k <= leftMiddle; k++)
@@ -879,6 +903,50 @@ void zz_pX_FFT::inverse_t(Vec<zz_p> &out, const Vec<zz_p> &in)
 	}
 	out = tmp;
 }
+
+void zz_pX_FFT::mult(zz_pX &res, const zz_pX &a, const zz_pX &b)
+{
+	long d = deg(a)+deg(b); // this is the degree of the prod
+
+	//cout << "a: " << a << endl;
+	//cout << "b: " << b << endl;
+
+	// copy into vectors
+	Vec<zz_p> v1,v2;
+	v1.SetLength(d+1);
+	v2.SetLength(d+1);
+	for (long i = 0; i < d+1; i++)
+	{
+		if (i <= deg(a)) v1[i] = a[i];
+		else v1[i] = zz_p{0};
+
+		if (i <= deg(b)) v2[i] = b[i];
+		else v2[i] = zz_p{0};
+	}
+
+	// run the forward transforms
+	forward(v1,v1);
+	forward(v2,v2);
+	//cout << "v1: " << v1 << endl;
+	//cout << "v2: " << v2 << endl;
+
+
+	// multiply the evals
+	for (long i = 0; i < d+1; i++)
+		v2[i] = v1[i]*v2[i];
+
+	//cout << "f: " << v2 << endl;	
+	// run the inverse
+	inverse(v2,v2);
+	//cout << "inv: " << v2 << endl;
+
+	// copy back into res
+	res.SetLength(d+1);
+	for (long i = 0; i < d+1; i++)
+		res[i] = v2[i];
+}
+
+
 // Local Variables:
 // mode: C++
 // tab-width: 4

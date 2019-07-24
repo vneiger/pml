@@ -186,7 +186,7 @@ public:
 	void inverse_t(Vec<zz_p> &out, const Vec<zz_p> &in);
     
     // polynomial routines
-    //void mult(zz_pX &res, const zz_pX &a, const zz_pX &b);
+    void mult(zz_pX &res, const zz_pX &a, const zz_pX &b);
 };
 
 
