@@ -176,17 +176,19 @@ public:
 
 	// initializes with (2^p)-th root of unity
 	zz_pX_FFT(const long &prime,const long p);
-
-    // transforms
-    void forward(Vec<zz_p> &out, const Vec<zz_p> &in);
-    void forward_t(Vec<zz_p> &out, const Vec<zz_p> &in);
-    
+	
+	// transforms
+	void forward(Vec<zz_p> &out, const Vec<zz_p> &in);
+	void forward_t(Vec<zz_p> &out, const Vec<zz_p> &in);
+	
 	// full inverse transforms
 	void inverse(Vec<zz_p> &out, const Vec<zz_p> &in);
 	void inverse_t(Vec<zz_p> &out, const Vec<zz_p> &in);
     
-    // polynomial routines
-    void mult(zz_pX &res, const zz_pX &a, const zz_pX &b);
+	// polynomial routines
+	void mult(zz_pX &res, const zz_pX &a, const zz_pX &b);
+	// requires d = deg(a) and deg(b) = 2d+1
+	void middle_prod(zz_pX &res, const zz_pX &a, const zz_pX &b);
 };
 
 

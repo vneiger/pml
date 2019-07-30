@@ -908,9 +908,6 @@ void zz_pX_FFT::mult(zz_pX &res, const zz_pX &a, const zz_pX &b)
 {
 	long d = deg(a)+deg(b); // this is the degree of the prod
 
-	//cout << "a: " << a << endl;
-	//cout << "b: " << b << endl;
-
 	// copy into vectors
 	Vec<zz_p> v1,v2;
 	v1.SetLength(d+1);
@@ -927,23 +924,46 @@ void zz_pX_FFT::mult(zz_pX &res, const zz_pX &a, const zz_pX &b)
 	// run the forward transforms
 	forward(v1,v1);
 	forward(v2,v2);
-	//cout << "v1: " << v1 << endl;
-	//cout << "v2: " << v2 << endl;
-
 
 	// multiply the evals
 	for (long i = 0; i < d+1; i++)
 		v2[i] = v1[i]*v2[i];
 
-	//cout << "f: " << v2 << endl;	
 	// run the inverse
 	inverse(v2,v2);
-	//cout << "inv: " << v2 << endl;
 
 	// copy back into res
 	res.SetLength(d+1);
 	for (long i = 0; i < d+1; i++)
 		res[i] = v2[i];
+}
+
+void zz_pX_FFT::middle_prod(zz_pX &res, const zz_pX &a, const zz_pX &b)
+{
+	long n = deg(b)+1;
+	Vec<zz_p> v1;
+	Vec<zz_p> v2;
+	v1.SetLength(n);
+	v2.SetLength(n);
+
+	// reverse b and pad a
+	for (long i = 0; i < n; i++)
+	{
+		v2[i] = b[i];
+		if (i <= deg(a)) v1[i] = a[deg(a)-i];
+		else v1[i] = 0;
+	}
+
+	forward(v1,v1);
+	inverse_t(v2,v2);
+
+	for (long i = 0; i < n; i++)
+		v2[i] = v1[i] * v2[i];
+	forward_t(v2,v2);
+
+	res = zz_pX();
+	for (long i = 0; i < n/2; i++)
+		SetCoeff(res,i+n/2-1,v2[i]);
 }
 
 

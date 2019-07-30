@@ -130,6 +130,15 @@ int main(int argc, char *argv[])
 	if (h2 == h) cout << "okay!";
 	else cout << "BAD!";
 	cout << endl;
+
+	random(f,5);
+	random(g,10);
+	cout << "f: " << f << endl;
+	cout << "g: " << g << endl;
+
+	cout << "f*g: " << f*g << endl;
+	fft.middle_prod(h,f,g);
+	cout << "midprod: " << h << endl;
 }
 
 
