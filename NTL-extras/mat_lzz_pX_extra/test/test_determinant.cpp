@@ -23,7 +23,8 @@ int main(int argc, char *argv[])
     const bool fftprime = (argc==3) ? false : (atoi(argv[3])==1);
 
     if (fftprime)
-        zz_p::FFTInit(0);
+        //zz_p::FFTInit(0);
+        zz_p::UserFFTInit(786433);
     else
         zz_p::init(NTL::GenPrime_long(60));
 
