@@ -940,16 +940,18 @@ void zz_pX_FFT::mult(zz_pX &res, const zz_pX &a, const zz_pX &b)
 
 void zz_pX_FFT::middle_prod(zz_pX &res, const zz_pX &a, const zz_pX &b)
 {
-	long n = deg(b)+1;
+	long n = 2*(deg(a)+1);
 	Vec<zz_p> v1;
 	Vec<zz_p> v2;
 	v1.SetLength(n);
 	v2.SetLength(n);
 
-	// reverse b and pad a
+	// reverse and pad a, pad b if needed
 	for (long i = 0; i < n; i++)
 	{
-		v2[i] = b[i];
+		if (i <= deg(b)) v2[i] = b[i];
+		else v2[i] = 0;
+
 		if (i <= deg(a)) v1[i] = a[deg(a)-i];
 		else v1[i] = 0;
 	}
@@ -963,10 +965,63 @@ void zz_pX_FFT::middle_prod(zz_pX &res, const zz_pX &a, const zz_pX &b)
 
 	res = zz_pX();
 	for (long i = 0; i < n/2; i++)
-		SetCoeff(res,i+n/2-1,v2[i]);
+		SetCoeff(res,i,v2[i]);
 }
 
+void zz_pX_FFT::mat_mult(Mat<zz_pX> &res, const Mat<zz_pX> &A, const Mat<zz_pX> &B)
+{
+	Vec<Mat<zz_p>> A_evals;
+	Vec<Mat<zz_p>> B_evals;
 
+	long d = deg(A) + deg(B); // degree of the product
+	A_evals.SetLength(d+1);
+	B_evals.SetLength(d+1);
+	for (long i = 0; i <= d; i++)
+	{
+		A_evals[i].SetDims(A.NumRows(), A.NumCols());
+		B_evals[i].SetDims(B.NumRows(), B.NumCols());
+	}
+
+	// pad and compute the forward transform
+	for (long r = 0; r < A.NumRows(); r++)
+	{
+		for (long c = 0; c < A.NumCols(); c++)
+		{
+			auto v = A[r][c].rep;
+			v.SetLength(d+1,zz_p{0});
+			forward(v,v);
+			for (long i = 0; i <= d; i++)
+				A_evals[i][r][c] = v[i];
+		}
+	}
+	
+	for (long r = 0; r < B.NumRows(); r++)
+	{
+		for (long c = 0; c < B.NumCols(); c++)
+		{
+			auto v = B[r][c].rep;
+			v.SetLength(d+1,zz_p{0});
+			forward(v,v);
+			for (long i = 0; i <= d; i++)
+				B_evals[i][r][c] = v[i];
+		}
+	}
+	
+	for (long i = 0; i <= d; i++)
+		mul(A_evals[i], A_evals[i], B_evals[i]);
+
+	res.SetDims(A.NumRows(),B.NumCols());
+	for (long r = 0; r < res.NumRows(); r++)
+		for (long c = 0; c < res.NumCols(); c++)
+		{
+			Vec<zz_p> v;
+			v.SetLength(d+1);
+			for (long i = 0; i <= d; i++)
+				v[i] = A_evals[i][r][c];
+			inverse(v,v);
+			res[r][c].rep = v;
+		}
+}
 // Local Variables:
 // mode: C++
 // tab-width: 4

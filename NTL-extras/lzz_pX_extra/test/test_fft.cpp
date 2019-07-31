@@ -1,6 +1,7 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/ZZ.h>
 #include "lzz_pX_extra.h"
+#include "mat_lzz_pX_multiply.h"
 #include <iostream>
 NTL_CLIENT
 
@@ -129,16 +130,35 @@ int main(int argc, char *argv[])
 	cout << "mult check: ";
 	if (h2 == h) cout << "okay!";
 	else cout << "BAD!";
-	cout << endl;
+	cout << endl << endl;
 
-	random(f,5);
-	random(g,10);
-	cout << "f: " << f << endl;
-	cout << "g: " << g << endl;
-
-	cout << "f*g: " << f*g << endl;
+	random(f,pow(2,p-1)+1);
+	random(g,pow(2,p)+1);
+	auto q = f*g;
+	Vec<zz_p> cs;
+	cs.SetLength(pow(2,p-1)+1);
+	for (long i = 0; i <= pow(2,p-1); i++)
+		cs[i] = q[i+pow(2,p-1)];
+	t = GetWallTime();
 	fft.middle_prod(h,f,g);
-	cout << "midprod: " << h << endl;
+	cout << "midprod took: " << GetWallTime() - t << endl;
+	cout << "midprod check: ";
+	for (long i = 0; i <= pow(2,p-1); i++)
+		if (cs[i] != h[i])
+		{
+			cout << "BAD!" << endl;
+			return 0;
+		}
+	cout << "okay!" << endl << endl;
+
+	Mat<zz_pX> A,B,C,D;
+	random(A,3,3,3);
+	random(B,3,3,3);
+	fft.mat_mult(C,A,B);
+	multiply(D,A,B);
+	cout << "Mat mult check: ";
+	if (C == D) cout << "okay!" << endl;
+	else cout << "BAD!" << endl;
 }
 
 

@@ -14,6 +14,7 @@
 #include <NTL/lzz_pX.h>
 #include <stdexcept>
 #include <cmath>
+#include "mat_lzz_pX_utils.h"
 NTL_CLIENT
 
 /** Returns `true` if the polynomial `a` is monic, and `false` otherwise */
@@ -187,8 +188,13 @@ public:
     
 	// polynomial routines
 	void mult(zz_pX &res, const zz_pX &a, const zz_pX &b);
-	// requires d = deg(a) and deg(b) = 2d+1
+	
+	// requires deg(b) <= 2*deg(a) + 1
 	void middle_prod(zz_pX &res, const zz_pX &a, const zz_pX &b);
+
+	// polynomial matrix routines
+	// TODO: move to more appropriate place after tests
+	void mat_mult(Mat<zz_pX> &res, const Mat<zz_pX> &A, const Mat<zz_pX> &B);
 };
 
 
