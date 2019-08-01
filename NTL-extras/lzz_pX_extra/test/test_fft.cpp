@@ -159,6 +159,19 @@ int main(int argc, char *argv[])
 	cout << "Mat mult check: ";
 	if (C == D) cout << "okay!" << endl;
 	else cout << "BAD!" << endl;
+
+	random(A,2,2,3);
+	random(B,2,2,6);
+	fft.mat_mp(C,A,B);
+	cout << "A: " << A << endl;
+	cout << "B: " << B << endl;
+	cout << "C: " << C << endl;
+	multiply(D,A,B);
+	cout << "D: " << D << endl;
+	f = A[0][0];
+	g = B[0][0];
+	fft.middle_prod(h,f,g);
+	cout << "h: " << h << endl;
 }
 
 

@@ -1022,6 +1022,73 @@ void zz_pX_FFT::mat_mult(Mat<zz_pX> &res, const Mat<zz_pX> &A, const Mat<zz_pX> 
 			res[r][c].rep = v;
 		}
 }
+
+void zz_pX_FFT::mat_mp(Mat<zz_pX> &res, const Mat<zz_pX> &A, const Mat<zz_pX> &B)
+{
+	Vec<Mat<zz_p>> A_evals;
+	Vec<Mat<zz_p>> B_evals;
+
+	long d = 2*(deg(A)+1);
+	A_evals.SetLength(d);
+	B_evals.SetLength(d);
+	for (long i = 0; i < d; i++)
+	{
+		A_evals[i].SetDims(A.NumRows(), A.NumCols());
+		B_evals[i].SetDims(B.NumRows(), B.NumCols());
+	}
+
+	// reverse and pad a
+	for (long r = 0; r < A.NumRows(); r++)
+	{
+		for (long c = 0; c < A.NumCols(); c++)
+		{
+			Vec<zz_p> v;
+			long n = deg(A[r][c])+1;
+			v.SetLength(d,zz_p{0});
+
+			for (long i = 0; i < n; i++)
+			{
+				v[i] = A[r][c][n-i-1];
+			}
+							
+			forward(v,v);
+			for (long i = 0; i < d; i++)
+				A_evals[i][r][c] = v[i];
+		}
+	}
+	
+	for (long r = 0; r < B.NumRows(); r++)
+	{
+		for (long c = 0; c < B.NumCols(); c++)
+		{
+			auto v = B[r][c].rep;
+			v.SetLength(d,zz_p{0});
+			inverse_t(v,v);
+			for (long i = 0; i < d; i++)
+				B_evals[i][r][c] = v[i];
+		}
+	}
+	
+	for (long i = 0; i < d; i++)
+		mul(A_evals[i], A_evals[i], B_evals[i]);
+
+	res.SetDims(A.NumRows(),B.NumCols());
+	long dA = deg(A)+1;
+	for (long r = 0; r < res.NumRows(); r++)
+		for (long c = 0; c < res.NumCols(); c++)
+		{
+			Vec<zz_p> v;
+			v.SetLength(d);
+			for (long i = 0; i < d; i++)
+				v[i] = A_evals[i][r][c];
+			forward_t(v,v);
+			v.SetLength(dA);
+			res[r][c].rep = v;
+			
+		}
+	
+}
+
 // Local Variables:
 // mode: C++
 // tab-width: 4

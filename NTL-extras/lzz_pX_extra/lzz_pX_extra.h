@@ -195,6 +195,7 @@ public:
 	// polynomial matrix routines
 	// TODO: move to more appropriate place after tests
 	void mat_mult(Mat<zz_pX> &res, const Mat<zz_pX> &A, const Mat<zz_pX> &B);
+	void mat_mp(Mat<zz_pX> &res, const Mat<zz_pX> &A, const Mat<zz_pX> &B);
 };
 
 
