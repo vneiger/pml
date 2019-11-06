@@ -198,13 +198,6 @@ public:
 	void mat_mp(Mat<zz_pX> &res, const Mat<zz_pX> &A, const Mat<zz_pX> &B);
 };
 
-
-
-
-
-
-
-
 #endif
 
 // Local Variables:
