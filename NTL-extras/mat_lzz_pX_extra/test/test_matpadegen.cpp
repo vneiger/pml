@@ -53,25 +53,52 @@ int main(int argc, char *argv[])
     if (rdim==1) // 2 x 1 pmbasis below
     {
         long deg_gcd = (order>>1);
-        double t1,t2;
+        double t, tt;
+        long nb_iter=0;
         std::cout << "For reference, timings for GCD computation (degree " << deg_gcd << "):" << std::endl;
         {
-            zz_pX a,b,g;
-            random(a, deg_gcd);
-            random(b, deg_gcd);
-            t1 = GetWallTime();
-            NTL::GCD(g, a, b);
-            t2 = GetWallTime();
-            std::cout << "\t GCD --> " << (t2-t1) << std::endl;
+            t = 0.;
+            while (t < 0.2)
+            {
+                zz_pX a,b,g;
+                random(a, deg_gcd);
+                random(b, deg_gcd);
+                tt = GetWallTime();
+                NTL::GCD(g, a, b);
+                t += GetWallTime()-tt;
+                ++nb_iter;
+            }
+            std::cout << "\t GCD --> " << t/nb_iter << std::endl;
         }
         {
-            zz_pX a,b,g,u,v; 
-            random(a, deg_gcd);
-            random(b, deg_gcd);
-            t1 = GetWallTime();
-            NTL::XGCD(g, u, v, a, b);
-            t2 = GetWallTime();
-            std::cout << "\tXGCD --> " << (t2-t1) << std::endl;
+            nb_iter=0;
+            t = 0.;
+            while (t < 0.2)
+            {
+                zz_pX a,b,g;
+                random(a, deg_gcd);
+                random(b, deg_gcd);
+                tt = GetWallTime();
+                NTL::PlainGCD(g, a, b);
+                t += GetWallTime()-tt;
+                ++nb_iter;
+            }
+            std::cout << "\t GCD --> " << t/nb_iter << std::endl;
+        }
+        {
+            nb_iter=0;
+            t = 0.;
+            while (t < 0.2)
+            {
+                zz_pX a,b,g,u,v; 
+                random(a, deg_gcd);
+                random(b, deg_gcd);
+                tt = GetWallTime();
+                NTL::XGCD(g, u, v, a, b);
+                t += GetWallTime()-tt;
+                ++nb_iter;
+            }
+            std::cout << "\tXGCD --> " << t/nb_iter << std::endl;
         }
     }
 
