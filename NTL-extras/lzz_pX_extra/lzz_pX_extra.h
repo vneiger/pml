@@ -14,7 +14,8 @@
 #include <NTL/lzz_pX.h>
 #include <stdexcept>
 #include <cmath>
-#include "mat_lzz_pX_utils.h"
+#include "../mat_lzz_pX_extra/mat_lzz_pX_utils.h" // TODO probably to be removed, here for new FFT things, isn't it?
+
 NTL_CLIENT
 
 /** Returns `true` if the polynomial `a` is monic, and `false` otherwise */
@@ -197,13 +198,6 @@ public:
 	void mat_mult(Mat<zz_pX> &res, const Mat<zz_pX> &A, const Mat<zz_pX> &B);
 	void mat_mp(Mat<zz_pX> &res, const Mat<zz_pX> &A, const Mat<zz_pX> &B);
 };
-
-
-
-
-
-
-
 
 #endif
 
