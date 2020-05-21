@@ -37,4 +37,25 @@ int main(){
 	cout << "GENS:" << endl;
 	for (long i = 0; i < gens.length(); i++)
 		cout << gens[i] << endl;
+
+	Vec<zz_pXY> gens2;
+	modified_kurakin(d,seq,gens2);
+
+	cout << "GENS2:"<< endl;
+	for (long i = 0; i < gens2.length(); i++)
+		cout << gens2[i] << endl;
+	
+	cout << "GENS2 filled in:" << endl;
+	fill_in(gens2);
+	for (long i  = 0; i < gens2.length(); i++)
+		cout << gens2[i] << endl;
+
+	cout << "checking that gens cancels the seq" << endl;
+	if (check_cancel(seq,gens,d)) cout << "OKAY!" << endl;
+	else cout << "BAD!" << endl;
+
+	cout << "checking that gens2 cancels the seq" << endl;
+	if (check_cancel(seq,gens2,d)) cout << "OKAY!" << endl;
+	else cout << "BAD!" << endl;
+
 }

@@ -13,6 +13,7 @@ Vec<zz_pX> mul(const Vec<zz_pX> &S, const zz_pX &a);
 Vec<zz_pX> mul(const Vec<zz_pX> &S, const zz_pXY &f);
 // truncated multiplication
 Vec<zz_pX> mulTrunc(const Vec<zz_pX> &S, const zz_pX &a, const long d);
+Vec<zz_pX> mulTrunc(const Vec<zz_pX> &S, const zz_pXY &f, const long d);
 
 // add two sequences together
 Vec<zz_pX> add(const Vec<zz_pX> &S, const Vec<zz_pX> &T); 
@@ -27,4 +28,15 @@ bool is_zero_seq(const Vec<zz_pX> &S);
 // generators of ann(S) for some sequence S over k[x]/x^d
 void kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens);
 
+// the output will have only generators that are potentially useful;
+// if the full list of generators are needed, use the function fill_in
+void modified_kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens);
+
+// requires that gens is the output of modified_kurakin
+void fill_in(Vec<zz_pXY> &gens);
+
+/* for verifying */
+// checks if each polynomial in gens cancels S
+bool check_cancel(const Vec<zz_pX> &S, const Vec<zz_pXY> &gens, 
+		  const long d=-1);
 #endif

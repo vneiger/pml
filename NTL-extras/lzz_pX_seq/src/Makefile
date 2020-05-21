@@ -6,7 +6,7 @@ SOURCES = $(wildcard *.cpp)
 OBJS = $(patsubst %.cpp, $(LIB_DIR)/%.o, $(SOURCES))
 
 CXX = g++
-CXXFLAGS = -Wall -std=c++11 -O3 -march=native -I$(INC_DIR)
+CXXFLAGS = -Wall -std=c++11 -O3 -march=native -I$(INC_DIR) -g
 LIBS = -lntl -lgmp -lm
 .PHONY: clean
 
