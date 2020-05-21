@@ -109,7 +109,6 @@ void solve(zz_pX &a, const zz_pX &l, const zz_pX &r, const long d){
   SetCoeff(mod,d,1);
 
   MulMod(a, l_shifted, InvMod(r_shifted, mod), mod);
-  cout <<"a at solve: " << a << endl; 
 }
 
 bool check_cancel(const Vec<zz_pX> &S, const Vec<zz_pXY> &gens,
@@ -178,11 +177,14 @@ void kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens){
 	if (u.length() == 0) break;
 	if (is_zero_seq(u)) break;
 
-	cout << "at (s,t): " << s << ", " << t << endl;
-	cout << "f: " << f << endl;
-	cout << "u:" << endl;
-	for (long i = 0; i < us[t].length(); i++)
-	  cout << us[t][i] << endl;
+	if(verbose){
+	  cout << "at (s,t): " << s << ", " << t << endl;
+	  cout << "f: " << f << endl;
+	  cout << "u:" << endl;
+
+	  for (long i = 0; i < us[t].length(); i++)
+	    cout << us[t][i] << endl;
+	}
 
 	long k = index_non_zero(u);
 	if (k == u.length()) break;
@@ -201,18 +203,24 @@ void kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens){
 	  else{
 	    zz_pX a{1};
 	    solve(a,l,r,d);
-	    cout << "a: " << a << endl;
+	    if(verbose){
+	      cout << "a: " << a << endl;
+	    }
 
 	    // update u
 	    auto temp = mulTrunc(I_seq[k], -a, d);
 	    u = add(u, temp);
-	    cout << "u after:" << endl;
-	    for (auto & i : u)
-	      cout << i << endl;
+	    if(verbose){
+	      cout << "u after:" << endl;
+	      for (auto & i : u)
+		cout << i << endl;
+	    }
 
 	    // update f
 	    f = trunc_x(f - a * I_fs[k], d);
-	    cout << "f after: " << f << endl << endl;
+	    if(verbose){
+	      cout << "f after: " << f << endl << endl;
+	    }
 	  }
 	}else{
 	  // means there exists no prev seq
