@@ -33,7 +33,7 @@ void kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens);
 void modified_kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens);
 
 // requires that gens is the output of modified_kurakin
-void fill_in(Vec<zz_pXY> &gens);
+void fill_in(const long d, Vec<zz_pXY> &gens);
 
 /* for verifying */
 // checks if each polynomial in gens cancels S

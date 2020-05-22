@@ -106,9 +106,12 @@ void solve(zz_pX &a, const zz_pX &l, const zz_pX &r, const long d){
   auto r_shifted = RightShift(r,s);
 
   zz_pX mod;
-  SetCoeff(mod,d,1);
+  SetCoeff(mod,d-s,1);
+  auto r_inv = InvMod(r_shifted, mod);
+  MulMod(a, l_shifted, r_inv, mod);
 
-  MulMod(a, l_shifted, InvMod(r_shifted, mod), mod);
+
+ // MulMod(a, l_shifted, InvMod(r_shifted, mod), mod);
 }
 
 bool check_cancel(const Vec<zz_pX> &S, const Vec<zz_pXY> &gens,
@@ -166,6 +169,16 @@ void kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens){
     for (long t = 0; t < d; t++){
       auto &f = gens[t];
       auto &u = us[t];
+      if(verbose){
+	  cout << "\n\nNEW ITER" << endl;
+	  cout << "at (s,t): " << s << ", " << t << endl;
+	  cout << "f: " << f << endl;
+	  cout << "u:" << endl;
+
+	  for (long i = 0; i < us[t].length(); i++)
+	    cout << us[t][i] << endl;
+	}
+
 
       if (u.length() == 0) continue;
       if (is_zero_seq(u)) continue;
@@ -178,6 +191,8 @@ void kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens){
 	if (is_zero_seq(u)) break;
 
 	if(verbose){
+
+	  cout << "new subiter" << endl;
 	  cout << "at (s,t): " << s << ", " << t << endl;
 	  cout << "f: " << f << endl;
 	  cout << "u:" << endl;
@@ -204,6 +219,8 @@ void kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens){
 	    zz_pX a{1};
 	    solve(a,l,r,d);
 	    if(verbose){
+  	      cout << "l: " << l << endl;
+	      cout << "r: " << r << endl;
 	      cout << "a: " << a << endl;
 	    }
 
@@ -416,10 +433,13 @@ void modified_kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens){
   }
 }
 
-void fill_in(Vec<zz_pXY> &gens){
+void fill_in(const long d, Vec<zz_pXY> &gens){
   zz_pXY zero{zz_pX{0}};
   for (long t = 1; t < gens.length(); t++){
-    if (gens[t] == zero) gens[t] = shift_x(gens[t-1],1);
+    if (gens[t] == zero){
+      gens[t] = shift_x(gens[t-1],1);
+      trunc_x(gens[t],gens[t],d); 
+    }
   }
 }
 

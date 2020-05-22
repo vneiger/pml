@@ -8,7 +8,7 @@ NTL_CLIENT
 using namespace std;
 
 int main(){
-	long p = 13;
+	long p = 9001;
 	zz_p::init(p);
 
 	long d;
@@ -29,7 +29,8 @@ int main(){
 	cout << "SEQ: " << endl;
 	for (long i = 0; i < ell; i++)
 		cout << seq[i] << endl;
-
+	cout << endl;
+	cout << "***************************************" << endl;
 	cout << "STARTING KURAKIN" << endl;
 	Vec<zz_pXY> gens;
 	kurakin(d,seq,gens);
@@ -37,19 +38,25 @@ int main(){
 	cout << "GENS:" << endl;
 	for (long i = 0; i < gens.length(); i++)
 		cout << gens[i] << endl;
+	cout << endl;
 
+	cout << "***************************************" << endl;
+	cout << "STARTING MODIFIED KURAKIN" << endl;
 	Vec<zz_pXY> gens2;
 	modified_kurakin(d,seq,gens2);
+	
 
 	cout << "GENS2:"<< endl;
 	for (long i = 0; i < gens2.length(); i++)
 		cout << gens2[i] << endl;
 	
 	cout << "GENS2 filled in:" << endl;
-	fill_in(gens2);
+	fill_in(d,gens2);
 	for (long i  = 0; i < gens2.length(); i++)
 		cout << gens2[i] << endl;
-
+	cout << endl;
+	cout << "***************************************" << endl;
+	cout << "STARTING CHECKS" << endl;
 	cout << "checking that gens cancels the seq" << endl;
 	if (check_cancel(seq,gens,d)) cout << "OKAY!" << endl;
 	else cout << "BAD!" << endl;
