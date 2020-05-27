@@ -1,4 +1,5 @@
 #include "lzz_pX_seq.h"
+#include "mat_lzz_pX_approximant.h"
 #include <map>
 #include <vector>
 #include <iostream>
@@ -32,6 +33,31 @@ Vec<zz_pX> mul(const Vec<zz_pX> &S, const zz_pXY &f){
   return res;
 }
 
+Vec<Vec<zz_pX>> mul(const Vec<Vec<zz_pX>> &S, const zz_pX &a){
+  Vec<Vec<zz_pX>> res;
+  res.SetLength(S.length());
+
+  for (long i = 0; i < S.length(); i++)
+    res[i] = mul(S[i], a);
+
+  return res;
+}
+
+Vec<Vec<zz_pX>> mul(const Vec<Vec<zz_pX>> &S, const zz_pXY &f){
+  Vec<Vec<zz_pX>> res;
+  long dy = f.degY();
+  res.SetLength(min(0, S.length() - dy));
+  for (long i = 0; i < res.length(); i++){
+    Vec<zz_pX> val;
+    val.SetLength(S[i].length());
+    for (long t = 0; t <= dy; t++)
+      val = add(val, mul(S[i+t], f.rep[t]));
+    res[i] = val;
+  }
+
+  return res;
+}
+
 Vec<zz_pX> mulTrunc(const Vec<zz_pX> &S, const zz_pX &a, const long d){
   Vec<zz_pX> res;
   res.SetLength(S.length());
@@ -57,6 +83,33 @@ Vec<zz_pX> mulTrunc(const Vec<zz_pX> &S, const zz_pXY &f, const long d){
   return res;
 }
 
+Vec<Vec<zz_pX>> mulTrunc(const Vec<Vec<zz_pX>> &S, const zz_pX &a,
+    const long d){
+  Vec<Vec<zz_pX>> res;
+  res.SetLength(S.length());
+
+  for (long i = 0; i < S.length(); i++)
+    res[i] = mulTrunc(S[i], a, d);
+
+  return res;
+}
+
+Vec<Vec<zz_pX>> mulTrunc(const Vec<Vec<zz_pX>> &S, const zz_pXY &f,
+    const long d){
+  Vec<Vec<zz_pX>> res;
+  long dy = f.degY();
+  res.SetLength(min(0, S.length() - dy));
+  for (long i = 0; i < res.length(); i++){
+    Vec<zz_pX> val;
+    val.SetLength(S[i].length());
+    for (long t = 0; t <= dy; t++)
+      val = add(val, mulTrunc(S[i+t], f.rep[t],d));
+    res[i] = val;
+  }
+
+  return res;
+}
+
 Vec<zz_pX> add(const Vec<zz_pX> &S, const Vec<zz_pX> &T){
   Vec<zz_pX> res;
   long n = min(S.length(), T.length());
@@ -65,6 +118,16 @@ Vec<zz_pX> add(const Vec<zz_pX> &S, const Vec<zz_pX> &T){
     res[i] = S[i] + T[i];
   return res;
 }
+
+Vec<Vec<zz_pX>> add(const Vec<Vec<zz_pX>> &S, const Vec<Vec<zz_pX>> &T){
+  Vec<Vec<zz_pX>> res;
+  long n = min(S.length(), T.length());
+  res.SetLength(n);
+  for (long i = 0; i < n; i++)
+    res[i] = add(S[i], T[i]);
+  return res;
+}
+
 
 long index_non_zero (const Vec<zz_pX> &S){
   if (S.length() == 0) return -1;
@@ -111,7 +174,7 @@ void solve(zz_pX &a, const zz_pX &l, const zz_pX &r, const long d){
   MulMod(a, l_shifted, r_inv, mod);
 
 
- // MulMod(a, l_shifted, InvMod(r_shifted, mod), mod);
+  // MulMod(a, l_shifted, InvMod(r_shifted, mod), mod);
 }
 
 bool check_cancel(const Vec<zz_pX> &S, const Vec<zz_pXY> &gens,
@@ -170,14 +233,14 @@ void kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens){
       auto &f = gens[t];
       auto &u = us[t];
       if(verbose){
-	  cout << "\n\nNEW ITER" << endl;
-	  cout << "at (s,t): " << s << ", " << t << endl;
-	  cout << "f: " << f << endl;
-	  cout << "u:" << endl;
+	cout << "\n\nNEW ITER" << endl;
+	cout << "at (s,t): " << s << ", " << t << endl;
+	cout << "f: " << f << endl;
+	cout << "u:" << endl;
 
-	  for (long i = 0; i < us[t].length(); i++)
-	    cout << us[t][i] << endl;
-	}
+	for (long i = 0; i < us[t].length(); i++)
+	  cout << us[t][i] << endl;
+      }
 
 
       if (u.length() == 0) continue;
@@ -219,7 +282,7 @@ void kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens){
 	    zz_pX a{1};
 	    solve(a,l,r,d);
 	    if(verbose){
-  	      cout << "l: " << l << endl;
+	      cout << "l: " << l << endl;
 	      cout << "r: " << r << endl;
 	      cout << "a: " << a << endl;
 	    }
@@ -443,10 +506,90 @@ void fill_in(const long d, Vec<zz_pXY> &gens){
   }
 }
 
+void kurakin(const long d, const Vec<Mat<zz_pX>> &S, Vec<zz_pXY> &gens){
 
+}
 
+void minpoly_DAC(const long d, const zz_pXY &SXY, const zz_pX &S0X, 
+    const zz_pXY &rhs, zz_pXY &P){
+  if (d == 1){
+    vector<long> shift;
+    shift.emplace_back(0);
+    shift.emplace_back(0);
+    Mat<zz_pX> appbas;
+    Mat<zz_pX> pmat;
+    long order = deg(S0X)+1;
+    pmat.SetDims(3,1);
+    pmat[0][0] = S0X;
+    pmat[1][0] = zz_pX{-1};
 
+    // construct rhs mod x
+    zz_pX rhs_x;
+    for (long i = 0; i <= rhs.degY(); i++){
+      if (rhs.rep[0] != zz_p(0))
+	SetCoeff(rhs_x, i, rhs.rep[i][0]);
+    }
+    LeftShift(rhs_x,rhs_x, rhs.degY());
+    pmat[2][0] = -rhs_x;
+    pmbasis(appbas, pmat, order, shift);
+    long r_cor = 0;
+    for (long i = 0; i < 3; i++){
+      if (deg(appbas[i][2]) == 0){
+	r_cor = i;
+	break;
+      }
+    }
+    zz_pX px = appbas[r_cor][0]*InvTrunc(appbas[r_cor][2],1);
 
+    P = zz_pX{0};
+    for (long i = 0; i <= deg(px); i++)
+      P = P + shift_y(zz_pXY{zz_pX{px[i]}}, i);
+    if (verbose){
+      cout << "rhs_x:" << rhs_x << endl;
+      cout << "appbas: " << appbas << endl;
+      cout << "px: " << px << endl;
+      cout << "P: " << P << endl;
+    }
+    return;
+  }
+  zz_pXY P0;
+  minpoly_DAC(d/2, trunc_x(SXY,d/2), S0X, trunc_x(rhs,d/2),P0);
 
+  // compute the residue
+  zz_pXY r;
+  mul(r, SXY, P0);
+  r = trunc_x(r,d);
+  r = shift_y(r,-rhs.degY());
+  r = trunc_y(r,rhs.degY()+1);
+  r = rhs - r;
+  
+  r = shift_x(r,-d/2);
 
+  zz_pXY P1;
+  minpoly_DAC(d/2, trunc_x(SXY,d/2), S0X, r, P1);
+  shift_x(P1,P1,d/2);
+  P = P0 + P1;
+}
 
+void minpoly_nondegenerate(const long d, const Vec<zz_pX> &S, zz_pXY &P){
+  // make bivariate polynomial of S for multiplication
+  zz_pXY SXY;
+  for (long i = 0; i < S.length()-1; i++)
+    SXY  = SXY + shift_y(zz_pXY{S[i]}, i);
+  zz_pX S0X;
+  for (long i = 0; i < S.length()-1; i++)
+    SetCoeff(S0X, i, S[i][0]);
+  // construct rhs
+  zz_pXY rhs;
+  for (long i = S.length()/2; i < S.length(); i++)
+    rhs = rhs + shift_y(zz_pXY{S[i]},(i-S.length()/2));
+  zz_pXY P_res;
+  minpoly_DAC(d,SXY,S0X,zz_pXY{zz_pX{0}}-rhs,P_res);
+  cout << "P_res: " << P_res << endl;
+  P = zz_pXY{zz_pX{0}};
+  for (long i = 0; i < S.length()/2; i++){
+    cout <<"cur i: " << i << endl;
+    P.rep.append(P_res.rep[i]);
+  }
+  P = P + shift_y(zz_pXY{zz_pX{1}}, S.length()/2);
+}
