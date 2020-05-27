@@ -79,10 +79,6 @@ int main(){
 		if (gens[i].degY() != gens[i-1].degY()) d_opt++;
 	cout << "d_opt: " << d_opt << endl;
 
-	bool do_wied = true;
-	for (long i = 1; i < gens2.length(); i++)
-		if (!gens2[i].is_zero()) do_wied = false;
-
 	if(verbose){
 		cout << "GENS2 filled in:" << endl;
 		fill_in(d,gens2);
@@ -101,7 +97,7 @@ int main(){
 	if (check_cancel(seq,gens2,d)) cout << "OKAY!" << endl;
 	else cout << "BAD!" << endl;
 
-	if (do_wied){
+	if (d_opt == 1){
 		cout << "***************************************" << endl;
 		cout << "Detected non-degenerate sequence." << endl;
 		cout << "STARTING STRUCTURED LIFTING" << endl;
