@@ -45,6 +45,7 @@ int main(){
 	Vec<zz_pXY> gens;
 	double time = GetWallTime();
 	kurakin(d,seq,gens);
+	cout << "Monic degree: " << gens[0].degY() << endl;
 	cout << "Took: " << GetWallTime()-time << endl;
 
 	if(verbose){
@@ -59,6 +60,7 @@ int main(){
 	Vec<zz_pXY> gens2;
 	time = GetWallTime();
 	modified_kurakin(d,seq,gens2);	
+	cout << "Monic degree: " << gens2[0].degY() << endl;
 	cout << "Took: " << GetWallTime()-time << endl;
 
 	if(verbose){
@@ -106,6 +108,7 @@ int main(){
 		zz_pXY P;
 		time = GetWallTime();
 		minpoly_nondegenerate(d,seq,P);
+		cout << "degree: " << P.degY() << endl;
 		cout << "Took: " << GetWallTime() - time << endl;
 		if(verbose){
 			cout << "P: " << P << endl;

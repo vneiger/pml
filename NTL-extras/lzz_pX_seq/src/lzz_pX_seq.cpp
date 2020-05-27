@@ -585,7 +585,6 @@ void minpoly_nondegenerate(const long d, const Vec<zz_pX> &S, zz_pXY &P){
     rhs = rhs + shift_y(zz_pXY{S[i]},(i-S.length()/2));
   zz_pXY P_res;
   minpoly_DAC(d,SXY,S0X,zz_pXY{zz_pX{0}}-rhs,P_res);
-  cout << "P_res: " << P_res << endl;
   P = zz_pXY{zz_pX{0}};
   for (long i = 0; i < P_res.degY(); i++){
     P.rep.append(P_res.rep[i]);
