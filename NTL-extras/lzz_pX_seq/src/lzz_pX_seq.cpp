@@ -588,7 +588,6 @@ void minpoly_nondegenerate(const long d, const Vec<zz_pX> &S, zz_pXY &P){
   cout << "P_res: " << P_res << endl;
   P = zz_pXY{zz_pX{0}};
   for (long i = 0; i < P_res.degY(); i++){
-    cout <<"cur i: " << i << endl;
     P.rep.append(P_res.rep[i]);
   }
   P = P + shift_y(zz_pXY{zz_pX{1}}, S.length()/2);
