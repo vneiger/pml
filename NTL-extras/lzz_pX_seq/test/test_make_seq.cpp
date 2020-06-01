@@ -60,7 +60,8 @@ int main(){
 		for (long s = 0; s < ell-curOrd; s++){
 			zz_p r{0};
 			for (long t = 0; t < curOrd; t++)
-				r = r - P[t] * curS[s+t][0];
+				if (curS[s+t] != zz_pX{0})
+					r = r - P[t] * curS[s+t][0];
 			curS.append(zz_pX(r));
 		}
 		zz_pX curPow;
