@@ -7,9 +7,18 @@
 NTL_CLIENT
 using namespace std;
 
-int main(){
+int main(int argc, char *argv[]){
 	long p = 9001;
 	zz_p::init(p);
+	int mode = 0;
+	if (argc > 1){
+		mode =  stoi(argv[1]);
+		cout << "mode: " << mode << endl;
+		if (mode != 0 && mode != 1){
+			cout << "unknown mode" << endl;
+			return 3;
+		}
+	}
 
 	bool verbose = false;
 
@@ -44,9 +53,14 @@ int main(){
 	cout << "STARTING KURAKIN" << endl;
 	Vec<zz_pXY> gens;
 	double time = GetWallTime();
-	kurakin(d,seq,gens);
-	cout << "Monic degree: " << gens[0].degY() << endl;
-	cout << "Took: " << GetWallTime()-time << endl;
+	if (mode == 0){
+		kurakin(d,seq,gens);
+		cout << "Monic degree: " << gens[0].degY() << endl;
+		cout << "Took: " << GetWallTime()-time << endl;
+	}else{
+		cout << "skipping kurakin" << endl;
+	}
+
 
 	if(verbose){
 		cout << "GENS:" << endl;
@@ -74,27 +88,42 @@ int main(){
 		if (gens2[i] != zz_pX{0}) d_s++;
 	cout << "d*: " << d_s << endl;
 
-	long d_opt = 1;
-	for (long i = 1 ; i < gens.length(); i++)
-		if (gens[i].degY() != gens[i-1].degY()) d_opt++;
-	cout << "d_opt: " << d_opt << endl;
+	fill_in(d,gens2);
 
 	if(verbose){
 		cout << "GENS2 filled in:" << endl;
-		fill_in(d,gens2);
-		for (long i  = 0; i < gens2.length(); i++)
-			cout << gens2[i] << endl;
+			for (long i  = 0; i < gens2.length(); i++)
+		cout << gens2[i] << endl;
 		cout << endl;
 	}
 
+
+	long d_opt = 1;
+	for (long i = 1 ; i < gens2.length(); i++)
+		if (gens2[i].degY() != gens2[i-1].degY()) d_opt++;
+	cout << "d_opt: " << d_opt << endl;
+	
+	cout << "***************************************" << endl;
+	cout << "STARTING PMBASIS" << endl;
+	Vec<zz_pXY> gens3;
+	time = GetWallTime();
+	berlekamp_massey_pmbasis(d,seq,gens3);	
+	cout << "Took: " << GetWallTime()-time << endl;
+
 	cout << "***************************************" << endl;
 	cout << "STARTING CHECKS" << endl;
-	cout << "checking that gens cancels the seq" << endl;
-	if (check_cancel(seq,gens,d)) cout << "OKAY!" << endl;
-	else cout << "BAD!" << endl;
+	if (mode == 0){
+		cout << "checking that gens cancels the seq" << endl;
+		if (check_cancel(seq,gens,d)) cout << "OKAY!" << endl;
+		else cout << "BAD!" << endl;
+	}
 
 	cout << "checking that gens2 cancels the seq" << endl;
 	if (check_cancel(seq,gens2,d)) cout << "OKAY!" << endl;
+	else cout << "BAD!" << endl;
+	
+	cout << "checking that gens3 cancels the seq" << endl;
+	if (check_cancel(seq,gens3,d)) cout << "OKAY!" << endl;
 	else cout << "BAD!" << endl;
 
 	if (d_opt == 1){

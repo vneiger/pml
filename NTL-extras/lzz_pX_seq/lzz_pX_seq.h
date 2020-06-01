@@ -43,10 +43,14 @@ void kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens);
 // if the full list of generators are needed, use the function fill_in
 void modified_kurakin(const long d, const Vec<zz_pX> &S, Vec<zz_pXY> &gens);
 
+void berlekamp_massey_pmbasis(const long d, const Vec<zz_pX> &S, 
+		              Vec<zz_pXY> &gens);
+
+
 /* modules */
 // implementation of Kurakin's algorithm for computing generators of
 // ann(S) for sequence S over (k[x]/x^d)^tau
-void kurakin(const long d, const Vec<Mat<zz_pX>> &S, Vec<zz_pXY> &gens);
+void kurakin(const long d, const Vec<Vec<zz_pX>> &S, Vec<zz_pXY> &gens);
 
 // requires that gens is the output of modified_kurakin
 void fill_in(const long d, Vec<zz_pXY> &gens);

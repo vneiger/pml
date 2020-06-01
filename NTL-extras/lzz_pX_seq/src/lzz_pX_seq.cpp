@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cmath>
 #include <queue>
+#include <utility>
 using namespace std;
 
 const bool verbose = false;
@@ -136,11 +137,23 @@ long index_non_zero (const Vec<zz_pX> &S){
   return S.length();
 }
 
+long index_non_zero (const Vec<Vec<zz_pX>> &S){
+  if (S.length() == 0) return -1;
+  for (long i = 0; i < S.length(); i++)
+    if (index_non_zero(S[i]) != S[i].length())
+      return i;
+  return S.length();
+}
+
 bool is_zero_seq(const Vec<zz_pX> &S){
   if (S.length() == 0) return true;
   for (long i = 0; i < S.length(); i++)
     if (S[i] != zz_pX(0)) return false;
   return true;
+}
+
+bool is_zero_seq(const Vec<Vec<zz_pX>> &S){
+  return (index_non_zero(S) == S.length());
 }
 
 long valuation(const zz_pX &a){
@@ -162,6 +175,16 @@ void shift(Vec<zz_pX> &S, const long s){
 
 }
 
+void shift(Vec<Vec<zz_pX>> &S, const long s){
+  if (s > S.length()){
+    S.SetLength(0);
+    return;
+  }
+  for (long i = 0; i + s < S.length(); i++)
+    S[i] = S[i+s];
+  S.SetLength(S.length()-s);
+}
+
 // solves for a in l = a*r mod x^d
 void solve(zz_pX &a, const zz_pX &l, const zz_pX &r, const long d){
   long s = valuation(r);
@@ -175,6 +198,43 @@ void solve(zz_pX &a, const zz_pX &l, const zz_pX &r, const long d){
 
 
   // MulMod(a, l_shifted, InvMod(r_shifted, mod), mod);
+}
+
+Vec<zz_pX> solve(const Vec<zz_pX> &l, const Vec<Vec<zz_pX>> &rs, const long d){
+  // construct [rs_0 ... rs_j | -l]^tr
+  Mat<zz_pX> F;
+  long n = rs.length();
+  long m = rs[0].length();
+  F.SetDims(rs.length()+1, m);
+  for (long i = 0; i < n; i++)
+    F[i] = rs[i];
+  F[n] = -l;
+  cout << "F: " << F << endl;
+
+  // compute the left approximant basis at order d
+  vector<long> shifts;
+  for (long i = 0; i < n+1; i++) shifts.emplace_back(0);
+  Mat<zz_pX> appbas;
+  pmbasis(appbas,F,d,shifts);
+  cout << "appbas: " << appbas << endl;
+
+  // read off the solution
+  Vec<zz_pX> soln;
+  long ind = -1;
+  for (long r = 0; r < n+1; r++){
+    cout << "(r,n+1): " << r << " " << n << endl;
+    cout << "looking at: " << appbas[r][n] << endl;
+    if (valuation(appbas[r][n]) == 0){
+      ind = r;
+      break;
+    }
+  }
+  if (ind == -1) return soln;
+  zz_pX invC = InvTrunc(appbas[ind][n], d);
+  soln.SetLength(n);
+  for (long i = 0; i < n; i++)
+    soln[i] = MulTrunc(appbas[ind][i],invC,d);
+  return soln;
 }
 
 bool check_cancel(const Vec<zz_pX> &S, const Vec<zz_pXY> &gens,
@@ -506,8 +566,138 @@ void fill_in(const long d, Vec<zz_pXY> &gens){
   }
 }
 
-void kurakin(const long d, const Vec<Mat<zz_pX>> &S, Vec<zz_pXY> &gens){
+typedef Vec<zz_pX> Module;
+typedef pair<Vec<Module>, zz_pXY> mypair;
 
+long find_dependency(const Vec<Module> &basis, const long d){
+  Mat<zz_pX> F;
+  long n = basis.length();
+  long m = basis[0].length();
+  F.SetDims(n,m);
+  for (long i = 0; i < n; i++)
+    F[i] = basis[i];
+  Mat<zz_pX> appbas;
+  vector<long> shifts;
+  for (long i = 0; i < n; i++) shifts.emplace_back(i);
+  pmbasis(appbas,F,d,shifts);
+  for (long i = 0; i < n; i++){
+    for (long j = 0; j < n; j++){
+      if (valuation(appbas[i][j]) == 0){
+	return j;
+      }
+    }
+  }
+  return -1;
+}
+void kurakin(const long d, const Vec<Module> &S, Vec<zz_pXY> &gens){ 
+  map<long, vector<mypair>> I;
+  Vec<Vec<Module>> us;
+  us.SetLength(d);
+  gens.SetLength(d);
+
+  zz_pX running;
+  SetCoeff(running, 0, 1);
+  for (long t = 0; t < d; t++){
+    gens[t] = zz_pXY(running);
+    us[t] = mulTrunc(S, running, d);
+    LeftShift(running, running, 1);
+
+    long k = index_non_zero(us[t]);
+    auto it = I.find(k);
+    if (it == I.end() && k >= 0){
+      // create a pair and add to I
+      mypair p{us[t],gens[t]};
+      I[k].emplace_back(p);
+    }
+  }
+
+  for (long s = 1; s < S.length(); s++){
+    // stage 1
+    for (long t = 0; t < d; t++){
+      auto &f = gens[t];
+      auto &u = us[t];
+
+
+      if (u.length() == 0) continue;
+      if (is_zero_seq(u)) continue;
+
+      shift(u,1);
+      f = shift_y(f,1);
+
+      cout << endl << endl <<  "AT: " << s << " " << t << endl;
+      cout << "f: " << f << endl;
+      cout << "u: " << u << endl;
+      long temp_counter = 0;
+      while (temp_counter++ < 2){
+	if (u.length() == 0) break;
+	if (is_zero_seq(u)) break;
+
+	long k = index_non_zero(u);
+	if (k == u.length()) break;
+	cout << "subit: " << u << endl;
+
+	auto it = I.find(k);
+	if (it != I.end() && k >= 0){
+	  auto &l = u[k];
+	  cout << "l: " << l << endl;
+	  Vec<Module> rs;
+	  Vec<zz_pXY> rfs;
+	  Vec<Vec<Module>> rus;
+	  for (unsigned long i = 0; i < I[k].size(); i++){
+	    rs.append(I[k][i].first[k]);
+	    rus.append(I[k][i].first);
+	    rfs.append(I[k][i].second);
+	  }
+	  cout << "rs: " << rs << endl;
+	  // try to solve for l = \sum a_i rs_i
+	  auto soln = solve(l,rs,d);
+	  cout << "soln: " << soln << endl;
+	  if (soln.length() == 0) // no solutions
+	    break;
+	  // update u and f for the next subiteration
+	  for (long i = 0; i < rfs.length(); i++){
+	    u = add(u, mulTrunc(rus[i], -soln[i], d));
+	    f = f - rfs[i]*zz_pXY{soln[i]};
+	  }
+	}else{
+	  break;
+	}
+      }
+    }
+    // stage 2
+    for (long t = 0; t < d; t++){
+      auto &u = us[t];
+      auto &f = gens[t];
+      long k = index_non_zero(u);
+      if (k < u.length() && k >= 0){
+	auto it = I.find(k);
+	long nu = I[k].size();
+	if (it != I.end()){
+	  Vec<Module> basis;
+	  for (unsigned long i = 0; i < I[k].size(); i++){
+	    basis.append(I[k][i].first[k]);
+	  }
+	  basis.append(u[k]);
+	  long ind = find_dependency(basis, d);
+	  if (ind == -1){ // no dependency, just add to basis
+	    mypair p{u,f};
+	    I[k].emplace_back(p);
+	  }else if(ind < nu){
+	    // this means that the dependency is one of the vectors
+	    // inside I[k]
+	    cout << "vector size: " << I[k].size() << endl;
+	    cout << "deleting: " << ind << endl;
+	    I[k].erase(I[k].begin()+ind);
+	    mypair p{u,f};
+	    I[k].emplace_back(p);
+	  }
+	}else{
+	  mypair p{u,f};
+	  I[k].emplace_back(p);
+	}
+      }
+    }
+  }
 }
 
 void minpoly_DAC(const long d, const zz_pXY &SXY, const zz_pX &S0X, 
@@ -562,7 +752,7 @@ void minpoly_DAC(const long d, const zz_pXY &SXY, const zz_pX &S0X,
   r = shift_y(r,-rhs.degY());
   r = trunc_y(r,rhs.degY()+1);
   r = rhs - r;
-  
+
   r = shift_x(r,-d/2);
 
   zz_pXY P1;
@@ -591,3 +781,28 @@ void minpoly_nondegenerate(const long d, const Vec<zz_pX> &S, zz_pXY &P){
   }
   P = P + shift_y(zz_pXY{zz_pX{1}}, S.length()/2);
 }
+
+void berlekamp_massey_pmbasis(const long d, const Vec<zz_pX> &S,
+    Vec<zz_pXY> &gens){
+  long n = S.length()/2;
+  Mat<zz_pX> T;
+  T.SetDims(n+1,n);
+  for (long c = 0; c < n; c++){
+    for (long r = 0; r < n+1; r++)
+      T[r][c] = S[c+r];
+  }
+  Mat<zz_pX> appbas;
+  VecLong rdeg;
+  for (long i = 0; i < n+1; i++) rdeg.emplace_back(0);
+  pmbasis(appbas,T,d,rdeg);
+  for (long r = 0; r < n+1; r++){
+    zz_pXY res;
+    for (long c = 0; c < n+1; c++)
+      res = res + shift_y(zz_pXY{appbas[r][c]}, c);
+    gens.append(res);
+  }
+}
+
+
+
+
