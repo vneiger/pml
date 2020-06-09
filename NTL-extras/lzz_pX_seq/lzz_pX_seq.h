@@ -4,6 +4,7 @@
 #include <NTL/vector.h>
 #include <NTL/lzz_pX.h>
 #include "lzz_pXY.h"
+#include "structured_lzz_pX.h"
 NTL_CLIENT
 
 /* utility functions */
@@ -12,6 +13,7 @@ Vec<zz_pX> mul(const Vec<zz_pX> &S, const zz_pX &a);
 // seq times bivariate poly
 Vec<zz_pX> mul(const Vec<zz_pX> &S, const zz_pXY &f);
 
+// same for sequence of modules
 Vec<Vec<zz_pX>> mul(const Vec<Vec<zz_pX>> &S, const zz_pX &a);
 Vec<Vec<zz_pX>> mul(const Vec<Vec<zz_pX>> &S, const zz_pXY &f);
 
@@ -19,6 +21,7 @@ Vec<Vec<zz_pX>> mul(const Vec<Vec<zz_pX>> &S, const zz_pXY &f);
 Vec<zz_pX> mulTrunc(const Vec<zz_pX> &S, const zz_pX &a, const long d);
 Vec<zz_pX> mulTrunc(const Vec<zz_pX> &S, const zz_pXY &f, const long d);
 
+// for sequence of modules
 Vec<Vec<zz_pX>> mulTrunc(const Vec<Vec<zz_pX>> &S, const zz_pX &a, 
 		         const long d);
 Vec<Vec<zz_pX>> mulTrunc(const Vec<Vec<zz_pX>> &S, const zz_pXY &f, 
@@ -51,6 +54,7 @@ void berlekamp_massey_pmbasis(const long d, const Vec<zz_pX> &S,
 // implementation of Kurakin's algorithm for computing generators of
 // ann(S) for sequence S over (k[x]/x^d)^tau
 void kurakin(const long d, const Vec<Vec<zz_pX>> &S, Vec<zz_pXY> &gens);
+void modified_kurakin(const long d, const Vec<Vec<zz_pX>> &S, Vec<zz_pXY> &gens);
 
 // requires that gens is the output of modified_kurakin
 void fill_in(const long d, Vec<zz_pXY> &gens);
@@ -66,7 +70,11 @@ bool check_cancel(const Vec<zz_pX> &S, const Vec<zz_pXY> &gens,
 // lifting from a (precomputed) sequence S, assuming S is non-degenerate
 void minpoly_nondegenerate(const long d, const Vec<zz_pX> &S, zz_pXY &P);
 
-
+// generates the sequence (A^i b); set prec to be true if we want to instead
+// generate (A^i D^i b). If given b = 0, uses a random b
+void generate_right_seq(Vec<zz_pX> &S, const Mat<zz_pX> &A, 
+		        const Mat<zz_pX> b = Mat<zz_pX>(),
+		        const bool prec=false);
 
 
 

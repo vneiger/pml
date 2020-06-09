@@ -50,5 +50,10 @@ int main(){
 	cout << "gens:" << endl;
 	for (long i = 0; i < gens.length(); i++)
 		cout << gens[i] << endl;
+	Vec<zz_pXY> gens2;
+	modified_kurakin(d,S,gens2);
+	cout << "gens2: " << endl;
+	for (long i = 0; i < gens.length(); i++)
+		cout << gens2[i] << endl;
 
 }

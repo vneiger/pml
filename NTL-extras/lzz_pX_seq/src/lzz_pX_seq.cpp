@@ -200,43 +200,6 @@ void solve(zz_pX &a, const zz_pX &l, const zz_pX &r, const long d){
   // MulMod(a, l_shifted, InvMod(r_shifted, mod), mod);
 }
 
-Vec<zz_pX> solve(const Vec<zz_pX> &l, const Vec<Vec<zz_pX>> &rs, const long d){
-  // construct [rs_0 ... rs_j | -l]^tr
-  Mat<zz_pX> F;
-  long n = rs.length();
-  long m = rs[0].length();
-  F.SetDims(rs.length()+1, m);
-  for (long i = 0; i < n; i++)
-    F[i] = rs[i];
-  F[n] = -l;
-  cout << "F: " << F << endl;
-
-  // compute the left approximant basis at order d
-  vector<long> shifts;
-  for (long i = 0; i < n+1; i++) shifts.emplace_back(0);
-  Mat<zz_pX> appbas;
-  pmbasis(appbas,F,d,shifts);
-  cout << "appbas: " << appbas << endl;
-
-  // read off the solution
-  Vec<zz_pX> soln;
-  long ind = -1;
-  for (long r = 0; r < n+1; r++){
-    cout << "(r,n+1): " << r << " " << n << endl;
-    cout << "looking at: " << appbas[r][n] << endl;
-    if (valuation(appbas[r][n]) == 0){
-      ind = r;
-      break;
-    }
-  }
-  if (ind == -1) return soln;
-  zz_pX invC = InvTrunc(appbas[ind][n], d);
-  soln.SetLength(n);
-  for (long i = 0; i < n; i++)
-    soln[i] = MulTrunc(appbas[ind][i],invC,d);
-  return soln;
-}
-
 bool check_cancel(const Vec<zz_pX> &S, const Vec<zz_pXY> &gens,
     const long d){
   for (auto &f : gens){
@@ -589,6 +552,99 @@ long find_dependency(const Vec<Module> &basis, const long d){
   }
   return -1;
 }
+
+Vec<zz_pX> solve(const Vec<zz_pX> &l, const Vec<Vec<zz_pX>> &rs, const long d){
+  // construct [rs_0 ... rs_j | -l]^tr
+  Mat<zz_pX> F;
+  long n = rs.length();
+  long m = rs[0].length();
+  F.SetDims(rs.length()+1, m);
+  for (long i = 0; i < n; i++)
+    F[i] = rs[i];
+  F[n] = -l;
+  if (verbose)
+    cout << "F: " << F << endl;
+
+  // compute the left approximant basis at order d
+  vector<long> shifts;
+  for (long i = 0; i < n+1; i++) shifts.emplace_back(0);
+  Mat<zz_pX> appbas;
+  pmbasis(appbas,F,d,shifts);
+  if (verbose){
+    cout << "appbas: " << appbas << endl;
+  }
+
+  // read off the solution
+  Vec<zz_pX> soln;
+  long ind = -1;
+  for (long r = 0; r < n+1; r++){
+    if (verbose){
+      cout << "(r,n+1): " << r << " " << n << endl;
+      cout << "looking at: " << appbas[r][n] << endl;
+    }
+    if (valuation(appbas[r][n]) == 0){
+      ind = r;
+      break;
+    }
+  }
+  if (ind == -1) return soln;
+  zz_pX invC = InvTrunc(appbas[ind][n], d);
+  soln.SetLength(n);
+  for (long i = 0; i < n; i++)
+    soln[i] = MulTrunc(appbas[ind][i],invC,d);
+  return soln;
+}
+
+Vec<zz_pX> solve(const Vec<zz_pX> &l, const Vec<Vec<zz_pX>> &rs, const long d,
+    long &tprime){
+  // construct [rs_0 ... rs_j | -l]^tr
+  Mat<zz_pX> F;
+  long n = rs.length();
+  long m = rs[0].length();
+  F.SetDims(rs.length()+1, m);
+  for (long i = 0; i < n; i++)
+    F[i] = rs[i];
+  F[n] = -l;
+  if(verbose)
+    cout << "F: " << F << endl;
+
+  // compute the left approximant basis at order d
+  vector<long> shifts;
+  for (long i = 0; i < n+1; i++) shifts.emplace_back(0);
+  Mat<zz_pX> appbas;
+  pmbasis(appbas,F,d,shifts);
+  if(verbose){
+    cout << "appbas: " << appbas << endl;
+  }
+
+  // read off the solution
+  Vec<zz_pX> soln;
+  long ind = -1;
+  for (long r = 0; r < n+1; r++){
+    if (verbose){
+      cout << "(r,n+1): " << r << " " << n << endl;
+      cout << "looking at: " << appbas[r][n] << endl;
+    }
+    if (valuation(appbas[r][n]) == 0){
+      ind = r;
+      break;
+    }
+  }
+  if (ind == -1){
+    // check for the minimal valuation on the last column
+    long min_val = valuation(appbas[0][n]);
+    for (long r = 1; r < n+1; r++)
+      if (valuation(appbas[r][n]) < min_val)
+	min_val = valuation(appbas[r][n]);
+    tprime = d - min_val;
+    return soln;
+  }
+  zz_pX invC = InvTrunc(appbas[ind][n], d);
+  soln.SetLength(n);
+  for (long i = 0; i < n; i++)
+    soln[i] = MulTrunc(appbas[ind][i],invC,d);
+  return soln;
+}
 void kurakin(const long d, const Vec<Module> &S, Vec<zz_pXY> &gens){ 
   map<long, vector<mypair>> I;
   Vec<Vec<Module>> us;
@@ -624,9 +680,12 @@ void kurakin(const long d, const Vec<Module> &S, Vec<zz_pXY> &gens){
       shift(u,1);
       f = shift_y(f,1);
 
-      cout << endl << endl <<  "AT: " << s << " " << t << endl;
-      cout << "f: " << f << endl;
-      cout << "u: " << u << endl;
+      if (verbose){
+	cout << endl << endl <<  "AT: " << s << " " << t << endl;
+	cout << "f: " << f << endl;
+	cout << "u: " << u << endl;
+      }
+
       long temp_counter = 0;
       while (temp_counter++ < 2){
 	if (u.length() == 0) break;
@@ -634,12 +693,12 @@ void kurakin(const long d, const Vec<Module> &S, Vec<zz_pXY> &gens){
 
 	long k = index_non_zero(u);
 	if (k == u.length()) break;
-	cout << "subit: " << u << endl;
 
 	auto it = I.find(k);
 	if (it != I.end() && k >= 0){
 	  auto &l = u[k];
-	  cout << "l: " << l << endl;
+	  if(verbose)
+	    cout << "l: " << l << endl;
 	  Vec<Module> rs;
 	  Vec<zz_pXY> rfs;
 	  Vec<Vec<Module>> rus;
@@ -648,10 +707,12 @@ void kurakin(const long d, const Vec<Module> &S, Vec<zz_pXY> &gens){
 	    rus.append(I[k][i].first);
 	    rfs.append(I[k][i].second);
 	  }
-	  cout << "rs: " << rs << endl;
+	  if (verbose)
+	    cout << "rs: " << rs << endl;
 	  // try to solve for l = \sum a_i rs_i
 	  auto soln = solve(l,rs,d);
-	  cout << "soln: " << soln << endl;
+	  if (verbose)
+	    cout << "soln: " << soln << endl;
 	  if (soln.length() == 0) // no solutions
 	    break;
 	  // update u and f for the next subiteration
@@ -685,8 +746,10 @@ void kurakin(const long d, const Vec<Module> &S, Vec<zz_pXY> &gens){
 	  }else if(ind < nu){
 	    // this means that the dependency is one of the vectors
 	    // inside I[k]
-	    cout << "vector size: " << I[k].size() << endl;
-	    cout << "deleting: " << ind << endl;
+	    if (verbose){
+	      cout << "vector size: " << I[k].size() << endl;
+	      cout << "deleting: " << ind << endl;
+	    }
 	    I[k].erase(I[k].begin()+ind);
 	    mypair p{u,f};
 	    I[k].emplace_back(p);
@@ -698,6 +761,164 @@ void kurakin(const long d, const Vec<Module> &S, Vec<zz_pXY> &gens){
       }
     }
   }
+}
+
+// returns the minimal (non-zero) valuation of a, returns -1
+// if a is zero
+long valuation(const Module &a){
+  if (is_zero_seq(a)) return -1;
+  long min_val = valuation(a[0]);
+  for(long i = 1; i < a.length(); i++){
+    if (min_val > valuation(a[i])) min_val = valuation(a[i]);
+  }
+  return min_val;
+}
+
+void modified_kurakin(const long d, const Vec<Module> &S, Vec<zz_pXY> &gens){
+  gens.SetLength(0);
+  map<long, vector<mypair>> I;
+  map<long, Vec<Module>> us; // current sequences;
+  map<long, zz_pXY> fs; // current polys
+
+  vector<bool> bitmap; // bitmap[i] = true if x^t is potentially useful
+  bitmap.resize(d,false);
+
+  queue<long> Q;
+  Q.push(0); // 0 is always useful
+  bitmap[0] = true;
+  while(!Q.empty()){
+    long t = Q.front();
+    Q.pop();
+    zz_pX f_x;
+    SetCoeff(f_x,t,1);
+    zz_pXY f_xy{f_x};
+    auto u = mulTrunc(S, f_x, d);
+
+    // add to what we are tracking;
+    us[t] = u;
+    fs[t] = f_xy;
+
+    // update the ideals
+    auto k = index_non_zero(u);
+    auto it = I.find(k);
+    if (it == I.end() && k >= 0){
+      mypair p{u,f_xy};
+      I[k].emplace_back(p);
+    }
+
+    // check if we can find t' st (t'+t) < d and x^t' u[k] = 0
+    long tprime = d - valuation(u[k]);
+    if (tprime+t < d){
+      bitmap[tprime+t] = true;
+      Q.push(tprime+t);
+    }
+  }
+
+  for (long s = 1; s < S.length(); s++){
+    for (long b = 0; b < d; b++)
+      if (bitmap[b]) Q.push(b);
+    // stage 1
+    while(!Q.empty()){
+      auto t = Q.front();
+      Q.pop();
+      auto &f = fs[t];
+      auto &u = us[t];
+
+      // these are the original ones
+      auto fc = fs[t]; 
+      auto uc = us[t];
+
+      if (is_zero_seq(u)) continue;
+      // shift by y
+      f = shift_y(f,1);
+      shift(u,1);
+
+      // start of the subiterations
+      while(true){
+	if (u.length() == 0) break;
+	long k = index_non_zero(u);
+	if (k == u.length()) break;
+	long tprime = d - valuation(u[k]);
+	// check if we can cancel the first element just by
+	// multiply it with x^tprime
+	if (tprime + t < d && bitmap[tprime+t] == false){
+	  bitmap[tprime+t] = true;
+	  Q.push(tprime+t);
+	  fs[tprime+t] = shift_x(fc, tprime);
+	  zz_pX x_tprime;
+	  SetCoeff(x_tprime,tprime,1);
+	  us[t+tprime] = mulTrunc(uc, x_tprime, d);
+	}
+	// check if we can cancel the element by previous sequences
+	auto it = I.find(k);
+	if (it != I.end()){
+	  auto &l = u[k];
+	  Vec<Module> rs;
+	  Vec<zz_pXY> rfs;
+	  Vec<Vec<Module>> rus;
+	  for (unsigned long i = 0; i < I[k].size(); i++){
+	    rs.append(I[k][i].first[k]);
+	    rus.append(I[k][i].first);
+	    rfs.append(I[k][i].second);
+	  }
+	  long tprime;
+	  auto soln = solve(l,rs,d,tprime);
+	  if (soln.length() == 0){
+	    if (tprime+t >= d) break;
+	    bitmap[tprime+t] = true;
+	    Q.push(tprime+t);
+	    fs[tprime+t] = shift_x(fc,tprime);
+	    zz_pX x_tprime;
+	    SetCoeff(x_tprime, tprime, 1);
+	    us[t+tprime] = mulTrunc(uc, x_tprime, d);
+	    break;
+	  }
+	  for (long i = 0; i < rfs.length(); i++){
+	    u = add(u, mulTrunc(rus[i], -soln[i], d));
+	    f = f - rfs[i]*zz_pXY{soln[i]};
+	  }
+	}
+	if (it != I.end()){
+	}else{
+	  break;
+	}
+      }
+    }
+    // stage 2
+    for (long t = 0; t < d; t++){
+      if (bitmap[t] == false) continue; // nothing important here
+      auto &u = us[t];
+      auto &f = fs[t];
+      auto k = index_non_zero(u);
+      if (k < u.length() && k >= 0){
+	auto it = I.find(k);
+	long nu = I[k].size();
+	if (it != I.end()){
+	  // there is something in the ideal
+	  Vec<Module> basis;
+	  for (unsigned long i = 0; i < I[k].size(); i++)
+	    basis.append(I[k][i].first[k]);
+	  basis.append(u[k]);
+	  long ind = find_dependency(basis,d);
+	  if (ind == -1){
+	    mypair p{u,f};
+	    I[k].emplace_back(p);
+	  }else if (ind < nu){
+	    I[k].erase(I[k].begin()+ind);
+	    mypair p{u,f};
+	    I[k].emplace_back(p);
+	  }
+	}else{
+	  // there's nothing in the ideal
+	  mypair p{u,f};
+	  I[k].emplace_back(p);
+	}
+      }
+    }
+  }
+  gens.SetLength(d);
+  for (long t = 0;  t< d; t++)
+    if (bitmap[t]) gens[t] = fs[t];
 }
 
 void minpoly_DAC(const long d, const zz_pXY &SXY, const zz_pX &S0X, 
@@ -803,6 +1024,6 @@ void berlekamp_massey_pmbasis(const long d, const Vec<zz_pX> &S,
   }
 }
 
-
-
-
+void generate_right_seq(Vec<zz_pX> &S, const structured_lzz_pX &A,
+                        const Mat<zz_pX> b, const bool prec){
+}
