@@ -550,9 +550,6 @@ void matrix_recon_interpolation_geometric(Mat<zz_pX> & basis,
     // uniform shift (0,..,0)
     VecLong shift(2*m);
 
-    Vec<Mat<zz_p>> seq_id;
-    seq_id.SetLength(len);
-
     // add identity at the bottom of each matrix in seq
     for (long j = 0; j < len; j++)
     {
@@ -563,7 +560,7 @@ void matrix_recon_interpolation_geometric(Mat<zz_pX> & basis,
 
     // call pmbasis
     Mat<zz_pX> intbas;
-    pmbasis_geometric(intbas, seq_id, pts, r, shift, 0, len);
+    pmbasis_geometric(intbas, seq, pts, r, shift, 0, len);
 
     basis.SetDims(m, m);
     for (long i = 0; i < m; ++i)
