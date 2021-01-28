@@ -9,6 +9,8 @@
 using namespace std;
 
 const bool verbose = false;
+//const bool verbose = true;
+
 
 Vec<zz_pX> mul(const Vec<zz_pX> &S, const zz_pX &a){
   Vec<zz_pX> res;
@@ -153,6 +155,7 @@ bool is_zero_seq(const Vec<zz_pX> &S){
 }
 
 bool is_zero_seq(const Vec<Vec<zz_pX>> &S){
+  if (S.length() == 0) return true;
   return (index_non_zero(S) == S.length());
 }
 
@@ -208,6 +211,20 @@ bool check_cancel(const Vec<zz_pX> &S, const Vec<zz_pXY> &gens,
       res = mul(S,f);
     else
       res = mulTrunc(S,f,d);
+    if (!is_zero_seq(res)) return false;
+  }
+  return true;
+}
+
+bool check_cancel(const Vec<Vec<zz_pX>> &S, const Vec<zz_pXY> &gens,
+    const long d){
+  for (auto &f : gens){
+    Vec<Vec<zz_pX>> res;
+    if (d == -1)
+      res = mul(S,f);
+    else
+      res = mulTrunc(S,f,d);
+
     if (!is_zero_seq(res)) return false;
   }
   return true;
@@ -634,9 +651,11 @@ Vec<zz_pX> solve(const Vec<zz_pX> &l, const Vec<Vec<zz_pX>> &rs, const long d,
     // check for the minimal valuation on the last column
     long min_val = valuation(appbas[0][n]);
     for (long r = 1; r < n+1; r++)
-      if (valuation(appbas[r][n]) < min_val)
+      if (min_val < 0  || valuation(appbas[r][n]) < min_val)
 	min_val = valuation(appbas[r][n]);
+    if (verbose) cout << "minval: " << min_val << endl;
     tprime = d - min_val;
+    if (verbose) cout << "tprime: " << tprime << endl;
     return soln;
   }
   zz_pX invC = InvTrunc(appbas[ind][n], d);
@@ -783,6 +802,8 @@ void modified_kurakin(const long d, const Vec<Module> &S, Vec<zz_pXY> &gens){
   vector<bool> bitmap; // bitmap[i] = true if x^t is potentially useful
   bitmap.resize(d,false);
 
+  if (verbose) cout << "\nStarting mo. kurakin" << endl;
+
   queue<long> Q;
   Q.push(0); // 0 is always useful
   bitmap[0] = true;
@@ -808,7 +829,7 @@ void modified_kurakin(const long d, const Vec<Module> &S, Vec<zz_pXY> &gens){
 
     // check if we can find t' st (t'+t) < d and x^t' u[k] = 0
     long tprime = d - valuation(u[k]);
-    if (tprime+t < d){
+    if (tprime+t < d && !bitmap[tprime+t]){
       bitmap[tprime+t] = true;
       Q.push(tprime+t);
     }
@@ -832,6 +853,12 @@ void modified_kurakin(const long d, const Vec<Module> &S, Vec<zz_pXY> &gens){
       // shift by y
       f = shift_y(f,1);
       shift(u,1);
+
+      if (verbose){ 
+	cout << "\nat " << s << " " << t << endl;
+	cout << "f: " << f << endl;
+	cout << "u: " << u << endl;
+      }
 
       // start of the subiterations
       while(true){
@@ -864,7 +891,7 @@ void modified_kurakin(const long d, const Vec<Module> &S, Vec<zz_pXY> &gens){
 	  long tprime;
 	  auto soln = solve(l,rs,d,tprime);
 	  if (soln.length() == 0){
-	    if (tprime+t >= d) break;
+	    if (tprime+t >= d || bitmap[tprime+t]) break;
 	    bitmap[tprime+t] = true;
 	    Q.push(tprime+t);
 	    fs[tprime+t] = shift_x(fc,tprime);
@@ -1015,7 +1042,7 @@ void berlekamp_massey_pmbasis(const long d, const Vec<zz_pX> &S,
   Mat<zz_pX> appbas;
   VecLong rdeg;
   for (long i = 0; i < n+1; i++) rdeg.emplace_back(0);
-  pmbasis(appbas,T,d,rdeg);
+  popov_pmbasis(appbas,T,d,rdeg);
   for (long r = 0; r < n+1; r++){
     zz_pXY res;
     for (long c = 0; c < n+1; c++)
@@ -1024,6 +1051,153 @@ void berlekamp_massey_pmbasis(const long d, const Vec<zz_pX> &S,
   }
 }
 
-void generate_right_seq(Vec<zz_pX> &S, const structured_lzz_pX &A,
-                        const Mat<zz_pX> b, const bool prec){
+void berlekamp_massey_pmbasis(const long d, const Vec<Module> &S,
+    Vec<zz_pXY> & gens){
+  long e = S.length()/2;
+  long n = S[0].length();
+
+  Mat<zz_pX> H;
+  H.SetDims(e+1, e*n);
+  for (long s = 0; s < n; s++){
+    for (long c = 0; c < e; c++)
+      for (long r = 0; r < e+1; r++)
+	H[r][c+s*e] = S[c+r][s];
+  }
+  Mat<zz_pX> appbas;
+  VecLong rdeg;
+  for (long i = 0; i < e+1; i++) rdeg.emplace_back(0);
+  popov_pmbasis(appbas, H, d, rdeg);
+  for (long r= 0; r < e+1; r++){
+    zz_pXY res;
+    for (long c = 0; c < e+1; c++)
+      res = res + shift_y(zz_pXY(appbas[r][c]), c);
+    gens.append(res);
+  }
 }
+
+
+
+void generate_right_seq(Vec<zz_pX> &S, const structured_lzz_pX &A,
+    const Mat<zz_pX> b, const bool prec){
+}
+
+
+// compressed pm-basis
+void compress_scalar(Mat<zz_p> &mat, const mosaic_hankel_lzz_p &H){
+  long rows = H.NumRows();
+  long cols = H.NumCols();
+  Mat<zz_p> proj = random_mat_zz_p(cols,rows);
+
+  H.mul_right(mat, proj);
+}
+
+// assumes mat has the correct size (e+1) x (e+1)
+// each matrix in Hs is [x^i] H, the coefficient of the block Hankel
+// for x^i
+void compress_poly(Mat<zz_pX> &mat, const Vec<mosaic_hankel_lzz_p> &Hs){
+
+  cout << "mat dim: " << mat.NumRows() << " " << mat.NumCols() << endl;
+  for (long i = 0; i < Hs.length(); i++){
+    Mat<zz_p> cur_mat;
+    compress_scalar(cur_mat, Hs[i]);
+    cout << "dims: " << cur_mat.NumRows() << "  " << cur_mat.NumCols() << endl;
+    // copy the entries over and multiply by cur_pow
+    for (long r = 0; r < cur_mat.NumRows(); r++){
+      for (long c = 0; c < cur_mat.NumCols(); c++){
+	cout << "r,c " << r << " " << c << endl;
+	cout << "cur: " << cur_mat[r][c] << endl;
+	cout << "mat: " << mat[r][c] << endl;
+	cout << "i: " << i << endl;
+	//SetCoeff(mat[r][c], i, cur_mat[r][c]);
+	long entry = rep(cur_mat[r][c]);
+	SetCoeff(mat[r][c], i, entry);
+      }
+    }
+  }
+}
+
+void compress(Mat<zz_pX> &mat, const long d, const Vec<Module> &S){
+  long e = S.length()/2;
+  long n = S[0].length();
+
+  Vec<mosaic_hankel_lzz_p> Hs;
+  for (long i = 0; i < d; i++){
+    Vec<Vec<zz_p>> seqs; // for sequences of coefficient at x^i
+    for (long j = 0; j < n; j++){
+      Vec<zz_p> seq;
+      seq.SetLength(n);
+      for (long s = 0; s < e; s++){
+	seq[e-s-1] = S[s][j][i];
+      }
+      seqs.append(seq);
+    }
+    // create the Hankel matrices for each seq in seqs
+    Vec<hankel_lzz_p> H_vec;
+    for (auto & seq : seqs){
+      H_vec.append(hankel_lzz_p(seq, e+1, e));
+    }
+    Vec< Vec<hankel_lzz_p>> to_put; // make Hs into 2D matrix
+    to_put.append(H_vec);
+    Hs.append(mosaic_hankel_lzz_p(to_put));
+  }
+
+  mat.SetDims(e+1,e+1);
+  for (long i = 0; i < e+1; i++)
+    for (long j = 0; j < e+1; j++)
+      mat[i][j].SetLength(d);
+  compress_poly(mat, Hs);
+}
+
+void berlekamp_massey_pmbasis_compressed(const long d, const Vec<Module> &S,
+    Vec<zz_pXY> & gens){
+
+  long e = S.length()/2;
+
+  Mat<zz_pX> compressed;
+  compress(compressed, d, S);
+
+  Mat<zz_pX> appbas;
+  VecLong rdeg;
+  for (long i = 0; i < e+1; i++) rdeg.emplace_back(0);
+  popov_pmbasis(appbas, compressed, d, rdeg);
+  for (long r= 0; r < e+1; r++){
+    zz_pXY res;
+    for (long c = 0; c < e+1; c++)
+      res = res + shift_y(zz_pXY(appbas[r][c]), c);
+    gens.append(res);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
