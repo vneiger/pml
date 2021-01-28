@@ -11,7 +11,7 @@ int main(){
   long p = 9001;
   zz_p::init(p);
 
-  bool verbose = false;
+  bool verbose = true;
   //bool verbose = true;
 
   long d;
@@ -105,7 +105,7 @@ int main(){
 
   Vec<zz_pXY> gens4;
   time = GetWallTime();
-  berlekamp_massey_pmbasis_compressed(d, S, gens3);
+  berlekamp_massey_pmbasis_compressed(d, S, gens4);
   time = GetWallTime() - time;
   if(verbose){
     cout << "gens4: " << endl;
@@ -114,10 +114,12 @@ int main(){
   }
   cout << "pmbasis compressed took " << time << endl;
   cout << "checking pmbasis compressed" << endl;
-  if (check_cancel(S, gens4, d))
+ 
+	if (check_cancel(S, gens4, d))
     cout << "OKAY" << endl;
   else
     cout << "BAD" << endl;
+
 }
 
 
