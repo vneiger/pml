@@ -7,11 +7,11 @@
 NTL_CLIENT
 using namespace std;
 
-int main(){
+int main(int argc, char* argv[]){
   long p = 9001;
   zz_p::init(p);
 
-  bool verbose = true;
+  bool verbose = false;
   //bool verbose = true;
 
   long d;
@@ -41,51 +41,60 @@ int main(){
     for (long j = 0; j < tau; j++){
       zz_pX curpol;
       if (verbose)
-      	cout << "subentry: " << j << endl;
+	cout << "subentry: " << j << endl;
       cin >> curpol;
       cur.append(curpol);
     }
     S.append(cur);
   }
+
+  int mode = 0;
+  if (argc > 1){
+    mode = stoi(argv[1]);
+  }
+
   Vec<zz_pXY> gens;
   double time = GetWallTime();
-  kurakin(d,S,gens);
-  time = GetWallTime()-time;
-  if(verbose){
-    cout << "gens:" << endl;
-    for (long i = 0; i < gens.length(); i++)
-      cout << gens[i] << endl;
+  if (mode < 1){
+    kurakin(d,S,gens);
+    time = GetWallTime()-time;
+    if(verbose){
+      cout << "gens:" << endl;
+      for (long i = 0; i < gens.length(); i++)
+	cout << gens[i] << endl;
+    }
+    cout << "kurakin took " << time << endl;
+    cout << "checking kurakin" << endl;
+    if (check_cancel(S, gens, d))
+      cout << "OKAY" << endl;
+    else
+      cout << "BAD" << endl;
+    cout << endl;
   }
-  cout << "kurakin took " << time << endl;
-  cout << "checking kurakin" << endl;
-  if (check_cancel(S, gens, d))
-    cout << "OKAY" << endl;
-  else
-    cout << "BAD" << endl;
-  cout << endl;
 
 
   Vec<zz_pXY> gens2;
-  time = GetWallTime();
-  modified_kurakin(d,S,gens2);
-  time = GetWallTime()-time;
-  if(verbose){
-    cout << "gens2: " << endl;
+  if (mode < 2){
+    time = GetWallTime();
+    modified_kurakin(d,S,gens2);
+    time = GetWallTime()-time;
+    if(verbose){
+      cout << "gens2: " << endl;
+      for (long i = 0; i < gens2.length(); i++)
+	cout << gens2[i] << endl;
+    }
+    long d_s = 0;
     for (long i = 0; i < gens2.length(); i++)
-      cout << gens2[i] << endl;
+      if (gens2[i] != zz_pX{0}) d_s++;
+    cout << "mo. kurakin took " << time << endl;
+    cout << "d* = " << d_s << endl; 
+    cout << "checking mo. kurakin" << endl;
+    if (check_cancel(S, gens2, d))
+      cout << "OKAY" << endl;
+    else
+      cout << "BAD" << endl;
+    cout << endl;
   }
-  long d_s = 0;
-  for (long i = 0; i < gens2.length(); i++)
-   if (gens2[i] != zz_pX{0}) d_s++;
-  cout << "mo. kurakin took " << time << endl;
-  cout << "d* = " << d_s << endl; 
-  cout << "checking mo. kurakin" << endl;
-  if (check_cancel(S, gens2, d))
-    cout << "OKAY" << endl;
-  else
-    cout << "BAD" << endl;
- cout << endl;
-
   Vec<zz_pXY> gens3;
   time = GetWallTime();
   berlekamp_massey_pmbasis(d, S, gens3);
@@ -114,8 +123,8 @@ int main(){
   }
   cout << "pmbasis compressed took " << time << endl;
   cout << "checking pmbasis compressed" << endl;
- 
-	if (check_cancel(S, gens4, d))
+
+  if (check_cancel(S, gens4, d))
     cout << "OKAY" << endl;
   else
     cout << "BAD" << endl;

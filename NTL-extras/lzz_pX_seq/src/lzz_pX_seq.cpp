@@ -587,7 +587,7 @@ Vec<zz_pX> solve(const Vec<zz_pX> &l, const Vec<Vec<zz_pX>> &rs, const long d){
 	vector<long> shifts;
 	for (long i = 0; i < n+1; i++) shifts.emplace_back(0);
 	Mat<zz_pX> appbas;
-	popov_pmbasis(appbas,F,d,shifts);
+	pmbasis(appbas,F,d,shifts);
 	if (verbose){
 		cout << "appbas: " << appbas << endl;
 	}
@@ -630,7 +630,7 @@ Vec<zz_pX> solve(const Vec<zz_pX> &l, const Vec<Vec<zz_pX>> &rs, const long d,
 	vector<long> shifts;
 	for (long i = 0; i < n+1; i++) shifts.emplace_back(0);
 	Mat<zz_pX> appbas;
-	popov_pmbasis(appbas,F,d,shifts);
+	pmbasis(appbas,F,d,shifts);
 	if(verbose){
 		cout << "appbas: " << appbas << endl;
 	}
@@ -1045,7 +1045,7 @@ void berlekamp_massey_pmbasis(const long d, const Vec<zz_pX> &S,
 	Mat<zz_pX> appbas;
 	VecLong rdeg;
 	for (long i = 0; i < n+1; i++) rdeg.emplace_back(0);
-	popov_pmbasis(appbas,T,d,rdeg);
+	pmbasis(appbas,T,d,rdeg);
 	for (long r = 0; r < n+1; r++){
 		zz_pXY res;
 		for (long c = 0; c < n+1; c++)
@@ -1132,7 +1132,7 @@ void compress(Mat<zz_pX> &mat, const long d, const Vec<Module> &S){
 			Vec<zz_p> seq;
 			seq.SetLength(2*e);
 			for (long s = 0; s < 2*e; s++){
-				seq[s] = S[s][j][i];
+				seq[s] = coeff(S[s][j], i);
 			}
 			seqs.append(seq);
 		}
@@ -1149,7 +1149,7 @@ void compress(Mat<zz_pX> &mat, const long d, const Vec<Module> &S){
 			for (long c = 0; c < e+1; c++)
 				SetCoeff(mat[r][c], i, mat_i[r][c]);
 	}
-
+/*
 	Mat<zz_pX> H;
 	H.SetDims(e+1, e*n);
 	for (long s = 0; s < n; s++){
@@ -1166,6 +1166,7 @@ void compress(Mat<zz_pX> &mat, const long d, const Vec<Module> &S){
 				proj[i*n+r][c] = rands[i][r][c];
 	}
 	Mat<zz_pX> prod = H*proj;
+*/
 }
 
 void berlekamp_massey_pmbasis_compressed(const long d, const Vec<Module> &S,
@@ -1180,7 +1181,7 @@ void berlekamp_massey_pmbasis_compressed(const long d, const Vec<Module> &S,
 	Mat<zz_pX> appbas;
 	VecLong rdeg;
 	for (long i = 0; i < e+1; i++) rdeg.emplace_back(0);
-	popov_pmbasis(appbas, compressed, d, rdeg);
+	pmbasis(appbas, compressed, d, rdeg);
 	for (long r= 0; r < e+1; r++){
 		zz_pXY res;
 		for (long c = 0; c < e+1; c++)
