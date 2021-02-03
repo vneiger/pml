@@ -1069,7 +1069,7 @@ void berlekamp_massey_pmbasis(const long d, const Vec<Module> &S,
   Mat<zz_pX> appbas;
   VecLong rdeg;
   for (long i = 0; i < e+1; i++) rdeg.emplace_back(0);
-  popov_pmbasis(appbas, H, d, rdeg);
+  pmbasis(appbas, H, d, rdeg);
   for (long r= 0; r < e+1; r++){
     zz_pXY res;
     for (long c = 0; c < e+1; c++)
@@ -1176,6 +1176,25 @@ void compress(Mat<zz_pX> &mat, const long d, const Vec<Module> &S){
     }
   }
 
+  Mat<zz_pX> polHs;
+  polHs.SetDims(n, d);
+  for (long i = 0; i < d; i++){
+    for (long j = 0; j < n; j++){
+      for (long s = 0; s < 2*e; s++){
+	SetCoeff(polHs[j][i], s, coeff(S[s][j], i));
+      }
+    }
+  }
+
+  auto prod = rand_polmat * polHs;
+  
+  mat.SetDims(e+1,e+1);
+  for (long i = 0; i < d; i++)
+    for (long r = 0; r < e+1; r++)
+      for (long c = 0; c < e+1; c++)
+	  SetCoeff(mat[r][c], i, coeff( prod[c][i], r+(e-1)));
+
+/*
   for (long i = 0; i < d; i++){
     Vec<zz_pX> seqs; // for sequences of coefficient at x^i
     for (long j = 0; j < n; j++){
@@ -1189,26 +1208,12 @@ void compress(Mat<zz_pX> &mat, const long d, const Vec<Module> &S){
     Mat<zz_p> mat_i;
     mat_i.SetDims(e+1,e+1);
     right_mul(mat_i, seqs, rand_polmat);
-
-    /*
-       for (long ss = 0; ss < seqs.length(); ss++){
-       Mat<zz_p> mm;
-       double t = GetWallTime();
-       right_mul(mm, seqs[ss], rands[ss]);
-       time_mul += GetWallTime() - t;
-       t = GetWallTime();
-       mat_i = mat_i+mm;
-       time_add += GetWallTime() - t;
-       }
-       */
-    // set the coefficient to mat
-    //cout << "mat_i: " << mat_i.NumRows() << " " << mat_i.NumCols() << endl;
-    //cout << "e+1: " << e+1 << endl;
     for (long r = 0; r < e+1; r++)
       for (long c = 0; c < e+1; c++)
 	SetCoeff(mat[r][c], i, mat_i[r][c]);
   }
-/*
+*/
+ /*
   double time_ver = GetWallTime();
   Mat<zz_pX> H;
   H.SetDims(e+1, e*n);
@@ -1218,14 +1223,14 @@ void compress(Mat<zz_pX> &mat, const long d, const Vec<Module> &S){
 	H[r][c+s*e] = S[c+r][s];
   }
 
-  Mat<zz_pX> proj;
+  Mat<zz_p> proj;
   proj.SetDims(n*e, e+1);
   for (long i = 0; i < n; i++){
     for (long r = 0; r < e; r++)
       for (long c = 0; c < e+1; c++)
 	proj[i*n+r][c] = rands[i][r][c];
   }
-  Mat<zz_pX> prod = H*proj;
+  prod = H*proj;
   cout << "time to verify: " << GetWallTime()-time_ver << endl;
 */
 }
@@ -1236,10 +1241,8 @@ void berlekamp_massey_pmbasis_compressed(const long d, const Vec<Module> &S,
   long e = S.length()/2;
 
   Mat<zz_pX> compressed;
-  double t = GetWallTime();
   compressed.SetDims(e+1,e+1);
   compress(compressed, d, S);
-  cout << "time to compress: " << GetWallTime() - t << endl;
 
   Mat<zz_pX> appbas;
   VecLong rdeg;
