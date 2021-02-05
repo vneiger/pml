@@ -6,6 +6,7 @@
 #include <cmath>
 #include <queue>
 #include <utility>
+#include "mat_lzz_pX_kernel.h"
 using namespace std;
 
 const bool verbose = false;
@@ -1076,9 +1077,48 @@ void berlekamp_massey_pmbasis(const long d, const Vec<Module> &S,
       res = res + shift_y(zz_pXY(appbas[r][c]), c);
     gens.append(res);
   }
+  bool rank_check = false;
+  if (rank_check){
+    Mat<zz_pX> kern;
+    kernel_basis(kern, H, rdeg);
+    long K = kern.NumRows();
+    cout << "rank of F: " << e+1-K << endl;
+
+    Mat<zz_p> Hc;
+    Hc.SetDims(e+1,e*n);
+    for (long r = 0; r < e+1; r++)
+      for (long c = 0; c < e*n; c++)
+	Hc[r][c] = coeff(H[r][c], 0);
+    long rank = gauss(Hc);
+    cout << "rank of F(0): " << rank << endl;
+  }
 }
 
+void berlekamp_massey_pmbasis_hnf(const long d, const Vec<Module> &S,
+    Vec<zz_pXY> & gens){
+  long e = S.length()/2;
+  long n = S[0].length();
 
+  Mat<zz_pX> H;
+  H.SetDims(e+1, e*n);
+  for (long s = 0; s < n; s++){
+    for (long c = 0; c < e; c++)
+      for (long r = 0; r < e+1; r++)
+	H[r][c+s*e] = S[c+r][s];
+  }
+  Mat<zz_pX> appbas;
+  VecLong rdeg;
+  for (long i = 0; i < e+1; i++){
+    rdeg.emplace_back(i*d);
+  }
+  pmbasis(appbas, H, d, rdeg);
+  for (long r= 0; r < e+1; r++){
+    zz_pXY res;
+    for (long c = 0; c < e+1; c++)
+      res = res + shift_y(zz_pXY(appbas[r][c]), c);
+    gens.append(res);
+  }
+}
 
 void generate_right_seq(Vec<zz_pX> &S, const structured_lzz_pX &A,
     const Mat<zz_pX> b, const bool prec){

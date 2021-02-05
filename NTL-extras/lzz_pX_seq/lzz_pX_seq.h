@@ -54,6 +54,9 @@ void berlekamp_massey_pmbasis(const long d, const Vec<zz_pX> &S,
 void berlekamp_massey_pmbasis(const long d, const Vec<Vec<zz_pX> > &S, 
     Vec<zz_pXY> &gens);
 
+void berlekamp_massey_pmbasis_hnf(const long d, const Vec<Vec<zz_pX> > &S, 
+    Vec<zz_pXY> &gens);
+
 void berlekamp_massey_pmbasis_compressed(const long d, const Vec<Vec<zz_pX> > &S, 
     Vec<zz_pXY> &gens);
 
