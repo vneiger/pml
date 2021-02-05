@@ -155,6 +155,22 @@ int main(int argc, char* argv[]){
 			cout << "BAD" << endl;
 	}
 
+	Vec<zz_pXY> gens4;
+	time = GetWallTime();
+	berlekamp_massey_pmbasis_hnf(d, S, gens4);
+	time = GetWallTime() - time;
+	if(verbose){
+		cout << "gens4: " << endl;
+		for (long i = 0; i < gens4.length(); i++)
+			cout << gens4[i].degY() << endl;
+	}
+	cout << "pmbasis took " << time << endl;
+	cout << "checking pmbasis" << endl;
+	if (!check) cout << "not checking" << endl;
+	else if (check_cancel(S, gens4, d))
+		cout << "OKAY" << endl;
+	else
+		cout << "BAD" << endl;
 }
 
 
