@@ -256,6 +256,89 @@ void appbas_iterative(
 }
 
 /*------------------------------------------------------------*/
+/* specific to 2 x 1 input                                    */
+/*------------------------------------------------------------*/
+void appbas_iterative_2x1(
+                           zz_pX & p00,
+                           zz_pX & p01,
+                           zz_pX & p10,
+                           zz_pX & p11,
+                           const zz_pX & f0,
+                           const zz_pX & f1,
+                           long order,
+                           long & s0,
+                           long & s1
+                          )
+{
+    // initial approximant basis: identity of dimensions '2 x 2'
+    p00 = 1;
+    p01 = 0;
+    p10 = 0;
+    p11 = 1;
+
+    // initial residual: the whole input f,g
+    zz_pX r0 = f0;
+    zz_pX r1 = f1;
+    // will store the considered low-degree coefficient of residual,
+    // and their quotient when applicable
+    zz_p c0,c1,c;
+
+    // all along the algorithm, shift (s0,s1) = shifted row degrees of approximant basis
+    // (initially, input shift = shifted row degree of the identity matrix)
+    for (long ord=0; ord<order; ++ord)
+    {
+        /** Invariant:
+         *  - appbas is a shift-ordered weak Popov approximant basis for (pmat,ord)
+         *    at the beginning of the loop, and (pmat,ord+1) at the end of the loop
+         *  - (s0,s1) == the "input shift"-row degree of appbas
+         *  - (r0,r1) == (appbas * [f,g]^t)
+         */
+        c0 = coeff(r0,ord); c1 = coeff(r1,ord);
+        if (not IsZero(c0) && not IsZero(c1))
+        {
+            // most expected case: both coeffs are nonzero
+            if (s0 <= s1)
+            {
+                // s0 <= s1 ==> use row 1 as pivot
+                c = -c1/c0;
+                p10 = p10 + c*p00;
+                p11 = p11 + c*p01;
+                p00 <<= 1; p01 <<= 1;
+                r1 = r1 + c*r0;
+                r0 <<= 1;
+                s0 += 1;
+            }
+            else
+            {
+                // s0 > s1 ==> use row 2 as pivot
+                c = -c0/c1;
+                p00 = p00 + c*p10;
+                p01 = p01 + c*p11;
+                p10 <<= 1; p11 <<= 1;
+                r0 = r0 + c*r1;
+                r1 <<= 1;
+                s1 += 1;
+            }
+        }
+        else if (not IsZero(c1))
+        {
+            // multiply row 2 by x, do nothing on row 1
+            p10 <<= 1; p11 <<= 1;
+            r1 <<= 1;
+            s1 += 1;
+        }
+        else if (not IsZero(c0))
+        {
+            // multiply row 1 by x, do nothing on row 2
+            p00 <<= 1; p01 <<= 1;
+            r0 <<= 1;
+            s0 += 1;
+        }
+        // else, both coeffs are zero, do nothing
+    }
+}
+
+/*------------------------------------------------------------*/
 /* general case, output in Popov form                         */
 /*------------------------------------------------------------*/
 void popov_appbas_iterative(
