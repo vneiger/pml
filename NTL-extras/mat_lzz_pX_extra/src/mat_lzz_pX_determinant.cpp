@@ -11,7 +11,6 @@ bool verify_determinant(const zz_pX & det, const Mat<zz_pX> & pmat, bool up_to_c
     if (not randomized)
         throw std::logic_error("==verify_determinant== *Deterministic* polynomial matrix determinant verification not implemented yet");
 
-
     // take a random field element and evaluate
     zz_p pt = random_zz_p();
     zz_p det_pt = determinant(eval(pmat, pt));
