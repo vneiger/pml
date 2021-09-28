@@ -96,6 +96,30 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
     else
         t_pmbasis_intgeom=-1.0;
 
+    double t_pmbasis2x1=-1.0;
+    if (rdim==2 && cdim==1)
+    {
+        nb_iter=0;
+        t_pmbasis2x1=0.0;
+        while (t_pmbasis2x1<0.2)
+        {
+            zz_pX f0,f1;
+            random(f0, degree+1);
+            random(f1, degree+1);
+
+            t1 = GetWallTime();
+            zz_pX p00,p01,p10,p11;
+            long s0 = shift[0];
+            long s1 = shift[1];
+            pmbasis_2x1(p00,p01,p10,p11,f0,f1,order,s0,s1);
+            t2 = GetWallTime();
+
+            t_pmbasis2x1 += t2-t1;
+            ++nb_iter;
+        }
+        t_pmbasis2x1 /= nb_iter;
+    }
+
     // just for test, works only with very specific dimensions
     bool applin=false; // for disabling printing timing below in function
     double t_pmbasis_applin=0.0;
@@ -121,6 +145,7 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
 
     cout << rdim << "\t" << cdim << "\t" << degree << "\t" << order;
     cout << "\t" << t_pmbasis_app << "\t" << t_pmbasis_int << "\t" << t_pmbasis_intgeom;
+    cout << "\t" << t_pmbasis2x1;
 
     if (applin)
         std::cout << "\t" << t_pmbasis_applin;

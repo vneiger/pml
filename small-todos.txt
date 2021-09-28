@@ -1,4 +1,9 @@
 TODO Vincent
+   - PM-Basis 2x1:
+       * make it clean, add more tests, compare to pmbasis to see if any interest
+       * specialize to GCD application
+          --> take advantage of lower degrees in input?
+	  --> or rather add a first reduction to Pade [[f],[-1]] via power series inversion?
    - PM-Basis (power series version, some remarks shared with interpolants):
       * work on thresholds (mbasis_rescomp/resupdate, and pmbasis base case)
 			* specific code for dimension 2x1 (and compare with NTL's GCD / BerlekampMassey)

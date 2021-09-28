@@ -14,7 +14,7 @@ For the moment, this has only been tested on some linux distributions, with NTL 
 
 Each directory should contain one or more .h file and subdirectories src/, test/, timings/ (sometimes also tune/).
 
-Running "make" at the root, where this README is, (re)builds the entire library from scratch. Running "make doc" (after "make") builds a Doxygen documentation that can be found in ROOT/include/html/index.html
+Running "make" at the root, where this README is, (re)builds the entire library from scratch. Running "make doc" (after "make") builds a Doxygen documentation that can be found in ROOT/include/html/index.html  (building the documentation requires having doxygen and graphviz installed).
 
 In `src/`,
  - "make" -> compile and install the header / object files.
