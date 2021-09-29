@@ -113,15 +113,28 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         //cout << zz_p::modulus() << ", bit length = " << nbits << endl;
     }
 
-    // retrieve degree matrix from file
+    // retrieve degree matrix from file (this one has decreasing diag degrees)
     Mat<long> dmat;
     Vec<long> cdeg;
     retrieve_degree_matrix(dmat,cdeg,filename);
-    long degdet = std::accumulate(cdeg.begin(),cdeg.end(),0);
+    const long dim = dmat.NumRows();
+    const long degdet = std::accumulate(cdeg.begin(),cdeg.end(),0);
 
-    //std::cout << "Matrix dimension: " << dmat.NumCols() << ", degree of determinant: " << degdet << std::endl;
+    // compute mirrored degree matrix (increasing diag degrees)
+    Mat<long> dmat2(INIT_SIZE, dim, dim);
+    Vec<long> cdeg2(INIT_SIZE, dim);
+    for (long i = 0; i < dim; ++i)
+    {
+        cdeg2[i] = cdeg[dim-1-i];
+        for (long j = 0; j < dim; ++j)
+            dmat2[i][j] = dmat[dim-1-i][dim-1-j];
+    }
+    //std::cout << dmat2 << std::endl;
+    //std::cout << cdeg2 << std::endl;
 
-    double t,tt,t_naivetri,t_linsolve;
+    //std::cout << "Matrix dimension: " << dim << ", degree of determinant: " << degdet << std::endl;
+
+    double t,tt,t_naivetri,t_naivetri2,t_linsolve,t_linsolve2;
     long nb_iter;
 
     { // generic case
@@ -143,6 +156,29 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
             std::cout << "~~~Warning~~~ verification of determinant failed in naive triangular approach" << std::endl;
     }
 
+    std::cout << std::endl;
+
+    { // generic case, mirrored
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<1)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, dmat2);
+            tt = GetWallTime();
+            zz_pX det;
+            ok = ok && determinant_generic_knowing_degree(det, pmat, degdet);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = ok && verify_determinant(det, pmat, true, true);
+        }
+        t_naivetri2 = t/nb_iter;
+        if (not ok)
+            std::cout << "~~~Warning~~~ verification of determinant failed in naive triangular(mirror) approach" << std::endl;
+    }
+
+    std::cout << std::endl;
+
     { // via random linear system
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -161,6 +197,26 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         if (not ok)
             std::cout << "~~~Warning~~~ verification of determinant failed in linsolve approach" << std::endl;
     }
+
+    { // via random linear system, mirrored
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<1)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, dmat2);
+            tt = GetWallTime();
+            zz_pX det;
+            determinant_via_linsolve(det, pmat);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = verify_determinant(det, pmat, true, true);
+        }
+        t_linsolve2 = t/nb_iter;
+        if (not ok)
+            std::cout << "~~~Warning~~~ verification of determinant failed in linsolve(mirror) approach" << std::endl;
+    }
+
 
     // the three following methods are very slow (unsurprisingly) for low degree matrices
     if (false)
@@ -216,7 +272,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         }
         std::cout << "Time(ev-FFT):\t\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
     }
-    std::cout << nthreads << "\t" << fftprime << "\t" << nbits << "\t" << dmat.NumCols() << "\t" << degdet << "\t" << t_naivetri << "\t" << t_linsolve << std::endl;
+    std::cout << nthreads << "\t" << fftprime << "\t" << nbits << "\t" << dim << "\t" << degdet << "\t" << t_naivetri << "\t" << t_naivetri2 << "\t" << t_linsolve << "\t" << t_linsolve2 << std::endl;
 }
 
 /*---------------------------*/
@@ -224,7 +280,6 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 /*---------------------------*/
 void run_bench()
 {
-    cout << "threads\tfftp\tnbits\tdim\tdegdet\tnaivetri\tlinsolve\t" << endl;
     std::vector<long> nthreads = {1,2,3,4,8,12,16,24,32};
     std::vector<long> fftprimes = {0,1};
     std::vector<long> nbits = {20,31,42,60};
@@ -254,6 +309,7 @@ int main(int argc, char ** argv)
 
     if (argc == 1)
     {
+        cout << "threads\tfftp\tnbits\tdim\tdegdet\tnaivetri\tnaivetri-mirror\tlinsolve\tlinsolve-mirror\t" << endl;
         warmup();
         run_bench();
     }
@@ -263,6 +319,7 @@ int main(int argc, char ** argv)
 
     else
     {
+        cout << "threads\tfftp\tnbits\tdim\tdegdet\tnaivetri\tnaivetri-mirror\tlinsolve\tlinsolve-mirror\t" << endl;
         const long nbits = atoi(argv[1]);
         const bool fftprime = (atoi(argv[2])==1);
         long nthreads=1;

@@ -4,7 +4,7 @@
 #include "mat_lzz_pX_approximant.h"
 #include "mat_lzz_pX_linsolve.h"
 
-//#define GENERIC_DET_PROFILE
+#define GENERIC_DET_PROFILE
 
 bool verify_determinant(const zz_pX & det, const Mat<zz_pX> & pmat, bool up_to_constant, bool randomized)
 {
@@ -207,10 +207,21 @@ void determinant_expansion_by_minors_rec(zz_pX & det, const Mat<zz_pX> & pmat)
 
 bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, long degree)
 {
+#ifdef GENERIC_DET_PROFILE
+    double t;
+    std::cout << "enter with dim = " << pmat.NumCols() << ", deg = " << deg(pmat) << std::endl;
+#endif // GENERIC_DET_PROFILE
+    
     const long dim = pmat.NumRows();
     if (dim<=4)
     {
+#ifdef GENERIC_DET_PROFILE
+            t=GetWallTime();
+#endif // GENERIC_DET_PROFILE
         determinant_expansion_by_minors(det, pmat);
+#ifdef GENERIC_DET_PROFILE
+        std::cout << "\tbase case --> " << GetWallTime()-t << std::endl;
+#endif // GENERIC_DET_PROFILE
         return (degree==deg(det));
     }
 
@@ -240,7 +251,14 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
     long order = deg_pmat_l + deg_ker + 1;
 
     VecLong shift(dim,0);
+#ifdef GENERIC_DET_PROFILE
+    t = GetWallTime();
+#endif // GENERIC_DET_PROFILE
     pmbasis(appbas, pmat_l, order, shift);
+#ifdef GENERIC_DET_PROFILE
+    t = GetWallTime()-t;
+    std::cout << "\tpmbasis order = " << order << " || time " << t << std::endl;
+#endif // GENERIC_DET_PROFILE
 
     // minimal left kernel basis of pmat_r : last rows of app
     Mat<zz_pX> kerbas;
@@ -251,7 +269,14 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
 
     // then compute the product
     Mat<zz_pX> pmatt;
+#ifdef GENERIC_DET_PROFILE
+    t = GetWallTime();
+#endif // GENERIC_DET_PROFILE
     multiply(pmatt, kerbas, pmat_r);
+#ifdef GENERIC_DET_PROFILE
+    t = GetWallTime()-t;
+    std::cout << "\tmultiply degrees " << deg(kerbas) << "," << deg(pmat_r) << " || time " << t << std::endl;
+#endif // GENERIC_DET_PROFILE
 
     return determinant_generic_knowing_degree(det,pmatt,degree);
 }
