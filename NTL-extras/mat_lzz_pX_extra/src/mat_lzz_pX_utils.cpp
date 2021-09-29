@@ -524,6 +524,17 @@ void random_mat_zz_pX_cdeg(Mat<zz_pX>& pmat, long m, long n, VecLong cdeg)
 }
 
 /*------------------------------------------------------------*/
+/* random matrix with degree matrix strictly less than dmat   */
+/*------------------------------------------------------------*/
+void random(Mat<zz_pX> & pmat, Mat<long> dmat)
+{
+    pmat.SetDims(dmat.NumRows(), dmat.NumCols());
+    for (long i = 0; i < dmat.NumRows(); ++i)
+        for (long j = 0; j < dmat.NumCols(); ++j)
+            random(pmat[i][j], dmat[i][j]);
+}
+
+/*------------------------------------------------------------*/
 /* convert from Mat<zz_p>                                     */
 /*------------------------------------------------------------*/
 void conv(Mat<zz_pX>& pmat, const Mat<zz_p>& mat)

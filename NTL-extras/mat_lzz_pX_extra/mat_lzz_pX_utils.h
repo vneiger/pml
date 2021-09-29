@@ -482,6 +482,20 @@ void random_mat_zz_pX_rdeg(Mat<zz_pX> & pmat, long m, long n, VecLong rdeg);
  */
 void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, VecLong cdeg);
 
+/** Computes a random polynomial matrix `pmat` with the same dimensions
+ * as `dmat`, and degree of `(i,j)` entry less than `dmat[i][j]` for
+ * all `i` and `j`
+ */
+void random(Mat<zz_pX> & pmat, Mat<long> dmat);
+
+/** Computes and returns a random polynomial matrix `pmat` with the same
+ * dimensions as `dmat`, and degree of `(i,j)` entry less than `dmat[i][j]` for
+ * all `i` and `j`
+ */
+inline Mat<zz_pX> random_mat_zz_pX(Mat<long> dmat)
+{ Mat<zz_pX> pmat; random(pmat, dmat); return pmat; }
+
+
 /** Computes a random polynomial matrix `matp` with `m` rows, `n` columns,
  * and degree less than `d`, represented as a vector of constant matrices.
  */
