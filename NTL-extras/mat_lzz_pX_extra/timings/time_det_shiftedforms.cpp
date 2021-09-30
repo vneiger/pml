@@ -276,18 +276,18 @@ void run_bench()
         "degree-pattern-random-2-13.txt",
         "degree-pattern-random-2-14.txt"
     };
-    long n = 6;
-    for (auto filename : filenames)
-    {
-        for (long nthread : nthreads)
+    for (long nthread : nthreads)
+        for (long nbit : nbits)
             for (long fftprime : fftprimes)
-                for (long nbit : nbits)
+            {
+                long n = 6;
+                for (auto filename : filenames)
                 {
                     std::cout << n << "\t";
                     run_one_bench(nthread,fftprime,nbit,filename);
+                    ++n;
                 }
-        ++n;
-    }
+            }
 }
 
 /*------------------------------------------------------------*/
