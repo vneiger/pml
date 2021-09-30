@@ -191,6 +191,10 @@ inline Vec<zz_pX> solve_series(
  * accelerated for this kind of instance (vector rational reconstruction)
  *
  * \todo better tuning of number of vectors for rational reconstruction
+ *
+ * \todo some issues encountered when several vectors, with a shifted
+ * form compressed into a polynomial matrix; decreasing column degrees
+ * by blocks; solving directly using this function
  */
 void linsolve_via_series(
                          Vec<zz_pX> & u,

@@ -134,7 +134,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 
     //std::cout << "Matrix dimension: " << dim << ", degree of determinant: " << degdet << std::endl;
 
-    double t,tt,t_naivetri,t_naivetri2,t_linsolve,t_linsolve2;
+    double t,tt,t_naivetri,t_naivetri2,t_linsolve;
     long nb_iter;
 
     { // generic case
@@ -156,7 +156,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
             std::cout << "~~~Warning~~~ verification of determinant failed in naive triangular approach" << std::endl;
     }
 
-    std::cout << std::endl;
+    //std::cout << std::endl;
 
     { // generic case, mirrored
         t=0.0; nb_iter=0;
@@ -177,7 +177,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
             std::cout << "~~~Warning~~~ verification of determinant failed in naive triangular(mirror) approach" << std::endl;
     }
 
-    std::cout << std::endl;
+    //std::cout << std::endl;
 
     { // via random linear system
         t=0.0; nb_iter=0;
@@ -197,26 +197,6 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         if (not ok)
             std::cout << "~~~Warning~~~ verification of determinant failed in linsolve approach" << std::endl;
     }
-
-    { // via random linear system, mirrored
-        t=0.0; nb_iter=0;
-        bool ok = true;
-        while (ok && t<1)
-        {
-            Mat<zz_pX> pmat;
-            random(pmat, dmat2);
-            tt = GetWallTime();
-            zz_pX det;
-            determinant_via_linsolve(det, pmat);
-            t += GetWallTime()-tt;
-            ++nb_iter;
-            ok = verify_determinant(det, pmat, true, true);
-        }
-        t_linsolve2 = t/nb_iter;
-        if (not ok)
-            std::cout << "~~~Warning~~~ verification of determinant failed in linsolve(mirror) approach" << std::endl;
-    }
-
 
     // the three following methods are very slow (unsurprisingly) for low degree matrices
     if (false)
@@ -272,7 +252,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         }
         std::cout << "Time(ev-FFT):\t\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
     }
-    std::cout << nthreads << "\t" << fftprime << "\t" << nbits << "\t" << dim << "\t" << degdet << "\t" << t_naivetri << "\t" << t_naivetri2 << "\t" << t_linsolve << "\t" << t_linsolve2 << std::endl;
+    std::cout << nthreads << "\t" << fftprime << "\t" << nbits << "\t" << dim << "\t" << degdet << "\t" << t_naivetri << "\t" << t_naivetri2 << "\t" << t_linsolve << std::endl;
 }
 
 /*---------------------------*/
@@ -280,23 +260,34 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 /*---------------------------*/
 void run_bench()
 {
-    std::vector<long> nthreads = {1,2,3,4,8,12,16,24,32};
-    std::vector<long> fftprimes = {0,1};
+    std::vector<long> nthreads = {1,2,4,8,16,32};
+    //std::vector<long> nthreads = {1,2};
+    //std::vector<long> fftprimes = {0,1};
+    std::vector<long> fftprimes = {0};
     std::vector<long> nbits = {20,31,42,60};
-    for (long nthread : nthreads)
-        for (long fftprime : fftprimes)
-            for (long nbit : nbits)
-            {
-                run_one_bench(nthread,fftprime,nbit,"degree-pattern-random-2-6.txt");
-                run_one_bench(nthread,fftprime,nbit,"degree-pattern-random-2-7.txt");
-                run_one_bench(nthread,fftprime,nbit,"degree-pattern-random-2-8.txt");
-                run_one_bench(nthread,fftprime,nbit,"degree-pattern-random-2-9.txt");
-                run_one_bench(nthread,fftprime,nbit,"degree-pattern-random-2-10.txt");
-                run_one_bench(nthread,fftprime,nbit,"degree-pattern-random-2-11.txt");
-                run_one_bench(nthread,fftprime,nbit,"degree-pattern-random-2-12.txt");
-                run_one_bench(nthread,fftprime,nbit,"degree-pattern-random-2-13.txt");
-                run_one_bench(nthread,fftprime,nbit,"degree-pattern-random-2-14.txt");
-            }
+    std::vector<const char*> filenames = {
+        "degree-pattern-random-2-6.txt",
+        "degree-pattern-random-2-7.txt",
+        "degree-pattern-random-2-8.txt",
+        "degree-pattern-random-2-9.txt",
+        "degree-pattern-random-2-10.txt",
+        "degree-pattern-random-2-11.txt",
+        "degree-pattern-random-2-12.txt",
+        "degree-pattern-random-2-13.txt",
+        "degree-pattern-random-2-14.txt"
+    };
+    long n = 6;
+    for (auto filename : filenames)
+    {
+        for (long nthread : nthreads)
+            for (long fftprime : fftprimes)
+                for (long nbit : nbits)
+                {
+                    std::cout << n << "\t";
+                    run_one_bench(nthread,fftprime,nbit,filename);
+                }
+        ++n;
+    }
 }
 
 /*------------------------------------------------------------*/
@@ -309,7 +300,7 @@ int main(int argc, char ** argv)
 
     if (argc == 1)
     {
-        cout << "threads\tfftp\tnbits\tdim\tdegdet\tnaivetri\tnaivetri-mirror\tlinsolve\tlinsolve-mirror\t" << endl;
+        cout << "n\tthreads\tfftp\tnbits\tdim\tdegdet\tnaivetri\tnaivetri-mirror\tlinsolve\t" << endl;
         warmup();
         run_bench();
     }
@@ -319,7 +310,7 @@ int main(int argc, char ** argv)
 
     else
     {
-        cout << "threads\tfftp\tnbits\tdim\tdegdet\tnaivetri\tnaivetri-mirror\tlinsolve\tlinsolve-mirror\t" << endl;
+        cout << "threads\tfftp\tnbits\tdim\tdegdet\tnaivetri\tnaivetri-mirror\tlinsolve" << endl;
         const long nbits = atoi(argv[1]);
         const bool fftprime = (atoi(argv[2])==1);
         long nthreads=1;

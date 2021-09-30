@@ -335,20 +335,22 @@ void linsolve_via_series(Vec<zz_pX> &u, zz_pX& den, const Mat<zz_pX>& A, const V
     if (nb_max == -1)
     {
         nb_max = 1;
-        switch(type_of_prime())
-        {
-        case TYPE_FFT_PRIME:
-            if (n >= 100) nb_max = 4;
-            break;
-        case TYPE_SMALL_PRIME:
-            if (n >= 100) nb_max = 3;
-            break;
-        case TYPE_LARGE_PRIME:
-            if (n >= 100) nb_max = 3;
-            break;
-        default:
-            LogicError("Unknown prime type in linear solving via series.");
-        }
+        // TODO this is not always correct (see header file todo)
+        // just using 1 for the moment
+        //switch(type_of_prime())
+        //{
+        //case TYPE_FFT_PRIME:
+        //    if (n >= 100) nb_max = 4;
+        //    break;
+        //case TYPE_SMALL_PRIME:
+        //    if (n >= 100) nb_max = 3;
+        //    break;
+        //case TYPE_LARGE_PRIME:
+        //    if (n >= 100) nb_max = 3;
+        //    break;
+        //default:
+        //    LogicError("Unknown prime type in linear solving via series.");
+        //}
     }
 
     const long nb = min(n, nb_max); // number of linear combinations we are taking
