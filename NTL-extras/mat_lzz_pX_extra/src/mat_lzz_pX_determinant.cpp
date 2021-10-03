@@ -247,7 +247,7 @@ bool determinant_generic_knowing_degree(zz_pX & det, const Mat<zz_pX> & pmat, lo
     // --> compute approximants at order deg(pmat_l) + D + 1
     // (cf for example Neiger-Rosenkilde-Solomatov ISSAC 2018, Lemma 4.3)
     long deg_pmat_l = deg(pmat_l);
-    long deg_ker = ceil( cdim1 * deg(pmat_l) / (double)(dim-cdim1) );
+    long deg_ker = ceil( cdim1 * deg_pmat_l / (double)(dim-cdim1) );
     long order = deg_pmat_l + deg_ker + 1;
 
     VecLong shift(dim,0);
