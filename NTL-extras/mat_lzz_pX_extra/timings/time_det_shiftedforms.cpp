@@ -632,7 +632,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     std::cout << std::endl;
 #endif
 
-    for (long thres=1; thres < 6; ++thres)
+    for (long thres=1; thres < 8; ++thres)
     { // shifted form specific, degree-aware, update all
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -658,7 +658,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     std::cout << std::endl;
 #endif
 
-    for (long thres=1; thres < 6; ++thres)
+    for (long thres=1; thres < 8; ++thres)
     { // shifted form specific, degree-aware, update one
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -705,7 +705,8 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     }
 #endif
 
-    std::cout << nthreads << "\t" << fftprime << "\t" << nbits << "\t" << dim << "\t" << degdet << "\t";
+    //std::cout << nthreads << "\t" << fftprime << "\t" << nbits << "\t" << dim << "\t" << degdet << "\t";
+    std::cout << nbits << "\t" << dim << "\t" << degdet << "\t" << std::setprecision(3) << (double)dim/degdet*100 << std::setprecision(8) << "\t";
     for (auto timing : timings)
         std::cout << timing << "\t";
 
@@ -717,11 +718,12 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 /*---------------------------*/
 void run_bench()
 {
-    std::vector<long> nthreads = {1,2,4,8,16};
-    //std::vector<long> nthreads = {1,2};
+    //std::vector<long> nthreads = {1,2,4,8,16};
+    std::vector<long> nthreads = {1};
     //std::vector<long> fftprimes = {0,1};
     std::vector<long> fftprimes = {0};
-    std::vector<long> nbits = {23,28,31,60};
+    //std::vector<long> nbits = {23,28,31,60};
+    std::vector<long> nbits = {28,60};
     std::vector<const char*> filenames = {
         "degree-pattern-random-2-6.txt",
         "degree-pattern-random-2-7.txt",
@@ -731,17 +733,56 @@ void run_bench()
         "degree-pattern-random-2-11.txt",
         "degree-pattern-random-2-12.txt",
         "degree-pattern-random-2-13.txt",
-        "degree-pattern-random-2-14.txt"
+        "degree-pattern-random-2-14.txt",
+        "degree-pattern-random-3-4.txt",
+        "degree-pattern-random-3-5.txt",
+        "degree-pattern-random-3-6.txt",
+        "degree-pattern-random-3-7.txt",
+        "degree-pattern-random-3-8.txt",
+        "degree-pattern-random-3-9.txt",
+        "degree-pattern-random-4-4.txt",
+        "degree-pattern-random-4-5.txt",
+        "degree-pattern-random-4-6.txt",
+        "degree-pattern-random-4-7.txt",
+        "degree-pattern-random-5-3.txt",
+        "degree-pattern-random-5-4.txt",
+        "degree-pattern-random-5-5.txt",
+        "degree-pattern-random-5-6.txt",
+    };
+    std::vector<const char*> params = {
+        "2-6",
+        "2-7",
+        "2-8",
+        "2-9",
+        "2-10",
+        "2-11",
+        "2-12",
+        "2-13",
+        "2-14",
+        "3-4",
+        "3-5",
+        "3-6",
+        "3-7",
+        "3-8",
+        "3-9",
+        "4-4",
+        "4-5",
+        "4-6",
+        "4-7",
+        "5-3",
+        "5-4",
+        "5-5",
+        "5-6",
     };
     for (long nthread : nthreads)
         for (long nbit : nbits)
             for (long fftprime : fftprimes)
             {
                 long n = 6;
-                for (auto filename : filenames)
+                for (size_t i=0; i < filenames.size(); ++i)
                 {
-                    std::cout << n << "\t";
-                    run_one_bench(nthread,fftprime,nbit,filename);
+                    std::cout << params[i] << "\t";
+                    run_one_bench(nthread,fftprime,nbit,filenames[i]);
                     ++n;
                 }
             }
@@ -756,11 +797,12 @@ int main(int argc, char ** argv)
     std::cout << std::setprecision(8);
 
     //std::vector<string> labels = {"naivetri","naivetri-mirror","linsolve"};
-    std::vector<string> labels = {"naivetri-mirror","degaware-all-1","degaware-all-2","degaware-all-3","degaware-all-4","degaware-all-5","degaware-one-1","degaware-all-2","degaware-all-3","degaware-all-4","degaware-all-5"};
+    std::vector<string> labels = {"naivetri-mirror","degaware-all-1","degaware-all-2","degaware-all-3","degaware-all-4","degaware-all-5","degaware-all-6","degaware-all-7","degaware-one-1","degaware-all-2","degaware-all-3","degaware-all-4","degaware-all-5","degaware-all-6","degaware-all-7"};
 
     if (argc == 1)
     {
-        cout << "n\tthreads\tfftp\tnbits\tdim\tdegdet\t";
+        //cout << "n-deg\tthreads\tfftp\tnbits\tdim\tdegdet\t";
+        cout << "n-deg\tnbits\tdim\tdegdet\tratio\t";
         for (auto lab : labels)
             std::cout << lab << "\t";
         std::cout << std::endl;
