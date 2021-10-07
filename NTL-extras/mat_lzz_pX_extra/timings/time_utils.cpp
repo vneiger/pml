@@ -13,7 +13,7 @@
     tt = get_time()-tt; \
     cout << tt << "\t";
 
-#define SMALL_SUITE
+//#define SMALL_SUITE
 
 
 NTL_CLIENT
@@ -162,18 +162,23 @@ int main()
     std::cout << std::fixed;
     std::cout << std::setprecision(5);
 
+    VecLong rdims = {4000};
+    VecLong cdims = {4000};
+    VecLong degs = {5};
+    VecLong nbits = {28};
+    VecLong fftprimes = {786433,}; // 20, 60 bits
 #ifdef SMALL_SUITE
     VecLong rdims = {5,200,1000,};
     VecLong cdims = {5,200,1000,};
     VecLong degs = {5,500,5000,};
     VecLong nbits = {20,60};
     VecLong fftprimes = {786433,1139410705724735489,}; // 20, 60 bits
-#else
-    VecLong rdims = {5,10,20,40,70,100,150,200,400,1000,};
-    VecLong cdims = {5,10,20,40,70,100,150,200,400,1000,};
-    VecLong degs = {5,10,20,40,70,100,150,200,400,1000,2000,4000,8000,16000,};
-    VecLong nbits = {20,31,42,60};
-    VecLong fftprimes = {786433,2013265921,2748779069441,1139410705724735489,}; // 20, 31, 42, 60 bits
+//#else
+//    VecLong rdims = {5,10,20,40,70,100,150,200,400,1000,};
+//    VecLong cdims = {5,10,20,40,70,100,150,200,400,1000,};
+//    VecLong degs = {5,10,20,40,70,100,150,200,400,1000,2000,4000,8000,16000,};
+//    VecLong nbits = {20,31,42,60};
+//    VecLong fftprimes = {786433,2013265921,2748779069441,1139410705724735489,}; // 20, 31, 42, 60 bits
 #endif // SMALL_SUITE
 
     warmup();

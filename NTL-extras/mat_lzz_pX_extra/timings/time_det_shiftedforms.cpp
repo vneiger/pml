@@ -18,6 +18,9 @@
 //#define GENERIC_DETSALL_PROFILE
 //#define GENERIC_DETSONE_PROFILE
 //#define SLOW
+#define GENERIC_DETZLS_PROFILE
+#define GENERIC_KER_PROFILE
+//#define DEBUGGING_NOW
 
 NTL_CLIENT
 
@@ -64,10 +67,6 @@ bool determinant_shifted_form_degaware_updateall(zz_pX & det, const Mat<zz_pX> &
     // --> the matrix pmat remains s-owP all along, and shifted_rdeg gives its s-row deg
 
     const long dim = pmat.NumRows();
-
-    //std::cout << "shifted_rdeg: ";
-    //std::copy(shifted_rdeg.begin(), shifted_rdeg.end(), std::ostream_iterator<long>(std::cout, "\t"));
-    //std::cout << std::endl;
 
     // retrieve the row degree and the determinant degree
     const long degdet = std::accumulate(diag_deg.begin(), diag_deg.end(), 0);
@@ -215,14 +214,6 @@ bool determinant_shifted_form_degaware_updateone(zz_pX & det, Mat<zz_pX> & kerba
     const long cdim = pmat.NumCols();
     const bool kerbas_empty = (kerbas.NumRows() == 0);
 
-    //std::cout << rdim << " x " << cdim << std::endl;
-    //std::cout << kerbas.NumRows() << " x " << kerbas.NumCols() << std::endl;
-    //std::cout << pmat.NumRows() << " x " << pmat.NumCols() << std::endl;
-
-    //std::cout << "shifted_rdeg: ";
-    //std::copy(shifted_rdeg.begin(), shifted_rdeg.end(), std::ostream_iterator<long>(std::cout, "\t"));
-    //std::cout << std::endl;
-
     // retrieve the row degree and the determinant degree
     const long degdet = std::accumulate(diag_deg.begin(), diag_deg.end(), 0);
 
@@ -358,12 +349,6 @@ bool determinant_shifted_form_degaware_updateone(zz_pX & det, Mat<zz_pX> & kerba
     for (long k = 0; k < cdim2; ++k)
         diag_deg[k] += shifted_rdeg[k] - shift[cdim1+k];
 
-    //if (dim < 60)
-    //{
-    //    std::cout << degree_matrix(pmat_l) << std::endl;
-    //    std::cout << degree_matrix(kerbas) << std::endl;
-    //}
-
     // if halving: compute kerbas2*pmat_r
     if (halving)
     {
@@ -403,6 +388,292 @@ bool determinant_shifted_form_degaware_updateone(zz_pX & det, Mat<zz_pX> & kerba
     return determinant_shifted_form_degaware_updateone(det,kerbas,pmat_r,mult_cdeg,diag_deg,shifted_rdeg,index+1,threshold,target_degdet,prefix);
 }
 
+// kernel basis, ZLS style, of a full rank matrix of the form
+//     [  x^d Ident ]
+//     [  --------- ]  +   R
+//     [      0     ]
+// where cdeg(R) < d
+// i.e. stacking a square row-wise -d-Popov form of -d-row degree 0, and a matrix reduced by it
+// i.e. a column-wise 0-Popov form with column degree d and leading matrix the identity
+// TODO verify mbasis is good when degrees is far from (or half of) order...
+//      (since this is the main computational time spent here, at least in low degrees)
+// TODO write formally that if matrix m x n with m > n has this shape, and d = d_1...d_n,
+// then with the shift s=(d_1..d_n d_n..d_n) of length m,
+// an s-weak Popov kernel basis K has all pivots in the right part
+// and therefore |rdeg_s(K)| <= |s| = |d| + (m-n) d_n becomes |rdeg(K)| <= |d|
+// --> generically deg(K) <= |d| / (m-n)
+// TODO more generally (outside of the targetted application context) improve
+// ZLS kernel basis algorithm using this remark? note that we only need to
+// *know* there exists a form of the input F with such a shape (or up to row
+// permutation?) to apply this, indeed the left kernel of F is the same as that
+// of F*U for nonsingular U.  Yet the shift may not be efficient if the actual
+// degrees of F are far from those in its form having the above shape. For
+// example, assume F already has this shape: can we efficiently apply a ZLS
+// strategy to F directly? or do we need to apply some transformation to the
+// columns of F to make sure its top rows are in fact row-wise 0-weak Popov
+// (i.e. ensuring rdeg(top rows) = d)?
+// TODO warning, does not work if numcols < 2numrows; and if numcols >= 2numrows
+// the correctness may be only generic (to check)
+void kernel_basis_zls_degaware_via_approximation(
+                                                 Mat<zz_pX> & kerbas,
+                                                 Mat<zz_pX> & pmat,
+                                                 VecLong & degrees,
+                                                 VecLong & shifted_rdeg,
+                                                 VecLong & split_sizes,
+                                                 long index,
+                                                 long threshold,
+                                                 long acc_order
+                                                )
+{
+    // kerbas[out]: the output kernel basis
+    //     --> should be empty (dimensions 0) on initial call
+    // pmat[in,out]: the input matrix, having the shape described above
+    //     --> pmat is modified, used as a temporary
+    // degrees[in,out]: the degrees d_1...d_m
+    // shifted_rdeg: row degree shifted by some "s"
+    //     --> initially, row degree 0, and all along, s = -initial column degree
+    //     --> the matrix pmat remains s-owP all along, and shifted_rdeg gives its s-row deg
+    //     --> 0-row-degree of kerbas is shifted_rdeg
+    // split_sizes[in]: the indices at which we will split the matrix to
+    //      perform the algorithm's recursion
+    // index[in]: the index giving the split we are currently working on
+    // threshold: after some threshold, just apply usual ZLS
+
+#if DEBUGGING_NOW
+    std::cout << "degrees in kernel input matrix" << std::endl;
+    std::cout << degree_matrix(pmat) << std::endl;
+#endif // DEBUGGING_NOW
+
+    // if index is beyond the end of split_sizes, computation is finished
+    if ((size_t)index >= split_sizes.size())
+        return;
+
+    // if threshold >= index, call the usual algorithm
+    if (index >= threshold)
+        kernel_basis_zls_via_approximation(kerbas, pmat, shifted_rdeg);
+
+    const long m = pmat.NumRows();
+    const long n = split_sizes[index];
+    const long k = m-n; // expected size of kerbas
+
+    // find order for approximation
+    const long degdet = std::accumulate(degrees.begin(), degrees.begin()+n, 0) - n*acc_order;
+    const long deg_ker = ceil( degdet / (double)(m-n) );
+    const long order = *std::max_element(degrees.begin(), degrees.begin()+n) - acc_order + deg_ker + 1;
+
+#if DEBUGGING_NOW
+    std::cout << "degdet, deg_ker, order" << std::endl;
+    std::cout << degdet << "," << deg_ker << "," << order << std::endl;
+#endif // DEBUGGING_NOW
+
+    // save shift to be able to update diag_deg
+    VecLong shift(shifted_rdeg);
+#ifdef GENERIC_KER_PROFILE
+    double t;
+    t = GetWallTime();
+#endif // GENERIC_KER_PROFILE
+    Mat<zz_pX> appbas;
+    pmbasis(appbas, pmat, order, shifted_rdeg);
+#ifdef GENERIC_KER_PROFILE
+    t = GetWallTime()-t;
+    std::cout << "\tpmbasis dims x order = " << pmat.NumRows() << " x " << pmat.NumCols() << " x " << order << " || time " << t << std::endl;
+#endif // GENERIC_KER_PROFILE
+#if DEBUGGING_NOW
+    //std::cout << "\tdeg_ker: = " << deg_ker << std::endl;
+    //std::cout << "\tdegrees in approx = " << std::endl << degree_matrix(appbas) << std::endl;
+#endif // DEBUGGING_NOW
+
+    // update shifted_rdeg
+    // shifted_rdeg-row degree of kerbas
+    // = last entries of shift
+    // = s-row degree of product kerbas*pmat_r (see description of function, for "s")
+    std::vector<long>(shifted_rdeg.begin()+n, shifted_rdeg.end()).swap(shifted_rdeg);
+
+    // update diag_deg (keeping only the end of it)
+    std::vector<long>(degrees.begin()+n, degrees.end()).swap(degrees);
+    for (long i = 0; i < k; ++i)
+        degrees[i] += shifted_rdeg[i] - shift[n+i];
+
+    // extract the partial-kernel part of approx basis
+    Mat<zz_pX> kerbas2;
+    kerbas2.SetDims(k,m);
+    for (long i = 0; i < k; ++i)
+        for (long j = 0; j < m; ++j)
+            kerbas2[i][j] = appbas[i+n][j];
+
+    const long rem_cols = pmat.NumCols()-n;
+    const bool last_call = (rem_cols <= 0);
+
+#if DEBUGGING_NOW
+    Mat<zz_pX> prod = kerbas2 * pmat;
+    std::cout << "degrees in kernel" << std::endl;
+    std::cout << degree_matrix(kerbas2) << std::endl;
+    std::cout << "degrees in prod" << std::endl;
+    std::cout << degree_matrix(prod) << std::endl;
+    std::cout << "last call?" << last_call << std::endl;
+#endif // DEBUGGING_NOW
+
+    // update pmat by middle_product with appbas, only if necessary
+    if (not last_call)
+    {
+        // -> ignoring top rows (i.e. top rows of appbas, i.e. only consider kerbas2*pmat)
+        // -> ignoring left columns (kernel already computed)
+        Mat<zz_pX> copy_pmat(INIT_SIZE, m, rem_cols);
+        for (long i = 0; i < m; ++i)
+            for (long j = 0; j < rem_cols; ++j)
+                copy_pmat[i][j].swap(pmat[i][j+n]);
+        middle_product(pmat,kerbas2,copy_pmat,order,deg(copy_pmat)+deg(appbas)-order);
+    }
+
+    // update kerbas
+    if (kerbas.NumRows()==0) // initial call, kerbas was empty
+        kerbas.swap(kerbas2);
+    else
+        multiply(kerbas,kerbas2,kerbas);
+
+#if DEBUGGING_NOW
+    if (not last_call)
+    {
+        std::cout << "degrees in updated pmat" << std::endl;
+        std::cout << degree_matrix(pmat) << std::endl;
+    }
+#endif // DEBUGGING_NOW
+
+    if (not last_call)
+        kernel_basis_zls_degaware_via_approximation(kerbas,pmat,degrees,shifted_rdeg,split_sizes,index+1,threshold,acc_order+order);
+
+}
+
+bool determinant_shifted_form_zls_1(zz_pX & det, const Mat<zz_pX> & pmat, VecLong & diag_deg, VecLong & shifted_rdeg, VecLong & split_sizes, long target_degdet)
+{
+#ifdef GENERIC_DETZLS_PROFILE
+    double t;
+#endif // GENERIC_DETZLS_PROFILE
+
+    // det: output determinant
+    // pmat: input square matrix, assumed in "shiftedform" (X^{s} Id + R, cdeg(R) < s)
+    // --> degree of determinant is sum(cdeg) = sum of diagonal degrees
+    // mult_cdeg: list of lengths, sum should be pmat row (and column) dimension
+    // diag_deg: list of diagonal degrees of pmat (= its s-pivot-degree)
+    // shifted_rdeg: row degree shifted by some "s"
+    //     (initially, row degree 0, and all along, s = -initial column degree)
+    // --> the matrix pmat remains s-owP all along, and shifted_rdeg gives its s-row deg
+
+    const long dim = pmat.NumRows();
+    const long cdim = pmat.NumCols();
+
+#if DEBUGGING_NOW
+    std::cout << "shifted_rdeg: ";
+    std::copy(shifted_rdeg.begin(), shifted_rdeg.end(), std::ostream_iterator<long>(std::cout, "\t"));
+    std::cout << std::endl;
+    std::cout << "diag_deg: ";
+    std::copy(diag_deg.begin(), diag_deg.end(), std::ostream_iterator<long>(std::cout, "\t"));
+    std::cout << std::endl;
+    std::cout << "matrix degrees:" << std::endl;
+    std::cout << degree_matrix(pmat) << std::endl;
+#endif // DEBUGGING_NOW
+
+    // retrieve the row degree and the determinant degree
+    const long degdet = std::accumulate(diag_deg.begin(), diag_deg.end(), 0);
+
+#if DEBUGGING_NOW
+    std::cout << "verification:" << (degdet==target_degdet) << std::endl;
+#endif // DEBUGGING_NOW
+
+    // if degdet is not target_degree, then something went wrong in earlier steps
+    // if they are equal, then we can proceed with the recursive calls
+    if (degdet != target_degdet)
+        return false;
+
+    // if small dim, just run expansion by minors
+    if (dim<=4)
+    {
+#ifdef GENERIC_DETZLS_PROFILE
+        t=GetWallTime();
+#endif // GENERIC_DETZLS_PROFILE
+        determinant_expansion_by_minors(det, pmat);
+#ifdef GENERIC_DETZLS_PROFILE
+        std::cout << "\tbase case --> " << GetWallTime()-t << std::endl;
+#endif // GENERIC_DETZLS_PROFILE
+        return true;
+    }
+
+    // column dimension of the matrix that we will compute the kernel of
+    // and number of splits this corresponds to
+    long cdim1=0;
+    long nb_splits=0;
+    while (2*cdim1 < cdim)
+    {
+        cdim1 += split_sizes[nb_splits];
+        ++nb_splits;
+    }
+    // if we exceeded cdim/2 (likely), set it to cdim/2
+    // and modify split_sizes accordingly
+    if (2*cdim1 > cdim)
+    {
+        long excess = cdim1 - (cdim>>1);
+        split_sizes.insert(split_sizes.begin()+nb_splits, excess);
+        split_sizes[nb_splits-1] -= excess;
+        cdim1 = cdim>>1;
+    }
+
+    const long cdim2 = cdim-cdim1;
+
+#if DEBUGGING_NOW
+    std::cout << "cdim1 , cdim2 , cdim" << std::endl;
+    std::cout << cdim1 << "," << cdim2 << "," << cdim << std::endl;
+#endif // DEBUGGING_NOW
+
+    Mat<zz_pX> pmat_l;
+    Mat<zz_pX> pmat_r;
+    pmat_l.SetDims(dim,cdim1);
+    pmat_r.SetDims(dim,cdim2);
+
+    for (long i = 0; i < dim; ++i)
+    {
+        for (long j = 0; j < cdim1; ++j)
+            pmat_l[i][j] = pmat[i][j];
+        for (long j = 0; j < cdim2; ++j)
+            pmat_r[i][j] = pmat[i][j+cdim1];
+    }
+
+    //VecLong copy_splits(split_sizes.begin(), split_sizes.begin()+nb_splits);
+#ifdef GENERIC_DETZLS_PROFILE
+    t = GetWallTime();
+#endif // GENERIC_DETZLS_PROFILE
+    // TODO arbitrary threshold 150 = infty, to investigate
+    Mat<zz_pX> kerbas;
+    //kernel_basis_zls_degaware_via_approximation(kerbas, pmat_l, diag_deg, shifted_rdeg, copy_splits, 0, 150);
+    kernel_basis_zls_degaware_via_approximation(kerbas, pmat_l, diag_deg, shifted_rdeg, split_sizes, 0, 150, 0);
+#ifdef GENERIC_DETZLS_PROFILE
+    t = GetWallTime()-t;
+    //std::cout << "\tkernel_basis dims x order = " << dim << " x " << cdim1 << " x " << order << " || time " << t << std::endl;
+#endif // GENERIC_DETZLS_PROFILE
+
+    // update split_sizes (keeping only the end of it)
+    std::vector<long>(split_sizes.begin()+nb_splits, split_sizes.end()).swap(split_sizes);
+
+    //if (dim < 60)
+    //{
+    //    std::cout << degree_matrix(pmat_l) << std::endl;
+    //    std::cout << degree_matrix(kerbas) << std::endl;
+    //}
+
+    // then compute the product
+    Mat<zz_pX> pmatt;
+#ifdef GENERIC_DETZLS_PROFILE
+    t = GetWallTime();
+#endif // GENERIC_DETZLS_PROFILE
+    multiply(pmatt, kerbas, pmat_r);
+#ifdef GENERIC_DETZLS_PROFILE
+    t = GetWallTime()-t;
+    //std::cout << "\tmultiply degrees " << deg(kerbas) << "," << deg(pmat_r) << " || time " << t << std::endl;
+#endif // GENERIC_DETZLS_PROFILE
+
+    //return determinant_shifted_form_zls_1(det,pmatt,diag_deg,shifted_rdeg,split_sizes,index+1,target_degdet);
+    // TODO call recursively
+    return determinant_shifted_form_degaware_updateall(det,pmatt,split_sizes,diag_deg,shifted_rdeg,nb_splits,3,target_degdet);
+}
 
 // stores the degree matrix and column degree
 void retrieve_degree_matrix(Mat<long> & degree_matrix, Vec<long> & cdeg, const char *filename)
@@ -601,6 +872,34 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
             std::cout << "~~~Warning~~~ verification of determinant failed in naive triangular(mirror) approach" << std::endl;
     }
 
+#ifdef GENERIC_DETSZLS_PROFILE
+    std::cout << std::endl;
+#endif
+
+#ifdef GENERIC_DETZLS_PROFILE
+    { // shifted form specific, degree-aware, update one
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<1)
+        {
+            Mat<zz_pX> pmat,kerbas;
+            random(pmat, dmat2);
+            VecLong diag_deg = col_degree(pmat);
+            VecLong shifted_rdeg(dim);
+            VecLong split_sizes(mult_cdeg2);
+            tt = GetWallTime();
+            zz_pX det;
+            ok = ok && determinant_shifted_form_zls_1(det, pmat, diag_deg, shifted_rdeg, split_sizes, degdet);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = ok && verify_determinant(det, pmat, true, true);
+        }
+        timings.push_back(t/nb_iter);
+        if (not ok)
+            std::cout << "~~~Warning~~~ verification of determinant failed in degree-aware-one triangular(mirror) approach" << std::endl;
+    }
+#endif // GENERIC_DETZLS_PROFILE
+
 #ifdef GENERIC_DETSALL_PROFILE
     std::cout << std::endl;
 #endif
@@ -630,7 +929,6 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 
 #ifdef GENERIC_DETSALL_PROFILE
     std::cout << std::endl;
-#endif
 
     for (long thres=1; thres < 8; ++thres)
     { // shifted form specific, degree-aware, update all
@@ -653,10 +951,10 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         if (not ok)
             std::cout << "~~~Warning~~~ verification of determinant failed in degree-aware-all triangular(mirror) approach" << std::endl;
     }
+#endif
 
 #ifdef GENERIC_DETSONE_PROFILE
     std::cout << std::endl;
-#endif
 
     for (long thres=1; thres < 8; ++thres)
     { // shifted form specific, degree-aware, update one
@@ -679,6 +977,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         if (not ok)
             std::cout << "~~~Warning~~~ verification of determinant failed in degree-aware-one triangular(mirror) approach" << std::endl;
     }
+#endif
 
 #ifdef GENERIC_DETSONE_PROFILE
     std::cout << std::endl;
