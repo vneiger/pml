@@ -20,7 +20,15 @@
 //#define SLOW
 #define GENERIC_DETZLS_PROFILE
 #define GENERIC_KER_PROFILE
-//#define DEBUGGING_NOW
+#define DEBUGGING_NOW
+
+static std::ostream &operator<<(std::ostream &out, const VecLong &s)
+{
+    out << "[ ";
+    for (auto &i: s)
+        out << i << " ";
+    return out << "]";
+}
 
 NTL_CLIENT
 
@@ -419,10 +427,7 @@ void kernel_basis_zls_degaware_via_approximation(
                                                  Mat<zz_pX> & pmat,
                                                  VecLong & degrees,
                                                  VecLong & shifted_rdeg,
-                                                 VecLong & split_sizes,
-                                                 long index,
-                                                 long threshold,
-                                                 long acc_order
+                                                 VecLong & split_sizes
                                                 )
 {
     // kerbas[out]: the output kernel basis
@@ -439,112 +444,128 @@ void kernel_basis_zls_degaware_via_approximation(
     // index[in]: the index giving the split we are currently working on
     // threshold: after some threshold, just apply usual ZLS
 
-#if DEBUGGING_NOW
-    std::cout << "degrees in kernel input matrix" << std::endl;
-    std::cout << degree_matrix(pmat) << std::endl;
+#ifdef DEBUGGING_NOW
+    //std::cout << "degrees in kernel input matrix" << std::endl;
+    //std::cout << degree_matrix(pmat) << std::endl;
 #endif // DEBUGGING_NOW
 
-    // if index is beyond the end of split_sizes, computation is finished
-    if ((size_t)index >= split_sizes.size())
-        return;
-
-    // if threshold >= index, call the usual algorithm
-    if (index >= threshold)
-        kernel_basis_zls_via_approximation(kerbas, pmat, shifted_rdeg);
-
-    const long m = pmat.NumRows();
-    const long n = split_sizes[index];
-    const long k = m-n; // expected size of kerbas
-
-    // find order for approximation
-    const long degdet = std::accumulate(degrees.begin(), degrees.begin()+n, 0) - n*acc_order;
-    const long deg_ker = ceil( degdet / (double)(m-n) );
-    const long order = *std::max_element(degrees.begin(), degrees.begin()+n) - acc_order + deg_ker + 1;
-
-#if DEBUGGING_NOW
-    std::cout << "degdet, deg_ker, order" << std::endl;
-    std::cout << degdet << "," << deg_ker << "," << order << std::endl;
-#endif // DEBUGGING_NOW
-
-    // save shift to be able to update diag_deg
-    VecLong shift(shifted_rdeg);
-#ifdef GENERIC_KER_PROFILE
-    double t;
-    t = GetWallTime();
-#endif // GENERIC_KER_PROFILE
+    // row and column dimensions of pmat
+    long rdim; long cdim;
+    // size of block of columns we will handle in one given iteration
+    long splitdim;
+    // size of sought kernel
+    long kdim;
+    long degdet, order;
+    // copy of shifted rdeg, for update purposes
+    VecLong shift;
+    // approximant basis for computing kernel
     Mat<zz_pX> appbas;
-    pmbasis(appbas, pmat, order, shifted_rdeg);
-#ifdef GENERIC_KER_PROFILE
-    t = GetWallTime()-t;
-    std::cout << "\tpmbasis dims x order = " << pmat.NumRows() << " x " << pmat.NumCols() << " x " << order << " || time " << t << std::endl;
-#endif // GENERIC_KER_PROFILE
-#if DEBUGGING_NOW
-    //std::cout << "\tdeg_ker: = " << deg_ker << std::endl;
-    //std::cout << "\tdegrees in approx = " << std::endl << degree_matrix(appbas) << std::endl;
-#endif // DEBUGGING_NOW
-
-    // update shifted_rdeg
-    // shifted_rdeg-row degree of kerbas
-    // = last entries of shift
-    // = s-row degree of product kerbas*pmat_r (see description of function, for "s")
-    std::vector<long>(shifted_rdeg.begin()+n, shifted_rdeg.end()).swap(shifted_rdeg);
-
-    // update diag_deg (keeping only the end of it)
-    std::vector<long>(degrees.begin()+n, degrees.end()).swap(degrees);
-    for (long i = 0; i < k; ++i)
-        degrees[i] += shifted_rdeg[i] - shift[n+i];
-
-    // extract the partial-kernel part of approx basis
+    // matrix to store local kernel
     Mat<zz_pX> kerbas2;
-    kerbas2.SetDims(k,m);
-    for (long i = 0; i < k; ++i)
-        for (long j = 0; j < m; ++j)
-            kerbas2[i][j] = appbas[i+n][j];
+    // matrix to store copy of pmat for middle product with submatrix
+    Mat<zz_pX> copy_pmat;
+    // order accumulating the different approximation orders used
+    long acc_order = 0;
 
-    const long rem_cols = pmat.NumCols()-n;
-    const bool last_call = (rem_cols <= 0);
+    for (size_t index=0; index < split_sizes.size(); ++index)
+    {
+        rdim = pmat.NumRows();
+        cdim = pmat.NumCols();
+        splitdim = split_sizes[index];
+        kdim = rdim-splitdim; // expected size of kerbas
 
-#if DEBUGGING_NOW
-    Mat<zz_pX> prod = kerbas2 * pmat;
-    std::cout << "degrees in kernel" << std::endl;
-    std::cout << degree_matrix(kerbas2) << std::endl;
-    std::cout << "degrees in prod" << std::endl;
-    std::cout << degree_matrix(prod) << std::endl;
-    std::cout << "last call?" << last_call << std::endl;
+        // find order for approximation
+        degdet = std::accumulate(degrees.begin(), degrees.begin()+splitdim, 0) - splitdim*acc_order;
+        order = *std::max_element(degrees.begin(), degrees.begin()+splitdim) - acc_order + ceil(degdet / (double)kdim) + 1;
+        acc_order += order;
+        std::cout << degrees << std::endl;
+        std::cout << degdet << "," << order << "," << ceil(degdet / (double)kdim) << std::endl;
+
+        // save shift to be able to update diag_deg
+        shift = shifted_rdeg;
+#ifdef GENERIC_KER_PROFILE
+        std::cout << index << " -> partial kernel: input matrix rdim, cdim, splitsize\n\t= (" << rdim << " x " << cdim << ") , " << splitdim  << std::endl;
+        std::cout << index << " -> column degree of input matrix" << std::endl << col_degree(pmat) << std::endl;
+        double t;
+        t = GetWallTime();
+#endif // GENERIC_KER_PROFILE
+        pmbasis(appbas, pmat, order, shifted_rdeg);
+#ifdef GENERIC_KER_PROFILE
+        t = GetWallTime()-t;
+        std::cout << index << " -> pmbasis dims x order\n\t= (" << pmat.NumRows() << " x " << pmat.NumCols() << ") , " << order << " || time " << t << std::endl;
+#endif // GENERIC_KER_PROFILE
+#ifdef DEBUGGING_NOW
+        std::cout << "\trow-degree of approx = " << std::endl << row_degree(appbas) << std::endl;
 #endif // DEBUGGING_NOW
 
-    // update pmat by middle_product with appbas, only if necessary
-    if (not last_call)
-    {
-        // -> ignoring top rows (i.e. top rows of appbas, i.e. only consider kerbas2*pmat)
-        // -> ignoring left columns (kernel already computed)
-        Mat<zz_pX> copy_pmat(INIT_SIZE, m, rem_cols);
-        for (long i = 0; i < m; ++i)
-            for (long j = 0; j < rem_cols; ++j)
-                copy_pmat[i][j].swap(pmat[i][j+n]);
-        middle_product(pmat,kerbas2,copy_pmat,order,deg(copy_pmat)+deg(appbas)-order);
-    }
+        // update shifted_rdeg
+        // shifted_rdeg-row degree of kerbas
+        // = last entries of shift
+        // = s-row degree of product kerbas*pmat_r (see description of function, for "s")
+        std::vector<long>(shifted_rdeg.begin()+splitdim, shifted_rdeg.end()).swap(shifted_rdeg);
 
-    // update kerbas
-    if (kerbas.NumRows()==0) // initial call, kerbas was empty
-        kerbas.swap(kerbas2);
-    else
-        multiply(kerbas,kerbas2,kerbas);
+        // update diag_deg (keeping only the end of it)
+        std::vector<long>(degrees.begin()+splitdim, degrees.end()).swap(degrees);
+        for (long i = 0; i < kdim; ++i)
+            degrees[i] += shifted_rdeg[i] - shift[splitdim+i];
 
-#if DEBUGGING_NOW
-    if (not last_call)
-    {
-        std::cout << "degrees in updated pmat" << std::endl;
-        std::cout << degree_matrix(pmat) << std::endl;
-    }
+        // extract the partial-kernel part of approx basis
+        kerbas2.SetDims(kdim,rdim);
+        for (long i = 0; i < kdim; ++i)
+            for (long j = 0; j < rdim; ++j)
+                kerbas2[i][j] = appbas[i+splitdim][j];
+
+#ifdef DEBUGGING_NOW
+        Mat<zz_pX> prod = kerbas2 * pmat;
+        //std::cout << "degrees in kernel" << std::endl;
+        //std::cout << degree_matrix(kerbas2) << std::endl;
+        //std::cout << "degrees in prod" << std::endl;
+        //std::cout << degree_matrix(prod) << std::endl;
 #endif // DEBUGGING_NOW
 
-    if (not last_call)
-        kernel_basis_zls_degaware_via_approximation(kerbas,pmat,degrees,shifted_rdeg,split_sizes,index+1,threshold,acc_order+order);
+        // update pmat by middle_product with appbas, only if necessary (i.e. not in last iteration)
+        if (index<split_sizes.size()-1)
+        {
+            // -> ignoring top rows (i.e. top rows of appbas, i.e. only consider kerbas2*pmat)
+            // -> ignoring left columns (kernel already computed)
+#ifdef GENERIC_KER_PROFILE
+            t = GetWallTime();
+#endif
+            copy_pmat.SetDims(rdim, cdim-splitdim);
+            for (long i = 0; i < rdim; ++i)
+                for (long j = 0; j < cdim-splitdim; ++j)
+                    copy_pmat[i][j].swap(pmat[i][j+splitdim]);
+            middle_product(pmat,kerbas2,copy_pmat,order,deg(copy_pmat)+deg(appbas)-order);
+#ifdef GENERIC_KER_PROFILE
+            t = GetWallTime()-t;
+            std::cout << index << " -> updating middle product dims x degree x order || time\n\t= (" << kerbas2.NumRows() << " x " << kerbas2.NumCols() << ") * (" << copy_pmat.NumRows() << " x " << copy_pmat.NumCols() << ") , " << order << " , " << deg(copy_pmat)+deg(appbas)-order << " || " << t << std::endl;
+#endif
+        }
 
+#ifdef GENERIC_KER_PROFILE
+        std::cout << index << " -> updating multiply dims x degrees || time\n\t= (" << kerbas2.NumRows() << " x " << kerbas2.NumCols() << ") x (" << kerbas.NumRows() << " x " << kerbas.NumCols() << ") x " << deg(kerbas2) << " x " << deg(kerbas);
+        t = GetWallTime();
+#endif
+        // update kerbas by multiplication
+        if (index == 0) // initial call, kerbas was empty, corresponding to identity
+            kerbas.swap(kerbas2);
+        else
+            multiply(kerbas,kerbas2,kerbas);
+#ifdef GENERIC_KER_PROFILE
+        t = GetWallTime()-t;
+        std::cout << " || " << t << std::endl;
+#endif
+    }
 }
 
-bool determinant_shifted_form_zls_1(zz_pX & det, const Mat<zz_pX> & pmat, VecLong & diag_deg, VecLong & shifted_rdeg, VecLong & split_sizes, long target_degdet)
+bool determinant_shifted_form_zls_1(
+                                    zz_pX & det,
+                                    const Mat<zz_pX> & pmat,
+                                    VecLong & diag_deg,
+                                    VecLong & shifted_rdeg,
+                                    VecLong & split_sizes,
+                                    long target_degdet
+                                   )
 {
 #ifdef GENERIC_DETZLS_PROFILE
     double t;
@@ -562,21 +583,21 @@ bool determinant_shifted_form_zls_1(zz_pX & det, const Mat<zz_pX> & pmat, VecLon
     const long dim = pmat.NumRows();
     const long cdim = pmat.NumCols();
 
-#if DEBUGGING_NOW
-    std::cout << "shifted_rdeg: ";
-    std::copy(shifted_rdeg.begin(), shifted_rdeg.end(), std::ostream_iterator<long>(std::cout, "\t"));
-    std::cout << std::endl;
-    std::cout << "diag_deg: ";
-    std::copy(diag_deg.begin(), diag_deg.end(), std::ostream_iterator<long>(std::cout, "\t"));
-    std::cout << std::endl;
-    std::cout << "matrix degrees:" << std::endl;
-    std::cout << degree_matrix(pmat) << std::endl;
+#ifdef DEBUGGING_NOW
+    //std::cout << "shifted_rdeg: ";
+    //std::copy(shifted_rdeg.begin(), shifted_rdeg.end(), std::ostream_iterator<long>(std::cout, " "));
+    //std::cout << std::endl;
+    //std::cout << "diag_deg: ";
+    //std::copy(diag_deg.begin(), diag_deg.end(), std::ostream_iterator<long>(std::cout, " "));
+    //std::cout << std::endl;
+    //std::cout << "matrix degrees:" << std::endl;
+    //std::cout << degree_matrix(pmat) << std::endl;
 #endif // DEBUGGING_NOW
 
     // retrieve the row degree and the determinant degree
     const long degdet = std::accumulate(diag_deg.begin(), diag_deg.end(), 0);
 
-#if DEBUGGING_NOW
+#ifdef DEBUGGING_NOW
     std::cout << "verification:" << (degdet==target_degdet) << std::endl;
 #endif // DEBUGGING_NOW
 
@@ -619,7 +640,7 @@ bool determinant_shifted_form_zls_1(zz_pX & det, const Mat<zz_pX> & pmat, VecLon
 
     const long cdim2 = cdim-cdim1;
 
-#if DEBUGGING_NOW
+#ifdef DEBUGGING_NOW
     std::cout << "cdim1 , cdim2 , cdim" << std::endl;
     std::cout << cdim1 << "," << cdim2 << "," << cdim << std::endl;
 #endif // DEBUGGING_NOW
@@ -641,10 +662,9 @@ bool determinant_shifted_form_zls_1(zz_pX & det, const Mat<zz_pX> & pmat, VecLon
 #ifdef GENERIC_DETZLS_PROFILE
     t = GetWallTime();
 #endif // GENERIC_DETZLS_PROFILE
-    // TODO arbitrary threshold 150 = infty, to investigate
     Mat<zz_pX> kerbas;
-    //kernel_basis_zls_degaware_via_approximation(kerbas, pmat_l, diag_deg, shifted_rdeg, copy_splits, 0, 150);
-    kernel_basis_zls_degaware_via_approximation(kerbas, pmat_l, diag_deg, shifted_rdeg, split_sizes, 0, 150, 0);
+    VecLong split_sz(split_sizes.begin(),split_sizes.begin()+nb_splits);
+    kernel_basis_zls_degaware_via_approximation(kerbas, pmat_l, diag_deg, shifted_rdeg, split_sz);
 #ifdef GENERIC_DETZLS_PROFILE
     t = GetWallTime()-t;
     //std::cout << "\tkernel_basis dims x order = " << dim << " x " << cdim1 << " x " << order << " || time " << t << std::endl;
@@ -669,6 +689,10 @@ bool determinant_shifted_form_zls_1(zz_pX & det, const Mat<zz_pX> & pmat, VecLon
     t = GetWallTime()-t;
     //std::cout << "\tmultiply degrees " << deg(kerbas) << "," << deg(pmat_r) << " || time " << t << std::endl;
 #endif // GENERIC_DETZLS_PROFILE
+    // new degrees
+    //diag_deg.resize(cdim2);
+    //for (long j = 0; j < cdim2; ++j)
+    //    diag_deg[j] = deg(pmat[j][j]);
 
     //return determinant_shifted_form_zls_1(det,pmatt,diag_deg,shifted_rdeg,split_sizes,index+1,target_degdet);
     // TODO call recursively
@@ -797,12 +821,14 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     std::vector<long> mult_cdeg2;
     conv_cdeg_uniquemult(unique_cdeg,mult_cdeg,cdeg);
     conv_cdeg_uniquemult(unique_cdeg2,mult_cdeg2,cdeg2);
-    //std::cout << "sequence of degrees:\t";
-    //std::copy(unique_cdeg2.begin(), unique_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
-    //std::cout << std::endl;
-    //std::cout << "ncols for each degree:\t";
-    //std::copy(mult_cdeg2.begin(), mult_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
-    //std::cout << std::endl;
+#ifdef DEBUGGING_NOW
+    std::cout << "sequence of degrees:\t";
+    std::copy(unique_cdeg2.begin(), unique_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
+    std::cout << std::endl;
+    std::cout << "ncols for each degree:\t";
+    std::copy(mult_cdeg2.begin(), mult_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
+    std::cout << std::endl;
+#endif
     //std::copy(unique_cdeg2.begin(), unique_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
     //std::cout << std::endl;
     //std::copy(mult_cdeg2.begin(), mult_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
@@ -880,7 +906,11 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     { // shifted form specific, degree-aware, update one
         t=0.0; nb_iter=0;
         bool ok = true;
+#ifdef DEBUGGING_NOW
+        while (ok && t<1 && nb_iter<1)
+#else
         while (ok && t<1)
+#endif
         {
             Mat<zz_pX> pmat,kerbas;
             random(pmat, dmat2);
@@ -1095,8 +1125,8 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    //std::vector<string> labels = {"naivetri","naivetri-mirror","linsolve"};
-    std::vector<string> labels = {"naivetri-mirror","degaware-all-1","degaware-all-2","degaware-all-3","degaware-all-4","degaware-all-5","degaware-all-6","degaware-all-7","degaware-one-1","degaware-all-2","degaware-all-3","degaware-all-4","degaware-all-5","degaware-all-6","degaware-all-7"};
+    std::vector<string> labels = {"naivetri","zls"};
+    //std::vector<string> labels = {"naivetri-mirror","degaware-all-1","degaware-all-2","degaware-all-3","degaware-all-4","degaware-all-5","degaware-all-6","degaware-all-7","degaware-one-1","degaware-all-2","degaware-all-3","degaware-all-4","degaware-all-5","degaware-all-6","degaware-all-7"};
 
     if (argc == 1)
     {
