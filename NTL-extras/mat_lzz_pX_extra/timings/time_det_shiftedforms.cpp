@@ -18,9 +18,9 @@
 //#define GENERIC_DETSALL_PROFILE
 //#define GENERIC_DETSONE_PROFILE
 //#define SLOW
-#define GENERIC_DETZLS_PROFILE
-#define GENERIC_KER_PROFILE
-#define DEBUGGING_NOW
+//#define GENERIC_DETZLS_PROFILE
+//#define GENERIC_KER_PROFILE
+//#define DEBUGGING_NOW
 
 static std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
@@ -476,16 +476,17 @@ void kernel_basis_zls_degaware_via_approximation(
 
         // find order for approximation
         degdet = std::accumulate(degrees.begin(), degrees.begin()+splitdim, 0) - splitdim*acc_order;
-        order = *std::max_element(degrees.begin(), degrees.begin()+splitdim) - acc_order + ceil(degdet / (double)kdim) + 1;
+        long deg_ker = floor(degdet / (double)kdim) + 1;
+        order = *std::max_element(degrees.begin(), degrees.begin()+splitdim) - acc_order + deg_ker + 1;
         acc_order += order;
-        std::cout << degrees << std::endl;
-        std::cout << degdet << "," << order << "," << ceil(degdet / (double)kdim) << std::endl;
+        //std::cout << degrees << std::endl;
+        //std::cout << degdet << "," << order << "," << ceil(degdet / (double)kdim) << std::endl;
 
         // save shift to be able to update diag_deg
         shift = shifted_rdeg;
 #ifdef GENERIC_KER_PROFILE
         std::cout << index << " -> partial kernel: input matrix rdim, cdim, splitsize\n\t= (" << rdim << " x " << cdim << ") , " << splitdim  << std::endl;
-        std::cout << index << " -> column degree of input matrix" << std::endl << col_degree(pmat) << std::endl;
+        //std::cout << index << " -> column degree of input matrix" << std::endl << col_degree(pmat) << std::endl;
         double t;
         t = GetWallTime();
 #endif // GENERIC_KER_PROFILE
@@ -496,6 +497,7 @@ void kernel_basis_zls_degaware_via_approximation(
 #endif // GENERIC_KER_PROFILE
 #ifdef DEBUGGING_NOW
         std::cout << "\trow-degree of approx = " << std::endl << row_degree(appbas) << std::endl;
+        std::cout << degree_matrix(appbas*pmat) << std::endl;
 #endif // DEBUGGING_NOW
 
         // update shifted_rdeg
@@ -689,6 +691,7 @@ bool determinant_shifted_form_zls_1(
     t = GetWallTime()-t;
     //std::cout << "\tmultiply degrees " << deg(kerbas) << "," << deg(pmat_r) << " || time " << t << std::endl;
 #endif // GENERIC_DETZLS_PROFILE
+    //std::cout << degree_matrix(pmatt) << std::endl;
     // new degrees
     //diag_deg.resize(cdim2);
     //for (long j = 0; j < cdim2; ++j)
@@ -696,7 +699,7 @@ bool determinant_shifted_form_zls_1(
 
     //return determinant_shifted_form_zls_1(det,pmatt,diag_deg,shifted_rdeg,split_sizes,index+1,target_degdet);
     // TODO call recursively
-    return determinant_shifted_form_degaware_updateall(det,pmatt,split_sizes,diag_deg,shifted_rdeg,nb_splits,3,target_degdet);
+    return determinant_generic_knowing_degree(det,pmatt,target_degdet);
 }
 
 // stores the degree matrix and column degree
@@ -902,7 +905,6 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     std::cout << std::endl;
 #endif
 
-#ifdef GENERIC_DETZLS_PROFILE
     { // shifted form specific, degree-aware, update one
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -928,7 +930,6 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         if (not ok)
             std::cout << "~~~Warning~~~ verification of determinant failed in degree-aware-one triangular(mirror) approach" << std::endl;
     }
-#endif // GENERIC_DETZLS_PROFILE
 
 #ifdef GENERIC_DETSALL_PROFILE
     std::cout << std::endl;
@@ -1144,7 +1145,7 @@ int main(int argc, char ** argv)
 
     else
     {
-        cout << "threads\tfftp\tnbits\tdim\tdegdet\t";
+        cout << "nbits\tdim\tdegdet\t";
         for (auto lab : labels)
             std::cout << lab << "\t";
         std::cout << std::endl;
