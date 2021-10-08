@@ -19,8 +19,8 @@
 //#define GENERIC_DETSONE_PROFILE
 //#define SLOW
 //#define GENERIC_DETZLS_PROFILE
-//#define GENERIC_KER_PROFILE
-//#define DEBUGGING_NOW
+#define GENERIC_KER_PROFILE
+#define DEBUGGING_NOW
 
 static std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
@@ -409,7 +409,9 @@ bool determinant_shifted_form_degaware_updateone(zz_pX & det, Mat<zz_pX> & kerba
 // then with the shift s=(d_1..d_n d_n..d_n) of length m,
 // an s-weak Popov kernel basis K has all pivots in the right part
 // and therefore |rdeg_s(K)| <= |s| = |d| + (m-n) d_n becomes |rdeg(K)| <= |d|
-// --> generically deg(K) <= |d| / (m-n)
+// --> generically deg(K) <= |d| / (m-n)   NO !! only the pivot part !!
+// =====> nice observation but not so nice practice! the non-pivot part
+// has higher degrees if d1<=d2<=...<=dn
 // TODO more generally (outside of the targetted application context) improve
 // ZLS kernel basis algorithm using this remark? note that we only need to
 // *know* there exists a form of the input F with such a shape (or up to row
@@ -445,8 +447,12 @@ void kernel_basis_zls_degaware_via_approximation(
     // threshold: after some threshold, just apply usual ZLS
 
 #ifdef DEBUGGING_NOW
-    //std::cout << "degrees in kernel input matrix" << std::endl;
-    //std::cout << degree_matrix(pmat) << std::endl;
+    std::cout << "degrees in kernel input matrix" << std::endl;
+    std::cout << degree_matrix(pmat) << std::endl;
+    std::cout << "degrees" << std::endl;
+    std::cout << degrees << std::endl;
+    std::cout << "shifted rdeg" << std::endl;
+    std::cout << shifted_rdeg << std::endl;
 #endif // DEBUGGING_NOW
 
     // row and column dimensions of pmat
@@ -476,11 +482,11 @@ void kernel_basis_zls_degaware_via_approximation(
 
         // find order for approximation
         degdet = std::accumulate(degrees.begin(), degrees.begin()+splitdim, 0) - splitdim*acc_order;
-        long deg_ker = floor(degdet / (double)kdim) + 1;
+        long deg_ker = ceil(degdet / (double)kdim);
         order = *std::max_element(degrees.begin(), degrees.begin()+splitdim) - acc_order + deg_ker + 1;
+        // TODO it seems sometimes we may take smaller order (e.g. -1 at first step)... reanalyze carefully...
+        //order -= 1;
         acc_order += order;
-        //std::cout << degrees << std::endl;
-        //std::cout << degdet << "," << order << "," << ceil(degdet / (double)kdim) << std::endl;
 
         // save shift to be able to update diag_deg
         shift = shifted_rdeg;
@@ -493,10 +499,23 @@ void kernel_basis_zls_degaware_via_approximation(
         pmbasis(appbas, pmat, order, shifted_rdeg);
 #ifdef GENERIC_KER_PROFILE
         t = GetWallTime()-t;
+        std::cout << index << " -> expected kernel degree:" << deg_ker << std::endl;
+        std::cout << index << " -> chosen appbas order:" << order << std::endl;
+        VecLong rdeg_app = row_degree(appbas);
+        std::cout << index << " -> found 'kernel' degree " << *max_element(rdeg_app.begin()+splitdim,rdeg_app.end()) << std::endl;
         std::cout << index << " -> pmbasis dims x order\n\t= (" << pmat.NumRows() << " x " << pmat.NumCols() << ") , " << order << " || time " << t << std::endl;
 #endif // GENERIC_KER_PROFILE
+        //std::cout << "\tchecking kernel does cancel..." << std::endl;
+        //Mat<zz_pX> prod = appbas * pmat;
+        //for (long i = splitdim; i < rdim; ++i)
+        //    for (long j = 0; j < splitdim; ++j)
+        //        if (not IsZero(prod[i][j]))
+        //            std::cout << "KERNEL IS NOT KERNEL !!" << std::endl;
 #ifdef DEBUGGING_NOW
-        std::cout << "\trow-degree of approx = " << std::endl << row_degree(appbas) << std::endl;
+        std::cout << "\trow degree of approx = " << std::endl << row_degree(appbas) << std::endl;
+        std::cout << "\tdegree matrix of approx" << std::endl;
+        std::cout << degree_matrix(appbas) << std::endl;
+        std::cout << "\tdegree matrix of product" << std::endl;
         std::cout << degree_matrix(appbas*pmat) << std::endl;
 #endif // DEBUGGING_NOW
 
@@ -697,9 +716,23 @@ bool determinant_shifted_form_zls_1(
     //for (long j = 0; j < cdim2; ++j)
     //    diag_deg[j] = deg(pmat[j][j]);
 
+#ifdef DEBUGGING_NOW
+    std::cout << "degrees in updated pmat before recursive call" << std::endl;
+    std::cout << degree_matrix(pmatt) << std::endl;
+    std::cout << "diag_deg" << std::endl;
+    std::cout << diag_deg << std::endl;
+    std::cout << "shifted rdeg" << std::endl;
+    std::cout << shifted_rdeg << std::endl;
+    std::cout << "split_sizes" << std::endl;
+    std::cout << split_sizes << std::endl;
+#endif // DEBUGGING_NOW
+
     //return determinant_shifted_form_zls_1(det,pmatt,diag_deg,shifted_rdeg,split_sizes,index+1,target_degdet);
     // TODO call recursively
-    return determinant_generic_knowing_degree(det,pmatt,target_degdet);
+    return determinant_shifted_form_zls_1(det,pmatt,diag_deg,shifted_rdeg,split_sizes,target_degdet);
+    //return determinant_generic_knowing_degree(det,pmatt,target_degdet);
+    //kerbas.kill();
+    //return determinant_shifted_form_degaware_updateall(det,pmatt,split_sizes,diag_deg,shifted_rdeg,0,3,target_degdet);
 }
 
 // stores the degree matrix and column degree
@@ -882,6 +915,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     std::cout << std::endl;
 #endif
 
+    if (false)
     { // generic case, mirrored
         t=0.0; nb_iter=0;
         bool ok = true;
