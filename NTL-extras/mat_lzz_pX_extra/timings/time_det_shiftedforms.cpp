@@ -20,7 +20,8 @@
 //#define SLOW
 //#define GENERIC_DETZLS_PROFILE
 #define GENERIC_KER_PROFILE
-#define DEBUGGING_NOW
+//#define DEBUGGING_NOW
+#define ESTIMATE_WIEDEMANN
 
 static std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
@@ -1068,6 +1069,30 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
             std::cout << "~~~Warning~~~ verification of determinant failed in linsolve approach" << std::endl;
     }
 #endif
+
+#ifdef ESTIMATE_WIEDEMANN
+    { // estimate Wiedemann
+        t=0.0; nb_iter=0;
+        while (t<1)
+        {
+            Mat<zz_p> mat;
+            Vec<zz_p> vec,buf;
+            random(mat, dim, degdet);
+            random(vec, degdet);
+            tt = GetWallTime();
+            for (long d = 0; d < degdet; ++d)
+            {
+                mul(buf, mat, vec);
+                for (long i = 0; i < dim; ++i)
+                    vec[i] = buf[i];
+            }
+            t += GetWallTime()-tt;
+            ++nb_iter;
+        }
+        timings.push_back(t/nb_iter);
+    }
+#endif // ESTIMATE_WIEDEMANN
+
 
     //std::cout << nthreads << "\t" << fftprime << "\t" << nbits << "\t" << dim << "\t" << degdet << "\t";
     std::cout << nbits << "\t" << dim << "\t" << degdet << "\t" << std::setprecision(3) << (double)dim/degdet*100 << std::setprecision(8) << "\t";
