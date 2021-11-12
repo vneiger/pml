@@ -1,4 +1,5 @@
 // timing charpoly of matrix in "shifted forms" [Pernet-Storjohann]
+#include <NTL/vec_lzz_p.h>
 #include <algorithm>
 #include <functional>
 #include <iomanip>
@@ -6,11 +7,13 @@
 #include <fstream>
 
 #include <NTL/BasicThreadPool.h>
+#include <NTL/mat_lzz_p.h>
 #include <numeric>
 #include <string>
 
 #include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_forms.h"
+#include "mat_lzz_pX_utils.h"
 #include "util.h"
 //#include "mat_lzz_pX_forms.h"
 //#include "mat_lzz_pX_utils.h"
@@ -19,9 +22,10 @@
 //#define GENERIC_DETSONE_PROFILE
 //#define SLOW
 //#define GENERIC_DETZLS_PROFILE
-#define GENERIC_KER_PROFILE
+//#define GENERIC_KER_PROFILE
 //#define DEBUGGING_NOW
 #define ESTIMATE_WIEDEMANN
+#define ESTIMATE_KELLERGEHRIG
 
 static std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
@@ -858,6 +862,14 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     std::vector<long> mult_cdeg2;
     conv_cdeg_uniquemult(unique_cdeg,mult_cdeg,cdeg);
     conv_cdeg_uniquemult(unique_cdeg2,mult_cdeg2,cdeg2);
+    std::cout << "ncols for each degree:\n";
+    std::copy(mult_cdeg2.begin(), mult_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
+    std::cout << std::endl << "proportion of total:" << std::endl;
+    for (size_t k = 0; k < mult_cdeg2.size(); ++k)
+    {
+        std::cout << mult_cdeg2[k] / (double)dim << "\t";
+    }
+    std::cout << std::endl;
 #ifdef DEBUGGING_NOW
     std::cout << "sequence of degrees:\t";
     std::copy(unique_cdeg2.begin(), unique_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
@@ -1080,10 +1092,10 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
             random(mat, dim, degdet);
             random(vec, degdet);
             tt = GetWallTime();
-            for (long d = 0; d < degdet; ++d)
+            for (long d = 0; d < 2*degdet; ++d)
             {
                 mul(buf, mat, vec);
-                for (long i = 0; i < dim; ++i)
+                for (long i = degdet-dim; i < degdet; ++i)
                     vec[i] = buf[i];
             }
             t += GetWallTime()-tt;
@@ -1093,6 +1105,41 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     }
 #endif // ESTIMATE_WIEDEMANN
 
+#ifdef ESTIMATE_KELLERGEHRIG
+    { // estimate Keller-Gehrig
+        t=0.0; nb_iter=0;
+        while (t<1)
+        {
+            // working in columns to avoid introducing artificial
+            // slowliness due to data movements
+            Mat<zz_p> mat;
+            Mat<zz_p> projs,buf;
+            ident(mat, degdet);
+            for (long i = degdet-dim; i < degdet; ++i)
+                random(mat[i], degdet);
+            // transpose, work in columns
+            transpose(mat, mat);
+            random(projs, 1, degdet);
+            tt = GetWallTime();
+            for (long d = 1; d <= degdet; d=2*d)
+            {
+                // mat = power(M , d) where M = input matrix
+                // projs = [row i is V * M**i, i=0..d-1] where V = input vector
+                mul(buf, projs, mat);
+                projs.SetDims(2*d, degdet);
+                for (long i = d; i < 2*d; ++i)
+                    projs[i].swap(buf[i-d]);
+                // now proj = [row i is V * M**i, i=0..2*d-1]
+                if (2*d <= degdet)
+                    sqr(mat, mat);
+                // now mat = power(M , 2*d)
+            }
+            t += GetWallTime()-tt;
+            ++nb_iter;
+        }
+        timings.push_back(t/nb_iter);
+    }
+#endif
 
     //std::cout << nthreads << "\t" << fftprime << "\t" << nbits << "\t" << dim << "\t" << degdet << "\t";
     std::cout << nbits << "\t" << dim << "\t" << degdet << "\t" << std::setprecision(3) << (double)dim/degdet*100 << std::setprecision(8) << "\t";
