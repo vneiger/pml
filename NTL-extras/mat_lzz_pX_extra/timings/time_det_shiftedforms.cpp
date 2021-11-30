@@ -18,20 +18,21 @@
 //#include "mat_lzz_pX_forms.h"
 //#include "mat_lzz_pX_utils.h"
 //#include "mat_lzz_pX_determinant.h"
+
 //#define PROFILE_DEG_UPMAT
 //#define PROFILE_DEG_UPKER
 //#define PROFILE_ZLS_AVG
 //#define PROFILE_KER_AVG
-//#define TIME_ALL
 //#define DEBUGGING_NOW
-#define ESTIMATE_WIEDEMANN
-#define ESTIMATE_KELLERGEHRIG
+
+//#define TIME_LINSOLVE // via linear system solving with random rhs
+//#define TIME_TRI_DECR // generic determinant on matrix with decreasing diagonal degrees
 #define TIME_TRI_INCR // generic determinant on matrix with increasing diagonal degrees
-#define TIME_TRI_DECR // generic determinant on matrix with decreasing diagonal degrees
-#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
-#define TIME_DEG_UPKER // going degree by degree, updating kernel basis at each iteration
-#define TIME_LINSOLVE // via linear system solving with random rhs
+//#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
+//#define TIME_DEG_UPKER // going degree by degree, updating kernel basis at each iteration
 #define TIME_ZLS_AVG // ZLS style, but taking average degrees into account
+#define ESTIMATE_WIEDEMANN
+//#define ESTIMATE_KELLERGEHRIG
 
 //static std::ostream &operator<<(std::ostream &out, const VecLong &s)
 //{
@@ -903,7 +904,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         }
         timings.push_back(t/nb_iter);
         if (not ok)
-            std::cout << "~~~Warning~~~ verification of determinant failed in linsolve approach" << std::endl;
+            std::cout << "~~~Warning~~~ verification of determinant failed in LINSOLVE approach" << std::endl;
     }
 #endif
 
@@ -924,7 +925,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         }
         timings.push_back(t/nb_iter);
         if (not ok)
-            std::cout << "~~~Warning~~~ verification of determinant failed in naive triangular approach" << std::endl;
+            std::cout << "~~~Warning~~~ verification of determinant failed in TRI_DECR approach" << std::endl;
     }
 #endif
 
@@ -945,7 +946,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         }
         timings.push_back(t/nb_iter);
         if (not ok)
-            std::cout << "~~~Warning~~~ verification of determinant failed in naive triangular(mirror) approach" << std::endl;
+            std::cout << "~~~Warning~~~ verification of determinant failed in TRI_INCR approach" << std::endl;
     }
 #endif
 
@@ -969,7 +970,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         }
         timings.push_back(t/nb_iter);
         if (not ok)
-            std::cout << "~~~Warning~~~ verification of determinant failed in degree-aware-all triangular(mirror) approach" << std::endl;
+            std::cout << "~~~Warning~~~ verification of determinant failed in DEG_UPMAT approach" << std::endl;
     }
 #endif
 
@@ -993,7 +994,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         }
         timings.push_back(t/nb_iter);
         if (not ok)
-            std::cout << "~~~Warning~~~ verification of determinant failed in degree-aware-one triangular(mirror) approach" << std::endl;
+            std::cout << "~~~Warning~~~ verification of determinant failed in DEG_UPKER approach" << std::endl;
     }
 #endif
 
@@ -1021,7 +1022,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         }
         timings.push_back(t/nb_iter);
         if (not ok)
-            std::cout << "~~~Warning~~~ verification of determinant failed in degree-aware-one triangular(mirror) approach" << std::endl;
+            std::cout << "~~~Warning~~~ verification of determinant failed in ZLS_AVG approach" << std::endl;
     }
 #endif
 
@@ -1180,25 +1181,37 @@ int main(int argc, char ** argv)
     labels.push_back("rand-linsolve");
 #endif
 #ifdef TIME_TRI_DECR
-    labels.push_back("naivetri-decr");
+    labels.push_back("triangular-decr");
 #endif
 #ifdef TIME_TRI_INCR
-    labels.push_back("naivetri-incr");
+    labels.push_back("triangular-incr");
 #endif
 #ifdef TIME_DEG_UPMAT
-    labels.push_back("degaware-upmat");
+    labels.push_back("deg-upmat1");
+    labels.push_back("deg-upmat2");
+    labels.push_back("deg-upmat3");
+    labels.push_back("deg-upmat4");
+    labels.push_back("deg-upmat5");
+    labels.push_back("deg-upmat6");
+    labels.push_back("deg-upmat7");
 #endif
 #ifdef TIME_DEG_UPKER
-    labels.push_back("degaware-upker");
+    labels.push_back("deg-upker1");
+    labels.push_back("deg-upker2");
+    labels.push_back("deg-upker3");
+    labels.push_back("deg-upker4");
+    labels.push_back("deg-upker5");
+    labels.push_back("deg-upker6");
+    labels.push_back("deg-upker7");
 #endif
 #ifdef TIME_ZLS_AVG
     labels.push_back("zls-avgdeg");
 #endif
 #ifdef ESTIMATE_WIEDEMANN
-    labels.push_back("est-Wiedemann");
+    labels.push_back("est-Wied.");
 #endif
 #ifdef ESTIMATE_KELLERGEHRIG
-    labels.push_back("est-KellerGehrig");
+    labels.push_back("est-K.-G.");
 #endif
 
     if (argc == 1)
@@ -1217,7 +1230,7 @@ int main(int argc, char ** argv)
 
     else
     {
-        cout << "nbits\tdim\tdegdet\t";
+        cout << "nbits\tdim\tdegdet\tdensity\t";
         for (auto lab : labels)
             std::cout << lab << "\t";
         std::cout << std::endl;
