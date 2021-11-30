@@ -18,40 +18,30 @@
 //#include "mat_lzz_pX_forms.h"
 //#include "mat_lzz_pX_utils.h"
 //#include "mat_lzz_pX_determinant.h"
-//#define GENERIC_DETSALL_PROFILE
-//#define GENERIC_DETSONE_PROFILE
-//#define SLOW
-//#define GENERIC_DETZLS_PROFILE
-//#define GENERIC_KER_PROFILE
+//#define PROFILE_DEG_UPMAT
+//#define PROFILE_DEG_UPKER
+//#define PROFILE_ZLS_AVG
+//#define PROFILE_KER_AVG
+//#define TIME_ALL
 //#define DEBUGGING_NOW
 #define ESTIMATE_WIEDEMANN
 #define ESTIMATE_KELLERGEHRIG
+#define TIME_TRI_INCR // generic determinant on matrix with increasing diagonal degrees
+#define TIME_TRI_DECR // generic determinant on matrix with decreasing diagonal degrees
+#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
+#define TIME_DEG_UPKER // going degree by degree, updating kernel basis at each iteration
+#define TIME_LINSOLVE // via linear system solving with random rhs
+#define TIME_ZLS_AVG // ZLS style, but taking average degrees into account
 
-static std::ostream &operator<<(std::ostream &out, const VecLong &s)
-{
-    out << "[ ";
-    for (auto &i: s)
-        out << i << " ";
-    return out << "]";
-}
+//static std::ostream &operator<<(std::ostream &out, const VecLong &s)
+//{
+//    out << "[ ";
+//    for (auto &i: s)
+//        out << i << " ";
+//    return out << "]";
+//}
 
 NTL_CLIENT
-
-void conv_cdeg_uniquemult(std::vector<long> & unique_cdeg, std::vector<long> & mult_cdeg, const Vec<long> & cdeg)
-{
-    long current = -1;
-    for (long i = 0; i < cdeg.length(); ++i)
-    {
-        if (cdeg[i] != current)
-        {
-            current = cdeg[i];
-            unique_cdeg.push_back(current);
-            mult_cdeg.push_back(1);
-        }
-        else
-            ++mult_cdeg.back();
-    }
-}
 
 // TODO threshold to investigate
 // TODO there are many copies in this algo... avoidable?
@@ -66,9 +56,9 @@ void conv_cdeg_uniquemult(std::vector<long> & unique_cdeg, std::vector<long> & m
 //      will be a kernel of first columns and approx of the rest?
 bool determinant_shifted_form_degaware_updateall(zz_pX & det, const Mat<zz_pX> & pmat, const VecLong & mult_cdeg, VecLong & diag_deg, VecLong & shifted_rdeg, long index, long threshold, long target_degdet, char prefix=' ')
 {
-#ifdef GENERIC_DETSALL_PROFILE
+#ifdef PROFILE_DEG_UPMAT
     double t;
-#endif // GENERIC_DETSALL_PROFILE
+#endif // PROFILE_DEG_UPMAT
 
     // det: output determinant
     // pmat: input square matrix, assumed in "shiftedform" (X^{s} Id + R, cdeg(R) < s)
@@ -92,13 +82,13 @@ bool determinant_shifted_form_degaware_updateall(zz_pX & det, const Mat<zz_pX> &
     // if small dim, just run expansion by minors
     if (dim<=4)
     {
-#ifdef GENERIC_DETSALL_PROFILE
+#ifdef PROFILE_DEG_UPMAT
         t=GetWallTime();
-#endif // GENERIC_DETSALL_PROFILE
+#endif // PROFILE_DEG_UPMAT
         determinant_expansion_by_minors(det, pmat);
-#ifdef GENERIC_DETSALL_PROFILE
+#ifdef PROFILE_DEG_UPMAT
         std::cout << prefix << "\tbase case --> " << GetWallTime()-t << std::endl;
-#endif // GENERIC_DETSALL_PROFILE
+#endif // PROFILE_DEG_UPMAT
         return true;
     }
 
@@ -109,7 +99,7 @@ bool determinant_shifted_form_degaware_updateall(zz_pX & det, const Mat<zz_pX> &
     // just run the usual algo splitting column dimension in two equal parts
     if (index >= std::min<long>(threshold,mult_cdeg.size()-1))
     {
-#ifdef GENERIC_DETSALL_PROFILE
+#ifdef PROFILE_DEG_UPMAT
         std::cout << "\t-->Entering halving stage" << std::endl;
         prefix = '\t';
 #endif
@@ -143,14 +133,14 @@ bool determinant_shifted_form_degaware_updateall(zz_pX & det, const Mat<zz_pX> &
     const long order = *std::max_element(diag_deg.begin(), diag_deg.begin()+cdim1) + deg_ker + 1;
 
     VecLong shift(shifted_rdeg);
-#ifdef GENERIC_DETSALL_PROFILE
+#ifdef PROFILE_DEG_UPMAT
     t = GetWallTime();
-#endif // GENERIC_DETSALL_PROFILE
+#endif // PROFILE_DEG_UPMAT
     pmbasis(appbas, pmat_l, order, shifted_rdeg);
-#ifdef GENERIC_DETSALL_PROFILE
+#ifdef PROFILE_DEG_UPMAT
     t = GetWallTime()-t;
     std::cout << prefix << "\tpmbasis dims x order = " << dim << " x " << cdim1 << " x " << order << " || time " << t << std::endl;
-#endif // GENERIC_DETSALL_PROFILE
+#endif // PROFILE_DEG_UPMAT
 
     // minimal left kernel basis of pmat_r : last rows of app
     Mat<zz_pX> kerbas;
@@ -178,16 +168,16 @@ bool determinant_shifted_form_degaware_updateall(zz_pX & det, const Mat<zz_pX> &
 
     // then compute the product
     Mat<zz_pX> pmatt;
-#ifdef GENERIC_DETSALL_PROFILE
+#ifdef PROFILE_DEG_UPMAT
     t = GetWallTime();
-#endif // GENERIC_DETSALL_PROFILE
+#endif // PROFILE_DEG_UPMAT
     multiply(pmatt, kerbas, pmat_r);
-#ifdef GENERIC_DETSALL_PROFILE
+#ifdef PROFILE_DEG_UPMAT
     t = GetWallTime()-t;
     std::cout << prefix << "\tmultiply degrees " << deg(kerbas) << "," << deg(pmat_r) << " || time " << t << std::endl;
     const long actual_deg_ker = deg(kerbas);
     std::cout << prefix << "\tker deg, actual deg: " << deg_ker << "\t" << actual_deg_ker << std::endl;
-#endif // GENERIC_DETSALL_PROFILE
+#endif // PROFILE_DEG_UPMAT
 
     return determinant_shifted_form_degaware_updateall(det,pmatt,mult_cdeg,diag_deg,shifted_rdeg,index+1,threshold,target_degdet,prefix);
 }
@@ -205,9 +195,9 @@ bool determinant_shifted_form_degaware_updateall(zz_pX & det, const Mat<zz_pX> &
 //      will be a kernel of first columns and approx of the rest?
 bool determinant_shifted_form_degaware_updateone(zz_pX & det, Mat<zz_pX> & kerbas, const Mat<zz_pX> & pmat, const VecLong & mult_cdeg, VecLong & diag_deg, VecLong & shifted_rdeg, long index, long threshold, long target_degdet, char prefix=' ')
 {
-#ifdef GENERIC_DETSONE_PROFILE
+#ifdef PROFILE_DEG_UPKER
     double t;
-#endif // GENERIC_DETSONE_PROFILE
+#endif // PROFILE_DEG_UPKER
 
     // det: output determinant
     // kerbas: intermediate kernel basis, stored to multiply remaining columns
@@ -238,9 +228,9 @@ bool determinant_shifted_form_degaware_updateone(zz_pX & det, Mat<zz_pX> & kerba
     // if small dim, just run expansion by minors
     if (cdim<=4)
     {
-#ifdef GENERIC_DETSONE_PROFILE
+#ifdef PROFILE_DEG_UPKER
         t=GetWallTime();
-#endif // GENERIC_DETSONE_PROFILE
+#endif // PROFILE_DEG_UPKER
         if (not kerbas_empty)
         {
             Mat<zz_pX> pmatt;
@@ -249,9 +239,9 @@ bool determinant_shifted_form_degaware_updateone(zz_pX & det, Mat<zz_pX> & kerba
         }
         else
             determinant_expansion_by_minors(det, pmat);
-#ifdef GENERIC_DETSONE_PROFILE
+#ifdef PROFILE_DEG_UPKER
         std::cout << prefix << "\tbase case --> " << GetWallTime()-t << std::endl;
-#endif // GENERIC_DETSONE_PROFILE
+#endif // PROFILE_DEG_UPKER
         return true;
     }
 
@@ -267,16 +257,16 @@ bool determinant_shifted_form_degaware_updateone(zz_pX & det, Mat<zz_pX> & kerba
         // --> recurse on pmatt = kerbas * pmat
         // --> make kerbas empty
         Mat<zz_pX> pmatt;
-#ifdef GENERIC_DETSONE_PROFILE
+#ifdef PROFILE_DEG_UPKER
         std::cout << "\t-->Entering halving stage" << std::endl;
         prefix = '\t';
         t = GetWallTime();
-#endif // GENERIC_DETSONE_PROFILE
+#endif // PROFILE_DEG_UPKER
         multiply(pmatt, kerbas, pmat);
-#ifdef GENERIC_DETSONE_PROFILE
+#ifdef PROFILE_DEG_UPKER
         t = GetWallTime()-t;
         std::cout << prefix << "\tmultiply degrees " << deg(kerbas) << "," << deg(pmat) << " || time " << t << std::endl;
-#endif // GENERIC_DETSONE_PROFILE
+#endif // PROFILE_DEG_UPKER
         kerbas.kill();
         return determinant_shifted_form_degaware_updateone(det,kerbas,pmatt,mult_cdeg,diag_deg,shifted_rdeg,index,threshold,target_degdet,prefix);
     }
@@ -312,15 +302,15 @@ bool determinant_shifted_form_degaware_updateone(zz_pX & det, Mat<zz_pX> & kerba
     // if not halving and not initial call, pmat_l must be multiplied by kerbas
     if (not halving && not kerbas_empty)
     {
-#ifdef GENERIC_DETSONE_PROFILE
+#ifdef PROFILE_DEG_UPKER
         std::cout << prefix << "\tkerbas*pmat_l multiply dimensions x degrees " << kerbas.NumRows() << "x" << rdim << "x" << cdim1 << "," << deg(kerbas) << "x" << deg(pmat_l) << " || time ";
         t = GetWallTime();
-#endif // GENERIC_DETSONE_PROFILE
+#endif // PROFILE_DEG_UPKER
         multiply(pmat_l, kerbas, pmat_l);
-#ifdef GENERIC_DETSONE_PROFILE
+#ifdef PROFILE_DEG_UPKER
         t = GetWallTime()-t;
         std::cout << t << std::endl;
-#endif // GENERIC_DETSONE_PROFILE
+#endif // PROFILE_DEG_UPKER
     }
 
     // compute the kernel via approximant basis at high order
@@ -335,14 +325,14 @@ bool determinant_shifted_form_degaware_updateone(zz_pX & det, Mat<zz_pX> & kerba
 
     // save shift to be able to update diag_deg
     VecLong shift(shifted_rdeg);
-#ifdef GENERIC_DETSONE_PROFILE
+#ifdef PROFILE_DEG_UPKER
     t = GetWallTime();
-#endif // GENERIC_DETSONE_PROFILE
+#endif // PROFILE_DEG_UPKER
     pmbasis(appbas, pmat_l, order, shifted_rdeg);
-#ifdef GENERIC_DETSONE_PROFILE
+#ifdef PROFILE_DEG_UPKER
     t = GetWallTime()-t;
     std::cout << prefix << "\tpmbasis dims x order = " << app_rdim << " x " << cdim1 << " x " << order << " || time " << t << std::endl;
-#endif // GENERIC_DETSONE_PROFILE
+#endif // PROFILE_DEG_UPKER
 
     // minimal left kernel basis of pmat_r : last rows of app
     Mat<zz_pX> kerbas2;
@@ -365,32 +355,32 @@ bool determinant_shifted_form_degaware_updateone(zz_pX & det, Mat<zz_pX> & kerba
     // if halving: compute kerbas2*pmat_r
     if (halving)
     {
-#ifdef GENERIC_DETSONE_PROFILE
+#ifdef PROFILE_DEG_UPKER
         std::cout << prefix << "\tmultiply degrees " << deg(kerbas2) << "," << deg(pmat_r) << " || time ";
         t = GetWallTime();
-#endif // GENERIC_DETSONE_PROFILE
+#endif // PROFILE_DEG_UPKER
         multiply(pmat_r, kerbas2, pmat_r);
-#ifdef GENERIC_DETSONE_PROFILE
+#ifdef PROFILE_DEG_UPKER
         t = GetWallTime()-t;
         std::cout << t << std::endl;
         const long actual_deg_ker = deg(kerbas2);
         std::cout << prefix << "\tker deg, actual deg: " << deg_ker << "\t" << actual_deg_ker << std::endl;
-#endif // GENERIC_DETSONE_PROFILE
+#endif // PROFILE_DEG_UPKER
     }
     // else if non-initial non-halving step: update kerbas by multiplication
     else if (kerbas.NumRows() > 0)
     {
-#ifdef GENERIC_DETSONE_PROFILE
+#ifdef PROFILE_DEG_UPKER
         std::cout << prefix << "\tkerbas multiply degrees " << deg(kerbas2) << "x" << deg(kerbas) << " || time ";
         t = GetWallTime();
-#endif // GENERIC_DETSONE_PROFILE
+#endif // PROFILE_DEG_UPKER
         multiply(kerbas, kerbas2, kerbas);
-#ifdef GENERIC_DETSONE_PROFILE
+#ifdef PROFILE_DEG_UPKER
         t = GetWallTime()-t;
         std::cout << t << std::endl;
         const long actual_deg_ker = deg(kerbas2);
         std::cout << prefix << "\tnew ker deg, actual deg: " << deg_ker << "\t" << actual_deg_ker << std::endl;
-#endif // GENERIC_DETSONE_PROFILE
+#endif // PROFILE_DEG_UPKER
     }
     // else, initial non-halving step: kerbas is empty, meaning identity
     // --> make it equal to kerbas2
@@ -495,21 +485,21 @@ void kernel_basis_zls_degaware_via_approximation(
 
         // save shift to be able to update diag_deg
         shift = shifted_rdeg;
-#ifdef GENERIC_KER_PROFILE
+#ifdef PROFILE_KER_AVG
         std::cout << index << " -> partial kernel: input matrix rdim, cdim, splitsize\n\t= (" << rdim << " x " << cdim << ") , " << splitdim  << std::endl;
         //std::cout << index << " -> column degree of input matrix" << std::endl << col_degree(pmat) << std::endl;
         double t;
         t = GetWallTime();
-#endif // GENERIC_KER_PROFILE
+#endif // PROFILE_KER_AVG
         pmbasis(appbas, pmat, order, shifted_rdeg);
-#ifdef GENERIC_KER_PROFILE
+#ifdef PROFILE_KER_AVG
         t = GetWallTime()-t;
         std::cout << index << " -> expected kernel degree:" << deg_ker << std::endl;
         std::cout << index << " -> chosen appbas order:" << order << std::endl;
         VecLong rdeg_app = row_degree(appbas);
         std::cout << index << " -> found 'kernel' degree " << *max_element(rdeg_app.begin()+splitdim,rdeg_app.end()) << std::endl;
         std::cout << index << " -> pmbasis dims x order\n\t= (" << pmat.NumRows() << " x " << pmat.NumCols() << ") , " << order << " || time " << t << std::endl;
-#endif // GENERIC_KER_PROFILE
+#endif // PROFILE_KER_AVG
         //std::cout << "\tchecking kernel does cancel..." << std::endl;
         //Mat<zz_pX> prod = appbas * pmat;
         //for (long i = splitdim; i < rdim; ++i)
@@ -554,7 +544,7 @@ void kernel_basis_zls_degaware_via_approximation(
         {
             // -> ignoring top rows (i.e. top rows of appbas, i.e. only consider kerbas2*pmat)
             // -> ignoring left columns (kernel already computed)
-#ifdef GENERIC_KER_PROFILE
+#ifdef PROFILE_KER_AVG
             t = GetWallTime();
 #endif
             copy_pmat.SetDims(rdim, cdim-splitdim);
@@ -562,13 +552,13 @@ void kernel_basis_zls_degaware_via_approximation(
                 for (long j = 0; j < cdim-splitdim; ++j)
                     copy_pmat[i][j].swap(pmat[i][j+splitdim]);
             middle_product(pmat,kerbas2,copy_pmat,order,deg(copy_pmat)+deg(appbas)-order);
-#ifdef GENERIC_KER_PROFILE
+#ifdef PROFILE_KER_AVG
             t = GetWallTime()-t;
             std::cout << index << " -> updating middle product dims x degree x order || time\n\t= (" << kerbas2.NumRows() << " x " << kerbas2.NumCols() << ") * (" << copy_pmat.NumRows() << " x " << copy_pmat.NumCols() << ") , " << order << " , " << deg(copy_pmat)+deg(appbas)-order << " || " << t << std::endl;
 #endif
         }
 
-#ifdef GENERIC_KER_PROFILE
+#ifdef PROFILE_KER_AVG
         std::cout << index << " -> updating multiply dims x degrees || time\n\t= (" << kerbas2.NumRows() << " x " << kerbas2.NumCols() << ") x (" << kerbas.NumRows() << " x " << kerbas.NumCols() << ") x " << deg(kerbas2) << " x " << deg(kerbas);
         t = GetWallTime();
 #endif
@@ -577,7 +567,7 @@ void kernel_basis_zls_degaware_via_approximation(
             kerbas.swap(kerbas2);
         else
             multiply(kerbas,kerbas2,kerbas);
-#ifdef GENERIC_KER_PROFILE
+#ifdef PROFILE_KER_AVG
         t = GetWallTime()-t;
         std::cout << " || " << t << std::endl;
 #endif
@@ -593,9 +583,9 @@ bool determinant_shifted_form_zls_1(
                                     long target_degdet
                                    )
 {
-#ifdef GENERIC_DETZLS_PROFILE
+#ifdef PROFILE_ZLS_AVG
     double t;
-#endif // GENERIC_DETZLS_PROFILE
+#endif // PROFILE_ZLS_AVG
 
     // det: output determinant
     // pmat: input square matrix, assumed in "shiftedform" (X^{s} Id + R, cdeg(R) < s)
@@ -635,13 +625,13 @@ bool determinant_shifted_form_zls_1(
     // if small dim, just run expansion by minors
     if (dim<=4)
     {
-#ifdef GENERIC_DETZLS_PROFILE
+#ifdef PROFILE_ZLS_AVG
         t=GetWallTime();
-#endif // GENERIC_DETZLS_PROFILE
+#endif // PROFILE_ZLS_AVG
         determinant_expansion_by_minors(det, pmat);
-#ifdef GENERIC_DETZLS_PROFILE
+#ifdef PROFILE_ZLS_AVG
         std::cout << "\tbase case --> " << GetWallTime()-t << std::endl;
-#endif // GENERIC_DETZLS_PROFILE
+#endif // PROFILE_ZLS_AVG
         return true;
     }
 
@@ -685,16 +675,16 @@ bool determinant_shifted_form_zls_1(
     }
 
     //VecLong copy_splits(split_sizes.begin(), split_sizes.begin()+nb_splits);
-#ifdef GENERIC_DETZLS_PROFILE
+#ifdef PROFILE_ZLS_AVG
     t = GetWallTime();
-#endif // GENERIC_DETZLS_PROFILE
+#endif // PROFILE_ZLS_AVG
     Mat<zz_pX> kerbas;
     VecLong split_sz(split_sizes.begin(),split_sizes.begin()+nb_splits);
     kernel_basis_zls_degaware_via_approximation(kerbas, pmat_l, diag_deg, shifted_rdeg, split_sz);
-#ifdef GENERIC_DETZLS_PROFILE
+#ifdef PROFILE_ZLS_AVG
     t = GetWallTime()-t;
     //std::cout << "\tkernel_basis dims x order = " << dim << " x " << cdim1 << " x " << order << " || time " << t << std::endl;
-#endif // GENERIC_DETZLS_PROFILE
+#endif // PROFILE_ZLS_AVG
 
     // update split_sizes (keeping only the end of it)
     std::vector<long>(split_sizes.begin()+nb_splits, split_sizes.end()).swap(split_sizes);
@@ -707,14 +697,14 @@ bool determinant_shifted_form_zls_1(
 
     // then compute the product
     Mat<zz_pX> pmatt;
-#ifdef GENERIC_DETZLS_PROFILE
+#ifdef PROFILE_ZLS_AVG
     t = GetWallTime();
-#endif // GENERIC_DETZLS_PROFILE
+#endif // PROFILE_ZLS_AVG
     multiply(pmatt, kerbas, pmat_r);
-#ifdef GENERIC_DETZLS_PROFILE
+#ifdef PROFILE_ZLS_AVG
     t = GetWallTime()-t;
     //std::cout << "\tmultiply degrees " << deg(kerbas) << "," << deg(pmat_r) << " || time " << t << std::endl;
-#endif // GENERIC_DETZLS_PROFILE
+#endif // PROFILE_ZLS_AVG
     //std::cout << degree_matrix(pmatt) << std::endl;
     // new degrees
     //diag_deg.resize(cdim2);
@@ -738,6 +728,23 @@ bool determinant_shifted_form_zls_1(
     //return determinant_generic_knowing_degree(det,pmatt,target_degdet);
     //kerbas.kill();
     //return determinant_shifted_form_degaware_updateall(det,pmatt,split_sizes,diag_deg,shifted_rdeg,0,3,target_degdet);
+}
+
+
+void conv_cdeg_uniquemult(std::vector<long> & unique_cdeg, std::vector<long> & mult_cdeg, const Vec<long> & cdeg)
+{
+    long current = -1;
+    for (long i = 0; i < cdeg.length(); ++i)
+    {
+        if (cdeg[i] != current)
+        {
+            current = cdeg[i];
+            unique_cdeg.push_back(current);
+            mult_cdeg.push_back(1);
+        }
+        else
+            ++mult_cdeg.back();
+    }
 }
 
 // stores the degree matrix and column degree
@@ -862,49 +869,46 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     std::vector<long> mult_cdeg2;
     conv_cdeg_uniquemult(unique_cdeg,mult_cdeg,cdeg);
     conv_cdeg_uniquemult(unique_cdeg2,mult_cdeg2,cdeg2);
-    std::cout << "ncols for each degree:\n";
-    std::copy(mult_cdeg2.begin(), mult_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
-    std::cout << std::endl << "proportion of total:" << std::endl;
-    for (size_t k = 0; k < mult_cdeg2.size(); ++k)
-    {
-        std::cout << mult_cdeg2[k] / (double)dim << "\t";
-    }
-    std::cout << std::endl;
 #ifdef DEBUGGING_NOW
+    std::cout << std::endl;
     std::cout << "sequence of degrees:\t";
     std::copy(unique_cdeg2.begin(), unique_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
     std::cout << std::endl;
     std::cout << "ncols for each degree:\t";
     std::copy(mult_cdeg2.begin(), mult_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
+    std::cout << std::endl << "proportion of total:" << std::endl;
+    for (size_t k = 0; k < mult_cdeg2.size(); ++k)
+        std::cout << mult_cdeg2[k] / (double)dim << "\t";
     std::cout << std::endl;
 #endif
-    //std::copy(unique_cdeg2.begin(), unique_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
-    //std::cout << std::endl;
-    //std::copy(mult_cdeg2.begin(), mult_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
-    //std::cout << std::endl;
-
-    //std::cout << dmat << std::endl;
-    //std::cout << cdeg << std::endl;
-    //std::copy(unique_cdeg.begin(), unique_cdeg.end(), std::ostream_iterator<long>(std::cout, ""));
-    //std::cout << std::endl;
-    //std::copy(mult_cdeg.begin(), mult_cdeg.end(), std::ostream_iterator<long>(std::cout, ""));
-    //std::cout << std::endl;
-
-    //std::cout << dmat2 << std::endl;
-    //std::cout << cdeg2 << std::endl;
-    //std::copy(unique_cdeg2.begin(), unique_cdeg2.end(), std::ostream_iterator<long>(std::cout, ""));
-    //std::cout << std::endl;
-    //std::copy(mult_cdeg2.begin(), mult_cdeg2.end(), std::ostream_iterator<long>(std::cout, ""));
-    //std::cout << std::endl;
-
-    //std::cout << "Matrix dimension: " << dim << ", degree of determinant: " << degdet << std::endl;
 
     std::vector<double> timings;
     double t,tt;
     long nb_iter;
 
-#ifdef SLOW
-    { // generic case
+#ifdef TIME_LINSOLVE
+    { // via random linear system
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<1)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, dmat);
+            tt = GetWallTime();
+            zz_pX det;
+            determinant_via_linsolve(det, pmat);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = verify_determinant(det, pmat, true, true);
+        }
+        timings.push_back(t/nb_iter);
+        if (not ok)
+            std::cout << "~~~Warning~~~ verification of determinant failed in linsolve approach" << std::endl;
+    }
+#endif
+
+#ifdef TIME_TRI_DECR
+    { // generic determinant, decreasing diagonal degrees
         t=0.0; nb_iter=0;
         bool ok = true;
         while (ok && t<1)
@@ -924,12 +928,8 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     }
 #endif
 
-#ifdef GENERIC_DETSALL_PROFILE
-    std::cout << std::endl;
-#endif
-
-    if (false)
-    { // generic case, mirrored
+#ifdef TIME_TRI_INCR
+    { // generic determinant, increasing diagonal degrees
         t=0.0; nb_iter=0;
         bool ok = true;
         while (ok && t<1)
@@ -947,11 +947,57 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         if (not ok)
             std::cout << "~~~Warning~~~ verification of determinant failed in naive triangular(mirror) approach" << std::endl;
     }
-
-#ifdef GENERIC_DETSZLS_PROFILE
-    std::cout << std::endl;
 #endif
 
+#ifdef TIME_DEG_UPMAT
+    for (long thres=1; thres < 8; ++thres)
+    { // shifted form specific, degree-aware, update matrix
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<1)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, dmat2);
+            VecLong diag_deg = col_degree(pmat);
+            VecLong shifted_rdeg(dim);
+            tt = GetWallTime();
+            zz_pX det;
+            ok = ok && determinant_shifted_form_degaware_updateall(det, pmat, mult_cdeg2, diag_deg, shifted_rdeg, 0, thres, degdet);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = ok && verify_determinant(det, pmat, true, true);
+        }
+        timings.push_back(t/nb_iter);
+        if (not ok)
+            std::cout << "~~~Warning~~~ verification of determinant failed in degree-aware-all triangular(mirror) approach" << std::endl;
+    }
+#endif
+
+#ifdef TIME_DEG_UPKER
+    for (long thres=1; thres < 8; ++thres)
+    { // shifted form specific, degree-aware, update one
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<1)
+        {
+            Mat<zz_pX> pmat,kerbas;
+            random(pmat, dmat2);
+            VecLong diag_deg = col_degree(pmat);
+            VecLong shifted_rdeg(dim);
+            tt = GetWallTime();
+            zz_pX det;
+            ok = ok && determinant_shifted_form_degaware_updateone(det, kerbas, pmat, mult_cdeg2, diag_deg, shifted_rdeg, 0, thres, degdet);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = ok && verify_determinant(det, pmat, true, true);
+        }
+        timings.push_back(t/nb_iter);
+        if (not ok)
+            std::cout << "~~~Warning~~~ verification of determinant failed in degree-aware-one triangular(mirror) approach" << std::endl;
+    }
+#endif
+
+#ifdef TIME_ZLS_AVG
     { // shifted form specific, degree-aware, update one
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -976,109 +1022,6 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
         timings.push_back(t/nb_iter);
         if (not ok)
             std::cout << "~~~Warning~~~ verification of determinant failed in degree-aware-one triangular(mirror) approach" << std::endl;
-    }
-
-#ifdef GENERIC_DETSALL_PROFILE
-    std::cout << std::endl;
-#endif
-
-#ifdef SLOW
-    { // shifted form specific, degree-aware, update all
-        t=0.0; nb_iter=0;
-        bool ok = true;
-        while (ok && t<1)
-        {
-            Mat<zz_pX> pmat;
-            random(pmat, dmat);
-            VecLong diag_deg = col_degree(pmat);
-            VecLong shifted_rdeg(dim);
-            tt = GetWallTime();
-            zz_pX det;
-            ok = ok && determinant_shifted_form_degaware_updateall(det, pmat, mult_cdeg, diag_deg, shifted_rdeg, 0, 1, degdet);
-            t += GetWallTime()-tt;
-            ++nb_iter;
-            ok = ok && verify_determinant(det, pmat, true, true);
-        }
-        timings.push_back(t/nb_iter);
-        if (not ok)
-            std::cout << "~~~Warning~~~ verification of determinant failed in degree-aware triangular approach" << std::endl;
-    }
-#endif
-
-#ifdef GENERIC_DETSALL_PROFILE
-    std::cout << std::endl;
-
-    for (long thres=1; thres < 8; ++thres)
-    { // shifted form specific, degree-aware, update all
-        t=0.0; nb_iter=0;
-        bool ok = true;
-        while (ok && t<1)
-        {
-            Mat<zz_pX> pmat;
-            random(pmat, dmat2);
-            VecLong diag_deg = col_degree(pmat);
-            VecLong shifted_rdeg(dim);
-            tt = GetWallTime();
-            zz_pX det;
-            ok = ok && determinant_shifted_form_degaware_updateall(det, pmat, mult_cdeg2, diag_deg, shifted_rdeg, 0, thres, degdet);
-            t += GetWallTime()-tt;
-            ++nb_iter;
-            ok = ok && verify_determinant(det, pmat, true, true);
-        }
-        timings.push_back(t/nb_iter);
-        if (not ok)
-            std::cout << "~~~Warning~~~ verification of determinant failed in degree-aware-all triangular(mirror) approach" << std::endl;
-    }
-#endif
-
-#ifdef GENERIC_DETSONE_PROFILE
-    std::cout << std::endl;
-
-    for (long thres=1; thres < 8; ++thres)
-    { // shifted form specific, degree-aware, update one
-        t=0.0; nb_iter=0;
-        bool ok = true;
-        while (ok && t<1)
-        {
-            Mat<zz_pX> pmat,kerbas;
-            random(pmat, dmat2);
-            VecLong diag_deg = col_degree(pmat);
-            VecLong shifted_rdeg(dim);
-            tt = GetWallTime();
-            zz_pX det;
-            ok = ok && determinant_shifted_form_degaware_updateone(det, kerbas, pmat, mult_cdeg2, diag_deg, shifted_rdeg, 0, thres, degdet);
-            t += GetWallTime()-tt;
-            ++nb_iter;
-            ok = ok && verify_determinant(det, pmat, true, true);
-        }
-        timings.push_back(t/nb_iter);
-        if (not ok)
-            std::cout << "~~~Warning~~~ verification of determinant failed in degree-aware-one triangular(mirror) approach" << std::endl;
-    }
-#endif
-
-#ifdef GENERIC_DETSONE_PROFILE
-    std::cout << std::endl;
-#endif
-
-#ifdef SLOW
-    { // via random linear system
-        t=0.0; nb_iter=0;
-        bool ok = true;
-        while (ok && t<1)
-        {
-            Mat<zz_pX> pmat;
-            random(pmat, dmat);
-            tt = GetWallTime();
-            zz_pX det;
-            determinant_via_linsolve(det, pmat);
-            t += GetWallTime()-tt;
-            ++nb_iter;
-            ok = verify_determinant(det, pmat, true, true);
-        }
-        timings.push_back(t/nb_iter);
-        if (not ok)
-            std::cout << "~~~Warning~~~ verification of determinant failed in linsolve approach" << std::endl;
     }
 #endif
 
@@ -1232,8 +1175,31 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
-    std::vector<string> labels = {"naivetri","zls"};
-    //std::vector<string> labels = {"naivetri-mirror","degaware-all-1","degaware-all-2","degaware-all-3","degaware-all-4","degaware-all-5","degaware-all-6","degaware-all-7","degaware-one-1","degaware-all-2","degaware-all-3","degaware-all-4","degaware-all-5","degaware-all-6","degaware-all-7"};
+    std::vector<string> labels;
+#ifdef TIME_LINSOLVE
+    labels.push_back("rand-linsolve");
+#endif
+#ifdef TIME_TRI_DECR
+    labels.push_back("naivetri-decr");
+#endif
+#ifdef TIME_TRI_INCR
+    labels.push_back("naivetri-incr");
+#endif
+#ifdef TIME_DEG_UPMAT
+    labels.push_back("degaware-upmat");
+#endif
+#ifdef TIME_DEG_UPKER
+    labels.push_back("degaware-upker");
+#endif
+#ifdef TIME_ZLS_AVG
+    labels.push_back("zls-avgdeg");
+#endif
+#ifdef ESTIMATE_WIEDEMANN
+    labels.push_back("est-Wiedemann");
+#endif
+#ifdef ESTIMATE_KELLERGEHRIG
+    labels.push_back("est-KellerGehrig");
+#endif
 
     if (argc == 1)
     {
