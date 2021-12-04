@@ -11,8 +11,10 @@
 #include <numeric>
 #include <string>
 
+#include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_forms.h"
+#include "mat_lzz_pX_kernel.h"
 #include "mat_lzz_pX_utils.h"
 #include "util.h"
 //#include "mat_lzz_pX_forms.h"
@@ -23,6 +25,7 @@
 #define PROFILE_DEG_UPKER
 //#define PROFILE_ZLS_AVG
 //#define PROFILE_KER_AVG
+#define PROFILE_KERNEL_STEP1
 //#define DEBUGGING_NOW
 
 //#define TIME_LINSOLVE // via linear system solving with random rhs
@@ -750,24 +753,33 @@ bool determinant_shifted_form_zls_1(
 //   [  K_0  |  I_ell  |  0  ]
 //   [  ----   -------   --- ]
 //   [  K_1  |    0    | I_n ]
-// Consequence 2: 0-Popov left kernel basis of F is
-//   [  K_1 + xI_n  |    0    | -F_0 ]
-//   [  -----------   -------   ---- ]
-//   [  K_0         |  I_ell  |   0  ]
+// where
+//   [ K_0 ]       [ F_1 ]
+//   [ --- ]  =  - [ --- ] * iF_0
+//   [ K_1 ]       [ F_2 ]
+// where iF_0 = inverse(F_0)
+// Consequence 2: one reduced left kernel basis of F is
+//   [  K_1 - x iF_0  |    0    |  I_n ]
+//   [  -------------   -------   ---- ]
+//   [       K_0      |  I_ell  |   0  ]
+// and the Popov left kernel basis of F is
+//   [  F_0 K_1 + x I_n  |    0    |  F_0 ]
+//   [  ---------------    -------   ---- ]
+//   [        K_0        |  I_ell  |   0  ]
 // Input : (ell+2n) x n constant matrix
 //        [  F_0  ]
 //        [  ---- ]
 //  F =   [  F_1  ]
 //        [  ---- ]
 //        [  F_2  ]
-// Output : (ell+n) x n constant matrix
-//   [ K_1 ]
-//   [ --- ]
-//   [ K_0 ]
-void kernel_step1(Mat<zz_p> & cker, const Mat<zz_p> & cmat)
+// Output : 
+//   - kertop: n x n constant matrix kertop = F_0 K_1 
+//   - kerbot: ell x n constant matrix kerbot = K_0
+//   - cmat: replaced by only its n top rows F_0
+void kernel_step1(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat)
 {
 #ifdef PROFILE_KERNEL_STEP1
-    double t_total,t_gauss;
+    double t_total,t_gauss,t_mul;
     t_total = GetWallTime();
 #endif
     // get dimensions, check numrows >= 2 numcols
@@ -790,15 +802,82 @@ void kernel_step1(Mat<zz_p> & cker, const Mat<zz_p> & cmat)
 #endif
 
     // copy the left part
-    cker.SetDims(n+ell,n);
+    kertop.SetDims(n,n);
     for (long i = 0; i < n; ++i)
-        VectorCopy(cker[i], kermat[ell+i], n);
+        VectorCopy(kertop[i], kermat[ell+i], n);
+    kerbot.SetDims(ell,n);
     for (long i = 0; i < ell; ++i)
-        VectorCopy(cker[n+i], kermat[i], n);
+        VectorCopy(kerbot[i], kermat[i], n);
+    cmat.SetDims(n,n);
 #ifdef PROFILE_KERNEL_STEP1
+    t_mul = GetWallTime();
+#endif
+    mul(kertop, cmat, kertop);
+#ifdef PROFILE_KERNEL_STEP1
+    t_mul = GetWallTime() - t_mul;
     t_total = GetWallTime() - t_total;
+    std::cout << "\tKernel step1 profile:" << std::endl;
+    std::cout << "\ttotal time:\t" << t_total << std::endl;
+    std::cout << "\tGauss time:\t" << t_gauss << std::endl;
+    std::cout << "\tMatMul time:\t" << t_mul << std::endl;
 #endif
 }
+
+// same as above, but using direct computation of K via inv(.) instead of kernel(.)
+void kernel_step1_direct(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat)
+{
+#ifdef PROFILE_KERNEL_STEP1
+    double t_total,t_kernel,t_mul;
+    t_total = GetWallTime();
+#endif
+    // get dimensions, check numrows >= 2 numcols
+    const long n = cmat.NumCols();
+    const long ell = cmat.NumRows() - 2*n;
+    if (ell < 0)
+    {
+        std::cout << "~~ERROR~~ numrows >= 2numcols required in kernel_step1; see docstring" << std::endl;
+        return;
+    }
+
+#ifdef PROFILE_KERNEL_STEP1
+    t_kernel = GetWallTime();
+#endif
+    // retrieve kernel basis by direct computation
+    Mat<zz_p> imattop;
+    kertop.SetDims(n,n);
+    for (long i = 0; i < n; ++i)
+        kertop[i].swap(cmat[ell+n+i]);
+    kerbot.SetDims(ell,n);
+    for (long i = 0; i < ell; ++i)
+        kerbot[i].swap(cmat[n+i]);
+
+    cmat.SetDims(n,n);
+    inv(imattop,cmat);
+    mul(kertop, kertop, imattop);
+    NTL::negate(kertop, kertop);
+    mul(kerbot, kerbot, imattop);
+    NTL::negate(kerbot, kerbot);
+#ifdef PROFILE_KERNEL_STEP1
+    t_kernel = GetWallTime() - t_kernel;
+    t_mul = GetWallTime();
+#endif
+    mul(kertop, cmat, kertop);
+#ifdef PROFILE_KERNEL_STEP1
+    t_mul = GetWallTime() - t_mul;
+    t_total = GetWallTime() - t_total;
+    std::cout << "\tKernel step1 profile:" << std::endl;
+    std::cout << "\ttotal time:\t" << t_total << std::endl;
+    std::cout << "\tKernel time:\t" << t_kernel << std::endl;
+    std::cout << "\tMatMul time:\t" << t_mul << std::endl;
+#endif
+}
+
+
+
+
+
+
+
 
 
 void conv_cdeg_uniquemult(std::vector<long> & unique_cdeg, std::vector<long> & mult_cdeg, const Vec<long> & cdeg)
@@ -1237,9 +1316,57 @@ void run_bench()
             }
 }
 
-/*------------------------------------------------------------*/
-/* main calls check                                           */
-/*------------------------------------------------------------*/
+#ifdef PROFILE_KERNEL_STEP1
+// to compare variants for kernel step1
+// note that the "naive" kernel variant seems faster when very thin matrix
+int main(int argc, char ** argv)
+{
+    std::cout << std::fixed;
+    std::cout << std::setprecision(8);
+
+    const long m = atoi(argv[1]);
+    const long n = atoi(argv[2]);
+    zz_p::init(NTL::GenPrime_long(atoi(argv[3])));
+
+    Mat<zz_p> cmat,cmat2,cmat3;
+    random(cmat, m, n);
+    cmat2 = cmat;
+    cmat3 = cmat;
+    //std::cout << cmat << std::endl;
+
+    Mat<zz_pX> pmat;
+    pmat.SetDims(m,n);
+    for (long i = 0; i < n; ++i)
+        SetX(pmat[m-n+i][i]);
+    pmat = pmat + cmat;
+    //std::cout << pmat << std::endl;
+
+    double t = GetWallTime();
+    //Mat<zz_pX> kerbas;
+    //VecLong shift(m);
+    //pmbasis(kerbas, pmat, 2, shift);
+    //t = GetWallTime() - t;
+    //std::cout << "Via approx:\t" << t << std::endl;
+
+    t = GetWallTime();
+    Mat<zz_p> ckertop,ckerbot;
+    kernel_step1(ckertop, ckerbot, cmat);
+    t = GetWallTime() - t;
+    std::cout << "Smart Gauss:\t" << t << std::endl;
+    //std::cout << ckertop << std::endl<< std::endl << std::endl;
+    //std::cout << ckerbot << std::endl<< std::endl<< std::endl;
+
+    t = GetWallTime();
+    Mat<zz_p> ckertop2,ckerbot2;
+    kernel_step1_direct(ckertop2, ckerbot2, cmat2);
+    t = GetWallTime() - t;
+    std::cout << "Smart kernel:\t" << t << std::endl;
+    //std::cout << ckertop2  << std::endl<< std::endl << std::endl;
+    //std::cout << ckerbot2   << std::endl<< std::endl<< std::endl;
+
+    return 0;
+}
+#else
 int main(int argc, char ** argv)
 {
     std::cout << std::fixed;
@@ -1315,6 +1442,9 @@ int main(int argc, char ** argv)
 
     return 0;
 }
+#endif
+
+
 
 // Local Variables:
 // mode: C++
