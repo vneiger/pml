@@ -19,8 +19,8 @@
 //#include "mat_lzz_pX_utils.h"
 //#include "mat_lzz_pX_determinant.h"
 
-//#define PROFILE_DEG_UPMAT
-//#define PROFILE_DEG_UPKER
+#define PROFILE_DEG_UPMAT
+#define PROFILE_DEG_UPKER
 //#define PROFILE_ZLS_AVG
 //#define PROFILE_KER_AVG
 //#define DEBUGGING_NOW
@@ -28,19 +28,22 @@
 //#define TIME_LINSOLVE // via linear system solving with random rhs
 //#define TIME_TRI_DECR // generic determinant on matrix with decreasing diagonal degrees
 #define TIME_TRI_INCR // generic determinant on matrix with increasing diagonal degrees
-//#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
-//#define TIME_DEG_UPKER // going degree by degree, updating kernel basis at each iteration
-#define TIME_ZLS_AVG // ZLS style, but taking average degrees into account
-#define ESTIMATE_WIEDEMANN
+#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
+#define TIME_DEG_UPKER // going degree by degree, updating kernel basis at each iteration
+//#define TIME_ZLS_AVG // ZLS style, but taking average degrees into account
+//#define ESTIMATE_WIEDEMANN
 //#define ESTIMATE_KELLERGEHRIG
 
-//static std::ostream &operator<<(std::ostream &out, const VecLong &s)
-//{
-//    out << "[ ";
-//    for (auto &i: s)
-//        out << i << " ";
-//    return out << "]";
-//}
+#ifdef DEBUGGING_NOW
+    static std::ostream &operator<<(std::ostream &out, const VecLong &s)
+    {
+        out << "[ ";
+        for (auto &i: s)
+            out << i << " ";
+        return out << "]";
+    }
+#endif // DEBUGGING_NOW
+
 
 NTL_CLIENT
 
@@ -731,6 +734,72 @@ bool determinant_shifted_form_zls_1(
     //return determinant_shifted_form_degaware_updateall(det,pmatt,split_sizes,diag_deg,shifted_rdeg,0,3,target_degdet);
 }
 
+// STEP1
+// kernel basis of a degree-1  (ell+2n) x n matrix of the form
+//        [      F_0    ]
+//        [  ---------- ]
+//  F =   [      F_1    ]
+//        [  ---------- ]
+//        [  xI_n + F_2 ]
+// where F_0 is   n x n, constant
+//       F_1 is ell x n, constant
+//       F_2 is   n x n, constant
+// Assumption: ell >= 0, i.e. nrows >= 2 ncols
+// Assumption: F_0 is invertible (not checked)
+// Consequence 1: left nullspace of F mod x has the form
+//   [  K_0  |  I_ell  |  0  ]
+//   [  ----   -------   --- ]
+//   [  K_1  |    0    | I_n ]
+// Consequence 2: 0-Popov left kernel basis of F is
+//   [  K_1 + xI_n  |    0    | -F_0 ]
+//   [  -----------   -------   ---- ]
+//   [  K_0         |  I_ell  |   0  ]
+// Input : (ell+2n) x n constant matrix
+//        [  F_0  ]
+//        [  ---- ]
+//  F =   [  F_1  ]
+//        [  ---- ]
+//        [  F_2  ]
+// Output : (ell+n) x n constant matrix
+//   [ K_1 ]
+//   [ --- ]
+//   [ K_0 ]
+void kernel_step1(Mat<zz_p> & cker, const Mat<zz_p> & cmat)
+{
+#ifdef PROFILE_KERNEL_STEP1
+    double t_total,t_gauss;
+    t_total = GetWallTime();
+#endif
+    // get dimensions, check numrows >= 2 numcols
+    const long n = cmat.NumCols();
+    const long ell = cmat.NumRows() - 2*n;
+    if (ell < 0)
+    {
+        std::cout << "~~ERROR~~ numrows >= 2numcols required in kernel_step1; see docstring" << std::endl;
+        return;
+    }
+
+#ifdef PROFILE_KERNEL_STEP1
+    t_gauss = GetWallTime();
+#endif
+    // perform Gaussian elimination to retrieve kernel basis
+    Mat<zz_p> kermat;
+    kernel(kermat, cmat);
+#ifdef PROFILE_KERNEL_STEP1
+    t_gauss = GetWallTime() - t_gauss;
+#endif
+
+    // copy the left part
+    cker.SetDims(n+ell,n);
+    for (long i = 0; i < n; ++i)
+        VectorCopy(cker[i], kermat[ell+i], n);
+    for (long i = 0; i < ell; ++i)
+        VectorCopy(cker[n+i], kermat[i], n);
+#ifdef PROFILE_KERNEL_STEP1
+    t_total = GetWallTime() - t_total;
+#endif
+}
+
 
 void conv_cdeg_uniquemult(std::vector<long> & unique_cdeg, std::vector<long> & mult_cdeg, const Vec<long> & cdeg)
 {
@@ -870,16 +939,16 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     std::vector<long> mult_cdeg2;
     conv_cdeg_uniquemult(unique_cdeg,mult_cdeg,cdeg);
     conv_cdeg_uniquemult(unique_cdeg2,mult_cdeg2,cdeg2);
-#ifdef DEBUGGING_NOW
+#if true
     std::cout << std::endl;
     std::cout << "sequence of degrees:\t";
-    std::copy(unique_cdeg2.begin(), unique_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
+    std::copy(unique_cdeg.begin(), unique_cdeg.end(), std::ostream_iterator<long>(std::cout, "\t"));
     std::cout << std::endl;
     std::cout << "ncols for each degree:\t";
-    std::copy(mult_cdeg2.begin(), mult_cdeg2.end(), std::ostream_iterator<long>(std::cout, "\t"));
-    std::cout << std::endl << "proportion of total:" << std::endl;
-    for (size_t k = 0; k < mult_cdeg2.size(); ++k)
-        std::cout << mult_cdeg2[k] / (double)dim << "\t";
+    std::copy(mult_cdeg.begin(), mult_cdeg.end(), std::ostream_iterator<long>(std::cout, "\t"));
+    std::cout << std::endl << "proportion of total:";
+    for (size_t k = 0; k < mult_cdeg.size(); ++k)
+        std::cout << "\t" << std::setprecision(3) << 100 * mult_cdeg[k] / (double)dim << std::setprecision(8);
     std::cout << std::endl;
 #endif
 

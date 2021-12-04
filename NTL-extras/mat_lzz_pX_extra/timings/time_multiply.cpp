@@ -189,6 +189,11 @@ void all_checks()
 /*------------------------------------------------------------*/
 void check()
 {
+    zz_p::UserFFTInit(23068673);
+    cout << endl << "20 bit prime " << zz_p::modulus() << endl;
+    cout << "sz\tdeg\ttmul\twak\ttrsf\tgeom\tdens\tdens2\t3prm\tfft" << endl;
+    one_check(64,1024);
+
     // over an FFT prime, FFT always wins
     zz_p::FFTInit(0);
     cout << endl << "60 bit FFT prime" << endl;

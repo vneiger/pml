@@ -4,7 +4,7 @@
 #include "mat_lzz_pX_approximant.h"
 #include "mat_lzz_pX_linsolve.h"
 
-//#define GENERIC_DET_PROFILE
+#define GENERIC_DET_PROFILE
 
 bool verify_determinant(const zz_pX & det, const Mat<zz_pX> & pmat, bool up_to_constant, bool randomized)
 {

@@ -50,7 +50,7 @@ void check(long p, long sz, long sz2, long sz3, long deg)
 
 
     cout << p << " " << sz << " " << sz2 << " " << sz3 << " " << deg << endl;
-    
+
     t_3primes = get_time();
     nb = 0;
     do
@@ -60,7 +60,7 @@ void check(long p, long sz, long sz2, long sz3, long deg)
     }
     while ((get_time()-t_3primes) <= thresh);
     t_3primes = (get_time()-t_3primes) / nb;
-                
+
     t_eval = get_time();
     //nb = 0;
     //do
