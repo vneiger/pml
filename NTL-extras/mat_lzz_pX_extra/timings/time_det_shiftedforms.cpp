@@ -25,7 +25,7 @@
 #define PROFILE_DEG_UPKER
 //#define PROFILE_ZLS_AVG
 //#define PROFILE_KER_AVG
-#define PROFILE_KERNEL_STEP1
+//#define PROFILE_KERNEL_STEP1
 //#define DEBUGGING_NOW
 
 //#define TIME_LINSOLVE // via linear system solving with random rhs
@@ -737,7 +737,7 @@ bool determinant_shifted_form_zls_1(
     //return determinant_shifted_form_degaware_updateall(det,pmatt,split_sizes,diag_deg,shifted_rdeg,0,3,target_degdet);
 }
 
-// STEP1
+// ONE STEP degree 1
 // kernel basis of a degree-1  (ell+2n) x n matrix of the form
 //        [      F_0    ]
 //        [  ---------- ]
@@ -872,13 +872,60 @@ void kernel_step1_direct(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cma
 #endif
 }
 
-
-
-
-
-
-
-
+// ONE STEP in degree 2
+// kernel basis of a degree-1  (ell+2n) x n matrix of the form
+//        [       F_0      ]
+//        [   -----------  ]
+//  F =   [       F_1      ]
+//        [   -----------  ]
+//        [  x^2 I_n + F_2 ]
+// where F_0 is  2n x n, degree <= 1
+//       F_1 is ell x n, degree <= 1
+//       F_2 is   n x n, degree <= 1
+// Assumption: ell >= 0, i.e. nrows >= 3 ncols
+// Assumption: [F_00 | F_01] is invertible (not checked)
+//       where F_00 is the constant coefficient of F_0
+//         and F_01 is the coefficient of degree 1 of F_0
+// Consequence 1: left nullspace of
+//   [ F_00 | F_01 ]
+//   [ ----- ----- ]
+//   [ F_10 | F_11 ]
+//   [ ----- ----- ]
+//   [ F_20 | F_21 ]
+// has the form
+//   [  K_0  |  I_ell  |  0  ]
+//   [  ----   -------   --- ]
+//   [  K_1  |    0    | I_n ]
+// where
+//   [ K_0 ]       [ F_10 | F_11 ]
+//   [ --- ]  =  - [ ----   ---- ] * iF_0
+//   [ K_1 ]       [ F_20 | F_11 ]
+// where iF_0 = inverse([F_00 | F_01])
+// Note: all rows in the top part (involving K_0) are
+//       obviously also in the left kernel of F; in fact
+//       they form the constant part of Ker(F)
+// Consequence 2: one reduced left kernel basis of F is
+//   [  K_1 - x iF_0  |    0    |  I_n ]
+//   [  -------------   -------   ---- ]
+//   [       K_0      |  I_ell  |   0  ]
+// and the Popov left kernel basis of F is
+//   [  F_0 K_1 + x I_n  |    0    |  F_0 ]
+//   [  ---------------    -------   ---- ]
+//   [        K_0        |  I_ell  |   0  ]
+// Input : (ell+2n) x n constant matrix
+//        [  F_0  ]
+//        [  ---- ]
+//  F =   [  F_1  ]
+//        [  ---- ]
+//        [  F_2  ]
+// Output : 
+//   - kertop: n x n constant matrix kertop = F_0 K_1 
+//   - kerbot: ell x n constant matrix kerbot = K_0
+//   - cmat: replaced by only its n top rows F_0
+void kernel_step2(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat)
+{
+    return;
+}
 
 void conv_cdeg_uniquemult(std::vector<long> & unique_cdeg, std::vector<long> & mult_cdeg, const Vec<long> & cdeg)
 {
