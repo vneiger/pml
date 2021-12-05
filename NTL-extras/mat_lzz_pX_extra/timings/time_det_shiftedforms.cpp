@@ -1,4 +1,4 @@
-// timing charpoly of matrix in "shifted forms" [Pernet-Storjohann]
+// timing charpoly of matrix in "shifted forms" [terminology by Pernet-Storjohann]
 #include <NTL/vec_lzz_p.h>
 #include <algorithm>
 #include <functional>
@@ -1070,7 +1070,7 @@ void kernel_step2(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat)
 // -- note that top left dn x dn block has leading matrix
 //                 equal to iF_0, which is invertible
 // and the Popov left kernel basis of F is
-//   [  R + x I_2n  |     0   | -F_0l ]
+//   [  R + x I_dn  |     0   | -F_0l ]
 //   [  -----------   -------   ----- ]
 //   [     K_0      |  I_ell  |   0   ]
 //   where
@@ -1284,96 +1284,168 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
         return true;
     }
 
-//    // above some threshold (or if just one mult_cdeg left),
-//    // just run the usual algo splitting column dimension in two equal parts
-//    if (index >= std::min<long>(threshold,mult_cdeg.size()-1))
-//    {
-//#ifdef PROFILE_SMART_UPMAT
-//        std::cout << "\t-->Entering halving stage" << std::endl;
-//        prefix = '\t';
-//#endif
-//        cdim1 = (dim>>1);  // cdim1 ~ dim/2
-//    }
-//    // otherwise, handle leftmost mult_cdeg[index] columns and recurse with the rest
-//    else cdim1 = mult_cdeg[index];
-//
-//    const long cdim2 = dim-cdim1;
-//
-//    Mat<zz_pX> pmat_l;
-//    Mat<zz_pX> pmat_r;
-//    pmat_l.SetDims(dim,cdim1);
-//    pmat_r.SetDims(dim,cdim2);
-//
-//    for (long i = 0; i < dim; ++i)
-//    {
-//        for (long j = 0; j < cdim1; ++j)
-//            pmat_l[i][j] = pmat[i][j];
-//        for (long j = 0; j < cdim2; ++j)
-//            pmat_r[i][j] = pmat[i][j+cdim1];
-//    }
-//
-//    // compute the kernel via approximant basis at high order
-//    Mat<zz_pX> appbas;
-//    // degree of kernel basis will be (generically)  D = cdim1 * deg(pmat_l) / (dim - cdim1)
-//    // --> compute approximants at order deg(pmat_l) + D + 1
-//    // (cf for example Neiger-Rosenkilde-Solomatov ISSAC 2018, Lemma 4.3)
-//    const long degdet_ker = std::accumulate(diag_deg.begin(), diag_deg.begin()+cdim1, 0);
-//    const long deg_ker = ceil( degdet_ker / (double)(dim-cdim1) );
-//    const long order = *std::max_element(diag_deg.begin(), diag_deg.begin()+cdim1) + deg_ker + 1;
-//
-//    VecLong shift(shifted_rdeg);
-//#ifdef PROFILE_SMART_UPMAT
-//    t = GetWallTime();
-//#endif // PROFILE_SMART_UPMAT
-//    pmbasis(appbas, pmat_l, order, shifted_rdeg);
-//#ifdef PROFILE_SMART_UPMAT
-//    t = GetWallTime()-t;
-//    std::cout << prefix << "\tpmbasis dims x order = " << dim << " x " << cdim1 << " x " << order << " || time " << t << std::endl;
-//#endif // PROFILE_SMART_UPMAT
-//
-//    // minimal left kernel basis of pmat_r : last rows of app
-//    Mat<zz_pX> kerbas;
-//    kerbas.SetDims(cdim2,dim);
-//    for (long i = 0; i < cdim2; ++i)
-//        for (long j = 0; j < dim; ++j)
-//            kerbas[i][j] = appbas[i+cdim1][j];
-//
-//    // update shifted_rdeg
-//    // shifted_rdeg-row degree of kerbas
-//    // = last entries of shift
-//    // = s-row degree of product kerbas*pmat_r (see description of function, for "s")
-//    std::vector<long>(shifted_rdeg.begin()+cdim1, shifted_rdeg.end()).swap(shifted_rdeg);
-//
-//    // update diag_deg (keeping only the end of it)
-//    std::vector<long>(diag_deg.begin()+cdim1, diag_deg.end()).swap(diag_deg);
-//    for (long k = 0; k < cdim2; ++k)
-//        diag_deg[k] += shifted_rdeg[k] - shift[cdim1+k];
-//
-//    //if (dim < 60)
-//    //{
-//    //    std::cout << degree_matrix(pmat_l) << std::endl;
-//    //    std::cout << degree_matrix(kerbas) << std::endl;
-//    //}
-//
-//    // then compute the product
-//    Mat<zz_pX> pmatt;
-//#ifdef PROFILE_SMART_UPMAT
-//    t = GetWallTime();
-//#endif // PROFILE_SMART_UPMAT
-//    multiply(pmatt, kerbas, pmat_r);
-//#ifdef PROFILE_SMART_UPMAT
-//    t = GetWallTime()-t;
-//    std::cout << prefix << "\tmultiply degrees " << deg(kerbas) << "," << deg(pmat_r) << " || time " << t << std::endl;
-//    const long actual_deg_ker = deg(kerbas);
-//    std::cout << prefix << "\tker deg, actual deg: " << deg_ker << "\t" << actual_deg_ker << std::endl;
-//#endif // PROFILE_SMART_UPMAT
-//
-//    return determinant_shifted_form_degaware_updateall(det,pmatt,mult_cdeg,diag_deg,shifted_rdeg,index+1,threshold,target_degdet,prefix);
+    const long d = cdeg[m-1];
+
+    // above some threshold,
+    // run the usual algo splitting column dimension in two equal parts
+    if (d >= threshold) // TODO
+    {
+#ifdef PROFILE_SMART_UPMAT
+        std::cout << "\t-->Entering halving stage" << std::endl;
+        prefix = '\t';
+        t=GetWallTime();
+#endif
+        Mat<zz_pX> pmat;
+        conv_shifted_form(pmat, matp, cdeg);
+#ifdef PROFILE_SMART_UPMAT
+        std::cout << prefix << "\ttot halving --> " << GetWallTime()-t << std::endl;
+#endif // PROFILE_SMART_UPMAT
+        
+        return determinant_generic_knowing_degree(det, pmat, target_degdet);
+    }
+
+    // find number of columns with degree d
+    long block_size = 1;
+    while (block_size < m && cdeg[m-block_size] == d)
+        ++block_size;
+    // ensure kernel requirement: m >= (d+1) * block_size
+    if (m < (d+1)*block_size)
+        block_size = floor(m / (long)(d+1));
+    
+    // copy linearized version of block F of degree d
+    // cmat = [ F_00 | F_01 | .. | F_0l ]  where l=d-1
+    const long dn = d*block_size;
+    Mat<zz_p> cmat;
+    cmat.SetDims(m, dn);
+    for (long k = 0; k < d; ++k)
+        for (long i = 0; i < m; ++i)
+            for (long j = 0; j < block_size; ++j)
+                cmat[i][k*block_size+j] = matp[k][i][j];
+
+    // compute kernel
+    Mat<zz_p> kertop, kerbot;
+    kernel_degree1(kertop, kerbot, cmat, d);
+    // Recall this gives us constant matrices
+    //     kertop = R, dimensions dn x dn 
+    //     kerbot = K_0, dimensions ell x dn
+    //     and now cmat = -F_0l, dimensions dn x n
+    // where ell = m - (d+1)*n,  n = block_size
+    // such that the Popov left kernel of the block F is
+    //   [  R + x I_dn  |     0   | -F_0l ]
+    //   [  -----------   -------   ----- ]
+    //   [     K_0      |  I_ell  |   0   ]
+    // Then left-multiplying matp by this kernel gives
+    //                  [ M_0 + x^{cdeg1+1} I_dn |   M_1 + x^{cdeg2} L   |  0  ]
+    //   ker * matp =   [ ---------------------- | --------------------- | --- ]
+    //                  [          M_2           | M_3 + x^{cdeg2} I_ell |  0  ]
+    // where
+    //            cdeg = cdeg1 + cdeg2 + cdeg3
+    //      with lengths -dn-    -ell-    -n-
+    // and
+    //         cdeg(M_0) < cdeg1+1, cdeg(M_2) < cdeg1+1
+    //         cdeg(M_1) < cdeg2, cdeg(M_3) < cdeg2
+    // and
+    //         L = negate( matp[ :dn, dn:dn+ell ] )
+    // ==> as a result, ignoring the zero columns, this has the shifted form
+    // with the new cdeg = cdeg1+1  +  cdeg2,
+    // UP TO modifying the top rows by removing the L part, which is simply done
+    // by left-multiplication by the constant dn  x (ell+dn)  matrix
+    //       [ I_dn  |  -L  ]
+    // -> incorporating this into the kernel basis directly, we will left-multiply
+    // by the matrix
+    //   [  S + x I_dn  |   -L    | -F_0l ]
+    //   [  -----------   -------   ----- ]
+    //   [     K_0      |  I_ell  |   0   ]
+    // where S = R - L K_0
+
+    // discard columns of block F in matp
+    Mat<zz_p> buf;
+    long ell = m - block_size; // not yet the ell in comments above
+    for (long k = 0; k < d; ++k)
+    {
+        buf.SetDims(m,ell);
+        for (long i = 0; i < m; ++i)
+            VectorCopy(buf[i], matp[k][i], ell);
+        buf.swap(matp[k]);
+    }
+
+    ell = ell - dn; // now ell = m - (d+1)*block_size
+    // compute S = R - L K_0
+    buf.SetDims(dn, ell); // matrix -L
+    for (long j = 0; j < ell; ++j)
+        for (long i = 0; i < dn; ++i)
+            buf[i][j] = -matp[cdeg[dn+j]-1][i][dn+j];
+    mul(buf, buf, kerbot);  // now buf = -L K_0
+    add(kertop, kertop, buf); // now kertop = S
+    // form the row  [  S  |  -L  | -F_0l ] as defined above
+    Mat<zz_p> trans_top;
+    trans_top.SetDims(dn, m);
+    for (long i = 0; i < dn; ++i)
+    {
+        for (long j = 0; j < dn; ++j)
+            trans_top[i][j] = kertop[i][j];
+        for (long j = dn; j < dn+ell; ++j)
+            trans_top[i][j] = buf[i][j-dn];
+        for (long j = dn+ell; j < m; ++j)
+            trans_top[i][j] = cmat[i][j-dn-ell];
+    }
+
+    // left multiply by kernel
+    // update cdeg : discard last n entries ; add 1 to first dn entries
+    VecLong(cdeg.begin(), cdeg.begin()+dn+ell).swap(cdeg);
+    for (long i = 0; i < dn; ++i)
+        cdeg[i] = cdeg[i] + 1;
+    // update matp storage: add one coefficient, will be initialized in first iteration of loop
+    matp.SetLength(cdeg[0]);
+    // going through the coefficient of degree k from old max to d
+    // --> k >= d means we are still strictly within the left part
+    //     (the coefficients have <= dn columns)
+    for (long k = cdeg[0]-2; k >= d; --k)
+    {
+        const long cdim = matp[k].NumCols();
+        // 1. multiply by X I_dn: add first rows to matp[k+1]
+        // careful: matp[k+1] might have too small column dimension!
+        // -- this is in particular the case when k=cdeg[0]-2, since
+        // the new largest degree coeff has not been allocated yet
+        // -- this can be true for other coefficients as well, when we
+        // are in the left part whose degree increased by 1 globally
+        if (k >= d)
+        {
+            if (matp[k+1].NumCols() < cdim)
+                matp[k+1].SetDims(dn+ell,cdim);
+            for (long i = 0; i < dn; ++i)
+                add(matp[k+1][i], matp[k+1][i], matp[k][i]);
+        }
+        else if (k == d-1)
+        {
+            if (matp[k+1].NumCols() < dn)
+                matp[k+1].SetDims(dn+ell,dn);
+            for (long i = 0; i < dn; ++i)
+                for (long j = 0; j < dn; ++j)
+                    add(matp[k+1][i][j], matp[k+1][i][j], matp[k][i][j]);
+        }
+        else // k < d-1
+            for (long i = 0; i < dn; ++i)
+                add(matp[k+1][i], matp[k+1][i], matp[k][i]);
+
+        // 2. multiply by constant kernel    [ K_0 | I_ell | 0 ]
+        // and store in buf
+        buf.SetDims(dn, cdim);
+        for (long i = 0; i < dn; ++i)
+            VectorCopy(buf[i], matp[k][i], cdim);
+        mul(buf, kerbot, buf);
+        for (long i = 0; i < ell; ++i)
+            add(buf[i], buf[i], matp[k][i+dn]);
+        // 3. multiply by degree1 kernel   trans_top = [  S | -L | -F_0l ]
+        // and store in matp[k]
+        mul(matp[k], trans_top, matp[k]);
+        // 4. stack rows of buf below this product
+        matp[k].SetDims(dn+ell,cdim);
+        for (long i = dn; i < dn+ell; ++i)
+            matp[k][i].swap(buf[i-dn]);
+    }
+    return true;
 }
-
-
-
-
 
 
 void conv_cdeg_uniquemult(std::vector<long> & unique_cdeg, std::vector<long> & mult_cdeg, const Vec<long> & cdeg)
@@ -1643,7 +1715,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 #endif
 
 #ifdef TIME_SMART_UPMAT
-    for (long thres=3; thres < 4; ++thres)
+    for (long thres=0; thres < 1; ++thres)
     { // shifted form specific, degree-aware, update matrix, smart kernel
         t=0.0; nb_iter=0;
         bool ok = true;
