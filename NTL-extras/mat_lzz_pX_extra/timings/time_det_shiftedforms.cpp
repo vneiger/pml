@@ -28,7 +28,7 @@
 //#define PROFILE_KERNEL_STEP1
 //#define PROFILE_KERNEL_STEP2
 #define PROFILE_KERNEL_DEGREE1
-#define DEBUGGING_NOW
+//#define DEBUGGING_NOW
 
 //#define TIME_LINSOLVE // via linear system solving with random rhs
 //#define TIME_TRI_DECR // generic determinant on matrix with decreasing diagonal degrees
@@ -1116,7 +1116,6 @@ void kernel_degree1(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat, lo
     mul(kerbot, kerbot, imat); // kerbot = K_0
 #ifdef PROFILE_KERNEL_DEGREE1
     t_kernel = GetWallTime() - t_kernel;
-    t_mul = GetWallTime();
 #endif
     kertop.SetDims(d*n,d*n); // augment with iF_0b
     for (long i = 0; i < n; ++i)
@@ -1130,6 +1129,9 @@ void kernel_degree1(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat, lo
         kertop[i].swap(imat[n+i]);
         NTL::negate(kertop[i], kertop[i]);
     }
+#ifdef PROFILE_KERNEL_DEGREE1
+    t_mul = GetWallTime();
+#endif
     mul(kertop, cmat, kertop);
 #ifdef PROFILE_KERNEL_DEGREE1
     t_mul = GetWallTime() - t_mul;
@@ -1697,76 +1699,80 @@ int main(int argc, char ** argv)
     const long m = atoi(argv[1]);
     const long n = atoi(argv[2]);
     const long d = atoi(argv[3]);
-    //long p = NTL::GenPrime_long(atoi(argv[4]));
-    long p = 594397;
+    long p = NTL::GenPrime_long(atoi(argv[4]));
     zz_p::init(p);
+#ifdef DEBUGGING_NOW
     std::cout << "PRIME " << p << std::endl;
+#endif // DEBUGGING_NOW
 
     Vec<Mat<zz_p>> cmats;
     cmats.SetLength(d);
     for (long i = 0; i < d; ++i)
-        //random(cmats[i],m,n);
-        cmats[i].SetDims(m,n);
-    cmats[0][0][0] = 540635 ;
-    cmats[0][1][0] = 393278 ;
-    cmats[0][2][0] = 25615  ;
-    cmats[0][3][0] = 361430 ;
-    cmats[0][4][0] = 426228 ;
-    cmats[0][5][0] = 533219 ;
-    cmats[0][6][0] = 12266  ;
-    cmats[0][7][0] = 182116 ;
-    cmats[0][8][0] = 355140 ;
-    cmats[0][9][0] = 506910 ;
-    cmats[0][0][1] = 185850;
-    cmats[0][1][1] = 319804;
-    cmats[0][2][1] = 456968;
-    cmats[0][3][1] = 538120;
-    cmats[0][4][1] = 471472;
-    cmats[0][5][1] = 353017;
-    cmats[0][6][1] = 585546;
-    cmats[0][7][1] = 499752;
-    cmats[0][8][1] = 482345;
-    cmats[0][9][1] = 57564 ;
-    cmats[0][0][2] = 184671;
-    cmats[0][1][2] = 83659 ;
-    cmats[0][2][2] = 12273 ;
-    cmats[0][3][2] = 466317;
-    cmats[0][4][2] = 233868;
-    cmats[0][5][2] = 247343;
-    cmats[0][6][2] = 403402;
-    cmats[0][7][2] = 52394 ;
-    cmats[0][8][2] = 552391;
-    cmats[0][9][2] = 7779  ;
-    cmats[1][0][0] = 353628 ;
-    cmats[1][1][0] = 410695 ;
-    cmats[1][2][0] = 334048 ;
-    cmats[1][3][0] = 251812 ;
-    cmats[1][4][0] = 461843 ;
-    cmats[1][5][0] = 248587 ;
-    cmats[1][6][0] = 125230 ;
-    cmats[1][7][0] = 120852 ;
-    cmats[1][8][0] = 363768 ;
-    cmats[1][9][0] = 579117 ;
-    cmats[1][0][1] = 178165;
-    cmats[1][1][1] = 500174;
-    cmats[1][2][1] = 342199;
-    cmats[1][3][1] = 416403;
-    cmats[1][4][1] = 437184;
-    cmats[1][5][1] = 301989;
-    cmats[1][6][1] = 547901;
-    cmats[1][7][1] = 313877;
-    cmats[1][8][1] = 173123;
-    cmats[1][9][1] = 305000;
-    cmats[1][0][2] = 22627;
-    cmats[1][1][2] = 106362;
-    cmats[1][2][2] = 126392;
-    cmats[1][3][2] = 493266;
-    cmats[1][4][2] = 541673;
-    cmats[1][5][2] = 273329;
-    cmats[1][6][2] = 5298;
-    cmats[1][7][2] = 96693;
-    cmats[1][8][2] = 116158;
-    cmats[1][9][2] = 389773;
+        random(cmats[i],m,n);
+    // // concrete example in degree 2:
+    // // here: long p = 594397;
+    //for (long i = 0; i < 2; ++i)
+    //    cmats[i].SetDims(m,n);
+    //cmats[0][0][0] = 540635 ;
+    //cmats[0][1][0] = 393278 ;
+    //cmats[0][2][0] = 25615  ;
+    //cmats[0][3][0] = 361430 ;
+    //cmats[0][4][0] = 426228 ;
+    //cmats[0][5][0] = 533219 ;
+    //cmats[0][6][0] = 12266  ;
+    //cmats[0][7][0] = 182116 ;
+    //cmats[0][8][0] = 355140 ;
+    //cmats[0][9][0] = 506910 ;
+    //cmats[0][0][1] = 185850;
+    //cmats[0][1][1] = 319804;
+    //cmats[0][2][1] = 456968;
+    //cmats[0][3][1] = 538120;
+    //cmats[0][4][1] = 471472;
+    //cmats[0][5][1] = 353017;
+    //cmats[0][6][1] = 585546;
+    //cmats[0][7][1] = 499752;
+    //cmats[0][8][1] = 482345;
+    //cmats[0][9][1] = 57564 ;
+    //cmats[0][0][2] = 184671;
+    //cmats[0][1][2] = 83659 ;
+    //cmats[0][2][2] = 12273 ;
+    //cmats[0][3][2] = 466317;
+    //cmats[0][4][2] = 233868;
+    //cmats[0][5][2] = 247343;
+    //cmats[0][6][2] = 403402;
+    //cmats[0][7][2] = 52394 ;
+    //cmats[0][8][2] = 552391;
+    //cmats[0][9][2] = 7779  ;
+    //cmats[1][0][0] = 353628 ;
+    //cmats[1][1][0] = 410695 ;
+    //cmats[1][2][0] = 334048 ;
+    //cmats[1][3][0] = 251812 ;
+    //cmats[1][4][0] = 461843 ;
+    //cmats[1][5][0] = 248587 ;
+    //cmats[1][6][0] = 125230 ;
+    //cmats[1][7][0] = 120852 ;
+    //cmats[1][8][0] = 363768 ;
+    //cmats[1][9][0] = 579117 ;
+    //cmats[1][0][1] = 178165;
+    //cmats[1][1][1] = 500174;
+    //cmats[1][2][1] = 342199;
+    //cmats[1][3][1] = 416403;
+    //cmats[1][4][1] = 437184;
+    //cmats[1][5][1] = 301989;
+    //cmats[1][6][1] = 547901;
+    //cmats[1][7][1] = 313877;
+    //cmats[1][8][1] = 173123;
+    //cmats[1][9][1] = 305000;
+    //cmats[1][0][2] = 22627;
+    //cmats[1][1][2] = 106362;
+    //cmats[1][2][2] = 126392;
+    //cmats[1][3][2] = 493266;
+    //cmats[1][4][2] = 541673;
+    //cmats[1][5][2] = 273329;
+    //cmats[1][6][2] = 5298;
+    //cmats[1][7][2] = 96693;
+    //cmats[1][8][2] = 116158;
+    //cmats[1][9][2] = 389773;
  
 #ifdef DEBUGGING_NOW
     std::cout << cmats << std::endl;
@@ -1812,7 +1818,7 @@ int main(int argc, char ** argv)
         Mat<zz_p> cmat1 = cmats[0];
         t = GetWallTime();
         Mat<zz_p> ckertop1,ckerbot1;
-        kernel_step1(ckertop1, ckerbot1, cmat1);
+        kernel_step1_direct(ckertop1, ckerbot1, cmat1);
         t = GetWallTime() - t;
         std::cout << "Smart kernel(1):\t" << t << std::endl;
 #ifdef DEBUGGING_NOW
@@ -1845,6 +1851,7 @@ int main(int argc, char ** argv)
 
     return 0;
 }
+
 #else
 int main(int argc, char ** argv)
 {
