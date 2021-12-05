@@ -26,14 +26,15 @@
 //#define PROFILE_ZLS_AVG
 //#define PROFILE_KER_AVG
 //#define PROFILE_KERNEL_STEP1
-#define PROFILE_KERNEL_STEP2
-//#define DEBUGGING_NOW
+//#define PROFILE_KERNEL_STEP2
+#define PROFILE_KERNEL_DEGREE1
+#define DEBUGGING_NOW
 
 //#define TIME_LINSOLVE // via linear system solving with random rhs
 //#define TIME_TRI_DECR // generic determinant on matrix with decreasing diagonal degrees
 //#define TIME_TRI_INCR // generic determinant on matrix with increasing diagonal degrees
-#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
-#define TIME_DEG_UPKER // going degree by degree, updating kernel basis at each iteration
+//#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
+//#define TIME_DEG_UPKER // going degree by degree, updating kernel basis at each iteration
 //#define TIME_ZLS_AVG // ZLS style, but taking average degrees into account
 //#define ESTIMATE_WIEDEMANN
 //#define ESTIMATE_KELLERGEHRIG
@@ -740,7 +741,7 @@ bool determinant_shifted_form_zls_1(
 
 // ONE STEP degree 1
 // kernel basis of a degree-1  (ell+2n) x n matrix of the form
-//        [     -F_0    ]
+//        [      F_0    ]
 //        [  ---------- ]
 //  F =   [      F_1    ]
 //        [  ---------- ]
@@ -875,8 +876,8 @@ void kernel_step1_direct(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cma
 }
 
 // ONE STEP in degree 2
-// kernel basis of a degree-1  (ell+2n) x n matrix of the form
-//        [      -F_0      ]
+// kernel basis of a degree 2  (ell+3n) x n matrix of the form
+//        [       F_0      ]
 //        [   -----------  ]
 //  F =   [       F_1      ]
 //        [   -----------  ]
@@ -889,11 +890,11 @@ void kernel_step1_direct(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cma
 //       where F_00 is the constant coefficient of F_0
 //         and F_01 is the coefficient of degree 1 of F_0
 // Consequence 1: left nullspace of
-//   [ -F_00 | -F_01 ]
-//   [ -----   ----- ]
-//   [  F_10 |  F_11 ]
-//   [ -----   ----- ]
-//   [  F_20 |  F_21 ]
+//   [ F_00 | F_01 ]
+//   [ -----  ---- ]
+//   [ F_10 | F_11 ]
+//   [ -----  ---- ]
+//   [ F_20 | F_21 ]
 // has the form
 //   [  K_0  |  I_ell  |  0  ]
 //   [  ----   -------   --- ]
@@ -907,20 +908,21 @@ void kernel_step1_direct(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cma
 //       obviously also in the left kernel of F; in fact
 //       they form the constant part of Ker(F)
 // Note: we have the property that
-//                     [  I_n  ]
-//     iF_0 * F_0  = - [ ----- ]
-//                     [ x I_n ]
-//     which gives trivial syzygies [ x I_n | -I_n ]
+//                       [  I_n  ]
+//      iF_0 * F_0  =  - [ ----- ]
+//                       [ x I_n ]
+//   which gives trivial syzygies E = [ x I_n | -I_n ]
 // Consequence 2: one reduced left kernel basis of F is
 //   [  -iF_0b + x iF_0t |    0    |   0  ]
 //   [  ---------------    -------   ---- ]
-//   [   K_1 - x iF_0b   |    0    |  I_n ]
+//   [   K_1 + x iF_0b   |    0    |  I_n ]
 //   [  --------------     -------   ---- ]
 //   [        K_0        |  I_ell  |   0  ]
 // where iF_0b and iF_0t are bottom and top of iF_0
-// (note that it is also in HNF up to row permutation)
-// (note that top left 2n x 2n block has leading matrix
-//    equal to iF_0, which is invertible)
+//   -- note that E iF_0 = -iF_0b + x iF_0t
+//   -- note that this matrix is also in HNF up to row permutation
+//   -- note that top left 2n x 2n block has leading matrix
+//      equal to iF_0, which is invertible
 // and the Popov left kernel basis of F is
 //   [  R + x I_2n  |     0   | -F_01 ]
 //   [  -----------   -------   ----- ]
@@ -938,7 +940,7 @@ void kernel_step1_direct(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cma
 // Output : 
 //   - kertop: 2n x 2n constant matrix (R above)
 //   - kerbot: ell x n constant matrix kerbot (K_0 above)
-//   - cmat: replaced by only its n top rows F_0 // TODO
+//   - cmat: replaced by only the degree 1 part of its n top rows (-F_01 above)
 void kernel_step2(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat)
 {
 #ifdef PROFILE_KERNEL_STEP2
@@ -978,10 +980,11 @@ void kernel_step2(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat)
     kertop.SetDims(2*n,2*n);
     for (long i = 0; i < n; ++i)
     {
-        // row n+i of K1 <- row i of K1
+        // row n+i <- row i of K1
         kertop[i].swap(kertop[n+i]);
-        // row i of K1 <- row i of iF_0b = row n+i of iF_0
+        // row i <- - row i of iF_0b = - row n+i of iF_0
         kertop[i].swap(imat[n+i]);
+        NTL::negate(kertop[i],kertop[i]);
     }
     mul(kertop, cmat, kertop);
 #ifdef PROFILE_KERNEL_STEP2
@@ -1002,6 +1005,151 @@ void kernel_step2(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat)
     std::cout << "\tMatMul time:\t" << t_mul << std::endl;
 #endif
 }
+
+// Compute kernel basis of degree 1:
+// kernel basis of a degree d  (ell+(d+1)n) x n matrix of the form
+//        [       F_0      ]
+//        [   -----------  ]
+//  F =   [       F_1      ]
+//        [   -----------  ]
+//        [  x^d I_n + F_2 ]
+// where F_0 is  dn x n, degree < d
+//       F_1 is ell x n, degree < d
+//       F_2 is   n x n, degree < d
+// Assumption: ell >= 0, i.e. nrows >= (d+1) ncols
+// Assumption: [F_00 | F_01 | .. | F_0l] is invertible (not checked)
+//       where F_0k is the coefficient of degree k of F_0
+//       where F_0l is the leading coefficient (coeff of degree d-1) of F_0
+// Consequence 1: left nullspace of
+//   [ F_00 | F_01 | ... | F_0l ]
+//   [ ----   ----   ---   ---- ]
+//   [ F_10 | F_11 | ... | F_1l ]
+//   [ ----   ----   ---   ---- ]
+//   [ F_20 | F_21 | ... | F_2l ]
+// has the form
+//   [  K_0  |  I_ell  |  0  ]
+//   [  ----   -------   --- ]
+//   [  K_1  |    0    | I_n ]
+// where
+//   [ K_0 ]      [  F_10 |  F_11 |  ...  |  F_1l ] 
+//   [ --- ]  =   [ -----   -----   -----   ----- ] * iF_0
+//   [ K_1 ]      [  F_20 |  F_21 |  ...  |  F_2l ] 
+// where iF_0 = inverse([-F_00 | -F_01 | ... | -F_0l])
+// Note: all rows in the top part (involving K_0) are
+//       obviously also in the left kernel of F; in fact
+//       they form the constant part of Ker(F)
+// Note: we have the property that
+//                     [     I_n     ]
+//                     [  ---------  ]
+//                     [    x I_n    ]
+//   iF_0 * F_0 =  -   [  ---------  ]
+//                     [      :      ]
+//                     [  ---------  ]
+//                     [ x^(d-1) I_n ]
+//   which gives (d-1)*n trivial syzygies, via the (d-1)n x dn matrix
+//          [ x I_n |  -I_n |      |     |       |      ]
+//          [       | x I_n | -I_n |     |       |      ]
+//    E =   [       |       |  ... | ... |       |      ]
+//          [       |       |      | ... |  ...  |      ]
+//          [       |       |      |     | x I_n | -I_n ]
+// Consequence 2: one reduced left kernel basis of F is
+//   [      E iF_0       |    0    |   0  ]
+//   [  ---------------    -------   ---- ]
+//   [  K_1 + x iF_0bb   |    0    |  I_n ]
+//   [  --------------     -------   ---- ]
+//   [        K_0        |  I_ell  |   0  ]
+// where iF_0bb is the bottom n x dn part of iF_0
+// -- note that this matrix is also in HNF up to row permutation
+// -- note that top left dn x dn block has leading matrix
+//                 equal to iF_0, which is invertible
+// and the Popov left kernel basis of F is
+//   [  R + x I_2n  |     0   | -F_0l ]
+//   [  -----------   -------   ----- ]
+//   [     K_0      |  I_ell  |   0   ]
+//   where
+//                                         [ E(0) iF_0b ]
+//      R = [ -F_00 | -F_01 | .. | -F_0l ] [  --------  ]
+//                                         [     K_1    ]
+//   where
+//       iF_0b = (d-1)n x dn bottom part of iF_0 (everything except n first rows)
+// Input : degree d and  (ell+(d+1)n) x dn constant matrix
+//           [ F_00 | F_01 | ... | F_0l ]
+//           [ ----   ----   ---   ---- ]
+//   cmat =  [ F_10 | F_11 | ... | F_1l ]       (where l = d-1)
+//           [ ----   ----   ---   ---- ]
+//           [ F_20 | F_21 | ... | F_2l ]
+// Output/Side-effect :
+//   - kertop: dn x dn constant matrix (R above)
+//   - kerbot: ell x n constant matrix kerbot (K_0 above)
+//   - cmat: replaced by only the degree d-1 part of its n top rows (-F_0l above)
+void kernel_degree1(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat, long d)
+{
+#ifdef PROFILE_KERNEL_DEGREE1
+    double t_total,t_kernel,t_mul;
+    t_total = GetWallTime();
+#endif
+    // get dimensions, check numrows >= (degree+1) * numcols
+    const long n = cmat.NumCols()/d;
+    const long ell = cmat.NumRows() - (d+1)*n;
+    if (ell < 0)
+    {
+        std::cout << "~~ERROR~~ numrows >= (degree+1)*numcols required in kernel_stepd; see docstring" << std::endl;
+        return;
+    }
+
+#ifdef PROFILE_KERNEL_DEGREE1
+    t_kernel = GetWallTime();
+#endif
+    // retrieve kernel basis by direct computation
+    kertop.SetDims(n,d*n);
+    for (long i = 0; i < n; ++i)
+        kertop[i].swap(cmat[ell+d*n+i]);
+    kerbot.SetDims(ell,d*n);
+    for (long i = 0; i < ell; ++i)
+        kerbot[i].swap(cmat[d*n+i]);
+
+    cmat.SetDims(d*n,d*n); // forget bottom rows, already copied
+    NTL::negate(cmat,cmat);
+    Mat<zz_p> imat;
+    inv(imat,cmat); // imat == iF_0
+    mul(kertop, kertop, imat); // kertop = K_1
+    mul(kerbot, kerbot, imat); // kerbot = K_0
+#ifdef PROFILE_KERNEL_DEGREE1
+    t_kernel = GetWallTime() - t_kernel;
+    t_mul = GetWallTime();
+#endif
+    kertop.SetDims(d*n,d*n); // augment with iF_0b
+    for (long i = 0; i < n; ++i)
+    {
+        // row (d-1)*n+i <- row i of K1
+        kertop[i].swap(kertop[(d-1)*n+i]); 
+    }
+    for (long i = 0; i < (d-1)*n; ++i)
+    {
+        // row i <- -row i of iF_0b = -row n+i of iF_0
+        kertop[i].swap(imat[n+i]);
+        NTL::negate(kertop[i], kertop[i]);
+    }
+    mul(kertop, cmat, kertop);
+#ifdef PROFILE_KERNEL_DEGREE1
+    t_mul = GetWallTime() - t_mul;
+#endif
+    // remove left columns of cmat to keep only -F_01
+    Mat<zz_p> tmp;
+    tmp.SetDims(d*n,n);
+    for (long i = 0; i < d*n; ++i)
+        for (long j = 0; j < n; ++j)
+            tmp[i][j] = cmat[i][(d-1)*n+j];
+    cmat.swap(tmp);
+#ifdef PROFILE_KERNEL_DEGREE1
+    t_total = GetWallTime() - t_total;
+    std::cout << "\tKernel-degree1 profile:" << std::endl;
+    std::cout << "\ttotal time:\t" << t_total << std::endl;
+    std::cout << "\tKernel time:\t" << t_kernel << std::endl;
+    std::cout << "\tMatMul time:\t" << t_mul << std::endl;
+#endif
+}
+
 
 void conv_cdeg_uniquemult(std::vector<long> & unique_cdeg, std::vector<long> & mult_cdeg, const Vec<long> & cdeg)
 {
@@ -1222,7 +1370,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 #endif
 
 #ifdef TIME_DEG_UPMAT
-    for (long thres=1; thres < 8; ++thres)
+    for (long thres=3; thres < 4; ++thres)
     { // shifted form specific, degree-aware, update matrix
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -1246,7 +1394,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 #endif
 
 #ifdef TIME_DEG_UPKER
-    for (long thres=1; thres < 8; ++thres)
+    for (long thres=3; thres < 4; ++thres)
     { // shifted form specific, degree-aware, update one
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -1489,6 +1637,7 @@ int main(int argc, char ** argv)
 
     return 0;
 }
+
 #elif defined PROFILE_KERNEL_STEP2
 // to compare variants for kernel step2
 int main(int argc, char ** argv)
@@ -1534,6 +1683,165 @@ int main(int argc, char ** argv)
     std::cout << "Smart kernel:\t" << t << std::endl;
     //std::cout << ckertop << std::endl<< std::endl << std::endl;
     //std::cout << ckerbot << std::endl<< std::endl<< std::endl;
+
+    return 0;
+}
+
+#elif defined PROFILE_KERNEL_DEGREE1
+// to compare variants for kernel degree1
+int main(int argc, char ** argv)
+{
+    std::cout << std::fixed;
+    std::cout << std::setprecision(8);
+
+    const long m = atoi(argv[1]);
+    const long n = atoi(argv[2]);
+    const long d = atoi(argv[3]);
+    //long p = NTL::GenPrime_long(atoi(argv[4]));
+    long p = 594397;
+    zz_p::init(p);
+    std::cout << "PRIME " << p << std::endl;
+
+    Vec<Mat<zz_p>> cmats;
+    cmats.SetLength(d);
+    for (long i = 0; i < d; ++i)
+        //random(cmats[i],m,n);
+        cmats[i].SetDims(m,n);
+    cmats[0][0][0] = 540635 ;
+    cmats[0][1][0] = 393278 ;
+    cmats[0][2][0] = 25615  ;
+    cmats[0][3][0] = 361430 ;
+    cmats[0][4][0] = 426228 ;
+    cmats[0][5][0] = 533219 ;
+    cmats[0][6][0] = 12266  ;
+    cmats[0][7][0] = 182116 ;
+    cmats[0][8][0] = 355140 ;
+    cmats[0][9][0] = 506910 ;
+    cmats[0][0][1] = 185850;
+    cmats[0][1][1] = 319804;
+    cmats[0][2][1] = 456968;
+    cmats[0][3][1] = 538120;
+    cmats[0][4][1] = 471472;
+    cmats[0][5][1] = 353017;
+    cmats[0][6][1] = 585546;
+    cmats[0][7][1] = 499752;
+    cmats[0][8][1] = 482345;
+    cmats[0][9][1] = 57564 ;
+    cmats[0][0][2] = 184671;
+    cmats[0][1][2] = 83659 ;
+    cmats[0][2][2] = 12273 ;
+    cmats[0][3][2] = 466317;
+    cmats[0][4][2] = 233868;
+    cmats[0][5][2] = 247343;
+    cmats[0][6][2] = 403402;
+    cmats[0][7][2] = 52394 ;
+    cmats[0][8][2] = 552391;
+    cmats[0][9][2] = 7779  ;
+    cmats[1][0][0] = 353628 ;
+    cmats[1][1][0] = 410695 ;
+    cmats[1][2][0] = 334048 ;
+    cmats[1][3][0] = 251812 ;
+    cmats[1][4][0] = 461843 ;
+    cmats[1][5][0] = 248587 ;
+    cmats[1][6][0] = 125230 ;
+    cmats[1][7][0] = 120852 ;
+    cmats[1][8][0] = 363768 ;
+    cmats[1][9][0] = 579117 ;
+    cmats[1][0][1] = 178165;
+    cmats[1][1][1] = 500174;
+    cmats[1][2][1] = 342199;
+    cmats[1][3][1] = 416403;
+    cmats[1][4][1] = 437184;
+    cmats[1][5][1] = 301989;
+    cmats[1][6][1] = 547901;
+    cmats[1][7][1] = 313877;
+    cmats[1][8][1] = 173123;
+    cmats[1][9][1] = 305000;
+    cmats[1][0][2] = 22627;
+    cmats[1][1][2] = 106362;
+    cmats[1][2][2] = 126392;
+    cmats[1][3][2] = 493266;
+    cmats[1][4][2] = 541673;
+    cmats[1][5][2] = 273329;
+    cmats[1][6][2] = 5298;
+    cmats[1][7][2] = 96693;
+    cmats[1][8][2] = 116158;
+    cmats[1][9][2] = 389773;
+ 
+#ifdef DEBUGGING_NOW
+    std::cout << cmats << std::endl;
+#endif // DEBUGGING_NOW
+
+    Mat<zz_pX> pmat;
+    pmat.SetDims(m,n);
+    for (long k = 0; k < d; ++k)
+        SetCoeff(pmat, k, cmats[k]);
+    for (long i = 0; i < n; ++i)
+        SetCoeff(pmat[m-n+i][i],3);
+    //std::cout << pmat << std::endl;
+
+    double t = GetWallTime();
+    Mat<zz_pX> kerbas;
+    VecLong shift(m);
+    pmbasis(kerbas, pmat, 2*d, shift);
+    t = GetWallTime() - t;
+    std::cout << "Via approx:\t" << t << std::endl;
+
+    // general degree d smart kernel
+    Mat<zz_p> cmat;
+    cmat.SetDims(m,d*n);
+    for (long i = 0; i < m; ++i)
+        for (long k = 0; k < d; ++k)
+            for (long j = 0; j < n; ++j)
+                cmat[i][k*n+j] = cmats[k][i][j];
+
+    t = GetWallTime();
+    Mat<zz_p> ckertop,ckerbot;
+    kernel_degree1(ckertop, ckerbot, cmat, d);
+    t = GetWallTime() - t;
+    std::cout << "Smart kernel:\t" << t << std::endl;
+#ifdef DEBUGGING_NOW
+    std::cout << ckertop << std::endl<< std::endl << std::endl;
+    std::cout << ckerbot << std::endl<< std::endl<< std::endl;
+    std::cout << cmat << std::endl<< std::endl<< std::endl;
+#endif // DEBUGGING_NOW
+
+    // degree 1 smart kernel
+    if (d>=1)
+    {
+        Mat<zz_p> cmat1 = cmats[0];
+        t = GetWallTime();
+        Mat<zz_p> ckertop1,ckerbot1;
+        kernel_step1(ckertop1, ckerbot1, cmat1);
+        t = GetWallTime() - t;
+        std::cout << "Smart kernel(1):\t" << t << std::endl;
+#ifdef DEBUGGING_NOW
+        std::cout << ckertop1 << std::endl<< std::endl << std::endl;
+        std::cout << ckerbot1 << std::endl<< std::endl<< std::endl;
+        std::cout << cmat1 << std::endl<< std::endl<< std::endl;
+#endif // DEBUGGING_NOW
+    }
+
+    // degree 2 smart kernel
+    if (d>=2)
+    {
+        Mat<zz_p> cmat2;
+        cmat2.SetDims(m,2*n);
+        for (long i = 0; i < m; ++i)
+            for (long k = 0; k < 2; ++k)
+                for (long j = 0; j < n; ++j)
+                    cmat2[i][k*n+j] = cmats[k][i][j];
+        t = GetWallTime();
+        Mat<zz_p> ckertop2,ckerbot2;
+        kernel_step2(ckertop2, ckerbot2, cmat2);
+        t = GetWallTime() - t;
+        std::cout << "Smart kernel(2):\t" << t << std::endl;
+#ifdef DEBUGGING_NOW
+        std::cout << ckertop2 << std::endl<< std::endl << std::endl;
+        std::cout << ckerbot2 << std::endl<< std::endl<< std::endl;
+        std::cout << cmat2 << std::endl<< std::endl<< std::endl;
+#endif // DEBUGGING_NOW
+    }
 
     return 0;
 }
