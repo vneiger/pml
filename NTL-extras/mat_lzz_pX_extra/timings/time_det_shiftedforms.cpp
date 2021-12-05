@@ -20,14 +20,18 @@
 //#include "mat_lzz_pX_forms.h"
 //#include "mat_lzz_pX_utils.h"
 //#include "mat_lzz_pX_determinant.h"
+#define CACHE_FRIENDLY_SIZE 32
+#define MATRIX_BLOCK_SIZE 8
 
 #define PROFILE_DEG_UPMAT
 #define PROFILE_DEG_UPKER
+#define PROFILE_SMART_UPMAT
+//#define PROFILE_SMART_UPKER
 //#define PROFILE_ZLS_AVG
 //#define PROFILE_KER_AVG
 //#define PROFILE_KERNEL_STEP1
 //#define PROFILE_KERNEL_STEP2
-#define PROFILE_KERNEL_DEGREE1
+//#define PROFILE_KERNEL_DEGREE1
 //#define DEBUGGING_NOW
 
 //#define TIME_LINSOLVE // via linear system solving with random rhs
@@ -35,6 +39,8 @@
 //#define TIME_TRI_INCR // generic determinant on matrix with increasing diagonal degrees
 //#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
 //#define TIME_DEG_UPKER // going degree by degree, updating kernel basis at each iteration
+#define TIME_SMART_UPMAT // going degree by degree, UPMAT, smart kernel computation
+//#define TIME_SMART_UPKER // going degree by degree, UPKER, smart kernel computation
 //#define TIME_ZLS_AVG // ZLS style, but taking average degrees into account
 //#define ESTIMATE_WIEDEMANN
 //#define ESTIMATE_KELLERGEHRIG
@@ -876,6 +882,7 @@ void kernel_step1_direct(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cma
 }
 
 // ONE STEP in degree 2
+// ---> redundant with below, degree d
 // kernel basis of a degree 2  (ell+3n) x n matrix of the form
 //        [       F_0      ]
 //        [   -----------  ]
@@ -1152,6 +1159,222 @@ void kernel_degree1(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat, lo
 #endif
 }
 
+// Convert a matrix polynomial stored as below in determinant_shifted_form_smartkernel_updateall
+// towards a polynomial matrix
+// Actually this supports the rectangular m x n case with n < m; then the x id part is at the bottom
+void conv_shifted_form(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp, const VecLong & cdeg)
+{
+    const long len = matp.length();
+    const long n = cdeg.size();
+    if (len == 0)
+    {
+        // convention: matp is the n x n identity matrix
+        // (number of rows is a bit undefined...
+        std::cout << "WARNING: conv_shifted_form with zero length matp" << std::endl;
+        ident(pmat, n);
+        return;
+    }
+
+    const long m = matp[0].NumRows();
+    if (m<n)
+    {
+        std::cout << "~~ERROR~~ conv_shifted_form requires m >= n" << std::endl;
+        return;
+    }
+
+    pmat.SetDims(m,n);
+
+    for (long i = 0; i < m; ++i)
+    {
+        for (long j = 0; j < n; j+=CACHE_FRIENDLY_SIZE)
+        {
+            const long j_bound = std::min((long)CACHE_FRIENDLY_SIZE, n-j);
+            // initialize vectors
+            for (long jj = 0; jj < j_bound; ++jj)
+                pmat[i][j+jj].SetLength(cdeg[j+jj]);
+
+            // fill data (columns j to j+CACHE_FRIENDLY_SIZE-1
+            // note: cdeg must be nonincreasing!
+            for (long k = 0; k < cdeg[j]; k+=MATRIX_BLOCK_SIZE)
+            {
+                for (long jj = 0; jj < j_bound; ++jj)
+                {
+                    const long k_bound = std::min((long)MATRIX_BLOCK_SIZE, cdeg[j+jj]-k);
+                    for (long kk = 0; kk < k_bound; ++kk)
+                        pmat[i][j+jj][k+kk] = matp[k+kk][i][j+jj];
+                }
+            }
+
+            // strip away leading zeroes
+            for (long jj = 0; jj < j_bound; ++jj)
+                pmat[i][j+jj].normalize();
+        }
+    }
+
+    // add x^cdeg Id
+    for (long j = m-n; j < n; ++j)
+        SetCoeff(pmat[m-n+j][j],cdeg[j]);
+
+    return;
+}
+
+
+// det: output determinant
+// matp: input square m x m matrix
+// cdeg: column degrees of the input matp (len(cdeg) = m), assumed nondecreasing
+// threshold: when "??? TODO", switch to a classical determinant algorithm
+//      where d is the smallest entry (i.e. last entry)
+// target_degdet: degree of determinant of matp, used for certification
+// REQUIREMENTS:
+//   -- matp is in "shiftedform": matp = X^{cdeg} Id + R, where cdeg(R) < cdeg
+//   -- cdeg is nonincreasing   (cdeg[j+1] <= cdeg[j])
+//   -- storage: matp is a list of coefficient matrices; matp[i] has dimensions m x n_i
+//      where n_i is the largest integer j such that cdeg[j] >= i
+//      NOTE: the X^cdeg Id part is not stored
+//   -- target_degdet: must be equal to deg(det(matp)), otherwise the
+//   behaviour of certification is not guaranteed
+// GUARANTEES IN OUTPUT:
+//   -- det = det(matp)
+//   -- if target_degdet in input, then the return value is true iff det = det(matp)
+// PROPERTIES:
+//   -- degree of determinant is sum(cdeg) = sum of diagonal degrees
+bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> & matp, VecLong & cdeg, long threshold, long target_degdet, char prefix=' ')
+{
+#ifdef PROFILE_SMART_UPMAT
+    double t;
+    double t_total=GetWallTime();
+#endif // PROFILE_SMART_UPMAT
+    if (matp.length() == 0) // identity matrix
+    {
+        det = 1;
+        return (target_degdet == 0);
+    }
+
+    const long m = matp[0].NumRows();
+    if (m != (long)cdeg.size())
+    {
+        std::cout << "~~ERROR~~ wrong length of input cdeg in determinant_shifted_form_smartkernel_updateall" << std::endl;
+        return false;
+    }
+
+    // if sum(cdeg) is not target_degree, then something went wrong in earlier steps
+    if (std::accumulate(cdeg.begin(), cdeg.end(), 0) != target_degdet)
+    {
+        std::cout << "~~ERROR~~  in determinant_shifted_form_smartkernel_updateall" << std::endl;
+        std::cout << "         --> target_degdet is not equal to sum(cdeg)" << std::endl;
+        std::cout << "         --> either cdeg is wrong" << std::endl;
+        std::cout << "           (which is not supposed to happen if it was correct in input)" << std::endl;
+        std::cout << "         --> or some kernel computation went wrong" << std::endl;
+        std::cout << "           (which can happen due to genericity assumption not satisfied)" << std::endl;
+        return false;
+    }
+
+    // if small dim, just run expansion by minors
+    if (m<=4)
+    {
+#ifdef PROFILE_SMART_UPMAT
+        t=GetWallTime();
+#endif // PROFILE_SMART_UPMAT
+        Mat<zz_pX> pmat;
+        conv_shifted_form(pmat, matp, cdeg);
+        determinant_expansion_by_minors(det, pmat);
+#ifdef PROFILE_SMART_UPMAT
+        std::cout << prefix << "\tbase case --> " << GetWallTime()-t << std::endl;
+#endif // PROFILE_SMART_UPMAT
+        return true;
+    }
+
+//    // above some threshold (or if just one mult_cdeg left),
+//    // just run the usual algo splitting column dimension in two equal parts
+//    if (index >= std::min<long>(threshold,mult_cdeg.size()-1))
+//    {
+//#ifdef PROFILE_SMART_UPMAT
+//        std::cout << "\t-->Entering halving stage" << std::endl;
+//        prefix = '\t';
+//#endif
+//        cdim1 = (dim>>1);  // cdim1 ~ dim/2
+//    }
+//    // otherwise, handle leftmost mult_cdeg[index] columns and recurse with the rest
+//    else cdim1 = mult_cdeg[index];
+//
+//    const long cdim2 = dim-cdim1;
+//
+//    Mat<zz_pX> pmat_l;
+//    Mat<zz_pX> pmat_r;
+//    pmat_l.SetDims(dim,cdim1);
+//    pmat_r.SetDims(dim,cdim2);
+//
+//    for (long i = 0; i < dim; ++i)
+//    {
+//        for (long j = 0; j < cdim1; ++j)
+//            pmat_l[i][j] = pmat[i][j];
+//        for (long j = 0; j < cdim2; ++j)
+//            pmat_r[i][j] = pmat[i][j+cdim1];
+//    }
+//
+//    // compute the kernel via approximant basis at high order
+//    Mat<zz_pX> appbas;
+//    // degree of kernel basis will be (generically)  D = cdim1 * deg(pmat_l) / (dim - cdim1)
+//    // --> compute approximants at order deg(pmat_l) + D + 1
+//    // (cf for example Neiger-Rosenkilde-Solomatov ISSAC 2018, Lemma 4.3)
+//    const long degdet_ker = std::accumulate(diag_deg.begin(), diag_deg.begin()+cdim1, 0);
+//    const long deg_ker = ceil( degdet_ker / (double)(dim-cdim1) );
+//    const long order = *std::max_element(diag_deg.begin(), diag_deg.begin()+cdim1) + deg_ker + 1;
+//
+//    VecLong shift(shifted_rdeg);
+//#ifdef PROFILE_SMART_UPMAT
+//    t = GetWallTime();
+//#endif // PROFILE_SMART_UPMAT
+//    pmbasis(appbas, pmat_l, order, shifted_rdeg);
+//#ifdef PROFILE_SMART_UPMAT
+//    t = GetWallTime()-t;
+//    std::cout << prefix << "\tpmbasis dims x order = " << dim << " x " << cdim1 << " x " << order << " || time " << t << std::endl;
+//#endif // PROFILE_SMART_UPMAT
+//
+//    // minimal left kernel basis of pmat_r : last rows of app
+//    Mat<zz_pX> kerbas;
+//    kerbas.SetDims(cdim2,dim);
+//    for (long i = 0; i < cdim2; ++i)
+//        for (long j = 0; j < dim; ++j)
+//            kerbas[i][j] = appbas[i+cdim1][j];
+//
+//    // update shifted_rdeg
+//    // shifted_rdeg-row degree of kerbas
+//    // = last entries of shift
+//    // = s-row degree of product kerbas*pmat_r (see description of function, for "s")
+//    std::vector<long>(shifted_rdeg.begin()+cdim1, shifted_rdeg.end()).swap(shifted_rdeg);
+//
+//    // update diag_deg (keeping only the end of it)
+//    std::vector<long>(diag_deg.begin()+cdim1, diag_deg.end()).swap(diag_deg);
+//    for (long k = 0; k < cdim2; ++k)
+//        diag_deg[k] += shifted_rdeg[k] - shift[cdim1+k];
+//
+//    //if (dim < 60)
+//    //{
+//    //    std::cout << degree_matrix(pmat_l) << std::endl;
+//    //    std::cout << degree_matrix(kerbas) << std::endl;
+//    //}
+//
+//    // then compute the product
+//    Mat<zz_pX> pmatt;
+//#ifdef PROFILE_SMART_UPMAT
+//    t = GetWallTime();
+//#endif // PROFILE_SMART_UPMAT
+//    multiply(pmatt, kerbas, pmat_r);
+//#ifdef PROFILE_SMART_UPMAT
+//    t = GetWallTime()-t;
+//    std::cout << prefix << "\tmultiply degrees " << deg(kerbas) << "," << deg(pmat_r) << " || time " << t << std::endl;
+//    const long actual_deg_ker = deg(kerbas);
+//    std::cout << prefix << "\tker deg, actual deg: " << deg_ker << "\t" << actual_deg_ker << std::endl;
+//#endif // PROFILE_SMART_UPMAT
+//
+//    return determinant_shifted_form_degaware_updateall(det,pmatt,mult_cdeg,diag_deg,shifted_rdeg,index+1,threshold,target_degdet,prefix);
+}
+
+
+
+
+
 
 void conv_cdeg_uniquemult(std::vector<long> & unique_cdeg, std::vector<long> & mult_cdeg, const Vec<long> & cdeg)
 {
@@ -1418,6 +1641,44 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
             std::cout << "~~~Warning~~~ verification of determinant failed in DEG_UPKER approach" << std::endl;
     }
 #endif
+
+#ifdef TIME_SMART_UPMAT
+    for (long thres=3; thres < 4; ++thres)
+    { // shifted form specific, degree-aware, update matrix, smart kernel
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<1)
+        {
+            std::cout << degdet << std::endl;
+            VecLong copy_cdeg(dim);
+            for (long j = 0; j < dim; ++j)
+                copy_cdeg[j] = cdeg[j];
+            Vec<Mat<zz_p>> matp;
+            matp.SetLength(cdeg[0]);
+            for (long k = 0; k < cdeg[0]; ++k)
+            {
+                // find size
+                long n_k = 0;
+                while (n_k < cdeg.length() && cdeg[n_k] > k)
+                    ++n_k;
+                // random dim x n_k constant term (that of degree k)
+                random(matp[k], dim, n_k);
+            }
+            Mat<zz_pX> pmat;
+            conv_shifted_form(pmat,matp,copy_cdeg);
+            tt = GetWallTime();
+            zz_pX det;
+            ok = ok && determinant_shifted_form_smartkernel_updateall(det, matp, copy_cdeg, thres, degdet);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = ok && verify_determinant(det, pmat, true, true);
+        }
+        timings.push_back(t/nb_iter);
+        if (not ok)
+            std::cout << "~~~Warning~~~ verification of determinant failed in KER_UPMAT approach" << std::endl;
+    }
+#endif
+
 
 #ifdef TIME_ZLS_AVG
     { // shifted form specific, degree-aware, update one
@@ -1885,6 +2146,15 @@ int main(int argc, char ** argv)
     labels.push_back("deg-upker5");
     labels.push_back("deg-upker6");
     labels.push_back("deg-upker7");
+#endif
+#ifdef TIME_SMART_UPMAT
+    labels.push_back("ker-umat1");
+    labels.push_back("ker-umat2");
+    labels.push_back("ker-umat3");
+    labels.push_back("ker-umat4");
+    labels.push_back("ker-umat5");
+    labels.push_back("ker-umat6");
+    labels.push_back("ker-umat7");
 #endif
 #ifdef TIME_ZLS_AVG
     labels.push_back("zls-avgdeg");
