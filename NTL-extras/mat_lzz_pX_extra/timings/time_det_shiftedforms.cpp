@@ -26,11 +26,12 @@
 //#define PROFILE_ZLS_AVG
 //#define PROFILE_KER_AVG
 //#define PROFILE_KERNEL_STEP1
+#define PROFILE_KERNEL_STEP2
 //#define DEBUGGING_NOW
 
 //#define TIME_LINSOLVE // via linear system solving with random rhs
 //#define TIME_TRI_DECR // generic determinant on matrix with decreasing diagonal degrees
-#define TIME_TRI_INCR // generic determinant on matrix with increasing diagonal degrees
+//#define TIME_TRI_INCR // generic determinant on matrix with increasing diagonal degrees
 #define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
 #define TIME_DEG_UPKER // going degree by degree, updating kernel basis at each iteration
 //#define TIME_ZLS_AVG // ZLS style, but taking average degrees into account
@@ -739,7 +740,7 @@ bool determinant_shifted_form_zls_1(
 
 // ONE STEP degree 1
 // kernel basis of a degree-1  (ell+2n) x n matrix of the form
-//        [      F_0    ]
+//        [     -F_0    ]
 //        [  ---------- ]
 //  F =   [      F_1    ]
 //        [  ---------- ]
@@ -755,17 +756,18 @@ bool determinant_shifted_form_zls_1(
 //   [  K_1  |    0    | I_n ]
 // where
 //   [ K_0 ]       [ F_1 ]
-//   [ --- ]  =  - [ --- ] * iF_0
+//   [ --- ]  =    [ --- ] * iF_0
 //   [ K_1 ]       [ F_2 ]
-// where iF_0 = inverse(F_0)
+// where iF_0 = inverse(-F_0)
 // Consequence 2: one reduced left kernel basis of F is
 //   [  K_1 - x iF_0  |    0    |  I_n ]
 //   [  -------------   -------   ---- ]
 //   [       K_0      |  I_ell  |   0  ]
+// (note that it is also in HNF up to row permutation)
 // and the Popov left kernel basis of F is
-//   [  F_0 K_1 + x I_n  |    0    |  F_0 ]
-//   [  ---------------    -------   ---- ]
-//   [        K_0        |  I_ell  |   0  ]
+//   [  -F_0 K_1 + x I_n  |    0    | -F_0 ]
+//   [   ---------------    -------   ---- ]
+//   [         K_0        |  I_ell  |   0  ]
 // Input : (ell+2n) x n constant matrix
 //        [  F_0  ]
 //        [  ---- ]
@@ -773,9 +775,9 @@ bool determinant_shifted_form_zls_1(
 //        [  ---- ]
 //        [  F_2  ]
 // Output : 
-//   - kertop: n x n constant matrix kertop = F_0 K_1 
-//   - kerbot: ell x n constant matrix kerbot = K_0
-//   - cmat: replaced by only its n top rows F_0
+//   - kertop: n x n constant matrix kertop (above: -F_0 K_1)
+//   - kerbot: ell x n constant matrix kerbot (above: K_0)
+//   - cmat: replaced by the negation of its n top rows (above: -F_0)
 void kernel_step1(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat)
 {
 #ifdef PROFILE_KERNEL_STEP1
@@ -812,6 +814,7 @@ void kernel_step1(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat)
 #ifdef PROFILE_KERNEL_STEP1
     t_mul = GetWallTime();
 #endif
+    NTL::negate(cmat,cmat);
     mul(kertop, cmat, kertop);
 #ifdef PROFILE_KERNEL_STEP1
     t_mul = GetWallTime() - t_mul;
@@ -843,7 +846,6 @@ void kernel_step1_direct(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cma
     t_kernel = GetWallTime();
 #endif
     // retrieve kernel basis by direct computation
-    Mat<zz_p> imattop;
     kertop.SetDims(n,n);
     for (long i = 0; i < n; ++i)
         kertop[i].swap(cmat[ell+n+i]);
@@ -851,12 +853,12 @@ void kernel_step1_direct(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cma
     for (long i = 0; i < ell; ++i)
         kerbot[i].swap(cmat[n+i]);
 
+    Mat<zz_p> imat;
     cmat.SetDims(n,n);
-    inv(imattop,cmat);
-    mul(kertop, kertop, imattop);
-    NTL::negate(kertop, kertop);
-    mul(kerbot, kerbot, imattop);
-    NTL::negate(kerbot, kerbot);
+    NTL::negate(cmat,cmat);
+    inv(imat,cmat);
+    mul(kertop, kertop, imat);
+    mul(kerbot, kerbot, imat);
 #ifdef PROFILE_KERNEL_STEP1
     t_kernel = GetWallTime() - t_kernel;
     t_mul = GetWallTime();
@@ -874,7 +876,7 @@ void kernel_step1_direct(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cma
 
 // ONE STEP in degree 2
 // kernel basis of a degree-1  (ell+2n) x n matrix of the form
-//        [       F_0      ]
+//        [      -F_0      ]
 //        [   -----------  ]
 //  F =   [       F_1      ]
 //        [   -----------  ]
@@ -887,44 +889,118 @@ void kernel_step1_direct(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cma
 //       where F_00 is the constant coefficient of F_0
 //         and F_01 is the coefficient of degree 1 of F_0
 // Consequence 1: left nullspace of
-//   [ F_00 | F_01 ]
-//   [ ----- ----- ]
-//   [ F_10 | F_11 ]
-//   [ ----- ----- ]
-//   [ F_20 | F_21 ]
+//   [ -F_00 | -F_01 ]
+//   [ -----   ----- ]
+//   [  F_10 |  F_11 ]
+//   [ -----   ----- ]
+//   [  F_20 |  F_21 ]
 // has the form
 //   [  K_0  |  I_ell  |  0  ]
 //   [  ----   -------   --- ]
 //   [  K_1  |    0    | I_n ]
 // where
 //   [ K_0 ]       [ F_10 | F_11 ]
-//   [ --- ]  =  - [ ----   ---- ] * iF_0
-//   [ K_1 ]       [ F_20 | F_11 ]
-// where iF_0 = inverse([F_00 | F_01])
+//   [ --- ]  =    [ ----   ---- ] * iF_0
+//   [ K_1 ]       [ F_20 | F_21 ]
+// where iF_0 = inverse([-F_00 | -F_01])
 // Note: all rows in the top part (involving K_0) are
 //       obviously also in the left kernel of F; in fact
 //       they form the constant part of Ker(F)
+// Note: we have the property that
+//                     [  I_n  ]
+//     iF_0 * F_0  = - [ ----- ]
+//                     [ x I_n ]
+//     which gives trivial syzygies [ x I_n | -I_n ]
 // Consequence 2: one reduced left kernel basis of F is
-//   [  K_1 - x iF_0  |    0    |  I_n ]
-//   [  -------------   -------   ---- ]
-//   [       K_0      |  I_ell  |   0  ]
-// and the Popov left kernel basis of F is
-//   [  F_0 K_1 + x I_n  |    0    |  F_0 ]
+//   [  -iF_0b + x iF_0t |    0    |   0  ]
 //   [  ---------------    -------   ---- ]
+//   [   K_1 - x iF_0b   |    0    |  I_n ]
+//   [  --------------     -------   ---- ]
 //   [        K_0        |  I_ell  |   0  ]
-// Input : (ell+2n) x n constant matrix
-//        [  F_0  ]
-//        [  ---- ]
-//  F =   [  F_1  ]
-//        [  ---- ]
-//        [  F_2  ]
+// where iF_0b and iF_0t are bottom and top of iF_0
+// (note that it is also in HNF up to row permutation)
+// (note that top left 2n x 2n block has leading matrix
+//    equal to iF_0, which is invertible)
+// and the Popov left kernel basis of F is
+//   [  R + x I_2n  |     0   | -F_01 ]
+//   [  -----------   -------   ----- ]
+//   [     K_0      |  I_ell  |   0   ]
+//   where
+//                            [ iF_0b ]
+//      R = [ -F_00 | -F_01 ] [ ----- ] 
+//                            [  K_1  ]
+// Input : (ell+3n) x 2n constant matrix
+//   [ F_00 | F_01 ]
+//   [ ----- ----- ]
+//   [ F_10 | F_11 ]
+//   [ ----- ----- ]
+//   [ F_20 | F_21 ]
 // Output : 
-//   - kertop: n x n constant matrix kertop = F_0 K_1 
-//   - kerbot: ell x n constant matrix kerbot = K_0
-//   - cmat: replaced by only its n top rows F_0
+//   - kertop: 2n x 2n constant matrix (R above)
+//   - kerbot: ell x n constant matrix kerbot (K_0 above)
+//   - cmat: replaced by only its n top rows F_0 // TODO
 void kernel_step2(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat)
 {
-    return;
+#ifdef PROFILE_KERNEL_STEP2
+    double t_total,t_kernel,t_mul;
+    t_total = GetWallTime();
+#endif
+    // get dimensions, check numrows >= 2 numcols
+    const long n = cmat.NumCols()>>1;
+    const long ell = cmat.NumRows() - 3*n;
+    if (ell < 0)
+    {
+        std::cout << "~~ERROR~~ numrows >= 3numcols required in kernel_step2; see docstring" << std::endl;
+        return;
+    }
+
+#ifdef PROFILE_KERNEL_STEP2
+    t_kernel = GetWallTime();
+#endif
+    // retrieve kernel basis by direct computation
+    kertop.SetDims(n,2*n);
+    for (long i = 0; i < n; ++i)
+        kertop[i].swap(cmat[ell+2*n+i]);
+    kerbot.SetDims(ell,2*n);
+    for (long i = 0; i < ell; ++i)
+        kerbot[i].swap(cmat[2*n+i]);
+
+    cmat.SetDims(2*n,2*n);
+    NTL::negate(cmat,cmat);
+    Mat<zz_p> imat;
+    inv(imat,cmat); // imat == iF_0
+    mul(kertop, kertop, imat); // kertop = K_1
+    mul(kerbot, kerbot, imat); // kerbot = K_0
+#ifdef PROFILE_KERNEL_STEP2
+    t_kernel = GetWallTime() - t_kernel;
+    t_mul = GetWallTime();
+#endif
+    kertop.SetDims(2*n,2*n);
+    for (long i = 0; i < n; ++i)
+    {
+        // row n+i of K1 <- row i of K1
+        kertop[i].swap(kertop[n+i]);
+        // row i of K1 <- row i of iF_0b = row n+i of iF_0
+        kertop[i].swap(imat[n+i]);
+    }
+    mul(kertop, cmat, kertop);
+#ifdef PROFILE_KERNEL_STEP2
+    t_mul = GetWallTime() - t_mul;
+#endif
+    // remove left columns of cmat to keep only -F_01
+    Mat<zz_p> tmp;
+    tmp.SetDims(2*n,n);
+    for (long i = 0; i < 2*n; ++i)
+        for (long j = 0; j < n; ++j)
+            tmp[i][j] = cmat[i][n+j];
+    cmat.swap(tmp);
+#ifdef PROFILE_KERNEL_STEP2
+    t_total = GetWallTime() - t_total;
+    std::cout << "\tKernel step2 profile:" << std::endl;
+    std::cout << "\ttotal time:\t" << t_total << std::endl;
+    std::cout << "\tKernel time:\t" << t_kernel << std::endl;
+    std::cout << "\tMatMul time:\t" << t_mul << std::endl;
+#endif
 }
 
 void conv_cdeg_uniquemult(std::vector<long> & unique_cdeg, std::vector<long> & mult_cdeg, const Vec<long> & cdeg)
@@ -1363,7 +1439,7 @@ void run_bench()
             }
 }
 
-#ifdef PROFILE_KERNEL_STEP1
+#if defined PROFILE_KERNEL_STEP1
 // to compare variants for kernel step1
 // note that the "naive" kernel variant seems faster when very thin matrix
 int main(int argc, char ** argv)
@@ -1410,6 +1486,54 @@ int main(int argc, char ** argv)
     std::cout << "Smart kernel:\t" << t << std::endl;
     //std::cout << ckertop2  << std::endl<< std::endl << std::endl;
     //std::cout << ckerbot2   << std::endl<< std::endl<< std::endl;
+
+    return 0;
+}
+#elif defined PROFILE_KERNEL_STEP2
+// to compare variants for kernel step2
+int main(int argc, char ** argv)
+{
+    std::cout << std::fixed;
+    std::cout << std::setprecision(8);
+
+    const long m = atoi(argv[1]);
+    const long n = atoi(argv[2]);
+    zz_p::init(NTL::GenPrime_long(atoi(argv[3])));
+
+    Mat<zz_p> cmat0,cmat1,cmat;
+    random(cmat0, m, n);
+    random(cmat1, m, n);
+    //std::cout << cmat << std::endl;
+
+    Mat<zz_pX> pmat;
+    pmat.SetDims(m,n);
+    SetCoeff(pmat, 0, cmat0);
+    SetCoeff(pmat, 1, cmat1);
+    for (long i = 0; i < n; ++i)
+        SetCoeff(pmat[m-n+i][i],2);
+    //std::cout << pmat << std::endl;
+
+    double t = GetWallTime();
+    Mat<zz_pX> kerbas;
+    VecLong shift(m);
+    pmbasis(kerbas, pmat, 4, shift);
+    t = GetWallTime() - t;
+    std::cout << "Via approx:\t" << t << std::endl;
+
+    cmat.SetDims(m,2*n);
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < n; ++j)
+        {
+            cmat[i][j] = cmat0[i][j];
+            cmat[i][n+j] = cmat1[i][j];
+        }
+    t = GetWallTime();
+    Mat<zz_p> ckertop,ckerbot;
+    kernel_step2(ckertop, ckerbot, cmat);
+    t = GetWallTime() - t;
+    std::cout << "Smart kernel:\t" << t << std::endl;
+    //std::cout << ckertop << std::endl<< std::endl << std::endl;
+    //std::cout << ckerbot << std::endl<< std::endl<< std::endl;
 
     return 0;
 }
