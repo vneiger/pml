@@ -1,4 +1,5 @@
 // timing charpoly of matrix in "shifted forms" [terminology by Pernet-Storjohann]
+#include <NTL/ZZ.h>
 #include <NTL/vec_lzz_p.h>
 #include <algorithm>
 #include <functional>
@@ -23,9 +24,9 @@
 #define CACHE_FRIENDLY_SIZE 32
 #define MATRIX_BLOCK_SIZE 8
 
-#define PROFILE_DEG_UPMAT
-#define PROFILE_DEG_UPKER
-#define PROFILE_SMART_UPMAT
+//#define PROFILE_DEG_UPMAT
+//#define PROFILE_DEG_UPKER
+//#define PROFILE_SMART_UPMAT
 //#define PROFILE_SMART_UPKER
 //#define PROFILE_ZLS_AVG
 //#define PROFILE_KER_AVG
@@ -37,7 +38,7 @@
 //#define TIME_LINSOLVE // via linear system solving with random rhs
 //#define TIME_TRI_DECR // generic determinant on matrix with decreasing diagonal degrees
 //#define TIME_TRI_INCR // generic determinant on matrix with increasing diagonal degrees
-//#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
+#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
 //#define TIME_DEG_UPKER // going degree by degree, updating kernel basis at each iteration
 #define TIME_SMART_UPMAT // going degree by degree, UPMAT, smart kernel computation
 //#define TIME_SMART_UPKER // going degree by degree, UPKER, smart kernel computation
@@ -1087,7 +1088,7 @@ void kernel_step2(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat)
 //           [ F_20 | F_21 | ... | F_2l ]
 // Output/Side-effect :
 //   - kertop: dn x dn constant matrix (R above)
-//   - kerbot: ell x n constant matrix kerbot (K_0 above)
+//   - kerbot: ell x dn constant matrix kerbot (K_0 above)
 //   - cmat: replaced by only the degree d-1 part of its n top rows (-F_0l above)
 void kernel_degree1(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat, long d)
 {
@@ -1240,9 +1241,13 @@ void conv_shifted_form(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp, const Vec
 //   -- degree of determinant is sum(cdeg) = sum of diagonal degrees
 bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> & matp, VecLong & cdeg, long threshold, long target_degdet, char prefix=' ')
 {
+#ifdef DEBUGGING_NOW
+    std::cout << target_degdet << std::endl;
+    std::cout << cdeg << std::endl;
+#endif // DEBUGGING_NOW
+    
 #ifdef PROFILE_SMART_UPMAT
     double t;
-    double t_total=GetWallTime();
 #endif // PROFILE_SMART_UPMAT
     if (matp.length() == 0) // identity matrix
     {
@@ -1306,12 +1311,12 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
 
     // find number of columns with degree d
     long block_size = 1;
-    while (block_size < m && cdeg[m-block_size] == d)
+    while (block_size < m && cdeg[m-block_size-1] == d)
         ++block_size;
     // ensure kernel requirement: m >= (d+1) * block_size
     if (m < (d+1)*block_size)
         block_size = floor(m / (long)(d+1));
-    
+
     // copy linearized version of block F of degree d
     // cmat = [ F_00 | F_01 | .. | F_0l ]  where l=d-1
     const long dn = d*block_size;
@@ -1320,7 +1325,7 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
     for (long k = 0; k < d; ++k)
         for (long i = 0; i < m; ++i)
             for (long j = 0; j < block_size; ++j)
-                cmat[i][k*block_size+j] = matp[k][i][j];
+                cmat[i][k*block_size+j] = matp[k][i][m-block_size+j];
 
     // compute kernel
     Mat<zz_p> kertop, kerbot;
@@ -1345,7 +1350,7 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
     //         cdeg(M_0) < cdeg1+1, cdeg(M_2) < cdeg1+1
     //         cdeg(M_1) < cdeg2, cdeg(M_3) < cdeg2
     // and
-    //         L = negate( matp[ :dn, dn:dn+ell ] )
+    //         L = matp[ :dn, dn:dn+ell ]
     // ==> as a result, ignoring the zero columns, this has the shifted form
     // with the new cdeg = cdeg1+1  +  cdeg2,
     // UP TO modifying the top rows by removing the L part, which is simply done
@@ -1369,13 +1374,18 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
         buf.swap(matp[k]);
     }
 
+#ifdef DEBUGGING_NOW
+    std::cout << m << "\t" << ell << "\t" << dn << "\t" << d << std::endl;
+#endif // DEBUGGING_NOW
+
     ell = ell - dn; // now ell = m - (d+1)*block_size
     // compute S = R - L K_0
-    buf.SetDims(dn, ell); // matrix -L
+    Mat<zz_p> lmat;
+    lmat.SetDims(dn, ell); // matrix -L
     for (long j = 0; j < ell; ++j)
         for (long i = 0; i < dn; ++i)
-            buf[i][j] = -matp[cdeg[dn+j]-1][i][dn+j];
-    mul(buf, buf, kerbot);  // now buf = -L K_0
+            lmat[i][j] = -matp[cdeg[dn+j]-1][i][dn+j];
+    mul(buf, lmat, kerbot);  // now buf = -L K_0
     add(kertop, kertop, buf); // now kertop = S
     // form the row  [  S  |  -L  | -F_0l ] as defined above
     Mat<zz_p> trans_top;
@@ -1385,7 +1395,7 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
         for (long j = 0; j < dn; ++j)
             trans_top[i][j] = kertop[i][j];
         for (long j = dn; j < dn+ell; ++j)
-            trans_top[i][j] = buf[i][j-dn];
+            trans_top[i][j] = lmat[i][j-dn];
         for (long j = dn+ell; j < m; ++j)
             trans_top[i][j] = cmat[i][j-dn-ell];
     }
@@ -1397,36 +1407,22 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
         cdeg[i] = cdeg[i] + 1;
     // update matp storage: add one coefficient, will be initialized in first iteration of loop
     matp.SetLength(cdeg[0]);
-    // going through the coefficient of degree k from old max to d
-    // --> k >= d means we are still strictly within the left part
-    //     (the coefficients have <= dn columns)
-    for (long k = cdeg[0]-2; k >= d; --k)
+    // going through the coefficient of degree k from max to 0
+    for (long k = cdeg[0]-2; k >= 0; --k)
     {
         const long cdim = matp[k].NumCols();
         // 1. multiply by X I_dn: add first rows to matp[k+1]
-        // careful: matp[k+1] might have too small column dimension!
+        // careful: matp[k+1] might have smaller column dimension!
         // -- this is in particular the case when k=cdeg[0]-2, since
         // the new largest degree coeff has not been allocated yet
-        // -- this can be true for other coefficients as well, when we
-        // are in the left part whose degree increased by 1 globally
-        if (k >= d)
-        {
-            if (matp[k+1].NumCols() < cdim)
-                matp[k+1].SetDims(dn+ell,cdim);
-            for (long i = 0; i < dn; ++i)
-                add(matp[k+1][i], matp[k+1][i], matp[k][i]);
-        }
-        else if (k == d-1)
-        {
-            if (matp[k+1].NumCols() < dn)
-                matp[k+1].SetDims(dn+ell,dn);
-            for (long i = 0; i < dn; ++i)
-                for (long j = 0; j < dn; ++j)
-                    add(matp[k+1][i][j], matp[k+1][i][j], matp[k][i][j]);
-        }
-        else // k < d-1
-            for (long i = 0; i < dn; ++i)
-                add(matp[k+1][i], matp[k+1][i], matp[k][i]);
+        // -- this can be true for other coefficients as well
+        // -- we also must distinguish between the dn first columns
+        // (which get increased by 1) and the others
+        if (matp[k+1].NumCols() < dn)
+            matp[k+1].SetDims(dn+ell,std::min<long>(cdim,dn));
+        for (long i = 0; i < dn; ++i)
+            for (long j = 0; j < matp[k+1].NumCols(); ++j)
+                add(matp[k+1][i][j], matp[k+1][i][j], matp[k][i][j]);
 
         // 2. multiply by constant kernel    [ K_0 | I_ell | 0 ]
         // and store in buf
@@ -1444,7 +1440,28 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
         for (long i = dn; i < dn+ell; ++i)
             matp[k][i].swap(buf[i-dn]);
     }
-    return true;
+    // finally don't forget to add 
+    //   [  S  ]
+    //   [ K_0 ]
+    // in leading terms of leftmost rows since it is multiplied by the
+    // (non-stored) X^cdeg1 I_dn
+    // FIXME if needed, there surely is a more cache friendly way
+    // to do this, by incorporating it into the above loop
+    for (long j = 0; j < dn; ++j)
+    {
+        for (long i = 0; i < dn; ++i)
+            matp[cdeg[j]-1][i][j] += trans_top[i][j];
+        for (long i = dn; i < dn+ell; ++i)
+            matp[cdeg[j]-1][i][j] = kerbot[i-dn][j];
+    }
+
+#ifdef DEBUGGING_NOW
+    std::cout << matp << std::endl;
+    std::cout << "END NUMCOLS: " << matp[0].NumCols() << std::endl;
+    std::cout << "END NUMROWS: " << matp[0].NumRows() << std::endl;
+#endif // DEBUGGING_NOW
+
+    return determinant_shifted_form_smartkernel_updateall(det, matp, cdeg, threshold, target_degdet);
 }
 
 
@@ -1560,6 +1577,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     {
         //cout << "Bench determinant of shifted form, random prime p = ";
         zz_p::init(NTL::GenPrime_long(nbits));
+        //zz_p::init(29);
         //cout << zz_p::modulus() << ", bit length = " << nbits << endl;
     }
 
@@ -1567,6 +1585,14 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     Mat<long> dmat;
     Vec<long> cdeg;
     retrieve_degree_matrix(dmat,cdeg,filename);
+    //dmat.SetDims(8,8);
+    //cdeg.SetLength(8);
+    //cdeg[0] = 5; cdeg[1] = 3; cdeg[2] = 3; cdeg[3] = 3; cdeg[4] = 3; cdeg[5] = 3; cdeg[6] = 1; cdeg[7] = 1;
+    //for (long i = 0; i < 8; ++i)
+    //    for (long j = 0; j < 8; ++j)
+    //        dmat[i][j] = cdeg[j] - 1;
+    //for (long i = 0; i < 8; ++i)
+    //    dmat[i][i] = cdeg[i];
     const long dim = dmat.NumRows();
     const long degdet = std::accumulate(cdeg.begin(),cdeg.end(),0);
 
@@ -1667,7 +1693,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 #endif
 
 #ifdef TIME_DEG_UPMAT
-    for (long thres=3; thres < 4; ++thres)
+    for (long thres=4; thres < 6; ++thres)
     { // shifted form specific, degree-aware, update matrix
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -1715,7 +1741,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 #endif
 
 #ifdef TIME_SMART_UPMAT
-    for (long thres=0; thres < 1; ++thres)
+    for (long thres=12; thres < 19; thres+=2)
     { // shifted form specific, degree-aware, update matrix, smart kernel
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -1738,6 +1764,20 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
             }
             Mat<zz_pX> pmat;
             conv_shifted_form(pmat,matp,copy_cdeg);
+            //for (long i = 0; i < pmat.NumRows(); ++i)
+            //{
+            //    for (long j = 0; j < pmat.NumCols(); ++j)
+            //    {
+            //        std::cout << "pR([" ;
+            //        for (long k = 0; k <= deg(pmat[i][j]); ++k)
+            //        {
+            //            std::cout << pmat[i][j][k] << ", ";
+            //        }
+            //        std::cout << "])," << std::endl;
+            //    }
+            //}
+            //std::cout << matp << std::endl;
+            //std::cout << pmat << std::endl;
             tt = GetWallTime();
             zz_pX det;
             ok = ok && determinant_shifted_form_smartkernel_updateall(det, matp, copy_cdeg, thres, degdet);
@@ -2188,6 +2228,7 @@ int main(int argc, char ** argv)
 #else
 int main(int argc, char ** argv)
 {
+    NTL::SetSeed(ZZ(2));
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
 
