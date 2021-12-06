@@ -38,7 +38,7 @@
 //#define TIME_LINSOLVE // via linear system solving with random rhs
 //#define TIME_TRI_DECR // generic determinant on matrix with decreasing diagonal degrees
 //#define TIME_TRI_INCR // generic determinant on matrix with increasing diagonal degrees
-#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
+//#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
 //#define TIME_DEG_UPKER // going degree by degree, updating kernel basis at each iteration
 #define TIME_SMART_UPMAT // going degree by degree, UPMAT, smart kernel computation
 //#define TIME_SMART_UPKER // going degree by degree, UPKER, smart kernel computation
@@ -1219,6 +1219,38 @@ void conv_shifted_form(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp, const Vec
     return;
 }
 
+// same as above but applying J on right and left
+// TODO not optimal
+void conv_shifted_form_mirrored(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp, const VecLong & cdeg)
+{
+    Mat<zz_pX> buf;
+    conv_shifted_form(buf, matp, cdeg);
+    const long m = buf.NumRows();
+    const long n = buf.NumCols();
+    pmat.SetDims(m,n);
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < n; ++j)
+            pmat[m-1-i][n-1-j] = buf[i][j];
+}
+
+Mat<ZZ> degree_matrix(const Vec<Mat<zz_p>> & matp)
+{
+    const long m = matp[0].NumRows();
+    const long n = matp[0].NumCols();
+    Mat<ZZ> degmat;
+    degmat.SetDims(m,n);
+    for (long j = 0; j < n; ++j)
+    {
+        long k = 0;
+        while (k < matp.length() && matp[k].NumCols() > j)
+            ++k;
+        for (long i = 0; i < m; ++i)
+            degmat[i][j] = k-1;
+        degmat[j][j] += 1;
+    }
+    return degmat;
+}
+
 
 // det: output determinant
 // matp: input square m x m matrix
@@ -1301,11 +1333,11 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
         t=GetWallTime();
 #endif
         Mat<zz_pX> pmat;
-        conv_shifted_form(pmat, matp, cdeg);
+        conv_shifted_form_mirrored(pmat, matp, cdeg);
 #ifdef PROFILE_SMART_UPMAT
         std::cout << prefix << "\ttot halving --> " << GetWallTime()-t << std::endl;
 #endif // PROFILE_SMART_UPMAT
-        
+
         return determinant_generic_knowing_degree(det, pmat, target_degdet);
     }
 
@@ -1412,20 +1444,42 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
     {
         const long cdim = matp[k].NumCols();
         // 1. multiply by X I_dn: add first rows to matp[k+1]
-        // careful: matp[k+1] might have smaller column dimension!
-        // -- this is in particular the case when k=cdeg[0]-2, since
-        // the new largest degree coeff has not been allocated yet
-        // -- this can be true for other coefficients as well
-        // -- we also must distinguish between the dn first columns
-        // (which get increased by 1) and the others
-        if (matp[k+1].NumCols() < dn)
-            matp[k+1].SetDims(dn+ell,std::min<long>(cdim,dn));
-        for (long i = 0; i < dn; ++i)
-            for (long j = 0; j < matp[k+1].NumCols(); ++j)
-                add(matp[k+1][i][j], matp[k+1][i][j], matp[k][i][j]);
+        // And update size of matp[k+1] if needed
+        //  -- note that cdim2 <= cdim is always true
+        //  -- and there is no need to resize if cdim2 == cdim || cdim2 >= dn
+        const long cdim2 = matp[k+1].NumCols();
+        if (cdim2 == 0)
+        {
+            // first iteration, k+1 == cdeg[0]-1
+            matp[k+1].SetDims(dn+ell, std::min<long>(cdim,dn));
+            for (long i = 0; i < dn; ++i)
+                VectorCopy(matp[k+1][i], matp[k][i], std::min<long>(cdim,dn));
+        }
+        else if (cdim2 < std::min<long>(cdim,dn))
+        {
+            // matp[k+1] needs to be resized
+            buf.swap(matp[k+1]);
+            matp[k+1].SetDims(dn+ell,std::min<long>(cdim,dn)); // reallocates
+            for (long i = 0; i < dn; ++i)
+            {
+                for (long j = 0; j < cdim2; ++j)
+                    add(matp[k+1][i][j], buf[i][j], matp[k][i][j]);
+                for (long j = cdim2; j < matp[k+1].NumCols(); ++j)
+                    matp[k+1][i][j] = matp[k][i][j];
+            }
+            for (long i = dn; i < dn+ell; ++i)
+                VectorCopy(matp[k+1][i], buf[i], matp[k+1].NumCols());
+        }
+        else // matp[k+1] does not need to be resized
+        {
+            for (long i = 0; i < dn; ++i)
+                for (long j = 0; j < cdim2; ++j)
+                    add(matp[k+1][i][j], matp[k+1][i][j], matp[k][i][j]);
+        }
 
         // 2. multiply by constant kernel    [ K_0 | I_ell | 0 ]
         // and store in buf
+        buf.kill(); // TODO remove?
         buf.SetDims(dn, cdim);
         for (long i = 0; i < dn; ++i)
             VectorCopy(buf[i], matp[k][i], cdim);
@@ -1452,7 +1506,7 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
         for (long i = 0; i < dn; ++i)
             matp[cdeg[j]-1][i][j] += trans_top[i][j];
         for (long i = dn; i < dn+ell; ++i)
-            matp[cdeg[j]-1][i][j] = kerbot[i-dn][j];
+            matp[cdeg[j]-1][i][j] += kerbot[i-dn][j];
     }
 
 #ifdef DEBUGGING_NOW
@@ -1741,13 +1795,13 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 #endif
 
 #ifdef TIME_SMART_UPMAT
-    for (long thres=12; thres < 19; thres+=2)
+    for (long thres=25; thres < 26; thres+=2)
     { // shifted form specific, degree-aware, update matrix, smart kernel
         t=0.0; nb_iter=0;
         bool ok = true;
         while (ok && t<1)
         {
-            std::cout << degdet << std::endl;
+            //std::cout << degdet << std::endl;
             VecLong copy_cdeg(dim);
             for (long j = 0; j < dim; ++j)
                 copy_cdeg[j] = cdeg[j];
@@ -2312,8 +2366,6 @@ int main(int argc, char ** argv)
     return 0;
 }
 #endif
-
-
 
 // Local Variables:
 // mode: C++
