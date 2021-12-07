@@ -1840,7 +1840,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 #endif
 
 #ifdef TIME_SMART_UPMAT
-    for (long thres=25; thres < 26; thres+=2)
+    for (long thres=20; thres < 46; thres+=5)
     { // shifted form specific, degree-aware, update matrix, smart kernel
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -2360,13 +2360,12 @@ int main(int argc, char ** argv)
     labels.push_back("deg-upker7");
 #endif
 #ifdef TIME_SMART_UPMAT
-    labels.push_back("ker-umat1");
-    labels.push_back("ker-umat2");
-    labels.push_back("ker-umat3");
-    labels.push_back("ker-umat4");
-    labels.push_back("ker-umat5");
-    labels.push_back("ker-umat6");
-    labels.push_back("ker-umat7");
+    labels.push_back("ker-umat20");
+    labels.push_back("ker-umat25");
+    labels.push_back("ker-umat30");
+    labels.push_back("ker-umat35");
+    labels.push_back("ker-umat40");
+    labels.push_back("ker-umat45");
 #endif
 #ifdef TIME_ZLS_AVG
     labels.push_back("zls-avgdeg");
