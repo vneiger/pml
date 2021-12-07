@@ -79,6 +79,7 @@ int main(int argc, char* argv[])
     if ((argc<6 && argc>1) || argc > 6)
     {
         std::cout << "ERROR. Usage: './time_constant_multiply' or './time_constant_multiply rdim cdim rhsdim deg nbits'" << std::endl;
+        return 0;
     }
     if (argc==6)
     {
