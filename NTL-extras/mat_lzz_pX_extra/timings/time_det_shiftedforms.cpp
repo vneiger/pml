@@ -26,14 +26,15 @@
 
 //#define PROFILE_DEG_UPMAT
 //#define PROFILE_DEG_UPKER
-#define PROFILE_SMART_UPMAT
+//#define PROFILE_SMART_UPMAT
 //#define PROFILE_SMART_UPKER
 //#define PROFILE_ZLS_AVG
 //#define PROFILE_KER_AVG
-//#define PROFILE_KERNEL_STEP1
+#define PROFILE_KERNEL_STEP1
 //#define PROFILE_KERNEL_STEP2
 //#define PROFILE_KERNEL_DEGREE1
 //#define DEBUGGING_NOW
+//#define UNIFORM_KSHIFTED
 
 //#define TIME_LINSOLVE // via linear system solving with random rhs
 //#define TIME_TRI_DECR // generic determinant on matrix with decreasing diagonal degrees
@@ -1160,6 +1161,87 @@ void kernel_degree1(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat, lo
 #endif
 }
 
+// Compute kernel basis of degree 1:
+// Goal:
+// """""
+// compute kernel basis of a (D+ell+n) x n matrix F of column degree d=cdeg,
+// where D = sum of column degrees = d_1 + ... + d_n,
+// and F has the form
+//        [      F0      ]
+//        [  ----------  ]
+//  F =   [      F1      ]
+//        [  ----------  ]
+//        [ x^d I_n + F2 ]
+// where F0 is   D x n, cdeg(F0) < d
+//       F1 is ell x n, cdeg(F1) < d
+//       F2 is   n x n, cdeg(F2) < d.
+//
+// Notation:
+// """""""""
+//   * eF the (D+ell+n) x D matrix obtained by fully linearizing F
+//         eF = [ eF_0 | eF_1 | ... | eF_{mu-1} ]
+//         where mu = max(cdeg)
+//         and eF_k has dimensions m x n_k
+//         (i.e. n_k is the max integer such that d[n_k-1] > k)
+//   * eF0 (resp. eF1, eF2) the D x D (resp ell x D, n x D) matrix
+//       obtained by fully linearizing F0 (resp. F1, F2)
+//   * eFbot = [[eF1],[eF2]] the (ell+n) x D matrix obtained by fully linearizing [[F1],[F2]]
+//   * iF0 the inverse of -eF0  (note the minus sign)
+//
+// Assumption:
+// """""""""""
+//   * ell >= 0, i.e. nrows >= n+D
+//   * eF0 is invertible (not checked)
+//
+// Consequence:
+// """"""""""""
+// left nullspace of eF has a basis of the form
+//   [  K0  |  I_ell  |  0  ]
+//   [ ----   -------   --- ]
+//   [  K1  |    0    | I_n ]
+// where
+//   [ K0 ]    [ eF1 ]   
+//   [ -- ]  = [ --- ] * iF0
+//   [ K1 ]    [ eF2 ]   
+//
+// Note: all rows in the top part (involving K_0) are
+//       obviously also in the left kernel of F; in fact
+//       they form the constant part of Ker(F)
+//
+// Note: unlike in the above implementations, here we will
+// not use K0 and K1 as such, but a more direct computation
+// of the Popov kernel basis, see below
+//
+// Consequence:
+// """"""""""""
+// the Popov left kernel basis of F is
+//   [  xI_D + K0 |    0    | -lF0  ]
+//   [  ---------   -------   ----- ]
+//   [     K_1    |  I_ell  |   0   ]
+// where
+//  [ K0 ]       [ lF0 eF2 - sF0 ]
+//  [ -- ]   =   [ ------------- ] * iF0
+//  [ K1 ]       [     -eF1      ]
+// where
+//   lF0 = column-leading-matrix(F0, [d[0]-1, .., d[n-1]-1])
+//   sF0 = [ 0 | eF0_0 | ... | eF0_{mu-1} ]
+//   mu = max(cdeg)
+//   0 has size D x n
+//   eF0_k is the D x n_{k+1} left submatrix of the coefficient of degree k of F0
+//
+// Input:
+// """"""
+//   - (D+ell+n) x D constant matrix eF
+//   - column degree d
+// Output/Side-effect:
+// """""""""""""""""""
+//   - kertop: D x D constant matrix (K0 above)
+//   - kerbot: ell x D constant matrix kerbot (K1 above)
+//   - cmat: replaced by -lF0
+
+
+
+
 // Convert a matrix polynomial stored as below in determinant_shifted_form_smartkernel_updateall
 // towards a polynomial matrix
 // Actually this supports the rectangular m x n case with n < m; then the x id part is at the bottom
@@ -1334,7 +1416,7 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
 
     // above some threshold,
     // run the usual algo splitting column dimension in two equal parts
-    if (d >= threshold) // TODO
+    if (d >= threshold || m <= d+1) // TODO
     {
 #ifdef PROFILE_SMART_UPMAT
         std::cout << "\t-->Entering halving stage" << std::endl;
@@ -1359,7 +1441,8 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
         ++block_size;
     // ensure kernel requirement: m >= (d+1) * block_size
     if (m < (d+1)*block_size)
-        block_size = floor(m / (long)(d+1));
+        block_size = m / (d+1);
+    // note that m > d+1 here, so block_size >= 1
 
     // copy linearized version of block F of degree d
     // cmat = [ F_00 | F_01 | .. | F_0l ]  where l=d-1
@@ -1684,6 +1767,9 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     Mat<long> dmat;
     Vec<long> cdeg;
     retrieve_degree_matrix(dmat,cdeg,filename);
+    const long dim = dmat.NumRows();
+    const long degdet = std::accumulate(cdeg.begin(),cdeg.end(),0);
+    //// small example
     //dmat.SetDims(8,8);
     //cdeg.SetLength(8);
     //cdeg[0] = 5; cdeg[1] = 3; cdeg[2] = 3; cdeg[3] = 3; cdeg[4] = 3; cdeg[5] = 3; cdeg[6] = 1; cdeg[7] = 1;
@@ -1692,8 +1778,8 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
     //        dmat[i][j] = cdeg[j] - 1;
     //for (long i = 0; i < 8; ++i)
     //    dmat[i][i] = cdeg[i];
-    const long dim = dmat.NumRows();
-    const long degdet = std::accumulate(cdeg.begin(),cdeg.end(),0);
+    //dim = dmat.NumRows();
+    //degdet = std::accumulate(cdeg.begin(),cdeg.end(),0);
 
     // compute mirrored degree matrix (increasing diag degrees)
     Mat<long> dmat2(INIT_SIZE, dim, dim);
@@ -1840,7 +1926,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 #endif
 
 #ifdef TIME_SMART_UPMAT
-    for (long thres=20; thres < 46; thres+=5)
+    for (long thres=10; thres < 51; thres+=10)
     { // shifted form specific, degree-aware, update matrix, smart kernel
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -2173,7 +2259,7 @@ int main(int argc, char ** argv)
     const long d = atoi(argv[3]);
     long p = NTL::GenPrime_long(atoi(argv[4]));
     zz_p::init(p);
-#ifdef DEBUGGING_NOW
+#if defined DEBUGGING_NOW
     std::cout << "PRIME " << p << std::endl;
 #endif // DEBUGGING_NOW
 
@@ -2322,6 +2408,43 @@ int main(int argc, char ** argv)
     }
 
     return 0;
+}
+
+#elif defined UNIFORM_KSHIFTED
+// to check time for charpoly of d-shifted
+int main(int argc, char ** argv)
+{
+    std::cout << std::fixed;
+    std::cout << std::setprecision(8);
+
+    const long m = atoi(argv[1]);
+    const long d = atoi(argv[2]);
+    long p = NTL::GenPrime_long(atoi(argv[3]));
+    zz_p::init(p);
+    std::cout << "PRIME " << p << std::endl;
+
+    VecLong cdeg(m,d);
+    Vec<Mat<zz_p>> matp;
+    for (long thres = 10; thres < 51; thres+=10)
+    {
+        matp.kill();
+        matp.SetLength(cdeg[0]);
+        for (long k = 0; k < cdeg[0]; ++k)
+            random(matp[k], m, m);
+        Mat<zz_pX> pmat;
+        conv(pmat,matp);
+        for (long i = 0; i < m; ++i)
+            SetCoeff(pmat[i][i], d);
+        double t = GetWallTime();
+        VecLong copy_cdeg = cdeg;
+        zz_pX det;
+        bool ok = determinant_shifted_form_smartkernel_updateall(det, matp, copy_cdeg, thres, m*d);
+        t = GetWallTime()-t;
+        ok = ok && verify_determinant(det, pmat, true, true);
+        if (not ok)
+            std::cout << "~~~Warning~~~ verification of determinant failed in CHARPOLY" << std::endl;
+        std::cout << "Time: " << t << std::endl;
+    }
 }
 
 #else
