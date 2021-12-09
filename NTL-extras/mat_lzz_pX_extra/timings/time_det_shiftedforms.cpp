@@ -1319,7 +1319,7 @@ void kernel_degree1_cdeg(Mat<zz_p> & K0, Mat<zz_p> & K1, Mat<zz_p> & lF0, const 
 #ifdef PROFILE_KERNEL_DEGREE1_CDEG
     t_mulinv = GetWallTime() - t_mulinv;
     t_main += t_mulinv;
-    std::cout << "\tMatMul1 --> dimensions \t" << D << " x " << n << " x " << D << " ||  time " << t_mulinv << std::endl;
+    std::cout << "\t\tMatMul1 --> dimensions\t" << D << " x " << n << " x " << D << " ||  time " << t_mulinv << std::endl;
 #endif
 
     // lF0 = -lF0
@@ -1342,7 +1342,7 @@ void kernel_degree1_cdeg(Mat<zz_p> & K0, Mat<zz_p> & K1, Mat<zz_p> & lF0, const 
 #ifdef PROFILE_KERNEL_DEGREE1_CDEG
     t_mulinv = GetWallTime() - t_mulinv;
     t_main += t_mulinv;
-    std::cout << "\tInversion --> dimensions \t" << D << " x " << D << " ||  time " << t_mulinv << std::endl;
+    std::cout << "\t\tInversion --> dimensions\t" << D << " x " << D << " ||  time " << t_mulinv << std::endl;
 #endif
 
 #ifdef PROFILE_KERNEL_DEGREE1_CDEG
@@ -1355,18 +1355,18 @@ void kernel_degree1_cdeg(Mat<zz_p> & K0, Mat<zz_p> & K1, Mat<zz_p> & lF0, const 
 #ifdef PROFILE_KERNEL_DEGREE1_CDEG
     t_mulinv = GetWallTime() - t_mulinv;
     t_main += t_mulinv;
-    std::cout << "\tMatMul2 --> dimensions \t" << D+ell << " x " << D << " x " << D << " ||  time " << t_mulinv << std::endl;
+    std::cout << "\t\tMatMul2 --> dimensions\t" << D+ell << " x " << D << " x " << D << " ||  time " << t_mulinv << std::endl;
 #endif
 
     // split back into K0 and K1
     for (long i = 0; i < ell; ++i)
-        K0[i+ell].swap(K1[i]);
+        K0[i+D].swap(K1[i]);
     K0.SetDims(D,D);
 
 #ifdef PROFILE_KERNEL_DEGREE1_CDEG
     t_total = GetWallTime() - t_total;
-    std::cout << "\ttotal time:\t" << t_total << std::endl;
-    std::cout << "\tnon-dominant:\t" << t_total-t_main << std::endl;
+    std::cout << "\ttotal time " << t_total << ", non-dominant ";
+    std::cout << std::setprecision(2) << 100*(t_total-t_main)/t_total << "%" << std::setprecision(8) << std::endl;
 #endif
 }
 
