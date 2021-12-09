@@ -27,11 +27,12 @@
 //#define PROFILE_DEG_UPMAT
 //#define PROFILE_DEG_UPKER
 //#define PROFILE_SMART_UPMAT
+//#define PROFILE_SMART_UPMAT_V2
 //#define PROFILE_SMART_UPKER
 //#define PROFILE_ZLS_AVG
 //#define PROFILE_KER_AVG
 //#define PROFILE_KERNEL_STEP1
-#define PROFILE_KERNEL_DEGREE1_CDEG
+//#define PROFILE_KERNEL_DEGREE1_CDEG
 //#define PROFILE_KERNEL_STEP2
 //#define PROFILE_KERNEL_DEGREE1
 //#define DEBUGGING_NOW
@@ -43,6 +44,7 @@
 //#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
 //#define TIME_DEG_UPKER // going degree by degree, updating kernel basis at each iteration
 #define TIME_SMART_UPMAT // going degree by degree, UPMAT, smart kernel computation
+#define TIME_SMART_UPMAT_V2 // going degree by degree, UPMAT, smart kernel computation
 //#define TIME_SMART_UPKER // going degree by degree, UPKER, smart kernel computation
 //#define TIME_ZLS_AVG // ZLS style, but taking average degrees into account
 //#define ESTIMATE_WIEDEMANN
@@ -1234,6 +1236,8 @@ void kernel_degree1(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat, lo
 // """"""
 //   - matp: polynomial matrix (D+ell+n) x n  (corresponding to F without x^d Id part)
 //   - cdeg: column degrees of F (d above)
+//   - if starting_index > 0, then it will be considered that only the columns/entries
+//     of matp and cdeg on and after starting_index should be considered
 //
 // Output/Side-effect:
 // """""""""""""""""""
@@ -1246,7 +1250,7 @@ void kernel_degree1(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat, lo
 //   - eF0 invertible, as mentioned above
 //   - cdeg is nonincreasing and cdeg > 0 (so that n = matp[0].NumCols())
 //   - nrows >= n+D, where D == sum(cdeg)
-void kernel_degree1_cdeg(Mat<zz_p> & K0, Mat<zz_p> & K1, Mat<zz_p> & lF0, const Vec<Mat<zz_p>> & matp, const VecLong & cdeg)
+void kernel_degree1_cdeg(Mat<zz_p> & K0, Mat<zz_p> & K1, Mat<zz_p> & lF0, const Vec<Mat<zz_p>> & matp, const VecLong & cdeg, long starting_index=0)
 {
 #ifdef PROFILE_KERNEL_DEGREE1_CDEG
     double t_total,t_mulinv,t_main;
@@ -1255,10 +1259,10 @@ void kernel_degree1_cdeg(Mat<zz_p> & K0, Mat<zz_p> & K1, Mat<zz_p> & lF0, const 
     t_total = GetWallTime();
 #endif
     // get dimensions, check numrows >= D+n
-    const long D = std::accumulate(cdeg.begin(), cdeg.end(), 0);
-    const long n = matp[0].NumCols();
+    const long D = std::accumulate(cdeg.begin()+starting_index, cdeg.end(), 0);
+    const long n = matp[0].NumCols()-starting_index;
     const long ell = matp[0].NumRows() - D - n;
-    const long mu = matp.length();
+    const long mu = cdeg[starting_index];
 #ifdef PROFILE_KERNEL_DEGREE1_CDEG
     std::cout << matp[0].NumRows() << " | " << n << " | " << D << " | " << ell << " | " << mu << std::endl;
 #endif
@@ -1280,33 +1284,33 @@ void kernel_degree1_cdeg(Mat<zz_p> & K0, Mat<zz_p> & K1, Mat<zz_p> & lF0, const 
     long d = 0;
     for (long k = 0; k < mu; ++k)
     {
-        const long n_k = matp[k].NumCols();
-        const long n_kpp = (k < mu-1) ? matp[k+1].NumCols() : 0;
+        const long n_k = matp[k].NumCols()-starting_index;
+        const long n_kpp = (k < mu-1) ? (matp[k+1].NumCols()-starting_index) : 0;
 
         // eF0 <- eF0 and sF0 <- sF0 and lF0 <- lF0
         for (long i = 0; i < D; ++i)
         {
             for (long j = 0; j < n_kpp; ++j)
             {
-                eF0[i][d+j] = matp[k][i][j];
-                sF0[i][n_k+d+j] = matp[k][i][j];
+                eF0[i][d+j] = matp[k][i][starting_index+j];
+                sF0[i][n_k+d+j] = matp[k][i][starting_index+j];
             }
             for (long j = n_kpp; j < n_k; ++j)
             {
-                eF0[i][d+j] = matp[k][i][j];
-                lF0[i][j] = matp[k][i][j];
+                eF0[i][d+j] = matp[k][i][starting_index+j];
+                lF0[i][j] = matp[k][i][starting_index+j];
             }
         }
 
         // K1 <- -eF1
         for (long i = 0; i < ell; ++i)
             for (long j = 0; j < n_k; ++j)
-                NTL::negate(K1[i][d+j], matp[k][D+i][j]);
+                NTL::negate(K1[i][d+j], matp[k][D+i][starting_index+j]);
 
         // K0 <- eF2
         for (long i = 0; i < n; ++i)
             for (long j = 0; j < n_k; ++j)
-                K0[i][d+j] = matp[k][D+ell+i][j];
+                K0[i][d+j] = matp[k][D+ell+i][starting_index+j];
 
         d += n_k;
     }
@@ -1777,6 +1781,308 @@ bool determinant_shifted_form_smartkernel_updateall(zz_pX & det, Vec<Mat<zz_p>> 
     return determinant_shifted_form_smartkernel_updateall(det, matp, cdeg, threshold, target_degdet);
 }
 
+// det: output determinant
+// matp: input square m x m matrix
+// cdeg: column degrees of the input matp (len(cdeg) = m), assumed nondecreasing
+// threshold: when "??? TODO", switch to a classical determinant algorithm
+//      where d is the smallest entry (i.e. last entry)
+// target_degdet: degree of determinant of matp, used for certification
+// REQUIREMENTS:
+//   -- matp is in "shiftedform": matp = X^{cdeg} Id + R, where cdeg(R) < cdeg
+//   -- cdeg is nonincreasing   (cdeg[j+1] <= cdeg[j])
+//   -- storage: matp is a list of coefficient matrices; matp[i] has dimensions m x n_i
+//      where n_i is the largest integer j such that cdeg[j] >= i
+//      NOTE: the X^cdeg Id part is not stored
+//   -- target_degdet: must be equal to deg(det(matp)), otherwise the
+//   behaviour of certification is not guaranteed
+// GUARANTEES IN OUTPUT:
+//   -- det = det(matp)
+//   -- if target_degdet in input, then the return value is true iff det = det(matp)
+// PROPERTIES:
+//   -- degree of determinant is sum(cdeg) = sum of diagonal degrees
+bool determinant_shifted_form_smartkernel_updateall_v2(zz_pX & det, Vec<Mat<zz_p>> & matp, VecLong & cdeg, long threshold, long target_degdet)
+{
+#ifdef DEBUGGING_NOW
+    std::cout << target_degdet << std::endl;
+    std::cout << cdeg << std::endl;
+#endif // DEBUGGING_NOW
+    
+#ifdef PROFILE_SMART_UPMAT_V2
+    double t_total, t_kernel, t_update, t;
+    t_update = 0;
+    t_total = GetWallTime();
+#endif // PROFILE_SMART_UPMAT_V2
+    if (matp.length() == 0) // identity matrix
+    {
+        det = 1;
+#ifdef PROFILE_SMART_UPMAT_V2
+    std::cout << "\tbase case identity matrix" << std::endl;
+#endif // PROFILE_SMART_UPMAT_V2
+        return (target_degdet == 0);
+    }
+
+    const long m = matp[0].NumRows();
+#ifdef PROFILE_SMART_UPMAT_V2
+    std::cout << "Entering iteration with m , mindeg = " << m << " , " << cdeg[m-1] << std::endl;
+#endif // PROFILE_SMART_UPMAT_V2
+    if (m != (long)cdeg.size())
+    {
+        std::cout << "~~ERROR~~ wrong length of input cdeg in determinant_shifted_form_smartkernel_updateall" << std::endl;
+        return false;
+    }
+
+    // if sum(cdeg) is not target_degree, then something went wrong in earlier steps
+    if (std::accumulate(cdeg.begin(), cdeg.end(), 0) != target_degdet)
+    {
+        std::cout << "~~ERROR~~  in determinant_shifted_form_smartkernel_updateall" << std::endl;
+        std::cout << "         --> target_degdet is not equal to sum(cdeg)" << std::endl;
+        std::cout << "         --> either cdeg is wrong" << std::endl;
+        std::cout << "           (which is not supposed to happen if it was correct in input)" << std::endl;
+        std::cout << "         --> or some kernel computation went wrong" << std::endl;
+        std::cout << "           (which can happen due to genericity assumption not satisfied)" << std::endl;
+        return false;
+    }
+
+    // if small dim, just run expansion by minors
+    if (m<=4)
+    {
+        Mat<zz_pX> pmat;
+        conv_shifted_form(pmat, matp, cdeg);
+#ifdef PROFILE_SMART_UPMAT_V2
+        t=GetWallTime();
+#endif // PROFILE_SMART_UPMAT_V2
+        determinant_expansion_by_minors(det, pmat);
+#ifdef PROFILE_SMART_UPMAT_V2
+        std::cout << "\tbase case (expansion) --> " << GetWallTime()-t << std::endl;
+        std::cout << "\ttotal of iteration    --> " << GetWallTime()-t_total << std::endl;
+#endif // PROFILE_SMART_UPMAT_V2
+        return true;
+    }
+
+    // above some threshold,
+    // run the usual algo splitting column dimension in two equal parts
+    if (cdeg[m-1] >= threshold || m <= cdeg[m-1]+1) // TODO
+    {
+#ifdef PROFILE_SMART_UPMAT_V2
+        std::cout << "\t-->Entering halving stage" << std::endl;
+#endif // PROFILE_SMART_UPMAT_V2
+        Mat<zz_pX> pmat;
+        conv_shifted_form_mirrored(pmat, matp, cdeg);
+
+#ifdef PROFILE_SMART_UPMAT_V2
+        t=GetWallTime();
+#endif // PROFILE_SMART_UPMAT_V2
+        const bool ok = determinant_generic_knowing_degree(det, pmat, target_degdet);
+#ifdef PROFILE_SMART_UPMAT_V2
+        std::cout << "\ttotal of halving    --> " << GetWallTime()-t << std::endl;
+        std::cout << "\ttotal of iteration  --> " << GetWallTime()-t_total << std::endl;
+#endif // PROFILE_SMART_UPMAT_V2
+        return ok;
+    }
+
+    // take nn = largest possible number of columns handled in this step
+    // the requirement is  m >= D + nn
+    long nn = 1;          // size of the block
+    long D = cdeg[m-nn];  // sum of cdeg of the block
+    long mu = cdeg[m-nn]; // degree of the block
+    while (nn < m && D+cdeg[m-nn-1]+nn < m)
+    {
+        ++nn;
+        D += cdeg[m-nn];
+        mu = cdeg[m-nn];
+    }
+
+    // compute kernel
+#ifdef PROFILE_SMART_UPMAT_V2
+    std::cout << "\tkernel ||  m, D, nn, ell, mu --> " << m << " x " << D << " x " << nn << " x " << m-D-nn << " x " << mu << std::endl;
+    t_kernel = GetWallTime();
+#endif // PROFILE_SMART_UPMAT_V2
+    Mat<zz_p> K0, K1, lF0;
+    kernel_degree1_cdeg(K0, K1, lF0, matp, cdeg, m-nn);
+#ifdef PROFILE_SMART_UPMAT_V2
+    t_kernel = GetWallTime() - t_kernel;
+#endif // PROFILE_SMART_UPMAT_V2
+    // Recall this gives us constant matrices
+    //     K0, dimensions D x D 
+    //     K1, dimensions ell x D
+    //     lF0, dimensions D x n
+    // where ell = m - D - nn
+    // such that the Popov left kernel of the considered block is
+    //   [ x I_D + K0 |    0    | lF0 ]
+    //   [ ----------   -------   ----- ]
+    //   [     K1     |  I_ell  |   0   ]
+    // Then left-multiplying matp by this kernel gives
+    //                  [ M_0 + x^{cdeg1+1} I_D |   M_1 + x^{cdeg2} L   |  0  ]
+    //   ker * matp =   [ ---------------------- | --------------------- | --- ]
+    //                  [          M_2           | M_3 + x^{cdeg2} I_ell |  0  ]
+    // where
+    //            cdeg = cdeg1 + cdeg2 + cdeg3
+    //      with lengths -D-    -ell-    -n-
+    // and
+    //         cdeg(M_0) < cdeg1+1, cdeg(M_2) < cdeg1+1
+    //         cdeg(M_1) < cdeg2, cdeg(M_3) < cdeg2
+    // and
+    //         L = matp[ :D, D:D+ell ]
+    // ==> as a result, ignoring the zero columns, this has the shifted form
+    // with the new cdeg = cdeg1+1  +  cdeg2,
+    // UP TO modifying the top rows by removing the L part, which is simply done
+    // by left-multiplication by the constant D  x (ell+D)  matrix
+    //       [ I_D  |  -L  ]
+    // -> incorporating this into the kernel basis directly, we will left-multiply
+    // by the matrix
+    //   [  S + x I_D  |   -L    | lF0 ]
+    //   [  ----------   -------   --- ]
+    //   [      K1     |  I_ell  |  0  ]
+    // where S = K0 - L K1
+
+    // discard columns of block F in matp
+    Mat<zz_p> buf;
+    long ell = m - nn; // warning: not yet the ell in comments above
+    for (long k = 0; k < mu; ++k)
+    {
+        buf.SetDims(m,ell);
+        for (long i = 0; i < m; ++i)
+            VectorCopy(buf[i], matp[k][i], ell);
+        buf.swap(matp[k]);
+    }
+
+    ell = ell - D; // now ell is indeed ell = m - D - nn
+    // compute S = K0 - L K1 and store it in K0
+    Mat<zz_p> lmat;
+    lmat.SetDims(D, ell); // matrix -L
+    for (long j = 0; j < ell; ++j)
+        for (long i = 0; i < D; ++i)
+            lmat[i][j] = -matp[cdeg[D+j]-1][i][D+j];
+#ifdef PROFILE_SMART_UPMAT_V2
+    t = GetWallTime();
+#endif // PROFILE_SMART_UPMAT_V2
+    mul(buf, lmat, K1);  // now buf = -L K1
+    add(K0, K0, buf); // now K0 = S
+#ifdef PROFILE_SMART_UPMAT_V2
+    t_update += GetWallTime() - t;
+#endif // PROFILE_SMART_UPMAT_V2
+    // form the row  [  S  |  -L  | lF0 ] as defined above
+    Mat<zz_p> trans_top;
+    trans_top.SetDims(D, m);
+    for (long i = 0; i < D; ++i)
+    {
+        for (long j = 0; j < D; ++j)
+            trans_top[i][j] = K0[i][j];
+        for (long j = D; j < D+ell; ++j)
+            trans_top[i][j] = lmat[i][j-D];
+        for (long j = D+ell; j < m; ++j)
+            trans_top[i][j] = lF0[i][j-D-ell];
+    }
+
+    // left multiply by kernel
+    // update cdeg : discard last nn entries ; add 1 to first D entries
+    VecLong(cdeg.begin(), cdeg.begin()+D+ell).swap(cdeg);
+    for (long i = 0; i < D; ++i)
+        cdeg[i] = cdeg[i] + 1;
+    // update matp storage: add one coefficient, will be initialized in first iteration of loop
+    matp.SetLength(cdeg[0]);
+    // going through the coefficient of degree k from max to 0
+    for (long k = cdeg[0]-2; k >= 0; --k)
+    {
+        const long cdim = matp[k].NumCols();
+        // 1. multiply by X I_D: add first rows to matp[k+1]
+        // And update size of matp[k+1] if needed
+        //  -- note that cdim2 <= cdim is always true
+        //  -- and there is no need to resize if cdim2 == cdim || cdim2 >= D
+        const long cdim2 = matp[k+1].NumCols();
+        if (cdim2 == 0)
+        {
+            // first iteration, k+1 == cdeg[0]-1
+            matp[k+1].SetDims(D+ell, std::min<long>(cdim,D));
+            for (long i = 0; i < D; ++i)
+                VectorCopy(matp[k+1][i], matp[k][i], std::min<long>(cdim,D));
+        }
+        else if (cdim2 < std::min<long>(cdim,D))
+        {
+            // matp[k+1] needs to be resized
+            buf.swap(matp[k+1]);
+            matp[k+1].SetDims(D+ell,std::min<long>(cdim,D)); // reallocates
+            for (long i = 0; i < D; ++i)
+            {
+#ifdef PROFILE_SMART_UPMAT_V2
+                t = GetWallTime();
+#endif // PROFILE_SMART_UPMAT_V2
+                for (long j = 0; j < cdim2; ++j)
+                    add(matp[k+1][i][j], buf[i][j], matp[k][i][j]);
+#ifdef PROFILE_SMART_UPMAT_V2
+                t_update += GetWallTime() - t;
+#endif // PROFILE_SMART_UPMAT_V2
+                for (long j = cdim2; j < matp[k+1].NumCols(); ++j)
+                    matp[k+1][i][j] = matp[k][i][j];
+            }
+            for (long i = D; i < D+ell; ++i)
+                VectorCopy(matp[k+1][i], buf[i], matp[k+1].NumCols());
+        }
+        else // matp[k+1] does not need to be resized
+        {
+#ifdef PROFILE_SMART_UPMAT_V2
+            t = GetWallTime();
+#endif // PROFILE_SMART_UPMAT_V2
+            for (long i = 0; i < D; ++i)
+                for (long j = 0; j < cdim2; ++j)
+                    add(matp[k+1][i][j], matp[k+1][i][j], matp[k][i][j]);
+#ifdef PROFILE_SMART_UPMAT_V2
+            t_update += GetWallTime() - t;
+#endif // PROFILE_SMART_UPMAT_V2
+        }
+
+        // 2. multiply by constant kernel    [ K1 | I_ell | 0 ]
+        // and store in buf
+        buf.kill(); // TODO remove?
+        buf.SetDims(D, cdim);
+        for (long i = 0; i < D; ++i)
+            VectorCopy(buf[i], matp[k][i], cdim);
+#ifdef PROFILE_SMART_UPMAT_V2
+        t = GetWallTime();
+#endif // PROFILE_SMART_UPMAT_V2
+        mul(buf, K1, buf);
+        for (long i = 0; i < ell; ++i)
+            add(buf[i], buf[i], matp[k][i+D]);
+        // 3. multiply by degree1 kernel   trans_top = [  S | -L | lF0 ]
+        // and store in matp[k]
+        mul(matp[k], trans_top, matp[k]);
+#ifdef PROFILE_SMART_UPMAT_V2
+        t_update += GetWallTime() - t;
+#endif // PROFILE_SMART_UPMAT_V2
+        // 4. stack rows of buf below this product
+        matp[k].SetDims(D+ell,cdim);
+        for (long i = D; i < D+ell; ++i)
+            matp[k][i].swap(buf[i-D]);
+    }
+    // finally don't forget to add 
+    //   [ S  ]
+    //   [ K1 ]
+    // in leading terms of leftmost rows since it is multiplied by the
+    // (non-stored) X^cdeg1 I_D
+    // FIXME if needed, there surely is a more cache friendly way to do this...
+#ifdef PROFILE_SMART_UPMAT_V2
+        t = GetWallTime();
+#endif // PROFILE_SMART_UPMAT_V2
+    for (long j = 0; j < D; ++j)
+    {
+        for (long i = 0; i < D; ++i)
+            matp[cdeg[j]-1][i][j] += trans_top[i][j];
+        for (long i = D; i < D+ell; ++i)
+            matp[cdeg[j]-1][i][j] += K1[i-D][j];
+    }
+#ifdef PROFILE_SMART_UPMAT_V2
+    t_update += GetWallTime() - t;
+    t_total = GetWallTime() - t_total;
+    std::cout << "End of iteration; times before recursion:" << std::endl;
+    std::cout << "          kernel --> " << t_kernel << std::endl;
+    std::cout << "          update --> " << t_update << std::endl;
+    std::cout << "          total  --> " << t_total << std::endl;
+    std::cout << "    non-dominant --> " << std::setprecision(2) << 100*(t_kernel+t_update)/t_total << "%" << std::setprecision(8) << std::endl;
+#endif // PROFILE_SMART_UPMAT_V2
+
+    return determinant_shifted_form_smartkernel_updateall_v2(det, matp, cdeg, threshold, target_degdet);
+}
+
 
 void conv_cdeg_uniquemult(std::vector<long> & unique_cdeg, std::vector<long> & mult_cdeg, const Vec<long> & cdeg)
 {
@@ -2097,6 +2403,56 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
             tt = GetWallTime();
             zz_pX det;
             ok = ok && determinant_shifted_form_smartkernel_updateall(det, matp, copy_cdeg, thres, degdet);
+            t += GetWallTime()-tt;
+            ++nb_iter;
+            ok = ok && verify_determinant(det, pmat, true, true);
+        }
+        timings.push_back(t/nb_iter);
+        if (not ok)
+            std::cout << "~~~Warning~~~ verification of determinant failed in KER_UPMAT approach" << std::endl;
+    }
+#endif
+
+#ifdef TIME_SMART_UPMAT_V2
+    for (long thres=10; thres < 51; thres+=10)
+    { // shifted form specific, degree-aware, update matrix, smart kernel, version 2
+        t=0.0; nb_iter=0;
+        bool ok = true;
+        while (ok && t<1)
+        {
+            VecLong copy_cdeg(dim);
+            for (long j = 0; j < dim; ++j)
+                copy_cdeg[j] = cdeg[j];
+            Vec<Mat<zz_p>> matp;
+            matp.SetLength(cdeg[0]);
+            for (long k = 0; k < cdeg[0]; ++k)
+            {
+                // find size
+                long n_k = 0;
+                while (n_k < cdeg.length() && cdeg[n_k] > k)
+                    ++n_k;
+                // random dim x n_k constant term (that of degree k)
+                random(matp[k], dim, n_k);
+            }
+            Mat<zz_pX> pmat;
+            conv_shifted_form(pmat,matp,copy_cdeg);
+            //for (long i = 0; i < pmat.NumRows(); ++i)
+            //{
+            //    for (long j = 0; j < pmat.NumCols(); ++j)
+            //    {
+            //        std::cout << "pR([" ;
+            //        for (long k = 0; k <= deg(pmat[i][j]); ++k)
+            //        {
+            //            std::cout << pmat[i][j][k] << ", ";
+            //        }
+            //        std::cout << "])," << std::endl;
+            //    }
+            //}
+            //std::cout << matp << std::endl;
+            //std::cout << pmat << std::endl;
+            tt = GetWallTime();
+            zz_pX det;
+            ok = ok && determinant_shifted_form_smartkernel_updateall_v2(det, matp, copy_cdeg, thres, degdet);
             t += GetWallTime()-tt;
             ++nb_iter;
             ok = ok && verify_determinant(det, pmat, true, true);
