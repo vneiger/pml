@@ -30,7 +30,8 @@
 //#define PROFILE_SMART_UPKER
 //#define PROFILE_ZLS_AVG
 //#define PROFILE_KER_AVG
-#define PROFILE_KERNEL_STEP1
+//#define PROFILE_KERNEL_STEP1
+#define PROFILE_KERNEL_DEGREE1_CDEG
 //#define PROFILE_KERNEL_STEP2
 //#define PROFILE_KERNEL_DEGREE1
 //#define DEBUGGING_NOW
@@ -1102,7 +1103,7 @@ void kernel_degree1(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat, lo
     const long ell = cmat.NumRows() - (d+1)*n;
     if (ell < 0)
     {
-        std::cout << "~~ERROR~~ numrows >= (degree+1)*numcols required in kernel_stepd; see docstring" << std::endl;
+        std::cout << "~~ERROR~~ numrows >= (degree+1)*numcols required in kernel_degree1; see docstring" << std::endl;
         return;
     }
 
@@ -1224,20 +1225,150 @@ void kernel_degree1(Mat<zz_p> & kertop, Mat<zz_p> & kerbot, Mat<zz_p> & cmat, lo
 //  [ K1 ]       [     -eF1      ]
 // where
 //   lF0 = column-leading-matrix(F0, [d[0]-1, .., d[n-1]-1])
-//   sF0 = [ 0 | eF0_0 | ... | eF0_{mu-1} ]
+//   sF0 = [ 0 | eF0_0 | ... | eF0_{mu-2} ]
 //   mu = max(cdeg)
 //   0 has size D x n
 //   eF0_k is the D x n_{k+1} left submatrix of the coefficient of degree k of F0
 //
 // Input:
 // """"""
-//   - (D+ell+n) x D constant matrix eF
-//   - column degree d
+//   - matp: polynomial matrix (D+ell+n) x n  (corresponding to F without x^d Id part)
+//   - cdeg: column degrees of F (d above)
+//
 // Output/Side-effect:
 // """""""""""""""""""
-//   - kertop: D x D constant matrix (K0 above)
-//   - kerbot: ell x D constant matrix kerbot (K1 above)
-//   - cmat: replaced by -lF0
+//   - K0:  D x D constant matrix
+//   - K1: ell x D constant matrix kerbot
+//   - lF0: D x n constant matrix ( -lF0 above, note the minus sign)
+//
+// Required:
+// """""""""
+//   - eF0 invertible, as mentioned above
+//   - cdeg is nonincreasing and cdeg > 0 (so that n = matp[0].NumCols())
+//   - nrows >= n+D, where D == sum(cdeg)
+void kernel_degree1_cdeg(Mat<zz_p> & K0, Mat<zz_p> & K1, Mat<zz_p> & lF0, const Vec<Mat<zz_p>> & matp, const VecLong & cdeg)
+{
+#ifdef PROFILE_KERNEL_DEGREE1_CDEG
+    double t_total,t_mulinv,t_main;
+    std::cout << "\tKernel-degree1-cdeg starting, m | n | D | ell | mu = ";
+    t_main=0;
+    t_total = GetWallTime();
+#endif
+    // get dimensions, check numrows >= D+n
+    const long D = std::accumulate(cdeg.begin(), cdeg.end(), 0);
+    const long n = matp[0].NumCols();
+    const long ell = matp[0].NumRows() - D - n;
+    const long mu = matp.length();
+#ifdef PROFILE_KERNEL_DEGREE1_CDEG
+    std::cout << matp[0].NumRows() << " | " << n << " | " << D << " | " << ell << " | " << mu << std::endl;
+#endif
+    if (ell < 0)
+    {
+        std::cout << "~~ERROR~~ m >= D+n required in kernel_degree1_cdeg; see docstring" << std::endl;
+        return;
+    }
+
+    // build eF0 and sF0
+    // store -eF1 in K1, eF2 in K0, lF0 in lF0
+    Mat<zz_p> eF0, sF0;
+    eF0.SetDims(D,D);
+    sF0.SetDims(D,D);
+    K0.SetDims(n,D);
+    K1.SetDims(ell,D);
+    lF0.SetDims(D,n);
+
+    long d = 0;
+    for (long k = 0; k < mu; ++k)
+    {
+        const long n_k = matp[k].NumCols();
+        const long n_kpp = (k < mu-1) ? matp[k+1].NumCols() : 0;
+
+        // eF0 <- eF0 and sF0 <- sF0 and lF0 <- lF0
+        for (long i = 0; i < D; ++i)
+        {
+            for (long j = 0; j < n_kpp; ++j)
+            {
+                eF0[i][d+j] = matp[k][i][j];
+                sF0[i][n_k+d+j] = matp[k][i][j];
+            }
+            for (long j = n_kpp; j < n_k; ++j)
+            {
+                eF0[i][d+j] = matp[k][i][j];
+                lF0[i][j] = matp[k][i][j];
+            }
+        }
+
+        // K1 <- -eF1
+        for (long i = 0; i < ell; ++i)
+            for (long j = 0; j < n_k; ++j)
+                NTL::negate(K1[i][d+j], matp[k][D+i][j]);
+
+        // K0 <- eF2
+        for (long i = 0; i < n; ++i)
+            for (long j = 0; j < n_k; ++j)
+                K0[i][d+j] = matp[k][D+ell+i][j];
+
+        d += n_k;
+    }
+
+#ifdef PROFILE_KERNEL_DEGREE1_CDEG
+    t_mulinv = GetWallTime();
+#endif
+    // K0 = lF0 * eF2
+    mul(K0, lF0, K0);
+#ifdef PROFILE_KERNEL_DEGREE1_CDEG
+    t_mulinv = GetWallTime() - t_mulinv;
+    t_main += t_mulinv;
+    std::cout << "\tMatMul1 --> dimensions \t" << D << " x " << n << " x " << D << " ||  time " << t_mulinv << std::endl;
+#endif
+
+    // lF0 = -lF0
+    NTL::negate(lF0, lF0);
+    // K0 = lF0 * eF2 - sF0
+    sub(K0, K0, sF0); 
+    //       [ lF0 * eF2 - sF0 ]
+    // K0 <- [ --------------- ]
+    //       [      -eF1       ]
+    K0.SetDims(D+ell, D);
+    for (long i = 0; i < ell; ++i)
+        K0[i+D].swap(K1[i]);
+
+#ifdef PROFILE_KERNEL_DEGREE1_CDEG
+    t_mulinv = GetWallTime();
+#endif
+    // iF0 <- inverse of eF0
+    Mat<zz_p> iF0;
+    inv(iF0,eF0);
+#ifdef PROFILE_KERNEL_DEGREE1_CDEG
+    t_mulinv = GetWallTime() - t_mulinv;
+    t_main += t_mulinv;
+    std::cout << "\tInversion --> dimensions \t" << D << " x " << D << " ||  time " << t_mulinv << std::endl;
+#endif
+
+#ifdef PROFILE_KERNEL_DEGREE1_CDEG
+    t_mulinv = GetWallTime();
+#endif
+    //       [ lF0 * eF2 - sF0 ]
+    // K0 <- [ --------------- ]  iF0
+    //       [      -eF1       ]
+    mul(K0, K0, iF0);
+#ifdef PROFILE_KERNEL_DEGREE1_CDEG
+    t_mulinv = GetWallTime() - t_mulinv;
+    t_main += t_mulinv;
+    std::cout << "\tMatMul2 --> dimensions \t" << D+ell << " x " << D << " x " << D << " ||  time " << t_mulinv << std::endl;
+#endif
+
+    // split back into K0 and K1
+    for (long i = 0; i < ell; ++i)
+        K0[i+ell].swap(K1[i]);
+    K0.SetDims(D,D);
+
+#ifdef PROFILE_KERNEL_DEGREE1_CDEG
+    t_total = GetWallTime() - t_total;
+    std::cout << "\ttotal time:\t" << t_total << std::endl;
+    std::cout << "\tnon-dominant:\t" << t_total-t_main << std::endl;
+#endif
+}
 
 
 
@@ -2410,6 +2541,178 @@ int main(int argc, char ** argv)
     return 0;
 }
 
+#elif defined PROFILE_KERNEL_DEGREE1_CDEG
+// to compare variants for kernel degree1 cdeg
+int main(int argc, char ** argv)
+{
+    std::cout << std::fixed;
+    std::cout << std::setprecision(8);
+
+    const long m = atoi(argv[1]);
+    const long n = atoi(argv[2]);
+    const long d = atoi(argv[3]);
+    long p = NTL::GenPrime_long(atoi(argv[4]));
+    zz_p::init(p);
+    std::cout << "PRIME " << p << std::endl;
+
+    Vec<Mat<zz_p>> cmats;
+    cmats.SetLength(d);
+    for (long i = 0; i < d; ++i)
+        random(cmats[i],m,n);
+    // // concrete example in degree 2:
+    // // here: long p = 594397;
+    //for (long i = 0; i < 2; ++i)
+    //    cmats[i].SetDims(m,n);
+    //cmats[0][0][0] = 540635 ;
+    //cmats[0][1][0] = 393278 ;
+    //cmats[0][2][0] = 25615  ;
+    //cmats[0][3][0] = 361430 ;
+    //cmats[0][4][0] = 426228 ;
+    //cmats[0][5][0] = 533219 ;
+    //cmats[0][6][0] = 12266  ;
+    //cmats[0][7][0] = 182116 ;
+    //cmats[0][8][0] = 355140 ;
+    //cmats[0][9][0] = 506910 ;
+    //cmats[0][0][1] = 185850;
+    //cmats[0][1][1] = 319804;
+    //cmats[0][2][1] = 456968;
+    //cmats[0][3][1] = 538120;
+    //cmats[0][4][1] = 471472;
+    //cmats[0][5][1] = 353017;
+    //cmats[0][6][1] = 585546;
+    //cmats[0][7][1] = 499752;
+    //cmats[0][8][1] = 482345;
+    //cmats[0][9][1] = 57564 ;
+    //cmats[0][0][2] = 184671;
+    //cmats[0][1][2] = 83659 ;
+    //cmats[0][2][2] = 12273 ;
+    //cmats[0][3][2] = 466317;
+    //cmats[0][4][2] = 233868;
+    //cmats[0][5][2] = 247343;
+    //cmats[0][6][2] = 403402;
+    //cmats[0][7][2] = 52394 ;
+    //cmats[0][8][2] = 552391;
+    //cmats[0][9][2] = 7779  ;
+    //cmats[1][0][0] = 353628 ;
+    //cmats[1][1][0] = 410695 ;
+    //cmats[1][2][0] = 334048 ;
+    //cmats[1][3][0] = 251812 ;
+    //cmats[1][4][0] = 461843 ;
+    //cmats[1][5][0] = 248587 ;
+    //cmats[1][6][0] = 125230 ;
+    //cmats[1][7][0] = 120852 ;
+    //cmats[1][8][0] = 363768 ;
+    //cmats[1][9][0] = 579117 ;
+    //cmats[1][0][1] = 178165;
+    //cmats[1][1][1] = 500174;
+    //cmats[1][2][1] = 342199;
+    //cmats[1][3][1] = 416403;
+    //cmats[1][4][1] = 437184;
+    //cmats[1][5][1] = 301989;
+    //cmats[1][6][1] = 547901;
+    //cmats[1][7][1] = 313877;
+    //cmats[1][8][1] = 173123;
+    //cmats[1][9][1] = 305000;
+    //cmats[1][0][2] = 22627;
+    //cmats[1][1][2] = 106362;
+    //cmats[1][2][2] = 126392;
+    //cmats[1][3][2] = 493266;
+    //cmats[1][4][2] = 541673;
+    //cmats[1][5][2] = 273329;
+    //cmats[1][6][2] = 5298;
+    //cmats[1][7][2] = 96693;
+    //cmats[1][8][2] = 116158;
+    //cmats[1][9][2] = 389773;
+ 
+#ifdef DEBUGGING_NOW
+    std::cout << cmats << std::endl;
+#endif // DEBUGGING_NOW
+
+    Mat<zz_pX> pmat;
+    pmat.SetDims(m,n);
+    for (long k = 0; k < d; ++k)
+        SetCoeff(pmat, k, cmats[k]);
+    for (long i = 0; i < n; ++i)
+        SetCoeff(pmat[m-n+i][i],3);
+    //std::cout << pmat << std::endl;
+
+    double t = GetWallTime();
+    //Mat<zz_pX> kerbas;
+    //VecLong shift(m);
+    //pmbasis(kerbas, pmat, 2*d, shift);
+    //t = GetWallTime() - t;
+    //std::cout << "Via approx:\t" << t << std::endl;
+
+    // general degree d smart kernel
+    Mat<zz_p> cmat;
+    cmat.SetDims(m,d*n);
+    for (long i = 0; i < m; ++i)
+        for (long k = 0; k < d; ++k)
+            for (long j = 0; j < n; ++j)
+                cmat[i][k*n+j] = cmats[k][i][j];
+
+    VecLong cdeg(n,d);
+    t = GetWallTime();
+    Mat<zz_p> K0, K1, lF0;
+    kernel_degree1_cdeg(K0,K1,lF0,cmats,cdeg);
+    t = GetWallTime() - t;
+    std::cout << "Smart kernel, general:\t" << t << std::endl;
+#ifdef DEBUGGING_NOW
+    std::cout << K0 << std::endl<< std::endl << std::endl;
+    std::cout << K1 << std::endl<< std::endl<< std::endl;
+    std::cout << lF0 << std::endl<< std::endl<< std::endl;
+#endif // DEBUGGING_NOW
+
+    t = GetWallTime();
+    Mat<zz_p> ckertop,ckerbot;
+    kernel_degree1(ckertop, ckerbot, cmat, d);
+    t = GetWallTime() - t;
+    std::cout << "Smart kernel:\t" << t << std::endl;
+#ifdef DEBUGGING_NOW
+    std::cout << ckertop << std::endl<< std::endl << std::endl;
+    std::cout << ckerbot << std::endl<< std::endl<< std::endl;
+    std::cout << cmat << std::endl<< std::endl<< std::endl;
+#endif // DEBUGGING_NOW
+
+    // degree 1 smart kernel
+    if (d>=1)
+    {
+        Mat<zz_p> cmat1 = cmats[0];
+        t = GetWallTime();
+        Mat<zz_p> ckertop1,ckerbot1;
+        kernel_step1_direct(ckertop1, ckerbot1, cmat1);
+        t = GetWallTime() - t;
+        std::cout << "Smart kernel(1):\t" << t << std::endl;
+#ifdef DEBUGGING_NOW
+        std::cout << ckertop1 << std::endl<< std::endl << std::endl;
+        std::cout << ckerbot1 << std::endl<< std::endl<< std::endl;
+        std::cout << cmat1 << std::endl<< std::endl<< std::endl;
+#endif // DEBUGGING_NOW
+    }
+
+    // degree 2 smart kernel
+    if (d>=2)
+    {
+        Mat<zz_p> cmat2;
+        cmat2.SetDims(m,2*n);
+        for (long i = 0; i < m; ++i)
+            for (long k = 0; k < 2; ++k)
+                for (long j = 0; j < n; ++j)
+                    cmat2[i][k*n+j] = cmats[k][i][j];
+        t = GetWallTime();
+        Mat<zz_p> ckertop2,ckerbot2;
+        kernel_step2(ckertop2, ckerbot2, cmat2);
+        t = GetWallTime() - t;
+        std::cout << "Smart kernel(2):\t" << t << std::endl;
+#ifdef DEBUGGING_NOW
+        std::cout << ckertop2 << std::endl<< std::endl << std::endl;
+        std::cout << ckerbot2 << std::endl<< std::endl<< std::endl;
+        std::cout << cmat2 << std::endl<< std::endl<< std::endl;
+#endif // DEBUGGING_NOW
+    }
+
+    return 0;
+}
 #elif defined UNIFORM_KSHIFTED
 // to check time for charpoly of d-shifted
 int main(int argc, char ** argv)
