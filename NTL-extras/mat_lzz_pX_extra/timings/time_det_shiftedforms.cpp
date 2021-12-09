@@ -37,7 +37,7 @@
 //#define PROFILE_KERNEL_DEGREE1
 //#define DEBUGGING_NOW
 //#define UNIFORM_KSHIFTED
-#define TIME_FMA
+//#define TIME_FMA
 
 //#define TIME_LINSOLVE // via linear system solving with random rhs
 //#define TIME_TRI_DECR // generic determinant on matrix with decreasing diagonal degrees
@@ -1392,7 +1392,9 @@ void fused_mul_add(Mat<zz_p> & fmatp, Mat<zz_p> & matp, long rdim, Mat<zz_p> & m
     const long mm = mat.NumRows(); // new row dim
     const long nn = n+rdim; // new column dim
 
+    double t = GetWallTime();
     mul(mat, mat, matp);
+    cout << "MUL --> " << GetWallTime() - t << endl;
 
     fmatp.SetDims(mm,nn);
     for (long i = 0; i < k; ++i)
@@ -1405,7 +1407,8 @@ void fused_mul_add(Mat<zz_p> & fmatp, Mat<zz_p> & matp, long rdim, Mat<zz_p> & m
             fmatp[i][j].LoopHole() = matp[i][j-rdim]._zz_p__rep;
     }
     for (long i = k; i < mm; ++i)
-        VectorCopy(fmatp[i], mat[i], n);
+        for (long j = 0; j < n; ++j)
+            fmatp[i][j], mat[i][j]._zz_p__rep;
 }
 
 // Convert a matrix polynomial stored as below in determinant_shifted_form_smartkernel_updateall
@@ -3420,6 +3423,7 @@ int main(int argc, char ** argv)
     long p = NTL::GenPrime_long(atoi(argv[4]));
     zz_p::init(p);
     std::cout << "PRIME " << p << std::endl;
+    std::cout << "Time FMA" << std::endl;
 
     Mat<zz_p> fmatp, matp, mat;
     random(mat, k+5, m);
