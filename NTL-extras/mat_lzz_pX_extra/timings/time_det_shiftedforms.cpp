@@ -26,8 +26,8 @@
 
 //#define PROFILE_DEG_UPMAT
 //#define PROFILE_DEG_UPKER
-//#define PROFILE_SMART_UPMAT
-//#define PROFILE_SMART_UPMAT_V2
+#define PROFILE_SMART_UPMAT
+#define PROFILE_SMART_UPMAT_V2
 //#define PROFILE_SMART_UPKER
 //#define PROFILE_ZLS_AVG
 //#define PROFILE_KER_AVG
@@ -2363,7 +2363,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 #endif
 
 #ifdef TIME_SMART_UPMAT
-    for (long thres=10; thres < 51; thres+=10)
+    for (long thres=30; thres < 71; thres+=10)
     { // shifted form specific, degree-aware, update matrix, smart kernel
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -2414,7 +2414,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 #endif
 
 #ifdef TIME_SMART_UPMAT_V2
-    for (long thres=10; thres < 51; thres+=10)
+    for (long thres=30; thres < 71; thres+=10)
     { // shifted form specific, degree-aware, update matrix, smart kernel, version 2
         t=0.0; nb_iter=0;
         bool ok = true;
