@@ -210,6 +210,28 @@ void appbas_iterative(
                       bool order_wise=true
                      );
 
+/** Computes a `(s1,s2)`-ordered weak Popov approximant basis for
+ * `([f,g]^t,order)`. This is similar to `appbas_iterative` but specific for
+ * the case of an input matrix of dimensions 2 x 1. At the end of the
+ * computation, the vector `(s1,s2)` contains the shifted row degree of
+ * the matrix formed by `p11,p12,p21,p22`, with respect to the input shift.
+ **/
+// TODO try several options:
+// -- rescomp vs resupdate
+// -- currently it is resupdate but done naively, storing the residual
+// could probably be improved (for trying to reduce shifts/copies)
+void appbas_iterative_2x1(
+                           zz_pX & p00,
+                           zz_pX & p01,
+                           zz_pX & p10,
+                           zz_pX & p11,
+                           const zz_pX & f0,
+                           const zz_pX & f1,
+                           long order,
+                           long & s0,
+                           long & s1
+                          );
+
 /** Computes a `shift`-Popov approximant basis for `(pmat,order)`. At the end
  * of the computation, the vector `shift` contains the shifted row degree of
  * `appbas`, for the input shift. The parameter `order_wise` allows one to
@@ -495,6 +517,23 @@ void popov_pmbasis(
                    const long order,
                    VecLong & shift
                   );
+
+/** Computes a `(s1,s2)`-ordered weak Popov approximant basis for
+ * `([f,g]^t,order)`. This is the same as `pmbasis` but specific for the case
+ * of a 2x1 input matrix (see @ref pmbasis) */
+void pmbasis_2x1(
+                 zz_pX & p00,
+                 zz_pX & p01,
+                 zz_pX & p10,
+                 zz_pX & p11,
+                 const zz_pX & f0,
+                 const zz_pX & f1,
+                 long order,
+                 long & s0,
+                 long & s1,
+                 long threshold=32
+                );
+
 //@} // doxygen group: PM-Basis algorithm (uniform approximant order)
 
 

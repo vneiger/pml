@@ -161,6 +161,42 @@ int main(int argc, char *argv[])
                 if (verbose)
                     std::cout << "OK." << std::endl;
 
+                // 2 x 2 specific
+                if (rdim==2 && cdim==1)
+                {
+                    if (verbose)
+                        std::cout << "Computation with 2x2 specific code... ";
+
+                    long s0 = shift[0];
+                    long s1 = shift[1];
+                    zz_pX f0 = (*pmat)[0][0];
+                    zz_pX f1 = (*pmat)[1][0];
+                    zz_pX p00,p01,p10,p11;
+                    appbas_iterative_2x1(p00,p01,p10,p11,f0,f1,order,s0,s1);
+
+                    if (verbose)
+                        std::cout << "OK. Testing... ";
+                    appbas[0][0] = p00;
+                    appbas[0][1] = p01;
+                    appbas[1][0] = p10;
+                    appbas[1][1] = p11;
+                    if (not is_approximant_basis(appbas,*pmat,order,shift,ORD_WEAK_POPOV,true))
+                    {
+                        std::cout << "Error in appbas_iterative_dim2." << std::endl;
+                        std::cout << "--rdim =\t" << rdim << std::endl;
+                        std::cout << "--cdim =\t" << cdim << std::endl;
+                        std::cout << "--deg =\t" << d << std::endl;
+                        std::cout << "--order =\t" << order << std::endl;
+                        std::cout << "--shift =\t" << shift << std::endl;
+                        std::cout << zz_p::modulus() << std::endl;
+                        std::cout << *pmat << std::endl;
+                        std::cout << appbas << std::endl;
+                        return 0;
+                    }
+                    if (verbose)
+                        std::cout << "OK." << std::endl;
+                }
+
                 // PLAIN MBASIS
                 if (verbose)
                     std::cout << "Computation mbasis_plain... ";

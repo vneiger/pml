@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
         std::cout << "Time(system-solve):\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
     }
 
+    if (rdim<=50)
     { // via evaluation, general points
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -86,6 +87,7 @@ int main(int argc, char *argv[])
         std::cout << "Time(ev-general):\t" << t/nb_iter << (ok ? "\t(ok)":"  (notok)") << std::endl;
     }
 
+    if (rdim<=50)
     { // via evaluation, geometric points
         t=0.0; nb_iter=0;
         bool ok = true;

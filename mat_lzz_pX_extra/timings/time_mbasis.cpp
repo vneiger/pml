@@ -120,9 +120,35 @@ void one_bench_mbasis(long rdim, long cdim, long degree, long order)
     else // not enough distinct points can be found
         t_mbasis_int_resupdate = -1.0;
 
+    double t_app_2x1=-1.0;
+    if (rdim==2 && cdim==1)
+    {
+        nb_iter=0;
+        t_app_2x1=0.0;
+        while (t_app_2x1<0.1)
+        {
+            zz_pX f0,f1;
+            random(f0, degree+1);
+            random(f1, degree+1);
+
+            t1 = GetWallTime();
+            zz_pX p00,p01,p10,p11;
+            long s0 = shift[0];
+            long s1 = shift[1];
+            appbas_iterative_2x1(p00,p01,p10,p11,f0,f1,order,s0,s1);
+            t2 = GetWallTime();
+
+            t_app_2x1 += t2-t1;
+            ++nb_iter;
+        }
+        t_app_2x1 /= nb_iter;
+    }
+
+
     cout << rdim << "\t" << cdim << "\t" << degree << "\t" << order;
     cout << "\t" << t_mbasis_rescomp << "\t" << t_mbasis_resupdate;
     cout << "\t" << t_mbasis_int_rescomp << "\t" << t_mbasis_int_resupdate;
+    cout << "\t" << t_app_2x1;
     cout << endl;
 }
 

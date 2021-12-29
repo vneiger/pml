@@ -1,5 +1,6 @@
 #include <numeric> // for std::iota
 
+#include "lzz_pX_middle_product.h"
 #include "mat_lzz_pX_approximant.h"
 
 //#define MBASIS1_PROFILE
@@ -1494,6 +1495,9 @@ void pmbasis(
 
     // first recursive call, with 'pmat' and 'shift'
     Mat<zz_pX> trunc_pmat; // truncated pmat for first call
+    // TODO is this trunc necessary here? it seems to be just for avoiding
+    // big copies at the base mbasis (right?) (probably just for resupdate?) so
+    // it could be done directly inside mbasis when defining the residual?
     trunc(trunc_pmat,pmat,order1);
     pmbasis(appbas,trunc_pmat,order1,shift);
 
@@ -1550,6 +1554,70 @@ void popov_pmbasis(
     row_leading_matrix(lmat, appbas, rdeg);
     inv(lmat, lmat);
     mul(appbas,lmat,appbas);
+}
+
+void pmbasis_2x1(
+                 zz_pX & p00,
+                 zz_pX & p01,
+                 zz_pX & p10,
+                 zz_pX & p11,
+                 const zz_pX & f0,
+                 const zz_pX & f1,
+                 long order,
+                 long & s0,
+                 long & s1,
+                 long threshold
+                )
+{
+    if (order <= threshold) // TODO thresholds to be determined
+    {
+        appbas_iterative_2x1(p00,p01,p10,p11,f0,f1,order,s0,s1);
+        return;
+    }
+
+    long order1 = order>>1; // order of first call
+    long order2 = order-order1; // order of second call
+
+    // first recursive call, with 'pmat' and 'shift'
+    pmbasis_2x1(p00,p01,p10,p11,trunc(f0,order1),trunc(f1,order1),order1,s0,s1,threshold);
+
+    // (s0,s1) is now the shifted row degree of appbas,
+    // which is the shift for second call
+
+    // TODO the truncation might be removed if middle_product evolves
+    // (has it already?)
+    // residual = (appbas * pmat * X^-order1) mod X^order2
+    zz_pX tf0,tf1,r0,r1;
+    trunc(tf0,f0,order);
+    trunc(tf1,f1,order);
+    middle_product(r0,p00,tf0,order1,order2-1);
+    middle_product(r1,p01,tf1,order1,order2-1); // using r1 as temporary
+    r0 += r1;
+    middle_product(r1,p10,tf0,order1,order2-1);
+    middle_product(tf0,p11,tf1,order1,order2-1); // using tf0 as temporary
+    r1 += tf0;
+
+    // second recursive call, with the 'residual' (r1,r2) and updated (s0,s1)
+    zz_pX q00,q01,q10,q11; // basis for second call
+    pmbasis_2x1(q00,q01,q10,q11,r0,r1,order2,s0,s1,threshold);
+
+    // final basis = product of the two
+    Mat<zz_pX> appbas,appbas2;
+    appbas.SetDims(2,2);
+    appbas[0][0] = p00;
+    appbas[0][1] = p01;
+    appbas[1][0] = p10;
+    appbas[1][1] = p11;
+    appbas2.SetDims(2,2);
+    appbas2[0][0] = q00;
+    appbas2[0][1] = q01;
+    appbas2[1][0] = q10;
+    appbas2[1][1] = q11;
+    multiply(appbas,appbas2,appbas);
+    p00 = appbas[0][0];
+    p01 = appbas[0][1];
+    p10 = appbas[1][0];
+    p11 = appbas[1][1];
 }
 
 // Local Variables:
