@@ -23,12 +23,9 @@ int main(int argc, char *argv[])
     const bool fftprime = (argc==3) ? false : (atoi(argv[3])==1);
 
     if (fftprime)
-        //zz_p::FFTInit(0);
-        zz_p::UserFFTInit(786433);
+        zz_p::FFTInit(0);
     else
-        //zz_p::init(NTL::GenPrime_long(60));
-        //zz_p::init(NTL::GenPrime_long(20));
-        zz_p::init(131071);
+        zz_p::init(NTL::GenPrime_long(60));
 
     std::cout << "Testing determinant with random input matrix" << std::endl;
     std::cout << "--prime =\t" << zz_p::modulus() << (fftprime?"  (FFT prime)":"") << std::endl;

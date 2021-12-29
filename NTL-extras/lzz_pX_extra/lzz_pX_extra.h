@@ -12,9 +12,6 @@
 
 #include <memory> // for unique_ptr
 #include <NTL/lzz_pX.h>
-#include <stdexcept>
-#include <cmath>
-#include "../mat_lzz_pX_extra/mat_lzz_pX_utils.h" // TODO probably to be removed, here for new FFT things, isn't it?
 
 NTL_CLIENT
 
@@ -144,60 +141,6 @@ inline zz_pX shift(const zz_pX & f, const zz_p & c)
 /** Computes `c = a + (b << k)`, where the left shift means multiplication by
  * `X^k`. The OUT parameter `c` may alias `a` or `b`. */
 void add_LeftShift(zz_pX & c, const zz_pX & a, const zz_pX & b, const long k);
-
-
-// FFT (including TFT)
-class zz_pX_FFT{
-	zz_p **wtab = nullptr;
-	zz_p **inv_wtab = nullptr;
-	long p; // largest power of p
-
-	// in-place algorithms
-	// Forward algorithms also truncate, while the inverse does not
-	
-	// performs forward FT, where l is size of array and p is
-	// near exponent st l <= 2^p
-	void FFT(Vec<zz_p> &f, const long l, const long p);
-	void FFT_t(Vec<zz_p> &f, const long l, const long p);
-	
-	// full inverse transforms, require size of arrays to be power of 2
-	void iFFT(Vec<zz_p> &f, const long p,
-		      long start = 0, long end = -1);
-	void iFFT_t(Vec<zz_p> &f, const long p, 
-			  long start = 0, long end = -1);
-	
-	// truncated inverse transforms
-	void iTFT(Vec<zz_p> &f, long head, long tail, long last, long s,
-			  const long p);
-	void iTFT_t(Vec<zz_p> &f, long head, long tail, long last, long s,
-			  const long p);
-
-
-public:
-	~zz_pX_FFT();
-
-	// initializes with (2^p)-th root of unity
-	zz_pX_FFT(const long &prime,const long p);
-	
-	// transforms
-	void forward(Vec<zz_p> &out, const Vec<zz_p> &in);
-	void forward_t(Vec<zz_p> &out, const Vec<zz_p> &in);
-	
-	// full inverse transforms
-	void inverse(Vec<zz_p> &out, const Vec<zz_p> &in);
-	void inverse_t(Vec<zz_p> &out, const Vec<zz_p> &in);
-    
-	// polynomial routines
-	void mult(zz_pX &res, const zz_pX &a, const zz_pX &b);
-	
-	// requires deg(b) <= 2*deg(a) + 1
-	void middle_prod(zz_pX &res, const zz_pX &a, const zz_pX &b);
-
-	// polynomial matrix routines
-	// TODO: move to more appropriate place after tests
-	void mat_mult(Mat<zz_pX> &res, const Mat<zz_pX> &A, const Mat<zz_pX> &B);
-	void mat_mp(Mat<zz_pX> &res, const Mat<zz_pX> &A, const Mat<zz_pX> &B);
-};
 
 #endif
 

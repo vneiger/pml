@@ -1,10 +1,16 @@
 # PML (Polynomial Matrix Library)
 
-Additions to Shoup's NTL, with a focus on univariate polynomial matrices, structured matrices, and their applications.
+Additions to Victor Shoup's NTL, with a focus on univariate polynomial matrices, structured matrices, and their applications.
 
 Authors: Seung Gyu Hyun, Vincent Neiger, Éric Schost
 
-Version 0.0
+Version 0.2
+
+# Licensing
+
+PML v0.2 is distributed under the GNU General Public License version 2.0 (GPL-2.0-or-later). This applies to all files in the directory of this README as well as in all subdirectories. See the file COPYING for a copy of the license.
+
+PML v0.2 is heavily based on [NTL](https://www.shoup.net/ntl). See the file COPYING_NTL for NTL's copyright notice.
 
 # Installation
 

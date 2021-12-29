@@ -34,23 +34,8 @@ void check(long p, long sz, long sz2, long sz3, long deg)
     random(a, sz, sz2, deg);
     random(b, sz2, sz3, deg);
 
-    Mat<zz_p> aaa,bbb,ccc;
-    random(aaa, sz, sz2);
-    random(bbb, sz2, sz3);
-    double t_const = GetWallTime();
-    nb = 0;
-    do
-    {
-        mul(ccc,aaa,bbb);
-        nb++;
-    }
-    while (GetWallTime() - t_const <= 2);
-    t_const = GetWallTime() - t_const;
-    cout << "CONSTANT: " << t_const/nb << endl;
-
-
     cout << p << " " << sz << " " << sz2 << " " << sz3 << " " << deg << endl;
-
+    
     t_3primes = get_time();
     nb = 0;
     do
@@ -60,25 +45,25 @@ void check(long p, long sz, long sz2, long sz3, long deg)
     }
     while ((get_time()-t_3primes) <= thresh);
     t_3primes = (get_time()-t_3primes) / nb;
-
+                
     t_eval = get_time();
-    //nb = 0;
-    //do
-    //{
-    //    multiply_evaluate(c, a, b);
-    //    nb++;
-    //}
-    //while ((get_time()-t_eval) <= thresh);
+    nb = 0;
+    do
+    {
+        multiply_evaluate(c, a, b);
+        nb++;
+    }
+    while ((get_time()-t_eval) <= thresh);
     t_eval = (get_time()-t_eval) / nb;
 
     t_waksman = get_time();
-    //nb = 0;
-    //do
-    //{
-    //    multiply_waksman(c, a, b);
-    //    nb++;
-    //}
-    //        while ((get_time()-t_waksman) <= thresh);
+    nb = 0;
+    do
+    {
+        multiply_waksman(c, a, b);
+        nb++;
+    }
+            while ((get_time()-t_waksman) <= thresh);
     t_waksman = (get_time()-t_waksman) / nb;
 
     
@@ -174,9 +159,8 @@ int main(int argc, char ** argv)
     }
 
     warmup();
-    //check(0, sz1, sz2, sz3, deg);
+    check(0, sz1, sz2, sz3, deg);
     check(23068673, sz1, sz2, sz3, deg);
-    check(1073741827, sz1, sz2, sz3, deg);
     check(288230376151711813, sz1, sz2, sz3, deg);
     return 0;
 }

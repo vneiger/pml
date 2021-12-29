@@ -45,7 +45,7 @@
 //#define TIME_DEG_UPMAT // going degree by degree, updating remaining matrix columns at each iteration
 //#define TIME_DEG_UPKER // going degree by degree, updating kernel basis at each iteration
 //#define TIME_SMART_UPMAT // going degree by degree, UPMAT, smart kernel computation
-//#define TIME_SMART_UPMAT_V2 // going degree by degree, UPMAT, smart kernel computation
+#define TIME_SMART_UPMAT_V2 // going degree by degree, UPMAT, smart kernel computation
 //#define TIME_SMART_UPKER // going degree by degree, UPKER, smart kernel computation
 //#define TIME_ZLS_AVG // ZLS style, but taking average degrees into account
 //#define ESTIMATE_WIEDEMANN

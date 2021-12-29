@@ -15,9 +15,9 @@
 
 NTL_CLIENT
 
-/******************************************************/
-/* Times the degree functions for polynomial matrices */
-/******************************************************/
+/************************************************************************/
+/* Times the multiplication of a polynomial matrix by a constant matrix */
+/************************************************************************/
 
 using namespace std;
 
