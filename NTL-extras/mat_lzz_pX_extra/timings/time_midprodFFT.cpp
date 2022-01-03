@@ -23,42 +23,6 @@
         std::cout << t/tmul << "\t";         \
     }
 
-#define COMPARE(fn,fnt)                  \
-    {                                    \
-        tcomp = 0.0;                     \
-        nb_iter = 0;                     \
-        Mat<zz_pX> a, b;                 \
-        random(a, sz, sz, deg);          \
-        random(b, sz, sz, deg);          \
-        while (tcomp<0.1)                \
-        {                                \
-            tt = GetWallTime();          \
-            Mat<zz_pX> c;                \
-            fn(c, a, b);                 \
-            tcomp += GetWallTime()-tt;   \
-            ++nb_iter;                   \
-        }                                \
-        tcomp /= nb_iter;                \
-    }                                    \
-    {                                    \
-        t = 0.0;                         \
-        nb_iter = 0;                     \
-        Mat<zz_pX> a, b;                 \
-        random(a, sz, sz, deg);          \
-        random(b, sz, sz, deg);          \
-        while (t<0.1)                    \
-        {                                \
-            tt = GetWallTime();          \
-            Mat<zz_pX> c;                \
-            fnt(c, a, b);                \
-            t += GetWallTime()-tt;       \
-            ++nb_iter;                   \
-        }                                \
-        t /= nb_iter;                    \
-    }                                    \
-    std::cout << t/tcomp << "\t";
-
-
 NTL_CLIENT
 
 void one_bench_fft(long sz, long deg)
@@ -126,10 +90,10 @@ void one_bench_fft(long sz, long deg)
     else
         std::cout << "inf" << "\t";
 
-    if (deg<400)
-        TIME(middle_product_evaluate_dense2)
-    else
-        std::cout << "inf" << "\t";
+    //if (deg<400)
+    //    TIME(middle_product_evaluate_dense2)
+    //else
+    //    std::cout << "inf" << "\t";
 
     cout << endl;
 }
@@ -256,6 +220,7 @@ int main(int argc, char ** argv)
         //zz_p::FFTInit(0); // 60 bits, FFT
         //std::cout << "Bench polynomial matrix multiplication (FFT prime, 60 bits)" << std::endl;
         zz_p::UserFFTInit(786433); // FFT, 20 bits
+        //zz_p::init(1139410705724735489); // non-said that it is FFT, 60 bits
         std::cout << "Bench polynomial matrix multiplication (FFT prime, 20 bits)" << std::endl;
         std::cout << "(ratios versus multiply)" << std::endl;
         std::cout << "size\tdegree\tmpfft\tmm_old\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;

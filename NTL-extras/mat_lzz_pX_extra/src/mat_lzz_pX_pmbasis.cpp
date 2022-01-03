@@ -1578,36 +1578,78 @@ void pmbasis_2x1(
     long order1 = order>>1; // order of first call
     long order2 = order-order1; // order of second call
 
+    double t=0;
+    if (order>200000)
+        t=GetWallTime();
     // first recursive call, with 'pmat' and 'shift'
     pmbasis_2x1(p00,p01,p10,p11,trunc(f0,order1),trunc(f1,order1),order1,s0,s1,threshold);
+    if (order>200000)
+    {
+        t=GetWallTime()-t;
+        std::cout << order << " -- 1st rec call: " << t << std::endl;
+    }
 
     // (s0,s1) is now the shifted row degree of appbas,
     // which is the shift for second call
 
-    // TODO the truncation might be removed if middle_product evolves
-    // (has it already?)
     // residual = (appbas * pmat * X^-order1) mod X^order2
-    zz_pX tf0,tf1,r0,r1;
-    trunc(tf0,f0,order);
-    trunc(tf1,f1,order);
-    middle_product(r0,p00,tf0,order1,order2-1);
-    middle_product(r1,p01,tf1,order1,order2-1); // using r1 as temporary
-    r0 += r1;
-    middle_product(r1,p10,tf0,order1,order2-1);
-    middle_product(tf0,p11,tf1,order1,order2-1); // using tf0 as temporary
-    r1 += tf0;
-
-    // second recursive call, with the 'residual' (r1,r2) and updated (s0,s1)
-    zz_pX q00,q01,q10,q11; // basis for second call
-    pmbasis_2x1(q00,q01,q10,q11,r0,r1,order2,s0,s1,threshold);
-
-    // final basis = product of the two
+    ////version 1:
+    //zz_pX tmp,r0,r1;
+    //middle_product(r0,p00,f0,order1,order2-1);
+    //middle_product(r1,p01,f1,order1,order2-1); // using r1 as temporary
+    //r0 += r1;
+    //middle_product(r1,p10,f0,order1,order2-1);
+    //middle_product(tmp,p11,f1,order1,order2-1); // using tf0 as temporary
+    //r1 += tmp;
+    ////version 2:
+    //zz_pX r0,r1;
+    //RightShift(r0, MulTrunc(p00, f0, order) + MulTrunc(p01, f1, order), order1);
+    //RightShift(r1, MulTrunc(p10, f0, order) + MulTrunc(p11, f1, order), order1);
+    ////version3:
+    if (order>200000)
+        t=GetWallTime();
+    Mat<zz_pX> res, tmp;
     Mat<zz_pX> appbas,appbas2;
     appbas.SetDims(2,2);
     appbas[0][0] = p00;
     appbas[0][1] = p01;
     appbas[1][0] = p10;
     appbas[1][1] = p11;
+    tmp.SetDims(2,1);
+    tmp[0][0] = trunc(f0,order);
+    tmp[1][0] = trunc(f1,order);
+    RightShift(tmp, tmp, order1-deg(appbas));
+    middle_product_evaluate_FFT_new(res, appbas, tmp, deg(appbas), order2-1);
+    if (order>200000)
+    {
+        t=GetWallTime()-t;
+        std::cout << order << " -- residual: " << t << std::endl;
+    }
+
+    // second recursive call, with the 'residual' (r1,r2) and updated (s0,s1)
+    if (order>200000)
+        t=GetWallTime();
+    zz_pX q00,q01,q10,q11; // basis for second call
+    pmbasis_2x1(q00,q01,q10,q11,res[0][0],res[1][0],order2,s0,s1,threshold);
+    if (order>200000)
+    {
+        t=GetWallTime()-t;
+        std::cout << order << " -- 2nd rec call: " << t << std::endl;
+    }
+
+    // second recursive call, with the 'residual' (r1,r2) and updated (s0,s1)
+    //zz_pX q00,q01,q10,q11; // basis for second call
+    //pmbasis_2x1(q00,q01,q10,q11,r0,r1,order2,s0,s1,threshold);
+
+    // final basis = product of the two
+    //Mat<zz_pX> appbas,appbas2;
+    //appbas.SetDims(2,2);
+    //appbas[0][0] = p00;
+    //appbas[0][1] = p01;
+    //appbas[1][0] = p10;
+    //appbas[1][1] = p11;
+    if (order>200000)
+        t=GetWallTime();
     appbas2.SetDims(2,2);
     appbas2[0][0] = q00;
     appbas2[0][1] = q01;
@@ -1618,6 +1660,11 @@ void pmbasis_2x1(
     p01 = appbas[0][1];
     p10 = appbas[1][0];
     p11 = appbas[1][1];
+    if (order>200000)
+    {
+        t=GetWallTime()-t;
+        std::cout << order << " -- multiply bases: " << t << std::endl;
+    }
 }
 
 // Local Variables:

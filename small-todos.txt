@@ -1,6 +1,7 @@
 TODO Vincent
    - PM-Basis 2x1:
        * make it clean, add more tests, compare to pmbasis to see if any interest
+           (currently why does it seem to work even for non fft prime although we use middle product evaluate FFT??)
        * specialize to GCD application
           --> take advantage of lower degrees in input?
 	  --> or rather add a first reduction to Pade [[f],[-1]] via power series inversion?
@@ -10,16 +11,17 @@ TODO Vincent
 			* try writing our own LSP decomposition for small dimension
 			* can we use inv_trunc to pre-modify the input matrix, and then get an
 				 "easier" instance?
+   - middle product: the "new" variant is not incorporated yet!! critical for very small matrices
    - Multiplication:
 			* automatic thresholds for the variants of FFTx
 			* middle product: minor issue when degree of input is small (should start by shifting)
-	 - Determinant:
-		  * clean (finish naive algo if necessary) + threshold
+   - Determinant:
+      * clean (finish naive algo if necessary) + threshold
    - Improvement of approximants for small n (long term work):
       * generic algo (need some more tuning)
       * partial linearization solution Storjohann / ZhouLabahn
    - Multi-thread (long-term work):
-		  * try to speed up everything when several threads
+      * try to speed up everything when several threads
 
 TODO Eric
    - add new multiplication function
