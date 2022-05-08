@@ -2703,7 +2703,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 #endif
 
 #ifdef TIME_SMART_UPMAT
-    for (long thres=30; thres < 71; thres+=10)
+    for (long thres=20; thres < 101; thres+=10)
     { // shifted form specific, degree-aware, update matrix, smart kernel
         t=0.0; nb_iter=0;
         bool ok = true;
@@ -2754,6 +2754,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
 #endif
 
 #ifdef TIME_SMART_UPMAT_V2
+    std::cout << std::endl;
     for (long thres=30; thres < 71; thres+=10)
     { // shifted form specific, degree-aware, update matrix, smart kernel, version 2
         t=0.0; nb_iter=0;
@@ -2798,6 +2799,7 @@ void run_one_bench(long nthreads, bool fftprime, long nbits, const char* filenam
             ok = ok && verify_determinant(det, pmat, true, true);
         }
         timings.push_back(t/nb_iter);
+        std::cout << "thresh: " << thres << "\t timing: " << t/nb_iter << std::endl;
         if (not ok)
             std::cout << "~~~Warning~~~ verification of determinant failed in KER_UPMAT approach" << std::endl;
     }
