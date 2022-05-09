@@ -272,7 +272,7 @@ int main(int argc, char ** argv)
 
     if (argc!=3 && argc!=5)
     {
-        std::cout << "Usage: " << argv[0] << " nbits fftprime OR " << argv[0] << " dim deg fftprime" << std::endl;
+        std::cout << "Usage: " << argv[0] << " nbits fftprime OR " << argv[0] << " nbits dim deg fftprime" << std::endl;
         return 1;
     }
 
