@@ -1,0 +1,63 @@
+#ifndef __NMOD_MAT_EXTRA__H
+#define __NMOD_MAT_EXTRA__H
+
+#include <flint/flint.h>
+#include <flint/nmod_mat.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** Left nullspace of A.
+ *
+ *  Computes a basis X for the left nullspace of A, in reduced row echelon form
+ *  with pivots being the rightmost nonzero entries.
+ *
+ * \param [in] A input matrix
+ * \param [out] X matrix where the nullspace will be stored
+ * \return nullity of A (i.e. rank of X)
+ *
+ * \todo straightforward implementation from compact below
+ */
+FLINT_DLL slong nmod_mat_left_nullspace(nmod_mat_t X, const nmod_mat_t A);
+
+/** Left nullspace of A in compact form.
+ *
+ *  Computes a basis X for the left nullspace of A, in reduced row echelon form
+ *  with pivots being the rightmost nonzero entries. Only the nonpivot columns
+ *  of X are stored, in the order they appear in the nullspace basis. The lists
+ *  nonpivots and pivots indicate respectively the positions of the columns
+ *  without pivots, and the positions of the columns with pivots
+ *
+ * \param [in] A input matrix
+ * \param [out] X matrix where the nullspace will be stored
+ * \param [out] nonpivots list of nonpivots columns
+ * \param [out] pivots list of pivots columns
+ * \return nullity of A (i.e. rank of X)
+ */
+FLINT_DLL slong nmod_mat_left_nullspace_compact(
+                                                nmod_mat_t X,
+                                                slong * nonpivots,
+                                                slong * pivots,
+                                                const nmod_mat_t A
+                                                );
+
+
+/** Left lower triangular solving: X = B * L^{-1} */
+FLINT_DLL void nmod_mat_solve_left_tril(nmod_mat_t X, const nmod_mat_t L, const nmod_mat_t B, int unit);
+FLINT_DLL void nmod_mat_solve_left_tril_recursive(nmod_mat_t X, const nmod_mat_t L, const nmod_mat_t B, int unit);
+FLINT_DLL void nmod_mat_solve_left_tril_classical(nmod_mat_t X, const nmod_mat_t L, const nmod_mat_t B, int unit);
+
+/** Left upper triangular solving: X = B * U^{-1} */
+FLINT_DLL void nmod_mat_solve_left_triu(nmod_mat_t X, const nmod_mat_t U, const nmod_mat_t B, int unit);
+FLINT_DLL void nmod_mat_solve_left_triu_recursive(nmod_mat_t X, const nmod_mat_t U, const nmod_mat_t B, int unit);
+FLINT_DLL void nmod_mat_solve_left_triu_classical(nmod_mat_t X, const nmod_mat_t U, const nmod_mat_t B, int unit);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  // __NMOD_MAT_EXTRA__H
+
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
