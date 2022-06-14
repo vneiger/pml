@@ -1,3 +1,9 @@
+/** \file nmod_mat_extra.h
+ *
+ * \todo
+ *
+ */
+
 #ifndef __NMOD_MAT_EXTRA__H
 #define __NMOD_MAT_EXTRA__H
 
@@ -11,47 +17,64 @@ extern "C" {
 /** Left nullspace of A.
  *
  *  Computes a basis X for the left nullspace of A, in reduced row echelon form
- *  with pivots being the rightmost nonzero entries.
+ *  with pivots being the rightmost nonzero entries. X should be given
+ *  uninitialized, it will be initialized during the call with the right number
+ *  of rows.
+ *
+ *  This first calls nmod_mat_left_nullspace_compact(), and expands the compact
+ *  nullspace representation given by this call into the complete dense
+ *  nullspace representation.
  *
  * \param [in] A input matrix
- * \param [out] X matrix where the nullspace will be stored
+ * \param [out] X matrix where the nullspace will be stored (uninitialized)
  * \return nullity of A (i.e. rank of X)
  *
- * \todo straightforward implementation from compact below
+ * @see nmod_mat_left_nullspace_compact
  */
-FLINT_DLL slong nmod_mat_left_nullspace(nmod_mat_t X, const nmod_mat_t A);
+FLINT_DLL slong nmod_mat_left_nullspace(nmod_mat_t X, nmod_mat_t A);
 
 /** Left nullspace of A in compact form.
  *
  *  Computes a basis X for the left nullspace of A, in reduced row echelon form
  *  with pivots being the rightmost nonzero entries. Only the nonpivot columns
- *  of X are stored, in the order they appear in the nullspace basis. The lists
- *  nonpivots and pivots indicate respectively the positions of the columns
- *  without pivots, and the positions of the columns with pivots
+ *  of X are stored, in the order they appear in the nullspace basis. The list
+ *  permutation contains the concatenation of two lists, each in increasing
+ *  order: the positions of the columns with pivots in the nullspace, and the
+ *  positions of the columns without pivots in the nullspace (the latter being
+ *  also the row rank profile of A).
  *
  * \param [in] A input matrix
- * \param [out] X matrix where the nullspace will be stored
- * \param [out] nonpivots list of nonpivots columns
- * \param [out] pivots list of pivots columns
+ * \param [out] X matrix where the nullspace will be stored (uninitialized)
+ * \param [out] permutation list, allocated with A->r elements
  * \return nullity of A (i.e. rank of X)
+ *
+ * \todo better implementation based on PLUQ decomposition; currently
+ * this relies on Flint's nullspace and matrix transposition
  */
 FLINT_DLL slong nmod_mat_left_nullspace_compact(
                                                 nmod_mat_t X,
-                                                slong * nonpivots,
-                                                slong * pivots,
-                                                const nmod_mat_t A
+                                                slong * permutation,
+                                                nmod_mat_t A
                                                 );
 
 
 /** Left lower triangular solving: X = B * L^{-1} */
+// TODO
 FLINT_DLL void nmod_mat_solve_left_tril(nmod_mat_t X, const nmod_mat_t L, const nmod_mat_t B, int unit);
 FLINT_DLL void nmod_mat_solve_left_tril_recursive(nmod_mat_t X, const nmod_mat_t L, const nmod_mat_t B, int unit);
 FLINT_DLL void nmod_mat_solve_left_tril_classical(nmod_mat_t X, const nmod_mat_t L, const nmod_mat_t B, int unit);
 
 /** Left upper triangular solving: X = B * U^{-1} */
+// TODO
 FLINT_DLL void nmod_mat_solve_left_triu(nmod_mat_t X, const nmod_mat_t U, const nmod_mat_t B, int unit);
 FLINT_DLL void nmod_mat_solve_left_triu_recursive(nmod_mat_t X, const nmod_mat_t U, const nmod_mat_t B, int unit);
 FLINT_DLL void nmod_mat_solve_left_triu_classical(nmod_mat_t X, const nmod_mat_t U, const nmod_mat_t B, int unit);
+
+// TODO:
+// - helper: pivots | nonpivots of reduced row echelon form (rightmost/leftmost) ???
+// - PLUQ factorization (try naive + Crout)
+// - left nullspace via PLUQ
+// - row/column rank profile
 
 #ifdef __cplusplus
 }

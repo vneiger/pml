@@ -36,8 +36,9 @@ import ycm_core
 flags = [
     '-x',
     'c',
-    '-I./include',
+    '-I./include/',
     '-I../../include/',
+    '-I../include/',
     '-Wall',
     '-Wextra',
     '-O3',
