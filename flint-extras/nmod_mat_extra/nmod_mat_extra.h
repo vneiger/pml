@@ -59,13 +59,13 @@ FLINT_DLL slong nmod_mat_left_nullspace_compact(
 
 
 /** Left lower triangular solving: X = B * L^{-1} */
-// TODO
+// TODO not yet implemented
 FLINT_DLL void nmod_mat_solve_left_tril(nmod_mat_t X, const nmod_mat_t L, const nmod_mat_t B, int unit);
 FLINT_DLL void nmod_mat_solve_left_tril_recursive(nmod_mat_t X, const nmod_mat_t L, const nmod_mat_t B, int unit);
 FLINT_DLL void nmod_mat_solve_left_tril_classical(nmod_mat_t X, const nmod_mat_t L, const nmod_mat_t B, int unit);
 
 /** Left upper triangular solving: X = B * U^{-1} */
-// TODO
+// TODO not yet implemented
 FLINT_DLL void nmod_mat_solve_left_triu(nmod_mat_t X, const nmod_mat_t U, const nmod_mat_t B, int unit);
 FLINT_DLL void nmod_mat_solve_left_triu_recursive(nmod_mat_t X, const nmod_mat_t U, const nmod_mat_t B, int unit);
 FLINT_DLL void nmod_mat_solve_left_triu_classical(nmod_mat_t X, const nmod_mat_t U, const nmod_mat_t B, int unit);

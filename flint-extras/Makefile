@@ -1,4 +1,4 @@
-DIRS = nmod_extra nmod_vec_extra nmod_poly_extra nmod_mat_extra
+DIRS = nmod_extra nmod_vec_extra nmod_poly_extra nmod_mat_extra nmod_poly_mat_extra
 
 all:    clean
 	$(foreach dir, $(DIRS), if [ -d $(dir) ]; then cd $(dir)/src ; make ; cd ../.. ; fi ;)
