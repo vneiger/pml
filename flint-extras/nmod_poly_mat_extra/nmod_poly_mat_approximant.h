@@ -66,6 +66,11 @@ void sort_and_create_perm(slong *perm, const int64_t *vec, slong n);
 
 
 
+/** Not finished yet **/
+int is_minimal_approximant_basis(const nmod_poly_mat_t base,
+                                 const nmod_mat_t mat, int64_t order,
+                                 const int64_t *shifts);
+
 
 
 

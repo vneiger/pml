@@ -1,5 +1,10 @@
 #include "nmod_poly_mat_utils.h"
 
+/******************************************************
+*  degree, row degree, column degree, degree matrix  *
+******************************************************/
+
+
 void coefficient_matrix(nmod_mat_t res, const nmod_poly_mat_t mat, slong degree)
 {
     slong rdim = mat->r, cdim = mat->c;
@@ -43,21 +48,6 @@ void row_degrees(int64_t *res, const nmod_poly_mat_t mat, const int64_t *shifts)
     }
 }
 
-slong nmod_poly_mat_degree(const nmod_poly_mat_t mat)
-{
-    slong rdim = mat->r, cdim = mat->c;
-    slong d, max = 0;
-    for(slong i = 0; i < rdim; i++)
-        for(slong j = 0; j < cdim; j++)
-        {
-            d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
-            if (max < d)
-                max = d;
-
-        }
-    return max;
-}
-
 void int64_mat_print(const int64_t *mat, slong rdim, slong cdim)
 {
     printf("[");
@@ -81,7 +71,7 @@ void int64_mat_print(const int64_t *mat, slong rdim, slong cdim)
 }
 
 void degree_matrix(int64_t *res, const nmod_poly_mat_t mat, const int64_t *shifts,
-                   matrix_wise row_wise)
+                   orientation_t row_wise)
 {
 
     slong rdim = mat->r, cdim = mat->c;
@@ -109,7 +99,7 @@ void degree_matrix(int64_t *res, const nmod_poly_mat_t mat, const int64_t *shift
 }
 
 void leading_matrix(nmod_mat_t res, const nmod_poly_mat_t mat,
-                    const int64_t *shifts, matrix_wise row_wise)
+                    const int64_t *shifts, orientation_t row_wise)
 {
     slong rdim = mat->r, cdim = mat->c;
     nmod_poly_struct *P;
@@ -138,7 +128,7 @@ void leading_matrix(nmod_mat_t res, const nmod_poly_mat_t mat,
 }
 
 void leading_positions(int64_t *res, const nmod_poly_mat_t mat,
-                       const int64_t *shifts, matrix_wise row_wise)
+                       const int64_t *shifts, orientation_t row_wise)
 {
     slong rdim = mat->r, cdim = mat->c;
     slong max;
@@ -180,7 +170,7 @@ void leading_positions(int64_t *res, const nmod_poly_mat_t mat,
     }
 }
 
-int is_hermite(const nmod_poly_mat_t mat, matrix_wise row_wise)
+int is_hermite(const nmod_poly_mat_t mat, orientation_t row_wise)
 {
     slong rdim = mat->r, cdim = mat->c;
     slong deg_mat = nmod_poly_mat_degree(mat);
@@ -200,7 +190,7 @@ int is_hermite(const nmod_poly_mat_t mat, matrix_wise row_wise)
 
 }
 
-int is_popov(const nmod_poly_mat_t mat, const int64_t *shifts, matrix_wise row_wise, int ordered)
+int is_popov(const nmod_poly_mat_t mat, const int64_t *shifts, orientation_t row_wise, int ordered)
 {
     if (!is_weak_popov(mat, shifts, row_wise, ordered))
         return 0;
@@ -250,7 +240,7 @@ int is_popov(const nmod_poly_mat_t mat, const int64_t *shifts, matrix_wise row_w
 
 }
 
-int is_reduced(const nmod_poly_mat_t mat, const int64_t *shifts, matrix_wise row_wise)
+int is_reduced(const nmod_poly_mat_t mat, const int64_t *shifts, orientation_t row_wise)
 {
     slong rdim = mat->r, cdim = mat->c;
     nmod_mat_t B;
@@ -267,7 +257,7 @@ static int intComparator ( const void * first, const void * second ) {
     return firstInt - secondInt;
 }
 
-int is_weak_popov(const nmod_poly_mat_t mat, const int64_t *shifts, matrix_wise row_wise, int ordered)
+int is_weak_popov(const nmod_poly_mat_t mat, const int64_t *shifts, orientation_t row_wise, int ordered)
 {
     if (!is_reduced(mat, shifts, row_wise))
         return 0;
