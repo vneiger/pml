@@ -28,7 +28,7 @@ void PM_basis(nmod_poly_mat_t res, int64_t *res_shifts,
 
     if (sigma <= INITIAL_CASE_BOUND)
     {
-        M_basis(res, res_shifts, F, sigma, shifts);
+        M_basisIII(res, res_shifts, F, sigma, shifts);
         return;
     }
 
