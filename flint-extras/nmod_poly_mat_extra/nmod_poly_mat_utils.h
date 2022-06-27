@@ -13,25 +13,11 @@
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly_mat.h>
 
+#include "nmod_poly_mat_mat_poly.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-/** print for testing result on sage **/
-void nmod_mat_print_sage(const nmod_mat_t mat);
-
-void nmod_poly_mat_print_sage(const nmod_poly_mat_t mat);
-
-void int64_print_sage(const int64_t *shifts, slong length);
-
-void int64_mat_print(const int64_t *mat, slong rdim, slong cdim);
-
-
-
-
-
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -50,18 +36,12 @@ void int64_mat_print(const int64_t *mat, slong rdim, slong cdim);
 /** Compute and return the degree of a polynomial vector `pvec` */
 // TODO
 
-/** Compute and return the degree of a vector polynomial `vecp` */
-// TODO
-
 /** Compute and return the degree of a polynomial matrix `pmat` */
 NMOD_POLY_MAT_INLINE slong
 nmod_poly_mat_degree(const nmod_poly_mat_t pmat)
 {
     return nmod_poly_mat_max_length(pmat)-1;
 }
-
-/** Compute and return the degree of a matrix polynomial `matp` */
-// TODO
 
 /** Tests whether `pmat` is a constant matrix, that is, of degree 0 */
 NMOD_POLY_MAT_INLINE slong
@@ -70,8 +50,23 @@ nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
     return (nmod_poly_mat_max_length(pmat) == 1);
 }
 
+/** Compute and return the degree of a vector polynomial `vecp` */
+// TODO
+
+/** Compute and return the degree of a matrix polynomial `matp` */
+NMOD_POLY_MAT_INLINE slong
+nmod_mat_poly_degree(const nmod_mat_poly_t matp)
+{
+	return matp->degree;
+}
+
+
 /** Tests whether `matp` is a constant matrix, that is, of degree 0 */
-// TODO slong nmod_mat_poly_is_constant(const nmod_mat_poly_t matp);
+NMOD_POLY_MAT_INLINE slong
+nmod_mat_poly_is_constant(const nmod_mat_poly_t matp)
+{
+    return (nmod_mat_poly_degree(matp) == 0);
+}
 
 //@} // doxygen group: Degree
 

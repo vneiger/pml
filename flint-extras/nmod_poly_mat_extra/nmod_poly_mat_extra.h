@@ -24,16 +24,15 @@
  */
 
 // include flint's matrices
-#include "nmod_poly_extra.h"
+#include <flint/nmod_poly_mat.h>
 
 // include flint-extra's files
 #include "nmod_poly_mat_utils.h"
-#include "nmod_poly_mat_matpoly.h"
+#include "nmod_poly_mat_mat_poly.h"
 
-// TODO in order of todo:
-
-// #include "nmod_poly_mat_forms.h"
-// #include "nmod_poly_mat_arith.h"
+#include "nmod_poly_mat_io.h"
+#include "nmod_poly_mat_forms.h"
+#include "nmod_poly_mat_arith.h"
 
 // #include "nmod_poly_mat_multiply.h"
 

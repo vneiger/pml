@@ -24,44 +24,57 @@ typedef struct
   slong degree;
   slong length;
   nmod_mat_struct *mat;
-  slong rdim;
-  slong cdim;
+  slong r;
+  slong c;
   mp_limb_t modulus;
-} nmod_list_poly_mat_struct;
+} nmod_mat_poly_struct;
 
-typedef nmod_list_poly_mat_struct nmod_list_poly_mat_t[1];
+typedef nmod_mat_poly_struct nmod_mat_poly_t[1];
 
-slong nmod_list_poly_mat_nrows(const nmod_list_poly_mat_t A);
+NMOD_POLY_MAT_INLINE slong
+nmod_mat_poly_nrows(const nmod_mat_poly_t A)
+{
+	return A->r;
+}
 
-slong nmod_list_poly_mat_ncols(const nmod_list_poly_mat_t A);
+NMOD_POLY_MAT_INLINE slong
+nmod_mat_poly_ncols(const nmod_mat_poly_t A)
+{
+	return A->c;
+}
 
-slong nmod_list_poly_mat_degree(const nmod_list_poly_mat_t A);
+NMOD_POLY_MAT_INLINE mp_limb_t
+nmod_mat_poly_modulus(const nmod_mat_poly_t A)
+{
+	return A->modulus;
+}
 
-mp_limb_t nmod_list_poly_mat_modulus(const nmod_list_poly_mat_t A);
 
-void nmod_list_poly_mat_print(const nmod_list_poly_mat_t A);
 
-void nmod_list_poly_mat_get_coef(nmod_mat_t res, const nmod_list_poly_mat_t F,
+
+void nmod_mat_poly_print(const nmod_mat_poly_t A);
+
+void nmod_mat_poly_get_coef(nmod_mat_t res, const nmod_mat_poly_t F,
 				 slong k);
 
-void nmod_list_poly_mat_init(nmod_list_poly_mat_t res, slong degree,
+void nmod_mat_poly_init(nmod_mat_poly_t res, slong degree,
 			     slong length,
-			     slong rdim, slong cdim, mp_limb_t modulus);
+			     slong r, slong c, mp_limb_t modulus);
 
-void nmod_list_poly_mat_clear(nmod_list_poly_mat_t A);
+void nmod_mat_poly_clear(nmod_mat_poly_t A);
 
 
-/** void nmod_list_poly_mat_init_set(nmod_list_poly_mat_t res,
+/** void nmod_mat_poly_init_set(nmod_mat_poly_t res,
  *				 const nmod_poly_mat_t F)
  *
  * F \in K[x]^{mxn} <-> res \in K^{mxn}[x]
  * With res->degree = F.degree(), and res will have only res->degree + 1 nmod_mat_t pointer
  * 
  */
-void nmod_list_poly_mat_init_set(nmod_list_poly_mat_t res,
+void nmod_mat_poly_init_set(nmod_mat_poly_t res,
 				 const nmod_poly_mat_t F);
 
-/** void nmod_list_poly_mat_init_set(nmod_list_poly_mat_t res,
+/** void nmod_mat_poly_init_set(nmod_mat_poly_t res,
  *				 const nmod_poly_mat_t F)
  *
  * F \in K[x]^{mxn} <-> res \in K^{mxn}[x]
@@ -69,11 +82,11 @@ void nmod_list_poly_mat_init_set(nmod_list_poly_mat_t res,
  * Improve for the memory space of the computation of x^{-k} P_{k-1} F mod x in M_basisIII and IV 
  *
  */
-void nmod_list_poly_mat_init_setII(nmod_list_poly_mat_t res,
+void nmod_mat_poly_init_setII(nmod_mat_poly_t res,
 				   const nmod_poly_mat_t F, slong length);
 
 
-/** void nmod_list_poly_mat_init_set(nmod_list_poly_mat_t res,
+/** void nmod_mat_poly_init_set(nmod_mat_poly_t res,
  *				 const nmod_poly_mat_t F)
  *
  * F \in K[x]^{mxn} <-> res \in K^{mxn}[x]
@@ -81,19 +94,19 @@ void nmod_list_poly_mat_init_setII(nmod_list_poly_mat_t res,
  * To stock the computation of P_{k-1} F in M_basisV 
  *
  */
-void nmod_list_poly_mat_init_setIII(nmod_list_poly_mat_t res,
+void nmod_mat_poly_init_setIII(nmod_mat_poly_t res,
 				    const nmod_poly_mat_t F, slong length);
 
-void nmod_list_poly_mat_set(nmod_list_poly_mat_t res,
+void nmod_mat_poly_set(nmod_mat_poly_t res,
 			    const nmod_poly_mat_t F);
 
-void nmod_list_poly_mat_to_poly_mat(nmod_poly_mat_t res,
-				    const nmod_list_poly_mat_t F);
+void nmod_mat_poly_to_poly_mat(nmod_poly_mat_t res,
+				    const nmod_mat_poly_t F);
 
 
-/** void nmod_list_poly_mat_naive_mul_coef(nmod_mat_t res,
- *				       const nmod_list_poly_mat_t A,
- *				       const nmod_list_poly_mat_t B, slong k);
+/** void nmod_mat_poly_naive_mul_coef(nmod_mat_t res,
+ *				       const nmod_mat_poly_t A,
+ *				       const nmod_mat_poly_t B, slong k);
  *
  * A = sum^{deg_A}_{i=0} a_i x^i and B = sum^{deg_B}_{i=0} b_i x^i
  * Compute the coefficient k of the product AB 
@@ -101,9 +114,9 @@ void nmod_list_poly_mat_to_poly_mat(nmod_poly_mat_t res,
  * res = c_k = sum^{k}_{i=0} a_i b_{k-i}
  *
  */
-void nmod_list_poly_mat_naive_mul_coef(nmod_mat_t res,
-				       const nmod_list_poly_mat_t A,
-				       const nmod_list_poly_mat_t B, slong k);
+void nmod_mat_poly_naive_mul_coef(nmod_mat_t res,
+				       const nmod_mat_poly_t A,
+				       const nmod_mat_poly_t B, slong k);
 
 /** static void list_structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
  *                                               const slong *perm, slong rank,
@@ -122,14 +135,10 @@ void nmod_list_poly_mat_naive_mul_coef(nmod_mat_t res,
  * and k will go to sigma - 1 => we need to update the sigma - 1 coefficients
  *
  */
-void structured_list_multiplication_blocks(nmod_list_poly_mat_t res,
+void structured_list_multiplication_blocks(nmod_mat_poly_t res,
 					   const nmod_mat_t A,
 					   const slong *perm,
 					   slong rank, slong k, slong sigma);
-
-void nmod_list_poly_mat_to_poly_mat(nmod_poly_mat_t res,
-				    const nmod_list_poly_mat_t F);
-
 
 /** static void list_structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
  *                                               const slong *perm, slong rank,
@@ -144,7 +153,7 @@ void nmod_list_poly_mat_to_poly_mat(nmod_poly_mat_t res,
  * To do that we will permutate r_i's rows, shift the top and mul by A and add the bottom on each i
  * and update the degree of res
  */
-void structured_list_multiplication_blocks_full(nmod_list_poly_mat_t res,
+void structured_list_multiplication_blocks_full(nmod_mat_poly_t res,
 						const nmod_mat_t A,
 						const slong *perm, slong rank);
 
@@ -152,7 +161,7 @@ void structured_list_multiplication_blocks_full(nmod_list_poly_mat_t res,
 }
 #endif
 
-#endif /* NMOD_LIST_POLY_MAT_H */
+#endif /* NMOD_mat_poly_H */
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

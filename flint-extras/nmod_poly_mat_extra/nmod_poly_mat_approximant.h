@@ -129,7 +129,7 @@ void M_basisII(nmod_poly_mat_t res, int64_t *res_shifts,
  *
  * F \in K[x]^{nxm} <-> F_prime K^{mxn}[x]  and
  * Compute P_{k-1} F iteratively with a the list_structured_multiplication_blocks 
- * (in nmod_list_poly_mat.h)
+ * (in nmod_mat_poly.h)
  * Compute P_{k-1} \in K[x]^{mxm} with the structured_multiplication_blocks
  *
  * Use structured_multiplication_blocks and list_structured_multiplication_blocks 
@@ -144,7 +144,7 @@ void M_basisIII(nmod_poly_mat_t res, int64_t *res_shifts,
  *
  * F \in K[x]^{nxm} <-> F_prime K^{mxn}[x]  and
  * Compute P_{k-1} F iteratively with a the list_structured_multiplication_blocks 
- * (in nmod_list_poly_mat.h)
+ * (in nmod_mat_poly.h)
  * Compute P_{k-1} \in K^{mxm}[x] with the list_structured_multiplication_blocks
  * Transform P_{sigma - 1} as a poly_mat_t 
  *
