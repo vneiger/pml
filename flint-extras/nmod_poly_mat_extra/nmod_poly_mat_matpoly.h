@@ -15,6 +15,10 @@
 #include <flint/perm.h>
 #include <flint/nmod_poly_mat.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct
 {
   slong degree;
@@ -143,6 +147,10 @@ void nmod_list_poly_mat_to_poly_mat(nmod_poly_mat_t res,
 void structured_list_multiplication_blocks_full(nmod_list_poly_mat_t res,
 						const nmod_mat_t A,
 						const slong *perm, slong rank);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* NMOD_LIST_POLY_MAT_H */
 

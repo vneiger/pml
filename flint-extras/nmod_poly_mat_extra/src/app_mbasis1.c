@@ -1,8 +1,8 @@
 #include "nmod_mat_extra.h" // for left_nullspace
 #include "nmod_poly_mat_approximant.h"
 
-void Basis(nmod_poly_mat_t res, int64_t *res_shifts,
-           const nmod_mat_t mat, const int64_t *shifts)
+void Basis(nmod_poly_mat_t res, slong *res_shifts,
+           const nmod_mat_t mat, const slong *shifts)
 {
     slong rdim = mat->r;
     slong i, j, alloc, temp[rdim],
@@ -87,8 +87,8 @@ void Basis(nmod_poly_mat_t res, int64_t *res_shifts,
     _perm_clear(comp_inv);
 }
 
-slong Basis_for_M_basis(nmod_mat_t res, int64_t *res_shifts, slong *res_perm,
-                        const nmod_mat_t mat, const int64_t *shifts)
+slong Basis_for_M_basis(nmod_mat_t res, slong *res_shifts, slong *res_perm,
+                        const nmod_mat_t mat, const slong *shifts)
 
 {
     slong rdim = mat->r;

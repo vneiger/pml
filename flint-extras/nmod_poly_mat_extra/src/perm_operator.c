@@ -3,7 +3,7 @@
 /* Type only for the function Basis */
 typedef struct
 {
-    int64_t value;
+    slong value;
     slong ord;
 } int_tuple;
 
@@ -25,7 +25,7 @@ static int compare(const void *a, const void *b)
  * \param vec, the shift we want to sort increasly
  * \param n, length of perm and vec
  */
-void sort_and_create_perm(slong *perm, const int64_t *vec, slong n)
+void sort_and_create_perm(slong *perm, const slong *vec, slong n)
 {
     int_tuple temp[n];
     for (slong i = 0; i < n; i++)
@@ -131,7 +131,7 @@ void apply_perm_rows_to_poly_matrix(nmod_poly_mat_t mat, const slong *perm, slon
 
 
 
-void apply_perm_to_vector(int64_t *res, const int64_t *initial_vect,
+void apply_perm_to_vector(slong *res, const slong *initial_vect,
                           const slong *perm, slong length)
 {
     for (slong i = 0; i < length; i++)

@@ -60,8 +60,8 @@ void structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
     _perm_clear(inv_perm);
 }
 
-void M_basis(nmod_poly_mat_t res, int64_t *res_shifts,
-             const nmod_poly_mat_t F, ulong sigma, const int64_t *shifts)
+void M_basis(nmod_poly_mat_t res, slong *res_shifts,
+             const nmod_poly_mat_t F, ulong sigma, const slong *shifts)
 
 {
     slong rdim = F->r, cdim = F->c;
@@ -104,8 +104,8 @@ void M_basis(nmod_poly_mat_t res, int64_t *res_shifts,
     _perm_clear(perm);
 }
 
-void M_basisII(nmod_poly_mat_t res, int64_t *res_shifts,
-               const nmod_poly_mat_t F, ulong sigma, const int64_t *shifts)
+void M_basisII(nmod_poly_mat_t res, slong *res_shifts,
+               const nmod_poly_mat_t F, ulong sigma, const slong *shifts)
 {
     slong rdim = F->r, cdim = F->c;
     mp_limb_t prime = F->modulus;
@@ -147,8 +147,8 @@ void M_basisII(nmod_poly_mat_t res, int64_t *res_shifts,
     _perm_clear(perm);
 }
 
-void M_basisIII(nmod_poly_mat_t res, int64_t *res_shifts,
-                const nmod_poly_mat_t F, ulong sigma, const int64_t *shifts)
+void M_basisIII(nmod_poly_mat_t res, slong *res_shifts,
+                const nmod_poly_mat_t F, ulong sigma, const slong *shifts)
 {
     slong rdim = F->r, cdim = F->c;
     mp_limb_t prime = F->modulus;
@@ -187,8 +187,8 @@ void M_basisIII(nmod_poly_mat_t res, int64_t *res_shifts,
     _perm_clear(perm);
 }
 
-void M_basisIV(nmod_poly_mat_t res, int64_t *res_shifts,
-               const nmod_poly_mat_t F, ulong sigma, const int64_t *shifts)
+void M_basisIV(nmod_poly_mat_t res, slong *res_shifts,
+               const nmod_poly_mat_t F, ulong sigma, const slong *shifts)
 {
     slong rdim = F->r, cdim = F->c;
     mp_limb_t prime = F->modulus;
@@ -229,8 +229,8 @@ void M_basisIV(nmod_poly_mat_t res, int64_t *res_shifts,
     _perm_clear(perm);
 }
 
-void M_basisV(nmod_poly_mat_t res, int64_t *res_shifts,
-              const nmod_poly_mat_t F, ulong sigma, const int64_t *shifts)
+void M_basisV(nmod_poly_mat_t res, slong *res_shifts,
+              const nmod_poly_mat_t F, ulong sigma, const slong *shifts)
 {
     slong rdim = F->r, cdim = F->c;
     mp_limb_t prime = F->modulus;

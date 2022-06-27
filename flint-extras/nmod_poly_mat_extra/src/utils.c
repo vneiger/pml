@@ -1,4 +1,5 @@
 #include "nmod_poly_mat_utils.h"
+#include "nmod_poly_mat_forms.h"
 
 /******************************************************
 *  degree, row degree, column degree, degree matrix  *
@@ -14,7 +15,7 @@ void coefficient_matrix(nmod_mat_t res, const nmod_poly_mat_t mat, slong degree)
                                nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j), degree));
 }
 
-void column_degrees(int64_t *res, const nmod_poly_mat_t mat, const int64_t *shifts)
+void column_degrees_shifted(slong *res, const nmod_poly_mat_t mat, const slong *shifts)
 {
     slong rdim = mat->r, cdim = mat->c;
     slong max, d;
@@ -31,7 +32,7 @@ void column_degrees(int64_t *res, const nmod_poly_mat_t mat, const int64_t *shif
     }
 }
 
-void row_degrees(int64_t *res, const nmod_poly_mat_t mat, const int64_t *shifts)
+void row_degrees_shifted(slong *res, const nmod_poly_mat_t mat, const slong *shifts)
 {
     slong rdim = mat->r, cdim = mat->c;
     slong max, d;
@@ -48,7 +49,7 @@ void row_degrees(int64_t *res, const nmod_poly_mat_t mat, const int64_t *shifts)
     }
 }
 
-void int64_mat_print(const int64_t *mat, slong rdim, slong cdim)
+void slong_mat_print(const slong *mat, slong rdim, slong cdim)
 {
     printf("[");
     for (slong i = 0; i < rdim; i++)
@@ -70,7 +71,7 @@ void int64_mat_print(const int64_t *mat, slong rdim, slong cdim)
     printf("]\n");
 }
 
-void degree_matrix(int64_t *res, const nmod_poly_mat_t mat, const int64_t *shifts,
+void degree_matrix(slong *res, const nmod_poly_mat_t mat, const slong *shifts,
                    orientation_t row_wise)
 {
 
@@ -99,14 +100,14 @@ void degree_matrix(int64_t *res, const nmod_poly_mat_t mat, const int64_t *shift
 }
 
 void leading_matrix(nmod_mat_t res, const nmod_poly_mat_t mat,
-                    const int64_t *shifts, orientation_t row_wise)
+                    const slong *shifts, orientation_t row_wise)
 {
     slong rdim = mat->r, cdim = mat->c;
     nmod_poly_struct *P;
     if (row_wise)
     {
-        int64_t rdeg[rdim];
-        row_degrees(rdeg, mat, shifts);
+        slong rdeg[rdim];
+        row_degrees_shifted(rdeg, mat, shifts);
         for(slong i = 0; i < rdim; i++)
             for(slong j = 0; j < cdim; j++)
             {
@@ -116,8 +117,8 @@ void leading_matrix(nmod_mat_t res, const nmod_poly_mat_t mat,
         return;
     }
     {
-        int64_t cdeg[cdim];
-        column_degrees(cdeg, mat, shifts);
+        slong cdeg[cdim];
+        column_degrees_shifted(cdeg, mat, shifts);
         for(slong i = 0; i < cdim; i++)
             for(slong j = 0; j < rdim; j++)
             {
@@ -127,13 +128,13 @@ void leading_matrix(nmod_mat_t res, const nmod_poly_mat_t mat,
     }
 }
 
-void leading_positions(int64_t *res, const nmod_poly_mat_t mat,
-                       const int64_t *shifts, orientation_t row_wise)
+void leading_positions(slong *res, const nmod_poly_mat_t mat,
+                       const slong *shifts, orientation_t row_wise)
 {
     slong rdim = mat->r, cdim = mat->c;
     slong max;
     slong d;
-    int64_t ind; // TODO initial value
+    slong ind; // TODO initial value
     if (row_wise)
     {
         for (slong i = 0; i < rdim; i++)
@@ -177,20 +178,20 @@ int is_hermite(const nmod_poly_mat_t mat, orientation_t row_wise)
 
     if (row_wise)
     {
-        int64_t shifts[cdim];
+        slong shifts[cdim];
         for (slong i = 0; i < cdim; i++)
             shifts[i] = (cdim - i) * (deg_mat + 1);
         return is_popov(mat, shifts, row_wise, 0);
     }
 
-    int64_t shifts[rdim];
+    slong shifts[rdim];
     for (slong i = 0; i < rdim; i++)
         shifts[i] = i * (deg_mat + 1);
     return is_popov(mat, shifts, row_wise, 0);
 
 }
 
-int is_popov(const nmod_poly_mat_t mat, const int64_t *shifts, orientation_t row_wise, int ordered)
+int is_popov(const nmod_poly_mat_t mat, const slong *shifts, orientation_t row_wise, int ordered)
 {
     if (!is_weak_popov(mat, shifts, row_wise, ordered))
         return 0;
@@ -240,7 +241,7 @@ int is_popov(const nmod_poly_mat_t mat, const int64_t *shifts, orientation_t row
 
 }
 
-int is_reduced(const nmod_poly_mat_t mat, const int64_t *shifts, orientation_t row_wise)
+int is_reduced(const nmod_poly_mat_t mat, const slong *shifts, orientation_t row_wise)
 {
     slong rdim = mat->r, cdim = mat->c;
     nmod_mat_t B;
@@ -257,7 +258,7 @@ static int intComparator ( const void * first, const void * second ) {
     return firstInt - secondInt;
 }
 
-int is_weak_popov(const nmod_poly_mat_t mat, const int64_t *shifts, orientation_t row_wise, int ordered)
+int is_weak_popov(const nmod_poly_mat_t mat, const slong *shifts, orientation_t row_wise, int ordered)
 {
     if (!is_reduced(mat, shifts, row_wise))
         return 0;
@@ -265,7 +266,7 @@ int is_weak_popov(const nmod_poly_mat_t mat, const int64_t *shifts, orientation_
     slong rdim = mat->r, cdim = mat->c;
     if (row_wise)
     {
-        int64_t lead_pos[rdim];
+        slong lead_pos[rdim];
         leading_positions(lead_pos, mat, shifts, row_wise);
 
         if (!ordered)
@@ -279,7 +280,7 @@ int is_weak_popov(const nmod_poly_mat_t mat, const int64_t *shifts, orientation_
         return 1;
     }
 
-    int64_t lead_pos[cdim];
+    slong lead_pos[cdim];
     leading_positions(lead_pos, mat, shifts, row_wise);
 
     if (!ordered)
@@ -295,7 +296,7 @@ int is_weak_popov(const nmod_poly_mat_t mat, const int64_t *shifts, orientation_
     return 1;
 }
 
-int is_zero_mod_xk(const nmod_poly_mat_t mat, int64_t k)
+int is_zero_mod_xk(const nmod_poly_mat_t mat, slong k)
 {
     nmod_poly_t P;
     nmod_poly_init(P, mat->modulus);
@@ -313,8 +314,8 @@ int is_zero_mod_xk(const nmod_poly_mat_t mat, int64_t k)
 
 /** TO FIX **/
 int is_minimal_approximant_basis(const nmod_poly_mat_t base,
-                                 const nmod_mat_t mat, int64_t order,
-                                 const int64_t *shifts)
+                                 const nmod_mat_t mat, slong order,
+                                 const slong *shifts)
 {
     slong rdim = mat->r, cdim = mat->c;
     mp_limb_t prime = mat->mod.n;
@@ -345,7 +346,7 @@ int is_minimal_approximant_basis(const nmod_poly_mat_t base,
         printf("not zero");
         return 0;
     }
-    int64_t lead_pos[rdim];
+    slong lead_pos[rdim];
     leading_positions(lead_pos, base, shifts, ROW_WISE);
     printf("\nleading positions\n");
     for (slong i = 0; i < rdim; i++)
@@ -384,7 +385,7 @@ void nmod_poly_mat_shift(nmod_poly_mat_t res, slong k)
     }
 }
 
-void int64_print_sage(const int64_t *shifts, slong length)
+void slong_print_sage(const slong *shifts, slong length)
 {
     printf("[");
     for (slong i = 0; i < length - 1; i++)

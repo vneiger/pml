@@ -18,8 +18,8 @@ void middle_product(nmod_poly_mat_t res, const nmod_poly_mat_t A,
 }
 
 
-void PM_basis(nmod_poly_mat_t res, int64_t *res_shifts,
-              const nmod_poly_mat_t F, ulong sigma, const int64_t *shifts)
+void PM_basis(nmod_poly_mat_t res, slong *res_shifts,
+              const nmod_poly_mat_t F, ulong sigma, const slong *shifts)
 {
     slong rdim = F->r, cdim = F->c;
     mp_limb_t prime = F->modulus;

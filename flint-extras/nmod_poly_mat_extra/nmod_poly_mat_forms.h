@@ -598,18 +598,6 @@ void column_degrees_shifted(slong *res,
 //@} // doxygen group: Testing polynomial matrix forms
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 #ifdef __cplusplus
 }
 #endif
