@@ -1,5 +1,13 @@
+#include <flint/nmod_poly.h>
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_forms.h"
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* SETTING AND GETTING COEFFICIENTS                           */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 void coefficient_matrix(nmod_mat_t res, const nmod_poly_mat_t mat, slong degree)
 {
@@ -9,88 +17,78 @@ void coefficient_matrix(nmod_mat_t res, const nmod_poly_mat_t mat, slong degree)
                                nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j), degree));
 }
 
-void nmod_poly_mat_shift(nmod_poly_mat_t res, slong k)
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TRANSPOSE, TRUNC, SHIFT, REVERSE                           */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+void nmod_poly_mat_shift_left(nmod_poly_mat_t res, const nmod_poly_mat_t pmat, slong k)
 {
-    nmod_poly_struct *P;
-    if (k > 0)
-    {
-        for (slong i = 0; i < res->r; i++)
-            for (slong j = 0; j < res->c; j++)
+    for (slong i = 0; i < res->r; i++)
+        for (slong j = 0; j < res->c; j++)
+            if (!nmod_poly_is_zero(nmod_poly_mat_entry(res, i, j)))
+                nmod_poly_shift_left(nmod_poly_mat_entry(res, i, j), nmod_poly_mat_entry(pmat, i, j), k);
+}
+
+void nmod_poly_mat_shift_right(nmod_poly_mat_t res, const nmod_poly_mat_t pmat, slong k)
+{
+    for (slong i = 0; i < res->r; i++)
+        for (slong j = 0; j < res->c; j++)
+            if (!nmod_poly_is_zero(nmod_poly_mat_entry(res, i, j)))
+                nmod_poly_shift_right(nmod_poly_mat_entry(res, i, j), nmod_poly_mat_entry(pmat, i, j), k);
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* CONVERT                                                    */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+
+void nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat, const nmod_mat_t cmat)
+{
+    for (slong i = 0; i < cmat->r; ++i)
+        for (slong j = 0; j < cmat->c; ++j)
+        {
+            if (nmod_mat_entry(cmat, i, j) == 0)
+                nmod_poly_zero(nmod_poly_mat_entry(pmat, i, j));
+            else
             {
-                P = nmod_poly_mat_entry(res, i, j);
-                if (!nmod_poly_is_zero(P))
-                    nmod_poly_shift_left(P, P, k);
+                nmod_poly_realloc(nmod_poly_mat_entry(pmat, i, j), 1);
+                nmod_poly_mat_entry(pmat, i, j)->coeffs[0]
+                                    = nmod_mat_entry(cmat, i, j);
             }
-        return;
-    }
-
-
-    if (k < 0)
-    {
-        for (slong i = 0; i < res->r; i++)
-            for (slong j = 0; j < res->c; j++)
-            {
-                P = nmod_poly_mat_entry(res, i, j);
-                if (!nmod_poly_is_zero(P))
-                    nmod_poly_shift_right(P, P, k);
-            }
-        return;
-    }
+        }
 }
 
-
-void nmod_mat_to_poly_mat(nmod_poly_mat_t res, const nmod_mat_t M)
+void nmod_poly_mat_set_from_mat_poly(nmod_poly_mat_t pmat, const nmod_mat_poly_t matp)
 {
-	slong r = M->r, c = M->c;
-	nmod_poly_t P;
-	nmod_poly_init(P, res->modulus);
-	for (slong i = 0; i < r; i++)
-		for (slong j = 0; j < c; j++)
-		{
-			nmod_poly_set_coeff_ui(P, 0, nmod_mat_get_entry(M, i, j));
-			nmod_poly_set(nmod_poly_mat_entry(res, i, j), P);
-		}
-	nmod_poly_clear(P);
+    // TODO reinsert this kind of things, with flag "debug mode" or something?
+	//if (pmat->modulus != matp->mod)
+	//{
+	//	printf("\nERROR! Wrong modulus: nmod_mat_poly_to_poly_mat\n");
+	//	return;
+	//}
+	//if (pmat->r != r || pmat->c != c)
+	//{
+	//	printf("\nERROR! Wrong shape: nmod_mat_poly_to_poly_mat\n");
+	//	printf("shape pmat = (%ld, %ld), shape matp = (%ld, %ld)\n", pmat->r, pmat->c, r, c);
+	//	return;
+	//}
+    // TODO start with the right length,
+    // then fill, then normalize
+    // (zero is not necessary if all entries are touched, simply reallocate to
+    // right length)
+	nmod_poly_mat_zero(pmat);
+	for (slong k = 0; k <= matp->degree; k++)
+        for (slong i = 0; i < matp->r; ++i)
+            for (slong j = 0; j < matp->c; ++j)
+                nmod_poly_set_coeff_ui(nmod_poly_mat_entry(pmat, i, j), k, nmod_mat_get_entry(matp->mat + k, i, j));
 }
-
-void nmod_mat_poly_to_poly_mat(nmod_poly_mat_t res, const nmod_mat_poly_t F)
-{
-	slong degree, r, c;
-	mp_limb_t mod;
-	degree = F->degree;
-	r = F->r;
-	c = F->c;
-	mod = F->mod;
-
-	if (res->modulus != mod)
-	{
-		printf("\nERROR! Wrong modulus: nmod_mat_poly_to_poly_mat\n");
-		return;
-	}
-	if (res->r != r || res->c != c)
-	{
-		printf("\nERROR! Wrong shape: nmod_mat_poly_to_poly_mat\n");
-		printf("shape res = (%ld, %ld), shape F = (%ld, %ld)\n", res->r, res->c, r, c);
-		return;
-	}
-
-	nmod_poly_mat_zero(res);
-
-
-	nmod_poly_mat_t mat;
-	nmod_poly_mat_init(mat, r, c, mod);
-
-	for (slong i = 0; i <= degree; i++)
-	{
-
-		nmod_mat_to_poly_mat(mat, F->mat + i);
-		nmod_poly_mat_shift(mat, i);
-		nmod_poly_mat_add(res, res, mat);
-	}
-	nmod_poly_mat_clear(mat);
-}
-
-
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

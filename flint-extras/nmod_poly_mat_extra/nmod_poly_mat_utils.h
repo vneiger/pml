@@ -57,6 +57,7 @@ nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
 NMOD_POLY_MAT_INLINE slong
 nmod_mat_poly_degree(const nmod_mat_poly_t matp)
 {
+    // TODO not guaranteed to be the actual degree?
 	return matp->degree;
 }
 
@@ -102,9 +103,6 @@ void coefficient_matrix(nmod_mat_t coeff,
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/* Transpose                                                  */
-/*------------------------------------------------------------*/
 /** @name Transpose and mirror
  *
  *  Transpose of a polynomial matrix, and mirror of a vector.
@@ -162,7 +160,7 @@ void coefficient_matrix(nmod_mat_t coeff,
  * Left and right shift operations (X is the variable):
  *  - LeftShift by n means multiplication by X^n
  *  - RightShift by n means division by X^n
- *  - a negative shift reverses the direction of the shift.
+ *  - shift `n` has to be nonnegative in both cases.
  *
  *  In all the following functions which involve an OUT parameter (`svec` or
  *  `smat`), this parameter may alias the corresponding IN parameter (`pvec` or
@@ -177,20 +175,17 @@ void coefficient_matrix(nmod_mat_t coeff,
 /** Computes the left `n`-shift `svec` of the polynomial vector `pvec` */
 // TODO
 //void LeftShift(Vec<zz_pX> & svec, const Vec<zz_pX> & pvec, long n);
-void nmod_poly_mat_shift(nmod_poly_mat_t res, slong k);
 
 /** Computes the right `n`-shift `svec` of the polynomial vector `pvec` */
 // TODO
 //void RightShift(Vec<zz_pX> & svec, const Vec<zz_pX> & pvec, long n);
 
 /** Computes the left `n`-shift `smat` of the polynomial matrix `pmat` */
-// TODO
-//void LeftShift(Mat<zz_pX> & smat, const Mat<zz_pX> & pmat, long n);
+// TODO investigate what happens with Flint's shift when polynomial is zero
+void nmod_poly_mat_shift_left(nmod_poly_mat_t res, const nmod_poly_mat_t pmat, slong k);
 
 /** Computes the right `n`-shift `smat` of the polynomial matrix `pmat` */
-// TODO
-//void RightShift(Mat<zz_pX> & smat, const Mat<zz_pX> & pmat, long n);
-
+void nmod_poly_mat_shift_right(nmod_poly_mat_t res, const nmod_poly_mat_t pmat, slong k);
 
 /** Computes the matrix `smat` which is the same as the polynomial matrix
  * `pmat` but with its `i`-th row replaced by its left `n`-shift
@@ -286,10 +281,9 @@ void nmod_poly_mat_shift(nmod_poly_mat_t res, slong k);
  */
 //@{
 
-/** Computes the evaluation `evmat` of the polynomial matrix `pmat` at the
- * point `pt` (`pmat` stored as a matrix of polynomials) */
-// TODO
-//void eval(Mat<zz_p> & evmat, const Mat<zz_pX> & pmat, const zz_p & pt);
+// /** Computes the evaluation `evmat` of the polynomial matrix `pmat` at the
+//  * point `pt` (`pmat` stored as a matrix of polynomials) */
+// Flint native, as nmod_poly_mat_evaluate_nmod
 
 /** Computes the evaluation `evmat` of the polynomial matrix `matp` at the
  * point `pt` (polynomial matrix stored as a vector of constant matrices). If
@@ -297,7 +291,7 @@ void nmod_poly_mat_shift(nmod_poly_mat_t res, slong k);
 // TODO
 //void eval(Mat<zz_p> & evmat, const Vec<Mat<zz_p>> & matp, const zz_p & pt);
 
-//@} // doxygen group: Evaluation at one or multiple points
+//@} // doxygen group: Evaluation at one points
 
 
 /*------------------------------------------------------------*/
@@ -368,16 +362,24 @@ void nmod_poly_mat_shift(nmod_poly_mat_t res, slong k);
  */
 //@{
 
-/** Conversion from a constant matrix `mat` into a polynomial matrix `pmat`
- * (which is constant, equal to `mat`).
- */
-// TODO
-//void conv(Mat<zz_pX> & pmat, const Mat<zz_p> & mat);
+/** Initialize a polynomial matrix `pmat` of the same dimensions and modulus as
+ * a constant matrix `mat`, and set its constant coefficient to `mat`.
+ * \todo careful: probably better to use nmod_poly_init with preinv...
+ * but this should have been done in Flint's native poly_mat_init too?
+ **/
+//void nmod_poly_mat_init_set_from_nmod_mat(nmod_poly_mat_t pmat, const nmod_mat_t cmat);
+
+/** Set the polynomial matrix `pmat` to be a constant polynomial matrix whose
+ * constant coefficient is a copy of `cmat`. This assume `pmat` is already
+ * initialized with the same modulus and dimensions of `cmat`.
+ **/
+void nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat, const nmod_mat_t cmat);
 
 /** Conversion from a constant matrix `mat` into a matrix polynomial `matp`
  * (which is constant, equal to `mat`).
  * \todo
  */
+
 
 //@} // doxygen group: Conversion from constant matrix
 
@@ -386,16 +388,16 @@ void nmod_poly_mat_shift(nmod_poly_mat_t res, slong k);
  *
  *  Two main representations are used for polynomial matrices:
  *     - a polynomial matrix stored as a matrix with polynomial entries, that
- *     is, of type `Mat<zz_pX>` (currently the default representation)
+ *     is, of type `nmod_poly_mat_t`
  *     - a polynomial matrix stored as a polynomial with matrix coefficients,
- *     that is, of type `Vec<Mat<zz_p>>`
+ *     that is, of type `nmod_mat_poly_t`
  *
- *  In the latter representation, the vector has length at least `deg(mat)+1`;
- *  in particular, the zero matrix might be represented by the vector of length
- *  0, although this does not give access to the dimensions of this zero
- *  matrix. Note also the following requirement: in the second representation,
- *  all the matrix coefficients have the same row and column dimensions; this
- *  is currently assumed to hold, and not checked by the algorithms.
+ *  In the latter representation, the array of matrices has length at least
+ *  `degree(mat)+1`; in particular, the zero matrix may be represented by an
+ *  array of length 0. Note also the following requirement: in the second
+ *  representation, all the matrix coefficients have the same row and column
+ *  dimensions; this is currently assumed to hold, and is not checked by the
+ *  algorithms.
  *
  *  The following functions perform conversions between these types, with two
  *  variants: either the degree is deduced from the input, or a user-provided
@@ -404,24 +406,17 @@ void nmod_poly_mat_shift(nmod_poly_mat_t res, slong k);
 //@{
 
 /** Converts from matrix with polynomial entries `pmat` to polynomial with
- * matrix coefficients `matp`; the zero matrix is converted to the length-0
- * vector, losing information on the row and column dimensions.
- * \todo check last claim
+ * matrix coefficients `matp`.
  */
-void nmod_poly_mat_to_mat_poly(nmod_mat_poly_t matp,
-			    const nmod_poly_mat_t pmat);
+//void nmod_poly_mat_to_mat_poly(nmod_mat_poly_t matp,
+			    //const nmod_poly_mat_t pmat);
 
 /** Converts from polynomial with matrix coefficients `matp` to matrix with
- * polynomial entries `pmat`; if `matp` has length 0 then `pmat` is cleared
- * (set to zero without changing its dimensions).
- * \todo check last claim
- */
-void nmod_mat_poly_to_poly_mat(nmod_poly_mat_t pmat,
+ * polynomial entries `pmat`.
+ * \todo improvements in implementation
+ **/
+void nmod_poly_mat_set_from_mat_poly(nmod_poly_mat_t pmat,
 				    const nmod_mat_poly_t matp);
-
-// TODO DOC
-void nmod_mat_to_poly_mat(nmod_poly_mat_t res, const nmod_mat_t M);
-
 
 /** Converts from matrix with polynomial entries `pmat`, truncated at the
  * specified `order`, to polynomial with matrix coefficients `matp`. The

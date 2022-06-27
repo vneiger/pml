@@ -155,7 +155,7 @@ void structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
     nmod_poly_mat_window_init(R1, res, 0, 0, rank, cdim);
     nmod_poly_mat_set(R1_cp, R1);
 
-    nmod_poly_mat_shift(R1, 1); //matpol function
+    nmod_poly_mat_shift_left(R1, R1, 1); //matpol function
 
     /** work on R2 (bottom) **/
     nmod_poly_mat_window_init(R2, res, rank, 0, rdim, cdim);
@@ -353,7 +353,7 @@ void M_basisIV(nmod_poly_mat_t res, slong *res_shifts,
         structured_list_multiplication_blocks_full(res_prime, A_k, perm, rank);
     }
 
-    nmod_mat_poly_to_poly_mat(res, res_prime); // can be improved
+    nmod_poly_mat_set_from_mat_poly(res, res_prime); // can be improved
 
     nmod_mat_poly_clear(F_prime);
     nmod_mat_poly_clear(res_prime);
@@ -393,7 +393,7 @@ void M_basisV(nmod_poly_mat_t res, slong *res_shifts,
         structured_list_multiplication_blocks_full(res_prime, A_k, perm, rank);
     }
 
-    nmod_mat_poly_to_poly_mat(res, res_prime);
+    nmod_poly_mat_set_from_mat_poly(res, res_prime);
 
     nmod_mat_poly_clear(F_prime);
     nmod_mat_poly_clear(res_prime);
