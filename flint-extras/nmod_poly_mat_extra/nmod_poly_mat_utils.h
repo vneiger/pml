@@ -70,12 +70,6 @@ nmod_mat_poly_is_constant(const nmod_mat_poly_t matp)
 
 //@} // doxygen group: Degree
 
-
-
-void nmod_poly_mat_shift(nmod_poly_mat_t res, slong k);
-
-
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* SETTING AND GETTING COEFFICIENTS                           */
@@ -183,6 +177,7 @@ void coefficient_matrix(nmod_mat_t coeff,
 /** Computes the left `n`-shift `svec` of the polynomial vector `pvec` */
 // TODO
 //void LeftShift(Vec<zz_pX> & svec, const Vec<zz_pX> & pvec, long n);
+void nmod_poly_mat_shift(nmod_poly_mat_t res, slong k);
 
 /** Computes the right `n`-shift `svec` of the polynomial vector `pvec` */
 // TODO
@@ -411,16 +406,22 @@ void coefficient_matrix(nmod_mat_t coeff,
 /** Converts from matrix with polynomial entries `pmat` to polynomial with
  * matrix coefficients `matp`; the zero matrix is converted to the length-0
  * vector, losing information on the row and column dimensions.
+ * \todo check last claim
  */
-// TODO
-//void conv(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat);
+void nmod_poly_mat_to_mat_poly(nmod_mat_poly_t matp,
+			    const nmod_poly_mat_t pmat);
 
 /** Converts from polynomial with matrix coefficients `matp` to matrix with
  * polynomial entries `pmat`; if `matp` has length 0 then `pmat` is cleared
  * (set to zero without changing its dimensions).
+ * \todo check last claim
  */
-// TODO
-//void conv(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp);
+void nmod_mat_poly_to_poly_mat(nmod_poly_mat_t pmat,
+				    const nmod_mat_poly_t matp);
+
+// TODO DOC
+void nmod_mat_to_poly_mat(nmod_poly_mat_t res, const nmod_mat_t M);
+
 
 /** Converts from matrix with polynomial entries `pmat`, truncated at the
  * specified `order`, to polynomial with matrix coefficients `matp`. The

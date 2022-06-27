@@ -28,6 +28,7 @@ typedef struct
   slong c;
   mp_limb_t mod;
 } nmod_mat_poly_struct;
+// TODO use length and alloc as for Flint's poly
 
 typedef nmod_mat_poly_struct nmod_mat_poly_t[1];
 
@@ -49,8 +50,9 @@ nmod_mat_poly_modulus(const nmod_mat_poly_t matp)
 	return matp->mod;
 }
 
+// TODO getter for pointer to i-th coeff
 
-
+// TODO stopped here
 
 void nmod_mat_poly_print(const nmod_mat_poly_t A);
 
@@ -59,7 +61,7 @@ void nmod_mat_poly_get_coef(nmod_mat_t res, const nmod_mat_poly_t F,
 
 void nmod_mat_poly_init(nmod_mat_poly_t res, slong degree,
 			     slong length,
-			     slong r, slong c, mp_limb_t modulus);
+			     slong r, slong c, mp_limb_t mod);
 
 void nmod_mat_poly_clear(nmod_mat_poly_t A);
 
@@ -97,11 +99,7 @@ void nmod_mat_poly_init_setII(nmod_mat_poly_t res,
 void nmod_mat_poly_init_setIII(nmod_mat_poly_t res,
 				    const nmod_poly_mat_t F, slong length);
 
-void nmod_mat_poly_set(nmod_mat_poly_t res,
-			    const nmod_poly_mat_t F);
 
-void nmod_mat_poly_to_poly_mat(nmod_poly_mat_t res,
-				    const nmod_mat_poly_t F);
 
 
 /** void nmod_mat_poly_naive_mul_coef(nmod_mat_t res,
@@ -117,45 +115,6 @@ void nmod_mat_poly_to_poly_mat(nmod_poly_mat_t res,
 void nmod_mat_poly_naive_mul_coef(nmod_mat_t res,
 				       const nmod_mat_poly_t A,
 				       const nmod_mat_poly_t B, slong k);
-
-/** static void list_structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
- *                                               const slong *perm, slong rank,
- *                                               slong k, slong sigma)
- * 
- * This function compute the multiplication of specific polynomials matrix
- * A a nmod_mat_t, res a list_nmod_poly_mat_t
- * and the permutation perm. 
- * It will compute the mutiplication of
- * P = perm^(-1) * [[x, 0], [A, 1]] * perm \in K[x]^{mxm}  and 
- * res = sum_{i=0}^{sigma - 1} r_i x^i \in K^{mxn}[x]
- * To do that we will permutate r_i's rows, shift the top and mul by A and add the bottom on each i
- * It will not take in count the k - 2 first matrix of res, 
- * and the degree(res) - sigma last matrix 
- * because we will only need the k-th coefficients of res
- * and k will go to sigma - 1 => we need to update the sigma - 1 coefficients
- *
- */
-void structured_list_multiplication_blocks(nmod_mat_poly_t res,
-					   const nmod_mat_t A,
-					   const slong *perm,
-					   slong rank, slong k, slong sigma);
-
-/** static void list_structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
- *                                               const slong *perm, slong rank,
- *                                               slong k, slong sigma)
- * 
- * This function compute the multiplication of specific polynomials matrix
- * A a nmod_mat_t, res a list_nmod_poly_mat_t
- * and the permutation perm. 
- * It will compute the mutiplication of
- * P = perm^(-1) * [[x, 0], [A, 1]] * perm \in K[x]^{mxm}  and 
- * res = sum_{i=0}^{degree(res)} r_i x^i \in K^{mxn}[x]
- * To do that we will permutate r_i's rows, shift the top and mul by A and add the bottom on each i
- * and update the degree of res
- */
-void structured_list_multiplication_blocks_full(nmod_mat_poly_t res,
-						const nmod_mat_t A,
-						const slong *perm, slong rank);
 
 #ifdef __cplusplus
 }

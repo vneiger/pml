@@ -2,6 +2,139 @@
 #include "nmod_poly_mat_mat_poly.h"
 #include "nmod_poly_mat_utils.h"
 
+/** static void list_structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
+ *                                               const slong *perm, slong rank,
+ *                                               slong k, slong sigma)
+ * 
+ * This function compute the multiplication of specific polynomials matrix
+ * A a nmod_mat_t, res a list_nmod_poly_mat_t
+ * and the permutation perm. 
+ * It will compute the mutiplication of
+ * P = perm^(-1) * [[x, 0], [A, 1]] * perm \in K[x]^{mxm}  and 
+ * res = sum_{i=0}^{sigma - 1} r_i x^i \in K^{mxn}[x]
+ * To do that we will permutate r_i's rows, shift the top and mul by A and add the bottom on each i
+ * It will not take in count the k - 2 first matrix of res, 
+ * and the degree(res) - sigma last matrix 
+ * because we will only need the k-th coefficients of res
+ * and k will go to sigma - 1 => we need to update the sigma - 1 coefficients
+ *
+ */
+void structured_list_multiplication_blocks(nmod_mat_poly_t res,
+					   const nmod_mat_t A,
+					   const slong *perm,
+					   slong rank, slong deb, slong sigma)
+{
+	slong r = res->r, c = res->c;
+	mp_limb_t mod = res->mod;
+	slong i;
+	nmod_mat_t previous_R1, R1, R2, R1_cp, R2_cp;
+	nmod_mat_struct *r_i;
+	slong *inv_perm = _perm_init(r);
+
+	/** init **/
+	nmod_mat_init(R1_cp, rank, c, mod);
+	nmod_mat_init(previous_R1, rank, c, mod);
+	nmod_mat_init(R2_cp, r - rank, c, mod);
+
+	for (i = deb; i < sigma; i++)
+	{
+		r_i = res->mat + i;
+		apply_perm_rows_to_matrix(r_i, perm, r);
+		nmod_mat_window_init(R1, r_i, 0, 0, rank, c);
+		nmod_mat_set(R1_cp, R1);
+
+		nmod_mat_set(R1, previous_R1); //it will set the top block of r_{i-1} on r_{i}
+
+	nmod_mat_set(previous_R1, R1_cp);
+
+	nmod_mat_window_init(R2, r_i, rank, 0, r, c);
+	nmod_mat_set(R2_cp, R2);
+
+	nmod_mat_mul(R2, A, R1_cp);
+	nmod_mat_add(R2, R2, R2_cp);
+
+	nmod_mat_window_clear(R1);
+	nmod_mat_window_clear(R2);
+	}
+
+	/** apply perm^(-1) **/
+	_perm_inv(inv_perm, perm, r);
+	for (i = deb + 1; i < sigma; i++)
+		apply_perm_rows_to_matrix(res->mat + i, inv_perm, r);
+
+	/** clear **/
+	nmod_mat_clear(R1_cp);
+	nmod_mat_clear(R2_cp);
+	nmod_mat_clear(previous_R1);
+
+	_perm_clear(inv_perm);
+}
+
+/** static void list_structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
+ *                                               const slong *perm, slong rank,
+ *                                               slong k, slong sigma)
+ * 
+ * This function compute the multiplication of specific polynomials matrix
+ * A a nmod_mat_t, res a list_nmod_poly_mat_t
+ * and the permutation perm. 
+ * It will compute the mutiplication of
+ * P = perm^(-1) * [[x, 0], [A, 1]] * perm \in K[x]^{mxm}  and 
+ * res = sum_{i=0}^{degree(res)} r_i x^i \in K^{mxn}[x]
+ * To do that we will permutate r_i's rows, shift the top and mul by A and add the bottom on each i
+ * and update the degree of res
+ */
+void structured_list_multiplication_blocks_full(nmod_mat_poly_t res,
+						const nmod_mat_t A,
+						const slong *perm, slong rank)
+{
+	slong r = res->r, c = res->c;
+	mp_limb_t mod = res->mod;
+	slong i;
+	nmod_mat_t previous_R1, R1, R2, R1_cp, R2_cp;
+	nmod_mat_struct *r_i;
+	slong *inv_perm = _perm_init(r);
+
+	/** init **/
+	nmod_mat_init(R1_cp, rank, c, mod);
+	nmod_mat_init(previous_R1, rank, c, mod);
+	nmod_mat_init(R2_cp, r - rank, c, mod);
+
+	res->degree += 1;
+
+	for (i = 0; i <= res->degree; i++)
+	{
+		r_i = res->mat + i;
+		apply_perm_rows_to_matrix(r_i, perm, r);
+		nmod_mat_window_init(R1, r_i, 0, 0, rank, c);
+		nmod_mat_set(R1_cp, R1);
+
+		nmod_mat_set(R1, previous_R1); //it will set the top block of r_{i-1} on r_{i}
+
+	nmod_mat_set(previous_R1, R1_cp);
+
+	nmod_mat_window_init(R2, r_i, rank, 0, r, c);
+	nmod_mat_set(R2_cp, R2);
+
+	nmod_mat_mul(R2, A, R1_cp);
+	nmod_mat_add(R2, R2, R2_cp);
+
+	nmod_mat_window_clear(R1);
+	nmod_mat_window_clear(R2);
+	}
+
+	/** apply perm^(-1) **/
+	_perm_inv(inv_perm, perm, r);
+	for (i = 0; i <= res->degree; i++)
+		apply_perm_rows_to_matrix(res->mat + i, inv_perm, r);
+
+	/** clear **/
+	nmod_mat_clear(R1_cp);
+	nmod_mat_clear(R2_cp);
+	nmod_mat_clear(previous_R1);
+
+	_perm_clear(inv_perm);
+}
+
 void structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
                                       const slong *perm, slong rank)
 {
