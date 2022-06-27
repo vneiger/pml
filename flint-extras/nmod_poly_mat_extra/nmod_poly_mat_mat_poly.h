@@ -26,27 +26,27 @@ typedef struct
   nmod_mat_struct *mat;
   slong r;
   slong c;
-  mp_limb_t modulus;
+  mp_limb_t mod;
 } nmod_mat_poly_struct;
 
 typedef nmod_mat_poly_struct nmod_mat_poly_t[1];
 
 NMOD_POLY_MAT_INLINE slong
-nmod_mat_poly_nrows(const nmod_mat_poly_t A)
+nmod_mat_poly_nrows(const nmod_mat_poly_t matp)
 {
-	return A->r;
+	return matp->r;
 }
 
 NMOD_POLY_MAT_INLINE slong
-nmod_mat_poly_ncols(const nmod_mat_poly_t A)
+nmod_mat_poly_ncols(const nmod_mat_poly_t matp)
 {
-	return A->c;
+	return matp->c;
 }
 
 NMOD_POLY_MAT_INLINE mp_limb_t
-nmod_mat_poly_modulus(const nmod_mat_poly_t A)
+nmod_mat_poly_modulus(const nmod_mat_poly_t matp)
 {
-	return A->modulus;
+	return matp->mod;
 }
 
 

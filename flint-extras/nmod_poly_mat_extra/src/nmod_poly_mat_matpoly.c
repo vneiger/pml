@@ -2,27 +2,27 @@
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_approximant.h" // TODO for apply_perm ->  should move
 
-void nmod_mat_poly_init(nmod_mat_poly_t res, slong degree, slong length,
-		slong r, slong c, mp_limb_t modulus)
+void nmod_mat_poly_init(nmod_mat_poly_t matp, slong degree, slong length,
+		slong r, slong c, mp_limb_t mod)
 {
 
 	slong i;
 
 	if (r > 0)
 	{
-		res->mat = (nmod_mat_struct *) flint_malloc(length * sizeof(nmod_mat_struct));
-		for (i = 0; i < length; i++)
-			nmod_mat_init(res->mat + i, r, c, modulus);
+		matp->mat = (nmod_mat_struct *) flint_malloc(length * sizeof(nmod_mat_struct));
+		for (i = 0; i < length; i++) // TODO STOP AT DEGREE?
+			nmod_mat_init(matp->mat + i, r, c, mod);
 	}
 	else
-		res->mat = NULL;
+		matp->mat = NULL;
 
 
-	res->length = length;
-	res->degree = degree;
-	res->modulus = modulus;
-	res->r = r;
-	res->c = c;
+	matp->length = length;
+	matp->degree = degree;
+	matp->mod = mod;
+	matp->r = r;
+	matp->c = c;
 }
 
 void nmod_mat_poly_clear(nmod_mat_poly_t A)
@@ -48,14 +48,14 @@ void nmod_mat_poly_print(const nmod_mat_poly_t A)
 void nmod_mat_poly_set(nmod_mat_poly_t res, const nmod_poly_mat_t F)
 {
 	slong degree, r, c;
-	mp_limb_t modulus;
+	mp_limb_t mod;
 	degree = nmod_poly_mat_degree(F);
 	r = nmod_poly_mat_nrows(F);
 	c = nmod_poly_mat_ncols(F);
-	modulus = nmod_poly_mat_modulus(F);
+	mod = nmod_poly_mat_modulus(F);
 
 	nmod_mat_t mat;
-	nmod_mat_init(mat, r, c, modulus);
+	nmod_mat_init(mat, r, c, mod);
 
 	for (slong i = 0; i <= degree; i++)
 	{
@@ -70,13 +70,13 @@ void nmod_mat_poly_set(nmod_mat_poly_t res, const nmod_poly_mat_t F)
 void nmod_mat_poly_init_set(nmod_mat_poly_t res, const nmod_poly_mat_t F)
 {
 	slong degree, r, c;
-	mp_limb_t modulus;
+	mp_limb_t mod;
 	degree = nmod_poly_mat_degree(F);
 	r = nmod_poly_mat_nrows(F);
 	c = nmod_poly_mat_ncols(F);
-	modulus = nmod_poly_mat_modulus(F);
+	mod = nmod_poly_mat_modulus(F);
 
-	nmod_mat_poly_init(res, degree, degree + 1, r, c, modulus);
+	nmod_mat_poly_init(res, degree, degree + 1, r, c, mod);
 
 	nmod_poly_struct *P;
 	for (slong i = 0; i < r; i++)
@@ -92,13 +92,13 @@ void nmod_mat_poly_init_setII(nmod_mat_poly_t res,
 		const nmod_poly_mat_t F, slong length)
 {
 	slong degree, r, c, min, d;
-	mp_limb_t modulus;
+	mp_limb_t mod;
 	degree = nmod_poly_mat_degree(F);
 	r = nmod_poly_mat_nrows(F);
 	c = nmod_poly_mat_ncols(F);
-	modulus = nmod_poly_mat_modulus(F);
+	mod = nmod_poly_mat_modulus(F);
 
-	nmod_mat_poly_init(res, degree, length, r, c, modulus);
+	nmod_mat_poly_init(res, degree, length, r, c, mod);
 
 	nmod_poly_struct *P;
 	for (slong i = 0; i < r; i++)
@@ -116,13 +116,13 @@ void nmod_mat_poly_init_setIII(nmod_mat_poly_t res,
 		const nmod_poly_mat_t F, slong length)
 {
 	slong degree, r, c;
-	mp_limb_t modulus;
+	mp_limb_t mod;
 	degree = nmod_poly_mat_degree(F);
 	r = nmod_poly_mat_nrows(F);
 	c = nmod_poly_mat_ncols(F);
-	modulus = nmod_poly_mat_modulus(F);
+	mod = nmod_poly_mat_modulus(F);
 
-	nmod_mat_poly_init(res, degree, degree + length, r, c, modulus);
+	nmod_mat_poly_init(res, degree, degree + length, r, c, mod);
 
 	nmod_poly_struct *P;
 	for (slong i = 0; i < r; i++)
@@ -152,13 +152,13 @@ void nmod_mat_to_poly_mat(nmod_poly_mat_t res, const nmod_mat_t M)
 void nmod_mat_poly_to_poly_mat(nmod_poly_mat_t res, const nmod_mat_poly_t F)
 {
 	slong degree, r, c;
-	mp_limb_t modulus;
+	mp_limb_t mod;
 	degree = F->degree;
 	r = F->r;
 	c = F->c;
-	modulus = F->modulus;
+	mod = F->mod;
 
-	if (res->modulus != modulus)
+	if (res->modulus != mod)
 	{
 		printf("\nERROR! Wrong modulus: nmod_mat_poly_to_poly_mat\n");
 		return;
@@ -174,7 +174,7 @@ void nmod_mat_poly_to_poly_mat(nmod_poly_mat_t res, const nmod_mat_poly_t F)
 
 
 	nmod_poly_mat_t mat;
-	nmod_poly_mat_init(mat, r, c, modulus);
+	nmod_poly_mat_init(mat, r, c, mod);
 
 	for (slong i = 0; i <= degree; i++)
 	{
@@ -197,19 +197,19 @@ void nmod_mat_poly_naive_mul_coef(nmod_mat_t res, const nmod_mat_poly_t A,
 {
 	nmod_mat_t temp;
 	slong A_r, A_c, A_degree, B_r, B_c, B_degree;
-	mp_limb_t A_modulus, B_modulus;
+	mp_limb_t A_mod, B_mod;
 
 	A_r = A->r;
 	A_c = A->c;
-	A_modulus = A->modulus;
+	A_mod = A->mod;
 	A_degree = A->degree;
 
 	B_r = B->r;
 	B_c = B->c;
-	B_modulus = B->modulus;
+	B_mod = B->mod;
 	B_degree = B->degree;
 
-	if (A_modulus != B_modulus)
+	if (A_mod != B_mod)
 	{
 		printf("\nERROR! Wrong modulus: nmod_mat_poly_naive_mul_coef\n");
 		return;
@@ -222,7 +222,7 @@ void nmod_mat_poly_naive_mul_coef(nmod_mat_t res, const nmod_mat_poly_t A,
 	}
 
 	nmod_mat_zero(res);
-	nmod_mat_init(temp, A_r, B_c, A_modulus);
+	nmod_mat_init(temp, A_r, B_c, A_mod);
 	for (slong i = 0; i <= k; i++)
 	{
 		if (i <= A_degree && (k-i) <= B_degree)
@@ -238,16 +238,16 @@ void structured_list_multiplication_blocks(nmod_mat_poly_t res, const nmod_mat_t
 		const slong *perm, slong rank, slong deb, slong sigma)
 {
 	slong r = res->r, c = res->c;
-	mp_limb_t modulus = res->modulus;
+	mp_limb_t mod = res->mod;
 	slong i;
 	nmod_mat_t previous_R1, R1, R2, R1_cp, R2_cp;
 	nmod_mat_struct *r_i;
 	slong *inv_perm = _perm_init(r);
 
 	/** init **/
-	nmod_mat_init(R1_cp, rank, c, modulus);
-	nmod_mat_init(previous_R1, rank, c, modulus);
-	nmod_mat_init(R2_cp, r - rank, c, modulus);
+	nmod_mat_init(R1_cp, rank, c, mod);
+	nmod_mat_init(previous_R1, rank, c, mod);
+	nmod_mat_init(R2_cp, r - rank, c, mod);
 
 	for (i = deb; i < sigma; i++)
 	{
@@ -287,16 +287,16 @@ void structured_list_multiplication_blocks_full(nmod_mat_poly_t res, const nmod_
 		const slong *perm, slong rank)
 {
 	slong r = res->r, c = res->c;
-	mp_limb_t modulus = res->modulus;
+	mp_limb_t mod = res->mod;
 	slong i;
 	nmod_mat_t previous_R1, R1, R2, R1_cp, R2_cp;
 	nmod_mat_struct *r_i;
 	slong *inv_perm = _perm_init(r);
 
 	/** init **/
-	nmod_mat_init(R1_cp, rank, c, modulus);
-	nmod_mat_init(previous_R1, rank, c, modulus);
-	nmod_mat_init(R2_cp, r - rank, c, modulus);
+	nmod_mat_init(R1_cp, rank, c, mod);
+	nmod_mat_init(previous_R1, rank, c, mod);
+	nmod_mat_init(R2_cp, r - rank, c, mod);
 
 	res->degree += 1;
 
