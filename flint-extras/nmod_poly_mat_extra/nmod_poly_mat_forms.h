@@ -60,26 +60,8 @@ typedef enum
 
 
 // TODO TO CHECK AND INCORPORATE:
-void leading_positions(int64_t *res, const nmod_poly_mat_t mat, const int64_t *shifts,
+void leading_positions(slong *res, const nmod_poly_mat_t mat, const slong *shift,
                        orientation_t row_wise);
-
-int is_reduced(const nmod_poly_mat_t mat,
-               const int64_t *shifts,
-               orientation_t row_wise);
-
-int is_weak_popov(const nmod_poly_mat_t mat,
-                  const int64_t *shifts,
-                  orientation_t row_wise,
-                  int ordered);
-
-int is_popov(const nmod_poly_mat_t mat,
-             const int64_t *shifts,
-             orientation_t row_wise,
-             int ordered);
-
-int is_hermite(const nmod_poly_mat_t mat,
-               orientation_t row_wise);
-
 
 
 
@@ -250,33 +232,40 @@ void column_degrees_shifted(slong *cdeg,
 /** Computes the degree matrix `degmat` of a polynomial matrix `pmat` (see @ref
  * DegreeMatrix)
  */
-void degree_matrix(int64_t *res, const nmod_poly_mat_t mat);
+void degree_matrix(slong *res, const nmod_poly_mat_t mat);
 
 /** Computes the row-wise `shift`-degree matrix `degmat` of a polynomial matrix
  * `pmat` (see @ref DegreeMatrix)
  * \todo use mat fmpz
  */
-void degree_matrix_row_shifted(int64_t *res,
+void degree_matrix_row_shifted(slong *res,
                            const nmod_poly_mat_t mat,
-                           const int64_t *shifts);
+                           const slong *shift);
 
 /** Computes the column-wise `shift`-degree matrix `degmat` of a polynomial
  * matrix `pmat` (see @ref DegreeMatrix)
  * \todo use mat fmpz
  */
-void degree_matrix_column_shifted(int64_t *res,
+void degree_matrix_column_shifted(slong *res,
                            const nmod_poly_mat_t mat,
-                           const int64_t *shifts);
+                           const slong *shift);
 
 /** Computes the `shift`-degree matrix `degmat` of a polynomial matrix `pmat`
  * (see @ref DegreeMatrix), the orientation row-wise/column-wise being
  * indicated by a parameter.
  * \todo use mat fmpz
  */
-void degree_matrix_shifted(int64_t *res,
-                           const nmod_poly_mat_t mat,
-                           const int64_t *shifts,
-                           orientation_t orient);
+NMOD_POLY_MAT_INLINE void
+degree_matrix_shifted(slong *res,
+                      const nmod_poly_mat_t mat,
+                      const slong *shift,
+                      orientation_t row_wise)
+{
+    if (row_wise)
+        degree_matrix_row_shifted(res, mat, shift);
+    else
+        degree_matrix_column_shifted(res, mat, shift);
+}
 
 //@} // doxygen group: (Shifted) degree matrix
 
@@ -335,9 +324,18 @@ void leading_matrix_columnwise(nmod_mat_t lmat,
  * LeadingMatrix), using provided orientation row-wise or column-wise.
  * \todo bug to check, see src
  */
-void leading_matrix(nmod_mat_t lmat,
-                    const nmod_poly_mat_t mat,
-                    orientation_t orient);
+NMOD_POLY_MAT_INLINE void
+leading_matrix(nmod_mat_t lmat,
+               const nmod_poly_mat_t mat,
+               orientation_t row_wise)
+{
+    if (row_wise)
+        leading_matrix_rowwise(lmat, mat);
+    else
+        leading_matrix_columnwise(lmat, mat);
+}
+
+
 
 /** Computes the row-wise `shift`-leading matrix `lmat` of a polynomial matrix
  * `mat` (see @ref LeadingMatrix)
@@ -345,7 +343,7 @@ void leading_matrix(nmod_mat_t lmat,
  */
 void leading_matrix_shifted_rowwise(nmod_mat_t lmat,
                                     const nmod_poly_mat_t mat,
-                                    const slong *shifts);
+                                    const slong *shift);
 
 /** Computes the column-wise `shift`-leading matrix `lmat` of a polynomial
  * matrix `mat` (see @ref LeadingMatrix)
@@ -353,7 +351,7 @@ void leading_matrix_shifted_rowwise(nmod_mat_t lmat,
  */
 void leading_matrix_shifted_columnwise(nmod_mat_t lmat,
                                        const nmod_poly_mat_t mat,
-                                       const slong *shifts);
+                                       const slong *shift);
 
 
 /** Computes the column-wise `shift`-leading matrix `lmat` of a polynomial
@@ -361,10 +359,18 @@ void leading_matrix_shifted_columnwise(nmod_mat_t lmat,
  * row-wise or column-wise.
  * \todo bug to check, see src
  */
-void leading_matrix_shifted(nmod_mat_t lmat,
-                            const nmod_poly_mat_t mat,
-                            const slong *shifts,
-                            orientation_t orient);
+NMOD_POLY_MAT_INLINE void
+leading_matrix_shifted(nmod_mat_t lmat,
+                       const nmod_poly_mat_t mat,
+                       const slong *shift,
+                       orientation_t row_wise)
+{
+    if (row_wise)
+        leading_matrix_shifted_rowwise(lmat, mat, shift);
+    else
+        leading_matrix_shifted_columnwise(lmat, mat, shift);
+}
+
 
 //@} // doxygen group: (Shifted) leading matrix
 
@@ -410,128 +416,249 @@ void leading_matrix_shifted(nmod_mat_t lmat,
  */
 //@{
 
-/** Computes and returns a boolean indicating whether `pmat` is in row reduced
- * form (see @ref MatrixForms)
- * \todo
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING MATRIX FORMS - REDUCED                             */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** Tests whether `pmat` is in row reduced form (see @ref MatrixForms) */
+int is_reduced_rowwise(const nmod_poly_mat_t mat);
+
+/** Tests whether `pmat` is in `shift`-row reduced form (see @ref MatrixForms) */
+int is_reduced_shifted_rowwise(const nmod_poly_mat_t mat, const slong *shift);
+
+/** Tests whether `pmat` is in column reduced form (see @ref MatrixForms) */
+int is_reduced_columnwise(const nmod_poly_mat_t mat);
+
+/** Tests whether `pmat` is in `shift`-column reduced form (see @ref MatrixForms) */
+int is_reduced_shifted_columnwise(const nmod_poly_mat_t mat, const slong *shift);
+
+/** Tests whether `pmat` is in reduced form (see @ref MatrixForms), with
+ * orientation row-wise or column-wise specified by argument
  */
-//bool is_row_reduced(const Mat<zz_pX> & pmat);
+NMOD_POLY_MAT_INLINE int
+is_reduced(const nmod_poly_mat_t mat, orientation_t row_wise)
+{
+    if (row_wise)
+        return is_reduced_rowwise(mat);
+    else
+        return is_reduced_columnwise(mat);
+}
 
-/** Computes and returns a boolean indicating whether `pmat` is in `shift`-row
- * reduced form (see @ref MatrixForms)
- * \todo
+/** Tests whether `pmat` is in `shift`-reduced form (see @ref MatrixForms),
+ * with orientation row-wise or column-wise specified by argument
  */
-//bool is_row_reduced(const Mat<zz_pX> & pmat, const VecLong & shift);
-
-/** Computes and returns a boolean indicating whether `pmat` is in column
- * reduced form (see @ref MatrixForms)
- * \todo
- */
-//bool is_column_reduced(const Mat<zz_pX> & pmat);
-
-/** Computes and returns a boolean indicating whether `pmat` is in
- * `shift`-column reduced form (see @ref MatrixForms)
- * \todo
- */
-//bool is_column_reduced(const Mat<zz_pX> & pmat, const VecLong & shift);
+NMOD_POLY_MAT_INLINE int
+is_reduced_shifted(const nmod_poly_mat_t mat,
+                   const slong *shift,
+                   orientation_t row_wise)
+{
+    if (row_wise)
+        return is_reduced_shifted_rowwise(mat, shift);
+    else
+        return is_reduced_shifted_columnwise(mat, shift);
+}
 
 
-/** Computes and returns a boolean indicating whether `pmat` is in row-wise
- * weak Popov form (see @ref MatrixForms)
- * \todo
- */
-//bool is_row_weak_popov(const Mat<zz_pX> & pmat);
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING MATRIX FORMS - ORDERED WEAK POPOV                  */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
-/** Computes and returns a boolean indicating whether `pmat` is in row-wise
- * `shift`-weak Popov form (see @ref MatrixForms)
- * \todo
- */
-//bool is_row_weak_popov(const Mat<zz_pX> & pmat, const VecLong & shift);
+/** Tests whether `mat` is in row-wise ordered weak Popov form (see
+ * @ref MatrixForms) */
+int is_ordered_weak_popov_rowwise(const nmod_poly_mat_t mat);
 
-/** Computes and returns a boolean indicating whether `pmat` is in column-wise
- * weak Popov form (see @ref MatrixForms)
- * \todo
- */
-//bool is_column_weak_popov(const Mat<zz_pX> & pmat);
+/** Tests whether `mat` is in row-wise `shift`-ordered weak Popov form (see
+ * @ref MatrixForms) */
+int is_ordered_weak_popov_shifted_rowwise(const nmod_poly_mat_t mat,
+                                          const slong *shift);
 
-/** Computes and returns a boolean indicating whether `pmat` is in column-wise
- * `shift`-weak Popov form (see @ref MatrixForms)
- * \todo
- */
-//bool is_column_weak_popov(const Mat<zz_pX> &pmat, const VecLong & shift);
+/** Tests whether `mat` is in column-wise ordered weak Popov form (see
+ * @ref MatrixForms) */
+int is_ordered_weak_popov_columnwise(const nmod_poly_mat_t mat);
 
-/** Computes and returns a boolean indicating whether `pmat` is in row-wise
- * ordered weak Popov form (see @ref MatrixForms)
- * \todo
- */
-//bool is_row_ordered_weak_popov(const Mat<zz_pX> & pmat);
+/** Tests whether `mat` is in column-wise `shift`-ordered weak Popov form (see
+ * @ref MatrixForms) */
+int is_ordered_weak_popov_shifted_columnwise(const nmod_poly_mat_t mat,
+                                             const slong *shift);
 
-/** Computes and returns a boolean indicating whether `pmat` is in row-wise
- * `shift`-ordered weak Popov form (see @ref MatrixForms)
- * \todo
- */
-//bool is_row_ordered_weak_popov(
-//                               const Mat<zz_pX> &pmat,
-//                               const VecLong & shift
-//                              );
+/** Tests whether `mat` is in ordered weak Popov form (see @ref MatrixForms),
+ * with orientation specified by `row_wise` */
+NMOD_POLY_MAT_INLINE int
+is_ordered_weak_popov(const nmod_poly_mat_t mat,
+              orientation_t row_wise)
+{
+    if (row_wise)
+        return is_ordered_weak_popov_rowwise(mat);
+    else
+        return is_ordered_weak_popov_columnwise(mat);
+}
 
-/** Computes and returns a boolean indicating whether `pmat` is in column-wise
- * ordered weak Popov form (see @ref MatrixForms)
- * \todo
- */
-//bool is_column_ordered_weak_popov(const Mat<zz_pX> & pmat);
+/** Tests whether `mat` is in `shift`-ordered weak Popov form (see
+ * @ref MatrixForms), with orientation specified by `row_wise` */
+NMOD_POLY_MAT_INLINE int
+is_ordered_weak_popov_shifted(const nmod_poly_mat_t mat,
+                      const slong *shift,
+                      orientation_t row_wise)
+{
+    if (row_wise)
+        return is_ordered_weak_popov_shifted_rowwise(mat, shift);
+    else
+        return is_ordered_weak_popov_shifted_columnwise(mat, shift);
+}
 
-/** Computes and returns a boolean indicating whether `pmat` is in column-wise
- * `shift`-ordered weak Popov form (see @ref MatrixForms)
- * \todo
- */
-//bool is_column_ordered_weak_popov(
-//                               const Mat<zz_pX> &pmat,
-//                               const VecLong & shift
-//                              );
 
-/** Computes and returns a boolean indicating whether `pmat` is in row-wise
- * Popov form (see @ref MatrixForms)
- *
- * \todo provide same test but relaxing ordered weak Popov to weak Popov in the
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING MATRIX FORMS - WEAK POPOV                          */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** Tests whether `mat` is in row-wise weak Popov form (see @ref MatrixForms) */
+int is_weak_popov_rowwise(const nmod_poly_mat_t mat);
+
+/** Tests whether `mat` is in row-wise `shift`-weak Popov form (see
+ * @ref MatrixForms) */
+int is_weak_popov_shifted_rowwise(const nmod_poly_mat_t mat,
+                                  const slong *shift);
+
+/** Tests whether `mat` is in column-wise ordered weak Popov form (see
+ * @ref MatrixForms) */
+int is_weak_popov_columnwise(const nmod_poly_mat_t mat);
+
+/** Tests whether `mat` is in column-wise `shift`-ordered weak Popov form (see
+ * @ref MatrixForms) */
+int is_weak_popov_shifted_columnwise(const nmod_poly_mat_t mat,
+                                     const slong *shift);
+
+/** Tests whether `mat` is in weak Popov form (see @ref MatrixForms),
+ * with orientation specified by `row_wise` */
+NMOD_POLY_MAT_INLINE int
+is_weak_popov(const nmod_poly_mat_t mat,
+              orientation_t row_wise)
+{
+    if (row_wise)
+        return is_weak_popov_rowwise(mat);
+    else
+        return is_weak_popov_columnwise(mat);
+}
+
+/** Tests whether `mat` is in `shift`-weak Popov form (see @ref MatrixForms),
+ * with orientation specified by `row_wise` */
+NMOD_POLY_MAT_INLINE int
+is_weak_popov_shifted(const nmod_poly_mat_t mat,
+                  const slong *shift,
+                  orientation_t row_wise)
+{
+    if (row_wise)
+        return is_weak_popov_shifted_rowwise(mat, shift);
+    else
+        return is_weak_popov_shifted_columnwise(mat, shift);
+}
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING MATRIX FORMS - POPOV                               */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+
+
+/** \todo provide same test but relaxing ordered weak Popov to weak Popov in the
  * definition? This allows easier support for definitions of Popov with
- * different orderings of the rows, such as by increasing degree
- * \todo
- */
-//bool is_row_popov(const Mat<zz_pX> & pmat);
+ * different orderings of the rows, such as by increasing degree */
 
-/** Computes and returns a boolean indicating whether `pmat` is in row-wise
- * `shift`-Popov form (see @ref MatrixForms)
- * \todo
- */
-//bool is_row_popov(const Mat<zz_pX> & pmat, const VecLong & shift);
+/** Tests whether `mat` is in row-wise Popov form (see @ref MatrixForms) */
+// TODO
+//int is_popov_rowwise(const nmod_poly_mat_t mat);
 
-//bool is_row_popov_up_to_permutation(const Mat<zz_pX> & pmat);
-//bool is_row_popov_up_to_permutation(
-//                                    const Mat<zz_pX> & pmat,
-//                                    const VecLong & shift
-//                                    );
+/** Tests whether `mat` is in row-wise `shift`-Popov form (see
+ * @ref MatrixForms) */
+// TODO
+//int is_popov_shifted_rowwise(const nmod_poly_mat_t mat,
+//                             const slong *shift);
 
-/** Computes and returns a boolean indicating whether `pmat` is in column-wise
- * Popov form (see @ref MatrixForms)
- *
- * \todo provide same test but relaxing ordered weak Popov to weak Popov in the
- * definition? This allows easier support for definitions of Popov with
- * different orderings of the rows, such as by increasing degree
- * \todo
- */
-//bool is_column_popov(const Mat<zz_pX> & pmat);
+/** Tests whether `mat` is in column-wise Popov form (see @ref MatrixForms) */
+// TODO
+//int is_popov_columnwise(const nmod_poly_mat_t mat);
 
-/** Computes and returns a boolean indicating whether `pmat` is in column-wise
- * `shift`-Popov form (see @ref MatrixForms)
- * \todo
- */
-//bool is_column_popov(const Mat<zz_pX> & pmat, const VecLong & shift);
+/** Tests whether `mat` is in column-wise `shift`-Popov form (see
+ * @ref MatrixForms) */
+// TODO
+//int is_popov_shifted_columnwise(const nmod_poly_mat_t mat,
+//                                const slong *shift);
 
-//bool is_column_popov_up_to_permutation(const Mat<zz_pX> & pmat);
-//bool is_column_popov_up_to_permutation(
-//                                    const Mat<zz_pX> & pmat,
-//                                    const VecLong & shift
-//                                    );
+///** Tests whether `mat` is in `shift`-Popov form (see @ref MatrixForms), with
+// * orientation specified by argument `row_wise` */
+//NMOD_POLY_MAT_INLINE int
+//is_popov(const nmod_poly_mat_t mat,
+//         orientation_t row_wise)
+//{
+//    if (row_wise)
+//        return is_popov_rowwise(mat);
+//    else
+//        return is_popov_columnwise(mat);
+//}
+//
+///** Tests whether `mat` is in `shift`-Popov form (see @ref MatrixForms), with
+// * orientation specified by argument `row_wise` */
+//NMOD_POLY_MAT_INLINE int
+//is_popov_shifted(const nmod_poly_mat_t mat,
+//                 const slong *shift,
+//                 orientation_t row_wise)
+//{
+//    if (row_wise)
+//        return is_popov_shifted_rowwise(mat, shift);
+//    else
+//        return is_popov_shifted_columnwise(mat, shift);
+//}
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING MATRIX FORMS - HERMITE                             */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+// TODO
+///** Tests whether `mat` is in row-wise Hermite form (see @ref MatrixForms)
+// * \todo there are two definitions... upper vs lower
+// **/
+//int is_hermite_rowwise(const nmod_poly_mat_t mat);
+//
+///** Tests whether `mat` is in column-wise Hermite form (see @ref MatrixForms)
+// * \todo there are two definitions... upper vs lower
+// **/
+//int is_hermite_columnwise(const nmod_poly_mat_t mat);
+//
+///** Tests whether `mat` is in `shift`-Hermite form (see @ref MatrixForms), with
+// * orientation specified by argument `row_wise`
+// * \todo there are two definitions... upper vs lower
+// **/
+//NMOD_POLY_MAT_INLINE int
+//is_hermite(const nmod_poly_mat_t mat,
+//           orientation_t row_wise)
+//{
+//    if (row_wise)
+//        return is_hermite_rowwise(mat);
+//    else
+//        return is_hermite_columnwise(mat);
+//}
+//
+
+
+
+
+
+
+
+
 
 
 /** Computes and returns a boolean indicating whether `pmat` is in row-wise

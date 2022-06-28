@@ -55,15 +55,6 @@ void leading_positions(slong *res, const nmod_poly_mat_t mat,
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-void leading_matrix(nmod_mat_t lmat, const nmod_poly_mat_t mat, orientation_t orient)
-{
-    if (orient == ROW_WISE)
-        leading_matrix_rowwise(lmat, mat);
-    else if (orient == COLUMN_WISE)
-        leading_matrix_columnwise(lmat, mat);
-    // TODO add failure when not one of these two?
-}
-
 void leading_matrix_rowwise(nmod_mat_t lmat,
                             const nmod_poly_mat_t mat)
 {
@@ -102,17 +93,6 @@ void leading_matrix_columnwise(nmod_mat_t lmat,
 /*   SHIFTED LEADING MATRIX                                   */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-
-void leading_matrix_shifted(nmod_mat_t lmat, const nmod_poly_mat_t mat,
-                    const slong *shifts, orientation_t orient)
-{
-    if (orient == ROW_WISE)
-        leading_matrix_shifted_rowwise(lmat, mat, shifts);
-    else if (orient == COLUMN_WISE)
-        leading_matrix_shifted_columnwise(lmat, mat, shifts);
-    // TODO add failure when not one of these two?
-}
-
 
 void leading_matrix_shifted_rowwise(nmod_mat_t lmat,
                                     const nmod_poly_mat_t mat,

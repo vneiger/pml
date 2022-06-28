@@ -44,7 +44,7 @@ nmod_poly_mat_degree(const nmod_poly_mat_t pmat)
 }
 
 /** Tests whether `pmat` is a constant matrix, that is, of degree 0 */
-NMOD_POLY_MAT_INLINE slong
+NMOD_POLY_MAT_INLINE int
 nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
 {
     return (nmod_poly_mat_max_length(pmat) == 1);
@@ -63,7 +63,7 @@ nmod_mat_poly_degree(const nmod_mat_poly_t matp)
 
 
 /** Tests whether `matp` is a constant matrix, that is, of degree 0 */
-NMOD_POLY_MAT_INLINE slong
+NMOD_POLY_MAT_INLINE int
 nmod_mat_poly_is_constant(const nmod_mat_poly_t matp)
 {
     return (nmod_mat_poly_degree(matp) == 0);
