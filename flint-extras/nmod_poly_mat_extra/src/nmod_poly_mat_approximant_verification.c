@@ -52,7 +52,8 @@ int is_minimal_approximant_basis(const nmod_poly_mat_t base,
         return 0;
     }
     slong lead_pos[rdim];
-    leading_positions(lead_pos, base, shifts, ROW_WISE);
+    //leading_positions(lead_pos, base, shifts, ROW_WISE);
+    pivot_index_shifted_rowwise(lead_pos, base, shifts);
     printf("\nleading positions\n");
     for (slong i = 0; i < rdim; i++)
         printf("%lu ", lead_pos[i]);

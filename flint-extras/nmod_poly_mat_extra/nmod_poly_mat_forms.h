@@ -160,16 +160,40 @@ void column_degrees_shifted(slong *cdeg,
  */
 //@{
 
+/** Computes the row-wise pivot index `pivind` of a polynomial matrix `mat`
+ * (see @ref Pivots). */
+void pivot_index_rowwise(slong *pivind,
+                         const nmod_poly_mat_t mat);
+
+/** Computes the column-wise pivot index `pivind` of a polynomial matrix `mat`
+ * (see @ref Pivots). */
+void pivot_index_columnwise(slong *pivind,
+                            const nmod_poly_mat_t mat);
+
+/** Computes the row-wise `shift`-pivot index `pivind` of a polynomial matrix
+ * `mat` (see @ref Pivots). */
+void pivot_index_shifted_rowwise(slong *pivind,
+                                 const nmod_poly_mat_t mat,
+                                 const slong *shift);
+
+/** Computes the column-wise `shift`-pivot index `pivind` of a polynomial
+ * matrix `mat` (see @ref Pivots). */
+void pivot_index_shifted_columnwise(slong *pivind,
+                                    const nmod_poly_mat_t mat,
+                                    const slong *shift);
+
 /** Computes the row-wise pivot index `pivind` and pivot degree `pivdeg` of a
  * polynomial matrix `mat` (see @ref Pivots). In this unshifted case, `pivdeg`
  * coincides with the row degree of `mat`.  */
-void pivot_profile_rowwise(slong *pivind, slong *pivdeg,
+void pivot_profile_rowwise(slong *pivind,
+                           slong *pivdeg,
                            const nmod_poly_mat_t mat);
 
 /** Computes the column-wise pivot index `pivind` and pivot degree `pivdeg` of
  * a polynomial matrix `mat` (see @ref Pivots). In this unshifted case, `pivdeg`
  * coincides with the column degree of `mat`. */
-void pivot_profile_columnwise(slong *pivind, slong *pivdeg,
+void pivot_profile_columnwise(slong *pivind,
+                              slong *pivdeg,
                               const nmod_poly_mat_t mat);
 
 /** Computes the row-wise `shift`-pivot index `pivind` and `shift`-pivot degree
