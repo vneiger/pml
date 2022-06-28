@@ -40,48 +40,48 @@ void column_degrees(slong *cdeg, const nmod_poly_mat_t mat)
     }
 }
 
-void row_degrees_shifted(slong *rdeg, const nmod_poly_mat_t mat, const slong *shifts)
+void row_degrees_shifted(slong *rdeg, const nmod_poly_mat_t mat, const slong *shift)
 {
     slong max, d;
-    slong min_shift = (mat->c > 0) ? shifts[0] : 0;
+    slong min_shift = (mat->c > 0) ? shift[0] : 0;
 
     // find minimum of shift
     for (slong j = 0; j < mat->c; ++j)
-        if (shifts[j] < min_shift)
-            min_shift = shifts[j];
+        if (shift[j] < min_shift)
+            min_shift = shift[j];
 
     for (slong i = 0; i < mat->r; i++)
     {
         max = min_shift-1; // zero rows will have this as rdeg
         for (slong j = 0; j < mat->c; j++)
         {
-            d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shifts[j];
+            d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shift[j];
             // if new maximum at a nonzero entry, update
-            if (shifts[j] <= d && max < d)
+            if (shift[j] <= d && max < d)
                 max = d;
         }
         rdeg[i] = max;
     }
 }
 
-void column_degrees_shifted(slong *cdeg, const nmod_poly_mat_t mat, const slong *shifts)
+void column_degrees_shifted(slong *cdeg, const nmod_poly_mat_t mat, const slong *shift)
 {
     slong max, d;
-    slong min_shift = (mat->r > 0) ? shifts[0] : 0;
+    slong min_shift = (mat->r > 0) ? shift[0] : 0;
 
     // find minimum of shift
     for (slong i = 0; i < mat->r; ++i)
-        if (shifts[i] < min_shift)
-            min_shift = shifts[i];
+        if (shift[i] < min_shift)
+            min_shift = shift[i];
 
     for (slong j = 0; j < mat->c; j++)
     {
         max = min_shift-1;
         for (slong i = 0; i < mat->r; i++)
         {
-            d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shifts[i];
+            d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shift[i];
             // if new maximum at a nonzero entry, update
-            if (shifts[i] <= d && max < d)
+            if (shift[i] <= d && max < d)
                 max = d;
         }
         cdeg[j] = max;
@@ -95,8 +95,105 @@ void column_degrees_shifted(slong *cdeg, const nmod_poly_mat_t mat, const slong 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+void pivot_profile_rowwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_t mat)
+{
+    slong max, piv, d;
+    for (slong i = 0; i < mat->r; i++)
+    {
+        max = -1;
+        piv = -1;
+        for (slong j = 0; j < mat->c; j++)
+        {
+            d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
+            if (max < d)
+            {
+                max = d;
+                piv = j;
+            }
+        }
+        pivdeg[i] = max;
+        pivind[i] = piv;
+    }
+}
 
+void pivot_profile_columnwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_t mat)
+{
+    slong max, piv, d;
+    for (slong j = 0; j < mat->c; j++)
+    {
+        max = -1;
+        piv = -1;
+        for (slong i = 0; i < mat->r; i++)
+        {
+            d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
+            if (max < d)
+            {
+                max = d;
+                piv = i;
+            }
+        }
+        pivdeg[j] = max;
+        pivind[j] = piv;
+    }
+}
 
+void pivot_profile_shifted_rowwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_t mat, const slong *shift)
+{
+    slong max, piv, d;
+    slong min_shift = (mat->c > 0) ? shift[0] : 0;
+
+    // find minimum of shift
+    for (slong j = 0; j < mat->c; ++j)
+        if (shift[j] < min_shift)
+            min_shift = shift[j];
+
+    for (slong i = 0; i < mat->r; i++)
+    {
+        max = min_shift-1; // zero rows will have this as rdeg
+        piv = -1;
+        for (slong j = 0; j < mat->c; j++)
+        {
+            d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
+            // if new maximum (or equal maximum) reached at a nonzero entry, update
+            if (0 <= d && max <= d+shift[j])
+            {
+                max = d;
+                piv = j;
+            }
+        }
+        pivdeg[i] = max;
+        pivind[i] = piv;
+    }
+}
+
+void pivot_profile_shifted_columnwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_t mat, const slong *shift)
+{
+    slong max, piv, d;
+    slong min_shift = (mat->r > 0) ? shift[0] : 0;
+
+    // find minimum of shift
+    for (slong i = 0; i < mat->r; ++i)
+        if (shift[i] < min_shift)
+            min_shift = shift[i];
+
+    for (slong j = 0; j < mat->c; j++)
+    {
+        max = min_shift-1;
+        piv = -1;
+        for (slong i = 0; i < mat->r; i++)
+        {
+            d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
+            // if new maximum (or equal maximum) reached at a nonzero entry, update
+            if (0 <= d && max <= d+shift[i])
+            {
+                max = d;
+                piv = i;
+            }
+        }
+        pivdeg[j] = max;
+        pivind[j] = piv;
+    }
+}
 
 
 /*------------------------------------------------------------*/
@@ -116,25 +213,98 @@ void degree_matrix(slong *res,
 
 void degree_matrix_row_shifted(int64_t *res,
                                const nmod_poly_mat_t mat,
-                               const int64_t *shifts)
+                               const int64_t *shift)
 {
     for(slong i = 0; i < mat->r; i++)
         for(slong j = 0; j < mat->c; j++)
-            *(res + (i * mat->r) + j) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shifts[j];
+            *(res + (i * mat->r) + j) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shift[j];
     // TODO use access provided by fmpz matrix
     // TODO manage zero entry correctly
 }
 
 void degree_matrix_column_shifted(int64_t *res,
                                   const nmod_poly_mat_t mat,
-                                  const int64_t *shifts)
+                                  const int64_t *shift)
 {
     for(slong i = 0; i < mat->r; i++)
         for(slong j = 0; j < mat->c; j++)
-            *(res + (j * mat->c) + i) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shifts[i];
+            *(res + (j * mat->c) + i) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shift[i];
     // TODO use access provided by fmpz matrix
     // TODO manage zero entry correctly
 }
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* (SHIFTED) LEADING MATRIX                                   */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+void leading_matrix_rowwise(nmod_mat_t lmat,
+                            const nmod_poly_mat_t mat)
+{
+    // find row degrees
+    slong rdeg[mat->r];
+    row_degrees(rdeg, mat);
+
+    // deduce leading matrix
+    for (slong i = 0; i < mat->r; i++)
+        for (slong j = 0; j < mat->c; j++)
+            nmod_mat_set_entry(lmat, i, j,
+                               nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j),
+                                                      rdeg[i]));
+    // TODO check whether bug when reaching zero row (rdeg[i] should be -1)
+}
+
+void leading_matrix_columnwise(nmod_mat_t lmat,
+                               const nmod_poly_mat_t mat)
+{
+    // find column degrees
+    slong cdeg[mat->c];
+    column_degrees(cdeg, mat);
+
+    // deduce leading matrix
+    for (slong j = 0; j < mat->c; j++)
+        for (slong i = 0; i < mat->r; i++)
+            nmod_mat_set_entry(lmat, i, j,
+                               nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j),
+                                                      cdeg[j]));
+    // TODO check whether bug when reaching zero row (rdeg[i] should be -1)
+}
+
+void leading_matrix_shifted_rowwise(nmod_mat_t lmat,
+                                    const nmod_poly_mat_t mat,
+                                    const slong *shifts)
+{
+    // find row degrees
+    slong rdeg[mat->r];
+    row_degrees_shifted(rdeg, mat, shifts);
+
+    // deduce leading matrix
+    for (slong i = 0; i < mat->r; i++)
+        for (slong j = 0; j < mat->c; j++)
+            nmod_mat_set_entry(lmat, i, j,
+                               nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j),
+                                                      rdeg[i] - shifts[j]));
+    // TODO check whether bug when reaching min_shift-1 (rdeg[i] - shifts[j] might be negative?)
+}
+
+void leading_matrix_shifted_columnwise(nmod_mat_t lmat,
+                                       const nmod_poly_mat_t mat,
+                                       const slong *shifts)
+{
+    // find column degrees
+    slong cdeg[mat->c];
+    column_degrees_shifted(cdeg, mat, shifts);
+
+    // deduce leading matrix
+    for (slong j = 0; j < mat->c; j++)
+        for (slong i = 0; i < mat->r; i++)
+            nmod_mat_set_entry(lmat, i, j,
+                               nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j),
+                                                      cdeg[j] - shifts[i]));
+    // TODO check whether bug when reaching min_shift-1 (rdeg[i] - shifts[j] might be negative?)
+}
+
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
