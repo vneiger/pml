@@ -1,6 +1,13 @@
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_forms.h"
 
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING MATRIX FORMS                                       */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
 int is_hermite(const nmod_poly_mat_t mat, orientation_t row_wise)
 {
     slong rdim = mat->r, cdim = mat->c;
@@ -76,7 +83,7 @@ int is_reduced(const nmod_poly_mat_t mat, const slong *shifts, orientation_t row
     slong rdim = mat->r, cdim = mat->c;
     nmod_mat_t B;
     nmod_mat_init(B, rdim, cdim, nmod_poly_mat_modulus(mat));
-    leading_matrix(B, mat, shifts, row_wise);
+    leading_matrix_shifted(B, mat, shifts, row_wise);
     slong rank_lead = nmod_mat_rank(B);
     nmod_mat_clear(B);
     return (int) (rdim == rank_lead);

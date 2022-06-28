@@ -1,66 +1,153 @@
 #include "nmod_poly_mat_forms.h"
 
-void column_degrees_shifted(slong *res, const nmod_poly_mat_t mat, const slong *shifts)
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* (SHIFTED) ROW/COLUMN DEGREE                                */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+
+void row_degrees(slong *rdeg, const nmod_poly_mat_t mat)
 {
-    slong rdim = mat->r, cdim = mat->c;
     slong max, d;
-    for (slong i = 0; i < cdim; i++)
+    for (slong i = 0; i < mat->r; i++)
     {
         max = -1;
-        for (slong j = 0; j < rdim; j++)
+        for (slong j = 0; j < mat->c; j++)
         {
-            d = nmod_poly_degree(nmod_poly_mat_entry(mat, j, i)) + shifts[j];
+            d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
             if (max < d)
                 max = d;
         }
-        res[i] = max;
+        rdeg[i] = max;
     }
 }
 
-void row_degrees_shifted(slong *res, const nmod_poly_mat_t mat, const slong *shifts)
+void column_degrees(slong *cdeg, const nmod_poly_mat_t mat)
 {
-    slong rdim = mat->r, cdim = mat->c;
     slong max, d;
-    for (slong i = 0; i < rdim; i++)
+    for (slong j = 0; j < mat->c; j++)
     {
         max = -1;
-        for (slong j = 0; j < cdim; j++)
+        for (slong i = 0; i < mat->r; i++)
+        {
+            d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
+            if (max < d)
+                max = d;
+        }
+        cdeg[j] = max;
+    }
+}
+
+void row_degrees_shifted(slong *rdeg, const nmod_poly_mat_t mat, const slong *shifts)
+{
+    slong max, d;
+    slong min_shift = (mat->c > 0) ? shifts[0] : 0;
+
+    // find minimum of shift
+    for (slong j = 0; j < mat->c; ++j)
+        if (shifts[j] < min_shift)
+            min_shift = shifts[j];
+
+    for (slong i = 0; i < mat->r; i++)
+    {
+        max = min_shift-1; // zero rows will have this as rdeg
+        for (slong j = 0; j < mat->c; j++)
         {
             d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shifts[j];
-            if (max < d)
+            // if new maximum at a nonzero entry, update
+            if (shifts[j] <= d && max < d)
                 max = d;
         }
-        res[i] = max;
+        rdeg[i] = max;
     }
 }
 
-void degree_matrix(slong *res, const nmod_poly_mat_t mat, const slong *shifts,
-                   orientation_t row_wise)
+void column_degrees_shifted(slong *cdeg, const nmod_poly_mat_t mat, const slong *shifts)
 {
+    slong max, d;
+    slong min_shift = (mat->r > 0) ? shifts[0] : 0;
 
-    slong rdim = mat->r, cdim = mat->c;
-    slong d;
+    // find minimum of shift
+    for (slong i = 0; i < mat->r; ++i)
+        if (shifts[i] < min_shift)
+            min_shift = shifts[i];
 
-    if (row_wise)
+    for (slong j = 0; j < mat->c; j++)
     {
-        for(slong i = 0; i < rdim; i++)
+        max = min_shift-1;
+        for (slong i = 0; i < mat->r; i++)
         {
-            for(slong j = 0; j < cdim; j++)
-            {
-
-                d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shifts[j];
-                *(res + (i * rdim) + j) = d;
-            }
+            d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shifts[i];
+            // if new maximum at a nonzero entry, update
+            if (shifts[i] <= d && max < d)
+                max = d;
         }
-        return;
+        cdeg[j] = max;
     }
-    for(slong i = 0; i < cdim; i++)
-        for(slong j = 0; j < rdim; j++)
-        {
-            d = nmod_poly_degree(nmod_poly_mat_entry(mat, j, i)) + shifts[j];
-            *(res + (i * cdim) + j) = d;
-        }
 }
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* (SHIFTED) PIVOT INDEX/DEGREE                               */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* (SHIFTED) DEGREE MATRIX                                    */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+void degree_matrix(slong *res,
+                   const nmod_poly_mat_t mat)
+{
+    for(slong i = 0; i < mat->r; i++)
+        for(slong j = 0; j < mat->c; j++)
+            *(res + (j * mat->c) + i) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
+    // TODO use access provided by fmpz matrix
+}
+
+void degree_matrix_row_shifted(int64_t *res,
+                               const nmod_poly_mat_t mat,
+                               const int64_t *shifts)
+{
+    for(slong i = 0; i < mat->r; i++)
+        for(slong j = 0; j < mat->c; j++)
+            *(res + (i * mat->r) + j) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shifts[j];
+    // TODO use access provided by fmpz matrix
+    // TODO manage zero entry correctly
+}
+
+void degree_matrix_column_shifted(int64_t *res,
+                                  const nmod_poly_mat_t mat,
+                                  const int64_t *shifts)
+{
+    for(slong i = 0; i < mat->r; i++)
+        for(slong j = 0; j < mat->c; j++)
+            *(res + (j * mat->c) + i) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shifts[i];
+    // TODO use access provided by fmpz matrix
+    // TODO manage zero entry correctly
+}
+
+void degree_matrix_shifted(slong *res,
+                           const nmod_poly_mat_t mat,
+                           const slong *shifts,
+                           orientation_t orient)
+{
+    if (orient == ROW_WISE)
+        degree_matrix_row_shifted(res, mat, shifts);
+    else if (orient == COLUMN_WISE)
+        degree_matrix_column_shifted(res, mat, shifts);
+    // TODO add else which fails and raise warning?
+}
+
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

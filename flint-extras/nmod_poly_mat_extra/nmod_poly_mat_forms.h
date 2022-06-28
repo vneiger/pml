@@ -14,6 +14,8 @@
  * shifted row/column degrees and shifted pivot degrees, compute shifted
  * leading matrix.
  *
+ * \todo state that shift has to have right dimension (depending on
+ * orientation), and this is never checked in implementations
  * \todo random matrix with given PolMatForm
  *
  */
@@ -44,9 +46,7 @@ typedef enum
 
 /**
  * \enum orientation_t
- * \brief way to see a polynomial matrix 
- *
- * Permits the user to use function in different perspectives 
+ * \brief Whether to focus on row space or on column space of a polynomial matrix 
  *
  */
 typedef enum
@@ -58,35 +58,27 @@ typedef enum
 
 
 
-void degree_matrix(int64_t *res, const nmod_poly_mat_t mat, const int64_t *shifts,
-                   orientation_t row_wise);
 
-
-int is_hermite(const nmod_poly_mat_t mat, orientation_t row_wise);
-
-int is_popov(const nmod_poly_mat_t mat, const int64_t *shifts, orientation_t row_wise, int ordered);
-
-int is_reduced(const nmod_poly_mat_t mat, const int64_t *shifts, orientation_t row_wise);
-
-int is_weak_popov(const nmod_poly_mat_t mat, const int64_t *shifts, orientation_t row_wise, int ordered);
-
-void leading_matrix(nmod_mat_t res, const nmod_poly_mat_t mat, const int64_t *shifts,
-                    orientation_t row_wise);
-
+// TODO TO CHECK AND INCORPORATE:
 void leading_positions(int64_t *res, const nmod_poly_mat_t mat, const int64_t *shifts,
                        orientation_t row_wise);
 
+int is_reduced(const nmod_poly_mat_t mat,
+               const int64_t *shifts,
+               orientation_t row_wise);
 
+int is_weak_popov(const nmod_poly_mat_t mat,
+                  const int64_t *shifts,
+                  orientation_t row_wise,
+                  int ordered);
 
+int is_popov(const nmod_poly_mat_t mat,
+             const int64_t *shifts,
+             orientation_t row_wise,
+             int ordered);
 
-
-
-
-
-
-
-
-
+int is_hermite(const nmod_poly_mat_t mat,
+               orientation_t row_wise);
 
 
 
@@ -132,35 +124,36 @@ void leading_positions(int64_t *res, const nmod_poly_mat_t mat, const int64_t *s
 //@{
 
 /** Computes the row degree `rdeg` of a polynomial matrix `pmat` (see
- * @ref RowAndColumnDegrees)
- * \todo
+ * @ref RowAndColumnDegrees). The result `rdeg` must be already initialized
+ * with length (at least) the number of rows of `mat`.
  */
-void row_degrees(slong *res,
+void row_degrees(slong *rdeg,
                  const nmod_poly_mat_t mat);
 
 /** Computes the `shift`-row degree `rdeg` of a polynomial matrix `pmat` (see
- * @ref RowAndColumnDegrees)
- * \todo
+ * @ref RowAndColumnDegrees). The result `rdeg` must be already initialized
+ * with length (at least) the number of rows of `mat`. The shift `shift`
+ * must have (at least) as many elements as the number of columns of `mat`.
  */
-void row_degrees_shifted(slong *res,
-		const nmod_poly_mat_t mat,
-		const slong *shifts);
+void row_degrees_shifted(slong *rdeg,
+                         const nmod_poly_mat_t mat,
+                         const slong *shift);
 
 /** Computes the column degree `cdeg` of a polynomial matrix `pmat` (see
- * @ref RowAndColumnDegrees)
- * \todo
+ * @ref RowAndColumnDegrees). The result `cdeg` must be already initialized
+ * with length (at least) the number of column of `mat`.
  */
-void column_degrees(slong *res,
-                 const nmod_poly_mat_t mat,
-                 const slong *shifts);
+void column_degrees(slong *cdeg,
+                    const nmod_poly_mat_t mat);
 
 /** Computes the `shift`-column degree `cdeg` of a polynomial matrix `pmat`
- * (see @ref RowAndColumnDegrees)
- * \todo
+ * (see @ref RowAndColumnDegrees). The result `cdeg` must be already initialized
+ * with length (at least) the number of column of `mat`. The shift `shift` must
+ * have (at least) as many elements as the number of rows of `mat`.
  */
-void column_degrees_shifted(slong *res,
-                 const nmod_poly_mat_t mat,
-                 const slong *shifts);
+void column_degrees_shifted(slong *cdeg,
+                            const nmod_poly_mat_t mat,
+                            const slong *shift);
 
 //@} // doxygen group: (Shifted) row and column degree
 
@@ -256,29 +249,34 @@ void column_degrees_shifted(slong *res,
 
 /** Computes the degree matrix `degmat` of a polynomial matrix `pmat` (see @ref
  * DegreeMatrix)
- * \todo
  */
-//void degree_matrix(Mat<long> & degmat, const Mat<zz_pX> & pmat);
+void degree_matrix(int64_t *res, const nmod_poly_mat_t mat);
 
 /** Computes the row-wise `shift`-degree matrix `degmat` of a polynomial matrix
  * `pmat` (see @ref DegreeMatrix)
- * \todo
+ * \todo use mat fmpz
  */
-//void degree_matrix_rowshifted(
-//                              Mat<long> &degmat,
-//                              const Mat<zz_pX> &pmat,
-//                              const VecLong & shift
-//                             );
+void degree_matrix_row_shifted(int64_t *res,
+                           const nmod_poly_mat_t mat,
+                           const int64_t *shifts);
 
 /** Computes the column-wise `shift`-degree matrix `degmat` of a polynomial
  * matrix `pmat` (see @ref DegreeMatrix)
- * \todo
+ * \todo use mat fmpz
  */
-//void degree_matrix_colshifted(
-//                              Mat<long> &degmat,
-//                              const Mat<zz_pX> &pmat,
-//                              const VecLong & shift
-//                             );
+void degree_matrix_column_shifted(int64_t *res,
+                           const nmod_poly_mat_t mat,
+                           const int64_t *shifts);
+
+/** Computes the `shift`-degree matrix `degmat` of a polynomial matrix `pmat`
+ * (see @ref DegreeMatrix), the orientation row-wise/column-wise being
+ * indicated by a parameter.
+ * \todo use mat fmpz
+ */
+void degree_matrix_shifted(int64_t *res,
+                           const nmod_poly_mat_t mat,
+                           const int64_t *shifts,
+                           orientation_t orient);
 
 //@} // doxygen group: (Shifted) degree matrix
 
@@ -287,6 +285,7 @@ void column_degrees_shifted(slong *res,
 /* (SHIFTED) LEADING MATRIX                                   */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+
 /** @name (Shifted) leading matrix
  * \anchor LeadingMatrix
  *
@@ -317,40 +316,55 @@ void column_degrees_shifted(slong *res,
  */
 //@{
 
-/** Computes the row-wise leading matrix `lmat` of a polynomial matrix `pmat`
+/** Computes the row-wise leading matrix `lmat` of a polynomial matrix `mat`
  * (see @ref LeadingMatrix)
- * \todo
+ * \todo bug to check, see src
  */
-//void row_leading_matrix(Mat<zz_p> & lmat, const Mat<zz_pX> & pmat);
+void leading_matrix_rowwise(nmod_mat_t lmat,
+                            const nmod_poly_mat_t mat);
 
-/** Computes the row-wise `shift`-leading matrix `lmat` of a polynomial matrix
- * `pmat` (see @ref LeadingMatrix)
- * \todo
- */
-//void row_leading_matrix(
-//                        Mat<zz_p> &lmat,
-//                        const Mat<zz_pX> &pmat,
-//                        const VecLong & shift
-//                       );
 
 /** Computes the column-wise leading matrix `lmat` of a polynomial matrix
- * `pmat` (see @ref LeadingMatrix)
- * \todo
+ * `mat` (see @ref LeadingMatrix)
+ * \todo bug to check, see src
  */
-//void column_leading_matrix(
-//                        Mat<zz_p> & lmat,
-//                        const Mat<zz_pX> & pmat
-//                       );
+void leading_matrix_columnwise(nmod_mat_t lmat,
+                               const nmod_poly_mat_t mat);
+
+/** Computes the leading matrix `lmat` of a polynomial matrix `mat` (see @ref
+ * LeadingMatrix), using provided orientation row-wise or column-wise.
+ * \todo bug to check, see src
+ */
+void leading_matrix(nmod_mat_t lmat,
+                    const nmod_poly_mat_t mat,
+                    orientation_t orient);
+
+/** Computes the row-wise `shift`-leading matrix `lmat` of a polynomial matrix
+ * `mat` (see @ref LeadingMatrix)
+ * \todo bug to check, see src
+ */
+void leading_matrix_shifted_rowwise(nmod_mat_t lmat,
+                                    const nmod_poly_mat_t mat,
+                                    const slong *shifts);
 
 /** Computes the column-wise `shift`-leading matrix `lmat` of a polynomial
- * matrix `pmat` (see @ref LeadingMatrix)
- * \todo
+ * matrix `mat` (see @ref LeadingMatrix)
+ * \todo bug to check, see src
  */
-//void column_leading_matrix(
-//                        Mat<zz_p> &lmat,
-//                        const Mat<zz_pX> &pmat,
-//                        const VecLong & shift
-//                       );
+void leading_matrix_shifted_columnwise(nmod_mat_t lmat,
+                                       const nmod_poly_mat_t mat,
+                                       const slong *shifts);
+
+
+/** Computes the column-wise `shift`-leading matrix `lmat` of a polynomial
+ * matrix `mat` (see @ref LeadingMatrix), using provided orientation
+ * row-wise or column-wise.
+ * \todo bug to check, see src
+ */
+void leading_matrix_shifted(nmod_mat_t lmat,
+                            const nmod_poly_mat_t mat,
+                            const slong *shifts,
+                            orientation_t orient);
 
 //@} // doxygen group: (Shifted) leading matrix
 
@@ -360,6 +374,7 @@ void column_degrees_shifted(slong *res,
 /* TESTING MATRIX FORMS                                       */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+
 /** @name Testing polynomial matrix forms
  * \anchor MatrixForms
  *
