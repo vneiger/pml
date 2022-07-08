@@ -27,27 +27,28 @@ void check()
 {
 #ifdef HAS_AVX2
 
-    ulong order, order_max, N;
+    ulong order_w0, order, order_max, N;
     slong i;
     flint_rand_t state;
     mp_limb_t p, w0, w, w2;
     nmod_t mod;
-    nmod_avx2_32_fft_t F;
+    nmod_32_fft_t F;
     mp_ptr val;
     nmod_poly_t P;
     
     flint_randinit(state);
 
-    p = 7340033;
+    p = 537133057;
     nmod_init(&mod, p);
-    w0 = 3308891;
+    w0 = 144173337;
+    order_w0 = 16; 
     order_max = 10;
-    w = nmod_pow_ui(w0, 1L<<(16-order_max), mod);
-    nmod_avx2_32_fft_init_set(F, w, order_max, mod);
+    w = nmod_pow_ui(w0, 1L<<(order_w0-order_max), mod);
+    nmod_32_fft_init_set(F, w, order_max, mod);
     
     for (order = 1; order <= order_max; order++)
     {
-        w = nmod_pow_ui(w0, 1L<<(16-order), mod);
+        w = nmod_pow_ui(w0, 1L<<(order_w0-order), mod);
         N = 1L << order;
         nmod_poly_init2(P, p, N);
         val = _nmod_vec_init(N);
@@ -65,13 +66,13 @@ void check()
             assert (val[bit_reverse(i, order)] ==  nmod_poly_evaluate_nmod(P, w2));
             w2 = nmod_mul(w2, w, mod);
         }
+
         _nmod_vec_clear(val);
         nmod_poly_clear(P);
     }
     
-    nmod_avx2_32_fft_clear(F);
+    nmod_32_fft_clear(F);
     flint_randclear(state);
-
 #endif
 }
 

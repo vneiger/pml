@@ -9,7 +9,7 @@
 /* w primitive and w^(2^order))=1                             */
 /* DFTs of size up to 2^order are supported                   */ 
 /*------------------------------------------------------------*/
-void nmod_avx2_32_fft_init_set(nmod_avx2_32_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
+void nmod_32_fft_init_set(nmod_32_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
 {
     mp_hlimb_t inv_2, inv;
     slong k;
@@ -42,11 +42,17 @@ void nmod_avx2_32_fft_init_set(nmod_avx2_32_fft_t F, mp_limb_t w, ulong order, n
             F->powers_w[k] = malloc(K * sizeof(mp_hlimb_t));
             F->i_powers_w[k] = malloc(K * sizeof(mp_hlimb_t));
         }
-        else
+        if (k == 3)
         {
             F->powers_w[k] = aligned_alloc(32, 4 * K);
             F->i_powers_w[k] = aligned_alloc(32, 4 * K);
         }
+        if (k >= 4)
+        {
+            F->powers_w[k] = aligned_alloc(64, 4 * K);
+            F->i_powers_w[k] = aligned_alloc(64, 4 * K);
+        }
+
         
         if (K == 1)
         {
@@ -99,10 +105,15 @@ void nmod_avx2_32_fft_init_set(nmod_avx2_32_fft_t F, mp_limb_t w, ulong order, n
             F->powers_inv_w[k] = malloc(K * sizeof(mp_hlimb_t));
             F->i_powers_inv_w[k] = malloc(K * sizeof(mp_hlimb_t));
         }
-        else
+        if (k == 3)
         {
             F->powers_inv_w[k] = aligned_alloc(32, 4 * K);
             F->i_powers_inv_w[k] = aligned_alloc(32, 4 * K);
+        }
+        if (k >= 4)
+        {
+            F->powers_inv_w[k] = aligned_alloc(64, 4 * K);
+            F->i_powers_inv_w[k] = aligned_alloc(64, 4 * K);
         }
         
         if (K == 1)
@@ -141,6 +152,26 @@ void nmod_avx2_32_fft_init_set(nmod_avx2_32_fft_t F, mp_limb_t w, ulong order, n
         F->powers_inv_2[k] = inv;
         F->i_powers_inv_2[k] = prep_mul_mod_precon_32(inv, mod.n);
         inv = nmod_mul(inv, inv_2, mod);
+    }
+
+
+    F->powers_inv_w_over_2 = flint_malloc(sizeof(mp_hlimb_t *) * order);
+    F->i_powers_inv_w_over_2 = flint_malloc(sizeof(mp_hlimb_t *) * order);
+    for (k = 0; k < order; k++)
+    {
+        ulong i, K;
+        mp_hlimb_t * src;
+        
+        K = 1L << k;
+        F->powers_inv_w_over_2[k] = (mp_hlimb_t *) aligned_alloc(32, 4*K > 32 ? 4*K : 32);
+        F->i_powers_inv_w_over_2[k] = (mp_hlimb_t *) aligned_alloc(32, 4*K > 32 ? 4*K : 32);
+        src = F->powers_inv_w[k+1] + K;
+        
+        for (i = 0; i < K; i++)
+        {
+            F->powers_inv_w_over_2[k][i] = nmod_mul(src[i], F->powers_inv_2[k], mod);
+            F->i_powers_inv_w_over_2[k][i] = prep_mul_mod_precon_32(F->powers_inv_w_over_2[k][i], mod.n);
+        }
     }
 }
 

@@ -1,21 +1,17 @@
-#include <assert.h>
-#include <flint/flint.h>
-
-#include "nmod_extra.h"
 #include "nmod_poly_extra.h"
 
 /*------------------------------------------------------------*/
-/* FFT evaluation/interpolation                               */
+/* computes inverse FFTs up to order 2^14                     */
 /*------------------------------------------------------------*/
-void check()
+void get_time()
 {
-#ifdef HAS_AVX2
+#ifdef HAS_INT128    
     ulong order, order_max, N;
     slong i;
     flint_rand_t state;
     mp_limb_t p, w0, w;
     nmod_t mod;
-    nmod_32_fft_t F;
+    nmod_64_fft_t F;
     mp_ptr val;
     nmod_poly_t P, P2;
     
@@ -24,12 +20,16 @@ void check()
     p = 7340033;
     nmod_init(&mod, p);
     w0 = 3308891;
-    order_max = 10;
+    order_max = 14;
     w = nmod_pow_ui(w0, 1L<<(16-order_max), mod);
-    nmod_32_fft_init_set(F, w, order_max, mod);
-    //
-    for (order = 0; order <= order_max; order++)
+    nmod_64_fft_init_set(F, w, order_max, mod);
+    
+    for (order = 1; order <= order_max; order++)
     {
+        double t;
+        clock_t tt;
+        long nb_iter;
+
         w = nmod_pow_ui(w0, 1L<<(16-order), mod);
         N = 1L << order;
         nmod_poly_init2(P, p, N);
@@ -40,28 +40,36 @@ void check()
         {
             nmod_poly_set_coeff_ui(P, i, n_randtest(state) % p);
         }
-        nmod_avx2_32_fft_evaluate(val, P, F, order);
-        nmod_avx2_32_fft_interpolate(P2, val, F, order);
+        nmod_64_fft_evaluate(val, P, F, order);
+     
+        t = 0.0;
+        nb_iter = 0;
+        while (t < 0.5)
+        {
+            tt = clock();
+            nmod_64_fft_interpolate(P2, val, F, order);
+            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+            ++nb_iter;
+        }
+        t = 1000 * t;
+        t /= nb_iter;
+        printf("%ld %f\n", N, t);
 
-        // check if interpolate(evaluate(P)) == P
-        assert (nmod_poly_equal(P, P2));
-        
         _nmod_vec_clear(val);
         nmod_poly_clear(P);
         nmod_poly_clear(P2);
     }
     
-    nmod_32_fft_clear(F);
+    nmod_64_fft_clear(F);
     flint_randclear(state);
 #endif
 }
 
 
-
 /*------------------------------------------------------------*/
-/* main just calls check()                                    */
+/* main just calls get_time()                                 */
 /*------------------------------------------------------------*/
 int main(int argc, char **argv){
-    check();
+    get_time();
     return 0;
 }

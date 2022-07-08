@@ -11,7 +11,7 @@ void get_time()
     flint_rand_t state;
     mp_limb_t p, w0, w;
     nmod_t mod;
-    nmod_avx2_32_fft_t F;
+    nmod_32_fft_t F;
     mp_ptr val;
     nmod_poly_t P;
     
@@ -22,7 +22,7 @@ void get_time()
     w0 = 3308891;
     order_max = 14;
     w = nmod_pow_ui(w0, 1L<<(16-order_max), mod);
-    nmod_avx2_32_fft_init_set(F, w, order_max, mod);
+    nmod_32_fft_init_set(F, w, order_max, mod);
     
     for (order = 1; order <= order_max; order++)
     {
@@ -57,7 +57,7 @@ void get_time()
         nmod_poly_clear(P);
     }
     
-    nmod_avx2_32_fft_clear(F);
+    nmod_32_fft_clear(F);
     flint_randclear(state);
 #endif
 }

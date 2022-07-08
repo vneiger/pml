@@ -18,7 +18,7 @@ void check()
     nn = 65537;
     nmod_init(&mod, nn);
 
-    for (i = 1000; i < 10000; i+=10)
+    for (i = 1000; i < 10000; i+=1000)
     {
         mp_limb_t r;
         nmod_geometric_progression_t G;

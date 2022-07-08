@@ -7,7 +7,7 @@
 /* w primitive and w^(2^order))=1                             */
 /* DFTs of size up to 2^order are supported                   */ 
 /*------------------------------------------------------------*/
-void nmod_plain_fft_init_set(nmod_plain_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
+void nmod_fft_init_set(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
 {
     mp_limb_t inv_2, inv;
     slong k;
@@ -64,7 +64,7 @@ void nmod_plain_fft_init_set(nmod_plain_fft_t F, mp_limb_t w, ulong order, nmod_
     for (k = 0; k <= order; k++)
     {
         mp_limb_t inv_wr;
-        slong j;
+        slong j, K;
 
         inv_wr = F->inv_w;
         for (j = 0; j < order-k; j++)
@@ -73,7 +73,7 @@ void nmod_plain_fft_init_set(nmod_plain_fft_t F, mp_limb_t w, ulong order, nmod_
         } 
         // inv_wr = 1/w^{2^(order-k)}
         
-        long K = 1L << k;
+        K = 1L << k;
         F->powers_inv_w[k] = _nmod_vec_init(K);
         
         if (K == 1)
@@ -100,9 +100,7 @@ void nmod_plain_fft_init_set(nmod_plain_fft_t F, mp_limb_t w, ulong order, nmod_
             }
         }
     }
-
-
-    
+        
     F->powers_inv_2 = _nmod_vec_init(order + 1);
     inv_2 = nmod_inv(2, mod);
     inv = 1;
@@ -111,4 +109,22 @@ void nmod_plain_fft_init_set(nmod_plain_fft_t F, mp_limb_t w, ulong order, nmod_
         F->powers_inv_2[k] = inv;
         inv = nmod_mul(inv, inv_2, mod);
     }
+
+    F->powers_inv_w_over_2 = flint_malloc(sizeof(mp_ptr) * order);
+    for (k = 0; k < order; k++)
+    {
+        ulong i, K;
+        mp_ptr src;
+        
+        K = 1L << k;
+        F->powers_inv_w_over_2[k] = _nmod_vec_init(K);
+        src = F->powers_inv_w[k+1] + K;
+        
+        for (i = 0; i < K; i++)
+        {
+            F->powers_inv_w_over_2[k][i] = nmod_mul(src[i], F->powers_inv_2[k], mod);
+        }
+    }
+        
+    
 }

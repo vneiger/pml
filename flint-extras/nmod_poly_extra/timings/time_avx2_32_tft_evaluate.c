@@ -1,70 +1,68 @@
 #include "nmod_poly_extra.h"
 
 /*------------------------------------------------------------*/
-/* computes inverse FFTs up to order 2^14                     */
+/* computes FFTs up to order 2^14                             */
 /*------------------------------------------------------------*/
 void get_time()
 {
-    ulong order, order_max, N;
+#ifdef HAS_AVX2
+    ulong order_w0, order_max, nmin, nmax;
     slong i;
     flint_rand_t state;
     mp_limb_t p, w0, w;
     nmod_t mod;
-    nmod_plain_fft_t F;
+    nmod_32_fft_t F;
     mp_ptr val;
-    nmod_poly_t P, P2;
+    nmod_poly_t P;
     
     flint_randinit(state);
 
-    p = 7340033;
+    p = 537133057;
     nmod_init(&mod, p);
-    w0 = 3308891;
-    order_max = 14;
-    w = nmod_pow_ui(w0, 1L<<(16-order_max), mod);
-    nmod_plain_fft_init_set(F, w, order_max, mod);
+    w0 = 144173337;
+    order_w0 = 16; 
+    order_max = 10;
+    w = nmod_pow_ui(w0, 1L<<(order_w0-order_max), mod);
+    nmod_32_fft_init_set(F, w, order_max, mod);
+
+    nmin = 1;
+    nmax = 1000;
     
-    for (order = 1; order <= order_max; order++)
+    for (long n = nmin; n < nmax+1; n++)
     {
         double t;
         clock_t tt;
         long nb_iter;
-
-        w = nmod_pow_ui(w0, 1L<<(16-order), mod);
-        N = 1L << order;
-        nmod_poly_init2(P, p, N);
-        nmod_poly_init(P2, p);
-        val = _nmod_vec_init(N);
         
-        for (i = 0; i < N; i++)
+        nmod_poly_init2(P, p, n);
+        for (i = 0; i < n; i++)
         {
             nmod_poly_set_coeff_ui(P, i, n_randtest(state) % p);
         }
-        nmod_plain_fft_evaluate(val, P, F, order);
-     
+        
+        val = _nmod_vec_init(n);
+                
         t = 0.0;
         nb_iter = 0;
         while (t < 0.5)
         {
             tt = clock();
-            nmod_plain_fft_interpolate(P2, val, F, order);
+            nmod_avx2_32_tft_evaluate(val, P, F, n);
             t += (double)(clock()-tt) / CLOCKS_PER_SEC;
             ++nb_iter;
         }
         t = 1000 * t;
         t /= nb_iter;
-        printf("%ld %f\n", N, t);
+        printf("%ld %f\n", n, t);
 
         _nmod_vec_clear(val);
         nmod_poly_clear(P);
-        nmod_poly_clear(P2);
     }
     
-    nmod_plain_fft_clear(F);
+    nmod_32_fft_clear(F);
     flint_randclear(state);
-
-
+#endif
 }
-
 
 /*------------------------------------------------------------*/
 /* main just calls get_time()                                 */
