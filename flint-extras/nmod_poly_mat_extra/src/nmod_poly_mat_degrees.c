@@ -305,35 +305,30 @@ void pivot_profile_shifted_columnwise(slong *pivind, slong *pivdeg, const nmod_p
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-void degree_matrix(slong *res,
+void degree_matrix(fmpz_mat_t dmat,
                    const nmod_poly_mat_t mat)
 {
     for(slong i = 0; i < mat->r; i++)
         for(slong j = 0; j < mat->c; j++)
-            *(res + (j * mat->c) + i) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
-    // TODO use access provided by fmpz matrix
+            *fmpz_mat_entry(dmat, i, j) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
 }
 
-void degree_matrix_row_shifted(int64_t *res,
+void degree_matrix_row_shifted(fmpz_mat_t dmat,
                                const nmod_poly_mat_t mat,
-                               const int64_t *shift)
+                               const slong * shift)
 {
     for(slong i = 0; i < mat->r; i++)
         for(slong j = 0; j < mat->c; j++)
-            *(res + (i * mat->r) + j) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shift[j];
-    // TODO use access provided by fmpz matrix
-    // TODO manage zero entry correctly
+            *fmpz_mat_entry(dmat, i, j) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shift[j];
 }
 
-void degree_matrix_column_shifted(int64_t *res,
+void degree_matrix_column_shifted(fmpz_mat_t dmat,
                                   const nmod_poly_mat_t mat,
-                                  const int64_t *shift)
+                                  const slong * shift)
 {
     for(slong i = 0; i < mat->r; i++)
         for(slong j = 0; j < mat->c; j++)
-            *(res + (j * mat->c) + i) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shift[i];
-    // TODO use access provided by fmpz matrix
-    // TODO manage zero entry correctly
+            *fmpz_mat_entry(dmat, i, j) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shift[i];
 }
 
 /*------------------------------------------------------------*/

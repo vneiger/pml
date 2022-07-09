@@ -20,6 +20,8 @@
  *
  */
 
+// for degree matrix
+#include <flint/fmpz_mat.h> 
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly_mat.h>
 
@@ -229,11 +231,11 @@ void pivot_profile_shifted_columnwise(slong *pivind,
  *
  * For a given shift `shift` of length `n`, the row-wise `shift`-degree matrix
  * of `pmat` is the `m x n` integer matrix whose entry `(i,j)` is
- * `deg(pmat[i][j]) + shift[j]` if `pmat[i][j]` is nonzero, and `min(shift)-1`
+ * `deg(pmat[i][j]) + shift[j]` if `pmat[i][j]` is nonzero, and `shift[j]-1`
  * otherwise. For a given shift `shift` of length `m`, the column-wise
  * `shift`-degree matrix of `pmat` is the `m x n` integer matrix whose entry
  * `(i,j)` is `deg(pmat[i][j]) + shift[i]` if `pmat[i][j]` is nonzero, and
- * `min(shift)-1` otherwise.
+ * `shift[i]-1` otherwise.
  *
  * The functions below which involve a `shift` among its parameters throw
  * an error if this `shift` does not have the right length.
@@ -243,39 +245,36 @@ void pivot_profile_shifted_columnwise(slong *pivind,
 /** Computes the degree matrix `degmat` of a polynomial matrix `pmat` (see @ref
  * DegreeMatrix)
  */
-void degree_matrix(slong *res, const nmod_poly_mat_t mat);
+void degree_matrix(fmpz_mat_t dmat, const nmod_poly_mat_t mat);
 
 /** Computes the row-wise `shift`-degree matrix `degmat` of a polynomial matrix
  * `pmat` (see @ref DegreeMatrix)
- * \todo use mat fmpz
  */
-void degree_matrix_row_shifted(slong *res,
+void degree_matrix_row_shifted(fmpz_mat_t dmat,
                            const nmod_poly_mat_t mat,
-                           const slong *shift);
+                           const slong * shift);
 
 /** Computes the column-wise `shift`-degree matrix `degmat` of a polynomial
  * matrix `pmat` (see @ref DegreeMatrix)
- * \todo use mat fmpz
  */
-void degree_matrix_column_shifted(slong *res,
+void degree_matrix_column_shifted(fmpz_mat_t dmat,
                            const nmod_poly_mat_t mat,
-                           const slong *shift);
+                           const slong * shift);
 
 /** Computes the `shift`-degree matrix `degmat` of a polynomial matrix `pmat`
  * (see @ref DegreeMatrix), the orientation row-wise/column-wise being
  * indicated by a parameter.
- * \todo use mat fmpz
  */
 NMOD_POLY_MAT_INLINE void
-degree_matrix_shifted(slong *res,
+degree_matrix_shifted(fmpz_mat_t dmat,
                       const nmod_poly_mat_t mat,
-                      const slong *shift,
+                      const slong * shift,
                       orientation_t row_wise)
 {
     if (row_wise)
-        degree_matrix_row_shifted(res, mat, shift);
+        degree_matrix_row_shifted(dmat, mat, shift);
     else
-        degree_matrix_column_shifted(res, mat, shift);
+        degree_matrix_column_shifted(dmat, mat, shift);
 }
 
 //@} // doxygen group: (Shifted) degree matrix
