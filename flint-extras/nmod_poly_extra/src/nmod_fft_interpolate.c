@@ -7,8 +7,8 @@ static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const nmod_t mod,
 {
     // N=size of block, M=number of blocks
     mp_ptr powers_inv_w;
-    slong N, M;
-    slong r;
+    ulong N, M;
+    ulong r;
  
     powers_inv_w = powers_inv_w_in;
     N = 2;
@@ -22,7 +22,7 @@ static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const nmod_t mod,
 
         for (r = 0; r < M; r++, x0 += N, x1 += N)
         {
-            slong i;
+            ulong i;
             for (i = 0; i < N/2; i+=1)
             {
                 mp_limb_t u0, u1, v0, v1;
@@ -46,9 +46,9 @@ static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const nmod_t mod,
 /* tmp is a temporary workspace, of length at least 2n       */
 /*-----------------------------------------------------------*/
 static inline
-void CRT(mp_ptr x, mp_ptr tmp, slong n, mp_limb_t p)
+void CRT(mp_ptr x, mp_ptr tmp, ulong n, mp_limb_t p)
 {
-    slong a, b, b2, n2, i, j, nn;
+    ulong a, b, b2, n2, i, j, nn;
     mp_limb_t half;
 
     nn = n;
@@ -139,7 +139,7 @@ void CRT(mp_ptr x, mp_ptr tmp, slong n, mp_limb_t p)
 /*------------------------------------------------------------*/
 void nmod_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_fft_t F, const ulong k)
 {
-    slong i, N;
+    ulong i, N;
     
     N = 1L << k;
     nmod_poly_fit_length(poly, N);
@@ -167,7 +167,7 @@ void nmod_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_fft_t F, con
 /*------------------------------------------------------------*/
 void nmod_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_fft_t F, const ulong N)
 {
-    slong i, nn, k, aa;
+    ulong i, nn, k, aa;
     mp_ptr wk, wk2, powers;
         
     nmod_poly_fit_length(poly, N);

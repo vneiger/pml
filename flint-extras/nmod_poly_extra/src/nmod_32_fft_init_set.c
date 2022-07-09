@@ -12,7 +12,7 @@
 void nmod_32_fft_init_set(nmod_32_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
 {
     mp_hlimb_t inv_2, inv;
-    slong k;
+    ulong k;
     
     F->order = order;
     F->w = (mp_hlimb_t) w;
@@ -26,7 +26,7 @@ void nmod_32_fft_init_set(nmod_32_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
     for (k = 0; k <= order; k++)
     {
         mp_hlimb_t wr;
-        slong j;
+        ulong j;
         ulong K;
         
         wr = w;
@@ -61,11 +61,11 @@ void nmod_32_fft_init_set(nmod_32_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
         }
         else
         {
-            slong nb = 0;
+            ulong nb = 0;
             while (K >= 2)
             {
                 mp_limb_t wi;
-                slong i;
+                ulong i;
 
                 wi = 1;     // w^i
                 for (i = 0; i < K/2; i++)
@@ -90,7 +90,7 @@ void nmod_32_fft_init_set(nmod_32_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
     for (k = 0; k <= order; k++)
     {
         mp_limb_t iwr;
-        slong j;
+        ulong j;
         ulong K;
         
         iwr = F->inv_w;
@@ -123,11 +123,11 @@ void nmod_32_fft_init_set(nmod_32_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
         }
         else
         {
-            long KK = K;
+            ulong KK = K;
             while (K >= 2)
             {
                 mp_limb_t iwi;
-                slong i;
+                ulong i;
 
                 iwi = 1;     // 1/w^i
                 for (i = 0; i < K/2; i++)

@@ -14,13 +14,13 @@ static void _fft_k(mp_ptr x, const mp_ptr powers_w_in, const nmod_t mod, const u
     for (N = 1L<<k, M = 1; N > 1; N /= 2, M *= 2)
     {
         mp_ptr x0, x1;
-        slong r;
+        ulong r;
 
         x0 = x;
         x1 = x + N/2;
         for (r = 0; r < M; r++, x0 += N, x1 += N)
         {
-            slong i;
+            ulong i;
             for (i = 0; i < N/2; i++)
             {
                 mp_limb_t u0, u1, t0, t1;
@@ -63,7 +63,7 @@ void nmod_fft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_fft_t F, con
 /*------------------------------------------------------------*/
 void nmod_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_fft_t F, const ulong N)
 {
-    slong i, j, k, a, ell, b, t, b2, lambda;
+    ulong i, j, k, a, ell, b, t, b2, lambda;
     mp_limb_t p;
     mp_ptr x2, x2_bak, powers_rho;
     mp_limb_t u, v;

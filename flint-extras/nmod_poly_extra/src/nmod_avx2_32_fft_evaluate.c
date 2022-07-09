@@ -60,7 +60,7 @@ static void _fft_32_3(mp_hlimb_t * x,
                    mp_hlimb_t * powers_w, mp_hlimb_t * i_powers_w,
                    const nmod_t mod)
 {
-    slong r, i;
+    ulong r, i;
     mp_hlimb_t p, p2, w, iw;
     mp_hlimb_t  *x0, *x1;
         
@@ -77,7 +77,7 @@ static void _fft_32_3(mp_hlimb_t * x,
         u0 = x0[i];
         u1 = x1[i];
         t0 = u0 + u1 - p2;
-        x0[i] = (t0 < 0) ? t0+p2 : t0;
+        x0[i] = (t0 < 0) ? (mp_hlimb_t) (t0+p2) : (mp_hlimb_t) t0;
         t1 = (u0 + p2) - u1;
         x1[i] = mul_mod_precon_unreduced_32(t1, powers_w[i], p, i_powers_w[i]);
     }
@@ -140,7 +140,7 @@ static void _fft_32_k(mp_hlimb_t * x,
 {
     /* N=size of block, M=number of blocks */
     ulong N, M;
-    slong r, i, nb;
+    ulong r, i, nb;
     mp_hlimb_t p, p2, w, iw;
     mp_hlimb_t  *x0, *x1;
     __m256i avx_p, avx_p2, avx_p2_minus_1;
@@ -201,7 +201,7 @@ static void _fft_32_k(mp_hlimb_t * x,
         
         for (r = 0; r < M; r++)
         {
-            slong nb;
+            ulong nb;
             nb = N/16;
             
             for (i = 0; i < nb; i++)
@@ -241,7 +241,7 @@ static void _fft_32_k(mp_hlimb_t * x,
             u0 = x0[i];
             u1 = x1[i];
             t0 = u0 + u1 - p2;
-            x0[i] = (t0 < 0) ? t0+p2 : t0;
+            x0[i] = (t0 < 0) ? (mp_hlimb_t) (t0+p2) : (mp_hlimb_t) t0;
             t1 = (u0 + p2) - u1;
             x1[i] = mul_mod_precon_unreduced_32(t1, powers_w[i], p, i_powers_w[i]);
         }
@@ -302,7 +302,7 @@ static void _fft_32_k(mp_hlimb_t * x,
 /*------------------------------------------------------------*/
 void nmod_avx2_32_fft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32_fft_t F, const ulong k)
 {
-    slong i, N;
+    ulong i, N;
     mp_hlimb_t * x_32;
 
     N = 1L << k;
@@ -349,10 +349,10 @@ void nmod_avx2_32_fft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32_f
 /*------------------------------------------------------------*/
 void nmod_avx2_32_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32_fft_t F, const ulong N)
 {
-    slong i, j, k, a, ell, b, t, b2, lambda, lambda8;
+    ulong i, j, k, a, ell, b, t, b2, lambda, lambda8;
     mp_hlimb_t p, u, v, acc1, acc2, acc3, acc4;
     mp_hlimb_t  * x2, * x2_bak, * powers_rho, * i_powers_rho, * acc;
-    __m256i avx_p, avx_p_minus_1;
+    __m256i avx_acc, avx_p, avx_p_minus_1;
 
     
     // N <= 1 -> easy case
@@ -444,13 +444,11 @@ void nmod_avx2_32_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32_f
                 {
                     lambda = 1L << (k-1);
                     lambda8 = ((2*lambda)/8)*8;
-                    for (i = 0; i < 8; i++)
-                    {
-                        acc[i] = 0;
-                    }
+
+                    avx_acc = _mm256_set1_epi32(0);
                     for (t = 0; t < lambda8; t+=8)
                     {
-                        __m256i u, v, rho, i_rho, avx_acc;
+                        __m256i u, v, rho, i_rho;
                         u = _mm256_load_si256((__m256i const*) (x2 + t)); // in [0..p) by assumption
                         v = _mm256_load_si256((__m256i const*) (x2 + t + a)); // in [0..p) by assumption
                         rho = _mm256_load_si256((__m256i const*) (powers_rho + t));
@@ -462,10 +460,9 @@ void nmod_avx2_32_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32_f
                                            mm256_mul_mod_precon(mm256_sub_mod_unreduced(u, v, avx_p), rho, avx_p, avx_p_minus_1, i_rho));
                         
                         u = mm256_add_mod(u, v, avx_p, avx_p_minus_1); // in [0..p)
-                        avx_acc = _mm256_load_si256((__m256i const*) acc); // in [0..p) (rec. assumption)
-                        u = mm256_add_mod(u, avx_acc, avx_p, avx_p_minus_1); // in [0..p)
-                        _mm256_store_si256((__m256i*) acc, u);
+                        avx_acc = mm256_add_mod(u, avx_acc, avx_p, avx_p_minus_1); // in [0..p)
                     }
+                     _mm256_store_si256((__m256i*) acc, avx_acc);
                     acc1 = n_addmod(n_addmod(n_addmod(acc[0], acc[2], p), acc[4], p), acc[6], p); // in [0..p)
                     acc2 = n_addmod(n_addmod(n_addmod(acc[1], acc[3], p), acc[5], p), acc[7], p); // in [0..p)
 
@@ -505,15 +502,17 @@ void nmod_avx2_32_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32_f
                 lambda = 1L << (k-2);
                 lambda8 = (lambda/2)*8;
 
+                avx_acc = _mm256_set1_epi32(0);
                 // AVX?
                 for (i = 0; i < 8; i++)
                 {
                     acc[i] = 0;
                 }
 
+
                 for (t = 0; t < lambda8; t+=8)
                 {
-                    __m256i u, v, rho, i_rho, avx_acc;
+                    __m256i u, v, rho, i_rho;
                     u = _mm256_load_si256((__m256i const*) (x2 + t));
                     v = _mm256_load_si256((__m256i const*) (x2 + t + a));
                     rho = _mm256_load_si256((__m256i const*) (powers_rho + t));
@@ -522,11 +521,9 @@ void nmod_avx2_32_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32_f
                     _mm256_store_si256((__m256i*) (x2 + t),
                                        mm256_mul_mod_precon(mm256_sub_mod_unreduced(u, v, avx_p), rho, avx_p, avx_p_minus_1, i_rho));
                     u = mm256_add_mod(u, v, avx_p, avx_p_minus_1);
-                    avx_acc = _mm256_load_si256((__m256i const*) acc);
-                    u = mm256_add_mod(u, avx_acc, avx_p, avx_p_minus_1);
-                    
-                    _mm256_store_si256((__m256i*) acc, u);
+                    avx_acc = mm256_add_mod(u, avx_acc, avx_p, avx_p_minus_1); // in [0..p)
                 }
+                _mm256_store_si256((__m256i*) acc, avx_acc);
 
                 acc1 = n_addmod(acc[0], acc[4], p);
                 acc2 = n_addmod(acc[1], acc[5], p);

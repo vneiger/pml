@@ -12,7 +12,7 @@
 int next_power_of_two(mp_limb_t x)
 {
     int i = 0, j = 1;
-    while (j < x)
+    while (j < (int) x)
     {
         i++;
         j <<= 1;

@@ -21,7 +21,7 @@ static void _fft_k(mp_hlimb_t * x,
     /* N=size of block, M=number of blocks */
     // N >= 32
     ulong N, M;
-    slong r, i, nb;
+    ulong r, i, nb;
     mp_hlimb_t p, p2, w, iw;
     mp_hlimb_t  *x0, *x1;
     __m256i avx2_p, avx2_p2, avx2_p2_minus_1;
@@ -81,7 +81,7 @@ static void _fft_k(mp_hlimb_t * x,
         
         for (r = 0; r < M; r++)
         {
-            slong nb;
+            ulong nb;
             nb = N/32;
             
             for (i = 0; i < nb; i++)
@@ -160,7 +160,7 @@ static void _fft_k(mp_hlimb_t * x,
             u0 = x0[i];
             u1 = x1[i];
             t0 = u0 + u1 - p2;
-            x0[i] = (t0 < 0) ? t0+p2 : t0;
+            x0[i] = (t0 < 0) ? (mp_hlimb_t)(t0+p2) : (mp_hlimb_t) t0;
             t1 = (u0 + p2) - u1;
             x1[i] = mul_mod_precon_unreduced_32(t1, powers_w[i], p, i_powers_w[i]);
         }
@@ -229,7 +229,7 @@ void nmod_avx512_32_fft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32
     }
     else
     {
-        slong i, N;
+        ulong i, N;
         mp_hlimb_t * x_32;
         N = 1L << k; // N >= 32, so N >= 16
         x_32 = (mp_hlimb_t *) aligned_alloc(64, 4 * N);

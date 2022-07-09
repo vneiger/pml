@@ -63,22 +63,9 @@ static inline void _nmod_vec_avx2_32_scalar_mul(mp_hlimb_t * y, const mp_hlimb_t
     
     for (i = 0; i < nb; i++)
     {
-        __m256i avx_x, avx_q, avx_cmp;
-        /* slong j; */
-        /* for (j = 0; j < 8; j++) */
-        /* { */
-        /*     y[j] = mul_mod_precon_32(x[j], a, mod.n, i_a); */
-        /* } */
-
-        avx_x = _mm256_load_si256((__m256i const*) x);
-        avx_q = mm256_mulhi_epi32(avx_x, avx_i_a);
-        avx_q = _mm256_sub_epi32(_mm256_mullo_epi32(avx_x, avx_a), _mm256_mullo_epi32(avx_q, avx_p));
-
-        avx_cmp = _mm256_cmpgt_epi32(avx_q, avx_p_minus_1);
-        avx_q = _mm256_sub_epi32(avx_q, _mm256_and_si256(avx_cmp, avx_p));
-        
-        _mm256_store_si256((__m256i*) y, avx_q);
-        
+        __m256i avx_x;
+        avx_x =  _mm256_load_si256((__m256i const*) x);
+        _mm256_store_si256((__m256i*) y, mm256_mul_mod_precon(avx_x, avx_a, avx_p, avx_p_minus_1, avx_i_a));
         x += 8;
         y += 8;
     }
@@ -88,9 +75,47 @@ static inline void _nmod_vec_avx2_32_scalar_mul(mp_hlimb_t * y, const mp_hlimb_t
     {
         y[i] = mul_mod_precon_32(x[i], a, mod.n, i_a);
     }
-
 }
 
+/*------------------------------------------------------------*/
+/* y[i] = a[i]*x[i] mod mod, i=0..len-1                       */
+/* works for < 32 bit primes                                  */
+/* assumes avx2 available                                     */
+/* i_a must have been precomputed                             */
+/* x and y must be 32-byte aligned                            */
+/*------------------------------------------------------------*/
+static inline void _nmod_vec_avx2_32_hadamard_mul(mp_hlimb_t * y, const mp_hlimb_t * x, const mp_hlimb_t * a,
+                                                  const mp_hlimb_t * i_a, slong len, nmod_t mod)
+{
+    slong i, nb;
+    __m256i avx_p, avx_p_minus_1;
+    
+    nb = len/8;
+    avx_p = _mm256_set1_epi32(mod.n);
+    avx_p_minus_1 = _mm256_set1_epi32(mod.n - 1);
+    
+    for (i = 0; i < nb; i++)
+    {
+        __m256i avx_x, avx_a, avx_i_a;
+        avx_x =  _mm256_load_si256((__m256i const*) x);
+        avx_a =  _mm256_load_si256((__m256i const*) a);
+        avx_i_a =  _mm256_load_si256((__m256i const*) i_a);
+        _mm256_store_si256((__m256i*) y, mm256_mul_mod_precon(avx_x, avx_a, avx_p, avx_p_minus_1, avx_i_a));
+        a += 8;
+        i_a += 8;
+        x += 8;
+        y += 8;
+    }
+    
+    nb = len - 8*nb;
+    for (i = 0; i < nb; i++)
+    {
+        y[i] = mul_mod_precon_32(x[i], a[i], mod.n, i_a[i]);
+    }
+}
+
+
+    
 #endif
 
 

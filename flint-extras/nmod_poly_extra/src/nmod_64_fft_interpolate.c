@@ -48,7 +48,7 @@ static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const mp_ptr i_po
 {
     mp_limb_t w, iw, p, p2;
     ulong N, M;
-    slong r, i;
+    ulong r, i;
     mp_ptr powers_inv_w, i_powers_inv_w, x0, x1, x2;
 
     N = 4;
@@ -101,13 +101,13 @@ static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const mp_ptr i_po
                 mp_limb_signed_t z;
                 
                 z = x0[i] - p2; // (-2p,2p)
-                u0 = (z < 0) ? z + p2 : z; // [0,2p)
+                u0 = (z < 0) ? (mp_limb_t)(z + p2) : (mp_limb_t) z; // [0,2p)
                 u1 = mul_mod_precon_unreduced(x1[i], powers_inv_w[i], p, i_powers_inv_w[i]);  // [0,2p)
                 x0[i] = u0 + u1; // [0,4p)
                 x1[i] = (u0 + p2) - u1; // [0,4p)
 
                 z = x0[i+1] - p2; // (-2p,2p)
-                u0 = (z < 0) ? z + p2 : z; // [0,2p)
+                u0 = (z < 0) ? (mp_limb_t) (z + p2) : (mp_limb_t) z; // [0,2p)
                 u1 = mul_mod_precon_unreduced(x1[i+1], powers_inv_w[i+1], p, i_powers_inv_w[i+1]);  // [0,2p)
                 x0[i+1] = u0 + u1; // [0,4p)
                 x1[i+1] = (u0 + p2) - u1; // [0,4p)
@@ -127,7 +127,7 @@ static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const mp_ptr i_po
         mp_limb_signed_t z;
         
         z = x0[i] - p2;
-        u0 = (z < 0) ? z + p2 : z;
+        u0 = (z < 0) ? (mp_limb_t) (z + p2) : (mp_limb_t) z;
         u1 = mul_mod_precon_unreduced(x1[i], powers_inv_w[i], p, i_powers_inv_w[i]);  // [0,2p)
         
         q = u0 + u1; 
@@ -141,7 +141,7 @@ static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const mp_ptr i_po
         x1[i] = q;
         
         z = x0[i+1] - p2;
-        u0 = (z < 0) ? z + p2 : z; // [0,2p)
+        u0 = (z < 0) ? (mp_limb_t) (z + p2) : (mp_limb_t) z; // [0,2p)
         u1 = mul_mod_precon_unreduced(x1[i+1], powers_inv_w[i+1], p, i_powers_inv_w[i+1]);  // [0,2p)
         
         q = u0 + u1; // [0,4p)
@@ -163,9 +163,9 @@ static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const mp_ptr i_po
 /* all calculations are mod p                              */
 /*---------------------------------------------------------*/
 static inline
-void fold_minus(mp_ptr x, mp_ptr s, slong sz, slong N, mp_limb_t p)
+void fold_minus(mp_ptr x, mp_ptr s, ulong sz, ulong N, mp_limb_t p)
 {
-    slong i, j;
+    ulong i, j;
     switch(sz)
     {
         case 2:
@@ -203,9 +203,9 @@ void fold_minus(mp_ptr x, mp_ptr s, slong sz, slong N, mp_limb_t p)
 /* tmp is a temporary workspace, of length at least 2n       */
 /*-----------------------------------------------------------*/
 static inline
-void CRT(mp_ptr x, mp_ptr tmp, slong n, mp_limb_t p)
+void CRT(mp_ptr x, mp_ptr tmp, ulong n, mp_limb_t p)
 {
-    slong a, b, b2, n2, i, nn;
+    ulong a, b, b2, n2, i, nn;
     mp_limb_t half;
 
     nn = n;
@@ -284,7 +284,7 @@ void CRT(mp_ptr x, mp_ptr tmp, slong n, mp_limb_t p)
 /*------------------------------------------------------------*/
 void nmod_64_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_64_fft_t F, const ulong k)
 {
-    slong i, N;
+    ulong i, N;
     
     N = 1L << k;
     nmod_poly_fit_length(poly, N);
@@ -325,7 +325,7 @@ void nmod_64_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_64_fft_t 
 /*------------------------------------------------------------*/
 void nmod_64_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_64_fft_t F, const ulong N)
 {
-    slong i, nn, k, aa;
+    ulong i, nn, k, aa;
     mp_ptr wk, wk2, powers, i_powers;
     mp_limb_t p;
     

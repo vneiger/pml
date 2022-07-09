@@ -223,6 +223,16 @@ static inline __m256i mm256_sub_mod_unreduced(__m256i a, __m256i b, __m256i p)
     return _mm256_sub_epi32(_mm256_add_epi32(a, p), b);
 }
 
+/*------------------------------------------------------------*/
+/* a + p - b                                                  */
+/*------------------------------------------------------------*/
+static inline __m256i mm256_sub_mod(__m256i a, __m256i b, __m256i p, __m256i p_minus_1)
+{
+    __m256i cmp, d;
+    d = _mm256_sub_epi32(_mm256_add_epi32(a, p), b);
+    cmp = _mm256_cmpgt_epi32(d, p_minus_1);
+    return _mm256_sub_epi32(d, _mm256_and_si256(cmp, p));
+}
 
 /*------------------------------------------------------------*/
 /* high 32 bits of a*b                                        */

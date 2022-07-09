@@ -7,7 +7,7 @@
 /*------------------------------------------------------------*/
 void nmod_fft_clear(nmod_fft_t F)
 {
-    slong i;
+    ulong i;
     
     for (i = 0; i <= F->order; i++)
     {

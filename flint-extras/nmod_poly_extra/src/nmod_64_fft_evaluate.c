@@ -54,7 +54,7 @@ static void _fft_k(mp_ptr x, const mp_ptr powers_w_in, const mp_ptr i_powers_w_i
     // N=size of block, M=number of blocks
     ulong N, M;
     mp_limb_t w, iw, p, p2;
-    slong r, i;
+    ulong r, i;
     mp_ptr powers_w, i_powers_w, x0, x1;
 
     powers_w = powers_w_in;
@@ -105,7 +105,7 @@ static void _fft_k(mp_ptr x, const mp_ptr powers_w_in, const mp_ptr i_powers_w_i
 
         for (r = 0; r < M; r++, x0 += N, x1 += N)
         {
-            slong i;
+            ulong i;
             for (i = 0; i < N/2; i+=2)
             {
                 mp_limb_t u0, u1, t1;
@@ -114,14 +114,14 @@ static void _fft_k(mp_ptr x, const mp_ptr powers_w_in, const mp_ptr i_powers_w_i
                 u0 = x0[i];
                 u1 = x1[i];
                 t0 = u0 + u1 - p2;
-                x0[i] = (t0 < 0) ? t0+p2 : t0;
+                x0[i] = (t0 < 0) ? (mp_limb_t) (t0+p2) : (mp_limb_t) t0;
                 t1 = (u0 + p2) - u1;
                 x1[i] = mul_mod_precon_unreduced(t1, powers_w[i], p, i_powers_w[i]);
 
                 u0 = x0[i+1];
                 u1 = x1[i+1];
                 t0 = u0 + u1 - p2;
-                x0[i+1] = (t0 < 0) ? t0+p2 : t0;
+                x0[i+1] = (t0 < 0) ? (mp_limb_t) (t0+p2) : (mp_limb_t) t0;
                 t1 = (u0 + p2) - u1;
                 x1[i+1] = mul_mod_precon_unreduced(t1, powers_w[i+1], p, i_powers_w[i+1]);
             }
@@ -187,7 +187,7 @@ static void _fft_k(mp_ptr x, const mp_ptr powers_w_in, const mp_ptr i_powers_w_i
 /*------------------------------------------------------------*/
 void nmod_64_fft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_64_fft_t F, const ulong k)
 {
-    slong i, N;
+    ulong i, N;
     
     N = 1L << k;
     for (i = 0; i < N; i++)
@@ -220,7 +220,7 @@ void nmod_64_fft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_64_fft_t 
 /*------------------------------------------------------------*/
 void nmod_64_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_64_fft_t F, const ulong N)
 {
-    slong i, j, k, a, ell, b, t, b2, lambda;
+    ulong i, j, k, a, ell, b, t, b2, lambda;
     mp_limb_t p;
     mp_ptr x2, x2_bak, powers_rho, i_powers_rho;
     mp_limb_t u, v;
