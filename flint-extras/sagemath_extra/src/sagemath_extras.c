@@ -34,8 +34,6 @@ void nmod_mat_print_sagemath(const nmod_mat_t mat)
 void nmod_poly_mat_print_sagemath(const nmod_poly_mat_t mat, const char * var)
 {
     slong rdim = mat->r, cdim = mat->c;
-    nmod_poly_struct *P;
-    slong length;
 
     printf("[");
     for (slong i = 0; i < rdim; i++)
@@ -43,48 +41,9 @@ void nmod_poly_mat_print_sagemath(const nmod_poly_mat_t mat, const char * var)
         printf("[");
         for (slong j = 0; j < cdim; j++)
         {
-            P = nmod_poly_mat_entry(mat, i, j);
-            length = nmod_poly_length(P);
-            if (length == 0)
-            {
-                if (j != cdim - 1)
-                    printf("0, ");
-                else
-                    printf("0");
-            }
-            else
-            {
-                for (slong k = 0; k < length; k++)
-                {
-                    if (k != length - 1)
-                    {
-                        if (k == 0)
-                            printf("%ld +", nmod_poly_get_coeff_ui(P, k));
-                        else
-                            printf("%ld*%s**%ld + ", nmod_poly_get_coeff_ui(P, k), var, k);
-                    }
-                    else
-                    {
-                        if (j != cdim - 1)
-                        {
-
-                            if (k == 0)
-                                printf("%ld,", nmod_poly_get_coeff_ui(P, k));
-                            else
-                                printf("%ld*%s**%ld,", nmod_poly_get_coeff_ui(P, k), var, k);
-
-                        }
-                        else
-                        {
-
-                            if (k == 0)
-                                printf("%ld", nmod_poly_get_coeff_ui(P, k));
-                            else
-                                printf("%ld*%s**%ld", nmod_poly_get_coeff_ui(P, k), var, k);
-                        }
-                    }
-                }
-            }
+            nmod_poly_print_sagemath(nmod_poly_mat_entry(mat, i, j), var);
+            if (j != cdim - 1)
+                printf(", ");
         }
         if (i != rdim -1)
             printf("],\n");

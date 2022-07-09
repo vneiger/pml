@@ -66,7 +66,8 @@ nmod_mat_poly_degree(const nmod_mat_poly_t matp)
 NMOD_POLY_MAT_INLINE int
 nmod_mat_poly_is_constant(const nmod_mat_poly_t matp)
 {
-    return (nmod_mat_poly_degree(matp) == 0);
+    // TODO not guaranteed to be the actual degree?
+    return matp->degree == 0;
 }
 
 //@} // doxygen group: Degree
@@ -181,10 +182,11 @@ void coefficient_matrix(nmod_mat_t coeff,
 //void RightShift(Vec<zz_pX> & svec, const Vec<zz_pX> & pvec, long n);
 
 /** Computes the left `n`-shift `smat` of the polynomial matrix `pmat` */
-// TODO investigate what happens with Flint's shift when polynomial is zero
+// FIXME investigate what happens with Flint's shift when polynomial is zero
 void nmod_poly_mat_shift_left(nmod_poly_mat_t res, const nmod_poly_mat_t pmat, slong k);
 
 /** Computes the right `n`-shift `smat` of the polynomial matrix `pmat` */
+// FIXME investigate what happens with Flint's shift when polynomial is zero
 void nmod_poly_mat_shift_right(nmod_poly_mat_t res, const nmod_poly_mat_t pmat, slong k);
 
 /** Computes the matrix `smat` which is the same as the polynomial matrix

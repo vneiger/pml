@@ -35,9 +35,7 @@ nmod_poly_print_sagemath(const nmod_poly_t pol, const char * var)
 /** printing an `nmod_mat` */
 void nmod_mat_print_sagemath(const nmod_mat_t mat);
 
-/** printing an `nmod_poly_mat`
- * \todo simplify, using nmod_poly_print
- **/
+/** printing an `nmod_poly_mat` **/
 void nmod_poly_mat_print_sagemath(const nmod_poly_mat_t mat, const char * var);
 
 #ifdef __cplusplus
