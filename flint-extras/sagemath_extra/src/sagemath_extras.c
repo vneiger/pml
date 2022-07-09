@@ -1,5 +1,4 @@
-#include "nmod_poly_mat_io.h"
-#include "nmod_poly_mat_forms.h" // for degree_matrix
+#include "sagemath_extra.h"
 
 void slongvec_print_sagemath(const slong * shift, slong length)
 {
@@ -7,6 +6,29 @@ void slongvec_print_sagemath(const slong * shift, slong length)
     for (slong i = 0; i < length - 1; i++)
         printf("%ld,", shift[i]);
     printf("%ld]\n", shift[length - 1]);
+}
+
+void nmod_mat_print_sagemath(const nmod_mat_t mat)
+{
+    slong rdim = mat->r, cdim = mat->c;
+    printf("[");
+    for (slong i = 0; i < rdim; i++)
+    {
+        printf("[");
+        for (slong j = 0; j < cdim; j++)
+        {
+            if (j != cdim - 1)
+                printf("%ld, ",  nmod_mat_get_entry(mat, i, j));
+            else
+                printf("%ld",  nmod_mat_get_entry(mat, i, j));
+
+        }
+        if (i != rdim -1)
+            printf("],\n");
+        else
+            printf("]");
+    }
+    printf("]\n");
 }
 
 void nmod_poly_mat_print_sagemath(const nmod_poly_mat_t mat, const char * var)
@@ -71,54 +93,6 @@ void nmod_poly_mat_print_sagemath(const nmod_poly_mat_t mat, const char * var)
     }
     printf("]\n");
 }
-
-void nmod_mat_print_sagemath(const nmod_mat_t mat)
-{
-    slong rdim = mat->r, cdim = mat->c;
-    printf("[");
-    for (slong i = 0; i < rdim; i++)
-    {
-        printf("[");
-        for (slong j = 0; j < cdim; j++)
-        {
-            if (j != cdim - 1)
-                printf("%ld, ",  nmod_mat_get_entry(mat, i, j));
-            else
-                printf("%ld",  nmod_mat_get_entry(mat, i, j));
-
-        }
-        if (i != rdim -1)
-            printf("],\n");
-        else
-            printf("]");
-    }
-    printf("]\n");
-}
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* PRINTING DEGREE MATRIX                                     */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-void nmod_poly_mat_degree_matrix_print_pretty(const nmod_poly_mat_t mat)
-{
-    fmpz_mat_t dmat;
-    fmpz_mat_init(dmat, mat->r, mat->c);
-    degree_matrix(dmat, mat);
-    fmpz_mat_print_pretty(dmat);
-}
-
-void nmod_poly_mat_degree_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
-                                               const slong *shift,
-                                               orientation_t row_wise)
-{
-    fmpz_mat_t dmat;
-    fmpz_mat_init(dmat, mat->r, mat->c);
-    degree_matrix_shifted(dmat, mat, shift, row_wise);
-    fmpz_mat_print_pretty(dmat);
-}
-
 
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
