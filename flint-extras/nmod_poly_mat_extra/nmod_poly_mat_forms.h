@@ -292,11 +292,12 @@ degree_matrix_shifted(fmpz_mat_t dmat,
  * `rdeg` (see @ref RowAndColumnDegrees). Then, the row-wise leading matrix of
  * `pmat` is the `m x n` matrix over the base field whose entry `(i,j)` is the
  * coefficient of degree `rdeg[i]` of the entry `pmat[i][j]` (this is zero if
- * `pmat[i][j]` does not reach `rdeg[i]`). Similarly, writing `cdeg` for the
- * column degree of `pmat`, the column-wise leading matrix of `pmat` is the `m
- * x n` matrix over the base field whose entry `(i,j)` is the coefficient of
- * degree `cdeg[j]` of the entry `pmat[i][j]` (this is zero if `pmat[i][j]`
- * does not reach `cdeg[j]`).
+ * `pmat[i][j]` does not reach `rdeg[i]`; or if the row pmat[i] is zero).
+ * Similarly, writing `cdeg` for the column degree of `pmat`, the column-wise
+ * leading matrix of `pmat` is the `m x n` matrix over the base field whose
+ * entry `(i,j)` is the coefficient of degree `cdeg[j]` of the entry
+ * `pmat[i][j]` (this is zero if `pmat[i][j]` does not reach `cdeg[j]`, or if
+ * the column pmat[:][j] is zero).
  *  
  * More generally, given a shift `shift` of length `n`, the row-wise
  * `shift`-leading matrix of `pmat` is the `m x n` matrix over the base field
@@ -317,7 +318,6 @@ degree_matrix_shifted(fmpz_mat_t dmat,
 
 /** Computes the row-wise leading matrix `lmat` of a polynomial matrix `mat`
  * (see @ref LeadingMatrix)
- * \todo bug to check, see src
  */
 void leading_matrix_rowwise(nmod_mat_t lmat,
                             const nmod_poly_mat_t mat);
@@ -325,14 +325,12 @@ void leading_matrix_rowwise(nmod_mat_t lmat,
 
 /** Computes the column-wise leading matrix `lmat` of a polynomial matrix
  * `mat` (see @ref LeadingMatrix)
- * \todo bug to check, see src
  */
 void leading_matrix_columnwise(nmod_mat_t lmat,
                                const nmod_poly_mat_t mat);
 
 /** Computes the leading matrix `lmat` of a polynomial matrix `mat` (see @ref
  * LeadingMatrix), using provided orientation row-wise or column-wise.
- * \todo bug to check, see src
  */
 NMOD_POLY_MAT_INLINE void
 leading_matrix(nmod_mat_t lmat,
@@ -349,7 +347,6 @@ leading_matrix(nmod_mat_t lmat,
 
 /** Computes the row-wise `shift`-leading matrix `lmat` of a polynomial matrix
  * `mat` (see @ref LeadingMatrix)
- * \todo bug to check, see src
  */
 void leading_matrix_shifted_rowwise(nmod_mat_t lmat,
                                     const nmod_poly_mat_t mat,
@@ -357,7 +354,6 @@ void leading_matrix_shifted_rowwise(nmod_mat_t lmat,
 
 /** Computes the column-wise `shift`-leading matrix `lmat` of a polynomial
  * matrix `mat` (see @ref LeadingMatrix)
- * \todo bug to check, see src
  */
 void leading_matrix_shifted_columnwise(nmod_mat_t lmat,
                                        const nmod_poly_mat_t mat,
@@ -367,7 +363,6 @@ void leading_matrix_shifted_columnwise(nmod_mat_t lmat,
 /** Computes the column-wise `shift`-leading matrix `lmat` of a polynomial
  * matrix `mat` (see @ref LeadingMatrix), using provided orientation
  * row-wise or column-wise.
- * \todo bug to check, see src
  */
 NMOD_POLY_MAT_INLINE void
 leading_matrix_shifted(nmod_mat_t lmat,

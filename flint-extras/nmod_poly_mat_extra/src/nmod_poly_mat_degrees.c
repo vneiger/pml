@@ -346,11 +346,14 @@ void leading_matrix_rowwise(nmod_mat_t lmat,
 
     // deduce leading matrix
     for (slong i = 0; i < mat->r; i++)
-        for (slong j = 0; j < mat->c; j++)
-            nmod_mat_set_entry(lmat, i, j,
-                               nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j),
-                                                      rdeg[i]));
-    // TODO check whether bug when reaching zero row (rdeg[i] should be -1)
+        if (rdeg[i] >= 0)
+            for (slong j = 0; j < mat->c; j++)
+                nmod_mat_set_entry(lmat, i, j,
+                                   nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j),
+                                                          rdeg[i]));
+        else
+            for (slong j = 0; j < mat->c; j++)
+                nmod_mat_set_entry(lmat, i, j, 0);
 }
 
 void leading_matrix_columnwise(nmod_mat_t lmat,
@@ -362,11 +365,14 @@ void leading_matrix_columnwise(nmod_mat_t lmat,
 
     // deduce leading matrix
     for (slong j = 0; j < mat->c; j++)
-        for (slong i = 0; i < mat->r; i++)
-            nmod_mat_set_entry(lmat, i, j,
-                               nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j),
-                                                      cdeg[j]));
-    // TODO check whether bug when reaching zero row (rdeg[i] should be -1)
+        if (cdeg[j] >= 0)
+            for (slong i = 0; i < mat->r; i++)
+                nmod_mat_set_entry(lmat, i, j,
+                                   nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j),
+                                                          cdeg[j]));
+        else
+            for (slong i = 0; i < mat->r; i++)
+                nmod_mat_set_entry(lmat, i, j, 0);
 }
 
 void leading_matrix_shifted_rowwise(nmod_mat_t lmat,
@@ -380,10 +386,12 @@ void leading_matrix_shifted_rowwise(nmod_mat_t lmat,
     // deduce leading matrix
     for (slong i = 0; i < mat->r; i++)
         for (slong j = 0; j < mat->c; j++)
-            nmod_mat_set_entry(lmat, i, j,
-                               nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j),
-                                                      rdeg[i] - shifts[j]));
-    // TODO check whether bug when reaching min_shift-1 (rdeg[i] - shifts[j] might be negative?)
+            if (rdeg[i] >= shifts[j])
+                nmod_mat_set_entry(lmat, i, j,
+                                   nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j),
+                                                          rdeg[i] - shifts[j]));
+            else
+                nmod_mat_set_entry(lmat, i, j, 0);
 }
 
 void leading_matrix_shifted_columnwise(nmod_mat_t lmat,
@@ -397,10 +405,12 @@ void leading_matrix_shifted_columnwise(nmod_mat_t lmat,
     // deduce leading matrix
     for (slong j = 0; j < mat->c; j++)
         for (slong i = 0; i < mat->r; i++)
-            nmod_mat_set_entry(lmat, i, j,
-                               nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j),
-                                                      cdeg[j] - shifts[i]));
-    // TODO check whether bug when reaching min_shift-1 (rdeg[i] - shifts[j] might be negative?)
+            if (cdeg[j] >= shifts[i])
+                nmod_mat_set_entry(lmat, i, j,
+                                   nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j),
+                                                          cdeg[j] - shifts[i]));
+            else
+                nmod_mat_set_entry(lmat, i, j, 0);
 }
 
 
