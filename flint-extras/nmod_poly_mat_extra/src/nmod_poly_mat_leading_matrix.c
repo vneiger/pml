@@ -1,11 +1,11 @@
 #include "nmod_poly_mat_forms.h"
 
-void leading_matrix_rowwise(nmod_mat_t lmat,
+void nmod_poly_mat_leading_matrix_rowwise(nmod_mat_t lmat,
                             const nmod_poly_mat_t mat)
 {
     // find row degrees
     slong rdeg[mat->r];
-    row_degrees(rdeg, mat);
+    nmod_poly_mat_row_degree(rdeg, mat);
 
     // deduce leading matrix
     for (slong i = 0; i < mat->r; i++)
@@ -19,12 +19,12 @@ void leading_matrix_rowwise(nmod_mat_t lmat,
                 nmod_mat_set_entry(lmat, i, j, 0);
 }
 
-void leading_matrix_columnwise(nmod_mat_t lmat,
+void nmod_poly_mat_leading_matrix_columnwise(nmod_mat_t lmat,
                                const nmod_poly_mat_t mat)
 {
     // find column degrees
     slong cdeg[mat->c];
-    column_degrees(cdeg, mat);
+    nmod_poly_mat_column_degree(cdeg, mat);
 
     // deduce leading matrix
     for (slong j = 0; j < mat->c; j++)
@@ -38,13 +38,13 @@ void leading_matrix_columnwise(nmod_mat_t lmat,
                 nmod_mat_set_entry(lmat, i, j, 0);
 }
 
-void leading_matrix_shifted_rowwise(nmod_mat_t lmat,
+void nmod_poly_mat_leading_matrix_shifted_rowwise(nmod_mat_t lmat,
                                     const nmod_poly_mat_t mat,
                                     const slong *shifts)
 {
     // find row degrees
     slong rdeg[mat->r];
-    row_degrees_shifted(rdeg, mat, shifts);
+    nmod_poly_mat_row_degree_shifted(rdeg, mat, shifts);
 
     // deduce leading matrix
     for (slong i = 0; i < mat->r; i++)
@@ -57,13 +57,13 @@ void leading_matrix_shifted_rowwise(nmod_mat_t lmat,
                 nmod_mat_set_entry(lmat, i, j, 0);
 }
 
-void leading_matrix_shifted_columnwise(nmod_mat_t lmat,
+void nmod_poly_mat_leading_matrix_shifted_columnwise(nmod_mat_t lmat,
                                        const nmod_poly_mat_t mat,
                                        const slong *shifts)
 {
     // find column degrees
     slong cdeg[mat->c];
-    column_degrees_shifted(cdeg, mat, shifts);
+    nmod_poly_mat_column_degree_shifted(cdeg, mat, shifts);
 
     // deduce leading matrix
     for (slong j = 0; j < mat->c; j++)

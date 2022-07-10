@@ -1,6 +1,6 @@
 #include "nmod_poly_mat_forms.h"
 
-void row_degrees(slong *rdeg, const nmod_poly_mat_t mat)
+void nmod_poly_mat_row_degree(slong *rdeg, const nmod_poly_mat_t mat)
 {
     slong max, d;
     for (slong i = 0; i < mat->r; i++)
@@ -16,7 +16,7 @@ void row_degrees(slong *rdeg, const nmod_poly_mat_t mat)
     }
 }
 
-void column_degrees(slong *cdeg, const nmod_poly_mat_t mat)
+void nmod_poly_mat_column_degree(slong *cdeg, const nmod_poly_mat_t mat)
 {
     slong max, d;
     for (slong j = 0; j < mat->c; j++)
@@ -32,7 +32,7 @@ void column_degrees(slong *cdeg, const nmod_poly_mat_t mat)
     }
 }
 
-void row_degrees_shifted(slong *rdeg, const nmod_poly_mat_t mat, const slong *shift)
+void nmod_poly_mat_row_degree_shifted(slong *rdeg, const nmod_poly_mat_t mat, const slong *shift)
 {
     slong max, d;
     slong min_shift = (mat->c > 0) ? shift[0] : 0;
@@ -56,7 +56,7 @@ void row_degrees_shifted(slong *rdeg, const nmod_poly_mat_t mat, const slong *sh
     }
 }
 
-void column_degrees_shifted(slong *cdeg, const nmod_poly_mat_t mat, const slong *shift)
+void nmod_poly_mat_column_degree_shifted(slong *cdeg, const nmod_poly_mat_t mat, const slong *shift)
 {
     slong max, d;
     slong min_shift = (mat->r > 0) ? shift[0] : 0;

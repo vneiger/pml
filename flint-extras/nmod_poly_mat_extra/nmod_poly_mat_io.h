@@ -27,17 +27,17 @@ void nmod_poly_mat_print_pretty(const nmod_poly_mat_t mat, const char * var);
 
 
 /** Print the degree matrix, see @ref DegreeMatrix */
-void nmod_poly_mat_degree_matrix_print_pretty(const nmod_poly_mat_t mat);
+void nmod_poly_mat_nmod_poly_mat_degree_matrix_print_pretty(const nmod_poly_mat_t mat);
 
-void nmod_poly_mat_degree_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
+void nmod_poly_mat_nmod_poly_mat_degree_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
                                                const slong *shift,
                                                orientation_t row_wise);
 
 /** Print the leading matrix, see @ref LeadingMatrix */
-void nmod_poly_mat_leading_matrix_print_pretty(const nmod_poly_mat_t mat,
+void nmod_poly_mat_nmod_poly_mat_leading_matrix_print_pretty(const nmod_poly_mat_t mat,
                                                orientation_t row_wise);
 
-void nmod_poly_mat_leading_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
+void nmod_poly_mat_nmod_poly_mat_leading_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
                                                        const slong *shift,
                                                        orientation_t row_wise);
 

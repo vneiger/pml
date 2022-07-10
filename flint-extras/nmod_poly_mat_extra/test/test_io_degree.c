@@ -24,40 +24,40 @@ int main()
     *  LEADING MATRIX  *
     ********************/
 
-	// sage: M.leading_matrix()
+	// sage: M.nmod_poly_mat_leading_matrix()
 	// [3 0 0]
 	// [1 0 0]
     printf("Printing leading matrix:\n");
-    nmod_poly_mat_leading_matrix_print_pretty(mat, ROW_WISE);
+    nmod_poly_mat_nmod_poly_mat_leading_matrix_print_pretty(mat, ROW_WISE);
     printf("\n");
 
-	// sage: M.leading_matrix(shifts=[0,1,2])
+	// sage: M.nmod_poly_mat_leading_matrix(shifts=[0,1,2])
 	// [0 0 1]
 	// [1 0 0]
     printf("Printing shifted leading matrix, shift = [0,1,2]:\n");
-    nmod_poly_mat_leading_matrix_shifted_print_pretty(mat, rshift, ROW_WISE);
+    nmod_poly_mat_nmod_poly_mat_leading_matrix_shifted_print_pretty(mat, rshift, ROW_WISE);
     printf("\n");
 
-	// sage: M.leading_matrix(row_wise=False)
+	// sage: M.nmod_poly_mat_leading_matrix(row_wise=False)
 	// [0 0 1]
 	// [1 0 0]
     printf("Printing column-wise leading matrix:\n");
-    nmod_poly_mat_leading_matrix_print_pretty(mat, COLUMN_WISE);
+    nmod_poly_mat_nmod_poly_mat_leading_matrix_print_pretty(mat, COLUMN_WISE);
     printf("\n");
 
-	// sage: M.leading_matrix(shifts=[-2,1], row_wise=False)
+	// sage: M.nmod_poly_mat_leading_matrix(shifts=[-2,1], row_wise=False)
 	// [0 0 1]
 	// [1 0 0]
     printf("Printing shifted column-wise leading matrix, shift = [-2,1]:\n");
-    nmod_poly_mat_leading_matrix_shifted_print_pretty(mat, cshift, COLUMN_WISE);
+    nmod_poly_mat_nmod_poly_mat_leading_matrix_shifted_print_pretty(mat, cshift, COLUMN_WISE);
     printf("\n");
 
-	// sage: M.leading_matrix(shifts=[2,0], row_wise=False)
+	// sage: M.nmod_poly_mat_leading_matrix(shifts=[2,0], row_wise=False)
 	// [3 0 1]
 	// [1 0 0]
     printf("Printing shifted column-wise leading matrix, shift = [2,0]:\n");
     cshift[0] = 2; cshift[1]=0;
-    nmod_poly_mat_leading_matrix_shifted_print_pretty(mat, cshift, COLUMN_WISE);
+    nmod_poly_mat_nmod_poly_mat_leading_matrix_shifted_print_pretty(mat, cshift, COLUMN_WISE);
     printf("\n");
 
 
@@ -65,24 +65,24 @@ int main()
     *  DEGREE MATRIX  *
     *******************/
 
-    // sage: M.degree_matrix()
+    // sage: M.nmod_poly_mat_degree_matrix()
     // [ 1 -1  0]
     // [ 3 -1 -1]
     printf("Printing degree matrix:\n");
-    nmod_poly_mat_degree_matrix_print_pretty(mat);
+    nmod_poly_mat_nmod_poly_mat_degree_matrix_print_pretty(mat);
     printf("\n");
 
-    // sage: M.degree_matrix(shifts=[0,1,2])
+    // sage: M.nmod_poly_mat_degree_matrix(shifts=[0,1,2])
     // [ 1 -1  2]
     // [ 3 -1 -1]
     // Different convention for zero entries --> here
     // [ 1 0  2]
     // [ 3 0  1]
     printf("Printing row-wise [0,1,2]-shifted degree matrix:\n");
-    nmod_poly_mat_degree_matrix_shifted_print_pretty(mat, rshift, ROW_WISE);
+    nmod_poly_mat_nmod_poly_mat_degree_matrix_shifted_print_pretty(mat, rshift, ROW_WISE);
     printf("\n");
 
-    // sage: M.degree_matrix(shifts=[-2,1,2])
+    // sage: M.nmod_poly_mat_degree_matrix(shifts=[-2,1,2])
     // [-1 -3  2]
     // [ 1 -3 -3]
     // Different convention for zero entries --> here
@@ -90,10 +90,10 @@ int main()
     // [ 1 0 1]
     rshift[0] = -2; rshift[1] = 1; rshift[2] = 2;
     printf("Printing row-wise [-2,1,2]-shifted degree matrix:\n");
-    nmod_poly_mat_degree_matrix_shifted_print_pretty(mat, rshift, ROW_WISE);
+    nmod_poly_mat_nmod_poly_mat_degree_matrix_shifted_print_pretty(mat, rshift, ROW_WISE);
     printf("\n");
 
-    // sage: M.degree_matrix(shifts=[-1,2], row_wise=False)
+    // sage: M.nmod_poly_mat_degree_matrix(shifts=[-1,2], row_wise=False)
     // [ 0 -2 -1]
     // [ 5 -2 -2]
     // Different convention for zero entries --> here
@@ -101,7 +101,7 @@ int main()
     // [ 5  1  1]
     cshift[0] = -1; cshift[1] = 2;
     printf("Printing column-wise [-1,2]-shifted degree matrix:\n");
-    nmod_poly_mat_degree_matrix_shifted_print_pretty(mat, cshift, COLUMN_WISE);
+    nmod_poly_mat_nmod_poly_mat_degree_matrix_shifted_print_pretty(mat, cshift, COLUMN_WISE);
     printf("\n");
 
     nmod_poly_mat_clear(mat);

@@ -18,7 +18,7 @@ int is_row_reduced(const nmod_poly_mat_t mat)
 {
     nmod_mat_t lmat;
     nmod_mat_init(lmat, mat->r, mat->c, mat->modulus);
-    leading_matrix_rowwise(lmat, mat);
+    nmod_poly_mat_leading_matrix_rowwise(lmat, mat);
     slong rank_lead = nmod_mat_rank(lmat);
     nmod_mat_clear(lmat);
     return mat->r == rank_lead;
@@ -28,7 +28,7 @@ int is_row_reduced_shifted(const nmod_poly_mat_t mat, const slong *shift)
 {
     nmod_mat_t lmat;
     nmod_mat_init(lmat, mat->r, mat->c, mat->modulus);
-    leading_matrix_shifted_rowwise(lmat, mat, shift);
+    nmod_poly_mat_leading_matrix_shifted_rowwise(lmat, mat, shift);
     slong rank_lead = nmod_mat_rank(lmat);
     nmod_mat_clear(lmat);
     return mat->r == rank_lead;
@@ -38,7 +38,7 @@ int is_column_reduced(const nmod_poly_mat_t mat)
 {
     nmod_mat_t lmat;
     nmod_mat_init(lmat, mat->r, mat->c, mat->modulus);
-    leading_matrix_columnwise(lmat, mat);
+    nmod_poly_mat_leading_matrix_columnwise(lmat, mat);
     slong rank_lead = nmod_mat_rank(lmat);
     nmod_mat_clear(lmat);
     return mat->c == rank_lead;
@@ -48,7 +48,7 @@ int is_column_reduced_shifted(const nmod_poly_mat_t mat, const slong *shift)
 {
     nmod_mat_t lmat;
     nmod_mat_init(lmat, mat->r, mat->c, mat->modulus);
-    leading_matrix_shifted_columnwise(lmat, mat, shift);
+    nmod_poly_mat_leading_matrix_shifted_columnwise(lmat, mat, shift);
     slong rank_lead = nmod_mat_rank(lmat);
     nmod_mat_clear(lmat);
     return mat->c == rank_lead;
@@ -60,10 +60,10 @@ int is_column_reduced_shifted(const nmod_poly_mat_t mat, const slong *shift)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-int is_ordered_weak_popov_rowwise(const nmod_poly_mat_t mat)
+int nmod_poly_mat_is_ordered_weak_popov_rowwise(const nmod_poly_mat_t mat)
 {
     slong pivind[mat->r];
-    pivot_index_rowwise(pivind, mat);
+    nmod_poly_mat_pivot_index_rowwise(pivind, mat);
 
     // first row must be nonzero
     if (mat->r > 0 && pivind[0] == -1)
@@ -77,11 +77,11 @@ int is_ordered_weak_popov_rowwise(const nmod_poly_mat_t mat)
     return 1;
 }
 
-int is_ordered_weak_popov_shifted_rowwise(const nmod_poly_mat_t mat,
+int nmod_poly_mat_is_ordered_weak_popov_shifted_rowwise(const nmod_poly_mat_t mat,
                                           const slong *shift)
 {
     slong pivind[mat->r];
-    pivot_index_shifted_rowwise(pivind, mat, shift);
+    nmod_poly_mat_pivot_index_shifted_rowwise(pivind, mat, shift);
 
     // first row must be nonzero
     if (mat->r > 0 && pivind[0] == -1)
@@ -95,10 +95,10 @@ int is_ordered_weak_popov_shifted_rowwise(const nmod_poly_mat_t mat,
     return 1;
 }
 
-int is_ordered_weak_popov_columnwise(const nmod_poly_mat_t mat)
+int nmod_poly_mat_is_ordered_weak_popov_columnwise(const nmod_poly_mat_t mat)
 {
     slong pivind[mat->c];
-    pivot_index_columnwise(pivind, mat);
+    nmod_poly_mat_pivot_index_columnwise(pivind, mat);
 
     // first column must be nonzero
     if (mat->c > 0 && pivind[0] == -1)
@@ -112,11 +112,11 @@ int is_ordered_weak_popov_columnwise(const nmod_poly_mat_t mat)
     return 1;
 }
 
-int is_ordered_weak_popov_shifted_columnwise(const nmod_poly_mat_t mat,
+int nmod_poly_mat_is_ordered_weak_popov_shifted_columnwise(const nmod_poly_mat_t mat,
                                              const slong *shift)
 {
     slong pivind[mat->c];
-    pivot_index_shifted_columnwise(pivind, mat, shift);
+    nmod_poly_mat_pivot_index_shifted_columnwise(pivind, mat, shift);
 
     // first column must be nonzero
     if (mat->c > 0 && pivind[0] == -1)
@@ -137,10 +137,10 @@ int is_ordered_weak_popov_shifted_columnwise(const nmod_poly_mat_t mat,
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-int is_weak_popov_rowwise(const nmod_poly_mat_t mat)
+int nmod_poly_mat_is_weak_popov_rowwise(const nmod_poly_mat_t mat)
 {
     slong pivind[mat->r];
-    pivot_index_rowwise(pivind, mat);
+    nmod_poly_mat_pivot_index_rowwise(pivind, mat);
 
     // sort pivot indices in nondecreasing order
     qsort(pivind, mat->r, sizeof(ulong), _int_comparator);
@@ -157,11 +157,11 @@ int is_weak_popov_rowwise(const nmod_poly_mat_t mat)
     return 1;
 }
 
-int is_weak_popov_shifted_rowwise(const nmod_poly_mat_t mat,
+int nmod_poly_mat_is_weak_popov_shifted_rowwise(const nmod_poly_mat_t mat,
                                   const slong *shift)
 {
     slong pivind[mat->r];
-    pivot_index_shifted_rowwise(pivind, mat, shift);
+    nmod_poly_mat_pivot_index_shifted_rowwise(pivind, mat, shift);
 
     // sort pivot indices in nondecreasing order
     qsort(pivind, mat->r, sizeof(ulong), _int_comparator);
@@ -178,10 +178,10 @@ int is_weak_popov_shifted_rowwise(const nmod_poly_mat_t mat,
     return 1;
 }
 
-int is_weak_popov_columnwise(const nmod_poly_mat_t mat)
+int nmod_poly_mat_is_weak_popov_columnwise(const nmod_poly_mat_t mat)
 {
     slong pivind[mat->c];
-    pivot_index_columnwise(pivind, mat);
+    nmod_poly_mat_pivot_index_columnwise(pivind, mat);
 
     // sort pivot indices in nondecreasing order
     qsort(pivind, mat->c, sizeof(ulong), _int_comparator);
@@ -198,11 +198,11 @@ int is_weak_popov_columnwise(const nmod_poly_mat_t mat)
     return 1;
 }
 
-int is_weak_popov_shifted_columnwise(const nmod_poly_mat_t mat,
+int nmod_poly_mat_is_weak_popov_shifted_columnwise(const nmod_poly_mat_t mat,
                                      const slong *shift)
 {
     slong pivind[mat->c];
-    pivot_index_shifted_columnwise(pivind, mat, shift);
+    nmod_poly_mat_pivot_index_shifted_columnwise(pivind, mat, shift);
 
     // sort pivot indices in nondecreasing order
     qsort(pivind, mat->c, sizeof(ulong), _int_comparator);
@@ -228,7 +228,7 @@ int is_weak_popov_shifted_columnwise(const nmod_poly_mat_t mat,
 
 //int is_popov(const nmod_poly_mat_t mat, const slong *shifts, orientation_t row_wise, int ordered)
 //{
-//    if (!is_weak_popov(mat, shifts, row_wise, ordered))
+//    if (!nmod_poly_mat_is_weak_popov(mat, shifts, row_wise, ordered))
 //        return 0;
 //    slong cdim = mat->c, rdim = mat->r, pivot_deg, d;
 //    nmod_poly_struct *P, *pivot;

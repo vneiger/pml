@@ -1,6 +1,6 @@
 #include "nmod_poly_mat_forms.h"
 
-void pivot_index_rowwise(slong *pivind, const nmod_poly_mat_t mat)
+void nmod_poly_mat_pivot_index_rowwise(slong *pivind, const nmod_poly_mat_t mat)
 {
     slong max, piv, d;
     for (slong i = 0; i < mat->r; i++)
@@ -20,7 +20,7 @@ void pivot_index_rowwise(slong *pivind, const nmod_poly_mat_t mat)
     }
 }
 
-void pivot_index_columnwise(slong *pivind, const nmod_poly_mat_t mat)
+void nmod_poly_mat_pivot_index_columnwise(slong *pivind, const nmod_poly_mat_t mat)
 {
     slong max, piv, d;
     for (slong j = 0; j < mat->c; j++)
@@ -40,7 +40,7 @@ void pivot_index_columnwise(slong *pivind, const nmod_poly_mat_t mat)
     }
 }
 
-void pivot_index_shifted_rowwise(slong *pivind, const nmod_poly_mat_t mat, const slong *shift)
+void nmod_poly_mat_pivot_index_shifted_rowwise(slong *pivind, const nmod_poly_mat_t mat, const slong *shift)
 {
     slong max, piv, d;
     slong min_shift = (mat->c > 0) ? shift[0] : 0;
@@ -68,7 +68,7 @@ void pivot_index_shifted_rowwise(slong *pivind, const nmod_poly_mat_t mat, const
     }
 }
 
-void pivot_index_shifted_columnwise(slong *pivind, const nmod_poly_mat_t mat, const slong *shift)
+void nmod_poly_mat_pivot_index_shifted_columnwise(slong *pivind, const nmod_poly_mat_t mat, const slong *shift)
 {
     slong max, piv, d;
     slong min_shift = (mat->r > 0) ? shift[0] : 0;

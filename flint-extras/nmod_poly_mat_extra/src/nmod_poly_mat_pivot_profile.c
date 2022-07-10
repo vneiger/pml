@@ -1,6 +1,6 @@
 #include "nmod_poly_mat_forms.h"
 
-void pivot_profile_rowwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_t mat)
+void nmod_poly_mat_pivot_profile_rowwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_t mat)
 {
     slong max, piv, d;
     for (slong i = 0; i < mat->r; i++)
@@ -21,7 +21,7 @@ void pivot_profile_rowwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_t m
     }
 }
 
-void pivot_profile_columnwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_t mat)
+void nmod_poly_mat_pivot_profile_columnwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_t mat)
 {
     slong max, piv, d;
     for (slong j = 0; j < mat->c; j++)
@@ -42,7 +42,7 @@ void pivot_profile_columnwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_
     }
 }
 
-void pivot_profile_shifted_rowwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_t mat, const slong *shift)
+void nmod_poly_mat_pivot_profile_shifted_rowwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_t mat, const slong *shift)
 {
     slong max, piv, d;
     slong min_shift = (mat->c > 0) ? shift[0] : 0;
@@ -71,7 +71,7 @@ void pivot_profile_shifted_rowwise(slong *pivind, slong *pivdeg, const nmod_poly
     }
 }
 
-void pivot_profile_shifted_columnwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_t mat, const slong *shift)
+void nmod_poly_mat_pivot_profile_shifted_columnwise(slong *pivind, slong *pivdeg, const nmod_poly_mat_t mat, const slong *shift)
 {
     slong max, piv, d;
     slong min_shift = (mat->r > 0) ? shift[0] : 0;
