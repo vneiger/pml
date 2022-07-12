@@ -12,22 +12,34 @@
  */
 
 #include <flint/nmod_poly_mat.h>
+#include "nmod_poly_mat_forms.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/** \todo print to file
+ *  \todo pretty print to file
+ */
 
-/** print for testing result on sage **/
-void nmod_poly_mat_print_sage(const nmod_poly_mat_t mat, const char * var);
-
-void slong_print_sage(const slong *shifts, slong length);
-
-void nmod_mat_print_sage(const nmod_mat_t mat);
-
-void slong_mat_print(const slong *mat, slong rdim, slong cdim);
+/** Matrix pretty print to standard output */
+void nmod_poly_mat_print_pretty(const nmod_poly_mat_t mat, const char * var);
 
 
+/** Print the degree matrix, see @ref DegreeMatrix */
+void nmod_poly_mat_nmod_poly_mat_degree_matrix_print_pretty(const nmod_poly_mat_t mat);
+
+void nmod_poly_mat_nmod_poly_mat_degree_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
+                                               const slong *shift,
+                                               orientation_t row_wise);
+
+/** Print the leading matrix, see @ref LeadingMatrix */
+void nmod_poly_mat_nmod_poly_mat_leading_matrix_print_pretty(const nmod_poly_mat_t mat,
+                                               orientation_t row_wise);
+
+void nmod_poly_mat_nmod_poly_mat_leading_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
+                                                       const slong *shift,
+                                                       orientation_t row_wise);
 
 #ifdef __cplusplus
 }

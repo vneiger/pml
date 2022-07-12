@@ -26,7 +26,7 @@ void PM_basis(nmod_poly_mat_t res, slong *res_shifts,
     nmod_poly_mat_t Pl, Ph, F_prime;
     slong ul[rdim];
 
-    if (sigma <= INITIAL_CASE_BOUND)
+    if (sigma <= PMBASIS_THRES)
     {
         M_basisIII(res, res_shifts, F, sigma, shifts);
         return;

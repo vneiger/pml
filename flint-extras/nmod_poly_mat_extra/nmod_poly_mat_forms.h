@@ -20,6 +20,8 @@
  *
  */
 
+// for degree matrix
+#include <flint/fmpz_mat.h> 
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly_mat.h>
 
@@ -101,7 +103,7 @@ typedef enum
  * @ref RowAndColumnDegrees). The result `rdeg` must be already initialized
  * with length (at least) the number of rows of `mat`.
  */
-void row_degrees(slong *rdeg,
+void nmod_poly_mat_row_degree(slong *rdeg,
                  const nmod_poly_mat_t mat);
 
 /** Computes the `shift`-row degree `rdeg` of a polynomial matrix `pmat` (see
@@ -109,7 +111,7 @@ void row_degrees(slong *rdeg,
  * with length (at least) the number of rows of `mat`. The shift `shift`
  * must have (at least) as many elements as the number of columns of `mat`.
  */
-void row_degrees_shifted(slong *rdeg,
+void nmod_poly_mat_row_degree_shifted(slong *rdeg,
                          const nmod_poly_mat_t mat,
                          const slong *shift);
 
@@ -117,7 +119,7 @@ void row_degrees_shifted(slong *rdeg,
  * @ref RowAndColumnDegrees). The result `cdeg` must be already initialized
  * with length (at least) the number of column of `mat`.
  */
-void column_degrees(slong *cdeg,
+void nmod_poly_mat_column_degree(slong *cdeg,
                     const nmod_poly_mat_t mat);
 
 /** Computes the `shift`-column degree `cdeg` of a polynomial matrix `pmat`
@@ -125,7 +127,7 @@ void column_degrees(slong *cdeg,
  * with length (at least) the number of column of `mat`. The shift `shift` must
  * have (at least) as many elements as the number of rows of `mat`.
  */
-void column_degrees_shifted(slong *cdeg,
+void nmod_poly_mat_column_degree_shifted(slong *cdeg,
                             const nmod_poly_mat_t mat,
                             const slong *shift);
 
@@ -162,50 +164,50 @@ void column_degrees_shifted(slong *cdeg,
 
 /** Computes the row-wise pivot index `pivind` of a polynomial matrix `mat`
  * (see @ref Pivots). */
-void pivot_index_rowwise(slong *pivind,
+void nmod_poly_mat_pivot_index_rowwise(slong *pivind,
                          const nmod_poly_mat_t mat);
 
 /** Computes the column-wise pivot index `pivind` of a polynomial matrix `mat`
  * (see @ref Pivots). */
-void pivot_index_columnwise(slong *pivind,
+void nmod_poly_mat_pivot_index_columnwise(slong *pivind,
                             const nmod_poly_mat_t mat);
 
 /** Computes the row-wise `shift`-pivot index `pivind` of a polynomial matrix
  * `mat` (see @ref Pivots). */
-void pivot_index_shifted_rowwise(slong *pivind,
+void nmod_poly_mat_pivot_index_shifted_rowwise(slong *pivind,
                                  const nmod_poly_mat_t mat,
                                  const slong *shift);
 
 /** Computes the column-wise `shift`-pivot index `pivind` of a polynomial
  * matrix `mat` (see @ref Pivots). */
-void pivot_index_shifted_columnwise(slong *pivind,
+void nmod_poly_mat_pivot_index_shifted_columnwise(slong *pivind,
                                     const nmod_poly_mat_t mat,
                                     const slong *shift);
 
 /** Computes the row-wise pivot index `pivind` and pivot degree `pivdeg` of a
  * polynomial matrix `mat` (see @ref Pivots). In this unshifted case, `pivdeg`
  * coincides with the row degree of `mat`.  */
-void pivot_profile_rowwise(slong *pivind,
+void nmod_poly_mat_pivot_profile_rowwise(slong *pivind,
                            slong *pivdeg,
                            const nmod_poly_mat_t mat);
 
 /** Computes the column-wise pivot index `pivind` and pivot degree `pivdeg` of
  * a polynomial matrix `mat` (see @ref Pivots). In this unshifted case, `pivdeg`
  * coincides with the column degree of `mat`. */
-void pivot_profile_columnwise(slong *pivind,
+void nmod_poly_mat_pivot_profile_columnwise(slong *pivind,
                               slong *pivdeg,
                               const nmod_poly_mat_t mat);
 
 /** Computes the row-wise `shift`-pivot index `pivind` and `shift`-pivot degree
  * `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). */
-void pivot_profile_shifted_rowwise(slong *pivind,
+void nmod_poly_mat_pivot_profile_shifted_rowwise(slong *pivind,
                                    slong *pivdeg,
                                    const nmod_poly_mat_t mat,
                                    const slong *shift);
 
 /** Computes the column-wise `shift`-pivot index `pivind` and `shift`-pivot
  * degree `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). */
-void pivot_profile_shifted_columnwise(slong *pivind,
+void nmod_poly_mat_pivot_profile_shifted_columnwise(slong *pivind,
                                       slong *pivdeg,
                                       const nmod_poly_mat_t mat,
                                       const slong *shift);
@@ -229,11 +231,11 @@ void pivot_profile_shifted_columnwise(slong *pivind,
  *
  * For a given shift `shift` of length `n`, the row-wise `shift`-degree matrix
  * of `pmat` is the `m x n` integer matrix whose entry `(i,j)` is
- * `deg(pmat[i][j]) + shift[j]` if `pmat[i][j]` is nonzero, and `min(shift)-1`
+ * `deg(pmat[i][j]) + shift[j]` if `pmat[i][j]` is nonzero, and `shift[j]-1`
  * otherwise. For a given shift `shift` of length `m`, the column-wise
  * `shift`-degree matrix of `pmat` is the `m x n` integer matrix whose entry
  * `(i,j)` is `deg(pmat[i][j]) + shift[i]` if `pmat[i][j]` is nonzero, and
- * `min(shift)-1` otherwise.
+ * `shift[i]-1` otherwise.
  *
  * The functions below which involve a `shift` among its parameters throw
  * an error if this `shift` does not have the right length.
@@ -243,39 +245,36 @@ void pivot_profile_shifted_columnwise(slong *pivind,
 /** Computes the degree matrix `degmat` of a polynomial matrix `pmat` (see @ref
  * DegreeMatrix)
  */
-void degree_matrix(slong *res, const nmod_poly_mat_t mat);
+void nmod_poly_mat_degree_matrix(fmpz_mat_t dmat, const nmod_poly_mat_t mat);
 
 /** Computes the row-wise `shift`-degree matrix `degmat` of a polynomial matrix
  * `pmat` (see @ref DegreeMatrix)
- * \todo use mat fmpz
  */
-void degree_matrix_row_shifted(slong *res,
+void nmod_poly_mat_degree_matrix_row_shifted(fmpz_mat_t dmat,
                            const nmod_poly_mat_t mat,
-                           const slong *shift);
+                           const slong * shift);
 
 /** Computes the column-wise `shift`-degree matrix `degmat` of a polynomial
  * matrix `pmat` (see @ref DegreeMatrix)
- * \todo use mat fmpz
  */
-void degree_matrix_column_shifted(slong *res,
+void nmod_poly_mat_degree_matrix_column_shifted(fmpz_mat_t dmat,
                            const nmod_poly_mat_t mat,
-                           const slong *shift);
+                           const slong * shift);
 
 /** Computes the `shift`-degree matrix `degmat` of a polynomial matrix `pmat`
  * (see @ref DegreeMatrix), the orientation row-wise/column-wise being
  * indicated by a parameter.
- * \todo use mat fmpz
  */
 NMOD_POLY_MAT_INLINE void
-degree_matrix_shifted(slong *res,
+nmod_poly_mat_degree_matrix_shifted(fmpz_mat_t dmat,
                       const nmod_poly_mat_t mat,
-                      const slong *shift,
+                      const slong * shift,
                       orientation_t row_wise)
 {
     if (row_wise)
-        degree_matrix_row_shifted(res, mat, shift);
+        nmod_poly_mat_degree_matrix_row_shifted(dmat, mat, shift);
     else
-        degree_matrix_column_shifted(res, mat, shift);
+        nmod_poly_mat_degree_matrix_column_shifted(dmat, mat, shift);
 }
 
 //@} // doxygen group: (Shifted) degree matrix
@@ -293,11 +292,12 @@ degree_matrix_shifted(slong *res,
  * `rdeg` (see @ref RowAndColumnDegrees). Then, the row-wise leading matrix of
  * `pmat` is the `m x n` matrix over the base field whose entry `(i,j)` is the
  * coefficient of degree `rdeg[i]` of the entry `pmat[i][j]` (this is zero if
- * `pmat[i][j]` does not reach `rdeg[i]`). Similarly, writing `cdeg` for the
- * column degree of `pmat`, the column-wise leading matrix of `pmat` is the `m
- * x n` matrix over the base field whose entry `(i,j)` is the coefficient of
- * degree `cdeg[j]` of the entry `pmat[i][j]` (this is zero if `pmat[i][j]`
- * does not reach `cdeg[j]`).
+ * `pmat[i][j]` does not reach `rdeg[i]`; or if the row pmat[i] is zero).
+ * Similarly, writing `cdeg` for the column degree of `pmat`, the column-wise
+ * leading matrix of `pmat` is the `m x n` matrix over the base field whose
+ * entry `(i,j)` is the coefficient of degree `cdeg[j]` of the entry
+ * `pmat[i][j]` (this is zero if `pmat[i][j]` does not reach `cdeg[j]`, or if
+ * the column pmat[:][j] is zero).
  *  
  * More generally, given a shift `shift` of length `n`, the row-wise
  * `shift`-leading matrix of `pmat` is the `m x n` matrix over the base field
@@ -318,49 +318,44 @@ degree_matrix_shifted(slong *res,
 
 /** Computes the row-wise leading matrix `lmat` of a polynomial matrix `mat`
  * (see @ref LeadingMatrix)
- * \todo bug to check, see src
  */
-void leading_matrix_rowwise(nmod_mat_t lmat,
+void nmod_poly_mat_leading_matrix_rowwise(nmod_mat_t lmat,
                             const nmod_poly_mat_t mat);
 
 
 /** Computes the column-wise leading matrix `lmat` of a polynomial matrix
  * `mat` (see @ref LeadingMatrix)
- * \todo bug to check, see src
  */
-void leading_matrix_columnwise(nmod_mat_t lmat,
+void nmod_poly_mat_leading_matrix_columnwise(nmod_mat_t lmat,
                                const nmod_poly_mat_t mat);
 
 /** Computes the leading matrix `lmat` of a polynomial matrix `mat` (see @ref
  * LeadingMatrix), using provided orientation row-wise or column-wise.
- * \todo bug to check, see src
  */
 NMOD_POLY_MAT_INLINE void
-leading_matrix(nmod_mat_t lmat,
+nmod_poly_mat_leading_matrix(nmod_mat_t lmat,
                const nmod_poly_mat_t mat,
                orientation_t row_wise)
 {
     if (row_wise)
-        leading_matrix_rowwise(lmat, mat);
+        nmod_poly_mat_leading_matrix_rowwise(lmat, mat);
     else
-        leading_matrix_columnwise(lmat, mat);
+        nmod_poly_mat_leading_matrix_columnwise(lmat, mat);
 }
 
 
 
 /** Computes the row-wise `shift`-leading matrix `lmat` of a polynomial matrix
  * `mat` (see @ref LeadingMatrix)
- * \todo bug to check, see src
  */
-void leading_matrix_shifted_rowwise(nmod_mat_t lmat,
+void nmod_poly_mat_leading_matrix_shifted_rowwise(nmod_mat_t lmat,
                                     const nmod_poly_mat_t mat,
                                     const slong *shift);
 
 /** Computes the column-wise `shift`-leading matrix `lmat` of a polynomial
  * matrix `mat` (see @ref LeadingMatrix)
- * \todo bug to check, see src
  */
-void leading_matrix_shifted_columnwise(nmod_mat_t lmat,
+void nmod_poly_mat_leading_matrix_shifted_columnwise(nmod_mat_t lmat,
                                        const nmod_poly_mat_t mat,
                                        const slong *shift);
 
@@ -368,18 +363,17 @@ void leading_matrix_shifted_columnwise(nmod_mat_t lmat,
 /** Computes the column-wise `shift`-leading matrix `lmat` of a polynomial
  * matrix `mat` (see @ref LeadingMatrix), using provided orientation
  * row-wise or column-wise.
- * \todo bug to check, see src
  */
 NMOD_POLY_MAT_INLINE void
-leading_matrix_shifted(nmod_mat_t lmat,
+nmod_poly_mat_leading_matrix_shifted(nmod_mat_t lmat,
                        const nmod_poly_mat_t mat,
                        const slong *shift,
                        orientation_t row_wise)
 {
     if (row_wise)
-        leading_matrix_shifted_rowwise(lmat, mat, shift);
+        nmod_poly_mat_leading_matrix_shifted_rowwise(lmat, mat, shift);
     else
-        leading_matrix_shifted_columnwise(lmat, mat, shift);
+        nmod_poly_mat_leading_matrix_shifted_columnwise(lmat, mat, shift);
 }
 
 
@@ -434,41 +428,41 @@ leading_matrix_shifted(nmod_mat_t lmat,
 /*------------------------------------------------------------*/
 
 /** Tests whether `pmat` is in row reduced form (see @ref MatrixForms) */
-int is_reduced_rowwise(const nmod_poly_mat_t mat);
+int nmod_poly_mat_is_reduced_rowwise(const nmod_poly_mat_t mat);
 
 /** Tests whether `pmat` is in `shift`-row reduced form (see @ref MatrixForms) */
-int is_reduced_shifted_rowwise(const nmod_poly_mat_t mat, const slong *shift);
+int nmod_poly_mat_is_reduced_shifted_rowwise(const nmod_poly_mat_t mat, const slong *shift);
 
 /** Tests whether `pmat` is in column reduced form (see @ref MatrixForms) */
-int is_reduced_columnwise(const nmod_poly_mat_t mat);
+int nmod_poly_mat_is_reduced_columnwise(const nmod_poly_mat_t mat);
 
 /** Tests whether `pmat` is in `shift`-column reduced form (see @ref MatrixForms) */
-int is_reduced_shifted_columnwise(const nmod_poly_mat_t mat, const slong *shift);
+int nmod_poly_mat_is_reduced_shifted_columnwise(const nmod_poly_mat_t mat, const slong *shift);
 
 /** Tests whether `pmat` is in reduced form (see @ref MatrixForms), with
  * orientation row-wise or column-wise specified by argument
  */
 NMOD_POLY_MAT_INLINE int
-is_reduced(const nmod_poly_mat_t mat, orientation_t row_wise)
+nmod_poly_mat_is_reduced(const nmod_poly_mat_t mat, orientation_t row_wise)
 {
     if (row_wise)
-        return is_reduced_rowwise(mat);
+        return nmod_poly_mat_is_reduced_rowwise(mat);
     else
-        return is_reduced_columnwise(mat);
+        return nmod_poly_mat_is_reduced_columnwise(mat);
 }
 
 /** Tests whether `pmat` is in `shift`-reduced form (see @ref MatrixForms),
  * with orientation row-wise or column-wise specified by argument
  */
 NMOD_POLY_MAT_INLINE int
-is_reduced_shifted(const nmod_poly_mat_t mat,
+nmod_poly_mat_is_reduced_shifted(const nmod_poly_mat_t mat,
                    const slong *shift,
                    orientation_t row_wise)
 {
     if (row_wise)
-        return is_reduced_shifted_rowwise(mat, shift);
+        return nmod_poly_mat_is_reduced_shifted_rowwise(mat, shift);
     else
-        return is_reduced_shifted_columnwise(mat, shift);
+        return nmod_poly_mat_is_reduced_shifted_columnwise(mat, shift);
 }
 
 
@@ -480,45 +474,45 @@ is_reduced_shifted(const nmod_poly_mat_t mat,
 
 /** Tests whether `mat` is in row-wise ordered weak Popov form (see
  * @ref MatrixForms) */
-int is_ordered_weak_popov_rowwise(const nmod_poly_mat_t mat);
+int nmod_poly_mat_is_ordered_weak_popov_rowwise(const nmod_poly_mat_t mat);
 
 /** Tests whether `mat` is in row-wise `shift`-ordered weak Popov form (see
  * @ref MatrixForms) */
-int is_ordered_weak_popov_shifted_rowwise(const nmod_poly_mat_t mat,
+int nmod_poly_mat_is_ordered_weak_popov_shifted_rowwise(const nmod_poly_mat_t mat,
                                           const slong *shift);
 
 /** Tests whether `mat` is in column-wise ordered weak Popov form (see
  * @ref MatrixForms) */
-int is_ordered_weak_popov_columnwise(const nmod_poly_mat_t mat);
+int nmod_poly_mat_is_ordered_weak_popov_columnwise(const nmod_poly_mat_t mat);
 
 /** Tests whether `mat` is in column-wise `shift`-ordered weak Popov form (see
  * @ref MatrixForms) */
-int is_ordered_weak_popov_shifted_columnwise(const nmod_poly_mat_t mat,
+int nmod_poly_mat_is_ordered_weak_popov_shifted_columnwise(const nmod_poly_mat_t mat,
                                              const slong *shift);
 
 /** Tests whether `mat` is in ordered weak Popov form (see @ref MatrixForms),
  * with orientation specified by `row_wise` */
 NMOD_POLY_MAT_INLINE int
-is_ordered_weak_popov(const nmod_poly_mat_t mat,
+nmod_poly_mat_is_ordered_weak_popov(const nmod_poly_mat_t mat,
               orientation_t row_wise)
 {
     if (row_wise)
-        return is_ordered_weak_popov_rowwise(mat);
+        return nmod_poly_mat_is_ordered_weak_popov_rowwise(mat);
     else
-        return is_ordered_weak_popov_columnwise(mat);
+        return nmod_poly_mat_is_ordered_weak_popov_columnwise(mat);
 }
 
 /** Tests whether `mat` is in `shift`-ordered weak Popov form (see
  * @ref MatrixForms), with orientation specified by `row_wise` */
 NMOD_POLY_MAT_INLINE int
-is_ordered_weak_popov_shifted(const nmod_poly_mat_t mat,
+nmod_poly_mat_is_ordered_weak_popov_shifted(const nmod_poly_mat_t mat,
                       const slong *shift,
                       orientation_t row_wise)
 {
     if (row_wise)
-        return is_ordered_weak_popov_shifted_rowwise(mat, shift);
+        return nmod_poly_mat_is_ordered_weak_popov_shifted_rowwise(mat, shift);
     else
-        return is_ordered_weak_popov_shifted_columnwise(mat, shift);
+        return nmod_poly_mat_is_ordered_weak_popov_shifted_columnwise(mat, shift);
 }
 
 
@@ -529,45 +523,45 @@ is_ordered_weak_popov_shifted(const nmod_poly_mat_t mat,
 /*------------------------------------------------------------*/
 
 /** Tests whether `mat` is in row-wise weak Popov form (see @ref MatrixForms) */
-int is_weak_popov_rowwise(const nmod_poly_mat_t mat);
+int nmod_poly_mat_is_weak_popov_rowwise(const nmod_poly_mat_t mat);
 
 /** Tests whether `mat` is in row-wise `shift`-weak Popov form (see
  * @ref MatrixForms) */
-int is_weak_popov_shifted_rowwise(const nmod_poly_mat_t mat,
+int nmod_poly_mat_is_weak_popov_shifted_rowwise(const nmod_poly_mat_t mat,
                                   const slong *shift);
 
 /** Tests whether `mat` is in column-wise ordered weak Popov form (see
  * @ref MatrixForms) */
-int is_weak_popov_columnwise(const nmod_poly_mat_t mat);
+int nmod_poly_mat_is_weak_popov_columnwise(const nmod_poly_mat_t mat);
 
 /** Tests whether `mat` is in column-wise `shift`-ordered weak Popov form (see
  * @ref MatrixForms) */
-int is_weak_popov_shifted_columnwise(const nmod_poly_mat_t mat,
+int nmod_poly_mat_is_weak_popov_shifted_columnwise(const nmod_poly_mat_t mat,
                                      const slong *shift);
 
 /** Tests whether `mat` is in weak Popov form (see @ref MatrixForms),
  * with orientation specified by `row_wise` */
 NMOD_POLY_MAT_INLINE int
-is_weak_popov(const nmod_poly_mat_t mat,
+nmod_poly_mat_is_weak_popov(const nmod_poly_mat_t mat,
               orientation_t row_wise)
 {
     if (row_wise)
-        return is_weak_popov_rowwise(mat);
+        return nmod_poly_mat_is_weak_popov_rowwise(mat);
     else
-        return is_weak_popov_columnwise(mat);
+        return nmod_poly_mat_is_weak_popov_columnwise(mat);
 }
 
 /** Tests whether `mat` is in `shift`-weak Popov form (see @ref MatrixForms),
  * with orientation specified by `row_wise` */
 NMOD_POLY_MAT_INLINE int
-is_weak_popov_shifted(const nmod_poly_mat_t mat,
+nmod_poly_mat_is_weak_popov_shifted(const nmod_poly_mat_t mat,
                   const slong *shift,
                   orientation_t row_wise)
 {
     if (row_wise)
-        return is_weak_popov_shifted_rowwise(mat, shift);
+        return nmod_poly_mat_is_weak_popov_shifted_rowwise(mat, shift);
     else
-        return is_weak_popov_shifted_columnwise(mat, shift);
+        return nmod_poly_mat_is_weak_popov_shifted_columnwise(mat, shift);
 }
 
 

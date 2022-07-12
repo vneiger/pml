@@ -1,119 +1,86 @@
 #include "nmod_poly_mat_io.h"
+#include "nmod_poly_mat_forms.h" // for nmod_poly_mat_degree_matrix
 
-void slong_print_sage(const slong *shifts, slong length)
-{
-    printf("[");
-    for (slong i = 0; i < length - 1; i++)
-        printf("%ld,", shifts[i]);
-    printf("%ld]\n", shifts[length - 1]);
-}
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* PRETTY PRINTING THE MATRIX                                 */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
-void nmod_poly_mat_print_sage(const nmod_poly_mat_t mat, const char * var)
-{
-    slong rdim = mat->r, cdim = mat->c;
-    nmod_poly_struct *P;
-    slong length;
-
-    printf("[");
-    for (slong i = 0; i < rdim; i++)
-    {
-        printf("[");
-        for (slong j = 0; j < cdim; j++)
-        {
-            P = nmod_poly_mat_entry(mat, i, j);
-            length = nmod_poly_length(P);
-            if (length == 0)
-            {
-                if (j != cdim - 1)
-                    printf("0, ");
-                else
-                    printf("0");
-            }
-            else
-            {
-                for (slong k = 0; k < length; k++)
-                {
-                    if (k != length - 1)
-                    {
-                        if (k == 0)
-                            printf("%ld +", nmod_poly_get_coeff_ui(P, k));
-                        else
-                            printf("%ld*%s**%ld + ", nmod_poly_get_coeff_ui(P, k), var, k);
-                    }
-                    else
-                    {
-                        if (j != cdim - 1)
-                        {
-
-                            if (k == 0)
-                                printf("%ld,", nmod_poly_get_coeff_ui(P, k));
-                            else
-                                printf("%ld*%s**%ld,", nmod_poly_get_coeff_ui(P, k), var, k);
-
-                        }
-                        else
-                        {
-
-                            if (k == 0)
-                                printf("%ld", nmod_poly_get_coeff_ui(P, k));
-                            else
-                                printf("%ld*%s**%ld", nmod_poly_get_coeff_ui(P, k), var, k);
-                        }
-                    }
-                }
-            }
-        }
-        if (i != rdim -1)
-            printf("],\n");
-        else
-            printf("]");
-    }
-    printf("]\n");
-}
-
-void nmod_mat_print_sage(const nmod_mat_t mat)
+void nmod_poly_mat_print_pretty(const nmod_poly_mat_t mat, const char * var)
 {
     slong rdim = mat->r, cdim = mat->c;
-    printf("[");
+
+    flint_printf("<%wd x %wd matrix over Z/nZ[%s]>\n", mat->r, mat->c, var);
+    flint_printf("[");
     for (slong i = 0; i < rdim; i++)
     {
-        printf("[");
+        flint_printf("[");
         for (slong j = 0; j < cdim; j++)
         {
-            if (j != cdim - 1)
-                printf("%ld, ",  nmod_mat_get_entry(mat, i, j));
-            else
-                printf("%ld",  nmod_mat_get_entry(mat, i, j));
-
+            nmod_poly_print_pretty(nmod_poly_mat_entry(mat, i, j), var);
+            if (j+1 < cdim)
+                flint_printf(", ");
         }
         if (i != rdim -1)
-            printf("],\n");
+            flint_printf("],\n");
         else
-            printf("]");
+            flint_printf("]");
     }
-    printf("]\n");
+    flint_printf("]\n");
 }
 
-void slong_mat_print(const slong *mat, slong rdim, slong cdim)
-{
-    printf("[");
-    for (slong i = 0; i < rdim; i++)
-    {
-        printf("[");
-        for (slong j = 0; j < cdim; j++)
-        {
-            if (j != cdim - 1)
-                printf("%ld, ", *(mat + (i * rdim) + j));
-            else
-                printf("%ld", *(mat + (i * rdim) + j));
 
-        }
-        if (i != rdim -1)
-            printf("],\n");
-        else
-            printf("]");
-    }
-    printf("]\n");
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* PRETTY PRINTING DEGREE MATRIX                              */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+void nmod_poly_mat_nmod_poly_mat_degree_matrix_print_pretty(const nmod_poly_mat_t mat)
+{
+    fmpz_mat_t dmat;
+    fmpz_mat_init(dmat, mat->r, mat->c);
+    nmod_poly_mat_degree_matrix(dmat, mat);
+    fmpz_mat_print_pretty(dmat);
+    fmpz_mat_clear(dmat);
+}
+
+void nmod_poly_mat_nmod_poly_mat_degree_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
+                                               const slong *shift,
+                                               orientation_t row_wise)
+{
+    fmpz_mat_t dmat;
+    fmpz_mat_init(dmat, mat->r, mat->c);
+    nmod_poly_mat_degree_matrix_shifted(dmat, mat, shift, row_wise);
+    fmpz_mat_print_pretty(dmat);
+    fmpz_mat_clear(dmat);
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* PRETTY PRINTING LEADING MATRIX                             */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+void nmod_poly_mat_nmod_poly_mat_leading_matrix_print_pretty(const nmod_poly_mat_t mat, orientation_t row_wise)
+{
+    nmod_mat_t lmat;
+    nmod_mat_init(lmat, mat->r, mat->c, mat->modulus);
+    nmod_poly_mat_leading_matrix(lmat, mat, row_wise);
+    nmod_mat_print_pretty(lmat);
+    nmod_mat_clear(lmat);
+}
+
+void nmod_poly_mat_nmod_poly_mat_leading_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
+                                               const slong * shift,
+                                               orientation_t row_wise)
+{
+    nmod_mat_t lmat;
+    nmod_mat_init(lmat, mat->r, mat->c, mat->modulus);
+    nmod_poly_mat_leading_matrix_shifted(lmat, mat, shift, row_wise);
+    nmod_mat_print_pretty(lmat);
+    nmod_mat_clear(lmat);
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */

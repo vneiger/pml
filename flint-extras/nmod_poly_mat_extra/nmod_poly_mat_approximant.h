@@ -11,8 +11,7 @@
 #ifndef NMOD_POLY_MAT_APPROXIMANT_H
 #define NMOD_POLY_MAT_APPROXIMANT_H
 
-// TODO [urgent] change name
-#define INITIAL_CASE_BOUND 32
+#define PMBASIS_THRES 32
 
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly_mat.h>
