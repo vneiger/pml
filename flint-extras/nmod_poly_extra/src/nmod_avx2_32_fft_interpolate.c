@@ -59,6 +59,10 @@ static void _inv_fft_32_3(mp_hlimb_t * x, mp_hlimb_t * powers_inv_w, mp_hlimb_t 
     ulong r, i;
     mp_hlimb_t * x0, * x1, * x2;
 
+    // new 
+    powers_inv_w = powers_inv_w + 4;
+    i_powers_inv_w = i_powers_inv_w + 4;
+    
     w = powers_inv_w[1];
     iw = i_powers_inv_w[1];
 
@@ -88,8 +92,10 @@ static void _inv_fft_32_3(mp_hlimb_t * x, mp_hlimb_t * powers_inv_w, mp_hlimb_t 
         x2[3] = (v1 + p2) - v3; // [0, 4p) 
     }
     
-    powers_inv_w += 2;
-    i_powers_inv_w += 2;
+    powers_inv_w -= 4;
+    i_powers_inv_w -= 4;
+    /* powers_inv_w += 2; */
+    /* i_powers_inv_w += 2; */
 
     // last layer, with full reduction
     x0 = x;
@@ -124,13 +130,16 @@ static void _inv_fft_32_k(mp_hlimb_t * x, mp_hlimb_t * powers_inv_w, mp_hlimb_t 
                           const nmod_t mod, const ulong k)
 {
     mp_hlimb_t w, iw, p, p2;
-    ulong N, M;
-    ulong r, i, nb;
+    ulong N, M, r, i, nb;
     mp_hlimb_t * x0, * x1, * x2;
     __m256i avx_p, avx_p_minus_1, avx_p2, avx_p2_minus_1;
 
     N = 4;
     M = 1L << (k-2);    // number of blocks of size 4 = n/4
+
+    powers_inv_w = powers_inv_w + (1 << k) - 4;
+    i_powers_inv_w = i_powers_inv_w + (1 << k) - 4;
+
     w = powers_inv_w[1];
     iw = i_powers_inv_w[1];
 
@@ -164,8 +173,8 @@ static void _inv_fft_32_k(mp_hlimb_t * x, mp_hlimb_t * powers_inv_w, mp_hlimb_t 
         x2[3] = (v1 + p2) - v3; // [0, 4p) 
     }
     
-    powers_inv_w += 2;
-    i_powers_inv_w += 2;
+    powers_inv_w -= 4;
+    i_powers_inv_w -= 4;
     N = 8;
     M /= 2;
 
@@ -186,8 +195,8 @@ static void _inv_fft_32_k(mp_hlimb_t * x, mp_hlimb_t * powers_inv_w, mp_hlimb_t 
             x1[i] = (u0 + p2) - u1; // [0,4p)
         }
     }
-    powers_inv_w += 4;
-    i_powers_inv_w += 4;
+    powers_inv_w -= 8;
+    i_powers_inv_w -= 8;
     N = 16;
     M /= 2;
     
@@ -225,8 +234,8 @@ static void _inv_fft_32_k(mp_hlimb_t * x, mp_hlimb_t * powers_inv_w, mp_hlimb_t 
                 x1 += 8;
             }
         }
-        powers_inv_w += N/2;
-        i_powers_inv_w += N/2;
+        powers_inv_w -= N;
+        i_powers_inv_w -= N;
     }
 
     // last layer, with full reduction
@@ -544,13 +553,13 @@ void nmod_avx2_32_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_32_f
             _inv_fft_32_1(x_32, F->mod);
             break;
         case 2:
-            _inv_fft_32_2(x_32, F->powers_inv_w[2][3], F->i_powers_inv_w[2][3], F->mod);
+            _inv_fft_32_2(x_32, F->powers_inv_w_t[2][1], F->i_powers_inv_w_t[2][1], F->mod);
             break;
         case 3:
-            _inv_fft_32_3(x_32, F->powers_inv_w[3]+2, F->i_powers_inv_w[3]+2, F->mod);
+            _inv_fft_32_3(x_32, F->powers_inv_w_t[3], F->i_powers_inv_w_t[3], F->mod);
             break;
         default:
-            _inv_fft_32_k(x_32, F->powers_inv_w[k]+2, F->i_powers_inv_w[k]+2, F->mod, k);
+            _inv_fft_32_k(x_32, F->powers_inv_w_t[k], F->i_powers_inv_w_t[k], F->mod, k);
             break;
     }
 
@@ -608,13 +617,13 @@ void nmod_avx2_32_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_32_f
                 _inv_fft_32_1(wk, F->mod);
                 break;
             case 2:
-                _inv_fft_32_2(wk, F->powers_inv_w[2][3], F->i_powers_inv_w[2][3], F->mod);
+                _inv_fft_32_2(wk, F->powers_inv_w_t[2][1], F->i_powers_inv_w_t[2][1], F->mod);
                 break;
             case 3:
-                _inv_fft_32_3(wk, F->powers_inv_w[3]+2, F->i_powers_inv_w[3]+2, F->mod);
+                _inv_fft_32_3(wk, F->powers_inv_w_t[3], F->i_powers_inv_w_t[3], F->mod);
                 break;
             default:
-                _inv_fft_32_k(wk, F->powers_inv_w[k]+2, F->i_powers_inv_w[k]+2, F->mod, k);
+                _inv_fft_32_k(wk, F->powers_inv_w_t[k], F->i_powers_inv_w_t[k], F->mod, k);
                 break;
         }
         
@@ -647,5 +656,187 @@ void nmod_avx2_32_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_32_f
     free(tmp);
     _nmod_poly_normalise(poly);
 }
+
+
+/*-----------------------------------------------------------*/
+/* transpose tft in length N                                 */
+/*-----------------------------------------------------------*/
+void nmod_avx2_32_tft_evaluate_t(mp_ptr x, mp_srcptr A, const nmod_32_fft_t F, const ulong N)
+{
+    ulong n, a, b, b2, t, i, j, k, ell, lambda;
+    mp_hlimb_t p;
+    mp_hlimb_t * wk, * wk2, * powers_rho, * i_powers_rho;
+    
+    if (N == 0)
+    {
+        return;
+    }
+    
+    if (N == 1)
+    {
+        x[0] = A[0];
+        return;
+    }
+
+    wk = (mp_hlimb_t *) aligned_alloc(32, 8*N > 32 ? 8*N : 32);
+    
+    for (i = 0; i < N; i++)
+    {
+        wk[i] = A[i];
+        wk[i + N] = 0;
+    }
+
+    p = F->mod.n;
+    k = 0;
+    a = 1;
+    n = N;
+    
+    while (a <= n/2)
+    {
+        k++;
+        a <<= 1;
+    }
+
+    wk2 = wk;
+    do
+    {
+        // special cases
+        switch(k)
+        {
+            case 0:
+                break;
+            case 1:
+                _inv_fft_32_1(wk, F->mod);
+                break;
+            case 2:
+                _inv_fft_32_2(wk, F->powers_w[2][1], F->i_powers_w[2][1], F->mod);
+                break;
+            case 3:
+                _inv_fft_32_3(wk, F->powers_w[3], F->i_powers_w[3], F->mod);
+                break;
+            default:
+                _inv_fft_32_k(wk, F->powers_w[k], F->i_powers_w[k], F->mod, k);
+                break;
+        }
+        
+        powers_rho = F->powers_w[k+1];
+        i_powers_rho = F->i_powers_w[k+1];
+        for (i = 0; i < a; i++)
+        {
+            wk[i] = mul_mod_precon_32(wk[i], powers_rho[i], p, i_powers_rho[i]);
+        }
+        wk += a;
+        n = n-a;
+        
+        a = 1;
+        k = 0;
+        while (a <= n/2)
+        {
+            k++;
+            a <<= 1;
+        }
+    }
+    while (n != 0);
+    wk = wk2;
+
+    
+    a = 1;
+    k = 0;
+    while (! (a & N))
+    {
+        k++;
+        a <<= 1;
+    }
+    
+    for (i = 0; i < a; i++)
+    {
+        if (wk[N-a+i] != 0) // neg_mod
+        {
+            wk[N+i] = p - wk[N-a+i];
+        }
+    }
+    
+    n = a;
+    while (n != N)
+    {
+        b = a;
+        ell = k;
+        a <<= 1;
+        k++;
+        while (!(a & N))
+        {
+            a <<= 1;
+            k++;
+        }
+        
+        b2 = b << 1;
+        lambda = 1L << (k-ell-1);
+
+        n = n + a;
+        t = b2;
+        // we have to deal with i=0 separately
+        // (since otherwise we would erase the source)
+        switch(b)
+        {
+            case 1:
+                for (i = 1; i < lambda; i++)
+                {
+                    mp_limb_t u, v;
+                    u = wk[N-n+t];
+                    v = wk[N-n+a];
+                    wk[N-n+t] = n_addmod(v, u, p);
+                    wk[N-n+a+t] = n_submod(v, u, p);
+                    t++;
+                    u = wk[N-n+t];
+                    v = wk[N-n+a+1];
+                    wk[N-n+t] = n_addmod(v, u, p);
+                    wk[N-n+a+t] = n_submod(v, u, p);
+                    t++;
+                }
+                
+                mp_limb_t u, v;
+                u = wk[N-n];
+                v = wk[N-n+a];
+                wk[N-n] = n_addmod(v, u, p);
+                wk[N-n+a] = n_submod(v, u, p);
+                u = wk[N-n+1];
+                v = wk[N-n+a+1];
+                wk[N-n+1] = n_addmod(v, u, p);
+                wk[N-n+a+1] = n_submod(v, u, p);
+                break;
+            case 2:
+            default:
+                for (i = 1; i < lambda; i++)
+                {
+                    for (j = 0; j < b2; j++)
+                    {
+                        mp_limb_t u, v;
+                        u = wk[N-n+t];
+                        v = wk[N-n+a+j];
+                        wk[N-n+t] = n_addmod(v, u, p);
+                        wk[N-n+a+t] = n_submod(v, u, p);
+                        t++;
+                    }
+                }
+                for (j = 0; j < b2; j++)
+                {
+                    mp_limb_t u, v;
+                    u = wk[N-n+j];
+                    v = wk[N-n+a+j];
+                    wk[N-n+j] = n_addmod(v, u, p);
+                    wk[N-n+a+j] = n_submod(v, u, p);
+                }
+        }
+    }
+    
+    for (i = 0; i < N; i++)
+    {
+        x[i] = wk[i];
+    }
+
+    free(wk);
+}
+
+
 
 #endif

@@ -53,8 +53,10 @@ static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const mp_ptr i_po
 
     N = 4;
     M = 1L << (k-2);    // number of blocks of size 4 = n/4
-    powers_inv_w = powers_inv_w_in;
-    i_powers_inv_w = i_powers_inv_w_in;
+
+    powers_inv_w = powers_inv_w_in + (1 << k) - 4;
+    i_powers_inv_w = i_powers_inv_w_in + (1 << k) - 4;
+    
     w = powers_inv_w[1];
     iw = i_powers_inv_w[1];
 
@@ -83,8 +85,9 @@ static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const mp_ptr i_po
         x2[3] = (v1 + p2) - v3; // [0, 4p) 
     }
     
-    powers_inv_w += N/2;
-    i_powers_inv_w += N/2;
+    powers_inv_w -= N;
+    i_powers_inv_w -= N;
+    
     N *= 2;
     M /= 2;
     
@@ -113,8 +116,8 @@ static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const mp_ptr i_po
                 x1[i+1] = (u0 + p2) - u1; // [0,4p)
             }
         }
-        powers_inv_w += N/2;
-        i_powers_inv_w += N/2;
+        powers_inv_w -= N;
+        i_powers_inv_w -= N;
     }
 
     // last layer, with full reduction
@@ -305,10 +308,10 @@ void nmod_64_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_64_fft_t 
             _inv_fft_1(poly->coeffs, F->mod);
             break;
         case 2:
-            _inv_fft_2(poly->coeffs, F->powers_inv_w[2][3], F->mod);
+            _inv_fft_2(poly->coeffs, F->powers_inv_w_t[2][1], F->mod);
             break;
         default:
-            _inv_fft_k(poly->coeffs, F->powers_inv_w[k]+2, F->i_powers_inv_w[k]+2, F->mod, k);
+            _inv_fft_k(poly->coeffs, F->powers_inv_w_t[k], F->i_powers_inv_w_t[k], F->mod, k);
             break;
     }
  
@@ -363,10 +366,10 @@ void nmod_64_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_64_fft_t 
                 _inv_fft_1(wk, F->mod);
                 break;
             case 2:
-                _inv_fft_2(wk, F->powers_inv_w[2][3], F->mod);
+                _inv_fft_2(wk, F->powers_inv_w_t[2][1], F->mod);
                 break;
             default:
-                _inv_fft_k(wk, F->powers_inv_w[k]+2, F->i_powers_inv_w[k]+2, F->mod, k);
+                _inv_fft_k(wk, F->powers_inv_w_t[k], F->i_powers_inv_w_t[k], F->mod, k);
                 break;
         }
         
@@ -455,10 +458,10 @@ void nmod_64_tft_evaluate_t(mp_ptr x, mp_srcptr A, const nmod_64_fft_t F, const 
                 _inv_fft_1(wk, F->mod);
                 break;
             case 2:
-                _inv_fft_2(wk, F->powers_w_t[2][3], F->mod);
+                _inv_fft_2(wk, F->powers_w[2][1], F->mod);
                 break;
             default:
-                _inv_fft_k(wk, F->powers_w_t[k]+2, F->i_powers_w_t[k]+2, F->mod, k);
+                _inv_fft_k(wk, F->powers_w[k], F->i_powers_w[k], F->mod, k);
                 break;
         }
         
@@ -579,11 +582,4 @@ void nmod_64_tft_evaluate_t(mp_ptr x, mp_srcptr A, const nmod_64_fft_t F, const 
 
     _nmod_vec_clear(wk);
 }
-
-
-
-
-
-
-
 #endif

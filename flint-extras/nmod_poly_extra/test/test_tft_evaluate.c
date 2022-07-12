@@ -33,8 +33,6 @@ static long find_length(const long nn)
     return i;
 }
 
-
-
 /*------------------------------------------------------------*/
 /* returns the powers of 2 ni such that                       */
 /*    n = sum_i n_i                                           */
@@ -133,7 +131,7 @@ ulong bit_reverse(ulong u, ulong nb)
 }
 
 /*------------------------------------------------------------*/
-/* FFT evaluation, compared to naive evaluation               */
+/* TFT evaluation, compared to naive evaluation               */
 /*------------------------------------------------------------*/
 void check()
 {

@@ -18,9 +18,7 @@ void nmod_fft_init_set(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
     F->mod = mod;
 
     F->powers_w = flint_malloc(sizeof(mp_ptr) * (order + 1));
-    F->powers_inv_w = flint_malloc(sizeof(mp_ptr) * (order + 1));
     F->powers_inv_w_t = flint_malloc(sizeof(mp_ptr) * (order + 1));
-    F->powers_w_t = flint_malloc(sizeof(mp_ptr) * (order + 1));
 
     for (k = 0; k <= order; k++)
     {
@@ -40,15 +38,11 @@ void nmod_fft_init_set(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
         K = 1L << k;
         F->powers_w[k] = _nmod_vec_init(K);
         F->powers_inv_w_t[k] = _nmod_vec_init(K);
-        F->powers_inv_w[k] = _nmod_vec_init(K);
-        F->powers_w_t[k] = _nmod_vec_init(K);
         
         if (K == 1)
         {
             F->powers_w[k][0] = 1;
             F->powers_inv_w_t[k][0] = 1;
-            F->powers_inv_w[k][0] = 1;
-            F->powers_w_t[k][0] = 1;
         }
         else
         {
@@ -67,10 +61,8 @@ void nmod_fft_init_set(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
                 for (i = 0; i < K; i++)
                 {
                     F->powers_w[k][nb] = wri;
-                    F->powers_w_t[k][K + i] = wri;
                     wri = nmod_mul(wri, wr, mod);
                     F->powers_inv_w_t[k][nb] = inv_wri;
-                    F->powers_inv_w[k][K + i] = inv_wri;
                     inv_wri = nmod_mul(inv_wri, inv_wr, mod);
                     nb++;
                 }
@@ -100,7 +92,7 @@ void nmod_fft_init_set(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
         
         K = 1L << k;
         F->powers_inv_w_over_2[k] = _nmod_vec_init(K);
-        src = F->powers_inv_w[k+1] + K;
+        src = F->powers_inv_w_t[k+1];
         
         for (i = 0; i < K; i++)
         {

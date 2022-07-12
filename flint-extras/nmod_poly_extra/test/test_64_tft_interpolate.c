@@ -4,139 +4,13 @@
 #include "nmod_extra.h"
 #include "nmod_poly_extra.h"
 
-/*-----------------------------------------*/
-/* returns the number of bits = 1 in n     */
-/*-----------------------------------------*/
-static long find_length(const long nn)
-{
-    long n, a, i;
-    n = nn;
-    a = 1;
-    i = 1;
-    while (a <= n/2)
-    {
-        a <<= 1;
-    }
-    
-    while (a != n)
-    {
-        long b = a >> 1;
-        while (! (n & b))
-        {
-            b >>= 1;
-        }
-        i++;
-        n -= a;
-        a = b;
-    }
-    
-    return i;
-}
-
-
-
-/*-----------------------------------------*/
-/* returns the powers of 2 ni such that    */
-/*    n = sum_i n_i                        */
-/* decreasing order, the last entry is 0   */
-/*-----------------------------------------*/
-void split_degrees(long * vec, const long nn)
-{
-    long i, j, n, a;
-    
-    i = find_length(nn);
-    for (j = 0; j <= i; j++)
-    {
-        vec[j] = 0;
-    }
-    
-    n = nn;
-    a = 1;
-    i = 0;
-    while (a <= n/2)
-    {
-        a <<= 1;
-    }
-    vec[i++] = a;
-    
-    while (a != n)
-    {
-        long b;
-        b = a >> 1;
-        while (! (n & b))
-        {
-            b >>= 1;
-        }
-        n -= a;
-        a = b;
-        vec[i++] = a;
-    }
-}
-
-/*-----------------------------------------*/
-/* returns the exponents ki such that      */
-/*    n = sum_i 2^k_i                      */
-/*-----------------------------------------*/
-void split_exponents(long * vec, const long nn)
-{
-    long i, j, n, a;
-
-    i = find_length(nn);
-    for (j = 0; j <= i; j++)
-    {
-        vec[j] = 0;
-    }
-    vec[i] = -1;
-    
-    n = nn;
-    a = 1;
-    i = 0;
-    j = 0;
-    while (a <= n/2)
-    {
-        a <<= 1;
-        j++;
-    }
-    vec[i++] = j;
-    
-    while (a != n)
-    {
-        long k, b;
-        k = j-1;
-        b = a >> 1;
-        while (! (n & b))
-        {
-            k--;
-            b >>= 1;
-        }
-        n -= a;
-        a = b;
-        vec[i++] = k;
-        j = k;
-    }
-}
-
 /*------------------------------------------------------------*/
-/* returns reverse_nb(u)                                      */
-/*------------------------------------------------------------*/
-ulong bit_reverse(ulong u, ulong nb)
-{
-    ulong res, i;
-    res = 0;
-    for (i = 0; i < nb; i++)
-    {
-        res <<= 1;
-        res |= (u & 1);
-        u >>= 1;
-    }
-    return res;
-}
-
-/*------------------------------------------------------------*/
-/* FFT evaluation, compared to naive evaluation               */
+/* TFT evaluation, then interpolation                         */
+/* checks if matches input poly                               */
 /*------------------------------------------------------------*/
 void check()
 {
+#ifdef HAS_INT128
     ulong order_w0, order_max, nmin, nmax, n, i;
     flint_rand_t state;
     mp_limb_t p, w0, w;
@@ -183,6 +57,7 @@ void check()
         
     nmod_64_fft_clear(F);
     flint_randclear(state);
+#endif
 }
 
 

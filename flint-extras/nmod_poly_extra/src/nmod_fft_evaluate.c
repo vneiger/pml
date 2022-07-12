@@ -253,8 +253,6 @@ void nmod_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_fft_t F, con
 }
 
 
-
-
 /*-----------------------------------------------------------*/
 /* transpose inverse tft in length N                         */
 /*-----------------------------------------------------------*/

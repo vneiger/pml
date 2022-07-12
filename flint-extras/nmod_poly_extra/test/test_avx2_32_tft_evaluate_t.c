@@ -1,11 +1,13 @@
 #include <assert.h>
 #include <flint/flint.h>
+#include <flint/nmod_mat.h>
 
 #include "nmod_extra.h"
 #include "nmod_poly_extra.h"
 
 /*------------------------------------------------------------*/
-/* FFT evaluation, compared to naive evaluation               */
+/* TFT evaluation_t                                           */
+/* builds the matrix of TFT evaluation to compare results     */
 /*------------------------------------------------------------*/
 void check()
 {
@@ -15,7 +17,7 @@ void check()
     mp_limb_t p, w0, w;
     nmod_t mod;
     nmod_32_fft_t F;
-    mp_ptr val;
+    mp_ptr val, val2, val3;
     nmod_poly_t P;
     
     flint_randinit(state);
@@ -31,47 +33,48 @@ void check()
 
     nmin = 1;
     nmax = 1000;
-    
+
     for (long n = nmin; n < nmax+1; n++)
     {
         slong i, j;
-
-        len = find_length(n);
-
-        
+        nmod_mat_t M;
+        val = _nmod_vec_init(n);
+        val2 = _nmod_vec_init(n);
+        val3 = _nmod_vec_init(n);
         nmod_poly_init2(P, p, n);
+        nmod_mat_init(M, n, n, p);
+        
         for (i = 0; i < n; i++)
         {
-            nmod_poly_set_coeff_ui(P, i, n_randtest(state) % p);
+            nmod_poly_zero(P);
+            nmod_poly_set_coeff_ui(P, i, 1);
+            nmod_avx2_32_tft_evaluate(val, P, F, n);
+            for (j = 0; j < n; j++)
+            {
+                nmod_mat_set_entry(M, j, i, val[j]);
+            }
         }
         
-        val = _nmod_vec_init(n);
-                
-        nmod_avx2_32_tft_evaluate(val, P, F, n);
-
-        i = 0;
-        shift = 0;
-        do
+        for (i = 0; i < n; i++)
         {
-            slong e, j;
-            mp_limb_t rho, g;
-            
-            e = exponents[i];
+            val[i] = n_randtest(state) % p;
+        }
 
-            rho = nmod_pow_ui(w, 1L << (order_max-e-1), F->mod);
-            g = nmod_pow_ui(w, 1L << (order_max-e), F->mod);
+        nmod_mat_nmod_vec_mul(val2, val, n, M);
+        nmod_avx2_32_tft_evaluate_t(val3, val, F, n);
 
-            for (j = 0; j < (1L << e); j++)
-            {
-                assert (val[j + shift] == nmod_poly_evaluate_nmod(P, nmod_mul(rho, nmod_pow_ui(g, bit_reverse(j, e), F->mod), F->mod)));
-            }
-            shift += (1L << e);
-            i++;
-        } while (exponents[i] != -1);
-
+        for (i = 0; i < n; i++)
+        {
+            assert (val2[i]==val3[i]);
+        }
+        
+        nmod_mat_clear(M);
         nmod_poly_clear(P);
         _nmod_vec_clear(val);
+        _nmod_vec_clear(val2);
+        _nmod_vec_clear(val3);
     }
+
         
     nmod_32_fft_clear(F);
     flint_randclear(state);

@@ -35,10 +35,6 @@ typedef struct
     mp_ptr * powers_w;
     mp_ptr * powers_inv_w_t;  // same table for 1/w as for w
 
-    mp_ptr * powers_inv_w;  // same table for 1/w, but the order of the rows is reversed
-    mp_ptr * powers_w_t; // table for w with orders of the rows reversed
-
-    
     // length order+1, with powers_inv_2[i] = 1/2^i 
     mp_ptr powers_inv_2;
     // length order, level k has length 2^k with entries 1/w{k+1}^i/2^k 
@@ -125,14 +121,8 @@ typedef struct
     mp_ptr * powers_w; // the powers of the successive roots, as in nmod_fft_t
     mp_ptr * i_powers_w; // the same, after precomputation
 
-    mp_ptr * powers_inv_w; // the inverse powers of the successive roots 
-    mp_ptr * i_powers_inv_w; // the same, after precomputation
-
     mp_ptr * powers_inv_w_t;  // same table for 1/w as for w
     mp_ptr * i_powers_inv_w_t;  // same table for 1/w as for w
-
-    mp_ptr * powers_w_t; // table for w with orders of the rows reversed
-    mp_ptr * i_powers_w_t; // table for w with orders of the rows reversed
     
     mp_ptr * powers_r; // the powers of rho such that rho^2 = w
     mp_ptr * i_powers_r; // the same, after precomputation
@@ -218,12 +208,6 @@ typedef struct
     mp_hlimb_t ** powers_w; // the powers of the successive roots, ordered for fft_k
     mp_hlimb_t ** i_powers_w; // the same, after precomputation
 
-    mp_hlimb_t ** powers_inv_w; // the inverse powers of the successive roots, ordered for inv_fft_k
-    mp_hlimb_t ** i_powers_inv_w; // the same, after precomputation
-
-    mp_hlimb_t ** powers_w_t; // the powers of the successive roots, ordered for inv_fft_k
-    mp_hlimb_t ** i_powers_w_t; // the same, after precomputation
-
     mp_hlimb_t ** powers_inv_w_t; // the inverse powers of the successive roots, ordered for fft_k
     mp_hlimb_t ** i_powers_inv_w_t; // the same, after precomputation
 
@@ -286,15 +270,15 @@ void nmod_avx2_32_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32_f
 /*------------------------------------------------------------*/
 void nmod_avx2_32_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_32_fft_t F, const ulong N);
 
-/* /\*-----------------------------------------------------------*\/ */
-/* /\* transpose tft in length N                                 *\/ */
-/* /\*-----------------------------------------------------------*\/ */
-/* void nmod_avx2_32_tft_evaluate_t(mp_ptr x, mp_srcptr A, const nmod_32_fft_t F, const ulong N); */
+/*-----------------------------------------------------------*/
+/* transpose tft in length N                                 */
+/*-----------------------------------------------------------*/
+void nmod_avx2_32_tft_evaluate_t(mp_ptr x, mp_srcptr A, const nmod_32_fft_t F, const ulong N);
 
-/* /\*-----------------------------------------------------------*\/ */
-/* /\* transpose inverse tft in length N                         *\/ */
-/* /\*-----------------------------------------------------------*\/ */
-/* void nmod_avx2_32_tft_interpolate_t(mp_ptr x, mp_srcptr A, const nmod_32_fft_t F, const ulong N); */
+/*-----------------------------------------------------------*/
+/* transpose inverse tft in length N                         */
+/*-----------------------------------------------------------*/
+void nmod_avx2_32_tft_interpolate_t(mp_ptr x, mp_srcptr A, const nmod_32_fft_t F, const ulong N);
 
 #endif
 

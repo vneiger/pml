@@ -4,9 +4,9 @@
 #include "nmod_extra.h"
 #include "nmod_poly_extra.h"
 
-/*-----------------------------------------*/
-/* returns the number of bits = 1 in n     */
-/*-----------------------------------------*/
+/*------------------------------------------------------------*/
+/* returns the number of bits = 1 in n                        */
+/*------------------------------------------------------------*/
 static long find_length(const long nn)
 {
     long n, a, i;
@@ -33,13 +33,11 @@ static long find_length(const long nn)
     return i;
 }
 
-
-
-/*-----------------------------------------*/
-/* returns the powers of 2 ni such that    */
-/*    n = sum_i n_i                        */
-/* decreasing order, the last entry is 0   */
-/*-----------------------------------------*/
+/*------------------------------------------------------------*/
+/* returns the powers of 2 ni such that                       */
+/*    n = sum_i n_i                                           */
+/* decreasing order, the last entry is 0                      */
+/*------------------------------------------------------------*/
 void split_degrees(long * vec, const long nn)
 {
     long i, j, n, a;
@@ -73,10 +71,10 @@ void split_degrees(long * vec, const long nn)
     }
 }
 
-/*-----------------------------------------*/
-/* returns the exponents ki such that      */
-/*    n = sum_i 2^k_i                      */
-/*-----------------------------------------*/
+/*------------------------------------------------------------*/
+/* returns the exponents ki such that                         */
+/*    n = sum_i 2^k_i                                         */
+/*------------------------------------------------------------*/
 void split_exponents(long * vec, const long nn)
 {
     long i, j, n, a;

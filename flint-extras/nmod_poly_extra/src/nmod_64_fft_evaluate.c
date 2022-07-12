@@ -185,7 +185,8 @@ static void _fft_k(mp_ptr x, const mp_ptr powers_w_in, const mp_ptr i_powers_w_i
 /* input/output has length N                                 */
 /* tmp has length 2N, all zero                               */
 /*-----------------------------------------------------------*/
-static void CRT_t(mp_ptr x, mp_ptr tmp, ulong n, mp_limb_t p)
+static inline
+void CRT_t(mp_ptr x, mp_ptr tmp, ulong n, mp_limb_t p)
 {
     ulong a, b, b2, n2, i, t, nn;
     mp_limb_t half;

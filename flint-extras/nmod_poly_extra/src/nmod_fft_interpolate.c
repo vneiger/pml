@@ -11,10 +11,12 @@ static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const nmod_t mod,
     ulong N, M;
     ulong r;
  
-    powers_inv_w = powers_inv_w_in;
+
     N = 2;
     M = (1L << k) >> 1;    // number of blocks of size 4 = N/4
-
+    
+    powers_inv_w = powers_inv_w_in + (M + M - 2);
+    
     for (; M >= 1; N *= 2, M /= 2)
     {
         mp_ptr x0, x1;
@@ -35,7 +37,7 @@ static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const nmod_t mod,
                 x1[i] = v1;
             }
         }
-        powers_inv_w += N/2;
+        powers_inv_w -= N;
     }
 }
 
@@ -151,7 +153,7 @@ void nmod_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_fft_t F, con
         poly->coeffs[i] = x[i];
     }
 
-    _inv_fft_k(poly->coeffs, F->powers_inv_w[k] + 1, F->mod, k);
+    _inv_fft_k(poly->coeffs, F->powers_inv_w_t[k], F->mod, k);
             
     for (i = 0; i < N; i++)
     {
@@ -196,7 +198,7 @@ void nmod_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_fft_t F, con
 
     do
     {
-        _inv_fft_k(wk, F->powers_inv_w[k] + 1, F->mod, k);
+        _inv_fft_k(wk, F->powers_inv_w_t[k], F->mod, k);
 
         powers = F->powers_inv_w_over_2[k];
         for (i = 0; i < a; i++)
@@ -228,9 +230,6 @@ void nmod_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_fft_t F, con
     _nmod_vec_clear(wk);
     _nmod_poly_normalise(poly);
 }
-
-
-
 
 
 /*-----------------------------------------------------------*/
@@ -276,7 +275,7 @@ void nmod_tft_evaluate_t(mp_ptr x, mp_srcptr A, const nmod_fft_t F, const ulong 
     do
     {
         powers_rho = F->powers_w[k+1];
-        _inv_fft_k(wk, F->powers_w_t[k]+1, F->mod, k);
+        _inv_fft_k(wk, F->powers_w[k], F->mod, k);
         
         for (i = 0; i < a; i++)
         {
