@@ -179,6 +179,92 @@ static void _fft_k(mp_ptr x, const mp_ptr powers_w_in, const mp_ptr i_powers_w_i
 
 }
 
+/*-----------------------------------------------------------*/
+/* transpose CRT (= decomposition of sequences)              */
+/* in place                                                  */
+/* input/output has length N                                 */
+/* tmp has length 2N, all zero                               */
+/*-----------------------------------------------------------*/
+static void CRT_t(mp_ptr x, mp_ptr tmp, ulong n, mp_limb_t p)
+{
+    ulong a, b, b2, n2, i, t, nn;
+    mp_limb_t half;
+    
+    nn = n;
+    half = 1 + (p >> 1);
+    
+    if (n <= 1)
+    {
+        return;
+    }
+
+    a = 1;
+    n2 = (nn >> 1);
+    while (a <= n2)
+    {
+        a <<= 1;
+    }
+    
+    while (nn != a)
+    {
+        nn = nn-a;
+        b = 1;
+        n2 = (nn >> 1);
+        while (b <= n2)
+        {
+            b <<= 1;
+        }
+        b2 = b << 1;
+        
+        for (i = 0; i < b; i++)
+        {
+            mp_limb_t u;
+            u = n_addmod(x[i], x[a+i], p);
+            u = (u >> 1) + (u & 1)*half;   // u/2 mod p
+            x[a+i] = u;
+            tmp[i] = u;
+        }
+
+        for (i = b; i < nn; i++)
+        {
+            mp_limb_t u;
+            u = n_addmod(x[i], x[a+i], p);
+            x[a+i] = (u >> 1) + (u & 1)*half;   // u/2 mod p
+        }
+        
+        tmp += b2;
+        x += a;
+        a = b;
+    }
+
+    while (nn != n)
+    {
+        b = a;
+        a <<= 1;
+        b2 = a;
+        while (!(a & n))
+        {
+            a <<= 1;
+        }
+        tmp -= b2;
+        x -= a;
+        
+        for (i = 0; i < b; i++)
+        {
+            tmp[b + i] = n_submod(tmp[i], n_addmod(x[a + i], x[a + i], p), p);
+        }
+        t = 0;
+        while (t < a)
+        {
+            for (i = 0; i < b2; i++, t++)
+            {
+                x[t] = n_submod(x[t], tmp[i], p);
+            }
+        }
+        nn = nn+a;
+    }
+}
+
 
 /*------------------------------------------------------------*/
 /* fft evaluation                                             */
@@ -406,6 +492,93 @@ void nmod_64_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_64_fft_t 
         x[i] = x2[i];
     }
     _nmod_vec_clear(x2);
+}
+
+
+/*-----------------------------------------------------------*/
+/* transpose inverse tft in length N                         */
+/*-----------------------------------------------------------*/
+void nmod_64_tft_interpolate_t(mp_ptr x, mp_srcptr A, const nmod_64_fft_t F, const ulong N)
+{
+    ulong i, n, a, k;
+    mp_limb_t p;
+    mp_ptr wk, wk_bak, wk2, powers, i_powers;
+    
+    if (N == 0)
+    {
+        return;
+    }
+    
+    if (N == 1)
+    {
+        x[0] = A[0];
+        return;
+    }
+
+    wk = _nmod_vec_init(3*N);
+    wk2 = wk + N;
+    wk_bak = wk;
+    
+    for (i = 0; i < N; i++)
+    {
+        wk[i] = A[i];
+    }
+    for (i = 0; i < 2*N; i++)
+    {
+        wk2[i] = 0;
+    }
+
+    p = F->mod.n;
+    CRT_t(wk, wk2, N, p);
+    
+    n = N;
+    a = 1;
+    k = 0;
+    while (a <= n/2)
+    {
+        k++;
+        a <<= 1;
+    }
+    
+    do
+    {
+        powers = F->powers_inv_w_over_2[k];
+        i_powers = F->i_powers_inv_w_over_2[k];
+        for (i = 0; i < a; i++)
+        {
+            wk[i] = mul_mod_precon(wk[i], powers[i], p, i_powers[i]);
+        }
+        switch(k)
+        {
+            case 0:
+                break;
+            case 1:
+                _fft_1(wk, F->mod);
+                break;
+            case 2:
+                _fft_2(wk, F->powers_inv_w_t[2][1], F->mod);
+                break;
+            default:
+                _fft_k(wk, F->powers_inv_w_t[k], F->i_powers_inv_w_t[k], F->mod, k);
+                break;
+        }
+        wk += a;
+        
+        n = n-a;
+        a = 1;
+        k = 0;
+        while (a <= n/2)
+        {
+            k++;
+            a <<= 1;
+        }
+    }
+    while (n != 0);
+    
+    for (i = 0; i < N; i++)
+    {
+        x[i] = wk_bak[i];
+    }
 }
 
 

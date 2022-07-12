@@ -166,6 +166,7 @@ static inline
 void fold_minus(mp_ptr x, mp_ptr s, ulong sz, ulong N, mp_limb_t p)
 {
     ulong i, j;
+    // we don't need sz = 1
     switch(sz)
     {
         case 2:
@@ -209,12 +210,12 @@ void CRT(mp_ptr x, mp_ptr tmp, ulong n, mp_limb_t p)
     mp_limb_t half;
 
     nn = n;
-    half = 1 + (p >> 1);
-        
     if (nn <= 1)
     {
         return;
     }
+
+    half = 1 + (p >> 1);
 
     a = 1L;
     n2 = n >> 1;
@@ -400,6 +401,183 @@ void nmod_64_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_64_fft_t 
     
     _nmod_vec_clear(wk);
     _nmod_poly_normalise(poly);
+}
+
+
+/*-----------------------------------------------------------*/
+/* transpose tft in length N                                 */
+/*-----------------------------------------------------------*/
+void nmod_64_tft_evaluate_t(mp_ptr x, mp_srcptr A, const nmod_64_fft_t F, const ulong N)
+{
+    ulong n, a, b, b2, t, i, j, k, ell, lambda;
+    mp_limb_t p;
+    mp_ptr wk, wk2, powers_rho, i_powers_rho;
+    
+    if (N == 0)
+    {
+        return;
+    }
+    
+    if (N == 1)
+    {
+        x[0] = A[0];
+        return;
+    }
+
+    wk = _nmod_vec_init(2*N);
+    
+    for (i = 0; i < N; i++)
+    {
+        wk[i] = A[i];
+        wk[i + N] = 0;
+    }
+
+    p = F->mod.n;
+    k = 0;
+    a = 1;
+    n = N;
+    
+    while (a <= n/2)
+    {
+        k++;
+        a <<= 1;
+    }
+
+    wk2 = wk;
+    do
+    {
+        // special cases
+        switch(k)
+        {
+            case 0:
+                break;
+            case 1:
+                _inv_fft_1(wk, F->mod);
+                break;
+            case 2:
+                _inv_fft_2(wk, F->powers_w_t[2][3], F->mod);
+                break;
+            default:
+                _inv_fft_k(wk, F->powers_w_t[k]+2, F->i_powers_w_t[k]+2, F->mod, k);
+                break;
+        }
+        
+        powers_rho = F->powers_w[k+1];
+        i_powers_rho = F->i_powers_w[k+1];
+        for (i = 0; i < a; i++)
+        {
+            wk[i] = mul_mod_precon(wk[i], powers_rho[i], p, i_powers_rho[i]);
+        }
+        wk += a;
+        n = n-a;
+        
+        a = 1;
+        k = 0;
+        while (a <= n/2)
+        {
+            k++;
+            a <<= 1;
+        }
+    }
+    while (n != 0);
+    wk = wk2;
+
+    
+    a = 1;
+    k = 0;
+    while (! (a & N))
+    {
+        k++;
+        a <<= 1;
+    }
+    
+    for (i = 0; i < a; i++)
+    {
+        if (wk[N-a+i] != 0) // neg_mod
+        {
+            wk[N+i] = p - wk[N-a+i];
+        }
+    }
+    
+    n = a;
+    while (n != N)
+    {
+        b = a;
+        ell = k;
+        a <<= 1;
+        k++;
+        while (!(a & N))
+        {
+            a <<= 1;
+            k++;
+        }
+        
+        b2 = b << 1;
+        lambda = 1L << (k-ell-1);
+
+        n = n + a;
+        t = b2;
+        // we have to deal with i=0 separately
+        // (since otherwise we would erase the source)
+        switch(b)
+        {
+            case 1:
+                for (i = 1; i < lambda; i++)
+                {
+                    mp_limb_t u, v;
+                    u = wk[N-n+t];
+                    v = wk[N-n+a];
+                    wk[N-n+t] = n_addmod(v, u, p);
+                    wk[N-n+a+t] = n_submod(v, u, p);
+                    t++;
+                    u = wk[N-n+t];
+                    v = wk[N-n+a+1];
+                    wk[N-n+t] = n_addmod(v, u, p);
+                    wk[N-n+a+t] = n_submod(v, u, p);
+                    t++;
+                }
+                
+                mp_limb_t u, v;
+                u = wk[N-n];
+                v = wk[N-n+a];
+                wk[N-n] = n_addmod(v, u, p);
+                wk[N-n+a] = n_submod(v, u, p);
+                u = wk[N-n+1];
+                v = wk[N-n+a+1];
+                wk[N-n+1] = n_addmod(v, u, p);
+                wk[N-n+a+1] = n_submod(v, u, p);
+                break;
+            case 2:
+            default:
+                for (i = 1; i < lambda; i++)
+                {
+                    for (j = 0; j < b2; j++)
+                    {
+                        mp_limb_t u, v;
+                        u = wk[N-n+t];
+                        v = wk[N-n+a+j];
+                        wk[N-n+t] = n_addmod(v, u, p);
+                        wk[N-n+a+t] = n_submod(v, u, p);
+                        t++;
+                    }
+                }
+                for (j = 0; j < b2; j++)
+                {
+                    mp_limb_t u, v;
+                    u = wk[N-n+j];
+                    v = wk[N-n+a+j];
+                    wk[N-n+j] = n_addmod(v, u, p);
+                    wk[N-n+a+j] = n_submod(v, u, p);
+                }
+        }
+    }
+    
+    for (i = 0; i < N; i++)
+    {
+        x[i] = wk[i];
+    }
+
+    _nmod_vec_clear(wk);
 }
 
 

@@ -1,7 +1,8 @@
 #include "nmod_poly_extra.h"
 
 /*------------------------------------------------------------*/
-/*  in-place size 2^k inverse butterfly                       */
+/*  in-place size 2^k inverse FFT                             */
+/*  input is in bit-reverse order                             */
 /*------------------------------------------------------------*/
 static void _inv_fft_k(mp_ptr x, const mp_ptr powers_inv_w_in, const nmod_t mod, const ulong k)
 {
@@ -167,7 +168,7 @@ void nmod_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_fft_t F, con
 /*------------------------------------------------------------*/
 void nmod_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_fft_t F, const ulong N)
 {
-    ulong i, nn, k, aa;
+    ulong i, nn, k, a;
     mp_ptr wk, wk2, powers;
         
     nmod_poly_fit_length(poly, N);
@@ -185,33 +186,33 @@ void nmod_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_fft_t F, con
     wk2 = wk;
     nn = N;
     k = 0;
-    aa = 1;
+    a = 1;
     
-    while (aa <= nn/2)
+    while (a <= nn/2)
     {
         k++;
-        aa <<= 1;
+        a <<= 1;
     }
 
     do
     {
         _inv_fft_k(wk, F->powers_inv_w[k] + 1, F->mod, k);
-        powers = F->powers_inv_w_over_2[k];
 
-        for (i = 0; i < aa; i++)
+        powers = F->powers_inv_w_over_2[k];
+        for (i = 0; i < a; i++)
         {
             wk[i] = nmod_mul(wk[i], powers[i], F->mod);
         }
         
-        wk += aa;
-        nn = nn-aa;
+        wk += a;
+        nn = nn-a;
         
-        aa = 1;
+        a = 1;
         k = 0;
-        while (aa <= nn/2)
+        while (a <= nn/2)
         {
             k++;
-            aa <<= 1;
+            a <<= 1;
         }
     }
     while (nn != 0);
@@ -227,3 +228,138 @@ void nmod_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_fft_t F, con
     _nmod_vec_clear(wk);
     _nmod_poly_normalise(poly);
 }
+
+
+
+
+
+/*-----------------------------------------------------------*/
+/* transpose tft in length N                                 */
+/*-----------------------------------------------------------*/
+void nmod_tft_evaluate_t(mp_ptr x, mp_srcptr A, const nmod_fft_t F, const ulong N)
+{
+    ulong n, a, b, b2, t, i, j, k, ell, lambda;
+    mp_limb_t p;
+    mp_ptr wk, wk2, powers_rho;
+    
+    if (N == 0)
+    {
+        return;
+    }
+    
+    if (N == 1)
+    {
+        x[0] = A[0];
+        return;
+    }
+
+    wk = _nmod_vec_init(2*N);
+    
+    for (i = 0; i < N; i++)
+    {
+        wk[i] = A[i];
+        wk[i + N] = 0;
+    }
+
+    p = F->mod.n;
+    k = 0;
+    a = 1;
+    n = N;
+    
+    while (a <= n/2)
+    {
+        k++;
+        a <<= 1;
+    }
+
+    wk2 = wk;
+    do
+    {
+        powers_rho = F->powers_w[k+1];
+        _inv_fft_k(wk, F->powers_w_t[k]+1, F->mod, k);
+        
+        for (i = 0; i < a; i++)
+        {
+            wk[i] = nmod_mul(wk[i], powers_rho[i], F->mod);
+        }
+        wk += a;
+        n = n-a;
+        
+        a = 1;
+        k = 0;
+        while (a <= n/2)
+        {
+            k++;
+            a <<= 1;
+        }
+    }
+    while (n != 0);
+    wk = wk2;
+
+    
+    a = 1;
+    k = 0;
+    while (! (a & N))
+    {
+        k++;
+        a <<= 1;
+    }
+    
+    for (i = 0; i < a; i++)
+    {
+        if (wk[N-a+i] != 0) // neg_mod
+        {
+            wk[N+i] = p - wk[N-a+i];
+        }
+    }
+    
+    n = a;
+    while (n != N)
+    {
+        b = a;
+        ell = k;
+        a <<= 1;
+        k++;
+        while (!(a & N))
+        {
+            a <<= 1;
+            k++;
+        }
+        
+        b2 = b << 1;
+        lambda = 1L << (k-ell-1);
+
+        n = n + a;
+        t = b2;
+        // we have to deal with i=0 separately
+        // (since otherwise we would erase the source)
+        for (i = 1; i < lambda; i++)
+        {
+            for (j = 0; j < b2; j++)
+            {
+                mp_limb_t u, v;
+                u = wk[N-n+t];
+                v = wk[N-n+a+j];
+                wk[N-n+t] = n_addmod(v, u, p);
+                wk[N-n+a+t] = n_submod(v, u, p);
+                t++;
+            }
+        }
+        for (j = 0; j < b2; j++)
+        {
+            mp_limb_t u, v;
+            u = wk[N-n+j];
+            v = wk[N-n+a+j];
+            wk[N-n+j] = n_addmod(v, u, p);
+            wk[N-n+a+j] = n_submod(v, u, p);
+        }
+    }
+
+    for (i = 0; i < N; i++)
+    {
+        x[i] = wk[i];
+    }
+
+    _nmod_vec_clear(wk);
+}
+

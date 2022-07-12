@@ -137,6 +137,7 @@ ulong bit_reverse(ulong u, ulong nb)
 /*------------------------------------------------------------*/
 void check()
 {
+#ifdef HAS_INT128
     ulong order_w0, order_max, nmin, nmax;
     flint_rand_t state;
     mp_limb_t p, w0, w;
@@ -210,6 +211,7 @@ void check()
         
     nmod_64_fft_clear(F);
     flint_randclear(state);
+#endif
 }
 
 
