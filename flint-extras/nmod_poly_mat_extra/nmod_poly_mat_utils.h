@@ -111,42 +111,56 @@ void nmod_poly_mat_coefficient_matrix(nmod_mat_t coeff,
  */
 //@{
 
-/** Swap two rows of a polynomial matrix, by swapping pointers to rows. It is
- * assumed that `r` and `s` are valid row indices for `mat` (this is not
- * checked). The case of equality `r==s` is allowed.
+/** Swap two rows of a polynomial matrix. It is assumed that `r` and `s` are
+ * valid row indices for `mat` (this is not checked). The case of equality
+ * `r==s` is allowed. This swaps pointers to rows.
  * \todo describe perm */
 NMOD_POLY_MAT_INLINE void
 nmod_poly_mat_swap_rows(nmod_poly_mat_t mat,
                         slong * perm,
                         slong r, slong s)
 {
+    nmod_poly_struct * tmp;
+    slong t;
+
     if (r != s)
     {
         if (perm)
         {
-            slong t = perm[s];
+            t = perm[s];
             perm[s] = perm[r];
             perm[r] = t;
         }
 
-        nmod_poly_struct * tmp = mat->rows[s];
+        tmp = mat->rows[s];
         mat->rows[s] = mat->rows[r];
         mat->rows[r] = tmp;
     }
 }
 
-/** Swap two columns of a polynomial matrix, by swapping pointers to polynomial
- * entries. It is assumed that `r` and `s` are valid column indices for `mat`
- * (this is not checked). The case of equality `r==s` is allowed.
+/** Invert rows of a polynomial matrix. If `mat` has `m` rows, then its row `0`
+ * is swapped with its row `m-1`, its row `1` is swapped with its row `m-2`,
+ * etc.
+ * \todo describe perm */
+NMOD_POLY_MAT_INLINE void
+nmod_poly_mat_invert_rows(nmod_poly_mat_t mat, slong * perm)
+{
+    for (slong i = 0; i < mat->r/2; i++)
+        nmod_poly_mat_swap_rows(mat, perm, i, mat->r - i - 1);
+}
+
+/** Swap two columns of a polynomial matrix. It is assumed that `r` and `s` are
+ * valid column indices for `mat` (this is not checked). The case of equality
+ * `r==s` is allowed. This swaps pointers to polynomial entries.
  * \todo describe perm */
 NMOD_POLY_MAT_INLINE void
 nmod_poly_mat_swap_cols(nmod_poly_mat_t mat,
                         slong * perm,
                         slong r, slong s)
 {
+    slong t;
     if (r != s)
     {
-        slong t;
         if (perm)
         {
             t = perm[s];
@@ -155,9 +169,45 @@ nmod_poly_mat_swap_cols(nmod_poly_mat_t mat,
         }
 
         for (t = 0; t < mat->r; t++)
+            // TODO expand this to avoid temporaries?
             nmod_poly_swap(mat->rows[t] + r, mat->rows[t] + s);
     }
 }
+
+/** Invert columns of a polynomial matrix. If `mat` has `n` columns, then its
+ * column `0` is swapped with its column `n-1`, its column `1` is swapped with
+ * its column `n-2`, etc.
+ * \todo describe perm */
+NMOD_POLY_MAT_INLINE void
+nmod_poly_mat_invert_columns(nmod_poly_mat_t mat, slong * perm)
+{
+    slong t;
+    slong i;
+    slong c = mat->c;
+    slong k = mat->c/2;
+    nmod_poly_struct tmp;
+
+    if (perm)
+    {
+        for (i =0; i < k; i++)
+        {
+            t = perm[i];
+            perm[i] = perm[c - i];
+            perm[c - i] = t;
+        }
+    }
+
+    for (t = 0; t < mat->r; t++)
+    {
+        for (i = 0; i < k; i++)
+        {
+            tmp = mat->rows[t][i];
+            mat->rows[t][i] = mat->rows[t][c - i - 1];
+            mat->rows[t][c - i - 1] = tmp;
+        }
+    }
+}
+
 
 /** Permute rows of a polynomial matrix `mat` according to `perm`. Only
  * pointers to rows are permuted to limit data movements. 
