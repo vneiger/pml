@@ -9,7 +9,7 @@
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-void coefficient_matrix(nmod_mat_t res, const nmod_poly_mat_t mat, slong degree)
+void nmod_poly_mat_coefficient_matrix(nmod_mat_t res, const nmod_poly_mat_t mat, slong degree)
 {
     for(slong i = 0; i < mat->r; i++)
         for(slong j = 0; j < mat->c; j++)

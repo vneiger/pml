@@ -53,6 +53,7 @@ nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
 // TODO
 
 /** Compute and return the degree of a matrix polynomial `matp` */
+// TODO redundant with functions in nmod_mat_poly ?
 NMOD_POLY_MAT_INLINE slong
 nmod_mat_poly_degree(const nmod_mat_poly_t matp)
 {
@@ -62,6 +63,7 @@ nmod_mat_poly_degree(const nmod_mat_poly_t matp)
 
 
 /** Tests whether `matp` is a constant matrix, that is, of degree 0 */
+// TODO should be in nmod_mat_poly ?
 NMOD_POLY_MAT_INLINE int
 nmod_mat_poly_is_constant(const nmod_mat_poly_t matp)
 {
@@ -79,22 +81,111 @@ nmod_mat_poly_is_constant(const nmod_mat_poly_t matp)
 
 /** @name Setting and getting coefficients
  *
- *  Seeing a polynomial matrix in `Mat<zz_pX>` as a univariate polynomial with
- *  matrix coefficients in `Mat<zz_p>`, these functions allow one to get or set
- *  one of these coefficients, for a given polynomial matrix.
+ *  Seeing a polynomial matrix in `nmod_poly_mat_t` as a univariate polynomial
+ *  with matrix coefficients in `nmod_mat_t`, these functions allow one to get
+ *  or set one of these coefficients, for a given polynomial matrix.
  */
 //@{
 
 /** Sets `coeff` to be the coefficient of `pmat` of degree `degree` */
-void coefficient_matrix(nmod_mat_t coeff,
-                        const nmod_poly_mat_t pmat,
-                        slong degree);
+void nmod_poly_mat_coefficient_matrix(nmod_mat_t coeff,
+                                      const nmod_poly_mat_t pmat,
+                                      slong degree);
 
 /** Sets the coefficient of `pmat` of degree `degree` to be `coeff` */
 // TODO
 //void SetCoeff(Mat<zz_pX> & pmat, long i, const Mat<zz_p> & coeff);
 
 //@} // doxygen group: Setting and getting coefficients
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* SWAP, PERMUTE                                              */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name Swapping and permuting rows and columns
+ *
+ *  These functions allow one to swap or permute a given polynomial matrix,
+ *  operating either on its rows or on its columns.
+ */
+//@{
+
+/** Swap two rows of a polynomial matrix, by swapping pointers to rows. It is
+ * assumed that `r` and `s` are valid row indices for `mat` (this is not
+ * checked). The case of equality `r==s` is allowed.
+ * \todo describe perm */
+NMOD_POLY_MAT_INLINE void
+nmod_poly_mat_swap_rows(nmod_poly_mat_t mat,
+                        slong * perm,
+                        slong r, slong s)
+{
+    if (r != s)
+    {
+        if (perm)
+        {
+            slong t = perm[s];
+            perm[s] = perm[r];
+            perm[r] = t;
+        }
+
+        nmod_poly_struct * tmp = mat->rows[s];
+        mat->rows[s] = mat->rows[r];
+        mat->rows[r] = tmp;
+    }
+}
+
+/** Swap two columns of a polynomial matrix, by swapping pointers to polynomial
+ * entries. It is assumed that `r` and `s` are valid column indices for `mat`
+ * (this is not checked). The case of equality `r==s` is allowed.
+ * \todo describe perm */
+NMOD_POLY_MAT_INLINE void
+nmod_poly_mat_swap_cols(nmod_poly_mat_t mat,
+                        slong * perm,
+                        slong r, slong s)
+{
+    if (r != s)
+    {
+        slong t;
+        if (perm)
+        {
+            t = perm[s];
+            perm[s] = perm[r];
+            perm[r] = t;
+        }
+
+        for (t = 0; t < mat->r; t++)
+            nmod_poly_swap(mat->rows[t] + r, mat->rows[t] + s);
+    }
+}
+
+/** Permute rows of a polynomial matrix `mat` according to `perm`. Only
+ * pointers to rows are permuted to limit data movements. 
+ * \todo description of `perm`
+ * */
+void nmod_poly_mat_permute_rows(nmod_poly_mat_t mat, const slong *perm, slong rdim);
+
+/** Permute columns of a polynomial matrix `mat` according to `perm`. Only
+ * pointers to polynomial entries are permuted to limit data movements. 
+ * \todo description of `perm`
+ * */
+void nmod_poly_mat_permute_columns(nmod_poly_mat_t mat, const slong * perm, slong cdim);
+
+/** Permute rows of a matrix `mat` according to `perm`. 
+ * \todo Should be present in a future release of Flint --> remove */
+void nmod_mat_permute_rows(nmod_mat_t mat, const slong * perm, slong rdim);
+
+// TODO to move in other folder
+NMOD_POLY_MAT_INLINE void
+apply_perm_to_vector(slong *res, const slong *initial_vect,
+                          const slong *perm, slong length)
+{
+    for (slong i = 0; i < length; i++)
+        res[perm[i]] = initial_vect[i];
+}
+
+//@} // doxygen group: Swapping and permuting rows and columns
+
 
 
 /*------------------------------------------------------------*/

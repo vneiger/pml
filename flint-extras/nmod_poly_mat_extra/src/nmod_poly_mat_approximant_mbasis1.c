@@ -1,6 +1,48 @@
 #include "nmod_mat_extra.h" // for left_nullspace
 #include "nmod_poly_mat_approximant.h"
 
+
+/* Type only for the function Basis */
+typedef struct
+{
+    slong value;
+    slong ord;
+} int_tuple;
+
+
+/* Parameter for quicksort */
+static int compare(const void *a, const void *b)
+{
+    int_tuple a_prime = * (const int_tuple *) a;
+    int_tuple b_prime = * (const int_tuple *) b;
+    return a_prime.value - b_prime.value;
+}
+
+/**
+ * \brief Will only be used in Basis.
+ *
+ *  Creates a permutation from the sorting of a shift
+ *
+ * \param perm, the result his length must be n
+ * \param vec, the shift we want to sort increasly
+ * \param n, length of perm and vec
+ */
+void sort_and_create_perm(slong *perm, const slong *vec, slong n)
+{
+    int_tuple temp[n];
+    for (slong i = 0; i < n; i++)
+    {
+        temp[i].value = vec[i];
+        temp[i].ord = i;
+    }
+
+    qsort(temp, n, sizeof(int_tuple), compare);
+    for (slong i = 0; i < n; i++)
+        perm[temp[i].ord] = i;
+
+}
+
+
 void Basis(nmod_poly_mat_t res, slong *res_shifts,
            const nmod_mat_t mat, const slong *shifts)
 {
