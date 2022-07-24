@@ -4,7 +4,6 @@
 /** \brief Basic routines for univariate polynomial matrices over `nmod`
  *
  * \file nmod_poly_mat_utils.h
- * \author Vincent Neiger, Kevin Tran
  * \version 0.0
  * \date 2022-06-25
  *
@@ -183,11 +182,13 @@ void coefficient_matrix(nmod_mat_t coeff,
 
 /** Computes the left `n`-shift `smat` of the polynomial matrix `pmat` */
 // FIXME investigate what happens with Flint's shift when polynomial is zero
-void nmod_poly_mat_shift_left(nmod_poly_mat_t res, const nmod_poly_mat_t pmat, slong k);
+void nmod_poly_mat_shift_left(nmod_poly_mat_t res,
+                              const nmod_poly_mat_t pmat, slong k);
 
 /** Computes the right `n`-shift `smat` of the polynomial matrix `pmat` */
 // FIXME investigate what happens with Flint's shift when polynomial is zero
-void nmod_poly_mat_shift_right(nmod_poly_mat_t res, const nmod_poly_mat_t pmat, slong k);
+void nmod_poly_mat_shift_right(nmod_poly_mat_t res,
+                               const nmod_poly_mat_t pmat, slong k);
 
 /** Computes the matrix `smat` which is the same as the polynomial matrix
  * `pmat` but with its `i`-th row replaced by its left `n`-shift
@@ -375,7 +376,8 @@ void nmod_poly_mat_shift_right(nmod_poly_mat_t res, const nmod_poly_mat_t pmat, 
  * constant coefficient is a copy of `cmat`. This assume `pmat` is already
  * initialized with the same modulus and dimensions of `cmat`.
  **/
-void nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat, const nmod_mat_t cmat);
+void nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat,
+                                     const nmod_mat_t cmat);
 
 /** Conversion from a constant matrix `mat` into a matrix polynomial `matp`
  * (which is constant, equal to `mat`).
@@ -418,7 +420,7 @@ void nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat, const nmod_mat_t cmat
  * \todo improvements in implementation
  **/
 void nmod_poly_mat_set_from_mat_poly(nmod_poly_mat_t pmat,
-				    const nmod_mat_poly_t matp);
+                                     const nmod_mat_poly_t matp);
 
 /** Converts from matrix with polynomial entries `pmat`, truncated at the
  * specified `order`, to polynomial with matrix coefficients `matp`. The

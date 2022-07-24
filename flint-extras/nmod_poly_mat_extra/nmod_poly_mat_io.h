@@ -5,7 +5,6 @@
  * over `nmod`
  *
  * \file nmod_poly_mat_io.h
- * \author Vincent Neiger, Kevin Tran
  * \version 0.0
  * \date 2022-06-25
  *
@@ -30,16 +29,16 @@ void nmod_poly_mat_print_pretty(const nmod_poly_mat_t mat, const char * var);
 void nmod_poly_mat_nmod_poly_mat_degree_matrix_print_pretty(const nmod_poly_mat_t mat);
 
 void nmod_poly_mat_nmod_poly_mat_degree_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
-                                               const slong *shift,
-                                               orientation_t row_wise);
+                                                                    const slong *shift,
+                                                                    orientation_t row_wise);
 
 /** Print the leading matrix, see @ref LeadingMatrix */
 void nmod_poly_mat_nmod_poly_mat_leading_matrix_print_pretty(const nmod_poly_mat_t mat,
-                                               orientation_t row_wise);
+                                                             orientation_t row_wise);
 
 void nmod_poly_mat_nmod_poly_mat_leading_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
-                                                       const slong *shift,
-                                                       orientation_t row_wise);
+                                                                     const slong *shift,
+                                                                     orientation_t row_wise);
 
 #ifdef __cplusplus
 }

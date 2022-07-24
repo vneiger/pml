@@ -1,7 +1,6 @@
 /**
  * \file nmod_poly_mat_approximant.h
  * \brief Minimal approximant bases
- * \author Vincent Neiger, Kevin Tran
  * \version 0.0
  * \date 2022-06-25
  *

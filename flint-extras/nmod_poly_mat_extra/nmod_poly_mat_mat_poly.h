@@ -1,7 +1,6 @@
 /**
  * \file nmod_mat_poly.h
  * \brief Matrices with univariate polynomial entries modulo word-size prime, represented as list of matrices
- * \author Vincent Neiger, Kevin Tran
  * \version 0.0
  * \date 2022-06-25
  *

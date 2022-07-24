@@ -4,7 +4,6 @@
 /** \brief Basic arithmetic for univariate polynomial matrices over `zz_p`
  *
  * \file mat_lzz_pX_arith.h
- * \author Vincent Neiger
  * \version 0.0
  * \date 2022-06-27
  *

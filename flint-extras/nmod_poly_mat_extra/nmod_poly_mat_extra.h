@@ -4,7 +4,6 @@
 /**
  * \file nmod_poly_mat_extra.h
  * \brief Main header for matrices with univariate polynomial entries modulo word-size prime
- * \author Vincent Neiger, Kevin Tran
  * \version 0.0
  * \date 2022-06-25
  *
