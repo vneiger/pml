@@ -21,10 +21,6 @@ int main()
     nmod_poly_mat_print_pretty(mat, "x");
     printf("\n");
 
-    /********************
-    *  LEADING MATRIX  *
-    ********************/
-
 	// sage: M.nmod_poly_mat_leading_matrix()
 	// [3 0 0]
 	// [1 0 0]

@@ -1,6 +1,6 @@
 #include "nmod_poly_mat_forms.h"
 
-int nmod_poly_mat_is_row_reduced(const nmod_poly_mat_t mat)
+int nmod_poly_mat_is_reduced_rowwise(const nmod_poly_mat_t mat)
 {
     nmod_mat_t lmat;
     nmod_mat_init(lmat, mat->r, mat->c, mat->modulus);
@@ -10,7 +10,7 @@ int nmod_poly_mat_is_row_reduced(const nmod_poly_mat_t mat)
     return mat->r == rank_lead;
 }
 
-int nmod_poly_mat_is_row_reduced_shifted(const nmod_poly_mat_t mat, const slong *shift)
+int nmod_poly_mat_is_reduced_shifted_rowwise(const nmod_poly_mat_t mat, const slong *shift)
 {
     nmod_mat_t lmat;
     nmod_mat_init(lmat, mat->r, mat->c, mat->modulus);
@@ -20,7 +20,7 @@ int nmod_poly_mat_is_row_reduced_shifted(const nmod_poly_mat_t mat, const slong 
     return mat->r == rank_lead;
 }
 
-int nmod_poly_mat_is_column_reduced(const nmod_poly_mat_t mat)
+int nmod_poly_mat_is_reduced_columnwise(const nmod_poly_mat_t mat)
 {
     nmod_mat_t lmat;
     nmod_mat_init(lmat, mat->r, mat->c, mat->modulus);
@@ -30,7 +30,7 @@ int nmod_poly_mat_is_column_reduced(const nmod_poly_mat_t mat)
     return mat->c == rank_lead;
 }
 
-int nmod_poly_mat_is_column_reduced_shifted(const nmod_poly_mat_t mat, const slong *shift)
+int nmod_poly_mat_is_reduced_shifted_columnwise(const nmod_poly_mat_t mat, const slong *shift)
 {
     nmod_mat_t lmat;
     nmod_mat_init(lmat, mat->r, mat->c, mat->modulus);
