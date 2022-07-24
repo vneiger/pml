@@ -43,24 +43,22 @@ void nmod_poly_mat_pivot_index_columnwise(slong *pivind, const nmod_poly_mat_t m
 void nmod_poly_mat_pivot_index_shifted_rowwise(slong *pivind, const nmod_poly_mat_t mat, const slong *shift)
 {
     slong max, piv, d;
-    slong min_shift = (mat->c > 0) ? shift[0] : 0;
-
-    // find minimum of shift
-    for (slong j = 0; j < mat->c; ++j)
-        if (shift[j] < min_shift)
-            min_shift = shift[j];
 
     for (slong i = 0; i < mat->r; i++)
     {
-        max = min_shift-1; // zero rows will have this as rdeg
         piv = -1;
+        // the next starting value for max plays no role: in the next for loop,
+        // either piv==-1 until the end or max has been set correctly at first
+        // nonzero entry in the row
+        max = 0;
         for (slong j = 0; j < mat->c; j++)
         {
             d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
             // if new maximum (or equal maximum) reached at a nonzero entry, update
-            if (0 <= d && max <= d+shift[j])
+            // if encountering first nonzero entry in the row, update as well
+            if (0 <= d && (piv==-1 || max <= d+shift[j]))
             {
-                max = d;
+                max = d + shift[j];
                 piv = j;
             }
         }
@@ -71,24 +69,22 @@ void nmod_poly_mat_pivot_index_shifted_rowwise(slong *pivind, const nmod_poly_ma
 void nmod_poly_mat_pivot_index_shifted_columnwise(slong *pivind, const nmod_poly_mat_t mat, const slong *shift)
 {
     slong max, piv, d;
-    slong min_shift = (mat->r > 0) ? shift[0] : 0;
-
-    // find minimum of shift
-    for (slong i = 0; i < mat->r; ++i)
-        if (shift[i] < min_shift)
-            min_shift = shift[i];
 
     for (slong j = 0; j < mat->c; j++)
     {
-        max = min_shift-1;
         piv = -1;
+        // the next starting value for max plays no role: in the next for loop,
+        // either piv==-1 until the end or max has been set correctly at first
+        // nonzero entry in the column
+        max = 0;
         for (slong i = 0; i < mat->r; i++)
         {
             d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
             // if new maximum (or equal maximum) reached at a nonzero entry, update
-            if (0 <= d && max <= d+shift[i])
+            // if encountering first nonzero entry in the column, update as well
+            if (0 <= d && (piv == -1 || max <= d+shift[i]))
             {
-                max = d;
+                max = d + shift[i];
                 piv = i;
             }
         }

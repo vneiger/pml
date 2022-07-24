@@ -48,12 +48,16 @@ void nmod_poly_mat_pivot_profile_shifted_rowwise(slong *pivind, slong *pivdeg, c
 
     for (slong i = 0; i < mat->r; i++)
     {
-        max = -1; // zero rows will have this as pivdeg
         piv = -1; // zero rows will have this as pivind
+        // the next starting value for max plays no role: in the next for loop,
+        // either piv==-1 until the end or max has been set correctly at first
+        // nonzero entry in the row
+        max = 0;
         for (slong j = 0; j < mat->c; j++)
         {
             d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
             // if new maximum (or equal maximum) reached at a nonzero entry, update
+            // if encountering first nonzero entry in the row, update as well
             if (0 <= d && (piv == -1 || max <= d+shift[j]))
             {
                 piv = j;
@@ -71,12 +75,16 @@ void nmod_poly_mat_pivot_profile_shifted_columnwise(slong *pivind, slong *pivdeg
 
     for (slong j = 0; j < mat->c; j++)
     {
-        max = -1; // zero columns will have this as pivdeg
         piv = -1; // zero columns will have this as pivind
+        // the next starting value for max plays no role: in the next for loop,
+        // either piv==-1 until the end or max has been set correctly at first
+        // nonzero entry in the column
+        max = 0;
         for (slong i = 0; i < mat->r; i++)
         {
             d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
             // if new maximum (or equal maximum) reached at a nonzero entry, update
+            // if encountering first nonzero entry in the column, update as well
             if (0 <= d && (piv == -1 || max <= d+shift[i]))
             {
                 piv = i;
