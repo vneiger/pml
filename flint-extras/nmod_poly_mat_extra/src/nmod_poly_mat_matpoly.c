@@ -1,6 +1,5 @@
 #include "nmod_poly_mat_mat_poly.h"
 #include "nmod_poly_mat_utils.h"
-#include "nmod_poly_mat_approximant.h" // TODO for apply_perm ->  should move
 
 void nmod_mat_poly_init(nmod_mat_poly_t matp, slong degree, slong length,
 		slong r, slong c, mp_limb_t mod)

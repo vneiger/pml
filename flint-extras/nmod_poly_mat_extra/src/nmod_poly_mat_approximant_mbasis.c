@@ -1,3 +1,4 @@
+#include "nmod_mat_extra.h"
 #include "nmod_poly_mat_approximant.h"
 #include "nmod_poly_mat_mat_poly.h"
 #include "nmod_poly_mat_utils.h"
@@ -149,7 +150,7 @@ void structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
     nmod_poly_mat_init(R2_cp, rdim - rank, cdim, prime);
 
     /** apply perm **/
-    nmod_poly_mat_permute_rows(res, perm);
+    nmod_poly_mat_permute_rows(res, NULL, perm);
 
     /** work on R1 (top) **/
     nmod_poly_mat_window_init(R1, res, 0, 0, rank, cdim);
@@ -178,7 +179,7 @@ void structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
 
     /** apply perm^(-1) **/
     _perm_inv(inv_perm, perm, rdim);
-    nmod_poly_mat_permute_rows(res, inv_perm);
+    nmod_poly_mat_permute_rows(res, NULL, inv_perm);
 
     /** clear **/
     nmod_poly_clear(P);

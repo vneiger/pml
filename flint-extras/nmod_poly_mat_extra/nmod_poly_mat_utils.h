@@ -194,33 +194,53 @@ nmod_poly_mat_invert_columns(nmod_poly_mat_t mat, slong * perm)
 }
 
 
-/** Permute rows of a polynomial matrix `mat` according to `perm`. Only
- * pointers to rows are permuted to limit data movements. 
- * \todo description of `perm`
- * */
-void nmod_poly_mat_permute_rows(nmod_poly_mat_t mat,
-                                const slong *perm);
-
-/** Permute columns of a polynomial matrix `mat` according to `perm`. Only
- * pointers to polynomial entries are permuted to limit data movements. 
- * \todo description of `perm`
- * */
-void nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
-                                   const slong * perm);
-
-/** Permute rows of a matrix `mat` according to `perm`. 
- * \todo Should be present in a future release of Flint --> then remove */
-void nmod_mat_permute_rows(nmod_mat_t mat,
-                           slong * perm_store,
-                           const slong * perm_act);
-
-// TODO to move in other folder
+/** Permute rows of a polynomial matrix `mat` according to `perm_act`, and
+ * propagate the action on `perm_store`. Namely, performs for each appropriate
+ * index `i`, the operations `perm_store[i] <- perm_store[perm_act[i]]` and
+ * `rows[i] <- rows[perm_act[i]]`.  */
 NMOD_POLY_MAT_INLINE void
-apply_perm_to_vector(slong *res, const slong *initial_vect,
-                          const slong *perm, slong length)
+nmod_poly_mat_permute_rows(nmod_poly_mat_t mat,
+                           slong * perm_store,
+                           const slong *perm_act)
 {
-    for (slong i = 0; i < length; i++)
-        res[perm[i]] = initial_vect[i];
+    // perm_store[i] <- perm_store[perm_act[i]] 
+    if (perm_store)
+        _perm_compose(perm_store, perm_store, perm_act, mat->r);
+
+    // rows[i] <- rows[perm_act[i]] 
+    nmod_poly_struct ** mat_tmp = flint_malloc(mat->r * sizeof(nmod_poly_struct *));
+    for (slong i = 0; i < mat->r; ++i)
+        mat_tmp[i] = mat->rows[perm_act[i]];
+    for (slong i = 0; i < mat->r; ++i)
+        mat->rows[i] = mat_tmp[i];
+
+    flint_free(mat_tmp);
+}
+
+/** Permute columns of a polynomial matrix `mat` according to `perm_act`, and
+ * propagate the action on `perm_store`. Namely, performs for each appropriate
+ * index `i` and `j`, the operations `perm_store[j] <- perm_store[perm_act[j]]`
+ * and `rows[i][j] <- rows[i][perm_act[j]]`.  */
+NMOD_POLY_MAT_INLINE void
+nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
+                              slong * perm_store,
+                              const slong * perm_act)
+{
+    // perm_store[i] <- perm_store[perm_act[i]] 
+    if (perm_store)
+        _perm_compose(perm_store, perm_store, perm_act, mat->c);
+
+
+    // simulate columns[j] <- columns[perm_act[j]]
+    nmod_poly_struct * row_tmp = flint_malloc(mat->c * sizeof(nmod_poly_struct));
+    for (slong i = 0; i < mat->r; i++)
+    {
+        for (slong j = 0; j < mat->c; j++)
+            row_tmp[j] = mat->rows[i][perm_act[j]];
+        for (slong j = 0; j < mat->c; j++)
+            mat->rows[i][j] = row_tmp[j];
+    }
+    flint_free(row_tmp);
 }
 
 /** Computes the transpose `tmat` or the polynomial matrix `pmat`; `tmat`

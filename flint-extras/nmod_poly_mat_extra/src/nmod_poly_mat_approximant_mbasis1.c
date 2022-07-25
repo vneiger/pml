@@ -1,4 +1,5 @@
-#include "nmod_mat_extra.h" // for left_nullspace
+#include "nmod_mat_extra.h" // for left_nullspace, permutation
+#include "nmod_poly_mat_extra.h" // for apply_perm
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_approximant.h"
 
@@ -12,7 +13,7 @@ typedef struct
 
 
 /* Parameter for quicksort */
-static int compare(const void *a, const void *b)
+static inline int compare(const void *a, const void *b)
 {
     int_tuple a_prime = * (const int_tuple *) a;
     int_tuple b_prime = * (const int_tuple *) b;
@@ -28,7 +29,7 @@ static int compare(const void *a, const void *b)
  * \param vec, the shift we want to sort increasly
  * \param n, length of perm and vec
  */
-void sort_and_create_perm(slong *perm, const slong *vec, slong n)
+static inline void sort_and_create_perm(slong *perm, const slong *vec, slong n)
 {
     int_tuple temp[n];
     for (slong i = 0; i < n; i++)
@@ -39,7 +40,7 @@ void sort_and_create_perm(slong *perm, const slong *vec, slong n)
 
     qsort(temp, n, sizeof(int_tuple), compare);
     for (slong i = 0; i < n; i++)
-        perm[temp[i].ord] = i;
+        perm[i] = temp[i].ord;
 
 }
 
@@ -76,6 +77,7 @@ void Basis(nmod_poly_mat_t res, slong *res_shifts,
         P_inv[i] = P[rank_kernel + i];
 
     _perm_inv(P_inv, P_inv, rdim);
+    _perm_inv(perm, perm, rdim);
 
     /* Computation of the block matrix  [ [xIr, 0], [K, I_{rdim - rank}] ] */
     nmod_poly_init(One, prime);
@@ -107,8 +109,8 @@ void Basis(nmod_poly_mat_t res, slong *res_shifts,
 
     _perm_inv(comp_inv, comp, rdim);
 
-    nmod_poly_mat_permute_columns(res, comp);
-    nmod_poly_mat_permute_rows(res, comp_inv);
+    nmod_poly_mat_permute_columns(res, NULL, comp);
+    nmod_poly_mat_permute_rows(res, NULL, comp_inv);
 
     /* Compute the new shift */
     apply_perm_to_vector(temp, shifts, comp, rdim);
@@ -158,7 +160,8 @@ slong Basis_for_M_basis(nmod_mat_t res, slong *res_shifts, slong *res_perm,
     for (i = 0; i < rank_mat; i++)
         P_inv[i] = P[rank_kernel + i];
 
-    _perm_inv(P_inv, P_inv, rdim);
+    _perm_inv(perm, perm, rdim);
+    _perm_inv(perm, perm, rdim);
 
     nmod_mat_init_set(res, K);
 

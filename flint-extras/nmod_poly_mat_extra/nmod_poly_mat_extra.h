@@ -37,6 +37,15 @@
 
 // #include "nmod_poly_mat_multiply.h"
 
+// TODO remove once using flint's comp instead
+NMOD_POLY_MAT_INLINE void
+apply_perm_to_vector(slong *res, const slong *initial_vect,
+                          const slong *perm, slong length)
+{
+    for (slong i = 0; i < length; i++)
+        res[perm[i]] = initial_vect[i];
+}
+
 #include "nmod_poly_mat_approximant.h"
 // #include "nmod_poly_mat_interpolant.h"
 
