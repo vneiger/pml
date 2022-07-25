@@ -20,8 +20,6 @@
  *
  * \todo Note: all parameters are supposed init
  *
- * \todo swap rows / swap columns / permute rows / permute columns
- *
  */
 
 // include flint's matrices
