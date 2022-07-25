@@ -153,9 +153,9 @@ nmod_poly_mat_invert_rows(nmod_poly_mat_t mat, slong * perm)
  * not `NULL`, it should be an array for which `r` and `s` are valid indices;
  * then the corresponding elements of this array will be swapped. */
 NMOD_POLY_MAT_INLINE void
-nmod_poly_mat_swap_cols(nmod_poly_mat_t mat,
-                        slong * perm,
-                        slong r, slong s)
+nmod_poly_mat_swap_columns(nmod_poly_mat_t mat,
+                           slong * perm,
+                           slong r, slong s)
 {
     if (r != s)
     {
@@ -180,11 +180,11 @@ nmod_poly_mat_invert_columns(nmod_poly_mat_t mat, slong * perm)
 {
     if (perm)
     {
-        for (slong j =0; j < mat->c/2; j++)
+        for (slong j = 0; j < mat->c/2; j++)
         {
             slong t = perm[j];
-            perm[j] = perm[mat->c - j];
-            perm[mat->c - j] = t;
+            perm[j] = perm[mat->c - j - 1];
+            perm[mat->c - j - 1] = t;
         }
     }
 
