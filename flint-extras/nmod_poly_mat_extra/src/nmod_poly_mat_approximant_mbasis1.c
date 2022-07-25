@@ -62,7 +62,7 @@ void Basis(nmod_poly_mat_t res, slong *res_shifts,
 
     nmod_mat_init_set(mat_cp, mat);
 
-    nmod_mat_permute_rows(mat_cp, perm, rdim);
+    nmod_mat_permute_rows(mat_cp, NULL, perm);
 
     P = _perm_init(rdim);
 
@@ -107,8 +107,8 @@ void Basis(nmod_poly_mat_t res, slong *res_shifts,
 
     _perm_inv(comp_inv, comp, rdim);
 
-    nmod_poly_mat_permute_columns(res, comp, rdim);
-    nmod_poly_mat_permute_rows(res, comp_inv, rdim);
+    nmod_poly_mat_permute_columns(res, comp);
+    nmod_poly_mat_permute_rows(res, comp_inv);
 
     /* Compute the new shift */
     apply_perm_to_vector(temp, shifts, comp, rdim);
@@ -145,7 +145,7 @@ slong Basis_for_M_basis(nmod_mat_t res, slong *res_shifts, slong *res_perm,
     /* compute left kernel of perm*mat with rank profile */
     nmod_mat_init_set(mat_cp, mat);
 
-    nmod_mat_permute_rows(mat_cp, perm, rdim);
+    nmod_mat_permute_rows(mat_cp, NULL, perm);
 
     P = _perm_init(rdim);
 

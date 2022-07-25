@@ -39,7 +39,7 @@ void structured_list_multiplication_blocks(nmod_mat_poly_t res,
 	for (i = deb; i < sigma; i++)
 	{
 		r_i = res->mat + i;
-		nmod_mat_permute_rows(r_i, perm, r);
+		nmod_mat_permute_rows(r_i, NULL, perm);
 		nmod_mat_window_init(R1, r_i, 0, 0, rank, c);
 		nmod_mat_set(R1_cp, R1);
 
@@ -60,7 +60,7 @@ void structured_list_multiplication_blocks(nmod_mat_poly_t res,
 	/** apply perm^(-1) **/
 	_perm_inv(inv_perm, perm, r);
 	for (i = deb + 1; i < sigma; i++)
-		nmod_mat_permute_rows(res->mat + i, inv_perm, r);
+		nmod_mat_permute_rows(res->mat + i, NULL, inv_perm);
 
 	/** clear **/
 	nmod_mat_clear(R1_cp);
@@ -104,7 +104,7 @@ void structured_list_multiplication_blocks_full(nmod_mat_poly_t res,
 	for (i = 0; i <= res->degree; i++)
 	{
 		r_i = res->mat + i;
-		nmod_mat_permute_rows(r_i, perm, r);
+		nmod_mat_permute_rows(r_i, NULL, perm);
 		nmod_mat_window_init(R1, r_i, 0, 0, rank, c);
 		nmod_mat_set(R1_cp, R1);
 
@@ -125,7 +125,7 @@ void structured_list_multiplication_blocks_full(nmod_mat_poly_t res,
 	/** apply perm^(-1) **/
 	_perm_inv(inv_perm, perm, r);
 	for (i = 0; i <= res->degree; i++)
-		nmod_mat_permute_rows(res->mat + i, inv_perm, r);
+		nmod_mat_permute_rows(res->mat + i, NULL, inv_perm);
 
 	/** clear **/
 	nmod_mat_clear(R1_cp);
@@ -149,7 +149,7 @@ void structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
     nmod_poly_mat_init(R2_cp, rdim - rank, cdim, prime);
 
     /** apply perm **/
-    nmod_poly_mat_permute_rows(res, perm, rdim);
+    nmod_poly_mat_permute_rows(res, perm);
 
     /** work on R1 (top) **/
     nmod_poly_mat_window_init(R1, res, 0, 0, rank, cdim);
@@ -178,7 +178,7 @@ void structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
 
     /** apply perm^(-1) **/
     _perm_inv(inv_perm, perm, rdim);
-    nmod_poly_mat_permute_rows(res, inv_perm, rdim);
+    nmod_poly_mat_permute_rows(res, inv_perm);
 
     /** clear **/
     nmod_poly_clear(P);

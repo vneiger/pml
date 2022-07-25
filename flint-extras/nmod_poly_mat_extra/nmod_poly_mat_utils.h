@@ -100,39 +100,37 @@ void nmod_poly_mat_coefficient_matrix(nmod_mat_t coeff,
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* SWAP, PERMUTE                                              */
+/* SWAP, PERMUTE, TRANSPOSE                                   */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/** @name Swapping and permuting rows and columns
+/** @name Swap, permute, transpose
  *
- *  These functions allow one to swap or permute a given polynomial matrix,
- *  operating either on its rows or on its columns.
+ *  These functions allow one to swap or permute the rows or the columns a
+ *  given polynomial matrix, and to get its transpose.
  */
 //@{
 
 /** Swap two rows of a polynomial matrix. It is assumed that `r` and `s` are
  * valid row indices for `mat` (this is not checked). The case of equality
- * `r==s` is allowed. This swaps pointers to rows.
- * \todo describe perm */
+ * `r==s` is allowed. This swaps pointers to rows. If `perm` is not `NULL`,
+ * it should be an array for which `r` and `s` are valid indices; then the
+ * corresponding elements of this array will be swapped. */
 NMOD_POLY_MAT_INLINE void
 nmod_poly_mat_swap_rows(nmod_poly_mat_t mat,
                         slong * perm,
                         slong r, slong s)
 {
-    nmod_poly_struct * tmp;
-    slong t;
-
     if (r != s)
     {
         if (perm)
         {
-            t = perm[s];
+            slong t = perm[s];
             perm[s] = perm[r];
             perm[r] = t;
         }
 
-        tmp = mat->rows[s];
+        nmod_poly_struct * tmp = mat->rows[s];
         mat->rows[s] = mat->rows[r];
         mat->rows[r] = tmp;
     }
@@ -140,8 +138,8 @@ nmod_poly_mat_swap_rows(nmod_poly_mat_t mat,
 
 /** Invert rows of a polynomial matrix. If `mat` has `m` rows, then its row `0`
  * is swapped with its row `m-1`, its row `1` is swapped with its row `m-2`,
- * etc.
- * \todo describe perm */
+ * etc. If `perm` is not `NULL`, it should be an array of length `m`; its
+ * elements of this array will be inverted accordingly. */
 NMOD_POLY_MAT_INLINE void
 nmod_poly_mat_invert_rows(nmod_poly_mat_t mat, slong * perm)
 {
@@ -151,61 +149,48 @@ nmod_poly_mat_invert_rows(nmod_poly_mat_t mat, slong * perm)
 
 /** Swap two columns of a polynomial matrix. It is assumed that `r` and `s` are
  * valid column indices for `mat` (this is not checked). The case of equality
- * `r==s` is allowed. This swaps pointers to polynomial entries.
- * \todo describe perm */
+ * `r==s` is allowed. This swaps pointers to polynomial entries. If `perm` is
+ * not `NULL`, it should be an array for which `r` and `s` are valid indices;
+ * then the corresponding elements of this array will be swapped. */
 NMOD_POLY_MAT_INLINE void
 nmod_poly_mat_swap_cols(nmod_poly_mat_t mat,
                         slong * perm,
                         slong r, slong s)
 {
-    slong t;
     if (r != s)
     {
         if (perm)
         {
-            t = perm[s];
+            slong t = perm[s];
             perm[s] = perm[r];
             perm[r] = t;
         }
 
-        for (t = 0; t < mat->r; t++)
-            // TODO expand this to avoid temporaries?
+        for (slong t = 0; t < mat->r; t++)
             nmod_poly_swap(mat->rows[t] + r, mat->rows[t] + s);
     }
 }
 
 /** Invert columns of a polynomial matrix. If `mat` has `n` columns, then its
  * column `0` is swapped with its column `n-1`, its column `1` is swapped with
- * its column `n-2`, etc.
- * \todo describe perm */
+ * its column `n-2`, etc. If `perm` is not `NULL`, it should be an array of
+ * length `n`; its elements of this array will be inverted accordingly. */
 NMOD_POLY_MAT_INLINE void
 nmod_poly_mat_invert_columns(nmod_poly_mat_t mat, slong * perm)
 {
-    slong t;
-    slong i;
-    slong c = mat->c;
-    slong k = mat->c/2;
-    nmod_poly_struct tmp;
-
     if (perm)
     {
-        for (i =0; i < k; i++)
+        for (slong j =0; j < mat->c/2; j++)
         {
-            t = perm[i];
-            perm[i] = perm[c - i];
-            perm[c - i] = t;
+            slong t = perm[j];
+            perm[j] = perm[mat->c - j];
+            perm[mat->c - j] = t;
         }
     }
 
-    for (t = 0; t < mat->r; t++)
-    {
-        for (i = 0; i < k; i++)
-        {
-            tmp = mat->rows[t][i];
-            mat->rows[t][i] = mat->rows[t][c - i - 1];
-            mat->rows[t][c - i - 1] = tmp;
-        }
-    }
+    for (slong t = 0; t < mat->r; t++)
+        for (slong j = 0; j < mat->c/2; j++)
+            nmod_poly_swap(mat->rows[t]+j, mat->rows[t]+ mat->c - j - 1);
 }
 
 
@@ -213,17 +198,21 @@ nmod_poly_mat_invert_columns(nmod_poly_mat_t mat, slong * perm)
  * pointers to rows are permuted to limit data movements. 
  * \todo description of `perm`
  * */
-void nmod_poly_mat_permute_rows(nmod_poly_mat_t mat, const slong *perm, slong rdim);
+void nmod_poly_mat_permute_rows(nmod_poly_mat_t mat,
+                                const slong *perm);
 
 /** Permute columns of a polynomial matrix `mat` according to `perm`. Only
  * pointers to polynomial entries are permuted to limit data movements. 
  * \todo description of `perm`
  * */
-void nmod_poly_mat_permute_columns(nmod_poly_mat_t mat, const slong * perm, slong cdim);
+void nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
+                                   const slong * perm);
 
 /** Permute rows of a matrix `mat` according to `perm`. 
- * \todo Should be present in a future release of Flint --> remove */
-void nmod_mat_permute_rows(nmod_mat_t mat, const slong * perm, slong rdim);
+ * \todo Should be present in a future release of Flint --> then remove */
+void nmod_mat_permute_rows(nmod_mat_t mat,
+                           slong * perm_store,
+                           const slong * perm_act);
 
 // TODO to move in other folder
 NMOD_POLY_MAT_INLINE void
@@ -234,21 +223,6 @@ apply_perm_to_vector(slong *res, const slong *initial_vect,
         res[perm[i]] = initial_vect[i];
 }
 
-//@} // doxygen group: Swapping and permuting rows and columns
-
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* TRANSPOSE, TRUNC, SHIFT, REVERSE                           */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/** @name Transpose and mirror
- *
- *  Transpose of a polynomial matrix, and mirror of a vector.
- */
-//@{
 /** Computes the transpose `tmat` or the polynomial matrix `pmat`; `tmat`
  * may alias `pmat` */
 // TODO
@@ -260,7 +234,15 @@ apply_perm_to_vector(slong *res, const slong *initial_vect,
 // TODO
 //void mirror(Vec<zz_pX> & mvec, const Vec<zz_pX> & pvec);
 
-//@} // doxygen group: Transpose and mirror
+//@} // doxygen group: Swap, permute, transpose
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TRANSPOSE, TRUNC, SHIFT, REVERSE                           */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 
 /** @name Truncate
