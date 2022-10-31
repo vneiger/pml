@@ -121,27 +121,27 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
     //}
 
     // just for test, works only with very specific dimensions
-    bool applin=false; // for disabling printing timing below in function
+    bool applin=true; // for disabling printing timing below in function
     double t_pmbasis_applin=0.0;
-    //if (applin)
-    //{
-    //    nb_iter=0;
-    //    while (t_pmbasis_applin<0.2)
-    //    {
-    //        Mat<zz_pX> pmat;
-    //        random(pmat, rdim, cdim, degree+1);
+    if (applin)
+    {
+        nb_iter=0;
+        while (t_pmbasis_applin<0.2)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, rdim, cdim, degree+1);
 
-    //        t1 = GetWallTime();
-    //        Mat<zz_pX> appbas;
-    //        VecLong rdeg(shift);
-    //        pmbasis_generic_onecolumn(appbas,pmat,order,rdeg);
-    //        t2 = GetWallTime();
+            t1 = GetWallTime();
+            Mat<zz_pX> appbas;
+            VecLong rdeg(shift);
+            pmbasis_generic_onecolumn(appbas,pmat,order,rdeg);
+            t2 = GetWallTime();
 
-    //        t_pmbasis_applin += t2-t1;
-    //        ++nb_iter;
-    //    }
-    //    t_pmbasis_applin /= nb_iter;
-    //}
+            t_pmbasis_applin += t2-t1;
+            ++nb_iter;
+        }
+        t_pmbasis_applin /= nb_iter;
+    }
 
     cout << rdim << "\t" << cdim << "\t" << degree << "\t" << order;
     cout << "\t" << t_pmbasis_app << "\t" << t_pmbasis_int << "\t" << t_pmbasis_intgeom;
