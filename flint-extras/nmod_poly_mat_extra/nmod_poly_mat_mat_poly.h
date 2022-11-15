@@ -8,8 +8,8 @@
  *
  */
 
-#ifndef NMOD_MAT_POLY_H
-#define NMOD_MAT_POLY_H
+#ifndef NMOD_POLY_MAT_MAT_POLY_H
+#define NMOD_POLY_MAT_MAT_POLY_H
 
 #include <flint/perm.h>
 #include <flint/nmod_poly_mat.h>
@@ -20,21 +20,27 @@ extern "C" {
 
 typedef struct
 {
-  slong degree;
-  slong length;
-  nmod_mat_struct *mat;
-  slong r;
-  slong c;
-  mp_limb_t mod;
+    slong degree;
+    slong length;
+    nmod_mat_struct *mat;
+    slong r;
+    slong c;
+    mp_limb_t mod;
 } nmod_mat_poly_struct;
 // TODO use length and alloc as for Flint's poly
 
 typedef nmod_mat_poly_struct nmod_mat_poly_t[1];
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* GETTERS                                                    */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
 NMOD_POLY_MAT_INLINE slong
 nmod_mat_poly_nrows(const nmod_mat_poly_t matp)
 {
-	return matp->r;
+    return matp->r;
 }
 
 NMOD_POLY_MAT_INLINE slong
@@ -49,20 +55,32 @@ nmod_mat_poly_modulus(const nmod_mat_poly_t matp)
 	return matp->mod;
 }
 
+void nmod_mat_poly_get_coef(nmod_mat_t res, const nmod_mat_poly_t F,
+                            slong k);
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* SETTERS                                                    */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+
 // TODO getter for pointer to i-th coeff
 
-// TODO stopped here
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* MEMORY MANAGEMENT                                          */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
-void nmod_mat_poly_print(const nmod_mat_poly_t A);
-
-void nmod_mat_poly_get_coef(nmod_mat_t res, const nmod_mat_poly_t F,
-				 slong k);
-
-void nmod_mat_poly_init(nmod_mat_poly_t res, slong degree,
-			     slong length,
-			     slong r, slong c, mp_limb_t mod);
+// TODO realloc?
+// TODO fit_length?
 
 void nmod_mat_poly_clear(nmod_mat_poly_t A);
+
+void nmod_mat_poly_init(nmod_mat_poly_t res, slong degree,
+                        slong length,
+                        slong r, slong c, mp_limb_t mod);
 
 
 /** void nmod_mat_poly_init_set(nmod_mat_poly_t res,
@@ -73,7 +91,7 @@ void nmod_mat_poly_clear(nmod_mat_poly_t A);
  * 
  */
 void nmod_mat_poly_init_set(nmod_mat_poly_t res,
-				 const nmod_poly_mat_t F);
+                            const nmod_poly_mat_t F);
 
 /** void nmod_mat_poly_init_set(nmod_mat_poly_t res,
  *				 const nmod_poly_mat_t F)
@@ -84,7 +102,7 @@ void nmod_mat_poly_init_set(nmod_mat_poly_t res,
  *
  */
 void nmod_mat_poly_init_setII(nmod_mat_poly_t res,
-				   const nmod_poly_mat_t F, slong length);
+                              const nmod_poly_mat_t F, slong length);
 
 
 /** void nmod_mat_poly_init_set(nmod_mat_poly_t res,
@@ -96,9 +114,15 @@ void nmod_mat_poly_init_setII(nmod_mat_poly_t res,
  *
  */
 void nmod_mat_poly_init_setIII(nmod_mat_poly_t res,
-				    const nmod_poly_mat_t F, slong length);
+                               const nmod_poly_mat_t F, slong length);
 
 
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TODO to categorize                                         */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 
 /** void nmod_mat_poly_naive_mul_coef(nmod_mat_t res,
@@ -112,14 +136,16 @@ void nmod_mat_poly_init_setIII(nmod_mat_poly_t res,
  *
  */
 void nmod_mat_poly_naive_mul_coef(nmod_mat_t res,
-				       const nmod_mat_poly_t A,
-				       const nmod_mat_poly_t B, slong k);
+                                  const nmod_mat_poly_t A,
+                                  const nmod_mat_poly_t B, slong k);
+
+void nmod_mat_poly_print(const nmod_mat_poly_t A);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* NMOD_mat_poly_H */
+#endif /* NMOD_POLY_MAT_MAT_POLY_H */
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

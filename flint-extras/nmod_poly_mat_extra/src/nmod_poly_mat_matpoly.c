@@ -1,6 +1,5 @@
 #include "nmod_poly_mat_mat_poly.h"
 #include "nmod_poly_mat_utils.h"
-#include "nmod_poly_mat_approximant.h" // TODO for apply_perm ->  should move
 
 void nmod_mat_poly_init(nmod_mat_poly_t matp, slong degree, slong length,
 		slong r, slong c, mp_limb_t mod)
@@ -59,7 +58,7 @@ void nmod_mat_poly_set(nmod_mat_poly_t res, const nmod_poly_mat_t F)
 
 	for (slong i = 0; i <= degree; i++)
 	{
-		coefficient_matrix(mat, F, i);
+		nmod_poly_mat_coefficient_matrix(mat, F, i);
 		nmod_mat_set(res->mat + i, mat);
 	}
 	nmod_mat_clear(mat);

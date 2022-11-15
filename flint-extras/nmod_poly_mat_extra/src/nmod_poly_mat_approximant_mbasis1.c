@@ -1,5 +1,49 @@
-#include "nmod_mat_extra.h" // for left_nullspace
+#include "nmod_mat_extra.h" // for left_nullspace, permutation
+#include "nmod_poly_mat_extra.h" // for apply_perm
+#include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_approximant.h"
+
+
+/* Type only for the function Basis */
+typedef struct
+{
+    slong value;
+    slong ord;
+} int_tuple;
+
+
+/* Parameter for quicksort */
+static inline int compare(const void *a, const void *b)
+{
+    int_tuple a_prime = * (const int_tuple *) a;
+    int_tuple b_prime = * (const int_tuple *) b;
+    return a_prime.value - b_prime.value;
+}
+
+/**
+ * \brief Will only be used in Basis.
+ *
+ *  Creates a permutation from the sorting of a shift
+ *
+ * \param perm, the result his length must be n
+ * \param vec, the shift we want to sort increasly
+ * \param n, length of perm and vec
+ */
+static inline void sort_and_create_perm(slong *perm, const slong *vec, slong n)
+{
+    int_tuple temp[n];
+    for (slong i = 0; i < n; i++)
+    {
+        temp[i].value = vec[i];
+        temp[i].ord = i;
+    }
+
+    qsort(temp, n, sizeof(int_tuple), compare);
+    for (slong i = 0; i < n; i++)
+        perm[i] = temp[i].ord;
+
+}
+
 
 void Basis(nmod_poly_mat_t res, slong *res_shifts,
            const nmod_mat_t mat, const slong *shifts)
@@ -19,7 +63,7 @@ void Basis(nmod_poly_mat_t res, slong *res_shifts,
 
     nmod_mat_init_set(mat_cp, mat);
 
-    apply_perm_rows_to_matrix(mat_cp, perm, rdim);
+    nmod_mat_permute_rows(mat_cp, NULL, perm);
 
     P = _perm_init(rdim);
 
@@ -33,6 +77,7 @@ void Basis(nmod_poly_mat_t res, slong *res_shifts,
         P_inv[i] = P[rank_kernel + i];
 
     _perm_inv(P_inv, P_inv, rdim);
+    _perm_inv(perm, perm, rdim);
 
     /* Computation of the block matrix  [ [xIr, 0], [K, I_{rdim - rank}] ] */
     nmod_poly_init(One, prime);
@@ -64,8 +109,8 @@ void Basis(nmod_poly_mat_t res, slong *res_shifts,
 
     _perm_inv(comp_inv, comp, rdim);
 
-    apply_perm_cols_to_poly_matrix(res, comp, rdim);
-    apply_perm_rows_to_poly_matrix(res, comp_inv, rdim);
+    nmod_poly_mat_permute_columns(res, NULL, comp);
+    nmod_poly_mat_permute_rows(res, NULL, comp_inv);
 
     /* Compute the new shift */
     apply_perm_to_vector(temp, shifts, comp, rdim);
@@ -102,7 +147,7 @@ slong Basis_for_M_basis(nmod_mat_t res, slong *res_shifts, slong *res_perm,
     /* compute left kernel of perm*mat with rank profile */
     nmod_mat_init_set(mat_cp, mat);
 
-    apply_perm_rows_to_matrix(mat_cp, perm, rdim);
+    nmod_mat_permute_rows(mat_cp, NULL, perm);
 
     P = _perm_init(rdim);
 
@@ -115,7 +160,8 @@ slong Basis_for_M_basis(nmod_mat_t res, slong *res_shifts, slong *res_perm,
     for (i = 0; i < rank_mat; i++)
         P_inv[i] = P[rank_kernel + i];
 
-    _perm_inv(P_inv, P_inv, rdim);
+    _perm_inv(perm, perm, rdim);
+    _perm_inv(perm, perm, rdim);
 
     nmod_mat_init_set(res, K);
 

@@ -40,41 +40,10 @@ void Basis(nmod_poly_mat_t res, int64_t *res_shifts,
 slong Basis_for_M_basis(nmod_mat_t res, int64_t *res_shifts, slong *res_perm,
 			const nmod_mat_t mat, const int64_t *shifts);
 
-
-/**
- * \brief Do the multiplication permutation matrix (P*A) for the function Basis
- *
- * \param A, the input and result matrix
- * \param P, the permutation 
- * \param n, length of P and row dimension of A
- */
-void apply_perm_rows_to_matrix(nmod_mat_t mat, const slong * perm, slong rdim);
-
-void apply_perm_cols_to_poly_matrix(nmod_poly_mat_t mat, const slong * perm, slong cdim);
-
-void apply_perm_rows_to_poly_matrix(nmod_poly_mat_t mat, const slong *perm, slong rdim);
-
-void apply_perm_to_vector(int64_t *res, const int64_t *initial_vect,
-			  const slong *perm, slong length);
-
-void sort_and_create_perm(slong *perm, const int64_t *vec, slong n);
-
-
-
-
-
-
 /** Not finished yet **/
 int is_minimal_approximant_basis(const nmod_poly_mat_t base,
                                  const nmod_mat_t mat, int64_t order,
                                  const int64_t *shifts);
-
-
-
-
-
-
-
 
 
 

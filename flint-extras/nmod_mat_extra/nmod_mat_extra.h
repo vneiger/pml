@@ -8,11 +8,37 @@
 #define __NMOD_MAT_EXTRA__H
 
 #include <flint/flint.h>
+#include <flint/perm.h>
 #include <flint/nmod_mat.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** Permute rows of a matrix `mat` according to `perm_act`, and propagate the
+ * action on `perm_store`. Namely, performs for each appropriate index `i`, the
+ * operations `perm_store[i] <- perm_store[perm_act[i]]` and
+ * `rows[i] <- rows[perm_act[i]]`.
+ * \todo Should be present in a future release of Flint (?) --> then remove */
+NMOD_MAT_INLINE void
+nmod_mat_permute_rows(nmod_mat_t mat,
+                      slong * perm_store,
+                      const slong * perm_act)
+{
+    // perm_store[i] <- perm_store[perm_act[i]] 
+    if (perm_store)
+        _perm_compose(perm_store, perm_store, perm_act, mat->r);
+
+    // rows[i] <- rows[perm_act[i]] 
+    mp_limb_t ** mat_tmp = flint_malloc(mat->r * sizeof(mp_limb_t *));
+    for (slong i = 0; i < mat->r; ++i)
+        mat_tmp[i] = mat->rows[perm_act[i]];
+    for (slong i = 0; i < mat->r; ++i)
+        mat->rows[i] = mat_tmp[i];
+
+    flint_free(mat_tmp);
+}
+
 
 /** Left nullspace of A.
  *

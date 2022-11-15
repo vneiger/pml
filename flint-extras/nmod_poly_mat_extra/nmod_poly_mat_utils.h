@@ -53,6 +53,7 @@ nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
 // TODO
 
 /** Compute and return the degree of a matrix polynomial `matp` */
+// TODO redundant with functions in nmod_mat_poly ?
 NMOD_POLY_MAT_INLINE slong
 nmod_mat_poly_degree(const nmod_mat_poly_t matp)
 {
@@ -62,6 +63,7 @@ nmod_mat_poly_degree(const nmod_mat_poly_t matp)
 
 
 /** Tests whether `matp` is a constant matrix, that is, of degree 0 */
+// TODO should be in nmod_mat_poly ?
 NMOD_POLY_MAT_INLINE int
 nmod_mat_poly_is_constant(const nmod_mat_poly_t matp)
 {
@@ -79,16 +81,16 @@ nmod_mat_poly_is_constant(const nmod_mat_poly_t matp)
 
 /** @name Setting and getting coefficients
  *
- *  Seeing a polynomial matrix in `Mat<zz_pX>` as a univariate polynomial with
- *  matrix coefficients in `Mat<zz_p>`, these functions allow one to get or set
- *  one of these coefficients, for a given polynomial matrix.
+ *  Seeing a polynomial matrix in `nmod_poly_mat_t` as a univariate polynomial
+ *  with matrix coefficients in `nmod_mat_t`, these functions allow one to get
+ *  or set one of these coefficients, for a given polynomial matrix.
  */
 //@{
 
 /** Sets `coeff` to be the coefficient of `pmat` of degree `degree` */
-void coefficient_matrix(nmod_mat_t coeff,
-                        const nmod_poly_mat_t pmat,
-                        slong degree);
+void nmod_poly_mat_coefficient_matrix(nmod_mat_t coeff,
+                                      const nmod_poly_mat_t pmat,
+                                      slong degree);
 
 /** Sets the coefficient of `pmat` of degree `degree` to be `coeff` */
 // TODO
@@ -96,18 +98,151 @@ void coefficient_matrix(nmod_mat_t coeff,
 
 //@} // doxygen group: Setting and getting coefficients
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* SWAP, PERMUTE, TRANSPOSE                                   */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* TRANSPOSE, TRUNC, SHIFT, REVERSE                           */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/** @name Transpose and mirror
+/** @name Swap, permute, transpose
  *
- *  Transpose of a polynomial matrix, and mirror of a vector.
+ *  These functions allow one to swap or permute the rows or the columns a
+ *  given polynomial matrix, and to get its transpose.
  */
 //@{
+
+/** Swap two rows of a polynomial matrix. It is assumed that `r` and `s` are
+ * valid row indices for `mat` (this is not checked). The case of equality
+ * `r==s` is allowed. This swaps pointers to rows. If `perm` is not `NULL`,
+ * it should be an array for which `r` and `s` are valid indices; then the
+ * corresponding elements of this array will be swapped. */
+NMOD_POLY_MAT_INLINE void
+nmod_poly_mat_swap_rows(nmod_poly_mat_t mat,
+                        slong * perm,
+                        slong r, slong s)
+{
+    if (r != s)
+    {
+        if (perm)
+        {
+            slong t = perm[s];
+            perm[s] = perm[r];
+            perm[r] = t;
+        }
+
+        nmod_poly_struct * tmp = mat->rows[s];
+        mat->rows[s] = mat->rows[r];
+        mat->rows[r] = tmp;
+    }
+}
+
+/** Invert rows of a polynomial matrix. If `mat` has `m` rows, then its row `0`
+ * is swapped with its row `m-1`, its row `1` is swapped with its row `m-2`,
+ * etc. If `perm` is not `NULL`, it should be an array of length `m`; its
+ * elements of this array will be inverted accordingly. */
+NMOD_POLY_MAT_INLINE void
+nmod_poly_mat_invert_rows(nmod_poly_mat_t mat, slong * perm)
+{
+    for (slong i = 0; i < mat->r/2; i++)
+        nmod_poly_mat_swap_rows(mat, perm, i, mat->r - i - 1);
+}
+
+/** Swap two columns of a polynomial matrix. It is assumed that `r` and `s` are
+ * valid column indices for `mat` (this is not checked). The case of equality
+ * `r==s` is allowed. This swaps pointers to polynomial entries. If `perm` is
+ * not `NULL`, it should be an array for which `r` and `s` are valid indices;
+ * then the corresponding elements of this array will be swapped. */
+NMOD_POLY_MAT_INLINE void
+nmod_poly_mat_swap_columns(nmod_poly_mat_t mat,
+                           slong * perm,
+                           slong r, slong s)
+{
+    if (r != s)
+    {
+        if (perm)
+        {
+            slong t = perm[s];
+            perm[s] = perm[r];
+            perm[r] = t;
+        }
+
+        for (slong t = 0; t < mat->r; t++)
+            nmod_poly_swap(mat->rows[t] + r, mat->rows[t] + s);
+    }
+}
+
+/** Invert columns of a polynomial matrix. If `mat` has `n` columns, then its
+ * column `0` is swapped with its column `n-1`, its column `1` is swapped with
+ * its column `n-2`, etc. If `perm` is not `NULL`, it should be an array of
+ * length `n`; its elements of this array will be inverted accordingly. */
+NMOD_POLY_MAT_INLINE void
+nmod_poly_mat_invert_columns(nmod_poly_mat_t mat, slong * perm)
+{
+    if (perm)
+    {
+        for (slong j = 0; j < mat->c/2; j++)
+        {
+            slong t = perm[j];
+            perm[j] = perm[mat->c - j - 1];
+            perm[mat->c - j - 1] = t;
+        }
+    }
+
+    for (slong t = 0; t < mat->r; t++)
+        for (slong j = 0; j < mat->c/2; j++)
+            nmod_poly_swap(mat->rows[t]+j, mat->rows[t]+ mat->c - j - 1);
+}
+
+
+/** Permute rows of a polynomial matrix `mat` according to `perm_act`, and
+ * propagate the action on `perm_store`. Namely, performs for each appropriate
+ * index `i`, the operations `perm_store[i] <- perm_store[perm_act[i]]` and
+ * `rows[i] <- rows[perm_act[i]]`.  */
+NMOD_POLY_MAT_INLINE void
+nmod_poly_mat_permute_rows(nmod_poly_mat_t mat,
+                           slong * perm_store,
+                           const slong *perm_act)
+{
+    // perm_store[i] <- perm_store[perm_act[i]] 
+    if (perm_store)
+        _perm_compose(perm_store, perm_store, perm_act, mat->r);
+
+    // rows[i] <- rows[perm_act[i]] 
+    nmod_poly_struct ** mat_tmp = flint_malloc(mat->r * sizeof(nmod_poly_struct *));
+    for (slong i = 0; i < mat->r; ++i)
+        mat_tmp[i] = mat->rows[perm_act[i]];
+    for (slong i = 0; i < mat->r; ++i)
+        mat->rows[i] = mat_tmp[i];
+
+    flint_free(mat_tmp);
+}
+
+/** Permute columns of a polynomial matrix `mat` according to `perm_act`, and
+ * propagate the action on `perm_store`. Namely, performs for each appropriate
+ * index `i` and `j`, the operations `perm_store[j] <- perm_store[perm_act[j]]`
+ * and `rows[i][j] <- rows[i][perm_act[j]]`.  */
+NMOD_POLY_MAT_INLINE void
+nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
+                              slong * perm_store,
+                              const slong * perm_act)
+{
+    // perm_store[i] <- perm_store[perm_act[i]] 
+    if (perm_store)
+        _perm_compose(perm_store, perm_store, perm_act, mat->c);
+
+
+    // simulate columns[j] <- columns[perm_act[j]]
+    nmod_poly_struct * row_tmp = flint_malloc(mat->c * sizeof(nmod_poly_struct));
+    for (slong i = 0; i < mat->r; i++)
+    {
+        for (slong j = 0; j < mat->c; j++)
+            row_tmp[j] = mat->rows[i][perm_act[j]];
+        for (slong j = 0; j < mat->c; j++)
+            mat->rows[i][j] = row_tmp[j];
+    }
+    flint_free(row_tmp);
+}
+
 /** Computes the transpose `tmat` or the polynomial matrix `pmat`; `tmat`
  * may alias `pmat` */
 // TODO
@@ -119,7 +254,15 @@ void coefficient_matrix(nmod_mat_t coeff,
 // TODO
 //void mirror(Vec<zz_pX> & mvec, const Vec<zz_pX> & pvec);
 
-//@} // doxygen group: Transpose and mirror
+//@} // doxygen group: Swap, permute, transpose
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TRANSPOSE, TRUNC, SHIFT, REVERSE                           */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 
 /** @name Truncate
