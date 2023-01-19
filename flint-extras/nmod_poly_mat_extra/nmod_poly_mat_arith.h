@@ -1,9 +1,9 @@
 #ifndef NMOD_POLY_MAT_ARITH_H
 #define NMOD_POLY_MAT_ARITH_H
 
-/** \brief Basic arithmetic for univariate polynomial matrices over `zz_p`
+/** \brief Basic arithmetic for univariate polynomial matrices over `nmod`
  *
- * \file mat_lzz_pX_arith.h
+ * \file nmod_poly_mat_arith.h
  * \version 0.0
  * \date 2022-06-27
  *
