@@ -2,18 +2,18 @@
 #include "nmod_poly_mat_approximant.h"
 #include "time.h"
 
-#define NUMBER_M_BASIS 1
+#define NUMBER_M_BASIS 5
 
 // testing different variants of mbasis implementation
 static void (*m_basis[NUMBER_M_BASIS])(nmod_poly_mat_t, int64_t * ,
                                        const nmod_poly_mat_t, ulong, const int64_t*) =
 {
-    //M_basis, M_basisII, M_basisIII, M_basisIV, M_basisV
-    M_basisIV
+    M_basis, M_basisII, M_basisIII, M_basisIV, M_basisV
+    //M_basisIV
 };
 
-//static char* nb_m_basis[NUMBER_M_BASIS] =  {"I", "II", "III", "IV", "V"};
-static char* nb_m_basis[NUMBER_M_BASIS] =  {"IV"};
+static char* nb_m_basis[NUMBER_M_BASIS] =  {"I", "II", "III", "IV", "V"};
+//static char* nb_m_basis[NUMBER_M_BASIS] =  {"IV"};
 
 // main function
 void benchmark_m_basis(slong rdim, slong cdim, slong sigma, slong len,
