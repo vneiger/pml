@@ -541,48 +541,26 @@ slong mbasis1_for_mbasis(nmod_mat_t kerbas,
 //                  VecLong & shift
 //                 );
 
-/****************************************
-*  TODO MBASIS TO BE BETTER INTEGRATED  *
-****************************************/
-/** 
- * This function computes the multiplication of specific polynomial matrix
- * It takes an integer r, A a nmod_mat_t, res a nmod_poly_mat_t
- * and the permutation perm. 
- * It will compute the mutiplication of
- * M = perm^(-1) * [[x, 0], [A, 1]] * perm and res = [[R1],[R2]] 
- * Stores the result in res
- */
-void structured_multiplication_blocks(nmod_poly_mat_t pmat,
-                                      const nmod_mat_t mat,
-                                      const slong * perm,
-                                      slong rank);
-
-/****************************************
-*  TODO MBASIS TO BE BETTER INTEGRATED  *
-****************************************/
-/** void M_basis(nmod_poly_mat_t res, slong * res_shift,
- *	         const nmod_poly_mat_t F, ulong order, const slong * shift);
- * 
- * Compute the minimal approximant basis of F for the order order and the shift shift
+/**********************************************************
+*  TODO MBASIS TO BE FURTHER BENCH'D AND THEN INTEGRATED  *
+**********************************************************/
+/** Compute the minimal approximant basis of F for the order order and the shift shift
  *
  * It used the structured multiplication blocks to compute x^{-k} P_{k-1} F mod x and to compute
  * P_{k} = M P_{k-1}
  * Use polynomial matrix multiplication
  *
  */
-void M_basis(nmod_poly_mat_t appbas,
-             slong * res_shift,
-             const nmod_poly_mat_t pmat,
-             ulong order,
-             const slong * shift);
+void mbasis(nmod_poly_mat_t appbas,
+            slong * res_shift,
+            const nmod_poly_mat_t pmat,
+            ulong order,
+            const slong * shift);
 
-/****************************************
-*  TODO MBASIS TO BE BETTER INTEGRATED  *
-****************************************/
-/** void M_basisII(nmod_poly_mat_t res, slong * res_shift,
- *	         const nmod_poly_mat_t F, ulong order, const slong * shift);
- * 
- * Compute the minimal approximant basis of F for the order order and the shift shift
+/**********************************************************
+*  TODO MBASIS TO BE FURTHER BENCH'D AND THEN INTEGRATED  *
+**********************************************************/
+/** Compute the minimal approximant basis of F for the order order and the shift shift
  *
  * F \in K[x]^{nxm} <-> F_prime K^{mxn}[x] will be FIX and
  * compute iteratively P_{k} \in K[x]^{mxm}, then will transform to P_prime_{k} \in K^{mxm}[x] 
@@ -590,19 +568,16 @@ void M_basis(nmod_poly_mat_t appbas,
  *
  * Use naive polynomial multiplication
  */
-void M_basisII(nmod_poly_mat_t appbas,
+void mbasisII(nmod_poly_mat_t appbas,
                slong * res_shift,
                const nmod_poly_mat_t pmat,
                ulong order,
                const slong * shift);
 
-/****************************************
-*  TODO MBASIS TO BE BETTER INTEGRATED  *
-****************************************/
-/** void M_basisIII(nmod_poly_mat_t res, slong * res_shift,
- *	         const nmod_poly_mat_t F, ulong order, const slong * shift);
- * 
- * Compute the minimal approximant basis of F for the order order and the shift shift
+/**********************************************************
+*  TODO MBASIS TO BE FURTHER BENCH'D AND THEN INTEGRATED  *
+**********************************************************/
+/** Compute the minimal approximant basis of F for the order order and the shift shift
  *
  * F \in K[x]^{nxm} <-> F_prime K^{mxn}[x]  and
  * Compute P_{k-1} F iteratively with a the list_structured_multiplication_blocks 
@@ -611,19 +586,16 @@ void M_basisII(nmod_poly_mat_t appbas,
  *
  * Use structured_multiplication_blocks and list_structured_multiplication_blocks 
  */
-void M_basisIII(nmod_poly_mat_t appbas,
+void mbasisIII(nmod_poly_mat_t appbas,
                 slong * res_shift,
                 const nmod_poly_mat_t pmat,
                 ulong order,
                 const slong * shift);
 
-/****************************************
-*  TODO MBASIS TO BE BETTER INTEGRATED  *
-****************************************/
-/** void M_basisIV(nmod_poly_mat_t res, slong * res_shift,
- *	         const nmod_poly_mat_t F, ulong order, const slong * shift);
- * 
- * Compute the minimal approximant basis of F for the order order and the shift shift
+/**********************************************************
+*  TODO MBASIS TO BE FURTHER BENCH'D AND THEN INTEGRATED  *
+**********************************************************/
+/** Compute the minimal approximant basis of F for the order order and the shift shift
  *
  * F \in K[x]^{nxm} <-> F_prime K^{mxn}[x]  and
  * Compute P_{k-1} F iteratively with a the list_structured_multiplication_blocks 
@@ -633,19 +605,16 @@ void M_basisIII(nmod_poly_mat_t appbas,
  *
  * Use list_structured_multiplication_blocks 
  */
-void M_basisIV(nmod_poly_mat_t appbas,
+void mbasisIV(nmod_poly_mat_t appbas,
                slong * res_shift,
                const nmod_poly_mat_t pmat,
                ulong order,
                const slong * shift);
 
-/****************************************
-*  TODO MBASIS TO BE BETTER INTEGRATED  *
-****************************************/
-/** void M_basisIII(nmod_poly_mat_t res, slong * res_shift,
- *	         const nmod_poly_mat_t F, ulong order, const slong * shift);
- * 
- * Compute the minimal approximant basis of F for the order order and the shift shift
+/**********************************************************
+*  TODO MBASIS TO BE FURTHER BENCH'D AND THEN INTEGRATED  *
+**********************************************************/
+/** Compute the minimal approximant basis of F for the order order and the shift shift
  *
  * F \in K[x]^{nxm} <-> F_prime K^{mxn}[x] FIX and
  * Compute P_{k-1} \in K[x]^{mxm} with the list structured_multiplication_blocks
@@ -653,7 +622,7 @@ void M_basisIV(nmod_poly_mat_t appbas,
  *
  * Use naive polynomial multiplication and list_structured_multiplication_blocks 
  */
-void M_basisV(nmod_poly_mat_t appbas,
+void mbasisV(nmod_poly_mat_t appbas,
               slong * res_shift,
               const nmod_poly_mat_t pmat,
               ulong order,

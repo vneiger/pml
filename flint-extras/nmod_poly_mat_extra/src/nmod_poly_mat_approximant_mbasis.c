@@ -3,6 +3,23 @@
 #include "nmod_poly_mat_mat_poly.h"
 #include "nmod_poly_mat_utils.h"
 
+/****************************************************************
+*  TODO next functions for structured blocks mul to be cleaned  *
+****************************************************************/
+/** 
+ * This function computes the multiplication of specific polynomial matrix
+ * It takes rank, mat, pmat, perm. 
+ * It will compute the mutiplication of
+ * perm^(-1) * [[x, 0], [mat, 1]] * perm and pmat = [[pmat1],[pmat2]] 
+ * Stores the result in pmat
+ */
+void structured_multiplication_blocks(nmod_poly_mat_t pmat,
+                                      const nmod_mat_t mat,
+                                      const slong * perm,
+                                      slong rank);
+
+
+
 /** static void list_structured_multiplication_blocks(nmod_poly_mat_t res, const nmod_mat_t A,
  *                                               const slong *perm, slong rank,
  *                                               slong k, slong sigma)
