@@ -3,49 +3,49 @@
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_approximant.h"
 
-
-/* Type only for the function mbasis1 */
+/* type for sorting permutation */
 typedef struct
 {
     slong value;
     slong ord;
-} int_tuple;
+} slong_pair;
 
-
-/* Parameter for quicksort */
-static inline int compare(const void *a, const void *b)
+/* comparison function for quicksort */
+static inline int compare(const void * a, const void * b)
 {
-    int_tuple a_prime = * (const int_tuple *) a;
-    int_tuple b_prime = * (const int_tuple *) b;
-    return a_prime.value - b_prime.value;
+    slong_pair aa = * (const slong_pair *) a;
+    slong_pair bb = * (const slong_pair *) b;
+    return aa.value - bb.value;
 }
 
-/**
- * \brief Will only be used in mbasis1.
+/** Creates a permutation from the sorting of a shift
+ * After running this, perm is the list of integers which sorts
+ * shift increasingly, i.e.
+ * shift[perm[0]] <= shift[perm[1]] < ... < shift[perm[n-1]]
  *
- *  Creates a permutation from the sorting of a shift
+ * \param perm permutation (list of integers)
+ * \param shift list of integer to be sorted increasingly
+ * \param n length of both perm and shift
  *
- * \param perm, the result his length must be n
- * \param vec, the shift we want to sort increasly
- * \param n, length of perm and vec
+ * TODO make stable
  */
-static inline void sort_and_create_perm(slong *perm, const slong *vec, slong n)
+static inline void sort_and_create_perm(slong * perm, const slong * shift, slong n)
 {
-    int_tuple temp[n];
+    slong_pair temp[n];
     for (slong i = 0; i < n; i++)
     {
-        temp[i].value = vec[i];
+        temp[i].value = shift[i];
         temp[i].ord = i;
     }
 
-    qsort(temp, n, sizeof(int_tuple), compare);
+    qsort(temp, n, sizeof(slong_pair), compare);
+
     for (slong i = 0; i < n; i++)
         perm[i] = temp[i].ord;
-
 }
 
 
-void mbasis1(nmod_poly_mat_t res,
+void mbasis1(nmod_poly_mat_t appbas,
              slong *res_shifts,
              const nmod_mat_t mat,
              const slong *shifts)
@@ -86,11 +86,11 @@ void mbasis1(nmod_poly_mat_t res,
     nmod_poly_set_coeff_ui(One, 0, 1); // 1
 
     for (i = rank_mat; i < rdim; i++)
-        nmod_poly_set(nmod_poly_mat_entry(res, i, i), One);
+        nmod_poly_set(nmod_poly_mat_entry(appbas, i, i), One);
 
     nmod_poly_shift_left(One, One, 1); // x
     for (i = 0; i < rank_mat; i++)
-        nmod_poly_set(nmod_poly_mat_entry(res, i, i), One);
+        nmod_poly_set(nmod_poly_mat_entry(appbas, i, i), One);
 
     nmod_poly_init(constant, prime);
     for (i = 0; i < rank_kernel; i++)
@@ -100,7 +100,7 @@ void mbasis1(nmod_poly_mat_t res,
             if (alloc != 0)
             {
                 nmod_poly_set_coeff_ui(constant, 0, alloc);
-                nmod_poly_set(nmod_poly_mat_entry(res, i + rank_mat, j), constant);
+                nmod_poly_set(nmod_poly_mat_entry(appbas, i + rank_mat, j), constant);
             }
         }
     /* Multiply by the permutations */
@@ -111,8 +111,8 @@ void mbasis1(nmod_poly_mat_t res,
 
     _perm_inv(comp_inv, comp, rdim);
 
-    nmod_poly_mat_permute_columns(res, NULL, comp);
-    nmod_poly_mat_permute_rows(res, NULL, comp_inv);
+    nmod_poly_mat_permute_columns(appbas, NULL, comp);
+    nmod_poly_mat_permute_rows(appbas, NULL, comp_inv);
 
     /* Compute the new shift */
     apply_perm_to_vector(temp, shifts, comp, rdim);
@@ -134,7 +134,7 @@ void mbasis1(nmod_poly_mat_t res,
     _perm_clear(comp_inv);
 }
 
-slong mbasis1_for_mbasis(nmod_mat_t res,
+slong mbasis1_for_mbasis(nmod_mat_t appbas,
                          slong *res_shifts,
                          slong *res_perm,
                          const nmod_mat_t mat,
@@ -167,7 +167,7 @@ slong mbasis1_for_mbasis(nmod_mat_t res,
     _perm_inv(perm, perm, rdim);
     _perm_inv(perm, perm, rdim);
 
-    nmod_mat_init_set(res, K);
+    nmod_mat_init_set(appbas, K);
 
     /* Permutations */
     _perm_compose(res_perm, P_inv, perm, rdim);
