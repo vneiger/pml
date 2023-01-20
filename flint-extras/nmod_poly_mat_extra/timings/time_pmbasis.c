@@ -2,10 +2,8 @@
 #include "nmod_poly_mat_approximant.h"
 #include "time.h"
 
-#define NUMBER_M_BASIS 5
-
 // main function
-void benchmark_pm_basis(slong rdim, slong cdim, slong sigma, slong len,
+void benchmark_pmbasis(slong rdim, slong cdim, slong sigma, slong len,
                        ulong prime, flint_rand_t state)
 {
     // create random matrices
@@ -14,13 +12,13 @@ void benchmark_pm_basis(slong rdim, slong cdim, slong sigma, slong len,
     nmod_poly_mat_init(mat, rdim, cdim, prime);
     nmod_poly_mat_randtest(mat, state, len + 1);
 
-    nmod_poly_mat_t res_m_basis;
+    nmod_poly_mat_t res_mbasis;
     slong shifts[rdim], res_shifts[rdim];
 
     for (slong i = 0; i < rdim; i++)
         shifts[i] = 0;
 
-    nmod_poly_mat_init(res_m_basis, rdim, rdim, prime);
+    nmod_poly_mat_init(res_mbasis, rdim, rdim, prime);
 
     // parameters for measuring time
     double t = 0.0;
@@ -34,7 +32,7 @@ void benchmark_pm_basis(slong rdim, slong cdim, slong sigma, slong len,
     while (t<0.5)
     {
         tt = clock();
-        PM_basis(res_m_basis, res_shifts, mat, sigma, shifts);
+        PM_basis(res_mbasis, res_shifts, mat, sigma, shifts);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         ++nb_iter;
     }
@@ -60,11 +58,11 @@ void benchmark_nbits(ulong nbits, flint_rand_t state)
     slong rdims[] = { 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, };
     slong sigmas[] = { 32, 64, 128, 256, 512, 1024, 2048, 4096};
 
-    printf("Bench PM Basis\n");
+    printf("Bench pmbasis\n");
     printf("nbits=%ld, prime=%ld\n", nbits, prime);
     printf("n\trdim\tcdim\torder\tdeg\ttime\n");
     printf("~~~~WARMUP~~~~\n");
-    benchmark_pm_basis(4, 2, 128, 128, 997, state);
+    benchmark_pmbasis(4, 2, 128, 128, 997, state);
     printf("~~~~WARMUP DONE~~~~\n");
     for (size_t i = 0; i < sizeof(rdims) / sizeof(rdims[0]); ++i)
     {
@@ -73,7 +71,7 @@ void benchmark_nbits(ulong nbits, flint_rand_t state)
         for (size_t j = 0; j < sizeof(sigmas) / sizeof(sigmas[0]); ++j)
         {
             long ord = sigmas[j];
-            benchmark_pm_basis(rdim, rdim / 2, ord, ord, prime, state);
+            benchmark_pmbasis(rdim, rdim / 2, ord, ord, prime, state);
         }
     }
 
@@ -94,13 +92,13 @@ void benchmark_nbits_dim_deg(ulong nbits, ulong rdim, ulong cdim, ulong deg, fli
 {
     const ulong prime = n_randprime(state, nbits, 0);
 
-    printf("Bench PM Basis:\n");
+    printf("Bench pmbasis:\n");
     printf("nbits=%ld, prime=%ld, rdim=%ld, cdim=%ld, deg=%ld\n",nbits, prime, rdim, cdim, deg);
     printf("~~~~WARMUP~~~~\n");
-    benchmark_pm_basis(4, 2, 128, 128, 997, state);
+    benchmark_pmbasis(4, 2, 128, 128, 997, state);
     printf("~~~~WARMUP DONE~~~~\n");
     printf("n\trdim\tcdim\torder\tdeg\ttime\n");
-    benchmark_pm_basis(rdim, cdim, deg, deg, prime, state);
+    benchmark_pmbasis(rdim, cdim, deg, deg, prime, state);
 }
 
 

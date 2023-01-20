@@ -4,7 +4,7 @@
 #include "nmod_poly_mat_approximant.h"
 
 
-/* Type only for the function Basis */
+/* Type only for the function mbasis1 */
 typedef struct
 {
     slong value;
@@ -21,7 +21,7 @@ static inline int compare(const void *a, const void *b)
 }
 
 /**
- * \brief Will only be used in Basis.
+ * \brief Will only be used in mbasis1.
  *
  *  Creates a permutation from the sorting of a shift
  *
@@ -45,8 +45,10 @@ static inline void sort_and_create_perm(slong *perm, const slong *vec, slong n)
 }
 
 
-void Basis(nmod_poly_mat_t res, slong *res_shifts,
-           const nmod_mat_t mat, const slong *shifts)
+void mbasis1(nmod_poly_mat_t res,
+             slong *res_shifts,
+             const nmod_mat_t mat,
+             const slong *shifts)
 {
     slong rdim = mat->r;
     slong i, j, alloc, temp[rdim],
@@ -132,9 +134,11 @@ void Basis(nmod_poly_mat_t res, slong *res_shifts,
     _perm_clear(comp_inv);
 }
 
-slong Basis_for_M_basis(nmod_mat_t res, slong *res_shifts, slong *res_perm,
-                        const nmod_mat_t mat, const slong *shifts)
-
+slong mbasis1_for_mbasis(nmod_mat_t res,
+                         slong *res_shifts,
+                         slong *res_perm,
+                         const nmod_mat_t mat,
+                         const slong *shifts)
 {
     slong rdim = mat->r;
     slong  i, rank_mat, rank_kernel, temp[rdim];

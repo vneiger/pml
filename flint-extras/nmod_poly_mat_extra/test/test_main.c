@@ -1,4 +1,5 @@
 #include <flint/fmpz_mat.h>
+#include "nmod_poly_mat_approximant.h"
 #include "nmod_poly_mat_extra.h"
 #include "sagemath_extra.h"
 
@@ -61,7 +62,7 @@ int test_pmbasis(void)
 }
 
 /** Test
- * Verify if all versions of M_Basis give the same results, test time
+ * Verify if all versions of mbasis give the same results, test time
  */
 int test_mbasis(void)
 {
@@ -298,8 +299,8 @@ int test_nmod_mat_poly(void)
 //          nmod_mat_init(constant_mat, rdim, cdim, prime);
 //
 //          nmod_poly_mat_coefficient_matrix(constant_mat, mat, 0);
-//          rank = Basis_for_M_basis(A, res_shifts, perm, constant_mat, shifts);
-//          Basis(res_2, res_shifts, constant_mat, shifts);
+//          rank = mbasis1_for_mbasis(A, res_shifts, perm, constant_mat, shifts);
+//          mbasis1(res_2, res_shifts, constant_mat, shifts);
 //          nmod_poly_mat_mul(resid_2, res_2, resid_2);
 //
 //          nmod_poly_mat_one(res);
@@ -322,13 +323,13 @@ int test_nmod_mat_poly(void)
 //
 //          // test
 //          if (!nmod_poly_mat_equal(res, res_2))
-//              printf("Basis and Basis for M Basis not same result");
+//              printf("mbasis1 and mbasis1_for_mbasis not same result");
 //
 //          if (!nmod_poly_mat_equal(resid, resid_2))
-//              printf("Basis and Basis for M Basis not same result");
+//              printf("mbasis1 and mbasis1_for_mbasis not same result");
 //
 //          if (!nmod_poly_mat_equal(resid, resid_3))
-//              printf("Basis and list_struct_mul not same result");
+//              printf("mbasis1 and list_struct_mul not same result");
 //
 //          /** clear **/
 //          nmod_mat_clear(A);
@@ -379,12 +380,12 @@ int test_basis(void)
     for (slong i = 0; i < rdim; i++)
         shift[i] =  rand() % 10 - 5;
 
-    Basis(res, res_shift, mat, shift);
+    mbasis1(res, res_shift, mat, shift);
 
 
     printf("Matrix\n");
     nmod_mat_print_pretty(mat);
-    printf("Result Basis\n");
+    printf("Result mbasis1\n");
     nmod_poly_mat_print_pretty(res,"x");
     nmod_poly_mat_clear(res);
     flint_randclear(state);
@@ -392,7 +393,7 @@ int test_basis(void)
     nmod_mat_t res2;
     int64_t res_shift2[rdim];
     slong res_perm2[rdim];
-    slong rank = Basis_for_M_basis(res2, res_shift2, res_perm2, mat, shift);
+    slong rank = mbasis1_for_mbasis(res2, res_shift2, res_perm2, mat, shift);
 
     nmod_mat_clear(mat);
 

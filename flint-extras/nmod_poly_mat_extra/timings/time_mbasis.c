@@ -2,21 +2,21 @@
 #include "nmod_poly_mat_approximant.h"
 #include "time.h"
 
-#define NUMBER_M_BASIS 5
+#define NUMBER_MBASIS 5
 
 // testing different variants of mbasis implementation
-static void (*m_basis[NUMBER_M_BASIS])(nmod_poly_mat_t, int64_t * ,
+static void (*m_basis[NUMBER_MBASIS])(nmod_poly_mat_t, int64_t * ,
                                        const nmod_poly_mat_t, ulong, const int64_t*) =
 {
     M_basis, M_basisII, M_basisIII, M_basisIV, M_basisV
     //M_basisIV
 };
 
-static char* nb_m_basis[NUMBER_M_BASIS] =  {"I", "II", "III", "IV", "V"};
-//static char* nb_m_basis[NUMBER_M_BASIS] =  {"IV"};
+static char* nb_mbasis[NUMBER_MBASIS] =  {"I", "II", "III", "IV", "V"};
+//static char* nb_mbasis[NUMBER_MBASIS] =  {"IV"};
 
 // main function
-void benchmark_m_basis(slong rdim, slong cdim, slong sigma, slong len,
+void benchmark_mbasis(slong rdim, slong cdim, slong sigma, slong len,
                        ulong prime, flint_rand_t state)
 {
     // create random matrices
@@ -25,13 +25,13 @@ void benchmark_m_basis(slong rdim, slong cdim, slong sigma, slong len,
     nmod_poly_mat_init(mat, rdim, cdim, prime);
     nmod_poly_mat_randtest(mat, state, len + 1);
 
-    nmod_poly_mat_t res_m_basis;
+    nmod_poly_mat_t res_mbasis;
     slong shifts[rdim], res_shifts[rdim];
 
     for (slong i = 0; i < rdim; i++)
         shifts[i] = 0;
 
-    nmod_poly_mat_init(res_m_basis, rdim, rdim, prime);
+    nmod_poly_mat_init(res_mbasis, rdim, rdim, prime);
 
     // parameters for measuring time
     double t = 0.0;
@@ -39,7 +39,7 @@ void benchmark_m_basis(slong rdim, slong cdim, slong sigma, slong len,
     long nb_iter = 0;
 
     // let's go
-    for (int i = 0; i < NUMBER_M_BASIS; i++)
+    for (int i = 0; i < NUMBER_MBASIS; i++)
     {
         t = 0.0;
         nb_iter = 0;
@@ -47,12 +47,12 @@ void benchmark_m_basis(slong rdim, slong cdim, slong sigma, slong len,
         while (t<0.5)
         {
             tt = clock();
-            m_basis[i](res_m_basis, res_shifts, mat, sigma, shifts);
+            m_basis[i](res_mbasis, res_shifts, mat, sigma, shifts);
             t += (double)(clock()-tt) / CLOCKS_PER_SEC;
             ++nb_iter;
         }
         t /= nb_iter;
-        printf("%s\t%ld\t%ld\t%ld\t%ld\t%f\n", nb_m_basis[i], rdim, cdim, sigma, len, t);
+        printf("%s\t%ld\t%ld\t%ld\t%ld\t%f\n", nb_mbasis[i], rdim, cdim, sigma, len, t);
     }
 
 }
@@ -74,11 +74,11 @@ void benchmark_nbits(ulong nbits, flint_rand_t state)
     slong rdims[] = { 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192 };
     slong sigmas[] = { 4, 8, 16, 32, 64 };
 
-    printf("Bench M Basis\n");
+    printf("Bench mbasis\n");
     printf("nbits=%ld, prime=%ld\n", nbits, prime);
     printf("n\trdim\tcdim\torder\tdeg\ttime\n");
     printf("~~~~WARMUP~~~~\n");
-    benchmark_m_basis(4, 2, 128, 128, 997, state);
+    benchmark_mbasis(4, 2, 128, 128, 997, state);
     printf("~~~~WARMUP DONE~~~~\n");
     for (size_t i = 0; i < sizeof(rdims) / sizeof(rdims[0]); ++i)
     {
@@ -87,7 +87,7 @@ void benchmark_nbits(ulong nbits, flint_rand_t state)
         for (size_t j = 0; j < sizeof(sigmas) / sizeof(sigmas[0]); ++j)
         {
             long ord = sigmas[j];
-            benchmark_m_basis(rdim, rdim / 2, ord, ord, prime, state);
+            benchmark_mbasis(rdim, rdim / 2, ord, ord, prime, state);
             printf("\n");
         }
     }
@@ -109,13 +109,13 @@ void benchmark_nbits_dim_deg(ulong nbits, ulong rdim, ulong cdim, ulong deg, fli
 {
     const ulong prime = n_randprime(state, nbits, 0);
 
-    printf("Bench M Basis:\n");
+    printf("Bench mbasis:\n");
     printf("nbits=%ld, prime=%ld, rdim=%ld, cdim=%ld, deg=%ld\n",nbits, prime, rdim, cdim, deg);
     printf("~~~~WARMUP~~~~\n");
-    benchmark_m_basis(4, 2, 128, 128, 997, state);
+    benchmark_mbasis(4, 2, 128, 128, 997, state);
     printf("~~~~WARMUP DONE~~~~\n");
     printf("n\trdim\tcdim\torder\tdeg\ttime\n");
-    benchmark_m_basis(rdim, cdim, deg, deg, prime, state);
+    benchmark_mbasis(rdim, cdim, deg, deg, prime, state);
 }
 
 
