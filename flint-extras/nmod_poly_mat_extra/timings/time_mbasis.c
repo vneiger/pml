@@ -8,8 +8,8 @@
 static void (*m_basis[NUMBER_MBASIS])(nmod_poly_mat_t, int64_t * ,
                                        const nmod_poly_mat_t, ulong, const int64_t*) =
 {
-    M_basis, M_basisII, M_basisIII, M_basisIV, M_basisV
-    //M_basisIV
+    mbasis, mbasisII, mbasisIII, mbasisIV, mbasisV
+    //mbasisIV
 };
 
 static char* nb_mbasis[NUMBER_MBASIS] =  {"I", "II", "III", "IV", "V"};

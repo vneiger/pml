@@ -32,7 +32,7 @@ void benchmark_pmbasis(slong rdim, slong cdim, slong sigma, slong len,
     while (t<0.5)
     {
         tt = clock();
-        PM_basis(res_mbasis, res_shifts, mat, sigma, shifts);
+        pmbasis(res_mbasis, res_shifts, mat, sigma, shifts);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         ++nb_iter;
     }

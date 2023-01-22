@@ -99,7 +99,7 @@ void nmod_mat_poly_init_set(nmod_mat_poly_t res,
  *
  * F \in K[x]^{mxn} <-> res \in K^{mxn}[x]
  * With res->degree = F.degree(), and res will have only length nmod_mat_t pointer
- * Improves memory space for x^{-k} P_{k-1} F mod x in M_basis{III,IV}
+ * Improves memory space for x^{-k} P_{k-1} F mod x in mbasis{III,IV}
  *
  */
 void nmod_mat_poly_init_setII(nmod_mat_poly_t res,
@@ -112,7 +112,7 @@ void nmod_mat_poly_init_setII(nmod_mat_poly_t res,
  *
  * F \in K[x]^{mxn} <-> res \in K^{mxn}[x]
  * With res->degree = F.degree(), and res will have res->degree + length nmod_mat_t pointer
- * To store the computation of P_{k-1} F in M_basisV
+ * To store the computation of P_{k-1} F in mbasisV
  *
  */
 void nmod_mat_poly_init_setIII(nmod_mat_poly_t res,

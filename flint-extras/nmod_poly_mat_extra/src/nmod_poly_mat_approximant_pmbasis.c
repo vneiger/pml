@@ -18,7 +18,7 @@ void middle_product(nmod_poly_mat_t res, const nmod_poly_mat_t A,
 }
 
 
-void PM_basis(nmod_poly_mat_t res, slong *res_shifts,
+void pmbasis(nmod_poly_mat_t res, slong *res_shifts,
               const nmod_poly_mat_t F, ulong sigma, const slong *shifts)
 {
     slong rdim = F->r, cdim = F->c;
@@ -28,21 +28,21 @@ void PM_basis(nmod_poly_mat_t res, slong *res_shifts,
 
     if (sigma <= PMBASIS_THRES)
     {
-        M_basisIII(res, res_shifts, F, sigma, shifts);
+        mbasisIII(res, res_shifts, F, sigma, shifts);
         return;
     }
 
     nmod_poly_mat_init(Pl, rdim, rdim, prime);
-    PM_basis(Pl, ul, F, sigma / 2, shifts);
+    pmbasis(Pl, ul, F, sigma / 2, shifts);
 
     nmod_poly_mat_init(F_prime, rdim, cdim, prime);
     middle_product(F_prime, Pl, F, sigma / 2 + 1, sigma);
 
     nmod_poly_mat_init(Ph, rdim, rdim, prime);
     if (sigma % 2 == 0)
-        PM_basis(Ph, res_shifts, F_prime, sigma / 2, ul);
+        pmbasis(Ph, res_shifts, F_prime, sigma / 2, ul);
     else
-        PM_basis(Ph, res_shifts, F_prime, sigma / 2 + 1, ul);
+        pmbasis(Ph, res_shifts, F_prime, sigma / 2 + 1, ul);
 
     nmod_poly_mat_mul(res, Ph, Pl);
 
