@@ -1,8 +1,6 @@
 #include "nmod_poly_mat_approximant.h"
 #include "nmod_poly_mat_io.h"
 
-#include "flint/profiler.h"
-
 // TODO make random choice for given prime (or for random prime of given size)
 #define PRIME_30_BITS 536870923
 #define PRIME_60_BITS 576460752303423619
@@ -24,14 +22,13 @@ int shift_equal(slong * shift1, slong * shift2, slong length)
 int test_mbasis(void)
 {
     nmod_poly_mat_t mat, appbas1, appbas2, appbas3, appbas4, appbas5;
-    slong rdim = 128, cdim = 64, prime = 3 , sigma = 32, len = 32;
+    slong rdim = 3, cdim = 1, prime = 9001, order = 4, len = 4;
     slong shifts[rdim], shift1[rdim], shift2[rdim];
     slong shift3[rdim], shift4[rdim], shift5[rdim];
 
-    timeit_t t0;
     flint_rand_t state;
 
-    /** init **/
+    /** init */
     nmod_poly_mat_init(mat, rdim, cdim, prime);
 
     nmod_poly_mat_init(appbas1, rdim, rdim, prime);
@@ -46,39 +43,34 @@ int test_mbasis(void)
 
     nmod_poly_mat_randtest(mat, state, len);
 
-    for (slong i = 0; i < 3; i++)
+    for (slong i = 0; i < 100000; i++)
     {
         nmod_poly_mat_randtest(mat, state, len);
+
         //_perm_randtest(shifts, rdim, state);
         //for (slong i = 0; i < rdim; i++)
         //    shifts[i] = rand() % len - 10;
 
-        timeit_start(t0);
-        mbasis(appbas1, shift1, mat, sigma, shifts);
-        timeit_stop(t0);
-        flint_printf("mbasis: cpu = %wd ms  wall = %wd ms\n", t0->cpu, t0->wall);
+        mbasis(appbas1, shift1, mat, order, shifts);
 
-        timeit_start(t0);
-        mbasisII(appbas2, shift2, mat, sigma, shifts);
-        timeit_stop(t0);
-        flint_printf("mbasisII: cpu = %wd ms  wall = %wd ms\n", t0->cpu, t0->wall);
+        mbasisII(appbas2, shift2, mat, order, shifts);
 
-        timeit_start(t0);
-        mbasisIII(appbas3, shift3, mat, sigma, shifts);
-        timeit_stop(t0);
-        flint_printf("mbasisIII: cpu = %wd ms  wall = %wd ms\n", t0->cpu, t0->wall);
+        mbasisIII(appbas3, shift3, mat, order, shifts);
 
-        timeit_start(t0);
-        mbasisIV(appbas4, shift4, mat, sigma, shifts);
-        timeit_stop(t0);
-        flint_printf("mbasisIV: cpu = %wd ms  wall = %wd ms\n", t0->cpu, t0->wall);
+        mbasisIV(appbas4, shift4, mat, order, shifts);
 
-        timeit_start(t0);
-        mbasisV(appbas5, shift5, mat, sigma, shifts);
-        timeit_stop(t0);
-        flint_printf("mbasisV: cpu = %wd ms  wall = %wd ms\n", t0->cpu, t0->wall);
+        mbasisV(appbas5, shift5, mat, order, shifts);
 
-        /** test **/
+        // testing correctness of mbasis
+        if (!nmod_poly_mat_is_approximant_basis(appbas1, mat, order, shifts, ROW_WISE))
+        {
+            printf("mbasis output is not a minimal approximant basis\n");
+            nmod_poly_mat_print(mat, "X");
+            nmod_poly_mat_print(appbas1,"X");
+            printf("\n");
+        }
+
+        // testing other functions return the same
         if (!nmod_poly_mat_equal(appbas1, appbas2))
         {
             printf("mbasis and mbasisII don't return the same result\n");
@@ -118,8 +110,6 @@ int test_mbasis(void)
 
         if (!shift_equal(shift1, shift5, rdim))
             printf("mbasis and mbasisV don't return the same shifts result\n");
-
-        printf("\n");
     }
     /** clear **/
     nmod_poly_mat_clear(mat);

@@ -94,6 +94,8 @@
 
 #define PMBASIS_THRES 32
 
+#include "nmod_poly_mat_forms.h" // for testing form of approx basis, for orientation_t
+
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly_mat.h>
 #include <flint/perm.h> 
@@ -113,7 +115,7 @@ extern "C" {
  * form (possibly a stronger one). Approximants can be considered either as
  * left approximants (`row_wise` set to `true`) or as right approximants
  * (`row_wise` set to `false`).
- * TODO rather use orientation
+ * TODO everywhere: add support for orientation
  *
  * If the user knows that the input matrix is sufficiently generic (for
  * example, it was randomly generated, working over a large prime field), then
@@ -228,11 +230,13 @@ extern "C" {
 //    return is_approximant_basis(appbas,pmat,orders,shift,form,randomized);
 //}
 
-/** TODO temporary fix; and not finished yet **/
-int is_minimal_approximant_basis(const nmod_poly_mat_t base,
-                                 const nmod_mat_t mat,
-                                 slong order,
-                                 const slong * shift);
+// TODO (add input parameter for testing form at least sth) currently tests reduced
+/** TODO temporary fix; and not finished yet */
+int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
+                                       const nmod_poly_mat_t pmat,
+                                       slong order,
+                                       const slong * shift,
+                                       orientation_t row_wise);
 
 //@} // doxygen group: General interfaces for approximant basis computation and verification
 
