@@ -9,6 +9,13 @@ extern "C" {
 #endif
 
 
+void nmod_poly_rand(nmod_poly_t poly,
+		flint_rand_t state,
+		slong len)
+
+
+
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* a structure for FFT modulo p                               */

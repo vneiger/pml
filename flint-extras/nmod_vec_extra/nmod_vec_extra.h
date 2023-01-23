@@ -7,6 +7,20 @@
 extern "C" {
 #endif
 
+
+/** RANDOM */
+
+/** Fills vector with uniformly random entries */
+void nmod_vec_rand(mp_ptr vec, flint_rand_t state, slong len, nmod_t mod);
+
+
+
+
+
+
+
+
+
 /*------------------------------------------------------------*/
 /* y[i] = a*x[i] mod mod, i=0..len-1                          */
 /*------------------------------------------------------------*/

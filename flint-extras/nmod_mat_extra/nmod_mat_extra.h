@@ -15,6 +15,24 @@
 extern "C" {
 #endif
 
+/** RANDOM */
+
+/** Fills matrix with uniformly random entries */
+void nmod_mat_rand(nmod_mat_t mat, flint_rand_t state);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /** Permute rows of a matrix `mat` according to `perm_act`, and propagate the
  * action on `perm_store`. Namely, performs for each appropriate index `i`, the
  * operations `perm_store[i] <- perm_store[perm_act[i]]` and

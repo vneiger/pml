@@ -460,14 +460,14 @@ void nmod_poly_mat_shift_right(nmod_poly_mat_t res,
 /** Computes a random polynomial vector `pvec` of length `n` and degree less
  * than `d`
  */
-// TODO
-//void random(Vec<zz_pX> & pvec, long n, long d);
+// TODO vector version
+//void nmod_poly_vec_rand(nmod_poly_vec_t pvec, flint_rand_t state, slong len);
 
-/** Computes a random polynomial matrix `pmat` with `m` rows, `n` columns, and
- * degree less than `d`
- */
-// TODO
-//void random(Mat<zz_pX> & pmat, long m, long n, long d);
+/** Fills the polynomial matrix `pmat` with polynomials of length `len` with
+ * coefficients taken uniformly at random.  */
+void nmod_poly_mat_rand(nmod_poly_mat_t mat,
+                        flint_rand_t state,
+                        slong len);
 
 /** Computes a random polynomial matrix `pmat` with `m` rows, `n` columns, and
  * degree of `i`th row less than `rdeg[i]` for all `i`
