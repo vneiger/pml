@@ -447,12 +447,12 @@ void nmod_poly_mat_shift_right(nmod_poly_mat_t res,
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/** @name Generation of random matrices
+/** @name Generation of random matrices with degree bounds
  *
  *  Functions for generating a random polynomial matrix of given
  *  dimensions and degree; the degree bound can either be a global
  *  degree bound, or a list of bounds for the degree of each row
- *  (respectively, of each column).
+ *  (respectively, of each column), or a matrix of bounds.
  *
  *  \todo complete this doc with ref to function for random matrix with given form
  */
@@ -491,18 +491,6 @@ void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
                                       flint_rand_t state,
                                       fmpz_mat_t dmat);
 
-/** Computes a random polynomial matrix `pmat` with `m` rows, `n` columns, and
- * degree of `j`th column less than `cdeg[j]` for all `j`
- */
-// TODO
-//void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, VecLong cdeg);
-
-/** Computes a random polynomial matrix `pmat` with the same dimensions
- * as `dmat`, and degree of `(i,j)` entry less than `dmat[i][j]` for
- * all `i` and `j`
- */
-// TODO
-//void random(Mat<zz_pX> & pmat, Mat<long> dmat);
 
 /** Computes a random polynomial matrix `matp` with `m` rows, `n` columns,
  * and degree less than `d`, represented as a vector of constant matrices.
@@ -510,8 +498,19 @@ void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
 // TODO
 //void random(Vec<Mat<zz_p>> & matp, long m, long n, long d);
 
-//@} // doxygen group: Generation of random matrices
+//@} // doxygen group: Generation of random matrices with degree bounds
 
+/** @name Generation of random matrices with specific forms
+ *
+ *  Functions for generating a random polynomial matrix of a given
+ *  form: reduced, ordered weak Popov, Popov, Hermite; their shifted
+ *  variants and with choice of row/column orientation.
+ *
+ *  \todo
+ */
+//@{
+
+//@} // doxygen group: Generation of random matrices with specific forms
 
 
 /*------------------------------------------------------------*/
