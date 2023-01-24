@@ -65,7 +65,7 @@ void mbasis1(nmod_poly_mat_t appbas,
 
     nmod_mat_init_set(mat_cp, mat);
 
-    nmod_mat_permute_rows(mat_cp, NULL, perm);
+    nmod_mat_permute_rows(mat_cp, perm, NULL);
 
     P = _perm_init(rdim);
 
@@ -151,7 +151,7 @@ slong mbasis1_for_mbasis(nmod_mat_t appbas,
     /* compute left kernel of perm*mat with rank profile */
     nmod_mat_init_set(mat_cp, mat);
 
-    nmod_mat_permute_rows(mat_cp, NULL, perm);
+    nmod_mat_permute_rows(mat_cp, perm, NULL);
 
     P = _perm_init(rdim);
 
