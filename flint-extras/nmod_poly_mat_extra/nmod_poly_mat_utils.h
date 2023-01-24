@@ -5,7 +5,7 @@
  *
  * \file nmod_poly_mat_utils.h
  * \version 0.0
- * \date 2022-06-25
+ * \date 2023-01-25
  *
  */
 
@@ -469,11 +469,19 @@ void nmod_poly_mat_rand(nmod_poly_mat_t mat,
                         flint_rand_t state,
                         slong len);
 
-/** Computes a random polynomial matrix `pmat` with `m` rows, `n` columns, and
- * degree of `i`th row less than `rdeg[i]` for all `i`
- */
-// TODO
-//void random_mat_zz_pX_rdeg(Mat<zz_pX> & pmat, long m, long n, VecLong rdeg);
+/** Fills polynomial matrix `mat` with random polynomial entries such that
+ * `mat[i,j] has length up to `rdeg[i]+1` for all `i`. Assumes `rdeg` has the
+ * right length, i.e. the number of rows of mat. */
+void nmod_poly_mat_rand_row_degree(nmod_poly_mat_t mat,
+                                   flint_rand_t state,
+                                   slong * rdeg);
+
+/** Fills polynomial matrix `mat` with random polynomial entries such that
+ * `mat[i,j] has length up to `cdeg[j]+1` for all `j`. Assumes `cdeg` has the
+ * right length, i.e. the number of columns of mat. */
+void nmod_poly_mat_rand_column_degree(nmod_poly_mat_t mat,
+                                      flint_rand_t state,
+                                      slong * cdeg);
 
 /** Computes a random polynomial matrix `pmat` with `m` rows, `n` columns, and
  * degree of `j`th column less than `cdeg[j]` for all `j`

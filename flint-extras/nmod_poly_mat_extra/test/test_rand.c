@@ -1,22 +1,55 @@
+#include <flint/perm.h>
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_io.h"
+#include "sagemath_extra.h"
 
 int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, slong ncols, slong len)
 {
     nmod_poly_mat_t mat;
     nmod_poly_mat_init(mat, nrows, ncols, field_prime);
-    slong rank = FLINT_MIN(3, (FLINT_MIN(nrows,ncols)));
-    slong true_rank;
+
+    srand(time(NULL));
+
+    slong * rdeg = flint_malloc(nrows * sizeof(slong));
+    slong * cdeg = flint_malloc(ncols * sizeof(slong));
+    for (slong i = 0; i < nrows; i++)
+        rdeg[i] = rand() % 100;
+    for (slong i = 0; i < ncols; i++)
+        cdeg[i] = rand() % 100;
+
+    flint_printf("nrows\tncols\tlen\n");
+    flint_printf("%ld\t%ld\t%ld\n", nrows, ncols, len);
+    flint_printf("rdeg:\n");
+    slongvec_print_sagemath(rdeg, nrows);
+    flint_printf("\ncdeg:\n");
+    slongvec_print_sagemath(cdeg, ncols);
+    printf("\n");
 
     for (slong k = 0; k < iterations; ++k)
     {
-        // random uniform
-        flint_printf("Uniformly random matrix:\n");
-        nmod_poly_mat_rand(mat, state, len);
-        nmod_poly_mat_print_pretty(mat, "X");
+        flint_printf("\n(Showing degree matrices)\n");
 
+        // random uniform
+        flint_printf("\nUniformly random matrix, with prescribed degree:\n");
+        nmod_poly_mat_rand(mat, state, len);
+        //nmod_poly_mat_print_pretty(mat, "x");
+        nmod_poly_mat_degree_matrix_print_pretty(mat);
+
+        // random uniform, rdeg
+        flint_printf("\nUniformly random matrix, with prescribed row degree:\n");
+        nmod_poly_mat_rand_row_degree(mat, state, rdeg);
+        //nmod_poly_mat_print_pretty(mat, "x");
+        nmod_poly_mat_degree_matrix_print_pretty(mat);
+
+        // random uniform, cdeg
+        flint_printf("\nUniformly random matrix, with prescribed column degree:\n");
+        nmod_poly_mat_rand_column_degree(mat, state, cdeg);
+        //nmod_poly_mat_print_pretty(mat, "x");
+        nmod_poly_mat_degree_matrix_print_pretty(mat);
     }
     nmod_poly_mat_clear(mat);
+    flint_free(rdeg);
+    flint_free(cdeg);
     return 1;
 }
 
