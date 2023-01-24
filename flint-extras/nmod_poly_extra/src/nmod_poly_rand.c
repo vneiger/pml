@@ -1,4 +1,5 @@
 #include <flint/nmod_poly.h>
+#include "nmod_vec_extra.h"
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -6,14 +7,14 @@
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-void nmod_poly_rand(nmod_poly_t poly,
+void nmod_poly_rand(nmod_poly_t pol,
                     flint_rand_t state,
                     slong len)
 {
-    nmod_poly_fit_length(poly, len);
-    _nmod_vec_rand(poly->coeffs, state, len, poly->mod);
-    poly->length = len;
-    _nmod_poly_normalise(poly);
+    nmod_poly_fit_length(pol, len);
+    _nmod_vec_rand(pol->coeffs, state, len, pol->mod);
+    pol->length = len;
+    _nmod_poly_normalise(pol);
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */

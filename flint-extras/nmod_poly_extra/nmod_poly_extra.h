@@ -9,10 +9,11 @@ extern "C" {
 #endif
 
 
-void nmod_poly_rand(nmod_poly_t poly,
-		flint_rand_t state,
-		slong len)
-
+/** Generates random polynomial `pol` of length up to `len` with uniformly
+ * random coefficients. */
+void nmod_poly_rand(nmod_poly_t pol,
+                    flint_rand_t state,
+                    slong len);
 
 
 
@@ -351,4 +352,7 @@ void nmod_geometric_progression_interpolate(nmod_poly_t poly, mp_srcptr v, const
 }
 #endif
 
-#endif
+#endif // __NMOD_POLY_EXTRA__H
+
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
