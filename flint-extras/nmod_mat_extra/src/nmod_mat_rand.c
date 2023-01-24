@@ -32,6 +32,7 @@ void nmod_mat_randrank_dense(nmod_mat_t mat,
     // make matrix look rather dense
 }
 
+// random lower row echelon form
 void nmod_mat_rand_lref(nmod_mat_t mat,
                         flint_rand_t state,
                         slong rank,
@@ -79,6 +80,7 @@ void nmod_mat_rand_lref(nmod_mat_t mat,
     flint_free(pivots);
 }
 
+// random upper row echelon form
 void nmod_mat_rand_uref(nmod_mat_t mat,
                         flint_rand_t state,
                         slong rank,
@@ -127,6 +129,7 @@ void nmod_mat_rand_uref(nmod_mat_t mat,
     flint_free(pivots);
 }
 
+// random lower reduced row echelon form
 void nmod_mat_rand_lrref(nmod_mat_t mat,
                          flint_rand_t state,
                          slong rank)
@@ -174,6 +177,7 @@ void nmod_mat_rand_lrref(nmod_mat_t mat,
     flint_free(pivots);
 }
 
+// random upper reduced row echelon form
 void nmod_mat_rand_urref(nmod_mat_t mat,
                          flint_rand_t state,
                          slong rank)
