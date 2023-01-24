@@ -66,20 +66,20 @@ int main()
     printf("\n");
 
 
-    nmod_poly_mat_permute_rows(mat, perm_store_rows, perm_act_rows);
+    nmod_poly_mat_permute_rows(mat, perm_act_rows, perm_store_rows);
     printf("After permuting rows with permutation [0,1], perm_store_rows is [%ld,%ld] and matrix is\n",
            perm_store_rows[0], perm_store_rows[1]);
     nmod_poly_mat_print_pretty(mat, "x");
     printf("\n");
 
     perm_act_rows[0] = 1; perm_act_rows[1] = 0; 
-    nmod_poly_mat_permute_rows(mat, perm_store_rows, perm_act_rows);
+    nmod_poly_mat_permute_rows(mat, perm_act_rows, perm_store_rows);
     printf("After permuting rows with permutation [1,0], perm_store_rows is [%ld,%ld] and matrix is\n",
            perm_store_rows[0], perm_store_rows[1]);
     nmod_poly_mat_print_pretty(mat, "x");
     printf("\n");
 
-    nmod_poly_mat_permute_columns(mat, perm_store_cols, perm_act_cols);
+    nmod_poly_mat_permute_columns(mat, perm_act_cols, perm_store_cols);
     printf("After permuting columns with permutation [2,0,1], perm_store_cols is [%ld,%ld,%ld] and matrix is\n",
            perm_store_cols[0], perm_store_cols[1], perm_store_cols[2]);
     nmod_poly_mat_print_pretty(mat, "x");

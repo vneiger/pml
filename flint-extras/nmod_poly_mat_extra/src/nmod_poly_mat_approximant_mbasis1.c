@@ -111,8 +111,8 @@ void mbasis1(nmod_poly_mat_t appbas,
 
     _perm_inv(comp_inv, comp, rdim);
 
-    nmod_poly_mat_permute_columns(appbas, NULL, comp);
-    nmod_poly_mat_permute_rows(appbas, NULL, comp_inv);
+    nmod_poly_mat_permute_columns(appbas, comp, NULL);
+    nmod_poly_mat_permute_rows(appbas, comp_inv, NULL);
 
     /* Compute the new shift */
     apply_perm_to_vector(temp, shifts, comp, rdim);

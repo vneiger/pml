@@ -200,8 +200,8 @@ nmod_poly_mat_invert_columns(nmod_poly_mat_t mat, slong * perm)
  * `rows[i] <- rows[perm_act[i]]`.  */
 NMOD_POLY_MAT_INLINE void
 nmod_poly_mat_permute_rows(nmod_poly_mat_t mat,
-                           slong * perm_store,
-                           const slong *perm_act)
+                           const slong *perm_act,
+                           slong * perm_store)
 {
     // perm_store[i] <- perm_store[perm_act[i]] 
     if (perm_store)
@@ -223,8 +223,8 @@ nmod_poly_mat_permute_rows(nmod_poly_mat_t mat,
  * and `rows[i][j] <- rows[i][perm_act[j]]`.  */
 NMOD_POLY_MAT_INLINE void
 nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
-                              slong * perm_store,
-                              const slong * perm_act)
+                              const slong * perm_act,
+                              slong * perm_store)
 {
     // perm_store[i] <- perm_store[perm_act[i]] 
     if (perm_store)
