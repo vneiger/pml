@@ -15,21 +15,137 @@
 extern "C" {
 #endif
 
-/** RANDOM */
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* RANDOM MATRICES                                            */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name Random
+ *
+ *  These functions are for creating random matrices. They take as input
+ *  `mat`, already allocated with some row and column dimensions, and fill them
+ *  with random entries with some constraints: prescribed rank, row echelon
+ *  form, ...
+ */
+//@{
 
 /** Fills matrix with uniformly random entries */
 void nmod_mat_rand(nmod_mat_t mat, flint_rand_t state);
 
+/** Combines Flint's `randrank` and `randops` functions to obtain a random
+ * dense matrix `mat` having specified rank */
+void nmod_mat_randrank_dense(nmod_mat_t mat,
+                             flint_rand_t state,
+                             slong rank);
+
+/** Combines Flint's `randrank` and `randops` functions to obtain a random
+ * dense matrix having full rank */
+NMOD_MAT_INLINE void
+nmod_mat_rand_fullrank(nmod_mat_t mat, flint_rand_t state)
+{
+    nmod_mat_randrank_dense(mat, state, FLINT_MIN(mat->r,mat->c));
+}
+
+/** Sets `mat` to a random "lower" row echelon form of specified rank. Lower
+ * means it has a lower triangular shape, that is, pivots are defined as
+ * the indices of rightmost nonzero entries. If `unit` is `1`, pivot entries
+ * are ones, otherwise they are random nonzero entries. */
+void nmod_mat_rand_lref(nmod_mat_t mat,
+                        flint_rand_t state,
+                        slong rank,
+                        int unit);
+
+/** Sets `mat` to a random full rank "lower" row echelon form. This is
+ * the same as calling ::nmod_mat_rand_lref with rank the minimum of row and
+ * column dimensions. */
+NMOD_MAT_INLINE void
+nmod_mat_rand_fullrank_lref(nmod_mat_t mat,
+                            flint_rand_t state,
+                            int unit)
+{
+    nmod_mat_rand_lref(mat, state, FLINT_MIN(mat->r,mat->c), unit);
+}
 
 
+/** Sets `mat` to a random "upper" row echelon form of specified rank. Upper
+ * means it has an upper triangular shape, that is, pivots are defined as the
+ * indices of leftmost nonzero entries. If `unit` is `1`, pivots are ones,
+ * otherwise they are random nonzero entries. */
+void nmod_mat_rand_uref(nmod_mat_t mat,
+                        flint_rand_t state,
+                        slong rank,
+                        int unit);
 
+/** Sets `mat` to a random full rank "upper" row echelon form. This is
+ * the same as calling ::nmod_mat_rand_uref with rank the minimum of row and
+ * column dimensions. */
+NMOD_MAT_INLINE void
+nmod_mat_rand_fullrank_uref(nmod_mat_t mat,
+                            flint_rand_t state,
+                            int unit)
+{
+    nmod_mat_rand_uref(mat, state, FLINT_MIN(mat->r,mat->c), unit);
+}
 
+/** Sets `mat` to a random "lower" column echelon form of specified rank. Lower
+ * means it has a lower triangular shape, that is, pivots are defined as the
+ * indices of uppermost nonzero entries.  If `unit` is `1`, pivots are ones,
+ * otherwise they are random nonzero entries. */
+NMOD_MAT_INLINE void
+nmod_mat_rand_lcef(nmod_mat_t mat,
+                   flint_rand_t state,
+                   slong rank,
+                   int unit)
+{
+    nmod_mat_t tmp;
+    nmod_mat_init(tmp, mat->c, mat->r, mat->mod.n);
+    nmod_mat_rand_uref(tmp, state, rank, unit);
+    nmod_mat_transpose(mat, tmp);
+    nmod_mat_clear(tmp);
+}
 
+/** Sets `mat` to a random full rank "lower" column echelon form. This is the
+ * same as calling ::nmod_mat_rand_lcef with rank the minimum of row and column
+ * dimensions. */
+NMOD_MAT_INLINE void
+nmod_mat_rand_fullrank_lcef(nmod_mat_t mat,
+                            flint_rand_t state,
+                            int unit)
+{
+    nmod_mat_rand_lcef(mat, state, FLINT_MIN(mat->r,mat->c), unit);
+}
 
+/** Sets `mat` to a random "upper" column echelon form of specified rank. Upper
+ * means it has an upper triangular shape, that is, pivots are defined as the
+ * indices of bottommost nonzero entries.  If `unit` is `1`, pivots are ones,
+ * otherwise they are random nonzero entries. */
+NMOD_MAT_INLINE void
+nmod_mat_rand_ucef(nmod_mat_t mat,
+                        flint_rand_t state,
+                        slong rank,
+                        int unit)
+{
+    nmod_mat_t tmp;
+    nmod_mat_init(tmp, mat->c, mat->r, mat->mod.n);
+    nmod_mat_rand_lref(tmp, state, rank, unit);
+    nmod_mat_transpose(mat, tmp);
+    nmod_mat_clear(tmp);
+}
 
+/** Sets `mat` to a random full rank "upper" column echelon form. This is the
+ * same as calling ::nmod_mat_rand_ucef with rank the minimum of row and column
+ * dimensions. */
+NMOD_MAT_INLINE void
+nmod_mat_rand_fullrank_ucef(nmod_mat_t mat,
+                            flint_rand_t state,
+                            int unit)
+{
+    nmod_mat_rand_ucef(mat, state, FLINT_MIN(mat->r,mat->c), unit);
+}
 
-
-
+//@} // doxygen group: Random
 
 
 
@@ -38,24 +154,24 @@ void nmod_mat_rand(nmod_mat_t mat, flint_rand_t state);
  * operations `perm_store[i] <- perm_store[perm_act[i]]` and
  * `rows[i] <- rows[perm_act[i]]`.
  * \todo Should be present in a future release of Flint (?) --> then remove */
-NMOD_MAT_INLINE void
-nmod_mat_permute_rows(nmod_mat_t mat,
-                      slong * perm_store,
-                      const slong * perm_act)
-{
-    // perm_store[i] <- perm_store[perm_act[i]] 
-    if (perm_store)
-        _perm_compose(perm_store, perm_store, perm_act, mat->r);
-
-    // rows[i] <- rows[perm_act[i]] 
-    mp_limb_t ** mat_tmp = flint_malloc(mat->r * sizeof(mp_limb_t *));
-    for (slong i = 0; i < mat->r; ++i)
-        mat_tmp[i] = mat->rows[perm_act[i]];
-    for (slong i = 0; i < mat->r; ++i)
-        mat->rows[i] = mat_tmp[i];
-
-    flint_free(mat_tmp);
-}
+//NMOD_MAT_INLINE void
+//nmod_mat_permute_rows(nmod_mat_t mat,
+//                      slong * perm_store,
+//                      const slong * perm_act)
+//{
+//    // perm_store[i] <- perm_store[perm_act[i]] 
+//    if (perm_store)
+//        _perm_compose(perm_store, perm_store, perm_act, mat->r);
+//
+//    // rows[i] <- rows[perm_act[i]] 
+//    mp_limb_t ** mat_tmp = flint_malloc(mat->r * sizeof(mp_limb_t *));
+//    for (slong i = 0; i < mat->r; ++i)
+//        mat_tmp[i] = mat->rows[perm_act[i]];
+//    for (slong i = 0; i < mat->r; ++i)
+//        mat->rows[i] = mat_tmp[i];
+//
+//    flint_free(mat_tmp);
+//}
 
 
 /** Left nullspace of A.

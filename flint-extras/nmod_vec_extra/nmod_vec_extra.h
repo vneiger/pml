@@ -1,6 +1,17 @@
 #ifndef __NMOD_VEC_EXTRA__H
 #define __NMOD_VEC_EXTRA__H
 
+/** \brief Extra functions for vectors over Z/nZ
+ *
+ * \file nmod_vec_extra.h
+ * \version 0.0
+ * \date 2023-01-23
+ *
+ * Some functions to deal with vectors over `nmod`.
+ *
+ */
+
+#include <flint/flint.h>
 #include "nmod_extra.h"
 
 #ifdef __cplusplus
@@ -8,10 +19,29 @@ extern "C" {
 #endif
 
 
-/** RANDOM */
+// TODO augment/add documentation
 
-/** Fills vector with uniformly random entries */
-void nmod_vec_rand(mp_ptr vec, flint_rand_t state, slong len, nmod_t mod);
+/** Random */
+// to be completed: random sparse? randtest small? randtest nonzero ? ...
+
+/** Fills the entries `0`, .., `len-1` of vector with uniformly random entries.
+ * Vector must already be allocated with length at least `len`. */
+void _nmod_vec_rand(mp_ptr vec,
+            		flint_rand_t state,
+            		slong len,
+            		nmod_t mod);
+
+
+
+
+/** Input/Output */
+// to be completed: print to file, print to sagemath..
+
+/** Prints the entries `0`, .., `len-1` of vector `vec`. Vector must already be
+ * initialized, with length at least `len`. */
+void _nmod_vec_print_pretty(mp_ptr vec,
+                            slong len,
+                            nmod_t mod);
 
 
 
@@ -68,13 +98,13 @@ static inline void _nmod_vec_avx2_32_scalar_mul(mp_hlimb_t * y, const mp_hlimb_t
 {
     slong i, nb;
     __m256i avx_a, avx_i_a, avx_p, avx_p_minus_1;
-    
+
     nb = len/8;
     avx_a = _mm256_set1_epi32(a);
     avx_i_a = _mm256_set1_epi32(i_a);
     avx_p = _mm256_set1_epi32(mod.n);
     avx_p_minus_1 = _mm256_set1_epi32(mod.n - 1);
-    
+
     for (i = 0; i < nb; i++)
     {
         __m256i avx_x;
@@ -83,7 +113,7 @@ static inline void _nmod_vec_avx2_32_scalar_mul(mp_hlimb_t * y, const mp_hlimb_t
         x += 8;
         y += 8;
     }
-    
+
     nb = len - 8*nb;
     for (i = 0; i < nb; i++)
     {
@@ -103,11 +133,11 @@ static inline void _nmod_vec_avx2_32_hadamard_mul(mp_hlimb_t * y, const mp_hlimb
 {
     slong i, nb;
     __m256i avx_p, avx_p_minus_1;
-    
+
     nb = len/8;
     avx_p = _mm256_set1_epi32(mod.n);
     avx_p_minus_1 = _mm256_set1_epi32(mod.n - 1);
-    
+
     for (i = 0; i < nb; i++)
     {
         __m256i avx_x, avx_a, avx_i_a;
@@ -120,7 +150,7 @@ static inline void _nmod_vec_avx2_32_hadamard_mul(mp_hlimb_t * y, const mp_hlimb
         x += 8;
         y += 8;
     }
-    
+
     nb = len - 8*nb;
     for (i = 0; i < nb; i++)
     {
@@ -128,14 +158,14 @@ static inline void _nmod_vec_avx2_32_hadamard_mul(mp_hlimb_t * y, const mp_hlimb
     }
 }
 
-
-    
-#endif
+#endif // HAS_AVX2
 
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif // ifndef  __NMOD_VEC_EXTRA__H
 
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
