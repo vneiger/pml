@@ -264,7 +264,7 @@ void nmod_avx2_32_fft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32_f
 /* inverse fft                                                */
 /* given x[i] = poly(w^bitreverse(i,2^k)), returns poly       */
 /*------------------------------------------------------------*/
-void nmod_avx2_32_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_32_fft_t F, const ulong k);
+//void nmod_avx2_32_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_32_fft_t F, const ulong k);
 
 /*------------------------------------------------------------*/
 /* tft evaluation                                             */

@@ -1,4 +1,5 @@
 #include <flint/nmod_poly.h>
+#include "nmod_poly_extra.h"
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_forms.h"
 
@@ -14,10 +15,7 @@ void nmod_poly_mat_rand(nmod_poly_mat_t mat,
                         slong len)
 {
     for (slong i = 0; i < mat->r * mat->c; i++)
-    {
-				nmod_poly_randtest(&mat->entries[i], state, len);
-
-		}
+        nmod_poly_rand(mat->entries + i, state, len);
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
