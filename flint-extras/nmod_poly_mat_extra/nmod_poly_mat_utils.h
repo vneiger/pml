@@ -10,6 +10,7 @@
  */
 
 #include <flint/nmod_mat.h>
+#include <flint/fmpz_mat.h>
 #include <flint/nmod_poly_mat.h>
 
 #include "nmod_poly_mat_mat_poly.h"
@@ -482,6 +483,13 @@ void nmod_poly_mat_rand_row_degree(nmod_poly_mat_t mat,
 void nmod_poly_mat_rand_column_degree(nmod_poly_mat_t mat,
                                       flint_rand_t state,
                                       slong * cdeg);
+
+/** Fills polynomial matrix `mat` with random polynomial entries such that
+ * `mat[i,j] has length up to `dmat[i,j]+1` for all `i,j`. Assumes `dmat` has
+ * the right number of rows and columns (i.e. the same as those of mat). */
+void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
+                                      flint_rand_t state,
+                                      fmpz_mat_t dmat);
 
 /** Computes a random polynomial matrix `pmat` with `m` rows, `n` columns, and
  * degree of `j`th column less than `cdeg[j]` for all `j`

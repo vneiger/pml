@@ -1,3 +1,4 @@
+#include <flint/fmpz_mat.h>
 #include <flint/perm.h>
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_io.h"
@@ -17,12 +18,20 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
     for (slong i = 0; i < ncols; i++)
         cdeg[i] = rand() % 100;
 
+    fmpz_mat_t dmat;
+    fmpz_mat_init(dmat, nrows, ncols);
+    for (slong i = 0; i < nrows; i++)
+        for (slong j = 0; j < ncols; j++)
+            fmpz_randtest_unsigned(fmpz_mat_entry(dmat,i,j), state, 5);
+
     flint_printf("nrows\tncols\tlen\n");
     flint_printf("%ld\t%ld\t%ld\n", nrows, ncols, len);
     flint_printf("rdeg:\n");
     slongvec_print_sagemath(rdeg, nrows);
-    flint_printf("\ncdeg:\n");
+    flint_printf("cdeg:\n");
     slongvec_print_sagemath(cdeg, ncols);
+    flint_printf("dmat:\n");
+    fmpz_mat_print_pretty(dmat);
     printf("\n");
 
     for (slong k = 0; k < iterations; ++k)
@@ -44,6 +53,12 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
         // random uniform, cdeg
         flint_printf("\nUniformly random matrix, with prescribed column degree:\n");
         nmod_poly_mat_rand_column_degree(mat, state, cdeg);
+        //nmod_poly_mat_print_pretty(mat, "x");
+        nmod_poly_mat_degree_matrix_print_pretty(mat);
+
+        // random uniform, dmat
+        flint_printf("\nUniformly random matrix, with prescribed degree matrix:\n");
+        nmod_poly_mat_rand_degree_matrix(mat, state, dmat);
         //nmod_poly_mat_print_pretty(mat, "x");
         nmod_poly_mat_degree_matrix_print_pretty(mat);
     }

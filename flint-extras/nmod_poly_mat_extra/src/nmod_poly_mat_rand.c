@@ -36,5 +36,14 @@ void nmod_poly_mat_rand_column_degree(nmod_poly_mat_t mat,
             nmod_poly_rand(mat->rows[i] + j, state, cdeg[j]+1);
 }
 
+void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
+                                      flint_rand_t state,
+                                      fmpz_mat_t dmat)
+{
+    for (slong i = 0; i < mat->r; i++)
+        for (slong j = 0; j < mat->c; j++)
+            nmod_poly_rand(mat->rows[i] + j, state, 1 + *fmpz_mat_entry(dmat, i, j));
+}
+
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
