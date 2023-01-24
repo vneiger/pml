@@ -73,8 +73,20 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
         true_rank = nmod_mat_rank(mat);
         flint_printf("\t(rank = %ld)\n", true_rank);
 
+        flint_printf("\nRandom matrix in lower reduced row echelon form:\n");
+        nmod_mat_rand_lrref(mat, state, rank);
+        nmod_mat_print_pretty(mat);
+        true_rank = nmod_mat_rank(mat);
+        flint_printf("\t(rank = %ld)\n", true_rank);
+
         flint_printf("\nRandom matrix in lower full rank row echelon form:\n");
         nmod_mat_rand_fullrank_lref(mat, state, 0);
+        nmod_mat_print_pretty(mat);
+        true_rank = nmod_mat_rank(mat);
+        flint_printf("\t(rank = %ld)\n", true_rank);
+
+        flint_printf("\nRandom matrix in lower full rank reduced row echelon form:\n");
+        nmod_mat_rand_fullrank_lrref(mat, state);
         nmod_mat_print_pretty(mat);
         true_rank = nmod_mat_rank(mat);
         flint_printf("\t(rank = %ld)\n", true_rank);
@@ -85,8 +97,20 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
         true_rank = nmod_mat_rank(mat);
         flint_printf("\t(rank = %ld)\n", true_rank);
 
-        flint_printf("\nRandom matrix in upper full rank row echelon form:\n");
+        flint_printf("\nRandom matrix in upper reduced row echelon form:\n");
+        nmod_mat_rand_urref(mat, state, rank);
+        nmod_mat_print_pretty(mat);
+        true_rank = nmod_mat_rank(mat);
+        flint_printf("\t(rank = %ld)\n", true_rank);
+
+        flint_printf("\nRandom matrix in upper full rank reduced row echelon form:\n");
         nmod_mat_rand_fullrank_uref(mat, state, 0);
+        nmod_mat_print_pretty(mat);
+        true_rank = nmod_mat_rank(mat);
+        flint_printf("\t(rank = %ld)\n", true_rank);
+
+        flint_printf("\nRandom matrix in upper full rank row echelon form:\n");
+        nmod_mat_rand_fullrank_urref(mat, state);
         nmod_mat_print_pretty(mat);
         true_rank = nmod_mat_rank(mat);
         flint_printf("\t(rank = %ld)\n", true_rank);
@@ -99,8 +123,20 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
         true_rank = nmod_mat_rank(mat);
         flint_printf("\t(rank = %ld)\n", true_rank);
 
+        flint_printf("\nRandom matrix in lower reduced column echelon form:\n");
+        nmod_mat_rand_lrcef(mat, state, rank);
+        nmod_mat_print_pretty(mat);
+        true_rank = nmod_mat_rank(mat);
+        flint_printf("\t(rank = %ld)\n", true_rank);
+
         flint_printf("\nRandom matrix in lower full rank column echelon form:\n");
         nmod_mat_rand_fullrank_lcef(mat, state, 0);
+        nmod_mat_print_pretty(mat);
+        true_rank = nmod_mat_rank(mat);
+        flint_printf("\t(rank = %ld)\n", true_rank);
+
+        flint_printf("\nRandom matrix in lower full rank reduced column echelon form:\n");
+        nmod_mat_rand_fullrank_lrcef(mat, state);
         nmod_mat_print_pretty(mat);
         true_rank = nmod_mat_rank(mat);
         flint_printf("\t(rank = %ld)\n", true_rank);
@@ -111,8 +147,20 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
         true_rank = nmod_mat_rank(mat);
         flint_printf("\t(rank = %ld)\n", true_rank);
 
+        flint_printf("\nRandom matrix in upper reduced column echelon form:\n");
+        nmod_mat_rand_urcef(mat, state, rank);
+        nmod_mat_print_pretty(mat);
+        true_rank = nmod_mat_rank(mat);
+        flint_printf("\t(rank = %ld)\n", true_rank);
+
         flint_printf("\nRandom matrix in upper full rank column echelon form:\n");
         nmod_mat_rand_fullrank_ucef(mat, state, 0);
+        nmod_mat_print_pretty(mat);
+        true_rank = nmod_mat_rank(mat);
+        flint_printf("\t(rank = %ld)\n", true_rank);
+
+        flint_printf("\nRandom matrix in upper full rank reduced column echelon form:\n");
+        nmod_mat_rand_fullrank_urcef(mat, state);
         nmod_mat_print_pretty(mat);
         true_rank = nmod_mat_rank(mat);
         flint_printf("\t(rank = %ld)\n", true_rank);

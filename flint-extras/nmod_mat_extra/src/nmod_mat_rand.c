@@ -64,8 +64,8 @@ void nmod_mat_rand_lref(nmod_mat_t mat,
             nmod_mat_entry(mat, i, j) = n_randint(state, mat->mod.n);
 
         nmod_mat_entry(mat, i, pivots[i]) = n_randint(state, mat->mod.n);
-        if (unit || nmod_mat_entry(mat, i, j) == UWORD(0))
-            nmod_mat_entry(mat, i, j) = UWORD(1);
+        if (unit || nmod_mat_entry(mat, i, pivots[i]) == UWORD(0))
+            nmod_mat_entry(mat, i, pivots[i]) = UWORD(1);
 
         for (j = pivots[i]+1; j < mat->c; j++)
             nmod_mat_entry(mat, i, j) = UWORD(0);
@@ -87,7 +87,7 @@ void nmod_mat_rand_uref(nmod_mat_t mat,
     // check given rank is acceptable
     if (rank < 0 || rank > mat->r || rank > mat->c)
     {
-        flint_printf("Exception (nmod_mat_rand_lref). Impossible rank.\n");
+        flint_printf("Exception (nmod_mat_rand_uref). Impossible rank.\n");
         flint_abort();
     }
 
@@ -111,12 +111,106 @@ void nmod_mat_rand_uref(nmod_mat_t mat,
             nmod_mat_entry(mat, i, j) = UWORD(0);
 
         nmod_mat_entry(mat, i, pivots[i]) = n_randint(state, mat->mod.n);
-        if (unit || nmod_mat_entry(mat, i, j) == UWORD(0))
-            nmod_mat_entry(mat, i, j) = UWORD(1);
+        if (unit || nmod_mat_entry(mat, i, pivots[i]) == UWORD(0))
+            nmod_mat_entry(mat, i, pivots[i]) = UWORD(1);
 
 
         for (j = pivots[i]+1; j < mat->c; j++)
             nmod_mat_entry(mat, i, j) = n_randint(state, mat->mod.n);
+    }
+
+    // make sure remaining rows are zero
+    for (i = rank; i < mat->r; i++)
+        for (j = 0; j < mat->c; j++)
+            nmod_mat_entry(mat, i, j) = UWORD(0);
+
+    flint_free(pivots);
+}
+
+void nmod_mat_rand_lrref(nmod_mat_t mat,
+                         flint_rand_t state,
+                         slong rank)
+{
+    // check given rank is acceptable
+    if (rank < 0 || rank > mat->r || rank > mat->c)
+    {
+        flint_printf("Exception (nmod_mat_rand_lrref). Impossible rank.\n");
+        flint_abort();
+    }
+
+    // there will be rank nonzero rows, we need to fix their respective pivot
+    // indices: take a random permutation of length mat->c and keep the first
+    // rank entries as pivots
+    slong * pivots = (slong *) flint_malloc(rank * sizeof(slong));
+    slong * tmp = _perm_init(mat->c);
+    _perm_randtest(tmp, mat->c, state);
+    for (slong i = 0; i < rank; i++)
+        pivots[i] = tmp[i];
+    _perm_clear(tmp);
+    qsort(pivots, rank, sizeof(slong), slong_compare);
+
+    slong i, j;
+
+    // fill nonzero rows
+    for (i = rank-1; i >= 0; i--)
+    {
+        for (j = 0; j < pivots[i]; j++)
+            nmod_mat_entry(mat, i, j) = n_randint(state, mat->mod.n);
+
+        nmod_mat_entry(mat, i, pivots[i]) = UWORD(1);
+
+        for (j = pivots[i]+1; j < mat->c; j++)
+            nmod_mat_entry(mat, i, j) = UWORD(0);
+
+        for (j = i+1; j < rank; j++)
+            nmod_mat_entry(mat, j, pivots[i]) = UWORD(0);
+    }
+
+    // make sure remaining rows are zero
+    for (i = rank; i < mat->r; i++)
+        for (j = 0; j < mat->c; j++)
+            nmod_mat_entry(mat, i, j) = UWORD(0);
+
+    flint_free(pivots);
+}
+
+void nmod_mat_rand_urref(nmod_mat_t mat,
+                         flint_rand_t state,
+                         slong rank)
+{
+    // check given rank is acceptable
+    if (rank < 0 || rank > mat->r || rank > mat->c)
+    {
+        flint_printf("Exception (nmod_mat_rand_urref). Impossible rank.\n");
+        flint_abort();
+    }
+
+    // there will be rank nonzero rows, we need to fix their respective pivot
+    // indices: take a random permutation of length mat->c and keep the first
+    // rank entries as pivots
+    slong * pivots = (slong *) flint_malloc(rank * sizeof(slong));
+    slong * tmp = _perm_init(mat->c);
+    _perm_randtest(tmp, mat->c, state);
+    for (slong i = 0; i < rank; i++)
+        pivots[i] = tmp[i];
+    _perm_clear(tmp);
+    qsort(pivots, rank, sizeof(slong), slong_compare);
+
+    slong i, j;
+
+    // fill nonzero rows
+    for (i = 0; i < rank; i++)
+    {
+        for (j = 0; j < pivots[i]; j++)
+            nmod_mat_entry(mat, i, j) = UWORD(0);
+
+        nmod_mat_entry(mat, i, pivots[i]) = UWORD(1);
+
+        for (j = pivots[i]+1; j < mat->c; j++)
+            nmod_mat_entry(mat, i, j) = n_randint(state, mat->mod.n);
+
+        for (j = 0; j < i; j++)
+            nmod_mat_entry(mat, j, pivots[i]) = UWORD(0);
     }
 
     // make sure remaining rows are zero

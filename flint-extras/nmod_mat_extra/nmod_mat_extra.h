@@ -31,6 +31,10 @@ extern "C" {
  */
 //@{
 
+/*------------------------------------------------------------*/
+/* Uniform Random                                             */
+/*------------------------------------------------------------*/
+
 /** Fills matrix with uniformly random entries */
 void nmod_mat_rand(nmod_mat_t mat, flint_rand_t state);
 
@@ -47,6 +51,10 @@ nmod_mat_rand_fullrank(nmod_mat_t mat, flint_rand_t state)
 {
     nmod_mat_randrank_dense(mat, state, FLINT_MIN(mat->r,mat->c));
 }
+
+/*------------------------------------------------------------*/
+/* Random Lower Row Echelon                                   */
+/*------------------------------------------------------------*/
 
 /** Sets `mat` to a random "lower" row echelon form of specified rank. Lower
  * means it has a lower triangular shape, that is, pivots are defined as
@@ -68,6 +76,30 @@ nmod_mat_rand_fullrank_lref(nmod_mat_t mat,
     nmod_mat_rand_lref(mat, state, FLINT_MIN(mat->r,mat->c), unit);
 }
 
+/*------------------------------------------------------------*/
+/* Random Reduced Lower Row Echelon                           */
+/*------------------------------------------------------------*/
+
+/** Sets `mat` to a random "lower" reduced row echelon form of specified rank.
+ * Lower means it has a lower triangular shape, that is, pivots are defined as
+ * the indices of rightmost nonzero entries. */
+void nmod_mat_rand_lrref(nmod_mat_t mat,
+                         flint_rand_t state,
+                         slong rank);
+
+/** Sets `mat` to a random full rank "lower" reduced row echelon form. This is
+ * the same as calling ::nmod_mat_rand_lrref with rank the minimum of row and
+ * column dimensions. */
+NMOD_MAT_INLINE void
+nmod_mat_rand_fullrank_lrref(nmod_mat_t mat,
+                             flint_rand_t state)
+{
+    nmod_mat_rand_lrref(mat, state, FLINT_MIN(mat->r,mat->c));
+}
+
+/*------------------------------------------------------------*/
+/* Random Upper Row Echelon                                   */
+/*------------------------------------------------------------*/
 
 /** Sets `mat` to a random "upper" row echelon form of specified rank. Upper
  * means it has an upper triangular shape, that is, pivots are defined as the
@@ -88,6 +120,31 @@ nmod_mat_rand_fullrank_uref(nmod_mat_t mat,
 {
     nmod_mat_rand_uref(mat, state, FLINT_MIN(mat->r,mat->c), unit);
 }
+
+/*------------------------------------------------------------*/
+/* Random Reduced Upper Row Echelon                           */
+/*------------------------------------------------------------*/
+
+/** Sets `mat` to a random "upper" reduced row echelon form of specified rank.
+ * Upper means it has an upper triangular shape, that is, pivots are defined as
+ * the indices of leftmost nonzero entries. */
+void nmod_mat_rand_urref(nmod_mat_t mat,
+                         flint_rand_t state,
+                         slong rank);
+
+/** Sets `mat` to a random full rank "upper" reduced row echelon form. This is
+ * the same as calling ::nmod_mat_rand_urref with rank the minimum of row and
+ * column dimensions. */
+NMOD_MAT_INLINE void
+nmod_mat_rand_fullrank_urref(nmod_mat_t mat,
+                             flint_rand_t state)
+{
+    nmod_mat_rand_urref(mat, state, FLINT_MIN(mat->r,mat->c));
+}
+
+/*------------------------------------------------------------*/
+/* Random Lower Column Echelon                                */
+/*------------------------------------------------------------*/
 
 /** Sets `mat` to a random "lower" column echelon form of specified rank. Lower
  * means it has a lower triangular shape, that is, pivots are defined as the
@@ -117,15 +174,48 @@ nmod_mat_rand_fullrank_lcef(nmod_mat_t mat,
     nmod_mat_rand_lcef(mat, state, FLINT_MIN(mat->r,mat->c), unit);
 }
 
+/*------------------------------------------------------------*/
+/* Random Reduced Lower Column Echelon                        */
+/*------------------------------------------------------------*/
+
+/** Sets `mat` to a random "lower" reduced column echelon form of specified
+ * rank. Lower means it has a lower triangular shape, that is, pivots are
+ * defined as the indices of uppermost nonzero entries. */
+NMOD_MAT_INLINE void
+nmod_mat_rand_lrcef(nmod_mat_t mat,
+                    flint_rand_t state,
+                    slong rank)
+{
+    nmod_mat_t tmp;
+    nmod_mat_init(tmp, mat->c, mat->r, mat->mod.n);
+    nmod_mat_rand_urref(tmp, state, rank);
+    nmod_mat_transpose(mat, tmp);
+    nmod_mat_clear(tmp);
+}
+
+/** Sets `mat` to a random full rank "lower" reduced column echelon form. This
+ * is the same as calling ::nmod_mat_rand_lrcef with rank the minimum of row
+ * and column dimensions. */
+NMOD_MAT_INLINE void
+nmod_mat_rand_fullrank_lrcef(nmod_mat_t mat,
+                             flint_rand_t state)
+{
+    nmod_mat_rand_lrcef(mat, state, FLINT_MIN(mat->r,mat->c));
+}
+
+/*------------------------------------------------------------*/
+/* Random Upper Column Echelon                                */
+/*------------------------------------------------------------*/
+
 /** Sets `mat` to a random "upper" column echelon form of specified rank. Upper
  * means it has an upper triangular shape, that is, pivots are defined as the
  * indices of bottommost nonzero entries.  If `unit` is `1`, pivots are ones,
  * otherwise they are random nonzero entries. */
 NMOD_MAT_INLINE void
 nmod_mat_rand_ucef(nmod_mat_t mat,
-                        flint_rand_t state,
-                        slong rank,
-                        int unit)
+                   flint_rand_t state,
+                   slong rank,
+                   int unit)
 {
     nmod_mat_t tmp;
     nmod_mat_init(tmp, mat->c, mat->r, mat->mod.n);
@@ -143,6 +233,35 @@ nmod_mat_rand_fullrank_ucef(nmod_mat_t mat,
                             int unit)
 {
     nmod_mat_rand_ucef(mat, state, FLINT_MIN(mat->r,mat->c), unit);
+}
+
+/*------------------------------------------------------------*/
+/* Random Reduced Upper Column Echelon                        */
+/*------------------------------------------------------------*/
+
+/** Sets `mat` to a random "upper" reduced column echelon form of specified
+ * rank. Upper means it has an upper triangular shape, that is, pivots are
+ * defined as the indices of bottommost nonzero entries. */
+NMOD_MAT_INLINE void
+nmod_mat_rand_urcef(nmod_mat_t mat,
+                    flint_rand_t state,
+                    slong rank)
+{
+    nmod_mat_t tmp;
+    nmod_mat_init(tmp, mat->c, mat->r, mat->mod.n);
+    nmod_mat_rand_lrref(tmp, state, rank);
+    nmod_mat_transpose(mat, tmp);
+    nmod_mat_clear(tmp);
+}
+
+/** Sets `mat` to a random full rank "upper" reduced column echelon form. This
+ * is the same as calling ::nmod_mat_rand_urcef with rank the minimum of row
+ * and column dimensions. */
+NMOD_MAT_INLINE void
+nmod_mat_rand_fullrank_urcef(nmod_mat_t mat,
+                             flint_rand_t state)
+{
+    nmod_mat_rand_urcef(mat, state, FLINT_MIN(mat->r,mat->c));
 }
 
 //@} // doxygen group: Random
