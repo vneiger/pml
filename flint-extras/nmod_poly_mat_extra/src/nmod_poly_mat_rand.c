@@ -122,5 +122,35 @@ void nmod_poly_mat_rand_popov_columnwise(nmod_poly_mat_t mat,
     free(dvec);
 }
 
+void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
+                         flint_rand_t state,
+                         const slong * pivind,
+                         const slong * pivdeg,
+                         const slong * shift,
+                         orientation_t row_wise)
+{
+    const slong * sshift;
+    if (shift) // used provided shift
+        sshift = shift;
+    else // uniform shift
+        sshift = flint_calloc(row_wise ? mat->c : mat->r, sizeof(slong));
+
+    // Note: if pivind == NULL, `mat` must be square, this is not checked
+    slong * iota;
+    if (pivind == NULL)
+    {
+        iota = flint_malloc((row_wise ? mat->r : mat->c) * sizeof(slong));
+        for (slong i = 0; i < (row_wise ? mat->r : mat->c); i++)
+            iota[i] = i;
+    }
+    const slong * ppivind = (pivind) ? pivind : iota;
+
+    if (row_wise)
+        nmod_poly_mat_rand_popov_rowwise(mat, state, ppivind, pivdeg, sshift);
+    else
+        nmod_poly_mat_rand_popov_columnwise(mat, state, ppivind, pivdeg, sshift);
+}
+
+
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
