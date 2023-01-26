@@ -63,23 +63,14 @@ void nmod_poly_mat_degree_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
 /* PRETTY PRINTING LEADING MATRIX                             */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+
 void nmod_poly_mat_leading_matrix_print_pretty(const nmod_poly_mat_t mat,
+                                               const slong * shift,
                                                orientation_t row_wise)
 {
     nmod_mat_t lmat;
     nmod_mat_init(lmat, mat->r, mat->c, mat->modulus);
-    nmod_poly_mat_leading_matrix(lmat, mat, row_wise);
-    nmod_mat_print_pretty(lmat);
-    nmod_mat_clear(lmat);
-}
-
-void nmod_poly_mat_leading_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
-                                                       const slong * shift,
-                                                       orientation_t row_wise)
-{
-    nmod_mat_t lmat;
-    nmod_mat_init(lmat, mat->r, mat->c, mat->modulus);
-    nmod_poly_mat_leading_matrix_shifted(lmat, mat, shift, row_wise);
+    nmod_poly_mat_leading_matrix(lmat, mat, shift, row_wise);
     nmod_mat_print_pretty(lmat);
     nmod_mat_clear(lmat);
 }

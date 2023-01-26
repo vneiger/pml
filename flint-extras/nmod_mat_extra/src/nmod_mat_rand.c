@@ -5,7 +5,7 @@
 #include <flint/perm.h>
 #include <stdlib.h> // qsort
 
-static int slong_compare(const void * a, const void * b)
+static int _slong_comparator(const void * a, const void * b)
 {
     if ( *(slong *)a  <  *(slong *)b )
         return -1;
@@ -54,7 +54,7 @@ void nmod_mat_rand_lref(nmod_mat_t mat,
     for (slong i = 0; i < rank; i++)
         pivots[i] = tmp[i];
     _perm_clear(tmp);
-    qsort(pivots, rank, sizeof(slong), slong_compare);
+    qsort(pivots, rank, sizeof(slong), _slong_comparator);
 
     slong i, j;
 
@@ -102,7 +102,7 @@ void nmod_mat_rand_uref(nmod_mat_t mat,
     for (slong i = 0; i < rank; i++)
         pivots[i] = tmp[i];
     _perm_clear(tmp);
-    qsort(pivots, rank, sizeof(slong), slong_compare);
+    qsort(pivots, rank, sizeof(slong), _slong_comparator);
 
     slong i, j;
 
@@ -150,7 +150,7 @@ void nmod_mat_rand_lrref(nmod_mat_t mat,
     for (slong i = 0; i < rank; i++)
         pivots[i] = tmp[i];
     _perm_clear(tmp);
-    qsort(pivots, rank, sizeof(slong), slong_compare);
+    qsort(pivots, rank, sizeof(slong), _slong_comparator);
 
     slong i, j;
 
@@ -198,7 +198,7 @@ void nmod_mat_rand_urref(nmod_mat_t mat,
     for (slong i = 0; i < rank; i++)
         pivots[i] = tmp[i];
     _perm_clear(tmp);
-    qsort(pivots, rank, sizeof(slong), slong_compare);
+    qsort(pivots, rank, sizeof(slong), _slong_comparator);
 
     slong i, j;
 
