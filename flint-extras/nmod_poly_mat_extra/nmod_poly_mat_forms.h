@@ -198,10 +198,10 @@ void nmod_poly_mat_pivot_profile_columnwise(slong *pivind,
 
 /** Computes the row-wise `shift`-pivot index `pivind` and `shift`-pivot degree
  * `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). */
-void nmod_poly_mat_pivot_profile_shifted_rowwise(slong *pivind,
-                                                 slong *pivdeg,
+void nmod_poly_mat_pivot_profile_shifted_rowwise(slong * pivind,
+                                                 slong * pivdeg,
                                                  const nmod_poly_mat_t mat,
-                                                 const slong *shift);
+                                                 const slong * shift);
 
 /** Computes the column-wise `shift`-pivot index `pivind` and `shift`-pivot
  * degree `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). */

@@ -20,7 +20,7 @@ void nmod_poly_mat_rand(nmod_poly_mat_t mat,
 
 void nmod_poly_mat_rand_row_degree(nmod_poly_mat_t mat,
                                    flint_rand_t state,
-                                   slong * rdeg)
+                                   const slong * rdeg)
 {
     for (slong i = 0; i < mat->r; i++)
         for (slong j = 0; j < mat->c; j++)
@@ -29,7 +29,7 @@ void nmod_poly_mat_rand_row_degree(nmod_poly_mat_t mat,
 
 void nmod_poly_mat_rand_column_degree(nmod_poly_mat_t mat,
                                       flint_rand_t state,
-                                      slong * cdeg)
+                                      const slong * cdeg)
 {
     for (slong i = 0; i < mat->r; i++)
         for (slong j = 0; j < mat->c; j++)
@@ -38,7 +38,7 @@ void nmod_poly_mat_rand_column_degree(nmod_poly_mat_t mat,
 
 void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
                                       flint_rand_t state,
-                                      fmpz_mat_t dmat)
+                                      const fmpz_mat_t dmat)
 {
     for (slong i = 0; i < mat->r; i++)
         for (slong j = 0; j < mat->c; j++)
