@@ -10,10 +10,18 @@ extern "C" {
 
 
 /** Generates random polynomial `pol` of length up to `len` with uniformly
- * random coefficients. */
+ * random coefficients. If `len` is nonpositive, `pol` is set to zero. */
 void nmod_poly_rand(nmod_poly_t pol,
                     flint_rand_t state,
                     slong len);
+
+
+/** Generates random monic polynomial `pol` of length exactly `len` with
+ * uniformly random coefficients. If `len` is nonpositive, `pol` is set to
+ * zero. */
+void nmod_poly_rand_monic(nmod_poly_t pol,
+                          flint_rand_t state,
+                          slong len);
 
 
 

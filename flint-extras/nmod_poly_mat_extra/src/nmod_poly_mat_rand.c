@@ -1,3 +1,5 @@
+#include <flint/fmpz_mat.h>
+#include <flint/fmpz_vec.h>
 #include <flint/nmod_poly.h>
 #include "nmod_poly_extra.h"
 #include "nmod_poly_mat_utils.h"
@@ -6,7 +8,7 @@
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* RANDOM - UNIFORM DEGREES                                   */
+/* RANDOM - UNIFORM, DENSE                                    */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
@@ -43,6 +45,81 @@ void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
     for (slong i = 0; i < mat->r; i++)
         for (slong j = 0; j < mat->c; j++)
             nmod_poly_rand(mat->rows[i] + j, state, 1 + *fmpz_mat_entry(dmat, i, j));
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* RANDOM - POPOV                                             */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+void nmod_poly_mat_rand_popov_rowwise(nmod_poly_mat_t mat,
+                                      flint_rand_t state,
+                                      const slong * pivind,
+                                      const slong * pivdeg,
+                                      const slong * shift)
+{
+    // will store, for each row, the corresponding degree constraints
+    slong * dvec = (slong *) flint_malloc(mat->c * sizeof(slong));
+
+    // process each row
+    for (slong i = 0; i < mat->r; i++)
+    {
+        // row-wise constraints for row i
+        for (slong j = 0; j < pivind[i]; j++)
+            dvec[j] = pivdeg[i]+shift[i]-shift[j];
+        for (slong j = pivind[i]+1; j < mat->c; j++)
+            dvec[j] = pivdeg[i]+shift[i]-shift[j]-1;
+        // column-wise constraints for row i
+        for (slong ii = 0; ii < mat->r; ii++)
+            if (dvec[pivind[ii]] >= pivdeg[ii])
+                dvec[pivind[ii]] = pivdeg[ii]-1;
+        // random filling before pivot
+        for (slong j = 0; j < pivind[i]; j++)
+            nmod_poly_rand(mat->rows[i] + j, state, 1 + dvec[j]);
+        // add monic of pivot degree at pivot
+        nmod_poly_rand_monic(mat->rows[i] + pivind[i], state, 1+pivdeg[i]);
+        // random filling after pivot
+        for (slong j = pivind[i]+1; j < mat->c; j++)
+            nmod_poly_rand(mat->rows[i] + j, state, 1 + dvec[j]);
+    }
+
+    free(dvec);
+}
+
+void nmod_poly_mat_rand_popov_columnwise(nmod_poly_mat_t mat,
+                                         flint_rand_t state,
+                                         const slong * pivind,
+                                         const slong * pivdeg,
+                                         const slong * shift)
+{
+    // will store, for each column, the corresponding degree constraints
+    slong * dvec = (slong *) flint_malloc(mat->r * sizeof(slong));
+
+    // process each column
+    for (slong j = 0; j < mat->c; j++)
+    {
+        // column-wise constraints for column j
+        for (slong i = 0; i < pivind[j]; i++)
+            dvec[i] = pivdeg[j]+shift[j]-shift[i];
+        for (slong i = pivind[j]+1; i < mat->r; i++)
+            dvec[i] = pivdeg[j]+shift[j]-shift[i]-1;
+        // row-wise constraints for column j
+        for (slong jj = 0; jj < mat->c; jj++)
+            if (dvec[pivind[jj]] >= pivdeg[jj])
+                dvec[pivind[jj]] = pivdeg[jj]-1;
+        // random filling before pivot
+        for (slong i = 0; i < pivind[j]; i++)
+            nmod_poly_rand(mat->rows[i] + j, state, 1 + dvec[i]);
+        // add monic of pivot degree at pivot
+        nmod_poly_rand_monic(mat->rows[pivind[j]] + j, state, 1+pivdeg[j]);
+        // random filling after pivot
+        for (slong i = pivind[j]+1; i < mat->r; i++)
+            nmod_poly_rand(mat->rows[i] + j, state, 1 + dvec[i]);
+    }
+
+    free(dvec);
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
