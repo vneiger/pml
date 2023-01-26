@@ -4,7 +4,7 @@ void nmod_poly_mat_pivot_index_rowwise(slong *pivind, const nmod_poly_mat_t mat,
 {
     if (shift == NULL)
     {
-           slong max, piv, d;
+        slong max, piv, d;
         for (slong i = 0; i < mat->r; i++)
         {
             max = -1;

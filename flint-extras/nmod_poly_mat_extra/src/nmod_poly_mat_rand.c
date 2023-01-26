@@ -68,9 +68,9 @@ void nmod_poly_mat_rand_popov_rowwise(nmod_poly_mat_t mat,
     {
         // row-wise constraints for row i
         for (slong j = 0; j < pivind[i]; j++)
-            dvec[j] = pivdeg[i]+shift[i]-shift[j];
+            dvec[j] = pivdeg[i]+shift[pivind[i]]-shift[j];
         for (slong j = pivind[i]+1; j < mat->c; j++)
-            dvec[j] = pivdeg[i]+shift[i]-shift[j]-1;
+            dvec[j] = pivdeg[i]+shift[pivind[i]]-shift[j]-1;
         // column-wise constraints for row i
         for (slong ii = 0; ii < mat->r; ii++)
             if (dvec[pivind[ii]] >= pivdeg[ii])
@@ -102,9 +102,9 @@ void nmod_poly_mat_rand_popov_columnwise(nmod_poly_mat_t mat,
     {
         // column-wise constraints for column j
         for (slong i = 0; i < pivind[j]; i++)
-            dvec[i] = pivdeg[j]+shift[j]-shift[i];
+            dvec[i] = pivdeg[j]+shift[pivind[j]]-shift[i];
         for (slong i = pivind[j]+1; i < mat->r; i++)
-            dvec[i] = pivdeg[j]+shift[j]-shift[i]-1;
+            dvec[i] = pivdeg[j]+shift[pivind[j]]-shift[i]-1;
         // row-wise constraints for column j
         for (slong jj = 0; jj < mat->c; jj++)
             if (dvec[pivind[jj]] >= pivdeg[jj])
@@ -129,14 +129,13 @@ void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
                          const slong * shift,
                          orientation_t row_wise)
 {
-    const slong * sshift;
-    if (shift) // used provided shift
-        sshift = shift;
-    else // uniform shift
-        sshift = flint_calloc(row_wise ? mat->c : mat->r, sizeof(slong));
+    slong * uniform_shift = NULL;
+    if (shift == NULL)
+        uniform_shift = flint_calloc(row_wise ? mat->c : mat->r, sizeof(slong));
+    const slong * sshift = (shift) ? shift : uniform_shift;
 
     // Note: if pivind == NULL, `mat` must be square, this is not checked
-    slong * iota;
+    slong * iota = NULL;
     if (pivind == NULL)
     {
         iota = flint_malloc((row_wise ? mat->r : mat->c) * sizeof(slong));
@@ -149,6 +148,9 @@ void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
         nmod_poly_mat_rand_popov_rowwise(mat, state, ppivind, pivdeg, sshift);
     else
         nmod_poly_mat_rand_popov_columnwise(mat, state, ppivind, pivdeg, sshift);
+
+    flint_free(uniform_shift);
+    flint_free(iota);
 }
 
 
