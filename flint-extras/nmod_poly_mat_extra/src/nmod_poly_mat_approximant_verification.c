@@ -1,62 +1,61 @@
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_forms.h"
+#include <flint/nmod_poly.h>
 
-int is_zero_mod_xk(const nmod_poly_mat_t mat, slong k)
+int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
+                                       const nmod_poly_mat_t pmat,
+                                       slong order,
+                                       const slong * shift,
+                                       orientation_t row_wise)
 {
-    nmod_poly_t P;
-    nmod_poly_init(P, mat->modulus);
-    for(slong i = 0; i < mat->r; i++)
-        for(slong j = 0; j < mat->c; j++)
+    // context
+    const slong rdim = pmat->r, cdim = pmat->c;
+    const mp_limb_t prime = pmat->modulus;
+
+    // check appbas is square with the right dimension
+    if (appbas->r != rdim || appbas->c != rdim)
+    {
+        printf("basis has wrong row dimension or column dimension\n");
+        return 0;
+    }
+
+    //// check appbas has form at least "form"
+    //if (!nmod_poly_mat_is_reduced_shifted(appbas, shift, row_wise))
+    //{
+    //    printf("basis is not shifted-reduced\n");
+    //    return 0;
+    //}
+
+    // compute residual
+    nmod_poly_mat_t residual;
+    nmod_poly_mat_init(residual, rdim, cdim, prime);
+    // FIXME next line could be a multiplication truncated at order order+1
+    nmod_poly_mat_mul(residual, appbas, pmat);
+
+    // check rows of appbas are approximants
+    nmod_poly_t pol;
+    nmod_poly_init(pol, prime);
+    for(slong i = 0; i < rdim; i++)
+        for(slong j = 0; j < cdim; j++)
         {
-            nmod_poly_set(P, nmod_poly_mat_entry(mat, i, j));
-            nmod_poly_shift_right(P, P, k);
-            if (!nmod_poly_is_zero(P))
+            nmod_poly_set_trunc(pol, nmod_poly_mat_entry(residual, i, j), order);
+            if (!nmod_poly_is_zero(pol))
+            {
+                printf("entry %ld, %ld of residual has valuation less than the order\n",i,j);
                 return 0;
+            }
         }
-    return 1;
-}
+    nmod_poly_clear(pol);
 
+    // 
+    //slong lead_pos[rdim];
+    //nmod_poly_mat_pivot_index_shifted_rowwise(lead_pos, appbas, shift);
+    //printf("\nleading positions\n");
+    //for (slong i = 0; i < rdim; i++)
+    //    printf("%lu ", lead_pos[i]);
 
-/** TO FIX **/
-int is_minimal_approximant_basis(const nmod_poly_mat_t base,
-                                 const nmod_mat_t mat, slong order,
-                                 const slong *shifts)
-{
-    slong rdim = mat->r, cdim = mat->c;
-    mp_limb_t prime = mat->mod.n;
-    nmod_poly_t constant;
-    nmod_poly_mat_t mat_poly, res_mul;
+    nmod_poly_mat_clear(residual);
 
-    if (base->c != base->r)
-    {
-        printf("not basis: wrong shape");
-        return 0;
-    }
-
-    nmod_poly_mat_init(mat_poly, rdim, cdim, prime);
-    slong alloc;
-    nmod_poly_init(constant, prime);
-    for (slong i = 0; i < rdim; i++)
-        for (slong j = 0; j < cdim; j++)
-        {
-            alloc = (slong) nmod_mat_get_entry(mat, i, j);
-            nmod_poly_set_coeff_ui(constant, 0, alloc);
-            nmod_poly_set(nmod_poly_mat_entry(mat_poly, i, j), constant);
-        }
-    nmod_poly_mat_init(res_mul, rdim, cdim, prime);
-    nmod_poly_mat_mul(res_mul, base, mat_poly);
-
-    if (! is_zero_mod_xk(res_mul, order))
-    {
-        printf("not zero");
-        return 0;
-    }
-    slong lead_pos[rdim];
-    //leading_positions(lead_pos, base, shifts, ROW_WISE);
-    nmod_poly_mat_pivot_index_shifted_rowwise(lead_pos, base, shifts);
-    printf("\nleading positions\n");
-    for (slong i = 0; i < rdim; i++)
-        printf("%lu ", lead_pos[i]);
     return 1;
 }
 

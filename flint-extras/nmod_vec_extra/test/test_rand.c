@@ -1,0 +1,44 @@
+#include <time.h>
+#include <flint/flint.h>
+
+#include "nmod_vec_extra.h"
+
+/*------------------------------------------------------------*/
+/* creates and prints uniform random vector                   */
+/*------------------------------------------------------------*/
+int main(int argc, char **argv)
+{
+    if (argc != 3)
+    {
+        printf("Usage %s [positive modulus] [vector length]\n",argv[0]);
+        return 0;
+    }
+
+    flint_rand_t state;
+    flint_randinit(state);
+    srand(time(NULL));
+    flint_randseed(state, rand(), rand());
+
+    nmod_t mod;
+    nmod_init(&mod, atol(argv[1]));
+
+    const slong len = atol(argv[2]);
+
+    mp_ptr vec_uni = _nmod_vec_init(len);
+    mp_ptr vec_test = _nmod_vec_init(len);
+
+    _nmod_vec_rand(vec_uni, state, len, mod);
+    _nmod_vec_randtest(vec_test, state, len, mod);
+
+    _nmod_vec_print_pretty(vec_uni, len, mod);
+    _nmod_vec_print_pretty(vec_test, len, mod);
+
+    _nmod_vec_clear(vec_uni);
+    _nmod_vec_clear(vec_test);
+    flint_randclear(state);
+
+    return 0;
+}
+
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -1,8 +1,12 @@
 #include "nmod_poly_mat_mat_poly.h"
 #include "nmod_poly_mat_utils.h"
 
-void nmod_mat_poly_init(nmod_mat_poly_t matp, slong degree, slong length,
-		slong r, slong c, mp_limb_t mod)
+void nmod_mat_poly_init(nmod_mat_poly_t matp,
+                        slong degree,
+                        slong length,
+                        slong r,
+                        slong c,
+                        mp_limb_t mod)
 {
 
 	slong i;
@@ -66,7 +70,8 @@ void nmod_mat_poly_set(nmod_mat_poly_t res, const nmod_poly_mat_t F)
 	res->degree = degree;
 }
 
-void nmod_mat_poly_init_set(nmod_mat_poly_t res, const nmod_poly_mat_t F)
+void nmod_mat_poly_init_set(nmod_mat_poly_t res,
+                            const nmod_poly_mat_t F)
 {
 	slong degree, r, c;
 	mp_limb_t mod;
@@ -88,7 +93,8 @@ void nmod_mat_poly_init_set(nmod_mat_poly_t res, const nmod_poly_mat_t F)
 }
 
 void nmod_mat_poly_init_setII(nmod_mat_poly_t res,
-		const nmod_poly_mat_t F, slong length)
+                              const nmod_poly_mat_t F,
+                              slong length)
 {
 	slong degree, r, c, min, d;
 	mp_limb_t mod;
@@ -112,7 +118,8 @@ void nmod_mat_poly_init_setII(nmod_mat_poly_t res,
 }
 
 void nmod_mat_poly_init_setIII(nmod_mat_poly_t res,
-		const nmod_poly_mat_t F, slong length)
+                               const nmod_poly_mat_t F,
+                               slong length)
 {
 	slong degree, r, c;
 	mp_limb_t mod;
@@ -133,14 +140,17 @@ void nmod_mat_poly_init_setIII(nmod_mat_poly_t res,
 		}
 }
 
-void nmod_mat_poly_get_coef(nmod_mat_t res, const nmod_mat_poly_t F, slong k)
+void nmod_mat_poly_get_coef(nmod_mat_t res,
+                            const nmod_mat_poly_t F,
+                            slong k)
 {
 	nmod_mat_set(res, F->mat + k);
 }
 
-void nmod_mat_poly_naive_mul_coef(nmod_mat_t res, const nmod_mat_poly_t A,
-		const nmod_mat_poly_t B, slong k)
-
+void nmod_mat_poly_naive_mul_coef(nmod_mat_t res,
+                                  const nmod_mat_poly_t A,
+                                  const nmod_mat_poly_t B,
+                                  slong k)
 {
 	nmod_mat_t temp;
 	slong A_r, A_c, A_degree, B_r, B_c, B_degree;

@@ -9,6 +9,40 @@ extern "C" {
 #endif
 
 
+/** Generates random polynomial `pol` of length up to `len` with uniformly
+ * random coefficients. If `len` is nonpositive, `pol` is set to zero. */
+void nmod_poly_rand(nmod_poly_t pol,
+                    flint_rand_t state,
+                    slong len);
+
+
+/** Generates random monic polynomial `pol` of length exactly `len` with
+ * uniformly random coefficients. If `len` is nonpositive, `pol` is set to
+ * zero. */
+void nmod_poly_rand_monic(nmod_poly_t pol,
+                          flint_rand_t state,
+                          slong len);
+
+/** 
+ * uniformly random coefficients. If `len` is nonpositive, `pol` is set to
+ * zero. */
+void nmod_poly_rand_monic(nmod_poly_t pol,
+                          flint_rand_t state,
+                          slong len);
+
+
+/** Returns `1` if the polynomial `pol` is monic, otherwise returns `0`. */
+NMOD_POLY_INLINE int
+nmod_poly_is_monic(const nmod_poly_t pol)
+{
+    if (pol->length && pol->coeffs[(pol->length - 1)] == 1)
+        return 1;
+    else
+        return 0;
+}
+
+
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* a structure for FFT modulo p                               */
@@ -256,7 +290,7 @@ void nmod_avx2_32_fft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32_f
 /* inverse fft                                                */
 /* given x[i] = poly(w^bitreverse(i,2^k)), returns poly       */
 /*------------------------------------------------------------*/
-void nmod_avx2_32_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_32_fft_t F, const ulong k);
+//void nmod_avx2_32_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_32_fft_t F, const ulong k);
 
 /*------------------------------------------------------------*/
 /* tft evaluation                                             */
@@ -344,4 +378,7 @@ void nmod_geometric_progression_interpolate(nmod_poly_t poly, mp_srcptr v, const
 }
 #endif
 
-#endif
+#endif // __NMOD_POLY_EXTRA__H
+
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

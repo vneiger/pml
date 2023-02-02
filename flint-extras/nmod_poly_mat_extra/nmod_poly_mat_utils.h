@@ -5,14 +5,16 @@
  *
  * \file nmod_poly_mat_utils.h
  * \version 0.0
- * \date 2022-06-25
+ * \date 2023-01-25
  *
  */
 
 #include <flint/nmod_mat.h>
+#include <flint/fmpz_mat.h>
 #include <flint/nmod_poly_mat.h>
 
 #include "nmod_poly_mat_mat_poly.h"
+#include "nmod_poly_mat_forms.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -200,8 +202,8 @@ nmod_poly_mat_invert_columns(nmod_poly_mat_t mat, slong * perm)
  * `rows[i] <- rows[perm_act[i]]`.  */
 NMOD_POLY_MAT_INLINE void
 nmod_poly_mat_permute_rows(nmod_poly_mat_t mat,
-                           slong * perm_store,
-                           const slong *perm_act)
+                           const slong *perm_act,
+                           slong * perm_store)
 {
     // perm_store[i] <- perm_store[perm_act[i]] 
     if (perm_store)
@@ -223,8 +225,8 @@ nmod_poly_mat_permute_rows(nmod_poly_mat_t mat,
  * and `rows[i][j] <- rows[i][perm_act[j]]`.  */
 NMOD_POLY_MAT_INLINE void
 nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
-                              slong * perm_store,
-                              const slong * perm_act)
+                              const slong * perm_act,
+                              slong * perm_store)
 {
     // perm_store[i] <- perm_store[perm_act[i]] 
     if (perm_store)
@@ -446,12 +448,12 @@ void nmod_poly_mat_shift_right(nmod_poly_mat_t res,
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/** @name Generation of random matrices
+/** @name Generation of random matrices with degree bounds
  *
  *  Functions for generating a random polynomial matrix of given
  *  dimensions and degree; the degree bound can either be a global
  *  degree bound, or a list of bounds for the degree of each row
- *  (respectively, of each column).
+ *  (respectively, of each column), or a matrix of bounds.
  *
  *  \todo complete this doc with ref to function for random matrix with given form
  */
@@ -460,33 +462,36 @@ void nmod_poly_mat_shift_right(nmod_poly_mat_t res,
 /** Computes a random polynomial vector `pvec` of length `n` and degree less
  * than `d`
  */
-// TODO
-//void random(Vec<zz_pX> & pvec, long n, long d);
+// TODO vector version
+//void nmod_poly_vec_rand(nmod_poly_vec_t pvec, flint_rand_t state, slong len);
 
-/** Computes a random polynomial matrix `pmat` with `m` rows, `n` columns, and
- * degree less than `d`
- */
-// TODO
-//void random(Mat<zz_pX> & pmat, long m, long n, long d);
+/** Fills the polynomial matrix `pmat` with dense polynomials of length `len`
+ * with coefficients taken uniformly at random.  */
+void nmod_poly_mat_rand(nmod_poly_mat_t mat,
+                        flint_rand_t state,
+                        slong len);
 
-/** Computes a random polynomial matrix `pmat` with `m` rows, `n` columns, and
- * degree of `i`th row less than `rdeg[i]` for all `i`
- */
-// TODO
-//void random_mat_zz_pX_rdeg(Mat<zz_pX> & pmat, long m, long n, VecLong rdeg);
+/** Fills polynomial matrix `mat` with random dense polynomial entries such
+ * that `mat[i,j] has length up to `rdeg[i]+1` for all `i`. Assumes `rdeg` has
+ * the right length, i.e. the number of rows of mat. */
+void nmod_poly_mat_rand_row_degree(nmod_poly_mat_t mat,
+                                   flint_rand_t state,
+                                   const slong * rdeg);
 
-/** Computes a random polynomial matrix `pmat` with `m` rows, `n` columns, and
- * degree of `j`th column less than `cdeg[j]` for all `j`
- */
-// TODO
-//void random_mat_zz_pX_cdeg(Mat<zz_pX> & pmat, long m, long n, VecLong cdeg);
+/** Fills polynomial matrix `mat` with random dense polynomial entries such
+ * that `mat[i,j] has length up to `cdeg[j]+1` for all `j`. Assumes `cdeg` has
+ * the right length, i.e. the number of columns of mat. */
+void nmod_poly_mat_rand_column_degree(nmod_poly_mat_t mat,
+                                      flint_rand_t state,
+                                      const slong * cdeg);
 
-/** Computes a random polynomial matrix `pmat` with the same dimensions
- * as `dmat`, and degree of `(i,j)` entry less than `dmat[i][j]` for
- * all `i` and `j`
- */
-// TODO
-//void random(Mat<zz_pX> & pmat, Mat<long> dmat);
+/** Fills polynomial matrix `mat` with random dense polynomial entries such
+ * that `mat[i,j] has length up to `dmat[i,j]+1` for all `i,j`. Assumes `dmat`
+ * has the right number of rows and columns (i.e. the same as those of mat). */
+void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
+                                      flint_rand_t state,
+                                      const fmpz_mat_t dmat);
+
 
 /** Computes a random polynomial matrix `matp` with `m` rows, `n` columns,
  * and degree less than `d`, represented as a vector of constant matrices.
@@ -494,8 +499,62 @@ void nmod_poly_mat_shift_right(nmod_poly_mat_t res,
 // TODO
 //void random(Vec<Mat<zz_p>> & matp, long m, long n, long d);
 
-//@} // doxygen group: Generation of random matrices
+//@} // doxygen group: Generation of random matrices with degree bounds
 
+/** @name Generation of random matrices with specific forms
+ *
+ *  Functions for generating a random polynomial matrix of a given
+ *  form: reduced, ordered weak Popov, Popov, Hermite; their shifted
+ *  variants and with choice of row/column orientation.
+ *
+ *  For definitions of pivot profiles, pivot indices and pivot degrees,
+ *  see @ref Pivots and @ref MatrixForms.
+ */
+//@{
+
+/** Fills polynomial matrix `mat` with random dense polynomial entries such
+ * that `mat` is in `shift`-Popov form row-wise, with `shift`-pivot profile
+ * specified by `pivind` and `pivdeg`. If `m` and `n` are the number of rows
+ * and columns of `mat`, the input must satisfy `m <= n`, the length of
+ * `pivind` and `pivdeg` must be `m`, `pivind` must consist of increasing
+ * integers between `0` and `n-1`, `pivdeg` must be nonnegative, `shift` must
+ * have length `n`. */
+void nmod_poly_mat_rand_popov_rowwise(nmod_poly_mat_t mat,
+                                      flint_rand_t state,
+                                      const slong * pivind,
+                                      const slong * pivdeg,
+                                      const slong * shift);
+
+/** Fills polynomial matrix `mat` with random dense polynomial entries such
+ * that `mat` is in `shift`-Popov form column-wise, with `shift`-pivot profile
+ * specified by `pivind` and `pivdeg`. If `m` and `n` are the number of rows
+ * and columns of `mat`, the input must satisfy `n <= m`, the length of
+ * `pivind` and `pivdeg` must be `n`, `pivind` must consist of increasing
+ * integers between `0` and `m-1`, `pivdeg` must be nonnegative, `shift` must
+ * have length `m`.  */
+void nmod_poly_mat_rand_popov_columnwise(nmod_poly_mat_t mat,
+                                         flint_rand_t state,
+                                         const slong * pivind,
+                                         const slong * pivdeg,
+                                         const slong * shift);
+
+/** Fills polynomial matrix `mat` with random dense polynomial entries such
+ * that `mat` is in `shift`-Popov form, with `shift`-pivot profile specified by
+ * `pivind` and `pivdeg`; the orientation row-wise or column-wise is specified
+ * by the input `row_wise`. The input requirements depend on the orientation,
+ * see the documentation of ::nmod_poly_mat_rand_popov_rowwise or
+ * ::nmod_poly_mat_rand_popov_columnwise . Here `shift` can be `NULL`
+ * (equivalent to `[0,...,0]`), and if `mat` is square, `pivind` can be `NULL`
+ * (note that if it is not, the input requirement means that it has to be the
+ * list of successive integers [0,1,2,..], of the right length). */
+void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
+                         flint_rand_t state,
+                         const slong * pivind,
+                         const slong * pivdeg,
+                         const slong * shift,
+                         orientation_t row_wise);
+
+//@} // doxygen group: Generation of random matrices with specific forms
 
 
 /*------------------------------------------------------------*/

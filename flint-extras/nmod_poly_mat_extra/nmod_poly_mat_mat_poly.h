@@ -55,7 +55,8 @@ nmod_mat_poly_modulus(const nmod_mat_poly_t matp)
 	return matp->mod;
 }
 
-void nmod_mat_poly_get_coef(nmod_mat_t res, const nmod_mat_poly_t F,
+void nmod_mat_poly_get_coef(nmod_mat_t res,
+                            const nmod_mat_poly_t F,
                             slong k);
 
 /*------------------------------------------------------------*/
@@ -84,37 +85,39 @@ void nmod_mat_poly_init(nmod_mat_poly_t res, slong degree,
 
 
 /** void nmod_mat_poly_init_set(nmod_mat_poly_t res,
- *				 const nmod_poly_mat_t F)
+ *                              const nmod_poly_mat_t F)
  *
  * F \in K[x]^{mxn} <-> res \in K^{mxn}[x]
  * With res->degree = F.degree(), and res will have only res->degree + 1 nmod_mat_t pointer
- * 
+ *
  */
 void nmod_mat_poly_init_set(nmod_mat_poly_t res,
                             const nmod_poly_mat_t F);
 
 /** void nmod_mat_poly_init_set(nmod_mat_poly_t res,
- *				 const nmod_poly_mat_t F)
+ *				                const nmod_poly_mat_t F)
  *
  * F \in K[x]^{mxn} <-> res \in K^{mxn}[x]
  * With res->degree = F.degree(), and res will have only length nmod_mat_t pointer
- * Improve for the memory space of the computation of x^{-k} P_{k-1} F mod x in M_basisIII and IV 
+ * Improves memory space for x^{-k} P_{k-1} F mod x in mbasis{III,IV}
  *
  */
 void nmod_mat_poly_init_setII(nmod_mat_poly_t res,
-                              const nmod_poly_mat_t F, slong length);
+                              const nmod_poly_mat_t F,
+                              slong length);
 
 
 /** void nmod_mat_poly_init_set(nmod_mat_poly_t res,
- *				 const nmod_poly_mat_t F)
+ *				                const nmod_poly_mat_t F)
  *
  * F \in K[x]^{mxn} <-> res \in K^{mxn}[x]
  * With res->degree = F.degree(), and res will have res->degree + length nmod_mat_t pointer
- * To stock the computation of P_{k-1} F in M_basisV 
+ * To store the computation of P_{k-1} F in mbasisV
  *
  */
 void nmod_mat_poly_init_setIII(nmod_mat_poly_t res,
-                               const nmod_poly_mat_t F, slong length);
+                               const nmod_poly_mat_t F,
+                               slong length);
 
 
 
@@ -130,14 +133,15 @@ void nmod_mat_poly_init_setIII(nmod_mat_poly_t res,
  *				       const nmod_mat_poly_t B, slong k);
  *
  * A = sum^{deg_A}_{i=0} a_i x^i and B = sum^{deg_B}_{i=0} b_i x^i
- * Compute the coefficient k of the product AB 
+ * Compute the coefficient k of the product AB
  * C = AB = sum^{deg_A + deg_B}_{i=0} c_i x^i
  * res = c_k = sum^{k}_{i=0} a_i b_{k-i}
  *
  */
 void nmod_mat_poly_naive_mul_coef(nmod_mat_t res,
                                   const nmod_mat_poly_t A,
-                                  const nmod_mat_poly_t B, slong k);
+                                  const nmod_mat_poly_t B,
+                                  slong k);
 
 void nmod_mat_poly_print(const nmod_mat_poly_t A);
 
