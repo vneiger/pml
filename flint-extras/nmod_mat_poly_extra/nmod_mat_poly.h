@@ -15,6 +15,10 @@
  * \todo test for memory leaks
  * \todo Note: all parameters are supposed init
  *
+ * \todo transpose, swap/permute rows/cols, printing
+ * \todo set, init_set, swap
+ * \todo windows?
+ * \todo tests
  */
 
 #ifdef NMOD_MAT_POLY_INLINES_C
