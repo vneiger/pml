@@ -171,7 +171,7 @@ int collection_test_mbasis(slong iter)
 int main(void)
 {
     //slong prime = 1125899906842679;
-    slong prime = 3;
+    slong prime = 2;
     slong rdim = 3, cdim = 1, order = 2, len = 1;
     slong iter = 1000;
     one_test_mbasis(prime, rdim, cdim, order, len, iter);

@@ -55,9 +55,9 @@ nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
 // TODO
 
 /** Compute and return the degree of a matrix polynomial `matp` */
-// TODO redundant with functions in nmod_mat_poly ?
+// TODO redundant with functions in nmod_mat_poly0 ?
 NMOD_POLY_MAT_INLINE slong
-nmod_mat_poly_degree(const nmod_mat_poly_t matp)
+nmod_mat_poly0_degree(const nmod_mat_poly0_t matp)
 {
     // TODO not guaranteed to be the actual degree?
 	return matp->degree;
@@ -65,9 +65,9 @@ nmod_mat_poly_degree(const nmod_mat_poly_t matp)
 
 
 /** Tests whether `matp` is a constant matrix, that is, of degree 0 */
-// TODO should be in nmod_mat_poly ?
+// TODO should be in nmod_mat_poly0 ?
 NMOD_POLY_MAT_INLINE int
-nmod_mat_poly_is_constant(const nmod_mat_poly_t matp)
+nmod_mat_poly0_is_constant(const nmod_mat_poly0_t matp)
 {
     // TODO not guaranteed to be the actual degree?
     return matp->degree == 0;
@@ -590,13 +590,13 @@ void nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat,
 //@} // doxygen group: Conversion from constant matrix
 
 
-/** @name Conversion nmod_poly_mat <-> nmod_mat_poly
+/** @name Conversion nmod_poly_mat <-> nmod_mat_poly0
  *
  *  Two main representations are used for polynomial matrices:
  *     - a polynomial matrix stored as a matrix with polynomial entries, that
  *     is, of type `nmod_poly_mat_t`
  *     - a polynomial matrix stored as a polynomial with matrix coefficients,
- *     that is, of type `nmod_mat_poly_t`
+ *     that is, of type `nmod_mat_poly0_t`
  *
  *  In the latter representation, the array of matrices has length at least
  *  `degree(mat)+1`; in particular, the zero matrix may be represented by an
@@ -614,15 +614,15 @@ void nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat,
 /** Converts from matrix with polynomial entries `pmat` to polynomial with
  * matrix coefficients `matp`.
  */
-//void nmod_poly_mat_to_mat_poly(nmod_mat_poly_t matp,
+//void nmod_poly_mat_to_mat_poly0(nmod_mat_poly0_t matp,
 			    //const nmod_poly_mat_t pmat);
 
 /** Converts from polynomial with matrix coefficients `matp` to matrix with
  * polynomial entries `pmat`.
  * \todo improvements in implementation
  **/
-void nmod_poly_mat_set_from_mat_poly(nmod_poly_mat_t pmat,
-                                     const nmod_mat_poly_t matp);
+void nmod_poly_mat_set_from_mat_poly0(nmod_poly_mat_t pmat,
+                                     const nmod_mat_poly0_t matp);
 
 /** Converts from matrix with polynomial entries `pmat`, truncated at the
  * specified `order`, to polynomial with matrix coefficients `matp`. The
@@ -640,7 +640,7 @@ void nmod_poly_mat_set_from_mat_poly(nmod_poly_mat_t pmat,
 // TODO
 //void conv(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp, const long order);
 
-//@} // doxygen group: Conversion nmod_poly_mat <-> nmod_mat_poly
+//@} // doxygen group: Conversion nmod_poly_mat <-> nmod_mat_poly0
 
 #ifdef __cplusplus
 }

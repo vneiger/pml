@@ -65,17 +65,17 @@ void nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat, const nmod_mat_t cmat
         }
 }
 
-void nmod_poly_mat_set_from_mat_poly(nmod_poly_mat_t pmat, const nmod_mat_poly_t matp)
+void nmod_poly_mat_set_from_mat_poly0(nmod_poly_mat_t pmat, const nmod_mat_poly0_t matp)
 {
     // TODO reinsert this kind of things, with flag "debug mode" or something?
 	//if (pmat->modulus != matp->mod)
 	//{
-	//	printf("\nERROR! Wrong modulus: nmod_mat_poly_to_poly_mat\n");
+	//	printf("\nERROR! Wrong modulus: nmod_mat_poly0_to_poly_mat\n");
 	//	return;
 	//}
 	//if (pmat->r != r || pmat->c != c)
 	//{
-	//	printf("\nERROR! Wrong shape: nmod_mat_poly_to_poly_mat\n");
+	//	printf("\nERROR! Wrong shape: nmod_mat_poly0_to_poly_mat\n");
 	//	printf("shape pmat = (%ld, %ld), shape matp = (%ld, %ld)\n", pmat->r, pmat->c, r, c);
 	//	return;
 	//}
