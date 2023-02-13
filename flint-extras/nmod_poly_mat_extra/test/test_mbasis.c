@@ -30,9 +30,20 @@ int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
     if (!nmod_poly_mat_is_approximant_basis(appbas, mat, order, shift, ROW_WISE))
     {
         printf("mbasis output is not a minimal approximant basis\n");
+        printf("Input matrix:\n");
         nmod_poly_mat_print(mat, "X");
+        printf("Output matrix:\n");
         nmod_poly_mat_print(appbas,"X");
+        printf("Residual matrix:\n");
+        nmod_poly_mat_t res;
+        nmod_poly_mat_init(res, appbas->r, mat->c, mat->modulus);
+        nmod_poly_mat_mul(res, appbas, mat);
+        nmod_poly_mat_print(res,"X");
+        printf("Degree matrix:\n");
+        nmod_poly_mat_degree_matrix_print_pretty(appbas);
+        printf("Input shift:\t");
         slongvec_print_sagemath(shift, rdim);
+        printf("Output shift:\t");
         slongvec_print_sagemath(oshift, rdim);
         printf("\n");
         return 0;
@@ -114,17 +125,18 @@ int one_test_mbasis(slong prime, slong rdim, slong cdim, slong order, slong len,
     nmod_poly_mat_t mat;
     nmod_poly_mat_init(mat, rdim, cdim, prime);
 
-    // shift shift random small entries
+    // shift random small entries
     slong shift[rdim];
+    _test_collection_shift_uniform(shift, rdim);
 
     for (slong i = 0; i < iter; i++)
     {
         //nmod_poly_mat_randtest(mat, state, len);
         nmod_poly_mat_rand(mat, state, len);
 
-        _perm_randtest(shift, rdim, state);
-        for (slong i = 0; i < rdim; i++)
-            shift[i] = rand() % len - len/2;
+        //_perm_randtest(shift, rdim, state);
+        //for (slong i = 0; i < rdim; i++)
+        //    shift[i] = rand() % len - len/2;
 
         if (core_test_mbasis(mat, order, shift) == 0)
         {
@@ -141,12 +153,27 @@ int one_test_mbasis(slong prime, slong rdim, slong cdim, slong order, slong len,
 }
 
 /** Test against the whole testing collection */
+int collection_test_mbasis(slong iter)
+{
+    flint_rand_t state;
+    flint_randinit(state);
+    srand(time(NULL));
+    flint_randseed(state, rand(), rand());
+
+    // input matrix for approximation
+    nmod_poly_mat_t mat;
+
+    // shift random small entries
+    slong shift;
+
+}
 
 int main(void)
 {
-    slong prime = 1125899906842679;
-    slong rdim = 3, cdim = 1, order = 4, len = 4;
-    slong iter = 100;
+    //slong prime = 1125899906842679;
+    slong prime = 3;
+    slong rdim = 3, cdim = 1, order = 2, len = 1;
+    slong iter = 1000;
     one_test_mbasis(prime, rdim, cdim, order, len, iter);
 
     return EXIT_SUCCESS;
