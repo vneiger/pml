@@ -24,7 +24,7 @@ int shift_equal(slong * shift1, slong * shift2, slong length)
 int test_mbasis(void)
 {
     nmod_poly_mat_t mat, appbas1, appbas2, appbas3, appbas4, appbas5;
-    slong rdim = 3, cdim = 1, prime = 9001, order = 4, len = 4;
+    slong rdim = 3, cdim = 1, prime = 1125899906842679, order = 4, len = 4;
     slong shifts[rdim], shift1[rdim], shift2[rdim];
     slong shift3[rdim], shift4[rdim], shift5[rdim];
 
@@ -49,12 +49,6 @@ int test_mbasis(void)
     for (slong i = 0; i < 100000; i++)
     {
         nmod_poly_mat_rand(mat, state, len);
-    shifts[0] = 0;
-    shifts[1] = 0;
-    shifts[2] = 0;
-    shift1[0] = 0;
-    shift1[1] = 0;
-    shift1[2] = 0;
 
         //_perm_randtest(shifts, rdim, state);
         //for (slong i = 0; i < rdim; i++)
