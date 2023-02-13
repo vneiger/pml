@@ -1,5 +1,5 @@
 /**
- * \file nmod_mat_poly.h
+ * \file nmod_mat_poly0.h
  * \brief Matrices with univariate polynomial entries modulo word-size prime, represented as list of matrices
  * \version 0.0
  * \date 2022-06-25
@@ -17,59 +17,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-//typedef struct
-//{
-//    mp_ptr coeffs;
-//    slong alloc;
-//    slong length;
-//    nmod_t mod;
-//} nmod_poly_struct;
-//
-//typedef nmod_poly_struct nmod_poly_t[1];
-//
-//
-//typedef struct
-//{
-//    mp_limb_t * entries;
-//    slong r;
-//    slong c;
-//    mp_limb_t ** rows;
-//    nmod_t mod;
-//}
-//nmod_mat_struct;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 typedef struct
 {
