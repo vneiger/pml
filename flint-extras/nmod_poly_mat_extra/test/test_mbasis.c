@@ -1,5 +1,7 @@
 #include "nmod_poly_mat_approximant.h"
+#include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_io.h"
+#include "sagemath_extra.h"
 
 // TODO make random choice for given prime (or for random prime of given size)
 #define PRIME_30_BITS 536870923
@@ -41,11 +43,18 @@ int test_mbasis(void)
     srand(time(NULL));
     flint_randseed(state, rand(), rand());
 
-    nmod_poly_mat_randtest(mat, state, len);
+    //nmod_poly_mat_randtest(mat, state, len);
+    nmod_poly_mat_rand(mat, state, len);
 
     for (slong i = 0; i < 100000; i++)
     {
-        nmod_poly_mat_randtest(mat, state, len);
+        nmod_poly_mat_rand(mat, state, len);
+    shifts[0] = 0;
+    shifts[1] = 0;
+    shifts[2] = 0;
+    shift1[0] = 0;
+    shift1[1] = 0;
+    shift1[2] = 0;
 
         //_perm_randtest(shifts, rdim, state);
         //for (slong i = 0; i < rdim; i++)
@@ -64,9 +73,11 @@ int test_mbasis(void)
         // testing correctness of mbasis
         if (!nmod_poly_mat_is_approximant_basis(appbas1, mat, order, shifts, ROW_WISE))
         {
-            printf("mbasis output is not a minimal approximant basis\n");
+            printf("iter %ld: mbasis output is not a minimal approximant basis\n", i);
             nmod_poly_mat_print(mat, "X");
             nmod_poly_mat_print(appbas1,"X");
+            slongvec_print_sagemath(shifts, rdim);
+            slongvec_print_sagemath(shift1, rdim);
             printf("\n");
             return 0;
         }
