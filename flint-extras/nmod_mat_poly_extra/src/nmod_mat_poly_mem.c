@@ -7,12 +7,11 @@
 /*------------------------------------------------------------*/
 
 
-void
-nmod_mat_poly_init_preinv(nmod_mat_poly_t matp,
-                          slong r,
-                          slong c,
-                          mp_limb_t n,
-                          mp_limb_t ninv)
+void nmod_mat_poly_init_preinv(nmod_mat_poly_t matp,
+                               slong r,
+                               slong c,
+                               mp_limb_t n,
+                               mp_limb_t ninv)
 {
     matp->coeffs = NULL;
 

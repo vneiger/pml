@@ -56,6 +56,7 @@ typedef struct
     nmod_t mod;               /**< modulus */
 } nmod_mat_poly_struct;
 
+/* nmod_mat_poly_t allows reference-like semantics for nmod_mat_poly_struct */
 typedef nmod_mat_poly_struct nmod_mat_poly_t[1];
 
 /*------------------------------------------------------------*/
@@ -123,17 +124,28 @@ nmod_mat_poly_init_mod(nmod_mat_poly_t matp,
     matp->mod = mod;
 }
 
-NMOD_MAT_POLY_INLINE
-void nmod_mat_poly_set_mod(nmod_mat_poly_t matp, const nmod_t mod)
-{
-    matp->mod = mod;
-}
-
 //NMOD_MAT_POLY_INLINE
-//void _nmod_mat_poly_set_length(nmod_mat_poly_t matp, slong len)
+//void nmod_mat_poly_set_mod(nmod_mat_poly_t matp, const nmod_t mod)
 //{
-//    matp->length = len;
+//    matp->mod = mod;
 //}
+
+/** Sets the length of `matp` to `length`. If `length < matp->length` then the
+ * matrix coefficients of `matp` beyond `length` are cleared; otherwise, the
+ * matrix coefficients of `matp` are initialized up to `length`. Note: `matp`
+ * may not be normalized after this. The provided `length` must be less than
+ * `matp->alloc`. */
+NMOD_MAT_POLY_INLINE void
+_nmod_mat_poly_set_length(nmod_mat_poly_t matp, slong length)
+{
+    if (matp->length > length)
+        for (slong i = length; i < matp->length; i++)
+            nmod_mat_clear(matp->coeffs + i); 
+    else
+        for (slong i = matp->length; i < length; i++)
+            nmod_mat_init(matp->coeffs + i, matp->r, matp->c, matp->mod.n); 
+    matp->length = length;
+}
 
 /** Normalises a matrix polynomial `matp` so that the top coefficient, if there
  * is one at all, is not zero. */
@@ -149,6 +161,154 @@ void _nmod_mat_poly_normalise(nmod_mat_poly_t matp)
 
 //@} // doxygen group:  Memory management for matrix polynomials
 
+/*------------------------------------------------------------*/
+/* Zero and Identity                                          */
+/*------------------------------------------------------------*/
+
+/** @name Zero and Identity
+ * \todo TODO doc
+ */
+//@{
+
+/** Sets `matp` to the zero matrix polynomial */
+NMOD_MAT_POLY_INLINE void
+nmod_mat_poly_zero(nmod_mat_poly_t matp)
+{
+   _nmod_mat_poly_set_length(matp, 0);
+}
+
+/** \def nmod_mat_poly_is_zero(matp)
+ * Tests whether `matp` is the zero matrix polynomial
+ */
+#define nmod_mat_poly_is_zero(matp) \
+    ((matp)->length == 0)
+
+/** Sets `matp` to the identity matrix polynomial */
+NMOD_MAT_POLY_INLINE void
+nmod_mat_poly_one(nmod_mat_poly_t matp)
+{
+    nmod_mat_poly_fit_length(matp, 1);
+    nmod_mat_one(matp->coeffs + 0);
+    _nmod_mat_poly_set_length(matp, 1);
+}
+
+/** Tests whether `matp` is the identity matrix polynomial */
+NMOD_MAT_POLY_INLINE int
+nmod_mat_poly_is_one(const nmod_mat_poly_t matp)
+{
+    return (matp->length) == 1 && (nmod_mat_is_one(matp->coeffs + 0));
+}
+
+//@} // doxygen group:  Zero and Identity
+
+
+/*------------------------------------------------------------*/
+/* Accessing struct info and coefficients                     */
+/*------------------------------------------------------------*/
+
+/** @name Accessing struct info and matrix coefficients
+ * \todo TODO doc
+ */
+//@{
+
+/** Returns the number of rows of `matp`. */
+NMOD_MAT_POLY_INLINE slong
+nmod_mat_poly_nrows(const nmod_mat_poly_t matp)
+{
+    return matp->r;
+}
+
+/** Returns the number of cols of `matp`. */
+NMOD_MAT_POLY_INLINE slong
+nmod_mat_poly_ncols(const nmod_mat_poly_t matp)
+{
+    return matp->c;
+}
+
+/** Returns the length of `matp`. */
+NMOD_MAT_POLY_INLINE slong
+nmod_mat_poly_length(const nmod_mat_poly_t matp)
+{
+    return matp->length;
+}
+
+/** Returns the degree of `matp`. By convention the zero matrix polynomial has
+ * degree `-1`. */
+NMOD_MAT_POLY_INLINE slong
+nmod_mat_poly_degree(const nmod_mat_poly_t matp)
+{
+    return matp->length - 1;
+}
+
+/** Leading matrix coefficient of `matp`. */
+NMOD_MAT_POLY_INLINE nmod_mat_struct *
+nmod_mat_poly_lead(const nmod_mat_poly_t matp)
+{
+    if (matp->length)
+        return matp->coeffs + (matp->length - 1);
+    else
+        return (nmod_mat_struct *)NULL;
+}
+
+/** \def nmod_mat_poly_get_coeff_ptr(matp, n)
+ * Returns a reference to the coefficient of `x**n` in the matrix polynomial
+ * `matp`. This function is provided so that individual coefficients can be
+ * accessed and operated on by functions in the `nmod_mat` module. This
+ * function does not make a copy of the data, but returns a reference
+ * `nmod_mat_struct *` to the actual coefficient. Returns `NULL` when `n`
+ * exceeds the degree of the polynomial.
+ */
+#define nmod_mat_poly_get_coeff_ptr(matp, n) \
+    ((n) < (matp)->length ? (matp)->coeffs + (n) : NULL)
+
+/** \def nmod_mat_poly_lead(const nmod_mat_poly_t poly)
+ * Returns a reference to the leading coefficient of the matrix polynomial, as
+ * an `nmod_mat_struct *`. This function is provided so that the leading
+ * coefficient can be easily accessed and operated on by functions in the
+ * `nmod_mat` module. This function does not make a copy of the data, but
+ * returns a reference to the actual coefficient.  Returns `NULL` when the
+ * polynomial is zero.
+ */
+#define nmod_mat_poly_lead(matp) \
+    ((matp)->length ? (matp)->coeffs + (matp)->length - 1 : NULL)
+
+/** \def nmod_mat_poly_entry(matp,k,i,j)
+ * Directly accesses the entry in the coefficient of `matp` of degree `k`, in
+ * row `i` and column `j` (indexed from zero). No bounds checking is performed.
+ * This macro can be used both for reading and writing coefficients.
+ */
+#define nmod_mat_poly_entry(matp,k,i,j) \
+    (((matp)->coeffs + (k))->rows[(i)][(j)])
+
+/** Get the entry at row `i` and column `j` in the coefficient of
+ * degree `k` of the matrix polynomial `matp`. */
+NMOD_MAT_POLY_INLINE mp_limb_t
+nmod_mat_poly_get_entry(const nmod_mat_poly_t matp,
+                        slong k, slong i, slong j)
+{
+   return (matp->coeffs + k)->rows[i][j];
+}
+
+/** Return a pointer to the entry at row `i` and column `j` of the coefficient
+ * of degree `k` of the matrix polynomial `matp` */
+NMOD_MAT_POLY_INLINE mp_limb_t *
+nmod_mat_poly_entry_ptr(const nmod_mat_poly_t matp,
+                        slong k, slong i, slong j)
+{
+   return (matp->coeffs + k)->rows[i] + j;
+}
+
+/** Set to `x` the entry at row `i` and column `j` in the coefficient of degree
+ * `k` of the matrix polynomial `matp`. */
+NMOD_MAT_POLY_INLINE void
+nmod_mat_poly_set_entry(nmod_mat_poly_t matp,
+                        slong k, slong i, slong j,
+                        mp_limb_t x)
+{
+    nmod_mat_poly_entry(matp, k, i, j) = x;
+}
+
+//@} // doxygen group:  Accessing struct info and matrix coefficients
 
 
 
@@ -170,6 +330,8 @@ nmod_mat_poly_truncate(nmod_mat_poly_t matp, slong order)
         _nmod_mat_poly_normalise(matp);
     }  
 }
+
+//@} // doxygen group:  Truncate, shift, reverse
 
 
 
