@@ -3,14 +3,8 @@
 #include "nmod_poly_mat_io.h"
 #include "sagemath_extra.h"
 
-// TODO make random choice for given prime (or for random prime of given size)
-#define PRIME_30_BITS 536870923
-#define PRIME_60_BITS 576460752303423619
-
-// TODO make more robust and reusable framework test for approximant basis algorithms
-// and use it for mbasis1
-
-// TODO general: test for memory leaks
+#include "testing_collection.h"
+#include <flint/nmod_poly_mat.h>
 
 int shift_equal(slong * shift1, slong * shift2, slong length)
 {
@@ -20,134 +14,141 @@ int shift_equal(slong * shift1, slong * shift2, slong length)
     return 1;
 }
 
-/** Verify if all versions of mbasis give the same results */
-int test_mbasis(void)
+// test one given input for mbasis
+int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
 {
-    nmod_poly_mat_t mat, appbas1, appbas2, appbas3, appbas4, appbas5;
-    slong rdim = 3, cdim = 1, prime = 1125899906842679, order = 4, len = 4;
-    slong shifts[rdim], shift1[rdim], shift2[rdim];
-    slong shift3[rdim], shift4[rdim], shift5[rdim];
+    const slong rdim = mat->r;
+    nmod_poly_mat_t appbas, appbas2;
+    nmod_poly_mat_init(appbas, rdim, rdim, mat->modulus);
+    nmod_poly_mat_init(appbas2, rdim, rdim, mat->modulus);
 
+    slong oshift[rdim], oshift2[rdim];
+
+    mbasis(appbas, oshift, mat, order, shift);
+
+    // testing correctness of mbasis
+    if (!nmod_poly_mat_is_approximant_basis(appbas, mat, order, shift, ROW_WISE))
+    {
+        printf("mbasis output is not a minimal approximant basis\n");
+        nmod_poly_mat_print(mat, "X");
+        nmod_poly_mat_print(appbas,"X");
+        slongvec_print_sagemath(shift, rdim);
+        slongvec_print_sagemath(oshift, rdim);
+        printf("\n");
+        return 0;
+    }
+
+    // testing other functions return the same
+    mbasisII(appbas2, oshift2, mat, order, shift);
+    if (!nmod_poly_mat_equal(appbas, appbas2))
+    {
+        printf("mbasis and mbasisII don't return the same basis\n");
+        nmod_poly_mat_print(appbas,"X");
+        nmod_poly_mat_print(appbas2,"X");
+        return 0;
+    }
+    if (!shift_equal(oshift, oshift2, rdim))
+    {
+        printf("mbasis and mbasisII don't return the same shifts\n");
+        return 0;
+    }
+
+    mbasisIII(appbas2, oshift2, mat, order, shift);
+    if (!nmod_poly_mat_equal(appbas, appbas2))
+    {
+        printf("mbasis and mbasisIII don't return the same basis\n");
+        nmod_poly_mat_print(appbas,"X");
+        nmod_poly_mat_print(appbas2,"X");
+        return 0;
+    }
+    if (!shift_equal(oshift, oshift2, rdim))
+    {
+        printf("mbasis and mbasisIII don't return the same shifts\n");
+        return 0;
+    }
+
+    mbasisIV(appbas2, oshift2, mat, order, shift);
+    if (!nmod_poly_mat_equal(appbas, appbas2))
+    {
+        printf("mbasis and mbasisIV don't return the same basis\n");
+        nmod_poly_mat_print(appbas,"X");
+        nmod_poly_mat_print(appbas2,"X");
+        return 0;
+    }
+    if (!shift_equal(oshift, oshift2, rdim))
+    {
+        printf("mbasis and mbasisIV don't return the same shifts\n");
+        return 0;
+    }
+
+
+    mbasisV(appbas2, oshift2, mat, order, shift);
+    if (!nmod_poly_mat_equal(appbas, appbas2))
+    {
+        printf("mbasis and mbasisV don't return the same basis\n");
+        nmod_poly_mat_print(appbas,"X");
+        nmod_poly_mat_print(appbas2,"X");
+        return 0;
+    }
+    if (!shift_equal(oshift, oshift2, rdim))
+    {
+        printf("mbasis and mbasisV don't return the same shifts\n");
+        return 0;
+    }
+
+    nmod_poly_mat_clear(appbas);
+    nmod_poly_mat_clear(appbas2);
+
+    return 1;
+}
+
+/** Test with specified parameters, uniform shift */
+int one_test_mbasis(slong prime, slong rdim, slong cdim, slong order, slong len, slong iter)
+{
     flint_rand_t state;
-
-    /** init */
-    nmod_poly_mat_init(mat, rdim, cdim, prime);
-
-    nmod_poly_mat_init(appbas1, rdim, rdim, prime);
-    nmod_poly_mat_init(appbas2, rdim, rdim, prime);
-    nmod_poly_mat_init(appbas3, rdim, rdim, prime);
-    nmod_poly_mat_init(appbas4, rdim, rdim, prime);
-    nmod_poly_mat_init(appbas5, rdim, rdim, prime);
-
     flint_randinit(state);
     srand(time(NULL));
     flint_randseed(state, rand(), rand());
 
-    //nmod_poly_mat_randtest(mat, state, len);
-    nmod_poly_mat_rand(mat, state, len);
+    // random matrix
+    nmod_poly_mat_t mat;
+    nmod_poly_mat_init(mat, rdim, cdim, prime);
 
-    for (slong i = 0; i < 100000; i++)
+    // shift shift random small entries
+    slong shift[rdim];
+
+    for (slong i = 0; i < iter; i++)
     {
+        //nmod_poly_mat_randtest(mat, state, len);
         nmod_poly_mat_rand(mat, state, len);
 
-        //_perm_randtest(shifts, rdim, state);
-        //for (slong i = 0; i < rdim; i++)
-        //    shifts[i] = rand() % len - 10;
+        _perm_randtest(shift, rdim, state);
+        for (slong i = 0; i < rdim; i++)
+            shift[i] = rand() % len - len/2;
 
-        mbasis(appbas1, shift1, mat, order, shifts);
-
-        mbasisII(appbas2, shift2, mat, order, shifts);
-
-        mbasisIII(appbas3, shift3, mat, order, shifts);
-
-        mbasisIV(appbas4, shift4, mat, order, shifts);
-
-        mbasisV(appbas5, shift5, mat, order, shifts);
-
-        // testing correctness of mbasis
-        if (!nmod_poly_mat_is_approximant_basis(appbas1, mat, order, shifts, ROW_WISE))
+        if (core_test_mbasis(mat, order, shift) == 0)
         {
-            printf("iter %ld: mbasis output is not a minimal approximant basis\n", i);
-            nmod_poly_mat_print(mat, "X");
-            nmod_poly_mat_print(appbas1,"X");
-            slongvec_print_sagemath(shifts, rdim);
-            slongvec_print_sagemath(shift1, rdim);
-            printf("\n");
-            return 0;
-        }
-
-        // testing other functions return the same
-        if (!nmod_poly_mat_equal(appbas1, appbas2))
-        {
-            printf("mbasis and mbasisII don't return the same result\n");
-            nmod_poly_mat_print(appbas1,"X");
-            nmod_poly_mat_print(appbas2,"X");
-            return 0;
-        }
-
-        if (!nmod_poly_mat_equal(appbas3, appbas1))
-        {
-            printf("mbasis and mbasisIII don't return the same result\n");
-            nmod_poly_mat_print(appbas1,"X");
-            nmod_poly_mat_print(appbas3,"X");
-            return 0;
-        }
-
-        if (!nmod_poly_mat_equal(appbas4, appbas1))
-        {
-            printf("mbasis and mbasisIV don't return the same result\n");
-            nmod_poly_mat_print(appbas1,"X");
-            nmod_poly_mat_print(appbas4,"X");
-            return 0;
-        }
-
-        if (!nmod_poly_mat_equal(appbas5, appbas1))
-        {
-            printf("mbasis and mbasisV don't return the same result\n");
-            nmod_poly_mat_print(appbas1,"X");
-            nmod_poly_mat_print(appbas5,"X");
-            return 0;
-        }
-
-        if (!shift_equal(shift1, shift2, rdim))
-        {
-            printf("mbasis and mbasisII don't return the same shifts result\n");
-            return 0;
-        }
-
-        if (!shift_equal(shift1, shift3, rdim))
-        {
-            printf("mbasis and mbasisIII don't return the same shifts result\n");
-            return 0;
-        }
-
-        if (!shift_equal(shift1, shift4, rdim))
-        {
-            printf("mbasis and mbasisIV don't return the same shifts result\n");
-            return 0;
-        }
-
-        if (!shift_equal(shift1, shift5, rdim))
-        {
-            printf("mbasis and mbasisV don't return the same shifts result\n");
+            printf("failed at iteration %ld... exiting\n", i);
             return 0;
         }
     }
-    /** clear **/
-    nmod_poly_mat_clear(mat);
-    nmod_poly_mat_clear(appbas1);
-    nmod_poly_mat_clear(appbas2);
-    nmod_poly_mat_clear(appbas3);
-    nmod_poly_mat_clear(appbas4);
-    nmod_poly_mat_clear(appbas5);
 
+    printf("All %ld iterations went fine! exiting\n", iter);
+    nmod_poly_mat_clear(mat);
     flint_randclear(state);
-    return 0;
+
+    return 1;
 }
+
+/** Test against the whole testing collection */
 
 int main(void)
 {
-    test_mbasis();
+    slong prime = 1125899906842679;
+    slong rdim = 3, cdim = 1, order = 4, len = 4;
+    slong iter = 100;
+    one_test_mbasis(prime, rdim, cdim, order, len, iter);
+
     return EXIT_SUCCESS;
 }
 

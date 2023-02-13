@@ -4,18 +4,31 @@
 #include <flint/ulong_extras.h>
 #include "nmod_poly_mat_utils.h"
 
+/*******************
+*  tested moduli  *
+*******************/
+
+// very small 2, 3, 5; then i*10 bits for i = 1..6
+const slong _test_collection_nb_primes = 9;
+slong _test_collection_primes[]  = {
+    2, 3, 5,    // very small ones
+    521, 524309, 536870923,  // 10, 20, 30 bits
+    549755813911, 562949953421381, 576460752303423619  // 40, 50, 60 bits
+ };
+
 /***********************************
 *  tested dimensions and degrees  *
 ***********************************/
 
-// tested dimensions
 const slong _test_collection_nb_dim = 7;
 slong _test_collection_rdims[] = {1, 2, 3, 5, 10, 15, 23};
 slong _test_collection_cdims[] = {1, 2, 3, 5, 11, 17, 21};
 
-// tested degrees
-const slong _test_collection_nb_degs = 13;
-slong _test_collection_degs[] = {0, 1, 2, 3, 4, 5, 10, 15, 25, 50, 75, 100, 125};
+const slong _test_collection_nb_smalldegs = 13;
+slong _test_collection_smalldegs[] = {0, 1, 2, 3, 4, 5, 10, 15, 25, 50, 75, 100, 125};
+
+const slong _test_collection_nb_degs = 16;
+slong _test_collection_degs[] = {0, 1, 2, 3, 4, 5, 10, 15, 25, 50, 75, 100, 125, 200, 400, 1000};
 
 /*******************
 *  tested shifts  *

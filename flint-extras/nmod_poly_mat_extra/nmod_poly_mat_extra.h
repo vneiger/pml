@@ -15,8 +15,8 @@
  * TODOs, and may contain a few declarations that do not require a separate
  * header (for the moment).
  *
- * \todo add tests
  * \todo benchmark performance
+ * \todo test for memory leaks
  *
  * \todo Note: all parameters are supposed init
  *
