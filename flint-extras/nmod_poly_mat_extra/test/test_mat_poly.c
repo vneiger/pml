@@ -1,3 +1,4 @@
+#include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_io.h"
 #include "sagemath_extra.h"
@@ -126,9 +127,9 @@ int test_matpol(void)
     slongvec_print_sagemath(shifts, cdim);
 
     slong cols_deg[cdim];
-    nmod_poly_mat_column_degree_shifted(cols_deg, A, shifts);
+    nmod_poly_mat_column_degree(cols_deg, A, shifts);
     slong rows_deg[rdim];
-    nmod_poly_mat_row_degree_shifted(rows_deg, A, shifts);
+    nmod_poly_mat_row_degree(rows_deg, A, shifts);
 
     printf("\ncolumn degree of A with shift \n");
     slongvec_print_sagemath(cols_deg, rdim);
@@ -148,11 +149,11 @@ int test_matpol(void)
     fmpz_mat_print_pretty(mat_deg);
 
     slong lead_pos[cdim];
-    nmod_poly_mat_pivot_index_shifted_columnwise(lead_pos, A, shifts);
+    nmod_poly_mat_pivot_index_columnwise(lead_pos, A, shifts);
     printf("leading position: ");
     slongvec_print_sagemath(lead_pos, cdim);
 
-    nmod_poly_mat_leading_matrix_shifted(B, A, shifts, row_wise);
+    nmod_poly_mat_leading_matrix(B, A, shifts, row_wise);
     printf("leading matrix for shift shifts of A\n");
     nmod_mat_print_sagemath(B);
 

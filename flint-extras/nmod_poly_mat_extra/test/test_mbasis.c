@@ -68,6 +68,7 @@ int test_mbasis(void)
             nmod_poly_mat_print(mat, "X");
             nmod_poly_mat_print(appbas1,"X");
             printf("\n");
+            return 0;
         }
 
         // testing other functions return the same
@@ -76,6 +77,7 @@ int test_mbasis(void)
             printf("mbasis and mbasisII don't return the same result\n");
             nmod_poly_mat_print(appbas1,"X");
             nmod_poly_mat_print(appbas2,"X");
+            return 0;
         }
 
         if (!nmod_poly_mat_equal(appbas3, appbas1))
@@ -83,6 +85,7 @@ int test_mbasis(void)
             printf("mbasis and mbasisIII don't return the same result\n");
             nmod_poly_mat_print(appbas1,"X");
             nmod_poly_mat_print(appbas3,"X");
+            return 0;
         }
 
         if (!nmod_poly_mat_equal(appbas4, appbas1))
@@ -90,6 +93,7 @@ int test_mbasis(void)
             printf("mbasis and mbasisIV don't return the same result\n");
             nmod_poly_mat_print(appbas1,"X");
             nmod_poly_mat_print(appbas4,"X");
+            return 0;
         }
 
         if (!nmod_poly_mat_equal(appbas5, appbas1))
@@ -97,19 +101,32 @@ int test_mbasis(void)
             printf("mbasis and mbasisV don't return the same result\n");
             nmod_poly_mat_print(appbas1,"X");
             nmod_poly_mat_print(appbas5,"X");
+            return 0;
         }
 
         if (!shift_equal(shift1, shift2, rdim))
+        {
             printf("mbasis and mbasisII don't return the same shifts result\n");
+            return 0;
+        }
 
         if (!shift_equal(shift1, shift3, rdim))
+        {
             printf("mbasis and mbasisIII don't return the same shifts result\n");
+            return 0;
+        }
 
         if (!shift_equal(shift1, shift4, rdim))
+        {
             printf("mbasis and mbasisIV don't return the same shifts result\n");
+            return 0;
+        }
 
         if (!shift_equal(shift1, shift5, rdim))
+        {
             printf("mbasis and mbasisV don't return the same shifts result\n");
+            return 0;
+        }
     }
     /** clear **/
     nmod_poly_mat_clear(mat);
