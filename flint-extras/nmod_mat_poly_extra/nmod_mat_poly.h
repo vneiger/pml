@@ -16,11 +16,10 @@
  * \todo Note: all parameters are supposed init
  *
  * \todo transpose, swap/permute rows/cols
- * \todo conversions
  * \todo set, init_set, swap
+ * \todo init2_mod for init from mod with given alloc
  * \todo set_trunc, set_shift, attach_trunc, attach_shift
  * \todo windows?
- * \todo tests!!
  */
 
 #ifdef NMOD_MAT_POLY_INLINES_C
@@ -34,6 +33,7 @@
 
 #include <flint/perm.h>
 #include <flint/nmod_mat.h>
+#include <flint/nmod_poly_mat.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -103,19 +103,6 @@ FLINT_DLL void nmod_mat_poly_init2_preinv(nmod_mat_poly_t matp,
                                           mp_limb_t n, mp_limb_t ninv,
                                           slong alloc);
 
-/** Reallocates `matp` to the given length `alloc`. If the current `length` is
- * more than `alloc`, the polynomial is truncated and normalised. If `alloc` is
- * zero, the polynomial is cleared. */
-FLINT_DLL void nmod_mat_poly_realloc(nmod_mat_poly_t matp, slong alloc);
-
-/** Clears `matp` and releases any memory it used. The matrix polynomial cannot be
-used again until it is initialised. */
-FLINT_DLL void nmod_mat_poly_clear(nmod_mat_poly_t matp);
-
-/** Ensures `matp` has space for at least `alloc` coefficients. This function
- * only ever grows the allocated space, so no data loss can occur. */
-FLINT_DLL void nmod_mat_poly_fit_length(nmod_mat_poly_t matp, slong alloc);
-
 /** Initialises `matp` using an already initialised modulus `mod`. */
 NMOD_MAT_POLY_INLINE void
 nmod_mat_poly_init_mod(nmod_mat_poly_t matp,
@@ -136,6 +123,19 @@ void nmod_mat_poly_set_mod(nmod_mat_poly_t matp, const nmod_t mod)
 {
     matp->mod = mod;
 }
+
+/** Reallocates `matp` to the given length `alloc`. If the current `length` is
+ * more than `alloc`, the polynomial is truncated and normalised. If `alloc` is
+ * zero, the polynomial is cleared. */
+FLINT_DLL void nmod_mat_poly_realloc(nmod_mat_poly_t matp, slong alloc);
+
+/** Clears `matp` and releases any memory it used. The matrix polynomial cannot be
+used again until it is initialised. */
+FLINT_DLL void nmod_mat_poly_clear(nmod_mat_poly_t matp);
+
+/** Ensures `matp` has space for at least `alloc` coefficients. This function
+ * only ever grows the allocated space, so no data loss can occur. */
+FLINT_DLL void nmod_mat_poly_fit_length(nmod_mat_poly_t matp, slong alloc);
 
 /** Sets the length of `matp` to `length`. If `length < matp->length` then the
  * matrix coefficients of `matp` beyond `length` are cleared; otherwise, the
@@ -336,6 +336,13 @@ nmod_mat_poly_set_entry(nmod_mat_poly_t matp,
  */
 //@{
 
+/** Tests whether `matp` is a constant matrix, that is, of degree 0 */
+NMOD_MAT_POLY_INLINE int
+nmod_mat_poly_is_constant(const nmod_mat_poly_t matp)
+{
+    return matp->length == 0;
+}
+
 /** Truncates `matp` to the given `order` and normalises it. If `order` is
  * greater than or equal to the current length of `matp`, then nothing happens.
  */
@@ -414,13 +421,14 @@ nmod_mat_poly_rand(nmod_mat_poly_t matp,
  * x^i` and `mat2` is some matrix `B = sum^{deg_B}_{i=0} b_i x^i`, then `coeff`
  * will get the coefficient `k` of the product `AB`, which is `c_k =
  * sum^{i=0}_{k} a_i b_{k-i}`. It is not checked that dimensions or moduli are
- * compatible. The output `coeff` must already be initialized.
+ * compatible. The output `coeff` must already be initialized with dimensions
+ * `mat1->r x mat2->c`.
  */
 FLINT_DLL void
-nmod_mat_poly_mul_coef(nmod_mat_t coeff,
-                       const nmod_mat_poly_t mat1,
-                       const nmod_mat_poly_t mat2,
-                       slong k);
+nmod_mat_poly_mul_coeff(nmod_mat_t coeff,
+                        const nmod_mat_poly_t mat1,
+                        const nmod_mat_poly_t mat2,
+                        slong k);
 
 /** Evaluate the matrix polynomial at a point in `nmod`. */
 FLINT_DLL void
@@ -430,60 +438,64 @@ nmod_mat_poly_evaluate_nmod(nmod_mat_t eval,
 
 //@} // doxygen group:  Basic arithmetic
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* SET FROM CONSTANT OR PMAT                                  */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
+/** @name Set from constant matrix and polynomial matrix.
+ *
+ * Provides `set` and `init_set`, from either a constant matrix,
+ * or from a `nmod_poly_mat_t`.
+ *
+ * Two main representations are used for polynomial matrices:
+ *    - a polynomial matrix stored as a matrix with polynomial entries, that
+ *    is, of type `nmod_poly_mat_t`
+ *    - a polynomial matrix stored as a polynomial with matrix coefficients,
+ *    that is, of type `nmod_mat_poly_t`
+ *
+ * The following functions perform conversions between these types, with two
+ * variants: either the degree is deduced from the input, or a user-provided
+ * truncation order is used.
+ *
+ * \todo init-set variants
+ */
+//@{
 
+/** Initialize a polynomial matrix `pmat` of the same dimensions and modulus as
+ * a constant matrix `mat`, and set its constant coefficient to `mat`.
+ * \todo to be written
+ * careful: probably better to use nmod_poly_init with preinv...
+ * but this should have been done in Flint's native poly_mat_init too?
+ **/
+FLINT_DLL void
+nmod_mat_poly_init_set_from_nmod_mat(nmod_mat_poly_t matp,
+                                     const nmod_mat_t cmat);
 
+/** Set the polynomial matrix `pmat` to be a constant polynomial matrix whose
+ * constant coefficient is a copy of `cmat`. This assumes `pmat` is already
+ * initialized with the same modulus and dimensions as `cmat`.  */
+FLINT_DLL void
+nmod_mat_poly_set_from_nmod_mat(nmod_mat_poly_t matp, const nmod_mat_t cmat);
 
+/** Set from polynomial with matrix coefficients `matp`, truncated at the
+ * specified `order` (a nonnegative integer). */
+FLINT_DLL void
+nmod_mat_poly_set_trunc_from_poly_mat(nmod_mat_poly_t matp,
+                                      const nmod_poly_mat_t pmat,
+                                      slong order);
 
+/** Set from polynomial with matrix coefficients `matp`. */
+// TODO benchmark and try variants if needed
+NMOD_MAT_POLY_INLINE void
+nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat)
+{
+    printf("ok0\n");
+    nmod_mat_poly_set_trunc_from_poly_mat(matp, pmat, nmod_poly_mat_max_length(pmat));
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//@} // doxygen group: Conversion from constant matrix and polynomial matrix
 
 #ifdef __cplusplus
 }

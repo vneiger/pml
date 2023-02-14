@@ -59,7 +59,7 @@ void nmod_mat_poly_init2_preinv(nmod_mat_poly_t matp,
     count_leading_zeros(matp->mod.norm, n);
 }
 
-void nmod_poly_init2(nmod_mat_poly_t matp,
+void nmod_mat_poly_init2(nmod_mat_poly_t matp,
                      slong r,
                      slong c,
                      mp_limb_t n,
