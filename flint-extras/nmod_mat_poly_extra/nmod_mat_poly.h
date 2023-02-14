@@ -103,6 +103,12 @@ FLINT_DLL void nmod_mat_poly_init2_preinv(nmod_mat_poly_t matp,
                                           mp_limb_t n, mp_limb_t ninv,
                                           slong alloc);
 
+/** Sets `matp1` to equal `matp2`. It is assumed that these matrices
+ * have identical dimensions and modulus. */
+FLINT_DLL void
+nmod_mat_poly_set(nmod_mat_poly_t matp1, const nmod_mat_poly_t matp2);
+
+
 /** Initialises `matp` using an already initialised modulus `mod`. */
 NMOD_MAT_POLY_INLINE void
 nmod_mat_poly_init_mod(nmod_mat_poly_t matp,
@@ -255,7 +261,7 @@ nmod_mat_poly_degree(const nmod_mat_poly_t matp)
     return matp->length - 1;
 }
 
-/** \def nmod_mat_poly_get_coeff_ptr(matp, k)
+/** \def nmod_mat_poly_coeff(matp, k)
  * Returns a reference to the coefficient of degree `k` in the matrix
  * polynomial `matp`. This function is provided so that individual coefficients
  * can be accessed and operated on by functions in the `nmod_mat` module. This
@@ -263,7 +269,7 @@ nmod_mat_poly_degree(const nmod_mat_poly_t matp)
  * `nmod_mat_struct *` to the actual coefficient. Returns `NULL` when `k`
  * exceeds the degree of the matrix polynomial.
  */
-#define nmod_mat_poly_get_coeff_ptr(matp, k) \
+#define nmod_mat_poly_coeff(matp, k) \
     ((k) < (matp)->length ? (matp)->coeffs + (k) : NULL)
 
 /** Get the coefficient of degree `k` in the matrix polynomial `matp`. Zeroes
@@ -357,6 +363,37 @@ nmod_mat_poly_truncate(nmod_mat_poly_t matp, slong order)
         _nmod_mat_poly_normalise(matp);
     }
 }
+
+/** Sets `(smatp, len + n)` to `(matp, len)` shifted left by `n` coefficients.
+ * Inserts zero coefficients at the lower end. Assumes that `len` and `n`
+ are positive, and that `smatp` fits `len + n` elements. Supports aliasing
+ between res and poly. */
+FLINT_DLL void
+_nmod_mat_poly_shift_left(nmod_mat_struct * smatp,
+                          const nmod_mat_struct * matp,
+                          slong len,
+                          slong n);
+
+// TODO
+//FLINT_DLL void
+//_nmod_mat_poly_shift_right(nmod_mat_poly_t smatp,
+//                          const nmod_mat_poly_t matp,
+//                          slong len,
+//                          slong n);
+
+/** Sets `smatp` to `matp` shifted left by `n` coeffs. Zero coefficients are
+ * inserted. */
+FLINT_DLL void
+nmod_mat_poly_shift_left(nmod_mat_poly_t smatp,
+                         const nmod_mat_poly_t matp,
+                         slong n);
+
+// TODO
+//FLINT_DLL void
+//nmod_mat_poly_shift_right(nmod_mat_poly_t smatp,
+//                          const nmod_mat_poly_t matp,
+//                          slong n);
+//
 
 //@} // doxygen group:  Truncate, shift, reverse
 
@@ -496,6 +533,16 @@ nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat
 }
 
 //@} // doxygen group: Conversion from constant matrix and polynomial matrix
+
+
+// TODO DOC (see @ref mbasis1)
+// TODO resupdate version
+// TODO general version with choice
+FLINT_DLL void
+nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
+                     slong * shift,
+                     const nmod_mat_poly_t matp,
+                     ulong order);
 
 #ifdef __cplusplus
 }

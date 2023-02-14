@@ -64,7 +64,7 @@ void nmod_mat_poly_evaluate_nmod(nmod_mat_t eval,
 
     // Horner: eval = matp[k] + eval*pt, k = degree-1 ... 0
     for ( ; k >= 0; k--)
-        nmod_mat_scalar_addmul_ui(eval, nmod_mat_poly_get_coeff_ptr(matp, k), eval, pt);
+        nmod_mat_scalar_addmul_ui(eval, nmod_mat_poly_coeff(matp, k), eval, pt);
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */

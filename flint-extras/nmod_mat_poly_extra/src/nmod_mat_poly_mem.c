@@ -69,6 +69,26 @@ void nmod_mat_poly_init2(nmod_mat_poly_t matp,
 }
 
 /*------------------------------------------------------------*/
+/* SET / INIT SET                                             */
+/*------------------------------------------------------------*/
+
+void nmod_mat_poly_set(nmod_mat_poly_t matp1, const nmod_mat_poly_t matp2)
+{
+    if (matp1 != matp2)         /* Aliasing is trivial */
+    {
+        const slong len = matp2->length;
+
+        nmod_mat_poly_fit_length(matp1, len);
+        _nmod_mat_poly_set_length(matp1, len);
+
+        for (slong i = 0; i < len; i++)
+            nmod_mat_set(matp1->coeffs + i, matp2->coeffs + i);
+    }
+}
+
+
+
+/*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* CLEAR / REALLOC / FIT LENGTH                               */
 /*------------------------------------------------------------*/
