@@ -31,7 +31,7 @@ void nmod_mat_poly_init(nmod_mat_poly_t matp,
                         slong c,
                         mp_limb_t n)
 {
-    nmod_mat_poly_init_preinv(matp, n, r, c, n_preinvert_limb(n));
+    nmod_mat_poly_init_preinv(matp, r, c, n, n_preinvert_limb(n));
 }
 
 
@@ -76,8 +76,8 @@ void nmod_poly_init2(nmod_mat_poly_t matp,
 
 void nmod_mat_poly_clear(nmod_mat_poly_t matp)
 {
-    // clear any matrix coefficient
-    for (slong i=0; i < matp->alloc; i++)
+    // clear any allocated matrix coefficient
+    for (slong i=0; i < matp->length; i++)
         nmod_mat_clear(matp->coeffs + i);
     // free coeffs
     if (matp->coeffs)

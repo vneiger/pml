@@ -492,13 +492,6 @@ void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
                                       flint_rand_t state,
                                       const fmpz_mat_t dmat);
 
-
-/** Computes a random polynomial matrix `matp` with `m` rows, `n` columns,
- * and degree less than `d`, represented as a vector of constant matrices.
- */
-// TODO
-//void random(Vec<Mat<zz_p>> & matp, long m, long n, long d);
-
 //@} // doxygen group: Generation of random matrices with degree bounds
 
 /** @name Generation of random matrices with specific forms

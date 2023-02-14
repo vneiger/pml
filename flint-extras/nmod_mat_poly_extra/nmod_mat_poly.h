@@ -16,9 +16,12 @@
  * \todo Note: all parameters are supposed init
  *
  * \todo transpose, swap/permute rows/cols, printing
+ * \todo conversions
  * \todo set, init_set, swap
+ * \todo set_trunc, set_shift, attach_trunc, attach_shift
+ * \todo eval
  * \todo windows?
- * \todo tests
+ * \todo tests!!
  */
 
 #ifdef NMOD_MAT_POLY_INLINES_C
@@ -324,7 +327,8 @@ nmod_mat_poly_set_entry(nmod_mat_poly_t matp,
 //@{
 
 /** Truncates `matp` to the given `order` and normalises it. If `order` is
- * greater than the current length of `matp`, then nothing happens. */
+ * greater than or equal to the current length of `matp`, then nothing happens.
+ */
 NMOD_MAT_POLY_INLINE void
 nmod_mat_poly_truncate(nmod_mat_poly_t matp, slong order)
 {
@@ -360,10 +364,40 @@ FLINT_DLL void nmod_mat_poly_print_pretty(const nmod_mat_poly_t matp);
 //@} // doxygen group:  Input / Output
 
 
+/*------------------------------------------------------------*/
+/* Random filling                                             */
+/*------------------------------------------------------------*/
+
+
+/** @name Random
+ * \todo Doc
+ */
+//@{
+
+/** Generates a random matrix polynomial with length up to `len`,
+ * with `randtest` generation for `nmod` elements. */
+FLINT_DLL void
+nmod_mat_poly_randtest(nmod_mat_poly_t matp,
+                       flint_rand_t state, 
+                       slong len);
+
+/** Generates a random matrix polynomial with length up to `len`, with
+ * uniform random generation for `nmod` elements. */
+FLINT_DLL void
+nmod_mat_poly_rand(nmod_mat_poly_t matp,
+                   flint_rand_t state, 
+                   slong len);
+
+//@} // doxygen group:  Random
 
 /*------------------------------------------------------------*/
 /* Basic arithmetic                                           */
 /*------------------------------------------------------------*/
+
+/** @name Basic arithmetic
+ * \todo doc
+ */
+//@{
 
 /** Compute the coefficient of degree `k` in the product of the two matrix
  * polynomials. Precisely, if `mat1` is some matrix `A = sum^{deg_A}_{i=0} a_i
@@ -376,6 +410,9 @@ FLINT_DLL void nmod_mat_poly_mul_coef(nmod_mat_t coeff,
                                       const nmod_mat_poly_t mat1,
                                       const nmod_mat_poly_t mat2,
                                       slong k);
+
+
+//@} // doxygen group:  Basic arithmetic
 
 
 
