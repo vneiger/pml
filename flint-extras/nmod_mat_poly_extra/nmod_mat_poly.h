@@ -60,7 +60,7 @@ typedef struct
     nmod_t mod;               /**< modulus */
 } nmod_mat_poly_struct;
 
-/* nmod_mat_poly_t allows reference-like semantics for nmod_mat_poly_struct */
+/** nmod_mat_poly_t allows reference-like semantics for nmod_mat_poly_struct */
 typedef nmod_mat_poly_struct nmod_mat_poly_t[1];
 
 /*------------------------------------------------------------*/
@@ -128,11 +128,12 @@ nmod_mat_poly_init_mod(nmod_mat_poly_t matp,
     matp->mod = mod;
 }
 
-//NMOD_MAT_POLY_INLINE
-//void nmod_mat_poly_set_mod(nmod_mat_poly_t matp, const nmod_t mod)
-//{
-//    matp->mod = mod;
-//}
+/** Set the modulus to `mod`. */
+NMOD_MAT_POLY_INLINE
+void nmod_mat_poly_set_mod(nmod_mat_poly_t matp, const nmod_t mod)
+{
+    matp->mod = mod;
+}
 
 /** Sets the length of `matp` to `length`. If `length < matp->length` then the
  * matrix coefficients of `matp` beyond `length` are cleared; otherwise, the
@@ -151,10 +152,11 @@ _nmod_mat_poly_set_length(nmod_mat_poly_t matp, slong length)
     matp->length = length;
 }
 
+
 /** Normalises a matrix polynomial `matp` so that the top coefficient, if there
  * is one at all, is not zero. */
-NMOD_MAT_POLY_INLINE
-void _nmod_mat_poly_normalise(nmod_mat_poly_t matp)
+NMOD_MAT_POLY_INLINE void
+_nmod_mat_poly_normalise(nmod_mat_poly_t matp)
 {
     while (matp->length && nmod_mat_is_zero(matp->coeffs + matp->length - 1))
     {
@@ -170,7 +172,10 @@ void _nmod_mat_poly_normalise(nmod_mat_poly_t matp)
 /*------------------------------------------------------------*/
 
 /** @name Zero and Identity
- * \todo TODO doc
+ * Functions to set an already initialized matrix polynomial `matp` to zero or
+ * to one (this is the identity matrix if `matp` is square; in general this
+ * puts `1` on the main diagonal and `0` elsewhere). Functions to test whether
+ * a matrix polynomial is zero or one.
  */
 //@{
 
@@ -196,7 +201,8 @@ nmod_mat_poly_one(nmod_mat_poly_t matp)
     _nmod_mat_poly_set_length(matp, 1);
 }
 
-/** Tests whether `matp` is the identity matrix polynomial */
+/** Tests whether `matp` is one (i.e., if square, the identity matrix
+ * polynomial; otherwise `1` on the main diagonal and `0` elsewhere). */
 NMOD_MAT_POLY_INLINE int
 nmod_mat_poly_is_one(const nmod_mat_poly_t matp)
 {
@@ -211,7 +217,10 @@ nmod_mat_poly_is_one(const nmod_mat_poly_t matp)
 /*------------------------------------------------------------*/
 
 /** @name Accessing struct info and matrix coefficients
- * \todo TODO doc
+ * Get the number of rows, the number of columns, the length, or the degree of
+ * this matrix polynomial. Get a reference to the leading coefficient matrix,
+ * or to the coefficient of degree `k`, or to the entry `i,j` of the
+ * coefficient of degree `k`. Get or set the latter entry.
  */
 //@{
 
@@ -244,26 +253,16 @@ nmod_mat_poly_degree(const nmod_mat_poly_t matp)
     return matp->length - 1;
 }
 
-/** Leading matrix coefficient of `matp`. */
-NMOD_MAT_POLY_INLINE nmod_mat_struct *
-nmod_mat_poly_lead(const nmod_mat_poly_t matp)
-{
-    if (matp->length)
-        return matp->coeffs + (matp->length - 1);
-    else
-        return (nmod_mat_struct *)NULL;
-}
-
-/** \def nmod_mat_poly_get_coeff_ptr(matp, n)
- * Returns a reference to the coefficient of `x**n` in the matrix polynomial
- * `matp`. This function is provided so that individual coefficients can be
- * accessed and operated on by functions in the `nmod_mat` module. This
+/** \def nmod_mat_poly_get_coeff_ptr(matp, k)
+ * Returns a reference to the coefficient of degree `k` in the matrix
+ * polynomial `matp`. This function is provided so that individual coefficients
+ * can be accessed and operated on by functions in the `nmod_mat` module. This
  * function does not make a copy of the data, but returns a reference
- * `nmod_mat_struct *` to the actual coefficient. Returns `NULL` when `n`
+ * `nmod_mat_struct *` to the actual coefficient. Returns `NULL` when `k`
  * exceeds the degree of the polynomial.
  */
-#define nmod_mat_poly_get_coeff_ptr(matp, n) \
-    ((n) < (matp)->length ? (matp)->coeffs + (n) : NULL)
+#define nmod_mat_poly_get_coeff_ptr(matp, k) \
+    ((k) < (matp)->length ? (matp)->coeffs + (k) : NULL)
 
 /** \def nmod_mat_poly_lead(const nmod_mat_poly_t poly)
  * Returns a reference to the leading coefficient of the matrix polynomial, as
@@ -315,8 +314,11 @@ nmod_mat_poly_set_entry(nmod_mat_poly_t matp,
 //@} // doxygen group:  Accessing struct info and matrix coefficients
 
 
+/*------------------------------------------------------------*/
+/* Truncate, Shift, Reverse                                   */
+/*------------------------------------------------------------*/
 
-/** @name Truncate, shift, reverse.
+/** @name Truncate, shift, reverse
  * \todo TODO
  */
 //@{
@@ -338,80 +340,96 @@ nmod_mat_poly_truncate(nmod_mat_poly_t matp, slong order)
 //@} // doxygen group:  Truncate, shift, reverse
 
 
+/*------------------------------------------------------------*/
+/* Intput / Output                                            */
+/*------------------------------------------------------------*/
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/** void nmod_mat_poly_naive_mul_coef(nmod_mat_t res,
- *				       const nmod_mat_poly_t A,
- *				       const nmod_mat_poly_t B, slong k);
- *
- * A = sum^{deg_A}_{i=0} a_i x^i and B = sum^{deg_B}_{i=0} b_i x^i
- * Compute the coefficient k of the product AB
- * C = AB = sum^{deg_A + deg_B}_{i=0} c_i x^i
- * res = c_k = sum^{k}_{i=0} a_i b_{k-i}
- *
+/** @name Input / Output
+ * Printing, writing to a file, reading from a file.
+ * \todo
  */
-void nmod_mat_poly_naive_mul_coef(nmod_mat_t res,
-                                  const nmod_mat_poly_t A,
-                                  const nmod_mat_poly_t B,
-                                  slong k);
+//@{
 
-void nmod_mat_poly_print(const nmod_mat_poly_t A);
+/** Basic print to standard output */
+FLINT_DLL void nmod_mat_poly_print(const nmod_mat_poly_t matp);
+
+/** Pretty print to standard output */
+FLINT_DLL void nmod_mat_poly_print_pretty(const nmod_mat_poly_t matp);
+
+//@} // doxygen group:  Input / Output
+
+
+
+/*------------------------------------------------------------*/
+/* Basic arithmetic                                           */
+/*------------------------------------------------------------*/
+
+/** Compute the coefficient of degree `k` in the product of the two matrix
+ * polynomials. Precisely, if `mat1` is some matrix `A = sum^{deg_A}_{i=0} a_i
+ * x^i` and `mat2` is some matrix `B = sum^{deg_B}_{i=0} b_i x^i`, then `coeff`
+ * will get the coefficient `k` of the product `AB`, which is `c_k =
+ * sum^{i=0}_{k} a_i b_{k-i}`. It is not checked that dimensions or moduli are
+ * compatible. The output `coeff` must already be initialized.
+ */
+FLINT_DLL void nmod_mat_poly_mul_coef(nmod_mat_t coeff,
+                                      const nmod_mat_poly_t mat1,
+                                      const nmod_mat_poly_t mat2,
+                                      slong k);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #ifdef __cplusplus
