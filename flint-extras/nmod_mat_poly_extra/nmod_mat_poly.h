@@ -15,11 +15,10 @@
  * \todo test for memory leaks
  * \todo Note: all parameters are supposed init
  *
- * \todo transpose, swap/permute rows/cols, printing
+ * \todo transpose, swap/permute rows/cols
  * \todo conversions
  * \todo set, init_set, swap
  * \todo set_trunc, set_shift, attach_trunc, attach_shift
- * \todo eval
  * \todo windows?
  * \todo tests!!
  */
@@ -262,10 +261,21 @@ nmod_mat_poly_degree(const nmod_mat_poly_t matp)
  * can be accessed and operated on by functions in the `nmod_mat` module. This
  * function does not make a copy of the data, but returns a reference
  * `nmod_mat_struct *` to the actual coefficient. Returns `NULL` when `k`
- * exceeds the degree of the polynomial.
+ * exceeds the degree of the matrix polynomial.
  */
 #define nmod_mat_poly_get_coeff_ptr(matp, k) \
     ((k) < (matp)->length ? (matp)->coeffs + (k) : NULL)
+
+/** Get the coefficient of degree `k` in the matrix polynomial `matp`. Zeroes
+ * the output matrix when `k` exceeds the degree of the matrix polynomial. */
+NMOD_MAT_POLY_INLINE void
+nmod_mat_poly_get_coeff(nmod_mat_t coeff, const nmod_mat_poly_t matp, slong k)
+{
+    if (k < matp->length)
+        nmod_mat_set(coeff, matp->coeffs + k);
+    else
+        nmod_mat_zero(coeff);
+}
 
 /** \def nmod_mat_poly_lead(const nmod_mat_poly_t poly)
  * Returns a reference to the leading coefficient of the matrix polynomial, as
@@ -406,11 +416,17 @@ nmod_mat_poly_rand(nmod_mat_poly_t matp,
  * sum^{i=0}_{k} a_i b_{k-i}`. It is not checked that dimensions or moduli are
  * compatible. The output `coeff` must already be initialized.
  */
-FLINT_DLL void nmod_mat_poly_mul_coef(nmod_mat_t coeff,
-                                      const nmod_mat_poly_t mat1,
-                                      const nmod_mat_poly_t mat2,
-                                      slong k);
+FLINT_DLL void
+nmod_mat_poly_mul_coef(nmod_mat_t coeff,
+                       const nmod_mat_poly_t mat1,
+                       const nmod_mat_poly_t mat2,
+                       slong k);
 
+/** Evaluate the matrix polynomial at a point in `nmod`. */
+FLINT_DLL void
+nmod_mat_poly_evaluate_nmod(nmod_mat_t eval,
+                            const nmod_mat_poly_t matp,
+                            mp_limb_t pt);
 
 //@} // doxygen group:  Basic arithmetic
 

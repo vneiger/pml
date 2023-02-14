@@ -414,34 +414,6 @@ void nmod_poly_mat_shift_right(nmod_poly_mat_t res,
 
 //@} // doxygen group: Reverse
 
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* EVALUATE (SINGLE POINT)                                    */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/** @name Evaluation at one point
- *
- *  Functions for computing the evaluation of a polynomial matrix at a single
- *  point (element of the base field, that is, of type `nmod`).
- *
- */
-//@{
-
-// /** Computes the evaluation `evmat` of the polynomial matrix `pmat` at the
-//  * point `pt` (`pmat` stored as a matrix of polynomials) */
-// Flint native, as nmod_poly_mat_evaluate_nmod
-
-/** Computes the evaluation `evmat` of the polynomial matrix `matp` at the
- * point `pt` (polynomial matrix stored as a vector of constant matrices). If
- * `matp` has length zero, `eval` is the `0x0` matrix. */
-// TODO
-//void eval(Mat<zz_p> & evmat, const Vec<Mat<zz_p>> & matp, const zz_p & pt);
-
-//@} // doxygen group: Evaluation at one points
-
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* CREATE RANDOM MATRICES                                     */

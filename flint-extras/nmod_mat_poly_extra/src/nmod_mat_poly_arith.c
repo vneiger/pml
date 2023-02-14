@@ -1,3 +1,4 @@
+#include <flint/nmod_mat.h>
 #include "nmod_mat_poly.h"
 
 void nmod_mat_poly_mul_coeff(nmod_mat_t coeff,
@@ -37,6 +38,33 @@ void nmod_mat_poly_mul_coeff(nmod_mat_t coeff,
         }
         nmod_mat_clear(temp);
     }
+}
+
+void nmod_mat_poly_evaluate_nmod(nmod_mat_t eval,
+                                 const nmod_mat_poly_t matp,
+                                 mp_limb_t pt)
+{
+    slong k = matp->length;
+
+    if (k == 0)
+    {
+        nmod_mat_zero(eval);
+        return;
+    }
+
+    if (k == 1 || pt == 0)
+    {
+        nmod_mat_set(eval, matp->coeffs + 0);
+        return;
+    }
+
+    k--; // k == degree
+    nmod_mat_set(eval, matp->coeffs + k);
+    k--; // k == degree-1
+
+    // Horner: eval = matp[k] + eval*pt, k = degree-1 ... 0
+    for ( ; k >= 0; k--)
+        nmod_mat_scalar_addmul_ui(eval, nmod_mat_poly_get_coeff_ptr(matp, k), eval, pt);
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
