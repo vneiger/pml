@@ -334,10 +334,10 @@ nmod_mat_poly_set_entry(nmod_mat_poly_t matp,
 
 
 /*------------------------------------------------------------*/
-/* Truncate, Shift, Reverse                                   */
+/* Truncate, Shift, Reverse, Permute                          */
 /*------------------------------------------------------------*/
 
-/** @name Truncate, shift, reverse
+/** @name Truncate, shift, reverse, permute
  * \todo TODO
  */
 //@{
@@ -395,7 +395,36 @@ nmod_mat_poly_shift_left(nmod_mat_poly_t smatp,
 //                          slong n);
 //
 
-//@} // doxygen group:  Truncate, shift, reverse
+/** Permute rows of a matrix polynomial `matp` according to `perm_act`, and
+ * propagate the action on `perm_store`.
+ * That is, performs for each appropriate index `i`, the operations
+ * `perm_store[i] <- perm_store[perm_act[i]]`
+ * `rows[i] <- rows[perm_act[i]]` */
+NMOD_MAT_POLY_INLINE void
+nmod_mat_poly_permute_rows(nmod_mat_poly_t matp,
+                           const slong * perm_act,
+                           slong * perm_store)
+{
+    slong i;
+    mp_limb_t ** mat_tmp = flint_malloc(matp->r * sizeof(mp_limb_t *));
+
+    /* perm_store[i] <- perm_store[perm_act[i]] */
+    if (perm_store)
+        _perm_compose(perm_store, perm_store, perm_act, matp->r);
+
+    /* rows[i] <- rows[perm_act[i]]  */
+    for (slong k = 0; k < matp->length; k++)
+    {
+        for (i = 0; i < matp->r; i++)
+            mat_tmp[i] = matp->coeffs[k].rows[perm_act[i]];
+        for (i = 0; i < matp->r; i++)
+            matp->coeffs[k].rows[i] = mat_tmp[i];
+    }
+
+    flint_free(mat_tmp);
+}
+
+//@} // doxygen group:  Truncate, shift, reverse, permute
 
 
 /*------------------------------------------------------------*/

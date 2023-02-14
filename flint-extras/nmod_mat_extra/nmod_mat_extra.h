@@ -291,9 +291,9 @@ FLINT_DLL slong nmod_mat_left_nullspace(nmod_mat_t X, nmod_mat_t A);
  *  with pivots being the rightmost nonzero entries. Only the nonpivot columns
  *  of X are stored, in the order they appear in the nullspace basis. The list
  *  permutation contains the concatenation of two lists, each in increasing
- *  order: the positions of the columns with pivots in the rref nullspace
- *  basis, and the positions of the columns without pivots in the rref
- *  nullspace basis (the latter being also the row rank profile of A).
+ *  order: the positions of the columns without pivots in the rref nullspace
+ *  basis, and the positions of the columns with pivots in the rref nullspace
+ *  basis (the former being also the row rank profile of A).
  *
  * \param [out] X matrix where the nullspace will be stored (uninitialized)
  * \param [out] permutation list, allocated with A->r elements
