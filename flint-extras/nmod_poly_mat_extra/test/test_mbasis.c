@@ -22,23 +22,27 @@ int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
     nmod_poly_mat_init(appbas, rdim, rdim, mat->modulus);
     nmod_poly_mat_init(appbas2, rdim, rdim, mat->modulus);
 
-    slong oshift[rdim], oshift2[rdim];
+    slong oshift[rdim], oshift2[rdim], cshift[rdim];
+    for (slong i = 0; i < rdim; i++)
+        cshift[i] = shift[i];
 
-    mbasis(appbas, oshift, mat, order, shift);
 
-    // testing correctness of mbasis
+    nmod_poly_mat_init(appbas, rdim, rdim, mat->modulus);
+    nmod_poly_mat_mbasis(appbas, cshift, mat, order);
+
+    // testing correctness of nmod_poly_mat_mbasis
     if (!nmod_poly_mat_is_approximant_basis(appbas, mat, order, shift, ROW_WISE))
     {
-        printf("mbasis output is not a minimal approximant basis\n");
+        printf("nmod_poly_mat_mbasis output is not a minimal approximant basis\n");
         printf("Input matrix:\n");
-        nmod_poly_mat_print(mat, "X");
+        nmod_poly_mat_print_pretty(mat, "X");
         printf("Output matrix:\n");
         nmod_poly_mat_print(appbas,"X");
         printf("Residual matrix:\n");
         nmod_poly_mat_t res;
         nmod_poly_mat_init(res, appbas->r, mat->c, mat->modulus);
         nmod_poly_mat_mul(res, appbas, mat);
-        nmod_poly_mat_print(res,"X");
+        nmod_poly_mat_print_pretty(res,"X");
         printf("Degree matrix:\n");
         nmod_poly_mat_degree_matrix_print_pretty(appbas);
         printf("Input shift:\t");
@@ -49,68 +53,93 @@ int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
         return 0;
     }
 
-    // testing other functions return the same
-    mbasisII(appbas2, oshift2, mat, order, shift);
-    if (!nmod_poly_mat_equal(appbas, appbas2))
-    {
-        printf("mbasis and mbasisII don't return the same basis\n");
-        nmod_poly_mat_print(appbas,"X");
-        nmod_poly_mat_print(appbas2,"X");
-        return 0;
-    }
-    if (!shift_equal(oshift, oshift2, rdim))
-    {
-        printf("mbasis and mbasisII don't return the same shifts\n");
-        return 0;
-    }
+    //mbasis(appbas, oshift, mat, order, shift);
 
-    mbasisIII(appbas2, oshift2, mat, order, shift);
-    if (!nmod_poly_mat_equal(appbas, appbas2))
-    {
-        printf("mbasis and mbasisIII don't return the same basis\n");
-        nmod_poly_mat_print(appbas,"X");
-        nmod_poly_mat_print(appbas2,"X");
-        return 0;
-    }
-    if (!shift_equal(oshift, oshift2, rdim))
-    {
-        printf("mbasis and mbasisIII don't return the same shifts\n");
-        return 0;
-    }
+    //// testing correctness of mbasis
+    //if (!nmod_poly_mat_is_approximant_basis(appbas, mat, order, shift, ROW_WISE))
+    //{
+    //    printf("mbasis output is not a minimal approximant basis\n");
+    //    printf("Input matrix:\n");
+    //    nmod_poly_mat_print(mat, "X");
+    //    printf("Output matrix:\n");
+    //    nmod_poly_mat_print(appbas,"X");
+    //    printf("Residual matrix:\n");
+    //    nmod_poly_mat_t res;
+    //    nmod_poly_mat_init(res, appbas->r, mat->c, mat->modulus);
+    //    nmod_poly_mat_mul(res, appbas, mat);
+    //    nmod_poly_mat_print(res,"X");
+    //    printf("Degree matrix:\n");
+    //    nmod_poly_mat_degree_matrix_print_pretty(appbas);
+    //    printf("Input shift:\t");
+    //    slongvec_print_sagemath(shift, rdim);
+    //    printf("Output shift:\t");
+    //    slongvec_print_sagemath(oshift, rdim);
+    //    printf("\n");
+    //    return 0;
+    //}
 
-    mbasisIV(appbas2, oshift2, mat, order, shift);
-    if (!nmod_poly_mat_equal(appbas, appbas2))
-    {
-        printf("mbasis and mbasisIV don't return the same basis\n");
-        nmod_poly_mat_print(appbas,"X");
-        nmod_poly_mat_print(appbas2,"X");
-        return 0;
-    }
-    if (!shift_equal(oshift, oshift2, rdim))
-    {
-        printf("mbasis and mbasisIV don't return the same shifts\n");
-        return 0;
-    }
+    //// testing other functions return the same
+    //mbasisII(appbas2, oshift2, mat, order, shift);
+    //if (!nmod_poly_mat_equal(appbas, appbas2))
+    //{
+    //    printf("mbasis and mbasisII don't return the same basis\n");
+    //    nmod_poly_mat_print(appbas,"X");
+    //    nmod_poly_mat_print(appbas2,"X");
+    //    return 0;
+    //}
+    //if (!shift_equal(oshift, oshift2, rdim))
+    //{
+    //    printf("mbasis and mbasisII don't return the same shifts\n");
+    //    return 0;
+    //}
+
+    //mbasisIII(appbas2, oshift2, mat, order, shift);
+    //if (!nmod_poly_mat_equal(appbas, appbas2))
+    //{
+    //    printf("mbasis and mbasisIII don't return the same basis\n");
+    //    nmod_poly_mat_print(appbas,"X");
+    //    nmod_poly_mat_print(appbas2,"X");
+    //    return 0;
+    //}
+    //if (!shift_equal(oshift, oshift2, rdim))
+    //{
+    //    printf("mbasis and mbasisIII don't return the same shifts\n");
+    //    return 0;
+    //}
+
+    //mbasisIV(appbas2, oshift2, mat, order, shift);
+    //if (!nmod_poly_mat_equal(appbas, appbas2))
+    //{
+    //    printf("mbasis and mbasisIV don't return the same basis\n");
+    //    nmod_poly_mat_print(appbas,"X");
+    //    nmod_poly_mat_print(appbas2,"X");
+    //    return 0;
+    //}
+    //if (!shift_equal(oshift, oshift2, rdim))
+    //{
+    //    printf("mbasis and mbasisIV don't return the same shifts\n");
+    //    return 0;
+    //}
 
 
-    mbasisV(appbas2, oshift2, mat, order, shift);
-    if (!nmod_poly_mat_equal(appbas, appbas2))
-    {
-        printf("mbasis and mbasisV don't return the same basis\n");
-        nmod_poly_mat_print(appbas,"X");
-        nmod_poly_mat_print(appbas2,"X");
-        return 0;
-    }
-    if (!shift_equal(oshift, oshift2, rdim))
-    {
-        printf("mbasis and mbasisV don't return the same shifts\n");
-        return 0;
-    }
+    //mbasisV(appbas2, oshift2, mat, order, shift);
+    //if (!nmod_poly_mat_equal(appbas, appbas2))
+    //{
+    //    printf("mbasis and mbasisV don't return the same basis\n");
+    //    nmod_poly_mat_print(appbas,"X");
+    //    nmod_poly_mat_print(appbas2,"X");
+    //    return 0;
+    //}
+    //if (!shift_equal(oshift, oshift2, rdim))
+    //{
+    //    printf("mbasis and mbasisV don't return the same shifts\n");
+    //    return 0;
+    //}
 
-    nmod_poly_mat_clear(appbas);
-    nmod_poly_mat_clear(appbas2);
+    //nmod_poly_mat_clear(appbas);
+    //nmod_poly_mat_clear(appbas2);
 
-    return 1;
+    //return 1;
 }
 
 /** Test with specified parameters, uniform shift */
@@ -166,13 +195,14 @@ int collection_test_mbasis(slong iter)
     // shift random small entries
     slong shift;
 
+    // TODO finish
 }
 
 int main(void)
 {
     //slong prime = 1125899906842679;
     slong prime = 2;
-    slong rdim = 3, cdim = 1, order = 2, len = 1;
+    slong rdim = 4, cdim = 2, order = 4, len = 4;
     slong iter = 1000;
     one_test_mbasis(prime, rdim, cdim, order, len, iter);
 

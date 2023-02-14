@@ -3,7 +3,6 @@
 #include <flint/profiler.h>
 #include "nmod_mat_poly.h"
 #include "nmod_mat_extra.h"
-#include "sagemath_extra.h"
 
 //#define MBASIS1_PROFILE
 //#define MBASIS_PROFILE
@@ -151,8 +150,6 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
 
         else if (nullity < m)
         {
-            printf("iter %ld:\n", ord);
-            nmod_mat_poly_print_pretty(appbas);
             // nullity == m is another exceptional case:
             // residual coeff was zero, and nullspace 'nsbas' is identity
             // --> approximant basis is already correct for this order, no need to
@@ -175,14 +172,11 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
 
             // transform pivots[i] into perm[pivots[i]]
             _perm_compose(pivots, perm, pivots, m);
-            slongvec_print_sagemath(pivots, m);
 
             // Update the approximant basis
 
             // permute appbas
             nmod_mat_poly_permute_rows(appbas, pivots, NULL);
-            printf("\n\nafter permute\n");
-            nmod_mat_poly_print_pretty(appbas);
 
             // Submatrix of rows corresponding to pivots are replaced by
             // nsbas*appbas (note: these rows currently have degree
@@ -195,8 +189,6 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
             // TODO generally try to improve memory handling in here
             nmod_mat_t ns_app, app_win_mul, app_win_add;
             nmod_mat_init(ns_app, nullity, appbas->c, appbas->mod.n);
-            printf("KERNEL\n");
-            nmod_mat_print_pretty(nsbas);
             for (slong d = 0; d < appbas->length; ++d)
             {
                 nmod_mat_window_init(app_win_mul, appbas->coeffs + d, 0, 0, m-nullity, m);
