@@ -431,6 +431,7 @@ nmod_mat_poly_mul_coeff(nmod_mat_t coeff,
                         slong k);
 
 /** Evaluate the matrix polynomial at a point in `nmod`. */
+// TODO test
 FLINT_DLL void
 nmod_mat_poly_evaluate_nmod(nmod_mat_t eval,
                             const nmod_mat_poly_t matp,
@@ -491,7 +492,6 @@ nmod_mat_poly_set_trunc_from_poly_mat(nmod_mat_poly_t matp,
 NMOD_MAT_POLY_INLINE void
 nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat)
 {
-    printf("ok0\n");
     nmod_mat_poly_set_trunc_from_poly_mat(matp, pmat, nmod_poly_mat_max_length(pmat));
 }
 
