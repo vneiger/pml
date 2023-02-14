@@ -200,8 +200,8 @@ NMOD_MAT_POLY_INLINE void
 nmod_mat_poly_one(nmod_mat_poly_t matp)
 {
     nmod_mat_poly_fit_length(matp, 1);
-    nmod_mat_one(matp->coeffs + 0);
     _nmod_mat_poly_set_length(matp, 1);
+    nmod_mat_one(matp->coeffs + 0);
 }
 
 /** Tests whether `matp` is one (i.e., if square, the identity matrix
