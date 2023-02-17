@@ -167,8 +167,10 @@ int one_test_mbasis(slong prime, slong rdim, slong cdim, slong order, slong len,
         //_perm_randtest(shift, rdim, state);
         //for (slong i = 0; i < rdim; i++)
         //    shift[i] = rand() % len - len/2;
-
-        if (core_test_mbasis(mat, order, shift) == 0)
+        printf("%ld\n",i);
+        int res = core_test_mbasis(mat, order, shift);
+        printf("%ld\n",i);
+        if (res == 0)
         {
             printf("failed at iteration %ld... exiting\n", i);
             return 0;

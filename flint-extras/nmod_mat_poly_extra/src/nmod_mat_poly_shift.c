@@ -46,7 +46,7 @@ void nmod_mat_poly_shift_left(nmod_mat_poly_t smatp,
 
     nmod_mat_poly_fit_length(smatp, matp->length + n);
     _nmod_mat_poly_set_length(smatp, matp->length + n);
-    _nmod_mat_poly_shift_left(smatp->coeffs, matp->coeffs, matp->length, n);
+    _nmod_mat_poly_shift_left(smatp->coeffs, matp->coeffs, matp->length-n, n);
 }
 
 //void nmod_mat_poly_shift_right(nmod_mat_poly_t smatp,

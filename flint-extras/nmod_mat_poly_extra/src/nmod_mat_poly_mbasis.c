@@ -8,6 +8,29 @@
 //#define MBASIS_PROFILE
 //#define PMBASIS_PROFILE
 
+#ifdef MBASIS_PROFILE
+
+#define MBASIS_PROF_INIT \
+    timeit_t t_others,t_residual,t_appbas,t_kernel, _t_now;  \
+    t_others->cpu = 0; t_others->wall = 0;                   \
+    t_residual->cpu = 0; t_residual->wall = 0;               \
+    t_appbas->cpu = 0; t_appbas->wall = 0;                   \
+    t_kernel->cpu = 0; t_kernel->wall = 0;
+#define MBASIS_PROF_REGION_START timeit_start(t_now);
+#define MBASIS_PROF_REGION_STOP(_counter_) \
+    timeit_stop(t_now);                    \
+    (_counter_)->cpu += t_now->cpu;           \
+    (_counter_)->wall += t_now->wall;
+
+#else // MBASIS_PROFILE
+
+#define MBASIS_PROF_INIT
+#define MBASIS_PROF_REGION_START
+#define MBASIS_PROF_REGION_STOP(_counter_)
+
+#endif // MBASIS_PROFILE
+
+
 
 /* type for stable sort while retaining the permutation */
 typedef struct
@@ -69,10 +92,6 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
                           const nmod_mat_poly_t matp,
                           slong order)
 {
-#ifdef MBASIS_PROFILE
-    timeit_t t_others,t_residual,t_appbas,t_kernel,t_now;
-    timeit_start(t_now);
-#endif
     // dimensions of input matrix
     const slong m = matp->r;
     const slong n = matp->c;
@@ -98,12 +117,6 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
     slong * pivots = (slong *) flint_malloc(m * sizeof(slong));
     nmod_mat_t nsbas;
 
-#ifdef MBASIS_PROFILE
-    timeit_stop(t_now);
-    t_others->cpu += t_now->cpu;
-    t_others->wall += t_now->wall;
-#endif
-
     // Note: iterations will guarantee that `shift` (initially, this is the
     // input shift) holds the `shift`-shifted row degree of appbas; in
     // particular this is the case when the algorithm returns
@@ -114,17 +127,11 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
         //    basis at order `ord` for `pmat`, and shift = rdeg_s0(appbas)
         // end of loop: appbas is an `s0`-ordered weak Popov approximant
         //    basis at order `ord+1` for `pmat`, and shift = rdeg_s0(appbas)
-#ifdef MBASIS_PROFILE
-        timeit_start(t_now);
-#endif
         if (ord == 0) // initially res = coeffs_matp[0]
             nmod_mat_init_set(res, nmod_mat_poly_coeff(matp,0));
         else // res = coefficient of degree ord in appbas*pmat
             nmod_mat_poly_mul_coeff(res, appbas, matp, ord);
         // TODO try another variant with res_tmp to save memory?
-#ifdef MBASIS_PROFILE
-            t_residual += GetWallTime()-t_now;
-#endif
 
         // compute stable permutation which makes the shift nondecreasing
         // --> we will need to permute things, to take into account the
@@ -134,30 +141,21 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
         // permute rows of the residual accordingly
         nmod_mat_permute_rows(res, perm, NULL);
 
-#ifdef MBASIS_PROFILE
-        timeit_stop(t_now);
-        t_others->cpu += t_now->cpu;
-        t_others->wall += t_now->wall;
-        timeit_start(t_now);
-#endif
-
         // find the left nullspace basis of the (permuted) residual, in reduced
         // row echelon form and compact storage (see the documentation)
         nullity = nmod_mat_left_nullspace_compact(nsbas,pivots,res);
-#ifdef MBASIS_PROFILE
-        timeit_stop(t_now);
-        t_kernel->cpu += t_now->cpu;
-        t_kernel->wall += t_now->wall;
-#endif
 
         if (nullity==0)
         {
             // Exceptional case: the residual matrix has empty left nullspace
             // --> no need to compute more: the final basis is X^(order-ord)*appbas
+            printf("HERE\n");
             nmod_mat_poly_shift_left(appbas, appbas, order-ord);
+            printf("HEREalso\n");
             for (long i = 0; i < m; ++i)
                 shift[i] += order-ord;
-            return;
+            printf("andHERE\n");
+            break;
         }
 
         else if (nullity < m)
@@ -169,9 +167,7 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
 
             // here, we are in the "usual" case, where the left nullspace of the
             // residual has no special shape
-#ifdef MBASIS_PROFILE
-            t_now = GetWallTime();
-#endif
+
             // things will be easier in the permuted world, gathering pivot
             // rows and non-pivot rows
             // --> we are currently working on perm * appbas
@@ -251,6 +247,8 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
     flint_free(pair_tmp);
     flint_free(pivots);
     nmod_mat_clear(nsbas);
+
+    printf("andTHERE\n");
 
     // TODO profile
 }
