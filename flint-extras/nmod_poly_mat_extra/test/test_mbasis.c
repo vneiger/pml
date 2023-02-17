@@ -5,6 +5,7 @@
 
 #include "testing_collection.h"
 #include <flint/nmod_poly_mat.h>
+#include <flint/ulong_extras.h>
 
 int shift_equal(slong * shift1, slong * shift2, slong length)
 {
@@ -18,17 +19,18 @@ int shift_equal(slong * shift1, slong * shift2, slong length)
 int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
 {
     const slong rdim = mat->r;
-    nmod_poly_mat_t appbas, appbas2;
+    nmod_poly_mat_t appbas;
     nmod_poly_mat_init(appbas, rdim, rdim, mat->modulus);
-    nmod_poly_mat_init(appbas2, rdim, rdim, mat->modulus);
 
-    slong oshift[rdim], oshift2[rdim], cshift[rdim];
+    slong cshift[rdim];
     for (slong i = 0; i < rdim; i++)
         cshift[i] = shift[i];
 
-
     nmod_poly_mat_init(appbas, rdim, rdim, mat->modulus);
     nmod_poly_mat_mbasis(appbas, cshift, mat, order);
+
+    printf("Degree matrix:\n");
+    nmod_poly_mat_degree_matrix_print_pretty(appbas);
 
     // testing correctness of nmod_poly_mat_mbasis
     if (!nmod_poly_mat_is_approximant_basis(appbas, mat, order, shift, ROW_WISE))
@@ -48,7 +50,7 @@ int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
         printf("Input shift:\t");
         slongvec_print_sagemath(shift, rdim);
         printf("Output shift:\t");
-        slongvec_print_sagemath(oshift, rdim);
+        slongvec_print_sagemath(cshift, rdim);
         printf("\n");
         return 0;
     }
@@ -136,10 +138,9 @@ int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
     //    return 0;
     //}
 
-    //nmod_poly_mat_clear(appbas);
-    //nmod_poly_mat_clear(appbas2);
+    nmod_poly_mat_clear(appbas);
 
-    //return 1;
+    return 1;
 }
 
 /** Test with specified parameters, uniform shift */
@@ -198,13 +199,39 @@ int collection_test_mbasis(slong iter)
     // TODO finish
 }
 
-int main(void)
+int main(int argc, char ** argv)
 {
-    //slong prime = 1125899906842679;
-    slong prime = 2;
-    slong rdim = 4, cdim = 2, order = 4, len = 4;
-    slong iter = 1000;
-    one_test_mbasis(prime, rdim, cdim, order, len, iter);
+
+    if (argc != 1 && argc != 5)
+    {
+        printf("Usage: %s OR %s [nbits] [rdim] [cdim] [order]\n", argv[0], argv[0]);
+        return 1;
+    }
+
+
+    if (argc == 1)
+    {
+        printf("launching test collection...\n");
+        collection_test_mbasis(1000);
+    }
+    else if (argc == 5)
+    {
+        slong nbits = atoi(argv[1]);
+        slong rdim = atoi(argv[2]);
+        slong cdim = atoi(argv[3]);
+        slong order = atoi(argv[4]);
+
+        flint_rand_t state;
+        flint_randinit(state);
+        srand(time(NULL));
+        flint_randseed(state, rand(), rand());
+            
+        slong prime = n_randprime(state, nbits, 1);
+        printf("Launching test with\n\tprime = %ld,\n\trdim = %ld,\n\tcdim = %ld,\
+               \n\torder = %ld,\n\tlen = %ld...\n",prime,rdim,cdim,order,order);
+
+        one_test_mbasis(prime, rdim, cdim, order, order, 10000);
+    }
 
     return EXIT_SUCCESS;
 }

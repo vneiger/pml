@@ -571,7 +571,7 @@ FLINT_DLL void
 nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
                      slong * shift,
                      const nmod_mat_poly_t matp,
-                     ulong order);
+                     slong order);
 
 #ifdef __cplusplus
 }

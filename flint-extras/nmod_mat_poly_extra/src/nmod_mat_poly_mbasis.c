@@ -67,7 +67,7 @@ static inline void _find_shift_permutation(slong * perm,
 void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
                           slong * shift,
                           const nmod_mat_poly_t matp,
-                          ulong order)
+                          slong order)
 {
 #ifdef MBASIS_PROFILE
     timeit_t t_others,t_residual,t_appbas,t_kernel,t_now;
@@ -80,11 +80,9 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
     // initialize output approximant basis with identity
     nmod_mat_poly_one(appbas);
 
-    // residual matrix:
-    // m x n constant matrix, next coefficient of appbas * matp to be
-    // annihilated, initially coeffs_matp[0]
+    // residual matrix: m x n constant matrix, next coefficient of appbas *
+    // matp to be annihilated
     nmod_mat_t res;
-    nmod_mat_init_set(res, nmod_mat_poly_coeff(matp,0));
 
     // temporary matrix used during the computation of residuals
     nmod_mat_t res_tmp;
@@ -109,11 +107,25 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
     // Note: iterations will guarantee that `shift` (initially, this is the
     // input shift) holds the `shift`-shifted row degree of appbas; in
     // particular this is the case when the algorithm returns
-    for (slong ord = 1; ord <= (slong)order; ++ord)
+    for (slong ord = 0; ord < order; ++ord)
     {
+        // Letting s0 be the original input shift:
+        // start of loop: appbas is an `s0`-ordered weak Popov approximant
+        //    basis at order `ord` for `pmat`, and shift = rdeg_s0(appbas)
+        // end of loop: appbas is an `s0`-ordered weak Popov approximant
+        //    basis at order `ord+1` for `pmat`, and shift = rdeg_s0(appbas)
 #ifdef MBASIS_PROFILE
         timeit_start(t_now);
 #endif
+        if (ord == 0) // initially res = coeffs_matp[0]
+            nmod_mat_init_set(res, nmod_mat_poly_coeff(matp,0));
+        else // res = coefficient of degree ord in appbas*pmat
+            nmod_mat_poly_mul_coeff(res, appbas, matp, ord);
+        // TODO try another variant with res_tmp to save memory?
+#ifdef MBASIS_PROFILE
+            t_residual += GetWallTime()-t_now;
+#endif
+
         // compute stable permutation which makes the shift nondecreasing
         // --> we will need to permute things, to take into account the
         // "priority" indicated by the shift
@@ -141,22 +153,19 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
         if (nullity==0)
         {
             // Exceptional case: the residual matrix has empty left nullspace
-            // --> no need to compute more: the final basis is X^(order-ord+1)*appbas
-            nmod_mat_poly_shift_left(appbas, appbas, order-ord+1);
+            // --> no need to compute more: the final basis is X^(order-ord)*appbas
+            nmod_mat_poly_shift_left(appbas, appbas, order-ord);
             for (long i = 0; i < m; ++i)
-                shift[i] += order-ord+1;
+                shift[i] += order-ord;
             return;
         }
 
         else if (nullity < m)
         {
-            // nullity == m is another exceptional case:
+            // nothing to do if nullity == m, another exceptional case:
             // residual coeff was zero, and nullspace 'nsbas' is identity
             // --> approximant basis is already correct for this order, no need to
-            // change it or to change shift, just need to compute the next residual
-            // (unless ord == order, in which case the algorithm returns)
-            // --> this residual computation will be done at the end of this loop
-            // iteration in any case
+            // change it or to change shift, go to next iteration
 
             // here, we are in the "usual" case, where the left nullspace of the
             // residual has no special shape
@@ -234,25 +243,15 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
                 shift[pivots[i]] += 1;
         }
 
-        // computation of the next residual 
-        // = coefficient of degree ord in appbas*pmat
-        // (not necessary if ord == order, in which case the algorithm returns)
-        if (ord < (slong)order)
-        {
-#ifdef MBASIS_PROFILE
-            t_now = GetWallTime();
-#endif
-            // TODO use another variant with res_tmp to save memory
-            nmod_mat_poly_mul_coeff(res, appbas, matp, ord);
-#ifdef MBASIS_PROFILE
-            t_residual += GetWallTime()-t_now;
-#endif
-        }
     }
 
-    // TODO CLEAR EVERYTHING
-    //
-    //
+    nmod_mat_clear(res);
+    nmod_mat_clear(res_tmp);
+    _perm_clear(perm);
+    flint_free(pair_tmp);
+    flint_free(pivots);
+    nmod_mat_clear(nsbas);
+
     // TODO profile
 }
 
