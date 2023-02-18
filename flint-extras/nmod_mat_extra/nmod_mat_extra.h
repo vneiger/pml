@@ -1,6 +1,10 @@
 /** \file nmod_mat_extra.h
  *
  * \todo
+ * - helper: pivots | nonpivots of reduced row echelon form (rightmost/leftmost) ???
+ * - PLUQ factorization (try naive + Crout)
+ * - left nullspace via PLUQ (or at least more direct than transposition)
+ * - row/column rank profile (extract more information from Flint's nullspace?)
  *
  */
 
@@ -277,13 +281,13 @@ nmod_mat_rand_fullrank_urcef(nmod_mat_t mat,
  *  nullspace representation given by this call into the complete dense
  *  nullspace representation.
  *
- * \param [in] A input matrix
  * \param [out] X matrix where the nullspace will be stored (uninitialized)
+ * \param [in] A input matrix
  * \return nullity of A (i.e. rank of X)
  *
  * @see nmod_mat_left_nullspace_compact
  */
-FLINT_DLL slong nmod_mat_left_nullspace(nmod_mat_t X, nmod_mat_t A);
+FLINT_DLL slong nmod_mat_left_nullspace(nmod_mat_t X, const nmod_mat_t A);
 
 /** Left nullspace of A in compact form.
  *
@@ -306,27 +310,8 @@ FLINT_DLL slong nmod_mat_left_nullspace(nmod_mat_t X, nmod_mat_t A);
 FLINT_DLL slong nmod_mat_left_nullspace_compact(
                                                 nmod_mat_t X,
                                                 slong * permutation,
-                                                nmod_mat_t A
+                                                const nmod_mat_t A
                                                 );
-
-
-/** Left lower triangular solving: X = B * L^{-1} */
-// TODO not yet implemented
-//FLINT_DLL void nmod_mat_solve_left_tril(nmod_mat_t X, const nmod_mat_t L, const nmod_mat_t B, int unit);
-//FLINT_DLL void nmod_mat_solve_left_tril_recursive(nmod_mat_t X, const nmod_mat_t L, const nmod_mat_t B, int unit);
-//FLINT_DLL void nmod_mat_solve_left_tril_classical(nmod_mat_t X, const nmod_mat_t L, const nmod_mat_t B, int unit);
-
-/** Left upper triangular solving: X = B * U^{-1} */
-// TODO not yet implemented
-//FLINT_DLL void nmod_mat_solve_left_triu(nmod_mat_t X, const nmod_mat_t U, const nmod_mat_t B, int unit);
-//FLINT_DLL void nmod_mat_solve_left_triu_recursive(nmod_mat_t X, const nmod_mat_t U, const nmod_mat_t B, int unit);
-//FLINT_DLL void nmod_mat_solve_left_triu_classical(nmod_mat_t X, const nmod_mat_t U, const nmod_mat_t B, int unit);
-
-// TODO:
-// - helper: pivots | nonpivots of reduced row echelon form (rightmost/leftmost) ???
-// - PLUQ factorization (try naive + Crout)
-// - left nullspace via PLUQ
-// - row/column rank profile
 
 #ifdef __cplusplus
 }

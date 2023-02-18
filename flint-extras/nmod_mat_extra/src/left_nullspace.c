@@ -1,6 +1,6 @@
 #include "nmod_mat_extra.h"
 
-slong nmod_mat_left_nullspace(nmod_mat_t X, nmod_mat_t A)
+slong nmod_mat_left_nullspace(nmod_mat_t X, const nmod_mat_t A)
 {
     // helper lists of pivot|nonpivot columns of X
     slong * permutation = malloc(A->r * sizeof(slong));
@@ -26,7 +26,7 @@ slong nmod_mat_left_nullspace(nmod_mat_t X, nmod_mat_t A)
 slong nmod_mat_left_nullspace_compact(
                                       nmod_mat_t X,
                                       slong * permutation,
-                                      nmod_mat_t A
+                                      const nmod_mat_t A
                                      )
 {
     // At <- transpose A
@@ -51,32 +51,20 @@ slong nmod_mat_left_nullspace_compact(
         permutation[j] = Xt->r - 1;
         while (permutation[j] >= 0 && nmod_mat_entry(Xt, permutation[j], j-rank) == 0)
             --permutation[j];
-        if (permutation[j] < 0)
-        {
-            printf("BUG!\n");
-            return -1; // should never happen!
-        }
+        // Note: we should never arrive at (permutation[j] < 0)
     }
 
     slong r = 0;
-    for (slong i = 0; i < permutation[rank]; ++i)
-    {
+
+    for (slong i = 0; i < permutation[rank]; i++, r++)
         permutation[r] = i;
-        ++r;
-    }
+
     for (slong j = rank; j < At->c -1; ++j)
-    {
-        for (slong i = permutation[j]+1; i < permutation[j+1]; ++i)
-        {
+        for (slong i = permutation[j]+1; i < permutation[j+1]; i++, r++)
             permutation[r] = i;
-            ++r;
-        }
-    }
-    for (slong i = permutation[At->c -1]+1; i < Xt->r; ++i)
-    {
+
+    for (slong i = permutation[At->c -1]+1; i < Xt->r; i++, r++)
         permutation[r] = i;
-        ++r;
-    }
 
     // extract dense part of kernel
     nmod_mat_init(X, nullity, rank, A->mod.n);
