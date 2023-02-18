@@ -1,4 +1,5 @@
 #include <flint/nmod_poly_mat.h>
+#include "nmod_poly_mat_utils.h" // for rand
 #include "nmod_poly_mat_approximant.h"
 #include "time.h"
 
@@ -23,7 +24,7 @@ void benchmark_mbasis(slong rdim, slong cdim, slong sigma, slong len,
     nmod_poly_mat_t mat;
 
     nmod_poly_mat_init(mat, rdim, cdim, prime);
-    nmod_poly_mat_randtest(mat, state, len + 1);
+    nmod_poly_mat_rand(mat, state, len + 1);
 
     nmod_poly_mat_t res_mbasis;
     slong shifts[rdim], res_shifts[rdim];
@@ -33,33 +34,35 @@ void benchmark_mbasis(slong rdim, slong cdim, slong sigma, slong len,
 
     nmod_poly_mat_init(res_mbasis, rdim, rdim, prime);
 
+    double thres = 1.0;
+
     // parameters for measuring time
     double t = 0.0;
     clock_t tt;
     long nb_iter = 0;
 
-    // let's go
-    for (int i = 0; i < NUMBER_MBASIS; i++)
+//    // let's go
+//    for (int i = 0; i < NUMBER_MBASIS; i++)
+//    {
+//        t = 0.0;
+//        nb_iter = 0;
+//
+//        while (t<thres)
+//        {
+//            tt = clock();
+//            m_basis[i](res_mbasis, res_shifts, mat, sigma, shifts);
+//            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+//            ++nb_iter;
+//        }
+//        t /= nb_iter;
+//        printf("%s\t%ld\t%ld\t%ld\t%ld\t%f\n", nb_mbasis[i], rdim, cdim, sigma, len, t);
+//    }
+
     {
         t = 0.0;
         nb_iter = 0;
 
-        while (t<0.5)
-        {
-            tt = clock();
-            m_basis[i](res_mbasis, res_shifts, mat, sigma, shifts);
-            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-            ++nb_iter;
-        }
-        t /= nb_iter;
-        printf("%s\t%ld\t%ld\t%ld\t%ld\t%f\n", nb_mbasis[i], rdim, cdim, sigma, len, t);
-    }
-
-    {
-        t = 0.0;
-        nb_iter = 0;
-
-        while (t<0.5)
+        while (t<thres)
         {
             nmod_poly_mat_zero(res_mbasis);
             tt = clock();
@@ -71,6 +74,9 @@ void benchmark_mbasis(slong rdim, slong cdim, slong sigma, slong len,
         t /= nb_iter;
         printf("%s\t%ld\t%ld\t%ld\t%ld\t%f\n", "NEW", rdim, cdim, sigma, len, t);
     }
+
+    nmod_poly_mat_clear(res_mbasis);
+    nmod_poly_mat_clear(mat);
 }
 
 /** Launches a series of benchmarks for a given prime size.
@@ -87,8 +93,8 @@ void benchmark_nbits(ulong nbits, flint_rand_t state)
     flint_randinit(state);
     const ulong prime = n_randprime(state, nbits, 0);
 
-    slong rdims[] = { 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192 };
-    slong sigmas[] = { 4, 8, 16, 32, 64 };
+    slong rdims[] = { 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048};
+    slong orders[] = { 4, 8, 16, 32, 64, 128 };
 
     printf("Bench mbasis\n");
     printf("nbits=%ld, prime=%ld\n", nbits, prime);
@@ -99,12 +105,10 @@ void benchmark_nbits(ulong nbits, flint_rand_t state)
     for (size_t i = 0; i < sizeof(rdims) / sizeof(rdims[0]); ++i)
     {
         long rdim = rdims[i];
-
-        for (size_t j = 0; j < sizeof(sigmas) / sizeof(sigmas[0]); ++j)
+        for (size_t j = 0; j < sizeof(orders) / sizeof(orders[0]); ++j)
         {
-            long ord = sigmas[j];
+            long ord = orders[j];
             benchmark_mbasis(rdim, rdim / 2, ord, ord, prime, state);
-            printf("\n");
         }
     }
 
