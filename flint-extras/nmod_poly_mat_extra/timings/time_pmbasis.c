@@ -1,4 +1,5 @@
 #include <flint/nmod_poly_mat.h>
+#include "nmod_poly_mat_io.h"
 #include "nmod_poly_mat_approximant.h"
 #include "time.h"
 
@@ -20,6 +21,8 @@ void benchmark_pmbasis(slong rdim, slong cdim, slong sigma, slong len,
 
     nmod_poly_mat_init(res_mbasis, rdim, rdim, prime);
 
+    double thres = 1.0;
+
     // parameters for measuring time
     double t = 0.0;
     clock_t tt;
@@ -29,16 +32,34 @@ void benchmark_pmbasis(slong rdim, slong cdim, slong sigma, slong len,
     t = 0.0;
     nb_iter = 0;
 
-    while (t<0.5)
-    {
-        tt = clock();
-        pmbasis(res_mbasis, res_shifts, mat, sigma, shifts);
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        ++nb_iter;
-    }
-    t /= nb_iter;
-    printf("%ld\t%ld\t%ld\t%ld\t%f\n", rdim, cdim, sigma, len, t);
+    //while (t<thres)
+    //{
+    //    nmod_poly_mat_zero(res_mbasis);
+    //    tt = clock();
+    //    pmbasis(res_mbasis, res_shifts, mat, sigma, shifts);
+    //    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+    //    ++nb_iter;
+    //}
+    //t /= nb_iter;
 
+    //printf("%ld\t%ld\t%ld\t%ld\t%f\n", rdim, cdim, sigma, len, t);
+
+    {
+        t = 0.0;
+        nb_iter = 0;
+
+        while (t<thres)
+        {
+            nmod_poly_mat_zero(res_mbasis);
+            tt = clock();
+            slong * cshift = flint_calloc(mat->r, sizeof(slong));
+            nmod_poly_mat_pmbasis(res_mbasis, cshift, mat, sigma);
+            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+            ++nb_iter;
+        }
+        t /= nb_iter;
+        printf("%s\t%ld\t%ld\t%ld\t%ld\t%f\n\n", "NEW", rdim, cdim, sigma, len, t);
+    }
 }
 
 /** Launches a series of benchmarks for a given prime size.
@@ -55,8 +76,8 @@ void benchmark_nbits(ulong nbits, flint_rand_t state)
     flint_randinit(state);
     const ulong prime = n_randprime(state, nbits, 0);
 
-    slong rdims[] = { 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, };
-    slong sigmas[] = { 32, 64, 128, 256, 512, 1024, 2048, 4096};
+    slong rdims[] = { 2, 4, 8, 16, 32, 64, 128, 256 };
+    slong sigmas[] = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192};
 
     printf("Bench pmbasis\n");
     printf("nbits=%ld, prime=%ld\n", nbits, prime);
