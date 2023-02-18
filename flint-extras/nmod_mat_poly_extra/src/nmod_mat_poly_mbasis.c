@@ -97,12 +97,22 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
     const slong n = matp->c;
 
     // initialize output approximant basis with identity
-    nmod_mat_poly_one(appbas);
+    // except when matp == 0: return appbas = x**order * identity
+    if (nmod_mat_poly_is_zero(matp))
+    {
+        nmod_mat_poly_fit_length(appbas, order+1);
+        _nmod_mat_poly_set_length(appbas, order+1);
+        nmod_mat_one(appbas->coeffs + order);
+        return;
+    }
+    else
+        nmod_mat_poly_one(appbas);
+    // -> ensures matp->length > 0 in what follows
 
     // residual matrix: m x n constant matrix, next coefficient of appbas *
     // matp to be annihilated
     nmod_mat_t res;
-
+    nmod_mat_init(res, m, n, matp->mod.n);
     // temporary matrix used during the computation of residuals
     nmod_mat_t res_tmp;
     nmod_mat_init(res_tmp, m, n, res->mod.n);
@@ -127,8 +137,8 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
         //    basis at order `ord` for `pmat`, and shift = rdeg_s0(appbas)
         // end of loop: appbas is an `s0`-ordered weak Popov approximant
         //    basis at order `ord+1` for `pmat`, and shift = rdeg_s0(appbas)
-        if (ord == 0) // initially res = coeffs_matp[0]
-            nmod_mat_init_set(res, nmod_mat_poly_coeff(matp,0));
+        if (ord == 0) // initially res = coeffs_matp[0] (note matp->length > 0 here)
+            nmod_mat_set(res, matp->coeffs + 0);
         else // res = coefficient of degree ord in appbas*pmat
             nmod_mat_poly_mul_coeff(res, appbas, matp, ord);
         // TODO try another variant with res_tmp to save memory?
@@ -149,12 +159,9 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
         {
             // Exceptional case: the residual matrix has empty left nullspace
             // --> no need to compute more: the final basis is X^(order-ord)*appbas
-            printf("HERE\n");
             nmod_mat_poly_shift_left(appbas, appbas, order-ord);
-            printf("HEREalso\n");
             for (long i = 0; i < m; ++i)
                 shift[i] += order-ord;
-            printf("andHERE\n");
             break;
         }
 
@@ -247,8 +254,6 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
     flint_free(pair_tmp);
     flint_free(pivots);
     nmod_mat_clear(nsbas);
-
-    printf("andTHERE\n");
 
     // TODO profile
 }

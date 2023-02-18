@@ -433,11 +433,8 @@ void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
     nmod_mat_poly_set_trunc_from_poly_mat(matp, pmat, order);
     nmod_mat_poly_init(app, pmat->r, pmat->r, pmat->modulus);
     nmod_mat_poly_mbasis(app, shift, matp, order);
-    printf("Riiiiiight\n");
-    nmod_mat_poly_print_pretty(app);
     // TODO improve: set init
     nmod_poly_mat_set_from_mat_poly(appbas, app);
-    printf("Riiiiiight as well...\n");
 }
 
 
