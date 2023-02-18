@@ -21,7 +21,7 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
     long nb_iter=0;
 
     double t_pmbasis_app=0.0;
-    while (t_pmbasis_app<0.2)
+    while (t_pmbasis_app<1.0)
     {
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, degree+1);
@@ -126,7 +126,7 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
     if (applin)
     {
         nb_iter=0;
-        while (t_pmbasis_applin<0.2)
+        while (t_pmbasis_applin<1.0)
         {
             Mat<zz_pX> pmat;
             random(pmat, rdim, cdim, degree+1);

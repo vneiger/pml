@@ -10,7 +10,7 @@ RUN = $(patsubst %.c, %.dat, $(patsubst time_%, %, $(SOURCES)))
 
 CC = gcc
 CFLAGS = -Wall -O3 -march=native -I$(INC_DIR)
-LIBS = -lflint -lmpfr -lgmp -lm -lblis
+LIBS = -lflint -lmpfr -lgmp -lm
 
 .PHONY: clean
 
