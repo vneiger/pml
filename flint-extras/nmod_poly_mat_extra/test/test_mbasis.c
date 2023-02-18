@@ -29,9 +29,6 @@ int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
     nmod_poly_mat_init(appbas, rdim, rdim, mat->modulus);
     nmod_poly_mat_mbasis(appbas, cshift, mat, order);
 
-    printf("Degree matrix:\n");
-    nmod_poly_mat_degree_matrix_print_pretty(appbas);
-
     // testing correctness of nmod_poly_mat_mbasis
     if (!nmod_poly_mat_is_approximant_basis(appbas, mat, order, shift, ROW_WISE))
     {
@@ -167,9 +164,7 @@ int one_test_mbasis(slong prime, slong rdim, slong cdim, slong order, slong len,
         //_perm_randtest(shift, rdim, state);
         //for (slong i = 0; i < rdim; i++)
         //    shift[i] = rand() % len - len/2;
-        printf("%ld\n",i);
         int res = core_test_mbasis(mat, order, shift);
-        printf("%ld\n",i);
         if (res == 0)
         {
             printf("failed at iteration %ld... exiting\n", i);
@@ -203,13 +198,10 @@ int collection_test_mbasis(slong iter)
 
 int main(int argc, char ** argv)
 {
+    printf("Usage: %s OR %s [nbits] [rdim] [cdim] [order]\n--\n", argv[0], argv[0]);
 
     if (argc != 1 && argc != 5)
-    {
-        printf("Usage: %s OR %s [nbits] [rdim] [cdim] [order]\n", argv[0], argv[0]);
         return 1;
-    }
-
 
     if (argc == 1)
     {

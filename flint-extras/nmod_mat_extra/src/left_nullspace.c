@@ -1,8 +1,9 @@
 #include "nmod_mat_extra.h"
+#include <flint/perm.h>
 
 slong nmod_mat_left_nullspace(nmod_mat_t X, const nmod_mat_t A)
 {
-    // helper lists of pivot|nonpivot columns of X
+    // helper lists of nonpivot|pivot columns of X
     slong * permutation = malloc(A->r * sizeof(slong));
 
     // compute compact form of left nullspace
@@ -18,6 +19,7 @@ slong nmod_mat_left_nullspace(nmod_mat_t X, const nmod_mat_t A)
         for (slong j = 0; j < rank; ++j)
             nmod_mat_entry(X, i, permutation[j]) = nmod_mat_entry(Y, i, j);
 
+    nmod_mat_clear(Y);
     free(permutation);
 
     return nullity;
@@ -39,38 +41,44 @@ slong nmod_mat_left_nullspace_compact(
     nmod_mat_init(Xt, At->c, At->c, At->mod.n);
     slong nullity = nmod_mat_nullspace(Xt, At);
 
-    // find row rank profile of A and its complement, store them concatenated
-    // in permutation (first rrp, then complement, each in increasing order)
-    // -> recall: row rank profile = indices of nonpivots in Xt which is in
-    // reduced column echelon form
-    slong rank = At->c - nullity;
+    const slong rank = At->c - nullity;
+    nmod_mat_init(X, nullity, rank, A->mod.n);
 
-    // search non pivots first
-    for (slong j = rank; j < At->c; ++j)
+    if (nullity)
     {
-        permutation[j] = Xt->r - 1;
-        while (permutation[j] >= 0 && nmod_mat_entry(Xt, permutation[j], j-rank) == 0)
-            --permutation[j];
-        // Note: we should never arrive at (permutation[j] < 0)
-    }
+        // find row rank profile of A and its complement, store them concatenated
+        // in permutation (first rrp, then complement, each in increasing order)
+        // -> recall: row rank profile = indices of nonpivots in Xt which is in
+        // reduced column echelon form
 
-    slong r = 0;
+        // search pivots first
+        for (slong j = rank; j < At->c; ++j)
+        {
+            permutation[j] = Xt->r - 1;
+            while (permutation[j] >= 0 && nmod_mat_entry(Xt, permutation[j], j-rank) == 0)
+                --permutation[j];
+            // Note: we should never arrive at (permutation[j] < 0)
+        }
 
-    for (slong i = 0; i < permutation[rank]; i++, r++)
-        permutation[r] = i;
+        slong r = 0;
 
-    for (slong j = rank; j < At->c -1; ++j)
-        for (slong i = permutation[j]+1; i < permutation[j+1]; i++, r++)
+        for (slong i = 0; i < permutation[rank]; i++, r++)
             permutation[r] = i;
 
-    for (slong i = permutation[At->c -1]+1; i < Xt->r; i++, r++)
-        permutation[r] = i;
+        for (slong j = rank; j < At->c -1; ++j)
+            for (slong i = permutation[j]+1; i < permutation[j+1]; i++, r++)
+                permutation[r] = i;
 
-    // extract dense part of kernel
-    nmod_mat_init(X, nullity, rank, A->mod.n);
-    for (slong i = 0; i < nullity; ++i)
-        for (slong j = 0; j < rank; ++j)
-            nmod_mat_entry(X, i, j) = nmod_mat_entry(Xt, permutation[j], i);
+        for (slong i = permutation[At->c -1]+1; i < Xt->r; i++, r++)
+            permutation[r] = i;
+
+        // extract dense part of kernel
+        for (slong i = 0; i < nullity; ++i)
+            for (slong j = 0; j < rank; ++j)
+                nmod_mat_entry(X, i, j) = nmod_mat_entry(Xt, permutation[j], i);
+    }
+    else
+        _perm_set_one(permutation, A->r);
 
     // clean
     nmod_mat_clear(At);

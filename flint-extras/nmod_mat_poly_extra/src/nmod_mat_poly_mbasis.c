@@ -7,6 +7,7 @@
 //#define MBASIS1_PROFILE
 //#define MBASIS_PROFILE
 //#define PMBASIS_PROFILE
+//#define MBASIS_DEBUG
 
 #ifdef MBASIS_PROFILE
 
@@ -132,6 +133,10 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
     // particular this is the case when the algorithm returns
     for (slong ord = 0; ord < order; ++ord)
     {
+#ifdef MBASIS_DEBUG
+printf("\n\nDEBUG -- Start iteration %ld\n", ord);
+#endif // MBASIS_DEBUG
+
         // Letting s0 be the original input shift:
         // start of loop: appbas is an `s0`-ordered weak Popov approximant
         //    basis at order `ord` for `pmat`, and shift = rdeg_s0(appbas)
@@ -147,19 +152,43 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
         // --> we will need to permute things, to take into account the
         // "priority" indicated by the shift
         _find_shift_permutation(perm, shift, m, pair_tmp);
+#ifdef MBASIS_DEBUG
+printf("\n\nDEBUG -- it %ld -- shift: ", ord);
+_perm_print(shift, m);
+printf("\n\nDEBUG -- it %ld -- permutation: ", ord);
+_perm_print(perm, m);
+#endif // MBASIS_DEBUG
 
         // permute rows of the residual accordingly
+#ifdef MBASIS_DEBUG
+printf("\n\nDEBUG -- it %ld -- res before perm: ", ord);
+nmod_mat_print_pretty(res);
+#endif // MBASIS_DEBUG
         nmod_mat_permute_rows(res, perm, NULL);
+#ifdef MBASIS_DEBUG
+printf("\n\nDEBUG -- it %ld -- res after perm: ", ord);
+nmod_mat_print_pretty(res);
+#endif // MBASIS_DEBUG
 
         // find the left nullspace basis of the (permuted) residual, in reduced
         // row echelon form and compact storage (see the documentation)
+        if (ord >= 1) // nsbas should be uninitialized for nullspace
+            nmod_mat_clear(nsbas);
         nullity = nmod_mat_left_nullspace_compact(nsbas,pivots,res);
+#ifdef MBASIS_DEBUG
+printf("\n\nDEBUG -- it %ld -- nullity: %ld, rank: %ld", ord, nullity, m-nullity);
+printf("\n\nDEBUG -- it %ld -- nsbas: ", ord);
+nmod_mat_print_pretty(nsbas);
+printf("\n\nDEBUG -- it %ld -- pivots: ", ord);
+_perm_print(pivots, m);
+#endif // MBASIS_DEBUG
 
         if (nullity==0)
         {
             // Exceptional case: the residual matrix has empty left nullspace
             // --> no need to compute more: the final basis is X^(order-ord)*appbas
             nmod_mat_poly_shift_left(appbas, appbas, order-ord);
+            printf("OK shift\n");
             for (long i = 0; i < m; ++i)
                 shift[i] += order-ord;
             break;
@@ -184,12 +213,38 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
 
             // transform pivots[i] into perm[pivots[i]]
             _perm_compose(pivots, perm, pivots, m);
+#ifdef MBASIS_DEBUG
+printf("\n\nDEBUG -- it %ld -- composed permutation: ", ord);
+_perm_print(pivots, m);
+#endif // MBASIS_DEBUG
 
-            // Update the approximant basis
+            // Update the shift
+            // --> in the permuted world, we should add 1 to each entry
+            // corresponding to a nullspace column which contains a pivot
+            // (don't move below! pivots will be modified)
+#ifdef MBASIS_DEBUG
+printf("\n\nDEBUG -- it %ld -- shift before update: ", ord);
+_perm_print(shift, m);
+#endif // MBASIS_DEBUG
+            for (slong i = 0; i < m-nullity; i++)
+                shift[pivots[i]] += 1;
+#ifdef MBASIS_DEBUG
+printf("\n\nDEBUG -- it %ld -- shift after update: ", ord);
+_perm_print(shift, m);
+#endif // MBASIS_DEBUG
 
-            // permute appbas
+            // Update the approximant basis: 1/ go to permuted world
+#ifdef MBASIS_DEBUG
+printf("\n\nDEBUG -- it %ld -- appbas before update:\n", ord);
+nmod_mat_poly_print_pretty(appbas);
+#endif // MBASIS_DEBUG
             nmod_mat_poly_permute_rows(appbas, pivots, NULL);
+#ifdef MBASIS_DEBUG
+printf("\n\nDEBUG -- it %ld -- permuted appbas before update:\n", ord);
+nmod_mat_poly_print_pretty(appbas);
+#endif // MBASIS_DEBUG
 
+            // Update the approximant basis: 2/ perform constant update
             // Submatrix of rows corresponding to pivots are replaced by
             // nsbas*appbas (note: these rows currently have degree
             // at most deg(appbas))
@@ -209,6 +264,7 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
                 nmod_mat_add(app_win_add, app_win_add, ns_app);
             }
 
+            // Update the approximant basis: 3/ left-shift relevant rows by 1
             // increase length of appbas if necessary
             for (slong i = 0; i < m-nullity; ++i)
                 if (!_nmod_vec_is_zero(appbas->coeffs[appbas->length-1].rows[i], m))
@@ -234,18 +290,22 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
                 //_nmod_vec_zero(appbas->coeffs[0].rows[i], m);
                 appbas->coeffs[0].rows[i] = save_zero_rows[i];
 
-
-            // permute appbas back
+#ifdef MBASIS_DEBUG
+printf("\n\nDEBUG -- it %ld -- permuted appbas after update:\n", ord);
+nmod_mat_poly_print_pretty(appbas);
+#endif // MBASIS_DEBUG
+            // Update the approximant basis: 4/ come back from permuted world
             _perm_inv(pivots, pivots, m);
+#ifdef MBASIS_DEBUG
+printf("\n\nDEBUG -- it %ld -- inverted composed permutation: ", ord);
+_perm_print(pivots, m);
+#endif // MBASIS_DEBUG
             nmod_mat_poly_permute_rows(appbas, pivots, NULL);
-
-            // update shift
-            // --> in the permuted world, we should add 1 to each entry
-            // corresponding to a nullspace column which contains a pivot
-            for (slong i = 0; i < m-nullity; i++)
-                shift[pivots[i]] += 1;
+#ifdef MBASIS_DEBUG
+printf("\n\nDEBUG -- it %ld -- appbas after update:\n", ord);
+nmod_mat_poly_print_pretty(appbas);
+#endif // MBASIS_DEBUG
         }
-
     }
 
     nmod_mat_clear(res);
@@ -254,8 +314,6 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
     flint_free(pair_tmp);
     flint_free(pivots);
     nmod_mat_clear(nsbas);
-
-    // TODO profile
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
