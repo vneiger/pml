@@ -47,14 +47,14 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
         }
     nmod_poly_clear(pol);
 
+    // TODO check generation!
+
     // 
     //slong lead_pos[rdim];
     //nmod_poly_mat_pivot_index_shifted_rowwise(lead_pos, appbas, shift);
     //printf("\nleading positions\n");
     //for (slong i = 0; i < rdim; i++)
     //    printf("%lu ", lead_pos[i]);
-
-    nmod_poly_mat_clear(residual);
 
     return 1;
 }

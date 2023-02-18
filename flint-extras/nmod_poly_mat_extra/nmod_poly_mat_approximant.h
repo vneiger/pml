@@ -199,40 +199,9 @@ extern "C" {
  *
  * \todo add parameter row_wise
  * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
- * \todo
+ * \todo WARNING! for the moment, does not check generation!
+ * \todo WARNING! for the moment, hardcoded to check for ordered weak Popov
  */
-//bool is_approximant_basis(
-//                          const Mat<zz_pX> & appbas,
-//                          const Mat<zz_pX> & pmat,
-//                          const VecLong & order,
-//                          const VecLong & shift,
-//                          const poly_mat_form_t & form = ORD_WEAK_POPOV,
-//                          const bool randomized = false
-//                         );
-
-/** Verifying if a matrix is a minimal approximant basis.
- *
- * Same function as above, but taking a single positive integer for the
- * parameter `order` instead of a list. This simply interprets this as
- * specifying a list of integers all equal to `order` (with the right length),
- * and then calls the function above.
- * \todo
- */
-//inline bool is_approximant_basis(
-//                                 const Mat<zz_pX> & appbas,
-//                                 const Mat<zz_pX> & pmat,
-//                                 const long order,
-//                                 const VecLong & shift,
-//                                 const poly_mat_form_t & form = ORD_WEAK_POPOV,
-//                                 const bool randomized = false
-//                                )
-//{
-//    VecLong orders(pmat.NumCols(),order);
-//    return is_approximant_basis(appbas,pmat,orders,shift,form,randomized);
-//}
-
-// TODO (add input parameter for testing form at least sth) currently tests reduced
-/** TODO temporary fix; and not finished yet */
 int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
                                        const nmod_poly_mat_t pmat,
                                        slong order,

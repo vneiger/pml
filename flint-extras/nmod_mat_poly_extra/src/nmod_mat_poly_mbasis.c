@@ -188,7 +188,6 @@ _perm_print(pivots, m);
             // Exceptional case: the residual matrix has empty left nullspace
             // --> no need to compute more: the final basis is X^(order-ord)*appbas
             nmod_mat_poly_shift_left(appbas, appbas, order-ord);
-            printf("OK shift\n");
             for (long i = 0; i < m; ++i)
                 shift[i] += order-ord;
             break;
