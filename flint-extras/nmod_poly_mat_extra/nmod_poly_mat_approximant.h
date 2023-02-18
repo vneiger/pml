@@ -509,6 +509,15 @@ void pmbasis(nmod_poly_mat_t appbas,
              ulong order,
              const slong * shift);
 
+// TODO doc
+// TODO middle_product currently naive
+FLINT_DLL void
+nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
+                      slong * shift,
+                      const nmod_poly_mat_t pmat,
+                      slong order);
+
+
 /** Computes a `shift`-Popov approximant basis for `(pmat,order)` using the
  * algorithm PM-Basis (see @ref pmbasis) twice: the first call yields an
  * ordered weak Popov form which indicates the `shift`-pivot degree, which is

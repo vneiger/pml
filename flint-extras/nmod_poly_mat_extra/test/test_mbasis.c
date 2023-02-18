@@ -152,7 +152,7 @@ int one_test_mbasis(slong prime, slong rdim, slong cdim, slong order, slong len,
     nmod_poly_mat_t mat;
     nmod_poly_mat_init(mat, rdim, cdim, prime);
 
-    // shift random small entries
+    // shift random uniform entries
     slong shift[rdim];
     _test_collection_shift_uniform(shift, rdim);
 
@@ -194,18 +194,19 @@ int collection_test_mbasis(slong iter)
     slong * shift;
 
     long total_nb_tests =
-            40 // number of mats (currently 5) x number of shifts (currently 8)
+            iter // number of iterations
+            * 40 // number of mats (currently 5) x number of shifts (currently 8)
             * _test_collection_nb_primes
             * _test_collection_nb_dim
             * _test_collection_nb_dim
             * _test_collection_nb_smalldegs;
     printf("Launching testing collection (%ld cases)\n", total_nb_tests);
 
-    for (slong it = 0; it < iter; it++)
-        for (slong i_primes = 0; i_primes < _test_collection_nb_primes; i_primes++)
-            for (slong i_rdims = 0; i_rdims < _test_collection_nb_dim; i_rdims++)
-                for (slong i_cdims = 0; i_cdims < _test_collection_nb_dim; i_cdims++)
-                    for (slong i_degs = 0; i_degs < _test_collection_nb_smalldegs; i_degs++)
+    for (slong i_primes = 0; i_primes < _test_collection_nb_primes; i_primes++)
+        for (slong i_rdims = 0; i_rdims < _test_collection_nb_dim; i_rdims++)
+            for (slong i_cdims = 0; i_cdims < _test_collection_nb_dim; i_cdims++)
+                for (slong i_degs = 0; i_degs < _test_collection_nb_smalldegs; i_degs++)
+                    for (slong it = 0; it < iter; it++)
                     {
                         const long prime = _test_collection_primes[i_primes];
                         const long rdim = _test_collection_rdims[i_rdims];
@@ -441,7 +442,7 @@ int main(int argc, char ** argv)
     if (argc == 1)
     {
         printf("launching test collection...\n");
-        collection_test_mbasis(1000);
+        collection_test_mbasis(10);
     }
     else if (argc == 5)
     {
