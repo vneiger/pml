@@ -26,19 +26,19 @@ int main()
 
     // sage: M.leading_positions()
     // [0, 0]
-    nmod_poly_mat_pivot_index_rowwise(rpivind, mat);
+    nmod_poly_mat_pivot_index_rowwise(rpivind, mat, NULL);
     printf("Checking row-wise pivot index [%ld, %ld] --> %s\n",
            rpivind[0], rpivind[1], (rpivind[0] == 0 && rpivind[1] == 0) ? "ok" : "not ok");
 
     // sage: M.leading_positions(shifts=[0,5,2], return_degree=True)
     // ([2, 0], [0, 3])
-    nmod_poly_mat_pivot_index_shifted_rowwise(rpivind, mat, rshift);
+    nmod_poly_mat_pivot_index_rowwise(rpivind, mat, rshift);
     printf("Checking (0,5,2)-shifted row-wise pivot index [%ld, %ld] --> %s\n",
            rpivind[0], rpivind[1], (rpivind[0] == 2 && rpivind[1] == 0) ? "ok" : "not ok");
 
     // sage: M.leading_positions(row_wise=False, return_degree=True)
     // ([1, -1, 0], [3, -1, 0])
-    nmod_poly_mat_pivot_index_columnwise(cpivind, mat);
+    nmod_poly_mat_pivot_index_columnwise(cpivind, mat, NULL);
     printf("Checking column-wise pivot index [%ld, %ld, %ld] --> %s\n",
            cpivind[0], cpivind[1], cpivind[2],
            (cpivind[0] == 1 && cpivind[1] == -1 && cpivind[2] == 0) ? "ok" : "not ok");
@@ -46,7 +46,7 @@ int main()
     // sage: M.leading_positions(shifts=[1,2], row_wise=False,
     //                           ....:   return_degree=True)
     // ([1, -1, 0], [3, -1, 0])
-    nmod_poly_mat_pivot_index_shifted_columnwise(cpivind, mat, cshift);
+    nmod_poly_mat_pivot_index_columnwise(cpivind, mat, cshift);
     printf("Checking (1,2)-shifted column-wise pivot index [%ld, %ld, %ld] --> %s\n",
            cpivind[0], cpivind[1], cpivind[2],
            (cpivind[0] == 1 && cpivind[1] == -1 && cpivind[2] == 0) ? "ok" : "not ok");
@@ -58,14 +58,14 @@ int main()
     // sage: M.leading_positions(shifts=[0,5,1],return_degree=True)
     // ([2, 0], [0, 3])
     rshift[2] = 1;
-    nmod_poly_mat_pivot_index_shifted_rowwise(rpivind, mat, rshift);
+    nmod_poly_mat_pivot_index_rowwise(rpivind, mat, rshift);
     printf("Checking (0,5,1)-shifted row-wise pivot index [%ld, %ld] --> %s\n",
            rpivind[0], rpivind[1], (rpivind[0] == 2 && rpivind[1] == 0) ? "ok" : "not ok");
 
     // sage: M.leading_positions(shifts=[2,0], row_wise=False,return_degree=True)
     // ([1, -1, 0], [3, -1, 0])
     cshift[0]=2; cshift[1]=0;
-    nmod_poly_mat_pivot_index_shifted_columnwise(cpivind, mat, cshift);
+    nmod_poly_mat_pivot_index_columnwise(cpivind, mat, cshift);
     printf("Checking (2,0)-shifted column-wise pivot index [%ld, %ld, %ld] --> %s\n",
            cpivind[0], cpivind[1], cpivind[2],
            (cpivind[0] == 1 && cpivind[1] == -1 && cpivind[2] == 0) ? "ok" : "not ok");

@@ -4,6 +4,7 @@
  * \version 0.0
  * \date 2022-06-25
  *
+ * \todo CLEAN DOC
  */
 
 
@@ -198,40 +199,9 @@ extern "C" {
  *
  * \todo add parameter row_wise
  * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
- * \todo
+ * \todo WARNING! for the moment, does not check generation!
+ * \todo WARNING! for the moment, hardcoded to check for ordered weak Popov
  */
-//bool is_approximant_basis(
-//                          const Mat<zz_pX> & appbas,
-//                          const Mat<zz_pX> & pmat,
-//                          const VecLong & order,
-//                          const VecLong & shift,
-//                          const poly_mat_form_t & form = ORD_WEAK_POPOV,
-//                          const bool randomized = false
-//                         );
-
-/** Verifying if a matrix is a minimal approximant basis.
- *
- * Same function as above, but taking a single positive integer for the
- * parameter `order` instead of a list. This simply interprets this as
- * specifying a list of integers all equal to `order` (with the right length),
- * and then calls the function above.
- * \todo
- */
-//inline bool is_approximant_basis(
-//                                 const Mat<zz_pX> & appbas,
-//                                 const Mat<zz_pX> & pmat,
-//                                 const long order,
-//                                 const VecLong & shift,
-//                                 const poly_mat_form_t & form = ORD_WEAK_POPOV,
-//                                 const bool randomized = false
-//                                )
-//{
-//    VecLong orders(pmat.NumCols(),order);
-//    return is_approximant_basis(appbas,pmat,orders,shift,form,randomized);
-//}
-
-// TODO (add input parameter for testing form at least sth) currently tests reduced
-/** TODO temporary fix; and not finished yet */
 int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
                                        const nmod_poly_mat_t pmat,
                                        slong order,
@@ -370,38 +340,7 @@ slong mbasis1_for_mbasis(nmod_mat_t kerbas,
                          const nmod_mat_t mat,
                          const slong * shift);
 
-
-/** Computes a shifted-ordered weak Popov approximant basis at order
- * `(1,...,1)` using fast linear algebra on constant matrices. Thus, in this
- * context, the input matrix `pmat` is a constant matrix. This approximant
- * basis consists of two sets of rows:
- * - rows forming a left kernel basis in (non-reduced) row echelon form of some
- *   row-permutation of `pmat` (the permutation depends on the shift)
- * - the other rows are coordinate vectors multiplied by the variable `x`;
- *   there is one such row at each index `i` which is not among the pivot
- *   indices of the left kernel basis above.
- *
- * The first set of rows is what is stored in the OUT parameter `appbas`.
- *
- * \todo improve doc, to say exactly what this computes (and what is the return
- * value?)
- *
- * \param[out] kerbas constant matrix
- * \param[in] pmat constant matrix
- * \param[in] shift shift (vector of integers)
- *
- * \todo modify shift in place
- * \todo safety correctness checks
- * \todo is output Popov by this method? check
- */
-//VecLong mbasis1(
-//                Mat<zz_p> & kerbas,
-//                const Mat<zz_p> & pmat,
-//                const VecLong & shift
-//               );
-
-//@} // doxygen group: Approximant basis 
-
+//@} // doxygen group: Approximant basis via linear algebra
 
 /** @name M-Basis algorithm (uniform approximant order)
  * \anchor mbasis
@@ -427,18 +366,6 @@ slong mbasis1_for_mbasis(nmod_mat_t kerbas,
  *  - P. Giorgi, R. Lebreton. Proceedings ISSAC 2014.
  */
 //@{
-
-/** Plain version of `mbasis` (see @ref mbasis), where the input `pmat` is
- * represented as `nmod_poly_mat_t`. 
- *
- * \todo this seems to be almost always less efficient than other variants, but
- * should be analyzed more carefully */
-//void mbasis_plain(
-//                  Mat<zz_pX> & appbas,
-//                  const Mat<zz_pX> & pmat,
-//                  const long order,
-//                  VecLong & shift
-//                 );
 
 /** Variant of `mbasis` (see @ref mbasis) which first converts `pmat` to its
  * representation as a matrix polynomial `nmod_mat_poly_t`, then performs the
@@ -631,6 +558,15 @@ void mbasisV(nmod_poly_mat_t appbas,
               const nmod_poly_mat_t pmat,
               ulong order,
               const slong * shift);
+
+// TODO DOC
+// appbas must be initialized with right dimensions
+FLINT_DLL void
+nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
+                     slong * shift,
+                     const nmod_poly_mat_t pmat,
+                     ulong order);
+
 //@} // doxygen group: M-Basis algorithm (uniform approximant order)
 
 

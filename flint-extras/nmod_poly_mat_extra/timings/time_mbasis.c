@@ -55,6 +55,22 @@ void benchmark_mbasis(slong rdim, slong cdim, slong sigma, slong len,
         printf("%s\t%ld\t%ld\t%ld\t%ld\t%f\n", nb_mbasis[i], rdim, cdim, sigma, len, t);
     }
 
+    {
+        t = 0.0;
+        nb_iter = 0;
+
+        while (t<0.5)
+        {
+            nmod_poly_mat_zero(res_mbasis);
+            tt = clock();
+            slong * cshift = flint_calloc(mat->r, sizeof(slong));
+            nmod_poly_mat_mbasis(res_mbasis, cshift, mat, sigma);
+            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+            ++nb_iter;
+        }
+        t /= nb_iter;
+        printf("%s\t%ld\t%ld\t%ld\t%ld\t%f\n", "NEW", rdim, cdim, sigma, len, t);
+    }
 }
 
 /** Launches a series of benchmarks for a given prime size.

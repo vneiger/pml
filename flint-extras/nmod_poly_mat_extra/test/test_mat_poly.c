@@ -1,3 +1,4 @@
+#include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_io.h"
 #include "sagemath_extra.h"
@@ -8,16 +9,16 @@
 
 /** Test
  * Verify if nmod_poly_mat_mul + coefficient_matrix and
- * nmod_mat_poly_naive_mul_coef
+ * nmod_mat_poly0_naive_mul_coef
  * return the same result.
- * Verify if nmod_poly_mat -> nmod_mat_poly -> nmod_poly_mat
+ * Verify if nmod_poly_mat -> nmod_mat_poly0 -> nmod_poly_mat
  * unchanged the initial matrix
  */
-int test_nmod_mat_poly(void)
+int test_nmod_mat_poly0(void)
 {
     nmod_mat_t prod, prod_2;
     nmod_poly_mat_t mat, mat_2, res, res_2, poly_prod;
-    nmod_mat_poly_t mat_repr, mat_repr_2;
+    nmod_mat_poly0_t mat_repr, mat_repr_2;
     slong rdim = 6, cdim = 2, prime = 7,
           len = 10, len_2 = 20, k = 28;
     char *x = malloc(1);
@@ -39,28 +40,28 @@ int test_nmod_mat_poly(void)
     srand(time(NULL));
     flint_randseed(state, rand(), rand());
 
-    /** test poly_mat <-> mat_poly **/
+    /** test poly_mat <-> mat_poly0 **/
     nmod_poly_mat_randtest(mat, state, len);
     nmod_poly_mat_randtest(mat_2, state, len_2);
 
-    nmod_mat_poly_init_setII(mat_repr, mat, 10);
-    nmod_mat_poly_init_setII(mat_repr_2, mat_2, 9);
+    nmod_mat_poly0_init_setII(mat_repr, mat, 10);
+    nmod_mat_poly0_init_setII(mat_repr_2, mat_2, 9);
 
-    nmod_poly_mat_set_from_mat_poly(res, mat_repr);
-    nmod_poly_mat_set_from_mat_poly(res_2, mat_repr_2);
+    nmod_poly_mat_set_from_mat_poly0(res, mat_repr);
+    nmod_poly_mat_set_from_mat_poly0(res_2, mat_repr_2);
 
     if (!nmod_poly_mat_equal(mat, res))
         printf("error mat not equals");
     if (!nmod_poly_mat_equal(mat_2, res_2))
         printf("\nerror mat_2 not equals\n");
 
-    /** test mul: poly_mat <-> mat_poly **/
+    /** test mul: poly_mat <-> mat_poly0 **/
     nmod_poly_mat_mul(poly_prod, res, res_2);
     nmod_poly_mat_coefficient_matrix(prod, poly_prod, k);
 
     nmod_poly_mat_print(poly_prod, x);
 
-    nmod_mat_poly_naive_mul_coef(prod_2, mat_repr, mat_repr_2, k);
+    nmod_mat_poly0_naive_mul_coef(prod_2, mat_repr, mat_repr_2, k);
 
 
     //print
@@ -71,11 +72,11 @@ int test_nmod_mat_poly(void)
         printf("error mul not equals");
 
     /** clear **/
-    nmod_mat_poly_clear(mat_repr);
+    nmod_mat_poly0_clear(mat_repr);
     nmod_poly_mat_clear(mat);
     nmod_poly_mat_clear(res);
 
-    nmod_mat_poly_clear(mat_repr_2);
+    nmod_mat_poly0_clear(mat_repr_2);
     nmod_poly_mat_clear(mat_2);
     nmod_poly_mat_clear(res_2);
 
@@ -126,9 +127,9 @@ int test_matpol(void)
     slongvec_print_sagemath(shifts, cdim);
 
     slong cols_deg[cdim];
-    nmod_poly_mat_column_degree_shifted(cols_deg, A, shifts);
+    nmod_poly_mat_column_degree(cols_deg, A, shifts);
     slong rows_deg[rdim];
-    nmod_poly_mat_row_degree_shifted(rows_deg, A, shifts);
+    nmod_poly_mat_row_degree(rows_deg, A, shifts);
 
     printf("\ncolumn degree of A with shift \n");
     slongvec_print_sagemath(cols_deg, rdim);
@@ -148,11 +149,11 @@ int test_matpol(void)
     fmpz_mat_print_pretty(mat_deg);
 
     slong lead_pos[cdim];
-    nmod_poly_mat_pivot_index_shifted_columnwise(lead_pos, A, shifts);
+    nmod_poly_mat_pivot_index_columnwise(lead_pos, A, shifts);
     printf("leading position: ");
     slongvec_print_sagemath(lead_pos, cdim);
 
-    nmod_poly_mat_leading_matrix_shifted(B, A, shifts, row_wise);
+    nmod_poly_mat_leading_matrix(B, A, shifts, row_wise);
     printf("leading matrix for shift shifts of A\n");
     nmod_mat_print_sagemath(B);
 
@@ -166,7 +167,7 @@ int test_matpol(void)
 
 int main(void)
 {
-    //test_nmod_mat_poly();
+    //test_nmod_mat_poly0();
     test_matpol();
     return EXIT_SUCCESS;
 }

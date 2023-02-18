@@ -19,12 +19,12 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
         return 0;
     }
 
-    //// check appbas has form at least "form"
-    //if (!nmod_poly_mat_is_reduced_shifted(appbas, shift, row_wise))
-    //{
-    //    printf("basis is not shifted-reduced\n");
-    //    return 0;
-    //}
+    // check appbas has form at least "form"
+    if (!nmod_poly_mat_is_ordered_weak_popov(appbas, shift, row_wise))
+    {
+        printf("basis is not shifted-reduced\n");
+        return 0;
+    }
 
     // compute residual
     nmod_poly_mat_t residual;
@@ -47,14 +47,14 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
         }
     nmod_poly_clear(pol);
 
+    // TODO check generation!
+
     // 
     //slong lead_pos[rdim];
     //nmod_poly_mat_pivot_index_shifted_rowwise(lead_pos, appbas, shift);
     //printf("\nleading positions\n");
     //for (slong i = 0; i < rdim; i++)
     //    printf("%lu ", lead_pos[i]);
-
-    nmod_poly_mat_clear(residual);
 
     return 1;
 }
