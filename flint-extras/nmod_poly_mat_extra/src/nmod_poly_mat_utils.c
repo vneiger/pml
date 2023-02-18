@@ -26,20 +26,32 @@ void nmod_poly_mat_coefficient_matrix(nmod_mat_t res, const nmod_poly_mat_t mat,
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-void nmod_poly_mat_shift_left(nmod_poly_mat_t res, const nmod_poly_mat_t pmat, slong k)
+void nmod_poly_mat_set_trunc(nmod_poly_mat_t tmat, const nmod_poly_mat_t pmat, long len)
 {
-    for (slong i = 0; i < res->r; i++)
-        for (slong j = 0; j < res->c; j++)
-            if (!nmod_poly_is_zero(nmod_poly_mat_entry(res, i, j)))
-                nmod_poly_shift_left(nmod_poly_mat_entry(res, i, j), nmod_poly_mat_entry(pmat, i, j), k);
+    for (slong i = 0; i < pmat->r; i++)
+        for (slong j = 0; j < pmat->c; j++)
+            nmod_poly_set_trunc(tmat->rows[i] + j, pmat->rows[i] + j, len);
 }
 
-void nmod_poly_mat_shift_right(nmod_poly_mat_t res, const nmod_poly_mat_t pmat, slong k)
+void nmod_poly_mat_truncate(nmod_poly_mat_t pmat, long len)
 {
-    for (slong i = 0; i < res->r; i++)
-        for (slong j = 0; j < res->c; j++)
-            if (!nmod_poly_is_zero(nmod_poly_mat_entry(res, i, j)))
-                nmod_poly_shift_right(nmod_poly_mat_entry(res, i, j), nmod_poly_mat_entry(pmat, i, j), k);
+    for (slong i = 0; i < pmat->r; i++)
+        for (slong j = 0; j < pmat->c; j++)
+            nmod_poly_truncate(pmat->rows[i] + j, len);
+}
+
+void nmod_poly_mat_shift_left(nmod_poly_mat_t smat, const nmod_poly_mat_t pmat, slong k)
+{
+    for (slong i = 0; i < smat->r; i++)
+        for (slong j = 0; j < smat->c; j++)
+            nmod_poly_shift_left(nmod_poly_mat_entry(smat, i, j), nmod_poly_mat_entry(pmat, i, j), k);
+}
+
+void nmod_poly_mat_shift_right(nmod_poly_mat_t smat, const nmod_poly_mat_t pmat, slong k)
+{
+    for (slong i = 0; i < smat->r; i++)
+        for (slong j = 0; j < smat->c; j++)
+            nmod_poly_shift_right(smat->rows[i] + j, pmat->rows[i] + j, k);
 }
 
 

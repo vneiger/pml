@@ -258,23 +258,23 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
  */
 //@{
 
-/** Computes the truncation `tvec` of a polynomial vector `pvec` at order `n` */
-// TODO
-//void trunc(Vec<zz_pX> & tvec, const Vec<zz_pX> & pvec, long n);
+/** Set `tmat` to the truncation of a polynomial matrix `pmat` at order `len` */
+void nmod_poly_mat_set_trunc(nmod_poly_mat_t tmat,
+                             const nmod_poly_mat_t pmat,
+                             long len);
 
-/** Computes the truncation `tmat` of a polynomial matrix `pmat` at order `n` */
-// TODO
-//void trunc(Mat<zz_pX> & tmat, const Mat<zz_pX> & pmat, long n);
-
-/** Computes the matrix `tmat` which is the polynomial matrix `pmat` with its
- * row `i` truncated at order `n` */
-// TODO
-//void truncRow(Mat<zz_pX> & tmat, const Mat<zz_pX> & pmat, long i, long n);
+/** Truncate `pmat` at order `len` */
+void nmod_poly_mat_truncate(nmod_poly_mat_t pmat, long len);
 
 /** Computes the matrix `tmat` which is the polynomial matrix `pmat` with its
- * column `j` truncated at order `n` */
+ * row `i` truncated at order `len` */
 // TODO
-//void truncCol(Mat<zz_pX> & tmat, const Mat<zz_pX> & pmat, long j, long n);
+//void nmod_poly_mat_truncate_row(nmod_poly_mat_t tmat, const nmod_poly_mat_t pmat, long len, long i);
+
+/** Computes the matrix `tmat` which is the polynomial matrix `pmat` with its
+ * column `j` truncated at order `len` */
+// TODO
+//void nmod_poly_mat_truncate_column(nmod_poly_mat_t tmat, const nmod_poly_mat_t pmat, long len, long j);
 
 //@} // doxygen group: Truncate
 
@@ -304,15 +304,15 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
 // TODO
 //void RightShift(Vec<zz_pX> & svec, const Vec<zz_pX> & pvec, long n);
 
-/** Computes the left `n`-shift `smat` of the polynomial matrix `pmat` */
-// FIXME investigate what happens with Flint's shift when polynomial is zero
-void nmod_poly_mat_shift_left(nmod_poly_mat_t res,
-                              const nmod_poly_mat_t pmat, slong k);
+/** Computes the left `k`-shift `smat` of the polynomial matrix `pmat` */
+void nmod_poly_mat_shift_left(nmod_poly_mat_t smat,
+                              const nmod_poly_mat_t pmat,
+                              slong k);
 
-/** Computes the right `n`-shift `smat` of the polynomial matrix `pmat` */
-// FIXME investigate what happens with Flint's shift when polynomial is zero
-void nmod_poly_mat_shift_right(nmod_poly_mat_t res,
-                               const nmod_poly_mat_t pmat, slong k);
+/** Computes the right `k`-shift `smat` of the polynomial matrix `pmat` */
+void nmod_poly_mat_shift_right(nmod_poly_mat_t smat,
+                               const nmod_poly_mat_t pmat,
+                               slong k);
 
 /** Computes the matrix `smat` which is the same as the polynomial matrix
  * `pmat` but with its `i`-th row replaced by its left `n`-shift
