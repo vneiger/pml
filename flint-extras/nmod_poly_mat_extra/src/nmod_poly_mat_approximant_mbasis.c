@@ -435,6 +435,8 @@ void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
     nmod_mat_poly_mbasis(app, shift, matp, order);
     // TODO improve: set init
     nmod_poly_mat_set_from_mat_poly(appbas, app);
+    nmod_mat_poly_clear(matp);
+    nmod_mat_poly_clear(app);
 }
 
 

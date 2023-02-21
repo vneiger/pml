@@ -20,7 +20,6 @@ int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
 {
     const slong rdim = mat->r;
     nmod_poly_mat_t appbas;
-    nmod_poly_mat_init(appbas, rdim, rdim, mat->modulus);
 
     slong cshift[rdim];
     for (slong i = 0; i < rdim; i++)
@@ -42,6 +41,7 @@ int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
         nmod_poly_mat_init(res, appbas->r, mat->c, mat->modulus);
         nmod_poly_mat_mul(res, appbas, mat);
         nmod_poly_mat_print_pretty(res,"X");
+        nmod_poly_mat_clear(res);
         printf("Degree matrix:\n");
         nmod_poly_mat_degree_matrix_print_pretty(appbas);
         printf("Input shift:\t");

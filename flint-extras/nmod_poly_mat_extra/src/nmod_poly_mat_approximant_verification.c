@@ -46,6 +46,7 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
             }
         }
     nmod_poly_clear(pol);
+    nmod_poly_mat_clear(residual);
 
     // TODO check generation!
 

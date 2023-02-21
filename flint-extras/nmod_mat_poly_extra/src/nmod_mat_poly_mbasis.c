@@ -5,7 +5,7 @@
 #include "nmod_mat_extra.h"
 
 //#define MBASIS1_PROFILE
-#define MBASIS_PROFILE
+//#define MBASIS_PROFILE
 //#define PMBASIS_PROFILE
 //#define MBASIS_DEBUG
 
@@ -49,7 +49,7 @@
 
 #define _MBASIS_PROFILER_INIT
 #define _PROFILER_REGION_START
-#define _PROFILER_REGION_STOP
+#define _PROFILER_REGION_STOP(_counter_)
 #define _MBASIS_PROFILER_OUTPUT
 
 #endif // MBASIS_PROFILE
@@ -302,6 +302,9 @@ _PROFILER_REGION_START
                 nmod_mat_mul(ns_app, nsbas, app_win_mul);
                 nmod_mat_add(app_win_add, app_win_add, ns_app);
             }
+            nmod_mat_clear(ns_app);
+            nmod_mat_clear(app_win_mul);
+            nmod_mat_clear(app_win_add);
 
             // Update the approximant basis: 3/ left-shift relevant rows by 1
             // increase length of appbas if necessary
