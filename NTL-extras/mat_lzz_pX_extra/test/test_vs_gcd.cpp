@@ -108,37 +108,37 @@ int main(int argc, char *argv[])
     }
     std::cout << "Time(pmbasis): " << tt/nb_iter << std::endl;
 
-    //// slightly optimized pmbasis
-    //Mat<zz_pX> polys;
-    //random(polys, 2, 1, degree);
-    //tt=0.0; nb_iter=0;
-    //while (tt<0.5)
-    //{
-    //    t1 = GetWallTime();
-
-    //    Mat<zz_pX> appbas1,appbas2,residual;
-    //    zz_pX uu,vv;
-
-    //    // first recursive call, with 'pmat' and 'shift'
-    //    pmbasis(appbas1,polys,degree,shift);
-    //    // shift is now the shifted row degree of appbas,
-    //    // which is the shift for second call
-
-    //    // residual = (appbas * pmat * X^-order1) mod X^order2
-    //    multiply(residual, appbas1, polys);
-    //    RightShift(residual, residual, degree);
-
-    //    // second recursive call, with 'residual' and 'rdeg'
-    //    pmbasis(appbas2,residual,degree-1,shift);
-
-    //    uu = appbas2[0][0] * appbas1[0][0] + appbas2[0][1] * appbas1[1][0];
-    //    vv = appbas2[0][0] * appbas1[0][1] + appbas2[0][1] * appbas1[1][1];
-
-    //    t2 = GetWallTime();
-    //    tt += t2-t1;
-    //    ++nb_iter;
-    //}
-    //std::cout << "Time(modified-pmbasis): " << tt/nb_iter << std::endl;
+//    // slightly optimized pmbasis
+//    Mat<zz_pX> polys;
+//    random(polys, 2, 1, degree);
+//    tt=0.0; nb_iter=0;
+//    while (tt<0.5)
+//    {
+//        t1 = GetWallTime();
+//
+//        Mat<zz_pX> appbas1,appbas2,residual;
+//        zz_pX uu,vv;
+//
+//        // first recursive call, with 'pmat' and 'shift'
+//        pmbasis(appbas1,polys,degree,shift);
+//        // shift is now the shifted row degree of appbas,
+//        // which is the shift for second call
+//
+//        // residual = (appbas * pmat * X^-order1) mod X^order2
+//        multiply(residual, appbas1, polys);
+//        RightShift(residual, residual, degree);
+//
+//        // second recursive call, with 'residual' and 'rdeg'
+//        pmbasis(appbas2,residual,degree-1,shift);
+//
+//        uu = appbas2[0][0] * appbas1[0][0] + appbas2[0][1] * appbas1[1][0];
+//        vv = appbas2[0][0] * appbas1[0][1] + appbas2[0][1] * appbas1[1][1];
+//
+//        t2 = GetWallTime();
+//        tt += t2-t1;
+//        ++nb_iter;
+//    }
+    std::cout << "Time(modified-pmbasis): " << tt/nb_iter << std::endl;
 }
 
 

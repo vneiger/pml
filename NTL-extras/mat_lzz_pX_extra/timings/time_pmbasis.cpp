@@ -64,61 +64,61 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
         t_pmbasis_int=-1.0;
 
     double t_pmbasis_intgeom=0.0;
-    //if (2*order+1 < zz_p::modulus())
-    //{
-    //    nb_iter=0;
-    //    while (t_pmbasis_intgeom<0.2)
-    //    {
-    //        Mat<zz_pX> pmat;
-    //        random(pmat, rdim, cdim, degree+1);
-    //        // geometric in degree 'order' (bound on degree of intbas) requires an
-    //        // element order at least 2*deg+1
-    //        zz_p r;
-    //        element_of_order(r, 2*order+1); 
-    //        if (IsZero(r))
-    //        {
-    //            t_pmbasis_intgeom=-1.0; nb_iter=1;
-    //            break;
-    //        }
+    if (2*order+1 < zz_p::modulus())
+    {
+        nb_iter=0;
+        while (t_pmbasis_intgeom<0.2)
+        {
+            Mat<zz_pX> pmat;
+            random(pmat, rdim, cdim, degree+1);
+            // geometric in degree 'order' (bound on degree of intbas) requires an
+            // element order at least 2*deg+1
+            zz_p r;
+            element_of_order(r, 2*order+1); 
+            if (IsZero(r))
+            {
+                t_pmbasis_intgeom=-1.0; nb_iter=1;
+                break;
+            }
 
-    //        t1 = GetWallTime();
-    //        Vec<zz_p> pts;
-    //        Mat<zz_pX> intbas;
-    //        VecLong rdeg(shift);
-    //        pmbasis_geometric(intbas,pmat,r,order,rdeg,pts);
-    //        t2 = GetWallTime();
-    //    
-    //        t_pmbasis_intgeom += t2-t1;
-    //        ++nb_iter;
-    //    }
-    //    t_pmbasis_intgeom /= nb_iter;
-    //}
-    //else
+            t1 = GetWallTime();
+            Vec<zz_p> pts;
+            Mat<zz_pX> intbas;
+            VecLong rdeg(shift);
+            pmbasis_geometric(intbas,pmat,r,order,rdeg,pts);
+            t2 = GetWallTime();
+        
+            t_pmbasis_intgeom += t2-t1;
+            ++nb_iter;
+        }
+        t_pmbasis_intgeom /= nb_iter;
+    }
+    else
         t_pmbasis_intgeom=-1.0;
 
     double t_pmbasis2x1=-1.0;
-    //if (rdim==2 && cdim==1)
-    //{
-    //    nb_iter=0;
-    //    t_pmbasis2x1=0.0;
-    //    while (t_pmbasis2x1<0.2)
-    //    {
-    //        zz_pX f0,f1;
-    //        random(f0, degree+1);
-    //        random(f1, degree+1);
+    if (rdim==2 && cdim==1)
+    {
+        nb_iter=0;
+        t_pmbasis2x1=0.0;
+        while (t_pmbasis2x1<0.2)
+        {
+            zz_pX f0,f1;
+            random(f0, degree+1);
+            random(f1, degree+1);
 
-    //        t1 = GetWallTime();
-    //        zz_pX p00,p01,p10,p11;
-    //        long s0 = shift[0];
-    //        long s1 = shift[1];
-    //        pmbasis_2x1(p00,p01,p10,p11,f0,f1,order,s0,s1);
-    //        t2 = GetWallTime();
+            t1 = GetWallTime();
+            zz_pX p00,p01,p10,p11;
+            long s0 = shift[0];
+            long s1 = shift[1];
+            pmbasis_2x1(p00,p01,p10,p11,f0,f1,order,s0,s1,128);
+            t2 = GetWallTime();
 
-    //        t_pmbasis2x1 += t2-t1;
-    //        ++nb_iter;
-    //    }
-    //    t_pmbasis2x1 /= nb_iter;
-    //}
+            t_pmbasis2x1 += t2-t1;
+            ++nb_iter;
+        }
+        t_pmbasis2x1 /= nb_iter;
+    }
 
     // just for test, works only with very specific dimensions
     bool applin=true; // for disabling printing timing below in function
