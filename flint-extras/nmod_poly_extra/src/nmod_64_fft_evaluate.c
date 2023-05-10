@@ -580,6 +580,8 @@ void nmod_64_tft_interpolate_t(mp_ptr x, mp_srcptr A, const nmod_64_fft_t F, con
     {
         x[i] = wk_bak[i];
     }
+
+    _nmod_vec_clear(wk);
 }
 
 

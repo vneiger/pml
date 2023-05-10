@@ -1,4 +1,5 @@
 #include "nmod_poly_extra.h"
+#include "nmod_vec_extra.h"
 
 #ifdef HAS_AVX2
 #include <immintrin.h>
@@ -305,7 +306,7 @@ static void _fft_32_k(mp_hlimb_t * x,
 static inline
 void CRT_t(mp_hlimb_t * x, mp_hlimb_t * tmp, ulong n, mp_hlimb_t p)
 {
-    ulong a, b, b2, n2, i, t, nn;
+    ulong a, b, b2, b8, n2, n8, i, j, t, nn;
     mp_hlimb_t half;
     
     nn = n;
@@ -333,21 +334,39 @@ void CRT_t(mp_hlimb_t * x, mp_hlimb_t * tmp, ulong n, mp_hlimb_t p)
             b <<= 1;
         }
         b2 = b << 1;
-        
-        for (i = 0; i < b; i++)
-        {
-            mp_hlimb_t u;
-            u = n_addmod(x[i], x[a+i], p);
-            u = (u >> 1) + (u & 1)*half;   // u/2 mod p
-            x[a+i] = u;
-            tmp[i] = u;
-        }
 
-        for (i = b; i < nn; i++)
+
+        n8 = (nn >> 3) << 3;
+        for (i = 0; i < n8; i += 8)
+        {
+            // TODO: AVX2
+            for (j = 0; j < 8; j++)
+            {
+                mp_hlimb_t u;
+                u = n_addmod(x[i + j], x[a + i + j], p);
+                x[a + i + j] = (u >> 1) + (u & 1)*half;   // u/2 mod p
+            }
+        }
+        // less than 8
+        for (; i < nn; i++)
         {
             mp_hlimb_t u;
             u = n_addmod(x[i], x[a+i], p);
             x[a+i] = (u >> 1) + (u & 1)*half;   // u/2 mod p
+        }
+
+        b8 = (b >> 3) << 3;
+        for (i = 0; i < b8; i += 8)
+        {
+            // TODO: AVX2
+            for (j = 0; j < 8; j++)
+            {
+                tmp[i + j] = x[a + i + j];
+            }
+        }
+        for (; i < b; i++)
+        {
+            tmp[i] = x[a + i];
         }
         
         tmp += b2;
@@ -366,18 +385,59 @@ void CRT_t(mp_hlimb_t * x, mp_hlimb_t * tmp, ulong n, mp_hlimb_t p)
         }
         tmp -= b2;
         x -= a;
-        
-        for (i = 0; i < b; i++)
+
+        b8 = (b >> 3) << 3;
+        for (i = 0; i < b8; i += 8)
+        {
+            // TODO: AVX2
+            for (j = 0; j < 8; j++)
+            {
+                tmp[b + i + j] = n_submod(tmp[i + j], n_addmod(x[a + i + j], x[a + i + j], p), p);
+            }
+        }
+        for (; i < b; i++)
         {
             tmp[b + i] = n_submod(tmp[i], n_addmod(x[a + i], x[a + i], p), p);
         }
-        t = 0;
-        while (t < a)
+
+        switch(b2)
         {
-            for (i = 0; i < b2; i++, t++)
-            {
-                x[t] = n_submod(x[t], tmp[i], p);
-            }
+            case 2:
+                for (t = 0; t < a; t += 2)
+                {
+                    x[t] = n_submod(x[t], tmp[0], p);
+                    x[t + 1] = n_submod(x[t + 1], tmp[1], p);
+                }
+                break;
+            case 4:
+                for (t = 0; t < a; t += 4)
+                {
+                    x[t] = n_submod(x[t], tmp[0], p);
+                    x[t + 1] = n_submod(x[t + 1], tmp[1], p);
+                    x[t + 2] = n_submod(x[t + 2], tmp[2], p);
+                    x[t + 3] = n_submod(x[t + 3], tmp[3], p);
+                }
+                break;
+            default:
+                t = 0;
+                while (t < a)
+                {
+                    b8 = (b2 >> 3) << 3;
+                    for (i = 0; i < b8; i += 8, t += 8)
+                    {
+                        // TODO: AVX2
+                        for (j = 0; j < 8; j++)
+                        {
+                            x[t + j] = n_submod(x[t + j], tmp[i + j], p);
+                        }
+                    }
+                    // less than 8
+                    for (; i < b2; i++, t++)
+                    {
+                        x[t] = n_submod(x[t], tmp[i], p);
+                    }
+                }
+                break;
         }
         nn = nn+a;
     }
@@ -770,10 +830,7 @@ void nmod_avx2_32_tft_interpolate_t(mp_ptr x, mp_srcptr A, const nmod_32_fft_t F
     {
         powers = F->powers_inv_w_over_2[k];
         i_powers = F->i_powers_inv_w_over_2[k];
-        for (i = 0; i < a; i++)
-        {
-            wk[i] = mul_mod_precon_32(wk[i], powers[i], p, i_powers[i]);
-        }
+        _nmod_vec_avx2_32_hadamard_mul(wk, wk, powers, i_powers, a, F->mod);
         switch(k)
         {
             case 0:
@@ -791,20 +848,6 @@ void nmod_avx2_32_tft_interpolate_t(mp_ptr x, mp_srcptr A, const nmod_32_fft_t F
                 _fft_32_k(wk, F->powers_inv_w_t[k], F->i_powers_inv_w_t[k], F->mod, k);
                 break;
         }
-        /* switch(k) */
-        /* { */
-        /*     case 0: */
-        /*         break; */
-        /*     case 1: */
-        /*         _fft_1(wk, F->mod); */
-        /*         break; */
-        /*     case 2: */
-        /*         _fft_2(wk, F->powers_inv_w_t[2][1], F->mod); */
-        /*         break; */
-        /*     default: */
-        /*         _fft_k(wk, F->powers_inv_w_t[k], F->i_powers_inv_w_t[k], F->mod, k); */
-        /*         break; */
-        /* } */
         wk += a;
         
         n = n-a;

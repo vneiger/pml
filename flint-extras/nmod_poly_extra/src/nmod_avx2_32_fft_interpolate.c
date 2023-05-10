@@ -1,8 +1,10 @@
+#include <flint/fft_small.h>
 #include "nmod_poly_extra.h"
 #include "nmod_vec_extra.h"
 
 #ifdef HAS_AVX2
 #include <immintrin.h>
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -721,10 +723,8 @@ void nmod_avx2_32_tft_evaluate_t(mp_ptr x, mp_srcptr A, const nmod_32_fft_t F, c
         
         powers_rho = F->powers_w[k+1];
         i_powers_rho = F->i_powers_w[k+1];
-        for (i = 0; i < a; i++)
-        {
-            wk[i] = mul_mod_precon_32(wk[i], powers_rho[i], p, i_powers_rho[i]);
-        }
+        _nmod_vec_avx2_32_hadamard_mul(wk, wk, powers_rho, i_powers_rho, a, F->mod);
+
         wk += a;
         n = n-a;
         
