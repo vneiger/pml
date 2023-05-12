@@ -1,14 +1,13 @@
 #include <flint/nmod.h>
 #include <flint/fft_small.h>
 
-void sd_fft_lctx_inverse(sd_fft_lctx_t Qt, sd_fft_lctx_t Q)
+void sd_fft_ctx_init_inverse(sd_fft_ctx_t Qt, sd_fft_ctx_t Q)
 {
-    ulong m, l, NN, i;
+    ulong m, l, NN, i, k;
     vec1d p, pinv;
     vec1d *t;
     nmod_t mmod;
 
-    
     p = Q->p;
     pinv = Q->pinv;
     nmod_init(&mmod, p);
@@ -33,6 +32,11 @@ void sd_fft_lctx_inverse(sd_fft_lctx_t Qt, sd_fft_lctx_t Q)
             fwd[i] = -bck[l - 1 - i];
         }
     }
+    
+    Qt->w2tab_depth = SD_FFT_CTX_INIT_DEPTH;
+    
+    for (k = SD_FFT_CTX_INIT_DEPTH; k < FLINT_BITS; k++)
+        Qt->w2tab[k] = NULL;
 
     /* mp_limb_t p0 = (mp_limb_t) p; */
     /* for (m = 1, l = 1; m < SD_FFT_CTX_INIT_DEPTH; m++, l *= 2) */

@@ -6,7 +6,7 @@
 void get_time()
 {
 #ifdef HAS_AVX2
-    ulong order, order_max, N;
+    ulong order, order_min, order_max, N;
     slong i;
     flint_rand_t state;
     mp_limb_t p, w0, w;
@@ -20,11 +20,13 @@ void get_time()
     p = 7340033;
     nmod_init(&mod, p);
     w0 = 3308891;
-    order_max = 14;
+    
+    order_min = 8;
+    order_max = 8;
     w = nmod_pow_ui(w0, 1L<<(16-order_max), mod);
     nmod_32_fft_init_set(F, w, order_max, mod);
     
-    for (order = 1; order <= order_max; order++)
+    for (order = order_min; order <= order_max; order++)
     {
         double t;
         clock_t tt;

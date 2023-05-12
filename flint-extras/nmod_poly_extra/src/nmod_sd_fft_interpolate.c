@@ -2,6 +2,9 @@
 #include "nmod_poly_extra.h"
 #include "nmod_vec_extra.h"
 
+/*------------------------------------------------------------*/
+/* modular addition for p < 2^63                              */
+/*------------------------------------------------------------*/
 FLINT_FORCE_INLINE vec1n vec1n_addmod_limited(vec1n a, vec1n b, vec1n p)
 {
     vec1n s = a + b;
@@ -22,8 +25,7 @@ void sd_ifft_basecase_5_1(const sd_fft_lctx_t Q, double* X, ulong j_r, ulong j_b
 void sd_ifft_basecase_6_1(const sd_fft_lctx_t Q, double* X, ulong j_r, ulong j_bits);
 void sd_ifft_basecase_7_1(const sd_fft_lctx_t Q, double* X, ulong j_r, ulong j_bits);
 void sd_ifft_basecase_8_1(const sd_fft_lctx_t Q, double* X, ulong j_r, ulong j_bits);
-/* use for k >= 8 */
-void sd_ifft(sd_fft_lctx_t Q, double *X, long k);
+void sd_ifft(sd_fft_lctx_t Q, double *X, long k); /* use for k >= 8 */
 
 
 /*------------------------------------------------------------*/
@@ -383,78 +385,11 @@ void nmod_sd_tft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const 
     _nmod_poly_normalise(poly);
 }
 
+
 /*------------------------------------------------------------*/
-/* fft interpolation                                          */
 /*------------------------------------------------------------*/
-void nmod_sd_fft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const ulong k)
+static void nmod_sd_fft_inverse(mp_ptr x, mp_srcptr polyc, sd_fft_lctx_t Qt, const ulong k)
 {
-    ulong i, N;
-    vec1d p, pinv;
-    vec1d *dx;
-
-    p = Q->p;
-    pinv = Q->pinv;
-
-    N = 1L << k;
-    nmod_poly_fit_length(poly, N);
-    poly->length = N;
-    dx = (vec1d *) aligned_alloc(32, FLINT_MAX(N, 4) * sizeof(vec1d));
-   
-    for (i = 0; i < N; i++)
-    {
-        dx[i] = (vec1d) x[i];
-    }
-
-    switch(k)
-    {
-        case 0:
-            break;
-        case 1:
-            sd_ifft_1(dx);
-            break;
-        case 2:
-            sd_ifft_2(dx, Q->w2tab[1][0], p, pinv);
-            break;
-        case 3:
-            sd_ifft_3(dx, Q->w2tab[1][0], Q->w2tab[2][1], Q->w2tab[2][0], p, pinv);
-            break;
-        case 4:
-            do_sd_ifft_basecase_4_1(Q, dx, 0, 0);
-            break;
-        case 5:
-            sd_ifft_basecase_5_1(Q, dx, 0, 0);
-            break;
-        case 6:
-            sd_ifft_basecase_6_1(Q, dx, 0, 0);
-            break;
-        case 7:
-            sd_ifft_basecase_7_1(Q, dx, 0, 0);
-            break;
-        case 8:
-            sd_ifft_basecase_8_1(Q, dx, 0, 0);
-            break;
-        default:
-            sd_ifft(Q, dx, k);
-            break;
-    }
-
-    /* _nmod_vec_avx2_32_scalar_mul(x_32, x_32, N, F->powers_inv_2[k], F->i_powers_inv_2[k], F->mod); */
-    for (i = 0; i < N; i++)
-    {
-        poly->coeffs[i] = (mp_limb_t) vec1d_reduce_to_0n(dx[i], p, pinv);
-    }
-    
-    _nmod_poly_normalise(poly);
-    free(dx);
-}
-
-/*------------------------------------------------------------*/
-/* transposed fft evaluation                                  */
-/* obtained by using the inverse root and ifft routines       */
-/*------------------------------------------------------------*/
-void nmod_sd_fft_evaluate_t(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Qt, const ulong k)
-{
-    /* sd_fft_lctx_t Qt; */
     ulong i, N;
     vec1d p, pinv;
     vec1d *dx;
@@ -463,15 +398,13 @@ void nmod_sd_fft_evaluate_t(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Qt, 
     p = Qt->p;
     pinv = Qt->pinv;
 
-    /* sd_fft_lctx_inverse(Qt, Q); */
     dx = (vec1d *) aligned_alloc(32, FLINT_MAX(N, 4) * sizeof(vec1d));
     
     for (i = 0; i < N; i++)
     {
-        dx[i] = (vec1d) nmod_poly_get_coeff_ui(poly, i);
+        dx[i] = (vec1d) polyc[i];
     }
-    /* special cases */
-
+ 
     switch(k)
     {
         case 0:
@@ -511,6 +444,40 @@ void nmod_sd_fft_evaluate_t(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Qt, 
     }
 
     flint_free(dx);
-
 }
 
+    
+/*------------------------------------------------------------*/
+/* transposed fft evaluation                                  */
+/* obtained by using the inverse root and ifft routines       */
+/*------------------------------------------------------------*/
+void nmod_sd_fft_evaluate_t(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Qt, const ulong k)
+{
+    mp_ptr polyc;
+    ulong i, N, d;
+
+    N = 1L << k;
+    d = poly->length - 1;
+    polyc = _nmod_vec_init(N);
+    for (i = 0; i <= d; i++)
+    {
+        polyc[i] = poly->coeffs[i];
+    }
+    for (; i < N; i++)
+    {
+        polyc[i] = 0;
+    }
+    nmod_sd_fft_inverse(x, polyc, Qt, k);
+    _nmod_vec_clear(polyc);
+}
+
+
+/*------------------------------------------------------------*/
+/* fft interpolation                                          */
+/*------------------------------------------------------------*/
+void nmod_sd_fft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const ulong k)
+{
+    nmod_poly_fit_length(poly, 1L << k);
+    nmod_sd_fft_inverse(poly->coeffs, x, Q, k);
+    _nmod_poly_normalise(poly);
+}
