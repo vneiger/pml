@@ -225,22 +225,25 @@ void nmod_sd_fft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, con
 void nmod_sd_fft_evaluate_t(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong k);
 
 /*------------------------------------------------------------*/
-/* tft evaluation                                             */
+/* tft evaluation and its transpose                           */
 /* x must have length >= N                                    */
 /*------------------------------------------------------------*/
 void nmod_sd_tft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong N);
+void nmod_sd_tft_evaluate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, ulong N);
 
 /*------------------------------------------------------------*/
-/* tft interpolation                                          */
+/* tft interpolation and its transpose                        */
 /* inverts nmod_sd_tft_evaluate                               */
 /*------------------------------------------------------------*/
 void nmod_sd_tft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const ulong N);
+void nmod_sd_tft_interpolate_t(mp_ptr a, mp_srcptr A, sd_fft_lctx_t Q, const ulong N);
 
 /*------------------------------------------------------------*/
 /* fft interpolation                                          */
 /* inverts nmod_sd_fft_evaluate                               */
 /*------------------------------------------------------------*/
 void nmod_sd_fft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const ulong k); 
+void nmod_sd_fft_interpolate_t(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const ulong k); 
 
 
 #ifdef HAS_INT128

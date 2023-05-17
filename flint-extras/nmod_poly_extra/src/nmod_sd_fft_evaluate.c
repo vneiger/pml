@@ -12,8 +12,7 @@ void sd_fft_basecase_5_1(const sd_fft_lctx_t Q, double* X, ulong j_r, ulong j_bi
 void sd_fft_basecase_6_1(const sd_fft_lctx_t Q, double* X, ulong j_r, ulong j_bits);
 void sd_fft_basecase_7_1(const sd_fft_lctx_t Q, double* X, ulong j_r, ulong j_bits);
 void sd_fft_basecase_8_1(const sd_fft_lctx_t Q, double* X, ulong j_r, ulong j_bits);
-/* use for k >= 8 */
-void sd_fft(sd_fft_lctx_t Q, double *X, long k);
+void sd_fft(sd_fft_lctx_t Q, double *X, long k); /* use for k >= 8 */
 
 /*------------------------------------------------------------*/
 /*  in-place size 2^1 butterfly                               */
@@ -105,8 +104,47 @@ static void _fft_3(vec1d *x, const vec1d t1, const vec1d t2, const vec1d t3, con
 }
 
 /*------------------------------------------------------------*/
+/* main fft routine, in place                                 */
+/*------------------------------------------------------------*/
+FLINT_FORCE_INLINE void _fft(vec1d *wk, sd_fft_lctx_t Q, vec1d p, vec1d pinv, ulong k)
+{
+    switch(k)
+    {
+        case 0:
+            break;
+        case 1:
+            _fft_1(wk);
+            break;
+        case 2:
+            _fft_2(wk, Q->w2tab[1][0], p, pinv);
+            break;
+        case 3:
+            _fft_3(wk, Q->w2tab[1][0], Q->w2tab[2][0], Q->w2tab[2][1], p, pinv);
+            break;
+        case 4:
+            do_sd_fft_basecase_4_1(Q, wk, 0, 0);
+            break;
+        case 5:
+            sd_fft_basecase_5_1(Q, wk, 0, 0);
+            break;
+        case 6:
+            sd_fft_basecase_6_1(Q, wk, 0, 0);
+            break;
+        case 7:
+            sd_fft_basecase_7_1(Q, wk, 0, 0);
+            break;
+        case 8:
+            sd_fft_basecase_8_1(Q, wk, 0, 0);
+            break;
+        default:
+            sd_fft(Q, wk, k);
+            break;
+    }
+}                       
+
+/*------------------------------------------------------------*/
 /* fft evaluation                                             */
-/* returns x[i] = poly(w^bitreverse_n(i)), n=2^k              */
+/* returns x[i] = poly(w^i), n=2^k, in some order             */
 /* x must have length >= n                                    */
 /*------------------------------------------------------------*/
 void nmod_sd_fft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong k)
@@ -125,45 +163,45 @@ void nmod_sd_fft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, con
     {
         dx[i] = (vec1d) nmod_poly_get_coeff_ui(poly, i);
     }
-    /* special cases */
 
-    switch(k)
-    {
-        case 0:
-            break;
-        case 1:
-            _fft_1(dx);
-            break;
-        case 2:
-            _fft_2(dx, Q->w2tab[1][0], p, pinv);
-            break;
-        case 3:
-            _fft_3(dx, Q->w2tab[1][0], Q->w2tab[2][0], Q->w2tab[2][1], p, pinv);
-            break;
-        case 4:
-            do_sd_fft_basecase_4_1(Q, dx, 0, 0);
-            break;
-        case 5:
-            sd_fft_basecase_5_1(Q, dx, 0, 0);
-            break;
-        case 6:
-            sd_fft_basecase_6_1(Q, dx, 0, 0);
-            break;
-        case 7:
-            sd_fft_basecase_7_1(Q, dx, 0, 0);
-            break;
-        case 8:
-            sd_fft_basecase_8_1(Q, dx, 0, 0);
-            break;
-        default:
-            sd_fft(Q, dx, k);
-            break;
-    }
+    _fft(dx, Q, p, pinv, k);
 
     for (i = 0; i < N; i++)
     {
         x[i] = (mp_limb_t) vec1d_reduce_to_0n(dx[i], p, pinv);
     }
+    flint_free(dx);
+}
+
+/*------------------------------------------------------------*/
+/* transposed fft interpolation                               */
+/* obtained by using the inverse root and fft routines        */
+/*------------------------------------------------------------*/
+void nmod_sd_fft_interpolate_t(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const ulong k)
+{
+    ulong i, N;
+    vec1d p, pinv;
+    vec1d *dx;
+    
+    N = 1L << k;
+    p = Q->p;
+    pinv = Q->pinv;
+    
+    dx = (vec1d *) aligned_alloc(32, FLINT_MAX(N, 4) * sizeof(vec1d));
+    
+    for (i = 0; i < N; i++)
+    {
+        dx[i] = (vec1d) x[i];
+    }
+
+    _fft(dx, Q, p, pinv, k);
+
+    nmod_poly_fit_length(poly, 1L << k);
+    for (i = 0; i < N; i++)
+    {
+        poly->coeffs[i] = (mp_limb_t) vec1d_reduce_to_0n(dx[i], p, pinv);
+    }
+    _nmod_poly_normalise(poly);
     flint_free(dx);
 }
 
@@ -213,7 +251,6 @@ void nmod_sd_tft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, con
         ell++;
         b <<= 1;
     }
-    
 
     do
     {
@@ -279,39 +316,7 @@ void nmod_sd_tft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, con
         }
         // all entries of x2 we still need are in (-p..p)
 
-        switch(k)
-        {
-            case 0:
-                break;
-            case 1:
-                _fft_1(x2);
-                break;
-            case 2:
-                _fft_2(x2, Q->w2tab[1][0], p, pinv);
-                break;
-            case 3:
-                _fft_3(x2, Q->w2tab[1][0], Q->w2tab[2][0], Q->w2tab[2][1], p, pinv);
-                break;
-            case 4:
-                do_sd_fft_basecase_4_1(Q, x2, 0, 0);
-                break;
-            case 5:
-                sd_fft_basecase_5_1(Q, x2, 0, 0);
-                break;
-            case 6:
-                sd_fft_basecase_6_1(Q, x2, 0, 0);
-                break;
-            case 7:
-                sd_fft_basecase_7_1(Q, x2, 0, 0);
-                break;
-            case 8:
-                sd_fft_basecase_8_1(Q, x2, 0, 0);
-                break;
-            default:
-                sd_fft(Q, x2, k);
-                break;
-        }
-        // output in (-4p..4p)
+        _fft(x2, Q, p, pinv, k);
             
        x2 += a;
     }
@@ -331,21 +336,19 @@ void nmod_sd_tft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, con
 /* in place                                                  */
 /* input/output has length N                                 */
 /* tmp has length 2N, all zero                               */
+/* inputs and outputs in [0..p)                              */
 /*-----------------------------------------------------------*/
 static inline
-void CRT_t(vec1d *x, vec1d *tmp, ulong n, vec1d p)
+void CRT_t(vec1d *x, vec1d *tmp, ulong n, vec1d half, vec1d p, vec1d pinv)
 {
     ulong a, b, b2, n2, i, t, nn;
-    vec1d half;
-    
-    nn = n;
-    half = 1 + (((ulong)p) >> 1);
-    
+
     if (n <= 1)
     {
         return;
     }
-
+        
+    nn = n;
     a = 1;
     n2 = (nn >> 1);
     while (a <= n2)
@@ -366,6 +369,11 @@ void CRT_t(vec1d *x, vec1d *tmp, ulong n, vec1d p)
         
         for (i = 0; i < b; i++)
         {
+            vec1d u;
+            u = vec1d_mulmod(half, x[i] + x[a+i], p, pinv);
+            u = (u < 0) ? u + p : u;
+            x[a+i] = u;
+            tmp[i] = u;
 /*             mp_limb_t u; */
 /*             u = n_addmod(x[i], x[a+i], p); */
 /*             u = (u >> 1) + (u & 1)*half;   // u/2 mod p */
@@ -375,6 +383,9 @@ void CRT_t(vec1d *x, vec1d *tmp, ulong n, vec1d p)
 
         for (i = b; i < nn; i++)
         {
+            vec1d u;
+            u = vec1d_mulmod(half, x[i] + x[a+i], p, pinv);
+            x[a+i] = (u < 0) ? u + p : u;
 /*             mp_limb_t u; */
 /*             u = n_addmod(x[i], x[a+i], p); */
 /*             x[a+i] = (u >> 1) + (u & 1)*half;   // u/2 mod p */
@@ -399,6 +410,10 @@ void CRT_t(vec1d *x, vec1d *tmp, ulong n, vec1d p)
         
         for (i = 0; i < b; i++)
         {
+            vec1d u;
+            u = tmp[i] - (x[a+i] + x[a+i]);
+            u = (u < 0) ? u + p : u;
+            tmp[b+i] = (u < 0) ? u + p : u;
 /*             tmp[b + i] = n_submod(tmp[i], n_addmod(x[a + i], x[a + i], p), p); */
         }
         t = 0;
@@ -406,6 +421,9 @@ void CRT_t(vec1d *x, vec1d *tmp, ulong n, vec1d p)
         {
             for (i = 0; i < b2; i++, t++)
             {
+                vec1d u;
+                u = x[t] - tmp[i];
+                x[t] = (u < 0) ? u + p : u;
 /*                 x[t] = n_submod(x[t], tmp[i], p); */
             }
         }
@@ -416,10 +434,10 @@ void CRT_t(vec1d *x, vec1d *tmp, ulong n, vec1d p)
 /*-----------------------------------------------------------*/
 /* transpose inverse tft in length N                         */
 /*-----------------------------------------------------------*/
-void nmod_sd_tft_interpolate_t(vec1d *x, vec1d *A, const sd_fft_lctx_t Q, const ulong N)
+void nmod_sd_tft_interpolate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, const ulong N)
 {
     ulong i, n, a, k, Nup;
-    vec1d p;
+    vec1d w, powerh, half, p, pinv;
     vec1d *wk, *wk2, *wk_bak;
     
     if (N == 0)
@@ -436,7 +454,7 @@ void nmod_sd_tft_interpolate_t(vec1d *x, vec1d *A, const sd_fft_lctx_t Q, const 
     Nup = FLINT_MAX(N, 4);
     wk = (vec1d *) aligned_alloc(32, 3 * Nup * sizeof(vec1d));
 
-    wk2 = wk + N;
+    wk2 = wk + Nup;
     wk_bak = wk;
     
     for (i = 0; i < N; i++)
@@ -445,11 +463,14 @@ void nmod_sd_tft_interpolate_t(vec1d *x, vec1d *A, const sd_fft_lctx_t Q, const 
     }
     for (; i < 3 * Nup; i++)
     {
-        wk2[i] = 0;
+        wk[i] = 0;
     }
 
     p = Q->p;
-    CRT_t(wk, wk2, N, p);
+    pinv = Q->pinv;
+    half = (vec1d) (1 + ((ulong)(p) >> 1));
+
+    CRT_t(wk, wk2, N, half, p, pinv);
     
     n = N;
     a = 1;
@@ -462,26 +483,30 @@ void nmod_sd_tft_interpolate_t(vec1d *x, vec1d *A, const sd_fft_lctx_t Q, const 
     
     do
     {
-/*         powers = F->powers_inv_w_over_2[k]; */
-/*         i_powers = F->i_powers_inv_w_over_2[k]; */
+        
+        if (k >= 1)
+        {
+            w = Q->w2tab[k][0];
+            powerh = half;
+            for (i = 1; i < k; i++)
+            {
+                powerh = vec1d_mulmod(powerh, half, p, pinv);
+            }
+        }
+        else
+        {
+            w = 1;
+            powerh = 1;
+        }
+        
         for (i = 0; i < a; i++)
         {
-/*             wk[i] = mul_mod_precon(wk[i], powers[i], p, i_powers[i]); */
+            wk[i] = vec1d_mulmod(wk[i], powerh, p, pinv);
+            powerh = vec1d_mulmod(w, powerh, p, pinv);
         }
-        switch(k)
-        {
-/*             case 0: */
-/*                 break; */
-/*             case 1: */
-/*                 _fft_1(wk, F->mod); */
-/*                 break; */
-/*             case 2: */
-/*                 _fft_2(wk, F->powers_inv_w_t[2][1], F->mod); */
-/*                 break; */
-/*             default: */
-/*                 _fft_k(wk, F->powers_inv_w_t[k], F->i_powers_inv_w_t[k], F->mod, k); */
-/*                 break; */
-        }
+
+        _fft(wk, Q, p, pinv, k);
+
         wk += a;
         
         n = n-a;
@@ -497,7 +522,7 @@ void nmod_sd_tft_interpolate_t(vec1d *x, vec1d *A, const sd_fft_lctx_t Q, const 
     
     for (i = 0; i < N; i++)
     {
-        x[i] = wk_bak[i];
+        x[i] = (mp_limb_t) vec1d_reduce_to_0n(wk_bak[i], p, pinv);
     }
-    flint_free(wk);
+    flint_free(wk_bak);
 }

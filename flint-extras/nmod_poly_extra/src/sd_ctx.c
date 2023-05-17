@@ -37,24 +37,4 @@ void sd_fft_ctx_init_inverse(sd_fft_ctx_t Qt, sd_fft_ctx_t Q)
     
     for (k = SD_FFT_CTX_INIT_DEPTH; k < FLINT_BITS; k++)
         Qt->w2tab[k] = NULL;
-
-    /* mp_limb_t p0 = (mp_limb_t) p; */
-    /* for (m = 1, l = 1; m < SD_FFT_CTX_INIT_DEPTH; m++, l *= 2) */
-    /* { */
-    /*     ulong w0 = n_primitive_root_prime(p0); */
-    /*     ulong ww = nmod_pow_ui(w0, (p0 - 1)>>(m + 1), mmod); */
-    /*     ww = nmod_inv(ww, mmod); */
-    /*     double w = vec1d_set_d(vec1d_reduce_0n_to_pmhn(ww, p)); */
-    /*     double* curr = t + l; */
-    /*     Qt->w2tab[m] = curr; */
-    /*     i = 0; */
-    /*     do */
-    /*     { */
-    /*         vec1d x = vec1d_load(t + i); */
-    /*         x = vec1d_mulmod(x, w, p, pinv); */
-    /*         x = vec1d_reduce_pm1n_to_pmhn(x, p); */
-    /*         vec1d_store(curr + i, x); */
-    /*     } */
-    /*     while (i += 1, i < l); */
-    /* } */
 }
