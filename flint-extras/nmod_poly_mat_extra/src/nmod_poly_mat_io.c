@@ -43,6 +43,7 @@ void nmod_poly_mat_degree_matrix_print_pretty(const nmod_poly_mat_t mat)
     fmpz_mat_init(dmat, mat->r, mat->c);
     nmod_poly_mat_degree_matrix(dmat, mat);
     fmpz_mat_print_pretty(dmat);
+    printf("\n");
     fmpz_mat_clear(dmat);
 }
 
@@ -54,6 +55,7 @@ void nmod_poly_mat_degree_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
     fmpz_mat_init(dmat, mat->r, mat->c);
     nmod_poly_mat_degree_matrix_shifted(dmat, mat, shift, row_wise);
     fmpz_mat_print_pretty(dmat);
+    printf("\n");
     fmpz_mat_clear(dmat);
 }
 

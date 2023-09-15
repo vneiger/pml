@@ -75,11 +75,10 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
     nmod_mat_init(A, nrows, ncols, field_prime);
     for (slong k = 0; k < iterations; ++k)
     {
-        //printf("%ld -->\n",k);
         nmod_mat_randfull(A, state);
         nmod_mat_t X;
-        //printf("-- %ld:kernel in progress --\n",k);
         nmod_mat_left_nullspace(X, A);
+        // DEBUG -->
         //printf("-- %ld: kernel OK --\n",k);
         //printf("%ldOK\n",k);
         //is_in_nullspace(X, A);
@@ -88,6 +87,7 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
         //printf("%ldOK\n",k);
         //is_rref(X);
         //printf("%ldOK\n",k);
+        // <-- DEBUG
         if (
                is_in_nullspace(X, A) == 0 
             || basis_of_nullspace(X, A) == 0
@@ -95,33 +95,31 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
            )
             return 0;
         nmod_mat_clear(X);
-        //printf("<-- %ld\n",k);
     }
+    nmod_mat_clear(A);
     return 1;
 }
 
 int main(int argc, char *argv[])
 {
+    printf("Usage: %s OR %s field_prime OR %s field_prime number_of_tests\n--\n", argv[0], argv[0], argv[0]);
     if (argc > 3)
-    {
-        printf("Usage: %s OR %s field_prime OR %s field_prime number_of_tests\n", argv[0], argv[0], argv[0]);
         return 1;
-    }
-    
+
     srand(time(NULL));
     flint_rand_t state;
     flint_randinit(state);
     flint_randseed(state, rand(), rand());
 
     slong field_prime = (argc>=2) ? atol(argv[1]) : 3;
-    slong iterations = (argc==3) ? atol(argv[2]) : 1000;
+    slong iterations = (argc==3) ? atol(argv[2]) : 10000;
 
-    if (check(field_prime, iterations, state, 10, 4) == 0)
-        printf("BUG1\n");
-    if (check(field_prime, iterations, state, 6, 6) == 0)
-        printf("BUG2\n");
-    if (check(field_prime, iterations, state, 4, 10) == 0)
-        printf("BUG3\n");
+    //if (check(field_prime, iterations, state, 10, 4))
+    //    printf("Input dimension 10 x 4 --> ok\n");
+    if (check(field_prime, iterations, state, 6, 6))
+        printf("Input dimension 6 x 6 --> ok\n");
+    //if (check(field_prime, iterations, state, 4, 10))
+    //    printf("Input dimension 4 x 10 --> ok\n");
 
     flint_randclear(state);
     return 0;

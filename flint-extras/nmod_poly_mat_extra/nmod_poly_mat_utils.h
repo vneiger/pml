@@ -13,7 +13,8 @@
 #include <flint/fmpz_mat.h>
 #include <flint/nmod_poly_mat.h>
 
-#include "nmod_poly_mat_mat_poly.h"
+#include "nmod_poly_mat_mat_poly.h" // TODO remove
+#include "nmod_mat_poly.h"
 #include "nmod_poly_mat_forms.h"
 
 #ifdef __cplusplus
@@ -49,28 +50,6 @@ NMOD_POLY_MAT_INLINE int
 nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
 {
     return (nmod_poly_mat_max_length(pmat) == 1);
-}
-
-/** Compute and return the degree of a vector polynomial `vecp` */
-// TODO
-
-/** Compute and return the degree of a matrix polynomial `matp` */
-// TODO redundant with functions in nmod_mat_poly ?
-NMOD_POLY_MAT_INLINE slong
-nmod_mat_poly_degree(const nmod_mat_poly_t matp)
-{
-    // TODO not guaranteed to be the actual degree?
-	return matp->degree;
-}
-
-
-/** Tests whether `matp` is a constant matrix, that is, of degree 0 */
-// TODO should be in nmod_mat_poly ?
-NMOD_POLY_MAT_INLINE int
-nmod_mat_poly_is_constant(const nmod_mat_poly_t matp)
-{
-    // TODO not guaranteed to be the actual degree?
-    return matp->degree == 0;
 }
 
 //@} // doxygen group: Degree
@@ -279,23 +258,23 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
  */
 //@{
 
-/** Computes the truncation `tvec` of a polynomial vector `pvec` at order `n` */
-// TODO
-//void trunc(Vec<zz_pX> & tvec, const Vec<zz_pX> & pvec, long n);
+/** Set `tmat` to the truncation of a polynomial matrix `pmat` at order `len` */
+void nmod_poly_mat_set_trunc(nmod_poly_mat_t tmat,
+                             const nmod_poly_mat_t pmat,
+                             long len);
 
-/** Computes the truncation `tmat` of a polynomial matrix `pmat` at order `n` */
-// TODO
-//void trunc(Mat<zz_pX> & tmat, const Mat<zz_pX> & pmat, long n);
-
-/** Computes the matrix `tmat` which is the polynomial matrix `pmat` with its
- * row `i` truncated at order `n` */
-// TODO
-//void truncRow(Mat<zz_pX> & tmat, const Mat<zz_pX> & pmat, long i, long n);
+/** Truncate `pmat` at order `len` */
+void nmod_poly_mat_truncate(nmod_poly_mat_t pmat, long len);
 
 /** Computes the matrix `tmat` which is the polynomial matrix `pmat` with its
- * column `j` truncated at order `n` */
+ * row `i` truncated at order `len` */
 // TODO
-//void truncCol(Mat<zz_pX> & tmat, const Mat<zz_pX> & pmat, long j, long n);
+//void nmod_poly_mat_truncate_row(nmod_poly_mat_t tmat, const nmod_poly_mat_t pmat, long len, long i);
+
+/** Computes the matrix `tmat` which is the polynomial matrix `pmat` with its
+ * column `j` truncated at order `len` */
+// TODO
+//void nmod_poly_mat_truncate_column(nmod_poly_mat_t tmat, const nmod_poly_mat_t pmat, long len, long j);
 
 //@} // doxygen group: Truncate
 
@@ -325,15 +304,15 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
 // TODO
 //void RightShift(Vec<zz_pX> & svec, const Vec<zz_pX> & pvec, long n);
 
-/** Computes the left `n`-shift `smat` of the polynomial matrix `pmat` */
-// FIXME investigate what happens with Flint's shift when polynomial is zero
-void nmod_poly_mat_shift_left(nmod_poly_mat_t res,
-                              const nmod_poly_mat_t pmat, slong k);
+/** Computes the left `k`-shift `smat` of the polynomial matrix `pmat` */
+void nmod_poly_mat_shift_left(nmod_poly_mat_t smat,
+                              const nmod_poly_mat_t pmat,
+                              slong k);
 
-/** Computes the right `n`-shift `smat` of the polynomial matrix `pmat` */
-// FIXME investigate what happens with Flint's shift when polynomial is zero
-void nmod_poly_mat_shift_right(nmod_poly_mat_t res,
-                               const nmod_poly_mat_t pmat, slong k);
+/** Computes the right `k`-shift `smat` of the polynomial matrix `pmat` */
+void nmod_poly_mat_shift_right(nmod_poly_mat_t smat,
+                               const nmod_poly_mat_t pmat,
+                               slong k);
 
 /** Computes the matrix `smat` which is the same as the polynomial matrix
  * `pmat` but with its `i`-th row replaced by its left `n`-shift
@@ -414,34 +393,6 @@ void nmod_poly_mat_shift_right(nmod_poly_mat_t res,
 
 //@} // doxygen group: Reverse
 
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* EVALUATE (SINGLE POINT)                                    */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/** @name Evaluation at one point
- *
- *  Functions for computing the evaluation of a polynomial matrix at a single
- *  point (element of the base field, that is, of type `nmod`).
- *
- */
-//@{
-
-// /** Computes the evaluation `evmat` of the polynomial matrix `pmat` at the
-//  * point `pt` (`pmat` stored as a matrix of polynomials) */
-// Flint native, as nmod_poly_mat_evaluate_nmod
-
-/** Computes the evaluation `evmat` of the polynomial matrix `matp` at the
- * point `pt` (polynomial matrix stored as a vector of constant matrices). If
- * `matp` has length zero, `eval` is the `0x0` matrix. */
-// TODO
-//void eval(Mat<zz_p> & evmat, const Vec<Mat<zz_p>> & matp, const zz_p & pt);
-
-//@} // doxygen group: Evaluation at one points
-
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* CREATE RANDOM MATRICES                                     */
@@ -491,13 +442,6 @@ void nmod_poly_mat_rand_column_degree(nmod_poly_mat_t mat,
 void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
                                       flint_rand_t state,
                                       const fmpz_mat_t dmat);
-
-
-/** Computes a random polynomial matrix `matp` with `m` rows, `n` columns,
- * and degree less than `d`, represented as a vector of constant matrices.
- */
-// TODO
-//void random(Vec<Mat<zz_p>> & matp, long m, long n, long d);
 
 //@} // doxygen group: Generation of random matrices with degree bounds
 
@@ -559,88 +503,73 @@ void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* CONVERT                                                    */
+/* SET FROM CONSTANT OR MATP                                  */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/** @name Conversion from constant matrix.
+/** @name Set from constant matrix and matrix polynomial.
+ *
+ * Provides `set` and `init_set`, from either a constant matrix,
+ * or from a `nmod_mat_poly_t`.
+ *
+ * Two main representations are used for polynomial matrices:
+ *    - a polynomial matrix stored as a matrix with polynomial entries, that
+ *    is, of type `nmod_poly_mat_t`
+ *    - a polynomial matrix stored as a polynomial with matrix coefficients,
+ *    that is, of type `nmod_mat_poly_t`
+ *
+ * In the latter representation, the array of matrices has length
+ * `degree(mat)+1`; in particular, the zero matrix may be represented by an
+ * array of length 0. Note also the following requirement: in the second
+ * representation, all the matrix coefficients have the same row and column
+ * dimensions; this is currently assumed to hold, and is not checked by the
+ * algorithms.
+ *
+ * The following functions perform conversions between these types, with two
+ * variants: either the degree is deduced from the input, or a user-provided
+ * truncation order is used.
+ *
+ * \todo init-set variants
  */
 //@{
 
 /** Initialize a polynomial matrix `pmat` of the same dimensions and modulus as
  * a constant matrix `mat`, and set its constant coefficient to `mat`.
- * \todo careful: probably better to use nmod_poly_init with preinv...
+ * \todo to be written
+ * careful: probably better to use nmod_poly_init with preinv...
  * but this should have been done in Flint's native poly_mat_init too?
  **/
 //void nmod_poly_mat_init_set_from_nmod_mat(nmod_poly_mat_t pmat, const nmod_mat_t cmat);
 
 /** Set the polynomial matrix `pmat` to be a constant polynomial matrix whose
- * constant coefficient is a copy of `cmat`. This assume `pmat` is already
- * initialized with the same modulus and dimensions of `cmat`.
- **/
-void nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat,
-                                     const nmod_mat_t cmat);
+ * constant coefficient is a copy of `cmat`. This assumes `pmat` is already
+ * initialized with the same modulus and dimensions as `cmat`.  */
+FLINT_DLL void
+nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat,
+                                const nmod_mat_t cmat);
 
-/** Conversion from a constant matrix `mat` into a matrix polynomial `matp`
- * (which is constant, equal to `mat`).
- * \todo
- */
+// TODO remove
+void nmod_poly_mat_set_from_mat_poly0(nmod_poly_mat_t pmat,
+                                     const nmod_mat_poly0_t matp);
 
+/** Set from polynomial with matrix coefficients `matp`, truncated at the
+ * specified `order` (a nonnegative integer). */
+// TODO benchmark and try variants if needed
+FLINT_DLL void
+nmod_poly_mat_set_trunc_from_mat_poly(nmod_poly_mat_t pmat,
+                                      const nmod_mat_poly_t matp,
+                                      slong order);
 
-//@} // doxygen group: Conversion from constant matrix
+/** Set from polynomial with matrix coefficients `matp`. */
+// TODO benchmark and try variants if needed
+NMOD_POLY_MAT_INLINE void
+nmod_poly_mat_set_from_mat_poly(nmod_poly_mat_t pmat,
+                                const nmod_mat_poly_t matp)
+{
+    nmod_poly_mat_set_trunc_from_mat_poly(pmat, matp, matp->length);
+}
 
-
-/** @name Conversion nmod_poly_mat <-> nmod_mat_poly
- *
- *  Two main representations are used for polynomial matrices:
- *     - a polynomial matrix stored as a matrix with polynomial entries, that
- *     is, of type `nmod_poly_mat_t`
- *     - a polynomial matrix stored as a polynomial with matrix coefficients,
- *     that is, of type `nmod_mat_poly_t`
- *
- *  In the latter representation, the array of matrices has length at least
- *  `degree(mat)+1`; in particular, the zero matrix may be represented by an
- *  array of length 0. Note also the following requirement: in the second
- *  representation, all the matrix coefficients have the same row and column
- *  dimensions; this is currently assumed to hold, and is not checked by the
- *  algorithms.
- *
- *  The following functions perform conversions between these types, with two
- *  variants: either the degree is deduced from the input, or a user-provided
- *  truncation order is used.
- */
-//@{
-
-/** Converts from matrix with polynomial entries `pmat` to polynomial with
- * matrix coefficients `matp`.
- */
-//void nmod_poly_mat_to_mat_poly(nmod_mat_poly_t matp,
-			    //const nmod_poly_mat_t pmat);
-
-/** Converts from polynomial with matrix coefficients `matp` to matrix with
- * polynomial entries `pmat`.
- * \todo improvements in implementation
- **/
-void nmod_poly_mat_set_from_mat_poly(nmod_poly_mat_t pmat,
-                                     const nmod_mat_poly_t matp);
-
-/** Converts from matrix with polynomial entries `pmat`, truncated at the
- * specified `order`, to polynomial with matrix coefficients `matp`. The
- * integer `order` must be nonnegative (this is currently not verified by the
- * code), and it is guaranteed that the vector `matp` has length `order`.
- */
-// TODO
-//void conv(Vec<Mat<zz_p>> & matp, const Mat<zz_pX> & pmat, const long order);
-
-/** Converts from polynomial with matrix coefficients `matp`, truncated at the
- * specified `order` (a nonnegative integer), to matrix with polynomial entries
- * `pmat`; if `matp` has length 0 then `pmat` is cleared (set to zero without
- * changing its dimensions).
- */
-// TODO
-//void conv(Mat<zz_pX> & pmat, const Vec<Mat<zz_p>> & matp, const long order);
-
-//@} // doxygen group: Conversion nmod_poly_mat <-> nmod_mat_poly
+//@} // doxygen group: Conversion from constant matrix and matrix polynomial
 
 #ifdef __cplusplus
 }
