@@ -2,6 +2,8 @@
 #include "nmod_poly_extra.h"
 #include "nmod_vec_extra.h"
 
+#define TRY_AVX2
+
 /*------------------------------------------------------------*/
 /* base cases are functions from sd_ifft.c                    */
 /* k=4 is a wrapper for a forced inline function              */
@@ -105,6 +107,7 @@ static void _fft_3(vec1d *x, const vec1d t1, const vec1d t2, const vec1d t3, con
 
 /*------------------------------------------------------------*/
 /* main fft routine, in place                                 */
+/* input in (-p..p), output in (-3p..3p)                      */
 /*------------------------------------------------------------*/
 FLINT_FORCE_INLINE void _fft(vec1d *wk, sd_fft_lctx_t Q, vec1d p, vec1d pinv, ulong k)
 {
@@ -210,11 +213,12 @@ void nmod_sd_fft_interpolate_t(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, cons
 /* returns a cyclotomic tft evaluation of x at n points       */
 /* x must have length >= N                                    */
 /*------------------------------------------------------------*/
-void nmod_sd_tft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong N)
+void nmod_sd_tft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N)
 {
     ulong i, j, k, a, ell, b, t, b2, lambda, N2;
-    vec1d *x2, *x2_bak;
-    vec1d u, v, w, w2, z, p, pinv;
+    vec1d *x2, *x2_bak, *powers_rho;
+    vec1d p, pinv;
+    vec4d p4, pinv4;
 
     
     // N <= 1 -> easy case
@@ -230,19 +234,22 @@ void nmod_sd_tft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, con
     // else, loop through the reduction process
     p = Q->p;
     pinv = Q->pinv;
+    p4 = vec4d_set_d(p);
+    pinv4 = vec4d_set_d(pinv);
     
-    N2 = n_next_pow2m1(2*N-1) + 1;
-
-    x2 = (vec1d *) aligned_alloc(32, FLINT_MAX(N2, 4) * sizeof(vec1d));
+    N2 = FLINT_MAX(4, n_next_pow2m1(2*N-1) + 1);
+    x2 = (vec1d *) aligned_alloc(32, N2 * sizeof(vec1d));
     x2_bak = x2;
 
     // x2 in [0..p)
     for (i = 0; i < N; i++)
     {
         x2[i] = nmod_poly_get_coeff_ui(poly, i);
-        x2[i + N] = 0;
     }
-
+    for (; i < N2; i++)
+    {
+        x2[i] = 0;
+    }
     
     ell = 0;
     b = 1;
@@ -269,63 +276,129 @@ void nmod_sd_tft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, con
         b2 = b << 1;
 
         // assume x2 in [0..p)
-        w = Q->w2tab[k][0];
-        w2 = 1;
+        powers_rho = F->powers_w[k+1];
+
         switch(b)
         {
             case 0:
+#ifdef TRY_AVX2
+                i = 0;
+                if (a >= 4)
+                    for (; i < a; i += 4)
+                    {
+                        vec4d_store_aligned(x2 + i, vec4d_mulmod(
+                                                vec4d_sub(vec4d_load_aligned(x2 + i),
+                                                          vec4d_load_aligned(x2 + i + a)),
+                                                vec4d_load_aligned(powers_rho + i), p4, pinv4));
+                    }
+                for (; i < a; i++)
+                {
+                    x2[i] = vec1d_mulmod(vec1d_sub(x2[i], x2[i+a]), powers_rho[i], p, pinv); // (-p..p)
+                }
+#else
                 for (i = 0; i < a; i++)
                 {
-                    z = vec1d_mulmod(vec1d_sub(x2[i], x2[i+a]), w2, p, pinv); // x2[i]-x2[i+a] in (-p..p)
-                    //                                                           w2 in (-p..p)
-                    //                                                           product in (-p^2..p^2) so rem in (-p..p)
-                    x2[i] = (z < 0) ? z + p : z;
-                    w2 = vec1d_mulmod(w, w2, p, pinv);                        // w2 still in (-p..p)
+                    x2[i] = vec1d_mulmod(vec1d_sub(x2[i], x2[i+a]), powers_rho[i], p, pinv); // (-p..p)
                 }
+#endif
                 break;
 
             default:
                 // i = 0 to 2^(k-ell-1) = a/(2b), j = 0 to 2b
                 // i = 0 : special case
+#ifdef TRY_AVX2
+                if (b2 >= 4)
+                    for (; t < b2; t += 4)
+                    {
+                        vec4d u, v;
+                        u = vec4d_load_aligned(x2 + t);
+                        v = vec4d_load_aligned(x2 + a + t);
+                        vec4d_store_aligned(x2 + t, vec4d_mulmod(vec4d_sub(u, v),
+                                                                 vec4d_load_aligned(powers_rho + t), p4, pinv4));
+                        vec4d_store_aligned(x2 + a + t, vec4d_reduce_2n_to_n(vec4d_add(u, v), p4));
+                    }
                 for (; t < b2; t++)
                 {
-                    u = x2[t];
-                    v = x2[a+t];
-
-                    z = vec1d_mulmod(vec1d_sub(u, v), w2, p, pinv); // (-p..p)
-                    x2[t] = (z < 0) ? z + p : z;                    // [0..p)
-                    w2 = vec1d_mulmod(w, w2, p, pinv);                  // w2 still in (-p..p)
-                    x2[a+t] = vec1d_reduce_2n_to_n(u+v, p);             // [0..p)
+                    vec1d u, v;
+                    u = x2[t]; 
+                    v = x2[a+t]; 
+                    x2[t] = vec1d_mulmod(vec1d_sub(u, v), powers_rho[t], p, pinv); // (-p..p)
+                    x2[a+t] = vec1d_reduce_2n_to_n(u+v, p); // [0..p)
                 }
-                
+#else
+                for (; t < b2; t++)
+                {
+                    vec1d u, v;
+                    u = x2[t]; 
+                    v = x2[a+t]; 
+                    x2[t] = vec1d_mulmod(vec1d_sub(u, v), powers_rho[t], p, pinv); // (-p..p)
+                    x2[a+t] = vec1d_reduce_2n_to_n(u+v, p); // [0..p)
+                }
+#endif
                 lambda = (1L << k) >> (ell+1);
                 for (i = 1; i < lambda; i++)
                 {
-                    for (j = 0; j < b2; j++)
+#ifdef TRY_AVX2
+                    j = 0;
+                    if (b2 >= 4)
+                        for (j = 0; j < b2; j += 4)
+                        {
+                            vec4d u, v, tmp;
+                            u = vec4d_load_aligned(x2 + t);
+                            v = vec4d_load_aligned(x2 + a + t);
+                            vec4d_store_aligned(x2 + t, vec4d_mulmod(vec4d_sub(u, v), vec4d_load_aligned(powers_rho + t),
+                                                                     p4, pinv4));
+                            tmp = vec4d_reduce_2n_to_n(vec4d_add(u, v), p4); // [0..p)
+                            vec4d_store_aligned(x2 + a + j, vec4d_reduce_2n_to_n(
+                                                    vec4d_add(tmp, vec4d_load_aligned(x2 + a + j)), p4)); // [0..p)
+                            t += 4;
+                        }
+                    for (; j < b2; j++)
                     {
+                        vec1d u, v, tmp;
                         u = x2[t];
                         v = x2[a+t];
-                        z = vec1d_mulmod(vec1d_sub(u, v), w2, p, pinv); // (-p..p)
-                        x2[t] = (z < 0) ? z + p : z;                    // [0..p)
-                        w2 = vec1d_mulmod(w, w2, p, pinv);                  // (-p..p)
-                        z = vec1d_reduce_2n_to_n(u+v, p);                 // [0..p)
-                        x2[a+j] = vec1d_reduce_2n_to_n(z + x2[a+j], p);       // (-2p..p)
+                        x2[t] = vec1d_mulmod(vec1d_sub(u, v), powers_rho[t], p, pinv); // (-p..p)
+                        tmp = vec1d_reduce_2n_to_n(u+v, p); // [0..p)
+                        x2[a+j] = vec1d_reduce_2n_to_n(tmp + x2[a+j], p); // [0..p)
                         t++;
                     }
+#else
+                    for (j = 0; j < b2; j++)
+                    {
+                        vec1d u, v, tmp;
+                        u = x2[t];
+                        v = x2[a+t];
+                        x2[t] = vec1d_mulmod(vec1d_sub(u, v), powers_rho[t], p, pinv); // (-p..p)
+                        tmp = vec1d_reduce_2n_to_n(u+v, p); // [0..p)
+                        x2[a+j] = vec1d_reduce_2n_to_n(tmp + x2[a+j], p); // [0..p)
+                        t++;
+                    }
+#endif
                 }
         }
-        // all entries of x2 we still need are in (-p..p)
-
-        _fft(x2, Q, p, pinv, k);
-            
-       x2 += a;
+        // remaining part of x2 still in [0..p)
+        _fft(x2, Q, p, pinv, k);  // (-3p..3p)
+        x2 += a;
     }
     while (b != 0);
     
     x2 = x2_bak;
-    for (i = 0; i < N; i++)
+
+    for (i = 0; i < N; i += 4)
     {
-        x[i] = vec1d_reduce_to_0n(x2[i], p, pinv);
+        vec4d u, v;
+        u = vec4d_load_aligned(x2 + i);
+        v = vec4d_reduce_to_0n(u, p4, pinv4);
+        vec4d_store_aligned(x2 + i, v);
+    }
+    for (; i < N; i++)
+    {
+        x[i] = vec1d_reduce_to_0n(x2[i], p, pinv); // [0..p)
+    }
+    for (i = 0; i < N; i++) // we redo a few here, does not matter
+    {
+        x[i] = x2[i];
     }
 
     free(x2);
@@ -342,7 +415,8 @@ static inline
 void CRT_t(vec1d *x, vec1d *tmp, ulong n, vec1d half, vec1d p, vec1d pinv)
 {
     ulong a, b, b2, n2, i, t, nn;
-
+    vec4d half4, p4, pinv4;
+    
     if (n <= 1)
     {
         return;
@@ -355,9 +429,14 @@ void CRT_t(vec1d *x, vec1d *tmp, ulong n, vec1d half, vec1d p, vec1d pinv)
     {
         a <<= 1;
     }
-    
+
+    half4 = vec4d_set_d(half);
+    p4 = vec4d_set_d(p);
+    pinv4 = vec4d_set_d(pinv);
+
     while (nn != a)
     {
+        
         nn = nn-a;
         b = 1;
         n2 = (nn >> 1);
@@ -366,31 +445,62 @@ void CRT_t(vec1d *x, vec1d *tmp, ulong n, vec1d half, vec1d p, vec1d pinv)
             b <<= 1;
         }
         b2 = b << 1;
-        
+
+#ifdef TRY_AVX2
+        i = 0;
+        if (b >= 4)
+        {
+            for (; i < b; i += 4)
+            {
+                vec4d u;
+                u = vec4d_mulmod(half4, vec4d_add(vec4d_load_aligned(x + i), vec4d_load_aligned(x + a + i)),
+                                 p4, pinv4);
+                u = vec4d_reduce_2n_to_n(vec4d_add(u, p4), p4);
+                vec4d_store_aligned(x + a + i, u);
+                vec4d_store_aligned(tmp + i, u);
+            }
+        }
+        for (; i < b; i++)
+        {
+            vec1d u;
+            u = vec1d_mulmod(half, x[i] + x[a + i], p, pinv);
+            u = vec1d_reduce_2n_to_n(u + p, p);
+            x[a + i] = u;
+            tmp[i] = u;
+        }
+
+        i = b;
+        if (b >= 4)
+            for (; i < nn; i += 4)
+            {
+                vec4d u;
+                u = vec4d_mulmod(half4, vec4d_add(vec4d_load_aligned(x + i), vec4d_load_aligned(x + a + i)),
+                                 p4, pinv4);
+                u = vec4d_reduce_2n_to_n(vec4d_add(u, p4), p4);
+                vec4d_store_aligned(x + a + i, u);
+            }
+        for (; i < nn; i++)
+        {
+            vec1d u;
+            u = vec1d_mulmod(half, x[i] + x[a + i], p, pinv);
+            x[a + i] = vec1d_reduce_2n_to_n(u + p, p);
+        }
+#else
         for (i = 0; i < b; i++)
         {
             vec1d u;
-            u = vec1d_mulmod(half, x[i] + x[a+i], p, pinv);
-            u = (u < 0) ? u + p : u;
-            x[a+i] = u;
+            u = vec1d_mulmod(half, x[i] + x[a + i], p, pinv);
+            u = vec1d_reduce_2n_to_n(u + p, p);
+            x[a + i] = u;
             tmp[i] = u;
-/*             mp_limb_t u; */
-/*             u = n_addmod(x[i], x[a+i], p); */
-/*             u = (u >> 1) + (u & 1)*half;   // u/2 mod p */
-/*             x[a+i] = u; */
-/*             tmp[i] = u; */
         }
-
         for (i = b; i < nn; i++)
         {
             vec1d u;
-            u = vec1d_mulmod(half, x[i] + x[a+i], p, pinv);
-            x[a+i] = (u < 0) ? u + p : u;
-/*             mp_limb_t u; */
-/*             u = n_addmod(x[i], x[a+i], p); */
-/*             x[a+i] = (u >> 1) + (u & 1)*half;   // u/2 mod p */
+            u = vec1d_mulmod(half, x[i] + x[a + i], p, pinv);
+            x[a + i] = vec1d_reduce_2n_to_n(u + p, p);
         }
-        
+#endif
         tmp += b2;
         x += a;
         a = b;
@@ -407,25 +517,61 @@ void CRT_t(vec1d *x, vec1d *tmp, ulong n, vec1d half, vec1d p, vec1d pinv)
         }
         tmp -= b2;
         x -= a;
-        
+
+#ifdef TRY_AVX2
+        i = 0;
+        if (b >= 4)
+            for (; i < b; i += 4)
+            {
+                vec4d u, v;
+                v = vec4d_load_aligned(x + a + i);
+                u =vec4d_sub(vec4d_load_aligned(tmp + i), vec4d_add(v, v));
+                u = vec4d_reduce_2n_to_n(u + p4, p4);
+                vec4d_store_aligned(tmp + b + i, vec4d_reduce_2n_to_n(u + p4, p4));
+            }
+        for (; i < b; i++)
+        {
+            vec1d u;
+            u = tmp[i] - (x[a+i] + x[a+i]);
+            u = vec1d_reduce_2n_to_n(u + p, p);
+            tmp[b + i] = vec1d_reduce_2n_to_n(u + p, p);
+        }
+#else
         for (i = 0; i < b; i++)
         {
             vec1d u;
             u = tmp[i] - (x[a+i] + x[a+i]);
-            u = (u < 0) ? u + p : u;
-            tmp[b+i] = (u < 0) ? u + p : u;
-/*             tmp[b + i] = n_submod(tmp[i], n_addmod(x[a + i], x[a + i], p), p); */
+            u = vec1d_reduce_2n_to_n(u + p, p);
+            tmp[b + i] = vec1d_reduce_2n_to_n(u + p, p);
         }
+#endif
+        
         t = 0;
         while (t < a)
         {
+#ifdef TRY_AVX2
+            i = 0;
+            if (b >= 2)
+                for (; i < b2; i += 4, t += 4)
+                {
+                    vec4d u;
+                    u = vec4d_sub(vec4d_load_aligned(x + t), vec4d_load_aligned(tmp + i));
+                    vec4d_store_aligned(x + t, vec4d_reduce_2n_to_n(vec4d_add(u, p4), p4));
+                }
+            for (; i < b2; i++, t++)
+            {
+                vec1d u;
+                u = x[t] - tmp[i];
+                x[t] = vec1d_reduce_2n_to_n(u + p, p);
+            }
+#else
             for (i = 0; i < b2; i++, t++)
             {
                 vec1d u;
                 u = x[t] - tmp[i];
-                x[t] = (u < 0) ? u + p : u;
-/*                 x[t] = n_submod(x[t], tmp[i], p); */
+                x[t] = vec1d_reduce_2n_to_n(u + p, p);
             }
+#endif
         }
         nn = nn+a;
     }
@@ -434,10 +580,11 @@ void CRT_t(vec1d *x, vec1d *tmp, ulong n, vec1d half, vec1d p, vec1d pinv)
 /*-----------------------------------------------------------*/
 /* transpose inverse tft in length N                         */
 /*-----------------------------------------------------------*/
-void nmod_sd_tft_interpolate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, const ulong N)
+void nmod_sd_tft_interpolate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N)
 {
     ulong i, n, a, k, Nup;
-    vec1d w, powerh, half, p, pinv;
+    vec1d half, p, pinv;
+    vec4d p4, pinv4;
     vec1d *wk, *wk2, *wk_bak;
     
     if (N == 0)
@@ -451,7 +598,7 @@ void nmod_sd_tft_interpolate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, const ulo
         return;
     }
 
-    Nup = FLINT_MAX(N, 4);
+    Nup = FLINT_MAX(4, n_next_pow2m1(N-1) + 1);
     wk = (vec1d *) aligned_alloc(32, 3 * Nup * sizeof(vec1d));
 
     wk2 = wk + Nup;
@@ -468,6 +615,9 @@ void nmod_sd_tft_interpolate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, const ulo
 
     p = Q->p;
     pinv = Q->pinv;
+    p4 = vec4d_set_d(p);
+    pinv4 = vec4d_set_d(pinv);
+
     half = (vec1d) (1 + ((ulong)(p) >> 1));
 
     CRT_t(wk, wk2, N, half, p, pinv);
@@ -483,28 +633,25 @@ void nmod_sd_tft_interpolate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, const ulo
     
     do
     {
-        
-        if (k >= 1)
-        {
-            w = Q->w2tab[k][0];
-            powerh = half;
-            for (i = 1; i < k; i++)
+        vec1d *powers_w = F->powers_inv_w_over_2[k];
+#ifdef TRY_AVX2        
+        i = 0;
+        if (a >= 4)
+            for (; i < a; i += 4)
             {
-                powerh = vec1d_mulmod(powerh, half, p, pinv);
+                vec4d_store_aligned(wk + i, vec4d_mulmod(vec4d_load_aligned(wk + i),
+                                                         vec4d_load_aligned(powers_w + i), p4, pinv4));
             }
-        }
-        else
+        for (; i < a; i++)
         {
-            w = 1;
-            powerh = 1;
+            wk[i] = vec1d_mulmod(wk[i], powers_w[i], p, pinv); // (-p..p)
         }
-        
+#else
         for (i = 0; i < a; i++)
         {
-            wk[i] = vec1d_mulmod(wk[i], powerh, p, pinv);
-            powerh = vec1d_mulmod(w, powerh, p, pinv);
+            wk[i] = vec1d_mulmod(wk[i], powers_w[i], p, pinv);
         }
-
+#endif
         _fft(wk, Q, p, pinv, k);
 
         wk += a;
@@ -519,10 +666,29 @@ void nmod_sd_tft_interpolate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, const ulo
         }
     }
     while (n != 0);
-    
+
+
+#ifdef TRY_AVX2
+    for (i = 0; i < N; i += 4)
+    {
+        vec4d u, v;
+        u = vec4d_load_aligned(wk_bak + i);
+        v = vec4d_reduce_to_0n(u, p4, pinv4);
+        vec4d_store_aligned(wk_bak + i, v);
+    }
+    for (; i < N; i++)
+    {
+        x[i] = vec1d_reduce_to_0n(wk_bak[i], p, pinv); // [0..p)
+    }
+    for (i = 0; i < N; i++) // we redo a few here, does not matter
+    {
+        x[i] = wk_bak[i];
+    }
+#else
     for (i = 0; i < N; i++)
     {
         x[i] = (mp_limb_t) vec1d_reduce_to_0n(wk_bak[i], p, pinv);
     }
+#endif
     flint_free(wk_bak);
 }

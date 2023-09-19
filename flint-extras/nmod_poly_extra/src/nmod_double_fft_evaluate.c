@@ -230,14 +230,18 @@ void nmod_double_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_doubl
     pinv = F->pinv;
     
     N2 = n_next_pow2m1(2*N-1) + 1;
-
-    x2 = (vec1d *) aligned_alloc(32, FLINT_MAX(N2, 4) * sizeof(vec1d));
+    N2 = FLINT_MAX(N2, 4);
+    
+    x2 = (vec1d *) aligned_alloc(32, N2 * sizeof(vec1d));
     x2_bak = x2;
     
     for (i = 0; i < N; i++)
     {
         x2[i] = nmod_poly_get_coeff_ui(poly, i);
-        x2[i + N] = 0;
+    }
+    for (; i < N2; i++)
+    {
+        x2[i] = 0;
     }
 
     

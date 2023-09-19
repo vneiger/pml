@@ -135,13 +135,13 @@ ulong bit_reverse(ulong u, ulong nb)
 /*------------------------------------------------------------*/
 void check()
 {
-    /* ulong order_w0, order_max; */
     ulong nmin, nmax;
     flint_rand_t state;
-    mp_limb_t w0, p;
+    mp_limb_t w0, w, p;
     nmod_t mod;
     sd_fft_ctx_t Q;
-    mp_ptr val;
+    nmod_sd_fft_t F;
+    mp_ptr val, val2;
     nmod_poly_t P;
     
     flint_randinit(state);
@@ -152,16 +152,17 @@ void check()
 
     
     w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> 16, mod);
+    w = nmod_pow_ui(w0, 1L<<(16-16), mod);
+    nmod_sd_fft_init_set(F, w, 16, mod);
 
     nmin = 1;
-    nmax = 2000;
+    nmax = 10000;
 
     for (long n = nmin; n < nmax+1; n++)
     {
         sd_fft_lctx_t QL;
         long * degrees, * exponents;
-        ulong i;
-        ulong len, shift;
+        ulong i, j, idx, len, shift, OK, found;
         
         len = find_length(n);
 
@@ -175,29 +176,23 @@ void check()
         nmod_poly_init2(P, p, n);
         for (i = 0; i < n; i++)
         {
-            nmod_poly_set_coeff_ui(P, i, n_randtest(state) % p);
+            mp_limb_t c;
+            c = n_randtest(state);
+            c = nmod_mul(c, c, mod);
+            c = nmod_mul(c, c, mod);
+            c = nmod_mul(c, c, mod);
+            nmod_poly_set_coeff_ui(P, i, c);
         }
         
         val = _nmod_vec_init(n);
-        nmod_sd_tft_evaluate(val, P, QL, n);
+        nmod_sd_tft_evaluate(val, P, QL, F, n);
 
-        printf("S:=[");
-        for (i = 0; i < n; i++)
-        {
-            printf("%ld", val[i]);
-            if (i < n-1)
-            {
-                printf(", ");
-            }
-        }
-        printf("];");
-        printf("\n");
-
-        printf("T:=[");
+        val2 = _nmod_vec_init(n);
         i = 0;
+        idx = 0;
         do
         {
-            slong e, j;
+            slong e;
             mp_limb_t rho, g;
             
             e = exponents[i];
@@ -206,21 +201,48 @@ void check()
             
             for (j = 0; j < (1L << e); j++)
             {
-                printf("%lu, ", nmod_poly_evaluate_nmod(P, nmod_mul(rho, nmod_pow_ui(g, bit_reverse(j, e), Q->mod), Q->mod)));
+                val2[idx] = nmod_poly_evaluate_nmod(P, nmod_mul(rho, nmod_pow_ui(g, bit_reverse(j, e), Q->mod), Q->mod));
+                idx++;
             }
             shift += (1L << e);
             i++;
         } while (exponents[i] != -1);
-        printf("0];\n");
-        printf("T:=T[1..#T-1];\n");
-        printf("SequenceToSet(S) eq SequenceToSet(T);\n");
+
         
+        OK = 1;
+        for (i = 0; i < n; i++)
+        {
+            found = 0;
+            for (j = 0; j < n; j++)
+                if (val2[j] == val[i])
+                    found = 1;
+            if (found == 0)
+                OK = 0;
+            found = 0;
+            for (j = 0; j < n; j++)
+                if (val2[i] == val[j])
+                    found = 1;
+            if (found == 0)
+                OK = 0;
+        }
+
         nmod_poly_clear(P);
         _nmod_vec_clear(val);
+        _nmod_vec_clear(val2);
         flint_free(exponents);
         flint_free(degrees);
+
+        if (OK == 0)
+        {
+            printf("%ld\n", n);
+            continue;
+        }
+
+        if (n > 2000)
+            n += 100;
     }
     sd_fft_ctx_clear(Q);
+    nmod_sd_fft_clear(F);
     flint_randclear(state);
 }
 

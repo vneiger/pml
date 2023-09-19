@@ -13,10 +13,11 @@ void check()
     ulong N, i, j;
     nmod_mat_t M, Mt, Mtt;
     flint_rand_t state;
-    mp_limb_t p;
+    mp_limb_t w0, w, p;
     nmod_t mod;
     mp_ptr val, val2;
     sd_fft_ctx_t Q, Qt;
+    nmod_sd_fft_t F;
     nmod_poly_t P;
     
     flint_randinit(state);
@@ -26,6 +27,10 @@ void check()
     sd_fft_ctx_init_inverse(Qt, Q);
 
     nmod_init(&mod, p);
+        
+    w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> 16, mod);
+    w = nmod_pow_ui(w0, 1L<<(16-16), mod);
+    nmod_sd_fft_init_set(F, w, 16, mod);
 
     for (N = 1; N < 400; N++)
     {
@@ -48,7 +53,7 @@ void check()
                 val2[j] = 0;
             }
             val2[i] = 1;
-            nmod_sd_tft_evaluate_t(val, val2, QtL, N);
+            nmod_sd_tft_evaluate_t(val, val2, QtL, F, N);
             for (j = 0; j < N; j++)
             {
                 nmod_mat_set_entry(M, i, j, val[j]);
@@ -62,7 +67,7 @@ void check()
                 val2[j] = 0;
             }
             val2[i] = 1;
-            nmod_sd_tft_interpolate_t(val, val2, QtL, N);
+            nmod_sd_tft_interpolate_t(val, val2, QtL, F, N);
             for (j = 0; j < N; j++)
             {
                 nmod_mat_set_entry(Mt, i, j, val[j]);
@@ -73,8 +78,6 @@ void check()
         if (!nmod_mat_equal(M, Mtt))
         {
             printf("%lu \n", N);
-            /* nmod_mat_print(M); */
-            /* nmod_mat_print(Mt); */
             continue;
         }
 
@@ -88,6 +91,7 @@ void check()
     
     sd_fft_ctx_clear(Q);
     sd_fft_ctx_clear(Qt);
+    nmod_sd_fft_clear(F);
 
     flint_randclear(state);
 }    
