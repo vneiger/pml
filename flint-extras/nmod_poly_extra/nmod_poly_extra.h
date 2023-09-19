@@ -214,6 +214,50 @@ void nmod_double_fft_clear(nmod_double_fft_t F);
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+typedef struct
+{
+    nmod_t mod;
+    vec1d p, pinv;
+
+    mp_limb_t w, inv_w;       // root of 1 and its inverse
+    ulong order;       // its order
+    
+    /*  table of roots of unity, with (order+1) levels                              */
+    /*  at level k > 0, set wk = w^(2^(order-k)). this is a K-th root, with K=2^k   */
+    /*  the entries of powers_w[k] are                                              */
+    /*        1, wk, wk^2, ..., wk^{K/2-1},           (len K/2)                     */
+    /*        1, wk^2, wk^4, ..., wk^{K/2-2},         (len K/4)                     */
+    /*        1, wk^4, wk^8, ..., wk^{K/2-4}          (len K/8)                     */
+    /*        ...                                                                   */
+    /*        1, wk^{K/8}, wk^{K/4}, wk^{3K/8},       (len (K/2)/(K/8)=4)           */
+    /*        1, wk^{K/4},                            (len 2)                       */
+    /*        1.                                      (len 1)                       */
+    /*  total length K-1 (we allocate K)                                            */ 
+    vec1d **powers_w;
+    mp_limb_t **powers_inv_w_t;  // same table for 1/w as for w
+
+    // length order+1, with powers_inv_2[i] = 1/2^i 
+    mp_limb_t *powers_inv_2;
+    
+    // length order, level k has length 2^k with entries 1/w{k+1}^i/2^k 
+    vec1d **powers_inv_w_over_2;
+} nmod_sd_fft_struct;
+typedef nmod_sd_fft_struct nmod_sd_fft_t[1];
+
+
+/*------------------------------------------------------------*/
+/* initializes all entries of F                               */
+/* w primitive and w^(2^order))=1                             */
+/* DFTs of size up to 2^order are supported                   */ 
+/*------------------------------------------------------------*/
+void nmod_sd_fft_init_set(nmod_sd_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
+    
+/*------------------------------------------------------------*/
+/* clears all memory assigned to F                            */
+/*------------------------------------------------------------*/
+void nmod_sd_fft_clear(nmod_sd_fft_t F);
+
+
 void sd_fft_ctx_init_inverse(sd_fft_ctx_t Qt, sd_fft_ctx_t Q);
 
 /*------------------------------------------------------------*/
@@ -228,15 +272,15 @@ void nmod_sd_fft_evaluate_t(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, c
 /* tft evaluation and its transpose                           */
 /* x must have length >= N                                    */
 /*------------------------------------------------------------*/
-void nmod_sd_tft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong N);
-void nmod_sd_tft_evaluate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, ulong N);
+void nmod_sd_tft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
+void nmod_sd_tft_evaluate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, ulong N);
 
 /*------------------------------------------------------------*/
 /* tft interpolation and its transpose                        */
 /* inverts nmod_sd_tft_evaluate                               */
 /*------------------------------------------------------------*/
-void nmod_sd_tft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const ulong N);
-void nmod_sd_tft_interpolate_t(mp_ptr a, mp_srcptr A, sd_fft_lctx_t Q, const ulong N);
+void nmod_sd_tft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
+void nmod_sd_tft_interpolate_t(mp_ptr a, mp_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
 
 /*------------------------------------------------------------*/
 /* fft interpolation                                          */
