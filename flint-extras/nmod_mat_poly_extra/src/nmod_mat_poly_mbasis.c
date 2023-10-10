@@ -1,3 +1,4 @@
+#include <flint/nmod_vec.h>
 #include <flint/nmod_mat.h>
 #include <flint/perm.h>
 #include <flint/profiler.h>
