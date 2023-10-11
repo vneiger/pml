@@ -39,14 +39,10 @@ void _nmod_vec_rand(mp_ptr vec,
 
 /** Prints the entries `0`, .., `len-1` of vector `vec`. Vector must already be
  * initialized, with length at least `len`. */
-void _nmod_vec_print_pretty(mp_ptr vec,
-                            slong len,
-                            nmod_t mod);
-
-
-
-
-
+int _nmod_vec_fprint_pretty(FILE * file, mp_srcptr vec, slong len, nmod_t mod);
+void _nmod_vec_print_pretty(mp_srcptr vec, slong len, nmod_t mod);
+int _nmod_vec_print(mp_srcptr vec, slong len, nmod_t mod);
+int _nmod_vec_fprint(FILE * f, mp_srcptr vec, slong len, nmod_t mod);
 
 
 
