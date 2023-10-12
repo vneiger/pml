@@ -245,7 +245,7 @@ void nmod_poly_mat_lechelon_pivot_index_columnwise(slong * pivind, const nmod_po
     slong piv;
     for (slong j = 0; j < mat->c; j++)
     {
-        // rightmost nonzero entry in row i if nonzero, otherwise -1
+        // topmost nonzero entry in column j if nonzero, otherwise mat->r
         piv = 0;
         while (piv < mat->r && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
             piv++;
@@ -258,7 +258,7 @@ void nmod_poly_mat_uechelon_pivot_index_columnwise(slong * pivind, const nmod_po
     slong piv;
     for (slong j = 0; j < mat->c; j++)
     {
-        // rightmost nonzero entry in row i if nonzero, otherwise -1
+        // bottommost nonzero entry in column j if nonzero, otherwise -1
         piv = mat->r - 1;
         while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
             piv--;
@@ -303,7 +303,7 @@ void nmod_poly_mat_lechelon_pivot_profile_columnwise(slong * pivind, slong * piv
     slong piv;
     for (slong j = 0; j < mat->c; j++)
     {
-        // rightmost nonzero entry in row i if nonzero, otherwise -1
+        // topmost nonzero entry in column j if nonzero, otherwise mat->r
         piv = 0;
         while (piv < mat->r && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
             piv++;
@@ -317,7 +317,7 @@ void nmod_poly_mat_uechelon_pivot_profile_columnwise(slong * pivind, slong * piv
     slong piv;
     for (slong j = 0; j < mat->c; j++)
     {
-        // rightmost nonzero entry in row i if nonzero, otherwise -1
+        // bottommost nonzero entry in column j if nonzero, otherwise -1
         piv = mat->r - 1;
         while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
             piv--;

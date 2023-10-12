@@ -576,16 +576,30 @@ nmod_poly_mat_is_popov(const nmod_poly_mat_t mat,
 /*------------------------------------------------------------*/
 
 /* def of lower row echelon:
+ * - there is no zero row below a nonzero row (possible zero rows are grouped at the top),
+ * - let r be the number of nonzero rows (thus at indices m-r,...,m-1) and j_i be
+ *   the index of the rightmost nonzero entry in row m-r+i for 0 <= i < r, then j_0 < ... < j_{r-1}.
+ * ==> equivalently: the row-wise lower echelon pivot profile of the matrix is increasing,
+ * excepting zero rows */
+int nmod_poly_mat_is_lechelon_rowwise(nmod_poly_mat_t pmat);
+/* def of upper row echelon:
  * - there is no zero row above a nonzero row (possible zero rows are grouped at the bottom),
  * - let r be the number of nonzero rows (thus at indices 0,...,r-1) and j_i be
  *   the index of the rightmost nonzero entry in row i for 0 <= i < r, then j_0 < ... < j_{r-1}.
  * ==> equivalently: the row-wise lower echelon pivot profile of the matrix is increasing,
  * excepting zero rows */
-int is_lechelon_rowwise(nmod_poly_mat_t pmat);
-/* etc.... */
-int is_uechelon_rowwise(nmod_poly_mat_t pmat);
-int is_lechelon_columnwise(nmod_poly_mat_t pmat);
-int is_uechelon_columnwise(nmod_poly_mat_t pmat);
+int nmod_poly_mat_is_uechelon_rowwise(nmod_poly_mat_t pmat);
+/* etc... */
+int nmod_poly_mat_is_lechelon_columnwise(nmod_poly_mat_t pmat);
+/* etc... */
+int nmod_poly_mat_is_uechelon_columnwise(nmod_poly_mat_t pmat);
+
+int nmod_poly_mat_is_lhermite_rowwise(nmod_poly_mat_t pmat);
+int nmod_poly_mat_is_uhermite_rowwise(nmod_poly_mat_t pmat);
+int nmod_poly_mat_is_lhermite_columnwise(nmod_poly_mat_t pmat);
+int nmod_poly_mat_is_uhermite_columnwise(nmod_poly_mat_t pmat);
+
+
 
 // TODO
 ///** Tests whether `mat` is in row-wise Hermite form (see @ref MatrixForms)

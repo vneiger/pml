@@ -45,7 +45,7 @@ int nmod_poly_mat_is_reduced_columnwise(const nmod_poly_mat_t mat,
 int nmod_poly_mat_is_weak_popov_rowwise(const nmod_poly_mat_t mat,
                                         const slong * shift)
 {
-	slong pivind[mat->r];
+	slong * pivind = flint_malloc(mat->r * sizeof(slong));
 	nmod_poly_mat_pivot_index_rowwise(pivind, mat, shift);
 
 	// sort pivot indices in nondecreasing order
@@ -60,13 +60,14 @@ int nmod_poly_mat_is_weak_popov_rowwise(const nmod_poly_mat_t mat,
 		if (pivind[i] >= pivind[i+1])
 			return 0;
 
+    flint_free(pivind);
 	return 1;
 }
 
 int nmod_poly_mat_is_weak_popov_columnwise(const nmod_poly_mat_t mat,
                                            const slong * shift)
 {
-	slong pivind[mat->c];
+	slong * pivind = flint_malloc(mat->c * sizeof(slong));
 	nmod_poly_mat_pivot_index_columnwise(pivind, mat, shift);
 
 	// sort pivot indices in nondecreasing order
@@ -81,6 +82,7 @@ int nmod_poly_mat_is_weak_popov_columnwise(const nmod_poly_mat_t mat,
 		if (pivind[i] >= pivind[i+1])
 			return 0;
 
+    flint_free(pivind);
 	return 1;
 }
 
@@ -91,7 +93,7 @@ int nmod_poly_mat_is_weak_popov_columnwise(const nmod_poly_mat_t mat,
 int nmod_poly_mat_is_ordered_weak_popov_rowwise(const nmod_poly_mat_t mat,
                                                 const slong * shift)
 {
-    slong pivind[mat->r];
+	slong * pivind = flint_malloc(mat->r * sizeof(slong));
     nmod_poly_mat_pivot_index_rowwise(pivind, mat, shift);
 
     // first row must be nonzero
@@ -103,13 +105,14 @@ int nmod_poly_mat_is_ordered_weak_popov_rowwise(const nmod_poly_mat_t mat,
         if (pivind[i] >= pivind[i+1])
             return 0;
 
+    flint_free(pivind);
     return 1;
 }
 
 int nmod_poly_mat_is_ordered_weak_popov_columnwise(const nmod_poly_mat_t mat,
                                                    const slong * shift)
 {
-    slong pivind[mat->c];
+	slong * pivind = flint_malloc(mat->c * sizeof(slong));
     nmod_poly_mat_pivot_index_columnwise(pivind, mat, shift);
 
     // first column must be nonzero
@@ -121,6 +124,7 @@ int nmod_poly_mat_is_ordered_weak_popov_columnwise(const nmod_poly_mat_t mat,
         if (pivind[i] >= pivind[i+1])
             return 0;
 
+    flint_free(pivind);
     return 1;
 }
 
@@ -190,13 +194,173 @@ int nmod_poly_mat_is_popov_columnwise(const nmod_poly_mat_t mat,
 *                              echelon                               *
 **********************************************************************/
 
-int is_lechelon_rowwise(nmod_poly_mat_t pmat);
-/* etc.... */
-int is_uechelon_rowwise(nmod_poly_mat_t pmat);
-int is_lechelon_columnwise(nmod_poly_mat_t pmat);
-int is_uechelon_columnwise(nmod_poly_mat_t pmat);
+int nmod_poly_mat_is_lechelon_rowwise(const nmod_poly_mat_t mat)
+{
+    // retrieve pivot index
+    slong * pivind = flint_malloc(mat->r * sizeof(slong));
+    nmod_poly_mat_lechelon_pivot_index_rowwise(pivind, mat);
 
-//int is_hermite(const nmod_poly_mat_t mat, orientation_t row_wise)
+    // scan rows until first nonzero one
+    slong i = 0;
+    while (i < mat->r && pivind[i] == -1)
+        i++;
+
+    // check remaining pivot indices are strictly increasing
+    // in particular, if we have already reached mat->r, the matrix is zero; if
+    // we have already reached the last row, it has a single nonzero row; in
+    // both cases it is echelon
+    while (i+1 < mat->r)
+    {
+        if (pivind[i] >= pivind[i+1])
+            return 0;
+        // note: the above test includes the case where row i+1 is zero,
+        // i.e. zero row below a nonzero row
+        i++;
+    }
+
+    flint_free(pivind);
+
+    return 1;
+}
+
+int nmod_poly_mat_is_uechelon_rowwise(const nmod_poly_mat_t mat)
+{
+    // retrieve pivot index
+    slong * pivind = flint_malloc(mat->r * sizeof(slong));
+    nmod_poly_mat_uechelon_pivot_index_rowwise(pivind, mat);
+
+    // scan rows from last one until finding nonzero one
+    slong i = mat->r - 1;
+    while (i >= 0 && pivind[i] == mat->c)
+        i--;
+
+    // check remaining pivot indices are strictly increasing
+    // in particular, if we have reached i == -1, the matrix is zero; if we
+    // have reached the first row i==0, it has a single nonzero row; in both
+    // cases it is echelon
+    while (i > 0)
+    {
+        if (pivind[i-1] >= pivind[i])
+            return 0;
+        // note: the above test includes the case where row i-1 is zero (has index mat->c),
+        // i.e. zero row above a nonzero row
+        i--;
+    }
+
+    flint_free(pivind);
+
+    return 1;
+}
+
+int nmod_poly_mat_is_lechelon_columnwise(const nmod_poly_mat_t mat)
+{
+    // retrieve pivot index
+    slong * pivind = flint_malloc(mat->c * sizeof(slong));
+    nmod_poly_mat_lechelon_pivot_index_columnwise(pivind, mat);
+
+    // scan columns from last one until finding nonzero one
+    slong j = mat->c - 1;
+    while (j >= 0 && pivind[j] == mat->r)
+        j--;
+
+    // check remaining pivot indices are strictly increasing
+    // in particular, if we have reached j == -1, the matrix is zero; if we
+    // have reached the first column j==0, it has a single nonzero column; in both
+    // cases it is echelon
+    while (j > 0)
+    {
+        if (pivind[j-1] >= pivind[j])
+            return 0;
+        // note: the above test includes the case where column j-1 is zero (has index mat->r),
+        // i.e. zero column to the left of a nonzero column
+        j--;
+    }
+
+    flint_free(pivind);
+
+    return 1;
+}
+
+int nmod_poly_mat_is_uechelon_columnwise(const nmod_poly_mat_t mat)
+{
+    // retrieve pivot index
+    slong * pivind = flint_malloc(mat->c * sizeof(slong));
+    nmod_poly_mat_lechelon_pivot_index_columnwise(pivind, mat);
+
+    // scan columns until first nonzero one
+    slong j = 0;
+    while (j < mat->c && pivind[j] == -1)
+        j++;
+
+    // otherwise, check remaining pivot indices are strictly increasing
+    // in particular: if we have already reached mat->c, the matrix is zero; if
+    // we have already reached the last column, it has a single nonzero column;
+    // in both cases it is echelon
+    while (j+1 < mat->c)
+    {
+        if (pivind[j] >= pivind[j+1])
+            return 0;
+        // note: the above test includes the case where column j+1 is zero,
+        // i.e. zero column to the right of a nonzero one
+        j++;
+    }
+
+    flint_free(pivind);
+
+    return 1;
+}
+
+/**********************************************************************
+*                              Hermite                               *
+**********************************************************************/
+
+int nmod_poly_mat_is_lhermite_rowwise(const nmod_poly_mat_t mat)
+{
+    if (mat->r == 0)
+        return 1;
+
+    // matrix must be in lower echelon form row-wise, with no zero row
+    // retrieve pivot index
+    slong * pivind = flint_malloc(mat->r * sizeof(slong));
+    nmod_poly_mat_lechelon_pivot_index_rowwise(pivind, mat);
+
+    // first row: make sure it is nonzero
+    if (pivind[0] == -1)
+        return 0;
+
+    // scan rows starting from topmost one
+    for (slong i = 0; i < mat->r - 1; i++)
+    {
+        // row i+1 must be nonzero and pivot indices must be increasing
+        if (pivind[i] >= pivind[i+1])
+            return 0;
+        // note: the above test includes the case where row i+1 is zero,
+        // i.e. zero row below a nonzero row
+
+        nmod_poly_struct * pivot = nmod_poly_mat_entry(mat, i, pivind[i]);
+        // pivot entry must be monic
+        if (! nmod_poly_is_monic(pivot))
+            return 0;
+
+        // entries below pivot entry must have lower degree
+        for (slong ii = i+1; ii < mat->r; ii++)
+            if (nmod_poly_length(nmod_poly_mat_entry(mat, ii, pivind[i])) >= nmod_poly_length(pivot))
+                return 0;
+    }
+
+    // last row: pivot must be monic, and that's it
+    if (! nmod_poly_is_monic(nmod_poly_mat_entry(mat, mat->r-1, pivind[mat->r-1])))
+        return 0;
+
+    flint_free(pivind);
+
+    return 1;
+}
+
+int nmod_poly_mat_is_uhermite_rowwise(const nmod_poly_mat_t pmat);
+int nmod_poly_mat_is_lhermite_columnwise(const nmod_poly_mat_t pmat);
+int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
+
 //{
 //    slong rdim = mat->r, cdim = mat->c;
 //    slong deg_mat = nmod_poly_mat_degree(mat);
