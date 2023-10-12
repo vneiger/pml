@@ -21,47 +21,12 @@
 extern "C" {
 #endif
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* MATRIX DEGREE                                              */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/** @name Degree
- *
- *  The degree of a polynomial matrix is the maximum of the degrees of all its
- *  entries; by convention, the zero matrix has degree -1 (thus, except for the
- *  zero matrix, the degree of a polynomial matrix is always nonnegative).
- */
-//@{
-
-/** Compute and return the degree of a polynomial vector `pvec` */
-// TODO
-
 /** Tests whether `pmat` is a constant matrix, that is, of degree 0 */
 NMOD_POLY_MAT_INLINE int
 nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
 {
     return (nmod_poly_mat_max_length(pmat) == 1);
 }
-
-//@} // doxygen group: Degree
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* SETTING AND GETTING COEFFICIENTS                           */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/** @name Setting and getting coefficients
- *
- *  Seeing a polynomial matrix in `nmod_poly_mat_t` as a univariate polynomial
- *  with matrix coefficients in `nmod_mat_t`, these functions allow one to get
- *  or set one of these coefficients, for a given polynomial matrix.
- */
-//@{
-
-//@} // doxygen group: Setting and getting coefficients
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
