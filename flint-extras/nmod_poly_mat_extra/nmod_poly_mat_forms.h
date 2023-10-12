@@ -221,15 +221,15 @@ void nmod_poly_mat_pivot_profile_columnwise(slong *pivind,
 void nmod_poly_mat_lechelon_pivot_index_rowwise(slong * pivind,
                                                 const nmod_poly_mat_t mat);
 
-/** Computes the column-wise lower echelon pivot index `pivind` of a polynomial
- * matrix `mat` (see @ref EchelonPivots). */
-void nmod_poly_mat_lechelon_pivot_index_columnwise(slong * pivind,
-                                                   const nmod_poly_mat_t mat);
-
 /** Computes the row-wise upper echelon pivot index `pivind` of a polynomial
  * matrix `mat` (see @ref EchelonPivots). */
 void nmod_poly_mat_uechelon_pivot_index_rowwise(slong * pivind,
                                                 const nmod_poly_mat_t mat);
+
+/** Computes the column-wise lower echelon pivot index `pivind` of a polynomial
+ * matrix `mat` (see @ref EchelonPivots). */
+void nmod_poly_mat_lechelon_pivot_index_columnwise(slong * pivind,
+                                                   const nmod_poly_mat_t mat);
 
 /** Computes the column-wise upper echelon pivot index `pivind` of a polynomial
  * matrix `mat` (see @ref EchelonPivots). */

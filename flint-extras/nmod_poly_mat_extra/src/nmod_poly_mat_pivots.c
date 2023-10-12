@@ -101,6 +101,9 @@ void nmod_poly_mat_pivot_index_columnwise(slong *pivind, const nmod_poly_mat_t m
     }
 }
 
+/**********************************************************************
+*                       shifted pivot profile                        *
+**********************************************************************/
 void nmod_poly_mat_pivot_profile_rowwise(slong *pivind,
                                          slong *pivdeg,
                                          const nmod_poly_mat_t mat,
@@ -211,49 +214,117 @@ void nmod_poly_mat_pivot_profile_columnwise(slong *pivind,
 *                        echelon pivot index                         *
 **********************************************************************/
 
-/** Computes the row-wise lower echelon pivot index `pivind` of a polynomial
- * matrix `mat` (see @ref EchelonPivots). */
-void nmod_poly_mat_lechelon_pivot_index_rowwise(slong * pivind,
-                                                const nmod_poly_mat_t mat);
+void nmod_poly_mat_lechelon_pivot_index_rowwise(slong * pivind, const nmod_poly_mat_t mat)
+{
+    slong piv;
+    for (slong i = 0; i < mat->r; i++)
+    {
+        // rightmost nonzero entry in row i if nonzero, otherwise -1
+        piv = mat->c - 1;
+        while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, piv)))
+            piv--;
+        pivind[i] = piv;
+    }
+}
 
-/** Computes the column-wise lower echelon pivot index `pivind` of a polynomial
- * matrix `mat` (see @ref EchelonPivots). */
-void nmod_poly_mat_lechelon_pivot_index_columnwise(slong * pivind,
-                                                   const nmod_poly_mat_t mat);
+void nmod_poly_mat_uechelon_pivot_index_rowwise(slong * pivind, const nmod_poly_mat_t mat)
+{
+    slong piv;
+    for (slong i = 0; i < mat->r; i++)
+    {
+        // leftmost nonzero entry in row i if nonzero, otherwise mat->c
+        piv = 0;
+        while (piv < mat->c && nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, piv)))
+            piv++;
+        pivind[i] = piv;
+    }
+}
 
-/** Computes the row-wise upper echelon pivot index `pivind` of a polynomial
- * matrix `mat` (see @ref EchelonPivots). */
-void nmod_poly_mat_uechelon_pivot_index_rowwise(slong * pivind,
-                                                const nmod_poly_mat_t mat);
+void nmod_poly_mat_lechelon_pivot_index_columnwise(slong * pivind, const nmod_poly_mat_t mat)
+{
+    slong piv;
+    for (slong j = 0; j < mat->c; j++)
+    {
+        // rightmost nonzero entry in row i if nonzero, otherwise -1
+        piv = 0;
+        while (piv < mat->r && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
+            piv++;
+        pivind[j] = piv;
+    }
+}
 
-/** Computes the column-wise upper echelon pivot index `pivind` of a polynomial
- * matrix `mat` (see @ref EchelonPivots). */
-void nmod_poly_mat_uechelon_pivot_index_columnwise(slong * pivind,
-                                                   const nmod_poly_mat_t mat);
+void nmod_poly_mat_uechelon_pivot_index_columnwise(slong * pivind, const nmod_poly_mat_t mat)
+{
+    slong piv;
+    for (slong j = 0; j < mat->c; j++)
+    {
+        // rightmost nonzero entry in row i if nonzero, otherwise -1
+        piv = mat->r - 1;
+        while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
+            piv--;
+        pivind[j] = piv;
+    }
+}
 
-/** Computes the row-wise lower echelon pivot index `pivind` and pivot
- * degree `pivdeg` of a polynomial matrix `mat` (see @ref EchelonPivots). */
-void nmod_poly_mat_lechelon_pivot_profile_rowwise(slong * pivind,
-                                                  slong * pivdeg,
-                                                  const nmod_poly_mat_t mat);
+/**********************************************************************
+*                       echelon pivot profile                        *
+**********************************************************************/
 
-/** Computes the row-wise upper echelon pivot index `pivind` and pivot
- * degree `pivdeg` of a polynomial matrix `mat` (see @ref EchelonPivots). */
-void nmod_poly_mat_uechelon_pivot_profile_rowwise(slong * pivind,
-                                                  slong * pivdeg,
-                                                  const nmod_poly_mat_t mat);
+void nmod_poly_mat_lechelon_pivot_profile_rowwise(slong * pivind, slong * pivdeg, const nmod_poly_mat_t mat)
+{
+    slong piv;
+    for (slong i = 0; i < mat->r; i++)
+    {
+        // rightmost nonzero entry in row i if nonzero, otherwise -1
+        piv = mat->c - 1;
+        while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, piv)))
+            piv--;
+        pivind[i] = piv;
+        pivdeg[i] = (piv==-1) ? -1 : nmod_poly_degree(nmod_poly_mat_entry(mat, i, piv));
+    }
+}
 
-/** Computes the column-wise lower echelon pivot index `pivind` and pivot
- * degree `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). */
-void nmod_poly_mat_lechelon_pivot_profile_columnwise(slong * pivind,
-                                                     slong * pivdeg,
-                                                     const nmod_poly_mat_t mat);
+void nmod_poly_mat_uechelon_pivot_profile_rowwise(slong * pivind, slong * pivdeg, const nmod_poly_mat_t mat)
+{
+    slong piv;
+    for (slong i = 0; i < mat->r; i++)
+    {
+        // leftmost nonzero entry in row i if nonzero, otherwise mat->c
+        piv = 0;
+        while (piv < mat->c && nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, piv)))
+            piv++;
+        pivind[i] = piv;
+        pivdeg[i] = (piv==mat->c) ? -1 : nmod_poly_degree(nmod_poly_mat_entry(mat, i, piv));
+    }
+}
 
-/** Computes the column-wise upper echelon pivot index `pivind` and pivot
- * degree `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). */
-void nmod_poly_mat_uechelon_pivot_profile_columnwise(slong * pivind,
-                                                     slong * pivdeg,
-                                                     const nmod_poly_mat_t mat);
+void nmod_poly_mat_lechelon_pivot_profile_columnwise(slong * pivind, slong * pivdeg, const nmod_poly_mat_t mat)
+{
+    slong piv;
+    for (slong j = 0; j < mat->c; j++)
+    {
+        // rightmost nonzero entry in row i if nonzero, otherwise -1
+        piv = 0;
+        while (piv < mat->r && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
+            piv++;
+        pivind[j] = piv;
+        pivdeg[j] = (piv == mat->r) ? -1 : nmod_poly_degree(nmod_poly_mat_entry(mat, piv, j));
+    }
+}
+
+void nmod_poly_mat_uechelon_pivot_profile_columnwise(slong * pivind, slong * pivdeg, const nmod_poly_mat_t mat)
+{
+    slong piv;
+    for (slong j = 0; j < mat->c; j++)
+    {
+        // rightmost nonzero entry in row i if nonzero, otherwise -1
+        piv = mat->r - 1;
+        while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
+            piv--;
+        pivind[j] = piv;
+        pivdeg[j] = (piv==-1) ? -1 : nmod_poly_degree(nmod_poly_mat_entry(mat, piv, j));
+    }
+}
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
