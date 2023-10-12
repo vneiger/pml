@@ -25,7 +25,6 @@ extern "C" {
 // - add/sub x**k * nmod_mat to nmod_poly_mat, or more generally combined add+shift of polymats?
 // - left/right multiplication by a constant matrix
 
-
 /*------------------------------------------------------------*/
 /* multiplication by a constant matrix                        */
 /*------------------------------------------------------------*/
@@ -34,15 +33,15 @@ extern "C" {
  *  The following functions implement the multiplication of a polynomial matrix
  *  by a constant matrix. The dimensions are not checked to be compatible.
  *
- * \todo
- *   - try the following (more efficient?): rely on complete linearization as
+ * \todo not yet implemented, at least two strategies:
+ *   - rely on complete linearization as
  *   constant matrices. That is, expand 'a' as single (or several?) constant
  *   matrix 'cmat', and compute b*cmat, and retrieve back the entries in 'c'
  *   (preliminary work: compute cdeg(a))
- *   - make this depend on conv?
- *   - more generally, how to proceed should depend on the dimensions (for
- *   example, it is not the same story if the non-constant mat is square and if
- *   it is a single vector). Thresholds may be needed.
+ *   - or convert to matpoly, multiply, convert back
+ *   -> what is faster should depend on the dimensions (for example, it is not
+ *   the same story if the non-constant mat is square and if it is a single
+ *   vector), so thresholds may be needed.
  *
  */
 //@{
