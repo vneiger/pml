@@ -141,8 +141,8 @@ void nmod_poly_mat_column_degree(slong *cdeg,
  * of a polynomial matrix is the tuple of the shifted pivot indices (resp.
  * degrees) of the columns of this matrix.
  *
- * The shifted row pivot profile consists of both the shifted pivot index and
- * the shifted row (resp. column) degree.
+ * For a given orientation (row-wise/column-wise), the shifted pivot profile
+ * consists of both the shifted pivot index and the shifted pivot degree.
  *
  * The functions below which involve a `shift` among its parameters throw
  * an error if this `shift` does not have the right length or is not `NULL`.
@@ -163,6 +163,7 @@ void nmod_poly_mat_pivot_index_columnwise(slong *pivind,
                                           const nmod_poly_mat_t mat,
                                           const slong *shift);
 
+
 /** Computes the row-wise `shift`-pivot index `pivind` and `shift`-pivot degree
  * `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). In the unshifted
  * case, `pivdeg` coincides with the row degree of `mat`. */
@@ -180,6 +181,86 @@ void nmod_poly_mat_pivot_profile_columnwise(slong *pivind,
                                             const slong *shift);
 
 //@} // doxygen group: (Shifted) pivot index and pivot degree
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* ECHELON PIVOT INDEX/DEGREE                                 */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name Echelon pivot index and pivot degree
+ * \anchor EchelonPivots
+ *
+ * For a given polynomial row vector, its _lower (resp. upper) echelon pivot
+ * index_ is the index of its rightmost (resp. leftmost) nonzero entry, and its
+ * _lower (resp. upper) pivot degree_ is the degree of that nonzero entry. By
+ * convention, for a zero row vector of length `n`, the lower (resp. upper)
+ * echelon pivot index is `-1` (resp. `n`), and the lower (resp. upper) echelon
+ * pivot degree is `-1`.
+ *
+ * For a given polynomial column vector, its _lower (resp. upper) echelon pivot
+ * index_ is the index of its topmost (resp. bottommost) nonzero entry, and its
+ * _lower (resp. upper) pivot degree_ is the degree of that nonzero entry.  By
+ * convention, for a zero column vector of length `n`, the lower (resp.  upper)
+ * echelon pivot index is `n` (resp. `-1`), and the lower (resp. upper) echelon
+ * pivot degree is `-1`.
+ *
+ * Then, the row-wise lower echelon pivot index (resp. degree) of a polynomial
+ * matrix is the tuple of the lower echelon pivot indices (resp. degrees) of
+ * the rows of this matrix. The three other variants (column-wise / upper) are
+ * defined similarly.
+ *
+ * For given orientations (row-wise/column-wise, lower/upper), the echelon
+ * pivot profile consists of both the echelon pivot index and the echelon pivot
+ * degree.
+ */
+//@{
+
+/** Computes the row-wise lower echelon pivot index `pivind` of a polynomial
+ * matrix `mat` (see @ref EchelonPivots). */
+void nmod_poly_mat_lechelon_pivot_index_rowwise(slong * pivind,
+                                                const nmod_poly_mat_t mat);
+
+/** Computes the column-wise lower echelon pivot index `pivind` of a polynomial
+ * matrix `mat` (see @ref EchelonPivots). */
+void nmod_poly_mat_lechelon_pivot_index_columnwise(slong * pivind,
+                                                   const nmod_poly_mat_t mat);
+
+/** Computes the row-wise upper echelon pivot index `pivind` of a polynomial
+ * matrix `mat` (see @ref EchelonPivots). */
+void nmod_poly_mat_uechelon_pivot_index_rowwise(slong * pivind,
+                                                const nmod_poly_mat_t mat);
+
+/** Computes the column-wise upper echelon pivot index `pivind` of a polynomial
+ * matrix `mat` (see @ref EchelonPivots). */
+void nmod_poly_mat_uechelon_pivot_index_columnwise(slong * pivind,
+                                                   const nmod_poly_mat_t mat);
+
+/** Computes the row-wise lower echelon pivot index `pivind` and pivot
+ * degree `pivdeg` of a polynomial matrix `mat` (see @ref EchelonPivots). */
+void nmod_poly_mat_lechelon_pivot_profile_rowwise(slong * pivind,
+                                                  slong * pivdeg,
+                                                  const nmod_poly_mat_t mat);
+
+/** Computes the row-wise upper echelon pivot index `pivind` and pivot
+ * degree `pivdeg` of a polynomial matrix `mat` (see @ref EchelonPivots). */
+void nmod_poly_mat_uechelon_pivot_profile_rowwise(slong * pivind,
+                                                  slong * pivdeg,
+                                                  const nmod_poly_mat_t mat);
+
+/** Computes the column-wise lower echelon pivot index `pivind` and pivot
+ * degree `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). */
+void nmod_poly_mat_lechelon_pivot_profile_columnwise(slong * pivind,
+                                                     slong * pivdeg,
+                                                     const nmod_poly_mat_t mat);
+
+/** Computes the column-wise upper echelon pivot index `pivind` and pivot
+ * degree `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). */
+void nmod_poly_mat_uechelon_pivot_profile_columnwise(slong * pivind,
+                                                     slong * pivdeg,
+                                                     const nmod_poly_mat_t mat);
+
+//@} // doxygen group: echelon pivot index and pivot degree
 
 
 /*------------------------------------------------------------*/
@@ -494,6 +575,17 @@ nmod_poly_mat_is_popov(const nmod_poly_mat_t mat,
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+/* def of lower row echelon:
+ * there is no zero row above a nonzero row (possible zero rows are grouped at the bottom),
+ * let r be the number of nonzero rows (thus at indices 0,...,r-1) and j_i be
+ * the index of the rightmost nonzero entry in row i for 0 <= i < r, then
+ * j_0 < ... < j_{r-1}. */
+int is_lower_row_echelon(nmod_poly_mat_t pmat);
+/* etc.... */
+int is_upper_row_echelon(nmod_poly_mat_t pmat);
+int is_lower_column_echelon(nmod_poly_mat_t pmat);
+int is_upper_column_echelon(nmod_poly_mat_t pmat);
+
 // TODO
 ///** Tests whether `mat` is in row-wise Hermite form (see @ref MatrixForms)
 // * \todo there are two definitions... upper vs lower
@@ -505,7 +597,7 @@ nmod_poly_mat_is_popov(const nmod_poly_mat_t mat,
 // **/
 //int is_hermite_columnwise(const nmod_poly_mat_t mat);
 //
-///** Tests whether `mat` is in `shift`-Hermite form (see @ref MatrixForms), with
+///** Tests whether `mat` is in Hermite form (see @ref MatrixForms), with
 // * orientation specified by argument `row_wise`
 // * \todo there are two definitions... upper vs lower
 // **/
