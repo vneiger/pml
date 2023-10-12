@@ -1,3 +1,4 @@
+#include <stdlib.h> // qsort
 #include "nmod_poly_mat_forms.h"
 
 // helper function for qsort

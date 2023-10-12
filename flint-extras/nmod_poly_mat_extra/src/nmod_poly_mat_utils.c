@@ -10,15 +10,6 @@
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-// TODO now in flint?
-void nmod_poly_mat_coefficient_matrix(nmod_mat_t res, const nmod_poly_mat_t mat, slong degree)
-{
-    for(slong i = 0; i < mat->r; i++)
-        for(slong j = 0; j < mat->c; j++)
-            nmod_mat_set_entry(res, i, j,
-                               nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j), degree));
-}
-
 
 
 /*------------------------------------------------------------*/
@@ -27,61 +18,12 @@ void nmod_poly_mat_coefficient_matrix(nmod_mat_t res, const nmod_poly_mat_t mat,
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-// TODO now in flint?
-void nmod_poly_mat_set_trunc(nmod_poly_mat_t tmat, const nmod_poly_mat_t pmat, long len)
-{
-    for (slong i = 0; i < pmat->r; i++)
-        for (slong j = 0; j < pmat->c; j++)
-            nmod_poly_set_trunc(tmat->rows[i] + j, pmat->rows[i] + j, len);
-}
-
-// TODO now in flint?
-void nmod_poly_mat_truncate(nmod_poly_mat_t pmat, long len)
-{
-    for (slong i = 0; i < pmat->r; i++)
-        for (slong j = 0; j < pmat->c; j++)
-            nmod_poly_truncate(pmat->rows[i] + j, len);
-}
-
-// TODO now in flint?
-void nmod_poly_mat_shift_left(nmod_poly_mat_t smat, const nmod_poly_mat_t pmat, slong k)
-{
-    for (slong i = 0; i < smat->r; i++)
-        for (slong j = 0; j < smat->c; j++)
-            nmod_poly_shift_left(nmod_poly_mat_entry(smat, i, j), nmod_poly_mat_entry(pmat, i, j), k);
-}
-
-// TODO now in flint?
-void nmod_poly_mat_shift_right(nmod_poly_mat_t smat, const nmod_poly_mat_t pmat, slong k)
-{
-    for (slong i = 0; i < smat->r; i++)
-        for (slong j = 0; j < smat->c; j++)
-            nmod_poly_shift_right(smat->rows[i] + j, pmat->rows[i] + j, k);
-}
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* SET FROM CONSTANT                                          */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-
-// TODO now in flint?
-void nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat, const nmod_mat_t cmat)
-{
-    for (slong i = 0; i < cmat->r; ++i)
-        for (slong j = 0; j < cmat->c; ++j)
-        {
-            if (nmod_mat_entry(cmat, i, j) == 0)
-                nmod_poly_zero(nmod_poly_mat_entry(pmat, i, j));
-            else
-            {
-                nmod_poly_realloc(nmod_poly_mat_entry(pmat, i, j), 1);
-                nmod_poly_mat_entry(pmat, i, j)->coeffs[0]
-                                    = nmod_mat_entry(cmat, i, j);
-            }
-        }
-}
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

@@ -2,6 +2,7 @@
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_io.h"
 #include "sagemath_extra.h"
+#include <flint/nmod_poly_mat.h>
 
 // TODO make random choice for given prime (or for random prime of given size)
 #define PRIME_30_BITS 536870923
@@ -57,7 +58,7 @@ int test_nmod_mat_poly0(void)
 
     /** test mul: poly_mat <-> mat_poly0 **/
     nmod_poly_mat_mul(poly_prod, res, res_2);
-    nmod_poly_mat_coefficient_matrix(prod, poly_prod, k);
+    nmod_poly_mat_get_coeff_mat(prod, poly_prod, k);
 
     nmod_poly_mat_print(poly_prod, x);
 
@@ -116,7 +117,7 @@ int test_matpol(void)
 
     nmod_mat_t B;
     nmod_mat_init(B, rdim, cdim, 4);
-    nmod_poly_mat_coefficient_matrix(B, A, 2);
+    nmod_poly_mat_get_coeff_mat(B, A, 2);
     printf("\ncoefficient matrix for degree 2 of A\n");
     nmod_mat_print_pretty(B);
 

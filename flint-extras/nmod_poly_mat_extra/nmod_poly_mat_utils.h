@@ -38,14 +38,6 @@ extern "C" {
 /** Compute and return the degree of a polynomial vector `pvec` */
 // TODO
 
-/** Compute and return the degree of a polynomial matrix `pmat` */
-// TODO now in flint
-NMOD_POLY_MAT_INLINE slong
-nmod_poly_mat_degree(const nmod_poly_mat_t pmat)
-{
-    return nmod_poly_mat_max_length(pmat)-1;
-}
-
 /** Tests whether `pmat` is a constant matrix, that is, of degree 0 */
 NMOD_POLY_MAT_INLINE int
 nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
@@ -68,17 +60,6 @@ nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
  *  or set one of these coefficients, for a given polynomial matrix.
  */
 //@{
-
-/** Sets `coeff` to be the coefficient of `pmat` of degree `degree` */
-// TODO now in flint get_coeff_mat
-// TODO now in flint set_coeff_mat
-void nmod_poly_mat_coefficient_matrix(nmod_mat_t coeff,
-                                      const nmod_poly_mat_t pmat,
-                                      slong degree);
-
-/** Sets the coefficient of `pmat` of degree `degree` to be `coeff` */
-// TODO
-//void SetCoeff(Mat<zz_pX> & pmat, long i, const Mat<zz_p> & coeff);
 
 //@} // doxygen group: Setting and getting coefficients
 
@@ -261,16 +242,6 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
  */
 //@{
 
-/** Set `tmat` to the truncation of a polynomial matrix `pmat` at order `len` */
-// TODO in flint now
-void nmod_poly_mat_set_trunc(nmod_poly_mat_t tmat,
-                             const nmod_poly_mat_t pmat,
-                             long len);
-
-/** Truncate `pmat` at order `len` */
-// TODO in flint now
-void nmod_poly_mat_truncate(nmod_poly_mat_t pmat, long len);
-
 /** Computes the matrix `tmat` which is the polynomial matrix `pmat` with its
  * row `i` truncated at order `len` */
 // TODO
@@ -308,18 +279,6 @@ void nmod_poly_mat_truncate(nmod_poly_mat_t pmat, long len);
 /** Computes the right `n`-shift `svec` of the polynomial vector `pvec` */
 // TODO
 //void RightShift(Vec<zz_pX> & svec, const Vec<zz_pX> & pvec, long n);
-
-/** Computes the left `k`-shift `smat` of the polynomial matrix `pmat` */
-// TODO now in flint?
-void nmod_poly_mat_shift_left(nmod_poly_mat_t smat,
-                              const nmod_poly_mat_t pmat,
-                              slong k);
-
-/** Computes the right `k`-shift `smat` of the polynomial matrix `pmat` */
-// TODO now in flint?
-void nmod_poly_mat_shift_right(nmod_poly_mat_t smat,
-                               const nmod_poly_mat_t pmat,
-                               slong k);
 
 /** Computes the matrix `smat` which is the same as the polynomial matrix
  * `pmat` but with its `i`-th row replaced by its left `n`-shift
@@ -547,14 +506,6 @@ void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
  * but this should have been done in Flint's native poly_mat_init too?
  **/
 //void nmod_poly_mat_init_set_from_nmod_mat(nmod_poly_mat_t pmat, const nmod_mat_t cmat);
-
-/** Set the polynomial matrix `pmat` to be a constant polynomial matrix whose
- * constant coefficient is a copy of `cmat`. This assumes `pmat` is already
- * initialized with the same modulus and dimensions as `cmat`.  */
-// TODO now in flint
-FLINT_DLL void
-nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat,
-                                const nmod_mat_t cmat);
 
 // TODO remove
 void nmod_poly_mat_set_from_mat_poly0(nmod_poly_mat_t pmat,
