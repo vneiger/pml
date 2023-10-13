@@ -29,8 +29,6 @@ slong nmod_poly_mat_lhermite_form_rowwise_naive(nmod_poly_mat_t hnf, const nmod_
     ulong rk = 0;
     ulong j = 0;
 
-    ulong i, pi, ii, jj;
-
     mp_limb_t inv; // will store inverses of leading coefficients for making monic
     nmod_poly_struct * piv; // will point to pivot entry
     nmod_poly_struct * nonz; // will point to nonpivot entry that is bound to become zero
@@ -50,7 +48,7 @@ slong nmod_poly_mat_lhermite_form_rowwise_naive(nmod_poly_mat_t hnf, const nmod_
     while (j < n)
     {
         // find actual pivot: starting at (i,j), find first nonzero entry in the rest of column j
-        pi = rk;
+        ulong pi = rk;
         while (pi < m && nmod_poly_is_zero(nmod_poly_mat_entry(hnf, pi, j)))
             pi++;
 
@@ -58,7 +56,7 @@ slong nmod_poly_mat_lhermite_form_rowwise_naive(nmod_poly_mat_t hnf, const nmod_
         // else, no pivot in this column, go to next column
         {
             // process column j below pivot
-            ii = pi + 1;
+            ulong ii = pi + 1;
             while (ii < m)
             {
                 // find next nonzero entry in column
@@ -81,7 +79,7 @@ slong nmod_poly_mat_lhermite_form_rowwise_naive(nmod_poly_mat_t hnf, const nmod_
                     // for hnf, due to zeroes already set in columns 0...j-1, we can start at column j
                     // set piv to g, and later below set nonz to 0
                     nmod_poly_set(piv, g); // hnf[pi,j] = g
-                    for (jj = j+1; jj < n; jj++)
+                    for (ulong jj = j+1; jj < n; jj++)
                     {
                         // simultaneously update:
                         //     hnf[pi,jj] = u * hnf[pi,jj] + v * hnf[ii,jj]
@@ -99,7 +97,7 @@ slong nmod_poly_mat_lhermite_form_rowwise_naive(nmod_poly_mat_t hnf, const nmod_
                         nmod_poly_sub(nmod_poly_mat_entry(hnf, ii, jj), nonz, nmod_poly_mat_entry(hnf, ii, jj));
                     }
                     // TODO IF TRANSFORMATION
-                    for (jj = 0; jj < m; jj++)
+                    for (ulong jj = 0; jj < m; jj++)
                     {
                         // simultaneously update:
                         //     uni[pi,jj] = u * uni[pi,jj] + v * uni[ii,jj]
@@ -140,20 +138,20 @@ slong nmod_poly_mat_lhermite_form_rowwise_naive(nmod_poly_mat_t hnf, const nmod_
 
         // normalize pivot, and correspondingly update all the row
         inv = n_invmod(piv->coeffs[piv->length - 1], piv->mod.n);
-        for (jj = j; jj < n; jj++)
+        for (ulong jj = j; jj < n; jj++)
         {
             entry = nmod_poly_mat_entry(hnf, i, jj);
             _nmod_vec_scalar_mul_nmod(entry->coeffs, entry->coeffs, entry->length, inv, entry->mod);
         }
         // TODO IF TRANSFO
-        for (jj = 0; jj < m; jj++)
+        for (ulong jj = 0; jj < m; jj++)
         {
             entry = nmod_poly_mat_entry(uni, i, jj);
             _nmod_vec_scalar_mul_nmod(entry->coeffs, entry->coeffs, entry->length, inv, entry->mod);
         }
 
         // reduce entries above (i,j)
-        for (ii = 0; ii < i; ii++)
+        for (ulong ii = 0; ii < i; ii++)
         {
             entry = nmod_poly_mat_entry(hnf, ii, j);
             if (entry->length >= piv->length)
@@ -164,12 +162,12 @@ slong nmod_poly_mat_lhermite_form_rowwise_naive(nmod_poly_mat_t hnf, const nmod_
                 nmod_poly_swap(entry, v);
                 // apply same transformation on rest of the row: row_ii <- row_ii - u * row_i
                 nmod_poly_neg(u, u);
-                for (jj = j+1; j < n; j++)
+                for (ulong jj = j+1; j < n; j++)
                 {
                     nmod_poly_mul(v, u, nmod_poly_mat_entry(hnf, i, jj)); // v used as tmp
                     nmod_poly_add(nmod_poly_mat_entry(hnf, ii, jj), nmod_poly_mat_entry(hnf, ii, jj), v);
                 }
-                for (jj = 0; j < m; j++)
+                for (ulong jj = 0; j < m; j++) // TODO IF TRANSFO
                 {
                     nmod_poly_mul(v, u, nmod_poly_mat_entry(uni, i, jj)); // v used as tmp
                     nmod_poly_add(nmod_poly_mat_entry(uni, ii, jj), nmod_poly_mat_entry(uni, ii, jj), v);
