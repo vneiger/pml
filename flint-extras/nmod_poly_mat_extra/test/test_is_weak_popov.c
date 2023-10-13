@@ -161,7 +161,7 @@ int main()
     iswp = nmod_poly_mat_is_weak_popov_rowwise(mat, shift2);
     printf("Checking is (0,3,2,2)-weak Popov row-wise: %d --> %s\n",
            iswp, (iswp==1) ? "ok" : "not ok");
-    // TODO
+    // TODO (todo what??)
 
     iswp = nmod_poly_mat_is_ordered_weak_popov_rowwise(mat, shift2);
     printf("Checking is (0,3,2,2)-ordered weak Popov row-wise: %d --> %s\n\n",
