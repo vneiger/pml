@@ -31,8 +31,12 @@ extern "C" {
  *
  * \enum poly_mat_form_t
  *
- * Note that the assigned numbers follow the "strength" of these forms: Popov
- * implies ordered weak Popov, which implies weak Popov, which implies reduced.
+ * Note that the assigned numbers follow the "strength" of these forms:
+ * - Popov implies ordered weak Popov, which implies weak Popov,
+ *   which implies reduced.
+ * - Upper Hermite implies upper echelon.
+ * - Lower Hermite implies lower echelon.
+ *
  */
 typedef enum
 {
@@ -41,8 +45,11 @@ typedef enum
     WEAK_POPOV = 2, /**< Matrix in (shifted) weak Popov form */
     ORD_WEAK_POPOV = 3, /**< Matrix in (shifted) ordered weak Popov form */
     POPOV = 4, /**< Matrix in (shifted) Popov form */
+    LECHELON = 5, /**< Matrix in lower echelon form */
+    LHERMITE = 6, /**< Matrix in lower Hermite form */
+    UECHELON = 7, /**< Matrix in upper echelon form */
+    UHERMITE = 8, /**< Matrix in upper Hermite form */
 } poly_mat_form_t;
-
 
 /**
  * \enum orientation_t
@@ -54,9 +61,6 @@ typedef enum
     COLUMN_WISE = 0,
     ROW_WISE = 1
 } orientation_t;
-
-
-
 
 
 /*------------------------------------------------------------*/
@@ -441,6 +445,7 @@ nmod_poly_mat_leading_matrix(nmod_mat_t lmat,
  * If `NULL` is provided as input for the shift, this is understood as the
  * uniform shift `[0,...,0]` of the right length.
  *  
+ * \todo define lower/upper row-wise/column-wise echelon/Hermite forms
  */
 //@{
 
@@ -571,7 +576,7 @@ nmod_poly_mat_is_popov(const nmod_poly_mat_t mat,
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* TESTING MATRIX FORMS - HERMITE                             */
+/* TESTING MATRIX FORMS - ECHELON                             */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
@@ -594,47 +599,31 @@ int nmod_poly_mat_is_lechelon_columnwise(const nmod_poly_mat_t pmat);
 /* etc... */
 int nmod_poly_mat_is_uechelon_columnwise(const nmod_poly_mat_t pmat);
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING MATRIX FORMS - HERMITE                             */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** Tests whether `mat` is in row-wise lower Hermite form (see @ref MatrixForms) */
 int nmod_poly_mat_is_lhermite_rowwise(const nmod_poly_mat_t pmat);
+/** Tests whether `mat` is in row-wise upper Hermite form (see @ref MatrixForms) */
 int nmod_poly_mat_is_uhermite_rowwise(const nmod_poly_mat_t pmat);
+/** Tests whether `mat` is in column-wise lower Hermite form (see @ref MatrixForms) */
 int nmod_poly_mat_is_lhermite_columnwise(const nmod_poly_mat_t pmat);
+/** Tests whether `mat` is in column-wise upper Hermite form (see @ref MatrixForms) */
 int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
 
 
 
-// TODO
-///** Tests whether `mat` is in row-wise Hermite form (see @ref MatrixForms)
-// * \todo there are two definitions... upper vs lower
-// **/
-//int is_hermite_rowwise(const nmod_poly_mat_t mat);
-//
-///** Tests whether `mat` is in column-wise Hermite form (see @ref MatrixForms)
-// * \todo there are two definitions... upper vs lower
-// **/
-//int is_hermite_columnwise(const nmod_poly_mat_t mat);
-//
-///** Tests whether `mat` is in Hermite form (see @ref MatrixForms), with
-// * orientation specified by argument `row_wise`
-// * \todo there are two definitions... upper vs lower
-// **/
-//NMOD_POLY_MAT_INLINE int
-//is_hermite(const nmod_poly_mat_t mat,
-//           orientation_t row_wise)
-//{
-//    if (row_wise)
-//        return is_hermite_rowwise(mat);
-//    else
-//        return is_hermite_columnwise(mat);
-//}
-//
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* TESTING MATRIX FORMS - USER INTERFACE                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
-
-
-
-
-
-
-
+// TODO implement general interfaces, or just the above suffice?
 
 /** Computes and returns a boolean indicating whether `pmat` is in row-wise
  * (non-shifted) form indicated by `form` (see @ref MatrixForms and
@@ -713,6 +702,24 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
 //                             );
 
 //@} // doxygen group: Testing polynomial matrix forms
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* COMPUTING MATRIX FORMS                                     */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name Computing polynomial matrix forms
+ * See @ref MatrixForms for definitions
+ */
+//@{
+
+/** Sets ``hnf`` to the row-wise, lower Hermite normal form of ``mat``, and
+ * returns the rank of ``mat``. Aliasing is allowed */
+slong nmod_poly_mat_uhermite_form_rowwise_naive(nmod_poly_mat_t hnf, const nmod_poly_mat_t mat);
+
+
+//@} // doxygen group: Computing polynomial matrix forms
 
 
 #ifdef __cplusplus
