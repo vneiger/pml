@@ -716,7 +716,8 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
 
 /** Sets ``hnf`` to the row-wise, lower Hermite normal form of ``mat``, and
  * returns the rank of ``mat``. Aliasing is allowed */
-slong nmod_poly_mat_uhermite_form_rowwise_naive(nmod_poly_mat_t hnf, const nmod_poly_mat_t mat);
+slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat,
+                                                       nmod_poly_mat_t tsf);
 
 
 //@} // doxygen group: Computing polynomial matrix forms

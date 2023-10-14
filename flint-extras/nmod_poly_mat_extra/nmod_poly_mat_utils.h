@@ -28,6 +28,14 @@ nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
     return (nmod_poly_mat_max_length(pmat) == 1);
 }
 
+/** Tests whether `pmat` is a unimodular matrix, that is, a square matrix with
+ * determinant being a nonzero constant. Rectangular matrices are accepted as
+ * input (and are not unimodular). */
+// TODO deterministic test, slow; provide randomized test via evaluation
+int nmod_poly_mat_is_unimodular(const nmod_poly_mat_t pmat);
+
+
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* SWAP, PERMUTE, TRANSPOSE                                   */
