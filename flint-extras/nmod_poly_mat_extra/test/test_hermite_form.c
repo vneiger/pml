@@ -10,64 +10,85 @@
 #include <flint/ulong_extras.h>
 #include <flint/profiler.h>
 
-// test one given input for hermite form
-int core_test_hermite_form(nmod_poly_mat_t mat, int time)
+// verify Hermite form
+
+int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat)
 {
-    const slong rdim = mat->r;
-
-    // init copy of mat
-    nmod_poly_mat_t hnf;
-    nmod_poly_mat_init_set(hnf, mat);
-
-    // init unimodular transformation tsf such that hnf = tsf * mat
-    nmod_poly_mat_t tsf;
-    nmod_poly_mat_init(tsf, rdim, rdim, mat->modulus);
-    nmod_poly_mat_one(tsf);
-
-    timeit_t timer;
-    timeit_start(timer);
-    slong rk = nmod_poly_mat_upper_hermite_form_rowwise_bradley(hnf, tsf);
-    timeit_stop(timer);
-    if (time)
-        flint_printf("-- time: %wd ms\n", timer->wall);
+    nmod_poly_mat_t tmp;
+    nmod_poly_mat_init(tmp, mat->r, mat->c, mat->modulus);
 
     // testing correctness, from fastest to slowest:
     // 1. unimodular transformation
     if (! nmod_poly_mat_is_unimodular(tsf))
     {
-        printf("~~~ upper, rowwise, bradley ~~~ INCORRECT: transformation is not unimodular\n");
+        printf("~~~ upper, rowwise ~~~ INCORRECT: transformation is not unimodular\n");
+        nmod_poly_mat_clear(tmp);
         return 0;
     }
 
     // 2. tsf * mat == hnf
-    nmod_poly_mat_t prod;
-    nmod_poly_mat_init(prod, rdim, mat->c, mat->modulus);
-    nmod_poly_mat_mul(prod, tsf, mat);
-    if (! nmod_poly_mat_equal(prod, hnf))
+    nmod_poly_mat_mul(tmp, tsf, mat);
+    if (! nmod_poly_mat_equal(tmp, hnf))
     {
-        printf("~~~ upper, rowwise, bradley ~~~ INCORRECT: tsf * mat != hnf\n");
+        printf("~~~ upper, rowwise ~~~ INCORRECT: tsf * mat != hnf\n");
+        nmod_poly_mat_clear(tmp);
         return 0;
     }
-    nmod_poly_mat_clear(prod);
 
     // 3. hnf is in Hermite form
     // first prune zero rows since this is a requirement of is_hermite
-    if (rk < rdim)
+    // (note that nonzero rows are necessarily the ones at rk ... rdim-1)
+    nmod_poly_mat_clear(tmp);
+    nmod_poly_mat_init(tmp, rk, hnf->c, hnf->modulus);
+    for (slong i = 0; i < rk; i++)
+        for (slong j = 0; j < hnf->c; j++)
+            nmod_poly_set(nmod_poly_mat_entry(tmp, i, j), nmod_poly_mat_entry(hnf, i, j));
+    if (! nmod_poly_mat_is_uhermite_rowwise(tmp))
     {
-        // note that nonzero rows are necessarily the ones at rk ... rdim-1
-        // FIXME true for Bradley's algo... others as well?
-        nmod_poly_mat_t tmp;
-        nmod_poly_mat_init(tmp, rk, hnf->c, hnf->modulus);
-        for (slong i = 0; i < rk; i++)
-            for (slong j = 0; j < hnf->c; j++)
-                nmod_poly_swap(nmod_poly_mat_entry(hnf, i, j), nmod_poly_mat_entry(tmp, i, j));
-        nmod_poly_mat_swap(hnf, tmp);
+        printf("~~~ upper, rowwise ~~~ INCORRECT: hnf not in Hermite form\n");
         nmod_poly_mat_clear(tmp);
-    }
-    if (! nmod_poly_mat_is_uhermite_rowwise(hnf))
-    {
-        printf("~~~ upper, rowwise, bradley ~~~ INCORRECT: hnf not in Hermite form\n");
         return 0;
+    }
+
+    nmod_poly_mat_clear(tmp);
+    return 1;
+}
+
+// test one given input for hermite form
+int core_test_hermite_form(nmod_poly_mat_t mat, int time)
+{
+    // init copy of mat
+    nmod_poly_mat_t hnf;
+    nmod_poly_mat_init(hnf, mat->r, mat->c, mat->modulus);
+
+    // init unimodular transformation tsf such that hnf = tsf * mat
+    nmod_poly_mat_t tsf;
+    nmod_poly_mat_init(tsf, mat->r, mat->r, mat->modulus);
+
+    { // Rosser's algorithm
+        nmod_poly_mat_set(hnf, mat);
+        nmod_poly_mat_one(tsf);
+        timeit_t timer;
+        timeit_start(timer);
+        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_rosser(hnf, tsf);
+        timeit_stop(timer);
+        if (time)
+            flint_printf("-- time (Rosser): %wd ms\n", timer->wall);
+        if (! verify_hermite_form(hnf, tsf, rk, mat))
+            printf("Hermite form -- Rosser -- failure.\n");
+    }
+
+    { // Bradley's algorithm
+        nmod_poly_mat_set(hnf, mat);
+        nmod_poly_mat_one(tsf);
+        timeit_t timer;
+        timeit_start(timer);
+        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_bradley(hnf, tsf);
+        timeit_stop(timer);
+        if (time)
+            flint_printf("-- time (Bradley): %wd ms\n", timer->wall);
+        if (! verify_hermite_form(hnf, tsf, rk, mat))
+            printf("Hermite form -- Bradley -- failure.\n");
     }
 
     nmod_poly_mat_clear(hnf);
@@ -167,29 +188,25 @@ int main(int argc, char ** argv)
             
         slong prime = n_randprime(state, nbits, 1);
         printf("Launching test with\n\tprime = %ld,\n\trdim = %ld,\n\tcdim = %ld,\
-               \n\torder = %ld,\n\tlen = %ld...\n",prime,rdim,cdim,order,order);
+               \n\tlen = %ld...\n",prime,rdim,cdim,order);
 
-        //one_test_pmbasis(prime, rdim, cdim, order, order, 10000);
         nmod_poly_mat_t mat;
         nmod_poly_mat_init(mat, rdim, cdim, prime);
         nmod_poly_mat_rand(mat, state, order);
 
-        if (nbits == 20)
-        {
-            printf("HNF\n");
-            core_test_hermite_form(mat, 1);
-        }
-        else
-        {
-            printf("FFLU\n");
-            nmod_poly_mat_t hnf;
-            nmod_poly_mat_init(hnf, rdim, cdim, prime);
-            nmod_poly_t den;
-            nmod_poly_init(den, prime);
-            nmod_poly_mat_fflu(hnf, den, NULL, mat, 0);
-            nmod_poly_mat_clear(hnf);
-            nmod_poly_clear(den);
-        }
+        core_test_hermite_form(mat, 1);
+
+        nmod_poly_mat_t hnf;
+        nmod_poly_mat_init(hnf, rdim, cdim, prime);
+        nmod_poly_t den;
+        nmod_poly_init(den, prime);
+        timeit_t timer;
+        timeit_start(timer);
+        nmod_poly_mat_fflu(hnf, den, NULL, mat, 0);
+        timeit_stop(timer);
+        nmod_poly_mat_clear(hnf);
+        nmod_poly_clear(den);
+        flint_printf("-- time FFLU: %wd ms (for comparison)\n", timer->wall);
 
         nmod_poly_mat_clear(mat);
     }

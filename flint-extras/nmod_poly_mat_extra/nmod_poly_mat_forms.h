@@ -718,6 +718,12 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
  * returns the rank of ``mat``. Aliasing is allowed */
 slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat,
                                                        nmod_poly_mat_t tsf);
+slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat,
+                                                      nmod_poly_mat_t tsf);
+slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat,
+                                                             nmod_poly_mat_t tsf);
+slong nmod_poly_mat_upper_hermite_form_rowwise_domich(nmod_poly_mat_t mat,
+                                                      nmod_poly_mat_t tsf);
 
 
 //@} // doxygen group: Computing polynomial matrix forms
