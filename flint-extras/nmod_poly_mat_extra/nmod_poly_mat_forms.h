@@ -722,8 +722,12 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat,
                                                       nmod_poly_mat_t tsf);
 slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat,
                                                              nmod_poly_mat_t tsf);
-slong nmod_poly_mat_upper_hermite_form_rowwise_domich(nmod_poly_mat_t mat,
-                                                      nmod_poly_mat_t tsf);
+// TODO mod det version (see e.g. Domich) ? quite often, computing the
+// determinant is not much easier than computing the HNF (with fast algos)...
+// --> YET once may imagine e.g. approximant/interpolant basis computation,
+// where the determinant (or a multiple of it) is actually known, so if having
+// it helps, why not? (still, for approximants/interpolants, one might as well
+// compute them directly in HNF...)
 
 
 //@} // doxygen group: Computing polynomial matrix forms

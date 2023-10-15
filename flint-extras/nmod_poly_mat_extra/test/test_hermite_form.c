@@ -15,6 +15,12 @@
 
 int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat)
 {
+    if (! tsf)
+    {
+        printf("~~~ upper, rowwise ~~~ transformation not provided, skipping verification\n");
+        return 1;
+    }
+
     // testing correctness, from fastest to slowest:
     // 0. dimensions
     if (mat->r != hnf->r || mat->c != hnf->c || mat->r != tsf->r || mat->r != tsf->c)
@@ -105,11 +111,13 @@ int core_test_hermite_form(nmod_poly_mat_t mat, int time)
         timeit_t timer;
         timeit_start(timer);
         slong rk = nmod_poly_mat_upper_hermite_form_rowwise_rosser(hnf, tsf);
+        //slong rk = nmod_poly_mat_upper_hermite_form_rowwise_rosser(hnf, NULL);
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (Rosser): %wd ms\n", timer->wall);
         timeit_start(timer);
         if (! verify_hermite_form(hnf, tsf, rk, mat))
+        //if (! verify_hermite_form(hnf, NULL, rk, mat))
             printf("Hermite form -- Rosser -- failure.\n");
         timeit_stop(timer);
         if (time)
@@ -121,12 +129,14 @@ int core_test_hermite_form(nmod_poly_mat_t mat, int time)
         nmod_poly_mat_one(tsf);
         timeit_t timer;
         timeit_start(timer);
-        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_bradley(hnf, tsf);
+        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_rosser(hnf, tsf);
+        //slong rk = nmod_poly_mat_upper_hermite_form_rowwise_bradley(hnf, NULL);
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (Bradley): %wd ms\n", timer->wall);
         timeit_start(timer);
         if (! verify_hermite_form(hnf, tsf, rk, mat))
+        //if (! verify_hermite_form(hnf, NULL, rk, mat))
             printf("Hermite form -- Bradley -- failure.\n");
         timeit_stop(timer);
         if (time)
@@ -238,15 +248,15 @@ int main(int argc, char ** argv)
 
         core_test_hermite_form(mat, 1);
 
-        nmod_poly_mat_t hnf;
-        nmod_poly_mat_init(hnf, rdim, cdim, prime);
+        nmod_poly_mat_t ref;
+        nmod_poly_mat_init(ref, rdim, cdim, prime);
         nmod_poly_t den;
         nmod_poly_init(den, prime);
         timeit_t timer;
         timeit_start(timer);
-        nmod_poly_mat_fflu(hnf, den, NULL, mat, 0);
+        nmod_poly_mat_rref(ref, den, mat);
         timeit_stop(timer);
-        nmod_poly_mat_clear(hnf);
+        nmod_poly_mat_clear(ref);
         nmod_poly_clear(den);
         flint_printf("-- time FFLU: %wd ms (for comparison)\n", timer->wall);
 

@@ -19,9 +19,12 @@
 //         --> if wanting the transformation for this computation only, set tsf to identity before calling this
 
 // Rosser's algorithm
-// proceed column by column, look at the right of the diagonal and kill leading
-//      term of largest deg by using the second largest deg; continue in the same
-//      column until all terms below diagonal are zero
+// proceed column by column, when looking for i-th pivot (in column j >= i) look
+// at entries [i:m,j], and kill leading term of largest deg by using the second
+// largest deg (using basic operation only, adding a multiple of another row by
+// constant*x**k); continue in the same column until all entries in [i:m,j]
+// except one are zero; swap rows to put the nonzero one at [i,j]
+// --> TODO try version using divrem and poly multiplication instead of constant*x**k?
 slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
 {
     const slong m = mat->r;
@@ -212,6 +215,17 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
     return rk;
 }
 
+// Bradley's algorithm
+// proceed column by column, when looking for i-th pivot (in column j >= i) look
+// at entries [i:m,j], and repeatedly use gcd's between the two first nonzero
+// entries in [i:m,j], say at [pi,j] and [ii,j], to zero out [ii,j] and reduce [pi,j]
+// as much as possible. If g = u * mat[pi,j] + v * mat[ii,j], then this means
+// applying the following unimodular transformation to rows pi and ii:
+//  [ mat[pi,:] ]  =  [    u       v  ]  *  [ mat[pi,:] ]
+//  [ mat[ii,:] ]     [ -nonzg   pivg ]     [ mat[ii,:] ]
+// where nonzg = mat[ii,j]/g   and   pivg = mat[pi,j]/g
+// This goes on same column until all entries in [i:m,j] except one are zero;
+// swap rows to put the nonzero one at [i,j]. Then proceed to next column.
 slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
 {
     const slong m = mat->r;
@@ -396,8 +410,9 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod
     return rk;
 }
 
-
-slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t tsf);
+slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
+{
+}
 // at start of iteration i, the (i-1)x(i-1) leading principal submatrix is in HNF. 
 // --> first use gcd on rows (1,i), (2,i), ... (i-1,i) to reduce the first i-1 entries of row i
 // --> then reduce the entries above the diagonal in i-th column
