@@ -19,12 +19,13 @@
 //         --> if wanting the transformation for this computation only, set tsf to identity before calling this
 
 // Rosser's algorithm
-// proceed column by column, when looking for i-th pivot (in column j >= i) look
+// proceed column by column. When looking for i-th pivot (in column j >= i) look
 // at entries [i:m,j], and kill leading term of largest deg by using the second
 // largest deg (using basic operation only, adding a multiple of another row by
 // constant*x**k); continue in the same column until all entries in [i:m,j]
 // except one are zero; swap rows to put the nonzero one at [i,j]
 // --> TODO try version using divrem and poly multiplication instead of constant*x**k?
+// --> TODO put the normalization step inside the main triangularization loop?
 slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
 {
     const slong m = mat->r;
@@ -216,7 +217,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
 }
 
 // Bradley's algorithm
-// proceed column by column, when looking for i-th pivot (in column j >= i) look
+// proceed column by column. When looking for i-th pivot (in column j >= i) look
 // at entries [i:m,j], and repeatedly use gcd's between the two first nonzero
 // entries in [i:m,j], say at [pi,j] and [ii,j], to zero out [ii,j] and reduce [pi,j]
 // as much as possible. If g = u * mat[pi,j] + v * mat[ii,j], then this means
@@ -226,6 +227,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
 // where nonzg = mat[ii,j]/g   and   pivg = mat[pi,j]/g
 // This goes on same column until all entries in [i:m,j] except one are zero;
 // swap rows to put the nonzero one at [i,j]. Then proceed to next column.
+// --> TODO put the normalization step inside the main triangularization loop?
 slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
 {
     const slong m = mat->r;
@@ -410,6 +412,30 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod
     return rk;
 }
 
+// Kannan-Bachem's algorithm
+// proceed by leading submatrices. When looking for i-th pivot, in column j >=
+// i, the (i-1) x (j-1) leading submatrix `hnf` is already in Hermite form.
+//
+// Then, ensure entries [i,jj] for jj in 0:j are zero. Look for the first row
+// ii in i:m such that [ii,0:j+1] is nonzero. If there is none increment j and
+// process next submatrix, otherwise for jj in 0:j in that order, do:
+// - if mat[ii,jj] is nonzero and there is no pivot in column jj in hnf, reduce
+// entries [ii,jj+1:j] against hnf, reduce appropriate entries in column jj of
+// hnf against mat[ii,jj], and move row ii to the correct location in hnf;
+// increment the pivot count i without increasing j, and go to process the next
+// leading submatrix
+// - else, if mat[ii,jj] is nonzero and there is a pivot in column jj in hnf,
+// say in row pi, use gcd between [pi,jj] and [ii,jj] and apply the
+// corresponding row-wise unimodular transformation between rows pi and ii (see
+// description of Bradley's algorithm above), which puts a zero at [ii,jj] and
+// the gcd at [pi,jj]; reduce appropriate entries in hnf in column jj, and
+// proceed to next jj.
+//
+// Now that all entries in [ii,0:j] are zero, check if entry [ii,j] is nonzero;
+// - if yes, this is a new pivot, reduce entries above it, increment both i and
+// j, and proceed to next leading submatrix
+// - if no, swap row ii and the last row, and keep the same i,j to process same
+// submatrix again.
 slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
 {
 }
