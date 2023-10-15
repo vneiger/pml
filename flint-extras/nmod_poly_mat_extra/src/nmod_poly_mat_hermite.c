@@ -7,7 +7,9 @@
 
 // TODO how to handle upper/lower?
 // TODO how to handle rowwise/colwise?
-// TODO restrict to rank rows, where to do this?
+// TODO eventually restrict the output HNF to rank rows, where to do this?
+// TODO check that all memory is cleared everywhere
+//
 //
 //
 // For all:
@@ -18,11 +20,55 @@
 //    -- otherwise, the transformation is accumulated into tsf
 //         --> if wanting the transformation for this computation only, set tsf to identity before calling this
 
+/**********************************************************************
+*                          HELPER FUNCTIONS                          *
+**********************************************************************/
+
+// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[i,:]     <--    mat[j,:]
+//      mat[i+1,:]   <--    mat[i,:]
+//      mat[i+2,:]   <--    mat[i+1,:]
+//         ...       <--       ...
+//      mat[j-1,:]   <--    mat[j-2,:]
+//      mat[j,:]     <--    mat[j-1,:]
+// as well as
+//      vec[i]     <--    vec[j]
+//      vec[i+1]   <--    vec[i]
+//      vec[i+2]   <--    vec[i+1]
+//        ...      <--      ...
+//      vec[j-1]   <--    vec[j-2]
+//      vec[j]     <--    vec[j-1]
+void _nmod_poly_mat_rotate_rows(nmod_poly_mat_t mat, slong * vec, slong i, slong j)
+{
+    if (i != j)
+    {
+        if (vec)
+        {
+            slong tmp_vec = vec[j];
+            for (slong ii = j; ii > i; ii--)
+                vec[ii] = vec[ii-1];
+            vec[i] = tmp_vec;
+        }
+
+        nmod_poly_struct * tmp_mat = mat->rows[j];
+        for (slong ii = j; ii > i; ii--)
+            mat->rows[ii] = mat->rows[ii-1];
+        mat->rows[i] = tmp_mat;
+    }
+}
 
 
-// helper function for computing xgcd and applying corresponding unimodular transformation
-// TODO more complete description + assumptions on input
-// all inputs are already initialized; piv and nonz may be NULL
+
+// computing xgcd and applying corresponding unimodular transformation
+// input is mat, tsf, pi, ii, j
+// pivot is at pi,j
+// we perform xgcd between pivot and mat[ii,j]
+// g, u, v, pivg, nonzg are used as temporaries and must be already initialized,
+// piv and nonz may be NULL
 void _apply_xgcd_transformation(nmod_poly_t g, nmod_poly_t u, nmod_poly_t v,
                                 nmod_poly_t pivg, nmod_poly_t nonzg,
                                 nmod_poly_struct * piv, nmod_poly_struct * entry,
@@ -85,8 +131,7 @@ void _apply_xgcd_transformation(nmod_poly_t g, nmod_poly_t u, nmod_poly_t v,
 
 // normalize pivot entry in given row of mat, applying the corresponding
 // operation to the whole row of mat and the corresponding row of the transformation tsf
-// i is index of the row
-// j is index where the pivot is
+// (i,j) is position of the pivot entry
 // piv points to the pivot entry
 // entry will be used as temp
 void _normalize_pivot(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, nmod_poly_struct * piv,
@@ -112,7 +157,7 @@ void _normalize_pivot(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, nmod_poly_struct
     }
 }
 
-// reduce entry mat[ii,j] against pivot entry piv which is at mat[i,j],
+// reduce entry mat[ii,j] against pivot entry piv, which is at mat[i,j],
 // applying the corresponding operation to the whole row ii of mat and the
 // corresponding row ii of the transformation tsf
 // entry, u, v are used as temporaries (u, v must be already initialized, entry can be NULL)
@@ -167,7 +212,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
     // -> index rk below will tell us how many have been found already,
     //     pivots_cols[i] for i >= rk is undefined
     // -> there will never be > rank(mat) pivots
-    slong * pivot_cols = flint_malloc(FLINT_MIN(m,n) * sizeof(slong));
+    slong * pivot_col = flint_malloc(FLINT_MIN(m,n) * sizeof(slong));
 
     // (rk,j) : position where next pivot is expected to be found when processing column j,
     // =>   rk = number of pivots already found in columns < j, which is also the rank
@@ -204,7 +249,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
                 nmod_poly_mat_swap_rows(mat, NULL, pi1, rk);
                 if (tsf)
                     nmod_poly_mat_swap_rows(tsf, NULL, pi1, rk);
-                pivot_cols[rk] = j;
+                pivot_col[rk] = j;
                 rk++;
                 collision = 0;
             }
@@ -231,7 +276,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
                     nmod_poly_mat_swap_rows(mat, NULL, pi1, rk);
                     if (tsf)
                         nmod_poly_mat_swap_rows(tsf, NULL, pi1, rk);
-                    pivot_cols[rk] = j;
+                    pivot_col[rk] = j;
                     rk++;
                     collision = 0;
                 }
@@ -293,7 +338,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
     nmod_poly_init(v, mat->modulus);
     for (slong i = 0; i < rk; i++)
     {
-        slong j = pivot_cols[i];
+        slong j = pivot_col[i];
         entry2 = nmod_poly_mat_entry(mat, i, j); // pivot entry
 
         // normalize pivot, and correspondingly update the row i of mat and of tsf
@@ -304,7 +349,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
             _reduce_against_pivot(mat, tsf, entry2, i, j, ii, entry1, u, v);
     }
 
-    flint_free(pivot_cols);
+    flint_free(pivot_col);
 
     return rk;
 }
@@ -334,7 +379,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod
     // -> index rk below will tell us how many have been found already,
     //     pivots_cols[i] for i >= rk is undefined
     // -> there will never be > rank(mat) pivots
-    slong * pivot_cols = flint_malloc(FLINT_MIN(m,n) * sizeof(slong));
+    slong * pivot_col = flint_malloc(FLINT_MIN(m,n) * sizeof(slong));
 
     // (rk,j) : position where next pivot is expected to be found when processing column j,
     // =>   rk = number of pivots already found in columns < j, which is also the rank
@@ -384,7 +429,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod
             nmod_poly_mat_swap_rows(mat, NULL, rk, pi); // does nothing if rk==pi
             if (tsf)
                 nmod_poly_mat_swap_rows(tsf, NULL, rk, pi);
-            pivot_cols[rk] = j;
+            pivot_col[rk] = j;
             rk++;
         }
     }
@@ -394,7 +439,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod
     // 2. normalize each pivot
     for (slong i = 0; i < rk; i++)
     {
-        slong j = pivot_cols[i];
+        slong j = pivot_col[i];
         piv = nmod_poly_mat_entry(mat, i, j);
 
         // normalize pivot, and correspondingly update the row i of mat and of tsf
@@ -405,7 +450,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod
             _reduce_against_pivot(mat, tsf, piv, i, j, ii, entry, u, v);
     }
 
-    flint_free(pivot_cols);
+    flint_free(pivot_col);
     nmod_poly_clear(g);
     nmod_poly_clear(u);
     nmod_poly_clear(v);
@@ -452,7 +497,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
     // -> index i below will tell us how many have been found already,
     //     pivots_cols[ii] for ii >= i is undefined
     // -> there will never be > rank(mat) pivots
-    slong * pivot_cols = flint_malloc(FLINT_MIN(m,n) * sizeof(slong));
+    slong * pivot_col = flint_malloc(FLINT_MIN(m,n) * sizeof(slong));
     // for simplicity also store reverse array
     // -> pivot_row[j] is either -1 (not among the pivots discovered so far)
     // or is the index of the row with pivot j
@@ -463,10 +508,9 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
     // we will now try to increase either i (if new pivot found in row i or
     // below), or j (if submatrix [i:m,0:j+1] does not bring any new pivot), or
     // both (if new pivot found in column j)
-    slong i = 1;
-    slong j = 1;
+    slong i = 0;
+    slong j = 0;
 
-    mp_limb_t inv; // will store inverses of leading coefficients for making monic
     nmod_poly_struct * piv = NULL; // will point to pivot entry
     nmod_poly_struct * nonz = NULL; // will point to nonpivot entry that is bound to become zero
     nmod_poly_struct * entry = NULL; // will point to some entry
@@ -485,10 +529,12 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
     // reached maximal rank, or when we have processed all columns
     while (i < m && j < n)
     {
+        //printf("i = %ld - j = %ld - IN  degree matrix:\n", i, j);
+        //nmod_poly_mat_degree_matrix_print_pretty(mat);
         // Look for the first row ii in i:m such that [ii,0:j+1] is nonzero.
         // also find jj such that [ii,jj] is the first nonzero entry among [ii,0:j+1]
         slong ii = i;
-        slong jj;
+        slong jj = 0;
         int row_is_zero = 1;
         while (ii < m && row_is_zero)
         {
@@ -500,54 +546,133 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
             else // jj <= j and mat[ii,jj] is nonzero
                 row_is_zero = 0;
         }
+        //printf("i = %ld - j = %ld - nonz search: ii = %ld - jj = %ld\n", i, j, ii, jj);
         if (ii == m) // no nonzero row, increment j and process next submatrix
             j++;
-        else
+        else // found nonzero row
         {
-            // process entries ii,jj for jj in 0:j
+            // variable now used to record whether we found new pivot, or only
+            // put zeroes thanks to gcd transformations
+            row_is_zero = 1; 
+
+            // swap rows i and ii
+            nmod_poly_mat_swap_rows(mat, NULL, i, ii); // does nothing if i == ii
+            if (tsf)
+                nmod_poly_mat_swap_rows(tsf, NULL, i, ii);
+
+            // process entries i,jj for jj in 0:j
             // (start at previously found jj since entries before that are zero)
             for (; jj < j; jj++)
             {
-                if (! nmod_poly_is_zero(nmod_poly_mat_entry(mat, ii, jj)))
+                if (! nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, jj)))
                 {
                     slong pi = pivot_row[jj];
-                    if (pi >= 0) // a pivot has already been found at [pi,jj]
+                    if (pi >= 0) // a pivot has already been found at [pi,jj], for some pi < i
                     {
-                        // use gcd between [pi,jj] and [ii,jj] and apply the
-                        // corresponding row-wise unimodular transformation
-                        // between rows pi and ii (see description of Bradley's
-                        // algorithm above), which puts a zero at [ii,jj] and
-                        // the gcd at [pi,jj]
-                        _apply_xgcd_transformation(g, u, v, pivg, nonzg, piv, nonz, mat, tsf, pi, ii, jj);
+                        //printf("i = %ld - j = %ld ; no-new-pivot - pi = %ld - jj = %ld\n", i, j, pi, jj);
+                        // use gcd between [pi,jj] and [i,jj] and apply the corresponding row-wise unimodular transformation
+                        // between rows pi and i (see description of Bradley's algorithm), which puts a zero at [i,jj] and
+                        // the gcd (updated pivot) at [pi,jj]
+                        _apply_xgcd_transformation(g, u, v, pivg, nonzg, piv, nonz, mat, tsf, pi, i, jj);
+                        // note: new pivot already normalized since xgcd ensures the gcd is monic
 
-                        // reduce appropriate entries in hnf in column jj, and
-                        // proceed to next jj.
+                        // reduce appropriate entries in hnf in column jj
+                        //nmod_poly_mat_degree_matrix_print_pretty(mat);
+                        for (ii = 0; ii < pi; ii++)
+                            _reduce_against_pivot(mat, tsf, nmod_poly_mat_entry(mat, pi, jj), pi, jj, ii, entry, u, v);
+                        //nmod_poly_mat_degree_matrix_print_pretty(mat);
+                        //printf("finished\n");
                     }
                     else // pivot_row[jj] == -1, currently no pivot in column jj
                     {
-                        // reduce entries [ii,jj+1:j] against hnf, reduce
-                        // appropriate entries in column jj of hnf against
-                        // mat[ii,jj], and move row ii to the correct location
-                        // in hnf; increment the pivot count i without
-                        // increasing j, and go to process the next leading
-                        // submatrix
+                        //printf("i = %ld - j = %ld ; new-pivot\n", i, j);
+                        row_is_zero = 0;
+                        // move row i to the correct location in hnf and update pivot_row, pivot_col
+                        ii = 0; // index where row i must be placed
+                        while (ii < i && pivot_col[ii] < jj)
+                            ii++;
+                        // rotate mat and pivot_col
+                        pivot_col[i] = jj;
+                        _nmod_poly_mat_rotate_rows(mat, pivot_col, ii, i);
+                        if (tsf)
+                            _nmod_poly_mat_rotate_rows(tsf, NULL, ii, i);
+                        pivot_row[jj] = i; // column jj is new pivot for row i
+                        // update pivot row for found pivots in jj+1 ... j-1
+                        for (slong pj = jj+1; pj < j; pj++)
+                            if (pivot_row[pj] >= 0)
+                                pivot_row[pj] += 1;
+
+                        // the new row is now at index ii, with new pivot at ii,jj
+                        // normalize the new pivot
+                        _normalize_pivot(mat, tsf, nmod_poly_mat_entry(mat, ii, jj), ii, jj, entry);
+
+                        // reduce entries [ii,jj+1:j] against current hnf
+                        for (slong kk = jj+1; kk < j; kk++)
+                        {
+                            pi = pivot_row[kk];
+                            if (pi >= 0) // otherwise, no pivot, nothing to do
+                            {
+                                // reduce mat[ii,kk] against pivot [pi,kk]
+                                _reduce_against_pivot(mat, tsf, nmod_poly_mat_entry(mat, pi, kk),
+                                                      pi, kk, ii, entry, u, v);
+                            }
+                        }
+                        // reduce column jj of hnf against new pivot mat[ii,jj]
+                        for (slong pii = 0; pii < ii; pii++)
+                        {
+                            // reduce pii,jj against the pivot [ii,jj]
+                            _reduce_against_pivot(mat, tsf, nmod_poly_mat_entry(mat, pii, jj),
+                                                  ii, jj, pii, entry, u, v);
+                        }
+                        // increment the pivot count i without increasing j
+                        i++;
+                        // abort current jj-for loop, go to next submatrix
+                        break;
                     }
                 }
             }
-
+            if (row_is_zero)
+            {
+                // now all entries in [i,0:j] have been set to zero via gcd
+                // operations, and we have not detected a new pivot
+                if (nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, j)))
+                {
+                    //printf("i = %ld - j = %ld ; now in row_is_zero --> no new pivot\n", i, j);
+                    // entry [i,j] is zero, swap row i and the last row (just
+                    // to avoid wasting time re-checking it is zero), and keep
+                    // the same i,j to process same submatrix again.
+                    nmod_poly_mat_swap_rows(mat, NULL, i, mat->r -1);
+                    if (tsf)
+                        nmod_poly_mat_swap_rows(tsf, NULL, i, mat->r -1);
+                }
+                else
+                {
+                    //printf("i = %ld - j = %ld ; now in row_is_zero --> new pivot\n", i, j);
+                    // update pivot_col and pivot_row
+                    pivot_col[i] = j;
+                    pivot_row[j] = i;
+                    // entry [i,j] is nonzero, this is a new pivot
+                    // normalize it
+                    _normalize_pivot(mat, tsf, nmod_poly_mat_entry(mat, i, j), i, j, entry);
+                    // reduce entries above it, i.e. ii,j against pivot i,j
+                    for (ii = 0; ii < i; ii++)
+                        _reduce_against_pivot(mat, tsf, nmod_poly_mat_entry(mat, i, j),
+                                              i, j, ii, entry, u, v);
+                    // increment both i and j
+                    i++;
+                    j++;
+                }
+            }
         }
+        //printf("i = %ld - j = %ld - OUT degree matrix:\n", i-1, j-1);
+        //nmod_poly_mat_degree_matrix_print_pretty(mat);
     }
 
-//
-// Now that all entries in [ii,0:j] are zero, check if entry [ii,j] is nonzero;
-// - if yes, this is a new pivot, reduce entries above it, increment both i and
-// j, and proceed to next leading submatrix
-// - if no, swap row ii and the last row, and keep the same i,j to process same
-// submatrix again.
+    flint_free(pivot_col);
+    flint_free(pivot_row);
 
+    return i;
 }
-
-slong nmod_poly_mat_upper_hermite_form_rowwise_domich(nmod_poly_mat_t mat, nmod_poly_mat_t tsf);
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

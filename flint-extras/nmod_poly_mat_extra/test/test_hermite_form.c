@@ -11,8 +11,11 @@
 #include <flint/ulong_extras.h>
 #include <flint/profiler.h>
 
+//#define NONSINGULAR
+//#define NOTRANS
+
 // verify Hermite form
-int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, int nonsingular)
+int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat)
 {
     if (! tsf)
     {
@@ -29,41 +32,38 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, sl
     }
 
     // 1. unimodular transformation
-    if (! nonsingular)
+#ifndef NONSINGULAR
+    if (! nmod_poly_mat_is_unimodular(tsf))
     {
-        if (! nmod_poly_mat_is_unimodular(tsf))
-        {
-            printf("~~~ upper, rowwise ~~~ INCORRECT: transformation is not unimodular\n");
-            return 0;
-        }
+        printf("~~~ upper, rowwise ~~~ INCORRECT: transformation is not unimodular\n");
+        return 0;
     }
-    else
-    {
-        // NOTE the above is slow due to likely large degrees in transformation
-        // --> circumvent it in the square case
-        // --> also requires nonsingular, otherwise det(mat) and det(hnf) do
-        // not say anything useful
-        nmod_poly_t det1;
-        nmod_poly_init(det1, mat->modulus);
-        nmod_poly_mat_det(det1, mat);
-        nmod_poly_make_monic(det1, det1);
+#else
+    // NOTE the above is slow due to likely large degrees in transformation
+    // --> circumvent it in the square case
+    // --> also requires nonsingular, otherwise det(mat) and det(hnf) do
+    // not say anything useful
+    nmod_poly_t det1;
+    nmod_poly_init(det1, mat->modulus);
+    nmod_poly_mat_det(det1, mat);
+    nmod_poly_make_monic(det1, det1);
 
-        nmod_poly_t det2;
-        nmod_poly_init(det2, mat->modulus);
-        nmod_poly_one(det2);
-        for (slong i = 0; i < hnf->r; i++)
-            nmod_poly_mul(det2, det2, nmod_poly_mat_entry(hnf, i, i));
-        nmod_poly_make_monic(det2, det2);
-        if (! nmod_poly_equal(det1, det2))
-        {
-            printf("~~~ upper, rowwise ~~~ INCORRECT: transformation is not unimodular\n");
-            nmod_poly_clear(det1);
-            nmod_poly_clear(det2);
-            return 0;
-        }
+    nmod_poly_t det2;
+    nmod_poly_init(det2, mat->modulus);
+    nmod_poly_one(det2);
+    for (slong i = 0; i < hnf->r; i++)
+        nmod_poly_mul(det2, det2, nmod_poly_mat_entry(hnf, i, i));
+    nmod_poly_make_monic(det2, det2);
+    if (! nmod_poly_equal(det1, det2))
+    {
+        printf("~~~ upper, rowwise ~~~ INCORRECT: transformation is not unimodular\n");
         nmod_poly_clear(det1);
         nmod_poly_clear(det2);
+        return 0;
     }
+    nmod_poly_clear(det1);
+    nmod_poly_clear(det2);
+#endif // NONSINGULAR
 
     // 2. tsf * mat == hnf
     nmod_poly_mat_t tmp;
@@ -111,14 +111,20 @@ int core_test_hermite_form(nmod_poly_mat_t mat, int time)
         nmod_poly_mat_one(tsf);
         timeit_t timer;
         timeit_start(timer);
+#ifndef NOTRANS
         slong rk = nmod_poly_mat_upper_hermite_form_rowwise_rosser(hnf, tsf);
-        //slong rk = nmod_poly_mat_upper_hermite_form_rowwise_rosser(hnf, NULL);
+#else
+        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_rosser(hnf, NULL);
+#endif /* ifndef NOTRANS */
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (Rosser): %wd ms\n", timer->wall);
         timeit_start(timer);
-        if (! verify_hermite_form(hnf, tsf, rk, mat, 0))
-        //if (! verify_hermite_form(hnf, NULL, rk, mat, 0))
+#ifndef NOTRANS
+        if (! verify_hermite_form(hnf, tsf, rk, mat))
+#else
+        if (! verify_hermite_form(hnf, NULL, rk, mat))
+#endif /* ifndef NOTRANS */
             printf("Hermite form -- Rosser -- failure.\n");
         timeit_stop(timer);
         if (time)
@@ -130,15 +136,46 @@ int core_test_hermite_form(nmod_poly_mat_t mat, int time)
         nmod_poly_mat_one(tsf);
         timeit_t timer;
         timeit_start(timer);
+#ifndef NOTRANS
         slong rk = nmod_poly_mat_upper_hermite_form_rowwise_bradley(hnf, tsf);
-        //slong rk = nmod_poly_mat_upper_hermite_form_rowwise_bradley(hnf, NULL);
+#else
+        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_bradley(hnf, NULL);
+#endif /* ifndef NOTRANS */
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (Bradley): %wd ms\n", timer->wall);
         timeit_start(timer);
-        if (! verify_hermite_form(hnf, tsf, rk, mat, 0))
-        //if (! verify_hermite_form(hnf, NULL, rk, mat, 0))
+#ifndef NOTRANS
+        if (! verify_hermite_form(hnf, tsf, rk, mat))
+#else
+        if (! verify_hermite_form(hnf, NULL, rk, mat))
+#endif /* ifndef NOTRANS */
             printf("Hermite form -- Bradley -- failure.\n");
+        timeit_stop(timer);
+        if (time)
+            flint_printf("-- time (verif): %wd ms\n", timer->wall);
+    }
+
+    { // Kannan-Bachem's algorithm
+        nmod_poly_mat_set(hnf, mat);
+        nmod_poly_mat_one(tsf);
+        timeit_t timer;
+        timeit_start(timer);
+#ifndef NOTRANS
+        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(hnf, tsf);
+#else
+        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(hnf, NULL);
+#endif /* ifndef NOTRANS */
+        timeit_stop(timer);
+        if (time)
+            flint_printf("-- time (Kannan-Bachem): %wd ms\n", timer->wall);
+        timeit_start(timer);
+#ifndef NOTRANS
+        if (! verify_hermite_form(hnf, tsf, rk, mat))
+#else
+        if (! verify_hermite_form(hnf, NULL, rk, mat))
+#endif /* ifndef NOTRANS */
+            printf("Hermite form -- Kannan-Bachem -- failure.\n");
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", timer->wall);
