@@ -12,8 +12,7 @@
 #include <flint/profiler.h>
 
 // verify Hermite form
-
-int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat)
+int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, int nonsingular)
 {
     if (! tsf)
     {
@@ -30,7 +29,7 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, sl
     }
 
     // 1. unimodular transformation
-    if (mat->r != mat->c)
+    if (! nonsingular)
     {
         if (! nmod_poly_mat_is_unimodular(tsf))
         {
@@ -42,6 +41,8 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, sl
     {
         // NOTE the above is slow due to likely large degrees in transformation
         // --> circumvent it in the square case
+        // --> also requires nonsingular, otherwise det(mat) and det(hnf) do
+        // not say anything useful
         nmod_poly_t det1;
         nmod_poly_init(det1, mat->modulus);
         nmod_poly_mat_det(det1, mat);
@@ -116,8 +117,8 @@ int core_test_hermite_form(nmod_poly_mat_t mat, int time)
         if (time)
             flint_printf("-- time (Rosser): %wd ms\n", timer->wall);
         timeit_start(timer);
-        if (! verify_hermite_form(hnf, tsf, rk, mat))
-        //if (! verify_hermite_form(hnf, NULL, rk, mat))
+        if (! verify_hermite_form(hnf, tsf, rk, mat, 0))
+        //if (! verify_hermite_form(hnf, NULL, rk, mat, 0))
             printf("Hermite form -- Rosser -- failure.\n");
         timeit_stop(timer);
         if (time)
@@ -129,14 +130,14 @@ int core_test_hermite_form(nmod_poly_mat_t mat, int time)
         nmod_poly_mat_one(tsf);
         timeit_t timer;
         timeit_start(timer);
-        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_rosser(hnf, tsf);
+        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_bradley(hnf, tsf);
         //slong rk = nmod_poly_mat_upper_hermite_form_rowwise_bradley(hnf, NULL);
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (Bradley): %wd ms\n", timer->wall);
         timeit_start(timer);
-        if (! verify_hermite_form(hnf, tsf, rk, mat))
-        //if (! verify_hermite_form(hnf, NULL, rk, mat))
+        if (! verify_hermite_form(hnf, tsf, rk, mat, 0))
+        //if (! verify_hermite_form(hnf, NULL, rk, mat, 0))
             printf("Hermite form -- Bradley -- failure.\n");
         timeit_stop(timer);
         if (time)
