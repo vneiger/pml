@@ -8,6 +8,7 @@
 void _nmod_poly_mat_handle_pivot_collision(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
                                            slong i, slong ii, slong j)
 {
+
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
