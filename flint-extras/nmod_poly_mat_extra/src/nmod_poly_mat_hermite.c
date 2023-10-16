@@ -5,8 +5,10 @@
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_io.h" // TODO remove, for debugging
 
-#define MAT(i,j) nmod_poly_mat_entry(mat, i, j)
-#define TSF(i,j) nmod_poly_mat_entry(tsf, i, j)
+//#define MAT(i,j) nmod_poly_mat_entry(mat, i, j)
+//#define TSF(i,j) nmod_poly_mat_entry(tsf, i, j)
+#define MAT(i,j) (mat->rows[i] + j)
+#define TSF(i,j) (tsf->rows[i] + j)
 
 // TODO how to handle upper/lower?
 // TODO how to handle rowwise/colwise?
@@ -64,20 +66,29 @@ void _nmod_poly_mat_rotate_rows(nmod_poly_mat_t mat, slong * vec, slong i, slong
     }
 }
 
+// two potential new HNF pivots have been found in the same column, i.e.
+// entries [pi1,j] and [pi2,j] which are both nonzero, with deg [pi1,j] >= deg
+// [pi2,j], and all entries [pi1,jj] and [pi2,jj] for jj < j are zero (pivots
+// in columns 0:j have been found and none of them is in row pi1 or pi2)
+// -> use pi2,j to kill the leading term of pi1,j, and apply the
+// corresponding transformation to the whole row pi1
+// --> this is a "simple transformation of the first kind" (terminology from Mulders & Storjohann 2003)
+//         mat[pi1,:] = mat[pi1,:] + cst * x**exp * mat[pi2,:]
+// where cst = - leading_coeff(mat[pi1,j]) / leading_coeff(mat[pi2,j])
+//   and exp = deg(mat[pi1,j]) - deg(mat[pi2,j])
 void _apply_pivot_collision_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
                                            slong pi1, slong pi2, slong j)
 {
-    // use pi2,j to kill the leading term of pi1,j, and apply the
-    // corresponding transformation to the whole row pi1
-    //  --> mat[pi1,:] = mat[pi1,:] + cst * x**exp * mat[pi2,:]
-    // where cst = - leading_coeff(mat[pi1,j]) / leading_coeff(mat[pi2,j])
-    //   and exp = deg(mat[pi1,j]) - deg(mat[pi2,j])
+    // compute exp = deg(mat[pi1,j]) - deg(mat[pi2,j])
     const slong exp = MAT(pi1, j)->length - MAT(pi2, j)->length;
+    // compute cst = - leading_coeff(mat[pi1,j]) / leading_coeff(mat[pi2,j])
     mp_limb_t cst = n_invmod(MAT(pi2, j)->coeffs[MAT(pi2, j)->length -1], mat->modulus);
     cst = nmod_mul(MAT(pi1, j)->coeffs[MAT(pi1, j)->length -1], cst, MAT(pi1, j)->mod);
     cst = nmod_neg(cst, MAT(pi1, j)->mod);
+    // update pivot pi1,j
     _nmod_vec_scalar_addmul_nmod(MAT(pi1, j)->coeffs+exp, MAT(pi2, j)->coeffs, MAT(pi2, j)->length, cst, MAT(pi1, j)->mod);
     _nmod_poly_normalise(MAT(pi1, j));
+    // update entries to the right of pi1,j (left ones are zero)
     for (slong jj = j+1; jj < mat->c; jj++)
     {
         const slong len = MAT(pi2, jj)->length + exp;
@@ -90,6 +101,7 @@ void _apply_pivot_collision_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t 
         _nmod_vec_scalar_addmul_nmod(MAT(pi1, jj)->coeffs+exp, MAT(pi2, jj)->coeffs, MAT(pi2, jj)->length, cst, MAT(pi1, jj)->mod);
         _nmod_poly_normalise(MAT(pi1, jj));
     }
+    // update the row pi1 of tsf
     if (tsf) for (slong jj = 0; jj < mat->r; jj++)
     {
         const slong len = TSF(pi2, jj)->length + exp;
@@ -110,7 +122,7 @@ void _apply_pivot_collision_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t 
 // pivot is at pi,j
 // other entry is at ii,j
 // we perform xgcd between pivot and mat[ii,j]
-// g, u, v, pivg, nonzg are used as temporaries and must be already initialized,
+// g, u, v, pivg, nonzg are used as temporaries and must be already initialized
 void _apply_xgcd_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
                                 slong pi, slong ii, slong j,
                                 nmod_poly_t g, nmod_poly_t u, nmod_poly_t v,
@@ -178,7 +190,7 @@ void _apply_xgcd_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
                 //     tsf[pi,jj] = u * tsf[pi,jj] + v * tsf[ii,jj]
                 //     tsf[ii,jj] = -nonzg * tsf[pi,jj] + pivg * tsf[ii,jj]
                 // --> use g as temporary copy of tsf[pi,jj]
-                // --> use entry as temporary for storing products
+                // --> use entry mat[ii,j] as temporary for storing products
                 nmod_poly_set(g, TSF(pi, jj));
 
                 nmod_poly_mul(TSF(pi, jj), u, g);
@@ -201,8 +213,7 @@ void _normalize_pivot(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong i, slong j
 {
     if (! nmod_poly_is_monic(MAT(i, j)))
     {
-        mp_limb_t inv = n_invmod(MAT(i, j)->coeffs[MAT(i, j)->length - 1],
-                                 MAT(i, j)->mod.n);
+        mp_limb_t inv = n_invmod(MAT(i, j)->coeffs[MAT(i, j)->length - 1], MAT(i, j)->mod.n);
         for (slong jj = j; jj < mat->c; jj++)
             _nmod_vec_scalar_mul_nmod(MAT(i, jj)->coeffs, MAT(i, jj)->coeffs, MAT(i, jj)->length, inv, MAT(i, jj)->mod);
         if (tsf)
@@ -250,7 +261,8 @@ void _reduce_against_pivot(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong i, sl
 // constant*x**k); continue in the same column until all entries in [i:m,j]
 // except one are zero; swap rows to put the nonzero one at [i,j]
 // --> TODO try version using divrem and poly multiplication instead of constant*x**k?
-// --> TODO put the normalization step inside the main triangularization loop?
+// --> FIXME normalization step could be inside inside the main triangularization loop
+// (applying it each time we find a pivot), but this probably has no impact
 slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
 {
     const slong m = mat->r;
@@ -281,16 +293,14 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
         while (collision)
         {
             // find i1 and i2 such that entries (i1,j) and (i2,j) are those of largest degrees,
-            // with the former greater than or equal to the former, among the entries
-            // (i,j) for i = rk ... m
-            // 1. find first nonzero entry
+            // with the former greater than or equal to the former, among the entries (i,j) for i = rk ... m
+            // first step: find first nonzero entry
             slong pi1 = rk;
             while (pi1 < m && nmod_poly_is_zero(MAT(pi1, j)))
                 pi1++;
             if (pi1 == m) // there were only zeroes in rk:m,j
                 collision = 0;
-            else if (pi1 == m-1)
-                // only nonzero entry in rk:m,j is pi1,j --> pivot found, j-th iteration finished
+            else if (pi1 == m-1) // only nonzero entry in rk:m,j is pi1,j --> pivot found, j-th iteration finished
             {
                 // put the nonzero entry as pivot entry, and exit column j
                 nmod_poly_mat_swap_rows(mat, NULL, pi1, rk);
@@ -328,9 +338,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
                     collision = 0;
                 }
                 else
-                {
                     _apply_pivot_collision_transformation(mat, tsf, pi1, pi2, j);
-                }
             }
         }
     }
@@ -368,7 +376,6 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
 // where nonzg = mat[ii,j]/g   and   pivg = mat[pi,j]/g
 // This goes on same column until all entries in [i:m,j] except one are zero;
 // swap rows to put the nonzero one at [i,j]. Then proceed to next column.
-// --> TODO put the normalization step inside the main triangularization loop?
 slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
 {
     const slong m = mat->r;
@@ -394,7 +401,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod
     nmod_poly_t g; // gcd
     nmod_poly_t u; // gcd cofactor1
     nmod_poly_t v; // gcd cofactor2
-    nmod_poly_t pivg; // piv divided by gcd
+    nmod_poly_t pivg; // pivot divided by gcd
     nmod_poly_t nonzg; // other nonzero entry divided by gcd
     nmod_poly_init(g, mat->modulus);
     nmod_poly_init(u, mat->modulus);
@@ -436,8 +443,10 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod
     }
 
     // now, we have mat in upper echelon form, it remains to
-    // 1. reduce the entries above each pivot
-    // 2. normalize each pivot
+    // 1. normalize each pivot
+    //     (this will do nothing for already monic pivots, which is the case
+    //     for all those that were obtained through some xgcd)
+    // 2. reduce the entries above each pivot
     for (slong i = 0; i < rk; i++)
     {
         slong j = pivot_col[i];
@@ -524,8 +533,6 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
     // reached maximal rank, or when we have processed all columns
     while (i < m && j < n)
     {
-        //printf("i = %ld - j = %ld - IN  degree matrix:\n", i, j);
-        //nmod_poly_mat_degree_matrix_print_pretty(mat);
         // Look for the first row ii in i:m such that [ii,0:j+1] is nonzero.
         // also find jj such that [ii,jj] is the first nonzero entry among [ii,0:j+1]
         slong ii = i;
@@ -541,7 +548,6 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
             else // jj <= j and mat[ii,jj] is nonzero
                 row_is_zero = 0;
         }
-        //printf("i = %ld - j = %ld - nonz search: ii = %ld - jj = %ld\n", i, j, ii, jj);
         if (ii == m) // no nonzero row, increment j and process next submatrix
             j++;
         else // found nonzero row
@@ -564,7 +570,6 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
                     slong pi = pivot_row[jj];
                     if (pi >= 0) // a pivot has already been found at [pi,jj], for some pi < i
                     {
-                        //printf("i = %ld - j = %ld ; no-new-pivot - pi = %ld - jj = %ld\n", i, j, pi, jj);
                         // use gcd between [pi,jj] and [i,jj] and apply the corresponding row-wise unimodular transformation
                         // between rows pi and i (see description of Bradley's algorithm), which puts a zero at [i,jj] and
                         // the gcd (updated pivot) at [pi,jj]
@@ -572,15 +577,11 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
                         // note: new pivot already normalized since xgcd ensures the gcd is monic
 
                         // reduce appropriate entries in hnf in column jj
-                        //nmod_poly_mat_degree_matrix_print_pretty(mat);
                         for (ii = 0; ii < pi; ii++)
                             _reduce_against_pivot(mat, tsf, pi, jj, ii, u, v);
-                        //nmod_poly_mat_degree_matrix_print_pretty(mat);
-                        //printf("finished\n");
                     }
                     else // pivot_row[jj] == -1, currently no pivot in column jj
                     {
-                        //printf("i = %ld - j = %ld ; new-pivot\n", i, j);
                         row_is_zero = 0;
                         // move row i to the correct location in hnf and update pivot_row, pivot_col
                         ii = 0; // index where row i must be placed
@@ -630,7 +631,6 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
                 // operations, and we have not detected a new pivot
                 if (nmod_poly_is_zero(MAT(i, j)))
                 {
-                    //printf("i = %ld - j = %ld ; now in row_is_zero --> no new pivot\n", i, j);
                     // entry [i,j] is zero, swap row i and the last row (just
                     // to avoid wasting time re-checking it is zero), and keep
                     // the same i,j to process same submatrix again.
@@ -640,7 +640,6 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
                 }
                 else
                 {
-                    //printf("i = %ld - j = %ld ; now in row_is_zero --> new pivot\n", i, j);
                     // update pivot_col and pivot_row
                     pivot_col[i] = j;
                     pivot_row[j] = i;
@@ -656,8 +655,6 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
                 }
             }
         }
-        //printf("i = %ld - j = %ld - OUT degree matrix:\n", i-1, j-1);
-        //nmod_poly_mat_degree_matrix_print_pretty(mat);
     }
 
     flint_free(pivot_col);
