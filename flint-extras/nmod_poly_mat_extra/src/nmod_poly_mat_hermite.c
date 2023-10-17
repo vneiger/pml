@@ -9,6 +9,7 @@
 //#define TSF(i,j) nmod_poly_mat_entry(tsf, i, j)
 #define MAT(i,j) (mat->rows[i] + j)
 #define TSF(i,j) (tsf->rows[i] + j)
+#define OTHER(i,j) (other->rows[i] + j)
 
 // TODO how to handle upper/lower?
 // TODO how to handle rowwise/colwise?
@@ -66,6 +67,7 @@ void _nmod_poly_mat_rotate_rows(nmod_poly_mat_t mat, slong * vec, slong i, slong
     }
 }
 
+// Context: upper echelon, row-wise
 // two potential new HNF pivots have been found in the same column, i.e.
 // entries [pi1,j] and [pi2,j] which are both nonzero, with deg [pi1,j] >= deg
 // [pi2,j], and all entries [pi1,jj] and [pi2,jj] for jj < j are zero (pivots
@@ -76,8 +78,8 @@ void _nmod_poly_mat_rotate_rows(nmod_poly_mat_t mat, slong * vec, slong i, slong
 //         mat[pi1,:] = mat[pi1,:] + cst * x**exp * mat[pi2,:]
 // where cst = - leading_coeff(mat[pi1,j]) / leading_coeff(mat[pi2,j])
 //   and exp = deg(mat[pi1,j]) - deg(mat[pi2,j])
-void _apply_pivot_collision_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
-                                           slong pi1, slong pi2, slong j)
+void _apply_pivot_collision_transformation_upper_triangular_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
+                                               slong pi1, slong pi2, slong j)
 {
     // compute exp = deg(mat[pi1,j]) - deg(mat[pi2,j])
     const slong exp = MAT(pi1, j)->length - MAT(pi2, j)->length;
@@ -101,29 +103,29 @@ void _apply_pivot_collision_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t 
         _nmod_vec_scalar_addmul_nmod(MAT(pi1, jj)->coeffs+exp, MAT(pi2, jj)->coeffs, MAT(pi2, jj)->length, cst, MAT(pi1, jj)->mod);
         _nmod_poly_normalise(MAT(pi1, jj));
     }
-    // update the row pi1 of tsf
-    if (tsf) for (slong jj = 0; jj < mat->r; jj++)
+    // update the row pi1 of other
+    if (other) for (slong jj = 0; jj < other->c; jj++)
     {
-        const slong len = TSF(pi2, jj)->length + exp;
-        nmod_poly_fit_length(TSF(pi1, jj), len);
-        if (len > TSF(pi1, jj)->length)
+        const slong len = OTHER(pi2, jj)->length + exp;
+        nmod_poly_fit_length(OTHER(pi1, jj), len);
+        if (len > OTHER(pi1, jj)->length)
         {
-            _nmod_vec_zero(TSF(pi1, jj)->coeffs + TSF(pi1, jj)->length, len - TSF(pi1, jj)->length);
-            _nmod_poly_set_length(TSF(pi1, jj), len);
+            _nmod_vec_zero(OTHER(pi1, jj)->coeffs + OTHER(pi1, jj)->length, len - OTHER(pi1, jj)->length);
+            _nmod_poly_set_length(OTHER(pi1, jj), len);
         }
-        _nmod_vec_scalar_addmul_nmod(TSF(pi1, jj)->coeffs+exp, TSF(pi2, jj)->coeffs, TSF(pi2, jj)->length, cst, TSF(pi1, jj)->mod);
-        _nmod_poly_normalise(TSF(pi1, jj));
+        _nmod_vec_scalar_addmul_nmod(OTHER(pi1, jj)->coeffs+exp, OTHER(pi2, jj)->coeffs, OTHER(pi2, jj)->length, cst, OTHER(pi1, jj)->mod);
+        _nmod_poly_normalise(OTHER(pi1, jj));
     }
 }
 
-
+// Context: upper echelon, row-wise
 // computing xgcd and applying corresponding unimodular transformation
-// input is mat, tsf, pi, ii, j
+// input is mat, other, pi, ii, j
 // pivot is at pi,j
 // other entry is at ii,j
 // we perform xgcd between pivot and mat[ii,j]
 // g, u, v, pivg, nonzg are used as temporaries and must be already initialized
-void _apply_xgcd_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
+void _apply_xgcd_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t other,
                                 slong pi, slong ii, slong j,
                                 nmod_poly_t g, nmod_poly_t u, nmod_poly_t v,
                                 nmod_poly_t pivg, nmod_poly_t nonzg)
@@ -141,12 +143,12 @@ void _apply_xgcd_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
             nmod_poly_mul(g, MAT(ii, j), MAT(pi, jj));
             nmod_poly_sub(MAT(ii, jj), MAT(ii, jj), g);
         }
-        if (tsf)
+        if (other)
         {
-            for (slong jj = 0; jj < mat->r; jj++)
+            for (slong jj = 0; jj < other->c; jj++)
             {
-                nmod_poly_mul(g, MAT(ii, j), TSF(pi, jj));
-                nmod_poly_sub(TSF(ii, jj), TSF(ii, jj), g);
+                nmod_poly_mul(g, MAT(ii, j), OTHER(pi, jj));
+                nmod_poly_sub(OTHER(ii, jj), OTHER(ii, jj), g);
             }
         }
         nmod_poly_zero(MAT(ii, j));
@@ -158,7 +160,7 @@ void _apply_xgcd_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
         nmod_poly_divides(nonzg, MAT(ii, j), g); // nonzg = other // g
 
         // cancel (ii,j) and modify row ii accordingly
-        // in short: for M in {mat,tsf} do the unimodular transformation on rows pi,ii:
+        // in short: for M in {mat,other} do the unimodular transformation on rows pi,ii:
         //  [ M[pi,:] ]  =  [    u       v  ]  *  [ M[pi,:] ]
         //  [ M[ii,:] ]     [ -nonzg   pivg ]     [ M[ii,:] ]
 
@@ -182,51 +184,54 @@ void _apply_xgcd_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
             nmod_poly_mul(MAT(ii, jj), nonzg, g);
             nmod_poly_sub(MAT(ii, jj), MAT(ii, j), MAT(ii, jj));
         }
-        if (tsf)
+        if (other)
         {
             for (slong jj = 0; jj < mat->r; jj++)
             {
                 // simultaneously update:
-                //     tsf[pi,jj] = u * tsf[pi,jj] + v * tsf[ii,jj]
-                //     tsf[ii,jj] = -nonzg * tsf[pi,jj] + pivg * tsf[ii,jj]
-                // --> use g as temporary copy of tsf[pi,jj]
+                //     other[pi,jj] = u * other[pi,jj] + v * other[ii,jj]
+                //     other[ii,jj] = -nonzg * other[pi,jj] + pivg * other[ii,jj]
+                // --> use g as temporary copy of other[pi,jj]
                 // --> use entry mat[ii,j] as temporary for storing products
-                nmod_poly_set(g, TSF(pi, jj));
+                nmod_poly_set(g, OTHER(pi, jj));
 
-                nmod_poly_mul(TSF(pi, jj), u, g);
-                nmod_poly_mul(MAT(ii, j), v, TSF(ii, jj));
-                nmod_poly_add(TSF(pi, jj), TSF(pi, jj), MAT(ii, j));
+                nmod_poly_mul(OTHER(pi, jj), u, g);
+                nmod_poly_mul(MAT(ii, j), v, OTHER(ii, jj));
+                nmod_poly_add(OTHER(pi, jj), OTHER(pi, jj), MAT(ii, j));
 
-                nmod_poly_mul(MAT(ii, j), pivg, TSF(ii, jj));
-                nmod_poly_mul(TSF(ii, jj), nonzg, g);
-                nmod_poly_sub(TSF(ii, jj), MAT(ii, j), TSF(ii, jj));
+                nmod_poly_mul(MAT(ii, j), pivg, OTHER(ii, jj));
+                nmod_poly_mul(OTHER(ii, jj), nonzg, g);
+                nmod_poly_sub(OTHER(ii, jj), MAT(ii, j), OTHER(ii, jj));
             }
         }
         nmod_poly_zero(MAT(ii, j));
     }
 }
 
+// Context: upper echelon, row-wise
 // normalize pivot entry in given row of mat, applying the corresponding
-// operation to the whole row of mat and the corresponding row of the transformation tsf
+// operation to the whole row of mat and the corresponding row of other
 // (i,j) is position of the pivot entry
-void _normalize_pivot(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong i, slong j)
+void _normalize_pivot_upper_triangular_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j)
 {
     if (! nmod_poly_is_monic(MAT(i, j)))
     {
         mp_limb_t inv = n_invmod(MAT(i, j)->coeffs[MAT(i, j)->length - 1], MAT(i, j)->mod.n);
         for (slong jj = j; jj < mat->c; jj++)
             _nmod_vec_scalar_mul_nmod(MAT(i, jj)->coeffs, MAT(i, jj)->coeffs, MAT(i, jj)->length, inv, MAT(i, jj)->mod);
-        if (tsf)
-            for (slong jj = 0; jj < mat->r; jj++)
-                _nmod_vec_scalar_mul_nmod(TSF(i, jj)->coeffs, TSF(i, jj)->coeffs, TSF(i, jj)->length, inv, TSF(i, jj)->mod);
+        if (other)
+            for (slong jj = 0; jj < other->c; jj++)
+                _nmod_vec_scalar_mul_nmod(OTHER(i, jj)->coeffs, OTHER(i, jj)->coeffs, OTHER(i, jj)->length, inv, OTHER(i, jj)->mod);
     }
 }
 
+// Context: upper echelon, row-wise
 // reduce entry mat[ii,j] against pivot entry which is at mat[i,j],
 // applying the corresponding operation to the whole row ii of mat and the
-// corresponding row ii of the transformation tsf
+// corresponding row ii of other
 // u, v are used as temporaries and must be already initialized
-void _reduce_against_pivot(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong i, slong j, slong ii,
+void _reduce_against_pivot(nmod_poly_mat_t mat, nmod_poly_mat_t other,
+                           slong i, slong j, slong ii,
                            nmod_poly_t u, nmod_poly_t v)
 {
     if (MAT(ii, j)->length >= MAT(i, j)->length)
@@ -242,16 +247,21 @@ void _reduce_against_pivot(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong i, sl
             nmod_poly_mul(v, u, MAT(i, jj));
             nmod_poly_add(MAT(ii, jj), MAT(ii, jj), v);
         }
-        if (tsf)
+        if (other)
         {
             for (slong jj = 0; jj < mat->r; jj++)
             {
-                nmod_poly_mul(v, u, TSF(i, jj));
-                nmod_poly_add(TSF(ii, jj), TSF(ii, jj), v);
+                nmod_poly_mul(v, u, OTHER(i, jj));
+                nmod_poly_add(OTHER(ii, jj), OTHER(ii, jj), v);
             }
         }
     }
 }
+
+/**********************************************************************
+*                   Hermite normal form algorithms                   *
+**********************************************************************/
+// Orientation: upper echelon, row-wise
 
 
 // Rosser's algorithm
@@ -338,7 +348,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
                     collision = 0;
                 }
                 else
-                    _apply_pivot_collision_transformation(mat, tsf, pi1, pi2, j);
+                    _apply_pivot_collision_transformation_upper_triangular_rowwise(mat, tsf, pi1, pi2, j);
             }
         }
     }
@@ -354,7 +364,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
     {
         slong j = pivot_col[i];
         // normalize pivot, and correspondingly update the row i of mat and of tsf
-        _normalize_pivot(mat, tsf, i, j);
+        _normalize_pivot_upper_triangular_rowwise(mat, tsf, i, j);
         // reduce entries above (i,j)
         for (slong ii = 0; ii < i; ii++)
             _reduce_against_pivot(mat, tsf, i, j, ii, u, v);
@@ -451,7 +461,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod
     {
         slong j = pivot_col[i];
         // normalize pivot, and correspondingly update the row i of mat and of tsf
-        _normalize_pivot(mat, tsf, i, j);
+        _normalize_pivot_upper_triangular_rowwise(mat, tsf, i, j);
         // reduce entries above (i,j)
         for (slong ii = 0; ii < i; ii++)
             _reduce_against_pivot(mat, tsf, i, j, ii, u, v);
@@ -600,7 +610,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
 
                         // the new row is now at index ii, with new pivot at ii,jj
                         // normalize the new pivot
-                        _normalize_pivot(mat, tsf, ii, jj);
+                        _normalize_pivot_upper_triangular_rowwise(mat, tsf, ii, jj);
 
                         // reduce entries [ii,jj+1:j] against current hnf
                         for (slong kk = jj+1; kk < j; kk++)
@@ -645,7 +655,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
                     pivot_row[j] = i;
                     // entry [i,j] is nonzero, this is a new pivot
                     // normalize it
-                    _normalize_pivot(mat, tsf, i, j);
+                    _normalize_pivot_upper_triangular_rowwise(mat, tsf, i, j);
                     // reduce entries above it, i.e. ii,j against pivot i,j
                     for (ii = 0; ii < i; ii++)
                         _reduce_against_pivot(mat, tsf, i, j, ii, u, v);
