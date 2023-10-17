@@ -31,8 +31,9 @@ nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
 /** Tests whether `pmat` is a unimodular matrix, that is, a square matrix with
  * determinant being a nonzero constant. Rectangular matrices are accepted as
  * input (and are not unimodular). */
-// TODO deterministic test, slow; provide randomized test via evaluation
+// deterministic test, slow; and randomized test via evaluation (not reliable for small fields)
 int nmod_poly_mat_is_unimodular(const nmod_poly_mat_t pmat);
+int nmod_poly_mat_is_unimodular_randomized(const nmod_poly_mat_t pmat, flint_rand_t state);
 
 
 

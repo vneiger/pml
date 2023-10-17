@@ -14,8 +14,8 @@
 
 //#define NOTRANS
 
-// verify Hermite form
-int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, flint_rand_t state)
+// verify weak Popov form
+int verify_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shift, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, flint_rand_t state)
 {
     if (! tsf)
     {
@@ -25,13 +25,13 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, sl
 
     // testing correctness, from fastest to slowest:
     // 0. dimensions
-    if (mat->r != hnf->r || mat->c != hnf->c || mat->r != tsf->r || mat->r != tsf->c)
+    if (mat->r != wpf->r || mat->c != wpf->c || mat->r != tsf->r || mat->r != tsf->c)
     {
             printf("~~~ upper, rowwise ~~~ INCORRECT: dimension mismatch\n");
             return 0;
     }
 
-    // empty matrices are fine (checked by is_hermite, but done here otherwise
+    // empty matrices are fine (checked by is_weak_popov, but done here otherwise
     // tsf does not pass test on tsf_deg >= 0)
     if (mat->r == 0 || mat->c == 0)
         return 1;
@@ -62,28 +62,38 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, sl
         }
     }
 
-    // 2. tsf * mat == hnf
+    // 2. tsf * mat == wpf
     nmod_poly_mat_t tmp;
     nmod_poly_mat_init(tmp, mat->r, mat->c, mat->modulus);
     nmod_poly_mat_mul(tmp, tsf, mat);
-    if (! nmod_poly_mat_equal(tmp, hnf))
+    if (! nmod_poly_mat_equal(tmp, wpf))
     {
-        printf("~~~ upper, rowwise ~~~ INCORRECT: tsf * mat != hnf\n");
+        printf("~~~ upper, rowwise ~~~ INCORRECT: tsf * mat != wpf\n");
         nmod_poly_mat_clear(tmp);
         return 0;
     }
 
-    // 3. hnf is in Hermite form
-    // first prune zero rows since this is a requirement of is_hermite
-    // (note that nonzero rows are necessarily the ones at rk ... rdim-1)
+    // 3. wpf is in weak Popov form
+    // first prune zero rows since this is a requirement of is_weak_popov
+    // (note that nonzero rows are not necessarily the ones at rk ... rdim-1)
     nmod_poly_mat_clear(tmp);
-    nmod_poly_mat_init(tmp, rk, hnf->c, hnf->modulus);
-    for (slong i = 0; i < rk; i++)
-        for (slong j = 0; j < hnf->c; j++)
-            nmod_poly_set(nmod_poly_mat_entry(tmp, i, j), nmod_poly_mat_entry(hnf, i, j));
-    if (! nmod_poly_mat_is_uhermite_rowwise(tmp))
+    nmod_poly_mat_init(tmp, rk, wpf->c, wpf->modulus);
+    slong current_row = 0;
+    for (slong i = 0; i < wpf->r; i++)
     {
-        printf("~~~ upper, rowwise ~~~ INCORRECT: hnf not in Hermite form\n");
+        slong jj = 0;
+        while (jj < mat->c && nmod_poly_is_zero(nmod_poly_mat_entry(wpf, i, jj)))
+            jj++;
+        if (jj < mat->c) // row i is nonzero, jj is first nonzero
+        {
+            for (slong j = jj; j < wpf->c; j++)
+                nmod_poly_set(nmod_poly_mat_entry(tmp, current_row, j), nmod_poly_mat_entry(wpf, i, j));
+            current_row++;
+        }
+    }
+    if (! nmod_poly_mat_is_weak_popov_rowwise(tmp, shift))
+    {
+        printf("~~~ upper, rowwise ~~~ INCORRECT: wpf not in shifted weak Popov form\n");
         nmod_poly_mat_clear(tmp);
         return 0;
     }
@@ -92,38 +102,38 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, sl
     return 1;
 }
 
-// test one given input for hermite form
-int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t state)
+// test one given input for weak Popov form
+int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, int time, flint_rand_t state)
 {
     // init copy of mat
-    nmod_poly_mat_t hnf;
-    nmod_poly_mat_init(hnf, mat->r, mat->c, mat->modulus);
+    nmod_poly_mat_t wpf;
+    nmod_poly_mat_init(wpf, mat->r, mat->c, mat->modulus);
 
-    // init unimodular transformation tsf such that hnf = tsf * mat
+    // init unimodular transformation tsf such that wpf = tsf * mat
     nmod_poly_mat_t tsf;
     nmod_poly_mat_init(tsf, mat->r, mat->r, mat->modulus);
 
-    { // Rosser's algorithm
-        nmod_poly_mat_set(hnf, mat);
+    { // Mulders and Storjohann's algorithm
+        nmod_poly_mat_set(wpf, mat);
         nmod_poly_mat_one(tsf);
         timeit_t timer;
         timeit_start(timer);
 #ifndef NOTRANS
-        slong rk = nmod_poly_mat_hnf_rosser_upper_rowwise(hnf, tsf);
+        slong rk = nmod_poly_mat_weak_popov_mulders_storjohann_upper_rowwise(wpf, shift, tsf);
 #else
-        slong rk = nmod_poly_mat_hnf_rosser_upper_rowwise(hnf, NULL);
+        slong rk = nmod_poly_mat_weak_popov_mulders_storjohann_upper_rowwise(wpf, NULL);
 #endif /* ifndef NOTRANS */
         timeit_stop(timer);
         if (time)
-            flint_printf("-- time (Rosser): %wd ms\n", timer->wall);
+            flint_printf("-- time (Mulders-Storjohann): %wd ms\n", timer->wall);
         timeit_start(timer);
 #ifndef NOTRANS
-        if (! verify_hermite_form(hnf, tsf, rk, mat, state))
+        if (! verify_weak_popov_form(wpf, shift, tsf, rk, mat, state))
 #else
-        if (! verify_hermite_form(hnf, NULL, rk, mat, state))
+        if (! verify_weak_popov_form(wpf, shift, NULL, rk, mat, state))
 #endif /* ifndef NOTRANS */
         {
-            printf("Hermite form -- Rosser -- failure.\n");
+            printf("weak Popov form -- Mulders-Storjohann -- failure.\n");
             return 0;
         }
         timeit_stop(timer);
@@ -131,73 +141,18 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
             flint_printf("-- time (verif): %wd ms\n", timer->wall);
     }
 
-    { // Bradley's algorithm
-        nmod_poly_mat_set(hnf, mat);
-        nmod_poly_mat_one(tsf);
-        timeit_t timer;
-        timeit_start(timer);
-#ifndef NOTRANS
-        slong rk = nmod_poly_mat_hnf_bradley_upper_rowwise(hnf, tsf);
-#else
-        slong rk = nmod_poly_mat_hnf_bradley_upper_rowwise(hnf, NULL);
-#endif /* ifndef NOTRANS */
-        timeit_stop(timer);
-        if (time)
-            flint_printf("-- time (Bradley): %wd ms\n", timer->wall);
-        timeit_start(timer);
-#ifndef NOTRANS
-        if (! verify_hermite_form(hnf, tsf, rk, mat, state))
-#else
-        if (! verify_hermite_form(hnf, NULL, rk, mat, state))
-#endif /* ifndef NOTRANS */
-        {
-            printf("Hermite form -- Bradley -- failure.\n");
-            return 0;
-        }
-        timeit_stop(timer);
-        if (time)
-            flint_printf("-- time (verif): %wd ms\n", timer->wall);
-    }
-
-    { // Kannan-Bachem's algorithm
-        nmod_poly_mat_set(hnf, mat);
-        nmod_poly_mat_one(tsf);
-        timeit_t timer;
-        timeit_start(timer);
-#ifndef NOTRANS
-        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, tsf);
-#else
-        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, NULL);
-#endif /* ifndef NOTRANS */
-        timeit_stop(timer);
-        if (time)
-            flint_printf("-- time (Kannan-Bachem): %wd ms\n", timer->wall);
-        timeit_start(timer);
-#ifndef NOTRANS
-        if (! verify_hermite_form(hnf, tsf, rk, mat, state))
-#else
-        if (! verify_hermite_form(hnf, NULL, rk, mat, state))
-#endif /* ifndef NOTRANS */
-        {
-            printf("Hermite form -- Kannan-Bachem -- failure.\n");
-            return 0;
-        }
-        timeit_stop(timer);
-        if (time)
-            flint_printf("-- time (verif): %wd ms\n", timer->wall);
-    }
-
-    nmod_poly_mat_clear(hnf);
+    nmod_poly_mat_clear(wpf);
     nmod_poly_mat_clear(tsf);
 
     return 1;
 }
 
 //** Test against the whole testing collection */
-int collection_test_hermite_form(slong iter, flint_rand_t state)
+int collection_test_weak_popov_form(slong iter, flint_rand_t state)
 {
     // input matrix
     nmod_poly_mat_t mat;
+    // TODO add shifts
 
     long total_nb_tests =
             iter // number of iterations
@@ -224,23 +179,23 @@ int collection_test_hermite_form(slong iter, flint_rand_t state)
                         nmod_poly_mat_init(mat, rdim, cdim, prime);
 
                         _test_collection_mat_zero(mat);
-                        if (! core_test_hermite_form(mat, 0, state))
+                        if (! core_test_weak_popov_form(mat, NULL, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "zero"); return 0; }
 
                         _test_collection_mat_uniform(mat, len-1, state);
-                        if (! core_test_hermite_form(mat, 0, state))
+                        if (! core_test_weak_popov_form(mat, NULL, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "uniform"); return 0; }
 
                         _test_collection_mat_test(mat, len-1, state);
-                        if (! core_test_hermite_form(mat, 0, state))
+                        if (! core_test_weak_popov_form(mat, NULL, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "test"); return 0; }
 
                         _test_collection_mat_sparse(mat, len-1, state);
-                        if (! core_test_hermite_form(mat, 0, state))
+                        if (! core_test_weak_popov_form(mat, NULL, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "sparse"); return 0; }
 
                         _test_collection_mat_rkdef(mat, len-1, state);
-                        if (! core_test_hermite_form(mat, 0, state))
+                        if (! core_test_weak_popov_form(mat, NULL, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "rkdef"); return 0; }
 
                         nmod_poly_mat_clear(mat);
@@ -270,7 +225,7 @@ int main(int argc, char ** argv)
     if (argc == 1)
     {
         printf("launching test collection...\n");
-        res = collection_test_hermite_form(10, state);
+        res = collection_test_weak_popov_form(10, state);
     }
     else if (argc == 5)
     {
@@ -287,7 +242,7 @@ int main(int argc, char ** argv)
         nmod_poly_mat_init(mat, rdim, cdim, prime);
         nmod_poly_mat_rand(mat, state, order);
 
-        res = core_test_hermite_form(mat, 1, state);
+        res = core_test_weak_popov_form(mat, NULL, 1, state);
 
         nmod_poly_mat_t ref;
         nmod_poly_mat_init(ref, rdim, cdim, prime);
