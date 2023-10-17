@@ -111,7 +111,7 @@ typedef enum
  */
 void nmod_poly_mat_row_degree(slong *rdeg,
                               const nmod_poly_mat_t mat,
-                              const slong *shift);
+                              const slong * shift);
 
 /** Computes the `shift`-column degree `cdeg` of a polynomial matrix `pmat`
  * (see @ref RowAndColumnDegrees). The result `cdeg` must be already initialized
@@ -120,7 +120,7 @@ void nmod_poly_mat_row_degree(slong *rdeg,
  */
 void nmod_poly_mat_column_degree(slong *cdeg,
                                  const nmod_poly_mat_t mat,
-                                 const slong *shift);
+                                 const slong * shift);
 
 //@} // doxygen group: (Shifted) row and column degree
 
@@ -159,13 +159,13 @@ void nmod_poly_mat_column_degree(slong *cdeg,
  * `mat` (see @ref Pivots). */
 void nmod_poly_mat_pivot_index_rowwise(slong *pivind,
                                        const nmod_poly_mat_t mat,
-                                       const slong *shift);
+                                       const slong * shift);
 
 /** Computes the column-wise `shift`-pivot index `pivind` of a polynomial
  * matrix `mat` (see @ref Pivots). */
 void nmod_poly_mat_pivot_index_columnwise(slong *pivind,
                                           const nmod_poly_mat_t mat,
-                                          const slong *shift);
+                                          const slong * shift);
 
 
 /** Computes the row-wise `shift`-pivot index `pivind` and `shift`-pivot degree
@@ -182,7 +182,7 @@ void nmod_poly_mat_pivot_profile_rowwise(slong * pivind,
 void nmod_poly_mat_pivot_profile_columnwise(slong *pivind,
                                             slong *pivdeg,
                                             const nmod_poly_mat_t mat,
-                                            const slong *shift);
+                                            const slong * shift);
 
 //@} // doxygen group: (Shifted) pivot index and pivot degree
 
@@ -376,14 +376,14 @@ nmod_poly_mat_degree_matrix_shifted(fmpz_mat_t dmat,
  */
 void nmod_poly_mat_leading_matrix_rowwise(nmod_mat_t lmat,
                                           const nmod_poly_mat_t mat,
-                                          const slong *shift);
+                                          const slong * shift);
 
 /** Computes the column-wise `shift`-leading matrix `lmat` of a polynomial
  * matrix `mat` (see @ref LeadingMatrix)
  */
 void nmod_poly_mat_leading_matrix_columnwise(nmod_mat_t lmat,
                                              const nmod_poly_mat_t mat,
-                                             const slong *shift);
+                                             const slong * shift);
 
 
 /** Computes the column-wise `shift`-leading matrix `lmat` of a polynomial
@@ -393,7 +393,7 @@ void nmod_poly_mat_leading_matrix_columnwise(nmod_mat_t lmat,
 NMOD_POLY_MAT_INLINE void
 nmod_poly_mat_leading_matrix(nmod_mat_t lmat,
                              const nmod_poly_mat_t mat,
-                             const slong *shift,
+                             const slong * shift,
                              orientation_t row_wise)
 {
     if (row_wise)
@@ -457,18 +457,18 @@ nmod_poly_mat_leading_matrix(nmod_mat_t lmat,
 
 /** Tests whether `pmat` is in `shift`-row reduced form (see @ref MatrixForms) */
 int nmod_poly_mat_is_reduced_rowwise(const nmod_poly_mat_t mat,
-                                     const slong *shift);
+                                     const slong * shift);
 
 /** Tests whether `pmat` is in `shift`-column reduced form (see @ref MatrixForms) */
 int nmod_poly_mat_is_reduced_columnwise(const nmod_poly_mat_t mat,
-                                        const slong *shift);
+                                        const slong * shift);
 
 /** Tests whether `pmat` is in `shift`-reduced form (see @ref MatrixForms),
  * with orientation row-wise or column-wise specified by argument
  */
 NMOD_POLY_MAT_INLINE int
 nmod_poly_mat_is_reduced(const nmod_poly_mat_t mat,
-                                 const slong *shift,
+                                 const slong * shift,
                                  orientation_t row_wise)
 {
     if (row_wise)
@@ -487,18 +487,18 @@ nmod_poly_mat_is_reduced(const nmod_poly_mat_t mat,
 /** Tests whether `mat` is in row-wise `shift`-ordered weak Popov form (see
  * @ref MatrixForms) */
 int nmod_poly_mat_is_ordered_weak_popov_rowwise(const nmod_poly_mat_t mat,
-                                                const slong *shift);
+                                                const slong * shift);
 
 /** Tests whether `mat` is in column-wise `shift`-ordered weak Popov form (see
  * @ref MatrixForms) */
 int nmod_poly_mat_is_ordered_weak_popov_columnwise(const nmod_poly_mat_t mat,
-                                                   const slong *shift);
+                                                   const slong * shift);
 
 /** Tests whether `mat` is in `shift`-ordered weak Popov form (see
  * @ref MatrixForms), with orientation specified by `row_wise` */
 NMOD_POLY_MAT_INLINE int
 nmod_poly_mat_is_ordered_weak_popov(const nmod_poly_mat_t mat,
-                                    const slong *shift,
+                                    const slong * shift,
                                     orientation_t row_wise)
 {
     if (row_wise)
@@ -517,18 +517,18 @@ nmod_poly_mat_is_ordered_weak_popov(const nmod_poly_mat_t mat,
 /** Tests whether `mat` is in row-wise `shift`-weak Popov form (see
  * @ref MatrixForms) */
 int nmod_poly_mat_is_weak_popov_rowwise(const nmod_poly_mat_t mat,
-                                        const slong *shift);
+                                        const slong * shift);
 
 /** Tests whether `mat` is in column-wise `shift`-weak Popov form (see
  * @ref MatrixForms) */
 int nmod_poly_mat_is_weak_popov_columnwise(const nmod_poly_mat_t mat,
-                                           const slong *shift);
+                                           const slong * shift);
 
 /** Tests whether `mat` is in `shift`-weak Popov form (see @ref MatrixForms),
  * with orientation specified by `row_wise` */
 NMOD_POLY_MAT_INLINE int
 nmod_poly_mat_is_weak_popov(const nmod_poly_mat_t mat,
-                            const slong *shift,
+                            const slong * shift,
                             orientation_t row_wise)
 {
     if (row_wise)
@@ -553,18 +553,18 @@ nmod_poly_mat_is_weak_popov(const nmod_poly_mat_t mat,
 /** Tests whether `mat` is in row-wise `shift`-Popov form (see
  * @ref MatrixForms) */
 int nmod_poly_mat_is_popov_rowwise(const nmod_poly_mat_t mat,
-                                   const slong *shift);
+                                   const slong * shift);
 
 /** Tests whether `mat` is in column-wise `shift`-Popov form (see
  * @ref MatrixForms) */
 int nmod_poly_mat_is_popov_columnwise(const nmod_poly_mat_t mat,
-                                      const slong *shift);
+                                      const slong * shift);
 
 /** Tests whether `mat` is in `shift`-Popov form (see @ref MatrixForms),
  * with orientation specified by `row_wise` */
 NMOD_POLY_MAT_INLINE int
 nmod_poly_mat_is_popov(const nmod_poly_mat_t mat,
-                       const slong *shift,
+                       const slong * shift,
                        orientation_t row_wise)
 {
     if (row_wise)
@@ -714,14 +714,19 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
  */
 //@{
 
-/** Sets ``hnf`` to the row-wise, lower Hermite normal form of ``mat``, and
- * returns the rank of ``mat``. Aliasing is allowed */
+/** Transforms ``mat`` in place to its row-wise, upper Hermite normal form, and
+ * returns the rank of ``mat``. If ``tsf`` is not NULL, the same unimodular
+ * left-operations applied to ``mat`` are performed on ``tsf`` (which must
+ * therefore have as many rows as ``mat``, and can have an arbitrary number of
+ * columns). Setting ``tsf`` to the identity beforehand allows one to recover
+ * the unimodular transformation between ``mat`` and the computed Hermite
+ * normal form. ``mat`` cannot alias ``tsf``. */
 slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat,
                                              nmod_poly_mat_t tsf);
 slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat,
-                                                    nmod_poly_mat_t tsf);
+                                              nmod_poly_mat_t tsf);
 slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat,
-                                                       nmod_poly_mat_t tsf);
+                                                    nmod_poly_mat_t tsf);
 // TODO mod det version (see e.g. Domich) ? quite often, computing the
 // determinant is not much easier than computing the HNF (with fast algos)...
 // --> YET once may imagine e.g. approximant/interpolant basis computation,
@@ -729,6 +734,17 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat,
 // it helps, why not? (still, for approximants/interpolants, one might as well
 // compute them directly in HNF...)
 
+/** Transforms ``mat`` in place to a row-wise, upper, ordered, shifted weak
+ * Popov form, and returns the rank of ``mat``. If ``tsf`` is not NULL, the
+ * same unimodular left-operations applied to ``mat`` are performed on ``tsf``
+ * (which must therefore have as many rows as ``mat``, and can have an
+ * arbitrary number of columns). If ``shift`` is NULL, the uniform shift is
+ * used. Setting ``tsf`` to the identity beforehand allows one to recover the
+ * unimodular transformation between ``mat`` and the computed weak Popov form.
+ * ``mat`` cannot alias ``tsf``. */
+slong nmod_poly_mat_weak_popov_mulders_storjohann_upper_rowwise(nmod_poly_mat_t wpf,
+                                                                const slong * shift,
+                                                                nmod_poly_mat_t tsf);
 
 //@} // doxygen group: Computing polynomial matrix forms
 

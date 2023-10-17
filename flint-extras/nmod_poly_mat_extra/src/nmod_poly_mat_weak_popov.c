@@ -66,5 +66,9 @@ void _reduce_against_pivot_general(nmod_poly_mat_t mat, nmod_poly_mat_t other,
 }
 
 
+slong nmod_poly_mat_weak_popov_mulders_storjohann_upper_rowwise(nmod_poly_mat_t wpf,
+                                                                const slong * shift,
+                                                                nmod_poly_mat_t tsf);
+
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

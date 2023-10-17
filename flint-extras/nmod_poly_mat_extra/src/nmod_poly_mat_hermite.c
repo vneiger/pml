@@ -189,7 +189,7 @@ void _complete_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_
         }
         if (other)
         {
-            for (slong jj = 0; jj < mat->r; jj++)
+            for (slong jj = 0; jj < other->c; jj++)
             {
                 // simultaneously update:
                 //     other[pi,jj] = u * other[pi,jj] + v * other[ii,jj]
@@ -235,7 +235,7 @@ void _reduce_against_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t
         }
         if (other)
         {
-            for (slong jj = 0; jj < mat->r; jj++)
+            for (slong jj = 0; jj < other->c; jj++)
             {
                 nmod_poly_mul(v, u, OTHER(i, jj));
                 nmod_poly_add(OTHER(ii, jj), OTHER(ii, jj), v);
