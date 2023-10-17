@@ -14,7 +14,6 @@
 // TODO how to handle upper/lower?
 // TODO how to handle rowwise/colwise?
 // TODO eventually restrict the output HNF to rank rows, where to do this?
-// TODO check that all memory is cleared everywhere
 //
 //
 //
@@ -78,8 +77,8 @@ void _nmod_poly_mat_rotate_rows(nmod_poly_mat_t mat, slong * vec, slong i, slong
 //         mat[pi1,:] = mat[pi1,:] + cst * x**exp * mat[pi2,:]
 // where cst = - leading_coeff(mat[pi1,j]) / leading_coeff(mat[pi2,j])
 //   and exp = deg(mat[pi1,j]) - deg(mat[pi2,j])
-void _apply_pivot_collision_transformation_upper_triangular_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
-                                               slong pi1, slong pi2, slong j)
+void _atomic_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
+                                                    slong pi1, slong pi2, slong j)
 {
     // compute exp = deg(mat[pi1,j]) - deg(mat[pi2,j])
     const slong exp = MAT(pi1, j)->length - MAT(pi2, j)->length;
@@ -118,17 +117,21 @@ void _apply_pivot_collision_transformation_upper_triangular_rowwise(nmod_poly_ma
     }
 }
 
+// TODO implement _single_solve (or whatever name), where a divrem is used
+// instead of just one step of Euclidean division (as in _atomic_solve)
+
 // Context: upper echelon, row-wise
 // computing xgcd and applying corresponding unimodular transformation
 // input is mat, other, pi, ii, j
 // pivot is at pi,j
 // other entry is at ii,j
-// we perform xgcd between pivot and mat[ii,j]
+// we perform complete xgcd transformation between pivot and mat[ii,j]
+//   (see more detailed description in algorithm comments below)
 // g, u, v, pivg, nonzg are used as temporaries and must be already initialized
-void _apply_xgcd_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t other,
-                                slong pi, slong ii, slong j,
-                                nmod_poly_t g, nmod_poly_t u, nmod_poly_t v,
-                                nmod_poly_t pivg, nmod_poly_t nonzg)
+void _complete_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
+                                                      slong pi, slong ii, slong j,
+                                                      nmod_poly_t g, nmod_poly_t u, nmod_poly_t v,
+                                                      nmod_poly_t pivg, nmod_poly_t nonzg)
 {
     // FIXME this specific code for pivot == 1 does not seem to speed up things
     if (nmod_poly_is_one(MAT(pi, j)))
@@ -209,30 +212,13 @@ void _apply_xgcd_transformation(nmod_poly_mat_t mat, nmod_poly_mat_t other,
 }
 
 // Context: upper echelon, row-wise
-// normalize pivot entry in given row of mat, applying the corresponding
-// operation to the whole row of mat and the corresponding row of other
-// (i,j) is position of the pivot entry
-void _normalize_pivot_upper_triangular_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j)
-{
-    if (! nmod_poly_is_monic(MAT(i, j)))
-    {
-        mp_limb_t inv = n_invmod(MAT(i, j)->coeffs[MAT(i, j)->length - 1], MAT(i, j)->mod.n);
-        for (slong jj = j; jj < mat->c; jj++)
-            _nmod_vec_scalar_mul_nmod(MAT(i, jj)->coeffs, MAT(i, jj)->coeffs, MAT(i, jj)->length, inv, MAT(i, jj)->mod);
-        if (other)
-            for (slong jj = 0; jj < other->c; jj++)
-                _nmod_vec_scalar_mul_nmod(OTHER(i, jj)->coeffs, OTHER(i, jj)->coeffs, OTHER(i, jj)->length, inv, OTHER(i, jj)->mod);
-    }
-}
-
-// Context: upper echelon, row-wise
 // reduce entry mat[ii,j] against pivot entry which is at mat[i,j],
 // applying the corresponding operation to the whole row ii of mat and the
 // corresponding row ii of other
 // u, v are used as temporaries and must be already initialized
-void _reduce_against_pivot(nmod_poly_mat_t mat, nmod_poly_mat_t other,
-                           slong i, slong j, slong ii,
-                           nmod_poly_t u, nmod_poly_t v)
+void _reduce_against_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
+                                            slong i, slong j, slong ii,
+                                            nmod_poly_t u, nmod_poly_t v)
 {
     if (MAT(ii, j)->length >= MAT(i, j)->length)
     {
@@ -258,22 +244,40 @@ void _reduce_against_pivot(nmod_poly_mat_t mat, nmod_poly_mat_t other,
     }
 }
 
+// Context: upper echelon, row-wise
+// normalize pivot entry in given row of mat, applying the corresponding
+// operation to the whole row of mat and the corresponding row of other
+// (i,j) is position of the pivot entry
+void _normalize_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j)
+{
+    if (! nmod_poly_is_monic(MAT(i, j)))
+    {
+        mp_limb_t inv = n_invmod(MAT(i, j)->coeffs[MAT(i, j)->length - 1], MAT(i, j)->mod.n);
+        for (slong jj = j; jj < mat->c; jj++)
+            _nmod_vec_scalar_mul_nmod(MAT(i, jj)->coeffs, MAT(i, jj)->coeffs, MAT(i, jj)->length, inv, MAT(i, jj)->mod);
+        if (other)
+            for (slong jj = 0; jj < other->c; jj++)
+                _nmod_vec_scalar_mul_nmod(OTHER(i, jj)->coeffs, OTHER(i, jj)->coeffs, OTHER(i, jj)->length, inv, OTHER(i, jj)->mod);
+    }
+}
+
 /**********************************************************************
 *                   Hermite normal form algorithms                   *
 **********************************************************************/
 // Orientation: upper echelon, row-wise
 
 
-// Rosser's algorithm
+// Rosser's HNF algorithm   (upper echelon, row-wise)
 // proceed column by column. When looking for i-th pivot (in column j >= i) look
 // at entries [i:m,j], and kill leading term of largest deg by using the second
 // largest deg (using basic operation only, adding a multiple of another row by
 // constant*x**k); continue in the same column until all entries in [i:m,j]
 // except one are zero; swap rows to put the nonzero one at [i,j]
 // --> TODO try version using divrem and poly multiplication instead of constant*x**k?
+//     (probably no difference in speed if input is random of given max degree...)
 // --> FIXME normalization step could be inside inside the main triangularization loop
 // (applying it each time we find a pivot), but this probably has no impact
-slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
+slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
 {
     const slong m = mat->r;
     const slong n = mat->c;
@@ -348,7 +352,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
                     collision = 0;
                 }
                 else
-                    _apply_pivot_collision_transformation_upper_triangular_rowwise(mat, tsf, pi1, pi2, j);
+                    _atomic_solve_pivot_collision_uechelon_rowwise(mat, tsf, pi1, pi2, j);
             }
         }
     }
@@ -364,10 +368,10 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
     {
         slong j = pivot_col[i];
         // normalize pivot, and correspondingly update the row i of mat and of tsf
-        _normalize_pivot_upper_triangular_rowwise(mat, tsf, i, j);
+        _normalize_pivot_uechelon_rowwise(mat, tsf, i, j);
         // reduce entries above (i,j)
         for (slong ii = 0; ii < i; ii++)
-            _reduce_against_pivot(mat, tsf, i, j, ii, u, v);
+            _reduce_against_pivot_uechelon_rowwise(mat, tsf, i, j, ii, u, v);
     }
 
     flint_free(pivot_col);
@@ -375,7 +379,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
     return rk;
 }
 
-// Bradley's algorithm
+// Bradley's HNF algorithm       (upper echelon, row-wise)
 // proceed column by column. When looking for i-th pivot (in column j >= i) look
 // at entries [i:m,j], and repeatedly use gcd's between the two first nonzero
 // entries in [i:m,j], say at [pi,j] and [ii,j], to zero out [ii,j] and reduce [pi,j]
@@ -386,7 +390,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat, nmod_
 // where nonzg = mat[ii,j]/g   and   pivg = mat[pi,j]/g
 // This goes on same column until all entries in [i:m,j] except one are zero;
 // swap rows to put the nonzero one at [i,j]. Then proceed to next column.
-slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
+slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
 {
     const slong m = mat->r;
     const slong n = mat->c;
@@ -438,7 +442,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod
                 while (ii < m && nmod_poly_is_zero(MAT(ii, j)))
                     ii++;
                 if (ii < m)
-                    _apply_xgcd_transformation(mat, tsf, pi, ii, j, g, u, v, pivg, nonzg);
+                    _complete_solve_pivot_collision_uechelon_rowwise(mat, tsf, pi, ii, j, g, u, v, pivg, nonzg);
                 // else, ii==m, pivot is the only nonzero entry: nothing more to do for this column
             }
 
@@ -461,10 +465,10 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod
     {
         slong j = pivot_col[i];
         // normalize pivot, and correspondingly update the row i of mat and of tsf
-        _normalize_pivot_upper_triangular_rowwise(mat, tsf, i, j);
+        _normalize_pivot_uechelon_rowwise(mat, tsf, i, j);
         // reduce entries above (i,j)
         for (slong ii = 0; ii < i; ii++)
-            _reduce_against_pivot(mat, tsf, i, j, ii, u, v);
+            _reduce_against_pivot_uechelon_rowwise(mat, tsf, i, j, ii, u, v);
     }
 
     flint_free(pivot_col);
@@ -477,7 +481,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod
     return rk;
 }
 
-// Kannan-Bachem's algorithm
+// Kannan-Bachem's HNF algorithm       (upper echelon, row-wise)
 // proceed by leading submatrices. When looking for i-th pivot, in column j >=
 // i, the (i-1) x (j-1) leading submatrix `hnf` is already in Hermite form.
 //
@@ -501,7 +505,7 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat, nmod
 // j, and proceed to next leading submatrix
 // - if no, swap row ii and the last row, and keep the same i,j to process same
 // submatrix again.
-slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
+slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
 {
     const slong m = mat->r;
     const slong n = mat->c;
@@ -583,12 +587,12 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
                         // use gcd between [pi,jj] and [i,jj] and apply the corresponding row-wise unimodular transformation
                         // between rows pi and i (see description of Bradley's algorithm), which puts a zero at [i,jj] and
                         // the gcd (updated pivot) at [pi,jj]
-                        _apply_xgcd_transformation(mat, tsf, pi, i, jj, g, u, v, pivg, nonzg);
+                        _complete_solve_pivot_collision_uechelon_rowwise(mat, tsf, pi, i, jj, g, u, v, pivg, nonzg);
                         // note: new pivot already normalized since xgcd ensures the gcd is monic
 
                         // reduce appropriate entries in hnf in column jj
                         for (ii = 0; ii < pi; ii++)
-                            _reduce_against_pivot(mat, tsf, pi, jj, ii, u, v);
+                            _reduce_against_pivot_uechelon_rowwise(mat, tsf, pi, jj, ii, u, v);
                     }
                     else // pivot_row[jj] == -1, currently no pivot in column jj
                     {
@@ -610,24 +614,16 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
 
                         // the new row is now at index ii, with new pivot at ii,jj
                         // normalize the new pivot
-                        _normalize_pivot_upper_triangular_rowwise(mat, tsf, ii, jj);
+                        _normalize_pivot_uechelon_rowwise(mat, tsf, ii, jj);
 
                         // reduce entries [ii,jj+1:j] against current hnf
                         for (slong kk = jj+1; kk < j; kk++)
-                        {
-                            pi = pivot_row[kk];
-                            if (pi >= 0) // otherwise, no pivot, nothing to do
-                            {
-                                // reduce mat[ii,kk] against pivot [pi,kk]
-                                _reduce_against_pivot(mat, tsf, pi, kk, ii, u, v);
-                            }
-                        }
+                            if (pivot_row[kk] >= 0) // reduce mat[ii,kk] against pivot [pi,kk]
+                                _reduce_against_pivot_uechelon_rowwise(mat, tsf, pi, kk, ii, u, v);
+                            // else, no pivot in column kk, nothing to do
                         // reduce column jj of hnf against new pivot mat[ii,jj]
                         for (slong pii = 0; pii < ii; pii++)
-                        {
-                            // reduce pii,jj against the pivot [ii,jj]
-                            _reduce_against_pivot(mat, tsf, ii, jj, pii, u, v);
-                        }
+                            _reduce_against_pivot_uechelon_rowwise(mat, tsf, ii, jj, pii, u, v);
                         // increment the pivot count i without increasing j
                         i++;
                         // abort current jj-for loop, go to next submatrix
@@ -655,10 +651,10 @@ slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat
                     pivot_row[j] = i;
                     // entry [i,j] is nonzero, this is a new pivot
                     // normalize it
-                    _normalize_pivot_upper_triangular_rowwise(mat, tsf, i, j);
+                    _normalize_pivot_uechelon_rowwise(mat, tsf, i, j);
                     // reduce entries above it, i.e. ii,j against pivot i,j
                     for (ii = 0; ii < i; ii++)
-                        _reduce_against_pivot(mat, tsf, i, j, ii, u, v);
+                        _reduce_against_pivot_uechelon_rowwise(mat, tsf, i, j, ii, u, v);
                     // increment both i and j
                     i++;
                     j++;

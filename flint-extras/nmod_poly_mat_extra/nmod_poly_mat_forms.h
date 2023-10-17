@@ -716,12 +716,12 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
 
 /** Sets ``hnf`` to the row-wise, lower Hermite normal form of ``mat``, and
  * returns the rank of ``mat``. Aliasing is allowed */
-slong nmod_poly_mat_upper_hermite_form_rowwise_bradley(nmod_poly_mat_t mat,
+slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat,
+                                             nmod_poly_mat_t tsf);
+slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat,
+                                                    nmod_poly_mat_t tsf);
+slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat,
                                                        nmod_poly_mat_t tsf);
-slong nmod_poly_mat_upper_hermite_form_rowwise_rosser(nmod_poly_mat_t mat,
-                                                      nmod_poly_mat_t tsf);
-slong nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(nmod_poly_mat_t mat,
-                                                             nmod_poly_mat_t tsf);
 // TODO mod det version (see e.g. Domich) ? quite often, computing the
 // determinant is not much easier than computing the HNF (with fast algos)...
 // --> YET once may imagine e.g. approximant/interpolant basis computation,

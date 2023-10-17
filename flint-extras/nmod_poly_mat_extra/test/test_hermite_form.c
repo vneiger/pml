@@ -112,9 +112,9 @@ int core_test_hermite_form(nmod_poly_mat_t mat, int time)
         timeit_t timer;
         timeit_start(timer);
 #ifndef NOTRANS
-        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_rosser(hnf, tsf);
+        slong rk = nmod_poly_mat_hnf_rosser_upper_rowwise(hnf, tsf);
 #else
-        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_rosser(hnf, NULL);
+        slong rk = nmod_poly_mat_hnf_rosser_upper_rowwise(hnf, NULL);
 #endif /* ifndef NOTRANS */
         timeit_stop(timer);
         if (time)
@@ -137,9 +137,9 @@ int core_test_hermite_form(nmod_poly_mat_t mat, int time)
         timeit_t timer;
         timeit_start(timer);
 #ifndef NOTRANS
-        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_bradley(hnf, tsf);
+        slong rk = nmod_poly_mat_hnf_bradley_upper_rowwise(hnf, tsf);
 #else
-        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_bradley(hnf, NULL);
+        slong rk = nmod_poly_mat_hnf_bradley_upper_rowwise(hnf, NULL);
 #endif /* ifndef NOTRANS */
         timeit_stop(timer);
         if (time)
@@ -162,9 +162,9 @@ int core_test_hermite_form(nmod_poly_mat_t mat, int time)
         timeit_t timer;
         timeit_start(timer);
 #ifndef NOTRANS
-        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(hnf, tsf);
+        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, tsf);
 #else
-        slong rk = nmod_poly_mat_upper_hermite_form_rowwise_kannan_bachem(hnf, NULL);
+        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, NULL);
 #endif /* ifndef NOTRANS */
         timeit_stop(timer);
         if (time)
