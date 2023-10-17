@@ -19,7 +19,7 @@ int verify_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shift, const
 {
     if (! tsf)
     {
-        printf("~~~ upper, rowwise ~~~ transformation not provided, skipping verification\n");
+        printf("~~~ lower, rowwise ~~~ transformation not provided, skipping verification\n");
         return 1;
     }
 
@@ -27,7 +27,7 @@ int verify_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shift, const
     // 0. dimensions
     if (mat->r != wpf->r || mat->c != wpf->c || mat->r != tsf->r || mat->r != tsf->c)
     {
-            printf("~~~ upper, rowwise ~~~ INCORRECT: dimension mismatch\n");
+            printf("~~~ lower, rowwise ~~~ INCORRECT: dimension mismatch\n");
             return 0;
     }
 
@@ -41,7 +41,7 @@ int verify_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shift, const
     slong tsf_deg = nmod_poly_mat_degree(tsf);
     if (tsf_deg < 0)
     {
-        printf("~~~ upper, rowwise ~~~ INCORRECT: transformation is zero\n");
+        printf("~~~ lower, rowwise ~~~ INCORRECT: transformation is zero\n");
         return 0;
     }
     ulong degdet = tsf->r * (ulong)tsf_deg;
@@ -49,7 +49,7 @@ int verify_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shift, const
     {
         if (!nmod_poly_mat_is_unimodular_randomized(tsf, state))
         {
-            printf("~~~ upper, rowwise ~~~ INCORRECT: transformation is not unimodular (randomized test)\n");
+            printf("~~~ lower, rowwise ~~~ INCORRECT: transformation is not unimodular (randomized test)\n");
             return 0;
         }
     }
@@ -57,7 +57,7 @@ int verify_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shift, const
     {
         if (!nmod_poly_mat_is_unimodular(tsf))
         {
-            printf("~~~ upper, rowwise ~~~ INCORRECT: transformation is not unimodular\n");
+            printf("~~~ lower, rowwise ~~~ INCORRECT: transformation is not unimodular\n");
             return 0;
         }
     }
@@ -68,7 +68,7 @@ int verify_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shift, const
     nmod_poly_mat_mul(tmp, tsf, mat);
     if (! nmod_poly_mat_equal(tmp, wpf))
     {
-        printf("~~~ upper, rowwise ~~~ INCORRECT: tsf * mat != wpf\n");
+        printf("~~~ lower, rowwise ~~~ INCORRECT: tsf * mat != wpf\n");
         nmod_poly_mat_clear(tmp);
         return 0;
     }
@@ -93,7 +93,9 @@ int verify_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shift, const
     }
     if (! nmod_poly_mat_is_weak_popov_rowwise(tmp, shift))
     {
-        printf("~~~ upper, rowwise ~~~ INCORRECT: wpf not in shifted weak Popov form\n");
+        printf("~~~ lower, rowwise ~~~ INCORRECT: wpf not in shifted weak Popov form\n");
+        nmod_poly_mat_degree_matrix_print_pretty(tmp);
+        nmod_poly_mat_degree_matrix_shifted_print_pretty(tmp, shift, ROW_WISE);
         nmod_poly_mat_clear(tmp);
         return 0;
     }
@@ -105,6 +107,8 @@ int verify_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shift, const
 // test one given input for weak Popov form
 int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, int time, flint_rand_t state)
 {
+    // initialize pivind list
+    slong * pivind = flint_malloc(mat->r * sizeof(slong));
     // init copy of mat
     nmod_poly_mat_t wpf;
     nmod_poly_mat_init(wpf, mat->r, mat->c, mat->modulus);
@@ -119,9 +123,9 @@ int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, in
         timeit_t timer;
         timeit_start(timer);
 #ifndef NOTRANS
-        slong rk = nmod_poly_mat_weak_popov_mulders_storjohann_upper_rowwise(wpf, shift, tsf);
+        slong rk = nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(pivind, wpf, shift, tsf);
 #else
-        slong rk = nmod_poly_mat_weak_popov_mulders_storjohann_upper_rowwise(wpf, NULL);
+        slong rk = nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(pivind, wpf, shift, NULL);
 #endif /* ifndef NOTRANS */
         timeit_stop(timer);
         if (time)
@@ -152,14 +156,16 @@ int collection_test_weak_popov_form(slong iter, flint_rand_t state)
 {
     // input matrix
     nmod_poly_mat_t mat;
-    // TODO add shifts
+
+    // input shift
+    slong * shift;
 
     long total_nb_tests =
             iter // number of iterations
-            * 5 // number of mats (currently 5)
+            * 40 // number of mats (currently 5) x number of shifts (currently 8)
             * _test_collection_nb_primes
-            * _test_collection_nb_minidims
-            * _test_collection_nb_minidims
+            * _test_collection_nb_smalldims
+            * _test_collection_nb_smalldims
             * _test_collection_nb_minidegs;
 
     printf("Launching testing collection (%ld cases)\n", total_nb_tests);
@@ -177,28 +183,217 @@ int collection_test_weak_popov_form(slong iter, flint_rand_t state)
                         printf("prime %ld, rdim %ld, cdim %ld, length %ld.\n", prime, rdim, cdim, len);
 
                         nmod_poly_mat_init(mat, rdim, cdim, prime);
+                        shift = (slong *) flint_malloc(cdim * sizeof(slong));
 
+                        _test_collection_shift_uniform(shift, cdim);
                         _test_collection_mat_zero(mat);
-                        if (! core_test_weak_popov_form(mat, NULL, 0, state))
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "zero"); return 0; }
 
+                        _test_collection_shift_uniform(shift, cdim);
                         _test_collection_mat_uniform(mat, len-1, state);
-                        if (! core_test_weak_popov_form(mat, NULL, 0, state))
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "uniform"); return 0; }
 
+                        _test_collection_shift_uniform(shift, cdim);
                         _test_collection_mat_test(mat, len-1, state);
-                        if (! core_test_weak_popov_form(mat, NULL, 0, state))
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "test"); return 0; }
 
+                        _test_collection_shift_uniform(shift, cdim);
                         _test_collection_mat_sparse(mat, len-1, state);
-                        if (! core_test_weak_popov_form(mat, NULL, 0, state))
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "sparse"); return 0; }
 
+                        _test_collection_shift_uniform(shift, cdim);
                         _test_collection_mat_rkdef(mat, len-1, state);
-                        if (! core_test_weak_popov_form(mat, NULL, 0, state))
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "rkdef"); return 0; }
 
+
+                        _test_collection_shift_increasing(shift, cdim);
+                        _test_collection_mat_zero(mat);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "increasing", "zero"); return 0; }
+
+                        _test_collection_shift_increasing(shift, cdim);
+                        _test_collection_mat_uniform(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "increasing", "uniform"); return 0; }
+
+                        _test_collection_shift_increasing(shift, cdim);
+                        _test_collection_mat_test(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "increasing", "test"); return 0; }
+
+                        _test_collection_shift_increasing(shift, cdim);
+                        _test_collection_mat_sparse(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "increasing", "sparse"); return 0; }
+
+                        _test_collection_shift_increasing(shift, cdim);
+                        _test_collection_mat_rkdef(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "increasing", "rkdef"); return 0; }
+
+
+                        _test_collection_shift_decreasing(shift, cdim);
+                        _test_collection_mat_zero(mat);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "decreasing", "zero"); return 0; }
+
+                        _test_collection_shift_decreasing(shift, cdim);
+                        _test_collection_mat_uniform(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "decreasing", "uniform"); return 0; }
+
+                        _test_collection_shift_decreasing(shift, cdim);
+                        _test_collection_mat_test(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "decreasing", "test"); return 0; }
+
+                        _test_collection_shift_decreasing(shift, cdim);
+                        _test_collection_mat_sparse(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "decreasing", "sparse"); return 0; }
+
+                        _test_collection_shift_decreasing(shift, cdim);
+                        _test_collection_mat_rkdef(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "decreasing", "rkdef"); return 0; }
+
+
+                        _test_collection_shift_shuffle(shift, cdim, state);
+                        _test_collection_mat_zero(mat);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "shuffle", "zero"); return 0; }
+
+                        _test_collection_shift_shuffle(shift, cdim, state);
+                        _test_collection_mat_uniform(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "shuffle", "uniform"); return 0; }
+
+                        _test_collection_shift_shuffle(shift, cdim, state);
+                        _test_collection_mat_test(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "shuffle", "test"); return 0; }
+
+                        _test_collection_shift_shuffle(shift, cdim, state);
+                        _test_collection_mat_sparse(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "shuffle", "sparse"); return 0; }
+
+                        _test_collection_shift_shuffle(shift, cdim, state);
+                        _test_collection_mat_rkdef(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "shuffle", "rkdef"); return 0; }
+
+
+                        _test_collection_shift_hermite(shift, cdim, len);
+                        _test_collection_mat_zero(mat);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "hermite", "zero"); return 0; }
+
+                        _test_collection_shift_hermite(shift, cdim, len);
+                        _test_collection_mat_uniform(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "hermite", "uniform"); return 0; }
+
+                        _test_collection_shift_hermite(shift, cdim, len);
+                        _test_collection_mat_test(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "hermite", "test"); return 0; }
+
+                        _test_collection_shift_hermite(shift, cdim, len);
+                        _test_collection_mat_sparse(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "hermite", "sparse"); return 0; }
+
+                        _test_collection_shift_hermite(shift, cdim, len);
+                        _test_collection_mat_rkdef(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "hermite", "rkdef"); return 0; }
+
+
+                        _test_collection_shift_rhermite(shift, cdim, len);
+                        _test_collection_mat_zero(mat);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "rhermite", "zero"); return 0; }
+
+                        _test_collection_shift_rhermite(shift, cdim, len);
+                        _test_collection_mat_uniform(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "rhermite", "uniform"); return 0; }
+
+                        _test_collection_shift_rhermite(shift, cdim, len);
+                        _test_collection_mat_test(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "rhermite", "test"); return 0; }
+
+                        _test_collection_shift_rhermite(shift, cdim, len);
+                        _test_collection_mat_sparse(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "rhermite", "sparse"); return 0; }
+
+                        _test_collection_shift_rhermite(shift, cdim, len);
+                        _test_collection_mat_rkdef(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "rhermite", "rkdef"); return 0; }
+
+
+                        _test_collection_shift_plateau(shift, cdim, len);
+                        _test_collection_mat_zero(mat);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "plateau", "zero"); return 0; }
+
+                        _test_collection_shift_plateau(shift, cdim, len);
+                        _test_collection_mat_uniform(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "plateau", "uniform"); return 0; }
+
+                        _test_collection_shift_plateau(shift, cdim, len);
+                        _test_collection_mat_test(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "plateau", "test"); return 0; }
+
+                        _test_collection_shift_plateau(shift, cdim, len);
+                        _test_collection_mat_sparse(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "plateau", "sparse"); return 0; }
+
+                        _test_collection_shift_plateau(shift, cdim, len);
+                        _test_collection_mat_rkdef(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "plateau", "rkdef"); return 0; }
+
+
+                        _test_collection_shift_rplateau(shift, cdim, len);
+                        _test_collection_mat_zero(mat);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "rplateau", "zero"); return 0; }
+
+                        _test_collection_shift_rplateau(shift, cdim, len);
+                        _test_collection_mat_uniform(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "rplateau", "uniform"); return 0; }
+
+                        _test_collection_shift_rplateau(shift, cdim, len);
+                        _test_collection_mat_test(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "rplateau", "test"); return 0; }
+
+                        _test_collection_shift_rplateau(shift, cdim, len);
+                        _test_collection_mat_sparse(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "rplateau", "sparse"); return 0; }
+
+                        _test_collection_shift_rplateau(shift, cdim, len);
+                        _test_collection_mat_rkdef(mat, len-1, state);
+                        if (! core_test_weak_popov_form(mat, shift, 0, state))
+                        { printf("failed %s -- %s,\n...exiting\n", "rplateau", "rkdef"); return 0; }
+
                         nmod_poly_mat_clear(mat);
+                        flint_free(shift);
                     }
 
     printf("--> Successful\n");
@@ -243,18 +438,6 @@ int main(int argc, char ** argv)
         nmod_poly_mat_rand(mat, state, order);
 
         res = core_test_weak_popov_form(mat, NULL, 1, state);
-
-        nmod_poly_mat_t ref;
-        nmod_poly_mat_init(ref, rdim, cdim, prime);
-        nmod_poly_t den;
-        nmod_poly_init(den, prime);
-        timeit_t timer;
-        timeit_start(timer);
-        nmod_poly_mat_rref(ref, den, mat);
-        timeit_stop(timer);
-        nmod_poly_mat_clear(ref);
-        nmod_poly_clear(den);
-        flint_printf("-- time FFLU: %wd ms (for comparison)\n", timer->wall);
 
         nmod_poly_mat_clear(mat);
     }

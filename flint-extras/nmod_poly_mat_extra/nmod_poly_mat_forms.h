@@ -744,7 +744,7 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat,
 // it helps, why not? (still, for approximants/interpolants, one might as well
 // compute them directly in HNF...)
 
-/** Transforms ``mat`` in place to a row-wise, upper, ordered, shifted weak
+/** Transforms ``mat`` in place to a row-wise, lower, ordered, shifted weak
  * Popov form, and returns the rank of ``mat``. If ``tsf`` is not NULL, the
  * same unimodular left-operations applied to ``mat`` are performed on ``tsf``
  * (which must therefore have as many rows as ``mat``, and can have an
@@ -752,7 +752,9 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat,
  * used. Setting ``tsf`` to the identity beforehand allows one to recover the
  * unimodular transformation between ``mat`` and the computed weak Popov form.
  * ``mat`` cannot alias ``tsf``. */
-slong nmod_poly_mat_weak_popov_mulders_storjohann_upper_rowwise(nmod_poly_mat_t wpf,
+// TODO not ordered atm
+slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(slong * pivind,
+                                                                nmod_poly_mat_t wpf,
                                                                 const slong * shift,
                                                                 nmod_poly_mat_t tsf);
 

@@ -129,21 +129,43 @@ void _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other
 // shifted case.
 //
 // Introduce rows one after another, only adding next one when current matrix
-// is already in shift-ordered weak Popov form. When discovering a zero row, a
-// row rotation is used to push it back as the last row.
+// is already in shift-ordered weak Popov form. Track the number rk of added
+// rows, and the number zr of encountered zero rows. Consequence: at any
+// moment, we have encountered rk+zr rows, the zr zero ones have been put at
+// the bottom of the matrix, and the rk ones are at the top, with the rk-1
+// first ones being full rank and in weak Popov form, and the rk-th one being
+// the one we are currently working on.
 //
-// Strategy for pivot collision selection: target the collision involving the
-// smallest possible degree (this means fewer field operations to do for
-// transforming `wpf`, but also means greater degrees in the unimodular
-// transformation or in `tsf`, which may impact performance if `tsf` is not
-// NULL)
+// Therefore in the currently considered submatrix there can be at most one
+// pivot collision, and up to swapping the two involved rows (among which is
+// rk), we ensure that the atomic collision transformation is modifying row rk.
+// This transformation will either keep a collision at the same column, or move
+// a pivot resulting to another single collision, or move a pivot but not
+// resulting in a collision. After sufficiently many steps, we must end up in
+// the last situation (see Mulders and Storjohann for proofs and bounds), which
+// splits in two cases: either the rk-th row is zero (we put it at the bottom
+// and increment zr) or the rk-th row provides a new pivot (we leave it here
+// and increment rk).
+//
+// In this row-by-row framework, the strategy for pivot collision selection is
+// imposed, there is actually no choice.
 //
 // pivind must be allocated with at least mat->r entries; it will be populated
 // with the shifted pivot index of the output weak Popov form (undefined
 // behaviour for entries beyond mat->r)
-slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,
+//
+// NOTE: more generally, strategy for pivot selection, a good one if
+// transformation not needed may be to target the collision involving the
+// smallest possible degree (this means fewer field operations to do for
+// transforming `wpf`, but also means greater degrees in the unimodular
+// transformation or in `tsf`, which may impact performance if `tsf` is not
+// NULL). Or like Rosser's HNF, use the larger degree, trying to keep low the
+// degrees in the transformation.
+// --> it seems it may be a good idea to permute rows by increasing shifted
+// degrees before calling this
+slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(slong * pivind,
+                                                                nmod_poly_mat_t mat,
                                                                 const slong * shift,
-                                                                slong * pivind,
                                                                 nmod_poly_mat_t tsf)
 {
     const slong m = mat->r;
@@ -153,28 +175,64 @@ slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t 
         return 0;
 
     // number of found pivots (i.e., rank), and number of found zero rows
-    // all along, mat->r == rk + zr + number of rows that remained to be processed
     slong rk = 0;
     slong zr = 0;
+    // All along, mat->r == rk + zr + number of rows that remained to be processed
+    // Also, we will ensure that pivind[:rk] remains correct (pivot index of
+    // current mat[:rk,:]), and pivind[mat->r-zr:mat->r] is correct as well
+    // (pivot index of the zr zero rows at the bottom of current mat)
 
-    //flint_mpn_store(pivind, mat->r, -1); // fill with -1, presumably all rows are zero
+    // -> pivot_row[j] is either -1 (not among the pivots discovered so far)
+    // or is the index of the row with pivot j
+    slong * pivot_row = flint_malloc(n * sizeof(slong));
+    flint_mpn_store(pivot_row, n, -1); // fill with -1
+
+    slong pivdeg; // will be used to store pivot degrees
 
     while (rk + zr < mat->r)
     {
         // consider next row, compute its pivot index
-        slong pivdeg;
         _nmod_poly_vec_pivot_profile(pivind+rk, &pivdeg, mat->rows[rk], shift, mat->c);
         if (pivind[rk] == -1)
         {
-            // row is zero, rotate to put it last; increment zr
-            _nmod_poly_mat_rotate_rows_upward(mat, pivind, rk, mat->r-1);
+            // row is zero: rotate to put it last, increment zr and go to next row
+            _nmod_poly_mat_rotate_rows_upward(mat, pivind, rk, mat->r -1);
+            if (tsf)
+                _nmod_poly_mat_rotate_rows_upward(tsf, NULL, rk, mat->r -1);
             zr++;
+        }
+        else if (pivot_row[pivind[rk]] == -1)
+        {
+            // row provides new pivot: update pivot_row, increment rk and go to next row
+            pivot_row[pivind[rk]] = rk;
+            rk++;
         }
         else
         {
-            // row is nonzero, let's actually do some work
+            // pivot collision, let's actually do some work
+            slong pi = pivot_row[pivind[rk]];
+            // see who has greatest pivot degree, and swap accordingly
+            if (pivdeg < nmod_poly_degree(MAT(pi, pivind[rk])))
+            {
+                nmod_poly_mat_swap_rows(mat, NULL, pi, rk);
+                if (tsf)
+                    nmod_poly_mat_swap_rows(tsf, NULL, pi, rk);
+            }
+            // (notes: no need to swap pivind's since they are the same; pivdeg
+            // is now incorrect but we will recompute it before any use)
+
+            // perform atomic collision solving: mat[rk,:] = mat[rk,:] + cst * x**exp * mat[pi,:]
+            _atomic_solve_pivot_collision_rowwise(mat, tsf, rk, pi, pivind[rk]);
+
+            // --> on the one hand we have not changed the pivots in rows 0:rk,
+            // on the other hand we have worked on row rk and now it may be
+            // zero, or it may directly bring a new pivot, or it may still have
+            // a collision with some of the rows 0:rk... let's just enter the
+            // loop again with same rk and zr
         }
     }
+
+    return rk;
 }
 
 
