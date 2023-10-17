@@ -29,43 +29,6 @@
 *                          HELPER FUNCTIONS                          *
 **********************************************************************/
 
-// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
-// and apply the corresponding transformation to vec (requirement: j < len(vec))
-// If i == j, then nothing happens.
-// vec can be NULL, in case it is omitted
-// More precisely this performs simultaneously:
-//      mat[i,:]     <--    mat[j,:]
-//      mat[i+1,:]   <--    mat[i,:]
-//      mat[i+2,:]   <--    mat[i+1,:]
-//         ...       <--       ...
-//      mat[j-1,:]   <--    mat[j-2,:]
-//      mat[j,:]     <--    mat[j-1,:]
-// as well as
-//      vec[i]     <--    vec[j]
-//      vec[i+1]   <--    vec[i]
-//      vec[i+2]   <--    vec[i+1]
-//        ...      <--      ...
-//      vec[j-1]   <--    vec[j-2]
-//      vec[j]     <--    vec[j-1]
-void _nmod_poly_mat_rotate_rows(nmod_poly_mat_t mat, slong * vec, slong i, slong j)
-{
-    if (i != j)
-    {
-        if (vec)
-        {
-            slong tmp_vec = vec[j];
-            for (slong ii = j; ii > i; ii--)
-                vec[ii] = vec[ii-1];
-            vec[i] = tmp_vec;
-        }
-
-        nmod_poly_struct * tmp_mat = mat->rows[j];
-        for (slong ii = j; ii > i; ii--)
-            mat->rows[ii] = mat->rows[ii-1];
-        mat->rows[i] = tmp_mat;
-    }
-}
-
 // Context: upper echelon, row-wise
 // two potential new HNF pivots have been found in the same column, i.e.
 // entries [pi1,j] and [pi2,j] which are both nonzero, with deg [pi1,j] >= deg
@@ -216,6 +179,7 @@ void _complete_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_
 // applying the corresponding operation to the whole row ii of mat and the
 // corresponding row ii of other
 // u, v are used as temporaries and must be already initialized
+// other == NULL or other is another matrix with the same modulus (it must have a row ii)
 void _reduce_against_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
                                             slong i, slong j, slong ii,
                                             nmod_poly_t u, nmod_poly_t v)
@@ -233,6 +197,7 @@ void _reduce_against_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t
             nmod_poly_mul(v, u, MAT(i, jj));
             nmod_poly_add(MAT(ii, jj), MAT(ii, jj), v);
         }
+        // apply same transformation on row ii of other
         if (other)
         {
             for (slong jj = 0; jj < other->c; jj++)
@@ -248,6 +213,7 @@ void _reduce_against_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t
 // normalize pivot entry in given row of mat, applying the corresponding
 // operation to the whole row of mat and the corresponding row of other
 // (i,j) is position of the pivot entry
+// other == NULL or other is another matrix with the same modulus
 void _normalize_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j)
 {
     if (! nmod_poly_is_monic(MAT(i, j)))

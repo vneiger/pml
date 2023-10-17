@@ -1,56 +1,65 @@
 #include "nmod_poly_mat_forms.h"
 
+
+/**********************************************************************
+*                    shifted pivot profile, vector                    *
+**********************************************************************/
+
+void _nmod_poly_vec_pivot_profile(slong * pivind,
+                                  slong * pivdeg,
+                                  const nmod_poly_struct * vec,
+                                  const slong * shift,
+                                  slong len)
+{
+    if (shift == NULL)
+    {
+        slong max = -1;
+        slong piv = -1;
+        slong d;
+        for (slong j = 0; j < len; j++)
+        {
+            d = nmod_poly_degree(vec+j); // TODO nmod_poly_vec_entry
+            if (0 <= d && max <= d)
+            {
+                max = d;
+                piv = j;
+            }
+        }
+        *pivdeg = max;
+        *pivind = piv;
+    }
+    else
+    {
+        slong piv = -1; // zero rows will have this as pivind
+        slong max = 0; // the starting value for max plays no role: in the next
+                       // for loop, either piv==-1 until the end or max has
+                       // been set correctly at first nonzero entry in the row
+        slong d;
+        for (slong j = 0; j < len; j++)
+        {
+            d = nmod_poly_degree(vec+j); // TODO nmod_poly_vec_entry
+            // if new maximum (or equal maximum) reached at a nonzero entry, update
+            // if encountering first nonzero entry in the row, update as well
+            if (0 <= d && (piv == -1 || max <= d+shift[j]))
+            {
+                piv = j;
+                max = d+shift[piv];
+            }
+        }
+        *pivind = piv;
+        *pivdeg = (piv == -1) ? -1 : (max - shift[piv]);
+    }
+}
+
 /**********************************************************************
 *                        shifted pivot index                         *
 **********************************************************************/
 
 void nmod_poly_mat_pivot_index_rowwise(slong *pivind, const nmod_poly_mat_t mat, const slong *shift)
 {
-    if (shift == NULL)
-    {
-        slong max, piv, d;
-        for (slong i = 0; i < mat->r; i++)
-        {
-            max = -1;
-            piv = -1;
-            for (slong j = 0; j < mat->c; j++)
-            {
-                d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
-                if (0 <= d && max <= d)
-                {
-                    max = d;
-                    piv = j;
-                }
-            }
-            pivind[i] = piv;
-        }
-    }
- 
-    else
-    {
-        slong max, piv, d;
-        
-        for (slong i = 0; i < mat->r; i++)
-        {
-            piv = -1;
-            // the next starting value for max plays no role: in the next for loop,
-            // either piv==-1 until the end or max has been set correctly at first
-            // nonzero entry in the row
-            max = 0;
-            for (slong j = 0; j < mat->c; j++)
-            {
-                d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
-                // if new maximum (or equal maximum) reached at a nonzero entry, update
-                // if encountering first nonzero entry in the row, update as well
-                if (0 <= d && (piv==-1 || max <= d+shift[j]))
-                {
-                    max = d + shift[j];
-                    piv = j;
-                }
-            }
-            pivind[i] = piv;
-        }
-    }
+    slong buf;
+    for (slong i = 0; i < mat->r; i++)
+        _nmod_poly_vec_pivot_profile(pivind+i, &buf, mat->rows[i], shift, mat->c);
 }
 
 void nmod_poly_mat_pivot_index_columnwise(slong *pivind, const nmod_poly_mat_t mat, const slong *shift)
@@ -104,58 +113,16 @@ void nmod_poly_mat_pivot_index_columnwise(slong *pivind, const nmod_poly_mat_t m
 /**********************************************************************
 *                       shifted pivot profile                        *
 **********************************************************************/
-void nmod_poly_mat_pivot_profile_rowwise(slong *pivind,
-                                         slong *pivdeg,
-                                         const nmod_poly_mat_t mat,
-                                         const slong *shift)
-{
-    if (shift == NULL)
-    {
-        slong max, piv, d;
-        for (slong i = 0; i < mat->r; i++)
-        {
-            max = -1;
-            piv = -1;
-            for (slong j = 0; j < mat->c; j++)
-            {
-                d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
-                if (0 <= d && max <= d)
-                {
-                    max = d;
-                    piv = j;
-                }
-            }
-            pivdeg[i] = max;
-            pivind[i] = piv;
-        }
-    }
-    else
-    {
-        slong max, piv, d;
 
-        for (slong i = 0; i < mat->r; i++)
-        {
-            piv = -1; // zero rows will have this as pivind
-                      // the next starting value for max plays no role: in the next for loop,
-                      // either piv==-1 until the end or max has been set correctly at first
-                      // nonzero entry in the row
-            max = 0;
-            for (slong j = 0; j < mat->c; j++)
-            {
-                d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
-                // if new maximum (or equal maximum) reached at a nonzero entry, update
-                // if encountering first nonzero entry in the row, update as well
-                if (0 <= d && (piv == -1 || max <= d+shift[j]))
-                {
-                    piv = j;
-                    max = d+shift[piv];
-                }
-            }
-            pivind[i] = piv;
-            pivdeg[i] = (piv == -1) ? -1 : (max - shift[piv]);
-        }
-    }
+void nmod_poly_mat_pivot_profile_rowwise(slong * pivind,
+                                         slong * pivdeg,
+                                         const nmod_poly_mat_t mat,
+                                         const slong * shift)
+{
+    for (slong i = 0; i < mat->r; i++)
+        _nmod_poly_vec_pivot_profile(pivind+i, pivdeg+i, mat->rows[i], shift, mat->c);
 }
+
 
 void nmod_poly_mat_pivot_profile_columnwise(slong *pivind,
                                             slong *pivdeg,
@@ -209,6 +176,7 @@ void nmod_poly_mat_pivot_profile_columnwise(slong *pivind,
         }
     }
 }
+
 
 /**********************************************************************
 *                        echelon pivot index                         *

@@ -35,6 +35,9 @@ nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
 int nmod_poly_mat_is_unimodular(const nmod_poly_mat_t pmat);
 int nmod_poly_mat_is_unimodular_randomized(const nmod_poly_mat_t pmat, flint_rand_t state);
 
+// rotate rows i...j, and also rotate vec similarly if provided
+// see .c for more documentation
+void _nmod_poly_mat_rotate_rows(nmod_poly_mat_t mat, slong * vec, slong i, slong j);
 
 
 /*------------------------------------------------------------*/

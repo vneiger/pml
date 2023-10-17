@@ -4,19 +4,42 @@
 #include "nmod_mat_poly.h"
 
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* SETTING AND GETTING COEFFICIENTS                           */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
+// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[i,:]     <--    mat[j,:]
+//      mat[i+1,:]   <--    mat[i,:]
+//      mat[i+2,:]   <--    mat[i+1,:]
+//         ...       <--       ...
+//      mat[j-1,:]   <--    mat[j-2,:]
+//      mat[j,:]     <--    mat[j-1,:]
+// as well as
+//      vec[i]     <--    vec[j]
+//      vec[i+1]   <--    vec[i]
+//      vec[i+2]   <--    vec[i+1]
+//        ...      <--      ...
+//      vec[j-1]   <--    vec[j-2]
+//      vec[j]     <--    vec[j-1]
+void _nmod_poly_mat_rotate_rows(nmod_poly_mat_t mat, slong * vec, slong i, slong j)
+{
+    if (i != j)
+    {
+        if (vec)
+        {
+            slong tmp_vec = vec[j];
+            for (slong ii = j; ii > i; ii--)
+                vec[ii] = vec[ii-1];
+            vec[i] = tmp_vec;
+        }
 
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* TRANSPOSE, TRUNC, SHIFT, REVERSE                           */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
+        nmod_poly_struct * tmp_mat = mat->rows[j];
+        for (slong ii = j; ii > i; ii--)
+            mat->rows[ii] = mat->rows[ii-1];
+        mat->rows[i] = tmp_mat;
+    }
+}
 
 
 /*------------------------------------------------------------*/

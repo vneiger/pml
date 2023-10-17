@@ -155,6 +155,16 @@ void nmod_poly_mat_column_degree(slong *cdeg,
  */
 //@{
 
+/** Computes the `shift`-pivot index (stored in integer `pivind`) and
+ * `shift`-pivot degree (stored in integer `pivdeg`) of a given vector `vec`
+ * (see @ref Pivots). In the unshifted case, `pivdeg` coincides with the degree
+ * of this vector. */
+void _nmod_poly_vec_pivot_profile(slong * pivind,
+                                  slong * pivdeg,
+                                  const nmod_poly_struct * vec,
+                                  const slong * shift,
+                                  slong len);
+
 /** Computes the row-wise `shift`-pivot index `pivind` of a polynomial matrix
  * `mat` (see @ref Pivots). */
 void nmod_poly_mat_pivot_index_rowwise(slong *pivind,
@@ -167,7 +177,6 @@ void nmod_poly_mat_pivot_index_columnwise(slong *pivind,
                                           const nmod_poly_mat_t mat,
                                           const slong * shift);
 
-
 /** Computes the row-wise `shift`-pivot index `pivind` and `shift`-pivot degree
  * `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). In the unshifted
  * case, `pivdeg` coincides with the row degree of `mat`. */
@@ -179,10 +188,11 @@ void nmod_poly_mat_pivot_profile_rowwise(slong * pivind,
 /** Computes the column-wise `shift`-pivot index `pivind` and `shift`-pivot
  * degree `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). In the
  * unshifted case, `pivdeg` coincides with the column degree of `mat`. */
-void nmod_poly_mat_pivot_profile_columnwise(slong *pivind,
-                                            slong *pivdeg,
+void nmod_poly_mat_pivot_profile_columnwise(slong * pivind,
+                                            slong * pivdeg,
                                             const nmod_poly_mat_t mat,
                                             const slong * shift);
+
 
 //@} // doxygen group: (Shifted) pivot index and pivot degree
 
