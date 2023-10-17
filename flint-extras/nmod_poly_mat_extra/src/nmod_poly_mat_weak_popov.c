@@ -162,11 +162,17 @@ slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t 
     while (rk + zr < mat->r)
     {
         // consider next row, compute its pivot index
-        slong pind = pivind[rk];
+        slong pivdeg;
+        _nmod_poly_vec_pivot_profile(pivind+rk, &pivdeg, mat->rows[rk], shift, mat->c);
         if (pivind[rk] == -1)
         {
-            // row is zero, rotate to put it last
-            _nmod_poly_mat_rotate_rows(mat, pivind, rk, mat->r);
+            // row is zero, rotate to put it last; increment zr
+            _nmod_poly_mat_rotate_rows_upward(mat, pivind, rk, mat->r-1);
+            zr++;
+        }
+        else
+        {
+            // row is nonzero, let's actually do some work
         }
     }
 }

@@ -569,9 +569,9 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_po
                             ii++;
                         // rotate mat and pivot_col
                         pivot_col[i] = jj;
-                        _nmod_poly_mat_rotate_rows(mat, pivot_col, ii, i);
+                        _nmod_poly_mat_rotate_rows_downward(mat, pivot_col, ii, i);
                         if (tsf)
-                            _nmod_poly_mat_rotate_rows(tsf, NULL, ii, i);
+                            _nmod_poly_mat_rotate_rows_downward(tsf, NULL, ii, i);
                         pivot_row[jj] = i; // column jj is new pivot for row i
                         // update pivot row for found pivots in jj+1 ... j-1
                         for (slong pj = jj+1; pj < j; pj++)

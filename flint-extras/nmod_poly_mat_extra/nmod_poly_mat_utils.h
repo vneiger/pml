@@ -37,7 +37,8 @@ int nmod_poly_mat_is_unimodular_randomized(const nmod_poly_mat_t pmat, flint_ran
 
 // rotate rows i...j, and also rotate vec similarly if provided
 // see .c for more documentation
-void _nmod_poly_mat_rotate_rows(nmod_poly_mat_t mat, slong * vec, slong i, slong j);
+void _nmod_poly_mat_rotate_rows_downward(nmod_poly_mat_t mat, slong * vec, slong i, slong j);
+void _nmod_poly_mat_rotate_rows_upward(nmod_poly_mat_t mat, slong * vec, slong i, slong j);
 
 
 /*------------------------------------------------------------*/

@@ -22,7 +22,7 @@
 //        ...      <--      ...
 //      vec[j-1]   <--    vec[j-2]
 //      vec[j]     <--    vec[j-1]
-void _nmod_poly_mat_rotate_rows(nmod_poly_mat_t mat, slong * vec, slong i, slong j)
+void _nmod_poly_mat_rotate_rows_downward(nmod_poly_mat_t mat, slong * vec, slong i, slong j)
 {
     if (i != j)
     {
@@ -38,6 +38,43 @@ void _nmod_poly_mat_rotate_rows(nmod_poly_mat_t mat, slong * vec, slong i, slong
         for (slong ii = j; ii > i; ii--)
             mat->rows[ii] = mat->rows[ii-1];
         mat->rows[i] = tmp_mat;
+    }
+}
+
+// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[i,:]     <--    mat[i+1,:]
+//      mat[i+1,:]   <--    mat[i+2,:]
+//      mat[i+2,:]   <--       ...
+//         ...       <--    mat[j-1,:]
+//      mat[j-1,:]   <--    mat[j,:]
+//      mat[j,:]     <--    mat[i,:]
+// as well as
+//      vec[i]     <--    vec[i+1]
+//      vec[i+1]   <--    vec[i+2]
+//      vec[i+2]   <--      ...
+//        ...      <--    vec[j-1]
+//      vec[j-1]   <--    vec[j]
+//      vec[j]     <--    vec[i]
+void _nmod_poly_mat_rotate_rows_upward(nmod_poly_mat_t mat, slong * vec, slong i, slong j)
+{
+    if (i != j)
+    {
+        if (vec)
+        {
+            slong tmp_vec = vec[i];
+            for (slong ii = i; ii < j; ii++)
+                vec[ii] = vec[ii+1];
+            vec[j] = tmp_vec;
+        }
+
+        nmod_poly_struct * tmp_mat = mat->rows[i];
+        for (slong ii = i; ii < j; ii++)
+            mat->rows[ii] = mat->rows[ii+1];
+        mat->rows[j] = tmp_mat;
     }
 }
 
