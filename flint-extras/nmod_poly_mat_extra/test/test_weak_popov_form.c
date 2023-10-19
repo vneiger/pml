@@ -38,25 +38,12 @@ static void replace_last_row(nmod_poly_mat_t mat, const nmod_poly_struct * row)
 }
 
 // helper for verifying rank profile
-// rank must be the length of rrp (expected to be the rank of mat)
+// rank must be <= the length of rrp
+// assumption: rank is the rank of mat
 int verify_row_rank_profile(const nmod_poly_mat_t mat, const slong * rrp, slong rank)
 {
     if (mat->r == 0 || mat->c == 0)
-    {
-        if (rank == 0)
-            return 1;
-        else
-        {
-            printf("~~~ verify row rank profile ~~~ INCORRECT: rank != 0 but matrix is empty\n");
-            return 0;
-        }
-    }
-
-    if (rank > mat->r || rank > mat->c)
-    {
-        printf("~~~ verify row rank profile ~~~ INCORRECT: rank beyond matrix dimension\n");
-        return 0;
-    }
+        return 1;
 
     nmod_poly_mat_t submat;
     nmod_poly_mat_init(submat, 0, mat->c, mat->modulus);
@@ -96,6 +83,25 @@ int verify_row_rank_profile(const nmod_poly_mat_t mat, const slong * rrp, slong 
     }
     nmod_poly_mat_clear(submat);
     return 1;
+}
+
+// helper for verifying pivot index of first rank rows of mat
+// rank must be the rank of mat and it is assumed that pivind has >= rank entries
+int verify_pivot_index(const nmod_poly_mat_t mat, const slong * shift, const slong * pivind, slong rank)
+{
+    if (mat->r == 0 || mat->c == 0)
+        return 1;
+
+    slong * check_pivind = flint_malloc(mat->r * sizeof(slong));
+    nmod_poly_mat_pivot_index_rowwise(check_pivind, mat, shift);
+    int equal = 1;
+    for (slong i = 0; i < rank; i++)
+        if (pivind[i] != check_pivind[i])
+            equal = 0;
+    flint_free(check_pivind);
+    if (!equal)
+        printf("~~~ verify pivot index ~~~ INCORRECT: pivot index is not correct\n");
+    return equal;
 }
 
 // verify weak Popov form
@@ -192,8 +198,9 @@ int verify_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shift, const
 int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, int time, flint_rand_t state)
 {
     // initialize pivind list and row rank profile
-    slong * pivind = flint_malloc(mat->r * sizeof(slong));
-    slong * rrp = flint_malloc(mat->r * sizeof(slong));
+    slong max_rank = FLINT_MIN(mat->r, mat->c);
+    slong * pivind = flint_malloc(FLINT_MIN(max_rank+1,mat->r) * sizeof(slong)); // see doc for the +1
+    slong * rrp = flint_malloc(max_rank * sizeof(slong));
     // init copy of mat
     nmod_poly_mat_t wpf;
     nmod_poly_mat_init(wpf, mat->r, mat->c, mat->modulus);
@@ -203,7 +210,7 @@ int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, in
     nmod_poly_mat_init(tsf, mat->r, mat->r, mat->modulus);
 
     // verification of weak Popov form, verification of row rank profile
-    int verif_form, verif_rrp;
+    int verif_form, verif_pivind, verif_rrp;
 
     { // Mulders and Storjohann's algorithm
         nmod_poly_mat_set(wpf, mat);
@@ -224,9 +231,12 @@ int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, in
 #else
         verif_form = verify_weak_popov_form(wpf, shift, tsf, rk, mat, state);
 #endif /* ifdef NOTRANS */
+        verif_pivind = verify_pivot_index(wpf, shift, pivind, rk);
         verif_rrp = verify_row_rank_profile(mat, rrp, rk);
         if (! verif_form)
             printf("weak Popov form -- Mulders-Storjohann -- form failure.\n");
+        if (! verif_pivind)
+            printf("weak Popov form -- Mulders-Storjohann -- pivot index failure.\n");
         if (! verif_rrp)
             printf("weak Popov form -- Mulders-Storjohann -- rank profile failure.\n");
         timeit_stop(timer);

@@ -211,9 +211,8 @@ slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t 
         if (pivind[rk] == -1)
         {
             // row is zero: rotate to put it last, increment zr and go to next row
-            _nmod_poly_mat_rotate_rows_upward(mat, pivind, rk, mat->r -1);
+            _nmod_poly_mat_rotate_rows_upward(mat, NULL, rk, mat->r -1);
             if (tsf) _nmod_poly_mat_rotate_rows_upward(tsf, NULL, rk, mat->r -1);
-            if (rrp) rrp[mat->r -1-zr] = rk+zr;
             zr++;
         }
         else if (pivot_row[pivind[rk]] == -1)

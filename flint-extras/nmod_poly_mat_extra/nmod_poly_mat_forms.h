@@ -725,18 +725,36 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
 //@{
 
 /** Transforms ``mat`` in place to its row-wise, upper Hermite normal form, and
- * returns the rank of ``mat``. If ``tsf`` is not NULL, the same unimodular
- * left-operations applied to ``mat`` are performed on ``tsf`` (which must
- * therefore have as many rows as ``mat``, and can have an arbitrary number of
- * columns). Setting ``tsf`` to the identity beforehand allows one to recover
- * the unimodular transformation between ``mat`` and the computed Hermite
- * normal form. ``mat`` cannot alias ``tsf``. */
+ * returns the rank of ``mat``.
+ *
+ *   ..``tsf``. If ``tsf`` is not NULL, the same unimodular left-operations
+ *   applied to ``mat`` are performed on ``tsf`` (which must therefore have as
+ *   many rows as ``mat``, and can have an arbitrary number of columns).
+ *   Setting ``tsf`` to the identity beforehand allows one to recover the
+ *   unimodular transformation between ``mat`` and the computed Hermite normal
+ *   form. ``mat`` cannot alias ``tsf``.
+ *
+ * Then, depending on the algorithm:
+ *
+ *   ..``crp``. It is filled with the (upper echelon, row-wise) pivot indices
+ *   of the output Hermite normal form, which also correspond to the column
+ *   rank profile of ``mat``. As input, ``crp`` must have allocated space for
+ *   at least rank(mat) entries (take min(mat->r,mat->c) if no better bound is
+ *   known). No need to fill it with values. Its allocated space is left
+ *   unchanged, and so are its entries beyond the rank(mat)-th one.
+ *
+ *   ..``mrp``. TODO
+ **/
 slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat,
-                                             nmod_poly_mat_t tsf);
+                                             nmod_poly_mat_t tsf,
+                                             slong * crp);
 slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat,
-                                              nmod_poly_mat_t tsf);
+                                              nmod_poly_mat_t tsf,
+                                              slong * crp);
 slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat,
-                                                    nmod_poly_mat_t tsf);
+                                                    nmod_poly_mat_t tsf,
+                                                    slong * crp,
+                                                    slong * mrp);
 // TODO mod det version (see e.g. Domich) ? quite often, computing the
 // determinant is not much easier than computing the HNF (with fast algos)...
 // --> YET once may imagine e.g. approximant/interpolant basis computation,
@@ -745,22 +763,30 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat,
 // compute them directly in HNF...)
 
 /** Transforms ``mat`` in place to a row-wise, lower ``shift``-weak Popov form
- * (non-necessarily ordered), and returns the rank of ``mat``. If ``tsf`` is
- * not NULL, the same unimodular left-operations applied to ``mat`` are
- * performed on ``tsf`` (which must therefore have as many rows as ``mat``, and
- * can have an arbitrary number of columns). ``mat`` cannot alias ``tsf``.
- * Setting ``tsf`` to the identity beforehand allows one to recover the
- * unimodular transformation between ``mat`` and the computed weak Popov form.
- * If ``shift`` is NULL, the uniform shift is used. ``pivind`` must be
- * allocated with ``mat->r`` entries (no need to fill it with values);
- * ``pivind`` will eventually contain the ``shift``-pivot index of the output
- * ``mat`` (with ``-1`` for the zero rows, which are grouped at the bottom of
- * ``mat``). ``rrp`` must be either NULL or allocated with ``mat->r`` entries
- * (no need to fill it with values); if not NULL, ``rrp`` will eventually
- * contain the row rank profile of the input ``mat`` as its first ``rank(mat)``
- * entries, while the remaining entries list the rows not in the row rank
- * profile by decreasing row index. Except if mat has zero columns: then
- * ``rrp`` is left unchanged. */
+ * (non-necessarily ordered), and returns the rank of ``mat``.
+ *    .. ``tsf``. If ``tsf`` is not NULL, the same unimodular left-operations
+ *    applied to ``mat`` are performed on ``tsf`` (which must therefore have as
+ *    many rows as ``mat``, and can have an arbitrary number of columns).
+ *    ``mat`` cannot alias ``tsf``.  Setting ``tsf`` to the identity beforehand
+ *    allows one to recover the unimodular transformation between ``mat`` and
+ *    the computed weak Popov form.
+ *
+ *    ..``shifts``. If ``shift`` is NULL, the uniform shift is used.
+ *
+ *    ..``pivind``. It will eventually contain the ``shift``-pivot index of the
+ *    output ``mat``. As input it must have allocated space for at least
+ *    ``rank(mat)+1`` entries, except if mat has full row rank in case
+ *    ``mat->r`` entries suffice (so, allocating ``mat->r`` entries is always
+ *    ok, but ``min(mat->r,mat->c)`` may not be when mat->r > mat->c). No need
+ *    to fill it with values. Its allocated space is left unchanged, and so are
+ *    its entries beyond the rank(mat)-th one.
+ *
+ *    ..``rrp``. It must be either NULL or allocated with at least
+ *    ``rank(mat)`` entries (no need to fill it with values). If not NULL,
+ *    ``rrp`` will eventually contain the row rank profile of the input ``mat``
+ *    as its first ``rank(mat)`` entries. Its allocated space is left
+ *    unchanged, and so are its entries beyond the rank(mat)-th one.
+ **/
 slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,
                                                                 const slong * shift,
                                                                 nmod_poly_mat_t tsf,
