@@ -744,19 +744,28 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat,
 // it helps, why not? (still, for approximants/interpolants, one might as well
 // compute them directly in HNF...)
 
-/** Transforms ``mat`` in place to a row-wise, lower, ordered, shifted weak
- * Popov form, and returns the rank of ``mat``. If ``tsf`` is not NULL, the
- * same unimodular left-operations applied to ``mat`` are performed on ``tsf``
- * (which must therefore have as many rows as ``mat``, and can have an
- * arbitrary number of columns). If ``shift`` is NULL, the uniform shift is
- * used. Setting ``tsf`` to the identity beforehand allows one to recover the
+/** Transforms ``mat`` in place to a row-wise, lower ``shift``-weak Popov form
+ * (non-necessarily ordered), and returns the rank of ``mat``. If ``tsf`` is
+ * not NULL, the same unimodular left-operations applied to ``mat`` are
+ * performed on ``tsf`` (which must therefore have as many rows as ``mat``, and
+ * can have an arbitrary number of columns). ``mat`` cannot alias ``tsf``.
+ * Setting ``tsf`` to the identity beforehand allows one to recover the
  * unimodular transformation between ``mat`` and the computed weak Popov form.
- * ``mat`` cannot alias ``tsf``. */
-// TODO not ordered atm
-slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(slong * pivind,
-                                                                nmod_poly_mat_t wpf,
+ * If ``shift`` is NULL, the uniform shift is used. ``pivind`` must be
+ * allocated with ``mat->r`` entries (no need to fill it with values);
+ * ``pivind`` will eventually contain the ``shift``-pivot index of the output
+ * ``mat`` (with ``-1`` for the zero rows, which are grouped at the bottom of
+ * ``mat``). ``rrp`` must be either NULL or allocated with ``mat->r`` entries
+ * (no need to fill it with values); if not NULL, ``rrp`` will eventually
+ * contain the row rank profile of the input ``mat`` as its first ``rank(mat)``
+ * entries, while the remaining entries list the rows not in the row rank
+ * profile by decreasing row index. Except if mat has zero columns: then
+ * ``rrp`` is left unchanged. */
+slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,
                                                                 const slong * shift,
-                                                                nmod_poly_mat_t tsf);
+                                                                nmod_poly_mat_t tsf,
+                                                                slong * pivind,
+                                                                slong * rrp);
 
 //@} // doxygen group: Computing polynomial matrix forms
 

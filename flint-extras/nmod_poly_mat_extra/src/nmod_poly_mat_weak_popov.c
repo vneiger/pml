@@ -179,15 +179,13 @@ void _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other
 // degrees in the transformation.
 // --> it seems it may be a good idea to permute rows by increasing shifted
 // degrees before calling this
-slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(slong * pivind,
-                                                                nmod_poly_mat_t mat,
+slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,
                                                                 const slong * shift,
-                                                                nmod_poly_mat_t tsf)
+                                                                nmod_poly_mat_t tsf,
+                                                                slong * pivind,
+                                                                slong * rrp)
 {
-    const slong m = mat->r;
-    const slong n = mat->c;
-
-    if (m == 0 || n == 0)
+    if (mat->r == 0 || mat->c == 0)
         return 0;
 
     // number of found pivots (i.e., rank), and number of found zero rows
@@ -200,51 +198,44 @@ slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(slong * pivind,
 
     // -> pivot_row[j] is either -1 (not among the pivots discovered so far)
     // or is the index of the row with pivot j
-    slong * pivot_row = flint_malloc(n * sizeof(slong));
-    flint_mpn_store(pivot_row, n, -1); // fill with -1
+    slong * pivot_row = flint_malloc(mat->c * sizeof(slong));
+    flint_mpn_store(pivot_row, mat->c, -1); // fill with -1
 
     slong pivdeg; // will be used to store pivot degrees
 
     while (rk + zr < mat->r)
     {
-        // consider next row, compute its pivot index
+        // consider row rk of current matrix (corresponds to row rk+zr of initial matrix)
+        // compute its pivot index
         _nmod_poly_vec_pivot_profile(pivind+rk, &pivdeg, mat->rows[rk], shift, mat->c);
         if (pivind[rk] == -1)
         {
             // row is zero: rotate to put it last, increment zr and go to next row
             _nmod_poly_mat_rotate_rows_upward(mat, pivind, rk, mat->r -1);
-            if (tsf)
-                _nmod_poly_mat_rotate_rows_upward(tsf, NULL, rk, mat->r -1);
+            if (tsf) _nmod_poly_mat_rotate_rows_upward(tsf, NULL, rk, mat->r -1);
+            if (rrp) rrp[mat->r -1-zr] = rk+zr;
             zr++;
         }
         else if (pivot_row[pivind[rk]] == -1)
         {
             // row provides new pivot: update pivot_row, increment rk and go to next row
             pivot_row[pivind[rk]] = rk;
+            if (rrp) rrp[rk] = rk+zr;
             rk++;
         }
         else
         {
-            // pivot collision, let's actually do some work
+            // pivind[rk] == pivind[pi]: pivot collision, let's actually do some work
             slong pi = pivot_row[pivind[rk]];
             // see who has greatest pivot degree, and swap accordingly
             if (pivdeg < nmod_poly_degree(MAT(pi, pivind[rk])))
             {
                 nmod_poly_mat_swap_rows(mat, NULL, pi, rk);
-                if (tsf)
-                    nmod_poly_mat_swap_rows(tsf, NULL, pi, rk);
+                if (tsf) nmod_poly_mat_swap_rows(tsf, NULL, pi, rk);
             }
-            // (notes: no need to swap pivind's since they are the same; pivdeg
-            // is now incorrect but we will recompute it before any use)
 
             // perform atomic collision solving: mat[rk,:] = mat[rk,:] + cst * x**exp * mat[pi,:]
             _atomic_solve_pivot_collision_rowwise(mat, tsf, rk, pi, pivind[rk]);
-
-            // --> on the one hand we have not changed the pivots in rows 0:rk,
-            // on the other hand we have worked on row rk and now it may be
-            // zero, or it may directly bring a new pivot, or it may still have
-            // a collision with some of the rows 0:rk... let's just enter the
-            // loop again with same rk and zr
         }
     }
 
