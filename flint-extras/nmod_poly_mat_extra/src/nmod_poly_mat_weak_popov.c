@@ -23,6 +23,11 @@
 //         mat[pi1,:] = mat[pi1,:] + cst * x**exp * mat[pi2,:]
 // where cst = - leading_coeff(mat[pi1,j]) / leading_coeff(mat[pi2,j])
 //   and exp = deg(mat[pi1,j]) - deg(mat[pi2,j])
+// Complexity (field operations):
+//  - for mat: sum_{jj = 0 ... mat->c-1} (deg(mat[pi2,jj]) + 1)
+//             <=  mat->c * (rdeg(mat[pi2,:])+1)
+//  - for other: sum_{jj = 0 ... other->c-1} (deg(other[pi2,jj]) + 1)
+//             <=  other->c * (rdeg(other[pi2,:])+1)
 void _atomic_solve_pivot_collision_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
                                            slong pi1, slong pi2, slong j)
 {
@@ -66,6 +71,12 @@ void _atomic_solve_pivot_collision_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 // corresponding row ii of other
 // u, v are used as temporaries and must be already initialized
 // other == NULL or other is another matrix with the same modulus (it must have a row ii)
+// Complexity: 0 if deg(mat[ii,j]) < deg(mat[i,j]), otherwise:
+//    . divrem: M(deg(mat[i,j]))
+//    . for mat: sum_{jj = 0 .. j-1 and j+1 ... mat->c-1} M(deg(mat[ii,j]) - deg(mat[i,j]) + deg(mat[i,jj]))
+//        <=     (mat->c - 1) * M(deg(mat[ii,j]) - deg(mat[i,j]) + rdeg(mat[i,:]))
+//    . for other: sum_{jj = 0 ... other->c-1} M(deg(mat[ii,j]) - deg(mat[i,j]) + deg(other[i,jj]))
+//        <=     other->c * M(deg(mat[ii,j]) - deg(mat[i,j]) + rdeg(other[i,:]))
 void _reduce_against_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
                                    slong i, slong j, slong ii,
                                    nmod_poly_t u, nmod_poly_t v)
@@ -106,6 +117,11 @@ void _reduce_against_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 // operation to the whole row of mat and the corresponding row of other
 // (i,j) is position of the pivot entry
 // other == NULL or other is another matrix with the same modulus
+// Complexity: if already monic, 0, otherwise:
+//    . for mat: sum_{jj = 0 ... mat->c-1} deg(mat[i,jj])
+//          <= mat->c * rdeg(mat[i,:])
+//    . for other: sum_{jj = 0 ... other->c-1} deg(other[i,jj])
+//          <= other->c * rdeg(other[i,:])
 void _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j)
 {
     if (! nmod_poly_is_monic(MAT(i, j)))

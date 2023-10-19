@@ -40,6 +40,11 @@
 //         mat[pi1,:] = mat[pi1,:] + cst * x**exp * mat[pi2,:]
 // where cst = - leading_coeff(mat[pi1,j]) / leading_coeff(mat[pi2,j])
 //   and exp = deg(mat[pi1,j]) - deg(mat[pi2,j])
+// Complexity (field operations):
+//  - for mat: sum_{jj = j ... mat->c-1} (deg(mat[pi2,jj]) + 1)
+//             <=  (mat->c - j) * (rdeg(mat[pi2,:])+1)
+//  - for other: sum_{jj = 0 ... other->c-1} (deg(other[pi2,jj]) + 1)
+//             <=  other->c * (rdeg(other[pi2,:])+1)
 void _atomic_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
                                                     slong pi1, slong pi2, slong j)
 {
@@ -91,6 +96,15 @@ void _atomic_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_po
 // we perform complete xgcd transformation between pivot and mat[ii,j]
 //   (see more detailed description in algorithm comments below)
 // g, u, v, pivg, nonzg are used as temporaries and must be already initialized
+// Complexity:
+//    . xgcd in degrees deg(mat[pi,j]) and deg(mat[ii,j])
+//        ~ M(d) log(d) where d is max of these
+//    . dividing these entries by the gcd: bounded by M(d)
+//    . sum_{jj = j+1 ... mat->c-1} M(d + deg(mat[pi,jj])) + M(d + deg(mat[ii,jj]))
+//         <=   (mat->c - j - 1) * M(rdeg(mat[pi,:]) + rdeg(mat[ii,:]))
+//    . for other:
+//        sum_{jj = 0 ... other->c-1} M(d + deg(other[pi,jj])) + M(d + deg(other[ii,jj]))
+//         <=   other->c * M(d + rdeg(other[pi,:]) + rdeg(other[ii,:]))
 void _complete_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
                                                       slong pi, slong ii, slong j,
                                                       nmod_poly_t g, nmod_poly_t u, nmod_poly_t v,
@@ -180,6 +194,12 @@ void _complete_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_
 // corresponding row ii of other
 // u, v are used as temporaries and must be already initialized
 // other == NULL or other is another matrix with the same modulus (it must have a row ii)
+// Complexity: 0 if deg(mat[ii,j]) < deg(mat[i,j]), otherwise:
+//    . divrem: M(deg(mat[i,j]))
+//    . for mat: sum_{jj = j+1 ... mat->c-1} M(deg(mat[ii,j]) - deg(mat[i,j]) + deg(mat[i,jj]))
+//        <=     (mat->c - j - 1) * M(deg(mat[ii,j]) - deg(mat[i,j]) + rdeg(mat[i,:]))
+//    . for other: sum_{jj = 0 ... other->c-1} M(deg(mat[ii,j]) - deg(mat[i,j]) + deg(other[i,jj]))
+//        <=     other->c * M(deg(mat[ii,j]) - deg(mat[i,j]) + rdeg(other[i,:]))
 void _reduce_against_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
                                             slong i, slong j, slong ii,
                                             nmod_poly_t u, nmod_poly_t v)
@@ -214,6 +234,11 @@ void _reduce_against_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t
 // operation to the whole row of mat and the corresponding row of other
 // (i,j) is position of the pivot entry
 // other == NULL or other is another matrix with the same modulus
+// Complexity: if already monic, 0, otherwise:
+//    . for mat: sum_{jj = j ... mat->c-1} deg(mat[i,jj])
+//          <= (mat->c - j) * rdeg(mat[i,:])
+//    . for other: sum_{jj = 0 ... other->c-1} deg(other[i,jj])
+//          <= other->c * rdeg(other[i,:])
 void _normalize_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j)
 {
     if (! nmod_poly_is_monic(MAT(i, j)))
@@ -243,6 +268,10 @@ void _normalize_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t othe
 //     (probably no difference in speed if input is random of given max degree...)
 // --> FIXME normalization step could be inside inside the main triangularization loop
 // (applying it each time we find a pivot), but this probably has no impact
+// Complexity for a generic m x m degree d (hence nonsingular) matrix:
+// - first, it will use about m*(d+1) steps to transform the first column
+//   into the transpose of [1  0  0  ...  0]. Indeed each step decreases the
+//   degree of a single one of the entries by exactly 1.
 slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
 {
     const slong m = mat->r;
