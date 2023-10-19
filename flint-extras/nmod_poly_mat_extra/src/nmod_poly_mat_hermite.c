@@ -272,20 +272,15 @@ void _normalize_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t othe
 // - first, it will use about m*(d+1) steps to transform the first column
 //   into the transpose of [1  0  0  ...  0]. Indeed each step decreases the
 //   degree of a single one of the entries by exactly 1.
-slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
+slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
 {
-    const slong m = mat->r;
-    const slong n = mat->c;
-
-    if (m == 0 || n == 0)
+    // Notation: in comments, m = mat->r, n = mat->c
+    if (mat->r == 0 || mat->c == 0)
         return 0;
 
-    // to store the positions of columns where a pivot was found
-    // -> pivots_cols[i] gives index of pivot in row i
-    // -> index rk below will tell us how many have been found already,
-    //     pivots_cols[i] for i >= rk is undefined
-    // -> there will never be > rank(mat) pivots
-    slong * pivot_col = flint_malloc(FLINT_MIN(m,n) * sizeof(slong));
+    // recall, pivind[i] gives index of pivot in row i
+    // -> index rk below will tell us how many pivots have been found already,
+    //     pivind[i] for i >= rk is not used nor modified
 
     // (rk,j) : position where next pivot is expected to be found when processing column j,
     // =>   rk = number of pivots already found in columns < j, which is also the rank
@@ -295,7 +290,7 @@ slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_
     slong rk = 0;
 
     // loop over the columns
-    for (slong j = 0; j < n; j++)
+    for (slong j = 0; j < mat->c; j++)
     {
         // whether there are still nonzero elements in entries rk+1:m,j
         int collision = 1;
@@ -305,17 +300,17 @@ slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_
             // with the former greater than or equal to the former, among the entries (i,j) for i = rk ... m
             // first step: find first nonzero entry
             slong pi1 = rk;
-            while (pi1 < m && nmod_poly_is_zero(MAT(pi1, j)))
+            while (pi1 < mat->r && nmod_poly_is_zero(MAT(pi1, j)))
                 pi1++;
-            if (pi1 == m) // there were only zeroes in rk:m,j
+            if (pi1 == mat->r) // there were only zeroes in rk:m,j
                 collision = 0;
-            else if (pi1 == m-1) // only nonzero entry in rk:m,j is pi1,j --> pivot found, j-th iteration finished
+            else if (pi1 == mat->r-1) // only nonzero entry in rk:m,j is pi1,j --> pivot found, j-th iteration finished
             {
                 // put the nonzero entry as pivot entry, and exit column j
                 nmod_poly_mat_swap_rows(mat, NULL, pi1, rk);
                 if (tsf)
                     nmod_poly_mat_swap_rows(tsf, NULL, pi1, rk);
-                pivot_col[rk] = j;
+                pivind[rk] = j;
                 rk++;
                 collision = 0;
             }
@@ -326,7 +321,7 @@ slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_
                 // among entries rk:m,j, with deg(mat[pi1,j]) >= deg(mat[pi2,j])
                 if (MAT(pi1, j)->length < MAT(pi2, j)->length)
                     SLONG_SWAP(pi1, pi2);
-                for (slong i = FLINT_MAX(pi1,pi2)+1; i < m; i++)
+                for (slong i = FLINT_MAX(pi1,pi2)+1; i < mat->r; i++)
                 {
                     if (MAT(i, j)->length > MAT(pi1, j)->length)
                     {
@@ -342,7 +337,7 @@ slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_
                     nmod_poly_mat_swap_rows(mat, NULL, pi1, rk);
                     if (tsf)
                         nmod_poly_mat_swap_rows(tsf, NULL, pi1, rk);
-                    pivot_col[rk] = j;
+                    pivind[rk] = j;
                     rk++;
                     collision = 0;
                 }
@@ -361,15 +356,13 @@ slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_
     nmod_poly_init(v, mat->modulus);
     for (slong i = 0; i < rk; i++)
     {
-        slong j = pivot_col[i];
+        slong j = pivind[i];
         // normalize pivot, and correspondingly update the row i of mat and of tsf
         _normalize_pivot_uechelon_rowwise(mat, tsf, i, j);
         // reduce entries above (i,j)
         for (slong ii = 0; ii < i; ii++)
             _reduce_against_pivot_uechelon_rowwise(mat, tsf, i, j, ii, u, v);
     }
-
-    flint_free(pivot_col);
 
     return rk;
 }
@@ -385,20 +378,14 @@ slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_
 // where nonzg = mat[ii,j]/g   and   pivg = mat[pi,j]/g
 // This goes on same column until all entries in [i:m,j] except one are zero;
 // swap rows to put the nonzero one at [i,j]. Then proceed to next column.
-slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
+slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
 {
-    const slong m = mat->r;
-    const slong n = mat->c;
-
-    if (m == 0 || n == 0)
+    if (mat->r == 0 || mat->c == 0)
         return 0;
 
-    // to store the positions of columns where a pivot was found
-    // -> pivots_cols[i] gives index of pivot in row i
-    // -> index rk below will tell us how many have been found already,
-    //     pivots_cols[i] for i >= rk is undefined
-    // -> there will never be > rank(mat) pivots
-    slong * pivot_col = flint_malloc(FLINT_MIN(m,n) * sizeof(slong));
+    // recall, pivind[i] gives index of pivot in row i
+    // -> index rk below will tell us how many pivots have been found already,
+    //     pivind[i] for i >= rk is not used nor modified
 
     // (rk,j) : position where next pivot is expected to be found when processing column j,
     // =>   rk = number of pivots already found in columns < j, which is also the rank
@@ -419,24 +406,24 @@ slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat
     nmod_poly_init(nonzg, mat->modulus);
 
     // loop over the columns
-    for (slong j = 0; j < n; j++)
+    for (slong j = 0; j < mat->c; j++)
     {
         // find actual pivot: starting at (rk,j), find first nonzero entry in the rest of column j
         slong pi = rk;
-        while (pi < m && nmod_poly_is_zero(MAT(pi, j)))
+        while (pi < mat->r && nmod_poly_is_zero(MAT(pi, j)))
             pi++;
 
-        if (pi < m)
+        if (pi < mat->r)
         // else, no pivot in this column, go to next column
         {
             // process column j below pivot
             slong ii = pi + 1;
-            while (ii < m)
+            while (ii < mat->r)
             {
                 // find next nonzero entry in column
-                while (ii < m && nmod_poly_is_zero(MAT(ii, j)))
+                while (ii < mat->r && nmod_poly_is_zero(MAT(ii, j)))
                     ii++;
-                if (ii < m)
+                if (ii < mat->r)
                     _complete_solve_pivot_collision_uechelon_rowwise(mat, tsf, pi, ii, j, g, u, v, pivg, nonzg);
                 // else, ii==m, pivot is the only nonzero entry: nothing more to do for this column
             }
@@ -446,7 +433,7 @@ slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat
             nmod_poly_mat_swap_rows(mat, NULL, rk, pi); // does nothing if rk==pi
             if (tsf)
                 nmod_poly_mat_swap_rows(tsf, NULL, rk, pi);
-            pivot_col[rk] = j;
+            pivind[rk] = j;
             rk++;
         }
     }
@@ -458,7 +445,7 @@ slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat
     // 2. reduce the entries above each pivot
     for (slong i = 0; i < rk; i++)
     {
-        slong j = pivot_col[i];
+        slong j = pivind[i];
         // normalize pivot, and correspondingly update the row i of mat and of tsf
         _normalize_pivot_uechelon_rowwise(mat, tsf, i, j);
         // reduce entries above (i,j)
@@ -466,7 +453,6 @@ slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat
             _reduce_against_pivot_uechelon_rowwise(mat, tsf, i, j, ii, u, v);
     }
 
-    flint_free(pivot_col);
     nmod_poly_clear(g);
     nmod_poly_clear(u);
     nmod_poly_clear(v);
@@ -500,25 +486,20 @@ slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat
 // j, and proceed to next leading submatrix
 // - if no, swap row ii and the last row, and keep the same i,j to process same
 // submatrix again.
-slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf)
+slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind, slong * mrp)
 {
-    const slong m = mat->r;
-    const slong n = mat->c;
-
-    if (m == 0 || n == 0)
+    if (mat->r == 0 || mat->c == 0)
         return 0;
 
-    // to store the positions of columns where a pivot was found
-    // -> pivots_cols[ii] gives index of pivot in row ii
-    // -> index i below will tell us how many have been found already,
-    //     pivots_cols[ii] for ii >= i is undefined
-    // -> there will never be > rank(mat) pivots
-    slong * pivot_col = flint_malloc(FLINT_MIN(m,n) * sizeof(slong));
+    // recall, pivind[i] gives index of pivot in row i
+    // -> index i below will tell us how many pivots have been found already,
+    //     pivind[ii] for ii >= i is not used nor modified
+
     // for simplicity also store reverse array
     // -> pivot_row[j] is either -1 (not among the pivots discovered so far)
     // or is the index of the row with pivot j
-    slong * pivot_row = flint_malloc(n * sizeof(slong));
-    flint_mpn_store(pivot_row, n, -1); // fill with -1
+    slong * pivot_row = flint_malloc(mat->c * sizeof(slong));
+    flint_mpn_store(pivot_row, mat->c, -1); // fill with -1
 
     // (i,j) : the (i-1) x (j-1) leading submatrix `hnf` is already in Hermite form,
     // we will now try to increase either i (if new pivot found in row i or
@@ -540,14 +521,14 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_po
 
     // stop when we have reached m pivots, i.e. we have processed all rows and
     // reached maximal rank, or when we have processed all columns
-    while (i < m && j < n)
+    while (i < mat->r && j < mat->c)
     {
         // Look for the first row ii in i:m such that [ii,0:j+1] is nonzero.
         // also find jj such that [ii,jj] is the first nonzero entry among [ii,0:j+1]
         slong ii = i;
         slong jj = 0;
         int row_is_zero = 1;
-        while (ii < m && row_is_zero)
+        while (ii < mat->r && row_is_zero)
         {
             jj = 0;
             while (jj <= j && nmod_poly_is_zero(MAT(ii, jj)))
@@ -557,7 +538,7 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_po
             else // jj <= j and mat[ii,jj] is nonzero
                 row_is_zero = 0;
         }
-        if (ii == m) // no nonzero row, increment j and process next submatrix
+        if (ii == mat->r) // no nonzero row, increment j and process next submatrix
             j++;
         else // found nonzero row
         {
@@ -594,11 +575,11 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_po
                         row_is_zero = 0;
                         // move row i to the correct location in hnf and update pivot_row, pivot_col
                         ii = 0; // index where row i must be placed
-                        while (ii < i && pivot_col[ii] < jj)
+                        while (ii < i && pivind[ii] < jj)
                             ii++;
                         // rotate mat and pivot_col
-                        pivot_col[i] = jj;
-                        _nmod_poly_mat_rotate_rows_downward(mat, pivot_col, ii, i);
+                        pivind[i] = jj;
+                        _nmod_poly_mat_rotate_rows_downward(mat, pivind, ii, i);
                         if (tsf)
                             _nmod_poly_mat_rotate_rows_downward(tsf, NULL, ii, i);
                         pivot_row[jj] = i; // column jj is new pivot for row i
@@ -642,7 +623,7 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_po
                 else
                 {
                     // update pivot_col and pivot_row
-                    pivot_col[i] = j;
+                    pivind[i] = j;
                     pivot_row[j] = i;
                     // entry [i,j] is nonzero, this is a new pivot
                     // normalize it
@@ -658,8 +639,13 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_po
         }
     }
 
-    flint_free(pivot_col);
     flint_free(pivot_row);
+
+    nmod_poly_clear(g);
+    nmod_poly_clear(u);
+    nmod_poly_clear(v);
+    nmod_poly_clear(pivg);
+    nmod_poly_clear(nonzg);
 
     return i;
 }

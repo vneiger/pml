@@ -15,7 +15,7 @@
 //#define NOTRANS
 
 // verify Hermite form
-int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, flint_rand_t state)
+int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, flint_rand_t state)
 {
     if (! tsf)
     {
@@ -23,7 +23,7 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, sl
         return 1;
     }
 
-    // testing correctness, from fastest to slowest:
+    // testing correctness
     // 0. dimensions
     if (mat->r != hnf->r || mat->c != hnf->c || mat->r != tsf->r || mat->r != tsf->c)
     {
@@ -75,7 +75,9 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, sl
 
     // 3. hnf is in Hermite form
     // first prune zero rows since this is a requirement of is_hermite
-    // (note that nonzero rows are necessarily the ones at rk ... rdim-1)
+    // (note that zero rows are necessarily the ones at rk ... rdim-1)
+    // TODO later simplify, once pruning zero rows  in algorithms
+    // + verify [bottom part of tsf] * mat == 0
     nmod_poly_mat_clear(tmp);
     nmod_poly_mat_init(tmp, rk, hnf->c, hnf->modulus);
     for (slong i = 0; i < rk; i++)
@@ -88,6 +90,20 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, sl
         return 0;
     }
 
+    // 4. check pivind
+    slong * check_pivind = flint_malloc(rk * sizeof(slong));
+    nmod_poly_mat_uechelon_pivot_index_rowwise(check_pivind, tmp);
+    for (slong i = 0; i < rk; i++)
+    {
+        if (pivind[i] != check_pivind[i])
+        {
+            printf("~~~ verify_hermite_form ~~~ INCORRECT: pivot index is wrong\n");
+            nmod_poly_mat_clear(tmp);
+            return 0;
+        }
+    }
+
+    flint_free(check_pivind);
     nmod_poly_mat_clear(tmp);
     return 1;
 }
@@ -95,6 +111,10 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const nmod_poly_mat_t tsf, sl
 // test one given input for hermite form
 int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t state)
 {
+    // initialize pivind list and row rank profile
+    slong max_rank = FLINT_MIN(mat->r, mat->c);
+    slong * pivind = flint_malloc(max_rank * sizeof(slong));
+
     // init copy of mat
     nmod_poly_mat_t hnf;
     nmod_poly_mat_init(hnf, mat->r, mat->c, mat->modulus);
@@ -103,29 +123,29 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
     nmod_poly_mat_t tsf;
     nmod_poly_mat_init(tsf, mat->r, mat->r, mat->modulus);
 
+    int verif_hnf;
+
     { // Rosser's algorithm
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);
         timeit_t timer;
         timeit_start(timer);
-#ifndef NOTRANS
-        slong rk = nmod_poly_mat_hnf_rosser_upper_rowwise(hnf, tsf);
-#else
+#ifdef NOTRANS
         slong rk = nmod_poly_mat_hnf_rosser_upper_rowwise(hnf, NULL);
-#endif /* ifndef NOTRANS */
+#else
+        slong rk = nmod_poly_mat_hnf_rosser_upper_rowwise(hnf, tsf, pivind);
+#endif /* ifdef NOTRANS */
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (Rosser): %wd ms\n", timer->wall);
         timeit_start(timer);
-#ifndef NOTRANS
-        if (! verify_hermite_form(hnf, tsf, rk, mat, state))
+#ifdef NOTRANS
+        verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
 #else
-        if (! verify_hermite_form(hnf, NULL, rk, mat, state))
-#endif /* ifndef NOTRANS */
-        {
+        verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
+#endif /* ifdef NOTRANS */
+        if (!verif_hnf)
             printf("Hermite form -- Rosser -- failure.\n");
-            return 0;
-        }
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", timer->wall);
@@ -137,7 +157,7 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         timeit_t timer;
         timeit_start(timer);
 #ifndef NOTRANS
-        slong rk = nmod_poly_mat_hnf_bradley_upper_rowwise(hnf, tsf);
+        slong rk = nmod_poly_mat_hnf_bradley_upper_rowwise(hnf, tsf, pivind);
 #else
         slong rk = nmod_poly_mat_hnf_bradley_upper_rowwise(hnf, NULL);
 #endif /* ifndef NOTRANS */
@@ -145,15 +165,13 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         if (time)
             flint_printf("-- time (Bradley): %wd ms\n", timer->wall);
         timeit_start(timer);
-#ifndef NOTRANS
-        if (! verify_hermite_form(hnf, tsf, rk, mat, state))
+#ifdef NOTRANS
+        verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
 #else
-        if (! verify_hermite_form(hnf, NULL, rk, mat, state))
-#endif /* ifndef NOTRANS */
-        {
+        verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
+#endif /* ifdef NOTRANS */
+        if (!verif_hnf)
             printf("Hermite form -- Bradley -- failure.\n");
-            return 0;
-        }
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", timer->wall);
@@ -165,23 +183,22 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         timeit_t timer;
         timeit_start(timer);
 #ifndef NOTRANS
-        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, tsf);
+        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, tsf, pivind, pivind);
 #else
-        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, NULL);
+        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, NULL, pivind, pivind);
 #endif /* ifndef NOTRANS */
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (Kannan-Bachem): %wd ms\n", timer->wall);
         timeit_start(timer);
-#ifndef NOTRANS
-        if (! verify_hermite_form(hnf, tsf, rk, mat, state))
+#ifdef NOTRANS
+        verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
 #else
-        if (! verify_hermite_form(hnf, NULL, rk, mat, state))
-#endif /* ifndef NOTRANS */
-        {
+        verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
+#endif /* ifdef NOTRANS */
+        // TODO add check RPM
+        if (!verif_hnf)
             printf("Hermite form -- Kannan-Bachem -- failure.\n");
-            return 0;
-        }
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", timer->wall);
@@ -189,6 +206,7 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
 
     nmod_poly_mat_clear(hnf);
     nmod_poly_mat_clear(tsf);
+    flint_free(pivind);
 
     return 1;
 }

@@ -747,14 +747,14 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
  **/
 slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat,
                                              nmod_poly_mat_t tsf,
-                                             slong * crp);
+                                             slong * pivind);
 slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat,
                                               nmod_poly_mat_t tsf,
-                                              slong * crp);
+                                              slong * pivind);
 slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat,
                                                     nmod_poly_mat_t tsf,
-                                                    slong * crp,
-                                                    slong * mrp);
+                                                    slong * pivind, // TODO
+                                                    slong * mrp); // TODO
 // TODO mod det version (see e.g. Domich) ? quite often, computing the
 // determinant is not much easier than computing the HNF (with fast algos)...
 // --> YET once may imagine e.g. approximant/interpolant basis computation,
