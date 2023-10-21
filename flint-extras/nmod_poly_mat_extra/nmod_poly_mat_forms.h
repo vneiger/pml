@@ -734,8 +734,6 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
  *   unimodular transformation between ``mat`` and the computed Hermite normal
  *   form. ``mat`` cannot alias ``tsf``.
  *
- * Then, depending on the algorithm:
- *
  *   ..``pivind``. It is filled with the (upper echelon, row-wise) pivot
  *   indices of the output Hermite normal form, which also correspond to the
  *   column rank profile of ``mat``. As input, ``pivind`` must have allocated
@@ -743,7 +741,19 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
  *   bound is known). No need to fill it with values. Its allocated space is
  *   left unchanged, and so are its entries beyond the rank(mat)-th one.
  *
- *   ..``mrp``. TODO implem+doc
+ * Some algorithms may also provide:
+ *
+ *   ..``mrp``. It is filled with the matrix rank profile of the input matrix.
+ *   See e.g. Dumas, Pernet, Sultan, Journal of Symbolic Computation 2017. It
+ *   is represented here as an array of mat->r entries, the i-th entry is
+ *   either some j in 0:mat->c giving the position (i,j) of `1` in the matrix
+ *   rank profile, or it is -1 to indicate that row i does not contribute to
+ *   the matrix rank profile. As input, ``mrp`` must have allocated space
+ *   for at least mat->r entries; no need to fill them with values. Its
+ *   allocated space is left unchanged, and so are its entries beyond the
+ *   mat->r -th one.
+ *
+ *   \todo correctness of mrp not verified at the moment
  **/
 // upper row echelon form normalization into upper row-wise HNF
 // TODO make public?
@@ -770,15 +780,27 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat,
                                        nmod_poly_mat_t tsf,
                                        slong * pivind);
 
-// TODO clean - doc
-slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat,
-                                                    nmod_poly_mat_t tsf,
-                                                    slong * pivind);
+// Upper row echelon form using lexicographic pivot search
+slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat,
+                                  nmod_poly_mat_t tsf,
+                                  slong * pivind,
+                                  slong * mrp);
+// Hermite normal form using lexicographic pivot search
+slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat,
+                                    nmod_poly_mat_t tsf,
+                                    slong * pivind,
+                                    slong * mrp);
 
 // TODO clean - doc
-slong nmod_poly_mat_hnf_lex_upper_rowwise(nmod_poly_mat_t mat,
-                                                    nmod_poly_mat_t tsf,
-                                                    slong * pivind);
+slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat,
+                                         nmod_poly_mat_t tsf,
+                                         slong * pivind);
+
+// TODO clean - doc
+slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_mat_t mat,
+                                              nmod_poly_mat_t tsf,
+                                              slong * pivind);
+
 
 // TODO mod det version (see e.g. Domich) ? quite often, computing the
 // determinant is not much easier than computing the HNF (with fast algos)...

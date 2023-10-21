@@ -105,7 +105,7 @@ void _atomic_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_po
 //    . for other:
 //        sum_{jj = 0 ... other->c-1} M(d + deg(other[pi,jj])) + M(d + deg(other[ii,jj]))
 //         <=   other->c * M(d + rdeg(other[pi,:]) + rdeg(other[ii,:]))
-void _complete_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
+void _pivot_collision_xgcd_uref(nmod_poly_mat_t mat, nmod_poly_mat_t other,
                                                       slong pi, slong ii, slong j,
                                                       nmod_poly_t g, nmod_poly_t u, nmod_poly_t v,
                                                       nmod_poly_t pivg, nmod_poly_t nonzg)
@@ -200,7 +200,7 @@ void _complete_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_
 //        <=     (mat->c - j - 1) * M(deg(mat[ii,j]) - deg(mat[i,j]) + rdeg(mat[i,:]))
 //    . for other: sum_{jj = 0 ... other->c-1} M(deg(mat[ii,j]) - deg(mat[i,j]) + deg(other[i,jj]))
 //        <=     other->c * M(deg(mat[ii,j]) - deg(mat[i,j]) + rdeg(other[i,:]))
-void _reduce_against_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
+void _reduce_against_pivot_uref(nmod_poly_mat_t mat, nmod_poly_mat_t other,
                                             slong i, slong j, slong ii,
                                             nmod_poly_t u, nmod_poly_t v)
 {
@@ -277,7 +277,7 @@ void _normalize_uref(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong * pivind,
         _normalize_pivot_uref(mat, other, i, j);
         // reduce entries above (i,j)
         for (slong ii = 0; ii < i; ii++)
-            _reduce_against_pivot_uechelon_rowwise(mat, other, i, j, ii, u, v);
+            _reduce_against_pivot_uref(mat, other, i, j, ii, u, v);
     }
     // clear temporaries
     nmod_poly_clear(u);
@@ -334,9 +334,9 @@ void _normalize_uref(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong * pivind,
 // Transformations for handling pivot collisions:
 //     . atomic transformations (mat[pi1,:] = mat[pi1,:] + cst * x**exp * mat[pi2,:])
 //
-// Guarantee: unimodular transformation has determinant 1 (so this can be
-// directly used for computing determinants of square matrices).
-// TODO check!
+// Guarantee: unimodular transformation has determinant +1 or -1 (could easily
+// say which one, following the number of row swaps, so this can be directly
+// used for computing determinants of square matrices).
 //
 // Typically offers good control of the degree growth, both in the matrix and
 // the transformation.
@@ -465,9 +465,9 @@ slong nmod_poly_mat_hnf_ur_maxdeg_atomic(nmod_poly_mat_t mat, nmod_poly_mat_t ts
 //        [ mat[pi,:] ]  =  [    u       v  ]  *  [ mat[pi,:] ]
 //        [ mat[ii,:] ]     [ -nonzg   pivg ]     [ mat[ii,:] ]
 //
-// Guarantee: unimodular transformation has determinant 1 (so this can be
-// directly used for computing determinants of square matrices).
-// TODO check!
+// Guarantee: unimodular transformation has determinant +1 or -1 (could easily
+// say which one, following the number of row swaps, so this can be directly
+// used for computing determinants of square matrices).
 //
 // Benefits from fast polynomial arithmetic, but typically offers bad control
 // of the degree growth, both in the matrix and the transformation.
@@ -514,7 +514,7 @@ slong nmod_poly_mat_uref_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, s
                 while (ii < mat->r && nmod_poly_is_zero(MAT(ii, j)))
                     ii++;
                 if (ii < mat->r)
-                    _complete_solve_pivot_collision_uechelon_rowwise(mat, tsf, pi, ii, j, g, u, v, pivg, nonzg);
+                    _pivot_collision_xgcd_uref(mat, tsf, pi, ii, j, g, u, v, pivg, nonzg);
                 // else, ii==m, pivot is the only nonzero entry: nothing more to do for this column
             }
 
@@ -548,81 +548,117 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
 }
 
 
+/**********************************************************************
+*                             Pivoting: lex                          *
+*              orientation "ur": upper echelon, row-wise             *
+**********************************************************************/
 
-slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
+// In short: proceed row by row, take leftmost nonzero entry in topmost nonzero
+// row as next pivot (lex pivoting). After having done i steps, we have
+// processed the first i rows of the matrix and not touched the others; we have
+// computed the (row-wise upper) HNF of these i rows.
+//
+// In generic cases, the degrees in the matrix along the computation are thus
+// split into two parts: the first i rows have the expected degrees for the HNF
+// of an i x mat->c matrix, for i = 0 ...  mat->r-1, and the remaining rows
+// haven't been touched. This does not yield very good behaviour when applied
+// to a generic m x m matrix of degree d (compared to Rosser's strategy, for
+// example).
+
+// Upper row echelon form use lex pivot search
+// (leftmost nonzero entry in topmost nonzero row)
+//
+// Proceed row by row, with lex pivoting strategy
+// Transformations for reducing entries below existing pivots:
+// complete xgcd transformation
+//        [ mat[pi1,:] ]  =  [    u       v  ]  *  [ mat[pi1,:] ]
+//        [ mat[pi2,:] ]     [ -nonzg   pivg ]     [ mat[pi2,:] ]
+//
+// Guarantee: unimodular transformation has determinant +1 or -1 (could easily
+// say which one, following the number of row rotations, so this can be
+// directly used for computing determinants of square matrices).
+//
+// Benefits from fast polynomial arithmetic, but typically offers bad control
+// of the degree growth, both in the matrix and the transformation.
+slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind, slong * mrp)
 {
     if (mat->r == 0 || mat->c == 0)
         return 0;
 
-    // recall, pivind[i] gives index of pivot in row i
-    // -> index rk below will tell us how many pivots have been found already,
-    //     pivind[i] for i >= rk is not used nor modified
-
-    // (rk,j) : position where next pivot is expected to be found when processing column j,
-    // =>   rk = number of pivots already found in columns < j, which is also the rank
-    // of these first j-1 columns
-    // Note: in case of zeroes/dependencies, we may find a pivot below rk,
-    // then we will permute rows to bring it up at row rk
+    // rk: the (rk-1) x mat->c leading submatrix `hnf` is already in Hermite form,
+    // we will now look for a new pivot in row i
+    // zr: we have encountered zr zero rows at this point
+    // --> numbers of already processed rows == rk + zr
     slong rk = 0;
+    slong zr = 0;
+
+    // for simplicity also store reverse array
+    // -> pivot_row[j] is either -1 (not among the pivots discovered so far)
+    // or is the index of the row with pivot j
+    slong * pivot_row = flint_malloc(mat->c * sizeof(slong));
+    flint_mpn_store(pivot_row, mat->c, -1); // fill with -1
 
     nmod_poly_t g; // gcd
     nmod_poly_t u; // gcd cofactor1
     nmod_poly_t v; // gcd cofactor2
-    nmod_poly_t pivg; // pivot divided by gcd
-    nmod_poly_t nonzg; // other nonzero entry divided by gcd
+    nmod_poly_t pivg; // piv divided by gcd
+    nmod_poly_t nonzg; // nonz divided by gcd
     nmod_poly_init(g, mat->modulus);
     nmod_poly_init(u, mat->modulus);
     nmod_poly_init(v, mat->modulus);
     nmod_poly_init(pivg, mat->modulus);
     nmod_poly_init(nonzg, mat->modulus);
 
-    // loop over the columns
-    for (slong j = 0; j < mat->c; j++)
+    // while there remains some row to process
+    while (rk+zr < mat->r)
     {
-        // find actual pivot: starting at (rk,j), find first nonzero entry in the rest of column j
-        slong pi = rk;
-        while (pi < mat->r && nmod_poly_is_zero(MAT(pi, j)))
-            pi++;
-
-        if (pi < mat->r)
-        // else, no pivot in this column, go to next column
+        // look for new pivot at [rk,j], if it exists
+        int pivot_found = 0;
+        slong j = 0;
+        while (j < mat->c && !pivot_found)
         {
-            // process column j below pivot
-            slong ii = pi + 1;
-            while (ii < mat->r)
+            if (nmod_poly_is_zero(MAT(rk, j))) // entry is already zero
+                j++;
+            else if (pivot_row[j] >= 0) // make entry zero using existing pivot [pi,j]
             {
-                // find next nonzero entry in column
-                while (ii < mat->r && nmod_poly_is_zero(MAT(ii, j)))
-                    ii++;
-                if (ii < mat->r)
-                    _complete_solve_pivot_collision_uechelon_rowwise(mat, tsf, pi, ii, j, g, u, v, pivg, nonzg);
-                // else, ii==m, pivot is the only nonzero entry: nothing more to do for this column
+                // apply complete XGCD transformation between [pi,j] and [rk,j]
+                // -> puts a zero at [rk,j] and the monic gcd at [pi,j] (updated pivot)
+                _pivot_collision_xgcd_uref(mat, tsf, pivot_row[j], rk, j, g, u, v, pivg, nonzg);
+                j++;
             }
+            else // currently no pivot in column j => found new pivot
+            {
+                // move row rk to the correct location in hnf and update pivot information
+                slong i = 0; // index where row rk must be placed
+                while (i < rk && pivind[i] < j)
+                    i++;
+                pivind[rk] = j; // must be modified before rotation
+                _nmod_poly_mat_rotate_rows_downward(mat, pivind, i, rk);
+                if (tsf)
+                    _nmod_poly_mat_rotate_rows_downward(tsf, NULL, i, rk);
+                pivot_row[j] = i;
+                for (slong jj = j+1; jj < mat->c; jj++)
+                    if (pivot_row[jj] >= 0)
+                        pivot_row[jj] += 1;
 
-            // if pivot found in a lower row than expected
-            // -> swap rows to bring it up to row rk
-            nmod_poly_mat_swap_rows(mat, NULL, rk, pi); // does nothing if rk==pi
+                if (mrp)
+                    mrp[rk+zr] = j;
+                rk++;
+                pivot_found = 1;
+            }
+        }
+        if (j == mat->c) // row is zero, rotate and go to next row
+        {
+            if (mrp)
+                mrp[rk+zr] = -1;
+            zr++;
+            _nmod_poly_mat_rotate_rows_upward(mat, NULL, rk, mat->r-1);
             if (tsf)
-                nmod_poly_mat_swap_rows(tsf, NULL, rk, pi);
-            pivind[rk] = j;
-            rk++;
+                _nmod_poly_mat_rotate_rows_upward(tsf, NULL, rk, mat->r-1);
         }
     }
 
-    // now, we have mat in upper echelon form, it remains to
-    // 1. normalize each pivot
-    //     (this will do nothing for already monic pivots, which is the case
-    //     for all those that were obtained through some xgcd)
-    // 2. reduce the entries above each pivot
-    for (slong i = 0; i < rk; i++)
-    {
-        slong j = pivind[i];
-        // normalize pivot, and correspondingly update the row i of mat and of tsf
-        _normalize_pivot_uref(mat, tsf, i, j);
-        // reduce entries above (i,j)
-        for (slong ii = 0; ii < i; ii++)
-            _reduce_against_pivot_uechelon_rowwise(mat, tsf, i, j, ii, u, v);
-    }
+    flint_free(pivot_row);
 
     nmod_poly_clear(g);
     nmod_poly_clear(u);
@@ -632,6 +668,18 @@ slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat
 
     return rk;
 }
+
+slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind, slong * mrp)
+{
+    // upper row echelon form
+    slong rk = nmod_poly_mat_uref_lex_xgcd(mat, tsf, pivind, mrp);
+
+    // normalization
+    _normalize_uref(mat, tsf, pivind, rk);
+
+    return rk;
+}
+
 
 // Notes about Kannan-Bachem's algorithm/implementation
 // (see below for a description of the algorithm)
@@ -683,7 +731,7 @@ slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat
 // - if no, swap row ii and the last row, and keep the same i,j to process same
 // submatrix again.
 // TODO complexity
-slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
+slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
 {
     if (mat->r == 0 || mat->c == 0)
         return 0;
@@ -760,12 +808,12 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_po
                         // use gcd between [pi,jj] and [i,jj] and apply the corresponding row-wise unimodular transformation
                         // between rows pi and i (see description of Bradley's algorithm), which puts a zero at [i,jj] and
                         // the gcd (updated pivot) at [pi,jj]
-                        _complete_solve_pivot_collision_uechelon_rowwise(mat, tsf, pi, i, jj, g, u, v, pivg, nonzg);
+                        _pivot_collision_xgcd_uref(mat, tsf, pi, i, jj, g, u, v, pivg, nonzg);
                         // note: new pivot already normalized since xgcd ensures the gcd is monic
 
                         // reduce appropriate entries in hnf in column jj
                         for (ii = 0; ii < pi; ii++)
-                            _reduce_against_pivot_uechelon_rowwise(mat, tsf, pi, jj, ii, u, v);
+                            _reduce_against_pivot_uref(mat, tsf, pi, jj, ii, u, v);
                     }
                     else // pivot_row[jj] == -1, currently no pivot in column jj
                     {
@@ -792,11 +840,11 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_po
                         // reduce entries [ii,jj+1:j] against current hnf
                         for (slong kk = jj+1; kk < j; kk++)
                             if (pivot_row[kk] >= 0) // reduce mat[ii,kk] against pivot [pi,kk]
-                                _reduce_against_pivot_uechelon_rowwise(mat, tsf, pivot_row[kk], kk, ii, u, v);
+                                _reduce_against_pivot_uref(mat, tsf, pivot_row[kk], kk, ii, u, v);
                             // else, no pivot in column kk, nothing to do
                         // reduce column jj of hnf against new pivot mat[ii,jj]
                         for (slong pii = 0; pii < ii; pii++)
-                            _reduce_against_pivot_uechelon_rowwise(mat, tsf, ii, jj, pii, u, v);
+                            _reduce_against_pivot_uref(mat, tsf, ii, jj, pii, u, v);
                         // increment the pivot count i without increasing j
                         i++;
                         // abort current jj-for loop, go to next submatrix
@@ -827,7 +875,7 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_po
                     _normalize_pivot_uref(mat, tsf, i, j);
                     // reduce entries above it, i.e. ii,j against pivot i,j
                     for (ii = 0; ii < i; ii++)
-                        _reduce_against_pivot_uechelon_rowwise(mat, tsf, i, j, ii, u, v);
+                        _reduce_against_pivot_uref(mat, tsf, i, j, ii, u, v);
                     // increment both i and j
                     i++;
                     j++;
@@ -847,114 +895,35 @@ slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat, nmod_po
     return i;
 }
 
-// put mat in upper echelon form, then normalize entries
-slong nmod_poly_mat_hnf_lex_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
+
+slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_mat_t mat,
+                                              nmod_poly_mat_t tsf,
+                                              slong * pivind)
 {
-    if (mat->r == 0 || mat->c == 0)
-        return 0;
+    nmod_poly_mat_t submat;
+    nmod_poly_mat_t subvec;
+    nmod_poly_mat_init(submat, mat->r, mat->c - 1, mat->modulus);
+    nmod_poly_mat_init(subvec, mat->r, 1, mat->modulus);
+    for (slong i = 0; i < mat->r; i++)
+        for (slong j = 0; j < mat->c - 1; j++)
+            nmod_poly_set(nmod_poly_mat_entry(submat, i, j), MAT(i, j));
+    for (slong i = 0; i < mat->r; i++)
+            nmod_poly_set(nmod_poly_mat_entry(subvec, i, 0), MAT(i, mat->c -1));
 
-    // recall, pivind[i] gives index of pivot in row i
-    // -> index i below will tell us how many pivots have been found already,
-    //     pivind[ii] for ii >= i is not used nor modified
+    slong rk = nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(submat, NULL, subvec, pivind, NULL);
 
-    // for simplicity also store reverse array
-    // -> pivot_row[j] is either -1 (not among the pivots discovered so far)
-    // or is the index of the row with pivot j
-    slong * pivot_row = flint_malloc(mat->c * sizeof(slong));
-    flint_mpn_store(pivot_row, mat->c, -1); // fill with -1
+    for (slong i = 0; i < mat->r; i++)
+        for (slong j = 0; j < mat->c - 1; j++)
+            nmod_poly_set(MAT(i, j), nmod_poly_mat_entry(submat, i, j));
+    for (slong i = 0; i < mat->r; i++)
+            nmod_poly_set(MAT(i, mat->c -1), nmod_poly_mat_entry(subvec, i, 0));
 
-    // rk: the (rk-1) x mat->c leading submatrix `hnf` is already in Hermite form,
-    // we will now look for a new pivot in row i
-    // zr: we have encountered zr zero rows at this point
-    // --> numbers of already processed rows == rk + zr
-    slong rk = 0;
-    slong zr = 0;
+    pivind[mat->r-1] = mat->r-1;
 
-    nmod_poly_t g; // gcd
-    nmod_poly_t u; // gcd cofactor1
-    nmod_poly_t v; // gcd cofactor2
-    nmod_poly_t pivg; // piv divided by gcd
-    nmod_poly_t nonzg; // nonz divided by gcd
-    nmod_poly_init(g, mat->modulus);
-    nmod_poly_init(u, mat->modulus);
-    nmod_poly_init(v, mat->modulus);
-    nmod_poly_init(pivg, mat->modulus);
-    nmod_poly_init(nonzg, mat->modulus);
+    nmod_poly_mat_clear(submat);
+    nmod_poly_mat_clear(subvec);
 
-    // stop when we have reached m pivots, i.e. we have processed all rows and
-    // reached maximal rank, or when we have processed all columns
-    while (rk+zr < mat->r)
-    {
-        // look for new pivot at [rk,j], if it exists
-        int pivot_found = 0;
-        slong j = 0;
-        while (j < mat->c && !pivot_found)
-        {
-            if (nmod_poly_is_zero(MAT(rk, j))) // entry is already zero
-                j++;
-            else if (pivot_row[j] >= 0) // make entry zero using existing pivot [pi,j]
-            {
-                // apply complete XGCD transformation between [pi,j] and [rk,j]
-                // -> puts a zero at [rk,j] and the monic gcd at [pi,j] (updated pivot)
-                _complete_solve_pivot_collision_uechelon_rowwise(mat, tsf, pivot_row[j], rk, j, g, u, v, pivg, nonzg);
-                j++;
-            }
-            else // currently no pivot in column j => found new pivot
-            {
-                // TODO update mrp
-                // move row rk to the correct location in hnf and update pivot information
-                slong i = 0; // index where row rk must be placed
-                while (i < rk && pivind[i] < j)
-                    i++;
-                pivind[rk] = j;
-                _nmod_poly_mat_rotate_rows_downward(mat, pivind, i, rk);
-                if (tsf)
-                    _nmod_poly_mat_rotate_rows_downward(tsf, NULL, i, rk);
-                pivot_row[j] = i;
-                for (slong jj = j+1; jj < mat->c; jj++)
-                    if (pivot_row[jj] >= 0)
-                        pivot_row[jj] += 1;
-
-                // normalize the new pivot (now at index i,j)
-                _normalize_pivot_uref(mat, tsf, i, j);
-                // reduce entries [:i,j] of hnf against new pivot [i,j]
-                // (in typical situations, helps keep working with low degrees)
-                for (slong ii = 0; ii < i; ii++)
-                    _reduce_against_pivot_uechelon_rowwise(mat, tsf, i, j, ii, u, v);
-                rk++;
-                pivot_found = 1;
-                //printf("found pivot rk = %ld, zr = %ld, i = %ld, j = %ld\n",rk,zr,i,j);
-            }
-        }
-        if (j == mat->c) // row is zero, rotate and go to next row
-        {
-            zr++;
-            _nmod_poly_mat_rotate_rows_upward(mat, NULL, rk, mat->r-1);
-            if (tsf)
-                _nmod_poly_mat_rotate_rows_upward(tsf, NULL, rk, mat->r-1);
-        }
-    }
-
-    // now, we have mat in upper echelon form, with monic pivots
-    // -> reduce the entries above each pivot
-    // Note: if pivots have been found in increasing pivot index (generic case),
-    // the matrix is already normalized, this does essentially nothing
-    for (slong i = 0; i < rk; i++)
-    {
-        slong j = pivind[i];
-        for (slong ii = 0; ii < i; ii++)
-            _reduce_against_pivot_uechelon_rowwise(mat, tsf, i, j, ii, u, v);
-    }
-
-    flint_free(pivot_row);
-
-    nmod_poly_clear(g);
-    nmod_poly_clear(u);
-    nmod_poly_clear(v);
-    nmod_poly_clear(pivg);
-    nmod_poly_clear(nonzg);
-
-    return rk;
+    return rk+1;
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
