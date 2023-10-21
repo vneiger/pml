@@ -12,7 +12,7 @@
 #include <flint/ulong_extras.h>
 #include <flint/profiler.h>
 
-#define NOTRANS
+//#define NOTRANS
 
 // verify Hermite form
 int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, flint_rand_t state)
@@ -125,87 +125,70 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
 
     int verif_hnf;
 
-    { // maxdeg, atomic, deg
+    { // maxdeg, atomic
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);
-        timeit_t timer;
-        timeit_start(timer);
+        timeit_t t0, t1;
+        timeit_start(t0);
 #ifdef NOTRANS
-        slong rk = nmod_poly_mat_hnf_maxdeg_atomic_ur(hnf, NULL, pivind);
+        slong rk = nmod_poly_mat_uref_maxdeg_atomic(hnf, NULL, pivind);
 #else
-        slong rk = nmod_poly_mat_hnf_maxdeg_atomic_ur(hnf, tsf, pivind);
+        slong rk = nmod_poly_mat_hnf_ur_maxdeg_atomic(hnf, tsf, pivind);
 #endif /* ifdef NOTRANS */
-        timeit_stop(timer);
+        timeit_stop(t0);
+        timeit_start(t1);
+#ifdef NOTRANS
+        _normalize_uref(hnf, NULL, pivind, rk);
+#else
+        _normalize_uref(hnf, tsf, pivind, rk);
+#endif /* ifdef NOTRANS */
+        timeit_stop(t1);
         if (time)
-            flint_printf("-- time (maxdeg - atomic - ur): %wd ms\n", timer->wall);
-        timeit_start(timer);
+            flint_printf("-- time (maxdeg - atomic - ur): %wd ms  (%wd + %wd)\n", t0->wall+t1->wall, t0->wall, t1->wall);
+        timeit_start(t0);
 #ifdef NOTRANS
         verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
 #else
         verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
 #endif /* ifdef NOTRANS */
         if (!verif_hnf)
-            printf("Hermite form -- Rosser -- failure.\n");
-        timeit_stop(timer);
+            printf("HNF -- maxdeg-atomic -- failure.\n");
+        timeit_stop(t0);
         if (time)
-            flint_printf("-- time (verif): %wd ms\n", timer->wall);
+            flint_printf("-- time (verif): %wd ms\n", t0->wall);
     }
 
-    { // maxdeg, atomic, deg
-        //nmod_poly_mat_t hnf_tmp;
-        //nmod_poly_mat_init_set(hnf_tmp, hnf);
+    { // revlex, xgcd
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);
-        timeit_t timer;
-        timeit_start(timer);
+        timeit_t t0, t1;
+        timeit_start(t0);
 #ifdef NOTRANS
-        slong rk = nmod_poly_mat_hnf_maxdeg_atomic_ur_bis(hnf, NULL, pivind);
+        slong rk = nmod_poly_mat_uref_revlex_xgcd(hnf, NULL, pivind);
 #else
-        slong rk = nmod_poly_mat_hnf_maxdeg_atomic_ur_bis(hnf, tsf, pivind);
+        slong rk = nmod_poly_mat_hnf_ur_revlex_xgcd(hnf, tsf, pivind);
 #endif /* ifdef NOTRANS */
-        timeit_stop(timer);
+        timeit_stop(t0);
+        timeit_start(t1);
+#ifdef NOTRANS
+        _normalize_uref(hnf, NULL, pivind, rk);
+#else
+        _normalize_uref(hnf, tsf, pivind, rk);
+#endif /* ifdef NOTRANS */
+        timeit_stop(t1);
         if (time)
-            flint_printf("-- time (maxdeg - atomic - ur): %wd ms\n", timer->wall);
-        timeit_start(timer);
+            flint_printf("-- time (revlex - xgcd - ur): %wd ms  (%wd + %wd)\n", t0->wall+t1->wall, t0->wall, t1->wall);
+        timeit_start(t0);
 #ifdef NOTRANS
         verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
 #else
         verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
 #endif /* ifdef NOTRANS */
         if (!verif_hnf)
-            printf("Hermite form -- Rosser -- failure.\n");
-        timeit_stop(timer);
-        //if (nmod_poly_mat_equal(hnf,hnf_tmp))
-            //printf("ACTUALLY GOOD!\n");
+            printf("HNF -- revlex-xgcd -- failure.\n");
+        timeit_stop(t0);
         if (time)
-            flint_printf("-- time (verif): %wd ms\n", timer->wall);
-    }
-
-
-    { // Bradley's algorithm
-        nmod_poly_mat_set(hnf, mat);
-        nmod_poly_mat_one(tsf);
-        timeit_t timer;
-        timeit_start(timer);
-#ifdef NOTRANS
-        slong rk = nmod_poly_mat_hnf_bradley_upper_rowwise(hnf, NULL, pivind);
-#else
-        slong rk = nmod_poly_mat_hnf_bradley_upper_rowwise(hnf, tsf, pivind);
-#endif /* ifndef NOTRANS */
-        timeit_stop(timer);
-        if (time)
-            flint_printf("-- time (Bradley): %wd ms\n", timer->wall);
-        timeit_start(timer);
-#ifdef NOTRANS
-        verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
-#else
-        verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
-#endif /* ifdef NOTRANS */
-        if (!verif_hnf)
-            printf("Hermite form -- Bradley -- failure.\n");
-        timeit_stop(timer);
-        if (time)
-            flint_printf("-- time (verif): %wd ms\n", timer->wall);
+            flint_printf("-- time (verif): %wd ms\n", t0->wall);
     }
 
     { // Kannan-Bachem's algorithm
@@ -214,9 +197,9 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         timeit_t timer;
         timeit_start(timer);
 #ifdef NOTRANS
-        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, NULL, pivind, pivind);
+        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, NULL, pivind);
 #else
-        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, tsf, pivind, pivind);
+        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, tsf, pivind);
 #endif /* ifdef NOTRANS */
         timeit_stop(timer);
         if (time)
@@ -241,9 +224,9 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         timeit_t timer;
         timeit_start(timer);
 #ifdef NOTRANS
-        slong rk = nmod_poly_mat_hnf_lex_upper_rowwise(hnf, NULL, pivind, pivind);
+        slong rk = nmod_poly_mat_hnf_lex_upper_rowwise(hnf, NULL, pivind);
 #else
-        slong rk = nmod_poly_mat_hnf_lex_upper_rowwise(hnf, tsf, pivind, pivind);
+        slong rk = nmod_poly_mat_hnf_lex_upper_rowwise(hnf, tsf, pivind);
 #endif /* ifdef NOTRANS */
         timeit_stop(timer);
         if (time)

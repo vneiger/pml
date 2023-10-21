@@ -745,6 +745,13 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
  *
  *   ..``mrp``. TODO implem+doc
  **/
+// upper row echelon form normalization into upper row-wise HNF
+// TODO make public?
+void _normalize_uref(nmod_poly_mat_t mat,
+                     nmod_poly_mat_t other,
+                     slong *
+                     pivind, slong rk);
+
 // Upper row echelon form inspired by Rosser's HNF algorithm
 slong nmod_poly_mat_uref_maxdeg_atomic(nmod_poly_mat_t mat,
                                        nmod_poly_mat_t tsf,
