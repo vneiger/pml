@@ -259,29 +259,29 @@ void _normalize_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t othe
 
 
 // Rosser's HNF algorithm   (upper echelon, row-wise)
+// Pivoting strategy: reverse lexicographic
+// Transformations: atomic
 //
 // In short: pivoting strategy is "reverse lexicographic" (search for the topmost
-// nonzero entry in the first nonzero column); use atomic pivot collision
-// transformations. Typically offers good control of the degree growth both in
-// the matrix and the transformation.
-// TODO try version where choice of pivots makes even lower degrees
+// nonzero entry in the first nonzero column); use atomic transformations
+// for handling pivot collisions. Typically offers good control of the degree
+// growth both in the matrix and the transformation.
+// Variant: upon collision, pick first two entries of larger degree.
 //
 // Long description:
 // proceed column by column. When looking for i-th pivot (in column j >= i) look
 // at entries [i:m,j], and kill leading term of largest deg by using the second
-// largest deg (using basic operation only, adding a multiple of another row by
+// largest deg (using atomic transformation, adding a multiple of another row by
 // constant*x**k); continue in the same column until all entries in [i:m,j]
-// except one are zero; swap rows to put the nonzero one at [i,j]
-// --> TODO try version using divrem and poly multiplication instead of constant*x**k?
-//     (probably no difference in speed if input is random of given max degree...)
-// --> FIXME normalization step could be inside inside the main triangularization loop
+// except one are zero; swap rows to put the nonzero one at [i,j] // TODO not swap, preserve MRP
+// --> FIXME normalization step could be inside the main triangularization loop
 // (applying it each time we find a pivot), but this probably has no impact
 // Complexity for a generic m x m degree d (hence nonsingular) matrix:
 // - first, it will use about m*(d+1) steps to transform the first column
 //   into the transpose of [1  0  0  ...  0]. Indeed each step decreases the
 //   degree of a single one of the entries by exactly 1.
 // - TODO complete this complexity analysis
-slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
+slong nmod_poly_mat_hnf_revlex_atomic_ur(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
 {
     // Notation: in comments, m = mat->r, n = mat->c
     if (mat->r == 0 || mat->c == 0)

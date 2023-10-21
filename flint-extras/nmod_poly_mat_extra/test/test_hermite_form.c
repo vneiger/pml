@@ -125,19 +125,19 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
 
     int verif_hnf;
 
-    { // Rosser's algorithm
+    { // Revlex, atomic, deg
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);
         timeit_t timer;
         timeit_start(timer);
 #ifdef NOTRANS
-        slong rk = nmod_poly_mat_hnf_rosser_upper_rowwise(hnf, NULL, pivind);
+        slong rk = nmod_poly_mat_hnf_revlex_atomic_ur(hnf, NULL, pivind);
 #else
-        slong rk = nmod_poly_mat_hnf_rosser_upper_rowwise(hnf, tsf, pivind);
+        slong rk = nmod_poly_mat_hnf_revlex_atomic_ur(hnf, tsf, pivind);
 #endif /* ifdef NOTRANS */
         timeit_stop(timer);
         if (time)
-            flint_printf("-- time (Rosser): %wd ms\n", timer->wall);
+            flint_printf("-- time (ur - Revlex - atomic): %wd ms\n", timer->wall);
         timeit_start(timer);
 #ifdef NOTRANS
         verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);

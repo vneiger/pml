@@ -745,9 +745,9 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
  *
  *   ..``mrp``. TODO implem+doc
  **/
-slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat,
-                                             nmod_poly_mat_t tsf,
-                                             slong * pivind);
+slong nmod_poly_mat_hnf_revlex_atomic_ur(nmod_poly_mat_t mat,
+                                         nmod_poly_mat_t tsf,
+                                         slong * pivind);
 slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat,
                                               nmod_poly_mat_t tsf,
                                               slong * pivind);
