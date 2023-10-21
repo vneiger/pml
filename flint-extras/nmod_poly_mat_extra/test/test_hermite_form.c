@@ -12,7 +12,7 @@
 #include <flint/ulong_extras.h>
 #include <flint/profiler.h>
 
-#define NOTRANS
+//#define NOTRANS
 
 // verify Hermite form
 int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, flint_rand_t state)

@@ -274,8 +274,7 @@ void _normalize_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t othe
 // largest deg (using atomic transformation, adding a multiple of another row by
 // constant*x**k); continue in the same column until all entries in [i:m,j]
 // except one are zero; swap rows to put the nonzero one at [i,j] // TODO not swap, preserve MRP
-// --> FIXME normalization step could be inside the main triangularization loop
-// (applying it each time we find a pivot), but this probably has no impact
+//
 // Complexity for a generic m x m degree d (hence nonsingular) matrix:
 // - first, it will use about m*(d+1) steps to transform the first column
 //   into the transpose of [1  0  0  ...  0]. Indeed each step decreases the
@@ -283,51 +282,41 @@ void _normalize_pivot_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t othe
 // - TODO complete this complexity analysis
 slong nmod_poly_mat_hnf_revlex_atomic_ur(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
 {
-    // Notation: in comments, m = mat->r, n = mat->c
     if (mat->r == 0 || mat->c == 0)
         return 0;
 
     // recall, pivind[i] gives index of pivot in row i
     // -> index rk below will tell us how many pivots have been found already,
+    //     rk == rank of first j-1 columns
     //     pivind[i] for i >= rk is not used nor modified
-
-    // (rk,j) : position where next pivot is expected to be found when processing column j,
-    // =>   rk = number of pivots already found in columns < j, which is also the rank
-    // of these first j-1 columns
     // Note: in case of zeroes/dependencies, we may find a pivot below rk,
     // then we will permute rows to bring it up at row rk
     slong rk = 0;
 
+    // will be used to reduce against pivots
+    nmod_poly_t u; nmod_poly_init(u, mat->modulus);
+    nmod_poly_t v; nmod_poly_init(v, mat->modulus);
+
     // loop over the columns
     for (slong j = 0; j < mat->c; j++)
     {
-        // whether there are still nonzero elements in entries rk+1:m,j
+        // whether there is still some collision among entries rk:mat->r,j
         int collision = 1;
         while (collision)
         {
-            // find i1 and i2 such that entries (i1,j) and (i2,j) are those of largest degrees,
-            // with the former greater than or equal to the former, among the entries (i,j) for i = rk ... m
-            // first step: find first nonzero entry
+            // pi1: find first nonzero entry
             slong pi1 = rk;
             while (pi1 < mat->r && nmod_poly_is_zero(MAT(pi1, j)))
                 pi1++;
-            if (pi1 == mat->r) // there were only zeroes in rk:m,j
-                collision = 0;
-            else if (pi1 == mat->r-1) // only nonzero entry in rk:m,j is pi1,j --> pivot found, j-th iteration finished
+            if (pi1 == mat->r)
+                collision = 0; // no collision, only zeroes
+            else if (pi1 == mat->r-1)
+                collision = 0; // no collision, pivot found
+            else // look for pi2 providing collision
             {
-                // put the nonzero entry as pivot entry, and exit column j
-                nmod_poly_mat_swap_rows(mat, NULL, pi1, rk);
-                if (tsf)
-                    nmod_poly_mat_swap_rows(tsf, NULL, pi1, rk);
-                pivind[rk] = j;
-                rk++;
-                collision = 0;
-            }
-            else // there is a collision, work on it
-            {
-                slong pi2 = pi1 + 1; // recall pi1+1 < m
+                slong pi2 = pi1 + 1; // recall pi1+1 < mat->r
                 // find pi1,pi2 such that entries pi1,j and pi2,j have the largest degree
-                // among entries rk:m,j, with deg(mat[pi1,j]) >= deg(mat[pi2,j])
+                // among entries [rk:mat->r,j], with deg(mat[pi1,j]) >= deg(mat[pi2,j])
                 if (MAT(pi1, j)->length < MAT(pi2, j)->length)
                     SLONG_SWAP(pi1, pi2);
                 for (slong i = FLINT_MAX(pi1,pi2)+1; i < mat->r; i++)
@@ -341,38 +330,34 @@ slong nmod_poly_mat_hnf_revlex_atomic_ur(nmod_poly_mat_t mat, nmod_poly_mat_t ts
                         pi2 = i;
                 }
                 if (nmod_poly_is_zero(MAT(pi2, j)))
-                    // only nonzero entry in rk:m,j is pi1,j --> pivot found, j-th iteration finished
-                {
-                    nmod_poly_mat_swap_rows(mat, NULL, pi1, rk);
-                    if (tsf)
-                        nmod_poly_mat_swap_rows(tsf, NULL, pi1, rk);
-                    pivind[rk] = j;
-                    rk++;
-                    collision = 0;
-                }
-                else
+                    collision = 0; // actually no collision, pivot found
+                else // collision, work on it
                     _atomic_solve_pivot_collision_uechelon_rowwise(mat, tsf, pi1, pi2, j);
+            }
+            if (!collision && pi1 < mat->r)
+            {
+                // found pivot at [pi1,j]:
+                // . permute rows to bring the pivot at [rk,j]TODO use rotation
+                // . make pivot monic
+                // . reduce entries above pivot
+                // note: reduction could be grouped at the end, yet performing
+                // it now may help to compute with smaller degrees in mat (but
+                // may also bring larger degrees in transformation, if the
+                // latter is computed)
+                nmod_poly_mat_swap_rows(mat, NULL, pi1, rk);
+                if (tsf)
+                    nmod_poly_mat_swap_rows(tsf, NULL, pi1, rk);
+                _normalize_pivot_uechelon_rowwise(mat, tsf, rk, j);
+                for (slong ii = 0; ii < rk; ii++)
+                    _reduce_against_pivot_uechelon_rowwise(mat, tsf, rk, j, ii, u, v);
+                pivind[rk] = j;
+                rk++;
             }
         }
     }
 
-    // now, we have mat in upper echelon form, it remains to
-    // 1. reduce the entries above each pivot
-    // 2. normalize each pivot
-    nmod_poly_t u;
-    nmod_poly_t v;
-    nmod_poly_init(u, mat->modulus);
-    nmod_poly_init(v, mat->modulus);
-    for (slong i = 0; i < rk; i++)
-    {
-        slong j = pivind[i];
-        // normalize pivot, and correspondingly update the row i of mat and of tsf
-        _normalize_pivot_uechelon_rowwise(mat, tsf, i, j);
-        // reduce entries above (i,j)
-        for (slong ii = 0; ii < i; ii++)
-            _reduce_against_pivot_uechelon_rowwise(mat, tsf, i, j, ii, u, v);
-    }
-
+    nmod_poly_clear(u);
+    nmod_poly_clear(v);
     return rk;
 }
 
