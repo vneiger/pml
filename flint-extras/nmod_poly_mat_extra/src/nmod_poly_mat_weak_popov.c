@@ -113,8 +113,9 @@ void _reduce_against_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 
 
 // Context: row-wise
-// normalize pivot entry in given row of mat, applying the corresponding
+// . normalize pivot entry in given row of mat, applying the corresponding
 // operation to the whole row of mat and the corresponding row of other
+// . return the constant used for normalization
 // (i,j) is position of the pivot entry
 // other == NULL or other is another matrix with the same modulus
 // Complexity: if already monic, 0, otherwise:
@@ -122,9 +123,11 @@ void _reduce_against_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 //          <= mat->c * rdeg(mat[i,:])
 //    . for other: sum_{jj = 0 ... other->c-1} deg(other[i,jj])
 //          <= other->c * rdeg(other[i,:])
-void _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j)
+mp_limb_t _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j)
 {
-    if (! nmod_poly_is_monic(MAT(i, j)))
+    if (nmod_poly_is_monic(MAT(i, j)))
+        return 1UL;
+    else
     {
         mp_limb_t inv = n_invmod(MAT(i, j)->coeffs[MAT(i, j)->length - 1], MAT(i, j)->mod.n);
         for (slong jj = 0; jj < mat->c; jj++)
@@ -132,6 +135,7 @@ void _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other
         if (other)
             for (slong jj = 0; jj < other->c; jj++)
                 _nmod_vec_scalar_mul_nmod(OTHER(i, jj)->coeffs, OTHER(i, jj)->coeffs, OTHER(i, jj)->length, inv, OTHER(i, jj)->mod);
+        return inv;
     }
 }
 

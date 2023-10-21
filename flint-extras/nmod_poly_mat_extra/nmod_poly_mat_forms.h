@@ -736,35 +736,52 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
  *
  * Then, depending on the algorithm:
  *
- *   ..``crp``. It is filled with the (upper echelon, row-wise) pivot indices
- *   of the output Hermite normal form, which also correspond to the column
- *   rank profile of ``mat``. As input, ``crp`` must have allocated space for
- *   at least rank(mat) entries (take min(mat->r,mat->c) if no better bound is
- *   known). No need to fill it with values. Its allocated space is left
- *   unchanged, and so are its entries beyond the rank(mat)-th one.
+ *   ..``pivind``. It is filled with the (upper echelon, row-wise) pivot
+ *   indices of the output Hermite normal form, which also correspond to the
+ *   column rank profile of ``mat``. As input, ``pivind`` must have allocated
+ *   space for at least rank(mat) entries (take min(mat->r,mat->c) if no better
+ *   bound is known). No need to fill it with values. Its allocated space is
+ *   left unchanged, and so are its entries beyond the rank(mat)-th one.
  *
  *   ..``mrp``. TODO implem+doc
  **/
-slong nmod_poly_mat_hnf_revlex_atomic_ur(nmod_poly_mat_t mat,
+// Upper row echelon form inspired by Rosser's HNF algorithm
+slong nmod_poly_mat_uref_maxdeg_atomic(nmod_poly_mat_t mat,
+                                       nmod_poly_mat_t tsf,
+                                       slong * pivind);
+// Hermite normal form in the style of Rosser's algorithm
+slong nmod_poly_mat_hnf_ur_maxdeg_atomic(nmod_poly_mat_t mat,
                                          nmod_poly_mat_t tsf,
                                          slong * pivind);
-slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat,
-                                              nmod_poly_mat_t tsf,
-                                              slong * pivind);
+
+// Upper row echelon form inspired by Bradley's HNF algorithm
+slong nmod_poly_mat_uref_revlex_xgcd(nmod_poly_mat_t mat,
+                                     nmod_poly_mat_t tsf,
+                                     slong * pivind);
+// Hermite normal form in the style of Bradley's algorithm
+slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat,
+                                       nmod_poly_mat_t tsf,
+                                       slong * pivind);
+
+// TODO clean - doc
 slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat,
                                                     nmod_poly_mat_t tsf,
-                                                    slong * pivind,
-                                                    slong * mrp);
+                                                    slong * pivind);
+
+// TODO clean - doc
 slong nmod_poly_mat_hnf_lex_upper_rowwise(nmod_poly_mat_t mat,
                                                     nmod_poly_mat_t tsf,
-                                                    slong * pivind,
-                                                    slong * mrp);
+                                                    slong * pivind);
+
 // TODO mod det version (see e.g. Domich) ? quite often, computing the
 // determinant is not much easier than computing the HNF (with fast algos)...
 // --> YET once may imagine e.g. approximant/interpolant basis computation,
 // where the determinant (or a multiple of it) is actually known, so if having
 // it helps, why not? (still, for approximants/interpolants, one might as well
 // compute them directly in HNF...)
+// --> ALSO for algorithms easily split into ref+normalization, the second step
+// could be done easily done mod det (of the pivot part if rank deficient), which
+// should be interesting for algorithms having large degree growth
 
 /** Transforms ``mat`` in place to a row-wise, lower ``shift``-weak Popov form
  * (non-necessarily ordered), and returns the rank of ``mat``.
