@@ -12,7 +12,7 @@
 #include <flint/ulong_extras.h>
 #include <flint/profiler.h>
 
-//#define NOTRANS
+#define NOTRANS
 
 // verify Hermite form
 int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, flint_rand_t state)
@@ -131,7 +131,7 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         timeit_t timer;
         timeit_start(timer);
 #ifdef NOTRANS
-        slong rk = nmod_poly_mat_hnf_rosser_upper_rowwise(hnf, NULL);
+        slong rk = nmod_poly_mat_hnf_rosser_upper_rowwise(hnf, NULL, pivind);
 #else
         slong rk = nmod_poly_mat_hnf_rosser_upper_rowwise(hnf, tsf, pivind);
 #endif /* ifdef NOTRANS */
@@ -156,10 +156,10 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         nmod_poly_mat_one(tsf);
         timeit_t timer;
         timeit_start(timer);
-#ifndef NOTRANS
-        slong rk = nmod_poly_mat_hnf_bradley_upper_rowwise(hnf, tsf, pivind);
+#ifdef NOTRANS
+        slong rk = nmod_poly_mat_hnf_bradley_upper_rowwise(hnf, NULL, pivind);
 #else
-        slong rk = nmod_poly_mat_hnf_bradley_upper_rowwise(hnf, NULL);
+        slong rk = nmod_poly_mat_hnf_bradley_upper_rowwise(hnf, tsf, pivind);
 #endif /* ifndef NOTRANS */
         timeit_stop(timer);
         if (time)
@@ -182,11 +182,11 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         nmod_poly_mat_one(tsf);
         timeit_t timer;
         timeit_start(timer);
-#ifndef NOTRANS
-        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, tsf, pivind, pivind);
-#else
+#ifdef NOTRANS
         slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, NULL, pivind, pivind);
-#endif /* ifndef NOTRANS */
+#else
+        slong rk = nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(hnf, tsf, pivind, pivind);
+#endif /* ifdef NOTRANS */
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (Kannan-Bachem): %wd ms\n", timer->wall);
@@ -203,6 +203,34 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         if (time)
             flint_printf("-- time (verif): %wd ms\n", timer->wall);
     }
+
+    { // pivoting strategy: lex
+        nmod_poly_mat_set(hnf, mat);
+        nmod_poly_mat_one(tsf);
+        timeit_t timer;
+        timeit_start(timer);
+#ifdef NOTRANS
+        slong rk = nmod_poly_mat_hnf_lex_upper_rowwise(hnf, NULL, pivind, pivind);
+#else
+        slong rk = nmod_poly_mat_hnf_lex_upper_rowwise(hnf, tsf, pivind, pivind);
+#endif /* ifdef NOTRANS */
+        timeit_stop(timer);
+        if (time)
+            flint_printf("-- time (lex pivoting): %wd ms\n", timer->wall);
+        timeit_start(timer);
+#ifdef NOTRANS
+        verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
+#else
+        verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
+#endif /* ifdef NOTRANS */
+        // TODO add check RPM
+        if (!verif_hnf)
+            printf("Hermite form -- lex pivoting -- failure.\n");
+        timeit_stop(timer);
+        if (time)
+            flint_printf("-- time (verif): %wd ms\n", timer->wall);
+    }
+
 
     nmod_poly_mat_clear(hnf);
     nmod_poly_mat_clear(tsf);

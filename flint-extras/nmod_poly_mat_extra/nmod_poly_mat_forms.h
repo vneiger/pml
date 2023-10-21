@@ -743,7 +743,7 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
  *   known). No need to fill it with values. Its allocated space is left
  *   unchanged, and so are its entries beyond the rank(mat)-th one.
  *
- *   ..``mrp``. TODO
+ *   ..``mrp``. TODO implem+doc
  **/
 slong nmod_poly_mat_hnf_rosser_upper_rowwise(nmod_poly_mat_t mat,
                                              nmod_poly_mat_t tsf,
@@ -753,8 +753,12 @@ slong nmod_poly_mat_hnf_bradley_upper_rowwise(nmod_poly_mat_t mat,
                                               slong * pivind);
 slong nmod_poly_mat_hnf_kannan_bachem_upper_rowwise(nmod_poly_mat_t mat,
                                                     nmod_poly_mat_t tsf,
-                                                    slong * pivind, // TODO
-                                                    slong * mrp); // TODO
+                                                    slong * pivind,
+                                                    slong * mrp);
+slong nmod_poly_mat_hnf_lex_upper_rowwise(nmod_poly_mat_t mat,
+                                                    nmod_poly_mat_t tsf,
+                                                    slong * pivind,
+                                                    slong * mrp);
 // TODO mod det version (see e.g. Domich) ? quite often, computing the
 // determinant is not much easier than computing the HNF (with fast algos)...
 // --> YET once may imagine e.g. approximant/interpolant basis computation,
