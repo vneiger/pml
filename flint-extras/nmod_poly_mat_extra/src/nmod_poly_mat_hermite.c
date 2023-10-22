@@ -303,10 +303,17 @@ void _normalize_uref(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong * pivind,
 // put the nonzero one at [i,j]. This yields an upper echelon form of the
 // matrix, it remains to reduce the off-"diagonal" entries
 //
-// Provides column rank profile; does not provide row rank profile or matrix
-// rank profile (notice that e.g. the largest degree row, be it in the rrp or
-// not, may be killed if it is a cst*x**exp multiple of the second largest
-// one).
+// Provides column rank profile. Does not provide row rank profile (or matrix
+// rank profile). Notice that e.g. the largest degree row, be it in the rrp or
+// not, may be killed if it is a cst*x**exp multiple of the second largest one.
+// Explicit example of algorithm steps:
+// [ 1     1   1 ] j=0 [ 1 1 1 ] j=0 [ 1  1   1 ] j=1 [ 1  1  1 ]
+// [ x**2  x   0 ] --> [ 0 0 0 ] --> [ 0  0   0 ] --> [ 0 x-1 x ] --> end
+// [ x     1   0 ]     [ x 1 0 ]     [ 0 1-x -x ]     [ 0  0  0 ]
+// when putting zero on the second row, the algorithm has only looked at first
+// column, it does not even know yet the row has become zero (or dependent on
+// the first); the information that this row was originally independent from
+// the first has been lost.
 //
 // Note: there is no advantage in reducing off-diagonal entries during
 // echelonization: in any case, once a pivot has been found in a certain row,
@@ -430,13 +437,13 @@ slong nmod_poly_mat_hnf_ur_maxdeg_atomic(nmod_poly_mat_t mat, nmod_poly_mat_t ts
 //     [ mat[ii,:] ]     [ 0 ... ]     [ -nonzg   pivg ]     [ mat[ii,:] ]
 // where nonzg = mat[ii,j]/g   and   pivg = mat[pi,j]/g.
 // This goes on in the same column until all entries in [i:,j] except one are
-// zero; this nonzero entry gives the new pivot, we swap rows to put the
+// zero; this nonzero entry gives the new pivot, we permute rows to put the
 // nonzero one at [i,j].
 //
-// Provides column rank profile; does not provide row rank profile or matrix
-// rank profile (notice that e.g. if mat[ii,:] divides mat[pi,:], the xgcd
-// transformation is not very different from swapping rows ii and pi; this will
-// disturb the rrp).
+// Provides column rank profile. Since we take the first nonzero entries (and
+// not those two of largest degree like in Rosser's algorithm), this also
+// provides the row rank profile. It also provides the matrix rank profile,
+// by using only rotations for the row permutations.
 //
 // Note: there is no advantage in reducing off-diagonal entries during
 // echelonization: in any case, once a pivot has been found in a certain row,
@@ -471,10 +478,15 @@ slong nmod_poly_mat_hnf_ur_maxdeg_atomic(nmod_poly_mat_t mat, nmod_poly_mat_t ts
 //
 // Benefits from fast polynomial arithmetic, but typically offers bad control
 // of the degree growth, both in the matrix and the transformation.
-slong nmod_poly_mat_uref_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
+slong nmod_poly_mat_uref_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind, slong * mrp)
 {
     if (mat->r == 0 || mat->c == 0)
+    {
+        if (mrp)
+            for (slong i = 0; i < mat->r; i++)
+                mrp[i] = -1L;
         return 0;
+    }
 
     // recall, pivind[i] gives index of pivot in row i
     // -> index rk below will tell us how many pivots have been found already,
@@ -483,6 +495,18 @@ slong nmod_poly_mat_uref_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, s
     // Note: in case of zeroes/dependencies, we may find a pivot below rk,
     // then we will permute rows to bring it up at row rk
     slong rk = 0;
+
+    // record row permutation, to fill the mrp
+    // the row i of current mat is the row perm[i] of the input mat
+    slong * perm = NULL;
+    if (mrp)
+    {
+        for (slong i = 0; i < mat->r; i++)
+            mrp[i] = -1L;
+        perm = flint_malloc(mat->r * sizeof(slong));
+        for (slong i = 0; i < mat->r; i++)
+            perm[i] = i;
+    }
 
     nmod_poly_t g; // gcd
     nmod_poly_t u; // gcd cofactor1
@@ -498,13 +522,12 @@ slong nmod_poly_mat_uref_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, s
     // loop over the columns
     for (slong j = 0; j < mat->c; j++)
     {
-        // find actual pivot: starting at (rk,j), find first nonzero entry in the rest of column j
+        // find pivot: find first nonzero entry in [rk:,j]
         slong pi = rk;
         while (pi < mat->r && nmod_poly_is_zero(MAT(pi, j)))
             pi++;
 
-        if (pi < mat->r)
-        // else, no pivot in this column, go to next column
+        if (pi < mat->r) // otherwise, no pivot in this column
         {
             // process column j below pivot
             slong ii = pi + 1;
@@ -513,33 +536,36 @@ slong nmod_poly_mat_uref_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, s
                 // find next nonzero entry in column
                 while (ii < mat->r && nmod_poly_is_zero(MAT(ii, j)))
                     ii++;
-                if (ii < mat->r)
+                if (ii < mat->r) // this makes [ii,j] zero, so the while loop will eventually stop
                     _pivot_collision_xgcd_uref(mat, tsf, pi, ii, j, g, u, v, pivg, nonzg);
-                // else, ii==m, pivot is the only nonzero entry: nothing more to do for this column
             }
 
-            // if pivot found in a lower row than expected
-            // -> swap rows to bring it up to row rk
-            nmod_poly_mat_swap_rows(mat, NULL, rk, pi); // does nothing if rk==pi
+            // rotate rows to bring the pivot up to row rk
+            _nmod_poly_mat_rotate_rows_downward(mat, perm, rk, pi);
             if (tsf)
-                nmod_poly_mat_swap_rows(tsf, NULL, rk, pi);
+                _nmod_poly_mat_rotate_rows_downward(tsf, NULL, rk, pi);
             pivind[rk] = j;
+            if (mrp)
+                mrp[perm[rk]] = j;
             rk++;
         }
     }
+
     nmod_poly_clear(g);
     nmod_poly_clear(u);
     nmod_poly_clear(v);
     nmod_poly_clear(pivg);
     nmod_poly_clear(nonzg);
+    if (mrp)
+        flint_free(perm);
 
     return rk;
 }
 
-slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
+slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind, slong * mrp)
 {
     // upper row echelon form
-    slong rk = nmod_poly_mat_uref_revlex_xgcd(mat, tsf, pivind);
+    slong rk = nmod_poly_mat_uref_revlex_xgcd(mat, tsf, pivind, mrp);
 
     // normalization
     _normalize_uref(mat, tsf, pivind, rk);
@@ -557,7 +583,7 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
 // row as next pivot (lex pivoting). After having done i steps, we have
 // processed the first i rows of the matrix and not touched the others; we have
 // computed an upper row echelon form of these i rows.
-// 
+//
 // Uses row permutation to place the zero rows at the bottom and to ensure the
 // pivot indices are increasing. Rotations are used to preserve the matrix rank
 // profile.
@@ -592,7 +618,12 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
 slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind, slong * mrp)
 {
     if (mat->r == 0 || mat->c == 0)
+    {
+        if (mrp)
+            for (slong i = 0; i < mat->r; i++)
+                mrp[i] = -1L;
         return 0;
+    }
 
     // rk: the (rk-1) x mat->c leading submatrix `hnf` is already in Hermite form,
     // we will now look for a new pivot in row i
@@ -659,7 +690,7 @@ slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slon
         if (j == mat->c) // row is zero, rotate and go to next row
         {
             if (mrp)
-                mrp[rk+zr] = -1;
+                mrp[rk+zr] = -1L;
             zr++;
             _nmod_poly_mat_rotate_rows_upward(mat, NULL, rk, mat->r-1);
             if (tsf)

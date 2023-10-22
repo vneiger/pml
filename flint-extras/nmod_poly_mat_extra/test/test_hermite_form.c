@@ -1,5 +1,6 @@
 #include <flint/flint.h>
 #include <flint/nmod_poly.h>
+#include <flint/nmod_vec.h>
 #include <stdlib.h>
 
 #include "nmod_poly_mat_forms.h"
@@ -111,9 +112,10 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const n
 // test one given input for hermite form
 int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t state)
 {
-    // initialize pivind list and row rank profile
+    // initialize pivind list and rank profiles
     slong max_rank = FLINT_MIN(mat->r, mat->c);
     slong * pivind = flint_malloc(max_rank * sizeof(slong));
+    slong * mrp = flint_malloc(mat->r * sizeof(slong));
 
     // init copy of mat
     nmod_poly_mat_t hnf;
@@ -164,9 +166,9 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         timeit_t t0, t1;
         timeit_start(t0);
 #ifdef NOTRANS
-        slong rk = nmod_poly_mat_uref_revlex_xgcd(hnf, NULL, pivind);
+        slong rk = nmod_poly_mat_uref_revlex_xgcd(hnf, NULL, pivind, mrp);
 #else
-        slong rk = nmod_poly_mat_uref_revlex_xgcd(hnf, tsf, pivind);
+        slong rk = nmod_poly_mat_uref_revlex_xgcd(hnf, tsf, pivind, mrp);
 #endif /* ifdef NOTRANS */
         timeit_stop(t0);
         timeit_start(t1);
@@ -192,15 +194,15 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
     }
 
     { // lex, xgcd
-        slong * mrp = flint_malloc(mat->r * sizeof(long));
+        slong * mrp2 = flint_malloc(mat->r * sizeof(long));
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);
         timeit_t t0, t1;
         timeit_start(t0);
 #ifdef NOTRANS
-        slong rk = nmod_poly_mat_uref_lex_xgcd(hnf, NULL, pivind, mrp);
+        slong rk = nmod_poly_mat_uref_lex_xgcd(hnf, NULL, pivind, mrp2);
 #else
-        slong rk = nmod_poly_mat_uref_lex_xgcd(hnf, tsf, pivind, mrp);
+        slong rk = nmod_poly_mat_uref_lex_xgcd(hnf, tsf, pivind, mrp2);
 #endif /* ifdef NOTRANS */
         timeit_stop(t0);
         timeit_start(t1);
@@ -220,9 +222,18 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
 #endif /* ifdef NOTRANS */
         if (!verif_hnf)
             printf("HNF -- lex-xgcd -- failure.\n");
+        for (slong i = 0; i < mat->r; i++)
+            if (mrp[i] != mrp2[i])
+                verif_hnf = 0;
+        if (!verif_hnf)
+        {
+            printf("HNF -- lex-xgcd -- matrix rank profile failure.\n");
+            return 0;
+        }
         timeit_stop(t0);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", t0->wall);
+        flint_free(mrp2);
     }
 
     { // Kannan-Bachem's algorithm
@@ -301,8 +312,9 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
     nmod_poly_mat_clear(hnf);
     nmod_poly_mat_clear(tsf);
     flint_free(pivind);
+    flint_free(mrp);
 
-    return 1;
+    return verif_hnf;
 }
 
 //** Test against the whole testing collection */

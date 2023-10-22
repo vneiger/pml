@@ -774,11 +774,13 @@ slong nmod_poly_mat_hnf_ur_maxdeg_atomic(nmod_poly_mat_t mat,
 // Upper row echelon form inspired by Bradley's HNF algorithm
 slong nmod_poly_mat_uref_revlex_xgcd(nmod_poly_mat_t mat,
                                      nmod_poly_mat_t tsf,
-                                     slong * pivind);
+                                     slong * pivind,
+                                     slong * mrp);
 // Hermite normal form in the style of Bradley's algorithm
 slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat,
                                        nmod_poly_mat_t tsf,
-                                       slong * pivind);
+                                       slong * pivind,
+                                       slong * mrp);
 
 // Upper row echelon form using lexicographic pivot search
 slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat,
