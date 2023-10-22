@@ -855,6 +855,20 @@ slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t 
 // `tsf` is not NULL). When transformation is needed, using the largest degree
 // may be interesting, trying to keep low the degrees in the transformation.
 
+// TODO
+slong nmod_poly_mat_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,
+                                                           const slong * shift,
+                                                           nmod_poly_mat_t tsf,
+                                                           slong * pivind,
+                                                           slong * rrp);
+// TODO
+slong nmod_poly_mat_det_mulders_storjohann(nmod_poly_t det, nmod_poly_mat_t mat);
+// TODO
+//slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_t det, nmod_poly_mat_t mat);
+// TODO
+slong nmod_poly_mat_linsolve_mulders_storjohann(nmod_poly_mat_t mat);
+
+
 //@} // doxygen group: Computing polynomial matrix forms
 
 
