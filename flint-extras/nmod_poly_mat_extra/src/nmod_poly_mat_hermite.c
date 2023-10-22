@@ -5,15 +5,13 @@
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_io.h" // TODO remove, for debugging
 
-//#define MAT(i,j) nmod_poly_mat_entry(mat, i, j)
-//#define TSF(i,j) nmod_poly_mat_entry(tsf, i, j)
 #define MAT(i,j) (mat->rows[i] + j)
 #define TSF(i,j) (tsf->rows[i] + j)
 #define OTHER(i,j) (other->rows[i] + j)
 
 // TODO how to handle upper/lower?
 // TODO how to handle rowwise/colwise?
-// TODO eventually restrict the output HNF to rank rows, where to do this?
+// TODO eventually restrict the output HNF to rank rows?
 //
 //
 //
@@ -562,6 +560,7 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
 }
 
 
+
 /**********************************************************************
 *                             Pivoting: lex                          *
 *              orientation "ur": upper echelon, row-wise             *
@@ -708,60 +707,35 @@ slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, sl
     return rk;
 }
 
+
+
+
 /**********************************************************************
 *                      Kannan&Bachem's algorithm                     *
 *              orientation "ur": upper echelon, row-wise             *
 **********************************************************************/
 
-// (see below for a description of the algorithm)
-// - about column permutations: one could use permutations to always work on
-// the leading square principal submatrix, and then permute back at the very
-// end (to go back to the original row space). But doing this, one should be
-// careful to use suitable permutations only, like rotations, otherwise when
-// permuting back one will not get a Hermite form (and, in addition, one would
-// not obtain the matrix rank profile). For example: a pivot has been found at
-// (0,0), and the second row is zero until its last entry which is nonzero
-// (thus a pivot); then one may decide to rotate columns 0,1,2,...,n-1 ->
-// 0,n-1,1,2,...,n-2, however doing for example a swap 0,1,2,...,n-1 ->
-// 0,n-1,2,...,n-2,1 is not allowed (consider the expected next pivot, which
-// would be the original 2,2 instead of the original 2,1).
-// Here, since it is unclear to me (Vincent Neiger) that column rotations would
-// simplify the code or make it more efficient, column permutations are avoided
-// altogether. However such rotations would certainly be useful if one was to
-// design a recursive block-variant of this algorithm. (TODO ?)
-// - about row permutations:
-
 // Kannan-Bachem's HNF algorithm       (upper echelon, row-wise)
+// Adaptation, removing the assumptions (rank properties) from the original.
 //
-// In short: pivoting strategy is "lexicographic" (search for the leftmost
-// nonzero entry in the first nonzero row); use complete XGCD transformations.
-// TODO a word on efficiency?
-//
-// Long description, trying to keep close to the original presentation:
-// proceed by leading submatrices. When looking for i-th pivot, in column j >=
-// i, the (i-1) x (j-1) leading submatrix `hnf` is already in Hermite form.
+// Proceed by leading submatrices. When looking for i-th pivot, in column j >=
+// i, the (i-1) x (j-1) leading submatrix is already in Hermite form.
 //
 // Then, ensure entries [i,jj] for jj in 0:j are zero. Look for the first row
-// ii in i:m such that [ii,0:j+1] is nonzero. If there is none increment j and
-// process next submatrix, otherwise for jj in 0:j in that order, do:
-// - if mat[ii,jj] is nonzero and there is no pivot in column jj in hnf, reduce
-// entries [ii,jj+1:j] against hnf, reduce appropriate entries in column jj of
-// hnf against mat[ii,jj], and move row ii to the correct location in hnf;
-// increment the pivot count i without increasing j, and go to process the next
-// leading submatrix
-// - else, if mat[ii,jj] is nonzero and there is a pivot in column jj in hnf,
-// say in row pi, use gcd between [pi,jj] and [ii,jj] and apply the
-// corresponding row-wise unimodular transformation between rows pi and ii (see
-// description of Bradley's algorithm above), which puts a zero at [ii,jj] and
-// the gcd at [pi,jj]; reduce appropriate entries in hnf in column jj, and
-// proceed to next jj.
+// ii in i:m such that [ii,0:j+1] is nonzero.
+// -> if there is none increment j and process next submatrix
+// -> otherwise, use xgcd transformations between existing pivots and the
+// entries [ii,0:j]. This will possibly update the existing pivots, and this
+// will surely make [ii,0:j] zero. Then check if entry [ii,j] is nonzero: if
+// yes, this is a new pivot, increment both i and j and proceed to next leading
+// submatrix; if no, repeat with the remaining rows below the ii-th one.
 //
-// Now that all entries in [ii,0:j] are zero, check if entry [ii,j] is nonzero;
-// - if yes, this is a new pivot, reduce entries above it, increment both i and
-// j, and proceed to next leading submatrix
-// - if no, swap row ii and the last row, and keep the same i,j to process same
-// submatrix again.
-// TODO complexity
+// Ensure HNF: each time a pivot is found or updated, reduce the suitable
+// entries of the current leading submatrix.
+//
+// Benefits from fast polynomial arithmetic. Typically offers worse control
+// of the degree growth than Rosser's algorithm, but better than the revlex
+// strategy.
 slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
 {
     if (mat->r == 0 || mat->c == 0)
@@ -869,6 +843,27 @@ slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t ts
 
     return i;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_mat_t mat,
