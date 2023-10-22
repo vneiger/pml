@@ -764,6 +764,9 @@ slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t ts
     // both (if new pivot found in column j)
     slong i = 0;
     slong j = 0;
+    // ii: index of currently processed row below the i-th row
+    // each time we increment i or j, ii will be reset to i
+    slong ii = 0;
 
     nmod_poly_t g; // gcd
     nmod_poly_t u; // gcd cofactor1
@@ -780,9 +783,8 @@ slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t ts
     // reached maximal rank, or when we have processed all columns
     while (i < mat->r && j < mat->c)
     {
-        // Look for the first row ii in i:m such that [ii,0:j+1] is nonzero.
+        // look for the next row ii such that [ii,0:j+1] is nonzero.
         // also find jj such that [ii,jj] is the first nonzero entry among [ii,0:j+1]
-        slong ii = i;
         slong jj = 0;
         int row_is_zero = 1;
         while (ii < mat->r && row_is_zero)
@@ -795,66 +797,45 @@ slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t ts
             else // jj <= j and mat[ii,jj] is nonzero
                 row_is_zero = 0;
         }
-        if (ii == mat->r) // no nonzero row, increment j and process next submatrix
-            j++;
+        // if no nonzero row, reset ii and go to next j
+        if (ii == mat->r) { ii = i; j++; }
         else // found nonzero row
         {
-            // variable now used to record whether we found new pivot, or only
-            // put zeroes thanks to gcd transformations
-            row_is_zero = 1;
-
-            // swap rows i and ii
-            nmod_poly_mat_swap_rows(mat, NULL, i, ii); // does nothing if i == ii
-            if (tsf)
-                nmod_poly_mat_swap_rows(tsf, NULL, i, ii);
-
-            // process entries i,jj for jj in 0:j
-            // (start at previously found jj since entries before that are zero)
+            // make entries ii,jj:j zero
             for (; jj < j; jj++)
             {
-                if (! nmod_poly_is_zero(MAT(i, jj)))
+                if (! nmod_poly_is_zero(MAT(ii, jj)))
                 {
-                    // a pivot has already been found at [pi,jj], for some pi < i
+                    // a pivot has necessarily been found at [pi,jj], for some pi < i
                     slong pi = pivot_row[jj];
-                    // use gcd between [pi,jj] and [i,jj] and apply the corresponding row-wise unimodular transformation
-                    // between rows pi and i (see description of Bradley's algorithm), which puts a zero at [i,jj] and
-                    // the gcd (updated pivot) at [pi,jj]
-                    _pivot_collision_xgcd_uref(mat, tsf, pi, i, jj, g, u, v, pivg, nonzg);
-                    // note: new pivot already normalized since xgcd ensures the gcd is monic
-
-                    // reduce appropriate entries in hnf in column jj
-                    for (ii = 0; ii < pi; ii++)
-                        _reduce_against_pivot_uref(mat, tsf, pi, jj, ii, u, v);
+                    // perform complete xgcd transformation between [pi,jj] and [ii,jj]
+                    // -> puts a zero at [ii,jj] and the gcd (updated pivot, monic) at [pi,jj]
+                    _pivot_collision_xgcd_uref(mat, tsf, pi, ii, jj, g, u, v, pivg, nonzg);
+                    // reduce appropriate entries in column jj
+                    for (slong pii = 0; pii < pi; pii++)
+                        _reduce_against_pivot_uref(mat, tsf, pi, jj, pii, u, v);
                 }
             }
-            if (row_is_zero)
+            // now all entries in [ii,0:j] are zero
+            if (nmod_poly_is_zero(MAT(ii, j))) // no new pivot in [i:ii+1,0:j+1]
+                ii++;
+            else // found pivot at [ii,j]
             {
-                // now all entries in [i,0:j] have been set to zero via gcd
-                // operations, and we have not detected a new pivot
-                if (nmod_poly_is_zero(MAT(i, j)))
-                {
-                    // entry [i,j] is zero, swap row i and the last row (just
-                    // to avoid wasting time re-checking it is zero), and keep
-                    // the same i,j to process same submatrix again.
-                    nmod_poly_mat_swap_rows(mat, NULL, i, mat->r -1);
-                    if (tsf)
-                        nmod_poly_mat_swap_rows(tsf, NULL, i, mat->r -1);
-                }
-                else
-                {
-                    // update pivot_col and pivot_row
-                    pivind[i] = j;
-                    pivot_row[j] = i;
-                    // entry [i,j] is nonzero, this is a new pivot
-                    // normalize it
-                    _normalize_pivot_uref(mat, tsf, i, j);
-                    // reduce entries above it, i.e. ii,j against pivot i,j
-                    for (ii = 0; ii < i; ii++)
-                        _reduce_against_pivot_uref(mat, tsf, i, j, ii, u, v);
-                    // increment both i and j
-                    i++;
-                    j++;
-                }
+                // swap rows i and ii // TODO rotate, MRP ?
+                nmod_poly_mat_swap_rows(mat, NULL, i, ii); // does nothing if i == ii
+                if (tsf)
+                    nmod_poly_mat_swap_rows(tsf, NULL, i, ii);
+                // update pivot_col and pivot_row
+                pivind[i] = j;
+                pivot_row[j] = i;
+                // make pivot monic and reduce entries above it, i.e. ii,j against i,j
+                _normalize_pivot_uref(mat, tsf, i, j);
+                for (slong pii = 0; pii < i; pii++)
+                    _reduce_against_pivot_uref(mat, tsf, i, j, pii, u, v);
+                // increment i and j, reset ii
+                i++;
+                j++;
+                ii = i;
             }
         }
     }
