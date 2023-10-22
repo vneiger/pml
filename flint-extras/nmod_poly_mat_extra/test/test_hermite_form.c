@@ -13,7 +13,9 @@
 #include <flint/ulong_extras.h>
 #include <flint/profiler.h>
 
-#define NOTRANS
+#define MAT(i,j) (mat->rows[i] + j)
+
+//#define NOTRANS
 
 // verify Hermite form
 int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, flint_rand_t state)
@@ -109,6 +111,48 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const n
     return 1;
 }
 
+// verify matrix rank profile
+// (warning, tests all leading submatrices, can be slow!)
+int verify_matrix_rank_profile(const nmod_poly_mat_t mat, const slong * mrp)
+{
+    if (mat->r == 0 || mat->c == 0)
+        for (slong i = 0; i < mat->r; i++)
+            if (mrp[i] != -1)
+            {
+                printf("~~~ verify_matrix_rank_profile ~~~ INCORRECT for empty matrix\n");
+                return 0;
+            }
+    slong * pivind = flint_malloc(mat->r * sizeof(slong));
+    nmod_poly_mat_t sub;
+    for (slong i = 0; i < mat->r; i++)
+    {
+        for (slong j = 0; j < mat->c; j++)
+        {
+            // create submatrix
+            nmod_poly_mat_init(sub, i, j, mat->modulus);
+            for (slong ii = 0; ii < i; ii++)
+                for (slong jj = 0; jj < j; jj++)
+                    nmod_poly_set(nmod_poly_mat_entry(sub,ii,jj), MAT(ii, jj));
+            // compute rank of submatrix
+            slong rk_sub = nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(sub, NULL, NULL, pivind, NULL);
+            // compute rank of matrix rank profile
+            slong rk_mrp = 0;
+            for (slong k = 0; k < i; k++)
+                if (mrp[k] >= 0 && mrp[k] < j)
+                    rk_mrp++;
+            // compare
+            if (rk_sub != rk_mrp)
+            {
+                printf("~~~ verify_matrix_rank_profile ~~~ INCORRECT submatrix [:%ld,:%ld]\n", i, j);
+                return 0;
+            }
+            nmod_poly_mat_clear(sub);
+        }
+    }
+    flint_free(pivind);
+    return 1;
+}
+
 // test one given input for hermite form
 int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t state)
 {
@@ -116,6 +160,7 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
     slong max_rank = FLINT_MIN(mat->r, mat->c);
     slong * pivind = flint_malloc(max_rank * sizeof(slong));
     slong * mrp = flint_malloc(mat->r * sizeof(slong));
+    slong * mrp2 = flint_malloc(mat->r * sizeof(slong));
 
     // init copy of mat
     nmod_poly_mat_t hnf;
@@ -125,7 +170,7 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
     nmod_poly_mat_t tsf;
     nmod_poly_mat_init(tsf, mat->r, mat->r, mat->modulus);
 
-    int verif_hnf;
+    int verif_hnf, verif_mrp;
 
     { // maxdeg, atomic
         nmod_poly_mat_set(hnf, mat);
@@ -187,14 +232,18 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
 #endif /* ifdef NOTRANS */
         if (!verif_hnf)
-            printf("HNF -- revlex-xgcd -- failure.\n");
+            printf("HNF -- revlex-xgcd -- HNF failure.\n");
+        verif_mrp = verify_matrix_rank_profile(mat, mrp);
+        if (!verif_hnf)
+            printf("HNF -- revlex-xgcd -- matrix rank profile failure.\n");
         timeit_stop(t0);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", t0->wall);
     }
 
     { // lex, xgcd
-        slong * mrp2 = flint_malloc(mat->r * sizeof(long));
+      // Warning! the mrp here is compared against the former
+      // -- expect errors if former not computed
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);
         timeit_t t0, t1;
@@ -221,19 +270,16 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
 #endif /* ifdef NOTRANS */
         if (!verif_hnf)
-            printf("HNF -- lex-xgcd -- failure.\n");
+            printf("HNF -- lex-xgcd -- HNF failure.\n");
+        verif_mrp = 1;
         for (slong i = 0; i < mat->r; i++)
             if (mrp[i] != mrp2[i])
-                verif_hnf = 0;
-        if (!verif_hnf)
-        {
+                verif_mrp = 0;
+        if (!verif_mrp)
             printf("HNF -- lex-xgcd -- matrix rank profile failure.\n");
-            return 0;
-        }
         timeit_stop(t0);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", t0->wall);
-        flint_free(mrp2);
     }
 
     { // Kannan-Bachem's algorithm
@@ -249,31 +295,6 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (Kannan-Bachem): %wd ms\n", timer->wall);
-        timeit_start(timer);
-#ifdef NOTRANS
-        verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
-#else
-        verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
-#endif /* ifdef NOTRANS */
-        if (!verif_hnf)
-            printf("Hermite form -- Kannan-Bachem -- failure.\n");
-        timeit_stop(timer);
-        if (time)
-            flint_printf("-- time (verif): %wd ms\n", timer->wall);
-    }
-    { // Kannan-Bachem's algorithm, no norm
-        nmod_poly_mat_set(hnf, mat);
-        nmod_poly_mat_one(tsf);
-        timeit_t timer;
-        timeit_start(timer);
-#ifdef NOTRANS
-        slong rk = nmod_poly_mat_hnf_ur_kannan_bachem_nonorm(hnf, NULL, pivind);
-#else
-        slong rk = nmod_poly_mat_hnf_ur_kannan_bachem_nonorm(hnf, tsf, pivind);
-#endif /* ifdef NOTRANS */
-        timeit_stop(timer);
-        if (time)
-            flint_printf("-- time (Kannan-Bachem-NN): %wd ms\n", timer->wall);
         timeit_start(timer);
 #ifdef NOTRANS
         verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
@@ -332,6 +353,7 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
     nmod_poly_mat_clear(tsf);
     flint_free(pivind);
     flint_free(mrp);
+    flint_free(mrp2);
 
     return verif_hnf;
 }
