@@ -556,16 +556,25 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
 // In short: proceed row by row, take leftmost nonzero entry in topmost nonzero
 // row as next pivot (lex pivoting). After having done i steps, we have
 // processed the first i rows of the matrix and not touched the others; we have
-// computed the (row-wise upper) HNF of these i rows.
+// computed an upper row echelon form of these i rows.
+// 
+// Uses row permutation to place the zero rows at the bottom and to ensure the
+// pivot indices are increasing. Rotations are used to preserve the matrix rank
+// profile.
 //
 // In generic cases, the degrees in the matrix along the computation are thus
-// split into two parts: the first i rows have the expected degrees for the HNF
-// of an i x mat->c matrix, for i = 0 ...  mat->r-1, and the remaining rows
+// split into two parts: the first i rows have the expected degrees for an
+// upper row echelon form of an i x mat->c matrix (*), and the remaining rows
 // haven't been touched. This does not yield very good behaviour when applied
 // to a generic m x m matrix of degree d (compared to Rosser's strategy, for
 // example).
+//
+// (*) pivots are all 1 except the last,
+//     row 1 has degree the sum of the degrees of the input's rows 0 + 1,
+//     row 2 has degree the sum of the degrees of the input's rows 0 + 1 + 2,
+//     etc.
 
-// Upper row echelon form use lex pivot search
+// Upper row echelon form using lex pivot search
 // (leftmost nonzero entry in topmost nonzero row)
 //
 // Proceed row by row, with lex pivoting strategy
@@ -680,8 +689,11 @@ slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, sl
     return rk;
 }
 
+/**********************************************************************
+*                      Kannan&Bachem's algorithm                     *
+*              orientation "ur": upper echelon, row-wise             *
+**********************************************************************/
 
-// Notes about Kannan-Bachem's algorithm/implementation
 // (see below for a description of the algorithm)
 // - about column permutations: one could use permutations to always work on
 // the leading square principal submatrix, and then permute back at the very
@@ -802,54 +814,17 @@ slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t ts
             {
                 if (! nmod_poly_is_zero(MAT(i, jj)))
                 {
+                    // a pivot has already been found at [pi,jj], for some pi < i
                     slong pi = pivot_row[jj];
-                    if (pi >= 0) // a pivot has already been found at [pi,jj], for some pi < i
-                    {
-                        // use gcd between [pi,jj] and [i,jj] and apply the corresponding row-wise unimodular transformation
-                        // between rows pi and i (see description of Bradley's algorithm), which puts a zero at [i,jj] and
-                        // the gcd (updated pivot) at [pi,jj]
-                        _pivot_collision_xgcd_uref(mat, tsf, pi, i, jj, g, u, v, pivg, nonzg);
-                        // note: new pivot already normalized since xgcd ensures the gcd is monic
+                    // use gcd between [pi,jj] and [i,jj] and apply the corresponding row-wise unimodular transformation
+                    // between rows pi and i (see description of Bradley's algorithm), which puts a zero at [i,jj] and
+                    // the gcd (updated pivot) at [pi,jj]
+                    _pivot_collision_xgcd_uref(mat, tsf, pi, i, jj, g, u, v, pivg, nonzg);
+                    // note: new pivot already normalized since xgcd ensures the gcd is monic
 
-                        // reduce appropriate entries in hnf in column jj
-                        for (ii = 0; ii < pi; ii++)
-                            _reduce_against_pivot_uref(mat, tsf, pi, jj, ii, u, v);
-                    }
-                    else // pivot_row[jj] == -1, currently no pivot in column jj
-                    {
-                        row_is_zero = 0;
-                        // move row i to the correct location in hnf and update pivot_row, pivot_col
-                        ii = 0; // index where row i must be placed
-                        while (ii < i && pivind[ii] < jj)
-                            ii++;
-                        // rotate mat and pivind
-                        pivind[i] = jj;
-                        _nmod_poly_mat_rotate_rows_downward(mat, pivind, ii, i);
-                        if (tsf)
-                            _nmod_poly_mat_rotate_rows_downward(tsf, NULL, ii, i);
-                        pivot_row[jj] = i; // column jj is new pivot for row i
-                        // update pivot row for found pivots in jj+1 ... j-1
-                        for (slong pj = jj+1; pj < j; pj++)
-                            if (pivot_row[pj] >= 0)
-                                pivot_row[pj] += 1;
-
-                        // the new row is now at index ii, with new pivot at ii,jj
-                        // normalize the new pivot
-                        _normalize_pivot_uref(mat, tsf, ii, jj);
-
-                        // reduce entries [ii,jj+1:j] against current hnf
-                        for (slong kk = jj+1; kk < j; kk++)
-                            if (pivot_row[kk] >= 0) // reduce mat[ii,kk] against pivot [pi,kk]
-                                _reduce_against_pivot_uref(mat, tsf, pivot_row[kk], kk, ii, u, v);
-                            // else, no pivot in column kk, nothing to do
-                        // reduce column jj of hnf against new pivot mat[ii,jj]
-                        for (slong pii = 0; pii < ii; pii++)
-                            _reduce_against_pivot_uref(mat, tsf, ii, jj, pii, u, v);
-                        // increment the pivot count i without increasing j
-                        i++;
-                        // abort current jj-for loop, go to next submatrix
-                        break;
-                    }
+                    // reduce appropriate entries in hnf in column jj
+                    for (ii = 0; ii < pi; ii++)
+                        _reduce_against_pivot_uref(mat, tsf, pi, jj, ii, u, v);
                 }
             }
             if (row_is_zero)

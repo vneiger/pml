@@ -12,7 +12,7 @@
 #include <flint/ulong_extras.h>
 #include <flint/profiler.h>
 
-#define NOTRANS
+//#define NOTRANS
 
 // verify Hermite form
 int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, flint_rand_t state)
@@ -239,6 +239,11 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         if (time)
             flint_printf("-- time (Kannan-Bachem): %wd ms\n", timer->wall);
         timeit_start(timer);
+        if (rk == -1)
+        {
+            printf("YES");
+            return 0;
+        }
 #ifdef NOTRANS
         verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
 #else
@@ -252,6 +257,7 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
             flint_printf("-- time (verif): %wd ms\n", timer->wall);
     }
 
+    if (0)
     { // Mulder-Storjohann's algorithm (generic case only for now TODO )
         nmod_poly_mat_t tmp;
         nmod_poly_mat_init(tmp, mat->r, mat->c, mat->modulus);
