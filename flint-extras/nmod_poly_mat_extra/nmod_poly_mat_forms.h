@@ -847,6 +847,13 @@ slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t 
                                                                 nmod_poly_mat_t tsf,
                                                                 slong * pivind,
                                                                 slong * rrp);
+// RANDOM NOTES: this uses a row-by-row approach. More generally, strategy for
+// pivot selection, a good one if transformation not needed may be to target
+// the collision involving the smallest possible degree (this means fewer field
+// operations to do for transforming `wpf`, but also means greater degrees in
+// the unimodular transformation or in `tsf`, which may impact performance if
+// `tsf` is not NULL). When transformation is needed, using the largest degree
+// may be interesting, trying to keep low the degrees in the transformation.
 
 //@} // doxygen group: Computing polynomial matrix forms
 

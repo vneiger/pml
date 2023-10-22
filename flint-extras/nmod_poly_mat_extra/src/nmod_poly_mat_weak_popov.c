@@ -144,9 +144,9 @@ mp_limb_t _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 **********************************************************************/
 
 // Orientation: lower, row-wise
-// iterative weak Popov form algorithm by Mulders and Storjohann, 2003 there
-// presented for the uniform shift, here straightforwardly adapted to the
-// shifted case.
+// iterative weak Popov form algorithm by Mulders and Storjohann, 2003 (as in
+// Figure 3, algo "RankProfile"). There presented for the uniform shift, here
+// straightforwardly adapted to the shifted case.
 //
 // Introduce rows one after another, only adding next one when current matrix
 // is already in shift-ordered weak Popov form. Track the number rk of added
@@ -173,16 +173,6 @@ mp_limb_t _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 // pivind must be allocated with at least mat->r entries; it will be populated
 // with the shifted pivot index of the output weak Popov form (undefined
 // behaviour for entries beyond mat->r)
-//
-// NOTE: more generally, strategy for pivot selection, a good one if
-// transformation not needed may be to target the collision involving the
-// smallest possible degree (this means fewer field operations to do for
-// transforming `wpf`, but also means greater degrees in the unimodular
-// transformation or in `tsf`, which may impact performance if `tsf` is not
-// NULL). Or like Rosser's HNF, use the larger degree, trying to keep low the
-// degrees in the transformation.
-// --> it seems it may be a good idea to permute rows by increasing shifted
-// degrees before calling this
 slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,
                                                                 const slong * shift,
                                                                 nmod_poly_mat_t tsf,
