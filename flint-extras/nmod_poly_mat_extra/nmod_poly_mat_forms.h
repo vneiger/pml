@@ -792,27 +792,29 @@ slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat,
                                     nmod_poly_mat_t tsf,
                                     slong * pivind,
                                     slong * mrp);
-
-// TODO clean - doc
+// Hermite normal form in the style of Kannan-Bachem's algorithm
+// (uref with lexicographic pivot search, with modified scheduling for
+// cancellation of non-pivot entries, and continuous normalization into HNF)
 slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat,
                                          nmod_poly_mat_t tsf,
                                          slong * pivind);
 
-// TODO clean - doc
+// TODO implement + doc
 slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_mat_t mat,
                                               nmod_poly_mat_t tsf,
                                               slong * pivind);
 
 
-// TODO mod det version (see e.g. Domich) ? quite often, computing the
-// determinant is not much easier than computing the HNF (with fast algos)...
+// TODO mod det version (see e.g. Domich) ? quite often for nmod_poly_mat's,
+// computing the determinant is not really easier than computing the HNF...
 // --> YET once may imagine e.g. approximant/interpolant basis computation,
 // where the determinant (or a multiple of it) is actually known, so if having
 // it helps, why not? (still, for approximants/interpolants, one might as well
 // compute them directly in HNF...)
 // --> ALSO for algorithms easily split into ref+normalization, the second step
 // could be done easily done mod det (of the pivot part if rank deficient), which
-// should be interesting for algorithms having large degree growth
+// should be interesting for algorithms having large degree growth (but these may
+// be avoided anyway)
 
 /** Transforms ``mat`` in place to a row-wise, lower ``shift``-weak Popov form
  * (non-necessarily ordered), and returns the rank of ``mat``.

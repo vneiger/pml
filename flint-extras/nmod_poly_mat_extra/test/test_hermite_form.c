@@ -13,7 +13,7 @@
 #include <flint/ulong_extras.h>
 #include <flint/profiler.h>
 
-//#define NOTRANS
+#define NOTRANS
 
 // verify Hermite form
 int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, flint_rand_t state)
@@ -250,17 +250,36 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         if (time)
             flint_printf("-- time (Kannan-Bachem): %wd ms\n", timer->wall);
         timeit_start(timer);
-        if (rk == -1)
-        {
-            printf("YES");
-            return 0;
-        }
 #ifdef NOTRANS
         verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
 #else
         verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
 #endif /* ifdef NOTRANS */
-        // TODO add check RPM
+        if (!verif_hnf)
+            printf("Hermite form -- Kannan-Bachem -- failure.\n");
+        timeit_stop(timer);
+        if (time)
+            flint_printf("-- time (verif): %wd ms\n", timer->wall);
+    }
+    { // Kannan-Bachem's algorithm, no norm
+        nmod_poly_mat_set(hnf, mat);
+        nmod_poly_mat_one(tsf);
+        timeit_t timer;
+        timeit_start(timer);
+#ifdef NOTRANS
+        slong rk = nmod_poly_mat_hnf_ur_kannan_bachem_nonorm(hnf, NULL, pivind);
+#else
+        slong rk = nmod_poly_mat_hnf_ur_kannan_bachem_nonorm(hnf, tsf, pivind);
+#endif /* ifdef NOTRANS */
+        timeit_stop(timer);
+        if (time)
+            flint_printf("-- time (Kannan-Bachem-NN): %wd ms\n", timer->wall);
+        timeit_start(timer);
+#ifdef NOTRANS
+        verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
+#else
+        verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
+#endif /* ifdef NOTRANS */
         if (!verif_hnf)
             printf("Hermite form -- Kannan-Bachem -- failure.\n");
         timeit_stop(timer);

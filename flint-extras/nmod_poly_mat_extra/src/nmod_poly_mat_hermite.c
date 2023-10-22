@@ -715,11 +715,11 @@ slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, sl
 *              orientation "ur": upper echelon, row-wise             *
 **********************************************************************/
 
-// Kannan-Bachem's HNF algorithm       (upper echelon, row-wise)
-// Adaptation, removing the assumptions (rank properties) from the original.
+// The choice of pivots is eventually the same as in the direct revlex pivoting
+// strategy. However, the scheduling of when to apply transformations differs.
 //
-// Proceed by leading submatrices. When looking for i-th pivot, in column j >=
-// i, the (i-1) x (j-1) leading submatrix is already in Hermite form.
+// This proceeds by leading submatrices. When looking for i-th pivot, in column
+// j >= i, the (i-1) x (j-1) leading submatrix is already in Hermite form.
 //
 // Then, ensure entries [i,jj] for jj in 0:j are zero. Look for the first row
 // ii in i:m such that [ii,0:j+1] is nonzero.
@@ -727,11 +727,28 @@ slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, sl
 // -> otherwise, use xgcd transformations between existing pivots and the
 // entries [ii,0:j]. This will possibly update the existing pivots, and this
 // will surely make [ii,0:j] zero. Then check if entry [ii,j] is nonzero: if
-// yes, this is a new pivot, increment both i and j and proceed to next leading
-// submatrix; if no, repeat with the remaining rows below the ii-th one.
+// yes, this is a new pivot, use row rotations to place it at (i,j), increment
+// both i and j and proceed to next leading submatrix; if no, repeat with the
+// remaining rows below the ii-th one.
 //
 // Ensure HNF: each time a pivot is found or updated, reduce the suitable
-// entries of the current leading submatrix.
+// entries of the current leading submatrix. (Experiments seem to suggest that
+// -- even for obtaining just the row echelon form -- doing this is faster than
+// removing all normalization steps.)
+//
+// Provides column rank profile. Since we take the first nonzero entries (and
+// not those two of largest degree like in Rosser's algorithm), this also
+// provides the row rank profile. It also provides the matrix rank profile,
+// by using only rotations for the row permutations.
+
+// Kannan-Bachem's HNF algorithm       (upper echelon, row-wise)
+// Adaptation, removing the assumptions (rank properties) from the original.
+// 
+// Take same pivots as revlex strategy, but proceeds by leading principal
+// submatrices. Uses xgcd transformations, and continuous normalization.
+//
+// No guarantee concerning the determinant of the unimodular transformation
+// (but, if useful, this determinant could easily be returned).
 //
 // Benefits from fast polynomial arithmetic. Typically offers worse control
 // of the degree growth than Rosser's algorithm, but better than the revlex
@@ -843,19 +860,6 @@ slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t ts
 
     return i;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
