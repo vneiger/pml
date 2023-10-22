@@ -85,9 +85,6 @@ void _atomic_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_po
     }
 }
 
-// TODO implement _single_solve (or whatever name), where a divrem is used
-// instead of just one step of Euclidean division (as in _atomic_solve)
-
 // Context: upper echelon, row-wise
 // computing xgcd and applying corresponding unimodular transformation
 // input is mat, other, pi, ii, j
@@ -450,19 +447,10 @@ slong nmod_poly_mat_hnf_ur_maxdeg_atomic(nmod_poly_mat_t mat, nmod_poly_mat_t ts
 // this row is not used anymore to find other pivots. Thus, we can totally
 // separate the "row echelon form" step and the "normalization" step.
 //
-// TODO Note: for a generic m x m degree d (hence nonsingular) matrix, degree growth
-// is rather bad, since the degrees seem to almost double at each of the first steps
-// (after i steps the i x i leading principal submatrix
-// has 1 on the diagonal and the trailing principal (m-i) x (m-i) submatrix is
-// row reduced, or very close to it (meaning it has degrees very close to those
-// obtained if one used a minimal kernel basis in the suitable part of the
-// unimodular transformation: degrees are all around m*d / (m-i)).
-//
-// TODO Enhancements? for specific non-generic instances, or for heterogenous row
-// degrees, it would make sense to introduce shifts to guide the choice of
-// pivot collisions instead of "two largest ones". This would make it more
-// likely that the trailing principal submatrix is actually as small as it
-// can get.
+// Note: for a generic m x m degree d (hence nonsingular) matrix, degree growth
+// is rather bad, since the degrees seem to almost double at each of the first
+// steps; this slows down at some point but remains a big issue for
+// performance except when m << d.
 
 // Upper row echelon form inspired by Bradley's HNF algorithm
 //
