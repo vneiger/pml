@@ -797,7 +797,8 @@ slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat,
 // cancellation of non-pivot entries, and continuous normalization into HNF)
 slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat,
                                          nmod_poly_mat_t tsf,
-                                         slong * pivind);
+                                         slong * pivind,
+                                         slong * mrp);
 
 // TODO implement + doc
 slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_mat_t mat,

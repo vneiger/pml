@@ -288,9 +288,9 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         timeit_t timer;
         timeit_start(timer);
 #ifdef NOTRANS
-        slong rk = nmod_poly_mat_hnf_ur_kannan_bachem(hnf, NULL, pivind);
+        slong rk = nmod_poly_mat_hnf_ur_kannan_bachem(hnf, NULL, pivind, mrp2);
 #else
-        slong rk = nmod_poly_mat_hnf_ur_kannan_bachem(hnf, tsf, pivind);
+        slong rk = nmod_poly_mat_hnf_ur_kannan_bachem(hnf, tsf, pivind, mrp2);
 #endif /* ifdef NOTRANS */
         timeit_stop(timer);
         if (time)
@@ -303,6 +303,12 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
 #endif /* ifdef NOTRANS */
         if (!verif_hnf)
             printf("Hermite form -- Kannan-Bachem -- failure.\n");
+        verif_mrp = 1;
+        for (slong i = 0; i < mat->r; i++)
+            if (mrp[i] != mrp2[i])
+                verif_mrp = 0;
+        if (!verif_mrp)
+            printf("HNF -- Kannan-Bachem -- matrix rank profile failure.\n");
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", timer->wall);

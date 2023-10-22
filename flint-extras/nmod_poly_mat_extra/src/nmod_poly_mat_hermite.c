@@ -753,10 +753,15 @@ slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, sl
 // Benefits from fast polynomial arithmetic. Typically offers worse control
 // of the degree growth than Rosser's algorithm, but better than the revlex
 // strategy.
-slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
+slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind, slong * mrp)
 {
     if (mat->r == 0 || mat->c == 0)
+    {
+        if (mrp)
+            for (slong i = 0; i < mat->r; i++)
+                mrp[i] = -1L;
         return 0;
+    }
 
     // recall, pivind[i] gives index of pivot in row i
     // -> index i below will tell us how many pivots have been found already,
@@ -767,6 +772,18 @@ slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t ts
     // or is the index of the row with pivot j
     slong * pivot_row = flint_malloc(mat->c * sizeof(slong));
     flint_mpn_store(pivot_row, mat->c, -1); // fill with -1
+
+    // record row permutation, to fill the mrp
+    // the row k of current mat is the row perm[k] of the input mat
+    slong * perm = NULL;
+    if (mrp)
+    {
+        for (slong i = 0; i < mat->r; i++)
+            mrp[i] = -1L;
+        perm = flint_malloc(mat->r * sizeof(slong));
+        for (slong i = 0; i < mat->r; i++)
+            perm[i] = i;
+    }
 
     // (i,j) : the (i-1) x (j-1) leading submatrix `hnf` is already in Hermite form,
     // we will now try to increase either i (if new pivot found in row i or
@@ -832,12 +849,14 @@ slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t ts
             else // found pivot at [ii,j]
             {
                 // swap rows i and ii // TODO rotate, MRP ?
-                nmod_poly_mat_swap_rows(mat, NULL, i, ii); // does nothing if i == ii
+                _nmod_poly_mat_rotate_rows_downward(mat, perm, i, ii);
                 if (tsf)
-                    nmod_poly_mat_swap_rows(tsf, NULL, i, ii);
-                // update pivot_col and pivot_row
+                    _nmod_poly_mat_rotate_rows_downward(tsf, NULL, i, ii);
+                // update pivot_col, pivot_row, mrp
                 pivind[i] = j;
                 pivot_row[j] = i;
+                if (mrp)
+                    mrp[perm[i]] = j;
                 // make pivot monic and reduce entries above it, i.e. ii,j against i,j
                 _normalize_pivot_uref(mat, tsf, i, j);
                 for (slong pii = 0; pii < i; pii++)
@@ -857,6 +876,8 @@ slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t ts
     nmod_poly_clear(v);
     nmod_poly_clear(pivg);
     nmod_poly_clear(nonzg);
+    if (mrp)
+        flint_free(perm);
 
     return i;
 }
