@@ -173,40 +173,68 @@ mp_limb_t _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 // pivind must be allocated with at least mat->r entries; it will be populated
 // with the shifted pivot index of the output weak Popov form (undefined
 // behaviour for entries beyond mat->r)
-slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,
-                                                                const slong * shift,
-                                                                nmod_poly_mat_t tsf,
-                                                                slong * pivind,
-                                                                slong * rrp)
+
+// This applies the algorithm to the whole matrix
+slong nmod_poly_mat_weak_popov_lr_iter(nmod_poly_mat_t mat,
+                                       const slong * shift,
+                                       nmod_poly_mat_t tsf,
+                                       slong * pivind,
+                                       slong * rrp)
 {
-    if (mat->r == 0 || mat->c == 0)
+    return _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(mat, shift, tsf, pivind, rrp, 0, 0, mat->r, mat->c);
+}
+
+// This applies the algorithm to the submatrix mat[rstart:rstart+rdim,cstart:cstart+cdim],
+// called submat below. The left unimodular transformations are applied to the whole
+// of mat[rstart:rstart+rdim,:], i.e. not restricting the columns to those of submat.
+// -> mat must have >= rstart+rdim rows, >= cstart+cdim columns
+// -> shift must have length >= cdim, its first cdim entries will be used as the shift
+// -> tsf must be NULL or a matrix with at least rstart+rdim rows, the transformation
+// will be applied to its rows rstart:rstart+rdim
+// -> pivind must be allocated with at least rdim entries; its first rdim
+// entries will be populated with the shifted pivot index of the output weak
+// Popov form (undefined behaviour for entries beyond rdim)
+// -> rrp  must be NULL or allocated with rank(submat) entries, it will
+// eventually contain the row rank profile of submat as its first ``rank(mat)``
+// entries
+slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
+                                                        const slong * shift,
+                                                        nmod_poly_mat_t tsf,
+                                                        slong * pivind,
+                                                        slong * rrp,
+                                                        slong rstart,
+                                                        slong cstart,
+                                                        slong rdim,
+                                                        slong cdim)
+{
+    if (rdim == 0 || cdim == 0)
         return 0;
 
     // number of found pivots (i.e., rank), and number of found zero rows
     slong rk = 0;
     slong zr = 0;
-    // All along, mat->r == rk + zr + number of rows that remained to be processed
+    // All along, rdim == rk + zr + number of rows that remained to be processed
     // Also, we will ensure that pivind[:rk] remains correct (pivot index of
-    // current mat[:rk,:]), and pivind[mat->r-zr:mat->r] is correct as well
-    // (pivot index of the zr zero rows at the bottom of current mat)
+    // current submat[:rk,:]), and pivind[rdim-zr:rdim] is correct as well
+    // (pivot index of the zr zero rows at the bottom of current submatrix)
 
     // -> pivot_row[j] is either -1 (not among the pivots discovered so far)
-    // or is the index of the row with pivot j
-    slong * pivot_row = flint_malloc(mat->c * sizeof(slong));
-    flint_mpn_store(pivot_row, mat->c, -1); // fill with -1
+    // or is the index (in submatrix) of the row with pivot j
+    slong * pivot_row = flint_malloc(cdim * sizeof(slong));
+    flint_mpn_store(pivot_row, cdim, -1); // fill with -1
 
     slong pivdeg; // will be used to store pivot degrees
 
-    while (rk + zr < mat->r)
+    while (rk + zr < rdim)
     {
         // consider row rk of current matrix (corresponds to row rk+zr of initial matrix)
         // compute its pivot index
-        _nmod_poly_vec_pivot_profile(pivind+rk, &pivdeg, mat->rows[rk], shift, mat->c);
+        _nmod_poly_vec_pivot_profile(pivind+rk, &pivdeg, mat->rows[rstart+rk]+cstart, shift, cdim);
         if (pivind[rk] == -1)
         {
             // row is zero: rotate to put it last, increment zr and go to next row
-            _nmod_poly_mat_rotate_rows_upward(mat, NULL, rk, mat->r -1);
-            if (tsf) _nmod_poly_mat_rotate_rows_upward(tsf, NULL, rk, mat->r -1);
+            _nmod_poly_mat_rotate_rows_upward(mat, NULL, rstart+rk, rstart+rdim-1);
+            if (tsf) _nmod_poly_mat_rotate_rows_upward(tsf, NULL, rstart+rk, rstart+rdim-1);
             zr++;
         }
         else if (pivot_row[pivind[rk]] == -1)
@@ -221,14 +249,16 @@ slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t 
             // pivind[rk] == pivind[pi]: pivot collision, let's actually do some work
             slong pi = pivot_row[pivind[rk]];
             // see who has greatest pivot degree, and swap accordingly
-            if (pivdeg < nmod_poly_degree(MAT(pi, pivind[rk])))
+            // (does not disturb row rank profile)
+            if (pivdeg < nmod_poly_degree(MAT(rstart+pi, pivind[rk])))
             {
-                nmod_poly_mat_swap_rows(mat, NULL, pi, rk);
-                if (tsf) nmod_poly_mat_swap_rows(tsf, NULL, pi, rk);
+                nmod_poly_mat_swap_rows(mat, NULL, rstart+pi, rstart+rk);
+                if (tsf) nmod_poly_mat_swap_rows(tsf, NULL, rstart+pi, rstart+rk);
             }
 
-            // perform atomic collision solving: mat[rk,:] = mat[rk,:] + cst * x**exp * mat[pi,:]
-            _atomic_solve_pivot_collision_rowwise(mat, tsf, rk, pi, pivind[rk]);
+            // perform atomic collision solving:
+            //    mat[rstart+rk,:] = mat[rstart+rk,:] + cst * x**exp * mat[rstart+pi,:]
+            _atomic_solve_pivot_collision_rowwise(mat, tsf, rstart+rk, rstart+pi, pivind[rk]);
         }
     }
 

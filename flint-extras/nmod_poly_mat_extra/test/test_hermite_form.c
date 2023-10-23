@@ -134,7 +134,7 @@ int verify_matrix_rank_profile(const nmod_poly_mat_t mat, const slong * mrp)
                 for (slong jj = 0; jj < j; jj++)
                     nmod_poly_set(nmod_poly_mat_entry(sub,ii,jj), MAT(ii, jj));
             // compute rank of submatrix
-            slong rk_sub = nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(sub, NULL, NULL, pivind, NULL);
+            slong rk_sub = nmod_poly_mat_weak_popov_lr_iter(sub, NULL, NULL, pivind, NULL);
             // compute rank of matrix rank profile
             slong rk_mrp = 0;
             for (slong k = 0; k < i; k++)
@@ -288,13 +288,13 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         timeit_t timer;
         timeit_start(timer);
 #ifdef NOTRANS
-        slong rk = nmod_poly_mat_hnf_ur_kannan_bachem(hnf, NULL, pivind, mrp2);
+        slong rk = nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(hnf, NULL, pivind, mrp2);
 #else
-        slong rk = nmod_poly_mat_hnf_ur_kannan_bachem(hnf, tsf, pivind, mrp2);
+        slong rk = nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(hnf, tsf, pivind, mrp2);
 #endif /* ifdef NOTRANS */
         timeit_stop(timer);
         if (time)
-            flint_printf("-- time (Kannan-Bachem): %wd ms\n", timer->wall);
+            flint_printf("-- time (revlex - xgcd - delayedzero - ur): %wd ms\n", timer->wall);
         timeit_start(timer);
 #ifdef NOTRANS
         verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
@@ -302,13 +302,13 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
 #endif /* ifdef NOTRANS */
         if (!verif_hnf)
-            printf("Hermite form -- Kannan-Bachem -- failure.\n");
+            printf("Hermite form -- revlex - xgcd - delayedzero - ur -- failure.\n");
         verif_mrp = 1;
         for (slong i = 0; i < mat->r; i++)
             if (mrp[i] != mrp2[i])
                 verif_mrp = 0;
         if (!verif_mrp)
-            printf("HNF -- Kannan-Bachem -- matrix rank profile failure.\n");
+            printf("HNF -- revlex-xgcd-delayedzero-ur -- matrix rank profile failure.\n");
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", timer->wall);

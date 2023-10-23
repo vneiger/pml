@@ -781,6 +781,12 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat,
                                        nmod_poly_mat_t tsf,
                                        slong * pivind,
                                        slong * mrp);
+// Hermite normal form in the style of Kannan-Bachem's algorithm
+// (uref with reverse lexicographic pivot search, with modified scheduling for
+// cancellation of non-pivot entries, and continuous normalization into HNF)
+slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat,
+                                                    nmod_poly_mat_t tsf, slong *
+                                                    pivind, slong * mrp);
 
 // Upper row echelon form using lexicographic pivot search
 slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat,
@@ -792,13 +798,6 @@ slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat,
                                     nmod_poly_mat_t tsf,
                                     slong * pivind,
                                     slong * mrp);
-// Hermite normal form in the style of Kannan-Bachem's algorithm
-// (uref with lexicographic pivot search, with modified scheduling for
-// cancellation of non-pivot entries, and continuous normalization into HNF)
-slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat,
-                                         nmod_poly_mat_t tsf,
-                                         slong * pivind,
-                                         slong * mrp);
 
 // TODO implement + doc
 slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_mat_t mat,
@@ -842,11 +841,13 @@ slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_mat_t mat,
  *    as its first ``rank(mat)`` entries. Its allocated space is left
  *    unchanged, and so are its entries beyond the rank(mat)-th one.
  **/
-slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,
-                                                                const slong * shift,
-                                                                nmod_poly_mat_t tsf,
-                                                                slong * pivind,
-                                                                slong * rrp);
+slong nmod_poly_mat_weak_popov_lr_iter(nmod_poly_mat_t mat,
+                                       const slong * shift,
+                                       nmod_poly_mat_t tsf,
+                                       slong * pivind,
+                                       slong * rrp);
+
+// TODO doc (update from above)
 // RANDOM NOTES: this uses a row-by-row approach. More generally, strategy for
 // pivot selection, a good one if transformation not needed may be to target
 // the collision involving the smallest possible degree (this means fewer field
@@ -854,6 +855,17 @@ slong nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t 
 // the unimodular transformation or in `tsf`, which may impact performance if
 // `tsf` is not NULL). When transformation is needed, using the largest degree
 // may be interesting, trying to keep low the degrees in the transformation.
+slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
+                                                        const slong * shift,
+                                                        nmod_poly_mat_t tsf,
+                                                        slong * pivind,
+                                                        slong * rrp,
+                                                        slong rstart,
+                                                        slong cstart,
+                                                        slong rdim,
+                                                        slong cdim);
+// TODO other strategies should be tested;
+// nmod_poly_mat_weak_popov_lr_iter should pick the best depending on params
 
 // TODO
 slong nmod_poly_mat_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,

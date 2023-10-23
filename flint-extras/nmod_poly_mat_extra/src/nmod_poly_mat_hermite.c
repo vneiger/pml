@@ -753,7 +753,7 @@ slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, sl
 // Benefits from fast polynomial arithmetic. Typically offers worse control
 // of the degree growth than Rosser's algorithm, but better than the revlex
 // strategy.
-slong nmod_poly_mat_hnf_ur_kannan_bachem(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind, slong * mrp)
+slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind, slong * mrp)
 {
     if (mat->r == 0 || mat->c == 0)
     {
@@ -905,7 +905,7 @@ slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_mat_t mat,
     for (slong i = 0; i < mat->r; i++)
             nmod_poly_set(nmod_poly_mat_entry(subvec, i, 0), MAT(i, mat->c -1));
 
-    slong rk = nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(submat, NULL, subvec, pivind, NULL);
+    slong rk = nmod_poly_mat_weak_popov_lr_iter(submat, NULL, subvec, pivind, NULL);
 
     for (slong i = 0; i < mat->r; i++)
         for (slong j = 0; j < mat->c - 1; j++)

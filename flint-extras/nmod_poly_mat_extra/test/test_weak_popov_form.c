@@ -212,19 +212,19 @@ int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, in
     // verification of weak Popov form, verification of row rank profile
     int verif_form, verif_pivind, verif_rrp;
 
-    { // Mulders and Storjohann's algorithm
+    { // Mulders and Storjohann's iterative algorithm, row by row
         nmod_poly_mat_set(wpf, mat);
         nmod_poly_mat_one(tsf);
         timeit_t timer;
         timeit_start(timer);
 #ifdef NOTRANS
-        slong rk = nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(wpf, shift, NULL, pivind, rrp);
+        slong rk = _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(wpf, shift, NULL, pivind, rrp, 0, 0, mat->r, mat->c);
 #else
-        slong rk = nmod_poly_mat_weak_popov_mulders_storjohann_lower_rowwise(wpf, shift, tsf, pivind, rrp);
+        slong rk = _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(wpf, shift, tsf, pivind, rrp, 0, 0, mat->r, mat->c);
 #endif /* ifdef NOTRANS */
         timeit_stop(timer);
         if (time)
-            flint_printf("-- time (Mulders-Storjohann): %wd ms\n", timer->wall);
+            flint_printf("-- time (iter - rowbyrow - ur): %wd ms\n", timer->wall);
         timeit_start(timer);
 #ifdef NOTRANS
         verif_form = verify_weak_popov_form(wpf, shift, NULL, rk, mat, state);
