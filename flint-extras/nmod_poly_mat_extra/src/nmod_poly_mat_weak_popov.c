@@ -195,8 +195,9 @@ slong nmod_poly_mat_weak_popov_lr_iter(nmod_poly_mat_t mat,
 // -> rrp  must be NULL or allocated with rank(submat) entries, it will
 // eventually contain the row rank profile of submat as its first ``rank(mat)``
 // entries
-// -> det will be filled with the determinant of the unimodular transformation
-// used during this call, which happens to be +1 or -1
+// -> det is required to be +1 or -1 and will be multiplied with the
+// determinant of the unimodular transformation used during this call (which is
+// itself +1 or -1)
 slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
                                                         const slong * shift,
                                                         nmod_poly_mat_t tsf,
@@ -209,7 +210,6 @@ slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
                                                         slong cdim,
                                                         slong early_exit_zr)
 {
-    if (det) *det = 1;
     if (rdim == 0 || cdim == 0)
         return 0;
 

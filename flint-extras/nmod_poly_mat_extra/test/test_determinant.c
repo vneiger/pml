@@ -63,7 +63,7 @@ int core_test_determinant(const nmod_poly_mat_t mat, int time, flint_rand_t stat
         timeit_start(timer);
         verif_det = verify_determinant(det, mat, state);
         if (! verif_det)
-            printf("weak Popov form -- Mulders-Storjohann -- determinant failure.\n");
+            printf("determinant -- iter-rowbyrow -- determinant failure.\n");
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", timer->wall);
@@ -168,6 +168,8 @@ int main(int argc, char ** argv)
         nmod_poly_mat_rand(mat, state, order);
 
         res = core_test_determinant(mat, 1, state);
+
+
 
         nmod_poly_mat_clear(mat);
     }
