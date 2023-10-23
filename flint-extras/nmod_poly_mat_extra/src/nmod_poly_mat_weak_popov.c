@@ -173,8 +173,6 @@ mp_limb_t _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 // pivind must be allocated with at least mat->r entries; it will be populated
 // with the shifted pivot index of the output weak Popov form (undefined
 // behaviour for entries beyond mat->r)
-
-// This applies the algorithm to the whole matrix
 slong nmod_poly_mat_weak_popov_lr_iter(nmod_poly_mat_t mat,
                                        const slong * shift,
                                        nmod_poly_mat_t tsf,
