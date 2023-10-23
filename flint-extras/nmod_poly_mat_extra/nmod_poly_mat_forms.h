@@ -882,7 +882,7 @@ slong nmod_poly_mat_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,
                                                            slong * pivind,
                                                            slong * rrp);
 // TODO
-slong nmod_poly_mat_det_mulders_storjohann(nmod_poly_t det, nmod_poly_mat_t mat);
+void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat);
 // TODO
 //slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_t det, nmod_poly_mat_t mat);
 // TODO

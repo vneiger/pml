@@ -13,7 +13,7 @@ void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat)
     slong * pivind = flint_malloc(mat->r * sizeof(slong));
 
     nmod_poly_one(det);
-    for (slong i = mat->r -2; i >= 0; i--)
+    for (slong i = mat->r -1; i >= 0; i--)
     {
         //            [ S  * ]
         // mat is now [ 0  D ] with det = det(D) and S of size i+1 x i+1
@@ -26,17 +26,17 @@ void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat)
         // apply weak Popov on i+1 x i leading principal submatrix,
         // with transformations applied to the whole rows mat[0:i+1,:]
         // with early exit if detecting rank < i (in which case rk < 0)
+        udet = 1;
         rk = _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(mat, NULL, NULL, &udet, pivind, NULL, 0, 0, i+1, i, 1);
         if (rk < i)
         {
             nmod_poly_zero(det);
             return;
         }
-
         // multiply det by entry i+1,i+1  (called d above)
-        nmod_poly_mul(det, det, mat->rows[i]+i);
         if (udet == -1)
             _nmod_vec_neg(det->coeffs, det->coeffs, det->length, det->mod);
+        nmod_poly_mul(det, det, mat->rows[i]+i);
     }
     flint_free(pivind);
 }
