@@ -855,15 +855,23 @@ slong nmod_poly_mat_weak_popov_lr_iter(nmod_poly_mat_t mat,
 // the unimodular transformation or in `tsf`, which may impact performance if
 // `tsf` is not NULL). When transformation is needed, using the largest degree
 // may be interesting, trying to keep low the degrees in the transformation.
+//
+// early_exit_zr: stop the computation as soon as early_exit_zr zero rows have
+// been found; in that case returns -rk (negative or zero). If not interested
+// in early exit, put mat->r (or more). If the output is < 0, the output
+// guarantees are the same but only for the first |rk| + max_zr rows of mat
+// (TODO be more precise; zero rows have been put at bottom, etc)
 slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
                                                         const slong * shift,
                                                         nmod_poly_mat_t tsf,
+                                                        int * det,
                                                         slong * pivind,
                                                         slong * rrp,
                                                         slong rstart,
                                                         slong cstart,
                                                         slong rdim,
-                                                        slong cdim);
+                                                        slong cdim,
+                                                        slong early_exit_zr);
 // TODO other strategies should be tested;
 // nmod_poly_mat_weak_popov_lr_iter should pick the best depending on params
 

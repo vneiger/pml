@@ -179,7 +179,7 @@ slong nmod_poly_mat_weak_popov_lr_iter(nmod_poly_mat_t mat,
                                        slong * pivind,
                                        slong * rrp)
 {
-    return _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(mat, shift, tsf, pivind, rrp, 0, 0, mat->r, mat->c);
+    return _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(mat, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r);
 }
 
 // This applies the algorithm to the submatrix mat[rstart:rstart+rdim,cstart:cstart+cdim],
@@ -195,16 +195,21 @@ slong nmod_poly_mat_weak_popov_lr_iter(nmod_poly_mat_t mat,
 // -> rrp  must be NULL or allocated with rank(submat) entries, it will
 // eventually contain the row rank profile of submat as its first ``rank(mat)``
 // entries
+// -> det will be filled with the determinant of the unimodular transformation
+// used during this call, which happens to be +1 or -1
 slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
                                                         const slong * shift,
                                                         nmod_poly_mat_t tsf,
+                                                        int * det,
                                                         slong * pivind,
                                                         slong * rrp,
                                                         slong rstart,
                                                         slong cstart,
                                                         slong rdim,
-                                                        slong cdim)
+                                                        slong cdim,
+                                                        slong early_exit_zr)
 {
+    if (det) *det = 1;
     if (rdim == 0 || cdim == 0)
         return 0;
 
@@ -223,7 +228,7 @@ slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
 
     slong pivdeg; // will be used to store pivot degrees
 
-    while (rk + zr < rdim)
+    while (rk + zr < rdim && zr < early_exit_zr)
     {
         // consider row rk of current matrix (corresponds to row rk+zr of initial matrix)
         // compute its pivot index
@@ -233,6 +238,7 @@ slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
             // row is zero: rotate to put it last, increment zr and go to next row
             _nmod_poly_mat_rotate_rows_upward(mat, NULL, rstart+rk, rstart+rdim-1);
             if (tsf) _nmod_poly_mat_rotate_rows_upward(tsf, NULL, rstart+rk, rstart+rdim-1);
+            if (det && (rdim-1-rk) % 2 == 1) *det = - *det;
             zr++;
         }
         else if (pivot_row[pivind[rk]] == -1)
@@ -247,11 +253,12 @@ slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
             // pivind[rk] == pivind[pi]: pivot collision, let's actually do some work
             slong pi = pivot_row[pivind[rk]];
             // see who has greatest pivot degree, and swap accordingly
-            // (does not disturb row rank profile)
+            // (note that this does not disturb the row rank profile)
             if (pivdeg < nmod_poly_degree(MAT(rstart+pi, pivind[rk])))
             {
                 nmod_poly_mat_swap_rows(mat, NULL, rstart+pi, rstart+rk);
                 if (tsf) nmod_poly_mat_swap_rows(tsf, NULL, rstart+pi, rstart+rk);
+                if (det && pi != rk) *det = - *det;
             }
 
             // perform atomic collision solving:
@@ -260,7 +267,10 @@ slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
         }
     }
 
-    return rk;
+    if (zr >= early_exit_zr)
+        return -rk;
+    else
+        return rk;
 }
 
 
