@@ -47,6 +47,8 @@ int core_test_determinant(const nmod_poly_mat_t mat, int time, flint_rand_t stat
 {
     nmod_poly_t det;
     nmod_poly_init(det, mat->modulus);
+    nmod_poly_t det_correct;
+    nmod_poly_init(det_correct, mat->modulus);
     // init copy of mat
     nmod_poly_mat_t copy_mat;
     nmod_poly_mat_init(copy_mat, mat->r, mat->c, mat->modulus);
@@ -64,12 +66,35 @@ int core_test_determinant(const nmod_poly_mat_t mat, int time, flint_rand_t stat
             flint_printf("-- time (iter - rowbyrow): %wd ms\n", timer->wall);
         timeit_start(timer);
         verif_det = verify_determinant(det, mat, state);
+        timeit_stop(timer);
         if (! verif_det)
             printf("determinant -- iter-rowbyrow -- determinant failure.\n");
+        else
+            nmod_poly_set(det_correct, det);
+        if (time)
+            flint_printf("-- time (verif): %wd ms\n", timer->wall);
+    }
+
+    { // Mulders and Storjohann's algorithm, row by row variant
+        nmod_poly_mat_set(copy_mat, mat);
+        timeit_t timer;
+        timeit_start(timer);
+        nmod_poly_mat_det_iter_bis(det, copy_mat);
+        timeit_stop(timer);
+        if (time)
+            flint_printf("-- time (iter - rowbyrow): %wd ms\n", timer->wall);
+        timeit_start(timer);
+        if (verif_det)
+            verif_det = nmod_poly_equal(det_correct, det);
+        else
+            verif_det = verify_determinant(det, mat, state);
+        if (! verif_det)
+            printf("determinant -- iter-rowbyrow-bis -- determinant failure.\n");
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", timer->wall);
     }
+
 
     nmod_poly_mat_clear(copy_mat);
     nmod_poly_clear(det);
