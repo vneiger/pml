@@ -21,6 +21,35 @@
 extern "C" {
 #endif
 
+/** The input `window` is some window (r1,c1,r2,c2) of some polynomial matrix
+ * `mat`. This function changes it into the window (r1,c1+cc1,r2,c2+cc2) of the
+ * same `mat`. It is assumed that the latter window is indeed a valid window of
+ * the original matrix `mat`; in particular one must provide cc1,cc2 such that
+ * c1+cc1 < mat->c and c2+cc2 < mat->c.  **/
+// TODO currently unused, remove?
+NMOD_POLY_MAT_INLINE void
+_nmod_poly_mat_window_update_columns(nmod_poly_mat_t window, slong cc1, slong cc2)
+{
+    // if original mat->c was 0, each window->rows[i] is and should remain NULL
+    // otherwise, window->rows[i] are all non-NULL and should be updated
+    if (window->rows)  // NULL if window->r <= 0
+        for (slong i = 0; i < window->r; i++)
+            if (window->rows[i]) 
+                window->rows[i] += cc1;
+    window->c = cc2-cc1;
+}
+
+/** The input `window` is some window (r1,c1,r2,c2) of some polynomial matrix
+ * `mat`. This function changes it into the window (r1,c1,r2,c2+c) of the same
+ * `mat`. The provided c can be positive or negative and must be such that the
+ * latter window is a valid window of `mat`: 0 <= c2+c <= mat->c.  **/
+NMOD_POLY_MAT_INLINE void
+_nmod_poly_mat_window_resize_columns(nmod_poly_mat_t window, slong c)
+{
+    window->c += c;
+}
+
+
 /** Tests whether `pmat` is a unimodular matrix, that is, a square matrix with
  * determinant being a nonzero constant. Rectangular matrices are accepted as
  * input (and are not unimodular). */
