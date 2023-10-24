@@ -180,7 +180,6 @@ typedef enum
     ROW_LOWER = 3,
 } orientation_t;
 
-
 /** Computes the `shift`-pivot index (stored in integer `pivind`) and
  * `shift`-pivot degree (stored in integer `pivdeg`) of a given vector `vec`
  * (see @ref Pivots). In the unshifted case, `pivdeg` coincides with the degree
@@ -281,47 +280,16 @@ void nmod_poly_mat_lechelon_pivot_profile_rowwise(slong * pivind,
  * `shift`-degree matrix of `pmat` is the `m x n` integer matrix whose entry
  * `(i,j)` is `deg(pmat[i][j]) + shift[i]` if `pmat[i][j]` is nonzero, and
  * `shift[i]-1` otherwise.
- *
- * The functions below which involve a `shift` among its parameters throw
- * an error if this `shift` does not have the right length. Here, the shift
- * cannot be `NULL`.
  */
 //@{
 
-/** Computes the degree matrix `degmat` of a polynomial matrix `pmat` (see @ref
- * DegreeMatrix)
- */
-void nmod_poly_mat_degree_matrix(fmpz_mat_t dmat, const nmod_poly_mat_t mat);
-
-/** Computes the row-wise `shift`-degree matrix `degmat` of a polynomial matrix
- * `pmat` (see @ref DegreeMatrix)
- */
-void nmod_poly_mat_degree_matrix_row_shifted(fmpz_mat_t dmat,
-                                             const nmod_poly_mat_t mat,
-                                             const slong * shift);
-
-/** Computes the column-wise `shift`-degree matrix `degmat` of a polynomial
- * matrix `pmat` (see @ref DegreeMatrix)
- */
-void nmod_poly_mat_degree_matrix_column_shifted(fmpz_mat_t dmat,
-                                                const nmod_poly_mat_t mat,
-                                                const slong * shift);
-
 /** Computes the `shift`-degree matrix `degmat` of a polynomial matrix `pmat`
- * (see @ref DegreeMatrix), the orientation row-wise/column-wise being
- * indicated by a parameter.
+ * (see @ref DegreeMatrix).
  */
-NMOD_POLY_MAT_INLINE void
-nmod_poly_mat_degree_matrix_shifted(fmpz_mat_t dmat,
-                                    const nmod_poly_mat_t mat,
-                                    const slong * shift,
-                                    orientation_t row_wise)
-{
-    if (row_wise)
-        nmod_poly_mat_degree_matrix_row_shifted(dmat, mat, shift);
-    else
-        nmod_poly_mat_degree_matrix_column_shifted(dmat, mat, shift);
-}
+void nmod_poly_mat_degree_matrix(fmpz_mat_t dmat,
+                                 const nmod_poly_mat_t mat,
+                                 const slong * shift,
+                                 orientation_t orient);
 
 //@} // doxygen group: (Shifted) degree matrix
 
@@ -364,36 +332,12 @@ nmod_poly_mat_degree_matrix_shifted(fmpz_mat_t dmat,
  */
 //@{
 
-/** Computes the row-wise `shift`-leading matrix `lmat` of a polynomial matrix
- * `mat` (see @ref LeadingMatrix)
- */
-void nmod_poly_mat_leading_matrix_rowwise(nmod_mat_t lmat,
-                                          const nmod_poly_mat_t mat,
-                                          const slong * shift);
-
-/** Computes the column-wise `shift`-leading matrix `lmat` of a polynomial
- * matrix `mat` (see @ref LeadingMatrix)
- */
-void nmod_poly_mat_leading_matrix_columnwise(nmod_mat_t lmat,
-                                             const nmod_poly_mat_t mat,
-                                             const slong * shift);
-
-
-/** Computes the column-wise `shift`-leading matrix `lmat` of a polynomial
- * matrix `mat` (see @ref LeadingMatrix), using provided orientation
- * row-wise or column-wise.
- */
-NMOD_POLY_MAT_INLINE void
-nmod_poly_mat_leading_matrix(nmod_mat_t lmat,
-                             const nmod_poly_mat_t mat,
-                             const slong * shift,
-                             orientation_t row_wise)
-{
-    if (row_wise)
-        nmod_poly_mat_leading_matrix_rowwise(lmat, mat, shift);
-    else
-        nmod_poly_mat_leading_matrix_columnwise(lmat, mat, shift);
-}
+/** Computes the `shift`-leading matrix `lmat` of a polynomial matrix `mat`
+ * (see @ref LeadingMatrix).  */
+void nmod_poly_mat_leading_matrix(nmod_mat_t lmat,
+                                  const nmod_poly_mat_t mat,
+                                  const slong * shift,
+                                  orientation_t orient);
 
 //@} // doxygen group: (Shifted) leading matrix
 
