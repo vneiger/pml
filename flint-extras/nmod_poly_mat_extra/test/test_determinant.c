@@ -30,6 +30,8 @@ int verify_determinant(const nmod_poly_t det, const nmod_poly_mat_t mat, flint_r
     if (! nmod_poly_equal(det, det_correct))
     {
         printf("~~~ verify determinant ~~~ INCORRECT: determinant is wrong\n");
+        nmod_poly_print_pretty(det, "X"); printf("\n");
+        nmod_poly_print_pretty(det_correct, "X"); printf("\n");
         nmod_poly_clear(det_correct);
         return 0;
     }
