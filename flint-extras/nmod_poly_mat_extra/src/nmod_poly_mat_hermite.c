@@ -883,43 +883,5 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat, nmod_po
 }
 
 
-
-
-
-
-
-
-
-// TODO
-slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_mat_t mat,
-                                              nmod_poly_mat_t tsf,
-                                              slong * pivind)
-{
-    nmod_poly_mat_t submat;
-    nmod_poly_mat_t subvec;
-    nmod_poly_mat_init(submat, mat->r, mat->c - 1, mat->modulus);
-    nmod_poly_mat_init(subvec, mat->r, 1, mat->modulus);
-    for (slong i = 0; i < mat->r; i++)
-        for (slong j = 0; j < mat->c - 1; j++)
-            nmod_poly_set(nmod_poly_mat_entry(submat, i, j), MAT(i, j));
-    for (slong i = 0; i < mat->r; i++)
-            nmod_poly_set(nmod_poly_mat_entry(subvec, i, 0), MAT(i, mat->c -1));
-
-    slong rk = nmod_poly_mat_weak_popov_lr_iter(submat, NULL, subvec, pivind, NULL);
-
-    for (slong i = 0; i < mat->r; i++)
-        for (slong j = 0; j < mat->c - 1; j++)
-            nmod_poly_set(MAT(i, j), nmod_poly_mat_entry(submat, i, j));
-    for (slong i = 0; i < mat->r; i++)
-            nmod_poly_set(MAT(i, mat->c -1), nmod_poly_mat_entry(subvec, i, 0));
-
-    pivind[mat->r-1] = mat->r-1;
-
-    nmod_poly_mat_clear(submat);
-    nmod_poly_mat_clear(subvec);
-
-    return rk+1;
-}
-
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -225,7 +225,7 @@ slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
     {
         // consider row rk of current matrix (corresponds to row rk+zr of initial matrix)
         // compute its pivot index
-        _nmod_poly_vec_pivot_profile(pivind+rk, &pivdeg, mat->rows[rstart+rk]+cstart, shift, cdim);
+        _nmod_poly_vec_pivot_profile(pivind+rk, &pivdeg, mat->rows[rstart+rk]+cstart, shift, cdim, ROW_LOWER);
         if (pivind[rk] == -1)
         {
             // row is zero: rotate to put it last, increment zr and go to next row

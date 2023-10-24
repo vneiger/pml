@@ -93,7 +93,7 @@ int verify_pivot_index(const nmod_poly_mat_t mat, const slong * shift, const slo
         return 1;
 
     slong * check_pivind = flint_malloc(mat->r * sizeof(slong));
-    nmod_poly_mat_pivot_index_rowwise(check_pivind, mat, shift);
+    nmod_poly_mat_pivot_index(check_pivind, mat, shift, ROW_LOWER);
     int equal = 1;
     for (slong i = 0; i < rank; i++)
         if (pivind[i] != check_pivind[i])
@@ -181,11 +181,9 @@ int verify_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shift, const
             current_row++;
         }
     }
-    if (! nmod_poly_mat_is_weak_popov_rowwise(tmp, shift))
+    if (! nmod_poly_mat_is_weak_popov(tmp, shift, ROW_LOWER))
     {
         printf("~~~ verify weak Popov ~~~ INCORRECT: wpf not in shifted weak Popov form\n");
-        nmod_poly_mat_degree_matrix_print_pretty(tmp);
-        nmod_poly_mat_degree_matrix_shifted_print_pretty(tmp, shift, ROW_WISE);
         nmod_poly_mat_clear(tmp);
         return 0;
     }
@@ -262,11 +260,9 @@ int verify_ordered_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shif
         for (slong j = 0; j < mat->c; j++)
             nmod_poly_set(nmod_poly_mat_entry(tmp, i, j), nmod_poly_mat_entry(wpf, i, j));
 
-    if (! nmod_poly_mat_is_ordered_weak_popov_rowwise(tmp, shift))
+    if (! nmod_poly_mat_is_ordered_weak_popov(tmp, shift, ROW_LOWER))
     {
         printf("~~~ verify ord weak Popov ~~~ INCORRECT: wpf not in shifted ordered weak Popov form\n");
-        nmod_poly_mat_degree_matrix_print_pretty(tmp);
-        nmod_poly_mat_degree_matrix_shifted_print_pretty(tmp, shift, ROW_WISE);
         nmod_poly_mat_clear(tmp);
         return 0;
     }

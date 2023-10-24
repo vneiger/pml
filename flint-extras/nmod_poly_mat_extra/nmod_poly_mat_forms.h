@@ -186,7 +186,7 @@ typedef enum
  * of this vector. ROW_LOWER / COLUMN_UPPER orientation. */
 void _nmod_poly_vec_pivot_profile(slong * pivind,
                                   slong * pivdeg,
-                                  nmod_poly_struct * const * vec,
+                                  const nmod_poly_struct * vec,
                                   const slong * shift,
                                   slong len,
                                   orientation_t orient);
@@ -638,22 +638,21 @@ slong nmod_poly_mat_ordered_weak_popov_lr_iter(nmod_poly_mat_t mat,
 //@} // doxygen group: Computing weak Popov form
 
 
-// TODO
-//
-slong nmod_poly_mat_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,
-                                                           const slong * shift,
-                                                           nmod_poly_mat_t tsf,
-                                                           slong * pivind,
-                                                           slong * rrp);
+// TODO implem + doc
+//slong nmod_poly_mat_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,
+//                                                           const slong * shift,
+//                                                           nmod_poly_mat_t tsf,
+//                                                           slong * pivind,
+//                                                           slong * rrp);
 
 
-// TODO
+// TODO doc
 void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat);
-void nmod_poly_mat_det_iter_bis(nmod_poly_t det, nmod_poly_mat_t mat);
-// TODO
+
+// TODO implem + doc
 //slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_t det, nmod_poly_mat_t mat);
-// TODO
-slong nmod_poly_mat_linsolve_mulders_storjohann(nmod_poly_mat_t mat);
+// TODO implem + doc
+//slong nmod_poly_mat_linsolve_mulders_storjohann(nmod_poly_mat_t mat);
 
 
 //@} // doxygen group: Computing polynomial matrix forms

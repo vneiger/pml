@@ -7,7 +7,7 @@
 
 void _nmod_poly_vec_pivot_profile(slong * pivind,
                                   slong * pivdeg,
-                                  nmod_poly_struct * const * vec,
+                                  const nmod_poly_struct * vec,
                                   const slong * shift,
                                   slong len,
                                   orientation_t orient)
@@ -21,7 +21,7 @@ void _nmod_poly_vec_pivot_profile(slong * pivind,
             slong d;
             for (slong j = 0; j < len; j++)
             {
-                d = nmod_poly_degree(vec[j]);
+                d = nmod_poly_degree(vec+j);
                 if (0 <= d && max <= d)
                 {
                     max = d;
@@ -40,7 +40,7 @@ void _nmod_poly_vec_pivot_profile(slong * pivind,
             slong d;
             for (slong j = 0; j < len; j++)
             {
-                d = nmod_poly_degree(vec[j]);
+                d = nmod_poly_degree(vec+j);
                 // if new maximum (or equal maximum) reached at a nonzero entry, update
                 // if encountering first nonzero entry in the row, update as well
                 if (0 <= d && (piv == -1 || max <= d+shift[j]))
@@ -62,7 +62,7 @@ void _nmod_poly_vec_pivot_profile(slong * pivind,
             slong d;
             for (slong j = 0; j < len; j++)
             {
-                d = nmod_poly_degree(vec[j]);
+                d = nmod_poly_degree(vec+j);
                 if (0 <= d && max < d)
                 {
                     max = d;
@@ -81,7 +81,7 @@ void _nmod_poly_vec_pivot_profile(slong * pivind,
             slong d;
             for (slong j = 0; j < len; j++)
             {
-                d = nmod_poly_degree(vec[j]);
+                d = nmod_poly_degree(vec+j);
                 // if new strict maximum reached at a nonzero entry, update
                 // if encountering first nonzero entry in vec, update as well
                 if (0 <= d && (piv == -1 || max < d+shift[j]))
@@ -109,17 +109,17 @@ void nmod_poly_mat_pivot_index(slong *pivind,
     {
         slong buf;
         for (slong i = 0; i < mat->r; i++)
-            _nmod_poly_vec_pivot_profile(pivind+i, &buf, mat->rows+i, shift, mat->c, orient);
+            _nmod_poly_vec_pivot_profile(pivind+i, &buf, mat->rows[i], shift, mat->c, orient);
     }
     else
     {
         slong buf;
-        // force access to column as a vec
-        nmod_poly_struct ** vec = flint_malloc(mat->r * sizeof(nmod_poly_struct *));
+        // copy column into vec
+        nmod_poly_struct * vec = flint_malloc(mat->r * sizeof(nmod_poly_struct));
         for (slong j = 0; j < mat->c; j++)
         {
             for (slong i = 0; i < mat->r; i++)
-                vec[i] = mat->rows[i] + j;
+                vec[i] = mat->rows[i][j];
             _nmod_poly_vec_pivot_profile(pivind+j, &buf, vec, shift, mat->r, orient);
         }
         flint_free(vec);
@@ -138,15 +138,15 @@ void nmod_poly_mat_pivot_profile(slong * pivind,
 {
     if (orient == ROW_LOWER || orient == ROW_UPPER)
         for (slong i = 0; i < mat->r; i++)
-            _nmod_poly_vec_pivot_profile(pivind+i, pivdeg+i, mat->rows+i, shift, mat->c, orient);
+            _nmod_poly_vec_pivot_profile(pivind+i, pivdeg+i, mat->rows[i], shift, mat->c, orient);
     else
     {
         // force access to column as a vec
-        nmod_poly_struct ** vec = flint_malloc(mat->r * sizeof(nmod_poly_struct *));
+        nmod_poly_struct * vec = flint_malloc(mat->r * sizeof(nmod_poly_struct));
         for (slong j = 0; j < mat->c; j++)
         {
             for (slong i = 0; i < mat->r; i++)
-                vec[i] = mat->rows[i] + j;
+                vec[i] = mat->rows[i][j];
             _nmod_poly_vec_pivot_profile(pivind+j, pivdeg+j, vec, shift, mat->r, orient);
         }
         flint_free(vec);
