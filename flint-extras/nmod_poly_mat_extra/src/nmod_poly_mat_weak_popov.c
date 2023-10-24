@@ -139,6 +139,7 @@ mp_limb_t _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
     }
 }
 
+
 /**********************************************************************
 *                     weak Popov form algorithms                     *
 **********************************************************************/
@@ -173,15 +174,7 @@ mp_limb_t _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 // pivind must be allocated with at least mat->r entries; it will be populated
 // with the shifted pivot index of the output weak Popov form (undefined
 // behaviour for entries beyond mat->r)
-slong nmod_poly_mat_weak_popov_lr_iter(nmod_poly_mat_t mat,
-                                       const slong * shift,
-                                       nmod_poly_mat_t tsf,
-                                       slong * pivind,
-                                       slong * rrp)
-{
-    return _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(mat, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r);
-}
-
+//
 // This applies the algorithm to the submatrix mat[rstart:rstart+rdim,cstart:cstart+cdim],
 // called submat below. The left unimodular transformations are applied to the whole
 // of mat[rstart:rstart+rdim,:], i.e. not restricting the columns to those of submat.
@@ -273,6 +266,21 @@ slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
         return rk;
 }
 
+slong nmod_poly_mat_ordered_weak_popov_lr_iter(nmod_poly_mat_t mat,
+                                         const slong * shift,
+                                         nmod_poly_mat_t tsf,
+                                         slong * pivind,
+                                         slong * rrp)
+{
+    slong rk = _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(mat, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r);
+
+    slong * perm = flint_malloc(mat->r * sizeof(slong));
+    _nmod_poly_mat_permute_rows_by_sorting_vec(mat, rk, pivind, perm);
+    if (tsf)
+        nmod_poly_mat_permute_rows(tsf, perm, NULL);
+    flint_free(perm);
+    return rk;
+}
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

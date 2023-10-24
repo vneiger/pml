@@ -1,6 +1,6 @@
+#include <stdlib.h>
 #include <flint/flint.h>
 #include <flint/nmod_poly.h>
-#include <stdlib.h>
 
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_utils.h"
@@ -194,6 +194,87 @@ int verify_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shift, const
     return 1;
 }
 
+// verify ordered weak Popov form
+int verify_ordered_weak_popov_form(const nmod_poly_mat_t wpf, const slong * shift, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, flint_rand_t state)
+{
+    if (! tsf)
+    {
+        printf("~~~ verify weak Popov ~~~ transformation not provided, skipping verification\n");
+        return 1;
+    }
+
+    // testing correctness, from fastest to slowest:
+    // 0. dimensions
+    if (mat->r != wpf->r || mat->c != wpf->c || mat->r != tsf->r || mat->r != tsf->c)
+    {
+            printf("~~~ verify weak Popov ~~~ INCORRECT: dimension mismatch\n");
+            return 0;
+    }
+
+    // empty matrices are fine (checked by is_weak_popov, but done here otherwise
+    // tsf does not pass test on tsf_deg >= 0)
+    if (mat->r == 0 || mat->c == 0)
+        return 1;
+
+    // 1. unimodular transformation
+    // upper bound on degree of determinant
+    slong tsf_deg = nmod_poly_mat_degree(tsf);
+    if (tsf_deg < 0)
+    {
+        printf("~~~ verify weak Popov ~~~ INCORRECT: transformation is zero\n");
+        return 0;
+    }
+    ulong degdet = tsf->r * (ulong)tsf_deg;
+    if (mat->modulus > 100*degdet)
+    {
+        if (!nmod_poly_mat_is_unimodular_randomized(tsf, state))
+        {
+            printf("~~~ verify weak Popov ~~~ INCORRECT: transformation is not unimodular (randomized test)\n");
+            return 0;
+        }
+    }
+    else
+    {
+        if (!nmod_poly_mat_is_unimodular(tsf))
+        {
+            printf("~~~ verify weak Popov ~~~ INCORRECT: transformation is not unimodular\n");
+            return 0;
+        }
+    }
+
+    // 2. tsf * mat == wpf
+    nmod_poly_mat_t tmp;
+    nmod_poly_mat_init(tmp, mat->r, mat->c, mat->modulus);
+    nmod_poly_mat_mul(tmp, tsf, mat);
+    if (! nmod_poly_mat_equal(tmp, wpf))
+    {
+        printf("~~~ verify weak Popov ~~~ INCORRECT: tsf * mat != wpf\n");
+        nmod_poly_mat_clear(tmp);
+        return 0;
+    }
+
+    // 3. wpf is in weak Popov form
+    // first prune zero rows since this is a requirement of is_ordered_weak_popov
+    // (note that zero rows are necessarily the ones at rk ... rdim-1)
+    nmod_poly_mat_clear(tmp);
+    nmod_poly_mat_init(tmp, rk, wpf->c, wpf->modulus);
+    for (slong i = 0; i < rk; i++)
+        for (slong j = 0; j < mat->c; j++)
+            nmod_poly_set(nmod_poly_mat_entry(tmp, i, j), nmod_poly_mat_entry(wpf, i, j));
+
+    if (! nmod_poly_mat_is_ordered_weak_popov_rowwise(tmp, shift))
+    {
+        printf("~~~ verify ord weak Popov ~~~ INCORRECT: wpf not in shifted ordered weak Popov form\n");
+        nmod_poly_mat_degree_matrix_print_pretty(tmp);
+        nmod_poly_mat_degree_matrix_shifted_print_pretty(tmp, shift, ROW_WISE);
+        nmod_poly_mat_clear(tmp);
+        return 0;
+    }
+
+    nmod_poly_mat_clear(tmp);
+    return 1;
+}
+
 // test one given input for weak Popov form
 int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, int time, flint_rand_t state)
 {
@@ -217,6 +298,7 @@ int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, in
         nmod_poly_mat_one(tsf);
         timeit_t timer;
         timeit_start(timer);
+        // weak Popov form computation
 #ifdef NOTRANS
         slong rk = _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(wpf, shift, NULL, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r);
 #else
@@ -225,6 +307,8 @@ int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, in
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (iter - rowbyrow - ur): %wd ms\n", timer->wall);
+
+        // weak Popov form verification
         timeit_start(timer);
 #ifdef NOTRANS
         verif_form = verify_weak_popov_form(wpf, shift, NULL, rk, mat, state);
@@ -241,7 +325,35 @@ int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, in
             printf("weak Popov form -- Mulders-Storjohann -- rank profile failure.\n");
         timeit_stop(timer);
         if (time)
-            flint_printf("-- time (verif): %wd ms\n", timer->wall);
+            flint_printf("-- time (verif-wpf+pivind+rrp): %wd ms\n", timer->wall);
+
+        // ordered weak Popov form computation
+        timeit_start(timer);
+        slong * perm = flint_malloc(wpf->r * sizeof(slong));
+        _nmod_poly_mat_permute_rows_by_sorting_vec(wpf, rk, pivind, perm);
+#ifndef NOTRANS
+        nmod_poly_mat_permute_rows(tsf, perm, NULL);
+#endif
+        timeit_stop(timer);
+        if (time)
+            flint_printf("-- time (wpf -> ordered wpf): %wd ms\n", timer->wall);
+
+        // ordered weak Popov form verification
+        timeit_start(timer);
+#ifdef NOTRANS
+        verif_form = verify_ordered_weak_popov_form(wpf, shift, NULL, rk, mat, state);
+#else
+        verif_form = verify_ordered_weak_popov_form(wpf, shift, tsf, rk, mat, state);
+#endif /* ifdef NOTRANS */
+        verif_pivind = verify_pivot_index(wpf, shift, pivind, rk);
+        flint_free(perm);
+        timeit_stop(timer);
+        if (! verif_form)
+            printf("weak Popov form -- Mulders-Storjohann -- form failure.\n");
+        if (! verif_pivind)
+            printf("weak Popov form -- Mulders-Storjohann -- pivot index failure.\n");
+        if (time)
+            flint_printf("-- time (verif-ord-wpf+pivind): %wd ms\n", timer->wall);
     }
 
     nmod_poly_mat_clear(wpf);

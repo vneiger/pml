@@ -715,11 +715,11 @@ int nmod_poly_mat_is_uhermite_columnwise(const nmod_poly_mat_t pmat);
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* COMPUTING MATRIX FORMS                                     */
+/* COMPUTING HERMITE NORMAL FORM                              */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/** @name Computing polynomial matrix forms
+/** @name Computing Hermite normal form
  * See @ref MatrixForms for definitions
  */
 //@{
@@ -816,8 +816,63 @@ slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_mat_t mat,
 // should be interesting for algorithms having large degree growth (but these may
 // be avoided anyway)
 
+//@} // doxygen group: Computing Hermite normal form
+
+
+
+
+
+
+
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* COMPUTING WEAK POPOV FORM                                  */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name Computing weak Popov form
+ * See @ref MatrixForms for definitions
+ */
+//@{
+
+// TODO doc
+// internal function for weak Popov form, Mulders-Storjohann, row-by-row
+// RANDOM NOTES: this uses a row-by-row approach. More generally, strategy for
+// pivot selection, a good one if transformation not needed may be to target
+// the collision involving the smallest possible degree (this means fewer field
+// operations to do for transforming `wpf`, but also means greater degrees in
+// the unimodular transformation or in `tsf`, which may impact performance if
+// `tsf` is not NULL). When transformation is needed, using the largest degree
+// may be interesting, trying to keep low the degrees in the transformation.
+//
+// non-ordered, but zero rows are still placed at the bottom
+//
+// early_exit_zr: stop the computation as soon as early_exit_zr zero rows have
+// been found; in that case returns -rk (negative or zero). If not interested
+// in early exit, put mat->r (or more). If the output is < 0, the output
+// guarantees are the same but only for the first |rk| + max_zr rows of mat
+// (TODO be more precise; zero rows have been put at bottom, etc)
+slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
+                                                        const slong * shift,
+                                                        nmod_poly_mat_t tsf,
+                                                        int * det,
+                                                        slong * pivind,
+                                                        slong * rrp,
+                                                        slong rstart,
+                                                        slong cstart,
+                                                        slong rdim,
+                                                        slong cdim,
+                                                        slong early_exit_zr);
+// TODO other strategies should be tested;
+// nmod_poly_mat_weak_popov_lr_iter should pick the best depending on params
+
+
 /** Transforms ``mat`` in place to a row-wise, lower ``shift``-weak Popov form
- * (non-necessarily ordered), and returns the rank of ``mat``.
+ * (non-necessarily ordered, zero rows at the bottom), and returns the rank of
+ * ``mat``.
  *    .. ``tsf``. If ``tsf`` is not NULL, the same unimodular left-operations
  *    applied to ``mat`` are performed on ``tsf`` (which must therefore have as
  *    many rows as ``mat``, and can have an arbitrary number of columns).
@@ -841,46 +896,41 @@ slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_mat_t mat,
  *    as its first ``rank(mat)`` entries. Its allocated space is left
  *    unchanged, and so are its entries beyond the rank(mat)-th one.
  **/
-slong nmod_poly_mat_weak_popov_lr_iter(nmod_poly_mat_t mat,
+NMOD_POLY_MAT_INLINE slong
+nmod_poly_mat_weak_popov_lr_iter(nmod_poly_mat_t mat,
                                        const slong * shift,
                                        nmod_poly_mat_t tsf,
                                        slong * pivind,
-                                       slong * rrp);
+                                       slong * rrp)
+{
+    return _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(mat, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r);
+}
 
-// TODO doc (update from above)
-// RANDOM NOTES: this uses a row-by-row approach. More generally, strategy for
-// pivot selection, a good one if transformation not needed may be to target
-// the collision involving the smallest possible degree (this means fewer field
-// operations to do for transforming `wpf`, but also means greater degrees in
-// the unimodular transformation or in `tsf`, which may impact performance if
-// `tsf` is not NULL). When transformation is needed, using the largest degree
-// may be interesting, trying to keep low the degrees in the transformation.
-//
-// early_exit_zr: stop the computation as soon as early_exit_zr zero rows have
-// been found; in that case returns -rk (negative or zero). If not interested
-// in early exit, put mat->r (or more). If the output is < 0, the output
-// guarantees are the same but only for the first |rk| + max_zr rows of mat
-// (TODO be more precise; zero rows have been put at bottom, etc)
-slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
-                                                        const slong * shift,
-                                                        nmod_poly_mat_t tsf,
-                                                        int * det,
-                                                        slong * pivind,
-                                                        slong * rrp,
-                                                        slong rstart,
-                                                        slong cstart,
-                                                        slong rdim,
-                                                        slong cdim,
-                                                        slong early_exit_zr);
-// TODO other strategies should be tested;
-// nmod_poly_mat_weak_popov_lr_iter should pick the best depending on params
+/** Transforms ``mat`` in place to a row-wise, lower, ordered ``shift``-weak
+ * Popov form (zero rows at the bottom), and returns the rank of ``mat``.
+ * See the documentation of @ref nmod_poly_mat_weak_popov_lr_iter for more
+ * details.
+ **/
+slong nmod_poly_mat_ordered_weak_popov_lr_iter(nmod_poly_mat_t mat,
+                                         const slong * shift,
+                                         nmod_poly_mat_t tsf,
+                                         slong * pivind,
+                                         slong * rrp);
+
+
+
+//@} // doxygen group: Computing weak Popov form
+
 
 // TODO
+//
 slong nmod_poly_mat_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,
                                                            const slong * shift,
                                                            nmod_poly_mat_t tsf,
                                                            slong * pivind,
                                                            slong * rrp);
+
+
 // TODO
 void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat);
 // TODO

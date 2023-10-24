@@ -21,13 +21,6 @@
 extern "C" {
 #endif
 
-/** Tests whether `pmat` is a constant matrix, that is, of degree 0 */
-NMOD_POLY_MAT_INLINE int
-nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
-{
-    return (nmod_poly_mat_max_length(pmat) == 1);
-}
-
 /** Tests whether `pmat` is a unimodular matrix, that is, a square matrix with
  * determinant being a nonzero constant. Rectangular matrices are accepted as
  * input (and are not unimodular). */
@@ -35,10 +28,72 @@ nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
 int nmod_poly_mat_is_unimodular(const nmod_poly_mat_t pmat);
 int nmod_poly_mat_is_unimodular_randomized(const nmod_poly_mat_t pmat, flint_rand_t state);
 
-// rotate rows i...j, and also rotate vec similarly if provided
-// see .c for more documentation
+// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[i,:]     <--    mat[j,:]
+//      mat[i+1,:]   <--    mat[i,:]
+//      mat[i+2,:]   <--    mat[i+1,:]
+//         ...       <--       ...
+//      mat[j-1,:]   <--    mat[j-2,:]
+//      mat[j,:]     <--    mat[j-1,:]
+// as well as
+//      vec[i]     <--    vec[j]
+//      vec[i+1]   <--    vec[i]
+//      vec[i+2]   <--    vec[i+1]
+//        ...      <--      ...
+//      vec[j-1]   <--    vec[j-2]
+//      vec[j]     <--    vec[j-1]
 void _nmod_poly_mat_rotate_rows_downward(nmod_poly_mat_t mat, slong * vec, slong i, slong j);
+
+// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[i,:]     <--    mat[i+1,:]
+//      mat[i+1,:]   <--    mat[i+2,:]
+//      mat[i+2,:]   <--       ...
+//         ...       <--    mat[j-1,:]
+//      mat[j-1,:]   <--    mat[j,:]
+//      mat[j,:]     <--    mat[i,:]
+// as well as
+//      vec[i]     <--    vec[i+1]
+//      vec[i+1]   <--    vec[i+2]
+//      vec[i+2]   <--      ...
+//        ...      <--    vec[j-1]
+//      vec[j-1]   <--    vec[j]
+//      vec[j]     <--    vec[i]
 void _nmod_poly_mat_rotate_rows_upward(nmod_poly_mat_t mat, slong * vec, slong i, slong j);
+
+// . mat is the input matrix
+// . r is an integer between 0 and mat->r -1
+// . vec has >= r entries (signed integers)
+// . perm must be allocated with at least mat->r entries (no need to fill it
+// with values)
+// This finds the unique permutation which stable-sorts vec[0:r] into
+// non-decreasing order, records this permutation in perm[0:r], and applies it
+// both to vec and to the first r rows of mat (the out-vec[i] is the
+// in-vec[perm[i]], the out-mat[i,:] is the in-mat[perm[i],:]). The entries
+// perm[r:mat->r] are filled with iota (perm[i] = i), to ensure that perm
+// actually represents the used row permutation on the whole set of rows.
+//
+// Example uses:
+// - weak Popov -> ordered weak Popov: vec is the s-pivot index of mat in
+// s-weak Popov form with r nonzero rows; then this puts mat in s-ordered weak
+// Popov form and ensures that vec is updated accordingly; also, the output
+// perm can be used to apply the corresponding row permutation to another
+// matrix with as many rows as mat (e.g. some unimodular transformation)
+// - step in weak Popov -> Popov: vec is the s-pivot degree of mat in s-weak
+// Popov form with r nonzero rows; then this arranges the s-pivot degree in
+// nondecreasing order, and the relative position of rows with identical
+// s-pivot degree is preserved.
+void _nmod_poly_mat_permute_rows_by_sorting_vec(nmod_poly_mat_t mat,
+                                                slong r,
+                                                slong * vec,
+                                                slong * perm);
 
 
 /*------------------------------------------------------------*/

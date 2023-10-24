@@ -1,27 +1,14 @@
+#include <stdlib.h> // for qsort
 #include <flint/nmod_poly.h>
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_forms.h"
 #include "nmod_mat_poly.h"
 
 
-// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
-// and apply the corresponding transformation to vec (requirement: j < len(vec))
-// If i == j, then nothing happens.
-// vec can be NULL, in case it is omitted
-// More precisely this performs simultaneously:
-//      mat[i,:]     <--    mat[j,:]
-//      mat[i+1,:]   <--    mat[i,:]
-//      mat[i+2,:]   <--    mat[i+1,:]
-//         ...       <--       ...
-//      mat[j-1,:]   <--    mat[j-2,:]
-//      mat[j,:]     <--    mat[j-1,:]
-// as well as
-//      vec[i]     <--    vec[j]
-//      vec[i+1]   <--    vec[i]
-//      vec[i+2]   <--    vec[i+1]
-//        ...      <--      ...
-//      vec[j-1]   <--    vec[j-2]
-//      vec[j]     <--    vec[j-1]
+/**********************************************************************
+*                    ROW ROTATION DOWNWARD/UPWARD                    *
+**********************************************************************/
+
 void _nmod_poly_mat_rotate_rows_downward(nmod_poly_mat_t mat, slong * vec, slong i, slong j)
 {
     if (i != j)
@@ -41,24 +28,6 @@ void _nmod_poly_mat_rotate_rows_downward(nmod_poly_mat_t mat, slong * vec, slong
     }
 }
 
-// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
-// and apply the corresponding transformation to vec (requirement: j < len(vec))
-// If i == j, then nothing happens.
-// vec can be NULL, in case it is omitted
-// More precisely this performs simultaneously:
-//      mat[i,:]     <--    mat[i+1,:]
-//      mat[i+1,:]   <--    mat[i+2,:]
-//      mat[i+2,:]   <--       ...
-//         ...       <--    mat[j-1,:]
-//      mat[j-1,:]   <--    mat[j,:]
-//      mat[j,:]     <--    mat[i,:]
-// as well as
-//      vec[i]     <--    vec[i+1]
-//      vec[i+1]   <--    vec[i+2]
-//      vec[i+2]   <--      ...
-//        ...      <--    vec[j-1]
-//      vec[j-1]   <--    vec[j]
-//      vec[j]     <--    vec[i]
 void _nmod_poly_mat_rotate_rows_upward(nmod_poly_mat_t mat, slong * vec, slong i, slong j)
 {
     if (i != j)
@@ -78,12 +47,86 @@ void _nmod_poly_mat_rotate_rows_upward(nmod_poly_mat_t mat, slong * vec, slong i
     }
 }
 
+/**********************************************************************
+*                    PERMUTE ROWS BY SORTING VEC                     *
+**********************************************************************/
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* SET FROM CONSTANT                                          */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
+/* type for stable sort while retaining the permutation */
+typedef struct
+{
+    slong value;
+    slong index;
+} slong_pair;
+
+/* comparator for quicksort, lexicographic (total) order to ensure stable sort */
+static inline int _slong_pair_compare(const void * a, const void * b)
+{
+    slong_pair aa = * (const slong_pair *) a;
+    slong_pair bb = * (const slong_pair *) b;
+    if (aa.value == bb.value)
+    {
+        if (aa.index < bb.index)
+            return -1;
+        else if (aa.index > bb.index)
+            return 1;
+        else // aa.index == bb.index
+            return 0;
+    }
+    else if (aa.value < bb.value)
+        return -1;
+    else // aa.value > bb.value
+        return 1;
+}
+
+/** Creates a permutation from the sorting of a list of integers
+ * After running this, perm is the unique list of integers which sorts
+ * the pairs (vec,index) increasingly, i.e.
+ * vec[perm[0]] <= vec[perm[1]] < ... < vec[perm[n-1]]
+ * All inputs must be already initialized/allocated. sorted_vec can alias vec.
+ * If sorted_vec is NULL, it is simply ignored, the permuted vec is not
+ * returned.
+ *
+ * \param perm permutation (list of integers), length n
+ * \param sorted_vec list of integer sorted nondecreasingly, length n
+ * \param vec list of integer to be sorted nondecreasingly, length n
+ * \param n length
+ * \param pair_tmp temporary storage, length n
+ *
+ */
+static inline void _vec_sort_permutation(slong * perm,
+                                         slong * sorted_vec,
+                                         const slong * vec,
+                                         slong n,
+                                         slong_pair * pair_tmp)
+{
+    for (slong i = 0; i < n; i++)
+    {
+        pair_tmp[i].value = vec[i];
+        pair_tmp[i].index = i;
+    }
+
+    qsort(pair_tmp, n, sizeof(slong_pair), _slong_pair_compare);
+
+    for (slong i = 0; i < n; i++)
+        perm[i] = pair_tmp[i].index;
+    if (sorted_vec)
+        for (slong i = 0; i < n; i++)
+            sorted_vec[i] = pair_tmp[i].value;
+}
+
+void _nmod_poly_mat_permute_rows_by_sorting_vec(nmod_poly_mat_t mat,
+                                                slong r,
+                                                slong * vec,
+                                                slong * perm)
+{
+    slong_pair * tmp = flint_malloc(r * sizeof(slong_pair));
+    _vec_sort_permutation(perm, vec, vec, r, tmp);
+    for (slong i = r; i < mat->r; i++)
+        perm[i] = i;
+    flint_free(tmp);
+    nmod_poly_mat_permute_rows(mat, perm, NULL);
+}
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
