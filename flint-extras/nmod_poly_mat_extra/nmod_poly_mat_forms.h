@@ -45,22 +45,9 @@ typedef enum
     WEAK_POPOV = 2, /**< Matrix in (shifted) weak Popov form */
     ORD_WEAK_POPOV = 3, /**< Matrix in (shifted) ordered weak Popov form */
     POPOV = 4, /**< Matrix in (shifted) Popov form */
-    LECHELON = 5, /**< Matrix in lower echelon form */
-    LHERMITE = 6, /**< Matrix in lower Hermite form */
-    UECHELON = 7, /**< Matrix in upper echelon form */
-    UHERMITE = 8, /**< Matrix in upper Hermite form */
+    ECHELON = 5, /**< Matrix in echelon form */
+    HERMITE = 6, /**< Matrix in Hermite form */
 } poly_mat_form_t;
-
-/**
- * \enum orientation_t
- * \brief Whether to focus on row space or on column space of a polynomial matrix 
- *
- */
-typedef enum
-{
-    COLUMN_WISE = 0,
-    ROW_WISE = 1
-} orientation_t;
 
 
 /*------------------------------------------------------------*/
@@ -133,20 +120,23 @@ void nmod_poly_mat_column_degree(slong *cdeg,
 /** @name (Shifted) pivot index and pivot degree
  * \anchor Pivots
  *
- * For a given shift and a given (row or column) polynomial vector, its _shifted
- * pivot index_ is the largest index corresponding to an entry which reaches the
- * shifted degree of the vector, and its _shifted pivot degree_ is the degree of
- * that entry (without adding the shift entry). By convention, both the shifted
- * pivot index and the shifted pivot degree of a zero vector are -1.
+ * Four orientations are possible and will be described in @ref orientation_t.
+ * Here we describe shifted pivot index, degree, and pivot profile assuming
+ * orientation row-wise & lower (ROW_LOWER). The translation of these
+ * definitions to the other cases is straightforward.
  *
- * Then, the row-wise shifted pivot index (resp. degree) of a polynomial matrix
+ * For a given shift and a given polynomial row vector, its _shifted pivot
+ * index_ is the largest index corresponding to an entry which reaches the
+ * shifted degree of the vector, and its _shifted pivot degree_ is the degree
+ * of that entry (without adding the shift entry). By convention, both the
+ * shifted pivot index and the shifted pivot degree of a zero vector are -1.
+ *
+ * Then, the shifted pivot index (resp. degree) of a polynomial matrix
  * is the tuple of the shifted pivot indices (resp. degrees) of the rows of
- * this matrix. Similarly, the column-wise shifted pivot index (resp. degree)
- * of a polynomial matrix is the tuple of the shifted pivot indices (resp.
- * degrees) of the columns of this matrix.
+ * this matrix.
  *
- * For a given orientation (row-wise/column-wise), the shifted pivot profile
- * consists of both the shifted pivot index and the shifted pivot degree.
+ * The shifted pivot profile consists of both the shifted pivot index and the
+ * shifted pivot degree.
  *
  * The functions below which involve a `shift` among its parameters throw
  * an error if this `shift` does not have the right length or is not `NULL`.
@@ -155,44 +145,69 @@ void nmod_poly_mat_column_degree(slong *cdeg,
  */
 //@{
 
+/**
+ * \enum orientation_t
+ * \brief Whether to focus on row space or on column space of a polynomial matrix,
+ * and whether to consider upper or lower forms.
+ *
+ * Row-wise: focus on row space, work with left unimodular transformation.
+ *
+ * Column-wise: focus on columns space, work with right unimodular
+ * transformation.
+ *
+ * ROW_LOWER and COL_UPPER are related by means of matrix transposition.
+ * ROW_LOWER and ROW_UPPER are related by means of inverting both rows
+ * and columns (i.e. pre- and post-multiplying by the antidiagonal identity
+ * matrix).
+ *
+ * Upper: shifted weak Popov form means leading matrix in upper echelon form;
+ * for row-wise this means pivot is the leftmost entry of largest shifted
+ * degree in a row (or, for Hermite form, leftmost nonzero entry), and for
+ * column-wise this means pivot is the bottommost entry of largest shifted
+ * degree in a column (or, for Hermite form, bottommost nonzero entry).
+ *
+ * Lower: shifted weak Popov form means leading matrix in lower echelon form;
+ * for row-wise this means pivot is the rightmost entry of largest shifted
+ * degree in a row (or, for Hermite form, rightmost nonzero entry) and for
+ * column-wise this means pivot is the topmost entry of largest shifted degree
+ * in a column (or, for Hermite form, topmost nonzero entry).
+ */
+typedef enum
+{
+    COL_UPPER = 0,
+    COL_LOWER = 1,
+    ROW_UPPER = 2,
+    ROW_LOWER = 3,
+} orientation_t;
+
+
 /** Computes the `shift`-pivot index (stored in integer `pivind`) and
  * `shift`-pivot degree (stored in integer `pivdeg`) of a given vector `vec`
  * (see @ref Pivots). In the unshifted case, `pivdeg` coincides with the degree
- * of this vector. */
+ * of this vector. ROW_LOWER / COLUMN_UPPER orientation. */
 void _nmod_poly_vec_pivot_profile(slong * pivind,
                                   slong * pivdeg,
-                                  const nmod_poly_struct * vec,
+                                  nmod_poly_struct * const * vec,
                                   const slong * shift,
-                                  slong len);
+                                  slong len,
+                                  orientation_t orient);
 
-/** Computes the row-wise `shift`-pivot index `pivind` of a polynomial matrix
+/** Computes the `shift`-pivot index `pivind` of a polynomial matrix
  * `mat` (see @ref Pivots). */
-void nmod_poly_mat_pivot_index_rowwise(slong *pivind,
-                                       const nmod_poly_mat_t mat,
-                                       const slong * shift);
-
-/** Computes the column-wise `shift`-pivot index `pivind` of a polynomial
- * matrix `mat` (see @ref Pivots). */
-void nmod_poly_mat_pivot_index_columnwise(slong *pivind,
-                                          const nmod_poly_mat_t mat,
-                                          const slong * shift);
+void nmod_poly_mat_pivot_index(slong *pivind,
+                               const nmod_poly_mat_t mat,
+                               const slong * shift,
+                               orientation_t orient);
 
 /** Computes the row-wise `shift`-pivot index `pivind` and `shift`-pivot degree
  * `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). In the unshifted
- * case, `pivdeg` coincides with the row degree of `mat`. */
-void nmod_poly_mat_pivot_profile_rowwise(slong * pivind,
-                                         slong * pivdeg,
-                                         const nmod_poly_mat_t mat,
-                                         const slong * shift);
-
-/** Computes the column-wise `shift`-pivot index `pivind` and `shift`-pivot
- * degree `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). In the
- * unshifted case, `pivdeg` coincides with the column degree of `mat`. */
-void nmod_poly_mat_pivot_profile_columnwise(slong * pivind,
-                                            slong * pivdeg,
-                                            const nmod_poly_mat_t mat,
-                                            const slong * shift);
-
+ * case, `pivdeg` coincides with the row or column degree of `mat` (depending
+ * on column-wise/row-wise orientation). */
+void nmod_poly_mat_pivot_profile(slong * pivind,
+                                 slong * pivdeg,
+                                 const nmod_poly_mat_t mat,
+                                 const slong * shift,
+                                 orientation_t orient);
 
 //@} // doxygen group: (Shifted) pivot index and pivot degree
 
@@ -224,55 +239,23 @@ void nmod_poly_mat_pivot_profile_columnwise(slong * pivind,
  * the rows of this matrix. The three other variants (column-wise / upper) are
  * defined similarly.
  *
- * For given orientations (row-wise/column-wise, lower/upper), the echelon
- * pivot profile consists of both the echelon pivot index and the echelon pivot
- * degree.
+ * For a given orientation, the echelon pivot profile consists of both the
+ * echelon pivot index and the echelon pivot degree.
  */
 //@{
 
-/** Computes the row-wise lower echelon pivot index `pivind` of a polynomial
- * matrix `mat` (see @ref EchelonPivots). */
+/** Computes the echelon pivot index `pivind` of a polynomial matrix `mat` (see
+ * @ref EchelonPivots). */
 void nmod_poly_mat_lechelon_pivot_index_rowwise(slong * pivind,
-                                                const nmod_poly_mat_t mat);
+                                                const nmod_poly_mat_t mat,
+                                                orientation_t orient);
 
-/** Computes the row-wise upper echelon pivot index `pivind` of a polynomial
+/** Computes the echelon pivot profile `pivind`, `pivdeg` of a polynomial
  * matrix `mat` (see @ref EchelonPivots). */
-void nmod_poly_mat_uechelon_pivot_index_rowwise(slong * pivind,
-                                                const nmod_poly_mat_t mat);
-
-/** Computes the column-wise lower echelon pivot index `pivind` of a polynomial
- * matrix `mat` (see @ref EchelonPivots). */
-void nmod_poly_mat_lechelon_pivot_index_columnwise(slong * pivind,
-                                                   const nmod_poly_mat_t mat);
-
-/** Computes the column-wise upper echelon pivot index `pivind` of a polynomial
- * matrix `mat` (see @ref EchelonPivots). */
-void nmod_poly_mat_uechelon_pivot_index_columnwise(slong * pivind,
-                                                   const nmod_poly_mat_t mat);
-
-/** Computes the row-wise lower echelon pivot index `pivind` and pivot
- * degree `pivdeg` of a polynomial matrix `mat` (see @ref EchelonPivots). */
 void nmod_poly_mat_lechelon_pivot_profile_rowwise(slong * pivind,
                                                   slong * pivdeg,
-                                                  const nmod_poly_mat_t mat);
-
-/** Computes the row-wise upper echelon pivot index `pivind` and pivot
- * degree `pivdeg` of a polynomial matrix `mat` (see @ref EchelonPivots). */
-void nmod_poly_mat_uechelon_pivot_profile_rowwise(slong * pivind,
-                                                  slong * pivdeg,
-                                                  const nmod_poly_mat_t mat);
-
-/** Computes the column-wise lower echelon pivot index `pivind` and pivot
- * degree `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). */
-void nmod_poly_mat_lechelon_pivot_profile_columnwise(slong * pivind,
-                                                     slong * pivdeg,
-                                                     const nmod_poly_mat_t mat);
-
-/** Computes the column-wise upper echelon pivot index `pivind` and pivot
- * degree `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). */
-void nmod_poly_mat_uechelon_pivot_profile_columnwise(slong * pivind,
-                                                     slong * pivdeg,
-                                                     const nmod_poly_mat_t mat);
+                                                  const nmod_poly_mat_t mat,
+                                                  orientation_t orient);
 
 //@} // doxygen group: echelon pivot index and pivot degree
 
@@ -800,9 +783,9 @@ slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat,
                                     slong * mrp);
 
 // TODO implement + doc
-slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_mat_t mat,
-                                              nmod_poly_mat_t tsf,
-                                              slong * pivind);
+slong nmod_poly_mat_hnf_ur_rowbasis_iter(nmod_poly_mat_t mat,
+                                         nmod_poly_mat_t tsf,
+                                         slong * pivind);
 
 
 // TODO mod det version (see e.g. Domich) ? quite often for nmod_poly_mat's,
@@ -898,10 +881,10 @@ slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
  **/
 NMOD_POLY_MAT_INLINE slong
 nmod_poly_mat_weak_popov_lr_iter(nmod_poly_mat_t mat,
-                                       const slong * shift,
-                                       nmod_poly_mat_t tsf,
-                                       slong * pivind,
-                                       slong * rrp)
+                                 const slong * shift,
+                                 nmod_poly_mat_t tsf,
+                                 slong * pivind,
+                                 slong * rrp)
 {
     return _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(mat, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r);
 }
@@ -912,10 +895,10 @@ nmod_poly_mat_weak_popov_lr_iter(nmod_poly_mat_t mat,
  * details.
  **/
 slong nmod_poly_mat_ordered_weak_popov_lr_iter(nmod_poly_mat_t mat,
-                                         const slong * shift,
-                                         nmod_poly_mat_t tsf,
-                                         slong * pivind,
-                                         slong * rrp);
+                                               const slong * shift,
+                                               nmod_poly_mat_t tsf,
+                                               slong * pivind,
+                                               slong * rrp);
 
 
 

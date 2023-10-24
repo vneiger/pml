@@ -7,47 +7,92 @@
 
 void _nmod_poly_vec_pivot_profile(slong * pivind,
                                   slong * pivdeg,
-                                  const nmod_poly_struct * vec,
+                                  nmod_poly_struct * const * vec,
                                   const slong * shift,
-                                  slong len)
+                                  slong len,
+                                  orientation_t orient)
 {
-    if (shift == NULL)
+    if (orient == ROW_LOWER || orient == COL_UPPER)
     {
-        slong max = -1;
-        slong piv = -1;
-        slong d;
-        for (slong j = 0; j < len; j++)
+        if (shift == NULL)
         {
-            d = nmod_poly_degree(vec+j); // TODO nmod_poly_vec_entry
-            if (0 <= d && max <= d)
+            slong max = -1;
+            slong piv = -1;
+            slong d;
+            for (slong j = 0; j < len; j++)
             {
-                max = d;
-                piv = j;
+                d = nmod_poly_degree(vec[j]);
+                if (0 <= d && max <= d)
+                {
+                    max = d;
+                    piv = j;
+                }
             }
+            *pivdeg = max;
+            *pivind = piv;
         }
-        *pivdeg = max;
-        *pivind = piv;
+        else
+        {
+            slong piv = -1; // zero vec will have this as pivind
+            slong max = 0; // the starting value for max plays no role: in the next
+                        // for loop, either piv==-1 until the end or max has
+                        // been set correctly at first nonzero entry in the vec
+            slong d;
+            for (slong j = 0; j < len; j++)
+            {
+                d = nmod_poly_degree(vec[j]);
+                // if new maximum (or equal maximum) reached at a nonzero entry, update
+                // if encountering first nonzero entry in the row, update as well
+                if (0 <= d && (piv == -1 || max <= d+shift[j]))
+                {
+                    piv = j;
+                    max = d+shift[piv];
+                }
+            }
+            *pivind = piv;
+            *pivdeg = (piv == -1) ? -1 : (max - shift[piv]);
+        }
     }
-    else
+    else // orient == COL_LOWER || orient == ROW_UPPER
     {
-        slong piv = -1; // zero rows will have this as pivind
-        slong max = 0; // the starting value for max plays no role: in the next
-                       // for loop, either piv==-1 until the end or max has
-                       // been set correctly at first nonzero entry in the row
-        slong d;
-        for (slong j = 0; j < len; j++)
+        if (shift == NULL)
         {
-            d = nmod_poly_degree(vec+j); // TODO nmod_poly_vec_entry
-            // if new maximum (or equal maximum) reached at a nonzero entry, update
-            // if encountering first nonzero entry in the row, update as well
-            if (0 <= d && (piv == -1 || max <= d+shift[j]))
+            slong max = -1;
+            slong piv = -1;
+            slong d;
+            for (slong j = 0; j < len; j++)
             {
-                piv = j;
-                max = d+shift[piv];
+                d = nmod_poly_degree(vec[j]);
+                if (0 <= d && max < d)
+                {
+                    max = d;
+                    piv = j;
+                }
             }
+            *pivdeg = max;
+            *pivind = (piv == -1) ? len : piv;
         }
-        *pivind = piv;
-        *pivdeg = (piv == -1) ? -1 : (max - shift[piv]);
+        else
+        {
+            slong piv = -1;
+            slong max = 0; // the starting value for max plays no role: in the next
+                        // for loop, either piv==-1 until the end or max has
+                        // been set correctly at first nonzero entry in vec
+            slong d;
+            for (slong j = 0; j < len; j++)
+            {
+                d = nmod_poly_degree(vec[j]);
+                // if new strict maximum reached at a nonzero entry, update
+                // if encountering first nonzero entry in vec, update as well
+                if (0 <= d && (piv == -1 || max < d+shift[j]))
+                {
+                    piv = j;
+                    max = d+shift[piv];
+                }
+            }
+            *pivind = piv;
+            *pivdeg = (piv == -1) ? len : (max - shift[piv]);
+        }
     }
 }
 
@@ -55,58 +100,29 @@ void _nmod_poly_vec_pivot_profile(slong * pivind,
 *                        shifted pivot index                         *
 **********************************************************************/
 
-void nmod_poly_mat_pivot_index_rowwise(slong *pivind, const nmod_poly_mat_t mat, const slong *shift)
+void nmod_poly_mat_pivot_index(slong *pivind,
+                               const nmod_poly_mat_t mat,
+                               const slong * shift,
+                               orientation_t orient)
 {
-    slong buf;
-    for (slong i = 0; i < mat->r; i++)
-        _nmod_poly_vec_pivot_profile(pivind+i, &buf, mat->rows[i], shift, mat->c);
-}
-
-void nmod_poly_mat_pivot_index_columnwise(slong *pivind, const nmod_poly_mat_t mat, const slong *shift)
-{
-    if (shift == NULL)
+    if (orient == ROW_LOWER || orient == ROW_UPPER)
     {
-        slong max, piv, d;
-        for (slong j = 0; j < mat->c; j++)
-        {
-            max = -1;
-            piv = -1;
-            for (slong i = 0; i < mat->r; i++)
-            {
-                d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
-                if (0 <= d && max <= d)
-                {
-                    max = d;
-                    piv = i;
-                }
-            }
-            pivind[j] = piv;
-        }
+        slong buf;
+        for (slong i = 0; i < mat->r; i++)
+            _nmod_poly_vec_pivot_profile(pivind+i, &buf, mat->rows+i, shift, mat->c, orient);
     }
     else
     {
-        slong max, piv, d;
-
+        slong buf;
+        // force access to column as a vec
+        nmod_poly_struct ** vec = flint_malloc(mat->r * sizeof(nmod_poly_struct *));
         for (slong j = 0; j < mat->c; j++)
         {
-            piv = -1;
-            // the next starting value for max plays no role: in the next for loop,
-            // either piv==-1 until the end or max has been set correctly at first
-            // nonzero entry in the column
-            max = 0;
             for (slong i = 0; i < mat->r; i++)
-            {
-                d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
-                // if new maximum (or equal maximum) reached at a nonzero entry, update
-                // if encountering first nonzero entry in the column, update as well
-                if (0 <= d && (piv == -1 || max <= d+shift[i]))
-                {
-                    max = d + shift[i];
-                    piv = i;
-                }
-            }
-            pivind[j] = piv;
+                vec[i] = mat->rows[i] + j;
+            _nmod_poly_vec_pivot_profile(pivind+j, &buf, vec, shift, mat->r, orient);
         }
+        flint_free(vec);
     }
 }
 
@@ -114,66 +130,26 @@ void nmod_poly_mat_pivot_index_columnwise(slong *pivind, const nmod_poly_mat_t m
 *                       shifted pivot profile                        *
 **********************************************************************/
 
-void nmod_poly_mat_pivot_profile_rowwise(slong * pivind,
-                                         slong * pivdeg,
-                                         const nmod_poly_mat_t mat,
-                                         const slong * shift)
+void nmod_poly_mat_pivot_profile(slong * pivind,
+                                 slong * pivdeg,
+                                 const nmod_poly_mat_t mat,
+                                 const slong * shift,
+                                 orientation_t orient)
 {
-    for (slong i = 0; i < mat->r; i++)
-        _nmod_poly_vec_pivot_profile(pivind+i, pivdeg+i, mat->rows[i], shift, mat->c);
-}
-
-
-void nmod_poly_mat_pivot_profile_columnwise(slong *pivind,
-                                            slong *pivdeg,
-                                            const nmod_poly_mat_t mat,
-                                            const slong *shift)
-{
-    if (shift == NULL)
-    {
-        slong max, piv, d;
-        for (slong j = 0; j < mat->c; j++)
-        {
-            max = -1;
-            piv = -1;
-            for (slong i = 0; i < mat->r; i++)
-            {
-                d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
-                if (0 <= d && max <= d)
-                {
-                    max = d;
-                    piv = i;
-                }
-            }
-            pivdeg[j] = max;
-            pivind[j] = piv;
-        }
-    }
+    if (orient == ROW_LOWER || orient == ROW_UPPER)
+        for (slong i = 0; i < mat->r; i++)
+            _nmod_poly_vec_pivot_profile(pivind+i, pivdeg+i, mat->rows+i, shift, mat->c, orient);
     else
     {
-        slong max, piv, d;
-
+        // force access to column as a vec
+        nmod_poly_struct ** vec = flint_malloc(mat->r * sizeof(nmod_poly_struct *));
         for (slong j = 0; j < mat->c; j++)
         {
-            piv = -1; // zero columns will have this as pivind
-            // the next starting value for max plays no role: in the next for loop,
-            // either piv==-1 until the end or max has been set correctly at first
-            // nonzero entry in the column
-            max = 0;
             for (slong i = 0; i < mat->r; i++)
-            {
-                d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
-                // if new maximum (or equal maximum) reached at a nonzero entry, update
-                // if encountering first nonzero entry in the column, update as well
-                if (0 <= d && (piv == -1 || max <= d+shift[i]))
-                {
-                    piv = i;
-                    max = d+shift[piv];
-                }
-            }
-            pivind[j] = piv;
-            pivdeg[j] = (piv == -1) ? -1 : (max - shift[piv]);
+                vec[i] = mat->rows[i] + j;
+            _nmod_poly_vec_pivot_profile(pivind+j, pivdeg+j, vec, shift, mat->r, orient);
         }
+        flint_free(vec);
     }
 }
 
@@ -182,55 +158,54 @@ void nmod_poly_mat_pivot_profile_columnwise(slong *pivind,
 *                        echelon pivot index                         *
 **********************************************************************/
 
-void nmod_poly_mat_lechelon_pivot_index_rowwise(slong * pivind, const nmod_poly_mat_t mat)
+void nmod_poly_mat_echelon_pivot_index(slong * pivind, const nmod_poly_mat_t mat, orientation_t orient)
 {
-    slong piv;
-    for (slong i = 0; i < mat->r; i++)
+    switch (orient)
     {
-        // rightmost nonzero entry in row i if nonzero, otherwise -1
-        piv = mat->c - 1;
-        while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, piv)))
-            piv--;
-        pivind[i] = piv;
-    }
-}
+        slong piv;
+        case ROW_LOWER:
+            for (slong i = 0; i < mat->r; i++)
+            {
+                // rightmost nonzero entry in row i if nonzero, otherwise -1
+                piv = mat->c - 1;
+                while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, piv)))
+                    piv--;
+                pivind[i] = piv;
+            }
+            break;
 
-void nmod_poly_mat_uechelon_pivot_index_rowwise(slong * pivind, const nmod_poly_mat_t mat)
-{
-    slong piv;
-    for (slong i = 0; i < mat->r; i++)
-    {
-        // leftmost nonzero entry in row i if nonzero, otherwise mat->c
-        piv = 0;
-        while (piv < mat->c && nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, piv)))
-            piv++;
-        pivind[i] = piv;
-    }
-}
+        case ROW_UPPER:
+            for (slong i = 0; i < mat->r; i++)
+            {
+                // leftmost nonzero entry in row i if nonzero, otherwise mat->c
+                piv = 0;
+                while (piv < mat->c && nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, piv)))
+                    piv++;
+                pivind[i] = piv;
+            }
+            break;
 
-void nmod_poly_mat_lechelon_pivot_index_columnwise(slong * pivind, const nmod_poly_mat_t mat)
-{
-    slong piv;
-    for (slong j = 0; j < mat->c; j++)
-    {
-        // topmost nonzero entry in column j if nonzero, otherwise mat->r
-        piv = 0;
-        while (piv < mat->r && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
-            piv++;
-        pivind[j] = piv;
-    }
-}
+        case COL_LOWER:
+            for (slong j = 0; j < mat->c; j++)
+            {
+                // topmost nonzero entry in column j if nonzero, otherwise mat->r
+                piv = 0;
+                while (piv < mat->r && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
+                    piv++;
+                pivind[j] = piv;
+            }
+            break;
 
-void nmod_poly_mat_uechelon_pivot_index_columnwise(slong * pivind, const nmod_poly_mat_t mat)
-{
-    slong piv;
-    for (slong j = 0; j < mat->c; j++)
-    {
-        // bottommost nonzero entry in column j if nonzero, otherwise -1
-        piv = mat->r - 1;
-        while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
-            piv--;
-        pivind[j] = piv;
+        case COL_UPPER:
+            for (slong j = 0; j < mat->c; j++)
+            {
+                // bottommost nonzero entry in column j if nonzero, otherwise -1
+                piv = mat->r - 1;
+                while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
+                    piv--;
+                pivind[j] = piv;
+            }
+            break;
     }
 }
 
@@ -238,59 +213,59 @@ void nmod_poly_mat_uechelon_pivot_index_columnwise(slong * pivind, const nmod_po
 *                       echelon pivot profile                        *
 **********************************************************************/
 
-void nmod_poly_mat_lechelon_pivot_profile_rowwise(slong * pivind, slong * pivdeg, const nmod_poly_mat_t mat)
+void nmod_poly_mat_echelon_pivot_profile(slong * pivind, slong * pivdeg, const nmod_poly_mat_t mat, orientation_t orient)
 {
-    slong piv;
-    for (slong i = 0; i < mat->r; i++)
+    switch (orient)
     {
-        // rightmost nonzero entry in row i if nonzero, otherwise -1
-        piv = mat->c - 1;
-        while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, piv)))
-            piv--;
-        pivind[i] = piv;
-        pivdeg[i] = (piv==-1) ? -1 : nmod_poly_degree(nmod_poly_mat_entry(mat, i, piv));
-    }
-}
+        slong piv;
 
-void nmod_poly_mat_uechelon_pivot_profile_rowwise(slong * pivind, slong * pivdeg, const nmod_poly_mat_t mat)
-{
-    slong piv;
-    for (slong i = 0; i < mat->r; i++)
-    {
-        // leftmost nonzero entry in row i if nonzero, otherwise mat->c
-        piv = 0;
-        while (piv < mat->c && nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, piv)))
-            piv++;
-        pivind[i] = piv;
-        pivdeg[i] = (piv==mat->c) ? -1 : nmod_poly_degree(nmod_poly_mat_entry(mat, i, piv));
-    }
-}
+    case ROW_LOWER:
+        for (slong i = 0; i < mat->r; i++)
+        {
+            // rightmost nonzero entry in row i if nonzero, otherwise -1
+            piv = mat->c - 1;
+            while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, piv)))
+                piv--;
+            pivind[i] = piv;
+            pivdeg[i] = (piv==-1) ? -1 : nmod_poly_degree(nmod_poly_mat_entry(mat, i, piv));
+        }
+        break;
 
-void nmod_poly_mat_lechelon_pivot_profile_columnwise(slong * pivind, slong * pivdeg, const nmod_poly_mat_t mat)
-{
-    slong piv;
-    for (slong j = 0; j < mat->c; j++)
-    {
-        // topmost nonzero entry in column j if nonzero, otherwise mat->r
-        piv = 0;
-        while (piv < mat->r && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
-            piv++;
-        pivind[j] = piv;
-        pivdeg[j] = (piv == mat->r) ? -1 : nmod_poly_degree(nmod_poly_mat_entry(mat, piv, j));
-    }
-}
+    case ROW_UPPER:
+        for (slong i = 0; i < mat->r; i++)
+        {
+            // leftmost nonzero entry in row i if nonzero, otherwise mat->c
+            piv = 0;
+            while (piv < mat->c && nmod_poly_is_zero(nmod_poly_mat_entry(mat, i, piv)))
+                piv++;
+            pivind[i] = piv;
+            pivdeg[i] = (piv==mat->c) ? -1 : nmod_poly_degree(nmod_poly_mat_entry(mat, i, piv));
+        }
+        break;
 
-void nmod_poly_mat_uechelon_pivot_profile_columnwise(slong * pivind, slong * pivdeg, const nmod_poly_mat_t mat)
-{
-    slong piv;
-    for (slong j = 0; j < mat->c; j++)
-    {
-        // bottommost nonzero entry in column j if nonzero, otherwise -1
-        piv = mat->r - 1;
-        while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
-            piv--;
-        pivind[j] = piv;
-        pivdeg[j] = (piv==-1) ? -1 : nmod_poly_degree(nmod_poly_mat_entry(mat, piv, j));
+    case COL_LOWER:
+        for (slong j = 0; j < mat->c; j++)
+        {
+            // topmost nonzero entry in column j if nonzero, otherwise mat->r
+            piv = 0;
+            while (piv < mat->r && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
+                piv++;
+            pivind[j] = piv;
+            pivdeg[j] = (piv == mat->r) ? -1 : nmod_poly_degree(nmod_poly_mat_entry(mat, piv, j));
+        }
+        break;
+
+    case COL_UPPER:
+        for (slong j = 0; j < mat->c; j++)
+        {
+            // bottommost nonzero entry in column j if nonzero, otherwise -1
+            piv = mat->r - 1;
+            while (piv >= 0 && nmod_poly_is_zero(nmod_poly_mat_entry(mat, piv, j)))
+                piv--;
+            pivind[j] = piv;
+            pivdeg[j] = (piv==-1) ? -1 : nmod_poly_degree(nmod_poly_mat_entry(mat, piv, j));
+        }
+        break;
     }
 }
 

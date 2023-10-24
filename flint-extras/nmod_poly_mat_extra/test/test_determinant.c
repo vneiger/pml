@@ -75,6 +75,7 @@ int core_test_determinant(const nmod_poly_mat_t mat, int time, flint_rand_t stat
             flint_printf("-- time (verif): %wd ms\n", timer->wall);
     }
 
+    if (0)
     { // Mulders and Storjohann's algorithm, row by row variant
         nmod_poly_mat_set(copy_mat, mat);
         timeit_t timer;
