@@ -154,7 +154,7 @@ void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
     if (orient == ROW_LOWER)
         _nmod_poly_mat_rand_popov_row_lower(mat, state, ppivind, pivdeg, sshift);
     else if (orient == COL_UPPER)
-        nmod_poly_mat_rand_popov_columnwise(mat, state, ppivind, pivdeg, sshift);
+        _nmod_poly_mat_rand_popov_col_upper(mat, state, ppivind, pivdeg, sshift);
     else
         flint_throw(FLINT_ERROR, "not implemented yet\n");
 

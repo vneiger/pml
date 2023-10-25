@@ -147,6 +147,7 @@ void nmod_poly_mat_column_degree(slong *cdeg,
 
 /**
  * \enum orientation_t
+ * \anchor orientation
  * \brief Whether to focus on row space or on column space of a polynomial matrix,
  * and whether to consider upper or lower forms.
  *
@@ -577,7 +578,10 @@ slong nmod_poly_mat_hnf_ur_rowbasis_iter(nmod_poly_mat_t mat,
 // in early exit, put mat->r (or more). If the output is < 0, the output
 // guarantees are the same but only for the first |rk| + max_zr rows of mat
 // (TODO be more precise; zero rows have been put at bottom, etc)
-slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
+//
+// orient: orientation, must be among ROW_UPPER and ROW_LOWER (not checked if
+// valid)
+slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
                                                         const slong * shift,
                                                         nmod_poly_mat_t tsf,
                                                         int * det,
@@ -587,9 +591,10 @@ slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
                                                         slong cstart,
                                                         slong rdim,
                                                         slong cdim,
-                                                        slong early_exit_zr);
+                                                        slong early_exit_zr,
+                                                        orientation_t orient);
 // TODO other strategies should be tested;
-// nmod_poly_mat_weak_popov_lr_iter should pick the best depending on params
+// nmod_poly_mat_weak_popov_iter should pick the best depending on params
 
 
 /** Transforms ``mat`` in place to a row-wise, lower ``shift``-weak Popov form
@@ -617,27 +622,34 @@ slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
  *    ``rrp`` will eventually contain the row rank profile of the input ``mat``
  *    as its first ``rank(mat)`` entries. Its allocated space is left
  *    unchanged, and so are its entries beyond the rank(mat)-th one.
+ *
+ *    .. ``orient``. The orientation, among ROW_LOWER, ROW_UPPER,
+ *    COL_LOWER, COL_UPPER. See @ref orientation.
+ *
+ *    \todo only ROW_* supported at the moment
  **/
 NMOD_POLY_MAT_INLINE slong
-nmod_poly_mat_weak_popov_lr_iter(nmod_poly_mat_t mat,
-                                 const slong * shift,
-                                 nmod_poly_mat_t tsf,
-                                 slong * pivind,
-                                 slong * rrp)
+nmod_poly_mat_weak_popov_iter(nmod_poly_mat_t mat,
+                              const slong * shift,
+                              nmod_poly_mat_t tsf,
+                              slong * pivind,
+                              slong * rrp,
+                              orientation_t orient)
 {
-    return _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(mat, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r);
+    return _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(mat, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r, orient);
 }
 
 /** Transforms ``mat`` in place to a row-wise, lower, ordered ``shift``-weak
  * Popov form (zero rows at the bottom), and returns the rank of ``mat``.
- * See the documentation of @ref nmod_poly_mat_weak_popov_lr_iter for more
+ * See the documentation of @ref nmod_poly_mat_weak_popov_iter for more
  * details.
  **/
-slong nmod_poly_mat_ordered_weak_popov_lr_iter(nmod_poly_mat_t mat,
-                                               const slong * shift,
-                                               nmod_poly_mat_t tsf,
-                                               slong * pivind,
-                                               slong * rrp);
+slong nmod_poly_mat_ordered_weak_popov_iter(nmod_poly_mat_t mat,
+                                            const slong * shift,
+                                            nmod_poly_mat_t tsf,
+                                            slong * pivind,
+                                            slong * rrp,
+                                            orientation_t orient);
 
 
 

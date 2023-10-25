@@ -491,11 +491,11 @@ void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
  * `pivind` and `pivdeg` must be `m`, `pivind` must consist of increasing
  * integers between `0` and `n-1`, `pivdeg` must be nonnegative, `shift` must
  * have length `n`. */
-void nmod_poly_mat_rand_popov_rowwise(nmod_poly_mat_t mat,
-                                      flint_rand_t state,
-                                      const slong * pivind,
-                                      const slong * pivdeg,
-                                      const slong * shift);
+void _nmod_poly_mat_rand_popov_row_lower(nmod_poly_mat_t mat,
+                                         flint_rand_t state,
+                                         const slong * pivind,
+                                         const slong * pivdeg,
+                                         const slong * shift);
 
 /** Fills polynomial matrix `mat` with random dense polynomial entries such
  * that `mat` is in `shift`-Popov form column-wise, with `shift`-pivot profile
@@ -504,7 +504,7 @@ void nmod_poly_mat_rand_popov_rowwise(nmod_poly_mat_t mat,
  * `pivind` and `pivdeg` must be `n`, `pivind` must consist of increasing
  * integers between `0` and `m-1`, `pivdeg` must be nonnegative, `shift` must
  * have length `m`.  */
-void nmod_poly_mat_rand_popov_columnwise(nmod_poly_mat_t mat,
+void _nmod_poly_mat_rand_popov_col_upper(nmod_poly_mat_t mat,
                                          flint_rand_t state,
                                          const slong * pivind,
                                          const slong * pivdeg,
@@ -512,13 +512,15 @@ void nmod_poly_mat_rand_popov_columnwise(nmod_poly_mat_t mat,
 
 /** Fills polynomial matrix `mat` with random dense polynomial entries such
  * that `mat` is in `shift`-Popov form, with `shift`-pivot profile specified by
- * `pivind` and `pivdeg`; the orientation row-wise or column-wise is specified
- * by the input `row_wise`. The input requirements depend on the orientation,
- * see the documentation of ::nmod_poly_mat_rand_popov_rowwise or
- * ::nmod_poly_mat_rand_popov_columnwise . Here `shift` can be `NULL`
- * (equivalent to `[0,...,0]`), and if `mat` is square, `pivind` can be `NULL`
- * (note that if it is not, the input requirement means that it has to be the
- * list of successive integers [0,1,2,..], of the right length). */
+ * `pivind` and `pivdeg`; the orientation is specified by the input `orient`.
+ * The input requirements depend on the orientation, see the documentation of
+ * ::nmod_poly_mat_rand_popov_row_lower or ::nmod_poly_mat_rand_popov_col_upper
+ * . Here `shift` can be `NULL` (equivalent to `[0,...,0]`), and if `mat` is
+ * square, `pivind` can be `NULL` (note that if it is not, the input
+ * requirement means that it has to be the list of successive integers
+ * [0,1,2,..], of the right length).
+ * \todo ROW_UPPER / COL_LOWER not implemented
+ **/
 void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
                               flint_rand_t state,
                               const slong * pivind,

@@ -144,7 +144,7 @@ mp_limb_t _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 *                     weak Popov form algorithms                     *
 **********************************************************************/
 
-// Orientation: lower, row-wise
+// Orientation: row-wise, upper or lower
 // iterative weak Popov form algorithm by Mulders and Storjohann, 2003 (as in
 // Figure 3, algo "RankProfile"). There presented for the uniform shift, here
 // straightforwardly adapted to the shifted case.
@@ -191,20 +191,26 @@ mp_limb_t _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 // -> det is required to be +1 or -1 and will be multiplied with the
 // determinant of the unimodular transformation used during this call (which is
 // itself +1 or -1)
-slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
-                                                        const slong * shift,
-                                                        nmod_poly_mat_t tsf,
-                                                        int * det,
-                                                        slong * pivind,
-                                                        slong * rrp,
-                                                        slong rstart,
-                                                        slong cstart,
-                                                        slong rdim,
-                                                        slong cdim,
-                                                        slong early_exit_zr)
+// allowed orientation: ROW_LOWER | ROW_UPPER, no check that it is not sth else
+// Note: for ROW_LOWER, zero rows are put at the bottom even though they have
+// the smallest possible pivot index
+slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
+                                                     const slong * shift,
+                                                     nmod_poly_mat_t tsf,
+                                                     int * det,
+                                                     slong * pivind,
+                                                     slong * rrp,
+                                                     slong rstart,
+                                                     slong cstart,
+                                                     slong rdim,
+                                                     slong cdim,
+                                                     slong early_exit_zr,
+                                                     orientation_t orient)
 {
     if (rdim == 0 || cdim == 0)
         return 0;
+
+    const slong zpiv = (orient == ROW_LOWER) ? -1 : mat->c;
 
     // number of found pivots (i.e., rank), and number of found zero rows
     slong rk = 0;
@@ -225,8 +231,8 @@ slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
     {
         // consider row rk of current matrix (corresponds to row rk+zr of initial matrix)
         // compute its pivot index
-        _nmod_poly_vec_pivot_profile(pivind+rk, &pivdeg, mat->rows[rstart+rk]+cstart, shift, cdim, ROW_LOWER);
-        if (pivind[rk] == -1)
+        _nmod_poly_vec_pivot_profile(pivind+rk, &pivdeg, mat->rows[rstart+rk]+cstart, shift, cdim, orient);
+        if (pivind[rk] == zpiv)
         {
             // row is zero: rotate to put it last, increment zr and go to next row
             _nmod_poly_mat_rotate_rows_upward(mat, NULL, rstart+rk, rstart+rdim-1);
@@ -266,13 +272,14 @@ slong _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(nmod_poly_mat_t mat,
         return rk;
 }
 
-slong nmod_poly_mat_ordered_weak_popov_lr_iter(nmod_poly_mat_t mat,
-                                         const slong * shift,
-                                         nmod_poly_mat_t tsf,
-                                         slong * pivind,
-                                         slong * rrp)
+slong nmod_poly_mat_ordered_weak_popov_iter(nmod_poly_mat_t mat,
+                                            const slong * shift,
+                                            nmod_poly_mat_t tsf,
+                                            slong * pivind,
+                                            slong * rrp,
+                                            orientation_t orient)
 {
-    slong rk = _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(mat, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r);
+    slong rk = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(mat, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r, orient);
 
     slong * perm = flint_malloc(mat->r * sizeof(slong));
     _nmod_poly_mat_permute_rows_by_sorting_vec(mat, rk, pivind, perm);
