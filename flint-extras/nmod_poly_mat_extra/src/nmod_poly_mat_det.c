@@ -37,7 +37,7 @@ void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat)
         // with transformations applied to the whole rows view[:i+1,:] = V
         // with early exit if detecting rank < i (in which case rk < 0)
         // with update of the determinant of unimodular transformation (+1 or -1)
-        rk = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(view, NULL, NULL, &udet, pivind, NULL, 0, 0, i+1, i, 2, ROW_LOWER);
+        rk = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(view, NULL, NULL, &udet, pivind, NULL, 0, 0, i+1, i, 2, ROW_UPPER);
 
         // early exit if rank-deficient
         if (rk < i || nmod_poly_is_zero(nmod_poly_mat_entry(view, i, i)))

@@ -210,7 +210,7 @@ slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
     if (rdim == 0 || cdim == 0)
         return 0;
 
-    const slong zpiv = (orient == ROW_LOWER) ? -1 : mat->c;
+    const slong zpiv = (orient == ROW_LOWER) ? -1 : cdim;
 
     // number of found pivots (i.e., rank), and number of found zero rows
     slong rk = 0;
