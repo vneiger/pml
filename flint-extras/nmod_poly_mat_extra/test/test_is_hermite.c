@@ -40,19 +40,19 @@ int main()
 
     // M.is_hermite()
     // True
-    ish = nmod_poly_mat_is_uhermite_rowwise(mat); // sage's default is upper
+    ish = nmod_poly_mat_is_hermite(mat, ROW_UPPER); // sage's default is upper
     printf("Checking is upper Hermite row-wise: %d --> %s\n",
            ish, (ish==1) ? "ok" : "not ok");
 
     // M.is_hermite(row_wise=False)
     // True
-    ish = nmod_poly_mat_is_uhermite_columnwise(mat); // sage's default is upper
+    ish = nmod_poly_mat_is_hermite(mat, COL_UPPER); // sage's default is upper
     printf("Checking is upper Hermite column-wise: %d --> %s\n",
            ish, (ish==1) ? "ok" : "not ok");
 
     // M.is_hermite(row_wise=False, lower_echelon=True)
     // False
-    ish = nmod_poly_mat_is_lhermite_rowwise(mat);
+    ish = nmod_poly_mat_is_hermite(mat, ROW_LOWER);
     printf("Checking is lower Hermite row-wise: %d --> %s\n",
            ish, (ish==0) ? "ok" : "not ok");
 
@@ -87,25 +87,25 @@ int main()
 
     // N.is_hermite()
     // False
-    ish = nmod_poly_mat_is_uhermite_rowwise(mat2);
+    ish = nmod_poly_mat_is_hermite(mat2, ROW_UPPER);
     printf("Checking is upper Hermite row-wise: %d --> %s\n",
            ish, (ish==0) ? "ok" : "not ok");
 
     // N.is_hermite(lower_echelon=True)
     // True
-    ish = nmod_poly_mat_is_lhermite_rowwise(mat2);
+    ish = nmod_poly_mat_is_hermite(mat2, ROW_LOWER);
     printf("Checking is lower Hermite row-wise: %d --> %s\n",
            ish, (ish==1) ? "ok" : "not ok");
 
     // N.is_hermite(row_wise=False)
     // False
-    ish = nmod_poly_mat_is_uhermite_columnwise(mat2);
+    ish = nmod_poly_mat_is_hermite(mat2, COL_UPPER);
     printf("Checking is upper Hermite column-wise: %d --> %s\n",
            ish, (ish==0) ? "ok" : "not ok");
 
     // N.is_hermite(row_wise=False, lower_echelon=True)
     // False 
-    ish = nmod_poly_mat_is_lhermite_columnwise(mat2);
+    ish = nmod_poly_mat_is_hermite(mat2, COL_LOWER);
     printf("Checking is lower Hermite row-wise: %d --> %s\n",
            ish, (ish==0) ? "ok" : "not ok");
 
@@ -127,15 +127,15 @@ int main()
     nmod_poly_mat_print_pretty(mat3, "x");
     printf("\n");
 
-    ish = nmod_poly_mat_is_lhermite_rowwise(mat3);
+    ish = nmod_poly_mat_is_hermite(mat3, ROW_LOWER);
     printf("Checking is lower Hermite row-wise: %d --> %s\n",
            ish, (ish==0) ? "ok" : "not ok");
 
-    ish = nmod_poly_mat_is_lechelon_columnwise(mat3);
+    ish = nmod_poly_mat_is_echelon(mat3, COL_LOWER);
     printf("Checking is lower echelon column-wise: %d --> %s\n",
            ish, (ish==1) ? "ok" : "not ok");
 
-    ish = nmod_poly_mat_is_lhermite_columnwise(mat3);
+    ish = nmod_poly_mat_is_hermite(mat3, COL_LOWER);
     printf("Checking is lower Hermite column-wise: %d --> %s\n",
            ish, (ish==0) ? "ok" : "not ok");
 
@@ -158,15 +158,15 @@ int main()
     nmod_poly_mat_print_pretty(mat3, "x");
     printf("\n");
 
-    ish = nmod_poly_mat_is_lhermite_rowwise(mat3);
+    ish = nmod_poly_mat_is_hermite(mat3, ROW_LOWER);
     printf("Checking is lower Hermite row-wise: %d --> %s\n",
            ish, (ish==1) ? "ok" : "not ok");
 
-    ish = nmod_poly_mat_is_lechelon_columnwise(mat3);
+    ish = nmod_poly_mat_is_echelon(mat3, COL_LOWER);
     printf("Checking is lower echelon column-wise: %d --> %s\n",
            ish, (ish==1) ? "ok" : "not ok");
 
-    ish = nmod_poly_mat_is_lhermite_columnwise(mat3);
+    ish = nmod_poly_mat_is_hermite(mat3, COL_LOWER);
     printf("Checking is lower Hermite column-wise: %d --> %s\n",
            ish, (ish==0) ? "ok" : "not ok");
 

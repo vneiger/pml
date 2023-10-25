@@ -37,13 +37,23 @@ void nmod_poly_mat_print_pretty(const nmod_poly_mat_t mat, const char * var)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-void nmod_poly_mat_degree_matrix_print_pretty(const nmod_poly_mat_t mat,
-                                              const slong *shift,
-                                              orientation_t orient)
+void nmod_poly_mat_degree_matrix_print_pretty(const nmod_poly_mat_t mat)
 {
     fmpz_mat_t dmat;
     fmpz_mat_init(dmat, mat->r, mat->c);
-    nmod_poly_mat_degree_matrix(dmat, mat, shift, orient); 
+    nmod_poly_mat_degree_matrix(dmat, mat); 
+    fmpz_mat_print_pretty(dmat);
+    printf("\n");
+    fmpz_mat_clear(dmat);
+}
+
+void nmod_poly_mat_degree_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
+                                                      const slong *shift,
+                                                      orientation_t orient)
+{
+    fmpz_mat_t dmat;
+    fmpz_mat_init(dmat, mat->r, mat->c);
+    nmod_poly_mat_degree_matrix_shifted(dmat, mat, shift, orient); 
     fmpz_mat_print_pretty(dmat);
     printf("\n");
     fmpz_mat_clear(dmat);

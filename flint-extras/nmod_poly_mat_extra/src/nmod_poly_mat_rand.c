@@ -54,11 +54,11 @@ void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-void nmod_poly_mat_rand_popov_rowwise(nmod_poly_mat_t mat,
-                                      flint_rand_t state,
-                                      const slong * pivind,
-                                      const slong * pivdeg,
-                                      const slong * shift)
+void _nmod_poly_mat_rand_popov_row_lower(nmod_poly_mat_t mat,
+                                         flint_rand_t state,
+                                         const slong * pivind,
+                                         const slong * pivdeg,
+                                         const slong * shift)
 {
     // will store, for each row, the corresponding degree constraints
     slong * dvec = (slong *) flint_malloc(mat->c * sizeof(slong));
@@ -88,7 +88,7 @@ void nmod_poly_mat_rand_popov_rowwise(nmod_poly_mat_t mat,
     free(dvec);
 }
 
-void nmod_poly_mat_rand_popov_columnwise(nmod_poly_mat_t mat,
+void _nmod_poly_mat_rand_popov_col_upper(nmod_poly_mat_t mat,
                                          flint_rand_t state,
                                          const slong * pivind,
                                          const slong * pivdeg,
@@ -123,31 +123,40 @@ void nmod_poly_mat_rand_popov_columnwise(nmod_poly_mat_t mat,
 }
 
 void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
-                         flint_rand_t state,
-                         const slong * pivind,
-                         const slong * pivdeg,
-                         const slong * shift,
-                         orientation_t row_wise)
+                              flint_rand_t state,
+                              const slong * pivind,
+                              const slong * pivdeg,
+                              const slong * shift,
+                              orientation_t orient)
 {
+    slong dim, sdim;
+    if (orient == ROW_LOWER || orient == ROW_UPPER)
+        { dim = mat->r; sdim = mat->c; }
+    else // orient == COL_*
+        { dim = mat->c; sdim = mat->r; }
+
     slong * uniform_shift = NULL;
     if (shift == NULL)
-        uniform_shift = flint_calloc(row_wise ? mat->c : mat->r, sizeof(slong));
+        uniform_shift = flint_calloc(sdim, sizeof(slong));
     const slong * sshift = (shift) ? shift : uniform_shift;
 
     // Note: if pivind == NULL, `mat` must be square, this is not checked
+    // TODO why this? could take "generic" pivot indices?
     slong * iota = NULL;
     if (pivind == NULL)
     {
-        iota = flint_malloc((row_wise ? mat->r : mat->c) * sizeof(slong));
-        for (slong i = 0; i < (row_wise ? mat->r : mat->c); i++)
+        iota = flint_malloc(dim * sizeof(slong));
+        for (slong i = 0; i < dim; i++)
             iota[i] = i;
     }
     const slong * ppivind = (pivind) ? pivind : iota;
 
-    if (row_wise)
-        nmod_poly_mat_rand_popov_rowwise(mat, state, ppivind, pivdeg, sshift);
-    else
+    if (orient == ROW_LOWER)
+        _nmod_poly_mat_rand_popov_row_lower(mat, state, ppivind, pivdeg, sshift);
+    else if (orient == COL_UPPER)
         nmod_poly_mat_rand_popov_columnwise(mat, state, ppivind, pivdeg, sshift);
+    else
+        flint_throw(FLINT_ERROR, "not implemented yet\n");
 
     flint_free(uniform_shift);
     flint_free(iota);

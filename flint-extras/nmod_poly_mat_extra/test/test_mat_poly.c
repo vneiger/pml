@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_io.h"
@@ -141,20 +142,19 @@ int test_matpol(void)
     printf("\nA's degree: %ld\n", deg_A);
 
 
-    orientation_t row_wise = 0;
     fmpz_mat_t mat_deg;
     fmpz_mat_init(mat_deg, rdim, cdim);
 
-    nmod_poly_mat_degree_matrix_shifted(mat_deg, A, shifts, row_wise);
+    nmod_poly_mat_degree_matrix(mat_deg, A, shifts, ROW_LOWER);
     printf("\n");
     fmpz_mat_print_pretty(mat_deg);
 
     slong lead_pos[cdim];
-    nmod_poly_mat_pivot_index_columnwise(lead_pos, A, shifts);
+    nmod_poly_mat_pivot_index(lead_pos, A, shifts, COL_UPPER);
     printf("leading position: ");
     slongvec_print_sagemath(lead_pos, cdim);
 
-    nmod_poly_mat_leading_matrix(B, A, shifts, row_wise);
+    nmod_poly_mat_leading_matrix(B, A, shifts, ROW_LOWER);
     printf("leading matrix for shift shifts of A\n");
     nmod_mat_print_sagemath(B);
 

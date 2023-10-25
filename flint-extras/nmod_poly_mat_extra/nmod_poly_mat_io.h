@@ -27,9 +27,10 @@ void nmod_poly_mat_print_pretty(const nmod_poly_mat_t mat, const char * var);
 
 
 /** Print the degree matrix, see @ref DegreeMatrix */
-void nmod_poly_mat_degree_matrix_print_pretty(const nmod_poly_mat_t mat,
-                                              const slong *shift,
-                                              orientation_t orient);
+void nmod_poly_mat_degree_matrix_print_pretty(const nmod_poly_mat_t mat);
+void nmod_poly_mat_degree_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
+                                                      const slong *shift,
+                                                      orientation_t orient);
 
 /** Print the leading matrix, see @ref LeadingMatrix . For uniform shift, one
  * can input `shift = NULL`. */

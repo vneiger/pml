@@ -260,13 +260,13 @@ int nmod_poly_mat_is_hermite(const nmod_poly_mat_t mat, orientation_t orient)
             if (orient == ROW_LOWER) // entries below pivot entry must have lower degree
             {
                 for (slong ii = i+1; ii < dim; ii++)
-                    if (nmod_poly_mat_entry(mat, ii, pivind[i])->length >= pivdeg[i])
+                    if (nmod_poly_mat_entry(mat, ii, pivind[i])->length > pivdeg[i])
                         return 0;
             }
             else // ROW_UPPER, entries above pivot entry must have lower degree
             {
                 for (slong ii = 0; ii < i; ii++)
-                    if (nmod_poly_mat_entry(mat, ii, pivind[i])->length >= pivdeg[i])
+                    if (nmod_poly_mat_entry(mat, ii, pivind[i])->length > pivdeg[i])
                         return 0;
             }
         }
@@ -282,13 +282,13 @@ int nmod_poly_mat_is_hermite(const nmod_poly_mat_t mat, orientation_t orient)
             if (orient == COL_LOWER) // entries to the left of pivot must have lower degree
             {
                 for (slong jj = 0; jj < j; jj++)
-                    if (nmod_poly_mat_entry(mat, pivind[j], jj)->length >= pivdeg[j])
+                    if (nmod_poly_mat_entry(mat, pivind[j], jj)->length > pivdeg[j])
                         return 0;
             }
             else // COL_UPPER, entries to the right of pivot entry must have lower degree
             {
                 for (slong jj = j+1; jj < dim; jj++)
-                    if (nmod_poly_mat_entry(mat, pivind[j], jj)->length >= pivdeg[j])
+                    if (nmod_poly_mat_entry(mat, pivind[j], jj)->length > pivdeg[j])
                         return 0;
             }
         }

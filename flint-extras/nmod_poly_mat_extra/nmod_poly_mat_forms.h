@@ -82,8 +82,8 @@ typedef enum
  * shifted degree of a vector and of shifted row/column degree of a matrix
  * coincide with the usual non-shifted notions defined above.
  *
- * The functions below which involve a `shift` among its parameters throw an
- * error if this `shift` does not have the right length or is not `NULL`.  If
+ * The functions below which involve a `shift` among its parameters do not
+ * check whether `shift` has the right length. Most functions accept that
  * `NULL` is provided as input for the shift, this is understood as the uniform
  * shift `[0,...,0]` of the right length.
  *  
@@ -138,10 +138,10 @@ void nmod_poly_mat_column_degree(slong *cdeg,
  * The shifted pivot profile consists of both the shifted pivot index and the
  * shifted pivot degree.
  *
- * The functions below which involve a `shift` among its parameters throw
- * an error if this `shift` does not have the right length or is not `NULL`.
- * If `NULL` is provided as input for the shift, this is understood as the
- * uniform shift `[0,...,0]` of the right length.
+ * The functions below which involve a `shift` among its parameters do not
+ * check whether `shift` has the right length. Most functions accept that
+ * `NULL` is provided as input for the shift, this is understood as the uniform
+ * shift `[0,...,0]` of the right length.
  */
 //@{
 
@@ -283,13 +283,19 @@ void nmod_poly_mat_echelon_pivot_profile(slong * pivind,
  */
 //@{
 
-/** Computes the `shift`-degree matrix `degmat` of a polynomial matrix `pmat`
+/** Computes the degree matrix `degmat` of a polynomial matrix `pmat`
  * (see @ref DegreeMatrix).
  */
 void nmod_poly_mat_degree_matrix(fmpz_mat_t dmat,
-                                 const nmod_poly_mat_t mat,
-                                 const slong * shift,
-                                 orientation_t orient);
+                                 const nmod_poly_mat_t mat);
+
+/** Computes the `shift`-degree matrix `degmat` of a polynomial matrix `pmat`
+ * (see @ref DegreeMatrix).
+ */
+void nmod_poly_mat_degree_matrix_shifted(fmpz_mat_t dmat,
+                                         const nmod_poly_mat_t mat,
+                                         const slong * shift,
+                                         orientation_t orient);
 
 //@} // doxygen group: (Shifted) degree matrix
 
@@ -322,10 +328,10 @@ void nmod_poly_mat_degree_matrix(fmpz_mat_t dmat,
  * coefficient of degree `cdeg[j]-shift[i]` of the entry `pmat[i][j]`, where
  * `cdeg` is now the `shift`-column degree of `pmat`.
  *
- * The functions below which involve a `shift` among its parameters throw
- * an error if this `shift` does not have the right length or is not `NULL`.
- * If `NULL` is provided as input for the shift, this is understood as the
- * uniform shift `[0,...,0]` of the right length.
+ * The functions below which involve a `shift` among its parameters do not
+ * check whether `shift` has the right length. Most functions accept that
+ * `NULL` is provided as input for the shift, this is understood as the uniform
+ * shift `[0,...,0]` of the right length.
  *
  * \todo enhancement: offer row-wise (resp column-wise) leading matrix
  * when the row degree (resp column degree) is already known
@@ -377,10 +383,10 @@ void nmod_poly_mat_leading_matrix(nmod_mat_t lmat,
  *   degree less than this pivot entry
  * In particular, such a matrix cannot have a zero column.
  *
- * The functions below which involve a `shift` among its parameters throw
- * an error if this `shift` does not have the right length or is not `NULL`.
- * If `NULL` is provided as input for the shift, this is understood as the
- * uniform shift `[0,...,0]` of the right length.
+ * The functions below which involve a `shift` among its parameters do not
+ * check whether `shift` has the right length. Most functions accept that
+ * `NULL` is provided as input for the shift, this is understood as the uniform
+ * shift `[0,...,0]` of the right length.
  *  
  * \todo doc: define lower/upper row-wise/column-wise echelon/Hermite forms
  */

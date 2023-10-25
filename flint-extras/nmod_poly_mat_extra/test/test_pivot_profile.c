@@ -27,7 +27,7 @@ int main()
 
     // sage: M.leading_positions()
     // [0, 0]
-    nmod_poly_mat_pivot_profile_rowwise(rpivind, rpivdeg, mat, NULL);
+    nmod_poly_mat_pivot_profile(rpivind, rpivdeg, mat, NULL, ROW_LOWER);
     printf("Checking row-wise pivot profile [%ld, %ld], [%ld, %ld] --> %s\n",
            rpivind[0], rpivind[1],
            rpivdeg[0], rpivdeg[1],
@@ -36,7 +36,7 @@ int main()
 
     // sage: M.leading_positions(shifts=[0,5,2], return_degree=True)
     // ([2, 0], [0, 3])
-    nmod_poly_mat_pivot_profile_rowwise(rpivind, rpivdeg, mat, rshift);
+    nmod_poly_mat_pivot_profile(rpivind, rpivdeg, mat, rshift, ROW_LOWER);
     printf("Checking (0,5,2)-shifted row-wise pivot profile [%ld, %ld], [%ld, %ld] --> %s\n",
            rpivind[0], rpivind[1],
            rpivdeg[0], rpivdeg[1],
@@ -45,7 +45,7 @@ int main()
 
     // sage: M.leading_positions(row_wise=False, return_degree=True)
     // ([1, -1, 0], [3, -1, 0])
-    nmod_poly_mat_pivot_profile_columnwise(cpivind, cpivdeg, mat, NULL);
+    nmod_poly_mat_pivot_profile(cpivind, cpivdeg, mat, NULL, COL_UPPER);
     printf("Checking column-wise pivot profile [%ld, %ld, %ld], [%ld, %ld, %ld] --> %s\n",
            cpivind[0], cpivind[1], cpivind[2],
            cpivdeg[0], cpivdeg[1], cpivdeg[2],
@@ -55,7 +55,7 @@ int main()
     // sage: M.leading_positions(shifts=[1,2], row_wise=False,
     //                           ....:   return_degree=True)
     // ([1, -1, 0], [3, -1, 0])
-    nmod_poly_mat_pivot_profile_columnwise(cpivind, cpivdeg, mat, cshift);
+    nmod_poly_mat_pivot_profile(cpivind, cpivdeg, mat, cshift, COL_UPPER);
     printf("Checking (1,2)-shifted column-wise pivot profile [%ld, %ld, %ld], [%ld, %ld, %ld] --> %s\n",
            cpivind[0], cpivind[1], cpivind[2],
            cpivdeg[0], cpivdeg[1], cpivdeg[2],
@@ -69,7 +69,7 @@ int main()
     // sage: M.leading_positions(shifts=[0,5,1],return_degree=True)
     // ([2, 0], [0, 3])
     rshift[2] = 1;
-    nmod_poly_mat_pivot_profile_rowwise(rpivind, rpivdeg, mat, rshift);
+    nmod_poly_mat_pivot_profile(rpivind, rpivdeg, mat, rshift, ROW_LOWER);
     printf("Checking (0,5,1)-shifted row-wise pivot profile [%ld, %ld], [%ld, %ld] --> %s\n",
            rpivind[0], rpivind[1],
            rpivdeg[0], rpivdeg[1],
@@ -79,7 +79,7 @@ int main()
     // sage: M.leading_positions(shifts=[2,0], row_wise=False,return_degree=True)
     // ([1, -1, 0], [3, -1, 0])
     cshift[0]=2; cshift[1]=0;
-    nmod_poly_mat_pivot_profile_columnwise(cpivind, cpivdeg, mat, cshift);
+    nmod_poly_mat_pivot_profile(cpivind, cpivdeg, mat, cshift, COL_UPPER);
     printf("Checking (2,0)-shifted column-wise pivot profile [%ld, %ld, %ld], [%ld, %ld, %ld] --> %s\n",
            cpivind[0], cpivind[1], cpivind[2],
            cpivdeg[0], cpivdeg[1], cpivdeg[2],

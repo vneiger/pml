@@ -86,7 +86,7 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const n
     for (slong i = 0; i < rk; i++)
         for (slong j = 0; j < hnf->c; j++)
             nmod_poly_set(nmod_poly_mat_entry(tmp, i, j), nmod_poly_mat_entry(hnf, i, j));
-    if (! nmod_poly_mat_is_uhermite_rowwise(tmp))
+    if (! nmod_poly_mat_is_hermite(tmp, ROW_UPPER))
     {
         printf("~~~ upper, rowwise ~~~ INCORRECT: hnf not in Hermite form\n");
         nmod_poly_mat_clear(tmp);
@@ -95,7 +95,7 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const n
 
     // 4. check pivind
     slong * check_pivind = flint_malloc(rk * sizeof(slong));
-    nmod_poly_mat_uechelon_pivot_index_rowwise(check_pivind, tmp);
+    nmod_poly_mat_echelon_pivot_index(check_pivind, tmp, ROW_UPPER);
     for (slong i = 0; i < rk; i++)
     {
         if (pivind[i] != check_pivind[i])
@@ -312,47 +312,6 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", timer->wall);
-    }
-
-    if (0)
-    { // Mulder-Storjohann's algorithm (generic case only for now TODO )
-        nmod_poly_mat_t tmp;
-        nmod_poly_mat_init(tmp, mat->r, mat->c, mat->modulus);
-        nmod_poly_mat_set(tmp, hnf);
-        nmod_poly_mat_set(hnf, mat);
-        nmod_poly_mat_one(tsf);
-        timeit_t t0,t1;
-        timeit_start(t0);
-#ifdef NOTRANS
-        slong rk = nmod_poly_mat_hnf_ur_mulders_storjohann(hnf, NULL, pivind);
-#else
-        slong rk = nmod_poly_mat_hnf_ur_mulders_storjohann(hnf, tsf, pivind);
-#endif /* ifdef NOTRANS */
-        timeit_stop(t0);
-        timeit_start(t1);
-#ifdef NOTRANS
-        _normalize_uref(hnf, NULL, pivind, rk);
-#else
-        nmod_poly_mat_degree_matrix_print_pretty(hnf);
-        _normalize_uref(hnf, NULL, pivind, rk);
-        nmod_poly_mat_degree_matrix_print_pretty(hnf);
-#endif /* ifdef NOTRANS */
-        timeit_stop(t1);
-        if (time)
-            flint_printf("-- time (Mulders-Storjohann): %wd (%wd + %wd) ms\n", t0->wall+t1->wall, t0->wall, t1->wall);
-        timeit_start(t0);
-#ifdef NOTRANS
-        verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
-#else
-        verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
-#endif /* ifdef NOTRANS */
-        if (!verif_hnf)
-            printf("Hermite form -- Mulders-Storjohann -- failure.\n");
-        timeit_stop(t0);
-        if (nmod_poly_mat_equal(hnf, tmp))
-            printf("ACTUALLY OK\n");
-        if (time)
-            flint_printf("-- time (verif): %wd ms\n", t0->wall);
     }
 
     nmod_poly_mat_clear(hnf);

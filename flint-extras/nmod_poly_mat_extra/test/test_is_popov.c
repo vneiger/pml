@@ -50,14 +50,14 @@ int main()
 
     //M.is_popov()
     //True
-    isp = nmod_poly_mat_is_popov_rowwise(mat, NULL);
+    isp = nmod_poly_mat_is_popov(mat, NULL, ROW_LOWER);
     printf("Checking is Popov row-wise: %d --> %s\n",
            isp, (isp==1) ? "ok" : "not ok");
 
     //M.is_popov(shifts=[0,1,2])
     //True
     shift[0] = 0; shift[1] = 1; shift[2] = 2;
-    isp = nmod_poly_mat_is_popov_rowwise(mat, shift);
+    isp = nmod_poly_mat_is_popov(mat, shift, ROW_LOWER);
     printf("Checking is (0,1,2)-Popov row-wise: %d --> %s\n",
            isp, (isp==1) ? "ok" : "not ok");
 
@@ -72,7 +72,7 @@ int main()
     nmod_poly_set(nmod_poly_mat_entry(mat2, 2, 0), nmod_poly_mat_entry(mat, 2, 0));
     nmod_poly_set(nmod_poly_mat_entry(mat2, 2, 1), nmod_poly_mat_entry(mat, 2, 1));
 
-    isp = nmod_poly_mat_is_popov_rowwise(mat2, NULL);
+    isp = nmod_poly_mat_is_popov(mat2, NULL, ROW_LOWER);
     printf("Checking if :,0:2 submatrix is Popov row-wise: %d --> %s\n",
            isp, (isp==0) ? "ok" : "not ok");
 
@@ -87,7 +87,7 @@ int main()
     nmod_poly_set(nmod_poly_mat_entry(mat2, 1, 1), nmod_poly_mat_entry(mat, 1, 1));
     nmod_poly_set(nmod_poly_mat_entry(mat2, 1, 2), nmod_poly_mat_entry(mat, 1, 2));
 
-    isp = nmod_poly_mat_is_popov_rowwise(mat2, shift);
+    isp = nmod_poly_mat_is_popov(mat2, shift, ROW_LOWER);
     printf("Checking if 0:2,: submatrix is (0,1,2)-Popov row-wise: %d --> %s\n",
            isp, (isp==1) ? "ok" : "not ok");
 
@@ -117,20 +117,20 @@ int main()
 
     nmod_poly_set_coeff_ui(nmod_poly_mat_entry(mat, 2, 0), 0, 6);
 
+    printf("\n");
     printf("Now, input matrix is:\n");
     nmod_poly_mat_print_pretty(mat, "x");
-    printf("\n");
 
     //M.is_popov(row_wise=False)
     //False
-    isp = nmod_poly_mat_is_popov_columnwise(mat, NULL);
+    isp = nmod_poly_mat_is_popov(mat, NULL, COL_UPPER);
     printf("Checking is Popov column-wise: %d --> %s\n",
            isp, (isp==0) ? "ok" : "not ok");
 
     //M.is_popov(shifts=[0,2,3], row_wise=False)
     //True
     shift[0] = 0; shift[1] = 2; shift[2] = 3;
-    isp = nmod_poly_mat_is_popov_columnwise(mat, shift);
+    isp = nmod_poly_mat_is_popov(mat, shift, COL_UPPER);
     printf("Checking is (0,2,3)-Popov column-wise: %d --> %s\n",
            isp, (isp==1) ? "ok" : "not ok");
 
@@ -157,7 +157,7 @@ int main()
     //True
     //N.is_popov(include_zero_vectors=False)
     //False
-    isp = nmod_poly_mat_is_popov_rowwise(mat, NULL);
+    isp = nmod_poly_mat_is_popov(mat, NULL, ROW_LOWER);
     printf("Checking is Popov row-wise: %d --> %s\n",
            isp, (isp==0) ? "ok" : "not ok"); // here NOT Popov (there is zero row)
 
@@ -166,7 +166,7 @@ int main()
     //M.is_popov(shifts=[0,2,3], row_wise=False)
     //False
     nmod_poly_mat_swap_columns(mat, NULL, 0, 1);
-    isp = nmod_poly_mat_is_popov_columnwise(mat, shift);
+    isp = nmod_poly_mat_is_popov(mat, shift, ROW_LOWER);
     printf("Checking on swapped columns if is (0,2,3)-Popov row-wise: %d --> %s\n",
            isp, (isp==0) ? "ok" : "not ok");
 
@@ -178,7 +178,7 @@ int main()
     //N.is_popov()
     //False
     nmod_poly_mat_swap_rows(mat2, NULL, 0, 2);
-    isp = nmod_poly_mat_is_popov_rowwise(mat, NULL);
+    isp = nmod_poly_mat_is_popov(mat, NULL, ROW_LOWER);
     printf("Checking on swapped rows if is Popov row-wise: %d --> %s\n",
            isp, (isp==0) ? "ok" : "not ok");
 
@@ -229,21 +229,21 @@ int main()
     nmod_poly_set_coeff_ui(nmod_poly_mat_entry(mat, 2, 3), 1, 5);
     nmod_poly_set_coeff_ui(nmod_poly_mat_entry(mat, 2, 3), 2, 1);
 
+    printf("\n");
     printf("Now a rectangular matrix:\n");
     nmod_poly_mat_print_pretty(mat, "x");
-    printf("\n");
 
-    isp = nmod_poly_mat_is_popov_rowwise(mat, NULL);
+    isp = nmod_poly_mat_is_popov(mat, NULL, ROW_LOWER);
     printf("Checking is Popov row-wise: %d --> %s\n",
            isp, (isp==0) ? "ok" : "not ok");
 
     slong shift2[4] = {0,3,2,2};
-    isp = nmod_poly_mat_is_popov_rowwise(mat, shift2);
+    isp = nmod_poly_mat_is_popov(mat, shift2, ROW_LOWER);
     printf("Checking is (0,3,2,2)-Popov row-wise: %d --> %s\n",
            isp, (isp==0) ? "ok" : "not ok");
 
     slong shift3[4] = {0,2,1,3};
-    isp = nmod_poly_mat_is_popov_rowwise(mat, shift3);
+    isp = nmod_poly_mat_is_popov(mat, shift3, ROW_LOWER);
     printf("Checking is (0,2,1,3)-Popov row-wise: %d --> %s\n",
            isp, (isp==0) ? "ok" : "not ok");
 
@@ -252,7 +252,7 @@ int main()
     nmod_poly_zero(nmod_poly_mat_entry(mat, 2, 1));
     nmod_poly_set_coeff_ui(nmod_poly_mat_entry(mat, 2, 0), 3, 0);
 
-    isp = nmod_poly_mat_is_popov_rowwise(mat, shift3);
+    isp = nmod_poly_mat_is_popov(mat, shift3, ROW_LOWER);
     printf("Checking is (0,2,1,3)-Popov row-wise: %d --> %s\n",
            isp, (isp==1) ? "ok" : "not ok");
 
@@ -263,19 +263,19 @@ int main()
     nmod_poly_zero(nmod_poly_mat_entry(mat, 1, 2));
     nmod_poly_zero(nmod_poly_mat_entry(mat, 1, 3));
 
+    printf("\n");
     printf("Finally same matrix with zero second row:\n");
     nmod_poly_mat_print_pretty(mat, "x");
-    printf("\n");
 
-    isp = nmod_poly_mat_is_popov_rowwise(mat, NULL);
+    isp = nmod_poly_mat_is_popov(mat, NULL, ROW_LOWER);
     printf("Checking is Popov row-wise: %d --> %s\n",
            isp, (isp==0) ? "ok" : "not ok");
 
-    isp = nmod_poly_mat_is_popov_rowwise(mat, shift3);
+    isp = nmod_poly_mat_is_popov(mat, shift3, ROW_LOWER);
     printf("Checking is (0,2,1,3)-Popov row-wise: %d --> %s\n",
            isp, (isp==0) ? "ok" : "not ok");
 
-    isp = nmod_poly_mat_is_popov_columnwise(mat, NULL);
+    isp = nmod_poly_mat_is_popov(mat, NULL, COL_UPPER);
     printf("Checking is Popov column-wise: %d --> %s\n",
            isp, (isp==0) ? "ok" : "not ok");
 

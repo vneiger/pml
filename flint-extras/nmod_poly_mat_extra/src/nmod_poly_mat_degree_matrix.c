@@ -1,9 +1,17 @@
 #include "nmod_poly_mat_forms.h"
 
 void nmod_poly_mat_degree_matrix(fmpz_mat_t dmat,
-                                 const nmod_poly_mat_t mat,
-                                 const slong * shift,
-                                 orientation_t orient)
+                                 const nmod_poly_mat_t mat)
+{
+    for(slong i = 0; i < mat->r; i++)
+        for(slong j = 0; j < mat->c; j++)
+            *fmpz_mat_entry(dmat, i, j) = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
+}
+
+void nmod_poly_mat_degree_matrix_shifted(fmpz_mat_t dmat,
+                                         const nmod_poly_mat_t mat,
+                                         const slong * shift,
+                                         orientation_t orient)
 {
     if (shift)
     {

@@ -520,11 +520,11 @@ void nmod_poly_mat_rand_popov_columnwise(nmod_poly_mat_t mat,
  * (note that if it is not, the input requirement means that it has to be the
  * list of successive integers [0,1,2,..], of the right length). */
 void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
-                         flint_rand_t state,
-                         const slong * pivind,
-                         const slong * pivdeg,
-                         const slong * shift,
-                         orientation_t row_wise);
+                              flint_rand_t state,
+                              const slong * pivind,
+                              const slong * pivdeg,
+                              const slong * shift,
+                              orientation_t orient);
 
 //@} // doxygen group: Generation of random matrices with specific forms
 
