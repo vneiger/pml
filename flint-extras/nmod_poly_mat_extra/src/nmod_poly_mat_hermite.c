@@ -1,5 +1,6 @@
 #include <flint/flint.h>
 #include <flint/nmod_poly.h>
+#include <flint/nmod_poly_mat.h>
 #include <flint/nmod_vec.h>
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_forms.h"
@@ -917,7 +918,7 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat, nmod_po
 // just do nothing (whereas they would perform some atomic transformations if
 // we used lower weak Popov form).
 //
-// An early detection based on determinantal degree is added so that as soon as
+// TODO An early detection based on determinantal degree is added so that as soon as
 // only trivial pivot entries remain to be found, the algorithm stops the
 // iteration over the leading principal minors and rather uses a simple
 // constant transformation to complete the computation.
@@ -933,44 +934,46 @@ slong _nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
     if (mat->r == 0 || mat->c == 0)
         return 0;
 
-    // output rank (will be modified later if necessary)
-    slong rk = FLINT_MIN(mat->r,mat->c);
+    // min-dim (estimated rank)
+    const slong mdim = FLINT_MIN(mat->r,mat->c);
     // permutation for putting into ordered weak Popov
-    slong * perm = flint_malloc(mat->r * sizeof(slong));
+    slong * perm = NULL;
+    if (udet) perm = flint_malloc(mat->r * sizeof(slong));
 
-    // weak Popov computation to reduce to full row rank case, but on leftmost
-    // columns only, to avoid wasting time in the frequent nonsingular case
-    // --> weak Popov of mat[:,:min(nrows,ncols)-1], with transformation
-    // applied to the whole mat and tsf
-    slong i = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(mat, NULL, tsf, udet, pivind, rrp, 0, 0, mat->r, rk, mat->r -rk, ROW_UPPER);
+    // reducing to the case of (assumed) generic column rank profile:
+    // weak Popov of mat[:,:min(nrows,ncols)-1], with transformation applied to
+    // the whole mat and tsf
+    // --> for most aspects, it would be easier to compute weak Popov of
+    // mat[:,:min(nrows,ncols)], but this would slow down the (frequent)
+    // nonsingular case for which it would mean starting with an extra
+    // computation of a weak Popov form of mat
+    // --> recall i == rank(mat[:,min(nrows,ncols)-1])
+    slong rk = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(mat, NULL, tsf, udet, pivind, rrp, 0, 0, mat->r, mdim-1, mat->r, ROW_UPPER);
 
-    // deduce rank and row rank profile (recall i == rank(mat[:,piv_bound-1]))
-    // * submatrix mat[mat->r -i:,:piv_bound-1] is zero; the possible
-    // missed pivot must be in subcolumn mat[mat->r -i,piv_bound-1] due
-    // to the input requirement on piv_bound
-    // * if the first nonzero entry in mat[mat->r -i,piv_bound-1] is at
-    // [pi,piv_bound-1], then the row rank profile of the input mat is rrp
-    // modified by adding pi-i to the rrp, meaning the "pi-i"-th row
-    // of mat was actually in the row rank profile (this is valid because weak
-    // Popov uses row rotations to put zero rows at the end)
-
-    // find pi
-    slong pi = i;
-    while (pi < mat->r && nmod_poly_is_zero(MAT(pi, j)))
+    // since we did not do mat[:,:min(nrows,ncols)] but mat[:,:min(nrows,ncols)-1],
+    // there is now some work to confirm the rank and row and row rank profile
+    // * submatrix mat[mat->r -i:,:min(nrows,ncols)-1] is now zero
+    // * find the first nonzero entry in mat[mat->r -i,:min(nrows,ncols)-1]
+    slong pi = rk;
+    while (pi < mat->r && nmod_poly_is_zero(MAT(pi, mdim)))
         pi++;
-    if (pi == mat->r) // no additional pivot, rk==i and rrp is correct
-        rk = i;
-    else
+    if (pi < mat->r)
     {
-        // handle additional pivot: update pivind, rk, and rrp
-        pivind[i] = j;
-        rk = i+1;
+        // we missed a pivot, in the column mat[:,min(nrows,ncols)-1]
+        // -> rank rk should be incremented (at end of scope for convenience)
+        // -> the row rank profile of the input mat is rrp modified by adding
+        // pi-i to the rrp, meaning the "pi-i"-th row of mat was actually in
+        // the row rank profile (this is valid because weak Popov uses row
+        // rotations to put zero rows at the end)
+
+        // handle additional pivot: update pivind and rrp
+        pivind[rk] = mdim;
         if (rrp)
         {
             // TODO to be completed
             // find the "pi-i -th gap" in rrp
             slong iii = 0; slong ii = 0;
-            while (iii < pi-i && ii < iii)
+            while (iii < pi-rk && ii < iii)
             {
                 if (iii < rrp[ii])
                     iii++;
@@ -979,48 +982,63 @@ slong _nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
             }
         }
         // while there is another nonzero below pi, xgcd-solve collision
+        nmod_poly_t g; // gcd
+        nmod_poly_t u; // gcd cofactor1
+        nmod_poly_t v; // gcd cofactor2
+        nmod_poly_t pivg; // piv divided by gcd
+        nmod_poly_t nonzg; // nonz divided by gcd
+        nmod_poly_init(g, mat->modulus);
+        nmod_poly_init(u, mat->modulus);
+        nmod_poly_init(v, mat->modulus);
+        nmod_poly_init(pivg, mat->modulus);
+        nmod_poly_init(nonzg, mat->modulus);
         for (slong ii = pi+1; ii < mat->r; ii++)
-            _pivot_collision_xgcd_uref(mat, tsf, pi, j, ii, g, u, v, pivg, nonzg);
-        // now the whole submatrix mat[mat->r - i,:] is zero except the pivot
-        // row pi; swap rows to put it in position i
-        _nmod_poly_mat_rotate_rows_downward(mat, NULL, i, pi);
-        if (tsf) _nmod_poly_mat_rotate_rows_downward(tsf, NULL, i, pi);
-    }
+            _pivot_collision_xgcd_uref(mat, tsf, pi, mdim, ii, g, u, v, pivg, nonzg);
+        nmod_poly_clear(g);
+        nmod_poly_clear(u);
+        nmod_poly_clear(v);
+        nmod_poly_clear(pivg);
+        nmod_poly_clear(nonzg);
 
-    // the algorithm can proceed with mat[:i,:j]
+        // swap rows to put the pivot row pi in position rk
+        nmod_poly_mat_swap_rows(mat, NULL, rk, pi);
+        if (tsf) nmod_poly_mat_swap_rows(tsf, NULL, rk, pi);
+        rk++;
+    }
+    // check the rank requirement has not failed yet: mat[rk:,:] should be zero
+    // (we only test mat[rk:,mdim+1:]: the rest is zero for sure)
+    nmod_poly_mat_t view;
+    nmod_poly_mat_window_init(view, mat, rk, mdim+1, mat->r, mat->c);
+    if (!nmod_poly_mat_is_zero(view))
+        return -rk-1;
+
+    // the algorithm can proceed with mat[:rk,:]
+    slong i = rk;
     while (i > 0)
     {
-        // we could simply decrement j by 1, yet the rightmost pivot in the uref
-        // cannot be more to the right than the rightmost pivot in an upper
-        // row-wise weak Popov form --> pick new j according to this
-        j = pivind[i-1];
-
         //        [ M  * ] 
-        // mat is [ 0  E ] with E in upper echelon form,
-        // and M full row rank of size i x (j+1)
+        // mat is [ 0  E ] with E in upper echelon form (including possible
+        // zero rows), and M of size i x i (a priori, nonsingular)
         //                 [ N  *  * ]
-        // -> transform to [ 0  p  * ] via weak Popov form of M[:i,:j]
+        // -> transform to [ 0  p  * ] via weak Popov form of MM = M[:i,:i-1]
         //                 [ 0  0  E ]
-        // case 1: p == mat[i,j] is nonzero -> continue with i-1,N
-        // case 2: p == mat[i,j] is zero -> the whole row i is zero
+        // case 1: p == mat[i,j] is nonzero -> continue with i-1
+        // case 2: p == mat[i,j] is zero -> fail, rank requirement
 
-        // the next call applies weak Popov form on mat[:i,:j],
+        // the next call applies weak Popov form on mat[:i,:i-1],
         // with transformations applied to the whole rows mat[:i,:],
         // and with update of the determinant of unimodular transformation (+1 or -1)
-        i = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(mat, NULL, tsf, udet, pivind, NULL, 0, 0, i, j, i, ROW_UPPER);
-        // permute into ordered weak Popov form
+        i = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(mat, NULL, tsf, udet, pivind, NULL, 0, 0, i, i, 2, ROW_UPPER);
+        if (i < 0) // found >= 2 zero rows in MM, fails rank requirement
+            return i;
+        // else found <= 1 zero rows (thus exactly 1): rank of MM ok
+        if (nmod_poly_is_zero(MAT(i,i))) // rank of M not ok
+            return -rk;
+        // rank ok until now, permute into ordered weak Popov form
         _nmod_poly_mat_permute_rows_by_sorting_vec(mat, i, pivind, perm);
-        if (_perm_parity(perm, i)) // odd permutation, negate udet
+        if (udet && _perm_parity(perm, i)) // odd permutation, negate udet
             *udet = - *udet;
-
-        // termination: either i has been decreased by exactly 1, or i has
-        // stayed the same and pivind[i-1] has decreased by at least 1
     }
-    nmod_poly_clear(g);
-    nmod_poly_clear(u);
-    nmod_poly_clear(v);
-    nmod_poly_clear(pivg);
-    nmod_poly_clear(nonzg);
     flint_free(perm);
     return rk;
 }

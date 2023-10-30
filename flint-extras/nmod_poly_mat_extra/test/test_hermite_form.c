@@ -134,7 +134,7 @@ int verify_matrix_rank_profile(const nmod_poly_mat_t mat, const slong * mrp)
                 for (slong jj = 0; jj < j; jj++)
                     nmod_poly_set(nmod_poly_mat_entry(sub,ii,jj), MAT(ii, jj));
             // compute rank of submatrix
-            slong rk_sub = nmod_poly_mat_weak_popov_lr_iter(sub, NULL, NULL, pivind, NULL);
+            slong rk_sub = nmod_poly_mat_weak_popov_iter(sub, NULL, NULL, pivind, NULL, ROW_LOWER);
             // compute rank of matrix rank profile
             slong rk_mrp = 0;
             for (slong k = 0; k < i; k++)
@@ -312,6 +312,39 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", timer->wall);
+    }
+
+    { // Mulder-Storjohann's algorithm
+        nmod_poly_mat_set(hnf, mat);
+        nmod_poly_mat_one(tsf);
+        timeit_t t0, t1;
+        timeit_start(t0);
+#ifdef NOTRANS
+        slong rk = _nmod_poly_mat_uref_matrixgcd_iter(hnf, NULL, pivind, NULL, NULL);
+#else
+        slong rk = _nmod_poly_mat_uref_matrixgcd_iter(hnf, tsf, pivind, NULL, NULL);
+#endif /* ifdef NOTRANS */
+        timeit_stop(t0);
+        timeit_start(t1);
+#ifdef NOTRANS
+        _normalize_uref(hnf, NULL, pivind, rk);
+#else
+        _normalize_uref(hnf, tsf, pivind, rk);
+#endif /* ifdef NOTRANS */
+        timeit_stop(t1);
+        if (time)
+            flint_printf("-- time (matrixgcd - ur): %wd ms  (%wd + %wd)\n", t0->wall+t1->wall, t0->wall, t1->wall);
+        timeit_start(t0);
+#ifdef NOTRANS
+        verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
+#else
+        verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
+#endif /* ifdef NOTRANS */
+        if (!verif_hnf)
+            printf("HNF -- matrix-gcd -- failure.\n");
+        timeit_stop(t0);
+        if (time)
+            flint_printf("-- time (verif): %wd ms\n", t0->wall);
     }
 
     nmod_poly_mat_clear(hnf);
