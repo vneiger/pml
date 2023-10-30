@@ -522,10 +522,12 @@ slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat,
                                     slong * pivind,
                                     slong * mrp);
 
-// TODO implement + doc
-slong nmod_poly_mat_hnf_ur_rowbasis_iter(nmod_poly_mat_t mat,
-                                         nmod_poly_mat_t tsf,
-                                         slong * pivind);
+// TODO doc
+slong  _nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
+                                          nmod_poly_mat_t tsf,
+                                          slong * pivind,
+                                          slong * rrp,
+                                          int * udet);
 
 
 // TODO mod det version (see e.g. Domich) ? quite often for nmod_poly_mat's,
@@ -574,10 +576,13 @@ slong nmod_poly_mat_hnf_ur_rowbasis_iter(nmod_poly_mat_t mat,
 // non-ordered, but zero rows are still placed at the bottom
 //
 // early_exit_zr: stop the computation as soon as early_exit_zr zero rows have
-// been found; in that case returns -rk (negative or zero). If not interested
-// in early exit, put mat->r (or more). If the output is < 0, the output
-// guarantees are the same but only for the first |rk| + max_zr rows of mat
-// (TODO be more precise; zero rows have been put at bottom, etc)
+// been found; in that case returns -rk (negative or zero and with rk not
+// necessarily related to the actual rank). If not interested in early exit,
+// put mat->r (or more). If the output is < 0, the output guarantees are the
+// same but only for the first |rk| + max_zr rows of mat (TODO be more precise;
+// zero rows have been put at bottom, etc)
+// 
+// TODO doc det
 //
 // orient: orientation, must be among ROW_UPPER and ROW_LOWER (not checked if
 // valid)
