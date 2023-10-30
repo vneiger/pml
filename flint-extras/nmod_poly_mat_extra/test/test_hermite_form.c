@@ -111,6 +111,35 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const n
     return 1;
 }
 
+int verify_generic_column_rank_profile(const nmod_poly_mat_t mat)
+{
+    // take copy of mat
+    nmod_poly_mat_t copy;
+    nmod_poly_mat_init_set(copy, mat);
+    // retrieve the rank of mat
+    slong * pivind = flint_malloc(mat->r * sizeof(slong));
+    const long rk = nmod_poly_mat_weak_popov_iter(copy, NULL, NULL, pivind, NULL, ROW_LOWER);
+    // reset copy
+    nmod_poly_mat_set(copy, mat);
+
+    // retrieve the rank of first rk columns of mat
+    nmod_poly_mat_t view;
+    nmod_poly_mat_window_init(view, copy, 0, 0, mat->r, rk);
+    const long rk_sub = nmod_poly_mat_weak_popov_iter(view, NULL, NULL, pivind, NULL, ROW_LOWER);
+
+    // clear
+    nmod_poly_mat_clear(view);
+    nmod_poly_mat_clear(copy);
+    flint_free(pivind);
+
+    if (rk != rk_sub)
+    {
+            printf("~~~ upper, rowwise ~~~ INCORRECT: non-generic CRP\n");
+            return 0;
+    }
+    return 1;
+}
+
 // verify matrix rank profile
 // (warning, tests all leading submatrices, can be slow!)
 int verify_matrix_rank_profile(const nmod_poly_mat_t mat, const slong * mrp)
@@ -325,21 +354,30 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         slong rk = _nmod_poly_mat_uref_matrixgcd_iter(hnf, tsf, pivind, NULL, NULL);
 #endif /* ifdef NOTRANS */
         timeit_stop(t0);
-        timeit_start(t1);
+        if (rk < 0)
+        {
+            verif_hnf = ! verify_generic_column_rank_profile(mat);
+            if (time)
+                flint_printf("-- time (matrixgcd - ur): %wd ms  (!early exit!)\n", t0->wall);
+        }
+        else
+        {
+            timeit_start(t1);
 #ifdef NOTRANS
-        _normalize_uref(hnf, NULL, pivind, rk);
+            _normalize_uref(hnf, NULL, pivind, rk);
 #else
-        _normalize_uref(hnf, tsf, pivind, rk);
+            _normalize_uref(hnf, tsf, pivind, rk);
 #endif /* ifdef NOTRANS */
-        timeit_stop(t1);
-        if (time)
-            flint_printf("-- time (matrixgcd - ur): %wd ms  (%wd + %wd)\n", t0->wall+t1->wall, t0->wall, t1->wall);
-        timeit_start(t0);
+            timeit_stop(t1);
+            if (time)
+                flint_printf("-- time (matrixgcd - ur): %wd ms  (%wd + %wd)\n", t0->wall+t1->wall, t0->wall, t1->wall);
+            timeit_start(t0);
 #ifdef NOTRANS
-        verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
+            verif_hnf = verify_hermite_form(hnf, pivind, NULL, rk, mat, state);
 #else
-        verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
+            verif_hnf = verify_hermite_form(hnf, pivind, tsf, rk, mat, state);
 #endif /* ifdef NOTRANS */
+        }
         if (!verif_hnf)
             printf("HNF -- matrix-gcd -- failure.\n");
         timeit_stop(t0);
