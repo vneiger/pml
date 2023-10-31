@@ -111,7 +111,7 @@ int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const n
     return 1;
 }
 
-int verify_generic_column_rank_profile(const nmod_poly_mat_t mat)
+int verify_nongeneric_column_rank_profile(const nmod_poly_mat_t mat)
 {
     // take copy of mat
     nmod_poly_mat_t copy;
@@ -132,9 +132,9 @@ int verify_generic_column_rank_profile(const nmod_poly_mat_t mat)
     nmod_poly_mat_clear(copy);
     flint_free(pivind);
 
-    if (rk != rk_sub)
+    if (rk == rk_sub)
     {
-            printf("~~~ upper, rowwise ~~~ INCORRECT: non-generic CRP\n");
+            printf("~~~ upper, rowwise ~~~ INCORRECT: CRP is actually generic\n");
             return 0;
     }
     return 1;
@@ -354,9 +354,9 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         slong rk = _nmod_poly_mat_uref_matrixgcd_iter(hnf, tsf, pivind, NULL, NULL);
 #endif /* ifdef NOTRANS */
         timeit_stop(t0);
-        if (rk < 0)
+        if (rk <= 0 && !nmod_poly_mat_is_zero(mat))
         {
-            verif_hnf = ! verify_generic_column_rank_profile(mat);
+            verif_hnf = verify_nongeneric_column_rank_profile(mat);
             if (time)
                 flint_printf("-- time (matrixgcd - ur): %wd ms  (!early exit!)\n", t0->wall);
         }
