@@ -504,6 +504,7 @@ slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat,
                                   slong * mrp);
 
 // TODO doc
+// TODO test rrp + udet
 slong nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
                                         nmod_poly_mat_t tsf,
                                         slong * pivind,
@@ -620,6 +621,7 @@ slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat,
 }
 
 // TODO doc
+// TODO test rk < 0 and proceed accordingly?
 NMOD_POLY_MAT_INLINE
 slong nmod_poly_mat_hnf_ur_matrixgcd_iter(nmod_poly_mat_t mat,
                                           nmod_poly_mat_t tsf,

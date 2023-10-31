@@ -882,7 +882,8 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat, nmod_po
 // just do nothing (whereas they would perform some atomic transformations if
 // we used lower weak Popov form).
 //
-// TODO An early detection based on determinantal degree is added so that as soon as
+// TODO to be implemented:
+// An early detection based on determinantal degree is added so that as soon as
 // only trivial pivot entries remain to be found, the algorithm stops the
 // iteration over the leading principal minors and rather uses a simple
 // constant transformation to complete the computation.
