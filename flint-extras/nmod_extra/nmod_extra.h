@@ -7,6 +7,7 @@
 #include <inttypes.h>
 
 #include <flint/flint.h>
+#include <flint/nmod.h>
 #include <flint/nmod_vec.h>
 
 #if (defined __SIZEOF_INT128__ && GMP_LIMB_BITS == 64)
@@ -24,7 +25,7 @@
 /*------------------------------------------------------------*/
 /* TODO: find which flags to test for                         */
 /*------------------------------------------------------------*/
-#define HAS_AVX512
+//#define HAS_AVX512
 
 
 

@@ -1,6 +1,8 @@
+#include <flint/nmod_vec.h>
 #include <flint/nmod_mat.h>
 #include <flint/perm.h>
 #include <flint/profiler.h>
+#include <stdlib.h>
 #include "nmod_mat_poly.h"
 #include "nmod_mat_extra.h"
 
@@ -11,23 +13,46 @@
 
 #ifdef MBASIS_PROFILE
 
-#define MBASIS_PROF_INIT \
-    timeit_t t_others,t_residual,t_appbas,t_kernel, _t_now;  \
+#define _MBASIS_PROFILER_INIT \
+    timeit_t t_others,t_residual,t_appbas,t_kernel,t_now;    \
     t_others->cpu = 0; t_others->wall = 0;                   \
     t_residual->cpu = 0; t_residual->wall = 0;               \
     t_appbas->cpu = 0; t_appbas->wall = 0;                   \
     t_kernel->cpu = 0; t_kernel->wall = 0;
-#define MBASIS_PROF_REGION_START timeit_start(t_now);
-#define MBASIS_PROF_REGION_STOP(_counter_) \
+#define _PROFILER_REGION_START timeit_start(t_now);
+#define _PROFILER_REGION_STOP(_counter_) \
     timeit_stop(t_now);                    \
-    (_counter_)->cpu += t_now->cpu;           \
+    (_counter_)->cpu += t_now->cpu;        \
     (_counter_)->wall += t_now->wall;
+#define _MBASIS_PROFILER_OUTPUT \
+    double total_cpu = t_others->cpu + t_residual->cpu +     \
+                       t_appbas->cpu + t_kernel->cpu;        \
+    double total_wall = t_others->wall + t_residual->wall +  \
+                       t_appbas->wall + t_kernel->wall;      \
+    printf("wall\tothers\t\tresidual\tappbas\t\tkernel\n");      \
+    printf("\t%f\t%f\t%f\t%f\n",                             \
+           100 * t_others->wall / total_wall,                \
+           100 * t_residual->wall / total_wall,              \
+           100 * t_appbas->wall / total_wall,                \
+           100 * t_kernel->wall / total_wall);               \
+    printf("cpu\tothers\t\tresidual\tappbas\t\tkernel\n");       \
+    printf("\t%f\t%f\t%f\t%f\n",                             \
+           100 * t_others->cpu / total_cpu,                  \
+           100 * t_residual->cpu / total_cpu,                \
+           100 * t_appbas->cpu / total_cpu,                  \
+           100 * t_kernel->cpu / total_cpu);                 \
+    printf("\t%ld\t%ld\t%ld\t%ld\n",                        \
+           t_others->wall,                \
+           t_residual->wall,              \
+           t_appbas->wall,                \
+           t_kernel->wall);               \
 
 #else // MBASIS_PROFILE
 
-#define MBASIS_PROF_INIT
-#define MBASIS_PROF_REGION_START
-#define MBASIS_PROF_REGION_STOP(_counter_)
+#define _MBASIS_PROFILER_INIT
+#define _PROFILER_REGION_START
+#define _PROFILER_REGION_STOP(_counter_)
+#define _MBASIS_PROFILER_OUTPUT
 
 #endif // MBASIS_PROFILE
 
@@ -93,6 +118,8 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
                           const nmod_mat_poly_t matp,
                           slong order)
 {
+_MBASIS_PROFILER_INIT
+_PROFILER_REGION_START
     // dimensions of input matrix
     const slong m = matp->r;
     const slong n = matp->c;
@@ -104,6 +131,8 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
         nmod_mat_poly_fit_length(appbas, order+1);
         _nmod_mat_poly_set_length(appbas, order+1);
         nmod_mat_one(appbas->coeffs + order);
+_PROFILER_REGION_STOP(t_others)
+_MBASIS_PROFILER_OUTPUT
         return;
     }
     else
@@ -127,6 +156,7 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
     slong nullity;
     slong * pivots = (slong *) flint_malloc(m * sizeof(slong));
     nmod_mat_t nsbas;
+_PROFILER_REGION_STOP(t_others)
 
     // Note: iterations will guarantee that `shift` (initially, this is the
     // input shift) holds the `shift`-shifted row degree of appbas; in
@@ -137,6 +167,7 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
 printf("\n\nDEBUG -- Start iteration %ld\n", ord);
 #endif // MBASIS_DEBUG
 
+_PROFILER_REGION_START
         // Letting s0 be the original input shift:
         // start of loop: appbas is an `s0`-ordered weak Popov approximant
         //    basis at order `ord` for `pmat`, and shift = rdeg_s0(appbas)
@@ -147,7 +178,9 @@ printf("\n\nDEBUG -- Start iteration %ld\n", ord);
         else // res = coefficient of degree ord in appbas*pmat
             nmod_mat_poly_mul_coeff(res, appbas, matp, ord);
         // TODO try another variant with res_tmp to save memory?
+_PROFILER_REGION_STOP(t_residual)
 
+_PROFILER_REGION_START
         // compute stable permutation which makes the shift nondecreasing
         // --> we will need to permute things, to take into account the
         // "priority" indicated by the shift
@@ -169,12 +202,16 @@ nmod_mat_print_pretty(res);
 printf("\n\nDEBUG -- it %ld -- res after perm: ", ord);
 nmod_mat_print_pretty(res);
 #endif // MBASIS_DEBUG
+_PROFILER_REGION_STOP(t_others)
 
+_PROFILER_REGION_START
         // find the left nullspace basis of the (permuted) residual, in reduced
         // row echelon form and compact storage (see the documentation)
         if (ord >= 1) // nsbas should be uninitialized for nullspace
             nmod_mat_clear(nsbas);
         nullity = nmod_mat_left_nullspace_compact(nsbas,pivots,res);
+_PROFILER_REGION_STOP(t_kernel)
+
 #ifdef MBASIS_DEBUG
 printf("\n\nDEBUG -- it %ld -- nullity: %ld, rank: %ld", ord, nullity, m-nullity);
 printf("\n\nDEBUG -- it %ld -- nsbas: ", ord);
@@ -187,9 +224,11 @@ _perm_print(pivots, m);
         {
             // Exceptional case: the residual matrix has empty left nullspace
             // --> no need to compute more: the final basis is X^(order-ord)*appbas
+_PROFILER_REGION_START
             nmod_mat_poly_shift_left(appbas, appbas, order-ord);
             for (long i = 0; i < m; ++i)
                 shift[i] += order-ord;
+_PROFILER_REGION_STOP(t_others)
             break;
         }
 
@@ -210,6 +249,7 @@ _perm_print(pivots, m);
             // --> we will add to this the pivot permutation:
             //         i.e. pivots*perm*appbas[i] = appbas[perm[pivots[i]]]
 
+_PROFILER_REGION_START
             // transform pivots[i] into perm[pivots[i]]
             _perm_compose(pivots, perm, pivots, m);
 #ifdef MBASIS_DEBUG
@@ -242,7 +282,9 @@ nmod_mat_poly_print_pretty(appbas);
 printf("\n\nDEBUG -- it %ld -- permuted appbas before update:\n", ord);
 nmod_mat_poly_print_pretty(appbas);
 #endif // MBASIS_DEBUG
+_PROFILER_REGION_STOP(t_others)
 
+_PROFILER_REGION_START
             // Update the approximant basis: 2/ perform constant update
             // Submatrix of rows corresponding to pivots are replaced by
             // nsbas*appbas (note: these rows currently have degree
@@ -262,6 +304,9 @@ nmod_mat_poly_print_pretty(appbas);
                 nmod_mat_mul(ns_app, nsbas, app_win_mul);
                 nmod_mat_add(app_win_add, app_win_add, ns_app);
             }
+            nmod_mat_clear(ns_app);
+            nmod_mat_clear(app_win_mul);
+            nmod_mat_clear(app_win_add);
 
             // Update the approximant basis: 3/ left-shift relevant rows by 1
             // increase length of appbas if necessary
@@ -288,7 +333,9 @@ nmod_mat_poly_print_pretty(appbas);
             for (slong i = 0; i < m-nullity; ++i)
                 //_nmod_vec_zero(appbas->coeffs[0].rows[i], m);
                 appbas->coeffs[0].rows[i] = save_zero_rows[i];
+_PROFILER_REGION_STOP(t_appbas)
 
+_PROFILER_REGION_START
 #ifdef MBASIS_DEBUG
 printf("\n\nDEBUG -- it %ld -- permuted appbas after update:\n", ord);
 nmod_mat_poly_print_pretty(appbas);
@@ -304,15 +351,20 @@ _perm_print(pivots, m);
 printf("\n\nDEBUG -- it %ld -- appbas after update:\n", ord);
 nmod_mat_poly_print_pretty(appbas);
 #endif // MBASIS_DEBUG
+_PROFILER_REGION_STOP(t_others)
         }
     }
 
+_PROFILER_REGION_START
     nmod_mat_clear(res);
     nmod_mat_clear(res_tmp);
     _perm_clear(perm);
     flint_free(pair_tmp);
     flint_free(pivots);
     nmod_mat_clear(nsbas);
+_PROFILER_REGION_STOP(t_others)
+_MBASIS_PROFILER_OUTPUT
+    return;
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */

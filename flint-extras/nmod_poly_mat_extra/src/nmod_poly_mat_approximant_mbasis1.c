@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "nmod_mat_extra.h" // for left_nullspace, permutation
 #include "nmod_poly_mat_extra.h" // for apply_perm
 #include "nmod_poly_mat_utils.h"

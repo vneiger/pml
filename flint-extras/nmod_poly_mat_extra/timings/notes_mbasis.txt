@@ -1,0 +1,5 @@
+- new mbasis is best most of the time, often substantially
+  (at least on m x 1, k x m with k < m, and m x m/2 tested, for orders 1->64)
+- a specialized 2x1 version would be profitable
+- for cdim closer to rdim, new mbasis slower than mbasisIII/IV (and sometimes mbasisI)
+    --> TODO implement resup should resolve this

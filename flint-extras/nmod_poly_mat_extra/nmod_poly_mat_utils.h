@@ -21,63 +21,109 @@
 extern "C" {
 #endif
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* MATRIX DEGREE                                              */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/** @name Degree
- *
- *  The degree of a polynomial matrix is the maximum of the degrees of all its
- *  entries; by convention, the zero matrix has degree -1 (thus, except for the
- *  zero matrix, the degree of a polynomial matrix is always nonnegative).
- */
-//@{
-
-/** Compute and return the degree of a polynomial vector `pvec` */
-// TODO
-
-/** Compute and return the degree of a polynomial matrix `pmat` */
-NMOD_POLY_MAT_INLINE slong
-nmod_poly_mat_degree(const nmod_poly_mat_t pmat)
+/** The input `window` is some window (r1,c1,r2,c2) of some polynomial matrix
+ * `mat`. This function changes it into the window (r1,c1+cc1,r2,c2+cc2) of the
+ * same `mat`. It is assumed that the latter window is indeed a valid window of
+ * the original matrix `mat`; in particular one must provide cc1,cc2 such that
+ * c1+cc1 < mat->c and c2+cc2 < mat->c.  **/
+// TODO currently unused, remove?
+NMOD_POLY_MAT_INLINE void
+_nmod_poly_mat_window_update_columns(nmod_poly_mat_t window, slong cc1, slong cc2)
 {
-    return nmod_poly_mat_max_length(pmat)-1;
+    // if original mat->c was 0, each window->rows[i] is and should remain NULL
+    // otherwise, window->rows[i] are all non-NULL and should be updated
+    if (window->rows)  // NULL if window->r <= 0
+        for (slong i = 0; i < window->r; i++)
+            if (window->rows[i]) 
+                window->rows[i] += cc1;
+    window->c = cc2-cc1;
 }
 
-/** Tests whether `pmat` is a constant matrix, that is, of degree 0 */
-NMOD_POLY_MAT_INLINE int
-nmod_poly_mat_is_constant(const nmod_poly_mat_t pmat)
+/** The input `window` is some window (r1,c1,r2,c2) of some polynomial matrix
+ * `mat`. This function changes it into the window (r1,c1,r2,c2+c) of the same
+ * `mat`. The provided c can be positive or negative and must be such that the
+ * latter window is a valid window of `mat`: 0 <= c2+c <= mat->c.  **/
+NMOD_POLY_MAT_INLINE void
+_nmod_poly_mat_window_resize_columns(nmod_poly_mat_t window, slong c)
 {
-    return (nmod_poly_mat_max_length(pmat) == 1);
+    window->c += c;
 }
 
-//@} // doxygen group: Degree
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* SETTING AND GETTING COEFFICIENTS                           */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
+/** Tests whether `pmat` is a unimodular matrix, that is, a square matrix with
+ * determinant being a nonzero constant. Rectangular matrices are accepted as
+ * input (and are not unimodular). */
+// deterministic test, slow; and randomized test via evaluation (not reliable for small fields)
+int nmod_poly_mat_is_unimodular(const nmod_poly_mat_t pmat);
+int nmod_poly_mat_is_unimodular_randomized(const nmod_poly_mat_t pmat, flint_rand_t state);
 
-/** @name Setting and getting coefficients
- *
- *  Seeing a polynomial matrix in `nmod_poly_mat_t` as a univariate polynomial
- *  with matrix coefficients in `nmod_mat_t`, these functions allow one to get
- *  or set one of these coefficients, for a given polynomial matrix.
- */
-//@{
+// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[i,:]     <--    mat[j,:]
+//      mat[i+1,:]   <--    mat[i,:]
+//      mat[i+2,:]   <--    mat[i+1,:]
+//         ...       <--       ...
+//      mat[j-1,:]   <--    mat[j-2,:]
+//      mat[j,:]     <--    mat[j-1,:]
+// as well as
+//      vec[i]     <--    vec[j]
+//      vec[i+1]   <--    vec[i]
+//      vec[i+2]   <--    vec[i+1]
+//        ...      <--      ...
+//      vec[j-1]   <--    vec[j-2]
+//      vec[j]     <--    vec[j-1]
+void _nmod_poly_mat_rotate_rows_downward(nmod_poly_mat_t mat, slong * vec, slong i, slong j);
 
-/** Sets `coeff` to be the coefficient of `pmat` of degree `degree` */
-void nmod_poly_mat_coefficient_matrix(nmod_mat_t coeff,
-                                      const nmod_poly_mat_t pmat,
-                                      slong degree);
+// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[i,:]     <--    mat[i+1,:]
+//      mat[i+1,:]   <--    mat[i+2,:]
+//      mat[i+2,:]   <--       ...
+//         ...       <--    mat[j-1,:]
+//      mat[j-1,:]   <--    mat[j,:]
+//      mat[j,:]     <--    mat[i,:]
+// as well as
+//      vec[i]     <--    vec[i+1]
+//      vec[i+1]   <--    vec[i+2]
+//      vec[i+2]   <--      ...
+//        ...      <--    vec[j-1]
+//      vec[j-1]   <--    vec[j]
+//      vec[j]     <--    vec[i]
+void _nmod_poly_mat_rotate_rows_upward(nmod_poly_mat_t mat, slong * vec, slong i, slong j);
 
-/** Sets the coefficient of `pmat` of degree `degree` to be `coeff` */
-// TODO
-//void SetCoeff(Mat<zz_pX> & pmat, long i, const Mat<zz_p> & coeff);
+// . mat is the input matrix
+// . r is an integer between 0 and mat->r -1
+// . vec has >= r entries (signed integers)
+// . perm must be allocated with at least mat->r entries (no need to fill it
+// with values)
+// This finds the unique permutation which stable-sorts vec[0:r] into
+// non-decreasing order, records this permutation in perm[0:r], and applies it
+// both to vec and to the first r rows of mat (the out-vec[i] is the
+// in-vec[perm[i]], the out-mat[i,:] is the in-mat[perm[i],:]). The entries
+// perm[r:mat->r] are filled with iota (perm[i] = i), to ensure that perm
+// actually represents the used row permutation on the whole set of rows.
+//
+// Example uses:
+// - weak Popov -> ordered weak Popov: vec is the s-pivot index of mat in
+// s-weak Popov form with r nonzero rows; then this puts mat in s-ordered weak
+// Popov form and ensures that vec is updated accordingly; also, the output
+// perm can be used to apply the corresponding row permutation to another
+// matrix with as many rows as mat (e.g. some unimodular transformation)
+// - step in weak Popov -> Popov: vec is the s-pivot degree of mat in s-weak
+// Popov form with r nonzero rows; then this arranges the s-pivot degree in
+// nondecreasing order, and the relative position of rows with identical
+// s-pivot degree is preserved.
+void _nmod_poly_mat_permute_rows_by_sorting_vec(nmod_poly_mat_t mat,
+                                                slong r,
+                                                slong * vec,
+                                                slong * perm);
 
-//@} // doxygen group: Setting and getting coefficients
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -258,14 +304,6 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
  */
 //@{
 
-/** Set `tmat` to the truncation of a polynomial matrix `pmat` at order `len` */
-void nmod_poly_mat_set_trunc(nmod_poly_mat_t tmat,
-                             const nmod_poly_mat_t pmat,
-                             long len);
-
-/** Truncate `pmat` at order `len` */
-void nmod_poly_mat_truncate(nmod_poly_mat_t pmat, long len);
-
 /** Computes the matrix `tmat` which is the polynomial matrix `pmat` with its
  * row `i` truncated at order `len` */
 // TODO
@@ -303,16 +341,6 @@ void nmod_poly_mat_truncate(nmod_poly_mat_t pmat, long len);
 /** Computes the right `n`-shift `svec` of the polynomial vector `pvec` */
 // TODO
 //void RightShift(Vec<zz_pX> & svec, const Vec<zz_pX> & pvec, long n);
-
-/** Computes the left `k`-shift `smat` of the polynomial matrix `pmat` */
-void nmod_poly_mat_shift_left(nmod_poly_mat_t smat,
-                              const nmod_poly_mat_t pmat,
-                              slong k);
-
-/** Computes the right `k`-shift `smat` of the polynomial matrix `pmat` */
-void nmod_poly_mat_shift_right(nmod_poly_mat_t smat,
-                               const nmod_poly_mat_t pmat,
-                               slong k);
 
 /** Computes the matrix `smat` which is the same as the polynomial matrix
  * `pmat` but with its `i`-th row replaced by its left `n`-shift
@@ -463,11 +491,11 @@ void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
  * `pivind` and `pivdeg` must be `m`, `pivind` must consist of increasing
  * integers between `0` and `n-1`, `pivdeg` must be nonnegative, `shift` must
  * have length `n`. */
-void nmod_poly_mat_rand_popov_rowwise(nmod_poly_mat_t mat,
-                                      flint_rand_t state,
-                                      const slong * pivind,
-                                      const slong * pivdeg,
-                                      const slong * shift);
+void _nmod_poly_mat_rand_popov_row_lower(nmod_poly_mat_t mat,
+                                         flint_rand_t state,
+                                         const slong * pivind,
+                                         const slong * pivdeg,
+                                         const slong * shift);
 
 /** Fills polynomial matrix `mat` with random dense polynomial entries such
  * that `mat` is in `shift`-Popov form column-wise, with `shift`-pivot profile
@@ -476,7 +504,7 @@ void nmod_poly_mat_rand_popov_rowwise(nmod_poly_mat_t mat,
  * `pivind` and `pivdeg` must be `n`, `pivind` must consist of increasing
  * integers between `0` and `m-1`, `pivdeg` must be nonnegative, `shift` must
  * have length `m`.  */
-void nmod_poly_mat_rand_popov_columnwise(nmod_poly_mat_t mat,
+void _nmod_poly_mat_rand_popov_col_upper(nmod_poly_mat_t mat,
                                          flint_rand_t state,
                                          const slong * pivind,
                                          const slong * pivdeg,
@@ -484,19 +512,21 @@ void nmod_poly_mat_rand_popov_columnwise(nmod_poly_mat_t mat,
 
 /** Fills polynomial matrix `mat` with random dense polynomial entries such
  * that `mat` is in `shift`-Popov form, with `shift`-pivot profile specified by
- * `pivind` and `pivdeg`; the orientation row-wise or column-wise is specified
- * by the input `row_wise`. The input requirements depend on the orientation,
- * see the documentation of ::nmod_poly_mat_rand_popov_rowwise or
- * ::nmod_poly_mat_rand_popov_columnwise . Here `shift` can be `NULL`
- * (equivalent to `[0,...,0]`), and if `mat` is square, `pivind` can be `NULL`
- * (note that if it is not, the input requirement means that it has to be the
- * list of successive integers [0,1,2,..], of the right length). */
+ * `pivind` and `pivdeg`; the orientation is specified by the input `orient`.
+ * The input requirements depend on the orientation, see the documentation of
+ * ::nmod_poly_mat_rand_popov_row_lower or ::nmod_poly_mat_rand_popov_col_upper
+ * . Here `shift` can be `NULL` (equivalent to `[0,...,0]`), and if `mat` is
+ * square, `pivind` can be `NULL` (note that if it is not, the input
+ * requirement means that it has to be the list of successive integers
+ * [0,1,2,..], of the right length).
+ * \todo ROW_UPPER / COL_LOWER not implemented
+ **/
 void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
-                         flint_rand_t state,
-                         const slong * pivind,
-                         const slong * pivdeg,
-                         const slong * shift,
-                         orientation_t row_wise);
+                              flint_rand_t state,
+                              const slong * pivind,
+                              const slong * pivdeg,
+                              const slong * shift,
+                              orientation_t orient);
 
 //@} // doxygen group: Generation of random matrices with specific forms
 
@@ -540,13 +570,6 @@ void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
  * but this should have been done in Flint's native poly_mat_init too?
  **/
 //void nmod_poly_mat_init_set_from_nmod_mat(nmod_poly_mat_t pmat, const nmod_mat_t cmat);
-
-/** Set the polynomial matrix `pmat` to be a constant polynomial matrix whose
- * constant coefficient is a copy of `cmat`. This assumes `pmat` is already
- * initialized with the same modulus and dimensions as `cmat`.  */
-FLINT_DLL void
-nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat,
-                                const nmod_mat_t cmat);
 
 // TODO remove
 void nmod_poly_mat_set_from_mat_poly0(nmod_poly_mat_t pmat,

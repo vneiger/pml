@@ -62,7 +62,7 @@ void nmod_mat_poly0_set(nmod_mat_poly0_t res, const nmod_poly_mat_t F)
 
 	for (slong i = 0; i <= degree; i++)
 	{
-		nmod_poly_mat_coefficient_matrix(mat, F, i);
+		nmod_poly_mat_get_coeff_mat(mat, F, i);
 		nmod_mat_set(res->mat + i, mat);
 	}
 	nmod_mat_clear(mat);

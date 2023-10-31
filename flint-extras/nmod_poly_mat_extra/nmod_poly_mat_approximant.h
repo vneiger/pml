@@ -206,7 +206,7 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
                                        const nmod_poly_mat_t pmat,
                                        slong order,
                                        const slong * shift,
-                                       orientation_t row_wise);
+                                       orientation_t orient);
 
 //@} // doxygen group: General interfaces for approximant basis computation and verification
 

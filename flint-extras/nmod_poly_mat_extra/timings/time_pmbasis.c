@@ -58,7 +58,7 @@ void benchmark_pmbasis(slong rdim, slong cdim, slong sigma, slong len,
             ++nb_iter;
         }
         t /= nb_iter;
-        printf("%s\t%ld\t%ld\t%ld\t%ld\t%f\n\n", "NEW", rdim, cdim, sigma, len, t);
+        printf("%s\t%ld\t%ld\t%ld\t%ld\t%f\n", "NEW", rdim, cdim, sigma, len, t);
     }
 }
 
@@ -76,8 +76,8 @@ void benchmark_nbits(ulong nbits, flint_rand_t state)
     flint_randinit(state);
     const ulong prime = n_randprime(state, nbits, 0);
 
-    slong rdims[] = { 2, 4, 8, 16, 32, 64, 128, 256 };
-    slong sigmas[] = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192};
+    slong rdims[] = { 2, 4, 8, 16, 32, 64, 128 };
+    slong sigmas[] = { 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384};
 
     printf("Bench pmbasis\n");
     printf("nbits=%ld, prime=%ld\n", nbits, prime);
@@ -125,6 +125,7 @@ void benchmark_nbits_dim_deg(ulong nbits, ulong rdim, ulong cdim, ulong deg, fli
 
 int main(int argc, char *argv[])
 {
+    setlinebuf(stdout);
     srand(time(NULL));
     flint_rand_t state;
     flint_randinit(state);

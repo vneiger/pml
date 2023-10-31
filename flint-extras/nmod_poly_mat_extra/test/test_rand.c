@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <flint/fmpz.h>
 #include <flint/fmpz_mat.h>
 #include <flint/fmpz_vec.h>
 #include <flint/perm.h>
@@ -120,15 +122,15 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
-            if (!nmod_poly_mat_is_popov_rowwise(mat, urshift))
+            if (!nmod_poly_mat_is_popov(mat, urshift, ROW_LOWER))
                 return 1;
 
             flint_printf("\nUniformly random matrix, row-wise 0-Popov, with general interface:\n");
-            nmod_poly_mat_rand_popov(mat, state, rpivind, rpivdeg, NULL, ROW_WISE);
+            nmod_poly_mat_rand_popov(mat, state, rpivind, rpivdeg, NULL, ROW_LOWER);
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
-            if (!nmod_poly_mat_is_popov_rowwise(mat, NULL))
+            if (!nmod_poly_mat_is_popov(mat, NULL, ROW_LOWER))
                 return 1;
 
             flint_printf("\nUniformly random matrix, row-wise shifted-Popov:\n");
@@ -136,15 +138,15 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
-            if (!nmod_poly_mat_is_popov_rowwise(mat, rshift))
+            if (!nmod_poly_mat_is_popov(mat, rshift, ROW_LOWER))
                 return 1;
 
             flint_printf("\nUniformly random matrix, row-wise shifted-Popov, with general interface:\n");
-            nmod_poly_mat_rand_popov(mat, state, rpivind, rpivdeg, rshift, ROW_WISE);
+            nmod_poly_mat_rand_popov(mat, state, rpivind, rpivdeg, rshift, ROW_LOWER);
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
-            if (!nmod_poly_mat_is_popov_rowwise(mat, rshift))
+            if (!nmod_poly_mat_is_popov(mat, rshift, ROW_LOWER))
                 return 1;
         }
 
@@ -156,15 +158,15 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
-            if (!nmod_poly_mat_is_popov_columnwise(mat, ucshift))
+            if (!nmod_poly_mat_is_popov(mat, ucshift, COL_UPPER))
                 return 1;
 
             flint_printf("\nUniformly random matrix, column-wise 0-Popov, with general interface:\n");
-            nmod_poly_mat_rand_popov(mat, state, cpivind, cpivdeg, NULL, COLUMN_WISE);
+            nmod_poly_mat_rand_popov(mat, state, cpivind, cpivdeg, NULL, COL_UPPER);
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
-            if (!nmod_poly_mat_is_popov_columnwise(mat, NULL))
+            if (!nmod_poly_mat_is_popov(mat, NULL, COL_UPPER))
                 return 1;
 
             flint_printf("\nUniformly random matrix, column-wise shifted-Popov:\n");
@@ -172,15 +174,15 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
-            if (!nmod_poly_mat_is_popov_columnwise(mat, cshift))
+            if (!nmod_poly_mat_is_popov(mat, cshift, COL_UPPER))
                 return 1;
 
             flint_printf("\nUniformly random matrix, column-wise shifted-Popov, with general interface:\n");
-            nmod_poly_mat_rand_popov(mat, state, cpivind, cpivdeg, cshift, COLUMN_WISE);
+            nmod_poly_mat_rand_popov(mat, state, cpivind, cpivdeg, cshift, COL_UPPER);
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
-            if (!nmod_poly_mat_is_popov_columnwise(mat, cshift))
+            if (!nmod_poly_mat_is_popov(mat, cshift, COL_UPPER))
                 return 1;
         }
 
@@ -188,35 +190,35 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
         if (ncols == nrows)
         {
             flint_printf("\nUniformly random square matrix, row-wise 0-Popov, with general interface:\n");
-            nmod_poly_mat_rand_popov(mat, state, NULL, rpivdeg, NULL, ROW_WISE);
+            nmod_poly_mat_rand_popov(mat, state, NULL, rpivdeg, NULL, ROW_LOWER);
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
-            if (!nmod_poly_mat_is_popov_rowwise(mat, NULL))
+            if (!nmod_poly_mat_is_popov(mat, NULL, ROW_LOWER))
                 return 1;
 
             flint_printf("\nUniformly random square matrix, row-wise shifted-Popov, with general interface:\n");
-            nmod_poly_mat_rand_popov(mat, state, NULL, rpivdeg, rshift, ROW_WISE);
+            nmod_poly_mat_rand_popov(mat, state, NULL, rpivdeg, rshift, ROW_LOWER);
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
-            if (!nmod_poly_mat_is_popov_rowwise(mat, rshift))
+            if (!nmod_poly_mat_is_popov(mat, rshift, ROW_LOWER))
                 return 1;
 
             flint_printf("\nUniformly random square matrix, column-wise 0-Popov, with general interface:\n");
-            nmod_poly_mat_rand_popov(mat, state, NULL, cpivdeg, NULL, COLUMN_WISE);
+            nmod_poly_mat_rand_popov(mat, state, NULL, cpivdeg, NULL, COL_UPPER);
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
-            if (!nmod_poly_mat_is_popov_columnwise(mat, NULL))
+            if (!nmod_poly_mat_is_popov(mat, NULL, COL_UPPER))
                 return 1;
 
             flint_printf("\nUniformly random square matrix, column-wise shifted-Popov, with general interface:\n");
-            nmod_poly_mat_rand_popov(mat, state, NULL, cpivdeg, cshift, COLUMN_WISE);
+            nmod_poly_mat_rand_popov(mat, state, NULL, cpivdeg, cshift, COL_UPPER);
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
-            if (!nmod_poly_mat_is_popov_columnwise(mat, cshift))
+            if (!nmod_poly_mat_is_popov(mat, cshift, COL_UPPER))
                 return 1;
         }
     }

@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "nmod_poly_mat_approximant.h"
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_io.h"
@@ -20,7 +21,6 @@ int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
 {
     const slong rdim = mat->r;
     nmod_poly_mat_t appbas;
-    nmod_poly_mat_init(appbas, rdim, rdim, mat->modulus);
 
     slong cshift[rdim];
     for (slong i = 0; i < rdim; i++)
@@ -30,7 +30,7 @@ int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
     nmod_poly_mat_mbasis(appbas, cshift, mat, order);
 
     // testing correctness of nmod_poly_mat_mbasis
-    if (!nmod_poly_mat_is_approximant_basis(appbas, mat, order, shift, ROW_WISE))
+    if (!nmod_poly_mat_is_approximant_basis(appbas, mat, order, shift, ROW_LOWER))
     {
         printf("nmod_poly_mat_mbasis output is not a minimal approximant basis\n");
         printf("Input matrix:\n");
@@ -42,6 +42,7 @@ int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
         nmod_poly_mat_init(res, appbas->r, mat->c, mat->modulus);
         nmod_poly_mat_mul(res, appbas, mat);
         nmod_poly_mat_print_pretty(res,"X");
+        nmod_poly_mat_clear(res);
         printf("Degree matrix:\n");
         nmod_poly_mat_degree_matrix_print_pretty(appbas);
         printf("Input shift:\t");
@@ -55,7 +56,7 @@ int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
     //mbasis(appbas, oshift, mat, order, shift);
 
     //// testing correctness of mbasis
-    //if (!nmod_poly_mat_is_approximant_basis(appbas, mat, order, shift, ROW_WISE))
+    //if (!nmod_poly_mat_is_approximant_basis(appbas, mat, order, shift, ROW_LOWER))
     //{
     //    printf("mbasis output is not a minimal approximant basis\n");
     //    printf("Input matrix:\n");
@@ -197,14 +198,14 @@ int collection_test_mbasis(slong iter)
             iter // number of iterations
             * 40 // number of mats (currently 5) x number of shifts (currently 8)
             * _test_collection_nb_primes
-            * _test_collection_nb_dim
-            * _test_collection_nb_dim
+            * _test_collection_nb_dims
+            * _test_collection_nb_dims
             * _test_collection_nb_smalldegs;
     printf("Launching testing collection (%ld cases)\n", total_nb_tests);
 
     for (slong i_primes = 0; i_primes < _test_collection_nb_primes; i_primes++)
-        for (slong i_rdims = 0; i_rdims < _test_collection_nb_dim; i_rdims++)
-            for (slong i_cdims = 0; i_cdims < _test_collection_nb_dim; i_cdims++)
+        for (slong i_rdims = 0; i_rdims < _test_collection_nb_dims; i_rdims++)
+            for (slong i_cdims = 0; i_cdims < _test_collection_nb_dims; i_cdims++)
                 for (slong i_degs = 0; i_degs < _test_collection_nb_smalldegs; i_degs++)
                     for (slong it = 0; it < iter; it++)
                     {

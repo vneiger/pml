@@ -2,6 +2,10 @@
 #define __NMOD_POLY_EXTRA__H
 
 #include <flint/nmod_poly.h>
+#include <flint/fft_small.h>
+#include <flint/machine_vectors.h>
+
+#include <math.h>
 #include "nmod_extra.h"
 
 #ifdef __cplusplus
@@ -23,155 +27,31 @@ void nmod_poly_rand_monic(nmod_poly_t pol,
                           flint_rand_t state,
                           slong len);
 
-/** 
- * uniformly random coefficients. If `len` is nonpositive, `pol` is set to
- * zero. */
-void nmod_poly_rand_monic(nmod_poly_t pol,
-                          flint_rand_t state,
-                          slong len);
-
-
-/** Returns `1` if the polynomial `pol` is monic, otherwise returns `0`. */
-NMOD_POLY_INLINE int
-nmod_poly_is_monic(const nmod_poly_t pol)
-{
-    if (pol->length && pol->coeffs[(pol->length - 1)] == 1)
-        return 1;
-    else
-        return 0;
-}
-
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* a structure for FFT modulo p                               */
-/* only uses flint arithmetic                                 */
+/* fft_small FFT, using doubles                               */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+
 typedef struct
 {
     nmod_t mod;
+    vec1d p, pinv;
+
     mp_limb_t w, inv_w;       // root of 1 and its inverse
     ulong order;       // its order
     
-    /*  table of roots of unity, with (order+1) levels                              */
-    /*  at level k > 0, set wk = w^(2^(order-k)). this is a K-th root, with K=2^k   */
-    /*  the entries of powers_w[k] are                                              */
-    /*        1, wk, wk^2, ..., wk^{K/2-1},           (len K/2)                     */
-    /*        1, wk^2, wk^4, ..., wk^{K/2-2},         (len K/4)                     */
-    /*        1, wk^4, wk^8, ..., wk^{K/2-4}          (len K/8)                     */
-    /*        ...                                                                   */
-    /*        1, wk^{K/8}, wk^{K/4}, wk^{3K/8},       (len (K/2)/(K/8)=4)           */
-    /*        1, wk^{K/4},                            (len 2)                       */
-    /*        1.                                      (len 1)                       */
-    /*  total length K-1 (we allocate K)                                            */ 
-    mp_ptr * powers_w;
-    mp_ptr * powers_inv_w_t;  // same table for 1/w as for w
+    vec1d **powers_w;
+    mp_limb_t **powers_inv_w_t;  // same table for 1/w as for w
 
     // length order+1, with powers_inv_2[i] = 1/2^i 
-    mp_ptr powers_inv_2;
+    mp_limb_t *powers_inv_2;
+    
     // length order, level k has length 2^k with entries 1/w{k+1}^i/2^k 
-    mp_ptr * powers_inv_w_over_2;
-    
-} nmod_fft_struct;
-typedef nmod_fft_struct nmod_fft_t[1];
-
-/*------------------------------------------------------------*/
-/* a butterfly with reduction mod p                           */
-/*------------------------------------------------------------*/
-#define BUTTERFLY(o1, o2, i1, i2, mod)                 \
-    do {                                               \
-        o1 = i1 + i2;                                  \
-        o2 = i1 - i2;                                  \
-        CORRECT_0_2P(o1, mod.n);                       \
-        CORRECT_MINUSP_P(o2, mod.n);                   \
-    } while(0)
-
-/*------------------------------------------------------------*/
-/* initializes all entries of F                               */
-/* w primitive and w^(2^order))=1                             */
-/* DFTs of size up to 2^order are supported                   */ 
-/*------------------------------------------------------------*/
-void nmod_fft_init_set(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
-
-/*------------------------------------------------------------*/
-/* clears all memory assigned to F                            */
-/*------------------------------------------------------------*/
-void nmod_fft_clear(nmod_fft_t F);
-
-/*------------------------------------------------------------*/
-/* fft evaluation                                             */
-/* returns x[i] = poly(w^bitreverse_n(i)), n=2^k              */
-/* x must have length >= n                                    */
-/*------------------------------------------------------------*/
-void nmod_fft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_fft_t F, const ulong k);
-
-/*------------------------------------------------------------*/
-/* inverse fft                                                */
-/* given x[i] = poly(w^bitreverse(i,2^k)), returns poly       */
-/*------------------------------------------------------------*/
-void nmod_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_fft_t F, const ulong k);
-
-/*------------------------------------------------------------*/
-/* tft evaluation                                             */
-/* returns a cyclotomic tft evaluation of x at n points       */
-/* x must have length >= N                                    */
-/*------------------------------------------------------------*/
-void nmod_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_fft_t F, const ulong N);
-
-/*------------------------------------------------------------*/
-/* inverse tft                                                */
-/*------------------------------------------------------------*/
-void nmod_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_fft_t F, const ulong N);
-
-/*-----------------------------------------------------------*/
-/* transpose tft in length N                                 */
-/*-----------------------------------------------------------*/
-void nmod_tft_evaluate_t(mp_ptr x, mp_srcptr A, const nmod_fft_t F, const ulong N);
-
-/*-----------------------------------------------------------*/
-/* transpose inverse tft in length N                         */
-/*-----------------------------------------------------------*/
-void nmod_tft_interpolate_t(mp_ptr x, mp_srcptr A, const nmod_fft_t F, const ulong N);
-
-
-    
-#ifdef HAS_INT128
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* a structure for FFT modulo p                               */
-/* assumes C compiler has __int128 built-in type              */
-/* __int128 used for mod p reductions                         */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-typedef struct
-{
-    nmod_t mod;
-    mp_limb_t w, inv_w;       // root of 1 and its inverse
-    ulong order;       // its order
-    
-    mp_ptr * powers_w; // the powers of the successive roots, as in nmod_fft_t
-    mp_ptr * i_powers_w; // the same, after precomputation
-
-    mp_ptr * powers_inv_w_t;  // same table for 1/w as for w
-    mp_ptr * i_powers_inv_w_t;  // same table for 1/w as for w
-    
-    mp_ptr * powers_r; // the powers of rho such that rho^2 = w
-    mp_ptr * i_powers_r; // the same, after precomputation
-    mp_ptr * powers_inv_r; // the powers of rho such that rho^2 = w
-    mp_ptr * i_powers_inv_r; // the same, after precomputation
-    
-    // inverses of the powers of 2
-    mp_ptr powers_inv_2;
-    mp_ptr i_powers_inv_2;
-
-    // length order, level k has length 2^k with entries 1/w{k+1}^i/2^k 
-    mp_ptr * powers_inv_w_over_2;
-    mp_ptr * i_powers_inv_w_over_2;
-} nmod_64_fft_struct;
-typedef nmod_64_fft_struct nmod_64_fft_t[1];
+    vec1d **powers_inv_w_over_2;
+} nmod_sd_fft_struct;
+typedef nmod_sd_fft_struct nmod_sd_fft_t[1];
 
 
 /*------------------------------------------------------------*/
@@ -179,162 +59,47 @@ typedef nmod_64_fft_struct nmod_64_fft_t[1];
 /* w primitive and w^(2^order))=1                             */
 /* DFTs of size up to 2^order are supported                   */ 
 /*------------------------------------------------------------*/
-void nmod_64_fft_init_set(nmod_64_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
-
-/*------------------------------------------------------------*/
-/* clears all memory assigned to F                            */
-/*------------------------------------------------------------*/
-void nmod_64_fft_clear(nmod_64_fft_t F);
-
-/*------------------------------------------------------------*/
-/* fft evaluation                                             */
-/* returns x[i] = poly(w^bitreverse_n(i)), n=2^k              */
-/* x must have length >= n                                    */
-/*------------------------------------------------------------*/
-void nmod_64_fft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_64_fft_t F, const ulong k);
-
-/*------------------------------------------------------------*/
-/* inverse fft                                                */
-/* given x[i] = poly(w^bitreverse(i,2^k)), returns poly       */
-/*------------------------------------------------------------*/
-void nmod_64_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_64_fft_t F, const ulong k);
-
-/*------------------------------------------------------------*/
-/* tft evaluation                                             */
-/* returns a cyclotomic tft evaluation of x at n points       */
-/* x must have length >= N                                    */
-/*------------------------------------------------------------*/
-void nmod_64_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_64_fft_t F, const ulong N);
-
-/*------------------------------------------------------------*/
-/* tft interpolation                                          */
-/*------------------------------------------------------------*/
-void nmod_64_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_64_fft_t F, const ulong N);
-
-/*-----------------------------------------------------------*/
-/* transpose tft in length N                                 */
-/*-----------------------------------------------------------*/
-void nmod_64_tft_evaluate_t(mp_ptr x, mp_srcptr A, const nmod_64_fft_t F, const ulong N);
-
-/*-----------------------------------------------------------*/
-/* transpose inverse tft in length N                         */
-/*-----------------------------------------------------------*/
-void nmod_64_tft_interpolate_t(mp_ptr x, mp_srcptr A, const nmod_64_fft_t F, const ulong N);
-
-#endif
-
-
-
-
-#ifdef HAS_AVX2
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* a structure for FFT modulo p                               */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-typedef struct
-{
-    nmod_t mod;
-    mp_hlimb_t w, inv_w;       // root of 1 and its inverse
-    ulong order;       // its order
+void nmod_sd_fft_init_set(nmod_sd_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
     
-    mp_hlimb_t ** powers_w; // the powers of the successive roots, ordered for fft_k
-    mp_hlimb_t ** i_powers_w; // the same, after precomputation
-
-    mp_hlimb_t ** powers_inv_w_t; // the inverse powers of the successive roots, ordered for fft_k
-    mp_hlimb_t ** i_powers_inv_w_t; // the same, after precomputation
-
-    // inverses of the powers of 2
-    mp_hlimb_t * powers_inv_2;
-    mp_hlimb_t * i_powers_inv_2;
-
-    // length order, level k has length 2^k with entries 1/w{k+1}^i/2^k 
-    mp_hlimb_t ** powers_inv_w_over_2;
-    mp_hlimb_t ** i_powers_inv_w_over_2;
-
-} nmod_32_fft_struct;
-typedef nmod_32_fft_struct nmod_32_fft_t[1];
-
-/*------------------------------------------------------------*/
-/* a butterfly with reduction mod p                           */
-/*------------------------------------------------------------*/
-#define BUTTERFLY32(o1, o2, i1, i2, mod)                    \
-    do {                                                    \
-        o1 = i1 + i2;                                       \
-        o2 = i1 - i2;                                       \
-        CORRECT_32_0_2P(o1, (mp_hlimb_t) mod.n);            \
-        CORRECT_32_MINUSP_P(o2, (mp_hlimb_t) mod.n);        \
-    } while(0)
-
-/*------------------------------------------------------------*/
-/* initializes all entries of F                               */
-/* w primitive and w^(2^order))=1                             */
-/* DFTs of size up to 2^order are supported                   */ 
-/*------------------------------------------------------------*/
-void nmod_32_fft_init_set(nmod_32_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
-
 /*------------------------------------------------------------*/
 /* clears all memory assigned to F                            */
 /*------------------------------------------------------------*/
-void nmod_32_fft_clear(nmod_32_fft_t F);
+void nmod_sd_fft_clear(nmod_sd_fft_t F);
+
+
+void sd_fft_ctx_init_inverse(sd_fft_ctx_t Qt, sd_fft_ctx_t Q);
 
 /*------------------------------------------------------------*/
 /* fft evaluation                                             */
-/* returns x[i] = poly(w^bitreverse_n(i)), n=2^k              */
+/* returns x[i] = poly(w^i), n=2^k, up to permutation         */
 /* x must have length >= n                                    */
 /*------------------------------------------------------------*/
-void nmod_avx2_32_fft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32_fft_t F, const ulong k);
+void nmod_sd_fft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong k);
+void nmod_sd_fft_evaluate_t(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong k);
 
 /*------------------------------------------------------------*/
-/* inverse fft                                                */
-/* given x[i] = poly(w^bitreverse(i,2^k)), returns poly       */
-/*------------------------------------------------------------*/
-//void nmod_avx2_32_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_32_fft_t F, const ulong k);
-
-/*------------------------------------------------------------*/
-/* tft evaluation                                             */
-/* returns a cyclotomic tft evaluation of x at n points       */
+/* tft evaluation and its transpose                           */
 /* x must have length >= N                                    */
 /*------------------------------------------------------------*/
-void nmod_avx2_32_tft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32_fft_t F, const ulong N);
+void nmod_sd_tft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
+void nmod_sd_tft_evaluate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, ulong N);
 
 /*------------------------------------------------------------*/
-/* inverse tft                                                */
+/* tft interpolation and its transpose                        */
+/* inverts nmod_sd_tft_evaluate                               */
 /*------------------------------------------------------------*/
-void nmod_avx2_32_tft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_32_fft_t F, const ulong N);
-
-/*-----------------------------------------------------------*/
-/* transpose tft in length N                                 */
-/*-----------------------------------------------------------*/
-void nmod_avx2_32_tft_evaluate_t(mp_ptr x, mp_srcptr A, const nmod_32_fft_t F, const ulong N);
-
-/*-----------------------------------------------------------*/
-/* transpose inverse tft in length N                         */
-/*-----------------------------------------------------------*/
-void nmod_avx2_32_tft_interpolate_t(mp_ptr x, mp_srcptr A, const nmod_32_fft_t F, const ulong N);
-
-#endif
-
- 
-
-#ifdef HAS_AVX512
+void nmod_sd_tft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
+void nmod_sd_tft_interpolate_t(mp_ptr a, mp_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
 
 /*------------------------------------------------------------*/
-/* fft evaluation                                             */
-/* returns x[i] = poly(w^bitreverse_n(i)), n=2^k              */
-/* x must have length >= n                                    */
+/* fft interpolation                                          */
+/* inverts nmod_sd_fft_evaluate                               */
 /*------------------------------------------------------------*/
-void nmod_avx512_32_fft_evaluate(mp_ptr x, const nmod_poly_t poly, const nmod_32_fft_t F, const ulong k);
-
-/*------------------------------------------------------------*/
-/* inverse fft                                                */
-/* given x[i] = poly(w^bitreverse(i,2^k)), returns poly       */
-/*------------------------------------------------------------*/
-void nmod_avx512_32_fft_interpolate(nmod_poly_t poly, mp_srcptr x, const nmod_32_fft_t F, const ulong k);
+void nmod_sd_fft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const ulong k); 
+void nmod_sd_fft_interpolate_t(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const ulong k); 
 
 
-#endif
+
 
 /*------------------------------------------------------------*/
 /* a structure for geometric evaluation / interpolation       */
@@ -373,6 +138,9 @@ void nmod_geometric_progression_evaluate(mp_ptr v, const nmod_poly_t poly, const
 /* out: interpolating polynomial C s.t. C(q^i) = v[i], i<d    */
 /*------------------------------------------------------------*/
 void nmod_geometric_progression_interpolate(nmod_poly_t poly, mp_srcptr v, const nmod_geometric_progression_t G);
+
+
+
 
 #ifdef __cplusplus
 }

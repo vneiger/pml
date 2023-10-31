@@ -47,7 +47,7 @@ int main()
 
     // sage: M.is_weak_popov()
     // True
-    iswp = nmod_poly_mat_is_weak_popov_rowwise(mat, NULL);
+    iswp = nmod_poly_mat_is_weak_popov(mat, NULL, ROW_LOWER);
     printf("Checking is weak Popov row-wise: %d --> %s\n",
            iswp, (iswp==1) ? "ok" : "not ok");
 
@@ -56,7 +56,7 @@ int main()
 
     // sage: M.is_weak_popov(ordered=True)
     // True
-    iswp = nmod_poly_mat_is_ordered_weak_popov_rowwise(mat, NULL);
+    iswp = nmod_poly_mat_is_ordered_weak_popov(mat, NULL, ROW_LOWER);
     printf("Checking is ordered weak Popov row-wise: %d --> %s\n\n",
            iswp, (iswp==1) ? "ok" : "not ok");
 
@@ -74,10 +74,10 @@ int main()
     nmod_poly_mat_print_pretty(mat2, "x");
     printf("\n");
 
-    iswp = nmod_poly_mat_is_weak_popov_rowwise(mat2, NULL);
+    iswp = nmod_poly_mat_is_weak_popov(mat2, NULL, ROW_LOWER);
     printf("Checking is weak Popov row-wise: %d --> %s\n",
            iswp, (iswp==1) ? "ok" : "not ok");
-    iswp = nmod_poly_mat_is_ordered_weak_popov_rowwise(mat2, NULL);
+    iswp = nmod_poly_mat_is_ordered_weak_popov(mat2, NULL, ROW_LOWER);
     printf("Checking is ordered weak Popov row-wise: %d --> %s\n\n",
            iswp, (iswp==0) ? "ok" : "not ok");
 
@@ -90,14 +90,14 @@ int main()
     // sage: M.is_weak_popov(shifts=[2,3,1])
     // False
     shift[0] = 2; shift[1] = 3; shift[2] = 1;
-    iswp = nmod_poly_mat_is_weak_popov_rowwise(mat, shift);
+    iswp = nmod_poly_mat_is_weak_popov(mat, shift, ROW_LOWER);
     printf("Checking is (2,3,1)-weak Popov row-wise: %d --> %s\n",
            iswp, (iswp==0) ? "ok" : "not ok");
 
     // sage: M.is_weak_popov(shifts=[0,2,0],row_wise=False,ordered=True)
     // True
     shift[0] = 0; shift[1] = 2; shift[2] = 0;
-    iswp = nmod_poly_mat_is_ordered_weak_popov_columnwise(mat, shift);
+    iswp = nmod_poly_mat_is_ordered_weak_popov(mat, shift, COL_UPPER);
     printf("Checking is (0,2,0)-ordered weak Popov column-wise: %d --> %s\n\n",
            iswp, (iswp==1) ? "ok" : "not ok");
     // TODO
@@ -149,21 +149,21 @@ int main()
     nmod_poly_mat_print_pretty(mat, "x");
     printf("\n");
 
-    iswp = nmod_poly_mat_is_weak_popov_rowwise(mat, NULL);
+    iswp = nmod_poly_mat_is_weak_popov(mat, NULL, ROW_LOWER);
     printf("Checking is weak Popov row-wise: %d --> %s\n",
            iswp, (iswp==0) ? "ok" : "not ok");
 
-    iswp = nmod_poly_mat_is_ordered_weak_popov_rowwise(mat, NULL);
+    iswp = nmod_poly_mat_is_ordered_weak_popov(mat, NULL, ROW_LOWER);
     printf("Checking is ordered weak Popov row-wise: %d --> %s\n",
            iswp, (iswp==0) ? "ok" : "not ok");
 
     slong shift2[4] = {0,3,2,2};
-    iswp = nmod_poly_mat_is_weak_popov_rowwise(mat, shift2);
+    iswp = nmod_poly_mat_is_weak_popov(mat, shift2, ROW_LOWER);
     printf("Checking is (0,3,2,2)-weak Popov row-wise: %d --> %s\n",
            iswp, (iswp==1) ? "ok" : "not ok");
-    // TODO
+    // TODO (todo what??)
 
-    iswp = nmod_poly_mat_is_ordered_weak_popov_rowwise(mat, shift2);
+    iswp = nmod_poly_mat_is_ordered_weak_popov(mat, shift2, ROW_LOWER);
     printf("Checking is (0,3,2,2)-ordered weak Popov row-wise: %d --> %s\n\n",
            iswp, (iswp==0) ? "ok" : "not ok");
 
@@ -172,11 +172,11 @@ int main()
     // sage: M.is_weak_popov(shifts=[0,2,1,3],ordered=True)
     // True
     slong shift3[4] = {0,2,1,3};
-    iswp = nmod_poly_mat_is_weak_popov_rowwise(mat, shift3);
+    iswp = nmod_poly_mat_is_weak_popov(mat, shift3, ROW_LOWER);
     printf("Checking is (0,2,1,3)-weak Popov row-wise: %d --> %s\n",
            iswp, (iswp==1) ? "ok" : "not ok");
 
-    iswp = nmod_poly_mat_is_ordered_weak_popov_rowwise(mat, shift3);
+    iswp = nmod_poly_mat_is_ordered_weak_popov(mat, shift3, ROW_LOWER);
     printf("Checking is (0,2,1,3)-ordered weak Popov row-wise: %d --> %s\n\n",
            iswp, (iswp==1) ? "ok" : "not ok");
 
@@ -190,15 +190,15 @@ int main()
     nmod_poly_mat_print_pretty(mat, "x");
     printf("\n");
 
-    iswp = nmod_poly_mat_is_weak_popov_rowwise(mat, NULL);
+    iswp = nmod_poly_mat_is_weak_popov(mat, NULL, ROW_LOWER);
     printf("Checking is weak Popov row-wise: %d --> %s\n",
            iswp, (iswp==0) ? "ok" : "not ok");
 
-    iswp = nmod_poly_mat_is_weak_popov_rowwise(mat, shift3);
+    iswp = nmod_poly_mat_is_weak_popov(mat, shift3, ROW_LOWER);
     printf("Checking is (0,2,1,3)-weak Popov row-wise: %d --> %s\n",
            iswp, (iswp==0) ? "ok" : "not ok");
 
-    iswp = nmod_poly_mat_is_weak_popov_columnwise(mat, NULL);
+    iswp = nmod_poly_mat_is_weak_popov(mat, NULL, COL_UPPER);
     printf("Checking is weak Popov column-wise: %d --> %s\n",
            iswp, (iswp==0) ? "ok" : "not ok");
 
