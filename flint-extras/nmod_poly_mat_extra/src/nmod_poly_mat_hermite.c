@@ -407,17 +407,6 @@ slong nmod_poly_mat_uref_maxdeg_atomic(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
     return rk;
 }
 
-slong nmod_poly_mat_hnf_ur_maxdeg_atomic(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind)
-{
-    // upper row echelon form
-    slong rk = nmod_poly_mat_uref_maxdeg_atomic(mat, tsf, pivind);
-
-    // normalization
-    _normalize_uref(mat, tsf, pivind, rk);
-
-    return rk;
-}
-
 /**********************************************************************
 *                         Bradley's algorithm                        *
 *              orientation "ur": upper echelon, row-wise             *
@@ -548,19 +537,6 @@ slong nmod_poly_mat_uref_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, s
 
     return rk;
 }
-
-slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind, slong * mrp)
-{
-    // upper row echelon form
-    slong rk = nmod_poly_mat_uref_revlex_xgcd(mat, tsf, pivind, mrp);
-
-    // normalization
-    _normalize_uref(mat, tsf, pivind, rk);
-
-    return rk;
-}
-
-
 
 /**********************************************************************
 *                             Pivoting: lex                          *
@@ -696,18 +672,6 @@ slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slon
 
     return rk;
 }
-
-slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slong * pivind, slong * mrp)
-{
-    // upper row echelon form
-    slong rk = nmod_poly_mat_uref_lex_xgcd(mat, tsf, pivind, mrp);
-
-    // normalization
-    _normalize_uref(mat, tsf, pivind, rk);
-
-    return rk;
-}
-
 
 
 

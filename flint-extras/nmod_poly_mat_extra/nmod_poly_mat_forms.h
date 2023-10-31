@@ -86,7 +86,7 @@ typedef enum
  * check whether `shift` has the right length. Most functions accept that
  * `NULL` is provided as input for the shift, this is understood as the uniform
  * shift `[0,...,0]` of the right length.
- *  
+ *
  */
 //@{
 
@@ -319,7 +319,7 @@ void nmod_poly_mat_degree_matrix_shifted(fmpz_mat_t dmat,
  * entry `(i,j)` is the coefficient of degree `cdeg[j]` of the entry
  * `pmat[i][j]` (this is zero if `pmat[i][j]` does not reach `cdeg[j]`, or if
  * the column pmat[:][j] is zero).
- *  
+ *
  * More generally, given a shift `shift` of length `n`, the row-wise
  * `shift`-leading matrix of `pmat` is the `m x n` matrix over the base field
  * whose entry `(i,j)` is the coefficient of degree `rdeg[i]-shift[j]` of the
@@ -388,7 +388,7 @@ void nmod_poly_mat_leading_matrix(nmod_mat_t lmat,
  * check whether `shift` has the right length. Most functions accept that
  * `NULL` is provided as input for the shift, this is understood as the uniform
  * shift `[0,...,0]` of the right length.
- *  
+ *
  * \todo doc: define lower/upper row-wise/column-wise echelon/Hermite forms
  */
 //@{
@@ -436,6 +436,83 @@ int nmod_poly_mat_is_hermite(const nmod_poly_mat_t pmat,
 
 //@} // doxygen group: Testing polynomial matrix forms
 
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* COMPUTING ECHELON FORMS                                    */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name Computing echelon forms
+ * See @ref MatrixForms for definitions
+ */
+//@{
+
+/** Transforms ``mat`` in place to a row-wise, upper row echelon form, and
+ * returns the rank of ``mat``.
+ *
+ *   ..``tsf``. If ``tsf`` is not NULL, the same unimodular left-operations
+ *   applied to ``mat`` are performed on ``tsf`` (which must therefore have as
+ *   many rows as ``mat``, and can have an arbitrary number of columns).
+ *   Setting ``tsf`` to the identity beforehand allows one to recover the
+ *   unimodular transformation between ``mat`` and the computed Hermite normal
+ *   form. ``mat`` cannot alias ``tsf``.
+ *
+ *   ..``pivind``. It is filled with the (upper echelon, row-wise) pivot
+ *   indices of the output Hermite normal form, which also correspond to the
+ *   column rank profile of ``mat``. As input, ``pivind`` must have allocated
+ *   space for at least rank(mat) entries (take min(mat->r,mat->c) if no better
+ *   bound is known). No need to fill it with values. Its allocated space is
+ *   left unchanged, and so are its entries beyond the rank(mat)-th one.
+ *
+ * Some algorithms may also provide:
+ *
+ *   ..``mrp``. It is filled with the matrix rank profile of the input matrix.
+ *   See e.g. Dumas, Pernet, Sultan, Journal of Symbolic Computation 2017. It
+ *   is represented here as an array of mat->r entries, the i-th entry is
+ *   either some j in 0:mat->c giving the position (i,j) of `1` in the matrix
+ *   rank profile, or it is -1 to indicate that row i does not contribute to
+ *   the matrix rank profile. As input, ``mrp`` must have allocated space
+ *   for at least mat->r entries; no need to fill them with values. Its
+ *   allocated space is left unchanged, and so are its entries beyond the
+ *   mat->r -th one.
+ *
+ *   .. `rrp`. It is filled with the row rank profile of the input matrix.
+ *   As input, ``rrp`` must have allocated space for (TODO check) at least rank(mat) entries
+ *   (take min(mat->r,mat->c) if no better bound is known). No need to fill it
+ *   with values. Its allocated space is left unchanged, and so are its entries
+ *   beyond the rank(mat)-th one.
+ **/
+
+// Upper row echelon form inspired by Rosser's HNF algorithm
+slong nmod_poly_mat_uref_maxdeg_atomic(nmod_poly_mat_t mat,
+                                       nmod_poly_mat_t tsf,
+                                       slong * pivind);
+
+// Upper row echelon form inspired by Bradley's HNF algorithm
+slong nmod_poly_mat_uref_revlex_xgcd(nmod_poly_mat_t mat,
+                                     nmod_poly_mat_t tsf,
+                                     slong * pivind,
+                                     slong * mrp);
+
+// Upper row echelon form using lexicographic pivot search
+slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat,
+                                  nmod_poly_mat_t tsf,
+                                  slong * pivind,
+                                  slong * mrp);
+
+// TODO doc
+slong nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
+                                        nmod_poly_mat_t tsf,
+                                        slong * pivind,
+                                        slong * rrp,
+                                        int * udet);
+
+
+//@} // doxygen group: Computing echelon forms
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* COMPUTING HERMITE NORMAL FORM                              */
@@ -476,59 +553,14 @@ int nmod_poly_mat_is_hermite(const nmod_poly_mat_t pmat,
  *   allocated space is left unchanged, and so are its entries beyond the
  *   mat->r -th one.
  *
- *   \todo correctness of mrp not verified at the moment
  **/
 // upper row echelon form normalization into upper row-wise HNF
 // TODO make public?
+// TODO doc
 void _normalize_uref(nmod_poly_mat_t mat,
                      nmod_poly_mat_t other,
-                     slong *
-                     pivind, slong rk);
-
-// Upper row echelon form inspired by Rosser's HNF algorithm
-slong nmod_poly_mat_uref_maxdeg_atomic(nmod_poly_mat_t mat,
-                                       nmod_poly_mat_t tsf,
-                                       slong * pivind);
-// Hermite normal form in the style of Rosser's algorithm
-slong nmod_poly_mat_hnf_ur_maxdeg_atomic(nmod_poly_mat_t mat,
-                                         nmod_poly_mat_t tsf,
-                                         slong * pivind);
-
-// Upper row echelon form inspired by Bradley's HNF algorithm
-slong nmod_poly_mat_uref_revlex_xgcd(nmod_poly_mat_t mat,
-                                     nmod_poly_mat_t tsf,
-                                     slong * pivind,
-                                     slong * mrp);
-// Hermite normal form in the style of Bradley's algorithm
-slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat,
-                                       nmod_poly_mat_t tsf,
-                                       slong * pivind,
-                                       slong * mrp);
-// Hermite normal form in the style of Kannan-Bachem's algorithm
-// (uref with reverse lexicographic pivot search, with modified scheduling for
-// cancellation of non-pivot entries, and continuous normalization into HNF)
-slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat,
-                                                    nmod_poly_mat_t tsf, slong *
-                                                    pivind, slong * mrp);
-
-// Upper row echelon form using lexicographic pivot search
-slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat,
-                                  nmod_poly_mat_t tsf,
-                                  slong * pivind,
-                                  slong * mrp);
-// Hermite normal form using lexicographic pivot search
-slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat,
-                                    nmod_poly_mat_t tsf,
-                                    slong * pivind,
-                                    slong * mrp);
-
-// TODO doc
-slong  _nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
-                                          nmod_poly_mat_t tsf,
-                                          slong * pivind,
-                                          slong * rrp,
-                                          int * udet);
-
+                     slong * pivind,
+                     slong rk);
 
 // TODO mod det version (see e.g. Domich) ? quite often for nmod_poly_mat's,
 // computing the determinant is not really easier than computing the HNF...
@@ -538,8 +570,70 @@ slong  _nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
 // compute them directly in HNF...)
 // --> ALSO for algorithms easily split into ref+normalization, the second step
 // could be done easily done mod det (of the pivot part if rank deficient), which
-// should be interesting for algorithms having large degree growth (but these may
-// be avoided anyway)
+// should be interesting for algorithms having large degree growth (but one may
+// want to avoid these anyway?)
+
+
+// Hermite normal form in the style of Kannan-Bachem's algorithm
+// (uref with reverse lexicographic pivot search, with modified scheduling for
+// cancellation of non-pivot entries, and continuous normalization into HNF)
+slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat,
+                                                    nmod_poly_mat_t tsf, slong *
+                                                    pivind, slong * mrp);
+
+// Hermite normal form in the style of Rosser's algorithm
+NMOD_POLY_MAT_INLINE
+slong nmod_poly_mat_hnf_ur_maxdeg_atomic(nmod_poly_mat_t mat,
+                                         nmod_poly_mat_t tsf,
+                                         slong * pivind)
+{
+    // upper row echelon form + normalization
+    slong rk = nmod_poly_mat_uref_maxdeg_atomic(mat, tsf, pivind);
+    _normalize_uref(mat, tsf, pivind, rk);
+    return rk;
+}
+
+// Hermite normal form in the style of Bradley's algorithm
+NMOD_POLY_MAT_INLINE
+slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat,
+                                       nmod_poly_mat_t tsf,
+                                       slong * pivind,
+                                       slong * mrp)
+{
+    // upper row echelon form + normalization
+    slong rk = nmod_poly_mat_uref_revlex_xgcd(mat, tsf, pivind, mrp);
+    _normalize_uref(mat, tsf, pivind, rk);
+    return rk;
+}
+
+// Hermite normal form using lexicographic pivot search
+NMOD_POLY_MAT_INLINE
+slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat,
+                                    nmod_poly_mat_t tsf,
+                                    slong * pivind,
+                                    slong * mrp)
+{
+    // upper row echelon form + normalization
+    slong rk = nmod_poly_mat_uref_lex_xgcd(mat, tsf, pivind, mrp);
+    _normalize_uref(mat, tsf, pivind, rk);
+    return rk;
+}
+
+// TODO doc
+NMOD_POLY_MAT_INLINE
+slong nmod_poly_mat_hnf_ur_matrixgcd_iter(nmod_poly_mat_t mat,
+                                          nmod_poly_mat_t tsf,
+                                          slong * pivind,
+                                          slong * rrp,
+                                          int * udet)
+{
+    // upper row echelon form + normalization
+    slong rk = nmod_poly_mat_uref_matrixgcd_iter(mat, tsf, pivind, rrp, udet);
+    _normalize_uref(mat, tsf, pivind, rk);
+    return rk;
+}
+
+
 
 //@} // doxygen group: Computing Hermite normal form
 
@@ -581,7 +675,7 @@ slong  _nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
 // put mat->r (or more). If the output is < 0, the output guarantees are the
 // same but only for the first |rk| + max_zr rows of mat (TODO be more precise;
 // zero rows have been put at bottom, etc)
-// 
+//
 // TODO doc det
 //
 // orient: orientation, must be among ROW_UPPER and ROW_LOWER (not checked if

@@ -15,7 +15,7 @@
 
 #define MAT(i,j) (mat->rows[i] + j)
 
-#define NOTRANS
+//#define NOTRANS
 
 // verify Hermite form
 int verify_hermite_form(const nmod_poly_mat_t hnf, const slong * pivind, const nmod_poly_mat_t tsf, slong rk, const nmod_poly_mat_t mat, flint_rand_t state)
@@ -201,6 +201,7 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
 
     int verif_hnf, verif_mrp;
 
+    if (0)
     { // maxdeg, atomic
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);
@@ -313,6 +314,7 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
             flint_printf("-- time (verif): %wd ms\n", t0->wall);
     }
 
+    if (0)
     { // Kannan-Bachem's algorithm
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);

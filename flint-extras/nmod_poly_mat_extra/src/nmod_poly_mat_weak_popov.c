@@ -185,12 +185,12 @@ mp_limb_t _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 // -> pivind must be allocated with at least rdim entries; its first rdim
 // entries will be populated with the shifted pivot index of the output weak
 // Popov form (undefined behaviour for entries beyond rdim)
-// -> rrp  must be NULL or allocated with rank(submat) entries, it will
-// eventually contain the row rank profile of submat as its first ``rank(mat)``
+// -> rrp  must be NULL or allocated with >= rank(submat) entries, it will
+// eventually contain the row rank profile of submat as its first ``rank(submat)``
 // entries
-// -> det is required to be +1 or -1 and will be multiplied with the
-// determinant of the unimodular transformation used during this call (which is
-// itself +1 or -1)
+// -> det can be NULL; otherwise it is required to be +1 or -1 (actually no) and will be
+// multiplied with the determinant of the unimodular transformation used during
+// this call (which is itself +1 or -1)
 // allowed orientation: ROW_LOWER | ROW_UPPER, no check that it is not sth else
 // Note: for ROW_LOWER, zero rows are put at the bottom even though they have
 // the smallest possible pivot index
