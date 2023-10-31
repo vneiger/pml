@@ -708,7 +708,7 @@ slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slon
 
 // Kannan-Bachem's HNF algorithm       (upper echelon, row-wise)
 // Adaptation, removing the assumptions (rank properties) from the original.
-// 
+//
 // Take same pivots as revlex strategy, but proceeds by leading principal
 // submatrices. Uses xgcd transformations, and continuous normalization.
 //
@@ -888,12 +888,12 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat, nmod_po
 // constant transformation to complete the computation.
 //
 // If not NULL, udet is either left the same or negated, according to the
-// determinant of the applied unimodular transformation, which is +1 or -1 
-slong _nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
-                                         nmod_poly_mat_t tsf,
-                                         slong * pivind,
-                                         slong * rrp,
-                                         int * udet)
+// determinant of the applied unimodular transformation, which is +1 or -1
+slong nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
+                                        nmod_poly_mat_t tsf,
+                                        slong * pivind,
+                                        slong * rrp,
+                                        int * udet)
 {
     if (mat->r == 0 || mat->c == 0)
         return 0;
@@ -991,7 +991,7 @@ slong _nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
     slong i = rk;
     while (i > 0)
     {
-        //        [ M  * ] 
+        //        [ M  * ]
         // mat is [ 0  E ] with E in upper echelon form (including possible
         // zero rows), and M of size i x i (a priori, nonsingular)
         //                 [ N  *  * ]

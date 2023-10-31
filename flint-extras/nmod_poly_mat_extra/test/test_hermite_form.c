@@ -353,9 +353,9 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         timeit_t t0, t1;
         timeit_start(t0);
 #ifdef NOTRANS
-        slong rk = _nmod_poly_mat_uref_matrixgcd_iter(hnf, NULL, pivind, NULL, NULL);
+        slong rk = nmod_poly_mat_uref_matrixgcd_iter(hnf, NULL, pivind, NULL, NULL);
 #else
-        slong rk = _nmod_poly_mat_uref_matrixgcd_iter(hnf, tsf, pivind, NULL, NULL);
+        slong rk = nmod_poly_mat_uref_matrixgcd_iter(hnf, tsf, pivind, NULL, NULL);
 #endif /* ifdef NOTRANS */
         timeit_stop(t0);
         if (rk <= 0 && !nmod_poly_mat_is_zero(mat))
