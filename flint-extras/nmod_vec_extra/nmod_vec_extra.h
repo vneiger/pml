@@ -33,8 +33,6 @@ void _nmod_vec_rand(mp_ptr vec,
             		nmod_t mod);
 
 
-
-
 /** Input/Output */
 // to be completed: print to file, print to sagemath..
 
@@ -58,7 +56,6 @@ void nmod_vec_primes(mp_ptr v, slong n, mp_bitcnt_t s);
 /* stores the result in 3 limbs of res                          */
 /* ------------------------------------------------------------ */
 void nmod_vec_integer_dot_product(mp_ptr res, mp_srcptr v1, mp_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2);
-    
 
 
 #ifdef __cplusplus

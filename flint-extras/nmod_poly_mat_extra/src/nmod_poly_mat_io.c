@@ -41,7 +41,7 @@ void nmod_poly_mat_degree_matrix_print_pretty(const nmod_poly_mat_t mat)
 {
     fmpz_mat_t dmat;
     fmpz_mat_init(dmat, mat->r, mat->c);
-    nmod_poly_mat_degree_matrix(dmat, mat);
+    nmod_poly_mat_degree_matrix(dmat, mat); 
     fmpz_mat_print_pretty(dmat);
     printf("\n");
     fmpz_mat_clear(dmat);
@@ -49,11 +49,11 @@ void nmod_poly_mat_degree_matrix_print_pretty(const nmod_poly_mat_t mat)
 
 void nmod_poly_mat_degree_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
                                                       const slong *shift,
-                                                      orientation_t row_wise)
+                                                      orientation_t orient)
 {
     fmpz_mat_t dmat;
     fmpz_mat_init(dmat, mat->r, mat->c);
-    nmod_poly_mat_degree_matrix_shifted(dmat, mat, shift, row_wise);
+    nmod_poly_mat_degree_matrix_shifted(dmat, mat, shift, orient); 
     fmpz_mat_print_pretty(dmat);
     printf("\n");
     fmpz_mat_clear(dmat);
@@ -68,11 +68,11 @@ void nmod_poly_mat_degree_matrix_shifted_print_pretty(const nmod_poly_mat_t mat,
 
 void nmod_poly_mat_leading_matrix_print_pretty(const nmod_poly_mat_t mat,
                                                const slong * shift,
-                                               orientation_t row_wise)
+                                               orientation_t orient)
 {
     nmod_mat_t lmat;
     nmod_mat_init(lmat, mat->r, mat->c, mat->modulus);
-    nmod_poly_mat_leading_matrix(lmat, mat, shift, row_wise);
+    nmod_poly_mat_leading_matrix(lmat, mat, shift, orient);
     nmod_mat_print_pretty(lmat);
     nmod_mat_clear(lmat);
 }

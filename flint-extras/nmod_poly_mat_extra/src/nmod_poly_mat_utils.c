@@ -1,81 +1,132 @@
+#include <stdlib.h> // for qsort
 #include <flint/nmod_poly.h>
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_forms.h"
 #include "nmod_mat_poly.h"
 
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* SETTING AND GETTING COEFFICIENTS                           */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
+/**********************************************************************
+*                    ROW ROTATION DOWNWARD/UPWARD                    *
+**********************************************************************/
 
-void nmod_poly_mat_coefficient_matrix(nmod_mat_t res, const nmod_poly_mat_t mat, slong degree)
+void _nmod_poly_mat_rotate_rows_downward(nmod_poly_mat_t mat, slong * vec, slong i, slong j)
 {
-    for(slong i = 0; i < mat->r; i++)
-        for(slong j = 0; j < mat->c; j++)
-            nmod_mat_set_entry(res, i, j,
-                               nmod_poly_get_coeff_ui(nmod_poly_mat_entry(mat, i, j), degree));
-}
-
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* TRANSPOSE, TRUNC, SHIFT, REVERSE                           */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-void nmod_poly_mat_set_trunc(nmod_poly_mat_t tmat, const nmod_poly_mat_t pmat, long len)
-{
-    for (slong i = 0; i < pmat->r; i++)
-        for (slong j = 0; j < pmat->c; j++)
-            nmod_poly_set_trunc(tmat->rows[i] + j, pmat->rows[i] + j, len);
-}
-
-void nmod_poly_mat_truncate(nmod_poly_mat_t pmat, long len)
-{
-    for (slong i = 0; i < pmat->r; i++)
-        for (slong j = 0; j < pmat->c; j++)
-            nmod_poly_truncate(pmat->rows[i] + j, len);
-}
-
-void nmod_poly_mat_shift_left(nmod_poly_mat_t smat, const nmod_poly_mat_t pmat, slong k)
-{
-    for (slong i = 0; i < smat->r; i++)
-        for (slong j = 0; j < smat->c; j++)
-            nmod_poly_shift_left(nmod_poly_mat_entry(smat, i, j), nmod_poly_mat_entry(pmat, i, j), k);
-}
-
-void nmod_poly_mat_shift_right(nmod_poly_mat_t smat, const nmod_poly_mat_t pmat, slong k)
-{
-    for (slong i = 0; i < smat->r; i++)
-        for (slong j = 0; j < smat->c; j++)
-            nmod_poly_shift_right(smat->rows[i] + j, pmat->rows[i] + j, k);
-}
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* SET FROM CONSTANT                                          */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-void nmod_poly_mat_set_from_nmod_mat(nmod_poly_mat_t pmat, const nmod_mat_t cmat)
-{
-    for (slong i = 0; i < cmat->r; ++i)
-        for (slong j = 0; j < cmat->c; ++j)
+    if (i != j)
+    {
+        if (vec)
         {
-            if (nmod_mat_entry(cmat, i, j) == 0)
-                nmod_poly_zero(nmod_poly_mat_entry(pmat, i, j));
-            else
-            {
-                nmod_poly_realloc(nmod_poly_mat_entry(pmat, i, j), 1);
-                nmod_poly_mat_entry(pmat, i, j)->coeffs[0]
-                                    = nmod_mat_entry(cmat, i, j);
-            }
+            slong tmp_vec = vec[j];
+            for (slong ii = j; ii > i; ii--)
+                vec[ii] = vec[ii-1];
+            vec[i] = tmp_vec;
         }
+
+        nmod_poly_struct * tmp_mat = mat->rows[j];
+        for (slong ii = j; ii > i; ii--)
+            mat->rows[ii] = mat->rows[ii-1];
+        mat->rows[i] = tmp_mat;
+    }
 }
+
+void _nmod_poly_mat_rotate_rows_upward(nmod_poly_mat_t mat, slong * vec, slong i, slong j)
+{
+    if (i != j)
+    {
+        if (vec)
+        {
+            slong tmp_vec = vec[i];
+            for (slong ii = i; ii < j; ii++)
+                vec[ii] = vec[ii+1];
+            vec[j] = tmp_vec;
+        }
+
+        nmod_poly_struct * tmp_mat = mat->rows[i];
+        for (slong ii = i; ii < j; ii++)
+            mat->rows[ii] = mat->rows[ii+1];
+        mat->rows[j] = tmp_mat;
+    }
+}
+
+/**********************************************************************
+*                    PERMUTE ROWS BY SORTING VEC                     *
+**********************************************************************/
+
+/* type for stable sort while retaining the permutation */
+typedef struct
+{
+    slong value;
+    slong index;
+} slong_pair;
+
+/* comparator for quicksort, lexicographic (total) order to ensure stable sort */
+static inline int _slong_pair_compare(const void * a, const void * b)
+{
+    slong_pair aa = * (const slong_pair *) a;
+    slong_pair bb = * (const slong_pair *) b;
+    if (aa.value == bb.value)
+    {
+        if (aa.index < bb.index)
+            return -1;
+        else if (aa.index > bb.index)
+            return 1;
+        else // aa.index == bb.index
+            return 0;
+    }
+    else if (aa.value < bb.value)
+        return -1;
+    else // aa.value > bb.value
+        return 1;
+}
+
+/** Creates a permutation from the sorting of a list of integers
+ * After running this, perm is the unique list of integers which sorts
+ * the pairs (vec,index) increasingly, i.e.
+ * vec[perm[0]] <= vec[perm[1]] < ... < vec[perm[n-1]]
+ * All inputs must be already initialized/allocated. sorted_vec can alias vec.
+ * If sorted_vec is NULL, it is simply ignored, the permuted vec is not
+ * returned.
+ *
+ * \param perm permutation (list of integers), length n
+ * \param sorted_vec list of integer sorted nondecreasingly, length n
+ * \param vec list of integer to be sorted nondecreasingly, length n
+ * \param n length
+ * \param pair_tmp temporary storage, length n
+ *
+ */
+static inline void _vec_sort_permutation(slong * perm,
+                                         slong * sorted_vec,
+                                         const slong * vec,
+                                         slong n,
+                                         slong_pair * pair_tmp)
+{
+    for (slong i = 0; i < n; i++)
+    {
+        pair_tmp[i].value = vec[i];
+        pair_tmp[i].index = i;
+    }
+
+    qsort(pair_tmp, n, sizeof(slong_pair), _slong_pair_compare);
+
+    for (slong i = 0; i < n; i++)
+        perm[i] = pair_tmp[i].index;
+    if (sorted_vec)
+        for (slong i = 0; i < n; i++)
+            sorted_vec[i] = pair_tmp[i].value;
+}
+
+void _nmod_poly_mat_permute_rows_by_sorting_vec(nmod_poly_mat_t mat,
+                                                slong r,
+                                                slong * vec,
+                                                slong * perm)
+{
+    slong_pair * tmp = flint_malloc(r * sizeof(slong_pair));
+    _vec_sort_permutation(perm, vec, vec, r, tmp);
+    for (slong i = r; i < mat->r; i++)
+        perm[i] = i;
+    flint_free(tmp);
+    nmod_poly_mat_permute_rows(mat, perm, NULL);
+}
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

@@ -228,7 +228,7 @@ void mbasis(nmod_poly_mat_t res, slong *res_shifts,
     nmod_mat_init(constant_mat, rdim, cdim, prime);
 
     nmod_poly_mat_init_set(F_prime, F);
-    nmod_poly_mat_coefficient_matrix(constant_mat, F_prime, 0); //Compute F mod x
+    nmod_poly_mat_get_coeff_mat(constant_mat, F_prime, 0); //Compute F mod x
 
     rank = mbasis1_for_mbasis(A_k, res_shifts, perm, constant_mat, shifts);
 
@@ -238,7 +238,7 @@ void mbasis(nmod_poly_mat_t res, slong *res_shifts,
     {
         // doing the operation x^(-k) F_prime mod x
         structured_multiplication_blocks(F_prime, A_k, perm, rank);
-        nmod_poly_mat_coefficient_matrix(constant_mat, F_prime, k);
+        nmod_poly_mat_get_coeff_mat(constant_mat, F_prime, k);
 
         nmod_mat_clear(A_k); /** clear A_k before compute a new A_k because
                               * mbasis1_for_mbasis init A_k

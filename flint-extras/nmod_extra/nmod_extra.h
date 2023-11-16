@@ -23,6 +23,10 @@
 #define HAS_AVX2
 #endif
 
+/*------------------------------------------------------------*/
+/* TODO: find which flags to test for                         */
+/*------------------------------------------------------------*/
+#define HAS_AVX512
 
 #ifdef HAS_AVX2
 #include <immintrin.h>

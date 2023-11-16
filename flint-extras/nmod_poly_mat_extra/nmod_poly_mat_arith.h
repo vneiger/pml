@@ -4,8 +4,8 @@
 /** \brief Basic arithmetic for univariate polynomial matrices over `nmod`
  *
  * \file nmod_poly_mat_arith.h
- * \version 0.0
- * \date 2022-06-27
+ * \version 0.1
+ * \date 2023-10-12
  *
  * This file contains the declarations of functions for performing basic
  * arithmetic with univariate polynomial matrices. This involves addition,
@@ -20,248 +20,10 @@
 extern "C" {
 #endif
 
-/*------------------------------------------------------------*/
-/* vector addition                                            */
-/*------------------------------------------------------------*/
-
-/** @name Addition of polynomial vectors
- *
- * These functions all have the first two of the following parameters,
- * and some of them also have the third:
- * @param[in] a a polynomial vector
- * @param[in] b a polynomial vector
- * @param[out] c a polynomial vector
- *
- * These functions compute `a+b` and store it in `c`.
- * The dimensions of `a` and `b` are not checked to be compatible.
- *
- *  \todo to be moved in a specific file for vectors?
- */
-//@{
-
-/** `c = a+b`, `c` may alias `a` or `b` */
-// TODO
-//void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b);
-
-/** `c = a+b`, `b` constant vector, `c` may alias `a` */
-// TODO
-//void add(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_p> & b);
-
-/** `c = a+b`, `a` constant vector, `c` may alias `b` */
-// TODO
-//inline void add(Vec<zz_pX> & c, const Vec<zz_p> & a, const Vec<zz_pX> & b)
-//{ add(c, b, a); }
-
-/** Computes the addition of the left shift `c = a + (b << k)`. The OUT
- * parameter `c` may alias the IN parameter `a`, but not `b`. The integer `k`
- * must be positive. */
-// TODO
-//void add_LeftShift(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b, long k);
-
-/** Computes the addition of the left shift `c = a + (b << k)`. The OUT
- * parameter `c` may alias the IN parameter `a`, but not `b`. The integer `k`
- * must be positive. */
-// TODO
-//void add_LeftShift(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b, long k);
-
-//@} // doxygen group:  Addition of polynomial vectors
-
-/*------------------------------------------------------------*/
-/* vector subtraction                                         */
-/*------------------------------------------------------------*/
-
-/** @name Subtraction of polynomial vectors
- *
- * These functions all have the first two of the following parameters,
- * and some of them also have the third:
- * @param[in] a a polynomial vector
- * @param[in] b a polynomial vector
- * @param[out] c a polynomial vector
- *
- * These functions compute `a-b` and store it in `c`.
- * The dimensions of `a` and `b` are not checked to be compatible.
- *
- *  \todo to be moved in a specific file for vectors
- */
-//@{
-
-/** `c = a-b`, `c` may alias `a` or `b` */
-// TODO
-//void sub(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_pX> & b);
-
-/** `c = a-b`, `b` constant vector, `c` may alias `a` */
-// TODO
-//void sub(Vec<zz_pX> & c, const Vec<zz_pX> & a, const Vec<zz_p> & b);
-
-/** `c = a-b`, `a` constant vector, `c` may alias `b` */
-// TODO
-//void sub(Vec<zz_pX> & c, const Vec<zz_p> & a, const Vec<zz_pX> & b);
-
-//@} // doxygen group:  Subtraction of polynomial vectors
-
-
-
-/*------------------------------------------------------------*/
-/* matrix addition                                            */
-/*------------------------------------------------------------*/
-
-/** @name Addition of polynomial matrices
- *
- * These functions all have the first two of the following parameters,
- * and some of them also have the third:
- * @param[in] a a polynomial matrix
- * @param[in] b a polynomial matrix
- * @param[out] c a polynomial matrix
- *
- * These functions compute `a+b` and store it in `c`.
- * The dimensions of `a` and `b` are not checked to be compatible.
- *
- */
-//@{
-
-/** `c = a+b`, `c` may alias `a` or `b` */
-// TODO
-//void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-
-/** `c = a+b`, `b` constant matrix, `c` may alias `a` */
-// TODO
-//void add(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b);
-
-/** `c = a+b`, `a` constant matrix, `c` may alias `b` */
-// TODO
-//inline void add(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b)
-//{ add(c, b, a); }
-
-//@} // doxygen group:  Addition of polynomial matrices
-
-
-/*------------------------------------------------------------*/
-/* matrix subtraction                                         */
-/*------------------------------------------------------------*/
-/** @name Subtraction of polynomial matrices
- *
- * These functions all have the first two of the following parameters,
- * and some of them also have the third:
- * @param[in] a a polynomial matrix
- * @param[in] b a polynomial matrix
- * @param[out] c a polynomial matrix
- *
- * These functions compute `a-b` and store it in `c`.
- * The dimensions of `a` and `b` are not checked to be compatible.
- *
- */
-//@{
-
-/** `c = a-b`, `c` may alias `a` or `b` */
-// TODO
-//void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> & b);
-
-/** `c = a-b`, `b` constant matrix, `c` may alias `a` */
-// TODO
-//void sub(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b);
-
-/** `c = a-b`, `a` constant matrix, `c` may alias `b` */
-// TODO
-//void sub(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b);
-
-//@} // doxygen group: Subtraction of polynomial matrices
-
-/*------------------------------------------------------------*/
-/* negate                                                     */
-/*------------------------------------------------------------*/
-/** @name Negate
- *
- *  The negation of a polynomial matrix or a polynomial vector `a` is `-a`.
- */
-//@{
-
-/** Computes the polynomial vector `x = -a` */
-// TODO
-//void negate(Vec<zz_pX> & x, const Vec<zz_pX> & a);
-
-/** Computes the polynomial matrix `x = -a` */
-// TODO
-//void negate(Mat<zz_pX> & x, const Mat<zz_pX> & a);
-
-//@} // doxygen group: Negate
-
-/*------------------------------------------------------------*/
-/* scalar and polynomial multiplication for vectors           */
-/*------------------------------------------------------------*/
-
-/** @name Multiplication of a vector by a scalar or a polynomial
- *
- *  For a given polynomial vector, the following functions implement the
- *  multiplication by a scalar from `nmod` or by a polynomial from `nmod_poly`.
- */
-//@{
-
-/** Computes `c = b*a` for a polynomial vector `a` and a scalar `b`,
- * `c` may alias `a`.
- */
-// TODO
-//void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_p & b);
-
-/** Computes `c = a*b` for a polynomial vector `b` and a scalar `a`,
- * `c` may alias `b`.
- */
-// TODO
-//inline void mul(Vec<zz_pX> & c, const zz_p & a, const Vec<zz_pX> & b)
-//{ mul(c, b, a); }
-
-/** Computes `c = b*a` for a polynomial vector `a` and a polynomial `b`,
- * `c` may alias `a`.
- */
-// TODO
-//void mul(Vec<zz_pX> & c, const Vec<zz_pX> & a, const zz_pX & b);
-
-/** Computes `c = a*b` for a polynomial vector `b` and a polynomial `a`,
- * `c` may alias `b`.
- */
-// TODO
-//inline void mul(Vec<zz_pX> & c, const zz_pX & a, const Vec<zz_pX> & b)
-//{ mul(c, b, a); }
-
-//@} // doxygen group: Multiplication of a vector by a scalar or a polynomial
-
-/*------------------------------------------------------------*/
-/* scalar and polynomial multiplication                       */
-/*------------------------------------------------------------*/
-
-/** @name Multiplication of a matrix by a scalar or a polynomial
- *
- *  For a given polynomial matrix, the following functions implement the
- *  multiplication by a scalar from `nmod` or by a polynomial from `nmod_poly`.
- */
-//@{
-
-/** Computes `c = b*a` for a polynomial matrix `a` and a scalar `b`,
- * `c` may alias `a`.
- */
-// TODO
-//void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_p & b);
-
-/** Computes `c = a*b` for a polynomial matrix `b` and a scalar `a`,
- * `c` may alias `b`.
- */
-// TODO
-//inline void mul(Mat<zz_pX> & c, const zz_p & a, const Mat<zz_pX> & b)
-//{ mul(c, b, a); }
-
-/** Computes `c = b*a` for a polynomial matrix `a` and a polynomial `b`,
- * `c` may alias `a`.
- */
-// TODO
-//void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_pX & b);
-
-/** Computes `c = a*b` for a polynomial matrix `b` and a polynomial `a`,
- * `c` may alias `b`.
- */
-// TODO
-//inline void mul(Mat<zz_pX> & c, const zz_pX & a, const Mat<zz_pX> & b)
-//{ mul(c, b, a); }
-
-//@} // doxygen group: Multiplication of a matrix by a scalar or a polynomial
+// TODO missing in FLINT:
+// - add/sub nmod_mat with nmod_poly_mat 
+// - add/sub x**k * nmod_mat to nmod_poly_mat, or more generally combined add+shift of polymats?
+// - left/right multiplication by a constant matrix
 
 /*------------------------------------------------------------*/
 /* multiplication by a constant matrix                        */
@@ -271,30 +33,30 @@ extern "C" {
  *  The following functions implement the multiplication of a polynomial matrix
  *  by a constant matrix. The dimensions are not checked to be compatible.
  *
- * \todo
- *   - try the following (more efficient?): rely on complete linearization as
+ * \todo not yet implemented, at least two strategies:
+ *   - rely on complete linearization as
  *   constant matrices. That is, expand 'a' as single (or several?) constant
  *   matrix 'cmat', and compute b*cmat, and retrieve back the entries in 'c'
  *   (preliminary work: compute cdeg(a))
- *   - make this depend on conv?
- *   - more generally, how to proceed should depend on the dimensions (for
- *   example, it is not the same story if the non-constant mat is square and if
- *   it is a single vector). Thresholds may be needed.
+ *   - or convert to matpoly, multiply, convert back
+ *   -> what is faster should depend on the dimensions (for example, it is not
+ *   the same story if the non-constant mat is square and if it is a single
+ *   vector), so thresholds may be needed.
  *
  */
 //@{
 
 /** Computes `c = a*b` for a polynomial matrix `a` and a constant matrix `b`,
  * `c` may alias `a`
+ * \todo not implemented yet
  */
-// TODO
-//void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_p> & b);
+//void nmod_poly_mat_mul_right_nmod_mat(nmod_poly_mat_t & c, const nmod_poly_mat_t & a, const nmod_mat_t & b);
 
 /** Computes `c = a*b` for a constant matrix `a` and a polynomial matrix `b`,
  * `c` may alias `b`
+ * \todo not implemented yet
  */
-// TODO
-//void mul(Mat<zz_pX> & c, const Mat<zz_p> & a, const Mat<zz_pX> & b);
+//void nmod_poly_mat_mul_left_nmod_mat(nmod_poly_mat_t & c, const nmod_mat_t & a, const nmod_poly_mat_t & b);
 
 //@} // doxygen group: Multiplication by a constant matrix
 
