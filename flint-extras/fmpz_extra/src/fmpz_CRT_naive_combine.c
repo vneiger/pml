@@ -8,7 +8,7 @@
 /* compute A = sum_i m[i] \prod_{j \ne i} primes[j]             */
 /* ------------------------------------------------------------ */
 void 
-fmpz_CRT_combine(fmpz_t A, mp_srcptr m, const fmpz_CRT_t mCRT)
+fmpz_CRT_naive_combine(fmpz_t A, mp_srcptr m, const fmpz_CRT_naive_t mCRT)
 {
     mp_size_t size;
     mp_limb_t tmp[3];
@@ -18,9 +18,10 @@ fmpz_CRT_combine(fmpz_t A, mp_srcptr m, const fmpz_CRT_t mCRT)
 
     mpz_init2(temp, FLINT_BITS * (mCRT->num_limbs + 2));
     dat = temp->_mp_d;
+
     for (i = 0; i < mCRT->num_limbs + 2; i++)
     {
-    	dat[i] = 0;
+	dat[i] = 0;
     }
 
     /* computes a 3-limb dot product */

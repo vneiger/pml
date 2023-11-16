@@ -64,15 +64,24 @@ mp_limb_t _fmpz_reduce(const fmpz_t a, mp_srcptr powers_of_two, const nmod_t mod
     }
 }
 
-
-
 /* ------------------------------------------------------------ */
 /* computes A mod mmod[i] for all i                             */
 /* ------------------------------------------------------------ */
-void fmpz_multimod_reduce(mp_limb_t * out, const fmpz_t A, const fmpz_multimod_t mmod)
+void fmpz_multimod_naive_reduce(mp_limb_t * out, const fmpz_t A, const fmpz_multimod_naive_t mmod)
 {
     ulong i;
 
+    if (fmpz_cmpabs(mmod->prod, A) <= 0)
+    {
+        fmpz_t B;
+        fmpz_init(B);
+        fmpz_mod(B, A, mmod->prod);
+        fmpz_multimod_naive_reduce(out, B, mmod);
+        fmpz_clear(B);
+        return;
+    }
+            
     for (i = 0; i < mmod->num_primes; i++)
         out[i] = _fmpz_reduce(A, mmod->powers_of_two[i], mmod->mod[i]);
 }
+

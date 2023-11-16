@@ -12,6 +12,7 @@
  */
 
 #include <flint/flint.h>
+#include <flint/nmod_vec.h>
 #include "nmod_extra.h"
 
 #ifdef __cplusplus
@@ -44,121 +45,20 @@ void _nmod_vec_print_pretty(mp_ptr vec,
                             nmod_t mod);
 
 
+/*--------------------------------------------------------------*/
+/* vector of n consecutive primes of exactly s bits             */
+/*--------------------------------------------------------------*/
+void nmod_vec_primes(mp_ptr v, slong n, mp_bitcnt_t s);
 
-
-
-
-
-
-
-/*------------------------------------------------------------*/
-/* y[i] = a*x[i] mod mod, i=0..len-1                          */
-/*------------------------------------------------------------*/
-static inline void _nmod_vec_scalar_mul(mp_ptr y, mp_srcptr x, slong len, mp_limb_t a, nmod_t mod)
-{
-    slong i;
-    for (i = 0; i < len; i++)
-    {
-        y[i] = nmod_mul(x[i], a, mod);
-    }
-}
-
-
-#ifdef HAS_INT128
-
-/*------------------------------------------------------------*/
-/* y[i] = a*x[i] mod mod, i=0..len-1                          */
-/* assumes int128 available                                   */
-/* i_a must have been precomputed                             */
-/*------------------------------------------------------------*/
-static inline void _nmod_vec_int128_scalar_mul(mp_ptr y, mp_srcptr x, slong len,
-                                               mp_limb_t a, mp_limb_t i_a, nmod_t mod)
-{
-    slong i;
-    for (i = 0; i < len; i++)
-    {
-        y[i] = mul_mod_precon(x[i], a, mod.n, i_a);
-    }
-}
-
-#endif
-
-
-#ifdef HAS_AVX2
-
-/*------------------------------------------------------------*/
-/* y[i] = a*x[i] mod mod, i=0..len-1                          */
-/* works for < 32 bit primes                                  */
-/* assumes avx2 available                                     */
-/* i_a must have been precomputed                             */
-/* x and y must be 32-byte aligned                            */
-/*------------------------------------------------------------*/
-static inline void _nmod_vec_avx2_32_scalar_mul(mp_hlimb_t * y, const mp_hlimb_t * x, slong len,
-                                                mp_hlimb_t a, mp_hlimb_t i_a, nmod_t mod)
-{
-    slong i, nb;
-    __m256i avx_a, avx_i_a, avx_p, avx_p_minus_1;
-
-    nb = len/8;
-    avx_a = _mm256_set1_epi32(a);
-    avx_i_a = _mm256_set1_epi32(i_a);
-    avx_p = _mm256_set1_epi32(mod.n);
-    avx_p_minus_1 = _mm256_set1_epi32(mod.n - 1);
-
-    for (i = 0; i < nb; i++)
-    {
-        __m256i avx_x;
-        avx_x =  _mm256_load_si256((__m256i const*) x);
-        _mm256_store_si256((__m256i*) y, mm256_mul_mod_precon(avx_x, avx_a, avx_p, avx_p_minus_1, avx_i_a));
-        x += 8;
-        y += 8;
-    }
-
-    nb = len - 8*nb;
-    for (i = 0; i < nb; i++)
-    {
-        y[i] = mul_mod_precon_32(x[i], a, mod.n, i_a);
-    }
-}
-
-/*------------------------------------------------------------*/
-/* y[i] = a[i]*x[i] mod mod, i=0..len-1                       */
-/* works for < 32 bit primes                                  */
-/* assumes avx2 available                                     */
-/* i_a must have been precomputed                             */
-/* x and y must be 32-byte aligned                            */
-/*------------------------------------------------------------*/
-static inline void _nmod_vec_avx2_32_hadamard_mul(mp_hlimb_t * y, const mp_hlimb_t * x, const mp_hlimb_t * a,
-                                                  const mp_hlimb_t * i_a, slong len, nmod_t mod)
-{
-    slong i, nb;
-    __m256i avx_p, avx_p_minus_1;
-
-    nb = len/8;
-    avx_p = _mm256_set1_epi32(mod.n);
-    avx_p_minus_1 = _mm256_set1_epi32(mod.n - 1);
-
-    for (i = 0; i < nb; i++)
-    {
-        __m256i avx_x, avx_a, avx_i_a;
-        avx_x =  _mm256_load_si256((__m256i const*) x);
-        avx_a =  _mm256_load_si256((__m256i const*) a);
-        avx_i_a =  _mm256_load_si256((__m256i const*) i_a);
-        _mm256_store_si256((__m256i*) y, mm256_mul_mod_precon(avx_x, avx_a, avx_p, avx_p_minus_1, avx_i_a));
-        a += 8;
-        i_a += 8;
-        x += 8;
-        y += 8;
-    }
-
-    nb = len - 8*nb;
-    for (i = 0; i < nb; i++)
-    {
-        y[i] = mul_mod_precon_32(x[i], a[i], mod.n, i_a[i]);
-    }
-}
-
-#endif // HAS_AVX2
+/* ------------------------------------------------------------ */
+/* v1 and v2 have length at least len, len <= 2^FLINT_BITS      */
+/* all entries of v1 have <= max_bits1 bits <= FLINT_BITS       */
+/* all entries of v2 have <= max_bits2 bits <= FLINT_BITS       */
+/* computes sum(v1[i]*v2[i], 0 <= i < len)                      */
+/* stores the result in 3 limbs of res                          */
+/* ------------------------------------------------------------ */
+void nmod_vec_integer_dot_product(mp_ptr res, mp_srcptr v1, mp_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2);
+    
 
 
 #ifdef __cplusplus

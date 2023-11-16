@@ -5,47 +5,35 @@
 #include "fmpz_extra.h"
 #include "nmod_vec_extra.h"
 
+
 /*--------------------------------------------------------------*/
-/* computes a random combination with num_primes terms          */
-/* check against the result of the naive algorithm              */
+/* computes a CRT with num_primes of FLINT_BITS-8 size          */
 /*--------------------------------------------------------------*/
-void check_fmpz_CRT_combine(slong num_primes)
+void check_fmpz_multimod_CRT_CRT(ulong num_primes)
 {
     flint_rand_t state;
-    fmpz_t comb, check, temp;
-    fmpz_CRT_t mCRT; 
+    fmpz_t comb;
+    fmpz_multimod_CRT_t mCRT; 
     mp_ptr primes, residues;
-    slong i, j;
+    ulong i;
 
     flint_randinit(state);
     primes = _nmod_vec_init(num_primes);
     residues = _nmod_vec_init(num_primes);
     fmpz_init(comb);
-    fmpz_init(check);
-    fmpz_init(temp);
 
     nmod_vec_primes(primes, num_primes, FLINT_BITS-8);
     for (i = 0; i < num_primes; i++)
     	residues[i] = n_randlimb(state) % primes[i];
 
-    fmpz_CRT_init(mCRT, primes, num_primes);
-    fmpz_CRT_combine(comb, residues, mCRT);
+    fmpz_multimod_CRT_init(mCRT, primes, num_primes);
+    fmpz_multimod_CRT_CRT(comb, residues, mCRT);
 
-    fmpz_set_ui(check, 0);
     for (i = 0; i < num_primes; i++)
-    {
-    	fmpz_set_ui(temp, residues[i]);
-    	for (j = 0; j < num_primes; j++)
-    	    if (i != j)
-    		fmpz_mul_ui(temp, temp, primes[j]);
-    	fmpz_add(check, check, temp);
-    }
-    assert(fmpz_equal(comb, check));
+        assert (fmpz_fdiv_ui(comb, primes[i]) == residues[i]);
+    
+    fmpz_multimod_CRT_clear(mCRT);
 
-    fmpz_CRT_clear(mCRT);
-
-    fmpz_clear(temp);
-    fmpz_clear(check);
     fmpz_clear(comb);
     _nmod_vec_clear(residues);
     _nmod_vec_clear(primes);
@@ -57,9 +45,11 @@ void check_fmpz_CRT_combine(slong num_primes)
 /*--------------------------------------------------------------*/
 int main(int argc, char**argv)
 {
-    slong i;
-    for (i = 1; i < 1000; i += 50)
-	check_fmpz_CRT_combine(i);
+    ulong i;
+    for (i = 1; i < 1000; i += 1)
+    {
+	check_fmpz_multimod_CRT_CRT(i);
+    }
 
     return 0;
 }

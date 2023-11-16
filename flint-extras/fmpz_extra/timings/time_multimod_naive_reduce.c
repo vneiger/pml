@@ -25,13 +25,13 @@ void check_fmpz_multimod_reduce(ulong max_bit_length)
     long nb_iter;
 
     flint_randinit(state);
-    prime_length = 59;
+    prime_length = 50;
     num_primes = 1 + (max_bit_length / prime_length);
     
     primes = _nmod_vec_init(num_primes);
     residues = _nmod_vec_init(num_primes);
     nmod_vec_primes(primes, num_primes, prime_length);
-    fmpz_multimod_init(mmod, primes, num_primes, max_bit_length);
+    fmpz_multimod_init(mmod, primes, num_primes);
 
     printf("%ld ", num_primes);
 
@@ -47,8 +47,17 @@ void check_fmpz_multimod_reduce(ulong max_bit_length)
     {
         tt = clock();
         fmpz_multimod_reduce(residues, A, mmod);
+        fmpz_multimod_reduce(residues, A, mmod);
+        fmpz_multimod_reduce(residues, A, mmod);
+        fmpz_multimod_reduce(residues, A, mmod);
+        fmpz_multimod_reduce(residues, A, mmod);
+        fmpz_multimod_reduce(residues, A, mmod);
+        fmpz_multimod_reduce(residues, A, mmod);
+        fmpz_multimod_reduce(residues, A, mmod);
+        fmpz_multimod_reduce(residues, A, mmod);
+        fmpz_multimod_reduce(residues, A, mmod);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        ++nb_iter;
+        nb_iter += 10;
     }
     t = 1000 * t;
     t /= nb_iter;
@@ -60,12 +69,21 @@ void check_fmpz_multimod_reduce(ulong max_bit_length)
     {
         tt = clock();
         fmpz_multi_mod_ui(residues, A, C, Ct);
+        fmpz_multi_mod_ui(residues, A, C, Ct);
+        fmpz_multi_mod_ui(residues, A, C, Ct);
+        fmpz_multi_mod_ui(residues, A, C, Ct);
+        fmpz_multi_mod_ui(residues, A, C, Ct);
+        fmpz_multi_mod_ui(residues, A, C, Ct);
+        fmpz_multi_mod_ui(residues, A, C, Ct);
+        fmpz_multi_mod_ui(residues, A, C, Ct);
+        fmpz_multi_mod_ui(residues, A, C, Ct);
+        fmpz_multi_mod_ui(residues, A, C, Ct);
         tp += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        ++nb_iter;
+        nb_iter += 10;
     }
     tp = 1000 * tp;
     tp /= nb_iter;
-    printf("%lf %lf ", tp, tp / t);
+    printf("%lf ", tp);
 
     printf("\n");
     
@@ -85,7 +103,7 @@ int main(int argc, char **argv)
 {
     ulong i;
 
-    printf("# num_primes t_new t_old t_old/t_new\n");
+    printf("# num_primes t_new t_old\n");
     for (i = 10; i < 100000; i += 200)
 	check_fmpz_multimod_reduce(i);
 

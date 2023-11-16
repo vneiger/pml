@@ -7,20 +7,19 @@
 
 
 /*--------------------------------------------------------------*/
-/* creates and deletes a multimod                               */
+/* creates and deletes a CRT                                    */
 /* uses num_primes of FLINT_BITS-8 bits                         */
-/* max bit-size of operands is max_bit_length                   */
 /*--------------------------------------------------------------*/
-void check_fmpz_multimod_init_clear(slong num_primes, slong max_bit_length)
+void check_fmpz_CRT_naive_init_clear(slong num_primes)
 {
-    fmpz_multimod_t mmod; 
+    fmpz_CRT_naive_t mCRT; 
     mp_ptr primes;
 
     primes = _nmod_vec_init(num_primes);
     nmod_vec_primes(primes, num_primes, FLINT_BITS-8);
-    fmpz_multimod_init(mmod, primes, num_primes, max_bit_length);
+    fmpz_CRT_naive_init(mCRT, primes, num_primes);
     _nmod_vec_clear(primes);
-    fmpz_multimod_clear(mmod);
+    fmpz_CRT_naive_clear(mCRT);
 }
 
 /*--------------------------------------------------------------*/
@@ -29,10 +28,8 @@ void check_fmpz_multimod_init_clear(slong num_primes, slong max_bit_length)
 int main(int argc, char**argv)
 {
     slong i;
-    for (i = 1; i < 1000; i += 50)
-    {
-	check_fmpz_multimod_init_clear(i, 59);
-	check_fmpz_multimod_init_clear(i, 10000);
-    }
+    for (i = 1; i < 1000; i += 10)
+	check_fmpz_CRT_naive_init_clear(i);
+
     return 0;
 }

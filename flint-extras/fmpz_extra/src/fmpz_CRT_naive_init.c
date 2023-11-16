@@ -6,7 +6,7 @@
 /* ------------------------------------------------------------ */
 /* prepares the vectors of coefficients and inverses            */
 /* ------------------------------------------------------------ */
-void fmpz_CRT_init(fmpz_CRT_t mCRT, mp_srcptr primes, ulong num_primes)
+void fmpz_CRT_naive_init(fmpz_CRT_naive_t mCRT, mp_srcptr primes, ulong num_primes)
 {
     unsigned long i, k;
     int j;

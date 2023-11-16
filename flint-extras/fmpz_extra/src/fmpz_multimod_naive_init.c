@@ -5,10 +5,8 @@
 
 /* ------------------------------------------------------------ */
 /* copies primes in mmod-> primes (length is num_primes)        */
-/* max_bit_length = maximum bit-length of inputs we will reduce */
 /* ------------------------------------------------------------ */
-
-void fmpz_multimod_init(fmpz_multimod_t mmod, mp_srcptr primes, ulong num_primes, slong max_bit_length)
+void fmpz_multimod_naive_init(fmpz_multimod_naive_t mmod, mp_srcptr primes, ulong num_primes)
 {
     ulong i, u;
 
@@ -16,21 +14,23 @@ void fmpz_multimod_init(fmpz_multimod_t mmod, mp_srcptr primes, ulong num_primes
     mmod->primes = (mp_ptr) flint_malloc(num_primes * sizeof(mp_limb_t));
     mmod->mod = (nmod_t *) flint_malloc(num_primes * sizeof(nmod_t));
     mmod->powers_of_two = (mp_ptr *) flint_malloc(num_primes * sizeof(mp_ptr));
-    mmod->prime_bit_length = _nmod_vec_max_bits(primes, num_primes); /* finds the bit-length of the primes */
-    mmod->num_limbs = (max_bit_length + FLINT_BITS - 1) / FLINT_BITS; /* round up to get the number of limbs  */
 
-    /* printf("num_primes %ld\n", num_primes); */
-    /* printf("mbl %ld\n", max_bit_length); */
-    /* printf("num limbs %ld\n", mmod->num_limbs); */
+    fmpz_init(mmod->prod);
+    fmpz_set_ui(mmod->prod, 1);
 
     for (i = 0; i < num_primes; i++)
     {
-        mp_limb_t two_FLINT_BITS;
-        mp_ptr v;
-        nmod_t mod;
-
         mmod->primes[i] = primes[i];
         nmod_init(&mmod->mod[i], primes[i]);
+    	fmpz_mul_ui(mmod->prod, mmod->prod, primes[i]);
+    }
+
+    mmod->num_limbs = fmpz_size(mmod->prod);
+    for (i = 0; i < num_primes; i++)
+    {
+        mp_limb_t two_FLINT_BITS;
+        nmod_t mod;
+        mp_ptr v;
         
         mmod->powers_of_two[i] = (mp_ptr) flint_malloc(mmod->num_limbs * sizeof(mp_limb_t));
         mod = mmod->mod[i];
@@ -42,6 +42,5 @@ void fmpz_multimod_init(fmpz_multimod_t mmod, mp_srcptr primes, ulong num_primes
         v[0] = 1;
         for (u = 1; u < mmod->num_limbs; u++)
             v[u] = nmod_mul(v[u - 1], two_FLINT_BITS, mod);
-                
     }
 }
