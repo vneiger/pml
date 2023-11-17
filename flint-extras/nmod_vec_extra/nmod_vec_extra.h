@@ -33,16 +33,6 @@ void _nmod_vec_rand(mp_ptr vec,
             		nmod_t mod);
 
 
-/** Input/Output */
-// to be completed: print to file, print to sagemath..
-
-/** Prints the entries `0`, .., `len-1` of vector `vec`. Vector must already be
- * initialized, with length at least `len`. */
-void _nmod_vec_print_pretty(mp_ptr vec,
-                            slong len,
-                            nmod_t mod);
-
-
 /*--------------------------------------------------------------*/
 /* vector of n consecutive primes of exactly s bits             */
 /*--------------------------------------------------------------*/

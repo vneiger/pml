@@ -28,16 +28,6 @@ void nmod_poly_rand_monic(nmod_poly_t pol,
                           slong len);
 
 
-/** Returns `1` if the polynomial `pol` is monic, otherwise returns `0`. */
-NMOD_POLY_INLINE int
-nmod_poly_is_monic(const nmod_poly_t pol)
-{
-    if (pol->length && pol->coeffs[(pol->length - 1)] == 1)
-        return 1;
-    else
-        return 0;
-}
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* fft_small FFT, using doubles                               */
