@@ -296,9 +296,9 @@ int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, in
         timeit_start(timer);
         // weak Popov form computation
 #ifdef NOTRANS
-        slong rk = _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(wpf, shift, NULL, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r);
+        slong rk = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(wpf, shift, NULL, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r, ROW_LOWER);
 #else
-        slong rk = _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(wpf, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r);
+        slong rk = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(wpf, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r, ROW_LOWER);
 #endif /* ifdef NOTRANS */
         timeit_stop(timer);
         if (time)
