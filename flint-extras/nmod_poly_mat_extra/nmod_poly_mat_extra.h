@@ -55,6 +55,14 @@ apply_perm_to_vector(slong *res, const slong *initial_vect,
 
 // #include "nmod_poly_mat_linearization.h"
 
+/** \todo doc
+ *  \todo move in suitable header
+ **/
+void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat);
+
+// TODO implem + doc
+//slong nmod_poly_mat_linsolve_mulders_storjohann(nmod_poly_mat_t mat);
+
 /** TODO: Other todos
  *  \todo algorithm for modular composition / charpoly mod
  *  \todo row reduction as in GJV (and via kernel?)
