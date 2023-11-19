@@ -273,13 +273,13 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
 /** Computes the transpose `tmat` or the polynomial matrix `pmat`; `tmat`
  * may alias `pmat` */
 // TODO
-//void transpose(Mat<zz_pX> & tmat, const Mat<zz_pX> & pmat);
+//void transpose(nmod_poly_mat tmat, nmod_poly_mat pmat);
 
 /** Computes the mirror `mvec` of the polynomial vector `pvec`, meaning that
  * `mvec[i]` is `pvec[n-1-i]` for `0<=i<n`, where `n` is the length of `pvec`
  */
 // TODO
-//void mirror(Vec<zz_pX> & mvec, const Vec<zz_pX> & pvec);
+//void mirror( mvec,  pvec);
 
 //@} // doxygen group: Swap, permute, transpose
 
@@ -336,35 +336,35 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
 
 /** Computes the left `n`-shift `svec` of the polynomial vector `pvec` */
 // TODO
-//void LeftShift(Vec<zz_pX> & svec, const Vec<zz_pX> & pvec, long n);
+//void LeftShift( svec,  pvec, long n);
 
 /** Computes the right `n`-shift `svec` of the polynomial vector `pvec` */
 // TODO
-//void RightShift(Vec<zz_pX> & svec, const Vec<zz_pX> & pvec, long n);
+//void RightShift( svec,  pvec, long n);
 
 /** Computes the matrix `smat` which is the same as the polynomial matrix
  * `pmat` but with its `i`-th row replaced by its left `n`-shift
  */
 // TODO
-//void LeftShiftRow(Mat<zz_pX> & smat, const Mat<zz_pX> & pmat, const long i, long n);
+//void LeftShiftRow(nmod_poly_mat smat, nmod_poly_mat pmat, const long i, long n);
 
 /** Computes the matrix `smat` which is the same as the polynomial matrix
  * `pmat` but with its `i`-th row replaced by its right `n`-shift
  */
 // TODO
-//void RightShiftRow(Mat<zz_pX> & smat, const Mat<zz_pX> & pmat, const long i, long n);
+//void RightShiftRow(nmod_poly_mat smat, nmod_poly_mat pmat, const long i, long n);
 
 /** Computes the matrix `smat` which is the same as the polynomial matrix
  * `pmat` but with its `j`-th column replaced by its left `n`-shift
  */
 // TODO
-//void LeftShiftCol(Mat<zz_pX> & smat, const Mat<zz_pX> & pmat, const long j, long n);
+//void LeftShiftCol(nmod_poly_mat_t smat, nmod_poly_mat_t pmat, const long j, long n);
 
 /** Computes the matrix `smat` which is the same as the polynomial matrix
  * `pmat` but with its `j`-th column replaced by its right `n`-shift
  */
 // TODO
-//void RightShiftCol(Mat<zz_pX> & smat, const Mat<zz_pX> & pmat, const long j, long n);
+//void RightShiftCol(nmod_poly_mat_t smat, nmod_poly_mat_t pmat, const long j, long n);
 
 //@} // doxygen group: Shifts (multiplication by powers of the variable)
 
@@ -396,13 +396,13 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
  * respect to a bound `hi` (see @ref Reverse for more details).
  */
 //TODO
-//void reverse(Mat<zz_pX> & rmat, const Mat<zz_pX> & pmat, long hi);
+//void reverse(nmod_poly_mat_t rmat, nmod_poly_mat_t pmat, long hi);
 
 /** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
  * respect to the degree of `pmat` (see @ref Reverse for more details).
  */
 //TODO
-//inline void reverse(Mat<zz_pX> & rmat, const Mat<zz_pX> & pmat)
+//inline void reverse(nmod_poly_mat_t rmat, nmod_poly_mat_t pmat)
 //{ reverse(rmat, pmat, deg(pmat)); }
 
 /** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
@@ -410,14 +410,14 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
  * details). The length of `hi` must be the number of rows of `pmat`.
  */
 //TODO
-//void row_reverse(Mat<zz_pX> & rmat, const Mat<zz_pX> & pmat, const VecLong & hi);
+//void row_reverse(nmod_poly_mat_t rmat, nmod_poly_mat_t  pmat, long * hi);
 
 /** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
  * respect to a list of bounds `hi` for each column (see @ref Reverse for more
  * details). The length of `hi` must be the number of columns of `pmat`.
  */
 //TODO
-//void col_reverse(Mat<zz_pX> & rmat, const Mat<zz_pX> & pmat, const VecLong & hi);
+//void col_reverse(nmod_poly_mat_t rmat, nmod_poly_mat_t pmat, long * hi);
 
 //@} // doxygen group: Reverse
 

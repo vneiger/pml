@@ -50,7 +50,6 @@ void nmod_vec_integer_dot_product(mp_ptr res, mp_srcptr v1, mp_srcptr v2, ulong 
 
 mp_limb_t _nmod_vec_dot_small_modulus(mp_ptr a, mp_ptr b, ulong len, nmod_t mod);
 
-
 #ifdef __cplusplus
 }
 #endif
