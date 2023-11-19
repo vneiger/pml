@@ -5,6 +5,7 @@
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_io.h"
+#include "nmod_poly_mat_extra.h"
 #include "sagemath_extra.h"
 
 #include "testing_collection.h"

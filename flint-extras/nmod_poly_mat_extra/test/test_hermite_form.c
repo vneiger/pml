@@ -348,14 +348,16 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
     }
 
     { // Mulder-Storjohann's algorithm
+        //slong * rrp = flint_malloc(mat->r * sizeof(slong));
+        slong * rrp = NULL;
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);
         timeit_t t0, t1;
         timeit_start(t0);
 #ifdef NOTRANS
-        slong rk = nmod_poly_mat_uref_matrixgcd_iter(hnf, NULL, pivind, NULL, NULL);
+        slong rk = nmod_poly_mat_uref_matrixgcd_iter(hnf, NULL, pivind, rrp, NULL);
 #else
-        slong rk = nmod_poly_mat_uref_matrixgcd_iter(hnf, tsf, pivind, NULL, NULL);
+        slong rk = nmod_poly_mat_uref_matrixgcd_iter(hnf, tsf, pivind, rrp, NULL);
 #endif /* ifdef NOTRANS */
         timeit_stop(t0);
         if (rk <= 0 && !nmod_poly_mat_is_zero(mat))
@@ -387,6 +389,7 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
         timeit_stop(t0);
         if (time)
             flint_printf("-- time (verif): %wd ms\n", t0->wall);
+        flint_free(rrp);
     }
 
     nmod_poly_mat_clear(hnf);

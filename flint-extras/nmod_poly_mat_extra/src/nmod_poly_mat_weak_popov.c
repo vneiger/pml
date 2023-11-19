@@ -3,7 +3,6 @@
 #include <flint/nmod_vec.h>
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_forms.h"
-#include "nmod_poly_mat_io.h" // TODO remove, for debugging
 
 #define MAT(i,j) (mat->rows[i] + j)
 #define TSF(i,j) (tsf->rows[i] + j)
@@ -144,11 +143,6 @@ mp_limb_t _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 *                     weak Popov form algorithms                     *
 **********************************************************************/
 
-// Orientation: row-wise, upper or lower
-// iterative weak Popov form algorithm by Mulders and Storjohann, 2003 (as in
-// Figure 3, algo "RankProfile"). There presented for the uniform shift, here
-// straightforwardly adapted to the shifted case.
-//
 // Introduce rows one after another, only adding next one when current matrix
 // is already in shift-ordered weak Popov form. Track the number rk of added
 // rows, and the number zr of encountered zero rows. Consequence: at any
@@ -171,33 +165,15 @@ mp_limb_t _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 // In this row-by-row framework, the strategy for pivot collision selection is
 // imposed, there is actually no choice.
 //
-// pivind must be allocated with at least mat->r entries; it will be populated
-// with the shifted pivot index of the output weak Popov form (undefined
-// behaviour for entries beyond mat->r)
-//
 // This applies the algorithm to the submatrix mat[rstart:rstart+rdim,cstart:cstart+cdim],
 // called submat below. The left unimodular transformations are applied to the whole
 // of mat[rstart:rstart+rdim,:], i.e. not restricting the columns to those of submat.
-// -> mat must have >= rstart+rdim rows, >= cstart+cdim columns
-// -> shift must have length >= cdim, its first cdim entries will be used as the shift
-// -> tsf must be NULL or a matrix with at least rstart+rdim rows, the transformation
-// will be applied to its rows rstart:rstart+rdim
-// -> pivind must be allocated with at least rdim entries; its first rdim
-// entries will be populated with the shifted pivot index of the output weak
-// Popov form (undefined behaviour for entries beyond rdim)
-// -> rrp  must be NULL or allocated with >= rank(submat) entries, it will
-// eventually contain the row rank profile of submat as its first ``rank(submat)``
-// entries
-// -> det can be NULL; otherwise it is required to be +1 or -1 (actually no) and will be
-// multiplied with the determinant of the unimodular transformation used during
-// this call (which is itself +1 or -1)
-// allowed orientation: ROW_LOWER | ROW_UPPER, no check that it is not sth else
-// Note: for ROW_LOWER, zero rows are put at the bottom even though they have
-// the smallest possible pivot index
+// tsf must be NULL or have at least rstart+rdim rows, the transformation will
+// be applied to its rows rstart:rstart+rdim.
 slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
                                                      const slong * shift,
                                                      nmod_poly_mat_t tsf,
-                                                     int * det,
+                                                     slong * det,
                                                      slong * pivind,
                                                      slong * rrp,
                                                      slong rstart,
