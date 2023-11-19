@@ -12,7 +12,7 @@ Version 0.3
 
 PML v0.3 is distributed under the GNU General Public License version 2.0 (GPL-2.0-or-later). This applies to all files in the directory of this README as well as in all subdirectories. See the file COPYING for a copy of the license.
 
-PML v0.3 is heavily based on [NTL](https://libntl.org/) and [FLINT](https://flintlib.org/). See the file ntl-extras/COPYING_NTL for NTL's copyright notice. FLINT is distributed under LGPL 2.1 (GNU Lesser General Public License), see flint-extras/COPYING_FLINT for the license.
+PML v0.3 is heavily based on [NTL](https://libntl.org/) and [FLINT](https://flintlib.org/). See the file `ntl-extras/COPYING_NTL` for NTL's copyright notice. FLINT is distributed under LGPL 2.1 (GNU Lesser General Public License), see `flint-extras/COPYING_FLINT` for the license.
 
 ## Installation
 
