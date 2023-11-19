@@ -6,7 +6,7 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
                                        const nmod_poly_mat_t pmat,
                                        slong order,
                                        const slong * shift,
-                                       orientation_t row_wise)
+                                       orientation_t orient)
 {
     // context
     const slong rdim = pmat->r, cdim = pmat->c;
@@ -20,7 +20,7 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
     }
 
     // check appbas has form at least "form"
-    if (!nmod_poly_mat_is_ordered_weak_popov(appbas, shift, row_wise))
+    if (!nmod_poly_mat_is_ordered_weak_popov(appbas, shift, orient))
     {
         printf("basis is not shifted-reduced\n");
         return 0;

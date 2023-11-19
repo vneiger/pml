@@ -1,16 +1,17 @@
+SYSINC_DIR = /usr/local/include
 INC_DIR = ../../include
+SYSLIB_DIR = /usr/local/lib
 LIB_DIR = ../../lib
 SOURCES = $(wildcard time*c)
 OBJS = $(wildcard $(LIB_DIR)/*)
-
 EXEC = $(patsubst %.c, %, $(SOURCES))
 DATA = $(patsubst %.c, %.dat, $(SOURCES))
 COMPILE = $(patsubst %.c, %.exe, $(patsubst time_%, %, $(SOURCES)))
 RUN = $(patsubst %.c, %.dat, $(patsubst time_%, %, $(SOURCES)))
 
 CC = gcc
-CFLAGS = -Wall -O3 -march=native -I$(INC_DIR)
-LIBS = -lflint -lmpfr -lgmp -lm -lopenblas
+CFLAGS = -Wall -O3 -march=native -I$(INC_DIR) -I$(SYSINC_DIR) -L$(LIB_DIR) -L$(SYSLIB_DIR) 
+LIBS = -lflint -lmpfr -lgmp -lm -lopenblas -lpthread
 
 .PHONY: clean
 

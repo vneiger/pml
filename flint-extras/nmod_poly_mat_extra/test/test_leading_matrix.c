@@ -25,28 +25,28 @@ int main()
 	// [3 0 0]
 	// [1 0 0]
     printf("Printing leading matrix:\n");
-    nmod_poly_mat_leading_matrix_print_pretty(mat, NULL, ROW_WISE);
+    nmod_poly_mat_leading_matrix_print_pretty(mat, NULL, ROW_LOWER);
     printf("\n");
 
 	// sage: M.nmod_poly_mat_leading_matrix(shifts=[0,1,2])
 	// [0 0 1]
 	// [1 0 0]
     printf("Printing shifted leading matrix, shift = [0,1,2]:\n");
-    nmod_poly_mat_leading_matrix_print_pretty(mat, rshift, ROW_WISE);
+    nmod_poly_mat_leading_matrix_print_pretty(mat, rshift, ROW_LOWER);
     printf("\n");
 
 	// sage: M.nmod_poly_mat_leading_matrix(row_wise=False)
 	// [0 0 1]
 	// [1 0 0]
     printf("Printing column-wise leading matrix:\n");
-    nmod_poly_mat_leading_matrix_print_pretty(mat, NULL, COLUMN_WISE);
+    nmod_poly_mat_leading_matrix_print_pretty(mat, NULL, COL_UPPER);
     printf("\n");
 
 	// sage: M.nmod_poly_mat_leading_matrix(shifts=[-2,1], row_wise=False)
 	// [0 0 1]
 	// [1 0 0]
     printf("Printing shifted column-wise leading matrix, shift = [-2,1]:\n");
-    nmod_poly_mat_leading_matrix_print_pretty(mat, cshift, COLUMN_WISE);
+    nmod_poly_mat_leading_matrix_print_pretty(mat, cshift, COL_UPPER);
     printf("\n");
 
 	// sage: M.nmod_poly_mat_leading_matrix(shifts=[2,0], row_wise=False)
@@ -54,7 +54,7 @@ int main()
 	// [1 0 0]
     printf("Printing shifted column-wise leading matrix, shift = [2,0]:\n");
     cshift[0] = 2; cshift[1]=0;
-    nmod_poly_mat_leading_matrix_print_pretty(mat, cshift, COLUMN_WISE);
+    nmod_poly_mat_leading_matrix_print_pretty(mat, cshift, COL_UPPER);
     printf("\n");
 
     nmod_poly_mat_clear(mat);

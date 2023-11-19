@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "nmod_poly_mat_approximant.h"
 #include "nmod_poly_mat_io.h" // for print_pretty
 

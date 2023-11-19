@@ -1,4 +1,3 @@
-#include "flint/ulong_extras.h" // for n_preinvert_limb
 #include "nmod_mat_poly.h"
 
 /*------------------------------------------------------------*/

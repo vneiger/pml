@@ -1,4 +1,5 @@
 #include "nmod_mat_extra.h"
+#include <stdlib.h>
 #include <flint/perm.h>
 
 slong nmod_mat_left_nullspace(nmod_mat_t X, const nmod_mat_t A)

@@ -1,4 +1,5 @@
 #include <NTL/lzz_pX.h>
+#include <NTL/tools.h>
 #include <iomanip>
 
 #include "util.h"
@@ -66,7 +67,7 @@ int main(int argc, char ** argv)
     if (argc!=3)
         throw std::invalid_argument("Usage: ./test_mul22 deg nbits");
 
-    double t_ntl=0.0, t_ours=0.0;
+    double t_ntl=0.0, t_pml=0.0, t_naive=0.0;
     long iter = 0;
     double t_now;
 
@@ -81,18 +82,35 @@ int main(int argc, char ** argv)
     std::cout << "2x2 polynomial matrix multiplication, over prime field p = " << zz_p::modulus() << std::endl;
     std::cout << "degree d =" << d << std::endl;
 
-    while (t_ours<0.5)
+    while (t_pml<0.5)
     {
         Mat<zz_pX> a = random_mat_zz_pX(2,2,d);
         Mat<zz_pX> b = random_mat_zz_pX(2,2,d);
         Mat<zz_pX> c;
         t_now = GetWallTime();
             multiply(c,a,b);
-        t_ours += GetWallTime()-t_now;
+        t_pml += GetWallTime()-t_now;
         ++iter;
     }
 
-    std::cout << "Time (ours):" << (t_ours / iter) << std::endl;
+    std::cout << "Time (pml):" << (t_pml / iter) << std::endl;
+
+    iter=0;
+    while (t_naive<0.5)
+    {
+        Mat<zz_pX> a = random_mat_zz_pX(2,2,d);
+        Mat<zz_pX> b = random_mat_zz_pX(2,2,d);
+        Mat<zz_pX> c(INIT_SIZE, 2, 2);
+        t_now = GetWallTime();
+            c[0][0] = a[0][0]*b[0][0] + a[0][1]*b[1][0];
+            c[0][1] = a[0][0]*b[0][1] + a[0][1]*b[1][1];
+            c[1][0] = a[1][0]*b[0][0] + a[1][1]*b[1][0];
+            c[1][1] = a[1][0]*b[0][1] + a[1][1]*b[1][1];
+        t_naive += GetWallTime()-t_now;
+        ++iter;
+    }
+
+    std::cout << "Time (naive):" << (t_naive / iter) << std::endl;
 
     iter=0;
     while (t_ntl<0.5)

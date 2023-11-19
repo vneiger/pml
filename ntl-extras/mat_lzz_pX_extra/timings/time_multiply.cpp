@@ -14,7 +14,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void one_check(long sz, long deg)
 {
-    const double thresh = 0.1;
+    const double thresh = 1;
     long nb;
     Mat<zz_pX> a, b, c1, c2;
     double t_FFT, t_waksman, t_transform, t_geometric, t_dense, t_dense2, t_3_primes, t_multiply;
@@ -192,23 +192,26 @@ void check()
     zz_p::UserFFTInit(23068673);
     cout << endl << "20 bit FFT prime " << zz_p::modulus() << endl;
     cout << "sz\tdeg\ttmul\twak\ttrsf\tgeom\tdens\tdens2\t3prm\tfft" << endl;
-    one_check(64,1024);
+    one_check(2,10000);
 
     // over an FFT prime, FFT always wins
     zz_p::FFTInit(0);
     cout << endl << "60 bit FFT prime" << endl;
     cout << "sz\tdeg\ttmul\twak\ttrsf\tgeom\tdens\tdens2\t3prm\tfft" << endl;
-    all_checks();
+    //all_checks();
+    one_check(2,1000000);
 
     zz_p::init(288230376151711813);
     cout << endl << "60 bit prime " << zz_p::modulus() << endl;
     cout << "sz\tdeg\ttmul\twak\ttrsf\tgeom\tdens\tdens2\t3prm\tfft" << endl;
-    all_checks();
+    //all_checks();
+    one_check(2,1000000);
 
     zz_p::init(23068673);
     cout << endl << "20 bit prime " << zz_p::modulus() << endl;
     cout << "sz\tdeg\ttmul\twak\ttrsf\tgeom\tdens\tdens2\t3prm\tfft" << endl;
-    all_checks();
+    //all_checks();
+    one_check(2,1000000);
 }  
 
 /*------------------------------------------------------------*/

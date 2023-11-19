@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdlib.h>
 #include <flint/flint.h>
 
 #include "nmod_mat_extra.h"

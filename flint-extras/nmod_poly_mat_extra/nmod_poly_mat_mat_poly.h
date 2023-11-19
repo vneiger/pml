@@ -18,13 +18,6 @@
 extern "C" {
 #endif
 
-/*************************************************************
-*                        WARNING                             *
-*  this will be removed (replaced by nmod_mat_poly_extra)    *
-*  and tests for mbasis fastest variants are finalized       *
-**************************************************************/
-
-
 typedef struct
 {
     slong degree;

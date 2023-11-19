@@ -6,7 +6,8 @@ NTL_CLIENT
 int main()
 {
     //zz_p::FFTInit(0);
-    zz_p::init(GenPrime_long(60));
+    zz_p::UserFFTInit(786433); // 20 bits
+    //zz_p::init(GenPrime_long(60));
 
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
@@ -14,7 +15,8 @@ int main()
     std::cout << "Basis reduction, FFT prime (FFTInit(0))" << std::endl;
     std::cout << "dim\tdeg\tinvtrunc\tHOL\t\treconstruct\ttotal\t\towP?\tright deg?" << std::endl;
 
-    VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256, 512};
+    VecLong szs = {32, 64, 128, 256, 512};
+    //VecLong szs = {2, 4, 8, 16, 32, 64, 128, 256, 512};
 
     for (size_t i=0; i<szs.size(); ++i)
     {
@@ -59,13 +61,13 @@ int main()
             // artificially non-reduced pmat
             Mat<zz_pX> trans_pmat;
             multiply(trans_pmat, trans, pmat);
-            //std::cout << "\ndegree input:\n" << degree_matrix(trans_pmat) << std::endl;
+            std::cout << "\ndegree input:\n" << degree_matrix(trans_pmat) << std::endl;
 
             double t=GetWallTime();
             Mat<zz_pX> reduced;
             reduced_form_gjv(reduced, trans_pmat);
             std::cout << GetWallTime()-t << "\t";
-            //std::cout << "\ndegree output:\n" << degree_matrix(reduced) << std::endl;
+            std::cout << "\ndegree output:\n" << degree_matrix(reduced) << std::endl;
 
             // tests form
             std::cout << is_row_ordered_weak_popov(reduced) << "\t";

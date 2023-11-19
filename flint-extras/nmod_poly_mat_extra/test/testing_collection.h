@@ -20,9 +20,21 @@ slong _test_collection_primes[]  = {
 *  tested dimensions and degrees  *
 ***********************************/
 
-const slong _test_collection_nb_dim = 7;
-slong _test_collection_rdims[] = {1, 2, 3, 5, 10, 15, 23};
-slong _test_collection_cdims[] = {1, 2, 3, 5, 11, 17, 21};
+const slong _test_collection_nb_minidims = 8;
+slong _test_collection_minirdims[] = {0, 1, 2, 3, 4, 5, 6, 7};
+slong _test_collection_minicdims[] = {0, 1, 2, 3, 4, 5, 6, 7};
+
+const slong _test_collection_nb_smalldims = 8;
+slong _test_collection_smallrdims[] = {0, 1, 2, 3, 5, 7, 10, 13};
+slong _test_collection_smallcdims[] = {0, 1, 2, 3, 5, 7, 11, 15};
+
+const slong _test_collection_nb_dims = 8;
+slong _test_collection_rdims[] = {0, 1, 2, 3, 5, 10, 20, 30};
+slong _test_collection_cdims[] = {0, 1, 2, 3, 5, 11, 23, 35};
+
+
+const slong _test_collection_nb_minidegs = 10;
+slong _test_collection_minidegs[] = {0, 1, 2, 3, 4, 5, 7, 9, 11, 13};
 
 const slong _test_collection_nb_smalldegs = 13;
 slong _test_collection_smalldegs[] = {0, 1, 2, 3, 4, 5, 10, 15, 25, 50, 75, 100, 125};
@@ -128,7 +140,7 @@ inline void _test_collection_mat_sparse(nmod_poly_mat_t mat, slong deg, flint_ra
 // rank-deficient matrices
 void _test_collection_mat_rkdef(nmod_poly_mat_t mat, slong deg, flint_rand_s * state)
 {
-    if (mat->r == 1 || mat->c == 1)
+    if (mat->r <= 1 || mat->c <= 1)
         nmod_poly_mat_zero(mat);
 
     else

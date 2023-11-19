@@ -25,24 +25,24 @@ int main()
 
     // sage: M.is_reduced()
     // False
-    isred = nmod_poly_mat_is_reduced_rowwise(mat, NULL);
+    isred = nmod_poly_mat_is_reduced(mat, NULL, ROW_LOWER);
     printf("Checking is reduced row-wise: %d --> %s\n",
            isred, (isred==0) ? "ok" : "not ok");
 
     // sage: M.is_reduced(shifts=[0,1,2])
     // True
-    isred = nmod_poly_mat_is_reduced_rowwise(mat, rshift);
+    isred = nmod_poly_mat_is_reduced(mat, rshift, ROW_LOWER);
     printf("Checking is (0,1,2)-reduced row-wise: %d --> %s\n",
            isred, (isred==1) ? "ok" : "not ok");
 
-    isred = nmod_poly_mat_is_reduced_columnwise(mat, NULL);
+    isred = nmod_poly_mat_is_reduced(mat, NULL, COL_UPPER);
     printf("Checking is reduced column-wise: %d --> %s\n",
            isred, (isred==0) ? "ok" : "not ok");
 
     // sage: M.is_reduced(shifts=[2,0], row_wise=False,
     // ....:                           include_zero_vectors=False)
     // False
-    isred = nmod_poly_mat_is_reduced_columnwise(mat, cshift);
+    isred = nmod_poly_mat_is_reduced(mat, cshift, COL_UPPER);
     printf("Checking is (2,0)-reduced column-wise: %d --> %s\n",
            isred, (isred==0) ? "ok" : "not ok");
 
@@ -61,11 +61,11 @@ int main()
     nmod_poly_mat_print_pretty(mat, "x");
     printf("\n");
 
-    isred = nmod_poly_mat_is_reduced_columnwise(mat, NULL);
+    isred = nmod_poly_mat_is_reduced(mat, NULL, COL_UPPER);
     printf("Checking is reduced column-wise: %d --> %s\n",
            isred, (isred==1) ? "ok" : "not ok");
 
-    isred = nmod_poly_mat_is_reduced_columnwise(mat, cshift);
+    isred = nmod_poly_mat_is_reduced(mat, cshift, COL_UPPER);
     printf("Checking is (2,0)-reduced column-wise: %d --> %s\n",
            isred, (isred==1) ? "ok" : "not ok");
 

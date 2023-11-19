@@ -11,8 +11,9 @@
  *
  */
 
-#include <flint/nmod.h>
+#include <flint/flint.h>
 #include <flint/nmod_vec.h>
+#include "nmod_extra.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,30 +33,22 @@ void _nmod_vec_rand(mp_ptr vec,
             		nmod_t mod);
 
 
+/*--------------------------------------------------------------*/
+/* vector of n consecutive primes of exactly s bits             */
+/*--------------------------------------------------------------*/
+void nmod_vec_primes(mp_ptr v, slong n, mp_bitcnt_t s);
+
+/* ------------------------------------------------------------ */
+/* v1 and v2 have length at least len, len <= 2^FLINT_BITS      */
+/* all entries of v1 have <= max_bits1 bits <= FLINT_BITS       */
+/* all entries of v2 have <= max_bits2 bits <= FLINT_BITS       */
+/* computes sum(v1[i]*v2[i], 0 <= i < len)                      */
+/* stores the result in 3 limbs of res                          */
+/* ------------------------------------------------------------ */
+void nmod_vec_integer_dot_product(mp_ptr res, mp_srcptr v1, mp_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2);
 
 
-/** Input/Output */
-// to be completed: print to file, print to sagemath..
-
-/** Prints the entries `0`, .., `len-1` of vector `vec`. Vector must already be
- * initialized, with length at least `len`. */
-void _nmod_vec_print_pretty(mp_ptr vec,
-                            slong len,
-                            nmod_t mod);
-
-
-
-
-/*------------------------------------------------------------*/
-/* y[i] = a*x[i] mod mod, i=0..len-1                          */
-/*------------------------------------------------------------*/
-static inline void _nmod_vec_scalar_mul(mp_ptr y, mp_srcptr x, slong len, mp_limb_t a, nmod_t mod)
-{
-    for (slong i = 0; i < len; i++)
-    {
-        y[i] = nmod_mul(x[i], a, mod);
-    }
-}
+mp_limb_t _nmod_vec_dot_small_modulus(mp_ptr a, mp_ptr b, ulong len, nmod_t mod);
 
 #ifdef __cplusplus
 }

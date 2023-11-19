@@ -1,8 +1,8 @@
 /** \file nmod_mat_extra.h
  *
- * Some possible TODOs:
- * - helper: pivots | nonpivots of reduced row echelon form (rightmost/leftmost) ?
- * - PLUQ factorization?
+ * \todo
+ * - helper: pivots | nonpivots of reduced row echelon form (rightmost/leftmost) ???
+ * - PLUQ factorization (try naive + Crout)
  * - left nullspace via PLUQ (or at least more direct than transposition)
  * - row/column rank profile (extract more information from Flint's nullspace?)
  *
@@ -18,6 +18,16 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* MATRIX MULTIPLICATION                                      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** matrix multiplication using AVX2 instructions for moduli less than 2^30 */
+void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B);
+
 
 
 /*------------------------------------------------------------*/

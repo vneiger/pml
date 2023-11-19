@@ -21,7 +21,7 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
     long nb_iter=0;
 
     double t_pmbasis_app=0.0;
-    while (t_pmbasis_app<0.2)
+    while (t_pmbasis_app<1.0)
     {
         Mat<zz_pX> pmat;
         random(pmat, rdim, cdim, degree+1);
@@ -38,29 +38,29 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
     t_pmbasis_app /= nb_iter;
 
     double t_pmbasis_int=0.0;
-    if (order<zz_p::modulus())
-    {
-        nb_iter=0;
-        while (t_pmbasis_int<0.2)
-        {
-            Mat<zz_pX> pmat;
-            random(pmat, rdim, cdim, degree+1);
-            Vec<zz_p> pts(INIT_SIZE, order);
-            std::iota(pts.begin(), pts.end(), 0);
-            std::shuffle(pts.begin(), pts.end(), std::mt19937{std::random_device{}()});
-        
-            t1 = GetWallTime();
-            Mat<zz_pX> intbas;
-            VecLong rdeg(shift);
-            pmbasis(intbas,pmat,pts,rdeg);
-            t2 = GetWallTime();
-        
-            t_pmbasis_int += t2-t1;
-            ++nb_iter;
-        }
-        t_pmbasis_int /= nb_iter;
-    }
-    else
+    //if (order<zz_p::modulus())
+    //{
+    //    nb_iter=0;
+    //    while (t_pmbasis_int<0.2)
+    //    {
+    //        Mat<zz_pX> pmat;
+    //        random(pmat, rdim, cdim, degree+1);
+    //        Vec<zz_p> pts(INIT_SIZE, order);
+    //        std::iota(pts.begin(), pts.end(), 0);
+    //        std::shuffle(pts.begin(), pts.end(), std::mt19937{std::random_device{}()});
+    //    
+    //        t1 = GetWallTime();
+    //        Mat<zz_pX> intbas;
+    //        VecLong rdeg(shift);
+    //        pmbasis(intbas,pmat,pts,rdeg);
+    //        t2 = GetWallTime();
+    //    
+    //        t_pmbasis_int += t2-t1;
+    //        ++nb_iter;
+    //    }
+    //    t_pmbasis_int /= nb_iter;
+    //}
+    //else
         t_pmbasis_int=-1.0;
 
     double t_pmbasis_intgeom=0.0;
@@ -111,7 +111,7 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
             zz_pX p00,p01,p10,p11;
             long s0 = shift[0];
             long s1 = shift[1];
-            pmbasis_2x1(p00,p01,p10,p11,f0,f1,order,s0,s1);
+            pmbasis_2x1(p00,p01,p10,p11,f0,f1,order,s0,s1,128);
             t2 = GetWallTime();
 
             t_pmbasis2x1 += t2-t1;
@@ -121,12 +121,12 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
     }
 
     // just for test, works only with very specific dimensions
-    bool applin=false; // for disabling printing timing below in function
+    bool applin=true; // for disabling printing timing below in function
     double t_pmbasis_applin=0.0;
     if (applin)
     {
         nb_iter=0;
-        while (t_pmbasis_applin<0.2)
+        while (t_pmbasis_applin<1.0)
         {
             Mat<zz_pX> pmat;
             random(pmat, rdim, cdim, degree+1);

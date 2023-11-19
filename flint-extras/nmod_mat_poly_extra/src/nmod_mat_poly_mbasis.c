@@ -1,8 +1,8 @@
-#include <stdlib.h> // for qsort
-#include <flint/nmod_mat.h>
 #include <flint/nmod_vec.h>
+#include <flint/nmod_mat.h>
 #include <flint/perm.h>
 #include <flint/profiler.h>
+#include <stdlib.h>
 #include "nmod_mat_poly.h"
 #include "nmod_mat_extra.h"
 
