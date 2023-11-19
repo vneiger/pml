@@ -145,7 +145,7 @@ int test_matpol(void)
     fmpz_mat_t mat_deg;
     fmpz_mat_init(mat_deg, rdim, cdim);
 
-    nmod_poly_mat_degree_matrix(mat_deg, A, shifts, ROW_LOWER);
+    nmod_poly_mat_degree_matrix_shifted(mat_deg, A, shifts, ROW_LOWER);
     printf("\n");
     fmpz_mat_print_pretty(mat_deg);
 
