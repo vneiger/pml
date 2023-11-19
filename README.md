@@ -2,9 +2,9 @@
 
 Additions to the NTL and FLINT libraries, with a focus on univariate polynomial matrices, structured matrices, and their applications.
 
-Authors of NTL version: Seung Gyu Hyun, Vincent Neiger, Éric Schost
+Authors of NTL version: Seung Gyu Hyun, Vincent Neiger, Eric Schost
 
-Authors of FLINT version, and current maintainers: Vincent Neiger, Éric Schost
+Authors of FLINT version, and current maintainers: Vincent Neiger, Eric Schost
 
 Version 0.3
 
