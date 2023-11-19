@@ -17,13 +17,13 @@ as well as in all subdirectories. See the file COPYING for a copy of the
 license.
 
 PML v0.3 is heavily based on [NTL](https://libntl.org/) and
-[FLINT](https://flintlib.org/). See the file `ntl-extras/COPYING_NTL` for NTL's
-copyright notice. FLINT is distributed under LGPL 2.1 (GNU Lesser General
-Public License), see `flint-extras/COPYING_FLINT` for the license.
+[FLINT](https://flintlib.org/). See the file ``ntl-extras/COPYING_NTL`` for
+NTL's copyright notice. FLINT is distributed under LGPL 2.1 (GNU Lesser General
+Public License), see ``flint-extras/COPYING_FLINT`` for the license.
 
 ## Installation
 
-If compiling the NTL version, NTL should be installed, version >=11.3.1
+If compiling the NTL version, NTL should be installed, version at least 11.3.1
 required.
 
 The FLINT version is work in progress, and currently compiles with the latest
@@ -44,33 +44,33 @@ Doxygen documentation that can be found in ROOT/include/html/index.html
 The NTL version uses C++ code and .cpp files, whereas the FLINT version uses C
 and .c files.
 
-In `src/`,
- - "make" -> compile and install the header / object files.
- - "make clean" -> removes the object files.
+In `src`,
+ - "make": compile the object files.
+ - "make clean": clean compilation products.
 
-In `test/`, test files should be called test-something.\{c,cpp\}
- - "make" or "make clean" -> removes all executables and check files (.chk)
- - "make all" -> compiles all test files
- - "make run" -> runs all executables, outputs results to something.chk
- - "make something.exe" -> compiles only test-something.\{c,cpp\}
- - "make something.chk" -> runs only test-something
+In `test`, test files should be called test-something.\{c,cpp\}
+ - "make" or "make clean": removes all executables and check files (.chk)
+ - "make all": compiles all test files
+ - "make run": runs all executables, outputs results to something.chk
+ - "make something.exe": compiles only test-something.\{c,cpp\}
+ - "make something.chk": runs only test-something
 
-In `timings/`, timing files should be called time-something.\{c,cpp\}
- - "make" or "make clean" -> removes all executables and data files (.dat)
- - "make all" -> compiles all timing files
- - "make run" -> runs all executables, outputs results to something.dat
- - "make something.exe" -> compiles only time-something.\{c,cpp\}
- - "make something.chk" -> runs only time-something
+In `timings`, timing files should be called time-something.\{c,cpp\}
+ - "make" or "make clean": removes all executables and data files (.dat)
+ - "make all": compiles all timing files
+ - "make run": runs all executables, outputs results to something.dat
+ - "make something.exe": compiles only time-something.\{c,cpp\}
+ - "make something.chk": runs only time-something
 
 ## For developers
 
 Code style:
   - with vim and emacs, simply respect the modelines
   - no hard tabulation
-  - soft tabulations = 4 spaces
+  - soft tabulations, 4 spaces
   - scope delimiter \{ \} on their own line
   - scope delimiters are not required here when they are not required by C++
-    (e.g. for one-line if/for)
+    (e.g. for one-line if or for)
   - when creating a new file, add the modelines at the bottom of the file:
 
 ```
