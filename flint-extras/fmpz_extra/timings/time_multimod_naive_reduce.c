@@ -10,11 +10,11 @@
 /* creates and deletes a multimod                               */
 /* total bit length is max_bit_length                           */
 /*--------------------------------------------------------------*/
-void check_fmpz_multimod_reduce(ulong max_bit_length)
+void check_fmpz_multimod_naive_reduce(ulong max_bit_length)
 {
     flint_rand_t state;
     flint_bitcnt_t prime_length;
-    fmpz_multimod_t mmod; 
+    fmpz_multimod_naive_t mmod; 
     mp_ptr primes, residues;
     ulong num_primes;
     fmpz_comb_t C;
@@ -31,7 +31,7 @@ void check_fmpz_multimod_reduce(ulong max_bit_length)
     primes = _nmod_vec_init(num_primes);
     residues = _nmod_vec_init(num_primes);
     nmod_vec_primes(primes, num_primes, prime_length);
-    fmpz_multimod_init(mmod, primes, num_primes);
+    fmpz_multimod_naive_init(mmod, primes, num_primes);
 
     printf("%ld ", num_primes);
 
@@ -46,16 +46,16 @@ void check_fmpz_multimod_reduce(ulong max_bit_length)
     while (t < 0.5)
     {
         tt = clock();
-        fmpz_multimod_reduce(residues, A, mmod);
-        fmpz_multimod_reduce(residues, A, mmod);
-        fmpz_multimod_reduce(residues, A, mmod);
-        fmpz_multimod_reduce(residues, A, mmod);
-        fmpz_multimod_reduce(residues, A, mmod);
-        fmpz_multimod_reduce(residues, A, mmod);
-        fmpz_multimod_reduce(residues, A, mmod);
-        fmpz_multimod_reduce(residues, A, mmod);
-        fmpz_multimod_reduce(residues, A, mmod);
-        fmpz_multimod_reduce(residues, A, mmod);
+        fmpz_multimod_naive_reduce(residues, A, mmod);
+        fmpz_multimod_naive_reduce(residues, A, mmod);
+        fmpz_multimod_naive_reduce(residues, A, mmod);
+        fmpz_multimod_naive_reduce(residues, A, mmod);
+        fmpz_multimod_naive_reduce(residues, A, mmod);
+        fmpz_multimod_naive_reduce(residues, A, mmod);
+        fmpz_multimod_naive_reduce(residues, A, mmod);
+        fmpz_multimod_naive_reduce(residues, A, mmod);
+        fmpz_multimod_naive_reduce(residues, A, mmod);
+        fmpz_multimod_naive_reduce(residues, A, mmod);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 10;
     }
@@ -90,7 +90,7 @@ void check_fmpz_multimod_reduce(ulong max_bit_length)
     fmpz_clear(A);
     fmpz_comb_temp_clear(Ct);
     fmpz_comb_clear(C);
-    fmpz_multimod_clear(mmod);
+    fmpz_multimod_naive_clear(mmod);
     _nmod_vec_clear(residues);
     _nmod_vec_clear(primes);
     flint_randclear(state);
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 
     printf("# num_primes t_new t_old\n");
     for (i = 10; i < 100000; i += 200)
-	check_fmpz_multimod_reduce(i);
+	check_fmpz_multimod_naive_reduce(i);
 
     return 0;
 }
