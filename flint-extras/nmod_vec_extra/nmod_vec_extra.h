@@ -48,7 +48,21 @@ void nmod_vec_primes(mp_ptr v, slong n, mp_bitcnt_t s);
 void nmod_vec_integer_dot_product(mp_ptr res, mp_srcptr v1, mp_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2);
 
 
-mp_limb_t _nmod_vec_dot_small_modulus(mp_ptr a, mp_ptr b, ulong len, nmod_t mod);
+/*------------------------------------------------------------*/
+/** dot product for moduli less than 2^30                     */
+/** reduction works if (p-1)^3*len < 2^96                     */
+/** returns dot(a1, b)                                        */
+/** power_two = 2^45 mod p, pinv = 1/p                        */
+/*------------------------------------------------------------*/
+mp_limb_t _nmod_vec_dot_small_modulus(mp_ptr a, mp_ptr b, ulong len, mp_limb_t power_two, vec1d p, vec1d pinv);
+
+/*------------------------------------------------------------*/
+/** dot product for moduli less than 2^30                     */
+/** reduction works if (p-1)^3*len < 2^96                     */
+/** res[0] = dot(a1, b), res[1] = dot(a2, b)                  */
+/** power_two = 2^45 mod p, p2 = (p,p), pinv2 = (1/p,1/p)     */
+/*------------------------------------------------------------*/
+void _nmod_vec_dot2_small_modulus(mp_ptr res, mp_ptr a1, mp_ptr a2, mp_ptr b, ulong len, mp_limb_t power_two, vec2d p2, vec2d pinv2);
 
 #ifdef __cplusplus
 }
