@@ -196,8 +196,30 @@ FLINT_FORCE_INLINE void vec4n_store_aligned(ulong* z, vec4n a)
     _mm256_store_si256((__m256i*) z, a);
 }
 
+/* reduce_to_pm1n(a, n, ninv): return a mod n in (-n,n) */
+FLINT_FORCE_INLINE vec2d vec2d_reduce_to_pm1no(vec2d a, vec2d n, vec2d ninv)
+{                                                               
+    return _mm_fnmadd_pd(_mm_round_pd(_mm_mul_pd(a, ninv), 4), n, a); 
+}
 
+/* reduce_pm1no_to_0n(a, n): return a mod n in [0,n) assuming a in (-n,n) */
+FLINT_FORCE_INLINE vec2d vec2d_reduce_pm1no_to_0n(vec2d a, vec2d n)
+{
+    return _mm_blendv_pd(a, _mm_add_pd(a, n), a); 
+}
 
+/* reduce_to_0n(a, n, ninv): return a mod n in [0,n) */
+FLINT_FORCE_INLINE vec2d vec2d_reduce_to_0n(vec2d a, vec2d n, vec2d ninv)
+{ 
+    return vec2d_reduce_pm1no_to_0n(vec2d_reduce_to_pm1no(a, n, ninv), n);
+}
+
+FLINT_FORCE_INLINE vec2d vec2d_set_d2(double a1, double a0)
+{
+    return _mm_set_pd(a0, a1);
+}
+
+#define vec4n_bit_shift_right_45(a) vec4n_bit_shift_right((a), 45)
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
