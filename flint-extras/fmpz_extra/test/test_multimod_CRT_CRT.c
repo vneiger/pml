@@ -22,7 +22,7 @@ void check_fmpz_multimod_CRT_CRT(ulong num_primes)
     residues = _nmod_vec_init(num_primes);
     fmpz_init(comb);
 
-    nmod_vec_primes(primes, num_primes, FLINT_BITS-8);
+    nmod_vec_primes(primes, num_primes, 29);
     for (i = 0; i < num_primes; i++)
     	residues[i] = n_randlimb(state) % primes[i];
 
