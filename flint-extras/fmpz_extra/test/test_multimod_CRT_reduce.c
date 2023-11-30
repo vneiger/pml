@@ -8,11 +8,10 @@
 
 /*--------------------------------------------------------------*/
 /* creates and deletes a multimod                               */
-/* uses 55 bits primes                                          */
 /* uses num_primes, total bit length is max_bit_length          */
 /* reduces 100 random integer modulo all primes                 */
 /*--------------------------------------------------------------*/
-void check_fmpz_multimod_CRT_reduce(ulong num_primes)
+void check_fmpz_multimod_CRT_reduce(ulong num_primes, ulong n_bits)
 {
     flint_rand_t state;
     fmpz_multimod_CRT_t mmod; 
@@ -23,14 +22,14 @@ void check_fmpz_multimod_CRT_reduce(ulong num_primes)
 
     primes = _nmod_vec_init(num_primes);
     residues = _nmod_vec_init(num_primes);
-    nmod_vec_primes(primes, num_primes, 55);
+    nmod_vec_primes(primes, num_primes, n_bits);
     fmpz_multimod_CRT_init(mmod, primes, num_primes);
     
     for (j = 0; j < 100; j++)
     {
 	fmpz_t A;
 	fmpz_init(A);
-	fmpz_randtest(A, state, 54 * num_primes);
+	fmpz_randtest(A, state, (n_bits - 1) * num_primes);
         fmpz_multimod_CRT_reduce(residues, A, mmod);
 	for (i = 0; i < num_primes; i++)
 	    if (residues[i] != fmpz_fdiv_ui(A, primes[i]))
@@ -60,7 +59,9 @@ int main(int argc, char**argv)
     ulong i;
     for (i = 1; i < 10000; i += 10)
     {
-	check_fmpz_multimod_CRT_reduce(i);
+	check_fmpz_multimod_CRT_reduce(i, 60);
+	check_fmpz_multimod_CRT_reduce(i, 50);
+	check_fmpz_multimod_CRT_reduce(i, 29);
     }
     
     return 0;

@@ -29,7 +29,6 @@ extern "C" {
 void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B);
 
 
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* RANDOM MATRICES                                            */

@@ -5,7 +5,6 @@
 #include <flint/nmod_vec.h>
 
 #include "nmod_mat_extra.h"
- 
 
 /*--------------------------------------------------------------*/
 /* computes a square matrix product in size len modulo n        */
@@ -49,7 +48,7 @@ void time_nmod_mat_mul_small_modulus(ulong len, ulong n)
     }
     t = 1000 * t;
     t /= nb_iter;
-    printf("%lf", t/1000);
+    printf("%lf ", t/1000);
 
     t = 0.0;
     nb_iter = 0;
@@ -66,7 +65,7 @@ void time_nmod_mat_mul_small_modulus(ulong len, ulong n)
     }
     t = 1000 * t;
     t /= nb_iter;
-    printf(" %lf", t/1000);
+    printf(" %lf ", t/1000);
 
     printf("\n");
 
@@ -82,6 +81,7 @@ void time_nmod_mat_mul_small_modulus(ulong len, ulong n)
 /*--------------------------------------------------------------*/
 int main(int argc, char **argv)
 {
+    flint_set_num_threads(1);
     printf("#size t_old t_new\n");
     ulong i;
     for (i = 1; i < 110; i += 10)

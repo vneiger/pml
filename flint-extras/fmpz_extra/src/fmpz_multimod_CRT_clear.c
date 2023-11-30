@@ -10,7 +10,8 @@
 void fmpz_multimod_CRT_clear(fmpz_multimod_CRT_t mmod)
 {
     ulong i;
-    
+
+    fmpz_clear(mmod->product_primes);
     fmpz_multi_mod_clear(mmod->top_mod);
     fmpz_multi_CRT_clear(mmod->top_CRT);
     

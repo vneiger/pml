@@ -1,6 +1,7 @@
 #include <flint/flint.h>
 #include <flint/fmpz.h>
 
+#include "nmod_vec_extra.h"
 #include "fmpz_extra.h"
 
 
@@ -53,14 +54,12 @@ mp_limb_t _fmpz_reduce(const fmpz_t a, mp_srcptr powers_of_two, const nmod_t mod
         slong slen;
         a_ptr = COEFF_TO_PTR(*a);
 	a_coeffs = a_ptr->_mp_d;
-        
         slen = a_ptr->_mp_size;
+
         if (slen < 0)
-            return nmod_neg(_nmod_vec_dot(powers_of_two, a_coeffs, -slen, mod,
-                                          _nmod_vec_dot_bound_limbs_unbalanced(-slen, mod)), mod);
+            return nmod_neg(nmod_vec_dot_product(powers_of_two, a_coeffs, -slen, FLINT_BIT_COUNT(mod.n), FLINT_BITS, mod), mod);
 	else
-	    return _nmod_vec_dot(powers_of_two, a_coeffs, slen, mod,
-                                 _nmod_vec_dot_bound_limbs_unbalanced(slen, mod));
+            return nmod_vec_dot_product(powers_of_two, a_coeffs, slen, FLINT_BIT_COUNT(mod.n), FLINT_BITS, mod);
     }
 }
 
@@ -80,7 +79,7 @@ void fmpz_multimod_naive_reduce(mp_limb_t * out, const fmpz_t A, const fmpz_mult
         fmpz_clear(B);
         return;
     }
-            
+
     for (i = 0; i < mmod->num_primes; i++)
         out[i] = _fmpz_reduce(A, mmod->powers_of_two[i], mmod->mod[i]);
 }

@@ -21,7 +21,7 @@ void fmpz_multimod_CRT_CRT(fmpz_t A, mp_srcptr m, const fmpz_multimod_CRT_t mmod
     {
         ulong j, nb;
         mp_ptr inv_cof;
-        
+
         nb = mmod->leaves_CRT[i]->num_primes;
         inv_cof = mmod->inverse_cofactors;
         for (j = 0; j < nb; j++)
@@ -35,7 +35,12 @@ void fmpz_multimod_CRT_CRT(fmpz_t A, mp_srcptr m, const fmpz_multimod_CRT_t mmod
     }
     
     if (mmod->num_leaves == 1)
-        fmpz_set(A, tmp);
+    {
+        fmpz_t q;
+        fmpz_init(q);
+        fmpz_fdiv_qr(q, A, tmp, mmod->leaves_CRT[0]->prod);
+        fmpz_clear(q);
+    }
     else
         fmpz_multi_CRT_combine(A, mmod->top_CRT, tmp);
     

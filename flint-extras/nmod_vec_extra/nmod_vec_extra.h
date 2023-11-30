@@ -47,6 +47,14 @@ void nmod_vec_primes(mp_ptr v, slong n, mp_bitcnt_t s);
 /* ------------------------------------------------------------ */
 void nmod_vec_integer_dot_product(mp_ptr res, mp_srcptr v1, mp_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2);
 
+/*  ------------------------------------------------------------ */
+/** v1 and v2 have length at least len, len <= 2^FLINT_BITS      */
+/** all entries of v1 have <= max_bits1 bits <= FLINT_BITS       */
+/** all entries of v2 have <= max_bits2 bits <= FLINT_BITS       */
+/** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
+/** does not assume input is reduced modulo mod.n                */
+/*  ------------------------------------------------------------ */
+mp_limb_t nmod_vec_dot_product(mp_srcptr v1, mp_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2, nmod_t mod);
 
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */
