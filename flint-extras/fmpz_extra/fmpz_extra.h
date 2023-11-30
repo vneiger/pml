@@ -27,6 +27,7 @@ typedef struct
     ulong num_primes;
     ulong num_limbs;
     fmpz_t prod;
+    int small_moduli;
 }
 fmpz_multimod_naive_struct;
 
