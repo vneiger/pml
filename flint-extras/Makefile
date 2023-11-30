@@ -14,3 +14,7 @@ clean:
 .PHONY: doc
 doc:
 	doxygen doxygen.conf
+
+docclean:
+	rm -r include/html
+	rm -r include/latex
