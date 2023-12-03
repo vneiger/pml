@@ -1,3 +1,5 @@
+#include <flint/fmpz.h>
+
 #include "nmod_extra.h"
 
 /*------------------------------------------------------------*/
@@ -59,66 +61,37 @@ void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, mp_limb_t modulus, ulong num_
     }
     else // large modulus. this is inspired by multimod and CRT in fft_small
     {
-        ulong i, old_len;
-        mp_ptr old_data;
-        
+        ulong i, len;
+        fmpz_t prod;
+        mp_ptr coeffs;
+        __mpz_struct *ptr;
+       
         if (num_primes == 1)
             return;
         
-        old_data = FLINT_ARRAY_ALLOC(1*1 + 1 + 1, ulong);
-        old_len = 1;
+        fmpz_init(prod);
+        fmpz_set_ui(prod, 1);
+
+        for (i = 0; i < num_primes; i++)
+            fmpz_mul_ui(prod, prod, C->mod_primes[i].n);
+
+        len = num_primes * num_primes + num_primes + num_primes;
+        C->data = FLINT_ARRAY_ALLOC(len, ulong);
+        for (i = 0; i < len; i++)
+            C->data[i] = 0;
+
+        ptr = COEFF_TO_PTR(*prod);
+	coeffs = ptr->_mp_d;
         
+        flint_mpn_copyi(C->data + num_primes * num_primes, coeffs, num_primes);
         for (i = 0; i < num_primes; i++)
         {
-            mp_limb_t p;
-            p = C->mod_primes[i].n;
-            
-            if (i == 0)
-            {
-                old_data[0] = 1; // coprime
-                old_data[1] = p; // prod
-                old_data[2] = 1; // coprime_red
-            }
-            else
-            {
-                ulong len;
-                ulong *t,  *tt;
-                
-                len = old_len;
-                
-                t = FLINT_ARRAY_ALLOC(2*(len + 2), ulong);
-                tt = t + (len + 2);
-                
-                t[len + 1] = 0;
-                t[len] = mpn_mul_1(t, old_data + len*i, len, p);
-                
-                /* leave enough room for (product of primes)*(number of primes) */
-                len += 2;
-                mpn_mul_1(tt, t, len, i + 1);
-                while (tt[len - 1] == 0)
-                    len--;
-                
-                flint_free(old_data);
-                
-                /* set product of primes */
-                old_data = FLINT_ARRAY_ALLOC((i+1)*len + len + (i+1), ulong);
-                flint_mpn_copyi(old_data + (i+1)*len, t, len);
-                
-                flint_free(t);
-                old_len = len;
-            }
+            mpn_divexact_1(C->data + i*num_primes, coeffs, num_primes, C->mod_primes[i].n);
+            C->data[num_primes*num_primes + num_primes + i] = mpn_mod_1(C->data + i*num_primes, num_primes, C->mod_primes[i].n);
+            C->inverse_cofactors[i] = nmod_inv(C->data[num_primes*num_primes + num_primes + i], C->mod_primes[i]);
         }
-        
-        /* set cofactors */
-        for (i = 0; i < num_primes; i++)
-        {
-            mpn_divexact_1(old_data + i*old_len, old_data + num_primes*old_len, old_len, C->mod_primes[i].n);
-            old_data[num_primes*old_len + old_len + i] = mpn_mod_1(old_data + i*old_len, old_len, C->mod_primes[i].n);
-            C->inverse_cofactors[i] = nmod_inv(old_data[num_primes*old_len + old_len + i], C->mod_primes[i]);
-        }
-        
-        C->data = FLINT_ARRAY_ALLOC(num_primes*old_len + num_primes + old_len, ulong);
-        flint_mpn_copyi(C->data, old_data, num_primes*old_len + num_primes + old_len);
-        flint_free(old_data);
+
+        fmpz_clear(prod);
     }
+    
 }

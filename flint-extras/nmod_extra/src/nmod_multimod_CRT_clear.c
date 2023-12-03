@@ -6,5 +6,6 @@
 void nmod_multimod_CRT_clear(nmod_multimod_CRT_t C)
 {
     if (C->p >= (1L << 50)) // large modulus
-        _nmod_vec_clear(C->data);
+        if (C->num_primes > 1)
+            _nmod_vec_clear(C->data);
 }
