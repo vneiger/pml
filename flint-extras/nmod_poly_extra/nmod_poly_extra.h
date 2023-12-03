@@ -38,16 +38,12 @@ typedef struct
 {
     nmod_t mod;
     vec1d p, pinv;
-
     mp_limb_t w, inv_w;       // root of 1 and its inverse
     ulong order;       // its order
-    
     vec1d **powers_w;
     mp_limb_t **powers_inv_w_t;  // same table for 1/w as for w
-
     // length order+1, with powers_inv_2[i] = 1/2^i 
     mp_limb_t *powers_inv_2;
-    
     // length order, level k has length 2^k with entries 1/w{k+1}^i/2^k 
     vec1d **powers_inv_w_over_2;
 } nmod_sd_fft_struct;
@@ -60,14 +56,18 @@ typedef nmod_sd_fft_struct nmod_sd_fft_t[1];
 /* DFTs of size up to 2^order are supported                   */ 
 /*------------------------------------------------------------*/
 void nmod_sd_fft_init_set(nmod_sd_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
-    
+
+/*------------------------------------------------------------*/
+/* utility routine, Qt used in transposed algorithms          */ 
+/*------------------------------------------------------------*/
+void sd_fft_ctx_init_inverse(sd_fft_ctx_t Qt, sd_fft_ctx_t Q);
+
 /*------------------------------------------------------------*/
 /* clears all memory assigned to F                            */
 /*------------------------------------------------------------*/
 void nmod_sd_fft_clear(nmod_sd_fft_t F);
 
 
-void sd_fft_ctx_init_inverse(sd_fft_ctx_t Qt, sd_fft_ctx_t Q);
 
 /*------------------------------------------------------------*/
 /* fft evaluation                                             */

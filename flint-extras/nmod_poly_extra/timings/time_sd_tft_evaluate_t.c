@@ -42,9 +42,8 @@ void get_time()
     {
         nmod_poly_init2(P, p, n);
         for (i = 0; i < n; i++)
-        {
             nmod_poly_set_coeff_ui(P, i, n_randtest(state) % p);
-        }
+
         val = _nmod_vec_init(n);
         val2 = _nmod_vec_init(n);
 
