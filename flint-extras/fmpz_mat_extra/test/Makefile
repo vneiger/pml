@@ -1,4 +1,4 @@
-SYSINC_DIR = /usr/local/include
+SYSINC_DIR = ../../include
 INC_DIR = ../../include
 SYSLIB_DIR = /usr/local/lib
 LIB_DIR = ../../lib

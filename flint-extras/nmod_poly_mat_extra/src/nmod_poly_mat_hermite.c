@@ -370,7 +370,12 @@ slong nmod_poly_mat_uref_maxdeg_atomic(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
                 // find pi1,pi2 such that entries pi1,j and pi2,j have the largest degree
                 // among entries [rk:mat->r,j], with deg(mat[pi1,j]) >= deg(mat[pi2,j])
                 if (MAT(pi1, j)->length < MAT(pi2, j)->length)
-                    SLONG_SWAP(pi1, pi2);
+                {
+                    slong t = pi1;
+                    pi1 = pi2;
+                    pi2 = t;
+                }
+//                    SLONG_SWAP(pi1, pi2);
                 for (slong i = FLINT_MAX(pi1,pi2)+1; i < mat->r; i++)
                 {
                     if (MAT(i, j)->length > MAT(pi1, j)->length)
