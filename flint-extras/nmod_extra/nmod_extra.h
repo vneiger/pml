@@ -26,9 +26,8 @@
 /*------------------------------------------------------------*/
 /* TODO: find which flags to test for                         */
 /*------------------------------------------------------------*/
-#define HAS_AVX512
 
-#ifdef HAS_AVX2
+#ifdef HAS_AVX2 // TODO: use flint flags for avx512/avx2?
 #include <immintrin.h>
 #endif
 
@@ -162,10 +161,10 @@ FLINT_FORCE_INLINE vec4d vec4d_addmod(vec4d a, vec4d b, vec4d n)
 /*------------------------------------------------------------*/
 FLINT_FORCE_INLINE vec4d vec4d_load_unaligned_mp_ptr(mp_ptr a)
 {
-#ifdef HAS_AVX2
+#ifdef FLINT_HAVE_AVX512
     return  _mm256_setr_m128d( _mm_cvtepi64_pd(_mm_loadu_si128((vec2n *) a)),
                                _mm_cvtepi64_pd(_mm_loadu_si128((vec2n *) (a + 2))) );
-#else
+#else // TODO need to test if has avx2?
 // when AVX2 is available, this is a bit slower than the solution above
     return vec4n_convert_limited_vec4d(vec4n_load_unaligned(a));
 #endif
