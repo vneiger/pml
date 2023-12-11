@@ -26,17 +26,15 @@ void time_nmod_mat_mul_small_modulus(ulong len, ulong n)
     nmod_mat_init(c1, len, len, mod.n);
     nmod_mat_init(c2, len, len, mod.n);
 
-    nmod_mat_rand(a, state);
-    nmod_mat_rand(b, state);
-    nmod_mat_rand(c1, state);
-    nmod_mat_rand(c2, state);
-
-    printf("%lu ", len);
+    printf("%lu\t", len);
     
     t = 0.0;
     nb_iter = 0;
     while (t < 0.5)
     {
+        nmod_mat_rand(a, state);
+        nmod_mat_rand(b, state);
+        nmod_mat_rand(c1, state);
         tt = clock();
         nmod_mat_mul(c1, a, b);
         nmod_mat_mul(c1, a, b);
@@ -48,12 +46,35 @@ void time_nmod_mat_mul_small_modulus(ulong len, ulong n)
     }
     t = 1000 * t;
     t /= nb_iter;
-    printf("%lf ", t/1000);
+    printf("%lf\t", t);
 
     t = 0.0;
     nb_iter = 0;
     while (t < 0.5)
     {
+        nmod_mat_rand(a, state);
+        nmod_mat_rand(b, state);
+        nmod_mat_rand(c1, state);
+        tt = clock();
+        nmod_mat_mul_blas(c1, a, b);
+        nmod_mat_mul_blas(c1, a, b);
+        nmod_mat_mul_blas(c1, a, b);
+        nmod_mat_mul_blas(c1, a, b);
+        nmod_mat_mul_blas(c1, a, b);
+        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += 5;
+    }
+    t = 1000 * t;
+    t /= nb_iter;
+    printf("%lf\t", t);
+
+    t = 0.0;
+    nb_iter = 0;
+    while (t < 0.5)
+    {
+        nmod_mat_rand(a, state);
+        nmod_mat_rand(b, state);
+        nmod_mat_rand(c2, state);
         tt = clock();
         nmod_mat_mul_small_modulus(c2, a, b);
         nmod_mat_mul_small_modulus(c2, a, b);
@@ -65,7 +86,7 @@ void time_nmod_mat_mul_small_modulus(ulong len, ulong n)
     }
     t = 1000 * t;
     t /= nb_iter;
-    printf(" %lf ", t/1000);
+    printf("%lf", t);
 
     printf("\n");
 
@@ -82,9 +103,10 @@ void time_nmod_mat_mul_small_modulus(ulong len, ulong n)
 int main(int argc, char **argv)
 {
     flint_set_num_threads(1);
-    printf("#size t_old t_new\n");
+    printf("Modulus %ld, times in ms\n", 1L << 29);
+    printf("#size\tt_flint\t\tt_blas\t\tt_here\n");
     ulong i;
-    for (i = 1; i < 110; i += 10)
+    for (i = 1; i < 210; i += 10)
         time_nmod_mat_mul_small_modulus(i, (1L << 29) + 1);
 
     return 0;
