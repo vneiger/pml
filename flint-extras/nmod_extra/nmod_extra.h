@@ -26,9 +26,8 @@
 /*------------------------------------------------------------*/
 /* TODO: find which flags to test for                         */
 /*------------------------------------------------------------*/
-#define HAS_AVX512
 
-#ifdef HAS_AVX2
+#ifdef HAS_AVX2 // TODO: use flint flags for avx512/avx2?
 #include <immintrin.h>
 #endif
 
@@ -162,10 +161,10 @@ FLINT_FORCE_INLINE vec4d vec4d_addmod(vec4d a, vec4d b, vec4d n)
 /*------------------------------------------------------------*/
 FLINT_FORCE_INLINE vec4d vec4d_load_unaligned_mp_ptr(mp_ptr a)
 {
-#ifdef HAS_AVX2
+#ifdef FLINT_HAVE_AVX512
     return  _mm256_setr_m128d( _mm_cvtepi64_pd(_mm_loadu_si128((vec2n *) a)),
                                _mm_cvtepi64_pd(_mm_loadu_si128((vec2n *) (a + 2))) );
-#else
+#else // TODO need to test if has avx2?
 // when AVX2 is available, this is a bit slower than the solution above
     return vec4n_convert_limited_vec4d(vec4n_load_unaligned(a));
 #endif
@@ -196,8 +195,30 @@ FLINT_FORCE_INLINE void vec4n_store_aligned(ulong* z, vec4n a)
     _mm256_store_si256((__m256i*) z, a);
 }
 
+/* reduce_to_pm1n(a, n, ninv): return a mod n in (-n,n) */
+FLINT_FORCE_INLINE vec2d vec2d_reduce_to_pm1no(vec2d a, vec2d n, vec2d ninv)
+{                                                               
+    return _mm_fnmadd_pd(_mm_round_pd(_mm_mul_pd(a, ninv), 4), n, a); 
+}
 
+/* reduce_pm1no_to_0n(a, n): return a mod n in [0,n) assuming a in (-n,n) */
+FLINT_FORCE_INLINE vec2d vec2d_reduce_pm1no_to_0n(vec2d a, vec2d n)
+{
+    return _mm_blendv_pd(a, _mm_add_pd(a, n), a); 
+}
 
+/* reduce_to_0n(a, n, ninv): return a mod n in [0,n) */
+FLINT_FORCE_INLINE vec2d vec2d_reduce_to_0n(vec2d a, vec2d n, vec2d ninv)
+{ 
+    return vec2d_reduce_pm1no_to_0n(vec2d_reduce_to_pm1no(a, n, ninv), n);
+}
+
+FLINT_FORCE_INLINE vec2d vec2d_set_d2(double a1, double a0)
+{
+    return _mm_set_pd(a0, a1);
+}
+
+#define vec4n_bit_shift_right_45(a) vec4n_bit_shift_right((a), 45)
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

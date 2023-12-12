@@ -13,7 +13,8 @@ void _fmpz_multi_CRT_combine(
     slong i, a, b, c;
     slong len = P->length;
     /* const fmpz * m = P->moduli; */
-    fmpz * A, * B, * C, * t3, * t4;
+    fmpz * A = NULL; // just to suppress uninitialized warning..
+    fmpz * B, * C, * t3, * t4;
 
     /* t1 = outputs + P->temp1loc; */
     /* t2 = outputs + P->temp2loc; */

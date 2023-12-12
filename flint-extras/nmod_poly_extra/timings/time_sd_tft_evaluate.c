@@ -15,7 +15,6 @@ void get_time()
     flint_rand_t state;
     mp_limb_t p, w0, w;
     nmod_t mod;
-    nmod_double_fft_t Fd;
     nmod_sd_fft_t F;
     sd_fft_ctx_t Q;
     sd_fft_lctx_t QL;
@@ -34,9 +33,7 @@ void get_time()
     w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> 16, mod);
     w = nmod_pow_ui(w0, 1L<<(16-16), mod);
     nmod_sd_fft_init_set(F, w, 16, mod);
-// double initialization
-    nmod_double_fft_init_set(Fd, w, 16, mod);
-    
+
     nmin = 1;
     nmax = 2000;
 
@@ -46,24 +43,9 @@ void get_time()
     {
         nmod_poly_init2(P, p, n);
         for (i = 0; i < n; i++)
-        {
             nmod_poly_set_coeff_ui(P, i, n_randtest(state) % p);
-        }
-        val = _nmod_vec_init(1L << n_clog2(n));
 
-        printf("%lu ", n);
-        t = 0.0;
-        nb_iter = 0;
-        while (t < 0.5)
-        {
-            tt = clock();
-            nmod_double_tft_evaluate(val, P, Fd, n);
-            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-            ++nb_iter;
-        }
-        t = 1000 * t;
-        t /= nb_iter;
-        printf("%f ", t);
+        val = _nmod_vec_init(1L << n_clog2(n));
 
         t = 0.0;
         nb_iter = 0;
@@ -86,7 +68,6 @@ void get_time()
     }
 
     sd_fft_ctx_clear(Q);
-    nmod_double_fft_clear(Fd);
     nmod_sd_fft_clear(F);
     flint_randclear(state);
 }

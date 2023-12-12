@@ -11,5 +11,10 @@ clean:
 	$(foreach dir, $(DIRS), if [ -d $(dir)/timings ]; then cd $(dir)/timings ; make clean ; cd ../.. ; fi ;)
 	$(foreach dir, $(DIRS), if [ -d $(dir)/tune ]; then cd $(dir)/tune ; make clean ; cd ../.. ; fi ;)
 
+.PHONY: doc
 doc:
 	cd include/ ; doxygen doxygen.conf ; cd ../
+
+docclean:
+	rm -r include/html
+	rm -r include/latex

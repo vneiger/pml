@@ -33,7 +33,7 @@
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_arith.h"
 
-// #include "nmod_poly_mat_multiply.h"
+#include "nmod_poly_mat_multiply.h"
 
 // TODO remove once using flint's comp instead
 NMOD_POLY_MAT_INLINE void

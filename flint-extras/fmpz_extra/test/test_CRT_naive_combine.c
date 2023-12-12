@@ -9,13 +9,13 @@
 /* computes a random combination with num_primes terms          */
 /* check against the result of the naive algorithm              */
 /*--------------------------------------------------------------*/
-void check_fmpz_CRT_naive_combine(slong num_primes)
+void check_fmpz_CRT_naive_combine(ulong num_primes, ulong n_bits)
 {
     flint_rand_t state;
     fmpz_t comb, check, temp;
     fmpz_CRT_naive_t mCRT; 
     mp_ptr primes, residues;
-    slong i, j;
+    ulong i, j;
 
     flint_randinit(state);
     primes = _nmod_vec_init(num_primes);
@@ -24,7 +24,7 @@ void check_fmpz_CRT_naive_combine(slong num_primes)
     fmpz_init(check);
     fmpz_init(temp);
 
-    nmod_vec_primes(primes, num_primes, FLINT_BITS-8);
+    nmod_vec_primes(primes, num_primes, n_bits);
     for (i = 0; i < num_primes; i++)
     	residues[i] = n_randlimb(state) % primes[i];
 
@@ -57,9 +57,13 @@ void check_fmpz_CRT_naive_combine(slong num_primes)
 /*--------------------------------------------------------------*/
 int main(int argc, char**argv)
 {
-    slong i;
-    for (i = 1; i < 1000; i += 50)
-	check_fmpz_CRT_naive_combine(i);
+    ulong i;
+    for (i = 1; i < 1000; i += 1)
+    {
+	check_fmpz_CRT_naive_combine(i, 60);
+	check_fmpz_CRT_naive_combine(i, 50);
+	check_fmpz_CRT_naive_combine(i, 29);
+    }
 
     return 0;
 }

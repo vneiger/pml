@@ -6,7 +6,7 @@
  
 
 /*--------------------------------------------------------------*/
-/* computes a dot modulus in size len modulo n                  */
+/* computes a dot product in size len modulo n                  */
 /*--------------------------------------------------------------*/
 void check_nmod_vec_dot_small_modulus(ulong len, ulong n)
 {
@@ -25,7 +25,7 @@ void check_nmod_vec_dot_small_modulus(ulong len, ulong n)
     _nmod_vec_rand(v2, state, len, mod);
     
     res1 = _nmod_vec_dot(v1, v2, len, mod, _nmod_vec_dot_bound_limbs(len, mod));
-    res2 = _nmod_vec_dot_small_modulus(v1, v2, len, mod);
+    res2 = _nmod_vec_dot_small_modulus(v1, v2, len, (1L << 45) % n, n, 1 / (double) n);
     assert (res1 == res2);
     
     _nmod_vec_clear(v1);
@@ -39,7 +39,7 @@ void check_nmod_vec_dot_small_modulus(ulong len, ulong n)
 int main(int argc, char **argv)
 {
     slong i;
-    for (i = 1; i < 1000; i += 21)
+    for (i = 1; i < 1000; i += 1)
 	check_nmod_vec_dot_small_modulus(i, (1L << 29) + 1);
 
     return 0;
