@@ -7,9 +7,9 @@
 
 
 /*--------------------------------------------------------------*/
-/* computes a CRT with num_primes of FLINT_BITS-8 size          */
+/* computes a CRT with num_primes of n_bits size                */
 /*--------------------------------------------------------------*/
-void check_fmpz_CRT_naive_CRT(ulong num_primes)
+void check_fmpz_CRT_naive_CRT(ulong num_primes, ulong n_bits)
 {
     flint_rand_t state;
     fmpz_t comb;
@@ -22,7 +22,7 @@ void check_fmpz_CRT_naive_CRT(ulong num_primes)
     residues = _nmod_vec_init(num_primes);
     fmpz_init(comb);
 
-    nmod_vec_primes(primes, num_primes, FLINT_BITS-8);
+    nmod_vec_primes(primes, num_primes, n_bits);
     for (i = 0; i < num_primes; i++)
     	residues[i] = n_randlimb(state) % primes[i];
 
@@ -48,8 +48,12 @@ void check_fmpz_CRT_naive_CRT(ulong num_primes)
 int main(int argc, char**argv)
 {
     ulong i;
-    for (i = 1; i < 1000; i += 10)
-	check_fmpz_CRT_naive_CRT(i);
+    for (i = 1; i < 1000; i += 1)
+    {
+	check_fmpz_CRT_naive_CRT(i, 60);
+	check_fmpz_CRT_naive_CRT(i, 50);
+	check_fmpz_CRT_naive_CRT(i, 29);
+    }
 
     return 0;
 }

@@ -79,7 +79,7 @@ slong nmod_mat_left_nullspace_compact(
                 nmod_mat_entry(X, i, j) = nmod_mat_entry(Xt, permutation[j], i);
     }
     else
-        _perm_set_one(permutation, A->r);
+        _perm_one(permutation, A->r);
 
     // clean
     nmod_mat_clear(At);

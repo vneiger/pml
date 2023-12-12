@@ -156,7 +156,7 @@ FLINT_FORCE_INLINE void _crt_1_small(mp_ptr out,
         vec4d p4, pinv4;
         p4 = vec4d_set_d(p);
         pinv4 = vec4d_set_d(pinv);
-        for (; i + 4 < nb; i += 4)
+        for (; i + 3 < nb; i += 4)
             vec4d_store_unaligned_mp_ptr(out + i,
                                          vec4d_reduce_to_0n(vec4d_load_unaligned_mp_ptr(residues0 + i), p4, pinv4));
     }
@@ -193,7 +193,7 @@ FLINT_FORCE_INLINE void _crt_2_small(mp_ptr out,
         pinv4 = vec4d_set_d(pinv);
         p0_redp4 = vec4d_set_d(p0_redp);
 
-        for (; i + 4 < nb; i += 4)
+        for (; i + 3 < nb; i += 4)
         {
             vec4d alpha04, alpha4, alphap4, alphapp4, m04, a4;
 
@@ -255,7 +255,7 @@ FLINT_FORCE_INLINE void _crt_3_small(mp_ptr out,
         invp0p1_p24 = vec4d_set_d(invp0p1_p2);
         p0p1_redp4 = vec4d_set_d(p0p1_red);
 
-        for (; i + 4 < nb; i += 4)
+        for (; i + 3 < nb; i += 4)
         {
             vec4d alpha04, alpha14, alpha1_p0_red24, alpha24;
 
@@ -361,7 +361,7 @@ FLINT_FORCE_INLINE void _crt_4_small(mp_ptr out,
         invp0p1p2_p34 = vec4d_set_d(invp0p1p2_p3);
         p0p1p2_red4 = vec4d_set_d(p0p1p2_red);
         
-        for (; i + 4 < nb; i += 4)
+        for (; i + 3 < nb; i += 4)
         {
             vec4d alpha04, alpha14, alpha1_p0_red24, alpha24, alpha34, alpha1_p0_red34, alpha2_p0p1_red34;
             alpha04 = vec4d_load_unaligned_mp_ptr(residues0 + i); // [0..p0), so [0..p1)

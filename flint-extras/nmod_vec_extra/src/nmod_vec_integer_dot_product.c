@@ -2,7 +2,6 @@
 
 #include "nmod_vec_extra.h"
 
-
 /* ------------------------------------------------------------ */
 /* v1 and v2 have length at least len, len <= 2^FLINT_BITS      */
 /* all entries of v1 have <= max_bits1 bits <= FLINT_BITS       */

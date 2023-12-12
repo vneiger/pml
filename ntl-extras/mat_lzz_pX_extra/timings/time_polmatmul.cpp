@@ -17,8 +17,8 @@
         t = 0.0;                         \
         nb_iter = 0;                     \
         Mat<zz_pX> a, b;                 \
-        random(a, rdim, idim, deg);      \
-        random(b, idim, cdim, deg);      \
+        random(a, rdim, idim, degl);      \
+        random(b, idim, cdim, degr);      \
         while (t<0.5)                    \
         {                                \
             tt = GetWallTime();          \
@@ -43,21 +43,22 @@ NTL_CLIENT
  * \param rdim row dimension
  * \param idim inner dimension
  * \param cdim column dimension
- * \param deg degree bound
+ * \param degl degree bound, left operand
+ * \param degr degree bound, right operand
  * \return void
  */
-void benchmark_polmatmul_fftprime(long rdim, long idim, long cdim, long deg)
+void benchmark_polmatmul_fftprime(long rdim, long idim, long cdim, long degl, long degr)
 {
     double t, tt;
     long nb_iter;
 
-    cout << rdim << "\t" << idim << "\t" << cdim << "\t" << deg << "\t";
+    cout << rdim << "\t" << idim << "\t" << cdim << "\t" << degl << "\t" << degr << "\t";
 
     { // warmup
         t=0.0;
         Mat<zz_pX> a, b;
-        random(a, rdim, idim, deg);
-        random(b, idim, cdim, deg);
+        random(a, rdim, idim, degl);
+        random(b, idim, cdim, degr);
         while (t<0.5)
         {
             tt = GetWallTime();
@@ -85,12 +86,12 @@ void benchmark_polmatmul_fftprime(long rdim, long idim, long cdim, long deg)
     else
         std::cout << "inf" << "\t";
 
-    if (deg<60)
+    if (max(degl,degr)<60)
         TIME(multiply_evaluate_dense)
     else
         std::cout << "inf" << "\t";
 
-    if (deg<100)
+    if (max(degl,degr)<100)
         TIME(multiply_evaluate_dense2)
     else
         std::cout << "inf" << "\t";
@@ -107,21 +108,22 @@ void benchmark_polmatmul_fftprime(long rdim, long idim, long cdim, long deg)
  * \param rdim row dimension
  * \param idim inner dimension
  * \param cdim column dimension
- * \param deg degree bound
+ * \param degl degree bound, left operand
+ * \param degr degree bound, right operand
  * \return void
  */
-void benchmark_polmatmul(long rdim, long idim, long cdim, long deg)
+void benchmark_polmatmul(long rdim, long idim, long cdim, long degl, long degr)
 {
     double t, tt;
     long nb_iter;
 
-    cout << rdim << "\t" << idim << "\t" << cdim << "\t" << deg << "\t";
+    cout << rdim << "\t" << idim << "\t" << cdim << "\t" << degl << "\t" << degr << "\t";
 
     { // warmup
         t=0.0;
         Mat<zz_pX> a, b;
-        random(a, rdim, idim, deg);
-        random(b, idim, cdim, deg);
+        random(a, rdim, idim, degl);
+        random(b, idim, cdim, degr);
         while (t<0.5)
         {
             tt = GetWallTime();
@@ -137,12 +139,12 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg)
 
     TIME(multiply_evaluate_geometric);
 
-    if (deg<100)
+    if (max(degl,degr)<100)
         TIME(multiply_evaluate_dense)
     else
         std::cout << "inf" << "\t";
 
-    if (deg<150)
+    if (max(degl,degr)<150)
         TIME(multiply_evaluate_dense2)
     else
         std::cout << "inf" << "\t";
@@ -163,33 +165,33 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg)
  */
 void benchmark_nbits(long nbits, bool fftprime)
 {
-    std::vector<long> dims = { 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, };
-    //std::vector<long> dims = { 2, 4, 10, 20, 32, 75, 180 };
-    std::vector<long> degs =
-    {
-        8, 10, 12, 14,
-        16, 20, 24, 28,
-        32, 40, 48, 56,
-        64, 80, 96, 112,
-        128, 160, 192, 224,
-        256, 320, 384, 448,
-        512, 640, 768, 896,
-        1024, 1280, 1536, 1792,
-        2048, 2560, 3072, 3584,
-        4096, 5120, 6144, 7168,
-        8192, 10240, 12288, 14336,
-        16384, 20480, 24576, 28672,
-        32768, 40960, 49152, 57344
-    };
+    //std::vector<long> dims = { 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, };
+    std::vector<long> dims = { 2, 4, 10, 20, 32, 75, 180 };
     //std::vector<long> degs =
     //{
-    //    8,
-    //    32,
-    //    128,
-    //    512,
-    //    2048,
-    //    8192,
+    //    8, 10, 12, 14,
+    //    16, 20, 24, 28,
+    //    32, 40, 48, 56,
+    //    64, 80, 96, 112,
+    //    128, 160, 192, 224,
+    //    256, 320, 384, 448,
+    //    512, 640, 768, 896,
+    //    1024, 1280, 1536, 1792,
+    //    2048, 2560, 3072, 3584,
+    //    4096, 5120, 6144, 7168,
+    //    8192, 10240, 12288, 14336,
+    //    16384, 20480, 24576, 28672,
+    //    32768, 40960, 49152, 57344
     //};
+    std::vector<long> degs =
+    {
+        8,
+        32,
+        128,
+        512,
+        2048,
+        8192,
+    };
 
     if (fftprime)
     {
@@ -207,7 +209,7 @@ void benchmark_nbits(long nbits, bool fftprime)
         for (long dim : dims)
             for (long d : degs)
                 if (dim*dim*dim*d < 30000000000)
-                    benchmark_polmatmul_fftprime(dim,dim,dim,d);
+                    benchmark_polmatmul_fftprime(dim,dim,dim,d,d);
         std::cout << std::endl;
     }
     else
@@ -219,7 +221,7 @@ void benchmark_nbits(long nbits, bool fftprime)
         for (long dim : dims)
             for (long d : degs)
                 if (dim*dim*dim*d < 30000000000)
-                    benchmark_polmatmul(dim,dim,dim,d);
+                    benchmark_polmatmul(dim,dim,dim,d,d);
         std::cout << std::endl;
     }
 }
@@ -252,7 +254,7 @@ void benchmark_nbits_dim_deg(long nbits, long dim, long deg, bool fftprime)
             zz_p::UserFFTInit(1139410705724735489); // 60 bits
         std::cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << NumBits(zz_p::modulus()) << ")" << std::endl;
         std::cout << "dim\tdim\tdim\tdegree\tmult\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
-        benchmark_polmatmul_fftprime(dim,dim,dim,deg);
+        benchmark_polmatmul_fftprime(dim,dim,dim,deg,deg);
     }
     else
     {
@@ -260,7 +262,49 @@ void benchmark_nbits_dim_deg(long nbits, long dim, long deg, bool fftprime)
         zz_p::init(GenPrime_long(nbits));
         std::cout << "p = " << zz_p::modulus() << "  (prime, bit length = " << NumBits(zz_p::modulus()) << ")" << std::endl;
         std::cout << "dim\tdim\tdim\tdegree\tmult\t3pri\tev-geo\tvdmd\tvdmd2" << std::endl;
-        benchmark_polmatmul(dim,dim,dim,deg);
+        benchmark_polmatmul(dim,dim,dim,deg,deg);
+    }
+}
+
+/** Launches single benchmark for specified parameters.
+ *
+ *  Launches one benchmark for the given square matrix dimensions, matrix
+ *  degree, and bitlength for the prime defining the field of coefficients. If
+ *  fftprime is true, this picks an FFT prime not too far from the given
+ *  bitlength.
+ *
+ * \param nbits bitlength of the prime modulus
+ * \param rdim left matrix row dimension
+ * \param idim matrix inner dimension
+ * \param cdim right matrix column dimension
+ * \param deg matrix degree
+ * \param fftprime boolean, whether to take an FFT prime
+ * \return void
+ */
+void benchmark_nbits_dims_deg(long nbits, long rdim, long idim, long cdim, long degl, long degr, bool fftprime)
+{
+    if (fftprime)
+    {
+        std::cout << "Bench polynomial matrix multiplication (FFT prime):" << std::endl;
+        if (nbits < 25)
+            zz_p::UserFFTInit(786433); // 20 bits
+        else if (nbits < 35)
+            zz_p::UserFFTInit(2013265921); // 31 bits
+        else if (nbits < 45)
+            zz_p::UserFFTInit(2748779069441); // 42 bits
+        else if (nbits < 65)
+            zz_p::UserFFTInit(1139410705724735489); // 60 bits
+        std::cout << "p = " << zz_p::modulus() << "  (FFT prime, bit length = " << NumBits(zz_p::modulus()) << ")" << std::endl;
+        std::cout << "rdim\tidim\tcdim\tdeg1\tdeg2\tmult\tmm1\tmm2\tmm3\tdir_ll\tdir\tvdmd\tvdmd2" << std::endl;
+        benchmark_polmatmul_fftprime(rdim,idim,cdim,degl,degr);
+    }
+    else
+    {
+        std::cout << "Bench square polynomial matrix multiplication:" << std::endl;
+        zz_p::init(GenPrime_long(nbits));
+        std::cout << "p = " << zz_p::modulus() << "  (prime, bit length = " << NumBits(zz_p::modulus()) << ")" << std::endl;
+        std::cout << "rdim\tidim\tcdim\tdeg1\tdeg2\tmult\t3pri\tev-geo\tvdmd\tvdmd2" << std::endl;
+        benchmark_polmatmul(rdim,idim,cdim,degl,degr);
     }
 }
 
@@ -270,9 +314,11 @@ int main(int argc, char ** argv)
     std::cout << std::setprecision(5);
     //std::cout << std::unitbuf; // enable automatic flushing
 
-    if (argc!=3 && argc!=5)
+    if (argc!=3 && argc!=5 && argc!=8)
     {
-        std::cout << "Usage: " << argv[0] << " nbits fftprime OR " << argv[0] << " nbits dim deg fftprime" << std::endl;
+        std::cout << "Usage: " << argv[0] << " nbits fftprime" << std::endl;
+        std::cout << "    OR " << argv[0] << " nbits dim deg fftprime" << std::endl;
+        std::cout << "    OR " << argv[0] << " nbits rdim idim cdim deg1 deg2 fftprime" << std::endl;
         return 1;
     }
 
@@ -293,6 +339,17 @@ int main(int argc, char ** argv)
         benchmark_nbits_dim_deg(nbits,dim,deg,fftprime);
     }
 
+    if (argc==8)
+    {
+        long nbits = atoi(argv[1]);
+        long rdim = atoi(argv[2]);
+        long idim = atoi(argv[3]);
+        long cdim = atoi(argv[4]);
+        long degl = atoi(argv[5]);
+        long degr = atoi(argv[6]);
+        bool fftprime = (atoi(argv[7]) == 1);
+        benchmark_nbits_dims_deg(nbits,rdim,idim,cdim,degl,degr,fftprime);
+    }
     return 0;
 }
 

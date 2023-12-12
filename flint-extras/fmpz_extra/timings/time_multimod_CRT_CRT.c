@@ -131,7 +131,7 @@ int main(int argc, char **argv)
     ulong i;
 
     printf("# num_primes t_naive t_DAC t_old\n");
-    for (i = 2000; i < 100000; i += 2000000)
+    for (i = 20000; i < 100000; i += 1200)
 	check_fmpz_multimod_CRT(i);
 
     return 0;

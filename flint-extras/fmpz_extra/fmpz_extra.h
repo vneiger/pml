@@ -27,6 +27,7 @@ typedef struct
     ulong num_primes;
     ulong num_limbs;
     fmpz_t prod;
+    int small_moduli;
 }
 fmpz_multimod_naive_struct;
 
@@ -98,23 +99,22 @@ void fmpz_CRT_naive_CRT(fmpz_t A, mp_srcptr m, const fmpz_CRT_naive_t mCRT);
 /* ------------------------------------------------------------ */
 typedef struct
 {
-    fmpz_multimod_naive_t * leaves_mod;
     ulong num_primes;
     ulong size_leaves;
     ulong num_leaves;
     mp_ptr inverse_cofactors;
+    fmpz_multimod_naive_t * leaves_mod;
     fmpz_CRT_naive_t * leaves_CRT;
     fmpz * products_leaves;
     fmpz_multi_mod_t top_mod;
     fmpz_multi_CRT_t top_CRT;
+    fmpz_t product_primes;
 }
 fmpz_multimod_CRT_struct;
 
 typedef fmpz_multimod_CRT_struct fmpz_multimod_CRT_t[1];
 
-
 #define MULTIMOD_CRT_LEAF_SIZE 200
-//#define MULTIMOD_CRT_LEAF_SIZE 10
 
 /* ------------------------------------------------------------ */
 /* prepares the vectors of coefficients and inverses            */

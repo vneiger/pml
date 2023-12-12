@@ -8,19 +8,16 @@
 
 /*----------------------------------------------------------------*/
 /* CRT in size num_bits, reduced mod n of size p_bits             */
-/* does 1002 reductions                                           */
 /*----------------------------------------------------------------*/
-void check_nmod_multimod_CRT_CRT(ulong num_bits, ulong p_bits)
+void check_nmod_multimod_CRT_CRT(ulong N, ulong num_bits, ulong p_bits)
 {
     flint_rand_t state;
     nmod_multimod_CRT_t CRT; 
     mp_ptr *vec_residues;
     mp_ptr output;
-    ulong i, j, num_primes, N;
+    ulong i, j, num_primes;
     mp_limb_t n;
     fmpz * input;
-    
-    N=1006;
     
     flint_randinit(state);
 
@@ -89,20 +86,25 @@ void check_nmod_multimod_CRT_CRT(ulong num_bits, ulong p_bits)
 /*--------------------------------------------------------------*/
 int main(int argc, char**argv)
 {
-    check_nmod_multimod_CRT_CRT(30, 25);
-    check_nmod_multimod_CRT_CRT(50, 25);
-    check_nmod_multimod_CRT_CRT(100, 25);
-    check_nmod_multimod_CRT_CRT(150, 25);
+    ulong i;
 
-    check_nmod_multimod_CRT_CRT(30, 49);
-    check_nmod_multimod_CRT_CRT(50, 49);
-    check_nmod_multimod_CRT_CRT(100, 49);
-    check_nmod_multimod_CRT_CRT(150, 49);
-
-    check_nmod_multimod_CRT_CRT(30, 60);
-    check_nmod_multimod_CRT_CRT(50, 60);
-    check_nmod_multimod_CRT_CRT(100, 60);
-    check_nmod_multimod_CRT_CRT(150, 60);
+    for (i = 0; i < 500; i++)
+    {
+        check_nmod_multimod_CRT_CRT(i, 30, 25);
+        check_nmod_multimod_CRT_CRT(i, 50, 25);
+        check_nmod_multimod_CRT_CRT(i, 100, 25);
+        check_nmod_multimod_CRT_CRT(i, 150, 25);
+        
+        check_nmod_multimod_CRT_CRT(i, 30, 49);
+        check_nmod_multimod_CRT_CRT(i, 50, 49);
+        check_nmod_multimod_CRT_CRT(i, 100, 49);
+        check_nmod_multimod_CRT_CRT(i, 150, 49);
+        
+        check_nmod_multimod_CRT_CRT(i, 30, 60);
+        check_nmod_multimod_CRT_CRT(i, 50, 60);
+        check_nmod_multimod_CRT_CRT(i, 100, 60);
+        check_nmod_multimod_CRT_CRT(i, 150, 60);
+    }
 
     return 0;
 }
