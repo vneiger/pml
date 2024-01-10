@@ -10,7 +10,7 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
     nmod_multimod_CRT_t CRT;
     mp_ptr residues[4];
     nmod_poly_mat_t *mod_A, *mod_B, *mod_C;
-    
+
     m = A->r;
     k = A->c;
     n = B->c;
@@ -40,6 +40,7 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
     len_A = 0;
     len_B = 0;
 
+   
     for (i = 0; i < m; i++)
         for (j = 0; j < k; j++)
             len_A = FLINT_MAX(len_A, A->rows[i][j].length);
@@ -60,7 +61,7 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
         num_primes = 3;
     if (num_bits > 3*49)
         num_primes = 4;
-    
+
     nmod_multimod_CRT_init(CRT, p, num_primes);
 
     mod_A = FLINT_ARRAY_ALLOC(num_primes, nmod_poly_mat_t);
@@ -74,7 +75,7 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
         nmod_poly_mat_init(mod_C[i], m, n, primes[i]);
     }
 
-
+    
     for (i = 0; i < m; i++)
         for (j = 0; j < k; j++)
         {
@@ -109,12 +110,15 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
         }
 
 
+
     for (ell = 0; ell < num_primes; ell++)
     {
         nmod_poly_mat_mul_tft(mod_C[ell], mod_A[ell], mod_B[ell]);
         residues[ell] = _nmod_vec_init(len_C);
     }
 
+
+    
     for (i = 0; i < m; i++)
         for (j = 0; j < n; j++)
         {
@@ -140,7 +144,8 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
             nmod_multimod_CRT_CRT(C->rows[i][j].coeffs, residues, len, CRT);
             _nmod_poly_normalise(&C->rows[i][j]);
         }
-    
+
+
     nmod_multimod_CRT_clear(CRT);
     for (i = 0; i < num_primes; i++)
     {
@@ -152,4 +157,8 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
     flint_free(mod_A);
     flint_free(mod_B);
     flint_free(mod_C);
+
+
 }
+
+
