@@ -24,6 +24,8 @@ void check()
     sd_fft_ctx_init_prime(Q, p);
     nmod_init(&mod, p);
 
+
+    
     w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> 16, mod);
     w = nmod_pow_ui(w0, 1L<<(16-16), mod);
     nmod_sd_fft_init_set(F, w, 16, mod);
@@ -61,6 +63,7 @@ void check()
         nmod_poly_clear(P2);
         nmod_poly_clear(P);
         _nmod_vec_clear(val);
+        sd_fft_lctx_clear(QL, Q);
     }
         
     sd_fft_ctx_clear(Q);
