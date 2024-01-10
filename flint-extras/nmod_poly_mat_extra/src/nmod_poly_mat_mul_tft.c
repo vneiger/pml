@@ -15,6 +15,7 @@ void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmo
     sd_fft_lctx_t QL;
     nmod_sd_fft_t F;
 
+
     m = A->r;
     k = A->c;
     n = B->c;
@@ -36,6 +37,7 @@ void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmo
         return;
     }
 
+    
     // length = 0 iff matrix is zero
     ellA = nmod_poly_mat_max_length(A);
     ellB = nmod_poly_mat_max_length(B);
@@ -53,6 +55,7 @@ void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmo
 
     sd_fft_ctx_init_prime(Q, p);
     w = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> order, mod); // w has order 2^order
+
     nmod_sd_fft_init_set(F, w, order, mod);
     sd_fft_lctx_init(QL, Q, order);
 
@@ -67,6 +70,7 @@ void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmo
         nmod_mat_init(mod_B[i], k, n, p);
         nmod_mat_init(mod_C[i], m, n, p);
     }
+
 
     for (i = 0; i < n; i++)
         for (j = 0; j < k; j++)
@@ -84,9 +88,11 @@ void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmo
                 mod_B[ell]->rows[i][j] = val[ell];
         }
 
+
     for (ell = 0; ell < ellC; ell++)
         nmod_mat_mul(mod_C[ell], mod_A[ell], mod_B[ell]);
 
+    
     for (i = 0; i < n; i++)
         for (j = 0; j < m; j++)
         {
@@ -95,6 +101,7 @@ void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmo
             nmod_sd_tft_interpolate(&C->rows[i][j], val, QL, F, ellC);
         }
     
+
     for (i = 0; i < ellC; i++)
     {
         nmod_mat_clear(mod_A[i]);
@@ -106,6 +113,6 @@ void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmo
     flint_free(mod_C);
     _nmod_vec_clear(val);
     nmod_sd_fft_clear(F);
-    sd_fft_ctx_clear(Q);
     sd_fft_lctx_clear(QL, Q);
+    sd_fft_ctx_clear(Q);
 }
