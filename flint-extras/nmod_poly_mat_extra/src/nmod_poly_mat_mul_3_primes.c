@@ -3,6 +3,11 @@
 #include "nmod_extra.h"
 #include "nmod_poly_mat_multiply.h"
 
+/** Multiplication for polynomial matrices
+ *  sets C = A * B
+ *  output can alias input
+ *  uses tft multiplication modulo 50 bits fft primes
+ */
 void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B)
 {
     ulong num_primes, num_bits, i, j, ell, m, k, n, len_A, len_B, len_C;

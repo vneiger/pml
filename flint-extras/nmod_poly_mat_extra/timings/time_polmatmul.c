@@ -26,7 +26,7 @@
 void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime, int fftprime, flint_rand_t state)
 {
     // create random matrices
-    nmod_poly_mat_t a, b;
+    nmod_poly_mat_t a, b, c1, c2;
 
     flint_randinit(state);
     nmod_poly_mat_init(a, rdim, idim, prime);
@@ -43,54 +43,149 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
     clock_t tt;
     long nb_iter = 0;
 
+    // warmup
+    t = 0.0;
+    nb_iter = 0;
+    while (t<0.5)
+    {
+            tt = clock();
+            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+            ++nb_iter;
+    }
+    
     { // FLINT native
-        nmod_poly_mat_t c;
-        nmod_poly_mat_init(c, rdim, cdim, prime);
+        nmod_poly_mat_init(c1, rdim, cdim, prime);
         t = 0.0; nb_iter = 0;
         while (t<0.5)
         {
             tt = clock();
-            nmod_poly_mat_mul(c, a, b);
+            nmod_poly_mat_mul(c1, a, b);
             t += (double)(clock()-tt) / CLOCKS_PER_SEC;
             ++nb_iter;
-        }
+            }
         t /= nb_iter;
         printf("\t%f",t);
-        nmod_poly_mat_clear(c);
     }
-
+        
     { // PML 3-primes
-        nmod_poly_mat_t c;
-        nmod_poly_mat_init(c, rdim, cdim, prime);
+        nmod_poly_mat_init(c2, rdim, cdim, prime);
         t = 0.0; nb_iter = 0;
         while (t<0.5)
         {
             tt = clock();
-            nmod_poly_mat_mul_tft(c, a, b);
+            nmod_poly_mat_mul_3_primes(c2, a, b);
             t += (double)(clock()-tt) / CLOCKS_PER_SEC;
             ++nb_iter;
         }
-        t /= nb_iter;
-        printf("\t%f",t);
-        nmod_poly_mat_clear(c);
+            t /= nb_iter;
+            printf("\t%f", t);
     }
 
-    if (fftprime)
-    { // PML TFT
-        nmod_poly_mat_t c;
-        nmod_poly_mat_init(c, rdim, cdim, prime);
+    if (!nmod_poly_mat_equal(c1, c2))
+    {
+        printf("\terror with 3 primes\n");
+        exit(-1);
+    }
+    
+    { // PML geometric
+        nmod_poly_mat_init(c2, rdim, cdim, prime);
         t = 0.0; nb_iter = 0;
         while (t<0.5)
         {
             tt = clock();
-            nmod_poly_mat_mul_tft(c, a, b);
+            nmod_poly_mat_mul_geometric(c2, a, b);
+            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+            ++nb_iter;
+        }
+            t /= nb_iter;
+            printf("\t%f", t);
+    }
+
+    if (!nmod_poly_mat_equal(c1, c2))
+    {
+        printf("\terror with geometric\n");
+        exit(-1);
+    }
+
+    { // PML VDM1
+        nmod_poly_mat_init(c2, rdim, cdim, prime);
+        t = 0.0; nb_iter = 0;
+        while (t<0.5)
+        {
+            tt = clock();
+            nmod_poly_mat_mul_vdm1(c2, a, b);
             t += (double)(clock()-tt) / CLOCKS_PER_SEC;
             ++nb_iter;
         }
         t /= nb_iter;
-        printf("\t%f",t);
-        nmod_poly_mat_clear(c);
+        printf("\t%f", t);
     }
+
+    if (!nmod_poly_mat_equal(c1, c2))
+    {
+        printf("\terror with vdm1\n");
+        exit(-1);
+    }
+
+    { // PML VDM2
+        nmod_poly_mat_init(c2, rdim, cdim, prime);
+        t = 0.0; nb_iter = 0;
+        while (t<0.5)
+        {
+            tt = clock();
+            nmod_poly_mat_mul_vdm2(c2, a, b);
+            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+            ++nb_iter;
+        }
+        t /= nb_iter;
+        printf("\t%f", t);
+    }
+        
+    if (!nmod_poly_mat_equal(c1, c2))
+    {
+        printf("\terror with vdm2\n");
+        exit(-1);
+    }
+
+    { // PML WAKSMAN
+        nmod_poly_mat_init(c2, rdim, cdim, prime);
+        t = 0.0; nb_iter = 0;
+        while (t<0.5)
+        {
+            tt = clock();
+            nmod_poly_mat_mul_waksman(c2, a, b);
+            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+            ++nb_iter;
+        }
+        t /= nb_iter;
+        printf("\t%f", t);
+    }
+        
+    if (!nmod_poly_mat_equal(c1, c2))
+    {
+        printf("\terror with waksman\n");
+        exit(-1);
+    }
+
+    nmod_poly_mat_clear(c1);
+    nmod_poly_mat_clear(c2);
+            
+    /* if (fftprime) */
+    /* { // PML TFT */
+    /*     nmod_poly_mat_t c; */
+    /*     nmod_poly_mat_init(c, rdim, cdim, prime); */
+    /*     t = 0.0; nb_iter = 0; */
+    /*     while (t<0.5) */
+    /*     { */
+    /*         tt = clock(); */
+    /*         nmod_poly_mat_mul_tft(c, a, b); */
+    /*         t += (double)(clock()-tt) / CLOCKS_PER_SEC; */
+    /*         ++nb_iter; */
+    /*     } */
+    /*     t /= nb_iter; */
+    /*     printf("\t%f",t); */
+    /*     nmod_poly_mat_clear(c); */
+    /* } */
     nmod_poly_mat_clear(a);
     nmod_poly_mat_clear(b);
     printf("\n");
@@ -182,7 +277,7 @@ void benchmark_nbits_dim_deg(ulong nbits, ulong dim, ulong deg)
     printf("Bench square polynomial matrix multiplication:\n");
     printf("nbits=%ld, dim=%ld, deg=%ld\n",nbits,dim,deg);
     printf("nbits=%ld, prime=%ld, dim=%ld, deg=%ld\n",nbits,prime,dim,deg);
-    printf("rdim\tidim\tcdim\tdeg\tflint\t\tpml\n");
+    printf("rdim\tidim\tcdim\tdeg\tflint\t\tpml(3 primes)\tpml(geometric)\tpml(vdm1)\tpml(vdm2)\tpml(waksman)\n");
     benchmark_polmatmul(dim,dim,dim,deg,prime,0,state);
 }
 

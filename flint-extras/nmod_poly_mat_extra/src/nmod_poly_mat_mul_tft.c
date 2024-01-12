@@ -2,7 +2,12 @@
 
 #include "nmod_poly_mat_multiply.h"
 
-// assume 2^(ceiling(log_2(lenA+lenB-1))) divides p-1
+/** Multiplication for polynomial matrices
+ *  sets C = A * B
+ *  output can alias input
+ *  assume 2^(ceiling(log_2(lenA+lenB-1))) divides p-1
+ *  uses tft multiplication
+ */
 void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B)
 {
     nmod_mat_t *mod_A, *mod_B, *mod_C;
