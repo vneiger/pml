@@ -10,7 +10,7 @@ COMPILE = $(patsubst %.c, %.exe, $(patsubst test_%, %, $(SRC)))
 
 CC = gcc
 CFLAGS = -Wall -O3 -march=native -I$(INC_DIR) -I$(SYSINC_DIR) -L$(LIB_DIR) -L$(SYSLIB_DIR) 
-LIBS = -lflint -lmpfr -lgmp -lm -lopenblas -lpthread
+LIBS = -lflint -lmpfr -lgmp -lm -lpthread
 
 .PHONY: clean
 
