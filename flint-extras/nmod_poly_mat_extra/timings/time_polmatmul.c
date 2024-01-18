@@ -52,7 +52,8 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
             t += (double)(clock()-tt) / CLOCKS_PER_SEC;
             ++nb_iter;
     }
-    
+
+    if (1)
     { // FLINT native
         nmod_poly_mat_init(c1, rdim, cdim, prime);
         t = 0.0; nb_iter = 0;
@@ -66,7 +67,10 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
         t /= nb_iter;
         printf("\t%f",t);
     }
-        
+    else
+        printf("\t-\t");
+
+    if (1)
     { // PML 3-primes
         nmod_poly_mat_init(c2, rdim, cdim, prime);
         t = 0.0; nb_iter = 0;
@@ -79,14 +83,17 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
         }
             t /= nb_iter;
             printf("\t%f", t);
+            if (!nmod_poly_mat_equal(c1, c2))
+            {
+                printf("\terror with 3 primes\n");
+                exit(-1);
+            }
     }
+    else
+        printf("\t-\t");
 
-    if (!nmod_poly_mat_equal(c1, c2))
-    {
-        printf("\terror with 3 primes\n");
-        exit(-1);
-    }
-    
+    // should test if the field is large enough
+    if (1)
     { // PML geometric
         nmod_poly_mat_init(c2, rdim, cdim, prime);
         t = 0.0; nb_iter = 0;
@@ -97,16 +104,19 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
             t += (double)(clock()-tt) / CLOCKS_PER_SEC;
             ++nb_iter;
         }
-            t /= nb_iter;
-            printf("\t%f", t);
+        t /= nb_iter;
+        printf("\t%f", t);
+        if (!nmod_poly_mat_equal(c1, c2))
+        {
+            printf("\terror with geometric\n");
+            exit(-1);
+        }
     }
+    else
+        printf("\t-\t");
 
-    if (!nmod_poly_mat_equal(c1, c2))
-    {
-        printf("\terror with geometric\n");
-        exit(-1);
-    }
-
+    // should test if the field is large enough
+    if (deg < 100)
     { // PML VDM1
         nmod_poly_mat_init(c2, rdim, cdim, prime);
         t = 0.0; nb_iter = 0;
@@ -119,14 +129,17 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
         }
         t /= nb_iter;
         printf("\t%f", t);
+        if (!nmod_poly_mat_equal(c1, c2))
+        {
+            printf("\terror with vdm1\n");
+            exit(-1);
+        }
     }
+    else
+        printf("\t-\t");
 
-    if (!nmod_poly_mat_equal(c1, c2))
-    {
-        printf("\terror with vdm1\n");
-        exit(-1);
-    }
-
+    // should test if the field is large enough
+    if (deg < 100)
     { // PML VDM2
         nmod_poly_mat_init(c2, rdim, cdim, prime);
         t = 0.0; nb_iter = 0;
@@ -139,14 +152,16 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
         }
         t /= nb_iter;
         printf("\t%f", t);
+        if (!nmod_poly_mat_equal(c1, c2))
+        {
+            printf("\terror with vdm2\n");
+            exit(-1);
+        }
     }
+    else
+        printf("\t-\t");
         
-    if (!nmod_poly_mat_equal(c1, c2))
-    {
-        printf("\terror with vdm2\n");
-        exit(-1);
-    }
-
+    if (rdim < 20 && cdim < 20)
     { // PML WAKSMAN
         nmod_poly_mat_init(c2, rdim, cdim, prime);
         t = 0.0; nb_iter = 0;
@@ -159,13 +174,15 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
         }
         t /= nb_iter;
         printf("\t%f", t);
+        if (!nmod_poly_mat_equal(c1, c2))
+        {
+            printf("\terror with waksman\n");
+            exit(-1);
+        }
     }
-        
-    if (!nmod_poly_mat_equal(c1, c2))
-    {
-        printf("\terror with waksman\n");
-        exit(-1);
-    }
+    else
+        printf("\t-");
+    
 
     nmod_poly_mat_clear(c1);
     nmod_poly_mat_clear(c2);
