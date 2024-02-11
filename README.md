@@ -8,10 +8,12 @@ Version 0.3
 ## Authors
 
 Current maintainers:
+
  - Vincent Neiger
  - Eric Schost
 
 Contributors:
+
  - Seung Gyu Hyun
  - Kevin Tran
 
