@@ -1,35 +1,29 @@
 #include <flint/nmod_mat.h>
-#ifdef TIME_TFT
-#include <time.h>
-#endif
+
+#define DIRTY_ALLOC_MATRIX
 
 #include "nmod_poly_mat_multiply.h"
 
-/** Multiplication for polynomial matrices
- *  sets C = A * B
+/** Middle product for polynomial matrices
+ *  sets C = ((A * B) div x^dA) mod x^(dB+1)
  *  output can alias input
- *  ASSUME: 2^(ceiling(log_2(lenA+lenB-1))) divides p-1 (assumption not checked)
- *  uses tft multiplication
+ *  ASSUME: deg(A) <= dA and deg(B) <= dA + dB
+ *  ASSUME: existence of primitive root
+ *  uses geometric evaluation and interpolation
  */
-void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B)
+void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+                                            const ulong dA, const ulong dB)
 {
     nmod_mat_t *mod_A, *mod_B, *mod_C;
     ulong ellA, ellB, ellC, order;
-    ulong i, j, ell, m, k, n;
+    ulong i, j, ell, m, k, n, u;
+    long v;
     mp_limb_t p, w;
-    mp_ptr val;
+    mp_ptr val, val2;
     nmod_t mod;
-    sd_fft_ctx_t Q;
-    sd_fft_lctx_t QL;
-    nmod_sd_fft_t F;
+    nmod_geometric_progression_t F;
+    nmod_poly_t tmp_poly;
     
-#ifdef TIME_TFT
-    double t = 0.0;
-    clock_t tt;
-    tt = clock();
-#endif    
-
-    // straightforward algorithm: tft-evaluate A and B, multiply the values, interpolate C
     m = A->r;
     k = A->c;
     n = B->c;
@@ -45,12 +39,13 @@ void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmo
     {
         nmod_poly_mat_t T;
         nmod_poly_mat_init(T, m, n, p);
-        nmod_poly_mat_mul_tft(T, A, B);
+        nmod_poly_mat_middle_product_geometric(T, A, B, dA, dB);
         nmod_poly_mat_swap_entrywise(C, T);
         nmod_poly_mat_clear(T);
         return;
     }
 
+    
     // length = 0 iff matrix is zero
     ellA = nmod_poly_mat_max_length(A);
     ellB = nmod_poly_mat_max_length(B);
@@ -61,39 +56,23 @@ void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmo
         return;
     }
 
-    ellC = ellA + ellB - 1;  // length(C) = length(A) + length(B) - 1
-    order = n_clog(ellC, 2); // ceiling(log_2(ellC))
-
     nmod_init(&mod, p);
-    
-#ifdef TIME_TFT
-    t = (double)(clock()-tt) / CLOCKS_PER_SEC;
-    printf("\ninit: %lf\n", t);
-    tt = clock();
-#endif
 
-    sd_fft_ctx_init_prime(Q, p);
+    ellC = ellA + ellB - 1;  // length(C) = length(A) + length(B) - 1
+    order = ellC;
+    nmod_init(&mod, p);
+    w = nmod_find_root(order, mod);
+    nmod_geometric_progression_init_set(F, w, order, mod);
 
-#ifdef TIME_TFT
-    t = (double)(clock()-tt) / CLOCKS_PER_SEC;
-    printf("ctx init: %lf\n", t);
-    tt = clock();
-#endif
 
-    w = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> order, mod); // w has order 2^order
-    nmod_sd_fft_init_set(F, w, order, mod);
-    sd_fft_lctx_init(QL, Q, order);
     mod_A = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
     mod_B = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
     mod_C = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
     val = _nmod_vec_init(ellC);
-    
-#ifdef TIME_TFT
-    t = (double)(clock()-tt) / CLOCKS_PER_SEC;
-    printf("fft init: %lf\n", t);
-    tt = clock();
-#endif
+    val2 = _nmod_vec_init(ellC);
+    nmod_poly_init2(tmp_poly, mod.n, dA+1);
 
+    
 #ifdef DIRTY_ALLOC_MATRIX
     // we alloc the memory for all matrices at once
     mp_ptr *tmp_rows = (mp_ptr *) malloc((m + k + m) * ellC * sizeof(mp_ptr));
@@ -174,65 +153,68 @@ void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmo
 #endif
 
     
-#ifdef TIME_TFT
-    t = (double)(clock()-tt) / CLOCKS_PER_SEC;
-    printf("mem init: %lf\n", t);
-    tt = clock();
-#endif
-    
     for (i = 0; i < n; i++)
         for (j = 0; j < k; j++)
         {
-            nmod_sd_tft_evaluate(val, &A->rows[i][j], QL, F, ellC);
+            ulong deg = nmod_poly_degree(&A->rows[i][j]);
+            mp_ptr src = (A->rows[i] + j)->coeffs;
+            mp_ptr dest = tmp_poly->coeffs;
+            v = dA;
+            for (u = 0; u <= deg; u++, v--)
+                dest[v] = src[u];
+            for (; v >= 0; v--)
+                dest[v] = 0;
+            tmp_poly->length = dA + 1;
+            _nmod_poly_normalise(tmp_poly);
+            
+            nmod_geometric_progression_evaluate(val, tmp_poly, F);
             for (ell = 0; ell < ellC; ell++)
                 mod_A[ell]->rows[i][j] = val[ell];
         }
 
-#ifdef TIME_TFT
-    t = (double)(clock()-tt) / CLOCKS_PER_SEC;
-    printf("eval A: %lf\n", t);
-    tt = clock();
-#endif
-    
+
     for (i = 0; i < k; i++)
-        for (j = 0; j < m; j++)
+        for (j = 0; j < n; j++)
         {
-            nmod_sd_tft_evaluate(val, &B->rows[i][j], QL, F, ellC);
-            for (ell = 0; ell < ellC; ell++)
-                mod_B[ell]->rows[i][j] = val[ell];
+            ulong deg = nmod_poly_degree(&B->rows[i][j]);
+            mp_ptr src = (B->rows[i] + j)->coeffs;
+            for (u = 0; u <= deg; u++)
+                val2[u] = src[u];
+            for (; u < ellC; u++)
+                val2[u] = 0;
+            nmod_geometric_progression_interpolate(tmp_poly, val2, F);
+            deg = nmod_poly_degree(tmp_poly);
+            src = tmp_poly->coeffs;
+            for (ell = 0; ell <= deg; ell++)
+                mod_B[ell]->rows[i][j] = src[ell];
+            for (; ell < ellC; ell++)
+                mod_B[ell]->rows[i][j] = 0;
         }
 
-#ifdef TIME_TFT
-    t = (double)(clock()-tt) / CLOCKS_PER_SEC;
-    printf("eval B: %lf\n", t);
-    tt = clock();
-#endif
-    
     for (ell = 0; ell < ellC; ell++)
         nmod_mat_mul(mod_C[ell], mod_A[ell], mod_B[ell]);
 
-    
-#ifdef TIME_TFT
-    t = (double)(clock()-tt) / CLOCKS_PER_SEC;
-    printf("mul: %lf\n", t);
-    tt = clock();
-#endif
-    
+
+    nmod_poly_fit_length(tmp_poly, ellC);
     for (i = 0; i < n; i++)
         for (j = 0; j < m; j++)
         {
-            for (ell = 0; ell < ellC; ell++)
-                val[ell] = mod_C[ell]->rows[i][j];
-            nmod_sd_tft_interpolate(&C->rows[i][j], val, QL, F, ellC);
+            mp_ptr dest = tmp_poly->coeffs;
+            for (ell = 0; ell < ellC; u++)
+                dest[ell] = mod_C[ell]->rows[i][j];
+            tmp_poly->length = ellC;
+            _nmod_poly_normalise(tmp_poly);
+
+            nmod_geometric_progression_evaluate(val2, tmp_poly, F);
+
+            nmod_poly_realloc(C->rows[i] + j, dB + 1);
+            (C->rows[i] + j)->length = dB + 1;
+            dest = (C->rows[i] + j)->coeffs;
+            for (u = 0; u <= dB; u++)
+                dest[u] = val2[u];
+            _nmod_poly_normalise(C->rows[i] + j);
         }
     
-
-#ifdef TIME_TFT
-    t = (double)(clock()-tt) / CLOCKS_PER_SEC;
-    printf("interpolate: %lf\n", t);
-    tt = clock();
-#endif
-
     
 #ifdef DIRTY_ALLOC_MATRIX
     free(tmp_rows);
@@ -249,14 +231,8 @@ void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmo
     flint_free(mod_A);
     flint_free(mod_B);
     flint_free(mod_C);
+    nmod_poly_clear(tmp_poly);
+    _nmod_vec_clear(val2);
     _nmod_vec_clear(val);
-    nmod_sd_fft_clear(F);
-    sd_fft_lctx_clear(QL, Q);
-    sd_fft_ctx_clear(Q);
-
-#ifdef TIME_TFT
-    t = (double)(clock()-tt) / CLOCKS_PER_SEC;
-    printf("clean: %lf\n", t);
-#endif
-
+    nmod_geometric_progression_clear(F);
 }

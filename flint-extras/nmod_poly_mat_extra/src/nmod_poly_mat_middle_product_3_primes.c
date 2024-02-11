@@ -3,15 +3,15 @@
 #include "nmod_extra.h"
 #include "nmod_poly_mat_multiply.h"
 
-/** Multiplication for polynomial matrices
- *  sets C = A * B
+/** Middle product for polynomial matrices
+ *  sets C = ((A * B) div x^dA) mod x^(dB+1), assuming deg(A) <= dA and deg(B) <= dA + dB
  *  output can alias input
- *  ASSUME: num columns of A < 2^30 and min(deg A, deg B) < 2^30 (assumption not checked)
- *  uses tft multiplication modulo 50 bits fft primes
+ *  uses tft middle product modulo 50 bits fft primes
  */
-void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B)
+void nmod_poly_mat_middle_product_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+                                      const ulong dA, const ulong dB)
 {
-    ulong num_primes, num_bits, i, j, ell, m, k, n, len_A, len_B, len_C;
+    ulong num_primes, num_bits, i, j, ell, m, k, n, len_A, len_B;
     mp_limb_t p, primes[4];
     nmod_multimod_CRT_t CRT;
     mp_ptr residues[4];
@@ -32,7 +32,7 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
     {
         nmod_poly_mat_t T;
         nmod_poly_mat_init(T, m, n, p);
-        nmod_poly_mat_mul_3_primes(T, A, B);
+        nmod_poly_mat_middle_product_3_primes(T, A, B, dA, dB);
         nmod_poly_mat_swap_entrywise(C, T);
         nmod_poly_mat_clear(T);
         return;
@@ -45,6 +45,7 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
 
     len_A = 0;
     len_B = 0;
+
    
     for (i = 0; i < m; i++)
         for (j = 0; j < k; j++)
@@ -56,10 +57,7 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
     
     // slight overestimate
     num_bits = 2 * FLINT_BIT_COUNT(p) + FLINT_BIT_COUNT(k) + FLINT_BIT_COUNT(FLINT_MIN(len_A, len_B));
-    // all entries of C fit in size len_C
-    len_C = len_A + len_B - 1;
 
-    // our assumption implies that num_bits < 4*49
     num_primes = 1;
     if (num_bits > 49)
         num_primes = 2;
@@ -73,7 +71,7 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
     mod_A = FLINT_ARRAY_ALLOC(num_primes, nmod_poly_mat_t);
     mod_B = FLINT_ARRAY_ALLOC(num_primes, nmod_poly_mat_t);
     mod_C = FLINT_ARRAY_ALLOC(num_primes, nmod_poly_mat_t);
-    
+
     for (i = 0; i < num_primes; i++)
     {
         nmod_poly_mat_init(mod_A[i], m, k, primes[i]);
@@ -81,7 +79,7 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
         nmod_poly_mat_init(mod_C[i], m, n, primes[i]);
     }
 
-    // computes A modulo all primes
+    
     for (i = 0; i < m; i++)
         for (j = 0; j < k; j++)
         {
@@ -99,7 +97,6 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
         }
 
 
-    // computes B modulo all primes
     for (i = 0; i < k; i++)
         for (j = 0; j < n; j++)
         {
@@ -117,15 +114,15 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
         }
 
 
-    // TFT multiplications
+
     for (ell = 0; ell < num_primes; ell++)
     {
-        nmod_poly_mat_mul_tft(mod_C[ell], mod_A[ell], mod_B[ell]);
-        residues[ell] = _nmod_vec_init(len_C);
+        nmod_poly_mat_middle_product_tft(mod_C[ell], mod_A[ell], mod_B[ell], dA, dB);
+        residues[ell] = _nmod_vec_init(dB + 1);
     }
 
 
-    // CRT to find C
+    
     for (i = 0; i < m; i++)
         for (j = 0; j < n; j++)
         {
@@ -154,6 +151,7 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
 
 
     nmod_multimod_CRT_clear(CRT);
+    
     for (i = 0; i < num_primes; i++)
     {
         nmod_poly_mat_clear(mod_A[i]);
@@ -161,9 +159,8 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
         nmod_poly_mat_clear(mod_C[i]);
         _nmod_vec_clear(residues[i]);
     }
+    
     flint_free(mod_A);
     flint_free(mod_B);
     flint_free(mod_C);
 }
-
-
