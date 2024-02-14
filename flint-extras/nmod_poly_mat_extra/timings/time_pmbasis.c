@@ -32,18 +32,6 @@ void benchmark_pmbasis(slong rdim, slong cdim, slong sigma, slong len,
     t = 0.0;
     nb_iter = 0;
 
-    //while (t<thres)
-    //{
-    //    nmod_poly_mat_zero(res_mbasis);
-    //    tt = clock();
-    //    pmbasis(res_mbasis, res_shifts, mat, sigma, shifts);
-    //    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-    //    ++nb_iter;
-    //}
-    //t /= nb_iter;
-
-    //printf("%ld\t%ld\t%ld\t%ld\t%f\n", rdim, cdim, sigma, len, t);
-
     {
         t = 0.0;
         nb_iter = 0;
