@@ -473,12 +473,6 @@ nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
  */
 /** Computes a `shift`-ordered weak Popov approximant basis for `(pmat,order)`
  * using the algorithm PM-Basis (see @ref pmbasis) */
-// TODO modify shift in place
-void pmbasis(nmod_poly_mat_t appbas,
-             slong * res_shift,
-             const nmod_poly_mat_t pmat,
-             ulong order,
-             const slong * shift);
 
 // TODO doc
 // TODO middle_product currently naive
