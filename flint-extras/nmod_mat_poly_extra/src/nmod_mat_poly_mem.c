@@ -1,3 +1,4 @@
+#include <flint/ulong_extras.h>
 #include "nmod_mat_poly.h"
 
 /*------------------------------------------------------------*/

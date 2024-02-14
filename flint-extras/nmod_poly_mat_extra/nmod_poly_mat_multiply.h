@@ -1,12 +1,11 @@
 #ifndef NMOD_POLY_MAT_MULTIPLY_H
 #define NMOD_POLY_MAT_MULTIPLY_H
 
-#include <flint/nmod_poly_mat.h>
-#include "nmod_poly_extra.h"
+#include <flint/nmod_types.h>
 
 // several functions allocate arrays of matrices
 // setting this flag allocates all memory at once
-// slightly faster that using nmod_mat_init
+// slightly faster than using nmod_mat_init
 #define DIRTY_ALLOC_MATRIX
 
 

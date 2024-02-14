@@ -10,9 +10,8 @@
  *
  */
 
-#include <flint/nmod_mat.h>
-#include <flint/nmod_poly_mat.h>
-#include "nmod_poly_mat_forms.h"
+#include <flint/nmod_types.h>
+#include "nmod_poly_mat_forms.h" // for orientation_t
 
 #ifdef __cplusplus
 extern "C" {

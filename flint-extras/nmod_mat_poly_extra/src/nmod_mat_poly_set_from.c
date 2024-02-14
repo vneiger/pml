@@ -1,4 +1,5 @@
 #include "nmod_mat_poly.h"
+#include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
 
 void nmod_mat_poly_init_set_from_nmod_mat(nmod_mat_poly_t matp,
