@@ -1,18 +1,5 @@
-#include "nmod_poly_mat_utils.h"  // truncate, shift
+#include "nmod_poly_mat_multiply.h"  // for middle product
 #include "nmod_poly_mat_approximant.h"
-
-// computes x**(-d) (A*B mod x**h)
-void middle_product(nmod_poly_mat_t res,
-                    const nmod_poly_mat_t A,
-                    const nmod_poly_mat_t B,
-                    slong d,
-                    slong h)
-{
-    nmod_poly_mat_mul(res, A, B);
-    nmod_poly_mat_truncate(res, h);
-    nmod_poly_mat_shift_right(res, res, d);
-}
-
 
 void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
                            slong * shift,
@@ -34,7 +21,7 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
 
     nmod_poly_mat_pmbasis(appbas, shift, pmat, order1);
 
-    middle_product(residual, appbas, pmat, order1, order);
+    nmod_poly_mat_middle_product_naive(residual, appbas, pmat, order1, order2-1);
 
     nmod_poly_mat_pmbasis(appbas2, shift, residual, order2);
 
