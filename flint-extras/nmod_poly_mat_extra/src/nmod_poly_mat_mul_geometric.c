@@ -1,8 +1,11 @@
 #include <flint/nmod_mat.h>
+#include <flint/nmod_poly_mat.h>
+
+#include "nmod_mat_extra.h" // for nmod_mat_mul_pml
+#include "nmod_poly_extra.h" // for geom progression
 
 #define DIRTY_ALLOC_MATRIX
 
-#include "nmod_mat_extra.h"
 #include "nmod_poly_mat_multiply.h"
 
 /** Multiplication for polynomial matrices

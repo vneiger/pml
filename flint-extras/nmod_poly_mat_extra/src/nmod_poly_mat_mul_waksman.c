@@ -1,3 +1,4 @@
+#include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
 
 void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  const nmod_poly_mat_t B)
