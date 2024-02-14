@@ -1,3 +1,5 @@
+#include <flint/nmod_poly.h>
+
 #include "nmod_poly_mat_forms.h"
 
 
