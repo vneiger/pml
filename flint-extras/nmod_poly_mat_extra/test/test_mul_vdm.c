@@ -1,12 +1,8 @@
 #include <stdlib.h>
-#include <assert.h>
-
-#include <flint/flint.h>
-#include <flint/fmpz.h>
-#include <flint/nmod_vec.h>
 #include <flint/nmod_poly_mat.h>
 
-#include "nmod_poly_mat_extra.h"
+#include "nmod_poly_mat_utils.h" // for rand
+#include "nmod_poly_mat_multiply.h"
 
 
 /*--------------------------------------------------------------*/
@@ -56,7 +52,7 @@ void test_nmod_poly_mat_mul(ulong m, ulong n, ulong p, ulong deg)
 /*--------------------------------------------------------------*/
 /* main calls tets                                              */
 /*--------------------------------------------------------------*/
-int main(int argc, char **argv)
+int main()
 {
     ulong i;
     flint_set_num_threads(1);

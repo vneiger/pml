@@ -1,17 +1,11 @@
-#include <flint/flint.h>
-#include <flint/nmod_poly.h>
 #include <stdlib.h>
+#include <flint/nmod_types.h>
+#include <flint/profiler.h>
 
-#include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_utils.h"
-#include "nmod_poly_mat_io.h"
-#include "nmod_poly_mat_extra.h"
-#include "sagemath_extra.h"
+#include "nmod_poly_mat_extra.h"  // det_iter currently in _extra.h
 
 #include "testing_collection.h"
-#include <flint/nmod_poly_mat.h>
-#include <flint/ulong_extras.h>
-#include <flint/profiler.h>
 
 // verify determinant
 int verify_determinant(const nmod_poly_t det, const nmod_poly_mat_t mat, flint_rand_t state)

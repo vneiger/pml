@@ -1,6 +1,7 @@
-#include "nmod_poly_mat_io.h"
+#include <flint/nmod_poly.h>
+
 #include "nmod_poly_mat_forms.h"
-#include "sagemath_extra.h"
+#include "nmod_poly_mat_io.h" // for print_pretty
 
 int main()
 {
