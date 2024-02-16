@@ -287,6 +287,66 @@ nmod_mat_rand_fullrank_urcef(nmod_mat_t mat,
 
 //@} // doxygen group: Random
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* PLUQ DECOMPOSITION                                         */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name PLUQ
+ *
+ *  These functions are for PLUQ decomposition and related tasks.
+ *  \todo doc
+ */
+//@{
+
+
+/** PLUQ decomposition.
+ *
+ * For an m x n matrix A, computes a PLUQ decomposition
+ * --> returns P, LU, Q, rank such that:
+ *  - LU is L and U compactly stored ## TODO be more precise
+ *  - P is a row permutation (list [0...m-1], permuted)
+ *  - Q is a column permutation (list [0...n-1], permuted)
+ *  - rank is the rank of A
+ *  - A = P*L*U*Q
+ *
+ * Rotations are performed to preserve the row rank profile, so that in the end
+ * we have P = rrp+nrrp, where rrp is the row rank profile of A and nrrp is the
+ * list of row indices not in rrp (both rrp and nrrp are increasing).
+ *
+ * Using lexicographic order, using row rotations + column rotations
+ * ==> preserves the rank profile matrix and row (resp.column) relations precedence
+ */
+slong nmod_mat_pluq(slong * P, nmod_mat_t A, slong * Q);
+
+
+/** Expand an LU stored in compact format into two triangular matrices L and U.
+ * Here it is assumed that L is unit lower triangular with the 1's not stored
+ * in LU. Only first `rank` columns of L are stored, the rest are implicit
+ * identity columns.
+ * If LU has dimensions m x n, then on input L should be the zero
+ * m x m matrix U should be the zero m x n matrix.
+ * The rank `rank` of L*U has to be known and provided.
+ **/
+void nmod_mat_expand_compactlu(nmod_mat_t L, nmod_mat_t U, const nmod_mat_t LU, slong rank)
+{
+    // L: fill entries from lower triangular part of LU
+    for (slong i = 1; i < rank; i++)
+        for (slong j = 0; j < i; j++)
+            nmod_mat_entry(L, i, j) = nmod_mat_entry(LU, i, j);
+    for (slong i = rank; i < LU->r; i++)
+        for (slong j = 0; j < rank; j++)
+            nmod_mat_entry(L, i, j) = nmod_mat_entry(LU, i, j);
+    // L: fill diagonal 1's
+    for (slong i = 0; i < LU->r; i++)
+        nmod_mat_entry(L, i, i) = UWORD(1);
+    // U: fill entries from upper triangular part of LU
+    // TODO
+}
+//@} // doxygen group: PLUQ
+
+
 /** Left nullspace of A.
  *
  *  Computes a basis X for the left nullspace of A, in reduced row echelon form
