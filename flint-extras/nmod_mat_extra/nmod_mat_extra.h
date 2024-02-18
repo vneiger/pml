@@ -33,7 +33,7 @@ void nmod_mat_mul_pml(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
 {
     if (A->mod.n < (1L < 29))
         nmod_mat_mul_small_modulus(C, A, B);
-    else 
+    else
         nmod_mat_mul(C, A, B);
 }
 
@@ -321,29 +321,25 @@ nmod_mat_rand_fullrank_urcef(nmod_mat_t mat,
 slong nmod_mat_pluq(slong * P, nmod_mat_t A, slong * Q);
 
 
-/** Expand an LU stored in compact format into two triangular matrices L and U.
- * Here it is assumed that L is unit lower triangular with the 1's not stored
- * in LU. Only first `rank` columns of L are stored, the rest are implicit
- * identity columns.
- * If LU has dimensions m x n, then on input L should be the zero
- * m x m matrix U should be the zero m x n matrix.
- * The rank `rank` of L*U has to be known and provided.
+/** Expand LU stored in compact format into two triangular matrices L and U.
+ * Conventions, for LU of dimensions m x n of rank rk:
+ * - L is m x m unit lower triangular (with the 1's not stored in LU)
+ * - only first rk columns of L are stored in LU, the rest are implicit
+ *   identity columns
+ * - U is m x n upper triangular, with only the first `rk` rows nonzero
+ * Requirements:
+ * - the rank rk has to be provided
+ * - U may alias LU, L may not alias LU
+ * - for "zeroin" variant only: on input, L is zero and (either U aliases LU or U is zero)
  **/
-void nmod_mat_expand_compactlu(nmod_mat_t L, nmod_mat_t U, const nmod_mat_t LU, slong rank)
-{
-    // L: fill entries from lower triangular part of LU
-    for (slong i = 1; i < rank; i++)
-        for (slong j = 0; j < i; j++)
-            nmod_mat_entry(L, i, j) = nmod_mat_entry(LU, i, j);
-    for (slong i = rank; i < LU->r; i++)
-        for (slong j = 0; j < rank; j++)
-            nmod_mat_entry(L, i, j) = nmod_mat_entry(LU, i, j);
-    // L: fill diagonal 1's
-    for (slong i = 0; i < LU->r; i++)
-        nmod_mat_entry(L, i, i) = UWORD(1);
-    // U: fill entries from upper triangular part of LU
-    // TODO
-}
+void _nmod_mat_l_u_from_compactlu_zeroin(nmod_mat_t L,
+                                         nmod_mat_t U,
+                                         const nmod_mat_t LU,
+                                         slong rank);
+void _nmod_mat_l_u_from_compactlu(nmod_mat_t L,
+                                  nmod_mat_t U,
+                                  const nmod_mat_t LU,
+                                  slong rank);
 //@} // doxygen group: PLUQ
 
 
