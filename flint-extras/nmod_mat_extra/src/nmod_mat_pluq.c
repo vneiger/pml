@@ -1,3 +1,5 @@
+#include <flint/nmod.h> // for nmod_div
+#include <flint/ulong_extras.h> // for n_invmod
 #include <flint/nmod_vec.h> // for _nmod_vec_set
 
 #include "nmod_mat_extra.h"
@@ -66,7 +68,7 @@ void nmod_mat_l_u_from_compactlu(nmod_mat_t L,
     _nmod_mat_l_u_from_compactlu_zeroin(L, U, LU, rk);
 }
 
-slong nmod_mat_pluq(slong * P, nmod_mat_t A, slong * Q)
+slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q)
 {
     slong nullity = 0;
     slong rank = 0;
@@ -82,13 +84,28 @@ slong nmod_mat_pluq(slong * P, nmod_mat_t A, slong * Q)
         // (current row becomes last row, others rows in between are moved up)
         if (pivot == A->c)
         {
-            // TODO row rotation
+            _nmod_mat_rotate_rows_upward(A, P, rank, A->r);
             nullity++;
         }
         else
         {
-            // TODO column rotation
-            
+            _nmod_mat_rotate_columns_rightward(A, Q, rank, pivot);
+            mp_limb_t inv_pivot = n_invmod(nmod_mat_entry(A, rank, rank), A->mod.n);
+            for (slong i = rank+1; i < A->r; i++)
+            {
+                nmod_mat_entry(A, i, rank) = nmod_mul(nmod_mat_entry(A, i, rank), inv_pivot, A->mod);
+                //for (slong j = rank+1; j < A->c; j++)
+                //    nmod_mat_entry(A, i, j) = nmod_sub(nmod_mat_entry(A, i, j),
+                //                                       nmod_mul(nmod_mat_entry(A, i, rank),
+                //                                                nmod_mat_entry(A, rank, j),
+                //                                                A->mod),
+                //                                       A->mod);
+                _nmod_vec_scalar_addmul_nmod(A->rows[i]+rank+1,
+                                             A->rows[rank]+rank+1,
+                                             A->c - rank - 1,
+                                             nmod_neg(nmod_mat_entry(A, i, rank), A->mod),
+                                             A->mod);
+            }
             rank++;
         }
     }

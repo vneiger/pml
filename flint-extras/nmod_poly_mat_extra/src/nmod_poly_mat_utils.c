@@ -13,7 +13,7 @@ void _nmod_poly_mat_rotate_rows_downward(nmod_poly_mat_t mat, slong * vec, slong
 {
     if (i != j)
     {
-        if (vec)
+        if (vec != NULL)
         {
             slong tmp_vec = vec[j];
             for (slong ii = j; ii > i; ii--)
@@ -32,7 +32,7 @@ void _nmod_poly_mat_rotate_rows_upward(nmod_poly_mat_t mat, slong * vec, slong i
 {
     if (i != j)
     {
-        if (vec)
+        if (vec != NULL)
         {
             slong tmp_vec = vec[i];
             for (slong ii = i; ii < j; ii++)

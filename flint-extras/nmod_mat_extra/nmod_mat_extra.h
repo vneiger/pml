@@ -324,7 +324,7 @@ nmod_mat_rand_fullrank_urcef(nmod_mat_t mat,
  * Using lexicographic order, using row rotations + column rotations
  * ==> preserves the rank profile matrix and row (resp.column) relations precedence
  */
-slong nmod_mat_pluq(slong * P, nmod_mat_t A, slong * Q);
+slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q);
 
 
 /** Expand LU stored in compact format into two triangular matrices L and U.
@@ -404,8 +404,48 @@ void _nmod_mat_rotate_rows_downward(nmod_mat_t mat, slong * vec, slong i, slong 
 void _nmod_mat_rotate_rows_upward(nmod_mat_t mat, slong * vec, slong i, slong j);
 
 
+// rotate columns of mat from i to j (requirement: 0 <= i <= j < mat->c)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[:,i]     <--    mat[:,j]
+//      mat[:,i+1]   <--    mat[:,i]
+//      mat[:,i+2]   <--    mat[:,i+1]
+//         ...       <--       ...
+//      mat[:,j-1]   <--    mat[:,j-2]
+//      mat[:,j]     <--    mat[:,j-1]
+// as well as
+//      vec[i]     <--    vec[j]
+//      vec[i+1]   <--    vec[i]
+//      vec[i+2]   <--    vec[i+1]
+//        ...      <--      ...
+//      vec[j-1]   <--    vec[j-2]
+//      vec[j]     <--    vec[j-1]
+void _nmod_mat_rotate_columns_rightward(nmod_mat_t mat, slong * vec, slong i, slong j);
 
-//@} // doxygen group: PLUQ
+// rotate columns of mat from i to j (requirement: 0 <= i <= j < mat->c)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[:,i]     <--    mat[:,i+1]
+//      mat[:,i+1]   <--    mat[:,i+2]
+//      mat[:,i+2]   <--       ...
+//         ...       <--    mat[:,j-1]
+//      mat[:,j-1]   <--    mat[:,j]
+//      mat[:,j]     <--    mat[:,i]
+// as well as
+//      vec[i]     <--    vec[i+1]
+//      vec[i+1]   <--    vec[i+2]
+//      vec[i+2]   <--      ...
+//        ...      <--    vec[j-1]
+//      vec[j-1]   <--    vec[j]
+//      vec[j]     <--    vec[i]
+void _nmod_mat_rotate_columns_leftward(nmod_mat_t mat, slong * vec, slong i, slong j);
+
+
+//@} // doxygen group: Rotations
 
 
 /** Left nullspace of A.
