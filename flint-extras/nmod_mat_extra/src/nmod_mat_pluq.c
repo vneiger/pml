@@ -84,12 +84,14 @@ slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q)
         // (current row becomes last row, others rows in between are moved up)
         if (pivot == A->c)
         {
-            _nmod_mat_rotate_rows_upward(A, P, rank, A->r);
+            _nmod_mat_rotate_rows_upward(A, P, rank, A->r - 1);
             nullity++;
         }
         else
         {
+            // pivot found, move its column to rank-th column
             _nmod_mat_rotate_columns_rightward(A, Q, rank, pivot);
+            // perform elimination
             mp_limb_t inv_pivot = n_invmod(nmod_mat_entry(A, rank, rank), A->mod.n);
             for (slong i = rank+1; i < A->r; i++)
             {
