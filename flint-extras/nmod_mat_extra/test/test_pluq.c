@@ -1,132 +1,101 @@
-#include <stdlib.h>
-#include <time.h>
-#include <flint/flint.h>
-#include <flint/nmod_mat.h>
+#include <flint/ulong_extras.h>  // for n_randtest_prime
 
 #include "nmod_mat_extra.h"
 
-int main(int argc, char ** argv)
+// return values:
+// 1 --> wrong dimensions
+// 2 --> wrong shape, bottom left block is not zero
+// 3 --> P*L*U*Q is not equal to A
+int check_pluq(nmod_mat_t LU, slong * P, slong * Q, const nmod_mat_t A, slong rank)
 {
-    if (0)
-    {
-        nmod_mat_t mat;
-        nmod_mat_init(mat, 3, 4, 7);
+    // check dimensions
+    if (LU->r != A->r || LU->c != A->c)
+        return 1;
 
-        mat->rows[0][0] = 2;
-        mat->rows[0][1] = 4;
-        mat->rows[0][2] = 5;
-        mat->rows[0][3] = 1;
-        mat->rows[1][0] = 2;
-        mat->rows[1][1] = 3;
-        //mat->rows[1][2] = 2; --> rank==2
-        mat->rows[1][2] = 5;
-        mat->rows[1][3] = 6;
-        mat->rows[2][0] = 0;
-        mat->rows[2][1] = 1;
-        mat->rows[2][2] = 3;
-        mat->rows[2][3] = 2;
+    // check LU[rank:,rank:] is zero
+    for (slong i = rank; i < LU->r; i++)
+        for (slong j = rank; j < LU->c; j++)
+            if (nmod_mat_entry(LU, i, j) != 0)
+                return 2;
 
-        nmod_mat_print_pretty(mat);
-
-        slong * P = _perm_init(mat->r);
-        slong * Q = _perm_init(mat->c);
-        nmod_mat_pluq(mat, P, Q);
-
-        nmod_mat_print_pretty(mat);
-    }
-
-    if (1)
-    {
-        srand(time(NULL));
-        flint_rand_t state;
-        flint_randinit(state);
-        flint_randseed(state, rand(), rand());
-
-        nmod_mat_t mat;
-        //nmod_mat_init(mat, atoi(argv[1]), atoi(argv[2]), 8388617);  // 24 bits
-        nmod_mat_init(mat, atoi(argv[1]), atoi(argv[2]), 1099511627791);  // 41 bits
-        //nmod_mat_init(mat, atoi(argv[1]), atoi(argv[2]), 36028797018963971);  // 56 bits
-        //nmod_mat_init(mat, atoi(argv[1]), atoi(argv[2]), 2305843009213693967);  // 62 bits
-
-        double t;
-        clock_t tt;
-        long nb_iter;
-
-        // warmup
-        t = 0.0;
-        nb_iter = 0;
-        while (t < 2)
-        {
-            nmod_mat_rand(mat, state);
-            slong * P = _perm_init(mat->r);
-            slong * Q = _perm_init(mat->c);
-            tt = clock();
-            nmod_mat_pluq(mat, P, Q);
-            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-            nb_iter += 1;
-        }
-        t /= nb_iter;
-        printf("warmup done\n");
-
-        printf("new pluq\tlu_classical\tlu_delayed\tlu_recursive\n");
-
-        t = 0.0;
-        nb_iter = 0;
-        while (t < 0.5)
-        {
-            nmod_mat_rand(mat, state);
-            slong * P = _perm_init(mat->r);
-            slong * Q = _perm_init(mat->c);
-            tt = clock();
-            nmod_mat_pluq(mat, P, Q);
-            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-            nb_iter += 1;
-        }
-        t /= nb_iter;
-        printf("%4e\t", t);
-
-        t = 0.0;
-        nb_iter = 0;
-        while (t < 0.5)
-        {
-            nmod_mat_rand(mat, state);
-            slong * P = _perm_init(mat->r);
-            tt = clock();
-            nmod_mat_lu_classical(P, mat, 0);
-            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-            nb_iter += 1;
-        }
-        t /= nb_iter;
-        printf("%4e\t", t);
-
-        t = 0.0;
-        nb_iter = 0;
-        while (t < 0.5)
-        {
-            nmod_mat_rand(mat, state);
-            slong * P = _perm_init(mat->r);
-            tt = clock();
-            nmod_mat_lu_classical_delayed(P, mat, 0);
-            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-            nb_iter += 1;
-        }
-        t /= nb_iter;
-        printf("%4e\t", t);
-
-        t = 0.0;
-        nb_iter = 0;
-        while (t < 0.5)
-        {
-            nmod_mat_rand(mat, state);
-            slong * P = _perm_init(mat->r);
-            tt = clock();
-            nmod_mat_lu_recursive(P, mat, 0);
-            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-            nb_iter += 1;
-        }
-        t /= nb_iter;
-        printf("%4e\n", t);
-    }
+    // check P*L*U*Q == A
+    nmod_mat_t L;
+    nmod_mat_init(L, LU->r, LU->r, LU->mod.n);
+    // compute L and U (the latter stored in LU)
+    _nmod_mat_l_u_from_compactlu_zeroin(L, LU, LU, rank);
+    // compute L*U, stored in LU
+    nmod_mat_mul(LU, L, LU);
+    // permute rows and columns
+    _perm_inv(P, P, LU->r);
+    nmod_mat_permute_rows(LU, P, NULL);
+    _perm_inv(Q, Q, LU->c);
+    nmod_mat_permute_columns(LU, Q, NULL);
+    if (!nmod_mat_equal(LU, A))
+        return 3;
 
     return 0;
 }
+
+int main()
+{
+    // test from flint: nmod_mat/test/lu_classical
+    flint_printf("Testing 5000 matrices; should take 5-10s\n");
+    flint_printf("--> no message below means success\n");
+    for (slong i = 0; i < 5000; i++)
+    {
+        FLINT_TEST_INIT(state);
+
+        slong m = n_randint(state, 20);
+        slong n = n_randint(state, 20);
+        mp_limb_t mod = n_randtest_prime(state, 0);
+        //mp_limb_t mod = 2;
+
+        for (slong r = 0; r <= FLINT_MIN(m, n); r++)
+        {
+            nmod_mat_t A;
+            nmod_mat_init(A, m, n, mod);
+            nmod_mat_randrank(A, state, r);
+
+            slong d;
+            if (n_randint(state, 2))
+            {
+                d = n_randint(state, 2*m*n + 1);
+                nmod_mat_randops(A, state, d);
+            }
+
+            nmod_mat_t LU;
+            nmod_mat_init_set(LU, A);
+            slong * P = _perm_init(sizeof(slong) * m);
+            slong * Q = _perm_init(sizeof(slong) * n);
+            slong rank = nmod_mat_pluq(LU, P, Q);
+
+            if (r != rank)
+            {
+                printf("Wrong rank found in PLUQ\n");
+                return 1;
+            }
+
+            int result = check_pluq(LU, P, Q, A, rank);
+            if (result != 0)
+            {
+                if (result == 1)  // 1 --> wrong dimensions
+                    flint_printf("Wrong dimensions for LU\n");
+                else if (result == 2)  // 2 --> wrong shape, bottom left block is not zero
+                    flint_printf("Wrong shape for LU\n");
+                else if (result == 3)  // 3 --> P*L*U*Q is not equal to A
+                    flint_printf("A  !=  P*L*U*Q\n");
+                return 1;
+            }
+
+            nmod_mat_clear(A);
+            nmod_mat_clear(LU);
+            flint_free(P);
+            flint_free(Q);
+        }
+        FLINT_TEST_CLEANUP(state);
+    }
+    return 0;
+}
+
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

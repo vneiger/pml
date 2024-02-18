@@ -1,3 +1,5 @@
+#include <flint/nmod_vec.h>  // for _nmod_vec_set
+
 #include "nmod_mat_extra.h"
 
 
@@ -90,6 +92,37 @@ void _nmod_mat_rotate_columns_leftward(nmod_mat_t mat, slong * vec, slong i, slo
             nmod_mat_entry(mat, ii, i) = tmp_mat;
         }
     }
+}
+
+/**********************************************************************
+*                         COLUMN PERMUTATION                         *
+**********************************************************************/
+
+/** Permute columns of a matrix `mat` according to `perm_act`, and propagate
+ * the action on `perm_store`.
+ * That is, performs for each appropriate index `j`, the operations
+ * `perm_store[j] <- perm_store[perm_act[j]]`
+ * `mat[i][j] <- mat[i][perm_act[j]] for all row indices i`
+ **/
+void nmod_mat_permute_columns(nmod_mat_t mat, const slong * perm_act, slong * perm_store)
+{
+    mp_limb_t * row_buffer = (mp_limb_t *) flint_malloc(mat->c * sizeof(mp_limb_t));
+
+    /* perm_store[j] <- perm_store[perm_act[j]] */
+    if (perm_store)
+        _perm_compose(perm_store, perm_store, perm_act, mat->r);
+
+    /* rows[i] <- rows[perm_act[i]]  */
+    for (slong i = 0; i < mat->r; i++)
+    {
+        // copy row i into buffer
+        _nmod_vec_set(row_buffer, mat->rows[i], mat->c);
+        // permute row i
+        for (slong j = 0; j < mat->c; j++)
+            nmod_mat_entry(mat, i, j) = row_buffer[perm_act[j]];
+    }
+
+    flint_free(row_buffer);
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */

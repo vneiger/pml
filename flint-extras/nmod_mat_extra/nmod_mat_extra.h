@@ -315,7 +315,6 @@ nmod_mat_rand_fullrank_urcef(nmod_mat_t mat,
  * length, typically with
  *  slong * P = _perm_init(A->r);
  *  slong * Q = _perm_init(A->c);
- *    
  *
  * Rotations are performed to preserve the row rank profile, so that in the end
  * we have P = rrp+nrrp, where rrp is the row rank profile of A and nrrp is the
@@ -323,6 +322,12 @@ nmod_mat_rand_fullrank_urcef(nmod_mat_t mat,
  *
  * Using lexicographic order, using row rotations + column rotations
  * ==> preserves the rank profile matrix and row (resp.column) relations precedence
+ *    
+ * \todo with the current computation of P,Q,
+ * the functions nmod_permute_{rows,columns} are such that one should
+ * first invert P and Q before using them:
+ * _perm_inv(P, P, LU->r);
+ * nmod_permute_rows(LU, P, NULL);
  */
 slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q);
 
@@ -444,6 +449,13 @@ void _nmod_mat_rotate_columns_rightward(nmod_mat_t mat, slong * vec, slong i, sl
 //      vec[j]     <--    vec[i]
 void _nmod_mat_rotate_columns_leftward(nmod_mat_t mat, slong * vec, slong i, slong j);
 
+/** Permute columns of a matrix `mat` according to `perm_act`, and propagate
+ * the action on `perm_store`.
+ * That is, performs for each appropriate index `j`, the operations
+ * `perm_store[j] <- perm_store[perm_act[j]]`
+ * `mat[i][j] <- mat[i][perm_act[j]] for all row indices i`
+ **/
+void nmod_mat_permute_columns(nmod_mat_t mat, const slong * perm_act, slong * perm_store);
 
 //@} // doxygen group: Rotations
 

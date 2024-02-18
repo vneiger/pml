@@ -4,10 +4,6 @@
 
 #include "nmod_mat_extra.h"
 
-
-
-
-
 void _nmod_mat_l_u_from_compactlu_zeroin(nmod_mat_t L,
                                         nmod_mat_t U,
                                         const nmod_mat_t LU,
