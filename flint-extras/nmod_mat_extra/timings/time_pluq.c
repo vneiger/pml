@@ -60,7 +60,7 @@ int main(int argc, char ** argv)
     }
     t /= nb_iter;
 
-    printf("new pluq\tlu_classical\tlu_delayed\tlu_recursive\n");
+    printf("new pluq\tnew pluq crout\tlu_classical\tlu_delayed\tlu_recursive\n");
 
     t = 0.0;
     nb_iter = 0;
@@ -78,6 +78,24 @@ int main(int argc, char ** argv)
     }
     t /= nb_iter;
     printf("%4e\t", t);
+
+    t = 0.0;
+    nb_iter = 0;
+    while (t < 0.5)
+    {
+        nmod_mat_set(LU, mat);
+        slong * P = _perm_init(LU->r);
+        slong * Q = _perm_init(LU->c);
+        tt = clock();
+        nmod_mat_pluq_crout(LU, P, Q);
+        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        _perm_clear(P);
+        _perm_clear(Q);
+        nb_iter += 1;
+    }
+    t /= nb_iter;
+    printf("%4e\t", t);
+
 
     t = 0.0;
     nb_iter = 0;

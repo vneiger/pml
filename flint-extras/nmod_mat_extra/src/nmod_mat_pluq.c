@@ -142,6 +142,7 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
         // (current row becomes last row, others rows in between are moved up)
         if (pivot == A->c)
         {
+            // TODO rank-sensitive: delay this, or handle zero rows (beyond A->r - nullity) in a smarter way
             _nmod_mat_rotate_rows_upward(A, P, rank, A->r - 1);
             nullity++;
         }
@@ -162,6 +163,7 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
                 nmod_mat_entry(A, i, pivot) = nmod_mul(nmod_mat_entry(A, i, pivot), inv_pivot, A->mod);
             }
             // move pivot column to rank-th column by rotation
+            // TODO rank-sensitive: only do this on rows up to A->r - nullity
             _nmod_mat_rotate_columns_rightward(A, Q, rank, pivot);
             rank++;
         }
