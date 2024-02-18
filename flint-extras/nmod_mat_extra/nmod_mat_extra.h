@@ -311,6 +311,12 @@ nmod_mat_rand_fullrank_urcef(nmod_mat_t mat,
  *  - rank is the rank of A
  *  - A = P*L*U*Q
  *
+ * input: P and Q have been allocated as identity permutations of the right
+ * length, typically with
+ *  slong * P = _perm_init(A->r);
+ *  slong * Q = _perm_init(A->c);
+ *    
+ *
  * Rotations are performed to preserve the row rank profile, so that in the end
  * we have P = rrp+nrrp, where rrp is the row rank profile of A and nrrp is the
  * list of row indices not in rrp (both rrp and nrrp are increasing).
@@ -336,10 +342,69 @@ void _nmod_mat_l_u_from_compactlu_zeroin(nmod_mat_t L,
                                          nmod_mat_t U,
                                          const nmod_mat_t LU,
                                          slong rank);
-void _nmod_mat_l_u_from_compactlu(nmod_mat_t L,
-                                  nmod_mat_t U,
-                                  const nmod_mat_t LU,
-                                  slong rank);
+void nmod_mat_l_u_from_compactlu(nmod_mat_t L,
+                                 nmod_mat_t U,
+                                 const nmod_mat_t LU,
+                                 slong rank);
+
+//@} // doxygen group: PLUQ
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* ROW/COLUMN ROTATIONS                                       */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name Rotations
+ *
+ *  These functions are for row rotations and column rotations.
+ *  \todo could be in generics? (same functions for nmod_poly_mat, see
+ *  the row variants therein: almost zero modification...)
+ */
+//@{
+
+// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[i,:]     <--    mat[j,:]
+//      mat[i+1,:]   <--    mat[i,:]
+//      mat[i+2,:]   <--    mat[i+1,:]
+//         ...       <--       ...
+//      mat[j-1,:]   <--    mat[j-2,:]
+//      mat[j,:]     <--    mat[j-1,:]
+// as well as
+//      vec[i]     <--    vec[j]
+//      vec[i+1]   <--    vec[i]
+//      vec[i+2]   <--    vec[i+1]
+//        ...      <--      ...
+//      vec[j-1]   <--    vec[j-2]
+//      vec[j]     <--    vec[j-1]
+void _nmod_mat_rotate_rows_downward(nmod_mat_t mat, slong * vec, slong i, slong j);
+
+// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[i,:]     <--    mat[i+1,:]
+//      mat[i+1,:]   <--    mat[i+2,:]
+//      mat[i+2,:]   <--       ...
+//         ...       <--    mat[j-1,:]
+//      mat[j-1,:]   <--    mat[j,:]
+//      mat[j,:]     <--    mat[i,:]
+// as well as
+//      vec[i]     <--    vec[i+1]
+//      vec[i+1]   <--    vec[i+2]
+//      vec[i+2]   <--      ...
+//        ...      <--    vec[j-1]
+//      vec[j-1]   <--    vec[j]
+//      vec[j]     <--    vec[i]
+void _nmod_mat_rotate_rows_upward(nmod_mat_t mat, slong * vec, slong i, slong j);
+
+
+
 //@} // doxygen group: PLUQ
 
 
