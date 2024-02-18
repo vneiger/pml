@@ -1,4 +1,5 @@
 #include <flint/nmod.h> // for nmod_div
+#include <flint/nmod_mat.h>
 #include <flint/ulong_extras.h> // for n_invmod
 #include <flint/nmod_vec.h> // for _nmod_vec_set
 
@@ -89,7 +90,7 @@ slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q)
             _nmod_mat_rotate_columns_rightward(A, Q, rank, pivot);
             // perform elimination
             mp_limb_t inv_pivot = n_invmod(nmod_mat_entry(A, rank, rank), A->mod.n);
-            for (slong i = rank+1; i < A->r; i++)
+            for (slong i = rank+1; i < A->r - nullity; i++)
             {
                 nmod_mat_entry(A, i, rank) = nmod_mul(nmod_mat_entry(A, i, rank), inv_pivot, A->mod);
                 //for (slong j = rank+1; j < A->c; j++)
@@ -107,6 +108,66 @@ slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q)
             rank++;
         }
     }
+    return rank;
+}
+
+slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
+{
+    slong nullity = 0;
+    slong rank = 0;
+    // will store parts of columns of A, maximum length final rank
+    mp_limb_t * A_i_piv = flint_malloc(FLINT_MIN(A->r, A->c) * sizeof(mp_limb_t));
+    // will store results of parts of A multiplied by A_i_piv
+    mp_limb_t * A_vec = flint_malloc(A->r * sizeof(mp_limb_t));
+    // we will use some windows of A
+    nmod_mat_t Awin;
+
+    while (rank + nullity < A->r)
+    {
+        // update row rank
+        // A[rank, rank:] <-- A[rank, rank:] - A[rank, :rank] * A[:rank, rank:]
+        for (slong i = 0; i < rank-1; i++)
+            _nmod_vec_scalar_addmul_nmod(A->rows[rank] + rank,
+                                         A->rows[i] + rank,
+                                         A->c - rank,
+                                         nmod_neg(nmod_mat_entry(A, rank, i), A->mod),
+                                         A->mod);
+
+        // seek pivot: on row rank, first nonzero entry with column index >= rank
+        slong pivot = rank;
+        while (pivot < A->c && nmod_mat_entry(A, rank, pivot) == 0)
+            pivot++;
+
+        // if no pivot was found: increase rank defect + perform row rotation
+        // (current row becomes last row, others rows in between are moved up)
+        if (pivot == A->c)
+        {
+            _nmod_mat_rotate_rows_upward(A, P, rank, A->r - 1);
+            nullity++;
+        }
+        else
+        {
+            // precompute inverse of pivot
+            mp_limb_t inv_pivot = n_invmod(nmod_mat_entry(A, rank, pivot), A->mod.n);
+            // compute matrix-vector product A[rank+1:A->r-nullity, :rank] * A[:rank, pivot]
+            for (slong i = 0; i < rank; i++)
+                A_i_piv[i] = nmod_mat_entry(A, i, pivot);
+            nmod_mat_window_init(Awin, A, rank+1, 0, A->r - nullity, rank);
+            nmod_mat_mul_nmod_vec(A_vec, Awin, A_i_piv, rank);
+            nmod_mat_window_clear(Awin);
+            // update:  from A[rank+1:A->r-nullity, pivot], subtract A_vec and divide by pivot
+            for (slong i = rank+1; i < A->r - nullity; i++)
+            {
+                nmod_mat_entry(A, i, pivot) = _nmod_sub(nmod_mat_entry(A, i, pivot), A_vec[i-rank-1], A->mod);
+                nmod_mat_entry(A, i, pivot) = nmod_mul(nmod_mat_entry(A, i, pivot), inv_pivot, A->mod);
+            }
+            // move pivot column to rank-th column by rotation
+            _nmod_mat_rotate_columns_rightward(A, Q, rank, pivot);
+            rank++;
+        }
+    }
+    flint_free(A_vec);
+    flint_free(A_i_piv);
     return rank;
 }
 

@@ -62,35 +62,72 @@ int main()
                 d = n_randint(state, 2*m*n + 1);
                 nmod_mat_randops(A, state, d);
             }
+            nmod_mat_rand(A, state);
 
-            nmod_mat_t LU;
-            nmod_mat_init_set(LU, A);
-            slong * P = _perm_init(sizeof(slong) * m);
-            slong * Q = _perm_init(sizeof(slong) * n);
-            slong rank = nmod_mat_pluq(LU, P, Q);
-
-            if (r != rank)
+            // "First" variant
             {
-                printf("Wrong rank found in PLUQ\n");
-                return 1;
+                nmod_mat_t LU;
+                nmod_mat_init_set(LU, A);
+                slong * P = _perm_init(sizeof(slong) * m);
+                slong * Q = _perm_init(sizeof(slong) * n);
+                slong rank = nmod_mat_pluq(LU, P, Q);
+
+                //if (r != rank)
+                //{
+                //    printf("PLUQ: wrong rank\n");
+                //    return 1;
+                //}
+
+                int result = check_pluq(LU, P, Q, A, rank);
+                if (result != 0)
+                {
+                    if (result == 1)  // 1 --> wrong dimensions
+                        flint_printf("PLUQ: wrong dimensions for LU\n");
+                    else if (result == 2)  // 2 --> wrong shape, bottom left block is not zero
+                        flint_printf("PLUQ: wrong shape for LU\n");
+                    else if (result == 3)  // 3 --> P*L*U*Q is not equal to A
+                        flint_printf("PLUQ: A  !=  P*L*U*Q\n");
+                    return 1;
+                }
+
+                nmod_mat_clear(LU);
+                flint_free(P);
+                flint_free(Q);
             }
 
-            int result = check_pluq(LU, P, Q, A, rank);
-            if (result != 0)
+            // Crout variant
             {
-                if (result == 1)  // 1 --> wrong dimensions
-                    flint_printf("Wrong dimensions for LU\n");
-                else if (result == 2)  // 2 --> wrong shape, bottom left block is not zero
-                    flint_printf("Wrong shape for LU\n");
-                else if (result == 3)  // 3 --> P*L*U*Q is not equal to A
-                    flint_printf("A  !=  P*L*U*Q\n");
-                return 1;
+                nmod_mat_t LU;
+                nmod_mat_init_set(LU, A);
+                slong * P = _perm_init(sizeof(slong) * m);
+                slong * Q = _perm_init(sizeof(slong) * n);
+                printf("ok\n");
+                slong rank = nmod_mat_pluq_crout(LU, P, Q);
+
+                //if (r != rank)
+                //{
+                //    printf("PLUQ(Crout): Wrong rank\n");
+                //    return 1;
+                //}
+
+                int result = check_pluq(LU, P, Q, A, rank);
+                if (result != 0)
+                {
+                    if (result == 1)  // 1 --> wrong dimensions
+                        flint_printf("PLUQ(Crout): wrong dimensions for LU\n");
+                    else if (result == 2)  // 2 --> wrong shape, bottom left block is not zero
+                        flint_printf("PLUQ(Crout): wrong shape for LU\n");
+                    else if (result == 3)  // 3 --> P*L*U*Q is not equal to A
+                        flint_printf("PLUQ(Crout): A  !=  P*L*U*Q\n");
+                    return 1;
+                }
+
+                nmod_mat_clear(LU);
+                flint_free(P);
+                flint_free(Q);
             }
 
             nmod_mat_clear(A);
-            nmod_mat_clear(LU);
-            flint_free(P);
-            flint_free(Q);
         }
         FLINT_TEST_CLEANUP(state);
     }

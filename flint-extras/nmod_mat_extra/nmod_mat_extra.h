@@ -330,7 +330,7 @@ nmod_mat_rand_fullrank_urcef(nmod_mat_t mat,
  * nmod_permute_rows(LU, P, NULL);
  */
 slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q);
-
+slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q);
 
 /** Expand LU stored in compact format into two triangular matrices L and U.
  * Conventions, for LU of dimensions m x n of rank rk:
