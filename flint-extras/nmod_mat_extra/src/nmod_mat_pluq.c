@@ -126,7 +126,7 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
     {
         // update row rank
         // A[rank, rank:] <-- A[rank, rank:] - A[rank, :rank] * A[:rank, rank:]
-        for (slong i = 0; i < rank-1; i++)
+        for (slong i = 0; i < rank; i++)
             _nmod_vec_scalar_addmul_nmod(A->rows[rank] + rank,
                                          A->rows[i] + rank,
                                          A->c - rank,

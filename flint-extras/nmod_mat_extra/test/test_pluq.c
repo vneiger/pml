@@ -39,7 +39,7 @@ int check_pluq(nmod_mat_t LU, slong * P, slong * Q, const nmod_mat_t A, slong ra
 int main()
 {
     // test from flint: nmod_mat/test/lu_classical
-    flint_printf("Testing 5000 matrices; should take 5-10s\n");
+    flint_printf("Testing 5000 matrices; should take 5-15s\n");
     flint_printf("--> no message below means success\n");
     for (slong i = 0; i < 5000; i++)
     {
@@ -62,7 +62,7 @@ int main()
                 d = n_randint(state, 2*m*n + 1);
                 nmod_mat_randops(A, state, d);
             }
-            nmod_mat_rand(A, state);
+            //nmod_mat_rand(A, state);
 
             // "First" variant
             {
@@ -72,11 +72,11 @@ int main()
                 slong * Q = _perm_init(sizeof(slong) * n);
                 slong rank = nmod_mat_pluq(LU, P, Q);
 
-                //if (r != rank)
-                //{
-                //    printf("PLUQ: wrong rank\n");
-                //    return 1;
-                //}
+                if (r != rank)
+                {
+                    printf("PLUQ: wrong rank\n");
+                    return 1;
+                }
 
                 int result = check_pluq(LU, P, Q, A, rank);
                 if (result != 0)
@@ -101,14 +101,13 @@ int main()
                 nmod_mat_init_set(LU, A);
                 slong * P = _perm_init(sizeof(slong) * m);
                 slong * Q = _perm_init(sizeof(slong) * n);
-                printf("ok\n");
                 slong rank = nmod_mat_pluq_crout(LU, P, Q);
 
-                //if (r != rank)
-                //{
-                //    printf("PLUQ(Crout): Wrong rank\n");
-                //    return 1;
-                //}
+                if (r != rank)
+                {
+                    printf("PLUQ(Crout): Wrong rank\n");
+                    return 1;
+                }
 
                 int result = check_pluq(LU, P, Q, A, rank);
                 if (result != 0)
