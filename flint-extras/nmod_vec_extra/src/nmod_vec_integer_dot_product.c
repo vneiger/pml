@@ -15,10 +15,10 @@ void nmod_vec_integer_dot_product(mp_ptr res, mp_srcptr v1, mp_srcptr v2, ulong 
     ulong i;
     /* number of products we can do before overflow */
     ulong num_terms;
-    
+
     num_terms = 1 << (2*FLINT_BITS - (max_bits1 + max_bits2));
     i = 0;
-    
+
     t2 = 0;
     t1 = 0;
     t0 = 0;
@@ -51,7 +51,7 @@ void nmod_vec_integer_dot_product(mp_ptr res, mp_srcptr v1, mp_srcptr v2, ulong 
             v2 += 10;
             len -= 10;
         }
-    else 
+    else
         while (num_terms < len)
         {
             u0 = UWORD(0);
@@ -66,8 +66,8 @@ void nmod_vec_integer_dot_product(mp_ptr res, mp_srcptr v1, mp_srcptr v2, ulong 
             v2 += num_terms;
             len -= num_terms;
         }
-    
-    
+
+
     u0 = UWORD(0);
     u1 = UWORD(0);
     for (i = 0; i < len; i++)
