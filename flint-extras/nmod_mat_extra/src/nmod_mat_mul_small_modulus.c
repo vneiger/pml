@@ -1,8 +1,7 @@
-#include <stdlib.h>
-#include <flint/flint.h>
 #include <flint/nmod_mat.h>
 #include <flint/machine_vectors.h>
 
+#include "nmod_extra.h"
 #include "nmod_vec_extra.h"
 
 /** matrix multiplication using AVX2 instructions for moduli less than 2^30 */

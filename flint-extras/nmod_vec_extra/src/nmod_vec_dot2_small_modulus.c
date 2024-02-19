@@ -1,4 +1,4 @@
-#include <flint/machine_vectors.h>
+#include "nmod_extra.h"  // for vec4n_zero and others
 #include "nmod_vec_extra.h"
 
 /*------------------------------------------------------------*/
