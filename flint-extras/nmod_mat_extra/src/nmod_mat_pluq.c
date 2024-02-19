@@ -93,12 +93,6 @@ slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q)
             for (slong i = rank+1; i < A->r - nullity; i++)
             {
                 nmod_mat_entry(A, i, rank) = nmod_mul(nmod_mat_entry(A, i, rank), inv_pivot, A->mod);
-                //for (slong j = rank+1; j < A->c; j++)
-                //    nmod_mat_entry(A, i, j) = nmod_sub(nmod_mat_entry(A, i, j),
-                //                                       nmod_mul(nmod_mat_entry(A, i, rank),
-                //                                                nmod_mat_entry(A, rank, j),
-                //                                                A->mod),
-                //                                       A->mod);
                 _nmod_vec_scalar_addmul_nmod(A->rows[i]+rank+1,
                                              A->rows[rank]+rank+1,
                                              A->c - rank - 1,
@@ -122,16 +116,32 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
     // we will use some windows of A
     nmod_mat_t Awin;
 
+    // yet other things, only for FIXME[2]
+    nmod_mat_t Arowwin;
+    nmod_mat_t matvec;
+
     while (rank + nullity < A->r)
     {
         // update row rank
         // A[rank, rank:] <-- A[rank, rank:] - A[rank, :rank] * A[:rank, rank:]
-        for (slong i = 0; i < rank; i++)
-            _nmod_vec_scalar_addmul_nmod(A->rows[rank] + rank,
-                                         A->rows[i] + rank,
-                                         A->c - rank,
-                                         nmod_neg(nmod_mat_entry(A, rank, i), A->mod),
-                                         A->mod);
+        // FIXME could rely on nmod_mat_nmod_vec_mul, and the latter should be optimized
+        //       with delayed reductions
+        // VERSION, TESTED:
+        //for (slong i = 0; i < rank; i++)
+        //    _nmod_vec_scalar_addmul_nmod(A->rows[rank] + rank,
+        //                                 A->rows[i] + rank,
+        //                                 A->c - rank,
+        //                                 nmod_neg(nmod_mat_entry(A, rank, i), A->mod),
+        //                                 A->mod);
+        // FIXME[2] BELOW, TESTED: with mul, which actually seems faster than nmod_mat_nmod_vec_mul...
+        nmod_mat_window_init(Arowwin, A, rank, 0, rank+1, rank);
+        nmod_mat_window_init(Awin, A, 0, rank, rank, A->c);
+        nmod_mat_init(matvec, 1, A->c - rank, A->mod.n);
+        nmod_mat_mul(matvec, Arowwin, Awin);
+        _nmod_vec_sub(A->rows[rank]+rank, A->rows[rank]+rank, matvec->rows[0], A->c - rank, A->mod);
+        nmod_mat_clear(matvec);
+        nmod_mat_window_clear(Awin);
+        nmod_mat_window_clear(Arowwin);
 
         // seek pivot: on row rank, first nonzero entry with column index >= rank
         slong pivot = rank;
@@ -154,6 +164,7 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
             for (slong i = 0; i < rank; i++)
                 A_i_piv[i] = nmod_mat_entry(A, i, pivot);
             nmod_mat_window_init(Awin, A, rank+1, 0, A->r - nullity, rank);
+            // FIXME any reason to avoid this e.g. when small dim?
             nmod_mat_mul_nmod_vec(A_vec, Awin, A_i_piv, rank);
             nmod_mat_window_clear(Awin);
             // update:  from A[rank+1:A->r-nullity, pivot], subtract A_vec and divide by pivot
