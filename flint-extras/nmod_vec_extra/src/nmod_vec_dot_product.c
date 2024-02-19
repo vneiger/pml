@@ -13,11 +13,10 @@
 static inline 
 ulong _nmod_vec_dot_bound_limbs_unbalanced(ulong len, ulong max_bits1, ulong max_bits2)
 {
-    mp_limb_t t2, t1, t0, u1, u0;
-
     const mp_limb_t a1 = (max_bits1 == FLINT_BITS) ? (UWORD_MAX) : (UWORD(1) << max_bits1) - 1;
     const mp_limb_t a2 = (max_bits2 == FLINT_BITS) ? (UWORD_MAX) : (UWORD(1) << max_bits2) - 1;
     
+    mp_limb_t t2, t1, t0, u1, u0;
     umul_ppmm(t1, t0, a1, a2);
     umul_ppmm(t2, t1, t1, len);
     umul_ppmm(u1, u0, t0, len);
