@@ -1,8 +1,5 @@
-#include <assert.h>
-#include <gmp.h>
-#include <flint/flint.h>
+#include <time.h>
 #include <flint/nmod.h>
-#include <flint/nmod_vec.h>
 
 #include "nmod_mat_extra.h"
 
@@ -27,7 +24,7 @@ void time_nmod_mat_mul_small_modulus(ulong len, ulong n)
     nmod_mat_init(c2, len, len, mod.n);
 
     printf("%lu\t", len);
-    
+
     t = 0.0;
     nb_iter = 0;
     while (t < 0.5)
@@ -100,13 +97,13 @@ void time_nmod_mat_mul_small_modulus(ulong len, ulong n)
 /*--------------------------------------------------------------*/
 /* main calls time                                              */
 /*--------------------------------------------------------------*/
-int main(int argc, char **argv)
+int main()
 {
     flint_set_num_threads(1);
     printf("Modulus %ld, times in ms\n", 1L << 29);
     printf("#size\tt_flint\t\tt_blas\t\tt_here\n");
     ulong i;
-    for (i = 1; i < 210; i += 10)
+    for (i = 1; i < 1000; i += 10)
         time_nmod_mat_mul_small_modulus(i, (1L << 29) + 1);
 
     return 0;

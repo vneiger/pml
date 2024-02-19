@@ -28,6 +28,9 @@ extern "C" {
 /** matrix multiplication using AVX2 instructions for moduli less than 2^30 */
 void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B);
 
+/** matrix multiplication not using AVX2 instructions */
+void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B);
+
 NMOD_MAT_INLINE
 void nmod_mat_mul_pml(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
 {
