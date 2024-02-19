@@ -7,7 +7,7 @@
 
 
 /*--------------------------------------------------------------*/
-/* computes a dot modulus in size len modulo n                  */
+/* computes a dot product in size len modulo n                  */
 /*--------------------------------------------------------------*/
 void time_nmod_vec_integer_dot_product(ulong len, ulong n)
 {
@@ -36,6 +36,10 @@ void time_nmod_vec_integer_dot_product(ulong len, ulong n)
     //while (t < 0.5 && nb_iter<2)
     {
         tt = clock();
+        nmod_vec_integer_dot_product(res, v1, v2, len, maxbits, maxbits);
+        nmod_vec_integer_dot_product(res, v1, v2, len, maxbits, maxbits);
+        nmod_vec_integer_dot_product(res, v1, v2, len, maxbits, maxbits);
+        nmod_vec_integer_dot_product(res, v1, v2, len, maxbits, maxbits);
         nmod_vec_integer_dot_product(res, v1, v2, len, maxbits, maxbits);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 5;

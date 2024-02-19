@@ -43,7 +43,7 @@ int main()
     flint_rand_t state;
     flint_randinit(state);
 
-    printf("test running, various bitlengths, from len 1 to ~1000 (no error message means success)...\n");
+    printf("test running, various bitlengths, len from 1 to ~1000 (no error message means success)...\n");
     for (slong len = 1; len < 1000; len += 20)
     {
         printf("%ld..", len);
@@ -60,6 +60,7 @@ int main()
             check_nmod_vec_integer_dot_product(len, 40, state);
             check_nmod_vec_integer_dot_product(len, 50, state);
             check_nmod_vec_integer_dot_product(len, 60, state);
+            check_nmod_vec_integer_dot_product(len, 64, state);
         }
     }
     printf("\n");

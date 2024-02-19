@@ -1,3 +1,4 @@
+#include <flint/flint.h>
 #include <flint/nmod_vec.h>
 
 #include "nmod_vec_extra.h"
@@ -13,18 +14,9 @@ static inline
 ulong _nmod_vec_dot_bound_limbs_unbalanced(ulong len, ulong max_bits1, ulong max_bits2)
 {
     mp_limb_t t2, t1, t0, u1, u0;
-    mp_limb_t a1, a2;
 
-    if (max_bits1 == FLINT_BITS)
-        a1 = -1;
-    else 
-        a1 = (1L << max_bits1) - 1;
-
-    if (max_bits2 == FLINT_BITS)
-        a2 = -1;
-    else 
-        a2 = (1L << max_bits1) - 1;
-
+    const mp_limb_t a1 = (max_bits1 == FLINT_BITS) ? (UWORD_MAX) : (UWORD(1) << max_bits1) - 1;
+    const mp_limb_t a2 = (max_bits2 == FLINT_BITS) ? (UWORD_MAX) : (UWORD(1) << max_bits2) - 1;
     
     umul_ppmm(t1, t0, a1, a2);
     umul_ppmm(t2, t1, t1, len);
