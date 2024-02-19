@@ -1,4 +1,6 @@
 #include <assert.h>
+#include <flint/nmod.h>
+#include <flint/nmod_vec.h>
 
 #include "nmod_vec_extra.h"
  
