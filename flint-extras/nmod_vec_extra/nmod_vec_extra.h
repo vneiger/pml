@@ -11,9 +11,8 @@
  *
  */
 
-#include <flint/flint.h>
-#include <flint/nmod_vec.h>
-#include "nmod_extra.h"
+#include <flint/machine_vectors.h>
+#include <flint/nmod_types.h>
 
 #ifdef __cplusplus
 extern "C" {
