@@ -59,8 +59,9 @@ void nmod_vec_integer_dot_product(mp_ptr res, mp_srcptr v1, mp_srcptr v2, ulong 
             len -= num_terms;
         }
 
-    umul_ppmm(u1, u0, v1[0], v2[0]);
-    for (ulong i = 1; i < len; i++)
+    u1 = UWORD(0);
+    u0 = UWORD(0);
+    for (ulong i = 0; i < len; i++)
     {
         umul_ppmm(s1, s0, v1[i], v2[i]);
         add_ssaaaa(u1, u0, u1, u0, s1, s0);
