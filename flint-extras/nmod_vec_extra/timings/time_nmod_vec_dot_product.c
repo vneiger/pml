@@ -1,3 +1,4 @@
+#include <flint/nmod_vec.h>
 #include <time.h>
 
 #include "nmod_vec_extra.h"
@@ -21,27 +22,52 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
     v2 = _nmod_vec_init(len);
     _nmod_vec_rand(v2, state, len, mod2);
 
-    double t;
+    double t1, t2;
     clock_t tt;
     long nb_iter;
 
-    t = 0.0;
+    mp_limb_t val1, val2;
+
+    t1 = 0.0;
     nb_iter = 0;
-    while (t < 0.2)
-    //while (t < 0.5 && nb_iter<2)
+    while (t1 < 0.2)
+    //while (t1 < 0.5 && nb_iter<2)
     {
         tt = clock();
-        nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
-        nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
-        nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
-        nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
-        nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+        val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+        val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+        val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+        val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+        t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 5;
     }
-    t = 1000 * t;
-    t /= nb_iter;
-    printf("%.1e\t", t);
+    //t = 1000 * t;
+    t1 /= nb_iter;
+    //printf("%.1e\t", t);
+
+    int nlimbs = _nmod_vec_dot_bound_limbs(len, mod);
+    t2 = 0.0;
+    nb_iter = 0;
+    while (t2 < 0.2)
+    //while (t2 < 0.5 && nb_iter<2)
+    {
+        tt = clock();
+        val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
+        val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
+        val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
+        val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
+        val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
+        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += 5;
+    }
+    //t = 1000 * t;
+    t2 /= nb_iter;
+    //printf("%.1e\t", t);
+
+    printf("%.1e\t", t1/t2);
+    if (val1 != val2)
+        printf("\nERROR!!!!!\n");
 
     _nmod_vec_clear(v1);
     _nmod_vec_clear(v2);
