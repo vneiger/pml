@@ -1,5 +1,6 @@
-#include <flint/nmod_vec.h>
 #include <time.h>
+#include <flint/nmod_vec.h>
+#include <flint/nmod.h>
 
 #include "nmod_vec_extra.h"
 
@@ -18,9 +19,7 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
 
     mp_ptr v1, v2;
     v1 = _nmod_vec_init(len);
-    _nmod_vec_rand(v1, state, len, mod1);
     v2 = _nmod_vec_init(len);
-    _nmod_vec_rand(v2, state, len, mod2);
 
     double t1, t2;
     clock_t tt;
@@ -33,6 +32,8 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
     while (t1 < 0.2)
     //while (t1 < 0.5 && nb_iter<2)
     {
+        _nmod_vec_rand(v1, state, len, mod1);
+        _nmod_vec_rand(v2, state, len, mod2);
         tt = clock();
         val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
         val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
@@ -46,24 +47,46 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
     t1 /= nb_iter;
     //printf("%.1e\t", t);
 
-    int nlimbs = _nmod_vec_dot_bound_limbs(len, mod);
+    // VERSUS v0:
     t2 = 0.0;
     nb_iter = 0;
     while (t2 < 0.2)
     //while (t2 < 0.5 && nb_iter<2)
     {
+        _nmod_vec_rand(v1, state, len, mod1);
+        _nmod_vec_rand(v2, state, len, mod2);
         tt = clock();
-        val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
-        val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
-        val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
-        val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
-        val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
+        val2 = nmod_vec_dot_product_v0(v1, v2, len, maxbits1, maxbits2, mod);
+        val2 = nmod_vec_dot_product_v0(v1, v2, len, maxbits1, maxbits2, mod);
+        val2 = nmod_vec_dot_product_v0(v1, v2, len, maxbits1, maxbits2, mod);
+        val2 = nmod_vec_dot_product_v0(v1, v2, len, maxbits1, maxbits2, mod);
+        val2 = nmod_vec_dot_product_v0(v1, v2, len, maxbits1, maxbits2, mod);
         t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 5;
     }
     //t = 1000 * t;
     t2 /= nb_iter;
     //printf("%.1e\t", t);
+
+    // VERSUS FLINT:
+    //int nlimbs = _nmod_vec_dot_bound_limbs(len, mod);
+    //t2 = 0.0;
+    //nb_iter = 0;
+    //while (t2 < 0.2)
+    ////while (t2 < 0.5 && nb_iter<2)
+    //{
+    //    tt = clock();
+    //    val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
+    //    val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
+    //    val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
+    //    val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
+    //    val2 = _nmod_vec_dot(v1, v2, len, mod, nlimbs);
+    //    t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+    //    nb_iter += 5;
+    //}
+    ////t = 1000 * t;
+    //t2 /= nb_iter;
+    ////printf("%.1e\t", t);
 
     printf("%.1e\t", t1/t2);
     if (val1 != val2)
