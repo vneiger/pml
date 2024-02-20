@@ -45,6 +45,31 @@ mp_limb_t _nmod_vec_dot_product_1(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t 
 {
     mp_limb_t res = UWORD(0);
 
+    ulong i = 0;
+    for (; i+8 < len; i++)
+    {
+        res +=   v1[i+0] * v2[i+0]
+               + v1[i+1] * v2[i+1]
+               + v1[i+2] * v2[i+2]
+               + v1[i+3] * v2[i+3]
+               + v1[i+4] * v2[i+4]
+               + v1[i+5] * v2[i+5]
+               + v1[i+6] * v2[i+6]
+               + v1[i+7] * v2[i+7];
+    }
+
+    for (; i < len; i++)
+        res += v1[i] * v2[i];
+
+    NMOD_RED(res, res, mod);
+    return res;
+}
+
+static inline
+mp_limb_t _nmod_vec_dot_product_1_v0(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+{
+    mp_limb_t res = UWORD(0);
+
     while (8 < len)
     {
         res +=   v1[0] * v2[0]
@@ -239,6 +264,33 @@ void _nmod_vec_dot_product_multi_1(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
     for (ulong j = 0; j < k; j++)
         NMOD_RED(uv[j], uv[j], mod);
 }
+
+//static inline
+//void _nmod_vec_dot_product_multi_1_v2(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+//                                      ulong len, ulong k, nmod_t mod)
+//{
+//    _nmod_vec_zero(uv, k);
+//    for (ulong i = 0; i < len; i++)
+//    {
+//        ulong j = 0;
+//        for (; j+8 < k; j += 8)
+//        {
+//            uv[j+0] += u[i] * v[i][j+0];
+//            uv[j+1] += u[i] * v[i][j+1];
+//            uv[j+2] += u[i] * v[i][j+2];
+//            uv[j+3] += u[i] * v[i][j+3];
+//            uv[j+4] += u[i] * v[i][j+4];
+//            uv[j+5] += u[i] * v[i][j+5];
+//            uv[j+6] += u[i] * v[i][j+6];
+//            uv[j+7] += u[i] * v[i][j+7];
+//        }
+//        for (; j < k; j++)
+//            uv[j] += u[i] * v[i][j];
+//    }
+//
+//    for (ulong j = 0; j < k; j++)
+//        NMOD_RED(uv[j], uv[j], mod);
+//}
 
 static inline
 void _nmod_vec_dot_product_multi_2(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
