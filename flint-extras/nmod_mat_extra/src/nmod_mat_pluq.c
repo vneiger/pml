@@ -1,8 +1,10 @@
+#include <flint/flint.h>
 #include <flint/nmod.h> // for nmod_div
 #include <flint/nmod_mat.h>
 #include <flint/ulong_extras.h> // for n_invmod
 #include <flint/nmod_vec.h> // for _nmod_vec_set
 
+#include "nmod_vec_extra.h"
 #include "nmod_mat_extra.h"
 
 void _nmod_mat_l_u_from_compactlu_zeroin(nmod_mat_t L,
@@ -107,6 +109,10 @@ slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q)
 
 slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
 {
+    // nbits of modulus, for delayed reduction
+    const ulong nbits = FLINT_BIT_COUNT(A->mod.n);
+
+    // nullity and rank that will be continuously updated
     slong nullity = 0;
     slong rank = 0;
     // will store parts of columns of A, maximum length final rank
@@ -116,7 +122,7 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
     // we will use some windows of A
     nmod_mat_t Awin;
 
-    // yet other things, only for FIXME[2]
+    // other things, only for OTHERVERSION
     nmod_mat_t Arowwin;
     nmod_mat_t matvec;
 
@@ -124,16 +130,14 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
     {
         // update row rank
         // A[rank, rank:] <-- A[rank, rank:] - A[rank, :rank] * A[:rank, rank:]
-        // FIXME could rely on nmod_mat_nmod_vec_mul, and the latter should be optimized
-        //       with delayed reductions
-        // VERSION, TESTED:
+        // 1stVERSION, TESTED:
         //for (slong i = 0; i < rank; i++)
         //    _nmod_vec_scalar_addmul_nmod(A->rows[rank] + rank,
         //                                 A->rows[i] + rank,
         //                                 A->c - rank,
         //                                 nmod_neg(nmod_mat_entry(A, rank, i), A->mod),
         //                                 A->mod);
-        // FIXME[2] BELOW, TESTED: with mul, which actually seems faster than nmod_mat_nmod_vec_mul...
+        // OTHERVERSION, TESTED: with mul, which actually seems faster than nmod_mat_nmod_vec_mul...
         nmod_mat_window_init(Arowwin, A, rank, 0, rank+1, rank);
         nmod_mat_window_init(Awin, A, 0, rank, rank, A->c);
         nmod_mat_init(matvec, 1, A->c - rank, A->mod.n);
@@ -161,12 +165,17 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
             // precompute inverse of pivot
             mp_limb_t inv_pivot = n_invmod(nmod_mat_entry(A, rank, pivot), A->mod.n);
             // compute matrix-vector product A[rank+1:A->r-nullity, :rank] * A[:rank, pivot]
+            // 1stVERSION, TESTED:
+            //for (slong i = 0; i < rank; i++)
+            //    A_i_piv[i] = nmod_mat_entry(A, i, pivot);
+            //nmod_mat_window_init(Awin, A, rank+1, 0, A->r - nullity, rank);
+            //nmod_mat_mul_nmod_vec(A_vec, Awin, A_i_piv, rank);
+            //nmod_mat_window_clear(Awin);
+            // 2ndVERSION, TESTED: with new nmod_vec_dot
             for (slong i = 0; i < rank; i++)
                 A_i_piv[i] = nmod_mat_entry(A, i, pivot);
-            nmod_mat_window_init(Awin, A, rank+1, 0, A->r - nullity, rank);
-            // FIXME any reason to avoid this e.g. when small dim?
-            nmod_mat_mul_nmod_vec(A_vec, Awin, A_i_piv, rank);
-            nmod_mat_window_clear(Awin);
+            for (slong i = 0; i < A->r - nullity - rank - 1; i++)
+                A_vec[i] = nmod_vec_dot_product(A->rows[i+rank+1], A_i_piv, rank, nbits, nbits, A->mod);
             // update:  from A[rank+1:A->r-nullity, pivot], subtract A_vec and divide by pivot
             for (slong i = rank+1; i < A->r - nullity; i++)
             {
