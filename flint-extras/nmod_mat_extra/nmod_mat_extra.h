@@ -29,7 +29,10 @@ extern "C" {
 void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B);
 
 /** matrix multiplication not using AVX2 instructions */
+// C = A*B
 void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B);
+// v[:A->r] = A[:,:len]*u[:len], v may not alias u
+void nmod_mat_mul_nmod_vec_newdot(mp_ptr v, const nmod_mat_t A, mp_srcptr u, ulong len);
 
 NMOD_MAT_INLINE
 void nmod_mat_mul_pml(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)

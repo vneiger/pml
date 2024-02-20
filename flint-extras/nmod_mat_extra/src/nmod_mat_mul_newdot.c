@@ -1,7 +1,8 @@
 #include <flint/flint.h>
 #include <flint/nmod_mat.h>
+#include <flint/nmod_vec.h>  // for _nmod_vec_init
 
-#include "nmod_vec_extra.h"
+#include "nmod_vec_extra.h"  // for dot_product
 
 void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
 {
@@ -24,20 +25,20 @@ void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
     nmod_mat_init(BT, B->c, B->r, B->mod.n);
     nmod_mat_transpose(BT, B);
 
-    // let's go
-    //slong i = 0;
-    //for (; i < A->r - 1; i += 2)
-    //    for (slong j = 0; j < BT->r; j++)
-    //    {
-    //        _nmod_vec_dot2_small_modulus(res, A->rows[i], A->rows[i+1], BT->rows[j], A->c, power_two, p2, pinv2);
-    //        C->rows[i][j] = res[0];
-    //        C->rows[i+1][j] = res[1];
-    //    }
-
-    //for (; i < A->r; i++)
+    // now let's compute
     for (slong i = 0; i < A->r; i++)
         for (slong j = 0; j < BT->r; j++)
             C->rows[i][j] = nmod_vec_dot_product(A->rows[i], BT->rows[j], A->c, nbits, nbits, A->mod);
 
     nmod_mat_clear(BT);
 }
+
+void nmod_mat_mul_nmod_vec_newdot(mp_ptr v, const nmod_mat_t A, mp_srcptr u, ulong len)
+{
+    // number of bits of modulus
+    const ulong nbits = FLINT_BIT_COUNT(A->mod.n);
+
+    for (slong i = 0; i < A->r; i++)
+        v[i] = nmod_vec_dot_product(A->rows[i], u, len, nbits, nbits, A->mod);
+}
+

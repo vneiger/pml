@@ -4,6 +4,7 @@
 #include <flint/nmod_mat.h>
 
 #include "nmod_vec_extra.h"
+#include "nmod_mat_extra.h"
 
 
 /*--------------------------------------------------------------*/
@@ -51,8 +52,22 @@ void check_nmod_vec_dot_product_multi(ulong len, ulong k, ulong bits1, ulong bit
 
     assert (_nmod_vec_equal(uv1, uv2, k));
 
-    nmod_vec_dot_product_multi_v2(uv1, u, (mp_srcptr *) v, len, k, bits1, bits2, mod);
-    assert (_nmod_vec_equal(uv1, uv2, k));
+    // in case, also test mul_nmod_vec_newdot
+    nmod_mat_t vrt;
+    nmod_mat_init(vrt, vr->c, vr->r, vr->mod.n);
+    nmod_mat_transpose(vrt, vr);
+    nmod_mat_mul_nmod_vec_newdot(uv2, vrt, ur, len);
+    assert (_nmod_vec_equal(uv1, uv2, k) && "mat_mul_nmod_vec_newdot");
+
+    // WARNING: temporary, only if nbits small enough!!
+    _nmod_vec_dot_product_multi_1_v1_8(uv1, u, (mp_srcptr *) v, len, k, mod);
+    assert (_nmod_vec_equal(uv1, uv2, k) && "v1_8");
+    _nmod_vec_dot_product_multi_1_v8_8(uv1, u, (mp_srcptr *) v, len, k, mod);
+    assert (_nmod_vec_equal(uv1, uv2, k) && "v8_8");
+    _nmod_vec_dot_product_multi_1_v16_16(uv1, u, (mp_srcptr *) v, len, k, mod);
+    assert (_nmod_vec_equal(uv1, uv2, k) && "v8_32");
+    _nmod_vec_dot_product_multi_1_v16_16(uv1, u, (mp_srcptr *) v, len, k, mod);
+    assert (_nmod_vec_equal(uv1, uv2, k) && "v16_16");
 
     _nmod_vec_clear(u);
     for (ulong i = 0; i < len; i++)
