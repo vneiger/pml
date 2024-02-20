@@ -46,7 +46,7 @@ mp_limb_t _nmod_vec_dot_product_1(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t 
     mp_limb_t res = UWORD(0);
 
     ulong i = 0;
-    for (; i+8 < len; i++)
+    for (; i+7 < len; i += 8)
     {
         res +=   v1[i+0] * v2[i+0]
                + v1[i+1] * v2[i+1]
