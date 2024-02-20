@@ -230,32 +230,115 @@ void _nmod_vec_dot_product_multi_1(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
         NMOD_RED(uv[j], uv[j], mod);
 }
 
-//static inline
-//void _nmod_vec_dot_product_multi_1_v2(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
-//                                      ulong len, ulong k, nmod_t mod)
-//{
-//    _nmod_vec_zero(uv, k);
-//    for (ulong i = 0; i < len; i++)
-//    {
-//        ulong j = 0;
-//        for (; j+8 < k; j += 8)
-//        {
-//            uv[j+0] += u[i] * v[i][j+0];
-//            uv[j+1] += u[i] * v[i][j+1];
-//            uv[j+2] += u[i] * v[i][j+2];
-//            uv[j+3] += u[i] * v[i][j+3];
-//            uv[j+4] += u[i] * v[i][j+4];
-//            uv[j+5] += u[i] * v[i][j+5];
-//            uv[j+6] += u[i] * v[i][j+6];
-//            uv[j+7] += u[i] * v[i][j+7];
-//        }
-//        for (; j < k; j++)
-//            uv[j] += u[i] * v[i][j];
-//    }
-//
-//    for (ulong j = 0; j < k; j++)
-//        NMOD_RED(uv[j], uv[j], mod);
-//}
+static inline
+void _nmod_vec_dot_product_multi_1_v2(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                      ulong len, ulong k, nmod_t mod)
+{
+    _nmod_vec_zero(uv, k);
+    ulong i = 0;
+    for (; i+8 < len; i += 8)
+    {
+        ulong j = 0;
+        for (; j+8 < k; j += 8)
+        {
+            uv[j+0] +=   u[i+0] * v[i+0][j+0]
+                       + u[i+1] * v[i+1][j+0]
+                       + u[i+2] * v[i+2][j+0]
+                       + u[i+3] * v[i+3][j+0]
+                       + u[i+4] * v[i+4][j+0]
+                       + u[i+5] * v[i+5][j+0]
+                       + u[i+6] * v[i+6][j+0]
+                       + u[i+7] * v[i+7][j+0];
+            uv[j+1] +=   u[i+0] * v[i+0][j+1]
+                       + u[i+1] * v[i+1][j+1]
+                       + u[i+2] * v[i+2][j+1]
+                       + u[i+3] * v[i+3][j+1]
+                       + u[i+4] * v[i+4][j+1]
+                       + u[i+5] * v[i+5][j+1]
+                       + u[i+6] * v[i+6][j+1]
+                       + u[i+7] * v[i+7][j+1];
+            uv[j+2] +=   u[i+0] * v[i+0][j+2]
+                       + u[i+1] * v[i+1][j+2]
+                       + u[i+2] * v[i+2][j+2]
+                       + u[i+3] * v[i+3][j+2]
+                       + u[i+4] * v[i+4][j+2]
+                       + u[i+5] * v[i+5][j+2]
+                       + u[i+6] * v[i+6][j+2]
+                       + u[i+7] * v[i+7][j+2];
+            uv[j+3] +=   u[i+0] * v[i+0][j+3]
+                       + u[i+1] * v[i+1][j+3]
+                       + u[i+2] * v[i+2][j+3]
+                       + u[i+3] * v[i+3][j+3]
+                       + u[i+4] * v[i+4][j+3]
+                       + u[i+5] * v[i+5][j+3]
+                       + u[i+6] * v[i+6][j+3]
+                       + u[i+7] * v[i+7][j+3];
+            uv[j+4] +=   u[i+0] * v[i+0][j+4]
+                       + u[i+1] * v[i+1][j+4]
+                       + u[i+2] * v[i+2][j+4]
+                       + u[i+3] * v[i+3][j+4]
+                       + u[i+4] * v[i+4][j+4]
+                       + u[i+5] * v[i+5][j+4]
+                       + u[i+6] * v[i+6][j+4]
+                       + u[i+7] * v[i+7][j+4];
+            uv[j+5] +=   u[i+0] * v[i+0][j+5]
+                       + u[i+1] * v[i+1][j+5]
+                       + u[i+2] * v[i+2][j+5]
+                       + u[i+3] * v[i+3][j+5]
+                       + u[i+4] * v[i+4][j+5]
+                       + u[i+5] * v[i+5][j+5]
+                       + u[i+6] * v[i+6][j+5]
+                       + u[i+7] * v[i+7][j+5];
+            uv[j+6] +=   u[i+0] * v[i+0][j+6]
+                       + u[i+1] * v[i+1][j+6]
+                       + u[i+2] * v[i+2][j+6]
+                       + u[i+3] * v[i+3][j+6]
+                       + u[i+4] * v[i+4][j+6]
+                       + u[i+5] * v[i+5][j+6]
+                       + u[i+6] * v[i+6][j+6]
+                       + u[i+7] * v[i+7][j+6];
+            uv[j+7] +=   u[i+0] * v[i+0][j+7]
+                       + u[i+1] * v[i+1][j+7]
+                       + u[i+2] * v[i+2][j+7]
+                       + u[i+3] * v[i+3][j+7]
+                       + u[i+4] * v[i+4][j+7]
+                       + u[i+5] * v[i+5][j+7]
+                       + u[i+6] * v[i+6][j+7]
+                       + u[i+7] * v[i+7][j+7];
+        }
+        for (; j < k; j++)
+        {
+            uv[j] +=   u[i+0] * v[i+0][j]
+                     + u[i+1] * v[i+1][j]
+                     + u[i+2] * v[i+2][j]
+                     + u[i+3] * v[i+3][j]
+                     + u[i+4] * v[i+4][j]
+                     + u[i+5] * v[i+5][j]
+                     + u[i+6] * v[i+6][j]
+                     + u[i+7] * v[i+7][j];
+        }
+    }
+    for (; i < len; i++)
+    {
+        ulong j = 0;
+        for (; j+8 < k; j += 8)
+        {
+            uv[j+0] += u[i] * v[i][j+0];
+            uv[j+1] += u[i] * v[i][j+1];
+            uv[j+2] += u[i] * v[i][j+2];
+            uv[j+3] += u[i] * v[i][j+3];
+            uv[j+4] += u[i] * v[i][j+4];
+            uv[j+5] += u[i] * v[i][j+5];
+            uv[j+6] += u[i] * v[i][j+6];
+            uv[j+7] += u[i] * v[i][j+7];
+        }
+        for (; j < k; j++)
+            uv[j] += u[i] * v[i][j];
+    }
+
+    for (ulong j = 0; j < k; j++)
+        NMOD_RED(uv[j], uv[j], mod);
+}
 
 static inline
 void _nmod_vec_dot_product_multi_2(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
@@ -297,6 +380,36 @@ void nmod_vec_dot_product_multi(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
     if (n_limbs == 1)
     {
         _nmod_vec_dot_product_multi_1(uv, u, v, len, k, mod);
+        return;
+    }
+    // n_limbs == 0
+    _nmod_vec_zero(uv, k);
+    return;
+}
+
+
+void nmod_vec_dot_product_multi_v2(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                ulong len, ulong k,
+                                ulong max_bits_u, ulong max_bits_v,
+                                nmod_t mod)
+{
+    const ulong n_limbs = _nmod_vec_dot_bound_limbs_unbalanced(len, max_bits_u, max_bits_v);
+
+    if (n_limbs == 2)
+    {
+        printf("NOT IMPLEMENTED YET\n");
+        _nmod_vec_dot_product_multi_2(uv, u, v, len, k, mod);
+        return;
+    }
+    if (n_limbs == 3)
+    {
+        printf("NOT IMPLEMENTED YET\n");
+        _nmod_vec_dot_product_multi_3(uv, u, v, len, max_bits_u, max_bits_v, k, mod);
+        return;
+    }
+    if (n_limbs == 1)
+    {
+        _nmod_vec_dot_product_multi_1_v2(uv, u, v, len, k, mod);
         return;
     }
     // n_limbs == 0

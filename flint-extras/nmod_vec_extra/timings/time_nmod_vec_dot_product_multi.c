@@ -41,13 +41,13 @@ void time_nmod_vec_dot_product_multi(ulong len, ulong k, ulong maxbits1, ulong m
         ur[i] = u[i] % n;
     nmod_mat_rand(vmat, state);
 
-    double t1, t2;
+    double t1, t2, t3;
     clock_t tt;
     long nb_iter;
 
     t1 = 0.0;
     nb_iter = 0;
-    while (t1 < 0.2)
+    while (t1 < 0.5)
     //while (t1 < 0.5 && nb_iter<2)
     {
         mp_ptr uv = _nmod_vec_init(k);
@@ -67,16 +67,21 @@ void time_nmod_vec_dot_product_multi(ulong len, ulong k, ulong maxbits1, ulong m
 
     t2 = 0.0;
     nb_iter = 0;
-    while (t2 < 0.2)
+    while (t2 < 0.5)
     //while (t2 < 0.5 && nb_iter<2)
     {
         mp_ptr uv = _nmod_vec_init(k);
         tt = clock();
-        nmod_mat_nmod_vec_mul(uv, ur, len, vmat);
-        nmod_mat_nmod_vec_mul(uv, ur, len, vmat);
-        nmod_mat_nmod_vec_mul(uv, ur, len, vmat);
-        nmod_mat_nmod_vec_mul(uv, ur, len, vmat);
-        nmod_mat_nmod_vec_mul(uv, ur, len, vmat);
+        //nmod_mat_nmod_vec_mul(uv, ur, len, vmat);
+        //nmod_mat_nmod_vec_mul(uv, ur, len, vmat);
+        //nmod_mat_nmod_vec_mul(uv, ur, len, vmat);
+        //nmod_mat_nmod_vec_mul(uv, ur, len, vmat);
+        //nmod_mat_nmod_vec_mul(uv, ur, len, vmat);
+        nmod_mat_mul_nmod_vec(uv, vmat, ur, len);
+        nmod_mat_mul_nmod_vec(uv, vmat, ur, len);
+        nmod_mat_mul_nmod_vec(uv, vmat, ur, len);
+        nmod_mat_mul_nmod_vec(uv, vmat, ur, len);
+        nmod_mat_mul_nmod_vec(uv, vmat, ur, len);
         t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         _nmod_vec_clear(uv);
         nb_iter += 5;
@@ -84,6 +89,26 @@ void time_nmod_vec_dot_product_multi(ulong len, ulong k, ulong maxbits1, ulong m
     //t = 1000 * t;
     t2 /= nb_iter;
     printf("%.1e\t", t2);
+
+    t3 = 0.0;
+    nb_iter = 0;
+    while (t3 < 0.5)
+    //while (t3 < 0.5 && nb_iter<2)
+    {
+        mp_ptr uv = _nmod_vec_init(k);
+        tt = clock();
+        nmod_vec_dot_product_multi_v2(uv, u, (mp_srcptr *) v, len, k, maxbits1, maxbits2, mod);
+        nmod_vec_dot_product_multi_v2(uv, u, (mp_srcptr *) v, len, k, maxbits1, maxbits2, mod);
+        nmod_vec_dot_product_multi_v2(uv, u, (mp_srcptr *) v, len, k, maxbits1, maxbits2, mod);
+        nmod_vec_dot_product_multi_v2(uv, u, (mp_srcptr *) v, len, k, maxbits1, maxbits2, mod);
+        nmod_vec_dot_product_multi_v2(uv, u, (mp_srcptr *) v, len, k, maxbits1, maxbits2, mod);
+        t3 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        _nmod_vec_clear(uv);
+        nb_iter += 5;
+    }
+    //t = 1000 * t;
+    t3 /= nb_iter;
+    printf("%.1e\t", t3);
 
     _nmod_vec_clear(u);
     for (ulong i = 0; i < len; i++)
@@ -99,6 +124,8 @@ int main(int argc, char ** argv)
 {
     flint_rand_t state;
     flint_randinit(state);
+
+
 
     // launch full suite
     if (argc == 1)
@@ -120,6 +147,11 @@ int main(int argc, char ** argv)
         const ulong nbits[11] = { 4, 11, 21, 26, 30, 31, 32, 41, 51, 61, 64 };
 
         const ulong dims[24] = {1,2,3,4,5,8,12,16,20,25,30,40,50,75,100,150,200,300,400,500,750,1000,1500,2000};
+
+        // warmup
+        printf("Warmup:");
+        time_nmod_vec_dot_product_multi(16, 16, nbits[3], nbits[3], mods[3], state);
+        printf("\n");
 
         printf("nbits\tbits1\tbits2\tlen\tk\tmulti\tflint\ttrspdot\n");
         for (slong i = 0; i < 11; i++)
@@ -148,6 +180,11 @@ int main(int argc, char ** argv)
     // fixed number of bits
     else if (argc == 2)
     {
+        // warmup
+        printf("Warmup:");
+        time_nmod_vec_dot_product_multi(16, 16, 20, 20, (UWORD(1) << 19) + 1, state);
+        printf("\n");
+
         printf("nbits\tbits1\tbits2\tlen\tk\tmulti\tflint\ttrspdot\n");
         const ulong nbit = atoi(argv[1]);
         const ulong dims[24] = {1,2,3,4,5,8,12,16,20,25,30,40,50,75,100,150,200,300,400,500,750,1000,1500,2000};
@@ -165,6 +202,11 @@ int main(int argc, char ** argv)
     // fixed number of bits and dimensions
     else if (argc == 4)
     {
+        // warmup
+        printf("Warmup:");
+        time_nmod_vec_dot_product_multi(16, 16, 20, 20, (UWORD(1) << 19) + 1, state);
+        printf("\n");
+
         printf("nbits\tbits1\tbits2\tlen\tk\tmulti\tflint\ttrspdot\n");
         const ulong nbit = atoi(argv[1]);
         const ulong len = atoi(argv[2]);

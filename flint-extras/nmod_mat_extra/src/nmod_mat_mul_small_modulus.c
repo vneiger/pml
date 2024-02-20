@@ -36,7 +36,7 @@ void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat
     // let's go
     mp_limb_t res[2];
     slong i = 0;
-    for (; i < A->r - 1; i += 2)
+    for (; i+1 < A->r; i += 2)
         for (slong j = 0; j < BT->r; j++)
         {
             _nmod_vec_dot2_small_modulus(res, A->rows[i], A->rows[i+1], BT->rows[j], A->c, power_two, p2, pinv2);

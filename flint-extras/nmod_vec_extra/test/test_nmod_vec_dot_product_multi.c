@@ -51,6 +51,9 @@ void check_nmod_vec_dot_product_multi(ulong len, ulong k, ulong bits1, ulong bit
 
     assert (_nmod_vec_equal(uv1, uv2, k));
 
+    nmod_vec_dot_product_multi_v2(uv1, u, (mp_srcptr *) v, len, k, bits1, bits2, mod);
+    assert (_nmod_vec_equal(uv1, uv2, k));
+
     _nmod_vec_clear(u);
     for (ulong i = 0; i < len; i++)
         _nmod_vec_clear(v[i]);
@@ -87,8 +90,8 @@ int main()
                 check_nmod_vec_dot_product_multi(len, k, 3, 3, (UWORD(1) << 3) + 1, state);
                 check_nmod_vec_dot_product_multi(len, k, 5, 10, (UWORD(1) << 10) + 1, state);
                 check_nmod_vec_dot_product_multi(len, k, 10, 10, (UWORD(1) << 10) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 10, 20, (UWORD(1) << 20) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 20, 20, (UWORD(1) << 20) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 10, 20, (UWORD(1) << 20) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 20, 20, (UWORD(1) << 20) + 1, state);
                 //check_nmod_vec_dot_product_multi(len, k, 15, 29, (UWORD(1) << 29) + 1, state);
                 //check_nmod_vec_dot_product_multi(len, k, 29, 29, (UWORD(1) << 29) + 1, state);
                 //check_nmod_vec_dot_product_multi(len, k, 15, 30, (UWORD(1) << 30) + 1, state);

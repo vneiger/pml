@@ -100,6 +100,10 @@ void nmod_vec_dot_product_multi(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                 ulong len, ulong k,
                                 ulong max_bits_u, ulong max_bits_v,
                                 nmod_t mod);
+void nmod_vec_dot_product_multi_v2(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                ulong len, ulong k,
+                                ulong max_bits_u, ulong max_bits_v,
+                                nmod_t mod);
 
 #ifdef __cplusplus
 }
