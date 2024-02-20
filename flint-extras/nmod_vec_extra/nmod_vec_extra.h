@@ -37,6 +37,11 @@ void _nmod_vec_rand(mp_ptr vec,
 /*--------------------------------------------------------------*/
 void nmod_vec_primes(mp_ptr v, slong n, mp_bitcnt_t s);
 
+/**********************************************************************
+*                            DOT PRODUCT                             *
+**********************************************************************/
+
+
 /* ------------------------------------------------------------ */
 /* v1 and v2 have length at least len, len < 2^FLINT_BITS      */
 /* all entries of v1 have <= max_bits1 bits <= FLINT_BITS       */
@@ -49,7 +54,7 @@ void nmod_vec_integer_dot_product(mp_ptr res,
                                   ulong len, ulong max_bits1, ulong max_bits2);
 
 /*  ------------------------------------------------------------ */
-/** v1 and v2 have length at least len, len <= 2^FLINT_BITS      */
+/** v1 and v2 have length at least len, len < 2^FLINT_BITS       */
 /** all entries of v1 have <= max_bits1 bits <= FLINT_BITS       */
 /** all entries of v2 have <= max_bits2 bits <= FLINT_BITS       */
 /** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
@@ -79,6 +84,22 @@ void _nmod_vec_dot2_small_modulus(mp_ptr res,
                                   mp_ptr a1, mp_ptr a2, mp_ptr b, ulong len,
                                   mp_limb_t power_two,
                                   vec2d p2, vec2d pinv2);
+
+/** Several dot products with same left operand, as in vector-matrix product.
+ *
+ * . u has length at least len, len < 2^FLINT_BITS
+ * . all entries of u  have <= max_bits_u bits <= FLINT_BITS
+ * . v points to at least len vectors v[0],..,v[len-1] each of length
+ * at least k, with entries of <= max_bits_v bits <= FLINT_BITS
+ * . computes uv[j] = sum(u[i]*v[i][j], 0 <= i < len) modulo mod.n,
+ * for 0 <= j < k
+ * . does not assume input entries are reduced modulo mod.n
+ *
+ */
+void nmod_vec_dot_product_multi(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                ulong len, ulong k,
+                                ulong max_bits_u, ulong max_bits_v,
+                                nmod_t mod);
 
 #ifdef __cplusplus
 }
