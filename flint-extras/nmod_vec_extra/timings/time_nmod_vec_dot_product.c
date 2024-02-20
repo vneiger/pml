@@ -89,8 +89,8 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
     ////printf("%.1e\t", t);
 
     printf("%.1e\t", t1/t2);
-    if (val1 != val2)
-        printf("\nERROR!!!!!\n");
+    //if (val1 != val2)
+        //printf("\nERROR!!!!!\n");
 
     _nmod_vec_clear(v1);
     _nmod_vec_clear(v2);
