@@ -3,11 +3,19 @@
 Additions to the NTL and FLINT libraries, with a focus on univariate polynomial
 matrices, structured matrices, and their applications.
 
-Authors of NTL version: Seung Gyu Hyun, Vincent Neiger, Eric Schost
-
-Authors of FLINT version, and current maintainers: Vincent Neiger, Eric Schost
-
 Version 0.3
+
+## Authors
+
+Current maintainers:
+
+ - Vincent Neiger
+ - Eric Schost
+
+Contributors:
+
+ - Seung Gyu Hyun
+ - Kevin Tran
 
 ## Licensing
 
@@ -20,6 +28,32 @@ PML v0.3 is heavily based on [NTL](https://libntl.org/) and
 [FLINT](https://flintlib.org/). See the file `ntl-extras/COPYING_NTL` for
 NTL's copyright notice. FLINT is distributed under LGPL 2.1 (GNU Lesser General
 Public License), see `flint-extras/COPYING_FLINT` for the license.
+
+## Citing PML
+
+```
+@inproceedings{HyunNeigerSchost2019,
+  author = {Hyun, S. G. and Neiger, V. and Schost, {\'E}.},
+  title = {Implementations of Efficient Univariate Polynomial Matrix Algorithms and Application to Bivariate Resultants},
+  year = {2019},
+  isbn = {9781450360845},
+  publisher = {ACM},
+  doi = {10.1145/3326229.3326272},
+  booktitle = {Proceedings ISSAC 2019},
+  pages = {235--242},
+  numpages = {8},
+  keywords = {algorithms, implementation, resultant, polynomial matrices},
+  note = {\url{https://github.com/vneiger/pml}},
+}
+
+@manual{pml,
+    key = {PML},
+    author = {The {PML} team},
+    title = {{PML}: {P}olynomial {M}atrix {L}ibrary},
+    year = {2023},
+    note = {Version 0.3, \url{https://github.com/vneiger/pml}}
+}
+```
 
 ## Installation
 

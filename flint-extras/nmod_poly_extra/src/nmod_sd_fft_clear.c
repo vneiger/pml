@@ -23,5 +23,7 @@ void nmod_sd_fft_clear(nmod_sd_fft_t F)
     flint_free(F->powers_w);
     flint_free(F->powers_inv_w_t);
     flint_free(F->powers_inv_2);
-    flint_free(F->powers_inv_w_over_2);
+
+    if (F->order > 0)
+        flint_free(F->powers_inv_w_over_2);
 }

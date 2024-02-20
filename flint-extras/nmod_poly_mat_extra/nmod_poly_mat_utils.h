@@ -9,13 +9,13 @@
  *
  */
 
-#include <flint/nmod_mat.h>
-#include <flint/fmpz_mat.h>
-#include <flint/nmod_poly_mat.h>
+#include <flint/nmod_types.h>
+#include <flint/fmpz_types.h> // for fmpz_mat degree matrix
+#include <flint/nmod_poly.h> // for nmod_poly_swap
 
 #include "nmod_poly_mat_mat_poly.h" // TODO remove
+#include "nmod_poly_mat_forms.h" // for orientation
 #include "nmod_mat_poly.h"
-#include "nmod_poly_mat_forms.h"
 
 #ifdef __cplusplus
 extern "C" {

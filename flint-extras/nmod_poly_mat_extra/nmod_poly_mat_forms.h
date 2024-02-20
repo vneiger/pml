@@ -18,9 +18,9 @@
  *
  */
 
-#include <flint/fmpz_mat.h> // for degree matrix
-#include <flint/nmod_mat.h>
-#include <flint/nmod_poly_mat.h>
+#include <flint/fmpz_types.h> // for fmpz_mat (degree matrix)
+//#include <flint/nmod_types.h>
+#include <flint/nmod_poly_mat.h> // fmpz_types not enough, need NMOD_POLY_MAT_INLINE
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,10 +1,8 @@
-#include <flint/flint.h>
-#include <flint/nmod_poly.h>
-#include <flint/nmod_poly_mat.h>
+#include <flint/ulong_extras.h>
 #include <flint/nmod_vec.h>
+#include <flint/nmod.h>
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_forms.h"
-#include "nmod_poly_mat_io.h" // TODO remove, for debugging
 
 #define MAT(i,j) (mat->rows[i] + j)
 #define TSF(i,j) (tsf->rows[i] + j)

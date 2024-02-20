@@ -27,7 +27,7 @@ void nmod_mat_randrank_dense(nmod_mat_t mat,
                              slong rank)
 {
     nmod_mat_randrank(mat, state, rank);
-    nmod_mat_randops(mat, (mat->r+mat->c)*(mat->r+mat->c), state);
+    nmod_mat_randops(mat, state, (mat->r+mat->c)*(mat->r+mat->c));
     // heuristic: number (nrows + ncols)**2 taken through a few experiments to
     // make matrix look rather dense
 }

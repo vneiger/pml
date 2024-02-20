@@ -1,8 +1,10 @@
-#include <flint/flint.h>
-#include <flint/nmod_poly.h>
+#include <time.h>
+#include <stdlib.h>
+#include <flint/nmod_types.h>
 #include <flint/nmod_poly_mat.h>
 
-#include "nmod_poly_mat_extra.h"
+#include "nmod_poly_mat_utils.h"
+#include "nmod_poly_mat_multiply.h"
 
 /*--------------------------------------------------------------*/
 /* multiplies matrices using different implementations          */
@@ -29,19 +31,19 @@ void time_nmod_poly_mat_mul(ulong m, ulong n, ulong p, ulong deg)
 
     printf("%lu\t%lu\t%lu\t%lu\t", m, n, p, deg);
 
-    t = 0.0;
-    nb_iter = 0;
-    while (t < 0.5)
-    {
-        tt = clock();
-        nmod_poly_mat_mul(C, A, B);
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        nb_iter += 1;
-    }
-    t /= nb_iter;
-    printf("%4g\t", t);
+    //t = 0.0;
+    //nb_iter = 0;
+    //while (t < 0.5)
+    //{
+    //    tt = clock();
+    //    nmod_poly_mat_mul(C, A, B);
+    //    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+    //    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+    //    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+    //    nb_iter += 1;
+    //}
+    //t /= nb_iter;
+    //printf("%4g\t", t);
 
     t = 0.0;
     nb_iter = 0;
@@ -73,14 +75,26 @@ int main(int argc, char **argv)
     ulong i;
     flint_set_num_threads(1);
     
-    for (i = 1; i < 300; i += 40)
-        time_nmod_poly_mat_mul(i, i, i, 200);
+    if (argc==1)
+    {
+        for (i = 1; i < 300; i += 40)
+            time_nmod_poly_mat_mul(i, i, i, 200);
 
-    for (i = 1; i < 300; i += 40)
-        time_nmod_poly_mat_mul(i, i, i, 2000);
+        for (i = 1; i < 300; i += 40)
+            time_nmod_poly_mat_mul(i, i, i, 2000);
 
-    for (i = 1; i < 100; i += 20)
-        time_nmod_poly_mat_mul(i, i, i, 20000);
+        for (i = 1; i < 100; i += 20)
+            time_nmod_poly_mat_mul(i, i, i, 20000);
+    }
+
+    else if (argc==5)
+    {
+        long rdim = atoi(argv[1]);
+        long idim = atoi(argv[2]);
+        long cdim = atoi(argv[3]);
+        long deg = atoi(argv[4]);
+        time_nmod_poly_mat_mul(rdim, idim, cdim, deg);
+    }
 
     return 0;
 }

@@ -1,5 +1,4 @@
-#include <flint/nmod_vec.h>
-#include <flint/exception.h>
+#include <flint/ulong_extras.h>  // for n_nextprime
 
 #include "nmod_vec_extra.h"
 
