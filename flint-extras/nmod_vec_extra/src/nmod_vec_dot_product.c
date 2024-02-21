@@ -71,6 +71,17 @@ mp_limb_t _nmod_vec_dot_product_1(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t 
     return res;
 }
 
+mp_limb_t _nmod_vec_dot_product_1_vuint(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+{
+    mp_limb_t res = UWORD(0);
+
+    for (ulong i = 0; i < len; i++)
+        res += ((uint)v1[i]) * v2[i];
+
+    NMOD_RED(res, res, mod);
+    return res;
+}
+
 /*  ------------------------------------------------------------ */
 /** v1 and v2 have length at least len, len < 2^FLINT_BITS       */
 /** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
@@ -159,50 +170,6 @@ mp_limb_t _nmod_vec_dot_product_2_split26(mp_srcptr v1, mp_srcptr v2, ulong len,
     return res;
 }
 
-
-mp_limb_t _nmod_vec_dot_product_2_split26_vec(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
-{
-    uint v1hi[4];
-    uint v1lo[4];
-    uint v2hi[4];
-    uint v2lo[4];
-    ulong ulo = UWORD(0);
-    ulong umi = UWORD(0);
-    ulong uhi = UWORD(0);
-    ulong i = 0;
-    for (; i+3 < len; i += 4)
-    {
-        __ll4_lowhi_parts26(v1lo, v1hi, v1+i);
-        __ll4_lowhi_parts26(v2lo, v2hi, v2+i);
-        ulo += (ulong)v1lo[0] * v2lo[0]
-             + (ulong)v1lo[1] * v2lo[1]
-             + (ulong)v1lo[2] * v2lo[2]
-             + (ulong)v1lo[3] * v2lo[3];
-        umi += (ulong)v1lo[0] * v2hi[0] + (ulong)v1hi[0] * v2lo[0]
-             + (ulong)v1lo[1] * v2hi[1] + (ulong)v1hi[1] * v2lo[1]
-             + (ulong)v1lo[2] * v2hi[2] + (ulong)v1hi[2] * v2lo[2]
-             + (ulong)v1lo[3] * v2hi[3] + (ulong)v1hi[3] * v2lo[3];
-        uhi += (ulong)v1hi[0] * v2hi[0]
-             + (ulong)v1hi[1] * v2hi[1]
-             + (ulong)v1hi[2] * v2hi[2]
-             + (ulong)v1hi[3] * v2hi[3];
-    }
-    for (; i < len; i++)
-    {
-        __ll_lowhi_parts26(v1lo[0], v1hi[0], v1[i]);
-        __ll_lowhi_parts26(v2lo[0], v2hi[0], v2[i]);
-        ulo += (ulong)v1lo[0] * v2lo[0];
-        umi += (ulong)v1lo[0] * v2hi[0] + v1hi[0] * v2lo[0];
-        uhi += (ulong)v1hi[0] * v2hi[0];
-    }
-
-    // result: ulo + 2**26 umi + 2**52 uhi
-    // hi = (umi >> 38) + (uhi >> 12)  ||  lo = (umi << 26) + (uhi << 52) + ulo
-    add_ssaaaa(uhi, ulo, umi>>38, umi<<26, uhi>>12, (uhi<<52)+ulo);
-    mp_limb_t res;
-    NMOD2_RED2(res, uhi, ulo, mod);
-    return res;
-}
 
 /*  ------------------------------------------------------------ */
 /** v1 and v2 have length at least len, len < 2^FLINT_BITS       */

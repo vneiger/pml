@@ -48,6 +48,26 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
 
     if (FLINT_BIT_COUNT(n) <= 31)
     {
+        t1 = 0.0; nb_iter = 0;
+        while (t1 < 0.2)
+        {
+            _nmod_vec_rand(v1, state, len, mod1);
+            _nmod_vec_rand(v2, state, len, mod2);
+            tt = clock();
+            _nmod_vec_dot_product_1_vuint(v1, v2, len, mod);
+            _nmod_vec_dot_product_1_vuint(v1, v2, len, mod);
+            _nmod_vec_dot_product_1_vuint(v1, v2, len, mod);
+            _nmod_vec_dot_product_1_vuint(v1, v2, len, mod);
+            _nmod_vec_dot_product_1_vuint(v1, v2, len, mod);
+            t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+            nb_iter += 5;
+        }
+        t1 /= nb_iter;
+        printf("%.1e\t", t1);
+    }
+
+    if (FLINT_BIT_COUNT(n) <= 31)
+    {
         t2 = 0.0; nb_iter = 0;
         while (t2 < 0.2)
         {
@@ -83,23 +103,6 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
     t2 /= nb_iter;
     printf("%.1e\t", t2);
 
-    t2 = 0.0; nb_iter = 0;
-    while (t2 < 0.2)
-    {
-        _nmod_vec_rand(v1, state, len, mod);
-        _nmod_vec_rand(v2, state, len, mod);
-        tt = clock();
-        _nmod_vec_dot_product_2_split26_vec(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_split26_vec(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_split26_vec(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_split26_vec(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_split26_vec(v1, v2, len, mod);
-        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        nb_iter += 5;
-    }
-    t2 /= nb_iter;
-    printf("%.1e\t", t2);
-
 
     // VERSUS FLINT:
     //int nlimbs = _nmod_vec_dot_bound_limbs(len, mod);
@@ -124,17 +127,20 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
     //printf("%.1e\t", t1/t2);
 
     val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+    if (FLINT_BIT_COUNT(n) <= 25)
+    {
+        val2 = _nmod_vec_dot_product_1_vuint(v1, v2, len, mod);
+        assert (val1 == val2 && "1_vuint");
+    }
     if (FLINT_BIT_COUNT(n) <= 31)
     {
         val2 = _nmod_vec_dot_product_2_split16(v1, v2, len, mod);
-        assert (val1 == val2 && "split16");
+        assert (val1 == val2 && "2_split16");
     }
     if (FLINT_BIT_COUNT(n) <= 56)
     {
-        val2 = _nmod_vec_dot_product_2_split28(v1, v2, len, mod);
-        assert (val1 == val2 && "split28");
-        val2 = _nmod_vec_dot_product_2_split28_vec(v1, v2, len, mod);
-        assert (val1 == val2 && "split28_vec");
+        val2 = _nmod_vec_dot_product_2_split26(v1, v2, len, mod);
+        assert (val1 == val2 && "2_split26");
     }
 
     _nmod_vec_clear(v1);
