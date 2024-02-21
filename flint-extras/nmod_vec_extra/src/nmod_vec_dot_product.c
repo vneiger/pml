@@ -1,8 +1,15 @@
+//#include <flint/longlong.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
 
 #include "nmod_vec_extra.h"
 
+#define nbits_adhoc 32
+#define __ll_B_adhoc (1 << (nbits_adhoc / 2))
+#define __ll_lowhi_parts(tlo,thi,t)       \
+      tlo = (__uint32_t) t;               \
+      thi = ((tlo) >> (nbits_adhoc / 2)); \
+      tlo = (tlo) & (__ll_B_adhoc - 1);
 
 /* ------------------------------------------------------------ */
 /* number of limbs needed for a dot product of length len       */
@@ -96,111 +103,30 @@ mp_limb_t _nmod_vec_dot_product_2(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t 
     return res;
 }
 
-mp_limb_t _nmod_vec_dot_product_2_v4_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+mp_limb_t _nmod_vec_dot_product_2_vuint32(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
 {
-    __uint128_t u = 0;
-
-    ulong i = 0;
-    for (; i+3 < len; i += 4)
+    __uint32_t v1hi, v1lo, v2hi, v2lo;
+    ulong ulo = UWORD(0);
+    ulong umi = UWORD(0);
+    ulong uhi = UWORD(0);
+    for (ulong i = 0; i < len; i++)
     {
-        u +=   (__uint128_t)v1[i+0] * (__uint128_t)v2[i+0]
-             + (__uint128_t)v1[i+1] * (__uint128_t)v2[i+1]
-             + (__uint128_t)v1[i+2] * (__uint128_t)v2[i+2]
-             + (__uint128_t)v1[i+3] * (__uint128_t)v2[i+3];
-    }
-    for (; i < len; i++)
-        u += (__uint128_t)v1[i] * (__uint128_t)v2[i];
-
-    const mp_limb_t uhi = (mp_limb_t) (u >> 64);
-    const mp_limb_t ulo = (mp_limb_t) (u);
-
-    mp_limb_t res;
-    NMOD2_RED2(res, uhi, ulo, mod);
-    return res;
-}
-
-mp_limb_t _nmod_vec_dot_product_2_v8_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
-{
-    __uint128_t u = 0;
-
-    ulong i = 0;
-    for (; i+7 < len; i += 8)
-    {
-        u +=   (__uint128_t)v1[i+0] * (__uint128_t)v2[i+0]
-             + (__uint128_t)v1[i+1] * (__uint128_t)v2[i+1]
-             + (__uint128_t)v1[i+2] * (__uint128_t)v2[i+2]
-             + (__uint128_t)v1[i+3] * (__uint128_t)v2[i+3]
-             + (__uint128_t)v1[i+4] * (__uint128_t)v2[i+4]
-             + (__uint128_t)v1[i+5] * (__uint128_t)v2[i+5]
-             + (__uint128_t)v1[i+6] * (__uint128_t)v2[i+6]
-             + (__uint128_t)v1[i+7] * (__uint128_t)v2[i+7];
-    }
-    for (; i < len; i++)
-        u += (__uint128_t)v1[i] * (__uint128_t)v2[i];
-
-    const mp_limb_t uhi = (mp_limb_t) (u >> 64);
-    const mp_limb_t ulo = (mp_limb_t) (u);
-
-    mp_limb_t res;
-    NMOD2_RED2(res, uhi, ulo, mod);
-    return res;
-}
-
-mp_limb_t _nmod_vec_dot_product_2_vec4_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
-{
-    __uint128_t vecu[4] = {0,0,0,0};
-
-    ulong i = 0;
-    for (; i+3 < len; i += 4)
-    {
-        vecu[0] += (__uint128_t)v1[i+0] * (__uint128_t)v2[i+0];
-        vecu[1] += (__uint128_t)v1[i+1] * (__uint128_t)v2[i+1];
-        vecu[2] += (__uint128_t)v1[i+2] * (__uint128_t)v2[i+2];
-        vecu[3] += (__uint128_t)v1[i+3] * (__uint128_t)v2[i+3];
+        __ll_lowhi_parts(v1lo, v1hi, v1[i]);
+        __ll_lowhi_parts(v2lo, v2hi, v2[i]);
+        ulo += v1lo * v2lo;
+        umi += v1lo * v2hi + v1hi * v2lo;
+        uhi += v1hi * v2hi;
     }
 
-    __uint128_t u = vecu[0] + vecu[1] + vecu[2] + vecu[3];
-    ;
-
-    for (; i < len; i++)
-        u += (__uint128_t)v1[i] * (__uint128_t)v2[i];
-
-    const mp_limb_t uhi = (mp_limb_t) (u >> 64);
-    const mp_limb_t ulo = (mp_limb_t) (u);
-
+    // result:
+    // ulo + 2**x umi + 2**(2x) uhi,  x = nbits_adhoc / 2
+    // umi : split from 0...63-x and 64-x to 64
+    // uhi : split from 0...63-2x and 63-2x to 64
+    ulong of = (umi >> (64 - nbits_adhoc/2)) + (uhi >> (64 - nbits_adhoc));
+    ulong uf = ((umi & ((1UL << (64 - nbits_adhoc/2)) - 1)) << (nbits_adhoc/2))
+             + ((uhi & ((1UL << (64 - nbits_adhoc)) - 1)) << (nbits_adhoc));
     mp_limb_t res;
-    NMOD2_RED2(res, uhi, ulo, mod);
-    return res;
-}
-
-mp_limb_t _nmod_vec_dot_product_2_vec8_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
-{
-    __uint128_t vecu[8] = {0,0,0,0};
-
-    ulong i = 0;
-    for (; i+7 < len; i += 8)
-    {
-        vecu[0] += (__uint128_t)v1[i+0] * (__uint128_t)v2[i+0];
-        vecu[1] += (__uint128_t)v1[i+1] * (__uint128_t)v2[i+1];
-        vecu[2] += (__uint128_t)v1[i+2] * (__uint128_t)v2[i+2];
-        vecu[3] += (__uint128_t)v1[i+3] * (__uint128_t)v2[i+3];
-        vecu[0] += (__uint128_t)v1[i+4] * (__uint128_t)v2[i+4];
-        vecu[1] += (__uint128_t)v1[i+5] * (__uint128_t)v2[i+5];
-        vecu[2] += (__uint128_t)v1[i+6] * (__uint128_t)v2[i+6];
-        vecu[3] += (__uint128_t)v1[i+7] * (__uint128_t)v2[i+7];
-    }
-
-    __uint128_t u = vecu[0] + vecu[1] + vecu[2] + vecu[3];
-    ;
-
-    for (; i < len; i++)
-        u += (__uint128_t)v1[i] * (__uint128_t)v2[i];
-
-    const mp_limb_t uhi = (mp_limb_t) (u >> 64);
-    const mp_limb_t ulo = (mp_limb_t) (u);
-
-    mp_limb_t res;
-    NMOD2_RED2(res, uhi, ulo, mod);
+    NMOD2_RED2(res, of, uf + ulo, mod);
     return res;
 }
 
