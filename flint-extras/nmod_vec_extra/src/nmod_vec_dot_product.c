@@ -96,11 +96,19 @@ mp_limb_t _nmod_vec_dot_product_2(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t 
     return res;
 }
 
-mp_limb_t _nmod_vec_dot_product_2_v0_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+mp_limb_t _nmod_vec_dot_product_2_v4_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
 {
     __uint128_t u = 0;
 
-    for (ulong i = 0; i < len; i++)
+    ulong i = 0;
+    for (; i+3 < len; i += 4)
+    {
+        u +=   (__uint128_t)v1[i+0] * (__uint128_t)v2[i+0]
+             + (__uint128_t)v1[i+1] * (__uint128_t)v2[i+1]
+             + (__uint128_t)v1[i+2] * (__uint128_t)v2[i+2]
+             + (__uint128_t)v1[i+3] * (__uint128_t)v2[i+3];
+    }
+    for (; i < len; i++)
         u += (__uint128_t)v1[i] * (__uint128_t)v2[i];
 
     const mp_limb_t uhi = (mp_limb_t) (u >> 64);
@@ -138,67 +146,20 @@ mp_limb_t _nmod_vec_dot_product_2_v8_int128(mp_srcptr v1, mp_srcptr v2, ulong le
     return res;
 }
 
-mp_limb_t _nmod_vec_dot_product_2_v16_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+mp_limb_t _nmod_vec_dot_product_2_vec4_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
 {
-    __uint128_t u = 0;
+    __uint128_t vecu[4] = {0,0,0,0};
 
     ulong i = 0;
-    for (; i+15 < len; i += 16)
+    for (; i+3 < len; i += 4)
     {
-        u +=   (__uint128_t)v1[i+0] * (__uint128_t)v2[i+0]
-             + (__uint128_t)v1[i+1] * (__uint128_t)v2[i+1]
-             + (__uint128_t)v1[i+2] * (__uint128_t)v2[i+2]
-             + (__uint128_t)v1[i+3] * (__uint128_t)v2[i+3]
-             + (__uint128_t)v1[i+4] * (__uint128_t)v2[i+4]
-             + (__uint128_t)v1[i+5] * (__uint128_t)v2[i+5]
-             + (__uint128_t)v1[i+6] * (__uint128_t)v2[i+6]
-             + (__uint128_t)v1[i+7] * (__uint128_t)v2[i+7]
-             + (__uint128_t)v1[i+8] * (__uint128_t)v2[i+8]
-             + (__uint128_t)v1[i+9] * (__uint128_t)v2[i+9]
-             + (__uint128_t)v1[i+10] * (__uint128_t)v2[i+10]
-             + (__uint128_t)v1[i+11] * (__uint128_t)v2[i+11]
-             + (__uint128_t)v1[i+12] * (__uint128_t)v2[i+12]
-             + (__uint128_t)v1[i+13] * (__uint128_t)v2[i+13]
-             + (__uint128_t)v1[i+14] * (__uint128_t)v2[i+14]
-             + (__uint128_t)v1[i+15] * (__uint128_t)v2[i+15];
-    }
-    for (; i < len; i++)
-        u += (__uint128_t)v1[i] * (__uint128_t)v2[i];
-
-    const mp_limb_t uhi = (mp_limb_t) (u >> 64);
-    const mp_limb_t ulo = (mp_limb_t) (u);
-
-    mp_limb_t res;
-    NMOD2_RED2(res, uhi, ulo, mod);
-    return res;
-}
-
-mp_limb_t _nmod_vec_dot_product_2_vec16_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
-{
-    __uint128_t vecu[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
-    ulong i = 0;
-    for (; i+15 < len; i += 16)
-    {
-        vecu[ 0] += (__uint128_t)v1[i+0] * (__uint128_t)v2[i+0];
-        vecu[ 1] += (__uint128_t)v1[i+1] * (__uint128_t)v2[i+1];
-        vecu[ 2] += (__uint128_t)v1[i+2] * (__uint128_t)v2[i+2];
-        vecu[ 3] += (__uint128_t)v1[i+3] * (__uint128_t)v2[i+3];
-        vecu[ 4] += (__uint128_t)v1[i+4] * (__uint128_t)v2[i+4];
-        vecu[ 5] += (__uint128_t)v1[i+5] * (__uint128_t)v2[i+5];
-        vecu[ 6] += (__uint128_t)v1[i+6] * (__uint128_t)v2[i+6];
-        vecu[ 7] += (__uint128_t)v1[i+7] * (__uint128_t)v2[i+7];
-        vecu[ 8] += (__uint128_t)v1[i+8] * (__uint128_t)v2[i+8];
-        vecu[ 9] += (__uint128_t)v1[i+9] * (__uint128_t)v2[i+9];
-        vecu[10] += (__uint128_t)v1[i+10] * (__uint128_t)v2[i+10];
-        vecu[11] += (__uint128_t)v1[i+11] * (__uint128_t)v2[i+11];
-        vecu[12] += (__uint128_t)v1[i+12] * (__uint128_t)v2[i+12];
-        vecu[13] += (__uint128_t)v1[i+13] * (__uint128_t)v2[i+13];
-        vecu[14] += (__uint128_t)v1[i+14] * (__uint128_t)v2[i+14];
-        vecu[15] += (__uint128_t)v1[i+15] * (__uint128_t)v2[i+15];
+        vecu[0] += (__uint128_t)v1[i+0] * (__uint128_t)v2[i+0];
+        vecu[1] += (__uint128_t)v1[i+1] * (__uint128_t)v2[i+1];
+        vecu[2] += (__uint128_t)v1[i+2] * (__uint128_t)v2[i+2];
+        vecu[3] += (__uint128_t)v1[i+3] * (__uint128_t)v2[i+3];
     }
 
-    __uint128_t u = vecu[ 0] + vecu[ 1] + vecu[ 2] + vecu[ 3] + vecu[ 4] + vecu[ 5] + vecu[ 6] + vecu[ 7] + vecu[ 8] + vecu[ 9] + vecu[10] + vecu[11] + vecu[12] + vecu[13] + vecu[14] + vecu[15];
+    __uint128_t u = vecu[0] + vecu[1] + vecu[2] + vecu[3];
     ;
 
     for (; i < len; i++)
@@ -212,147 +173,34 @@ mp_limb_t _nmod_vec_dot_product_2_vec16_int128(mp_srcptr v1, mp_srcptr v2, ulong
     return res;
 }
 
-
-
-
-mp_limb_t _nmod_vec_dot_product_2_v16(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+mp_limb_t _nmod_vec_dot_product_2_vec8_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
 {
-    mp_limb_t s0, s1;
-    mp_limb_t u0 = UWORD(0);
-    mp_limb_t u1 = UWORD(0);
+    __uint128_t vecu[8] = {0,0,0,0};
 
     ulong i = 0;
-    for (; i+15 < len; i += 16)
+    for (; i+7 < len; i += 8)
     {
-        umul_ppmm(s1, s0, v1[i+0], v2[i+0]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+1], v2[i+1]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+2], v2[i+2]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+3], v2[i+3]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+4], v2[i+4]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+5], v2[i+5]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+6], v2[i+6]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+7], v2[i+7]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+8], v2[i+8]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+9], v2[i+9]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+10], v2[i+10]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+11], v2[i+11]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+12], v2[i+12]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+13], v2[i+13]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+14], v2[i+14]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+15], v2[i+15]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-
+        vecu[0] += (__uint128_t)v1[i+0] * (__uint128_t)v2[i+0];
+        vecu[1] += (__uint128_t)v1[i+1] * (__uint128_t)v2[i+1];
+        vecu[2] += (__uint128_t)v1[i+2] * (__uint128_t)v2[i+2];
+        vecu[3] += (__uint128_t)v1[i+3] * (__uint128_t)v2[i+3];
+        vecu[0] += (__uint128_t)v1[i+4] * (__uint128_t)v2[i+4];
+        vecu[1] += (__uint128_t)v1[i+5] * (__uint128_t)v2[i+5];
+        vecu[2] += (__uint128_t)v1[i+6] * (__uint128_t)v2[i+6];
+        vecu[3] += (__uint128_t)v1[i+7] * (__uint128_t)v2[i+7];
     }
+
+    __uint128_t u = vecu[0] + vecu[1] + vecu[2] + vecu[3];
+    ;
 
     for (; i < len; i++)
-    {
-        umul_ppmm(s1, s0, v1[i], v2[i]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-    }
+        u += (__uint128_t)v1[i] * (__uint128_t)v2[i];
+
+    const mp_limb_t uhi = (mp_limb_t) (u >> 64);
+    const mp_limb_t ulo = (mp_limb_t) (u);
 
     mp_limb_t res;
-    NMOD2_RED2(res, u1, u0, mod);
-    return res;
-}
-
-mp_limb_t _nmod_vec_dot_product_2_v32(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
-{
-    mp_limb_t s0, s1;
-    mp_limb_t u0 = UWORD(0);
-    mp_limb_t u1 = UWORD(0);
-
-    ulong i = 0;
-    for (; i+31 < len; i += 32)
-    {
-        umul_ppmm(s1, s0, v1[i+0], v2[i+0]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+1], v2[i+1]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+2], v2[i+2]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+3], v2[i+3]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+4], v2[i+4]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+5], v2[i+5]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+6], v2[i+6]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+7], v2[i+7]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+8], v2[i+8]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+9], v2[i+9]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+10], v2[i+10]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+11], v2[i+11]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+12], v2[i+12]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+13], v2[i+13]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+14], v2[i+14]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+15], v2[i+15]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+16], v2[i+16]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+17], v2[i+17]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+18], v2[i+18]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+19], v2[i+19]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+20], v2[i+20]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+21], v2[i+21]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+22], v2[i+22]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+23], v2[i+23]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+24], v2[i+24]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+25], v2[i+25]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+26], v2[i+26]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+27], v2[i+27]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+28], v2[i+28]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+29], v2[i+29]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+30], v2[i+30]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+31], v2[i+31]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-    }
-
-    for (; i < len; i++)
-    {
-        umul_ppmm(s1, s0, v1[i], v2[i]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-    }
-
-    mp_limb_t res;
-    NMOD2_RED2(res, u1, u0, mod);
+    NMOD2_RED2(res, uhi, ulo, mod);
     return res;
 }
 

@@ -44,6 +44,25 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
     t1 /= nb_iter;
     printf("%.1e\t", t1);
 
+    // v4:
+    t2 = 0.0; nb_iter = 0;
+    while (t2 < 0.2)
+    {
+        _nmod_vec_rand(v1, state, len, mod1);
+        _nmod_vec_rand(v2, state, len, mod2);
+        tt = clock();
+        _nmod_vec_dot_product_2_v4_int128(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_v4_int128(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_v4_int128(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_v4_int128(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_v4_int128(v1, v2, len, mod);
+        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += 5;
+    }
+    t2 /= nb_iter;
+    printf("%.1e\t", t2);
+
+
     // v8:
     t2 = 0.0; nb_iter = 0;
     while (t2 < 0.2)
@@ -62,23 +81,23 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
     t2 /= nb_iter;
     printf("%.1e\t", t2);
 
-    //// v16:
-    //t2 = 0.0; nb_iter = 0;
-    //while (t2 < 0.2)
-    //{
-    //    _nmod_vec_rand(v1, state, len, mod1);
-    //    _nmod_vec_rand(v2, state, len, mod2);
-    //    tt = clock();
-    //    _nmod_vec_dot_product_2_v16_int128(v1, v2, len, mod);
-    //    _nmod_vec_dot_product_2_v16_int128(v1, v2, len, mod);
-    //    _nmod_vec_dot_product_2_v16_int128(v1, v2, len, mod);
-    //    _nmod_vec_dot_product_2_v16_int128(v1, v2, len, mod);
-    //    _nmod_vec_dot_product_2_v16_int128(v1, v2, len, mod);
-    //    t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
-    //    nb_iter += 5;
-    //}
-    //t2 /= nb_iter;
-    //printf("%.1e\t", t2);
+    // vec4:
+    t2 = 0.0; nb_iter = 0;
+    while (t2 < 0.2)
+    {
+        _nmod_vec_rand(v1, state, len, mod1);
+        _nmod_vec_rand(v2, state, len, mod2);
+        tt = clock();
+        _nmod_vec_dot_product_2_vec4_int128(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_vec4_int128(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_vec4_int128(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_vec4_int128(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_vec4_int128(v1, v2, len, mod);
+        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += 5;
+    }
+    t2 /= nb_iter;
+    printf("%.1e\t", t2);
 
     // vec16:
     t2 = 0.0; nb_iter = 0;
@@ -87,34 +106,16 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
         _nmod_vec_rand(v1, state, len, mod1);
         _nmod_vec_rand(v2, state, len, mod2);
         tt = clock();
-        _nmod_vec_dot_product_2_vec16_int128(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vec16_int128(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vec16_int128(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vec16_int128(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vec16_int128(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_vec8_int128(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_vec8_int128(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_vec8_int128(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_vec8_int128(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_vec8_int128(v1, v2, len, mod);
         t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 5;
     }
     t2 /= nb_iter;
     printf("%.1e\t", t2);
-
-    //// v32:
-    //t2 = 0.0; nb_iter = 0;
-    //while (t2 < 0.2)
-    //{
-    //    _nmod_vec_rand(v1, state, len, mod1);
-    //    _nmod_vec_rand(v2, state, len, mod2);
-    //    tt = clock();
-    //    _nmod_vec_dot_product_2_v16(v1, v2, len, mod);
-    //    _nmod_vec_dot_product_2_v16(v1, v2, len, mod);
-    //    _nmod_vec_dot_product_2_v16(v1, v2, len, mod);
-    //    _nmod_vec_dot_product_2_v16(v1, v2, len, mod);
-    //    _nmod_vec_dot_product_2_v16(v1, v2, len, mod);
-    //    t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
-    //    nb_iter += 5;
-    //}
-    //t2 /= nb_iter;
-    //printf("%.1e\t", t2);
 
 
     // VERSUS FLINT:
@@ -140,13 +141,16 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
     //printf("%.1e\t", t1/t2);
 
     val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+    val2 = _nmod_vec_dot_product_2_v4_int128(v1, v2, len, mod);
+    if (val1 != val2)
+        printf("\nERROR!!!!!\n");
     val2 = _nmod_vec_dot_product_2_v8_int128(v1, v2, len, mod);
     if (val1 != val2)
         printf("\nERROR!!!!!\n");
-    val2 = _nmod_vec_dot_product_2_vec16_int128(v1, v2, len, mod);
+    val2 = _nmod_vec_dot_product_2_vec4_int128(v1, v2, len, mod);
     if (val1 != val2)
         printf("\nERROR!!!!!\n");
-    val2 = _nmod_vec_dot_product_2_v16(v1, v2, len, mod);
+    val2 = _nmod_vec_dot_product_2_vec8_int128(v1, v2, len, mod);
     if (val1 != val2)
         printf("\nERROR!!!!!\n");
     //val2 = _nmod_vec_dot_product_2_v32(v1, v2, len, mod);
