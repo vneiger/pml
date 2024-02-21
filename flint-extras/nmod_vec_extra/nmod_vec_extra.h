@@ -63,6 +63,11 @@ void nmod_vec_integer_dot_product(mp_ptr res,
 mp_limb_t nmod_vec_dot_product(mp_srcptr v1, mp_srcptr v2,
                                ulong len, ulong max_bits1, ulong max_bits2,
                                nmod_t mod);
+mp_limb_t _nmod_vec_dot_product_2_v16(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+mp_limb_t _nmod_vec_dot_product_1_v0(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+mp_limb_t _nmod_vec_dot_product_1_v32(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+mp_limb_t _nmod_vec_dot_product_1_vec8(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+mp_limb_t _nmod_vec_dot_product_1_vec32(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
 
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */
@@ -95,6 +100,11 @@ void _nmod_vec_dot2_small_modulus(mp_ptr res,
  * for 0 <= j < k
  * . does not assume input entries are reduced modulo mod.n
  *
+ * \todo variants 8_16, 16_32, 32_32
+ * \todo then, thresholds needed: on two different machines, 
+ * - one (recent, avx512) is most often faster with v8_8 (but sometimes v8_32 better, e.g. len=128 k=16)
+ * - another one (2020, no avx512) is most often faster with v8_32 and v16_16 > v8_8
+ * \todo eventually, to be compared to a good matrix-matrix product with a single row in left operand!
  */
 void nmod_vec_dot_product_multi(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                 ulong len, ulong k,

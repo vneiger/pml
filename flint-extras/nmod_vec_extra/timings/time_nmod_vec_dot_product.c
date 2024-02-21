@@ -27,46 +27,95 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
 
     mp_limb_t val1, val2;
 
-    t1 = 0.0;
-    nb_iter = 0;
+    t1 = 0.0; nb_iter = 0;
     while (t1 < 0.2)
-    //while (t1 < 0.5 && nb_iter<2)
     {
         _nmod_vec_rand(v1, state, len, mod1);
         _nmod_vec_rand(v2, state, len, mod2);
         tt = clock();
-        val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
-        val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
-        val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
-        val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
-        val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+        nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+        nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+        nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+        nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+        nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
         t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 5;
     }
-    //t = 1000 * t;
     t1 /= nb_iter;
-    //printf("%.1e\t", t);
+    printf("%.1e\t", t1);
 
-    // VERSUS v0:
-    t2 = 0.0;
-    nb_iter = 0;
+    // v0:
+    t2 = 0.0; nb_iter = 0;
     while (t2 < 0.2)
-    //while (t2 < 0.5 && nb_iter<2)
     {
         _nmod_vec_rand(v1, state, len, mod1);
         _nmod_vec_rand(v2, state, len, mod2);
         tt = clock();
-        val2 = nmod_vec_dot_product_v0(v1, v2, len, maxbits1, maxbits2, mod);
-        val2 = nmod_vec_dot_product_v0(v1, v2, len, maxbits1, maxbits2, mod);
-        val2 = nmod_vec_dot_product_v0(v1, v2, len, maxbits1, maxbits2, mod);
-        val2 = nmod_vec_dot_product_v0(v1, v2, len, maxbits1, maxbits2, mod);
-        val2 = nmod_vec_dot_product_v0(v1, v2, len, maxbits1, maxbits2, mod);
+        _nmod_vec_dot_product_1_v0(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_v0(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_v0(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_v0(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_v0(v1, v2, len, mod);
         t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 5;
     }
-    //t = 1000 * t;
     t2 /= nb_iter;
-    //printf("%.1e\t", t);
+    printf("%.1e\t", t2);
+
+    // vec8:
+    t2 = 0.0; nb_iter = 0;
+    while (t2 < 0.2)
+    {
+        _nmod_vec_rand(v1, state, len, mod1);
+        _nmod_vec_rand(v2, state, len, mod2);
+        tt = clock();
+        _nmod_vec_dot_product_1_vec8(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_vec8(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_vec8(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_vec8(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_vec8(v1, v2, len, mod);
+        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += 5;
+    }
+    t2 /= nb_iter;
+    printf("%.1e\t", t2);
+
+    // vec32:
+    t2 = 0.0; nb_iter = 0;
+    while (t2 < 0.2)
+    {
+        _nmod_vec_rand(v1, state, len, mod1);
+        _nmod_vec_rand(v2, state, len, mod2);
+        tt = clock();
+        _nmod_vec_dot_product_1_vec32(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_vec32(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_vec32(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_vec32(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_vec32(v1, v2, len, mod);
+        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += 5;
+    }
+    t2 /= nb_iter;
+    printf("%.1e\t", t2);
+
+
+    // v32:
+    t2 = 0.0; nb_iter = 0;
+    while (t2 < 0.2)
+    {
+        _nmod_vec_rand(v1, state, len, mod1);
+        _nmod_vec_rand(v2, state, len, mod2);
+        tt = clock();
+        _nmod_vec_dot_product_1_v32(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_v32(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_v32(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_v32(v1, v2, len, mod);
+        _nmod_vec_dot_product_1_v32(v1, v2, len, mod);
+        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += 5;
+    }
+    t2 /= nb_iter;
+    printf("%.1e\t", t2);
 
     // VERSUS FLINT:
     //int nlimbs = _nmod_vec_dot_bound_limbs(len, mod);
@@ -88,9 +137,23 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
     //t2 /= nb_iter;
     ////printf("%.1e\t", t);
 
-    printf("%.1e\t", t1/t2);
-    //if (val1 != val2)
-        //printf("\nERROR!!!!!\n");
+    //printf("%.1e\t", t1/t2);
+
+    val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+    val2 = _nmod_vec_dot_product_1_v0(v1, v2, len, mod);
+    if (val1 != val2)
+        printf("\nERROR!!!!!\n");
+    val2 = _nmod_vec_dot_product_1_vec8(v1, v2, len, mod);
+    if (val1 != val2)
+        printf("\nERROR!!!!!\n");
+    val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+    val2 = _nmod_vec_dot_product_1_vec32(v1, v2, len, mod);
+    if (val1 != val2)
+        printf("\nERROR!!!!!\n");
+    val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
+    val2 = _nmod_vec_dot_product_1_v32(v1, v2, len, mod);
+    if (val1 != val2)
+        printf("\nERROR!!!!!\n");
 
     _nmod_vec_clear(v1);
     _nmod_vec_clear(v2);
@@ -108,28 +171,28 @@ int main()
     for (slong len = 1; len < 1000; len += 21)
     {
         printf("%ld\t", len);
-        time_nmod_vec_dot_product(len, 1, 3, (UWORD(1) << 3) + 1, state);
-        time_nmod_vec_dot_product(len, 3, 3, (UWORD(1) << 3) + 1, state);
-        time_nmod_vec_dot_product(len, 5, 10, (UWORD(1) << 10) + 1, state);
-        time_nmod_vec_dot_product(len, 10, 10, (UWORD(1) << 10) + 1, state);
-        time_nmod_vec_dot_product(len, 10, 20, (UWORD(1) << 20) + 1, state);
+        //time_nmod_vec_dot_product(len, 1, 3, (UWORD(1) << 3) + 1, state);
+        //time_nmod_vec_dot_product(len, 3, 3, (UWORD(1) << 3) + 1, state);
+        //time_nmod_vec_dot_product(len, 5, 10, (UWORD(1) << 10) + 1, state);
+        //time_nmod_vec_dot_product(len, 10, 10, (UWORD(1) << 10) + 1, state);
+        //time_nmod_vec_dot_product(len, 10, 20, (UWORD(1) << 20) + 1, state);
         time_nmod_vec_dot_product(len, 20, 20, (UWORD(1) << 20) + 1, state);
-        time_nmod_vec_dot_product(len, 15, 29, (UWORD(1) << 29) + 1, state);
-        time_nmod_vec_dot_product(len, 29, 29, (UWORD(1) << 29) + 1, state);
-        time_nmod_vec_dot_product(len, 15, 30, (UWORD(1) << 30) + 1, state);
-        time_nmod_vec_dot_product(len, 30, 30, (UWORD(1) << 30) + 1, state);
-        time_nmod_vec_dot_product(len, 15, 31, (UWORD(1) << 31) + 1, state);
-        time_nmod_vec_dot_product(len, 31, 31, (UWORD(1) << 31) + 1, state);
-        time_nmod_vec_dot_product(len, 16, 32, (UWORD(1) << 32) + 1, state);
-        time_nmod_vec_dot_product(len, 32, 32, (UWORD(1) << 32) + 1, state);
-        time_nmod_vec_dot_product(len, 20, 40, (UWORD(1) << 40) + 1, state);
-        time_nmod_vec_dot_product(len, 40, 40, (UWORD(1) << 40) + 1, state);
-        time_nmod_vec_dot_product(len, 25, 50, (UWORD(1) << 50) + 1, state);
-        time_nmod_vec_dot_product(len, 50, 50, (UWORD(1) << 50) + 1, state);
-        time_nmod_vec_dot_product(len, 30, 60, (UWORD(1) << 60) + 1, state);
-        time_nmod_vec_dot_product(len, 60, 60, (UWORD(1) << 60) + 1, state);
-        time_nmod_vec_dot_product(len, 32, 64, UWORD_MAX, state);
-        time_nmod_vec_dot_product(len, 64, 64, UWORD_MAX, state);
+        //time_nmod_vec_dot_product(len, 15, 29, (UWORD(1) << 29) + 1, state);
+        //time_nmod_vec_dot_product(len, 29, 29, (UWORD(1) << 29) + 1, state);
+        //time_nmod_vec_dot_product(len, 15, 30, (UWORD(1) << 30) + 1, state);
+        //time_nmod_vec_dot_product(len, 30, 30, (UWORD(1) << 30) + 1, state);
+        //time_nmod_vec_dot_product(len, 15, 31, (UWORD(1) << 31) + 1, state);
+        //time_nmod_vec_dot_product(len, 31, 31, (UWORD(1) << 31) + 1, state);
+        //time_nmod_vec_dot_product(len, 16, 32, (UWORD(1) << 32) + 1, state);
+        //time_nmod_vec_dot_product(len, 32, 32, (UWORD(1) << 32) + 1, state);
+        //time_nmod_vec_dot_product(len, 20, 40, (UWORD(1) << 40) + 1, state);
+        //time_nmod_vec_dot_product(len, 40, 40, (UWORD(1) << 40) + 1, state);
+        //time_nmod_vec_dot_product(len, 25, 50, (UWORD(1) << 50) + 1, state);
+        //time_nmod_vec_dot_product(len, 50, 50, (UWORD(1) << 50) + 1, state);
+        //time_nmod_vec_dot_product(len, 30, 60, (UWORD(1) << 60) + 1, state);
+        //time_nmod_vec_dot_product(len, 60, 60, (UWORD(1) << 60) + 1, state);
+        //time_nmod_vec_dot_product(len, 32, 64, UWORD_MAX, state);
+        //time_nmod_vec_dot_product(len, 64, 64, UWORD_MAX, state);
         printf("\n");
     }
 
