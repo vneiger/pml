@@ -63,11 +63,9 @@ void nmod_vec_integer_dot_product(mp_ptr res,
 mp_limb_t nmod_vec_dot_product(mp_srcptr v1, mp_srcptr v2,
                                ulong len, ulong max_bits1, ulong max_bits2,
                                nmod_t mod);
+mp_limb_t _nmod_vec_dot_product_2_v0(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
 mp_limb_t _nmod_vec_dot_product_2_v16(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
-mp_limb_t _nmod_vec_dot_product_1_v0(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
-mp_limb_t _nmod_vec_dot_product_1_v32(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
-mp_limb_t _nmod_vec_dot_product_1_vec8(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
-mp_limb_t _nmod_vec_dot_product_1_vec32(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+mp_limb_t _nmod_vec_dot_product_2_v32(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
 
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */
