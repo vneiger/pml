@@ -10,18 +10,8 @@
       tlo = (tlo) & 0xFFFF;
 
 #define __ll_lowhi_parts26(tlo,thi,t)     \
-      thi = (uint) ((t) >> 26);                  \
+      thi = (uint) ((t) >> 26);           \
       tlo = ((uint)(t)) & 0x3FFFFFF;
-
-#define __ll4_lowhi_parts26(tlo,thi,t)                 \
-      thi[0] = (uint) ((t)[0] >> 26);                  \
-      thi[1] = (uint) ((t)[1] >> 26);                  \
-      thi[2] = (uint) ((t)[2] >> 26);                  \
-      thi[3] = (uint) ((t)[3] >> 26);                  \
-      tlo[0] = ((uint)(t)[0]) & 0x3FFFFFF;             \
-      tlo[1] = ((uint)(t)[1]) & 0x3FFFFFF;             \
-      tlo[2] = ((uint)(t)[2]) & 0x3FFFFFF;             \
-      tlo[3] = ((uint)(t)[3]) & 0x3FFFFFF;
 
 /* ------------------------------------------------------------ */
 /* number of limbs needed for a dot product of length len       */
@@ -71,17 +61,6 @@ mp_limb_t _nmod_vec_dot_product_1(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t 
     return res;
 }
 
-mp_limb_t _nmod_vec_dot_product_1_vuint(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
-{
-    mp_limb_t res = UWORD(0);
-
-    for (ulong i = 0; i < len; i++)
-        res += ((uint)v1[i]) * v2[i];
-
-    NMOD_RED(res, res, mod);
-    return res;
-}
-
 /*  ------------------------------------------------------------ */
 /** v1 and v2 have length at least len, len < 2^FLINT_BITS       */
 /** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
@@ -126,6 +105,7 @@ mp_limb_t _nmod_vec_dot_product_2(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t 
     return res;
 }
 
+// TODO benchmark more, integrate, give precise conditions for when this works
 mp_limb_t _nmod_vec_dot_product_2_split16(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
 {
     uint v1hi, v1lo, v2hi, v2lo;
@@ -147,6 +127,7 @@ mp_limb_t _nmod_vec_dot_product_2_split16(mp_srcptr v1, mp_srcptr v2, ulong len,
     return res;
 }
 
+// TODO benchmark more, integrate, give precise conditions for when this works
 mp_limb_t _nmod_vec_dot_product_2_split26(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
 {
     uint v1hi, v1lo, v2hi, v2lo;

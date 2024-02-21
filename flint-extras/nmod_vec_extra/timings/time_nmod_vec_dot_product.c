@@ -48,26 +48,6 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
 
     if (FLINT_BIT_COUNT(n) <= 31)
     {
-        t1 = 0.0; nb_iter = 0;
-        while (t1 < 0.2)
-        {
-            _nmod_vec_rand(v1, state, len, mod1);
-            _nmod_vec_rand(v2, state, len, mod2);
-            tt = clock();
-            _nmod_vec_dot_product_1_vuint(v1, v2, len, mod);
-            _nmod_vec_dot_product_1_vuint(v1, v2, len, mod);
-            _nmod_vec_dot_product_1_vuint(v1, v2, len, mod);
-            _nmod_vec_dot_product_1_vuint(v1, v2, len, mod);
-            _nmod_vec_dot_product_1_vuint(v1, v2, len, mod);
-            t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
-            nb_iter += 5;
-        }
-        t1 /= nb_iter;
-        printf("%.1e\t", t1);
-    }
-
-    if (FLINT_BIT_COUNT(n) <= 31)
-    {
         t2 = 0.0; nb_iter = 0;
         while (t2 < 0.2)
         {
@@ -127,11 +107,6 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
     //printf("%.1e\t", t1/t2);
 
     val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
-    if (FLINT_BIT_COUNT(n) <= 25)
-    {
-        val2 = _nmod_vec_dot_product_1_vuint(v1, v2, len, mod);
-        assert (val1 == val2 && "1_vuint");
-    }
     if (FLINT_BIT_COUNT(n) <= 31)
     {
         val2 = _nmod_vec_dot_product_2_split16(v1, v2, len, mod);
@@ -165,10 +140,11 @@ int main()
         //time_nmod_vec_dot_product(len, 5, 10, (UWORD(1) << 10) + 1, state);
         //time_nmod_vec_dot_product(len, 10, 10, (UWORD(1) << 10) + 1, state);
         //time_nmod_vec_dot_product(len, 10, 20, (UWORD(1) << 20) + 1, state);
-        //time_nmod_vec_dot_product(len, 20, 20, (UWORD(1) << 20) - 1, state);
-        //time_nmod_vec_dot_product(len, 15, 29, (UWORD(1) << 29) + 1, state);
-        time_nmod_vec_dot_product(len, 28, 28, (UWORD(1) << 27) + 1, state);
+        time_nmod_vec_dot_product(len, 20, 20, (UWORD(1) << 20) - 1, state);
         printf("\t\t");
+        //time_nmod_vec_dot_product(len, 15, 29, (UWORD(1) << 29) + 1, state);
+        //time_nmod_vec_dot_product(len, 28, 28, (UWORD(1) << 27) + 1, state);
+        //printf("\t\t");
         //time_nmod_vec_dot_product(len, 15, 30, (UWORD(1) << 30) + 1, state);
         //time_nmod_vec_dot_product(len, 30, 30, (UWORD(1) << 30) + 1, state);
         //time_nmod_vec_dot_product(len, 15, 31, (UWORD(1) << 31) + 1, state);
