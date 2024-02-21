@@ -96,22 +96,48 @@ mp_limb_t _nmod_vec_dot_product_2(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t 
     return res;
 }
 
-mp_limb_t _nmod_vec_dot_product_2_v0(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+mp_limb_t _nmod_vec_dot_product_2_v0_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
 {
-    mp_limb_t s0, s1;
-    mp_limb_t u0 = UWORD(0);
-    mp_limb_t u1 = UWORD(0);
+    __uint128_t u = 0;
 
     for (ulong i = 0; i < len; i++)
-    {
-        umul_ppmm(s1, s0, v1[i], v2[i]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-    }
+        u += (__uint128_t)v1[i] * (__uint128_t)v2[i];
+
+    const mp_limb_t uhi = (mp_limb_t) (u >> 64);
+    const mp_limb_t ulo = (mp_limb_t) (u);
 
     mp_limb_t res;
-    NMOD2_RED2(res, u1, u0, mod);
+    NMOD2_RED2(res, uhi, ulo, mod);
     return res;
 }
+
+mp_limb_t _nmod_vec_dot_product_2_v8_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+{
+    __uint128_t u = 0;
+
+    ulong i = 0;
+    for (; i+7 < len; i += 8)
+    {
+        u +=   (__uint128_t)v1[i+0] * (__uint128_t)v2[i+0]
+             + (__uint128_t)v1[i+1] * (__uint128_t)v2[i+1]
+             + (__uint128_t)v1[i+2] * (__uint128_t)v2[i+2]
+             + (__uint128_t)v1[i+3] * (__uint128_t)v2[i+3]
+             + (__uint128_t)v1[i+4] * (__uint128_t)v2[i+4]
+             + (__uint128_t)v1[i+5] * (__uint128_t)v2[i+5]
+             + (__uint128_t)v1[i+6] * (__uint128_t)v2[i+6]
+             + (__uint128_t)v1[i+7] * (__uint128_t)v2[i+7];
+    }
+    for (; i < len; i++)
+        u += (__uint128_t)v1[i] * (__uint128_t)v2[i];
+
+    const mp_limb_t uhi = (mp_limb_t) (u >> 64);
+    const mp_limb_t ulo = (mp_limb_t) (u);
+
+    mp_limb_t res;
+    NMOD2_RED2(res, uhi, ulo, mod);
+    return res;
+}
+
 
 mp_limb_t _nmod_vec_dot_product_2_v16(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
 {
