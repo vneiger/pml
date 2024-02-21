@@ -64,8 +64,9 @@ mp_limb_t nmod_vec_dot_product(mp_srcptr v1, mp_srcptr v2,
                                ulong len, ulong max_bits1, ulong max_bits2,
                                nmod_t mod);
 mp_limb_t _nmod_vec_dot_product_2_v16(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
-mp_limb_t _nmod_vec_dot_product_2_v0_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
 mp_limb_t _nmod_vec_dot_product_2_v8_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+mp_limb_t _nmod_vec_dot_product_2_v16_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+mp_limb_t _nmod_vec_dot_product_2_vec16_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
 
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */

@@ -138,6 +138,82 @@ mp_limb_t _nmod_vec_dot_product_2_v8_int128(mp_srcptr v1, mp_srcptr v2, ulong le
     return res;
 }
 
+mp_limb_t _nmod_vec_dot_product_2_v16_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+{
+    __uint128_t u = 0;
+
+    ulong i = 0;
+    for (; i+15 < len; i += 16)
+    {
+        u +=   (__uint128_t)v1[i+0] * (__uint128_t)v2[i+0]
+             + (__uint128_t)v1[i+1] * (__uint128_t)v2[i+1]
+             + (__uint128_t)v1[i+2] * (__uint128_t)v2[i+2]
+             + (__uint128_t)v1[i+3] * (__uint128_t)v2[i+3]
+             + (__uint128_t)v1[i+4] * (__uint128_t)v2[i+4]
+             + (__uint128_t)v1[i+5] * (__uint128_t)v2[i+5]
+             + (__uint128_t)v1[i+6] * (__uint128_t)v2[i+6]
+             + (__uint128_t)v1[i+7] * (__uint128_t)v2[i+7]
+             + (__uint128_t)v1[i+8] * (__uint128_t)v2[i+8]
+             + (__uint128_t)v1[i+9] * (__uint128_t)v2[i+9]
+             + (__uint128_t)v1[i+10] * (__uint128_t)v2[i+10]
+             + (__uint128_t)v1[i+11] * (__uint128_t)v2[i+11]
+             + (__uint128_t)v1[i+12] * (__uint128_t)v2[i+12]
+             + (__uint128_t)v1[i+13] * (__uint128_t)v2[i+13]
+             + (__uint128_t)v1[i+14] * (__uint128_t)v2[i+14]
+             + (__uint128_t)v1[i+15] * (__uint128_t)v2[i+15];
+    }
+    for (; i < len; i++)
+        u += (__uint128_t)v1[i] * (__uint128_t)v2[i];
+
+    const mp_limb_t uhi = (mp_limb_t) (u >> 64);
+    const mp_limb_t ulo = (mp_limb_t) (u);
+
+    mp_limb_t res;
+    NMOD2_RED2(res, uhi, ulo, mod);
+    return res;
+}
+
+mp_limb_t _nmod_vec_dot_product_2_vec16_int128(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+{
+    __uint128_t vecu[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+    ulong i = 0;
+    for (; i+15 < len; i += 16)
+    {
+        vecu[ 0] += (__uint128_t)v1[i+0] * (__uint128_t)v2[i+0];
+        vecu[ 1] += (__uint128_t)v1[i+1] * (__uint128_t)v2[i+1];
+        vecu[ 2] += (__uint128_t)v1[i+2] * (__uint128_t)v2[i+2];
+        vecu[ 3] += (__uint128_t)v1[i+3] * (__uint128_t)v2[i+3];
+        vecu[ 4] += (__uint128_t)v1[i+4] * (__uint128_t)v2[i+4];
+        vecu[ 5] += (__uint128_t)v1[i+5] * (__uint128_t)v2[i+5];
+        vecu[ 6] += (__uint128_t)v1[i+6] * (__uint128_t)v2[i+6];
+        vecu[ 7] += (__uint128_t)v1[i+7] * (__uint128_t)v2[i+7];
+        vecu[ 8] += (__uint128_t)v1[i+8] * (__uint128_t)v2[i+8];
+        vecu[ 9] += (__uint128_t)v1[i+9] * (__uint128_t)v2[i+9];
+        vecu[10] += (__uint128_t)v1[i+10] * (__uint128_t)v2[i+10];
+        vecu[11] += (__uint128_t)v1[i+11] * (__uint128_t)v2[i+11];
+        vecu[12] += (__uint128_t)v1[i+12] * (__uint128_t)v2[i+12];
+        vecu[13] += (__uint128_t)v1[i+13] * (__uint128_t)v2[i+13];
+        vecu[14] += (__uint128_t)v1[i+14] * (__uint128_t)v2[i+14];
+        vecu[15] += (__uint128_t)v1[i+15] * (__uint128_t)v2[i+15];
+    }
+
+    __uint128_t u = vecu[ 0] + vecu[ 1] + vecu[ 2] + vecu[ 3] + vecu[ 4] + vecu[ 5] + vecu[ 6] + vecu[ 7] + vecu[ 8] + vecu[ 9] + vecu[10] + vecu[11] + vecu[12] + vecu[13] + vecu[14] + vecu[15];
+    ;
+
+    for (; i < len; i++)
+        u += (__uint128_t)v1[i] * (__uint128_t)v2[i];
+
+    const mp_limb_t uhi = (mp_limb_t) (u >> 64);
+    const mp_limb_t ulo = (mp_limb_t) (u);
+
+    mp_limb_t res;
+    NMOD2_RED2(res, uhi, ulo, mod);
+    return res;
+}
+
+
+
 
 mp_limb_t _nmod_vec_dot_product_2_v16(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
 {
