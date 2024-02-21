@@ -136,7 +136,7 @@ mp_limb_t _nmod_vec_dot_product_2_split16(mp_srcptr v1, mp_srcptr v2, ulong len,
     return res;
 }
 
-mp_limb_t _nmod_vec_dot_product_2_split28(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+mp_limb_t _nmod_vec_dot_product_2_split26(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
 {
     uint v1hi, v1lo, v2hi, v2lo;
     ulong ulo = UWORD(0);
@@ -160,7 +160,7 @@ mp_limb_t _nmod_vec_dot_product_2_split28(mp_srcptr v1, mp_srcptr v2, ulong len,
 }
 
 
-mp_limb_t _nmod_vec_dot_product_2_split28_vec(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+mp_limb_t _nmod_vec_dot_product_2_split26_vec(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
 {
     uint v1hi[4];
     uint v1lo[4];

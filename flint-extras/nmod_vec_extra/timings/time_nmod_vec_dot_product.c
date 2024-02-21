@@ -72,11 +72,11 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
         _nmod_vec_rand(v1, state, len, mod);
         _nmod_vec_rand(v2, state, len, mod);
         tt = clock();
-        _nmod_vec_dot_product_2_split28(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_split28(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_split28(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_split28(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_split28(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_split26(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_split26(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_split26(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_split26(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_split26(v1, v2, len, mod);
         t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 5;
     }
@@ -89,11 +89,11 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
         _nmod_vec_rand(v1, state, len, mod);
         _nmod_vec_rand(v2, state, len, mod);
         tt = clock();
-        _nmod_vec_dot_product_2_split28_vec(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_split28_vec(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_split28_vec(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_split28_vec(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_split28_vec(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_split26_vec(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_split26_vec(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_split26_vec(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_split26_vec(v1, v2, len, mod);
+        _nmod_vec_dot_product_2_split26_vec(v1, v2, len, mod);
         t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 5;
     }

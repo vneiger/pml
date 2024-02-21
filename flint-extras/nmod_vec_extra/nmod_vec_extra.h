@@ -67,8 +67,8 @@ mp_limb_t nmod_vec_dot_product(mp_srcptr v1, mp_srcptr v2,
 // note: version uint32 interesting on recent laptop (with avx512, gcc does some vectorization)
 // limited to nbits <= 31
 mp_limb_t _nmod_vec_dot_product_2_split16(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
-mp_limb_t _nmod_vec_dot_product_2_split28(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
-mp_limb_t _nmod_vec_dot_product_2_split28_vec(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+mp_limb_t _nmod_vec_dot_product_2_split26(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+mp_limb_t _nmod_vec_dot_product_2_split26_vec(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
 
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */
