@@ -11,6 +11,7 @@
  *
  */
 
+#include "nmod_vec_extra.h"
 #include <flint/machine_vectors.h>
 #include <flint/nmod_types.h>
 
@@ -63,7 +64,11 @@ void nmod_vec_integer_dot_product(mp_ptr res,
 mp_limb_t nmod_vec_dot_product(mp_srcptr v1, mp_srcptr v2,
                                ulong len, ulong max_bits1, ulong max_bits2,
                                nmod_t mod);
-mp_limb_t _nmod_vec_dot_product_2_vuint32(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+// note: version uint32 interesting on recent laptop (with avx512, gcc does some vectorization)
+// limited to nbits <= 31
+mp_limb_t _nmod_vec_dot_product_2_split16(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+mp_limb_t _nmod_vec_dot_product_2_split28(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+mp_limb_t _nmod_vec_dot_product_2_split28_vec(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
 
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */
