@@ -60,51 +60,6 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
     t2 /= nb_iter;
     printf("%.1e\t", t2);
 
-    t2 = 0.0; nb_iter = 0;
-    while (t2 < 0.2)
-    {
-        tt = clock();
-        _nmod_vec_dot_product_2_vuint32_1(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vuint32_1(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vuint32_1(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vuint32_1(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vuint32_1(v1, v2, len, mod);
-        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        nb_iter += 5;
-    }
-    t2 /= nb_iter;
-    printf("%.1e\t", t2);
-
-    t2 = 0.0; nb_iter = 0;
-    while (t2 < 0.2)
-    {
-        tt = clock();
-        _nmod_vec_dot_product_2_vuint32_2(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vuint32_2(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vuint32_2(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vuint32_2(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vuint32_2(v1, v2, len, mod);
-        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        nb_iter += 5;
-    }
-    t2 /= nb_iter;
-    printf("%.1e\t", t2);
-
-    t2 = 0.0; nb_iter = 0;
-    while (t2 < 0.2)
-    {
-        tt = clock();
-        _nmod_vec_dot_product_2_vuint32_3(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vuint32_3(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vuint32_3(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vuint32_3(v1, v2, len, mod);
-        _nmod_vec_dot_product_2_vuint32_3(v1, v2, len, mod);
-        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        nb_iter += 5;
-    }
-    t2 /= nb_iter;
-    printf("%.1e\t", t2);
-
     // VERSUS FLINT:
     //int nlimbs = _nmod_vec_dot_bound_limbs(len, mod);
     //t2 = 0.0;
@@ -130,12 +85,6 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
     val1 = nmod_vec_dot_product(v1, v2, len, maxbits1, maxbits2, mod);
     val2 = _nmod_vec_dot_product_2_vuint32(v1, v2, len, mod);
     assert (val1 == val2 && "vuint32");
-    val2 = _nmod_vec_dot_product_2_vuint32_1(v1, v2, len, mod);
-    assert (val1 == val2 && "vuint32_1");
-    val2 = _nmod_vec_dot_product_2_vuint32_2(v1, v2, len, mod);
-    assert (val1 == val2 && "vuint32_2");
-    val2 = _nmod_vec_dot_product_2_vuint32_3(v1, v2, len, mod);
-    assert (val1 == val2 && "vuint32_3");
 
     _nmod_vec_clear(v1);
     _nmod_vec_clear(v2);
@@ -150,7 +99,8 @@ int main()
     flint_randinit(state);
 
     printf("len\t3\t3\t10\t10\t20\t20\t29\t29\t30\t30\t31\t31\t32\t32\t40\t40\t50\t50\t60\t60\t64\t64\n");
-    for (slong len = 100; len < 1000; len += 21)
+    //for (slong len = 100; len < 1000; len += 21)
+    for (slong len = 1000; len < 4000; len += 1000)
     {
         printf("%ld\t", len);
         //time_nmod_vec_dot_product(len, 1, 3, (UWORD(1) << 3) + 1, state);
