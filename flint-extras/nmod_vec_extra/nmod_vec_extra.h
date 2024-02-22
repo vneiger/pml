@@ -118,6 +118,9 @@ void _nmod_vec_dot2_small_modulus(mp_ptr res,
  * - split 26 (no blocking yet; might be attempted) with avx512 is faster than the above with a factor sometimes > 2
  * - split 26 is in draft version, not properly checked for overflow
  * - again, more benchmarking and threshold needed
+ *
+ * for multi_3:
+ * - at the moment, no attempt at blocking or other things; will depend on what happens for multi_{1,2}
  */
 void nmod_vec_dot_product_multi(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                 ulong len, ulong k,

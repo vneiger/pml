@@ -1172,8 +1172,9 @@ void _nmod_vec_dot_product_multi_2(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
 // (or better, really do a hand-made avx512 version...)
 // --> if splitting at 26, each product is 52, can allow at most 12 additional bits,
 // i.e. not more than xxx terms (this depends on the size of the high part since
-// they are not balanced... could make sense to balance them to allow more terms,
-// but do this only if this really is interesting in terms of speed)
+// they are not balanced... could make sense to balance them to allow more terms
+// (info from max_bits_u and max_bits_v could be useful), but do this only if
+// this really is interesting in terms of speed)
 void _nmod_vec_dot_product_multi_2_split26(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                    ulong len, ulong k, nmod_t mod)
 {
@@ -1983,11 +1984,72 @@ void _nmod_vec_dot_product_multi_3(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                    ulong max_bits_u, ulong max_bits_v,
                                    nmod_t mod)
 {
+    /* number of products we can do before overflow */
+    const ulong log_nt = 2*FLINT_BITS - (max_bits_u + max_bits_v);
+    const ulong num_terms = (log_nt < FLINT_BITS) ? (UWORD(1) << log_nt) : (UWORD_MAX);
+
+    mp_ptr uv_hi = _nmod_vec_init(k);   // 64->127
+    mp_ptr uv_hii = _nmod_vec_init(k);  // 128->..
+    _nmod_vec_zero(uv, k);
+    _nmod_vec_zero(uv_hi, k);
+    _nmod_vec_zero(uv_hii, k);
+    mp_limb_t s0, s1, t0, t1;
+    ulong i = 0;
+    if (num_terms >= 8)
+        for (; i+7 < len; i += 8) // FIXME 8 vs 4 ? (Vincent: not tested)
+        {
+            for (ulong j = 0; j < k; j++)
+            {
+                umul_ppmm(t1, t0, u[i+0], v[i+0][j]);
+                umul_ppmm(s1, s0, u[i+1], v[i+1][j]);
+                add_ssaaaa(t1, t0, t1, t0, s1, s0);
+                umul_ppmm(s1, s0, u[i+2], v[i+2][j]);
+                add_ssaaaa(t1, t0, t1, t0, s1, s0);
+                umul_ppmm(s1, s0, u[i+3], v[i+3][j]);
+                add_ssaaaa(t1, t0, t1, t0, s1, s0);
+                umul_ppmm(s1, s0, u[i+4], v[i+4][j]);
+                add_ssaaaa(t1, t0, t1, t0, s1, s0);
+                umul_ppmm(s1, s0, u[i+5], v[i+5][j]);
+                add_ssaaaa(t1, t0, t1, t0, s1, s0);
+                umul_ppmm(s1, s0, u[i+6], v[i+6][j]);
+                add_ssaaaa(t1, t0, t1, t0, s1, s0);
+                umul_ppmm(s1, s0, u[i+7], v[i+7][j]);
+                add_ssaaaa(t1, t0, t1, t0, s1, s0);
+                add_sssaaaaaa(uv_hii[j], uv_hi[j], uv[j], uv_hii[j], uv_hi[j], uv[j], UWORD(0), t1, t0);
+            }
+        }
+    else
+        for (; i+num_terms < len; i += num_terms)
+        {
+            for (ulong j = 0; j < k; j++)
+            {
+                umul_ppmm(t1, t0, u[i+0], v[i+0][j]);
+                for (ulong ii = 1; ii < num_terms; ii++)
+                {
+                    umul_ppmm(s1, s0, u[i+ii], v[i+ii][j]);
+                    add_ssaaaa(t1, t0, t1, t0, s1, s0);
+                }
+                add_sssaaaaaa(uv_hii[j], uv_hi[j], uv[j], uv_hii[j], uv_hi[j], uv[j], UWORD(0), t1, t0);
+            }
+        }
+
+    // TODO see if good for small len; unclear (order of loops, etc)
+    for (ulong j = 0; j < k; j++)
+    {
+        t0 = UWORD(0);
+        t1 = UWORD(0);
+        for (ulong ii = i; ii < len; ii++)
+        {
+            umul_ppmm(s1, s0, u[ii], v[ii][j]);
+            add_ssaaaa(t1, t0, t1, t0, s1, s0);
+        }
+        add_sssaaaaaa(uv_hii[j], uv_hi[j], uv[j], uv_hii[j], uv_hi[j], uv[j], UWORD(0), t1, t0);
+        NMOD_RED(uv_hii[j], uv_hii[j], mod);
+        NMOD_RED3(uv[j], uv_hii[j], uv_hi[j], uv[j], mod);
+    }
+    _nmod_vec_clear(uv_hii);
+    _nmod_vec_clear(uv_hi);
 }
-
-
-
-
 
 void nmod_vec_dot_product_multi(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                 ulong len, ulong k,
@@ -2003,8 +2065,7 @@ void nmod_vec_dot_product_multi(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
     }
     if (n_limbs == 3)
     {
-        printf("%ld, NOT IMPLEMENTED YET\n", mod.n);
-        _nmod_vec_dot_product_multi_3(uv, u, v, len, max_bits_u, max_bits_v, k, mod);
+        _nmod_vec_dot_product_multi_3(uv, u, v, len, k, max_bits_u, max_bits_v, mod);
         return;
     }
     if (n_limbs == 1)

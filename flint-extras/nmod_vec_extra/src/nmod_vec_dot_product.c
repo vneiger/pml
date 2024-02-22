@@ -178,7 +178,7 @@ mp_limb_t _nmod_vec_dot_product_3(mp_srcptr v1, mp_srcptr v2, ulong len, ulong m
 
     ulong i = 0;
     if (num_terms >= 8)
-        for (; i+7 < len; i += 8)
+        for (; i+7 < len; i += 8) // FIXME 8 vs 4 ? (Vincent: not tested)
         {
             umul_ppmm(u1, u0, v1[i+0], v2[i+0]);
             umul_ppmm(s1, s0, v1[i+1], v2[i+1]);
