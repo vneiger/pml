@@ -102,16 +102,28 @@ void _nmod_vec_dot2_small_modulus(mp_ptr res,
  * for 0 <= j < k
  * . does not assume input entries are reduced modulo mod.n
  *
+ * \todo do we want to write avx512 versions... ? below, attempts at making
+ * the compiler do it for us; get some improvements, but not gigantic
+ *
+ * for multi_1:
  * \todo variants 8_16, 16_32, 32_32
  * \todo then, thresholds needed: on two different machines, 
  * - one (recent, avx512) is most often faster with v8_8 (but sometimes v8_32 better, e.g. len=128 k=16)
  * - another one (2020, no avx512) is most often faster with v8_32 and v16_16 > v8_8
+ * - split 26 is in draft version, not properly checked for overflow
  * \todo eventually, to be compared to a good matrix-matrix product with a single row in left operand!
+ *
+ * for multi_2:
+ * - 8_8, 8_32, 16_16 look similar, and on avx512 machine, are faster than 1_8 or basic
+ * - split 26 (no blocking yet; might be attempted) with avx512 is faster than the above with a factor sometimes > 2
+ * - split 26 is in draft version, not properly checked for overflow
+ * - again, more benchmarking and threshold needed
  */
 void nmod_vec_dot_product_multi(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                 ulong len, ulong k,
                                 ulong max_bits_u, ulong max_bits_v,
                                 nmod_t mod);
+
 void _nmod_vec_dot_product_multi_1_v1_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                        ulong len, ulong k, nmod_t mod);
 void _nmod_vec_dot_product_multi_1_v8_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
@@ -120,6 +132,7 @@ void _nmod_vec_dot_product_multi_1_v8_32(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                        ulong len, ulong k, nmod_t mod);
 void _nmod_vec_dot_product_multi_1_v16_16(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                        ulong len, ulong k, nmod_t mod);
+
 void _nmod_vec_dot_product_multi_2_v1_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                    ulong len, ulong k, nmod_t mod);
 void _nmod_vec_dot_product_multi_2_v4_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
