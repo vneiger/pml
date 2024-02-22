@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <flint/flint.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
 #include <flint/nmod_mat.h>
@@ -59,15 +60,17 @@ void check_nmod_vec_dot_product_multi(ulong len, ulong k, ulong bits1, ulong bit
     nmod_mat_mul_nmod_vec_newdot(uv2, vrt, ur, len);
     assert (_nmod_vec_equal(uv1, uv2, k) && "mat_mul_nmod_vec_newdot");
 
-    // WARNING: temporary, only if nbits small enough!!
-    _nmod_vec_dot_product_multi_1_v1_8(uv1, u, (mp_srcptr *) v, len, k, mod);
-    assert (_nmod_vec_equal(uv1, uv2, k) && "v1_8");
-    _nmod_vec_dot_product_multi_1_v8_8(uv1, u, (mp_srcptr *) v, len, k, mod);
-    assert (_nmod_vec_equal(uv1, uv2, k) && "v8_8");
-    _nmod_vec_dot_product_multi_1_v16_16(uv1, u, (mp_srcptr *) v, len, k, mod);
-    assert (_nmod_vec_equal(uv1, uv2, k) && "v8_32");
-    _nmod_vec_dot_product_multi_1_v16_16(uv1, u, (mp_srcptr *) v, len, k, mod);
-    assert (_nmod_vec_equal(uv1, uv2, k) && "v16_16");
+    if (FLINT_BIT_COUNT(n) < 21)
+    {
+        _nmod_vec_dot_product_multi_1_v1_8(uv1, u, (mp_srcptr *) v, len, k, mod);
+        assert (_nmod_vec_equal(uv1, uv2, k) && "v1_8");
+        _nmod_vec_dot_product_multi_1_v8_8(uv1, u, (mp_srcptr *) v, len, k, mod);
+        assert (_nmod_vec_equal(uv1, uv2, k) && "v8_8");
+        _nmod_vec_dot_product_multi_1_v16_16(uv1, u, (mp_srcptr *) v, len, k, mod);
+        assert (_nmod_vec_equal(uv1, uv2, k) && "v8_32");
+        _nmod_vec_dot_product_multi_1_v16_16(uv1, u, (mp_srcptr *) v, len, k, mod);
+        assert (_nmod_vec_equal(uv1, uv2, k) && "v16_16");
+    }
 
     _nmod_vec_clear(u);
     for (ulong i = 0; i < len; i++)
@@ -107,19 +110,19 @@ int main()
                 check_nmod_vec_dot_product_multi(len, k, 10, 10, (UWORD(1) << 10) + 1, state);
                 check_nmod_vec_dot_product_multi(len, k, 10, 20, (UWORD(1) << 20) + 1, state);
                 check_nmod_vec_dot_product_multi(len, k, 20, 20, (UWORD(1) << 20) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 15, 29, (UWORD(1) << 29) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 29, 29, (UWORD(1) << 29) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 15, 30, (UWORD(1) << 30) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 30, 30, (UWORD(1) << 30) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 15, 31, (UWORD(1) << 31) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 31, 31, (UWORD(1) << 31) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 16, 32, (UWORD(1) << 32) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 32, 32, (UWORD(1) << 32) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 20, 40, (UWORD(1) << 40) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 40, 40, (UWORD(1) << 40) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 25, 50, (UWORD(1) << 50) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 50, 50, (UWORD(1) << 50) + 1, state);
-                //check_nmod_vec_dot_product_multi(len, k, 30, 60, (UWORD(1) << 60) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 15, 29, (UWORD(1) << 29) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 29, 29, (UWORD(1) << 29) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 15, 30, (UWORD(1) << 30) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 30, 30, (UWORD(1) << 30) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 15, 31, (UWORD(1) << 31) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 31, 31, (UWORD(1) << 31) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 16, 32, (UWORD(1) << 32) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 32, 32, (UWORD(1) << 32) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 20, 40, (UWORD(1) << 40) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 40, 40, (UWORD(1) << 40) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 25, 50, (UWORD(1) << 50) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 50, 50, (UWORD(1) << 50) + 1, state);
+                check_nmod_vec_dot_product_multi(len, k, 30, 60, (UWORD(1) << 60) + 1, state);
                 //check_nmod_vec_dot_product_multi(len, k, 60, 60, (UWORD(1) << 60) + 1, state);
                 //check_nmod_vec_dot_product_multi(len, k, 32, 64, UWORD_MAX, state);
                 //check_nmod_vec_dot_product_multi(len, k, 64, 64, UWORD_MAX, state);

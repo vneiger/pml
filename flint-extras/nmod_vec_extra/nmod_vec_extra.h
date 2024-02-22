@@ -67,8 +67,8 @@ mp_limb_t nmod_vec_dot_product(mp_srcptr v1, mp_srcptr v2,
 // note: version split16 interesting on recent laptop (gcc does some vectorization)
 // limited to nbits <= ~31 (bound to be better analyzed, numterms)
 mp_limb_t _nmod_vec_dot_product_2_split16(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
-// note: version split26 interesting on recent laptop (gcc does some vectorization)
-// limited to nbits <= ~52 (bound to be better analyzed, numterms)
+// note: version split26 interesting (beyond 30-31 bits) on recent laptop (gcc does some vectorization)
+// limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
 mp_limb_t _nmod_vec_dot_product_2_split26(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
 
 /*------------------------------------------------------------*/
@@ -120,6 +120,17 @@ void _nmod_vec_dot_product_multi_1_v8_32(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                        ulong len, ulong k, nmod_t mod);
 void _nmod_vec_dot_product_multi_1_v16_16(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                        ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_2_v1_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_2_v4_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_2_v8_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_2_v4_32(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod);
+// limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
+void _nmod_vec_dot_product_multi_2_split26(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod);
 
 #ifdef __cplusplus
 }

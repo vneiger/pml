@@ -3,6 +3,9 @@
 
 #include "nmod_vec_extra.h"
 
+#define __ll_lowhi_parts26(tlo,thi,t)     \
+      thi = (uint) ((t) >> 26);           \
+      tlo = ((uint)(t)) & 0x3FFFFFF;
 
 /* ------------------------------------------------------------ */
 /* number of limbs needed for a dot product of length len       */
@@ -1147,7 +1150,832 @@ static inline
 void _nmod_vec_dot_product_multi_2(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
                                    ulong len, ulong k, nmod_t mod)
 {
+    mp_ptr uv_hi = _nmod_vec_init(k);
+    _nmod_vec_zero(uv, k);
+    _nmod_vec_zero(uv_hi, k);
+    mp_limb_t s0, s1;
+    for (ulong i = 0; i < len; i++)
+    {
+        for (ulong j = 0; j < k; j++)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j]);
+            add_ssaaaa(uv_hi[j], uv[j], uv_hi[j], uv[j], s1, s0);
+        }
+    }
+
+    for (ulong j = 0; j < k; j++)
+        NMOD2_RED2(uv[j], uv_hi[j], uv[j], mod);
+    _nmod_vec_clear(uv_hi);
 }
+
+// TODO benchmark more, integrate, give precise conditions for when this works
+// (or better, really do a hand-made avx512 version...)
+// --> if splitting at 26, each product is 52, can allow at most 12 additional bits,
+// i.e. not more than xxx terms (this depends on the size of the high part since
+// they are not balanced... could make sense to balance them to allow more terms,
+// but do this only if this really is interesting in terms of speed)
+void _nmod_vec_dot_product_multi_2_split26(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod)
+{
+    uint ulo, uhi, vlo, vhi;
+    mp_ptr uv_mi = _nmod_vec_init(k);
+    mp_ptr uv_hi = _nmod_vec_init(k);
+    _nmod_vec_zero(uv, k);  // plays the role of uv_lo
+    _nmod_vec_zero(uv_mi, k);
+    _nmod_vec_zero(uv_hi, k);
+    for (ulong i = 0; i < len; i++)
+    {
+        __ll_lowhi_parts26(ulo, uhi, u[i]);
+        for (ulong j = 0; j < k; j++)
+        {
+            __ll_lowhi_parts26(vlo, vhi, v[i][j]);
+            uv   [j] += (ulong)ulo * vlo;
+            uv_mi[j] += (ulong)ulo * vhi + (ulong)uhi * vlo;
+            uv_hi[j] += (ulong)uhi * vhi;
+        }
+    }
+
+    for (ulong j = 0; j < k; j++)
+    {
+        // result: uv_lo + 2**26 uv_mi + 2**52 uv_hi
+        // hi = (uv_mi >> 38) + (uv_hi >> 12)  ||  lo = (uv_mi << 26) + (uv_hi << 52) + uv_lo
+        add_ssaaaa(uv_hi[j], uv[j], uv_mi[j]>>38, uv_mi[j]<<26, uv_hi[j]>>12, (uv_hi[j]<<52)+uv[j]);
+        NMOD2_RED2(uv[j], uv_hi[j], uv[j], mod);
+    }
+    _nmod_vec_clear(uv_hi);
+    _nmod_vec_clear(uv_mi);
+}
+
+void _nmod_vec_dot_product_multi_2_v1_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod)
+{
+    mp_ptr uv_hi = _nmod_vec_init(k);
+    _nmod_vec_zero(uv, k);
+    _nmod_vec_zero(uv_hi, k);
+    mp_limb_t s0, s1;
+    for (ulong i = 0; i < len; i++)
+    {
+        ulong j = 0;
+        for (; j+7 < k; j+=8)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+        }
+        for (; j < k; j++)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+        }
+    }
+
+    for (ulong j = 0; j < k; j++)
+        NMOD2_RED2(uv[j], uv_hi[j], uv[j], mod);
+    _nmod_vec_clear(uv_hi);
+}
+
+void _nmod_vec_dot_product_multi_2_v4_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod)
+{
+    mp_ptr uv_hi = _nmod_vec_init(k);
+    _nmod_vec_zero(uv, k);
+    _nmod_vec_zero(uv_hi, k);
+    mp_limb_t s0, s1;
+    ulong i = 0;
+    for (; i+3 < len; i += 4)
+    {
+        ulong j = 0;
+        for (; j+7 < k; j+=8)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+        }
+        for (; j < k; j++)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+        }
+    }
+    for (; i < len; i++)
+    {
+        ulong j = 0;
+        for (; j+7 < k; j+=8)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+        }
+        for (; j < k; j++)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+        }
+    }
+
+    for (ulong j = 0; j < k; j++)
+        NMOD2_RED2(uv[j], uv_hi[j], uv[j], mod);
+    _nmod_vec_clear(uv_hi);
+}
+
+void _nmod_vec_dot_product_multi_2_v4_32(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod)
+{
+    mp_ptr uv_hi = _nmod_vec_init(k);
+    _nmod_vec_zero(uv, k);
+    _nmod_vec_zero(uv_hi, k);
+    mp_limb_t s0, s1;
+    ulong i = 0;
+    for (; i+3 < len; i += 4)
+    {
+        ulong j = 0;
+        for (; j+31 < k; j+=32)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+8]);
+            add_ssaaaa(uv_hi[j+8], uv[j+8], uv_hi[j+8], uv[j+8], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+8]);
+            add_ssaaaa(uv_hi[j+8], uv[j+8], uv_hi[j+8], uv[j+8], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+8]);
+            add_ssaaaa(uv_hi[j+8], uv[j+8], uv_hi[j+8], uv[j+8], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+8]);
+            add_ssaaaa(uv_hi[j+8], uv[j+8], uv_hi[j+8], uv[j+8], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+9]);
+            add_ssaaaa(uv_hi[j+9], uv[j+9], uv_hi[j+9], uv[j+9], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+9]);
+            add_ssaaaa(uv_hi[j+9], uv[j+9], uv_hi[j+9], uv[j+9], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+9]);
+            add_ssaaaa(uv_hi[j+9], uv[j+9], uv_hi[j+9], uv[j+9], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+9]);
+            add_ssaaaa(uv_hi[j+9], uv[j+9], uv_hi[j+9], uv[j+9], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+10]);
+            add_ssaaaa(uv_hi[j+10], uv[j+10], uv_hi[j+10], uv[j+10], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+10]);
+            add_ssaaaa(uv_hi[j+10], uv[j+10], uv_hi[j+10], uv[j+10], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+10]);
+            add_ssaaaa(uv_hi[j+10], uv[j+10], uv_hi[j+10], uv[j+10], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+10]);
+            add_ssaaaa(uv_hi[j+10], uv[j+10], uv_hi[j+10], uv[j+10], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+11]);
+            add_ssaaaa(uv_hi[j+11], uv[j+11], uv_hi[j+11], uv[j+11], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+11]);
+            add_ssaaaa(uv_hi[j+11], uv[j+11], uv_hi[j+11], uv[j+11], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+11]);
+            add_ssaaaa(uv_hi[j+11], uv[j+11], uv_hi[j+11], uv[j+11], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+11]);
+            add_ssaaaa(uv_hi[j+11], uv[j+11], uv_hi[j+11], uv[j+11], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+12]);
+            add_ssaaaa(uv_hi[j+12], uv[j+12], uv_hi[j+12], uv[j+12], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+12]);
+            add_ssaaaa(uv_hi[j+12], uv[j+12], uv_hi[j+12], uv[j+12], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+12]);
+            add_ssaaaa(uv_hi[j+12], uv[j+12], uv_hi[j+12], uv[j+12], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+12]);
+            add_ssaaaa(uv_hi[j+12], uv[j+12], uv_hi[j+12], uv[j+12], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+13]);
+            add_ssaaaa(uv_hi[j+13], uv[j+13], uv_hi[j+13], uv[j+13], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+13]);
+            add_ssaaaa(uv_hi[j+13], uv[j+13], uv_hi[j+13], uv[j+13], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+13]);
+            add_ssaaaa(uv_hi[j+13], uv[j+13], uv_hi[j+13], uv[j+13], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+13]);
+            add_ssaaaa(uv_hi[j+13], uv[j+13], uv_hi[j+13], uv[j+13], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+14]);
+            add_ssaaaa(uv_hi[j+14], uv[j+14], uv_hi[j+14], uv[j+14], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+14]);
+            add_ssaaaa(uv_hi[j+14], uv[j+14], uv_hi[j+14], uv[j+14], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+14]);
+            add_ssaaaa(uv_hi[j+14], uv[j+14], uv_hi[j+14], uv[j+14], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+14]);
+            add_ssaaaa(uv_hi[j+14], uv[j+14], uv_hi[j+14], uv[j+14], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+15]);
+            add_ssaaaa(uv_hi[j+15], uv[j+15], uv_hi[j+15], uv[j+15], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+15]);
+            add_ssaaaa(uv_hi[j+15], uv[j+15], uv_hi[j+15], uv[j+15], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+15]);
+            add_ssaaaa(uv_hi[j+15], uv[j+15], uv_hi[j+15], uv[j+15], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+15]);
+            add_ssaaaa(uv_hi[j+15], uv[j+15], uv_hi[j+15], uv[j+15], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+16]);
+            add_ssaaaa(uv_hi[j+16], uv[j+16], uv_hi[j+16], uv[j+16], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+16]);
+            add_ssaaaa(uv_hi[j+16], uv[j+16], uv_hi[j+16], uv[j+16], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+16]);
+            add_ssaaaa(uv_hi[j+16], uv[j+16], uv_hi[j+16], uv[j+16], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+16]);
+            add_ssaaaa(uv_hi[j+16], uv[j+16], uv_hi[j+16], uv[j+16], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+17]);
+            add_ssaaaa(uv_hi[j+17], uv[j+17], uv_hi[j+17], uv[j+17], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+17]);
+            add_ssaaaa(uv_hi[j+17], uv[j+17], uv_hi[j+17], uv[j+17], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+17]);
+            add_ssaaaa(uv_hi[j+17], uv[j+17], uv_hi[j+17], uv[j+17], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+17]);
+            add_ssaaaa(uv_hi[j+17], uv[j+17], uv_hi[j+17], uv[j+17], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+18]);
+            add_ssaaaa(uv_hi[j+18], uv[j+18], uv_hi[j+18], uv[j+18], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+18]);
+            add_ssaaaa(uv_hi[j+18], uv[j+18], uv_hi[j+18], uv[j+18], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+18]);
+            add_ssaaaa(uv_hi[j+18], uv[j+18], uv_hi[j+18], uv[j+18], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+18]);
+            add_ssaaaa(uv_hi[j+18], uv[j+18], uv_hi[j+18], uv[j+18], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+19]);
+            add_ssaaaa(uv_hi[j+19], uv[j+19], uv_hi[j+19], uv[j+19], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+19]);
+            add_ssaaaa(uv_hi[j+19], uv[j+19], uv_hi[j+19], uv[j+19], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+19]);
+            add_ssaaaa(uv_hi[j+19], uv[j+19], uv_hi[j+19], uv[j+19], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+19]);
+            add_ssaaaa(uv_hi[j+19], uv[j+19], uv_hi[j+19], uv[j+19], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+20]);
+            add_ssaaaa(uv_hi[j+20], uv[j+20], uv_hi[j+20], uv[j+20], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+20]);
+            add_ssaaaa(uv_hi[j+20], uv[j+20], uv_hi[j+20], uv[j+20], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+20]);
+            add_ssaaaa(uv_hi[j+20], uv[j+20], uv_hi[j+20], uv[j+20], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+20]);
+            add_ssaaaa(uv_hi[j+20], uv[j+20], uv_hi[j+20], uv[j+20], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+21]);
+            add_ssaaaa(uv_hi[j+21], uv[j+21], uv_hi[j+21], uv[j+21], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+21]);
+            add_ssaaaa(uv_hi[j+21], uv[j+21], uv_hi[j+21], uv[j+21], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+21]);
+            add_ssaaaa(uv_hi[j+21], uv[j+21], uv_hi[j+21], uv[j+21], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+21]);
+            add_ssaaaa(uv_hi[j+21], uv[j+21], uv_hi[j+21], uv[j+21], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+22]);
+            add_ssaaaa(uv_hi[j+22], uv[j+22], uv_hi[j+22], uv[j+22], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+22]);
+            add_ssaaaa(uv_hi[j+22], uv[j+22], uv_hi[j+22], uv[j+22], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+22]);
+            add_ssaaaa(uv_hi[j+22], uv[j+22], uv_hi[j+22], uv[j+22], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+22]);
+            add_ssaaaa(uv_hi[j+22], uv[j+22], uv_hi[j+22], uv[j+22], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+23]);
+            add_ssaaaa(uv_hi[j+23], uv[j+23], uv_hi[j+23], uv[j+23], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+23]);
+            add_ssaaaa(uv_hi[j+23], uv[j+23], uv_hi[j+23], uv[j+23], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+23]);
+            add_ssaaaa(uv_hi[j+23], uv[j+23], uv_hi[j+23], uv[j+23], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+23]);
+            add_ssaaaa(uv_hi[j+23], uv[j+23], uv_hi[j+23], uv[j+23], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+24]);
+            add_ssaaaa(uv_hi[j+24], uv[j+24], uv_hi[j+24], uv[j+24], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+24]);
+            add_ssaaaa(uv_hi[j+24], uv[j+24], uv_hi[j+24], uv[j+24], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+24]);
+            add_ssaaaa(uv_hi[j+24], uv[j+24], uv_hi[j+24], uv[j+24], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+24]);
+            add_ssaaaa(uv_hi[j+24], uv[j+24], uv_hi[j+24], uv[j+24], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+25]);
+            add_ssaaaa(uv_hi[j+25], uv[j+25], uv_hi[j+25], uv[j+25], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+25]);
+            add_ssaaaa(uv_hi[j+25], uv[j+25], uv_hi[j+25], uv[j+25], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+25]);
+            add_ssaaaa(uv_hi[j+25], uv[j+25], uv_hi[j+25], uv[j+25], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+25]);
+            add_ssaaaa(uv_hi[j+25], uv[j+25], uv_hi[j+25], uv[j+25], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+26]);
+            add_ssaaaa(uv_hi[j+26], uv[j+26], uv_hi[j+26], uv[j+26], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+26]);
+            add_ssaaaa(uv_hi[j+26], uv[j+26], uv_hi[j+26], uv[j+26], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+26]);
+            add_ssaaaa(uv_hi[j+26], uv[j+26], uv_hi[j+26], uv[j+26], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+26]);
+            add_ssaaaa(uv_hi[j+26], uv[j+26], uv_hi[j+26], uv[j+26], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+27]);
+            add_ssaaaa(uv_hi[j+27], uv[j+27], uv_hi[j+27], uv[j+27], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+27]);
+            add_ssaaaa(uv_hi[j+27], uv[j+27], uv_hi[j+27], uv[j+27], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+27]);
+            add_ssaaaa(uv_hi[j+27], uv[j+27], uv_hi[j+27], uv[j+27], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+27]);
+            add_ssaaaa(uv_hi[j+27], uv[j+27], uv_hi[j+27], uv[j+27], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+28]);
+            add_ssaaaa(uv_hi[j+28], uv[j+28], uv_hi[j+28], uv[j+28], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+28]);
+            add_ssaaaa(uv_hi[j+28], uv[j+28], uv_hi[j+28], uv[j+28], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+28]);
+            add_ssaaaa(uv_hi[j+28], uv[j+28], uv_hi[j+28], uv[j+28], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+28]);
+            add_ssaaaa(uv_hi[j+28], uv[j+28], uv_hi[j+28], uv[j+28], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+29]);
+            add_ssaaaa(uv_hi[j+29], uv[j+29], uv_hi[j+29], uv[j+29], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+29]);
+            add_ssaaaa(uv_hi[j+29], uv[j+29], uv_hi[j+29], uv[j+29], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+29]);
+            add_ssaaaa(uv_hi[j+29], uv[j+29], uv_hi[j+29], uv[j+29], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+29]);
+            add_ssaaaa(uv_hi[j+29], uv[j+29], uv_hi[j+29], uv[j+29], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+30]);
+            add_ssaaaa(uv_hi[j+30], uv[j+30], uv_hi[j+30], uv[j+30], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+30]);
+            add_ssaaaa(uv_hi[j+30], uv[j+30], uv_hi[j+30], uv[j+30], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+30]);
+            add_ssaaaa(uv_hi[j+30], uv[j+30], uv_hi[j+30], uv[j+30], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+30]);
+            add_ssaaaa(uv_hi[j+30], uv[j+30], uv_hi[j+30], uv[j+30], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+31]);
+            add_ssaaaa(uv_hi[j+31], uv[j+31], uv_hi[j+31], uv[j+31], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+31]);
+            add_ssaaaa(uv_hi[j+31], uv[j+31], uv_hi[j+31], uv[j+31], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+31]);
+            add_ssaaaa(uv_hi[j+31], uv[j+31], uv_hi[j+31], uv[j+31], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+31]);
+            add_ssaaaa(uv_hi[j+31], uv[j+31], uv_hi[j+31], uv[j+31], s1, s0);
+        }
+        for (; j < k; j++)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+        }
+    }
+    for (; i < len; i++)
+    {
+        ulong j = 0;
+        for (; j+31 < k; j+=32)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+8]);
+            add_ssaaaa(uv_hi[j+8], uv[j+8], uv_hi[j+8], uv[j+8], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+9]);
+            add_ssaaaa(uv_hi[j+9], uv[j+9], uv_hi[j+9], uv[j+9], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+10]);
+            add_ssaaaa(uv_hi[j+10], uv[j+10], uv_hi[j+10], uv[j+10], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+11]);
+            add_ssaaaa(uv_hi[j+11], uv[j+11], uv_hi[j+11], uv[j+11], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+12]);
+            add_ssaaaa(uv_hi[j+12], uv[j+12], uv_hi[j+12], uv[j+12], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+13]);
+            add_ssaaaa(uv_hi[j+13], uv[j+13], uv_hi[j+13], uv[j+13], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+14]);
+            add_ssaaaa(uv_hi[j+14], uv[j+14], uv_hi[j+14], uv[j+14], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+15]);
+            add_ssaaaa(uv_hi[j+15], uv[j+15], uv_hi[j+15], uv[j+15], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+16]);
+            add_ssaaaa(uv_hi[j+16], uv[j+16], uv_hi[j+16], uv[j+16], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+17]);
+            add_ssaaaa(uv_hi[j+17], uv[j+17], uv_hi[j+17], uv[j+17], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+18]);
+            add_ssaaaa(uv_hi[j+18], uv[j+18], uv_hi[j+18], uv[j+18], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+19]);
+            add_ssaaaa(uv_hi[j+19], uv[j+19], uv_hi[j+19], uv[j+19], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+20]);
+            add_ssaaaa(uv_hi[j+20], uv[j+20], uv_hi[j+20], uv[j+20], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+21]);
+            add_ssaaaa(uv_hi[j+21], uv[j+21], uv_hi[j+21], uv[j+21], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+22]);
+            add_ssaaaa(uv_hi[j+22], uv[j+22], uv_hi[j+22], uv[j+22], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+23]);
+            add_ssaaaa(uv_hi[j+23], uv[j+23], uv_hi[j+23], uv[j+23], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+24]);
+            add_ssaaaa(uv_hi[j+24], uv[j+24], uv_hi[j+24], uv[j+24], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+25]);
+            add_ssaaaa(uv_hi[j+25], uv[j+25], uv_hi[j+25], uv[j+25], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+26]);
+            add_ssaaaa(uv_hi[j+26], uv[j+26], uv_hi[j+26], uv[j+26], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+27]);
+            add_ssaaaa(uv_hi[j+27], uv[j+27], uv_hi[j+27], uv[j+27], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+28]);
+            add_ssaaaa(uv_hi[j+28], uv[j+28], uv_hi[j+28], uv[j+28], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+29]);
+            add_ssaaaa(uv_hi[j+29], uv[j+29], uv_hi[j+29], uv[j+29], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+30]);
+            add_ssaaaa(uv_hi[j+30], uv[j+30], uv_hi[j+30], uv[j+30], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+31]);
+            add_ssaaaa(uv_hi[j+31], uv[j+31], uv_hi[j+31], uv[j+31], s1, s0);
+        }
+        for (; j < k; j++)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+        }
+    }
+
+    for (ulong j = 0; j < k; j++)
+        NMOD2_RED2(uv[j], uv_hi[j], uv[j], mod);
+    _nmod_vec_clear(uv_hi);
+}
+
+void _nmod_vec_dot_product_multi_2_v8_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod)
+{
+    mp_ptr uv_hi = _nmod_vec_init(k);
+    _nmod_vec_zero(uv, k);
+    _nmod_vec_zero(uv_hi, k);
+    mp_limb_t s0, s1;
+    ulong i = 0;
+    for (; i+8 < len; i += 8)
+    {
+        ulong j = 0;
+        for (; j+7 < k; j+=8)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+4], v[i+4][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+5], v[i+5][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+6], v[i+6][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+7], v[i+7][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i+4], v[i+4][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i+5], v[i+5][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i+6], v[i+6][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i+7], v[i+7][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i+4], v[i+4][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i+5], v[i+5][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i+6], v[i+6][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i+7], v[i+7][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i+4], v[i+4][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i+5], v[i+5][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i+6], v[i+6][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i+7], v[i+7][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i+4], v[i+4][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i+5], v[i+5][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i+6], v[i+6][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i+7], v[i+7][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i+4], v[i+4][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i+5], v[i+5][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i+6], v[i+6][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i+7], v[i+7][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i+4], v[i+4][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i+5], v[i+5][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i+6], v[i+6][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i+7], v[i+7][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+
+            umul_ppmm(s1, s0, u[i], v[i][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i+4], v[i+4][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i+5], v[i+5][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i+6], v[i+6][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+            umul_ppmm(s1, s0, u[i+7], v[i+7][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+        }
+        for (; j < k; j++)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+1], v[i+1][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+2], v[i+2][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+3], v[i+3][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+4], v[i+4][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+5], v[i+5][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+6], v[i+6][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i+7], v[i+7][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+        }
+    }
+    for (; i < len; i++)
+    {
+        ulong j = 0;
+        for (; j+7 < k; j+=8)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+1]);
+            add_ssaaaa(uv_hi[j+1], uv[j+1], uv_hi[j+1], uv[j+1], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+2]);
+            add_ssaaaa(uv_hi[j+2], uv[j+2], uv_hi[j+2], uv[j+2], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+3]);
+            add_ssaaaa(uv_hi[j+3], uv[j+3], uv_hi[j+3], uv[j+3], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+4]);
+            add_ssaaaa(uv_hi[j+4], uv[j+4], uv_hi[j+4], uv[j+4], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+5]);
+            add_ssaaaa(uv_hi[j+5], uv[j+5], uv_hi[j+5], uv[j+5], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+6]);
+            add_ssaaaa(uv_hi[j+6], uv[j+6], uv_hi[j+6], uv[j+6], s1, s0);
+            umul_ppmm(s1, s0, u[i], v[i][j+7]);
+            add_ssaaaa(uv_hi[j+7], uv[j+7], uv_hi[j+7], uv[j+7], s1, s0);
+        }
+        for (; j < k; j++)
+        {
+            umul_ppmm(s1, s0, u[i], v[i][j+0]);
+            add_ssaaaa(uv_hi[j+0], uv[j+0], uv_hi[j+0], uv[j+0], s1, s0);
+        }
+    }
+
+    for (ulong j = 0; j < k; j++)
+        NMOD2_RED2(uv[j], uv_hi[j], uv[j], mod);
+    _nmod_vec_clear(uv_hi);
+}
+
 
 static inline
 void _nmod_vec_dot_product_multi_3(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
@@ -1170,13 +1998,12 @@ void nmod_vec_dot_product_multi(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
 
     if (n_limbs == 2)
     {
-        printf("NOT IMPLEMENTED YET\n");
         _nmod_vec_dot_product_multi_2(uv, u, v, len, k, mod);
         return;
     }
     if (n_limbs == 3)
     {
-        printf("NOT IMPLEMENTED YET\n");
+        printf("%ld, NOT IMPLEMENTED YET\n", mod.n);
         _nmod_vec_dot_product_multi_3(uv, u, v, len, max_bits_u, max_bits_v, k, mod);
         return;
     }

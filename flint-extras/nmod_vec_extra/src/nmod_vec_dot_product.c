@@ -128,6 +128,11 @@ mp_limb_t _nmod_vec_dot_product_2_split16(mp_srcptr v1, mp_srcptr v2, ulong len,
 }
 
 // TODO benchmark more, integrate, give precise conditions for when this works
+// (or better, really do a hand-made avx512 version...)
+// --> if splitting at 26, each product is 52, can allow at most 12 additional bits,
+// i.e. not more than xxx terms (this depends on the size of the high part since
+// they are not balanced... could make sense to balance them to allow more terms,
+// but do this only if this really is interesting in terms of speed)
 mp_limb_t _nmod_vec_dot_product_2_split26(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
 {
     uint v1hi, v1lo, v2hi, v2lo;

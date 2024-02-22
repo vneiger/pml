@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <time.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
@@ -62,73 +63,186 @@ void time_nmod_vec_dot_product_multi(ulong len, ulong k, ulong maxbits1, ulong m
     }
     t1 /= nb_iter; printf("%.1e\t", t1);
 
-    // variant v1_8
-    t3 = 0.0; nb_iter = 0;
-    while (t3 < 0.5)
-    {
-        mp_ptr uv = _nmod_vec_init(k);
-        tt = clock();
-        _nmod_vec_dot_product_multi_1_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
-        t3 += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        _nmod_vec_clear(uv);
-        nb_iter += 5;
-    }
-    t3 /= nb_iter; printf("%.1e\t", t3);
+    //// variant v1_8
+    //t3 = 0.0; nb_iter = 0;
+    //while (t3 < 0.5)
+    //{
+    //    mp_ptr uv = _nmod_vec_init(k);
+    //    tt = clock();
+    //    _nmod_vec_dot_product_multi_1_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    t3 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+    //    _nmod_vec_clear(uv);
+    //    nb_iter += 5;
+    //}
+    //t3 /= nb_iter; printf("%.1e\t", t3);
 
-    // variant v8_8
-    t3 = 0.0; nb_iter = 0;
-    while (t3 < 0.5)
-    {
-        mp_ptr uv = _nmod_vec_init(k);
-        tt = clock();
-        _nmod_vec_dot_product_multi_1_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
-        t3 += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        _nmod_vec_clear(uv);
-        nb_iter += 5;
-    }
-    t3 /= nb_iter; printf("%.1e\t", t3);
+    //// variant v8_8
+    //t3 = 0.0; nb_iter = 0;
+    //while (t3 < 0.5)
+    //{
+    //    mp_ptr uv = _nmod_vec_init(k);
+    //    tt = clock();
+    //    _nmod_vec_dot_product_multi_1_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    t3 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+    //    _nmod_vec_clear(uv);
+    //    nb_iter += 5;
+    //}
+    //t3 /= nb_iter; printf("%.1e\t", t3);
 
-    // variant v8_32
-    t3 = 0.0; nb_iter = 0;
-    while (t3 < 0.5)
-    {
-        mp_ptr uv = _nmod_vec_init(k);
-        tt = clock();
-        _nmod_vec_dot_product_multi_1_v8_32(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v8_32(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v8_32(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v8_32(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v8_32(uv, u, (mp_srcptr *) v, len, k, mod);
-        t3 += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        _nmod_vec_clear(uv);
-        nb_iter += 5;
-    }
-    t3 /= nb_iter; printf("%.1e\t", t3);
+    //// variant v8_32
+    //t3 = 0.0; nb_iter = 0;
+    //while (t3 < 0.5)
+    //{
+    //    mp_ptr uv = _nmod_vec_init(k);
+    //    tt = clock();
+    //    _nmod_vec_dot_product_multi_1_v8_32(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v8_32(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v8_32(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v8_32(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v8_32(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    t3 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+    //    _nmod_vec_clear(uv);
+    //    nb_iter += 5;
+    //}
+    //t3 /= nb_iter; printf("%.1e\t", t3);
 
-    // variant v16_16
-    t3 = 0.0; nb_iter = 0;
-    while (t3 < 0.5)
+    //// variant v16_16
+    //t3 = 0.0; nb_iter = 0;
+    //while (t3 < 0.5)
+    //{
+    //    mp_ptr uv = _nmod_vec_init(k);
+    //    tt = clock();
+    //    _nmod_vec_dot_product_multi_1_v16_16(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v16_16(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v16_16(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v16_16(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    _nmod_vec_dot_product_multi_1_v16_16(uv, u, (mp_srcptr *) v, len, k, mod);
+    //    t3 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+    //    _nmod_vec_clear(uv);
+    //    nb_iter += 5;
+    //}
+    //t3 /= nb_iter; printf("%.1e\t", t3);
+    //}
+
+    // variant 1-8
+    t2 = 0.0; nb_iter = 0;
+    while (t2 < 0.5)
     {
         mp_ptr uv = _nmod_vec_init(k);
         tt = clock();
-        _nmod_vec_dot_product_multi_1_v16_16(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v16_16(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v16_16(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v16_16(uv, u, (mp_srcptr *) v, len, k, mod);
-        _nmod_vec_dot_product_multi_1_v16_16(uv, u, (mp_srcptr *) v, len, k, mod);
-        t3 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        _nmod_vec_dot_product_multi_2_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v1_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         _nmod_vec_clear(uv);
         nb_iter += 5;
     }
-    t3 /= nb_iter; printf("%.1e\t", t3);
+    t2 /= nb_iter; printf("%.1e\t", t2);
+
+    // variant 4-8
+    t2 = 0.0; nb_iter = 0;
+    while (t2 < 0.5)
+    {
+        mp_ptr uv = _nmod_vec_init(k);
+        tt = clock();
+        _nmod_vec_dot_product_multi_2_v4_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v4_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v4_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v4_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v4_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        _nmod_vec_clear(uv);
+        nb_iter += 5;
+    }
+    t2 /= nb_iter; printf("%.1e\t", t2);
+
+    // variant 8-8
+    t2 = 0.0; nb_iter = 0;
+    while (t2 < 0.5)
+    {
+        mp_ptr uv = _nmod_vec_init(k);
+        tt = clock();
+        _nmod_vec_dot_product_multi_2_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v8_8(uv, u, (mp_srcptr *) v, len, k, mod);
+        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        _nmod_vec_clear(uv);
+        nb_iter += 5;
+    }
+    t2 /= nb_iter; printf("%.1e\t", t2);
+
+    // variant 4-32
+    t2 = 0.0; nb_iter = 0;
+    while (t2 < 0.5)
+    {
+        mp_ptr uv = _nmod_vec_init(k);
+        tt = clock();
+        _nmod_vec_dot_product_multi_2_v4_32(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v4_32(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v4_32(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v4_32(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_v4_32(uv, u, (mp_srcptr *) v, len, k, mod);
+        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        _nmod_vec_clear(uv);
+        nb_iter += 5;
+    }
+    t2 /= nb_iter; printf("%.1e\t", t2);
+
+    // variant split26
+    t2 = 0.0; nb_iter = 0;
+    while (t2 < 0.5)
+    {
+        mp_ptr uv = _nmod_vec_init(k);
+        tt = clock();
+        _nmod_vec_dot_product_multi_2_split26(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_split26(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_split26(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_split26(uv, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_2_split26(uv, u, (mp_srcptr *) v, len, k, mod);
+        t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        _nmod_vec_clear(uv);
+        nb_iter += 5;
+    }
+    t2 /= nb_iter; printf("%.1e\t", t2);
+
+
+
+    // TODO test disabled for the moment (split26 sometimes fails due to overflow)
+    if (0 && FLINT_BIT_COUNT(n) < 45)
+    {
+        mp_ptr uv1 = _nmod_vec_init(k);
+        nmod_vec_dot_product_multi(uv1, u, (mp_srcptr *) v, len, k, maxbits1, maxbits2, mod);
+        mp_ptr uv2 = _nmod_vec_init(k);
+        _nmod_vec_dot_product_multi_2_v1_8(uv2, u, (mp_srcptr *) v, len, k, mod);
+        assert(_nmod_vec_equal(uv1, uv2, k) && "v1_8");
+        _nmod_vec_dot_product_multi_2_v4_8(uv2, u, (mp_srcptr *) v, len, k, mod);
+        assert(_nmod_vec_equal(uv1, uv2, k) && "v4_8");
+        _nmod_vec_dot_product_multi_2_v8_8(uv2, u, (mp_srcptr *) v, len, k, mod);
+        assert(_nmod_vec_equal(uv1, uv2, k) && "v8_8");
+        _nmod_vec_dot_product_multi_2_v4_32(uv2, u, (mp_srcptr *) v, len, k, mod);
+        assert(_nmod_vec_equal(uv1, uv2, k) && "v4_32");
+        _nmod_vec_dot_product_multi_2_split26(uv2, u, (mp_srcptr *) v, len, k, mod);
+        if (!_nmod_vec_equal(uv1, uv2, k))
+        {
+            printf("\n\n");
+            _nmod_vec_print(uv1, k, mod);
+            printf("\n\n");
+            _nmod_vec_print(uv2, k, mod);
+        }
+        assert(_nmod_vec_equal(uv1, uv2, k) && "split26");
+    }
 
     // flint's vector-matrix product
     t2 = 0.0; nb_iter = 0;
@@ -183,6 +297,37 @@ void time_nmod_vec_dot_product_multi(ulong len, ulong k, ulong maxbits1, ulong m
         nb_iter += 5;
     }
     t2 /= nb_iter; printf("%.1e\t", t2);
+
+    if (FLINT_BIT_COUNT(n) < 31)
+    {
+        // pml's small modulus matrix-vector product
+        t2 = 0.0; nb_iter = 0;
+        while (t2 < 0.5)
+        {
+            mp_ptr uv = _nmod_vec_init(k);
+            tt = clock();
+            nmod_mat_mul_nmod_vec_small_modulus(uv, vmattr, ur, len);
+            nmod_mat_mul_nmod_vec_small_modulus(uv, vmattr, ur, len);
+            nmod_mat_mul_nmod_vec_small_modulus(uv, vmattr, ur, len);
+            nmod_mat_mul_nmod_vec_small_modulus(uv, vmattr, ur, len);
+            nmod_mat_mul_nmod_vec_small_modulus(uv, vmattr, ur, len);
+            t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+            _nmod_vec_clear(uv);
+            nb_iter += 5;
+        }
+        t2 /= nb_iter; printf("%.1e\t", t2);
+    }
+
+    if (0)
+    {
+        mp_ptr uv1 = _nmod_vec_init(k);
+        mp_ptr uv2 = _nmod_vec_init(k);
+        nmod_mat_mul_nmod_vec_newdot(uv1, vmattr, ur, len);
+        nmod_mat_mul_nmod_vec_small_modulus(uv2, vmattr, ur, len);
+        assert(_nmod_vec_equal(uv1, uv2, len));
+        _nmod_vec_clear(uv1);
+        _nmod_vec_clear(uv2);
+    }
 
     _nmod_vec_clear(u);
     for (ulong i = 0; i < len; i++)
@@ -279,7 +424,7 @@ int main(int argc, char ** argv)
     {
         // warmup
         printf("Warmup:");
-        time_nmod_vec_dot_product_multi(16, 16, 20, 20, (UWORD(1) << 19) + 1, state);
+        time_nmod_vec_dot_product_multi(16, 16, 20, 20, (UWORD(1) << 20) - 1, state);
         printf("\n");
 
         printf("%s\n",labels);
@@ -287,7 +432,7 @@ int main(int argc, char ** argv)
         const ulong len = atoi(argv[2]);
         const ulong k = atoi(argv[3]);
         printf("%ld\t%ld\t%ld\t", nbit, len, k);
-        time_nmod_vec_dot_product_multi(len, k, nbit, nbit, (UWORD(1) << (nbit-1))+1, state);
+        time_nmod_vec_dot_product_multi(len, k, nbit, nbit, (UWORD(1) << (nbit))-1, state);
         printf("\n");
     }
 

@@ -112,9 +112,10 @@ void time_nmod_vec_dot_product(ulong len, ulong maxbits1, ulong maxbits2, ulong 
         val2 = _nmod_vec_dot_product_2_split16(v1, v2, len, mod);
         assert (val1 == val2 && "2_split16");
     }
-    if (FLINT_BIT_COUNT(n) <= 56)
+    if (FLINT_BIT_COUNT(n) <= 52)
     {
         val2 = _nmod_vec_dot_product_2_split26(v1, v2, len, mod);
+        if (val1 != val2) {fflush(stdout); printf("\n");}
         assert (val1 == val2 && "2_split26");
     }
 
@@ -132,7 +133,7 @@ int main()
 
     printf("len\t3\t3\t10\t10\t20\t20\t29\t29\t30\t30\t31\t31\t32\t32\t40\t40\t50\t50\t60\t60\t64\t64\n");
     //for (slong len = 100; len < 1000; len += 21)
-    for (slong len = 20; len < 4000; len *= 2)
+    for (slong len = 800; len < 4000; len *= 2)
     {
         printf("%ld\t", len);
         //time_nmod_vec_dot_product(len, 1, 3, (UWORD(1) << 3) + 1, state);
@@ -153,10 +154,10 @@ int main()
         //time_nmod_vec_dot_product(len, 16, 32, (UWORD(1) << 32) + 1, state);
         //time_nmod_vec_dot_product(len, 32, 32, (UWORD(1) << 32) + 1, state);
         //time_nmod_vec_dot_product(len, 20, 40, (UWORD(1) << 40) + 1, state);
-        //time_nmod_vec_dot_product(len, 40, 40, (UWORD(1) << 40) + 1, state);
+        time_nmod_vec_dot_product(len, 40, 40, (UWORD(1) << 40) + 1, state);
         //printf("\n");
         //time_nmod_vec_dot_product(len, 25, 50, (UWORD(1) << 50) + 1, state);
-        time_nmod_vec_dot_product(len, 50, 50, (UWORD(1) << 50) - 1, state);
+        //time_nmod_vec_dot_product(len, 50, 50, (UWORD(1) << 50) - 1, state);
         printf("\n");
         //time_nmod_vec_dot_product(len, 30, 60, (UWORD(1) << 60) + 1, state);
         //time_nmod_vec_dot_product(len, 60, 60, (UWORD(1) << 60) + 1, state);
