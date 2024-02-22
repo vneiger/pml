@@ -119,33 +119,41 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
     mp_limb_t * A_i_piv = flint_malloc(FLINT_MIN(A->r, A->c) * sizeof(mp_limb_t));
     // will store results of parts of A multiplied by A_i_piv
     mp_limb_t * A_vec = flint_malloc(A->r * sizeof(mp_limb_t));
-    // we will use some windows of A
-    nmod_mat_t Awin;
 
-    // other things, only for OTHERVERSION
-    nmod_mat_t Arowwin;
-    nmod_mat_t matvec;
+    // we will use some windows of A, for 1st VERSION and OTHERVERSION
+    //nmod_mat_t Awin;
+    //// other things, only for OTHERVERSION
+    //nmod_mat_t Arowwin;
+    //nmod_mat_t matvec;
+    // tmp vec, only for YETOTHERVERSION
+    mp_ptr vecmat = _nmod_vec_init(A->c);
+    mp_ptr * Arows_rk = flint_malloc(A->r * sizeof(mp_ptr)); // TODO could be avoided by providing starting column index to dot_product_multi
 
     while (rank + nullity < A->r)
     {
         // update row rank
         // A[rank, rank:] <-- A[rank, rank:] - A[rank, :rank] * A[:rank, rank:]
-        // 1stVERSION, TESTED:
+        //// 1stVERSION, TESTED:
         //for (slong i = 0; i < rank; i++)
         //    _nmod_vec_scalar_addmul_nmod(A->rows[rank] + rank,
         //                                 A->rows[i] + rank,
         //                                 A->c - rank,
         //                                 nmod_neg(nmod_mat_entry(A, rank, i), A->mod),
         //                                 A->mod);
-        // OTHERVERSION, TESTED: with mul, which actually seems faster than nmod_mat_nmod_vec_mul...
-        nmod_mat_window_init(Arowwin, A, rank, 0, rank+1, rank);
-        nmod_mat_window_init(Awin, A, 0, rank, rank, A->c);
-        nmod_mat_init(matvec, 1, A->c - rank, A->mod.n);
-        nmod_mat_mul(matvec, Arowwin, Awin);
-        _nmod_vec_sub(A->rows[rank]+rank, A->rows[rank]+rank, matvec->rows[0], A->c - rank, A->mod);
-        nmod_mat_clear(matvec);
-        nmod_mat_window_clear(Awin);
-        nmod_mat_window_clear(Arowwin);
+        //// OTHERVERSION, TESTED: with mul, which actually seems faster than nmod_mat_nmod_vec_mul...
+        //nmod_mat_window_init(Arowwin, A, rank, 0, rank+1, rank);
+        //nmod_mat_window_init(Awin, A, 0, rank, rank, A->c);
+        //nmod_mat_init(matvec, 1, A->c - rank, A->mod.n);
+        //nmod_mat_mul(matvec, Arowwin, Awin);
+        //_nmod_vec_sub(A->rows[rank]+rank, A->rows[rank]+rank, matvec->rows[0], A->c - rank, A->mod);
+        //nmod_mat_clear(matvec);
+        //nmod_mat_window_clear(Awin);
+        //nmod_mat_window_clear(Arowwin);
+        // YETOTHERVERSION, TESTED: with new nmod_mat_nmod_vec_mul (via dot_product_multi)
+        for (slong i = 0; i < rank; i++)
+            Arows_rk[i] = A->rows[i]+rank;
+        nmod_vec_dot_product_multi(vecmat, A->rows[rank], (mp_srcptr *) Arows_rk, rank, A->c - rank, nbits, nbits, A->mod);
+        _nmod_vec_sub(A->rows[rank]+rank, A->rows[rank]+rank, vecmat, A->c - rank, A->mod);
 
         // seek pivot: on row rank, first nonzero entry with column index >= rank
         slong pivot = rank;
@@ -190,6 +198,10 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
     }
     flint_free(A_vec);
     flint_free(A_i_piv);
+
+    // for YETOTHERVERSION
+    _nmod_vec_clear(vecmat);
+    flint_free(Arows_rk);
     return rank;
 }
 

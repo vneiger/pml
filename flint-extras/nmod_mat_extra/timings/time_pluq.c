@@ -37,7 +37,12 @@ int main(int argc, char ** argv)
 
     nmod_mat_t mat, LU;
     nmod_mat_init(mat, m, n, primes[nbits-2]);
-    nmod_mat_randrank_dense(mat, state, rk);
+    if (rk == FLINT_MIN(m, n))
+        // not 100% fine: not benchmarking non-generic rank profiles...
+        // but makes random filling much faster
+        nmod_mat_rand(mat, state);
+    else
+        nmod_mat_randrank_dense(mat, state, rk);
     nmod_mat_init(LU, m, n, primes[nbits-2]);
 
     double t;
