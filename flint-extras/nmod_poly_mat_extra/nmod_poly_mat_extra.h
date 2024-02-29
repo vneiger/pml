@@ -27,7 +27,6 @@
 
 // include flint-extra's files
 #include "nmod_poly_mat_utils.h"
-#include "nmod_poly_mat_mat_poly.h"
 
 #include "nmod_poly_mat_io.h"
 #include "nmod_poly_mat_forms.h"

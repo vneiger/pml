@@ -13,7 +13,6 @@
 #include <flint/fmpz_types.h> // for fmpz_mat degree matrix
 #include <flint/nmod_poly.h> // for nmod_poly_swap
 
-#include "nmod_poly_mat_mat_poly.h" // TODO remove
 #include "nmod_poly_mat_forms.h" // for orientation
 #include "nmod_mat_poly.h"
 
@@ -570,10 +569,6 @@ void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
  * but this should have been done in Flint's native poly_mat_init too?
  **/
 //void nmod_poly_mat_init_set_from_nmod_mat(nmod_poly_mat_t pmat, const nmod_mat_t cmat);
-
-// TODO remove
-void nmod_poly_mat_set_from_mat_poly0(nmod_poly_mat_t pmat,
-                                     const nmod_mat_poly0_t matp);
 
 /** Set from polynomial with matrix coefficients `matp`, truncated at the
  * specified `order` (a nonnegative integer). */
