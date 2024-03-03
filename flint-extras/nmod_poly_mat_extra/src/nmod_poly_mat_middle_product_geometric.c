@@ -1,7 +1,11 @@
 #include <flint/nmod_mat.h>
+#include <flint/nmod_poly.h>
+#include <flint/nmod_poly_mat.h>
 
 #define DIRTY_ALLOC_MATRIX
 
+#include "nmod_extra.h"
+#include "nmod_poly_extra.h"
 #include "nmod_poly_mat_multiply.h"
 
 /** Middle product for polynomial matrices
@@ -200,7 +204,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
         for (j = 0; j < m; j++)
         {
             mp_ptr dest = tmp_poly->coeffs;
-            for (ell = 0; ell < ellC; u++)
+            for (ell = 0; ell < ellC; ell++)
                 dest[ell] = mod_C[ell]->rows[i][j];
             tmp_poly->length = ellC;
             _nmod_poly_normalise(tmp_poly);

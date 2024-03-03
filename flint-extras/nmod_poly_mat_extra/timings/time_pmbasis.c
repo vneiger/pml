@@ -1,5 +1,7 @@
+#include <stdlib.h>
+#include <flint/ulong_extras.h>
 #include <flint/nmod_poly_mat.h>
-#include "nmod_poly_mat_io.h"
+
 #include "nmod_poly_mat_approximant.h"
 #include "time.h"
 
@@ -14,7 +16,7 @@ void benchmark_pmbasis(slong rdim, slong cdim, slong sigma, slong len,
     nmod_poly_mat_randtest(mat, state, len + 1);
 
     nmod_poly_mat_t res_mbasis;
-    slong shifts[rdim], res_shifts[rdim];
+    slong shifts[rdim];
 
     for (slong i = 0; i < rdim; i++)
         shifts[i] = 0;
@@ -31,18 +33,6 @@ void benchmark_pmbasis(slong rdim, slong cdim, slong sigma, slong len,
     // let's go
     t = 0.0;
     nb_iter = 0;
-
-    //while (t<thres)
-    //{
-    //    nmod_poly_mat_zero(res_mbasis);
-    //    tt = clock();
-    //    pmbasis(res_mbasis, res_shifts, mat, sigma, shifts);
-    //    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-    //    ++nb_iter;
-    //}
-    //t /= nb_iter;
-
-    //printf("%ld\t%ld\t%ld\t%ld\t%f\n", rdim, cdim, sigma, len, t);
 
     {
         t = 0.0;

@@ -1,6 +1,4 @@
-#include <flint/nmod_mat.h>
-
-#include "nmod_poly_mat_multiply.h"
+#include <flint/nmod_poly_mat.h>
 
 /** Middle product for polynomial matrices
  *  sets C = ((A * B) div x^dA) mod x^(dB+1), assuming deg(A) <= dA and deg(B) <= dA + dB

@@ -5,8 +5,14 @@
  *
  */
 
-#include "nmod_poly_mat_extra.h"
-#include "time.h"
+#include <time.h>
+#include <stdlib.h>
+#include <flint/ulong_extras.h>
+#include <flint/nmod_poly_mat.h>
+
+#include "nmod_poly_mat_utils.h"
+#include "nmod_poly_mat_multiply.h"
+
 
 /** Bench of polmatmul for given dimension, degree, modulus.
  *
@@ -86,7 +92,7 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
             if (!nmod_poly_mat_equal(c1, c2))
             {
                 printf("\terror with 3 primes\n");
-                exit(-1);
+                return;
             }
     }
     else
@@ -109,7 +115,7 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
         if (!nmod_poly_mat_equal(c1, c2))
         {
             printf("\terror with geometric\n");
-            exit(-1);
+            return;
         }
     }
     else
@@ -132,7 +138,7 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
         if (!nmod_poly_mat_equal(c1, c2))
         {
             printf("\terror with vdm1\n");
-            exit(-1);
+            return;
         }
     }
     else
@@ -155,7 +161,7 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
         if (!nmod_poly_mat_equal(c1, c2))
         {
             printf("\terror with vdm2\n");
-            exit(-1);
+            return;
         }
     }
     else
@@ -177,7 +183,7 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
         if (!nmod_poly_mat_equal(c1, c2))
         {
             printf("\terror with waksman\n");
-            exit(-1);
+            return;
         }
     }
     else

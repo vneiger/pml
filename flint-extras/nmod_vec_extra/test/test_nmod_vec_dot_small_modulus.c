@@ -1,5 +1,5 @@
 #include <assert.h>
-#include <gmp.h>
+#include <flint/nmod.h>
 #include <flint/nmod_vec.h>
 
 #include "nmod_vec_extra.h"
@@ -8,14 +8,12 @@
 /*--------------------------------------------------------------*/
 /* computes a dot product in size len modulo n                  */
 /*--------------------------------------------------------------*/
-void check_nmod_vec_dot_small_modulus(ulong len, ulong n)
+void check_nmod_vec_dot_small_modulus(ulong len, ulong n, flint_rand_t state)
 {
-    flint_rand_t state;
     mp_limb_t res1, res2;
     mp_ptr v1, v2;
     nmod_t mod;
 
-    flint_randinit(state);
     nmod_init(&mod, n);
 
     v1 = _nmod_vec_init(len);
@@ -30,17 +28,38 @@ void check_nmod_vec_dot_small_modulus(ulong len, ulong n)
     
     _nmod_vec_clear(v1);
     _nmod_vec_clear(v2);
-    flint_randclear(state);
 }
 
 /*--------------------------------------------------------------*/
 /* main calls check                                             */
 /*--------------------------------------------------------------*/
-int main(int argc, char **argv)
+int main()
 {
-    slong i;
-    for (i = 1; i < 1000; i += 1)
-	check_nmod_vec_dot_small_modulus(i, (1L << 29) + 1);
+    flint_rand_t state;
+    flint_randinit(state);
 
+    printf("test running, various bitlengths, len from 1 to 999 (no error message means success)...\n");
+    for (slong len = 1; len < 1000; len += 1)
+    {
+        if (len % 20 == 0)
+        {
+            printf("%ld..", len);
+            fflush(stdout);
+        }
+        for (slong repeat = 0; repeat < 30; repeat++)
+        {
+            check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 2) + 1, state);
+            check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 6) + 1, state);
+            check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 10) + 1, state);
+            check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 14) + 1, state);
+            check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 18) + 1, state);
+            check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 22) + 1, state);
+            check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 26) + 1, state);
+            check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 29) + 1, state);
+        }
+    }
+    printf("\n");
+
+    flint_randclear(state);
     return 0;
 }

@@ -1,6 +1,6 @@
+#include <flint/nmod_poly.h>
 #include "nmod_poly_mat_io.h"
 #include "nmod_poly_mat_forms.h"
-#include "nmod_poly_mat_utils.h"
 
 int main()
 {

@@ -1,4 +1,6 @@
 #include <flint/nmod_mat.h>
+#include <flint/nmod_poly.h>
+#include <flint/nmod_poly_mat.h>
 
 #include "nmod_extra.h"
 #include "nmod_poly_mat_multiply.h"

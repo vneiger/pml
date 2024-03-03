@@ -1,17 +1,10 @@
-#include <flint/flint.h>
-#include <flint/nmod_poly.h>
-#include <flint/nmod_vec.h>
 #include <stdlib.h>
+#include <flint/nmod_types.h>
+#include <flint/profiler.h>
 
 #include "nmod_poly_mat_forms.h"
-#include "nmod_poly_mat_utils.h"
-#include "nmod_poly_mat_io.h"
-#include "sagemath_extra.h"
 
 #include "testing_collection.h"
-#include <flint/nmod_poly_mat.h>
-#include <flint/ulong_extras.h>
-#include <flint/profiler.h>
 
 #define MAT(i,j) (mat->rows[i] + j)
 

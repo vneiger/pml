@@ -1,5 +1,8 @@
+#include <flint/fmpz_mat.h>
+#include <flint/nmod_mat.h>
+#include <flint/nmod_poly.h>
 #include "nmod_poly_mat_io.h"
-#include "nmod_poly_mat_forms.h" // for nmod_poly_mat_degree_matrix
+#include "nmod_poly_mat_forms.h" // for nmod_poly_mat_degree_matrix, orientation
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

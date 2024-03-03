@@ -19,7 +19,7 @@ void one_bench(long rdim, long cdim, long degA, long degB)
 
     double t_div=0.0;
     long nb_iter=0;
-    while (t_div<0.2)
+    while (t_div<0.5)
     {
         // random A
         Mat<zz_pX> A;
@@ -179,6 +179,7 @@ int main(int argc, char ** argv)
         const long cdim = atoi(argv[4]);
         const long degA = atoi(argv[5]);
         const long degB = atoi(argv[6]);
+        warmup();
         run_bench(1,nbits,fftprime,rdim,cdim,degA,degB);
     }
     else

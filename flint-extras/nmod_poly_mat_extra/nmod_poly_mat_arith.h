@@ -14,7 +14,7 @@
  *
  */
 
-#include <flint/nmod_poly_mat.h>
+#include <flint/nmod_types.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,8 +1,10 @@
-#include <flint/flint.h>
-#include <flint/nmod_poly.h>
+#include <time.h>
+#include <stdlib.h>
+#include <flint/nmod_types.h>
 #include <flint/nmod_poly_mat.h>
 
-#include "nmod_poly_mat_extra.h"
+#include "nmod_poly_mat_utils.h"
+#include "nmod_poly_mat_multiply.h"
 
 /*--------------------------------------------------------------*/
 /* multiplies matrices using different implementations          */

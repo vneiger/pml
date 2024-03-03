@@ -25,15 +25,24 @@ extern "C" {
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-/** matrix multiplication using AVX2 instructions for moduli less than 2^30 */
+/** matrix multiplication using AVX2 instructions for moduli less than 2^30 (TODO refine bound) */
 void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B);
+/** matrix-vector multiplication using AVX2 instructions for moduli less than 2^30 (TODO refine bound) */
+// v[:A->r] = A[:,:len]*u[:len], v may not alias u
+void nmod_mat_mul_nmod_vec_small_modulus(mp_ptr v, const nmod_mat_t A, mp_srcptr u, ulong len);
+
+/** matrix multiplication not using AVX2 instructions */
+// C = A*B
+void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B);
+// v[:A->r] = A[:,:len]*u[:len], v may not alias u
+void nmod_mat_mul_nmod_vec_newdot(mp_ptr v, const nmod_mat_t A, mp_srcptr u, ulong len);
 
 NMOD_MAT_INLINE
 void nmod_mat_mul_pml(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
 {
     if (A->mod.n < (1L < 29))
         nmod_mat_mul_small_modulus(C, A, B);
-    else 
+    else
         nmod_mat_mul(C, A, B);
 }
 
@@ -286,6 +295,179 @@ nmod_mat_rand_fullrank_urcef(nmod_mat_t mat,
 }
 
 //@} // doxygen group: Random
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* PLUQ DECOMPOSITION                                         */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name PLUQ
+ *
+ *  These functions are for PLUQ decomposition and related tasks.
+ *  \todo doc
+ */
+//@{
+
+
+/** PLUQ decomposition.
+ *
+ * For an m x n matrix A, computes a PLUQ decomposition
+ * --> returns P, LU, Q, rank such that:
+ *  - LU is L and U compactly stored ## TODO be more precise
+ *  - P is a row permutation (list [0...m-1], permuted)
+ *  - Q is a column permutation (list [0...n-1], permuted)
+ *  - rank is the rank of A
+ *  - A = P*L*U*Q
+ *
+ * input: P and Q have been allocated as identity permutations of the right
+ * length, typically with
+ *  slong * P = _perm_init(A->r);
+ *  slong * Q = _perm_init(A->c);
+ *
+ * Rotations are performed to preserve the row rank profile, so that in the end
+ * we have P = rrp+nrrp, where rrp is the row rank profile of A and nrrp is the
+ * list of row indices not in rrp (both rrp and nrrp are increasing).
+ *
+ * Using lexicographic order, using row rotations + column rotations
+ * ==> preserves the rank profile matrix and row (resp.column) relations precedence
+ *    
+ * \todo with the current computation of P,Q,
+ * the functions nmod_permute_{rows,columns} are such that one should
+ * first invert P and Q before using them:
+ * _perm_inv(P, P, LU->r);
+ * nmod_permute_rows(LU, P, NULL);
+ */
+slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q);
+slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q);
+
+/** Expand LU stored in compact format into two triangular matrices L and U.
+ * Conventions, for LU of dimensions m x n of rank rk:
+ * - L is m x m unit lower triangular (with the 1's not stored in LU)
+ * - only first rk columns of L are stored in LU, the rest are implicit
+ *   identity columns
+ * - U is m x n upper triangular, with only the first `rk` rows nonzero
+ * Requirements:
+ * - the rank rk has to be provided
+ * - U may alias LU, L may not alias LU
+ * - for "zeroin" variant only: on input, L is zero and (either U aliases LU or U is zero)
+ **/
+void _nmod_mat_l_u_from_compactlu_zeroin(nmod_mat_t L,
+                                         nmod_mat_t U,
+                                         const nmod_mat_t LU,
+                                         slong rank);
+void nmod_mat_l_u_from_compactlu(nmod_mat_t L,
+                                 nmod_mat_t U,
+                                 const nmod_mat_t LU,
+                                 slong rank);
+
+//@} // doxygen group: PLUQ
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* ROW/COLUMN ROTATIONS                                       */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name Rotations
+ *
+ *  These functions are for row rotations and column rotations.
+ *  \todo could be in generics? (same functions for nmod_poly_mat, see
+ *  the row variants therein: almost zero modification...)
+ */
+//@{
+
+// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[i,:]     <--    mat[j,:]
+//      mat[i+1,:]   <--    mat[i,:]
+//      mat[i+2,:]   <--    mat[i+1,:]
+//         ...       <--       ...
+//      mat[j-1,:]   <--    mat[j-2,:]
+//      mat[j,:]     <--    mat[j-1,:]
+// as well as
+//      vec[i]     <--    vec[j]
+//      vec[i+1]   <--    vec[i]
+//      vec[i+2]   <--    vec[i+1]
+//        ...      <--      ...
+//      vec[j-1]   <--    vec[j-2]
+//      vec[j]     <--    vec[j-1]
+void _nmod_mat_rotate_rows_downward(nmod_mat_t mat, slong * vec, slong i, slong j);
+
+// rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[i,:]     <--    mat[i+1,:]
+//      mat[i+1,:]   <--    mat[i+2,:]
+//      mat[i+2,:]   <--       ...
+//         ...       <--    mat[j-1,:]
+//      mat[j-1,:]   <--    mat[j,:]
+//      mat[j,:]     <--    mat[i,:]
+// as well as
+//      vec[i]     <--    vec[i+1]
+//      vec[i+1]   <--    vec[i+2]
+//      vec[i+2]   <--      ...
+//        ...      <--    vec[j-1]
+//      vec[j-1]   <--    vec[j]
+//      vec[j]     <--    vec[i]
+void _nmod_mat_rotate_rows_upward(nmod_mat_t mat, slong * vec, slong i, slong j);
+
+
+// rotate columns of mat from i to j (requirement: 0 <= i <= j < mat->c)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[:,i]     <--    mat[:,j]
+//      mat[:,i+1]   <--    mat[:,i]
+//      mat[:,i+2]   <--    mat[:,i+1]
+//         ...       <--       ...
+//      mat[:,j-1]   <--    mat[:,j-2]
+//      mat[:,j]     <--    mat[:,j-1]
+// as well as
+//      vec[i]     <--    vec[j]
+//      vec[i+1]   <--    vec[i]
+//      vec[i+2]   <--    vec[i+1]
+//        ...      <--      ...
+//      vec[j-1]   <--    vec[j-2]
+//      vec[j]     <--    vec[j-1]
+void _nmod_mat_rotate_columns_rightward(nmod_mat_t mat, slong * vec, slong i, slong j);
+
+// rotate columns of mat from i to j (requirement: 0 <= i <= j < mat->c)
+// and apply the corresponding transformation to vec (requirement: j < len(vec))
+// If i == j, then nothing happens.
+// vec can be NULL, in case it is omitted
+// More precisely this performs simultaneously:
+//      mat[:,i]     <--    mat[:,i+1]
+//      mat[:,i+1]   <--    mat[:,i+2]
+//      mat[:,i+2]   <--       ...
+//         ...       <--    mat[:,j-1]
+//      mat[:,j-1]   <--    mat[:,j]
+//      mat[:,j]     <--    mat[:,i]
+// as well as
+//      vec[i]     <--    vec[i+1]
+//      vec[i+1]   <--    vec[i+2]
+//      vec[i+2]   <--      ...
+//        ...      <--    vec[j-1]
+//      vec[j-1]   <--    vec[j]
+//      vec[j]     <--    vec[i]
+void _nmod_mat_rotate_columns_leftward(nmod_mat_t mat, slong * vec, slong i, slong j);
+
+/** Permute columns of a matrix `mat` according to `perm_act`, and propagate
+ * the action on `perm_store`.
+ * That is, performs for each appropriate index `j`, the operations
+ * `perm_store[j] <- perm_store[perm_act[j]]`
+ * `mat[i][j] <- mat[i][perm_act[j]] for all row indices i`
+ **/
+void nmod_mat_permute_columns(nmod_mat_t mat, const slong * perm_act, slong * perm_store);
+
+//@} // doxygen group: Rotations
+
 
 /** Left nullspace of A.
  *
