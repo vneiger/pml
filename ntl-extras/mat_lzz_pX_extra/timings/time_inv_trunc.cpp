@@ -12,7 +12,7 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void one_check(long sz, long deg)
 {
-    const double thres = 0.01;
+    const double thres = 0.5;
     double t_middle, t_geometric;
     long nb;
     Mat<zz_pX> a, x;
@@ -66,7 +66,7 @@ void one_check(long sz, long deg)
 }
 
 /*------------------------------------------------------------*/
-/* for a give prime, checks some (size, degree)               */
+/* for a given prime, checks some (size, degree)              */
 /*------------------------------------------------------------*/
 void all_checks()
 {
@@ -113,7 +113,17 @@ int main(int argc, char ** argv)
     std::cout << std::fixed;
     std::cout << std::setprecision(8);
     warmup();
-    check();
+    if (argc == 1)
+        check();
+    else if (argc == 3) // sz, deg
+    {
+        zz_p::FFTInit(0);
+        one_check(atoi(argv[1]), atoi(argv[2]));
+    }
+    else
+    {
+        std::cout << "Usage: ./" << argv[0] << " OR ./" << argv[0] << "sz deg" << std::endl;
+    }
     return 0;
 }
 
