@@ -1,8 +1,7 @@
-#include <assert.h>
+#include <time.h>
 #include <flint/flint.h>
 #include <flint/nmod_mat.h>
 
-#include "nmod_extra.h"
 #include "nmod_poly_extra.h"
 
 /*------------------------------------------------------------*/
@@ -39,7 +38,7 @@ void get_time()
 
     printf("n double_tft sd_tft\n");
     
-    for (long n = nmin; n < nmax+1; n++)
+    for (ulong n = nmin; n < nmax+1; n++)
     {
         nmod_poly_init2(P, p, n);
         for (i = 0; i < n; i++)
@@ -77,7 +76,10 @@ void get_time()
 /*------------------------------------------------------------*/
 /* main just calls get_time()                                 */
 /*------------------------------------------------------------*/
-int main(int argc, char **argv){
+int main(){
     get_time();
     return 0;
 }
+
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

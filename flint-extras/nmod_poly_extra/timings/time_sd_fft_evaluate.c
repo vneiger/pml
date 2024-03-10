@@ -1,78 +1,97 @@
+#include <time.h>
 #include "nmod_poly_extra.h"
 
 /*------------------------------------------------------------*/
-/* computes FFTs up to order 2^14                             */
+/* computes FFTs/TFTs up to order 2^25                        */
 /*------------------------------------------------------------*/
 void get_time()
 {
-    ulong order, order_min, order_max, N;
-    slong i;
     flint_rand_t state;
-    mp_limb_t p, w0, w;
-    sd_fft_ctx_t Q;
-    sd_fft_lctx_t QL;
-    nmod_t mod;
-
-    mp_ptr val;
-    nmod_poly_t P;
-    
     flint_randinit(state);
 
-    p = 1108307720798209;
+    // prime, modulus
+    nmod_t mod;
+    ulong p = 1108307720798209; // 50 bits, 1 + 2**44 * 3**2 * 7
     nmod_init(&mod, p);
-    sd_fft_ctx_init_prime(Q, p);
-    sd_fft_lctx_init(QL, Q, 16);
 
-    order_min = 6;
-    order_max = 11;
-    
-    for (order = order_min; order < order_max; order++)
+    // fft context
+    sd_fft_ctx_t Q;
+    sd_fft_lctx_t QL;
+    sd_fft_ctx_init_prime(Q, p);
+    sd_fft_lctx_init(QL, Q, 27);
+
+    // nmod_sd_fft prepare
+    mp_limb_t w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> 27, mod);
+    mp_limb_t w = nmod_pow_ui(w0, 1L<<(27-27), mod);
+    nmod_sd_fft_t F;
+    nmod_sd_fft_init_set(F, w, 27, mod);
+
+    printf("- order is log(fft length)\n");
+    printf("- timing various tft lengths, e.g. tft1.25 means length 1.25 * 2**order\n");
+    printf("order\tfft1\ttft1\ttft1+\ttft1.25\ttft1.5\ttft1.75\ttft2-\n");
+
+    for (ulong order = 2; order < 26; order++)
     {
         double t;
         clock_t tt;
         long nb_iter;
 
-        N = 1L << order;
-        nmod_poly_init2(P, p, N);
-        val = _nmod_vec_init(N);
+        ulong Ns[6] = {
+            1L<<order,
+            (1L<<order) + 1,
+            (1L<<order) + (1L<<(order-2)),
+            (1L<<order) + (1L<<(order-1)),
+            (1L<<order) + 3*(1L<<(order-2)),
+            (1L<<(order+1)) - 1,
+        };
 
-        for (i = 0; i < N; i++)
-            nmod_poly_set_coeff_ui(P, i, n_randtest(state) % p);
-        
-        printf("%ld ", N);
-
-        t = 0.0;
-        nb_iter = 0;
-        while (t < 0.5)
+        printf("%ld\t", order);
+        for (ulong k = 0; k < 6; k++)
         {
-            tt = clock();
-            nmod_sd_fft_evaluate(val, P, QL, order);
-            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-            ++nb_iter;
-        }
-        t = 1000 * t;
-        t /= nb_iter;
-        printf("%f ", t);
+            ulong N = Ns[k];
 
-        t = 0.0;
-        nb_iter = 0;
-        while (t < 0.5)
-        {
-            tt = clock();
-            nmod_sd_tft_evaluate(val, P, QL, N);
-            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-            ++nb_iter;
-        }
-        t = 1000 * t;
-        t /= nb_iter;
-        printf("%f", t);
+            nmod_poly_t P;
+            nmod_poly_init2(P, p, N);
+            mp_ptr val = _nmod_vec_init(N);
 
+            for (slong i = 0; i < (slong)N; i++)
+                nmod_poly_set_coeff_ui(P, i, n_randtest(state) % p);
+
+            if (k == 0)
+            {
+                t = 0.0;
+                nb_iter = 0;
+                while (t < 0.5)
+                {
+                    tt = clock();
+                    nmod_sd_fft_evaluate(val, P, QL, order);
+                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                    ++nb_iter;
+                }
+                t /= nb_iter;
+                printf("%.1e\t", t);
+            }
+
+            t = 0.0;
+            nb_iter = 0;
+            while (t < 0.5)
+            {
+                tt = clock();
+                nmod_sd_tft_evaluate(val, P, QL, F, N);
+                t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                ++nb_iter;
+            }
+            t /= nb_iter;
+            printf("%.1e\t", t);
+            _nmod_vec_clear(val);
+            nmod_poly_clear(P);
+        }
         printf("\n");
-        _nmod_vec_clear(val);
-        nmod_poly_clear(P);
     }
-    
+
+    sd_fft_lctx_clear(QL, Q);
     sd_fft_ctx_clear(Q);
+    nmod_sd_fft_clear(F);
     flint_randclear(state);
 }
 
@@ -80,8 +99,11 @@ void get_time()
 /*------------------------------------------------------------*/
 /* main just calls get_time()                                 */
 /*------------------------------------------------------------*/
-int main(int argc, char **argv)
+int main()
 {
     get_time();
     return 0;
 }
+
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
