@@ -38,3 +38,6 @@ void sd_fft_ctx_init_inverse(sd_fft_ctx_t Qt, sd_fft_ctx_t Q)
     for (k = SD_FFT_CTX_INIT_DEPTH; k < FLINT_BITS; k++)
         Qt->w2tab[k] = NULL;
 }
+
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

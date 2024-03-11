@@ -825,4 +825,5 @@ void nmod_sd_tft_evaluate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Qt, nmod_sd_fft
     flint_free(wk);
 }
 
-
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -123,3 +123,6 @@ void nmod_sd_fft_init_set(nmod_sd_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
         }
     }
 }
+
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
