@@ -48,7 +48,7 @@ void nmod_integer_fft_init_set(nmod_integer_fft_t F, mp_limb_t w, ulong order, n
 
 // allow initialization with NULL tables
 // allow fit_depth to precompute more tables when wanted/needed
-// 
+// separate computation of the tables from basic init
 
 /*------------------------------------------------------------*/
 /* clears all memory assigned to F                            */
@@ -62,7 +62,7 @@ void nmod_integer_fft_clear(nmod_integer_fft_t F);
 /* returns x[i] = poly(w^i), len=2^k, in bit reverse order    */
 /* x must have length >= len                                  */
 /*------------------------------------------------------------*/
-void _nmod_poly_dif_inplace_radix2(mp_ptr x, ulong len, nmod_integer_fft_t F);
+void _nmod_poly_dif_inplace_radix2(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 void _nmod_poly_dit_inplace_radix2(mp_ptr x, ulong len, nmod_integer_fft_t F);
 //void _nmod_mat_poly_dif_inplace_radix2(nmod_mat_poly_t x, ulong len, nmod_integer_fft_t F);
 //void _nmod_mat_poly_dit_inplace_radix2(nmod_mat_poly_t x, ulong len, nmod_integer_fft_t F);
