@@ -45,6 +45,10 @@ typedef nmod_integer_fft_struct nmod_integer_fft_t[1];
 /* order >= 3 required                                        */
 /*------------------------------------------------------------*/
 void nmod_integer_fft_init_set(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
+void nmod_integer_fft_init_set2(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
+void nmod_integer_fft_init_set3(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
+void nmod_integer_fft_init_set4(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
+void nmod_integer_fft_init_set5(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
 
 // allow initialization with NULL tables
 // allow fit_depth to precompute more tables when wanted/needed

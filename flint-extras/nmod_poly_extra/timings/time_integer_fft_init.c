@@ -22,7 +22,7 @@ void time_init_set()
         1108307720798209,    // 50 bits, 1 + 2**44 * 3**2 * 7
         1139410705724735489, // 60 bits, 1 + 2**52 * 11 * 23
     };
-    ulong max_orders[num_primes] = { 18, 27, 30, 30, 30 };
+    ulong max_orders[num_primes] = { 18, 27, 27, 27, 27 };
 
     for (ulong k = 0; k < num_primes; k++)
     {
@@ -79,6 +79,142 @@ void time_init_set()
                 printf("%.1e\t", t);
             }
 
+            { // v2
+                t = 0.0;
+                nb_iter = 0;
+                while (t < 0.5)
+                {
+                    tt = clock();
+                    nmod_integer_fft_t F;
+                    nmod_integer_fft_init_set2(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set2(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set2(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set2(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set2(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set2(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set2(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set2(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set2(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set2(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                    nb_iter+=10;
+                }
+                t /= nb_iter;
+                printf("%.1e\t", t);
+            }
+
+            { // v3
+                t = 0.0;
+                nb_iter = 0;
+                while (t < 0.5)
+                {
+                    tt = clock();
+                    nmod_integer_fft_t F;
+                    nmod_integer_fft_init_set3(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set3(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set3(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set3(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set3(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set3(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set3(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set3(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set3(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set3(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                    nb_iter+=10;
+                }
+                t /= nb_iter;
+                printf("%.1e\t", t);
+            }
+
+            { // v4
+                t = 0.0;
+                nb_iter = 0;
+                while (t < 0.5)
+                {
+                    tt = clock();
+                    nmod_integer_fft_t F;
+                    nmod_integer_fft_init_set4(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set4(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set4(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set4(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set4(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set4(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set4(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set4(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set4(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set4(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                    nb_iter+=10;
+                }
+                t /= nb_iter;
+                printf("%.1e\t", t);
+            }
+
+            { // v4
+                t = 0.0;
+                nb_iter = 0;
+                while (t < 0.5)
+                {
+                    tt = clock();
+                    nmod_integer_fft_t F;
+                    nmod_integer_fft_init_set5(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set5(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set5(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set5(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set5(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set5(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set5(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set5(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set5(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    nmod_integer_fft_init_set5(F, w, order, mod);
+                    nmod_integer_fft_clear(F);
+                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                    nb_iter+=10;
+                }
+                t /= nb_iter;
+                printf("%.1e\t", t);
+            }
+
             printf("\n");
         }
     }
@@ -92,6 +228,7 @@ void time_init_set()
 /*------------------------------------------------------------*/
 int main()
 {
+    setbuf(stdout, NULL);
     time_init_set();
     return 0;
 }
