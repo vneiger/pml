@@ -21,9 +21,9 @@ typedef struct
     mp_limb_t w;                   // primitive (2**order)th root of 1
     mp_limb_t inv_w;               // inverse of w
     ulong ** tab_w;              // tabulated powers of w
-    mp_limb_t ** tab_inv_w;      // tabulated powers of 1/w
-    mp_limb_t ** tab_inv_w_over_2; // length order, level k is [1/w{k+1}^i/2^k 
-    mp_limb_t * powers_inv_2;    // length order+1, with powers_inv_2[i] = 1/2^i 
+    //mp_limb_t ** tab_inv_w;      // tabulated powers of 1/w
+    //mp_limb_t ** tab_inv_w_over_2; // length order, level k is [1/w{k+1}^i/2^k 
+    //mp_limb_t * powers_inv_2;    // length order+1, with powers_inv_2[i] = 1/2^i 
 } nmod_integer_fft_struct;
 typedef nmod_integer_fft_struct nmod_integer_fft_t[1];
 
@@ -42,13 +42,10 @@ typedef nmod_integer_fft_struct nmod_integer_fft_t[1];
 /* initializes all entries of F                               */
 /* w primitive and w^(2^order))=1                             */
 /* DFTs of size up to 2^order are supported                   */ 
-/* order >= 3 required                                        */
+/* order >= 3 and order < FLINT_BITS (-sth?) required         */
 /*------------------------------------------------------------*/
 void nmod_integer_fft_init_set(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
 void nmod_integer_fft_init_set2(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
-void nmod_integer_fft_init_set3(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
-void nmod_integer_fft_init_set4(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
-void nmod_integer_fft_init_set5(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
 
 // allow initialization with NULL tables
 // allow fit_depth to precompute more tables when wanted/needed
@@ -66,14 +63,12 @@ void nmod_integer_fft_clear(nmod_integer_fft_t F);
 /* returns x[i] = poly(w^i), len=2^k, in bit reverse order    */
 /* x must have length >= len                                  */
 /*------------------------------------------------------------*/
-void _nmod_poly_dif_inplace_radix2(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dit_inplace_radix2(mp_ptr x, ulong len, nmod_integer_fft_t F);
-//void _nmod_mat_poly_dif_inplace_radix2(nmod_mat_poly_t x, ulong len, nmod_integer_fft_t F);
-//void _nmod_mat_poly_dit_inplace_radix2(nmod_mat_poly_t x, ulong len, nmod_integer_fft_t F);
+void _nmod_poly_dif_inplace_radix2_rec(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
+void _nmod_poly_dif_inplace_radix4_rec(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 // TODO :
 // - radix 4
 // - inverse fft
-// - how to handle "not in place"? (e.g. if evaluating polynomial for fft mul, but polynomial needs to be kept)
+// - not in place (e.g. if evaluating polynomial for fft mul, but polynomial needs to be kept)
 
 
 
