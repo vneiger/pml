@@ -9,6 +9,7 @@
 #include <flint/flint.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
+#include <flint/fft_small.h>
 
 #if (defined __SIZEOF_INT128__ && GMP_LIMB_BITS == 64)
 #define HAS_INT128
@@ -25,12 +26,8 @@
 /*------------------------------------------------------------*/
 /* TODO: find which flags to test for                         */
 /*------------------------------------------------------------*/
-//#define HAS_AVX512
 
-
-
-
-#ifdef HAS_AVX2
+#ifdef HAS_AVX2 // TODO: use flint flags for avx512/avx2?
 #include <immintrin.h>
 #endif
 
@@ -47,44 +44,6 @@
 /*        A few extra functionalities for Fp                  */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* in-place reduces a mod p for a in [0,2p)                   */
-/*------------------------------------------------------------*/
-#define CORRECT_0_2P(a, p)                      \
-    do {                                        \
-        a -= (a >= p) ? p : 0;                  \
-    } while(0)
-
-/*------------------------------------------------------------*/
-/* in-place reduces a mod p for a in (-p,p)                   */
-/*------------------------------------------------------------*/
-#define CORRECT_MINUSP_P(a, p)                          \
-    do {                                                \
-        a += ((mp_limb_signed_t) a < 0) ? (p) : 0;      \
-    } while(0)
-
-
-#ifdef HAS_AVX2
-/*------------------------------------------------------------*/
-/* in-place reduces a mod p for a in [0,2p)                   */
-/*------------------------------------------------------------*/
-#define CORRECT_32_0_2P(a, p)                   \
-    do {                                        \
-        a -= (a >= p) ? p : 0;                  \
-    } while(0)
-
-/*------------------------------------------------------------*/
-/* in-place reduces a mod p for a in (-p,p)                   */
-/*------------------------------------------------------------*/
-#define CORRECT_32_MINUSP_P(a, p)                        \
-    do {                                                 \
-        a += ((mp_hlimb_signed_t) a < 0) ? (p) : 0;      \
-    } while(0)
-#endif
-
-
-
 
 /*------------------------------------------------------------*/
 /* returns the smallest i such that 2^i >= x                  */
@@ -104,58 +63,9 @@ mp_limb_t inverse_mod_power_of_two(mp_limb_t p, int k);
 mp_limb_t nmod_find_root(long n, nmod_t mod);
 
 
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* 32 bit modular multiplication using a preconditionner      */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* high word of a*b, assuming words are 32 bits               */
-/*------------------------------------------------------------*/
-static inline mp_hlimb_t mul_hi_32(mp_hlimb_t a, mp_hlimb_t b)
-{
-    return ((mp_limb_t) a * (mp_limb_t) b) >> 32;
-}
-
-/*------------------------------------------------------------*/
-/* returns floor (2^32*b)/p                                   */
-/*------------------------------------------------------------*/
-static inline mp_hlimb_t prep_mul_mod_precon_32(mp_hlimb_t b, mp_hlimb_t p)
-{
-    return (((mp_limb_t) b) << 32) / ((mp_limb_t) p);
-}
-
-/*------------------------------------------------------------*/
-/* preconditioned product                                     */
-/* returns ab mod p                                           */
-/* a is in [0..2^32), b is in [0..p)                          */
-/*------------------------------------------------------------*/
-static inline mp_hlimb_t mul_mod_precon_32(mp_hlimb_t a, mp_hlimb_t b, mp_hlimb_t p, mp_hlimb_t i_b)
-{
-    mp_hlimb_t q;
-    mp_hlimb_signed_t t;
-    q = mul_hi_32(i_b, a);
-    t = a*b - q*p - p;
-    if (t < 0)
-        return t + p;
-    else
-        return t;
-}
-
-/*------------------------------------------------------------*/
-/* returns ab mod p in [0..2p)                                */
-/* a is in [0..2^32), b is in [0..p)                          */
-/*------------------------------------------------------------*/
-static inline mp_hlimb_t mul_mod_precon_unreduced_32(mp_hlimb_t a, mp_hlimb_t b, mp_hlimb_t p, mp_hlimb_t i_b)
-{
-    mp_hlimb_t q;
-    q = mul_hi_32(i_b, a);
-    return a*b - q*p;
-}
-
-
 #ifdef HAS_INT128
+
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -166,7 +76,7 @@ static inline mp_hlimb_t mul_mod_precon_unreduced_32(mp_hlimb_t a, mp_hlimb_t b,
 /*------------------------------------------------------------*/
 /* high word of a*b, assuming words are 64 bits               */
 /*------------------------------------------------------------*/
-static inline mp_limb_t mul_hi(mp_limb_t a, mp_limb_t b)
+FLINT_FORCE_INLINE mp_limb_t mul_hi(mp_limb_t a, mp_limb_t b)
 {
     mp_dlimb_t prod;
     prod = a * (mp_dlimb_t)b;
@@ -176,7 +86,7 @@ static inline mp_limb_t mul_hi(mp_limb_t a, mp_limb_t b)
 /*------------------------------------------------------------*/
 /* returns floor (2^64*b)/p                                   */
 /*------------------------------------------------------------*/
-static inline mp_limb_t prep_mul_mod_precon(mp_limb_t b, mp_limb_t p)
+FLINT_FORCE_INLINE mp_limb_t prep_mul_mod_precon(mp_limb_t b, mp_limb_t p)
 {
     return ((mp_dlimb_t) b << 64) / p;
 }
@@ -186,7 +96,7 @@ static inline mp_limb_t prep_mul_mod_precon(mp_limb_t b, mp_limb_t p)
 /* returns ab mod p                                           */
 /* a is in [0..2^64), b is in [0..p)                          */
 /*------------------------------------------------------------*/
-static inline mp_limb_t mul_mod_precon(mp_limb_t a, mp_limb_t b, mp_limb_t p, mp_limb_t i_b)
+FLINT_FORCE_INLINE mp_limb_t mul_mod_precon(mp_limb_t a, mp_limb_t b, mp_limb_t p, mp_limb_t i_b)
 {
     mp_limb_t q;
     long t;
@@ -203,7 +113,7 @@ static inline mp_limb_t mul_mod_precon(mp_limb_t a, mp_limb_t b, mp_limb_t p, mp
 /* returns ab mod p in [0..2p)                                */
 /* a is in [0..2^64), b is in [0..p)                          */
 /*------------------------------------------------------------*/
-static inline mp_limb_t mul_mod_precon_unreduced(mp_limb_t a, mp_limb_t b, mp_limb_t p, mp_limb_t i_b)
+FLINT_FORCE_INLINE mp_limb_t mul_mod_precon_unreduced(mp_limb_t a, mp_limb_t b, mp_limb_t p, mp_limb_t i_b)
 {
     mp_limb_t q;
 
@@ -214,97 +124,160 @@ static inline mp_limb_t mul_mod_precon_unreduced(mp_limb_t a, mp_limb_t b, mp_li
 #endif
 
 
-#ifdef HAS_AVX2
 
 /*------------------------------------------------------------*/
-/* a + p - b                                                  */
 /*------------------------------------------------------------*/
-static inline __m256i mm256_sub_mod_unreduced(__m256i a, __m256i b, __m256i p)
+/* A few extra operations for the fft_small types             */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* returns a + b mod n, assuming a,b reduced mod n            */
+/*------------------------------------------------------------*/
+FLINT_FORCE_INLINE vec1n vec1n_addmod(vec1n a, vec1n b, vec1n n)
 {
-    return _mm256_sub_epi32(_mm256_add_epi32(a, p), b);
+    return n - b > a ? a + b : a + b - n;
 }
 
 /*------------------------------------------------------------*/
-/* a + p - b                                                  */
+/* returns a + b mod n, assuming a,b reduced mod n            */
 /*------------------------------------------------------------*/
-static inline __m256i mm256_sub_mod(__m256i a, __m256i b, __m256i p, __m256i p_minus_1)
+FLINT_FORCE_INLINE vec1d vec1d_addmod(vec1d a, vec1d b, vec1d n)
 {
-    __m256i cmp, d;
-    d = _mm256_sub_epi32(_mm256_add_epi32(a, p), b);
-    cmp = _mm256_cmpgt_epi32(d, p_minus_1);
-    return _mm256_sub_epi32(d, _mm256_and_si256(cmp, p));
+    return a + b - n >= 0 ? a + b - n : a + b;
 }
 
 /*------------------------------------------------------------*/
-/* high 32 bits of a*b                                        */
+/* returns a + b mod n, assuming a,b reduced mod n            */
 /*------------------------------------------------------------*/
-static inline __m256i mm256_mulhi_epi32(__m256i a, __m256i b)
+FLINT_FORCE_INLINE vec4d vec4d_addmod(vec4d a, vec4d b, vec4d n)
 {
-    __m256i prod02, prod13;
-    prod02 = _mm256_mul_epu32(a, b);
-    prod13 = _mm256_mul_epu32(_mm256_shuffle_epi32(a, 0xf5), _mm256_shuffle_epi32(b, 0xf5));
-    return _mm256_unpackhi_epi64(_mm256_unpacklo_epi32(prod02, prod13), _mm256_unpackhi_epi32(prod02, prod13));
+    return vec4d_reduce_2n_to_n(vec4d_add(a, b), n);
 }
 
 /*------------------------------------------------------------*/
-/* preconditioned product                                     */
-/* returns ab mod p in [0..2p)                                */
-/* a is in [0..2^32), b is in [0..p)                          */
+/* TODO: if AVX512 supported, use cvtepi64_pd instead         */
+/* loads a vec4n from a and converts it to double             */
 /*------------------------------------------------------------*/
-static inline __m256i mm256_mul_mod_precon_unreduced(__m256i a, __m256i b, __m256i p, __m256i i_b)
+FLINT_FORCE_INLINE vec4d vec4d_load_unaligned_mp_ptr(mp_ptr a)
 {
-    __m256i q;
-    q = mm256_mulhi_epi32(a, i_b);
-    return _mm256_sub_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(q, p));
-}
-
-/*------------------------------------------------------------*/
-/* preconditioned product                                     */
-/* returns ab mod p in [0..2p)                                */
-/* a is in [0..2^32), b is in [0..p)                          */
-/* p_minus_1 = p-1                                            */
-/*------------------------------------------------------------*/
-static inline __m256i mm256_mul_mod_precon(__m256i a, __m256i b, __m256i p, __m256i p_minus_1, __m256i i_b)
-{
-    __m256i c, q, cmp;
-
-    q = mm256_mulhi_epi32(a, i_b);
-    c = _mm256_sub_epi32(_mm256_mullo_epi32(a, b), _mm256_mullo_epi32(q, p));
-    cmp = _mm256_cmpgt_epi32(c, p_minus_1);
-    return _mm256_sub_epi32(c, _mm256_and_si256(cmp, p));
-}
-
-/*------------------------------------------------------------*/
-/* a+b mod p on 32 bit operands                               */
-/* input and output are reduced mod p                         */
-/* p_minus_1 = p-1                                            */
-/*------------------------------------------------------------*/
-static inline __m256i mm256_add_mod(__m256i a, __m256i b, __m256i p, __m256i p_minus_1)
-{
-    __m256i cmp;
-    a = _mm256_add_epi32(a, b);
-    cmp = _mm256_cmpgt_epi32(a, p_minus_1);
-    return _mm256_sub_epi32(a, _mm256_and_si256(cmp, p));
-}
-
-
+#ifdef FLINT_HAVE_AVX512
+    return  _mm256_setr_m128d( _mm_cvtepi64_pd(_mm_loadu_si128((vec2n *) a)),
+                               _mm_cvtepi64_pd(_mm_loadu_si128((vec2n *) (a + 2))) );
+#else // TODO need to test if has avx2?
+// when AVX2 is available, this is a bit slower than the solution above
+    return vec4n_convert_limited_vec4d(vec4n_load_unaligned(a));
 #endif
-
-
-#ifdef HAS_AVX512
-
-/*------------------------------------------------------------*/
-/* high 32 bits of a*b                                        */
-/*------------------------------------------------------------*/
-static inline __m512i mm512_mulhi_epi32(__m512i a, __m512i b)
-{
-    __m512i prod02, prod13;
-    prod02 = _mm512_mul_epu32(a, b);
-    prod13 = _mm512_mul_epu32(_mm512_shuffle_epi32(a, 0xf5), _mm512_shuffle_epi32(b, 0xf5));
-    return _mm512_unpackhi_epi64(_mm512_unpacklo_epi32(prod02, prod13), _mm512_unpackhi_epi32(prod02, prod13));
 }
 
-#endif
+/*------------------------------------------------------------*/
+/* TODO: if AVX512 supported, use cvtpd_epi64 instead         */
+/* converts a vec4d to vec4n and stores it                    */
+/*------------------------------------------------------------*/
+FLINT_FORCE_INLINE void vec4d_store_unaligned_mp_ptr(mp_ptr dest, vec4d a)
+{
+    vec4n_store_unaligned(dest, vec4d_convert_limited_vec4n(a));
+}
+
+
+FLINT_FORCE_INLINE vec4n vec4n_mul(vec4n u, vec4n v)
+{
+    return _mm256_mul_epu32(u, v);
+}
+
+FLINT_FORCE_INLINE vec4n vec4n_zero()
+{
+    return _mm256_setzero_si256();
+}
+
+FLINT_FORCE_INLINE void vec4n_store_aligned(ulong* z, vec4n a)
+{
+    _mm256_store_si256((__m256i*) z, a);
+}
+
+/* reduce_to_pm1n(a, n, ninv): return a mod n in (-n,n) */
+FLINT_FORCE_INLINE vec2d vec2d_reduce_to_pm1no(vec2d a, vec2d n, vec2d ninv)
+{                                                               
+    return _mm_fnmadd_pd(_mm_round_pd(_mm_mul_pd(a, ninv), 4), n, a); 
+}
+
+/* reduce_pm1no_to_0n(a, n): return a mod n in [0,n) assuming a in (-n,n) */
+FLINT_FORCE_INLINE vec2d vec2d_reduce_pm1no_to_0n(vec2d a, vec2d n)
+{
+    return _mm_blendv_pd(a, _mm_add_pd(a, n), a); 
+}
+
+/* reduce_to_0n(a, n, ninv): return a mod n in [0,n) */
+FLINT_FORCE_INLINE vec2d vec2d_reduce_to_0n(vec2d a, vec2d n, vec2d ninv)
+{ 
+    return vec2d_reduce_pm1no_to_0n(vec2d_reduce_to_pm1no(a, n, ninv), n);
+}
+
+FLINT_FORCE_INLINE vec2d vec2d_set_d2(double a1, double a0)
+{
+    return _mm_set_pd(a0, a1);
+}
+
+#define vec4n_bit_shift_right_45(a) vec4n_bit_shift_right((a), 45)
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/*                    CRT and multimod                        */
+/* -we only handle 1 to 4 hard-coded primes p0..pk            */
+/* -we take as extra parameter another modulus p              */           
+/* -multimod reduces vectors of mp_limb_t mod all pi's        */
+/* -CRT does Chinese Remainders, and reduces the result mod p */
+/* -use AVX2 for p < 2^50, long arithmetic otherwise          */
+/* TODO: set a macro for testing large/small modulus          */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+// 4 primes should be enough for all practical purposes involving nmods
+// TODO: make sure we test if so, just in case?
+//
+// PRIME0 < PRIME1 < PRIME2 < PRIME3 needed for the double implementation
+#define PRIME0 659706976665601
+#define PRIME1 910395627798529
+#define PRIME2 1086317488242689
+#define PRIME3 1108307720798209
+
+typedef struct {
+    ulong num_primes;
+    mp_limb_t p;
+    nmod_t mod;
+
+    mp_ptr data;
+    double pinv;
+    nmod_t mod_primes[4];
+    mp_limb_t primes[4];
+    double primes_inv[4];
+    mp_limb_t inverse_cofactors[4];
+    double p0_red, p1_red, p0p1_red, p0p1p2_red, p0_red2, p0p1red_2, invp0_p1, invp0p1_p2, p0p1_red3, invp0p1p2_p3;
+} nmod_multimod_CRT_struct;
+
+typedef nmod_multimod_CRT_struct nmod_multimod_CRT_t[1];
+
+
+/*------------------------------------------------------------*/
+/* initializes all data in C                                  */
+/*------------------------------------------------------------*/
+void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, mp_limb_t p, ulong num_primes);
+
+/*------------------------------------------------------------*/
+/* clears all data in C                                       */
+/*------------------------------------------------------------*/
+void nmod_multimod_CRT_clear(nmod_multimod_CRT_t C);
+
+/*------------------------------------------------------------*/
+/* out[i] = CRT(residues[j][i], j < num_primes) mod p, i < nb */
+/*------------------------------------------------------------*/
+void nmod_multimod_CRT_CRT(mp_ptr out, mp_ptr *residues, ulong nb, nmod_multimod_CRT_t C);
+
+/*------------------------------------------------------------*/
+/* residues[j][i] = input[i] mod prime[j]                     */
+/* for i < nb, j < num_primes                                 */
+/*------------------------------------------------------------*/
+void nmod_multimod_CRT_reduce(mp_ptr *residues, mp_ptr input, ulong nb, nmod_multimod_CRT_t C);
 
 
 #endif

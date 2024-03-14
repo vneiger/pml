@@ -5,37 +5,42 @@
  * polynomial matrices with coefficients in `nmod`
  *
  * \file nmod_poly_mat_utils.h
- * \version 0.0
- * \date 2022-06-25
+ * \version 0.3
+ * \date 2023-11-20
  *
- * Basic functions to deal with shifted reduced and shifted normal forms of
- * polynomials matrices: test if a matrix is in some given form, compute
- * shifted row/column degrees and shifted pivot degrees, compute shifted
- * leading matrix.
+ * - Basic functions to deal with shifted reduced and shifted normal forms of
+ *   polynomials matrices: test if a matrix is in some given form, compute
+ *   shifted row/column degrees and shifted pivot degrees, compute shifted
+ *   leading matrix.
  *
- * \todo state that shift has to have right dimension (depending on
- * orientation), and this is never checked in implementations
- * \todo random matrix with given PolMatForm
+ * - Functions for computing shifted reduced and shifted normal forms of
+ *   polynomial matrices.
  *
  */
 
-#include <flint/fmpz_mat.h> // for degree matrix
-#include <flint/nmod_mat.h>
-#include <flint/nmod_poly_mat.h>
+#include <flint/fmpz_types.h> // for fmpz_mat (degree matrix)
+//#include <flint/nmod_types.h>
+#include <flint/nmod_poly_mat.h> // fmpz_types not enough, need NMOD_POLY_MAT_INLINE
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* ENUMS: FORMS AND ORIENTATION                               */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 
 /** Shifted reduced forms of polynomial matrices.
  *
  * \enum poly_mat_form_t
  *
  * Note that the assigned numbers follow the "strength" of these forms:
- * - Popov implies ordered weak Popov, which implies weak Popov,
+ * - 0<-1<-2<-3<-4: Popov implies ordered weak Popov, which implies weak Popov,
  *   which implies reduced.
- * - Upper Hermite implies upper echelon.
- * - Lower Hermite implies lower echelon.
+ * - 0<-5<-6: Hermite implies echelon.
  *
  */
 typedef enum
@@ -48,6 +53,45 @@ typedef enum
     ECHELON = 5, /**< Matrix in echelon form */
     HERMITE = 6, /**< Matrix in Hermite form */
 } poly_mat_form_t;
+
+/**
+ * \enum orientation_t
+ * \anchor orientation
+ * \brief Whether to focus on row space or on column space of a polynomial matrix,
+ * and whether to consider upper or lower forms.
+ *
+ * Row-wise: focus on row space, work with left unimodular transformation.
+ *
+ * Column-wise: focus on columns space, work with right unimodular
+ * transformation.
+ *
+ * ROW_LOWER and COL_UPPER are related by means of matrix transposition.
+ * ROW_LOWER and ROW_UPPER are related by means of inverting both rows
+ * and columns (i.e. pre- and post-multiplying by the antidiagonal identity
+ * matrix).
+ *
+ * More details regarding shifted forms (see @ref MatrixForms):
+ *
+ * Upper: shifted weak Popov form means leading matrix in upper echelon form;
+ * for row-wise this means pivot is the leftmost entry of largest shifted
+ * degree in a row (or, for Hermite form, leftmost nonzero entry), and for
+ * column-wise this means pivot is the bottommost entry of largest shifted
+ * degree in a column (or, for Hermite form, bottommost nonzero entry).
+ *
+ * Lower: shifted weak Popov form means leading matrix in lower echelon form;
+ * for row-wise this means pivot is the rightmost entry of largest shifted
+ * degree in a row (or, for Hermite form, rightmost nonzero entry) and for
+ * column-wise this means pivot is the topmost entry of largest shifted degree
+ * in a column (or, for Hermite form, topmost nonzero entry).
+ */
+typedef enum
+{
+    COL_UPPER = 0,
+    COL_LOWER = 1,
+    ROW_UPPER = 2,
+    ROW_LOWER = 3,
+} orientation_t;
+
 
 
 /*------------------------------------------------------------*/
@@ -120,10 +164,10 @@ void nmod_poly_mat_column_degree(slong *cdeg,
 /** @name (Shifted) pivot index and pivot degree
  * \anchor Pivots
  *
- * Four orientations are possible and will be described in @ref orientation_t.
- * Here we describe shifted pivot index, degree, and pivot profile assuming
- * orientation row-wise & lower (ROW_LOWER). The translation of these
- * definitions to the other cases is straightforward.
+ * Four orientations are possible, see @ref orientation_t. Here we describe
+ * shifted pivot index, degree, and pivot profile assuming orientation row-wise
+ * and lower (ROW_LOWER). The translation of these definitions to the other
+ * cases is straightforward.
  *
  * For a given shift and a given polynomial row vector, its _shifted pivot
  * index_ is the largest index corresponding to an entry which reaches the
@@ -142,44 +186,11 @@ void nmod_poly_mat_column_degree(slong *cdeg,
  * check whether `shift` has the right length. Most functions accept that
  * `NULL` is provided as input for the shift, this is understood as the uniform
  * shift `[0,...,0]` of the right length.
+ *
+ * Note: for ROW_UPPER/COLUMN_LOWER, the zero vector has pivot index equal to
+ * the length of this vector.
  */
 //@{
-
-/**
- * \enum orientation_t
- * \anchor orientation
- * \brief Whether to focus on row space or on column space of a polynomial matrix,
- * and whether to consider upper or lower forms.
- *
- * Row-wise: focus on row space, work with left unimodular transformation.
- *
- * Column-wise: focus on columns space, work with right unimodular
- * transformation.
- *
- * ROW_LOWER and COL_UPPER are related by means of matrix transposition.
- * ROW_LOWER and ROW_UPPER are related by means of inverting both rows
- * and columns (i.e. pre- and post-multiplying by the antidiagonal identity
- * matrix).
- *
- * Upper: shifted weak Popov form means leading matrix in upper echelon form;
- * for row-wise this means pivot is the leftmost entry of largest shifted
- * degree in a row (or, for Hermite form, leftmost nonzero entry), and for
- * column-wise this means pivot is the bottommost entry of largest shifted
- * degree in a column (or, for Hermite form, bottommost nonzero entry).
- *
- * Lower: shifted weak Popov form means leading matrix in lower echelon form;
- * for row-wise this means pivot is the rightmost entry of largest shifted
- * degree in a row (or, for Hermite form, rightmost nonzero entry) and for
- * column-wise this means pivot is the topmost entry of largest shifted degree
- * in a column (or, for Hermite form, topmost nonzero entry).
- */
-typedef enum
-{
-    COL_UPPER = 0,
-    COL_LOWER = 1,
-    ROW_UPPER = 2,
-    ROW_LOWER = 3,
-} orientation_t;
 
 /** Computes the `shift`-pivot index (stored in integer `pivind`) and
  * `shift`-pivot degree (stored in integer `pivdeg`) of a given vector `vec`
@@ -334,8 +345,8 @@ void nmod_poly_mat_degree_matrix_shifted(fmpz_mat_t dmat,
  * `NULL` is provided as input for the shift, this is understood as the uniform
  * shift `[0,...,0]` of the right length.
  *
- * \todo enhancement: offer row-wise (resp column-wise) leading matrix
- * when the row degree (resp column degree) is already known
+ * \todo minor enhancement: offer row-wise (resp column-wise) leading matrix
+ * when the row degree (resp. column degree) is already known
  */
 //@{
 
@@ -384,12 +395,38 @@ void nmod_poly_mat_leading_matrix(nmod_mat_t lmat,
  *   degree less than this pivot entry
  * In particular, such a matrix cannot have a zero column.
  *
+ * A polynomial matrix is said to be in lower row echelon form (ROW_LOWER) if:
+ * - there is no zero row below a nonzero row (possible zero rows are grouped
+ *   at the top),
+ * - let r be the number of nonzero rows (thus at indices m-r,...,m-1) and j_i
+ *   be the index of the rightmost nonzero entry in row m-r+i for 0 <= i < r,
+ *   then j_0 < ... < j_{r-1}.
+ * ==> equivalently: the row-wise lower echelon pivot profile of the matrix is
+ * increasing, excepting zero rows
+ *
+ * A polynomial matrix is said to be in upper row echelon form (ROW_UPPER) if:
+ * - there is no zero row above a nonzero row (possible zero rows are grouped
+ *   at the bottom),
+ * - let r be the number of nonzero rows (thus at indices 0,...,r-1) and let
+ *   j_i be the index of the rightmost nonzero entry in row i for 0 <= i < r,
+ *   then j_0 < ... < j_{r-1}.
+ * ==> equivalently: the row-wise upper echelon pivot profile of the matrix is
+ * increasing, excepting zero rows
+ * 
+ * Definitions for COL_LOWER and COL_UPPER echelon forms are analogous.
+ *
+ * A polynomial matrix is said to be in ROW_LOWER Hermite normal form if:
+ * - it is in ROW_LOWER echelon form,
+ * - it has no zero row,
+ * - all entries below a pivot entry have degree strictly less than the degree
+ *   of that pivot entry.
+ * Definitions are similar for other orientations.
+ *
  * The functions below which involve a `shift` among its parameters do not
  * check whether `shift` has the right length. Most functions accept that
  * `NULL` is provided as input for the shift, this is understood as the uniform
  * shift `[0,...,0]` of the right length.
  *
- * \todo doc: define lower/upper row-wise/column-wise echelon/Hermite forms
  */
 //@{
 
@@ -414,19 +451,7 @@ int nmod_poly_mat_is_popov(const nmod_poly_mat_t mat,
                            const slong * shift,
                            orientation_t orient);
 
-/* def of lower row echelon (ROW_LOWER):
- * - there is no zero row below a nonzero row (possible zero rows are grouped at the top),
- * - let r be the number of nonzero rows (thus at indices m-r,...,m-1) and j_i be
- *   the index of the rightmost nonzero entry in row m-r+i for 0 <= i < r, then j_0 < ... < j_{r-1}.
- * ==> equivalently: the row-wise lower echelon pivot profile of the matrix is increasing,
- * excepting zero rows */
-/* def of upper row echelon (ROW_UPPER):
- * - there is no zero row above a nonzero row (possible zero rows are grouped at the bottom),
- * - let r be the number of nonzero rows (thus at indices 0,...,r-1) and j_i be
- *   the index of the rightmost nonzero entry in row i for 0 <= i < r, then j_0 < ... < j_{r-1}.
- * ==> equivalently: the row-wise lower echelon pivot profile of the matrix is increasing,
- * excepting zero rows */
-/* similarly for COL_LOWER and COL_UPPER */
+/** Tests whether `mat` is in echelon form (see @ref MatrixForms) */
 int nmod_poly_mat_is_echelon(const nmod_poly_mat_t pmat,
                              orientation_t orient);
 
@@ -437,8 +462,6 @@ int nmod_poly_mat_is_hermite(const nmod_poly_mat_t pmat,
 //@} // doxygen group: Testing polynomial matrix forms
 
 
-
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* COMPUTING ECHELON FORMS                                    */
@@ -446,11 +469,11 @@ int nmod_poly_mat_is_hermite(const nmod_poly_mat_t pmat,
 /*------------------------------------------------------------*/
 
 /** @name Computing echelon forms
+ * \anchor EchelonForms
+ *
  * See @ref MatrixForms for definitions
- */
-//@{
-
-/** Transforms ``mat`` in place to a row-wise, upper row echelon form, and
+ *
+ * Transforms ``mat`` in place to a row-wise, upper row echelon form, and
  * returns the rank of ``mat``.
  *
  *   ..``tsf``. If ``tsf`` is not NULL, the same unimodular left-operations
@@ -461,11 +484,11 @@ int nmod_poly_mat_is_hermite(const nmod_poly_mat_t pmat,
  *   form. ``mat`` cannot alias ``tsf``.
  *
  *   ..``pivind``. It is filled with the (upper echelon, row-wise) pivot
- *   indices of the output Hermite normal form, which also correspond to the
- *   column rank profile of ``mat``. As input, ``pivind`` must have allocated
- *   space for at least rank(mat) entries (take min(mat->r,mat->c) if no better
- *   bound is known). No need to fill it with values. Its allocated space is
- *   left unchanged, and so are its entries beyond the rank(mat)-th one.
+ *   indices of the output echelon form, which also correspond to the column
+ *   rank profile of ``mat``. As input, ``pivind`` must have allocated space
+ *   for at least rank(mat) entries (take min(mat->r,mat->c) if no better bound
+ *   is known). No need to fill it with values. Its allocated space is left
+ *   unchanged, and so are its entries beyond the rank(mat)-th one.
  *
  * Some algorithms may also provide:
  *
@@ -479,37 +502,53 @@ int nmod_poly_mat_is_hermite(const nmod_poly_mat_t pmat,
  *   allocated space is left unchanged, and so are its entries beyond the
  *   mat->r -th one.
  *
- *   .. `rrp`. It is filled with the row rank profile of the input matrix.
- *   As input, ``rrp`` must have allocated space for (TODO check) at least rank(mat) entries
+ *   .. ``rrp``. It is filled with the row rank profile of the input matrix.
+ *   As input, ``rrp`` must have allocated space for at least rank(mat) entries
  *   (take min(mat->r,mat->c) if no better bound is known). No need to fill it
  *   with values. Its allocated space is left unchanged, and so are its entries
  *   beyond the rank(mat)-th one.
- **/
+ *
+ * \todo handle more orientations
+ */
+//@{
 
-// Upper row echelon form inspired by Rosser's HNF algorithm
+/** Upper row echelon form inspired by Rosser's HNF algorithm */
 slong nmod_poly_mat_uref_maxdeg_atomic(nmod_poly_mat_t mat,
                                        nmod_poly_mat_t tsf,
                                        slong * pivind);
 
-// Upper row echelon form inspired by Bradley's HNF algorithm
+/** Upper row echelon form inspired by Bradley's HNF algorithm */
 slong nmod_poly_mat_uref_revlex_xgcd(nmod_poly_mat_t mat,
                                      nmod_poly_mat_t tsf,
                                      slong * pivind,
                                      slong * mrp);
 
-// Upper row echelon form using lexicographic pivot search
+/** Upper row echelon form using lexicographic pivot search */
 slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat,
                                   nmod_poly_mat_t tsf,
                                   slong * pivind,
                                   slong * mrp);
 
-// TODO doc
-// TODO test rrp + udet
+/** Upper row echelon form inspired by Mulders and Storjohann's
+ * HNF algorithm.
+ * 
+ * If not NULL, ``udet`` is either left the same or negated, according to the
+ * determinant of the applied unimodular transformation (which transforms
+ * the input into the output). The latter determinant is +1 or -1.
+ *
+ * \todo row rank profile rrp not supported yet
+ * 
+ * \todo to be implemented: an early detection based on known determinantal
+ * degree (or sum of pivot degree) could be added so that as soon as only
+ * trivial pivot entries remain to be found, the algorithm stops the iteration
+ * over the leading principal minors and rather uses a simple constant
+ * transformation to complete the computation.
+ **/
 slong nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
                                         nmod_poly_mat_t tsf,
                                         slong * pivind,
                                         slong * rrp,
-                                        int * udet);
+                                        slong * udet);
 
 
 //@} // doxygen group: Computing echelon forms
@@ -522,46 +561,97 @@ slong nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
 
 /** @name Computing Hermite normal form
  * See @ref MatrixForms for definitions
- */
-//@{
-
-/** Transforms ``mat`` in place to its row-wise, upper Hermite normal form, and
+ *
+ * Transforms ``mat`` in place to its row-wise, upper Hermite normal form, and
  * returns the rank of ``mat``.
  *
- *   ..``tsf``. If ``tsf`` is not NULL, the same unimodular left-operations
- *   applied to ``mat`` are performed on ``tsf`` (which must therefore have as
- *   many rows as ``mat``, and can have an arbitrary number of columns).
- *   Setting ``tsf`` to the identity beforehand allows one to recover the
- *   unimodular transformation between ``mat`` and the computed Hermite normal
- *   form. ``mat`` cannot alias ``tsf``.
+ * Input parameters are the same as for echelon forms, see @ref EchelonForms.
  *
- *   ..``pivind``. It is filled with the (upper echelon, row-wise) pivot
- *   indices of the output Hermite normal form, which also correspond to the
- *   column rank profile of ``mat``. As input, ``pivind`` must have allocated
- *   space for at least rank(mat) entries (take min(mat->r,mat->c) if no better
- *   bound is known). No need to fill it with values. Its allocated space is
- *   left unchanged, and so are its entries beyond the rank(mat)-th one.
+ * \todo handle more orientations
  *
- * Some algorithms may also provide:
- *
- *   ..``mrp``. It is filled with the matrix rank profile of the input matrix.
- *   See e.g. Dumas, Pernet, Sultan, Journal of Symbolic Computation 2017. It
- *   is represented here as an array of mat->r entries, the i-th entry is
- *   either some j in 0:mat->c giving the position (i,j) of `1` in the matrix
- *   rank profile, or it is -1 to indicate that row i does not contribute to
- *   the matrix rank profile. As input, ``mrp`` must have allocated space
- *   for at least mat->r entries; no need to fill them with values. Its
- *   allocated space is left unchanged, and so are its entries beyond the
- *   mat->r -th one.
+ * \todo eventually restrict the output HNF to rank rows? currently,
+ * output HNF may contain zero rows
  *
  **/
-// upper row echelon form normalization into upper row-wise HNF
-// TODO make public?
-// TODO doc
+//@{
+
+/** Upper row echelon form normalization into upper row-wise HNF
+ * \todo improve documentation
+ **/
 void _normalize_uref(nmod_poly_mat_t mat,
                      nmod_poly_mat_t other,
                      slong * pivind,
                      slong rk);
+
+/** Hermite normal form in the style of Kannan-Bachem's algorithm
+ * (uref with reverse lexicographic pivot search, with modified scheduling for
+ * cancellation of non-pivot entries, and continuous normalization into HNF) */
+slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat,
+                                                    nmod_poly_mat_t tsf, slong *
+                                                    pivind, slong * mrp);
+
+/** Hermite normal form in the style of Rosser's algorithm */
+NMOD_POLY_MAT_INLINE
+slong nmod_poly_mat_hnf_ur_maxdeg_atomic(nmod_poly_mat_t mat,
+                                         nmod_poly_mat_t tsf,
+                                         slong * pivind)
+{
+    // upper row echelon form + normalization
+    slong rk = nmod_poly_mat_uref_maxdeg_atomic(mat, tsf, pivind);
+    _normalize_uref(mat, tsf, pivind, rk);
+    return rk;
+}
+
+/** Hermite normal form in the style of Bradley's algorithm */
+NMOD_POLY_MAT_INLINE
+slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat,
+                                       nmod_poly_mat_t tsf,
+                                       slong * pivind,
+                                       slong * mrp)
+{
+    // upper row echelon form + normalization
+    slong rk = nmod_poly_mat_uref_revlex_xgcd(mat, tsf, pivind, mrp);
+    _normalize_uref(mat, tsf, pivind, rk);
+    return rk;
+}
+
+/** Hermite normal form using lexicographic pivot search */
+NMOD_POLY_MAT_INLINE
+slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat,
+                                    nmod_poly_mat_t tsf,
+                                    slong * pivind,
+                                    slong * mrp)
+{
+    // upper row echelon form + normalization
+    slong rk = nmod_poly_mat_uref_lex_xgcd(mat, tsf, pivind, mrp);
+    _normalize_uref(mat, tsf, pivind, rk);
+    return rk;
+}
+
+/** Hermite normal form in the style of Mulders&Storjohann's algorithm
+ * 
+ * If not NULL, ``udet`` is either left the same or negated, according to the
+ * determinant of the applied unimodular transformation (which transforms
+ * the input into the output).
+ *
+ * \todo rrp not well supported yet
+ * \todo udet not supported: has to be updated during normalization
+ * \todo should test for rk < 0 (non generic CRP) and proceed accordingly
+ */
+NMOD_POLY_MAT_INLINE
+slong nmod_poly_mat_hnf_ur_matrixgcd_iter(nmod_poly_mat_t mat,
+                                          nmod_poly_mat_t tsf,
+                                          slong * pivind,
+                                          slong * rrp,
+                                          slong * udet)
+{
+    // upper row echelon form + normalization
+    slong rk = nmod_poly_mat_uref_matrixgcd_iter(mat, tsf, pivind, rrp, udet);
+    _normalize_uref(mat, tsf, pivind, rk);
+    return rk;
+}
+
+//@} // doxygen group: Computing Hermite normal form
 
 // TODO mod det version (see e.g. Domich) ? quite often for nmod_poly_mat's,
 // computing the determinant is not really easier than computing the HNF...
@@ -575,79 +665,6 @@ void _normalize_uref(nmod_poly_mat_t mat,
 // want to avoid these anyway?)
 
 
-// Hermite normal form in the style of Kannan-Bachem's algorithm
-// (uref with reverse lexicographic pivot search, with modified scheduling for
-// cancellation of non-pivot entries, and continuous normalization into HNF)
-slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat,
-                                                    nmod_poly_mat_t tsf, slong *
-                                                    pivind, slong * mrp);
-
-// Hermite normal form in the style of Rosser's algorithm
-NMOD_POLY_MAT_INLINE
-slong nmod_poly_mat_hnf_ur_maxdeg_atomic(nmod_poly_mat_t mat,
-                                         nmod_poly_mat_t tsf,
-                                         slong * pivind)
-{
-    // upper row echelon form + normalization
-    slong rk = nmod_poly_mat_uref_maxdeg_atomic(mat, tsf, pivind);
-    _normalize_uref(mat, tsf, pivind, rk);
-    return rk;
-}
-
-// Hermite normal form in the style of Bradley's algorithm
-NMOD_POLY_MAT_INLINE
-slong nmod_poly_mat_hnf_ur_revlex_xgcd(nmod_poly_mat_t mat,
-                                       nmod_poly_mat_t tsf,
-                                       slong * pivind,
-                                       slong * mrp)
-{
-    // upper row echelon form + normalization
-    slong rk = nmod_poly_mat_uref_revlex_xgcd(mat, tsf, pivind, mrp);
-    _normalize_uref(mat, tsf, pivind, rk);
-    return rk;
-}
-
-// Hermite normal form using lexicographic pivot search
-NMOD_POLY_MAT_INLINE
-slong nmod_poly_mat_hnf_ur_lex_xgcd(nmod_poly_mat_t mat,
-                                    nmod_poly_mat_t tsf,
-                                    slong * pivind,
-                                    slong * mrp)
-{
-    // upper row echelon form + normalization
-    slong rk = nmod_poly_mat_uref_lex_xgcd(mat, tsf, pivind, mrp);
-    _normalize_uref(mat, tsf, pivind, rk);
-    return rk;
-}
-
-// TODO doc
-// TODO test rk < 0 and proceed accordingly?
-NMOD_POLY_MAT_INLINE
-slong nmod_poly_mat_hnf_ur_matrixgcd_iter(nmod_poly_mat_t mat,
-                                          nmod_poly_mat_t tsf,
-                                          slong * pivind,
-                                          slong * rrp,
-                                          int * udet)
-{
-    // upper row echelon form + normalization
-    slong rk = nmod_poly_mat_uref_matrixgcd_iter(mat, tsf, pivind, rrp, udet);
-    _normalize_uref(mat, tsf, pivind, rk);
-    return rk;
-}
-
-
-
-//@} // doxygen group: Computing Hermite normal form
-
-
-
-
-
-
-
-
-
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* COMPUTING WEAK POPOV FORM                                  */
@@ -659,33 +676,74 @@ slong nmod_poly_mat_hnf_ur_matrixgcd_iter(nmod_poly_mat_t mat,
  */
 //@{
 
-// TODO doc
-// internal function for weak Popov form, Mulders-Storjohann, row-by-row
-// RANDOM NOTES: this uses a row-by-row approach. More generally, strategy for
-// pivot selection, a good one if transformation not needed may be to target
-// the collision involving the smallest possible degree (this means fewer field
-// operations to do for transforming `wpf`, but also means greater degrees in
-// the unimodular transformation or in `tsf`, which may impact performance if
-// `tsf` is not NULL). When transformation is needed, using the largest degree
-// may be interesting, trying to keep low the degrees in the transformation.
-//
-// non-ordered, but zero rows are still placed at the bottom
-//
-// early_exit_zr: stop the computation as soon as early_exit_zr zero rows have
-// been found; in that case returns -rk (negative or zero and with rk not
-// necessarily related to the actual rank). If not interested in early exit,
-// put mat->r (or more). If the output is < 0, the output guarantees are the
-// same but only for the first |rk| + max_zr rows of mat (TODO be more precise;
-// zero rows have been put at bottom, etc)
-//
-// TODO doc det
-//
-// orient: orientation, must be among ROW_UPPER and ROW_LOWER (not checked if
-// valid)
+/** Mulders&Storjohann's weak Popov form algorithm, working row-by-row.
+ *
+ * This implements the iterative weak Popov form algorithm by Mulders and
+ * Storjohann, 2003 (as in Figure 3, algo "RankProfile"). There presented for
+ * the uniform shift, here straightforwardly adapted to the shifted case.
+ *
+ * The orientation `orient` must be among ROW_UPPER and ROW_LOWER; there
+ * is no check that this is the case. Returns a non-ordered weak Popov form,
+ * with zero rows not removed; possible zero rows are all grouped at the bottom
+ * of the output matrix.
+ *
+ * .. ``shift``: shift for the shifted weak Popov form. The fact that the
+ * length is valid is not tested.
+ *
+ * ..``tsf``. If ``tsf`` is not NULL, the same unimodular left-operations
+ * applied to ``mat`` are performed on ``tsf`` (which must therefore have as
+ * many rows as ``mat``, and can have an arbitrary number of columns).  Setting
+ * ``tsf`` to the identity beforehand allows one to recover the unimodular
+ * transformation between ``mat`` and the computed shifted weak Popov form.
+ * ``mat`` cannot alias ``tsf``.
+ *
+ * .. ``det``: it can be NULL in which case it is ignored. Otherwise, it will
+ * be multiplied with the determinant of the unimodular transformation used
+ * during this call, which is +1 or -1.
+ *
+ * .. ``pivind``: integer array, must be allocated with at least mat->r
+ * entries; it will be populated with the shifted pivot index of the output
+ * weak Popov form (undefined behaviour for its entries beyond mat->r)
+ *
+ * .. ``rrp``. It is filled with the row rank profile of the input matrix.
+ * As input, ``rrp`` must have allocated space for at least rank(mat) entries
+ * (take min(mat->r,mat->c) if no better bound is known). No need to fill it
+ * with values. Its allocated space is left unchanged, and so are its entries
+ * beyond the rank(mat)-th one.
+ *
+ * .. ``early_exit_zr``: stop the computation as soon as early_exit_zr zero
+ * rows have been found; in that case returns -rk (negative or zero and with rk
+ * not necessarily related to the actual rank). If not interested in early
+ * exit, put mat->r (or more). If the output is < 0, the output guarantees are
+ * the same but only for the first |rk| + max_zr rows of mat (zero rows have
+ * been put at bottom, etc)
+ *
+ * .. ``rstart``, ``cstart``, ``rdim``, ``cdim``: apply the algorithm to the
+ * submatrix mat[rstart:rstart+rdim,cstart:cstart+cdim], called submat below.
+ * The left unimodular transformations are applied to the whole of
+ * mat[rstart:rstart+rdim,:], i.e. not restricting the columns to those of
+ * submat. Some more details:
+ *   ... mat must have >= rstart+rdim rows, >= cstart+cdim columns
+ *   ... shift must have length >= cdim, its first cdim entries will be used as
+ *   the shift
+ *   ... tsf must be NULL or a matrix with at least rstart+rdim rows, the
+ *   transformation will be applied to its rows rstart:rstart+rdim
+ *   ... pivind must be allocated with at least rdim entries; its first rdim
+ *   entries will be populated with the shifted pivot index of the output weak
+ *   Popov form (undefined behaviour for entries beyond rdim)
+ *   ... rrp  must be NULL or allocated with >= rank(submat) entries, it will
+ *   eventually contain the row rank profile of submat as its first
+ *   ``rank(submat)`` entries
+ *
+ * .. ``orient``. The orientation, among ROW_LOWER and ROW_UPPER. Note that for
+ * ROW_LOWER, zero rows are put at the bottom even though they have the
+ * smallest possible pivot index.
+ *
+ */
 slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
                                                         const slong * shift,
                                                         nmod_poly_mat_t tsf,
-                                                        int * det,
+                                                        slong * det,
                                                         slong * pivind,
                                                         slong * rrp,
                                                         slong rstart,
@@ -694,9 +752,6 @@ slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
                                                         slong cdim,
                                                         slong early_exit_zr,
                                                         orientation_t orient);
-// TODO other strategies should be tested;
-// nmod_poly_mat_weak_popov_iter should pick the best depending on params
-
 
 /** Transforms ``mat`` in place to a row-wise, lower ``shift``-weak Popov form
  * (non-necessarily ordered, zero rows at the bottom), and returns the rank of
@@ -724,10 +779,11 @@ slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
  *    as its first ``rank(mat)`` entries. Its allocated space is left
  *    unchanged, and so are its entries beyond the rank(mat)-th one.
  *
- *    .. ``orient``. The orientation, among ROW_LOWER, ROW_UPPER,
- *    COL_LOWER, COL_UPPER. See @ref orientation.
+ *    .. ``orient``. The orientation, among ROW_LOWER and ROW_UPPER.
+ *    See @ref orientation.
  *
- *    \todo only ROW_* supported at the moment
+ *  \todo support COL_LOWER, COL_UPPER
+ *  \todo currently only applies rowbyrow; try other strategies?
  **/
 NMOD_POLY_MAT_INLINE slong
 nmod_poly_mat_weak_popov_iter(nmod_poly_mat_t mat,
@@ -752,30 +808,7 @@ slong nmod_poly_mat_ordered_weak_popov_iter(nmod_poly_mat_t mat,
                                             slong * rrp,
                                             orientation_t orient);
 
-
-
 //@} // doxygen group: Computing weak Popov form
-
-
-// TODO implem + doc
-//slong nmod_poly_mat_popov_mulders_storjohann_lower_rowwise(nmod_poly_mat_t mat,
-//                                                           const slong * shift,
-//                                                           nmod_poly_mat_t tsf,
-//                                                           slong * pivind,
-//                                                           slong * rrp);
-
-
-// TODO doc
-void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat);
-
-// TODO implem + doc
-//slong nmod_poly_mat_hnf_ur_mulders_storjohann(nmod_poly_t det, nmod_poly_mat_t mat);
-// TODO implem + doc
-//slong nmod_poly_mat_linsolve_mulders_storjohann(nmod_poly_mat_t mat);
-
-
-//@} // doxygen group: Computing polynomial matrix forms
-
 
 #ifdef __cplusplus
 }

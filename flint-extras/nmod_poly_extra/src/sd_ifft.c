@@ -345,3 +345,6 @@ void sd_ifft(sd_fft_lctx_t Q, double *X, ulong k)
     Q->data = X;
     sd_ifft_main(Q, 0, 1, k - LG_BLK_SZ, 0);
 }
+
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

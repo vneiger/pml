@@ -1,9 +1,10 @@
+#include <stdlib.h>
+#include <time.h>
 #include <flint/nmod_poly_mat.h>
 #include <flint/ulong_extras.h>
+
 #include "nmod_poly_mat_utils.h" // for rand
 #include "nmod_poly_mat_approximant.h"
-#include <stdlib.h>
-#include "time.h"
 
 #define NUMBER_MBASIS 5
 

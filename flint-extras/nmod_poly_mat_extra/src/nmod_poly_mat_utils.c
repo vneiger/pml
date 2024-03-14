@@ -13,7 +13,7 @@ void _nmod_poly_mat_rotate_rows_downward(nmod_poly_mat_t mat, slong * vec, slong
 {
     if (i != j)
     {
-        if (vec)
+        if (vec != NULL)
         {
             slong tmp_vec = vec[j];
             for (slong ii = j; ii > i; ii--)
@@ -32,7 +32,7 @@ void _nmod_poly_mat_rotate_rows_upward(nmod_poly_mat_t mat, slong * vec, slong i
 {
     if (i != j)
     {
-        if (vec)
+        if (vec != NULL)
         {
             slong tmp_vec = vec[i];
             for (slong ii = i; ii < j; ii++)
@@ -133,15 +133,6 @@ void _nmod_poly_mat_permute_rows_by_sorting_vec(nmod_poly_mat_t mat,
 /* SET FROM MATRIX POLYNOMIAL                                 */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-
-void nmod_poly_mat_set_from_mat_poly0(nmod_poly_mat_t pmat, const nmod_mat_poly0_t matp)
-{
-	nmod_poly_mat_zero(pmat);
-	for (slong k = 0; k <= matp->degree; k++)
-        for (slong i = 0; i < matp->r; ++i)
-            for (slong j = 0; j < matp->c; ++j)
-                nmod_poly_set_coeff_ui(nmod_poly_mat_entry(pmat, i, j), k, nmod_mat_get_entry(matp->mat + k, i, j));
-}
 
 void nmod_poly_mat_set_trunc_from_mat_poly(nmod_poly_mat_t pmat,
                                            const nmod_mat_poly_t matp,

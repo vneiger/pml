@@ -1,8 +1,8 @@
+#include <time.h>
 #include <stdlib.h>
 #include <flint/fmpz.h>
 #include <flint/fmpz_mat.h>
-#include <flint/fmpz_vec.h>
-#include <flint/perm.h>
+
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_io.h"
@@ -118,7 +118,7 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
         if (nrows <= ncols)
         {
             flint_printf("\nUniformly random matrix, row-wise 0-Popov:\n");
-            nmod_poly_mat_rand_popov_rowwise(mat, state, rpivind, rpivdeg, urshift);
+            _nmod_poly_mat_rand_popov_row_lower(mat, state, rpivind, rpivdeg, urshift);
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
@@ -134,7 +134,7 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
                 return 1;
 
             flint_printf("\nUniformly random matrix, row-wise shifted-Popov:\n");
-            nmod_poly_mat_rand_popov_rowwise(mat, state, rpivind, rpivdeg, rshift);
+            _nmod_poly_mat_rand_popov_row_lower(mat, state, rpivind, rpivdeg, rshift);
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
@@ -154,7 +154,7 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
         if (ncols <= nrows)
         {
             flint_printf("\nUniformly random matrix, column-wise 0-Popov:\n");
-            nmod_poly_mat_rand_popov_columnwise(mat, state, cpivind, cpivdeg, ucshift);
+            _nmod_poly_mat_rand_popov_col_upper(mat, state, cpivind, cpivdeg, ucshift);
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 
@@ -170,7 +170,7 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
                 return 1;
 
             flint_printf("\nUniformly random matrix, column-wise shifted-Popov:\n");
-            nmod_poly_mat_rand_popov_columnwise(mat, state, cpivind, cpivdeg, cshift);
+            _nmod_poly_mat_rand_popov_col_upper(mat, state, cpivind, cpivdeg, cshift);
             //nmod_poly_mat_print_pretty(mat, "x");
             nmod_poly_mat_degree_matrix_print_pretty(mat);
 

@@ -27,22 +27,12 @@
 
 // include flint-extra's files
 #include "nmod_poly_mat_utils.h"
-#include "nmod_poly_mat_mat_poly.h"
 
 #include "nmod_poly_mat_io.h"
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_arith.h"
 
-// #include "nmod_poly_mat_multiply.h"
-
-// TODO remove once using flint's comp instead
-NMOD_POLY_MAT_INLINE void
-apply_perm_to_vector(slong *res, const slong *initial_vect,
-                          const slong *perm, slong length)
-{
-    for (slong i = 0; i < length; i++)
-        res[perm[i]] = initial_vect[i];
-}
+#include "nmod_poly_mat_multiply.h"
 
 #include "nmod_poly_mat_approximant.h"
 // #include "nmod_poly_mat_interpolant.h"
@@ -54,6 +44,24 @@ apply_perm_to_vector(slong *res, const slong *initial_vect,
 // #include "nmod_poly_mat_linsolve.h"
 
 // #include "nmod_poly_mat_linearization.h"
+
+
+// TODO remove once using flint's comp instead
+NMOD_POLY_MAT_INLINE void
+apply_perm_to_vector(slong *res, const slong *initial_vect,
+                          const slong *perm, slong length)
+{
+    for (slong i = 0; i < length; i++)
+        res[perm[i]] = initial_vect[i];
+}
+
+/** \todo doc
+ *  \todo move in suitable header
+ **/
+void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat);
+
+// TODO implem + doc
+//slong nmod_poly_mat_linsolve_mulders_storjohann(nmod_poly_mat_t mat);
 
 /** TODO: Other todos
  *  \todo algorithm for modular composition / charpoly mod

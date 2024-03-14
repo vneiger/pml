@@ -1,21 +1,13 @@
-#include <flint/flint.h>
-#include <flint/nmod_poly.h>
-#include <flint/nmod_poly_mat.h>
+#include <flint/ulong_extras.h>
 #include <flint/nmod_vec.h>
+#include <flint/nmod.h>
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_forms.h"
-#include "nmod_poly_mat_io.h" // TODO remove, for debugging
 
 #define MAT(i,j) (mat->rows[i] + j)
 #define TSF(i,j) (tsf->rows[i] + j)
 #define OTHER(i,j) (other->rows[i] + j)
 
-// TODO how to handle upper/lower?
-// TODO how to handle rowwise/colwise?
-// TODO eventually restrict the output HNF to rank rows?
-//
-//
-//
 // For all:
 // - upper Hermite, row-wise
 // - computation is in place
@@ -376,7 +368,12 @@ slong nmod_poly_mat_uref_maxdeg_atomic(nmod_poly_mat_t mat, nmod_poly_mat_t tsf,
                 // find pi1,pi2 such that entries pi1,j and pi2,j have the largest degree
                 // among entries [rk:mat->r,j], with deg(mat[pi1,j]) >= deg(mat[pi2,j])
                 if (MAT(pi1, j)->length < MAT(pi2, j)->length)
-                    SLONG_SWAP(pi1, pi2);
+                {
+                    slong t = pi1;
+                    pi1 = pi2;
+                    pi2 = t;
+                }
+//                    SLONG_SWAP(pi1, pi2);
                 for (slong i = FLINT_MAX(pi1,pi2)+1; i < mat->r; i++)
                 {
                     if (MAT(i, j)->length > MAT(pi1, j)->length)
@@ -855,7 +852,6 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat, nmod_po
 **********************************************************************/
 
 
-// TODO improve doc
 // Algo of Mulders&Storjohann, Algo 7, with a slight modification: performs
 // upper row echelon form; no reduction of above-pivot entries for already
 // found pivots. If wanting the HNF, performs a complete normalization step at
@@ -874,27 +870,18 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat, nmod_po
 // will exit as soon as it detects this singularity, returning a strictly
 // negative value
 //
-// This using the upper weak Popov form (unlike in the original presentation),
-// since this has better properties w.r.t the target upper echelon form / HNF.
-// In the generic m x m nonsingular case, the first weak Popov computation
-// transforms the first m-1 columns into an invertible upper triangular matrix
-// with a row of zeroes below it; the subsequent weak Popov form computations
-// just do nothing (whereas they would perform some atomic transformations if
-// we used lower weak Popov form).
-//
-// TODO to be implemented:
-// An early detection based on determinantal degree is added so that as soon as
-// only trivial pivot entries remain to be found, the algorithm stops the
-// iteration over the leading principal minors and rather uses a simple
-// constant transformation to complete the computation.
-//
-// If not NULL, udet is either left the same or negated, according to the
-// determinant of the applied unimodular transformation, which is +1 or -1
+// This is using the upper weak Popov form (unlike in the original
+// presentation), since this has better properties w.r.t the target upper
+// echelon form / HNF.  In the generic m x m nonsingular case, the first weak
+// Popov computation transforms the first m-1 columns into an invertible upper
+// triangular matrix with a row of zeroes below it; the subsequent weak Popov
+// form computations just do nothing (whereas they would perform some atomic
+// transformations if we used lower weak Popov form).
 slong nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
                                         nmod_poly_mat_t tsf,
                                         slong * pivind,
                                         slong * rrp,
-                                        int * udet)
+                                        slong * udet)
 {
     if (mat->r == 0 || mat->c == 0)
         return 0;
@@ -1026,7 +1013,6 @@ slong nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
     flint_free(perm);
     return rk;
 }
-
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

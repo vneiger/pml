@@ -11,8 +11,9 @@
  *
  */
 
-#include <flint/flint.h>
-#include "nmod_extra.h"
+#include "nmod_vec_extra.h"
+#include <flint/machine_vectors.h>
+#include <flint/nmod_types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,117 +33,120 @@ void _nmod_vec_rand(mp_ptr vec,
             		nmod_t mod);
 
 
+/*--------------------------------------------------------------*/
+/* vector of n consecutive primes of exactly s bits             */
+/*--------------------------------------------------------------*/
+void nmod_vec_primes(mp_ptr v, slong n, mp_bitcnt_t s);
+
+/**********************************************************************
+*                            DOT PRODUCT                             *
+**********************************************************************/
 
 
-/*------------------------------------------------------------*/
-/* y[i] = a*x[i] mod mod, i=0..len-1                          */
-/*------------------------------------------------------------*/
-static inline void _nmod_vec_scalar_mul(mp_ptr y, mp_srcptr x, slong len, mp_limb_t a, nmod_t mod)
-{
-    slong i;
-    for (i = 0; i < len; i++)
-    {
-        y[i] = nmod_mul(x[i], a, mod);
-    }
-}
+/* ------------------------------------------------------------ */
+/* v1 and v2 have length at least len, len < 2^FLINT_BITS      */
+/* all entries of v1 have <= max_bits1 bits <= FLINT_BITS       */
+/* all entries of v2 have <= max_bits2 bits <= FLINT_BITS       */
+/* computes sum(v1[i]*v2[i], 0 <= i < len)                      */
+/* stores the result in 3 limbs of res                          */
+/* ------------------------------------------------------------ */
+void nmod_vec_integer_dot_product(mp_ptr res,
+                                  mp_srcptr v1, mp_srcptr v2,
+                                  ulong len, ulong max_bits1, ulong max_bits2);
 
-
-#ifdef HAS_INT128
-
-/*------------------------------------------------------------*/
-/* y[i] = a*x[i] mod mod, i=0..len-1                          */
-/* assumes int128 available                                   */
-/* i_a must have been precomputed                             */
-/*------------------------------------------------------------*/
-static inline void _nmod_vec_int128_scalar_mul(mp_ptr y, mp_srcptr x, slong len,
-                                               mp_limb_t a, mp_limb_t i_a, nmod_t mod)
-{
-    slong i;
-    for (i = 0; i < len; i++)
-    {
-        y[i] = mul_mod_precon(x[i], a, mod.n, i_a);
-    }
-}
-
-#endif
-
-
-#ifdef HAS_AVX2
-
-/*------------------------------------------------------------*/
-/* y[i] = a*x[i] mod mod, i=0..len-1                          */
-/* works for < 32 bit primes                                  */
-/* assumes avx2 available                                     */
-/* i_a must have been precomputed                             */
-/* x and y must be 32-byte aligned                            */
-/*------------------------------------------------------------*/
-static inline void _nmod_vec_avx2_32_scalar_mul(mp_hlimb_t * y, const mp_hlimb_t * x, slong len,
-                                                mp_hlimb_t a, mp_hlimb_t i_a, nmod_t mod)
-{
-    slong i, nb;
-    __m256i avx_a, avx_i_a, avx_p, avx_p_minus_1;
-
-    nb = len/8;
-    avx_a = _mm256_set1_epi32(a);
-    avx_i_a = _mm256_set1_epi32(i_a);
-    avx_p = _mm256_set1_epi32(mod.n);
-    avx_p_minus_1 = _mm256_set1_epi32(mod.n - 1);
-
-    for (i = 0; i < nb; i++)
-    {
-        __m256i avx_x;
-        avx_x =  _mm256_load_si256((__m256i const*) x);
-        _mm256_store_si256((__m256i*) y, mm256_mul_mod_precon(avx_x, avx_a, avx_p, avx_p_minus_1, avx_i_a));
-        x += 8;
-        y += 8;
-    }
-
-    nb = len - 8*nb;
-    for (i = 0; i < nb; i++)
-    {
-        y[i] = mul_mod_precon_32(x[i], a, mod.n, i_a);
-    }
-}
+/*  ------------------------------------------------------------ */
+/** v1 and v2 have length at least len, len < 2^FLINT_BITS       */
+/** all entries of v1 have <= max_bits1 bits <= FLINT_BITS       */
+/** all entries of v2 have <= max_bits2 bits <= FLINT_BITS       */
+/** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
+/** does not assume input is reduced modulo mod.n                */
+/*  ------------------------------------------------------------ */
+mp_limb_t nmod_vec_dot_product(mp_srcptr v1, mp_srcptr v2,
+                               ulong len, ulong max_bits1, ulong max_bits2,
+                               nmod_t mod);
+// note: version split16 interesting on recent laptop (gcc does some vectorization)
+// limited to nbits <= ~31 (bound to be better analyzed, numterms)
+mp_limb_t _nmod_vec_dot_product_2_split16(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+// note: version split26 interesting (beyond 30-31 bits) on recent laptop (gcc does some vectorization)
+// limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
+mp_limb_t _nmod_vec_dot_product_2_split26(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
 
 /*------------------------------------------------------------*/
-/* y[i] = a[i]*x[i] mod mod, i=0..len-1                       */
-/* works for < 32 bit primes                                  */
-/* assumes avx2 available                                     */
-/* i_a must have been precomputed                             */
-/* x and y must be 32-byte aligned                            */
+/** dot product for moduli less than 2^30                     */
+/** reduction works if (p-1)^3*len < 2^96                     */
+/** returns dot(a, b)                                         */
+/** power_two = 2^45 mod p, pinv = 1/p                        */
 /*------------------------------------------------------------*/
-static inline void _nmod_vec_avx2_32_hadamard_mul(mp_hlimb_t * y, const mp_hlimb_t * x, const mp_hlimb_t * a,
-                                                  const mp_hlimb_t * i_a, slong len, nmod_t mod)
-{
-    slong i, nb;
-    __m256i avx_p, avx_p_minus_1;
+mp_limb_t _nmod_vec_dot_small_modulus(mp_ptr a, mp_ptr b, ulong len,
+                                      mp_limb_t power_two,
+                                      vec1d p, vec1d pinv);
 
-    nb = len/8;
-    avx_p = _mm256_set1_epi32(mod.n);
-    avx_p_minus_1 = _mm256_set1_epi32(mod.n - 1);
+/*------------------------------------------------------------*/
+/** dot product for moduli less than 2^30                     */
+/** reduction works if (p-1)^3*len < 2^96                     */
+/** res[0] = dot(a1, b), res[1] = dot(a2, b)                  */
+/** power_two = 2^45 mod p, p2 = (p,p), pinv2 = (1/p,1/p)     */
+/*------------------------------------------------------------*/
+void _nmod_vec_dot2_small_modulus(mp_ptr res,
+                                  mp_ptr a1, mp_ptr a2, mp_ptr b, ulong len,
+                                  mp_limb_t power_two,
+                                  vec2d p2, vec2d pinv2);
 
-    for (i = 0; i < nb; i++)
-    {
-        __m256i avx_x, avx_a, avx_i_a;
-        avx_x =  _mm256_load_si256((__m256i const*) x);
-        avx_a =  _mm256_load_si256((__m256i const*) a);
-        avx_i_a =  _mm256_load_si256((__m256i const*) i_a);
-        _mm256_store_si256((__m256i*) y, mm256_mul_mod_precon(avx_x, avx_a, avx_p, avx_p_minus_1, avx_i_a));
-        a += 8;
-        i_a += 8;
-        x += 8;
-        y += 8;
-    }
+/** Several dot products with same left operand, as in vector-matrix product.
+ *
+ * . u has length at least len, len < 2^FLINT_BITS
+ * . all entries of u  have <= max_bits_u bits <= FLINT_BITS
+ * . v points to at least len vectors v[0],..,v[len-1] each of length
+ * at least k, with entries of <= max_bits_v bits <= FLINT_BITS
+ * . computes uv[j] = sum(u[i]*v[i][j], 0 <= i < len) modulo mod.n,
+ * for 0 <= j < k
+ * . does not assume input entries are reduced modulo mod.n
+ *
+ * \todo do we want to write avx512 versions... ? below, attempts at making
+ * the compiler do it for us; get some improvements, but not gigantic
+ *
+ * for multi_1:
+ * \todo variants 8_16, 16_32, 32_32
+ * \todo then, thresholds needed: on two different machines, 
+ * - one (recent, avx512) is most often faster with v8_8 (but sometimes v8_32 better, e.g. len=128 k=16)
+ * - another one (2020, no avx512) is most often faster with v8_32 and v16_16 > v8_8
+ * - split 26 is in draft version, not properly checked for overflow
+ * \todo eventually, to be compared to a good matrix-matrix product with a single row in left operand!
+ *
+ * for multi_2:
+ * - 8_8, 8_32, 16_16 look similar, and on avx512 machine, are faster than 1_8 or basic
+ * - split 26 (no blocking yet; might be attempted) with avx512 is faster than the above with a factor sometimes > 2
+ * - split 26 is in draft version, not properly checked for overflow
+ * - again, more benchmarking and threshold needed
+ *
+ * for multi_3:
+ * - at the moment, no attempt at blocking or other things; will depend on what happens for multi_{1,2}
+ */
+void nmod_vec_dot_product_multi(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                ulong len, ulong k,
+                                ulong max_bits_u, ulong max_bits_v,
+                                nmod_t mod);
 
-    nb = len - 8*nb;
-    for (i = 0; i < nb; i++)
-    {
-        y[i] = mul_mod_precon_32(x[i], a[i], mod.n, i_a[i]);
-    }
-}
+void _nmod_vec_dot_product_multi_1_v1_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                       ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_1_v8_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                       ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_1_v8_32(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                       ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_1_v16_16(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                       ulong len, ulong k, nmod_t mod);
 
-#endif // HAS_AVX2
-
+void _nmod_vec_dot_product_multi_2_v1_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_2_v4_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_2_v8_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_2_v4_32(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod);
+// limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
+void _nmod_vec_dot_product_multi_2_split26(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+                                   ulong len, ulong k, nmod_t mod);
 
 #ifdef __cplusplus
 }

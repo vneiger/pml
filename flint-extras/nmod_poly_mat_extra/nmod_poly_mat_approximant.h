@@ -95,11 +95,8 @@
 
 #define PMBASIS_THRES 32
 
-#include "nmod_poly_mat_forms.h" // for testing form of approx basis, for orientation_t
-
-#include <flint/nmod_mat.h>
-#include <flint/nmod_poly_mat.h>
-#include <flint/perm.h> 
+#include <flint/nmod_types.h>
+#include "nmod_poly_mat_forms.h" // for orientation_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -145,14 +142,14 @@ extern "C" {
  * \todo
  */
 //void approximant_basis(
-//                       Mat<zz_pX> & appbas,
-//                       VecLong & rdeg,
-//                       const Mat<zz_pX> & pmat,
-//                       const VecLong & order,
-//                       const VecLong & shift = VecLong(),
-//                       const poly_mat_form_t form = ORD_WEAK_POPOV,
-//                       const bool row_wise = true,
-//                       const bool generic = false
+//                       appbas,
+//                       rdeg,
+//                       pmat,
+//                       order,
+//                       shift = vec of long's,
+//                       form = ORD_WEAK_POPOV,
+//                       row_wise = true,
+//                       generic = false
 //                      );
 
 /** General user-friendly interface for approximant basis computation.
@@ -165,20 +162,8 @@ extern "C" {
  * \todo `row_wise` false not handled
  * \todo
  */
-//inline void approximant_basis(
-//                              Mat<zz_pX> & appbas,
-//                              VecLong & rdeg,
-//                              const Mat<zz_pX> & pmat,
-//                              const long order,
-//                              const VecLong & shift = VecLong(),
-//                              const poly_mat_form_t form = ORD_WEAK_POPOV,
-//                              const bool row_wise = true,
-//                              const bool generic = false
-//                             )
-//{
-//    VecLong orders(pmat.NumCols(),order);
-//    return approximant_basis(appbas,rdeg,pmat,orders,shift,form,row_wise,generic);
-//}
+
+
 
 /** Verifying if a matrix is a minimal approximant basis.
  *
@@ -199,7 +184,7 @@ extern "C" {
  *
  * \todo add parameter row_wise
  * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
- * \todo WARNING! for the moment, does not check generation!
+ * \todo WARNING! for the moment, does not really check generation!
  * \todo WARNING! for the moment, hardcoded to check for ordered weak Popov
  */
 int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
@@ -230,13 +215,7 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
  * - process `pmat` order-wise (choose column with largest order)
  * - process `pmat` column-wise (choose leftmost column not yet completed). */
 // TODO
-//void appbas_iterative(
-//                      Mat<zz_pX> & appbas,
-//                      const Mat<zz_pX> & pmat,
-//                      const VecLong & order,
-//                      VecLong & shift,
-//                      bool order_wise=true
-//                     );
+//void appbas_iterative( ... );
 
 /** Computes a `shift`-Popov approximant basis for `(pmat,order)`. At the end
  * of the computation, the vector `shift` contains the shifted row degree of
@@ -254,13 +233,7 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
  * with the current technique.
  */
 // TODO
-//void popov_appbas_iterative(
-//                            Mat<zz_pX> & appbas,
-//                            const Mat<zz_pX> & pmat,
-//                            const VecLong & order,
-//                            VecLong & shift,
-//                            bool order_wise=true
-//                           );
+//void popov_appbas_iterative( ...);
 //@} // doxygen group: Iterative algorithms
 
 
@@ -363,99 +336,7 @@ slong mbasis1_for_mbasis(nmod_mat_t kerbas,
  * cases" (only for uniform shift?).
  * \todo integrate
  */
-//void popov_mbasis(
-//                  Mat<zz_pX> &appbas,
-//                  const Mat<zz_pX> & pmat,
-//                  const long order,
-//                  VecLong & shift
-//                 );
-
-/**********************************************************
-*  TODO MBASIS TO BE FURTHER BENCH'D AND THEN INTEGRATED  *
-**********************************************************/
-/** Compute the minimal approximant basis of F for the order order and the shift shift
- *
- * It used the structured multiplication blocks to compute x^{-k} P_{k-1} F mod x and to compute
- * P_{k} = M P_{k-1}
- * Use polynomial matrix multiplication
- *
- */
-void mbasis(nmod_poly_mat_t appbas,
-            slong * res_shift,
-            const nmod_poly_mat_t pmat,
-            ulong order,
-            const slong * shift);
-
-/**********************************************************
-*  TODO MBASIS TO BE FURTHER BENCH'D AND THEN INTEGRATED  *
-**********************************************************/
-/** Compute the minimal approximant basis of F for the order order and the shift shift
- *
- * F \in K[x]^{nxm} <-> F_prime K^{mxn}[x] will be FIX and
- * compute iteratively P_{k} \in K[x]^{mxm}, then will transform to P_prime_{k} \in K^{mxm}[x] 
- * and compute x^{-k} P_{k-1} F mod x with a naive polynomial multiplication
- *
- * Use naive polynomial multiplication
- */
-void mbasisII(nmod_poly_mat_t appbas,
-               slong * res_shift,
-               const nmod_poly_mat_t pmat,
-               ulong order,
-               const slong * shift);
-
-/**********************************************************
-*  TODO MBASIS TO BE FURTHER BENCH'D AND THEN INTEGRATED  *
-**********************************************************/
-/** Compute the minimal approximant basis of F for the order order and the shift shift
- *
- * F \in K[x]^{nxm} <-> F_prime K^{mxn}[x]  and
- * Compute P_{k-1} F iteratively with a the list_structured_multiplication_blocks 
- * (in nmod_mat_poly.h)
- * Compute P_{k-1} \in K[x]^{mxm} with the structured_multiplication_blocks
- *
- * Use structured_multiplication_blocks and list_structured_multiplication_blocks 
- */
-void mbasisIII(nmod_poly_mat_t appbas,
-                slong * res_shift,
-                const nmod_poly_mat_t pmat,
-                ulong order,
-                const slong * shift);
-
-/**********************************************************
-*  TODO MBASIS TO BE FURTHER BENCH'D AND THEN INTEGRATED  *
-**********************************************************/
-/** Compute the minimal approximant basis of F for the order order and the shift shift
- *
- * F \in K[x]^{nxm} <-> F_prime K^{mxn}[x]  and
- * Compute P_{k-1} F iteratively with a the list_structured_multiplication_blocks 
- * (in nmod_mat_poly.h)
- * Compute P_{k-1} \in K^{mxm}[x] with the list_structured_multiplication_blocks
- * Transform P_{order - 1} as a poly_mat_t 
- *
- * Use list_structured_multiplication_blocks 
- */
-void mbasisIV(nmod_poly_mat_t appbas,
-               slong * res_shift,
-               const nmod_poly_mat_t pmat,
-               ulong order,
-               const slong * shift);
-
-/**********************************************************
-*  TODO MBASIS TO BE FURTHER BENCH'D AND THEN INTEGRATED  *
-**********************************************************/
-/** Compute the minimal approximant basis of F for the order order and the shift shift
- *
- * F \in K[x]^{nxm} <-> F_prime K^{mxn}[x] FIX and
- * Compute P_{k-1} \in K[x]^{mxm} with the list structured_multiplication_blocks
- * Compute x^{-k} P_{k-1} F mod x iteratively with a naive polynomial multiplication  
- *
- * Use naive polynomial multiplication and list_structured_multiplication_blocks 
- */
-void mbasisV(nmod_poly_mat_t appbas,
-              slong * res_shift,
-              const nmod_poly_mat_t pmat,
-              ulong order,
-              const slong * shift);
+//void popov_mbasis( ... );
 
 // TODO DOC
 // appbas must be initialized with right dimensions
@@ -502,12 +383,6 @@ nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
  */
 /** Computes a `shift`-ordered weak Popov approximant basis for `(pmat,order)`
  * using the algorithm PM-Basis (see @ref pmbasis) */
-// TODO modify shift in place
-void pmbasis(nmod_poly_mat_t appbas,
-             slong * res_shift,
-             const nmod_poly_mat_t pmat,
-             ulong order,
-             const slong * shift);
 
 // TODO doc
 // TODO middle_product currently naive
@@ -529,19 +404,9 @@ nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
  * also related comment for popov_mbasis.
  **/
 // TODO integrate
-//void popov_pmbasis(
-//                   Mat<zz_pX> &appbas,
-//                   const Mat<zz_pX> & pmat,
-//                   const long order,
-//                   VecLong & shift
-//                  );
+//void popov_pmbasis( ... );
 
 //@} // doxygen group: PM-Basis algorithm (uniform approximant order)
-
-
-
-
-
 
 
 #ifdef __cplusplus

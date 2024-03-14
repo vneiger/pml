@@ -42,9 +42,8 @@ void get_time()
     {
         nmod_poly_init2(P, p, n);
         for (i = 0; i < n; i++)
-        {
             nmod_poly_set_coeff_ui(P, i, n_randtest(state) % p);
-        }
+
         val = _nmod_vec_init(n);
         val2 = _nmod_vec_init(n);
 
@@ -97,3 +96,6 @@ int main(int argc, char **argv){
     get_time();
     return 0;
 }
+
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

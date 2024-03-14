@@ -1,3 +1,5 @@
+#include <flint/nmod_mat.h>
+#include <flint/nmod_poly.h>
 #include "nmod_poly_mat_forms.h"
 
 void nmod_poly_mat_leading_matrix(nmod_mat_t lmat,

@@ -1,3 +1,5 @@
+#include <flint/fmpz_mat.h>
+#include <flint/nmod_poly.h>
 #include "nmod_poly_mat_forms.h"
 
 void nmod_poly_mat_degree_matrix(fmpz_mat_t dmat,

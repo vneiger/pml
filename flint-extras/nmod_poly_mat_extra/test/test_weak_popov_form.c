@@ -1,16 +1,11 @@
 #include <stdlib.h>
-#include <flint/flint.h>
-#include <flint/nmod_poly.h>
+#include <flint/nmod_types.h>
+#include <flint/profiler.h>
 
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_utils.h"
-#include "nmod_poly_mat_io.h"
-#include "sagemath_extra.h"
 
 #include "testing_collection.h"
-#include <flint/nmod_poly_mat.h>
-#include <flint/ulong_extras.h>
-#include <flint/profiler.h>
 
 //#define NOTRANS
 
@@ -296,9 +291,9 @@ int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, in
         timeit_start(timer);
         // weak Popov form computation
 #ifdef NOTRANS
-        slong rk = _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(wpf, shift, NULL, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r);
+        slong rk = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(wpf, shift, NULL, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r, ROW_LOWER);
 #else
-        slong rk = _nmod_poly_mat_weak_popov_lr_iter_submat_rowbyrow(wpf, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r);
+        slong rk = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(wpf, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r, ROW_LOWER);
 #endif /* ifdef NOTRANS */
         timeit_stop(timer);
         if (time)

@@ -609,12 +609,7 @@ nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat
 // least this almost always; and for the uniform shift it is equal to this for
 // generic pmat), then the third item costs O(m n^2 order^2 / 2) operations,
 // assuming cubic matrix multiplication over the field.
-//void mbasis_rescomp(
-//                    Mat<zz_pX> & appbas,
-//                    const Mat<zz_pX> & pmat,
-//                    const long order,
-//                    VecLong & shift
-//                   );
+//void mbasis_rescomp( ... );
 
 /** Variant of `mbasis` (see @ref mbasis) where we store a vector of residual
  * matrices, initially the coefficients of `pmat`, and we update all of them at
@@ -638,12 +633,7 @@ nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat
 //   the residual, for ord=1...order-1
 // Assuming cubic matrix multiplication over the field, the third item costs
 // O(m n (m-n) order^2/2) operations
-//void mbasis_resupdate(
-//                      Mat<zz_pX> & appbas,
-//                      const Mat<zz_pX> & pmat,
-//                      const long order,
-//                      VecLong & shift
-//                     );
+//void mbasis_resupdate( ... );
 
 /** Main `mbasis` function which chooses the most efficient variant depending
  * on the parameters (dimensions and order).
@@ -658,10 +648,10 @@ nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat
  *    some tests; again, this is not the best known algorithm in this case)
  */
 //inline void mbasis(
-//                   Mat<zz_pX> & appbas,
-//                   const Mat<zz_pX> & pmat,
-//                   const long order,
-//                   VecLong & shift
+//                   nmod_poly_mat_t appbas,
+//                   slong * shift,
+//                   const nmod_mat_poly_t pmat,
+//                   slong order
 //                  )
 //{
 //    if (pmat.NumCols() > pmat.NumRows()/2 + 1)

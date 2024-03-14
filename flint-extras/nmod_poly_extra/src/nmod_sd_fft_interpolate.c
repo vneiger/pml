@@ -420,6 +420,19 @@ void nmod_sd_tft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, nmod_s
     nmod_poly_fit_length(poly, N);
     poly->length = N;
 
+    if (N == 0)
+    {
+        _nmod_poly_normalise(poly);
+        return;
+    }
+    
+    if (N == 1)
+    {
+        poly->coeffs[0] = x[0];
+        _nmod_poly_normalise(poly);
+        return;
+    }
+    
     Nup = FLINT_MAX(4, n_next_pow2m1(N-1) + 1);
     wk = (vec1d *) aligned_alloc(32, 3 * Nup * sizeof(vec1d));
     
@@ -447,12 +460,12 @@ void nmod_sd_tft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, nmod_s
         k++;
         aa <<= 1;
     }
-
+    
     do
     {
         _ifft(wk, Q, p, pinv, k); // (-3p..3p), expectedly
         powers_w = F->powers_inv_w_over_2[k]; // (-p/2..p/2)
-
+        
 #ifdef TRY_AVX2
         i = 0;
         if (aa >= 4)
@@ -465,7 +478,8 @@ void nmod_sd_tft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, nmod_s
             }
         for (; i < aa; i++)
         {
-            vec1d z = vec1d_mulmod(wk[i], powers_w[i], p, pinv);  // (-p..p)
+            vec1d z;
+            z = vec1d_mulmod(wk[i], powers_w[i], p, pinv);  // (-p..p)
             wk[i] = vec1d_reduce_2n_to_n(z + p, p);               // [0..p)
         }
 #else
@@ -811,4 +825,5 @@ void nmod_sd_tft_evaluate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Qt, nmod_sd_fft
     flint_free(wk);
 }
 
-
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

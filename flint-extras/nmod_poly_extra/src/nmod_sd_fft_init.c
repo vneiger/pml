@@ -96,27 +96,33 @@ void nmod_sd_fft_init_set(nmod_sd_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
         inv = nmod_mul(inv, inv_2, mod);
     }
 
-    F->powers_inv_w_over_2 = (vec1d **) flint_malloc(sizeof(vec1d *) * order);
-    for (k = 0; k < order; k++)
+    if (order > 0)
     {
-        ulong i, K;
-        mp_limb_t *src;
-        
-        K = 1L << k;
-
-        if ((sizeof(vec1d) * K) >= 32)
+        F->powers_inv_w_over_2 = (vec1d **) flint_malloc(sizeof(vec1d *) * order);
+        for (k = 0; k < order; k++)
         {
-            F->powers_inv_w_over_2[k] = (vec1d *) aligned_alloc(32, sizeof(vec1d) * K);
-        }
-        else
-        {
-            F->powers_inv_w_over_2[k] = (vec1d *) flint_malloc(sizeof(vec1d) * K);
-        }
-        src = F->powers_inv_w_t[k+1];
-        
-        for (i = 0; i < K; i++)
-        {
-            F->powers_inv_w_over_2[k][i] = vec1d_reduce_0n_to_pmhn((vec1d) nmod_mul(src[i], F->powers_inv_2[k], mod), dp);
+            ulong i, K;
+            mp_limb_t *src;
+            
+            K = 1L << k;
+            
+            if ((sizeof(vec1d) * K) >= 32)
+            {
+                F->powers_inv_w_over_2[k] = (vec1d *) aligned_alloc(32, sizeof(vec1d) * K);
+            }
+            else
+            {
+                F->powers_inv_w_over_2[k] = (vec1d *) flint_malloc(sizeof(vec1d) * K);
+            }
+            src = F->powers_inv_w_t[k+1];
+            
+            for (i = 0; i < K; i++)
+            {
+                F->powers_inv_w_over_2[k][i] = vec1d_reduce_0n_to_pmhn((vec1d) nmod_mul(src[i], F->powers_inv_2[k], mod), dp);
+            }
         }
     }
 }
+
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -85,7 +85,7 @@ void _nmod_poly_mat_rand_popov_row_lower(nmod_poly_mat_t mat,
             nmod_poly_rand(mat->rows[i] + j, state, 1 + dvec[j]);
     }
 
-    free(dvec);
+    flint_free(dvec);
 }
 
 void _nmod_poly_mat_rand_popov_col_upper(nmod_poly_mat_t mat,
@@ -119,7 +119,7 @@ void _nmod_poly_mat_rand_popov_col_upper(nmod_poly_mat_t mat,
             nmod_poly_rand(mat->rows[i] + j, state, 1 + dvec[i]);
     }
 
-    free(dvec);
+    flint_free(dvec);
 }
 
 void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
