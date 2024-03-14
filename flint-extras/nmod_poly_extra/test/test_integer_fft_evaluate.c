@@ -6,6 +6,35 @@
 
 #define num_primes 5
 
+/***********************
+*  bit reversed copy  *
+***********************/
+
+long RevInc(long a, long k)
+{
+    long j, m;
+
+    j = k;
+    m = 1L << (k-1);
+
+    while (j && (m & a)) {
+        a ^= m;
+        m >>= 1;
+        j--;
+    }
+    if (j) a ^= m;
+    return a;
+}
+
+// indices initialized with length >= k
+void brc_indices(mp_limb_t * indices, long k)
+{
+    const long n = (1L << k);
+    for (long i = 0, j = 0; i < n; i++, j = RevInc(j, k))
+        indices[i] = j;
+}
+
+
 /*------------------------------------------------------------*/
 /* computes init for FFT for several bit lengths and orders   */
 /*------------------------------------------------------------*/
@@ -24,10 +53,10 @@ void test_fft_eval()
         1108307720798209,    // 50 bits, 1 + 2**44 * 3**2 * 7
         1139410705724735489, // 60 bits, 1 + 2**52 * 11 * 23
     };
-    ulong max_orders[num_primes] = { 5, 22, 22, 22, 22 };
+    ulong max_orders[num_primes] = { 13, 13, 13, 13, 13 };
 
-    //for (ulong nb_prime = 0; nb_prime < num_primes; nb_prime++)
-    for (ulong nb_prime = 0; nb_prime < 1; nb_prime++)
+    for (ulong nb_prime = 0; nb_prime < num_primes; nb_prime++)
+    //for (ulong nb_prime = 0; nb_prime < 1; nb_prime++)
     {
         // prime, modulus
         nmod_t mod;
@@ -37,10 +66,10 @@ void test_fft_eval()
         // find root of unity of specified maximum order
         mp_limb_t w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> max_orders[nb_prime], mod);
 
+        printf("prime %ld, orders: ", nb_prime);
+
         for (ulong order = 3; order <= max_orders[nb_prime]; order++)
         {
-            printf("prime %ld, order %ld\t", nb_prime, order);
-
             const ulong len = (1<<order);
 
             // root of unity of order 2**order
@@ -63,16 +92,31 @@ void test_fft_eval()
                 evals[k] = nmod_poly_evaluate_nmod(pol, point);
                 evals[k+len/2] = nmod_poly_evaluate_nmod(pol, nmod_neg(point, F->mod));
             }
+            // put in bit reversed order
+            mp_ptr br_ind = flint_malloc(len * sizeof(mp_limb_t));
+            brc_indices(br_ind, order);
+            mp_ptr evals_br = _nmod_vec_init(len);
+            for (ulong k = 0; k < len; k++)
+                evals_br[k] = evals[br_ind[k]];
 
+            // FFT evals, inplace radix 2 recursive
             _nmod_poly_dif_inplace_radix2_rec(pol->coeffs, len, order, F);
 
-            if (! _nmod_vec_equal(evals, pol->coeffs, len))
+            if (! _nmod_vec_equal(evals_br, pol->coeffs, len))
             {
-                printf("ERROR! in _nmod_poly_dif_inplace_radix2_rec");
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec\n\n");
+                return;
             }
+            else
+                printf("%ld ", order);
 
-            printf("\n");
+            nmod_poly_clear(pol);
+            _nmod_vec_clear(evals);
+            _nmod_vec_clear(evals_br);
+            flint_free(br_ind);
+            nmod_integer_fft_clear(F);
         }
+        printf("\n");
     }
 
     flint_randclear(state);
