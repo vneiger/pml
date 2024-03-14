@@ -100,11 +100,29 @@ void test_fft_eval()
                 evals_br[k] = evals[br_ind[k]];
 
             // FFT evals, inplace radix 2 recursive
+            nmod_poly_t pol2;
+            nmod_poly_init(pol2, mod.n);
+            nmod_poly_set(pol2, pol);
+            nmod_poly_t pol3;
+            nmod_poly_init(pol3, mod.n);
+            nmod_poly_set(pol3, pol);
             _nmod_poly_dif_inplace_radix2_rec(pol->coeffs, len, order, F);
+            _nmod_poly_dif_inplace_radix2_rec_v2(pol2->coeffs, len, order, F);
+            _nmod_poly_dif_inplace_radix2_rec_v3(pol3->coeffs, len, order, F);
 
             if (! _nmod_vec_equal(evals_br, pol->coeffs, len))
             {
                 printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec\n\n");
+                return;
+            }
+            else if (! _nmod_vec_equal(evals_br, pol2->coeffs, len))
+            {
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec_v2\n\n");
+                return;
+            }
+            else if (! _nmod_vec_equal(evals_br, pol3->coeffs, len))
+            {
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec_v3\n\n");
                 return;
             }
             else
