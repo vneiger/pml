@@ -50,12 +50,12 @@ void time_evaluate()
             long nb_iter;
 
             { // fft_init alone
+                nmod_integer_fft_t F;
                 t = 0.0;
                 nb_iter = 0;
                 while (t < 0.5)
                 {
                     tt = clock();
-                    nmod_integer_fft_t F;
                     nmod_integer_fft_init_set(F, w, order, mod);
                     nmod_integer_fft_clear(F);
                     nmod_integer_fft_init_set(F, w, order, mod);
@@ -76,6 +76,40 @@ void time_evaluate()
                     nmod_integer_fft_clear(F);
                     nmod_integer_fft_init_set(F, w, order, mod);
                     nmod_integer_fft_clear(F);
+                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                    nb_iter+=10;
+                }
+                t /= nb_iter;
+                printf("%.1e\t", t);
+            }
+
+            { // fft_init_pre alone
+                nmod_integer_fft_t Fpre;
+                t = 0.0;
+                nb_iter = 0;
+                while (t < 0.5)
+                {
+                    tt = clock();
+                    nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+                    nmod_integer_fft_clear_pre(Fpre);
+                    nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+                    nmod_integer_fft_clear_pre(Fpre);
+                    nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+                    nmod_integer_fft_clear_pre(Fpre);
+                    nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+                    nmod_integer_fft_clear_pre(Fpre);
+                    nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+                    nmod_integer_fft_clear_pre(Fpre);
+                    nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+                    nmod_integer_fft_clear_pre(Fpre);
+                    nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+                    nmod_integer_fft_clear_pre(Fpre);
+                    nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+                    nmod_integer_fft_clear_pre(Fpre);
+                    nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+                    nmod_integer_fft_clear_pre(Fpre);
+                    nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+                    nmod_integer_fft_clear_pre(Fpre);
                     t += (double)(clock()-tt) / CLOCKS_PER_SEC;
                     nb_iter+=10;
                 }
@@ -164,6 +198,34 @@ void time_evaluate()
                 }
                 t /= nb_iter;
                 nmod_integer_fft_clear(F);
+                printf("%.1e\t", t);
+            }
+
+            { // dif_radix2 alone, v4
+                nmod_integer_fft_t Fpre;
+                nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+                t = 0.0;
+                nb_iter = 0;
+                while (t < 0.5)
+                {
+                    nmod_poly_t pol;
+                    nmod_poly_init(pol, mod.n);
+                    nmod_poly_rand(pol, state, len);
+                    tt = clock();
+                    _nmod_poly_dif_inplace_radix2_rec_v4(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_v4(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_v4(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_v4(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_v4(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_v4(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_v4(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_v4(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_v4(pol->coeffs, len, order, Fpre);
+                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                    nb_iter+=10;
+                }
+                t /= nb_iter;
+                nmod_integer_fft_clear_pre(Fpre);
                 printf("%.1e\t", t);
             }
 

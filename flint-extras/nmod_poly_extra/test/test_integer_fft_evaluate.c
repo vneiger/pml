@@ -78,6 +78,8 @@ void test_fft_eval()
             // build FFT tables
             nmod_integer_fft_t F;
             nmod_integer_fft_init_set(F, w, order, mod);
+            nmod_integer_fft_t Fpre;
+            nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
 
             // choose random poly
             nmod_poly_t pol;
@@ -106,9 +108,13 @@ void test_fft_eval()
             nmod_poly_t pol3;
             nmod_poly_init(pol3, mod.n);
             nmod_poly_set(pol3, pol);
+            nmod_poly_t pol4;
+            nmod_poly_init(pol4, mod.n);
+            nmod_poly_set(pol4, pol);
             _nmod_poly_dif_inplace_radix2_rec(pol->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix2_rec_v2(pol2->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix2_rec_v3(pol3->coeffs, len, order, F);
+            _nmod_poly_dif_inplace_radix2_rec_v4(pol4->coeffs, len, order, Fpre);
 
             if (! _nmod_vec_equal(evals_br, pol->coeffs, len))
             {
@@ -125,6 +131,11 @@ void test_fft_eval()
                 printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec_v3\n\n");
                 return;
             }
+            else if (! _nmod_vec_equal(evals_br, pol4->coeffs, len))
+            {
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec_v4\n\n");
+                return;
+            }
             else
                 printf("%ld ", order);
 
@@ -133,6 +144,7 @@ void test_fft_eval()
             _nmod_vec_clear(evals_br);
             flint_free(br_ind);
             nmod_integer_fft_clear(F);
+            nmod_integer_fft_clear_pre(Fpre);
         }
         printf("\n");
     }

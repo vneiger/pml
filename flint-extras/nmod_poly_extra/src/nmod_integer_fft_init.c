@@ -198,11 +198,81 @@ void nmod_integer_fft_init_set2(nmod_integer_fft_t F, mp_limb_t w, ulong order, 
     }
 }
 
+void nmod_integer_fft_init_set_pre(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
+{
+    // basic attributes
+    F->mod = mod;
+    F->order = order;
+    F->w = w;
+    F->inv_w = nmod_inv(w, mod);
+
+    // 1. fill tables of powers of w
+    F->tab_w = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * (order-1));
+    F->tab_w_pre = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * (order-1));
+
+    // fill largest array of powers of w
+    slong ell = order-2;  // >= 1
+    ulong len = (1 << (order-1));  // len == 2**(ell+1) >= 4
+    F->tab_w[ell] = _nmod_vec_init(len);
+    F->tab_w_pre[ell] = _nmod_vec_init(len);
+    F->tab_w[ell][0] = UWORD(1);
+    F->tab_w[ell][1] = w;
+    F->tab_w[ell][2] = n_mulmod2_preinv(w, w, mod.n, mod.ninv);
+    F->tab_w[ell][3] = n_mulmod2_preinv(F->tab_w[ell][2], w, mod.n, mod.ninv);
+    F->tab_w_pre[ell][0] = n_mulmod_precomp_shoup(F->tab_w[ell][0], mod.n);
+    F->tab_w_pre[ell][1] = n_mulmod_precomp_shoup(F->tab_w[ell][1], mod.n);
+    F->tab_w_pre[ell][2] = n_mulmod_precomp_shoup(F->tab_w[ell][2], mod.n);
+    F->tab_w_pre[ell][3] = n_mulmod_precomp_shoup(F->tab_w[ell][3], mod.n);
+    if (order > 3)
+    {
+        mp_limb_t w4 = n_mulmod2_preinv(F->tab_w[ell][2], F->tab_w[ell][2], mod.n, mod.ninv);
+        mp_limb_t w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
+        for (ulong k = 0; k+7 < len; k+=4)
+        {
+            F->tab_w[ell][k+4] = n_mulmod_shoup(w4, F->tab_w[ell][k+0], w4_pr, mod.n);
+            F->tab_w[ell][k+5] = n_mulmod_shoup(w4, F->tab_w[ell][k+1], w4_pr, mod.n);
+            F->tab_w[ell][k+6] = n_mulmod_shoup(w4, F->tab_w[ell][k+2], w4_pr, mod.n);
+            F->tab_w[ell][k+7] = n_mulmod_shoup(w4, F->tab_w[ell][k+3], w4_pr, mod.n);
+            F->tab_w_pre[ell][k+4] = n_mulmod_precomp_shoup(F->tab_w[ell][k+4], mod.n);
+            F->tab_w_pre[ell][k+5] = n_mulmod_precomp_shoup(F->tab_w[ell][k+5], mod.n);
+            F->tab_w_pre[ell][k+6] = n_mulmod_precomp_shoup(F->tab_w[ell][k+6], mod.n);
+            F->tab_w_pre[ell][k+7] = n_mulmod_precomp_shoup(F->tab_w[ell][k+7], mod.n);
+        }
+        // finished here, k reached exactly len since len is a power of 2
+    }
+
+    // copy into other arrays
+    // NAIVE VERSION:
+    //   -> if order up to ~10, this is negligible (<~10%) compared to the above
+    //   -> beyond, its impact grows and reaches a factor around 2 up to order 30 at least
+    //       (meaning the next for-ell loop takes about as much time as the above for-k loop)
+    ell--;
+    for (; ell >= 0; ell--)
+    {
+        len = len >> 1;  // len == 2**(ell+1)
+        F->tab_w[ell] = _nmod_vec_init(len);
+        F->tab_w_pre[ell] = _nmod_vec_init(len);
+        for (ulong k = 0; k < len; k++)
+        {
+            F->tab_w[ell][k] = F->tab_w[ell+1][2*k];
+            F->tab_w_pre[ell][k] = F->tab_w_pre[ell+1][2*k];
+        }
+    }
+}
+
 void nmod_integer_fft_clear(nmod_integer_fft_t F)
 {
     for (ulong ell = 0; ell <= F->order-2; ell++)
         _nmod_vec_clear(F->tab_w[ell]);
     flint_free(F->tab_w);
+}
+
+void nmod_integer_fft_clear_pre(nmod_integer_fft_t F)
+{
+    for (ulong ell = 0; ell <= F->order-2; ell++)
+        _nmod_vec_clear(F->tab_w[ell]);
+    flint_free(F->tab_w);
+    flint_free(F->tab_w_pre);
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
