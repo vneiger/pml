@@ -117,14 +117,23 @@ void test_fft_eval()
             nmod_poly_t pol6;
             nmod_poly_init(pol6, mod.n);
             nmod_poly_set(pol6, pol);
+            nmod_poly_t pol7;
+            nmod_poly_init(pol7, mod.n);
+            nmod_poly_set(pol7, pol);
+            nmod_poly_t pol8;
+            nmod_poly_init(pol8, mod.n);
+            nmod_poly_set(pol8, pol);
+
             _nmod_poly_dif_inplace_radix2_rec(pol->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix2_rec_v2(pol2->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix2_rec_v3(pol3->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix2_rec_v4(pol4->coeffs, len, order, Fpre);
             _nmod_poly_dif_inplace_radix2_iter(pol5->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix2_iter_v2(pol6->coeffs, len, order, Fpre);
+            _nmod_poly_dif_inplace_radix4_rec(pol7->coeffs, len, order, F);
+            _nmod_poly_dif_inplace_radix4_rec_v2(pol8->coeffs, len, order, F);
 
-            //_nmod_vec_print(pol5->coeffs, len, mod);
+            //_nmod_vec_print(pol7->coeffs, len, mod);
             //_nmod_vec_print(evals_br, len, mod);
 
             if (! _nmod_vec_equal(evals_br, pol->coeffs, len))
@@ -157,6 +166,16 @@ void test_fft_eval()
                 printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_iter_v2\n\n");
                 return;
             }
+            else if (! _nmod_vec_equal(evals_br, pol7->coeffs, len))
+            {
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix4_rec\n\n");
+                return;
+            }
+            else if (! _nmod_vec_equal(evals_br, pol8->coeffs, len))
+            {
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix4_rec_v2\n\n");
+                return;
+            }
             else
                 printf("%ld ", order);
 
@@ -166,6 +185,8 @@ void test_fft_eval()
             nmod_poly_clear(pol4);
             nmod_poly_clear(pol5);
             nmod_poly_clear(pol6);
+            nmod_poly_clear(pol7);
+            nmod_poly_clear(pol8);
             _nmod_vec_clear(evals);
             _nmod_vec_clear(evals_br);
             flint_free(br_ind);

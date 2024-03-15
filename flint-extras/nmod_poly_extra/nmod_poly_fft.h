@@ -77,6 +77,7 @@ void _nmod_poly_dif_inplace_radix2_iter_v2(mp_ptr p, ulong len, ulong order, nmo
 void _nmod_poly_dif_inplace_radix2_iter_bench(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 
 void _nmod_poly_dif_inplace_radix4_rec(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
+void _nmod_poly_dif_inplace_radix4_rec_v2(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 // TODO :
 // - radix 4
 // - inverse fft
