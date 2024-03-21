@@ -18,9 +18,9 @@ void time_evaluate()
 
     printf("- order is log(fft length)\n");
     printf("- timing init FFT tables + DIF evaluate for several bit lengths and orders\n");
-    //printf("order\trec-b\titer-b\trec4\titer\titer2\n");
+    printf("order\trec-b\titer-b\trec4-b\titer4-b\n");
     //printf("order\tinit\tinit_pre\teval\teval2\teval3\teval4\titer\titer2\n");
-    printf("order\teval3\titer\tradix4\n");
+    //printf("order\teval3\titer\tradix4\n");
 
     ulong primes[num_primes] = {
         786433,              // 20 bits, 1 + 2**18 * 3
@@ -124,7 +124,7 @@ void time_evaluate()
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 3)
+            if (VERSIONS >= 0)
             { // dif_radix2_rec, bench
                 nmod_integer_fft_t Fpre;
                 nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
@@ -155,7 +155,7 @@ void time_evaluate()
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 3)
+            if (VERSIONS >= 0)
             { // dif_radix2_iter, bench
                 nmod_integer_fft_t Fpre;
                 nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
@@ -183,6 +183,37 @@ void time_evaluate()
                 }
                 t /= nb_iter;
                 nmod_integer_fft_clear_pre(Fpre);
+                printf("%.1e\t", t);
+            }
+
+            if (VERSIONS >= 0)
+            { // dif_radix4_rec_bench
+                nmod_integer_fft_t F;
+                nmod_integer_fft_init_set_pre(F, w, order, mod);
+                t = 0.0;
+                nb_iter = 0;
+                while (t < 0.5)
+                {
+                    nmod_poly_t pol;
+                    nmod_poly_init(pol, mod.n);
+                    nmod_poly_rand(pol, state, len);
+                    tt = clock();
+                    _nmod_poly_dif_inplace_radix4_rec_bench(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_rec_bench(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_rec_bench(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_rec_bench(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_rec_bench(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_rec_bench(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_rec_bench(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_rec_bench(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_rec_bench(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_rec_bench(pol->coeffs, len, order, F);
+                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                    nb_iter+=10;
+                    nmod_poly_clear(pol);
+                }
+                t /= nb_iter;
+                nmod_integer_fft_clear(F);
                 printf("%.1e\t", t);
             }
 
@@ -404,9 +435,9 @@ void time_evaluate()
             }
 
             if (VERSIONS >= 1)
-            { // dif_radix4_rec_v2
+            { // dif_radix4_iter
                 nmod_integer_fft_t F;
-                nmod_integer_fft_init_set_pre(F, w, order, mod);
+                nmod_integer_fft_init_set(F, w, order, mod);
                 t = 0.0;
                 nb_iter = 0;
                 while (t < 0.5)
@@ -415,16 +446,16 @@ void time_evaluate()
                     nmod_poly_init(pol, mod.n);
                     nmod_poly_rand(pol, state, len);
                     tt = clock();
-                    _nmod_poly_dif_inplace_radix4_rec_v2(pol->coeffs, len, order, F);
-                    _nmod_poly_dif_inplace_radix4_rec_v2(pol->coeffs, len, order, F);
-                    _nmod_poly_dif_inplace_radix4_rec_v2(pol->coeffs, len, order, F);
-                    _nmod_poly_dif_inplace_radix4_rec_v2(pol->coeffs, len, order, F);
-                    _nmod_poly_dif_inplace_radix4_rec_v2(pol->coeffs, len, order, F);
-                    _nmod_poly_dif_inplace_radix4_rec_v2(pol->coeffs, len, order, F);
-                    _nmod_poly_dif_inplace_radix4_rec_v2(pol->coeffs, len, order, F);
-                    _nmod_poly_dif_inplace_radix4_rec_v2(pol->coeffs, len, order, F);
-                    _nmod_poly_dif_inplace_radix4_rec_v2(pol->coeffs, len, order, F);
-                    _nmod_poly_dif_inplace_radix4_rec_v2(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_iter(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_iter(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_iter(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_iter(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_iter(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_iter(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_iter(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_iter(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_iter(pol->coeffs, len, order, F);
+                    _nmod_poly_dif_inplace_radix4_iter(pol->coeffs, len, order, F);
                     t += (double)(clock()-tt) / CLOCKS_PER_SEC;
                     nb_iter+=10;
                     nmod_poly_clear(pol);
@@ -433,7 +464,6 @@ void time_evaluate()
                 nmod_integer_fft_clear(F);
                 printf("%.1e\t", t);
             }
-
 
             printf("\n");
         }

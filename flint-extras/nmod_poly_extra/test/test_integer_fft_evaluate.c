@@ -131,10 +131,7 @@ void test_fft_eval()
             _nmod_poly_dif_inplace_radix2_iter(pol5->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix2_iter_v2(pol6->coeffs, len, order, Fpre);
             _nmod_poly_dif_inplace_radix4_rec(pol7->coeffs, len, order, F);
-            _nmod_poly_dif_inplace_radix4_rec_v2(pol8->coeffs, len, order, F);
-
-            //_nmod_vec_print(pol7->coeffs, len, mod);
-            //_nmod_vec_print(evals_br, len, mod);
+            _nmod_poly_dif_inplace_radix4_iter(pol8->coeffs, len, order, F);
 
             if (! _nmod_vec_equal(evals_br, pol->coeffs, len))
             {
@@ -169,11 +166,15 @@ void test_fft_eval()
             else if (! _nmod_vec_equal(evals_br, pol7->coeffs, len))
             {
                 printf("\n\nERROR! in _nmod_poly_dif_inplace_radix4_rec\n\n");
+                _nmod_vec_print(pol7->coeffs, len, mod);
+                _nmod_vec_print(evals_br, len, mod);
                 return;
             }
             else if (! _nmod_vec_equal(evals_br, pol8->coeffs, len))
             {
-                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix4_rec_v2\n\n");
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix4_iter\n\n");
+                _nmod_vec_print(pol8->coeffs, len, mod);
+                _nmod_vec_print(evals_br, len, mod);
                 return;
             }
             else
