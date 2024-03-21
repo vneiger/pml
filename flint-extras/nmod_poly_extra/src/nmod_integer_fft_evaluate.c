@@ -21,7 +21,7 @@
 //                              [1 -1 -I  I]
 
 // using NMOD_MUL_PRENORM (Inorm is I << mod.norm):
-#define DIF4_NMOD_PRENORM(a,b,c,d,mod,Inorm)             \
+#define DIF4_NMOD_PRENORM(a,b,c,d,Inorm,mod)             \
     do {                                                 \
         const mp_limb_t p0 = (a);                        \
         const mp_limb_t p1 = (b);                        \
@@ -38,6 +38,63 @@
         (b) = nmod_sub(p4, p6, (mod));                   \
         (c) = nmod_add(p5, p7, (mod));                   \
         (d) = nmod_sub(p5, p7, (mod));                   \
+    } while(0)
+
+// using n_mulmod_shoup  (Ipre is I with Shoup's precomputation)
+#define DIF4_NMOD_SHOUP(a,b,c,d,I,Ipre,mod)              \
+    do {                                                 \
+        const mp_limb_t p0 = (a);                        \
+        const mp_limb_t p1 = (b);                        \
+        const mp_limb_t p2 = (c);                        \
+        const mp_limb_t p3 = (d);                        \
+        const mp_limb_t p4 = nmod_add(p0, p2, (mod));    \
+        const mp_limb_t p5 = nmod_sub(p0, p2, (mod));    \
+        const mp_limb_t p6 = nmod_add(p1, p3, (mod));    \
+        const mp_limb_t p7 =                             \
+                n_mulmod_shoup((I),                      \
+                               nmod_sub(p1, p3, (mod)),  \
+                               (Ipre), (mod).n);         \
+        (a) = nmod_add(p4, p6, (mod));                   \
+        (b) = nmod_sub(p4, p6, (mod));                   \
+        (c) = nmod_add(p5, p7, (mod));                   \
+        (d) = nmod_sub(p5, p7, (mod));                   \
+    } while(0)
+
+
+/*****************************************
+*  TEMPORARIES: BENCH WITHOUT REDUCTION  *
+*****************************************/
+
+// 2-points DIF evaluation:
+//                    [1   1]
+// [a  b]  <-  [a  b] [1  -1]
+#define DIF2_BENCH(a,b)         \
+    do {                        \
+        mp_limb_t tmp = (a);    \
+        (a) = (a) + (b);        \
+        (b) = tmp - (b);        \
+    } while(0)
+
+// 4-points DIF evaluation:
+// for I == w**(2**(order-2)) square root of -1,
+//                              [1  1  1  1]
+//                              [1 -1  I -I]
+// [a  b  c  d] <- [a  b  c  d] [1  1 -1 -1]
+//                              [1 -1 -I  I]
+#define DIF4_NMOD_BENCH(a,b,c,d,I)            \
+    do {                                      \
+        const mp_limb_t p0 = (a);             \
+        const mp_limb_t p1 = (b);             \
+        const mp_limb_t p2 = (c);             \
+        const mp_limb_t p3 = (d);             \
+        const mp_limb_t p4 = p0 + p2;         \
+        const mp_limb_t p5 = p0 - p2;         \
+        const mp_limb_t p6 = p1 + p3;         \
+        const mp_limb_t p7 = (I) * (p1 - p3); \
+        (a) = p4 + p6;                        \
+        (b) = p4 - p6;                        \
+        (c) = p5 + p7;                        \
+        (d) = p5 - p7;                        \
     } while(0)
 
 
@@ -61,7 +118,7 @@ void _nmod_poly_dif_inplace_radix2_rec(mp_ptr p, ulong len, ulong order, nmod_in
     if (order == 1)
         DIF2_NMOD(p[0], p[1], F->mod);
     else if (order == 2)
-        DIF4_NMOD_PRENORM(p[0], p[1], p[2], p[3], F->mod, F->tab_w[0][1] << F->mod.norm);
+        DIF4_NMOD_PRENORM(p[0], p[1], p[2], p[3], F->tab_w[0][1] << F->mod.norm, F->mod);
     else
     {
         const mp_ptr phi = p+(len/2);
@@ -83,7 +140,7 @@ void _nmod_poly_dif_inplace_radix2_rec_v2(mp_ptr p, ulong len, ulong order, nmod
     if (order == 1)
         DIF2_NMOD(p[0], p[1], F->mod);
     else if (order == 2)
-        DIF4_NMOD_PRENORM(p[0], p[1], p[2], p[3], F->mod, F->tab_w[0][1] << F->mod.norm);
+        DIF4_NMOD_PRENORM(p[0], p[1], p[2], p[3], F->tab_w[0][1] << F->mod.norm, F->mod);
     else
     {
         // here order >= 3, len >= 8, try some unrolling
@@ -118,38 +175,9 @@ void _nmod_poly_dif_inplace_radix2_rec_v3(mp_ptr p, ulong len, ulong order, nmod
 {
     // order == 0: nothing to do
     if (order == 1)
-    {
-        //                  [1   1]
-        // p <- [p[0] p[1]] [1  -1]
-        mp_limb_t tmp = p[0];
-        p[0] = nmod_add(p[0], p[1], F->mod);
-        p[1] = nmod_sub(tmp, p[1], F->mod);
-    }
+        DIF2_NMOD(p[0], p[1], F->mod);
     else if (order == 2)
-    {
-        // for I == w**(2**(order-2)) square root of -1,
-        //                            [1  1  1  1]
-        // p <- [p[0] p[1] p[2] p[3]] [1 -1  I -I]
-        //                            [1  1 -1 -1]
-        //                            [1 -1 -I  I]
-        // p[0] = (p[0] + p[2]) + (p[1] + p[3]);
-        // p[1] = (p[0] + p[2]) - (p[1] + p[3]);
-        // p[2] = (p[0] - p[2]) + I*(p[1] - p[3]);
-        // p[3] = (p[0] - p[2]) - I*(p[1] - p[3]);
-        const mp_limb_t p0 = p[0];
-        const mp_limb_t p1 = p[1];
-        const mp_limb_t p2 = p[2];
-        const mp_limb_t p3 = p[3];
-        const mp_limb_t p4 = nmod_add(p0, p2, F->mod);
-        const mp_limb_t p5 = nmod_sub(p0, p2, F->mod);
-        const mp_limb_t p6 = nmod_add(p1, p3, F->mod);
-        mp_limb_t p7;
-        NMOD_MUL_PRENORM(p7, nmod_sub(p1, p3, F->mod) << F->mod.norm, F->tab_w[0][1], F->mod);
-        p[0] = nmod_add(p4, p6, F->mod);
-        p[1] = nmod_sub(p4, p6, F->mod);
-        p[2] = nmod_add(p5, p7, F->mod);
-        p[3] = nmod_sub(p5, p7, F->mod);
-    }
+        DIF4_NMOD_PRENORM(p[0], p[1], p[2], p[3], F->tab_w[0][1] << F->mod.norm, F->mod);
     else
     {
         // here order >= 3, len >= 8, try some unrolling
@@ -217,37 +245,9 @@ void _nmod_poly_dif_inplace_radix2_rec_v4(mp_ptr p, ulong len, ulong order, nmod
 {
     // order == 0: nothing to do
     if (order == 1)
-    {
-        //                  [1   1]
-        // p <- [p[0] p[1]] [1  -1]
-        mp_limb_t tmp = p[0];
-        p[0] = nmod_add(p[0], p[1], F->mod);
-        p[1] = nmod_sub(tmp, p[1], F->mod);
-    }
+        DIF2_NMOD(p[0], p[1], F->mod);
     else if (order == 2)
-    {
-        // for I == w**(2**(order-2)) square root of -1,
-        //                            [1  1  1  1]
-        // p <- [p[0] p[1] p[2] p[3]] [1 -1  I -I]
-        //                            [1  1 -1 -1]
-        //                            [1 -1 -I  I]
-        // p[0] = (p[0] + p[2]) + (p[1] + p[3]);
-        // p[1] = (p[0] + p[2]) - (p[1] + p[3]);
-        // p[2] = (p[0] - p[2]) + I*(p[1] - p[3]);
-        // p[3] = (p[0] - p[2]) - I*(p[1] - p[3]);
-        const mp_limb_t p0 = p[0];
-        const mp_limb_t p1 = p[1];
-        const mp_limb_t p2 = p[2];
-        const mp_limb_t p3 = p[3];
-        const mp_limb_t p4 = nmod_add(p0, p2, F->mod);
-        const mp_limb_t p5 = nmod_sub(p0, p2, F->mod);
-        const mp_limb_t p6 = nmod_add(p1, p3, F->mod);
-        const mp_limb_t p7 = n_mulmod_shoup(F->tab_w[0][1], nmod_sub(p1, p3, F->mod), F->tab_w_pre[0][1], F->mod.n);
-        p[0] = nmod_add(p4, p6, F->mod);
-        p[1] = nmod_sub(p4, p6, F->mod);
-        p[2] = nmod_add(p5, p7, F->mod);
-        p[3] = nmod_sub(p5, p7, F->mod);
-    }
+        DIF4_NMOD_SHOUP(p[0], p[1], p[2], p[3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod);
     else
     {
         // here order >= 3, len >= 8, try some unrolling
@@ -284,37 +284,9 @@ void _nmod_poly_dif_inplace_radix2_rec_bench(mp_ptr p, ulong len, ulong order, n
 {
     // order == 0: nothing to do
     if (order == 1)
-    {
-        //                  [1   1]
-        // p <- [p[0] p[1]] [1  -1]
-        mp_limb_t tmp = p[0];
-        p[0] = p[0] + p[1];
-        p[1] = tmp - p[1];
-    }
+        DIF2_BENCH(p[0], p[1]);
     else if (order == 2)
-    {
-        // for I == w**(2**(order-2)) square root of -1,
-        //                            [1  1  1  1]
-        // p <- [p[0] p[1] p[2] p[3]] [1 -1  I -I]
-        //                            [1  1 -1 -1]
-        //                            [1 -1 -I  I]
-        // p[0] = (p[0] + p[2]) + (p[1] + p[3]);
-        // p[1] = (p[0] + p[2]) - (p[1] + p[3]);
-        // p[2] = (p[0] - p[2]) + I*(p[1] - p[3]);
-        // p[3] = (p[0] - p[2]) - I*(p[1] - p[3]);
-        const mp_limb_t p0 = p[0];
-        const mp_limb_t p1 = p[1];
-        const mp_limb_t p2 = p[2];
-        const mp_limb_t p3 = p[3];
-        const mp_limb_t p4 = p0 + p2;
-        const mp_limb_t p5 = p0 - p2;
-        const mp_limb_t p6 = p1 + p3;
-        const mp_limb_t p7 = F->tab_w[0][1] * (p1 - p3);
-        p[0] = p4 + p6;
-        p[1] = p4 - p6;
-        p[2] = p5 + p7;
-        p[3] = p5 - p7;
-    }
+        DIF4_NMOD_BENCH(p[0], p[1], p[2], p[3], F->tab_w[0][1]);
     else
     {
         const mp_ptr ww = F->tab_w[order-2];
@@ -351,6 +323,7 @@ void _nmod_poly_dif_inplace_radix2_rec_bench(mp_ptr p, ulong len, ulong order, n
 ***************************/
 
 // iterative version, using NMOD_MUL_PRENORM
+// TODO does not support order==1
 void _nmod_poly_dif_inplace_radix2_iter(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
 {
     // perform FFT layers up to order 2
@@ -385,31 +358,11 @@ void _nmod_poly_dif_inplace_radix2_iter(mp_ptr p, ulong len, ulong order, nmod_i
     }
     // perform last two FFT layers
     for (ulong k = 0; k < len; k+=4)
-    {
-        const mp_limb_t p0 = p[k+0];
-        const mp_limb_t p1 = p[k+1];
-        const mp_limb_t p2 = p[k+2];
-        const mp_limb_t p3 = p[k+3];
-        const mp_limb_t p4 = nmod_add(p0, p2, F->mod);
-        const mp_limb_t p5 = nmod_sub(p0, p2, F->mod);
-        const mp_limb_t p6 = nmod_add(p1, p3, F->mod);
-        const mp_limb_t tmp7 = nmod_sub(p1, p3, F->mod);
-        mp_limb_t p7;
-        NMOD_MUL_PRENORM(p7, tmp7 << F->mod.norm, F->tab_w[0][1], F->mod);
-        p[k+0] = nmod_add(p4, p6, F->mod);
-        p[k+1] = nmod_sub(p4, p6, F->mod);
-        p[k+2] = nmod_add(p5, p7, F->mod);
-        p[k+3] = nmod_sub(p5, p7, F->mod);
-    }
-    //for (ulong k = 0; k < len; k+=2)
-    //{
-    //    const mp_limb_t tmp = p[k+0];
-    //    p[k+0] = nmod_add(p[k+0], p[k+1], F->mod);
-    //    p[k+1] = nmod_sub(tmp, p[k+1], F->mod);
-    //}
+        DIF4_NMOD_PRENORM(p[k+0], p[k+1], p[k+2], p[k+3], F->tab_w[0][1] << F->mod.norm, F->mod);
 }
 
 // iterative version, using n_mulmod_shoup
+// TODO does not support order==1
 void _nmod_poly_dif_inplace_radix2_iter_v2(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
 {
     // perform FFT layers up to order 2
@@ -445,27 +398,7 @@ void _nmod_poly_dif_inplace_radix2_iter_v2(mp_ptr p, ulong len, ulong order, nmo
     }
     // perform last two FFT layers
     for (ulong k = 0; k < len; k+=4)
-    {
-        const mp_limb_t p0 = p[k+0];
-        const mp_limb_t p1 = p[k+1];
-        const mp_limb_t p2 = p[k+2];
-        const mp_limb_t p3 = p[k+3];
-        const mp_limb_t p4 = nmod_add(p0, p2, F->mod);
-        const mp_limb_t p5 = nmod_sub(p0, p2, F->mod);
-        const mp_limb_t p6 = nmod_add(p1, p3, F->mod);
-        const mp_limb_t tmp7 = nmod_sub(p1, p3, F->mod);
-        const mp_limb_t p7 = n_mulmod_shoup(F->tab_w[0][1], tmp7, F->tab_w_pre[0][1], F->mod.n);
-        p[k+0] = nmod_add(p4, p6, F->mod);
-        p[k+1] = nmod_sub(p4, p6, F->mod);
-        p[k+2] = nmod_add(p5, p7, F->mod);
-        p[k+3] = nmod_sub(p5, p7, F->mod);
-    }
-    //for (ulong k = 0; k < len; k+=2)
-    //{
-    //    const mp_limb_t tmp = p[k+0];
-    //    p[k+0] = nmod_add(p[k+0], p[k+1], F->mod);
-    //    p[k+1] = nmod_sub(tmp, p[k+1], F->mod);
-    //}
+        DIF4_NMOD_SHOUP(p[k+0], p[k+1], p[k+2], p[k+3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod);
 }
 
 void _nmod_poly_dif_inplace_radix2_iter_bench(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
@@ -502,26 +435,7 @@ void _nmod_poly_dif_inplace_radix2_iter_bench(mp_ptr p, ulong len, ulong order, 
     }
     // perform last two FFT layers
     for (ulong k = 0; k < len; k+=4)
-    {
-        const mp_limb_t p0 = p[k+0];
-        const mp_limb_t p1 = p[k+1];
-        const mp_limb_t p2 = p[k+2];
-        const mp_limb_t p3 = p[k+3];
-        const mp_limb_t p4 = p0 + p2;
-        const mp_limb_t p5 = p0 - p2;
-        const mp_limb_t p6 = p1 + p3;
-        const mp_limb_t p7 = F->tab_w[0][1] * (p1 - p3);
-        p[k+0] = p4 + p6;
-        p[k+1] = p4 - p6;
-        p[k+2] = p5 + p7;
-        p[k+3] = p5 - p7;
-    }
-    //for (ulong k = 0; k < len; k+=2)
-    //{
-    //    const mp_limb_t tmp = p[k+0];
-    //    p[k+0] = p[k+0] + p[k+1];
-    //    p[k+1] = tmp - p[k+1];
-    //}
+        DIF4_NMOD_BENCH(p[k+0], p[k+1], p[k+2], p[k+3], F->tab_w[0][1]);
 }
 
 /***************************
