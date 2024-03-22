@@ -29,9 +29,9 @@ void time_evaluate()
         1108307720798209,    // 50 bits, 1 + 2**44 * 3**2 * 7
         1139410705724735489, // 60 bits, 1 + 2**52 * 11 * 23
     };
-    ulong max_orders[num_primes] = { 18, 27, 27, 25, 27 };
+    ulong max_orders[num_primes] = { 18, 25, 25, 25, 25 };
 
-    for (ulong k = 3; k < 4; k++)
+    for (ulong k = 4; k < 5; k++)
     {
         // prime, modulus
         nmod_t mod;
