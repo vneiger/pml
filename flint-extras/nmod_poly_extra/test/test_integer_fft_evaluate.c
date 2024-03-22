@@ -64,13 +64,14 @@ void test_fft_eval()
         nmod_init(&mod, p);
 
         // find root of unity of specified maximum order
-        mp_limb_t w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> max_orders[nb_prime], mod);
+        const mp_limb_t prt = n_primitive_root_prime(p);
+        mp_limb_t w0 = nmod_pow_ui(prt, (p - 1) >> max_orders[nb_prime], mod);
 
         printf("prime %ld, orders: ", nb_prime);
 
         for (ulong order = 3; order <= max_orders[nb_prime]; order++)
         {
-            const ulong len = (1<<order);
+            const ulong len = (1UL<<order);
 
             // root of unity of order 2**order
             mp_limb_t w = nmod_pow_ui(w0, 1UL<<(max_orders[nb_prime]-order), mod);
@@ -124,57 +125,93 @@ void test_fft_eval()
             nmod_poly_init(pol8, mod.n);
             nmod_poly_set(pol8, pol);
 
-            _nmod_poly_dif_inplace_radix2_rec(pol->coeffs, len, order, F);
-            _nmod_poly_dif_inplace_radix2_rec_v2(pol2->coeffs, len, order, F);
-            _nmod_poly_dif_inplace_radix2_rec_v3(pol3->coeffs, len, order, F);
-            _nmod_poly_dif_inplace_radix2_rec_v4(pol4->coeffs, len, order, Fpre);
-            _nmod_poly_dif_inplace_radix2_iter(pol5->coeffs, len, order, F);
-            _nmod_poly_dif_inplace_radix2_iter_v2(pol6->coeffs, len, order, Fpre);
+            _nmod_poly_dif_inplace_radix2_rec_prenorm(pol->coeffs, len, order, F);
+            _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(pol2->coeffs, len, order, F);
+            _nmod_poly_dif_inplace_radix2_rec_shoup(pol3->coeffs, len, order, Fpre);
+            _nmod_poly_dif_inplace_radix2_rec_shoup_unroll4(pol4->coeffs, len, order, Fpre);
+            _nmod_poly_dif_inplace_radix2_iter_prenorm(pol5->coeffs, len, order, F);
+            _nmod_poly_dif_inplace_radix2_iter_shoup(pol6->coeffs, len, order, Fpre);
             _nmod_poly_dif_inplace_radix4_rec(pol7->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix4_iter(pol8->coeffs, len, order, F);
 
             if (! _nmod_vec_equal(evals_br, pol->coeffs, len))
             {
-                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec\n\n");
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec_prenorm\n\n");
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
+                }
                 return;
             }
             else if (! _nmod_vec_equal(evals_br, pol2->coeffs, len))
             {
-                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec_v2\n\n");
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4\n\n");
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol2->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
+                }
                 return;
             }
             else if (! _nmod_vec_equal(evals_br, pol3->coeffs, len))
             {
-                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec_v3\n\n");
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec_shoup\n\n");
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol3->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
+                }
                 return;
             }
             else if (! _nmod_vec_equal(evals_br, pol4->coeffs, len))
             {
-                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec_v4\n\n");
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec_shoup_unroll4\n\n");
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol4->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
+                }
                 return;
             }
             else if (! _nmod_vec_equal(evals_br, pol5->coeffs, len))
             {
-                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_iter\n\n");
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_iter_prenorm\n\n");
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol5->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
+                }
                 return;
             }
             else if (! _nmod_vec_equal(evals_br, pol6->coeffs, len))
             {
-                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_iter_v2\n\n");
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_iter_shoup\n\n");
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol6->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
+                }
                 return;
             }
             else if (! _nmod_vec_equal(evals_br, pol7->coeffs, len))
             {
                 printf("\n\nERROR! in _nmod_poly_dif_inplace_radix4_rec\n\n");
-                _nmod_vec_print(pol7->coeffs, len, mod);
-                _nmod_vec_print(evals_br, len, mod);
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol7->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
+                }
                 return;
             }
             else if (! _nmod_vec_equal(evals_br, pol8->coeffs, len))
             {
                 printf("\n\nERROR! in _nmod_poly_dif_inplace_radix4_iter\n\n");
-                _nmod_vec_print(pol8->coeffs, len, mod);
-                _nmod_vec_print(evals_br, len, mod);
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol8->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
+                }
                 return;
             }
             else

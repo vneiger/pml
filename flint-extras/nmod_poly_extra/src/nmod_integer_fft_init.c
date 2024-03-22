@@ -21,7 +21,7 @@ void nmod_integer_fft_init_set(nmod_integer_fft_t F, mp_limb_t w, ulong order, n
 
     // fill largest array of powers of w
     slong ell = order-2;  // >= 1
-    ulong len = (1 << (order-1));  // len == 2**(ell+1) >= 4
+    ulong len = (1UL << (order-1));  // len == 2**(ell+1) >= 4
     F->tab_w[ell] = _nmod_vec_init(len);
     F->tab_w[ell][0] = UWORD(1);
     F->tab_w[ell][1] = w;
@@ -109,7 +109,7 @@ void nmod_integer_fft_init_set2(nmod_integer_fft_t F, mp_limb_t w, ulong order, 
         // fill largest 4 tables ell-3, ell-2, ell-1, ell
         // note: order >= 5, ell >= 3, len == 2**(ell+1) >= 16
         slong ell = order-2;           // largest tab of tab_w we want to fill
-        ulong len = (1 << (order-1));  // length of this tab
+        ulong len = (1UL << (order-1));  // length of this tab
         F->tab_w[ell] = _nmod_vec_init(len);
         F->tab_w[ell-1] = _nmod_vec_init(len/2);
         F->tab_w[ell-2] = _nmod_vec_init(len/4);
@@ -157,7 +157,7 @@ void nmod_integer_fft_init_set2(nmod_integer_fft_t F, mp_limb_t w, ulong order, 
         // 2. copy into other arrays
 
         //// LESS NAIVE VERSION:
-        // does not get that much compared to above version... but still
+        // does not get that much improvement compared to above version... but still
         // interesting around orders 17-27 at least
         ell -= 4; // level of next table to consider
         len >>= 3; // len of last table computed, i.e. 2**(ell+2)

@@ -3,22 +3,27 @@
 #include <flint/ulong_extras.h>
 #include "nmod_poly_fft.h"
 
-// 2-points DIF evaluation:
-//                    [1   1]
-// [a  b]  <-  [a  b] [1  -1]
-#define DIF2_NMOD(a,b,mod)                \
+/** 2-points Discrete Fourier Transform:
+ * returns (p(1), p(-1)) for p(x) = a+b*x
+ *                    [1   1]
+ * [a  b]  <-  [a  b] [1  -1]
+ * */
+#define DFT2_NMOD(a,b,mod)                \
     do {                                  \
         mp_limb_t tmp = (a);              \
         (a) = nmod_add((a), (b), (mod));  \
         (b) = nmod_sub(tmp, (b), (mod));  \
     } while(0)
 
-// 4-points DIF evaluation:
-// for I == w**(2**(order-2)) square root of -1,
-//                              [1  1  1  1]
-//                              [1 -1  I -I]
-// [a  b  c  d] <- [a  b  c  d] [1  1 -1 -1]
-//                              [1 -1 -I  I]
+/** 4-points DFT (DIF style):
+ * (Decimation In Frequency returns bit reversed order evaluations)
+ * returns (p(1), p(-1), p(I), p(-I)) where p(x) = a + b*x + c*x**2 + d*x**3
+ * and I is typically a square root of -1 (this property is not exploited)
+ *                              [1  1  1  1]
+ *                              [1 -1  I -I]
+ * [a  b  c  d] <- [a  b  c  d] [1  1 -1 -1]
+ *                              [1 -1 -I  I]
+ * */
 
 // using NMOD_MUL_PRENORM (Inorm is I << mod.norm):
 #define DIF4_NMOD_PRENORM(a,b,c,d,Inorm,mod)             \
@@ -65,22 +70,15 @@
 *  TEMPORARIES: BENCH WITHOUT REDUCTION  *
 *****************************************/
 
-// 2-points DIF evaluation:
-//                    [1   1]
-// [a  b]  <-  [a  b] [1  -1]
-#define DIF2_BENCH(a,b)         \
+// 2-points DFT, bench version without mod:
+#define DFT2_BENCH(a,b)         \
     do {                        \
         mp_limb_t tmp = (a);    \
         (a) = (a) + (b);        \
         (b) = tmp - (b);        \
     } while(0)
 
-// 4-points DIF evaluation:
-// for I == w**(2**(order-2)) square root of -1,
-//                              [1  1  1  1]
-//                              [1 -1  I -I]
-// [a  b  c  d] <- [a  b  c  d] [1  1 -1 -1]
-//                              [1 -1 -I  I]
+// 4-points DFT (DIF style):
 #define DIF4_NMOD_BENCH(a,b,c,d,I)            \
     do {                                      \
         const mp_limb_t p0 = (a);             \
@@ -109,41 +107,38 @@
  *       at w**k, for 0 <= k < len, in bit reverse order
  * TODO : ASSUMES order suitable for w,
  *          and tables for 'order' already precomputed in F
- *
- *  also assumes we can add a few terms before overflowing
  */
-void _nmod_poly_dif_inplace_radix2_rec(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
+void _nmod_poly_dif_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
 {
     // order == 0: nothing to do
     if (order == 1)
-        DIF2_NMOD(p[0], p[1], F->mod);
+        DFT2_NMOD(p[0], p[1], F->mod);
     else if (order == 2)
         DIF4_NMOD_PRENORM(p[0], p[1], p[2], p[3], F->tab_w[0][1] << F->mod.norm, F->mod);
     else
     {
-        const mp_ptr phi = p+(len/2);
+        const mp_ptr p0 = p;
+        const mp_ptr p1 = p0+(len/2);
         for (ulong k = 0; k < len/2; k++)
         {
-            const ulong tmp = p[k];
-            p[k] = nmod_add(p[k], phi[k], F->mod);
-            phi[k] = nmod_sub(tmp, phi[k], F->mod);
-            NMOD_MUL_PRENORM(phi[k], phi[k] << F->mod.norm, F->tab_w[order-2][k], F->mod);
+            DFT2_NMOD(p0[k], p1[k], F->mod);
+            NMOD_MUL_PRENORM(p1[k], p1[k] << F->mod.norm, F->tab_w[order-2][k], F->mod);
         }
-        _nmod_poly_dif_inplace_radix2_rec(p, len/2, order-1, F);
-        _nmod_poly_dif_inplace_radix2_rec(phi, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_prenorm(p0, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_prenorm(p1, len/2, order-1, F);
     }
 }
 
-void _nmod_poly_dif_inplace_radix2_rec_v2(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
+void _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
 {
     // order == 0: nothing to do
     if (order == 1)
-        DIF2_NMOD(p[0], p[1], F->mod);
+        DFT2_NMOD(p[0], p[1], F->mod);
     else if (order == 2)
         DIF4_NMOD_PRENORM(p[0], p[1], p[2], p[3], F->tab_w[0][1] << F->mod.norm, F->mod);
     else
     {
-        // here order >= 3, len >= 8, try some unrolling
+        // here order >= 3, len >= 8, unroll
         const mp_ptr p0 = p;
         const mp_ptr p1 = p+(len/2);
         const mp_ptr ww = F->tab_w[order-2];
@@ -153,99 +148,56 @@ void _nmod_poly_dif_inplace_radix2_rec_v2(mp_ptr p, ulong len, ulong order, nmod
             const mp_limb_t u1 = p0[k+1];
             const mp_limb_t u2 = p0[k+2];
             const mp_limb_t u3 = p0[k+3];
-            const mp_limb_t v0 = p1[k+0];
-            const mp_limb_t v1 = p1[k+1];
-            const mp_limb_t v2 = p1[k+2];
-            const mp_limb_t v3 = p1[k+3];
+            mp_limb_t v0 = p1[k+0];
+            mp_limb_t v1 = p1[k+1];
+            mp_limb_t v2 = p1[k+2];
+            mp_limb_t v3 = p1[k+3];
             p0[k+0] = nmod_add(u0, v0, F->mod);
             p0[k+1] = nmod_add(u1, v1, F->mod);
             p0[k+2] = nmod_add(u2, v2, F->mod);
             p0[k+3] = nmod_add(u3, v3, F->mod);
-            NMOD_MUL_PRENORM(p1[k+0], nmod_sub(u0, v0, F->mod) << F->mod.norm, ww[k+0], F->mod);
-            NMOD_MUL_PRENORM(p1[k+1], nmod_sub(u1, v1, F->mod) << F->mod.norm, ww[k+1], F->mod);
-            NMOD_MUL_PRENORM(p1[k+2], nmod_sub(u2, v2, F->mod) << F->mod.norm, ww[k+2], F->mod);
-            NMOD_MUL_PRENORM(p1[k+3], nmod_sub(u3, v3, F->mod) << F->mod.norm, ww[k+3], F->mod);
+            v0 = nmod_sub(u0, v0, F->mod) << F->mod.norm;
+            NMOD_MUL_PRENORM(p1[k+0], v0, ww[k+0], F->mod);
+            v1 = nmod_sub(u1, v1, F->mod) << F->mod.norm;
+            NMOD_MUL_PRENORM(p1[k+1], v1, ww[k+1], F->mod);
+            v2 = nmod_sub(u2, v2, F->mod) << F->mod.norm;
+            NMOD_MUL_PRENORM(p1[k+2], v2, ww[k+2], F->mod);
+            v3 = nmod_sub(u3, v3, F->mod) << F->mod.norm;
+            NMOD_MUL_PRENORM(p1[k+3], v3, ww[k+3], F->mod);
         }
-        _nmod_poly_dif_inplace_radix2_rec_v2(p0, len/2, order-1, F);
-        _nmod_poly_dif_inplace_radix2_rec_v2(p1, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(p0, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(p1, len/2, order-1, F);
     }
 }
 
-void _nmod_poly_dif_inplace_radix2_rec_v3(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
+void _nmod_poly_dif_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
 {
     // order == 0: nothing to do
     if (order == 1)
-        DIF2_NMOD(p[0], p[1], F->mod);
+        DFT2_NMOD(p[0], p[1], F->mod);
     else if (order == 2)
-        DIF4_NMOD_PRENORM(p[0], p[1], p[2], p[3], F->tab_w[0][1] << F->mod.norm, F->mod);
+        DIF4_NMOD_SHOUP(p[0], p[1], p[2], p[3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod);
     else
     {
-        // here order >= 3, len >= 8, try some unrolling
-        // for multiplication:
-        mp_limb_t q0xx, q1xx, rxx, p_hixx, p_loxx;
-        const mp_limb_t nxx = F->mod.n << F->mod.norm;
-        // second half of array
         const mp_ptr p0 = p;
-        const mp_ptr p1 = p+(len/2);
+        const mp_ptr p1 = p0+(len/2);
         const mp_ptr ww = F->tab_w[order-2];
-        // temporary space
-        for (ulong k = 0; k < len/2; k+=4)
+        const mp_ptr wwpre = F->tab_w_pre[order-2];
+        for (ulong k = 0; k < len/2; k++)
         {
-            const mp_limb_t u0 = p0[k+0];
-            const mp_limb_t u1 = p0[k+1];
-            const mp_limb_t u2 = p0[k+2];
-            const mp_limb_t u3 = p0[k+3];
-            const mp_limb_t v0 = p1[k+0];
-            const mp_limb_t v1 = p1[k+1];
-            const mp_limb_t v2 = p1[k+2];
-            const mp_limb_t v3 = p1[k+3];
-            p0[k+0] = nmod_add(u0, v0, F->mod);
-            p0[k+1] = nmod_add(u1, v1, F->mod);
-            p0[k+2] = nmod_add(u2, v2, F->mod);
-            p0[k+3] = nmod_add(u3, v3, F->mod);
-
-            umul_ppmm(p_hixx, p_loxx, nmod_sub(u0, v0, F->mod), ww[k+0] << F->mod.norm);
-            umul_ppmm(q1xx, q0xx, F->mod.ninv, p_hixx);
-            add_ssaaaa(q1xx, q0xx, q1xx, q0xx, p_hixx, p_loxx);
-            rxx = (p_loxx - (q1xx + 1) * nxx);
-            if (rxx > q0xx)
-                rxx += nxx;
-            p1[k+0] = (rxx < nxx ? rxx : rxx - nxx) >> F->mod.norm;
-
-            umul_ppmm(p_hixx, p_loxx, nmod_sub(u1, v1, F->mod), ww[k+1] << F->mod.norm);
-            umul_ppmm(q1xx, q0xx, F->mod.ninv, p_hixx);
-            add_ssaaaa(q1xx, q0xx, q1xx, q0xx, p_hixx, p_loxx);
-            rxx = (p_loxx - (q1xx + 1) * nxx);
-            if (rxx > q0xx)
-                rxx += nxx;
-            p1[k+1] = (rxx < nxx ? rxx : rxx - nxx) >> F->mod.norm;
-
-            umul_ppmm(p_hixx, p_loxx, nmod_sub(u2, v2, F->mod), ww[k+2] << F->mod.norm);
-            umul_ppmm(q1xx, q0xx, F->mod.ninv, p_hixx);
-            add_ssaaaa(q1xx, q0xx, q1xx, q0xx, p_hixx, p_loxx);
-            rxx = (p_loxx - (q1xx + 1) * nxx);
-            if (rxx > q0xx)
-                rxx += nxx;
-            p1[k+2] = (rxx < nxx ? rxx : rxx - nxx) >> F->mod.norm;
-
-            umul_ppmm(p_hixx, p_loxx, nmod_sub(u3, v3, F->mod), ww[k+3] << F->mod.norm);
-            umul_ppmm(q1xx, q0xx, F->mod.ninv, p_hixx);
-            add_ssaaaa(q1xx, q0xx, q1xx, q0xx, p_hixx, p_loxx);
-            rxx = (p_loxx - (q1xx + 1) * nxx);
-            if (rxx > q0xx)
-                rxx += nxx;
-            p1[k+3] = (rxx < nxx ? rxx : rxx - nxx) >> F->mod.norm;
+            DFT2_NMOD(p0[k], p1[k], F->mod);
+            p1[k] = n_mulmod_shoup(ww[k], p1[k], wwpre[k], F->mod.n);
         }
-        _nmod_poly_dif_inplace_radix2_rec_v3(p0, len/2, order-1, F);
-        _nmod_poly_dif_inplace_radix2_rec_v3(p1, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_shoup(p0, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_shoup(p1, len/2, order-1, F);
     }
 }
 
-void _nmod_poly_dif_inplace_radix2_rec_v4(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
+void _nmod_poly_dif_inplace_radix2_rec_shoup_unroll4(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
 {
     // order == 0: nothing to do
     if (order == 1)
-        DIF2_NMOD(p[0], p[1], F->mod);
+        DFT2_NMOD(p[0], p[1], F->mod);
     else if (order == 2)
         DIF4_NMOD_SHOUP(p[0], p[1], p[2], p[3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod);
     else
@@ -261,21 +213,25 @@ void _nmod_poly_dif_inplace_radix2_rec_v4(mp_ptr p, ulong len, ulong order, nmod
             const mp_limb_t u1 = p0[k+1];
             const mp_limb_t u2 = p0[k+2];
             const mp_limb_t u3 = p0[k+3];
-            const mp_limb_t v0 = p1[k+0];
-            const mp_limb_t v1 = p1[k+1];
-            const mp_limb_t v2 = p1[k+2];
-            const mp_limb_t v3 = p1[k+3];
+            mp_limb_t v0 = p1[k+0];
+            mp_limb_t v1 = p1[k+1];
+            mp_limb_t v2 = p1[k+2];
+            mp_limb_t v3 = p1[k+3];
             p0[k+0] = nmod_add(u0, v0, F->mod);
             p0[k+1] = nmod_add(u1, v1, F->mod);
             p0[k+2] = nmod_add(u2, v2, F->mod);
             p0[k+3] = nmod_add(u3, v3, F->mod);
-            p1[k+0] = n_mulmod_shoup(ww[k+0], nmod_sub(u0, v0, F->mod), wwpre[k+0], F->mod.n);
-            p1[k+1] = n_mulmod_shoup(ww[k+1], nmod_sub(u1, v1, F->mod), wwpre[k+1], F->mod.n);
-            p1[k+2] = n_mulmod_shoup(ww[k+2], nmod_sub(u2, v2, F->mod), wwpre[k+2], F->mod.n);
-            p1[k+3] = n_mulmod_shoup(ww[k+3], nmod_sub(u3, v3, F->mod), wwpre[k+3], F->mod.n);
+            v0 = nmod_sub(u0, v0, F->mod);
+            p1[k+0] = n_mulmod_shoup(ww[k+0], v0, wwpre[k+0], F->mod.n);
+            v1 = nmod_sub(u1, v1, F->mod);
+            p1[k+1] = n_mulmod_shoup(ww[k+1], v1, wwpre[k+1], F->mod.n);
+            v2 = nmod_sub(u2, v2, F->mod);
+            p1[k+2] = n_mulmod_shoup(ww[k+2], v2, wwpre[k+2], F->mod.n);
+            v3 = nmod_sub(u3, v3, F->mod);
+            p1[k+3] = n_mulmod_shoup(ww[k+3], v3, wwpre[k+3], F->mod.n);
         }
-        _nmod_poly_dif_inplace_radix2_rec_v4(p0, len/2, order-1, F);
-        _nmod_poly_dif_inplace_radix2_rec_v4(p1, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_shoup_unroll4(p0, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_shoup_unroll4(p1, len/2, order-1, F);
     }
 
 }
@@ -284,7 +240,7 @@ void _nmod_poly_dif_inplace_radix2_rec_bench(mp_ptr p, ulong len, ulong order, n
 {
     // order == 0: nothing to do
     if (order == 1)
-        DIF2_BENCH(p[0], p[1]);
+        DFT2_BENCH(p[0], p[1]);
     else if (order == 2)
         DIF4_NMOD_BENCH(p[0], p[1], p[2], p[3], F->tab_w[0][1]);
     else
@@ -324,7 +280,7 @@ void _nmod_poly_dif_inplace_radix2_rec_bench(mp_ptr p, ulong len, ulong order, n
 
 // iterative version, using NMOD_MUL_PRENORM
 // TODO does not support order==1
-void _nmod_poly_dif_inplace_radix2_iter(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
+void _nmod_poly_dif_inplace_radix2_iter_prenorm(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
 {
     // perform FFT layers up to order 2
     ulong llen = len;
@@ -363,7 +319,7 @@ void _nmod_poly_dif_inplace_radix2_iter(mp_ptr p, ulong len, ulong order, nmod_i
 
 // iterative version, using n_mulmod_shoup
 // TODO does not support order==1
-void _nmod_poly_dif_inplace_radix2_iter_v2(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
+void _nmod_poly_dif_inplace_radix2_iter_shoup(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
 {
     // perform FFT layers up to order 2
     ulong llen = len;

@@ -66,14 +66,14 @@ void nmod_integer_fft_clear_pre(nmod_integer_fft_t F);
 /* returns x[i] = poly(w^i), len=2^k, in bit reverse order    */
 /* x must have length >= len                                  */
 /*------------------------------------------------------------*/
-void _nmod_poly_dif_inplace_radix2_rec(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix2_rec_v2(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix2_rec_v3(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix2_rec_v4(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
+void _nmod_poly_dif_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
+void _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
+void _nmod_poly_dif_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
+void _nmod_poly_dif_inplace_radix2_rec_shoup_unroll4(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 void _nmod_poly_dif_inplace_radix2_rec_bench(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 
-void _nmod_poly_dif_inplace_radix2_iter(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix2_iter_v2(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
+void _nmod_poly_dif_inplace_radix2_iter_prenorm(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
+void _nmod_poly_dif_inplace_radix2_iter_shoup(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 void _nmod_poly_dif_inplace_radix2_iter_bench(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 
 void _nmod_poly_dif_inplace_radix4_rec(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
