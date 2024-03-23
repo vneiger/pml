@@ -41,6 +41,8 @@ void nmod_integer_fft_init_set(nmod_integer_fft_t F, mp_limb_t w, ulong order, n
 {
     // basic attributes
     F->mod = mod;
+    F->modn2 = 2*mod.n;
+    F->modn4 = 4*mod.n;
     F->order = order;
     F->w = w;
     F->inv_w = nmod_inv(w, mod);
@@ -89,6 +91,8 @@ void nmod_integer_fft_init_set2(nmod_integer_fft_t F, mp_limb_t w, ulong order, 
 {
     // basic attributes
     F->mod = mod;
+    F->modn2 = 2*mod.n;
+    F->modn4 = 4*mod.n;
     F->order = order;
     F->w = w;
     F->inv_w = nmod_inv(w, mod);
@@ -231,6 +235,8 @@ void nmod_integer_fft_init_set_pre(nmod_integer_fft_t F, mp_limb_t w, ulong orde
 {
     // basic attributes
     F->mod = mod;
+    F->modn2 = 2*mod.n;
+    F->modn4 = 4*mod.n;
     F->order = order;
     F->w = w;
     F->inv_w = nmod_inv(w, mod);
@@ -293,6 +299,8 @@ void nmod_integer_fft_init_set_red(nmod_integer_fft_t F, mp_limb_t w, ulong orde
 {
     // basic attributes
     F->mod = mod;
+    F->modn2 = 2*mod.n;
+    F->modn4 = 4*mod.n;
     F->order = order;
     F->w = w;
     F->inv_w = nmod_inv(w, mod);
@@ -331,6 +339,8 @@ void nmod_integer_fft_init_set_red_pre(nmod_integer_fft_t F, mp_limb_t w, ulong 
 {
     // basic attributes
     F->mod = mod;
+    F->modn2 = 2*mod.n;
+    F->modn4 = 4*mod.n;
     F->order = order;
     F->w = w;
     F->inv_w = nmod_inv(w, mod);

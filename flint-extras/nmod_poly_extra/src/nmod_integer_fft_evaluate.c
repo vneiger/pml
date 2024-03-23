@@ -3,6 +3,24 @@
 #include <flint/ulong_extras.h>
 #include "nmod_poly_fft.h"
 
+// returns a*b % n  in [0..2*n)
+static inline ulong n_mulmod_shoup_lazy(ulong a, ulong b, ulong apre, ulong n)
+{
+    ulong p_hi, p_lo;
+    umul_ppmm(p_hi, p_lo, apre, b);
+    return a * b - p_hi * n;
+}
+#define N_MULMOD_SHOUP_LAZY(res, a, b, apre, n) \
+do { \
+    ulong p_hixxx, p_loxxx; \
+    umul_ppmm(p_hixxx, p_loxxx, (apre), (b)); \
+    (res) = (a) * (b) - p_hixxx * (n); \
+} while(0)
+
+/*------------------------------------------------------------*/
+/* 2-point butterfly                                          */
+/*------------------------------------------------------------*/
+
 /** 2-points Discrete Fourier Transform:
  * returns (p(1), p(-1)) for p(x) = a+b*x
  *                    [1   1]
@@ -14,6 +32,64 @@
         (a) = nmod_add((a), (b), (mod));  \
         (b) = nmod_sub(tmp, (b), (mod));  \
     } while(0)
+
+// lazy1: input [0..n), output [0..2n)
+#define DFT2_LAZY1(a,b,n)           \
+    do {                            \
+        const mp_limb_t tmp = (a);  \
+        (a) = (a) + (b);            \
+        (b) = tmp + (n) - (b);      \
+    } while(0)
+
+// lazy2: input [0..2n), output [0..4n)
+// n2 is 2*n
+#define DFT2_LAZY2(a,b,n2)          \
+    do {                            \
+        const mp_limb_t tmp = (a);  \
+        (a) = (a) + (b);            \
+        (b) = tmp + (n2) - (b);     \
+    } while(0)
+
+// lazy3: input [0..4n), output [0..8n)
+// n4 is 4*n
+#define DFT2_LAZY3(a,b,n4)          \
+    do {                            \
+        const mp_limb_t tmp = (a);  \
+        (a) = (a) + (b);            \
+        (b) = tmp + (n4) - (b);     \
+    } while(0)
+
+// lazy3 red1:
+// input [0..4n) x [0..4n),
+// output [0..4n) x [0..8n)
+// n4 is 4*n
+#define DFT2_LAZY3_RED1(a,b,n4)     \
+    do {                            \
+        const mp_limb_t tmp = (a);  \
+        (a) = (a) + (b);            \
+        (b) = tmp + n4 - (b);       \
+        if ((a) >= (n4))            \
+            (a) -= (n4);            \
+    } while(0)
+
+// lazy3 red:
+// input [0..4n), output [0..4n)
+// n4 is 4*n
+#define DFT2_LAZY3_RED(a,b,n4)      \
+    do {                            \
+        const mp_limb_t tmp = (a);  \
+        (a) = (a) + (b);            \
+        (b) = tmp + n4 - (b);       \
+        if ((a) >= (n4))            \
+            (a) -= (n4);            \
+        if ((b) >= (n4))            \
+            (b) -= (n4);            \
+    } while(0)
+
+
+/*------------------------------------------------------------*/
+/* 4-point DFT (DIF style)                                    */
+/*------------------------------------------------------------*/
 
 /** 4-points DFT (DIF style):
  * (Decimation In Frequency returns bit reversed order evaluations)
@@ -64,6 +140,83 @@
         (c) = nmod_add(p5, p7, (mod));                   \
         (d) = nmod_sub(p5, p7, (mod));                   \
     } while(0)
+
+// lazy1: input in [0..n) --> output [0..4*n)
+#define DFT4_DIF_SHOUP_LAZY1(a,b,c,d,I,Ipre,n)                     \
+    do {                                                           \
+        const mp_limb_t p0 = (a);                                  \
+        const mp_limb_t p1 = (b);                                  \
+        const mp_limb_t p2 = (c);                                  \
+        const mp_limb_t p3 = (d);                                  \
+        const mp_limb_t p4 = p0 + p2;              /* < 2*n */     \
+        const mp_limb_t p5 = p0 + (n) - p2;        /* < 2*n */     \
+        const mp_limb_t p6 = p1 + p3;              /* < 2*n */     \
+        const mp_limb_t p7 =                       /* < 2*n */     \
+             n_mulmod_shoup_lazy((I), p1 + (n) - p3, (Ipre), (n)); \
+        (a) = p4 + p6;                             /* < 4*n */     \
+        (b) = p4 + 2*(n) - p6;                     /* < 4*n */     \
+        (c) = p5 + p7;                             /* < 4*n */     \
+        (d) = p5 + 2*(n) - p7;                     /* < 4*n */     \
+    } while(0)
+
+// using n_mulmod_shoup  (Ipre is I with Shoup's precomputation)
+// lazy red: input in [0..2*n) --> output [0..4*n)
+// n2 is 2*n
+#define DFT4_DIF_SHOUP_LAZY2_RED(a,b,c,d,I,Ipre,n,n2,n4)               \
+    do {                                                               \
+        const mp_limb_t p0 = (a);                                      \
+        const mp_limb_t p1 = (b);                                      \
+        const mp_limb_t p2 = (c);                                      \
+        const mp_limb_t p3 = (d);                                      \
+        mp_limb_t p4 = p0 + p2;                     /* < 4*n */        \
+        if (p4 >= (n2))                                                \
+            p4 -= (n2);                             /* < 2*n */        \
+        mp_limb_t p5 = p0 + (n4) - p2;              /* < 4*n */        \
+        if (p5 >= (n2))                                                \
+            p5 -= (n2);                             /* < 2*n */        \
+        mp_limb_t p6 = p1 + p3;                     /* < 4*n */        \
+        if (p6 >= (n2))                                                \
+            p6 -= (n2);                             /* < 2*n */        \
+        const mp_limb_t p7 =                        /* < 2*n */        \
+             n_mulmod_shoup_lazy((I), p1 + (n4) - p3, (Ipre), (n));    \
+        (a) = p4 + p6;                              /* < 4*n */        \
+        (b) = p4 + (n2) - p6;                       /* < 4*n */        \
+        (c) = p5 + p7;                              /* < 4*n */        \
+        (d) = p5 + (n2) - p7;                       /* < 4*n */        \
+    } while(0)
+
+// using n_mulmod_shoup  (Ipre is I with Shoup's precomputation)
+// lazy red: input in [0..4*n) --> output [0..4*n)
+// n4 is 4*n
+#define DFT4_DIF_SHOUP_LAZY3_RED(a,b,c,d,I,Ipre,n)                     \
+    do {                                                               \
+        const mp_limb_t p0 = (a);                                      \
+        const mp_limb_t p1 = (b);                                      \
+        const mp_limb_t p2 = (c);                                      \
+        const mp_limb_t p3 = (d);                                      \
+        mp_limb_t p4 = p0 + p2;                    /* < 8*n */         \
+        if (p4 >= 4*(n))                                               \
+            p4 -= 4*(n);                             /* < 4*n */       \
+        if (p4 >= 2*(n))                                               \
+            p4 -= 2*(n);                             /* < 2*n */       \
+        mp_limb_t p5 = p0 + 4*(n) - p2;            /* < 4*n */         \
+        if (p5 >= 4*(n))                                               \
+            p5 -= 4*(n);                             /* < 4*n */       \
+        if (p5 >= 2*(n))                                               \
+            p5 -= 2*(n);                             /* < 2*n */       \
+        mp_limb_t p6 = p1 + p3;                    /* < 4*n */         \
+        if (p6 >= 4*(n))                                               \
+            p6 -= 4*(n);                             /* < 4*n */       \
+        if (p6 >= 2*(n))                                               \
+            p6 -= 2*(n);                             /* < 2*n */       \
+        const mp_limb_t p7 =                       /* < 2*n */         \
+             n_mulmod_shoup_lazy((I), p1 + 4*(n) - p3, (Ipre), (n));   \
+        (a) = p4 + p6;                             /* < 4*n */         \
+        (b) = p4 + 2*(n) - p6;                     /* < 4*n */         \
+        (c) = p5 + p7;                             /* < 4*n */         \
+        (d) = p5 + 2*(n) - p7;                     /* < 4*n */         \
+    } while(0)
+
 
 /** one level of DFT, DIF style, unrolling 4 by 4:
  * does DFT2 and multiply by powers of w
@@ -675,7 +828,7 @@ void _nmod_poly_dif_inplace_radix4_iter(mp_ptr p, ulong len, ulong order, nmod_i
 
 
 /*******************************
-*  Delayed scaling recursive  *
+*  Reduction tree viewpoint   *
 *******************************/
 
 /** fft evaluation, in place
@@ -1141,6 +1294,109 @@ void _nmod_poly_red_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, u
         _nmod_poly_red_inplace_radix2_rec_shoup(p+len/2, len/2, order-1, 2*node+1, F);
     }
 }
+
+
+/**********
+*  Lazy  *
+**********/
+
+// input [0..2*n), output [0..4*n)
+void _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
+{
+    // order == 0: nothing to do
+    if (order == 1)
+        DFT2_LAZY3_RED(p[0], p[1], F->modn4);
+    else if (order == 2)
+        DFT4_DIF_SHOUP_LAZY2_RED(p[0], p[1], p[2], p[3], F->tab_w[0][1], F->tab_w_pre[0][1],
+                                 F->mod.n, F->modn2, F->modn4);
+    else
+    {
+        for (ulong k = 0; k < len/2; k+=4)
+        {
+            // in: p[k], p[len/2+k] in [0..2n)
+            // out: p[k], p[len/2+k] in [0..2n)
+            ulong p_hi, p_lo, tmp;
+
+            tmp = p[k+0] + F->modn2 - p[len/2+k+0];
+            p[k+0] = p[k+0] + p[len/2+k+0];
+            if (p[k+0] >= F->modn2)
+                p[k+0] -= F->modn2;
+            umul_ppmm(p_hi, p_lo, F->tab_w_pre[order-2][k+0], tmp);
+            p[len/2+k+0] = F->tab_w[order-2][k+0] * tmp - p_hi * F->mod.n;
+
+            tmp = p[k+1] + F->modn2 - p[len/2+k+1];
+            p[k+1] = p[k+1] + p[len/2+k+1];
+            if (p[k+1] >= F->modn2)
+                p[k+1] -= F->modn2;
+            umul_ppmm(p_hi, p_lo, F->tab_w_pre[order-2][k+1], tmp);
+            p[len/2+k+1] = F->tab_w[order-2][k+1] * tmp - p_hi * F->mod.n;
+
+            tmp = p[k+2] + F->modn2 - p[len/2+k+2];
+            p[k+2] = p[k+2] + p[len/2+k+2];
+            if (p[k+2] >= F->modn2)
+                p[k+2] -= F->modn2;
+            umul_ppmm(p_hi, p_lo, F->tab_w_pre[order-2][k+2], tmp);
+            p[len/2+k+2] = F->tab_w[order-2][k+2] * tmp - p_hi * F->mod.n;
+
+            tmp = p[k+3] + F->modn2 - p[len/2+k+3];
+            p[k+3] = p[k+3] + p[len/2+k+3];
+            if (p[k+3] >= F->modn2)
+                p[k+3] -= F->modn2;
+            umul_ppmm(p_hi, p_lo, F->tab_w_pre[order-2][k+3], tmp);
+            p[len/2+k+3] = F->tab_w[order-2][k+3] * tmp - p_hi * F->mod.n;
+        }
+        _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(p, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(p+len/2, len/2, order-1, F);
+    }
+}
+
+void _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
+{
+    // perform FFT layers up to order 2
+    ulong llen = len;
+    for (ulong ell = order; ell > 2; ell--, llen>>=1)
+        for (ulong k = 0; k < len; k+=llen)
+            for (ulong kk = 0; kk < llen/2; kk+=4)
+            {
+                // in: p[k+kk], p[llen/2+k+kk] in [0..2n)
+                // out: p[k+kk], p[llen/2+k+kk] in [0..2n)
+                ulong p_hi, p_lo, tmp;
+
+                tmp = p[k+kk+0] + F->modn2 - p[llen/2+k+kk+0];
+                p[k+kk+0] = p[k+kk+0] + p[llen/2+k+kk+0];
+                if (p[k+kk+0] >= F->modn2)
+                    p[k+kk+0] -= F->modn2;
+                umul_ppmm(p_hi, p_lo, F->tab_w_pre[ell-2][kk+0], tmp);
+                p[llen/2+k+kk+0] = F->tab_w[ell-2][kk+0] * tmp - p_hi * F->mod.n;
+
+                tmp = p[k+kk+1] + F->modn2 - p[llen/2+k+kk+1];
+                p[k+kk+1] = p[k+kk+1] + p[llen/2+k+kk+1];
+                if (p[k+kk+1] >= F->modn2)
+                    p[k+kk+1] -= F->modn2;
+                umul_ppmm(p_hi, p_lo, F->tab_w_pre[ell-2][kk+1], tmp);
+                p[llen/2+k+kk+1] = F->tab_w[ell-2][kk+1] * tmp - p_hi * F->mod.n;
+
+                tmp = p[k+kk+2] + F->modn2 - p[llen/2+k+kk+2];
+                p[k+kk+2] = p[k+kk+2] + p[llen/2+k+kk+2];
+                if (p[k+kk+2] >= F->modn2)
+                    p[k+kk+2] -= F->modn2;
+                umul_ppmm(p_hi, p_lo, F->tab_w_pre[ell-2][kk+2], tmp);
+                p[llen/2+k+kk+2] = F->tab_w[ell-2][kk+2] * tmp - p_hi * F->mod.n;
+
+                tmp = p[k+kk+3] + F->modn2 - p[llen/2+k+kk+3];
+                p[k+kk+3] = p[k+kk+3] + p[llen/2+k+kk+3];
+                if (p[k+kk+3] >= F->modn2)
+                    p[k+kk+3] -= F->modn2;
+                umul_ppmm(p_hi, p_lo, F->tab_w_pre[ell-2][kk+3], tmp);
+                p[llen/2+k+kk+3] = F->tab_w[ell-2][kk+3] * tmp - p_hi * F->mod.n;
+            }
+    // perform last two FFT layers
+    for (ulong k = 0; k < len; k+=4)
+        DFT4_DIF_SHOUP_LAZY2_RED(p[k+0], p[k+1], p[k+2], p[k+3], F->tab_w[0][1], F->tab_w_pre[0][1],
+                                 F->mod.n, F->modn2, F->modn4);
+}
+
+
 
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */

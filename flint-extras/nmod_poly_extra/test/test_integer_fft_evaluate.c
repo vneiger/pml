@@ -1,4 +1,5 @@
 #include <flint/nmod_vec.h>
+#include <flint/ulong_extras.h>
 #include <time.h>
 #include <flint/nmod.h>
 #include "nmod_poly_extra.h"
@@ -10,30 +11,46 @@
 *  bit reversed copy  *
 ***********************/
 
-long RevInc(long a, long k)
+//long RevInc(long a, long k)
+//{
+//    long j, m;
+//
+//    j = k;
+//    m = 1L << (k-1);
+//
+//    while (j && (m & a)) {
+//        a ^= m;
+//        m >>= 1;
+//        j--;
+//    }
+//    if (j) a ^= m;
+//    return a;
+//}
+//
+//// indices initialized with length >= k
+//void brc_indices(mp_limb_t * indices, long k)
+//{
+//    const long n = (1L << k);
+//    for (long i = 0, j = 0; i < n; i++, j = RevInc(j, k))
+//        indices[i] = j;
+//}
+
+
+// vector equality up to reduction mod
+int nmod_vec_red_equal(mp_srcptr vec1, mp_srcptr vec2, ulong len, nmod_t mod)
 {
-    long j, m;
-
-    j = k;
-    m = 1L << (k-1);
-
-    while (j && (m & a)) {
-        a ^= m;
-        m >>= 1;
-        j--;
+    for (ulong k = 0; k < len; k++)
+    {
+        ulong v1;
+        ulong v2;
+        NMOD_RED(v1, vec1[k], mod);
+        NMOD_RED(v2, vec2[k], mod);
+        if (v1 != v2)
+            return 0;
     }
-    if (j) a ^= m;
-    return a;
-}
 
-// indices initialized with length >= k
-void brc_indices(mp_limb_t * indices, long k)
-{
-    const long n = (1L << k);
-    for (long i = 0, j = 0; i < n; i++, j = RevInc(j, k))
-        indices[i] = j;
+    return 1;
 }
-
 
 /*------------------------------------------------------------*/
 /* computes init for FFT for several bit lengths and orders   */
@@ -138,6 +155,12 @@ void test_fft_eval()
             nmod_poly_t pol10;
             nmod_poly_init(pol10, mod.n);
             nmod_poly_set(pol10, pol);
+            nmod_poly_t pol11;
+            nmod_poly_init(pol11, mod.n);
+            nmod_poly_set(pol11, pol);
+            nmod_poly_t pol12;
+            nmod_poly_init(pol12, mod.n);
+            nmod_poly_set(pol12, pol);
 
             _nmod_poly_dif_inplace_radix2_rec_prenorm(pol->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(pol2->coeffs, len, order, F);
@@ -149,6 +172,9 @@ void test_fft_eval()
             _nmod_poly_dif_inplace_radix4_iter(pol8->coeffs, len, order, F);
             _nmod_poly_red_inplace_radix2_rec_prenorm(pol9->coeffs, len, order, 0, Fred);
             _nmod_poly_red_inplace_radix2_rec_shoup(pol10->coeffs, len, order, 0, Fredpre);
+
+            _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(pol11->coeffs, len, order, Fpre);
+            _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(pol12->coeffs, len, order, Fpre);
 
             if (! _nmod_vec_equal(evals_br, pol->coeffs, len))
             {
@@ -250,6 +276,26 @@ void test_fft_eval()
                 }
                 return;
             }
+            else if (! nmod_vec_red_equal(evals_br, pol11->coeffs, len, mod))
+            {
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec_shoup_lazy\n\n");
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol11->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
+                }
+                return;
+            }
+            else if (! _nmod_vec_equal(pol11->coeffs, pol12->coeffs, len))
+            {
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_iter_shoup_lazy\n\n");
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol11->coeffs, len, mod);
+                    _nmod_vec_print(pol12->coeffs, len, mod);
+                }
+                return;
+            }
             else
                 printf("%ld ", order);
 
@@ -263,6 +309,8 @@ void test_fft_eval()
             nmod_poly_clear(pol8);
             nmod_poly_clear(pol9);
             nmod_poly_clear(pol10);
+            nmod_poly_clear(pol11);
+            nmod_poly_clear(pol12);
             _nmod_vec_clear(evals_br);
             nmod_integer_fft_clear(F);
             nmod_integer_fft_clear_pre(Fpre);

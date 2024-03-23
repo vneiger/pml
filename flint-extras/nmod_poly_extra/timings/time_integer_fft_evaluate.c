@@ -279,7 +279,7 @@ void time_evaluate()
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 2)
+            if (VERSIONS >= 1)
             { // dif_radix2_rec_shoup
                 nmod_integer_fft_t Fpre;
                 nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
@@ -310,7 +310,7 @@ void time_evaluate()
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 1)
+            if (VERSIONS >= 2)
             { // dif_radix2_rec_shoup_unroll4
                 nmod_integer_fft_t Fpre;
                 nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
@@ -465,7 +465,7 @@ void time_evaluate()
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 1)
+            if (VERSIONS >= 2)
             { // red_rec_prenorm
                 nmod_integer_fft_t F;
                 nmod_integer_fft_init_set_red(F, w, order, mod);
@@ -496,7 +496,7 @@ void time_evaluate()
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 1)
+            if (VERSIONS >= 2)
             { // red_rec_shoup
                 nmod_integer_fft_t F;
                 nmod_integer_fft_init_set_red_pre(F, w, order, mod);
@@ -524,6 +524,68 @@ void time_evaluate()
                 }
                 t /= nb_iter;
                 nmod_integer_fft_clear_red_pre(F);
+                printf("%.1e\t", t);
+            }
+
+            if (VERSIONS >= 1)
+            { // dif_radix2_rec_shoup_lazy
+                nmod_integer_fft_t Fpre;
+                nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+                t = 0.0;
+                nb_iter = 0;
+                while (t < 0.5)
+                {
+                    nmod_poly_t pol;
+                    nmod_poly_init(pol, mod.n);
+                    nmod_poly_rand(pol, state, len);
+                    tt = clock();
+                    _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                    nb_iter+=10;
+                    nmod_poly_clear(pol);
+                }
+                t /= nb_iter;
+                nmod_integer_fft_clear_pre(Fpre);
+                printf("%.1e\t", t);
+            }
+
+            if (VERSIONS >= 1)
+            { // dif_radix2_rec_shoup_lazy_v2
+                nmod_integer_fft_t Fpre;
+                nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+                t = 0.0;
+                nb_iter = 0;
+                while (t < 0.5)
+                {
+                    nmod_poly_t pol;
+                    nmod_poly_init(pol, mod.n);
+                    nmod_poly_rand(pol, state, len);
+                    tt = clock();
+                    _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(pol->coeffs, len, order, Fpre);
+                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                    nb_iter+=10;
+                    nmod_poly_clear(pol);
+                }
+                t /= nb_iter;
+                nmod_integer_fft_clear_pre(Fpre);
                 printf("%.1e\t", t);
             }
 

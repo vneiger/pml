@@ -17,6 +17,8 @@ extern "C" {
 typedef struct
 {
     nmod_t mod;
+    ulong modn2;     // 2*mod.n
+    ulong modn4;     // 4*mod.n
     ulong order;
     mp_limb_t w;                   // primitive (2**order)th root of 1
     mp_limb_t inv_w;               // inverse of w
@@ -99,10 +101,9 @@ void _nmod_poly_red_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order,
 void _nmod_poly_red_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, ulong rt_index, nmod_integer_fft_t F);
 
 
-
-// TODO :
-// - inverse fft
-// - not in place (e.g. if evaluating polynomial for fft mul, but polynomial needs to be kept)
+// lazy attempts
+void _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
+void _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 
 
 
