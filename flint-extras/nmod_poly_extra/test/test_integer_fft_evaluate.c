@@ -84,6 +84,8 @@ void test_fft_eval()
             nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
             nmod_integer_fft_t Fred;
             nmod_integer_fft_init_set_red(Fred, w, order, mod);
+            nmod_integer_fft_t Fredpre;
+            nmod_integer_fft_init_set_red_pre(Fredpre, w, order, mod);
 
             // choose random poly
             nmod_poly_t pol;
@@ -146,7 +148,7 @@ void test_fft_eval()
             _nmod_poly_dif_inplace_radix4_rec(pol7->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix4_iter(pol8->coeffs, len, order, F);
             _nmod_poly_red_inplace_radix2_rec_prenorm(pol9->coeffs, len, order, 0, Fred);
-            _nmod_poly_red_inplace_radix2_rec_shoup(pol10->coeffs, len, order, 0, 0, Fpre);
+            _nmod_poly_red_inplace_radix2_rec_shoup(pol10->coeffs, len, order, 0, Fredpre);
 
             if (! _nmod_vec_equal(evals_br, pol->coeffs, len))
             {
@@ -265,6 +267,7 @@ void test_fft_eval()
             nmod_integer_fft_clear(F);
             nmod_integer_fft_clear_pre(Fpre);
             nmod_integer_fft_clear_red(Fred);
+            nmod_integer_fft_clear_red_pre(Fredpre);
         }
         printf("\n");
     }
