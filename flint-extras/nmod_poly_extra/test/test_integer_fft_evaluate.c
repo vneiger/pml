@@ -54,6 +54,7 @@ void test_fft_eval()
         1139410705724735489, // 60 bits, 1 + 2**52 * 11 * 23
     };
     ulong max_orders[num_primes] = { 13, 13, 13, 13, 13 };
+    //ulong max_orders[num_primes] = { 4, 4, 4, 4, 4 };
 
     for (ulong nb_prime = 0; nb_prime < num_primes; nb_prime++)
     //for (ulong nb_prime = 0; nb_prime < 1; nb_prime++)
@@ -81,26 +82,31 @@ void test_fft_eval()
             nmod_integer_fft_init_set(F, w, order, mod);
             nmod_integer_fft_t Fpre;
             nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
+            nmod_integer_fft_t Fred;
+            nmod_integer_fft_init_set_red(Fred, w, order, mod);
 
             // choose random poly
             nmod_poly_t pol;
             nmod_poly_init(pol, mod.n);
             nmod_poly_rand(pol, state, len);
 
-            // naive evals by Horner
-            mp_ptr evals = _nmod_vec_init(len);
+            //// naive evals by Horner
+            //mp_ptr evals = _nmod_vec_init(len);
+            //for (ulong k = 0; k < len/2; k++)
+            //{
+            //    mp_limb_t point = F->tab_w[order-2][k];
+            //    evals[k] = nmod_poly_evaluate_nmod(pol, point);
+            //    evals[k+len/2] = nmod_poly_evaluate_nmod(pol, nmod_neg(point, F->mod));
+            //}
+
+            // naive evals by Horner, in bit reversed order
+            mp_ptr evals_br = _nmod_vec_init(len);
             for (ulong k = 0; k < len/2; k++)
             {
-                mp_limb_t point = F->tab_w[order-2][k];
-                evals[k] = nmod_poly_evaluate_nmod(pol, point);
-                evals[k+len/2] = nmod_poly_evaluate_nmod(pol, nmod_neg(point, F->mod));
+                mp_limb_t point = Fred->tab_w[1][k];
+                evals_br[2*k] = nmod_poly_evaluate_nmod(pol, point);
+                evals_br[2*k+1] = nmod_poly_evaluate_nmod(pol, nmod_neg(point,Fred->mod));
             }
-            // put in bit reversed order
-            mp_ptr br_ind = flint_malloc(len * sizeof(mp_limb_t));
-            brc_indices(br_ind, order);
-            mp_ptr evals_br = _nmod_vec_init(len);
-            for (ulong k = 0; k < len; k++)
-                evals_br[k] = evals[br_ind[k]];
 
             // FFT evals, inplace radix 2 recursive
             nmod_poly_t pol2;
@@ -124,6 +130,12 @@ void test_fft_eval()
             nmod_poly_t pol8;
             nmod_poly_init(pol8, mod.n);
             nmod_poly_set(pol8, pol);
+            nmod_poly_t pol9;
+            nmod_poly_init(pol9, mod.n);
+            nmod_poly_set(pol9, pol);
+            nmod_poly_t pol10;
+            nmod_poly_init(pol10, mod.n);
+            nmod_poly_set(pol10, pol);
 
             _nmod_poly_dif_inplace_radix2_rec_prenorm(pol->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(pol2->coeffs, len, order, F);
@@ -133,6 +145,8 @@ void test_fft_eval()
             _nmod_poly_dif_inplace_radix2_iter_shoup(pol6->coeffs, len, order, Fpre);
             _nmod_poly_dif_inplace_radix4_rec(pol7->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix4_iter(pol8->coeffs, len, order, F);
+            _nmod_poly_red_inplace_radix2_rec_prenorm(pol9->coeffs, len, order, 0, Fred);
+            _nmod_poly_red_inplace_radix2_rec_shoup(pol10->coeffs, len, order, 0, 0, Fpre);
 
             if (! _nmod_vec_equal(evals_br, pol->coeffs, len))
             {
@@ -214,6 +228,26 @@ void test_fft_eval()
                 }
                 return;
             }
+            else if (! _nmod_vec_equal(evals_br, pol9->coeffs, len))
+            {
+                printf("\n\nERROR! in _nmod_poly_red_inplace_radix2_rec_prenorm\n\n");
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol9->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
+                }
+                return;
+            }
+            else if (! _nmod_vec_equal(evals_br, pol10->coeffs, len))
+            {
+                printf("\n\nERROR! in _nmod_poly_red_inplace_radix2_rec_shoup\n\n");
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol10->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
+                }
+                return;
+            }
             else
                 printf("%ld ", order);
 
@@ -225,11 +259,12 @@ void test_fft_eval()
             nmod_poly_clear(pol6);
             nmod_poly_clear(pol7);
             nmod_poly_clear(pol8);
-            _nmod_vec_clear(evals);
+            nmod_poly_clear(pol9);
+            nmod_poly_clear(pol10);
             _nmod_vec_clear(evals_br);
-            flint_free(br_ind);
             nmod_integer_fft_clear(F);
             nmod_integer_fft_clear_pre(Fpre);
+            nmod_integer_fft_clear_red(Fred);
         }
         printf("\n");
     }

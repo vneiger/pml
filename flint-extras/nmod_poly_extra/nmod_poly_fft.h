@@ -46,18 +46,27 @@ typedef nmod_integer_fft_struct nmod_integer_fft_t[1];
 /* order >= 3 and order < FLINT_BITS (-sth?) required         */
 /*------------------------------------------------------------*/
 void nmod_integer_fft_init_set(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
-void nmod_integer_fft_init_set2(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
+void nmod_integer_fft_init_set2(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod); // faster
+
+// not tried to optimize:
+// version with table of precomputed things for Shoup multiplication
 void nmod_integer_fft_init_set_pre(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
+// version with just a list of roots in bit reversed order
+void nmod_integer_fft_init_set_red(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
 
 // allow initialization with NULL tables
 // allow fit_depth to precompute more tables when wanted/needed
 // separate computation of the tables from basic init
+// allocate first tables on stack
+
+
 
 /*------------------------------------------------------------*/
 /* clears all memory assigned to F                            */
 /*------------------------------------------------------------*/
 void nmod_integer_fft_clear(nmod_integer_fft_t F);
 void nmod_integer_fft_clear_pre(nmod_integer_fft_t F);
+void nmod_integer_fft_clear_red(nmod_integer_fft_t F);
 
 
 
@@ -76,10 +85,17 @@ void _nmod_poly_dif_inplace_radix2_iter_prenorm(mp_ptr p, ulong len, ulong order
 void _nmod_poly_dif_inplace_radix2_iter_shoup(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 void _nmod_poly_dif_inplace_radix2_iter_bench(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 
+// not very clean
 void _nmod_poly_dif_inplace_radix4_rec(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 void _nmod_poly_dif_inplace_radix4_rec_bench(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-
 void _nmod_poly_dif_inplace_radix4_iter(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
+
+
+// reduction tree attempt
+void _nmod_poly_red_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order, ulong node, nmod_integer_fft_t F);
+void _nmod_poly_red_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, ulong level, ulong rt_index, nmod_integer_fft_t F);
+
+
 
 // TODO :
 // - inverse fft

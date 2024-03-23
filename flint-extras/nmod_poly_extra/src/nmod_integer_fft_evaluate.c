@@ -10,7 +10,7 @@
  * */
 #define DFT2_NMOD(a,b,mod)                \
     do {                                  \
-        mp_limb_t tmp = (a);              \
+        const mp_limb_t tmp = (a);        \
         (a) = nmod_add((a), (b), (mod));  \
         (b) = nmod_sub(tmp, (b), (mod));  \
     } while(0)
@@ -26,7 +26,7 @@
  * */
 
 // using NMOD_MUL_PRENORM (Inorm is I << mod.norm):
-#define DIF4_NMOD_PRENORM(a,b,c,d,Inorm,mod)             \
+#define DFT4_DIF_PRENORM(a,b,c,d,Inorm,mod)             \
     do {                                                 \
         const mp_limb_t p0 = (a);                        \
         const mp_limb_t p1 = (b);                        \
@@ -46,7 +46,7 @@
     } while(0)
 
 // using n_mulmod_shoup  (Ipre is I with Shoup's precomputation)
-#define DIF4_NMOD_SHOUP(a,b,c,d,I,Ipre,mod)              \
+#define DFT4_DIF_SHOUP(a,b,c,d,I,Ipre,mod)              \
     do {                                                 \
         const mp_limb_t p0 = (a);                        \
         const mp_limb_t p1 = (b);                        \
@@ -65,6 +65,58 @@
         (d) = nmod_sub(p5, p7, (mod));                   \
     } while(0)
 
+/** one level of DFT, DIF style, unrolling 4 by 4:
+ * does DFT2 and multiply by powers of w
+ * */
+#define DIF2_PRENORM_UNROLL4(p0,p1,ww,mod)             \
+    do {                                               \
+        const mp_limb_t u0 = (p0)[0];                  \
+        const mp_limb_t u1 = (p0)[1];                  \
+        const mp_limb_t u2 = (p0)[2];                  \
+        const mp_limb_t u3 = (p0)[3];                  \
+        mp_limb_t v0 = (p1)[0];                        \
+        mp_limb_t v1 = (p1)[1];                        \
+        mp_limb_t v2 = (p1)[2];                        \
+        mp_limb_t v3 = (p1)[3];                        \
+        (p0)[0] = nmod_add(u0, v0, (mod));             \
+        (p0)[1] = nmod_add(u1, v1, (mod));             \
+        (p0)[2] = nmod_add(u2, v2, (mod));             \
+        (p0)[3] = nmod_add(u3, v3, (mod));             \
+        v0 = nmod_sub(u0, v0, (mod)) << (mod).norm;    \
+        v1 = nmod_sub(u1, v1, (mod)) << (mod).norm;    \
+        v2 = nmod_sub(u2, v2, (mod)) << (mod).norm;    \
+        v3 = nmod_sub(u3, v3, (mod)) << (mod).norm;    \
+        NMOD_MUL_PRENORM((p1)[0], v0, (ww)[0], (mod)); \
+        NMOD_MUL_PRENORM((p1)[1], v1, (ww)[1], (mod)); \
+        NMOD_MUL_PRENORM((p1)[2], v2, (ww)[2], (mod)); \
+        NMOD_MUL_PRENORM((p1)[3], v3, (ww)[3], (mod)); \
+    } while (0)
+
+#define DIF2_SHOUP_UNROLL4(p0,p1,ww,wwpre,mod)                      \
+    do {                                                            \
+        const mp_limb_t u0 = (p0)[0];                               \
+        const mp_limb_t u1 = (p0)[1];                               \
+        const mp_limb_t u2 = (p0)[2];                               \
+        const mp_limb_t u3 = (p0)[3];                               \
+        mp_limb_t v0 = (p1)[0];                                     \
+        mp_limb_t v1 = (p1)[1];                                     \
+        mp_limb_t v2 = (p1)[2];                                     \
+        mp_limb_t v3 = (p1)[3];                                     \
+        (p0)[0] = nmod_add(u0, v0, (mod));                          \
+        (p0)[1] = nmod_add(u1, v1, (mod));                          \
+        (p0)[2] = nmod_add(u2, v2, (mod));                          \
+        (p0)[3] = nmod_add(u3, v3, (mod));                          \
+        v0 = nmod_sub(u0, v0, (mod));                               \
+        v1 = nmod_sub(u1, v1, (mod));                               \
+        v2 = nmod_sub(u2, v2, (mod));                               \
+        v3 = nmod_sub(u3, v3, (mod));                               \
+        (p1)[0] = n_mulmod_shoup((ww)[0], v0, (wwpre)[0], (mod).n); \
+        (p1)[1] = n_mulmod_shoup((ww)[1], v1, (wwpre)[1], (mod).n); \
+        (p1)[2] = n_mulmod_shoup((ww)[2], v2, (wwpre)[2], (mod).n); \
+        (p1)[3] = n_mulmod_shoup((ww)[3], v3, (wwpre)[3], (mod).n); \
+    } while (0)
+
+
 
 /*****************************************
 *  TEMPORARIES: BENCH WITHOUT REDUCTION  *
@@ -79,7 +131,7 @@
     } while(0)
 
 // 4-points DFT (DIF style):
-#define DIF4_NMOD_BENCH(a,b,c,d,I)            \
+#define DFT4_DIF_BENCH(a,b,c,d,I)            \
     do {                                      \
         const mp_limb_t p0 = (a);             \
         const mp_limb_t p1 = (b);             \
@@ -114,18 +166,16 @@ void _nmod_poly_dif_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order,
     if (order == 1)
         DFT2_NMOD(p[0], p[1], F->mod);
     else if (order == 2)
-        DIF4_NMOD_PRENORM(p[0], p[1], p[2], p[3], F->tab_w[0][1] << F->mod.norm, F->mod);
+        DFT4_DIF_PRENORM(p[0], p[1], p[2], p[3], F->tab_w[0][1] << F->mod.norm, F->mod);
     else
     {
-        const mp_ptr p0 = p;
-        const mp_ptr p1 = p0+(len/2);
         for (ulong k = 0; k < len/2; k++)
         {
-            DFT2_NMOD(p0[k], p1[k], F->mod);
-            NMOD_MUL_PRENORM(p1[k], p1[k] << F->mod.norm, F->tab_w[order-2][k], F->mod);
+            DFT2_NMOD(p[k], p[len/2+k], F->mod);
+            NMOD_MUL_PRENORM(p[len/2+k], p[len/2+k] << F->mod.norm, F->tab_w[order-2][k], F->mod);
         }
-        _nmod_poly_dif_inplace_radix2_rec_prenorm(p0, len/2, order-1, F);
-        _nmod_poly_dif_inplace_radix2_rec_prenorm(p1, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_prenorm(p, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_prenorm(p+len/2, len/2, order-1, F);
     }
 }
 
@@ -135,38 +185,14 @@ void _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(mp_ptr p, ulong len, ulon
     if (order == 1)
         DFT2_NMOD(p[0], p[1], F->mod);
     else if (order == 2)
-        DIF4_NMOD_PRENORM(p[0], p[1], p[2], p[3], F->tab_w[0][1] << F->mod.norm, F->mod);
+        DFT4_DIF_PRENORM(p[0], p[1], p[2], p[3], F->tab_w[0][1] << F->mod.norm, F->mod);
     else
     {
         // here order >= 3, len >= 8, unroll
-        const mp_ptr p0 = p;
-        const mp_ptr p1 = p+(len/2);
-        const mp_ptr ww = F->tab_w[order-2];
         for (ulong k = 0; k < len/2; k+=4)
-        {
-            const mp_limb_t u0 = p0[k+0];
-            const mp_limb_t u1 = p0[k+1];
-            const mp_limb_t u2 = p0[k+2];
-            const mp_limb_t u3 = p0[k+3];
-            mp_limb_t v0 = p1[k+0];
-            mp_limb_t v1 = p1[k+1];
-            mp_limb_t v2 = p1[k+2];
-            mp_limb_t v3 = p1[k+3];
-            p0[k+0] = nmod_add(u0, v0, F->mod);
-            p0[k+1] = nmod_add(u1, v1, F->mod);
-            p0[k+2] = nmod_add(u2, v2, F->mod);
-            p0[k+3] = nmod_add(u3, v3, F->mod);
-            v0 = nmod_sub(u0, v0, F->mod) << F->mod.norm;
-            NMOD_MUL_PRENORM(p1[k+0], v0, ww[k+0], F->mod);
-            v1 = nmod_sub(u1, v1, F->mod) << F->mod.norm;
-            NMOD_MUL_PRENORM(p1[k+1], v1, ww[k+1], F->mod);
-            v2 = nmod_sub(u2, v2, F->mod) << F->mod.norm;
-            NMOD_MUL_PRENORM(p1[k+2], v2, ww[k+2], F->mod);
-            v3 = nmod_sub(u3, v3, F->mod) << F->mod.norm;
-            NMOD_MUL_PRENORM(p1[k+3], v3, ww[k+3], F->mod);
-        }
-        _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(p0, len/2, order-1, F);
-        _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(p1, len/2, order-1, F);
+            DIF2_PRENORM_UNROLL4(p+k, p+len/2+k, F->tab_w[order-2]+k, F->mod);
+        _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(p, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(p+len/2, len/2, order-1, F);
     }
 }
 
@@ -176,20 +202,16 @@ void _nmod_poly_dif_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, n
     if (order == 1)
         DFT2_NMOD(p[0], p[1], F->mod);
     else if (order == 2)
-        DIF4_NMOD_SHOUP(p[0], p[1], p[2], p[3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod);
+        DFT4_DIF_SHOUP(p[0], p[1], p[2], p[3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod);
     else
     {
-        const mp_ptr p0 = p;
-        const mp_ptr p1 = p0+(len/2);
-        const mp_ptr ww = F->tab_w[order-2];
-        const mp_ptr wwpre = F->tab_w_pre[order-2];
         for (ulong k = 0; k < len/2; k++)
         {
-            DFT2_NMOD(p0[k], p1[k], F->mod);
-            p1[k] = n_mulmod_shoup(ww[k], p1[k], wwpre[k], F->mod.n);
+            DFT2_NMOD(p[k], p[len/2+k], F->mod);
+            p[len/2+k] = n_mulmod_shoup(F->tab_w[order-2][k], p[len/2+k], F->tab_w_pre[order-2][k], F->mod.n);
         }
-        _nmod_poly_dif_inplace_radix2_rec_shoup(p0, len/2, order-1, F);
-        _nmod_poly_dif_inplace_radix2_rec_shoup(p1, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_shoup(p, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_shoup(p+len/2, len/2, order-1, F);
     }
 }
 
@@ -199,39 +221,14 @@ void _nmod_poly_dif_inplace_radix2_rec_shoup_unroll4(mp_ptr p, ulong len, ulong 
     if (order == 1)
         DFT2_NMOD(p[0], p[1], F->mod);
     else if (order == 2)
-        DIF4_NMOD_SHOUP(p[0], p[1], p[2], p[3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod);
+        DFT4_DIF_SHOUP(p[0], p[1], p[2], p[3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod);
     else
     {
         // here order >= 3, len >= 8, try some unrolling
-        const mp_ptr p0 = p;
-        const mp_ptr p1 = p+(len/2);
-        const mp_ptr ww = F->tab_w[order-2];
-        const mp_ptr wwpre = F->tab_w_pre[order-2];
         for (ulong k = 0; k < len/2; k+=4)
-        {
-            const mp_limb_t u0 = p0[k+0];
-            const mp_limb_t u1 = p0[k+1];
-            const mp_limb_t u2 = p0[k+2];
-            const mp_limb_t u3 = p0[k+3];
-            mp_limb_t v0 = p1[k+0];
-            mp_limb_t v1 = p1[k+1];
-            mp_limb_t v2 = p1[k+2];
-            mp_limb_t v3 = p1[k+3];
-            p0[k+0] = nmod_add(u0, v0, F->mod);
-            p0[k+1] = nmod_add(u1, v1, F->mod);
-            p0[k+2] = nmod_add(u2, v2, F->mod);
-            p0[k+3] = nmod_add(u3, v3, F->mod);
-            v0 = nmod_sub(u0, v0, F->mod);
-            p1[k+0] = n_mulmod_shoup(ww[k+0], v0, wwpre[k+0], F->mod.n);
-            v1 = nmod_sub(u1, v1, F->mod);
-            p1[k+1] = n_mulmod_shoup(ww[k+1], v1, wwpre[k+1], F->mod.n);
-            v2 = nmod_sub(u2, v2, F->mod);
-            p1[k+2] = n_mulmod_shoup(ww[k+2], v2, wwpre[k+2], F->mod.n);
-            v3 = nmod_sub(u3, v3, F->mod);
-            p1[k+3] = n_mulmod_shoup(ww[k+3], v3, wwpre[k+3], F->mod.n);
-        }
-        _nmod_poly_dif_inplace_radix2_rec_shoup_unroll4(p0, len/2, order-1, F);
-        _nmod_poly_dif_inplace_radix2_rec_shoup_unroll4(p1, len/2, order-1, F);
+            DIF2_SHOUP_UNROLL4(p+k, p+len/2+k, F->tab_w[order-2]+k, F->tab_w_pre[order-2]+k, F->mod);
+        _nmod_poly_dif_inplace_radix2_rec_shoup_unroll4(p, len/2, order-1, F);
+        _nmod_poly_dif_inplace_radix2_rec_shoup_unroll4(p+len/2, len/2, order-1, F);
     }
 
 }
@@ -242,7 +239,7 @@ void _nmod_poly_dif_inplace_radix2_rec_bench(mp_ptr p, ulong len, ulong order, n
     if (order == 1)
         DFT2_BENCH(p[0], p[1]);
     else if (order == 2)
-        DIF4_NMOD_BENCH(p[0], p[1], p[2], p[3], F->tab_w[0][1]);
+        DFT4_DIF_BENCH(p[0], p[1], p[2], p[3], F->tab_w[0][1]);
     else
     {
         const mp_ptr ww = F->tab_w[order-2];
@@ -285,36 +282,12 @@ void _nmod_poly_dif_inplace_radix2_iter_prenorm(mp_ptr p, ulong len, ulong order
     // perform FFT layers up to order 2
     ulong llen = len;
     for (ulong ell = order; ell > 2; ell--, llen>>=1)
-    {
-        const mp_ptr ww = F->tab_w[ell-2];
         for (ulong k = 0; k < len; k+=llen)
-        {
-            const mp_ptr p0 = p+k;
-            const mp_ptr p1 = p+(k+llen/2);
             for (ulong kk = 0; kk < llen/2; kk+=4)
-            {
-                const mp_limb_t u0 = p0[kk+0];
-                const mp_limb_t u1 = p0[kk+1];
-                const mp_limb_t u2 = p0[kk+2];
-                const mp_limb_t u3 = p0[kk+3];
-                const mp_limb_t v0 = p1[kk+0];
-                const mp_limb_t v1 = p1[kk+1];
-                const mp_limb_t v2 = p1[kk+2];
-                const mp_limb_t v3 = p1[kk+3];
-                p0[kk+0] = nmod_add(u0, v0, F->mod);
-                p0[kk+1] = nmod_add(u1, v1, F->mod);
-                p0[kk+2] = nmod_add(u2, v2, F->mod);
-                p0[kk+3] = nmod_add(u3, v3, F->mod);
-                NMOD_MUL_PRENORM(p1[kk+0], nmod_sub(u0, v0, F->mod) << F->mod.norm, ww[kk+0], F->mod);
-                NMOD_MUL_PRENORM(p1[kk+1], nmod_sub(u1, v1, F->mod) << F->mod.norm, ww[kk+1], F->mod);
-                NMOD_MUL_PRENORM(p1[kk+2], nmod_sub(u2, v2, F->mod) << F->mod.norm, ww[kk+2], F->mod);
-                NMOD_MUL_PRENORM(p1[kk+3], nmod_sub(u3, v3, F->mod) << F->mod.norm, ww[kk+3], F->mod);
-            }
-        }
-    }
+                DIF2_PRENORM_UNROLL4(p+k+kk, p+llen/2+k+kk, F->tab_w[ell-2]+kk, F->mod);
     // perform last two FFT layers
     for (ulong k = 0; k < len; k+=4)
-        DIF4_NMOD_PRENORM(p[k+0], p[k+1], p[k+2], p[k+3], F->tab_w[0][1] << F->mod.norm, F->mod);
+        DFT4_DIF_PRENORM(p[k+0], p[k+1], p[k+2], p[k+3], F->tab_w[0][1] << F->mod.norm, F->mod);
 }
 
 // iterative version, using n_mulmod_shoup
@@ -324,37 +297,12 @@ void _nmod_poly_dif_inplace_radix2_iter_shoup(mp_ptr p, ulong len, ulong order, 
     // perform FFT layers up to order 2
     ulong llen = len;
     for (ulong ell = order; ell > 2; ell--, llen>>=1)
-    {
-        const mp_ptr ww = F->tab_w[ell-2];
-        const mp_ptr wwpre = F->tab_w_pre[ell-2];
         for (ulong k = 0; k < len; k+=llen)
-        {
-            const mp_ptr p0 = p+k;
-            const mp_ptr p1 = p+(k+llen/2);
             for (ulong kk = 0; kk < llen/2; kk+=4)
-            {
-                const mp_limb_t u0 = p0[kk+0];
-                const mp_limb_t u1 = p0[kk+1];
-                const mp_limb_t u2 = p0[kk+2];
-                const mp_limb_t u3 = p0[kk+3];
-                const mp_limb_t v0 = p1[kk+0];
-                const mp_limb_t v1 = p1[kk+1];
-                const mp_limb_t v2 = p1[kk+2];
-                const mp_limb_t v3 = p1[kk+3];
-                p0[kk+0] = nmod_add(u0, v0, F->mod);
-                p0[kk+1] = nmod_add(u1, v1, F->mod);
-                p0[kk+2] = nmod_add(u2, v2, F->mod);
-                p0[kk+3] = nmod_add(u3, v3, F->mod);
-                p1[kk+0] = n_mulmod_shoup(ww[kk+0], nmod_sub(u0, v0, F->mod), wwpre[kk+0], F->mod.n);
-                p1[kk+1] = n_mulmod_shoup(ww[kk+1], nmod_sub(u1, v1, F->mod), wwpre[kk+1], F->mod.n);
-                p1[kk+2] = n_mulmod_shoup(ww[kk+2], nmod_sub(u2, v2, F->mod), wwpre[kk+2], F->mod.n);
-                p1[kk+3] = n_mulmod_shoup(ww[kk+3], nmod_sub(u3, v3, F->mod), wwpre[kk+3], F->mod.n);
-            }
-        }
-    }
+                DIF2_SHOUP_UNROLL4(p+k+kk, p+llen/2+k+kk, F->tab_w[ell-2]+kk, F->tab_w_pre[ell-2]+kk, F->mod);
     // perform last two FFT layers
     for (ulong k = 0; k < len; k+=4)
-        DIF4_NMOD_SHOUP(p[k+0], p[k+1], p[k+2], p[k+3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod);
+        DFT4_DIF_SHOUP(p[k+0], p[k+1], p[k+2], p[k+3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod);
 }
 
 void _nmod_poly_dif_inplace_radix2_iter_bench(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
@@ -391,7 +339,7 @@ void _nmod_poly_dif_inplace_radix2_iter_bench(mp_ptr p, ulong len, ulong order, 
     }
     // perform last two FFT layers
     for (ulong k = 0; k < len; k+=4)
-        DIF4_NMOD_BENCH(p[k+0], p[k+1], p[k+2], p[k+3], F->tab_w[0][1]);
+        DFT4_DIF_BENCH(p[k+0], p[k+1], p[k+2], p[k+3], F->tab_w[0][1]);
 }
 
 /***************************
@@ -725,6 +673,181 @@ void _nmod_poly_dif_inplace_radix4_iter(mp_ptr p, ulong len, ulong order, nmod_i
         }
 }
 
+
+/*******************************
+*  Delayed scaling recursive  *
+*******************************/
+
+/** fft evaluation, in place
+ * - len == 2**order, order >= 0
+ * - input p has length at least len, seen as polynomial
+ * - output p contains, in 0...len-1, the evaluations of trunc(p, len)
+ *       at w**k, for 0 <= k < len, in bit reverse order
+ * TODO : ASSUMES order suitable for w,
+ *          and RED tables for 'order' already precomputed in F
+ */
+void _nmod_poly_red_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order, ulong node, nmod_integer_fft_t F)
+{
+    // order == 0: nothing to do
+    if (order == 1)
+    {
+        if (node==0)  // w == 1
+            DFT2_NMOD(p[0], p[1], F->mod);
+        else
+        {
+            const mp_limb_t w = F->tab_w[1][node];
+            const mp_limb_t u = p[0];
+            mp_limb_t v = p[1];
+            NMOD_MUL_PRENORM(v, v << F->mod.norm, w, F->mod);
+            p[0] = nmod_add(u, v, F->mod);
+            p[1] = nmod_sub(u, v, F->mod);
+        }
+    }
+    if (order == 2)
+    {
+        if (node==0)  // w == 1
+        {
+            DFT2_NMOD(p[0], p[2], F->mod);
+            DFT2_NMOD(p[1], p[3], F->mod);
+            DFT2_NMOD(p[0], p[1], F->mod);
+            const mp_limb_t w = F->tab_w[1][1];
+            const mp_limb_t u = p[2];
+            mp_limb_t v = p[3];
+            NMOD_MUL_PRENORM(v, v << F->mod.norm, w, F->mod);
+            p[2] = nmod_add(u, v, F->mod);
+            p[3] = nmod_sub(u, v, F->mod);
+        }
+        else
+        {
+            const mp_limb_t w = F->tab_w[1][node];
+            const mp_limb_t w1 = F->tab_w[1][2*node];
+            const mp_limb_t w2 = F->tab_w[1][2*node+1];
+            const mp_limb_t u0 = p[0];
+            const mp_limb_t u1 = p[1];
+            mp_limb_t v0 = p[2];
+            mp_limb_t v1 = p[3];
+
+            NMOD_MUL_PRENORM(v0, v0 << F->mod.norm, w, F->mod);
+            NMOD_MUL_PRENORM(v1, v1 << F->mod.norm, w, F->mod);
+            const mp_limb_t p0 = nmod_add(u0, v0, F->mod);
+            mp_limb_t p1 = nmod_add(u1, v1, F->mod);
+            v0 = nmod_sub(u0, v0, F->mod);  // p2
+            v1 = nmod_sub(u1, v1, F->mod);  // p3
+
+            NMOD_MUL_PRENORM(p1, p1 << F->mod.norm, w1, F->mod);
+            p[0] = nmod_add(p0, p1, F->mod);
+            p[1] = nmod_sub(p0, p1, F->mod);
+            NMOD_MUL_PRENORM(v1, v1 << F->mod.norm, w2, F->mod);
+            p[2] = nmod_add(v0, v1, F->mod);
+            p[3] = nmod_sub(v0, v1, F->mod);
+        }
+    }
+    else
+    {
+        if (node==0)  // w == 1
+            for (ulong k = 0; k < len/2; k++)
+                DFT2_NMOD(p[k], p[len/2+k], F->mod);
+        else
+        {
+            const mp_limb_t w = F->tab_w[1][node];
+            for (ulong k = 0; k < len/2; k++)
+            {
+                const mp_limb_t u = p[k];
+                mp_limb_t v = p[len/2+k];
+                NMOD_MUL_PRENORM(v, v << F->mod.norm, w, F->mod);
+                p[k] = nmod_add(u, v, F->mod);
+                p[len/2+k] = nmod_sub(u, v, F->mod);
+            }
+        }
+        _nmod_poly_red_inplace_radix2_rec_prenorm(p, len/2, order-1, 2*node, F);
+        _nmod_poly_red_inplace_radix2_rec_prenorm(p+len/2, len/2, order-1, 2*node+1, F);
+    }
+}
+
+
+void _nmod_poly_red_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, ulong level, ulong rt_index, nmod_integer_fft_t F)
+{
+    // order == 0: nothing to do
+    if (order == 1)
+    {
+        if (rt_index==0)  // w == 1
+            DFT2_NMOD(p[0], p[1], F->mod);
+        else
+        {
+            const mp_limb_t w = F->tab_w[level-1][rt_index];
+            const mp_limb_t wpre = F->tab_w_pre[level-1][rt_index];
+            const mp_limb_t u = p[0];
+            mp_limb_t v = p[1];
+            v = n_mulmod_shoup(w, v, wpre, F->mod.n);
+            p[0] = nmod_add(u, v, F->mod);
+            p[1] = nmod_sub(u, v, F->mod);
+        }
+    }
+    if (order == 2)
+    {
+        if (rt_index==0)  // w == 1
+        {
+            DFT2_NMOD(p[0], p[2], F->mod);
+            DFT2_NMOD(p[1], p[3], F->mod);
+            DFT2_NMOD(p[0], p[1], F->mod);
+            const mp_limb_t w = F->tab_w[0][1];
+            const mp_limb_t wpre = F->tab_w_pre[0][1];
+            const mp_limb_t u = p[2];
+            mp_limb_t v = p[3];
+            v = n_mulmod_shoup(w, v, wpre, F->mod.n);
+            p[2] = nmod_add(u, v, F->mod);
+            p[3] = nmod_sub(u, v, F->mod);
+        }
+        else
+        {
+            mp_limb_t w = F->tab_w[level-1][rt_index];
+            mp_limb_t wpre = F->tab_w_pre[level-1][rt_index];
+            const mp_limb_t u0 = p[0];
+            const mp_limb_t u1 = p[1];
+            mp_limb_t v0 = p[2];
+            mp_limb_t v1 = p[3];
+
+            v0 = n_mulmod_shoup(w, v0, wpre, F->mod.n);
+            v1 = n_mulmod_shoup(w, v1, wpre, F->mod.n);
+            const mp_limb_t p0 = nmod_add(u0, v0, F->mod);
+            mp_limb_t p1 = nmod_add(u1, v1, F->mod);
+            v0 = nmod_sub(u0, v0, F->mod);  // p2
+            v1 = nmod_sub(u1, v1, F->mod);  // p3
+
+            w = F->tab_w[level][rt_index];
+            wpre = F->tab_w_pre[level][rt_index];
+            p1 = n_mulmod_shoup(w, p1, wpre, F->mod.n);
+            p[0] = nmod_add(p0, p1, F->mod);
+            p[1] = nmod_sub(p0, p1, F->mod);
+            w = F->tab_w[level][rt_index+(1<<level)];
+            wpre = F->tab_w_pre[level][rt_index+(1<<level)];
+            v1 = n_mulmod_shoup(w, v1, wpre, F->mod.n);
+            p[2] = nmod_add(v0, v1, F->mod);
+            p[3] = nmod_sub(v0, v1, F->mod);
+        }
+    }
+    else
+    {
+        if (rt_index==0)  // w == 1
+            for (ulong k = 0; k < len/2; k++)
+                DFT2_NMOD(p[k], p[len/2+k], F->mod);
+        else
+        {
+            const mp_limb_t w = F->tab_w[level-1][rt_index];
+            const mp_limb_t wpre = F->tab_w_pre[level-1][rt_index];
+            for (ulong k = 0; k < len/2; k++)
+            {
+                const mp_limb_t u = p[k];
+                mp_limb_t v = p[len/2+k];
+                v = n_mulmod_shoup(w, v, wpre, F->mod.n);
+                p[k] = nmod_add(u, v, F->mod);
+                p[len/2+k] = nmod_sub(u, v, F->mod);
+            }
+        }
+        _nmod_poly_red_inplace_radix2_rec_shoup(p, len/2, order-1, level+1, rt_index, F);
+        _nmod_poly_red_inplace_radix2_rec_shoup(p+len/2, len/2, order-1, level+1, rt_index+(1<<level), F);
+    }
+}
 
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */

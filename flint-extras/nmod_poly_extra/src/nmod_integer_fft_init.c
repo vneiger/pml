@@ -2,6 +2,35 @@
 #include <flint/nmod_vec.h>
 #include "nmod_poly_fft.h"
 
+/***********************
+*  bit reversed copy  *
+***********************/
+
+static inline long RevInc(long a, long k)
+{
+    long j, m;
+
+    j = k;
+    m = 1L << (k-1);
+
+    while (j && (m & a)) {
+        a ^= m;
+        m >>= 1;
+        j--;
+    }
+    if (j) a ^= m;
+    return a;
+}
+
+// indices initialized with length >= k
+//static inline void brc_indices(mp_limb_t * indices, long k)
+//{
+//    const long n = (1L << k);
+//    for (long i = 0, j = 0; i < n; i++, j = RevInc(j, k))
+//        indices[i] = j;
+//}
+
+
 /*------------------------------------------------------------*/
 /* initializes all entries of F                               */
 /* w primitive and w^(2^order))=1                             */
@@ -260,6 +289,45 @@ void nmod_integer_fft_init_set_pre(nmod_integer_fft_t F, mp_limb_t w, ulong orde
     }
 }
 
+void nmod_integer_fft_init_set_red(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
+{
+    // basic attributes
+    F->mod = mod;
+    F->order = order;
+    F->w = w;
+    F->inv_w = nmod_inv(w, mod);
+
+    // 1. fill tables of powers of w
+    // F->tab_w[0][i] == w**i, i = 0 ... len-1   where len = 2**(order-1)
+    // F->tab_w[1] same in bit-reversed: 1, w**(len/2), w**(len/4), w**(3*len/4), ...
+    ulong len = (1UL << (order-1));  // len == 2**(ell+1) >= 4
+    F->tab_w = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * 2);
+    F->tab_w[0] = _nmod_vec_init(len);
+    F->tab_w[0][0] = UWORD(1);
+    F->tab_w[0][1] = w;
+    F->tab_w[0][2] = n_mulmod2_preinv(w, w, mod.n, mod.ninv);
+    F->tab_w[0][3] = n_mulmod2_preinv(F->tab_w[0][2], w, mod.n, mod.ninv);
+    if (order > 3)
+    {
+        mp_limb_t w4 = n_mulmod2_preinv(F->tab_w[0][2], F->tab_w[0][2], mod.n, mod.ninv);
+        mp_limb_t w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
+        for (ulong k = 0; k+7 < len; k+=4)
+        {
+            F->tab_w[0][k+4] = n_mulmod_shoup(w4, F->tab_w[0][k+0], w4_pr, mod.n);
+            F->tab_w[0][k+5] = n_mulmod_shoup(w4, F->tab_w[0][k+1], w4_pr, mod.n);
+            F->tab_w[0][k+6] = n_mulmod_shoup(w4, F->tab_w[0][k+2], w4_pr, mod.n);
+            F->tab_w[0][k+7] = n_mulmod_shoup(w4, F->tab_w[0][k+3], w4_pr, mod.n);
+        }
+        // finished here, k reached exactly len since len is a power of 2
+    }
+
+    // put in bit reversed order for tab_w[1]
+    F->tab_w[1] = _nmod_vec_init(len);
+    for (ulong k = 0, j = 0; k < len; k++, j = RevInc(j, order-1))
+        F->tab_w[1][k] = F->tab_w[0][j];
+}
+
+
 void nmod_integer_fft_clear(nmod_integer_fft_t F)
 {
     for (ulong ell = 0; ell <= F->order-2; ell++)
@@ -273,6 +341,13 @@ void nmod_integer_fft_clear_pre(nmod_integer_fft_t F)
         _nmod_vec_clear(F->tab_w[ell]);
     flint_free(F->tab_w);
     flint_free(F->tab_w_pre);
+}
+
+void nmod_integer_fft_clear_red(nmod_integer_fft_t F)
+{
+    for (ulong ell = 0; ell < 2; ell++)
+        _nmod_vec_clear(F->tab_w[ell]);
+    flint_free(F->tab_w);
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
