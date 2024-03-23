@@ -441,7 +441,7 @@ void _nmod_poly_dif_inplace_radix4_rec(mp_ptr p, ulong len, ulong order, nmod_in
             // p1 = (p0 + p2) - (p1 + p3), multiplied by powers of w**2;
             // p2 = (p0 - p2) + I*(p1 - p3);
             // p3 = (p0 - p2) - I*(p1 - p3), multiplied by powers of w;
-            // TODO comment to explain below, mod x^{len/2 - 1}, mod x^{len/2 + 1}, mod x^{len/2 - I}, mod x^{len/2 + I}, 
+            // TODO comment to explain below, mod x^{len/2 - 1}, mod x^{len/2 + 1}, mod x^{len/2 - I}, mod x^{len/2 + I},
             const mp_limb_t u0 = p0[k];
             const mp_limb_t u1 = p1[k];
             const mp_limb_t u2 = p2[k];
@@ -686,6 +686,7 @@ void _nmod_poly_dif_inplace_radix4_iter(mp_ptr p, ulong len, ulong order, nmod_i
  * TODO : ASSUMES order suitable for w,
  *          and RED tables for 'order' already precomputed in F
  */
+// note: unroll4 does not seem to gain anything
 void _nmod_poly_red_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order, ulong node, nmod_integer_fft_t F)
 {
     // order == 0: nothing to do
@@ -703,7 +704,7 @@ void _nmod_poly_red_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order,
             p[1] = nmod_sub(u, v, F->mod);
         }
     }
-    if (order == 2)
+    else if (order == 2)
     {
         if (node==0)  // w == 1
         {
@@ -745,6 +746,93 @@ void _nmod_poly_red_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order,
             p[3] = nmod_sub(v0, v1, F->mod);
         }
     }
+    else if (order == 3 && node == 0)
+    {
+        if (node==0)  // w == 1
+        {
+            mp_limb_t u0 = p[0];
+            mp_limb_t u1 = p[1];
+            mp_limb_t u2 = p[2];
+            mp_limb_t u3 = p[3];
+            mp_limb_t v0 = p[4];
+            mp_limb_t v1 = p[5];
+            mp_limb_t v2 = p[6];
+            mp_limb_t v3 = p[7];
+
+            // mod x**4 - 1 | x**4 + 1
+            mp_limb_t p0 = nmod_add(u0, v0, F->mod);
+            mp_limb_t p1 = nmod_add(u1, v1, F->mod);
+            mp_limb_t p2 = nmod_add(u2, v2, F->mod);
+            mp_limb_t p3 = nmod_add(u3, v3, F->mod);
+            v0 = nmod_sub(u0, v0, F->mod);
+            v1 = nmod_sub(u1, v1, F->mod);
+            v2 = nmod_sub(u2, v2, F->mod);
+            v3 = nmod_sub(u3, v3, F->mod);
+
+            // left, mod x**2 - 1 | x**2 + 1
+            u0 = nmod_add(p0, p2, F->mod);
+            u1 = nmod_add(p1, p3, F->mod);
+            u2 = nmod_sub(p0, p2, F->mod);
+            u3 = nmod_sub(p1, p3, F->mod);
+
+            // left-left, mod x-1 | x+1
+            p0 = nmod_add(u0, u1, F->mod);
+            p1 = nmod_sub(u0, u1, F->mod);
+
+            // left-right, mod x-I | x+I
+            NMOD_MUL_PRENORM(u3, u3 << F->mod.norm, F->tab_w[1][1], F->mod);
+            p2 = nmod_add(u2, u3, F->mod);
+            p3 = nmod_sub(u2, u3, F->mod);
+
+            // right, mod x**2 - I | x**2 + I
+            NMOD_MUL_PRENORM(v2, v2 << F->mod.norm, F->tab_w[1][1], F->mod);
+            NMOD_MUL_PRENORM(v3, v3 << F->mod.norm, F->tab_w[1][1], F->mod);
+            u0 = nmod_add(v0, v2, F->mod);
+            u1 = nmod_add(v1, v3, F->mod);
+            u2 = nmod_sub(v0, v2, F->mod);
+            u3 = nmod_sub(v1, v3, F->mod);
+
+            // right-left, mod x - J | x + J
+            NMOD_MUL_PRENORM(u1, u1 << F->mod.norm, F->tab_w[1][2], F->mod);
+            v0 = nmod_add(u0, u1, F->mod);
+            v1 = nmod_sub(u0, u1, F->mod);
+
+            // right-right, mod x - I*J | x + I*J
+            NMOD_MUL_PRENORM(u3, u3 << F->mod.norm, F->tab_w[1][3], F->mod);
+            v2 = nmod_add(u2, u3, F->mod);
+            v3 = nmod_sub(u2, u3, F->mod);
+
+            p[0] = p0;
+            p[1] = p1;
+            p[2] = p2;
+            p[3] = p3;
+            p[4] = v0;
+            p[5] = v1;
+            p[6] = v2;
+            p[7] = v3;
+        }
+        //else
+        //{
+        //    const mp_limb_t u0 = p[0];
+        //    const mp_limb_t u1 = p[1];
+        //    mp_limb_t v0 = p[2];
+        //    mp_limb_t v1 = p[3];
+
+        //    NMOD_MUL_PRENORM(v0, v0 << F->mod.norm, F->tab_w[1][node], F->mod);
+        //    NMOD_MUL_PRENORM(v1, v1 << F->mod.norm, F->tab_w[1][node], F->mod);
+        //    const mp_limb_t p0 = nmod_add(u0, v0, F->mod);
+        //    mp_limb_t p1 = nmod_add(u1, v1, F->mod);
+        //    v0 = nmod_sub(u0, v0, F->mod);  // p2
+        //    v1 = nmod_sub(u1, v1, F->mod);  // p3
+
+        //    NMOD_MUL_PRENORM(p1, p1 << F->mod.norm, F->tab_w[1][2*node], F->mod);
+        //    NMOD_MUL_PRENORM(v1, v1 << F->mod.norm, F->tab_w[1][2*node+1], F->mod);
+        //    p[0] = nmod_add(p0, p1, F->mod);
+        //    p[1] = nmod_sub(p0, p1, F->mod);
+        //    p[2] = nmod_add(v0, v1, F->mod);
+        //    p[3] = nmod_sub(v0, v1, F->mod);
+        //}
+    }
     else
     {
         if (node==0)  // w == 1
@@ -767,7 +855,7 @@ void _nmod_poly_red_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order,
     }
 }
 
-
+// note: unroll4 does not seem to gain anything
 void _nmod_poly_red_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, ulong node, nmod_integer_fft_t F)
 {
     // order == 0: nothing to do
@@ -786,7 +874,7 @@ void _nmod_poly_red_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, u
             p[1] = nmod_sub(u, v, F->mod);
         }
     }
-    if (order == 2)
+    else if (order == 2)
     {
         if (node==0)  // w == 1
         {
