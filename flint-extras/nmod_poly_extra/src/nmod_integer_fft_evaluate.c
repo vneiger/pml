@@ -707,37 +707,40 @@ void _nmod_poly_red_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order,
     {
         if (node==0)  // w == 1
         {
-            DFT2_NMOD(p[0], p[2], F->mod);
-            DFT2_NMOD(p[1], p[3], F->mod);
-            DFT2_NMOD(p[0], p[1], F->mod);
-            const mp_limb_t w = F->tab_w[1][1];
-            const mp_limb_t u = p[2];
-            mp_limb_t v = p[3];
-            NMOD_MUL_PRENORM(v, v << F->mod.norm, w, F->mod);
-            p[2] = nmod_add(u, v, F->mod);
-            p[3] = nmod_sub(u, v, F->mod);
-        }
-        else
-        {
-            mp_limb_t w = F->tab_w[1][node];
             const mp_limb_t u0 = p[0];
             const mp_limb_t u1 = p[1];
             mp_limb_t v0 = p[2];
             mp_limb_t v1 = p[3];
 
-            NMOD_MUL_PRENORM(v0, v0 << F->mod.norm, w, F->mod);
-            NMOD_MUL_PRENORM(v1, v1 << F->mod.norm, w, F->mod);
+            const mp_limb_t p0 = nmod_add(u0, v0, F->mod);
+            const mp_limb_t p1 = nmod_add(u1, v1, F->mod);
+            v0 = nmod_sub(u0, v0, F->mod);
+            v1 = nmod_sub(u1, v1, F->mod);
+
+            NMOD_MUL_PRENORM(v1, v1 << F->mod.norm, F->tab_w[1][1], F->mod);
+            p[0] = nmod_add(p0, p1, F->mod);
+            p[1] = nmod_sub(p0, p1, F->mod);
+            p[2] = nmod_add(v0, v1, F->mod);
+            p[3] = nmod_sub(v0, v1, F->mod);
+        }
+        else
+        {
+            const mp_limb_t u0 = p[0];
+            const mp_limb_t u1 = p[1];
+            mp_limb_t v0 = p[2];
+            mp_limb_t v1 = p[3];
+
+            NMOD_MUL_PRENORM(v0, v0 << F->mod.norm, F->tab_w[1][node], F->mod);
+            NMOD_MUL_PRENORM(v1, v1 << F->mod.norm, F->tab_w[1][node], F->mod);
             const mp_limb_t p0 = nmod_add(u0, v0, F->mod);
             mp_limb_t p1 = nmod_add(u1, v1, F->mod);
             v0 = nmod_sub(u0, v0, F->mod);  // p2
             v1 = nmod_sub(u1, v1, F->mod);  // p3
 
-            w = F->tab_w[1][2*node];
-            NMOD_MUL_PRENORM(p1, p1 << F->mod.norm, w, F->mod);
+            NMOD_MUL_PRENORM(p1, p1 << F->mod.norm, F->tab_w[1][2*node], F->mod);
+            NMOD_MUL_PRENORM(v1, v1 << F->mod.norm, F->tab_w[1][2*node+1], F->mod);
             p[0] = nmod_add(p0, p1, F->mod);
             p[1] = nmod_sub(p0, p1, F->mod);
-            w = F->tab_w[1][2*node+1];
-            NMOD_MUL_PRENORM(v1, v1 << F->mod.norm, w, F->mod);
             p[2] = nmod_add(v0, v1, F->mod);
             p[3] = nmod_sub(v0, v1, F->mod);
         }
@@ -787,16 +790,23 @@ void _nmod_poly_red_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, u
     {
         if (node==0)  // w == 1
         {
-            DFT2_NMOD(p[0], p[2], F->mod);
-            DFT2_NMOD(p[1], p[3], F->mod);
-            DFT2_NMOD(p[0], p[1], F->mod);
+            const mp_limb_t u0 = p[0];
+            const mp_limb_t u1 = p[1];
+            mp_limb_t v0 = p[2];
+            mp_limb_t v1 = p[3];
+
+            const mp_limb_t p0 = nmod_add(u0, v0, F->mod);
+            const mp_limb_t p1 = nmod_add(u1, v1, F->mod);
+            v0 = nmod_sub(u0, v0, F->mod);
+            v1 = nmod_sub(u1, v1, F->mod);
+
             const mp_limb_t w = F->tab_w[1][1];
             const mp_limb_t wpre = F->tab_w_pre[1][1];
-            const mp_limb_t u = p[2];
-            mp_limb_t v = p[3];
-            v = n_mulmod_shoup(w, v, wpre, F->mod.n);
-            p[2] = nmod_add(u, v, F->mod);
-            p[3] = nmod_sub(u, v, F->mod);
+            v1 = n_mulmod_shoup(w, v1, wpre, F->mod.n);
+            p[0] = nmod_add(p0, p1, F->mod);
+            p[1] = nmod_sub(p0, p1, F->mod);
+            p[2] = nmod_add(v0, v1, F->mod);
+            p[3] = nmod_sub(v0, v1, F->mod);
         }
         else
         {
@@ -817,11 +827,11 @@ void _nmod_poly_red_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, u
             w = F->tab_w[1][2*node];
             wpre = F->tab_w_pre[1][2*node];
             p1 = n_mulmod_shoup(w, p1, wpre, F->mod.n);
-            p[0] = nmod_add(p0, p1, F->mod);
-            p[1] = nmod_sub(p0, p1, F->mod);
             w = F->tab_w[1][2*node+1];
             wpre = F->tab_w_pre[1][2*node+1];
             v1 = n_mulmod_shoup(w, v1, wpre, F->mod.n);
+            p[0] = nmod_add(p0, p1, F->mod);
+            p[1] = nmod_sub(p0, p1, F->mod);
             p[2] = nmod_add(v0, v1, F->mod);
             p[3] = nmod_sub(v0, v1, F->mod);
         }
