@@ -139,6 +139,7 @@ void test_fft_eval()
             _nmod_fft_dif_iter2_lazy(pol3->coeffs, len, order, Fpre);
             _nmod_fft_red_rec2_lazy(pol4->coeffs, len, order, Fred);
             _nmod_fft_dif_rec4_lazy(pol5->coeffs, len, order, Fpre);
+            _nmod_fft_red_iter2_lazy(pol6->coeffs, len, order, Fred);
 
             if (! nmod_vec_red_equal(evals_br, pol2->coeffs, len, mod)
                      || !nmod_vec_range(pol2->coeffs, len, 4*mod.n))
@@ -180,6 +181,17 @@ void test_fft_eval()
                 if (len < 33)
                 {
                     _nmod_vec_print(pol5->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
+                }
+                return;
+            }
+            else if (! nmod_vec_red_equal(evals_br, pol6->coeffs, len, mod)
+                     || !nmod_vec_range(pol6->coeffs, len, 8*mod.n))
+            {
+                printf("\n\nERROR! in _nmod_fft_dif_iter2_lazy\n\n");
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol6->coeffs, len, mod);
                     _nmod_vec_print(evals_br, len, mod);
                 }
                 return;

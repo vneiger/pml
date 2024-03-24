@@ -103,6 +103,8 @@ void _nmod_fft_red_rec2_lazy_general(mp_ptr p, ulong len, ulong order, ulong nod
 // entry point: case where node == 0, modulus is x**len - 1 = (x**(len/2) - 1) (x**(len/2) + 1)
 void _nmod_fft_red_rec2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
 
+void _nmod_fft_red_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
+
 // recursive, decimation in frequency, radix 4
 // input coefficients in [0..??)
 // output coefficients in [0..??)

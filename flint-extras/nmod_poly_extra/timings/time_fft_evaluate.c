@@ -18,7 +18,7 @@ void time_evaluate()
 
     printf("- order is log(fft length)\n");
     printf("- timing init FFT tables + DIF evaluate for several bit lengths and orders\n");
-    printf("order\trec2\titer2\tred\trec4\n");
+    printf("order\trec2\titer2\tred\trec4\tred-iter\n");
 
     ulong primes[num_primes] = {
         786433,              // 20 bits, 1 + 2**18 * 3
@@ -243,6 +243,38 @@ void time_evaluate()
                 nmod_fft_clear_pre(Fpre);
                 printf("%.1e\t", t);
             }
+
+            if (VERSIONS >= 1)
+            { // red_radix2_iter_shoup_lazy
+                nmod_fft_t Fred;
+                nmod_fft_init_set_red_pre(Fred, w, order, mod);
+                t = 0.0;
+                nb_iter = 0;
+                while (t < 0.5)
+                {
+                    nmod_poly_t pol;
+                    nmod_poly_init(pol, mod.n);
+                    nmod_poly_rand(pol, state, len);
+                    tt = clock();
+                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
+                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
+                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
+                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
+                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
+                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
+                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
+                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
+                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
+                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
+                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                    nb_iter+=10;
+                    nmod_poly_clear(pol);
+                }
+                t /= nb_iter;
+                nmod_fft_clear_red_pre(Fred);
+                printf("%.1e\t", t);
+            }
+
             printf("\n");
         }
     }
