@@ -174,6 +174,9 @@ void test_fft_eval()
             nmod_poly_t pol13;
             nmod_poly_init(pol13, mod.n);
             nmod_poly_set(pol13, pol);
+            nmod_poly_t pol14;
+            nmod_poly_init(pol14, mod.n);
+            nmod_poly_set(pol14, pol);
 
             _nmod_poly_dif_inplace_radix2_rec_prenorm(pol->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(pol2->coeffs, len, order, F);
@@ -189,6 +192,7 @@ void test_fft_eval()
             _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(pol11->coeffs, len, order, Fpre);
             _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(pol12->coeffs, len, order, Fpre);
             _nmod_poly_red_inplace_radix2_rec_shoup_lazy(pol13->coeffs, len, order, 0, Fredpre);
+            _nmod_poly_dif_inplace_radix4_rec_shoup_lazy(pol14->coeffs, len, order, Fpre);
 
             if (! _nmod_vec_equal(evals_br, pol->coeffs, len))
             {
@@ -323,6 +327,17 @@ void test_fft_eval()
                 }
                 return;
             }
+            else if (! nmod_vec_red_equal(evals_br, pol14->coeffs, len, mod)
+                     || !nmod_vec_range(pol14->coeffs, len, 8*mod.n))
+            {
+                printf("\n\nERROR! in _nmod_poly_dif_inplace_radix4_rec_shoup_lazy\n\n");
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol14->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
+                }
+                return;
+            }
             else
                 printf("%ld ", order);
 
@@ -338,6 +353,8 @@ void test_fft_eval()
             nmod_poly_clear(pol10);
             nmod_poly_clear(pol11);
             nmod_poly_clear(pol12);
+            nmod_poly_clear(pol13);
+            nmod_poly_clear(pol14);
             _nmod_vec_clear(evals_br);
             nmod_integer_fft_clear(F);
             nmod_integer_fft_clear_pre(Fpre);
