@@ -1,7 +1,7 @@
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
 #include <flint/ulong_extras.h>
-#include "nmod_poly_fft.h"
+#include "nmod_poly_integer_fft.h"
 #include "nmod_integer_fft_base_cases.c"
 
 /*------------------------------------------------------------*/

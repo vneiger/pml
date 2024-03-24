@@ -3,10 +3,6 @@
 
 #include <flint/nmod_poly.h>
 #include <flint/fft_small.h>
-#include <flint/machine_vectors.h>
-
-#include <math.h>
-#include "nmod_extra.h"
 
 #ifdef __cplusplus
 extern "C" {

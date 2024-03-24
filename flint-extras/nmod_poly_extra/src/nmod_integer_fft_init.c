@@ -1,6 +1,6 @@
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
-#include "nmod_poly_fft.h"
+#include "nmod_poly_integer_fft.h"
 
 /***********************
 *  bit reversed copy  *

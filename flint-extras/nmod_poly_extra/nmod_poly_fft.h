@@ -1,7 +1,6 @@
 #ifndef __NMOD_POLY_FFT__H
 #define __NMOD_POLY_FFT__H
 
-//#include "nmod_mat_poly.h"
 #include <flint/nmod_types.h>
 
 #ifdef __cplusplus
@@ -10,7 +9,7 @@ extern "C" {
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* integer FFT                                                */
+/* struct for basic info + precomputed root tables            */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
@@ -33,8 +32,8 @@ typedef struct
     //mp_limb_t ** tab_inv_w;      // tabulated powers of 1/w
     //mp_limb_t ** tab_inv_w_over_2; // length order, level k is [1/w{k+1}^i/2^k 
     //mp_limb_t * powers_inv_2;    // length order+1, with powers_inv_2[i] = 1/2^i 
-} nmod_integer_fft_struct;
-typedef nmod_integer_fft_struct nmod_integer_fft_t[1];
+} nmod_fft_struct;
+typedef nmod_fft_struct nmod_fft_t[1];
 
 // FFT tables of powers / twiddle factors, say for w:
 // for 0 <= ell < order-1, "powers_w[ell]" has length 2**(ell+1)
@@ -53,67 +52,58 @@ typedef nmod_integer_fft_struct nmod_integer_fft_t[1];
 /* DFTs of size up to 2^order are supported                   */ 
 /* order >= 3 and order < FLINT_BITS (-sth?) required         */
 /*------------------------------------------------------------*/
-void nmod_integer_fft_init_set(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
-void nmod_integer_fft_init_set2(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod); // faster
 
-// not tried to optimize:
-// version with table of precomputed things for Shoup multiplication
-void nmod_integer_fft_init_set_pre(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
+// TODO :
+// - optimize speed (see integer_fft_init)
+// - allow initialization with NULL tables
+// - allow fit_depth to precompute more tables when wanted/needed
+// - separate computation of the tables from basic init
+// - allocate first tables on stack
+void nmod_fft_init_set_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
 
 // version with just a list of roots in bit reversed order
-void nmod_integer_fft_init_set_red(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
-void nmod_integer_fft_init_set_red_pre(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
+void nmod_fft_init_set_red_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
 
-// allow initialization with NULL tables
-// allow fit_depth to precompute more tables when wanted/needed
-// separate computation of the tables from basic init
-// allocate first tables on stack
 
 
 
 /*------------------------------------------------------------*/
 /* clears all memory assigned to F                            */
 /*------------------------------------------------------------*/
-void nmod_integer_fft_clear(nmod_integer_fft_t F);
-void nmod_integer_fft_clear_pre(nmod_integer_fft_t F);
-void nmod_integer_fft_clear_red(nmod_integer_fft_t F);
-void nmod_integer_fft_clear_red_pre(nmod_integer_fft_t F);
+void nmod_fft_clear_pre(nmod_fft_t F);
+void nmod_fft_clear_red_pre(nmod_fft_t F);
 
 
 
 /*------------------------------------------------------------*/
 /* fft evaluation, in place                                   */
-/* returns x[i] = poly(w^i), len=2^k, in bit reverse order    */
+/* x[i] = poly(w^i), len=2^k, in bit reverse order            */
 /* x must have length >= len                                  */
 /*------------------------------------------------------------*/
-void _nmod_poly_dif_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix2_rec_shoup_unroll4(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix2_rec_bench(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 
-void _nmod_poly_dif_inplace_radix2_iter_prenorm(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix2_iter_shoup(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix2_iter_bench(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
+// TODO
+//   - clarify input/output bounds below
+//   - what constraints on modulus to avoid overflow?
 
-// not very clean
-void _nmod_poly_dif_inplace_radix4_rec(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix4_rec_bench(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix4_iter(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
+// recursive, decimation in frequency, radix 2
+// input coefficients in [0..??)
+// output coefficients in [0..??)
+void _nmod_fft_dif_rec2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
 
+// iterative, decimation in frequency, radix 2
+// input coefficients in [0..??)
+// output coefficients in [0..??)
+void _nmod_fft_dif_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
 
-// reduction tree attempt
-void _nmod_poly_red_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order, ulong node, nmod_integer_fft_t F);
-void _nmod_poly_red_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, ulong node, nmod_integer_fft_t F);
+// recursive, reduction-tree approach, radix 2
+// input coefficients in [0..??)
+// output coefficients in [0..??)
+void _nmod_fft_red_rec2_lazy(mp_ptr p, ulong len, ulong order, ulong node, nmod_fft_t F);
 
-
-// lazy attempts
-void _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-void _nmod_poly_red_inplace_radix2_rec_shoup_lazy(mp_ptr p, ulong len, ulong order, ulong node, nmod_integer_fft_t F);
-void _nmod_poly_dif_inplace_radix4_rec_shoup_lazy(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
-
-
+// recursive, decimation in frequency, radix 4
+// input coefficients in [0..??)
+// output coefficients in [0..??)
+void _nmod_poly_dif_rec4_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
 
 #ifdef __cplusplus
 }

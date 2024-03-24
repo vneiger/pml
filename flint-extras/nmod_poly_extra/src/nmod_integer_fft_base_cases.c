@@ -1,4 +1,4 @@
-#include "nmod_poly_fft.h"
+#include "nmod_poly_integer_fft.h"
 
 // returns a*b % n  in [0..2*n)
 FLINT_FORCE_INLINE ulong n_mulmod_shoup_lazy(ulong a, ulong b, ulong apre, ulong n)
