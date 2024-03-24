@@ -27,8 +27,8 @@ typedef struct
     ulong order;               // maximum supported order (currently: order of w + max order in precomputed tables)
     ulong w;                   // primitive (2**order)th root of 1
     ulong inv_w;               // inverse of w
-    ulong ** tab_w;            // tabulated powers of w
-    ulong ** tab_w_pre;        // tabulated powers of precomputations for multiplication by w mod mod.n
+    ulong * tab_w[64];            // tabulated powers of w
+    ulong * tab_w_pre[64];        // tabulated powers of precomputations for multiplication by w mod mod.n
     //mp_limb_t ** tab_inv_w;      // tabulated powers of 1/w
     //mp_limb_t ** tab_inv_w_over_2; // length order, level k is [1/w{k+1}^i/2^k 
     //mp_limb_t * powers_inv_2;    // length order+1, with powers_inv_2[i] = 1/2^i 

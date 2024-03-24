@@ -52,7 +52,7 @@ void time_evaluate()
             clock_t tt;
             long nb_iter;
 
-            if (VERSIONS >= 1)
+            if (VERSIONS >= 2)
             { // fft_init alone
                 nmod_fft_t F;
                 t = 0.0;
@@ -87,7 +87,7 @@ void time_evaluate()
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 1)
+            if (VERSIONS >= 2)
             { // fft_init_red alone
                 nmod_fft_t Fred;
                 t = 0.0;

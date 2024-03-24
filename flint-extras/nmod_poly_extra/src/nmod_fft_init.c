@@ -1,5 +1,6 @@
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
+
 #include "nmod_poly_fft.h"
 
 /***********************
@@ -48,8 +49,6 @@ void nmod_fft_init_set_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
     F->inv_w = nmod_inv(w, mod);
 
     // 1. fill tables of powers of w
-    F->tab_w = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * (order-1));
-    F->tab_w_pre = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * (order-1));
 
     // fill largest array of powers of w
     slong ell = order-2;  // >= 1
@@ -122,8 +121,6 @@ void nmod_fft_init_set_red_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mo
     // F->tab_w[0][i] == w**i, i = 0 ... len-1   where len = 2**(order-1)
     // F->tab_w[1] same in bit-reversed: 1, w**(len/2), w**(len/4), w**(3*len/4), ...
     ulong len = (1UL << (order-1));  // len == 2**(ell+1) >= 4
-    F->tab_w = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * 2);
-    F->tab_w_pre = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * 2);
     F->tab_w[0] = _nmod_vec_init(len);
     F->tab_w_pre[0] = _nmod_vec_init(len);
     F->tab_w[0][0] = UWORD(1);
@@ -165,9 +162,10 @@ void nmod_fft_init_set_red_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mo
 void nmod_fft_clear_pre(nmod_fft_t F)
 {
     for (ulong ell = 0; ell <= F->order-2; ell++)
+    {
         _nmod_vec_clear(F->tab_w[ell]);
-    flint_free(F->tab_w);
-    flint_free(F->tab_w_pre);
+        _nmod_vec_clear(F->tab_w_pre[ell]);
+    }
 }
 
 void nmod_fft_clear_red_pre(nmod_fft_t F)
@@ -177,8 +175,6 @@ void nmod_fft_clear_red_pre(nmod_fft_t F)
         _nmod_vec_clear(F->tab_w[ell]);
         _nmod_vec_clear(F->tab_w_pre[ell]);
     }
-    flint_free(F->tab_w);
-    flint_free(F->tab_w_pre);
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
