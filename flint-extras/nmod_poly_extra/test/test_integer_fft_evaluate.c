@@ -68,6 +68,7 @@ void test_fft_eval()
 {
     flint_rand_t state;
     flint_randinit(state);
+    flint_randseed(state, time(NULL), time(NULL)+57);
 
     printf("- order is log(fft length)\n");
     printf("- testing fft-eval for several bit lengths and orders\n");
