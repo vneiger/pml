@@ -2,7 +2,7 @@
 #include <flint/nmod.h>
 #include <flint/nmod_poly.h>
 #include "nmod_poly_extra.h"
-#include "nmod_poly_fft.h"
+#include "nmod_poly_integer_fft.h"
 
 #define VERSIONS 1
 

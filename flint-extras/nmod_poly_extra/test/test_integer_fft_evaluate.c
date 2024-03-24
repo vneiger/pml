@@ -3,7 +3,7 @@
 #include <time.h>
 #include <flint/nmod.h>
 #include "nmod_poly_extra.h"
-#include "nmod_poly_fft.h"
+#include "nmod_poly_integer_fft.h"
 
 #define num_primes 5
 

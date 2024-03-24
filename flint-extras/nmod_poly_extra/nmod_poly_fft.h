@@ -103,7 +103,7 @@ void _nmod_fft_red_rec2_lazy(mp_ptr p, ulong len, ulong order, ulong node, nmod_
 // recursive, decimation in frequency, radix 4
 // input coefficients in [0..??)
 // output coefficients in [0..??)
-void _nmod_poly_dif_rec4_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
+void _nmod_fft_dif_rec4_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
 
 #ifdef __cplusplus
 }

@@ -615,7 +615,7 @@ void _nmod_fft_red_rec2_lazy(mp_ptr p, ulong len, ulong order, ulong node, nmod_
 }
 
 // in [0..2n) out [0..4n)
-void _nmod_poly_dif_rec4_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
+void _nmod_fft_dif_rec4_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
 {
     // order == 0: nothing to do
     if (order == 1)
@@ -679,10 +679,10 @@ void _nmod_poly_dif_rec4_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
                 p3[k] = F->tab_w[order-2][3*k-len/2] * u5 - p_hi * F->mod.n;  // [0..2n)
             }
         }
-        _nmod_poly_dif_rec4_lazy(p0, len/4, order-2, F);
-        _nmod_poly_dif_rec4_lazy(p1, len/4, order-2, F);
-        _nmod_poly_dif_rec4_lazy(p2, len/4, order-2, F);
-        _nmod_poly_dif_rec4_lazy(p3, len/4, order-2, F);
+        _nmod_fft_dif_rec4_lazy(p0, len/4, order-2, F);
+        _nmod_fft_dif_rec4_lazy(p1, len/4, order-2, F);
+        _nmod_fft_dif_rec4_lazy(p2, len/4, order-2, F);
+        _nmod_fft_dif_rec4_lazy(p3, len/4, order-2, F);
     }
 }
 
