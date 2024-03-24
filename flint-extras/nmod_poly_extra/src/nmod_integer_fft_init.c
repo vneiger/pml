@@ -293,6 +293,13 @@ void nmod_integer_fft_init_set_pre(nmod_integer_fft_t F, mp_limb_t w, ulong orde
             F->tab_w_pre[ell][k] = F->tab_w_pre[ell+1][2*k];
         }
     }
+
+    F->J  = F->tab_w[1][1];
+    F->I  = F->tab_w[1][2];
+    F->IJ = F->tab_w[1][3];
+    F->Jpre  = F->tab_w_pre[1][1];
+    F->Ipre  = F->tab_w_pre[1][2];
+    F->IJpre = F->tab_w_pre[1][3];
 }
 
 void nmod_integer_fft_init_set_red(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod)

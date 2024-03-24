@@ -2,20 +2,7 @@
 #include <flint/nmod_vec.h>
 #include <flint/ulong_extras.h>
 #include "nmod_poly_fft.h"
-
-// returns a*b % n  in [0..2*n)
-static inline ulong n_mulmod_shoup_lazy(ulong a, ulong b, ulong apre, ulong n)
-{
-    ulong p_hi, p_lo;
-    umul_ppmm(p_hi, p_lo, apre, b);
-    return a * b - p_hi * n;
-}
-#define N_MULMOD_SHOUP_LAZY(res, a, b, apre, n) \
-do { \
-    ulong p_hixxx, p_loxxx; \
-    umul_ppmm(p_hixxx, p_loxxx, (apre), (b)); \
-    (res) = (a) * (b) - p_hixxx * (n); \
-} while(0)
+#include "nmod_integer_fft_base_cases.c"
 
 /*------------------------------------------------------------*/
 /* 2-point butterfly                                          */
@@ -49,6 +36,7 @@ do { \
         (a) = (a) + (b);            \
         (b) = tmp + (n2) - (b);     \
     } while(0)
+
 
 // lazy2 red1:
 // input [0..2n) x [0..2n)
@@ -223,6 +211,12 @@ do { \
         (d) = p5 + 2*(n) - p7;                     /* < 4*n */         \
     } while(0)
 
+/*------------------------------------------------------------*/
+/* 8-point DFT                                                */
+/*------------------------------------------------------------*/
+
+// remainder tree version
+// lazy red: input in [0..2*n) --> output in [0..4*n)
 
 /** one level of DFT, DIF style, unrolling 4 by 4:
  * does DFT2 and multiply by powers of w
@@ -1315,7 +1309,9 @@ void _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(mp_ptr p, ulong len, ulong ord
     if (order == 1)
         DFT2_LAZY3_RED(p[0], p[1], F->modn4);
     else if (order == 2)
-        DFT4_DIF_SHOUP_LAZY2_RED(p[0], p[1], p[2], p[3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod.n, F->modn2);
+        DFT4_DIF_SHOUP_LAZY2_RED(p[0], p[1], p[2], p[3], F->I, F->Ipre, F->mod.n, F->modn2);
+    else if (order == 3)
+        dft8_red_lazy(p, F);
     else
     {
         for (ulong k = 0; k < len/2; k+=4)
@@ -1359,9 +1355,9 @@ void _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(mp_ptr p, ulong len, ulong ord
 
 void _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
 {
-    // perform FFT layers up to order 2
+    // perform FFT layers up to order 3
     ulong llen = len;
-    for (ulong ell = order; ell > 2; ell--, llen>>=1)
+    for (ulong ell = order; ell > 3; ell--, llen>>=1)
         for (ulong k = 0; k < len; k+=llen)
             for (ulong kk = 0; kk < llen/2; kk+=4)
             {
@@ -1398,8 +1394,10 @@ void _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(mp_ptr p, ulong len, ulong or
                 p[llen/2+k+kk+3] = F->tab_w[ell-2][kk+3] * tmp - p_hi * F->mod.n;
             }
     // perform last two FFT layers
-    for (ulong k = 0; k < len; k+=4)
-        DFT4_DIF_SHOUP_LAZY2_RED(p[k+0], p[k+1], p[k+2], p[k+3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod.n, F->modn2);
+    for (ulong k = 0; k < len; k+=8)
+        dft8_red_lazy(p+k, F);
+    //for (ulong k = 0; k < len; k+=4)
+    //    DFT4_DIF_SHOUP_LAZY2_RED(p[k+0], p[k+1], p[k+2], p[k+3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod.n, F->modn2);
 }
 
 void _nmod_poly_red_inplace_radix2_rec_shoup_lazy(mp_ptr p, ulong len, ulong order, ulong node, nmod_integer_fft_t F)
@@ -1699,144 +1697,8 @@ void _nmod_poly_dif_inplace_radix4_rec_shoup_lazy(mp_ptr p, ulong len, ulong ord
         DFT4_DIF_SHOUP_LAZY2_RED(p[0], p[1], p[2], p[3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod.n, F->modn2);
     else if (order == 3)
     {
-#if 1
-        // in [0..2n) out [0..4n)
-        mp_limb_t u0 = p[0];
-        mp_limb_t u1 = p[1];
-        mp_limb_t u2 = p[2];
-        mp_limb_t u3 = p[3];
-        mp_limb_t v0 = p[4];
-        mp_limb_t v1 = p[5];
-        mp_limb_t v2 = p[6];
-        mp_limb_t v3 = p[7];
-
-        // mod x**4 - 1 | x**4 + 1
-        mp_limb_t p0 = u0 + v0;  // [0..4n)
-        mp_limb_t p1 = u1 + v1;  // [0..4n)
-        mp_limb_t p2 = u2 + v2;  // [0..4n)
-        mp_limb_t p3 = u3 + v3;  // [0..4n)
-        u0 += F->modn2 - v0;  // [0..4n)
-        u1 += F->modn2 - v1;  // [0..4n)
-        u2 += F->modn2 - v2;  // [0..4n)
-        u3 += F->modn2 - v3;  // [0..4n)
-
-        // left, mod x**2 - 1 | x**2 + 1
-        v0 = p0 + p2;             // [0..8n)
-        v1 = p1 + p3;             // [0..8n)
-        v2 = p0 + F->modn4 - p2;  // [0..8n)
-        v3 = p1 + F->modn4 - p3;  // [0..8n)
-
-        // left-left, mod x-1 | x+1
-        p0 = v0 + v1;               // [0..16n)
-        p1 = v0 + 2*F->modn4 - v1;  // [0..16n)
-        if (p0 > 2*F->modn4)
-            p0 -= 2*F->modn4;
-        if (p0 > F->modn4)
-            p0 -= F->modn4;        // [0..4n)
-        if (p1 > 2*F->modn4)
-            p1 -= 2*F->modn4;
-        if (p1 > F->modn4)
-            p1 -= F->modn4;        // [0..4n)
-        p[0] = p0;
-        p[1] = p1;
-
-        // left-right, mod x-I | x+I
-        v3 = n_mulmod_shoup_lazy(F->tab_w[0][1], v3, F->tab_w_pre[0][1], F->mod.n);
-        if (v2 >= F->modn4)
-            v2 -= F->modn4;
-        if (v2 >= F->modn2)
-            v2 -= F->modn2;         // [0..2n)
-        p[2] = v2 + v3;             // [0..4n)
-        p[3] = v2 + F->modn2 - v3;  // [0..4n)
-
-        // right, mod x**2 - I | x**2 + I
-        u2 = n_mulmod_shoup_lazy(F->tab_w[0][1], u2, F->tab_w_pre[0][1], F->mod.n);
-        u3 = n_mulmod_shoup_lazy(F->tab_w[0][1], u3, F->tab_w_pre[0][1], F->mod.n);
-        if (u0 >= F->modn2)
-            u0 -= F->modn2;         // [0..2n)
-        if (u1 >= F->modn2)
-            u1 -= F->modn2;         // [0..2n)
-        v0 = u0 + u2;  // [0..4n)
-        v1 = u1 + u3;  // [0..4n)
-        v2 = u0 + F->modn2 - u2;  // [0..4n)
-        v3 = u1 + F->modn2 - u3;  // [0..4n)
-
-        // right-left, mod x - J | x + J
-        v1 = n_mulmod_shoup_lazy(F->tab_w[1][1], v1, F->tab_w_pre[1][1], F->mod.n);
-        if (v0 >= F->modn2)
-            v0 -= F->modn2;         // [0..2n)
-        p[4] = v0 + v1;
-        p[5] = v0 + F->modn2 - v1;
-
-        // right-right, mod x - I*J | x + I*J
-        v3 = n_mulmod_shoup_lazy(F->tab_w[1][3], v3, F->tab_w_pre[1][3], F->mod.n);
-        if (v2 >= F->modn2)
-            v2 -= F->modn2;         // [0..2n)
-        p[6] = v2 + v3;
-        p[7] = v2 + F->modn2 - v3;
-#else
-        // in [0..2n) out [0..8n)
-        mp_limb_t p0 = p[0];
-        mp_limb_t q0 = p[1];
-        mp_limb_t p1 = p[2];
-        mp_limb_t q1 = p[3];
-        mp_limb_t p2 = p[4];
-        mp_limb_t q2 = p[5];
-        mp_limb_t p3 = p[6];
-        mp_limb_t q3 = p[7];
-
-        mp_limb_t p4 = p0 + p2;  // [0..4n)
-        mp_limb_t q4 = q0 + q2;  // [0..4n)
-        mp_limb_t p6 = p1 + p3;  // [0..4n)
-        mp_limb_t q6 = q1 + q3;  // [0..4n)
-        mp_limb_t p5 = p0 + F->modn2 - p2;  // [0..4n)
-        mp_limb_t q5 = q0 + F->modn2 - q2;  // [0..4n)
-        if (p4 >= F->modn2)
-            p4 -= F->modn2;  // [0..2n)
-        if (p6 >= F->modn2)
-            p6 -= F->modn2;  // [0..2n)
-        if (q4 >= F->modn2)
-            q4 -= F->modn2;  // [0..2n)
-        if (q6 >= F->modn2)
-            q6 -= F->modn2;  // [0..2n)
-
-        ulong p_hi, p_lo;
-        mp_limb_t p7 = (p1 + F->modn2 - p3);
-        // {p,q}7 = ({p,q}1 + F->modn2 - {p,q}3) * F->tab_w[0][1]
-        umul_ppmm(p_hi, p_lo, F->tab_w_pre[0][1], p7);
-        p7 = F->tab_w[0][1] * p7 - p_hi * F->mod.n;  // [0..2n)
-        mp_limb_t q7 = q1 + F->modn2 - q3;
-        umul_ppmm(p_hi, p_lo, F->tab_w_pre[0][1], q7);
-        q7 = F->tab_w[0][1] * q7 - p_hi * F->mod.n;  // [0..2n)
-
-        p0 = p4 + p6;  // [0..4n)
-        p1 = q4 + q6;  // [0..4n)
-        p2 = p4 + F->modn2 - p6;  // [0..4n)
-
-        p3 = q4 + F->modn2 - q6;
-        umul_ppmm(p_hi, p_lo, F->tab_w_pre[1][2], p3);
-        p3 = F->tab_w[1][2] * p3 - p_hi * F->mod.n;  // [0..2n)
-
-        q0 = p5 + p7;  // [0..6n)
-
-        q1 = q5 + q7;  // [0..6n)
-        umul_ppmm(p_hi, p_lo, F->tab_w_pre[1][1], q1);
-        q1 = F->tab_w[1][1] * q1 - p_hi * F->mod.n;  // [0..2n)
-
-        q2 = p5 + F->modn2 - p7;  // [0..6n)
-        q3 = q5 + F->modn2 - q7;  // [0..6n)
-        umul_ppmm(p_hi, p_lo, F->tab_w_pre[1][3], q3);
-        q3 = F->tab_w[1][3] * q3 - p_hi * F->mod.n;  // [0..2n)
-
-        p[0] = p0 + p1;  // [0..8n)
-        p[1] = p0 + F->modn4 - p1;  // [0..8n)
-        p[2] = p2 + p3;  // [0..6n)
-        p[3] = p2 + F->modn2 - p3;  // [0..6n)
-        p[4] = q0 + q1;  // [0..8n)
-        p[5] = q0 + F->modn2 - q1;  // [0..8n)
-        p[6] = q2 + q3;  // [0..8n)
-        p[7] = q2 + F->modn2 - q3;  // [0..8n)
-#endif
+        dft8_red_lazy(p, F);
+        //dft8_dif_lazy(p, F);
     }
     else
     {
@@ -1894,5 +1756,6 @@ void _nmod_poly_dif_inplace_radix4_rec_shoup_lazy(mp_ptr p, ulong len, ulong ord
         _nmod_poly_dif_inplace_radix4_rec_shoup_lazy(p3, len/4, order-2, F);
     }
 }
+
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
