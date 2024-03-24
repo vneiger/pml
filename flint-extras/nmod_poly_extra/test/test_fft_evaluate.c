@@ -137,7 +137,7 @@ void test_fft_eval()
 
             _nmod_fft_dif_rec2_lazy(pol2->coeffs, len, order, Fpre);
             _nmod_fft_dif_iter2_lazy(pol3->coeffs, len, order, Fpre);
-            _nmod_fft_red_rec2_lazy(pol4->coeffs, len, order, 0, Fred);
+            _nmod_fft_red_rec2_lazy(pol4->coeffs, len, order, Fred);
             _nmod_fft_dif_rec4_lazy(pol5->coeffs, len, order, Fpre);
 
             if (! nmod_vec_red_equal(evals_br, pol2->coeffs, len, mod)

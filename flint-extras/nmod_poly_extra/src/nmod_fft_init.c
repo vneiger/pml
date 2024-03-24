@@ -157,6 +157,13 @@ void nmod_fft_init_set_red_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mo
         F->tab_w[1][k] = F->tab_w[0][j];
         F->tab_w_pre[1][k] = F->tab_w_pre[0][j];
     }
+
+    F->J  = F->tab_w[1][2];
+    F->I  = F->tab_w[1][1];
+    F->IJ = F->tab_w[1][3];
+    F->Jpre  = F->tab_w_pre[1][2];
+    F->Ipre  = F->tab_w_pre[1][1];
+    F->IJpre = F->tab_w_pre[1][3];
 }
 
 void nmod_fft_clear_pre(nmod_fft_t F)

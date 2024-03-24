@@ -95,7 +95,13 @@ void _nmod_fft_dif_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
 // recursive, reduction-tree approach, radix 2
 // input coefficients in [0..??)
 // output coefficients in [0..??)
-void _nmod_fft_red_rec2_lazy(mp_ptr p, ulong len, ulong order, ulong node, nmod_fft_t F);
+
+// general: modulus is x**len - w**2 = (x**(len/2) - w) (x**(len/2) + w),
+// where w = F->tab_w[0][node]
+// e.g. for node == 1 this is w = I and x**len + 1
+void _nmod_fft_red_rec2_lazy_general(mp_ptr p, ulong len, ulong order, ulong node, nmod_fft_t F);
+// entry point: case where node == 0, modulus is x**len - 1 = (x**(len/2) - 1) (x**(len/2) + 1)
+void _nmod_fft_red_rec2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
 
 // recursive, decimation in frequency, radix 4
 // input coefficients in [0..??)
