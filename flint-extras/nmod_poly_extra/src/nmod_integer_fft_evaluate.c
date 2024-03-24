@@ -1847,7 +1847,6 @@ void _nmod_poly_dif_inplace_radix4_rec_shoup_lazy(mp_ptr p, ulong len, ulong ord
         const mp_ptr p3 = p2+(len/4);
         for (ulong k = 0; k < len/4; k++)
         {
-            ulong p_hi, p_lo;
             const mp_limb_t u0 = p0[k];
             const mp_limb_t u1 = p1[k];
             const mp_limb_t u2 = p2[k];
@@ -1856,6 +1855,8 @@ void _nmod_poly_dif_inplace_radix4_rec_shoup_lazy(mp_ptr p, ulong len, ulong ord
             mp_limb_t u5 = u0 + F->modn2 - u2;  // [0..4n)
             mp_limb_t u6 = u1 + u3;  // [0..4n)
             mp_limb_t u7 = u1 + F->modn2 - u3;
+
+            ulong p_hi, p_lo;
             umul_ppmm(p_hi, p_lo, F->tab_w_pre[0][1], u7);
             u7 = F->tab_w[0][1] * u7 - p_hi * F->mod.n;  // [0..2n)
 
