@@ -105,20 +105,6 @@ void nmod_fft_init_set_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
     F->Jpre  = F->tab_w_pre[1][1];
     F->Ipre  = F->tab_w_pre[1][2];
     F->IJpre = F->tab_w_pre[1][3];
-
-    // naive version for filling tab_w_stack
-    ulong k = 0;
-    for (ell = MAX_ORDER_STACK - 3; ell >= 0; ell--)
-    {
-        if (ell <= (long)order-2)
-            for (ulong j = 0; j < (1UL<<(ell+1)); j++, k+=2)
-            {
-                F->tab_w_stack[k] = F->tab_w[ell][j];
-                F->tab_w_stack[k+1] = F->tab_w_pre[ell][j];
-            }
-        else
-            k += (1UL<<(ell+2));
-    }
 }
 
 void nmod_fft_init_set_red_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
