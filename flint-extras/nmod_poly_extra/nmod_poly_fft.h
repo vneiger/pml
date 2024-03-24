@@ -98,12 +98,13 @@ void _nmod_poly_dif_inplace_radix4_iter(mp_ptr p, ulong len, ulong order, nmod_i
 
 // reduction tree attempt
 void _nmod_poly_red_inplace_radix2_rec_prenorm(mp_ptr p, ulong len, ulong order, ulong node, nmod_integer_fft_t F);
-void _nmod_poly_red_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, ulong rt_index, nmod_integer_fft_t F);
+void _nmod_poly_red_inplace_radix2_rec_shoup(mp_ptr p, ulong len, ulong order, ulong node, nmod_integer_fft_t F);
 
 
 // lazy attempts
 void _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
 void _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F);
+void _nmod_poly_red_inplace_radix2_rec_shoup_lazy(mp_ptr p, ulong len, ulong order, ulong node, nmod_integer_fft_t F);
 
 
 

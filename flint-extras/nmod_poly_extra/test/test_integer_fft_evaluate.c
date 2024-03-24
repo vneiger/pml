@@ -52,6 +52,15 @@ int nmod_vec_red_equal(mp_srcptr vec1, mp_srcptr vec2, ulong len, nmod_t mod)
     return 1;
 }
 
+int nmod_vec_range(mp_srcptr vec, ulong len, ulong bound)
+{
+    for (ulong k = 0; k < len; k++)
+        if (vec[k] >= bound)
+            return 0;
+
+    return 1;
+}
+
 /*------------------------------------------------------------*/
 /* computes init for FFT for several bit lengths and orders   */
 /*------------------------------------------------------------*/
@@ -161,6 +170,9 @@ void test_fft_eval()
             nmod_poly_t pol12;
             nmod_poly_init(pol12, mod.n);
             nmod_poly_set(pol12, pol);
+            nmod_poly_t pol13;
+            nmod_poly_init(pol13, mod.n);
+            nmod_poly_set(pol13, pol);
 
             _nmod_poly_dif_inplace_radix2_rec_prenorm(pol->coeffs, len, order, F);
             _nmod_poly_dif_inplace_radix2_rec_prenorm_unroll4(pol2->coeffs, len, order, F);
@@ -175,6 +187,7 @@ void test_fft_eval()
 
             _nmod_poly_dif_inplace_radix2_rec_shoup_lazy(pol11->coeffs, len, order, Fpre);
             _nmod_poly_dif_inplace_radix2_iter_shoup_lazy(pol12->coeffs, len, order, Fpre);
+            _nmod_poly_red_inplace_radix2_rec_shoup_lazy(pol13->coeffs, len, order, 0, Fredpre);
 
             if (! _nmod_vec_equal(evals_br, pol->coeffs, len))
             {
@@ -276,7 +289,8 @@ void test_fft_eval()
                 }
                 return;
             }
-            else if (! nmod_vec_red_equal(evals_br, pol11->coeffs, len, mod))
+            else if (! nmod_vec_red_equal(evals_br, pol11->coeffs, len, mod)
+                     || !nmod_vec_range(pol11->coeffs, len, 4*mod.n))
             {
                 printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_rec_shoup_lazy\n\n");
                 if (len < 33)
@@ -286,13 +300,25 @@ void test_fft_eval()
                 }
                 return;
             }
-            else if (! _nmod_vec_equal(pol11->coeffs, pol12->coeffs, len))
+            else if (! _nmod_vec_equal(pol11->coeffs, pol12->coeffs, len)
+                     || !nmod_vec_range(pol12->coeffs, len, 4*mod.n))
             {
                 printf("\n\nERROR! in _nmod_poly_dif_inplace_radix2_iter_shoup_lazy\n\n");
                 if (len < 33)
                 {
                     _nmod_vec_print(pol11->coeffs, len, mod);
                     _nmod_vec_print(pol12->coeffs, len, mod);
+                }
+                return;
+            }
+            else if (! nmod_vec_red_equal(evals_br, pol13->coeffs, len, mod)
+                     || !nmod_vec_range(pol13->coeffs, len, 8*mod.n))
+            {
+                printf("\n\nERROR! in _nmod_poly_red_inplace_radix2_rec_shoup_lazy\n\n");
+                if (len < 33)
+                {
+                    _nmod_vec_print(pol13->coeffs, len, mod);
+                    _nmod_vec_print(evals_br, len, mod);
                 }
                 return;
             }
