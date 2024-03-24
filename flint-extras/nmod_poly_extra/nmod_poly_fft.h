@@ -3,6 +3,9 @@
 
 #include <flint/nmod_types.h>
 
+#define MAX_ORDER_STACK 18
+#define STACK_TAB_SIZE (1L<<MAX_ORDER_STACK)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -27,11 +30,11 @@ typedef struct
     ulong order;               // maximum supported order (currently: order of w + max order in precomputed tables)
     ulong w;                   // primitive (2**order)th root of 1
     ulong inv_w;               // inverse of w
+    ulong tab_w_stack[STACK_TAB_SIZE];  // tab_w_stack = [interlace(tab_w[K-3] | tab_w_pre[K-3]) | ... | interlace(tab_w[0] | tab_w_pre[0])]
+                            // where K = MAX_ORDER_STACK; for ell = 0 ... K-3 (i.e. orders up to K-1):
+                            // --> position 2**(K-1) + 2**(K-2) + ... + 2**(ell+2)) + 2*j is tab_w[ell][j] followed by tab_w_pre[ell][j]
     ulong * tab_w[64];            // tabulated powers of w
     ulong * tab_w_pre[64];        // tabulated powers of precomputations for multiplication by w mod mod.n
-    //mp_limb_t ** tab_inv_w;      // tabulated powers of 1/w
-    //mp_limb_t ** tab_inv_w_over_2; // length order, level k is [1/w{k+1}^i/2^k 
-    //mp_limb_t * powers_inv_2;    // length order+1, with powers_inv_2[i] = 1/2^i 
 } nmod_fft_struct;
 typedef nmod_fft_struct nmod_fft_t[1];
 

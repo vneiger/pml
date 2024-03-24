@@ -129,7 +129,6 @@
         (d) = p5 + (n2) - p7;                       /* < 4*n */        \
     } while(0)
 
-
 /*----------------*/
 /* 8-point DFT    */
 /*----------------*/
@@ -232,7 +231,9 @@ FLINT_FORCE_INLINE void dft8_red_lazy(mp_ptr p, nmod_fft_t F)
 
 
 // input [0..2*n), output [0..4*n)
-void _nmod_fft_dif_rec2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
+
+// only for order <= MAX_ORDER_STACK
+void _nmod_fft_dif_rec2_lazy_smallorder(mp_ptr p, ulong len, ulong order, ulong index, nmod_fft_t F)
 {
     // order == 0: nothing to do
     if (order == 1)
@@ -241,6 +242,57 @@ void _nmod_fft_dif_rec2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
         DFT4_DIF_SHOUP_LAZY2_RED(p[0], p[1], p[2], p[3], F->I, F->Ipre, F->mod.n, F->modn2);
     else if (order == 3)
         dft8_red_lazy(p, F);
+    else
+    {
+        for (ulong k = 0; k < len/2; k+=4)
+        {
+            // in: p[k], p[len/2+k] in [0..2n)
+            // out: p[k], p[len/2+k] in [0..2n)
+            ulong p_hi, p_lo, tmp;
+
+            tmp = p[k+0] + F->modn2 - p[len/2+k+0];
+            p[k+0] = p[k+0] + p[len/2+k+0];
+            if (p[k+0] >= F->modn2)
+                p[k+0] -= F->modn2;
+            umul_ppmm(p_hi, p_lo, F->tab_w_stack[index+2*k+1], tmp);
+            p[len/2+k+0] = F->tab_w_stack[index+2*k] * tmp - p_hi * F->mod.n;
+
+            tmp = p[k+1] + F->modn2 - p[len/2+k+1];
+            p[k+1] = p[k+1] + p[len/2+k+1];
+            if (p[k+1] >= F->modn2)
+                p[k+1] -= F->modn2;
+            umul_ppmm(p_hi, p_lo, F->tab_w_stack[index+2*k+3], tmp);
+            p[len/2+k+1] = F->tab_w_stack[index+2*k+2] * tmp - p_hi * F->mod.n;
+
+            tmp = p[k+2] + F->modn2 - p[len/2+k+2];
+            p[k+2] = p[k+2] + p[len/2+k+2];
+            if (p[k+2] >= F->modn2)
+                p[k+2] -= F->modn2;
+            umul_ppmm(p_hi, p_lo, F->tab_w_stack[index+2*k+5], tmp);
+            p[len/2+k+2] = F->tab_w_stack[index+2*k+4] * tmp - p_hi * F->mod.n;
+
+            tmp = p[k+3] + F->modn2 - p[len/2+k+3];
+            p[k+3] = p[k+3] + p[len/2+k+3];
+            if (p[k+3] >= F->modn2)
+                p[k+3] -= F->modn2;
+            umul_ppmm(p_hi, p_lo, F->tab_w_stack[index+2*k+7], tmp);
+            p[len/2+k+3] = F->tab_w_stack[index+2*k+6] * tmp - p_hi * F->mod.n;
+        }
+        _nmod_fft_dif_rec2_lazy_smallorder(p, len/2, order-1, index+len, F);
+        _nmod_fft_dif_rec2_lazy_smallorder(p+len/2, len/2, order-1, index+len, F);
+    }
+}
+
+
+void _nmod_fft_dif_rec2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
+{
+    if (order < MAX_ORDER_STACK)
+    {
+        ulong index = 0;
+        for (ulong k = 0; k < MAX_ORDER_STACK - 1 - order; k++)
+            index += (1<<(MAX_ORDER_STACK-1-k));
+        _nmod_fft_dif_rec2_lazy_smallorder(p, len, order, index, F);
+    }
     else
     {
         for (ulong k = 0; k < len/2; k+=4)
@@ -286,7 +338,8 @@ void _nmod_fft_dif_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
 {
     // perform FFT layers up to order 3
     ulong llen = len;
-    for (ulong ell = order; ell > 3; ell--, llen>>=1)
+    ulong ell = order;
+    for (; ell >= MAX_ORDER_STACK; ell--, llen>>=1) // order was up to ell=3
         for (ulong k = 0; k < len; k+=llen)
             for (ulong kk = 0; kk < llen/2; kk+=4)
             {
@@ -322,6 +375,49 @@ void _nmod_fft_dif_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
                 umul_ppmm(p_hi, p_lo, F->tab_w_pre[ell-2][kk+3], tmp);
                 p[llen/2+k+kk+3] = F->tab_w[ell-2][kk+3] * tmp - p_hi * F->mod.n;
             }
+
+    // now dealing with order ell which is  < MAX_ORDER_STACK
+    ulong index = 0;
+    for (ulong k = 0; k+1+ell < MAX_ORDER_STACK; k++)  // if input order was >= MAX_ORDER_STACK, this does nothing
+        index += (1<<(MAX_ORDER_STACK-1-k));
+    // start loop again but using tab_w_stack
+    for (; ell > 3; ell--, index+=llen, llen>>=1)
+        for (ulong k = 0; k < len; k+=llen)
+            for (ulong kk = 0; kk < llen/2; kk+=4)
+            {
+                // in: p[k+kk], p[llen/2+k+kk] in [0..2n)
+                // out: p[k+kk], p[llen/2+k+kk] in [0..2n)
+                ulong p_hi, p_lo, tmp;
+
+                tmp = p[k+kk+0] + F->modn2 - p[llen/2+k+kk+0];
+                p[k+kk+0] = p[k+kk+0] + p[llen/2+k+kk+0];
+                if (p[k+kk+0] >= F->modn2)
+                    p[k+kk+0] -= F->modn2;
+                umul_ppmm(p_hi, p_lo, F->tab_w_stack[index+2*kk+1], tmp);
+                p[llen/2+k+kk+0] = F->tab_w_stack[index+2*kk+0] * tmp - p_hi * F->mod.n;
+
+                tmp = p[k+kk+1] + F->modn2 - p[llen/2+k+kk+1];
+                p[k+kk+1] = p[k+kk+1] + p[llen/2+k+kk+1];
+                if (p[k+kk+1] >= F->modn2)
+                    p[k+kk+1] -= F->modn2;
+                umul_ppmm(p_hi, p_lo, F->tab_w_stack[index+2*kk+3], tmp);
+                p[llen/2+k+kk+1] = F->tab_w_stack[index+2*kk+2] * tmp - p_hi * F->mod.n;
+
+                tmp = p[k+kk+2] + F->modn2 - p[llen/2+k+kk+2];
+                p[k+kk+2] = p[k+kk+2] + p[llen/2+k+kk+2];
+                if (p[k+kk+2] >= F->modn2)
+                    p[k+kk+2] -= F->modn2;
+                umul_ppmm(p_hi, p_lo, F->tab_w_stack[index+2*kk+5], tmp);
+                p[llen/2+k+kk+2] = F->tab_w_stack[index+2*kk+4] * tmp - p_hi * F->mod.n;
+
+                tmp = p[k+kk+3] + F->modn2 - p[llen/2+k+kk+3];
+                p[k+kk+3] = p[k+kk+3] + p[llen/2+k+kk+3];
+                if (p[k+kk+3] >= F->modn2)
+                    p[k+kk+3] -= F->modn2;
+                umul_ppmm(p_hi, p_lo, F->tab_w_stack[index+2*kk+7], tmp);
+                p[llen/2+k+kk+3] = F->tab_w_stack[index+2*kk+6] * tmp - p_hi * F->mod.n;
+            }
+
     // perform last two FFT layers
     for (ulong k = 0; k < len; k+=8)
         dft8_red_lazy(p+k, F);
