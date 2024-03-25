@@ -422,6 +422,92 @@ void _nmod_poly_dif_inplace_radix2_rec_bench(mp_ptr p, ulong len, ulong order, n
     }
 }
 
+//void _nmod_poly_dif_inplace_radix2_rec_bench(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
+//{
+//    // order == 0: nothing to do
+//    if (order == 1)
+//        DFT2_BENCH(p[0], p[1]);
+//    else if (order == 2)
+//        DFT4_DIF_BENCH(p[0], p[1], p[2], p[3], F->tab_w[0][1]);
+//    else
+//    {
+//        const mp_ptr ww = F->tab_w[order-2];
+//        const mp_ptr p0 = p;
+//        const mp_ptr p1 = p+(len/2);
+//        // here order >= 3, len >= 8
+//        for (ulong k = 0; k < len/2; k+=4)
+//        {
+//            const mp_limb_t u0 = p0[k+0];
+//            const mp_limb_t u1 = p0[k+1];
+//            const mp_limb_t u2 = p0[k+2];
+//            const mp_limb_t u3 = p0[k+3];
+//            const mp_limb_t v0 = p1[k+0];
+//            const mp_limb_t v1 = p1[k+1];
+//            const mp_limb_t v2 = p1[k+2];
+//            const mp_limb_t v3 = p1[k+3];
+//            p[k+0] = u0 + v0;
+//            p[k+1] = u1 + v1;
+//            p[k+2] = u2 + v2;
+//            p[k+3] = u3 + v3;
+//
+//            p1[k+0] = ww[k] * (u0 - v0) + u0 * v0 + v1 * F->mod.n;
+//
+//            p1[k+1] = ww[k+1] * (u1 - v1) + v1 * u1 + v2 * F->mod.n;
+//
+//            p1[k+2] = ww[k+2] * (u2 - v2) + v2 * u2 + v3 * (u2 - v2);
+//
+//            p1[k+3] = ww[k+3] * (u3 - v3) + u3 * v3 + u1 * F->mod.n;
+//        }
+//        _nmod_poly_dif_inplace_radix2_rec_bench(p, len/2, order-1, F);
+//        _nmod_poly_dif_inplace_radix2_rec_bench(p+len/2, len/2, order-1, F);
+//    }
+//}
+
+//void _nmod_poly_dif_inplace_radix2_rec_bench(mp_ptr p, ulong len, ulong order, nmod_integer_fft_t F)
+//{
+//    // order == 0: nothing to do
+//    if (order == 1)
+//        DFT2_BENCH(p[0], p[1]);
+//    else if (order == 2)
+//        DFT4_DIF_BENCH(p[0], p[1], p[2], p[3], F->tab_w[0][1]);
+//    else
+//    {
+//        const mp_ptr ww = F->tab_w[order-2];
+//        const mp_ptr p0 = p;
+//        const mp_ptr p1 = p+(len/2);
+//        // here order >= 3, len >= 8
+//        for (ulong k = 0; k < len/2; k+=4)
+//        {
+//            const mp_limb_t u0 = p0[k+0];
+//            const mp_limb_t u1 = p0[k+1];
+//            const mp_limb_t u2 = p0[k+2];
+//            const mp_limb_t u3 = p0[k+3];
+//            const mp_limb_t v0 = p1[k+0];
+//            const mp_limb_t v1 = p1[k+1];
+//            const mp_limb_t v2 = p1[k+2];
+//            const mp_limb_t v3 = p1[k+3];
+//            p[k+0] = u0 + v0;
+//            p[k+1] = u1 + v1;
+//            p[k+2] = u2 + v2;
+//            p[k+3] = u3 + v3;
+//
+//            ulong p_hi, p_lo;
+//            umul_ppmm(p_hi, p_lo, ww[k], u0-v0);
+//            p1[k+0] = ww[k] * p_hi - u0 * F->mod.n;
+//
+//            umul_ppmm(p_hi, p_lo, ww[k+1], u1-v1);
+//            p1[k+1] = ww[k+1] * p_hi - u1 * F->mod.n;
+//
+//            umul_ppmm(p_hi, p_lo, ww[k+2], u0-v0);
+//            p1[k+2] = ww[k+2] * p_hi - u2 * F->mod.n;
+//
+//            umul_ppmm(p_hi, p_lo, ww[k+3], u0-v0);
+//            p1[k+3] = ww[k+3] * p_hi - u3 * F->mod.n;
+//        }
+//        _nmod_poly_dif_inplace_radix2_rec_bench(p, len/2, order-1, F);
+//        _nmod_poly_dif_inplace_radix2_rec_bench(p+len/2, len/2, order-1, F);
+//    }
+//}
 
 /***************************
 *  DIF radix 2 iterative  *

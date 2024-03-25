@@ -124,7 +124,7 @@ void time_evaluate()
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 2)
+            if (VERSIONS >= 1)
             { // dif_radix2_rec, bench
                 nmod_integer_fft_t Fpre;
                 nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
@@ -155,7 +155,7 @@ void time_evaluate()
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 2)
+            if (VERSIONS >= 1)
             { // dif_radix2_iter, bench
                 nmod_integer_fft_t Fpre;
                 nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
@@ -558,7 +558,7 @@ void time_evaluate()
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 1)
+            if (VERSIONS >= 2)
             { // dif_radix2_iter_shoup_lazy
                 nmod_integer_fft_t Fpre;
                 nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
@@ -589,7 +589,7 @@ void time_evaluate()
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 1)
+            if (VERSIONS >= 2)
             { // red_radix2_rec_shoup_lazy
                 nmod_integer_fft_t Fpre;
                 nmod_integer_fft_init_set_red_pre(Fpre, w, order, mod);
@@ -620,7 +620,7 @@ void time_evaluate()
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 1)
+            if (VERSIONS >= 2)
             { // dif_radix4_rec_shoup_lazy
                 nmod_integer_fft_t Fpre;
                 nmod_integer_fft_init_set_pre(Fpre, w, order, mod);
