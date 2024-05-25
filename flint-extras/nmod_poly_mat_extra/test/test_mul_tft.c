@@ -11,7 +11,7 @@ void test_nmod_poly_mat_mul(ulong m, ulong n, ulong p, ulong deg)
 {
     flint_rand_t state;
     nmod_poly_mat_t A, B, C1, C2;
-    mp_limb_t modulus;
+    ulong modulus;
 
     modulus = 1108307720798209;
     flint_randinit(state);

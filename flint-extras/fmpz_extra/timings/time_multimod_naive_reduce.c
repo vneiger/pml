@@ -16,7 +16,7 @@ void check_fmpz_multimod_naive_reduce(ulong num_primes, ulong n_bits)
 {
     flint_rand_t state;
     fmpz_multimod_naive_t mmod; 
-    mp_ptr primes, residues;
+    nn_ptr primes, residues;
     fmpz_comb_t C;
     fmpz_comb_temp_t Ct;
     fmpz_t A;

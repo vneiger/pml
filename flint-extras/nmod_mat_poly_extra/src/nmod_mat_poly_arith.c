@@ -42,7 +42,7 @@ void nmod_mat_poly_mul_coeff(nmod_mat_t coeff,
 
 void nmod_mat_poly_evaluate_nmod(nmod_mat_t eval,
                                  const nmod_mat_poly_t matp,
-                                 mp_limb_t pt)
+                                 ulong pt)
 {
     slong k = matp->length;
 

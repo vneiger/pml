@@ -5,7 +5,7 @@
 /*------------------------------------------------------------*/
 /* initializes all data in C                                  */
 /*------------------------------------------------------------*/
-void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, mp_limb_t modulus, ulong num_primes)
+void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, ulong modulus, ulong num_primes)
 {
     FLINT_ASSERT(num_primes <= 4);
 
@@ -51,19 +51,19 @@ void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, mp_limb_t modulus, ulong num_
         C->invp0_p1 = nmod_inv(PRIME0, mod1);
 
         nmod_init(&mod2, PRIME2);
-        mp_limb_t p0p1_red2 = nmod_mul(PRIME0, PRIME1, mod2);
+        ulong p0p1_red2 = nmod_mul(PRIME0, PRIME1, mod2);
         C->invp0p1_p2 = (double) nmod_inv(p0p1_red2, mod2);
 
         nmod_init(&mod3, PRIME3);
         C->p0p1_red3 = nmod_mul(PRIME0, PRIME1, mod3);
-        mp_limb_t p0p1p2_red3 = nmod_mul(C->p0p1_red3, PRIME2, mod3);
+        ulong p0p1p2_red3 = nmod_mul(C->p0p1_red3, PRIME2, mod3);
         C->invp0p1p2_p3 = (double) nmod_inv(p0p1p2_red3, mod3);
     }
     else // large modulus. this is inspired by multimod and CRT in fft_small
     {
         ulong i, len;
         fmpz_t prod;
-        mp_ptr coeffs;
+        nn_ptr coeffs;
         __mpz_struct *ptr;
        
         if (num_primes == 1)

@@ -13,12 +13,12 @@ void get_time()
 {
     ulong i, nmin, nmax, nb_iter;
     flint_rand_t state;
-    mp_limb_t p, w0, w;
+    ulong p, w0, w;
     nmod_t mod;
     nmod_sd_fft_t F;
     sd_fft_ctx_t Q;
     sd_fft_lctx_t QL;
-    mp_ptr val, val2;
+    nn_ptr val, val2;
     nmod_poly_t P;
     clock_t tt;
     double t;

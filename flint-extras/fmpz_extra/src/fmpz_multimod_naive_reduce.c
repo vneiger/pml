@@ -11,9 +11,9 @@
 /* assumes that number of powers of 2 <= num_limbs(a)           */
 /* ------------------------------------------------------------ */
 static 
-mp_limb_t _fmpz_reduce(const fmpz_t a, mp_srcptr powers_of_two, const nmod_t mod)
+ulong _fmpz_reduce(const fmpz_t a, nn_srcptr powers_of_two, const nmod_t mod)
 {
-    mp_limb_t res;
+    ulong res;
     if (!COEFF_IS_MPZ(*a))
     {
 	fmpz s_a = *a;
@@ -31,7 +31,7 @@ mp_limb_t _fmpz_reduce(const fmpz_t a, mp_srcptr powers_of_two, const nmod_t mod
     else
     {
         __mpz_struct *a_ptr;
-        mp_ptr a_coeffs;    
+        nn_ptr a_coeffs;    
         slong slen;
         a_ptr = COEFF_TO_PTR(*a);
 	a_coeffs = a_ptr->_mp_d;
@@ -51,11 +51,11 @@ mp_limb_t _fmpz_reduce(const fmpz_t a, mp_srcptr powers_of_two, const nmod_t mod
 /* assumes all moduli are less than 2^30                        */
 /* ------------------------------------------------------------ */
 static 
-void _fmpz_reduce_small_moduli(mp_ptr out, const fmpz_t a, const fmpz_multimod_naive_t mmod)
+void _fmpz_reduce_small_moduli(nn_ptr out, const fmpz_t a, const fmpz_multimod_naive_t mmod)
 {
     if (!COEFF_IS_MPZ(*a))
     {
-        mp_limb_t res;
+        ulong res;
         ulong i, num_primes;
 	fmpz s_a;
 
@@ -79,7 +79,7 @@ void _fmpz_reduce_small_moduli(mp_ptr out, const fmpz_t a, const fmpz_multimod_n
     {
         slong slen;
         ulong i, j, num_limbs, len;
-        mp_ptr slice_A, a_coeffs;
+        nn_ptr slice_A, a_coeffs;
         __mpz_struct *a_ptr;
         
         a_ptr = COEFF_TO_PTR(*a);
@@ -93,13 +93,13 @@ void _fmpz_reduce_small_moduli(mp_ptr out, const fmpz_t a, const fmpz_multimod_n
 
         len = 3 * num_limbs;
         len = ((len + 3) >> 2) << 2; // must be a multiple of 4
-        slice_A = (mp_ptr) aligned_alloc(32, len * sizeof(mp_limb_t));
+        slice_A = (nn_ptr) aligned_alloc(32, len * sizeof(ulong));
 
 
         j = 0;
         for (i = 0; i < num_limbs; i++)
         {
-            mp_limb_t limb;
+            ulong limb;
 
             limb = a_coeffs[i];
 
@@ -114,7 +114,7 @@ void _fmpz_reduce_small_moduli(mp_ptr out, const fmpz_t a, const fmpz_multimod_n
 
         for (i = 0; i < mmod->num_primes; i++)
         {
-            mp_limb_t dot, power_two;
+            ulong dot, power_two;
             power_two = 1L << 45;
             NMOD_RED(power_two, power_two, mmod->mod[i]);
             dot = _nmod_vec_dot_small_modulus(mmod->powers_of_two[i], slice_A, len, power_two,
@@ -132,7 +132,7 @@ void _fmpz_reduce_small_moduli(mp_ptr out, const fmpz_t a, const fmpz_multimod_n
 /* ------------------------------------------------------------ */
 /* computes A mod mmod[i] for all i                             */
 /* ------------------------------------------------------------ */
-void fmpz_multimod_naive_reduce(mp_ptr out, const fmpz_t A, const fmpz_multimod_naive_t mmod)
+void fmpz_multimod_naive_reduce(nn_ptr out, const fmpz_t A, const fmpz_multimod_naive_t mmod)
 {
     ulong i;
 

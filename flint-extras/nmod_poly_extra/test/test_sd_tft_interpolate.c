@@ -11,11 +11,11 @@ void check()
 {
     ulong nmin, nmax;
     flint_rand_t state;
-    mp_limb_t w0, w, p;
+    ulong w0, w, p;
     nmod_t mod;
     sd_fft_ctx_t Q;
     nmod_sd_fft_t F;
-    mp_ptr val;
+    nn_ptr val;
     nmod_poly_t P, P2;
     
     flint_randinit(state);

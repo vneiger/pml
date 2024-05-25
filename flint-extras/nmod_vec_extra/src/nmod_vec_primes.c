@@ -5,7 +5,7 @@
 /*--------------------------------------------------------------*/
 /* vector of n consecutive primes of exactly s bits             */
 /*--------------------------------------------------------------*/
-void nmod_vec_primes(mp_ptr v, slong n, mp_bitcnt_t s)
+void nmod_vec_primes(nn_ptr v, slong n, flint_bitcnt_t s)
 {
     slong i;
     v[0] = n_nextprime(UWORD(1) << (s-1), 0);

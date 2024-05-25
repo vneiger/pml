@@ -14,7 +14,7 @@ void check_fmpz_CRT_naive_combine(ulong num_primes, ulong n_bits)
     flint_rand_t state;
     fmpz_t comb, check, temp;
     fmpz_CRT_naive_t mCRT; 
-    mp_ptr primes, residues;
+    nn_ptr primes, residues;
     ulong i, j;
 
     flint_randinit(state);

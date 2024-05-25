@@ -1,3 +1,4 @@
+#include <flint/longlong.h>
 #include <flint/nmod_vec.h>
 
 #include "nmod_vec_extra.h"
@@ -9,9 +10,9 @@
 /* computes sum(v1[i]*v2[i], 0 <= i < len)                      */
 /* stores the result in 3 limbs of res                          */
 /* ------------------------------------------------------------ */
-void nmod_vec_integer_dot_product(mp_ptr res, mp_srcptr v1, mp_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2)
+void nmod_vec_integer_dot_product(nn_ptr res, nn_srcptr v1, nn_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2)
 {
-    mp_limb_t s0, s1, u0, u1, t0, t1, t2;
+    ulong s0, s1, u0, u1, t0, t1, t2;
 
     /* number of products we can do before overflow */
     const ulong log_nt = 2*FLINT_BITS - (max_bits1 + max_bits2);

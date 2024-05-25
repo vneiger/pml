@@ -12,8 +12,8 @@
 void time_nmod_vec_integer_dot_product(ulong len, ulong n)
 {
     flint_rand_t state;
-    mp_ptr res = flint_malloc(3 * sizeof(mp_limb_t));
-    mp_ptr v1, v2;
+    nn_ptr res = flint_malloc(3 * sizeof(ulong));
+    nn_ptr v1, v2;
     nmod_t mod;
     double t;
     clock_t tt;

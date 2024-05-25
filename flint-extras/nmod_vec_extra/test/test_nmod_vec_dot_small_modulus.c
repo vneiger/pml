@@ -10,8 +10,8 @@
 /*--------------------------------------------------------------*/
 void check_nmod_vec_dot_small_modulus(ulong len, ulong n, flint_rand_t state)
 {
-    mp_limb_t res1, res2;
-    mp_ptr v1, v2;
+    ulong res1, res2;
+    nn_ptr v1, v2;
     nmod_t mod;
 
     nmod_init(&mod, n);

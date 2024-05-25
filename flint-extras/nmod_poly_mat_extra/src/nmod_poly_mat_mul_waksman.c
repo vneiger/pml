@@ -4,7 +4,7 @@
 void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  const nmod_poly_mat_t B)
 {
     ulong m, n, p, np, i, l, j, j2, k;
-    mp_limb_t mod, half;
+    ulong mod, half;
     nmod_poly_t val0, val1, val2, crow;
     nmod_poly_struct *Crow, *Ccol;
 
