@@ -1,3 +1,4 @@
+#include <flint/longlong.h> // for BIT_COUNT
 #include <flint/flint.h>
 #include <flint/nmod_mat.h>
 #include <flint/nmod_vec.h>  // for _nmod_vec_init
@@ -33,7 +34,7 @@ void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
     nmod_mat_clear(BT);
 }
 
-void nmod_mat_mul_nmod_vec_newdot(mp_ptr v, const nmod_mat_t A, mp_srcptr u, ulong len)
+void nmod_mat_mul_nmod_vec_newdot(nn_ptr v, const nmod_mat_t A, nn_srcptr u, ulong len)
 {
     // number of bits of modulus
     const ulong nbits = FLINT_BIT_COUNT(A->mod.n);

@@ -22,8 +22,8 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     ulong ellA, ellB, ellC, order;
     ulong i, j, ell, m, k, n, u;
     long v;
-    mp_limb_t p, w;
-    mp_ptr val, val2;
+    ulong p, w;
+    nn_ptr val, val2;
     nmod_t mod;
     nmod_geometric_progression_t F;
     nmod_poly_t tmp_poly;
@@ -79,10 +79,10 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     
 #ifdef DIRTY_ALLOC_MATRIX
     // we alloc the memory for all matrices at once
-    mp_ptr *tmp_rows = (mp_ptr *) malloc((m + k + m) * ellC * sizeof(mp_ptr));
-    mp_ptr tmp = (mp_ptr) malloc((m*k + k*n + m*n) * ellC * sizeof(mp_limb_t));
-    mp_ptr *bak_rows;
-    mp_ptr bak;
+    nn_ptr *tmp_rows = (nn_ptr *) malloc((m + k + m) * ellC * sizeof(nn_ptr));
+    nn_ptr tmp = (nn_ptr) malloc((m*k + k*n + m*n) * ellC * sizeof(ulong));
+    nn_ptr *bak_rows;
+    nn_ptr bak;
     
     bak_rows = tmp_rows;
     j = 0;
@@ -161,8 +161,8 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
         for (j = 0; j < k; j++)
         {
             ulong deg = nmod_poly_degree(&A->rows[i][j]);
-            mp_ptr src = (A->rows[i] + j)->coeffs;
-            mp_ptr dest = tmp_poly->coeffs;
+            nn_ptr src = (A->rows[i] + j)->coeffs;
+            nn_ptr dest = tmp_poly->coeffs;
             v = dA;
             for (u = 0; u <= deg; u++, v--)
                 dest[v] = src[u];
@@ -181,7 +181,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
         for (j = 0; j < n; j++)
         {
             ulong deg = nmod_poly_degree(&B->rows[i][j]);
-            mp_ptr src = (B->rows[i] + j)->coeffs;
+            nn_ptr src = (B->rows[i] + j)->coeffs;
             for (u = 0; u <= deg; u++)
                 val2[u] = src[u];
             for (; u < ellC; u++)
@@ -203,7 +203,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     for (i = 0; i < n; i++)
         for (j = 0; j < m; j++)
         {
-            mp_ptr dest = tmp_poly->coeffs;
+            nn_ptr dest = tmp_poly->coeffs;
             for (ell = 0; ell < ellC; ell++)
                 dest[ell] = mod_C[ell]->rows[i][j];
             tmp_poly->length = ellC;

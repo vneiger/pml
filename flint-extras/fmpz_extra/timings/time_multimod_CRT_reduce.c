@@ -16,7 +16,7 @@ void check_fmpz_multimod_reduce(ulong max_bit_length)
     flint_bitcnt_t prime_length;
     fmpz_multimod_naive_t mmod; 
     fmpz_multimod_CRT_t mmod_C; 
-    mp_ptr primes, residues;
+    nn_ptr primes, residues;
     ulong num_primes;
     fmpz_comb_t C;
     fmpz_comb_temp_t Ct;

@@ -6,10 +6,10 @@
 /* initializes all quantities attached to G                   */
 /* evaluates at powers of q = r^2                             */
 /*------------------------------------------------------------*/
-void nmod_geometric_progression_init_set(nmod_geometric_progression_t G, mp_limb_t r, slong d, nmod_t mod)
+void nmod_geometric_progression_init_set(nmod_geometric_progression_t G, ulong r, slong d, nmod_t mod)
 {
-    mp_limb_t q, inv_r, inv_q, tmp, qk, inv_qk, qq, s;
-    mp_ptr diff, inv_diff, prod_diff;
+    ulong q, inv_r, inv_q, tmp, qk, inv_qk, qq, s;
+    nn_ptr diff, inv_diff, prod_diff;
     slong i;
     
     G->d = d;
@@ -111,3 +111,5 @@ void nmod_geometric_progression_init_set(nmod_geometric_progression_t G, mp_limb
     _nmod_vec_clear(diff);
 }
 
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

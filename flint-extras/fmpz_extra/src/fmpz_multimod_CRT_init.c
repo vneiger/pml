@@ -7,12 +7,12 @@
 /* ------------------------------------------------------------ */
 /*                                                              */
 /* ------------------------------------------------------------ */
-void fmpz_multimod_CRT_init(fmpz_multimod_CRT_t mmod, mp_srcptr primes, ulong num_primes)
+void fmpz_multimod_CRT_init(fmpz_multimod_CRT_t mmod, nn_srcptr primes, ulong num_primes)
 {
     double quo;
     ulong size, i, cpt;
     int res;
-    mp_ptr cofactors, one;
+    nn_ptr cofactors, one;
     fmpz * partial_products;
     fmpz_t linearized_product;
     

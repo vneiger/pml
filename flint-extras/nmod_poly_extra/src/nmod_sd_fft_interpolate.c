@@ -345,7 +345,7 @@ FLINT_FORCE_INLINE void _ifft(vec1d *wk, sd_fft_lctx_t Q, vec1d p, vec1d pinv, u
 /*------------------------------------------------------------*/
 /* fft interpolation                                          */
 /*------------------------------------------------------------*/
-void nmod_sd_fft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const ulong k)
+void nmod_sd_fft_interpolate(nmod_poly_t poly, nn_ptr x, sd_fft_lctx_t Q, const ulong k)
 {
     ulong i, N;
     vec1d p, pinv;
@@ -367,7 +367,7 @@ void nmod_sd_fft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const 
     nmod_poly_fit_length(poly, 1L << k);
     for (i = 0; i < N; i++)
     {
-        poly->coeffs[i] = (mp_limb_t) vec1d_reduce_to_0n(dx[i], p, pinv);
+        poly->coeffs[i] = (ulong) vec1d_reduce_to_0n(dx[i], p, pinv);
     }
     _nmod_poly_normalise(poly);
     flint_free(dx);
@@ -378,7 +378,7 @@ void nmod_sd_fft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const 
 /* transposed fft evaluation                                  */
 /* obtained by using the inverse root and ifft routines       */
 /*------------------------------------------------------------*/
-void nmod_sd_fft_evaluate_t(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Qt, const ulong k)
+void nmod_sd_fft_evaluate_t(nn_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Qt, const ulong k)
 {
     ulong i, N, d;
     vec1d *dx;
@@ -402,7 +402,7 @@ void nmod_sd_fft_evaluate_t(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Qt, 
     _ifft(dx, Qt, p, pinv, k);
     for (i = 0; i < N; i++)
     {
-        x[i] = (mp_limb_t) vec1d_reduce_to_0n(dx[i], p, pinv);
+        x[i] = (ulong) vec1d_reduce_to_0n(dx[i], p, pinv);
     }
     flint_free(dx);
 }
@@ -410,7 +410,7 @@ void nmod_sd_fft_evaluate_t(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Qt, 
 /*------------------------------------------------------------*/
 /* tft interpolation                                          */
 /*------------------------------------------------------------*/
-void nmod_sd_tft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N)
+void nmod_sd_tft_interpolate(nmod_poly_t poly, nn_ptr x, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N)
 {
     ulong i, nn, k, aa, Nup;
     vec1d  *wk, *wk2, *powers_w;
@@ -517,7 +517,7 @@ void nmod_sd_tft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, nmod_s
 /*-----------------------------------------------------------*/
 /* transpose tft in length N                                 */
 /*-----------------------------------------------------------*/
-void nmod_sd_tft_evaluate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Qt, nmod_sd_fft_t F, ulong N)
+void nmod_sd_tft_evaluate_t(nn_ptr x, nn_srcptr A, sd_fft_lctx_t Qt, nmod_sd_fft_t F, ulong N)
 {
     ulong Nup, n, a, b, b2, t, i, j, k, ell, lambda;
     vec1d p, pinv;
@@ -825,4 +825,5 @@ void nmod_sd_tft_evaluate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Qt, nmod_sd_fft
     flint_free(wk);
 }
 
-
+/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

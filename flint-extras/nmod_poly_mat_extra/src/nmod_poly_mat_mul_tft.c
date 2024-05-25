@@ -21,8 +21,8 @@ void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmo
     nmod_mat_t *mod_A, *mod_B, *mod_C;
     ulong ellA, ellB, ellC, order;
     ulong i, j, ell, m, k, n;
-    mp_limb_t p, w;
-    mp_ptr val;
+    ulong p, w;
+    nn_ptr val;
     nmod_t mod;
     sd_fft_ctx_t Q;
     sd_fft_lctx_t QL;
@@ -101,10 +101,10 @@ void nmod_poly_mat_mul_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmo
 
 #ifdef DIRTY_ALLOC_MATRIX
     // we alloc the memory for all matrices at once
-    mp_ptr *tmp_rows = (mp_ptr *) malloc((m + k + m) * ellC * sizeof(mp_ptr));
-    mp_ptr tmp = (mp_ptr) malloc((m*k + k*n + m*n) * ellC * sizeof(mp_limb_t));
-    mp_ptr *bak_rows;
-    mp_ptr bak;
+    nn_ptr *tmp_rows = (nn_ptr *) malloc((m + k + m) * ellC * sizeof(nn_ptr));
+    nn_ptr tmp = (nn_ptr) malloc((m*k + k*n + m*n) * ellC * sizeof(ulong));
+    nn_ptr *bak_rows;
+    nn_ptr bak;
     
     bak_rows = tmp_rows;
     j = 0;

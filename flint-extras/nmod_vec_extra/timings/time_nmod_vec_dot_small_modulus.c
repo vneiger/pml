@@ -15,14 +15,14 @@ void time_nmod_vec_dot_small_modulus(ulong len, ulong nbits, ulong n, flint_rand
     nmod_t mod;
     nmod_init(&mod, n);
 
-    mp_ptr v1 = _nmod_vec_init(len);
-    mp_ptr v2 = _nmod_vec_init(len);
+    nn_ptr v1 = _nmod_vec_init(len);
+    nn_ptr v2 = _nmod_vec_init(len);
 
     _nmod_vec_rand(v1, state, len, mod);
     _nmod_vec_rand(v2, state, len, mod);
 
     // storing results
-    mp_limb_t res1, res2, res3, res4;
+    ulong res1, res2, res3, res4;
 
     double t;
     clock_t tt;

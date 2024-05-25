@@ -7,11 +7,11 @@
 /* ------------------------------------------------------------ */
 /* compute A s.t. A mod primes[j] = m[j] for all j              */
 /* ------------------------------------------------------------ */
-void fmpz_multimod_CRT_CRT(fmpz_t A, mp_srcptr m, const fmpz_multimod_CRT_t mmod)
+void fmpz_multimod_CRT_CRT(fmpz_t A, nn_srcptr m, const fmpz_multimod_CRT_t mmod)
 {
     ulong i, cpt;
     fmpz * tmp;
-    mp_ptr precomp_m;
+    nn_ptr precomp_m;
 
     precomp_m = _nmod_vec_init(mmod->num_primes);
     tmp = (fmpz *) malloc(mmod->num_leaves * sizeof(fmpz));
@@ -20,7 +20,7 @@ void fmpz_multimod_CRT_CRT(fmpz_t A, mp_srcptr m, const fmpz_multimod_CRT_t mmod
     for (i = 0; i < mmod->num_leaves; i++)
     {
         ulong j, nb;
-        mp_ptr inv_cof;
+        nn_ptr inv_cof;
 
         nb = mmod->leaves_CRT[i]->num_primes;
         inv_cof = mmod->inverse_cofactors;

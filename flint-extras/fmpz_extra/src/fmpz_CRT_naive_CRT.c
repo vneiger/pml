@@ -8,10 +8,10 @@
 /* compute A s.t. A mod primes[j] = m[j] for all j              */
 /* ------------------------------------------------------------ */
 void 
-fmpz_CRT_naive_CRT(fmpz_t A, mp_srcptr m, const fmpz_CRT_naive_t mCRT)
+fmpz_CRT_naive_CRT(fmpz_t A, nn_srcptr m, const fmpz_CRT_naive_t mCRT)
 {
     fmpz_t comb;
-    mp_ptr m_premul;
+    nn_ptr m_premul;
     ulong i;
 
     fmpz_init(comb);

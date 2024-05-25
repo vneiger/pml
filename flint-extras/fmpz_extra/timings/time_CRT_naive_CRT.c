@@ -16,7 +16,7 @@ void check_fmpz_CRT_naive_CRT(ulong num_primes)
     fmpz_CRT_naive_t mCRT; 
     fmpz_comb_t C;
     fmpz_comb_temp_t Ct;
-    mp_ptr primes, residues;
+    nn_ptr primes, residues;
     ulong i;
     double t, tp;
     clock_t tt;

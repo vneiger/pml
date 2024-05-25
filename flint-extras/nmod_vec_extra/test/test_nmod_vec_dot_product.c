@@ -10,8 +10,8 @@
 /*--------------------------------------------------------------*/
 void check_nmod_vec_dot_product(ulong len, ulong bits1, ulong bits2, ulong n, flint_rand_t state)
 {
-    mp_limb_t res1, res2;
-    mp_ptr v1, v2, v1r, v2r;
+    ulong res1, res2;
+    nn_ptr v1, v2, v1r, v2r;
     nmod_t mod, mod1, mod2;
     ulong i;
 
