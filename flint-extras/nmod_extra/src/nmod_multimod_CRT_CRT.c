@@ -18,8 +18,8 @@
 /* out[i] = residues0[i] mod p, i < nb                          */
 /* used for p >= 2^50                                           */
 /* ------------------------------------------------------------ */
-FLINT_FORCE_INLINE void _crt_1(mp_ptr out, 
-                               mp_ptr residues0,
+FLINT_FORCE_INLINE void _crt_1(nn_ptr out, 
+                               nn_ptr residues0,
                                ulong nb,
                                nmod_t mod)
 {
@@ -33,11 +33,11 @@ FLINT_FORCE_INLINE void _crt_1(mp_ptr out,
 /* out[i] = CRT(residues0[i],residues1[i]) mod p, i < nb        */
 /* assumes p >= 2^50                                            */
 /* ------------------------------------------------------------ */
-FLINT_FORCE_INLINE void _crt_2(mp_ptr out,
-                               mp_ptr residues0, mp_ptr residues1,
+FLINT_FORCE_INLINE void _crt_2(nn_ptr out,
+                               nn_ptr residues0, nn_ptr residues1,
                                ulong nb,
-                               mp_limb_t inv0, mp_limb_t inv1, // inv0 = 1/p1 mod p0, inv1 = 1/p0 mod p1
-                               mp_ptr data,
+                               ulong inv0, ulong inv1, // inv0 = 1/p1 mod p0, inv1 = 1/p0 mod p1
+                               nn_ptr data,
                                nmod_t mod, nmod_t mod0, nmod_t mod1)
 {
     ulong i;
@@ -56,11 +56,11 @@ FLINT_FORCE_INLINE void _crt_2(mp_ptr out,
 /* out[i] = CRT(residues[j][i], j < 3) mod p, i < nb            */
 /* assumes p >= 2^50                                            */
 /* ------------------------------------------------------------ */
-FLINT_FORCE_INLINE void _crt_3(mp_ptr out,
-                               mp_ptr residues0, mp_ptr residues1, mp_ptr residues2,
+FLINT_FORCE_INLINE void _crt_3(nn_ptr out,
+                               nn_ptr residues0, nn_ptr residues1, nn_ptr residues2,
                                ulong nb,
-                               mp_limb_t inv0, mp_limb_t inv1, mp_limb_t inv2,
-                               mp_ptr data,
+                               ulong inv0, ulong inv1, ulong inv2,
+                               nn_ptr data,
                                nmod_t mod, nmod_t mod0, nmod_t mod1, nmod_t mod2)
 {
     ulong i;
@@ -80,11 +80,11 @@ FLINT_FORCE_INLINE void _crt_3(mp_ptr out,
 /* out[i] = CRT(residues[j][i], j < 4) mod p, i < nb            */
 /* assumes p >= 2^50                                            */
 /* ------------------------------------------------------------ */
-FLINT_FORCE_INLINE void _crt_4(mp_ptr out,
-                               mp_ptr residues0, mp_ptr residues1, mp_ptr residues2, mp_ptr residues3,
+FLINT_FORCE_INLINE void _crt_4(nn_ptr out,
+                               nn_ptr residues0, nn_ptr residues1, nn_ptr residues2, nn_ptr residues3,
                                ulong nb,
-                               mp_limb_t inv0, mp_limb_t inv1, mp_limb_t inv2, mp_limb_t inv3,
-                               mp_ptr data,
+                               ulong inv0, ulong inv1, ulong inv2, ulong inv3,
+                               nn_ptr data,
                                nmod_t mod, nmod_t mod0, nmod_t mod1, nmod_t mod2, nmod_t mod3)
 {
     ulong i;
@@ -106,7 +106,7 @@ FLINT_FORCE_INLINE void _crt_4(mp_ptr out,
 /* k = 1,2,3,4                                                  */
 /* used for p >= 2^50                                           */
 /* ------------------------------------------------------------ */
-static void nmod_large_modulus_CRT(mp_ptr out, mp_ptr *residues, ulong nb, nmod_multimod_CRT_t C)
+static void nmod_large_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod_CRT_t C)
 {
     switch(C->num_primes)
     {
@@ -143,10 +143,10 @@ static void nmod_large_modulus_CRT(mp_ptr out, mp_ptr *residues, ulong nb, nmod_
 /* out[i] = residues0[i] mod p, i < nb                          */
 /* used for p < 2^50                                            */
 /* ------------------------------------------------------------ */
-FLINT_FORCE_INLINE void _crt_1_small(mp_ptr out,
-                                     mp_ptr residues0, 
+FLINT_FORCE_INLINE void _crt_1_small(nn_ptr out,
+                                     nn_ptr residues0, 
                                      ulong nb,
-                                     mp_limb_t p, double pinv)
+                                     ulong p, double pinv)
 {
     ulong i;
 
@@ -157,8 +157,8 @@ FLINT_FORCE_INLINE void _crt_1_small(mp_ptr out,
         p4 = vec4d_set_d(p);
         pinv4 = vec4d_set_d(pinv);
         for (; i + 3 < nb; i += 4)
-            vec4d_store_unaligned_mp_ptr(out + i,
-                                         vec4d_reduce_to_0n(vec4d_load_unaligned_mp_ptr(residues0 + i), p4, pinv4));
+            vec4d_store_unaligned_nn_ptr(out + i,
+                                         vec4d_reduce_to_0n(vec4d_load_unaligned_nn_ptr(residues0 + i), p4, pinv4));
     }
     for (; i < nb; i++)
         out[i] = (vec1n) vec1d_reduce_to_0n(residues0[i], p, pinv);
@@ -169,11 +169,11 @@ FLINT_FORCE_INLINE void _crt_1_small(mp_ptr out,
 /* out[i] = CRT(residues0[i],residues1[i]) mod p, i < nb        */
 /* assumes p < 2^50                                             */
 /* ------------------------------------------------------------ */
-FLINT_FORCE_INLINE void _crt_2_small(mp_ptr out,
-                                     mp_ptr residues0, mp_ptr residues1,
+FLINT_FORCE_INLINE void _crt_2_small(nn_ptr out,
+                                     nn_ptr residues0, nn_ptr residues1,
                                      ulong nb,
-                                     mp_limb_t p, double pinv, 
-                                     mp_limb_t p1, double p1inv,
+                                     ulong p, double pinv, 
+                                     ulong p1, double p1inv,
                                      double invp0_p1, // invp0_p1 = 1/p0 mod p1
                                      double p0_redp) // p0_redp = p0 mod p
 {
@@ -197,14 +197,14 @@ FLINT_FORCE_INLINE void _crt_2_small(mp_ptr out,
         {
             vec4d alpha04, alpha4, alphap4, alphapp4, m04, a4;
 
-            alpha04 = vec4d_load_unaligned_mp_ptr(residues0 + i);
-            alpha4 = vec4d_sub(vec4d_load_unaligned_mp_ptr(residues1 + i), alpha04);
+            alpha04 = vec4d_load_unaligned_nn_ptr(residues0 + i);
+            alpha4 = vec4d_sub(vec4d_load_unaligned_nn_ptr(residues1 + i), alpha04);
             alphap4 = vec4d_reduce_pm1no_to_0n(vec4d_mulmod(alpha4, invp0_p14, p14, p1inv4), p14);   // alphap4 in [0..p1)
             alphapp4 = vec4d_reduce_to_0n(alphap4, p4, pinv4); // alphapp4 in [0..p)
             m04 = vec4d_reduce_to_0n(alpha04, p4, pinv4); // m04 in [0..p)
             a4 = vec4d_reduce_pm1no_to_0n(vec4d_mulmod(alphapp4, p0_redp4, p4, pinv4), p4); // a in [0..p)
 
-            vec4d_store_unaligned_mp_ptr(out + i, vec4d_addmod(m04, a4, p4));
+            vec4d_store_unaligned_nn_ptr(out + i, vec4d_addmod(m04, a4, p4));
         }
     }
         
@@ -225,12 +225,12 @@ FLINT_FORCE_INLINE void _crt_2_small(mp_ptr out,
 /* out[i] = CRT(residues[j][i], j < 3) mod p, i < nb            */
 /* assumes p < 2^50                                             */
 /* ------------------------------------------------------------ */
-FLINT_FORCE_INLINE void _crt_3_small(mp_ptr out,
-                                     mp_ptr residues0, mp_ptr residues1, mp_ptr residues2,
+FLINT_FORCE_INLINE void _crt_3_small(nn_ptr out,
+                                     nn_ptr residues0, nn_ptr residues1, nn_ptr residues2,
                                      ulong nb,
-                                     mp_limb_t p, double pinv, // pinv for reduction
-                                     mp_limb_t p1, double p1inv, // p1inv for reduction
-                                     mp_limb_t p2, double p2inv, // p2inv for reduction
+                                     ulong p, double pinv, // pinv for reduction
+                                     ulong p1, double p1inv, // p1inv for reduction
+                                     ulong p2, double p2inv, // p2inv for reduction
                                      double p0_redpi, // p0 reduced modulo all others pi = p0 as a double
                                      double invp0_p1, // invp0_p1 = 1/p0 mod p1
                                      double p0_redp,  // p0 reduced modulo p
@@ -239,7 +239,7 @@ FLINT_FORCE_INLINE void _crt_3_small(mp_ptr out,
     ulong i;
     i = 0;
 
-    // check: do we need p1 as mp_limb_t?
+    // check: do we need p1 as ulong?
     if (nb >= 4)
     {
         vec4d invp0_p14, p14, p1inv4, p24, p2inv4, p4, pinv4, p0_redp4, p0_redpi4, invp0p1_p24, p0p1_redp4;
@@ -261,14 +261,14 @@ FLINT_FORCE_INLINE void _crt_3_small(mp_ptr out,
 
                 
             /* find coefficients alpha0, alpha1, alpha2 s.t. c = alpha0 + p0 alpha1 + p0 p1 alpha2 */
-            alpha04 = vec4d_load_unaligned_mp_ptr(residues0 + i); // [0..p0), so [0..p1)
-            alpha14 = vec4d_sub(vec4d_load_unaligned_mp_ptr(residues1 + i), alpha04); // (-p1..p1)
+            alpha04 = vec4d_load_unaligned_nn_ptr(residues0 + i); // [0..p0), so [0..p1)
+            alpha14 = vec4d_sub(vec4d_load_unaligned_nn_ptr(residues1 + i), alpha04); // (-p1..p1)
             
             alpha14 = vec4d_reduce_pm1no_to_0n(vec4d_mulmod(alpha14, invp0_p14, p14, p1inv4), p14); // [0..p1) so [0..p2)
             alpha1_p0_red24 = vec4d_reduce_pm1no_to_0n(vec4d_mulmod(alpha14, p0_redpi4, p24, p2inv4), p24); // [0..p2)
             /* residues0[i] in [0..p0) so in [0..p2) */
             alpha1_p0_red24 = vec4d_add(alpha04, alpha1_p0_red24); // [0..2p2)
-            alpha24 = vec4d_sub(vec4d_load_unaligned_mp_ptr(residues2 + i), alpha1_p0_red24); // (-2p2..p2)
+            alpha24 = vec4d_sub(vec4d_load_unaligned_nn_ptr(residues2 + i), alpha1_p0_red24); // (-2p2..p2)
             /* sufficient: alpha2 in (-2p2..2p2) */
             alpha24 = vec4d_reduce_pm1no_to_0n(vec4d_mulmod(alpha24, invp0p1_p24, p24, p2inv4), p24); // [0..p2)
             
@@ -277,7 +277,7 @@ FLINT_FORCE_INLINE void _crt_3_small(mp_ptr out,
             alpha14 = vec4d_reduce_to_pm1no(alpha14, p4, pinv4); // (-p..p)
             alpha24 = vec4d_reduce_to_pm1no(alpha24, p4, pinv4); // (-p..p)
 
-            vec4d_store_unaligned_mp_ptr(out + i,
+            vec4d_store_unaligned_nn_ptr(out + i,
                                          vec4d_addmod(alpha04,
                                                       vec4d_addmod(vec4d_reduce_pm1no_to_0n(
                                                                        vec4d_mulmod(alpha14, p0_redp4, p4, pinv4), p4),
@@ -324,13 +324,13 @@ FLINT_FORCE_INLINE void _crt_3_small(mp_ptr out,
 /* k = 1,2,3,4                                                  */
 /* assumes p < 2^50                                             */
 /* ------------------------------------------------------------ */
-FLINT_FORCE_INLINE void _crt_4_small(mp_ptr out,
-                                     mp_ptr residues0, mp_ptr residues1, mp_ptr residues2, mp_ptr residues3,
+FLINT_FORCE_INLINE void _crt_4_small(nn_ptr out,
+                                     nn_ptr residues0, nn_ptr residues1, nn_ptr residues2, nn_ptr residues3,
                                      ulong nb,
-                                     mp_limb_t p, double pinv,
-                                     mp_limb_t p1, double p1inv,
-                                     mp_limb_t p2, double p2inv,
-                                     mp_limb_t p3, double p3inv,
+                                     ulong p, double pinv,
+                                     ulong p1, double p1inv,
+                                     ulong p2, double p2inv,
+                                     ulong p3, double p3inv,
                                      double p0_redpi,
                                      double invp0_p1, 
                                      double p0_redp, double p0p1_red, double p0p1p2_red,
@@ -340,7 +340,7 @@ FLINT_FORCE_INLINE void _crt_4_small(mp_ptr out,
     ulong i;
     i = 0;
     
-    /* check: do we need p1 as mp_limb_t? */
+    /* check: do we need p1 as ulong? */
     if (nb >= 4)
     {
         vec4d invp0_p14, p14, p1inv4, p24, p2inv4, p4, p34, p3inv4, pinv4, p0_redp4, p0_redpi4, invp0p1_p24, p0p1_redp4, p0p1_red34, invp0p1p2_p34, p0p1p2_red4;
@@ -364,13 +364,13 @@ FLINT_FORCE_INLINE void _crt_4_small(mp_ptr out,
         for (; i + 3 < nb; i += 4)
         {
             vec4d alpha04, alpha14, alpha1_p0_red24, alpha24, alpha34, alpha1_p0_red34, alpha2_p0p1_red34;
-            alpha04 = vec4d_load_unaligned_mp_ptr(residues0 + i); // [0..p0), so [0..p1)
-            alpha14 = vec4d_sub(vec4d_load_unaligned_mp_ptr(residues1 + i), alpha04);   // (-p1..p1)
+            alpha04 = vec4d_load_unaligned_nn_ptr(residues0 + i); // [0..p0), so [0..p1)
+            alpha14 = vec4d_sub(vec4d_load_unaligned_nn_ptr(residues1 + i), alpha04);   // (-p1..p1)
             
             alpha14 = vec4d_reduce_pm1no_to_0n(vec4d_mulmod(alpha14, invp0_p14, p14, p1inv4), p14);  // [0..p1) so [0..p2)
             alpha1_p0_red24 = vec4d_reduce_pm1no_to_0n(vec4d_mulmod(alpha14, p0_redpi4, p24, p2inv4), p24); // [0..p2)
             alpha1_p0_red24 = vec4d_add(alpha04, alpha1_p0_red24); // [0..2p2)
-            alpha24 = vec4d_sub(vec4d_load_unaligned_mp_ptr(residues2 + i), alpha1_p0_red24); // (-2p2..p2)
+            alpha24 = vec4d_sub(vec4d_load_unaligned_nn_ptr(residues2 + i), alpha1_p0_red24); // (-2p2..p2)
             alpha24 = vec4d_reduce_pm1no_to_0n(vec4d_mulmod(alpha24, invp0p1_p24, p24, p2inv4), p24); // [0..p2)
             
             /* residues0[i] in [0..p0) so in [0..p3) */
@@ -378,7 +378,7 @@ FLINT_FORCE_INLINE void _crt_4_small(mp_ptr out,
             alpha2_p0p1_red34 = vec4d_reduce_pm1no_to_0n(vec4d_mulmod(alpha24, p0p1_red34, p34, p3inv4), p34); // [0..p3)
             alpha34 = vec4d_add(vec4d_addmod(alpha04, alpha1_p0_red34, p34), alpha2_p0p1_red34); // inner sum [0..p3], result [0..2p3)
 
-            alpha34 = vec4d_sub(vec4d_load_unaligned_mp_ptr(residues3 + i), alpha34); // (-2p3..p3)
+            alpha34 = vec4d_sub(vec4d_load_unaligned_nn_ptr(residues3 + i), alpha34); // (-2p3..p3)
             alpha34 = vec4d_reduce_pm1no_to_0n(vec4d_mulmod(alpha34, invp0p1p2_p34, p34, p3inv4), p34); // [0..p3)
             
             /* reduce everything mod p */
@@ -387,7 +387,7 @@ FLINT_FORCE_INLINE void _crt_4_small(mp_ptr out,
             alpha24 = vec4d_reduce_to_pm1no(alpha24, p4, pinv4); // (-p..p)
             alpha34 = vec4d_reduce_to_pm1no(alpha34, p4, pinv4); // (-p..p)
 
-            vec4d_store_unaligned_mp_ptr(out + i,
+            vec4d_store_unaligned_nn_ptr(out + i,
                                          vec4d_addmod(alpha04,
                                                       vec4d_addmod(
                                                           vec4d_addmod(
@@ -457,7 +457,7 @@ FLINT_FORCE_INLINE void _crt_4_small(mp_ptr out,
 /* k = 1,2,3,4                                                  */
 /* assumes p < 2^50                                             */
 /* ------------------------------------------------------------ */
-static void nmod_small_modulus_CRT(mp_ptr out, mp_ptr *residues, ulong nb, nmod_multimod_CRT_t C)
+static void nmod_small_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod_CRT_t C)
 {
     switch(C->num_primes)
     {
@@ -494,7 +494,7 @@ static void nmod_small_modulus_CRT(mp_ptr out, mp_ptr *residues, ulong nb, nmod_
 /* out[i] = CRT(residues[j][i], j < k) mod p, i < nb            */
 /* k = 1,2,3,4                                                  */
 /* ------------------------------------------------------------ */
-void nmod_multimod_CRT_CRT(mp_ptr out, mp_ptr *residues, ulong nb, nmod_multimod_CRT_t C)
+void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod_CRT_t C)
 {
     if (C->p < (1L << 50)) // small modulus: use SIMD floating-point representation 
         nmod_small_modulus_CRT(out, residues, nb, C);

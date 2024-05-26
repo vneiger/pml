@@ -57,7 +57,7 @@ void mbasis1(nmod_poly_mat_t appbas,
     *P, *P_inv, *comp, *comp_inv, *perm;
     nmod_mat_t K, mat_cp;
     nmod_poly_t One, constant;
-    mp_limb_t prime = mat->mod.n;
+    ulong prime = mat->mod.n;
 
     perm = _perm_init(rdim);
     sort_and_create_perm(perm, shifts, rdim);

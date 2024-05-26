@@ -25,7 +25,7 @@ void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat
     const vec2d p2 = vec2d_set_d2(p, p);
     const vec2d pinv2 = vec2d_set_d2(pinv, pinv);
 
-    mp_limb_t power_two;
+    ulong power_two;
     NMOD_RED(power_two, UWORD(1) << 45, A->mod);
 
     // transpose of B
@@ -34,7 +34,7 @@ void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat
     nmod_mat_transpose(BT, B);
 
     // let's go
-    mp_limb_t res[2];
+    ulong res[2];
     slong i = 0;
     for (; i+1 < A->r; i += 2)
         for (slong j = 0; j < BT->r; j++)
@@ -51,7 +51,7 @@ void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat
     nmod_mat_clear(BT);
 }
 
-void nmod_mat_mul_nmod_vec_small_modulus(mp_ptr v, const nmod_mat_t A, mp_srcptr u, ulong len)
+void nmod_mat_mul_nmod_vec_small_modulus(nn_ptr v, const nmod_mat_t A, nn_srcptr u, ulong len)
 {
     // precomputed values for computations modulo mod
     const double p = A->mod.n;
@@ -60,19 +60,19 @@ void nmod_mat_mul_nmod_vec_small_modulus(mp_ptr v, const nmod_mat_t A, mp_srcptr
     const vec2d p2 = vec2d_set_d2(p, p);
     const vec2d pinv2 = vec2d_set_d2(pinv, pinv);
 
-    mp_limb_t power_two;
+    ulong power_two;
     NMOD_RED(power_two, UWORD(1) << 45, A->mod);
 
     // let's go
-    mp_limb_t res[2];
+    ulong res[2];
     slong i = 0;
     for (; i+1 < A->r; i += 2)
     {
-        _nmod_vec_dot2_small_modulus(res, A->rows[i], A->rows[i+1], (mp_ptr)u, len, power_two, p2, pinv2);
+        _nmod_vec_dot2_small_modulus(res, A->rows[i], A->rows[i+1], (nn_ptr)u, len, power_two, p2, pinv2);
         v[i] = res[0];
         v[i+1] = res[1];
     }
 
     for (; i < A->r; i++)
-        v[i] = _nmod_vec_dot_small_modulus(A->rows[i], (mp_ptr)u, len, power_two, p, pinv);
+        v[i] = _nmod_vec_dot_small_modulus(A->rows[i], (nn_ptr)u, len, power_two, p, pinv);
 }

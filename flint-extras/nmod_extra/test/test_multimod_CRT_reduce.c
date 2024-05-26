@@ -14,10 +14,10 @@ void check_nmod_multimod_CRT_reduce(ulong N, ulong num_primes, ulong n_bits)
 {
     flint_rand_t state;
     nmod_multimod_CRT_t CRT; 
-    mp_ptr *vec_residues;
-    mp_ptr input;
+    nn_ptr *vec_residues;
+    nn_ptr input;
     ulong i, j;
-    mp_limb_t n;
+    ulong n;
     nmod_t mod;
     
     flint_randinit(state);
@@ -29,7 +29,7 @@ void check_nmod_multimod_CRT_reduce(ulong N, ulong num_primes, ulong n_bits)
     
     nmod_multimod_CRT_init(CRT, n, num_primes);
 
-    vec_residues = (mp_ptr *) malloc(num_primes * sizeof(mp_ptr *));
+    vec_residues = (nn_ptr *) malloc(num_primes * sizeof(nn_ptr *));
     for (i = 0; i < num_primes; i++)
         vec_residues[i] = _nmod_vec_init(N);
 

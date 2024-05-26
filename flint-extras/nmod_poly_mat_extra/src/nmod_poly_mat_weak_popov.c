@@ -34,7 +34,7 @@ void _atomic_solve_pivot_collision_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
     // compute exp = deg(mat[pi1,j]) - deg(mat[pi2,j])
     const slong exp = MAT(pi1, j)->length - MAT(pi2, j)->length;
     // compute cst = - leading_coeff(mat[pi1,j]) / leading_coeff(mat[pi2,j])
-    mp_limb_t cst = n_invmod(MAT(pi2, j)->coeffs[MAT(pi2, j)->length -1], mat->modulus);
+    ulong cst = n_invmod(MAT(pi2, j)->coeffs[MAT(pi2, j)->length -1], mat->modulus);
     cst = nmod_mul(MAT(pi1, j)->coeffs[MAT(pi1, j)->length -1], cst, MAT(pi1, j)->mod);
     cst = nmod_neg(cst, MAT(pi1, j)->mod);
     // update other entries in row pi1
@@ -123,13 +123,13 @@ void _reduce_against_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
 //          <= mat->c * rdeg(mat[i,:])
 //    . for other: sum_{jj = 0 ... other->c-1} deg(other[i,jj])
 //          <= other->c * rdeg(other[i,:])
-mp_limb_t _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j)
+ulong _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j)
 {
     if (nmod_poly_is_monic(MAT(i, j)))
         return 1UL;
     else
     {
-        mp_limb_t inv = n_invmod(MAT(i, j)->coeffs[MAT(i, j)->length - 1], MAT(i, j)->mod.n);
+        ulong inv = n_invmod(MAT(i, j)->coeffs[MAT(i, j)->length - 1], MAT(i, j)->mod.n);
         for (slong jj = 0; jj < mat->c; jj++)
             _nmod_vec_scalar_mul_nmod(MAT(i, jj)->coeffs, MAT(i, jj)->coeffs, MAT(i, jj)->length, inv, MAT(i, jj)->mod);
         if (other)
@@ -200,7 +200,8 @@ slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
     // -> pivot_row[j] is either -1 (not among the pivots discovered so far)
     // or is the index (in submatrix) of the row with pivot j
     slong * pivot_row = flint_malloc(cdim * sizeof(slong));
-    flint_mpn_store(pivot_row, cdim, -1); // fill with -1
+    for (slong i = 0; i < cdim; i++)
+        pivot_row[i] = -1L;
 
     slong pivdeg; // will be used to store pivot degrees
 

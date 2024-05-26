@@ -6,14 +6,14 @@
 /* ------------------------------------------------------------ */
 /* prepares the vectors of coefficients and inverses            */
 /* ------------------------------------------------------------ */
-void fmpz_CRT_naive_init(fmpz_CRT_naive_t mCRT, mp_srcptr primes, ulong num_primes)
+void fmpz_CRT_naive_init(fmpz_CRT_naive_t mCRT, nn_srcptr primes, ulong num_primes)
 {
     unsigned long i, k;
     int j;
 
     mCRT->num_primes = num_primes;
-    mCRT->primes = (mp_ptr) flint_malloc(num_primes * sizeof(mp_limb_t));
-    mCRT->inverses = (mp_ptr) flint_malloc(num_primes * sizeof(mp_limb_t));
+    mCRT->primes = (nn_ptr) flint_malloc(num_primes * sizeof(ulong));
+    mCRT->inverses = (nn_ptr) flint_malloc(num_primes * sizeof(ulong));
     mCRT->mod = (nmod_t *) flint_malloc(num_primes * sizeof(nmod_t));
     mCRT->prime_bit_length = _nmod_vec_max_bits(primes, num_primes); /* finds the bit-length of the primes */
     fmpz_init(mCRT->prod);
@@ -26,10 +26,10 @@ void fmpz_CRT_naive_init(fmpz_CRT_naive_t mCRT, mp_srcptr primes, ulong num_prim
     }
 
     mCRT->num_limbs = (fmpz_bits(mCRT->prod) + FLINT_BITS - 1) / FLINT_BITS;   /* number of limbs in the product */
-    mCRT->coefficients = (mp_ptr *) flint_malloc(mCRT->num_limbs * sizeof(mp_ptr));
+    mCRT->coefficients = (nn_ptr *) flint_malloc(mCRT->num_limbs * sizeof(nn_ptr));
     for (k = 0; k < mCRT->num_limbs; k++)
     {
-	mCRT->coefficients[k] = (mp_ptr) flint_malloc(num_primes * sizeof(mp_limb_t));
+	mCRT->coefficients[k] = (nn_ptr) flint_malloc(num_primes * sizeof(ulong));
     }
 
     for (i = 0; i < num_primes; i++)
@@ -52,7 +52,7 @@ void fmpz_CRT_naive_init(fmpz_CRT_naive_t mCRT, mp_srcptr primes, ulong num_prim
 	else
 	{
 	    __mpz_struct *ptr = COEFF_TO_PTR(*cofactor);
-	    mp_ptr coeffs = ptr->_mp_d;
+	    nn_ptr coeffs = ptr->_mp_d;
 	    for (j = 0; j < ptr->_mp_size; j++)
 	    {
 		mCRT->coefficients[j][i] = coeffs[j];

@@ -42,7 +42,7 @@ void _atomic_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_po
     // compute exp = deg(mat[pi1,j]) - deg(mat[pi2,j])
     const slong exp = MAT(pi1, j)->length - MAT(pi2, j)->length;
     // compute cst = - leading_coeff(mat[pi1,j]) / leading_coeff(mat[pi2,j])
-    mp_limb_t cst = n_invmod(MAT(pi2, j)->coeffs[MAT(pi2, j)->length -1], mat->modulus);
+    ulong cst = n_invmod(MAT(pi2, j)->coeffs[MAT(pi2, j)->length -1], mat->modulus);
     cst = nmod_mul(MAT(pi1, j)->coeffs[MAT(pi1, j)->length -1], cst, MAT(pi1, j)->mod);
     cst = nmod_neg(cst, MAT(pi1, j)->mod);
     // update pivot pi1,j
@@ -228,13 +228,13 @@ void _reduce_against_pivot_uref(nmod_poly_mat_t mat, nmod_poly_mat_t other,
 //          <= (mat->c - j) * rdeg(mat[i,:])
 //    . for other: sum_{jj = 0 ... other->c-1} deg(other[i,jj])
 //          <= other->c * rdeg(other[i,:])
-mp_limb_t _normalize_pivot_uref(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j)
+ulong _normalize_pivot_uref(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j)
 {
     if (nmod_poly_is_monic(MAT(i, j)))
         return 1UL;
     else
     {
-        mp_limb_t inv = n_invmod(MAT(i, j)->coeffs[MAT(i, j)->length - 1], MAT(i, j)->mod.n);
+        ulong inv = n_invmod(MAT(i, j)->coeffs[MAT(i, j)->length - 1], MAT(i, j)->mod.n);
         for (slong jj = j; jj < mat->c; jj++)
             _nmod_vec_scalar_mul_nmod(MAT(i, jj)->coeffs, MAT(i, jj)->coeffs, MAT(i, jj)->length, inv, MAT(i, jj)->mod);
         if (other)
@@ -597,7 +597,8 @@ slong nmod_poly_mat_uref_lex_xgcd(nmod_poly_mat_t mat, nmod_poly_mat_t tsf, slon
     // -> pivot_row[j] is either -1 (not among the pivots discovered so far)
     // or is the index of the row with pivot j
     slong * pivot_row = flint_malloc(mat->c * sizeof(slong));
-    flint_mpn_store(pivot_row, mat->c, -1); // fill with -1
+    for (slong i = 0; i < mat->c; i++)
+        pivot_row[i] = -1L;
 
     nmod_poly_t g; // gcd
     nmod_poly_t u; // gcd cofactor1
@@ -733,7 +734,8 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat, nmod_po
     // -> pivot_row[j] is either -1 (not among the pivots discovered so far)
     // or is the index of the row with pivot j
     slong * pivot_row = flint_malloc(mat->c * sizeof(slong));
-    flint_mpn_store(pivot_row, mat->c, -1); // fill with -1
+    for (slong i = 0; i < mat->c; i++)
+        pivot_row[i] = -1L;
 
     // record row permutation, to fill the mrp
     // the row k of current mat is the row perm[k] of the input mat

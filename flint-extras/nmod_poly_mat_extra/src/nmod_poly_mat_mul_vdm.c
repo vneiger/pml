@@ -13,7 +13,7 @@ static
 void vandermonde_init1(nmod_mat_t vdm1, nmod_mat_t vdm2, nmod_mat_t inv_vdm, long d1, long d2, nmod_t mod)
 {
     ulong i, j, s1, s2, nb_points;
-    mp_limb_t p;
+    ulong p;
     nmod_mat_t vdm;
     
     // sizes = degree + 1
@@ -42,7 +42,7 @@ void vandermonde_init1(nmod_mat_t vdm1, nmod_mat_t vdm2, nmod_mat_t inv_vdm, lon
     nmod_mat_entry(vdm2, 0 ,0) = 1;
     for (i = 1; i < nb_points; i++)
     {
-        mp_limb_t p1;
+        ulong p1;
         NMOD_RED(p1, i, mod);
         nmod_mat_entry(vdm, i, 0) = 1;
         nmod_mat_entry(vdm1, i, 0) = 1;
@@ -114,7 +114,7 @@ void nmod_poly_mat_mul_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         for (j = 0; j < n; j++, ell++)
         {
             ulong d;
-            mp_ptr ptr;
+            nn_ptr ptr;
             d = nmod_poly_degree(a->rows[i] + j);
             ptr = (a->rows[i] + j)->coeffs;
             for (k = 0; k <= d; k++)
@@ -138,7 +138,7 @@ void nmod_poly_mat_mul_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         for ( j = 0; j < p; j++, ell++)
         {
             ulong d;
-            mp_ptr ptr;
+            nn_ptr ptr;
             d = nmod_poly_degree(b->rows[i] + j);
             ptr = (b->rows[i] + j)->coeffs;
             for (k = 0; k <= d; k++)
@@ -190,7 +190,7 @@ void nmod_poly_mat_mul_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
     for (u = 0; u < m; u++)
         for (v = 0; v < p; v++, ell++)
         {
-            mp_ptr coeffs;
+            nn_ptr coeffs;
             nmod_poly_realloc(c->rows[u] + v, nb_points);
             coeffs = (c->rows[u] + v)->coeffs;
             (c->rows[u] + v)->length = nb_points; 
@@ -263,7 +263,7 @@ void nmod_poly_mat_middle_product_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t 
         for (j = 0; j < n; j++, ell++)
         {
             ulong d;
-            mp_ptr ptr;
+            nn_ptr ptr;
             d = nmod_poly_degree(a->rows[i] + j);
             ptr = (a->rows[i] + j)->coeffs;
             for (k = 0; k <= d; k++)
@@ -286,7 +286,7 @@ void nmod_poly_mat_middle_product_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t 
         for ( j = 0; j < p; j++, ell++)
         {
             ulong d;
-            mp_ptr ptr;
+            nn_ptr ptr;
             d = nmod_poly_degree(b->rows[i] + j);
             ptr = (b->rows[i] + j)->coeffs;
             for (k = 0; k <= d; k++)
@@ -340,7 +340,7 @@ void nmod_poly_mat_middle_product_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t 
     for (u = 0; u < m; u++)
         for (v = 0; v < p; v++, ell++)
         {
-            mp_ptr coeffs;
+            nn_ptr coeffs;
             nmod_poly_realloc(c->rows[u] + v, dB + 1);
             coeffs = (c->rows[u] + v)->coeffs;
             (c->rows[u] + v)->length = dB + 1; 
@@ -372,7 +372,7 @@ void nmod_poly_mat_middle_product_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t 
 static
 void vandermonde_init2(nmod_mat_t vdm1, nmod_mat_t vdm2, nmod_mat_t inv_vdm, long d1, long d2, nmod_t mod)
 {
-    mp_limb_t p;
+    ulong p;
     ulong i, j, s1, s2, nb_points;
     nmod_mat_t vdm;
     
@@ -395,7 +395,7 @@ void vandermonde_init2(nmod_mat_t vdm1, nmod_mat_t vdm2, nmod_mat_t inv_vdm, lon
     
     for (i = 0; i < nb_points; i++)
     {
-        mp_limb_t p1, pt;
+        ulong p1, pt;
         NMOD_RED(p1, i+1, mod);
         pt = nmod_mul(p1, p1, mod);
         nmod_mat_entry(vdm, i, 0) = 1;
@@ -428,7 +428,7 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
     nmod_mat_t vA, vB, iv, tmp_mat_even, tmp_mat_odd, valA_even, valA_odd, valB_even, valB_odd,
         valAp_even, valAp_odd, valBp_even, valBp_odd, valC_even, valC_odd, valCp_even, valCp_odd;
     nmod_t mod;
-    mp_limb_t inv2, pt, inv2pt;
+    ulong inv2, pt, inv2pt;
     
     ellA = nmod_poly_mat_max_length(a);
     ellB = nmod_poly_mat_max_length(b);
@@ -474,7 +474,7 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         for (j = 0; j < n; j++, ell++)
         {
             ulong d;
-            mp_ptr ptr;
+            nn_ptr ptr;
             d = nmod_poly_degree(a->rows[i] + j);
             ptr = (a->rows[i] + j)->coeffs;
             for (k = 0; 2*k < d; k++)
@@ -512,7 +512,7 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         for (j = 0; j < p; j++, ell++)
         {
             ulong d;
-            mp_ptr ptr;
+            nn_ptr ptr;
             
             d = nmod_poly_degree(b->rows[i] + j);
             ptr = (b->rows[i] + j)->coeffs;
@@ -558,7 +558,7 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
     // same with valB_odd
     for (i = 0; i < nb_points; i++)
     {
-        mp_limb_t pt;
+        ulong pt;
         NMOD_RED(pt, i+1, mod);
         for (j = 0; j < (ulong) valA_odd->c; j++)
             valA_odd->rows[i][j] = nmod_mul(pt, valA_odd->rows[i][j], mod);
@@ -628,7 +628,7 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
     for (u = 0; u < m; u++)
         for (v = 0; v < p; v++, ell++)
         {
-            mp_ptr coeffs;
+            nn_ptr coeffs;
             nmod_poly_realloc(c->rows[u] + v, 2 * nb_points);
             coeffs = (c->rows[u] + v)->coeffs;
             (c->rows[u] + v)->length = 2 * nb_points; 
