@@ -7,7 +7,7 @@ INSTALLED_HEADERS = $(patsubst ../%.h, $(INC_DIR)/%.h, $(HEADERS))
 
 CC = gcc
 #CFLAGS = -fverbose-asm -S -Wall -Wextra -O3 -march=native -I$(INC_DIR)
-CFLAGS = -Wall -Wextra -O3 -march=native -I$(INC_DIR)
+CFLAGS = -Wall -Wextra -O2 -march=native -I$(INC_DIR)
 
 .PHONY: clean
 

@@ -11,6 +11,7 @@
  *
  */
 
+#include <flint/flint.h>
 #include <flint/machine_vectors.h>
 #include <flint/nmod_types.h>
 
@@ -60,9 +61,15 @@ void nmod_vec_integer_dot_product(nn_ptr res,
 /** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
 /** does not assume input is reduced modulo mod.n                */
 /*  ------------------------------------------------------------ */
-ulong nmod_vec_dot_product(nn_srcptr v1, nn_srcptr v2,
-                           ulong len, ulong max_bits1, ulong max_bits2,
-                           nmod_t mod);
+ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2,
+                                      ulong len, ulong max_bits1, ulong max_bits2,
+                                      nmod_t mod);
+ulong nmod_vec_dot_product_v1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+ulong nmod_vec_dot_product_v2(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod, ulong n_limbs);
+ulong _nmod_vec_dot_product_1_avx2(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
+ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
+
+
 // note: version split16 interesting on recent laptop (gcc does some vectorization)
 // limited to nbits <= ~31 (bound to be better analyzed, numterms)
 ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);

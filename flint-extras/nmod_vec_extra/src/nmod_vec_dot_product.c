@@ -232,7 +232,7 @@ ulong _nmod_vec_dot_product_3(nn_srcptr v1, nn_srcptr v2, ulong len, ulong max_b
 /** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
 /** does not assume input is reduced modulo mod.n                */
 /*  ------------------------------------------------------------ */
-ulong nmod_vec_dot_product(nn_srcptr v1, nn_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2, nmod_t mod)
+ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2, nmod_t mod)
 {
     const ulong n_limbs = _nmod_vec_dot_bound_limbs_unbalanced(len, max_bits1, max_bits2);
 
@@ -240,6 +240,20 @@ ulong nmod_vec_dot_product(nn_srcptr v1, nn_srcptr v2, ulong len, ulong max_bits
         return _nmod_vec_dot_product_2(v1, v2, len, mod);
     if (n_limbs == 3)
         return _nmod_vec_dot_product_3(v1, v2, len, max_bits1, max_bits2, mod);
+    if (n_limbs == 1)
+        return _nmod_vec_dot_product_1(v1, v2, len, mod);
+    return UWORD(0);
+}
+
+ulong nmod_vec_dot_product_v1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
+{
+    const ulong maxbits = FLINT_BIT_COUNT(mod.n);
+    const ulong n_limbs = _nmod_vec_dot_bound_limbs_unbalanced(len, maxbits, maxbits);
+
+    if (n_limbs == 2)
+        return _nmod_vec_dot_product_2(v1, v2, len, mod);
+    if (n_limbs == 3)
+        return _nmod_vec_dot_product_3(v1, v2, len, maxbits, maxbits, mod);
     if (n_limbs == 1)
         return _nmod_vec_dot_product_1(v1, v2, len, mod);
     return UWORD(0);

@@ -38,9 +38,9 @@ ulong _fmpz_reduce(const fmpz_t a, nn_srcptr powers_of_two, const nmod_t mod)
         
         slen = a_ptr->_mp_size;
         if (slen < 0)
-            return nmod_neg(nmod_vec_dot_product(powers_of_two, a_coeffs, -slen, FLINT_BIT_COUNT(mod.n), FLINT_BITS, mod), mod);
+            return nmod_neg(nmod_vec_dot_product_unbalanced(powers_of_two, a_coeffs, -slen, FLINT_BIT_COUNT(mod.n), FLINT_BITS, mod), mod);
 	else
-            return nmod_vec_dot_product(powers_of_two, a_coeffs, slen, FLINT_BIT_COUNT(mod.n), FLINT_BITS, mod);
+            return nmod_vec_dot_product_unbalanced(powers_of_two, a_coeffs, slen, FLINT_BIT_COUNT(mod.n), FLINT_BITS, mod);
     }
 }
 
