@@ -8,10 +8,10 @@
 /* computes an integer dot-product, length len, bitsize bit_len */
 /* checks modulo a prime                                        */
 /*--------------------------------------------------------------*/
-void check_nmod_vec_integer_dot_product(slong len, mp_bitcnt_t bit_len, flint_rand_t state)
+void check_nmod_vec_integer_dot_product(slong len, flint_bitcnt_t bit_len, flint_rand_t state)
 {
-    mp_limb_t p, res1, res2;
-    mp_ptr v1, v2, res;
+    ulong p, res1, res2;
+    nn_ptr v1, v2, res;
     nmod_t mod;
 
     p = n_randprime(state, bit_len, 0);

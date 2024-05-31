@@ -1,6 +1,5 @@
-//#include <flint/longlong.h>
+#include <flint/longlong.h>
 #include <flint/nmod.h>
-#include <flint/nmod_vec.h>
 
 #include "nmod_vec_extra.h"
 
@@ -22,10 +21,10 @@
 static inline
 ulong _nmod_vec_dot_bound_limbs_unbalanced(ulong len, ulong max_bits1, ulong max_bits2)
 {
-    const mp_limb_t a1 = (max_bits1 == FLINT_BITS) ? (UWORD_MAX) : (UWORD(1) << max_bits1) - 1;
-    const mp_limb_t a2 = (max_bits2 == FLINT_BITS) ? (UWORD_MAX) : (UWORD(1) << max_bits2) - 1;
+    const ulong a1 = (max_bits1 == FLINT_BITS) ? (UWORD_MAX) : (UWORD(1) << max_bits1) - 1;
+    const ulong a2 = (max_bits2 == FLINT_BITS) ? (UWORD_MAX) : (UWORD(1) << max_bits2) - 1;
 
-    mp_limb_t t2, t1, t0, u1, u0;
+    ulong t2, t1, t0, u1, u0;
     umul_ppmm(t1, t0, a1, a2);
     umul_ppmm(t2, t1, t1, len);
     umul_ppmm(u1, u0, t0, len);
@@ -45,14 +44,15 @@ ulong _nmod_vec_dot_bound_limbs_unbalanced(ulong len, ulong max_bits1, ulong max
 /** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
 /** uses 1 limb to store the result before reduction             */
 /*  ------------------------------------------------------------ */
-// Feb 2024: tried other block sizes (8, 16, 32), and also
-// storing intermediate 8/16/32 products in vector before summing;
-// it seems this simplest variant remains the most efficient (gcc is better
-// at vectorizing it, both on slightly older machine and recent avx512 machine)
+// Feb 2024: in experimental attempts to look at produced assembly,
+// tried other block sizes (8, 16, 32), and also storing intermediate 8/16/32
+// products in vector before summing; it seems this simplest variant remains
+// the most efficient (gcc is better at vectorizing it, both on slightly older
+// machine and recent avx512 machine)
 static inline
-mp_limb_t _nmod_vec_dot_product_1(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+ulong _nmod_vec_dot_product_1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
-    mp_limb_t res = UWORD(0);
+    ulong res = UWORD(0);
 
     for (ulong i = 0; i < len; i++)
         res += v1[i] * v2[i];
@@ -67,11 +67,11 @@ mp_limb_t _nmod_vec_dot_product_1(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t 
 /** uses 2 limbs to store the result before reduction            */
 /*  ------------------------------------------------------------ */
 static inline
-mp_limb_t _nmod_vec_dot_product_2(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+ulong _nmod_vec_dot_product_2(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
-    mp_limb_t s0, s1;
-    mp_limb_t u0 = UWORD(0);
-    mp_limb_t u1 = UWORD(0);
+    ulong s0, s1;
+    ulong u0 = UWORD(0);
+    ulong u1 = UWORD(0);
 
     ulong i = 0;
     for (; i+7 < len; i += 8)
@@ -100,13 +100,13 @@ mp_limb_t _nmod_vec_dot_product_2(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t 
         add_ssaaaa(u1, u0, u1, u0, s1, s0);
     }
 
-    mp_limb_t res;
+    ulong res;
     NMOD2_RED2(res, u1, u0, mod);
     return res;
 }
 
 // TODO benchmark more, integrate, give precise conditions for when this works
-mp_limb_t _nmod_vec_dot_product_2_split16(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
     uint v1hi, v1lo, v2hi, v2lo;
     ulong ulo = UWORD(0);
@@ -122,7 +122,7 @@ mp_limb_t _nmod_vec_dot_product_2_split16(mp_srcptr v1, mp_srcptr v2, ulong len,
     }
 
     // result: ulo + 2**16 umi + 2**32 uhi
-    mp_limb_t res;
+    ulong res;
     NMOD2_RED2(res, (umi >> 48) + (uhi >> 32), (umi << 16) + (uhi << 32) + ulo, mod);
     return res;
 }
@@ -133,7 +133,7 @@ mp_limb_t _nmod_vec_dot_product_2_split16(mp_srcptr v1, mp_srcptr v2, ulong len,
 // i.e. not more than xxx terms (this depends on the size of the high part since
 // they are not balanced... could make sense to balance them to allow more terms,
 // but do this only if this really is interesting in terms of speed)
-mp_limb_t _nmod_vec_dot_product_2_split26(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod)
+ulong _nmod_vec_dot_product_2_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
     uint v1hi, v1lo, v2hi, v2lo;
     ulong ulo = UWORD(0);
@@ -151,7 +151,7 @@ mp_limb_t _nmod_vec_dot_product_2_split26(mp_srcptr v1, mp_srcptr v2, ulong len,
     // result: ulo + 2**26 umi + 2**52 uhi
     // hi = (umi >> 38) + (uhi >> 12)  ||  lo = (umi << 26) + (uhi << 52) + ulo
     add_ssaaaa(uhi, ulo, umi>>38, umi<<26, uhi>>12, (uhi<<52)+ulo);
-    mp_limb_t res;
+    ulong res;
     NMOD2_RED2(res, uhi, ulo, mod);
     return res;
 }
@@ -165,16 +165,16 @@ mp_limb_t _nmod_vec_dot_product_2_split26(mp_srcptr v1, mp_srcptr v2, ulong len,
 /** uses 3 limbs to store the result before reduction            */
 /*  ------------------------------------------------------------ */
 static inline
-mp_limb_t _nmod_vec_dot_product_3(mp_srcptr v1, mp_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2, nmod_t mod)
+ulong _nmod_vec_dot_product_3(nn_srcptr v1, nn_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2, nmod_t mod)
 {
     /* number of products we can do before overflow */
     const ulong log_nt = 2*FLINT_BITS - (max_bits1 + max_bits2);
     const ulong num_terms = (log_nt < FLINT_BITS) ? (UWORD(1) << log_nt) : (UWORD_MAX);
 
-    mp_limb_t s0, s1, u0, u1;
-    mp_limb_t t2 = UWORD(0);
-    mp_limb_t t1 = UWORD(0);
-    mp_limb_t t0 = UWORD(0);
+    ulong s0, s1, u0, u1;
+    ulong t2 = UWORD(0);
+    ulong t1 = UWORD(0);
+    ulong t0 = UWORD(0);
 
     ulong i = 0;
     if (num_terms >= 8)
@@ -220,7 +220,7 @@ mp_limb_t _nmod_vec_dot_product_3(mp_srcptr v1, mp_srcptr v2, ulong len, ulong m
     add_sssaaaaaa(t2, t1, t0, t2, t1, t0, UWORD(0), u1, u0);
     NMOD_RED(t2, t2, mod);
 
-    mp_limb_t res;
+    ulong res;
     NMOD_RED3(res, t2, t1, t0, mod);
     return res;
 }
@@ -232,7 +232,7 @@ mp_limb_t _nmod_vec_dot_product_3(mp_srcptr v1, mp_srcptr v2, ulong len, ulong m
 /** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
 /** does not assume input is reduced modulo mod.n                */
 /*  ------------------------------------------------------------ */
-mp_limb_t nmod_vec_dot_product(mp_srcptr v1, mp_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2, nmod_t mod)
+ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2, nmod_t mod)
 {
     const ulong n_limbs = _nmod_vec_dot_bound_limbs_unbalanced(len, max_bits1, max_bits2);
 
@@ -240,6 +240,20 @@ mp_limb_t nmod_vec_dot_product(mp_srcptr v1, mp_srcptr v2, ulong len, ulong max_
         return _nmod_vec_dot_product_2(v1, v2, len, mod);
     if (n_limbs == 3)
         return _nmod_vec_dot_product_3(v1, v2, len, max_bits1, max_bits2, mod);
+    if (n_limbs == 1)
+        return _nmod_vec_dot_product_1(v1, v2, len, mod);
+    return UWORD(0);
+}
+
+ulong nmod_vec_dot_product_v1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
+{
+    const ulong maxbits = FLINT_BIT_COUNT(mod.n);
+    const ulong n_limbs = _nmod_vec_dot_bound_limbs_unbalanced(len, maxbits, maxbits);
+
+    if (n_limbs == 2)
+        return _nmod_vec_dot_product_2(v1, v2, len, mod);
+    if (n_limbs == 3)
+        return _nmod_vec_dot_product_3(v1, v2, len, maxbits, maxbits, mod);
     if (n_limbs == 1)
         return _nmod_vec_dot_product_1(v1, v2, len, mod);
     return UWORD(0);

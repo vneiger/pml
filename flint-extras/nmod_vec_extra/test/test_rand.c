@@ -24,8 +24,8 @@ int main(int argc, char **argv)
 
     const slong len = atol(argv[2]);
 
-    mp_ptr vec_uni = _nmod_vec_init(len);
-    mp_ptr vec_test = _nmod_vec_init(len);
+    nn_ptr vec_uni = _nmod_vec_init(len);
+    nn_ptr vec_test = _nmod_vec_init(len);
 
     _nmod_vec_rand(vec_uni, state, len, mod);
     _nmod_vec_randtest(vec_test, state, len, mod);

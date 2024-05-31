@@ -38,12 +38,12 @@ typedef struct
 {
     nmod_t mod;
     vec1d p, pinv;
-    mp_limb_t w, inv_w;       // root of 1 and its inverse
+    ulong w, inv_w;       // root of 1 and its inverse
     ulong order;       // its order
     vec1d **powers_w;
-    mp_limb_t **powers_inv_w_t;  // same table for 1/w as for w
+    ulong **powers_inv_w_t;  // same table for 1/w as for w
     // length order+1, with powers_inv_2[i] = 1/2^i 
-    mp_limb_t *powers_inv_2;
+    ulong *powers_inv_2;
     // length order, level k has length 2^k with entries 1/w{k+1}^i/2^k 
     vec1d **powers_inv_w_over_2;
 } nmod_sd_fft_struct;
@@ -55,7 +55,7 @@ typedef nmod_sd_fft_struct nmod_sd_fft_t[1];
 /* w primitive and w^(2^order))=1                             */
 /* DFTs of size up to 2^order are supported                   */ 
 /*------------------------------------------------------------*/
-void nmod_sd_fft_init_set(nmod_sd_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
+void nmod_sd_fft_init_set(nmod_sd_fft_t F, ulong w, ulong order, nmod_t mod);
 
 /*------------------------------------------------------------*/
 /* utility routine, Qt used in transposed algorithms          */ 
@@ -74,29 +74,29 @@ void nmod_sd_fft_clear(nmod_sd_fft_t F);
 /* returns x[i] = poly(w^i), n=2^k, up to permutation         */
 /* x must have length >= n                                    */
 /*------------------------------------------------------------*/
-void nmod_sd_fft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong k);
-void nmod_sd_fft_evaluate_t(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong k);
+void nmod_sd_fft_evaluate(nn_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong k);
+void nmod_sd_fft_evaluate_t(nn_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong k);
 
 /*------------------------------------------------------------*/
 /* tft evaluation and its transpose                           */
 /* x must have length >= N                                    */
 /*------------------------------------------------------------*/
-void nmod_sd_tft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
-void nmod_sd_tft_evaluate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, ulong N);
+void nmod_sd_tft_evaluate(nn_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
+void nmod_sd_tft_evaluate_t(nn_ptr x, nn_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, ulong N);
 
 /*------------------------------------------------------------*/
 /* tft interpolation and its transpose                        */
 /* inverts nmod_sd_tft_evaluate                               */
 /*------------------------------------------------------------*/
-void nmod_sd_tft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
-void nmod_sd_tft_interpolate_t(mp_ptr a, mp_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
+void nmod_sd_tft_interpolate(nmod_poly_t poly, nn_ptr x, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
+void nmod_sd_tft_interpolate_t(nn_ptr a, nn_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
 
 /*------------------------------------------------------------*/
 /* fft interpolation                                          */
 /* inverts nmod_sd_fft_evaluate                               */
 /*------------------------------------------------------------*/
-void nmod_sd_fft_interpolate(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const ulong k); 
-void nmod_sd_fft_interpolate_t(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const ulong k); 
+void nmod_sd_fft_interpolate(nmod_poly_t poly, nn_ptr x, sd_fft_lctx_t Q, const ulong k); 
+void nmod_sd_fft_interpolate_t(nmod_poly_t poly, nn_ptr x, sd_fft_lctx_t Q, const ulong k); 
 
 
 /*------------------------------------------------------------*/
@@ -105,7 +105,7 @@ void nmod_sd_fft_interpolate_t(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, cons
 /*------------------------------------------------------------*/
 typedef struct
 {
-    mp_ptr x, t, w, y, z;       // five vectors of precomputed constants
+    nn_ptr x, t, w, y, z;       // five vectors of precomputed constants
     nmod_poly_t f, g1, g2;      // three precomputed polys
     nmod_t mod;
     slong d;                    // number of points
@@ -118,7 +118,7 @@ typedef nmod_geometric_progression_struct nmod_geometric_progression_t[1];
 /* initializes all quantities attached to G                   */
 /* evaluates/interpolates at powers of q = r^2                */
 /*------------------------------------------------------------*/
-void nmod_geometric_progression_init_set(nmod_geometric_progression_t G, mp_limb_t r, slong n, nmod_t mod);
+void nmod_geometric_progression_init_set(nmod_geometric_progression_t G, ulong r, slong n, nmod_t mod);
  
 /*------------------------------------------------------------*/
 /* frees all memory attached to G                             */
@@ -129,13 +129,13 @@ void nmod_geometric_progression_clear(nmod_geometric_progression_t G);
 /* in: polynomial to evaluate, deg(poly) < d                  */
 /* out: v[i] = poly(q^i), i = 0 .. d-1                        */
 /*------------------------------------------------------------*/
-void nmod_geometric_progression_evaluate(mp_ptr v, const nmod_poly_t poly, const nmod_geometric_progression_t G);
+void nmod_geometric_progression_evaluate(nn_ptr v, const nmod_poly_t poly, const nmod_geometric_progression_t G);
 
 /*------------------------------------------------------------*/
 /* in: coeffs must have size at least d                       */
 /* out: interpolating polynomial C s.t. C(q^i) = v[i], i<d    */
 /*------------------------------------------------------------*/
-void nmod_geometric_progression_interpolate(nmod_poly_t poly, mp_srcptr v, const nmod_geometric_progression_t G);
+void nmod_geometric_progression_interpolate(nmod_poly_t poly, nn_srcptr v, const nmod_geometric_progression_t G);
 
 
 

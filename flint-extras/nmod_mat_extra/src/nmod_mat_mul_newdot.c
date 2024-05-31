@@ -1,3 +1,4 @@
+#include <flint/longlong.h> // for BIT_COUNT
 #include <flint/flint.h>
 #include <flint/nmod_mat.h>
 #include <flint/nmod_vec.h>  // for _nmod_vec_init
@@ -17,9 +18,6 @@ void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
         return;
     }
 
-    // number of bits of modulus
-    const ulong nbits = FLINT_BIT_COUNT(A->mod.n);
-
     // transpose of B
     nmod_mat_t BT;
     nmod_mat_init(BT, B->c, B->r, B->mod.n);
@@ -28,17 +26,17 @@ void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
     // now let's compute
     for (slong i = 0; i < A->r; i++)
         for (slong j = 0; j < BT->r; j++)
-            C->rows[i][j] = nmod_vec_dot_product(A->rows[i], BT->rows[j], A->c, nbits, nbits, A->mod);
+            C->rows[i][j] = nmod_vec_dot_product_v1(A->rows[i], BT->rows[j], A->c, A->mod);
+            //C->rows[i][j] = nmod_vec_dot_product_v2(A->rows[i], BT->rows[j], A->c, A->mod, 1);
+            //C->rows[i][j] = _nmod_vec_dot_product_1_avx2(A->rows[i], BT->rows[j], A->c, A->mod);
+            //C->rows[i][j] = _nmod_vec_dot_product_1_avx512(A->rows[i], BT->rows[j], A->c, A->mod);
 
     nmod_mat_clear(BT);
 }
 
-void nmod_mat_mul_nmod_vec_newdot(mp_ptr v, const nmod_mat_t A, mp_srcptr u, ulong len)
+void nmod_mat_mul_nmod_vec_newdot(nn_ptr v, const nmod_mat_t A, nn_srcptr u, ulong len)
 {
-    // number of bits of modulus
-    const ulong nbits = FLINT_BIT_COUNT(A->mod.n);
-
     for (slong i = 0; i < A->r; i++)
-        v[i] = nmod_vec_dot_product(A->rows[i], u, len, nbits, nbits, A->mod);
+        v[i] = nmod_vec_dot_product_v1(A->rows[i], u, len, A->mod);
 }
 

@@ -16,7 +16,7 @@ void time_nmod_poly_mat_mul(ulong m, ulong n, ulong p, ulong deg)
     double t;
     clock_t tt;
     long nb_iter;
-    mp_limb_t modulus;
+    ulong modulus;
 
     modulus = 1108307720798209;
     flint_randinit(state);

@@ -7,8 +7,8 @@
 /** returns dot(a, b)                                         */
 /** power_two = 2^45 mod p, pinv = 1/p                        */
 /*------------------------------------------------------------*/
-mp_limb_t _nmod_vec_dot_small_modulus(mp_ptr a, mp_ptr b, ulong len,
-                                      mp_limb_t power_two, vec1d p, vec1d pinv)
+ulong _nmod_vec_dot_small_modulus(nn_ptr a, nn_ptr b, ulong len,
+                                      ulong power_two, vec1d p, vec1d pinv)
 {
     const ulong num_full_blocks = len >> 5;
     // mask for 45 low bits
@@ -25,14 +25,14 @@ mp_limb_t _nmod_vec_dot_small_modulus(mp_ptr a, mp_ptr b, ulong len,
     for (ulong k = 0; k < num_full_blocks; k++)
     {
         tmp = sum_low;
-        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((mp_ptr) a_4n++), vec4n_load_unaligned((mp_ptr) b_4n++)));
-        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((mp_ptr) a_4n++), vec4n_load_unaligned((mp_ptr) b_4n++)));
-        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((mp_ptr) a_4n++), vec4n_load_unaligned((mp_ptr) b_4n++)));
-        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((mp_ptr) a_4n++), vec4n_load_unaligned((mp_ptr) b_4n++)));
-        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((mp_ptr) a_4n++), vec4n_load_unaligned((mp_ptr) b_4n++)));
-        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((mp_ptr) a_4n++), vec4n_load_unaligned((mp_ptr) b_4n++)));
-        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((mp_ptr) a_4n++), vec4n_load_unaligned((mp_ptr) b_4n++)));
-        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((mp_ptr) a_4n++), vec4n_load_unaligned((mp_ptr) b_4n++)));
+        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((nn_ptr) a_4n++), vec4n_load_unaligned((nn_ptr) b_4n++)));
+        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((nn_ptr) a_4n++), vec4n_load_unaligned((nn_ptr) b_4n++)));
+        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((nn_ptr) a_4n++), vec4n_load_unaligned((nn_ptr) b_4n++)));
+        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((nn_ptr) a_4n++), vec4n_load_unaligned((nn_ptr) b_4n++)));
+        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((nn_ptr) a_4n++), vec4n_load_unaligned((nn_ptr) b_4n++)));
+        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((nn_ptr) a_4n++), vec4n_load_unaligned((nn_ptr) b_4n++)));
+        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((nn_ptr) a_4n++), vec4n_load_unaligned((nn_ptr) b_4n++)));
+        tmp = vec4n_add(tmp, vec4n_mul(vec4n_load_unaligned((nn_ptr) a_4n++), vec4n_load_unaligned((nn_ptr) b_4n++)));
 
         sum_low = vec4n_bit_and(tmp, low_bits);
         sum_high = vec4n_add(sum_high, vec4n_bit_shift_right_45(tmp));
@@ -42,23 +42,23 @@ mp_limb_t _nmod_vec_dot_small_modulus(mp_ptr a, mp_ptr b, ulong len,
     // k is now the number of coefficients already read
     ulong k = num_full_blocks << 5;
     for (; k + 3 < len; k += 4)
-        sum_low = vec4n_add(sum_low, vec4n_mul(vec4n_load_unaligned((mp_ptr) a_4n++), vec4n_load_unaligned((mp_ptr) b_4n++)));
+        sum_low = vec4n_add(sum_low, vec4n_mul(vec4n_load_unaligned((nn_ptr) a_4n++), vec4n_load_unaligned((nn_ptr) b_4n++)));
 
     sum_high = vec4n_add(sum_high, vec4n_bit_shift_right_45(sum_low));
     sum_low = vec4n_bit_and(sum_low, low_bits);
 
     // left with at most 3 coefficients
-    mp_ptr as = (mp_ptr) a_4n;
-    mp_ptr bs = (mp_ptr) b_4n;
+    nn_ptr as = (nn_ptr) a_4n;
+    nn_ptr bs = (nn_ptr) b_4n;
     ulong acc_last = 0;
     for (; k < len; k++)
         acc_last += (*as++) * (*bs++);
 
-    const mp_limb_t total_low = sum_low[0] + sum_low[1] + sum_low[2] + sum_low[3] + (acc_last & ((UWORD(1) << 45) - 1));
-    const mp_limb_t total_high = sum_high[0] + sum_high[1] + sum_high[2] + sum_high[3] + (acc_last >> 45);
+    const ulong total_low = sum_low[0] + sum_low[1] + sum_low[2] + sum_low[3] + (acc_last & ((UWORD(1) << 45) - 1));
+    const ulong total_high = sum_high[0] + sum_high[1] + sum_high[2] + sum_high[3] + (acc_last >> 45);
 
     vec1d sum = total_low + power_two * total_high;
-    return (mp_limb_t) vec1d_reduce_to_0n(sum, p, pinv);
+    return (ulong) vec1d_reduce_to_0n(sum, p, pinv);
 }
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */

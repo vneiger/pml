@@ -6,15 +6,15 @@
 /* ------------------------------------------------------------ */
 /* copies primes in mmod-> primes (length is num_primes)        */
 /* ------------------------------------------------------------ */
-void fmpz_multimod_naive_init(fmpz_multimod_naive_t mmod, mp_srcptr primes, ulong num_primes)
+void fmpz_multimod_naive_init(fmpz_multimod_naive_t mmod, nn_srcptr primes, ulong num_primes)
 {
     ulong i, u;
-    mp_limb_t max_prime;
+    ulong max_prime;
     
     mmod->num_primes = num_primes;
-    mmod->primes = (mp_ptr) flint_malloc(num_primes * sizeof(mp_limb_t));
+    mmod->primes = (nn_ptr) flint_malloc(num_primes * sizeof(ulong));
     mmod->mod = (nmod_t *) flint_malloc(num_primes * sizeof(nmod_t));
-    mmod->powers_of_two = (mp_ptr *) flint_malloc(num_primes * sizeof(mp_ptr));
+    mmod->powers_of_two = (nn_ptr *) flint_malloc(num_primes * sizeof(nn_ptr));
 
     fmpz_init(mmod->prod);
     fmpz_set_ui(mmod->prod, 1);
@@ -33,9 +33,9 @@ void fmpz_multimod_naive_init(fmpz_multimod_naive_t mmod, mp_srcptr primes, ulon
 
     for (i = 0; i < num_primes; i++)
     {
-        mp_limb_t two_FLINT_BITS;
+        ulong two_FLINT_BITS;
         nmod_t mod;
-        mp_ptr v;
+        nn_ptr v;
 
         mmod->small_moduli = 1;
         
@@ -50,14 +50,14 @@ void fmpz_multimod_naive_init(fmpz_multimod_naive_t mmod, mp_srcptr primes, ulon
         if (max_prime < (1L << 30))
         {
             ulong len;
-            mp_limb_t two_24, two_48;
+            ulong two_24, two_48;
 
             two_24 = (1L << 24) % primes[i];
             two_48 = (1L << 48) % primes[i];
             
             len = 3 * mmod->num_limbs; 
             len = ((len + 3) >> 2) << 2; // must be a multiple of 4
-            mmod->powers_of_two[i] = (mp_ptr) aligned_alloc(32, len * sizeof(mp_limb_t));
+            mmod->powers_of_two[i] = (nn_ptr) aligned_alloc(32, len * sizeof(ulong));
             v = mmod->powers_of_two[i];
 
             /* Powers of 2^FLINT_BITS, 2^24*2^FLINT_BITS, 2^48*2^FLINT_BITS modulo p */
@@ -78,7 +78,7 @@ void fmpz_multimod_naive_init(fmpz_multimod_naive_t mmod, mp_srcptr primes, ulon
         else{
             mmod->small_moduli = 0;
             
-            mmod->powers_of_two[i] = (mp_ptr) flint_malloc(mmod->num_limbs * sizeof(mp_limb_t));
+            mmod->powers_of_two[i] = (nn_ptr) flint_malloc(mmod->num_limbs * sizeof(ulong));
             /* Powers of 2^FLINT_BITS modulo p */
             v = mmod->powers_of_two[i];
             v[0] = 1;
@@ -95,14 +95,14 @@ void fmpz_multimod_naive_init(fmpz_multimod_naive_t mmod, mp_srcptr primes, ulon
 /* /\* ------------------------------------------------------------ *\/ */
 /* /\* copies primes in mmod-> primes (length is num_primes)        *\/ */
 /* /\* ------------------------------------------------------------ *\/ */
-/* void fmpz_multimod_naive_init(fmpz_multimod_naive_t mmod, mp_srcptr primes, ulong num_primes) */
+/* void fmpz_multimod_naive_init(fmpz_multimod_naive_t mmod, nn_srcptr primes, ulong num_primes) */
 /* { */
 /*     ulong i, u; */
 
 /*     mmod->num_primes = num_primes; */
-/*     mmod->primes = (mp_ptr) flint_malloc(num_primes * sizeof(mp_limb_t)); */
+/*     mmod->primes = (nn_ptr) flint_malloc(num_primes * sizeof(ulong)); */
 /*     mmod->mod = (nmod_t *) flint_malloc(num_primes * sizeof(nmod_t)); */
-/*     mmod->powers_of_two = (mp_ptr *) flint_malloc(num_primes * sizeof(mp_ptr)); */
+/*     mmod->powers_of_two = (nn_ptr *) flint_malloc(num_primes * sizeof(nn_ptr)); */
 
 /*     fmpz_init(mmod->prod); */
 /*     fmpz_set_ui(mmod->prod, 1); */
@@ -117,11 +117,11 @@ void fmpz_multimod_naive_init(fmpz_multimod_naive_t mmod, mp_srcptr primes, ulon
 /*     mmod->num_limbs = fmpz_size(mmod->prod); */
 /*     for (i = 0; i < num_primes; i++) */
 /*     { */
-/*         mp_limb_t two_FLINT_BITS; */
+/*         ulong two_FLINT_BITS; */
 /*         nmod_t mod; */
-/*         mp_ptr v; */
+/*         nn_ptr v; */
         
-/*         mmod->powers_of_two[i] = (mp_ptr) flint_malloc(mmod->num_limbs * sizeof(mp_limb_t)); */
+/*         mmod->powers_of_two[i] = (nn_ptr) flint_malloc(mmod->num_limbs * sizeof(ulong)); */
 /*         mod = mmod->mod[i]; */
 /*         two_FLINT_BITS = ( UWORD(1) << (FLINT_BITS-1) ) % primes[i]; */
 /*         two_FLINT_BITS = nmod_add(two_FLINT_BITS, two_FLINT_BITS, mod); */

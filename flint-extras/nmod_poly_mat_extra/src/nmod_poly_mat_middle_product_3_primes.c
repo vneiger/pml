@@ -14,9 +14,9 @@ void nmod_poly_mat_middle_product_3_primes(nmod_poly_mat_t C, const nmod_poly_ma
                                       const ulong dA, const ulong dB)
 {
     ulong num_primes, num_bits, i, j, ell, m, k, n, len_A, len_B;
-    mp_limb_t p, primes[4];
+    ulong p, primes[4];
     nmod_multimod_CRT_t CRT;
-    mp_ptr residues[4];
+    nn_ptr residues[4];
     nmod_poly_mat_t *mod_A, *mod_B, *mod_C;
 
     m = A->r;
@@ -135,7 +135,7 @@ void nmod_poly_mat_middle_product_3_primes(nmod_poly_mat_t C, const nmod_poly_ma
             for (ell = 0; ell < num_primes; ell++)
             {
                 ulong t, len_ell;
-                mp_ptr res_ell, C_ell_ij;
+                nn_ptr res_ell, C_ell_ij;
 
                 res_ell = residues[ell];
                 C_ell_ij = mod_C[ell]->rows[i][j].coeffs;

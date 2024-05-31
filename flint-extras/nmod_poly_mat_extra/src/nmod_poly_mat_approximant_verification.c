@@ -10,7 +10,7 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
 {
     // context
     const slong rdim = pmat->r, cdim = pmat->c;
-    const mp_limb_t prime = pmat->modulus;
+    const ulong prime = pmat->modulus;
 
     // check appbas is square with the right dimension
     if (appbas->r != rdim || appbas->c != rdim)

@@ -11,7 +11,7 @@ void check()
 {
     slong i;
     flint_rand_t state;
-    mp_limb_t nn;
+    ulong nn;
     nmod_t mod;
     
     flint_randinit(state);
@@ -21,10 +21,10 @@ void check()
     for (i = 1000; i < 10000; i+=1000)
     {
         slong j;
-        mp_limb_t r, q, t;
+        ulong r, q, t;
         nmod_geometric_progression_t G;
         nmod_poly_t P;
-        mp_ptr val;
+        nn_ptr val;
         
         r = nmod_find_root(2*i, mod);
         nmod_geometric_progression_init_set(G, r, i, mod);

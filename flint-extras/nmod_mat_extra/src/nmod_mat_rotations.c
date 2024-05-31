@@ -19,7 +19,7 @@ void _nmod_mat_rotate_rows_downward(nmod_mat_t mat, slong * vec, slong i, slong 
             vec[i] = tmp_vec;
         }
 
-        mp_limb_t * tmp_mat = mat->rows[j];
+        ulong * tmp_mat = mat->rows[j];
         for (slong ii = j; ii > i; ii--)
             mat->rows[ii] = mat->rows[ii-1];
         mat->rows[i] = tmp_mat;
@@ -38,7 +38,7 @@ void _nmod_mat_rotate_rows_upward(nmod_mat_t mat, slong * vec, slong i, slong j)
             vec[j] = tmp_vec;
         }
 
-        mp_limb_t * tmp_mat = mat->rows[i];
+        ulong * tmp_mat = mat->rows[i];
         for (slong ii = i; ii < j; ii++)
             mat->rows[ii] = mat->rows[ii+1];
         mat->rows[j] = tmp_mat;
@@ -64,7 +64,7 @@ void _nmod_mat_rotate_columns_rightward(nmod_mat_t mat, slong * vec, slong i, sl
 
         for (slong ii = 0; ii < mat->r; ii++)
         {
-            mp_limb_t tmp_mat = nmod_mat_entry(mat, ii, j);
+            ulong tmp_mat = nmod_mat_entry(mat, ii, j);
             for (slong jj = j; jj > i; jj--)
                 nmod_mat_entry(mat, ii, jj) = nmod_mat_entry(mat, ii, jj-1);
             nmod_mat_entry(mat, ii, i) = tmp_mat;
@@ -86,7 +86,7 @@ void _nmod_mat_rotate_columns_leftward(nmod_mat_t mat, slong * vec, slong i, slo
 
         for (slong ii = 0; ii < mat->r; ii++)
         {
-            mp_limb_t tmp_mat = nmod_mat_entry(mat, ii, i);
+            ulong tmp_mat = nmod_mat_entry(mat, ii, i);
             for (slong jj = i; jj < j; jj++)
                 nmod_mat_entry(mat, ii, jj) = nmod_mat_entry(mat, ii, jj+1);
             nmod_mat_entry(mat, ii, i) = tmp_mat;
@@ -106,7 +106,7 @@ void _nmod_mat_rotate_columns_leftward(nmod_mat_t mat, slong * vec, slong i, slo
  **/
 void nmod_mat_permute_columns(nmod_mat_t mat, const slong * perm_act, slong * perm_store)
 {
-    mp_limb_t * row_buffer = (mp_limb_t *) flint_malloc(mat->c * sizeof(mp_limb_t));
+    ulong * row_buffer = (ulong *) flint_malloc(mat->c * sizeof(ulong));
 
     /* perm_store[j] <- perm_store[perm_act[j]] */
     if (perm_store)

@@ -13,7 +13,7 @@
 void check_fmpz_multimod_naive_init_clear(slong num_primes)
 {
     fmpz_multimod_naive_t mmod; 
-    mp_ptr primes;
+    nn_ptr primes;
 
     primes = _nmod_vec_init(num_primes);
     nmod_vec_primes(primes, num_primes, FLINT_BITS-8);

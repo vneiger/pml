@@ -6,7 +6,7 @@
 /* finds an element of order at least n                       */
 /* returns 0 if not found                                     */
 /*------------------------------------------------------------*/
-mp_limb_t nmod_find_root(slong n, nmod_t mod)
+ulong nmod_find_root(slong n, nmod_t mod)
 {
     slong q;
     for(q = 2; q < (slong) mod.n; q++)

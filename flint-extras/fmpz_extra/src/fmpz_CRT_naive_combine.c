@@ -8,11 +8,11 @@
 /* compute A = sum_i m[i] \prod_{j \ne i} primes[j]             */
 /* ------------------------------------------------------------ */
 void 
-fmpz_CRT_naive_combine(fmpz_t A, mp_srcptr m, const fmpz_CRT_naive_t mCRT)
+fmpz_CRT_naive_combine(fmpz_t A, nn_srcptr m, const fmpz_CRT_naive_t mCRT)
 {
     mp_size_t size;
-    mp_limb_t tmp[3];
-    mp_ptr dat;
+    ulong tmp[3];
+    nn_ptr dat;
     mpz_t temp;
     ulong i;
 
@@ -44,7 +44,7 @@ fmpz_CRT_naive_combine(fmpz_t A, mp_srcptr m, const fmpz_CRT_naive_t mCRT)
     }
 
     temp->_mp_size = size;
-    fmpz_set_mpz(A, temp);
+    fmpz_set_mpz(A, temp); // TODO !! to be fixed !!
 
     mpz_clear(temp);
 }
