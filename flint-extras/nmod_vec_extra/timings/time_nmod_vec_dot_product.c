@@ -7,10 +7,10 @@
 
 
 //// small values for testing before launching test:
-#define TIME_THRES 0.02
-#define NB_ITER 1000
-//#define TIME_THRES 0.2
-//#define NB_ITER 2500
+//#define TIME_THRES 0.02
+//#define NB_ITER 1000
+#define TIME_THRES 0.2
+#define NB_ITER 2500
 
 /*--------------------------------------------------------------*/
 /* computes a dot product in size len modulo n                  */
@@ -557,7 +557,7 @@ ulong time_nmod_vec_dot_product_avx2b_v2_cu(ulong len, ulong n, flint_rand_t sta
     ulong res = 0;
 
     ulong power2 = (1L << 45) % n;
-    vec1d p = n;
+    ulong p = n;
     vec1d pinv = 1 / (double) n;
 
     { // TEST
@@ -619,7 +619,7 @@ ulong time_nmod_vec_dot_product_avx2b_v2_cf(ulong len, ulong n, flint_rand_t sta
     ulong res = 0;
 
     ulong power2 = (1L << 45) % n;
-    vec1d p = n;
+    ulong p = n;
     vec1d pinv = 1 / (double) n;
 
     { // TEST

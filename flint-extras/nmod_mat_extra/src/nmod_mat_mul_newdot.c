@@ -23,17 +23,17 @@ void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
     nmod_mat_init(BT, B->c, B->r, B->mod.n);
     nmod_mat_transpose(BT, B);
 
-    //const ulong power2 = (1L<<45) % A->mod.n;
+    const ulong power2 = (1L<<45) % A->mod.n;
 
     // now let's compute
     for (slong i = 0; i < A->r; i++)
         for (slong j = 0; j < BT->r; j++)
-            C->rows[i][j] = nmod_vec_dot_product_v1(A->rows[i], BT->rows[j], A->c, A->mod);
+            //C->rows[i][j] = nmod_vec_dot_product_v1(A->rows[i], BT->rows[j], A->c, A->mod);
             //C->rows[i][j] = nmod_vec_dot_product_v2(A->rows[i], BT->rows[j], A->c, A->mod, 1);
             //C->rows[i][j] = _nmod_vec_dot_product_1_avx2(A->rows[i], BT->rows[j], A->c, A->mod);
             //C->rows[i][j] = _nmod_vec_dot_product_1_avx512(A->rows[i], BT->rows[j], A->c, A->mod);
             //C->rows[i][j] = _nmod_vec_dot_small_modulus(A->rows[i], BT->rows[j], A->c, power2, A->mod.n, A->mod.ninv);
-            //C->rows[i][j] = _nmod_vec_dot_small_modulus_v2(A->rows[i], BT->rows[j], A->c, power2, A->mod.n, A->mod.ninv);
+            C->rows[i][j] = _nmod_vec_dot_small_modulus_v2(A->rows[i], BT->rows[j], A->c, power2, A->mod.n, A->mod.ninv);
             //C->rows[i][j] = _nmod_vec_dot_small_modulus_v3(A->rows[i], BT->rows[j], A->c, power2, A->mod);
 
 

@@ -63,7 +63,7 @@ ulong _nmod_vec_dot_small_modulus(nn_ptr a, nn_ptr b, ulong len,
 }
 
 ulong _nmod_vec_dot_small_modulus_v2(nn_ptr a, nn_ptr b, ulong len,
-                                      ulong power_two, double p, double pinv)
+                                      ulong power_two, ulong p, double pinv)
 {
     // the dot product without modular reduction is
     //       dp  =  dp_lo + 2**sp_nb * dp_hi
@@ -118,10 +118,18 @@ ulong _nmod_vec_dot_small_modulus_v2(nn_ptr a, nn_ptr b, ulong len,
     const ulong total_lo = dp_lo[0] + dp_lo[1] + dp_lo[2] + dp_lo[3] + (dp_last & ((1L << 45) - 1));
     const ulong total_hi = dp_hi[0] + dp_hi[1] + dp_hi[2] + dp_hi[3] + (dp_last >> 45);
 
-    double total = total_lo + power_two * total_hi;
-    double dp = fma(-rint(total*pinv), p, total);
-    //double dp = total - rint(total*pinv) * p;
-    return (dp >= 0) ? dp : (dp+p);
+    //double total = total_lo + power_two * total_hi;
+    //double dp = fma(-rint(total*pinv), p, total);
+    ////double dp = total - rint(total*pinv) * p;
+    //return (dp >= 0) ? dp : (dp+p);
+
+    ulong total = total_lo + power_two * total_hi;
+    ulong quot = (ulong) (total * pinv);
+    ulong rem  = total - quot*p;
+    if ((slong) rem < 0) /* unlikely */
+       rem += p;
+    return rem - (p & (((slong) (p - rem - 1)) >> (FLINT_BITS-1)));
+
 }
 
 ulong _nmod_vec_dot_small_modulus_v3(nn_ptr a, nn_ptr b, ulong len, ulong power_two, nmod_t mod)

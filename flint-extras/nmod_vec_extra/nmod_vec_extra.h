@@ -88,7 +88,7 @@ ulong _nmod_vec_dot_small_modulus(nn_ptr a, nn_ptr b, ulong len,
                                   vec1d p, vec1d pinv);
 ulong _nmod_vec_dot_small_modulus_v2(nn_ptr a, nn_ptr b, ulong len,
                                      ulong power_two,
-                                     double p, double pinv);
+                                     ulong p, double pinv);
 ulong _nmod_vec_dot_small_modulus_v3(nn_ptr a, nn_ptr b, ulong len,
                                      ulong power_two,
                                      nmod_t modn);
