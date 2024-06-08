@@ -657,6 +657,135 @@ ulong time_nmod_vec_dot_product_avx2b_v2_cf(ulong len, ulong n, flint_rand_t sta
     return res;
 }
 
+/*------------------------------------------------------------*/
+/* AVX2 bis, v3                                               */
+/*------------------------------------------------------------*/
+
+ulong time_nmod_vec_dot_product_avx2b_v3_cu(ulong len, ulong n, flint_rand_t state)
+{
+    nmod_t mod;
+    nmod_init(&mod, n);
+
+    //const ulong n_limbs = _nmod_vec_dot_bound_limbs_modn(len, mod.n);
+    // FIXME have had issues with 30mid
+    if (FLINT_BIT_COUNT(n) >= 30)
+        return 0;
+
+    nn_ptr v1[NB_ITER];
+    for (slong i = 0; i < NB_ITER; i++)
+    {
+        v1[i] = _nmod_vec_init(len);
+        _nmod_vec_rand(v1[i], state, len, mod);
+    }
+    nn_ptr v2[NB_ITER];
+    for (slong i = 0; i < NB_ITER; i++)
+    {
+        v2[i] = _nmod_vec_init(len);
+        _nmod_vec_rand(v2[i], state, len, mod);
+    }
+    ulong res = 0;
+
+    ulong power2 = (1L << 45) % n;
+    vec1d p = n;
+    vec1d pinv = 1 / (double) n;
+
+    { // TEST
+        ulong res_avx = _nmod_vec_dot_small_modulus_v3(v1[0], v2[0], len, power2, mod);
+        ulong res_lng = nmod_vec_dot_product_v1(v1[0], v2[0], len, mod);
+        if (res_avx != res_lng)
+        {
+            printf("\nDOT PRODUCT ERROR!\n");
+            return 0;
+        }
+    }
+
+    double t1;
+    clock_t tt;
+    long nb_iter;
+
+    t1 = 0.0; nb_iter = 0;
+    while (t1 < TIME_THRES)
+    {
+        for (slong i = 0; i < NB_ITER; i++) // warmup
+            res += _nmod_vec_dot_small_modulus_v3(v1[i], v2[i], len, power2, mod);
+
+        tt = clock();
+        for (slong i = 0; i < NB_ITER; i++)
+            res += _nmod_vec_dot_small_modulus_v3(v1[i], v2[i], len, power2, mod);
+        t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += NB_ITER;
+    }
+    t1 /= nb_iter;
+    printf("%.1e\t", t1);
+
+    for (slong i = 0; i < NB_ITER; i++)
+    {
+        _nmod_vec_clear(v1[i]);
+        _nmod_vec_clear(v2[i]);
+    }
+
+    return res;
+}
+
+ulong time_nmod_vec_dot_product_avx2b_v3_cf(ulong len, ulong n, flint_rand_t state)
+{
+    nmod_t mod;
+    nmod_init(&mod, n);
+
+    //const ulong n_limbs = _nmod_vec_dot_bound_limbs_modn(len, mod.n);
+    // FIXME have had issues with 30mid
+    if (FLINT_BIT_COUNT(n) >= 30)
+        return 0;
+    //printf("%ld\t", n_limbs);
+
+    nn_ptr v1;
+    v1 = _nmod_vec_init(len);
+    _nmod_vec_rand(v1, state, len, mod);
+    nn_ptr v2;
+    v2 = _nmod_vec_init(len);
+    _nmod_vec_rand(v2, state, len, mod);
+
+    ulong res = 0;
+
+    ulong power2 = (1L << 45) % n;
+    vec1d p = n;
+    vec1d pinv = 1 / (double) n;
+
+    { // TEST
+        ulong res_avx = _nmod_vec_dot_small_modulus_v3(v1, v2, len, power2, mod);
+        ulong res_lng = nmod_vec_dot_product_v1(v1, v2, len, mod);
+        if (res_avx != res_lng)
+        {
+            printf("\nDOT PRODUCT ERROR!\n");
+            return 0;
+        }
+    }
+
+    double t1;
+    clock_t tt;
+    long nb_iter;
+
+    t1 = 0.0; nb_iter = 0;
+    while (t1 < TIME_THRES)
+    {
+        for (slong i = 0; i < NB_ITER; i++) // warmup
+            res += _nmod_vec_dot_small_modulus_v3(v1, v2, len, power2, mod);
+
+        tt = clock();
+        for (slong i = 0; i < NB_ITER; i++)
+            res += _nmod_vec_dot_small_modulus_v3(v1, v2, len, power2, mod);
+        t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += NB_ITER;
+    }
+    t1 /= nb_iter;
+    printf("%.1e\t", t1);
+
+    _nmod_vec_clear(v1);
+    _nmod_vec_clear(v2);
+
+    return res;
+}
+
 
 /*------------------------------------------------------------*/
 /* AVX512i                                                    */
@@ -1004,7 +1133,8 @@ ulong time_nmod_vec_dot_product_split26_cf(ulong len, ulong n, flint_rand_t stat
 int main(int argc, char ** argv)
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
+    flint_rand_set_seed(state, time(NULL), time(NULL)+129384125);
 
     const slong nlens = 31;
     const slong lens[] = {2, 3, 4, 5, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 130, 160, 200, 260, 320, 400, 500, 600, 700, 800, 900, 1000, 2000, 4000};
@@ -1012,7 +1142,7 @@ int main(int argc, char ** argv)
     const slong nbits = 21;
     const slong bits[] = {3, 10, 20, 23, 26, 27, 28, 29, 30, 31, 32, 40, 50, 55, 57, 59, 60, 61, 62, 63, 64};
 
-    const slong nfuns = 12;
+    const slong nfuns = 14;
     typedef ulong (*timefun) (ulong, ulong, flint_rand_t);
     const timefun funs[] = {
         time_nmod_vec_dot_product_v1_cf,       // 0
@@ -1027,6 +1157,8 @@ int main(int argc, char ** argv)
         time_nmod_vec_dot_product_avx512_cu,   // 9
         time_nmod_vec_dot_product_avx2b_v2_cf, // 10
         time_nmod_vec_dot_product_avx2b_v2_cu, // 11
+        time_nmod_vec_dot_product_avx2b_v3_cf, // 12
+        time_nmod_vec_dot_product_avx2b_v3_cu, // 13
         //time_nmod_vec_dot_product_split16_cf,   // ??
         //time_nmod_vec_dot_product_split16_cu,   // ??
         //time_nmod_vec_dot_product_split26_cf,   // ??
@@ -1157,7 +1289,7 @@ int main(int argc, char ** argv)
         printf("\n");
     }
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     return 0;
 }
 
