@@ -86,6 +86,9 @@ ulong _nmod_vec_dot_product_2_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmo
 ulong _nmod_vec_dot_small_modulus(nn_ptr a, nn_ptr b, ulong len,
                                   ulong power_two,
                                   vec1d p, vec1d pinv);
+ulong _nmod_vec_dot_small_modulus_v2(nn_ptr a, nn_ptr b, ulong len,
+                                     ulong power_two,
+                                     double p, double pinv);
 
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */

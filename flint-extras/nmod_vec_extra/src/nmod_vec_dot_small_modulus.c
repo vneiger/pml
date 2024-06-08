@@ -61,5 +61,64 @@ ulong _nmod_vec_dot_small_modulus(nn_ptr a, nn_ptr b, ulong len,
     return (ulong) vec1d_reduce_to_0n(sum, p, pinv);
 }
 
+ulong _nmod_vec_dot_small_modulus_v2(nn_ptr a, nn_ptr b, ulong len,
+                                      ulong power_two, double p, double pinv)
+{
+    // the dot product without modular reduction is
+    //       dp  =  dp_lo + 2**sp_nb * dp_hi
+    // where sp_nb is a fixed number of bits where we split (below, this is 45)
+    const vec4n low_bits = vec4n_set_n((1L << 45) - 1);
+    vec4n dp_lo = vec4n_zero();
+    vec4n dp_hi = vec4n_zero();
+
+    // NOTES:
+    // -> constraint 1:
+    // the above representation of dp requires len * (p-1)**2 <= 2**sp_nb * (2**64-1)
+    // since p is < 2**32, a sufficient condition is len * 2**64 <= 2**(sp_nb + 63),
+    // i.e. len <= 2**(sp_nb-1)
+    // -> constraint 2:
+    // having dp_lo and dp_hi, we will actually compute dp_lo + power_two * dp_hi
+    // so we need power_two * dp_hi
+
+    // each pass in the loop handles 8x4 = 32 coefficients
+    ulong k = 0;
+    for (; k+31 < len; k += 32)
+    {
+        // no overflow in next 8 lines if 8*(p-1)**2 < 2**64, i.e. p-1 < 2**(30.5)
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+ 0), vec4n_load_unaligned(b+k+ 0)));
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+ 4), vec4n_load_unaligned(b+k+ 4)));
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+ 8), vec4n_load_unaligned(b+k+ 8)));
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+12), vec4n_load_unaligned(b+k+12)));
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+16), vec4n_load_unaligned(b+k+16)));
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+20), vec4n_load_unaligned(b+k+20)));
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+24), vec4n_load_unaligned(b+k+24)));
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+28), vec4n_load_unaligned(b+k+28)));
+
+        // add 19 bits 45...63 to dp_hi
+        dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right_45(dp_lo));
+        // keep only 45 lower bits in dp_lo
+        dp_lo = vec4n_bit_and(dp_lo, low_bits);
+    }
+
+    // left with < 32 coefficients
+    for (; k + 3 < len; k += 4)
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k), vec4n_load_unaligned(b+k)));
+
+    dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right_45(dp_lo));
+    dp_lo = vec4n_bit_and(dp_lo, low_bits);
+
+    // left with < 4 coefficients
+    ulong sum_last = 0;
+    for (; k < len; k++)
+        sum_last += a[k] * b[k];
+
+    const ulong total_lo = dp_lo[0] + dp_lo[1] + dp_lo[2] + dp_lo[3] + (sum_last & ((1L << 45) - 1));
+    const ulong total_hi = dp_hi[0] + dp_hi[1] + dp_hi[2] + dp_hi[3] + (sum_last >> 45);
+
+    vec1d sum = total_lo + power_two * total_hi;
+    return (ulong) vec1d_reduce_to_0n(sum, p, pinv);
+}
+
+
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
