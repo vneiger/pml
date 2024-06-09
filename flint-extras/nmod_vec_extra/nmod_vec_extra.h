@@ -86,12 +86,16 @@ ulong _nmod_vec_dot_product_2_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmo
 ulong _nmod_vec_dot_small_modulus(nn_ptr a, nn_ptr b, ulong len,
                                   ulong power_two,
                                   vec1d p, vec1d pinv);
-ulong _nmod_vec_dot_small_modulus_v2(nn_ptr a, nn_ptr b, ulong len,
-                                     ulong power_two,
-                                     ulong p, double pinv);
-ulong _nmod_vec_dot_small_modulus_v3(nn_ptr a, nn_ptr b, ulong len,
-                                     ulong power_two,
-                                     nmod_t modn);
+
+// splitting at 55 bits
+// -> supports prime up to 1517016615, and dot length up to 190369983 (more when p is smaller)
+#define DOT_SP_NB 55
+ulong _nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
+ulong _nmod_vec_dot_mod32_v2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
+ulong _nmod_vec_dot_mod32_v3(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
+ulong nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod);
+ulong _nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
+ulong nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod);
 
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */

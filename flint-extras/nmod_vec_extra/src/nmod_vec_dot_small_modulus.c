@@ -62,138 +62,58 @@ ulong _nmod_vec_dot_small_modulus(nn_ptr a, nn_ptr b, ulong len,
     return (ulong) vec1d_reduce_to_0n(sum, p, pinv);
 }
 
-ulong _nmod_vec_dot_small_modulus_v2(nn_ptr a, nn_ptr b, ulong len,
-                                      ulong power_two, ulong p, double pinv)
+// dot product using single limb, avx2
+ulong _nmod_vec_dot_product_1_avx2(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod)
 {
-    // the dot product without modular reduction is
-    //       dp  =  dp_lo + 2**sp_nb * dp_hi
-    // where sp_nb is a fixed number of bits where we split (below, this is 45)
-    const vec4n low_bits = vec4n_set_n((1L << 45) - 1);
-    vec4n dp_lo = vec4n_zero();
-    vec4n dp_hi = vec4n_zero();
-
-    // NOTES:
-    // -> constraint 1:
-    // the above representation of dp requires len * (p-1)**2 <= 2**sp_nb * (2**64-1)
-    // since p is < 2**32, a sufficient condition is len * 2**64 <= 2**(sp_nb + 63),
-    // i.e. len <= 2**(sp_nb-1)
-    // -> constraint 2:
-    // having dp_lo and dp_hi, we will actually compute dp_lo + power_two * dp_hi
-    // so we need power_two * dp_hi
-
-    // each pass in the loop handles 8x4 = 32 coefficients
-    ulong k = 0;
-    for (; k+31 < len; k += 32)
+    // compute 4 vertical sub-dot products
+    __m256i res_vec = _mm256_setzero_si256();
+    ulong i;
+    for (i = 0; i+3 < len; i += 4)
     {
-        // no overflow in next 8 lines if 8*(p-1)**2 < 2**64, i.e. p <= 2**(30.5)    (*)
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+ 0), vec4n_load_unaligned(b+k+ 0)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+ 4), vec4n_load_unaligned(b+k+ 4)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+ 8), vec4n_load_unaligned(b+k+ 8)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+12), vec4n_load_unaligned(b+k+12)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+16), vec4n_load_unaligned(b+k+16)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+20), vec4n_load_unaligned(b+k+20)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+24), vec4n_load_unaligned(b+k+24)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+28), vec4n_load_unaligned(b+k+28)));
-
-        // add 19 bits 45...63 to dp_hi
-        dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right_45(dp_lo));
-        // keep only 45 lower bits in dp_lo
-        dp_lo = vec4n_bit_and(dp_lo, low_bits);
+        // load + multiplication + addition
+        __m256i x = _mm256_loadu_si256((__m256i *) (vec1+i));
+        __m256i y = _mm256_loadu_si256((__m256i *) (vec2+i));
+        x = _mm256_mul_epu32(x, y);
+        res_vec = _mm256_add_epi64(res_vec, x);
     }
 
-    // left with len-k < 32 coefficients,
-    // this handles (len-k)//4 < 8 blocks of 4 coefficients, no overflow in this loop if (*) satisfied
-    for (; k + 3 < len; k += 4)
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k), vec4n_load_unaligned(b+k)));
+    // horizontal add
+    ulong res = res_vec[0] + res_vec[1] + res_vec[2] + res_vec[3];
 
-    dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right_45(dp_lo));
-    dp_lo = vec4n_bit_and(dp_lo, low_bits);
+    // scalar loop for leftover entries
+    for (; i < len; ++i)
+        res += vec1[i] * vec2[i];
+    NMOD_RED(res, res, mod);
 
-    // left with < 4 coefficients
-    // no overflow in dp_last if 3*(p-1)**2 < 2**64, i.e. p <= 2**32 / sqrt(3)  (up to ~31.207 bits)
-    ulong dp_last = 0;
-    for (; k < len; k++)
-        dp_last += a[k] * b[k];
-
-    const ulong total_lo = dp_lo[0] + dp_lo[1] + dp_lo[2] + dp_lo[3] + (dp_last & ((1L << 45) - 1));
-    const ulong total_hi = dp_hi[0] + dp_hi[1] + dp_hi[2] + dp_hi[3] + (dp_last >> 45);
-
-    //double total = total_lo + power_two * total_hi;
-    //double dp = fma(-rint(total*pinv), p, total);
-    ////double dp = total - rint(total*pinv) * p;
-    //return (dp >= 0) ? dp : (dp+p);
-
-    ulong total = total_lo + power_two * total_hi;
-    ulong quot = (ulong) (total * pinv);
-    ulong rem  = total - quot*p;
-    if ((slong) rem < 0) /* unlikely */
-       rem += p;
-    return rem - (p & (((slong) (p - rem - 1)) >> (FLINT_BITS-1)));
-
-}
-
-ulong _nmod_vec_dot_small_modulus_v3(nn_ptr a, nn_ptr b, ulong len, ulong power_two, nmod_t mod)
-{
-    // the dot product without modular reduction is
-    //       dp  =  dp_lo + 2**sp_nb * dp_hi
-    // where sp_nb is a fixed number of bits where we split (below, this is 45)
-    const vec4n low_bits = vec4n_set_n((1L << 45) - 1);
-    vec4n dp_lo = vec4n_zero();
-    vec4n dp_hi = vec4n_zero();
-
-    // NOTES:
-    // -> constraint 1:
-    // the above representation of dp requires len * (p-1)**2 <= 2**sp_nb * (2**64-1)
-    // since p is < 2**32, a sufficient condition is len * 2**64 <= 2**(sp_nb + 63),
-    // i.e. len <= 2**(sp_nb-1)
-    // -> constraint 2:
-    // having dp_lo and dp_hi, we will actually compute dp_lo + power_two * dp_hi
-    // so we need power_two * dp_hi
-
-    // each pass in the loop handles 8x4 = 32 coefficients
-    ulong k = 0;
-    for (; k+31 < len; k += 32)
-    {
-        // no overflow in next 8 lines if 8*(p-1)**2 < 2**64, i.e. p <= 2**(30.5)    (*)
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+ 0), vec4n_load_unaligned(b+k+ 0)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+ 4), vec4n_load_unaligned(b+k+ 4)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+ 8), vec4n_load_unaligned(b+k+ 8)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+12), vec4n_load_unaligned(b+k+12)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+16), vec4n_load_unaligned(b+k+16)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+20), vec4n_load_unaligned(b+k+20)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+24), vec4n_load_unaligned(b+k+24)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+28), vec4n_load_unaligned(b+k+28)));
-
-        // add 19 bits 45...63 to dp_hi
-        dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right_45(dp_lo));
-        // keep only 45 lower bits in dp_lo
-        dp_lo = vec4n_bit_and(dp_lo, low_bits);
-    }
-
-    // left with len-k < 32 coefficients,
-    // this handles (len-k)//4 < 8 blocks of 4 coefficients, no overflow in this loop if (*) satisfied
-    for (; k + 3 < len; k += 4)
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k), vec4n_load_unaligned(b+k)));
-
-    dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right_45(dp_lo));
-    dp_lo = vec4n_bit_and(dp_lo, low_bits);
-
-    // left with < 4 coefficients
-    // no overflow in dp_last if 3*(p-1)**2 < 2**64, i.e. p <= 2**32 / sqrt(3)  (up to ~31.207 bits)
-    ulong dp_last = 0;
-    for (; k < len; k++)
-        dp_last += a[k] * b[k];
-
-
-    const ulong total_lo = dp_lo[0] + dp_lo[1] + dp_lo[2] + dp_lo[3] + (dp_last & ((1L << 45) - 1));
-    const ulong total_hi = dp_hi[0] + dp_hi[1] + dp_hi[2] + dp_hi[3] + (dp_last >> 45);
-    const ulong dp = power_two * total_hi + total_lo;
-    ulong res;
-    NMOD_RED(res, dp, mod);
-    //return n_mod2_preinv(dp, mod.n, mod.ninv);
     return res;
 }
 
+// dot product using single limb, avx512
+ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod) {
+    // compute 4 vertical sub-dot products
+    __m512i res_vec = _mm512_setzero_si512();
+    ulong i;
+    for (i = 0; i+7 < len; i += 8)
+    {
+        // load + multiplication + addition
+        __m512i x = _mm512_loadu_si512((__m512i *) (vec1+i));
+        __m512i y = _mm512_loadu_si512((__m512i *) (vec2+i));
+        x = _mm512_mul_epu32(x, y);
+        res_vec = _mm512_add_epi64(res_vec, x);
+    }
+
+    // horizontal add
+    //ulong res = res_vec[0] + res_vec[1] + res_vec[2] + res_vec[3] 
+              //+ res_vec[4] + res_vec[5] + res_vec[6] + res_vec[7];
+    ulong res = _mm512_reduce_add_epi64(res_vec);
+
+    // scalar loop for leftover entries
+    for (; i < len; ++i)
+        res += vec1[i] * vec2[i];
+    NMOD_RED(res, res, mod);
+
+    return res;
+}
 
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
