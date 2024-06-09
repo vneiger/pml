@@ -5,7 +5,7 @@ HEADERS = $(wildcard ../*.h)
 OBJS = $(patsubst %.c, $(LIB_DIR)/%.o, $(SOURCES))
 INSTALLED_HEADERS = $(patsubst ../%.h, $(INC_DIR)/%.h, $(HEADERS))
 
-CC = gcc
+CC = clang
 #CFLAGS = -fverbose-asm -S -Wall -Wextra -O3 -march=native -I$(INC_DIR)
 CFLAGS = -Wall -Wextra -O3 -march=native -I$(INC_DIR)
 
