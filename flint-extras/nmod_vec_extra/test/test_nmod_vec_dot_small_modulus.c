@@ -3,14 +3,14 @@
 #include <flint/nmod_vec.h>
 
 #include "nmod_vec_extra.h"
- 
+
 
 /*--------------------------------------------------------------*/
 /* computes a dot product in size len modulo n                  */
 /*--------------------------------------------------------------*/
 void check_nmod_vec_dot_small_modulus(ulong len, ulong n, flint_rand_t state)
 {
-    ulong res1, res2;
+    ulong res1, res2, res3;
     nn_ptr v1, v2;
     nmod_t mod;
 
@@ -21,11 +21,13 @@ void check_nmod_vec_dot_small_modulus(ulong len, ulong n, flint_rand_t state)
 
     _nmod_vec_rand(v1, state, len, mod);
     _nmod_vec_rand(v2, state, len, mod);
-    
+
     res1 = _nmod_vec_dot(v1, v2, len, mod, _nmod_vec_dot_bound_limbs(len, mod));
-    res2 = _nmod_vec_dot_small_modulus(v1, v2, len, (1L << 45) % n, n, 1 / (double) n);
+    res2 = _nmod_vec_dot_mod32(v1, v2, len, mod, (uint) ((1L << DOT_SP_NB) % n));
+    res3 = _nmod_vec_dot_mod32_avx2(v1, v2, len, mod, (uint) ((1L << DOT_SP_NB) % n));
     assert (res1 == res2);
-    
+    assert (res1 == res3);
+
     _nmod_vec_clear(v1);
     _nmod_vec_clear(v2);
 }
@@ -38,15 +40,13 @@ int main()
     flint_rand_t state;
     flint_rand_init(state);
 
-    printf("test running, various bitlengths, len from 1 to 999 (no error message means success)...\n");
-    for (slong len = 1; len < 1000; len += 1)
+    printf("test running, various bitlengths, various lengths (no error message means success)...\n");
+    printf("lens: ");
+    for (slong len = 1; len < (slong)100000000; len *= 3)
     {
-        if (len % 20 == 0)
-        {
-            printf("%ld..", len);
-            fflush(stdout);
-        }
-        for (slong repeat = 0; repeat < 30; repeat++)
+        printf("%ld..", len);
+        fflush(stdout);
+        for (slong repeat = 0; repeat < 10; repeat++)
         {
             check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 2) + 1, state);
             check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 6) + 1, state);
@@ -55,9 +55,14 @@ int main()
             check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 18) + 1, state);
             check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 22) + 1, state);
             check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 26) + 1, state);
-            check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 29) + 1, state);
+            check_nmod_vec_dot_small_modulus(len, (UWORD(1) << 30) + 1, state);
         }
     }
+    // test max claimed modulus+len
+    printf("%ld..", 134744072L);
+    fflush(stdout);
+    for (slong repeat = 0; repeat < 10; repeat++)
+        check_nmod_vec_dot_small_modulus(134744072L, 1515531528L, state);
     printf("\n");
 
     flint_rand_clear(state);
