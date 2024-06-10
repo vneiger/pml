@@ -1220,11 +1220,11 @@ int main(int argc, char ** argv)
     flint_rand_init(state);
     flint_rand_set_seed(state, time(NULL), time(NULL)+129384125);
 
-    const slong nlens = 31;
-    const slong lens[] = {2, 3, 4, 5, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 130, 160, 200, 260, 320, 400, 500, 600, 700, 800, 900, 1000, 2000, 4000};
+    const slong nlens = 33;
+    const slong lens[] = {2, 3, 4, 5, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 130, 160, 200, 260, 320, 400, 500, 600, 700, 800, 900, 1000, 2000, 4000, 8000, 16000};
 
-    const slong nbits = 21;
-    const slong bits[] = {3, 10, 20, 23, 26, 27, 28, 29, 30, 31, 32, 40, 50, 55, 57, 59, 60, 61, 62, 63, 64};
+    const slong nbits = 20;
+    const slong bits[] = {3, 10, 20, 23, 26, 29, 30, 31, 32, 33, 40, 50, 55, 57, 59, 60, 61, 62, 63, 64};
 
     const slong nfuns = 10;
     typedef ulong (*timefun) (ulong, ulong, flint_rand_t);
