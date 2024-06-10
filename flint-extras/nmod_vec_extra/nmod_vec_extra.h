@@ -90,7 +90,7 @@ do                                                                   \
         ulong u0 = UWORD(0);                                         \
         ulong u1 = UWORD(0);                                         \
                                                                      \
-        for (i = 0; i+7 < len; )                                       \
+        for (i = 0; i+7 < len; )                                     \
         {                                                            \
             umul_ppmm(s1, s0, (expr1), (expr2));                     \
             add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
@@ -119,7 +119,7 @@ do                                                                   \
         }                                                            \
         for (; i < len; i++)                                         \
         {                                                            \
-            umul_ppmm(s1, s0, (expr1), (expr2));                         \
+            umul_ppmm(s1, s0, (expr1), (expr2));                     \
             add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
         }                                                            \
                                                                      \
@@ -128,20 +128,16 @@ do                                                                   \
                                                                      \
     else if (nlimbs == 3)                                            \
     {                                                                \
-        /* number of products we can do before overflow */           \
-        const ulong maxbits = FLINT_BIT_COUNT(mod.n);                \
-        const ulong log_nt = 2*FLINT_BITS - 2*maxbits;               \
-        const ulong num_terms =                                      \
-                (log_nt < FLINT_BITS) ?                              \
-                (UWORD(1) << log_nt) : (UWORD_MAX);                  \
-                                                                     \
         ulong s0, s1;                                                \
         ulong t2 = UWORD(0);                                         \
         ulong t1 = UWORD(0);                                         \
         ulong t0 = UWORD(0);                                         \
                                                                      \
         i = 0;                                                       \
-        if (num_terms >= 8)                                          \
+        /* we can accumulate 8 terms if n == mod.n is such that */   \
+        /*      8 * (n-1)**2 < 2**128, this is equivalent to    */   \
+        /*      n <= ceil(sqrt(2**125)) = 6521908912666391107   */   \
+        if (mod.n <= 6521908912666391107L)                           \
         {                                                            \
             slong u0, u1;                                            \
             for (; i+7 < len; )                                      \
