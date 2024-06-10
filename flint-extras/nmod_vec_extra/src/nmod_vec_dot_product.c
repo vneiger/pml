@@ -221,7 +221,8 @@ ulong _nmod_vec_dot_product_1_avx2(nn_srcptr vec1, nn_srcptr vec2, ulong len, nm
 }
 
 // dot product using single limb, avx512
-ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod) {
+ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod)
+{
     // compute 4 vertical sub-dot products
     __m512i res_vec = _mm512_setzero_si512();
     ulong i;
