@@ -5,9 +5,6 @@
 #include <flint/fft_small.h>
 #include <flint/machine_vectors.h>
 
-#include <math.h>
-#include "nmod_extra.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -74,29 +71,33 @@ void nmod_sd_fft_clear(nmod_sd_fft_t F);
 /* returns x[i] = poly(w^i), n=2^k, up to permutation         */
 /* x must have length >= n                                    */
 /*------------------------------------------------------------*/
-void nmod_sd_fft_evaluate(nn_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong k);
-void nmod_sd_fft_evaluate_t(nn_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong k);
+void nmod_sd_fft_evaluate(nn_ptr x, const nmod_poly_t poly, sd_fft_ctx_t Q, const ulong k);
+void nmod_sd_fft_evaluate_t(nn_ptr x, const nmod_poly_t poly, sd_fft_ctx_t Q, const ulong k);
+// TODO fft_small modif (June 24), changed lctx -> ctx to make things compile but this is not correct
 
 /*------------------------------------------------------------*/
 /* tft evaluation and its transpose                           */
 /* x must have length >= N                                    */
 /*------------------------------------------------------------*/
-void nmod_sd_tft_evaluate(nn_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
-void nmod_sd_tft_evaluate_t(nn_ptr x, nn_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, ulong N);
+void nmod_sd_tft_evaluate(nn_ptr x, const nmod_poly_t poly, sd_fft_ctx_t Q, nmod_sd_fft_t F, const ulong N);
+void nmod_sd_tft_evaluate_t(nn_ptr x, nn_srcptr A, sd_fft_ctx_t Q, nmod_sd_fft_t F, ulong N);
+// TODO fft_small modif (June 24), changed lctx -> ctx to make things compile but this is not correct
 
 /*------------------------------------------------------------*/
 /* tft interpolation and its transpose                        */
 /* inverts nmod_sd_tft_evaluate                               */
 /*------------------------------------------------------------*/
-void nmod_sd_tft_interpolate(nmod_poly_t poly, nn_ptr x, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
-void nmod_sd_tft_interpolate_t(nn_ptr a, nn_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
+void nmod_sd_tft_interpolate(nmod_poly_t poly, nn_ptr x, sd_fft_ctx_t Q, nmod_sd_fft_t F, const ulong N);
+void nmod_sd_tft_interpolate_t(nn_ptr a, nn_srcptr A, sd_fft_ctx_t Q, nmod_sd_fft_t F, const ulong N);
+// TODO fft_small modif (June 24), changed lctx -> ctx to make things compile but this is not correct
 
 /*------------------------------------------------------------*/
 /* fft interpolation                                          */
 /* inverts nmod_sd_fft_evaluate                               */
 /*------------------------------------------------------------*/
-void nmod_sd_fft_interpolate(nmod_poly_t poly, nn_ptr x, sd_fft_lctx_t Q, const ulong k); 
-void nmod_sd_fft_interpolate_t(nmod_poly_t poly, nn_ptr x, sd_fft_lctx_t Q, const ulong k); 
+void nmod_sd_fft_interpolate(nmod_poly_t poly, nn_ptr x, sd_fft_ctx_t Q, const ulong k); 
+void nmod_sd_fft_interpolate_t(nmod_poly_t poly, nn_ptr x, sd_fft_ctx_t Q, const ulong k); 
+// TODO fft_small modif (June 24), changed lctx -> ctx to make things compile but this is not correct
 
 
 /*------------------------------------------------------------*/
