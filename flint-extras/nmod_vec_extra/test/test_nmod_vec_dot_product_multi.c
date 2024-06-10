@@ -90,7 +90,7 @@ void check_nmod_vec_dot_product_multi(ulong len, ulong k, ulong bits1, ulong bit
 int main()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     printf("test running, various bitlengths, len and k from 1 to 300 (no error message means success)...\n");
     printf("len = ");
@@ -133,7 +133,7 @@ int main()
     }
     printf("\n");
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     return 0;
 }
 

@@ -170,7 +170,7 @@ ulong _nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint p
 }
 
 
-ulong nmod_vec_dot_product_v2(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod, ulong n_limbs)
+ulong nmod_vec_dot_product(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod, ulong n_limbs)
 {
     if (n_limbs == 1)
     {

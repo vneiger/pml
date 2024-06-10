@@ -65,8 +65,11 @@ void nmod_vec_integer_dot_product(nn_ptr res,
 ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2,
                                       ulong len, ulong max_bits1, ulong max_bits2,
                                       nmod_t mod);
-ulong nmod_vec_dot_product_v1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-ulong nmod_vec_dot_product_v2(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod, ulong n_limbs);
+
+/*------------------------------------------------*/
+/* v1 and v2 entries already reduced modulo mod.n */
+/*------------------------------------------------*/
+ulong nmod_vec_dot_product(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod, ulong n_limbs);
 
 
 /*------------------------------------------------------------*/
@@ -107,6 +110,10 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res,
                                   nn_ptr a1, nn_ptr a2, nn_ptr b, ulong len,
                                   ulong power_two,
                                   vec2d p2, vec2d pinv2);
+
+
+
+
 
 
 /*------------------------------------------------------------*/

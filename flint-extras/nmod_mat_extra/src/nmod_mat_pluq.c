@@ -183,9 +183,7 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
             for (slong i = 0; i < rank; i++)
                 A_i_piv[i] = nmod_mat_entry(A, i, pivot);
             for (slong i = 0; i < A->r - nullity - rank - 1; i++)
-                A_vec[i] = nmod_vec_dot_product_v1(A->rows[i+rank+1], A_i_piv, rank, A->mod);
-                //A_vec[i] = nmod_vec_dot_product_v2(A->rows[i+rank+1], A_i_piv, rank, A->mod, 1);
-                //A_vec[i] = nmod_vec_dot_product_v3(A->rows[i+rank+1], A_i_piv, rank, A->mod, 1);
+                A_vec[i] = nmod_vec_dot_product(A->rows[i+rank+1], A_i_piv, rank, A->mod, 1); // TODO update when dp finalized
             // update:  from A[rank+1:A->r-nullity, pivot], subtract A_vec and divide by pivot
             for (slong i = rank+1; i < A->r - nullity; i++)
             {

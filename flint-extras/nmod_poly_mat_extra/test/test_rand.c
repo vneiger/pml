@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
 
     srand(time(NULL));
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
     flint_randseed(state, rand(), rand());
 
     slong field_prime = atol(argv[1]);
@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
     if (check(field_prime, iterations, state, atol(argv[2]), atol(argv[3]), atol(argv[4])) != 0)
         printf("BUG\n");
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     return 0;
 }
 

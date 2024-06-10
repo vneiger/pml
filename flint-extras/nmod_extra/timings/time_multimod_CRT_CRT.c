@@ -24,7 +24,7 @@ void check_nmod_multimod_CRT_CRT(ulong num_bits, ulong n_bits)
     
     N=1000;
     
-    flint_randinit(state);
+    flint_rand_init(state);
 
     n = n_urandint(state, 1L << n_bits);
     input = (fmpz *) malloc(N * sizeof(fmpz));
@@ -86,7 +86,7 @@ void check_nmod_multimod_CRT_CRT(ulong num_bits, ulong n_bits)
     for (i = 0; i < N; i++)
         fmpz_clear(input + i);
     free(input);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/

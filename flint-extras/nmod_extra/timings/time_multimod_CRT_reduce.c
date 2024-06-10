@@ -22,7 +22,7 @@ void check_nmod_multimod_CRT_reduce(ulong num_primes, ulong n_bits)
 
     N=1001;
     
-    flint_randinit(state);
+    flint_rand_init(state);
     n = n_urandint(state, 1L << n_bits);
     nmod_init(&mod, n);
     input = _nmod_vec_init(N);
@@ -57,7 +57,7 @@ void check_nmod_multimod_CRT_reduce(ulong num_primes, ulong n_bits)
         _nmod_vec_clear(vec_residues[i]);
     free(vec_residues);
     nmod_multimod_CRT_clear(CRT);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/

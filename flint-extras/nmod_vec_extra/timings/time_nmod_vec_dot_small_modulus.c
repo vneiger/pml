@@ -115,7 +115,7 @@ void time_nmod_vec_dot_small_modulus(ulong len, ulong nbits, ulong n, flint_rand
 int main()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     //printf("len\t4\t\t\t\t10\t\t\t\t20\t\t\t\t25\t\t\t\t29\t\t\t\t30\n");
     printf("len\t4\t\t\t\t25\t\t\t\t30\n");
@@ -131,7 +131,7 @@ int main()
         printf("\n");
     }
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     return 0;
 }
 

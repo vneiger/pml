@@ -15,7 +15,7 @@ void time_fmpz_mat_mul(ulong m, ulong n, ulong p, ulong n_bits)
     clock_t tt;
     long nb_iter;
 
-    flint_randinit(state);
+    flint_rand_init(state);
 
     fmpz_mat_init(A, m, n);
     fmpz_mat_init(B, n, p);
@@ -56,7 +56,7 @@ void time_fmpz_mat_mul(ulong m, ulong n, ulong p, ulong n_bits)
     fmpz_mat_clear(C);
     fmpz_mat_clear(B);
     fmpz_mat_clear(A);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/

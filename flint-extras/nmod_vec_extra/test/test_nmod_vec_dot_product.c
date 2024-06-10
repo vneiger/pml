@@ -36,7 +36,7 @@ void check_nmod_vec_dot_product(ulong len, ulong bits1, ulong bits2, ulong n, fl
     }
 
     res1 = _nmod_vec_dot(v1r, v2r, len, mod, _nmod_vec_dot_bound_limbs(len, mod));
-    res2 = nmod_vec_dot_product(v1, v2, len, bits1, bits2, mod);
+    res2 = nmod_vec_dot_product(v1, v2, len, mod, _nmod_vec_dot_bound_limbs(len, mod));
     assert (res1 == res2);
 
     _nmod_vec_clear(v1r);
@@ -51,7 +51,7 @@ void check_nmod_vec_dot_product(ulong len, ulong bits1, ulong bits2, ulong n, fl
 int main()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     printf("test running, various bitlengths, len from 1 to ~1000 (no error message means success)...\n");
     for (slong len = 1; len < 1000; len += 1)
@@ -89,7 +89,7 @@ int main()
     }
     printf("\n");
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     return 0;
 }
 

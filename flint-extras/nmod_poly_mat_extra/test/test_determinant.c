@@ -163,7 +163,7 @@ int main(int argc, char ** argv)
         return 1;
 
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
     srand(time(NULL));
     flint_randseed(state, rand(), rand());
 
@@ -196,7 +196,7 @@ int main(int argc, char ** argv)
         nmod_poly_mat_clear(mat);
     }
 
-    flint_randclear(state);
+    flint_rand_clear(state);
 
     if (res == 0)
     {

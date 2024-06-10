@@ -41,7 +41,7 @@ int test_nmod_mat_poly0(void)
     nmod_mat_init(prod_2, rdim, rdim, prime);
 
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
     srand(time(NULL));
     flint_randseed(state, rand(), rand());
 
@@ -89,7 +89,7 @@ int test_nmod_mat_poly0(void)
     nmod_mat_clear(prod);
     nmod_mat_clear(prod_2);
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     free(x);
 
     return 0;
@@ -107,7 +107,7 @@ int test_matpol(void)
     printf("number of columns: %lu, and rows: %lu\n", cdim, rdim);
 
     flint_rand_t seed;
-    flint_randinit(seed);
+    flint_rand_init(seed);
     srand(time(NULL));
     flint_randseed(seed, rand(), rand());
 
@@ -163,7 +163,7 @@ int test_matpol(void)
 
     nmod_poly_mat_clear(A);
     nmod_mat_clear(B);
-    flint_randclear(seed);
+    flint_rand_clear(seed);
     fmpz_mat_clear(mat_deg);
 
     return 1;

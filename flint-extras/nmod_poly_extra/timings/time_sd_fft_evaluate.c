@@ -7,7 +7,7 @@
 void get_time()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     // prime, modulus
     nmod_t mod;
@@ -92,7 +92,7 @@ void get_time()
     sd_fft_lctx_clear(QL, Q);
     sd_fft_ctx_clear(Q);
     nmod_sd_fft_clear(F);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 

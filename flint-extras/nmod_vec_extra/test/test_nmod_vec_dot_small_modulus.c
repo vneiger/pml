@@ -36,7 +36,7 @@ void check_nmod_vec_dot_small_modulus(ulong len, ulong n, flint_rand_t state)
 int main()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     printf("test running, various bitlengths, len from 1 to 999 (no error message means success)...\n");
     for (slong len = 1; len < 1000; len += 1)
@@ -60,6 +60,6 @@ int main()
     }
     printf("\n");
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     return 0;
 }

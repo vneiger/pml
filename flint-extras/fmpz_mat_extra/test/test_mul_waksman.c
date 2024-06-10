@@ -18,7 +18,7 @@ void test_fmpz_mat_mul(ulong m, ulong n, ulong p, ulong n_bits)
     flint_rand_t state;
     fmpz_mat_t A, B, C1, C2;
 
-    flint_randinit(state);
+    flint_rand_init(state);
 
     fmpz_mat_init(A, m, n);
     fmpz_mat_init(B, n, p);
@@ -43,7 +43,7 @@ void test_fmpz_mat_mul(ulong m, ulong n, ulong p, ulong n_bits)
     fmpz_mat_clear(C2);
     fmpz_mat_clear(B);
     fmpz_mat_clear(A);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/
