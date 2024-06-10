@@ -35,7 +35,7 @@ void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
             //C->rows[i][j] = _nmod_vec_dot_small_modulus(A->rows[i], BT->rows[j], A->c, power2, A->mod.n, A->mod.ninv);
             //C->rows[i][j] = _nmod_vec_dot_small_modulus_v2(A->rows[i], BT->rows[j], A->c, power2, A->mod.n, A->mod.ninv);
             //C->rows[i][j] = _nmod_vec_dot_mod32_avx2(A->rows[i], BT->rows[j], A->c, A->mod, power2);
-            C->rows[i][j] = _nmod_vec_dot_mod32_v3(A->rows[i], BT->rows[j], A->c, A->mod, power2);
+            C->rows[i][j] = _nmod_vec_dot_mod32(A->rows[i], BT->rows[j], A->c, A->mod, power2);
 
 
     nmod_mat_clear(BT);

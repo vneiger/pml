@@ -87,12 +87,9 @@ ulong _nmod_vec_dot_small_modulus(nn_ptr a, nn_ptr b, ulong len,
                                   ulong power_two,
                                   vec1d p, vec1d pinv);
 
-// splitting at 55 bits
-// -> supports prime up to 1517016615, and dot length up to 190369983 (more when p is smaller)
-#define DOT_SP_NB 55
+// splitting at 56 bits
+#define DOT_SP_NB 56
 ulong _nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
-ulong _nmod_vec_dot_mod32_v2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
-ulong _nmod_vec_dot_mod32_v3(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
 ulong nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod);
 ulong _nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
 ulong nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod);

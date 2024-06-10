@@ -680,7 +680,7 @@ ulong time_nmod_vec_dot_product_mod32_cu(ulong len, ulong n, flint_rand_t state)
     uint power2 = (1L << DOT_SP_NB) % n;
 
     { // TEST
-        ulong res_mod32 = _nmod_vec_dot_mod32_v3(v1[0], v2[0], len, mod, power2);
+        ulong res_mod32 = _nmod_vec_dot_mod32(v1[0], v2[0], len, mod, power2);
         ulong res_lng = nmod_vec_dot_product_v1(v1[0], v2[0], len, mod);
         if (res_mod32 != res_lng)
         {
@@ -697,11 +697,11 @@ ulong time_nmod_vec_dot_product_mod32_cu(ulong len, ulong n, flint_rand_t state)
     while (t1 < TIME_THRES)
     {
         for (slong i = 0; i < NB_ITER; i++) // warmup
-            res += _nmod_vec_dot_mod32_v3(v1[i], v2[i], len, mod, power2);
+            res += _nmod_vec_dot_mod32(v1[i], v2[i], len, mod, power2);
 
         tt = clock();
         for (slong i = 0; i < NB_ITER; i++)
-            res += _nmod_vec_dot_mod32_v3(v1[i], v2[i], len, mod, power2);
+            res += _nmod_vec_dot_mod32(v1[i], v2[i], len, mod, power2);
         t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += NB_ITER;
     }
@@ -739,7 +739,7 @@ ulong time_nmod_vec_dot_product_mod32_cf(ulong len, ulong n, flint_rand_t state)
     ulong power2 = (1L << DOT_SP_NB) % n;
 
     { // TEST
-        ulong res_mod32 = _nmod_vec_dot_mod32_v3(v1, v2, len, mod, power2);
+        ulong res_mod32 = _nmod_vec_dot_mod32(v1, v2, len, mod, power2);
         ulong res_lng = nmod_vec_dot_product_v1(v1, v2, len, mod);
         if (res_mod32 != res_lng)
         {
@@ -756,11 +756,11 @@ ulong time_nmod_vec_dot_product_mod32_cf(ulong len, ulong n, flint_rand_t state)
     while (t1 < TIME_THRES)
     {
         for (slong i = 0; i < NB_ITER; i++) // warmup
-            res += _nmod_vec_dot_mod32_v3(v1, v2, len, mod, power2);
+            res += _nmod_vec_dot_mod32(v1, v2, len, mod, power2);
 
         tt = clock();
         for (slong i = 0; i < NB_ITER; i++)
-            res += _nmod_vec_dot_mod32_v3(v1, v2, len, mod, power2);
+            res += _nmod_vec_dot_mod32(v1, v2, len, mod, power2);
         t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += NB_ITER;
     }

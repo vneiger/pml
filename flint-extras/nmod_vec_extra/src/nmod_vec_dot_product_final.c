@@ -118,108 +118,6 @@ ulong nmod_vec_dot_product_v2(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod,
     return UWORD(0);
 }
 
-
-
-// NOTE: same constraints on len and mod as for avx version
-ulong _nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two)
-{
-    // the dot product without modular reduction is
-    //       dp  =  dp_lo + 2**sp_nb * dp_hi
-    // where sp_nb is a fixed number of bits where we split
-    const ulong low_bits = (1L << DOT_SP_NB) - 1;
-    ulong dp_lo0 = 0;
-    ulong dp_lo1 = 0;
-    ulong dp_lo2 = 0;
-    ulong dp_lo3 = 0;
-    ulong dp_hi0 = 0;
-    ulong dp_hi1 = 0;
-    ulong dp_hi2 = 0;
-    ulong dp_hi3 = 0;
-
-    // each pass in the loop handles 8*4 = 32 coefficients
-    ulong k = 0;
-    for (; k+31 < len; k += 32)
-    {
-        // no overflow in these lines if (2**sp_nb - 1) + 8*(p-1)**2 < 2**64    (*)
-        dp_lo0 += a[k+ 0] * b[k+ 0];  dp_lo1 += a[k+ 1] * b[k+ 1];  dp_lo2 += a[k+ 2] * b[k+ 2];  dp_lo3 += a[k+ 3] * b[k+ 3];
-        dp_lo0 += a[k+ 4] * b[k+ 4];  dp_lo1 += a[k+ 5] * b[k+ 5];  dp_lo2 += a[k+ 6] * b[k+ 6];  dp_lo3 += a[k+ 7] * b[k+ 7];
-        dp_lo0 += a[k+ 8] * b[k+ 8];  dp_lo1 += a[k+ 9] * b[k+ 9];  dp_lo2 += a[k+10] * b[k+10];  dp_lo3 += a[k+11] * b[k+11];
-        dp_lo0 += a[k+12] * b[k+12];  dp_lo1 += a[k+13] * b[k+13];  dp_lo2 += a[k+14] * b[k+14];  dp_lo3 += a[k+15] * b[k+15];
-        dp_lo0 += a[k+16] * b[k+16];  dp_lo1 += a[k+17] * b[k+17];  dp_lo2 += a[k+18] * b[k+18];  dp_lo3 += a[k+19] * b[k+19];
-        dp_lo0 += a[k+20] * b[k+20];  dp_lo1 += a[k+21] * b[k+21];  dp_lo2 += a[k+22] * b[k+22];  dp_lo3 += a[k+23] * b[k+23];
-        dp_lo0 += a[k+24] * b[k+24];  dp_lo1 += a[k+25] * b[k+25];  dp_lo2 += a[k+26] * b[k+26];  dp_lo3 += a[k+27] * b[k+27];
-        dp_lo0 += a[k+28] * b[k+28];  dp_lo1 += a[k+29] * b[k+29];  dp_lo2 += a[k+30] * b[k+30];  dp_lo3 += a[k+31] * b[k+31];
-
-        // add bits sp_nb...63 to dp_hi; keep sp_nb lower bits in dp_lo
-        dp_hi0 += (dp_lo0 >> DOT_SP_NB); dp_hi1 += (dp_lo1 >> DOT_SP_NB); dp_hi2 += (dp_lo2 >> DOT_SP_NB); dp_hi3 += (dp_lo3 >> DOT_SP_NB);
-        dp_lo0 &= low_bits; dp_lo0 &= low_bits; dp_lo0 &= low_bits; dp_lo0 &= low_bits;
-    }
-
-    // left with len-k < 32 coefficients,
-    // this handles (len-k)//4 < 8 blocks of 4 coefficients, no overflow in this loop if (*) satisfied
-    for (; k + 3 < len; k += 4)
-    {
-        dp_lo0 += a[k+ 0] * b[k+ 0];  dp_lo1 += a[k+ 1] * b[k+ 1];  dp_lo2 += a[k+ 2] * b[k+ 2];  dp_lo3 += a[k+ 3] * b[k+ 3];
-    }
-
-    dp_hi0 = dp_hi0 + dp_hi1 + dp_hi2 + dp_hi3 + (dp_lo0 >> DOT_SP_NB) + (dp_lo1 >> DOT_SP_NB) + (dp_lo2 >> DOT_SP_NB) + (dp_lo3 >> DOT_SP_NB);
-    dp_lo0 = (dp_lo0 & low_bits) + (dp_lo1 & low_bits) + (dp_lo2 & low_bits) + (dp_lo3 & low_bits);
-
-    // left with < 4 coefficients
-    // no overflow in dp_last if 3*(p-1)**2 < 2**64, ok if (*) satisfied
-    ulong dp_last = 0;
-    for (; k < len; k++)
-        dp_last += a[k] * b[k];
-
-    dp_lo0 += dp_last & low_bits;
-    dp_hi0 += dp_last >> DOT_SP_NB;
-    ulong dp = ((ulong)power_two * dp_hi0) + dp_lo0;
-    NMOD_RED(dp, dp, mod);
-    return dp;
-}
-
-// NOTE: same constraints on len and mod as for avx version
-ulong _nmod_vec_dot_mod32_v2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two)
-{
-    // the dot product without modular reduction is
-    //       dp  =  dp_lo + 2**sp_nb * dp_hi
-    // where sp_nb is a fixed number of bits where we split
-    const ulong low_bits = (1L << DOT_SP_NB) - 1;
-    ulong dp_lo = 0;
-    ulong dp_hi = 0;
-
-    // each pass in the loop handles 8 coefficients
-    ulong k = 0;
-    for (; k < len; k += 8)
-    {
-        // no overflow in these lines if (2**sp_nb - 1) + 8*(p-1)**2 < 2**64    (*)
-        dp_lo += a[k+0] * b[k+0];
-        dp_lo += a[k+1] * b[k+1];
-        dp_lo += a[k+2] * b[k+2];
-        dp_lo += a[k+3] * b[k+3];
-        dp_lo += a[k+4] * b[k+4];
-        dp_lo += a[k+5] * b[k+5];
-        dp_lo += a[k+6] * b[k+6];
-        dp_lo += a[k+7] * b[k+7];
-
-        // add bits sp_nb...63 to dp_hi; keep sp_nb lower bits in dp_lo
-        dp_hi += (dp_lo >> DOT_SP_NB);
-        dp_lo &= low_bits;
-    }
-
-    // left with len-k < 8 coefficients
-    // no overflow in dp_last if 7*(p-1)**2 < 2**64, ok FIXME if (*) satisfied
-    ulong dp_last = 0;
-    for (; k < len; k++)
-        dp_last += a[k] * b[k];
-
-    dp_lo += dp_last & low_bits;
-    dp_hi += dp_last >> DOT_SP_NB;
-    ulong dp = ((ulong)power_two * dp_hi) + dp_lo;
-    NMOD_RED(dp, dp, mod);
-    return dp;
-}
-
 /*-------------------------------*/
 /* dot product for small modulus */
 /*-------------------------------*/
@@ -227,65 +125,76 @@ ulong _nmod_vec_dot_mod32_v2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint pow
 // in short: with current DOT_SP_NB value 55,
 // -> modulus up to about 2**30.5 (more precisely, up to 1517016615)
 // -> length of dot product up to 
+// TODO in progress
 
 
-// NOTES:
-// -> constraint 0:
-// as can be seen below (*), we will have the condition
-//      8 * (p-1)**2 <= 2**64 - 2**sp_nb
-// i.e. (p-1)**2  <=  2**61 - 2**(sp_nb-3),
-// one can take p up to 1 + floor(sqrt(2**61 - 2**(sp_nb-3)))
-// in particular, p-1 < 2**30.5
+// APPROACH:
 //
-// -> constraint 1:
-// the above representation of dp requires len * (p-1)**2 <= 2**sp_nb * (2**64-1)
-// since (p-1)**2 is < 2**61, a sufficient condition is len * 2**61 <= 2**sp_nb * 2**63,
-// i.e. len <= 2**(sp_nb+2)   (which is not very restrictive)
+// Let n = mod.n, s = DOT_SP_NB
+// As input, take power_two == 2**s % n
 //
-// -> constraint 2:
-// having dp_lo and dp_hi, we will actually compute dp_lo + power_two * dp_hi
-// if computing power_two * dp_hi with single-word, this requires
-//    (p-1) dp_hi < 2**64, 
-// since (p-1) dp_hi <= (p-1) * len * (p-1)**2 / 2**sp_nb,
-// it suffices to ensure
-//     len * (p-1)**3 < 2**(64+sp_nb) 
-// which is more restrictive than constraint 1 (as soon as p > 2; if p==2 both constraints are fine)
-// since (p-1)**3 < 2**91.5, this accepts at least len <= 2**(sp_nb - 27.5)
+// -> avoiding modular reductions altogether, compute dp_lo and dp_hi such that
+// the dot product without modular reduction is dp  =  dp_lo + 2**s * dp_hi
+// -> finally, compute (dp_lo + power_two * dp_hi)  %  n
+// -> done through repeating this: accumulate a few terms,
+// save higher bits in dp_hi and lower ones in dp_lo
 //
+// PARAMETER CONSTRAINTS:
 //
-// sage: for sp_nb in range(40,64):
-// ....:     pmax = 1 + floor(sqrt(2**61 - 2**(sp_nb-3)))
-// ....:     lenmax = ceil(2**(64+sp_nb) / (pmax-1)**3) - 1
-// ....:     print(f"{sp_nb}\t{pmax.nbits()}\t{pmax}\t{lenmax.nbits()}\t{lenmax}")
+// -> constraint (C0):
+// we will accumulate 8 terms (each a product of two integers reduced modulo n)
+// on top of an s-bit integer, so we require
+//     2**s - 1 + 8 * (p-1)**2  <  2**64
+// so one can take any modulus with
+//     n <= 1 + floor(sqrt(2**61 - 2**(s-3)))
+// in particular, n-1 < 2**30.5, (n-1)**2 < 2**61, (n-1)**3 < 2**91.5
+//
+// -> constraint (C1):
+// in the above representation of dp we will use an uint32 for dp_hi,
+// so we require      len * (n-1)**2 <= 2**s * (2**32 - 1)
+//
+// -> constraint (C2):
+// [this constraint is void since dp_hi fits in uint32, but these notes are left
+// in case one would want to use ulong for dp_hi, which allows for larger lengths]
+// if ones wishes power_two * dp_hi to fit in a single word, this requires
+//    (n-1) dp_hi < 2**64
+// and since (n-1) dp_hi <= (n-1) * len * (n-1)**2 / 2**s, it suffices to ensure
+//     len * (n-1)**3 < 2**(64+s) 
+//
+// sage: for s in range(40,64):
+// ....:     nmax = 1 + floor(sqrt(2**61 - 2**(s-3)))             # (C0)
+// ....:     lenmax = floor(2**s * (2**32 - 1) / (nmax-1)**2)     # (C1)
+// ....:     lenmax_bis = ceil(2**(64+s) / (nmax-1)**3) - 1       # (C2)
+// ....:     print(f"{s}\t{nmax.nbits()}\t{nmax}\t{lenmax}\t{lenmax_bis}")
 // ....:
-// 40      31      1518500205      13      5792
-// 41      31      1518500160      14      11585
-// 42      31      1518500069      15      23170
-// 43      31      1518499888      16      46340
-// 44      31      1518499526      17      92682
-// 45      31      1518498802      18      185364
-// 46      31      1518497354      19      370729
-// 47      31      1518494458      20      741463
-// 48      31      1518488665      21      1482944
-// 49      31      1518477080      22      2965956
-// 50      31      1518453909      23      5932184
-// 51      31      1518407566      24      11865455
-// 52      31      1518314875      25      23735258
-// 53      31      1518129478      26      47487909
-// 54      31      1517758614      27      95045458
-// 55      31      1517016615      28      190369983
-// 56      31      1515531528      29      381860339
-// 57      31      1512556978      30      768235276
-// 58      31      1506590261      31      1554798112
-// 59      31      1494585366      32      3185130939
-// 60      31      1470281545      33      6691414686
-// 61      31      1420426920      34      14842011900
-// 62      31      1315059793      36      37406145210
-// 63      31      1073741825      37      137438953471
+// s       nbits   nmax            (C1) for nmax     (C2) for nmax
+// 40      31      1518500205      2048            5792
+// 41      31      1518500160      4096            11585
+// 42      31      1518500069      8192            23170
+// 43      31      1518499888      16384           46340
+// 44      31      1518499526      32768           92682
+// 45      31      1518498802      65536           185364
+// 46      31      1518497354      131072          370729
+// 47      31      1518494458      262146          741463
+// 48      31      1518488665      524296          1482944
+// 49      31      1518477080      1048608         2965956
+// 50      31      1518453909      2097280         5932184
+// 51      31      1518407566      4194816         11865455
+// 52      31      1518314875      8390656         23735258
+// 53      31      1518129478      16785412        47487909
+// 54      31      1517758614      33587232        95045458
+// 55      31      1517016615      67240192        190369983
+// 56      31      1515531528      134744072       381860339
+// 57      31      1512556978      270549121       768235276
+// 58      31      1506590261      545392672       1554798112
+// 59      31      1494585366      1108378657      3185130939
+// 60      31      1470281545      2290649226      6691414686
+// 61      31      1420426920      4908534053      14842011900
+// 62      31      1315059793      11453246122     37406145210
+// 63      31      1073741825      34359738360     137438953471
 
-//
-// NOTE: same constraints on len and mod as for avx version
-ulong _nmod_vec_dot_mod32_v3(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two)
+
+ulong _nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two)
 {
     // we compute dp_lo and dp_hi such that the dot product
     // without modular reduction is   dp  =  dp_lo + 2**DOT_SP_NB * dp_hi
@@ -293,8 +202,8 @@ ulong _nmod_vec_dot_mod32_v3(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint pow
     ulong dp_lo = 0;
     uint dp_hi = 0;
 
-    // handle batches of 8 coefficients
-    // (experiments show benefit against 4; no real benefit for > 8)
+    // handle batches of 8 terms
+    // no overflow thanks to condition (C0)
     ulong k = 0;
     for (; k+7 < len; k+=8)
     {
@@ -312,20 +221,19 @@ ulong _nmod_vec_dot_mod32_v3(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint pow
         dp_lo &= low_bits;
     }
 
-    // add the remaining < 8 coefficients
+    // handle remaining terms (< 8, so again no overflow thank to (C0))
     for (; k < len; k++)
         dp_lo += a[k] * b[k];
 
+    // compute and reduce dp_lo + power_two * dp_hi
+    // no overflow in the multiplication thanks to (C1)
     ulong dp;
     NMOD_RED(dp, ((ulong)power_two * dp_hi) + dp_lo, mod);
     return dp;
 }
 
-
-
 ulong nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod)
 {
-    // FIXME add check for len and p?
     uint power_two;
     NMOD_RED(power_two, 1L<<DOT_SP_NB, mod);
     return _nmod_vec_dot_mod32(a, b, len, mod, power_two);
@@ -340,18 +248,17 @@ ulong nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod)
 
 ulong _nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two)
 {
-    // the dot product without modular reduction is
-    //       dp  =  dp_lo + 2**sp_nb * dp_hi
-    // where sp_nb is a fixed number of bits where we split
+    // we compute 4n-vectors dp_lo and dp_hi such that the dot product
+    // without modular reduction is   dp  =  sum(dp_lo) + 2**DOT_SP_NB * sum(dp_hi)
     const vec4n low_bits = vec4n_set_n((1L << DOT_SP_NB) - 1);
     vec4n dp_lo = vec4n_zero();
     vec4n dp_hi = vec4n_zero();
 
-    // each pass in the loop handles 8x4 = 32 coefficients
+    // handle batches of 8 terms (hence 32 coefficients per loop iteration)
+    // no overflow thanks to condition (C0)
     ulong k = 0;
     for (; k+31 < len; k += 32)
     {
-        // no overflow in next 8 lines if (2**sp_nb - 1) + 8*(p-1)**2 < 2**64    (*)
         dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+ 0), vec4n_load_unaligned(b+k+ 0)));
         dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+ 4), vec4n_load_unaligned(b+k+ 4)));
         dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+ 8), vec4n_load_unaligned(b+k+ 8)));
@@ -362,36 +269,35 @@ ulong _nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint p
         dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k+28), vec4n_load_unaligned(b+k+28)));
 
         // add bits sp_nb...63 to dp_hi; keep sp_nb lower bits in dp_lo
-        // FIXME vec4n_bit_shift_right  uses _mm256_srl_epi64, a priori slower?
-        dp_hi = vec4n_add(dp_hi, _mm256_srli_epi64(dp_lo, DOT_SP_NB));
+        dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(dp_lo, DOT_SP_NB));
         dp_lo = vec4n_bit_and(dp_lo, low_bits);
     }
 
-    // left with len-k < 32 coefficients,
-    // this handles (len-k)//4 < 8 blocks of 4 coefficients, no overflow in this loop if (*) satisfied
+    // handle remaining terms 4 by 4
+    // (at most 7 x 4 remaining terms, so again no overflow thanks to (C0))
     for (; k + 3 < len; k += 4)
         dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(a+k), vec4n_load_unaligned(b+k)));
 
     dp_hi = vec4n_add(dp_hi, _mm256_srli_epi64(dp_lo, DOT_SP_NB));
     dp_lo = vec4n_bit_and(dp_lo, low_bits);
 
-    // left with < 4 coefficients
-    // no overflow in dp_last if 3*(p-1)**2 < 2**64, ok if (*) satisfied
-    ulong dp_last = 0;
-    for (; k < len; k++)
-        dp_last += a[k] * b[k];
+    ulong total_lo = dp_lo[0] + dp_lo[1] + dp_lo[2] + dp_lo[3];
+    const uint total_hi = dp_hi[0] + dp_hi[1] + dp_hi[2] + dp_hi[3] + (total_lo >> DOT_SP_NB);
+    total_lo &= (1L << DOT_SP_NB) - 1;
 
-    const ulong total_lo = dp_lo[0] + dp_lo[1] + dp_lo[2] + dp_lo[3] + (dp_last & ((1L << DOT_SP_NB) - 1));
-    const uint total_hi = dp_hi[0] + dp_hi[1] + dp_hi[2] + dp_hi[3] + (dp_last >> DOT_SP_NB);
-    // FIXME check uint is fine; may add additional requirement
-    ulong dp = ((ulong)power_two * total_hi) + total_lo;
-    NMOD_RED(dp, dp, mod);
+    // left with < 4 terms (no overflow thanks to (C0))
+    for (; k < len; k++)
+        total_lo += a[k] * b[k];
+
+    // compute and reduce dp_lo + power_two * dp_hi
+    // no overflow in the multiplication thanks to (C1)
+    ulong dp;
+    NMOD_RED(dp, ((ulong)power_two * total_hi) + total_lo, mod);
     return dp;
 }
 
 ulong nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod)
 {
-    // FIXME add check for len and p?
     uint power_two;
     NMOD_RED(power_two, 1L<<DOT_SP_NB, mod);
     return _nmod_vec_dot_mod32_avx2(a, b, len, mod, power_two);
