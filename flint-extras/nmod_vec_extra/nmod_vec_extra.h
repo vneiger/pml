@@ -14,6 +14,7 @@
 #include <flint/flint.h>
 #include <flint/machine_vectors.h>
 #include <flint/nmod_types.h>
+#include <flint/nmod.h> // for NMOD_RED
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,33 +67,35 @@ ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2,
                                       nmod_t mod);
 ulong nmod_vec_dot_product_v1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
 ulong nmod_vec_dot_product_v2(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod, ulong n_limbs);
-ulong _nmod_vec_dot_product_1_avx2(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
-ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
 
-
-// note: version split16 interesting on recent laptop (gcc does some vectorization)
-// limited to nbits <= ~31 (bound to be better analyzed, numterms)
-ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-// note: version split26 interesting (beyond 30-31 bits) on recent laptop (gcc does some vectorization)
-// limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
-ulong _nmod_vec_dot_product_2_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
 
 /*------------------------------------------------------------*/
-/** dot product for moduli less than 2^30                     */
-/** reduction works if (p-1)^3*len < 2^96                     */
-/** returns dot(a, b)                                         */
-/** power_two = 2^45 mod p, pinv = 1/p                        */
+/* small modulus: see implementation for constraints          */
 /*------------------------------------------------------------*/
-ulong _nmod_vec_dot_small_modulus(nn_ptr a, nn_ptr b, ulong len,
-                                  ulong power_two,
-                                  vec1d p, vec1d pinv);
 
 // splitting at 56 bits
 #define DOT_SP_NB 56
 ulong _nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
-ulong nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod);
 ulong _nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
-ulong nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod);
+
+FLINT_FORCE_INLINE
+ulong nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod)
+{
+    ulong power_two;
+    NMOD_RED(power_two, 1L<<DOT_SP_NB, mod);
+    return _nmod_vec_dot_mod32(a, b, len, mod, (uint)power_two);
+}
+
+FLINT_INLINE
+ulong nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod)
+{
+    ulong power_two;
+    NMOD_RED(power_two, 1L<<DOT_SP_NB, mod);
+    return _nmod_vec_dot_mod32_avx2(a, b, len, mod, (uint)power_two);
+}
+
+
+
 
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */
@@ -104,6 +107,36 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res,
                                   nn_ptr a1, nn_ptr a2, nn_ptr b, ulong len,
                                   ulong power_two,
                                   vec2d p2, vec2d pinv2);
+
+
+/*------------------------------------------------------------*/
+/* DRAFT / EXPERIMENTS                                        */
+/*------------------------------------------------------------*/
+
+
+// note: version split16 interesting on recent laptop (gcc does some vectorization)
+// limited to nbits <= ~31 (bound to be better analyzed, numterms)
+ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+// note: version split26 interesting (beyond 30-31 bits) on recent laptop (gcc does some vectorization)
+// limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
+ulong _nmod_vec_dot_product_2_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /** Several dot products with same left operand, as in vector-matrix product.
  *

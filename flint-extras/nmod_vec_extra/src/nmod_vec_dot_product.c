@@ -3,15 +3,6 @@
 
 #include "nmod_vec_extra.h"
 
-#define __ll_lowhi_parts16(tlo,thi,t)     \
-      tlo = (uint) (t);                   \
-      thi = ((tlo) >> 16);                \
-      tlo = (tlo) & 0xFFFF;
-
-#define __ll_lowhi_parts26(tlo,thi,t)     \
-      thi = (uint) ((t) >> 26);           \
-      tlo = ((uint)(t)) & 0x3FFFFFF;
-
 /* ------------------------------------------------------------ */
 /* number of limbs needed for a dot product of length len       */
 /* all entries 1st vector have <= max_bits1 bits <= FLINT_BITS  */
@@ -36,8 +27,6 @@ ulong _nmod_vec_dot_bound_limbs_unbalanced(ulong len, ulong max_bits1, ulong max
         return 2;
     return (t0 != 0);
 }
-
-
 
 /*  ------------------------------------------------------------ */
 /** v1 and v2 have length at least len, len < 2^FLINT_BITS       */
@@ -104,58 +93,6 @@ ulong _nmod_vec_dot_product_2(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
     NMOD2_RED2(res, u1, u0, mod);
     return res;
 }
-
-// TODO benchmark more, integrate, give precise conditions for when this works
-ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
-{
-    uint v1hi, v1lo, v2hi, v2lo;
-    ulong ulo = UWORD(0);
-    ulong umi = UWORD(0);
-    ulong uhi = UWORD(0);
-    for (ulong i = 0; i < len; i++)
-    {
-        __ll_lowhi_parts16(v1lo, v1hi, v1[i]);
-        __ll_lowhi_parts16(v2lo, v2hi, v2[i]);
-        ulo += v1lo * v2lo;
-        umi += v1lo * v2hi + v1hi * v2lo;
-        uhi += v1hi * v2hi;
-    }
-
-    // result: ulo + 2**16 umi + 2**32 uhi
-    ulong res;
-    NMOD2_RED2(res, (umi >> 48) + (uhi >> 32), (umi << 16) + (uhi << 32) + ulo, mod);
-    return res;
-}
-
-// TODO benchmark more, integrate, give precise conditions for when this works
-// (or better, really do a hand-made avx512 version...)
-// --> if splitting at 26, each product is 52, can allow at most 12 additional bits,
-// i.e. not more than xxx terms (this depends on the size of the high part since
-// they are not balanced... could make sense to balance them to allow more terms,
-// but do this only if this really is interesting in terms of speed)
-ulong _nmod_vec_dot_product_2_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
-{
-    uint v1hi, v1lo, v2hi, v2lo;
-    ulong ulo = UWORD(0);
-    ulong umi = UWORD(0);
-    ulong uhi = UWORD(0);
-    for (ulong i = 0; i < len; i++)
-    {
-        __ll_lowhi_parts26(v1lo, v1hi, v1[i]);
-        __ll_lowhi_parts26(v2lo, v2hi, v2[i]);
-        ulo += (ulong)v1lo * v2lo;
-        umi += (ulong)v1lo * v2hi + (ulong)v1hi * v2lo;
-        uhi += (ulong)v1hi * v2hi;
-    }
-
-    // result: ulo + 2**26 umi + 2**52 uhi
-    // hi = (umi >> 38) + (uhi >> 12)  ||  lo = (umi << 26) + (uhi << 52) + ulo
-    add_ssaaaa(uhi, ulo, umi>>38, umi<<26, uhi>>12, (uhi<<52)+ulo);
-    ulong res;
-    NMOD2_RED2(res, uhi, ulo, mod);
-    return res;
-}
-
 
 /*  ------------------------------------------------------------ */
 /** v1 and v2 have length at least len, len < 2^FLINT_BITS       */
@@ -245,19 +182,132 @@ ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2, ulong len, ulo
     return UWORD(0);
 }
 
-ulong nmod_vec_dot_product_v1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
-{
-    const ulong maxbits = FLINT_BIT_COUNT(mod.n);
-    const ulong n_limbs = _nmod_vec_dot_bound_limbs_unbalanced(len, maxbits, maxbits);
 
-    if (n_limbs == 2)
-        return _nmod_vec_dot_product_2(v1, v2, len, mod);
-    if (n_limbs == 3)
-        return _nmod_vec_dot_product_3(v1, v2, len, maxbits, maxbits, mod);
-    if (n_limbs == 1)
-        return _nmod_vec_dot_product_1(v1, v2, len, mod);
-    return UWORD(0);
+
+
+
+
+
+
+/*------------------------------------------------------------*/
+/* EXPERIMENTAL */
+/*------------------------------------------------------------*/
+
+
+// dot product using single limb, avx2
+ulong _nmod_vec_dot_product_1_avx2(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod)
+{
+    // compute 4 vertical sub-dot products
+    __m256i res_vec = _mm256_setzero_si256();
+    ulong i;
+    for (i = 0; i+3 < len; i += 4)
+    {
+        // load + multiplication + addition
+        __m256i x = _mm256_loadu_si256((__m256i *) (vec1+i));
+        __m256i y = _mm256_loadu_si256((__m256i *) (vec2+i));
+        x = _mm256_mul_epu32(x, y);
+        res_vec = _mm256_add_epi64(res_vec, x);
+    }
+
+    // horizontal add
+    ulong res = res_vec[0] + res_vec[1] + res_vec[2] + res_vec[3];
+
+    // scalar loop for leftover entries
+    for (; i < len; ++i)
+        res += vec1[i] * vec2[i];
+    NMOD_RED(res, res, mod);
+
+    return res;
 }
+
+// dot product using single limb, avx512
+ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod) {
+    // compute 4 vertical sub-dot products
+    __m512i res_vec = _mm512_setzero_si512();
+    ulong i;
+    for (i = 0; i+7 < len; i += 8)
+    {
+        // load + multiplication + addition
+        __m512i x = _mm512_loadu_si512((__m512i *) (vec1+i));
+        __m512i y = _mm512_loadu_si512((__m512i *) (vec2+i));
+        x = _mm512_mul_epu32(x, y);
+        res_vec = _mm512_add_epi64(res_vec, x);
+    }
+
+    // horizontal add
+    //ulong res = res_vec[0] + res_vec[1] + res_vec[2] + res_vec[3] 
+              //+ res_vec[4] + res_vec[5] + res_vec[6] + res_vec[7];
+    ulong res = _mm512_reduce_add_epi64(res_vec);
+
+    // scalar loop for leftover entries
+    for (; i < len; ++i)
+        res += vec1[i] * vec2[i];
+    NMOD_RED(res, res, mod);
+
+    return res;
+}
+
+
+#define __ll_lowhi_parts16(tlo,thi,t)     \
+      tlo = (uint) (t);                   \
+      thi = ((tlo) >> 16);                \
+      tlo = (tlo) & 0xFFFF;
+
+#define __ll_lowhi_parts26(tlo,thi,t)     \
+      thi = (uint) ((t) >> 26);           \
+      tlo = ((uint)(t)) & 0x3FFFFFF;
+
+// TODO benchmark more, integrate, give precise conditions for when this works
+ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
+{
+    uint v1hi, v1lo, v2hi, v2lo;
+    ulong ulo = UWORD(0);
+    ulong umi = UWORD(0);
+    ulong uhi = UWORD(0);
+    for (ulong i = 0; i < len; i++)
+    {
+        __ll_lowhi_parts16(v1lo, v1hi, v1[i]);
+        __ll_lowhi_parts16(v2lo, v2hi, v2[i]);
+        ulo += v1lo * v2lo;
+        umi += v1lo * v2hi + v1hi * v2lo;
+        uhi += v1hi * v2hi;
+    }
+
+    // result: ulo + 2**16 umi + 2**32 uhi
+    ulong res;
+    NMOD2_RED2(res, (umi >> 48) + (uhi >> 32), (umi << 16) + (uhi << 32) + ulo, mod);
+    return res;
+}
+
+// TODO benchmark more, integrate, give precise conditions for when this works
+// (or better, really do a hand-made avx512 version...)
+// --> if splitting at 26, each product is 52, can allow at most 12 additional bits,
+// i.e. not more than xxx terms (this depends on the size of the high part since
+// they are not balanced... could make sense to balance them to allow more terms,
+// but do this only if this really is interesting in terms of speed)
+ulong _nmod_vec_dot_product_2_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
+{
+    uint v1hi, v1lo, v2hi, v2lo;
+    ulong ulo = UWORD(0);
+    ulong umi = UWORD(0);
+    ulong uhi = UWORD(0);
+    for (ulong i = 0; i < len; i++)
+    {
+        __ll_lowhi_parts26(v1lo, v1hi, v1[i]);
+        __ll_lowhi_parts26(v2lo, v2hi, v2[i]);
+        ulo += (ulong)v1lo * v2lo;
+        umi += (ulong)v1lo * v2hi + (ulong)v1hi * v2lo;
+        uhi += (ulong)v1hi * v2hi;
+    }
+
+    // result: ulo + 2**26 umi + 2**52 uhi
+    // hi = (umi >> 38) + (uhi >> 12)  ||  lo = (umi << 26) + (uhi << 52) + ulo
+    add_ssaaaa(uhi, ulo, umi>>38, umi<<26, uhi>>12, (uhi<<52)+ulo);
+    ulong res;
+    NMOD2_RED2(res, uhi, ulo, mod);
+    return res;
+}
+
 
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */

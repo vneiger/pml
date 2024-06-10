@@ -114,11 +114,8 @@ void _fmpz_reduce_small_moduli(nn_ptr out, const fmpz_t a, const fmpz_multimod_n
 
         for (i = 0; i < mmod->num_primes; i++)
         {
-            ulong dot, power_two;
-            power_two = 1L << 45;
-            NMOD_RED(power_two, power_two, mmod->mod[i]);
-            dot = _nmod_vec_dot_small_modulus(mmod->powers_of_two[i], slice_A, len, power_two,
-                                              mmod->mod[i].n, 1 / (double) mmod->mod[i].n);
+            ulong dot;
+            dot = nmod_vec_dot_mod32_avx2(mmod->powers_of_two[i], slice_A, len, mmod->mod[i]);
             if (slen < 0)
                 out[i] = nmod_neg(dot, mmod->mod[i]);
             else
