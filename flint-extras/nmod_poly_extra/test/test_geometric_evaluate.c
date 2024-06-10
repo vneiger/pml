@@ -14,7 +14,7 @@ void check()
     ulong nn;
     nmod_t mod;
     
-    flint_randinit(state);
+    flint_rand_init(state);
     nn = 65537;
     nmod_init(&mod, nn);
 
@@ -47,7 +47,7 @@ void check()
         nmod_poly_clear(P);
         nmod_geometric_progression_clear(G);
     }
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*------------------------------------------------------------*/

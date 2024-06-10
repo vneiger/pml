@@ -24,7 +24,7 @@ void get_time()
     double t;
 
         
-    flint_randinit(state);
+    flint_rand_init(state);
 
     p = 1108307720798209;
     sd_fft_ctx_init_prime(Q, p);
@@ -85,7 +85,7 @@ void get_time()
 
     sd_fft_ctx_clear(Q);
     nmod_sd_fft_clear(F);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 

@@ -15,7 +15,7 @@ void time_nmod_mat_mul_small_modulus(ulong len, ulong n)
     clock_t tt;
     long nb_iter;
 
-    flint_randinit(state);
+    flint_rand_init(state);
     nmod_init(&mod, n);
 
     nmod_mat_init(a, len, len, mod.n);
@@ -91,7 +91,7 @@ void time_nmod_mat_mul_small_modulus(ulong len, ulong n)
     nmod_mat_clear(b);
     nmod_mat_clear(c1);
     nmod_mat_clear(c2);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/

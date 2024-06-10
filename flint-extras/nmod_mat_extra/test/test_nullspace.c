@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 
     srand(time(NULL));
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
     flint_randseed(state, rand(), rand());
 
     slong field_prime = (argc>=2) ? atol(argv[1]) : 3;
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     //if (check(field_prime, iterations, state, 4, 10))
     //    printf("Input dimension 4 x 10 --> ok\n");
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     return 0;
 }
 

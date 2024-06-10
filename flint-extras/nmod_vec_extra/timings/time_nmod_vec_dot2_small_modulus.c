@@ -88,7 +88,7 @@ void time_nmod_vec_dot2_small_modulus(ulong len, ulong n, flint_rand_t state)
 int main()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     printf("len\t4\t\t10\t\t20\t\t25\t\t29\t\t30\n");
     for (slong len = 1; len < 1000; len += 21)
@@ -103,7 +103,7 @@ int main()
         printf("\n");
     }
 
-    flint_randclear(state);
+    flint_rand_clear(state);
 
     return 0;
 }

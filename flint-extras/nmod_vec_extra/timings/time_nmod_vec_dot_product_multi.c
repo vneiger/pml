@@ -360,7 +360,7 @@ void time_nmod_vec_dot_product_multi(ulong len, ulong k, ulong maxbits1, ulong m
 int main(int argc, char ** argv)
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     char labels[] = "nbits\tlen\tk\tmulti\tv1_8\tv8_8\tv8_32\tv16_16\tvecmat\tmatvec\tmatvec(pml)";
 
@@ -454,7 +454,7 @@ int main(int argc, char ** argv)
         printf("\n");
     }
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     return 0;
 }
 

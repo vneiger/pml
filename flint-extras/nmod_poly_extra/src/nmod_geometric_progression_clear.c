@@ -1,3 +1,4 @@
+#include <flint/nmod_vec.h>
 #include "nmod_poly_extra.h"
 
 /*------------------------------------------------------------*/
