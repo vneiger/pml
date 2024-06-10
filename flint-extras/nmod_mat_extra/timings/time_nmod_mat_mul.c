@@ -134,7 +134,7 @@ void time_nmod_mat_mul(ulong len, ulong nbits, ulong n, flint_rand_t state)
 int main()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     printf("Square matrix multiplication over nmod:\n");
     printf("  - mul: flint's nmod_mat_mul\n");
@@ -158,19 +158,19 @@ int main()
     };
     const ulong nbits[11] = { 4, 11, 21, 26, 30, 31, 32, 41, 51, 61, 64 };
 
-    for (slong i = 0; i < 11; i++)
+    for (slong i = 3; i < 11; i++)
     {
         printf("nbits\tsize\tmul\tclassic\tblas\tnewdot\tsmall_mod\n");
-        //ulong len = 1;
-        //for (; len < 100; len += 5)
-        //    time_nmod_mat_mul(len, nbits[i], mods[i], state);
-        //for (; len < 200; len += 20)
-        //    time_nmod_mat_mul(len, nbits[i], mods[i], state);
-        for (ulong len = 200; len < 2000; len += 50)
+        ulong len = 1;
+        for (; len < 100; len += 5)
+            time_nmod_mat_mul(len, nbits[i], mods[i], state);
+        for (; len < 200; len += 20)
+            time_nmod_mat_mul(len, nbits[i], mods[i], state);
+        for (; len < 2000; len += 50)
             time_nmod_mat_mul(len, nbits[i], mods[i], state);
         printf("\n");
     }
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     return 0;
 }

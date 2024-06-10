@@ -25,7 +25,7 @@ void check_fmpz_multimod_reduce(ulong max_bit_length)
     clock_t tt;
     long nb_iter;
 
-    flint_randinit(state);
+    flint_rand_init(state);
     prime_length = 50;
     num_primes = 1 + (max_bit_length / prime_length);
     
@@ -120,7 +120,7 @@ void check_fmpz_multimod_reduce(ulong max_bit_length)
     fmpz_multimod_naive_clear(mmod);
     _nmod_vec_clear(residues);
     _nmod_vec_clear(primes);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/

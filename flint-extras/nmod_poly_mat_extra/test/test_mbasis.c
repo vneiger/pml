@@ -145,7 +145,7 @@ int core_test_mbasis(nmod_poly_mat_t mat, slong order, slong * shift)
 int one_test_mbasis(slong prime, slong rdim, slong cdim, slong order, slong len, slong iter)
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
     srand(time(NULL));
     flint_randseed(state, rand(), rand());
 
@@ -175,7 +175,7 @@ int one_test_mbasis(slong prime, slong rdim, slong cdim, slong order, slong len,
 
     printf("All %ld iterations went fine! exiting\n", iter);
     nmod_poly_mat_clear(mat);
-    flint_randclear(state);
+    flint_rand_clear(state);
 
     return 1;
 }
@@ -184,7 +184,7 @@ int one_test_mbasis(slong prime, slong rdim, slong cdim, slong order, slong len,
 int collection_test_mbasis(slong iter)
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
     srand(time(NULL));
     flint_randseed(state, rand(), rand());
 
@@ -453,7 +453,7 @@ int main(int argc, char ** argv)
         slong order = atoi(argv[4]);
 
         flint_rand_t state;
-        flint_randinit(state);
+        flint_rand_init(state);
         srand(time(NULL));
         flint_randseed(state, rand(), rand());
             

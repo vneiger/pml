@@ -23,13 +23,14 @@ void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
     nmod_mat_init(BT, B->c, B->r, B->mod.n);
     nmod_mat_transpose(BT, B);
 
+    const ulong power2 = (1L<<DOT_SP_NB) % A->mod.n;
+
     // now let's compute
     for (slong i = 0; i < A->r; i++)
         for (slong j = 0; j < BT->r; j++)
-            C->rows[i][j] = nmod_vec_dot_product_v1(A->rows[i], BT->rows[j], A->c, A->mod);
-            //C->rows[i][j] = nmod_vec_dot_product_v2(A->rows[i], BT->rows[j], A->c, A->mod, 1);
-            //C->rows[i][j] = _nmod_vec_dot_product_1_avx2(A->rows[i], BT->rows[j], A->c, A->mod);
-            //C->rows[i][j] = _nmod_vec_dot_product_1_avx512(A->rows[i], BT->rows[j], A->c, A->mod);
+            //C->rows[i][j] = nmod_vec_dot_product(A->rows[i], BT->rows[j], A->c, A->mod);
+            C->rows[i][j] = _nmod_vec_dot_mod32(A->rows[i], BT->rows[j], A->c, A->mod, power2);
+
 
     nmod_mat_clear(BT);
 }
@@ -37,6 +38,6 @@ void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
 void nmod_mat_mul_nmod_vec_newdot(nn_ptr v, const nmod_mat_t A, nn_srcptr u, ulong len)
 {
     for (slong i = 0; i < A->r; i++)
-        v[i] = nmod_vec_dot_product_v1(A->rows[i], u, len, A->mod);
+        v[i] = nmod_vec_dot_product(A->rows[i], u, len, A->mod, 1);  // TODO update when dp finalized
 }
 

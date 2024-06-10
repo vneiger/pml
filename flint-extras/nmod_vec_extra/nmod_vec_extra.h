@@ -14,6 +14,7 @@
 #include <flint/flint.h>
 #include <flint/machine_vectors.h>
 #include <flint/nmod_types.h>
+#include <flint/nmod.h> // for NMOD_RED
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,28 +65,165 @@ void nmod_vec_integer_dot_product(nn_ptr res,
 ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2,
                                       ulong len, ulong max_bits1, ulong max_bits2,
                                       nmod_t mod);
-ulong nmod_vec_dot_product_v1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-ulong nmod_vec_dot_product_v2(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod, ulong n_limbs);
-ulong _nmod_vec_dot_product_1_avx2(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
-ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
 
+/*------------------------------------------------*/
+/* v1 and v2 entries already reduced modulo mod.n */
+/*------------------------------------------------*/
+ulong nmod_vec_dot_product(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod, ulong n_limbs);
 
-// note: version split16 interesting on recent laptop (gcc does some vectorization)
-// limited to nbits <= ~31 (bound to be better analyzed, numterms)
-ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-// note: version split26 interesting (beyond 30-31 bits) on recent laptop (gcc does some vectorization)
-// limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
-ulong _nmod_vec_dot_product_2_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+#define NMOD_VEC_DOT_PRODUCT(res, i, len, expr1, expr2, mod, nlimbs) \
+do                                                                   \
+{                                                                    \
+    res = UWORD(0);                                                  \
+                                                                     \
+    if (nlimbs == 1)                                                 \
+    {                                                                \
+        for (i = 0; i < len; i++)                                    \
+            res += (expr1) * (expr2);                                \
+                                                                     \
+        NMOD_RED(res, res, mod);                                     \
+    }                                                                \
+                                                                     \
+    else if (nlimbs == 2)                                            \
+    {                                                                \
+        ulong s0, s1;                                                \
+        ulong u0 = UWORD(0);                                         \
+        ulong u1 = UWORD(0);                                         \
+                                                                     \
+        for (i = 0; i+7 < len; )                                     \
+        {                                                            \
+            umul_ppmm(s1, s0, (expr1), (expr2));                     \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            i++;                                                     \
+            umul_ppmm(s1, s0, (expr1), (expr2));                     \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            i++;                                                     \
+            umul_ppmm(s1, s0, (expr1), (expr2));                     \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            i++;                                                     \
+            umul_ppmm(s1, s0, (expr1), (expr2));                     \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            i++;                                                     \
+            umul_ppmm(s1, s0, (expr1), (expr2));                     \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            i++;                                                     \
+            umul_ppmm(s1, s0, (expr1), (expr2));                     \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            i++;                                                     \
+            umul_ppmm(s1, s0, (expr1), (expr2));                     \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            i++;                                                     \
+            umul_ppmm(s1, s0, (expr1), (expr2));                     \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            i++;                                                     \
+        }                                                            \
+        for (; i < len; i++)                                         \
+        {                                                            \
+            umul_ppmm(s1, s0, (expr1), (expr2));                     \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+        }                                                            \
+                                                                     \
+        NMOD2_RED2(res, u1, u0, mod);                                \
+    }                                                                \
+                                                                     \
+    else if (nlimbs == 3)                                            \
+    {                                                                \
+        ulong s0, s1;                                                \
+        ulong t2 = UWORD(0);                                         \
+        ulong t1 = UWORD(0);                                         \
+        ulong t0 = UWORD(0);                                         \
+                                                                     \
+        i = 0;                                                       \
+        /* we can accumulate 8 terms if n == mod.n is such that */   \
+        /*      8 * (n-1)**2 < 2**128, this is equivalent to    */   \
+        /*      n <= ceil(sqrt(2**125)) = 6521908912666391107   */   \
+        if (mod.n <= 6521908912666391107L)                           \
+        {                                                            \
+            slong u0, u1;                                            \
+            for (; i+7 < len; )                                      \
+            {                                                        \
+                umul_ppmm(u1, u0, (expr1), (expr2));                 \
+                i++;                                                 \
+                umul_ppmm(s1, s0, (expr1), (expr2));                 \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                i++;                                                 \
+                umul_ppmm(s1, s0, (expr1), (expr2));                 \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                i++;                                                 \
+                umul_ppmm(s1, s0, (expr1), (expr2));                 \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                i++;                                                 \
+                umul_ppmm(s1, s0, (expr1), (expr2));                 \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                i++;                                                 \
+                umul_ppmm(s1, s0, (expr1), (expr2));                 \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                i++;                                                 \
+                umul_ppmm(s1, s0, (expr1), (expr2));                 \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                i++;                                                 \
+                umul_ppmm(s1, s0, (expr1), (expr2));                 \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                i++;                                                 \
+                add_sssaaaaaa(t2, t1, t0,                            \
+                              t2, t1, t0,                            \
+                              UWORD(0), u1, u0);                     \
+            }                                                        \
+                                                                     \
+            u0 = UWORD(0);                                           \
+            u1 = UWORD(0);                                           \
+            for (; i < len; i++)                                     \
+            {                                                        \
+                umul_ppmm(s1, s0, (expr1), (expr2));                 \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+            }                                                        \
+                                                                     \
+            add_sssaaaaaa(t2, t1, t0,                                \
+                          t2, t1, t0,                                \
+                          UWORD(0), u1, u0);                         \
+        }                                                            \
+        else                                                         \
+        {                                                            \
+            for (; i < len; i++)                                     \
+            {                                                        \
+                umul_ppmm(s1, s0, (expr1), (expr2));                 \
+                add_sssaaaaaa(t2, t1, t0, t2, t1, t0, 0, s1, s0);    \
+            }                                                        \
+        }                                                            \
+                                                                     \
+        NMOD_RED(t2, t2, mod);                                       \
+        NMOD_RED3(res, t2, t1, t0, mod);                             \
+    }                                                                \
+} while(0);
+
 
 /*------------------------------------------------------------*/
-/** dot product for moduli less than 2^30                     */
-/** reduction works if (p-1)^3*len < 2^96                     */
-/** returns dot(a, b)                                         */
-/** power_two = 2^45 mod p, pinv = 1/p                        */
+/* small modulus: see implementation for constraints          */
 /*------------------------------------------------------------*/
-ulong _nmod_vec_dot_small_modulus(nn_ptr a, nn_ptr b, ulong len,
-                                  ulong power_two,
-                                  vec1d p, vec1d pinv);
+
+// splitting at 56 bits
+#define DOT_SP_NB 56
+ulong _nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
+ulong _nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
+
+FLINT_FORCE_INLINE
+ulong nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod)
+{
+    ulong power_two;
+    NMOD_RED(power_two, 1L<<DOT_SP_NB, mod);
+    return _nmod_vec_dot_mod32(a, b, len, mod, (uint)power_two);
+}
+
+FLINT_FORCE_INLINE
+ulong nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod)
+{
+    ulong power_two;
+    NMOD_RED(power_two, 1L<<DOT_SP_NB, mod);
+    return _nmod_vec_dot_mod32_avx2(a, b, len, mod, (uint)power_two);
+}
+
+
+
 
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */
@@ -97,6 +235,42 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res,
                                   nn_ptr a1, nn_ptr a2, nn_ptr b, ulong len,
                                   ulong power_two,
                                   vec2d p2, vec2d pinv2);
+
+
+
+
+
+
+/*------------------------------------------------------------*/
+/* DRAFT / EXPERIMENTS                                        */
+/*------------------------------------------------------------*/
+
+ulong _nmod_vec_dot_product_1_avx2(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
+ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
+
+// note: version split16 interesting on recent laptop (gcc does some vectorization)
+// limited to nbits <= ~31 (bound to be better analyzed, numterms)
+ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+// note: version split26 interesting (beyond 30-31 bits) on recent laptop (gcc does some vectorization)
+// limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
+ulong _nmod_vec_dot_product_2_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /** Several dot products with same left operand, as in vector-matrix product.
  *

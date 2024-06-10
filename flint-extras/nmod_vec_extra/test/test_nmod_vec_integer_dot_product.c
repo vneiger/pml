@@ -41,7 +41,7 @@ void check_nmod_vec_integer_dot_product(slong len, flint_bitcnt_t bit_len, flint
 int main()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     printf("test running, various bitlengths, len from 1 to ~1000 (no error message means success)...\n");
     for (slong len = 1; len < 1000; len += 20)
@@ -65,7 +65,7 @@ int main()
     }
     printf("\n");
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     return 0;
 }
 

@@ -4,7 +4,7 @@
 int main(int argc, char *argv[])
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
     srand(time(NULL));
     flint_randseed(state, rand(), rand());
 
@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 
     // clears memory
     nmod_mat_poly_clear(matp);
-    flint_randclear(state);
+    flint_rand_clear(state);
 
 	return 0;
 }

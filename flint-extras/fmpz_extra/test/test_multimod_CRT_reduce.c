@@ -18,7 +18,7 @@ void check_fmpz_multimod_CRT_reduce(ulong num_primes, ulong n_bits)
     nn_ptr primes, residues;
     ulong i, j;
 
-    flint_randinit(state);
+    flint_rand_init(state);
 
     primes = _nmod_vec_init(num_primes);
     residues = _nmod_vec_init(num_primes);
@@ -48,7 +48,7 @@ void check_fmpz_multimod_CRT_reduce(ulong num_primes, ulong n_bits)
    fmpz_multimod_CRT_clear(mmod);
     _nmod_vec_clear(residues);
     _nmod_vec_clear(primes);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/
