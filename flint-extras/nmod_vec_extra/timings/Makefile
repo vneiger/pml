@@ -16,6 +16,9 @@ LIBS = -lflint -lmpfr -lgmp -lm -lpthread
 
 .PHONY: clean
 
+dot:
+	$(CC) -o time_dot time_dot.c -Wall -Wextra -O3 -march=native -I$(SYSINC_DIR) -L$(SYSLIB_DIR) -lflint
+
 clean:
 	rm -f $(EXEC) $(DATA)
 
