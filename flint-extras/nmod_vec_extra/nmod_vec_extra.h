@@ -542,7 +542,10 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res,
 /*------------------------------------------------------------*/
 
 ulong _nmod_vec_dot_product_1_avx2(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
+#define HAVE_AVX512 0
+#if HAVE_AVX512
 ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
+#endif
 
 // note: version split16 interesting on recent laptop (gcc does some vectorization)
 // limited to nbits <= ~31 (bound to be better analyzed, numterms)

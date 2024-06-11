@@ -868,9 +868,10 @@ ulong time_nmod_vec_dot_product_avx2_cf(ulong len, ulong n, flint_rand_t state)
 
 
 /*------------------------------------------------------------*/
-/* AVX512i                                                    */
+/* AVX512                                                    */
 /*------------------------------------------------------------*/
 
+#if HAVE_AVX512
 ulong time_nmod_vec_dot_product_avx512_cu(ulong len, ulong n, flint_rand_t state)
 {
     nmod_t mod;
@@ -986,6 +987,7 @@ ulong time_nmod_vec_dot_product_avx512_cf(ulong len, ulong n, flint_rand_t state
 
     return res;
 }
+#endif
 
 /*------------------------------------------------------------*/
 /* split, experimental                                        */

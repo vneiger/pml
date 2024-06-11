@@ -21,49 +21,49 @@ void one_bench_kernel(long rdim, long cdim, long deg)
     bool reductionshift = false;
     bool hermiteshift = false;
 
-    // kernel direct via approx
-    t = 0.0; nb_iter = 0;
-    while (t < 0.2)
-    {
-        Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, deg);
-        VecLong shift(rdim); // uniform shift
-        if (reductionshift)
-            for (long i = rdim/2; i < rdim; ++i) // basis reduction-like shift
-                shift[i] = cdim*deg;
-        if (hermiteshift)
-            for (long i = 1; i < rdim; ++i) // Hermite shift
-                shift[i] = shift[i-1] + cdim*deg;
-        tt = GetWallTime();
-        Mat<zz_pX> kerbas;
-        VecLong pivind;
-        kernel_basis_via_approximation(kerbas,pivind,pmat,shift);
-        t += GetWallTime()-tt;
-        ++nb_iter;
-    }
-    std::cout << t/nb_iter << "\t";
-
-    // kernel direct via interpolation
-    t = 0.0; nb_iter = 0;
-    while (t < 0.2)
-    {
-        Mat<zz_pX> pmat;
-        random(pmat, rdim, cdim, deg);
-        VecLong shift(rdim); // uniform shift
-        if (reductionshift)
-            for (long i = rdim/2; i < rdim; ++i) // basis reduction-like shift
-                shift[i] = cdim*deg;
-        if (hermiteshift)
-            for (long i = 1; i < rdim; ++i) // Hermite shift
-                shift[i] = shift[i-1] + cdim*deg;
-        tt = GetWallTime();
-        Mat<zz_pX> kerbas;
-        VecLong pivind;
-        kernel_basis_via_interpolation(kerbas,pivind,pmat,shift);
-        t += GetWallTime()-tt;
-        ++nb_iter;
-    }
-    std::cout << t/nb_iter << "\t";
+//    // kernel direct via approx
+//    t = 0.0; nb_iter = 0;
+//    while (t < 0.2)
+//    {
+//        Mat<zz_pX> pmat;
+//        random(pmat, rdim, cdim, deg);
+//        VecLong shift(rdim); // uniform shift
+//        if (reductionshift)
+//            for (long i = rdim/2; i < rdim; ++i) // basis reduction-like shift
+//                shift[i] = cdim*deg;
+//        if (hermiteshift)
+//            for (long i = 1; i < rdim; ++i) // Hermite shift
+//                shift[i] = shift[i-1] + cdim*deg;
+//        tt = GetWallTime();
+//        Mat<zz_pX> kerbas;
+//        VecLong pivind;
+//        kernel_basis_via_approximation(kerbas,pivind,pmat,shift);
+//        t += GetWallTime()-tt;
+//        ++nb_iter;
+//    }
+//    std::cout << t/nb_iter << "\t";
+//
+//    // kernel direct via interpolation
+//    t = 0.0; nb_iter = 0;
+//    while (t < 0.2)
+//    {
+//        Mat<zz_pX> pmat;
+//        random(pmat, rdim, cdim, deg);
+//        VecLong shift(rdim); // uniform shift
+//        if (reductionshift)
+//            for (long i = rdim/2; i < rdim; ++i) // basis reduction-like shift
+//                shift[i] = cdim*deg;
+//        if (hermiteshift)
+//            for (long i = 1; i < rdim; ++i) // Hermite shift
+//                shift[i] = shift[i-1] + cdim*deg;
+//        tt = GetWallTime();
+//        Mat<zz_pX> kerbas;
+//        VecLong pivind;
+//        kernel_basis_via_interpolation(kerbas,pivind,pmat,shift);
+//        t += GetWallTime()-tt;
+//        ++nb_iter;
+//    }
+//    std::cout << t/nb_iter << "\t";
 
     // kernel ZLS via approx
     t = 0.0; nb_iter = 0;
