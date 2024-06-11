@@ -118,6 +118,7 @@ ulong _nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_
     return dp;
 }
 
+
 // explicitly vectorized version, flag AVX2
 ulong _nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two)
 {
