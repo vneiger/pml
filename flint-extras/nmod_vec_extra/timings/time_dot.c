@@ -8,13 +8,13 @@
 #include <flint/nmod.h>
 
 // small values for testing before launching test:
-#define TIME_THRES 0.002
-#define NB_ITER 10
-#define NB_MAT_ITER 1
+//#define TIME_THRES 0.002
+//#define NB_ITER 10
+//#define NB_MAT_ITER 1
 // full test:
-//#define TIME_THRES 0.2
-//#define NB_ITER 2500
-//#define NB_MAT_ITER 3
+#define TIME_THRES 0.2
+#define NB_ITER 2500
+#define NB_MAT_ITER 3
 //#define SMALL_SUITE 1
 
 // utility
