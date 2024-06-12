@@ -12,7 +12,7 @@
 //#define NB_ITER 100
 // full test:
 #define TIME_THRES 0.2
-#define NB_ITER 2000
+#define NB_ITER 2500
 //#define SMALL_SUITE 1
 
 // utility
