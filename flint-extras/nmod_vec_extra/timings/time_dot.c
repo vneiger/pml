@@ -8,12 +8,12 @@
 #include <flint/nmod.h>
 
 // small values for testing before launching test:
-//#define TIME_THRES 0.002
-//#define NB_ITER 10
+//#define TIME_THRES 0.02
+//#define NB_ITER 100
 //#define NB_MAT_ITER 1
 // full test:
 #define TIME_THRES 0.2
-#define NB_ITER 2500
+#define NB_ITER 1000
 #define NB_MAT_ITER 3
 //#define SMALL_SUITE 1
 
@@ -34,164 +34,176 @@ void nmod_mat_rand(nmod_mat_t mat, flint_rand_t state)
 
 
 // new general dot macro
-#define DOT_SP_NB 56
-#define _NMOD_VEC_DOT(res, i, len, expr1, expr2, mod, nlimbs)        \
-do                                                                   \
-{                                                                    \
-    res = UWORD(0);                                                  \
-                                                                     \
-    if (nlimbs == 1)                                                 \
-    {                                                                \
-        for (i = 0; i < len; i++)                                    \
-            res += (expr1) * (expr2);                                \
-                                                                     \
-        NMOD_RED(res, res, mod);                                     \
-    }                                                                \
-    else if (mod.n <= 1515531528 && len <= 134744072)                \
-    {                                                                \
-        const ulong low_bits = (1L << DOT_SP_NB) - 1;                \
-        const uint red_pow = (1L << DOT_SP_NB) % mod.n;              \
-        ulong dp_lo = 0;                                             \
-        uint dp_hi = 0;                                              \
-                                                                     \
-        for (i = 0; i+7 < len; )                                     \
-        {                                                            \
-            dp_lo += (expr1) * (expr2);                              \
-            i++;                                                     \
-            dp_lo += (expr1) * (expr2);                              \
-            i++;                                                     \
-            dp_lo += (expr1) * (expr2);                              \
-            i++;                                                     \
-            dp_lo += (expr1) * (expr2);                              \
-            i++;                                                     \
-            dp_lo += (expr1) * (expr2);                              \
-            i++;                                                     \
-            dp_lo += (expr1) * (expr2);                              \
-            i++;                                                     \
-            dp_lo += (expr1) * (expr2);                              \
-            i++;                                                     \
-            dp_lo += (expr1) * (expr2);                              \
-            i++;                                                     \
-                                                                     \
-            dp_hi += dp_lo >> DOT_SP_NB;                             \
-            dp_lo &= low_bits;                                       \
-        }                                                            \
-                                                                     \
-        for ( ; i < len; i++)                                        \
-            dp_lo += (expr1) * (expr2);                              \
-                                                                     \
-        NMOD_RED(res, ((ulong)red_pow * dp_hi) + dp_lo, mod);        \
-    }                                                                \
-    else if (nlimbs == 2)                                            \
-    {                                                                \
-        ulong s0, s1;                                                \
-        ulong u0 = UWORD(0);                                         \
-        ulong u1 = UWORD(0);                                         \
-                                                                     \
-        for (i = 0; i+7 < len; )                                     \
-        {                                                            \
-            umul_ppmm(s1, s0, (expr1), (expr2));                     \
-            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
-            i++;                                                     \
-            umul_ppmm(s1, s0, (expr1), (expr2));                     \
-            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
-            i++;                                                     \
-            umul_ppmm(s1, s0, (expr1), (expr2));                     \
-            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
-            i++;                                                     \
-            umul_ppmm(s1, s0, (expr1), (expr2));                     \
-            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
-            i++;                                                     \
-            umul_ppmm(s1, s0, (expr1), (expr2));                     \
-            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
-            i++;                                                     \
-            umul_ppmm(s1, s0, (expr1), (expr2));                     \
-            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
-            i++;                                                     \
-            umul_ppmm(s1, s0, (expr1), (expr2));                     \
-            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
-            i++;                                                     \
-            umul_ppmm(s1, s0, (expr1), (expr2));                     \
-            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
-            i++;                                                     \
-        }                                                            \
-        for (; i < len; i++)                                         \
-        {                                                            \
-            umul_ppmm(s1, s0, (expr1), (expr2));                     \
-            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
-        }                                                            \
-                                                                     \
-        NMOD2_RED2(res, u1, u0, mod);                                \
-    }                                                                \
-                                                                     \
-    else if (nlimbs == 3)                                            \
-    {                                                                \
-        ulong s0, s1;                                                \
-        ulong t2 = UWORD(0);                                         \
-        ulong t1 = UWORD(0);                                         \
-        ulong t0 = UWORD(0);                                         \
-                                                                     \
-        i = 0;                                                       \
-        /* we can accumulate 8 terms if n == mod.n is such that */   \
-        /*      8 * (n-1)**2 < 2**128, this is equivalent to    */   \
-        /*      n <= ceil(sqrt(2**125)) = 6521908912666391107   */   \
-        if (mod.n <= 6521908912666391107L)                           \
-        {                                                            \
-            slong u0, u1;                                            \
-            for (; i+7 < len; )                                      \
-            {                                                        \
-                umul_ppmm(u1, u0, (expr1), (expr2));                 \
-                i++;                                                 \
-                umul_ppmm(s1, s0, (expr1), (expr2));                 \
-                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
-                i++;                                                 \
-                umul_ppmm(s1, s0, (expr1), (expr2));                 \
-                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
-                i++;                                                 \
-                umul_ppmm(s1, s0, (expr1), (expr2));                 \
-                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
-                i++;                                                 \
-                umul_ppmm(s1, s0, (expr1), (expr2));                 \
-                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
-                i++;                                                 \
-                umul_ppmm(s1, s0, (expr1), (expr2));                 \
-                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
-                i++;                                                 \
-                umul_ppmm(s1, s0, (expr1), (expr2));                 \
-                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
-                i++;                                                 \
-                umul_ppmm(s1, s0, (expr1), (expr2));                 \
-                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
-                i++;                                                 \
-                add_sssaaaaaa(t2, t1, t0,                            \
-                              t2, t1, t0,                            \
-                              UWORD(0), u1, u0);                     \
-            }                                                        \
-                                                                     \
-            u0 = UWORD(0);                                           \
-            u1 = UWORD(0);                                           \
-            for (; i < len; i++)                                     \
-            {                                                        \
-                umul_ppmm(s1, s0, (expr1), (expr2));                 \
-                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
-            }                                                        \
-                                                                     \
-            add_sssaaaaaa(t2, t1, t0,                                \
-                          t2, t1, t0,                                \
-                          UWORD(0), u1, u0);                         \
-        }                                                            \
-        else                                                         \
-        {                                                            \
-            for (; i < len; i++)                                     \
-            {                                                        \
-                umul_ppmm(s1, s0, (expr1), (expr2));                 \
-                add_sssaaaaaa(t2, t1, t0, t2, t1, t0, 0, s1, s0);    \
-            }                                                        \
-        }                                                            \
-                                                                     \
-        NMOD_RED(t2, t2, mod);                                       \
-        NMOD_RED3(res, t2, t1, t0, mod);                             \
-    }                                                                \
+#define DOT_SPLIT_BITS 56
+#define DOT_SPLIT_MASK UWORD(72057594037927935) // (1L << DOT_SPLIT_BITS) - 1
+#define _NMOD_VEC_DOT(res, i, len, expr1, expr2, mod, nlimbs)         \
+do                                                                    \
+{                                                                     \
+    if (nlimbs == 1)                                                  \
+    {                                                                 \
+        res = UWORD(0);                                               \
+        for (i = 0; i < (len); i++)                                   \
+            res += (expr1) * (expr2);                                 \
+        NMOD_RED(res, res, mod);                                      \
+    }                                                                 \
+    else if (mod.n <= UWORD(1515531528) && (len) <= WORD(134744072))  \
+    {                                                                 \
+        ulong dp_lo = 0;                                              \
+        uint dp_hi = 0;                                               \
+                                                                      \
+        for (i = 0; i+7 < (len); )                                    \
+        {                                                             \
+            dp_lo += (expr1) * (expr2); i++;                          \
+            dp_lo += (expr1) * (expr2); i++;                          \
+            dp_lo += (expr1) * (expr2); i++;                          \
+            dp_lo += (expr1) * (expr2); i++;                          \
+            dp_lo += (expr1) * (expr2); i++;                          \
+            dp_lo += (expr1) * (expr2); i++;                          \
+            dp_lo += (expr1) * (expr2); i++;                          \
+            dp_lo += (expr1) * (expr2); i++;                          \
+                                                                      \
+            dp_hi += dp_lo >> DOT_SPLIT_BITS;                         \
+            dp_lo &= DOT_SPLIT_MASK;                                  \
+        }                                                             \
+                                                                      \
+        for ( ; i < (len); i++)                                       \
+            dp_lo += (expr1) * (expr2);                               \
+                                                                      \
+        ulong red_pow;                                                \
+        NMOD_RED(red_pow, (UWORD(1) << DOT_SPLIT_BITS), mod);         \
+        res = red_pow * dp_hi + dp_lo;                                \
+        NMOD_RED(res, res, mod);                                      \
+    }                                                                 \
+    else if (mod.n <= (UWORD(1) << (FLINT_BITS / 2)))                 \
+    {                                                                 \
+        ulong s0zz = UWORD(0);                                        \
+        ulong s1zz = UWORD(0);                                        \
+        for (i = 0; i < (len); i++)                                   \
+        {                                                             \
+            const ulong prodzz = (expr1) * (expr2);                   \
+            add_ssaaaa(s1zz, s0zz, s1zz, s0zz, 0, prodzz);            \
+        }                                                             \
+        NMOD2_RED2(res, s1zz, s0zz, mod);                             \
+    }                                                                 \
+    else if (nlimbs == 2)                                             \
+    {                                                                 \
+        ulong u0zz = UWORD(0);                                        \
+        ulong u1zz = UWORD(0);                                        \
+                                                                      \
+        for (i = 0; i+7 < (len); )                                    \
+        {                                                             \
+            ulong s0zz, s1zz;                                         \
+            umul_ppmm(s1zz, s0zz, (expr1), (expr2));                  \
+            add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);           \
+            i++;                                                      \
+            umul_ppmm(s1zz, s0zz, (expr1), (expr2));                  \
+            add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);           \
+            i++;                                                      \
+            umul_ppmm(s1zz, s0zz, (expr1), (expr2));                  \
+            add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);           \
+            i++;                                                      \
+            umul_ppmm(s1zz, s0zz, (expr1), (expr2));                  \
+            add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);           \
+            i++;                                                      \
+            umul_ppmm(s1zz, s0zz, (expr1), (expr2));                  \
+            add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);           \
+            i++;                                                      \
+            umul_ppmm(s1zz, s0zz, (expr1), (expr2));                  \
+            add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);           \
+            i++;                                                      \
+            umul_ppmm(s1zz, s0zz, (expr1), (expr2));                  \
+            add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);           \
+            i++;                                                      \
+            umul_ppmm(s1zz, s0zz, (expr1), (expr2));                  \
+            add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);           \
+            i++;                                                      \
+        }                                                             \
+        for ( ; i < (len); i++)                                       \
+        {                                                             \
+            ulong s0zz, s1zz;                                         \
+            umul_ppmm(s1zz, s0zz, (expr1), (expr2));                  \
+            add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);           \
+        }                                                             \
+                                                                      \
+        NMOD2_RED2(res, u1zz, u0zz, mod);                             \
+    }                                                                 \
+    else if (nlimbs == 3)                                             \
+    {                                                                 \
+        ulong t2zz = UWORD(0);                                        \
+        ulong t1zz = UWORD(0);                                        \
+        ulong t0zz = UWORD(0);                                        \
+                                                                      \
+        /* we can accumulate 8 terms if n == mod.n is such that */    \
+        /*      8 * (n-1)**2 < 2**128, this is equivalent to    */    \
+        /*      n <= ceil(sqrt(2**125)) = 6521908912666391107   */    \
+        if (mod.n <= 6521908912666391107L)                            \
+        {                                                             \
+            for (i = 0; i+7 < (len); )                                \
+            {                                                         \
+                ulong s0zz, s1zz;                                     \
+                ulong u0zz = UWORD(0);                                \
+                ulong u1zz = UWORD(0);                                \
+                umul_ppmm(s1zz, s0zz, (expr1), (expr2));              \
+                add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);       \
+                i++;                                                  \
+                umul_ppmm(s1zz, s0zz, (expr1), (expr2));              \
+                add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);       \
+                i++;                                                  \
+                umul_ppmm(s1zz, s0zz, (expr1), (expr2));              \
+                add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);       \
+                i++;                                                  \
+                umul_ppmm(s1zz, s0zz, (expr1), (expr2));              \
+                add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);       \
+                i++;                                                  \
+                umul_ppmm(s1zz, s0zz, (expr1), (expr2));              \
+                add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);       \
+                i++;                                                  \
+                umul_ppmm(s1zz, s0zz, (expr1), (expr2));              \
+                add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);       \
+                i++;                                                  \
+                umul_ppmm(s1zz, s0zz, (expr1), (expr2));              \
+                add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);       \
+                i++;                                                  \
+                umul_ppmm(s1zz, s0zz, (expr1), (expr2));              \
+                add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);       \
+                i++;                                                  \
+                add_sssaaaaaa(t2zz, t1zz, t0zz,                       \
+                              t2zz, t1zz, t0zz,                       \
+                              UWORD(0), u1zz, u0zz);                  \
+            }                                                         \
+                                                                      \
+            ulong s0zz, s1zz;                                         \
+            ulong u0zz = UWORD(0);                                    \
+            ulong u1zz = UWORD(0);                                    \
+            for ( ; i < (len); i++)                                   \
+            {                                                         \
+                umul_ppmm(s1zz, s0zz, (expr1), (expr2));              \
+                add_ssaaaa(u1zz, u0zz, u1zz, u0zz, s1zz, s0zz);       \
+            }                                                         \
+                                                                      \
+            add_sssaaaaaa(t2zz, t1zz, t0zz,                           \
+                          t2zz, t1zz, t0zz,                           \
+                          UWORD(0), u1zz, u0zz);                      \
+        }                                                             \
+        else                                                          \
+        {                                                             \
+            for (i = 0; i < (len); i++)                               \
+            {                                                         \
+                ulong s0zz, s1zz;                                     \
+                umul_ppmm(s1zz, s0zz, (expr1), (expr2));              \
+                add_sssaaaaaa(t2zz, t1zz, t0zz,                       \
+                              t2zz, t1zz, t0zz,                       \
+                              UWORD(0), s1zz, s0zz);                  \
+            }                                                         \
+        }                                                             \
+                                                                      \
+        NMOD_RED(t2zz, t2zz, mod);                                    \
+        NMOD_RED3(res, t2zz, t1zz, t0zz, mod);                        \
+    }                                                                 \
+    else   /* nlimbs == 0 */                                          \
+    {                                                                 \
+        res = UWORD(0);                                               \
+    }                                                                 \
 } while(0);
 
 ulong
@@ -254,7 +266,8 @@ ulong time_dotexpr_vs_flint_plain(ulong len, ulong n, flint_rand_t state)
     nmod_t mod;
     nmod_init(&mod, n);
 
-    const int n_limbs = _nmod_vec_dot_bound_limbs(len, mod);
+    //const int n_limbs = _nmod_vec_dot_bound_limbs(len, mod);
+    const int n_limbs = 2;
 
     nn_ptr v1;
     v1 = _nmod_vec_init(len);
@@ -431,7 +444,7 @@ ulong time_dotexpr_vs_flint_rev2(ulong len, ulong n, flint_rand_t state)
 
 ulong time_dotexpr_vs_flint_matmul(ulong len, ulong n, flint_rand_t state)
 {
-    if (len > 1000)
+    if (len >= 2000)
     {
         printf("inf\tinf\t1.0\t");
         return 0;
