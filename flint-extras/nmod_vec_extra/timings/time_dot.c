@@ -223,7 +223,7 @@ void nmod_mat_mul_flint(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
 }
 
 ulong
-_nmod_vec_newdot(nn_srcptr vec1, nn_srcptr vec2, slong len, nmod_t mod, int nlimbs, uint red_pow)
+_nmod_vec_newdot(nn_srcptr vec1, nn_srcptr vec2, slong len, nmod_t mod, int nlimbs, int red_pow)
 {
     ulong res;
     slong i;
@@ -234,7 +234,7 @@ _nmod_vec_newdot(nn_srcptr vec1, nn_srcptr vec2, slong len, nmod_t mod, int nlim
 void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
 {
     const int nlimbs = _nmod_vec_dot_bound_limbs(A->c, A->mod);
-    const uint red_pow = (1L << DOT_SPLIT_BITS) % A->mod.n;
+    const int red_pow = (1L << DOT_SPLIT_BITS) % A->mod.n;
     for (slong i = 0; i < A->r; i++)
         for (slong j = 0; j < B->r; j++)
             C->rows[i][j] = _nmod_vec_newdot(A->rows[i], B->rows[j], A->c, A->mod, nlimbs, red_pow);
@@ -264,7 +264,7 @@ ulong time_dotexpr_vs_flint_plain(ulong len, ulong n, flint_rand_t state)
     { // TEST
         ulong res_new;
         ulong j;
-    const uint red_pow = (1L << DOT_SPLIT_BITS) % mod.n;
+        const int red_pow = (1L << DOT_SPLIT_BITS) % mod.n;
         _NMOD_VEC_DOT(res_new, j, len, v1[j], v2[j], mod, n_limbs, red_pow);
         ulong res_flint;
         v1i = v1; v2i = v2;
@@ -285,7 +285,7 @@ ulong time_dotexpr_vs_flint_plain(ulong len, ulong n, flint_rand_t state)
     t1 = 0.0; nb_iter = 0;
     while (t1 < TIME_THRES)
     {
-        const uint red_pow = (1L << DOT_SPLIT_BITS) % mod.n;
+        const int red_pow = (1L << DOT_SPLIT_BITS) % mod.n;
         ulong buf;
         ulong j;
         for (slong i = 0; i < NB_ITER; i++) // warmup
@@ -356,7 +356,7 @@ ulong time_dotexpr_vs_flint_rev2(ulong len, ulong n, flint_rand_t state)
     { // TEST
         ulong res_new;
         ulong j;
-        const uint red_pow = (1L << DOT_SPLIT_BITS) % mod.n;
+        const int red_pow = (1L << DOT_SPLIT_BITS) % mod.n;
         _NMOD_VEC_DOT(res_new, j, len/2, v1[len - 1 - 2*j], v2[len - 1 - 2*j], mod, n_limbs, red_pow);
         ulong res_flint;
         v1i = v1; v2i = v2;
@@ -377,7 +377,7 @@ ulong time_dotexpr_vs_flint_rev2(ulong len, ulong n, flint_rand_t state)
     t1 = 0.0; nb_iter = 0;
     while (t1 < TIME_THRES)
     {
-        const uint red_pow = (1L << DOT_SPLIT_BITS) % mod.n;
+        const int red_pow = (1L << DOT_SPLIT_BITS) % mod.n;
         ulong buf;
         ulong j;
         for (slong i = 0; i < NB_ITER; i++) // warmup
