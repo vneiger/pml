@@ -71,7 +71,7 @@ ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2,
 /*------------------------------------------------*/
 ulong nmod_vec_dot_product(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod, ulong n_limbs);
 
-#define NMOD_VEC_DOT_PRODUCT(res, i, len, expr1, expr2, mod, nlimbs) \
+#define NMOD_VEC_DOT_PRODUCT_v1(res, i, len, expr1, expr2, mod, nlimbs) \
 do                                                                   \
 {                                                                    \
     res = UWORD(0);                                                  \
@@ -196,13 +196,309 @@ do                                                                   \
     }                                                                \
 } while(0);
 
+// new general dot macro
+#define DOT_SP_NB 56
+#define NMOD_VEC_DOT_PRODUCT_SCALAR(res, v1, v2, len, mod, nlimbs, red_pow) \
+do                                                                   \
+{                                                                    \
+    res = UWORD(0);                                                  \
+                                                                     \
+    if (nlimbs == 1)                                                 \
+    {                                                                \
+        ulong ixx = 0;                                               \
+        for (; ixx < len; ixx++)                                     \
+            res += (v1)[ixx] * (v2)[ixx];                            \
+                                                                     \
+        NMOD_RED(res, res, mod);                                     \
+    }                                                                \
+    else if (mod.n <= 1515531528 && len <= 134744072)                \
+    {                                                                \
+        const ulong low_bits = (1L << DOT_SP_NB) - 1;                \
+        ulong dp_lo = 0;                                             \
+        uint dp_hi = 0;                                              \
+                                                                     \
+        ulong kxx = 0;                                               \
+        for (; kxx+7 < len; kxx += 8)                                \
+        {                                                            \
+            dp_lo += (v1)[kxx+0] * (v2)[kxx+0] +                     \
+                     (v1)[kxx+1] * (v2)[kxx+1] +                     \
+                     (v1)[kxx+2] * (v2)[kxx+2] +                     \
+                     (v1)[kxx+3] * (v2)[kxx+3] +                     \
+                     (v1)[kxx+4] * (v2)[kxx+4] +                     \
+                     (v1)[kxx+5] * (v2)[kxx+5] +                     \
+                     (v1)[kxx+6] * (v2)[kxx+6] +                     \
+                     (v1)[kxx+7] * (v2)[kxx+7];                      \
+                                                                     \
+            dp_hi += dp_lo >> DOT_SP_NB;                             \
+            dp_lo &= low_bits;                                       \
+        }                                                            \
+                                                                     \
+        for (; kxx < len; kxx++)                                     \
+            dp_lo += (v1)[kxx] * (v2)[kxx];                          \
+                                                                     \
+        NMOD_RED(res, ((ulong)red_pow * dp_hi) + dp_lo, mod);        \
+    }                                                                \
+    else if (nlimbs == 2)                                            \
+    {                                                                \
+        ulong s0, s1;                                                \
+        ulong u0 = UWORD(0);                                         \
+        ulong u1 = UWORD(0);                                         \
+                                                                     \
+        ulong kxx = 0;                                               \
+        for ( ; kxx+7 < len; kxx += 8)                               \
+        {                                                            \
+            umul_ppmm(s1, s0, (v1)[kxx+0], (v2)[kxx+0]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+1], (v2)[kxx+1]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+2], (v2)[kxx+2]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+3], (v2)[kxx+3]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+4], (v2)[kxx+4]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+5], (v2)[kxx+5]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+6], (v2)[kxx+6]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+7], (v2)[kxx+7]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+        }                                                            \
+        for (; kxx < len; kxx++)                                     \
+        {                                                            \
+            umul_ppmm(s1, s0, (v1)[kxx], (v2)[kxx]);                 \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+        }                                                            \
+                                                                     \
+        NMOD2_RED2(res, u1, u0, mod);                                \
+    }                                                                \
+                                                                     \
+    else /* (nlimbs == 3) */                                         \
+    {                                                                \
+        ulong s0, s1;                                                \
+        ulong t2 = UWORD(0);                                         \
+        ulong t1 = UWORD(0);                                         \
+        ulong t0 = UWORD(0);                                         \
+                                                                     \
+        ulong kxx = 0;                                               \
+        /* we can accumulate 8 terms if n == mod.n is such that */   \
+        /*      8 * (n-1)**2 < 2**128, this is equivalent to    */   \
+        /*      n <= ceil(sqrt(2**125)) = 6521908912666391107   */   \
+        if (mod.n <= 6521908912666391107L)                           \
+        {                                                            \
+            slong u0, u1;                                            \
+            for ( ; kxx+7 < len; kxx += 8)                           \
+            {                                                        \
+                umul_ppmm(u1, u0, (v1)[kxx+0], (v2)[kxx+0]);         \
+                umul_ppmm(s1, s0, (v1)[kxx+1], (v2)[kxx+1]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                umul_ppmm(s1, s0, (v1)[kxx+2], (v2)[kxx+2]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                umul_ppmm(s1, s0, (v1)[kxx+3], (v2)[kxx+3]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                umul_ppmm(s1, s0, (v1)[kxx+4], (v2)[kxx+4]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                umul_ppmm(s1, s0, (v1)[kxx+5], (v2)[kxx+5]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                umul_ppmm(s1, s0, (v1)[kxx+6], (v2)[kxx+6]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                umul_ppmm(s1, s0, (v1)[kxx+7], (v2)[kxx+7]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                add_sssaaaaaa(t2, t1, t0,                            \
+                              t2, t1, t0,                            \
+                              UWORD(0), u1, u0);                     \
+            }                                                        \
+                                                                     \
+            u0 = UWORD(0);                                           \
+            u1 = UWORD(0);                                           \
+            for (; kxx < len; kxx++)                                 \
+            {                                                        \
+                umul_ppmm(s1, s0, (v1)[kxx], (v2)[kxx]);             \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+            }                                                        \
+                                                                     \
+            add_sssaaaaaa(t2, t1, t0,                                \
+                          t2, t1, t0,                                \
+                          UWORD(0), u1, u0);                         \
+        }                                                            \
+        else                                                         \
+        {                                                            \
+            for (ulong kxx = 0; kxx < len; kxx++)                    \
+            {                                                        \
+                umul_ppmm(s1, s0, (v1)[kxx], (v2)[kxx]);             \
+                add_sssaaaaaa(t2, t1, t0, t2, t1, t0, 0, s1, s0);    \
+            }                                                        \
+        }                                                            \
+                                                                     \
+        NMOD_RED(t2, t2, mod);                                       \
+        NMOD_RED3(res, t2, t1, t0, mod);                             \
+    }                                                                \
+} while(0);
+
+#define NMOD_VEC_DOT_PRODUCT_AVX2(res, v1, v2, len, mod, nlimbs, red_pow)                                          \
+do                                                                                                                 \
+{                                                                                                                  \
+    res = UWORD(0);                                                                                                \
+                                                                                                                   \
+    if (nlimbs == 1)                                                                                               \
+    {                                                                                                              \
+        vec4n dp = vec4n_zero();                                                                                   \
+        ulong kxx = 0;                                                                                             \
+        for ( ; kxx+3 < len; kxx+=4)                                                                               \
+            dp = vec4n_add(dp, vec4n_mul(vec4n_load_unaligned((v1)+kxx), vec4n_load_unaligned((v2)+kxx)));         \
+                                                                                                                   \
+        res = dp[0] + dp[1] + dp[2] + dp[3];                                                                       \
+                                                                                                                   \
+        for (; kxx < len; kxx++)                                                                                   \
+            res += (v1)[kxx] * (v2)[kxx];                                                                          \
+                                                                                                                   \
+        NMOD_RED(res, res, mod);                                                                                   \
+    }                                                                                                              \
+    else if (mod.n <= 1515531528 && len <= 134744072)                                                              \
+    {                                                                                                              \
+        const vec4n low_bits = vec4n_set_n((1L << DOT_SP_NB) - 1);                                                 \
+        vec4n dp_lo = vec4n_zero();                                                                                \
+        vec4n dp_hi = vec4n_zero();                                                                                \
+                                                                                                                   \
+        ulong kxx = 0;                                                                                             \
+        for (; kxx+31 < len; kxx += 32)                                                                            \
+        {                                                                                                          \
+            dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned((v1)+kxx+ 0), vec4n_load_unaligned((v2)+kxx+ 0))); \
+            dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned((v1)+kxx+ 4), vec4n_load_unaligned((v2)+kxx+ 4))); \
+            dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned((v1)+kxx+ 8), vec4n_load_unaligned((v2)+kxx+ 8))); \
+            dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned((v1)+kxx+12), vec4n_load_unaligned((v2)+kxx+12))); \
+            dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned((v1)+kxx+16), vec4n_load_unaligned((v2)+kxx+16))); \
+            dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned((v1)+kxx+20), vec4n_load_unaligned((v2)+kxx+20))); \
+            dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned((v1)+kxx+24), vec4n_load_unaligned((v2)+kxx+24))); \
+            dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned((v1)+kxx+28), vec4n_load_unaligned((v2)+kxx+28))); \
+                                                                                                                   \
+            dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(dp_lo, DOT_SP_NB));                                     \
+            dp_lo = vec4n_bit_and(dp_lo, low_bits);                                                                \
+        }                                                                                                          \
+                                                                                                                   \
+        for (; kxx + 3 < len; kxx += 4)                                                                            \
+            dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned((v1)+kxx), vec4n_load_unaligned((v2)+kxx)));   \
+                                                                                                                   \
+        dp_hi = vec4n_add(dp_hi, _mm256_srli_epi64(dp_lo, DOT_SP_NB));                                             \
+        dp_lo = vec4n_bit_and(dp_lo, low_bits);                                                                    \
+                                                                                                                   \
+        ulong total_lo = dp_lo[0] + dp_lo[1] + dp_lo[2] + dp_lo[3];                                                \
+        const uint total_hi = dp_hi[0] + dp_hi[1] + dp_hi[2] + dp_hi[3] + (total_lo >> DOT_SP_NB);                 \
+        total_lo &= (1L << DOT_SP_NB) - 1;                                                                         \
+                                                                                                                   \
+        for (; kxx < len; kxx++)                                                                                   \
+            total_lo += (v1)[kxx] * (v2)[kxx];                                                                     \
+                                                                                                                   \
+        NMOD_RED(res, ((ulong)red_pow * total_hi) + total_lo, mod);                                                \
+    }                                                                \
+    else if (nlimbs == 2)                                            \
+    {                                                                \
+        ulong s0, s1;                                                \
+        ulong u0 = UWORD(0);                                         \
+        ulong u1 = UWORD(0);                                         \
+                                                                     \
+        ulong kxx = 0;                                               \
+        for ( ; kxx+7 < len; kxx += 8)                               \
+        {                                                            \
+            umul_ppmm(s1, s0, (v1)[kxx+0], (v2)[kxx+0]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+1], (v2)[kxx+1]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+2], (v2)[kxx+2]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+3], (v2)[kxx+3]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+4], (v2)[kxx+4]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+5], (v2)[kxx+5]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+6], (v2)[kxx+6]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+            umul_ppmm(s1, s0, (v1)[kxx+7], (v2)[kxx+7]);             \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+        }                                                            \
+        for (; kxx < len; kxx++)                                     \
+        {                                                            \
+            umul_ppmm(s1, s0, (v1)[kxx], (v2)[kxx]);                 \
+            add_ssaaaa(u1, u0, u1, u0, s1, s0);                      \
+        }                                                            \
+                                                                     \
+        NMOD2_RED2(res, u1, u0, mod);                                \
+    }                                                                \
+                                                                     \
+    else /* (nlimbs == 3) */                                         \
+    {                                                                \
+        ulong s0, s1;                                                \
+        ulong t2 = UWORD(0);                                         \
+        ulong t1 = UWORD(0);                                         \
+        ulong t0 = UWORD(0);                                         \
+                                                                     \
+        ulong kxx = 0;                                               \
+        /* we can accumulate 8 terms if n == mod.n is such that */   \
+        /*      8 * (n-1)**2 < 2**128, this is equivalent to    */   \
+        /*      n <= ceil(sqrt(2**125)) = 6521908912666391107   */   \
+        if (mod.n <= 6521908912666391107L)                           \
+        {                                                            \
+            slong u0, u1;                                            \
+            for ( ; kxx+7 < len; kxx += 8)                           \
+            {                                                        \
+                umul_ppmm(u1, u0, (v1)[kxx+0], (v2)[kxx+0]);         \
+                umul_ppmm(s1, s0, (v1)[kxx+1], (v2)[kxx+1]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                umul_ppmm(s1, s0, (v1)[kxx+2], (v2)[kxx+2]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                umul_ppmm(s1, s0, (v1)[kxx+3], (v2)[kxx+3]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                umul_ppmm(s1, s0, (v1)[kxx+4], (v2)[kxx+4]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                umul_ppmm(s1, s0, (v1)[kxx+5], (v2)[kxx+5]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                umul_ppmm(s1, s0, (v1)[kxx+6], (v2)[kxx+6]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                umul_ppmm(s1, s0, (v1)[kxx+7], (v2)[kxx+7]);         \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+                add_sssaaaaaa(t2, t1, t0,                            \
+                              t2, t1, t0,                            \
+                              UWORD(0), u1, u0);                     \
+            }                                                        \
+                                                                     \
+            u0 = UWORD(0);                                           \
+            u1 = UWORD(0);                                           \
+            for (; kxx < len; kxx++)                                 \
+            {                                                        \
+                umul_ppmm(s1, s0, (v1)[kxx], (v2)[kxx]);             \
+                add_ssaaaa(u1, u0, u1, u0, s1, s0);                  \
+            }                                                        \
+                                                                     \
+            add_sssaaaaaa(t2, t1, t0,                                \
+                          t2, t1, t0,                                \
+                          UWORD(0), u1, u0);                         \
+        }                                                            \
+        else                                                         \
+        {                                                            \
+            for (ulong kxx = 0; kxx < len; kxx++)                    \
+            {                                                        \
+                umul_ppmm(s1, s0, (v1)[kxx], (v2)[kxx]);             \
+                add_sssaaaaaa(t2, t1, t0, t2, t1, t0, 0, s1, s0);    \
+            }                                                        \
+        }                                                            \
+                                                                     \
+        NMOD_RED(t2, t2, mod);                                       \
+        NMOD_RED3(res, t2, t1, t0, mod);                             \
+    }                                                                \
+} while(0);
+
+#if defined(__AVX2__)
+#define NMOD_VEC_DOT_PRODUCT NMOD_VEC_DOT_PRODUCT_AVX2
+#else
+#define NMOD_VEC_DOT_PRODUCT NMOD_VEC_DOT_PRODUCT_SCALAR
+#endif
 
 /*------------------------------------------------------------*/
 /* small modulus: see implementation for constraints          */
 /*------------------------------------------------------------*/
 
 // splitting at 56 bits
-#define DOT_SP_NB 56
 ulong _nmod_vec_dot_mod32(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
 ulong _nmod_vec_dot_mod32_avx2(nn_ptr a, nn_ptr b, ulong len, nmod_t mod, uint power_two);
 
@@ -246,7 +542,10 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res,
 /*------------------------------------------------------------*/
 
 ulong _nmod_vec_dot_product_1_avx2(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
+#define HAVE_AVX512 0
+#if HAVE_AVX512
 ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
+#endif
 
 // note: version split16 interesting on recent laptop (gcc does some vectorization)
 // limited to nbits <= ~31 (bound to be better analyzed, numterms)
