@@ -423,22 +423,22 @@ do                                                                    \
     NMOD_RED3(res, t2zz, t1zz, t0zz, mod);                            \
 } while(0);
 
-#define _NMOD_VEC_DOT_NEW(res, i, len, expr1, expr2, mod, params) \
+#define _NMOD_VEC_DOT_NEW(res, i, len, expr1, expr2, mod, params)          \
 do                                                                         \
 {                                                                          \
     res = UWORD(0);                                                        \
-    if (params.method == _DOT1)                                                   \
+    if (params.method == _DOT1)                                            \
         _NMOD_VEC_DOT1(res, i, len, expr1, expr2, mod)                     \
-    else if (params.method == _DOT2_32_SPLIT)                                     \
-        /* _NMOD_VEC_DOT2_32_SPLIT(res, i, len, expr1, expr2, mod, red_pow) */   \
+    else if (params.method == _DOT2_32_SPLIT)                              \
+        _NMOD_VEC_DOT2_32_SPLIT(res, i, len, expr1, expr2, mod,            \
+                params.pow2_precomp)                                       \
+    else if (params.method == _DOT2_32)                                    \
         _NMOD_VEC_DOT2_32(res, i, len, expr1, expr2, mod)                  \
-    else if (params.method == _DOT2_32)                                           \
-        _NMOD_VEC_DOT2_32(res, i, len, expr1, expr2, mod)                  \
-    else if (params.method == _DOT2)                                              \
+    else if (params.method == _DOT2)                                       \
         _NMOD_VEC_DOT2(res, i, len, expr1, expr2, mod)                     \
-    else if (params.method == _DOT3_UNROLL)                                       \
+    else if (params.method == _DOT3_UNROLL)                                \
         _NMOD_VEC_DOT3_UNROLL(res, i, len, expr1, expr2, mod)              \
-    else if (params.method == _DOT3)                                              \
+    else if (params.method == _DOT3)                                       \
         _NMOD_VEC_DOT3(res, i, len, expr1, expr2, mod)                     \
 } while(0);
 
