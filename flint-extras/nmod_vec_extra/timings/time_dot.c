@@ -43,8 +43,8 @@ ulong time_dotexpr_vs_flint_plain(ulong len, ulong n, flint_rand_t state)
     nmod_t mod;
     nmod_init(&mod, n);
 
-    //const int n_limbs = _nmod_vec_dot_bound_limbs(len, mod);
-    const int n_limbs = 2;
+    const int n_limbs = _nmod_vec_dot_bound_limbs(len, mod);
+    dot_params_t params = _nmod_vec_dot_params(len, mod);
 
     nn_ptr v1;
     v1 = _nmod_vec_init(len);
@@ -59,8 +59,7 @@ ulong time_dotexpr_vs_flint_plain(ulong len, ulong n, flint_rand_t state)
     { // TEST
         ulong res_new;
         ulong j;
-        const int red_pow = (1L << DOT_SPLIT_BITS) % mod.n;
-        _NMOD_VEC_DOT(res_new, j, len, v1[j], v2[j], mod, n_limbs, red_pow);
+        _NMOD_VEC_DOT_NEW(res_new, j, len, v1[j], v2[j], mod, params);
         ulong res_flint;
         v1i = v1; v2i = v2;
         FLINT_NMOD_VEC_DOT(res_flint, j, len, v1i[j], v2i[j], mod, n_limbs);
@@ -80,23 +79,28 @@ ulong time_dotexpr_vs_flint_plain(ulong len, ulong n, flint_rand_t state)
     t1 = 0.0; t2 = 0.0; nb_iter = 0;
     while (t1 < TIME_THRES)
     {
-        const int red_pow = (1L << DOT_SPLIT_BITS) % mod.n;
         ulong buf;
         ulong j;
         for (slong i = 0; i < NB_ITER; i++) // warmup
         {
-            _NMOD_VEC_DOT(buf, j, len, v1i[j], v2i[j], mod, n_limbs, red_pow);
+            _NMOD_VEC_DOT_NEW(buf, j, len, v1i[j], v2i[j], mod, params);
             res += buf;
         }
 
         tstart = clock();
         for (slong i = 0; i < NB_ITER; i++)
         {
-            _NMOD_VEC_DOT(buf, j, len, v1i[j], v2i[j], mod, n_limbs, red_pow);
+            _NMOD_VEC_DOT_NEW(buf, j, len, v1i[j], v2i[j], mod, params);
             res += buf;
         }
         tend = clock();
         t1 += (double)(tend-tstart) / CLOCKS_PER_SEC;
+
+        for (slong i = 0; i < NB_ITER; i++) // warmup
+        {
+            FLINT_NMOD_VEC_DOT(buf, j, len, v1i[j], v2i[j], mod, n_limbs);
+            res += buf;
+        }
 
         tstart = clock();
         for (slong i = 0; i < NB_ITER; i++)
@@ -124,6 +128,7 @@ ulong time_dotexpr_vs_flint_rev2(ulong len, ulong n, flint_rand_t state)
     nmod_init(&mod, n);
 
     const int n_limbs = _nmod_vec_dot_bound_limbs(len, mod);
+    const dot_params_t params = _nmod_vec_dot_params(len, mod);
 
     nn_ptr v1;
     v1 = _nmod_vec_init(len);
@@ -138,8 +143,7 @@ ulong time_dotexpr_vs_flint_rev2(ulong len, ulong n, flint_rand_t state)
     { // TEST
         ulong res_new;
         ulong j;
-        const int red_pow = (1L << DOT_SPLIT_BITS) % mod.n;
-        _NMOD_VEC_DOT(res_new, j, len/2, v1[len - 1 - 2*j], v2[len - 1 - 2*j], mod, n_limbs, red_pow);
+        _NMOD_VEC_DOT_NEW(res_new, j, len/2, v1[len - 1 - 2*j], v2[len - 1 - 2*j], mod, params);
         ulong res_flint;
         FLINT_NMOD_VEC_DOT(res_flint, j, len/2, v1i[len - 1 - 2*j], v2i[len - 1 - 2*j], mod, n_limbs);
         if (res_new != res_flint)
@@ -158,25 +162,29 @@ ulong time_dotexpr_vs_flint_rev2(ulong len, ulong n, flint_rand_t state)
     t2 = 0.0; t1 = 0.0; nb_iter = 0;
     while (t1 < TIME_THRES)
     {
-        const int red_pow = (1L << DOT_SPLIT_BITS) % mod.n;
         ulong buf;
         ulong j;
         for (slong i = 0; i < NB_ITER; i++) // warmup
         {
-            _NMOD_VEC_DOT(buf, j, len/2, v1[len - 1 - 2*j], v2[len - 1 - 2*j], mod, n_limbs, red_pow);
-            res += buf;
-            NMOD_VEC_DOT(buf, j, len/2, v1i[len - 1 - 2*j], v2i[len - 1 - 2*j], mod, n_limbs);
+            _NMOD_VEC_DOT_NEW(buf, j, len/2, v1[len - 1 - 2*j], v2[len - 1 - 2*j], mod, params);
             res += buf;
         }
 
         tstart = clock();
         for (slong i = 0; i < NB_ITER; i++)
         {
-            _NMOD_VEC_DOT(buf, j, len/2, v1[len - 1 - 2*j], v2[len - 1 - 2*j], mod, n_limbs, red_pow);
+            _NMOD_VEC_DOT_NEW(buf, j, len/2, v1[len - 1 - 2*j], v2[len - 1 - 2*j], mod, params);
             res += buf;
         }
         tend = clock();
         t1 += (double)(tend-tstart) / CLOCKS_PER_SEC;
+
+        for (slong i = 0; i < NB_ITER; i++) // warmup
+        {
+
+            NMOD_VEC_DOT(buf, j, len/2, v1i[len - 1 - 2*j], v2i[len - 1 - 2*j], mod, n_limbs);
+            res += buf;
+        }
 
         tstart = clock();
         for (slong i = 0; i < NB_ITER; i++)
@@ -245,15 +253,15 @@ ulong time_dotexpr_vs_flint_matmul(ulong len, ulong n, flint_rand_t state)
             nmod_mat_init(mat, len, len, n);
 
             for (ulong i = 0; i < NB_MAT_ITER; i++) // warmup
-            {
                 nmod_mat_mul_newdot(mat, mat1, mat2);
-                nmod_mat_mul_flint(mat, mat1, mat2);
-            }
 
             tt = clock();
             for (ulong i = 0; i < NB_MAT_ITER; i++)
                 nmod_mat_mul_newdot(mat, mat1, mat2);
             t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+
+            for (ulong i = 0; i < NB_MAT_ITER; i++) // warmup
+                nmod_mat_mul_flint(mat, mat1, mat2);
 
             tt = clock();
             for (ulong i = 0; i < NB_MAT_ITER; i++)
@@ -266,8 +274,6 @@ ulong time_dotexpr_vs_flint_matmul(ulong len, ulong n, flint_rand_t state)
             nmod_mat_clear(mat2);
             nmod_mat_clear(mat);
         }
-        //t1 /= nb_iter;
-        //t2 /= nb_iter;
 
         printf("%.1e\t%.1e\t%.1e\t", t1/nb_iter, t2/nb_iter, t2/t1);
         return 0;

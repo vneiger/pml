@@ -22,8 +22,8 @@ dot-clang:
 	clang -o time_dot time_dot.o dot.o -lflint
 
 dot-gcc:
-	gcc -c -o dot.o dot.c -Wall -Wextra -O3 -march=native -funroll-loops
-	gcc -c -o time_dot.o time_dot.c -Wall -Wextra -O3 -march=native -funroll-loops
+	gcc -c -o dot.o dot.c -Wall -Wextra -O3 -march=native
+	gcc -c -o time_dot.o time_dot.c -Wall -Wextra -O3 -march=native
 	gcc -o time_dot time_dot.o dot.o -lflint
 
 clean:
