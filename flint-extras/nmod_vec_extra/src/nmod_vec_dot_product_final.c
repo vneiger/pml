@@ -10,8 +10,8 @@
 // in short: with current DOT_SP_NB value 56,
 // -> modulus n up to about 2**30.5
 //       (more precisely, n <= 1515531528)
-// -> length of dot product up to at least 134744072
-//       (more precisely, len <= (2**88 - 2**56) / (n-1)**2)
+// -> length of dot product up to at least 380368697
+//       (more precisely, len * (n-1)**3 < 2**120 + 2**56 - 2**112)
 
 // APPROACH:
 //
@@ -26,57 +26,66 @@
 
 // PARAMETER CONSTRAINTS:
 //
-// -> constraint (C0):
-// we will accumulate 8 terms (each a product of two integers reduced modulo n)
-// on top of an s-bit integer, so we require
-//     2**s - 1 + 8 * (p-1)**2  <  2**64
+// -> constraint (C0-8):
+// if we accumulate 8 terms (each a product of two integers reduced modulo n)
+// on top of an s-bit integer, we require
+//     2**s - 1 + 8 * (n-1)**2  <  2**64
 // so one can take any modulus with
 //     n <= 1 + floor(sqrt(2**61 - 2**(s-3)))
 // in particular, n-1 < 2**30.5, (n-1)**2 < 2**61, (n-1)**3 < 2**91.5
 //
+// -> constraint (C0-4):
+// similarly, if we accumulate 4 terms on top of an s-bit integer, we require
+//     2**s - 1 + 4 * (n-1)**2  <  2**64
+// so one can take any modulus with
+//     n <= 1 + floor(sqrt(2**62 - 2**(s-2)))
+// in particular, n-1 < 2**30.5, (n-1)**2 < 2**61, (n-1)**3 < 2**91.5
+//
 // -> constraint (C1):
-// in the above representation of dp we will use an uint32 for dp_hi,
-// so we require      len * (n-1)**2 <= 2**s * (2**32 - 1)
+// in the above representation of dp we will use a ulong for dp_hi,
+// so we require      len * (n-1)**2 <= 2**s * (2**64 - 1)
+// which is less restrictive than the below (C2)
 //
 // -> constraint (C2):
-// [this constraint is void since dp_hi fits in uint32, but these notes are left
-// in case one would want to use ulong for dp_hi, which allows for larger lengths]
-// if ones wishes power_two * dp_hi to fit in a single word, this requires
-//    (n-1) dp_hi < 2**64
-// and since (n-1) dp_hi <= (n-1) * len * (n-1)**2 / 2**s, it suffices to ensure
-//     len * (n-1)**3 < 2**(64+s) 
+// for dp_lo + power_two * dp_hi to fit in a single word, we require
+//      2**s - 1 + (n-1) dp_hi < 2**64.
+// Since dp_hi <= len * (n-1)**2 / 2**s, it suffices to ensure
+//     len * (n-1)**3 < 2**s * (2**64 + 1 - 2**s)
 //
 // sage: for s in range(40,64):
-// ....:     nmax = 1 + floor(sqrt(2**61 - 2**(s-3)))             # (C0)
-// ....:     lenmax = floor(2**s * (2**32 - 1) / (nmax-1)**2)     # (C1)
-// ....:     lenmax_bis = ceil(2**(64+s) / (nmax-1)**3) - 1       # (C2)
-// ....:     print(f"{s}\t{nmax.nbits()}\t{nmax}\t{lenmax}\t{lenmax_bis}")
+// ....:     nmax8 = 1 + floor(sqrt(2**61 - 2**(s-3)))             # (C0-8)
+// ....:     nmax4 = 1 + floor(sqrt(2**62 - 2**(s-2)))             # (C0-4)
+// ....:     lenmax4 = floor(2**s * (2**64 - 1) / (nmax4-1)**2)     # (C1)
+// ....:     lenmax4_bis = ceil(2**s * (2**64 + 1 - 2**s) / (nmax4-1)**3) - 1       # (C2)
+// ....:     lenmax8 = floor(2**s * (2**64 - 1) / (nmax8-1)**2)     # (C1)
+// ....:     lenmax8_bis = ceil(2**s * (2**64 + 1 - 2**s) / (nmax8-1)**3) - 1       # (C2)
+// ....:     print(f"{s}\t{nmax.nbits()}\t{nmax8}\t{lenmax8_bis}\t{nmax4}\t{lenmax4_bis}")
 // ....:
-// s       nbits   nmax            (C1) for nmax     (C2) for nmax
-// 40      31      1518500205      2048            5792
-// 41      31      1518500160      4096            11585
-// 42      31      1518500069      8192            23170
-// 43      31      1518499888      16384           46340
-// 44      31      1518499526      32768           92682
-// 45      31      1518498802      65536           185364
-// 46      31      1518497354      131072          370729
-// 47      31      1518494458      262146          741463
-// 48      31      1518488665      524296          1482944
-// 49      31      1518477080      1048608         2965956
-// 50      31      1518453909      2097280         5932184
-// 51      31      1518407566      4194816         11865455
-// 52      31      1518314875      8390656         23735258
-// 53      31      1518129478      16785412        47487909
-// 54      31      1517758614      33587232        95045458
-// 55      31      1517016615      67240192        190369983
-// 56      31      1515531528      134744072       381860339
-// 57      31      1512556978      270549121       768235276
-// 58      31      1506590261      545392672       1554798112
-// 59      31      1494585366      1108378657      3185130939
-// 60      31      1470281545      2290649226      6691414686
-// 61      31      1420426920      4908534053      14842011900
-// 62      31      1315059793      11453246122     37406145210
-// 63      31      1073741825      34359738360     137438953471
+// s       nbits   nmax8          (C2) for nmax8    nmax4           (C2) for nmax4
+// 40      31      1518500205      5792             2147483584      2048
+// 41      31      1518500160      11585            2147483520      4096
+// 42      31      1518500069      23170            2147483392      8192
+// 43      31      1518499888      46340            2147483136      16384
+// 44      31      1518499526      92681            2147482624      32768
+// 45      31      1518498802      185363           2147481600      65536
+// 46      31      1518497354      370728           2147479552      131072
+// 47      31      1518494458      741458           2147475456      262145
+// 48      31      1518488665      1482921          2147467264      524292
+// 49      31      1518477080      2965866          2147450880      1048592
+// 50      31      1518453909      5931822          2147418111      2097216
+// 51      31      1518407566      11864007         2147352572      4194560
+// 52      31      1518314875      23729463         2147221488      8389632
+// 53      31      1518129478      47464722         2146959296      16781313
+// 54      31      1517758614      94952640         2146434816      33570828
+// 55      31      1517016615      189998167        2145385471      67174496
+// 56      31      1515531528      380368697        2143285240      134480642
+// 57      31      1512556978      762233438        2139078592      269490216
+// 58      31      1506590261      1530504392       2130640379      541115017
+// 59      31      1494585366      3085595597       2113662895      1090922784
+// 60      31      1470281545      6273201268       2079292102      2217911575
+// 61      31      1420426920      12986760413      2008787014      4591513178
+// 62      31      1315059793      28054608908      1859775394      9918802104
+// 63      31      1073741825      68719476736      1518500250      24296004047
 
 
 // scalar version (may be automatically vectorized to some extent)
