@@ -16,8 +16,15 @@ LIBS = -lflint -lmpfr -lgmp -lm -lpthread
 
 .PHONY: clean
 
-dot:
-	$(CC) -o time_dot time_dot.c -funroll-loops -Wall -Wextra -O3 -march=native -I$(SYSINC_DIR) -L$(SYSLIB_DIR) -lflint
+dot-clang:
+	clang -c -o dot.o dot.c -Wall -Wextra -O3 -march=native
+	clang -c -o time_dot.o time_dot.c -Wall -Wextra -O3 -march=native
+	clang -o time_dot time_dot.o dot.o -lflint
+
+dot-gcc:
+	gcc -c -o dot.o dot.c -Wall -Wextra -O3 -march=native -funroll-loops
+	gcc -c -o time_dot.o time_dot.c -Wall -Wextra -O3 -march=native -funroll-loops
+	gcc -o time_dot time_dot.o dot.o -lflint
 
 clean:
 	rm -f $(EXEC) $(DATA)
