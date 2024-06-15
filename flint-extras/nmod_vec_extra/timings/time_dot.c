@@ -14,7 +14,7 @@
 //#define TIME_THRES 0.02
 //#define NB_ITER 100
 // full test:
-#define TIME_THRES 0.01
+#define TIME_THRES 0.1
 #define NB_ITER 5000
 //#define SMALL_SUITE 1
 
@@ -95,6 +95,79 @@ ulong time_dotexpr_vs_flint_plain(ulong len, ulong n, flint_rand_t state)
         for (slong i = 0; i < NB_ITER; i++)
         {
             FLINT_NMOD_VEC_DOT(buf, j, len, v1i[j], v2i[j], mod, n_limbs);
+            res += buf;
+        }
+        tend = clock();
+        t2 += (double)(tend-tstart) / CLOCKS_PER_SEC;
+
+        nb_iter += NB_ITER;
+    }
+
+    printf("%.1e\t%.1e\t%.1e\t", t1/nb_iter, t2/nb_iter, t2/t1);
+
+    _nmod_vec_clear(v1);
+    _nmod_vec_clear(v2);
+
+    return res;
+}
+
+ulong time_dotexpr_vs_flint_rev(ulong len, ulong n, flint_rand_t state)
+{
+    nmod_t mod;
+    nmod_init(&mod, n);
+
+    const int n_limbs = _nmod_vec_dot_bound_limbs(len, mod);
+    const dot_params_t params = _nmod_vec_dot_params(len, mod);
+
+    nn_ptr v1;
+    v1 = _nmod_vec_init(len);
+    _nmod_vec_rand(v1, state, len, mod);
+    nn_ptr v2;
+    v2 = _nmod_vec_init(len);
+    _nmod_vec_rand(v2, state, len, mod);
+
+    nn_srcptr v1i, v2i;
+    v1i = v1; v2i = v2;
+
+    { // TEST
+        ulong res_new;
+        ulong j;
+        _NMOD_VEC_DOT_NEW(res_new, j, len, v1[len - 1 - j], v2[len - 1 - j], mod, params);
+        ulong res_flint;
+        FLINT_NMOD_VEC_DOT(res_flint, j, len, v1i[len - 1 - j], v2i[len - 1 - j], mod, n_limbs);
+        if (res_new != res_flint)
+        {
+            printf("\nDOT PRODUCT ERROR!\n");
+            return 0;
+        }
+    }
+
+    ulong res = 0;
+
+    double t1, t2;
+    clock_t tstart, tend;
+    long nb_iter;
+
+    t2 = 0.0; t1 = 0.0; nb_iter = 0;
+    while (t1 < TIME_THRES)
+    {
+        ulong buf;
+        ulong j;
+
+        tstart = clock();
+        for (slong i = 0; i < NB_ITER; i++)
+        {
+            _NMOD_VEC_DOT_NEW(buf, j, len, v1[len - 1 - j], v2[len - 1 - j], mod, params);
+            res += buf;
+        }
+        tend = clock();
+        t1 += (double)(tend-tstart) / CLOCKS_PER_SEC;
+
+        tstart = clock();
+        for (slong i = 0; i < NB_ITER; i++)
+        {
+            v1i = v1; v2i = v2;
+            NMOD_VEC_DOT(buf, j, len, v1i[len - 1 - j], v2i[len - 1 - j], mod, n_limbs);
             res += buf;
         }
         tend = clock();
@@ -278,9 +351,10 @@ int main(int argc, char ** argv)
     const slong nfuns = 3;
     typedef ulong (*timefun) (ulong, ulong, flint_rand_t);
     const timefun funs[] = {
-        time_dotexpr_vs_flint_plain,                // 0
-        time_dotexpr_vs_flint_rev2,                 // 1
-        time_dotexpr_vs_flint_matmul,                 // 2
+        time_dotexpr_vs_flint_plain,                   // 0
+        time_dotexpr_vs_flint_rev,                     // 1
+        time_dotexpr_vs_flint_rev2,                    // 2
+        time_dotexpr_vs_flint_matmul,                  // 3
     };
 
     printf("warmup...");

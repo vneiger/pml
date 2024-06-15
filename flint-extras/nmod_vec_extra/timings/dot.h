@@ -2,6 +2,19 @@
 #define DOT_H
 
 #include <flint/nmod_types.h>
+#include <flint/machine_vectors.h>
+#define HAVE_AVX2
+
+#ifdef HAVE_AVX2
+FLINT_FORCE_INLINE vec4n vec4n_zero()
+{
+    return _mm256_setzero_si256();
+}
+FLINT_FORCE_INLINE vec4n vec4n_mul(vec4n u, vec4n v)
+{
+    return _mm256_mul_epu32(u, v);
+}
+#endif
 
 typedef enum
 {
@@ -20,7 +33,7 @@ typedef struct
     ulong pow2_precomp;
 } dot_params_t;
 
-// compute dot parameters; returns nlimbs
+// compute dot parameters
 dot_params_t _nmod_vec_dot_params(ulong len, nmod_t mod);
 
 void nmod_mat_mul_flint(nmod_mat_t, const nmod_mat_t, const nmod_mat_t);
@@ -219,6 +232,7 @@ do                                                                    \
         // if (mod.n <= 6521908912666391107L)                            
 
 // _DOT1   (single limb)
+// it seems better to let the compiler vectorize that one
 #define _NMOD_VEC_DOT1(res, i, len, expr1, expr2, mod)                \
 do                                                                    \
 {                                                                     \
@@ -230,62 +244,171 @@ do                                                                    \
 
 // _DOT2_SPLIT   (two limbs, modulus < 2**32, splitting at 56 bits, 8-unrolling)
 // (constraints in nmod_vec_dot_product_final.c)
-#define _NMOD_VEC_DOT2_32_SPLIT(res, i, len, expr1, expr2, mod, red_pow) \
-do                                                                       \
-{                                                                        \
-    ulong dp_lo = 0;                                                     \
-    ulong dp_hi = 0;                                                     \
-                                                                         \
-    for (i = 0; i+7 < (len); )                                           \
-    {                                                                    \
-        dp_lo += (expr1) * (expr2); i++;                                 \
-        dp_lo += (expr1) * (expr2); i++;                                 \
-        dp_lo += (expr1) * (expr2); i++;                                 \
-        dp_lo += (expr1) * (expr2); i++;                                 \
-        dp_lo += (expr1) * (expr2); i++;                                 \
-        dp_lo += (expr1) * (expr2); i++;                                 \
-        dp_lo += (expr1) * (expr2); i++;                                 \
-        dp_lo += (expr1) * (expr2); i++;                                 \
-                                                                         \
-        dp_hi += dp_lo >> DOT_SPLIT_BITS;                                \
-        dp_lo &= DOT_SPLIT_MASK;                                         \
-    }                                                                    \
-                                                                         \
-    for ( ; i < (len); i++)                                              \
-        dp_lo += (expr1) * (expr2);                                      \
-                                                                         \
-    res = red_pow * dp_hi + dp_lo;                                       \
-    NMOD_RED(res, res, mod);                                             \
+// scalar and vectorized versions
+#ifndef HAVE_AVX2
+
+#define _NMOD_VEC_DOT2_32_SPLIT(res, i, len, expr1, expr2, mod, pow2_precomp) \
+do                                                    \
+{                                                     \
+    ulong dp_lo = 0;                                  \
+    ulong dp_hi = 0;                                  \
+                                                      \
+    for (i = 0; i+7 < (len); )                        \
+    {                                                 \
+        dp_lo += (expr1) * (expr2); i++;              \
+        dp_lo += (expr1) * (expr2); i++;              \
+        dp_lo += (expr1) * (expr2); i++;              \
+        dp_lo += (expr1) * (expr2); i++;              \
+        dp_lo += (expr1) * (expr2); i++;              \
+        dp_lo += (expr1) * (expr2); i++;              \
+        dp_lo += (expr1) * (expr2); i++;              \
+        dp_lo += (expr1) * (expr2); i++;              \
+                                                      \
+        dp_hi += dp_lo >> DOT_SPLIT_BITS;             \
+        dp_lo &= DOT_SPLIT_MASK;                      \
+    }                                                 \
+                                                      \
+    for ( ; i < (len); i++)                           \
+        dp_lo += (expr1) * (expr2);                   \
+                                                      \
+    res = pow2_precomp * dp_hi + dp_lo;               \
+    NMOD_RED(res, res, mod);                          \
 } while(0);
+
+#else // HAVE_AVX2
+
+#define _NMOD_VEC_DOT2_32_SPLIT(res, i, len, expr1, expr2, mod, pow2_precomp)                          \
+do                                                                                                     \
+{                                                                                                      \
+    const vec4n low_bits = vec4n_set_n(DOT_SPLIT_MASK);                                                \
+    vec4n dp_lo = vec4n_zero();                                                                        \
+    vec4n dp_hi = vec4n_zero();                                                                        \
+                                                                                                       \
+    ulong buf1[4];                                                                                     \
+    ulong buf2[4];                                                                                     \
+                                                                                                       \
+    for (i = 0; i+31 < len; )                                                                          \
+    {                                                                                                  \
+        vec4n v1zz, v2zz;                                                                              \
+                                                                                                       \
+        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
+        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
+        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
+        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
+        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
+        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
+        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
+        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
+        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
+        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
+        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
+        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
+        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
+        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
+        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
+        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
+        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
+        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
+        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
+        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
+        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
+        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
+        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
+        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
+        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
+        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
+        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
+        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
+        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
+        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
+        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
+        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
+        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
+        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
+        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
+        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
+        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
+        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
+        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
+        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
+        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
+        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
+        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
+        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
+        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
+        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
+        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
+        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
+                                                                                                       \
+        dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(dp_lo, DOT_SPLIT_BITS));                        \
+        dp_lo = vec4n_bit_and(dp_lo, low_bits);                                                        \
+    }                                                                                                  \
+                                                                                                       \
+    for ( ; i + 3 < len; )                                                                             \
+    {                                                                                                  \
+        vec4n v1zz, v2zz;                                                                              \
+                                                                                                       \
+        v1zz[0] = (expr1); v2zz[0] = (expr2); i++;                                                     \
+        v1zz[1] = (expr1); v2zz[1] = (expr2); i++;                                                     \
+        v1zz[2] = (expr1); v2zz[2] = (expr2); i++;                                                     \
+        v1zz[3] = (expr1); v2zz[3] = (expr2); i++;                                                     \
+        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
+    }                                                                                                  \
+                                                                                                       \
+    dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(dp_lo, DOT_SPLIT_BITS));                            \
+    dp_lo = vec4n_bit_and(dp_lo, low_bits);                                                            \
+                                                                                                       \
+    ulong hsum_lo = dp_lo[0] + dp_lo[1] + dp_lo[2] + dp_lo[3];                                         \
+    const ulong hsum_hi = dp_hi[0] + dp_hi[1] + dp_hi[2] + dp_hi[3] + (hsum_lo >> DOT_SPLIT_BITS);     \
+    hsum_lo &= DOT_SPLIT_MASK;                                                                         \
+                                                                                                       \
+    for (; i < len; i++)                                                                               \
+        hsum_lo += (expr1) * (expr2);                                                                  \
+                                                                                                       \
+    NMOD_RED(res, pow2_precomp * hsum_hi + hsum_lo, mod);                                              \
+} while(0);
+
+#endif  // HAVE_AVX2
 
 // _DOT2_SPLIT4   (two limbs, modulus < 2**32, splitting at 56 bits, 4-unrolling)
 // (constraints in nmod_vec_dot_product_final.c)
-#define _NMOD_VEC_DOT2_32_SPLIT4(res, i, len, expr1, expr2, mod, red_pow) \
-do                                                                       \
-{                                                                        \
-    ulong dp_lo = 0;                                                     \
-    ulong dp_hi = 0;                                                     \
-                                                                         \
-    for (i = 0; i+4 < (len); )                                           \
-    {                                                                    \
-        dp_lo += (expr1) * (expr2); i++;                                 \
-        dp_lo += (expr1) * (expr2); i++;                                 \
-        dp_lo += (expr1) * (expr2); i++;                                 \
-        dp_lo += (expr1) * (expr2); i++;                                 \
-                                                                         \
-        dp_hi += dp_lo >> DOT_SPLIT_BITS;                                \
-        dp_lo &= DOT_SPLIT_MASK;                                         \
-    }                                                                    \
-                                                                         \
-    for ( ; i < (len); i++)                                              \
-        dp_lo += (expr1) * (expr2);                                      \
-                                                                         \
-    res = red_pow * dp_hi + dp_lo;                                       \
-    NMOD_RED(res, res, mod);                                             \
+// vectorized version in [XXX]
+#define _NMOD_VEC_DOT2_32_SPLIT4(res, i, len, expr1, expr2, mod, pow2_precomp) \
+do                                                     \
+{                                                      \
+    ulong dp_lo = 0;                                   \
+    ulong dp_hi = 0;                                   \
+                                                       \
+    for (i = 0; i+4 < (len); )                         \
+    {                                                  \
+        dp_lo += (expr1) * (expr2); i++;               \
+        dp_lo += (expr1) * (expr2); i++;               \
+        dp_lo += (expr1) * (expr2); i++;               \
+        dp_lo += (expr1) * (expr2); i++;               \
+                                                       \
+        dp_hi += dp_lo >> DOT_SPLIT_BITS;              \
+        dp_lo &= DOT_SPLIT_MASK;                       \
+    }                                                  \
+                                                       \
+    for ( ; i < (len); i++)                            \
+        dp_lo += (expr1) * (expr2);                    \
+                                                       \
+    res = pow2_precomp * dp_hi + dp_lo;                \
+    NMOD_RED(res, res, mod);                           \
 } while(0);
 
 
 // _DOT2_32   (two limbs, modulus < 2**32)
+// mod.n is too close to 2**32 to accumulate in some ulong
+// still interesting: a bit faster than _NMOD_VEC_DOT2
 #define _NMOD_VEC_DOT2_32(res, i, len, expr1, expr2, mod)             \
 do                                                                    \
 {                                                                     \
@@ -300,6 +423,7 @@ do                                                                    \
 } while(0);
 
 // _DOT2   (two limbs, general)
+// 8-unroll: requires  8 * (mod.n - 1)**2 < 2**128
 #define _NMOD_VEC_DOT2(res, i, len, expr1, expr2, mod)                \
 do                                                                    \
 {                                                                     \
@@ -344,27 +468,8 @@ do                                                                    \
     NMOD2_RED2(res, u1zz, u0zz, mod);                                 \
 } while(0);
 
-// _DOT3   (three limbs, general)
-#define _NMOD_VEC_DOT3(res, i, len, expr1, expr2, mod)                \
-do                                                                    \
-{                                                                     \
-    ulong t2zz = UWORD(0);                                            \
-    ulong t1zz = UWORD(0);                                            \
-    ulong t0zz = UWORD(0);                                            \
-    for (i = 0; i < (len); i++)                                       \
-    {                                                                 \
-        ulong s0zz, s1zz;                                             \
-        umul_ppmm(s1zz, s0zz, (expr1), (expr2));                      \
-        add_sssaaaaaa(t2zz, t1zz, t0zz,                               \
-                        t2zz, t1zz, t0zz,                             \
-                        UWORD(0), s1zz, s0zz);                        \
-    }                                                                 \
-                                                                      \
-    NMOD_RED(t2zz, t2zz, mod);                                        \
-    NMOD_RED3(res, t2zz, t1zz, t0zz, mod);                            \
-} while(0);
-
-// _DOT3_UNROLL   (three limbs, 8-unroll, 8*(mod.n - 1)**2 < 2**128)
+// _DOT3_UNROLL   (three limbs, 8-unroll)
+// 8-unroll: requires  8 * (mod.n - 1)**2 < 2**128
 #define _NMOD_VEC_DOT3_UNROLL(res, i, len, expr1, expr2, mod)         \
 do                                                                    \
 {                                                                     \
@@ -423,10 +528,31 @@ do                                                                    \
     NMOD_RED3(res, t2zz, t1zz, t0zz, mod);                            \
 } while(0);
 
+// _DOT3   (three limbs, general)
+// mod.n is too close to 2**64 to accumulate in two words
+#define _NMOD_VEC_DOT3(res, i, len, expr1, expr2, mod)                \
+do                                                                    \
+{                                                                     \
+    ulong t2zz = UWORD(0);                                            \
+    ulong t1zz = UWORD(0);                                            \
+    ulong t0zz = UWORD(0);                                            \
+    for (i = 0; i < (len); i++)                                       \
+    {                                                                 \
+        ulong s0zz, s1zz;                                             \
+        umul_ppmm(s1zz, s0zz, (expr1), (expr2));                      \
+        add_sssaaaaaa(t2zz, t1zz, t0zz,                               \
+                        t2zz, t1zz, t0zz,                             \
+                        UWORD(0), s1zz, s0zz);                        \
+    }                                                                 \
+                                                                      \
+    NMOD_RED(t2zz, t2zz, mod);                                        \
+    NMOD_RED3(res, t2zz, t1zz, t0zz, mod);                            \
+} while(0);
+
 #define _NMOD_VEC_DOT_NEW(res, i, len, expr1, expr2, mod, params)          \
 do                                                                         \
 {                                                                          \
-    res = UWORD(0);                                                        \
+    res = UWORD(0);   /* covers _DOT0 */                                   \
     if (params.method == _DOT1)                                            \
         _NMOD_VEC_DOT1(res, i, len, expr1, expr2, mod)                     \
     else if (params.method == _DOT2_32_SPLIT)                              \
@@ -441,6 +567,11 @@ do                                                                         \
     else if (params.method == _DOT3)                                       \
         _NMOD_VEC_DOT3(res, i, len, expr1, expr2, mod)                     \
 } while(0);
+
+
+
+
+
 
 
 
