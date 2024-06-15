@@ -4,6 +4,7 @@
 #include <flint/nmod_vec.h>  // for _nmod_vec_init
 
 #include "nmod_vec_extra.h"  // for dot_product
+#include "nmod_extra.h"  // for vec4n
 
 void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
 {
@@ -23,14 +24,15 @@ void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
     nmod_mat_init(BT, B->c, B->r, B->mod.n);
     nmod_mat_transpose(BT, B);
 
-    const ulong power2 = (1L<<DOT_SP_NB) % A->mod.n;
+    const uint red_pow = (1L<<DOT_SP_NB) % A->mod.n;
 
     // now let's compute
     for (slong i = 0; i < A->r; i++)
         for (slong j = 0; j < BT->r; j++)
             //C->rows[i][j] = nmod_vec_dot_product(A->rows[i], BT->rows[j], A->c, A->mod);
-            C->rows[i][j] = _nmod_vec_dot_mod32(A->rows[i], BT->rows[j], A->c, A->mod, power2);
-
+            //C->rows[i][j] = _nmod_vec_dot_mod32_avx2(A->rows[i], BT->rows[j], A->c, A->mod, red_pow);
+            NMOD_VEC_DOT_PRODUCT_AVX2(C->rows[i][j], A->rows[i], BT->rows[j], (ulong)A->c, A->mod, 2, red_pow);
+            //NMOD_VEC_DOT(C->rows[i][j], k, A->c, A->rows[i][k], BT->rows[j][k], A->mod, 1);
 
     nmod_mat_clear(BT);
 }

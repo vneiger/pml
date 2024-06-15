@@ -220,6 +220,7 @@ ulong _nmod_vec_dot_product_1_avx2(nn_srcptr vec1, nn_srcptr vec2, ulong len, nm
     return res;
 }
 
+#if HAVE_AVX512
 // dot product using single limb, avx512
 ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod)
 {
@@ -247,6 +248,7 @@ ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, 
 
     return res;
 }
+#endif
 
 
 #define __ll_lowhi_parts16(tlo,thi,t)     \
