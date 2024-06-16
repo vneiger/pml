@@ -205,9 +205,9 @@ ulong time_dotexpr_vs_flint_rev2(ulong len, ulong n, flint_rand_t state)
     { // TEST
         ulong res_new;
         ulong j;
-        _NMOD_VEC_DOT_NEW(res_new, j, len/2, v1[len - 1 - 2*j], v2[len - 1 - 2*j], mod, params);
+        _NMOD_VEC_DOT_NEW(res_new, j, len/9, v1[len - 1 - 9*j], v2[len - 1 - 9*j], mod, params);
         ulong res_flint;
-        FLINT_NMOD_VEC_DOT(res_flint, j, len/2, v1i[len - 1 - 2*j], v2i[len - 1 - 2*j], mod, n_limbs);
+        FLINT_NMOD_VEC_DOT(res_flint, j, len/9, v1i[len - 1 - 9*j], v2i[len - 1 - 9*j], mod, n_limbs);
         if (res_new != res_flint)
         {
             printf("\nDOT PRODUCT ERROR!\n");
@@ -230,7 +230,7 @@ ulong time_dotexpr_vs_flint_rev2(ulong len, ulong n, flint_rand_t state)
         tstart = clock();
         for (slong i = 0; i < NB_ITER; i++)
         {
-            _NMOD_VEC_DOT_NEW(buf, j, len/2, v1[len - 1 - 2*j], v2[len - 1 - 2*j], mod, params);
+            _NMOD_VEC_DOT_NEW(buf, j, len/9, v1[len - 1 - 9*j], v2[len - 1 - 9*j], mod, params);
             res += buf;
         }
         tend = clock();
@@ -240,7 +240,7 @@ ulong time_dotexpr_vs_flint_rev2(ulong len, ulong n, flint_rand_t state)
         for (slong i = 0; i < NB_ITER; i++)
         {
             v1i = v1; v2i = v2;
-            NMOD_VEC_DOT(buf, j, len/2, v1i[len - 1 - 2*j], v2i[len - 1 - 2*j], mod, n_limbs);
+            NMOD_VEC_DOT(buf, j, len/9, v1i[len - 1 - 9*j], v2i[len - 1 - 9*j], mod, n_limbs);
             res += buf;
         }
         tend = clock();
