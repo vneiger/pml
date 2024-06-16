@@ -231,8 +231,14 @@ do                                                                    \
         /*      n <= ceil(sqrt(2**125)) = 6521908912666391107   */    
         // if (mod.n <= 6521908912666391107L)                            
 
+// 2024-06-16: attempts at vectorized versions (for methods _DOT1,
+// _DOT2_32_SPLIT) did not show an advantage except in "regular" cases where
+// memory accesses are fast (typically, expr = v[i] or expr = v[len - 1 -i]).
+// For these, there is dedicated code anyway; let's avoid adding many lines of
+// code that will rarely be of interest, and rather write dedicated avx code
+// each time a new specific situation appears.
+
 // _DOT1   (single limb)
-// TODO vectorize
 #define _NMOD_VEC_DOT1(res, i, len, expr1, expr2, mod)                \
 do                                                                    \
 {                                                                     \
@@ -244,9 +250,6 @@ do                                                                    \
 
 // _DOT2_SPLIT   (two limbs, modulus < 2**32, splitting at 56 bits, 8-unrolling)
 // (constraints in nmod_vec_dot_product_final.c)
-// scalar and vectorized versions
-#ifndef HAVE_AVX2
-
 #define _NMOD_VEC_DOT2_32_SPLIT(res, i, len, expr1, expr2, mod, pow2_precomp) \
 do                                                    \
 {                                                     \
@@ -275,221 +278,9 @@ do                                                    \
     NMOD_RED(res, res, mod);                          \
 } while(0);
 
-#else // HAVE_AVX2
-
-// 2024-06-16: Using load_si256 instead of set_epi64x, compilers seem to
-// generate better code for the "standard" case expr1, expr2 = v1[i], v2[i];
-// but worse code for other cases (e.g. reverse len-1-i, or less usual / less
-// regular). Since there is dedicated code for the former case anyway, choosing
-// to stick to set_epi64x.
-#define _NMOD_VEC_DOT2_32_SPLIT(res, i, len, expr1, expr2, mod, pow2_precomp)                          \
-do                                                                                                     \
-{                                                                                                      \
-    const vec4n low_bits = vec4n_set_n(DOT_SPLIT_MASK);                                                \
-    vec4n dp_lo = vec4n_zero();                                                                        \
-    vec4n dp_hi = vec4n_zero();                                                                        \
-                                                                                                       \
-    ulong buf1[4];                                                                                     \
-    ulong buf2[4];                                                                                     \
-                                                                                                       \
-    for (i = 0; i+31 < len; )                                                                          \
-    {                                                                                                  \
-        vec4n v1zz, v2zz;                                                                              \
-                                                                                                       \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
-        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
-        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
-        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
-        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
-        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
-        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
-        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
-        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-                                                                                                       \
-        dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(dp_lo, DOT_SPLIT_BITS));                        \
-        dp_lo = vec4n_bit_and(dp_lo, low_bits);                                                        \
-    }                                                                                                  \
-                                                                                                       \
-    for ( ; i + 3 < len; )                                                                             \
-    {                                                                                                  \
-        vec4n v1zz, v2zz;                                                                              \
-                                                                                                       \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
-        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-    }                                                                                                  \
-                                                                                                       \
-    dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(dp_lo, DOT_SPLIT_BITS));                            \
-    dp_lo = vec4n_bit_and(dp_lo, low_bits);                                                            \
-                                                                                                       \
-    ulong hsum_lo = dp_lo[0] + dp_lo[1] + dp_lo[2] + dp_lo[3];                                         \
-    const ulong hsum_hi = dp_hi[0] + dp_hi[1] + dp_hi[2] + dp_hi[3] + (hsum_lo >> DOT_SPLIT_BITS);     \
-    hsum_lo &= DOT_SPLIT_MASK;                                                                         \
-                                                                                                       \
-    for (; i < len; i++)                                                                               \
-        hsum_lo += (expr1) * (expr2);                                                                  \
-                                                                                                       \
-    NMOD_RED(res, pow2_precomp * hsum_hi + hsum_lo, mod);                                              \
-} while(0);
-
-#define _NMOD_VEC_DOT2_32_SPLITbis(res, i, len, expr1, expr2, mod, pow2_precomp)                          \
-do                                                                                                     \
-{                                                                                                      \
-    const vec4n low_bits = vec4n_set_n(DOT_SPLIT_MASK);                                                \
-    vec4n dp_lo = vec4n_zero();                                                                        \
-    vec4n dp_hi = vec4n_zero();                                                                        \
-                                                                                                       \
-    ulong buf1[4];                                                                                     \
-    ulong buf2[4];                                                                                     \
-                                                                                                       \
-    for (i = 0; i+31 < len; )                                                                          \
-    {                                                                                                  \
-        vec4n v1zz, v2zz;                                                                              \
-                                                                                                       \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_load_si256((const __m256i *) buf1);                                  \
-        v2zz = _mm256_load_si256((const __m256i *) buf2);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_load_si256((const __m256i *) buf1);                                  \
-        v2zz = _mm256_load_si256((const __m256i *) buf2);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_load_si256((const __m256i *) buf1);                                  \
-        v2zz = _mm256_load_si256((const __m256i *) buf2);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_load_si256((const __m256i *) buf1);                                  \
-        v2zz = _mm256_load_si256((const __m256i *) buf2);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_load_si256((const __m256i *) buf1);                                  \
-        v2zz = _mm256_load_si256((const __m256i *) buf2);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_load_si256((const __m256i *) buf1);                                  \
-        v2zz = _mm256_load_si256((const __m256i *) buf2);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_load_si256((const __m256i *) buf1);                                  \
-        v2zz = _mm256_load_si256((const __m256i *) buf2);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_load_si256((const __m256i *) buf1);                                  \
-        v2zz = _mm256_load_si256((const __m256i *) buf2);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-                                                                                                       \
-        dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(dp_lo, DOT_SPLIT_BITS));                        \
-        dp_lo = vec4n_bit_and(dp_lo, low_bits);                                                        \
-    }                                                                                                  \
-                                                                                                       \
-    for ( ; i + 3 < len; )                                                                             \
-    {                                                                                                  \
-        vec4n v1zz, v2zz;                                                                              \
-                                                                                                       \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_load_si256((const __m256i *) buf1);                                  \
-        v2zz = _mm256_load_si256((const __m256i *) buf2);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-    }                                                                                                  \
-                                                                                                       \
-    dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(dp_lo, DOT_SPLIT_BITS));                            \
-    dp_lo = vec4n_bit_and(dp_lo, low_bits);                                                            \
-                                                                                                       \
-    ulong hsum_lo = dp_lo[0] + dp_lo[1] + dp_lo[2] + dp_lo[3];                                         \
-    const ulong hsum_hi = dp_hi[0] + dp_hi[1] + dp_hi[2] + dp_hi[3] + (hsum_lo >> DOT_SPLIT_BITS);     \
-    hsum_lo &= DOT_SPLIT_MASK;                                                                         \
-                                                                                                       \
-    for (; i < len; i++)                                                                               \
-        hsum_lo += (expr1) * (expr2);                                                                  \
-                                                                                                       \
-    NMOD_RED(res, pow2_precomp * hsum_hi + hsum_lo, mod);                                              \
-} while(0);
-
-#endif  // HAVE_AVX2
-
 // _DOT2_SPLIT4   (two limbs, modulus < 2**32, splitting at 56 bits, 4-unrolling)
 // (constraints in nmod_vec_dot_product_final.c)
 // scalar and vectorized versions
-#ifndef HAVE_AVX2
 #define _NMOD_VEC_DOT2_32_SPLIT4(res, i, len, expr1, expr2, mod, pow2_precomp) \
 do                                                     \
 {                                                      \
@@ -513,83 +304,6 @@ do                                                     \
     res = pow2_precomp * dp_hi + dp_lo;                \
     NMOD_RED(res, res, mod);                           \
 } while(0);
-
-#else // HAVE_AVX2
-
-#define _NMOD_VEC_DOT2_32_SPLIT4(res, i, len, expr1, expr2, mod, pow2_precomp)                          \
-do                                                                                                     \
-{                                                                                                      \
-    const vec4n low_bits = vec4n_set_n(DOT_SPLIT_MASK);                                                \
-    vec4n dp_lo = vec4n_zero();                                                                        \
-    vec4n dp_hi = vec4n_zero();                                                                        \
-                                                                                                       \
-    ulong buf1[4];                                                                                     \
-    ulong buf2[4];                                                                                     \
-                                                                                                       \
-    for (i = 0; i+16 < len; )                                                                          \
-    {                                                                                                  \
-        vec4n v1zz, v2zz;                                                                              \
-                                                                                                       \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
-        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
-        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
-        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-        buf1[0] = (expr1); buf2[0] = (expr2); i++;                                                     \
-        buf1[1] = (expr1); buf2[1] = (expr2); i++;                                                     \
-        buf1[2] = (expr1); buf2[2] = (expr2); i++;                                                     \
-        buf1[3] = (expr1); buf2[3] = (expr2); i++;                                                     \
-        v1zz = _mm256_set_epi64x(buf1[0], buf1[1], buf1[2], buf1[3]);                                  \
-        v2zz = _mm256_set_epi64x(buf2[0], buf2[1], buf2[2], buf2[3]);                                  \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-                                                                                                       \
-        dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(dp_lo, DOT_SPLIT_BITS));                        \
-        dp_lo = vec4n_bit_and(dp_lo, low_bits);                                                        \
-    }                                                                                                  \
-                                                                                                       \
-    for ( ; i + 3 < len; )                                                                             \
-    {                                                                                                  \
-        vec4n v1zz, v2zz;                                                                              \
-                                                                                                       \
-        v1zz[0] = (expr1); v2zz[0] = (expr2); i++;                                                     \
-        v1zz[1] = (expr1); v2zz[1] = (expr2); i++;                                                     \
-        v1zz[2] = (expr1); v2zz[2] = (expr2); i++;                                                     \
-        v1zz[3] = (expr1); v2zz[3] = (expr2); i++;                                                     \
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(v1zz, v2zz));                                               \
-    }                                                                                                  \
-                                                                                                       \
-    dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(dp_lo, DOT_SPLIT_BITS));                            \
-    dp_lo = vec4n_bit_and(dp_lo, low_bits);                                                            \
-                                                                                                       \
-    ulong hsum_lo = dp_lo[0] + dp_lo[1] + dp_lo[2] + dp_lo[3];                                         \
-    const ulong hsum_hi = dp_hi[0] + dp_hi[1] + dp_hi[2] + dp_hi[3] + (hsum_lo >> DOT_SPLIT_BITS);     \
-    hsum_lo &= DOT_SPLIT_MASK;                                                                         \
-                                                                                                       \
-    for (; i < len; i++)                                                                               \
-        hsum_lo += (expr1) * (expr2);                                                                  \
-                                                                                                       \
-    NMOD_RED(res, pow2_precomp * hsum_hi + hsum_lo, mod);                                              \
-} while(0);
-
-#endif  // HAVE_AVX2
-
-
 
 // _DOT2_32   (two limbs, modulus < 2**32)
 // mod.n is too close to 2**32 to accumulate in some ulong
