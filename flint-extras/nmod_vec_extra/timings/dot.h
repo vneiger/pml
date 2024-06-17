@@ -49,6 +49,9 @@ typedef struct
 
 // compute dot parameters
 dot_params_t _nmod_vec_dot_params(ulong len, nmod_t mod);
+
+
+
 ulong _nmod_vec_newdot(nn_srcptr vec1, nn_srcptr vec2, slong len, nmod_t mod, dot_params_t params);
 ulong _nmod_vec_newdot_rev(nn_srcptr vec1, nn_srcptr vec2, slong len, nmod_t mod, dot_params_t params);
 

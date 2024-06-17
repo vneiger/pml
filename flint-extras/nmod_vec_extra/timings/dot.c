@@ -218,6 +218,7 @@ dot_params_t _nmod_vec_dot_params(ulong len, nmod_t mod)
     dot_params_t params = {_DOT0, UWORD(0)};
 
     // TODO rethink where to test what; and adjust tests for unrolling
+    // TODO FLINT_BITS 32 -> avoid some variants
     // TODO power of 2 case, return DOT1
 
     /* we can accumulate 8 terms if n == mod.n is such that */
@@ -233,7 +234,7 @@ dot_params_t _nmod_vec_dot_params(ulong len, nmod_t mod)
 
     else if (t1 != 0) // two limbs
     {
-        if (mod.n <= UWORD(1515531528) && len <= WORD(134744072)) // TODO update using long
+        if (mod.n <= UWORD(1515531528) && len <= WORD(134744072))
         {
             params.method = _DOT2_32_SPLIT;
             NMOD_RED(params.pow2_precomp, (1L << DOT_SPLIT_BITS), mod);
@@ -254,6 +255,15 @@ dot_params_t _nmod_vec_dot_params(ulong len, nmod_t mod)
 
     return params;
 }
+
+
+
+
+
+
+
+
+
 
 // matmul, C does not alias A or B
 void nmod_mat_mul_flint(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)

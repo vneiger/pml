@@ -8,7 +8,6 @@
 #include <flint/machine_vectors.h>
 
 #include "dot.h"
-//#include "nmod_extra.h"
 
 // small values for testing before launching test:
 //#define TIME_THRES 0.02
