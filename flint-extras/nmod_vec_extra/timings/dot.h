@@ -741,7 +741,7 @@ do                                                                         \
     if (params.method == _DOT1)                                            \
         _NMOD_VEC_DOT1(res, i, len, expr1, expr2, mod)                     \
     else if (params.method == _DOT2_32_SPLIT)                              \
-        _NMOD_VEC_DOT2_32_SPLIT(res, i, len, expr1, expr2, mod,            \
+        _NMOD_VEC_DOT2_32_SPLITbis(res, i, len, expr1, expr2, mod,            \
                 params.pow2_precomp)                                       \
     else if (params.method == _DOT2_32)                                    \
         _NMOD_VEC_DOT2_32(res, i, len, expr1, expr2, mod)                  \
