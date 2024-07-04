@@ -1,5 +1,6 @@
 #include <flint/nmod_mat.h>
 #include <flint/machine_vectors.h>
+#include <flint/nmod_vec.h>
 
 #include "nmod_extra.h"
 #include "nmod_vec_extra.h"
@@ -28,7 +29,7 @@ void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat
     ulong power_two;
     NMOD_RED(power_two, UWORD(1) << 45, A->mod);
     ulong power_two_bis;
-    NMOD_RED(power_two_bis, 1L<<DOT_SP_NB, A->mod);
+    NMOD_RED(power_two_bis, 1L<<DOT_SPLIT_BITS, A->mod);
 
     // transpose of B
     nmod_mat_t BT;
@@ -48,7 +49,7 @@ void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat
 
     for (; i < A->r; i++)
         for (slong j = 0; j < BT->r; j++)
-            C->rows[i][j] = _nmod_vec_dot_mod32_avx2(A->rows[i], BT->rows[j], A->c, A->mod, (uint)power_two_bis);
+            C->rows[i][j] = _nmod_vec_dot2_split(A->rows[i], BT->rows[j], A->c, A->mod, power_two_bis);
 
     nmod_mat_clear(BT);
 }
@@ -65,7 +66,7 @@ void nmod_mat_mul_nmod_vec_small_modulus(nn_ptr v, const nmod_mat_t A, nn_srcptr
     ulong power_two;
     NMOD_RED(power_two, UWORD(1) << 45, A->mod);
     ulong power_two_bis;
-    NMOD_RED(power_two_bis, 1L<<DOT_SP_NB, A->mod);
+    NMOD_RED(power_two_bis, 1L<<DOT_SPLIT_BITS, A->mod);
 
     // let's go
     ulong res[2];
@@ -78,5 +79,5 @@ void nmod_mat_mul_nmod_vec_small_modulus(nn_ptr v, const nmod_mat_t A, nn_srcptr
     }
 
     for (; i < A->r; i++)
-        v[i] = _nmod_vec_dot_mod32_avx2(A->rows[i], (nn_ptr)u, len, A->mod, (uint)power_two_bis);
+        v[i] = _nmod_vec_dot2_split(A->rows[i], u, len, A->mod, power_two_bis);
 }

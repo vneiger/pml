@@ -43,7 +43,6 @@ void nmod_vec_primes(nn_ptr v, slong n, flint_bitcnt_t s);
 *                            DOT PRODUCT                             *
 **********************************************************************/
 
-
 /* ------------------------------------------------------------ */
 /* v1 and v2 have length at least len, len < 2^FLINT_BITS      */
 /* all entries of v1 have <= max_bits1 bits <= FLINT_BITS       */
@@ -67,35 +66,19 @@ ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2,
                                       nmod_t mod);
 
 
-/*------------------------------------------------*/
-/* v1 and v2 entries already reduced modulo mod.n */
-/*------------------------------------------------*/
-
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */
 /** reduction works if (p-1)^3*len < 2^96                     */
 /** res[0] = dot(a1, b), res[1] = dot(a2, b)                  */
 /** power_two = 2^45 mod p, p2 = (p,p), pinv2 = (1/p,1/p)     */
 /*------------------------------------------------------------*/
-void _nmod_vec_dot2_small_modulus(nn_ptr res,
-                                  nn_ptr a1, nn_ptr a2, nn_ptr b, ulong len,
-                                  ulong power_two,
-                                  vec2d p2, vec2d pinv2);
-
-
-
-
+void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ulong len,
+                                  ulong power_two, vec2d p2, vec2d pinv2);
 
 
 /*------------------------------------------------------------*/
 /* DRAFT / EXPERIMENTS                                        */
 /*------------------------------------------------------------*/
-
-ulong _nmod_vec_dot_product_1_avx2(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
-#define HAVE_AVX512 0
-#if HAVE_AVX512
-ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod);
-#endif
 
 // note: version split16 interesting on recent laptop (gcc does some vectorization)
 // limited to nbits <= ~31 (bound to be better analyzed, numterms)

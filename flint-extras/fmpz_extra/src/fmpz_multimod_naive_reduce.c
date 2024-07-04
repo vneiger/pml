@@ -112,10 +112,12 @@ void _fmpz_reduce_small_moduli(nn_ptr out, const fmpz_t a, const fmpz_multimod_n
         for (; j < len; j++)
             slice_A[j] = 0;
 
+        const ulong pow2 = UWORD(1) << DOT_SPLIT_BITS;
         for (i = 0; i < mmod->num_primes; i++)
         {
-            ulong dot;
-            dot = nmod_vec_dot_mod32_avx2(mmod->powers_of_two[i], slice_A, len, mmod->mod[i]);
+            ulong pow2_red;
+            NMOD_RED(pow2_red, pow2, mmod->mod[i]);
+            ulong dot = _nmod_vec_dot2_split(mmod->powers_of_two[i], slice_A, len, mmod->mod[i], pow2_red);
             if (slen < 0)
                 out[i] = nmod_neg(dot, mmod->mod[i]);
             else

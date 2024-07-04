@@ -26,7 +26,8 @@ void check_nmod_vec_integer_dot_product(slong len, flint_bitcnt_t bit_len, flint
     res = _nmod_vec_init(3);
     nmod_vec_integer_dot_product(res, v1, v2, len, bit_len, bit_len);
     NMOD_RED3(res1, res[2], res[1], res[0], mod);
-    res2 = _nmod_vec_dot(v1, v2, len, mod, 3);
+    dot_params_t params = {_DOT3, UWORD(0)};
+    res2 = _nmod_vec_dot(v1, v2, len, mod, params);
 
     assert (res1 == res2);
 

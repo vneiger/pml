@@ -246,7 +246,7 @@ ulong time_nmod_vec_dot_product_split26_cu(ulong len, ulong n, flint_rand_t stat
 
     { // TEST
         const dot_params_t params = _nmod_vec_dot_params(len, mod);
-        ulong res_split = _nmod_vec_dot_product_2_split26(v1[0], v2[0], len, mod);
+        ulong res_split = _nmod_vec_dot_product_split26(v1[0], v2[0], len, mod);
         ulong res_correct = _nmod_vec_dot(v1[0], v2[0], len, mod, params);
         if (res_split != res_correct)
         {
@@ -263,11 +263,11 @@ ulong time_nmod_vec_dot_product_split26_cu(ulong len, ulong n, flint_rand_t stat
     while (t1 < TIME_THRES)
     {
         for (slong i = 0; i < NB_ITER; i++) // warmup
-            res[i] += _nmod_vec_dot_product_2_split26(v1[i], v2[i], len, mod);
+            res[i] += _nmod_vec_dot_product_split26(v1[i], v2[i], len, mod);
 
         tt = clock();
         for (slong i = 0; i < NB_ITER; i++)
-            res[i] += _nmod_vec_dot_product_2_split26(v1[i], v2[i], len, mod);
+            res[i] += _nmod_vec_dot_product_split26(v1[i], v2[i], len, mod);
         t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += NB_ITER;
     }
@@ -300,7 +300,7 @@ ulong time_nmod_vec_dot_product_split26_cf(ulong len, ulong n, flint_rand_t stat
 
     { // TEST
         const dot_params_t params = _nmod_vec_dot_params(len, mod);
-        ulong res_split = _nmod_vec_dot_product_2_split26(v1, v2, len, mod);
+        ulong res_split = _nmod_vec_dot_product_split26(v1, v2, len, mod);
         ulong res_correctj = _nmod_vec_dot(v1, v2, len, mod, params);
         if (res_split != res_correctj)
         {
@@ -317,11 +317,11 @@ ulong time_nmod_vec_dot_product_split26_cf(ulong len, ulong n, flint_rand_t stat
     while (t1 < TIME_THRES)
     {
         for (slong i = 0; i < NB_ITER; i++) // warmup
-            res += _nmod_vec_dot_product_2_split26(v1, v2, len, mod);
+            res += _nmod_vec_dot_product_split26(v1, v2, len, mod);
 
         tt = clock();
         for (slong i = 0; i < NB_ITER; i++)
-            res += _nmod_vec_dot_product_2_split26(v1, v2, len, mod);
+            res += _nmod_vec_dot_product_split26(v1, v2, len, mod);
         t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += NB_ITER;
     }
