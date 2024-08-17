@@ -10,7 +10,7 @@
 void time_init_set()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     printf("- order is log(fft length)\n");
     printf("- timing init of FFt tables for several bit lengths and orders\n");
@@ -32,14 +32,14 @@ void time_init_set()
         nmod_init(&mod, p);
 
         // find root of unity of specified maximum order
-        mp_limb_t w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> max_orders[k], mod);
+        ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> max_orders[k], mod);
 
         for (ulong order = 3; order <= max_orders[k]; order++)
         {
             printf("%ld\t", order);
 
             // root of unity of order 2**order
-            mp_limb_t w = nmod_pow_ui(w0, 1UL<<(max_orders[k]-order), mod);
+            ulong w = nmod_pow_ui(w0, 1UL<<(max_orders[k]-order), mod);
 
             double t;
             clock_t tt;
@@ -219,7 +219,7 @@ void time_init_set()
         }
     }
 
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 

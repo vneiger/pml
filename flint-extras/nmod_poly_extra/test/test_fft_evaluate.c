@@ -8,7 +8,7 @@
 #define num_primes 5
 
 // vector equality up to reduction mod
-int nmod_vec_red_equal(mp_srcptr vec1, mp_srcptr vec2, ulong len, nmod_t mod)
+int nmod_vec_red_equal(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod)
 {
     for (ulong k = 0; k < len; k++)
     {
@@ -24,7 +24,7 @@ int nmod_vec_red_equal(mp_srcptr vec1, mp_srcptr vec2, ulong len, nmod_t mod)
 }
 
 // testing that all elements of "vec" are less than "bound"
-int nmod_vec_range(mp_srcptr vec, ulong len, ulong bound)
+int nmod_vec_range(nn_srcptr vec, ulong len, ulong bound)
 {
     for (ulong k = 0; k < len; k++)
         if (vec[k] >= bound)
@@ -39,8 +39,8 @@ int nmod_vec_range(mp_srcptr vec, ulong len, ulong bound)
 void test_fft_eval()
 {
     flint_rand_t state;
-    flint_randinit(state);
-    flint_randseed(state, time(NULL), time(NULL)+57);
+    flint_rand_init(state);
+    flint_rand_set_seed(state, time(NULL), time(NULL)+57);
 
     printf("- order is log(fft length)\n");
     printf("- testing fft-eval for several bit lengths and orders\n");
@@ -63,8 +63,8 @@ void test_fft_eval()
         nmod_init(&mod, p);
 
         // find root of unity of specified maximum order
-        const mp_limb_t prt = n_primitive_root_prime(p);
-        mp_limb_t w0 = nmod_pow_ui(prt, (p - 1) >> max_orders[nb_prime], mod);
+        const ulong prt = n_primitive_root_prime(p);
+        ulong w0 = nmod_pow_ui(prt, (p - 1) >> max_orders[nb_prime], mod);
 
         printf("prime %ld, orders: ", nb_prime);
 
@@ -73,7 +73,7 @@ void test_fft_eval()
             const ulong len = (1UL<<order);
 
             // root of unity of order 2**order
-            mp_limb_t w = nmod_pow_ui(w0, 1UL<<(max_orders[nb_prime]-order), mod);
+            ulong w = nmod_pow_ui(w0, 1UL<<(max_orders[nb_prime]-order), mod);
 
             // build FFT tables
             nmod_fft_t Fpre;
@@ -87,10 +87,10 @@ void test_fft_eval()
             nmod_poly_rand(pol, state, len);
 
             // naive evals by Horner, in bit reversed order
-            mp_ptr evals_br = _nmod_vec_init(len);
+            nn_ptr evals_br = _nmod_vec_init(len);
             for (ulong k = 0; k < len/2; k++)
             {
-                mp_limb_t point = Fred->tab_w[1][k];
+                ulong point = Fred->tab_w[1][k];
                 evals_br[2*k] = nmod_poly_evaluate_nmod(pol, point);
                 evals_br[2*k+1] = nmod_poly_evaluate_nmod(pol, nmod_neg(point,Fred->mod));
             }
@@ -220,7 +220,7 @@ void test_fft_eval()
         printf("\n");
     }
 
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 
