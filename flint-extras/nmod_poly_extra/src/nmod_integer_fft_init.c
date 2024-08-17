@@ -23,7 +23,7 @@ static inline long RevInc(long a, long k)
 }
 
 // indices initialized with length >= k
-//static inline void brc_indices(mp_limb_t * indices, long k)
+//static inline void brc_indices(ulong * indices, long k)
 //{
 //    const long n = (1L << k);
 //    for (long i = 0, j = 0; i < n; i++, j = RevInc(j, k))
@@ -37,7 +37,7 @@ static inline long RevInc(long a, long k)
 /* DFTs of size up to 2^order are supported                   */
 /* order >= 3 required                                        */
 /*------------------------------------------------------------*/
-void nmod_integer_fft_init_set(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
+void nmod_integer_fft_init_set(nmod_integer_fft_t F, ulong w, ulong order, nmod_t mod)
 {
     // basic attributes
     F->mod = mod;
@@ -48,7 +48,7 @@ void nmod_integer_fft_init_set(nmod_integer_fft_t F, mp_limb_t w, ulong order, n
     F->inv_w = nmod_inv(w, mod);
 
     // 1. fill tables of powers of w
-    F->tab_w = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * (order-1));
+    F->tab_w = (ulong **) flint_malloc(sizeof(ulong *) * (order-1));
 
     // fill largest array of powers of w
     slong ell = order-2;  // >= 1
@@ -60,8 +60,8 @@ void nmod_integer_fft_init_set(nmod_integer_fft_t F, mp_limb_t w, ulong order, n
     F->tab_w[ell][3] = n_mulmod2_preinv(F->tab_w[ell][2], w, mod.n, mod.ninv);
     if (order > 3)
     {
-        mp_limb_t w4 = n_mulmod2_preinv(F->tab_w[ell][2], F->tab_w[ell][2], mod.n, mod.ninv);
-        mp_limb_t w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
+        ulong w4 = n_mulmod2_preinv(F->tab_w[ell][2], F->tab_w[ell][2], mod.n, mod.ninv);
+        ulong w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
         for (ulong k = 0; k+7 < len; k+=4)
         {
             F->tab_w[ell][k+4] = n_mulmod_shoup(w4, F->tab_w[ell][k+0], w4_pr, mod.n);
@@ -87,7 +87,7 @@ void nmod_integer_fft_init_set(nmod_integer_fft_t F, mp_limb_t w, ulong order, n
     }
 }
 
-void nmod_integer_fft_init_set2(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
+void nmod_integer_fft_init_set2(nmod_integer_fft_t F, ulong w, ulong order, nmod_t mod)
 {
     // basic attributes
     F->mod = mod;
@@ -98,7 +98,7 @@ void nmod_integer_fft_init_set2(nmod_integer_fft_t F, mp_limb_t w, ulong order, 
     F->inv_w = nmod_inv(w, mod);
 
     // A. fill tables of powers of w
-    F->tab_w = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * (order-1));
+    F->tab_w = (ulong **) flint_malloc(sizeof(ulong *) * (order-1));
 
     if (order == 2)
     {
@@ -152,8 +152,8 @@ void nmod_integer_fft_init_set2(nmod_integer_fft_t F, mp_limb_t w, ulong order, 
         F->tab_w[ell][1] = w;
         F->tab_w[ell][2] = n_mulmod2_preinv(w, w, mod.n, mod.ninv);
         F->tab_w[ell][3] = n_mulmod2_preinv(F->tab_w[ell][2], w, mod.n, mod.ninv);
-        mp_limb_t w4 = n_mulmod2_preinv(F->tab_w[ell][2], F->tab_w[ell][2], mod.n, mod.ninv);
-        mp_limb_t w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
+        ulong w4 = n_mulmod2_preinv(F->tab_w[ell][2], F->tab_w[ell][2], mod.n, mod.ninv);
+        ulong w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
         F->tab_w[ell][4] = w4;
         F->tab_w[ell][5] = n_mulmod_shoup(w4, F->tab_w[ell][1], w4_pr, mod.n);;
         F->tab_w[ell][6] = n_mulmod_shoup(w4, F->tab_w[ell][2], w4_pr, mod.n);;
@@ -231,7 +231,7 @@ void nmod_integer_fft_init_set2(nmod_integer_fft_t F, mp_limb_t w, ulong order, 
     }
 }
 
-void nmod_integer_fft_init_set_pre(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
+void nmod_integer_fft_init_set_pre(nmod_integer_fft_t F, ulong w, ulong order, nmod_t mod)
 {
     // basic attributes
     F->mod = mod;
@@ -242,8 +242,8 @@ void nmod_integer_fft_init_set_pre(nmod_integer_fft_t F, mp_limb_t w, ulong orde
     F->inv_w = nmod_inv(w, mod);
 
     // 1. fill tables of powers of w
-    F->tab_w = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * (order-1));
-    F->tab_w_pre = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * (order-1));
+    F->tab_w = (ulong **) flint_malloc(sizeof(ulong *) * (order-1));
+    F->tab_w_pre = (ulong **) flint_malloc(sizeof(ulong *) * (order-1));
 
     // fill largest array of powers of w
     slong ell = order-2;  // >= 1
@@ -260,8 +260,8 @@ void nmod_integer_fft_init_set_pre(nmod_integer_fft_t F, mp_limb_t w, ulong orde
     F->tab_w_pre[ell][3] = n_mulmod_precomp_shoup(F->tab_w[ell][3], mod.n);
     if (order > 3)
     {
-        mp_limb_t w4 = n_mulmod2_preinv(F->tab_w[ell][2], F->tab_w[ell][2], mod.n, mod.ninv);
-        mp_limb_t w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
+        ulong w4 = n_mulmod2_preinv(F->tab_w[ell][2], F->tab_w[ell][2], mod.n, mod.ninv);
+        ulong w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
         for (ulong k = 0; k+7 < len; k+=4)
         {
             F->tab_w[ell][k+4] = n_mulmod_shoup(w4, F->tab_w[ell][k+0], w4_pr, mod.n);
@@ -302,7 +302,7 @@ void nmod_integer_fft_init_set_pre(nmod_integer_fft_t F, mp_limb_t w, ulong orde
     F->IJpre = F->tab_w_pre[1][3];
 }
 
-void nmod_integer_fft_init_set_red(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
+void nmod_integer_fft_init_set_red(nmod_integer_fft_t F, ulong w, ulong order, nmod_t mod)
 {
     // basic attributes
     F->mod = mod;
@@ -316,7 +316,7 @@ void nmod_integer_fft_init_set_red(nmod_integer_fft_t F, mp_limb_t w, ulong orde
     // F->tab_w[0][i] == w**i, i = 0 ... len-1   where len = 2**(order-1)
     // F->tab_w[1] same in bit-reversed: 1, w**(len/2), w**(len/4), w**(3*len/4), ...
     ulong len = (1UL << (order-1));  // len == 2**(ell+1) >= 4
-    F->tab_w = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * 2);
+    F->tab_w = (ulong **) flint_malloc(sizeof(ulong *) * 2);
     F->tab_w[0] = _nmod_vec_init(len);
     F->tab_w[0][0] = UWORD(1);
     F->tab_w[0][1] = w;
@@ -324,8 +324,8 @@ void nmod_integer_fft_init_set_red(nmod_integer_fft_t F, mp_limb_t w, ulong orde
     F->tab_w[0][3] = n_mulmod2_preinv(F->tab_w[0][2], w, mod.n, mod.ninv);
     if (order > 3)
     {
-        mp_limb_t w4 = n_mulmod2_preinv(F->tab_w[0][2], F->tab_w[0][2], mod.n, mod.ninv);
-        mp_limb_t w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
+        ulong w4 = n_mulmod2_preinv(F->tab_w[0][2], F->tab_w[0][2], mod.n, mod.ninv);
+        ulong w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
         for (ulong k = 0; k+7 < len; k+=4)
         {
             F->tab_w[0][k+4] = n_mulmod_shoup(w4, F->tab_w[0][k+0], w4_pr, mod.n);
@@ -342,7 +342,7 @@ void nmod_integer_fft_init_set_red(nmod_integer_fft_t F, mp_limb_t w, ulong orde
         F->tab_w[1][k] = F->tab_w[0][j];
 }
 
-void nmod_integer_fft_init_set_red_pre(nmod_integer_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
+void nmod_integer_fft_init_set_red_pre(nmod_integer_fft_t F, ulong w, ulong order, nmod_t mod)
 {
     // basic attributes
     F->mod = mod;
@@ -356,8 +356,8 @@ void nmod_integer_fft_init_set_red_pre(nmod_integer_fft_t F, mp_limb_t w, ulong 
     // F->tab_w[0][i] == w**i, i = 0 ... len-1   where len = 2**(order-1)
     // F->tab_w[1] same in bit-reversed: 1, w**(len/2), w**(len/4), w**(3*len/4), ...
     ulong len = (1UL << (order-1));  // len == 2**(ell+1) >= 4
-    F->tab_w = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * 2);
-    F->tab_w_pre = (mp_limb_t **) flint_malloc(sizeof(mp_limb_t *) * 2);
+    F->tab_w = (ulong **) flint_malloc(sizeof(ulong *) * 2);
+    F->tab_w_pre = (ulong **) flint_malloc(sizeof(ulong *) * 2);
     F->tab_w[0] = _nmod_vec_init(len);
     F->tab_w_pre[0] = _nmod_vec_init(len);
     F->tab_w[0][0] = UWORD(1);
@@ -370,8 +370,8 @@ void nmod_integer_fft_init_set_red_pre(nmod_integer_fft_t F, mp_limb_t w, ulong 
     F->tab_w_pre[0][3] = n_mulmod_precomp_shoup(F->tab_w[0][3], mod.n);
     if (order > 3)
     {
-        mp_limb_t w4 = n_mulmod2_preinv(F->tab_w[0][2], F->tab_w[0][2], mod.n, mod.ninv);
-        mp_limb_t w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
+        ulong w4 = n_mulmod2_preinv(F->tab_w[0][2], F->tab_w[0][2], mod.n, mod.ninv);
+        ulong w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
         for (ulong k = 0; k+7 < len; k+=4)
         {
             F->tab_w[0][k+4] = n_mulmod_shoup(w4, F->tab_w[0][k+0], w4_pr, mod.n);

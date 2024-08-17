@@ -24,7 +24,7 @@ inline long RevInc(long a, long k)
 }
 
 // indices initialized with length >= k
-//static inline void brc_indices(mp_limb_t * indices, long k)
+//static inline void brc_indices(ulong * indices, long k)
 //{
 //    const long n = (1L << k);
 //    for (long i = 0, j = 0; i < n; i++, j = RevInc(j, k))
@@ -38,7 +38,7 @@ inline long RevInc(long a, long k)
 /* DFTs of size up to 2^order are supported                   */
 /* order >= 3 required                                        */
 /*------------------------------------------------------------*/
-void nmod_fft_init_set_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
+void nmod_fft_init_set_pre(nmod_fft_t F, ulong w, ulong order, nmod_t mod)
 {
     // basic attributes
     F->mod = mod;
@@ -65,8 +65,8 @@ void nmod_fft_init_set_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
     F->tab_w_pre[ell][3] = n_mulmod_precomp_shoup(F->tab_w[ell][3], mod.n);
     if (order > 3)
     {
-        mp_limb_t w4 = n_mulmod2_preinv(F->tab_w[ell][2], F->tab_w[ell][2], mod.n, mod.ninv);
-        mp_limb_t w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
+        ulong w4 = n_mulmod2_preinv(F->tab_w[ell][2], F->tab_w[ell][2], mod.n, mod.ninv);
+        ulong w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
         for (ulong k = 0; k+7 < len; k+=4)
         {
             F->tab_w[ell][k+4] = n_mulmod_shoup(w4, F->tab_w[ell][k+0], w4_pr, mod.n);
@@ -107,7 +107,7 @@ void nmod_fft_init_set_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
     F->IJpre = F->tab_w_pre[1][3];
 }
 
-void nmod_fft_init_set_red_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod)
+void nmod_fft_init_set_red_pre(nmod_fft_t F, ulong w, ulong order, nmod_t mod)
 {
     // basic attributes
     F->mod = mod;
@@ -133,8 +133,8 @@ void nmod_fft_init_set_red_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mo
     F->tab_w_pre[0][3] = n_mulmod_precomp_shoup(F->tab_w[0][3], mod.n);
     if (order > 3)
     {
-        mp_limb_t w4 = n_mulmod2_preinv(F->tab_w[0][2], F->tab_w[0][2], mod.n, mod.ninv);
-        mp_limb_t w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
+        ulong w4 = n_mulmod2_preinv(F->tab_w[0][2], F->tab_w[0][2], mod.n, mod.ninv);
+        ulong w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
         for (ulong k = 0; k+7 < len; k+=4)
         {
             F->tab_w[0][k+4] = n_mulmod_shoup(w4, F->tab_w[0][k+0], w4_pr, mod.n);

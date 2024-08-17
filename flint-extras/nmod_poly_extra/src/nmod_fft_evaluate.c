@@ -15,8 +15,8 @@
 // lazy1: input [0..n), output [0..2n)
 #define DFT2_LAZY1(a,b,n)           \
     do {                            \
-        const mp_limb_t u = (a);    \
-        const mp_limb_t v = (b);    \
+        const ulong u = (a);    \
+        const ulong v = (b);    \
         (a) = u + v;                \
         (b) = u + (n) - v;          \
     } while(0)
@@ -25,7 +25,7 @@
 // n2 is 2*n
 #define DFT2_LAZY2(a,b,n2)          \
     do {                            \
-        const mp_limb_t tmp = (a);  \
+        const ulong tmp = (a);  \
         (a) = (a) + (b);            \
         (b) = tmp + (n2) - (b);     \
     } while(0)
@@ -36,7 +36,7 @@
 // n2 is 2*n
 #define DFT2_LAZY2_RED1(a,b,n2)     \
     do {                            \
-        const mp_limb_t tmp = (b);  \
+        const ulong tmp = (b);  \
         (b) = (a) + (n2) - tmp;     \
         (a) = (a) + tmp;            \
         if ((a) >= (n2))            \
@@ -48,7 +48,7 @@
 // n2 is 2*n
 #define DFT2_LAZY2_RED(a,b,n2)      \
     do {                            \
-        const mp_limb_t tmp = (b);  \
+        const ulong tmp = (b);  \
         (b) = (a) + (n2) - tmp;     \
         if ((b) >= (n2))            \
             (b) -= (n2);            \
@@ -62,7 +62,7 @@
 // n4 is 4*n
 #define DFT2_LAZY3_RED(a,b,n4)      \
     do {                            \
-        const mp_limb_t tmp = (a);  \
+        const ulong tmp = (a);  \
         (a) = (a) + (b);            \
         if ((a) >= (n4))            \
             (a) -= (n4);            \
@@ -90,14 +90,14 @@
 // lazy1: input in [0..n) --> output [0..4*n)
 #define DFT4_DIF_SHOUP_LAZY1(a,b,c,d,I,Ipre,n,n2)                  \
     do {                                                           \
-        const mp_limb_t p0 = (a);                                  \
-        const mp_limb_t p1 = (b);                                  \
-        const mp_limb_t p2 = (c);                                  \
-        const mp_limb_t p3 = (d);                                  \
-        const mp_limb_t p4 = p0 + p2;              /* < 2*n */     \
-        const mp_limb_t p5 = p0 + (n) - p2;        /* < 2*n */     \
-        const mp_limb_t p6 = p1 + p3;              /* < 2*n */     \
-        const mp_limb_t p7 =                       /* < 2*n */     \
+        const ulong p0 = (a);                                  \
+        const ulong p1 = (b);                                  \
+        const ulong p2 = (c);                                  \
+        const ulong p3 = (d);                                  \
+        const ulong p4 = p0 + p2;              /* < 2*n */     \
+        const ulong p5 = p0 + (n) - p2;        /* < 2*n */     \
+        const ulong p6 = p1 + p3;              /* < 2*n */     \
+        const ulong p7 =                       /* < 2*n */     \
              n_mulmod_shoup_lazy((I), p1 + (n) - p3, (Ipre), (n)); \
         (a) = p4 + p6;                             /* < 4*n */     \
         (b) = p4 + (n2) - p6;                     /* < 4*n */      \
@@ -109,20 +109,20 @@
 // n2 is 2*n
 #define DFT4_DIF_SHOUP_LAZY2_RED(a,b,c,d,I,Ipre,n,n2)                  \
     do {                                                               \
-        const mp_limb_t p0 = (a);                                      \
-        const mp_limb_t p1 = (b);                                      \
-        const mp_limb_t p2 = (c);                                      \
-        const mp_limb_t p3 = (d);                                      \
-        mp_limb_t p4 = p0 + p2;                     /* < 4*n */        \
+        const ulong p0 = (a);                                      \
+        const ulong p1 = (b);                                      \
+        const ulong p2 = (c);                                      \
+        const ulong p3 = (d);                                      \
+        ulong p4 = p0 + p2;                     /* < 4*n */        \
         if (p4 >= (n2))                                                \
             p4 -= (n2);                             /* < 2*n */        \
-        mp_limb_t p5 = p0 + (n2) - p2;              /* < 4*n */        \
+        ulong p5 = p0 + (n2) - p2;              /* < 4*n */        \
         if (p5 >= (n2))                                                \
             p5 -= (n2);                             /* < 2*n */        \
-        mp_limb_t p6 = p1 + p3;                     /* < 4*n */        \
+        ulong p6 = p1 + p3;                     /* < 4*n */        \
         if (p6 >= (n2))                                                \
             p6 -= (n2);                             /* < 2*n */        \
-        const mp_limb_t p7 =                        /* < 2*n */        \
+        const ulong p7 =                        /* < 2*n */        \
              n_mulmod_shoup_lazy((I), p1 + (n2) - p3, (Ipre), (n));    \
         (a) = p4 + p6;                              /* < 4*n */        \
         (b) = p4 + (n2) - p6;                       /* < 4*n */        \
@@ -145,23 +145,23 @@ FLINT_FORCE_INLINE ulong n_mulmod_shoup_lazy(ulong a, ulong b, ulong apre, ulong
 // reduction tree 8-point lazy DFT
 // lazy red: input in [0..2*n) --> output in [0..4*n)
 // goes through [0..16n)... that may surely be improved
-FLINT_FORCE_INLINE void dft8_red_lazy(mp_ptr p, nmod_fft_t F)
+FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, nmod_fft_t F)
 {
     ulong p_hi, p_lo;
-    mp_limb_t u0 = p[0];
-    mp_limb_t u1 = p[1];
-    mp_limb_t u2 = p[2];
-    mp_limb_t u3 = p[3];
-    mp_limb_t v0 = p[4];
-    mp_limb_t v1 = p[5];
-    mp_limb_t v2 = p[6];
-    mp_limb_t v3 = p[7];
+    ulong u0 = p[0];
+    ulong u1 = p[1];
+    ulong u2 = p[2];
+    ulong u3 = p[3];
+    ulong v0 = p[4];
+    ulong v1 = p[5];
+    ulong v2 = p[6];
+    ulong v3 = p[7];
 
     // mod x**4 - 1 | x**4 + 1
-    mp_limb_t p0 = u0 + v0;  // [0..4n)
-    mp_limb_t p1 = u1 + v1;  // [0..4n)
-    mp_limb_t p2 = u2 + v2;  // [0..4n)
-    mp_limb_t p3 = u3 + v3;  // [0..4n)
+    ulong p0 = u0 + v0;  // [0..4n)
+    ulong p1 = u1 + v1;  // [0..4n)
+    ulong p2 = u2 + v2;  // [0..4n)
+    ulong p3 = u3 + v3;  // [0..4n)
     u0 += F->modn2 - v0;  // [0..4n)
     u1 += F->modn2 - v1;  // [0..4n)
     u2 += F->modn2 - v2;  // [0..4n)
@@ -234,7 +234,7 @@ FLINT_FORCE_INLINE void dft8_red_lazy(mp_ptr p, nmod_fft_t F)
 
 // input [0..2*n), output [0..4*n)
 // order >= 3
-void _nmod_fft_dif_rec2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
+void _nmod_fft_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
 {
     // order == 0: nothing to do
     //if (order == 1)
@@ -286,7 +286,7 @@ void _nmod_fft_dif_rec2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
 }
 
 // order >= 3
-void _nmod_fft_dif_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
+void _nmod_fft_dif_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
 {
     // perform FFT layers up to order 3
     ulong llen = len;
@@ -336,7 +336,7 @@ void _nmod_fft_dif_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
 
 // input [0..2n),  output [0..4n)
 // restricting to order >= 3 is a bit faster for smallish orders
-void _nmod_fft_red_rec2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
+void _nmod_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
 {
     // order == 0: nothing to do
     //if (order == 1)
@@ -364,14 +364,14 @@ void _nmod_fft_red_rec2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
 // if order < 3, in [0..2n) out [0..4n)
 // if order >= 3, in [0..4n) out [0..4n)
 // restricting to order >= 3 is a bit faster for smallish orders
-void _nmod_fft_red_rec2_lazy_general(mp_ptr p, ulong len, ulong order, ulong node, nmod_fft_t F)
+void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong node, nmod_fft_t F)
 {
     // order == 0: nothing to do
     //if (order == 1)
     //{
     //    // in [0..2n), out [0..4n)
-    //    const mp_limb_t u = p[0];
-    //    mp_limb_t v = p[1];
+    //    const ulong u = p[0];
+    //    ulong v = p[1];
     //    ulong p_hi, p_lo;
     //    umul_ppmm(p_hi, p_lo, F->tab_w_pre[1][node], v);
     //    v = F->tab_w[1][node] * v - p_hi * F->mod.n;
@@ -382,21 +382,21 @@ void _nmod_fft_red_rec2_lazy_general(mp_ptr p, ulong len, ulong order, ulong nod
     //{
     //    // in [0..2n), out [0..4n)
     //    ulong p_hi, p_lo;
-    //    const mp_limb_t u0 = p[0];
-    //    const mp_limb_t u1 = p[1];
-    //    mp_limb_t v0 = p[2];
-    //    mp_limb_t v1 = p[3];
+    //    const ulong u0 = p[0];
+    //    const ulong u1 = p[1];
+    //    ulong v0 = p[2];
+    //    ulong v1 = p[3];
 
-    //    mp_limb_t w = F->tab_w[1][node];
-    //    mp_limb_t wpre = F->tab_w_pre[1][node];
+    //    ulong w = F->tab_w[1][node];
+    //    ulong wpre = F->tab_w_pre[1][node];
     //    umul_ppmm(p_hi, p_lo, wpre, v0);
     //    v0 = w * v0 - p_hi * F->mod.n;
     //    umul_ppmm(p_hi, p_lo, wpre, v1);
     //    v1 = w * v1 - p_hi * F->mod.n;
-    //    mp_limb_t p0 = u0 + v0;  // [0..4n)
+    //    ulong p0 = u0 + v0;  // [0..4n)
     //    if (p0 >= F->modn2)
     //        p0 -= F->modn2;      // [0..2n)
-    //    mp_limb_t p1 = u1 + v1;  // [0..4n)
+    //    ulong p1 = u1 + v1;  // [0..4n)
     //    v0 = u0 + F->modn2 - v0;  // [0..4n)
     //    if (v0 >= F->modn2)
     //        v0 -= F->modn2;       // [0..2n)
@@ -421,18 +421,18 @@ void _nmod_fft_red_rec2_lazy_general(mp_ptr p, ulong len, ulong order, ulong nod
         // in [0..4n), out [0..4n)
         ulong p_hi, p_lo;
 
-        mp_limb_t u0 = p[0];
-        mp_limb_t u1 = p[1];
-        mp_limb_t u2 = p[2];
-        mp_limb_t u3 = p[3];
-        mp_limb_t v0 = p[4];
-        mp_limb_t v1 = p[5];
-        mp_limb_t v2 = p[6];
-        mp_limb_t v3 = p[7];
+        ulong u0 = p[0];
+        ulong u1 = p[1];
+        ulong u2 = p[2];
+        ulong u3 = p[3];
+        ulong v0 = p[4];
+        ulong v1 = p[5];
+        ulong v2 = p[6];
+        ulong v3 = p[7];
 
         // mod x**4 - w | x**4 + w
-        mp_limb_t w = F->tab_w[1][node];
-        mp_limb_t wpre = F->tab_w_pre[1][node];
+        ulong w = F->tab_w[1][node];
+        ulong wpre = F->tab_w_pre[1][node];
         umul_ppmm(p_hi, p_lo, wpre, v0);
         v0 = w * v0 - p_hi * F->mod.n;
         umul_ppmm(p_hi, p_lo, wpre, v1);
@@ -441,10 +441,10 @@ void _nmod_fft_red_rec2_lazy_general(mp_ptr p, ulong len, ulong order, ulong nod
         v2 = w * v2 - p_hi * F->mod.n;
         umul_ppmm(p_hi, p_lo, wpre, v3);
         v3 = w * v3 - p_hi * F->mod.n;
-        mp_limb_t p0 = u0 + v0;   // [0..6n)
-        mp_limb_t p1 = u1 + v1;   // [0..6n)
-        mp_limb_t p2 = u2 + v2;   // [0..6n)
-        mp_limb_t p3 = u3 + v3;   // [0..6n)
+        ulong p0 = u0 + v0;   // [0..6n)
+        ulong p1 = u1 + v1;   // [0..6n)
+        ulong p2 = u2 + v2;   // [0..6n)
+        ulong p3 = u3 + v3;   // [0..6n)
         u0 += F->modn2 - v0;  // [0..6n)
         u1 += F->modn2 - v1;  // [0..6n)
         u2 += F->modn2 - v2;  // [0..6n)
@@ -517,8 +517,8 @@ void _nmod_fft_red_rec2_lazy_general(mp_ptr p, ulong len, ulong order, ulong nod
     else
     {
         // in: [0..4n), out: [0..4n)
-        const mp_limb_t w = F->tab_w[1][node];
-        const mp_limb_t wpre = F->tab_w_pre[1][node];
+        const ulong w = F->tab_w[1][node];
+        const ulong wpre = F->tab_w_pre[1][node];
         for (ulong k = 0; k < len/2; k+=4)
         {
             ulong p_hi, p_lo, u, v;
@@ -563,7 +563,7 @@ void _nmod_fft_red_rec2_lazy_general(mp_ptr p, ulong len, ulong order, ulong nod
     }
 }
 
-void _nmod_fft_red_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
+void _nmod_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
 {
     // perform FFT layers up to order 3
     ulong llen = len;
@@ -577,8 +577,8 @@ void _nmod_fft_red_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
         ulong node = 1;  // index of current point in tab
         for (ulong k = llen; k < len; k+=llen, node++)
         {
-            mp_limb_t w = F->tab_w[1][node];
-            mp_limb_t wpre = F->tab_w_pre[1][node];
+            ulong w = F->tab_w[1][node];
+            ulong wpre = F->tab_w_pre[1][node];
 
             for (ulong kk = 0; kk < llen/2; kk+=4)
             {
@@ -632,18 +632,18 @@ void _nmod_fft_red_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
         // in [0..4n), out [0..4n)
         ulong p_hi, p_lo;
 
-        mp_limb_t u0 = p[k+0];
-        mp_limb_t u1 = p[k+1];
-        mp_limb_t u2 = p[k+2];
-        mp_limb_t u3 = p[k+3];
-        mp_limb_t v0 = p[k+4];
-        mp_limb_t v1 = p[k+5];
-        mp_limb_t v2 = p[k+6];
-        mp_limb_t v3 = p[k+7];
+        ulong u0 = p[k+0];
+        ulong u1 = p[k+1];
+        ulong u2 = p[k+2];
+        ulong u3 = p[k+3];
+        ulong v0 = p[k+4];
+        ulong v1 = p[k+5];
+        ulong v2 = p[k+6];
+        ulong v3 = p[k+7];
 
         // mod x**4 - w | x**4 + w
-        mp_limb_t w = F->tab_w[1][node];
-        mp_limb_t wpre = F->tab_w_pre[1][node];
+        ulong w = F->tab_w[1][node];
+        ulong wpre = F->tab_w_pre[1][node];
         umul_ppmm(p_hi, p_lo, wpre, v0);
         v0 = w * v0 - p_hi * F->mod.n;
         umul_ppmm(p_hi, p_lo, wpre, v1);
@@ -652,10 +652,10 @@ void _nmod_fft_red_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
         v2 = w * v2 - p_hi * F->mod.n;
         umul_ppmm(p_hi, p_lo, wpre, v3);
         v3 = w * v3 - p_hi * F->mod.n;
-        mp_limb_t p0 = u0 + v0;   // [0..6n)
-        mp_limb_t p1 = u1 + v1;   // [0..6n)
-        mp_limb_t p2 = u2 + v2;   // [0..6n)
-        mp_limb_t p3 = u3 + v3;   // [0..6n)
+        ulong p0 = u0 + v0;   // [0..6n)
+        ulong p1 = u1 + v1;   // [0..6n)
+        ulong p2 = u2 + v2;   // [0..6n)
+        ulong p3 = u3 + v3;   // [0..6n)
         u0 += F->modn2 - v0;  // [0..6n)
         u1 += F->modn2 - v1;  // [0..6n)
         u2 += F->modn2 - v2;  // [0..6n)
@@ -730,7 +730,7 @@ void _nmod_fft_red_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
 }
 
 // in [0..2n) out [0..4n)
-void _nmod_fft_dif_rec4_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
+void _nmod_fft_dif_rec4_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
 {
     // order == 0: nothing to do
     if (order == 1)
@@ -744,20 +744,20 @@ void _nmod_fft_dif_rec4_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F)
     else
     {
         // in [0..2n) out [0..2n)
-        const mp_ptr p0 = p;
-        const mp_ptr p1 = p+(len/4);
-        const mp_ptr p2 = p1+(len/4);
-        const mp_ptr p3 = p2+(len/4);
+        const nn_ptr p0 = p;
+        const nn_ptr p1 = p+(len/4);
+        const nn_ptr p2 = p1+(len/4);
+        const nn_ptr p3 = p2+(len/4);
         for (ulong k = 0; k < len/4; k++)
         {
-            const mp_limb_t u0 = p0[k];
-            const mp_limb_t u1 = p1[k];
-            const mp_limb_t u2 = p2[k];
-            const mp_limb_t u3 = p3[k];
-            mp_limb_t u4 = u0 + u2;  // [0..4n)
-            mp_limb_t u5 = u0 + F->modn2 - u2;  // [0..4n)
-            mp_limb_t u6 = u1 + u3;  // [0..4n)
-            mp_limb_t u7 = u1 + F->modn2 - u3;
+            const ulong u0 = p0[k];
+            const ulong u1 = p1[k];
+            const ulong u2 = p2[k];
+            const ulong u3 = p3[k];
+            ulong u4 = u0 + u2;  // [0..4n)
+            ulong u5 = u0 + F->modn2 - u2;  // [0..4n)
+            ulong u6 = u1 + u3;  // [0..4n)
+            ulong u7 = u1 + F->modn2 - u3;
 
             ulong p_hi, p_lo;
             umul_ppmm(p_hi, p_lo, F->tab_w_pre[0][1], u7);

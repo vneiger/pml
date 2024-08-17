@@ -1,3 +1,4 @@
+#include <flint/ulong_extras.h>  // for umul_ppmm
 #include "nmod_poly_integer_fft.h"
 
 // returns a*b % n  in [0..2*n)
@@ -11,23 +12,23 @@ FLINT_FORCE_INLINE ulong n_mulmod_shoup_lazy(ulong a, ulong b, ulong apre, ulong
 
 // reduction tree version
 // lazy red: input in [0..2*n) --> output in [0..4*n)
-FLINT_FORCE_INLINE void dft8_red_lazy(mp_ptr p, nmod_integer_fft_t F)
+FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, nmod_integer_fft_t F)
 {
     ulong p_hi, p_lo;
-    mp_limb_t u0 = p[0];
-    mp_limb_t u1 = p[1];
-    mp_limb_t u2 = p[2];
-    mp_limb_t u3 = p[3];
-    mp_limb_t v0 = p[4];
-    mp_limb_t v1 = p[5];
-    mp_limb_t v2 = p[6];
-    mp_limb_t v3 = p[7];
+    ulong u0 = p[0];
+    ulong u1 = p[1];
+    ulong u2 = p[2];
+    ulong u3 = p[3];
+    ulong v0 = p[4];
+    ulong v1 = p[5];
+    ulong v2 = p[6];
+    ulong v3 = p[7];
 
     // mod x**4 - 1 | x**4 + 1
-    mp_limb_t p0 = u0 + v0;  // [0..4n)
-    mp_limb_t p1 = u1 + v1;  // [0..4n)
-    mp_limb_t p2 = u2 + v2;  // [0..4n)
-    mp_limb_t p3 = u3 + v3;  // [0..4n)
+    ulong p0 = u0 + v0;  // [0..4n)
+    ulong p1 = u1 + v1;  // [0..4n)
+    ulong p2 = u2 + v2;  // [0..4n)
+    ulong p3 = u3 + v3;  // [0..4n)
     u0 += F->modn2 - v0;  // [0..4n)
     u1 += F->modn2 - v1;  // [0..4n)
     u2 += F->modn2 - v2;  // [0..4n)
@@ -96,24 +97,24 @@ FLINT_FORCE_INLINE void dft8_red_lazy(mp_ptr p, nmod_integer_fft_t F)
 
 // DIF version
 // lazy red: input in [0..2*n) --> output in [0..8*n)
-FLINT_FORCE_INLINE void dft8_dif_lazy(mp_ptr p, nmod_integer_fft_t F)
+FLINT_FORCE_INLINE void dft8_dif_lazy(nn_ptr p, nmod_integer_fft_t F)
 {
     // in [0..2n) out [0..8n)
-    mp_limb_t p0 = p[0];
-    mp_limb_t q0 = p[1];
-    mp_limb_t p1 = p[2];
-    mp_limb_t q1 = p[3];
-    mp_limb_t p2 = p[4];
-    mp_limb_t q2 = p[5];
-    mp_limb_t p3 = p[6];
-    mp_limb_t q3 = p[7];
+    ulong p0 = p[0];
+    ulong q0 = p[1];
+    ulong p1 = p[2];
+    ulong q1 = p[3];
+    ulong p2 = p[4];
+    ulong q2 = p[5];
+    ulong p3 = p[6];
+    ulong q3 = p[7];
 
-    mp_limb_t p4 = p0 + p2;  // [0..4n)
-    mp_limb_t q4 = q0 + q2;  // [0..4n)
-    mp_limb_t p6 = p1 + p3;  // [0..4n)
-    mp_limb_t q6 = q1 + q3;  // [0..4n)
-    mp_limb_t p5 = p0 + F->modn2 - p2;  // [0..4n)
-    mp_limb_t q5 = q0 + F->modn2 - q2;  // [0..4n)
+    ulong p4 = p0 + p2;  // [0..4n)
+    ulong q4 = q0 + q2;  // [0..4n)
+    ulong p6 = p1 + p3;  // [0..4n)
+    ulong q6 = q1 + q3;  // [0..4n)
+    ulong p5 = p0 + F->modn2 - p2;  // [0..4n)
+    ulong q5 = q0 + F->modn2 - q2;  // [0..4n)
     if (p4 >= F->modn2)
         p4 -= F->modn2;  // [0..2n)
     if (p6 >= F->modn2)
@@ -124,11 +125,11 @@ FLINT_FORCE_INLINE void dft8_dif_lazy(mp_ptr p, nmod_integer_fft_t F)
         q6 -= F->modn2;  // [0..2n)
 
     ulong p_hi, p_lo;
-    mp_limb_t p7 = (p1 + F->modn2 - p3);
+    ulong p7 = (p1 + F->modn2 - p3);
     // {p,q}7 = ({p,q}1 + F->modn2 - {p,q}3) * F->tab_w[0][1]
     umul_ppmm(p_hi, p_lo, F->Ipre, p7);
     p7 = F->I * p7 - p_hi * F->mod.n;  // [0..2n)
-    mp_limb_t q7 = q1 + F->modn2 - q3;
+    ulong q7 = q1 + F->modn2 - q3;
     umul_ppmm(p_hi, p_lo, F->Ipre, q7);
     q7 = F->I * q7 - p_hi * F->mod.n;  // [0..2n)
 

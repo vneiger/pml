@@ -56,10 +56,10 @@ typedef nmod_fft_struct nmod_fft_t[1];
 // - allow fit_depth to precompute more tables when wanted/needed
 // - separate computation of the tables from basic init
 // - allocate first tables on stack --> no noticeable effect
-void nmod_fft_init_set_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
+void nmod_fft_init_set_pre(nmod_fft_t F, ulong w, ulong order, nmod_t mod);
 
 // version with just a list of roots in bit reversed order
-void nmod_fft_init_set_red_pre(nmod_fft_t F, mp_limb_t w, ulong order, nmod_t mod);
+void nmod_fft_init_set_red_pre(nmod_fft_t F, ulong w, ulong order, nmod_t mod);
 
 
 
@@ -85,12 +85,12 @@ void nmod_fft_clear_red_pre(nmod_fft_t F);
 // recursive, decimation in frequency, radix 2
 // input coefficients in [0..??)
 // output coefficients in [0..??)
-void _nmod_fft_dif_rec2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
+void _nmod_fft_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F);
 
 // iterative, decimation in frequency, radix 2
 // input coefficients in [0..??)
 // output coefficients in [0..??)
-void _nmod_fft_dif_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
+void _nmod_fft_dif_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F);
 
 // recursive, reduction-tree approach, radix 2
 // input coefficients in [0..??)
@@ -99,16 +99,16 @@ void _nmod_fft_dif_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
 // general: modulus is x**len - w**2 = (x**(len/2) - w) (x**(len/2) + w),
 // where w = F->tab_w[0][node]
 // e.g. for node == 1 this is w = I and x**len + 1
-void _nmod_fft_red_rec2_lazy_general(mp_ptr p, ulong len, ulong order, ulong node, nmod_fft_t F);
+void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong node, nmod_fft_t F);
 // entry point: case where node == 0, modulus is x**len - 1 = (x**(len/2) - 1) (x**(len/2) + 1)
-void _nmod_fft_red_rec2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
+void _nmod_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F);
 
-void _nmod_fft_red_iter2_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
+void _nmod_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F);
 
 // recursive, decimation in frequency, radix 4
 // input coefficients in [0..??)
 // output coefficients in [0..??)
-void _nmod_fft_dif_rec4_lazy(mp_ptr p, ulong len, ulong order, nmod_fft_t F);
+void _nmod_fft_dif_rec4_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F);
 
 #ifdef __cplusplus
 }
