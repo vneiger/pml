@@ -12,13 +12,13 @@ void check()
     ulong order, order_min, order_max, N;
     slong i;
     flint_rand_t state;
-    mp_limb_t p;
+    ulong p;
     nmod_t mod;
-    mp_ptr val;
+    nn_ptr val;
     sd_fft_ctx_t Q;
     nmod_poly_t P, P2;
     
-    flint_randinit(state);
+    flint_rand_init(state);
     
     p = 1108307720798209;
     sd_fft_ctx_init_prime(Q, p);
@@ -40,7 +40,7 @@ void check()
         
         for (i = 0; i < N; i++)
         {
-            mp_limb_t t = rand() % p;
+            ulong t = rand() % p;
             t = (t * t) % p;
             t = (t * t) % p;
             t = (t * t) % p;
@@ -63,7 +63,7 @@ void check()
     }
     
     sd_fft_ctx_clear(Q);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 

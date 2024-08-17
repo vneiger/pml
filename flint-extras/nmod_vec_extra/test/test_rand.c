@@ -1,5 +1,6 @@
 #include <time.h>
 #include <flint/flint.h>
+#include <flint/nmod_vec.h>
 
 #include "nmod_vec_extra.h"
 
@@ -15,17 +16,17 @@ int main(int argc, char **argv)
     }
 
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
     srand(time(NULL));
-    flint_randseed(state, rand(), rand());
+    flint_rand_set_seed(state, rand(), rand());
 
     nmod_t mod;
     nmod_init(&mod, atol(argv[1]));
 
     const slong len = atol(argv[2]);
 
-    mp_ptr vec_uni = _nmod_vec_init(len);
-    mp_ptr vec_test = _nmod_vec_init(len);
+    nn_ptr vec_uni = _nmod_vec_init(len);
+    nn_ptr vec_test = _nmod_vec_init(len);
 
     _nmod_vec_rand(vec_uni, state, len, mod);
     _nmod_vec_randtest(vec_test, state, len, mod);
@@ -35,7 +36,7 @@ int main(int argc, char **argv)
 
     _nmod_vec_clear(vec_uni);
     _nmod_vec_clear(vec_test);
-    flint_randclear(state);
+    flint_rand_clear(state);
 
     return 0;
 }

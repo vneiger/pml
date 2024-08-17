@@ -12,7 +12,7 @@
 void time_nmod_mat_vec_mul(slong r, slong c, ulong n)
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     nmod_t mod;
     nmod_init(&mod, n);
@@ -25,8 +25,8 @@ void time_nmod_mat_vec_mul(slong r, slong c, ulong n)
     nmod_mat_init(A, r, c, mod.n);
     nmod_mat_rand(A, state);
 
-    mp_limb_t * u = flint_malloc(c * sizeof(mp_limb_t));
-    mp_limb_t * v = flint_malloc(r * sizeof(mp_limb_t));
+    ulong * u = flint_malloc(c * sizeof(ulong));
+    ulong * v = flint_malloc(r * sizeof(ulong));
     nmod_mat_t umat; nmod_mat_init(umat, c, 1, n);
     nmod_mat_t vmat1; nmod_mat_init(vmat1, r, 1, n);
     nmod_mat_t vmat2; nmod_mat_init(vmat2, 1, r, n);
@@ -141,7 +141,7 @@ void time_nmod_mat_vec_mul(slong r, slong c, ulong n)
     nmod_mat_clear(vmat2);
     flint_free(u);
     flint_free(v);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/

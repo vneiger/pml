@@ -137,14 +137,14 @@ void check()
 {
     ulong nmin, nmax;
     flint_rand_t state;
-    mp_limb_t w0, w, p;
+    ulong w0, w, p;
     nmod_t mod;
     sd_fft_ctx_t Q;
     nmod_sd_fft_t F;
-    mp_ptr val, val2;
+    nn_ptr val, val2;
     nmod_poly_t P;
     
-    flint_randinit(state);
+    flint_rand_init(state);
 
     p = 1108307720798209;
     sd_fft_ctx_init_prime(Q, p);
@@ -176,7 +176,7 @@ void check()
         nmod_poly_init2(P, p, n);
         for (i = 0; i < n; i++)
         {
-            mp_limb_t c;
+            ulong c;
             c = n_randtest(state);
             c = nmod_mul(c, c, mod);
             c = nmod_mul(c, c, mod);
@@ -193,7 +193,7 @@ void check()
         do
         {
             slong e;
-            mp_limb_t rho, g;
+            ulong rho, g;
             
             e = exponents[i];
             rho = nmod_pow_ui(w0, 1L << (16-e-1), Q->mod);
@@ -243,7 +243,7 @@ void check()
     }
     sd_fft_ctx_clear(Q);
     nmod_sd_fft_clear(F);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 

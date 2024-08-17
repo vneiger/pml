@@ -13,18 +13,18 @@ void get_time()
 {
     ulong i, nmin, nmax, nb_iter;
     flint_rand_t state;
-    mp_limb_t p, w0, w;
+    ulong p, w0, w;
     nmod_t mod;
     nmod_sd_fft_t F;
     sd_fft_ctx_t Q;
     sd_fft_lctx_t QL;
-    mp_ptr val;
+    nn_ptr val;
     nmod_poly_t P, P2;
     clock_t tt;
     double t;
 
         
-    flint_randinit(state);
+    flint_rand_init(state);
 
     p = 1108307720798209;
     sd_fft_ctx_init_prime(Q, p);
@@ -86,7 +86,7 @@ void get_time()
 
     sd_fft_ctx_clear(Q);
     nmod_sd_fft_clear(F);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 

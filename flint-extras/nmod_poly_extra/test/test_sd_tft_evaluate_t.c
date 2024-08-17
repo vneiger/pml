@@ -13,14 +13,14 @@ void check()
     ulong N, i, j;
     nmod_mat_t M, Mt;
     flint_rand_t state;
-    mp_limb_t w0, w, p;
+    ulong w0, w, p;
     nmod_t mod;
-    mp_ptr val, val2;
+    nn_ptr val, val2;
     sd_fft_ctx_t Q, Qt;
     nmod_sd_fft_t F;
     nmod_poly_t P;
     
-    flint_randinit(state);
+    flint_rand_init(state);
     
     p = 1108307720798209;
     sd_fft_ctx_init_prime(Q, p);
@@ -92,7 +92,7 @@ void check()
     sd_fft_ctx_clear(Qt);
     nmod_sd_fft_clear(F);
     
-    flint_randclear(state);
+    flint_rand_clear(state);
 }    
 
 

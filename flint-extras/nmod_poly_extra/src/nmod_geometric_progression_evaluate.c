@@ -5,7 +5,7 @@
 /* in: polynomial to evaluate, deg(poly) < d                  */
 /* out: v[i] = poly(q^i), i = 0 .. d-1                        */
 /*------------------------------------------------------------*/
-void nmod_geometric_progression_evaluate(mp_ptr v, const nmod_poly_t poly, const nmod_geometric_progression_t G)
+void nmod_geometric_progression_evaluate(nn_ptr v, const nmod_poly_t poly, const nmod_geometric_progression_t G)
 {
     nmod_poly_t a, b;
     slong i, d, dp;

@@ -91,7 +91,7 @@ slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q)
             // pivot found, move its column to rank-th column
             _nmod_mat_rotate_columns_rightward(A, Q, rank, pivot);
             // perform elimination
-            mp_limb_t inv_pivot = n_invmod(nmod_mat_entry(A, rank, rank), A->mod.n);
+            ulong inv_pivot = n_invmod(nmod_mat_entry(A, rank, rank), A->mod.n);
             for (slong i = rank+1; i < A->r - nullity; i++)
             {
                 nmod_mat_entry(A, i, rank) = nmod_mul(nmod_mat_entry(A, i, rank), inv_pivot, A->mod);
@@ -116,9 +116,9 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
     slong nullity = 0;
     slong rank = 0;
     // will store parts of columns of A, maximum length final rank
-    mp_limb_t * A_i_piv = flint_malloc(FLINT_MIN(A->r, A->c) * sizeof(mp_limb_t));
+    ulong * A_i_piv = flint_malloc(FLINT_MIN(A->r, A->c) * sizeof(ulong));
     // will store results of parts of A multiplied by A_i_piv
-    mp_limb_t * A_vec = flint_malloc(A->r * sizeof(mp_limb_t));
+    ulong * A_vec = flint_malloc(A->r * sizeof(ulong));
 
     // we will use some windows of A, for 1st VERSION and OTHERVERSION
     //nmod_mat_t Awin;
@@ -126,8 +126,8 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
     //nmod_mat_t Arowwin;
     //nmod_mat_t matvec;
     // tmp vec, only for YETOTHERVERSION
-    mp_ptr vecmat = _nmod_vec_init(A->c);
-    mp_ptr * Arows_rk = flint_malloc(A->r * sizeof(mp_ptr)); // TODO could be avoided by providing starting column index to dot_product_multi
+    nn_ptr vecmat = _nmod_vec_init(A->c);
+    nn_ptr * Arows_rk = flint_malloc(A->r * sizeof(nn_ptr)); // TODO could be avoided by providing starting column index to dot_product_multi
 
     while (rank + nullity < A->r)
     {
@@ -152,7 +152,7 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
         // YETOTHERVERSION, TESTED: with new nmod_mat_nmod_vec_mul (via dot_product_multi)
         for (slong i = 0; i < rank; i++)
             Arows_rk[i] = A->rows[i]+rank;
-        nmod_vec_dot_product_multi(vecmat, A->rows[rank], (mp_srcptr *) Arows_rk, rank, A->c - rank, nbits, nbits, A->mod);
+        nmod_vec_dot_product_multi(vecmat, A->rows[rank], (nn_srcptr *) Arows_rk, rank, A->c - rank, nbits, nbits, A->mod);
         _nmod_vec_sub(A->rows[rank]+rank, A->rows[rank]+rank, vecmat, A->c - rank, A->mod);
 
         // seek pivot: on row rank, first nonzero entry with column index >= rank
@@ -171,7 +171,7 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
         else
         {
             // precompute inverse of pivot
-            mp_limb_t inv_pivot = n_invmod(nmod_mat_entry(A, rank, pivot), A->mod.n);
+            ulong inv_pivot = n_invmod(nmod_mat_entry(A, rank, pivot), A->mod.n);
             // compute matrix-vector product A[rank+1:A->r-nullity, :rank] * A[:rank, pivot]
             // 1stVERSION, TESTED:
             //for (slong i = 0; i < rank; i++)
@@ -180,10 +180,11 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
             //nmod_mat_mul_nmod_vec(A_vec, Awin, A_i_piv, rank);
             //nmod_mat_window_clear(Awin);
             // 2ndVERSION, TESTED: with new nmod_vec_dot
+            const dot_params_t params = _nmod_vec_dot_params(rank, A->mod);
             for (slong i = 0; i < rank; i++)
                 A_i_piv[i] = nmod_mat_entry(A, i, pivot);
             for (slong i = 0; i < A->r - nullity - rank - 1; i++)
-                A_vec[i] = nmod_vec_dot_product(A->rows[i+rank+1], A_i_piv, rank, nbits, nbits, A->mod);
+                A_vec[i] = _nmod_vec_dot(A->rows[i+rank+1], A_i_piv, rank, A->mod, params);
             // update:  from A[rank+1:A->r-nullity, pivot], subtract A_vec and divide by pivot
             for (slong i = rank+1; i < A->r - nullity; i++)
             {

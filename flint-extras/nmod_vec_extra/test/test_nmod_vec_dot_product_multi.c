@@ -24,11 +24,11 @@ void check_nmod_vec_dot_product_multi(ulong len, ulong k, ulong bits1, ulong bit
     //printf("%lu, %lu, %lu\n", mod.n, mod1.n, mod2.n);
 
     // input vector
-    mp_ptr u = _nmod_vec_init(len);
-    mp_ptr ur = _nmod_vec_init(len);
+    nn_ptr u = _nmod_vec_init(len);
+    nn_ptr ur = _nmod_vec_init(len);
 
     // input collection of vectors (= matrices)
-    mp_ptr * v = flint_malloc(len * sizeof(mp_ptr));
+    nn_ptr * v = flint_malloc(len * sizeof(nn_ptr));
     for (ulong i = 0; i < len; i++)
         v[i] = _nmod_vec_init(k);
     nmod_mat_t vr; nmod_mat_init(vr, len, k, n);
@@ -46,10 +46,10 @@ void check_nmod_vec_dot_product_multi(ulong len, ulong k, ulong bits1, ulong bit
     }
 
     // compute
-    mp_ptr uv1 = _nmod_vec_init(k);
-    nmod_vec_dot_product_multi(uv1, u, (mp_srcptr *) v, len, k, bits1, bits2, mod);
+    nn_ptr uv1 = _nmod_vec_init(k);
+    nmod_vec_dot_product_multi(uv1, u, (nn_srcptr *) v, len, k, bits1, bits2, mod);
 
-    mp_ptr uv2 = _nmod_vec_init(k);
+    nn_ptr uv2 = _nmod_vec_init(k);
     nmod_mat_nmod_vec_mul(uv2, ur, len, vr);
 
     assert (_nmod_vec_equal(uv1, uv2, k));
@@ -63,13 +63,13 @@ void check_nmod_vec_dot_product_multi(ulong len, ulong k, ulong bits1, ulong bit
 
     if (FLINT_BIT_COUNT(n) < 21)
     {
-        _nmod_vec_dot_product_multi_1_v1_8(uv1, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_1_v1_8(uv1, u, (nn_srcptr *) v, len, k, mod);
         assert (_nmod_vec_equal(uv1, uv2, k) && "v1_8");
-        _nmod_vec_dot_product_multi_1_v8_8(uv1, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_1_v8_8(uv1, u, (nn_srcptr *) v, len, k, mod);
         assert (_nmod_vec_equal(uv1, uv2, k) && "v8_8");
-        _nmod_vec_dot_product_multi_1_v16_16(uv1, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_1_v16_16(uv1, u, (nn_srcptr *) v, len, k, mod);
         assert (_nmod_vec_equal(uv1, uv2, k) && "v8_32");
-        _nmod_vec_dot_product_multi_1_v16_16(uv1, u, (mp_srcptr *) v, len, k, mod);
+        _nmod_vec_dot_product_multi_1_v16_16(uv1, u, (nn_srcptr *) v, len, k, mod);
         assert (_nmod_vec_equal(uv1, uv2, k) && "v16_16");
     }
 
@@ -90,7 +90,7 @@ void check_nmod_vec_dot_product_multi(ulong len, ulong k, ulong bits1, ulong bit
 int main()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     printf("test running, various bitlengths, len and k from 1 to 300 (no error message means success)...\n");
     printf("len = ");
@@ -133,7 +133,7 @@ int main()
     }
     printf("\n");
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     return 0;
 }
 

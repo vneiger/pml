@@ -15,12 +15,12 @@ void sd_fft_ctx_init_inverse(sd_fft_ctx_t Qt, sd_fft_ctx_t Q)
     Qt->p = p;
     Qt->pinv = pinv;
 
-    NN = n_pow2(SD_FFT_CTX_INIT_DEPTH - 1);
+    NN = n_pow2(SD_FFT_CTX_W2TAB_INIT - 1);
     t = (double*) flint_aligned_alloc(4096, n_round_up(NN*sizeof(double), 4096));
     Qt->w2tab[0] = t;
     t[0] = 1;
 
-    for (m = 1, l = 1; m < SD_FFT_CTX_INIT_DEPTH; m++, l *= 2)
+    for (m = 1, l = 1; m < SD_FFT_CTX_W2TAB_INIT; m++, l *= 2)
     {
         double* fwd;
         const double *bck;
@@ -33,9 +33,9 @@ void sd_fft_ctx_init_inverse(sd_fft_ctx_t Qt, sd_fft_ctx_t Q)
         }
     }
     
-    Qt->w2tab_depth = SD_FFT_CTX_INIT_DEPTH;
+    Qt->w2tab_depth = SD_FFT_CTX_W2TAB_INIT;
     
-    for (k = SD_FFT_CTX_INIT_DEPTH; k < FLINT_BITS; k++)
+    for (k = SD_FFT_CTX_W2TAB_INIT; k < FLINT_BITS; k++)
         Qt->w2tab[k] = NULL;
 }
 

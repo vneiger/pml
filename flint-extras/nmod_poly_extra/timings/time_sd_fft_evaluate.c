@@ -7,7 +7,7 @@
 void get_time()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     // prime, modulus
     nmod_t mod;
@@ -21,8 +21,8 @@ void get_time()
     sd_fft_lctx_init(QL, Q, 27);
 
     // nmod_sd_fft prepare
-    mp_limb_t w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> 27, mod);
-    mp_limb_t w = nmod_pow_ui(w0, 1L<<(27-27), mod);
+    ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> 27, mod);
+    ulong w = nmod_pow_ui(w0, 1L<<(27-27), mod);
     nmod_sd_fft_t F;
     nmod_sd_fft_init_set(F, w, 27, mod);
 
@@ -52,7 +52,7 @@ void get_time()
 
             nmod_poly_t P;
             nmod_poly_init2(P, p, N);
-            mp_ptr val = _nmod_vec_init(N);
+            nn_ptr val = _nmod_vec_init(N);
 
             for (slong i = 0; i < (slong)N; i++)
                 nmod_poly_set_coeff_ui(P, i, n_randtest(state) % p);
@@ -92,7 +92,7 @@ void get_time()
     sd_fft_lctx_clear(QL, Q);
     sd_fft_ctx_clear(Q);
     nmod_sd_fft_clear(F);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 

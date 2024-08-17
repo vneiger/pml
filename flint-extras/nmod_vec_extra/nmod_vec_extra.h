@@ -11,9 +11,10 @@
  *
  */
 
-#include "nmod_vec_extra.h"
+#include <flint/flint.h>
 #include <flint/machine_vectors.h>
 #include <flint/nmod_types.h>
+#include <flint/nmod.h> // for NMOD_RED
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,7 +28,7 @@ extern "C" {
 
 /** Fills the entries `0`, .., `len-1` of vector with uniformly random entries.
  * Vector must already be allocated with length at least `len`. */
-void _nmod_vec_rand(mp_ptr vec,
+void _nmod_vec_rand(nn_ptr vec,
             		flint_rand_t state,
             		slong len,
             		nmod_t mod);
@@ -36,12 +37,11 @@ void _nmod_vec_rand(mp_ptr vec,
 /*--------------------------------------------------------------*/
 /* vector of n consecutive primes of exactly s bits             */
 /*--------------------------------------------------------------*/
-void nmod_vec_primes(mp_ptr v, slong n, mp_bitcnt_t s);
+void nmod_vec_primes(nn_ptr v, slong n, flint_bitcnt_t s);
 
 /**********************************************************************
 *                            DOT PRODUCT                             *
 **********************************************************************/
-
 
 /* ------------------------------------------------------------ */
 /* v1 and v2 have length at least len, len < 2^FLINT_BITS      */
@@ -50,8 +50,8 @@ void nmod_vec_primes(mp_ptr v, slong n, mp_bitcnt_t s);
 /* computes sum(v1[i]*v2[i], 0 <= i < len)                      */
 /* stores the result in 3 limbs of res                          */
 /* ------------------------------------------------------------ */
-void nmod_vec_integer_dot_product(mp_ptr res,
-                                  mp_srcptr v1, mp_srcptr v2,
+void nmod_vec_integer_dot_product(nn_ptr res,
+                                  nn_srcptr v1, nn_srcptr v2,
                                   ulong len, ulong max_bits1, ulong max_bits2);
 
 /*  ------------------------------------------------------------ */
@@ -61,25 +61,10 @@ void nmod_vec_integer_dot_product(mp_ptr res,
 /** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
 /** does not assume input is reduced modulo mod.n                */
 /*  ------------------------------------------------------------ */
-mp_limb_t nmod_vec_dot_product(mp_srcptr v1, mp_srcptr v2,
-                               ulong len, ulong max_bits1, ulong max_bits2,
-                               nmod_t mod);
-// note: version split16 interesting on recent laptop (gcc does some vectorization)
-// limited to nbits <= ~31 (bound to be better analyzed, numterms)
-mp_limb_t _nmod_vec_dot_product_2_split16(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
-// note: version split26 interesting (beyond 30-31 bits) on recent laptop (gcc does some vectorization)
-// limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
-mp_limb_t _nmod_vec_dot_product_2_split26(mp_srcptr v1, mp_srcptr v2, ulong len, nmod_t mod);
+ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2,
+                                      ulong len, ulong max_bits1, ulong max_bits2,
+                                      nmod_t mod);
 
-/*------------------------------------------------------------*/
-/** dot product for moduli less than 2^30                     */
-/** reduction works if (p-1)^3*len < 2^96                     */
-/** returns dot(a, b)                                         */
-/** power_two = 2^45 mod p, pinv = 1/p                        */
-/*------------------------------------------------------------*/
-mp_limb_t _nmod_vec_dot_small_modulus(mp_ptr a, mp_ptr b, ulong len,
-                                      mp_limb_t power_two,
-                                      vec1d p, vec1d pinv);
 
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */
@@ -87,10 +72,38 @@ mp_limb_t _nmod_vec_dot_small_modulus(mp_ptr a, mp_ptr b, ulong len,
 /** res[0] = dot(a1, b), res[1] = dot(a2, b)                  */
 /** power_two = 2^45 mod p, p2 = (p,p), pinv2 = (1/p,1/p)     */
 /*------------------------------------------------------------*/
-void _nmod_vec_dot2_small_modulus(mp_ptr res,
-                                  mp_ptr a1, mp_ptr a2, mp_ptr b, ulong len,
-                                  mp_limb_t power_two,
-                                  vec2d p2, vec2d pinv2);
+void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ulong len,
+                                  ulong power_two, vec2d p2, vec2d pinv2);
+
+
+/*------------------------------------------------------------*/
+/* DRAFT / EXPERIMENTS                                        */
+/*------------------------------------------------------------*/
+
+// note: version split16 interesting on recent laptop (gcc does some vectorization)
+// limited to nbits <= ~31 (bound to be better analyzed, numterms)
+ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+// note: version split26 interesting (beyond 30-31 bits) on recent laptop (gcc does some vectorization)
+// limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
+ulong _nmod_vec_dot_product_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /** Several dot products with same left operand, as in vector-matrix product.
  *
@@ -122,31 +135,31 @@ void _nmod_vec_dot2_small_modulus(mp_ptr res,
  * for multi_3:
  * - at the moment, no attempt at blocking or other things; will depend on what happens for multi_{1,2}
  */
-void nmod_vec_dot_product_multi(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void nmod_vec_dot_product_multi(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                 ulong len, ulong k,
                                 ulong max_bits_u, ulong max_bits_v,
                                 nmod_t mod);
 
-void _nmod_vec_dot_product_multi_1_v1_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
-                                       ulong len, ulong k, nmod_t mod);
-void _nmod_vec_dot_product_multi_1_v8_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
-                                       ulong len, ulong k, nmod_t mod);
-void _nmod_vec_dot_product_multi_1_v8_32(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
-                                       ulong len, ulong k, nmod_t mod);
-void _nmod_vec_dot_product_multi_1_v16_16(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
-                                       ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_1_v1_8(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
+                                        ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_1_v8_8(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
+                                        ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_1_v8_32(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
+                                         ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_1_v16_16(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
+                                          ulong len, ulong k, nmod_t mod);
 
-void _nmod_vec_dot_product_multi_2_v1_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
-                                   ulong len, ulong k, nmod_t mod);
-void _nmod_vec_dot_product_multi_2_v4_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
-                                   ulong len, ulong k, nmod_t mod);
-void _nmod_vec_dot_product_multi_2_v8_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
-                                   ulong len, ulong k, nmod_t mod);
-void _nmod_vec_dot_product_multi_2_v4_32(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
-                                   ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_2_v1_8(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
+                                        ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_2_v4_8(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
+                                        ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_2_v8_8(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
+                                        ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_2_v4_32(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
+                                         ulong len, ulong k, nmod_t mod);
 // limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
-void _nmod_vec_dot_product_multi_2_split26(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
-                                   ulong len, ulong k, nmod_t mod);
+void _nmod_vec_dot_product_multi_2_split26(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
+                                           ulong len, ulong k, nmod_t mod);
 
 #ifdef __cplusplus
 }

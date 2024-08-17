@@ -16,10 +16,10 @@
 static inline
 ulong _nmod_vec_dot_bound_limbs_unbalanced(ulong len, ulong max_bits1, ulong max_bits2)
 {
-    const mp_limb_t a1 = (max_bits1 == FLINT_BITS) ? (UWORD_MAX) : (UWORD(1) << max_bits1) - 1;
-    const mp_limb_t a2 = (max_bits2 == FLINT_BITS) ? (UWORD_MAX) : (UWORD(1) << max_bits2) - 1;
+    const ulong a1 = (max_bits1 == FLINT_BITS) ? (UWORD_MAX) : (UWORD(1) << max_bits1) - 1;
+    const ulong a2 = (max_bits2 == FLINT_BITS) ? (UWORD_MAX) : (UWORD(1) << max_bits2) - 1;
 
-    mp_limb_t t2, t1, t0, u1, u0;
+    ulong t2, t1, t0, u1, u0;
     umul_ppmm(t1, t0, a1, a2);
     umul_ppmm(t2, t1, t1, len);
     umul_ppmm(u1, u0, t0, len);
@@ -41,7 +41,7 @@ ulong _nmod_vec_dot_bound_limbs_unbalanced(ulong len, ulong max_bits1, ulong max
 
 // same as v_8_32 below
 static inline
-void _nmod_vec_dot_product_multi_1(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void _nmod_vec_dot_product_multi_1(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                    ulong len, ulong k, nmod_t mod)
 {
     _nmod_vec_zero(uv, k);
@@ -367,7 +367,7 @@ void _nmod_vec_dot_product_multi_1(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
 }
 
 // TODO: variants below, some missing + thresholds to be determined, see header file
-void _nmod_vec_dot_product_multi_1_v1_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void _nmod_vec_dot_product_multi_1_v1_8(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                    ulong len, ulong k, nmod_t mod)
 {
     _nmod_vec_zero(uv, k);
@@ -394,7 +394,7 @@ void _nmod_vec_dot_product_multi_1_v1_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
 }
 
 
-void _nmod_vec_dot_product_multi_1_v8_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void _nmod_vec_dot_product_multi_1_v8_8(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                        ulong len, ulong k, nmod_t mod)
 {
     _nmod_vec_zero(uv, k);
@@ -504,7 +504,7 @@ void _nmod_vec_dot_product_multi_1_v8_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
 }
 
 // same as main function above (_multi_1)
-void _nmod_vec_dot_product_multi_1_v8_32(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void _nmod_vec_dot_product_multi_1_v8_32(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                        ulong len, ulong k, nmod_t mod)
 {
     _nmod_vec_zero(uv, k);
@@ -829,7 +829,7 @@ void _nmod_vec_dot_product_multi_1_v8_32(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
         NMOD_RED(uv[j], uv[j], mod);
 }
 
-void _nmod_vec_dot_product_multi_1_v16_16(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void _nmod_vec_dot_product_multi_1_v16_16(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                       ulong len, ulong k, nmod_t mod)
 {
     _nmod_vec_zero(uv, k);
@@ -1147,13 +1147,13 @@ void _nmod_vec_dot_product_multi_1_v16_16(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
 }
 
 static inline
-void _nmod_vec_dot_product_multi_2(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void _nmod_vec_dot_product_multi_2(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                    ulong len, ulong k, nmod_t mod)
 {
-    mp_ptr uv_hi = _nmod_vec_init(k);
+    nn_ptr uv_hi = _nmod_vec_init(k);
     _nmod_vec_zero(uv, k);
     _nmod_vec_zero(uv_hi, k);
-    mp_limb_t s0, s1;
+    ulong s0, s1;
     for (ulong i = 0; i < len; i++)
     {
         for (ulong j = 0; j < k; j++)
@@ -1175,12 +1175,12 @@ void _nmod_vec_dot_product_multi_2(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
 // they are not balanced... could make sense to balance them to allow more terms
 // (info from max_bits_u and max_bits_v could be useful), but do this only if
 // this really is interesting in terms of speed)
-void _nmod_vec_dot_product_multi_2_split26(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void _nmod_vec_dot_product_multi_2_split26(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                    ulong len, ulong k, nmod_t mod)
 {
     uint ulo, uhi, vlo, vhi;
-    mp_ptr uv_mi = _nmod_vec_init(k);
-    mp_ptr uv_hi = _nmod_vec_init(k);
+    nn_ptr uv_mi = _nmod_vec_init(k);
+    nn_ptr uv_hi = _nmod_vec_init(k);
     _nmod_vec_zero(uv, k);  // plays the role of uv_lo
     _nmod_vec_zero(uv_mi, k);
     _nmod_vec_zero(uv_hi, k);
@@ -1207,13 +1207,13 @@ void _nmod_vec_dot_product_multi_2_split26(mp_ptr uv, mp_srcptr u, mp_srcptr * v
     _nmod_vec_clear(uv_mi);
 }
 
-void _nmod_vec_dot_product_multi_2_v1_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void _nmod_vec_dot_product_multi_2_v1_8(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                    ulong len, ulong k, nmod_t mod)
 {
-    mp_ptr uv_hi = _nmod_vec_init(k);
+    nn_ptr uv_hi = _nmod_vec_init(k);
     _nmod_vec_zero(uv, k);
     _nmod_vec_zero(uv_hi, k);
-    mp_limb_t s0, s1;
+    ulong s0, s1;
     for (ulong i = 0; i < len; i++)
     {
         ulong j = 0;
@@ -1248,13 +1248,13 @@ void _nmod_vec_dot_product_multi_2_v1_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
     _nmod_vec_clear(uv_hi);
 }
 
-void _nmod_vec_dot_product_multi_2_v4_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void _nmod_vec_dot_product_multi_2_v4_8(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                    ulong len, ulong k, nmod_t mod)
 {
-    mp_ptr uv_hi = _nmod_vec_init(k);
+    nn_ptr uv_hi = _nmod_vec_init(k);
     _nmod_vec_zero(uv, k);
     _nmod_vec_zero(uv_hi, k);
-    mp_limb_t s0, s1;
+    ulong s0, s1;
     ulong i = 0;
     for (; i+3 < len; i += 4)
     {
@@ -1379,13 +1379,13 @@ void _nmod_vec_dot_product_multi_2_v4_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
     _nmod_vec_clear(uv_hi);
 }
 
-void _nmod_vec_dot_product_multi_2_v4_32(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void _nmod_vec_dot_product_multi_2_v4_32(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                    ulong len, ulong k, nmod_t mod)
 {
-    mp_ptr uv_hi = _nmod_vec_init(k);
+    nn_ptr uv_hi = _nmod_vec_init(k);
     _nmod_vec_zero(uv, k);
     _nmod_vec_zero(uv_hi, k);
-    mp_limb_t s0, s1;
+    ulong s0, s1;
     ulong i = 0;
     for (; i+3 < len; i += 4)
     {
@@ -1774,13 +1774,13 @@ void _nmod_vec_dot_product_multi_2_v4_32(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
     _nmod_vec_clear(uv_hi);
 }
 
-void _nmod_vec_dot_product_multi_2_v8_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void _nmod_vec_dot_product_multi_2_v8_8(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                    ulong len, ulong k, nmod_t mod)
 {
-    mp_ptr uv_hi = _nmod_vec_init(k);
+    nn_ptr uv_hi = _nmod_vec_init(k);
     _nmod_vec_zero(uv, k);
     _nmod_vec_zero(uv_hi, k);
-    mp_limb_t s0, s1;
+    ulong s0, s1;
     ulong i = 0;
     for (; i+8 < len; i += 8)
     {
@@ -1979,7 +1979,7 @@ void _nmod_vec_dot_product_multi_2_v8_8(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
 
 
 static inline
-void _nmod_vec_dot_product_multi_3(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void _nmod_vec_dot_product_multi_3(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                    ulong len, ulong k,
                                    ulong max_bits_u, ulong max_bits_v,
                                    nmod_t mod)
@@ -1988,12 +1988,12 @@ void _nmod_vec_dot_product_multi_3(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
     const ulong log_nt = 2*FLINT_BITS - (max_bits_u + max_bits_v);
     const ulong num_terms = (log_nt < FLINT_BITS) ? (UWORD(1) << log_nt) : (UWORD_MAX);
 
-    mp_ptr uv_hi = _nmod_vec_init(k);   // 64->127
-    mp_ptr uv_hii = _nmod_vec_init(k);  // 128->..
+    nn_ptr uv_hi = _nmod_vec_init(k);   // 64->127
+    nn_ptr uv_hii = _nmod_vec_init(k);  // 128->..
     _nmod_vec_zero(uv, k);
     _nmod_vec_zero(uv_hi, k);
     _nmod_vec_zero(uv_hii, k);
-    mp_limb_t s0, s1, t0, t1;
+    ulong s0, s1, t0, t1;
     ulong i = 0;
     if (num_terms >= 8)
         for (; i+7 < len; i += 8) // FIXME 8 vs 4 ? (Vincent: not tested)
@@ -2051,7 +2051,7 @@ void _nmod_vec_dot_product_multi_3(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
     _nmod_vec_clear(uv_hi);
 }
 
-void nmod_vec_dot_product_multi(mp_ptr uv, mp_srcptr u, mp_srcptr * v,
+void nmod_vec_dot_product_multi(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
                                 ulong len, ulong k,
                                 ulong max_bits_u, ulong max_bits_v,
                                 nmod_t mod)

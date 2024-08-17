@@ -14,10 +14,10 @@ void check_fmpz_CRT_naive_combine(ulong num_primes, ulong n_bits)
     flint_rand_t state;
     fmpz_t comb, check, temp;
     fmpz_CRT_naive_t mCRT; 
-    mp_ptr primes, residues;
+    nn_ptr primes, residues;
     ulong i, j;
 
-    flint_randinit(state);
+    flint_rand_init(state);
     primes = _nmod_vec_init(num_primes);
     residues = _nmod_vec_init(num_primes);
     fmpz_init(comb);
@@ -49,7 +49,7 @@ void check_fmpz_CRT_naive_combine(ulong num_primes, ulong n_bits)
     fmpz_clear(comb);
     _nmod_vec_clear(residues);
     _nmod_vec_clear(primes);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/

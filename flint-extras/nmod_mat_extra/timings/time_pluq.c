@@ -6,6 +6,9 @@
 
 #include "nmod_mat_extra.h"
 
+#define NB_ITER 100
+// put this very low if trying large matrices!
+
 int main(int argc, char ** argv)
 {
     if (argc != 5)
@@ -33,17 +36,19 @@ int main(int argc, char ** argv)
     slong primes[59] = {3, 7, 13, 29, 53, 97, 193, 389, 769, 1543, 3079, 6151, 12289, 24593, 49157, 98317, 196613, 393241, 786433, 1572869, 3145739, 6291469, 12582917, 25165843, 50331653, 100663319, 201326611, 402653189, 805306457, 1610612741, 3221225473, 6442450967, 12884901893, 25769803799, 51539607599, 103079215111, 206158430209, 412316860441, 824633720837, 1649267441681, 3298534883417, 6597069766657, 13194139533349, 26388279066671, 52776558133303, 105553116266509, 211106232533047, 422212465066001, 844424930132057, 1688849860263953, 3377699720527897, 6755399441055827, 13510798882111519, 27021597764223071, 54043195528445957, 108086391056891941, 216172782113783843, 432345564227567621, 864691128455135281};
 
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
-    nmod_mat_t mat, LU;
+    nmod_mat_t mat;
     nmod_mat_init(mat, m, n, primes[nbits-2]);
+    nmod_mat_t LU[NB_ITER];
     if (rk == FLINT_MIN(m, n))
         // not 100% fine: not benchmarking non-generic rank profiles...
         // but makes random filling much faster
         nmod_mat_rand(mat, state);
     else
         nmod_mat_randrank_dense(mat, state, rk);
-    nmod_mat_init(LU, m, n, primes[nbits-2]);
+    for (slong i = 0; i < NB_ITER; i++)
+        nmod_mat_init(LU[i], m, n, primes[nbits-2]);
 
     double t;
     clock_t tt;
@@ -55,11 +60,13 @@ int main(int argc, char ** argv)
     nb_iter = 0;
     while (t < 2)
     {
-        nmod_mat_set(LU, mat);
-        slong * P = _perm_init(LU->r);
-        slong * Q = _perm_init(LU->c);
+        for (slong i = 0; i < NB_ITER; i++)
+            nmod_mat_set(LU[i], mat);
+        slong * P = _perm_init(mat->r);
+        slong * Q = _perm_init(mat->c);
         tt = clock();
-        nmod_mat_pluq(LU, P, Q);
+        for (slong i = 0; i < NB_ITER; i++)
+            nmod_mat_pluq(LU[i], P, Q);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 1;
     }
@@ -71,15 +78,17 @@ int main(int argc, char ** argv)
     nb_iter = 0;
     while (t < 0.5)
     {
-        nmod_mat_set(LU, mat);
-        slong * P = _perm_init(LU->r);
-        slong * Q = _perm_init(LU->c);
+        for (slong i = 0; i < NB_ITER; i++)
+            nmod_mat_set(LU[i], mat);
+        slong * P = _perm_init(mat->r);
+        slong * Q = _perm_init(mat->c);
         tt = clock();
-        nmod_mat_pluq(LU, P, Q);
+        for (slong i = 0; i < NB_ITER; i++)
+            nmod_mat_pluq(LU[i], P, Q);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         _perm_clear(P);
         _perm_clear(Q);
-        nb_iter += 1;
+        nb_iter += NB_ITER;
     }
     t /= nb_iter;
     printf("%4e\t", t);
@@ -88,15 +97,17 @@ int main(int argc, char ** argv)
     nb_iter = 0;
     while (t < 0.5)
     {
-        nmod_mat_set(LU, mat);
-        slong * P = _perm_init(LU->r);
-        slong * Q = _perm_init(LU->c);
+        for (slong i = 0; i < NB_ITER; i++)
+            nmod_mat_set(LU[i], mat);
+        slong * P = _perm_init(mat->r);
+        slong * Q = _perm_init(mat->c);
         tt = clock();
-        nmod_mat_pluq_crout(LU, P, Q);
+        for (slong i = 0; i < NB_ITER; i++)
+            nmod_mat_pluq_crout(LU[i], P, Q);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         _perm_clear(P);
         _perm_clear(Q);
-        nb_iter += 1;
+        nb_iter += NB_ITER;
     }
     t /= nb_iter;
     printf("%4e\t", t);
@@ -106,13 +117,15 @@ int main(int argc, char ** argv)
     nb_iter = 0;
     while (t < 0.5)
     {
-        nmod_mat_set(LU, mat);
-        slong * P = flint_malloc(LU->r * sizeof(slong));
+        for (slong i = 0; i < NB_ITER; i++)
+            nmod_mat_set(LU[i], mat);
+        slong * P = flint_malloc(mat->r * sizeof(slong));
         tt = clock();
-        nmod_mat_lu_classical(P, LU, 0);
+        for (slong i = 0; i < NB_ITER; i++)
+            nmod_mat_lu_classical(P, LU[i], 0);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         flint_free(P);
-        nb_iter += 1;
+        nb_iter += NB_ITER;
     }
     t /= nb_iter;
     printf("%4e\t", t);
@@ -121,13 +134,15 @@ int main(int argc, char ** argv)
     nb_iter = 0;
     while (t < 0.5)
     {
-        nmod_mat_set(LU, mat);
-        slong * P = flint_malloc(LU->r * sizeof(slong));
+        for (slong i = 0; i < NB_ITER; i++)
+            nmod_mat_set(LU[i], mat);
+        slong * P = flint_malloc(mat->r * sizeof(slong));
         tt = clock();
-        nmod_mat_lu_classical_delayed(P, LU, 0);
+        for (slong i = 0; i < NB_ITER; i++)
+            nmod_mat_lu_classical_delayed(P, LU[i], 0);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         flint_free(P);
-        nb_iter += 1;
+        nb_iter += NB_ITER;
     }
     t /= nb_iter;
     printf("%4e\t", t);
@@ -136,20 +151,23 @@ int main(int argc, char ** argv)
     nb_iter = 0;
     while (t < 0.5)
     {
-        nmod_mat_set(LU, mat);
-        slong * P = flint_malloc(LU->r * sizeof(slong));
+        for (slong i = 0; i < NB_ITER; i++)
+            nmod_mat_set(LU[i], mat);
+        slong * P = flint_malloc(mat->r * sizeof(slong));
         tt = clock();
-        nmod_mat_lu_recursive(P, LU, 0);
+        for (slong i = 0; i < NB_ITER; i++)
+            nmod_mat_lu_recursive(P, LU[i], 0);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         flint_free(P);
-        nb_iter += 1;
+        nb_iter += NB_ITER;
     }
     t /= nb_iter;
     printf("%4e\n", t);
 
     nmod_mat_clear(mat);
-    nmod_mat_clear(LU);
-    flint_randclear(state);
+    for (slong i = 0; i < NB_ITER; i++)
+        nmod_mat_clear(LU[i]);
+    flint_rand_clear(state);
 
 }
 

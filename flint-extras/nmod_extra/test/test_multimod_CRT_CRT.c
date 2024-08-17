@@ -13,13 +13,13 @@ void check_nmod_multimod_CRT_CRT(ulong N, ulong num_bits, ulong p_bits)
 {
     flint_rand_t state;
     nmod_multimod_CRT_t CRT; 
-    mp_ptr *vec_residues;
-    mp_ptr output;
+    nn_ptr *vec_residues;
+    nn_ptr output;
     ulong i, j, num_primes;
-    mp_limb_t n;
+    ulong n;
     fmpz * input;
     
-    flint_randinit(state);
+    flint_rand_init(state);
 
     n = n_urandint(state, 1L << p_bits);
     input = (fmpz *) malloc(N * sizeof(fmpz));
@@ -46,7 +46,7 @@ void check_nmod_multimod_CRT_CRT(ulong N, ulong num_bits, ulong p_bits)
 
     nmod_multimod_CRT_init(CRT, n, num_primes);
 
-    vec_residues = (mp_ptr *) malloc(num_primes * sizeof(mp_ptr));
+    vec_residues = (nn_ptr *) malloc(num_primes * sizeof(nn_ptr));
     for (i = 0; i < num_primes; i++)
     {
         vec_residues[i] = _nmod_vec_init(N);
@@ -78,7 +78,7 @@ void check_nmod_multimod_CRT_CRT(ulong N, ulong num_bits, ulong p_bits)
         fmpz_clear(input + i);
     free(input);
     
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/

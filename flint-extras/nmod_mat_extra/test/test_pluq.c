@@ -47,8 +47,8 @@ int main()
 
         slong m = n_randint(state, 20);
         slong n = n_randint(state, 20);
-        mp_limb_t mod = n_randtest_prime(state, 0);
-        //mp_limb_t mod = 2;
+        ulong mod = n_randtest_prime(state, 0);
+        //ulong mod = 2;
 
         for (slong r = 0; r <= FLINT_MIN(m, n); r++)
         {

@@ -12,10 +12,10 @@ void test_nmod_poly_mat_mul(ulong m, ulong n, ulong p, ulong deg)
 {
     flint_rand_t state;
     nmod_poly_mat_t A, B, C1, C2;
-    mp_limb_t modulus;
+    ulong modulus;
 
     modulus = 1108307720798209;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     nmod_poly_mat_init(A, m, n, modulus);
     nmod_poly_mat_init(B, n, p, modulus);
@@ -46,7 +46,7 @@ void test_nmod_poly_mat_mul(ulong m, ulong n, ulong p, ulong deg)
     nmod_poly_mat_clear(C2);
     nmod_poly_mat_clear(B);
     nmod_poly_mat_clear(A);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/

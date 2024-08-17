@@ -1,6 +1,5 @@
 #include <flint/fft_small.h>
 #include "nmod_poly_extra.h"
-#include "nmod_vec_extra.h"
 
 #define TRY_AVX2
 
@@ -9,12 +8,14 @@
 /* k=4 is a wrapper for a forced inline function              */
 /* inputs in (-3p..3p), outputs in (-3p..3p)                  */
 /*------------------------------------------------------------*/
-void do_sd_fft_basecase_4_1(const sd_fft_lctx_t Q, double* X, ulong j_r, ulong j_bits);
-void sd_fft_basecase_5_1(const sd_fft_lctx_t Q, double* X, ulong j_r, ulong j_bits);
-void sd_fft_basecase_6_1(const sd_fft_lctx_t Q, double* X, ulong j_r, ulong j_bits);
-void sd_fft_basecase_7_1(const sd_fft_lctx_t Q, double* X, ulong j_r, ulong j_bits);
-void sd_fft_basecase_8_1(const sd_fft_lctx_t Q, double* X, ulong j_r, ulong j_bits);
-void sd_fft(sd_fft_lctx_t Q, double *X, long k); /* use for k >= 8 */
+ // --> FIXME after updated fft_small (June 24), just modified to make things compile, not checked
+void do_sd_fft_basecase_4_1(const sd_fft_ctx_t Q, double* X, ulong j_r, ulong j_bits);
+void sd_fft_basecase_5_1(const sd_fft_ctx_t Q, double* X, ulong j_r, ulong j_bits);
+void sd_fft_basecase_6_1(const sd_fft_ctx_t Q, double* X, ulong j_r, ulong j_bits);
+void sd_fft_basecase_7_1(const sd_fft_ctx_t Q, double* X, ulong j_r, ulong j_bits);
+void sd_fft_basecase_8_1(const sd_fft_ctx_t Q, double* X, ulong j_r, ulong j_bits);
+void sd_fft(sd_fft_ctx_t Q, double *X, long k); /* use for k >= 8 */
+ // <-- FIXME after updated fft_small (June 24), just modified to make things compile (lctx -> ctx)
 
 /*------------------------------------------------------------*/
 /*  in-place size 2^1 butterfly                               */
@@ -109,7 +110,8 @@ static void _fft_3(vec1d *x, const vec1d t1, const vec1d t2, const vec1d t3, con
 /* main fft routine, in place                                 */
 /* input in (-p..p), output in (-3p..3p)                      */
 /*------------------------------------------------------------*/
-FLINT_FORCE_INLINE void _fft(vec1d *wk, sd_fft_lctx_t Q, vec1d p, vec1d pinv, ulong k)
+ // FIXME after updated fft_small (June 24), just modified to make things compile (lctx -> ctx)
+FLINT_FORCE_INLINE void _fft(vec1d *wk, sd_fft_ctx_t Q, vec1d p, vec1d pinv, ulong k)
 {
     switch(k)
     {
@@ -150,7 +152,8 @@ FLINT_FORCE_INLINE void _fft(vec1d *wk, sd_fft_lctx_t Q, vec1d p, vec1d pinv, ul
 /* returns x[i] = poly(w^i), n=2^k, in some order             */
 /* x must have length >= n                                    */
 /*------------------------------------------------------------*/
-void nmod_sd_fft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong k)
+ // FIXME after updated fft_small (June 24), just modified to make things compile (lctx -> ctx)
+void nmod_sd_fft_evaluate(nn_ptr x, const nmod_poly_t poly, sd_fft_ctx_t Q, const ulong k)
 {
     ulong i, N;
     vec1d p, pinv;
@@ -171,7 +174,7 @@ void nmod_sd_fft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, con
 
     for (i = 0; i < N; i++)
     {
-        x[i] = (mp_limb_t) vec1d_reduce_to_0n(dx[i], p, pinv);
+        x[i] = (ulong) vec1d_reduce_to_0n(dx[i], p, pinv);
     }
     flint_free(dx);
 }
@@ -180,7 +183,8 @@ void nmod_sd_fft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, con
 /* transposed fft interpolation                               */
 /* obtained by using the inverse root and fft routines        */
 /*------------------------------------------------------------*/
-void nmod_sd_fft_interpolate_t(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, const ulong k)
+ // FIXME after updated fft_small (June 24), just modified to make things compile (lctx -> ctx)
+void nmod_sd_fft_interpolate_t(nmod_poly_t poly, nn_ptr x, sd_fft_ctx_t Q, const ulong k)
 {
     ulong i, N;
     vec1d p, pinv;
@@ -202,7 +206,7 @@ void nmod_sd_fft_interpolate_t(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, cons
     nmod_poly_fit_length(poly, 1L << k);
     for (i = 0; i < N; i++)
     {
-        poly->coeffs[i] = (mp_limb_t) vec1d_reduce_to_0n(dx[i], p, pinv);
+        poly->coeffs[i] = (ulong) vec1d_reduce_to_0n(dx[i], p, pinv);
     }
     _nmod_poly_normalise(poly);
     flint_free(dx);
@@ -213,7 +217,8 @@ void nmod_sd_fft_interpolate_t(nmod_poly_t poly, mp_ptr x, sd_fft_lctx_t Q, cons
 /* returns a cyclotomic tft evaluation of x at n points       */
 /* x must have length >= N                                    */
 /*------------------------------------------------------------*/
-void nmod_sd_tft_evaluate(mp_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N)
+ // FIXME after updated fft_small (June 24), just modified to make things compile (lctx -> ctx)
+void nmod_sd_tft_evaluate(nn_ptr x, const nmod_poly_t poly, sd_fft_ctx_t Q, nmod_sd_fft_t F, const ulong N)
 {
     ulong i, j, k, a, ell, b, t, b2, lambda, N2;
     vec1d *x2, *x2_bak, *powers_rho;
@@ -580,7 +585,8 @@ void CRT_t(vec1d *x, vec1d *tmp, ulong n, vec1d half, vec1d p, vec1d pinv)
 /*-----------------------------------------------------------*/
 /* transpose inverse tft in length N                         */
 /*-----------------------------------------------------------*/
-void nmod_sd_tft_interpolate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N)
+ // FIXME after updated fft_small (June 24), just modified to make things compile (lctx -> ctx)
+void nmod_sd_tft_interpolate_t(nn_ptr x, nn_srcptr A, sd_fft_ctx_t Q, nmod_sd_fft_t F, const ulong N)
 {
     ulong i, n, a, k, Nup;
     vec1d half, p, pinv;
@@ -687,7 +693,7 @@ void nmod_sd_tft_interpolate_t(mp_ptr x, mp_srcptr A, sd_fft_lctx_t Q, nmod_sd_f
 #else
     for (i = 0; i < N; i++)
     {
-        x[i] = (mp_limb_t) vec1d_reduce_to_0n(wk_bak[i], p, pinv);
+        x[i] = (ulong) vec1d_reduce_to_0n(wk_bak[i], p, pinv);
     }
 #endif
     flint_free(wk_bak);

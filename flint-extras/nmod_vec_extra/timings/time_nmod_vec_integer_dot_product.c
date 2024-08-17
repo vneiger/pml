@@ -12,14 +12,14 @@
 void time_nmod_vec_integer_dot_product(ulong len, ulong n)
 {
     flint_rand_t state;
-    mp_ptr res = flint_malloc(3 * sizeof(mp_limb_t));
-    mp_ptr v1, v2;
+    nn_ptr res = flint_malloc(3 * sizeof(ulong));
+    nn_ptr v1, v2;
     nmod_t mod;
     double t;
     clock_t tt;
     long nb_iter;
 
-    flint_randinit(state);
+    flint_rand_init(state);
     nmod_init(&mod, n);
 
     ulong maxbits = FLINT_BIT_COUNT(n);
@@ -51,7 +51,7 @@ void time_nmod_vec_integer_dot_product(ulong len, ulong n)
     _nmod_vec_clear(v1);
     _nmod_vec_clear(v2);
     flint_free(res);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/

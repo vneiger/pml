@@ -11,7 +11,7 @@ static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_
     ulong i, j, l, m, k, n, num_primes;
     flint_bitcnt_t primes_bits;
     fmpz_multimod_CRT_t CRT;
-    mp_ptr primes, residues;
+    nn_ptr primes, residues;
     fmpz_t half_top, C_nosign;
     
     m = A->r;
@@ -28,7 +28,7 @@ static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_
 
     primes_bits = 29;
     num_primes = (bits + primes_bits - 1) / primes_bits;
-    primes = FLINT_ARRAY_ALLOC(num_primes, mp_limb_t);
+    primes = FLINT_ARRAY_ALLOC(num_primes, ulong);
     nmod_vec_primes(primes, num_primes, primes_bits + 1);
 
     mod_A = FLINT_ARRAY_ALLOC(num_primes, nmod_mat_t);
@@ -48,7 +48,7 @@ static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_
     if (sign == 1)
         fmpz_fdiv_q_2exp(half_top, CRT->product_primes, 1);
 
-    residues = FLINT_ARRAY_ALLOC(num_primes, mp_limb_t);
+    residues = FLINT_ARRAY_ALLOC(num_primes, ulong);
     
     for (i = 0; i < m; i++)
         for (j = 0; j < k; j++)

@@ -16,10 +16,10 @@ void time_nmod_poly_mat_mul(ulong m, ulong n, ulong p, ulong deg)
     double t;
     clock_t tt;
     long nb_iter;
-    mp_limb_t modulus;
+    ulong modulus;
 
     modulus = 1108307720798209;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     nmod_poly_mat_init(A, m, n, modulus);
     nmod_poly_mat_init(B, n, p, modulus);
@@ -64,7 +64,7 @@ void time_nmod_poly_mat_mul(ulong m, ulong n, ulong p, ulong deg)
     nmod_poly_mat_clear(C);
     nmod_poly_mat_clear(B);
     nmod_poly_mat_clear(A);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/

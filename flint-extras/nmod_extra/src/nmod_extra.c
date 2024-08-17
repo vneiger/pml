@@ -9,7 +9,7 @@
 /*------------------------------------------------------------------------*/
 /* returns the smallest i such that 2^i >= x                              */
 /*------------------------------------------------------------------------*/
-int next_power_of_two(mp_limb_t x)
+int next_power_of_two(ulong x)
 {
     int i = 0, j = 1;
     while (j < (int) x)
@@ -24,10 +24,10 @@ int next_power_of_two(mp_limb_t x)
 /* returns 1/p mod 2^k, assuming p is odd                                 */
 /* ill-defined when p is even                                             */
 /*------------------------------------------------------------------------*/
-mp_limb_t inverse_mod_power_of_two(mp_limb_t p, int k)
+ulong inverse_mod_power_of_two(ulong p, int k)
 {
-  mp_limb_t ip = 1L;
-  mp_limb_t old;
+  ulong ip = 1L;
+  ulong old;
   do
   {
       old = ip;

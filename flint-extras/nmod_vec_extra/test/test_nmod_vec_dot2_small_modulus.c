@@ -13,9 +13,9 @@ void check_nmod_vec_dot2_small_modulus(ulong len, ulong n, flint_rand_t state)
     nmod_t mod;
     nmod_init(&mod, n);
 
-    mp_ptr v11 = aligned_alloc(32, (4 + ((len >> 2) << 2)) * sizeof(mp_limb_t));
-    mp_ptr v12 = aligned_alloc(32, (4 + ((len >> 2) << 2)) * sizeof(mp_limb_t));
-    mp_ptr v2 = _nmod_vec_init(len);
+    nn_ptr v11 = aligned_alloc(32, (4 + ((len >> 2) << 2)) * sizeof(ulong));
+    nn_ptr v12 = aligned_alloc(32, (4 + ((len >> 2) << 2)) * sizeof(ulong));
+    nn_ptr v2 = _nmod_vec_init(len);
 
     _nmod_vec_rand(v11, state, len, mod);
     _nmod_vec_rand(v12, state, len, mod);
@@ -27,11 +27,11 @@ void check_nmod_vec_dot2_small_modulus(ulong len, ulong n, flint_rand_t state)
     pinv2[0] = 1 / p2[0];
     pinv2[1] = 1 / p2[1];
 
-    mp_limb_t res1[2];
+    ulong res1[2];
     res1[0] = _nmod_vec_dot(v11, v2, len, mod, _nmod_vec_dot_bound_limbs(len, mod));
     res1[1] = _nmod_vec_dot(v12, v2, len, mod, _nmod_vec_dot_bound_limbs(len, mod));
 
-    mp_limb_t res2[2];
+    ulong res2[2];
     _nmod_vec_dot2_small_modulus(res2, v11, v12, v2, len, (UWORD(1) << 45) % n, p2, pinv2);
 
     assert (res1[0] == res2[0]);
@@ -48,7 +48,7 @@ void check_nmod_vec_dot2_small_modulus(ulong len, ulong n, flint_rand_t state)
 int main()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     printf("test running, various bitlengths, len from 1 to 999 (no error message means success)...\n");
     for (slong len = 1; len < 1000; len += 1)
@@ -72,7 +72,7 @@ int main()
     }
     printf("\n");
 
-    flint_randclear(state);
+    flint_rand_clear(state);
 
     return 0;
 }

@@ -8,10 +8,10 @@
 /* computes an integer dot-product, length len, bitsize bit_len */
 /* checks modulo a prime                                        */
 /*--------------------------------------------------------------*/
-void check_nmod_vec_integer_dot_product(slong len, mp_bitcnt_t bit_len, flint_rand_t state)
+void check_nmod_vec_integer_dot_product(slong len, flint_bitcnt_t bit_len, flint_rand_t state)
 {
-    mp_limb_t p, res1, res2;
-    mp_ptr v1, v2, res;
+    ulong p, res1, res2;
+    nn_ptr v1, v2, res;
     nmod_t mod;
 
     p = n_randprime(state, bit_len, 0);
@@ -26,7 +26,8 @@ void check_nmod_vec_integer_dot_product(slong len, mp_bitcnt_t bit_len, flint_ra
     res = _nmod_vec_init(3);
     nmod_vec_integer_dot_product(res, v1, v2, len, bit_len, bit_len);
     NMOD_RED3(res1, res[2], res[1], res[0], mod);
-    res2 = _nmod_vec_dot(v1, v2, len, mod, 3);
+    dot_params_t params = {_DOT3, UWORD(0)};
+    res2 = _nmod_vec_dot(v1, v2, len, mod, params);
 
     assert (res1 == res2);
 
@@ -41,7 +42,7 @@ void check_nmod_vec_integer_dot_product(slong len, mp_bitcnt_t bit_len, flint_ra
 int main()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     printf("test running, various bitlengths, len from 1 to ~1000 (no error message means success)...\n");
     for (slong len = 1; len < 1000; len += 20)
@@ -65,7 +66,7 @@ int main()
     }
     printf("\n");
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     return 0;
 }
 

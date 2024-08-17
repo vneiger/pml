@@ -7,7 +7,7 @@
 /* ------------------------------------------------------------ */
 /* computes A mod mmod[i] for all i                             */
 /* ------------------------------------------------------------ */
-void fmpz_multimod_CRT_reduce(mp_limb_t * out, const fmpz_t A, const fmpz_multimod_CRT_t mmod)
+void fmpz_multimod_CRT_reduce(ulong * out, const fmpz_t A, const fmpz_multimod_CRT_t mmod)
 {
     ulong i;
     fmpz * tmp;

@@ -16,10 +16,10 @@ void check_fmpz_multimod_naive_reduce(ulong num_primes, ulong n_bits)
 {
     flint_rand_t state;
     fmpz_multimod_naive_t mmod; 
-    mp_ptr primes, residues;
+    nn_ptr primes, residues;
     ulong i, j;
 
-    flint_randinit(state);
+    flint_rand_init(state);
 
     primes = _nmod_vec_init(num_primes);
     residues = _nmod_vec_init(num_primes);
@@ -50,7 +50,7 @@ void check_fmpz_multimod_naive_reduce(ulong num_primes, ulong n_bits)
    fmpz_multimod_naive_clear(mmod);
     _nmod_vec_clear(residues);
     _nmod_vec_clear(primes);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/
