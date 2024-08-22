@@ -16,8 +16,8 @@ extern "C" {
 typedef struct
 {
     nmod_t mod;
-    ulong modn2;     // 2*mod.n
-    ulong modn4;     // 4*mod.n
+    ulong modn2;     // 2*mod.n  FIXME try not storing this
+    ulong modn4;     // 4*mod.n  FIXME try not storing this
     ulong I;                   // sqrt(-1)
     ulong Ipre;                // precomp on I
     ulong J;                   // sqrt(I)
@@ -55,6 +55,7 @@ typedef nmod_fft_struct nmod_fft_t[1];
 // - allow initialization with NULL tables
 // - allow fit_depth to precompute more tables when wanted/needed
 // - separate computation of the tables from basic init
+// - use aligned allocation
 // - allocate first tables on stack --> no noticeable effect
 void nmod_fft_init_set_pre(nmod_fft_t F, ulong w, ulong order, nmod_t mod);
 
@@ -81,6 +82,9 @@ void nmod_fft_clear_red_pre(nmod_fft_t F);
 // TODO
 //   - clarify input/output bounds below
 //   - what constraints on modulus to avoid overflow?
+//   - truncated: handle itrunc / otrunc
+//   - try DIT variant (and Harvey's DIT tft)
+//   - 
 
 // recursive, decimation in frequency, radix 2
 // input coefficients in [0..??)

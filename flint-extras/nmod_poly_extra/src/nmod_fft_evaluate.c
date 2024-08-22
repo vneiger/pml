@@ -144,7 +144,8 @@ FLINT_FORCE_INLINE ulong n_mulmod_shoup_lazy(ulong a, ulong b, ulong apre, ulong
 
 // reduction tree 8-point lazy DFT
 // lazy red: input in [0..2*n) --> output in [0..4*n)
-// goes through [0..16n)... that may surely be improved
+// FIXME goes through [0..16n)... easily improved to [0..8n)
+//       (just reduce v0,v1 to [0..4n) immediately --> check no speed difference)
 FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, nmod_fft_t F)
 {
     ulong p_hi, p_lo;
