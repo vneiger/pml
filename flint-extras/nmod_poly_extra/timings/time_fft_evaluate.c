@@ -4,7 +4,7 @@
 #include "nmod_poly_extra.h"
 #include "nmod_poly_fft.h"
 
-#define VERSIONS 1
+#define VERSIONS 2
 
 #define num_primes 5
 
