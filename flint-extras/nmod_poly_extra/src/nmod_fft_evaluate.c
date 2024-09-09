@@ -90,39 +90,39 @@
 // lazy1: input in [0..n) --> output [0..4*n)
 #define DFT4_DIF_SHOUP_LAZY1(a,b,c,d,I,Ipre,n,n2)                  \
     do {                                                           \
-        const ulong p0 = (a);                                  \
-        const ulong p1 = (b);                                  \
-        const ulong p2 = (c);                                  \
-        const ulong p3 = (d);                                  \
-        const ulong p4 = p0 + p2;              /* < 2*n */     \
-        const ulong p5 = p0 + (n) - p2;        /* < 2*n */     \
-        const ulong p6 = p1 + p3;              /* < 2*n */     \
-        const ulong p7 =                       /* < 2*n */     \
+        const ulong p0 = (a);                                      \
+        const ulong p1 = (b);                                      \
+        const ulong p2 = (c);                                      \
+        const ulong p3 = (d);                                      \
+        const ulong p4 = p0 + p2;                  /* < 2*n */     \
+        const ulong p5 = p0 + (n) - p2;            /* < 2*n */     \
+        const ulong p6 = p1 + p3;                  /* < 2*n */     \
+        const ulong p7 =                           /* < 2*n */     \
              n_mulmod_shoup_lazy((I), p1 + (n) - p3, (Ipre), (n)); \
         (a) = p4 + p6;                             /* < 4*n */     \
-        (b) = p4 + (n2) - p6;                     /* < 4*n */      \
+        (b) = p4 + (n2) - p6;                      /* < 4*n */     \
         (c) = p5 + p7;                             /* < 4*n */     \
-        (d) = p5 + (n2) - p7;                     /* < 4*n */      \
+        (d) = p5 + (n2) - p7;                      /* < 4*n */     \
     } while(0)
 
 // lazy2 red: input in [0..2*n) --> output [0..4*n)
 // n2 is 2*n
 #define DFT4_DIF_SHOUP_LAZY2_RED(a,b,c,d,I,Ipre,n,n2)                  \
     do {                                                               \
-        const ulong p0 = (a);                                      \
-        const ulong p1 = (b);                                      \
-        const ulong p2 = (c);                                      \
-        const ulong p3 = (d);                                      \
-        ulong p4 = p0 + p2;                     /* < 4*n */        \
+        const ulong p0 = (a);                                          \
+        const ulong p1 = (b);                                          \
+        const ulong p2 = (c);                                          \
+        const ulong p3 = (d);                                          \
+        ulong p4 = p0 + p2;                         /* < 4*n */        \
         if (p4 >= (n2))                                                \
             p4 -= (n2);                             /* < 2*n */        \
-        ulong p5 = p0 + (n2) - p2;              /* < 4*n */        \
+        ulong p5 = p0 + (n2) - p2;                  /* < 4*n */        \
         if (p5 >= (n2))                                                \
             p5 -= (n2);                             /* < 2*n */        \
-        ulong p6 = p1 + p3;                     /* < 4*n */        \
+        ulong p6 = p1 + p3;                         /* < 4*n */        \
         if (p6 >= (n2))                                                \
             p6 -= (n2);                             /* < 2*n */        \
-        const ulong p7 =                        /* < 2*n */        \
+        const ulong p7 =                            /* < 2*n */        \
              n_mulmod_shoup_lazy((I), p1 + (n2) - p3, (Ipre), (n));    \
         (a) = p4 + p6;                              /* < 4*n */        \
         (b) = p4 + (n2) - p6;                       /* < 4*n */        \
