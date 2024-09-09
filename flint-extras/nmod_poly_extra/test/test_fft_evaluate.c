@@ -76,10 +76,10 @@ void test_fft_eval()
             ulong w = nmod_pow_ui(w0, 1UL<<(max_orders[nb_prime]-order), mod);
 
             // build FFT tables
-            nmod_fft_t Fpre;
-            nmod_fft_init_set_pre(Fpre, w, order, mod);
-            nmod_fft_t Fred;
-            nmod_fft_init_set_red_pre(Fred, w, order, mod);
+            nmod_fft_ctx_t Fpre;
+            nmod_fft_ctx_init_set(Fpre, w, order, mod);
+            nmod_fft_ctx_t Fred;
+            nmod_fft_ctx_init_set_red(Fred, w, order, mod);
 
             // choose random poly
             nmod_poly_t pol;
@@ -204,8 +204,8 @@ void test_fft_eval()
 
             nmod_poly_clear(pol);
             _nmod_vec_clear(evals_br);
-            nmod_fft_clear_pre(Fpre);
-            nmod_fft_clear_red_pre(Fred);
+            nmod_fft_ctx_clear(Fpre);
+            nmod_fft_ctx_clear_red(Fred);
         }
         printf("\n");
     }
