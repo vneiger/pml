@@ -16,8 +16,8 @@ extern "C" {
 typedef struct
 {
     ulong mod;
-    ulong mod2;     // 2*mod  FIXME try not storing this
-    ulong mod4;     // 4*mod  FIXME try not storing this
+    ulong mod2;     // 2*mod  (storing this does help for speed, in _dif_rec2 at least)
+    ulong mod4;     // 4*mod  (storing this does help for speed, in _dif_rec2 at least)
     ulong I;                   // sqrt(-1)
     ulong Ipre;                // precomp on I
     ulong J;                   // sqrt(I)
