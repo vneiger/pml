@@ -134,14 +134,6 @@
 /* 8-point DFT    */
 /*----------------*/
 
-// returns a*b % n  in [0..2*n)
-FLINT_FORCE_INLINE ulong n_mulmod_shoup_lazy(ulong a, ulong b, ulong apre, ulong n)
-{
-    ulong p_hi, p_lo;
-    umul_ppmm(p_hi, p_lo, apre, b);
-    return a * b - p_hi * n;
-}
-
 // reduction tree 8-point lazy DFT
 // lazy red: input in [0..2*n) --> output in [0..4*n)
 // FIXME goes through [0..16n)... easily improved to [0..8n)
