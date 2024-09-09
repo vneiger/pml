@@ -95,124 +95,114 @@ void test_fft_eval()
                 evals_br[2*k+1] = nmod_poly_evaluate_nmod(pol, nmod_neg(point,Fred->mod));
             }
 
-            nmod_poly_t pol2;
-            nmod_poly_init(pol2, mod.n);
-            nmod_poly_set(pol2, pol);
-            nmod_poly_t pol3;
-            nmod_poly_init(pol3, mod.n);
-            nmod_poly_set(pol3, pol);
-            nmod_poly_t pol4;
-            nmod_poly_init(pol4, mod.n);
-            nmod_poly_set(pol4, pol);
-            nmod_poly_t pol5;
-            nmod_poly_init(pol5, mod.n);
-            nmod_poly_set(pol5, pol);
-            nmod_poly_t pol6;
-            nmod_poly_init(pol6, mod.n);
-            nmod_poly_set(pol6, pol);
-            nmod_poly_t pol7;
-            nmod_poly_init(pol7, mod.n);
-            nmod_poly_set(pol7, pol);
-            nmod_poly_t pol8;
-            nmod_poly_init(pol8, mod.n);
-            nmod_poly_set(pol8, pol);
-            nmod_poly_t pol9;
-            nmod_poly_init(pol9, mod.n);
-            nmod_poly_set(pol9, pol);
-            nmod_poly_t pol10;
-            nmod_poly_init(pol10, mod.n);
-            nmod_poly_set(pol10, pol);
-            nmod_poly_t pol11;
-            nmod_poly_init(pol11, mod.n);
-            nmod_poly_set(pol11, pol);
-            nmod_poly_t pol12;
-            nmod_poly_init(pol12, mod.n);
-            nmod_poly_set(pol12, pol);
-            nmod_poly_t pol13;
-            nmod_poly_init(pol13, mod.n);
-            nmod_poly_set(pol13, pol);
-            nmod_poly_t pol14;
-            nmod_poly_init(pol14, mod.n);
-            nmod_poly_set(pol14, pol);
+            {  // dif rec2 lazy
+                ulong * coeffs = _nmod_vec_init(len);
+                _nmod_vec_set(coeffs, pol->coeffs, len);
 
-            _nmod_fft_dif_rec2_lazy(pol2->coeffs, len, order, Fpre);
-            _nmod_fft_dif_iter2_lazy(pol3->coeffs, len, order, Fpre);
-            _nmod_fft_red_rec2_lazy(pol4->coeffs, len, order, Fred);
-            _nmod_fft_dif_rec4_lazy(pol5->coeffs, len, order, Fpre);
-            _nmod_fft_red_iter2_lazy(pol6->coeffs, len, order, Fred);
+                _nmod_fft_dif_rec2_lazy(coeffs, len, order, Fpre);
 
-            if (! nmod_vec_red_equal(evals_br, pol2->coeffs, len, mod)
-                     || !nmod_vec_range(pol2->coeffs, len, 4*mod.n))
-            {
-                printf("\n\nERROR! in _nmod_fft_dif_rec2_lazy\n\n");
-                if (len < 33)
+                if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
+                        || !nmod_vec_range(coeffs, len, 4*mod.n))
                 {
-                    _nmod_vec_print(pol2->coeffs, len, mod);
-                    _nmod_vec_print(evals_br, len, mod);
+                    printf("\n\nERROR! in _nmod_fft_dif_rec2_lazy\n\n");
+                    if (len < 33)
+                    {
+                        _nmod_vec_print(coeffs, len, mod);
+                        _nmod_vec_print(evals_br, len, mod);
+                    }
+                    return;
                 }
-                return;
+
+                _nmod_vec_clear(coeffs);
             }
-            else if (! _nmod_vec_equal(pol2->coeffs, pol3->coeffs, len)
-                     || !nmod_vec_range(pol3->coeffs, len, 4*mod.n))
-            {
-                printf("\n\nERROR! in _nmod_fft_dif_iter2_lazy\n\n");
-                if (len < 33)
+
+            {  // dif iter2 lazy
+                ulong * coeffs = _nmod_vec_init(len);
+                _nmod_vec_set(coeffs, pol->coeffs, len);
+
+                _nmod_fft_dif_iter2_lazy(coeffs, len, order, Fpre);
+
+                if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
+                        || !nmod_vec_range(coeffs, len, 4*mod.n))
                 {
-                    _nmod_vec_print(pol2->coeffs, len, mod);
-                    _nmod_vec_print(pol3->coeffs, len, mod);
+                    printf("\n\nERROR! in _nmod_fft_dif_iter2_lazy\n\n");
+                    if (len < 33)
+                    {
+                        _nmod_vec_print(coeffs, len, mod);
+                        _nmod_vec_print(evals_br, len, mod);
+                    }
+                    return;
                 }
-                return;
+
+                _nmod_vec_clear(coeffs);
             }
-            else if (! nmod_vec_red_equal(evals_br, pol4->coeffs, len, mod)
-                     || !nmod_vec_range(pol4->coeffs, len, 8*mod.n))
-            {
-                printf("\n\nERROR! in _nmod_fft_red_rec2_lazy\n\n");
-                if (len < 33)
+
+            {  // dif red_rec2 lazy
+                ulong * coeffs = _nmod_vec_init(len);
+                _nmod_vec_set(coeffs, pol->coeffs, len);
+
+                _nmod_fft_red_rec2_lazy(coeffs, len, order, Fred);
+
+                if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
+                        || !nmod_vec_range(coeffs, len, 8*mod.n))
                 {
-                    _nmod_vec_print(pol4->coeffs, len, mod);
-                    _nmod_vec_print(evals_br, len, mod);
+                    printf("\n\nERROR! in _nmod_fft_red_rec2_lazy\n\n");
+                    if (len < 33)
+                    {
+                        _nmod_vec_print(coeffs, len, mod);
+                        _nmod_vec_print(evals_br, len, mod);
+                    }
+                    return;
                 }
-                return;
+
+                _nmod_vec_clear(coeffs);
             }
-            else if (! nmod_vec_red_equal(evals_br, pol5->coeffs, len, mod)
-                     || !nmod_vec_range(pol5->coeffs, len, 8*mod.n))
-            {
-                printf("\n\nERROR! in _nmod_fft_dif_rec4_lazy\n\n");
-                if (len < 33)
+
+            {  // dif rec4 lazy
+                ulong * coeffs = _nmod_vec_init(len);
+                _nmod_vec_set(coeffs, pol->coeffs, len);
+
+                _nmod_fft_dif_rec4_lazy(coeffs, len, order, Fpre);
+
+                if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
+                        || !nmod_vec_range(coeffs, len, 8*mod.n))
                 {
-                    _nmod_vec_print(pol5->coeffs, len, mod);
-                    _nmod_vec_print(evals_br, len, mod);
+                    printf("\n\nERROR! in _nmod_fft_dif_rec4_lazy\n\n");
+                    if (len < 33)
+                    {
+                        _nmod_vec_print(coeffs, len, mod);
+                        _nmod_vec_print(evals_br, len, mod);
+                    }
+                    return;
                 }
-                return;
+
+                _nmod_vec_clear(coeffs);
             }
-            else if (! nmod_vec_red_equal(evals_br, pol6->coeffs, len, mod)
-                     || !nmod_vec_range(pol6->coeffs, len, 8*mod.n))
-            {
-                printf("\n\nERROR! in _nmod_fft_dif_iter2_lazy\n\n");
-                if (len < 33)
+
+            {  // red iter2 lazy
+                ulong * coeffs = _nmod_vec_init(len);
+                _nmod_vec_set(coeffs, pol->coeffs, len);
+
+                _nmod_fft_red_iter2_lazy(coeffs, len, order, Fred);
+
+                if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
+                        || !nmod_vec_range(coeffs, len, 8*mod.n))
                 {
-                    _nmod_vec_print(pol6->coeffs, len, mod);
-                    _nmod_vec_print(evals_br, len, mod);
+                    printf("\n\nERROR! in _nmod_fft_red_iter2_lazy\n\n");
+                    if (len < 33)
+                    {
+                        _nmod_vec_print(coeffs, len, mod);
+                        _nmod_vec_print(evals_br, len, mod);
+                    }
+                    return;
                 }
-                return;
+
+                _nmod_vec_clear(coeffs);
             }
-            else
-                printf("%ld ", order);
+
+            printf("%ld ", order);
 
             nmod_poly_clear(pol);
-            nmod_poly_clear(pol2);
-            nmod_poly_clear(pol3);
-            nmod_poly_clear(pol4);
-            nmod_poly_clear(pol5);
-            nmod_poly_clear(pol6);
-            nmod_poly_clear(pol7);
-            nmod_poly_clear(pol8);
-            nmod_poly_clear(pol9);
-            nmod_poly_clear(pol10);
-            nmod_poly_clear(pol11);
-            nmod_poly_clear(pol12);
-            nmod_poly_clear(pol13);
-            nmod_poly_clear(pol14);
             _nmod_vec_clear(evals_br);
             nmod_fft_clear_pre(Fpre);
             nmod_fft_clear_red_pre(Fred);
@@ -223,9 +213,8 @@ void test_fft_eval()
     flint_rand_clear(state);
 }
 
-
 /*------------------------------------------------------------*/
-/* main just calls time_init_set()                            */
+/* main just calls test_fft_eval()                            */
 /*------------------------------------------------------------*/
 int main()
 {

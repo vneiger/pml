@@ -31,6 +31,27 @@ inline long RevInc(long a, long k)
 //        indices[i] = j;
 //}
 
+//// counts in bit reversed order, in C
+//// or faster to build list as in dft.sage??
+//void iter_reversed(ulong bits) {
+//    ulong n = 1 << bits;
+//
+//    for (ulong i = 0, j = 0; i < n; i++) {
+//        printf("%ld\n", j);
+//
+//        // Compute a mask of LSBs.
+//        ulong mask = i ^ (i + 1);
+//        // Length of the mask.
+//        ulong len = __builtin_ctz(~mask);
+//        // Align the mask to MSB of n.
+//        mask <<= bits - len;
+//        // XOR with mask.
+//        j ^= mask;
+//    }
+//}
+
+
+
 
 /*------------------------------------------------------------*/
 /* initializes all entries of F                               */
@@ -38,7 +59,7 @@ inline long RevInc(long a, long k)
 /* DFTs of size up to 2^order are supported                   */
 /* order >= 3 required                                        */
 /*------------------------------------------------------------*/
-void nmod_fft_init_set_pre(nmod_fft_t F, ulong w, ulong order, nmod_t mod)
+void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mod)
 {
     // basic attributes
     F->mod = mod;
@@ -107,7 +128,7 @@ void nmod_fft_init_set_pre(nmod_fft_t F, ulong w, ulong order, nmod_t mod)
     F->IJpre = F->tab_w_pre[1][3];
 }
 
-void nmod_fft_init_set_red_pre(nmod_fft_t F, ulong w, ulong order, nmod_t mod)
+void nmod_fft_ctx_init_set_red(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mod)
 {
     // basic attributes
     F->mod = mod;
@@ -166,7 +187,7 @@ void nmod_fft_init_set_red_pre(nmod_fft_t F, ulong w, ulong order, nmod_t mod)
     F->IJpre = F->tab_w_pre[1][3];
 }
 
-void nmod_fft_clear_pre(nmod_fft_t F)
+void nmod_fft_ctx_clear(nmod_fft_ctx_t F)
 {
     for (ulong ell = 0; ell <= F->order-2; ell++)
     {
@@ -175,7 +196,7 @@ void nmod_fft_clear_pre(nmod_fft_t F)
     }
 }
 
-void nmod_fft_clear_red_pre(nmod_fft_t F)
+void nmod_fft_ctx_clear_red(nmod_fft_ctx_t F)
 {
     for (ulong ell = 0; ell < 2; ell++)
     {
