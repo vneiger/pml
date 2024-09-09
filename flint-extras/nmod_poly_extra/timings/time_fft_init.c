@@ -11,7 +11,7 @@
 /*-----------------------------------------------------------------*/
 void time_fft_init(ulong * primes, ulong * max_orders, flint_rand_t state)
 {
-    for (ulong k = 0; k < num_primes; k++)
+    for (ulong k = 4; k < num_primes; k++)
     {
         // prime, modulus
         nmod_t mod;

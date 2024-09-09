@@ -143,24 +143,24 @@ void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mo
     ulong w_pr_quo, w_pr_rem;
     n_mulmod_precomp_shoup_quo_rem(&w_pr_quo, &w_pr_rem, w, mod.n);
 
-    F->tab_w[ell] = _nmod_vec_init(len);
-    F->tab_w_pre[ell] = _nmod_vec_init(len);
+    F->tab_w[ell] = _nmod_vec_init(2*len);
+    F->tab_w_pre[ell] = _nmod_vec_init(0);
     F->tab_w[ell][0] = UWORD(1);
-    F->tab_w_pre[ell][0] = n_mulmod_precomp_shoup(UWORD(1), mod.n);
-    F->tab_w[ell][1] = w;
-    F->tab_w_pre[ell][1] = w_pr_quo;
-    n_mulmod_and_precomp_shoup(F->tab_w[ell] + 2, F->tab_w_pre[ell] + 2, w, w, w_pr_quo, w_pr_rem, w_pr_quo, mod.n);
-    n_mulmod_and_precomp_shoup(F->tab_w[ell] + 3, F->tab_w_pre[ell] + 3, w, F->tab_w[ell][2], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][2], mod.n);
+    F->tab_w[ell][1] = n_mulmod_precomp_shoup(UWORD(1), mod.n);
+    F->tab_w[ell][2] = w;
+    F->tab_w[ell][3] = w_pr_quo;
+    n_mulmod_and_precomp_shoup(F->tab_w[ell] + 4, F->tab_w[ell] + 5, w, w, w_pr_quo, w_pr_rem, w_pr_quo, mod.n);
+    n_mulmod_and_precomp_shoup(F->tab_w[ell] + 6, F->tab_w[ell] + 7, w, F->tab_w[ell][4], w_pr_quo, w_pr_rem, F->tab_w[ell][5], mod.n);
     if (order > 3)
     {
-        n_mulmod_and_precomp_shoup(&w, &w_pr_quo, w, F->tab_w[ell][3], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][3], mod.n);
+        n_mulmod_and_precomp_shoup(&w, &w_pr_quo, w, F->tab_w[ell][6], w_pr_quo, w_pr_rem, F->tab_w[ell][7], mod.n);
         w_pr_rem = n_mulmod_precomp_shoup_rem_from_quo(w_pr_quo, mod.n);
-        for (ulong k = 0; k+7 < len; k+=4)
+        for (ulong k = 0; 2*(k+7)+1 < 2*len; k+=4)
         {
-            n_mulmod_and_precomp_shoup(F->tab_w[ell] + k+4, F->tab_w_pre[ell] + k+4, w, F->tab_w[ell][k+0], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][k+0], mod.n);
-            n_mulmod_and_precomp_shoup(F->tab_w[ell] + k+5, F->tab_w_pre[ell] + k+5, w, F->tab_w[ell][k+1], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][k+1], mod.n);
-            n_mulmod_and_precomp_shoup(F->tab_w[ell] + k+6, F->tab_w_pre[ell] + k+6, w, F->tab_w[ell][k+2], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][k+2], mod.n);
-            n_mulmod_and_precomp_shoup(F->tab_w[ell] + k+7, F->tab_w_pre[ell] + k+7, w, F->tab_w[ell][k+3], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][k+3], mod.n);
+            n_mulmod_and_precomp_shoup(F->tab_w[ell] + 2*(k+4), F->tab_w[ell] + 2*(k+4)+1, w, F->tab_w[ell][2*(k+0)], w_pr_quo, w_pr_rem, F->tab_w[ell][2*(k+0)+1], mod.n);
+            n_mulmod_and_precomp_shoup(F->tab_w[ell] + 2*(k+5), F->tab_w[ell] + 2*(k+5)+1, w, F->tab_w[ell][2*(k+1)], w_pr_quo, w_pr_rem, F->tab_w[ell][2*(k+1)+1], mod.n);
+            n_mulmod_and_precomp_shoup(F->tab_w[ell] + 2*(k+6), F->tab_w[ell] + 2*(k+6)+1, w, F->tab_w[ell][2*(k+2)], w_pr_quo, w_pr_rem, F->tab_w[ell][2*(k+2)+1], mod.n);
+            n_mulmod_and_precomp_shoup(F->tab_w[ell] + 2*(k+7), F->tab_w[ell] + 2*(k+7)+1, w, F->tab_w[ell][2*(k+3)], w_pr_quo, w_pr_rem, F->tab_w[ell][2*(k+3)+1], mod.n);
         }
         // finished here, k reached exactly len since len is a power of 2
     }
@@ -174,21 +174,21 @@ void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mo
     for (; ell >= 0; ell--)
     {
         len = len >> 1;  // len == 2**(ell+1)
-        F->tab_w[ell] = _nmod_vec_init(len);
-        F->tab_w_pre[ell] = _nmod_vec_init(len);
+        F->tab_w[ell] = _nmod_vec_init(2*len);
+        F->tab_w_pre[ell] = _nmod_vec_init(1);
         for (ulong k = 0; k < len; k++)
         {
-            F->tab_w[ell][k] = F->tab_w[ell+1][2*k];
-            F->tab_w_pre[ell][k] = F->tab_w_pre[ell+1][2*k];
+            F->tab_w[ell][2*k] = F->tab_w[ell+1][4*k];
+            F->tab_w[ell][2*k+1] = F->tab_w[ell+1][4*k+1];
         }
     }
 
-    F->J  = F->tab_w[1][1];
-    F->I  = F->tab_w[1][2];
-    F->IJ = F->tab_w[1][3];
-    F->Jpre  = F->tab_w_pre[1][1];
-    F->Ipre  = F->tab_w_pre[1][2];
-    F->IJpre = F->tab_w_pre[1][3];
+    F->J  = F->tab_w[1][2];
+    F->I  = F->tab_w[1][4];
+    F->IJ = F->tab_w[1][6];
+    F->Jpre  = F->tab_w[1][3];
+    F->Ipre  = F->tab_w[1][5];
+    F->IJpre = F->tab_w[1][7];
 }
 
 
