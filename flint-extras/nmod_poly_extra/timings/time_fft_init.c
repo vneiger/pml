@@ -4,8 +4,6 @@
 #include "nmod_poly_extra.h"
 #include "nmod_poly_fft.h"
 
-#define VERSIONS 2
-
 #define num_primes 5
 
 /*-----------------------------------------------------------------*/
@@ -34,8 +32,7 @@ void time_fft_init(ulong * primes, ulong * max_orders, flint_rand_t state)
             clock_t tt;
             long nb_iter;
 
-            if (VERSIONS >= 2)
-            { // fft_init alone
+            { // fft_init
                 nmod_fft_ctx_t F;
                 t = 0.0;
                 nb_iter = 0;
@@ -69,8 +66,7 @@ void time_fft_init(ulong * primes, ulong * max_orders, flint_rand_t state)
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 2)
-            { // fft_init_red alone
+            { // fft_init_red
                 nmod_fft_ctx_t Fred;
                 t = 0.0;
                 nb_iter = 0;
@@ -97,6 +93,40 @@ void time_fft_init(ulong * primes, ulong * max_orders, flint_rand_t state)
                     nmod_fft_ctx_clear_red(Fred);
                     nmod_fft_ctx_init_set_red(Fred, w, order, mod);
                     nmod_fft_ctx_clear_red(Fred);
+                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                    nb_iter+=10;
+                }
+                t /= nb_iter;
+                printf("%.1e\t", t);
+            }
+
+            { // fft_init_new
+                nmod_fft_ctx_t F;
+                t = 0.0;
+                nb_iter = 0;
+                while (t < 0.5)
+                {
+                    tt = clock();
+                    nmod_fft_ctx_init_set_new(F, w, order, mod);
+                    nmod_fft_ctx_clear(F);
+                    nmod_fft_ctx_init_set_new(F, w, order, mod);
+                    nmod_fft_ctx_clear(F);
+                    nmod_fft_ctx_init_set_new(F, w, order, mod);
+                    nmod_fft_ctx_clear(F);
+                    nmod_fft_ctx_init_set_new(F, w, order, mod);
+                    nmod_fft_ctx_clear(F);
+                    nmod_fft_ctx_init_set_new(F, w, order, mod);
+                    nmod_fft_ctx_clear(F);
+                    nmod_fft_ctx_init_set_new(F, w, order, mod);
+                    nmod_fft_ctx_clear(F);
+                    nmod_fft_ctx_init_set_new(F, w, order, mod);
+                    nmod_fft_ctx_clear(F);
+                    nmod_fft_ctx_init_set_new(F, w, order, mod);
+                    nmod_fft_ctx_clear(F);
+                    nmod_fft_ctx_init_set_new(F, w, order, mod);
+                    nmod_fft_ctx_clear(F);
+                    nmod_fft_ctx_init_set_new(F, w, order, mod);
+                    nmod_fft_ctx_clear(F);
                     t += (double)(clock()-tt) / CLOCKS_PER_SEC;
                     nb_iter+=10;
                 }

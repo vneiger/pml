@@ -58,6 +58,7 @@ typedef nmod_fft_ctx_struct nmod_fft_ctx_t[1];
 // - is storing I, J, IJ useful for efficiency?
 // - allocate first tables on stack --> no noticeable effect
 void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mod);
+void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mod);
 
 // version with just a list of roots in bit reversed order
 void nmod_fft_ctx_init_set_red(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mod);
