@@ -1,5 +1,6 @@
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
+#include <flint/ulong_extras.h>
 
 #include "nmod_poly_fft.h"
 
@@ -59,15 +60,16 @@ inline long RevInc(long a, long k)
 /* DFTs of size up to 2^order are supported                   */
 /* order >= 3 required                                        */
 /*------------------------------------------------------------*/
-void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mod)
+void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod)
 {
     // basic attributes
     F->mod = mod;
-    F->modn2 = 2*mod.n;
-    F->modn4 = 4*mod.n;
+    F->mod2 = 2*mod;
+    F->mod4 = 4*mod;
     F->order = order;
     F->w = w;
-    F->inv_w = nmod_inv(w, mod);
+    // TODO
+    //F->inv_w = nmod_inv(w, mod);
 
     // 1. fill tables of powers of w
 
@@ -75,26 +77,26 @@ void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mod)
     slong ell = order-2;  // >= 1
     ulong len = (1 << (order-1));  // len == 2**(ell+1) >= 4
     ulong w_pr_quo, w_pr_rem;
-    n_mulmod_precomp_shoup_quo_rem(&w_pr_quo, &w_pr_rem, w, mod.n);
+    n_mulmod_precomp_shoup_quo_rem(&w_pr_quo, &w_pr_rem, w, mod);
 
     F->tab_w[ell] = _nmod_vec_init(len);
     F->tab_w_pre[ell] = _nmod_vec_init(len);
     F->tab_w[ell][0] = UWORD(1);
-    F->tab_w_pre[ell][0] = n_mulmod_precomp_shoup(UWORD(1), mod.n);
+    F->tab_w_pre[ell][0] = n_mulmod_precomp_shoup(UWORD(1), mod);
     F->tab_w[ell][1] = w;
     F->tab_w_pre[ell][1] = w_pr_quo;
-    n_mulmod_and_precomp_shoup(F->tab_w[ell] + 2, F->tab_w_pre[ell] + 2, w, w, w_pr_quo, w_pr_rem, w_pr_quo, mod.n);
-    n_mulmod_and_precomp_shoup(F->tab_w[ell] + 3, F->tab_w_pre[ell] + 3, w, F->tab_w[ell][2], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][2], mod.n);
+    n_mulmod_and_precomp_shoup(F->tab_w[ell] + 2, F->tab_w_pre[ell] + 2, w, w, w_pr_quo, w_pr_rem, w_pr_quo, mod);
+    n_mulmod_and_precomp_shoup(F->tab_w[ell] + 3, F->tab_w_pre[ell] + 3, w, F->tab_w[ell][2], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][2], mod);
     if (order > 3)
     {
-        n_mulmod_and_precomp_shoup(&w, &w_pr_quo, w, F->tab_w[ell][3], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][3], mod.n);
-        w_pr_rem = n_mulmod_precomp_shoup_rem_from_quo(w_pr_quo, mod.n);
+        n_mulmod_and_precomp_shoup(&w, &w_pr_quo, w, F->tab_w[ell][3], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][3], mod);
+        w_pr_rem = n_mulmod_precomp_shoup_rem_from_quo(w_pr_quo, mod);
         for (ulong k = 0; k+7 < len; k+=4)
         {
-            n_mulmod_and_precomp_shoup(F->tab_w[ell] + k+4, F->tab_w_pre[ell] + k+4, w, F->tab_w[ell][k+0], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][k+0], mod.n);
-            n_mulmod_and_precomp_shoup(F->tab_w[ell] + k+5, F->tab_w_pre[ell] + k+5, w, F->tab_w[ell][k+1], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][k+1], mod.n);
-            n_mulmod_and_precomp_shoup(F->tab_w[ell] + k+6, F->tab_w_pre[ell] + k+6, w, F->tab_w[ell][k+2], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][k+2], mod.n);
-            n_mulmod_and_precomp_shoup(F->tab_w[ell] + k+7, F->tab_w_pre[ell] + k+7, w, F->tab_w[ell][k+3], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][k+3], mod.n);
+            n_mulmod_and_precomp_shoup(F->tab_w[ell] + k+4, F->tab_w_pre[ell] + k+4, w, F->tab_w[ell][k+0], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][k+0], mod);
+            n_mulmod_and_precomp_shoup(F->tab_w[ell] + k+5, F->tab_w_pre[ell] + k+5, w, F->tab_w[ell][k+1], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][k+1], mod);
+            n_mulmod_and_precomp_shoup(F->tab_w[ell] + k+6, F->tab_w_pre[ell] + k+6, w, F->tab_w[ell][k+2], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][k+2], mod);
+            n_mulmod_and_precomp_shoup(F->tab_w[ell] + k+7, F->tab_w_pre[ell] + k+7, w, F->tab_w[ell][k+3], w_pr_quo, w_pr_rem, F->tab_w_pre[ell][k+3], mod);
         }
         // finished here, k reached exactly len since len is a power of 2
     }
@@ -125,15 +127,15 @@ void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mod)
     F->IJpre = F->tab_w_pre[1][3];
 }
 
-void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mod)
+void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod)
 {
     // basic attributes
     F->mod = mod;
-    F->modn2 = 2*mod.n;
-    F->modn4 = 4*mod.n;
+    F->mod2 = 2*mod;
+    F->mod4 = 4*mod;
     F->order = order;
     F->w = w;
-    F->inv_w = nmod_inv(w, mod);
+    //F->inv_w = nmod_inv(w, mod);  // TODO
 
     // 1. fill tables of powers of w
 
@@ -142,7 +144,7 @@ void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mo
     ulong len = (1 << (order-1));  // len == 2**(ell+1) >= 4
 
     F->tab_w[ell] = _nmod_vec_init(2*len);
-    _n_geometric_sequence_with_precomp(F->tab_w[ell], w, len, mod.n);
+    _n_geometric_sequence_with_precomp(F->tab_w[ell], w, len, mod);
 
     // copy into other arrays
     // NAIVE VERSION:
@@ -170,15 +172,16 @@ void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mo
 }
 
 
-void nmod_fft_ctx_init_set_red(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mod)
+void nmod_fft_ctx_init_set_red(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod)
 {
     // basic attributes
     F->mod = mod;
-    F->modn2 = 2*mod.n;
-    F->modn4 = 4*mod.n;
+    F->mod2 = 2*mod;
+    F->mod4 = 4*mod;
     F->order = order;
     F->w = w;
-    F->inv_w = nmod_inv(w, mod);
+    //F->inv_w = nmod_inv(w, mod);  // TODO
+    const ulong modinv = n_preinvert_limb(mod);
 
     // 1. fill tables of powers of w
     // F->tab_w[0][i] == w**i, i = 0 ... len-1   where len = 2**(order-1)
@@ -188,26 +191,26 @@ void nmod_fft_ctx_init_set_red(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mo
     F->tab_w_pre[0] = _nmod_vec_init(len);
     F->tab_w[0][0] = UWORD(1);
     F->tab_w[0][1] = w;
-    F->tab_w[0][2] = n_mulmod2_preinv(w, w, mod.n, mod.ninv);
-    F->tab_w[0][3] = n_mulmod2_preinv(F->tab_w[0][2], w, mod.n, mod.ninv);
-    F->tab_w_pre[0][0] = n_mulmod_precomp_shoup(F->tab_w[0][0], mod.n);
-    F->tab_w_pre[0][1] = n_mulmod_precomp_shoup(F->tab_w[0][1], mod.n);
-    F->tab_w_pre[0][2] = n_mulmod_precomp_shoup(F->tab_w[0][2], mod.n);
-    F->tab_w_pre[0][3] = n_mulmod_precomp_shoup(F->tab_w[0][3], mod.n);
+    F->tab_w[0][2] = n_mulmod2_preinv(w, w, mod, modinv);
+    F->tab_w[0][3] = n_mulmod2_preinv(F->tab_w[0][2], w, mod, modinv);
+    F->tab_w_pre[0][0] = n_mulmod_precomp_shoup(F->tab_w[0][0], mod);
+    F->tab_w_pre[0][1] = n_mulmod_precomp_shoup(F->tab_w[0][1], mod);
+    F->tab_w_pre[0][2] = n_mulmod_precomp_shoup(F->tab_w[0][2], mod);
+    F->tab_w_pre[0][3] = n_mulmod_precomp_shoup(F->tab_w[0][3], mod);
     if (order > 3)
     {
-        ulong w4 = n_mulmod2_preinv(F->tab_w[0][2], F->tab_w[0][2], mod.n, mod.ninv);
-        ulong w4_pr = n_mulmod_precomp_shoup(w4, mod.n);
+        ulong w4 = n_mulmod2_preinv(F->tab_w[0][2], F->tab_w[0][2], mod, modinv);
+        ulong w4_pr = n_mulmod_precomp_shoup(w4, mod);
         for (ulong k = 0; k+7 < len; k+=4)
         {
-            F->tab_w[0][k+4] = n_mulmod_shoup(w4, F->tab_w[0][k+0], w4_pr, mod.n);
-            F->tab_w[0][k+5] = n_mulmod_shoup(w4, F->tab_w[0][k+1], w4_pr, mod.n);
-            F->tab_w[0][k+6] = n_mulmod_shoup(w4, F->tab_w[0][k+2], w4_pr, mod.n);
-            F->tab_w[0][k+7] = n_mulmod_shoup(w4, F->tab_w[0][k+3], w4_pr, mod.n);
-            F->tab_w_pre[0][k+4] = n_mulmod_precomp_shoup(F->tab_w[0][k+4], mod.n);
-            F->tab_w_pre[0][k+5] = n_mulmod_precomp_shoup(F->tab_w[0][k+5], mod.n);
-            F->tab_w_pre[0][k+6] = n_mulmod_precomp_shoup(F->tab_w[0][k+6], mod.n);
-            F->tab_w_pre[0][k+7] = n_mulmod_precomp_shoup(F->tab_w[0][k+7], mod.n);
+            F->tab_w[0][k+4] = n_mulmod_shoup(w4, F->tab_w[0][k+0], w4_pr, mod);
+            F->tab_w[0][k+5] = n_mulmod_shoup(w4, F->tab_w[0][k+1], w4_pr, mod);
+            F->tab_w[0][k+6] = n_mulmod_shoup(w4, F->tab_w[0][k+2], w4_pr, mod);
+            F->tab_w[0][k+7] = n_mulmod_shoup(w4, F->tab_w[0][k+3], w4_pr, mod);
+            F->tab_w_pre[0][k+4] = n_mulmod_precomp_shoup(F->tab_w[0][k+4], mod);
+            F->tab_w_pre[0][k+5] = n_mulmod_precomp_shoup(F->tab_w[0][k+5], mod);
+            F->tab_w_pre[0][k+6] = n_mulmod_precomp_shoup(F->tab_w[0][k+6], mod);
+            F->tab_w_pre[0][k+7] = n_mulmod_precomp_shoup(F->tab_w[0][k+7], mod);
         }
         // finished here, k reached exactly len since len is a power of 2
     }

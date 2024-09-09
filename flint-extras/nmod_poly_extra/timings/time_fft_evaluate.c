@@ -60,25 +60,25 @@ void time_evaluate()
                 while (t < 0.5)
                 {
                     tt = clock();
-                    nmod_fft_ctx_init_set(F, w, order, mod);
+                    nmod_fft_ctx_init_set(F, w, order, p);
                     nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
+                    nmod_fft_ctx_init_set(F, w, order, p);
                     nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
+                    nmod_fft_ctx_init_set(F, w, order, p);
                     nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
+                    nmod_fft_ctx_init_set(F, w, order, p);
                     nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
+                    nmod_fft_ctx_init_set(F, w, order, p);
                     nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
+                    nmod_fft_ctx_init_set(F, w, order, p);
                     nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
+                    nmod_fft_ctx_init_set(F, w, order, p);
                     nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
+                    nmod_fft_ctx_init_set(F, w, order, p);
                     nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
+                    nmod_fft_ctx_init_set(F, w, order, p);
                     nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
+                    nmod_fft_ctx_init_set(F, w, order, p);
                     nmod_fft_ctx_clear(F);
                     t += (double)(clock()-tt) / CLOCKS_PER_SEC;
                     nb_iter+=10;
@@ -95,25 +95,25 @@ void time_evaluate()
                 while (t < 0.5)
                 {
                     tt = clock();
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
+                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
                     nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
+                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
                     nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
+                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
                     nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
+                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
                     nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
+                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
                     nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
+                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
                     nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
+                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
                     nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
+                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
                     nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
+                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
                     nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
+                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
                     nmod_fft_ctx_clear_red(Fred);
                     t += (double)(clock()-tt) / CLOCKS_PER_SEC;
                     nb_iter+=10;
@@ -125,7 +125,7 @@ void time_evaluate()
             if (VERSIONS >= 1)
             { // dif_radix2_rec_shoup_lazy
                 nmod_fft_ctx_t Fpre;
-                nmod_fft_ctx_init_set(Fpre, w, order, mod);
+                nmod_fft_ctx_init_set(Fpre, w, order, p);
                 t = 0.0;
                 nb_iter = 0;
                 while (t < 0.5)
@@ -155,7 +155,7 @@ void time_evaluate()
             if (VERSIONS >= 1)
             { // dif_radix2_iter_shoup_lazy
                 nmod_fft_ctx_t Fpre;
-                nmod_fft_ctx_init_set(Fpre, w, order, mod);
+                nmod_fft_ctx_init_set(Fpre, w, order, p);
                 t = 0.0;
                 nb_iter = 0;
                 while (t < 0.5)
@@ -186,7 +186,7 @@ void time_evaluate()
             if (VERSIONS >= 1)
             { // red_radix2_rec_shoup_lazy
                 nmod_fft_ctx_t Fpre;
-                nmod_fft_ctx_init_set_red(Fpre, w, order, mod);
+                nmod_fft_ctx_init_set_red(Fpre, w, order, p);
                 t = 0.0;
                 nb_iter = 0;
                 while (t < 0.5)
@@ -217,7 +217,7 @@ void time_evaluate()
             if (VERSIONS >= 1)
             { // dif_radix4_rec_shoup_lazy
                 nmod_fft_ctx_t Fpre;
-                nmod_fft_ctx_init_set(Fpre, w, order, mod);
+                nmod_fft_ctx_init_set(Fpre, w, order, p);
                 t = 0.0;
                 nb_iter = 0;
                 while (t < 0.5)
@@ -247,7 +247,7 @@ void time_evaluate()
             if (VERSIONS >= 1)
             { // red_radix2_iter_shoup_lazy
                 nmod_fft_ctx_t Fred;
-                nmod_fft_ctx_init_set_red(Fred, w, order, mod);
+                nmod_fft_ctx_init_set_red(Fred, w, order, p);
                 t = 0.0;
                 nb_iter = 0;
                 while (t < 0.5)

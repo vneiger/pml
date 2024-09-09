@@ -77,9 +77,9 @@ void test_fft_eval()
 
             // build FFT tables
             nmod_fft_ctx_t Fpre;
-            nmod_fft_ctx_init_set(Fpre, w, order, mod);
+            nmod_fft_ctx_init_set(Fpre, w, order, p);
             nmod_fft_ctx_t Fred;
-            nmod_fft_ctx_init_set_red(Fred, w, order, mod);
+            nmod_fft_ctx_init_set_red(Fred, w, order, p);
 
             // choose random poly
             nmod_poly_t pol;
@@ -92,7 +92,7 @@ void test_fft_eval()
             {
                 ulong point = Fred->tab_w[1][k];
                 evals_br[2*k] = nmod_poly_evaluate_nmod(pol, point);
-                evals_br[2*k+1] = nmod_poly_evaluate_nmod(pol, nmod_neg(point,Fred->mod));
+                evals_br[2*k+1] = nmod_poly_evaluate_nmod(pol, nmod_neg(point, mod));
             }
 
             {  // dif rec2 lazy

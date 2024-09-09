@@ -1,7 +1,7 @@
 #ifndef __NMOD_POLY_FFT__H
 #define __NMOD_POLY_FFT__H
 
-#include "flint/nmod_types.h"
+#include "flint/flint.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,9 +15,9 @@ extern "C" {
 
 typedef struct
 {
-    nmod_t mod;
-    ulong modn2;     // 2*mod.n  FIXME try not storing this
-    ulong modn4;     // 4*mod.n  FIXME try not storing this
+    ulong mod;
+    ulong mod2;     // 2*mod  FIXME try not storing this
+    ulong mod4;     // 4*mod  FIXME try not storing this
     ulong I;                   // sqrt(-1)
     ulong Ipre;                // precomp on I
     ulong J;                   // sqrt(I)
@@ -74,11 +74,11 @@ void n_geometric_sequence_with_precomp(ulong * seq, ulong a, ulong d, ulong n);
 // - separate computation of the tables from basic init
 // - is storing I, J, IJ useful for efficiency?
 // - allocate first tables on stack --> no noticeable effect
-void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mod);
-void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mod);
+void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod);
+void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod);
 
 // version with just a list of roots in bit reversed order
-void nmod_fft_ctx_init_set_red(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mod);
+void nmod_fft_ctx_init_set_red(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod);
 
 
 

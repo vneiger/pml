@@ -1,7 +1,6 @@
 #include "flint/nmod.h"
 #include "flint/profiler.h"
 
-#include "nmod_poly_extra.h"
 #include "nmod_poly_fft.h"
 #include <flint/flint.h>
 
@@ -38,7 +37,7 @@ void sample_init_set(void * arg, ulong count)
         for (ulong j = 0; j < rep; j++)
         {
             nmod_fft_ctx_t F;
-            nmod_fft_ctx_init_set(F, w, order, mod);
+            nmod_fft_ctx_init_set(F, w, order, p);
             nmod_fft_ctx_clear(F);
         }
         prof_stop();
@@ -72,7 +71,7 @@ void sample_init_set_red(void * arg, ulong count)
         for (ulong j = 0; j < rep; j++)
         {
             nmod_fft_ctx_t F;
-            nmod_fft_ctx_init_set_red(F, w, order, mod);
+            nmod_fft_ctx_init_set_red(F, w, order, p);
             nmod_fft_ctx_clear_red(F);
         }
         prof_stop();
@@ -105,7 +104,7 @@ void sample_init_set_new(void * arg, ulong count)
         for (ulong j = 0; j < rep; j++)
         {
             nmod_fft_ctx_t F;
-            nmod_fft_ctx_init_set_new(F, w, order, mod);
+            nmod_fft_ctx_init_set_new(F, w, order, p);
             nmod_fft_ctx_clear_new(F);
         }
         prof_stop();
