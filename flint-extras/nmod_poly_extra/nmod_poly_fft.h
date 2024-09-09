@@ -27,11 +27,13 @@ typedef struct
     ulong order;               // maximum supported order (currently: order of w + max order in precomputed tables)
     ulong w;                   // primitive (2**order)th root of 1
     ulong inv_w;               // inverse of w
-    ulong * tab_w[64];            // tabulated powers of w
-    ulong * tab_w_pre[64];        // tabulated powers of precomputations for multiplication by w mod mod.n
+    ulong * tab_w[64];            // tabulated powers of w, and of precomputations for modular multiplication by w
 } nmod_fft_ctx_struct;
 typedef nmod_fft_ctx_struct nmod_fft_ctx_t[1];
 
+// TODO explain new storage tab_w[2*k], tab_w[2*k+1]
+// TODO could start at next index since powers_w[0] just gives I, J, IJ?
+//
 // FFT tables of powers / twiddle factors, say for w:
 // for 0 <= ell < order-1, "powers_w[ell]" has length 2**(ell+1)
 // and contains [w**(2**(order-2-ell)*i), 0 <= i < 2**(ell+1)]
@@ -109,6 +111,7 @@ void nmod_fft_ctx_clear_red(nmod_fft_ctx_t F);
 // input coefficients in [0..??)
 // output coefficients in [0..??)
 void _nmod_fft_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F);
+void _nmod_fft_dif_rec2_lazy_new(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F);
 
 // iterative, decimation in frequency, radix 2
 // input coefficients in [0..??)

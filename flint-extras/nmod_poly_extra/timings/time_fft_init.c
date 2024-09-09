@@ -46,7 +46,6 @@ void sample_init_set(void * arg, ulong count)
     FLINT_TEST_CLEAR(state);
 }
 
-
 void sample_init_set_red(void * arg, ulong count)
 {
     info_t * info = (info_t *) arg;

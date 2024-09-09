@@ -4,7 +4,7 @@
 #include "nmod_poly_extra.h"
 #include "nmod_poly_fft.h"
 
-#define VERSIONS 2
+#define VERSIONS 1
 
 #define num_primes 5
 
@@ -124,8 +124,8 @@ void time_evaluate()
 
             if (VERSIONS >= 1)
             { // dif_radix2_rec_shoup_lazy
-                nmod_fft_ctx_t Fpre;
-                nmod_fft_ctx_init_set(Fpre, w, order, p);
+                nmod_fft_ctx_t F;
+                nmod_fft_ctx_init_set(F, w, order, p);
                 t = 0.0;
                 nb_iter = 0;
                 while (t < 0.5)
@@ -134,28 +134,29 @@ void time_evaluate()
                     nmod_poly_init(pol, mod.n);
                     nmod_poly_rand(pol, state, len);
                     tt = clock();
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
                     t += (double)(clock()-tt) / CLOCKS_PER_SEC;
                     nb_iter+=10;
                     nmod_poly_clear(pol);
                 }
                 t /= nb_iter;
-                nmod_fft_ctx_clear(Fpre);
+                nmod_fft_ctx_clear(F);
                 printf("%.1e\t", t);
             }
 
-            if (VERSIONS >= 1)
-            { // dif_radix2_iter_shoup_lazy
-                nmod_fft_ctx_t Fpre;
-                nmod_fft_ctx_init_set(Fpre, w, order, p);
+            if (VERSIONS >= 2)
+            { // dif_radix2_rec_shoup_lazy
+                nmod_fft_ctx_t F;
+                nmod_fft_ctx_init_set_new(F, w, order, p);
                 t = 0.0;
                 nb_iter = 0;
                 while (t < 0.5)
@@ -164,29 +165,61 @@ void time_evaluate()
                     nmod_poly_init(pol, mod.n);
                     nmod_poly_rand(pol, state, len);
                     tt = clock();
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
                     t += (double)(clock()-tt) / CLOCKS_PER_SEC;
                     nb_iter+=10;
                     nmod_poly_clear(pol);
                 }
                 t /= nb_iter;
-                nmod_fft_ctx_clear(Fpre);
+                nmod_fft_ctx_clear_new(F);
+                printf("%.1e\t", t);
+            }
+
+
+            if (VERSIONS >= 1)
+            { // dif_radix2_iter_shoup_lazy
+                nmod_fft_ctx_t F;
+                nmod_fft_ctx_init_set(F, w, order, p);
+                t = 0.0;
+                nb_iter = 0;
+                while (t < 0.5)
+                {
+                    nmod_poly_t pol;
+                    nmod_poly_init(pol, mod.n);
+                    nmod_poly_rand(pol, state, len);
+                    tt = clock();
+                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
+                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+                    nb_iter+=10;
+                    nmod_poly_clear(pol);
+                }
+                t /= nb_iter;
+                nmod_fft_ctx_clear(F);
                 printf("%.1e\t", t);
             }
 
             if (VERSIONS >= 1)
             { // red_radix2_rec_shoup_lazy
-                nmod_fft_ctx_t Fpre;
-                nmod_fft_ctx_init_set_red(Fpre, w, order, p);
+                nmod_fft_ctx_t F;
+                nmod_fft_ctx_init_set_red(F, w, order, p);
                 t = 0.0;
                 nb_iter = 0;
                 while (t < 0.5)
@@ -195,29 +228,29 @@ void time_evaluate()
                     nmod_poly_init(pol, mod.n);
                     nmod_poly_rand(pol, state, len);
                     tt = clock();
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
                     t += (double)(clock()-tt) / CLOCKS_PER_SEC;
                     nb_iter+=10;
                     nmod_poly_clear(pol);
                 }
                 t /= nb_iter;
-                nmod_fft_ctx_clear_red(Fpre);
+                nmod_fft_ctx_clear_red(F);
                 printf("%.1e\t", t);
             }
 
             if (VERSIONS >= 1)
             { // dif_radix4_rec_shoup_lazy
-                nmod_fft_ctx_t Fpre;
-                nmod_fft_ctx_init_set(Fpre, w, order, p);
+                nmod_fft_ctx_t F;
+                nmod_fft_ctx_init_set(F, w, order, p);
                 t = 0.0;
                 nb_iter = 0;
                 while (t < 0.5)
@@ -226,21 +259,22 @@ void time_evaluate()
                     nmod_poly_init(pol, mod.n);
                     nmod_poly_rand(pol, state, len);
                     tt = clock();
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, Fpre);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, Fpre);
+                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
+                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
                     t += (double)(clock()-tt) / CLOCKS_PER_SEC;
                     nb_iter+=10;
                     nmod_poly_clear(pol);
                 }
                 t /= nb_iter;
-                nmod_fft_ctx_clear(Fpre);
+                nmod_fft_ctx_clear(F);
                 printf("%.1e\t", t);
             }
 

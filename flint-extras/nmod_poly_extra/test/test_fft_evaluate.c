@@ -76,8 +76,10 @@ void test_fft_eval()
             ulong w = nmod_pow_ui(w0, 1UL<<(max_orders[nb_prime]-order), mod);
 
             // build FFT tables
-            nmod_fft_ctx_t Fpre;
-            nmod_fft_ctx_init_set(Fpre, w, order, p);
+            nmod_fft_ctx_t F;
+            nmod_fft_ctx_init_set(F, w, order, p);
+            nmod_fft_ctx_t Fnew;
+            nmod_fft_ctx_init_set_new(Fnew, w, order, p);
             nmod_fft_ctx_t Fred;
             nmod_fft_ctx_init_set_red(Fred, w, order, p);
 
@@ -90,7 +92,7 @@ void test_fft_eval()
             nn_ptr evals_br = _nmod_vec_init(len);
             for (ulong k = 0; k < len/2; k++)
             {
-                ulong point = Fred->tab_w[1][k];
+                ulong point = Fred->tab_w[1][2*k];
                 evals_br[2*k] = nmod_poly_evaluate_nmod(pol, point);
                 evals_br[2*k+1] = nmod_poly_evaluate_nmod(pol, nmod_neg(point, mod));
             }
@@ -99,7 +101,7 @@ void test_fft_eval()
                 ulong * coeffs = _nmod_vec_init(len);
                 _nmod_vec_set(coeffs, pol->coeffs, len);
 
-                _nmod_fft_dif_rec2_lazy(coeffs, len, order, Fpre);
+                _nmod_fft_dif_rec2_lazy(coeffs, len, order, F);
 
                 if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
                         || !nmod_vec_range(coeffs, len, 4*mod.n))
@@ -116,11 +118,32 @@ void test_fft_eval()
                 _nmod_vec_clear(coeffs);
             }
 
+            {  // dif rec2 lazy new
+                ulong * coeffs = _nmod_vec_init(len);
+                _nmod_vec_set(coeffs, pol->coeffs, len);
+
+                _nmod_fft_dif_rec2_lazy_new(coeffs, len, order, Fnew);
+
+                if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
+                        || !nmod_vec_range(coeffs, len, 4*mod.n))
+                {
+                    printf("\n\nERROR! in _nmod_fft_dif_rec2_lazy_new\n\n");
+                    if (len < 33)
+                    {
+                        _nmod_vec_print(coeffs, len, mod);
+                        _nmod_vec_print(evals_br, len, mod);
+                    }
+                    return;
+                }
+
+                _nmod_vec_clear(coeffs);
+            }
+
             {  // dif iter2 lazy
                 ulong * coeffs = _nmod_vec_init(len);
                 _nmod_vec_set(coeffs, pol->coeffs, len);
 
-                _nmod_fft_dif_iter2_lazy(coeffs, len, order, Fpre);
+                _nmod_fft_dif_iter2_lazy(coeffs, len, order, F);
 
                 if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
                         || !nmod_vec_range(coeffs, len, 4*mod.n))
@@ -162,7 +185,7 @@ void test_fft_eval()
                 ulong * coeffs = _nmod_vec_init(len);
                 _nmod_vec_set(coeffs, pol->coeffs, len);
 
-                _nmod_fft_dif_rec4_lazy(coeffs, len, order, Fpre);
+                _nmod_fft_dif_rec4_lazy(coeffs, len, order, F);
 
                 if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
                         || !nmod_vec_range(coeffs, len, 8*mod.n))
@@ -204,7 +227,8 @@ void test_fft_eval()
 
             nmod_poly_clear(pol);
             _nmod_vec_clear(evals_br);
-            nmod_fft_ctx_clear(Fpre);
+            nmod_fft_ctx_clear(F);
+            nmod_fft_ctx_clear_new(Fnew);
             nmod_fft_ctx_clear_red(Fred);
         }
         printf("\n");
