@@ -140,30 +140,9 @@ void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mo
     // fill largest array of powers of w
     slong ell = order-2;  // >= 1
     ulong len = (1 << (order-1));  // len == 2**(ell+1) >= 4
-    ulong w_pr_quo, w_pr_rem;
-    n_mulmod_precomp_shoup_quo_rem(&w_pr_quo, &w_pr_rem, w, mod.n);
 
     F->tab_w[ell] = _nmod_vec_init(2*len);
-    F->tab_w_pre[ell] = _nmod_vec_init(0);
-    F->tab_w[ell][0] = UWORD(1);
-    F->tab_w[ell][1] = n_mulmod_precomp_shoup(UWORD(1), mod.n);
-    F->tab_w[ell][2] = w;
-    F->tab_w[ell][3] = w_pr_quo;
-    n_mulmod_and_precomp_shoup(F->tab_w[ell] + 4, F->tab_w[ell] + 5, w, w, w_pr_quo, w_pr_rem, w_pr_quo, mod.n);
-    n_mulmod_and_precomp_shoup(F->tab_w[ell] + 6, F->tab_w[ell] + 7, w, F->tab_w[ell][4], w_pr_quo, w_pr_rem, F->tab_w[ell][5], mod.n);
-    if (order > 3)
-    {
-        n_mulmod_and_precomp_shoup(&w, &w_pr_quo, w, F->tab_w[ell][6], w_pr_quo, w_pr_rem, F->tab_w[ell][7], mod.n);
-        w_pr_rem = n_mulmod_precomp_shoup_rem_from_quo(w_pr_quo, mod.n);
-        for (ulong k = 0; 2*(k+7)+1 < 2*len; k+=4)
-        {
-            n_mulmod_and_precomp_shoup(F->tab_w[ell] + 2*(k+4), F->tab_w[ell] + 2*(k+4)+1, w, F->tab_w[ell][2*(k+0)], w_pr_quo, w_pr_rem, F->tab_w[ell][2*(k+0)+1], mod.n);
-            n_mulmod_and_precomp_shoup(F->tab_w[ell] + 2*(k+5), F->tab_w[ell] + 2*(k+5)+1, w, F->tab_w[ell][2*(k+1)], w_pr_quo, w_pr_rem, F->tab_w[ell][2*(k+1)+1], mod.n);
-            n_mulmod_and_precomp_shoup(F->tab_w[ell] + 2*(k+6), F->tab_w[ell] + 2*(k+6)+1, w, F->tab_w[ell][2*(k+2)], w_pr_quo, w_pr_rem, F->tab_w[ell][2*(k+2)+1], mod.n);
-            n_mulmod_and_precomp_shoup(F->tab_w[ell] + 2*(k+7), F->tab_w[ell] + 2*(k+7)+1, w, F->tab_w[ell][2*(k+3)], w_pr_quo, w_pr_rem, F->tab_w[ell][2*(k+3)+1], mod.n);
-        }
-        // finished here, k reached exactly len since len is a power of 2
-    }
+    _n_geometric_sequence_with_precomp(F->tab_w[ell], w, len, mod.n);
 
     // copy into other arrays
     // NAIVE VERSION:
@@ -175,7 +154,6 @@ void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mo
     {
         len = len >> 1;  // len == 2**(ell+1)
         F->tab_w[ell] = _nmod_vec_init(2*len);
-        F->tab_w_pre[ell] = _nmod_vec_init(1);
         for (ulong k = 0; k < len; k++)
         {
             F->tab_w[ell][2*k] = F->tab_w[ell+1][4*k];
@@ -259,6 +237,13 @@ void nmod_fft_ctx_clear(nmod_fft_ctx_t F)
         _nmod_vec_clear(F->tab_w_pre[ell]);
     }
 }
+
+void nmod_fft_ctx_clear_new(nmod_fft_ctx_t F)
+{
+    for (ulong ell = 0; ell <= F->order-2; ell++)
+        _nmod_vec_clear(F->tab_w[ell]);
+}
+
 
 void nmod_fft_ctx_clear_red(nmod_fft_ctx_t F)
 {

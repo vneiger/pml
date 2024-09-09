@@ -1,140 +1,151 @@
-#include <time.h>
-#include <flint/nmod.h>
-#include <flint/nmod_poly.h>
+#include "flint/nmod.h"
+#include "flint/profiler.h"
+
 #include "nmod_poly_extra.h"
 #include "nmod_poly_fft.h"
+#include <flint/flint.h>
 
 #define num_primes 5
+
+typedef struct
+{
+   ulong prime;
+   ulong order;
+   ulong maxorder;
+} info_t;
+
+void sample_init_set(void * arg, ulong count)
+{
+    info_t * info = (info_t *) arg;
+    const ulong p = info->prime;
+    const ulong order = info->order;
+    const ulong maxorder = info->maxorder;
+
+    const ulong len = UWORD(1) << order;
+    const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));
+
+    // modulus, roots of unity
+    nmod_t mod;
+    nmod_init(&mod, p);
+    ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> maxorder, mod);
+    ulong w = nmod_pow_ui(w0, 1UL<<(maxorder - order), mod);
+
+    FLINT_TEST_INIT(state);
+
+    for (ulong i = 0; i < count; i++)
+    {
+        prof_start();
+        for (ulong j = 0; j < rep; j++)
+        {
+            nmod_fft_ctx_t F;
+            nmod_fft_ctx_init_set(F, w, order, mod);
+            nmod_fft_ctx_clear(F);
+        }
+        prof_stop();
+    }
+
+    FLINT_TEST_CLEAR(state);
+}
+
+
+void sample_init_set_red(void * arg, ulong count)
+{
+    info_t * info = (info_t *) arg;
+    ulong p = info->prime;
+    ulong order = info->order;
+    ulong maxorder = info->maxorder;
+
+    const ulong len = UWORD(1) << order;
+    const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));
+
+    // modulus, roots of unity
+    nmod_t mod;
+    nmod_init(&mod, p);
+    ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> maxorder, mod);
+    ulong w = nmod_pow_ui(w0, 1UL<<(maxorder - order), mod);
+
+    FLINT_TEST_INIT(state);
+
+    for (ulong i = 0; i < count; i++)
+    {
+        prof_start();
+        for (ulong j = 0; j < rep; j++)
+        {
+            nmod_fft_ctx_t F;
+            nmod_fft_ctx_init_set_red(F, w, order, mod);
+            nmod_fft_ctx_clear_red(F);
+        }
+        prof_stop();
+    }
+
+    FLINT_TEST_CLEAR(state);
+}
+
+void sample_init_set_new(void * arg, ulong count)
+{
+    info_t * info = (info_t *) arg;
+    ulong p = info->prime;
+    ulong order = info->order;
+    ulong maxorder = info->maxorder;
+
+    const ulong len = UWORD(1) << order;
+    const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));
+
+    // modulus, roots of unity
+    nmod_t mod;
+    nmod_init(&mod, p);
+    ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> maxorder, mod);
+    ulong w = nmod_pow_ui(w0, 1UL<<(maxorder - order), mod);
+
+    FLINT_TEST_INIT(state);
+
+    for (ulong i = 0; i < count; i++)
+    {
+        prof_start();
+        for (ulong j = 0; j < rep; j++)
+        {
+            nmod_fft_ctx_t F;
+            nmod_fft_ctx_init_set_new(F, w, order, mod);
+            nmod_fft_ctx_clear_new(F);
+        }
+        prof_stop();
+    }
+
+    FLINT_TEST_CLEAR(state);
+}
 
 /*-----------------------------------------------------------------*/
 /* initialize context for FFT for several bit lengths and orders   */
 /*-----------------------------------------------------------------*/
-void time_fft_init(ulong * primes, ulong * max_orders, flint_rand_t state)
+void time_fft_init(ulong * primes, ulong * max_orders)
 {
     for (ulong k = 4; k < num_primes; k++)
     {
-        // prime, modulus
-        nmod_t mod;
-        ulong p = primes[k];
-        nmod_init(&mod, p);
-
-        // find root of unity of specified maximum order
-        ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> max_orders[k], mod);
-
         for (ulong order = 3; order <= max_orders[k]; order++)
         {
             printf("%ld\t", order);
 
-            // root of unity of order 2**order
-            ulong w = nmod_pow_ui(w0, 1UL<<(max_orders[k]-order), mod);
+            info_t info;
+            info.prime = primes[k];
+            info.maxorder = max_orders[k];
+            info.order = order;
 
-            double t;
-            clock_t tt;
-            long nb_iter;
+            const ulong len = UWORD(1) << order;
+            const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));
 
-            { // fft_init
-                nmod_fft_ctx_t F;
-                t = 0.0;
-                nb_iter = 0;
-                while (t < 0.5)
-                {
-                    tt = clock();
-                    nmod_fft_ctx_init_set(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-                    nb_iter+=10;
-                }
-                t /= nb_iter;
-                printf("%.1e\t", t);
-            }
+            double min[10];
+            double max;
 
-            { // fft_init_red
-                nmod_fft_ctx_t Fred;
-                t = 0.0;
-                nb_iter = 0;
-                while (t < 0.5)
-                {
-                    tt = clock();
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, mod);
-                    nmod_fft_ctx_clear_red(Fred);
-                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-                    nb_iter+=10;
-                }
-                t /= nb_iter;
-                printf("%.1e\t", t);
-            }
+            prof_repeat(min+0, &max, sample_init_set_red, (void *) &info);
+            prof_repeat(min+1, &max, sample_init_set, (void *) &info);
+            prof_repeat(min+2, &max, sample_init_set_new, (void *) &info);
 
-            { // fft_init_new
-                nmod_fft_ctx_t F;
-                t = 0.0;
-                nb_iter = 0;
-                while (t < 0.5)
-                {
-                    tt = clock();
-                    nmod_fft_ctx_init_set_new(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set_new(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set_new(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set_new(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set_new(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set_new(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set_new(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set_new(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set_new(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set_new(F, w, order, mod);
-                    nmod_fft_ctx_clear(F);
-                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-                    nb_iter+=10;
-                }
-                t /= nb_iter;
-                printf("%.1e\t", t);
-            }
-
-            printf("\n");
+            flint_printf("\t%.1e|%.1e|%.1e",
+                    min[0]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
+                    min[1]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
+                    min[2]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep 
+                    );
+            flint_printf("\n");
         }
     }
 
@@ -145,12 +156,9 @@ void time_fft_init(ulong * primes, ulong * max_orders, flint_rand_t state)
 /*------------------------------------------------------------*/
 int main()
 {
-    flint_rand_t state;
-    flint_rand_init(state);
-
     printf("- order is log(fft length)\n");
     printf("- timing init FFT context at this order\n");
-    printf("order\tdif\tred\n");
+    printf("order\tinit     initred  new\n");
 
     ulong primes[num_primes] = {
         786433,              // 20 bits, 1 + 2**18 * 3
@@ -161,9 +169,7 @@ int main()
     };
     ulong max_orders[num_primes] = { 18, 25, 25, 25, 25 };
 
-    time_fft_init(primes, max_orders, state);
-
-    flint_rand_clear(state);
+    time_fft_init(primes, max_orders);
 
     return 0;
 }

@@ -1,7 +1,7 @@
 #ifndef __NMOD_POLY_FFT__H
 #define __NMOD_POLY_FFT__H
 
-#include <flint/nmod_types.h>
+#include "flint/nmod_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,6 +43,23 @@ typedef nmod_fft_ctx_struct nmod_fft_ctx_t[1];
 // -> powers_w[order-2] = [1, w, w**2, ..., w**(2**(order-1)-1)]
 //         (note next powers until 2**order-1 would be -1, -w, -w**2, ..)
 
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* HELPERS                                                    */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+// fills seq with, for i = 0...d-1:
+// seq[2*i] = a**i
+// seq[2*i+1] = precomp(a**i)   (precomputed quotient for n_mulmod_shoup)
+// seq already allocated with >= 2*d entries; seq[i] not accessed for i >= 2*d
+
+// this version assumes d >= 5
+void _n_geometric_sequence_with_precomp(ulong * seq, ulong a, ulong d, ulong n);
+// general, any d
+void n_geometric_sequence_with_precomp(ulong * seq, ulong a, ulong d, ulong n);
+
 /*------------------------------------------------------------*/
 /* initializes all entries of F                               */
 /* w primitive and w^(2^order))=1                             */
@@ -70,6 +87,7 @@ void nmod_fft_ctx_init_set_red(nmod_fft_ctx_t F, ulong w, ulong order, nmod_t mo
 /* clears all memory assigned to F                            */
 /*------------------------------------------------------------*/
 void nmod_fft_ctx_clear(nmod_fft_ctx_t F);
+void nmod_fft_ctx_clear_new(nmod_fft_ctx_t F);
 void nmod_fft_ctx_clear_red(nmod_fft_ctx_t F);
 
 
