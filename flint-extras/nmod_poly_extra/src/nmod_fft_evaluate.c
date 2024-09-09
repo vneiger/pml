@@ -146,7 +146,7 @@ FLINT_FORCE_INLINE ulong n_mulmod_shoup_lazy(ulong a, ulong b, ulong apre, ulong
 // lazy red: input in [0..2*n) --> output in [0..4*n)
 // FIXME goes through [0..16n)... easily improved to [0..8n)
 //       (just reduce v0,v1 to [0..4n) immediately --> check no speed difference)
-FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, nmod_fft_t F)
+FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, nmod_fft_ctx_t F)
 {
     ulong p_hi, p_lo;
     ulong u0 = p[0];
@@ -235,7 +235,7 @@ FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, nmod_fft_t F)
 
 // input [0..2*n), output [0..4*n)
 // order >= 3
-void _nmod_fft_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
+void _nmod_fft_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
 {
     // order == 0: nothing to do
     //if (order == 1)
@@ -287,7 +287,7 @@ void _nmod_fft_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
 }
 
 // order >= 3
-void _nmod_fft_dif_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
+void _nmod_fft_dif_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
 {
     // perform FFT layers up to order 3
     ulong llen = len;
@@ -337,7 +337,7 @@ void _nmod_fft_dif_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
 
 // input [0..2n),  output [0..4n)
 // restricting to order >= 3 is a bit faster for smallish orders
-void _nmod_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
+void _nmod_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
 {
     // order == 0: nothing to do
     //if (order == 1)
@@ -365,7 +365,7 @@ void _nmod_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
 // if order < 3, in [0..2n) out [0..4n)
 // if order >= 3, in [0..4n) out [0..4n)
 // restricting to order >= 3 is a bit faster for smallish orders
-void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong node, nmod_fft_t F)
+void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong node, nmod_fft_ctx_t F)
 {
     // order == 0: nothing to do
     //if (order == 1)
@@ -564,7 +564,7 @@ void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong nod
     }
 }
 
-void _nmod_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
+void _nmod_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
 {
     // perform FFT layers up to order 3
     ulong llen = len;
@@ -731,7 +731,7 @@ void _nmod_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
 }
 
 // in [0..2n) out [0..4n)
-void _nmod_fft_dif_rec4_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_t F)
+void _nmod_fft_dif_rec4_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
 {
     // order == 0: nothing to do
     if (order == 1)
