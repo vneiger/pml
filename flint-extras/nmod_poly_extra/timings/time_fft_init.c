@@ -138,10 +138,13 @@ void time_fft_init(ulong * primes, ulong * max_orders)
             prof_repeat(min+1, &max, sample_init_set, (void *) &info);
             prof_repeat(min+2, &max, sample_init_set_new, (void *) &info);
 
-            flint_printf("\t%.1e|%.1e|%.1e",
+            flint_printf("\t%.1e|%.1e|%.1e\t||\t%.1e|%.1e|%.1e",
                     min[0]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
                     min[1]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
-                    min[2]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep 
+                    min[2]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
+                    min[0]/(double)1000000/rep,
+                    min[1]/(double)1000000/rep,
+                    min[2]/(double)1000000/rep 
                     );
             flint_printf("\n");
         }

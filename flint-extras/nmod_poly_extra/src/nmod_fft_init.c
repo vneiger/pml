@@ -74,7 +74,7 @@ void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod)
 
     // fill largest array of powers of w
     slong ell = order-2;  // >= 1
-    ulong len = (1 << (order-1));  // len == 2**(ell+1) >= 4
+    ulong len = (UWORD(1) << (order-1));  // len == 2**(ell+1) >= 4
 
     F->tab_w[ell] = _nmod_vec_init(2*len);
     _n_geometric_sequence_with_precomp(F->tab_w[ell], w, len, mod);
@@ -118,7 +118,7 @@ void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod
 
     // fill largest array of powers of w
     slong ell = order-2;  // >= 1
-    ulong len = (1 << (order-1));  // len == 2**(ell+1) >= 4
+    ulong len = (UWORD(1) << (order-1));  // len == 2**(ell+1) >= 4
 
     F->tab_w[ell] = _nmod_vec_init(2*len);
     _n_geometric_sequence_with_precomp(F->tab_w[ell], w, len, mod);
@@ -162,7 +162,7 @@ void nmod_fft_ctx_init_set_red(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod
     // fill table of powers of w:
     // F->tab_w[0][2*i] == w**i and F->tab_w[0][2*i+1] its precomp, i = 0 ... len-1   where len = 2**(order-1)
     // F->tab_w[1] same in bit-reversed: 1, w**(len/2), w**(len/4), w**(3*len/4), ...
-    ulong len = (1UL << (order-1));  // len == 2**(ell+1) >= 4
+    ulong len = (UWORD(1) << (order-1));  // len == 2**(ell+1) >= 4
     F->tab_w[0] = _nmod_vec_init(2*len);
     _n_geometric_sequence_with_precomp(F->tab_w[0], w, len, mod);
 
