@@ -819,18 +819,9 @@ void _nmod_fft_dif_rec4_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
             umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+1], u6);
             p2[k] = F->tab_w[order-4][2*k+0] * u6 - p_hi * F->mod;  // [0..2n)
 
-            if (6*k < len)
-            {
-                u5 = u5 + F->mod2 - u7;
-                umul_ppmm(p_hi, p_lo, F->tab_w[order-4][6*k+1], u5);
-                p3[k] = F->tab_w[order-4][6*k+0] * u5 - p_hi * F->mod;  // [0..2n)
-            }
-            else
-            {
-                u5 = u7 + F->mod4 - u5;
-                umul_ppmm(p_hi, p_lo, F->tab_w[order-4][6*k-len+1], u5);
-                p3[k] = F->tab_w[order-4][6*k-len] * u5 - p_hi * F->mod;  // [0..2n)
-            }
+            u5 = u5 + F->mod2 - u7;
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][6*k+1], u5);
+            p3[k] = F->tab_w[order-4][6*k+0] * u5 - p_hi * F->mod;  // [0..2n)
         }
         _nmod_fft_dif_rec4_lazy(p0, len/4, order-2, F);
         _nmod_fft_dif_rec4_lazy(p1, len/4, order-2, F);

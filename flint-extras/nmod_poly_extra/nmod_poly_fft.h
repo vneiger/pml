@@ -30,30 +30,31 @@ typedef struct
     ulong order;               // maximum supported order (currently: order of w)
     ulong w;                   // primitive (2**order)th root of 1
     ulong winv;               // inverse of w
-    ulong * tab_w[NMOD_FFT_MAX_TAB_SIZE]; // tabulated powers of w, see below
-    ulong * tab_winv[NMOD_FFT_MAX_TAB_SIZE]; // tabulated powers of w, see below
+    ulong * tab_w[NMOD_FFT_MAX_TAB_SIZE]; // tabulated powers of w and winv, see below
+    //ulong * tab_winv[NMOD_FFT_MAX_TAB_SIZE]; // tabulated powers of winv
 } nmod_fft_ctx_struct;
 typedef nmod_fft_ctx_struct nmod_fft_ctx_t[1];
 
-// TODO explain new storage tab_w[2*k], tab_w[2*k+1]
-// TODO could start at next index since powers_w[0] just gives I, J, IJ?
-//
 // FFT tables of powers / twiddle factors, say for w of order == `2**order`:
-// for 0 <= ell < order-3, "powers_w[ell]" has length 2**(ell+4)
-// and contains [wi, wi_pre for 0 <= i < 2**(ell+3)]
+// for 0 <= ell <= order-4, "powers_w[ell]" has length 2**(ell+5)
+// and contains [wi, wi_pre for 0 <= i < 2**(ell+4)]
 //    where wi = w**(2**(order-4-ell)*i) are the 2**(ell+4)-th roots of unity
 //      and wi_pre is the corresponding precomputation for mulmod
-// -> powers_w[-2] would have been [1, 1_pre, I, I_pre] where I is w**(2**(order-2))
-//         (note I**2 = -1, I**3 = -I)
-// -> powers_w[-1] would have been [1, 1_pre, J, J_pre, J**2, J**2_pre, J**3, J**3_pre]
+// -> powers_w[-2] would have been [1, 1_pre, I, I_pre, -1, -1_pre, -I, -I_pre]
+//          where I is w**(2**(order-2))
+// -> powers_w[-1] would have been similar with [1, J, J**2, J**3, -1, -J, -J**2, -J**3]
 //          where J is w**(2**(order-3))
 //         (note J**2 == I, and J**3 == I*J)
-//         (note [J**4, J**5, J**6, J**7] = [-1, -J, -J**2, -J**3])
 // -> etc..
-// -> powers_w[order-4] = [1, 1_pre, w, w_pre, w**2, w**2_pre, ..., w**(2**(order-1)-1), w**(2**(order-1)-1)_pre]
-//         (note next powers until 2**order-1 would be -1, -w, -w**2, ..)
+// -> powers_w[order-4] = [1, 1_pre, w, w_pre, w**2, w**2_pre, ..., w**(2**order -1), w**(2**order -1)_pre]
+//
+// Observe that the second part of each table gives the inverses:
+//    -I is the inverse of I; 
+//    -J**3 is the inverse of J, -J**2 is the inverse of J**2, -J is the inverse of J**3;
+//    etc.
 // 
-// Tables for inv_w follow the same approach.
+// TODO if fft_init goes through this table in reversed order,
+// make sure this is not hurting efficiency
 
 
 /*------------------------------------------------------------*/
