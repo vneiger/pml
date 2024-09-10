@@ -86,38 +86,11 @@ void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod)
     else
     {
         slong ell = order-4;  // >= 0
-        ulong len = (UWORD(1) << (order-1));  // len == 2**(ell+3) >= 8
+        ulong len = (UWORD(1) << (order-1));  // len == 2**(ell+3) >= 8, multiple of 4
 
         // fill array of powers of w
         F->tab_w[ell] = _nmod_vec_init(4*len);
-        _n_geometric_sequence_with_precomp(F->tab_w[ell], w, len, mod);
-
-        // fill array of powers of winv:
-        // note 1: winv**k == w**(-k) == w**(2**order - k)
-        //                      == w**(2*len - k) == - w**(len-k)
-        //         since w**len == -1
-        // note 2: the precomputation for wk = w**(len-k) is known from above;
-        //         it is equal to floor(wk * 2**FLINT_BITS / mod)
-        //         --> the precomputation for winv**k == -wk == mod-wk (which
-        //         is in [1..mod)) is equal to floor((mod-wk) * 2**FLINT_BITS / mod),
-        //                                   == 2**FLINT_BITS + floor(-wk * 2**FLINT_BITS / mod)
-        //                                   == 2**FLINT_BITS - ceil(wk * 2**FLINT_BITS / mod)
-        //                                   == 2**FLINT_BITS - 1 - floor(wk * 2**FLINT_BITS / mod)
-        //                  (the latter being because wk * 2**FLINT_BITS / mod is not an integer)
-
-        // TODO code to be removed if tab_winv confirmed not necessary
-        //F->tab_winv[ell] = _nmod_vec_init(2*len);
-        //F->tab_winv[ell][0] = F->tab_w[ell][0];
-        //F->tab_winv[ell][1] = F->tab_w[ell][1];
-
-        // TODO should be filled at the same time as F->tab_w
-        for (ulong k = 1; k < len; k++)
-        {
-            //F->tab_winv[ell][2*k] = mod - F->tab_w[ell][2*len-2*k];
-            //F->tab_winv[ell][2*k+1] = UWORD_MAX - F->tab_w[ell][2*len-2*k + 1];
-            F->tab_w[ell][4*len - 2*k] = mod - F->tab_w[ell][2*len-2*k];
-            F->tab_w[ell][4*len - 2*k +1] = UWORD_MAX - F->tab_w[ell][2*len-2*k + 1];
-        }
+        _n_geometric_sequence_and_opposites_with_precomp(F->tab_w[ell], w, len, mod);
 
         // copy into other arrays
         // NAIVE VERSION:
@@ -129,15 +102,12 @@ void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod)
         {
             len = len >> 1;  // len == 2**(ell+1)
             F->tab_w[ell] = _nmod_vec_init(4*len);
-            //F->tab_winv[ell] = _nmod_vec_init(2*len);
             F->tab_w[ell][0] = F->tab_w[ell+1][0];
             F->tab_w[ell][1] = F->tab_w[ell+1][1];
             for (ulong k = 1; k < 2*len; k++)
             {
                 F->tab_w[ell][2*k] = F->tab_w[ell+1][4*k];
                 F->tab_w[ell][2*k+1] = F->tab_w[ell+1][4*k+1];
-                //F->tab_winv[ell][2*k] = F->tab_winv[ell+1][4*k];  // if uncommented, should be done for k==0 as well, and only up to k < len
-                //F->tab_winv[ell][2*k+1] = F->tab_winv[ell+1][4*k+1];  // if uncommented, should be done for k==0 as well, and only up to k < len
             }
         }
 
