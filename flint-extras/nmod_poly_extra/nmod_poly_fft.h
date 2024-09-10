@@ -4,6 +4,8 @@
 #include "flint/flint.h"
 #include "flint/long_extras.h"
 
+#define NMOD_FFT_MAX_TAB_SIZE 32
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,34 +19,41 @@ extern "C" {
 typedef struct
 {
     ulong mod;
-    ulong mod2;     // 2*mod  (storing this does help for speed, in _dif_rec2 at least)
-    ulong mod4;     // 4*mod  (storing this does help for speed, in _dif_rec2 at least)
+    ulong mod2;                // 2*mod  (storing this does help for speed, in _dif_rec2 at least)
+    ulong mod4;                // 4*mod  (storing this does help for speed, in _dif_rec2 at least)
     ulong I;                   // sqrt(-1)
     ulong Ipre;                // precomp on I
     ulong J;                   // sqrt(I)
     ulong Jpre;                // precomp on J
     ulong IJ;                  // sqrt(-I) == I*J
     ulong IJpre;               // precomp on IJ
-    ulong order;               // maximum supported order (currently: order of w + max order in precomputed tables)
+    ulong order;               // maximum supported order (currently: order of w)
     ulong w;                   // primitive (2**order)th root of 1
-    ulong inv_w;               // inverse of w
-    ulong * tab_w[64];            // tabulated powers of w, and of precomputations for modular multiplication by w
+    ulong winv;               // inverse of w
+    ulong * tab_w[NMOD_FFT_MAX_TAB_SIZE]; // tabulated powers of w, see below
+    ulong * tab_winv[NMOD_FFT_MAX_TAB_SIZE]; // tabulated powers of w, see below
 } nmod_fft_ctx_struct;
 typedef nmod_fft_ctx_struct nmod_fft_ctx_t[1];
 
 // TODO explain new storage tab_w[2*k], tab_w[2*k+1]
 // TODO could start at next index since powers_w[0] just gives I, J, IJ?
 //
-// FFT tables of powers / twiddle factors, say for w:
-// for 0 <= ell < order-1, "powers_w[ell]" has length 2**(ell+1)
-// and contains [w**(2**(order-2-ell)*i), 0 <= i < 2**(ell+1)]
-// -> powers_w[0] = [1, I] where I is w**(2**(order-2))
+// FFT tables of powers / twiddle factors, say for w of order == `2**order`:
+// for 0 <= ell < order-3, "powers_w[ell]" has length 2**(ell+4)
+// and contains [wi, wi_pre for 0 <= i < 2**(ell+3)]
+//    where wi = w**(2**(order-4-ell)*i) are the 2**(ell+4)-th roots of unity
+//      and wi_pre is the corresponding precomputation for mulmod
+// -> powers_w[-2] would have been [1, 1_pre, I, I_pre] where I is w**(2**(order-2))
 //         (note I**2 = -1, I**3 = -I)
-// -> powers_w[1] = [1, J, J**2, J**3] where J is w**(2**(order-3))
+// -> powers_w[-1] would have been [1, 1_pre, J, J_pre, J**2, J**2_pre, J**3, J**3_pre]
+//          where J is w**(2**(order-3))
+//         (note J**2 == I, and J**3 == I*J)
 //         (note [J**4, J**5, J**6, J**7] = [-1, -J, -J**2, -J**3])
 // -> etc..
-// -> powers_w[order-2] = [1, w, w**2, ..., w**(2**(order-1)-1)]
+// -> powers_w[order-4] = [1, 1_pre, w, w_pre, w**2, w**2_pre, ..., w**(2**(order-1)-1), w**(2**(order-1)-1)_pre]
 //         (note next powers until 2**order-1 would be -1, -w, -w**2, ..)
+// 
+// Tables for inv_w follow the same approach.
 
 
 /*------------------------------------------------------------*/
@@ -71,12 +80,9 @@ void n_geometric_sequence_with_precomp(ulong * seq, ulong a, ulong d, ulong n);
 /*------------------------------------------------------------*/
 
 // TODO :
-// - optimize speed (see integer_fft_init)
-// - allow initialization with NULL tables
+// - optimize speed (try building by increasing ell)
+// - separate computation of the tables from basic init, allowing initialization with NULL tables
 // - allow fit_depth to precompute more tables when wanted/needed
-// - separate computation of the tables from basic init
-// - is storing I, J, IJ useful for efficiency?
-// - allocate first tables on stack --> no noticeable effect
 void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod);
 void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod);
 

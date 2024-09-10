@@ -1,24 +1,107 @@
-#include <time.h>
-#include <flint/nmod.h>
-#include <flint/nmod_poly.h>
-#include "nmod_poly_extra.h"
+#include <flint/profiler.h>
+#include <flint/nmod_vec.h>
+#include <flint/fft_small.h>
 #include "nmod_poly_fft.h"
 
 #define VERSIONS 1
 
 #define num_primes 5
 
+typedef struct
+{
+   ulong prime;
+   ulong order;
+   ulong maxorder;
+} info_t;
+
+#define SAMPLE(fun, _ctx)                                                        \
+void sample_##fun(void * arg, ulong count)                                       \
+{                                                                                \
+    info_t * info = (info_t *) arg;                                              \
+    const ulong p = info->prime;                                                 \
+    const ulong order = info->order;                                             \
+    const ulong maxorder = info->maxorder;                                       \
+                                                                                 \
+    const ulong len = UWORD(1) << order;                                         \
+    const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));                \
+                                                                                 \
+    /* modulus, roots of unity */                                                \
+    nmod_t mod;                                                                  \
+    nmod_init(&mod, p);                                                          \
+    ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> maxorder, mod); \
+    ulong w = nmod_pow_ui(w0, 1UL<<(maxorder - order), mod);                     \
+    nmod_fft_ctx_t F;                                                            \
+    nmod_fft_ctx_init_set##_ctx(F, w, order, p);                                 \
+                                                                                 \
+    FLINT_TEST_INIT(state);                                                      \
+                                                                                 \
+    ulong * coeffs = _nmod_vec_init(len);                                        \
+    _nmod_vec_randtest(coeffs, state, len, mod);                                 \
+                                                                                 \
+    for (ulong i = 0; i < count; i++)                                            \
+    {                                                                            \
+        prof_start();                                                            \
+        for (ulong j = 0; j < rep; j++)                                          \
+            _nmod_fft_##fun(coeffs, len, order, F);                              \
+        prof_stop();                                                             \
+    }                                                                            \
+                                                                                 \
+    nmod_fft_ctx_clear##_ctx(F);                                                 \
+    FLINT_TEST_CLEAR(state);                                                     \
+}                                                                                \
+
+SAMPLE(dif_rec2_lazy, )
+SAMPLE(dif_iter2_lazy, )
+SAMPLE(red_rec2_lazy, _red)
+SAMPLE(dif_rec4_lazy, )
+SAMPLE(red_iter2_lazy, _red)
+
+void sample_sd_fft(void * arg, ulong count)
+{
+    info_t * info = (info_t *) arg;
+    const ulong p = info->prime;
+    const ulong order = info->order;
+
+    const ulong len = UWORD(1) << order;
+    const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));
+
+    sd_fft_ctx_t Q;
+    sd_fft_ctx_init_prime(Q, p);
+    sd_fft_ctx_fit_depth(Q, order);
+
+    ulong sz = sd_fft_ctx_data_size(order)*sizeof(double);
+
+    FLINT_TEST_INIT(state);
+
+    nmod_t mod;
+    nmod_init(&mod, p);
+    ulong * coeffs = _nmod_vec_init(len);
+    _nmod_vec_randtest(coeffs, state, len, mod);
+
+    double* data = flint_aligned_alloc(4096, n_round_up(sz, 4096));
+    for (ulong i = 0; i < len; i++)
+        data[i] = coeffs[i];
+
+    for (ulong i = 0; i < count; i++)
+    {
+        prof_start();
+        for (ulong j = 0; j < rep; j++)
+            sd_fft_trunc(Q, data, order, len, len);
+        prof_stop();
+    }
+
+    sd_fft_ctx_clear(Q);
+    FLINT_TEST_CLEAR(state);
+}
+
 /*------------------------------------------------------------*/
 /* computes init for FFT for several bit lengths and orders   */
 /*------------------------------------------------------------*/
 void time_evaluate()
 {
-    flint_rand_t state;
-    flint_rand_init(state);
-
-    printf("- order is log(fft length)\n");
-    printf("- timing init FFT tables + DIF evaluate for several bit lengths and orders\n");
-    printf("order\trec2\titer2\tred\trec4\tred-iter\n");
+    flint_printf("- order is log(fft length)\n");
+    flint_printf("- timing init FFT tables + DIF evaluate for several bit lengths and orders\n");
+    flint_printf("order\tsd_fft\trec2\trec4\titer2\tredrec\tredit\t   ||\tsd_fft\trec2\trec4\titer2\tredrec\tredit\t\n");
 
     ulong primes[num_primes] = {
         786433,              // 20 bits, 1 + 2**18 * 3
@@ -29,291 +112,46 @@ void time_evaluate()
     };
     ulong max_orders[num_primes] = { 18, 25, 25, 25, 25 };
 
-    for (ulong k = 4; k < 5; k++)
+    for (ulong k = 3; k < 4; k++)
     {
-        // prime, modulus
-        nmod_t mod;
-        ulong p = primes[k];
-        nmod_init(&mod, p);
-
-        // find root of unity of specified maximum order
-        ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> max_orders[k], mod);
-
         for (ulong order = 3; order <= max_orders[k]; order++)
         {
             printf("%ld\t", order);
 
-            const ulong len = (1<<order);
+            info_t info;
+            info.prime = primes[k];
+            info.maxorder = max_orders[k];
+            info.order = order;
 
-            // root of unity of order 2**order
-            ulong w = nmod_pow_ui(w0, 1UL<<(max_orders[k]-order), mod);
+            const ulong len = UWORD(1) << order;
+            const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));
 
-            double t;
-            clock_t tt;
-            long nb_iter;
+            double min[10];
+            double max;
 
-            if (VERSIONS >= 2)
-            { // fft_init alone
-                nmod_fft_ctx_t F;
-                t = 0.0;
-                nb_iter = 0;
-                while (t < 0.5)
-                {
-                    tt = clock();
-                    nmod_fft_ctx_init_set(F, w, order, p);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, p);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, p);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, p);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, p);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, p);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, p);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, p);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, p);
-                    nmod_fft_ctx_clear(F);
-                    nmod_fft_ctx_init_set(F, w, order, p);
-                    nmod_fft_ctx_clear(F);
-                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-                    nb_iter+=10;
-                }
-                t /= nb_iter;
-                printf("%.1e\t", t);
-            }
+            prof_repeat(min+0, &max, sample_sd_fft, (void *) &info);
+            prof_repeat(min+1, &max, sample_dif_rec2_lazy, (void *) &info);
+            prof_repeat(min+2, &max, sample_dif_rec4_lazy, (void *) &info);
+            prof_repeat(min+3, &max, sample_dif_iter2_lazy, (void *) &info);
+            prof_repeat(min+4, &max, sample_red_rec2_lazy, (void *) &info);
+            prof_repeat(min+5, &max, sample_red_iter2_lazy, (void *) &info);
 
-            if (VERSIONS >= 2)
-            { // fft_init_red alone
-                nmod_fft_ctx_t Fred;
-                t = 0.0;
-                nb_iter = 0;
-                while (t < 0.5)
-                {
-                    tt = clock();
-                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
-                    nmod_fft_ctx_clear_red(Fred);
-                    nmod_fft_ctx_init_set_red(Fred, w, order, p);
-                    nmod_fft_ctx_clear_red(Fred);
-                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-                    nb_iter+=10;
-                }
-                t /= nb_iter;
-                printf("%.1e\t", t);
-            }
-
-            if (VERSIONS >= 1)
-            { // dif_radix2_rec_shoup_lazy
-                nmod_fft_ctx_t F;
-                nmod_fft_ctx_init_set(F, w, order, p);
-                t = 0.0;
-                nb_iter = 0;
-                while (t < 0.5)
-                {
-                    nmod_poly_t pol;
-                    nmod_poly_init(pol, mod.n);
-                    nmod_poly_rand(pol, state, len);
-                    tt = clock();
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy(pol->coeffs, len, order, F);
-                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-                    nb_iter+=10;
-                    nmod_poly_clear(pol);
-                }
-                t /= nb_iter;
-                nmod_fft_ctx_clear(F);
-                printf("%.1e\t", t);
-            }
-
-            if (VERSIONS >= 2)
-            { // dif_radix2_rec_shoup_lazy
-                nmod_fft_ctx_t F;
-                nmod_fft_ctx_init_set_new(F, w, order, p);
-                t = 0.0;
-                nb_iter = 0;
-                while (t < 0.5)
-                {
-                    nmod_poly_t pol;
-                    nmod_poly_init(pol, mod.n);
-                    nmod_poly_rand(pol, state, len);
-                    tt = clock();
-                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec2_lazy_new(pol->coeffs, len, order, F);
-                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-                    nb_iter+=10;
-                    nmod_poly_clear(pol);
-                }
-                t /= nb_iter;
-                nmod_fft_ctx_clear_new(F);
-                printf("%.1e\t", t);
-            }
-
-
-            if (VERSIONS >= 1)
-            { // dif_radix2_iter_shoup_lazy
-                nmod_fft_ctx_t F;
-                nmod_fft_ctx_init_set(F, w, order, p);
-                t = 0.0;
-                nb_iter = 0;
-                while (t < 0.5)
-                {
-                    nmod_poly_t pol;
-                    nmod_poly_init(pol, mod.n);
-                    nmod_poly_rand(pol, state, len);
-                    tt = clock();
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_iter2_lazy(pol->coeffs, len, order, F);
-                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-                    nb_iter+=10;
-                    nmod_poly_clear(pol);
-                }
-                t /= nb_iter;
-                nmod_fft_ctx_clear(F);
-                printf("%.1e\t", t);
-            }
-
-            if (VERSIONS >= 1)
-            { // red_radix2_rec_shoup_lazy
-                nmod_fft_ctx_t F;
-                nmod_fft_ctx_init_set_red(F, w, order, p);
-                t = 0.0;
-                nb_iter = 0;
-                while (t < 0.5)
-                {
-                    nmod_poly_t pol;
-                    nmod_poly_init(pol, mod.n);
-                    nmod_poly_rand(pol, state, len);
-                    tt = clock();
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_red_rec2_lazy(pol->coeffs, len, order, F);
-                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-                    nb_iter+=10;
-                    nmod_poly_clear(pol);
-                }
-                t /= nb_iter;
-                nmod_fft_ctx_clear_red(F);
-                printf("%.1e\t", t);
-            }
-
-            if (VERSIONS >= 1)
-            { // dif_radix4_rec_shoup_lazy
-                nmod_fft_ctx_t F;
-                nmod_fft_ctx_init_set(F, w, order, p);
-                t = 0.0;
-                nb_iter = 0;
-                while (t < 0.5)
-                {
-                    nmod_poly_t pol;
-                    nmod_poly_init(pol, mod.n);
-                    nmod_poly_rand(pol, state, len);
-                    tt = clock();
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
-                    _nmod_fft_dif_rec4_lazy(pol->coeffs, len, order, F);
-                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-                    nb_iter+=10;
-                    nmod_poly_clear(pol);
-                }
-                t /= nb_iter;
-                nmod_fft_ctx_clear(F);
-                printf("%.1e\t", t);
-            }
-
-            if (VERSIONS >= 1)
-            { // red_radix2_iter_shoup_lazy
-                nmod_fft_ctx_t Fred;
-                nmod_fft_ctx_init_set_red(Fred, w, order, p);
-                t = 0.0;
-                nb_iter = 0;
-                while (t < 0.5)
-                {
-                    nmod_poly_t pol;
-                    nmod_poly_init(pol, mod.n);
-                    nmod_poly_rand(pol, state, len);
-                    tt = clock();
-                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
-                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
-                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
-                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
-                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
-                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
-                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
-                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
-                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
-                    _nmod_fft_red_iter2_lazy(pol->coeffs, len, order, Fred);
-                    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-                    nb_iter+=10;
-                    nmod_poly_clear(pol);
-                }
-                t /= nb_iter;
-                nmod_fft_ctx_clear_red(Fred);
-                printf("%.1e\t", t);
-            }
-
-            printf("\n");
+            flint_printf("%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t   ||\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\n",
+                    min[0]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
+                    min[1]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
+                    min[2]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
+                    min[3]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
+                    min[4]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
+                    min[5]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
+                    min[0]/(double)1000000/rep,
+                    min[1]/(double)1000000/rep,
+                    min[2]/(double)1000000/rep,
+                    min[3]/(double)1000000/rep,
+                    min[4]/(double)1000000/rep,
+                    min[5]/(double)1000000/rep
+                    );
         }
     }
-
-    flint_rand_clear(state);
 }
 
 

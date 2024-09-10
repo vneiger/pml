@@ -246,29 +246,29 @@ void _nmod_fft_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
             p[k+0] = p[k+0] + p[len/2+k+0];
             if (p[k+0] >= F->mod2)
                 p[k+0] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-2][2*k+1], tmp);
-            p[len/2+k+0] = F->tab_w[order-2][2*k+0] * tmp - p_hi * F->mod;
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+1], tmp);
+            p[len/2+k+0] = F->tab_w[order-4][2*k+0] * tmp - p_hi * F->mod;
 
             tmp = p[k+1] + F->mod2 - p[len/2+k+1];
             p[k+1] = p[k+1] + p[len/2+k+1];
             if (p[k+1] >= F->mod2)
                 p[k+1] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-2][2*k+3], tmp);
-            p[len/2+k+1] = F->tab_w[order-2][2*k+2] * tmp - p_hi * F->mod;
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+3], tmp);
+            p[len/2+k+1] = F->tab_w[order-4][2*k+2] * tmp - p_hi * F->mod;
 
             tmp = p[k+2] + F->mod2 - p[len/2+k+2];
             p[k+2] = p[k+2] + p[len/2+k+2];
             if (p[k+2] >= F->mod2)
                 p[k+2] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-2][2*k+5], tmp);
-            p[len/2+k+2] = F->tab_w[order-2][2*k+4] * tmp - p_hi * F->mod;
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+5], tmp);
+            p[len/2+k+2] = F->tab_w[order-4][2*k+4] * tmp - p_hi * F->mod;
 
             tmp = p[k+3] + F->mod2 - p[len/2+k+3];
             p[k+3] = p[k+3] + p[len/2+k+3];
             if (p[k+3] >= F->mod2)
                 p[k+3] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-2][2*k+7], tmp);
-            p[len/2+k+3] = F->tab_w[order-2][2*k+6] * tmp - p_hi * F->mod;
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+7], tmp);
+            p[len/2+k+3] = F->tab_w[order-4][2*k+6] * tmp - p_hi * F->mod;
         }
         _nmod_fft_dif_rec2_lazy(p, len/2, order-1, F);
         _nmod_fft_dif_rec2_lazy(p+len/2, len/2, order-1, F);
@@ -277,7 +277,6 @@ void _nmod_fft_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
 
 // input [0..2*n), output [0..4*n)
 // order >= 3
-// VERSION WITH SINGLE ARRAY F->tab_w
 void _nmod_fft_dif_rec2_lazy_new(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
 {
     // order == 0: nothing to do
@@ -300,29 +299,29 @@ void _nmod_fft_dif_rec2_lazy_new(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_
             p[k+0] = p[k+0] + p[len/2+k+0];
             if (p[k+0] >= F->mod2)
                 p[k+0] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-2][2*k+1], tmp);
-            p[len/2+k+0] = F->tab_w[order-2][2*k+0] * tmp - p_hi * F->mod;
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+1], tmp);
+            p[len/2+k+0] = F->tab_w[order-4][2*k+0] * tmp - p_hi * F->mod;
 
             tmp = p[k+1] + F->mod2 - p[len/2+k+1];
             p[k+1] = p[k+1] + p[len/2+k+1];
             if (p[k+1] >= F->mod2)
                 p[k+1] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-2][2*k+3], tmp);
-            p[len/2+k+1] = F->tab_w[order-2][2*k+2] * tmp - p_hi * F->mod;
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+3], tmp);
+            p[len/2+k+1] = F->tab_w[order-4][2*k+2] * tmp - p_hi * F->mod;
 
             tmp = p[k+2] + F->mod2 - p[len/2+k+2];
             p[k+2] = p[k+2] + p[len/2+k+2];
             if (p[k+2] >= F->mod2)
                 p[k+2] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-2][2*k+5], tmp);
-            p[len/2+k+2] = F->tab_w[order-2][2*k+4] * tmp - p_hi * F->mod;
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+5], tmp);
+            p[len/2+k+2] = F->tab_w[order-4][2*k+4] * tmp - p_hi * F->mod;
 
             tmp = p[k+3] + F->mod2 - p[len/2+k+3];
             p[k+3] = p[k+3] + p[len/2+k+3];
             if (p[k+3] >= F->mod2)
                 p[k+3] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-2][2*k+7], tmp);
-            p[len/2+k+3] = F->tab_w[order-2][2*k+6] * tmp - p_hi * F->mod;
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+7], tmp);
+            p[len/2+k+3] = F->tab_w[order-4][2*k+6] * tmp - p_hi * F->mod;
         }
         _nmod_fft_dif_rec2_lazy(p, len/2, order-1, F);
         _nmod_fft_dif_rec2_lazy(p+len/2, len/2, order-1, F);
@@ -346,36 +345,34 @@ void _nmod_fft_dif_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F
                 p[k+kk+0] = p[k+kk+0] + p[llen/2+k+kk+0];
                 if (p[k+kk+0] >= F->mod2)
                     p[k+kk+0] -= F->mod2;
-                umul_ppmm(p_hi, p_lo, F->tab_w[ell-2][2*kk+1], tmp);
-                p[llen/2+k+kk+0] = F->tab_w[ell-2][2*kk+0] * tmp - p_hi * F->mod;
+                umul_ppmm(p_hi, p_lo, F->tab_w[ell-4][2*kk+1], tmp);
+                p[llen/2+k+kk+0] = F->tab_w[ell-4][2*kk+0] * tmp - p_hi * F->mod;
 
                 tmp = p[k+kk+1] + F->mod2 - p[llen/2+k+kk+1];
                 p[k+kk+1] = p[k+kk+1] + p[llen/2+k+kk+1];
                 if (p[k+kk+1] >= F->mod2)
                     p[k+kk+1] -= F->mod2;
-                umul_ppmm(p_hi, p_lo, F->tab_w[ell-2][2*kk+3], tmp);
-                p[llen/2+k+kk+1] = F->tab_w[ell-2][2*kk+2] * tmp - p_hi * F->mod;
+                umul_ppmm(p_hi, p_lo, F->tab_w[ell-4][2*kk+3], tmp);
+                p[llen/2+k+kk+1] = F->tab_w[ell-4][2*kk+2] * tmp - p_hi * F->mod;
 
                 tmp = p[k+kk+2] + F->mod2 - p[llen/2+k+kk+2];
                 p[k+kk+2] = p[k+kk+2] + p[llen/2+k+kk+2];
                 if (p[k+kk+2] >= F->mod2)
                     p[k+kk+2] -= F->mod2;
-                umul_ppmm(p_hi, p_lo, F->tab_w[ell-2][2*kk+5], tmp);
-                p[llen/2+k+kk+2] = F->tab_w[ell-2][2*kk+4] * tmp - p_hi * F->mod;
+                umul_ppmm(p_hi, p_lo, F->tab_w[ell-4][2*kk+5], tmp);
+                p[llen/2+k+kk+2] = F->tab_w[ell-4][2*kk+4] * tmp - p_hi * F->mod;
 
                 tmp = p[k+kk+3] + F->mod2 - p[llen/2+k+kk+3];
                 p[k+kk+3] = p[k+kk+3] + p[llen/2+k+kk+3];
                 if (p[k+kk+3] >= F->mod2)
                     p[k+kk+3] -= F->mod2;
-                umul_ppmm(p_hi, p_lo, F->tab_w[ell-2][2*kk+7], tmp);
-                p[llen/2+k+kk+3] = F->tab_w[ell-2][2*kk+6] * tmp - p_hi * F->mod;
+                umul_ppmm(p_hi, p_lo, F->tab_w[ell-4][2*kk+7], tmp);
+                p[llen/2+k+kk+3] = F->tab_w[ell-4][2*kk+6] * tmp - p_hi * F->mod;
             }
 
-    // perform last two FFT layers
+    // perform last FFT layers
     for (ulong k = 0; k < len; k+=8)
         dft8_red_lazy(p+k, F);
-    //for (ulong k = 0; k < len; k+=4)
-    //    DFT4_DIF_SHOUP_LAZY2_RED(p[k+0], p[k+1], p[k+2], p[k+3], F->tab_w[0][1], F->tab_w_pre[0][1], F->mod, F->mod2);
 }
 
 // input [0..2n),  output [0..4n)
@@ -815,24 +812,24 @@ void _nmod_fft_dif_rec4_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
             p0[k] = p_lo;  // [0..2n)
 
             u4 = u4 + F->mod4 - u6;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-2][4*k+1], u4);
-            p1[k] = F->tab_w[order-2][4*k+0] * u4 - p_hi * F->mod;  // [0..2n)
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][4*k+1], u4);
+            p1[k] = F->tab_w[order-4][4*k+0] * u4 - p_hi * F->mod;  // [0..2n)
 
             u6 = u5 + u7;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-2][2*k+1], u6);
-            p2[k] = F->tab_w[order-2][2*k+0] * u6 - p_hi * F->mod;  // [0..2n)
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+1], u6);
+            p2[k] = F->tab_w[order-4][2*k+0] * u6 - p_hi * F->mod;  // [0..2n)
 
             if (6*k < len)
             {
                 u5 = u5 + F->mod2 - u7;
-                umul_ppmm(p_hi, p_lo, F->tab_w[order-2][6*k+1], u5);
-                p3[k] = F->tab_w[order-2][6*k+0] * u5 - p_hi * F->mod;  // [0..2n)
+                umul_ppmm(p_hi, p_lo, F->tab_w[order-4][6*k+1], u5);
+                p3[k] = F->tab_w[order-4][6*k+0] * u5 - p_hi * F->mod;  // [0..2n)
             }
             else
             {
                 u5 = u7 + F->mod4 - u5;
-                umul_ppmm(p_hi, p_lo, F->tab_w[order-2][6*k-len+1], u5);
-                p3[k] = F->tab_w[order-2][6*k-len] * u5 - p_hi * F->mod;  // [0..2n)
+                umul_ppmm(p_hi, p_lo, F->tab_w[order-4][6*k-len+1], u5);
+                p3[k] = F->tab_w[order-4][6*k-len] * u5 - p_hi * F->mod;  // [0..2n)
             }
         }
         _nmod_fft_dif_rec4_lazy(p0, len/4, order-2, F);

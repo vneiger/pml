@@ -159,7 +159,7 @@ int main()
 {
     printf("- order is log(fft length)\n");
     printf("- timing init FFT context at this order\n");
-    printf("order\tinit     initred  new\n");
+    printf("order\t\tred init new\n");
 
     ulong primes[num_primes] = {
         786433,              // 20 bits, 1 + 2**18 * 3
