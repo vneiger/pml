@@ -152,6 +152,7 @@ void _nmod_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F
 // input coefficients in [0..??)
 // output coefficients in [0..??)
 void _nmod_fft_dif_rec4_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F);
+void _nmod_fft_dif_rec8_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F);
 
 /*--------------------*/
 /* arithmetic helpers */

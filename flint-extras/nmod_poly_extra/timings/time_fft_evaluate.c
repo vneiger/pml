@@ -55,6 +55,7 @@ SAMPLE(dif_rec2_lazy_new, _new)
 SAMPLE(dif_iter2_lazy, )
 SAMPLE(red_rec2_lazy, _red)
 SAMPLE(dif_rec4_lazy, )
+SAMPLE(dif_rec8_lazy, )
 SAMPLE(red_iter2_lazy, _red)
 
 void sample_sd_fft(void * arg, ulong count)
@@ -136,7 +137,7 @@ void time_evaluate()
             prof_repeat(min+3, &max, sample_dif_iter2_lazy, (void *) &info);
             prof_repeat(min+4, &max, sample_red_rec2_lazy, (void *) &info);
             prof_repeat(min+5, &max, sample_red_iter2_lazy, (void *) &info);
-            prof_repeat(min+6, &max, sample_dif_rec2_lazy_new, (void *) &info);
+            prof_repeat(min+6, &max, sample_dif_rec8_lazy, (void *) &info);
 
             flint_printf("%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t   ||\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\n",
                     min[0]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
