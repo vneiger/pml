@@ -323,8 +323,8 @@ void _nmod_fft_dif_rec2_lazy_new(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_
             umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+7], tmp);
             p[len/2+k+3] = F->tab_w[order-4][2*k+6] * tmp - p_hi * F->mod;
         }
-        _nmod_fft_dif_rec2_lazy(p, len/2, order-1, F);
-        _nmod_fft_dif_rec2_lazy(p+len/2, len/2, order-1, F);
+        _nmod_fft_dif_rec2_lazy_new(p, len/2, order-1, F);
+        _nmod_fft_dif_rec2_lazy_new(p+len/2, len/2, order-1, F);
     }
 }
 

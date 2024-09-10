@@ -122,7 +122,7 @@ void test_fft_eval()
                 ulong * coeffs = _nmod_vec_init(len);
                 _nmod_vec_set(coeffs, pol->coeffs, len);
 
-                _nmod_fft_dif_rec2_lazy_new(coeffs, len, order, F);
+                _nmod_fft_dif_rec2_lazy_new(coeffs, len, order, Fnew);
 
                 if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
                         || !nmod_vec_range(coeffs, len, 4*mod.n))

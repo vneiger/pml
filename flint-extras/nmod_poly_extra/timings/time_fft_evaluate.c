@@ -51,6 +51,7 @@ void sample_##fun(void * arg, ulong count)                                      
 }                                                                                \
 
 SAMPLE(dif_rec2_lazy, )
+SAMPLE(dif_rec2_lazy_new, _new)
 SAMPLE(dif_iter2_lazy, )
 SAMPLE(red_rec2_lazy, _red)
 SAMPLE(dif_rec4_lazy, )
@@ -135,8 +136,9 @@ void time_evaluate()
             prof_repeat(min+3, &max, sample_dif_iter2_lazy, (void *) &info);
             prof_repeat(min+4, &max, sample_red_rec2_lazy, (void *) &info);
             prof_repeat(min+5, &max, sample_red_iter2_lazy, (void *) &info);
+            prof_repeat(min+6, &max, sample_dif_rec2_lazy_new, (void *) &info);
 
-            flint_printf("%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t   ||\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\n",
+            flint_printf("%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t   ||\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\n",
                     min[0]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
                     min[1]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
                     min[2]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
@@ -148,7 +150,8 @@ void time_evaluate()
                     min[2]/(double)1000000/rep,
                     min[3]/(double)1000000/rep,
                     min[4]/(double)1000000/rep,
-                    min[5]/(double)1000000/rep
+                    min[5]/(double)1000000/rep,
+                    min[6]/(double)1000000/rep
                     );
         }
     }

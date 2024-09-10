@@ -1,3 +1,4 @@
+#include <flint/flint.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
 #include <flint/ulong_extras.h>
@@ -84,6 +85,88 @@ void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod)
     }
     else
     {
+        slong ell = order-4;  // >= 0
+        ulong len = (UWORD(1) << (order-1));  // len == 2**(ell+3) >= 8
+
+        // fill array of powers of w
+        F->tab_w[ell] = _nmod_vec_init(2*len);
+        _n_geometric_sequence_with_precomp(F->tab_w[ell], w, len, mod);
+
+        // fill array of powers of winv:
+        // note 1: winv**k == w**(-k) == w**(2**order - k)
+        //                      == w**(2*len - k) == - w**(len-k)
+        //         since w**len == -1
+        // note 2: the precomputation for wk = w**(len-k) is known from above;
+        //         it is equal to floor(wk * 2**FLINT_BITS / mod)
+        //         --> the precomputation for winv**k == -wk == mod-wk (which
+        //         is in [1..mod)) is equal to floor((mod-wk) * 2**FLINT_BITS / mod),
+        //                                   == 2**FLINT_BITS + floor(-wk * 2**FLINT_BITS / mod)
+        //                                   == 2**FLINT_BITS - ceil(wk * 2**FLINT_BITS / mod)
+        //                                   == 2**FLINT_BITS - 1 - floor(wk * 2**FLINT_BITS / mod)
+        //                  (the latter being because wk * 2**FLINT_BITS / mod is not an integer)
+        // TODO should be filled at the same time as F->tab_w
+        F->tab_winv[ell] = _nmod_vec_init(2*len);
+        F->tab_winv[ell][0] = F->tab_w[ell][0];
+        F->tab_winv[ell][1] = F->tab_w[ell][1];
+        for (ulong k = 1; k < len; k++)
+        {
+            F->tab_winv[ell][2*k] = mod - F->tab_w[ell][2*len-2*k];
+            F->tab_winv[ell][2*k+1] = UWORD_MAX - F->tab_w[ell][2*len-2*k + 1];
+        }
+
+        // copy into other arrays
+        // NAIVE VERSION:
+        //   -> if order up to ~10, this is negligible (<~10%) compared to the above
+        //   -> beyond, its impact grows and reaches a factor around 2 up to order 30 at least
+        //       (meaning the next for-ell loop takes about as much time as the above for-k loop)
+        ell--;
+        for (; ell >= 0; ell--)
+        {
+            len = len >> 1;  // len == 2**(ell+1)
+            F->tab_w[ell] = _nmod_vec_init(2*len);
+            F->tab_winv[ell] = _nmod_vec_init(2*len);
+            for (ulong k = 0; k < len; k++)
+            {
+                F->tab_w[ell][2*k] = F->tab_w[ell+1][4*k];
+                F->tab_w[ell][2*k+1] = F->tab_w[ell+1][4*k+1];
+                F->tab_winv[ell][2*k] = F->tab_winv[ell+1][4*k];
+                F->tab_winv[ell][2*k+1] = F->tab_winv[ell+1][4*k+1];
+            }
+        }
+
+        F->J     = F->tab_w[0][4];
+        F->Jpre  = F->tab_w[0][5];
+        F->I     = F->tab_w[0][8];
+        F->Ipre  = F->tab_w[0][9];
+        F->IJ    = F->tab_w[0][12];
+        F->IJpre = F->tab_w[0][13];
+    }
+}
+
+void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod)
+{
+    // basic attributes
+    F->mod = mod;
+    F->mod2 = 2*mod;
+    F->mod4 = 4*mod;
+    F->order = order;
+    F->w = w;
+
+    if (order == 3)
+    {
+        ulong w_pr_quo, w_pr_rem;
+        n_mulmod_precomp_shoup_quo_rem(&w_pr_quo, &w_pr_rem, w, mod);
+
+        // J == w
+        F->J = w;
+        F->Jpre = w_pr_quo;
+        // J**2 == I
+        n_mulmod_and_precomp_shoup(&F->I, &F->Ipre, w, w, w_pr_quo, w_pr_rem, w_pr_quo, mod);
+        // J**3 == I * J
+        n_mulmod_and_precomp_shoup(&F->IJ, &F->IJpre, w, F->I, w_pr_quo, w_pr_rem, F->Ipre, mod);
+    }
+    else
+    {
         // fill largest array of powers of w
         slong ell = order-4;  // >= 0
         ulong len = (UWORD(1) << (order-1));  // len == 2**(ell+3) >= 8
@@ -116,51 +199,6 @@ void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod)
         F->IJpre = F->tab_w[0][13];
     }
 }
-
-void nmod_fft_ctx_init_set_new(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod)
-{
-    // basic attributes
-    F->mod = mod;
-    F->mod2 = 2*mod;
-    F->mod4 = 4*mod;
-    F->order = order;
-    F->w = w;
-    //F->inv_w = nmod_inv(w, mod);  // TODO
-
-    // 1. fill tables of powers of w
-
-    // fill largest array of powers of w
-    slong ell = order-2;  // >= 1
-    ulong len = (UWORD(1) << (order-1));  // len == 2**(ell+1) >= 4
-
-    F->tab_w[ell] = _nmod_vec_init(2*len);
-    n_geometric_sequence_with_precomp(F->tab_w[ell], w, len, mod);
-
-    // copy into other arrays
-    // NAIVE VERSION:
-    //   -> if order up to ~10, this is negligible (<~10%) compared to the above
-    //   -> beyond, its impact grows and reaches a factor around 2 up to order 30 at least
-    //       (meaning the next for-ell loop takes about as much time as the above for-k loop)
-    ell--;
-    for (; ell >= 0; ell--)
-    {
-        len = len >> 1;  // len == 2**(ell+1)
-        F->tab_w[ell] = _nmod_vec_init(2*len);
-        for (ulong k = 0; k < len; k++)
-        {
-            F->tab_w[ell][2*k] = F->tab_w[ell+1][4*k];
-            F->tab_w[ell][2*k+1] = F->tab_w[ell+1][4*k+1];
-        }
-    }
-
-    F->J  = F->tab_w[1][2];
-    F->I  = F->tab_w[1][4];
-    F->IJ = F->tab_w[1][6];
-    F->Jpre  = F->tab_w[1][3];
-    F->Ipre  = F->tab_w[1][5];
-    F->IJpre = F->tab_w[1][7];
-}
-
 
 void nmod_fft_ctx_init_set_red(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod)
 {
@@ -198,15 +236,19 @@ void nmod_fft_ctx_init_set_red(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod
 void nmod_fft_ctx_clear(nmod_fft_ctx_t F)
 {
     for (ulong ell = 0; ell+4 <= F->order; ell++)
+    {
         _nmod_vec_clear(F->tab_w[ell]);
+        _nmod_vec_clear(F->tab_winv[ell]);
+    }
 }
 
 void nmod_fft_ctx_clear_new(nmod_fft_ctx_t F)
 {
-    for (ulong ell = 0; ell <= F->order-2; ell++)
+    for (ulong ell = 0; ell+4 <= F->order; ell++)
+    {
         _nmod_vec_clear(F->tab_w[ell]);
+    }
 }
-
 
 void nmod_fft_ctx_clear_red(nmod_fft_ctx_t F)
 {
