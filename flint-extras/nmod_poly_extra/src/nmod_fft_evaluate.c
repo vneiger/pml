@@ -1,5 +1,6 @@
 #include <flint/nmod.h>
 #include <flint/ulong_extras.h>
+#include <immintrin.h>
 
 #include "nmod_poly_fft.h"
 
@@ -280,51 +281,257 @@ void _nmod_fft_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
 void _nmod_fft_dif_rec2_lazy_new(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
 {
     // order == 0: nothing to do
-    //if (order == 1)
-    //    DFT2_LAZY3_RED(p[0], p[1], F->mod4);
-    //else if (order == 2)
-    //    DFT4_DIF_SHOUP_LAZY2_RED(p[0], p[1], p[2], p[3], F->I, F->Ipre, F->mod, F->mod2);
-    //else
-    if (order == 3)
+    if (order == 1)
+        // in [0..2n) out [0..4n)
+        DFT2_LAZY3_RED(p[0], p[1], F->mod2);
+    else if (order == 2)
+        // in [0..2n) out [0..4n)
+        DFT4_DIF_SHOUP_LAZY2_RED(p[0], p[1], p[2], p[3], F->I, F->Ipre, F->mod, F->mod2);
+    else if (order == 3)
         dft8_red_lazy(p, F);
     else
     {
-        for (ulong k = 0; k < len/2; k+=4)
+        // in [0..2n) out [0..2n)
+        const __m512i mod2 = _mm512_set1_epi64(F->mod2);
+        const __m512i mod4 = _mm512_set1_epi64(F->mod4);
+        const __m512i mod8 = _mm512_set1_epi64(2*F->mod4);
+        const __m512i Ipreavx = _mm512_set1_epi64(F->Ipre);
+        for (ulong k = 0; k+7 < len/8; k+=8)
         {
-            // in: p[k], p[len/2+k] in [0..2n)
-            // out: p[k], p[len/2+k] in [0..2n)
-            ulong p_hi, p_lo, tmp;
+            __m512i p_hi;
+            __m512i u0 = _mm512_loadu_si512(p+0*len/8+k);
+            __m512i u1 = _mm512_loadu_si512(p+1*len/8+k);
+            __m512i u2 = _mm512_loadu_si512(p+2*len/8+k);
+            __m512i u3 = _mm512_loadu_si512(p+3*len/8+k);
+            __m512i v0 = _mm512_loadu_si512(p+4*len/8+k);
+            __m512i v1 = _mm512_loadu_si512(p+5*len/8+k);
+            __m512i v2 = _mm512_loadu_si512(p+6*len/8+k);
+            __m512i v3 = _mm512_loadu_si512(p+7*len/8+k);
 
-            tmp = p[k+0] + F->mod2 - p[len/2+k+0];
-            p[k+0] = p[k+0] + p[len/2+k+0];
-            if (p[k+0] >= F->mod2)
-                p[k+0] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+1], tmp);
-            p[len/2+k+0] = F->tab_w[order-4][2*k+0] * tmp - p_hi * F->mod;
+            // mod x**4 - 1 | x**4 + 1
+            __m512i p0 = _mm512_add_epi64(u0, v0);  // [0..4n)
+            __m512i p1 = _mm512_add_epi64(u1, v1);  // [0..4n)
+            __m512i p2 = _mm512_add_epi64(u2, v2);  // [0..4n)
+            __m512i p3 = _mm512_add_epi64(u3, v3);  // [0..4n)
+            u0 = _mm512_sub_epi64(_mm512_add_epi64(u0, mod2), v0);
+            u1 = _mm512_sub_epi64(_mm512_add_epi64(u1, mod2), v1);
+            u2 = _mm512_sub_epi64(_mm512_add_epi64(u2, mod2), v2);
+            u3 = _mm512_sub_epi64(_mm512_add_epi64(u3, mod2), v3);
 
-            tmp = p[k+1] + F->mod2 - p[len/2+k+1];
-            p[k+1] = p[k+1] + p[len/2+k+1];
-            if (p[k+1] >= F->mod2)
-                p[k+1] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+3], tmp);
-            p[len/2+k+1] = F->tab_w[order-4][2*k+2] * tmp - p_hi * F->mod;
+            // left, mod x**2 - 1 | x**2 + 1
+            v0 = _mm512_add_epi64(p0, p2);             // [0..8n)
+            v1 = _mm512_add_epi64(p1, p3);             // [0..8n)
+            v2 = _mm512_sub_epi64(_mm512_add_epi64(p0, mod4), p2);  // [0..8n)
+            v3 = _mm512_sub_epi64(_mm512_add_epi64(p1, mod4), p3);  // [0..8n)
 
-            tmp = p[k+2] + F->mod2 - p[len/2+k+2];
-            p[k+2] = p[k+2] + p[len/2+k+2];
-            if (p[k+2] >= F->mod2)
-                p[k+2] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+5], tmp);
-            p[len/2+k+2] = F->tab_w[order-4][2*k+4] * tmp - p_hi * F->mod;
+            // left-left, mod x-1 | x+1
+            p0 = _mm512_add_epi64(v0, v1);               // [0..16n) // TODO 16n
+            p1 = _mm512_add_epi64(v0, _mm512_sub_epi64(mod8, v1));  // [0..16n) // TODO 16n
+            /* if (p0 > 2*F->mod4) */
+            /*     p0 -= 2*F->mod4; */
+            /* if (p0 > F->mod4) */
+            /*     p0 -= F->mod4;        // [0..4n) */
+            /* if (p0 > F->mod2) */
+            /*     p0 -= F->mod2;        // [0..2n) */
+            _mm512_storeu_si512(p+k, p0);
+            _mm512_storeu_si512(p+len/8+k, p1);
 
-            tmp = p[k+3] + F->mod2 - p[len/2+k+3];
-            p[k+3] = p[k+3] + p[len/2+k+3];
-            if (p[k+3] >= F->mod2)
-                p[k+3] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+7], tmp);
-            p[len/2+k+3] = F->tab_w[order-4][2*k+6] * tmp - p_hi * F->mod;
+            // left-right, mod x-I | x+I
+            //umul_ppmm(p_hi, p_lo, F->Ipre, v3);
+            p_hi = _mm512_mul_epu32(v3, Ipreavx);
+            v3 = _mm512_sub_epi64(_mm512_mul_epu32(Ipreavx, v3), _mm512_mul_epu32(p_hi, mod2));  // [0..2n)
+            p2 = v2 + v3;             // [0..10n)
+            p3 = v2 + mod2 - v3;  // [0..10n)
+            _mm512_storeu_si512(p+2*len/8+k, p2);
+            _mm512_storeu_si512(p+3*len/8+k, p3);
+
+            // right, mod x**2 - I | x**2 + I
+            //umul_ppmm(p_hi, p_lo, F->Ipre, u2);
+            p_hi = _mm512_mul_epu32(u2, Ipreavx);
+            u2 = _mm512_sub_epi64(_mm512_mul_epu32(Ipreavx, u2), _mm512_mul_epu32(p_hi, mod2));  // [0..2n)
+            //umul_ppmm(p_hi, p_lo, F->Ipre, u3);
+            p_hi = _mm512_mul_epu32(u3, Ipreavx);
+            u3 = _mm512_sub_epi64(_mm512_mul_epu32(Ipreavx, u3), _mm512_mul_epu32(p_hi, mod2));
+            v0 = u0 + u2;  // [0..6n)
+            v1 = u1 + u3;  // [0..6n)
+            v2 = u0 + mod2 - u2;  // [0..6n)
+            v3 = u1 + mod2 - u3;  // [0..6n)
+
+            // right-left, mod x - J | x + J
+            //umul_ppmm(p_hi, p_lo, F->Jpre, v1);
+            p_hi = v1 * F->Jpre;
+            v1 = F->J * v1 - p_hi * F->mod;  // [0..2n)
+            p0 = v0 + v1;  // [0..8n)
+            p1 = v0 + mod2 - v1;  // [0..8n)
+
+            // right-right, mod x - I*J | x + I*J
+            //umul_ppmm(p_hi, p_lo, F->IJpre, v3);
+            p_hi = v3 * F->IJpre;
+            v3 = F->IJ * v3 - p_hi * F->mod;  // [0..2n)
+            p2 = v2 + v3;   // [0..8n)
+            p3 = v2 + mod2 - v3;   // [0..8n)
+
+            _mm512_storeu_si512(p+4*len/8+k, p0);
+            _mm512_storeu_si512(p+5*len/8+k, p1);
+            _mm512_storeu_si512(p+6*len/8+k, p2);
+            _mm512_storeu_si512(p+7*len/8+k, p3);
         }
-        _nmod_fft_dif_rec2_lazy_new(p, len/2, order-1, F);
-        _nmod_fft_dif_rec2_lazy_new(p+len/2, len/2, order-1, F);
+
+        _nmod_fft_dif_rec2_lazy_new(p, len/8, order-3, F);
+
+        for (ulong k = 0; k+3 < len/8; k+=4)
+        {
+            // scale p1 <- w**(4*k) * p1
+            ulong p_lo, p_hi;
+            ulong p1 = p[len/8 + k+0];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][8*(k+0)+1], p1);
+            p[len/8 + k+0] = F->tab_w[order-4][8*(k+0)] * p1 - p_hi * F->mod;  // [0..2n)
+
+            p1 = p[len/8 + k+1];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][8*(k+1)+1], p1);
+            p[len/8 + k+1] = F->tab_w[order-4][8*(k+1)] * p1 - p_hi * F->mod;  // [0..2n)
+
+            p1 = p[len/8 + k+2];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][8*(k+2)+1], p1);
+            p[len/8 + k+2] = F->tab_w[order-4][8*(k+2)] * p1 - p_hi * F->mod;  // [0..2n)
+
+            p1 = p[len/8 + k+3];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][8*(k+3)+1], p1);
+            p[len/8 + k+3] = F->tab_w[order-4][8*(k+3)] * p1 - p_hi * F->mod;  // [0..2n)
+        }
+        _nmod_fft_dif_rec2_lazy_new(p+len/8, len/8, order-3, F);
+
+        for (ulong k = 0; k+3 < len/8; k+=4)
+        {
+            // scale p2 <-- w**(2*k) * p2, p3 <-- w**(6*k) * p3
+            ulong p_lo, p_hi;
+            ulong p2 = p[2*len/8 + k+0];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][4*(k+0)+1], p2);
+            p[2*len/8 + k+0] = F->tab_w[order-4][4*(k+0)] * p2 - p_hi * F->mod;  // [0..2n)
+
+            p2 = p[2*len/8 + k+1];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][4*(k+1)+1], p2);
+            p[2*len/8 + k+1] = F->tab_w[order-4][4*(k+1)] * p2 - p_hi * F->mod;  // [0..2n)
+
+            p2 = p[2*len/8 + k+2];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][4*(k+2)+1], p2);
+            p[2*len/8 + k+2] = F->tab_w[order-4][4*(k+2)] * p2 - p_hi * F->mod;  // [0..2n)
+
+            p2 = p[2*len/8 + k+3];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][4*(k+3)+1], p2);
+            p[2*len/8 + k+3] = F->tab_w[order-4][4*(k+3)] * p2 - p_hi * F->mod;  // [0..2n)
+        }
+        _nmod_fft_dif_rec2_lazy_new(p+2*len/8, len/8, order-3, F);
+
+        for (ulong k = 0; k+3 < len/8; k+=4)
+        {
+            //
+            ulong p_lo, p_hi;
+            ulong p3 = p[3+len/8 + k+0];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][12*(k+0)+1], p3);
+            p[3+len/8 + k+0] = F->tab_w[order-4][12*(k+0)] * p3 - p_hi * F->mod;  // [0..2n)
+
+            p3 = p[3+len/8 + k+1];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][12*(k+1)+1], p3);
+            p[3+len/8 + k+1] = F->tab_w[order-4][12*(k+1)] * p3 - p_hi * F->mod;  // [0..2n)
+
+            p3 = p[3+len/8 + k+2];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][12*(k+2)+1], p3);
+            p[3+len/8 + k+2] = F->tab_w[order-4][12*(k+2)] * p3 - p_hi * F->mod;  // [0..2n)
+
+            p3 = p[3+len/8 + k+3];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][12*(k+3)+1], p3);
+            p[3+len/8 + k+3] = F->tab_w[order-4][12*(k+3)] * p3 - p_hi * F->mod;  // [0..2n)
+        }
+        _nmod_fft_dif_rec2_lazy_new(p+3*len/8, len/8, order-3, F);
+
+        for (ulong k = 0; k+3 < len/8; k+=4)
+        {
+            // scale p0 <-- w**k * p0, p1 <-- w**(5*k) * p1
+            ulong p_lo, p_hi;
+            ulong p4 = p[4+len/8 + k+0];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*(k+0)+1], p4);
+            p[4+len/8 + k+0] = F->tab_w[order-4][2*(k+0)] * p4 - p_hi * F->mod;  // [0..2n)
+
+            p4 = p[4+len/8 + k+1];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*(k+1)+1], p4);
+            p[4+len/8 + k+1] = F->tab_w[order-4][2*(k+1)] * p4 - p_hi * F->mod;  // [0..2n)
+
+            p4 = p[4+len/8 + k+2];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*(k+2)+1], p4);
+            p[4+len/8 + k+2] = F->tab_w[order-4][2*(k+2)] * p4 - p_hi * F->mod;  // [0..2n)
+
+            p4 = p[4+len/8 + k+3];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*(k+3)+1], p4);
+            p[4+len/8 + k+3] = F->tab_w[order-4][2*(k+3)] * p4 - p_hi * F->mod;  // [0..2n)
+        }
+        _nmod_fft_dif_rec2_lazy_new(p+4*len/8, len/8, order-3, F);
+
+        for (ulong k = 0; k+3 < len/8; k+=4)
+        {
+            //
+            ulong p_lo, p_hi;
+            ulong p5 = p[5+len/8 + k+0];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][10*(k+0)+1], p5);
+            p[5+len/8 + k+0] = F->tab_w[order-4][10*(k+0)] * p5 - p_hi * F->mod;  // [0..2n)
+
+            p5 = p[5+len/8 + k+1];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][10*(k+1)+1], p5);
+            p[5+len/8 + k+1] = F->tab_w[order-4][10*(k+1)] * p5 - p_hi * F->mod;  // [0..2n)
+
+            p5 = p[5+len/8 + k+2];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][10*(k+2)+1], p5);
+            p[5+len/8 + k+2] = F->tab_w[order-4][10*(k+2)] * p5 - p_hi * F->mod;  // [0..2n)
+
+            p5 = p[5+len/8 + k+3];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][10*(k+3)+1], p5);
+            p[5+len/8 + k+3] = F->tab_w[order-4][10*(k+3)] * p5 - p_hi * F->mod;  // [0..2n)
+        }
+        _nmod_fft_dif_rec2_lazy_new(p+5*len/8, len/8, order-3, F);
+
+        for (ulong k = 0; k+3 < len/8; k+=4)
+        {
+            // scale p2 <-- w**(3*k) * p2, p3 <-- w**(7*k) * p3
+            ulong p_lo, p_hi;
+            ulong p6 = p[6+len/8 + k+0];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][6*(k+0)+1], p6);
+            p[6+len/8 + k+0] = F->tab_w[order-4][6*(k+0)] * p6 - p_hi * F->mod;  // [0..2n)
+
+            p6 = p[6+len/8 + k+1];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][6*(k+1)+1], p6);
+            p[6+len/8 + k+1] = F->tab_w[order-4][6*(k+1)] * p6 - p_hi * F->mod;  // [0..2n)
+
+            p6 = p[6+len/8 + k+2];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][6*(k+2)+1], p6);
+            p[6+len/8 + k+2] = F->tab_w[order-4][6*(k+2)] * p6 - p_hi * F->mod;  // [0..2n)
+
+            p6 = p[6+len/8 + k+3];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][6*(k+3)+1], p6);
+            p[6+len/8 + k+3] = F->tab_w[order-4][6*(k+3)] * p6 - p_hi * F->mod;  // [0..2n)
+        }
+        _nmod_fft_dif_rec2_lazy_new(p+6*len/8, len/8, order-3, F);
+
+        for (ulong k = 0; k+3 < len/8; k+=4)
+        {
+            //
+            ulong p_lo, p_hi;
+            ulong p7 = p[7+len/8 + k+0];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][14*(k+0)+1], p7);
+            p[7+len/8 + k+0] = F->tab_w[order-4][14*(k+0)] * p7 - p_hi * F->mod;  // [0..2n)
+
+            p7 = p[7+len/8 + k+1];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][14*(k+1)+1], p7);
+            p[7+len/8 + k+1] = F->tab_w[order-4][14*(k+1)] * p7 - p_hi * F->mod;  // [0..2n)
+
+            p7 = p[7+len/8 + k+2];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][14*(k+2)+1], p7);
+            p[7+len/8 + k+2] = F->tab_w[order-4][14*(k+2)] * p7 - p_hi * F->mod;  // [0..2n)
+
+            p7 = p[7+len/8 + k+3];
+            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][14*(k+3)+1], p7);
+            p[7+len/8 + k+3] = F->tab_w[order-4][14*(k+3)] * p7 - p_hi * F->mod;  // [0..2n)
+        }
+        _nmod_fft_dif_rec2_lazy_new(p+7*len/8, len/8, order-3, F);
     }
 }
 
@@ -456,7 +663,7 @@ void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong nod
     //    p[2] = v0 + v1;             // [0..4n)
     //    p[3] = v0 + F->mod2 - v1;  // [0..4n)
     //}
-    //else 
+    //else
     if (order == 3)
     {
         // in [0..4n), out [0..4n)
