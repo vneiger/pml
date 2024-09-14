@@ -13,8 +13,8 @@
 // result stored in res; a_pr is the precomputation for n, p_hi and p_lo are temporaries
 #define N_MULMOD_PRECOMP_LAZY(res, a, b, a_pr, n, p_hi, p_lo) \
     do {                                                      \
-        umul_ppmm(p_hi, p_lo, a_pr, b);                       \
-        res = a * b - p_hi * n;                               \
+        umul_ppmm(p_hi, p_lo, (a_pr), (b));                   \
+        res = (a) * (b) - p_hi * (n);                         \
     } while(0)
 
 /*----------------*/
@@ -61,9 +61,6 @@
         N_MULMOD_PRECOMP_LAZY(b, w, tmp, w_pr, n, p_hi, p_lo);   \
     } while(0)
 
-
-
-
 // lazy3 red:
 // input [0..4n), output [0..4n)
 // n4 is 4*n
@@ -78,6 +75,8 @@
         if ((b) >= (n4))         \
             (b) -= (n4);         \
     } while(0)
+
+
 
 
 // OTHER DFT2 NOT USED CURRENTLY
@@ -130,6 +129,66 @@
  *                              [1 -1 -I  I]
  * */
 
+// lazy2 red: input in [0..2*n) --> output [0..4*n)
+// n2 is 2*n
+#define DFT4_DIF_SHOUP_LAZY2_RED(a,b,c,d,I,Ipre,n,n2)                  \
+    do {                                                               \
+        const ulong p0 = (a);                                          \
+        const ulong p1 = (b);                                          \
+        const ulong p2 = (c);                                          \
+        const ulong p3 = (d);                                          \
+        ulong p4 = p0 + p2;                         /* < 4*n */        \
+        if (p4 >= (n2))                                                \
+            p4 -= (n2);                             /* < 2*n */        \
+        ulong p5 = p0 + (n2) - p2;                  /* < 4*n */        \
+        if (p5 >= (n2))                                                \
+            p5 -= (n2);                             /* < 2*n */        \
+        ulong p6 = p1 + p3;                         /* < 4*n */        \
+        if (p6 >= (n2))                                                \
+            p6 -= (n2);                             /* < 2*n */        \
+        ulong p7, p_hi, p_lo;                                          \
+        N_MULMOD_PRECOMP_LAZY(p7, (I), p1 + (n2) - p3, (Ipre), (n),    \
+                              p_hi, p_lo);                             \
+        (a) = p4 + p6;                              /* < 4*n */        \
+        (b) = p4 + (n2) - p6;                       /* < 4*n */        \
+        (c) = p5 + p7;                              /* < 4*n */        \
+        (d) = p5 + (n2) - p7;                       /* < 4*n */        \
+    } while(0)
+
+// in [0..2n) out [0..2n)
+#define BUTTERFLY4_GS_LAZY(a,b,c,d,                                    \
+                           I,I_pr,w1,w1_pr,w2,w2_pr,w3,w3_pr,          \
+                           n,n2,n4,p_hi,p_lo)                          \
+    do {                                                               \
+            const ulong u0 = (a);                                      \
+            const ulong u1 = (b);                                      \
+            const ulong u2 = (c);                                      \
+            const ulong u3 = (d);                                      \
+                                                                       \
+            ulong u4 = u0 + u2;            /* [0..4n) */               \
+            ulong u5 = u0 + n2 - u2;       /* [0..4n) */               \
+            ulong u6 = u1 + u3;            /* [0..4n) */               \
+            ulong u7 = u1 + n2 - u3;       /* [0..4n) */               \
+                                                                       \
+            N_MULMOD_PRECOMP_LAZY(u7, I, u7, I_pr, n, p_hi, p_lo);     \
+                                                                       \
+            p_lo = u4 + u6;                /* [0..8n) */               \
+            if (p_lo >= n4)                                            \
+                p_lo -= n4;                                            \
+            if (p_lo >= n2)                                            \
+                p_lo -= n2;                                            \
+            (a) = p_lo;                    /* [0..2n) */               \
+                                                                       \
+            u4 = u4 + n4 - u6;                                         \
+            N_MULMOD_PRECOMP_LAZY((b), w2, u4, w2_pr, n, p_hi, p_lo);  \
+            u6 = u5 + u7;                                              \
+            N_MULMOD_PRECOMP_LAZY((c), w1, u6, w1_pr, n, p_hi, p_lo);  \
+            u5 = u5 + n2 - u7;                                         \
+            N_MULMOD_PRECOMP_LAZY((d), w3, u5, w3_pr, n, p_hi, p_lo);  \
+    } while(0)
+
+
+// NOT USED
 // lazy1: input in [0..n) --> output [0..4*n)
 #define DFT4_DIF_SHOUP_LAZY1(a,b,c,d,I,Ipre,n,n2)                  \
     do {                                                           \
@@ -148,30 +207,6 @@
         (d) = p5 + (n2) - p7;                      /* < 4*n */     \
     } while(0)
 
-// lazy2 red: input in [0..2*n) --> output [0..4*n)
-// n2 is 2*n
-#define DFT4_DIF_SHOUP_LAZY2_RED(a,b,c,d,I,Ipre,n,n2)                  \
-    do {                                                               \
-        const ulong p0 = (a);                                          \
-        const ulong p1 = (b);                                          \
-        const ulong p2 = (c);                                          \
-        const ulong p3 = (d);                                          \
-        ulong p4 = p0 + p2;                         /* < 4*n */        \
-        if (p4 >= (n2))                                                \
-            p4 -= (n2);                             /* < 2*n */        \
-        ulong p5 = p0 + (n2) - p2;                  /* < 4*n */        \
-        if (p5 >= (n2))                                                \
-            p5 -= (n2);                             /* < 2*n */        \
-        ulong p6 = p1 + p3;                         /* < 4*n */        \
-        if (p6 >= (n2))                                                \
-            p6 -= (n2);                             /* < 2*n */        \
-        const ulong p7 =                            /* < 2*n */        \
-             n_mulmod_shoup_lazy((I), p1 + (n2) - p3, (Ipre), (n));    \
-        (a) = p4 + p6;                              /* < 4*n */        \
-        (b) = p4 + (n2) - p6;                       /* < 4*n */        \
-        (c) = p5 + p7;                              /* < 4*n */        \
-        (d) = p5 + (n2) - p7;                       /* < 4*n */        \
-    } while(0)
 
 /*----------------*/
 /* 8-point DFT    */
@@ -351,40 +386,20 @@ void _nmod_fft_dif_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F
     ulong llen = len;
     for (ulong ell = order; ell > 3; ell--, llen>>=1)
         for (ulong k = 0; k < len; k+=llen)
+        {
+            const nn_ptr p0 = p+k;
+            const nn_ptr p1 = p+llen/2+k;
+            const nn_ptr ww = F->tab_w[ell-4];
+            ulong p_hi, p_lo, tmp;
+            // in: p0, p1 in [0..2n); out: p0, p1 in [0..2n)
             for (ulong kk = 0; kk < llen/2; kk+=4)
             {
-                // in: p[k+kk], p[llen/2+k+kk] in [0..2n)
-                // out: p[k+kk], p[llen/2+k+kk] in [0..2n)
-                ulong p_hi, p_lo, tmp;
-
-                tmp = p[k+kk+0] + F->mod2 - p[llen/2+k+kk+0];
-                p[k+kk+0] = p[k+kk+0] + p[llen/2+k+kk+0];
-                if (p[k+kk+0] >= F->mod2)
-                    p[k+kk+0] -= F->mod2;
-                umul_ppmm(p_hi, p_lo, F->tab_w[ell-4][2*kk+1], tmp);
-                p[llen/2+k+kk+0] = F->tab_w[ell-4][2*kk+0] * tmp - p_hi * F->mod;
-
-                tmp = p[k+kk+1] + F->mod2 - p[llen/2+k+kk+1];
-                p[k+kk+1] = p[k+kk+1] + p[llen/2+k+kk+1];
-                if (p[k+kk+1] >= F->mod2)
-                    p[k+kk+1] -= F->mod2;
-                umul_ppmm(p_hi, p_lo, F->tab_w[ell-4][2*kk+3], tmp);
-                p[llen/2+k+kk+1] = F->tab_w[ell-4][2*kk+2] * tmp - p_hi * F->mod;
-
-                tmp = p[k+kk+2] + F->mod2 - p[llen/2+k+kk+2];
-                p[k+kk+2] = p[k+kk+2] + p[llen/2+k+kk+2];
-                if (p[k+kk+2] >= F->mod2)
-                    p[k+kk+2] -= F->mod2;
-                umul_ppmm(p_hi, p_lo, F->tab_w[ell-4][2*kk+5], tmp);
-                p[llen/2+k+kk+2] = F->tab_w[ell-4][2*kk+4] * tmp - p_hi * F->mod;
-
-                tmp = p[k+kk+3] + F->mod2 - p[llen/2+k+kk+3];
-                p[k+kk+3] = p[k+kk+3] + p[llen/2+k+kk+3];
-                if (p[k+kk+3] >= F->mod2)
-                    p[k+kk+3] -= F->mod2;
-                umul_ppmm(p_hi, p_lo, F->tab_w[ell-4][2*kk+7], tmp);
-                p[llen/2+k+kk+3] = F->tab_w[ell-4][2*kk+6] * tmp - p_hi * F->mod;
+                BUTTERFLY_GS_LAZY(p0[kk+0], p1[kk+0], F->mod, F->mod2, ww[2*kk+0], ww[2*kk+1], p_hi, p_lo, tmp);
+                BUTTERFLY_GS_LAZY(p0[kk+1], p1[kk+1], F->mod, F->mod2, ww[2*kk+2], ww[2*kk+3], p_hi, p_lo, tmp);
+                BUTTERFLY_GS_LAZY(p0[kk+2], p1[kk+2], F->mod, F->mod2, ww[2*kk+4], ww[2*kk+5], p_hi, p_lo, tmp);
+                BUTTERFLY_GS_LAZY(p0[kk+3], p1[kk+3], F->mod, F->mod2, ww[2*kk+6], ww[2*kk+7], p_hi, p_lo, tmp);
             }
+        }
 
     // perform last FFT layers
     for (ulong k = 0; k < len; k+=8)
@@ -807,39 +822,12 @@ void _nmod_fft_dif_rec4_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
         const nn_ptr p1 = p+(len/4);
         const nn_ptr p2 = p1+(len/4);
         const nn_ptr p3 = p2+(len/4);
+        ulong p_hi, p_lo;
         for (ulong k = 0; k < len/4; k++)
         {
-            const ulong u0 = p0[k];
-            const ulong u1 = p1[k];
-            const ulong u2 = p2[k];
-            const ulong u3 = p3[k];
-            ulong u4 = u0 + u2;  // [0..4n)
-            ulong u5 = u0 + F->mod2 - u2;  // [0..4n)
-            ulong u6 = u1 + u3;  // [0..4n)
-            ulong u7 = u1 + F->mod2 - u3;
-
-            ulong p_hi, p_lo;
-            umul_ppmm(p_hi, p_lo, F->Ipre, u7);
-            u7 = F->I * u7 - p_hi * F->mod;  // [0..2n)
-
-            p_lo = u4 + u6;  // [0..8n)
-            if (p_lo >= F->mod4)
-                p_lo -= F->mod4;
-            if (p_lo >= F->mod2)
-                p_lo -= F->mod2;
-            p0[k] = p_lo;  // [0..2n)
-
-            u4 = u4 + F->mod4 - u6;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][4*k+1], u4);
-            p1[k] = F->tab_w[order-4][4*k+0] * u4 - p_hi * F->mod;  // [0..2n)
-
-            u6 = u5 + u7;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+1], u6);
-            p2[k] = F->tab_w[order-4][2*k+0] * u6 - p_hi * F->mod;  // [0..2n)
-
-            u5 = u5 + F->mod2 - u7;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][6*k+1], u5);
-            p3[k] = F->tab_w[order-4][6*k+0] * u5 - p_hi * F->mod;  // [0..2n)
+            BUTTERFLY4_GS_LAZY(p0[k], p1[k], p2[k], p3[k],
+                               F->I, F->Ipre, F->tab_w[order-4][2*k], F->tab_w[order-4][2*k+1], F->tab_w[order-4][4*k], F->tab_w[order-4][4*k+1], F->tab_w[order-4][6*k], F->tab_w[order-4][6*k+1],
+                               F->mod, F->mod2, F->mod4, p_hi, p_lo);
         }
         _nmod_fft_dif_rec4_lazy(p0, len/4, order-2, F);
         _nmod_fft_dif_rec4_lazy(p1, len/4, order-2, F);

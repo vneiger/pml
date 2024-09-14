@@ -154,18 +154,6 @@ void _nmod_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F
 void _nmod_fft_dif_rec4_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F);
 void _nmod_fft_dif_rec8_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F);
 
-/*--------------------*/
-/* arithmetic helpers */
-/*--------------------*/
-
-// returns a*b % n  in [0..2*n)
-FLINT_FORCE_INLINE ulong n_mulmod_shoup_lazy(ulong a, ulong b, ulong apre, ulong n)
-{
-    ulong p_hi, p_lo;
-    umul_ppmm(p_hi, p_lo, apre, b);
-    return a * b - p_hi * n;
-}
-
 #ifdef __cplusplus
 }
 #endif
