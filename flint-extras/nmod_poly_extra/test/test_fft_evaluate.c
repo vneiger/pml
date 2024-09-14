@@ -118,7 +118,6 @@ void test_fft_eval()
                 _nmod_vec_clear(coeffs);
             }
 
-            if (0)
             {  // dif rec2 lazy new
                 ulong * coeffs = _nmod_vec_init(len);
                 _nmod_vec_set(coeffs, pol->coeffs, len);
@@ -168,7 +167,7 @@ void test_fft_eval()
                 _nmod_fft_red_rec2_lazy(coeffs, len, order, Fred);
 
                 if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
-                        || !nmod_vec_range(coeffs, len, 8*mod.n))
+                        || !nmod_vec_range(coeffs, len, 4*mod.n))
                 {
                     printf("\n\nERROR! in _nmod_fft_red_rec2_lazy\n\n");
                     if (len < 33)
