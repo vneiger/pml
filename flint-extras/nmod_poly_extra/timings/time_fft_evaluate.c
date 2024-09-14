@@ -51,7 +51,7 @@ void sample_##fun(void * arg, ulong count)                                      
 }                                                                                \
 
 SAMPLE(dif_rec2_lazy, )
-SAMPLE(dif_rec2_lazy_new, _new)
+SAMPLE(dif_rec2_lazy_new, _red)
 SAMPLE(dif_iter2_lazy, )
 SAMPLE(red_rec2_lazy, _red)
 SAMPLE(dif_rec4_lazy, )
