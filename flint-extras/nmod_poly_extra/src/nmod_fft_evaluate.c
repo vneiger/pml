@@ -237,6 +237,7 @@ FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, nmod_fft_ctx_t F)
 }
 
 
+
 // input [0..2*n), output [0..4*n)
 // order >= 3
 void _nmod_fft_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
@@ -381,56 +382,6 @@ void _nmod_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
 // restricting to order >= 3 is a bit faster for smallish orders
 void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong node, nmod_fft_ctx_t F)
 {
-    // order == 0: nothing to do
-    //if (order == 1)
-    //{
-    //    // in [0..2n), out [0..4n)
-    //    const ulong u = p[0];
-    //    ulong v = p[1];
-    //    ulong p_hi, p_lo;
-    //    umul_ppmm(p_hi, p_lo, F->tab_w_pre[1][node], v);
-    //    v = F->tab_w[1][node] * v - p_hi * F->mod;
-    //    p[0] = u + v;
-    //    p[1] = u + F->mod2 - v;
-    //}
-    //else if (order == 2)
-    //{
-    //    // in [0..2n), out [0..4n)
-    //    ulong p_hi, p_lo;
-    //    const ulong u0 = p[0];
-    //    const ulong u1 = p[1];
-    //    ulong v0 = p[2];
-    //    ulong v1 = p[3];
-
-    //    ulong w = F->tab_w[1][node];
-    //    ulong wpre = F->tab_w_pre[1][node];
-    //    umul_ppmm(p_hi, p_lo, wpre, v0);
-    //    v0 = w * v0 - p_hi * F->mod;
-    //    umul_ppmm(p_hi, p_lo, wpre, v1);
-    //    v1 = w * v1 - p_hi * F->mod;
-    //    ulong p0 = u0 + v0;  // [0..4n)
-    //    if (p0 >= F->mod2)
-    //        p0 -= F->mod2;      // [0..2n)
-    //    ulong p1 = u1 + v1;  // [0..4n)
-    //    v0 = u0 + F->mod2 - v0;  // [0..4n)
-    //    if (v0 >= F->mod2)
-    //        v0 -= F->mod2;       // [0..2n)
-    //    v1 = u1 + F->mod2 - v1;  // [0..4n)
-
-    //    w = F->tab_w[1][2*node];
-    //    wpre = F->tab_w_pre[1][2*node];
-    //    umul_ppmm(p_hi, p_lo, wpre, p1);
-    //    p1 = w * p1 - p_hi * F->mod;
-    //    w = F->tab_w[1][2*node+1];
-    //    wpre = F->tab_w_pre[1][2*node+1];
-    //    umul_ppmm(p_hi, p_lo, wpre, v1);
-    //    v1 = w * v1 - p_hi * F->mod;
-    //    p[0] = p0 + p1;             // [0..4n)
-    //    p[1] = p0 + F->mod2 - p1;  // [0..4n)
-    //    p[2] = v0 + v1;             // [0..4n)
-    //    p[3] = v0 + F->mod2 - v1;  // [0..4n)
-    //}
-    //else
     if (order == 3)
     {
         // in [0..4n), out [0..4n)
@@ -448,14 +399,10 @@ void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong nod
         // mod x**4 - w | x**4 + w
         ulong w = F->tab_w[1][2*node];
         ulong wpre = F->tab_w[1][2*node+1];
-        umul_ppmm(p_hi, p_lo, wpre, v0);
-        v0 = w * v0 - p_hi * F->mod;
-        umul_ppmm(p_hi, p_lo, wpre, v1);
-        v1 = w * v1 - p_hi * F->mod;
-        umul_ppmm(p_hi, p_lo, wpre, v2);
-        v2 = w * v2 - p_hi * F->mod;
-        umul_ppmm(p_hi, p_lo, wpre, v3);
-        v3 = w * v3 - p_hi * F->mod;
+        N_MULMOD_PRECOMP_LAZY(v0, w, v0, wpre, F->mod, p_hi, p_lo);
+        N_MULMOD_PRECOMP_LAZY(v1, w, v1, wpre, F->mod, p_hi, p_lo);
+        N_MULMOD_PRECOMP_LAZY(v2, w, v2, wpre, F->mod, p_hi, p_lo);
+        N_MULMOD_PRECOMP_LAZY(v3, w, v3, wpre, F->mod, p_hi, p_lo);
         ulong p0 = u0 + v0;   // [0..6n)
         ulong p1 = u1 + v1;   // [0..6n)
         ulong p2 = u2 + v2;   // [0..6n)
@@ -468,18 +415,15 @@ void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong nod
         // left, mod x**2 - sqrt(w) | x**2 + sqrt(w)
         w = F->tab_w[1][4*node];
         wpre = F->tab_w[1][4*node+1];
-        umul_ppmm(p_hi, p_lo, wpre, p2);
-        p2 = w * p2 - p_hi * F->mod;
-        umul_ppmm(p_hi, p_lo, wpre, p3);
-        p3 = w * p3 - p_hi * F->mod;
+        N_MULMOD_PRECOMP_LAZY(p2, w, p2, wpre, F->mod, p_hi, p_lo);
+        N_MULMOD_PRECOMP_LAZY(p3, w, p3, wpre, F->mod, p_hi, p_lo);
         v0 = p0 + p2;             // [0..8n)
         v1 = p1 + p3;             // [0..8n)
         v2 = p0 + F->mod2 - p2;  // [0..8n)
         v3 = p1 + F->mod2 - p3;  // [0..8n)
 
         // left-left, mod x - fort(w) | x + fort(w)
-        umul_ppmm(p_hi, p_lo, F->tab_w[1][8*node+1], v1);
-        v1 = F->tab_w[1][8*node] * v1 - p_hi * F->mod;
+        N_MULMOD_PRECOMP_LAZY(v1, F->tab_w[1][8*node], v1, F->tab_w[1][8*node+1], F->mod, p_hi, p_lo);
         if (v0 >= F->mod4)
             v0 -= F->mod4;
         if (v0 >= F->mod2)
@@ -488,8 +432,7 @@ void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong nod
         p[1] = v0 + F->mod2 - v1;  // [0..4n)
 
         // left-right, mod x - I*fort(w) | x+ I*fort(w)
-        umul_ppmm(p_hi, p_lo, F->tab_w[1][8*node+3], v3);
-        v3 = F->tab_w[1][8*node+2] * v3 - p_hi * F->mod;
+        N_MULMOD_PRECOMP_LAZY(v3, F->tab_w[1][8*node+2], v3, F->tab_w[1][8*node+3], F->mod, p_hi, p_lo);
         if (v2 >= F->mod4)
             v2 -= F->mod4;
         if (v2 >= F->mod2)
@@ -500,18 +443,15 @@ void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong nod
         // right, mod x**2 - I*sqrt(w) | x**2 + I*sqrt(w)
         w = F->tab_w[1][4*node+2];
         wpre = F->tab_w[1][4*node+3];
-        umul_ppmm(p_hi, p_lo, wpre, u2);
-        u2 = w * u2 - p_hi * F->mod;
-        umul_ppmm(p_hi, p_lo, wpre, u3);
-        u3 = w * u3 - p_hi * F->mod;
+        N_MULMOD_PRECOMP_LAZY(u2, w, u2, wpre, F->mod, p_hi, p_lo);
+        N_MULMOD_PRECOMP_LAZY(u3, w, u3, wpre, F->mod, p_hi, p_lo);
         v0 = u0 + u2;             // [0..8n)
         v1 = u1 + u3;             // [0..8n)
         v2 = u0 + F->mod2 - u2;  // [0..8n)
         v3 = u1 + F->mod2 - u3;  // [0..8n)
 
         // right-left, mod x - J*fort(w) | x + J*fort(w)
-        umul_ppmm(p_hi, p_lo, F->tab_w[1][8*node+5], v1);
-        v1 = F->tab_w[1][8*node+4] * v1 - p_hi * F->mod;
+        N_MULMOD_PRECOMP_LAZY(v1, F->tab_w[1][8*node+4], v1, F->tab_w[1][8*node+5], F->mod, p_hi, p_lo);
         if (v0 >= F->mod4)
             v0 -= F->mod4;
         if (v0 >= F->mod2)
@@ -520,8 +460,7 @@ void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong nod
         p[5] = v0 + F->mod2 - v1;  // [0..4n)
 
         // right-right, mod x - I*J*fort(w) | x + I*J*fort(w)
-        umul_ppmm(p_hi, p_lo, F->tab_w[1][8*node+7], v3);
-        v3 = F->tab_w[1][8*node+6] * v3 - p_hi * F->mod;
+        N_MULMOD_PRECOMP_LAZY(v3, F->tab_w[1][8*node+6], v3, F->tab_w[1][8*node+7], F->mod, p_hi, p_lo);
         if (v2 >= F->mod4)
             v2 -= F->mod4;
         if (v2 >= F->mod2)
