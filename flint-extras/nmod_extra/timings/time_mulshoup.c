@@ -151,6 +151,7 @@ void sample_avx2_2(void * FLINT_UNUSED(arg), ulong count)
 }
 
 // pretending modulus is special, like 2**60 - 2**30 - 1
+#if defined(__AVX512F__)
 void sample_avx512(void * FLINT_UNUSED(arg), ulong count)
 {
     nn_ptr array = flint_malloc(NB_ITER * sizeof(ulong));
@@ -191,6 +192,7 @@ void sample_avx512(void * FLINT_UNUSED(arg), ulong count)
     flint_aligned_free(array);
     FLINT_TEST_CLEAR(state);
 }
+#endif
 
 // __attribute__((optimize("no-tree-vectorize")))
 void sample_shoup_autovec(void * FLINT_UNUSED(arg), ulong count)
@@ -236,6 +238,7 @@ void sample_shoup_autovec(void * FLINT_UNUSED(arg), ulong count)
 }
 
 // __attribute__((optimize("no-tree-vectorize")))
+#if defined(__AVX512DQ__) && defined(__AVX512VL__)
 void sample_shoup_avx2(void * FLINT_UNUSED(arg), ulong count)
 {
     nn_ptr array = (nn_ptr) flint_malloc(NB_ITER*sizeof(ulong));
@@ -288,6 +291,7 @@ void sample_shoup_avx2(void * FLINT_UNUSED(arg), ulong count)
     flint_free(array);
     FLINT_TEST_CLEAR(state);
 }
+#endif
 
 
 // __attribute__((optimize("no-tree-vectorize")))
@@ -392,9 +396,11 @@ int main(void)
     flint_printf("   - basic special red AVX2 (two arrays): %.3f cycles / %.3f cycles\n",
             (min/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER, (max/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER);
 
+#if defined(__AVX512F__)
     prof_repeat(&min, &max, sample_avx512, NULL);
     flint_printf("   - basic special red AVX512: %.3f cycles / %.3f cycles\n",
             (min/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER, (max/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER);
+#endif
 
     prof_repeat(&min, &max, sample_shoup, NULL);
     flint_printf("   - Shoup excluding precomputation: %.3f cycles / %.3f cycles\n",
@@ -404,9 +410,11 @@ int main(void)
     flint_printf("   - Shoup excluding precomputation, autovec: %.3f cycles / %.3f cycles\n",
             (min/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER, (max/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER);
 
+#if defined(__AVX512DQ__) && defined(__AVX512VL__)
     prof_repeat(&min, &max, sample_shoup_avx2, NULL);
     flint_printf("   - Shoup excluding precomputation, avx2: %.3f cycles / %.3f cycles\n",
             (min/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER, (max/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER);
+#endif
 
 
     prof_repeat(&min, &max, sample_shoup_autovec_2, NULL);
