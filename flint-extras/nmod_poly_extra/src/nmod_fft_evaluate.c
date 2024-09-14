@@ -171,8 +171,7 @@
 
 // reduction tree 8-point lazy DFT
 // lazy red: input in [0..2*n) --> output in [0..4*n)
-// FIXME goes through [0..16n)... easily improved to [0..8n)
-//       (just reduce v0,v1 to [0..4n) immediately --> check no speed difference)
+// max value < 8n
 FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, nmod_fft_ctx_t F)
 {
     ulong p_hi, p_lo;
@@ -202,16 +201,16 @@ FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, nmod_fft_ctx_t F)
     v3 = p1 + F->mod4 - p3;  // [0..8n)
 
     // left-left, mod x-1 | x+1
-    p0 = v0 + v1;               // [0..16n)
-    p1 = v0 + 2*F->mod4 - v1;  // [0..16n)
-    if (p0 > 2*F->mod4)
-        p0 -= 2*F->mod4;
-    if (p0 > F->mod4)
-        p0 -= F->mod4;        // [0..4n)
-    if (p1 > 2*F->mod4)
-        p1 -= 2*F->mod4;
-    if (p1 > F->mod4)
-        p1 -= F->mod4;        // [0..4n)
+    if (v0 >= F->mod4)
+        v0 -= F->mod4;
+    if (v1 >= F->mod4)
+        v1 -= F->mod4;
+    p0 = v0 + v1;               // [0..8n)
+    p1 = v0 + F->mod4 - v1;     // [0..8n)
+    if (p0 >= F->mod4)
+        p0 -= F->mod4;
+    if (p1 >= F->mod4)
+        p1 -= F->mod4;
     p[0] = p0;
     p[1] = p1;
 
