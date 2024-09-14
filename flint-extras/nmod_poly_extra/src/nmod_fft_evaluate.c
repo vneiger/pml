@@ -193,7 +193,7 @@
 // in [0..4n), out [0..4n)
 #define BUTTERFLY4_CT_LAZY(a,b,c,d,                                    \
                            w1,w1_pr,w2,w2_pr,w3,w3_pr,                 \
-                           n,n2,n4,p_hi,p_lo,tmp)                      \
+                           n,n2,p_hi,p_lo,tmp)                         \
     do {                                                               \
             ulong u0 = (a);                                            \
             ulong u1 = (b);                                            \
@@ -425,10 +425,34 @@ FLINT_FORCE_INLINE void dft16_red_lazy(nn_ptr p, nmod_fft_ctx_t F)
 
     // next line requires < 2n, hence the four reductions above
     DFT4_LAZY2_RED(p[0], p[1], p[2], p[3], F->I, F->Ipre, F->mod, F->mod2, p_hi, p_lo);
-    BUTTERFLY4_CT_LAZY(p[4], p[5], p[6], p[7], F->I, F->Ipre, F->J, F->Jpre, F->IJ, F->IJpre, F->mod, F->mod2, F->mod4, p_hi, p_lo, tmp);
-    BUTTERFLY4_CT_LAZY(p[8], p[9], p[10], p[11], F->J, F->Jpre, F->tab_w[1][8], F->tab_w[1][9], F->tab_w[1][10], F->tab_w[1][11], F->mod, F->mod2, F->mod4, p_hi, p_lo, tmp);
-    BUTTERFLY4_CT_LAZY(p[12], p[13], p[14], p[15], F->IJ, F->IJpre, F->tab_w[1][12], F->tab_w[1][13], F->tab_w[1][14], F->tab_w[1][15], F->mod, F->mod2, F->mod4, p_hi, p_lo, tmp);
+    BUTTERFLY4_CT_LAZY(p[4], p[5], p[6], p[7], F->I, F->Ipre, F->J, F->Jpre, F->IJ, F->IJpre, F->mod, F->mod2, p_hi, p_lo, tmp);
+    BUTTERFLY4_CT_LAZY(p[8], p[9], p[10], p[11], F->J, F->Jpre, F->tab_w[1][8], F->tab_w[1][9], F->tab_w[1][10], F->tab_w[1][11], F->mod, F->mod2, p_hi, p_lo, tmp);
+    BUTTERFLY4_CT_LAZY(p[12], p[13], p[14], p[15], F->IJ, F->IJpre, F->tab_w[1][12], F->tab_w[1][13], F->tab_w[1][14], F->tab_w[1][15], F->mod, F->mod2, p_hi, p_lo, tmp);
 }
+
+// in [0..2n), out [0..4n), max value < 8n
+FLINT_FORCE_INLINE void dft16_red_lazy_general(nn_ptr p, ulong node, nmod_fft_ctx_t F)
+{
+    ulong p_hi, p_lo, tmp;
+    
+    ulong w2 = F->tab_w[1][2*node];
+    ulong w2pre = F->tab_w[1][2*node+1];
+    ulong w = F->tab_w[1][4*node];
+    ulong wpre = F->tab_w[1][4*node+1];
+    ulong Iw = F->tab_w[1][4*node+2];
+    ulong Iwpre = F->tab_w[1][4*node+3];
+    BUTTERFLY4_CT_LAZY(p[0], p[4], p[ 8], p[12], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, tmp);
+    BUTTERFLY4_CT_LAZY(p[1], p[5], p[ 9], p[13], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, tmp);
+    BUTTERFLY4_CT_LAZY(p[2], p[6], p[10], p[14], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, tmp);
+    BUTTERFLY4_CT_LAZY(p[3], p[7], p[11], p[15], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, tmp);
+
+    // next line requires < 2n, hence the four reductions above
+    dft8_red_lazy_general(p, 4*node, F);
+    dft8_red_lazy_general(p+8, 4*node+1, F);
+    dft8_red_lazy_general(p+16, 4*node+2, F);
+    dft8_red_lazy_general(p+24, 4*node+3, F);
+}
+
 
 // in [0..2n), out [0..4n), max value < 8n
 FLINT_FORCE_INLINE void dft32_red_lazy(nn_ptr p, nmod_fft_ctx_t F)
@@ -828,8 +852,8 @@ void _nmod_fft_red_rec2_lazy_general_new(nn_ptr p, ulong len, ulong order, ulong
 
         ulong p_hi, p_lo, u, v;
 
-        BUTTERFLY4_CT_LAZY(p[0], p[2], p[4], p[6], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, F->mod4, p_hi, p_lo, u);
-        BUTTERFLY4_CT_LAZY(p[1], p[3], p[5], p[7], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, F->mod4, p_hi, p_lo, u);
+        BUTTERFLY4_CT_LAZY(p[0], p[2], p[4], p[6], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, u);
+        BUTTERFLY4_CT_LAZY(p[1], p[3], p[5], p[7], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, u);
 
         BUTTERFLY2_CT_LAZY(p[0], p[1], F->mod, F->mod2, F->tab_w[1][8*node], F->tab_w[1][8*node+1], p_hi, p_lo, u, v);
         BUTTERFLY2_CT_LAZY(p[2], p[3], F->mod, F->mod2, F->tab_w[1][8*node+2], F->tab_w[1][8*node+3], p_hi, p_lo, u, v);
