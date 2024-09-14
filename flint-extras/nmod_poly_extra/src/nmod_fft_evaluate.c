@@ -4,6 +4,19 @@
 
 #include "nmod_poly_fft.h"
 
+/*--------------------------------*/
+/* Modular multiplication helpers */
+/*--------------------------------*/
+
+// Shoup's modular multiplication with precomputation, lazy
+// let r = (a*b) % n, this returns r or r+n
+// result stored in res; a_pr is the precomputation for n, p_hi and p_lo are temporaries
+#define N_MULMOD_PRECOMP_LAZY(res, a, b, a_pr, n, p_hi, p_lo) \
+    do {                                                      \
+        umul_ppmm(p_hi, p_lo, a_pr, b);                       \
+        res = a * b - p_hi * n;                               \
+    } while(0)
+
 /*----------------*/
 /* 2-point DFT    */
 /*----------------*/
@@ -12,6 +25,62 @@
  *                    [1   1]
  * [a  b]  <-  [a  b] [1  -1]
  * */
+
+// lazy2 red1:
+// input [0..2n) x [0..2n)
+// output [0..2n) x [0..4n)
+// n2 is 2*n, tmp is a temporary (ulong)
+#define DFT2_LAZY2_RED1(a, b, n2, tmp) \
+    do {                               \
+        tmp = (b);                     \
+        (b) = (a) + (n2) - tmp;        \
+        (a) = (a) + tmp;               \
+        if ((a) >= (n2))               \
+            (a) -= (n2);               \
+    } while(0)
+
+// lazy2 red1 out:
+// input [0..2n) x [0..2n)
+// output [0..2n) x [0..4n)
+// b unchanged, a-b stored in tmp
+// n2 is 2*n
+#define DFT2_LAZY2_RED1_OUT(a, b, n2, tmp) \
+    do {                                   \
+        tmp = (a) + (n2) - (b);            \
+        (a) = (a) + (b);                   \
+        if ((a) >= (n2))                   \
+            (a) -= (n2);                   \
+    } while(0)
+
+// Gentleman-Sande butterfly, in-place, lazy
+// in:  a,b in [0..2n) x [0..2n)
+// out: a,b in [0..2n) x [0..2n)
+#define BUTTERFLY_GS_LAZY(a, b, n, n2, w, w_pr, p_hi, p_lo, tmp) \
+    do {                                                         \
+        DFT2_LAZY2_RED1_OUT(a, b, n2, tmp);                      \
+        N_MULMOD_PRECOMP_LAZY(b, w, tmp, w_pr, n, p_hi, p_lo);   \
+    } while(0)
+
+
+
+
+// lazy3 red:
+// input [0..4n), output [0..4n)
+// n4 is 4*n
+// currently only used in base cases
+#define DFT2_LAZY3_RED(a, b, n4) \
+    do {                         \
+        const ulong tmp = (a);   \
+        (a) = (a) + (b);         \
+        if ((a) >= (n4))         \
+            (a) -= (n4);         \
+        (b) = tmp + n4 - (b);    \
+        if ((b) >= (n4))         \
+            (b) -= (n4);         \
+    } while(0)
+
+
+// OTHER DFT2 NOT USED CURRENTLY
 
 // lazy1: input [0..n), output [0..2n)
 #define DFT2_LAZY1(a,b,n)           \
@@ -31,19 +100,6 @@
         (b) = tmp + (n2) - (b);     \
     } while(0)
 
-// lazy2 red1:
-// input [0..2n) x [0..2n)
-// output [0..2n) x [0..4n)
-// n2 is 2*n
-#define DFT2_LAZY2_RED1(a,b,n2)     \
-    do {                            \
-        const ulong tmp = (b);  \
-        (b) = (a) + (n2) - tmp;     \
-        (a) = (a) + tmp;            \
-        if ((a) >= (n2))            \
-            (a) -= (n2);            \
-    } while(0)
-
 // lazy2 red:
 // input [0..2n), output [0..2n)
 // n2 is 2*n
@@ -56,20 +112,6 @@
         (a) += tmp;                 \
         if ((a) >= (n2))            \
             (a) -= (n2);            \
-    } while(0)
-
-// lazy3 red:
-// input [0..4n), output [0..4n)
-// n4 is 4*n
-#define DFT2_LAZY3_RED(a,b,n4)      \
-    do {                            \
-        const ulong tmp = (a);  \
-        (a) = (a) + (b);            \
-        if ((a) >= (n4))            \
-            (a) -= (n4);            \
-        (b) = tmp + n4 - (b);       \
-        if ((b) >= (n4))            \
-            (b) -= (n4);            \
     } while(0)
 
 
@@ -182,8 +224,7 @@ FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, nmod_fft_ctx_t F)
     p[1] = p1;
 
     // left-right, mod x-I | x+I
-    umul_ppmm(p_hi, p_lo, F->Ipre, v3);
-    v3 = F->I * v3 - p_hi * F->mod;  // [0..2n)
+    N_MULMOD_PRECOMP_LAZY(v3, F->I, v3, F->Ipre, F->mod, p_hi, p_lo);
     if (v2 >= F->mod4)
         v2 -= F->mod4;
     if (v2 >= F->mod2)
@@ -192,10 +233,8 @@ FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, nmod_fft_ctx_t F)
     p[3] = v2 + F->mod2 - v3;  // [0..4n)
 
     // right, mod x**2 - I | x**2 + I
-    umul_ppmm(p_hi, p_lo, F->Ipre, u2);
-    u2 = F->I * u2 - p_hi * F->mod;  // [0..2n)
-    umul_ppmm(p_hi, p_lo, F->Ipre, u3);
-    u3 = F->I * u3 - p_hi * F->mod;  // [0..2n)
+    N_MULMOD_PRECOMP_LAZY(u2, F->I, u2, F->Ipre, F->mod, p_hi, p_lo);
+    N_MULMOD_PRECOMP_LAZY(u3, F->I, u3, F->Ipre, F->mod, p_hi, p_lo);
     if (u0 >= F->mod2)
         u0 -= F->mod2;         // [0..2n)
     if (u1 >= F->mod2)
@@ -206,16 +245,14 @@ FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, nmod_fft_ctx_t F)
     v3 = u1 + F->mod2 - u3;  // [0..4n)
 
     // right-left, mod x - J | x + J
-    umul_ppmm(p_hi, p_lo, F->Jpre, v1);
-    v1 = F->J * v1 - p_hi * F->mod;  // [0..2n)
+    N_MULMOD_PRECOMP_LAZY(v1, F->J, v1, F->Jpre, F->mod, p_hi, p_lo);
     if (v0 >= F->mod2)
         v0 -= F->mod2;         // [0..2n)
     p[4] = v0 + v1;
     p[5] = v0 + F->mod2 - v1;
 
     // right-right, mod x - I*J | x + I*J
-    umul_ppmm(p_hi, p_lo, F->IJpre, v3);
-    v3 = F->IJ * v3 - p_hi * F->mod;  // [0..2n)
+    N_MULMOD_PRECOMP_LAZY(v3, F->IJ, v3, F->IJpre, F->mod, p_hi, p_lo);
     if (v2 >= F->mod2)
         v2 -= F->mod2;         // [0..2n)
     p[6] = v2 + v3;
@@ -237,42 +274,20 @@ void _nmod_fft_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
         dft8_red_lazy(p, F);
     else
     {
+        const nn_ptr p0 = p;
+        const nn_ptr p1 = p + len/2;
+        const nn_ptr ww = F->tab_w[order-4];
+        // in: p0, p1 in [0..2n); out: p0, p1 in [0..2n)
         for (ulong k = 0; k < len/2; k+=4)
         {
-            // in: p[k], p[len/2+k] in [0..2n)
-            // out: p[k], p[len/2+k] in [0..2n)
             ulong p_hi, p_lo, tmp;
-
-            tmp = p[k+0] + F->mod2 - p[len/2+k+0];
-            p[k+0] = p[k+0] + p[len/2+k+0];
-            if (p[k+0] >= F->mod2)
-                p[k+0] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+1], tmp);
-            p[len/2+k+0] = F->tab_w[order-4][2*k+0] * tmp - p_hi * F->mod;
-
-            tmp = p[k+1] + F->mod2 - p[len/2+k+1];
-            p[k+1] = p[k+1] + p[len/2+k+1];
-            if (p[k+1] >= F->mod2)
-                p[k+1] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+3], tmp);
-            p[len/2+k+1] = F->tab_w[order-4][2*k+2] * tmp - p_hi * F->mod;
-
-            tmp = p[k+2] + F->mod2 - p[len/2+k+2];
-            p[k+2] = p[k+2] + p[len/2+k+2];
-            if (p[k+2] >= F->mod2)
-                p[k+2] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+5], tmp);
-            p[len/2+k+2] = F->tab_w[order-4][2*k+4] * tmp - p_hi * F->mod;
-
-            tmp = p[k+3] + F->mod2 - p[len/2+k+3];
-            p[k+3] = p[k+3] + p[len/2+k+3];
-            if (p[k+3] >= F->mod2)
-                p[k+3] -= F->mod2;
-            umul_ppmm(p_hi, p_lo, F->tab_w[order-4][2*k+7], tmp);
-            p[len/2+k+3] = F->tab_w[order-4][2*k+6] * tmp - p_hi * F->mod;
+            BUTTERFLY_GS_LAZY(p0[k+0], p1[k+0], F->mod, F->mod2, ww[2*k+0], ww[2*k+1], p_hi, p_lo, tmp);
+            BUTTERFLY_GS_LAZY(p0[k+1], p1[k+1], F->mod, F->mod2, ww[2*k+2], ww[2*k+3], p_hi, p_lo, tmp);
+            BUTTERFLY_GS_LAZY(p0[k+2], p1[k+2], F->mod, F->mod2, ww[2*k+4], ww[2*k+5], p_hi, p_lo, tmp);
+            BUTTERFLY_GS_LAZY(p0[k+3], p1[k+3], F->mod, F->mod2, ww[2*k+6], ww[2*k+7], p_hi, p_lo, tmp);
         }
-        _nmod_fft_dif_rec2_lazy(p, len/2, order-1, F);
-        _nmod_fft_dif_rec2_lazy(p+len/2, len/2, order-1, F);
+        _nmod_fft_dif_rec2_lazy(p0, len/2, order-1, F);
+        _nmod_fft_dif_rec2_lazy(p1, len/2, order-1, F);
     }
 }
 
@@ -395,8 +410,9 @@ void _nmod_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
     {
         // input [0..2n) x [0..2n), output [0..2n) x [0..4n)
         // (general accepts [0..4n) as input for order >= 3)
+        ulong tmp;
         for (ulong k = 0; k < len/2; k++)
-            DFT2_LAZY2_RED1(p[k+0], p[len/2+k+0], F->mod2);
+            DFT2_LAZY2_RED1(p[k+0], p[len/2+k+0], F->mod2, tmp);
         _nmod_fft_red_rec2_lazy(p, len/2, order-1, F);
         _nmod_fft_red_rec2_lazy_general(p+len/2, len/2, order-1, 1, F);
     }
@@ -612,9 +628,10 @@ void _nmod_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F
     for (ulong ell = order; ell > 3; ell--, llen>>=1)
     {
         // k = 0: point is 1, handle separately
+        ulong tmp;
         for (ulong kk = 0; kk < llen/2; kk++)
             // input [0..2n) x [0..2n), output [0..2n) x [0..4n)
-            DFT2_LAZY2_RED1(p[kk], p[llen/2+kk], F->mod2);
+            DFT2_LAZY2_RED1(p[kk], p[llen/2+kk], F->mod2, tmp);
 
         ulong node = 1;  // index of current point in tab
         for (ulong k = llen; k < len; k+=llen, node++)

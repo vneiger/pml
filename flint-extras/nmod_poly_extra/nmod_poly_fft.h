@@ -52,9 +52,8 @@ typedef nmod_fft_ctx_struct nmod_fft_ctx_t[1];
 //    -I is the inverse of I; 
 //    -J**3 is the inverse of J, -J**2 is the inverse of J**2, -J is the inverse of J**3;
 //    etc.
-// 
-// TODO if ifft goes through this table in reversed order,
-// make sure this is not hurting efficiency
+
+// TODO make two ctx types for other butterfly types
 
 
 /*------------------------------------------------------------*/
@@ -81,6 +80,7 @@ void n_geometric_sequence_with_precomp(ulong * seq, ulong a, ulong d, ulong n);
 // (if w is a d-th root of unity, these are inverses of the first part of the array)
 // seq already allocated with >= 4*d entries; seq[i] not accessed for i >= 4*d
 void _n_geometric_sequence_and_opposites_with_precomp(ulong * seq, ulong a, ulong d, ulong n);
+    
 
 /*------------------------------------------------------------*/
 /* initializes all entries of F                               */
