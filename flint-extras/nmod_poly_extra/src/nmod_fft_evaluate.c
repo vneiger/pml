@@ -61,6 +61,21 @@
         N_MULMOD_PRECOMP_LAZY(b, w, tmp, w_pr, n, p_hi, p_lo);   \
     } while(0)
 
+// Cooley-Tukey butterfly, in-place, lazy
+// in:  a,b in [0..4n) x [0..4n)
+// out: a,b in [0..4n) x [0..4n)
+// n2 is 2*mod; p_hi, p_lo, u, v are temporaries
+#define BUTTERFLY_CT_LAZY(a, b, n, n2, w, w_pr, p_hi, p_lo, u, v) \
+    do {                                                          \
+        u = (a);                                                  \
+        if (u >= n2)                                              \
+            u -= n2;  /* [0..2n) */                               \
+        v = (b);                                                  \
+        N_MULMOD_PRECOMP_LAZY(v, w, v, w_pr, n, p_hi, p_lo);      \
+        (a) = u + v;                   /* [0..4n) */              \
+        (b) = u + F->mod2 - v;         /* [0..4n) */              \
+    } while(0)
+
 // lazy3 red:
 // input [0..4n), output [0..4n)
 // n4 is 4*n
@@ -471,49 +486,20 @@ void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong nod
     else
     {
         // in: [0..4n), out: [0..4n)
+        const nn_ptr p0 = p;
+        const nn_ptr p1 = p+len/2;
         const ulong w = F->tab_w[1][2*node];
         const ulong wpre = F->tab_w[1][2*node+1];
+        ulong p_hi, p_lo, u, v;
         for (ulong k = 0; k < len/2; k+=4)
         {
-            ulong p_hi, p_lo, u, v;
-            u = p[k+0];
-            if (u >= F->mod2)
-                u -= F->mod2;  // [0..2n)
-            v = p[len/2+k+0];
-            umul_ppmm(p_hi, p_lo, wpre, v);
-            v = w * v - p_hi * F->mod;
-            p[k+0] = u + v;                   // [0..4n)
-            p[len/2+k+0] = u + F->mod2 - v;  // [0..4n)
-
-            u = p[k+1];
-            if (u >= F->mod2)
-                u -= F->mod2;  // [0..2n)
-            v = p[len/2+k+1];
-            umul_ppmm(p_hi, p_lo, wpre, v);
-            v = w * v - p_hi * F->mod;
-            p[k+1] = u + v;  // [0..4n)
-            p[len/2+k+1] = u + F->mod2 - v;  // [0..4n)
-
-            u = p[k+2];
-            if (u >= F->mod2)
-                u -= F->mod2;  // [0..2n)
-            v = p[len/2+k+2];
-            umul_ppmm(p_hi, p_lo, wpre, v);
-            v = w * v - p_hi * F->mod;
-            p[k+2] = u + v;  // [0..4n)
-            p[len/2+k+2] = u + F->mod2 - v;  // [0..4n)
-
-            u = p[k+3];
-            if (u >= F->mod2)
-                u -= F->mod2;  // [0..2n)
-            v = p[len/2+k+3];
-            umul_ppmm(p_hi, p_lo, wpre, v);
-            v = w * v - p_hi * F->mod;
-            p[k+3] = u + v;  // [0..4n)
-            p[len/2+k+3] = u + F->mod2 - v;  // [0..4n)
+            BUTTERFLY_CT_LAZY(p0[k+0], p1[k+0], F->mod, F->mod2, w, wpre, p_hi, p_lo, u, v);
+            BUTTERFLY_CT_LAZY(p0[k+1], p1[k+1], F->mod, F->mod2, w, wpre, p_hi, p_lo, u, v);
+            BUTTERFLY_CT_LAZY(p0[k+2], p1[k+2], F->mod, F->mod2, w, wpre, p_hi, p_lo, u, v);
+            BUTTERFLY_CT_LAZY(p0[k+3], p1[k+3], F->mod, F->mod2, w, wpre, p_hi, p_lo, u, v);
         }
-        _nmod_fft_red_rec2_lazy_general(p, len/2, order-1, 2*node, F);
-        _nmod_fft_red_rec2_lazy_general(p+len/2, len/2, order-1, 2*node+1, F);
+        _nmod_fft_red_rec2_lazy_general(p0, len/2, order-1, 2*node, F);
+        _nmod_fft_red_rec2_lazy_general(p1, len/2, order-1, 2*node+1, F);
     }
 }
 
@@ -525,9 +511,14 @@ void _nmod_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F
     {
         // k = 0: point is 1, handle separately
         ulong tmp;
-        for (ulong kk = 0; kk < llen/2; kk++)
-            // input [0..2n) x [0..2n), output [0..2n) x [0..4n)
-            DFT2_LAZY2_RED1(p[kk], p[llen/2+kk], F->mod2, tmp);
+        // input [0..2n) x [0..2n), output [0..2n) x [0..4n)
+        for (ulong kk = 0; kk+3 < llen/2; kk+=4)
+        {
+            DFT2_LAZY2_RED1(p[kk+0], p[llen/2+kk+0], F->mod2, tmp);
+            DFT2_LAZY2_RED1(p[kk+1], p[llen/2+kk+1], F->mod2, tmp);
+            DFT2_LAZY2_RED1(p[kk+2], p[llen/2+kk+2], F->mod2, tmp);
+            DFT2_LAZY2_RED1(p[kk+3], p[llen/2+kk+3], F->mod2, tmp);
+        }
 
         ulong node = 1;  // index of current point in tab
         for (ulong k = llen; k < len; k+=llen, node++)
@@ -535,46 +526,15 @@ void _nmod_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F
             ulong w = F->tab_w[1][2*node];
             ulong wpre = F->tab_w[1][2*node+1];
 
+            const nn_ptr p0 = p+k;
+            const nn_ptr p1 = p+llen/2+k;
+            ulong p_hi, p_lo, u, v;
             for (ulong kk = 0; kk < llen/2; kk+=4)
             {
-                // in: p[k+kk], p[llen/2+k+kk] in [0..4n)
-                // out: p[k+kk], p[llen/2+k+kk] in [0..4n)
-                ulong p_hi, p_lo, u, v;
-                u = p[k+kk+0];
-                if (u >= F->mod2)
-                    u -= F->mod2;  // [0..2n)
-                v = p[llen/2+k+kk+0];
-                umul_ppmm(p_hi, p_lo, wpre, v);
-                v = w * v - p_hi * F->mod;
-                p[k+kk+0] = u + v;                   // [0..4n)
-                p[llen/2+k+kk+0] = u + F->mod2 - v;  // [0..4n)
-
-                u = p[k+kk+1];
-                if (u >= F->mod2)
-                    u -= F->mod2;  // [0..2n)
-                v = p[llen/2+k+kk+1];
-                umul_ppmm(p_hi, p_lo, wpre, v);
-                v = w * v - p_hi * F->mod;
-                p[k+kk+1] = u + v;  // [0..4n)
-                p[llen/2+k+kk+1] = u + F->mod2 - v;  // [0..4n)
-
-                u = p[k+kk+2];
-                if (u >= F->mod2)
-                    u -= F->mod2;  // [0..2n)
-                v = p[llen/2+k+kk+2];
-                umul_ppmm(p_hi, p_lo, wpre, v);
-                v = w * v - p_hi * F->mod;
-                p[k+kk+2] = u + v;  // [0..4n)
-                p[llen/2+k+kk+2] = u + F->mod2 - v;  // [0..4n)
-
-                u = p[k+kk+3];
-                if (u >= F->mod2)
-                    u -= F->mod2;  // [0..2n)
-                v = p[llen/2+k+kk+3];
-                umul_ppmm(p_hi, p_lo, wpre, v);
-                v = w * v - p_hi * F->mod;
-                p[k+kk+3] = u + v;  // [0..4n)
-                p[llen/2+k+kk+3] = u + F->mod2 - v;  // [0..4n)
+                BUTTERFLY_CT_LAZY(p0[kk+0], p1[kk+0], F->mod, F->mod2, w, wpre, p_hi, p_lo, u, v);
+                BUTTERFLY_CT_LAZY(p0[kk+1], p1[kk+1], F->mod, F->mod2, w, wpre, p_hi, p_lo, u, v);
+                BUTTERFLY_CT_LAZY(p0[kk+2], p1[kk+2], F->mod, F->mod2, w, wpre, p_hi, p_lo, u, v);
+                BUTTERFLY_CT_LAZY(p0[kk+3], p1[kk+3], F->mod, F->mod2, w, wpre, p_hi, p_lo, u, v);
             }
         }
     }
