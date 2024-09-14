@@ -430,6 +430,47 @@ FLINT_FORCE_INLINE void dft16_red_lazy(nn_ptr p, nmod_fft_ctx_t F)
     BUTTERFLY4_CT_LAZY(p[12], p[13], p[14], p[15], F->IJ, F->IJpre, F->tab_w[1][12], F->tab_w[1][13], F->tab_w[1][14], F->tab_w[1][15], F->mod, F->mod2, F->mod4, p_hi, p_lo, tmp);
 }
 
+// in [0..2n), out [0..4n), max value < 8n
+FLINT_FORCE_INLINE void dft32_red_lazy(nn_ptr p, nmod_fft_ctx_t F)
+{
+    ulong p_hi, p_lo, tmp;
+    
+    DFT4_LAZY2_RED(p[0], p[8 ], p[16], p[24], F->I, F->Ipre, F->mod, F->mod2, p_hi, p_lo);
+    if (p[0] >= F->mod2)     
+        p[0] -= F->mod2;     
+    DFT4_LAZY2_RED(p[1], p[9 ], p[17], p[25], F->I, F->Ipre, F->mod, F->mod2, p_hi, p_lo);
+    if (p[1] >= F->mod2)     
+        p[1] -= F->mod2;     
+    DFT4_LAZY2_RED(p[2], p[10], p[18], p[26], F->I, F->Ipre, F->mod, F->mod2, p_hi, p_lo);
+    if (p[2] >= F->mod2)     
+        p[2] -= F->mod2;     
+    DFT4_LAZY2_RED(p[3], p[11], p[19], p[27], F->I, F->Ipre, F->mod, F->mod2, p_hi, p_lo);
+    if (p[3] >= F->mod2)
+        p[3] -= F->mod2;
+    DFT4_LAZY2_RED(p[4], p[12], p[20], p[28], F->I, F->Ipre, F->mod, F->mod2, p_hi, p_lo);
+    if (p[4] >= F->mod2)     
+        p[4] -= F->mod2;     
+    DFT4_LAZY2_RED(p[5], p[13], p[21], p[29], F->I, F->Ipre, F->mod, F->mod2, p_hi, p_lo);
+    if (p[5] >= F->mod2)     
+        p[5] -= F->mod2;     
+    DFT4_LAZY2_RED(p[6], p[14], p[22], p[30], F->I, F->Ipre, F->mod, F->mod2, p_hi, p_lo);
+    if (p[6] >= F->mod2)     
+        p[6] -= F->mod2;     
+    DFT4_LAZY2_RED(p[7], p[15], p[23], p[31], F->I, F->Ipre, F->mod, F->mod2, p_hi, p_lo);
+    if (p[7] >= F->mod2)
+        p[7] -= F->mod2;
+
+    // next line requires < 2n, hence the 8 reductions above
+    dft8_red_lazy(p, F);
+    dft8_red_lazy_general(p+8, 1, F);
+    dft8_red_lazy_general(p+16, 2, F);
+    dft8_red_lazy_general(p+24, 3, F);
+}
+
+
+
+
+
 
 
 // input [0..2*n), output [0..4*n)
@@ -506,6 +547,8 @@ void _nmod_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
         dft8_red_lazy(p, F);  // in [0..2n), out [0..4n)
     else if (order == 4)
         dft16_red_lazy(p, F);  // in [0..2n), out [0..4n)
+    else if (order == 5)
+        dft32_red_lazy(p, F);  // in [0..2n), out [0..4n)
     else
     {
         // input [0..2n) x [0..2n), output [0..2n) x [0..4n)
@@ -610,26 +653,18 @@ void _nmod_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F
 // in [0..2n) out [0..4n)
 void _nmod_fft_dif_rec4_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
 {
-    // order == 0: nothing to do
-    //if (order == 1)
-    //    // in [0..2n) out [0..4n)
-    //    DFT2_LAZY4_RED(p[0], p[1], F->mod2);
-    //else if (order == 2)
-    //    // in [0..2n) out [0..4n)
-    //    DFT4_LAZY2_RED(p[0], p[1], p[2], p[3], F->I, F->Ipre, F->mod, F->mod2);
-    //else
     if (order == 3)
         dft8_red_lazy(p, F);
     else if (order == 4)
     {
         ulong p_hi, p_lo, tmp;
-        BUTTERFLY2_GS_LAZY(p[0], p[0+8], F->mod, F->mod2, F->tab_w[0][2*0], F->tab_w[0][2*0+1], p_hi, p_lo, tmp);
+        DFT2_LAZY2_RED1(p[0], p[0+8], F->mod2, tmp);
+        BUTTERFLY2_GS_LAZY(p[2], p[2+8], F->mod, F->mod2, F->J, F->Jpre, p_hi, p_lo, tmp);
+        BUTTERFLY2_GS_LAZY(p[4], p[4+8], F->mod, F->mod2, F->I, F->Ipre, p_hi, p_lo, tmp);
+        BUTTERFLY2_GS_LAZY(p[6], p[6+8], F->mod, F->mod2, F->IJ, F->IJpre, p_hi, p_lo, tmp);
         BUTTERFLY2_GS_LAZY(p[1], p[1+8], F->mod, F->mod2, F->tab_w[0][2*1], F->tab_w[0][2*1+1], p_hi, p_lo, tmp);
-        BUTTERFLY2_GS_LAZY(p[2], p[2+8], F->mod, F->mod2, F->tab_w[0][2*2], F->tab_w[0][2*2+1], p_hi, p_lo, tmp);
         BUTTERFLY2_GS_LAZY(p[3], p[3+8], F->mod, F->mod2, F->tab_w[0][2*3], F->tab_w[0][2*3+1], p_hi, p_lo, tmp);
-        BUTTERFLY2_GS_LAZY(p[4], p[4+8], F->mod, F->mod2, F->tab_w[0][2*4], F->tab_w[0][2*4+1], p_hi, p_lo, tmp);
         BUTTERFLY2_GS_LAZY(p[5], p[5+8], F->mod, F->mod2, F->tab_w[0][2*5], F->tab_w[0][2*5+1], p_hi, p_lo, tmp);
-        BUTTERFLY2_GS_LAZY(p[6], p[6+8], F->mod, F->mod2, F->tab_w[0][2*6], F->tab_w[0][2*6+1], p_hi, p_lo, tmp);
         BUTTERFLY2_GS_LAZY(p[7], p[7+8], F->mod, F->mod2, F->tab_w[0][2*7], F->tab_w[0][2*7+1], p_hi, p_lo, tmp);
         dft8_red_lazy(p, F);
         dft8_red_lazy(p+8, F);
@@ -660,8 +695,8 @@ void _nmod_fft_dif_rec8_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F)
 {
     if (order == 3)
         dft8_red_lazy(p, F);
-    else if (order == 4)
-        dft16_red_lazy(p, F);
+    else if (order <= 5)
+        _nmod_fft_dif_rec2_lazy(p, len, order, F);
     else
     {
         // in [0..2n) out [0..2n)
