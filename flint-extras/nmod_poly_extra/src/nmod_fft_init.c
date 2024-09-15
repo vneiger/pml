@@ -72,7 +72,7 @@ void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong w_depth, ulong depth, ul
     F->depth = w_depth;
     F->alloc = depth;
 
-    // fill tab_ww and other attributes
+    // fill tab_ww
     ulong pr_quo, pr_rem, ww;
     ww = w;
     n_mulmod_precomp_shoup_quo_rem(&pr_quo, &pr_rem, ww, p);
@@ -88,12 +88,14 @@ void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong w_depth, ulong depth, ul
     }
     // at this stage, pr_quo and pr_rem are for k == 0 i.e. for I == tab_ww[0]
 
+    // fill I, J, IJ
     F->I    = F->tab_ww[0];
     F->I_pr = F->tab_ww[1];
     F->J    = F->tab_ww[2];
     F->J_pr = F->tab_ww[3];
     n_mulmod_and_precomp_shoup(&F->IJ, &F->IJ_pr, F->I, F->J, pr_quo, pr_rem, F->J_pr, p);
 
+    // fill tab_w
     ulong len = (UWORD(1) << (depth-1));  // len >= 4
     F->tab_w = _nmod_vec_init(2*len);
 
@@ -106,20 +108,18 @@ void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong w_depth, ulong depth, ul
     F->tab_w[6] = F->IJ;
     F->tab_w[7] = F->IJ_pr;
 
-    // fill table of powers of w:
-    // buf[2*i] == w**i and buf[2*i+1] its precomp, i = 0 ... len-1   where len = 2**(depth-1)
-    // F->tab_w same in bit-reversed: 1, w**(len/2), w**(len/4), w**(3*len/4), ...
-    nn_ptr buf = _nmod_vec_init(2*len);
-    n_geometric_sequence_with_precomp(buf, w, len, p);
-
-    // put in bit reversed depth for tab_w[1]
-    for (ulong k = 0, j = 0; k < len; k++, j = RevInc(j, depth-1))
+    ulong d = 2;  // tab_ww[2*d] == sqrt(J)
+    for (ulong llen = 4; llen < len; llen <<= 1, d += 1)
     {
-        F->tab_w[2*k]   = buf[2*j];
-        F->tab_w[2*k+1] = buf[2*j+1];
+        ww = F->tab_ww[2*d];
+        pr_quo = F->tab_ww[2*d+1];
+        pr_rem = n_mulmod_precomp_shoup_rem_from_quo(pr_quo, p);
+        // for each k, tab_w[2*(k+llen)] <- ww * tab_w[2*k], and deduce precomputation
+        for (ulong k = 0; k < llen; k++)
+            n_mulmod_and_precomp_shoup(F->tab_w + 2*(k+llen), F->tab_w + 2*(k+llen)+1,
+                                       ww, F->tab_w[2*k],
+                                       pr_quo, pr_rem, F->tab_w[2*k+1], p);
     }
-
-    _nmod_vec_clear(buf);
 }
 
 
