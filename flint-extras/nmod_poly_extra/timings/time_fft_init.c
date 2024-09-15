@@ -13,7 +13,7 @@ typedef struct
    ulong maxorder;
 } info_t;
 
-void sample_init_set(void * arg, ulong count)
+void sample_old_init_set(void * arg, ulong count)
 {
     info_t * info = (info_t *) arg;
     const ulong p = info->prime;
@@ -36,75 +36,42 @@ void sample_init_set(void * arg, ulong count)
         prof_start();
         for (ulong j = 0; j < rep; j++)
         {
+            nmod_fft_old_ctx_t F;
+            nmod_fft_old_ctx_init_set(F, w, order, p);
+            nmod_fft_old_ctx_clear(F);
+        }
+        prof_stop();
+    }
+
+    FLINT_TEST_CLEAR(state);
+}
+
+void sample_init_set(void * arg, ulong count)
+{
+    info_t * info = (info_t *) arg;
+    ulong p = info->prime;
+    ulong order = info->order;
+    ulong maxorder = info->maxorder;
+
+    const ulong len = UWORD(1) << order;
+    const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));
+
+    // modulus, roots of unity
+    nmod_t mod;
+    nmod_init(&mod, p);
+    ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> maxorder, mod);
+    ulong w = nmod_pow_ui(w0, 1UL<<(maxorder - order), mod);
+
+    FLINT_TEST_INIT(state);
+
+    for (ulong i = 0; i < count; i++)
+    {
+        prof_start();
+        for (ulong j = 0; j < rep; j++)
+        {
             nmod_fft_ctx_t F;
             nmod_fft_ctx_init_set(F, w, order, p);
             nmod_fft_ctx_clear(F);
-        }
-        prof_stop();
-    }
-
-    FLINT_TEST_CLEAR(state);
-}
-
-void sample_init_set_red(void * arg, ulong count)
-{
-    info_t * info = (info_t *) arg;
-    ulong p = info->prime;
-    ulong order = info->order;
-    ulong maxorder = info->maxorder;
-
-    const ulong len = UWORD(1) << order;
-    const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));
-
-    // modulus, roots of unity
-    nmod_t mod;
-    nmod_init(&mod, p);
-    ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> maxorder, mod);
-    ulong w = nmod_pow_ui(w0, 1UL<<(maxorder - order), mod);
-
-    FLINT_TEST_INIT(state);
-
-    for (ulong i = 0; i < count; i++)
-    {
-        prof_start();
-        for (ulong j = 0; j < rep; j++)
-        {
-            nmod_fft_ctx_t F;
-            nmod_fft_ctx_init_set_red(F, w, order, p);
-            nmod_fft_ctx_clear_red(F);
-        }
-        prof_stop();
-    }
-
-    FLINT_TEST_CLEAR(state);
-}
-
-void sample_init_set_new(void * arg, ulong count)
-{
-    info_t * info = (info_t *) arg;
-    ulong p = info->prime;
-    ulong order = info->order;
-    ulong maxorder = info->maxorder;
-
-    const ulong len = UWORD(1) << order;
-    const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));
-
-    // modulus, roots of unity
-    nmod_t mod;
-    nmod_init(&mod, p);
-    ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> maxorder, mod);
-    ulong w = nmod_pow_ui(w0, 1UL<<(maxorder - order), mod);
-
-    FLINT_TEST_INIT(state);
-
-    for (ulong i = 0; i < count; i++)
-    {
-        prof_start();
-        for (ulong j = 0; j < rep; j++)
-        {
-            nmod_fft_ctx_t F;
-            nmod_fft_ctx_init_set_new(F, w, order, p);
-            nmod_fft_ctx_clear_new(F);
         }
         prof_stop();
     }
@@ -134,17 +101,14 @@ void time_fft_init(ulong * primes, ulong * max_orders)
             double min[10];
             double max;
 
-            prof_repeat(min+0, &max, sample_init_set_red, (void *) &info);
-            prof_repeat(min+1, &max, sample_init_set, (void *) &info);
-            prof_repeat(min+2, &max, sample_init_set_new, (void *) &info);
+            prof_repeat(min+0, &max, sample_init_set, (void *) &info);
+            prof_repeat(min+1, &max, sample_old_init_set, (void *) &info);
 
-            flint_printf("\t%.1e|%.1e|%.1e\t||\t%.1e|%.1e|%.1e",
+            flint_printf("\t%.1e|%.1e\t||\t%.1e|%.1e",
                     min[0]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
                     min[1]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
-                    min[2]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
                     min[0]/(double)1000000/rep,
-                    min[1]/(double)1000000/rep,
-                    min[2]/(double)1000000/rep 
+                    min[1]/(double)1000000/rep
                     );
             flint_printf("\n");
         }

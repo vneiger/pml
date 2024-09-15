@@ -30,8 +30,8 @@ void sample_##fun(void * arg, ulong count)                                      
     nmod_init(&mod, p);                                                          \
     ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> maxorder, mod); \
     ulong w = nmod_pow_ui(w0, 1UL<<(maxorder - order), mod);                     \
-    nmod_fft_ctx_t F;                                                            \
-    nmod_fft_ctx_init_set##_ctx(F, w, order, p);                                 \
+    nmod_fft##_ctx##_ctx_t F;                                                    \
+    nmod_fft##_ctx##_ctx_init_set(F, w, order, p);                               \
                                                                                  \
     FLINT_TEST_INIT(state);                                                      \
                                                                                  \
@@ -46,17 +46,17 @@ void sample_##fun(void * arg, ulong count)                                      
         prof_stop();                                                             \
     }                                                                            \
                                                                                  \
-    nmod_fft_ctx_clear##_ctx(F);                                                 \
+    nmod_fft##_ctx##_ctx_clear(F);                                               \
     FLINT_TEST_CLEAR(state);                                                     \
 }                                                                                \
 
-SAMPLE(dif_rec2_lazy, )
-SAMPLE(dif_rec2_lazy_new, _red)
-SAMPLE(dif_iter2_lazy, )
-SAMPLE(red_rec2_lazy, _red)
-SAMPLE(dif_rec4_lazy, )
-SAMPLE(dif_rec8_lazy, )
-SAMPLE(red_iter2_lazy, _red)
+SAMPLE(old_dif_rec2_lazy, _old)
+SAMPLE(old_dif_iter2_lazy, _old)
+SAMPLE(old_dif_rec4_lazy, _old)
+SAMPLE(old_dif_rec8_lazy, _old)
+SAMPLE(red_rec2_lazy, )
+SAMPLE(red_iter2_lazy, )
+SAMPLE(red_rec4_lazy, )
 
 void sample_sd_fft(void * arg, ulong count)
 {
@@ -103,7 +103,7 @@ void time_evaluate()
 {
     flint_printf("- order is log(fft length)\n");
     flint_printf("- timing init FFT tables + DIF evaluate for several bit lengths and orders\n");
-    flint_printf("order\tsd_fft\trec2\trec4\titer2\tredrec\tredit\t   ||\tsd_fft\trec2\trec4\titer2\tredrec\tredit\t\n");
+    flint_printf("order\tsd_fft\trec2\trec4\titer2\t   ||\tsd_fft\trec2\trec4\titer2\toldr2\toldr4\toldr8\toldi2\t\n");
 
     ulong primes[num_primes] = {
         786433,              // 20 bits, 1 + 2**18 * 3
@@ -132,21 +132,23 @@ void time_evaluate()
             double max;
 
             prof_repeat(min+0, &max, sample_sd_fft, (void *) &info);
-            prof_repeat(min+1, &max, sample_dif_rec2_lazy, (void *) &info);
-            prof_repeat(min+2, &max, sample_dif_rec4_lazy, (void *) &info);
-            prof_repeat(min+3, &max, sample_dif_iter2_lazy, (void *) &info);
-            prof_repeat(min+4, &max, sample_red_rec2_lazy, (void *) &info);
-            prof_repeat(min+5, &max, sample_red_iter2_lazy, (void *) &info);
-            prof_repeat(min+6, &max, sample_dif_rec8_lazy, (void *) &info);
-            prof_repeat(min+7, &max, sample_dif_rec2_lazy_new, (void *) &info);
+            prof_repeat(min+1, &max, sample_red_rec2_lazy, (void *) &info);
+            prof_repeat(min+2, &max, sample_red_rec4_lazy, (void *) &info);
+            prof_repeat(min+3, &max, sample_red_iter2_lazy, (void *) &info);
+            prof_repeat(min+4, &max, sample_old_dif_rec2_lazy, (void *) &info);
+            prof_repeat(min+5, &max, sample_old_dif_rec4_lazy, (void *) &info);
+            prof_repeat(min+6, &max, sample_old_dif_iter2_lazy, (void *) &info);
+            prof_repeat(min+7, &max, sample_old_dif_rec8_lazy, (void *) &info);
 
-            flint_printf("%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t   ||\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\n",
+            flint_printf("%.1e\t%.1e\t%.1e\t%.1e\t   ||\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\n",
                     min[0]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
                     min[1]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
                     min[2]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
                     min[3]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
-                    min[4]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
-                    min[5]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
+                    //min[4]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
+                    //min[5]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
+                    //min[6]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
+                    //min[7]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
                     min[0]/(double)1000000/rep,
                     min[1]/(double)1000000/rep,
                     min[2]/(double)1000000/rep,
