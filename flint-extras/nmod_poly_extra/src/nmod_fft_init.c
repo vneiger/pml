@@ -116,7 +116,7 @@ void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong w_depth, ulong depth, ul
         pr_rem = n_mulmod_precomp_shoup_rem_from_quo(pr_quo, p);
         // for each k, tab_w[2*(k+llen)] <- ww * tab_w[2*k], and deduce precomputation
         for (ulong k = 0; k < llen; k++)
-            n_mulmod_and_precomp_shoup(F->tab_w + 2*(k+llen), F->tab_w + 2*(k+llen)+1,
+            n_mulmod_and_precomp_shoup(F->tab_w + 2*llen + 2*k, F->tab_w + 2*llen + 2*k+1,
                                        ww, F->tab_w[2*k],
                                        pr_quo, pr_rem, F->tab_w[2*k+1], p);
     }
