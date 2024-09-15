@@ -26,6 +26,16 @@
  * [a  b]  <-  [a  b] [1  -1]
  * */
 
+// lazy2:
+// in [0..2n), out [0..2n) x [0..4n)
+// n2 is 2*n, tmp is a temporary (ulong)
+#define DFT2_LAZY2(a, b, n2, tmp) \
+    do {                          \
+        tmp = (b);                \
+        (b) = (a) + (n2) - tmp;   \
+        (a) = (a) + tmp;          \
+    } while(0)
+
 // lazy2 red1:
 // in [0..2n) x [0..2n), out [0..2n) x [0..4n)
 // n2 is 2*n, tmp is a temporary (ulong)
@@ -115,7 +125,7 @@
 
 // lazy2 red: input in [0..2*n) --> output [0..4*n)
 // n2 is 2*n
-#define DFT4_LAZY2_RED(a, b, c, d, I, I_pr, n, n2, p_hi, p_lo)                     \
+#define DFT4_LAZY2_RED(a, b, c, d, I, I_pr, n, n2, p_hi, p_lo)         \
     do {                                                               \
         const ulong v0 = (a);                                          \
         const ulong v1 = (b);                                          \
@@ -617,18 +627,20 @@ void _n_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong depth, ulong node, 
 }
 
 // input [0..2n),  output [0..4n)
-// restricting to depth >= 3 is a bit faster for smallish depths  // TODO maybe not anymore
 void _n_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F)
 {
     // depth == 0: nothing to do
-    //if (depth == 1)
-    //    // in [0..4n), out [0..4n)
-    //    DFT2_LAZY4_RED(p[0], p[1], F->mod4);
-    //else if (depth == 2)
-    //    // in [0..2n), out [0..4n)
-    //    DFT4_LAZY2_RED(p[0], p[1], p[2], p[3], F->tab_w[2], F->tab_w[3], F->mod, F->mod2);
-    //else
-    if (depth == 3)
+    if (depth == 1) // in [0..2n), out [0..4n)
+    {
+        ulong tmp;
+        DFT2_LAZY2(p[0], p[1], F->mod2, tmp);
+    }
+    else if (depth == 2) // in [0..2n), out [0..4n)
+    {
+        ulong p_hi, p_lo;
+        DFT4_LAZY2_RED(p[0], p[1], p[2], p[3], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
+    }
+    else if (depth == 3)
         dft8_red_lazy(p, F);  // in [0..2n), out [0..4n)
     else if (depth == 4)
         dft16_red_lazy(p, F);  // in [0..2n), out [0..4n)
