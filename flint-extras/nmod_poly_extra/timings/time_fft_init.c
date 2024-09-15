@@ -36,9 +36,9 @@ void sample_old_init_set(void * arg, ulong count)
         prof_start();
         for (ulong j = 0; j < rep; j++)
         {
-            nmod_fft_old_ctx_t F;
-            nmod_fft_old_ctx_init_set(F, w, order, p);
-            nmod_fft_old_ctx_clear(F);
+            n_fft_old_ctx_t F;
+            n_fft_old_ctx_init_set(F, w, order, p);
+            n_fft_old_ctx_clear(F);
         }
         prof_stop();
     }
@@ -69,9 +69,9 @@ void sample_init_set(void * arg, ulong count)
         prof_start();
         for (ulong j = 0; j < rep; j++)
         {
-            nmod_fft_ctx_t F;
-            nmod_fft_ctx_init_set(F, w, order, p);
-            nmod_fft_ctx_clear(F);
+            n_fft_ctx_t F;
+            n_fft_ctx_init_set(F, w, order, p);
+            n_fft_ctx_clear(F);
         }
         prof_stop();
     }

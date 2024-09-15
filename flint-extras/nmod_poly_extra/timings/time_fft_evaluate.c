@@ -30,8 +30,8 @@ void sample_##fun(void * arg, ulong count)                                      
     nmod_init(&mod, p);                                                          \
     ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> maxorder, mod); \
     ulong w = nmod_pow_ui(w0, 1UL<<(maxorder - order), mod);                     \
-    nmod_fft##_ctx##_ctx_t F;                                                    \
-    nmod_fft##_ctx##_ctx_init_set(F, w, order, p);                               \
+    n_fft##_ctx##_ctx_t F;                                                    \
+    n_fft##_ctx##_ctx_init_set(F, w, order, p);                               \
                                                                                  \
     FLINT_TEST_INIT(state);                                                      \
                                                                                  \
@@ -42,11 +42,11 @@ void sample_##fun(void * arg, ulong count)                                      
     {                                                                            \
         prof_start();                                                            \
         for (ulong j = 0; j < rep; j++)                                          \
-            _nmod_fft_##fun(coeffs, len, order, F);                              \
+            _n_fft_##fun(coeffs, len, order, F);                              \
         prof_stop();                                                             \
     }                                                                            \
                                                                                  \
-    nmod_fft##_ctx##_ctx_clear(F);                                               \
+    n_fft##_ctx##_ctx_clear(F);                                               \
     FLINT_TEST_CLEAR(state);                                                     \
 }                                                                                \
 

@@ -55,12 +55,12 @@ inline long RevInc(long a, long k)
 
 
 
-void nmod_fft_ctx_init(nmod_fft_ctx_t F, ulong p)
+void n_fft_ctx_init(n_fft_ctx_t F, ulong p)
 {
     // modulus p should be prime, with 2 < p < 2**61 (TODO check the latter suffices)
     // we do not check primality
     if (p <= 2 || flint_clz(p) <= 3)
-        flint_throw(FLINT_ERROR, "Provided prime p = %wu for nmod_fft does not satisfy bounds: 2 < p < 2**61", p);
+        flint_throw(FLINT_ERROR, "Provided prime p = %wu for n_fft does not satisfy bounds: 2 < p < 2**61", p);
 
     // find the constant and exponent such that p == c * 2**max_order + 1
     const ulong max_order = flint_ctz(p - UWORD(1));
@@ -73,7 +73,7 @@ void nmod_fft_ctx_init(nmod_fft_ctx_t F, ulong p)
     // build powers w**2**k
 }
 
-void nmod_fft_ctx_init_root(nmod_fft_ctx_t F, ulong root, ulong p)
+void n_fft_ctx_init_root(n_fft_ctx_t F, ulong root, ulong p)
 {
 }
 
@@ -84,7 +84,7 @@ void nmod_fft_ctx_init_root(nmod_fft_ctx_t F, ulong root, ulong p)
 /* order >= 3 required                                        */
 /*------------------------------------------------------------*/
 
-void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod)
+void n_fft_ctx_init_set(n_fft_ctx_t F, ulong w, ulong order, ulong mod)
 {
     // basic attributes
     F->mod = mod;
@@ -119,7 +119,7 @@ void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod)
     _nmod_vec_clear(buf);
 }
 
-void nmod_fft_ctx_clear(nmod_fft_ctx_t F)
+void n_fft_ctx_clear(n_fft_ctx_t F)
 {
     _nmod_vec_clear(F->tab_w);
 }

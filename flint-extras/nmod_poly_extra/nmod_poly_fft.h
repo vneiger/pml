@@ -4,7 +4,7 @@
 #include "flint/flint.h"
 #include "flint/long_extras.h"
 
-#define NMOD_FFT_OLD_MAX_TAB_SIZE 32
+#define N_FFT_OLD_MAX_TAB_SIZE 32
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,14 +29,13 @@ typedef struct
     ulong IJpre;               // precomp on IJ
     ulong order;               // maximum supported order (currently: order of w)
     ulong * tab_w;             // tabulated powers of w
-    //ulong * tab_winv[NMOD_FFT_MAX_TAB_SIZE]; // tabulated powers of winv
-} nmod_fft_ctx_struct;
-typedef nmod_fft_ctx_struct nmod_fft_ctx_t[1];
+} n_fft_ctx_struct;
+typedef n_fft_ctx_struct n_fft_ctx_t[1];
 
 // TODO describe fields
 
-void nmod_fft_ctx_init_set(nmod_fft_ctx_t F, ulong w, ulong order, ulong mod);
-void nmod_fft_ctx_clear(nmod_fft_ctx_t F);
+void n_fft_ctx_init_set(n_fft_ctx_t F, ulong w, ulong order, ulong mod);
+void n_fft_ctx_clear(n_fft_ctx_t F);
 
 
 
@@ -58,14 +57,14 @@ void nmod_fft_ctx_clear(nmod_fft_ctx_t F);
 // general: modulus is x**len - w**2 = (x**(len/2) - w) (x**(len/2) + w),
 // where w = F->tab_w[node]
 // e.g. for node == 1 this is w = I and x**len + 1
-void _nmod_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong node, nmod_fft_ctx_t F);
+void _n_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong node, n_fft_ctx_t F);
 // entry point: case where node == 0, modulus is x**len - 1 = (x**(len/2) - 1) (x**(len/2) + 1)
-void _nmod_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F);
+void _n_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong order, n_fft_ctx_t F);
 
-void _nmod_fft_red_rec4_lazy_general(nn_ptr p, ulong len, ulong order, ulong node, nmod_fft_ctx_t F);
-void _nmod_fft_red_rec4_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F);
+void _n_fft_red_rec4_lazy_general(nn_ptr p, ulong len, ulong order, ulong node, n_fft_ctx_t F);
+void _n_fft_red_rec4_lazy(nn_ptr p, ulong len, ulong order, n_fft_ctx_t F);
 
-void _nmod_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_ctx_t F);
+void _n_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, n_fft_ctx_t F);
 
 
 
@@ -91,10 +90,10 @@ typedef struct
     ulong order;               // maximum supported order (currently: order of w)
     ulong w;                   // primitive (2**order)th root of 1
     ulong winv;               // inverse of w
-    ulong * tab_w[NMOD_FFT_OLD_MAX_TAB_SIZE]; // tabulated powers of w and winv, see below
-    //ulong * tab_winv[NMOD_FFT_MAX_TAB_SIZE]; // tabulated powers of winv
-} nmod_fft_old_ctx_struct;
-typedef nmod_fft_old_ctx_struct nmod_fft_old_ctx_t[1];
+    ulong * tab_w[N_FFT_OLD_MAX_TAB_SIZE]; // tabulated powers of w and winv, see below
+    //ulong * tab_winv[n_fft_MAX_TAB_SIZE]; // tabulated powers of winv
+} n_fft_old_ctx_struct;
+typedef n_fft_old_ctx_struct n_fft_old_ctx_t[1];
 
 // FFT tables of powers / twiddle factors, say for w of order == `2**order`:
 // for 0 <= ell <= order-4, "powers_w[ell]" has length 2**(ell+5)
@@ -145,30 +144,30 @@ void _n_geometric_sequence_and_opposites_with_precomp(ulong * seq, ulong a, ulon
 // - not thoroughly optimized (especially copying part; and try building by increasing ell?)
 // - separate computation of the tables from basic init,
 //   and add fit_depth to precompute more tables when wanted/needed
-void nmod_fft_old_ctx_init_set(nmod_fft_old_ctx_t F, ulong w, ulong order, ulong mod);
-void nmod_fft_old_ctx_clear(nmod_fft_old_ctx_t F);
+void n_fft_old_ctx_init_set(n_fft_old_ctx_t F, ulong w, ulong order, ulong mod);
+void n_fft_old_ctx_clear(n_fft_old_ctx_t F);
 
 
 
 // recursive, Gentleman-Sande butterflies, radix 2
 // input coefficients in [0..??)
 // output coefficients in [0..??)
-void _nmod_fft_old_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_old_ctx_t F);
+void _n_fft_old_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, n_fft_old_ctx_t F);
 
 // recursive, Gentleman-Sande butterflies, radix 4
 // input coefficients in [0..??)
 // output coefficients in [0..??)
-void _nmod_fft_old_dif_rec4_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_old_ctx_t F);
+void _n_fft_old_dif_rec4_lazy(nn_ptr p, ulong len, ulong order, n_fft_old_ctx_t F);
 
 // recursive, Gentleman-Sande butterflies, radix 8
 // input coefficients in [0..??)
 // output coefficients in [0..??)
-void _nmod_fft_old_dif_rec8_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_old_ctx_t F);
+void _n_fft_old_dif_rec8_lazy(nn_ptr p, ulong len, ulong order, n_fft_old_ctx_t F);
 
 // iterative, Gentleman-Sande butterflies, radix 2
 // input coefficients in [0..??)
 // output coefficients in [0..??)
-void _nmod_fft_old_dif_iter2_lazy(nn_ptr p, ulong len, ulong order, nmod_fft_old_ctx_t F);
+void _n_fft_old_dif_iter2_lazy(nn_ptr p, ulong len, ulong order, n_fft_old_ctx_t F);
 
 
 #ifdef __cplusplus
