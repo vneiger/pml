@@ -70,7 +70,7 @@ void sample_init2_root(void * arg, ulong count)
         for (ulong j = 0; j < rep; j++)
         {
             n_fft_ctx_t F;
-            n_fft_ctx_init2_root(F, w, depth, p);
+            n_fft_ctx_init2_root(F, w, depth, depth, p);
             n_fft_ctx_clear(F);
         }
         prof_stop();

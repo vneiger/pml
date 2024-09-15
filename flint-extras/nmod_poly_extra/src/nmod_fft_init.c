@@ -1,9 +1,12 @@
 #include <flint/flint.h>
+#include <flint/longlong.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
 #include <flint/ulong_extras.h>
 
 #include "nmod_poly_fft.h"
+
+#define N_FFT_CTX_DEFAULT_DEPTH 12
 
 /***********************
 *  bit reversed copy  *
@@ -53,17 +56,23 @@ inline long RevInc(long a, long k)
 //}
 
 
+/*------------------------------------------------------------*/
+/* initializes all entries of F                               */
+/* w primitive root of 1, of order 2**depth                   */
+/* DFTs of size up to 2^depth are supported                   */
+/* depth >= 3 required                                        */
+/*------------------------------------------------------------*/
 
-void n_fft_ctx_init_root(n_fft_ctx_t F, ulong w, ulong depth, ulong p)
+void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong w_depth, ulong depth, ulong p)
 {
     // fill basic attributes
     F->mod = p;
     F->mod2 = 2*p;
     F->mod4 = 4*p;
-    F->depth = depth;
-    F->alloc = 3;
+    F->depth = w_depth;
+    F->alloc = depth;
 
-    // fill tab_ww
+    // fill tab_ww and other attributes
     ulong pr_quo, pr_rem, ww;
     ww = w;
     n_mulmod_precomp_shoup_quo_rem(&pr_quo, &pr_rem, ww, p);
@@ -84,6 +93,39 @@ void n_fft_ctx_init_root(n_fft_ctx_t F, ulong w, ulong depth, ulong p)
     F->J    = F->tab_ww[2];
     F->J_pr = F->tab_ww[3];
     n_mulmod_and_precomp_shoup(&F->IJ, &F->IJ_pr, F->I, F->J, pr_quo, pr_rem, F->J_pr, p);
+
+    ulong len = (UWORD(1) << (depth-1));  // len >= 4
+    F->tab_w = _nmod_vec_init(2*len);
+
+    F->tab_w[0] = UWORD(1);
+    F->tab_w[1] = n_mulmod_precomp_shoup(UWORD(1), p);
+    F->tab_w[2] = F->I;
+    F->tab_w[3] = F->I_pr;
+    F->tab_w[4] = F->J;
+    F->tab_w[5] = F->J_pr;
+    F->tab_w[6] = F->IJ;
+    F->tab_w[7] = F->IJ_pr;
+
+    // fill table of powers of w:
+    // buf[2*i] == w**i and buf[2*i+1] its precomp, i = 0 ... len-1   where len = 2**(depth-1)
+    // F->tab_w same in bit-reversed: 1, w**(len/2), w**(len/4), w**(3*len/4), ...
+    nn_ptr buf = _nmod_vec_init(2*len);
+    n_geometric_sequence_with_precomp(buf, w, len, p);
+
+    // put in bit reversed depth for tab_w[1]
+    for (ulong k = 0, j = 0; k < len; k++, j = RevInc(j, depth-1))
+    {
+        F->tab_w[2*k]   = buf[2*j];
+        F->tab_w[2*k+1] = buf[2*j+1];
+    }
+
+    _nmod_vec_clear(buf);
+}
+
+
+void n_fft_ctx_init_root(n_fft_ctx_t F, ulong w, ulong depth, ulong p)
+{
+    n_fft_ctx_init2_root(F, w, depth, FLINT_MIN(depth, N_FFT_CTX_DEFAULT_DEPTH), p);
 }
 
 void n_fft_ctx_init(n_fft_ctx_t F, ulong p)
@@ -103,49 +145,34 @@ void n_fft_ctx_init(n_fft_ctx_t F, ulong p)
     const ulong prim_root = n_primitive_root_prime(p);
     const ulong w = n_powmod2(prim_root, c, p);
 
+    // fill all attributes and tables, with default depth
     n_fft_ctx_init_root(F, w, depth, p);
 }
 
-/*------------------------------------------------------------*/
-/* initializes all entries of F                               */
-/* w primitive and w^(2^depth))=1                             */
-/* DFTs of size up to 2^depth are supported                   */
-/* depth >= 3 required                                        */
-/*------------------------------------------------------------*/
-
-void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong w_depth, ulong depth, ulong mod)
+void n_fft_ctx_init2(n_fft_ctx_t F, ulong len, ulong p)
 {
-    // basic attributes
-    F->mod = mod;
-    F->mod2 = 2*mod;
-    F->mod4 = 4*mod;
-    F->depth = depth;
-    //F->w = w;
-    //F->inv_w = nmod_inv(w, mod);  // TODO
+    // modulus p should be prime, with 2 < p < 2**61 (TODO check the latter suffices)
+    // we do not check primality
+    if (p <= 2 || flint_clz(p) <= 3)
+        flint_throw(FLINT_ERROR, "Provided prime p = %wu for n_fft does not satisfy bounds: 2 < p < 2**61", p);
 
-    // fill table of powers of w:
-    // buf[2*i] == w**i and buf[2*i+1] its precomp, i = 0 ... len-1   where len = 2**(depth-1)
-    // F->tab_w same in bit-reversed: 1, w**(len/2), w**(len/4), w**(3*len/4), ...
-    ulong len = (UWORD(1) << (depth-1));  // len == 2**(ell+1) >= 4
-    nn_ptr buf = _nmod_vec_init(2*len);
-    n_geometric_sequence_with_precomp(buf, w, len, mod);
+    // find the constant and exponent such that p == c * 2**depth + 1
+    const ulong depth = flint_ctz(p - UWORD(1));
+    const ulong c = (p - UWORD(1)) >> depth;
+    if (depth <= 3)
+        flint_throw(FLINT_ERROR, "Provided prime p = %wu for n_fft does not satisfy `8 divides p-1`", p);
 
-    // put in bit reversed depth for tab_w[1]
-    F->tab_w = _nmod_vec_init(2*len);
-    for (ulong k = 0, j = 0; k < len; k++, j = RevInc(j, depth-1))
-    {
-        F->tab_w[2*k]   = buf[2*j];
-        F->tab_w[2*k+1] = buf[2*j+1];
-    }
+    // verify required length is not too large
+    const ulong req_depth = FLINT_BIT_COUNT(len);
+    if (depth < req_depth)
+        flint_throw(FLINT_ERROR, "Required length %wu exceeds the limit for the modulus %wu", len, p);
 
-    F->I     = F->tab_w[2];
-    F->I_pr  = F->tab_w[3];
-    F->J     = F->tab_w[4];
-    F->J_pr  = F->tab_w[5];
-    F->IJ    = F->tab_w[6];
-    F->IJ_pr = F->tab_w[7];
+    // find primitive root w of depth 2**depth
+    const ulong prim_root = n_primitive_root_prime(p);
+    const ulong w = n_powmod2(prim_root, c, p);
 
-    _nmod_vec_clear(buf);
+    // fill all attributes and tables
+    n_fft_ctx_init2_root(F, w, depth, req_depth, p);
 }
 
 void n_fft_ctx_clear(n_fft_ctx_t F)
