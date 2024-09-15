@@ -59,6 +59,9 @@ FLINT_INLINE void n_fft_ctx_init(n_fft_ctx_t F, ulong p)
     n_fft_ctx_init2(F, N_FFT_CTX_DEFAULT_DEPTH, p);
 }
 
+// grows F->depth and precomputations to support DFTs of depth up to depth
+void n_fft_ctx_fit_depth(n_fft_ctx_t F, ulong depth);
+
 void n_fft_ctx_clear(n_fft_ctx_t F);
 
 

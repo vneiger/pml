@@ -79,7 +79,7 @@ void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong depth, 
     F->mod2 = 2*p;
     F->mod4 = 4*p;
     F->max_depth = max_depth;
-    F->depth = depth;
+    F->depth = 3;  // to be able to call fit_depth below
 
     // fill tab_w2
     ulong pr_quo, pr_rem, ww;
@@ -98,8 +98,8 @@ void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong depth, 
     // at this stage, pr_quo and pr_rem are for k == 0 i.e. for I == tab_w2[0]
 
 
-    // fill tab_w
-    ulong len = (UWORD(1) << (depth-1));  // len >= 4
+    // fill tab_w for depth 3
+    ulong len = UWORD(1) << (depth-1);  // len >= 4
     F->tab_w = _nmod_vec_init(2*len);
 
     F->tab_w[0] = UWORD(1);
@@ -110,21 +110,8 @@ void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong depth, 
     F->tab_w[5] = F->tab_w2[3];
     n_mulmod_and_precomp_shoup(F->tab_w+6, F->tab_w+7, F->tab_w2[0], F->tab_w2[2], pr_quo, pr_rem, F->tab_w2[3], p);
 
-    // tab_w[2*4:2*8] is w**(L/16) * tab_w[2*0:2*4] where L = 2**max_depth,
-    // tab_w[2*8:2*16] is w**(L/32) * tab_w[2*0:2*8], etc.
-    // recall tab_w2[2*d] == w**(L / 2**(d+2))
-    ulong d = 2;  // we start with w**(L/16) == sqrt(J)
-    for (ulong llen = 4; llen < len; llen <<= 1, d += 1)
-    {
-        ww = F->tab_w2[2*d];
-        pr_quo = F->tab_w2[2*d+1];
-        pr_rem = n_mulmod_precomp_shoup_rem_from_quo(pr_quo, p);
-        // for each k, tab_w[2*(k+llen)] <- ww * tab_w[2*k], and deduce precomputation
-        for (ulong k = 0; k < llen; k++)
-            n_mulmod_and_precomp_shoup(F->tab_w + 2*llen + 2*k, F->tab_w + 2*llen + 2*k+1,
-                                        ww, F->tab_w[2*k],
-                                        pr_quo, pr_rem, F->tab_w[2*k+1], p);
-    }
+    // complete tab_w up to specified depth
+    n_fft_ctx_fit_depth(F, depth);
 }
 
 void n_fft_ctx_init2(n_fft_ctx_t F, ulong depth, ulong p)
@@ -149,8 +136,37 @@ void n_fft_ctx_clear(n_fft_ctx_t F)
     _nmod_vec_clear(F->tab_w);
 }
 
+void n_fft_ctx_fit_depth(n_fft_ctx_t F, ulong depth)
+{
+    if (F->max_depth < depth)
+        depth = F->max_depth;
 
+    if (depth > F->depth)
+    {
+        ulong len = UWORD(1) << (depth-1);  // len >= 8 (since depth >= 4)
+        F->tab_w = flint_realloc(F->tab_w, 2*len * sizeof(ulong));
 
+        // tab_w[2] is w**(L/8) * tab_w[0], where L = 2**max_depth,
+        // tab_w[2*4,2*6] is w**(L/16) * tab_w[2*0,2*2],
+        // tab_w[2*8,2*10,2*12,2*14] is w**(L/32) * tab_w[2*0,2*2,2*4,2*6], etc.
+        // recall tab_w2[2*d] == w**(L / 2**(d+2))
+        ulong d = F->depth - 1;
+        ulong llen = UWORD(1) << (F->depth-1);
+        ulong ww, pr_quo, pr_rem;
+        for ( ; llen < len; llen <<= 1, d += 1)
+        {
+            ww = F->tab_w2[2*d];
+            pr_quo = F->tab_w2[2*d+1];
+            pr_rem = n_mulmod_precomp_shoup_rem_from_quo(pr_quo, F->mod);
+            // for each k, tab_w[2*(k+llen)] <- ww * tab_w[2*k], and deduce precomputation
+            for (ulong k = 0; k < llen; k++)
+                n_mulmod_and_precomp_shoup(F->tab_w + 2*llen + 2*k, F->tab_w + 2*llen + 2*k+1,
+                                            ww, F->tab_w[2*k],
+                                            pr_quo, pr_rem, F->tab_w[2*k+1], F->mod);
+        }
+        F->depth = depth;
+    }
+}
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
