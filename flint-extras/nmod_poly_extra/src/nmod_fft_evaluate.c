@@ -93,12 +93,12 @@
 #define BUTTERFLY2_CT_LAZY(a, b, n, n2, w, w_pr, p_hi, p_lo, u, v) \
     do {                                                          \
         u = (a);                                                  \
-        if (u >= n2)                                              \
-            u -= n2;  /* [0..2n) */                               \
+        if (u >= (n2))                                            \
+            u -= (n2);  /* [0..2n) */                             \
         v = (b);                                                  \
         N_MULMOD_PRECOMP_LAZY(v, w, v, w_pr, n, p_hi, p_lo);      \
         (a) = u + v;                   /* [0..4n) */              \
-        (b) = u + F->mod2 - v;         /* [0..4n) */              \
+        (b) = u + (n2) - v;         /* [0..4n) */                 \
     } while(0)
 
 /*----------------*/

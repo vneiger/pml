@@ -19,9 +19,9 @@ extern "C" {
 
 typedef struct
 {
-    ulong mod;
-    ulong mod2;                // 2*mod  (storing this does help for speed, in _dif_rec2 at least)
-    ulong mod4;                // 4*mod  (storing this does help for speed, in _dif_rec2 at least)
+    ulong mod;                 // modulus, prime
+    ulong mod2;                // 2*mod  (storing slightly helps for speed)
+    ulong mod4;                // 4*mod  (storing slightly helps for speed)
     ulong max_depth;           // maximum supported depth (w has order 2**max_depth)
     ulong depth;               // depth supported by current precomputation (use fit_depth to extend)
     ulong * tab_w;             // tabulated powers of w, see below
