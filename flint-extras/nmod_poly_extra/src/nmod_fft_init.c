@@ -97,12 +97,6 @@ void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong depth, 
     }
     // at this stage, pr_quo and pr_rem are for k == 0 i.e. for I == tab_w2[0]
 
-    // fill I, J, IJ
-    F->I    = F->tab_w2[0];
-    F->I_pr = F->tab_w2[1];
-    F->J    = F->tab_w2[2];
-    F->J_pr = F->tab_w2[3];
-    n_mulmod_and_precomp_shoup(&F->IJ, &F->IJ_pr, F->I, F->J, pr_quo, pr_rem, F->J_pr, p);
 
     // fill tab_w
     ulong len = (UWORD(1) << (depth-1));  // len >= 4
@@ -110,12 +104,11 @@ void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong depth, 
 
     F->tab_w[0] = UWORD(1);
     F->tab_w[1] = n_mulmod_precomp_shoup(UWORD(1), p);
-    F->tab_w[2] = F->I;
-    F->tab_w[3] = F->I_pr;
-    F->tab_w[4] = F->J;
-    F->tab_w[5] = F->J_pr;
-    F->tab_w[6] = F->IJ;
-    F->tab_w[7] = F->IJ_pr;
+    F->tab_w[2] = F->tab_w2[0];
+    F->tab_w[3] = F->tab_w2[1];
+    F->tab_w[4] = F->tab_w2[2];
+    F->tab_w[5] = F->tab_w2[3];
+    n_mulmod_and_precomp_shoup(F->tab_w+6, F->tab_w+7, F->tab_w2[0], F->tab_w2[2], pr_quo, pr_rem, F->tab_w2[3], p);
 
     // tab_w[2*4:2*8] is w**(L/16) * tab_w[2*0:2*4] where L = 2**max_depth,
     // tab_w[2*8:2*16] is w**(L/32) * tab_w[2*0:2*8], etc.

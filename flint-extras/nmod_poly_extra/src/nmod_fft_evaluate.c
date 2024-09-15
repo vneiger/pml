@@ -279,7 +279,7 @@ FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, n_fft_ctx_t F)
     p[1] = p1;
 
     // left-right, mod x-I | x+I
-    N_MULMOD_PRECOMP_LAZY(v3, F->I, v3, F->I_pr, F->mod, p_hi, p_lo);
+    N_MULMOD_PRECOMP_LAZY(v3, F->tab_w[2], v3, F->tab_w[3], F->mod, p_hi, p_lo);
     if (v2 >= F->mod4)
         v2 -= F->mod4;
     if (v2 >= F->mod2)
@@ -288,8 +288,8 @@ FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, n_fft_ctx_t F)
     p[3] = v2 + F->mod2 - v3;  // [0..4n)
 
     // right, mod x**2 - I | x**2 + I
-    N_MULMOD_PRECOMP_LAZY(u2, F->I, u2, F->I_pr, F->mod, p_hi, p_lo);
-    N_MULMOD_PRECOMP_LAZY(u3, F->I, u3, F->I_pr, F->mod, p_hi, p_lo);
+    N_MULMOD_PRECOMP_LAZY(u2, F->tab_w[2], u2, F->tab_w[3], F->mod, p_hi, p_lo);
+    N_MULMOD_PRECOMP_LAZY(u3, F->tab_w[2], u3, F->tab_w[3], F->mod, p_hi, p_lo);
     if (u0 >= F->mod2)
         u0 -= F->mod2;         // [0..2n)
     if (u1 >= F->mod2)
@@ -300,14 +300,14 @@ FLINT_FORCE_INLINE void dft8_red_lazy(nn_ptr p, n_fft_ctx_t F)
     v3 = u1 + F->mod2 - u3;  // [0..4n)
 
     // right-left, mod x - J | x + J
-    N_MULMOD_PRECOMP_LAZY(v1, F->J, v1, F->J_pr, F->mod, p_hi, p_lo);
+    N_MULMOD_PRECOMP_LAZY(v1, F->tab_w[4], v1, F->tab_w[5], F->mod, p_hi, p_lo);
     if (v0 >= F->mod2)
         v0 -= F->mod2;         // [0..2n)
     p[4] = v0 + v1;
     p[5] = v0 + F->mod2 - v1;
 
     // right-right, mod x - I*J | x + I*J
-    N_MULMOD_PRECOMP_LAZY(v3, F->IJ, v3, F->IJ_pr, F->mod, p_hi, p_lo);
+    N_MULMOD_PRECOMP_LAZY(v3, F->tab_w[6], v3, F->tab_w[7], F->mod, p_hi, p_lo);
     if (v2 >= F->mod2)
         v2 -= F->mod2;         // [0..2n)
     p[6] = v2 + v3;
@@ -428,24 +428,24 @@ FLINT_FORCE_INLINE void dft16_red_lazy(nn_ptr p, n_fft_ctx_t F)
 {
     ulong p_hi, p_lo, tmp;
 
-    DFT4_LAZY2_RED(p[0], p[4], p[8], p[12], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[0], p[4], p[8], p[12], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[0] >= F->mod2)
         p[0] -= F->mod2;
-    DFT4_LAZY2_RED(p[1], p[5], p[9 ], p[13], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[1], p[5], p[9 ], p[13], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[1] >= F->mod2)
         p[1] -= F->mod2;
-    DFT4_LAZY2_RED(p[2], p[6], p[10], p[14], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[2], p[6], p[10], p[14], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[2] >= F->mod2)
         p[2] -= F->mod2;
-    DFT4_LAZY2_RED(p[3], p[7], p[11], p[15], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[3], p[7], p[11], p[15], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[3] >= F->mod2)
         p[3] -= F->mod2;
 
     // next line requires < 2n, hence the four reductions above
-    DFT4_LAZY2_RED(p[0], p[1], p[2], p[3], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
-    BUTTERFLY4_CT_LAZY(p[4], p[5], p[6], p[7], F->I, F->I_pr, F->J, F->J_pr, F->IJ, F->IJ_pr, F->mod, F->mod2, p_hi, p_lo, tmp);
-    BUTTERFLY4_CT_LAZY(p[8], p[9], p[10], p[11], F->J, F->J_pr, F->tab_w[8], F->tab_w[9], F->tab_w[10], F->tab_w[11], F->mod, F->mod2, p_hi, p_lo, tmp);
-    BUTTERFLY4_CT_LAZY(p[12], p[13], p[14], p[15], F->IJ, F->IJ_pr, F->tab_w[12], F->tab_w[13], F->tab_w[14], F->tab_w[15], F->mod, F->mod2, p_hi, p_lo, tmp);
+    DFT4_LAZY2_RED(p[0], p[1], p[2], p[3], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
+    BUTTERFLY4_CT_LAZY(p[4], p[5], p[6], p[7], F->tab_w[2], F->tab_w[3], F->tab_w[4], F->tab_w[5], F->tab_w[6], F->tab_w[7], F->mod, F->mod2, p_hi, p_lo, tmp);
+    BUTTERFLY4_CT_LAZY(p[8], p[9], p[10], p[11], F->tab_w[4], F->tab_w[5], F->tab_w[8], F->tab_w[9], F->tab_w[10], F->tab_w[11], F->mod, F->mod2, p_hi, p_lo, tmp);
+    BUTTERFLY4_CT_LAZY(p[12], p[13], p[14], p[15], F->tab_w[6], F->tab_w[7], F->tab_w[12], F->tab_w[13], F->tab_w[14], F->tab_w[15], F->mod, F->mod2, p_hi, p_lo, tmp);
 }
 
 FLINT_FORCE_INLINE void dft16_red_lazy_general(nn_ptr p, ulong node, n_fft_ctx_t F)
@@ -518,28 +518,28 @@ FLINT_FORCE_INLINE void dft32_red_lazy(nn_ptr p, n_fft_ctx_t F)
 {
     ulong p_hi, p_lo;
 
-    DFT4_LAZY2_RED(p[0], p[8 ], p[16], p[24], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[0], p[8 ], p[16], p[24], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[0] >= F->mod2)
         p[0] -= F->mod2;
-    DFT4_LAZY2_RED(p[1], p[9 ], p[17], p[25], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[1], p[9 ], p[17], p[25], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[1] >= F->mod2)
         p[1] -= F->mod2;
-    DFT4_LAZY2_RED(p[2], p[10], p[18], p[26], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[2], p[10], p[18], p[26], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[2] >= F->mod2)
         p[2] -= F->mod2;
-    DFT4_LAZY2_RED(p[3], p[11], p[19], p[27], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[3], p[11], p[19], p[27], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[3] >= F->mod2)
         p[3] -= F->mod2;
-    DFT4_LAZY2_RED(p[4], p[12], p[20], p[28], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[4], p[12], p[20], p[28], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[4] >= F->mod2)
         p[4] -= F->mod2;
-    DFT4_LAZY2_RED(p[5], p[13], p[21], p[29], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[5], p[13], p[21], p[29], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[5] >= F->mod2)
         p[5] -= F->mod2;
-    DFT4_LAZY2_RED(p[6], p[14], p[22], p[30], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[6], p[14], p[22], p[30], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[6] >= F->mod2)
         p[6] -= F->mod2;
-    DFT4_LAZY2_RED(p[7], p[15], p[23], p[31], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[7], p[15], p[23], p[31], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[7] >= F->mod2)
         p[7] -= F->mod2;
 
@@ -626,7 +626,7 @@ void _n_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F)
     //    DFT2_LAZY4_RED(p[0], p[1], F->mod4);
     //else if (depth == 2)
     //    // in [0..2n), out [0..4n)
-    //    DFT4_LAZY2_RED(p[0], p[1], p[2], p[3], F->I, F->I_pr, F->mod, F->mod2);
+    //    DFT4_LAZY2_RED(p[0], p[1], p[2], p[3], F->tab_w[2], F->tab_w[3], F->mod, F->mod2);
     //else
     if (depth == 3)
         dft8_red_lazy(p, F);  // in [0..2n), out [0..4n)
@@ -736,7 +736,7 @@ void _n_fft_red_rec4_lazy(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F)
     //    DFT2_LAZY4_RED(p[0], p[1], F->mod4);
     //else if (depth == 2)
     //    // in [0..2n), out [0..4n)
-    //    DFT4_LAZY2_RED(p[0], p[1], p[2], p[3], F->I, F->I_pr, F->mod, F->mod2);
+    //    DFT4_LAZY2_RED(p[0], p[1], p[2], p[3], F->tab_w[2], F->tab_w[3], F->mod, F->mod2);
     //else
     if (depth == 3)
         dft8_red_lazy(p, F);  // in [0..2n), out [0..4n)
@@ -755,7 +755,7 @@ void _n_fft_red_rec4_lazy(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F)
         ulong p_hi, p_lo;
         for (ulong k = 0; k < len/4; k++)
         {
-            DFT4_LAZY2_RED(p0[k], p1[k], p2[k], p3[k], F->I, F->I_pr, F->mod, F->mod2, p_hi, p_lo);
+            DFT4_LAZY2_RED(p0[k], p1[k], p2[k], p3[k], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
             if (p[k] >= F->mod2)
                 p[k] -= F->mod2;
         }
