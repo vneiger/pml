@@ -86,7 +86,7 @@ void test_fft_eval()
             nmod_poly_init(pol, mod.n);
             nmod_poly_rand(pol, state, len);
 
-            // naive evals by Horner, in bit reversed depth
+            // naive evals by Horner, in bit reversed order
             nn_ptr evals_br = _nmod_vec_init(len);
             for (ulong k = 0; k < len/2; k++)
             {

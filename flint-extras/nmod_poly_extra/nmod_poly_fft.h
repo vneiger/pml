@@ -68,7 +68,7 @@ void n_fft_ctx_clear(n_fft_ctx_t F);
 
 /*------------------------------------------------------------*/
 /* fft evaluation, in place                                   */
-/* x[i] = poly(w^i), len=2^k, in bit reverse depth            */
+/* x[i] = poly(w^i), len=2^k, in bit reverse order            */
 /* x must have length >= len                                  */
 /*------------------------------------------------------------*/
 
@@ -148,7 +148,7 @@ typedef n_fft_old_ctx_struct n_fft_old_ctx_t[1];
 // -> powers_w[depth-4] = [1, 1_pre, w, w_pre, w**2, w**2_pre, ..., w**(2**depth -1), w**(2**depth -1)_pre]
 //
 // Observe that the second part of each table gives the inverses:
-//    -I is the inverse of I; 
+//    -I is the inverse of I;
 //    -J**3 is the inverse of J, -J**2 is the inverse of J**2, -J is the inverse of J**3;
 //    etc.
 
@@ -156,7 +156,7 @@ typedef n_fft_old_ctx_struct n_fft_old_ctx_t[1];
 /*------------------------------------------------------------*/
 /* initializes all entries of F                               */
 /* w primitive and w^(2^depth))=1                             */
-/* DFTs of size up to 2^depth are supported                   */ 
+/* DFTs of size up to 2^depth are supported                   */
 /* depth >= 3 and depth < FLINT_BITS (-sth?) required         */
 /*------------------------------------------------------------*/
 
