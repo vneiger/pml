@@ -21,29 +21,29 @@ typedef struct
     ulong mod;
     ulong mod2;                // 2*mod  (storing this does help for speed, in _dif_rec2 at least)
     ulong mod4;                // 4*mod  (storing this does help for speed, in _dif_rec2 at least)
-    ulong I;                   // sqrt(-1) == w**(len / 4), len == 2**depth
+    ulong I;                   // sqrt(-1) == w**(L / 4), L == 2**max_depth
     ulong I_pr;                // precomp on I
-    ulong J;                   // sqrt(I) == w**(len / 8)
+    ulong J;                   // sqrt(I) == w**(L / 8)
     ulong J_pr;                // precomp on J
     ulong IJ;                  // sqrt(-I) == I*J
     ulong IJ_pr;               // precomp on IJ
-    ulong depth;               // maximum supported depth (depth of w)
-    ulong alloc;               // depth currently supported (use fit_depth to extend)
+    ulong max_depth;           // maximum supported depth (w has order 2**max_depth)
+    ulong depth;               // depth supported by current precomputation (use fit_depth to extend)
     ulong * tab_w;             // tabulated powers of w, see below
-    ulong tab_ww[128];         // powers w**(2**(depth-1-k)), see below
+    ulong tab_w2[128];         // powers w**(2**k), see below
 } n_fft_ctx_struct;
 typedef n_fft_ctx_struct n_fft_ctx_t[1];
 
-// the array tab_ww contains the powers w**(2**(depth-2-k)) and the corresponding precomputations:
-// for 0 <= k < depth-1, tab_ww[2*k] is w**(2**(depth-2-k)) and tab_ww[2*k+1] is its precomputed quotient
-// in particular the first elements are tab_ww = [I, I_pr, J, J_pr, ...]
-// for 2*depth <= k < 128, tab_ww[k] is undefined
+// the array tab_w2 contains the powers w**(2**(depth-2-k)) and the corresponding precomputations:
+// for 0 <= k < depth-1, tab_w2[2*k] is w**(2**(depth-2-k)) and tab_w2[2*k+1] is its precomputed quotient
+// in particular the first elements are tab_w2 = [I, I_pr, J, J_pr, ...]
+// for 2*depth <= k < 128, tab_w2[k] is undefined
 
 // TODO describe fields of tab_w
 
 // requires that p is a prime with 2 < p < 2**61 and 8 divides p-1 (checks and throws)
 void n_fft_ctx_init(n_fft_ctx_t F, ulong p);
-// requires that p is a prime with 2 < p < 2**61 and depth >= 3 and w principal root of unity of depth 2**depth (no check)
+// requires that p is a prime with 2 < p < 2**61 and depth >= 3 and w principal root of unity of order 2**depth (no check)
 void n_fft_ctx_init_root(n_fft_ctx_t F, ulong w, ulong depth, ulong p);
 void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong w_depth, ulong depth, ulong mod);
 void n_fft_ctx_clear(n_fft_ctx_t F);
@@ -76,6 +76,16 @@ void _n_fft_red_rec4_lazy_general(nn_ptr p, ulong len, ulong depth, ulong node, 
 void _n_fft_red_rec4_lazy(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F);
 
 void _n_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F);
+
+
+
+
+
+
+
+
+
+
 
 
 

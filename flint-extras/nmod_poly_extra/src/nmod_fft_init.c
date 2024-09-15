@@ -12,21 +12,21 @@
 *  bit reversed copy  *
 ***********************/
 
-inline long RevInc(long a, long k)
-{
-    long j, m;
-
-    j = k;
-    m = 1L << (k-1);
-
-    while (j && (m & a)) {
-        a ^= m;
-        m >>= 1;
-        j--;
-    }
-    if (j) a ^= m;
-    return a;
-}
+//inline long RevInc(long a, long k)
+//{
+//    long j, m;
+//
+//    j = k;
+//    m = 1L << (k-1);
+//
+//    while (j && (m & a)) {
+//        a ^= m;
+//        m >>= 1;
+//        j--;
+//    }
+//    if (j) a ^= m;
+//    return a;
+//}
 
 // indices initialized with length >= k
 //static inline void brc_indices(ulong * indices, long k)
@@ -63,36 +63,36 @@ inline long RevInc(long a, long k)
 /* depth >= 3 required                                        */
 /*------------------------------------------------------------*/
 
-void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong w_depth, ulong depth, ulong p)
+void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong depth, ulong p)
 {
     // fill basic attributes
     F->mod = p;
     F->mod2 = 2*p;
     F->mod4 = 4*p;
-    F->depth = w_depth;
-    F->alloc = depth;
+    F->max_depth = max_depth;
+    F->depth = depth;
 
-    // fill tab_ww
+    // fill tab_w2
     ulong pr_quo, pr_rem, ww;
     ww = w;
     n_mulmod_precomp_shoup_quo_rem(&pr_quo, &pr_rem, ww, p);
-    F->tab_ww[2*(depth-2)] = ww;
-    F->tab_ww[2*(depth-2)+1] = pr_quo;
+    F->tab_w2[2*(depth-2)] = ww;
+    F->tab_w2[2*(depth-2)+1] = pr_quo;
     for (slong k = depth-3; k >= 0; k--)
     {
         // ww <- ww**2 and its precomputed quotient
         n_mulmod_and_precomp_shoup(&ww, &pr_quo, ww, ww, pr_quo, pr_rem, pr_quo, p);
         pr_rem = n_mulmod_precomp_shoup_rem_from_quo(pr_quo, p);
-        F->tab_ww[2*k] = ww;
-        F->tab_ww[2*k+1] = pr_quo;
+        F->tab_w2[2*k] = ww;
+        F->tab_w2[2*k+1] = pr_quo;
     }
-    // at this stage, pr_quo and pr_rem are for k == 0 i.e. for I == tab_ww[0]
+    // at this stage, pr_quo and pr_rem are for k == 0 i.e. for I == tab_w2[0]
 
     // fill I, J, IJ
-    F->I    = F->tab_ww[0];
-    F->I_pr = F->tab_ww[1];
-    F->J    = F->tab_ww[2];
-    F->J_pr = F->tab_ww[3];
+    F->I    = F->tab_w2[0];
+    F->I_pr = F->tab_w2[1];
+    F->J    = F->tab_w2[2];
+    F->J_pr = F->tab_w2[3];
     n_mulmod_and_precomp_shoup(&F->IJ, &F->IJ_pr, F->I, F->J, pr_quo, pr_rem, F->J_pr, p);
 
     // fill tab_w
@@ -108,11 +108,14 @@ void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong w_depth, ulong depth, ul
     F->tab_w[6] = F->IJ;
     F->tab_w[7] = F->IJ_pr;
 
-    ulong d = 2;  // tab_ww[2*d] == sqrt(J)
+    // tab_w[2*4:2*8] is w**(L/16) * tab_w[2*0:2*4] where L = 2**max_depth,
+    // tab_w[2*8:2*16] is w**(L/32) * tab_w[2*0:2*8], etc.
+    // recall tab_ww[2*d] == w**(L / 2**(d+2))
+    ulong d = 2;  // we start with w**(L/16) == sqrt(J)
     for (ulong llen = 4; llen < len; llen <<= 1, d += 1)
     {
-        ww = F->tab_ww[2*d];
-        pr_quo = F->tab_ww[2*d+1];
+        ww = F->tab_w2[2*d];
+        pr_quo = F->tab_w2[2*d+1];
         pr_rem = n_mulmod_precomp_shoup_rem_from_quo(pr_quo, p);
         // for each k, tab_w[2*(k+llen)] <- ww * tab_w[2*k], and deduce precomputation
         for (ulong k = 0; k < llen; k++)
