@@ -10,28 +10,28 @@
 typedef struct
 {
    ulong prime;
-   ulong order;
-   ulong maxorder;
+   ulong depth;
+   ulong maxdepth;
 } info_t;
 
-#define SAMPLE(fun, _ctx)                                                        \
+#define SAMPLE(fun)                                                              \
 void sample_##fun(void * arg, ulong count)                                       \
 {                                                                                \
     info_t * info = (info_t *) arg;                                              \
     const ulong p = info->prime;                                                 \
-    const ulong order = info->order;                                             \
-    const ulong maxorder = info->maxorder;                                       \
+    const ulong depth = info->depth;                                             \
+    const ulong maxdepth = info->maxdepth;                                       \
                                                                                  \
-    const ulong len = UWORD(1) << order;                                         \
+    const ulong len = UWORD(1) << depth;                                         \
     const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));                \
                                                                                  \
     /* modulus, roots of unity */                                                \
     nmod_t mod;                                                                  \
     nmod_init(&mod, p);                                                          \
-    ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> maxorder, mod); \
-    ulong w = nmod_pow_ui(w0, 1UL<<(maxorder - order), mod);                     \
-    n_fft##_ctx##_ctx_t F;                                                    \
-    n_fft##_ctx##_ctx_init_set(F, w, order, p);                               \
+    ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> maxdepth, mod); \
+    ulong w = nmod_pow_ui(w0, 1UL<<(maxdepth - depth), mod);                     \
+    n_fft_ctx_t F;                                                               \
+    n_fft_ctx_init2_root(F, w, depth, depth, p);                                 \
                                                                                  \
     FLINT_TEST_INIT(state);                                                      \
                                                                                  \
@@ -42,36 +42,73 @@ void sample_##fun(void * arg, ulong count)                                      
     {                                                                            \
         prof_start();                                                            \
         for (ulong j = 0; j < rep; j++)                                          \
-            _n_fft_##fun(coeffs, len, order, F);                              \
+            _n_fft_##fun(coeffs, len, depth, F);                                 \
         prof_stop();                                                             \
     }                                                                            \
                                                                                  \
-    n_fft##_ctx##_ctx_clear(F);                                               \
+    n_fft_ctx_clear(F);                                                          \
     FLINT_TEST_CLEAR(state);                                                     \
 }                                                                                \
 
-SAMPLE(old_dif_rec2_lazy, _old)
-SAMPLE(old_dif_iter2_lazy, _old)
-SAMPLE(old_dif_rec4_lazy, _old)
-SAMPLE(old_dif_rec8_lazy, _old)
-SAMPLE(red_rec2_lazy, )
-SAMPLE(red_iter2_lazy, )
-SAMPLE(red_rec4_lazy, )
+#define SAMPLEOLD(fun)                                                           \
+void sample_##fun(void * arg, ulong count)                                       \
+{                                                                                \
+    info_t * info = (info_t *) arg;                                              \
+    const ulong p = info->prime;                                                 \
+    const ulong depth = info->depth;                                             \
+    const ulong maxdepth = info->maxdepth;                                       \
+                                                                                 \
+    const ulong len = UWORD(1) << depth;                                         \
+    const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));                \
+                                                                                 \
+    /* modulus, roots of unity */                                                \
+    nmod_t mod;                                                                  \
+    nmod_init(&mod, p);                                                          \
+    ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> maxdepth, mod); \
+    ulong w = nmod_pow_ui(w0, 1UL<<(maxdepth - depth), mod);                     \
+    n_fft_old_ctx_t F;                                                           \
+    n_fft_old_ctx_init_set(F, w, depth, p);                                      \
+                                                                                 \
+    FLINT_TEST_INIT(state);                                                      \
+                                                                                 \
+    ulong * coeffs = _nmod_vec_init(len);                                        \
+    _nmod_vec_randtest(coeffs, state, len, mod);                                 \
+                                                                                 \
+    for (ulong i = 0; i < count; i++)                                            \
+    {                                                                            \
+        prof_start();                                                            \
+        for (ulong j = 0; j < rep; j++)                                          \
+            _n_fft_##fun(coeffs, len, depth, F);                                 \
+        prof_stop();                                                             \
+    }                                                                            \
+                                                                                 \
+    n_fft_old_ctx_clear(F);                                                      \
+    FLINT_TEST_CLEAR(state);                                                     \
+}                                                                                \
+
+
+SAMPLEOLD(old_dif_rec2_lazy)
+SAMPLEOLD(old_dif_iter2_lazy)
+SAMPLEOLD(old_dif_rec4_lazy)
+SAMPLEOLD(old_dif_rec8_lazy)
+SAMPLE(red_rec2_lazy)
+SAMPLE(red_iter2_lazy)
+SAMPLE(red_rec4_lazy)
 
 void sample_sd_fft(void * arg, ulong count)
 {
     info_t * info = (info_t *) arg;
     const ulong p = info->prime;
-    const ulong order = info->order;
+    const ulong depth = info->depth;
 
-    const ulong len = UWORD(1) << order;
+    const ulong len = UWORD(1) << depth;
     const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));
 
     sd_fft_ctx_t Q;
     sd_fft_ctx_init_prime(Q, p);
-    sd_fft_ctx_fit_depth(Q, order);
+    sd_fft_ctx_fit_depth(Q, depth);
 
-    ulong sz = sd_fft_ctx_data_size(order)*sizeof(double);
+    ulong sz = sd_fft_ctx_data_size(depth)*sizeof(double);
 
     FLINT_TEST_INIT(state);
 
@@ -88,7 +125,7 @@ void sample_sd_fft(void * arg, ulong count)
     {
         prof_start();
         for (ulong j = 0; j < rep; j++)
-            sd_fft_trunc(Q, data, order, len, len);
+            sd_fft_trunc(Q, data, depth, len, len);
         prof_stop();
     }
 
@@ -97,13 +134,13 @@ void sample_sd_fft(void * arg, ulong count)
 }
 
 /*------------------------------------------------------------*/
-/* computes init for FFT for several bit lengths and orders   */
+/* computes init for FFT for several bit lengths and depths   */
 /*------------------------------------------------------------*/
 void time_evaluate()
 {
-    flint_printf("- order is log(fft length)\n");
-    flint_printf("- timing init FFT tables + DIF evaluate for several bit lengths and orders\n");
-    flint_printf("order\tsd_fft\trec2\trec4\titer2\t   ||\tsd_fft\trec2\trec4\titer2\toldr2\toldr4\toldr8\toldi2\t\n");
+    flint_printf("- depth is log(fft length)\n");
+    flint_printf("- timing init FFT tables + DIF evaluate for several bit lengths and depths\n");
+    flint_printf("depth\tsd_fft\trec2\trec4\titer2\t   ||\tsd_fft\trec2\trec4\titer2\toldr2\toldr4\toldr8\toldi2\t\n");
 
     ulong primes[num_primes] = {
         786433,              // 20 bits, 1 + 2**18 * 3
@@ -112,20 +149,20 @@ void time_evaluate()
         1108307720798209,    // 50 bits, 1 + 2**44 * 3**2 * 7
         1139410705724735489, // 60 bits, 1 + 2**52 * 11 * 23
     };
-    ulong max_orders[num_primes] = { 18, 25, 25, 25, 25 };
+    ulong max_depths[num_primes] = { 18, 25, 25, 25, 25 };
 
     for (ulong k = 3; k < 4; k++)
     {
-        for (ulong order = 3; order <= max_orders[k]; order++)
+        for (ulong depth = 3; depth <= max_depths[k]; depth++)
         {
-            printf("%ld\t", order);
+            printf("%ld\t", depth);
 
             info_t info;
             info.prime = primes[k];
-            info.maxorder = max_orders[k];
-            info.order = order;
+            info.maxdepth = max_depths[k];
+            info.depth = depth;
 
-            const ulong len = UWORD(1) << order;
+            const ulong len = UWORD(1) << depth;
             const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));
 
             double min[10];

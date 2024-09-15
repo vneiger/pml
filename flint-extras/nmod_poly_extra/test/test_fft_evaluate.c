@@ -34,7 +34,7 @@ int nmod_vec_range(nn_srcptr vec, ulong len, ulong bound)
 }
 
 /*------------------------------------------------------------------*/
-/* computes and check FFT eval for several bit lengths and orders   */
+/* computes and check FFT eval for several bit lengths and depths   */
 /*------------------------------------------------------------------*/
 void test_fft_eval()
 {
@@ -42,8 +42,8 @@ void test_fft_eval()
     flint_rand_init(state);
     flint_rand_set_seed(state, time(NULL), time(NULL)+57);
 
-    printf("- order is log(fft length)\n");
-    printf("- testing fft-eval for several bit lengths and orders\n");
+    printf("- depth is log(fft length)\n");
+    printf("- testing fft-eval for several bit lengths and depths\n");
 
     ulong primes[num_primes] = {
         786433,              // 20 bits, 1 + 2**18 * 3
@@ -52,8 +52,8 @@ void test_fft_eval()
         1108307720798209,    // 50 bits, 1 + 2**44 * 3**2 * 7
         1139410705724735489, // 60 bits, 1 + 2**52 * 11 * 23
     };
-    ulong max_orders[num_primes] = { 13, 13, 13, 13, 13 };
-    //ulong max_orders[num_primes] = { 4, 4, 4, 4, 4 };
+    ulong max_depths[num_primes] = { 13, 13, 13, 13, 13 };
+    //ulong max_depths[num_primes] = { 4, 4, 4, 4, 4 };
 
     for (ulong nb_prime = 0; nb_prime < num_primes; nb_prime++)
     {
@@ -62,31 +62,31 @@ void test_fft_eval()
         ulong p = primes[nb_prime];
         nmod_init(&mod, p);
 
-        // find root of unity of specified maximum order
+        // find root of unity of specified maximum depth
         const ulong prt = n_primitive_root_prime(p);
-        ulong w0 = nmod_pow_ui(prt, (p - 1) >> max_orders[nb_prime], mod);
+        ulong w0 = nmod_pow_ui(prt, (p - 1) >> max_depths[nb_prime], mod);
 
-        printf("prime %ld, orders: ", nb_prime);
+        printf("prime %ld, depths: ", nb_prime);
 
-        for (ulong order = 3; order <= max_orders[nb_prime]; order++)
+        for (ulong depth = 3; depth <= max_depths[nb_prime]; depth++)
         {
-            const ulong len = (1UL<<order);
+            const ulong len = (1UL<<depth);
 
-            // root of unity of order 2**order
-            ulong w = nmod_pow_ui(w0, 1UL<<(max_orders[nb_prime]-order), mod);
+            // root of unity of depth 2**depth
+            ulong w = nmod_pow_ui(w0, 1UL<<(max_depths[nb_prime]-depth), mod);
 
             // build FFT tables
             n_fft_old_ctx_t F_old;
-            n_fft_old_ctx_init_set(F_old, w, order, p);
+            n_fft_old_ctx_init_set(F_old, w, depth, p);
             n_fft_ctx_t F;
-            n_fft_ctx_init_set(F, w, order, p);
+            n_fft_ctx_init2_root(F, w, depth, depth, p);
 
             // choose random poly
             nmod_poly_t pol;
             nmod_poly_init(pol, mod.n);
             nmod_poly_rand(pol, state, len);
 
-            // naive evals by Horner, in bit reversed order
+            // naive evals by Horner, in bit reversed depth
             nn_ptr evals_br = _nmod_vec_init(len);
             for (ulong k = 0; k < len/2; k++)
             {
@@ -99,7 +99,7 @@ void test_fft_eval()
                 ulong * coeffs = _nmod_vec_init(len);
                 _nmod_vec_set(coeffs, pol->coeffs, len);
 
-                _n_fft_red_rec2_lazy(coeffs, len, order, F);
+                _n_fft_red_rec2_lazy(coeffs, len, depth, F);
 
                 if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
                         || !nmod_vec_range(coeffs, len, 4*mod.n))
@@ -120,7 +120,7 @@ void test_fft_eval()
                 ulong * coeffs = _nmod_vec_init(len);
                 _nmod_vec_set(coeffs, pol->coeffs, len);
 
-                _n_fft_red_rec4_lazy(coeffs, len, order, F);
+                _n_fft_red_rec4_lazy(coeffs, len, depth, F);
 
                 if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
                         || !nmod_vec_range(coeffs, len, 4*mod.n))
@@ -141,7 +141,7 @@ void test_fft_eval()
                 ulong * coeffs = _nmod_vec_init(len);
                 _nmod_vec_set(coeffs, pol->coeffs, len);
 
-                _n_fft_red_iter2_lazy(coeffs, len, order, F);
+                _n_fft_red_iter2_lazy(coeffs, len, depth, F);
 
                 if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
                         || !nmod_vec_range(coeffs, len, 8*mod.n))
@@ -162,7 +162,7 @@ void test_fft_eval()
                 ulong * coeffs = _nmod_vec_init(len);
                 _nmod_vec_set(coeffs, pol->coeffs, len);
 
-                _n_fft_old_dif_rec2_lazy(coeffs, len, order, F_old);
+                _n_fft_old_dif_rec2_lazy(coeffs, len, depth, F_old);
 
                 if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
                         || !nmod_vec_range(coeffs, len, 4*mod.n))
@@ -183,7 +183,7 @@ void test_fft_eval()
                 ulong * coeffs = _nmod_vec_init(len);
                 _nmod_vec_set(coeffs, pol->coeffs, len);
 
-                _n_fft_old_dif_iter2_lazy(coeffs, len, order, F_old);
+                _n_fft_old_dif_iter2_lazy(coeffs, len, depth, F_old);
 
                 if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
                         || !nmod_vec_range(coeffs, len, 4*mod.n))
@@ -204,7 +204,7 @@ void test_fft_eval()
                 ulong * coeffs = _nmod_vec_init(len);
                 _nmod_vec_set(coeffs, pol->coeffs, len);
 
-                _n_fft_old_dif_rec4_lazy(coeffs, len, order, F_old);
+                _n_fft_old_dif_rec4_lazy(coeffs, len, depth, F_old);
 
                 if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
                         || !nmod_vec_range(coeffs, len, 8*mod.n))
@@ -225,7 +225,7 @@ void test_fft_eval()
                 ulong * coeffs = _nmod_vec_init(len);
                 _nmod_vec_set(coeffs, pol->coeffs, len);
 
-                _n_fft_old_dif_rec8_lazy(coeffs, len, order, F_old);
+                _n_fft_old_dif_rec8_lazy(coeffs, len, depth, F_old);
 
                 if (! nmod_vec_red_equal(evals_br, coeffs, len, mod)
                         || !nmod_vec_range(coeffs, len, 8*mod.n))
@@ -242,7 +242,7 @@ void test_fft_eval()
                 _nmod_vec_clear(coeffs);
             }
 
-            printf("%ld ", order);
+            printf("%ld ", depth);
 
             nmod_poly_clear(pol);
             _nmod_vec_clear(evals_br);

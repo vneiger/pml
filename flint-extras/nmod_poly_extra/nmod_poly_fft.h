@@ -21,27 +21,38 @@ typedef struct
     ulong mod;
     ulong mod2;                // 2*mod  (storing this does help for speed, in _dif_rec2 at least)
     ulong mod4;                // 4*mod  (storing this does help for speed, in _dif_rec2 at least)
-    ulong I;                   // sqrt(-1)
-    ulong Ipre;                // precomp on I
-    ulong J;                   // sqrt(I)
-    ulong Jpre;                // precomp on J
+    ulong I;                   // sqrt(-1) == w**(len / 4), len == 2**depth
+    ulong I_pr;                // precomp on I
+    ulong J;                   // sqrt(I) == w**(len / 8)
+    ulong J_pr;                // precomp on J
     ulong IJ;                  // sqrt(-I) == I*J
-    ulong IJpre;               // precomp on IJ
-    ulong order;               // maximum supported order (currently: order of w)
-    ulong * tab_w;             // tabulated powers of w
+    ulong IJ_pr;               // precomp on IJ
+    ulong depth;               // maximum supported depth (depth of w)
+    ulong alloc;               // depth currently supported (use fit_depth to extend)
+    ulong * tab_w;             // tabulated powers of w, see below
+    ulong tab_ww[128];         // powers w**(2**(depth-1-k)), see below
 } n_fft_ctx_struct;
 typedef n_fft_ctx_struct n_fft_ctx_t[1];
 
-// TODO describe fields
+// the array tab_ww contains the powers w**(2**(depth-2-k)) and the corresponding precomputations:
+// for 0 <= k < depth-1, tab_ww[2*k] is w**(2**(depth-2-k)) and tab_ww[2*k+1] is its precomputed quotient
+// in particular the first elements are tab_ww = [I, I_pr, J, J_pr, ...]
+// for 2*depth <= k < 128, tab_ww[k] is undefined
 
-void n_fft_ctx_init_set(n_fft_ctx_t F, ulong w, ulong order, ulong mod);
+// TODO describe fields of tab_w
+
+// requires that p is a prime with 2 < p < 2**61 and 8 divides p-1 (checks and throws)
+void n_fft_ctx_init(n_fft_ctx_t F, ulong p);
+// requires that p is a prime with 2 < p < 2**61 and depth >= 3 and w principal root of unity of depth 2**depth (no check)
+void n_fft_ctx_init_root(n_fft_ctx_t F, ulong w, ulong depth, ulong p);
+void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong w_depth, ulong depth, ulong mod);
 void n_fft_ctx_clear(n_fft_ctx_t F);
 
 
 
 /*------------------------------------------------------------*/
 /* fft evaluation, in place                                   */
-/* x[i] = poly(w^i), len=2^k, in bit reverse order            */
+/* x[i] = poly(w^i), len=2^k, in bit reverse depth            */
 /* x must have length >= len                                  */
 /*------------------------------------------------------------*/
 
@@ -57,14 +68,14 @@ void n_fft_ctx_clear(n_fft_ctx_t F);
 // general: modulus is x**len - w**2 = (x**(len/2) - w) (x**(len/2) + w),
 // where w = F->tab_w[node]
 // e.g. for node == 1 this is w = I and x**len + 1
-void _n_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong order, ulong node, n_fft_ctx_t F);
+void _n_fft_red_rec2_lazy_general(nn_ptr p, ulong len, ulong depth, ulong node, n_fft_ctx_t F);
 // entry point: case where node == 0, modulus is x**len - 1 = (x**(len/2) - 1) (x**(len/2) + 1)
-void _n_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong order, n_fft_ctx_t F);
+void _n_fft_red_rec2_lazy(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F);
 
-void _n_fft_red_rec4_lazy_general(nn_ptr p, ulong len, ulong order, ulong node, n_fft_ctx_t F);
-void _n_fft_red_rec4_lazy(nn_ptr p, ulong len, ulong order, n_fft_ctx_t F);
+void _n_fft_red_rec4_lazy_general(nn_ptr p, ulong len, ulong depth, ulong node, n_fft_ctx_t F);
+void _n_fft_red_rec4_lazy(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F);
 
-void _n_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong order, n_fft_ctx_t F);
+void _n_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F);
 
 
 
@@ -82,31 +93,31 @@ typedef struct
     ulong mod2;                // 2*mod  (storing this does help for speed, in _dif_rec2 at least)
     ulong mod4;                // 4*mod  (storing this does help for speed, in _dif_rec2 at least)
     ulong I;                   // sqrt(-1)
-    ulong Ipre;                // precomp on I
+    ulong I_pr;                // precomp on I
     ulong J;                   // sqrt(I)
-    ulong Jpre;                // precomp on J
+    ulong J_pr;                // precomp on J
     ulong IJ;                  // sqrt(-I) == I*J
-    ulong IJpre;               // precomp on IJ
-    ulong order;               // maximum supported order (currently: order of w)
-    ulong w;                   // primitive (2**order)th root of 1
+    ulong IJ_pr;               // precomp on IJ
+    ulong depth;               // maximum supported depth (currently: depth of w)
+    ulong w;                   // primitive (2**depth)th root of 1
     ulong winv;               // inverse of w
     ulong * tab_w[N_FFT_OLD_MAX_TAB_SIZE]; // tabulated powers of w and winv, see below
     //ulong * tab_winv[n_fft_MAX_TAB_SIZE]; // tabulated powers of winv
 } n_fft_old_ctx_struct;
 typedef n_fft_old_ctx_struct n_fft_old_ctx_t[1];
 
-// FFT tables of powers / twiddle factors, say for w of order == `2**order`:
-// for 0 <= ell <= order-4, "powers_w[ell]" has length 2**(ell+5)
+// FFT tables of powers / twiddle factors, say for w of depth == `2**depth`:
+// for 0 <= ell <= depth-4, "powers_w[ell]" has length 2**(ell+5)
 // and contains [wi, wi_pre for 0 <= i < 2**(ell+4)]
-//    where wi = w**(2**(order-4-ell)*i) are the 2**(ell+4)-th roots of unity
+//    where wi = w**(2**(depth-4-ell)*i) are the 2**(ell+4)-th roots of unity
 //      and wi_pre is the corresponding precomputation for mulmod
 // -> powers_w[-2] would have been [1, 1_pre, I, I_pre, -1, -1_pre, -I, -I_pre]
-//          where I is w**(2**(order-2))
+//          where I is w**(2**(depth-2))
 // -> powers_w[-1] would have been similar with [1, J, J**2, J**3, -1, -J, -J**2, -J**3]
-//          where J is w**(2**(order-3))
+//          where J is w**(2**(depth-3))
 //         (note J**2 == I, and J**3 == I*J)
 // -> etc..
-// -> powers_w[order-4] = [1, 1_pre, w, w_pre, w**2, w**2_pre, ..., w**(2**order -1), w**(2**order -1)_pre]
+// -> powers_w[depth-4] = [1, 1_pre, w, w_pre, w**2, w**2_pre, ..., w**(2**depth -1), w**(2**depth -1)_pre]
 //
 // Observe that the second part of each table gives the inverses:
 //    -I is the inverse of I; 
@@ -116,9 +127,9 @@ typedef n_fft_old_ctx_struct n_fft_old_ctx_t[1];
 
 /*------------------------------------------------------------*/
 /* initializes all entries of F                               */
-/* w primitive and w^(2^order))=1                             */
-/* DFTs of size up to 2^order are supported                   */ 
-/* order >= 3 and order < FLINT_BITS (-sth?) required         */
+/* w primitive and w^(2^depth))=1                             */
+/* DFTs of size up to 2^depth are supported                   */ 
+/* depth >= 3 and depth < FLINT_BITS (-sth?) required         */
 /*------------------------------------------------------------*/
 
 // fills seq with, for i = 0...d-1:
@@ -144,7 +155,7 @@ void _n_geometric_sequence_and_opposites_with_precomp(ulong * seq, ulong a, ulon
 // - not thoroughly optimized (especially copying part; and try building by increasing ell?)
 // - separate computation of the tables from basic init,
 //   and add fit_depth to precompute more tables when wanted/needed
-void n_fft_old_ctx_init_set(n_fft_old_ctx_t F, ulong w, ulong order, ulong mod);
+void n_fft_old_ctx_init_set(n_fft_old_ctx_t F, ulong w, ulong depth, ulong mod);
 void n_fft_old_ctx_clear(n_fft_old_ctx_t F);
 
 
@@ -152,22 +163,22 @@ void n_fft_old_ctx_clear(n_fft_old_ctx_t F);
 // recursive, Gentleman-Sande butterflies, radix 2
 // input coefficients in [0..??)
 // output coefficients in [0..??)
-void _n_fft_old_dif_rec2_lazy(nn_ptr p, ulong len, ulong order, n_fft_old_ctx_t F);
+void _n_fft_old_dif_rec2_lazy(nn_ptr p, ulong len, ulong depth, n_fft_old_ctx_t F);
 
 // recursive, Gentleman-Sande butterflies, radix 4
 // input coefficients in [0..??)
 // output coefficients in [0..??)
-void _n_fft_old_dif_rec4_lazy(nn_ptr p, ulong len, ulong order, n_fft_old_ctx_t F);
+void _n_fft_old_dif_rec4_lazy(nn_ptr p, ulong len, ulong depth, n_fft_old_ctx_t F);
 
 // recursive, Gentleman-Sande butterflies, radix 8
 // input coefficients in [0..??)
 // output coefficients in [0..??)
-void _n_fft_old_dif_rec8_lazy(nn_ptr p, ulong len, ulong order, n_fft_old_ctx_t F);
+void _n_fft_old_dif_rec8_lazy(nn_ptr p, ulong len, ulong depth, n_fft_old_ctx_t F);
 
 // iterative, Gentleman-Sande butterflies, radix 2
 // input coefficients in [0..??)
 // output coefficients in [0..??)
-void _n_fft_old_dif_iter2_lazy(nn_ptr p, ulong len, ulong order, n_fft_old_ctx_t F);
+void _n_fft_old_dif_iter2_lazy(nn_ptr p, ulong len, ulong depth, n_fft_old_ctx_t F);
 
 
 #ifdef __cplusplus
