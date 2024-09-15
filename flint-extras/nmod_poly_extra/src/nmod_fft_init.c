@@ -6,8 +6,6 @@
 
 #include "nmod_poly_fft.h"
 
-#define N_FFT_CTX_DEFAULT_DEPTH 12
-
 /***********************
 *  bit reversed copy  *
 ***********************/
@@ -57,14 +55,25 @@
 
 
 /*------------------------------------------------------------*/
+/* main initialization function                               */
 /* initializes all entries of F                               */
-/* w primitive root of 1, of order 2**depth                   */
-/* DFTs of size up to 2^depth are supported                   */
-/* depth >= 3 required                                        */
+/* w primitive root of 1, of order 2**max_depth               */
+/* max_depth must be >= 3 (so, 8 must divide p-1)             */
+/* p is a prime with p < 2**61 TODO confirm                   */
+/* FIXME currently large depth can lead to heavy memory usage */
+/*                                                            */
+/* none of the requirements is checked                        */
+/*                                                            */
+/* after this, DFTs of length up to 2**depth are supported    */
 /*------------------------------------------------------------*/
 
 void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong depth, ulong p)
 {
+    if (depth < 3)
+        depth = 3;
+    if (max_depth < depth)
+        depth = max_depth;
+
     // fill basic attributes
     F->mod = p;
     F->mod2 = 2*p;
@@ -76,9 +85,9 @@ void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong depth, 
     ulong pr_quo, pr_rem, ww;
     ww = w;
     n_mulmod_precomp_shoup_quo_rem(&pr_quo, &pr_rem, ww, p);
-    F->tab_w2[2*(depth-2)] = ww;
-    F->tab_w2[2*(depth-2)+1] = pr_quo;
-    for (slong k = depth-3; k >= 0; k--)
+    F->tab_w2[2*(max_depth-2)] = ww;
+    F->tab_w2[2*(max_depth-2)+1] = pr_quo;
+    for (slong k = max_depth-3; k >= 0; k--)
     {
         // ww <- ww**2 and its precomputed quotient
         n_mulmod_and_precomp_shoup(&ww, &pr_quo, ww, ww, pr_quo, pr_rem, pr_quo, p);
@@ -110,7 +119,7 @@ void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong depth, 
 
     // tab_w[2*4:2*8] is w**(L/16) * tab_w[2*0:2*4] where L = 2**max_depth,
     // tab_w[2*8:2*16] is w**(L/32) * tab_w[2*0:2*8], etc.
-    // recall tab_ww[2*d] == w**(L / 2**(d+2))
+    // recall tab_w2[2*d] == w**(L / 2**(d+2))
     ulong d = 2;  // we start with w**(L/16) == sqrt(J)
     for (ulong llen = 4; llen < len; llen <<= 1, d += 1)
     {
@@ -120,62 +129,26 @@ void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong depth, 
         // for each k, tab_w[2*(k+llen)] <- ww * tab_w[2*k], and deduce precomputation
         for (ulong k = 0; k < llen; k++)
             n_mulmod_and_precomp_shoup(F->tab_w + 2*llen + 2*k, F->tab_w + 2*llen + 2*k+1,
-                                       ww, F->tab_w[2*k],
-                                       pr_quo, pr_rem, F->tab_w[2*k+1], p);
+                                        ww, F->tab_w[2*k],
+                                        pr_quo, pr_rem, F->tab_w[2*k+1], p);
     }
 }
 
-
-void n_fft_ctx_init_root(n_fft_ctx_t F, ulong w, ulong depth, ulong p)
+void n_fft_ctx_init2(n_fft_ctx_t F, ulong depth, ulong p)
 {
-    n_fft_ctx_init2_root(F, w, depth, FLINT_MIN(depth, N_FFT_CTX_DEFAULT_DEPTH), p);
-}
+    FLINT_ASSERT(p > 2 && flint_clz(p) >= 3);    // 2 < p < 2**61
+    FLINT_ASSERT(flint_ctz(p - UWORD(1)) >= 3);  // p-1 divisible by 8
 
-void n_fft_ctx_init(n_fft_ctx_t F, ulong p)
-{
-    // modulus p should be prime, with 2 < p < 2**61 (TODO check the latter suffices)
-    // we do not check primality
-    if (p <= 2 || flint_clz(p) <= 3)
-        flint_throw(FLINT_ERROR, "Provided prime p = %wu for n_fft does not satisfy bounds: 2 < p < 2**61", p);
+    // find the constant and exponent such that p == c * 2**max_depth + 1
+    const ulong max_depth = flint_ctz(p - UWORD(1));
+    const ulong c = (p - UWORD(1)) >> max_depth;
 
-    // find the constant and exponent such that p == c * 2**depth + 1
-    const ulong depth = flint_ctz(p - UWORD(1));
-    const ulong c = (p - UWORD(1)) >> depth;
-    if (depth <= 3)
-        flint_throw(FLINT_ERROR, "Provided prime p = %wu for n_fft does not satisfy `8 divides p-1`", p);
-
-    // find primitive root w of depth 2**depth
-    const ulong prim_root = n_primitive_root_prime(p);
-    const ulong w = n_powmod2(prim_root, c, p);
-
-    // fill all attributes and tables, with default depth
-    n_fft_ctx_init_root(F, w, depth, p);
-}
-
-void n_fft_ctx_init2(n_fft_ctx_t F, ulong len, ulong p)
-{
-    // modulus p should be prime, with 2 < p < 2**61 (TODO check the latter suffices)
-    // we do not check primality
-    if (p <= 2 || flint_clz(p) <= 3)
-        flint_throw(FLINT_ERROR, "Provided prime p = %wu for n_fft does not satisfy bounds: 2 < p < 2**61", p);
-
-    // find the constant and exponent such that p == c * 2**depth + 1
-    const ulong depth = flint_ctz(p - UWORD(1));
-    const ulong c = (p - UWORD(1)) >> depth;
-    if (depth <= 3)
-        flint_throw(FLINT_ERROR, "Provided prime p = %wu for n_fft does not satisfy `8 divides p-1`", p);
-
-    // verify required length is not too large
-    const ulong req_depth = FLINT_BIT_COUNT(len);
-    if (depth < req_depth)
-        flint_throw(FLINT_ERROR, "Required length %wu exceeds the limit for the modulus %wu", len, p);
-
-    // find primitive root w of depth 2**depth
+    // find primitive root w of order 2**max_depth
     const ulong prim_root = n_primitive_root_prime(p);
     const ulong w = n_powmod2(prim_root, c, p);
 
     // fill all attributes and tables
-    n_fft_ctx_init2_root(F, w, depth, req_depth, p);
+    n_fft_ctx_init2_root(F, w, max_depth, depth, p);
 }
 
 void n_fft_ctx_clear(n_fft_ctx_t F)

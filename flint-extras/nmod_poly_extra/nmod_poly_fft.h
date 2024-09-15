@@ -3,8 +3,9 @@
 
 #include "flint/flint.h"
 #include "flint/long_extras.h"
+#include <stdio.h>
 
-#define N_FFT_OLD_MAX_TAB_SIZE 32
+#define N_FFT_CTX_DEFAULT_DEPTH 12
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,11 +42,29 @@ typedef n_fft_ctx_struct n_fft_ctx_t[1];
 
 // TODO describe fields of tab_w
 
-// requires that p is a prime with 2 < p < 2**61 and 8 divides p-1 (checks and throws)
-void n_fft_ctx_init(n_fft_ctx_t F, ulong p);
-// requires that p is a prime with 2 < p < 2**61 and depth >= 3 and w principal root of unity of order 2**depth (no check)
-void n_fft_ctx_init_root(n_fft_ctx_t F, ulong w, ulong depth, ulong p);
-void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong w_depth, ulong depth, ulong mod);
+
+// note when depth is provided:
+//   - if it is < 3, it is pretended that it is 3
+//   - it it is more than F->max_depth (the maximum possible with the given
+//   prime), it is reduced to F->max_depth
+
+// initialize with given root and given depth
+void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong depth, ulong mod);
+
+// find primitive root, initialize with given depth
+void n_fft_ctx_init2(n_fft_ctx_t F, ulong depth, ulong p);
+
+// same, with default depth
+FLINT_INLINE void n_fft_ctx_init_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong p)
+{
+    n_fft_ctx_init2_root(F, w, max_depth, N_FFT_CTX_DEFAULT_DEPTH, p);
+}
+
+FLINT_INLINE void n_fft_ctx_init(n_fft_ctx_t F, ulong p)
+{
+    n_fft_ctx_init2(F, N_FFT_CTX_DEFAULT_DEPTH, p);
+}
+
 void n_fft_ctx_clear(n_fft_ctx_t F);
 
 
@@ -96,6 +115,8 @@ void _n_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F);
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+
+#define N_FFT_OLD_MAX_TAB_SIZE 32
 
 typedef struct
 {
