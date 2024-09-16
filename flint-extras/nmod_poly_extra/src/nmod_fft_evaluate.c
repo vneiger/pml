@@ -877,7 +877,6 @@ FLINT_FORCE_INLINE void dft8_red_lazy_general_stride(nn_ptr p, ulong stride, ulo
     p[7*stride] = v2 + F->mod2 - v3;  // [0..4n)
 }
 
-
 FLINT_FORCE_INLINE void dft8_red_lazy_stride(nn_ptr p, ulong stride, n_fft_ctx_t F)
 {
     ulong p_hi, p_lo;
@@ -956,14 +955,94 @@ FLINT_FORCE_INLINE void dft8_red_lazy_stride(nn_ptr p, ulong stride, n_fft_ctx_t
     p[7*stride] = v2 + F->mod2 - v3;
 }
 
+// in [0..2n), out [0..4n), max value < 8n
+FLINT_FORCE_INLINE void dft16_red_lazy_stride(nn_ptr p, ulong stride, n_fft_ctx_t F)
+{
+    ulong p_hi, p_lo, tmp;
+
+    DFT4_LAZY2_RED(p[0*stride], p[4*stride], p[8*stride], p[12*stride], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
+    if (p[0*stride] >= F->mod2)
+        p[0*stride] -= F->mod2;
+    DFT4_LAZY2_RED(p[1*stride], p[5*stride], p[9 ], p[13*stride], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
+    if (p[1*stride] >= F->mod2)
+        p[1*stride] -= F->mod2;
+    DFT4_LAZY2_RED(p[2*stride], p[6*stride], p[10*stride], p[14*stride], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
+    if (p[2*stride] >= F->mod2)
+        p[2*stride] -= F->mod2;
+    DFT4_LAZY2_RED(p[3*stride], p[7*stride], p[11*stride], p[15*stride], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
+    if (p[3*stride] >= F->mod2)
+        p[3*stride] -= F->mod2;
+
+    // next line requires < 2n, hence the four reductions above
+    DFT4_LAZY2_RED(p[0*stride], p[1*stride], p[2*stride], p[3*stride], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
+    BUTTERFLY4_CT_LAZY(p[4*stride], p[5*stride], p[6*stride], p[7*stride], F->tab_w[2], F->tab_w[3], F->tab_w[4], F->tab_w[5], F->tab_w[6], F->tab_w[7], F->mod, F->mod2, p_hi, p_lo, tmp);
+    BUTTERFLY4_CT_LAZY(p[8*stride], p[9*stride], p[10*stride], p[11*stride], F->tab_w[4], F->tab_w[5], F->tab_w[8], F->tab_w[9], F->tab_w[10], F->tab_w[11], F->mod, F->mod2, p_hi, p_lo, tmp);
+    BUTTERFLY4_CT_LAZY(p[12*stride], p[13*stride], p[14*stride], p[15*stride], F->tab_w[6], F->tab_w[7], F->tab_w[12], F->tab_w[13], F->tab_w[14], F->tab_w[15], F->mod, F->mod2, p_hi, p_lo, tmp);
+}
+
+
+FLINT_FORCE_INLINE void dft16_red_lazy_general_stride(nn_ptr p, ulong stride, ulong node, n_fft_ctx_t F)
+{
+    ulong p_hi, p_lo, tmp;
+
+    ulong w2 = F->tab_w[2*node];
+    ulong w2pre = F->tab_w[2*node+1];
+    ulong w = F->tab_w[4*node];
+    ulong wpre = F->tab_w[4*node+1];
+    ulong Iw = F->tab_w[4*node+2];
+    ulong Iwpre = F->tab_w[4*node+3];
+    BUTTERFLY4_CT_LAZY(p[0*stride], p[4*stride], p[8*stride], p[12*stride], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, tmp);
+    BUTTERFLY4_CT_LAZY(p[1*stride], p[5*stride], p[9*stride], p[13*stride], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, tmp);
+    BUTTERFLY4_CT_LAZY(p[2*stride], p[6*stride], p[10*stride], p[14*stride], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, tmp);
+    BUTTERFLY4_CT_LAZY(p[3*stride], p[7*stride], p[11*stride], p[15*stride], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, tmp);
+
+    w2 = F->tab_w[8*node];
+    w2pre = F->tab_w[8*node+1];
+    w = F->tab_w[16*node];
+    wpre = F->tab_w[16*node+1];
+    Iw = F->tab_w[16*node+2];
+    Iwpre = F->tab_w[16*node+3];
+    BUTTERFLY4_CT_LAZY(p[0*stride], p[1*stride], p[2*stride], p[3*stride], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, tmp);
+
+    w2 = F->tab_w[8*node+2];
+    w2pre = F->tab_w[8*node+3];
+    w = F->tab_w[16*node+4];
+    wpre = F->tab_w[16*node+5];
+    Iw = F->tab_w[16*node+6];
+    Iwpre = F->tab_w[16*node+7];
+    BUTTERFLY4_CT_LAZY(p[4*stride], p[5*stride], p[6*stride], p[7*stride], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, tmp);
+
+    w2 = F->tab_w[8*node+4];
+    w2pre = F->tab_w[8*node+5];
+    w = F->tab_w[16*node+8];
+    wpre = F->tab_w[16*node+9];
+    Iw = F->tab_w[16*node+10];
+    Iwpre = F->tab_w[16*node+11];
+    BUTTERFLY4_CT_LAZY(p[8*stride], p[9*stride], p[10*stride], p[11*stride], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, tmp);
+
+    w2 = F->tab_w[8*node+6];
+    w2pre = F->tab_w[8*node+7];
+    w = F->tab_w[16*node+12];
+    wpre = F->tab_w[16*node+13];
+    Iw = F->tab_w[16*node+14];
+    Iwpre = F->tab_w[16*node+15];
+    BUTTERFLY4_CT_LAZY(p[12*stride], p[13*stride], p[14*stride], p[15*stride], w2, w2pre, w, wpre, Iw, Iwpre, F->mod, F->mod2, p_hi, p_lo, tmp);
+}
+
 // if depth < 3, in [0..2n) out [0..4n)
 // if depth >= 3, in [0..4n) out [0..4n)
 void _n_fft_red_rec2_lazy_general_stride(nn_ptr p, ulong len, ulong depth, ulong node, n_fft_ctx_t F)
 {
     if (depth == 3)
-        dft8_red_lazy_general_stride(p, len/8, node, F);
-    //else if (depth == 4)
-    //    dft16_red_lazy_general(p, node, F);
+    {
+        for (ulong k = 0; k < len/8; k++)
+            dft8_red_lazy_general_stride(p+k, len/8, node, F);
+    }
+    else if (depth == 4)
+    {
+        for (ulong k = 0; k < len/16; k++)
+            dft16_red_lazy_general_stride(p, len/16, node, F);
+    }
     //else if (depth == 5)
     //    dft32_red_lazy_general(p, node, F);
     else
@@ -1003,9 +1082,15 @@ void _n_fft_red_rec2_lazy_stride(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F
             DFT4_LAZY2_RED(p[k], p[len/4 + k], p[2*len/4 + k], p[3*len/4 + k], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     }
     else if (depth == 3)
-        dft8_red_lazy_stride(p, len/8, F);  // in [0..2n), out [0..4n)
-    //else if (depth == 4)
-    //    dft16_red_lazy(p, F);  // in [0..2n), out [0..4n)
+    {
+        for (ulong k = 0; k < len/8; k++)
+            dft8_red_lazy_stride(p+k, len/8, F);
+    }
+    else if (depth == 4)
+    {
+        for (ulong k = 0; k < len/16; k++)
+            dft16_red_lazy_stride(p, len/16, F);  // in [0..2n), out [0..4n)
+    }
     //else if (depth == 5)
     //    dft32_red_lazy(p, F);  // in [0..2n), out [0..4n)
     else

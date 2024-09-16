@@ -203,11 +203,11 @@ void time_evaluate()
                     //min[6]/(double)1000000/rep,
                     //min[7]/(double)1000000/rep,
                     min[8]/(double)1000000/rep_stride[0],
-                    min[9]/(double)1000000/rep_stride[0],
-                    min[10]/(double)1000000/rep_stride[0],
-                    min[11]/(double)1000000/rep_stride[0],
-                    min[12]/(double)1000000/rep_stride[0],
-                    min[13]/(double)1000000/rep_stride[0]
+                    min[9]/(double)1000000/rep_stride[1],
+                    min[10]/(double)1000000/rep_stride[2],
+                    min[11]/(double)1000000/rep_stride[3],
+                    min[12]/(double)1000000/rep_stride[4],
+                    min[13]/(double)1000000/rep_stride[5]
                     );
         }
     }
