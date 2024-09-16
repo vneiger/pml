@@ -98,6 +98,13 @@ void _n_fft_red_iter2_lazy(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F);
 
 
 
+void _n_fft_red_rec2_lazy_general_stride(nn_ptr p, ulong len, ulong depth, ulong node, n_fft_ctx_t F);
+void _n_fft_red_rec2_lazy_stride(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F);
+
+
+
+
+
 
 
 
