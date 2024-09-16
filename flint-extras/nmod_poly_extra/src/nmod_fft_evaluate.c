@@ -1041,7 +1041,7 @@ void _n_fft_red_rec2_lazy_general_stride(nn_ptr p, ulong len, ulong depth, ulong
     else if (depth == 4)
     {
         for (ulong k = 0; k < len/16; k++)
-            dft16_red_lazy_general_stride(p, len/16, node, F);
+            dft16_red_lazy_general_stride(p+k, len/16, node, F);
     }
     //else if (depth == 5)
     //    dft32_red_lazy_general(p, node, F);
@@ -1089,7 +1089,7 @@ void _n_fft_red_rec2_lazy_stride(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F
     else if (depth == 4)
     {
         for (ulong k = 0; k < len/16; k++)
-            dft16_red_lazy_stride(p, len/16, F);  // in [0..2n), out [0..4n)
+            dft16_red_lazy_stride(p+k, len/16, F);  // in [0..2n), out [0..4n)
     }
     //else if (depth == 5)
     //    dft32_red_lazy(p, F);  // in [0..2n), out [0..4n)
