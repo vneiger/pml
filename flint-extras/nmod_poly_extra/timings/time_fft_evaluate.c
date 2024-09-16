@@ -50,6 +50,42 @@ void sample_##fun(void * arg, ulong count)                                      
     FLINT_TEST_CLEAR(state);                                                     \
 }                                                                                \
 
+#define SAMPLESTRIDE(fun)                                                        \
+void sample_##fun##_stride(void * arg, ulong count)                              \
+{                                                                                \
+    info_t * info = (info_t *) arg;                                              \
+    const ulong p = info->prime;                                                 \
+    const ulong depth = info->depth;                                             \
+    const ulong maxdepth = info->maxdepth;                                       \
+                                                                                 \
+    const ulong len = UWORD(1) << (depth+4);                                     \
+    const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));                \
+                                                                                 \
+    /* modulus, roots of unity */                                                \
+    nmod_t mod;                                                                  \
+    nmod_init(&mod, p);                                                          \
+    ulong w0 = nmod_pow_ui(n_primitive_root_prime(p), (p - 1) >> maxdepth, mod); \
+    ulong w = nmod_pow_ui(w0, 1UL<<(maxdepth - depth), mod);                     \
+    n_fft_ctx_t F;                                                               \
+    n_fft_ctx_init2_root(F, w, depth, depth, p);                                 \
+                                                                                 \
+    FLINT_TEST_INIT(state);                                                      \
+                                                                                 \
+    ulong * coeffs = _nmod_vec_init(len);                                        \
+    _nmod_vec_randtest(coeffs, state, len, mod);                                 \
+                                                                                 \
+    for (ulong i = 0; i < count; i++)                                            \
+    {                                                                            \
+        prof_start();                                                            \
+        for (ulong j = 0; j < rep; j++)                                          \
+            _n_fft_##fun(coeffs, len, depth, F);                                 \
+        prof_stop();                                                             \
+    }                                                                            \
+                                                                                 \
+    n_fft_ctx_clear(F);                                                          \
+    FLINT_TEST_CLEAR(state);                                                     \
+}                                                                                \
+
 #define SAMPLEOLD(fun)                                                           \
 void sample_##fun(void * arg, ulong count)                                       \
 {                                                                                \
@@ -94,6 +130,7 @@ SAMPLEOLD(old_dif_rec8_lazy)
 SAMPLE(red_rec2_lazy)
 SAMPLE(red_iter2_lazy)
 SAMPLE(red_rec4_lazy)
+SAMPLESTRIDE(red_rec2_lazy)
 
 void sample_sd_fft(void * arg, ulong count)
 {
@@ -164,6 +201,8 @@ void time_evaluate()
 
             const ulong len = UWORD(1) << depth;
             const ulong rep = FLINT_MAX(1, FLINT_MIN(1000, 1000000/len));
+            const ulong lenstride = UWORD(1) << (depth+4);
+            const ulong repstride = FLINT_MAX(1, FLINT_MIN(1000, 1000000/lenstride));
 
             double min[10];
             double max;
@@ -176,8 +215,9 @@ void time_evaluate()
             prof_repeat(min+5, &max, sample_old_dif_rec4_lazy, (void *) &info);
             prof_repeat(min+6, &max, sample_old_dif_iter2_lazy, (void *) &info);
             prof_repeat(min+7, &max, sample_old_dif_rec8_lazy, (void *) &info);
+            prof_repeat(min+8, &max, sample_red_rec2_lazy_stride, (void *) &info);
 
-            flint_printf("%.1e\t%.1e\t%.1e\t%.1e\t   ||\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\n",
+            flint_printf("%.1e\t%.1e\t%.1e\t%.1e\t   ||\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\t%.1e\n",
                     min[0]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
                     min[1]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
                     min[2]/(double)FLINT_CLOCK_SCALE_FACTOR/len/rep,
@@ -193,7 +233,8 @@ void time_evaluate()
                     min[4]/(double)1000000/rep,
                     min[5]/(double)1000000/rep,
                     min[6]/(double)1000000/rep,
-                    min[7]/(double)1000000/rep
+                    min[7]/(double)1000000/rep,
+                    min[8]/(double)1000000/repstride
                     );
         }
     }
