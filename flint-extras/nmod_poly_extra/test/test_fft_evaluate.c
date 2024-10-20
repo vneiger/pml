@@ -72,14 +72,23 @@ void test_fft_eval()
         {
             const ulong len = (1UL<<depth);
 
-            // root of unity of depth 2**depth
-            ulong w = nmod_pow_ui(w0, 1UL<<(max_depths[nb_prime]-depth), mod);
-
             // build FFT tables
             n_fft_old_ctx_t F_old;
+            ulong w = nmod_pow_ui(w0, 1UL<<(max_depths[nb_prime]-depth), mod);
             n_fft_old_ctx_init_set(F_old, w, depth, p);
+
             n_fft_ctx_t F;
-            n_fft_ctx_init2_root(F, w, depth, depth, p);
+            n_fft_ctx_init2(F, depth, p);
+//            printf("prime: %lu\n", p);
+//            printf("tab_w:\n");
+//            for (ulong kk = 0; kk < 8; kk++)
+//                printf("%lu, ", F->tab_w[kk]);
+//            printf("\n");
+//            printf("tab_w2:\n");
+//            for (ulong kk = 0; kk < 8; kk++)
+//                printf("%lu, ", F->tab_w2[kk]);
+//            printf("\n");
+
 
             // choose random poly
             nmod_poly_t pol;
