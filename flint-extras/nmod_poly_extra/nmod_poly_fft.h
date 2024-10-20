@@ -2,69 +2,11 @@
 #define __NMOD_POLY_FFT__H
 
 #include "flint/flint.h"
-#include "flint/long_extras.h"
-#include <stdio.h>
-
-#define N_FFT_CTX_DEFAULT_DEPTH 12
+#include "flint/n_fft.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* struct for basic info + precomputed root tables            */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-typedef struct
-{
-    ulong mod;                 // modulus, prime
-    ulong mod2;                // 2*mod  (storing slightly helps for speed)
-    ulong mod4;                // 4*mod  (storing slightly helps for speed)
-    ulong max_depth;           // maximum supported depth (w has order 2**max_depth)
-    ulong depth;               // depth supported by current precomputation (use fit_depth to extend)
-    ulong * tab_w;             // tabulated powers of w, see below
-    ulong tab_w2[128];         // powers w**(2**k), see below
-} n_fft_ctx_struct;
-typedef n_fft_ctx_struct n_fft_ctx_t[1];
-
-// the array tab_w2 contains the powers w**(2**(depth-2-k)) and the corresponding precomputations:
-// for 0 <= k < depth-1, tab_w2[2*k] is w**(2**(depth-2-k)) and tab_w2[2*k+1] is its precomputed quotient
-// in particular the first elements are tab_w2 = [I, I_pr, J, J_pr, ...]
-// for 2*depth <= k < 128, tab_w2[k] is undefined
-
-// TODO describe fields of tab_w
-
-
-// note when depth is provided:
-//   - if it is < 3, it is pretended that it is 3
-//   - it it is more than F->max_depth (the maximum possible with the given
-//   prime), it is reduced to F->max_depth
-
-// initialize with given root and given depth
-void n_fft_ctx_init2_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong depth, ulong mod);
-
-// find primitive root, initialize with given depth
-void n_fft_ctx_init2(n_fft_ctx_t F, ulong depth, ulong p);
-
-// same, with default depth
-FLINT_INLINE void n_fft_ctx_init_root(n_fft_ctx_t F, ulong w, ulong max_depth, ulong p)
-{
-    n_fft_ctx_init2_root(F, w, max_depth, N_FFT_CTX_DEFAULT_DEPTH, p);
-}
-
-FLINT_INLINE void n_fft_ctx_init(n_fft_ctx_t F, ulong p)
-{
-    n_fft_ctx_init2(F, N_FFT_CTX_DEFAULT_DEPTH, p);
-}
-
-// grows F->depth and precomputations to support DFTs of depth up to depth
-void n_fft_ctx_fit_depth(n_fft_ctx_t F, ulong depth);
-
-void n_fft_ctx_clear(n_fft_ctx_t F);
-
-
 
 /*------------------------------------------------------------*/
 /* fft evaluation, in place                                   */
@@ -224,3 +166,62 @@ void _n_fft_old_dif_iter2_lazy(nn_ptr p, ulong len, ulong depth, n_fft_old_ctx_t
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
+
+
+
+
+
+/*-----------*/
+/*-----------*/
+/* TEMPORARY */
+/*-----------*/
+/*-----------*/
+
+
+/***********************
+*  bit reversed copy  *
+***********************/
+
+//inline long RevInc(long a, long k)
+//{
+//    long j, m;
+//
+//    j = k;
+//    m = 1L << (k-1);
+//
+//    while (j && (m & a)) {
+//        a ^= m;
+//        m >>= 1;
+//        j--;
+//    }
+//    if (j) a ^= m;
+//    return a;
+//}
+
+// indices initialized with length >= k
+//static inline void brc_indices(ulong * indices, long k)
+//{
+//    const long n = (1L << k);
+//    for (long i = 0, j = 0; i < n; i++, j = RevInc(j, k))
+//        indices[i] = j;
+//}
+
+//// counts in bit reversed depth, in C
+//// or faster to build list as in dft.sage??
+//void iter_reversed(ulong bits) {
+//    ulong n = 1 << bits;
+//
+//    for (ulong i = 0, j = 0; i < n; i++) {
+//        printf("%ld\n", j);
+//
+//        // Compute a mask of LSBs.
+//        ulong mask = i ^ (i + 1);
+//        // Length of the mask.
+//        ulong len = __builtin_ctz(~mask);
+//        // Align the mask to MSB of n.
+//        mask <<= bits - len;
+//        // XOR with mask.
+//        j ^= mask;
+//    }
+//}
+
