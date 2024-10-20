@@ -6,7 +6,7 @@
 #define VERSIONS 1
 
 #define num_primes 5
-#define num_strides 6
+#define num_strides 3
 
 typedef struct
 {
@@ -154,7 +154,7 @@ void time_evaluate()
         1108307720798209,    // 50 bits, 1 + 2**44 * 3**2 * 7
         1139410705724735489, // 60 bits, 1 + 2**52 * 11 * 23
     };
-    ulong max_depths[num_primes] = { 18, 21, 21, 21, 21 };
+    ulong max_depths[num_primes] = { 18, 25, 25, 25, 25 };
 
     ulong strides[num_strides] = {1, 2, 4, 9, 16, 100};
     ulong rep_stride[num_strides] = {0, 0, 0, 0, 0, 0};
