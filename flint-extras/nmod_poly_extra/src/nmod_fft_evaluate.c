@@ -4,6 +4,13 @@
 
 #include "nmod_poly_fft.h"
 
+#if defined(__GNUC__)
+# define FLINT_NO_VECTORIZE __attribute__((optimize("no-tree-vectorize")))
+#else
+# define FLINT_NO_VECTORIZE
+#endif
+
+
 /*--------------------------------*/
 /* Modular multiplication helpers */
 /*--------------------------------*/

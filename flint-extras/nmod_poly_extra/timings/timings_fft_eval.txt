@@ -245,7 +245,7 @@ depth   sd_fft  rec2    rec4    iter2   r2s1    r2s2    r2s4    r2s9    r2s16   
 *  just before integration of dft in flint  *
 *********************************************
 
-	      ARGIOPE             ||     INACHIS          
+	        ARGIOPE           ||            INACHIS          
 depth   sd_fft  rec2    rec4      ||    sd_fft	rec2	rec4   
 3       1.5e-08 8.4e-09 7.8e-09   ||    1.9e-08	6.4e-09	6.5e-09
 4       2.1e-08 2.3e-08 2.2e-08   ||    2.2e-08	1.9e-08	1.8e-08
