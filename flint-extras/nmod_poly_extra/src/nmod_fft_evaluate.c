@@ -159,20 +159,34 @@
 
 /** 4-point butterflies
  *
+ * TODO explain what w2, w1, w3 typically mean
+ *
  * Gentleman-Sande: in-place transform
  *                              [1  w2    w1    w3]
  *                              [1 -w2  I*w1 -I*w3]
  * [a  b  c  d] <- [a  b  c  d] [1  w2   -w1   -w3]
  *                              [1 -w2 -I*w1  I*w3]
  *
- * Cooley-Tukey: in-place transform   TODO
- *                    [1   1]
- * [a  b]  <-  [a  b] [w  -w]
- *                              [1  1  1  1]
- *                              [1 -1  I -I]
- * [a  b  c  d] <- [a  b  c  d] [1  1 -1 -1]
- *                              [1 -1 -I  I]
- * */
+ *                              [1     1   ] [1  w2        ]
+ *                              [   1     I] [1 -w2        ]
+ *              == [a  b  c  d] [1    -1   ] [       w1  w3]
+ *                              [   1    -I] [       w1 -w3]
+ *
+ * Cooley-Tukey: in-place transform
+ *                              [ 1          1       1       1]
+ *                              [w2        -w2      w3     -w3]
+ * [a  b  c  d] <- [a  b  c  d] [w1         w1     -w1     -w1]
+ *                              [w1*w2  -w1*w2  -w1*w3   w1*w3]
+ *  reducing down the tree with nodes
+ *                        x^4 - w1**2
+ *                      /             \
+ *             x^2 - w1                 x^2 + w1
+ *             /      \                 /      \
+ *        x - w2      x + w2       x - w3      x + w3
+ *  typically w2**2 == w1 and w3 == I*w2 (so that w3**2 == -w1) so that this
+ *  really is the subproduct tree built from the four roots
+ *    w2, -w2, I*w2, -I*w2 of x**4 - w1
+ **/
 
 // in [0..2n) out [0..2n)
 #define BUTTERFLY4_GS_LAZY(a,b,c,d,                                    \
@@ -445,10 +459,10 @@ FLINT_FORCE_INLINE void dft16_red_lazy(nn_ptr p, n_fft_ctx_t F)
 {
     ulong p_hi, p_lo, tmp;
 
-    DFT4_LAZY2_RED(p[0], p[4], p[8], p[12], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[0], p[4], p[ 8], p[12], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[0] >= F->mod2)
         p[0] -= F->mod2;
-    DFT4_LAZY2_RED(p[1], p[5], p[9 ], p[13], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
+    DFT4_LAZY2_RED(p[1], p[5], p[ 9], p[13], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
     if (p[1] >= F->mod2)
         p[1] -= F->mod2;
     DFT4_LAZY2_RED(p[2], p[6], p[10], p[14], F->tab_w[2], F->tab_w[3], F->mod, F->mod2, p_hi, p_lo);
@@ -713,6 +727,8 @@ void _n_fft_red_rec4_lazy_general(nn_ptr p, ulong len, ulong depth, ulong node, 
         dft8_red_lazy_general(p, node, F);
     else if (depth == 4)
         dft16_red_lazy_general(p, node, F);
+    else if (depth == 5)  // TODO unclear this helps (no acceleration on argiope)
+        dft32_red_lazy_general(p, node, F);
     else
     {
         // in: [0..4n), out: [0..4n)
@@ -759,8 +775,8 @@ void _n_fft_red_rec4_lazy(nn_ptr p, ulong len, ulong depth, n_fft_ctx_t F)
         dft8_red_lazy(p, F);  // in [0..2n), out [0..4n)
     else if (depth == 4)
         dft16_red_lazy(p, F);  // in [0..2n), out [0..4n)
-    else if (depth == 5)
-        dft32_red_lazy(p, F);  // in [0..2n), out [0..4n)
+    //else if (depth == 5)   // TODO unclear this helps (no acceleration on argiope)
+    //    dft32_red_lazy(p, F);  // in [0..2n), out [0..4n)
     else
     {
         // input [0..2n) x [0..2n), output [0..2n) x [0..4n)
