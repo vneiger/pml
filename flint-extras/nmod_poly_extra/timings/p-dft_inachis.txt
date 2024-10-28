@@ -1,3 +1,7 @@
+****************
+*  2024-10-28  *
+****************
+
 - depth is log(fft length)
 - timing DFT (length power of 2) for several bit lengths and depths
 depth	sd_fft	dft	idft	dft_t	idft_t
