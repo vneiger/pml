@@ -6,7 +6,7 @@
 #define VERSIONS 1
 
 #define num_primes 5
-#define num_strides 3
+#define num_strides 1
 
 typedef struct
 {
