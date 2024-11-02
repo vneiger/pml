@@ -8,7 +8,7 @@
 #include <NTL/mat_lzz_p.h>
 #include "mat_lzz_pX_kernel.h"
 
-#define GENERIC_KER_PROFILE
+//#define GENERIC_KER_PROFILE
 
 NTL_CLIENT
 
