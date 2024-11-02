@@ -394,15 +394,15 @@ int main(int argc, char *argv[])
     //test_all(52, 7, 95);
 
 
-    zz_p::init(21518131);
-    cout << endl << "25 bit prime " << zz_p::modulus() << endl;
-    std::cout << head << std::endl;
-    bench_all(n, m, t);
-
-    //zz_p::UserFFTInit(23068673);
-    //cout << endl << "25 bit FFT prime (2**21 * 11 + 1) " << zz_p::modulus() << endl;
+    //zz_p::init(21518131);
+    //cout << endl << "25 bit prime " << zz_p::modulus() << endl;
     //std::cout << head << std::endl;
     //bench_all(n, m, t);
+
+    zz_p::UserFFTInit(23068673);
+    cout << endl << "25 bit FFT prime (2**21 * 11 + 1) " << zz_p::modulus() << endl;
+    std::cout << head << std::endl;
+    bench_all(n, m, t);
 
     //zz_p::init(288230376151711813);
     //cout << endl << "60 bit prime " << zz_p::modulus() << endl;
