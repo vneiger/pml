@@ -303,19 +303,19 @@ void bench_all(long n, long m, long t)
     Vec<zz_p> v = random_vec_zz_p(n);
     Mat<zz_p> V = random_mat_zz_p(n, m);
 
-    long d_one = t;
+    //long d_one = t;
     long d_multiple = t/m;
 
     // single vector
-    bench_krylov_iterates_one_naive(A, v, d_one);
+    //bench_krylov_iterates_one_naive(A, v, d_one);
     //bench_krylov_iterates_one_squaring(A, v, d_one);
-    bench_krylov_iterates_one_polmat(A, v, d_one);
+    //bench_krylov_iterates_one_polmat(A, v, d_one);
 
     // multiple vectors
     bench_krylov_iterates_naive(A, V, d_multiple);
-    //bench_krylov_iterates_squaring(A, V, d_multiple);
+    bench_krylov_iterates_squaring(A, V, d_multiple);
     bench_krylov_iterates_polmat(A, V, d_multiple);
-    bench_krylov_iterates_squaring_sqronly(A, V, d_multiple);
+    //bench_krylov_iterates_squaring_sqronly(A, V, d_multiple);
 
     std::cout << std::endl;
 }
@@ -377,42 +377,59 @@ void test_all(long n, long m, long t)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 4)
-        throw std::invalid_argument("usage: ./time_krylov n m t");
+    if (argc != 1 && argc != 4)
+        throw std::invalid_argument("usage: ./time_krylov or ./time_krylov n m t");
 
     SetNumThreads(1);
 
-    const string head = "n\tm\tt\tnaive1\tsqr1\tpolmat1\tnaive\tsqr\tpolmat\tsqrMul";
+    const string head = "n\tm\tt\titer\tsqr\tpolmat";
+    //const string head = "n\tm\tt\tnaive1\tsqr1\tpolmat1\tnaive\tsqr\tpolmat\tsqrMul";
 
-    const long n = atoi(argv[1]);
-    const long m = atoi(argv[2]);
-    const long t = atoi(argv[3]);
+    if (argc == 4)
+    {
+        const long n = atoi(argv[1]);
+        const long m = atoi(argv[2]);
+        const long t = atoi(argv[3]);
 
-    //zz_p::init(97);
-    //test_all(15, 2, 13);
-    //test_all(23, 3, 23);
-    //test_all(52, 7, 95);
+        //zz_p::init(97);
+        //test_all(15, 2, 13);
+        //test_all(23, 3, 23);
+        //test_all(52, 7, 95);
 
+        //zz_p::init(21518131);
+        //cout << endl << "25 bit prime " << zz_p::modulus() << endl;
+        //std::cout << head << std::endl;
+        //bench_all(n, m, t);
 
-    //zz_p::init(21518131);
-    //cout << endl << "25 bit prime " << zz_p::modulus() << endl;
-    //std::cout << head << std::endl;
-    //bench_all(n, m, t);
+        zz_p::UserFFTInit(23068673);
+        cout << endl << "25 bit FFT prime (2**21 * 11 + 1) " << zz_p::modulus() << endl;
+        std::cout << head << std::endl;
+        bench_all(n, m, t);
 
-    zz_p::UserFFTInit(23068673);
-    cout << endl << "25 bit FFT prime (2**21 * 11 + 1) " << zz_p::modulus() << endl;
-    std::cout << head << std::endl;
-    bench_all(n, m, t);
+        //zz_p::init(288230376151711813);
+        //cout << endl << "60 bit prime " << zz_p::modulus() << endl;
+        //std::cout << head << std::endl;
+        //bench_all(n, m, t);
 
-    //zz_p::init(288230376151711813);
-    //cout << endl << "60 bit prime " << zz_p::modulus() << endl;
-    //std::cout << head << std::endl;
-    //bench_all(n, m, t);
+        //zz_p::FFTInit(0);
+        //cout << endl << "60 bit FFT prime" << endl;
+        //std::cout << head << std::endl;
+        //bench_all(n, m, t);
+    }
+    else
+    {
+        zz_p::UserFFTInit(23068673);
+        cout << endl << "25 bit FFT prime (2**21 * 11 + 1) " << zz_p::modulus() << endl;
+        std::cout << head << std::endl;
 
-    //zz_p::FFTInit(0);
-    //cout << endl << "60 bit FFT prime" << endl;
-    //std::cout << head << std::endl;
-    //bench_all(n, m, t);
+        std::vector<long> mm = {1, 8, 32};
+        std::vector<long> tfacs = {1, 2, 10};
+
+        for (long m : mm)
+            for (long tfac : tfacs)
+                for (long n = 7; n < 15000; n *= 2)
+                    bench_all(n, m, tfac*n);
+    }
 }
 
 
