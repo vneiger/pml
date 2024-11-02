@@ -6,6 +6,7 @@
 #include <NTL/BasicThreadPool.h>
 #include <iomanip>
 #include <ios>
+#include <ostream>
 
 #include "mat_lzz_pX_kernel.h"
 
@@ -48,7 +49,7 @@ void bench_krylov_iterates_##variant(               \
     const long d2 = (1L << NextPowerOfTwo(d));      \
     B.SetLength(d2);                                \
     for (long k = 0; k < d2; k++)                   \
-        B[k].SetDims(A.NumRows(), A.NumCols());     \
+        B[k].SetDims(V.NumRows(), V.NumCols());     \
                                                     \
     double t, tt;                                   \
     long nb_iter;                                   \
@@ -61,6 +62,10 @@ void bench_krylov_iterates_##variant(               \
         t += GetWallTime() - tt;                    \
         ++nb_iter;                                  \
     }                                               \
+                                                    \
+    for (long k = 0; k < d2; k++)                   \
+        B[k].kill();                                \
+    B.kill();                                       \
                                                     \
     cout << t/nb_iter << "\t";                      \
 }
@@ -294,10 +299,11 @@ BENCH_KRYLOV_ITERATES(squaring_sqronly)
 // t > 0: target number of total vector (typically n/m)
 void bench_all(long n, long m, long t)
 {
-    std::cout << std::fixed;
-    std::cout << std::setprecision(5);
+    std::cout << std::scientific;
+    std::cout << std::setprecision(1);
 
     std::cout << n << "\t" << m << "\t" << t << "\t";
+    std::cout << std::flush;
 
     Mat<zz_p> A = random_mat_zz_p(n, n);
     Vec<zz_p> v = random_vec_zz_p(n);
@@ -313,8 +319,11 @@ void bench_all(long n, long m, long t)
 
     // multiple vectors
     bench_krylov_iterates_naive(A, V, d_multiple);
+    std::cout << std::flush;
     bench_krylov_iterates_squaring(A, V, d_multiple);
+    std::cout << std::flush;
     bench_krylov_iterates_polmat(A, V, d_multiple);
+    std::cout << std::flush;
     //bench_krylov_iterates_squaring_sqronly(A, V, d_multiple);
 
     std::cout << std::endl;
