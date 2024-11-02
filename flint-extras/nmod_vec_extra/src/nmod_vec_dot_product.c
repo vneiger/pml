@@ -1,5 +1,6 @@
 #include <flint/longlong.h>
 #include <flint/nmod.h>
+#include <flint/nmod_vec.h>
 
 #include "nmod_vec_extra.h"
 
@@ -9,6 +10,7 @@
 /* all entries 2nd vector have <= max_bits2 bits <= FLINT_BITS  */
 /* returns 0, 1, 2, 3                                           */
 /* ------------------------------------------------------------ */
+// TODO adapt from new flint dot_params
 static inline
 ulong _nmod_vec_dot_bound_limbs_unbalanced(ulong len, ulong max_bits1, ulong max_bits2)
 {
@@ -33,20 +35,11 @@ ulong _nmod_vec_dot_bound_limbs_unbalanced(ulong len, ulong max_bits1, ulong max
 /** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
 /** uses 1 limb to store the result before reduction             */
 /*  ------------------------------------------------------------ */
-// Feb 2024: in experimental attempts to look at produced assembly,
-// tried other block sizes (8, 16, 32), and also storing intermediate 8/16/32
-// products in vector before summing; it seems this simplest variant remains
-// the most efficient (gcc is better at vectorizing it, both on slightly older
-// machine and recent avx512 machine)
 static inline
 ulong _nmod_vec_dot_product_1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
-    ulong res = UWORD(0);
-
-    for (ulong i = 0; i < len; i++)
-        res += v1[i] * v2[i];
-
-    NMOD_RED(res, res, mod);
+    ulong res; slong i;
+    _NMOD_VEC_DOT1(res, i, len, v1[i], v2[i], mod);
     return res;
 }
 
@@ -58,39 +51,8 @@ ulong _nmod_vec_dot_product_1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 static inline
 ulong _nmod_vec_dot_product_2(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
-    ulong s0, s1;
-    ulong u0 = UWORD(0);
-    ulong u1 = UWORD(0);
-
-    ulong i = 0;
-    for (; i+7 < len; i += 8)
-    {
-        umul_ppmm(s1, s0, v1[i+0], v2[i+0]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+1], v2[i+1]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+2], v2[i+2]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+3], v2[i+3]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+4], v2[i+4]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+5], v2[i+5]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+6], v2[i+6]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-        umul_ppmm(s1, s0, v1[i+7], v2[i+7]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-    }
-
-    for (; i < len; i++)
-    {
-        umul_ppmm(s1, s0, v1[i], v2[i]);
-        add_ssaaaa(u1, u0, u1, u0, s1, s0);
-    }
-
-    ulong res;
-    NMOD2_RED2(res, u1, u0, mod);
+    ulong res; slong i;
+    _NMOD_VEC_DOT2(res, i, len, v1[i], v2[i], mod);
     return res;
 }
 
@@ -101,6 +63,7 @@ ulong _nmod_vec_dot_product_2(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 /** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
 /** uses 3 limbs to store the result before reduction            */
 /*  ------------------------------------------------------------ */
+// TODO adapt with new flint dot_params
 static inline
 ulong _nmod_vec_dot_product_3(nn_srcptr v1, nn_srcptr v2, ulong len, ulong max_bits1, ulong max_bits2, nmod_t mod)
 {
@@ -115,7 +78,7 @@ ulong _nmod_vec_dot_product_3(nn_srcptr v1, nn_srcptr v2, ulong len, ulong max_b
 
     ulong i = 0;
     if (num_terms >= 8)
-        for (; i+7 < len; i += 8) // FIXME 8 vs 4 ? (Vincent: not tested)
+        for (; i+7 < len; i += 8)
         {
             umul_ppmm(u1, u0, v1[i+0], v2[i+0]);
             umul_ppmm(s1, s0, v1[i+1], v2[i+1]);
@@ -193,33 +156,6 @@ ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2, ulong len, ulo
 /* EXPERIMENTAL */
 /*------------------------------------------------------------*/
 
-
-// dot product using single limb, avx2
-ulong _nmod_vec_dot_product_1_avx2(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod)
-{
-    // compute 4 vertical sub-dot products
-    __m256i res_vec = _mm256_setzero_si256();
-    ulong i;
-    for (i = 0; i+3 < len; i += 4)
-    {
-        // load + multiplication + addition
-        __m256i x = _mm256_loadu_si256((__m256i *) (vec1+i));
-        __m256i y = _mm256_loadu_si256((__m256i *) (vec2+i));
-        x = _mm256_mul_epu32(x, y);
-        res_vec = _mm256_add_epi64(res_vec, x);
-    }
-
-    // horizontal add
-    ulong res = res_vec[0] + res_vec[1] + res_vec[2] + res_vec[3];
-
-    // scalar loop for leftover entries
-    for (; i < len; ++i)
-        res += vec1[i] * vec2[i];
-    NMOD_RED(res, res, mod);
-
-    return res;
-}
-
 #if HAVE_AVX512
 // dot product using single limb, avx512
 ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod)
@@ -256,9 +192,14 @@ ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, 
       thi = ((tlo) >> 16);                \
       tlo = (tlo) & 0xFFFF;
 
-#define __ll_lowhi_parts26(tlo,thi,t)     \
-      thi = (uint) ((t) >> 26);           \
-      tlo = ((uint)(t)) & 0x3FFFFFF;
+#define DOT_SPLITXX_BITS 26
+#define DOT_SPLITXX_MASK 0x3FFFFFF // (1L << DOT_SPLITXX_BITS) - 1
+
+#define __ll_lowhi_partsXX(tlo,thi,t)     \
+      thi = (unsigned int) ((t) >> DOT_SPLITXX_BITS);           \
+      tlo = ((unsigned int)(t)) & DOT_SPLITXX_MASK;
+#include <flint/machine_vectors.h>
+
 
 // TODO benchmark more, integrate, give precise conditions for when this works
 ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
@@ -288,7 +229,7 @@ ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmo
 // i.e. not more than xxx terms (this depends on the size of the high part since
 // they are not balanced... could make sense to balance them to allow more terms,
 // but do this only if this really is interesting in terms of speed)
-ulong _nmod_vec_dot_product_2_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
+ulong _nmod_vec_dot_product_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
     uint v1hi, v1lo, v2hi, v2lo;
     ulong ulo = UWORD(0);
@@ -296,8 +237,8 @@ ulong _nmod_vec_dot_product_2_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmo
     ulong uhi = UWORD(0);
     for (ulong i = 0; i < len; i++)
     {
-        __ll_lowhi_parts26(v1lo, v1hi, v1[i]);
-        __ll_lowhi_parts26(v2lo, v2hi, v2[i]);
+        __ll_lowhi_partsXX(v1lo, v1hi, v1[i]);
+        __ll_lowhi_partsXX(v2lo, v2hi, v2[i]);
         ulo += (ulong)v1lo * v2lo;
         umi += (ulong)v1lo * v2hi + (ulong)v1hi * v2lo;
         uhi += (ulong)v1hi * v2hi;
@@ -305,9 +246,53 @@ ulong _nmod_vec_dot_product_2_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmo
 
     // result: ulo + 2**26 umi + 2**52 uhi
     // hi = (umi >> 38) + (uhi >> 12)  ||  lo = (umi << 26) + (uhi << 52) + ulo
-    add_ssaaaa(uhi, ulo, umi>>38, umi<<26, uhi>>12, (uhi<<52)+ulo);
+    add_ssaaaa(uhi, ulo, (umi>>38), (umi<<26), (uhi>>12), ((uhi<<52)+ulo));
     ulong res;
     NMOD2_RED2(res, uhi, ulo, mod);
+    return res;
+}
+
+ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
+{
+    const vec4n low_bits = vec4n_set_n(DOT_SPLITXX_MASK);
+    ulong i = 0;
+    vec4n dp_vlo = vec4n_zero();
+    vec4n dp_vmi = vec4n_zero();
+    vec4n dp_vhi = vec4n_zero();
+    for ( ; i+3 < len; i+=4)
+    {
+        vec4n v1hi = vec4n_load_unaligned(v1+i);
+        vec4n v1lo = vec4n_bit_and(v1hi, low_bits);
+        v1hi = vec4n_bit_shift_right(v1hi, DOT_SPLITXX_BITS);
+        vec4n v2hi = vec4n_load_unaligned(v2+i);
+        vec4n v2lo = vec4n_bit_and(v2hi, low_bits);
+        v2hi = vec4n_bit_shift_right(v2hi, DOT_SPLITXX_BITS);
+
+        dp_vlo = vec4n_add(dp_vlo, vec4n_mul(v1lo, v2lo));
+        dp_vmi = vec4n_add(dp_vmi, vec4n_mul(v1lo, v2hi));
+        dp_vmi = vec4n_add(dp_vmi, vec4n_mul(v1hi, v2lo));
+        dp_vhi = vec4n_add(dp_vhi, vec4n_mul(v1hi, v2hi));
+    }
+
+    ulong dp_lo = vec4n_horizontal_sum(dp_vlo);
+    ulong dp_mi = vec4n_horizontal_sum(dp_vmi);
+    ulong dp_hi = vec4n_horizontal_sum(dp_vhi);
+
+    for ( ; i < len; i++)
+    {
+        unsigned int v1hi, v1lo, v2hi, v2lo;
+        __ll_lowhi_partsXX(v1lo, v1hi, v1[i]);
+        __ll_lowhi_partsXX(v2lo, v2hi, v2[i]);
+        dp_lo += (ulong)v1lo * v2lo;
+        dp_mi += (ulong)v1lo * v2hi + (ulong)v1hi * v2lo;
+        dp_hi += (ulong)v1hi * v2hi;
+    }
+
+    // result: ulo + 2**26 umi + 2**52 uhi
+    // hi = (umi >> 38) + (uhi >> 12)  ||  lo = (umi << 26) + (uhi << 52) + ulo
+    add_ssaaaa(dp_hi, dp_lo, (dp_mi>>38), (dp_mi<<26), (dp_hi>>12), ((dp_hi<<52)+dp_lo));
+    ulong res;
+    NMOD2_RED2(res, dp_hi, dp_lo, mod);
     return res;
 }
 

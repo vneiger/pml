@@ -130,6 +130,10 @@ void kernel_basis_zls_via_interpolation(
                                         VecLong & shift
                                        );
 
+
+/** Experimental kernel basis function for generic cases. */
+void kernel_basis_generic(Mat<zz_pX> & kerbas, Mat<zz_pX> & pmat);
+
 #endif /* ifndef MAT_LZZ_PX_KERNEL__H */
 
 // Local Variables:
