@@ -8,7 +8,6 @@
 #include <ios>
 
 #include "mat_lzz_pX_kernel.h"
-#include "mat_lzz_pX_utils.h"
 
 NTL_CLIENT
 
@@ -144,6 +143,7 @@ void krylov_iterates_one_polmat(Vec<Vec<zz_p>> & B,
 {
     const long n = A.NumRows();
 
+    // F = [[xI - A], [-v]]
     Mat<zz_pX> F;
     F.SetDims(n+1, n);
     for (long i = 0; i < n; ++i)
@@ -151,23 +151,16 @@ void krylov_iterates_one_polmat(Vec<Vec<zz_p>> & B,
         for (long j = 0; j < n; ++j)
         {
             if (j == i)
-                set(F[i][i]);
-            SetCoeff(F[i][j], 1, -A[i][j]);
+                SetX(F[i][i]);
+            SetCoeff(F[i][j], 0, -A[i][j]);
         }
     }
     for (long j = 0; j < n; ++j)
         SetCoeff(F[n][j], 0, v[j]);
 
     Mat<zz_pX> K;
-    VecLong s(n+1);
-    for (long k = 0; k < n; k++)
-        s[k] = 1;
-    //zz_pX det;
-    //determinant_generic_knowing_degree(det, F, n);
-    kernel_basis_zls_via_approximation(K, F, s);
+    kernel_basis_generic(K, F);
     // TODO missing rest of algo
-    // TODO calling kernel here is very slow
-    //pmbasis(K, F, 3, s);
 }
 
 /*-----------------------------------*/
@@ -314,6 +307,7 @@ void test_all(long n, long m, long t)
         // single vector
         krylov_iterates_one_naive(B1, A, v, d);
         krylov_iterates_one_squaring(B2, A, v, d);
+        krylov_iterates_one_polmat(B3, A, v, d);
 
         B2.SetLength(d); // to make sure we compare first d terms
         string res = ((B1 == B2) ? "ok" : "notok");
@@ -359,26 +353,30 @@ int main(int argc, char *argv[])
     const long t = atoi(argv[3]);
 
     zz_p::init(97);
-    test_all(15, 1, 13);
-    test_all(23, 3, 23);
-    test_all(52, 7, 95);
+    test_all(15, 2, 13);
+    //test_all(23, 3, 23);
+    //test_all(52, 7, 95);
 
-    zz_p::init(21518131);
-    cout << endl << "25 bit prime " << zz_p::modulus() << endl;
-    std::cout << head << std::endl;
-    bench_all(n, m, t);
+
+    //zz_p::init(21518131);
+    //std::cout << head << std::endl;
+    //cout << endl << "25 bit prime " << zz_p::modulus() << endl;
+    //bench_all(n, m, t);
 
     zz_p::UserFFTInit(23068673);
     cout << endl << "25 bit FFT prime (2**21 * 11 + 1) " << zz_p::modulus() << endl;
+    std::cout << head << std::endl;
     bench_all(n, m, t);
 
-    zz_p::init(288230376151711813);
-    cout << endl << "60 bit prime " << zz_p::modulus() << endl;
-    bench_all(n, m, t);
+    //zz_p::init(288230376151711813);
+    //cout << endl << "60 bit prime " << zz_p::modulus() << endl;
+    //std::cout << head << std::endl;
+    //bench_all(n, m, t);
 
-    zz_p::FFTInit(0);
-    cout << endl << "60 bit FFT prime" << endl;
-    bench_all(n, m, t);
+    //zz_p::FFTInit(0);
+    //cout << endl << "60 bit FFT prime" << endl;
+    //std::cout << head << std::endl;
+    //bench_all(n, m, t);
 }
 
 
