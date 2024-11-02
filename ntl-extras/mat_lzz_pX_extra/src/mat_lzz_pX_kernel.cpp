@@ -1149,6 +1149,14 @@ void kernel_basis_generic(Mat<zz_pX> & kerbas, Mat<zz_pX> & pmat)
         std::cout << "\tdegree 1, main time " << t << std::endl;
 #endif // GENERIC_KER_PROFILE
 
+        F0.kill();
+        A3.kill();
+        A4.kill();
+        K.kill();
+        K1.kill();
+        K2.kill();
+        mB.kill();
+
         //std::cout << kerbas*pmat << std::endl;
         //std::cout << F << std::endl;
         kernel_basis_generic(kerbas, F);
@@ -1214,6 +1222,11 @@ void kernel_basis_generic(Mat<zz_pX> & kerbas, Mat<zz_pX> & pmat)
         t = GetWallTime()-t;
         std::cout << "\tmultiply ker, degrees " << deg(kerbas2) << "," << deg(kerbas) << " || time " << t << std::endl;
 #endif // GENERIC_KER_PROFILE
+
+        pmat_l.kill();
+        pmat_r.kill();
+        appbas.kill();
+        kerbas2.kill();
 
         //cout << kerbas2 * pmat_l << endl;
         //cout << degree_matrix(kerbas2) << endl;
