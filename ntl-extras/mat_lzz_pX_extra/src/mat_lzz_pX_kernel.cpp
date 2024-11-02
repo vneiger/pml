@@ -8,7 +8,7 @@
 #include <NTL/mat_lzz_p.h>
 #include "mat_lzz_pX_kernel.h"
 
-//#define GENERIC_KER_PROFILE
+#define GENERIC_KER_PROFILE
 
 NTL_CLIENT
 
@@ -937,11 +937,15 @@ void kernel_basis_zls_via_interpolation(
 // where A is n x n and V is m x n, both of degree < d
 // assumption: generic left kernel basis degrees
 // output: 0-weak Popov kernel basis of pmat
-void kernel_basis_generic(Mat<zz_pX> & kerbas, const Mat<zz_pX> & pmat)
+// If d <= 1, kerbas is replaced with the kernel basis
+// If d > 1, kerbas is multiplied by the kernel basis (so kerbas should
+// already be allocated with appropriate dimensions)
+void kernel_basis_generic(Mat<zz_pX> & kerbas, Mat<zz_pX> & pmat)
 {
     const long n = pmat.NumCols();
     const long m = pmat.NumRows() - n;
     const long d = deg(pmat[0][0]);
+    //std::cout << degree_matrix(pmat) << std::endl;
 
 #ifdef GENERIC_KER_PROFILE
     double t;
@@ -956,22 +960,44 @@ void kernel_basis_generic(Mat<zz_pX> & kerbas, const Mat<zz_pX> & pmat)
     }
     else if (m >= n)
     {
-#ifdef GENERIC_KER_PROFILE
-    t = GetWallTime();
-#endif // GENERIC_KER_PROFILE
+        // base case: one call to pmbasis
         VecLong shift = row_degree(pmat);
-        VecLong pivind(m);
-        Mat<zz_pX> copy_mat(pmat);
-        kernel_basis_via_approximation(kerbas, pivind, copy_mat, shift);
+
+        // compute the kernel via approximant basis at high order
+        Mat<zz_pX> appbas;
+        // degree of kernel basis will be d (generically)
+        // --> compute approximants at order 2d is enough
+        // (one might need 2d+1, but thanks to the weak Popov form, 2d suffices)
 #ifdef GENERIC_KER_PROFILE
-    t = GetWallTime()-t;
-    std::cout << "\tm >= n, pmbasis, order = " << -1 << " || time " << t << std::endl;
+        t = GetWallTime();
+#endif // GENERIC_KER_PROFILE
+        popov_pmbasis_generic(appbas, pmat, 2*d);
+#ifdef GENERIC_KER_PROFILE
+        t = GetWallTime()-t;
+        std::cout << "\tpmbasis order = " << 2*d << " || time " << t << std::endl;
+#endif // GENERIC_KER_PROFILE
+
+        // minimal left kernel basis of pmat: last m rows of app
+        Mat<zz_pX> kerbas2;
+        kerbas2.SetDims(m, m+n);
+        for (long i = 0; i < m; ++i)
+            for (long j = 0; j < m+n; ++j)
+                kerbas2[i][j] = appbas[n+i][j];
+
+        // compute product of kernel bases
+#ifdef GENERIC_KER_PROFILE
+        t = GetWallTime();
+#endif // GENERIC_KER_PROFILE
+        multiply(kerbas, kerbas2, kerbas);
+#ifdef GENERIC_KER_PROFILE
+        t = GetWallTime()-t;
+        std::cout << "\tmultiply ker, degrees " << deg(kerbas2) << "," << deg(kerbas) << " || time " << t << std::endl;
 #endif // GENERIC_KER_PROFILE
     }
     else if (d == 1)
     {
 #ifdef GENERIC_KER_PROFILE
-    t = GetWallTime();
+        t = GetWallTime();
 #endif // GENERIC_KER_PROFILE
         // case of characteristic matrix:
         //     [ X I + A ]
@@ -1045,6 +1071,27 @@ void kernel_basis_generic(Mat<zz_pX> & kerbas, const Mat<zz_pX> & pmat)
         inv(K1, K1);
         mul(K1, mB, K1);
 
+        // FIXME the first multiplication (kerbas2 in rec call by the below
+        // kerbas) could be accelerated
+        // currently we just build kerbas explicitly now, and multiply later in recursive call
+        kerbas.SetDims(nn1+eps, m+n);
+        for (long i = 0; i < nn1; i++)
+        {
+            for (long j = 0; j < nn1; j++)
+                SetCoeff(kerbas[i][j], 0, mB[i][j]);
+            for (long j = nn1; j < 2*nn1; j++)
+            {
+                if (i+nn1 == j)
+                    SetX(kerbas[i][j]);
+                SetCoeff(kerbas[i][j], 0, K1[i][j-nn1]);
+            }
+        }
+        if (eps > 0)
+        {
+            for (long j = 0; j < nn1; j++)
+                SetCoeff(kerbas[nn1][j], 0, K2[0][j]);
+            set(kerbas[nn1][m+n-1]); 
+        }
 
         // multiply kernel basis with right-hand columns
         //  
@@ -1098,95 +1145,83 @@ void kernel_basis_generic(Mat<zz_pX> & kerbas, const Mat<zz_pX> & pmat)
             for (long j = 0; j < nn2; j++)
                 SetCoeff(F[i][j], 0, A3[i][j]);
 #ifdef GENERIC_KER_PROFILE
-    t = GetWallTime()-t;
-    std::cout << "\tdegree 1, time " << t << std::endl;
+        t = GetWallTime()-t;
+        std::cout << "\tdegree 1, main time " << t << std::endl;
 #endif // GENERIC_KER_PROFILE
 
-        // multiplication could be accelerated (?)
-        kerbas.SetDims(nn1+eps, m+n);
-        for (long i = 0; i < nn1; i++)
-        {
-            for (long j = 0; j < nn1; j++)
-                SetCoeff(kerbas[i][j], 0, mB[i][j]);
-            for (long j = nn1; j < 2*nn1; j++)
-            {
-                if (i+nn1 == j)
-                    SetX(kerbas[i][j]);
-                SetCoeff(kerbas[i][j], 0, K1[i][j-nn1]);
-            }
-        }
-        if (eps > 0)
-        {
-            for (long j = 0; j < nn1; j++)
-                SetCoeff(kerbas[nn1][j], 0, K2[0][j]);
-            set(kerbas[nn1][m+n-1]); 
-        }
         //std::cout << kerbas*pmat << std::endl;
         //std::cout << F << std::endl;
-        Mat<zz_pX> ker_rec;
-        kernel_basis_generic(ker_rec, F);
-        multiply(kerbas, ker_rec, kerbas);
+        kernel_basis_generic(kerbas, F);
     }
     else
     {
-        VecLong shift = row_degree(pmat);
-        kernel_basis(kerbas, pmat, shift);
+        // assuming we have gone through degree 1 case,
+        // which brought us to almost square case;
+        // otherwise for rectangular input this might be accelerated
+        const long nn1 = (m+n)/2;
+        const long nn2 = n-nn1;
+
+        Mat<zz_pX> pmat_l;
+        Mat<zz_pX> pmat_r;
+        pmat_l.SetDims(m+n,nn1);
+        pmat_r.SetDims(m+n,nn2);
+
+        for (long i = 0; i < m+n; ++i)
+        {
+            for (long j = 0; j < nn1; ++j)
+                pmat_l[i][j] = pmat[i][j];
+            for (long j = 0; j < nn2; ++j)
+                pmat_r[i][j] = pmat[i][j+nn1];
+        }
+
+        // compute the kernel of pmat_l via approximant basis at high order
+        Mat<zz_pX> appbas;
+        // by choice of nn1, degree of kernel basis will be d (generically)
+        // --> compute approximants at order 2d is enough
+        // (one might need 2d+1, but thanks to the weak Popov form, 2d suffices)
+#ifdef GENERIC_KER_PROFILE
+        t = GetWallTime();
+#endif // GENERIC_KER_PROFILE
+        popov_pmbasis_generic(appbas, pmat_l, 2*d);
+#ifdef GENERIC_KER_PROFILE
+        t = GetWallTime()-t;
+        std::cout << "\tpmbasis order = " << 2*d << " || time " << t << std::endl;
+#endif // GENERIC_KER_PROFILE
+
+        // minimal left kernel basis of pmat_l : last rows of app
+        Mat<zz_pX> kerbas2;
+        kerbas2.SetDims(m+nn2, m+n);
+        for (long i = 0; i < m+nn2; ++i)
+            for (long j = 0; j < m+n; ++j)
+                kerbas2[i][j] = appbas[nn1+i][j];
+
+        // then compute product with right-hand columns
+#ifdef GENERIC_KER_PROFILE
+        t = GetWallTime();
+#endif // GENERIC_KER_PROFILE
+        multiply(pmat, kerbas2, pmat_r);
+#ifdef GENERIC_KER_PROFILE
+        t = GetWallTime()-t;
+        std::cout << "\tmultiply mat, degrees " << deg(kerbas2) << "," << deg(pmat_r) << " || time " << t << std::endl;
+#endif // GENERIC_KER_PROFILE
+
+        // and product of kernel bases
+#ifdef GENERIC_KER_PROFILE
+        t = GetWallTime();
+#endif // GENERIC_KER_PROFILE
+        multiply(kerbas, kerbas2, kerbas);
+#ifdef GENERIC_KER_PROFILE
+        t = GetWallTime()-t;
+        std::cout << "\tmultiply ker, degrees " << deg(kerbas2) << "," << deg(kerbas) << " || time " << t << std::endl;
+#endif // GENERIC_KER_PROFILE
+
+        //cout << kerbas2 * pmat_l << endl;
+        //cout << degree_matrix(kerbas2) << endl;
+        //cout << degree_matrix(appbas) << endl;
+
+        // finally, the recursive call
+        kernel_basis_generic(kerbas, pmat);
     }
-
-    /*
-    const long cdim1 = (dim>>1);  // cdim1 ~ dim/2
-    const long cdim2 = dim-cdim1;  // cdim2 ~ dim/2, cdim1+cdim2 = dim
-
-    Mat<zz_pX> pmat_l;
-    Mat<zz_pX> pmat_r;
-    pmat_l.SetDims(dim,cdim1);
-    pmat_r.SetDims(dim,cdim2);
-
-    for (long i = 0; i < dim; ++i)
-    {
-        for (long j = 0; j < cdim1; ++j)
-            pmat_l[i][j] = pmat[i][j];
-        for (long j = 0; j < cdim2; ++j)
-            pmat_r[i][j] = pmat[i][j+cdim1];
-    }
-
-    // compute the kernel via approximant basis at high order
-    Mat<zz_pX> appbas;
-    // degree of kernel basis will be (generically)  D = cdim1 * deg(pmat_l) / (dim - cdim1)
-    // --> compute approximants at order deg(pmat_l) + D + 1
-    // (cf for example Neiger-Rosenkilde-Solomatov ISSAC 2018, Lemma 4.3)
-    long deg_pmat_l = deg(pmat_l);
-    long deg_ker = ceil( cdim1 * deg_pmat_l / (double)(dim-cdim1) );
-    long order = deg_pmat_l + deg_ker + 1;
-
-    VecLong shift(dim,0);
-#ifdef GENERIC_KER_PROFILE
-    t = GetWallTime();
-#endif // GENERIC_KER_PROFILE
-    pmbasis(appbas, pmat_l, order, shift);
-#ifdef GENERIC_KER_PROFILE
-    t = GetWallTime()-t;
-    std::cout << "\tpmbasis order = " << order << " || time " << t << std::endl;
-#endif // GENERIC_KER_PROFILE
-
-    // minimal left kernel basis of pmat_r : last rows of app
-    Mat<zz_pX> kerbas2;
-    kerbas2.SetDims(cdim2,dim);
-    for (long i = 0; i < cdim2; ++i)
-        for (long j = 0; j < dim; ++j)
-            kerbas2[i][j] = appbas[i+cdim1][j];
-
-    // then compute the product
-    Mat<zz_pX> pmatt;
-#ifdef GENERIC_KER_PROFILE
-    t = GetWallTime();
-#endif // GENERIC_KER_PROFILE
-    multiply(pmatt, kerbas, pmat_r);
-#ifdef GENERIC_KER_PROFILE
-    t = GetWallTime()-t;
-    std::cout << "\tmultiply degrees " << deg(kerbas) << "," << deg(pmat_r) << " || time " << t << std::endl;
-#endif // GENERIC_KER_PROFILE
-*/
 
     return;
 }

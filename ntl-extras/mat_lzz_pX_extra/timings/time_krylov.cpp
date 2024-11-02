@@ -156,11 +156,11 @@ void krylov_iterates_one_polmat(Vec<Vec<zz_p>> & B,
         }
     }
     for (long j = 0; j < n; ++j)
-        SetCoeff(F[n][j], 0, v[j]);
+        SetCoeff(F[n][j], 0, -v[j]);
 
     Mat<zz_pX> K;
     kernel_basis_generic(K, F);
-    // TODO missing rest of algo
+    // Note: missing rest of algo, but will be negligible for reasonable m
 }
 
 /*-----------------------------------*/
@@ -245,6 +245,39 @@ void krylov_iterates_squaring_sqronly(Vec<Mat<zz_p>> & B,
         sqr(C, C);
 }
 
+// B: vector of d matrices n x m
+// d: integer > 0
+// A: matrix n x n, V: fat vector n x m
+// Computes and stores B[k] = A**k * V, 0 <= k < d
+// Fast, based on minimal kernel basis
+void krylov_iterates_polmat(Vec<Mat<zz_p>> & B,
+                            const Mat<zz_p> & A,
+                            const Mat<zz_p> & V,
+                            long d)
+{
+    const long n = A.NumRows();
+    const long m = V.NumCols();
+
+    // F = [[xI - A], [-V]]
+    Mat<zz_pX> F;
+    F.SetDims(n+m, n);
+    for (long i = 0; i < n; ++i)
+    {
+        for (long j = 0; j < n; ++j)
+        {
+            if (j == i)
+                SetX(F[i][i]);
+            SetCoeff(F[i][j], 0, -A[i][j]);
+        }
+    }
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < n; ++j)
+            SetCoeff(F[n+i][j], 0, -V[j][i]);
+
+    Mat<zz_pX> K;
+    kernel_basis_generic(K, F);
+    // Note: missing rest of algo, but will be negligible for reasonable m
+}
 
 BENCH_KRYLOV_ITERATES_ONE(naive)
 BENCH_KRYLOV_ITERATES_ONE(squaring)
@@ -252,6 +285,8 @@ BENCH_KRYLOV_ITERATES_ONE(polmat)
 
 BENCH_KRYLOV_ITERATES(naive)
 BENCH_KRYLOV_ITERATES(squaring)
+BENCH_KRYLOV_ITERATES(polmat)
+
 BENCH_KRYLOV_ITERATES(squaring_sqronly)
 
 // n > 0
@@ -273,12 +308,13 @@ void bench_all(long n, long m, long t)
 
     // single vector
     bench_krylov_iterates_one_naive(A, v, d_one);
-    bench_krylov_iterates_one_squaring(A, v, d_one);
+    //bench_krylov_iterates_one_squaring(A, v, d_one);
     bench_krylov_iterates_one_polmat(A, v, d_one);
 
     // multiple vectors
     bench_krylov_iterates_naive(A, V, d_multiple);
-    bench_krylov_iterates_squaring(A, V, d_multiple);
+    //bench_krylov_iterates_squaring(A, V, d_multiple);
+    bench_krylov_iterates_polmat(A, V, d_multiple);
     bench_krylov_iterates_squaring_sqronly(A, V, d_multiple);
 
     std::cout << std::endl;
@@ -352,21 +388,21 @@ int main(int argc, char *argv[])
     const long m = atoi(argv[2]);
     const long t = atoi(argv[3]);
 
-    zz_p::init(97);
-    test_all(15, 2, 13);
+    //zz_p::init(97);
+    //test_all(15, 2, 13);
     //test_all(23, 3, 23);
     //test_all(52, 7, 95);
 
 
-    //zz_p::init(21518131);
-    //std::cout << head << std::endl;
-    //cout << endl << "25 bit prime " << zz_p::modulus() << endl;
-    //bench_all(n, m, t);
-
-    zz_p::UserFFTInit(23068673);
-    cout << endl << "25 bit FFT prime (2**21 * 11 + 1) " << zz_p::modulus() << endl;
+    zz_p::init(21518131);
+    cout << endl << "25 bit prime " << zz_p::modulus() << endl;
     std::cout << head << std::endl;
     bench_all(n, m, t);
+
+    //zz_p::UserFFTInit(23068673);
+    //cout << endl << "25 bit FFT prime (2**21 * 11 + 1) " << zz_p::modulus() << endl;
+    //std::cout << head << std::endl;
+    //bench_all(n, m, t);
 
     //zz_p::init(288230376151711813);
     //cout << endl << "60 bit prime " << zz_p::modulus() << endl;

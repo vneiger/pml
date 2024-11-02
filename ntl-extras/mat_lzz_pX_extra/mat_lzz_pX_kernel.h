@@ -132,7 +132,7 @@ void kernel_basis_zls_via_interpolation(
 
 
 /** Experimental kernel basis function for generic cases. */
-void kernel_basis_generic(Mat<zz_pX> & kerbas, const Mat<zz_pX> & pmat);
+void kernel_basis_generic(Mat<zz_pX> & kerbas, Mat<zz_pX> & pmat);
 
 #endif /* ifndef MAT_LZZ_PX_KERNEL__H */
 
