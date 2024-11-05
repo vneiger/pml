@@ -12,7 +12,7 @@
 void time_nmod_mat_vec_mul(slong r, slong c, ulong n)
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     nmod_t mod;
     nmod_init(&mod, n);
@@ -141,7 +141,7 @@ void time_nmod_mat_vec_mul(slong r, slong c, ulong n)
     nmod_mat_clear(vmat2);
     flint_free(u);
     flint_free(v);
-    flint_randclear(state);
+    flint_rand_clear(state);
 }
 
 /*--------------------------------------------------------------*/

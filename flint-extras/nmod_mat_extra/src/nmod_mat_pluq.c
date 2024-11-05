@@ -180,10 +180,11 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
             //nmod_mat_mul_nmod_vec(A_vec, Awin, A_i_piv, rank);
             //nmod_mat_window_clear(Awin);
             // 2ndVERSION, TESTED: with new nmod_vec_dot
+            const dot_params_t params = _nmod_vec_dot_params(rank, A->mod);
             for (slong i = 0; i < rank; i++)
                 A_i_piv[i] = nmod_mat_entry(A, i, pivot);
             for (slong i = 0; i < A->r - nullity - rank - 1; i++)
-                A_vec[i] = nmod_vec_dot_product(A->rows[i+rank+1], A_i_piv, rank, nbits, nbits, A->mod);
+                A_vec[i] = _nmod_vec_dot(A->rows[i+rank+1], A_i_piv, rank, A->mod, params);
             // update:  from A[rank+1:A->r-nullity, pivot], subtract A_vec and divide by pivot
             for (slong i = rank+1; i < A->r - nullity; i++)
             {

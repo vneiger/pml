@@ -196,6 +196,19 @@ void mul_naive(zz_pXY& c, const zz_pXY& a, const zz_pXY& b)
     c = c_tmp;
 }
 
+void mul(zz_pXY& c, const zz_pXY& a, const zz_p b)
+{
+    if (a.is_zero() || b == 0)
+    {
+        c.zero();
+        return;
+    }
+
+    c.rep.SetLength(a.degY() + 1, to_zz_pX(0));
+
+    for (long i = 0; i <= a.degY(); i++)
+        mul(c.rep[i], a.rep[i], b);
+}
 
 /*------------------------------------------------------------*/
 /* to kronecker substitution                                  */

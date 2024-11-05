@@ -10,6 +10,7 @@ COMPILE = $(patsubst %.c, %.exe, $(patsubst time_%, %, $(SOURCES)))
 RUN = $(patsubst %.c, %.dat, $(patsubst time_%, %, $(SOURCES)))
 
 CC = gcc
+#CC = clang
 CFLAGS = -Wall -O3 -march=native -I$(INC_DIR) -I$(SYSINC_DIR) -L$(LIB_DIR) -L$(SYSLIB_DIR) 
 LIBS = -lflint -lmpfr -lgmp -lm -lpthread
 

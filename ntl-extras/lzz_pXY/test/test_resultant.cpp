@@ -1,5 +1,6 @@
+#include <NTL/lzz_pX.h>
+#include <iomanip>
 #include <NTL/vec_lzz_p.h>
-#include <assert.h>
 
 #include "util.h"
 #include "lzz_pXY.h"
@@ -16,14 +17,14 @@ void check(long p)
     else
         zz_p::init(p);
 
-    for (long i = 300; i < 1000; i += 5000)
+    for (long i = 3; i < 100; i += 1)
     {
         zz_pXY f = random_zz_pXY(i, i);
         zz_pXY g = random_zz_pXY(i, i);
         zz_pX res1, res2;
         double t1, t2;
 
-        cout << "i=" << i << endl;
+        cout << "deg = " << i << " | ";
         t1 = get_time();
         resultant(res1, f, g);
         t1 = get_time()-t1;
@@ -32,8 +33,12 @@ void check(long p)
         resultant_villard(res2, f, g);
         t2 = get_time()-t2;
 
-        cout << t1 << " " << t2 << endl;
-        cout << deg(res1) << " " << deg(GCD(res1, res2)) << " ";
+        // normalize results to ease comparison
+        MakeMonic(res1);
+        MakeMonic(res2);
+
+        cout << "time naive: " << t1 << " | " << "time Villard: " << t2 << " | ";
+        cout << "correct: " << ((res1 == res2) ? "yes" : "no");
         cout << endl;
     }
 }
@@ -43,6 +48,8 @@ void check(long p)
 /*------------------------------------------------------------*/
 int main(int argc, char** argv)
 {
+    std::cout<<std::fixed;
+    std::cout<<std::setprecision(5);
     check(0);
     check(288230376151711813);
     return 0;

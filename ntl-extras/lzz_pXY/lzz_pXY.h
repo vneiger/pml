@@ -217,6 +217,24 @@ inline zz_pXY operator-(const zz_pXY& a, const zz_pXY& b)
  *  @{
  */ 
 
+
+/** Sets `c` = `a` * `b`, `b` is a constant. */
+void mul(zz_pXY& c, const zz_pXY& a, const zz_p b);
+
+/** Returns `a` * `b`, `b` is a constant. */
+inline zz_pXY mul(const zz_pXY& a, const zz_p b)
+{
+    zz_pXY c;
+    mul(c, a, b);
+    return c;
+}
+
+/** Returns `a` * `b`, `b` is a constant. */
+inline zz_pXY operator*(const zz_pXY& a, const zz_p b)
+{
+    return mul(a, b);
+}
+
 /** Sets `c` = `a` * `b`, computed using the naive algorithm */
 void mul_naive(zz_pXY& c, const zz_pXY& a, const zz_pXY& b);
 
@@ -291,6 +309,7 @@ inline zz_pXY operator*(const zz_pXY& a, const zz_pXY& b)
 {
     return mul(a, b);
 }
+
 
 /** @}  */       // doxygen multiplication
 

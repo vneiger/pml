@@ -5,9 +5,6 @@
 #include <flint/fft_small.h>
 #include <flint/machine_vectors.h>
 
-#include <math.h>
-#include "nmod_extra.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -27,76 +24,6 @@ void nmod_poly_rand_monic(nmod_poly_t pol,
                           flint_rand_t state,
                           slong len);
 
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* fft_small FFT, using doubles                               */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-typedef struct
-{
-    nmod_t mod;
-    vec1d p, pinv;
-    ulong w, inv_w;       // root of 1 and its inverse
-    ulong order;       // its order
-    vec1d **powers_w;
-    ulong **powers_inv_w_t;  // same table for 1/w as for w
-    // length order+1, with powers_inv_2[i] = 1/2^i 
-    ulong *powers_inv_2;
-    // length order, level k has length 2^k with entries 1/w{k+1}^i/2^k 
-    vec1d **powers_inv_w_over_2;
-} nmod_sd_fft_struct;
-typedef nmod_sd_fft_struct nmod_sd_fft_t[1];
-
-
-/*------------------------------------------------------------*/
-/* initializes all entries of F                               */
-/* w primitive and w^(2^order))=1                             */
-/* DFTs of size up to 2^order are supported                   */ 
-/*------------------------------------------------------------*/
-void nmod_sd_fft_init_set(nmod_sd_fft_t F, ulong w, ulong order, nmod_t mod);
-
-/*------------------------------------------------------------*/
-/* utility routine, Qt used in transposed algorithms          */ 
-/*------------------------------------------------------------*/
-void sd_fft_ctx_init_inverse(sd_fft_ctx_t Qt, sd_fft_ctx_t Q);
-
-/*------------------------------------------------------------*/
-/* clears all memory assigned to F                            */
-/*------------------------------------------------------------*/
-void nmod_sd_fft_clear(nmod_sd_fft_t F);
-
-
-
-/*------------------------------------------------------------*/
-/* fft evaluation                                             */
-/* returns x[i] = poly(w^i), n=2^k, up to permutation         */
-/* x must have length >= n                                    */
-/*------------------------------------------------------------*/
-void nmod_sd_fft_evaluate(nn_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong k);
-void nmod_sd_fft_evaluate_t(nn_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, const ulong k);
-
-/*------------------------------------------------------------*/
-/* tft evaluation and its transpose                           */
-/* x must have length >= N                                    */
-/*------------------------------------------------------------*/
-void nmod_sd_tft_evaluate(nn_ptr x, const nmod_poly_t poly, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
-void nmod_sd_tft_evaluate_t(nn_ptr x, nn_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, ulong N);
-
-/*------------------------------------------------------------*/
-/* tft interpolation and its transpose                        */
-/* inverts nmod_sd_tft_evaluate                               */
-/*------------------------------------------------------------*/
-void nmod_sd_tft_interpolate(nmod_poly_t poly, nn_ptr x, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
-void nmod_sd_tft_interpolate_t(nn_ptr a, nn_srcptr A, sd_fft_lctx_t Q, nmod_sd_fft_t F, const ulong N);
-
-/*------------------------------------------------------------*/
-/* fft interpolation                                          */
-/* inverts nmod_sd_fft_evaluate                               */
-/*------------------------------------------------------------*/
-void nmod_sd_fft_interpolate(nmod_poly_t poly, nn_ptr x, sd_fft_lctx_t Q, const ulong k); 
-void nmod_sd_fft_interpolate_t(nmod_poly_t poly, nn_ptr x, sd_fft_lctx_t Q, const ulong k); 
 
 
 /*------------------------------------------------------------*/

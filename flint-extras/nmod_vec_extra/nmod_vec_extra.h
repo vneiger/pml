@@ -11,8 +11,10 @@
  *
  */
 
+#include <flint/flint.h>
 #include <flint/machine_vectors.h>
 #include <flint/nmod_types.h>
+#include <flint/nmod.h> // for NMOD_RED
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,7 +43,6 @@ void nmod_vec_primes(nn_ptr v, slong n, flint_bitcnt_t s);
 *                            DOT PRODUCT                             *
 **********************************************************************/
 
-
 /* ------------------------------------------------------------ */
 /* v1 and v2 have length at least len, len < 2^FLINT_BITS      */
 /* all entries of v1 have <= max_bits1 bits <= FLINT_BITS       */
@@ -60,25 +61,10 @@ void nmod_vec_integer_dot_product(nn_ptr res,
 /** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
 /** does not assume input is reduced modulo mod.n                */
 /*  ------------------------------------------------------------ */
-ulong nmod_vec_dot_product(nn_srcptr v1, nn_srcptr v2,
-                           ulong len, ulong max_bits1, ulong max_bits2,
-                           nmod_t mod);
-// note: version split16 interesting on recent laptop (gcc does some vectorization)
-// limited to nbits <= ~31 (bound to be better analyzed, numterms)
-ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-// note: version split26 interesting (beyond 30-31 bits) on recent laptop (gcc does some vectorization)
-// limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
-ulong _nmod_vec_dot_product_2_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2,
+                                      ulong len, ulong max_bits1, ulong max_bits2,
+                                      nmod_t mod);
 
-/*------------------------------------------------------------*/
-/** dot product for moduli less than 2^30                     */
-/** reduction works if (p-1)^3*len < 2^96                     */
-/** returns dot(a, b)                                         */
-/** power_two = 2^45 mod p, pinv = 1/p                        */
-/*------------------------------------------------------------*/
-ulong _nmod_vec_dot_small_modulus(nn_ptr a, nn_ptr b, ulong len,
-                                  ulong power_two,
-                                  vec1d p, vec1d pinv);
 
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */
@@ -86,10 +72,38 @@ ulong _nmod_vec_dot_small_modulus(nn_ptr a, nn_ptr b, ulong len,
 /** res[0] = dot(a1, b), res[1] = dot(a2, b)                  */
 /** power_two = 2^45 mod p, p2 = (p,p), pinv2 = (1/p,1/p)     */
 /*------------------------------------------------------------*/
-void _nmod_vec_dot2_small_modulus(nn_ptr res,
-                                  nn_ptr a1, nn_ptr a2, nn_ptr b, ulong len,
-                                  ulong power_two,
-                                  vec2d p2, vec2d pinv2);
+void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ulong len,
+                                  ulong power_two, vec2d p2, vec2d pinv2);
+
+
+/*------------------------------------------------------------*/
+/* DRAFT / EXPERIMENTS                                        */
+/*------------------------------------------------------------*/
+
+// note: version split16 interesting on recent laptop (gcc does some vectorization)
+// limited to nbits <= ~31 (bound to be better analyzed, numterms)
+ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+// note: version split26 interesting (beyond 30-31 bits) on recent laptop (gcc does some vectorization)
+// limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
+ulong _nmod_vec_dot_product_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /** Several dot products with same left operand, as in vector-matrix product.
  *

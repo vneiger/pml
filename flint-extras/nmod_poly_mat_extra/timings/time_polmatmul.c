@@ -34,13 +34,13 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
     // create random matrices
     nmod_poly_mat_t a, b, c1, c2;
 
-    flint_randinit(state);
+    flint_rand_init(state);
     nmod_poly_mat_init(a, rdim, idim, prime);
     nmod_poly_mat_rand(a, state, deg);
 
     nmod_poly_mat_init(b, idim, cdim, prime);
     nmod_poly_mat_rand(b, state, deg);
-    flint_randclear(state);
+    flint_rand_clear(state);
 
     printf("%ld\t%ld\t%ld\t%ld",rdim,idim,cdim,deg);
 
@@ -225,9 +225,9 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
 void benchmark_nbits(ulong nbits)
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
     const ulong prime = n_randprime(state, nbits, 0);
-    flint_randclear(state);
+    flint_rand_clear(state);
 
     //long dims[] = { 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, };
     long dims[] = { 2, 4, 10, 20, 32, 75, 180 };
@@ -293,9 +293,9 @@ void benchmark_nbits(ulong nbits)
 void benchmark_nbits_dim_deg(ulong nbits, ulong dim, ulong deg)
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
     const ulong prime = n_randprime(state, nbits, 0);
-    flint_randclear(state);
+    flint_rand_clear(state);
 
     printf("Bench square polynomial matrix multiplication:\n");
     printf("nbits=%ld, dim=%ld, deg=%ld\n",nbits,dim,deg);

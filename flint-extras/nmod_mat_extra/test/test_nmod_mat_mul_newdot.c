@@ -41,7 +41,7 @@ void check_nmod_mat_mul_newdot(ulong len, ulong n, flint_rand_t state)
 int main()
 {
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
 
     printf("test running, various bitlengths, n x n product from 1 to 400 (no error message means success)...\n");
     for (ulong n = 1; n < 400; n += 10)
@@ -65,6 +65,6 @@ int main()
     }
     printf("\n");
 
-    flint_randclear(state);
+    flint_rand_clear(state);
     return 0;
 }

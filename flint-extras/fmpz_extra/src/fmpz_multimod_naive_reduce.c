@@ -38,9 +38,9 @@ ulong _fmpz_reduce(const fmpz_t a, nn_srcptr powers_of_two, const nmod_t mod)
         
         slen = a_ptr->_mp_size;
         if (slen < 0)
-            return nmod_neg(nmod_vec_dot_product(powers_of_two, a_coeffs, -slen, FLINT_BIT_COUNT(mod.n), FLINT_BITS, mod), mod);
+            return nmod_neg(nmod_vec_dot_product_unbalanced(powers_of_two, a_coeffs, -slen, FLINT_BIT_COUNT(mod.n), FLINT_BITS, mod), mod);
 	else
-            return nmod_vec_dot_product(powers_of_two, a_coeffs, slen, FLINT_BIT_COUNT(mod.n), FLINT_BITS, mod);
+            return nmod_vec_dot_product_unbalanced(powers_of_two, a_coeffs, slen, FLINT_BIT_COUNT(mod.n), FLINT_BITS, mod);
     }
 }
 
@@ -112,13 +112,12 @@ void _fmpz_reduce_small_moduli(nn_ptr out, const fmpz_t a, const fmpz_multimod_n
         for (; j < len; j++)
             slice_A[j] = 0;
 
+        const ulong pow2 = UWORD(1) << DOT_SPLIT_BITS;
         for (i = 0; i < mmod->num_primes; i++)
         {
-            ulong dot, power_two;
-            power_two = 1L << 45;
-            NMOD_RED(power_two, power_two, mmod->mod[i]);
-            dot = _nmod_vec_dot_small_modulus(mmod->powers_of_two[i], slice_A, len, power_two,
-                                              mmod->mod[i].n, 1 / (double) mmod->mod[i].n);
+            ulong pow2_red;
+            NMOD_RED(pow2_red, pow2, mmod->mod[i]);
+            ulong dot = _nmod_vec_dot2_split(mmod->powers_of_two[i], slice_A, len, mmod->mod[i], pow2_red);
             if (slen < 0)
                 out[i] = nmod_neg(dot, mmod->mod[i]);
             else

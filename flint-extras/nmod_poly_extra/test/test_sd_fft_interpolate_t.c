@@ -19,7 +19,7 @@ void check()
     sd_fft_ctx_t Q, Qt;
     nmod_poly_t P;
     
-    flint_randinit(state);
+    flint_rand_init(state);
     
     p = 1108307720798209;
     sd_fft_ctx_init_prime(Q, p);
@@ -88,7 +88,7 @@ void check()
     sd_fft_ctx_clear(Q);
     sd_fft_ctx_clear(Qt);
 
-    flint_randclear(state);
+    flint_rand_clear(state);
 }    
 
 

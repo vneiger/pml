@@ -786,6 +786,20 @@ VecLong pmbasis_generic_onecolumn(
                                  );
 
 
+/** \todo doc */
+void popov_mbasis_rescomp_generic(
+                                  Mat<zz_pX> & appbas,
+                                  const Mat<zz_pX> & pmat,
+                                  const long order
+                                 );
+
+void popov_pmbasis_generic(
+                           Mat<zz_pX> &appbas,
+                           const Mat<zz_pX> & pmat,
+                           const long order
+                          );
+
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

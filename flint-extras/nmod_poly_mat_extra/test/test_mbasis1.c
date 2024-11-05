@@ -23,7 +23,7 @@ int test_mbasis1(void)
 
 
     flint_rand_t state;
-    flint_randinit(state);
+    flint_rand_init(state);
     srand(time(NULL));
     flint_randseed(state, rand(), rand());
 
@@ -49,7 +49,7 @@ int test_mbasis1(void)
     printf("Result mbasis1\n");
     nmod_poly_mat_print_pretty(res,"x");
     nmod_poly_mat_clear(res);
-    flint_randclear(state);
+    flint_rand_clear(state);
 
     nmod_mat_t res2;
     slong res_shift2[rdim];
