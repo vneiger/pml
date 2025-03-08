@@ -22,6 +22,7 @@
 
 #define NB_ITER 16384
 
+// pretending modulus is special, like 2**60 - 2**30 - 1
 void sample(void * FLINT_UNUSED(arg), ulong count)
 {
     nn_ptr array = (nn_ptr) flint_malloc(NB_ITER*sizeof(ulong));
