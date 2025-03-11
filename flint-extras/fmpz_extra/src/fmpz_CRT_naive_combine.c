@@ -1,3 +1,4 @@
+#include <gmp.h>
 #include <flint/flint.h>
 #include <flint/fmpz.h>
 
@@ -44,7 +45,7 @@ fmpz_CRT_naive_combine(fmpz_t A, nn_srcptr m, const fmpz_CRT_naive_t mCRT)
     }
 
     temp->_mp_size = size;
-    fmpz_set_mpz(A, temp); // TODO !! to be fixed !!
+    fmpz_set_mpz(A, temp);
 
     mpz_clear(temp);
 }
