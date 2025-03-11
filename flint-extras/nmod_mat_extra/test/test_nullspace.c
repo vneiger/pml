@@ -107,10 +107,9 @@ int main(int argc, char *argv[])
     if (argc > 3)
         return 1;
 
-    srand(time(NULL));
     flint_rand_t state;
     flint_rand_init(state);
-    flint_randseed(state, rand(), rand());
+    flint_rand_set_seed(state, rand(), rand());
 
     slong field_prime = (argc>=2) ? atol(argv[1]) : 3;
     slong iterations = (argc==3) ? atol(argv[2]) : 10000;

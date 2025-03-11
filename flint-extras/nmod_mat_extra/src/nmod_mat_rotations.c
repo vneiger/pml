@@ -19,10 +19,21 @@ void _nmod_mat_rotate_rows_downward(nmod_mat_t mat, slong * vec, slong i, slong 
             vec[i] = tmp_vec;
         }
 
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         ulong * tmp_mat = mat->rows[j];
         for (slong ii = j; ii > i; ii--)
             mat->rows[ii] = mat->rows[ii-1];
         mat->rows[i] = tmp_mat;
+#else
+        ulong * tmp_row = _nmod_vec_init(mat->c);
+        _nmod_vec_set(tmp_row, nmod_mat_entry_ptr(mat, j, 0), mat->c);
+        for (slong ii = j; ii > i; ii--)
+            _nmod_vec_set(nmod_mat_entry_ptr(mat, ii, 0),
+                          nmod_mat_entry_ptr(mat, ii-1, 0),
+                          mat->c);
+        _nmod_vec_set(nmod_mat_entry_ptr(mat, i, 0), tmp_row, mat->c);
+        _nmod_vec_clear(tmp_row);
+#endif
     }
 }
 
@@ -38,10 +49,21 @@ void _nmod_mat_rotate_rows_upward(nmod_mat_t mat, slong * vec, slong i, slong j)
             vec[j] = tmp_vec;
         }
 
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         ulong * tmp_mat = mat->rows[i];
         for (slong ii = i; ii < j; ii++)
             mat->rows[ii] = mat->rows[ii+1];
         mat->rows[j] = tmp_mat;
+#else
+        ulong * tmp_row = _nmod_vec_init(mat->c);
+        _nmod_vec_set(tmp_row, nmod_mat_entry_ptr(mat, i, 0), mat->c);
+        for (slong ii = i; ii < j; ii++)
+            _nmod_vec_set(nmod_mat_entry_ptr(mat, ii, 0),
+                          nmod_mat_entry_ptr(mat, ii+1, 0),
+                          mat->c);
+        _nmod_vec_set(nmod_mat_entry_ptr(mat, j, 0), tmp_row, mat->c);
+        _nmod_vec_clear(tmp_row);
+#endif
     }
 }
 
@@ -116,7 +138,11 @@ void nmod_mat_permute_columns(nmod_mat_t mat, const slong * perm_act, slong * pe
     for (slong i = 0; i < mat->r; i++)
     {
         // copy row i into buffer
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         _nmod_vec_set(row_buffer, mat->rows[i], mat->c);
+#else
+        _nmod_vec_set(row_buffer, nmod_mat_entry_ptr(mat, i, 0), mat->c);
+#endif
         // permute row i
         for (slong j = 0; j < mat->c; j++)
             nmod_mat_entry(mat, i, j) = row_buffer[perm_act[j]];

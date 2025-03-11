@@ -179,10 +179,9 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    srand(time(NULL));
     flint_rand_t state;
     flint_rand_init(state);
-    flint_randseed(state, rand(), rand());
+    flint_rand_set_seed(state, rand(), rand());
 
     slong field_prime = atol(argv[1]);
     slong iterations = (argc==5) ? atol(argv[4]) : 1;

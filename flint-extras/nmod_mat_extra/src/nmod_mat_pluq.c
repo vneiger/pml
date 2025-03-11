@@ -20,12 +20,20 @@ void _nmod_mat_l_u_from_compactlu_zeroin(nmod_mat_t L,
     nmod_mat_entry(L, 0, 0) = UWORD(1);  // note L->r == LU->r > 0
     for (slong i = 1; i < rk; i++)
     {
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         _nmod_vec_set(L->rows[i], LU->rows[i], i);
+#else
+        _nmod_vec_set(nmod_mat_entry_ptr(L, i, 0), nmod_mat_entry_ptr(LU, i, 0), i);
+#endif
         nmod_mat_entry(L, i, i) = UWORD(1);
     }
     for (slong i = rk; i < LU->r; i++)
     {
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         _nmod_vec_set(L->rows[i], LU->rows[i], rk);
+#else
+        _nmod_vec_set(nmod_mat_entry_ptr(L, i, 0), nmod_mat_entry_ptr(LU, i, 0), rk);
+#endif
         nmod_mat_entry(L, i, i) = UWORD(1);
     }
 
@@ -33,14 +41,26 @@ void _nmod_mat_l_u_from_compactlu_zeroin(nmod_mat_t L,
     if (U == LU)
     {
         for (slong i = 1; i < rk; i++)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
             _nmod_vec_zero(U->rows[i], i);
+#else
+            _nmod_vec_zero(nmod_mat_entry_ptr(U, i, 0), i);
+#endif
         for (slong i = rk; i < LU->r; i++)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
             _nmod_vec_zero(U->rows[i], rk);
+#else
+            _nmod_vec_zero(nmod_mat_entry_ptr(U, i, 0), rk);
+#endif
     }
     // U: else, U == 0, copy entries from upper triangular part of LU
     else
         for (slong i = 0; i < rk; i++)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
             _nmod_vec_set(U->rows[i]+i, LU->rows[i]+i, U->c - i);
+#else
+            _nmod_vec_set(nmod_mat_entry_ptr(L, i, i), nmod_mat_entry_ptr(LU, i, i), U->c - i);
+#endif
 }
 
 void nmod_mat_l_u_from_compactlu(nmod_mat_t L,
@@ -50,17 +70,33 @@ void nmod_mat_l_u_from_compactlu(nmod_mat_t L,
 {
     // L: set to zero all entries above diagonal or beyond rk-th column
     for (slong i = 1; i < rk; i++)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         _nmod_vec_zero(L->rows[i]+i+1, L->c - i-1);
+#else
+        _nmod_vec_zero(nmod_mat_entry_ptr(L, i, i+1), L->c - i-1);
+#endif
     for (slong i = rk; i < L->r; i++)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         _nmod_vec_zero(L->rows[i]+rk, L->c - rk);
+#else
+        _nmod_vec_zero(nmod_mat_entry_ptr(L, i, rk), L->c - rk);
+#endif
 
     // U: set to zero all entries below diagonal or beyond rk-th row
     if (U != LU)
     {
         for (slong i = 1; i < rk; i++)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
             _nmod_vec_zero(U->rows[i], i);
+#else
+            _nmod_vec_zero(nmod_mat_entry_ptr(U, i, 0), i);
+#endif
         for (slong i = rk; i < U->r; i++)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
             _nmod_vec_zero(U->rows[i], U->c);
+#else
+            _nmod_vec_zero(nmod_mat_entry_ptr(U, i, 0), U->c);
+#endif
     }
 
     // call "zeroin" variant
@@ -83,6 +119,10 @@ slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q)
         // (current row becomes last row, others rows in between are moved up)
         if (pivot == A->c)
         {
+            // TODO new flint matrices with no row pointers actually perform
+            // "hard permutations": analyze if this costs anything; also
+            // analyze if it makes sense to bother having a global buffer row
+            // here (and avoid repeated mallocs)
             _nmod_mat_rotate_rows_upward(A, P, rank, A->r - 1);
             nullity++;
         }
@@ -95,8 +135,8 @@ slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q)
             for (slong i = rank+1; i < A->r - nullity; i++)
             {
                 nmod_mat_entry(A, i, rank) = nmod_mul(nmod_mat_entry(A, i, rank), inv_pivot, A->mod);
-                _nmod_vec_scalar_addmul_nmod(A->rows[i]+rank+1,
-                                             A->rows[rank]+rank+1,
+                _nmod_vec_scalar_addmul_nmod(nmod_mat_entry_ptr(A, i, rank+1),
+                                             nmod_mat_entry_ptr(A, rank, rank+1),
                                              A->c - rank - 1,
                                              nmod_neg(nmod_mat_entry(A, i, rank), A->mod),
                                              A->mod);
@@ -150,10 +190,22 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
         //nmod_mat_window_clear(Awin);
         //nmod_mat_window_clear(Arowwin);
         // YETOTHERVERSION, TESTED: with new nmod_mat_nmod_vec_mul (via dot_product_multi)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         for (slong i = 0; i < rank; i++)
             Arows_rk[i] = A->rows[i]+rank;
+#else
+        for (slong i = 0; i < rank; i++)
+            Arows_rk[i] = nmod_mat_entry_ptr(A, i, rank);
+#endif
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         nmod_vec_dot_product_multi(vecmat, A->rows[rank], (nn_srcptr *) Arows_rk, rank, A->c - rank, nbits, nbits, A->mod);
         _nmod_vec_sub(A->rows[rank]+rank, A->rows[rank]+rank, vecmat, A->c - rank, A->mod);
+#else
+        nmod_vec_dot_product_multi(vecmat, nmod_mat_entry_ptr(A, rank, 0), (nn_srcptr *) Arows_rk, rank, A->c - rank, nbits, nbits, A->mod);
+        _nmod_vec_sub(nmod_mat_entry_ptr(A, rank, rank),
+                      nmod_mat_entry_ptr(A, rank, rank),
+                      vecmat, A->c - rank, A->mod);
+#endif
 
         // seek pivot: on row rank, first nonzero entry with column index >= rank
         slong pivot = rank;
@@ -164,6 +216,10 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
         // (current row becomes last row, others rows in between are moved up)
         if (pivot == A->c)
         {
+            // TODO new flint matrices with no row pointers actually perform
+            // "hard permutations": analyze if this costs anything; also
+            // analyze if it makes sense to bother having a global buffer row
+            // here (and avoid repeated mallocs)
             // TODO rank-sensitive: delay this, or handle zero rows (beyond A->r - nullity) in a smarter way
             _nmod_mat_rotate_rows_upward(A, P, rank, A->r - 1);
             nullity++;
@@ -184,7 +240,7 @@ slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q)
             for (slong i = 0; i < rank; i++)
                 A_i_piv[i] = nmod_mat_entry(A, i, pivot);
             for (slong i = 0; i < A->r - nullity - rank - 1; i++)
-                A_vec[i] = _nmod_vec_dot(A->rows[i+rank+1], A_i_piv, rank, A->mod, params);
+                A_vec[i] = _nmod_vec_dot(nmod_mat_entry_ptr(A, i+rank+1, 0), A_i_piv, rank, A->mod, params);
             // update:  from A[rank+1:A->r-nullity, pivot], subtract A_vec and divide by pivot
             for (slong i = rank+1; i < A->r - nullity; i++)
             {
