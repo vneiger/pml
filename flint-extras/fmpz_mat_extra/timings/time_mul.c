@@ -1,3 +1,5 @@
+#include <time.h>
+
 #include <flint/flint.h>
 #include <flint/fmpz.h>
 #include <flint/fmpz_mat.h>
