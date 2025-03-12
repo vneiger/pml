@@ -12,7 +12,7 @@ static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_
     flint_bitcnt_t primes_bits;
     fmpz_multimod_CRT_t CRT;
     nn_ptr primes, residues;
-    fmpz_t half_top, C_nosign;
+    fmpz_t half_top;
     
     m = A->r;
     k = A->c;
@@ -53,18 +53,18 @@ static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_
     for (i = 0; i < m; i++)
         for (j = 0; j < k; j++)
         {
-            fmpz_multimod_CRT_reduce(residues, &A->rows[i][j], CRT);
+            fmpz_multimod_CRT_reduce(residues, fmpz_mat_entry(A, i, j), CRT);
             for (l = 0; l < num_primes; l++)
-                mod_A[l]->rows[i][j] = residues[l];
+                nmod_mat_entry(mod_A[l], i, j) = residues[l];
         }
 
     
     for (i = 0; i < k; i++)
         for (j = 0; j < n; j++)
         {
-            fmpz_multimod_CRT_reduce(residues, &B->rows[i][j], CRT);
+            fmpz_multimod_CRT_reduce(residues, fmpz_mat_entry(B, i, j), CRT);
             for (l = 0; l < num_primes; l++)
-                mod_B[l]->rows[i][j] = residues[l];
+                nmod_mat_entry(mod_B[l], i, j) = residues[l];
         }
 
 
@@ -76,13 +76,13 @@ static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_
         for (j = 0; j < n; j++)
         {
             for (l = 0; l < num_primes; l++)
-                residues[l] = mod_C[l]->rows[i][j];
+                residues[l] = nmod_mat_entry(mod_C[l], i, j);
             
-            fmpz_multimod_CRT_CRT(&C->rows[i][j], residues, CRT);
+            fmpz_multimod_CRT_CRT(fmpz_mat_entry(C, i, j), residues, CRT);
 
             /* T > M/2 iff floor(M/2) < T */
-            if (sign == 1 && fmpz_cmp(half_top, &C->rows[i][j]) < 0)
-                fmpz_sub(&C->rows[i][j], &C->rows[i][j], CRT->product_primes);
+            if (sign == 1 && fmpz_cmp(half_top, fmpz_mat_entry(C, i, j)) < 0)
+                fmpz_sub(fmpz_mat_entry(C, i, j), fmpz_mat_entry(C, i, j), CRT->product_primes);
         }
 
     flint_free(residues);
@@ -95,7 +95,6 @@ static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_
         nmod_mat_clear(mod_C[i]);
     }
 
-    fmpz_clear(C_nosign);
     fmpz_clear(half_top);
     flint_free(mod_A);
     flint_free(mod_B);
