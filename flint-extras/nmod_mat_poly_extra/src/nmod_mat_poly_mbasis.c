@@ -187,9 +187,9 @@ _PROFILER_REGION_START
         _find_shift_permutation(perm, shift, m, pair_tmp);
 #ifdef MBASIS_DEBUG
 printf("\n\nDEBUG -- it %ld -- shift: ", ord);
-_perm_print(shift, m);
+flint_printf("%{slong*}", shift, m);
 printf("\n\nDEBUG -- it %ld -- permutation: ", ord);
-_perm_print(perm, m);
+flint_printf("%{slong*}", perm, m);
 #endif // MBASIS_DEBUG
 
         // permute rows of the residual accordingly
@@ -217,7 +217,7 @@ printf("\n\nDEBUG -- it %ld -- nullity: %ld, rank: %ld", ord, nullity, m-nullity
 printf("\n\nDEBUG -- it %ld -- nsbas: ", ord);
 nmod_mat_print_pretty(nsbas);
 printf("\n\nDEBUG -- it %ld -- pivots: ", ord);
-_perm_print(pivots, m);
+flint_printf("%{slong*}", pivots, m);
 #endif // MBASIS_DEBUG
 
         if (nullity==0)
@@ -254,7 +254,7 @@ _PROFILER_REGION_START
             _perm_compose(pivots, perm, pivots, m);
 #ifdef MBASIS_DEBUG
 printf("\n\nDEBUG -- it %ld -- composed permutation: ", ord);
-_perm_print(pivots, m);
+flint_printf("%{slong*}", pivots, m);
 #endif // MBASIS_DEBUG
 
             // Update the shift
@@ -263,13 +263,13 @@ _perm_print(pivots, m);
             // (don't move below! pivots will be modified)
 #ifdef MBASIS_DEBUG
 printf("\n\nDEBUG -- it %ld -- shift before update: ", ord);
-_perm_print(shift, m);
+flint_printf("%{slong*}", shift, m);
 #endif // MBASIS_DEBUG
             for (slong i = 0; i < m-nullity; i++)
                 shift[pivots[i]] += 1;
 #ifdef MBASIS_DEBUG
 printf("\n\nDEBUG -- it %ld -- shift after update: ", ord);
-_perm_print(shift, m);
+flint_printf("%{slong*}", shift, m);
 #endif // MBASIS_DEBUG
 
             // Update the approximant basis: 1/ go to permuted world
@@ -305,13 +305,13 @@ _PROFILER_REGION_START
                 nmod_mat_add(app_win_add, app_win_add, ns_app);
             }
             nmod_mat_clear(ns_app);
-            nmod_mat_clear(app_win_mul);
-            nmod_mat_clear(app_win_add);
+            nmod_mat_window_clear(app_win_mul);
+            nmod_mat_window_clear(app_win_add);
 
             // Update the approximant basis: 3/ left-shift relevant rows by 1
             // increase length of appbas if necessary
             for (slong i = 0; i < m-nullity; ++i)
-                if (!_nmod_vec_is_zero(appbas->coeffs[appbas->length-1].rows[i], m))
+                if (!_nmod_vec_is_zero(nmod_mat_poly_entry_ptr(appbas, appbas->length-1, i, 0), m))
                 {
                     nmod_mat_poly_fit_length(appbas, appbas->length+1);
                     _nmod_mat_poly_set_length(appbas, appbas->length+1);
@@ -320,6 +320,7 @@ _PROFILER_REGION_START
 
             // rows not corresponding to pivots are multiplied by X
             // note: these rows currently have length strictly less than len(appbas)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
             ulong ** save_zero_rows = (ulong **) flint_malloc((m-nullity) * sizeof(ulong *));
             for (slong i = 0; i < m-nullity; ++i)
             {
@@ -333,6 +334,17 @@ _PROFILER_REGION_START
             for (slong i = 0; i < m-nullity; ++i)
                 //_nmod_vec_zero(appbas->coeffs[0].rows[i], m);
                 appbas->coeffs[0].rows[i] = save_zero_rows[i];
+            flint_free(save_zero_rows);
+#else
+            // note: arrived at this stage, appbas->length must be >= 2
+            for (slong d = appbas->length-1; d > 0; d--)
+                for (slong i = 0; i < m-nullity; ++i)
+                    _nmod_vec_set(nmod_mat_poly_entry_ptr(appbas, d, i, 0),
+                                  nmod_mat_poly_entry_ptr(appbas, d-1, i, 0),
+                                  m);
+            for (slong i = 0; i < m-nullity; ++i)
+                _nmod_vec_zero(nmod_mat_poly_entry_ptr(appbas, 0, i, 0), m);
+#endif
 _PROFILER_REGION_STOP(t_appbas)
 
 _PROFILER_REGION_START
@@ -344,7 +356,7 @@ nmod_mat_poly_print_pretty(appbas);
             _perm_inv(pivots, pivots, m);
 #ifdef MBASIS_DEBUG
 printf("\n\nDEBUG -- it %ld -- inverted composed permutation: ", ord);
-_perm_print(pivots, m);
+flint_printf("%{slong*}", pivots, m);
 #endif // MBASIS_DEBUG
             nmod_mat_poly_permute_rows(appbas, pivots, NULL);
 #ifdef MBASIS_DEBUG
