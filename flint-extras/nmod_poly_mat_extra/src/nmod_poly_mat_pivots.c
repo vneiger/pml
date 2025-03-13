@@ -111,7 +111,7 @@ void nmod_poly_mat_pivot_index(slong *pivind,
     {
         slong buf;
         for (slong i = 0; i < mat->r; i++)
-            _nmod_poly_vec_pivot_profile(pivind+i, &buf, mat->rows[i], shift, mat->c, orient);
+            _nmod_poly_vec_pivot_profile(pivind+i, &buf, nmod_poly_mat_entry(mat, i, 0), shift, mat->c, orient);
     }
     else
     {
@@ -121,7 +121,7 @@ void nmod_poly_mat_pivot_index(slong *pivind,
         for (slong j = 0; j < mat->c; j++)
         {
             for (slong i = 0; i < mat->r; i++)
-                vec[i] = mat->rows[i][j];
+                vec[i] = *nmod_poly_mat_entry(mat, i, j);
             _nmod_poly_vec_pivot_profile(pivind+j, &buf, vec, shift, mat->r, orient);
         }
         flint_free(vec);
@@ -140,7 +140,7 @@ void nmod_poly_mat_pivot_profile(slong * pivind,
 {
     if (orient == ROW_LOWER || orient == ROW_UPPER)
         for (slong i = 0; i < mat->r; i++)
-            _nmod_poly_vec_pivot_profile(pivind+i, pivdeg+i, mat->rows[i], shift, mat->c, orient);
+            _nmod_poly_vec_pivot_profile(pivind+i, pivdeg+i, nmod_poly_mat_entry(mat, i, 0), shift, mat->c, orient);
     else
     {
         // force access to column as a vec
@@ -148,7 +148,7 @@ void nmod_poly_mat_pivot_profile(slong * pivind,
         for (slong j = 0; j < mat->c; j++)
         {
             for (slong i = 0; i < mat->r; i++)
-                vec[i] = mat->rows[i][j];
+                vec[i] = *nmod_poly_mat_entry(mat, i, j);
             _nmod_poly_vec_pivot_profile(pivind+j, pivdeg+j, vec, shift, mat->r, orient);
         }
         flint_free(vec);

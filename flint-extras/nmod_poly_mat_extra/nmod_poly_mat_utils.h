@@ -9,6 +9,7 @@
  *
  */
 
+#include <flint/flint.h>
 #include <flint/nmod_types.h>
 #include <flint/fmpz_types.h> // for fmpz_mat degree matrix
 #include <flint/nmod_poly.h> // for nmod_poly_swap
@@ -26,17 +27,17 @@ extern "C" {
  * the original matrix `mat`; in particular one must provide cc1,cc2 such that
  * c1+cc1 < mat->c and c2+cc2 < mat->c.  **/
 // TODO currently unused, remove?
-NMOD_POLY_MAT_INLINE void
-_nmod_poly_mat_window_update_columns(nmod_poly_mat_t window, slong cc1, slong cc2)
-{
-    // if original mat->c was 0, each window->rows[i] is and should remain NULL
-    // otherwise, window->rows[i] are all non-NULL and should be updated
-    if (window->rows)  // NULL if window->r <= 0
-        for (slong i = 0; i < window->r; i++)
-            if (window->rows[i]) 
-                window->rows[i] += cc1;
-    window->c = cc2-cc1;
-}
+//NMOD_POLY_MAT_INLINE void
+//_nmod_poly_mat_window_update_columns(nmod_poly_mat_t window, slong cc1, slong cc2)
+//{
+//    // if original mat->c was 0, each window->rows[i] is and should remain NULL
+//    // otherwise, window->rows[i] are all non-NULL and should be updated
+//    if (window->rows)  // NULL if window->r <= 0
+//        for (slong i = 0; i < window->r; i++)
+//            if (window->rows[i]) 
+//                window->rows[i] += cc1;
+//    window->c = cc2-cc1;
+//}
 
 /** The input `window` is some window (r1,c1,r2,c2) of some polynomial matrix
  * `mat`. This function changes it into the window (r1,c1,r2,c2+c) of the same
@@ -141,7 +142,9 @@ void _nmod_poly_mat_permute_rows_by_sorting_vec(nmod_poly_mat_t mat,
  * valid row indices for `mat` (this is not checked). The case of equality
  * `r==s` is allowed. This swaps pointers to rows. If `perm` is not `NULL`,
  * it should be an array for which `r` and `s` are valid indices; then the
- * corresponding elements of this array will be swapped. */
+ * corresponding elements of this array will be swapped.
+ * \todo any advantage over gr_mat_swap_rows ?
+ **/
 NMOD_POLY_MAT_INLINE void
 nmod_poly_mat_swap_rows(nmod_poly_mat_t mat,
                         slong * perm,
@@ -156,9 +159,14 @@ nmod_poly_mat_swap_rows(nmod_poly_mat_t mat,
             perm[r] = t;
         }
 
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         nmod_poly_struct * tmp = mat->rows[s];
         mat->rows[s] = mat->rows[r];
         mat->rows[r] = tmp;
+#else
+        for (slong j = 0; j < mat->c; j++)
+            FLINT_SWAP(nmod_poly_struct, *nmod_poly_mat_entry(mat, r, j), *nmod_poly_mat_entry(mat, s, j));
+#endif
     }
 }
 
@@ -193,7 +201,11 @@ nmod_poly_mat_swap_columns(nmod_poly_mat_t mat,
         }
 
         for (slong t = 0; t < mat->r; t++)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
             nmod_poly_swap(mat->rows[t] + r, mat->rows[t] + s);
+#else
+            FLINT_SWAP(nmod_poly_struct, *nmod_poly_mat_entry(mat, t, r), *nmod_poly_mat_entry(mat, t, s));
+#endif
     }
 }
 
@@ -216,7 +228,11 @@ nmod_poly_mat_invert_columns(nmod_poly_mat_t mat, slong * perm)
 
     for (slong t = 0; t < mat->r; t++)
         for (slong j = 0; j < mat->c/2; j++)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
             nmod_poly_swap(mat->rows[t]+j, mat->rows[t]+ mat->c - j - 1);
+#else
+            FLINT_SWAP(nmod_poly_struct, *nmod_poly_mat_entry(mat, t, j), *nmod_poly_mat_entry(mat, t, mat->c - j - 1));
+#endif
 }
 
 
@@ -234,13 +250,23 @@ nmod_poly_mat_permute_rows(nmod_poly_mat_t mat,
         _perm_compose(perm_store, perm_store, perm_act, mat->r);
 
     // rows[i] <- rows[perm_act[i]] 
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
     nmod_poly_struct ** mat_tmp = flint_malloc(mat->r * sizeof(nmod_poly_struct *));
     for (slong i = 0; i < mat->r; ++i)
         mat_tmp[i] = mat->rows[perm_act[i]];
     for (slong i = 0; i < mat->r; ++i)
         mat->rows[i] = mat_tmp[i];
-
     flint_free(mat_tmp);
+#else
+    nmod_poly_struct * mat_tmp = flint_malloc(mat->r * mat->c * sizeof(nmod_poly_struct));
+    for (slong i = 0; i < mat->r; ++i)
+        for (slong j = 0; j < mat->c; ++j)
+            mat_tmp[i * mat->c + j] = *nmod_poly_mat_entry(mat, perm_act[i], j);
+    for (slong i = 0; i < mat->r; ++i)
+        for (slong j = 0; j < mat->c; ++j)
+            *nmod_poly_mat_entry(mat, i, j) = mat_tmp[i * mat->c + j];
+    flint_free(mat_tmp);
+#endif
 }
 
 /** Permute columns of a polynomial matrix `mat` according to `perm_act`, and
@@ -262,9 +288,9 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
     for (slong i = 0; i < mat->r; i++)
     {
         for (slong j = 0; j < mat->c; j++)
-            row_tmp[j] = mat->rows[i][perm_act[j]];
+            row_tmp[j] = *nmod_poly_mat_entry(mat, i, perm_act[j]);
         for (slong j = 0; j < mat->c; j++)
-            mat->rows[i][j] = row_tmp[j];
+            *nmod_poly_mat_entry(mat, i, j) = row_tmp[j];
     }
     flint_free(row_tmp);
 }

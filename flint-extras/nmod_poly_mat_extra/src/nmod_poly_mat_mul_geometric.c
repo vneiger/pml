@@ -1,10 +1,11 @@
+#include <flint/nmod.h>
+#include <flint/nmod_vec.h>
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly_mat.h>
 
+#include "nmod_extra.h" // for nmod_mat_mul_pml
 #include "nmod_mat_extra.h" // for nmod_mat_mul_pml
 #include "nmod_poly_extra.h" // for geom progression
-
-#define DIRTY_ALLOC_MATRIX
 
 #include "nmod_poly_mat_multiply.h"
 
@@ -28,7 +29,7 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
     k = A->c;
     n = B->c;
     p = A->modulus;
-    
+
     if (m < 1 || n < 1 || k < 1)
     {
         nmod_poly_mat_zero(C);
@@ -44,7 +45,7 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
         nmod_poly_mat_clear(T);
         return;
     }
-    
+
     // length = 0 iff matrix is zero
     ellA = nmod_poly_mat_max_length(A);
     ellB = nmod_poly_mat_max_length(B);
@@ -55,13 +56,13 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
         return;
     }
 
-    
+
     ellC = ellA + ellB - 1;  // length(C) = length(A) + length(B) - 1
     order = ellC;
     nmod_init(&mod, p);
     w = nmod_find_root(order, mod);
     nmod_geometric_progression_init_set(F, w, order, mod);
-    
+
     mod_A = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
     mod_B = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
     mod_C = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
@@ -70,11 +71,14 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
 
 #ifdef DIRTY_ALLOC_MATRIX
     // we alloc the memory for all matrices at once
-    nn_ptr *tmp_rows = (nn_ptr *) malloc((m + k + m) * ellC * sizeof(nn_ptr));
     nn_ptr tmp = (nn_ptr) malloc((m*k + k*n + m*n) * ellC * sizeof(ulong));
-    nn_ptr *bak_rows;
     nn_ptr bak;
-    
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
+    nn_ptr *tmp_rows = (nn_ptr *) malloc((m + k + m) * ellC * sizeof(nn_ptr));
+    nn_ptr *bak_rows;
+#endif
+
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
     bak_rows = tmp_rows;
     j = 0;
     for (i = 0; i < m*ellC; i++)
@@ -83,14 +87,14 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
         j += k;
     }
     tmp_rows += m*ellC;
-    
+
     for (i = 0; i < k*ellC; i++)
     {
         tmp_rows[i] = tmp + j;
         j += n;
     }
     tmp_rows += k*ellC;
-    
+
     for (i = 0; i < m*ellC; i++)
     {
         tmp_rows[i] = tmp + j;
@@ -99,10 +103,14 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
     tmp_rows = bak_rows;
 
     bak_rows = tmp_rows;
+#endif
+
     bak = tmp;
     for (i = 0; i < ellC; i++)
     {
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         mod_A[i]->rows = tmp_rows + i*m;
+#endif
         mod_A[i]->entries = tmp + i*m*k;
         mod_A[i]->r = m;
         mod_A[i]->c = k;
@@ -110,12 +118,16 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
         mod_A[i]->mod.norm = mod.norm;
         mod_A[i]->mod.ninv = mod.ninv;
     }
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
     tmp_rows += ellC*m;
+#endif
     tmp += ellC*m*k;
-    
+
     for (i = 0; i < ellC; i++)
     {
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         mod_B[i]->rows = tmp_rows + i*k;
+#endif
         mod_B[i]->entries = tmp + i*k*n;
         mod_B[i]->r = k;
         mod_B[i]->c = n;
@@ -123,12 +135,16 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
         mod_B[i]->mod.norm = mod.norm;
         mod_B[i]->mod.ninv = mod.ninv;
     }
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
     tmp_rows += ellC*k;
+#endif
     tmp += ellC*k*n;
-    
+
     for (i = 0; i < ellC; i++)
     {
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         mod_C[i]->rows = tmp_rows + i*m;
+#endif
         mod_C[i]->entries = tmp + i*m*n;
         mod_C[i]->r = m;
         mod_C[i]->c = n;
@@ -136,7 +152,9 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
         mod_C[i]->mod.norm = mod.norm;
         mod_C[i]->mod.ninv = mod.ninv;
     }
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
     tmp_rows = bak_rows;
+#endif
     tmp = bak;
 #else
     for (i = 0; i < ellC; i++)
@@ -147,38 +165,40 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
     }
 #endif
 
-    
+
     for (i = 0; i < n; i++)
         for (j = 0; j < k; j++)
         {
-            nmod_geometric_progression_evaluate(val, &A->rows[i][j], F);
+            nmod_geometric_progression_evaluate(val, nmod_poly_mat_entry(A, i, j), F);
             for (ell = 0; ell < ellC; ell++)
-                mod_A[ell]->rows[i][j] = val[ell];
+                nmod_mat_entry(mod_A[ell], i, j) = val[ell];
         }
 
     for (i = 0; i < k; i++)
         for (j = 0; j < m; j++)
         {
-            nmod_geometric_progression_evaluate(val, &B->rows[i][j], F);
+            nmod_geometric_progression_evaluate(val, nmod_poly_mat_entry(B, i, j), F);
             for (ell = 0; ell < ellC; ell++)
-                mod_B[ell]->rows[i][j] = val[ell];
+                nmod_mat_entry(mod_B[ell], i, j) = val[ell];
         }
 
 
     for (ell = 0; ell < ellC; ell++)
             nmod_mat_mul_pml(mod_C[ell], mod_A[ell], mod_B[ell]);
 
-    
+
     for (i = 0; i < n; i++)
         for (j = 0; j < m; j++)
         {
             for (ell = 0; ell < ellC; ell++)
-                val[ell] = mod_C[ell]->rows[i][j];
-            nmod_geometric_progression_interpolate(&C->rows[i][j], val, F);
+                val[ell] = nmod_mat_entry(mod_C[ell], i, j);
+            nmod_geometric_progression_interpolate(nmod_poly_mat_entry(C, i, j), val, F);
         }
-    
+
 #ifdef DIRTY_ALLOC_MATRIX
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
     free(tmp_rows);
+#endif
     free(tmp);
 #else
     for (i = 0; i < ellC; i++)
@@ -188,7 +208,7 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
         nmod_mat_clear(mod_C[i]);
     }
 #endif
-    
+
     flint_free(mod_A);
     flint_free(mod_B);
     flint_free(mod_C);

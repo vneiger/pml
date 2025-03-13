@@ -1,7 +1,6 @@
 #include <stdlib.h> // for qsort
 #include <flint/nmod_poly.h>
 #include "nmod_poly_mat_utils.h"
-#include "nmod_poly_mat_forms.h"
 #include "nmod_mat_poly.h"
 
 
@@ -21,10 +20,22 @@ void _nmod_poly_mat_rotate_rows_downward(nmod_poly_mat_t mat, slong * vec, slong
             vec[i] = tmp_vec;
         }
 
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         nmod_poly_struct * tmp_mat = mat->rows[j];
         for (slong ii = j; ii > i; ii--)
             mat->rows[ii] = mat->rows[ii-1];
         mat->rows[i] = tmp_mat;
+#else
+        nmod_poly_struct * tmp_row = flint_malloc(mat->c * sizeof(nmod_poly_struct));
+        for (slong jj = 0; jj < mat->c; jj++)
+            tmp_row[jj] = *nmod_poly_mat_entry(mat, j, jj);
+        for (slong ii = j; ii > i; ii--)
+            for (slong jj = 0; jj < mat->c; jj++)
+                *nmod_poly_mat_entry(mat, ii, jj) = *nmod_poly_mat_entry(mat, ii-1, jj);
+        for (slong jj = 0; jj < mat->c; jj++)
+            *nmod_poly_mat_entry(mat, i, jj) = tmp_row[jj];
+        flint_free(tmp_row);
+#endif
     }
 }
 
@@ -40,10 +51,22 @@ void _nmod_poly_mat_rotate_rows_upward(nmod_poly_mat_t mat, slong * vec, slong i
             vec[j] = tmp_vec;
         }
 
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
         nmod_poly_struct * tmp_mat = mat->rows[i];
         for (slong ii = i; ii < j; ii++)
             mat->rows[ii] = mat->rows[ii+1];
         mat->rows[j] = tmp_mat;
+#else
+        nmod_poly_struct * tmp_row = flint_malloc(mat->c * sizeof(nmod_poly_struct));
+        for (slong jj = 0; jj < mat->c; jj++)
+            tmp_row[jj] = *nmod_poly_mat_entry(mat, i, jj);
+        for (slong ii = i; ii < j; ii++)
+            for (slong jj = 0; jj < mat->c; jj++)
+                *nmod_poly_mat_entry(mat, ii, jj) = *nmod_poly_mat_entry(mat, ii+1, jj);
+        for (slong jj = 0; jj < mat->c; jj++)
+            *nmod_poly_mat_entry(mat, j, jj) = tmp_row[jj];
+        flint_free(tmp_row);
+#endif
     }
 }
 

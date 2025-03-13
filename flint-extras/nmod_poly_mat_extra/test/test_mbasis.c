@@ -147,7 +147,7 @@ int one_test_mbasis(slong prime, slong rdim, slong cdim, slong order, slong len,
     flint_rand_t state;
     flint_rand_init(state);
     srand(time(NULL));
-    flint_randseed(state, rand(), rand());
+    flint_rand_set_seed(state, rand(), rand());
 
     // random matrix
     nmod_poly_mat_t mat;
@@ -186,7 +186,7 @@ int collection_test_mbasis(slong iter)
     flint_rand_t state;
     flint_rand_init(state);
     srand(time(NULL));
-    flint_randseed(state, rand(), rand());
+    flint_rand_set_seed(state, rand(), rand());
 
     // input matrix for approximation
     nmod_poly_mat_t mat;
@@ -455,7 +455,7 @@ int main(int argc, char ** argv)
         flint_rand_t state;
         flint_rand_init(state);
         srand(time(NULL));
-        flint_randseed(state, rand(), rand());
+        flint_rand_set_seed(state, rand(), rand());
             
         slong prime = n_randprime(state, nbits, 1);
         printf("Launching test with\n\tprime = %ld,\n\trdim = %ld,\n\tcdim = %ld,\

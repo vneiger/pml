@@ -1,5 +1,4 @@
 #include <flint/nmod_vec.h>
-#include "nmod_poly_mat_io.h"
 #include "nmod_poly_mat_utils.h" // for permute_rows_by_sorting_vec
 #include "nmod_poly_mat_forms.h"
 
@@ -59,13 +58,13 @@ void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat)
     // use view rather than mat, since mat has not been row-permuted
     // so it is only triangular up to permutation
     _nmod_poly_mat_window_resize_columns(view, mat->r -1); // reset view->c to mat->c
-    nmod_poly_set(det, view->rows[0]+0); // recall here mat->r == mat->c > 0
+    nmod_poly_set(det, nmod_poly_mat_entry(view, 0, 0)); // recall here mat->r == mat->c > 0
     if (nmod_poly_is_zero(det))
         return; // rank deficient early exit, [0,0] had not been tested yet
     if (udet == -1)
         _nmod_vec_neg(det->coeffs, det->coeffs, det->length, det->mod);
     for (slong i = 1; i < view->r; i++)
-        nmod_poly_mul(det, det, view->rows[i]+i);
+        nmod_poly_mul(det, det, nmod_poly_mat_entry(view, i, i));
     nmod_poly_mat_window_clear(view);
 }
 

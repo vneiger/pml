@@ -25,7 +25,7 @@ int test_mbasis1(void)
     flint_rand_t state;
     flint_rand_init(state);
     srand(time(NULL));
-    flint_randseed(state, rand(), rand());
+    flint_rand_set_seed(state, rand(), rand());
 
     nmod_mat_randtest(mat, state);
 

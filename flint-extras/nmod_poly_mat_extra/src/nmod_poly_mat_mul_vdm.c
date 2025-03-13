@@ -115,10 +115,10 @@ void nmod_poly_mat_mul_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         {
             ulong d;
             nn_ptr ptr;
-            d = nmod_poly_degree(a->rows[i] + j);
-            ptr = (a->rows[i] + j)->coeffs;
+            d = nmod_poly_degree(nmod_poly_mat_entry(a, i, j));
+            ptr = nmod_poly_mat_entry(a, i, j)->coeffs;
             for (k = 0; k <= d; k++)
-                tmp_mat->rows[k][ell] = ptr[k];
+                nmod_mat_entry(tmp_mat, k, ell) = ptr[k];
         }
 
     // note: d = deg(a[i][j]) is -1 if a[i][j] == 0
@@ -139,10 +139,10 @@ void nmod_poly_mat_mul_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         {
             ulong d;
             nn_ptr ptr;
-            d = nmod_poly_degree(b->rows[i] + j);
-            ptr = (b->rows[i] + j)->coeffs;
+            d = nmod_poly_degree(nmod_poly_mat_entry(b, i, j));
+            ptr = nmod_poly_mat_entry(b, i, j)->coeffs;
             for (k = 0; k <= d; k++)
-                tmp_mat->rows[k][ell] = ptr[k];
+                nmod_mat_entry(tmp_mat, k, ell) = ptr[k];
         }
 
     // valB: column ell = i*n + j contains the evaluations of b[i][j]
@@ -161,13 +161,13 @@ void nmod_poly_mat_mul_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         ell = 0;
         for (u = 0; u < m; u++)
             for (v = 0; v < n; v++, ell++)
-                valAp->rows[u][v] = valA->rows[i][ell];
+                nmod_mat_entry(valAp, u, v) = nmod_mat_entry(valA, i, ell);
 
         // b evaluated at point i
         ell = 0;
         for (u = 0; u < n; u++)
             for (v = 0; v < p; v++, ell++)
-                valBp->rows[u][v] = valB->rows[i][ell];
+                nmod_mat_entry(valBp, u, v) = nmod_mat_entry(valB, i, ell);
 
         // a*b evaluated at point i
         nmod_mat_mul_pml(valCp, valAp, valBp);
@@ -177,7 +177,7 @@ void nmod_poly_mat_mul_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         ell = 0;
         for (u = 0; u < m; u++)
             for (v = 0; v < p; v++, ell++)
-                valC->rows[i][ell] = valCp->rows[u][v];
+                nmod_mat_entry(valC, i, ell) = nmod_mat_entry(valCp, u, v);
     }
 
     // interpolate to find the entries of c
@@ -191,12 +191,12 @@ void nmod_poly_mat_mul_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         for (v = 0; v < p; v++, ell++)
         {
             nn_ptr coeffs;
-            nmod_poly_realloc(c->rows[u] + v, nb_points);
-            coeffs = (c->rows[u] + v)->coeffs;
-            (c->rows[u] + v)->length = nb_points; 
+            nmod_poly_realloc(nmod_poly_mat_entry(c, u, v), nb_points);
+            coeffs = nmod_poly_mat_entry(c, u, v)->coeffs;
+            nmod_poly_mat_entry(c, u, v)->length = nb_points; 
             for (i = 0; i < nb_points; i++)
-                coeffs[i] = tmp_mat->rows[i][ell];
-            _nmod_poly_normalise(c->rows[u] + v);
+                coeffs[i] = nmod_mat_entry(tmp_mat, i, ell);
+            _nmod_poly_normalise(nmod_poly_mat_entry(c, u, v));
         }
     
     nmod_mat_clear(vA);
@@ -264,10 +264,10 @@ void nmod_poly_mat_middle_product_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t 
         {
             ulong d;
             nn_ptr ptr;
-            d = nmod_poly_degree(a->rows[i] + j);
-            ptr = (a->rows[i] + j)->coeffs;
+            d = nmod_poly_degree(nmod_poly_mat_entry(a, i, j));
+            ptr = nmod_poly_mat_entry(a, i, j)->coeffs;
             for (k = 0; k <= d; k++)
-                tmp_mat->rows[dA - k][ell] = ptr[k];
+                nmod_mat_entry(tmp_mat, dA - k, ell) = ptr[k];
         }
     // note: d = deg(a[i][j]) is -1 if a[i][j] == 0
     // all non-touched entries already zero since tmp_mat was initialized as zero
@@ -287,10 +287,10 @@ void nmod_poly_mat_middle_product_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t 
         {
             ulong d;
             nn_ptr ptr;
-            d = nmod_poly_degree(b->rows[i] + j);
-            ptr = (b->rows[i] + j)->coeffs;
+            d = nmod_poly_degree(nmod_poly_mat_entry(b, i, j));
+            ptr = nmod_poly_mat_entry(b, i, j)->coeffs;
             for (k = 0; k <= d; k++)
-                tmp_mat->rows[k][ell] = ptr[k];
+                nmod_mat_entry(tmp_mat, k, ell) = ptr[k];
         }
     // mul by transpose(iv)
     nmod_mat_init(iv_t, iv->r, iv->c, mod.n);
@@ -311,12 +311,12 @@ void nmod_poly_mat_middle_product_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t 
         ell = 0;
         for (u = 0; u < m; u++)
             for (v = 0; v < n; v++, ell++)
-                valAp->rows[u][v] = valA->rows[i][ell];
+                nmod_mat_entry(valAp, u, v) = nmod_mat_entry(valA, i, ell);
 
         ell = 0;
         for (u = 0; u < n; u++)
             for (v = 0; v < p; v++, ell++)
-                valBp->rows[u][v] = valB->rows[i][ell];
+                nmod_mat_entry(valBp, u, v) = nmod_mat_entry(valB, i, ell);
 
         nmod_mat_mul_pml(valCp, valAp, valBp);
 
@@ -324,7 +324,7 @@ void nmod_poly_mat_middle_product_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t 
         ell = 0;
         for (u = 0; u < m; u++)
             for (v = 0; v < p; v++, ell++)
-                valC->rows[i][ell] = valCp->rows[u][v];
+                nmod_mat_entry(valC, i, ell) = nmod_mat_entry(valCp, u, v);
     }
     
     nmod_mat_init(vB_t, vB->c, vB->r, mod.n);
@@ -341,12 +341,12 @@ void nmod_poly_mat_middle_product_vdm1(nmod_poly_mat_t c, const nmod_poly_mat_t 
         for (v = 0; v < p; v++, ell++)
         {
             nn_ptr coeffs;
-            nmod_poly_realloc(c->rows[u] + v, dB + 1);
-            coeffs = (c->rows[u] + v)->coeffs;
-            (c->rows[u] + v)->length = dB + 1; 
+            nmod_poly_realloc(nmod_poly_mat_entry(c, u, v), dB + 1);
+            coeffs = nmod_poly_mat_entry(c, u, v)->coeffs;
+            nmod_poly_mat_entry(c, u, v)->length = dB + 1; 
             for (i = 0; i <= dB; i++)
-                coeffs[i] = tmp_mat->rows[i][ell];
-            _nmod_poly_normalise(c->rows[u] + v);
+                coeffs[i] = nmod_mat_entry(tmp_mat, i, ell);
+            _nmod_poly_normalise(nmod_poly_mat_entry(c, u, v));
         }
     
     nmod_mat_clear(vA);
@@ -475,15 +475,15 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         {
             ulong d;
             nn_ptr ptr;
-            d = nmod_poly_degree(a->rows[i] + j);
-            ptr = (a->rows[i] + j)->coeffs;
+            d = nmod_poly_degree(nmod_poly_mat_entry(a, i, j));
+            ptr = nmod_poly_mat_entry(a, i, j)->coeffs;
             for (k = 0; 2*k < d; k++)
             {
-                tmp_mat_even->rows[k][ell] = ptr[2*k];
-                tmp_mat_odd->rows[k][ell] = ptr[2*k+1];
+                nmod_mat_entry(tmp_mat_even, k, ell) = ptr[2*k];
+                nmod_mat_entry(tmp_mat_odd, k, ell) = ptr[2*k+1];
             }
             if (d % 2 == 0) // d even
-                tmp_mat_even->rows[d/2][ell] = ptr[d];
+                nmod_mat_entry(tmp_mat_even, d/2, ell) = ptr[d];
         }
 
     // note: d = deg(a[i][j]) is -1 if a[i][j] == 0
@@ -514,24 +514,24 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
             ulong d;
             nn_ptr ptr;
             
-            d = nmod_poly_degree(b->rows[i] + j);
-            ptr = (b->rows[i] + j)->coeffs;
+            d = nmod_poly_degree(nmod_poly_mat_entry(b, i, j));
+            ptr = nmod_poly_mat_entry(b, i, j)->coeffs;
             k = 0;
             for (; 2*k < d; k++)
             {
-                tmp_mat_even->rows[k][ell] = ptr[2*k];
-                tmp_mat_odd->rows[k][ell] = ptr[2*k+1];
+                nmod_mat_entry(tmp_mat_even, k, ell) = ptr[2*k];
+                nmod_mat_entry(tmp_mat_odd, k, ell) = ptr[2*k+1];
             }
             if (2*k == d)
             {
-                tmp_mat_even->rows[k][ell] = ptr[d];
-                tmp_mat_odd->rows[k][ell] = 0;
+                nmod_mat_entry(tmp_mat_even, k, ell) = ptr[d];
+                nmod_mat_entry(tmp_mat_odd, k, ell) = 0;
                 k++;
             }
             for (; k < sB; k++)
             {
-                tmp_mat_even->rows[k][ell] = 0;
-                tmp_mat_odd->rows[k][ell] = 0;
+                nmod_mat_entry(tmp_mat_even, k, ell) = 0;
+                nmod_mat_entry(tmp_mat_odd, k, ell) = 0;
             }
         }
 
@@ -561,9 +561,9 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         ulong pt;
         NMOD_RED(pt, i+1, mod);
         for (j = 0; j < (ulong) valA_odd->c; j++)
-            valA_odd->rows[i][j] = nmod_mul(pt, valA_odd->rows[i][j], mod);
+            nmod_mat_entry(valA_odd, i, j) = nmod_mul(pt, nmod_mat_entry(valA_odd, i, j), mod);
         for (j = 0; j < (ulong) valB_odd->c; j++)
-            valB_odd->rows[i][j] = nmod_mul(pt, valB_odd->rows[i][j], mod);
+            nmod_mat_entry(valB_odd, i, j) = nmod_mul(pt, nmod_mat_entry(valB_odd, i, j), mod);
     }
 
     inv2 = nmod_inv(2, mod);
@@ -575,8 +575,8 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         for (u = 0; u < m; u++)
             for (v = 0; v < n; v++, ell++)
             {
-                valAp_even->rows[u][v] = nmod_add(valA_even->rows[i][ell], valA_odd->rows[i][ell], mod);
-                valAp_odd->rows[u][v] = nmod_sub(valA_even->rows[i][ell], valA_odd->rows[i][ell], mod);
+                nmod_mat_entry(valAp_even, u, v) = nmod_add(nmod_mat_entry(valA_even, i, ell), nmod_mat_entry(valA_odd, i, ell), mod);
+                nmod_mat_entry(valAp_odd, u, v) = nmod_sub(nmod_mat_entry(valA_even, i, ell), nmod_mat_entry(valA_odd, i, ell), mod);
             }
 
         // b evaluated at point i (which is i+1)
@@ -584,8 +584,8 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         for (u = 0; u < n; u++)
             for (v = 0; v < p; v++, ell++)
             {
-                valBp_even->rows[u][v] = nmod_add(valB_even->rows[i][ell], valB_odd->rows[i][ell], mod);
-                valBp_odd->rows[u][v] = nmod_sub(valB_even->rows[i][ell], valB_odd->rows[i][ell], mod);
+                nmod_mat_entry(valBp_even, u, v) = nmod_add(nmod_mat_entry(valB_even, i, ell), nmod_mat_entry(valB_odd, i, ell), mod);
+                nmod_mat_entry(valBp_odd, u, v) = nmod_sub(nmod_mat_entry(valB_even, i, ell), nmod_mat_entry(valB_odd, i, ell), mod);
             }
 
         // a*b evaluated at point i (which is i+1)
@@ -603,15 +603,15 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         for (u = 0; u < m; u++)
             for (v = 0; v < p; v++, ell++)
             {
-                valC_even->rows[i][ell] = nmod_add(valCp_even->rows[u][v], valCp_odd->rows[u][v], mod);
-                valC_odd->rows[i][ell] = nmod_sub(valCp_even->rows[u][v], valCp_odd->rows[u][v], mod);
+                nmod_mat_entry(valC_even, i, ell) = nmod_add(nmod_mat_entry(valCp_even, u, v), nmod_mat_entry(valCp_odd, u, v), mod);
+                nmod_mat_entry(valC_odd, i, ell) = nmod_sub(nmod_mat_entry(valCp_even, u, v), nmod_mat_entry(valCp_odd, u, v), mod);
             }
 
         for (j = 0; j < (ulong) valC_even->c; j++)
-            valC_even->rows[i][j] = nmod_mul(valC_even->rows[i][j], inv2, mod);
+            nmod_mat_entry(valC_even, i, j) = nmod_mul(nmod_mat_entry(valC_even, i, j), inv2, mod);
 
         for (j = 0; j < (ulong) valC_odd->c; j++)
-            valC_odd->rows[i][j] = nmod_mul(valC_odd->rows[i][j], inv2pt, mod);
+            nmod_mat_entry(valC_odd, i, j) = nmod_mul(nmod_mat_entry(valC_odd, i, j), inv2pt, mod);
     }
 
     // interpolate to find the _even/_odd parts of c
@@ -629,15 +629,15 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nm
         for (v = 0; v < p; v++, ell++)
         {
             nn_ptr coeffs;
-            nmod_poly_realloc(c->rows[u] + v, 2 * nb_points);
-            coeffs = (c->rows[u] + v)->coeffs;
-            (c->rows[u] + v)->length = 2 * nb_points; 
+            nmod_poly_realloc(nmod_poly_mat_entry(c, u, v), 2 * nb_points);
+            coeffs = nmod_poly_mat_entry(c, u, v)->coeffs;
+            nmod_poly_mat_entry(c, u, v)->length = 2 * nb_points; 
             for (i = 0; i < nb_points; i++)
             {
-                coeffs[2*i] = tmp_mat_even->rows[i][ell];
-                coeffs[2*i+1] = tmp_mat_odd->rows[i][ell];
+                coeffs[2*i] = nmod_mat_entry(tmp_mat_even, i, ell);
+                coeffs[2*i+1] = nmod_mat_entry(tmp_mat_odd, i, ell);
             }
-            _nmod_poly_normalise(c->rows[u] + v);
+            _nmod_poly_normalise(nmod_poly_mat_entry(c, u, v));
         }
 
     nmod_mat_clear(valCp_even);

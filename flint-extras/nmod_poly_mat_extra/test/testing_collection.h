@@ -68,7 +68,7 @@ inline void _test_collection_shift_decreasing(slong * shift, slong cdim)
 }
 
 // random shuffle of [0,1,...,rdim-1]
-inline void _test_collection_shift_shuffle(slong * shift, slong cdim, flint_rand_s * state)
+inline void _test_collection_shift_shuffle(slong * shift, slong cdim, flint_rand_t state)
 {
     _perm_randtest(shift, cdim, state);
 }
@@ -120,25 +120,25 @@ inline void _test_collection_mat_zero(nmod_poly_mat_t mat)
 }
 
 // uniformly random matrices, uniform degree
-inline void _test_collection_mat_uniform(nmod_poly_mat_t mat, slong deg, flint_rand_s * state)
+inline void _test_collection_mat_uniform(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
 {
     nmod_poly_mat_rand(mat, state, deg+1);
 }
 
 // randtest matrices
-inline void _test_collection_mat_test(nmod_poly_mat_t mat, slong deg, flint_rand_s * state)
+inline void _test_collection_mat_test(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
 {
     nmod_poly_mat_randtest(mat, state, deg+1);
 }
 
 // sparse matrices
-inline void _test_collection_mat_sparse(nmod_poly_mat_t mat, slong deg, flint_rand_s * state)
+inline void _test_collection_mat_sparse(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
 {
     nmod_poly_mat_randtest_sparse(mat, state, deg+1, 0.05);
 }
 
 // rank-deficient matrices
-void _test_collection_mat_rkdef(nmod_poly_mat_t mat, slong deg, flint_rand_s * state)
+void _test_collection_mat_rkdef(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
 {
     if (mat->r <= 1 || mat->c <= 1)
         nmod_poly_mat_zero(mat);

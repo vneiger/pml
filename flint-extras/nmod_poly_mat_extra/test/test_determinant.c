@@ -165,7 +165,7 @@ int main(int argc, char ** argv)
     flint_rand_t state;
     flint_rand_init(state);
     srand(time(NULL));
-    flint_randseed(state, rand(), rand());
+    flint_rand_set_seed(state, rand(), rand());
 
     int res = 0;
 

@@ -204,7 +204,9 @@ void _nmod_poly_vec_pivot_profile(slong * pivind,
                                   orientation_t orient);
 
 /** Computes the `shift`-pivot index `pivind` of a polynomial matrix
- * `mat` (see @ref Pivots). */
+ * `mat` (see @ref Pivots). 
+ * \todo for some orientations this uses (shallow) column copies, is it worth trying to avoid that?
+ **/
 void nmod_poly_mat_pivot_index(slong *pivind,
                                const nmod_poly_mat_t mat,
                                const slong * shift,

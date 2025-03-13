@@ -4,6 +4,8 @@
 #include <flint/flint.h>
 
 #include "nmod_mat_poly.h"
+#include "nmod_poly_mat_io.h"
+#include "nmod_poly_mat_utils.h"
 
 int main(int argc, char *argv[])
 {

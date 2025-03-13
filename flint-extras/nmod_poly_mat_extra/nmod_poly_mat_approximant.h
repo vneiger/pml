@@ -278,6 +278,7 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
  * if that makes sense; otherwise write other version popov_mbasis1
  * \todo safety correctness checks
  * \todo is output Popov by this method? check
+ * \todo seems that it does not return owP ? (see test_mbasis1.c)
  */
 void mbasis1(nmod_poly_mat_t appbas,
              slong * res_shift,

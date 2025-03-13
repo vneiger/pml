@@ -1,4 +1,7 @@
 #include <string.h> // for memset
+#include <time.h> // for clock_t
+#include <stdlib.h> // for srand
+
 #include "nmod_mat_poly.h"
 
 // main function
@@ -108,7 +111,7 @@ int main(int argc, char *argv[])
     srand(time(NULL));
     flint_rand_t state;
     flint_rand_init(state);
-    flint_randseed(state, rand(), rand());
+    flint_rand_set_seed(state, rand(), rand());
 
     if (argc!=2 && argc!=5)
     {

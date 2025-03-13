@@ -1,12 +1,19 @@
+#include <flint/nmod_poly_mat.h>
+#include <flint/fmpz_mat.h>
 #include <stdlib.h>
 #include <flint/nmod_types.h>
 #include <flint/profiler.h>
 
 #include "nmod_poly_mat_forms.h"
 
+#include "nmod_poly_mat_utils.h"
 #include "testing_collection.h"
 
-#define MAT(i,j) (mat->rows[i] + j)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
+#  define MAT(i,j) (mat->rows[i] + j)
+#else
+#  define MAT(i,j) (nmod_poly_mat_entry(mat, i, j))
+#endif
 
 //#define NOTRANS
 
@@ -121,7 +128,7 @@ int verify_nongeneric_column_rank_profile(const nmod_poly_mat_t mat)
     const long rk_sub = nmod_poly_mat_weak_popov_iter(view, NULL, NULL, pivind, NULL, ROW_LOWER);
 
     // clear
-    nmod_poly_mat_clear(view);
+    nmod_poly_mat_window_clear(view);
     nmod_poly_mat_clear(copy);
     flint_free(pivind);
 
@@ -194,7 +201,6 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
 
     int verif_hnf, verif_mrp;
 
-    if (0)
     { // maxdeg, atomic
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);
@@ -228,7 +234,6 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
             flint_printf("-- time (verif): %wd ms\n", t0->wall);
     }
 
-    if (0)
     { // revlex, xgcd
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);
@@ -265,7 +270,6 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
             flint_printf("-- time (verif): %wd ms\n", t0->wall);
     }
 
-    if (0)
     { // lex, xgcd
       // Warning! the mrp here is compared against the former
       // -- expect errors if former not computed
@@ -307,7 +311,6 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
             flint_printf("-- time (verif): %wd ms\n", t0->wall);
     }
 
-    if (0)
     { // Kannan-Bachem's algorithm
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);
@@ -464,7 +467,7 @@ int main(int argc, char ** argv)
     flint_rand_t state;
     flint_rand_init(state);
     srand(time(NULL));
-    flint_randseed(state, rand(), rand());
+    flint_rand_set_seed(state, rand(), rand());
 
     int res = 0;
 
@@ -478,15 +481,15 @@ int main(int argc, char ** argv)
         slong nbits = atoi(argv[1]);
         slong rdim = atoi(argv[2]);
         slong cdim = atoi(argv[3]);
-        slong order = atoi(argv[4]);
+        slong deg = atoi(argv[4]);
 
         slong prime = n_randprime(state, nbits, 1);
         printf("Launching test with\n\tprime = %ld,\n\trdim = %ld,\n\tcdim = %ld,\
-               \n\tlen = %ld...\n",prime,rdim,cdim,order);
+               \n\tlen = %ld...\n", prime, rdim, cdim, deg);
 
         nmod_poly_mat_t mat;
         nmod_poly_mat_init(mat, rdim, cdim, prime);
-        nmod_poly_mat_rand(mat, state, order);
+        nmod_poly_mat_rand(mat, state, deg);
 
         res = core_test_hermite_form(mat, 1, state);
 

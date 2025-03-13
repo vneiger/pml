@@ -51,11 +51,11 @@ void nmod_poly_mat_middle_product_3_primes(nmod_poly_mat_t C, const nmod_poly_ma
    
     for (i = 0; i < m; i++)
         for (j = 0; j < k; j++)
-            len_A = FLINT_MAX(len_A, A->rows[i][j].length);
+            len_A = FLINT_MAX(len_A, nmod_poly_mat_entry(A, i, j)->length);
     
     for (i = 0; i < k; i++)
         for (j = 0; j < n; j++)
-            len_B = FLINT_MAX(len_B, B->rows[i][j].length);
+            len_B = FLINT_MAX(len_B, nmod_poly_mat_entry(B, i, j)->length);
     
     // slight overestimate
     num_bits = 2 * FLINT_BIT_COUNT(p) + FLINT_BIT_COUNT(k) + FLINT_BIT_COUNT(FLINT_MIN(len_A, len_B));
@@ -86,16 +86,16 @@ void nmod_poly_mat_middle_product_3_primes(nmod_poly_mat_t C, const nmod_poly_ma
         for (j = 0; j < k; j++)
         {
             slong len;
-            len = A->rows[i][j].length;
+            len = nmod_poly_mat_entry(A, i, j)->length;
             for (ell = 0; ell < num_primes; ell++)
             {
-                nmod_poly_realloc(&mod_A[ell]->rows[i][j], len);
-                mod_A[ell]->rows[i][j].length = len;
-                residues[ell] = mod_A[ell]->rows[i][j].coeffs;
+                nmod_poly_realloc(nmod_poly_mat_entry(mod_A[ell], i, j), len);
+                nmod_poly_mat_entry(mod_A[ell], i, j)->length = len;
+                residues[ell] = nmod_poly_mat_entry(mod_A[ell], i, j)->coeffs;
             }
-            nmod_multimod_CRT_reduce(residues, A->rows[i][j].coeffs, len, CRT);
+            nmod_multimod_CRT_reduce(residues, nmod_poly_mat_entry(A, i, j)->coeffs, len, CRT);
             for (ell = 0; ell < num_primes; ell++)
-                _nmod_poly_normalise(&mod_A[ell]->rows[i][j]);
+                _nmod_poly_normalise(nmod_poly_mat_entry(mod_A[ell], i, j));
         }
 
 
@@ -103,16 +103,16 @@ void nmod_poly_mat_middle_product_3_primes(nmod_poly_mat_t C, const nmod_poly_ma
         for (j = 0; j < n; j++)
         {
             slong len;
-            len = B->rows[i][j].length;
+            len = nmod_poly_mat_entry(B, i, j)->length;
             for (ell = 0; ell < num_primes; ell++)
             {
-                nmod_poly_realloc(&mod_B[ell]->rows[i][j], len);
-                mod_B[ell]->rows[i][j].length = len;
-                residues[ell] = mod_B[ell]->rows[i][j].coeffs;
+                nmod_poly_realloc(nmod_poly_mat_entry(mod_B[ell], i, j), len);
+                nmod_poly_mat_entry(mod_B[ell], i, j)->length = len;
+                residues[ell] = nmod_poly_mat_entry(mod_B[ell], i, j)->coeffs;
             }
-            nmod_multimod_CRT_reduce(residues, B->rows[i][j].coeffs, len, CRT);
+            nmod_multimod_CRT_reduce(residues, nmod_poly_mat_entry(B, i, j)->coeffs, len, CRT);
             for (ell = 0; ell < num_primes; ell++)
-                _nmod_poly_normalise(&mod_B[ell]->rows[i][j]);
+                _nmod_poly_normalise(nmod_poly_mat_entry(mod_B[ell], i, j));
         }
 
 
@@ -131,24 +131,24 @@ void nmod_poly_mat_middle_product_3_primes(nmod_poly_mat_t C, const nmod_poly_ma
             slong len;
             len = 0;
             for (ell = 0; ell < num_primes; ell++)
-                len = FLINT_MAX(len, mod_C[ell]->rows[i][j].length);
+                len = FLINT_MAX(len, nmod_poly_mat_entry(mod_C[ell], i, j)->length);
             for (ell = 0; ell < num_primes; ell++)
             {
                 ulong t, len_ell;
                 nn_ptr res_ell, C_ell_ij;
 
                 res_ell = residues[ell];
-                C_ell_ij = mod_C[ell]->rows[i][j].coeffs;
-                len_ell = mod_C[ell]->rows[i][j].length;
+                C_ell_ij = nmod_poly_mat_entry(mod_C[ell], i, j)->coeffs;
+                len_ell = nmod_poly_mat_entry(mod_C[ell], i, j)->length;
                 for (t = 0; t < len_ell; t++)
                     res_ell[t] = C_ell_ij[t];
                 for (; t < (ulong) len; t++)
                     res_ell[t] = 0;
             }
-            nmod_poly_realloc(&C->rows[i][j], len);
-            C->rows[i][j].length = len;
-            nmod_multimod_CRT_CRT(C->rows[i][j].coeffs, residues, len, CRT);
-            _nmod_poly_normalise(&C->rows[i][j]);
+            nmod_poly_realloc(nmod_poly_mat_entry(C, i, j), len);
+            nmod_poly_mat_entry(C, i, j)->length = len;
+            nmod_multimod_CRT_CRT(nmod_poly_mat_entry(C, i, j)->coeffs, residues, len, CRT);
+            _nmod_poly_normalise(nmod_poly_mat_entry(C, i, j));
         }
 
 
