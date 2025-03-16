@@ -52,7 +52,7 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
 
         // random prescribed rank
 
-        flint_printf("\nRandom matrix of rank 2:\n");
+        flint_printf("\nRandom matrix of rank %d:\n",rank);
         nmod_mat_randrank_dense(mat, state, rank);
         nmod_mat_print_pretty(mat);
         true_rank = nmod_mat_rank(mat);
