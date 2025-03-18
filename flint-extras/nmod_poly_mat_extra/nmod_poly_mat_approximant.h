@@ -341,11 +341,10 @@ slong mbasis1_for_mbasis(nmod_mat_t kerbas,
 
 // TODO DOC
 // appbas must be initialized with right dimensions
-FLINT_DLL void
-nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
-                     slong * shift,
-                     const nmod_poly_mat_t pmat,
-                     ulong order);
+void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
+                          slong * shift,
+                          const nmod_poly_mat_t pmat,
+                          ulong order);
 
 //@} // doxygen group: M-Basis algorithm (uniform approximant order)
 
@@ -387,11 +386,10 @@ nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
 
 // TODO doc
 // TODO middle_product currently naive
-FLINT_DLL void
-nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
-                      slong * shift,
-                      const nmod_poly_mat_t pmat,
-                      slong order);
+void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
+                           slong * shift,
+                           const nmod_poly_mat_t pmat,
+                           slong order);
 
 
 /** Computes a `shift`-Popov approximant basis for `(pmat,order)` using the

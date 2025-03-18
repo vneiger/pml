@@ -486,7 +486,7 @@ void nmod_mat_permute_columns(nmod_mat_t mat, const slong * perm_act, slong * pe
  *
  * @see nmod_mat_left_nullspace_compact
  */
-FLINT_DLL slong nmod_mat_left_nullspace(nmod_mat_t X, const nmod_mat_t A);
+slong nmod_mat_left_nullspace(nmod_mat_t X, const nmod_mat_t A);
 
 /** Left nullspace of A in compact form.
  *
@@ -506,11 +506,11 @@ FLINT_DLL slong nmod_mat_left_nullspace(nmod_mat_t X, const nmod_mat_t A);
  * \todo efficiency is probably not best for small matrices: this uses Flint's
  * right nullspace and matrix transposition
  */
-FLINT_DLL slong nmod_mat_left_nullspace_compact(
-                                                nmod_mat_t X,
-                                                slong * permutation,
-                                                const nmod_mat_t A
-                                                );
+slong nmod_mat_left_nullspace_compact(
+                                      nmod_mat_t X,
+                                      slong * permutation,
+                                      const nmod_mat_t A
+                                     );
 
 #ifdef __cplusplus
 }
