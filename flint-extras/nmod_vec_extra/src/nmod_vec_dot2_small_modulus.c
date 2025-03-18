@@ -1,6 +1,14 @@
 #include "nmod_extra.h"  // for vec4n_zero and others
 #include "nmod_vec_extra.h"
 
+
+#ifdef __AVX2__
+#define HAS_AVX2
+#endif
+
+
+#ifdef HAS_AVX2  // GV 
+
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */
 /** reduction works if (p-1)^3*len < 2^96                     */
@@ -99,3 +107,4 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ul
     res[1] = (ulong) redsum[1];
 }
 
+#endif 
