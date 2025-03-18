@@ -4,6 +4,10 @@
 
 #include "nmod_vec_extra.h"
 
+#ifndef uint   //GV 
+#define uint unsigned int
+#endif
+
 /* ------------------------------------------------------------ */
 /* number of limbs needed for a dot product of length len       */
 /* all entries 1st vector have <= max_bits1 bits <= FLINT_BITS  */
@@ -150,6 +154,12 @@ ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2, ulong len, ulo
 
 
 
+#ifdef __AVX2__
+#define HAS_AVX2
+#endif
+
+
+#ifdef HAS_AVX2  // GV 
 
 
 /*------------------------------------------------------------*/
@@ -296,7 +306,7 @@ ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, n
     return res;
 }
 
-
+#endif
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
