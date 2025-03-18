@@ -7,7 +7,7 @@ SYSLIB_DIR = /usr/local/lib
 LIB_DIR = ../../lib
 LIB_MAC = /opt/homebrew/lib
 
-OBJS = $(wildcard $(LIB_DIR)/*)
+OBJS = $(wildcard $(LIB_DIR)/*.o)
 SRC = $(wildcard test*c)
 EXEC = $(patsubst %.c, %, $(SRC))
 CHK = $(patsubst %.c, %.chk, $(patsubst test_%, %, $(SRC)))
