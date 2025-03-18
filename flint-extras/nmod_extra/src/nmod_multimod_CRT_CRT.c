@@ -8,6 +8,14 @@
 
 #include "nmod_extra.h"
 
+
+#ifdef __AVX2__
+#define HAS_AVX2
+#endif
+
+
+#ifdef HAS_AVX2  // GV 
+
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
 /* helper functions for large modulus                           */
@@ -501,3 +509,5 @@ void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod
     else
         nmod_large_modulus_CRT(out, residues, nb, C);
 }
+
+#endif

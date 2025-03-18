@@ -10,8 +10,6 @@
 #include <flint/nmod_vec.h>
 #include <flint/fft_small.h>
 
-#include <flint/machine_vectors.h>
-
 #if (defined __SIZEOF_INT128__ && GMP_LIMB_BITS == 64)
 #define HAS_INT128
 #define mp_dlimb_t unsigned __int128
@@ -219,9 +217,11 @@ FLINT_FORCE_INLINE vec2d vec2d_set_d2(double a1, double a0)
     return _mm_set_pd(a0, a1);
 }
 
-#define vec4n_bit_shift_right_45(a) vec4n_bit_shift_right((a), 45)
-
 #endif 
+
+#define vec4n_bit_shift_right_45(a) 4n_bit_shift_right((a), 45)
+
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
