@@ -3,6 +3,10 @@
 
 #include "nmod_vec_extra.h"
 
+#ifndef uint   //GV 
+#define uint unsigned int
+#endif
+
 #define __ll_lowhi_parts26(tlo,thi,t)     \
       thi = (uint) ((t) >> 26);           \
       tlo = ((uint)(t)) & 0x3FFFFFF;
