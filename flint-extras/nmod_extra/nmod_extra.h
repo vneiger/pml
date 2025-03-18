@@ -10,6 +10,8 @@
 #include <flint/nmod_vec.h>
 #include <flint/fft_small.h>
 
+#include <flint/machine_vectors.h>
+
 #if (defined __SIZEOF_INT128__ && GMP_LIMB_BITS == 64)
 #define HAS_INT128
 #define mp_dlimb_t unsigned __int128
@@ -29,6 +31,7 @@
 #ifdef HAS_AVX2 // TODO: use flint flags for avx512/avx2?
 #include <immintrin.h>
 #endif
+
 
 #if (GMP_LIMB_BITS == 64)
 #define mp_hlimb_t uint32_t     // half-limb
@@ -63,7 +66,6 @@ ulong nmod_find_root(long n, nmod_t mod);
 
 
 #ifdef HAS_INT128
-
 
 
 /*------------------------------------------------------------*/
@@ -133,10 +135,12 @@ FLINT_FORCE_INLINE ulong mul_mod_precon_unreduced(ulong a, ulong b, ulong p, ulo
 /*------------------------------------------------------------*/
 /* returns a + b mod n, assuming a,b reduced mod n            */
 /*------------------------------------------------------------*/
-FLINT_FORCE_INLINE vec1n vec1n_addmod(vec1n a, vec1n b, vec1n n)
-{
-    return n - b > a ? a + b : a + b - n;
-}
+// FLINT_FORCE_INLINE vec1n vec1n_addmod(vec1n a, vec1n b, vec1n n)
+// {
+//     return n - b > a ? a + b : a + b - n;
+// }
+
+#ifdef HAS_AVX2  // GV already defined for NEON 
 
 /*------------------------------------------------------------*/
 /* returns a + b mod n, assuming a,b reduced mod n            */
@@ -146,14 +150,21 @@ FLINT_FORCE_INLINE vec1d vec1d_addmod(vec1d a, vec1d b, vec1d n)
     return a + b - n >= 0 ? a + b - n : a + b;
 }
 
+#endif
+
+#ifdef HAS_AVX2
+
 /*------------------------------------------------------------*/
 /* returns a + b mod n, assuming a,b reduced mod n            */
 /*------------------------------------------------------------*/
 FLINT_FORCE_INLINE vec4d vec4d_addmod(vec4d a, vec4d b, vec4d n)
 {
-    return vec4d_reduce_2n_to_n(vec4d_add(a, b), n);
+    return vec4d_reduce_2n_to_n(vec4d_add(a, b), n);  // GV not for NEON 
 }
 
+#endif
+
+#ifdef HAS_AVX2  // GV 
 /*------------------------------------------------------------*/
 /* TODO: if AVX512 supported, use cvtepi64_pd instead         */
 /* loads a vec4n from a and converts it to double             */
@@ -168,6 +179,7 @@ FLINT_FORCE_INLINE vec4d vec4d_load_unaligned_nn_ptr(nn_ptr a)
     return vec4n_convert_limited_vec4d(vec4n_load_unaligned(a));
 #endif
 }
+
 
 /*------------------------------------------------------------*/
 /* TODO: if AVX512 supported, use cvtpd_epi64 instead         */
@@ -208,6 +220,8 @@ FLINT_FORCE_INLINE vec2d vec2d_set_d2(double a1, double a0)
 }
 
 #define vec4n_bit_shift_right_45(a) vec4n_bit_shift_right((a), 45)
+
+#endif 
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
