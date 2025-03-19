@@ -41,7 +41,11 @@ no implementation yet
 
 # nmod -- arithmetic modulo word-size integers
 
-nmod_extra
+- nmod_extra
+some small utility functions,
+some additions to machine_vectors.h,
+some CRT/multimod functions for nmod (using <= 4 primes)
+
 nmod_mat_extra
 nmod_mat_poly_extra
 nmod_poly_extra

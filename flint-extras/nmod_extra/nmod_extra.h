@@ -5,31 +5,16 @@
 /*        TODO: safe to assume this exists?                   */
 /*------------------------------------------------------------*/
 
+#include <flint/flint-config.h>  // for HAVE_FFT_SMALL
 #include <flint/mpn_extras.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
-#include <flint/fft_small.h>
 
-/*------------------------------------------------------------*/
-/* TODO: find the proper way to test                          */
-/*------------------------------------------------------------*/
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-/*------------------------------------------------------------*/
-/* TODO: find which flags to test for                         */
-/*------------------------------------------------------------*/
-
-#ifdef HAS_AVX2 // TODO: use flint flags for avx512/avx2?
-#include <immintrin.h>
-#endif
-
-#if (GMP_LIMB_BITS == 64)
-#define mp_hlimb_t uint32_t     // half-limb
-#define mp_qlimb_t uint16_t     // quarter-limb
-#define mp_hlimb_signed_t int32_t      // signed half-limb
-#define mp_qlimb_signed_t int16_t       // signed quarter-limb
+// currently only vectorized for AVX2
+#if (FLINT_HAVE_FFT_SMALL && defined(__AVX2__))
+#   include <immintrin.h>
+#   include <flint/machine_vectors.h>
+#   include <flint/fft_small.h>
 #endif
 
 
@@ -55,6 +40,9 @@ ulong inverse_mod_power_of_two(ulong p, int k);
 /* returns 0 if not found                                     */
 /*------------------------------------------------------------*/
 ulong nmod_find_root(long n, nmod_t mod);
+
+#if FLINT_HAVE_FFT_SMALL 
+// (what we really want is to ensure FLINT has machine_vectors.h...)
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -141,6 +129,8 @@ FLINT_FORCE_INLINE vec2d vec2d_set_d2(double a1, double a0)
 
 #define vec4n_bit_shift_right_45(a) vec4n_bit_shift_right((a), 45)
 
+#endif  // FLINT_HAVE_FFT_SMALL
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*                    CRT and multimod                        */
@@ -201,4 +191,4 @@ void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod
 void nmod_multimod_CRT_reduce(nn_ptr *residues, nn_ptr input, ulong nb, nmod_multimod_CRT_t C);
 
 
-#endif
+#endif  // __NMOD_EXTRA__H
