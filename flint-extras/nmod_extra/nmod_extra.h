@@ -27,6 +27,7 @@
 /*------------------------------------------------------------*/
 /* returns the smallest i such that 2^i >= x                  */
 /*------------------------------------------------------------*/
+// TODO slow; use clz? put in FLINT?
 int next_power_of_two(ulong x);
 
 /*------------------------------------------------------------*/
@@ -39,6 +40,7 @@ ulong inverse_mod_power_of_two(ulong p, int k);
 /* finds an element of order at least n                       */
 /* returns 0 if not found                                     */
 /*------------------------------------------------------------*/
+// FIXME could probably be made faster (but is often a precomputation)
 ulong nmod_find_root(long n, nmod_t mod);
 
 #if FLINT_HAVE_FFT_SMALL 
@@ -188,7 +190,9 @@ void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod
 /* residues[j][i] = input[i] mod prime[j]                     */
 /* for i < nb, j < num_primes                                 */
 /*------------------------------------------------------------*/
+#if FLINT_HAVE_FFT_SMALL
 void nmod_multimod_CRT_reduce(nn_ptr *residues, nn_ptr input, ulong nb, nmod_multimod_CRT_t C);
+#endif  // FLINT_HAVE_FFT_SMALL
 
 
 #endif  // __NMOD_EXTRA__H
