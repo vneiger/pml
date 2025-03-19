@@ -12,6 +12,7 @@
 #define __NMOD_MAT_EXTRA__H
 
 #include <flint/flint.h>
+#include <flint/flint-config.h>
 #include <flint/perm.h>
 #include <flint/nmod_mat.h>
 
