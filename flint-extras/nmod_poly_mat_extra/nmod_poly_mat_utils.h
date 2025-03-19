@@ -4,8 +4,7 @@
 /** \brief Basic routines for univariate polynomial matrices over `nmod`
  *
  * \file nmod_poly_mat_utils.h
- * \version 0.0
- * \date 2023-01-25
+ * \date 2025-03-18
  *
  */
 

@@ -318,7 +318,7 @@ slong mbasis1_for_mbasis(nmod_mat_t kerbas,
 
 /** @name M-Basis algorithm (uniform approximant order)
  *
- * The core of these functions are implemented with `nmod_mat_poly_t` type,
+ * The core of these functions is implemented with `nmod_mat_poly_t` type,
  * for efficiency reasons. The bulk of the documentation can be found
  * in .nmod_mat_poly.h .
  *
