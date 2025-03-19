@@ -72,6 +72,11 @@ ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2,
 /** res[0] = dot(a1, b), res[1] = dot(a2, b)                  */
 /** power_two = 2^45 mod p, p2 = (p,p), pinv2 = (1/p,1/p)     */
 /*------------------------------------------------------------*/
+/**************
+*  NOTES:
+*  - on zen4, do not see an advantage for dot2_small_modulus
+*  - on intel icelake server, small advantage (<15%) for lengths about 200 and more
+**************/
 void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ulong len,
                                   ulong power_two, vec2d p2, vec2d pinv2);
 
@@ -80,11 +85,23 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ul
 /* DRAFT / EXPERIMENTS                                        */
 /*------------------------------------------------------------*/
 
-// note: version split16 interesting on recent laptop (gcc does some vectorization)
+// note: version split16 interesting on recent laptop when modulo small prime
 // limited to nbits <= ~31 (bound to be better analyzed, numterms)
+// v0, basic, sequential
 ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-// note: version split26 interesting (beyond 30-31 bits) on recent laptop (gcc does some vectorization)
-// limited to nbits <= ~52 (TODO bound to be better analyzed, numterms; potential fixes in code needed)
+// v1: vectorized somehow naively
+ulong _nmod_vec_dot_product_2_split16_avx_v1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+// v2: same but starting from uint * , to measure the difference
+ulong _nmod_vec_dot_product_2_split16_avx_v2(const uint * v1, const uint * v2, ulong len, nmod_t mod);
+// v3: vectorized with madd_epi16
+ulong _nmod_vec_dot_product_2_split16_avx_v3(const uint * v1, const uint * v2, ulong len, nmod_t mod);
+// v4: vectorized with VNNI TODO
+ulong _nmod_vec_dot_product_2_split16_avx_v4(const uint * v1, const uint * v2, ulong len, nmod_t mod);
+
+
+// note: version split26_avx interesting (beyond 30-31 bits) on zen4 laptop
+// --> speed-up about 2 for lengths a few 100s
+// (TODO analyze correctness bounds)
 ulong _nmod_vec_dot_product_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
 ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
 

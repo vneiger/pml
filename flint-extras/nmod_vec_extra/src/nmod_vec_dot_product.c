@@ -1,8 +1,35 @@
 #include <flint/longlong.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
+#include <immintrin.h>
 
 #include "nmod_vec_extra.h"
+
+/************
+*  hsum
+*  https://stackoverflow.com/questions/60108658/fastest-method-to-calculate-sum-of-all-packed-32-bit-integers-using-avx512-or-av
+************/
+
+static inline
+uint hsum_epi32_avx(__m128i x)
+{
+    __m128i hi64  = _mm_unpackhi_epi64(x, x);           // 3-operand non-destructive AVX lets us save a byte without needing a movdqa
+    __m128i sum64 = _mm_add_epi32(hi64, x);
+    __m128i hi32  = _mm_shuffle_epi32(sum64, _MM_SHUFFLE(2, 3, 0, 1));    // Swap the low two elements
+    __m128i sum32 = _mm_add_epi32(sum64, hi32);
+    return _mm_cvtsi128_si32(sum32);       // movd
+}
+
+// only needs AVX2
+uint hsum_8x32(__m256i v)
+{
+    __m128i sum128 = _mm_add_epi32( 
+                 _mm256_castsi256_si128(v),
+                 _mm256_extracti128_si256(v, 1)); // silly GCC uses a longer AXV512VL instruction if AVX512 is enabled :/
+    return hsum_epi32_avx(sum128);
+}
+
+
 
 /* ------------------------------------------------------------ */
 /* number of limbs needed for a dot product of length len       */
@@ -222,6 +249,126 @@ ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmo
     NMOD2_RED2(res, (umi >> 48) + (uhi >> 32), (umi << 16) + (uhi << 32) + ulo, mod);
     return res;
 }
+
+// basic version
+ulong _nmod_vec_dot_product_2_split16_avx_v1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
+{
+    const vec4n low_bits16 = vec4n_set_n(0xFFFF0000FFFF);
+    const vec4n low_bits32 = vec4n_set_n(0xFFFFFFFF);
+    ulong i = 0;
+    vec4n dp_vlo = vec4n_zero();
+    vec4n dp_vmi = vec4n_zero();
+    vec4n dp_vhi = vec4n_zero();
+    for ( ; i+7 < len; i+=8)
+    {
+        //__m256i v1hi = vec4n_load_unaligned(v1+i);
+        //__m256i v1hi_next = vec4n_load_unaligned(v1+4+i);
+        //v1hi_next = _mm256_slli_si256(v1hi_next, 4); // shift left 4 bytes
+        //v1hi = _mm256_blend_epi32(v1hi, v1hi_next, 0xAA); // 0xAA == 170 == 0b10101010
+        //vec4n v1lo = vec4n_bit_and(v1hi, low_bits16);
+        //v1hi = _mm256_srli_epi32(v1hi, 16);
+
+        //__m256i v2hi = vec4n_load_unaligned(v2+i);
+        //__m256i v2hi_next = vec4n_load_unaligned(v2+4+i);
+        //v2hi_next = _mm256_slli_si256(v2hi_next, 4); // shift left 4 bytes
+        //v2hi = _mm256_blend_epi32(v2hi, v2hi_next, 0xAA); // 0xAA == 170 == 0b10101010
+        //vec4n v2lo = vec4n_bit_and(v2hi, low_bits16);
+        //v2hi = _mm256_srli_epi32(v2hi, 16);
+
+        // variant1:
+        __m256i v1hi = vec4n_load_unaligned(v1+i);
+        __m256i v1hi_next = vec4n_load_unaligned((const ulong *) ((const uint *)v1 +7+2*i));
+        v1hi = _mm256_blend_epi32(v1hi, v1hi_next, 0xAA); // 0xAA == 170 == 0b10101010
+        vec4n v1lo = vec4n_bit_and(v1hi, low_bits16);
+        v1hi = _mm256_srli_epi32(v1hi, 16);
+
+        __m256i v2hi = vec4n_load_unaligned(v2+i);
+        __m256i v2hi_next = vec4n_load_unaligned((const ulong *) ((const uint *)v2 +7+2*i));
+        v2hi = _mm256_blend_epi32(v2hi, v2hi_next, 0xAA); // 0xAA == 170 == 0b10101010
+        vec4n v2lo = vec4n_bit_and(v2hi, low_bits16);
+        v2hi = _mm256_srli_epi32(v2hi, 16);
+
+        __m256i lo = _mm256_mullo_epi32(v1lo, v2lo);
+        __m256i mi = _mm256_add_epi32(_mm256_mullo_epi32(v1lo, v2hi), _mm256_mullo_epi32(v1hi, v2lo));
+        __m256i hi = _mm256_mullo_epi32(v1hi, v2hi);
+        dp_vlo = _mm256_add_epi64(dp_vlo, vec4n_bit_and(lo, low_bits32));
+        dp_vlo = _mm256_add_epi64(dp_vlo, _mm256_srli_epi64(lo, 32));
+        dp_vmi = _mm256_add_epi64(dp_vmi, vec4n_bit_and(mi, low_bits32));
+        dp_vmi = _mm256_add_epi64(dp_vmi, _mm256_srli_epi64(mi, 32));
+        dp_vhi = _mm256_add_epi64(dp_vhi, vec4n_bit_and(hi, low_bits32));
+        dp_vhi = _mm256_add_epi64(dp_vhi, _mm256_srli_epi64(hi, 32));
+    }
+
+    ulong dp_lo = vec4n_horizontal_sum(dp_vlo);
+    ulong dp_mi = vec4n_horizontal_sum(dp_vmi);
+    ulong dp_hi = vec4n_horizontal_sum(dp_vhi);
+
+    for ( ; i < len; i++)
+    {
+        uint v1hi, v1lo, v2hi, v2lo;
+        __ll_lowhi_parts16(v1lo, v1hi, v1[i]);
+        __ll_lowhi_parts16(v2lo, v2hi, v2[i]);
+        dp_lo += v1lo * v2lo;
+        dp_mi += v1lo * v2hi + v1hi * v2lo;
+        dp_hi += v1hi * v2hi;
+    }
+
+    // result: ulo + 2**16 umi + 2**32 uhi
+    ulong res;
+    NMOD2_RED2(res, (dp_mi >> 48) + (dp_hi >> 32), (dp_mi << 16) + (dp_hi << 32) + dp_lo, mod);
+    return res;
+}
+
+// version from uint pointer, to measure diff
+ulong _nmod_vec_dot_product_2_split16_avx_v2(const uint * v1, const uint * v2, ulong len, nmod_t mod)
+{
+    const vec4n low_bits16 = vec4n_set_n(0xFFFF0000FFFF);
+    const vec4n low_bits32 = vec4n_set_n(0xFFFFFFFF);
+    ulong i = 0;
+    vec4n dp_vlo = vec4n_zero();
+    vec4n dp_vmi = vec4n_zero();
+    vec4n dp_vhi = vec4n_zero();
+    for ( ; i+7 < len; i+=8)
+    {
+        __m256i v1hi = _mm256_loadu_si256((const __m256i *) (v1+i));
+        __m256i v1lo = vec4n_bit_and(v1hi, low_bits16);
+        v1hi = _mm256_srli_epi32(v1hi, 16);
+
+        __m256i v2hi = _mm256_loadu_si256((const __m256i *) (v2+i));
+        __m256i v2lo = vec4n_bit_and(v2hi, low_bits16);
+        v2hi = _mm256_srli_epi32(v2hi, 16);
+
+        __m256i lo = _mm256_mullo_epi32(v1lo, v2lo);
+        __m256i mi = _mm256_add_epi32(_mm256_mullo_epi32(v1lo, v2hi), _mm256_mullo_epi32(v1hi, v2lo));
+        __m256i hi = _mm256_mullo_epi32(v1hi, v2hi);
+        dp_vlo = _mm256_add_epi64(dp_vlo, vec4n_bit_and(lo, low_bits32));
+        dp_vlo = _mm256_add_epi64(dp_vlo, _mm256_srli_epi64(lo, 32));
+        dp_vmi = _mm256_add_epi64(dp_vmi, vec4n_bit_and(mi, low_bits32));
+        dp_vmi = _mm256_add_epi64(dp_vmi, _mm256_srli_epi64(mi, 32));
+        dp_vhi = _mm256_add_epi64(dp_vhi, vec4n_bit_and(hi, low_bits32));
+        dp_vhi = _mm256_add_epi64(dp_vhi, _mm256_srli_epi64(hi, 32));
+    }
+
+    ulong dp_lo = vec4n_horizontal_sum(dp_vlo);
+    ulong dp_mi = vec4n_horizontal_sum(dp_vmi);
+    ulong dp_hi = vec4n_horizontal_sum(dp_vhi);
+
+    for ( ; i < len; i++)
+    {
+        uint v1hi, v1lo, v2hi, v2lo;
+        __ll_lowhi_parts16(v1lo, v1hi, v1[i]);
+        __ll_lowhi_parts16(v2lo, v2hi, v2[i]);
+        dp_lo += v1lo * v2lo;
+        dp_mi += v1lo * v2hi + v1hi * v2lo;
+        dp_hi += v1hi * v2hi;
+    }
+
+    // result: ulo + 2**16 umi + 2**32 uhi
+    ulong res;
+    NMOD2_RED2(res, (dp_mi >> 48) + (dp_hi >> 32), (dp_mi << 16) + (dp_hi << 32) + dp_lo, mod);
+    return res;
+}
+
 
 // TODO benchmark more, integrate, give precise conditions for when this works
 // (or better, really do a hand-made avx512 version...)
