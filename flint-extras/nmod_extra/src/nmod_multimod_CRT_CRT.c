@@ -4,12 +4,12 @@
 #include <flint/templates.h>
 #include <flint/crt_helpers.h>
 
+#include "nmod_extra.h"
+
 #if FLINT_HAVE_FFT_SMALL
 #    include <flint/machine_vectors.h>
 #    include <flint/fft_small.h>
 #endif  // FLINT_HAVE_FFT_SMALL
-
-#include "nmod_extra.h"
 
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */

@@ -1,6 +1,6 @@
+#include "nmod_extra.h"
 #if FLINT_HAVE_FFT_SMALL
 #include <flint/machine_vectors.h>
-#include "nmod_extra.h"
 
 /*------------------------------------------------------------*/
 /* residues[j][i] = input[i] mod prime[j]                     */
