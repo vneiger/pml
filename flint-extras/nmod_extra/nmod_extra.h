@@ -10,11 +10,6 @@
 #include <flint/nmod_vec.h>
 #include <flint/fft_small.h>
 
-#if (defined __SIZEOF_INT128__ && GMP_LIMB_BITS == 64)
-#define HAS_INT128
-#define mp_dlimb_t unsigned __int128
-#endif
-
 /*------------------------------------------------------------*/
 /* TODO: find the proper way to test                          */
 /*------------------------------------------------------------*/
