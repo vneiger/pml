@@ -13,15 +13,24 @@ lib
 
 # fmpz -- multiprecision integers
 
-fmpz_extra
-fmpz_mat_extra
-fmpz_mod_mat_extra
-fmpz_mod_poly_mat
-fmpz_poly_mat_extra
+- fmpz_extra
+some CRT tools
+
+- fmpz_mat_extra
+multimod matrix multiplication
+
+- fmpz_poly_mat_extra
 
 ---
 
-# nmod -- integers modulo n, word-size n
+# fmpz_mod -- arithmetic modulo multiprecision integers
+
+- fmpz_mod_mat_extra
+- fmpz_mod_poly_mat
+
+---
+
+# nmod -- arithmetic modulo word-size integers
 
 nmod_extra
 nmod_mat_extra
