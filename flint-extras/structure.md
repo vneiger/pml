@@ -17,16 +17,25 @@ lib
 some CRT tools
 
 - fmpz_mat_extra
-multimod matrix multiplication
+multimodular matrix multiplication
 
 - fmpz_poly_mat_extra
+header for polynomial matrix multiplication (multimod | Waksman);
+**no implementation yet**
 
 ---
 
 # fmpz_mod -- arithmetic modulo multiprecision integers
 
+**no implementation yet**
+
 - fmpz_mod_mat_extra
+matrices over Z/nZ, large n
+no implementation yet
+
 - fmpz_mod_poly_mat
+univariate polynomial matrices over Z/nZ,
+no implementation yet
 
 ---
 

@@ -61,69 +61,6 @@ ulong inverse_mod_power_of_two(ulong p, int k);
 /*------------------------------------------------------------*/
 ulong nmod_find_root(long n, nmod_t mod);
 
-
-#ifdef HAS_INT128
-
-
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* 64 bit modular multiplication using a preconditionner      */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/*------------------------------------------------------------*/
-/* high word of a*b, assuming words are 64 bits               */
-/*------------------------------------------------------------*/
-FLINT_FORCE_INLINE ulong mul_hi(ulong a, ulong b)
-{
-    mp_dlimb_t prod;
-    prod = a * (mp_dlimb_t)b;
-    return prod >> 64;
-}
-
-/*------------------------------------------------------------*/
-/* returns floor (2^64*b)/p                                   */
-/*------------------------------------------------------------*/
-FLINT_FORCE_INLINE ulong prep_mul_mod_precon(ulong b, ulong p)
-{
-    return ((mp_dlimb_t) b << 64) / p;
-}
-
-/*------------------------------------------------------------*/
-/* preconditioned product                                     */
-/* returns ab mod p                                           */
-/* a is in [0..2^64), b is in [0..p)                          */
-/*------------------------------------------------------------*/
-FLINT_FORCE_INLINE ulong mul_mod_precon(ulong a, ulong b, ulong p, ulong i_b)
-{
-    ulong q;
-    long t;
-
-    q = mul_hi(i_b, a);
-    t = a*b - q*p - p;
-    if (t < 0)
-        return t + p;
-    else
-        return t;
-}
-
-/*------------------------------------------------------------*/
-/* returns ab mod p in [0..2p)                                */
-/* a is in [0..2^64), b is in [0..p)                          */
-/*------------------------------------------------------------*/
-FLINT_FORCE_INLINE ulong mul_mod_precon_unreduced(ulong a, ulong b, ulong p, ulong i_b)
-{
-    ulong q;
-
-    q = mul_hi(i_b, a);
-    return a*b - q*p;
-}
-
-#endif
-
-
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* A few extra operations for the fft_small types             */
