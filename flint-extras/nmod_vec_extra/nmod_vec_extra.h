@@ -86,17 +86,16 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ul
 /*------------------------------------------------------------*/
 
 // note: version split16 interesting on recent laptop when modulo small prime
-// limited to nbits <= ~31 (bound to be better analyzed, numterms)
-// v0, basic, sequential
+// v0, basic, sequential (limit ~32 bits + numterms to analyze)
 ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-// v1: vectorized somehow naively
+// v1: vectorized somehow naively (limit ~31 bits + numterms to analyze)
 ulong _nmod_vec_dot_product_2_split16_avx_v1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
 // v2: same but starting from uint * , to measure the difference
 ulong _nmod_vec_dot_product_2_split16_avx_v2(const uint * v1, const uint * v2, ulong len, nmod_t mod);
-// v3: vectorized with madd_epi16
-ulong _nmod_vec_dot_product_2_split16_avx_v3(const uint * v1, const uint * v2, ulong len, nmod_t mod);
-// v4: vectorized with VNNI TODO
-ulong _nmod_vec_dot_product_2_split16_avx_v4(const uint * v1, const uint * v2, ulong len, nmod_t mod);
+// attempt: vectorized with madd_epi16 (AVX2)
+//    issue: due to madd we split at 15bits instead of 16, and are limited at 30 bits max
+//    and for 30 bits or less this does not bring much compared to the avx2 _nmod_vec_dot2_split already in FLINT
+// attempt: (not tried) vectorization with dp VNNI (less widely available) should bring the same issue of limiting to 30 bits
 
 
 // note: version split26_avx interesting (beyond 30-31 bits) on zen4 laptop
