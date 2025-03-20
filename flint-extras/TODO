@@ -1,0 +1,13 @@
+
+
+
+.. nmod_mat_extra  src ok 
+	test: 1 file .bak,  3 tests ok 
+
+.. nmod_vec_extra src ok
+	test: 2 file .bak + #include <stdlib.h>, 2 tests ok
+
+-----------
+
+.. nmod_extra: src ok 
+	but nothing up (no test, timings)  because of AVX tests 

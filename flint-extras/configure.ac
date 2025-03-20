@@ -4,25 +4,25 @@
 #
 # Created from https://github.com/fplll/fplll/blob/master/configure.ac
 #
-#   This file is part of mapml. mapml is free software: you
+#   This file is part of pml. pml is free software: you
 #   can redistribute it and/or modify it under the terms of the GNU Lesser
 #   General Public License as published by the Free Software Foundation,
 #   either version 2.1 of the License, or (at your option) any later version.
 #
-#   mapml is distributed in the hope that it will be useful,
+#   pml is distributed in the hope that it will be useful,
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 #   GNU Lesser General Public License for more details.
 #
 #   You should have received a copy of the GNU Lesser General Public License
-#   along with mapml. If not, see <http://www.gnu.org/licenses/>. 
+#   along with pml. If not, see <http://www.gnu.org/licenses/>. 
 
 
 # -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([mapml],[0.0.1])
+AC_INIT([pml],[0.0.1])
 AC_CONFIG_SRCDIR([nmod_extra/src/nmod_extra.c])
 AM_MAINTAINER_MODE([enable])
 AC_CANONICAL_TARGET
@@ -118,6 +118,7 @@ include/nmod_mat_extra.h:nmod_mat_extra/nmod_mat_extra.h
 AC_CONFIG_FILES([
 Makefile
 lib/Makefile
+nmod_mat_extra/tests/Makefile
 ])
 
 AC_OUTPUT

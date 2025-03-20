@@ -18,8 +18,15 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS= lib
+SUBDIRS= lib  nmod_mat_extra/tests
 
 pkgconfigdir = $(libdir)/pkgconfig
 
 include_pmldir=$(includedir)/pml
+
+perfpublisher : nmod_mat_extra/tests/perfpublisher
+
+#nmod_mat_extra/tests/perfpublisher:
+#	(cd nmod_mat_extra/tests; ${MAKE} perfpublisher)
+
+EXTRA_DIST= autogen.sh
