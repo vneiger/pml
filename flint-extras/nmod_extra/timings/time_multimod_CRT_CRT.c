@@ -3,7 +3,7 @@
 #include <flint/nmod_vec.h>
 #include <flint/fmpz.h>
 
-#include "nmod_vec_extra.h"
+#include "nmod_extra.h"
 
 
 /*----------------------------------------------------------------*/

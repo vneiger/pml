@@ -5,7 +5,6 @@
 
 #include "nmod_vec_extra.h"
 
-
 /*--------------------------------------------------------------*/
 /* computes a dot modulus in size len modulo n                  */
 /*--------------------------------------------------------------*/
@@ -18,9 +17,6 @@ void time_nmod_vec_dot2_small_modulus(ulong len, ulong n, flint_rand_t state)
     nn_ptr v12 = aligned_alloc(32, (4 + ((len >> 2) << 2)) * sizeof(ulong));
     nn_ptr v2 = _nmod_vec_init(len);
 
-    const vec1d p = n;
-    const vec1d pinv = 1 / (double) n;
-
     vec2d p2, pinv2;
     p2[0] = n;
     p2[1] = n;
@@ -28,6 +24,8 @@ void time_nmod_vec_dot2_small_modulus(ulong len, ulong n, flint_rand_t state)
     pinv2[1] = 1 / p2[1];
 
     const ulong two_32 = (UWORD(1) << 45) % n;
+
+    const dot_params_t params = _nmod_vec_dot_params(len, mod);
 
     double t;
     clock_t tt;
@@ -38,8 +36,8 @@ void time_nmod_vec_dot2_small_modulus(ulong len, ulong n, flint_rand_t state)
     while (t < 0.5)
     {
         ulong res[2];
-    _nmod_vec_rand(v11, state, len, mod);
-    _nmod_vec_rand(v12, state, len, mod);
+        _nmod_vec_rand(v11, state, len, mod);
+        _nmod_vec_rand(v12, state, len, mod);
 
         tt = clock();
         _nmod_vec_dot2_small_modulus(res, v11, v12, v2, len, two_32, p2, pinv2);
@@ -58,18 +56,18 @@ void time_nmod_vec_dot2_small_modulus(ulong len, ulong n, flint_rand_t state)
     nb_iter = 0;
     while (t < 0.5)
     {
-    _nmod_vec_rand(v2, state, len, mod);
+        _nmod_vec_rand(v2, state, len, mod);
         tt = clock();
-        _nmod_vec_dot_small_modulus(v11, v2, len, two_32, p, pinv);
-        _nmod_vec_dot_small_modulus(v12, v2, len, two_32, p, pinv);
-        _nmod_vec_dot_small_modulus(v11, v2, len, two_32, p, pinv);
-        _nmod_vec_dot_small_modulus(v12, v2, len, two_32, p, pinv);
-        _nmod_vec_dot_small_modulus(v11, v2, len, two_32, p, pinv);
-        _nmod_vec_dot_small_modulus(v12, v2, len, two_32, p, pinv);
-        _nmod_vec_dot_small_modulus(v11, v2, len, two_32, p, pinv);
-        _nmod_vec_dot_small_modulus(v12, v2, len, two_32, p, pinv);
-        _nmod_vec_dot_small_modulus(v11, v2, len, two_32, p, pinv);
-        _nmod_vec_dot_small_modulus(v12, v2, len, two_32, p, pinv);
+        _nmod_vec_dot(v11, v2, len, mod, params);
+        _nmod_vec_dot(v12, v2, len, mod, params);
+        _nmod_vec_dot(v11, v2, len, mod, params);
+        _nmod_vec_dot(v12, v2, len, mod, params);
+        _nmod_vec_dot(v11, v2, len, mod, params);
+        _nmod_vec_dot(v12, v2, len, mod, params);
+        _nmod_vec_dot(v11, v2, len, mod, params);
+        _nmod_vec_dot(v12, v2, len, mod, params);
+        _nmod_vec_dot(v11, v2, len, mod, params);
+        _nmod_vec_dot(v12, v2, len, mod, params);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 5;
     }

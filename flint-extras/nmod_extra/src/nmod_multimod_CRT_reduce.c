@@ -1,5 +1,6 @@
-#include <flint/machine_vectors.h>
 #include "nmod_extra.h"
+#if FLINT_HAVE_FFT_SMALL
+#include <flint/machine_vectors.h>
 
 /*------------------------------------------------------------*/
 /* residues[j][i] = input[i] mod prime[j]                     */
@@ -57,3 +58,4 @@ void nmod_multimod_CRT_reduce(nn_ptr *residues, nn_ptr input, ulong nb, nmod_mul
         }
     }
 }
+#endif  // FLINT_HAVE_FFT_SMALL

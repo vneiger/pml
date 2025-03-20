@@ -16,7 +16,7 @@ void time_fmpz_mat_mul(ulong m, ulong n, ulong p, ulong n_bits)
     double t;
     clock_t tt;
     long nb_iter;
-    
+
     flint_rand_init(state);
 
     fmpz_mat_init(A, m, n);
@@ -36,12 +36,10 @@ void time_fmpz_mat_mul(ulong m, ulong n, ulong p, ulong n_bits)
         tt = clock();
         fmpz_mat_mul(C, A, B);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 1;
     }
     t /= nb_iter;
-    printf("%4g\t", t);
+    printf("%.4e\t", t);
 
     t = 0.0;
     nb_iter = 0;
@@ -50,26 +48,22 @@ void time_fmpz_mat_mul(ulong m, ulong n, ulong p, ulong n_bits)
         tt = clock();
         fmpz_mat_mul_strassen(C, A, B);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 1;
     }
     t /= nb_iter;
-    printf("%4g\t", t);
-    
+    printf("%.4e\t", t);
+
     t = 0.0;
     nb_iter = 0;
     while (t < 0.5)
     {
         tt = clock();
-        fmpz_mat_mul_blas(C, A, B);
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        fmpz_mat_mul_waksman(C, A, B);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 1;
     }
     t /= nb_iter;
-    printf("%4g\t", t);
+    printf("%.4e\t", t);
 
     t = 0.0;
     nb_iter = 0;
@@ -78,12 +72,10 @@ void time_fmpz_mat_mul(ulong m, ulong n, ulong p, ulong n_bits)
         tt = clock();
         fmpz_mat_mul_multi_mod(C, A, B);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 1;
     }
     t /= nb_iter;
-    printf("%4g\t", t);
+    printf("%.4e\t", t);
 
     printf("\n");
     fmpz_mat_clear(C);
@@ -99,8 +91,8 @@ int main(int argc, char **argv)
 {
     ulong i;
     flint_set_num_threads(1);
-    
-    printf("#m\tn\tp\tn_bits\tmul\t\tstrassen\twaksman\t\tfft\t\tblas\t\tmulti_mod\n");
+
+    printf("#m\tn\tp\tn_bits\tmul\t\tstrassen\twaksman\t\tmulti_mod\n");
     for (i = 1; i < 300; i += 40)
         time_fmpz_mat_mul(i, i, i, 200);
 

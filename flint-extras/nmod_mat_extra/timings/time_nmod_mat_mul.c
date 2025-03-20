@@ -158,10 +158,10 @@ int main()
     };
     const ulong nbits[11] = { 4, 11, 21, 26, 30, 31, 32, 41, 51, 61, 64 };
 
-    for (slong i = 3; i < 11; i++)
+    for (slong i = 6; i < 11; i++)
     {
         printf("nbits\tsize\tmul\tclassic\tblas\tnewdot\tsmall_mod\n");
-        ulong len = 1;
+        ulong len = 100;
         for (; len < 100; len += 5)
             time_nmod_mat_mul(len, nbits[i], mods[i], state);
         for (; len < 200; len += 20)
