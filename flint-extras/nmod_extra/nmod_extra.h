@@ -147,6 +147,8 @@ FLINT_FORCE_INLINE vec1d vec1d_addmod(vec1d a, vec1d b, vec1d n)
     return a + b - n >= 0 ? a + b - n : a + b;
 }
 
+
+
 /*------------------------------------------------------------*/
 /* returns a + b mod n, assuming a,b reduced mod n            */
 /*------------------------------------------------------------*/

@@ -13,7 +13,7 @@
 #endif
 
 
-#ifdef HAS_AVX2  // GV 
+
 
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
@@ -108,6 +108,7 @@ FLINT_FORCE_INLINE void _crt_4(nn_ptr out,
     }
 }
 
+
 /* ------------------------------------------------------------ */
 /* out[i] = CRT(residues[j][i], j < k) mod p, i < nb            */
 /* k = 1,2,3,4                                                  */
@@ -138,6 +139,8 @@ static void nmod_large_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
     }
 }
 
+
+#ifdef HAS_AVX2  // GV 
 
 
 /* ------------------------------------------------------------ */
@@ -170,6 +173,7 @@ FLINT_FORCE_INLINE void _crt_1_small(nn_ptr out,
     for (; i < nb; i++)
         out[i] = (vec1n) vec1d_reduce_to_0n(residues0[i], p, pinv);
 }
+
 
 
 /* ------------------------------------------------------------ */
@@ -227,6 +231,10 @@ FLINT_FORCE_INLINE void _crt_2_small(nn_ptr out,
         out[i] = vec1n_addmod(m0, a, p);
     }
 }
+
+#endif
+
+#ifdef HAS_AVX2  // GV 
 
 /* ------------------------------------------------------------ */
 /* out[i] = CRT(residues[j][i], j < 3) mod p, i < nb            */
@@ -325,6 +333,10 @@ FLINT_FORCE_INLINE void _crt_3_small(nn_ptr out,
                                       p);
     }
 }
+
+#endif
+
+#ifdef HAS_AVX2  // GV 
 
 /* ------------------------------------------------------------ */
 /* out[i] = CRT(residues[j][i], j < 4) mod p, i < nb            */
@@ -459,6 +471,8 @@ FLINT_FORCE_INLINE void _crt_4_small(nn_ptr out,
 }
 
 
+
+
 /* ------------------------------------------------------------ */
 /* out[i] = CRT(residues[j][i], j < k) mod p, i < nb            */
 /* k = 1,2,3,4                                                  */
@@ -495,6 +509,7 @@ static void nmod_small_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
             break;
     }
 }
+
 
 
 /* ------------------------------------------------------------ */
