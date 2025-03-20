@@ -255,7 +255,7 @@ ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmo
     return res;
 }
 
-// basic version
+// basic AVX version
 ulong _nmod_vec_dot_product_2_split16_avx_v1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
     const vec4n low_bits16 = vec4n_set_n(0xFFFF0000FFFF);
@@ -266,31 +266,16 @@ ulong _nmod_vec_dot_product_2_split16_avx_v1(nn_srcptr v1, nn_srcptr v2, ulong l
     vec4n dp_vhi = vec4n_zero();
     for ( ; i+7 < len; i+=8)
     {
-        //__m256i v1hi = vec4n_load_unaligned(v1+i);
-        //__m256i v1hi_next = vec4n_load_unaligned(v1+4+i);
-        //v1hi_next = _mm256_slli_si256(v1hi_next, 4); // shift left 4 bytes
-        //v1hi = _mm256_blend_epi32(v1hi, v1hi_next, 0xAA); // 0xAA == 170 == 0b10101010
-        //vec4n v1lo = vec4n_bit_and(v1hi, low_bits16);
-        //v1hi = _mm256_srli_epi32(v1hi, 16);
-
-        //__m256i v2hi = vec4n_load_unaligned(v2+i);
-        //__m256i v2hi_next = vec4n_load_unaligned(v2+4+i);
-        //v2hi_next = _mm256_slli_si256(v2hi_next, 4); // shift left 4 bytes
-        //v2hi = _mm256_blend_epi32(v2hi, v2hi_next, 0xAA); // 0xAA == 170 == 0b10101010
-        //vec4n v2lo = vec4n_bit_and(v2hi, low_bits16);
-        //v2hi = _mm256_srli_epi32(v2hi, 16);
-
-        // variant1:
-        __m256i v1hi = vec4n_load_unaligned(v1+i);
-        __m256i v1hi_next = vec4n_load_unaligned((const ulong *) ((const uint *)v1 +7+2*i));
-        v1hi = _mm256_blend_epi32(v1hi, v1hi_next, 0xAA); // 0xAA == 170 == 0b10101010
-        vec4n v1lo = vec4n_bit_and(v1hi, low_bits16);
+        __m256i v1lo = vec4n_load_unaligned(v1+i);
+        __m256i v1hi = vec4n_load_unaligned((const ulong *) ((const uint *)v1 +7+2*i));
+        v1hi = _mm256_blend_epi32(v1lo, v1hi, 0xAA); // 0xAA == 170 == 0b10101010
+        v1lo = vec4n_bit_and(v1hi, low_bits16);
         v1hi = _mm256_srli_epi32(v1hi, 16);
 
-        __m256i v2hi = vec4n_load_unaligned(v2+i);
-        __m256i v2hi_next = vec4n_load_unaligned((const ulong *) ((const uint *)v2 +7+2*i));
-        v2hi = _mm256_blend_epi32(v2hi, v2hi_next, 0xAA); // 0xAA == 170 == 0b10101010
-        vec4n v2lo = vec4n_bit_and(v2hi, low_bits16);
+        __m256i v2lo = vec4n_load_unaligned(v2+i);
+        __m256i v2hi = vec4n_load_unaligned((const ulong *) ((const uint *)v2 +7+2*i));
+        v2hi = _mm256_blend_epi32(v2lo, v2hi, 0xAA); // 0xAA == 170 == 0b10101010
+        v2lo = vec4n_bit_and(v2hi, low_bits16);
         v2hi = _mm256_srli_epi32(v2hi, 16);
 
         __m256i lo = _mm256_mullo_epi32(v1lo, v2lo);
