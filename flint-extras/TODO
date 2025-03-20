@@ -1,5 +1,12 @@
 
 
+# Conflicts:
+#	flint-extras/nmod_extra/nmod_extra.h
+#	flint-extras/nmod_extra/src/nmod_multimod_CRT_CRT.c
+#	flint-extras/nmod_extra/src/nmod_multimod_CRT_reduce.c
+
+
+
 
 .. nmod_mat_extra  src ok 
 	test: 1 file .bak,  3 tests ok 

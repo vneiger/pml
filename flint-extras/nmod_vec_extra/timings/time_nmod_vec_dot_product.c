@@ -363,7 +363,7 @@ int main(int argc, char ** argv)
 
     if (argc == 1)
     {
-        for (slong ifun = 8; ifun < nfuns; ifun++)
+        for (slong ifun = 0; ifun < nfuns; ifun++)
         {
             const timefun tfun = funs[ifun];
 

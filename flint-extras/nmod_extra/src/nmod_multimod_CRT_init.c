@@ -33,6 +33,7 @@ void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, ulong modulus, ulong num_prim
         num_primes = 4;
     
 
+#if FLINT_HAVE_FFT_SMALL
     if (modulus < (1L << 50)) // small modulus: case use SIMD floating-point representation 
     {
         C->pinv = 1 / (double)modulus;
@@ -60,6 +61,7 @@ void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, ulong modulus, ulong num_prim
         C->invp0p1p2_p3 = (double) nmod_inv(p0p1p2_red3, mod3);
     }
     else // large modulus. this is inspired by multimod and CRT in fft_small
+#endif  // FLINT_HAVE_FFT_SMALL
     {
         ulong i, len;
         fmpz_t prod;

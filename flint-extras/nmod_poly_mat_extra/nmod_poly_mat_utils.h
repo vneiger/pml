@@ -4,8 +4,7 @@
 /** \brief Basic routines for univariate polynomial matrices over `nmod`
  *
  * \file nmod_poly_mat_utils.h
- * \version 0.0
- * \date 2023-01-25
+ * \date 2025-03-18
  *
  */
 
@@ -599,10 +598,9 @@ void nmod_poly_mat_rand_popov(nmod_poly_mat_t mat,
 /** Set from polynomial with matrix coefficients `matp`, truncated at the
  * specified `order` (a nonnegative integer). */
 // TODO benchmark and try variants if needed
-FLINT_DLL void
-nmod_poly_mat_set_trunc_from_mat_poly(nmod_poly_mat_t pmat,
-                                      const nmod_mat_poly_t matp,
-                                      slong order);
+void nmod_poly_mat_set_trunc_from_mat_poly(nmod_poly_mat_t pmat,
+                                           const nmod_mat_poly_t matp,
+                                           slong order);
 
 /** Set from polynomial with matrix coefficients `matp`. */
 // TODO benchmark and try variants if needed

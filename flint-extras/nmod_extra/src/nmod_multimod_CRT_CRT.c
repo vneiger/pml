@@ -1,20 +1,17 @@
 #include <flint/flint.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
-#include <flint/fft_small.h>
 #include <flint/templates.h>
-#include <flint/machine_vectors.h>
 #include <flint/crt_helpers.h>
 
 #include "nmod_extra.h"
 
 
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
+#if FLINT_HAVE_FFT_SMALL
+#    include <flint/machine_vectors.h>
+#    include <flint/fft_small.h>
+#endif  // FLINT_HAVE_FFT_SMALL
 
-
-#ifdef HAS_AVX2  // GV 
 
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
@@ -146,6 +143,8 @@ static void nmod_large_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
 /* helper functions for small modulus                           */
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
+
+#if FLINT_HAVE_FFT_SMALL
 
 /* ------------------------------------------------------------ */
 /* out[i] = residues0[i] mod p, i < nb                          */
@@ -497,6 +496,7 @@ static void nmod_small_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
     }
 }
 
+#endif  // FLINT_HAVE_FFT_SMALL
 
 /* ------------------------------------------------------------ */
 /* out[i] = CRT(residues[j][i], j < k) mod p, i < nb            */
@@ -504,10 +504,11 @@ static void nmod_small_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
 /* ------------------------------------------------------------ */
 void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod_CRT_t C)
 {
+#if FLINT_HAVE_FFT_SMALL
     if (C->p < (1L << 50)) // small modulus: use SIMD floating-point representation 
         nmod_small_modulus_CRT(out, residues, nb, C);
     else
+#endif  // FLINT_HAVE_FFT_SMALL
         nmod_large_modulus_CRT(out, residues, nb, C);
 }
 
-#endif
