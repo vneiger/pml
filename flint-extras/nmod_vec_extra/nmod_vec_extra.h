@@ -85,15 +85,20 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ul
 /* DRAFT / EXPERIMENTS                                        */
 /*------------------------------------------------------------*/
 
-// note: version split16 interesting on recent laptop when modulo 31-bit prime
-// otherwise, not very interesting compared to the split-based avx nmod_vec_dot2_split in FLINT
-// basic, sequential (limit ~32 bits + numterms to analyze)
-ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-// avx: vectorized somehow naively (limit ~31 bits + numterms to analyze)
-ulong _nmod_vec_dot_product_2_split16_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-// avx_int: same but starting from uint *
-ulong _nmod_vec_dot_product_2_split16_avx_int(const uint * v1, const uint * v2, ulong len, nmod_t mod);
+// TODO incorporate FLINT:
+// faster nmod_vec for modulus close to 32 bits (almost as fast as AVX-based version for modulus < 2**30.5 bits)
 ulong _nmod_vec_dot2_half_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+ulong _nmod_vec_dot2_half_avx_int(const uint * v1, const uint * v2, ulong len, nmod_t mod);
+// some timings on zen4 with modulus == 2**32 - 1:
+//            bit/len 50      100     200     400     600     800     1000    2000    4000    8000    16000   50000   1000000
+// cf oldhalf 32hi    1.8e-08 3.3e-08 6.2e-08 1.2e-07 1.8e-07 2.4e-07 2.9e-07 5.9e-07 1.2e-06 2.4e-06 4.6e-06 1.4e-05 3.2e-04
+// cf newhalf 32hi    1.1e-08 1.5e-08 2.7e-08 4.1e-08 5.9e-08 7.4e-08 9.5e-08 1.9e-07 4.4e-07 9.1e-07 1.7e-06 6.4e-06 2.0e-04
+// cf new_int 32hi    1.0e-08 1.6e-08 2.4e-08 4.2e-08 6.2e-08 8.0e-08 9.5e-08 2.0e-07 3.8e-07 7.5e-07 1.5e-06 4.7e-06 9.7e-05
+// cu oldhalf 32hi    2.0e-08 3.5e-08 6.3e-08 1.4e-07 2.1e-07 2.9e-07 3.4e-07 7.3e-07 1.4e-06 3.2e-06 5.4e-06 1.8e-05 3.5e-04
+// cu newhalf 32hi    1.3e-08 1.9e-08 3.0e-08 9.3e-08 1.5e-07 2.3e-07 2.7e-07 6.7e-07 1.3e-06 2.8e-06 5.2e-06 1.7e-05 3.3e-04
+// cu new_int 32hi    1.1e-08 1.7e-08 2.8e-08 4.6e-08 6.8e-08 9.8e-08 1.5e-07 2.9e-07 7.2e-07 1.3e-06 2.7e-06 8.5e-06 1.6e-04
+
+
 
 // NOTES
 // attempt: vectorized with madd_epi16 (AVX2)
