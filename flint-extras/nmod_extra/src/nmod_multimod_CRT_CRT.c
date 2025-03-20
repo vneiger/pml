@@ -13,8 +13,6 @@
 #endif
 
 
-
-
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
 /* helper functions for large modulus                           */
@@ -511,6 +509,9 @@ static void nmod_small_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
 }
 
 
+#endif 
+
+#ifdef HAS_AVX2  // GV 
 
 /* ------------------------------------------------------------ */
 /* out[i] = CRT(residues[j][i], j < k) mod p, i < nb            */
@@ -524,4 +525,17 @@ void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod
         nmod_large_modulus_CRT(out, residues, nb, C);
 }
 
+#else 
+
+void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod_CRT_t C)
+{
+        nmod_large_modulus_CRT(out, residues, nb, C);
+}
+
 #endif
+
+
+
+
+
+

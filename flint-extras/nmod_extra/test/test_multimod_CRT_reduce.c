@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdlib.h>
 #include <gmp.h>
 #include <flint/nmod_vec.h>
 #include <flint/fmpz.h>
