@@ -42,10 +42,14 @@ no implementation yet
 # nmod -- arithmetic modulo word-size integers
 
 - nmod_extra
-some small utility functions,
-some additions to machine_vectors.h,
-some CRT/multimod functions for nmod
+  some small utility functions,
+  some additions to machine_vectors.h,
+  some CRT/multimod functions for nmod
      (using <= 4 primes, reduce requires AVX, CRT is ok without AVX)
+
+  macOS: AVX test for small in CRT_CRT (#include <stdlib.h>), for all in CRT_reduce 
+
+  ​	tests: test_multimod_CRT_CRT stops after i=1 in the main loop 
 
 - nmod_mat_extra   (AVX flags TO DO)
 creating random matrices with particular properties
