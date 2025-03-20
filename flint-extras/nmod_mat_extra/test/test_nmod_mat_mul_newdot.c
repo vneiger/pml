@@ -57,6 +57,7 @@ int main()
         check_nmod_mat_mul_newdot(n, (UWORD(1) << 29) + 1, state);
         check_nmod_mat_mul_newdot(n, (UWORD(1) << 30) + 1, state);
         check_nmod_mat_mul_newdot(n, (UWORD(1) << 31) + 1, state);
+        check_nmod_mat_mul_newdot(n, (UWORD(1) << 32) - 1, state);
         check_nmod_mat_mul_newdot(n, (UWORD(1) << 32) + 1, state);
         check_nmod_mat_mul_newdot(n, (UWORD(1) << 40) + 1, state);
         check_nmod_mat_mul_newdot(n, (UWORD(1) << 50) + 1, state);

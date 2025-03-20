@@ -363,7 +363,7 @@ ulong time_nmod_vec_dot_product_split26_cu(ulong len, ulong n, flint_rand_t stat
 
     { // TEST
         const dot_params_t params = _nmod_vec_dot_params(len, mod);
-        ulong res_split = _nmod_vec_dot_product_split26(v1[0], v2[0], len, mod);
+        ulong res_split = _nmod_vec_dot_product_split26_avx(v1[0], v2[0], len, mod);
         ulong res_correct = _nmod_vec_dot(v1[0], v2[0], len, mod, params);
         if (res_split != res_correct)
         {
@@ -417,7 +417,7 @@ ulong res = 0;
 
 { // TEST
     const dot_params_t params = _nmod_vec_dot_params(len, mod);
-    ulong res_split = _nmod_vec_dot_product_split26(v1, v2, len, mod);
+    ulong res_split = _nmod_vec_dot_product_split26_avx(v1, v2, len, mod);
     ulong res_correct = _nmod_vec_dot(v1, v2, len, mod, params);
     if (res_split != res_correct)
     {
@@ -464,7 +464,7 @@ int main(int argc, char ** argv)
     //const slong nlens = 33;
     //const slong lens[] = {2, 3, 4, 5, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 130, 160, 200, 260, 320, 400, 500, 600, 700, 800, 900, 1000, 2000, 4000, 8000, 16000};
 
-    const slong nlens = 13;
+    const slong nlens = 9;
     const slong lens[] = {50, 100, 200, 400, 600, 800, 1000, 2000, 4000, 8000, 16000, 50000, 1000000};
 
     const slong nbits = 19;
