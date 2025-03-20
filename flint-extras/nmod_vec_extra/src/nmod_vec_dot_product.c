@@ -1,19 +1,28 @@
 #include <flint/longlong.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
-#include <immintrin.h>
 
+#ifdef __AVX2__
+#define HAS_AVX2
+#endif
+
+#ifdef HAS_AVX2  // GV 
+#include <immintrin.h>
+#endif 
 #include "nmod_vec_extra.h"
 
 #ifndef uint   //GV 
 #define uint unsigned int
 #endif
 
+
+
 /************
 *  hsum
 *  https://stackoverflow.com/questions/60108658/fastest-method-to-calculate-sum-of-all-packed-32-bit-integers-using-avx512-or-av
 ************/
 
+#ifdef HAS_AVX2  // GV 
 static inline
 uint hsum_epi32_avx(__m128i x)
 {
@@ -32,7 +41,7 @@ uint hsum_8x32(__m256i v)
                  _mm256_extracti128_si256(v, 1)); // silly GCC uses a longer AXV512VL instruction if AVX512 is enabled :/
     return hsum_epi32_avx(sum128);
 }
-
+#endif
 
 /* ------------------------------------------------------------ */
 /* number of limbs needed for a dot product of length len       */
@@ -178,16 +187,7 @@ ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2, ulong len, ulo
 
 
 
-
-
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-
 #ifdef HAS_AVX2  // GV 
-
-
 /*------------------------------------------------------------*/
 /* EXPERIMENTAL */
 /*------------------------------------------------------------*/
@@ -411,8 +411,6 @@ ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, n
     NMOD2_RED2(res, dp_hi, dp_lo, mod);
     return res;
 }
-
 #endif
-
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

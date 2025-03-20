@@ -4,6 +4,12 @@
 #include <flint/nmod_mat.h>
 #include <flint/nmod_vec.h>  // for _nmod_vec_init
 
+#ifdef __AVX2__
+#define HAS_AVX2
+#endif
+
+#ifdef HAS_AVX2  // GV 
+
 void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
 {
     // C aliases A or B: use a temporary
@@ -79,3 +85,4 @@ void nmod_mat_mul_nmod_vec_newdot(nn_ptr v, const nmod_mat_t A, nn_srcptr u, ulo
     }
 }
 
+#endif 
