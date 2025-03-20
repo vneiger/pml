@@ -123,6 +123,7 @@ FLINT_FORCE_INLINE ulong mul_mod_precon_unreduced(ulong a, ulong b, ulong p, ulo
 #endif
 
 
+#ifdef HAS_AVX2 // GV
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -154,6 +155,8 @@ FLINT_FORCE_INLINE vec4d vec4d_addmod(vec4d a, vec4d b, vec4d n)
     return vec4d_reduce_2n_to_n(vec4d_add(a, b), n);
 }
 
+#endif
+
 /*------------------------------------------------------------*/
 /* TODO: if AVX512 supported, use cvtepi64_pd instead         */
 /* loads a vec4n from a and converts it to double             */
@@ -178,6 +181,7 @@ FLINT_FORCE_INLINE void vec4d_store_unaligned_nn_ptr(nn_ptr dest, vec4d a)
     vec4n_store_unaligned(dest, vec4d_convert_limited_vec4n(a));
 }
 
+#ifdef HAS_AVX2 // GV
 
 FLINT_FORCE_INLINE void vec4n_store_aligned(ulong* z, vec4n a)
 {
@@ -208,6 +212,8 @@ FLINT_FORCE_INLINE vec2d vec2d_set_d2(double a1, double a0)
 }
 
 #define vec4n_bit_shift_right_45(a) vec4n_bit_shift_right((a), 45)
+
+#endif
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

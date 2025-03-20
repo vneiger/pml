@@ -1,6 +1,14 @@
 #include <flint/machine_vectors.h>
 #include "nmod_extra.h"
 
+
+#ifdef __AVX2__
+#define HAS_AVX2
+#endif
+
+#ifdef HAS_AVX2  // GV 
+
+
 /*------------------------------------------------------------*/
 /* residues[j][i] = input[i] mod prime[j]                     */
 /* for i < nb, j < num_primes                                 */
@@ -57,3 +65,5 @@ void nmod_multimod_CRT_reduce(nn_ptr *residues, nn_ptr input, ulong nb, nmod_mul
         }
     }
 }
+
+#endif
