@@ -85,13 +85,17 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ul
 /* DRAFT / EXPERIMENTS                                        */
 /*------------------------------------------------------------*/
 
-// note: version split16 interesting on recent laptop when modulo small prime
-// v0, basic, sequential (limit ~32 bits + numterms to analyze)
+// note: version split16 interesting on recent laptop when modulo 31-bit prime
+// otherwise, not very interesting compared to the split-based avx nmod_vec_dot2_split in FLINT
+// basic, sequential (limit ~32 bits + numterms to analyze)
 ulong _nmod_vec_dot_product_2_split16(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-// v1: vectorized somehow naively (limit ~31 bits + numterms to analyze)
-ulong _nmod_vec_dot_product_2_split16_avx_v1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-// v2: same but starting from uint * , to measure the difference
-ulong _nmod_vec_dot_product_2_split16_avx_v2(const uint * v1, const uint * v2, ulong len, nmod_t mod);
+// avx: vectorized somehow naively (limit ~31 bits + numterms to analyze)
+ulong _nmod_vec_dot_product_2_split16_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+// avx_int: same but starting from uint *
+ulong _nmod_vec_dot_product_2_split16_avx_int(const uint * v1, const uint * v2, ulong len, nmod_t mod);
+ulong _nmod_vec_dot2_half_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+
+// NOTES
 // attempt: vectorized with madd_epi16 (AVX2)
 //    issue: due to madd we split at 15bits instead of 16, and are limited at 30 bits max
 //    and for 30 bits or less this does not bring much compared to the avx2 _nmod_vec_dot2_split already in FLINT
