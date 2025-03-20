@@ -133,6 +133,23 @@ void time_nmod_mat_vec_mul(slong r, slong c, ulong n)
     //t /= nb_iter;
     //printf("%4g\t", t);
 
+    t = 0.0;
+    nb_iter = 0;
+    while (t < 0.5)
+    {
+        _nmod_vec_rand(u, state, c, mod);
+        tt = clock();
+        nmod_mat_mul_nmod_vec_newdot(v, A, u, c);
+        nmod_mat_mul_nmod_vec_newdot(v, A, u, c);
+        nmod_mat_mul_nmod_vec_newdot(v, A, u, c);
+        nmod_mat_mul_nmod_vec_newdot(v, A, u, c);
+        nmod_mat_mul_nmod_vec_newdot(v, A, u, c);
+        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += 5;
+    }
+    t /= nb_iter;
+    printf("%4g\t", t);
+
     printf("\n");
 
     nmod_mat_clear(A);
@@ -150,11 +167,11 @@ void time_nmod_mat_vec_mul(slong r, slong c, ulong n)
 int main()
 {
     //printf("nbits\tr\tc\tmul_nmod_vec\tmatrix mul\tmatrix mul_blas\tnmod_vec_mul\tmatrix mul\tmatrix mul_blas\n");
-    printf("nbits\tr\tc\tmul_nmod_vec\tmatrix mul\tnmod_vec_mul\tmatrix mul\n");
-    for (slong r = 1; r < 200; r += 5)
+    printf("nbits\tr\tc\tmul_nmod_vec\tmatrix mul\tnmod_vec_mul\tmatrix mul\tnmod_vec_newdot\n");
+    for (slong r = 4; r < 200; r += 10)
     {
-        printf("%d\t%ld\t%ld\t", 30, r, r);
-        time_nmod_mat_vec_mul(r, r, (1L << 29) + 1);
+        printf("%d\t%ld\t%ld\t", 32, r, r);
+        time_nmod_mat_vec_mul(r, r, (1L << 32) - 1);
     }
     for (slong r = 1; r < 200; r += 5)
     {
