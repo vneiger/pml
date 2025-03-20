@@ -5,17 +5,36 @@
 /*        TODO: safe to assume this exists?                   */
 /*------------------------------------------------------------*/
 
-#include <flint/flint-config.h>  // for HAVE_FFT_SMALL
 #include <flint/mpn_extras.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
+#include <flint/fft_small.h>
 
+#if (defined __SIZEOF_INT128__ && GMP_LIMB_BITS == 64)
+#define HAS_INT128
+#define mp_dlimb_t unsigned __int128
+#endif
 
-// currently only vectorized for AVX2
-#if (FLINT_HAVE_FFT_SMALL && defined(__AVX2__))
-#   include <immintrin.h>
-#   include <flint/machine_vectors.h>
-#   include <flint/fft_small.h>
+/*------------------------------------------------------------*/
+/* TODO: find the proper way to test                          */
+/*------------------------------------------------------------*/
+#ifdef __AVX2__
+#define HAS_AVX2
+#endif
+
+/*------------------------------------------------------------*/
+/* TODO: find which flags to test for                         */
+/*------------------------------------------------------------*/
+
+#ifdef HAS_AVX2 // TODO: use flint flags for avx512/avx2?
+#include <immintrin.h>
+#endif
+
+#if (GMP_LIMB_BITS == 64)
+#define mp_hlimb_t uint32_t     // half-limb
+#define mp_qlimb_t uint16_t     // quarter-limb
+#define mp_hlimb_signed_t int32_t      // signed half-limb
+#define mp_qlimb_signed_t int16_t       // signed quarter-limb
 #endif
 
 
@@ -28,7 +47,6 @@
 /*------------------------------------------------------------*/
 /* returns the smallest i such that 2^i >= x                  */
 /*------------------------------------------------------------*/
-// TODO slow; use clz? put in FLINT?
 int next_power_of_two(ulong x);
 
 /*------------------------------------------------------------*/
@@ -41,11 +59,70 @@ ulong inverse_mod_power_of_two(ulong p, int k);
 /* finds an element of order at least n                       */
 /* returns 0 if not found                                     */
 /*------------------------------------------------------------*/
-// FIXME could probably be made faster (but is often a precomputation)
 ulong nmod_find_root(long n, nmod_t mod);
 
-#if FLINT_HAVE_FFT_SMALL 
-// (what we really want is to ensure FLINT has machine_vectors.h...)
+
+#ifdef HAS_INT128
+
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* 64 bit modular multiplication using a preconditionner      */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/*------------------------------------------------------------*/
+/* high word of a*b, assuming words are 64 bits               */
+/*------------------------------------------------------------*/
+FLINT_FORCE_INLINE ulong mul_hi(ulong a, ulong b)
+{
+    mp_dlimb_t prod;
+    prod = a * (mp_dlimb_t)b;
+    return prod >> 64;
+}
+
+/*------------------------------------------------------------*/
+/* returns floor (2^64*b)/p                                   */
+/*------------------------------------------------------------*/
+FLINT_FORCE_INLINE ulong prep_mul_mod_precon(ulong b, ulong p)
+{
+    return ((mp_dlimb_t) b << 64) / p;
+}
+
+/*------------------------------------------------------------*/
+/* preconditioned product                                     */
+/* returns ab mod p                                           */
+/* a is in [0..2^64), b is in [0..p)                          */
+/*------------------------------------------------------------*/
+FLINT_FORCE_INLINE ulong mul_mod_precon(ulong a, ulong b, ulong p, ulong i_b)
+{
+    ulong q;
+    long t;
+
+    q = mul_hi(i_b, a);
+    t = a*b - q*p - p;
+    if (t < 0)
+        return t + p;
+    else
+        return t;
+}
+
+/*------------------------------------------------------------*/
+/* returns ab mod p in [0..2p)                                */
+/* a is in [0..2^64), b is in [0..p)                          */
+/*------------------------------------------------------------*/
+FLINT_FORCE_INLINE ulong mul_mod_precon_unreduced(ulong a, ulong b, ulong p, ulong i_b)
+{
+    ulong q;
+
+    q = mul_hi(i_b, a);
+    return a*b - q*p;
+}
+
+#endif
+
+
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -56,12 +133,10 @@ ulong nmod_find_root(long n, nmod_t mod);
 /*------------------------------------------------------------*/
 /* returns a + b mod n, assuming a,b reduced mod n            */
 /*------------------------------------------------------------*/
-// FLINT_FORCE_INLINE vec1n vec1n_addmod(vec1n a, vec1n b, vec1n n)
-// {
-//     return n - b > a ? a + b : a + b - n;
-// }
-
-#ifdef HAS_AVX2  // GV already defined for NEON 
+FLINT_FORCE_INLINE vec1n vec1n_addmod(vec1n a, vec1n b, vec1n n)
+{
+    return n - b > a ? a + b : a + b - n;
+}
 
 /*------------------------------------------------------------*/
 /* returns a + b mod n, assuming a,b reduced mod n            */
@@ -71,21 +146,14 @@ FLINT_FORCE_INLINE vec1d vec1d_addmod(vec1d a, vec1d b, vec1d n)
     return a + b - n >= 0 ? a + b - n : a + b;
 }
 
-#endif
-
-#ifdef HAS_AVX2
-
 /*------------------------------------------------------------*/
 /* returns a + b mod n, assuming a,b reduced mod n            */
 /*------------------------------------------------------------*/
 FLINT_FORCE_INLINE vec4d vec4d_addmod(vec4d a, vec4d b, vec4d n)
 {
-    return vec4d_reduce_2n_to_n(vec4d_add(a, b), n);  // GV not for NEON 
+    return vec4d_reduce_2n_to_n(vec4d_add(a, b), n);
 }
 
-#endif
-
-#ifdef HAS_AVX2  // GV 
 /*------------------------------------------------------------*/
 /* TODO: if AVX512 supported, use cvtepi64_pd instead         */
 /* loads a vec4n from a and converts it to double             */
@@ -100,7 +168,6 @@ FLINT_FORCE_INLINE vec4d vec4d_load_unaligned_nn_ptr(nn_ptr a)
     return vec4n_convert_limited_vec4d(vec4n_load_unaligned(a));
 #endif
 }
-
 
 /*------------------------------------------------------------*/
 /* TODO: if AVX512 supported, use cvtpd_epi64 instead         */
@@ -140,13 +207,7 @@ FLINT_FORCE_INLINE vec2d vec2d_set_d2(double a1, double a0)
     return _mm_set_pd(a0, a1);
 }
 
-#endif 
-
-#define vec4n_bit_shift_right_45(a) 4n_bit_shift_right((a), 45)
-
-
-
-#endif  // FLINT_HAVE_FFT_SMALL
+#define vec4n_bit_shift_right_45(a) vec4n_bit_shift_right((a), 45)
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -205,9 +266,7 @@ void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod
 /* residues[j][i] = input[i] mod prime[j]                     */
 /* for i < nb, j < num_primes                                 */
 /*------------------------------------------------------------*/
-#if FLINT_HAVE_FFT_SMALL
 void nmod_multimod_CRT_reduce(nn_ptr *residues, nn_ptr input, ulong nb, nmod_multimod_CRT_t C);
-#endif  // FLINT_HAVE_FFT_SMALL
 
 
-#endif  // __NMOD_EXTRA__H
+#endif
