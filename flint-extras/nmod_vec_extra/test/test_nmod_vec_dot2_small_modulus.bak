@@ -1,4 +1,6 @@
 #include <assert.h>
+#include <stdlib.h>
+
 #include <flint/nmod.h>  // for nmod_init
 #include <flint/nmod_vec.h>
 
