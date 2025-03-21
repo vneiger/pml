@@ -22,7 +22,10 @@ pkgconfigdir = $(libdir)/pkgconfig
 
 include_pmldir=$(includedir)/pml
 
-VPATH= ../nmod_extra/src ../nmod_vec_extra/src ../nmod_mat_extra/src
+VPATH= 	../nmod_extra/src \
+		../fmpz_extra/src \
+		../nmod_vec_extra/src \
+		../nmod_mat_extra/src
 
 include_pmldir= $(includedir)/pml
 
@@ -36,6 +39,20 @@ libpml_la_SOURCES=  nmod_find_root.c    \
 			        nmod_multimod_CRT_CRT.c \
 			        nmod_multimod_CRT_init.c  
 
+libpml_la_SOURCES+= fmpz_multi_CRT_combine.c \
+					fmpz_multimod_naive_clear.c \
+					fmpz_CRT_naive_CRT.c	\
+					fmpz_multimod_CRT_CRT.c	\
+					fmpz_multimod_naive_init.c \
+					fmpz_CRT_naive_clear.c	\
+					fmpz_multimod_CRT_clear.c	\
+					fmpz_multimod_naive_reduce.c \
+					fmpz_CRT_naive_combine.c	\
+					fmpz_multimod_CRT_init.c \
+					fmpz_CRT_naive_init.c	\
+					fmpz_multimod_CRT_reduce.c
+
+
 libpml_la_SOURCES+= nmod_vec_dot_product.c	\
 					nmod_vec_primes.c \
 					nmod_vec_dot_product_multi.c\
@@ -45,9 +62,14 @@ libpml_la_SOURCES+= nmod_vec_dot_product.c	\
 
 #nmod_mat_mul_small_modulus.c	
 
-libpml_la_SOURCES+=  nmod_mat_mul_newdot.c	\
+libpml_la_SOURCES+= nmod_mat_mul_newdot.c	\
+					nmod_mat_mul_small_modulus.c \
                  	nmod_mat_rand.c \
 					nmod_mat_rotations.c \
 					left_nullspace.c	\
 					nmod_mat_pluq.c
+
+
+
+
 
