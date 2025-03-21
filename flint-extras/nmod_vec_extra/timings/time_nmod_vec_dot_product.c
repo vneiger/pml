@@ -464,7 +464,7 @@ int main(int argc, char ** argv)
     //const slong nlens = 33;
     //const slong lens[] = {2, 3, 4, 5, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 130, 160, 200, 260, 320, 400, 500, 600, 700, 800, 900, 1000, 2000, 4000, 8000, 16000};
 
-    const slong nlens = 9;
+    const slong nlens = 12;
     const slong lens[] = {50, 100, 200, 400, 600, 800, 1000, 2000, 4000, 8000, 16000, 50000, 1000000};
 
     const slong nbits = 19;
