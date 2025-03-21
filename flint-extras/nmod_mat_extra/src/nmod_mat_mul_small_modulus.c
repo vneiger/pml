@@ -5,6 +5,13 @@
 #include "nmod_extra.h"
 #include "nmod_vec_extra.h"
 
+
+#ifdef __AVX2__
+#define HAS_AVX2
+#endif
+
+#ifdef HAS_AVX2  // GV 
+
 /** matrix multiplication using AVX2 instructions for moduli less than 2^30 */
 void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
 {
@@ -110,3 +117,5 @@ void nmod_mat_mul_nmod_vec_small_modulus(nn_ptr v, const nmod_mat_t A, nn_srcptr
                                     len, A->mod, power_two_bis);
 #endif
 }
+
+#endif
