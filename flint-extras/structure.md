@@ -14,11 +14,11 @@ lib
 # fmpz -- multiprecision integers
 
 - fmpz_extra
-some CRT tools
-
+  some CRT tools
+  macOS (with configure): ok  (+ #include <stdlib.h>)
 - fmpz_mat_extra
-multimodular matrix multiplication
-
+  multimodular matrix multiplication
+  ~~macOS~~: cf nmod_mat_mul_small_modulus
 - fmpz_poly_mat_extra
 header for polynomial matrix multiplication (multimod | Waksman);
 **no implementation yet**
@@ -47,16 +47,17 @@ no implementation yet
   some CRT/multimod functions for nmod
      (using <= 4 primes, reduce requires AVX, CRT is ok without AVX)
 
-  macOS: AVX test for small in CRT_CRT (#include <stdlib.h>), for all in CRT_reduce 
-
-  ​	tests: test_multimod_CRT_CRT stops after i=1 in the main loop 
+  ~~macOS~~ (with configure), AVX test for small in CRT_CRT (+ #include <stdlib.h>), for all in CRT_reduce 
+  test_multimod_CRT_CRT, nmod_multimod_CRT_CRT blocks for N=1 and 50 bits 
 
 - nmod_mat_extra   (AVX flags TO DO)
-creating random matrices with particular properties
-row and column rotations
-matrix multiplication with AVX (small modulus)  (TO BE CLEANED + AVX CHECKS)
-PLUQ (uses AVX2 but from things already incorporated in FLINT: should compile as such, to be checked)
-left nullspace
+  creating random matrices with particular properties
+  row and column rotations
+  matrix multiplication with AVX (small modulus)  (TO BE CLEANED + AVX CHECKS)
+  PLUQ (uses AVX2 but from things already incorporated in FLINT: should compile as such, to be checked)
+  left nullspace
+  macOS (with configure): ok but AVX tests in mul_newdot.c and small_modulus.c
+  check to be improved, test_nmod_mat_mul_newdot.bak test_nmod_mat_mul_small_modulus.bak
 
 - nmod_mat_poly_extra
 types and basic functions for polynomial matrices stored as a vector of matrix coefficients
@@ -76,11 +77,13 @@ multiply: some middle-product and multiplication routines using various approach
 
 
 - nmod_vec_extra   (AVX flags TO DO)
-some basic routines
-some dot product routines with unbalanced sizes
-dot product with two vectors as input (TODO : see if still interesting, and clean)
-some dot product experiments for avx with moduli > 32 bits
-dot product multi: basically a vector matrix product, often faster than what is available through FLINT, but not integrated yet
+  some basic routines
+  some dot product routines with unbalanced sizes
+  dot product with two vectors as input (TODO : see if still interesting, and clean)
+  some dot product experiments for avx with moduli > 32 bits
+  dot product multi: basically a vector matrix product, often faster than what is available through FLINT, but not integrated yet
+  macOS (with configure): global AVX test in small_modulus.c and dot_product.c
+  test integer_dot_product ok (others .bak)
 
 ---
 
