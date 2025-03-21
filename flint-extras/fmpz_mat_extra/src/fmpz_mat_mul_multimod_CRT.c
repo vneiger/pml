@@ -5,6 +5,13 @@
 #include "fmpz_extra.h"
 #include "fmpz_mat_extra.h"
 
+#ifdef __AVX2__
+#define HAS_AVX2
+#endif
+
+#ifdef HAS_AVX2  // GV 
+
+
 static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_mat_t B, int sign, flint_bitcnt_t bits)
 {
     nmod_mat_t *mod_A, *mod_B, *mod_C;
@@ -133,3 +140,4 @@ void fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_mat_t B)
     _fmpz_mat_mul_multimod(C, A, B, sign, Cbits);
 }
 
+#endif 

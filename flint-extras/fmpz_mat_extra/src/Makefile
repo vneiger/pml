@@ -6,7 +6,7 @@ OBJS = $(patsubst %.c, $(LIB_DIR)/%.o, $(SOURCES))
 INSTALLED_HEADERS = $(patsubst ../%.h, $(INC_DIR)/%.h, $(HEADERS))
 
 CC = gcc
-CFLAGS = -Wall -Wextra -O3 -march=native -I$(INC_DIR)
+CFLAGS = -Wall -Wextra -O3 -march=native -I$(INC_DIR) -I/usr/local/include -I/opt/homebrew/include
 
 .PHONY: clean
 
