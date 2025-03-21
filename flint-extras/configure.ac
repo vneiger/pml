@@ -114,6 +114,17 @@ AC_CONFIG_LINKS([include/nmod_extra.h:nmod_extra/nmod_extra.h
 include/fmpz_extra.h:fmpz_extra/fmpz_extra.h
 include/nmod_vec_extra.h:nmod_vec_extra/nmod_vec_extra.h
 include/nmod_mat_extra.h:nmod_mat_extra/nmod_mat_extra.h
+include/nmod_poly_extra.h:nmod_poly_extra/nmod_poly_extra.h
+include/nmod_poly_fft.h:nmod_poly_extra/nmod_poly_fft.h
+include/nmod_mat_poly.h:nmod_mat_poly_extra/nmod_mat_poly.h
+include/sagemath_extra.h:sagemath_extra/sagemath_extra.h
+include/nmod_poly_mat_approximant.h:nmod_poly_mat_extra/nmod_poly_mat_approximant.h
+include/nmod_poly_mat_io.h:nmod_poly_mat_extra/nmod_poly_mat_io.h
+include/nmod_poly_mat_arith.h:nmod_poly_mat_extra/nmod_poly_mat_arith.h 
+include/nmod_poly_mat_multiply.h:nmod_poly_mat_extra/nmod_poly_mat_multiply.h
+include/nmod_poly_mat_extra.h:nmod_poly_mat_extra/nmod_poly_mat_extra.h
+include/nmod_poly_mat_utils.h:nmod_poly_mat_extra/nmod_poly_mat_utils.h
+include/nmod_poly_mat_forms.h:nmod_poly_mat_extra/nmod_poly_mat_forms.h
 ])
 
 AC_CONFIG_FILES([
