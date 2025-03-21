@@ -18,13 +18,13 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS= lib  nmod_mat_extra/tests
+SUBDIRS= lib tests
 
 pkgconfigdir = $(libdir)/pkgconfig
 
 include_pmldir=$(includedir)/pml
 
-perfpublisher : nmod_mat_extra/tests/perfpublisher
+#perfpublisher : nmod_mat_extra/tests/perfpublisher
 
 #nmod_mat_extra/tests/perfpublisher:
 #	(cd nmod_mat_extra/tests; ${MAKE} perfpublisher)

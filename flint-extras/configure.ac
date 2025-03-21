@@ -111,6 +111,7 @@ LIBS="$LIBS -lm -lpthread"
 AS_ECHO(["##--------------------------------------##"])
 
 AC_CONFIG_LINKS([include/nmod_extra.h:nmod_extra/nmod_extra.h
+include/fmpz_extra.h:fmpz_extra/fmpz_extra.h
 include/nmod_vec_extra.h:nmod_vec_extra/nmod_vec_extra.h
 include/nmod_mat_extra.h:nmod_mat_extra/nmod_mat_extra.h
 ])
@@ -118,7 +119,7 @@ include/nmod_mat_extra.h:nmod_mat_extra/nmod_mat_extra.h
 AC_CONFIG_FILES([
 Makefile
 lib/Makefile
-nmod_mat_extra/tests/Makefile
+tests/Makefile
 ])
 
 AC_OUTPUT
