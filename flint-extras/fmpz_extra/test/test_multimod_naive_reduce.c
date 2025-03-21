@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <assert.h>
 #include <gmp.h>
 #include <flint/nmod_vec.h>
