@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <flint/flint.h>
 #include <flint/ulong_extras.h>
 #include <flint/fmpz.h>
