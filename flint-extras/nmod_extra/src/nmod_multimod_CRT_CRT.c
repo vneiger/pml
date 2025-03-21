@@ -527,6 +527,7 @@ void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod
 
 #else 
 
+// GV attempt, not sufficient 
 void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod_CRT_t C)
 {
         nmod_large_modulus_CRT(out, residues, nb, C);
