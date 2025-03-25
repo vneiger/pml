@@ -403,6 +403,7 @@ ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, n
     return res;
 }
 
+#if HAVE_AVX_IFMA
 ulong _nmod_vec_dot_product_avx_ifma(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
     ulong i = 0;
@@ -431,7 +432,9 @@ ulong _nmod_vec_dot_product_avx_ifma(nn_srcptr v1, nn_srcptr v2, ulong len, nmod
     NMOD2_RED2(res, dp_hi, dp_lo, mod);
     return res;
 }
+#endif
 
+#if HAVE_AVX512
 ulong _nmod_vec_dot_product_avx512_ifma(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
     ulong i = 0;
@@ -460,7 +463,7 @@ ulong _nmod_vec_dot_product_avx512_ifma(nn_srcptr v1, nn_srcptr v2, ulong len, n
     NMOD2_RED2(res, dp_hi, dp_lo, mod);
     return res;
 }
-
+#endif
 
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
