@@ -158,7 +158,7 @@ int main()
     };
     const ulong nbits[11] = { 4, 11, 21, 26, 30, 31, 32, 41, 51, 61, 64 };
 
-    for (slong i = 6; i < 11; i++)
+    for (slong i = 2; i < 11; i++)
     {
         printf("nbits\tsize\tmul\tclassic\tblas\tnewdot\tsmall_mod\n");
         ulong len = 100;
