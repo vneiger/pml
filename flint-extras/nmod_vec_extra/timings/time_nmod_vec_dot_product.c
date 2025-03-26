@@ -402,56 +402,277 @@ ulong time_nmod_vec_dot_product_split26_cu(ulong len, ulong n, flint_rand_t stat
 
 ulong time_nmod_vec_dot_product_split26_cf(ulong len, ulong n, flint_rand_t state)
 {
-nmod_t mod;
-nmod_init(&mod, n);
+    nmod_t mod;
+    nmod_init(&mod, n);
 
-nn_ptr v1;
-v1 = _nmod_vec_init(len);
-_nmod_vec_rand(v1, state, len, mod);
+    nn_ptr v1;
+    v1 = _nmod_vec_init(len);
+    _nmod_vec_rand(v1, state, len, mod);
 
-nn_ptr v2;
-v2 = _nmod_vec_init(len);
-_nmod_vec_rand(v2, state, len, mod);
+    nn_ptr v2;
+    v2 = _nmod_vec_init(len);
+    _nmod_vec_rand(v2, state, len, mod);
 
-ulong res = 0;
+    ulong res = 0;
 
-{ // TEST
-    const dot_params_t params = _nmod_vec_dot_params(len, mod);
-    ulong res_split = _nmod_vec_dot_product_split26_avx(v1, v2, len, mod);
-    ulong res_correct = _nmod_vec_dot(v1, v2, len, mod, params);
-    if (res_split != res_correct)
-    {
-        printf("\nDOT PRODUCT ERROR!\n");
-        return 0;
+    { // TEST
+        const dot_params_t params = _nmod_vec_dot_params(len, mod);
+        ulong res_split = _nmod_vec_dot_product_split26_avx(v1, v2, len, mod);
+        ulong res_correct = _nmod_vec_dot(v1, v2, len, mod, params);
+        if (res_split != res_correct)
+        {
+            printf("\nDOT PRODUCT ERROR!\n");
+            return 0;
+        }
     }
+
+    double t1;
+    clock_t tt;
+    long nb_iter;
+
+    t1 = 0.0; nb_iter = 0;
+    while (t1 < TIME_THRES)
+    {
+        for (slong i = 0; i < NB_ITER; i++) // warmup
+            res += _nmod_vec_dot_product_split26_avx(v1, v2, len, mod);
+
+        tt = clock();
+        for (slong i = 0; i < NB_ITER; i++)
+            res += _nmod_vec_dot_product_split26_avx(v1, v2, len, mod);
+        t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += NB_ITER;
+    }
+    t1 /= nb_iter;
+    printf("%.1e\t", t1);
+
+    _nmod_vec_clear(v1);
+    _nmod_vec_clear(v2);
+
+    return res;
 }
 
-double t1;
-clock_t tt;
-long nb_iter;
-
-t1 = 0.0; nb_iter = 0;
-while (t1 < TIME_THRES)
+#ifdef HAVE_AVX512
+ulong time_nmod_vec_dot_product_ifma256_cu(ulong len, ulong n, flint_rand_t state)
 {
-    for (slong i = 0; i < NB_ITER; i++) // warmup
-        res += _nmod_vec_dot_product_split26_avx(v1, v2, len, mod);
+    nmod_t mod;
+    nmod_init(&mod, n);
 
-    tt = clock();
+    nn_ptr v1[NB_ITER];
     for (slong i = 0; i < NB_ITER; i++)
-        res += _nmod_vec_dot_product_split26_avx(v1, v2, len, mod);
-    t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
-    nb_iter += NB_ITER;
+    {
+        v1[i] = _nmod_vec_init(len);
+        _nmod_vec_rand(v1[i], state, len, mod);
+    }
+    nn_ptr v2[NB_ITER];
+    for (slong i = 0; i < NB_ITER; i++)
+    {
+        v2[i] = _nmod_vec_init(len);
+        _nmod_vec_rand(v2[i], state, len, mod);
+    }
+    ulong res[NB_ITER];
+
+    { // TEST
+        const dot_params_t params = _nmod_vec_dot_params(len, mod);
+        ulong res_split = _nmod_vec_dot_product_ifma256(v1[0], v2[0], len, mod);
+        ulong res_correct = _nmod_vec_dot(v1[0], v2[0], len, mod, params);
+        if (res_split != res_correct)
+        {
+            printf("\nDOT PRODUCT ERROR!\n");
+            return 0;
+        }
+    }
+
+    double t1;
+    clock_t tt;
+    long nb_iter;
+
+    t1 = 0.0; nb_iter = 0;
+    while (t1 < TIME_THRES)
+    {
+        for (slong i = 0; i < NB_ITER; i++) // warmup
+            res[i] += _nmod_vec_dot_product_ifma256(v1[i], v2[i], len, mod);
+
+        tt = clock();
+        for (slong i = 0; i < NB_ITER; i++)
+            res[i] += _nmod_vec_dot_product_ifma256(v1[i], v2[i], len, mod);
+        t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += NB_ITER;
+    }
+    t1 /= nb_iter;
+    printf("%.1e\t", t1);
+
+    for (slong i = 0; i < NB_ITER; i++)
+    {
+        _nmod_vec_clear(v1[i]);
+        _nmod_vec_clear(v2[i]);
+    }
+
+    return 0;
 }
-t1 /= nb_iter;
-printf("%.1e\t", t1);
 
-_nmod_vec_clear(v1);
-_nmod_vec_clear(v2);
+ulong time_nmod_vec_dot_product_ifma256_cf(ulong len, ulong n, flint_rand_t state)
+{
+    nmod_t mod;
+    nmod_init(&mod, n);
 
-return res;
+    nn_ptr v1;
+    v1 = _nmod_vec_init(len);
+    _nmod_vec_rand(v1, state, len, mod);
+
+    nn_ptr v2;
+    v2 = _nmod_vec_init(len);
+    _nmod_vec_rand(v2, state, len, mod);
+
+    ulong res = 0;
+
+    { // TEST
+        const dot_params_t params = _nmod_vec_dot_params(len, mod);
+        ulong res_split = _nmod_vec_dot_product_ifma256(v1, v2, len, mod);
+        ulong res_correct = _nmod_vec_dot(v1, v2, len, mod, params);
+        if (res_split != res_correct)
+        {
+            printf("\nDOT PRODUCT ERROR!\n");
+            return 0;
+        }
+    }
+
+    double t1;
+    clock_t tt;
+    long nb_iter;
+
+    t1 = 0.0; nb_iter = 0;
+    while (t1 < TIME_THRES)
+    {
+        for (slong i = 0; i < NB_ITER; i++) // warmup
+            res += _nmod_vec_dot_product_ifma256(v1, v2, len, mod);
+
+        tt = clock();
+        for (slong i = 0; i < NB_ITER; i++)
+            res += _nmod_vec_dot_product_ifma256(v1, v2, len, mod);
+        t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += NB_ITER;
+    }
+    t1 /= nb_iter;
+    printf("%.1e\t", t1);
+
+    _nmod_vec_clear(v1);
+    _nmod_vec_clear(v2);
+
+    return res;
 }
 
-ulong time_nmod_vec_dot_product_ifma_cu(ulong len, ulong n, flint_rand_t state)
+ulong time_nmod_vec_dot_product_ifma512_cu(ulong len, ulong n, flint_rand_t state)
+{
+    nmod_t mod;
+    nmod_init(&mod, n);
+
+    nn_ptr v1[NB_ITER];
+    for (slong i = 0; i < NB_ITER; i++)
+    {
+        v1[i] = _nmod_vec_init(len);
+        _nmod_vec_rand(v1[i], state, len, mod);
+    }
+    nn_ptr v2[NB_ITER];
+    for (slong i = 0; i < NB_ITER; i++)
+    {
+        v2[i] = _nmod_vec_init(len);
+        _nmod_vec_rand(v2[i], state, len, mod);
+    }
+    ulong res[NB_ITER];
+
+    { // TEST
+        const dot_params_t params = _nmod_vec_dot_params(len, mod);
+        ulong res_split = _nmod_vec_dot_product_ifma512(v1[0], v2[0], len, mod);
+        ulong res_correct = _nmod_vec_dot(v1[0], v2[0], len, mod, params);
+        if (res_split != res_correct)
+        {
+            printf("\nDOT PRODUCT ERROR!\n");
+            return 0;
+        }
+    }
+
+    double t1;
+    clock_t tt;
+    long nb_iter;
+
+    t1 = 0.0; nb_iter = 0;
+    while (t1 < TIME_THRES)
+    {
+        for (slong i = 0; i < NB_ITER; i++) // warmup
+            res[i] += _nmod_vec_dot_product_ifma512(v1[i], v2[i], len, mod);
+
+        tt = clock();
+        for (slong i = 0; i < NB_ITER; i++)
+            res[i] += _nmod_vec_dot_product_ifma512(v1[i], v2[i], len, mod);
+        t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += NB_ITER;
+    }
+    t1 /= nb_iter;
+    printf("%.1e\t", t1);
+
+    for (slong i = 0; i < NB_ITER; i++)
+    {
+        _nmod_vec_clear(v1[i]);
+        _nmod_vec_clear(v2[i]);
+    }
+
+    return 0;
+}
+
+ulong time_nmod_vec_dot_product_ifma512_cf(ulong len, ulong n, flint_rand_t state)
+{
+    nmod_t mod;
+    nmod_init(&mod, n);
+
+    nn_ptr v1;
+    v1 = _nmod_vec_init(len);
+    _nmod_vec_rand(v1, state, len, mod);
+
+    nn_ptr v2;
+    v2 = _nmod_vec_init(len);
+    _nmod_vec_rand(v2, state, len, mod);
+
+    ulong res = 0;
+
+    { // TEST
+        const dot_params_t params = _nmod_vec_dot_params(len, mod);
+        ulong res_split = _nmod_vec_dot_product_ifma512(v1, v2, len, mod);
+        ulong res_correct = _nmod_vec_dot(v1, v2, len, mod, params);
+        if (res_split != res_correct)
+        {
+            printf("\nDOT PRODUCT ERROR!\n");
+            return 0;
+        }
+    }
+
+    double t1;
+    clock_t tt;
+    long nb_iter;
+
+    t1 = 0.0; nb_iter = 0;
+    while (t1 < TIME_THRES)
+    {
+        for (slong i = 0; i < NB_ITER; i++) // warmup
+            res += _nmod_vec_dot_product_ifma512(v1, v2, len, mod);
+
+        tt = clock();
+        for (slong i = 0; i < NB_ITER; i++)
+            res += _nmod_vec_dot_product_ifma512(v1, v2, len, mod);
+        t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += NB_ITER;
+    }
+    t1 /= nb_iter;
+    printf("%.1e\t", t1);
+
+    _nmod_vec_clear(v1);
+    _nmod_vec_clear(v2);
+
+    return res;
+}
+#endif
+
+#ifdef HAVE_AVX_IFMA
+ulong time_nmod_vec_dot_product_avx_ifma_cu(ulong len, ulong n, flint_rand_t state)
 {
     nmod_t mod;
     nmod_init(&mod, n);
@@ -509,80 +730,25 @@ ulong time_nmod_vec_dot_product_ifma_cu(ulong len, ulong n, flint_rand_t state)
     return 0;
 }
 
-ulong time_nmod_vec_dot_product_ifma_cf(ulong len, ulong n, flint_rand_t state)
-{
-nmod_t mod;
-nmod_init(&mod, n);
-
-nn_ptr v1;
-v1 = _nmod_vec_init(len);
-_nmod_vec_rand(v1, state, len, mod);
-
-nn_ptr v2;
-v2 = _nmod_vec_init(len);
-_nmod_vec_rand(v2, state, len, mod);
-
-ulong res = 0;
-
-{ // TEST
-    const dot_params_t params = _nmod_vec_dot_params(len, mod);
-    ulong res_split = _nmod_vec_dot_product_avx_ifma(v1, v2, len, mod);
-    ulong res_correct = _nmod_vec_dot(v1, v2, len, mod, params);
-    if (res_split != res_correct)
-    {
-        printf("\nDOT PRODUCT ERROR!\n");
-        return 0;
-    }
-}
-
-double t1;
-clock_t tt;
-long nb_iter;
-
-t1 = 0.0; nb_iter = 0;
-while (t1 < TIME_THRES)
-{
-    for (slong i = 0; i < NB_ITER; i++) // warmup
-        res += _nmod_vec_dot_product_avx_ifma(v1, v2, len, mod);
-
-    tt = clock();
-    for (slong i = 0; i < NB_ITER; i++)
-        res += _nmod_vec_dot_product_avx_ifma(v1, v2, len, mod);
-    t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
-    nb_iter += NB_ITER;
-}
-t1 /= nb_iter;
-printf("%.1e\t", t1);
-
-_nmod_vec_clear(v1);
-_nmod_vec_clear(v2);
-
-return res;
-}
-
-ulong time_nmod_vec_dot_product_ifma512_cu(ulong len, ulong n, flint_rand_t state)
+ulong time_nmod_vec_dot_product_avx_ifma_cf(ulong len, ulong n, flint_rand_t state)
 {
     nmod_t mod;
     nmod_init(&mod, n);
 
-    nn_ptr v1[NB_ITER];
-    for (slong i = 0; i < NB_ITER; i++)
-    {
-        v1[i] = _nmod_vec_init(len);
-        _nmod_vec_rand(v1[i], state, len, mod);
-    }
-    nn_ptr v2[NB_ITER];
-    for (slong i = 0; i < NB_ITER; i++)
-    {
-        v2[i] = _nmod_vec_init(len);
-        _nmod_vec_rand(v2[i], state, len, mod);
-    }
-    ulong res[NB_ITER];
+    nn_ptr v1;
+    v1 = _nmod_vec_init(len);
+    _nmod_vec_rand(v1, state, len, mod);
+
+    nn_ptr v2;
+    v2 = _nmod_vec_init(len);
+    _nmod_vec_rand(v2, state, len, mod);
+
+    ulong res = 0;
 
     { // TEST
         const dot_params_t params = _nmod_vec_dot_params(len, mod);
-        ulong res_split = _nmod_vec_dot_product_avx512_ifma(v1[0], v2[0], len, mod);
-        ulong res_correct = _nmod_vec_dot(v1[0], v2[0], len, mod, params);
+        ulong res_split = _nmod_vec_dot_product_avx_ifma(v1, v2, len, mod);
+        ulong res_correct = _nmod_vec_dot(v1, v2, len, mod, params);
         if (res_split != res_correct)
         {
             printf("\nDOT PRODUCT ERROR!\n");
@@ -598,76 +764,23 @@ ulong time_nmod_vec_dot_product_ifma512_cu(ulong len, ulong n, flint_rand_t stat
     while (t1 < TIME_THRES)
     {
         for (slong i = 0; i < NB_ITER; i++) // warmup
-            res[i] += _nmod_vec_dot_product_avx512_ifma(v1[i], v2[i], len, mod);
+            res += _nmod_vec_dot_product_avx_ifma(v1, v2, len, mod);
 
         tt = clock();
         for (slong i = 0; i < NB_ITER; i++)
-            res[i] += _nmod_vec_dot_product_avx512_ifma(v1[i], v2[i], len, mod);
+            res += _nmod_vec_dot_product_avx_ifma(v1, v2, len, mod);
         t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += NB_ITER;
     }
     t1 /= nb_iter;
     printf("%.1e\t", t1);
 
-    for (slong i = 0; i < NB_ITER; i++)
-    {
-        _nmod_vec_clear(v1[i]);
-        _nmod_vec_clear(v2[i]);
-    }
+    _nmod_vec_clear(v1);
+    _nmod_vec_clear(v2);
 
-    return 0;
+    return res;
 }
-
-ulong time_nmod_vec_dot_product_ifma512_cf(ulong len, ulong n, flint_rand_t state)
-{
-nmod_t mod;
-nmod_init(&mod, n);
-
-nn_ptr v1;
-v1 = _nmod_vec_init(len);
-_nmod_vec_rand(v1, state, len, mod);
-
-nn_ptr v2;
-v2 = _nmod_vec_init(len);
-_nmod_vec_rand(v2, state, len, mod);
-
-ulong res = 0;
-
-{ // TEST
-    const dot_params_t params = _nmod_vec_dot_params(len, mod);
-    ulong res_split = _nmod_vec_dot_product_avx512_ifma(v1, v2, len, mod);
-    ulong res_correct = _nmod_vec_dot(v1, v2, len, mod, params);
-    if (res_split != res_correct)
-    {
-        printf("\nDOT PRODUCT ERROR!\n");
-        return 0;
-    }
-}
-
-double t1;
-clock_t tt;
-long nb_iter;
-
-t1 = 0.0; nb_iter = 0;
-while (t1 < TIME_THRES)
-{
-    for (slong i = 0; i < NB_ITER; i++) // warmup
-        res += _nmod_vec_dot_product_avx512_ifma(v1, v2, len, mod);
-
-    tt = clock();
-    for (slong i = 0; i < NB_ITER; i++)
-        res += _nmod_vec_dot_product_avx512_ifma(v1, v2, len, mod);
-    t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
-    nb_iter += NB_ITER;
-}
-t1 /= nb_iter;
-printf("%.1e\t", t1);
-
-_nmod_vec_clear(v1);
-_nmod_vec_clear(v2);
-
-return res;
-}
+#endif
 
 
 /*--------------------------------------------------------------*/
@@ -699,10 +812,15 @@ int main(int argc, char ** argv)
         time_nmod_vec_dot2_half_avx_cu,    // 5
         time_nmod_vec_dot2_half_avx_int_cf,    // 6
         time_nmod_vec_dot2_half_avx_int_cu,    // 7
-        time_nmod_vec_dot_product_ifma_cf,    // 8
-        time_nmod_vec_dot_product_ifma_cu,    // 9
+#if HAVE_AVX512
+        time_nmod_vec_dot_product_ifma256_cf,    // 8
+        time_nmod_vec_dot_product_ifma256_cu,    // 9
         time_nmod_vec_dot_product_ifma512_cf,    // 10
         time_nmod_vec_dot_product_ifma512_cu,    // 11
+#elif HAVE_AVX_IFMA
+        time_nmod_vec_dot_product_avx_ifma_cf,    // 8
+        time_nmod_vec_dot_product_avx_ifma_cu,    // 9
+#endif
     };
 
     if (argc == 1)

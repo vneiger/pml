@@ -403,8 +403,8 @@ ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, n
     return res;
 }
 
-#if HAVE_AVX_IFMA
-ulong _nmod_vec_dot_product_avx_ifma(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
+#if HAVE_AVX512
+ulong _nmod_vec_dot_product_ifma256(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
     ulong i = 0;
     vec4n dp_vlo = vec4n_zero();
@@ -432,10 +432,8 @@ ulong _nmod_vec_dot_product_avx_ifma(nn_srcptr v1, nn_srcptr v2, ulong len, nmod
     NMOD2_RED2(res, dp_hi, dp_lo, mod);
     return res;
 }
-#endif
 
-#if HAVE_AVX512
-ulong _nmod_vec_dot_product_avx512_ifma(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
+ulong _nmod_vec_dot_product_ifma512(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
     ulong i = 0;
     __m512i dp_vlo = _mm512_setzero_si512();
@@ -450,6 +448,37 @@ ulong _nmod_vec_dot_product_avx512_ifma(nn_srcptr v1, nn_srcptr v2, ulong len, n
 
     ulong dp_lo = _mm512_reduce_add_epi64(dp_vlo);
     ulong dp_hi = _mm512_reduce_add_epi64(dp_vhi);
+
+    add_ssaaaa(dp_hi, dp_lo, 0, (dp_hi<<52), (dp_hi>>12), dp_lo);
+    for ( ; i < len; i++)
+    {
+        ulong s0, s1;
+        umul_ppmm(s1, s0, v1[i], v2[i]);
+        add_ssaaaa(dp_hi, dp_lo, dp_hi, dp_lo, s1, s0);
+    }
+
+    ulong res;
+    NMOD2_RED2(res, dp_hi, dp_lo, mod);
+    return res;
+}
+#endif
+
+#if HAVE_AVX_IFMA
+ulong _nmod_vec_dot_product_avx_ifma(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
+{
+    ulong i = 0;
+    vec4n dp_vlo = vec4n_zero();
+    vec4n dp_vhi = vec4n_zero();
+    for ( ; i+3 < len; i+=4)
+    {
+        __m256i v1i = vec4n_load_unaligned(v1+i);
+        __m256i v2i = vec4n_load_unaligned(v2+i);
+        dp_vlo = _mm256_madd52lo_avx_epu64(dp_vlo, v1i, v2i);
+        dp_vhi = _mm256_madd52hi_avx_epu64(dp_vhi, v1i, v2i);
+    }
+
+    ulong dp_lo = vec4n_horizontal_sum(dp_vlo);
+    ulong dp_hi = vec4n_horizontal_sum(dp_vhi);
 
     add_ssaaaa(dp_hi, dp_lo, 0, (dp_hi<<52), (dp_hi>>12), dp_lo);
     for ( ; i < len; i++)
