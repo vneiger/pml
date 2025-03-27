@@ -22,26 +22,27 @@
 *  https://stackoverflow.com/questions/60108658/fastest-method-to-calculate-sum-of-all-packed-32-bit-integers-using-avx512-or-av
 ************/
 
-#ifdef HAS_AVX2  // GV 
-static inline
-uint hsum_epi32_avx(__m128i x)
-{
-    __m128i hi64  = _mm_unpackhi_epi64(x, x);           // 3-operand non-destructive AVX lets us save a byte without needing a movdqa
-    __m128i sum64 = _mm_add_epi32(hi64, x);
-    __m128i hi32  = _mm_shuffle_epi32(sum64, _MM_SHUFFLE(2, 3, 0, 1));    // Swap the low two elements
-    __m128i sum32 = _mm_add_epi32(sum64, hi32);
-    return _mm_cvtsi128_si32(sum32);       // movd
-}
 
-// only needs AVX2
-uint hsum_8x32(__m256i v)
-{
-    __m128i sum128 = _mm_add_epi32(
-                 _mm256_castsi256_si128(v),
-                 _mm256_extracti128_si256(v, 1)); // silly GCC uses a longer AXV512VL instruction if AVX512 is enabled :/
-    return hsum_epi32_avx(sum128);
-}
-#endif
+//static inline
+//uint hsum_epi32_avx(__m128i x)
+//{
+//    __m128i hi64  = _mm_unpackhi_epi64(x, x);           // 3-operand non-destructive AVX lets us save a byte without needing a movdqa
+//    __m128i sum64 = _mm_add_epi32(hi64, x);
+//    __m128i hi32  = _mm_shuffle_epi32(sum64, _MM_SHUFFLE(2, 3, 0, 1));    // Swap the low two elements
+//    __m128i sum32 = _mm_add_epi32(sum64, hi32);
+//    return _mm_cvtsi128_si32(sum32);       // movd
+//}
+//
+//// only needs AVX2
+//uint hsum_8x32(__m256i v)
+//{
+//    __m128i sum128 = _mm_add_epi32(
+//                 _mm256_castsi256_si128(v),
+//                 _mm256_extracti128_si256(v, 1)); // silly GCC uses a longer AXV512VL instruction if AVX512 is enabled :/
+//    return hsum_epi32_avx(sum128);
+//}
+
+
 
 /* ------------------------------------------------------------ */
 /* number of limbs needed for a dot product of length len       */
@@ -411,6 +412,101 @@ ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, n
     NMOD2_RED2(res, dp_hi, dp_lo, mod);
     return res;
 }
+
 #endif
+
+
+#if HAVE_AVX512
+ulong _nmod_vec_dot_product_ifma256(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
+{
+    ulong i = 0;
+    vec4n dp_vlo = vec4n_zero();
+    vec4n dp_vhi = vec4n_zero();
+    for ( ; i+3 < len; i+=4)
+    {
+        __m256i v1i = vec4n_load_unaligned(v1+i);
+        __m256i v2i = vec4n_load_unaligned(v2+i);
+        dp_vlo = _mm256_madd52lo_epu64(dp_vlo, v1i, v2i);
+        dp_vhi = _mm256_madd52hi_epu64(dp_vhi, v1i, v2i);
+    }
+
+    ulong dp_lo = vec4n_horizontal_sum(dp_vlo);
+    ulong dp_hi = vec4n_horizontal_sum(dp_vhi);
+
+    add_ssaaaa(dp_hi, dp_lo, 0, (dp_hi<<52), (dp_hi>>12), dp_lo);
+    for ( ; i < len; i++)
+    {
+        ulong s0, s1;
+        umul_ppmm(s1, s0, v1[i], v2[i]);
+        add_ssaaaa(dp_hi, dp_lo, dp_hi, dp_lo, s1, s0);
+    }
+
+    ulong res;
+    NMOD2_RED2(res, dp_hi, dp_lo, mod);
+    return res;
+}
+
+ulong _nmod_vec_dot_product_ifma512(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
+{
+    ulong i = 0;
+    __m512i dp_vlo = _mm512_setzero_si512();
+    __m512i dp_vhi = _mm512_setzero_si512();
+    for ( ; i+7 < len; i+=8)
+    {
+        __m512i v1i = _mm512_loadu_si512(v1+i);
+        __m512i v2i = _mm512_loadu_si512(v2+i);
+        dp_vlo = _mm512_madd52lo_epu64(dp_vlo, v1i, v2i);
+        dp_vhi = _mm512_madd52hi_epu64(dp_vhi, v1i, v2i);
+    }
+
+    ulong dp_lo = _mm512_reduce_add_epi64(dp_vlo);
+    ulong dp_hi = _mm512_reduce_add_epi64(dp_vhi);
+
+    add_ssaaaa(dp_hi, dp_lo, 0, (dp_hi<<52), (dp_hi>>12), dp_lo);
+    for ( ; i < len; i++)
+    {
+        ulong s0, s1;
+        umul_ppmm(s1, s0, v1[i], v2[i]);
+        add_ssaaaa(dp_hi, dp_lo, dp_hi, dp_lo, s1, s0);
+    }
+
+    ulong res;
+    NMOD2_RED2(res, dp_hi, dp_lo, mod);
+    return res;
+}
+#endif
+
+#if HAVE_AVX_IFMA
+ulong _nmod_vec_dot_product_avx_ifma(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
+{
+    ulong i = 0;
+    vec4n dp_vlo = vec4n_zero();
+    vec4n dp_vhi = vec4n_zero();
+    for ( ; i+3 < len; i+=4)
+    {
+        __m256i v1i = vec4n_load_unaligned(v1+i);
+        __m256i v2i = vec4n_load_unaligned(v2+i);
+        dp_vlo = _mm256_madd52lo_avx_epu64(dp_vlo, v1i, v2i);
+        dp_vhi = _mm256_madd52hi_avx_epu64(dp_vhi, v1i, v2i);
+    }
+
+    ulong dp_lo = vec4n_horizontal_sum(dp_vlo);
+    ulong dp_hi = vec4n_horizontal_sum(dp_vhi);
+
+    add_ssaaaa(dp_hi, dp_lo, 0, (dp_hi<<52), (dp_hi>>12), dp_lo);
+    for ( ; i < len; i++)
+    {
+        ulong s0, s1;
+        umul_ppmm(s1, s0, v1[i], v2[i]);
+        add_ssaaaa(dp_hi, dp_lo, dp_hi, dp_lo, s1, s0);
+    }
+
+    ulong res;
+    NMOD2_RED2(res, dp_hi, dp_lo, mod);
+    return res;
+}
+#endif
+
+
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

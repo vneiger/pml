@@ -130,18 +130,14 @@ ulong _nmod_vec_dot2_half_avx_int(const uint * v1, const uint * v2, ulong len, n
 ulong _nmod_vec_dot_product_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
 ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
 
-
-
-
-
-
-
-
-
-
-
-
-
+// TODO in progress: ifma attempt
+#if HAVE_AVX512   // TODO handle AVX flags
+ulong _nmod_vec_dot_product_ifma256(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+ulong _nmod_vec_dot_product_ifma512(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+#endif
+#if HAVE_AVX_IFMA   // TODO handle AVX flags
+ulong _nmod_vec_dot_product_avx_ifma(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+#endif
 
 
 
