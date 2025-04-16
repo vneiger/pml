@@ -9,7 +9,7 @@
 #define HAS_AVX2
 #endif
 
-#ifdef HAS_AVX2  // GV 
+#ifdef HAS_AVX2  // GV
 
 
 static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_mat_t B, int sign, flint_bitcnt_t bits)
@@ -20,7 +20,7 @@ static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_
     fmpz_multimod_CRT_t CRT;
     nn_ptr primes, residues;
     fmpz_t half_top;
-    
+
     m = A->r;
     k = A->c;
     n = B->c;
@@ -41,14 +41,14 @@ static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_
     mod_A = FLINT_ARRAY_ALLOC(num_primes, nmod_mat_t);
     mod_B = FLINT_ARRAY_ALLOC(num_primes, nmod_mat_t);
     mod_C = FLINT_ARRAY_ALLOC(num_primes, nmod_mat_t);
-    
+
     for (i = 0; i < num_primes; i++)
     {
         nmod_mat_init(mod_A[i], m, k, primes[i]);
         nmod_mat_init(mod_B[i], k, n, primes[i]);
         nmod_mat_init(mod_C[i], m, n, primes[i]);
     }
-    
+
     fmpz_multimod_CRT_init(CRT, primes, num_primes);
     fmpz_init(half_top);
 
@@ -56,7 +56,7 @@ static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_
         fmpz_fdiv_q_2exp(half_top, CRT->product_primes, 1);
 
     residues = FLINT_ARRAY_ALLOC(num_primes, ulong);
-    
+
     for (i = 0; i < m; i++)
         for (j = 0; j < k; j++)
         {
@@ -65,7 +65,7 @@ static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_
                 nmod_mat_entry(mod_A[l], i, j) = residues[l];
         }
 
-    
+
     for (i = 0; i < k; i++)
         for (j = 0; j < n; j++)
         {
@@ -77,14 +77,14 @@ static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_
 
     for (i = 0; i < num_primes; i++)
         nmod_mat_mul_small_modulus(mod_C[i], mod_A[i], mod_B[i]);
-    
+
 
     for (i = 0; i < m; i++)
         for (j = 0; j < n; j++)
         {
             for (l = 0; l < num_primes; l++)
                 residues[l] = nmod_mat_entry(mod_C[l], i, j);
-            
+
             fmpz_multimod_CRT_CRT(fmpz_mat_entry(C, i, j), residues, CRT);
 
             /* T > M/2 iff floor(M/2) < T */
@@ -112,7 +112,7 @@ static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_
 /** ------------------------------------------------------------ */
 /** a multimodular algorithm for matrix multiplication           */
 /** based on flint's fmpz_mat_mul_multi_mod implementation       */
-/** uses our fmpz_multimod_CRT nmod_mat_mul_small_modulus        */ 
+/** uses our fmpz_multimod_CRT nmod_mat_mul_small_modulus        */
 /** ------------------------------------------------------------ */
 void fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_mat_t B)
 {
@@ -140,4 +140,4 @@ void fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_mat_t B)
     _fmpz_mat_mul_multimod(C, A, B, sign, Cbits);
 }
 
-#endif 
+#endif
