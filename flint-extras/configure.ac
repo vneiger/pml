@@ -129,6 +129,7 @@ include/nmod_poly_mat_forms.h:nmod_poly_mat_extra/nmod_poly_mat_forms.h
 
 AC_CONFIG_FILES([
 Makefile
+include/Makefile
 lib/Makefile
 tests/Makefile
 ])

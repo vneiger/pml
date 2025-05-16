@@ -16,17 +16,23 @@
 #   along with mapml. If not, see <http://www.gnu.org/licenses/>. 
 
 
-ACLOCAL_AMFLAGS = -I m4
-
-SUBDIRS= include lib tests 
-
-pkgconfigdir = $(libdir)/pkgconfig
 
 include_pmldir=$(includedir)/pml
 
-#perfpublisher : nmod_mat_extra/tests/perfpublisher
+include_pml_HEADERS=  fmpz_extra.h \
+	nmod_extra.h \
+	nmod_poly_mat_approximant.h	\
+	nmod_poly_mat_multiply.h \
+	fmpz_mat_extra.h \
+	nmod_mat_extra.h \
+	nmod_poly_mat_arith.h \
+	nmod_poly_mat_utils.h \
+	nmod_mat_poly.h \
+	nmod_poly_mat_extra.h \
+	nmod_vec_extra.h \
+	nmod_poly_extra.h \
+	nmod_poly_mat_forms.h \
+	sagemath_extra.h \
+	nmod_poly_fft.h \
+	nmod_poly_mat_io.h
 
-#nmod_mat_extra/tests/perfpublisher:
-#	(cd nmod_mat_extra/tests; ${MAKE} perfpublisher)
-
-EXTRA_DIST= autogen.sh

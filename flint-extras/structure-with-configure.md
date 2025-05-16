@@ -36,6 +36,7 @@ The tree structure of flint-extras is kept, with extra directories and files
 #### Management 
 
 - `configure.ac`:  modify `AC_CONFIG_LINKS` for include files 
+- `include/Makefile.am`: add include files for installation  
 - `lib/Makefile.am`: add src directories and files for building objects and the library 
 - `tests/Makefile.am`: add tests directories and files for make check 
 
