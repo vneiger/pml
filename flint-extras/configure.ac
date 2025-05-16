@@ -112,6 +112,7 @@ AS_ECHO(["##--------------------------------------##"])
 
 AC_CONFIG_LINKS([include/nmod_extra.h:nmod_extra/nmod_extra.h
 include/fmpz_extra.h:fmpz_extra/fmpz_extra.h
+include/fmpz_mat_extra.h:fmpz_mat_extra/fmpz_mat_extra.h
 include/nmod_vec_extra.h:nmod_vec_extra/nmod_vec_extra.h
 include/nmod_mat_extra.h:nmod_mat_extra/nmod_mat_extra.h
 include/nmod_poly_extra.h:nmod_poly_extra/nmod_poly_extra.h
