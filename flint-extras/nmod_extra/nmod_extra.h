@@ -65,7 +65,6 @@ ulong nmod_find_root(long n, nmod_t mod);
 #ifdef HAS_INT128
 
 
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* 64 bit modular multiplication using a preconditionner      */
