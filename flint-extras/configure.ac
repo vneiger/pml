@@ -56,7 +56,7 @@ AC_LANG([C++])
 AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_MAKE_SET
-AX_CXX_COMPILE_STDCXX([11],[noext],[mandatory])     # GV outdated ? 
+AX_CXX_COMPILE_STDCXX([11],[noext],[mandatory]) # GV outdated ? 
 
 
 # Checks for typedefs, structures, and compiler characteristics.
