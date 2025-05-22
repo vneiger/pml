@@ -3,6 +3,8 @@
 Additions to the NTL and FLINT libraries, with a focus on univariate polynomial
 matrices, structured matrices, and their applications.
 
+The FLINT version is currently under development, and unstable.
+
 Version 0.3
 
 ## Authors
