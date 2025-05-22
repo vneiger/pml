@@ -101,7 +101,7 @@ _mm256_mulmod_precomp_lazy(__m256i a, __m256i b, __m256i a_pr, __m256i n, __m256
     v0 = _mm256_mullo_epi64(b, a); \
     v1 = _mm256_mullo_epi64(v2, n); \
     v2 = _mm256_sub_epi64(v0, v1); \
-    res = _mm256_min_epu64(v2, _mm256_sub_epi64(a, n2)); \
+    res = _mm256_min_epu64(v2, _mm256_sub_epi64(v2, n2)); \
 }
 
 #define _MM512_MULMOD_PRECOMP_LAZY_V2(res, a, b, a_pr, veca_pr_hi, n, n2) \
@@ -123,8 +123,22 @@ _mm256_mulmod_precomp_lazy(__m256i a, __m256i b, __m256i a_pr, __m256i n, __m256
     v0 = _mm512_mullo_epi64(b, a); \
     v1 = _mm512_mullo_epi64(v2, n); \
     v2 = _mm512_sub_epi64(v0, v1); \
-    res = _mm512_min_epu64(v2, _mm512_sub_epi64(a, n2)); \
+    res = _mm512_min_epu64(v2, _mm512_sub_epi64(v2, n2)); \
 }
+
+// basic experiment to measure what might happen if a_pr < 32b
+// (a bit too basic: some steps missing)
+#define _MM512_MULMOD_PRECOMP_LAZY_V2_32b(res, a, b, a_pr, n, n2) \
+{ \
+    __m512i v0, v1; \
+    v0 = _mm512_srli_epi64(b, 32);           \
+    v1 = _mm512_mullo_epi64(a_pr, v0); \
+    v0 = _mm512_mullo_epi64(b, a); \
+    v1 = _mm512_mullo_epi64(v1, n); \
+    v1 = _mm512_sub_epi64(v0, v1); \
+    res = _mm512_min_epu64(v1, _mm512_sub_epi64(v1, n2)); \
+}
+
 
 #define NB_ITER 16384
 
@@ -588,6 +602,40 @@ void sample_shoup_avx512_macro(void * FLINT_UNUSED(arg), ulong count)
     flint_free(array);
     FLINT_TEST_CLEAR(state);
 }
+
+void sample_shoup_avx512_32b_macro(void * FLINT_UNUSED(arg), ulong count)
+{
+    nn_ptr array = (nn_ptr) flint_malloc(NB_ITER*sizeof(ulong));
+    FLINT_TEST_INIT(state);
+
+    for (ulong i = 0; i < count; i++)
+    {
+        ulong bits = n_randint(state, FLINT_BITS - 2) + 1;  // 1...62
+        ulong d = n_randbits(state, bits);  // 0 < d < 2**(FLINT_BITS-1) required by mulmod_shoup
+        ulong a = n_randint(state, d);  // a must be < d
+
+        for (ulong j = 0; j < NB_ITER; j++)
+            array[j] = n_randlimb(state);  // array[j] is arbitrary
+
+        const ulong a_pr = n_mulmod_precomp_shoup(a, d);
+
+        prof_start();
+        const __m512i veca = _mm512_set1_epi64(a);
+        const __m512i vecn = _mm512_set1_epi64(d);
+        const __m512i vecn2 = _mm512_set1_epi64(d);
+        const __m512i veca_pr = _mm512_set1_epi64(a_pr);
+        for (ulong j = 0; j+7 < NB_ITER; j+=8)
+        {
+            __m512i vecaj = _mm512_loadu_si512((__m512i *)(array+j));
+            _MM512_MULMOD_PRECOMP_LAZY_V2_32b(vecaj, veca, vecaj, veca_pr, vecn, vecn2);
+            _mm512_storeu_si512((__m512i *)(array+j), vecaj);
+        }
+        prof_stop();
+    }
+
+    flint_free(array);
+    FLINT_TEST_CLEAR(state);
+}
 #endif
 
 int main(void)
@@ -596,23 +644,19 @@ int main(void)
 
     flint_printf("mulmod min time / max time is:\n");
 
-//    prof_repeat(&min, &max, sample, NULL);
-//    flint_printf("   - basic special red: %.3f cycles / %.3f cycles\n",
-//            (min/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER, (max/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER);
-//
-//    prof_repeat(&min, &max, sample_avx2, NULL);
-//    flint_printf("   - basic special red AVX2: %.3f cycles / %.3f cycles\n",
-//            (min/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER, (max/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER);
-//
-//    prof_repeat(&min, &max, sample_avx2_2, NULL);
-//    flint_printf("   - basic special red AVX2 (two arrays): %.3f cycles / %.3f cycles\n",
-//            (min/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER, (max/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER);
-//
-//#if defined(__AVX512F__)
-//    prof_repeat(&min, &max, sample_avx512, NULL);
-//    flint_printf("   - basic special red AVX512: %.3f cycles / %.3f cycles\n",
-//            (min/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER, (max/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER);
-//#endif
+    prof_repeat(&min, &max, sample, NULL);
+    flint_printf("   - basic special red: %.3f cycles / %.3f cycles\n",
+            (min/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER, (max/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER);
+
+    prof_repeat(&min, &max, sample_avx2, NULL);
+    flint_printf("   - basic special red AVX2: %.3f cycles / %.3f cycles\n",
+            (min/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER, (max/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER);
+
+#if defined(__AVX512F__)
+    prof_repeat(&min, &max, sample_avx512, NULL);
+    flint_printf("   - basic special red AVX512: %.3f cycles / %.3f cycles\n",
+            (min/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER, (max/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER);
+#endif
 
     prof_repeat(&min, &max, sample_shoup, NULL);
     flint_printf("   - Shoup excluding precomputation: %.3f cycles / %.3f cycles\n",
@@ -641,6 +685,10 @@ int main(void)
 
     prof_repeat(&min, &max, sample_shoup_avx512_macro, NULL);
     flint_printf("   - Shoup excluding precomputation macro, avx512: %.3f cycles / %.3f cycles\n",
+            (min/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER, (max/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER);
+
+    prof_repeat(&min, &max, sample_shoup_avx512_32b_macro, NULL);
+    flint_printf("   - Shoup excluding precomputation macro, avx512 32b: %.3f cycles / %.3f cycles\n",
             (min/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER, (max/(double)FLINT_CLOCK_SCALE_FACTOR)/NB_ITER);
 #endif
 
