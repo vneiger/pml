@@ -103,15 +103,8 @@ In `timings`, timing files should be called time-something.\{c,cpp\}
 
 Code style:
 
-  - with vim and emacs, simply respect the modelines
   - no hard tabulation
   - soft tabulations, 4 spaces
   - scope delimiter \{ \} on their own line
   - scope delimiters are not required here when they are not required by C++
     (e.g. for one-line if or for)
-  - when creating a new file, add the modelines at the bottom of the file:
-
-```
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
-```
