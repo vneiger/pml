@@ -144,8 +144,9 @@ void one_bench_pmbasis(long rdim, long cdim, long degree, long order)
     }
 
     cout << rdim << "\t" << cdim << "\t" << degree << "\t" << order;
-    cout << "\t" << t_pmbasis_app << "\t" << t_pmbasis_int << "\t" << t_pmbasis_intgeom;
-    cout << "\t" << t_pmbasis2x1;
+    cout << "\t" << t_pmbasis_app;
+    //cout << "\t" << t_pmbasis_app << "\t" << t_pmbasis_int << "\t" << t_pmbasis_intgeom;
+    //cout << "\t" << t_pmbasis2x1;
 
     if (applin)
         std::cout << "\t" << t_pmbasis_applin;
@@ -205,7 +206,8 @@ void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim
 
         for (size_t i=0; i<szs.size(); ++i)
         {
-            VecLong cdims = {szs[i]/4, szs[i]/2, 3*szs[i]/4};
+            //VecLong cdims = {szs[i]/4, szs[i]/2, 3*szs[i]/4};
+            VecLong cdims = {1};
             for (long j : cdims)
                 if (j > 0)
                 {
@@ -236,6 +238,56 @@ void run_bench(long nthreads, long nbits, bool fftprime, long rdim=-1, long cdim
 }
 
 /*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+void run_bench_applin(long nthreads, long nbits, bool fftprime)
+{
+    SetNumThreads(nthreads);
+
+    if (fftprime)
+    {
+        cout << "Bench pmbasis, FFT prime p = ";
+        if (nbits < 25)
+        {
+            zz_p::UserFFTInit(786433); // 20 bits
+            cout << zz_p::modulus() << ", bit length = " << 20 << endl;
+        }
+        else if (nbits < 35)
+        {
+            zz_p::UserFFTInit(2013265921); // 31 bits
+            cout << zz_p::modulus() << ", bit length = " << 31 << endl;
+        }
+        else if (nbits < 45)
+        {
+            zz_p::UserFFTInit(2748779069441); // 42 bits
+            cout << zz_p::modulus() << ", bit length = " << 42 << endl;
+        }
+        else if (nbits < 61)
+        {
+            zz_p::FFTInit(0);
+            std::cout << zz_p::modulus() << ", bit length = " << NumBits(zz_p::modulus()) << std::endl;
+        }
+        else
+        {
+            std::cout << "Asking for FFT prime with too large bitsize (> 60). Exiting." << std::endl;
+            return;
+        }
+    }
+    else
+    {
+        cout << "Bench pmbasis, random prime p = ";
+        zz_p::init(NTL::GenPrime_long(nbits));
+        cout << zz_p::modulus() << ", bit length = " << nbits << endl;
+    }
+
+    std::cout << "Note: negative timings for interpolant variants indicate that not enough interpolation points could be found in the base field." << std::endl;
+    cout << "rdim\tcdim\tdeg\torder\tapp\t\tint\t\tint-geo" << endl;
+
+    for (size_t m=2; m<500; m+=5)
+        one_bench_pmbasis(m,1,4095,4096); // degree ~ order
+    cout << endl;
+}
+
+/*------------------------------------------------------------*/
 /* main calls check                                           */
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
@@ -259,7 +311,8 @@ int main(int argc, char ** argv)
         run_bench(1,nbits,fftprime,rdim,cdim,degree,order);
     }
     else
-        run_bench(1,nbits,fftprime);
+        //run_bench(1,nbits,fftprime);
+        run_bench_applin(1,nbits,fftprime);
 
     return 0;
 }

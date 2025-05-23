@@ -52,8 +52,8 @@ int verify_row_rank_profile(const nmod_poly_mat_t mat, const slong * rrp, slong 
         slong end = (i==rank) ? mat->r : rrp[i];
         for (slong ii = start; ii < end; ii++)
         {
-            if (ii == start) stack_row(submat, mat->rows[ii]);
-            else replace_last_row(submat, mat->rows[ii]);
+            if (ii == start) stack_row(submat, nmod_poly_mat_entry(mat, ii, 0));
+            else replace_last_row(submat, nmod_poly_mat_entry(mat, ii, 0));
             if (nmod_poly_mat_rank(submat) != i)
             {
                 nmod_poly_mat_clear(submat);
@@ -65,9 +65,9 @@ int verify_row_rank_profile(const nmod_poly_mat_t mat, const slong * rrp, slong 
         if (i < rank)
         {
             if (submat->r == i) // happens when start == end; above for loop did nothing
-                stack_row(submat, mat->rows[rrp[i]]);
+                stack_row(submat, nmod_poly_mat_entry(mat, rrp[i], 0));
             else
-                replace_last_row(submat, mat->rows[rrp[i]]);
+                replace_last_row(submat, nmod_poly_mat_entry(mat, rrp[i], 0));
             if (nmod_poly_mat_rank(submat) != i+1)
             {
                 nmod_poly_mat_clear(submat);
@@ -295,6 +295,7 @@ int core_test_weak_popov_form(const nmod_poly_mat_t mat, const slong * shift, in
 #else
         slong rk = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(wpf, shift, tsf, NULL, pivind, rrp, 0, 0, mat->r, mat->c, mat->r, ROW_LOWER);
 #endif /* ifdef NOTRANS */
+
         timeit_stop(timer);
         if (time)
             flint_printf("-- time (iter - rowbyrow - ur): %wd ms\n", timer->wall);
@@ -617,7 +618,7 @@ int main(int argc, char ** argv)
     flint_rand_t state;
     flint_rand_init(state);
     srand(time(NULL));
-    flint_randseed(state, rand(), rand());
+    flint_rand_set_seed(state, rand(), rand());
 
     int res = 0;
 

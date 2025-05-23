@@ -1,4 +1,8 @@
+#include <time.h>
+#include <stdlib.h>
+
 #include <flint/flint.h>
+
 #include "nmod_mat_poly.h"
 
 int main(int argc, char *argv[])
@@ -6,7 +10,7 @@ int main(int argc, char *argv[])
     flint_rand_t state;
     flint_rand_init(state);
     srand(time(NULL));
-    flint_randseed(state, rand(), rand());
+    flint_rand_set_seed(state, rand(), rand());
 
     const long prime = 7;
     const long rdim = 4;

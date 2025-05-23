@@ -68,9 +68,10 @@ int main()
     // False
     nmod_poly_mat_t mat2;
     nmod_poly_mat_init_set(mat2, mat);
-    nmod_poly_struct * tmp = mat2->rows[0];
-    mat2->rows[0] = mat2->rows[1];
-    mat2->rows[1] = tmp;
+    for (slong j = 0; j < mat2->c; j++)
+        FLINT_SWAP(nmod_poly_struct,
+                   *nmod_poly_mat_entry(mat2, 0, j),
+                   *nmod_poly_mat_entry(mat2, 1, j));
     printf("Consider input matrix with swapped rows:\n");
     nmod_poly_mat_print_pretty(mat2, "x");
     printf("\n");

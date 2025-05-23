@@ -3,7 +3,8 @@
 #include <flint/nmod_vec.h>
 #include <flint/fmpz.h>
 
-#include "nmod_vec_extra.h"
+#include "nmod_vec_extra.h"  // for rand
+#include "nmod_extra.h"
 
 /*----------------------------------------------------------------*/
 /* reduces 1001 inputs of size n_bits, modulo num_primes primes   */

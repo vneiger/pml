@@ -1,6 +1,9 @@
+#include <time.h>
+#include <stdlib.h>
+
 #include <flint/flint.h>
+
 #include "nmod_mat_poly.h"
-#include "nmod_poly_mat_extra.h"
 #include "nmod_poly_mat_io.h"
 #include "nmod_poly_mat_utils.h"
 
@@ -9,7 +12,7 @@ int main(int argc, char *argv[])
     flint_rand_t state;
     flint_rand_init(state);
     srand(time(NULL));
-    flint_randseed(state, rand(), rand());
+    flint_rand_set_seed(state, rand(), rand());
 
     printf("building random matrices over GF(7)...\n");
     nmod_mat_poly_t mat1, mat2;

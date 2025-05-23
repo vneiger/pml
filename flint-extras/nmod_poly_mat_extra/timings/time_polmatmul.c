@@ -76,24 +76,24 @@ void benchmark_polmatmul(long rdim, long idim, long cdim, long deg, ulong prime,
     else
         printf("\t-\t");
 
-    if (1)
+    if (0)
     { // PML 3-primes
-        nmod_poly_mat_init(c2, rdim, cdim, prime);
-        t = 0.0; nb_iter = 0;
-        while (t<0.5)
-        {
-            tt = clock();
-            nmod_poly_mat_mul_3_primes(c2, a, b);
-            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-            ++nb_iter;
-        }
-            t /= nb_iter;
-            printf("\t%f", t);
-            if (!nmod_poly_mat_equal(c1, c2))
-            {
-                printf("\terror with 3 primes\n");
-                return;
-            }
+    //    nmod_poly_mat_init(c2, rdim, cdim, prime);
+    //    t = 0.0; nb_iter = 0;
+    //    while (t<0.5)
+    //    {
+    //        tt = clock();
+    //        nmod_poly_mat_mul_3_primes(c2, a, b);
+    //        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+    //        ++nb_iter;
+    //    }
+    //        t /= nb_iter;
+    //        printf("\t%f", t);
+    //        if (!nmod_poly_mat_equal(c1, c2))
+    //        {
+    //            printf("\terror with 3 primes\n");
+    //            return;
+    //        }
     }
     else
         printf("\t-\t");

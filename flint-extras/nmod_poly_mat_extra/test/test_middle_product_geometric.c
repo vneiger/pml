@@ -14,7 +14,7 @@ void test_nmod_poly_mat_middle_product(ulong m, ulong n, ulong p, ulong deg)
     nmod_poly_mat_t A, B, C1, C2;
     ulong modulus;
 
-    modulus = 1108307720798209;
+    modulus = UWORD(1108307720798209);
     flint_rand_init(state);
 
     nmod_poly_mat_init(A, m, n, modulus);

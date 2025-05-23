@@ -5,9 +5,15 @@
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_forms.h"
 
-#define MAT(i,j) (mat->rows[i] + j)
-#define TSF(i,j) (tsf->rows[i] + j)
-#define OTHER(i,j) (other->rows[i] + j)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
+#  define MAT(i,j) (mat->rows[i] + j)
+#  define TSF(i,j) (tsf->rows[i] + j)
+#  define OTHER(i,j) (other->rows[i] + j)
+#else
+#  define MAT(i,j) (nmod_poly_mat_entry(mat, i, j))
+#  define TSF(i,j) (nmod_poly_mat_entry(tsf, i, j))
+#  define OTHER(i,j) (nmod_poly_mat_entry(other, i, j))
+#endif
 
 /**********************************************************************
 *                          HELPER FUNCTIONS                          *
@@ -209,7 +215,7 @@ slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
     {
         // consider row rk of current matrix (corresponds to row rk+zr of initial matrix)
         // compute its pivot index
-        _nmod_poly_vec_pivot_profile(pivind+rk, &pivdeg, mat->rows[rstart+rk]+cstart, shift, cdim, orient);
+        _nmod_poly_vec_pivot_profile(pivind+rk, &pivdeg, nmod_poly_mat_entry(mat, rstart+rk, cstart), shift, cdim, orient);
         if (pivind[rk] == zpiv)
         {
             // row is zero: rotate to put it last, increment zr and go to next row
@@ -243,6 +249,8 @@ slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
             _atomic_solve_pivot_collision_rowwise(mat, tsf, rstart+rk, rstart+pi, pivind[rk]);
         }
     }
+
+    flint_free(pivot_row);
 
     if (zr >= early_exit_zr)
         return -rk;

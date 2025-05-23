@@ -4,9 +4,15 @@
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_forms.h"
 
-#define MAT(i,j) (mat->rows[i] + j)
-#define TSF(i,j) (tsf->rows[i] + j)
-#define OTHER(i,j) (other->rows[i] + j)
+#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
+#  define MAT(i,j) (mat->rows[i] + j)
+#  define TSF(i,j) (tsf->rows[i] + j)
+#  define OTHER(i,j) (other->rows[i] + j)
+#else
+#  define MAT(i,j) (nmod_poly_mat_entry(mat, i, j))
+#  define TSF(i,j) (nmod_poly_mat_entry(tsf, i, j))
+#  define OTHER(i,j) (nmod_poly_mat_entry(other, i, j))
+#endif
 
 // For all:
 // - upper Hermite, row-wise
@@ -856,10 +862,10 @@ slong nmod_poly_mat_hnf_ur_revlex_xgcd_delayed_zero(nmod_poly_mat_t mat, nmod_po
 
 // Algo of Mulders&Storjohann, Algo 7, with a slight modification: performs
 // upper row echelon form; no reduction of above-pivot entries for already
-// found pivots. If wanting the HNF, performs a complete normalization step at
-// the end; there should be some rare cases where this is bad in terms of
-// complexity and where continuously reducing off-diagonal entries is
-// preferable.
+// found pivots. If wanting the HNF, one should perform an additional
+// normalization step at the end; there should be some rare cases where this is
+// bad in terms of complexity and where continuously reducing off-diagonal
+// entries is preferable.
 //
 // Note: in the original presentation, the algorithm is only guaranteed to work
 // for a full column rank matrix. Here, the implementation supports any rectangular
@@ -973,7 +979,7 @@ slong nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
     nmod_poly_mat_t view;
     nmod_poly_mat_window_init(view, mat, rk, rk, mat->r, mat->c);
     int pass = nmod_poly_mat_is_zero(view);
-    nmod_poly_mat_clear(view);
+    nmod_poly_mat_window_clear(view);
     if (!pass)
         return -rk-1;
 
