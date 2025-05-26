@@ -30,25 +30,25 @@ void bench()
         const double thresh = 0.1;
 
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             inv(invA1, A);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << "\t";
 
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             inv_naive(invA1, A);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << "\t";
 
         cout << endl;

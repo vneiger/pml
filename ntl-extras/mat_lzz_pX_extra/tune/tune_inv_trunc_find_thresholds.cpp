@@ -66,15 +66,15 @@ void check(long p)
                 vector<double> vec_middle;
                 for (long r = 1; r < 8 && (1L << r) < deg; r++)
                 {
-                    double t_middle = get_time();
+                    double t_middle = GetWallTime();
                     long nb = 0;
                     do
                     {
                         newton_inv_trunc_middle_product(x, a, deg, (1L << r));
                         nb++;
                     }
-                    while ((get_time()-t_middle) <= thres);
-                    t_middle = (get_time()-t_middle) / nb;
+                    while ((GetWallTime()-t_middle) <= thres);
+                    t_middle = (GetWallTime()-t_middle) / nb;
                     vec_middle.push_back(t_middle);
                 }                
                 long min_middle = 1 + index_min(vec_middle);
@@ -83,15 +83,15 @@ void check(long p)
                 vector<double> vec_geometric;
                 for (long r = 1; r < 8 && (1L << r) < deg; r++)
                 {
-                    double t_geometric = get_time();
+                    double t_geometric = GetWallTime();
                     long nb = 0;
                     do
                     {
                         newton_inv_trunc_geometric(x, a, deg, (1L << r));
                         nb++;
                     }
-                    while ((get_time()-t_geometric) <= thres);
-                    t_geometric = (get_time()-t_geometric) / nb;
+                    while ((GetWallTime()-t_geometric) <= thres);
+                    t_geometric = (GetWallTime()-t_geometric) / nb;
                     vec_geometric.push_back(t_geometric);
                 }
                 long min_geometric = 1 + index_min(vec_geometric);
@@ -102,15 +102,15 @@ void check(long p)
                 vector<double> vec_FFT;
                 for (long r = 1; r < 8 && (1L << r) < deg; r++)
                 {
-                    double t_FFT = get_time();
+                    double t_FFT = GetWallTime();
                     long nb = 0;
                     do
                     {
                         newton_inv_trunc_FFT(x, a, deg, (1L << r));
                         nb++;
                     }
-                    while ((get_time()-t_FFT) <= thres);
-                    t_FFT = (get_time()-t_FFT) / nb;
+                    while ((GetWallTime()-t_FFT) <= thres);
+                    t_FFT = (GetWallTime()-t_FFT) / nb;
                     vec_FFT.push_back(t_FFT);
                 }
                 long min_FFT = 1 + index_min(vec_FFT);

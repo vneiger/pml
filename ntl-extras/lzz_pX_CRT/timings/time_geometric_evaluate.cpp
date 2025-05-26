@@ -39,27 +39,27 @@ void check(long p)
         // FFT evaluate
         ev.set_FFT_evaluate();
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.evaluate(val, f);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         // non-FFT evaluate
         ev.unset_FFT_evaluate();
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.evaluate(val, f);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         f = random_zz_pX(j / 2);
@@ -68,41 +68,41 @@ void check(long p)
         // FFT half-degree evaluate
         ev.set_FFT_evaluate();
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.evaluate(val, f);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         // non-FFT half-degree evaluate
         ev.unset_FFT_evaluate();
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.evaluate(val, f);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         // re-builds ev, using built-in thresholds
         f = random_zz_pX(j);
         ev = zz_pX_Multipoint_Geometric(a, j);
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.evaluate(val, f);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         cout << endl;

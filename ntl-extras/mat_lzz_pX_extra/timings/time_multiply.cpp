@@ -23,29 +23,29 @@ void one_check(long sz, long deg)
     random(a, sz, sz, deg);
     random(b, sz, sz, deg);
 
-    t_multiply = get_time();
+    t_multiply = GetWallTime();
     nb = 0;
     do
     {
         multiply(c2, a, b);
         nb++;
     }
-    while ((get_time()-t_multiply) <= 2*thresh);
-    t_multiply = (get_time()-t_multiply) / nb;
+    while ((GetWallTime()-t_multiply) <= 2*thresh);
+    t_multiply = (GetWallTime()-t_multiply) / nb;
 
     cout << t_multiply << "\t";
 
     if (sz < 20)
     {
-        t_waksman = get_time();
+        t_waksman = GetWallTime();
         nb = 0;
         do
         {
             multiply_waksman(c2, a, b);
             nb++;
         }
-        while ((get_time()-t_waksman) <= thresh);
-        t_waksman = (get_time()-t_waksman) / nb;
+        while ((GetWallTime()-t_waksman) <= thresh);
+        t_waksman = (GetWallTime()-t_waksman) / nb;
         if (t_waksman/t_multiply<10.)
             cout << t_waksman/t_multiply << "\t";
         else
@@ -56,15 +56,15 @@ void one_check(long sz, long deg)
 
     if (deg < 8)
     {
-        t_transform = get_time();
+        t_transform = GetWallTime();
         nb = 0;
         do
         {
             multiply_transform(c2, a, b);
             nb++;
         }
-        while ((get_time()-t_transform) <= thresh);
-        t_transform = (get_time()-t_transform) / nb;
+        while ((GetWallTime()-t_transform) <= thresh);
+        t_transform = (GetWallTime()-t_transform) / nb;
         if (t_transform/t_multiply<10.)
             cout << t_transform/t_multiply << "\t";
         else
@@ -73,15 +73,15 @@ void one_check(long sz, long deg)
     else
         cout << "inf\t";
 
-    t_geometric = get_time();
+    t_geometric = GetWallTime();
     nb = 0;
     do
     {
         multiply_evaluate_geometric(c2, a, b);
         nb++;
     }
-    while ((get_time()-t_geometric) <= thresh);
-    t_geometric = (get_time()-t_geometric) / nb;
+    while ((GetWallTime()-t_geometric) <= thresh);
+    t_geometric = (GetWallTime()-t_geometric) / nb;
     if (t_geometric/t_multiply<10.)
         cout << t_geometric/t_multiply << "\t";
     else
@@ -89,15 +89,15 @@ void one_check(long sz, long deg)
 
     if (deg <= 300)
     {
-        t_dense = get_time();
+        t_dense = GetWallTime();
         nb = 0;
         do
         {
             multiply_evaluate_dense(c1, a, b);
             nb++;
         }
-        while ((get_time()-t_dense) <= thresh);
-        t_dense = (get_time()-t_dense) / nb;
+        while ((GetWallTime()-t_dense) <= thresh);
+        t_dense = (GetWallTime()-t_dense) / nb;
         if (t_dense/t_multiply<10.)
             cout << t_dense/t_multiply << "\t";
         else
@@ -108,15 +108,15 @@ void one_check(long sz, long deg)
 
     if (deg <= 300)
     {
-        t_dense2 = get_time();
+        t_dense2 = GetWallTime();
         nb = 0;
         do
         {
             multiply_evaluate_dense2(c1, a, b);
             nb++;
         }
-        while ((get_time()-t_dense2) <= thresh);
-        t_dense2 = (get_time()-t_dense2) / nb;
+        while ((GetWallTime()-t_dense2) <= thresh);
+        t_dense2 = (GetWallTime()-t_dense2) / nb;
         if (t_dense2/t_multiply<10.)
             cout << t_dense2/t_multiply << "\t";
         else
@@ -125,15 +125,15 @@ void one_check(long sz, long deg)
     else
         cout << "inf\t";
 
-    t_3_primes = get_time();
+    t_3_primes = GetWallTime();
     nb = 0;
     do
     {
         multiply_3_primes(c2, a, b);
         nb++;
     }
-    while ((get_time()-t_3_primes) <= thresh);
-    t_3_primes = (get_time()-t_3_primes) / nb;
+    while ((GetWallTime()-t_3_primes) <= thresh);
+    t_3_primes = (GetWallTime()-t_3_primes) / nb;
     if (t_3_primes/t_multiply<10.)
         cout << t_3_primes/t_multiply << "\t";
     else
@@ -141,15 +141,15 @@ void one_check(long sz, long deg)
 
     if (is_FFT_ready(NextPowerOfTwo(2*deg - 1)))
     {
-        t_FFT = get_time();
+        t_FFT = GetWallTime();
         nb = 0;
         do
         {
             multiply_evaluate_FFT(c2, a, b);
             nb++;
         }
-        while ((get_time()-t_FFT) <= thresh);
-        t_FFT = (get_time()-t_FFT) / nb;
+        while ((GetWallTime()-t_FFT) <= thresh);
+        t_FFT = (GetWallTime()-t_FFT) / nb;
         if (t_FFT/t_multiply<10.)
             cout << t_FFT/t_multiply << "\t";
         else

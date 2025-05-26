@@ -31,131 +31,131 @@ void one_check(long sz, long deg)
 
             if (is_FFT_prime())
             {
-                t_FFT_direct = get_time();
+                t_FFT_direct = GetWallTime();
                 nb = 0;
                 do
                 {
                     middle_product_evaluate_FFT_direct(b, a, c, dA, dB);
                     nb++;
                 }
-                while ((get_time()-t_FFT_direct) <= thres);
-                t_FFT_direct = (get_time()-t_FFT_direct) / nb;
+                while ((GetWallTime()-t_FFT_direct) <= thres);
+                t_FFT_direct = (GetWallTime()-t_FFT_direct) / nb;
 
-                t_FFT_matmul = get_time();
+                t_FFT_matmul = GetWallTime();
                 nb = 0;
                 do
                 {
                     middle_product_evaluate_FFT_matmul(b, a, c, dA, dB);
                     nb++;
                 }
-                while ((get_time()-t_FFT_matmul) <= thres);
-                t_FFT_matmul = (get_time()-t_FFT_matmul) / nb;
+                while ((GetWallTime()-t_FFT_matmul) <= thres);
+                t_FFT_matmul = (GetWallTime()-t_FFT_matmul) / nb;
 
 
-                t_middle = get_time();
+                t_middle = GetWallTime();
                 nb = 0;
                 do
                 {
                     middle_product(b, a, c, dA, dB);
                     nb++;
                 }
-                while ((get_time()-t_middle) <= thres);
-                t_middle = (get_time()-t_middle) / nb;
+                while ((GetWallTime()-t_middle) <= thres);
+                t_middle = (GetWallTime()-t_middle) / nb;
 
 
                 random(b, sz, sz, dB + 1);
-                t_direct = get_time();
+                t_direct = GetWallTime();
                 nb = 0;
                 do
                 {
                     multiply(c, a, b);
                     nb++;
                 }
-                while ((get_time()-t_direct) <= thres);
-                t_direct = (get_time()-t_direct) / nb;
+                while ((GetWallTime()-t_direct) <= thres);
+                t_direct = (GetWallTime()-t_direct) / nb;
 
 
                 random(c, sz, sz, dA + dB + 1);
-                t_naive = get_time();
+                t_naive = GetWallTime();
                 nb = 0;
                 do
                 {
                     multiply(b, a, c);
                     nb++;
                 }
-                while ((get_time()-t_naive) <= thres);
-                t_naive = (get_time()-t_naive) / nb;
+                while ((GetWallTime()-t_naive) <= thres);
+                t_naive = (GetWallTime()-t_naive) / nb;
 
                 cout << t_FFT_direct << " " << t_FFT_matmul << "   " << t_middle << "   " << t_direct << " " << t_naive;
             }
             else
             {
-                t_geom = get_time();
+                t_geom = GetWallTime();
                 nb = 0;
                 do
                 {
                     t_multiply_evaluate_geometric(b, a, c, dA, dB);
                     nb++;
                 }
-                while ((get_time()-t_geom) <= thres);
-                t_geom = (get_time()-t_geom) / nb;
+                while ((GetWallTime()-t_geom) <= thres);
+                t_geom = (GetWallTime()-t_geom) / nb;
                 
 
-                t_dense = get_time();
+                t_dense = GetWallTime();
                 nb = 0;
                 do
                 {
                     middle_product_evaluate_dense(b, a, c, dA, dB);
                     nb++;
                 }
-                while ((get_time()-t_dense) <= thres);
-                t_dense = (get_time()-t_dense) / nb;
+                while ((GetWallTime()-t_dense) <= thres);
+                t_dense = (GetWallTime()-t_dense) / nb;
                 
                 
-                t_3_primes = get_time();
+                t_3_primes = GetWallTime();
                 nb = 0;
                 do
                 {
                     middle_product_3_primes(b, a, c, dA, dB);
                     nb++;
                 }
-                while ((get_time()-t_3_primes) <= thres);
-                t_3_primes = (get_time()-t_3_primes) / nb;
+                while ((GetWallTime()-t_3_primes) <= thres);
+                t_3_primes = (GetWallTime()-t_3_primes) / nb;
 
 
-                t_middle = get_time();
+                t_middle = GetWallTime();
                 nb = 0;
                 do
                 {
                     middle_product(b, a, c, dA, dB);
                     nb++;
                 }
-                while ((get_time()-t_middle) <= thres);
-                t_middle = (get_time()-t_middle) / nb;
+                while ((GetWallTime()-t_middle) <= thres);
+                t_middle = (GetWallTime()-t_middle) / nb;
 
 
                 random(b, sz, sz, dB + 1);
-                t_direct = get_time();
+                t_direct = GetWallTime();
                 nb = 0;
                 do
                 {
                     multiply(c, a, b);
                     nb++;
                 }
-                while ((get_time()-t_direct) <= thres);
-                t_direct = (get_time()-t_direct) / nb;
+                while ((GetWallTime()-t_direct) <= thres);
+                t_direct = (GetWallTime()-t_direct) / nb;
 
 
                 random(c, sz, sz, dA + dB + 1);
-                t_naive = get_time();
+                t_naive = GetWallTime();
                 nb = 0;
                 do
                 {
                     multiply(b, a, c);
                     nb++;
                 }
-                while ((get_time()-t_naive) <= thres);
-                t_naive = (get_time()-t_naive) / nb;
+                while ((GetWallTime()-t_naive) <= thres);
+                t_naive = (GetWallTime()-t_naive) / nb;
 
                 cout << t_geom << " " << t_dense << " " << t_3_primes << "   " << t_middle << "   " << t_direct << " " << t_naive;
             }

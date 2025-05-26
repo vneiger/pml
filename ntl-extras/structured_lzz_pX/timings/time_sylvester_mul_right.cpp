@@ -40,12 +40,12 @@ void check(long p)
         Mat<zz_pX> in, out, out2;
         
         in = random_mat_zz_pX(S.NumCols(), 2, d);
-        u1 = get_time();
+        u1 = GetWallTime();
         out = S.mul_right(in);
-        u1 = get_time() - u1;
-        u2 = get_time();
+        u1 = GetWallTime() - u1;
+        u2 = GetWallTime();
         out2 = M * in;
-        u2 = get_time() - u2;
+        u2 = GetWallTime() - u2;
         assert (out == out2);
         cout << i << " " << u1 << " " << u2;
         cout << endl;

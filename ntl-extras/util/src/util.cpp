@@ -9,12 +9,12 @@ NTL_CLIENT
 /*------------------------------------------------------------*/
 void warmup()
 {
-    double t = get_time();
+    double t = GetWallTime();
     do
     {
         ;
     } 
-    while (get_time() - t < 1);
+    while (GetWallTime() - t < 1);
 }
 
 // Local Variables:

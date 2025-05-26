@@ -63,15 +63,15 @@ void check(long p)
             {
                 double t;
                 long nb;
-                t = get_time();
+                t = GetWallTime();
                 nb = 0;
                 do
                 {
                     solve_series_low_precision(u, A, b, deg, i);
                     nb++;
                 }
-                while ((get_time()-t) <= thresh);
-                t = (get_time()-t) / nb;
+                while ((GetWallTime()-t) <= thresh);
+                t = (GetWallTime()-t) / nb;
                 vec.push_back(t);
             }
             long min_t = start + index_min(vec);

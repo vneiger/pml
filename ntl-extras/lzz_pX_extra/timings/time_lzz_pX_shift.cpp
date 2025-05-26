@@ -37,50 +37,50 @@ void time_one(long p)
         const double thresh = 0.1;
 
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             sDac = zz_pX_shift_DAC(i-1, c);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << "\t";
 
 
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             sDac.shift(b, a);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << "\t";
 
 
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             sLarge = zz_pX_shift_large_characteristic(i-1, c);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << "\t";
 
 
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             sLarge.shift(b, a);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << "\t";
         
         cout << endl;

@@ -40,40 +40,40 @@ void check(long p)
         // FFT        
         ev.set_FFT_interpolate();
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.interpolate(f, val);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         // non-FFT
         ev.unset_FFT_interpolate();
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.interpolate(f, val);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         // re-builds ev, using built-in thresholds
         ev = zz_pX_Multipoint_Geometric(a, j);
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.interpolate(f, val);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         cout << endl;

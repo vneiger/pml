@@ -10,18 +10,10 @@
  *
  */
 
-#include <NTL/version.h>
 #include <NTL/tools.h>
 
-#if (NTL_MAJOR_VERSION >= 11)
-/** Macro `get_time` which wraps either GetTime (NTL prior to v11) or
- * GetWallTime (NTL from v11) */
-#define get_time GetWallTime
-#else
-/** Macro `get_time` which wraps either GetTime (NTL prior to v11) or
- * GetWallTime (NTL from v11) */
-#define get_time GetTime
-#endif
+//#include <NTL/version.h>
+// #if ((NTL_MAJOR_VERSION == 11) && (NTL_MINOR_VERSION == 1) && (NTL_REVISION == 0))
 
 /** Warms the CPU up (currently naive: while loop with empty body, lasting one
  * second) */

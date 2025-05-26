@@ -36,95 +36,95 @@ void check(long p, long sz, long sz2, long sz3, long deg)
 
     cout << p << " " << sz << " " << sz2 << " " << sz3 << " " << deg << endl;
     
-    t_3primes = get_time();
+    t_3primes = GetWallTime();
     nb = 0;
     do
     {
         multiply_3_primes(c, a, b);
         nb++;
     }
-    while ((get_time()-t_3primes) <= thresh);
-    t_3primes = (get_time()-t_3primes) / nb;
+    while ((GetWallTime()-t_3primes) <= thresh);
+    t_3primes = (GetWallTime()-t_3primes) / nb;
                 
-    t_eval = get_time();
+    t_eval = GetWallTime();
     nb = 0;
     do
     {
         multiply_evaluate(c, a, b);
         nb++;
     }
-    while ((get_time()-t_eval) <= thresh);
-    t_eval = (get_time()-t_eval) / nb;
+    while ((GetWallTime()-t_eval) <= thresh);
+    t_eval = (GetWallTime()-t_eval) / nb;
 
-    t_waksman = get_time();
+    t_waksman = GetWallTime();
     nb = 0;
     do
     {
         multiply_waksman(c, a, b);
         nb++;
     }
-            while ((get_time()-t_waksman) <= thresh);
-    t_waksman = (get_time()-t_waksman) / nb;
+            while ((GetWallTime()-t_waksman) <= thresh);
+    t_waksman = (GetWallTime()-t_waksman) / nb;
 
     
     if (deg < 100)
     {
-        t_eval_dense = get_time();
+        t_eval_dense = GetWallTime();
         nb = 0;
         do
         {
             multiply_evaluate_dense(c, a, b);
             nb++;
         }
-        while ((get_time()-t_eval_dense) <= thresh);
-        t_eval_dense = (get_time()-t_eval_dense) / nb;
+        while ((GetWallTime()-t_eval_dense) <= thresh);
+        t_eval_dense = (GetWallTime()-t_eval_dense) / nb;
     }
 
     if (p == 0)
     {
-        t_eval_direct = get_time();
+        t_eval_direct = GetWallTime();
         nb = 0;
         do
         {
             multiply_evaluate_FFT_direct(c, a, b);
             nb++;
         }
-        while ((get_time()-t_eval_direct) <= thresh);
-        t_eval_direct = (get_time()-t_eval_direct) / nb;
+        while ((GetWallTime()-t_eval_direct) <= thresh);
+        t_eval_direct = (GetWallTime()-t_eval_direct) / nb;
         cout << t_eval_direct << "  check " << (c == a*b) << endl;
 
-        t_eval_direct = get_time();
+        t_eval_direct = GetWallTime();
         nb = 0;
         do
         {
             multiply_evaluate_FFT_matmul1(c, a, b);
             nb++;
         }
-        while ((get_time()-t_eval_direct) <= thresh);
-        t_eval_direct = (get_time()-t_eval_direct) / nb;
+        while ((GetWallTime()-t_eval_direct) <= thresh);
+        t_eval_direct = (GetWallTime()-t_eval_direct) / nb;
         cout << t_eval_direct << "  check " << (c == a*b) << endl;
 
-        t_eval_direct = get_time();
+        t_eval_direct = GetWallTime();
         nb = 0;
         do
         {
             multiply_evaluate_FFT(c, a, b);
             nb++;
         }
-        while ((get_time()-t_eval_direct) <= thresh);
-        t_eval_direct = (get_time()-t_eval_direct) / nb;
+        while ((GetWallTime()-t_eval_direct) <= thresh);
+        t_eval_direct = (GetWallTime()-t_eval_direct) / nb;
         cout << t_eval_direct << "  check " << (c == a*b) << endl;
     }
 
-    t_check = get_time();
+    t_check = GetWallTime();
     nb = 0;
     do
     {
         multiply(c, a, b);
         nb++;
     }
-    while ((get_time()-t_check) <= thresh);
-    t_check = (get_time()-t_check) / nb;
+    while ((GetWallTime()-t_check) <= thresh);
+    t_check = (GetWallTime()-t_check) / nb;
 
     cout << t_eval << " " << t_3primes << " " << t_waksman << " " << t_check << "   ";
     if (deg < 10)

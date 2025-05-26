@@ -23,15 +23,15 @@ void one_check(long sz, long deg)
     random(a, sz, sz, deg);
     random(b, sz, 1, deg);
 
-    t_plain = get_time();
+    t_plain = GetWallTime();
     nb = 0;
     do
     {
         multiply(c1, a, b);
         nb++;
     }
-    while ((get_time()-t_plain) <= thres);
-    t_plain = (get_time()-t_plain) / nb;
+    while ((GetWallTime()-t_plain) <= thres);
+    t_plain = (GetWallTime()-t_plain) / nb;
     cout << t_plain << "\t";
 
     if (is_FFT_prime())
@@ -39,27 +39,27 @@ void one_check(long sz, long deg)
         double t_FD, t_FM;
 
         mat_lzz_pX_lmultiplier_FFT_direct mulFD(a, deg-1);
-        t_FD = get_time();
+        t_FD = GetWallTime();
         nb = 0;
         do
         {
             mulFD.multiply(c2, b);
             nb++;
         }
-        while ((get_time()-t_FD) <= thres);
-        t_FD = (get_time()-t_FD) / nb;
+        while ((GetWallTime()-t_FD) <= thres);
+        t_FD = (GetWallTime()-t_FD) / nb;
         cout << t_FD << "\t";
 
         mat_lzz_pX_lmultiplier_FFT_matmul mulFM(a, deg-1);
-        t_FM = get_time();
+        t_FM = GetWallTime();
         nb = 0;
         do
         {
             mulFM.multiply(c2, b);
             nb++;
         }
-        while ((get_time()-t_FM) <= thres);
-        t_FM = (get_time()-t_FM) / nb;
+        while ((GetWallTime()-t_FM) <= thres);
+        t_FM = (GetWallTime()-t_FM) / nb;
         cout << t_FM << "\t";
         
         s = min(t_FM, t_FD);
@@ -69,39 +69,39 @@ void one_check(long sz, long deg)
         double t_g, t_3, t_d;
 
         mat_lzz_pX_lmultiplier_3_primes mul3(a, deg-1);
-        t_3 = get_time();
+        t_3 = GetWallTime();
         nb = 0;
         do
         {
             mul3.multiply(c2, b);
             nb++;
         }
-        while ((get_time()-t_3) <= thres);
-        t_3 = (get_time()-t_3) / nb;
+        while ((GetWallTime()-t_3) <= thres);
+        t_3 = (GetWallTime()-t_3) / nb;
         cout << t_3 << "\t";
         
         mat_lzz_pX_lmultiplier_geometric mulg(a, deg-1);
-        t_g = get_time();
+        t_g = GetWallTime();
         nb = 0;
         do
         {
             mulg.multiply(c2, b);
             nb++;
         }
-        while ((get_time()-t_g) <= thres);
-        t_g = (get_time()-t_g) / nb;
+        while ((GetWallTime()-t_g) <= thres);
+        t_g = (GetWallTime()-t_g) / nb;
         cout << t_g << "\t";
 
         mat_lzz_pX_lmultiplier_dense muld(a, deg-1);
-        t_d = get_time();
+        t_d = GetWallTime();
         nb = 0;
         do
         {
             muld.multiply(c2, b);
             nb++;
         }
-        while ((get_time()-t_d) <= thres);
-        t_d = (get_time()-t_d) / nb;
+        while ((GetWallTime()-t_d) <= thres);
+        t_d = (GetWallTime()-t_d) / nb;
         cout << t_d << "\t";
         
         s = min(t_d, min(t_g, t_3));
@@ -109,15 +109,15 @@ void one_check(long sz, long deg)
 
     double t_get;
     std::unique_ptr<mat_lzz_pX_lmultiplier> mul = get_lmultiplier(a, deg-1);
-    t_get = get_time();
+    t_get = GetWallTime();
     nb = 0;
     do
     {
         mul->multiply(c2, b);
         nb++;
     }
-    while ((get_time()-t_get) <= thres);
-    t_get = (get_time()-t_get) / nb;
+    while ((GetWallTime()-t_get) <= thres);
+    t_get = (GetWallTime()-t_get) / nb;
     cout << t_get << "(" << t_get/s << ")";
 
     cout << endl;

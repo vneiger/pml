@@ -31,26 +31,26 @@ void check()
 
         // FFT evaluate
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.evaluate(val, f);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         // FFT interpolate
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.interpolate(f, val);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         cout << endl;
