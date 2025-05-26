@@ -6,7 +6,7 @@
 
 #include "mat_lzz_pX_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 template<typename T>
 void printVec(std::vector<T> const &input)

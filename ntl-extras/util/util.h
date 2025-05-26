@@ -27,7 +27,7 @@
             using std::cout; \
             using std::endl;
 #define PML_END_IMPL_IO PML_CLOSE_NNS
-#define PML_CLIENT NTL_USE_SNS NTL_USE_NNS NTL_USE_PNS
+#define PML_CLIENT NTL_USE_SNS NTL_USE_NNS PML_USE_PNS
 
 /** Warms the CPU up (currently naive: while loop with empty body, lasting one
  * second) */

@@ -1,15 +1,16 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
-#include <iomanip>
-#include <vector>
-#include <numeric>
-#include <algorithm>
-#include <random>
 #include <NTL/BasicThreadPool.h>
 
+#include "mat_lzz_pX_utils.h"
+#include "mat_lzz_pX_forms.h"
+#include "mat_lzz_pX_linsolve.h"
+#include "mat_lzz_pX_multiply.h"
+#include "mat_lzz_pX_determinant.h"
 #include "util.h"
-#include "mat_lzz_pX_extra.h"
+
+PML_CLIENT
 
 void check(long m, long d1, long d2)
 {

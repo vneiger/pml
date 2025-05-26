@@ -3,7 +3,7 @@
 
 #include "sage_output.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* prints a vector and a polynomial                           */

@@ -11,7 +11,7 @@
 
 #include "test_examples.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* checks an (sz,sz) matrix in degree < deg                   */

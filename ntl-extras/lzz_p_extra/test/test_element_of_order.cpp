@@ -3,7 +3,7 @@
 
 #include "lzz_p_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* tries to find an element of order p-1                      */

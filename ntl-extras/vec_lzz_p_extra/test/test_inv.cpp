@@ -3,7 +3,7 @@
 
 #include "vec_lzz_p_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* runs a check up to size 1000                               */

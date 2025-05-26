@@ -4,7 +4,7 @@
 #include "vec_lzz_p_extra.h"
 #include "structured_lzz_p.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 
 /*------------------------------------------------------------*/

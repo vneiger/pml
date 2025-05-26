@@ -5,7 +5,7 @@
 #include "vec_lzz_p_extra.h"
 #include "mat_lzz_p_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* creates hankel matrices                                    */

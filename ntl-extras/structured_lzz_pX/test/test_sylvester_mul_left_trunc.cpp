@@ -7,7 +7,7 @@
 #include "mat_lzz_pX_extra.h"
 #include "structured_lzz_pX.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* creates sylvester matrices                                 */

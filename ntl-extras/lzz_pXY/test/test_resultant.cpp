@@ -5,7 +5,7 @@
 #include "util.h"
 #include "lzz_pXY.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* creates random bivariate polynomials                       */

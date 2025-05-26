@@ -2,7 +2,7 @@
 #include "mat_lzz_pX_interpolant.h"
 #include "test_examples.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {

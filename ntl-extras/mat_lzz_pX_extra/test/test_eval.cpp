@@ -18,7 +18,7 @@
 * Mat.elts?
 */
 
-NTL_CLIENT
+PML_CLIENT
 
 int main(int argc, char *argv[]){
     long nbits = 60;

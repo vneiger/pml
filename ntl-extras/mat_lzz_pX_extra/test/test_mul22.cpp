@@ -5,7 +5,7 @@
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 // copied from NTL's lzz_pX1.cpp
 void mul(zz_pXMatrix& A, zz_pXMatrix& B, zz_pXMatrix& C)

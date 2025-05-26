@@ -3,7 +3,7 @@
 
 #include "lzz_pX_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 void check(long p)
 {

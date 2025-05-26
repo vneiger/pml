@@ -5,7 +5,7 @@
 #include "vec_lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* does a multipoint evaluation                               */

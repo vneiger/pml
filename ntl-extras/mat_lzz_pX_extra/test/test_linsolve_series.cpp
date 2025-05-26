@@ -8,7 +8,7 @@
 #include "mat_lzz_pX_multiply.h"
 #include "mat_lzz_pX_linsolve.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 
 /*------------------------------------------------------------*/

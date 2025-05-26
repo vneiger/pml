@@ -4,7 +4,7 @@
 
 #include "mat_lzz_pX_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* creates random polynomial matrix                           */

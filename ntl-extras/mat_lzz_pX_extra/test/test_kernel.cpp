@@ -2,7 +2,7 @@
 #include "mat_lzz_pX_forms.h" // for degree_matrix, row_pivots
 #include "test_examples.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 static std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {

@@ -15,7 +15,7 @@
 
 //#define VERBOSE
 
-NTL_CLIENT
+PML_CLIENT
 
 /********************************************
  *  tests the approximant basis algorithms  *

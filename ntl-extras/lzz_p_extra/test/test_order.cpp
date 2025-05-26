@@ -3,7 +3,7 @@
 
 #include "lzz_p_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 bool test_order(const long order, const zz_p & a)
 {

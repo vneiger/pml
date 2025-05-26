@@ -11,7 +11,7 @@
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 int main(int argc, char *argv[]){
     long nbits = atoi(argv[1]);

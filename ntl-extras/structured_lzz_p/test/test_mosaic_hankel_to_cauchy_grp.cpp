@@ -5,7 +5,7 @@
 #include "lzz_pX_CRT.h"
 #include "structured_lzz_p.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 
 /*------------------------------------------------------------*/
