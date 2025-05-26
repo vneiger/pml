@@ -11,7 +11,7 @@
 #include "structured_lzz_p.h"
 
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* computes                                                   */
@@ -1042,6 +1042,8 @@ long cauchy_like_geometric_lzz_p::solve_grp(Vec<zz_p>& x, const Vec<zz_p> b, lon
     return 1;
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

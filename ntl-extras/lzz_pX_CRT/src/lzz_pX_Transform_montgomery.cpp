@@ -4,7 +4,7 @@
 
 #include "lzz_pX_CRT.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -160,6 +160,7 @@ void zz_pX_Transform_karatsuba4::backward(zz_pX& P, const Vec<zz_p>& val) const
     P.normalize();
 }
 
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

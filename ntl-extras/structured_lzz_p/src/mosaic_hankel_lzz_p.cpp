@@ -5,7 +5,7 @@
 #include "lzz_pX_CRT.h"
 #include "structured_lzz_p.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -725,6 +725,8 @@ long mosaic_hankel_lzz_p::inv(hankel_like_minus_lzz_p& inv, long thresh, long th
 
 
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

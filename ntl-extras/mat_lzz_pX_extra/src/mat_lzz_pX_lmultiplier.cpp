@@ -11,7 +11,7 @@
 // total cache 32k --> 512 ~ 16*16 cache lines
 
 
-NTL_CLIENT
+PML_START_IMPL
 
 #if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES) \
      && defined(__GNUC__) && (__GNUC__ >= 4) && !defined(__INTEL_COMPILER)  && !defined(__clang__) \
@@ -653,6 +653,8 @@ std::unique_ptr<mat_lzz_pX_lmultiplier> get_lmultiplier(const Mat<zz_pX> & a, lo
     }
 
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

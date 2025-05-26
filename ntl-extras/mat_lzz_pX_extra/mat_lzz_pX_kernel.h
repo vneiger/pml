@@ -1,6 +1,12 @@
 #ifndef MAT_LZZ_PX_KERNEL__H
 #define MAT_LZZ_PX_KERNEL__H
 
+#include "mat_lzz_pX_forms.h" // for VecLong, VecLong, PolMatForm
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Minimal kernel basis.
  *
  * \file mat_lzz_pX_kernel.h
@@ -12,10 +18,6 @@
  * matrices.
  *
  */
-
-#include "mat_lzz_pX_forms.h" // for VecLong, VecLong, PolMatForm
-
-NTL_CLIENT
 
 /** \file mat_lzz_pX_kernel.h
  *
@@ -133,6 +135,8 @@ void kernel_basis_zls_via_interpolation(
 
 /** Experimental kernel basis function for generic cases. */
 void kernel_basis_generic(Mat<zz_pX> & kerbas, Mat<zz_pX> & pmat);
+
+PML_CLOSE_NNS
 
 #endif /* ifndef MAT_LZZ_PX_KERNEL__H */
 

@@ -7,7 +7,7 @@
 #include "thresholds_matrix_multiply.h"
 #include "thresholds_newton_inv_trunc.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* finds a sequence of degrees n0, n1, .. nk                  */
@@ -476,6 +476,8 @@ void high_order_lift_inverse_odd(
     next = next - tmp; // deg(next) < 2d-1
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

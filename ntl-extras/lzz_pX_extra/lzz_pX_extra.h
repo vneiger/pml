@@ -13,7 +13,10 @@
 #include <memory> // for unique_ptr
 #include <NTL/lzz_pX.h>
 
-NTL_CLIENT
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
 
 /** Returns `true` if the polynomial `a` is monic, and `false` otherwise */
 inline bool is_monic(const zz_pX & a)
@@ -141,6 +144,8 @@ inline zz_pX shift(const zz_pX & f, const zz_p & c)
 /** Computes `c = a + (b << k)`, where the left shift means multiplication by
  * `X^k`. The OUT parameter `c` may alias `a` or `b`. */
 void add_LeftShift(zz_pX & c, const zz_pX & a, const zz_pX & b, const long k);
+
+PML_CLOSE_NNS
 
 #endif
 

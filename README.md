@@ -3,7 +3,7 @@
 Additions to the NTL and FLINT libraries, with a focus on univariate polynomial
 matrices, structured matrices, and their applications.
 
-Version 0.4beta
+Version 0.4
 
 Warning: the FLINT-based part of PML (flint-extras folder) is work in progress
 and currently unstable. Its components are continuously changing as some parts

@@ -1,6 +1,6 @@
 #include "mat_lzz_p_extra.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* returns                                                    */
@@ -61,6 +61,8 @@ void clear(Mat<zz_p> & mat, long r_offset, long c_offset, long nrows, long ncols
             clear(mat[i][j]);
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

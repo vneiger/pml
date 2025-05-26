@@ -7,8 +7,10 @@
 #include "lzz_pX_CRT.h"
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pXY.h"
+#include "util.h"
 
-NTL_CLIENT
+PML_OPEN_NNS
+NTL_USE_NNS
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -344,8 +346,6 @@ inline Mat<zz_pX> toeplitz_lzz_pX_phi_minus(const Mat<zz_pX>& A)
     return res;
 }
 
-#endif
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -441,6 +441,10 @@ inline Mat<zz_pX> toeplitz_lzz_pX_phi_plus(const Mat<zz_pX>& A)
     toeplitz_lzz_pX_phi_plus(res, A);
     return res;
 }
+
+PML_CLOSE_NNS
+
+#endif  // __STRUCTURED_LZZ_PX_H
 
 // Local Variables:
 // mode: C++

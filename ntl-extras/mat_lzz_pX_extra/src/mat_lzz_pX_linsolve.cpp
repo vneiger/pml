@@ -10,7 +10,7 @@
 
 #include "mat_lzz_pX_linsolve.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* solve A u = b mod x^prec                                   */
@@ -542,6 +542,8 @@ long linsolve_via_kernel(
 //    return 0;
 //}
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

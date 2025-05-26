@@ -2,7 +2,12 @@
 #define __THRESHOLDS_MATRIX_MULTIPLY__H
 
 #include <limits.h>
+#include "lzz_p_extra.h"
 #include "thresholds_waksman_evaluate.h"
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
 
 #define MAX_DEGREE_TRANSFORM_FFT 3
 #define MAX_DEGREE_TRANSFORM_SMALL 5 
@@ -67,6 +72,8 @@ inline long max_degree_waksman(long sz)
         else
             return MATRIX_WAKSMAN_THRESHOLDS_LARGE[i];
 }
+
+PML_CLOSE_NNS
 
 #endif
 

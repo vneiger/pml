@@ -3,7 +3,7 @@
 
 #include "structured_lzz_pX.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -541,6 +541,8 @@ void circulant_row_lzz_pX::mul_left_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in,
     }
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

@@ -9,7 +9,7 @@
 #include "structured_lzz_p.h"
 #include "structured_lzz_pX.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -508,6 +508,8 @@ void sylvester_lzz_pX::high_precision_inv_trunc(toeplitz_like_minus_lzz_pX& iM, 
 }
 
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

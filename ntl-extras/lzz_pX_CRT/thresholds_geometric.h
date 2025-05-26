@@ -7,7 +7,7 @@
 #include "thresholds_geometric_interpolate_FFT.h"
 #include "lzz_p_extra.h"
 
-NTL_CLIENT
+PML_OPEN_NNS
 
 #define MIN_GEOMETRIC_FFT_SMALL ((MIN_GEOMETRIC_FFT_EVALUATE_SMALL+MIN_GEOMETRIC_FFT_INTERPOLATE_SMALL)/2)
 #define MIN_GEOMETRIC_FFT_LARGE ((MIN_GEOMETRIC_FFT_EVALUATE_LARGE+MIN_GEOMETRIC_FFT_INTERPOLATE_LARGE)/2)
@@ -53,6 +53,7 @@ inline long max_geometric_FFT()
     return -1;
 }
 
+PML_CLOSE_NNS
 
 #endif
 

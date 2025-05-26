@@ -14,7 +14,10 @@
 
 #include <NTL/lzz_pX.h>
 
-NTL_CLIENT
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
 
 /** Computes the transposed product `xp` of `a` by `b` (naive algorithm) */
 void tPlainMul(zz_p *xp, const zz_p *ap, const zz_p *bp, long N);
@@ -68,6 +71,8 @@ inline zz_pX middle_product(const zz_pX& a, const zz_pX& c, long N)
     middle_product(b, a, c, N-1, N-1);
     return b;
 }
+
+PML_CLOSE_NNS
 
 #endif
 

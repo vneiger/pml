@@ -6,7 +6,7 @@
 #include "lzz_pX_CRT.h"
 #include "structured_lzz_p.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -741,6 +741,8 @@ long mosaic_toeplitz_lzz_p::inv(toeplitz_like_minus_lzz_p& inv, long thresh, lon
 }
 
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

@@ -1,7 +1,7 @@
 #include <algorithm> // for minmax
 #include "mat_lzz_pX_multiply.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* in-place reduction modulo the current prime                */
@@ -350,6 +350,8 @@ void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_
         primes.reconstruct(b, bs);
     }
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

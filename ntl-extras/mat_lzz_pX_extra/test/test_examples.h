@@ -1,17 +1,18 @@
 #ifndef __EXAMPLES_H__
 #define __EXAMPLES_H__
+
+#include <random>
+#include <algorithm>
+
 #include <NTL/BasicThreadPool.h>
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
-#include <iomanip>
-#include <random>
-#include <algorithm>
 
 #include "util.h"
 #include "mat_lzz_pX_multiply.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -176,6 +177,8 @@ build_test_examples(bool bigamp_shifts=false)
     return std::make_pair(test_matrices,test_shifts);
 }
 
+
+PML_END_IMPL
 
 #endif // __EXAMPLE_H__
 

@@ -8,7 +8,7 @@
 #include "structured_lzz_p.h"
 #include "structured_lzz_pX.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 
 /*------------------------------------------------------------*/
@@ -271,6 +271,8 @@ void lower_triangular_toeplitz_lzz_pX::mul_left_trunc(Vec<zz_pX>& res, const Vec
         res[i] = out_rev[n - 1 - i];
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

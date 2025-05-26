@@ -4,6 +4,8 @@
 #include "mat_lzz_pX_approximant.h"
 #include "mat_lzz_pX_linsolve.h"
 
+PML_START_IMPL
+
 //#define GENERIC_DET_PROFILE
 
 bool verify_determinant(const zz_pX & det, const Mat<zz_pX> & pmat, bool up_to_constant, bool randomized)
@@ -348,6 +350,8 @@ void determinant_via_evaluation_FFT(zz_pX & det, const Mat<zz_pX> & pmat)
     }
     FromfftRep(det, R, 0, pmat.NumRows() * d);
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

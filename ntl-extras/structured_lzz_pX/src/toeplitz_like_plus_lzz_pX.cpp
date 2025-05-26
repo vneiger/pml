@@ -7,7 +7,7 @@
 #include "structured_lzz_p.h"
 #include "structured_lzz_pX.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* returns Z1 A - A Z0                                        */
@@ -24,3 +24,5 @@ void toeplitz_lzz_pX_phi_plus(Mat<zz_pX> & res, const Mat<zz_pX>& A)
     long n = A.NumCols();
     res = Z_lzz_p(m, to_zz_p(1)) * A - A * Z_lzz_p(n, to_zz_p(0));
 }
+
+PML_END_IMPL

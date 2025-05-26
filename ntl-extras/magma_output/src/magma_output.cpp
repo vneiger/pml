@@ -4,9 +4,9 @@
 #include <NTL/matrix.h>
 
 #include "magma_output.h"
+#include "util.h"
 
-NTL_CLIENT
-
+PML_START_IMPL_IO
 
 /*------------------------------------------------------------*/
 /* initializes GF(p)                                          */
@@ -301,6 +301,8 @@ void magma_assign(const Mat<zz_pX>& v, const string & name)
     magma_assign(v, "x", name);
 }
 
+
+PML_END_IMPL_IO
 
 // Local Variables:
 // mode: C++

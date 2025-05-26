@@ -4,7 +4,7 @@
 #include "lzz_p_extra.h"
 #include "structured_lzz_p.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -251,6 +251,8 @@ void circulant_row_lzz_p::mul_left(Mat<zz_p>& res, const Mat<zz_p>& input) const
     }
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

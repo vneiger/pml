@@ -1,7 +1,7 @@
 #include "lzz_pX_extra.h" // for "is_monic(a)"
 #include "mat_lzz_pX_forms.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -1062,6 +1062,8 @@ PolMatForm get_col_polmatform(
 }
 
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

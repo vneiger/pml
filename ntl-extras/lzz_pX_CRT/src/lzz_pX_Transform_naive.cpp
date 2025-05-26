@@ -4,7 +4,7 @@
 
 #include "lzz_pX_CRT.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* constructor                                                */
@@ -93,7 +93,7 @@ void zz_pX_Transform_naive::backward(zz_pX& P, const Vec<zz_p>& val) const
     }
 }
 
-
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

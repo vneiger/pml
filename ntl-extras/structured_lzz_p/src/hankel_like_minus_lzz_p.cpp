@@ -5,7 +5,7 @@
 #include "mat_lzz_p_extra.h"
 #include "structured_lzz_p.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -158,6 +158,8 @@ void hankel_lzz_p_phi_minus(Mat<zz_p> & res, const Mat<zz_p>& A)
     transpose(Tz0, z0);
     res = Tz0 * A - A * Z_lzz_p(n, to_zz_p(1));
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

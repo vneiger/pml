@@ -1,6 +1,6 @@
 #include "mat_lzz_pX_extra.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 long reduced_form_gjv(
                       Mat<zz_pX> & reduced,
@@ -62,6 +62,8 @@ long reduced_form_gjv(
 
     return 1;
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

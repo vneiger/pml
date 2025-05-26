@@ -1,6 +1,14 @@
 #ifndef MAT_LZZ_PX_FORMS__H
 #define MAT_LZZ_PX_FORMS__H
 
+#include <algorithm>
+
+#include "mat_lzz_pX_utils.h"
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Shifted reduced forms and shifted normal forms of univariate
  * polynomial matrices over `zz_p`
  *
@@ -17,11 +25,6 @@
  * \todo random matrix with given PolMatForm
  *
  */
-
-#include "mat_lzz_pX_utils.h"
-#include <algorithm>
-
-NTL_CLIENT
 
 /** Shifted reduced forms of polynomial matrices.
  *
@@ -660,6 +663,8 @@ PolMatForm get_col_polmatform(
                              );
 
 //@} // doxygen group: Testing polynomial matrix forms
+
+PML_CLOSE_NNS
 
 #endif /* ifndef MAT_LZZ_PX_FORMS */
 

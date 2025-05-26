@@ -3,7 +3,7 @@
 
 #include "vec_lzz_p_extra.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -70,6 +70,7 @@ void precomp(Vec<mulmod_precon_t>& out, const Vec<zz_p>& in)
 
 
 
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

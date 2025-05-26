@@ -7,7 +7,7 @@
 #define CACHE_FRIENDLY_SIZE 32
 #define MATRIX_BLOCK_SIZE 8
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* clears the matrix  (pmat = 0 with same dimensions)         */
@@ -671,6 +671,8 @@ void conv(
         }
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

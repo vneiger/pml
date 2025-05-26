@@ -1,6 +1,13 @@
 #ifndef MAT_LZZ_PX_SEQUENCE__H
 #define MAT_LZZ_PX_SEQUENCE__H
 
+#include <NTL/matrix.h>
+#include <NTL/lzz_pX.h>
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Computing block-Wiedemann like sequences for balanced bases.
  *
  * \file mat_lzz_pX_sequence.h
@@ -12,11 +19,6 @@
  *
  * \todo clean code (e.g. redundant with matrix Pade)
  */
-
-#include <NTL/matrix.h>
-#include <NTL/lzz_pX.h>
-
-NTL_CLIENT
 
 typedef Vec<Vec<Vec<zz_p>>> Coeffs;
 /** For generating special Block-Wiedemann sequences.
@@ -128,6 +130,8 @@ void matrix_recon_interpolation_geometric(
                                           const zz_p& r,
                                           Vec<Mat<zz_p>> &seq
                                          );
+
+PML_CLOSE_NNS
 
 #endif /* ifndef MAT_LZZ_PX_SEQUENCE__H */
 

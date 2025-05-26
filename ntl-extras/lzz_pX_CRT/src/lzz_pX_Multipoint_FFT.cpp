@@ -1,7 +1,6 @@
 #include "lzz_pX_CRT.h"
 
-NTL_CLIENT
-
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -229,6 +228,8 @@ zz_pX_Multipoint_FFT get_FFT_points(long n)
     long k = NextPowerOfTwo(n);
     return zz_pX_Multipoint_FFT(1L << k);
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

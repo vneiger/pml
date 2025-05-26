@@ -1,17 +1,19 @@
-#include "lzz_pX_seq.h"
-#include "mat_lzz_pX_approximant.h"
 #include <map>
 #include <vector>
 #include <iostream>
 #include <cmath>
 #include <queue>
 #include <utility>
+
+#include "lzz_pX_seq.h"
+#include "mat_lzz_pX_approximant.h"
 #include "mat_lzz_pX_kernel.h"
-using namespace std;
+#include "util.h"
+
+PML_START_IMPL
 
 const bool verbose = false;
 //const bool verbose = true;
-
 
 Vec<zz_pX> mul(const Vec<zz_pX> &S, const zz_pX &a){
   Vec<zz_pX> res;
@@ -1297,31 +1299,4 @@ void berlekamp_massey_pmbasis_compressed(const long d, const Vec<Module> &S,
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+PML_END_IMPL

@@ -5,7 +5,7 @@
 //#define PMBASIS_GEN_PROFILE
 //#define VERBOSE_MBASISGEN
 
-NTL_CLIENT
+PML_START_IMPL
 
 
 /*------------------------------------------------------------*/
@@ -2548,6 +2548,8 @@ VecLong pmbasis_generic_onecolumn(
 
     return pivdeg;
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

@@ -1,6 +1,6 @@
 #include "mat_lzz_pX_extra.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 // Left division: 
 // B must be row reduced
@@ -59,6 +59,8 @@ void quo_rem(
     multiply(buf, B, Q);
     sub(R, A, buf);
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

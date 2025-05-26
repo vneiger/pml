@@ -5,7 +5,7 @@
 #include "lzz_pX_middle_product.h"
 #include "structured_lzz_p.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -312,6 +312,8 @@ void hankel_lzz_p::mul_left(Mat<zz_p>& res, const Mat<zz_p>& input) const
     }
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

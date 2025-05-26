@@ -3,7 +3,7 @@
 
 //#define PROFILE_ON
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* computes the matrices for evaluation and interpolation     */
@@ -677,6 +677,8 @@ void multiply_evaluate_dense2(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz
 //    std::cout << "Interpolate: " << t << std::endl;
 //#endif // PROFILE_ON
 //}
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

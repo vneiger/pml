@@ -1,6 +1,6 @@
 #include "lzz_pX_CRT.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* builds the subproduct tree naively (no Huffman)            */
@@ -140,6 +140,8 @@ long zz_pX_CRT::length() const
 {
     return n;
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

@@ -2,7 +2,7 @@
 
 #include "util.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* warm-up the CPU                                            */
@@ -16,6 +16,8 @@ void warmup()
     } 
     while (GetWallTime() - t < 1);
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

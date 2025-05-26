@@ -5,7 +5,7 @@
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pXY.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -610,6 +610,8 @@ long resultant_villard(zz_pX& res, const zz_pXY& f, const zz_pXY& g)
     return 1;
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

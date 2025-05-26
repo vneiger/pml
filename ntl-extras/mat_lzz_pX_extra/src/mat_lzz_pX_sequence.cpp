@@ -4,6 +4,8 @@
 #include "mat_lzz_pX_interpolant.h"
 #include "mat_lzz_pX_sequence.h"
 
+PML_START_IMPL
+
 /*------------------------------------------------------------*/
 /* TODO: what is this?                                        */
 /*------------------------------------------------------------*/
@@ -568,6 +570,7 @@ void matrix_recon_interpolation_geometric(Mat<zz_pX> & basis,
             basis[i][j].swap(intbas[i][j]);
 }
 
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

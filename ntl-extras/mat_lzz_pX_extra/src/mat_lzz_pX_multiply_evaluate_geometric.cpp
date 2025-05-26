@@ -1,6 +1,6 @@
 #include "mat_lzz_pX_multiply.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 
 /*------------------------------------------------------------*/
@@ -94,6 +94,8 @@ void multiply_evaluate_geometric(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat
         for (long k = 0; k < u; ++k)
             ev.interpolate(c[i][k], mat_valC[i*u + k]);
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

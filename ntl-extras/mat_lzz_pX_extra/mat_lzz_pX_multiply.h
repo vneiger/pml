@@ -1,6 +1,14 @@
 #ifndef MAT_LZZ_PX_MULTIPLY__H
 #define MAT_LZZ_PX_MULTIPLY__H
 
+#include <memory> // for unique_ptr
+#include "mat_lzz_pX_utils.h" // for deg(), macros CACHE_LINE_SIZE (and maybe other things)
+#include "lzz_pX_CRT.h"
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Multiplication of univariate polynomial matrices over `zz_p`
  *
  * \file mat_lzz_pX_multiply.h
@@ -12,12 +20,6 @@
  * polynomial matrices.
  *
  */
-
-#include <memory> // for unique_ptr
-#include "mat_lzz_pX_utils.h" // for deg(), macros CACHE_LINE_SIZE (and maybe other things)
-#include "lzz_pX_CRT.h"
-
-NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -599,6 +601,8 @@ std::unique_ptr<mat_lzz_pX_lmultiplier>
 get_lmultiplier(const Mat<zz_pX> & a, long dB);
 
 //@} // doxygen group: Helper functions
+
+PML_CLOSE_NNS
 
 #endif /* ifndef MAT_LZZ_PX_MULTIPLY__H */
 

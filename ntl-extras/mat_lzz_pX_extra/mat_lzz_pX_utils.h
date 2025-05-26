@@ -1,6 +1,20 @@
 #ifndef MAT_LZZ_PX_UTILS__H
 #define MAT_LZZ_PX_UTILS__H
 
+#include <vector>
+#include <NTL/matrix.h>
+#include <NTL/lzz_pX.h>
+
+/** Vectors of long's, for representing lists of degrees, list of indices,
+ * degree shifts, etc.
+ */
+typedef std::vector<long> VecLong;
+
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Basic routines for univariate polynomial matrices over `zz_p`
  *
  * \file mat_lzz_pX_utils.h
@@ -9,17 +23,6 @@
  * \date 2018-12-09
  *
  */
-
-#include <NTL/matrix.h>
-#include <NTL/lzz_pX.h>
-#include <vector>
-
-/** Vectors of long's, for representing lists of degrees, list of indices,
- * degree shifts, etc.
- */
-typedef std::vector<long> VecLong;
-
-NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -616,6 +619,8 @@ inline Mat<zz_pX> conv(const Vec<Mat<zz_p>> & matp, const long order)
 { Mat<zz_pX> pmat; conv(pmat, matp, order); return pmat; }
 
 //@} // doxygen group: Conversion to/from Vec<Mat<zz_p>>
+
+PML_CLOSE_NNS
 
 #endif // MAT_LZZ_PX_UTILS__H
 

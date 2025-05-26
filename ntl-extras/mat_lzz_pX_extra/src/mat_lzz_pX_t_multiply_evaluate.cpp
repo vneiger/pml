@@ -1,7 +1,7 @@
 #include "util.h"
 #include "mat_lzz_pX_multiply.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* transpose of b mapsto c = a*b. output is                   */
@@ -114,6 +114,8 @@ void t_multiply_evaluate_geometric(Mat<zz_pX> & b, const Mat<zz_pX> & a, const M
     t_multiply_evaluate_do_it(b, a, c, dA, dB, *ev);
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++
