@@ -1,10 +1,10 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
-#include <iomanip>
 
 #include "util.h"
 #include "mat_lzz_pX_utils.h"
+#include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_multiply.h"
 #include "mat_lzz_pX_linsolve.h"
 
