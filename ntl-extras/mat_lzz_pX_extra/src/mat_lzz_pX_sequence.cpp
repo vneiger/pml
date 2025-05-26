@@ -254,7 +254,7 @@ static void get_quos (Mat<zz_pX> &quos,
                       const zz_pX &g,
                       const long m)
 {
-    cout << "-enter quos\n";
+    std::cout << "-enter quos\n";
     double t;
 
     t = GetWallTime();
@@ -264,7 +264,7 @@ static void get_quos (Mat<zz_pX> &quos,
     Mat<zz_pX> mat1, mat2;
     mat1.SetDims(alphas.length(), len);
     mat2.SetDims(len, alphas.length());
-    cout << "setup: " << GetWallTime()-t << endl;
+    std::cout << "setup: " << GetWallTime()-t << std::endl;
 
     t = GetWallTime();
     for (long i = 0; i < alphas.length(); i++)
@@ -297,19 +297,19 @@ static void get_quos (Mat<zz_pX> &quos,
             mat2[len - j - 1][i].normalize();
         }
     }
-    cout << "build matrices: " << GetWallTime()-t << endl;
+    std::cout << "build matrices: " << GetWallTime()-t << std::endl;
 
     t = GetWallTime();
     Mat<zz_pX> res1, res2;
     mul_special(res1, res2, mat1, mat2);
-    cout << "mat mul ("  << mat1.NumRows() << " x " << mat2.NumRows() << " x " << mat2.NumCols() << ", deg " << max(deg(mat1),deg(mat2)) << "): " << GetWallTime()-t << endl;
+    std::cout << "mat mul ("  << mat1.NumRows() << " x " << mat2.NumRows() << " x " << mat2.NumCols() << ", deg " << max(deg(mat1),deg(mat2)) << "): " << GetWallTime()-t << std::endl;
 
     t = GetWallTime();
     trunc(res1, res1, 2*m);
     RightShift(res2, res2, 2*m);
     quos = res1 + res2;
     reverse(quos, quos, 2 * m - 1);
-    cout << "clean up: " << GetWallTime()-t << endl;
+    std::cout << "clean up: " << GetWallTime()-t << std::endl;
 }
 
 /*------------------------------------------------------------*/
@@ -372,18 +372,18 @@ void gen_sequence (Coeffs &res,
     t1 = GetWallTime();
     t0 = GetWallTime();
     Vec<zz_pX> upper;
-    cout << "-enter pows\n";
+    std::cout << "-enter pows\n";
     gen_pows(alphas, upper, t, a, 1, g, sqrt_d, 0);
-    cout << "pow1: " << GetWallTime() - t1 << endl;
+    std::cout << "pow1: " << GetWallTime() - t1 << std::endl;
     t1 = GetWallTime();
     gen_pows(As, upper, zz_pX(1), a, sqrt_d, g, sqrt_d, 1);
-    cout << "pow2: " << GetWallTime() - t1 << endl;
-    cout << "-total pow: " << GetWallTime() - t0 << endl;
+    std::cout << "pow2: " << GetWallTime() - t1 << std::endl;
+    std::cout << "-total pow: " << GetWallTime() - t0 << std::endl;
 
     t1 = GetWallTime();
     Mat<zz_pX> quos;
     get_quos(quos, alphas, upper, g, m);
-    cout << "-total quos: " << GetWallTime() - t1 << endl;
+    std::cout << "-total quos: " << GetWallTime() - t1 << std::endl;
 
     t1 = GetWallTime();
     SetDims(res, sqrt_d, sqrt_d, 2*m);
@@ -402,7 +402,7 @@ void gen_sequence (Coeffs &res,
             for (long s = 0; s < 2*m; s++)
                 res[u][v][s] = coeff(rem1,s);
         }
-    cout << "-rest from row1: " << GetWallTime() - t1 << endl;
+    std::cout << "-rest from row1: " << GetWallTime() - t1 << std::endl;
 }
 
 /*------------------------------------------------------------*/
@@ -425,7 +425,7 @@ void gen_sequence (Vec<Mat<zz_p>> &mats,
     zz_pX x_poly;
     SetCoeff(x_poly, m-1, zz_p(1));
     gen_sequence(res[0],x_poly,a,g,m);
-    cout << "--all first row: " << GetWallTime() - t << endl;
+    std::cout << "--all first row: " << GetWallTime() - t << std::endl;
 
     t = GetWallTime();
     const zz_p inv_c0 = -(zz_p(1)/ConstTerm(g));
@@ -442,14 +442,14 @@ void gen_sequence (Vec<Mat<zz_p>> &mats,
                 }
             }
     }
-    cout << "fill all: " << GetWallTime() - t << endl;
+    std::cout << "fill all: " << GetWallTime() - t << std::endl;
 
     // format
     t = GetWallTime();
     for (long i = 0; i < m; i++)
         SetDims(res[i], sqrt_d, sqrt_d, m);
     format(mats, res, d, m);
-    cout << "format: " << GetWallTime() - t << endl;
+    std::cout << "format: " << GetWallTime() - t << std::endl;
 }
 
 /*------------------------------------------------------------*/
