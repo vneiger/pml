@@ -121,14 +121,6 @@ void circulant_row_lzz_p::mul_right(Vec<zz_p>& res, const Vec<zz_p>& input) cons
     FromfftRep(res_all.elts(), fft_input, 0, 2*m - 2);
     res_all[2*m - 1] = 0;
 
-#ifdef __NTL_FIX_SIZE_2_FFT
-    if (K == 1)
-    {
-        res_all[0] /= 2;
-        res_all[1] /= 2;
-    }
-#endif   
-    
     res.SetLength(n);
     long todo = min(n, m);
     for (long i = 0; i < todo; i++)
@@ -212,15 +204,6 @@ void circulant_row_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const
     mul(fft_l, fft2, fft_l);
     FromfftRep(out.elts(), fft_l, 0, m + leftover - 2);
 
-#ifdef __NTL_FIX_SIZE_2_FFT
-    if (L == 1)
-    {
-        out[0] /= 2;
-        out[1] /= 2;
-    }
-#endif   
-
-
     out[m + leftover - 1] = 0;
     
     for (long i = 0; i < leftover; i++)
@@ -243,13 +226,6 @@ void circulant_row_lzz_p::mul_left(Vec<zz_p>& res, const Vec<zz_p>& input) const
         mul(fft_k, fft3, fft_k);
         FromfftRep(out.elts(), fft_k, 0, m + m - 2);
 
-#ifdef __NTL_FIX_SIZE_2_FFT
-    if (K == 1)
-    {
-        out[0] /= 2;
-        out[1] /= 2;
-    }
-#endif   
         out[m + m - 1] = 0;
     
         for (long i = 0; i < m; i++)

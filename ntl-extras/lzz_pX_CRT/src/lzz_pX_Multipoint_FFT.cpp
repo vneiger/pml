@@ -114,13 +114,6 @@ void zz_pX_Multipoint_FFT::interpolate(zz_pX& f, const Vec<zz_p>& val) {
     }
 
     FromfftRep(f, wk, 0, n-1);
-
-#ifdef __NTL_FIX_SIZE_2_FFT
-    if (n == 2) // for n=2, the normalization is different in version 11.1.0
-    {
-        f = (1 / to_zz_p(2)) * f;
-    }
-#endif
 }
 
 /*------------------------------------------------------------*/
@@ -215,13 +208,6 @@ void zz_pX_Multipoint_FFT::t_interpolate(Vec<zz_p>& val, const zz_pX& f) {
     }
 
     FromfftRep(tmp, wk, 0, n-1);
-
-#ifdef __NTL_FIX_SIZE_2_FFT
-    if (n == 2) // for n=2, the normalization is different in version 11.1.0
-    {
-        tmp = (1 / to_zz_p(2)) * tmp;
-    }
-#endif
 
     if (! do_bit_reverse)
     {

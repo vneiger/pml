@@ -151,12 +151,6 @@ void lower_triangular_toeplitz_lzz_pX::mul_right(Vec<zz_pX>& res, const Vec<zz_p
         mul(fft_in, fft_in, fft[i0]);
         zz_pX tmp;
         FromfftRep(tmp, fft_in, 0, n * (dX + d_found + 1) -1);
-#ifdef __NTL_FIX_SIZE_2_FFT
-        if (K == 1)
-        {
-            tmp = (1/to_zz_p(2)) * tmp;
-        }
-#endif   
         from_kronecker(res, tmp, dX + d_found);
     }
     else
@@ -173,12 +167,6 @@ void lower_triangular_toeplitz_lzz_pX::mul_right(Vec<zz_pX>& res, const Vec<zz_p
         zz_pX tmp;
         long len = min(dY + e + 1, n);
         FromfftRep(tmp, fft_in, 0, len * (dX + d + 1) - 1);
-#ifdef __NTL_FIX_SIZE_2_FFT
-        if (K == 1)
-        {
-            tmp = (1/to_zz_p(2)) * tmp;
-        }
-#endif   
         from_kronecker(res, tmp, dX + d);
     }
     long ell = res.length();
