@@ -9,7 +9,7 @@
 #include "mat_lzz_pX_utils.h"
 #include "mat_lzz_pX_linsolve.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 void one_bench(long sz, long degmat, long degvec)
 {

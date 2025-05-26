@@ -1,6 +1,8 @@
 #ifndef __UTIL_H
 #define __UTIL_H
 
+#include <NTL/tools.h>
+
 /** \brief Some useful functions and macros
  *
  * \file util.h
@@ -8,8 +10,6 @@
  * \date 2025-05-26
  *
  */
-
-#include <NTL/tools.h>
 
 //#include <NTL/version.h>
 // #if ((NTL_MAJOR_VERSION == 11) && (NTL_MINOR_VERSION == 1) && (NTL_REVISION == 0))
@@ -29,9 +29,13 @@
 #define PML_END_IMPL_IO PML_CLOSE_NNS
 #define PML_CLIENT NTL_USE_SNS NTL_USE_NNS PML_USE_PNS
 
+PML_OPEN_NNS
+
 /** Warms the CPU up (currently naive: while loop with empty body, lasting one
  * second) */
 void warmup();
+
+PML_CLOSE_NNS
 
 #endif
 

@@ -8,12 +8,13 @@
 #include <iomanip>
 #include <limits.h>
 
+#include "mat_lzz_pX_multiply.h"
 #include "util.h"
 #include "lzz_p_extra.h"
 #include "mat_lzz_pX_extra.h"
 
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* checks some products                                       */
@@ -26,16 +27,16 @@ void check(long p, long sz, long sz2, long sz3, long deg)
         zz_p::init(p);
 
     const double thresh = 0.001;
-    
+
     long nb;
     Mat<zz_pX> a, b, c;
-    double t_eval, t_eval_dense, t_eval_direct, t_3primes, t_waksman, t_check;
+    double t_eval_dense, t_eval_direct, t_3primes, t_waksman, t_check;
 
     random(a, sz, sz2, deg);
     random(b, sz2, sz3, deg);
 
     cout << p << " " << sz << " " << sz2 << " " << sz3 << " " << deg << endl;
-    
+
     t_3primes = GetWallTime();
     nb = 0;
     do
@@ -45,16 +46,6 @@ void check(long p, long sz, long sz2, long sz3, long deg)
     }
     while ((GetWallTime()-t_3primes) <= thresh);
     t_3primes = (GetWallTime()-t_3primes) / nb;
-                
-    t_eval = GetWallTime();
-    nb = 0;
-    do
-    {
-        multiply_evaluate(c, a, b);
-        nb++;
-    }
-    while ((GetWallTime()-t_eval) <= thresh);
-    t_eval = (GetWallTime()-t_eval) / nb;
 
     t_waksman = GetWallTime();
     nb = 0;
@@ -66,7 +57,7 @@ void check(long p, long sz, long sz2, long sz3, long deg)
             while ((GetWallTime()-t_waksman) <= thresh);
     t_waksman = (GetWallTime()-t_waksman) / nb;
 
-    
+
     if (deg < 100)
     {
         t_eval_dense = GetWallTime();
@@ -79,6 +70,8 @@ void check(long p, long sz, long sz2, long sz3, long deg)
         while ((GetWallTime()-t_eval_dense) <= thresh);
         t_eval_dense = (GetWallTime()-t_eval_dense) / nb;
     }
+    else
+        t_eval_dense = -1.0;
 
     if (p == 0)
     {
@@ -126,7 +119,7 @@ void check(long p, long sz, long sz2, long sz3, long deg)
     while ((GetWallTime()-t_check) <= thresh);
     t_check = (GetWallTime()-t_check) / nb;
 
-    cout << t_eval << " " << t_3primes << " " << t_waksman << " " << t_check << "   ";
+    cout << t_3primes << " " << t_waksman << " " << t_check << "   ";
     if (deg < 10)
         cout << " " << t_eval_dense;
     cout << endl;

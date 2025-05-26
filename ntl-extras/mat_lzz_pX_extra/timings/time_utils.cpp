@@ -16,7 +16,7 @@
 #define SMALL_SUITE
 
 
-NTL_CLIENT
+PML_CLIENT
 
 /******************************************************/
 /* Times the degree functions for polynomial matrices */

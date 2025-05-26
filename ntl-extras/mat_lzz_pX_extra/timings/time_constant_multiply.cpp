@@ -2,10 +2,9 @@
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
 #include <iomanip>
-#include <vector>
 
-#include "util.h"
 #include "mat_lzz_pX_extra.h"
+#include "util.h"
 
 #define TIME(a)         \
     tt = GetWallTime();    \
@@ -13,7 +12,7 @@
     tt = GetWallTime()-tt; \
     cout << tt << "\t";
 
-NTL_CLIENT
+PML_CLIENT
 
 /************************************************************************/
 /* Times the multiplication of a polynomial matrix by a constant matrix */

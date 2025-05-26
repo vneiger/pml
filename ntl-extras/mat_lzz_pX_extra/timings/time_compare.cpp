@@ -1,11 +1,6 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
-#include <iomanip>
-#include <vector>
-#include <algorithm>
-#include <numeric>
-#include <random>
 #include <NTL/BasicThreadPool.h>
 #include <cmath>
 
@@ -14,7 +9,7 @@
 #include "mat_lzz_pX_sequence.h"
 #include "structured_lzz_p.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 int main(int argc, char *argv[])
 {

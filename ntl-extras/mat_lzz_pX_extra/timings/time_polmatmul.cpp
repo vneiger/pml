@@ -31,7 +31,7 @@
         std::cout << t << "\t";          \
     }
 
-NTL_CLIENT
+PML_CLIENT
 
 /** Bench of polmatmul for given dimension and degree, modulo FFT prime.
  *

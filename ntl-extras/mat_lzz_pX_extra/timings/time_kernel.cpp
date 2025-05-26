@@ -6,7 +6,7 @@
 #include "util.h"
 #include "mat_lzz_pX_kernel.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* runs one bench                                             */

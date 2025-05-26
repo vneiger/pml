@@ -10,7 +10,7 @@
 
 #include "mat_lzz_pX_kernel.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 #define BENCH_KRYLOV_ITERATES_ONE(variant)          \
 void bench_krylov_iterates_one_##variant(           \

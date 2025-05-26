@@ -10,7 +10,7 @@
 
 
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* creates sylvester matrices                                 */

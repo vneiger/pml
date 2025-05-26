@@ -23,7 +23,7 @@
         std::cout << t/tmul << "\t";         \
     }
 
-NTL_CLIENT
+PML_CLIENT
 
 void one_bench_fft(long sz, long deg)
 {

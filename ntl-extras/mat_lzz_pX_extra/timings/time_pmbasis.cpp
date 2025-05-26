@@ -7,7 +7,7 @@
 #include "mat_lzz_pX_approximant.h"
 #include "mat_lzz_pX_interpolant.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* run one bench for specified rdim,cdim,order                */

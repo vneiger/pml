@@ -4,9 +4,8 @@
 
 #include "util.h"
 #include "lzz_pX_CRT.h"
-#include "vec_lzz_p_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* compares FFT / non-FFT                                     */

@@ -6,8 +6,8 @@
 #include <iomanip>
 
 #include "util.h"
-#include "magma_output.h"
-#include "mat_lzz_pX_extra.h"
+//#include "magma_output.h"
+#include "mat_lzz_pX_multiply.h"
 
 // LinBox
 #include <linbox/linbox-config.h>
@@ -34,7 +34,7 @@ void randomVect (Rand& r, Vect& v)
         r.random(v[i]); 
 }
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* compare polynomial matrix multiplication                   */

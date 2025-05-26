@@ -4,7 +4,7 @@
 #include "util.h"
 #include "lzz_pX_middle_product.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* checks middle products (only the balanced case)            */
