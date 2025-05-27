@@ -4,7 +4,7 @@
 #include "vec_lzz_p_extra.h"
 #include "structured_lzz_p.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -243,6 +243,8 @@ void cauchy_geometric_lzz_p::to_dense(Mat<zz_p>& M) const
 // }
 
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

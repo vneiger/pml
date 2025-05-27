@@ -3,6 +3,10 @@
 
 #include <limits.h>
 #include "thresholds_plain_newton_geometric_mp_inv_trunc.h"
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
 
 // The behavior middle product vs geometric is too irregular.
 // The geometric option is disabled for the moment.
@@ -10,6 +14,8 @@ inline long max_degree_middle_product_inv_trunc()
 {
     return LONG_MAX;
 }
+
+PML_CLOSE_NNS
 
 #endif
 

@@ -1,7 +1,7 @@
 #include "mat_lzz_pX_linearization.h"
 #include "mat_lzz_pX_multiply.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* horizontal join                                            */
@@ -286,6 +286,8 @@ void right_parlin_middle_product(
         }
     }
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

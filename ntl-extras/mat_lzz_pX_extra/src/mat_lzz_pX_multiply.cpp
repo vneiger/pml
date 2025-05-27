@@ -3,7 +3,7 @@
 #include "mat_lzz_pX_arith.h"
 #include "mat_lzz_pX_multiply.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* c = a*b                                                    */
@@ -123,6 +123,8 @@ void multiply(Vec<zz_pX>& c, const Vec<zz_pX>& a, const Mat<zz_pX>& b, long is_p
     c.swap(cmat[0]);
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

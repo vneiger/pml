@@ -1,6 +1,13 @@
 #ifndef MAT_LZZ_PX_LINEARIZATION__H
 #define MAT_LZZ_PX_LINEARIZATION__H
 
+#include <numeric> // for 'accumulate'
+#include "mat_lzz_pX_forms.h" // for VecLong and col_degree()
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Experimental code for partial linearization.
  *
  * \file mat_lzz_pX_linearization.h
@@ -10,11 +17,6 @@
  *
  * \todo Not documented yet. Will be when the functions become more stable.
  */
-
-#include <numeric> // for 'accumulate'
-#include "mat_lzz_pX_forms.h" // for VecLong and col_degree()
-
-NTL_CLIENT
 
 
 /*------------------------------------------------------------*/
@@ -275,6 +277,8 @@ inline void right_parlin_middle_product(
     VecLong col_degree(b.NumCols(), degree);
     right_parlin_middle_product(c, a, b, parlin_degree, col_degree, dA, dB);
 }
+
+PML_CLOSE_NNS
 
 #endif // MAT_LZZ_PX_LINEARIZATION__H
 

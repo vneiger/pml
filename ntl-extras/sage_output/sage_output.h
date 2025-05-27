@@ -6,7 +6,10 @@
 #include <NTL/vector.h>
 #include <NTL/matrix.h>
 
-NTL_CLIENT
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -42,10 +45,10 @@ void sage_output(const Vec<zz_p> & v);
 /*------------------------------------------------------------*/
 /* assigns a vector to variable "name"                        */
 /*------------------------------------------------------------*/
-void sage_assign(const Vec<ZZ> & v, const string & name);
-void sage_assign(const Vec<long> & v, const string & name);
-void sage_assign(const Vec<unsigned long> & v, const string & name);
-void sage_assign(const Vec<zz_p> & v, const string & name);
+void sage_assign(const Vec<ZZ> & v, const std::string & name);
+void sage_assign(const Vec<long> & v, const std::string & name);
+void sage_assign(const Vec<unsigned long> & v, const std::string & name);
+void sage_assign(const Vec<zz_p> & v, const std::string & name);
 
 
 /*------------------------------------------------------------*/
@@ -56,15 +59,15 @@ void sage_output(const Mat<zz_p> & v);
 /*------------------------------------------------------------*/
 /* assigns a matrix to variable "name"                        */
 /*------------------------------------------------------------*/
-void sage_assign(const Mat<zz_p> & v, const string & name);
+void sage_assign(const Mat<zz_p> & v, const std::string & name);
 
 /*------------------------------------------------------------*/
 /* prints a poly (or vector, matrix) with indeterminate "var" */
 /*------------------------------------------------------------*/
-void sage_output(const ZZX & v, const string & var);
-void sage_output(const zz_pX & v, const string & var);
-void sage_output(const Vec<zz_pX> & v, const string & var);
-void sage_output(const Mat<zz_pX>& a, const string & var);
+void sage_output(const ZZX & v, const std::string & var);
+void sage_output(const zz_pX & v, const std::string & var);
+void sage_output(const Vec<zz_pX> & v, const std::string & var);
+void sage_output(const Mat<zz_pX>& a, const std::string & var);
 
 /*------------------------------------------------------------*/
 /* prints a poly (or vector) with indeterminate x             */
@@ -77,18 +80,20 @@ void sage_output(const Mat<zz_pX>& a);
 /*------------------------------------------------------------*/
 /* assign a poly with indeterminate "var" to variable "name"  */
 /*------------------------------------------------------------*/
-void sage_assign(const ZZX & v, const string & var, const string & name);
-void sage_assign(const zz_pX & v, const string & var, const string & name);
-void sage_assign(const Vec<zz_pX> & v, const string & var, const string & name);
-void sage_assign(const Mat<zz_pX>& a, const string & var, const string & name);
+void sage_assign(const ZZX & v, const std::string & var, const std::string & name);
+void sage_assign(const zz_pX & v, const std::string & var, const std::string & name);
+void sage_assign(const Vec<zz_pX> & v, const std::string & var, const std::string & name);
+void sage_assign(const Mat<zz_pX>& a, const std::string & var, const std::string & name);
 
 /*------------------------------------------------------------*/
 /* assign a poly with indeterminate x to variable "name"      */
 /*------------------------------------------------------------*/
-void sage_assign(const ZZX & v, const string & name);
-void sage_assign(const zz_pX & v, const string & name);
-void sage_assign(const Vec<zz_pX> & v, const string & name);
-void sage_assign(const Mat<zz_pX>& a, const string & var);
+void sage_assign(const ZZX & v, const std::string & name);
+void sage_assign(const zz_pX & v, const std::string & name);
+void sage_assign(const Vec<zz_pX> & v, const std::string & name);
+void sage_assign(const Mat<zz_pX>& a, const std::string & var);
+
+PML_CLOSE_NNS
 
 #endif
 

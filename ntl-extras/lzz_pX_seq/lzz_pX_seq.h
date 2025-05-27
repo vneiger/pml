@@ -3,10 +3,13 @@
 
 #include <NTL/vector.h>
 #include <NTL/lzz_pX.h>
+
 #include "lzz_pXY.h"
-#include "structured_lzz_pX.h"
 #include "structured_lzz_p.h"
-NTL_CLIENT
+#include "structured_lzz_pX.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
 
 /* utility functions */
 // seq times univariate poly
@@ -90,14 +93,6 @@ void generate_right_seq(Vec<zz_pX> &S, const Mat<zz_pX> &A,
     const Mat<zz_pX> b = Mat<zz_pX>(),
     const bool prec=false);
 
-
-
-
-
-
-
-
-
-
+PML_CLOSE_NNS
 
 #endif

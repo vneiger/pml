@@ -1,12 +1,11 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
-#include <iomanip>
 
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -29,28 +28,28 @@ void check_solution(long sz, long deg)
 
     random(b, sz, 1, deg);
 
-    t = get_time();
+    t = GetWallTime();
     nb = 0;
     do
     {
         solve_series_high_order_lifting(sol, a, b, sz*deg);
         nb++;
     }
-    while ((get_time()-t) <= thresh);
-    t = (get_time()-t) / nb;
+    while ((GetWallTime()-t) <= thresh);
+    t = (GetWallTime()-t) / nb;
     cout << t << " ";
 
     Mat<zz_pX> check;
 
-    t = get_time();
+    t = GetWallTime();
     nb = 0;
     do
     {
         check = solve_series_high_precision(a, b, sz*deg);
         nb++;
     }
-    while ((get_time()-t) <= thresh);
-    t = (get_time()-t) / nb;
+    while ((GetWallTime()-t) <= thresh);
+    t = (GetWallTime()-t) / nb;
     cout << t << " ";
 
     cout << endl;

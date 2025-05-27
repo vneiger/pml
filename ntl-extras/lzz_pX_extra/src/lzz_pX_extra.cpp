@@ -3,8 +3,7 @@
 #include "vec_lzz_p_extra.h"
 #include "lzz_pX_extra.h"
 
-NTL_CLIENT
-
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -483,6 +482,7 @@ void add_LeftShift(zz_pX & c, const zz_pX & a, const zz_pX & b, const long k)
       c.normalize();
 }
 
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

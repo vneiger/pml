@@ -1,7 +1,7 @@
 #include <algorithm> // for minmax
 #include "mat_lzz_pX_multiply.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* in-place reduction modulo the current prime                */
@@ -145,7 +145,7 @@ static void reconstruct_3CRT(Mat<zz_pX> & c, const Mat<zz_pX> & c0, long p0, con
     {
         for (long j = 0; j < s; ++j)
         {
-            const std::pair<long,long> degs = minmax({deg(c0[i][j]), deg(c1[i][j]), deg(c2[i][j])});
+            const std::pair<long,long> degs = std::minmax({deg(c0[i][j]), deg(c1[i][j]), deg(c2[i][j])});
             c[i][j].SetLength(degs.second+1);
             for (long k = 0; k <= degs.first; ++k)
             {
@@ -350,6 +350,8 @@ void middle_product_3_primes(Mat<zz_pX> & b, const Mat<zz_pX> & a, const Mat<zz_
         primes.reconstruct(b, bs);
     }
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

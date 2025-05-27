@@ -4,7 +4,7 @@
 
 #include "lzz_pX_CRT.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* tests geometric evaluation, then interpolation             */
@@ -27,7 +27,7 @@ void check(long p)
         b = random_zz_p();
         ev = zz_pX_Multipoint_Geometric(a, b, j);
         M = ev.to_dense();
-        in = random(j);
+        random(in, j);
         
         ev.mul_right(out, in);
         out2 = M * in;

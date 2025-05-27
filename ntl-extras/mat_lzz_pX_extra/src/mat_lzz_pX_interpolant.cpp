@@ -8,7 +8,7 @@
 
 //#define MBASIS_PROFILE
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* interpolant basis verification                             */
@@ -1541,6 +1541,8 @@ void popov_pmbasis(
 //    return pivdeg;
 //}
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

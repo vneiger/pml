@@ -4,7 +4,7 @@
 #include "lzz_pX_CRT.h"
 #include "vec_lzz_p_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* creates, t-evaluates, t-interpolates a vector of polys.    */

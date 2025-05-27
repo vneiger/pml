@@ -1,6 +1,18 @@
 #ifndef LZZ_PX_CRT__H
 #define LZZ_PX_CRT__H
 
+#include <map>
+#include <NTL/lzz_pX.h>
+#include <NTL/vector.h>
+#include <NTL/matrix.h>
+#include <NTL/mat_lzz_p.h>
+
+#include "util.h"
+#include "thresholds_geometric.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Chinese remaindering and evaluation / interpolation for polynomials over `zz_p`
  *
  * \file lzz_pX_CRT.h
@@ -12,15 +24,6 @@
  * various operations related to CRT techniques, for polynomials over `zz_p`.
  *
  */
-
-#include <map>
-#include <NTL/lzz_pX.h>
-#include <NTL/vector.h>
-#include <NTL/matrix.h>
-#include <NTL/mat_lzz_p.h>
-#include "thresholds_geometric.h"
-
-NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -401,7 +404,7 @@ private:
     Vec<zz_p> x, xs, t, w, ws, y, z, zs;
     zz_pX f, g1, g2;
     fftRep g1_fft, g2_fft;  
-    map<int, fftRep> known_degrees;
+    std::map<int, fftRep> known_degrees;
 };
 
 /*------------------------------------------------------------*/
@@ -799,6 +802,8 @@ private:
     Vec<zz_pX> cofactors;
     Vec<Vec<zz_pX>> tree;
 };
+
+PML_CLOSE_NNS
 
 #endif
 

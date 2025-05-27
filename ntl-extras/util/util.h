@@ -1,39 +1,41 @@
 #ifndef __UTIL_H
 #define __UTIL_H
 
+#include <NTL/tools.h>
+
 /** \brief Some useful functions and macros
  *
  * \file util.h
  * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
- * \version 0.1
- * \date 2018-12-19
+ * \date 2025-05-26
  *
  */
 
-#include <NTL/version.h>
-#include <NTL/tools.h>
+//#include <NTL/version.h>
+// #if ((NTL_MAJOR_VERSION == 11) && (NTL_MINOR_VERSION == 1) && (NTL_REVISION == 0))
 
-NTL_CLIENT
+#define PML_OPEN_NNS namespace PML {
+#define PML_CLOSE_NNS  }
+#define PML_USE_PNS using namespace PML;
+#define PML_START_IMPL PML_OPEN_NNS NTL_USE_NNS NTL_IMPORT_FROM_STD
+#define PML_END_IMPL PML_CLOSE_NNS
+#define PML_START_IMPL_IO \
+            PML_OPEN_NNS \
+            NTL_USE_NNS \
+            NTL_IMPORT_FROM_STD \
+            using std::string; \
+            using std::cout; \
+            using std::endl;
+#define PML_END_IMPL_IO PML_CLOSE_NNS
+#define PML_CLIENT NTL_USE_SNS NTL_USE_NNS PML_USE_PNS
 
-#if ((NTL_MAJOR_VERSION == 11) && (NTL_MINOR_VERSION == 1) && (NTL_REVISION == 0))
-/** If NTL's version is 11.1.0, define the macro `__NTL_FIX_SIZE_2_FFT` to fix
- * a bug in size-2 FFT in `lzz_pX` */
-#define __NTL_FIX_SIZE_2_FFT
-#endif
-
-#if (NTL_MAJOR_VERSION >= 11)
-/** Macro `get_time` which wraps either GetTime (NTL prior to v11) or
- * GetWallTime (NTL from v11) */
-#define get_time GetWallTime
-#else
-/** Macro `get_time` which wraps either GetTime (NTL prior to v11) or
- * GetWallTime (NTL from v11) */
-#define get_time GetTime
-#endif
+PML_OPEN_NNS
 
 /** Warms the CPU up (currently naive: while loop with empty body, lasting one
  * second) */
 void warmup();
+
+PML_CLOSE_NNS
 
 #endif
 

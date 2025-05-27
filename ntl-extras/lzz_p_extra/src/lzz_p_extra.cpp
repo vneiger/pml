@@ -2,7 +2,7 @@
 
 #include "lzz_p_extra.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 
 /*------------------------------------------------------------*/
@@ -68,6 +68,8 @@ void element_of_order(zz_p& a, long ord, long nb_trials, bool strong)
     }
     clear(a);
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

@@ -5,7 +5,7 @@
 #include "util.h"
 #include "lzz_pXY.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* creates random bivariate polynomials                       */
@@ -25,13 +25,13 @@ void check(long p)
         double t1, t2;
 
         cout << "deg = " << i << " | ";
-        t1 = get_time();
+        t1 = GetWallTime();
         resultant(res1, f, g);
-        t1 = get_time()-t1;
+        t1 = GetWallTime()-t1;
 
-        t2 = get_time();
+        t2 = GetWallTime();
         resultant_villard(res2, f, g);
-        t2 = get_time()-t2;
+        t2 = GetWallTime()-t2;
 
         // normalize results to ease comparison
         MakeMonic(res1);

@@ -2,7 +2,7 @@
 #include "mat_lzz_pX_utils.h"
 #include "mat_lzz_pX_arith.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* basic arithmetic: addition, subtraction, negation,         */
@@ -229,18 +229,15 @@ void sub(Vec<zz_pX> & c, const Vec<zz_p> & a, const Vec<zz_pX> & b)
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-NTL_OPEN_NNS
 void negate(Vec<zz_pX> & x, const Vec<zz_pX> & a)
 {
     long n = a.length();
     x.SetLength(n);
     for (long i = 0; i < n; ++i)
-            NTL::negate(x[i], a[i]);
+            negate(x[i], a[i]);
 }
-NTL_CLOSE_NNS
 
 
-NTL_OPEN_NNS
 void negate(Mat<zz_pX> & x, const Mat<zz_pX> & a)
 {
     long m = a.NumRows();
@@ -249,9 +246,8 @@ void negate(Mat<zz_pX> & x, const Mat<zz_pX> & a)
     x.SetDims(m, n);
     for (long u = 0; u < m; ++u)
         for (long v = 0; v < n; ++v)
-            NTL::negate(x[u][v], a[u][v]);
+            negate(x[u][v], a[u][v]);
 }
-NTL_CLOSE_NNS
 
 
 
@@ -390,6 +386,8 @@ void mul(Mat<zz_pX> & c, const Mat<zz_pX> & a, const zz_pX & b)
 }
 
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

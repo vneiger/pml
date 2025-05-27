@@ -11,7 +11,7 @@
 #include "structured_lzz_p.h"
 
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* computes                                                   */
@@ -956,7 +956,7 @@ static long invert_rec(Mat<zz_p>& Yp_out, Mat<zz_p>& Zp_out,
 long cauchy_like_geometric_lzz_p::invert_leading_principal_minor_grp(cauchy_like_geometric_lzz_p& Cinv,
                                                                      long thresh, long thresh_alpha) const
 {
-    // double t = get_time();
+    // double t = GetWallTime();
 
     // check this!
     if (&Cinv == this)
@@ -988,7 +988,7 @@ long cauchy_like_geometric_lzz_p::invert_leading_principal_minor_grp(cauchy_like
 
     Cinv = cauchy_like_geometric_lzz_p(Yp_out, Zp_out, C.v1, C.u1, C.rho);
 
-    // cout << "solve cauchy " << get_time()-t << " with alpha=" << NumGens() << " size=" << NumRows() << " and thresh=" << thresh << endl;
+    // cout << "solve cauchy " << GetWallTime()-t << " with alpha=" << NumGens() << " size=" << NumRows() << " and thresh=" << thresh << endl;
 
     return 1;
 }
@@ -1042,6 +1042,8 @@ long cauchy_like_geometric_lzz_p::solve_grp(Vec<zz_p>& x, const Vec<zz_p> b, lon
     return 1;
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

@@ -3,6 +3,8 @@
 
 #include "structured_lzz_pX.h"
 
+PML_START_IMPL
+
 /*------------------------------------------------------------*/
 /* right multiplication, matrix version                       */
 /*------------------------------------------------------------*/
@@ -131,6 +133,8 @@ void structured_lzz_pX::mul_left_trunc(Mat<zz_pX>& out, const Mat<zz_pX>& in, lo
     }
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

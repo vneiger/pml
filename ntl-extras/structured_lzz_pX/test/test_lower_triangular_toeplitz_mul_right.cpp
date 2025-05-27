@@ -3,7 +3,7 @@
 
 #include "structured_lzz_pX.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* creates lower triangular toeplitz matrices                 */

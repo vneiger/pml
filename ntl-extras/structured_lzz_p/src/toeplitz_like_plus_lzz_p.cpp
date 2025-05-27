@@ -5,7 +5,7 @@
 #include "mat_lzz_p_extra.h"
 #include "structured_lzz_p.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -145,6 +145,8 @@ void toeplitz_lzz_p_phi_plus(Mat<zz_p> & res, const Mat<zz_p>& A)
     long n = A.NumCols();
     res = Z_lzz_p(m, to_zz_p(1)) * A - A * Z_lzz_p(n, to_zz_p(0));
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

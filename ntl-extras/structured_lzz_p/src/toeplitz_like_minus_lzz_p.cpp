@@ -5,7 +5,7 @@
 #include "mat_lzz_p_extra.h"
 #include "structured_lzz_p.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -159,6 +159,8 @@ void toeplitz_lzz_p_phi_minus(Mat<zz_p> & res, const Mat<zz_p>& A)
     z1 = Z_lzz_p(n, to_zz_p(1));
     res = z0 * A - A * z1;
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

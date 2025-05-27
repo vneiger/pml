@@ -1,6 +1,6 @@
 #include "mat_lzz_pX_multiply.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* returns trunc( trunc(a, dA+1)*c div x^dA, dB+1 )           */
@@ -227,6 +227,8 @@ void middle_product_evaluate_dense2(Mat<zz_pX> & b, const Mat<zz_pX> & a, const 
         }
 }
 #endif
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

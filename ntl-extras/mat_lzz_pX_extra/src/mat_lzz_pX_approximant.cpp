@@ -3,7 +3,7 @@
 
 #include "mat_lzz_pX_approximant.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -373,6 +373,8 @@ void popov_appbas_iterative(
     inv(lmat, lmat);
     mul(appbas,lmat,appbas);
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

@@ -7,7 +7,7 @@
 //#define MBASIS_PROFILE
 //#define PMBASIS_PROFILE
 
-NTL_CLIENT
+PML_START_IMPL
 
 
 /*------------------------------------------------------------*/
@@ -1666,6 +1666,8 @@ void pmbasis_2x1(
         std::cout << order << " -- multiply bases: " << t << std::endl;
     }
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

@@ -2,14 +2,11 @@
 #include <NTL/mat_lzz_p.h>
 
 #include "util.h"
-#include "lzz_p_extra.h"
-#include "mat_lzz_p_extra.h"
 #include "lzz_pX_middle_product.h"
-#include "mat_lzz_pX_extra.h"
 #include "structured_lzz_p.h"
 #include "structured_lzz_pX.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -367,9 +364,9 @@ void sylvester_lzz_pX::phi_plus_generators(Mat<zz_pX>& G, Mat<zz_pX>& H) const
 /* finds a sequence of degrees n0, n1, .. nk                  */
 /* n0 <= 1, ni = {2*n{i-1}, 2*{n-1}-2}, nk >= n               */
 /*------------------------------------------------------------*/
-static vector<long> degrees(long n)
+static VecLong degrees(long n)
 {
-    vector<long> all_deg;
+    VecLong all_deg;
 
     while(n > 1)
     {
@@ -418,7 +415,7 @@ void sylvester_lzz_pX::newton_inv_trunc(toeplitz_like_minus_lzz_pX& iM, long m) 
 
     iM = toeplitz_like_minus_lzz_pX(G, transpose(H));
 
-    vector<long> all_deg=degrees(m);
+    VecLong all_deg=degrees(m);
     long k = all_deg[0];
     long idx = 1;
 
@@ -508,6 +505,8 @@ void sylvester_lzz_pX::high_precision_inv_trunc(toeplitz_like_minus_lzz_pX& iM, 
 }
 
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

@@ -7,7 +7,7 @@
 #include "lzz_pX_middle_product.h"
 #include "structured_lzz_p.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -602,6 +602,8 @@ long sylvester_lzz_p::top_right_block_inverse(Mat<zz_p>& block, long m)
     return 1;
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

@@ -1,22 +1,15 @@
+#include <cmath>
+
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
-#include <iomanip>
-#include <vector>
-#include <algorithm>
-#include <numeric>
-#include <random>
 #include <NTL/BasicThreadPool.h>
-#include <cmath>
-
-//#define SAFETY_CHECKS
 
 #include "util.h"
-#include "mat_lzz_pX_extra.h"
+//#include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_approximant.h"
-#include "sage_output.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {
@@ -27,17 +20,6 @@ std::ostream &operator<<(std::ostream &out, const VecLong &s)
 }
 
 typedef Vec<Vec<Vec<zz_p>>> Coeffs;
-
-static inline void MulMod_simple(zz_pX& upper, const zz_pX& a, const zz_pXModulus& F)
-{
-    long n = F.n;
-    zz_pX P1(INIT_SIZE, n);
-    fftRep R1(INIT_SIZE, F.l);
-    TofftRep_trunc(R1, a, F.l, max(1L << F.k, 2*n-2));
-    mul(R1, R1, F.HRep);
-    FromfftRep(upper, R1, n-1, 2*n-3);
-}
-
 
 #if (1)
 void MulMod_local(zz_pX& x, zz_pX& upper, const zz_pX& a, const zz_pXMultiplier& B, const zz_pXModulus& F)
@@ -946,7 +928,8 @@ int main(int argc, char *argv[])
         Mat<zz_pX> appbas;
         VecLong shift(2*m+1, 0);
         shift[0] = 2*d+1;
-        VecLong pivdeg = pmbasis(appbas, P, 2*d+1, shift);
+        VecLong pivdeg(shift);
+        pmbasis(appbas, P, 2*d+1, pivdeg);
 
         t2 = GetWallTime();
         std::cout << "TIME ~~ matrix fraction reconstruction: " << (t2-t1) << std::endl;

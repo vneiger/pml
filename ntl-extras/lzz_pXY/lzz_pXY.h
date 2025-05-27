@@ -19,7 +19,10 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/vector.h>
 
-NTL_CLIENT
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
 
 /**  Main class for bivariate polynomials.
  *   
@@ -110,7 +113,7 @@ public:
  */ 
 
 /** Prints `a` to `s` using NTL's representation */
-ostream& operator<<(ostream& s, const zz_pXY& a);
+std::ostream& operator<<(std::ostream& s, const zz_pXY& a);
 
 /** @}  */       // doxygen I/O
 
@@ -435,6 +438,7 @@ long resultant_villard(zz_pX& res, const zz_pXY& f, const zz_pXY& g);
 
 /** @}  */       // doxygen resultant
 
+PML_CLOSE_NNS
 
 #endif
 

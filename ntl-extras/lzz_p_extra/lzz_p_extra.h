@@ -1,6 +1,13 @@
 #ifndef __LZZ_P_EXTRA__H
 #define __LZZ_P_EXTRA__H
 
+#include <NTL/lzz_p.h>
+
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Additional functions for `lzz_p`
  *
  * \file lzz_p_extra.h
@@ -19,9 +26,6 @@
 /** Prime of type _large prime_ (2 other types: FFT prime, small prime) */
 #define TYPE_LARGE_PRIME 2
 
-#include <NTL/lzz_p.h>
-
-NTL_CLIENT
 
 /** Computes and returns the multiplicative order of `a` if it is a unit;
  * returns `-1` otherwise */
@@ -70,6 +74,8 @@ inline long type_of_prime()
         return TYPE_SMALL_PRIME;
     return TYPE_LARGE_PRIME;
 }
+
+PML_CLOSE_NNS
 
 #endif
 

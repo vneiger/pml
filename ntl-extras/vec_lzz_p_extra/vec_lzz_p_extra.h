@@ -1,6 +1,13 @@
 #ifndef __VEC_LZZ_P_EXTRA_H
 #define __VEC_LZZ_P_EXTRA_H
 
+#include <NTL/mat_lzz_p.h>
+#include <NTL/vec_lzz_p.h>
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Additional functions for vectors over `zz_p`
  *
  * \file vec_lzz_p_extra.h
@@ -10,25 +17,6 @@
  *
  */
 
-#include <NTL/mat_lzz_p.h>
-#include <NTL/vec_lzz_p.h>
-#include <NTL/version.h>
-
-NTL_CLIENT
-
-#if ( (NTL_MAJOR_VERSION < 10) || ((NTL_MAJOR_VERSION == 10) && (NTL_MINOR_VERSION < 4)) )
-/** Builds and returns a random vector over `zz_p` of length `n` (defined only
- * for versions of NTL that do not include this feature) */
-inline Vec<zz_p> random_vec_zz_p(long n)
-{ Vec<zz_p> x; random(x, n); return x; }
-#endif
-
-#if ( (NTL_MAJOR_VERSION < 10) || ((NTL_MAJOR_VERSION == 10) && (NTL_MINOR_VERSION < 4)) )
-/** Builds and returns a random matrix vector over `zz_p`'s of dimensions `d x
- * e` (defined only for versions of NTL that do not include this feature) */
-inline Mat<zz_p> random_mat_zz_p(long d, long e)
-{ Mat<zz_p> x; random(x, d, e); return x; }
-#endif
 
 /** Computes the vector `invA`, which is `A` with each entry inverted. The OUT
  * parameter `invA` may alias the IN parameter `A`. */
@@ -51,6 +39,8 @@ void precomp(Vec<mulmod_precon_t> & precon, const Vec<zz_p> & A);
 inline Vec<mulmod_precon_t> precomp(const Vec<zz_p> & A)
 { Vec<mulmod_precon_t> precon; precomp(precon, A); return precon; }
 
+
+PML_CLOSE_NNS
 
 #endif
 

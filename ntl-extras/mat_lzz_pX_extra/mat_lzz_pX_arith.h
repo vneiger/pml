@@ -1,6 +1,14 @@
 #ifndef MAT_LZZ_PX_ARITH__H
 #define MAT_LZZ_PX_ARITH__H
 
+#include <NTL/matrix.h>
+#include <NTL/lzz_pX.h>
+
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Basic arithmetic for univariate polynomial matrices over `zz_p`
  *
  * \file mat_lzz_pX_arith.h
@@ -14,11 +22,6 @@
  * polynomial, etc.
  *
  */
-
-#include <NTL/matrix.h>
-#include <NTL/lzz_pX.h>
-
-NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /* vector addition                                            */
@@ -248,23 +251,19 @@ inline Mat<zz_pX> & operator-=(Mat<zz_pX> & x, const Mat<zz_p> & a)
  */
 //@{
 
-NTL_OPEN_NNS
 /** Computes the polynomial vector `x = -a` */
 void negate(Vec<zz_pX> & x, const Vec<zz_pX> & a);
-NTL_CLOSE_NNS
 
 /** Computes and returns the polynomial vector `-a` */
 inline Vec<zz_pX> operator-(const Vec<zz_pX> & a)
-{ Vec<zz_pX> x; NTL::negate(x, a); return x; }
+{ Vec<zz_pX> x; negate(x, a); return x; }
 
-NTL_OPEN_NNS
 /** Computes the polynomial matrix `x = -a` */
 void negate(Mat<zz_pX> & x, const Mat<zz_pX> & a);
-NTL_CLOSE_NNS
 
 /** Computes and returns the polynomial matrix `-a` */
 inline Mat<zz_pX> operator-(const Mat<zz_pX> & a)
-{ Mat<zz_pX> x; NTL::negate(x, a); return x; }
+{ Mat<zz_pX> x; negate(x, a); return x; }
 
 //@} // doxygen group: Negate
 
@@ -437,6 +436,8 @@ inline Mat<zz_pX> & operator*=(Mat<zz_pX> & x, const Mat<zz_p> & a)
 { mul(x, x, a); return x; }
 
 //@} // doxygen group: Multiplication by a constant matrix
+
+PML_CLOSE_NNS
 
 #endif /* ifndef MAT_LZZ_PX_ARITH__H */
 

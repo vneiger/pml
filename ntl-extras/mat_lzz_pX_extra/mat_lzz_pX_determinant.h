@@ -1,6 +1,14 @@
 #ifndef MAT_LZZ_PX_DETERMINANT__H
 #define MAT_LZZ_PX_DETERMINANT__H
 
+#include <NTL/matrix.h>
+#include <NTL/lzz_pX.h>
+
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Determinant algorithms for polynomial matrices over `zz_p`.
  *
  * \file mat_lzz_pX_determinant.h
@@ -19,11 +27,6 @@
  * Appendix of LaNeZh17 
  *
  */
-
-#include <NTL/matrix.h>
-#include <NTL/lzz_pX.h>
-
-NTL_CLIENT
 
 /** Computes the determinant `det` of `pmat`. Chooses the fastest available
  * option according to some given thresholds.
@@ -127,6 +130,8 @@ void determinant_expansion_by_minors_rec(zz_pX & det, const Mat<zz_pX> & pmat);
  * some redundant computations (currently, supports size up to `4 x 4`).
  */
 void determinant_expansion_by_minors(zz_pX & det, const Mat<zz_pX> & pmat);
+
+PML_CLOSE_NNS
 
 #endif // MAT_LZZ_PX_DETERMINANT__H
 

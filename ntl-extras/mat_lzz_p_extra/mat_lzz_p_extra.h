@@ -12,7 +12,10 @@
 
 #include <NTL/mat_lzz_p.h>
 
-NTL_CLIENT
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
 
 /* [0 0 0 c] */
 /* [1 0 0 0] */
@@ -47,6 +50,7 @@ Mat<zz_p> diagonal_matrix(const Vec<zz_p> & d);
 void clear(Mat<zz_p> & mat, long r_offset, long c_offset, long nrows, long ncols);
 
 
+PML_CLOSE_NNS
 
 #endif
 

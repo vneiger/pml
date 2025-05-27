@@ -47,26 +47,26 @@ void check(long p)
             
             random(b, sz, 1, deg);
 
-            t_3 = get_time();
+            t_3 = GetWallTime();
             nb = 0;
             do
             {
                 mul3.multiply(c, b);
                 nb++;
             }
-            while ((get_time()-t_3) <= thres);
-            t_3 = (get_time()-t_3) / nb;
+            while ((GetWallTime()-t_3) <= thres);
+            t_3 = (GetWallTime()-t_3) / nb;
 
 
-            t_g = get_time();
+            t_g = GetWallTime();
             nb = 0;
             do
             {
                 mulg.multiply(c, b);
                 nb++;
             }
-            while ((get_time()-t_g) <= thres);
-            t_g = (get_time()-t_g) / nb;
+            while ((GetWallTime()-t_g) <= thres);
+            t_g = (GetWallTime()-t_g) / nb;
 
             if (t_3 < 1.05 * t_g)
                 nb_3++;

@@ -5,8 +5,10 @@
 #include <NTL/mat_lzz_p.h>
 
 #include "lzz_pX_CRT.h"
+#include "util.h"
 
-NTL_CLIENT
+PML_OPEN_NNS
+NTL_USE_NNS
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -1194,7 +1196,7 @@ public:
 };
 
 
-
+PML_CLOSE_NNS
 
 #endif 
 

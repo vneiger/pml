@@ -4,7 +4,7 @@
 #include "util.h"
 #include "lzz_pX_middle_product.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* checks middle products (only the balanced case)            */
@@ -33,26 +33,26 @@ void check_balanced(long p)
         c = random_zz_pX(d + d + 1);
 
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             b = middle_product(a, c, d, d);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
 
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             c = a * b;
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         cout << endl;
@@ -86,38 +86,38 @@ void check(long p)
 
 
             nb = 0;
-            t = get_time();
+            t = GetWallTime();
             do
             {
                 b = middle_product(a, c, dA, dB);
                 nb++;
             }
-            while ( (get_time() - t) < thresh);
-            t = (get_time() - t) / nb;
+            while ( (GetWallTime() - t) < thresh);
+            t = (GetWallTime() - t) / nb;
             cout << t << " ";
 
 
             nb = 0;
-            t = get_time();
+            t = GetWallTime();
             do
             {
                 d = a * c;
                 nb++;
             }
-            while ( (get_time() - t) < thresh);
-            t = (get_time() - t) / nb;
+            while ( (GetWallTime() - t) < thresh);
+            t = (GetWallTime() - t) / nb;
             cout << t << " ";
 
 
             nb = 0;
-            t = get_time();
+            t = GetWallTime();
             do
             {
                 c = a * b;
                 nb++;
             }
-            while ( (get_time() - t) < thresh);
-            t = (get_time() - t) / nb;
+            while ( (GetWallTime() - t) < thresh);
+            t = (GetWallTime() - t) / nb;
             cout << t << " ";
 
             cout << endl;

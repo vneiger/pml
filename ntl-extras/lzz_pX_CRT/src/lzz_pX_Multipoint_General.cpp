@@ -5,7 +5,7 @@
 #include "lzz_pX_middle_product.h"
 #include "lzz_pX_CRT.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -191,6 +191,8 @@ zz_pX_Multipoint_General get_general_points(long n)
     }
     return zz_pX_Multipoint_General(tmp);
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

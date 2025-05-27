@@ -1,12 +1,11 @@
 #include <iomanip>
 #include <NTL/BasicThreadPool.h>
-#include <numeric>
 #include <random>
 
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* run one bench for specified rdim,cdim,degree               */

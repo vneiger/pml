@@ -5,7 +5,7 @@
 #include "util.h"
 #include "lzz_pX_CRT.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* compares FFT / non-FFT and full / half degree              */
@@ -38,40 +38,40 @@ void check(long p)
         // reference FFT full
         ev.set_FFT_evaluate();
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.evaluate(val, f);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         // FFT full
         ev.set_FFT_evaluate();
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.t_evaluate(f, val);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         // non-FFT, full
         ev.unset_FFT_evaluate();
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.t_evaluate(f, val);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         ev.prepare_degree((j / 2) - 1);
@@ -79,27 +79,27 @@ void check(long p)
         // FFT, half
         ev.set_FFT_evaluate();
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.t_evaluate(f, val, j / 2);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         // non-FFT, half
         ev.unset_FFT_evaluate();
         nb = 0;
-        t = get_time();
+        t = GetWallTime();
         do
         {
             ev.t_evaluate(f, val, j / 2);
             nb++;
         }
-        while ( (get_time() - t) < thresh);
-        t = (get_time() - t) / nb;
+        while ( (GetWallTime() - t) < thresh);
+        t = (GetWallTime() - t) / nb;
         cout << t << " ";
 
         cout << endl;

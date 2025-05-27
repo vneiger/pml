@@ -5,7 +5,7 @@
 #include <algorithm>
 #include "lzz_pX_seq.h"
 
-NTL_CLIENT
+PML_CLIENT
 using namespace std;
 
 bool comp(long i, long j){return i > j;}

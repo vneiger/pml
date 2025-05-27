@@ -8,15 +8,15 @@
 #include "mat_lzz_pX_extra.h"
 
 #define TIME(a)         \
-    tt = get_time();    \
+    tt = GetWallTime();    \
     a                   \
-    tt = get_time()-tt; \
+    tt = GetWallTime()-tt; \
     cout << tt << "\t";
 
 #define SMALL_SUITE
 
 
-NTL_CLIENT
+PML_CLIENT
 
 /******************************************************/
 /* Times the degree functions for polynomial matrices */

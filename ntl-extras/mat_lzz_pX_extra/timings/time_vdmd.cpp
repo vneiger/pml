@@ -7,7 +7,7 @@
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 void one_bench_vdmd(long m, long n, long p, long deg)
 {

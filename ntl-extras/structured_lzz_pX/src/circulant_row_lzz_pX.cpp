@@ -3,7 +3,7 @@
 
 #include "structured_lzz_pX.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -179,12 +179,6 @@ void circulant_row_lzz_pX::mul_right(Vec<zz_pX>& res, const Vec<zz_pX>& input) c
         mul(fft_input, fft[i0], fft_input);
         zz_pX res_kro;
         FromfftRep(res_kro, fft_input, 0, (dY + m) * (dX + d_found + 1) - 1 );
-#ifdef __NTL_FIX_SIZE_2_FFT
-        if (K == 1)
-        {
-            res_kro = (1/to_zz_p(2)) * res_kro;
-        }
-#endif   
         from_kronecker(coeff_res, res_kro, dX + d_found);
     }
     else
@@ -201,12 +195,6 @@ void circulant_row_lzz_pX::mul_right(Vec<zz_pX>& res, const Vec<zz_pX>& input) c
         zz_pX res_kro;
 
         FromfftRep(res_kro, fft_in, 0, (dY + e + 1) * (dX + d + 1) - 1);
-#ifdef __NTL_FIX_SIZE_2_FFT
-        if (K == 1)
-        {
-            res_kro = (1/to_zz_p(2)) * res_kro;
-        }
-#endif   
         from_kronecker(coeff_res, res_kro, dX + d);
     }
 
@@ -302,12 +290,6 @@ void circulant_row_lzz_pX::mul_left(Vec<zz_pX>& res, const Vec<zz_pX>& input) co
 
         mul(fft_l, fft2[i0], fft_l);
         FromfftRep(res_kro, fft_l, 0, (m + leftover - 1) * (dX + d_found + 1) - 1);
-#ifdef __NTL_FIX_SIZE_2_FFT
-        if (L == 1)
-        {
-            res_kro = (1/to_zz_p(2)) * res_kro;
-        }
-#endif   
         from_kronecker(out, res_kro, dX + d_found);
         ell = out.length();
         out.SetLength(m + leftover);
@@ -334,12 +316,6 @@ void circulant_row_lzz_pX::mul_left(Vec<zz_pX>& res, const Vec<zz_pX>& input) co
             mul(fft_k, fft3[i0], fft_k);
 
             FromfftRep(res_kro, fft_k, 0, (m + m - 1) * (dX + d_found + 1) - 1);
-#ifdef __NTL_FIX_SIZE_2_FFT
-            if (K == 1)
-            {
-                res_kro = (1/to_zz_p(2)) * res_kro;
-            }
-#endif   
             from_kronecker(out, res_kro, dX + d_found);
             ell = out.length();
             out.SetLength(m + m);
@@ -374,12 +350,6 @@ void circulant_row_lzz_pX::mul_left(Vec<zz_pX>& res, const Vec<zz_pX>& input) co
         mul(fft_l, fft2_here, fft_l);
 
         FromfftRep(res_kro, fft_l, 0, (m + leftover - 1) * (dX + d + 1) - 1);
-#ifdef __NTL_FIX_SIZE_2_FFT
-        if (L == 1)
-        {
-            res_kro = (1/to_zz_p(2)) * res_kro;
-        }
-#endif   
         from_kronecker(out, res_kro, dX + d);
 
         long ell = out.length();
@@ -412,12 +382,6 @@ void circulant_row_lzz_pX::mul_left(Vec<zz_pX>& res, const Vec<zz_pX>& input) co
             mul(fft_k, fft3_here, fft_k);
             FromfftRep(res_kro, fft_k, 0, (m + m - 1) * (dX + d + 1) - 1);
             
-#ifdef __NTL_FIX_SIZE_2_FFT
-            if (K == 1)
-            {
-                res_kro = (1/to_zz_p(2)) * res_kro;
-            }
-#endif   
             from_kronecker(out, res_kro, dX + d);
             ell = out.length();
             out.SetLength(m + m);
@@ -577,6 +541,8 @@ void circulant_row_lzz_pX::mul_left_trunc(Vec<zz_pX>& out, const Vec<zz_pX>& in,
     }
 }
 
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

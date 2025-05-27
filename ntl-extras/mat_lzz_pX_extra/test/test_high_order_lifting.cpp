@@ -6,7 +6,7 @@
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 static Mat<zz_pX> check(const Mat<zz_pX>& a, long d, long i)
 {

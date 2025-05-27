@@ -6,7 +6,7 @@
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* checks a product (s,s) x (s,1) in degree < deg             */

@@ -1,6 +1,14 @@
 #ifndef MAT_LZZ_PX_APPROXIMANT__H
 #define MAT_LZZ_PX_APPROXIMANT__H
 
+#include "util.h"
+#include "mat_lzz_pX_arith.h"
+#include "mat_lzz_pX_forms.h"
+#include "mat_lzz_pX_multiply.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Minimal approximant bases.
  *
  * \file mat_lzz_pX_approximant.h
@@ -54,12 +62,6 @@
  * Note that the latter two restrictions on the lengths of the lists are
  * assuming left approximants; for right approximants, they are swapped.
  */
-
-#include "mat_lzz_pX_arith.h"
-#include "mat_lzz_pX_forms.h"
-#include "mat_lzz_pX_multiply.h"
-
-NTL_CLIENT
 
 /** @name General interfaces for approximant basis computation and verification */
 //@{
@@ -829,6 +831,8 @@ void popov_pmbasis_generic(
 // iterative version / mbasis: compare different ways of obtaining Popov
 // (recompute with new shift, or maintain normal form)
 
+
+PML_CLOSE_NNS
 
 #endif // MAT_LZZ_PX_APPROXIMANT__H
 

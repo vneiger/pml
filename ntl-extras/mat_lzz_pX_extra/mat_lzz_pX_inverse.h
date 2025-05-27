@@ -1,6 +1,12 @@
 #ifndef MAT_LZZ_PX_INVERSE__H
 #define MAT_LZZ_PX_INVERSE__H
 
+#include "mat_lzz_pX_multiply.h"
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Inverse of a univariate polynomial matrix over `zz_p`
  *
  * \file mat_lzz_pX_inverse.h
@@ -20,10 +26,6 @@
  *   the largest Smith factor)
  *
  */
-
-#include "mat_lzz_pX_multiply.h"
-
-NTL_CLIENT
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -157,6 +159,8 @@ void high_order_lift_inverse_odd(
 /*------------------------------------------------------------*/
 
 
+
+PML_CLOSE_NNS
 
 #endif /* end of include guard: MAT_LZZ_PX_INVERSE__H */
 

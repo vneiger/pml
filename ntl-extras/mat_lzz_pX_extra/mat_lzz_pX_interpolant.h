@@ -1,6 +1,13 @@
 #ifndef MAT_LZZ_PX_INTERPOLANT__H
 #define MAT_LZZ_PX_INTERPOLANT__H
 
+#include "mat_lzz_pX_forms.h" // for VecLong, VecLong, PolMatForm
+
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Minimal interpolant bases.
  *
  * \file mat_lzz_pX_interpolant.h
@@ -9,10 +16,6 @@
  * \date 2018-12-22
  *
  */
-
-#include "mat_lzz_pX_forms.h" // for VecLong, VecLong, PolMatForm
-
-NTL_CLIENT
 
 /** \file mat_lzz_pX_interpolant.h
  * Definition (interpolant basis).
@@ -552,6 +555,7 @@ void popov_pmbasis(
 //                             );
 
 
+PML_CLOSE_NNS
 
 #endif /* ifndef MAT_LZZ_PX_INTERPOLANT__H */
 

@@ -2,12 +2,11 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
-#include <iomanip>
 
 #include "util.h"
-#include "mat_lzz_pX_extra.h"
+#include "mat_lzz_pX_multiply.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* checks a product (sz,sz+1) x (sz+1,sz+2) in degree < deg   */
@@ -47,12 +46,6 @@ void one_check(long sz, long deg)
         if (c1 != c2)
         {
             LogicError("FFT matmul1 mismatch");
-        }
-
-        multiply_evaluate_FFT_matmul1_new(c2, a, b);
-        if (c1 != c2)
-        {
-            LogicError("FFT matmul1_new mismatch");
         }
 
         multiply_evaluate_FFT_matmul2(c2, a, b);

@@ -6,7 +6,7 @@
 #include "util.h"
 #include "mat_lzz_pX_extra.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -25,40 +25,40 @@ void one_check(long sz, long deg)
     }
     while (determinant(a0) == 0);
 
-    t_middle = get_time();
+    t_middle = GetWallTime();
     nb = 0;
     do
     {
         newton_inv_trunc_middle_product(x, a, deg);
         nb++;
     }
-    while ((get_time()-t_middle) <= thres);
-    t_middle = (get_time()-t_middle) / nb;
+    while ((GetWallTime()-t_middle) <= thres);
+    t_middle = (GetWallTime()-t_middle) / nb;
 
-    t_geometric = get_time();
+    t_geometric = GetWallTime();
     nb = 0;
     do
     {
         newton_inv_trunc_geometric(x, a, deg);
         nb++;
     }
-    while ((get_time()-t_geometric) <= thres);
-    t_geometric = (get_time()-t_geometric) / nb;
+    while ((GetWallTime()-t_geometric) <= thres);
+    t_geometric = (GetWallTime()-t_geometric) / nb;
 
     cout << sz << " " << deg << " " << t_middle << " " << t_geometric << " ";
 
     if (is_FFT_prime())
     {
         double t_FFT;
-        t_FFT = get_time();
+        t_FFT = GetWallTime();
         nb = 0;
         do
         {
             newton_inv_trunc_FFT(x, a, deg);
             nb++;
         }
-        while ((get_time()-t_FFT) <= thres);
-        t_FFT = (get_time()-t_FFT) / nb;
+        while ((GetWallTime()-t_FFT) <= thres);
+        t_FFT = (GetWallTime()-t_FFT) / nb;
         cout << t_FFT;
     }
     cout << endl;

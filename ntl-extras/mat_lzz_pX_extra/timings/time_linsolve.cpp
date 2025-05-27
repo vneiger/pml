@@ -9,7 +9,7 @@
 #include "mat_lzz_pX_utils.h"
 #include "mat_lzz_pX_linsolve.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 void one_bench(long sz, long degmat, long degvec)
 {
@@ -34,9 +34,9 @@ void one_bench(long sz, long degmat, long degvec)
         {
             random(A, sz, sz, degmat);
             random(b, sz, degvec);
-            tt = get_time();
+            tt = GetWallTime();
             linsolve_via_series(u, den, A, b, nb);
-            t += get_time()-tt;
+            t += GetWallTime()-tt;
             ++nb_iter;
         }
         t /= nb_iter;
@@ -55,9 +55,9 @@ void one_bench(long sz, long degmat, long degvec)
     {
         random(A, sz, sz, degmat);
         random(b, sz, degvec);
-        tt = get_time();
+        tt = GetWallTime();
         linsolve_via_kernel(u, den, A, b);
-        t += get_time()-tt;
+        t += GetWallTime()-tt;
         ++nb_iter;
     }
     t /= nb_iter;
@@ -68,9 +68,9 @@ void one_bench(long sz, long degmat, long degvec)
     //{
     //    random(A, sz, sz, degmat);
     //    random(b, sz, degvec);
-    //    tt = get_time();
+    //    tt = GetWallTime();
     //    linsolve_via_evaluation(u, den, A, b);
-    //    t += get_time()-tt;
+    //    t += GetWallTime()-tt;
     //    ++nb_iter;
     //}
     //t /= nb_iter;

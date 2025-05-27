@@ -48,25 +48,25 @@ void check(long p)
                 random(a, sz, sz, deg);
                 random(b, sz, sz, deg);
 
-                t_eval = get_time();
+                t_eval = GetWallTime();
                 nb = 0;
                 do
                 {
                     multiply_evaluate_dense(c, a, b);
                     nb++;
                 }
-                while ((get_time()-t_eval) <= thres);
-                t_eval = (get_time()-t_eval) / nb;
+                while ((GetWallTime()-t_eval) <= thres);
+                t_eval = (GetWallTime()-t_eval) / nb;
 
-                t_3primes = get_time();
+                t_3primes = GetWallTime();
                 nb = 0;
                 do
                 {
                     multiply_3_primes(c, a, b);
                     nb++;
                 }
-                while ((get_time()-t_3primes) <= thres);
-                t_3primes = (get_time()-t_3primes) / nb;
+                while ((GetWallTime()-t_3primes) <= thres);
+                t_3primes = (GetWallTime()-t_3primes) / nb;
 
                 if (t_3primes < t_eval)
                     nb_in_a_row++;
@@ -110,25 +110,25 @@ void check(long p)
                 random(a, sz, sz, deg);
                 random(b, sz, sz, deg);
 
-                t_fft = get_time();
+                t_fft = GetWallTime();
                 nb = 0;
                 do
                 {
                     multiply_evaluate_FFT(c, a, b);
                     nb++;
                 }
-                while ((get_time()-t_fft) <= thres);
-                t_fft = (get_time()-t_fft) / nb;
+                while ((GetWallTime()-t_fft) <= thres);
+                t_fft = (GetWallTime()-t_fft) / nb;
 
-                t_waksman = get_time();
+                t_waksman = GetWallTime();
                 nb = 0;
                 do
                 {
                     multiply_waksman(c, a, b);
                     nb++;
                 }
-                while ((get_time()-t_waksman) <= thres);
-                t_waksman = (get_time()-t_waksman) / nb;
+                while ((GetWallTime()-t_waksman) <= thres);
+                t_waksman = (GetWallTime()-t_waksman) / nb;
 
                 if (t_waksman > t_fft)
                     nb_in_a_row++;
@@ -172,38 +172,38 @@ void check(long p)
 
                 if (deg <= thresholds[i])
                 {
-                    t_old = get_time();
+                    t_old = GetWallTime();
                     nb = 0;
                     do
                     {
                         multiply_evaluate_dense(c, a, b);
                         nb++;
                     }
-                    while ((get_time()-t_old) <= thres);
-                    t_old = (get_time()-t_old) / nb;
+                    while ((GetWallTime()-t_old) <= thres);
+                    t_old = (GetWallTime()-t_old) / nb;
                 }
                 else
                 {
-                    t_old = get_time();
+                    t_old = GetWallTime();
                     nb = 0;
                     do
                     {
                         multiply_3_primes(c, a, b);
                         nb++;
                     }
-                    while ((get_time()-t_old) <= thres);
-                    t_old = (get_time()-t_old) / nb;
+                    while ((GetWallTime()-t_old) <= thres);
+                    t_old = (GetWallTime()-t_old) / nb;
                 }
 
-                t_waksman = get_time();
+                t_waksman = GetWallTime();
                 nb = 0;
                 do
                 {
                     multiply_waksman(c, a, b);
                     nb++;
                 }
-                while ((get_time()-t_waksman) <= thres);
-                t_waksman = (get_time()-t_waksman) / nb;
+                while ((GetWallTime()-t_waksman) <= thres);
+                t_waksman = (GetWallTime()-t_waksman) / nb;
 
                 if (t_waksman > t_old)
                     nb_in_a_row++;

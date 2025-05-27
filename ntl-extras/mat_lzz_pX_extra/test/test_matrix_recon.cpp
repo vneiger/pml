@@ -1,20 +1,17 @@
 #include <NTL/lzz_pX.h>
 #include <NTL/matrix.h>
 #include <NTL/vector.h>
-#include <iomanip>
 #include <vector>
-#include <algorithm>
-#include <numeric>
-#include <random>
 #include <NTL/BasicThreadPool.h>
 #include <cmath>
 
-//#define SAFETY_CHECKS
-
-#include "util.h"
-#include "mat_lzz_pX_extra.h"
+#include "lzz_pX_CRT.h"
+#include "mat_lzz_pX_interpolant.h"
+#include "mat_lzz_pX_multiply.h"
 #include "mat_lzz_pX_sequence.h"
-#include "sage_output.h"
+#include "util.h"
+
+PML_CLIENT
 
 int main(int argc, char *argv[])
 {
@@ -66,7 +63,7 @@ int main(int argc, char *argv[])
         for (long j = 0; j < m; j++)
             prod[i][j] = prod[i][j] % poly;
 
-    cout << "-prod: " << -prod << endl;
+    cout << "-prod: " << prod << endl;
 
     Mat<zz_pX> F_id = F;
     F_id.SetDims(2*m,m);
@@ -93,7 +90,7 @@ int main(int argc, char *argv[])
                 mat_eval2[t][i][j] = ev[t];
         }
     }
-    pmbasis(intbas, mat_eval2, pts, shift);
+    pmbasis(intbas, F_id, pts, shift);
     multiply(prod, intbas, F_id);
 
     cout << "intbas: " << intbas << endl;
@@ -105,13 +102,4 @@ int main(int argc, char *argv[])
     cout << "deg: " << degree_matrix(intbas) << endl;
     cout << "len: " << d << endl;
 }
-
-
-
-
-
-
-
-
-
 

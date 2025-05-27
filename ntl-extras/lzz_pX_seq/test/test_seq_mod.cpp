@@ -4,7 +4,7 @@
 #include <sstream>
 #include <NTL/vector.h>
 
-NTL_CLIENT
+PML_CLIENT
 using namespace std;
 
 int main(int argc, char* argv[]){

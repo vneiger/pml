@@ -15,7 +15,7 @@ static std::ostream &operator<<(std::ostream &out, const VecLong &s)
     return out << "]";
 }
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* run one bench for specified rdim,cdim,order                */

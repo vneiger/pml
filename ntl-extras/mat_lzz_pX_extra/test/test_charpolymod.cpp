@@ -15,7 +15,7 @@
 #include "mat_lzz_pX_extra.h"
 #include "mat_lzz_pX_sequence.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {

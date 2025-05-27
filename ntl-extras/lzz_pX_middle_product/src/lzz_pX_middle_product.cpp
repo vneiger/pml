@@ -1,8 +1,8 @@
-#include "lzz_pX_middle_product.h"
 #include <NTL/FFT_impl.h>
 
-NTL_CLIENT
+#include "lzz_pX_middle_product.h"
 
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -268,6 +268,7 @@ void middle_product(zz_pX& b, const zz_pX& a, const zz_pX& c, long dA, long dB)
     b.normalize();
 }
 
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

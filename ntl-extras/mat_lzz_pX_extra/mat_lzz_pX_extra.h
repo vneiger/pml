@@ -1,24 +1,11 @@
 #ifndef MAT_LZZ_PX_EXTRA__H
 #define MAT_LZZ_PX_EXTRA__H
 
-/** \brief Main header for `Mat<zz_pX>`, matrices over the univariate polynomials.
- *
- * \file mat_lzz_pX_extra.h
- * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
- * \version 0.1
- * \date 2018-12-07
- *
- * This is the main header for polynomial matrix functions. Its purpose is only
- * to include all headers (which gather functions for a specific kind of
- * tasks). This file contains general TODOs, and still contains a few
- * declarations that do not require a separate header (for the moment).
- *
- */
+#include <iostream>
+#include <vector>
 
 #include <NTL/matrix.h>
 #include <NTL/lzz_pX.h>
-#include <iostream>
-#include <vector> // std vector, for shifts, degrees, pivot indices
 
 #include "lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
@@ -35,11 +22,25 @@
 #include "mat_lzz_pX_interpolant.h"
 #include "mat_lzz_pX_kernel.h"
 #include "mat_lzz_pX_determinant.h"
-
 #include "mat_lzz_pX_sequence.h"  // TODO: still draft
 
-NTL_CLIENT
+#include "util.h"
 
+PML_OPEN_NNS
+NTL_USE_NNS
+
+/** \brief Main header for `Mat<zz_pX>`, matrices over the univariate polynomials.
+ *
+ * \file mat_lzz_pX_extra.h
+ * \author Seung Gyu Hyun, Vincent Neiger, Eric Schost
+ * \date 2018-12-07
+ *
+ * This is the main header for polynomial matrix functions. Its purpose is only
+ * to include all headers (which gather functions for a specific kind of
+ * tasks). This file contains general TODOs, and still contains a few
+ * declarations that do not require a separate header (for the moment).
+ *
+ */
 
 
 /*------------------------------------------------------------*/
@@ -138,6 +139,7 @@ long reduced_form_gjv(
                      );
 
 
+PML_CLOSE_NNS
 
 #endif // MAT_LZZ_PX_EXTRA__H
 

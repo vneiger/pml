@@ -3,7 +3,7 @@
 
 #include "lzz_pX_CRT.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* checks geometric evaluation at many points                 */

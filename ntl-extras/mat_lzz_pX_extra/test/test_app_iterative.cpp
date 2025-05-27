@@ -4,7 +4,7 @@
 
 #define VERBOSE
 
-NTL_CLIENT
+PML_CLIENT
 
 std::ostream &operator<<(std::ostream &out, const VecLong &s)
 {

@@ -3,7 +3,7 @@
 
 #include "lzz_pX_CRT.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* tests subproduct tree evaluation, then interpolation       */

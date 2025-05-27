@@ -4,8 +4,9 @@
 #include <NTL/matrix.h>
 
 #include "sage_output.h"
+#include "util.h"
 
-NTL_CLIENT
+PML_START_IMPL_IO
 
 /*------------------------------------------------------------*/
 /* initializes GF(p)                                          */
@@ -298,6 +299,8 @@ void sage_assign(const Mat<zz_pX>& v, const string & name)
 {
     sage_assign(v, "x", name);
 }
+
+PML_END_IMPL_IO
 
 // Local Variables:
 // mode: C++

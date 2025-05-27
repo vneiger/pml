@@ -1,9 +1,9 @@
+#include <iomanip>
+#include <limits.h>
+
 #include <NTL/FFT_impl.h>
 #include <NTL/lzz_pX.h>
 #include <NTL/tools.h>
-
-#include <iomanip>
-#include <limits.h>
 
 #include "util.h"
 
@@ -11,7 +11,7 @@
 // NTL was compiled with NTL_FFTMaxRoot = 26
 // (instead of default 25)
 
-NTL_CLIENT
+PML_CLIENT
 
 void time_fft(long nbits, long depth)
 {

@@ -1,6 +1,13 @@
 #ifndef MAT_LZZ_PX_LINSOLVE__H
 #define MAT_LZZ_PX_LINSOLVE__H
 
+#include <NTL/matrix.h>
+#include <NTL/lzz_pX.h>
+#include "util.h"
+
+PML_OPEN_NNS
+NTL_USE_NNS
+
 /** \brief Functions for linear system solving.
  *
  * \file mat_lzz_pX_linsolve.h
@@ -9,11 +16,6 @@
  * \date 2019-01-01
  *
  */
-
-#include <NTL/matrix.h>
-#include <NTL/lzz_pX.h>
-
-NTL_CLIENT
 
 /** @name Solve linear system over the power series
  * \anchor SeriesSolve
@@ -232,6 +234,8 @@ long linsolve_via_kernel(
 //                            );
 
 //@} // doxygen group: Solving linear systems
+
+PML_CLOSE_NNS
 
 #endif /* ifndef MAT_LZZ_PX_LINSOLVE__H */
 

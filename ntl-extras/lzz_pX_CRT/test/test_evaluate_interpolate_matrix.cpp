@@ -4,7 +4,7 @@
 
 #include "lzz_pX_CRT.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* creates, evaluates and interpolates a matrix of polynomials*/

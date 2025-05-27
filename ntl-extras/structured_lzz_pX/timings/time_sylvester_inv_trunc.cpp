@@ -10,7 +10,7 @@
 
 
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* creates sylvester matrices                                 */
@@ -47,23 +47,23 @@ void check(long p)
         for (long i = 0; i < G.length(); i++)
             SetCoeff(b0, i, coeff(G[i], 0));
 
-        t = get_time();
+        t = GetWallTime();
         for (long nb = 0; nb < factor * d; nb++)
         {
             Mat<zz_p> block;
             sylvester_lzz_p S(a0, b0);
             S.top_right_block_inverse(block, (long) cbrt(d));
         }
-        cout << get_time()-t << " ";
+        cout << GetWallTime()-t << " ";
 
-        t = get_time();
+        t = GetWallTime();
         for (long nb = 0; nb < factor * d; nb++)
             resultant(a0, b0);
-        cout << get_time()-t << " ";
+        cout << GetWallTime()-t << " ";
 
-        t = get_time();
+        t = GetWallTime();
         S.high_precision_inv_trunc(iS, factor * d);
-        cout << get_time()-t << " ";
+        cout << GetWallTime()-t << " ";
 
         cout << endl;
     }

@@ -5,7 +5,7 @@
 #include "mat_lzz_pX_utils.h"
 #include "mat_lzz_pX_determinant.h"
 
-NTL_CLIENT
+PML_CLIENT
 
 /*------------------------------------------------------------*/
 /* tests the determinant algorithms                           */

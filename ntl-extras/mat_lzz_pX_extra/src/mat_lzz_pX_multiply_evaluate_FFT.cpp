@@ -8,7 +8,7 @@
 // right now these are chosen harcoded for L1 cache line 64B (8 long's) and L1
 // total cache 32k --> 512 ~ 16*16 cache lines
 
-NTL_CLIENT
+PML_START_IMPL
 
 #if defined(NTL_HAVE_LL_TYPE) && defined(NTL_HAVE_SP_LL_ROUTINES) \
      && defined(__GNUC__) && (__GNUC__ >= 4) && !defined(__INTEL_COMPILER)  && !defined(__clang__) \
@@ -714,6 +714,8 @@ void multiply_evaluate_FFT(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX
             multiply_evaluate_FFT_matmul3(c, a, b);
     }
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

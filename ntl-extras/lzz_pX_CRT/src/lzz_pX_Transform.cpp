@@ -3,8 +3,7 @@
 
 #include "lzz_pX_CRT.h"
 
-NTL_CLIENT
-
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* size of the input                                          */
@@ -182,6 +181,7 @@ void zz_pX_Transform::backward_matrix(Mat<zz_pX>& f, const Vec<Mat<zz_p>>& val) 
     }
 }
 
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

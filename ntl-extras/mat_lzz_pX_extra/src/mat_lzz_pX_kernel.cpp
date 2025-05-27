@@ -10,7 +10,7 @@
 
 //#define GENERIC_KER_PROFILE
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -1238,6 +1238,8 @@ void kernel_basis_generic(Mat<zz_pX> & kerbas, Mat<zz_pX> & pmat)
 
     return;
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

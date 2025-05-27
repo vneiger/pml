@@ -1,6 +1,6 @@
 #include "mat_lzz_pX_multiply.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 
 /*------------------------------------------------------------*/
@@ -107,6 +107,8 @@ void multiply_transform(Mat<zz_pX> & c, const Mat<zz_pX> & a, const Mat<zz_pX> &
         multiply_transform_naive(c, a, b);
     }
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

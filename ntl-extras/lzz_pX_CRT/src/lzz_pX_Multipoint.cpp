@@ -2,7 +2,7 @@
 #include "lzz_p_extra.h"
 #include "lzz_pX_CRT.h"
 
-NTL_CLIENT
+PML_START_IMPL
 
 /*------------------------------------------------------------*/
 /* number of points                                           */
@@ -286,6 +286,8 @@ void zz_pX_Multipoint::t_interpolate_matrix(Vec<Mat<zz_p>>& val, const Mat<zz_pX
         }
     }
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++

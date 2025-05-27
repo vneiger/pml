@@ -3,6 +3,7 @@
 #include <NTL/lzz_pX.h>
 
 #include "mat_lzz_pX_extra.h"
+PML_START_IMPL
 
 void diagonal_of_hermite(Vec<zz_pX> & diag, const Mat<zz_pX> & pmat)
 {
@@ -10,6 +11,8 @@ void diagonal_of_hermite(Vec<zz_pX> & diag, const Mat<zz_pX> & pmat)
     // TODO
     throw std::invalid_argument("==diagonal_of_hermite== Not implemented yet");
 }
+
+PML_END_IMPL
 
 // Local Variables:
 // mode: C++
