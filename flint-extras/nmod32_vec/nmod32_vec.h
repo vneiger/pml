@@ -23,23 +23,27 @@ typedef unsigned int uint; // assumes this is 32 bits on this machine
 typedef uint * n32_ptr;
 typedef const uint * n32_srcptr;
 
-/** Random */
+FLINT_INLINE
+n32_ptr _nmod32_vec_init(slong len)
+{
+    return (n32_ptr) flint_malloc(len * sizeof(uint));
+}
 
-/** Fills the entries `0`, .., `len-1` of vector with uniformly random entries.
- * Vector must already be allocated with length at least `len`. */
-void _nmod32_vec_rand(n32_ptr vec,
-                      flint_rand_t state,
-                      slong len,
-                      nmod_t mod);
+FLINT_INLINE
+void _nmod32_vec_clear(n32_ptr vec)
+{
+   flint_free(vec);
+}
+
 
 /**********************************************************************
 *                            DOT PRODUCT                             *
 **********************************************************************/
 
 // duplicates flint's dot2_split based on avx2
-uint _nmod32_vec_dot2_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod);
+uint _nmod32_vec_dot2_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
 #if HAVE_AVX512   // TODO handle AVX flags
-uint _nmod32_vec_dot2_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod);
+uint _nmod32_vec_dot2_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
 #endif
 
 // faster nmod_vec for modulus close to 32 bits

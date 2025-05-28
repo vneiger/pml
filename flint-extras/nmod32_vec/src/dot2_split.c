@@ -1,35 +1,97 @@
+#include "flint/nmod_vec.h"  // for DOT_SPLIT_MASK
 #include "nmod32_vec.h"
+#include <immintrin.h>
 
-uint _nmod_vec_dot2_split(nn_srcptr vec1, nn_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp)
+// horizontal sum
+FLINT_FORCE_INLINE ulong _mm256_hsum(__m256i a) {
+    __m256i a_hi = _mm256_shuffle_epi32(a, 14);  // 14 == 0b00001110
+    __m256i sum_lo = _mm256_add_epi64(a, a_hi);
+    __m128i sum_hi = _mm256_extracti128_si256(sum_lo, 1);
+    __m128i sum = _mm_add_epi64(_mm256_castsi256_si128(sum_lo), sum_hi);
+    return (ulong) _mm_cvtsi128_si64(sum);
+}
+
+uint _nmod32_vec_dot2_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp)
 {
-    const vec4n low_bits = vec4n_set_n(DOT_SPLIT_MASK);
-    vec4n dp_lo = vec4n_zero();
-    vec4n dp_hi = vec4n_zero();
+    const vec4n low_bits = _mm256_set1_epi64x(DOT_SPLIT_MASK);
+    vec4n dp_lo0 = _mm256_setzero_si256();
+    vec4n dp_lo1 = _mm256_setzero_si256();
+    vec4n dp_lo2 = _mm256_setzero_si256();
+    vec4n dp_lo3 = _mm256_setzero_si256();
+    vec4n dp_hi = _mm256_setzero_si256();
 
     slong i = 0;
-    for ( ; i+31 < len; i += 32)
+    for ( ; i+15 < len; i += 16)
     {
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(vec1+i+ 0), vec4n_load_unaligned(vec2+i+ 0)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(vec1+i+ 4), vec4n_load_unaligned(vec2+i+ 4)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(vec1+i+ 8), vec4n_load_unaligned(vec2+i+ 8)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(vec1+i+12), vec4n_load_unaligned(vec2+i+12)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(vec1+i+16), vec4n_load_unaligned(vec2+i+16)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(vec1+i+20), vec4n_load_unaligned(vec2+i+20)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(vec1+i+24), vec4n_load_unaligned(vec2+i+24)));
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(vec1+i+28), vec4n_load_unaligned(vec2+i+28)));
+        __m256i v1_0 = _mm256_loadu_si256((const __m256i *) (vec1+i+ 0));
+        __m256i v1_1 = _mm256_loadu_si256((const __m256i *) (vec1+i+ 4));
+        __m256i v1_2 = _mm256_loadu_si256((const __m256i *) (vec1+i+ 8));
+        __m256i v1_3 = _mm256_loadu_si256((const __m256i *) (vec1+i+12));
+        __m256i v2_0 = _mm256_loadu_si256((const __m256i *) (vec2+i+ 0));
+        __m256i v2_1 = _mm256_loadu_si256((const __m256i *) (vec2+i+ 4));
+        __m256i v2_2 = _mm256_loadu_si256((const __m256i *) (vec2+i+ 8));
+        __m256i v2_3 = _mm256_loadu_si256((const __m256i *) (vec2+i+12));
 
-        dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(dp_lo, DOT_SPLIT_BITS));
-        dp_lo = vec4n_bit_and(dp_lo, low_bits);
+        // handle low 32 bit word of each 64 bit word
+        dp_lo0 = _mm256_add_epi64(dp_lo0, _mm256_mul_epu32(v1_0, v2_0));
+        dp_lo1 = _mm256_add_epi64(dp_lo1, _mm256_mul_epu32(v1_1, v2_1));
+        dp_lo2 = _mm256_add_epi64(dp_lo2, _mm256_mul_epu32(v1_2, v2_2));
+        dp_lo3 = _mm256_add_epi64(dp_lo3, _mm256_mul_epu32(v1_3, v2_3));
+
+        // handle high 32 bit word of each 64 bit word
+        // alternative 1: vpshufd
+        // shuffle [0,1,2,3] => [1,0,3,2]    (imm8 = 0b10110001  -->  0xB1)
+        v1_0 = _mm256_shuffle_epi32(v1_0, 0xB1);
+        v1_1 = _mm256_shuffle_epi32(v1_1, 0xB1);
+        v1_2 = _mm256_shuffle_epi32(v1_2, 0xB1);
+        v1_3 = _mm256_shuffle_epi32(v1_3, 0xB1);
+        v2_0 = _mm256_shuffle_epi32(v2_0, 0xB1);
+        v2_1 = _mm256_shuffle_epi32(v2_1, 0xB1);
+        v2_2 = _mm256_shuffle_epi32(v2_2, 0xB1);
+        v2_3 = _mm256_shuffle_epi32(v2_3, 0xB1);
+        // alternative 2: vpsrlq
+        //v1_0 = _mm256_srli_epi64(v1_0, 32);
+        //v2_0 = _mm256_srli_epi64(v2_0, 32);
+        dp_lo0 = _mm256_add_epi64(dp_lo0, _mm256_mul_epu32(v1_0, v2_0));
+        dp_lo1 = _mm256_add_epi64(dp_lo1, _mm256_mul_epu32(v1_1, v2_1));
+        dp_lo2 = _mm256_add_epi64(dp_lo2, _mm256_mul_epu32(v1_2, v2_2));
+        dp_lo3 = _mm256_add_epi64(dp_lo3, _mm256_mul_epu32(v1_3, v2_3));
+
+        dp_lo0 = _mm256_add_epi64(dp_lo0, dp_lo1);
+        dp_lo2 = _mm256_add_epi64(dp_lo2, dp_lo3);
+        dp_lo0 = _mm256_add_epi64(dp_lo0, dp_lo2);
+        dp_hi = _mm256_add_epi64(dp_hi, _mm256_srli_epi64(dp_lo0, DOT_SPLIT_BITS));
+        dp_lo0 = _mm256_and_si256(dp_lo0, low_bits);
     }
 
-    for ( ; i + 3 < len; i += 4)
-        dp_lo = vec4n_add(dp_lo, vec4n_mul(vec4n_load_unaligned(vec1+i), vec4n_load_unaligned(vec2+i)));
+    for ( ; i+3 < len; i += 4)
+    {
+        __m256i v1_0 = _mm256_loadu_si256((const __m256i *) (vec1+i+ 0));
+        __m256i v2_0 = _mm256_loadu_si256((const __m256i *) (vec2+i+ 0));
 
-    dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(dp_lo, DOT_SPLIT_BITS));
-    dp_lo = vec4n_bit_and(dp_lo, low_bits);
+        // handle low 32 bit word of each 64 bit word
+        dp_lo0 = _mm256_add_epi64(dp_lo0, _mm256_mul_epu32(v1_0, v2_0));
 
-    ulong hsum_lo = vec4n_horizontal_sum(dp_lo);
-    const ulong hsum_hi = vec4n_horizontal_sum(dp_hi) + (hsum_lo >> DOT_SPLIT_BITS);
+        // handle high 32 bit word of each 64 bit word
+        // alternative 1: vpshufd
+        // shuffle [0,1,2,3] => [1,0,3,2]    (imm8 = 0b10110001  -->  0xB1)
+        v1_0 = _mm256_shuffle_epi32(v1_0, 0xB1);
+        v2_0 = _mm256_shuffle_epi32(v2_0, 0xB1);
+        // alternative 2: vpsrlq
+        //v1_0 = _mm256_srli_epi64(v1_0, 32);
+        //v2_0 = _mm256_srli_epi64(v2_0, 32);
+        dp_lo0 = _mm256_add_epi64(dp_lo0, _mm256_mul_epu32(v1_0, v2_0));
+
+        dp_hi = _mm256_add_epi64(dp_hi, _mm256_srli_epi64(dp_lo0, DOT_SPLIT_BITS));
+        dp_lo0 = _mm256_and_si256(dp_lo0, low_bits);
+    }
+    //dp_hi = _mm256_add_epi64(dp_hi, vec4n_bit_shift_right(dp_lo0, DOT_SPLIT_BITS));
+    //dp_lo0 = vec4n_bit_and(dp_lo0, low_bits);
+
+    // from here on, not really careful about operations that could be done 
+    // with int rather than long
+    ulong hsum_lo = _mm256_hsum(dp_lo0);
+    const ulong hsum_hi = _mm256_hsum(dp_hi) + (hsum_lo >> DOT_SPLIT_BITS);
     hsum_lo &= DOT_SPLIT_MASK;
 
     for (; i < len; i++)
@@ -37,6 +99,6 @@ uint _nmod_vec_dot2_split(nn_srcptr vec1, nn_srcptr vec2, slong len, nmod_t mod,
 
     ulong res;
     NMOD_RED(res, pow2_precomp * hsum_hi + hsum_lo, mod);
-    return res;
+    return (uint)res;
 }
 
