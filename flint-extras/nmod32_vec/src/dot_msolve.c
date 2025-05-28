@@ -30,59 +30,55 @@ uint _nmod32_vec_dot_msolve_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, ui
     uint RED_64 = ((ulong)1<<63) % PRIME;
     RED_64 = (RED_64*2) % PRIME;
 
-    //mask pour recuperer les parties basses
     __m256i mask = AVX2SET1_64(MONE32);
     const long quo = LENGTHQ8(len);
     const long rem = LENGTHR8(len);
 
-    unsigned int i;
     ulong acc4x64[8];
     ulong acc64;
-    __m256i acc_low,acc_high,vec8,mat8;
-    __m256i prod1,prod2;
-    __m256i res1;
     const uint *vec1_cp;
     const uint *vec2_cp;
 
     vec1_cp=vec1;
     vec2_cp=vec2;
 
-    acc_low=AVX2SETZERO();
-    acc_high=AVX2SETZERO();
+    __m256i acc_low = AVX2SETZERO();
+    __m256i acc_high = AVX2SETZERO();
 
-    for(i = 0 ; i < quo; ++i)
+    long i = 0;
+    for( ; i < quo; ++i)
     {
-        mat8=AVX2LOADU(vec1_cp);
-        vec8=AVX2LOADU(vec2_cp);
-        prod1=AVX2MUL(mat8,vec8);
-        prod2= AVX2MUL(AVX2SRLI_64(mat8,32),AVX2SRLI_64(vec8,32));
-        res1 = prod1 + prod2;
+        __m256i v1 = AVX2LOADU(vec1_cp);
+        __m256i v2 = AVX2LOADU(vec2_cp);
+        vec1_cp+=8;
+        vec2_cp+=8;
+        __m256i prod1=AVX2MUL(v1,v2);
+        __m256i prod2= AVX2MUL(AVX2SRLI_64(v1,32),AVX2SRLI_64(v2,32));
+        __m256i res1 = AVX2ADD_64(prod1, prod2);
 
+        v1=AVX2LOADU(vec1_cp);
+        v2=AVX2LOADU(vec2_cp);
         vec1_cp+=8;
         vec2_cp+=8;
-        mat8=AVX2LOADU(vec1_cp);
-        vec8=AVX2LOADU(vec2_cp);
-        prod1=AVX2MUL(mat8,vec8);
-        prod2= AVX2MUL(AVX2SRLI_64(mat8,32),AVX2SRLI_64(vec8,32));
-        res1 += prod1 + prod2;
+        prod1=AVX2MUL(v1,v2);
+        prod2= AVX2MUL(AVX2SRLI_64(v1,32),AVX2SRLI_64(v2,32));
+        res1 = AVX2ADD_64(res1, AVX2ADD_64(prod1, prod2));
 
+        v1=AVX2LOADU(vec1_cp);
+        v2=AVX2LOADU(vec2_cp);
         vec1_cp+=8;
         vec2_cp+=8;
-        mat8=AVX2LOADU(vec1_cp);
-        vec8=AVX2LOADU(vec2_cp);
-        prod1=AVX2MUL(mat8,vec8);
-        prod2= AVX2MUL(AVX2SRLI_64(mat8,32),AVX2SRLI_64(vec8,32));
-        res1 += prod1 + prod2;
+        prod1=AVX2MUL(v1,v2);
+        prod2= AVX2MUL(AVX2SRLI_64(v1,32),AVX2SRLI_64(v2,32));
+        res1 = AVX2ADD_64(res1, AVX2ADD_64(prod1, prod2));
 
+        v1=AVX2LOADU(vec1_cp);
+        v2=AVX2LOADU(vec2_cp);
         vec1_cp+=8;
         vec2_cp+=8;
-        mat8=AVX2LOADU(vec1_cp);
-        vec8=AVX2LOADU(vec2_cp);
-        prod1=AVX2MUL(mat8,vec8);
-        prod2= AVX2MUL(AVX2SRLI_64(mat8,32),AVX2SRLI_64(vec8,32));
-        res1 += prod1 + prod2;
-        vec1_cp+=8;
-        vec2_cp+=8;
+        prod1=AVX2MUL(v1,v2);
+        prod2= AVX2MUL(AVX2SRLI_64(v1,32),AVX2SRLI_64(v2,32));
+        res1 = AVX2ADD_64(res1, AVX2ADD_64(prod1, prod2));
 
         acc_low=AVX2ADD_64(acc_low,AVX2AND_(res1,mask));
         acc_high=AVX2ADD_64(acc_high,AVX2SRLI_64(res1,32));
@@ -102,11 +98,11 @@ uint _nmod32_vec_dot_msolve_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, ui
     }
 
     /* *vec_res[j]=MODRED32(acc64, PRIME, preinv); */
-    uint res = (uint)(acc64 % PRIME);
+    uint res = acc64 % PRIME;
 
     long tmp = 0;
     for(long k = 0; k < rem; k++)
-        tmp += ((long)vec1_cp[k] * (long)vec1_cp[k]) % PRIME;
+        tmp += ((long)vec1_cp[k] * (long)vec2_cp[k]) % PRIME;
 
     res = (res + tmp) % PRIME;
 
@@ -128,7 +124,7 @@ void nmod_mat_mul_nmod_vec_msolve32_avx2(n32_ptr vec_res, n32_srcptr mat, n32_sr
     unsigned int i,j;
     ulong acc4x64[8];
     ulong acc64;
-    __m256i acc_low,acc_high,vec8,mat8;
+    __m256i acc_low,acc_high;
     __m256i prod1,prod2;
     __m256i res1;
     const uint *vec_cp;
@@ -146,8 +142,8 @@ void nmod_mat_mul_nmod_vec_msolve32_avx2(n32_ptr vec_res, n32_srcptr mat, n32_sr
         /* Accumulation */
         for(i = 0 ; i < bs; ++i){
 
-            mat8=AVX2LOADU(mat_cp);
-            vec8=AVX2LOADU(vec_cp);
+            __m256i mat8=AVX2LOADU(mat_cp);
+            __m256i vec8=AVX2LOADU(vec_cp);
             /* four 32-bits mul, lower parts */
             /* four 32-bits mul, higher parts */
             prod1=AVX2MUL(mat8,vec8);
@@ -179,7 +175,6 @@ void nmod_mat_mul_nmod_vec_msolve32_avx2(n32_ptr vec_res, n32_srcptr mat, n32_sr
 
             acc_low=AVX2ADD_64(acc_low,AVX2AND_(res1,mask));
             acc_high=AVX2ADD_64(acc_high,AVX2SRLI_64(res1,32));
-
         }
 
         AVX2STOREU(acc4x64,acc_low);

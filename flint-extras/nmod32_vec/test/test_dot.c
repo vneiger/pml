@@ -3,6 +3,7 @@
 #include "flint/nmod_vec.h"
 
 #include "nmod32_vec.h"
+#include <flint/ulong_extras.h>
 
 // utility (nmod vec uniform random)
 static inline
@@ -27,8 +28,10 @@ TEST_FUNCTION_START(nmod_vec_dot, state)
         ulong correct;
 
         len = n_randint(state, 1000) + 1;
+        const long sqrt61 = UWORD(1518500249);  // floor(2**30.5)
         while (m == 0)
-            m = n_randtest_not_zero(state) % (UWORD(1) << 30);
+            //m = n_randtest_not_zero(state) % (UWORD(1) << 30);
+            m = n_randtest_not_zero(state) % sqrt61;
 
         nmod_init(&mod, m);
 
@@ -71,7 +74,6 @@ TEST_FUNCTION_START(nmod_vec_dot, state)
             }
         }
 
-        if (0)  // fails, but not investigated, slower anyway
         {  // dot_msolve_avx2
             res = _nmod32_vec_dot_msolve_avx2(x, y, len, mod.n);
 
