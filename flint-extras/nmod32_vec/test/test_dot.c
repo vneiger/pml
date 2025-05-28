@@ -29,6 +29,7 @@ TEST_FUNCTION_START(nmod_vec_dot, state)
         len = n_randint(state, 1000) + 1;
         while (m == 0)
             m = n_randtest_not_zero(state) % (UWORD(1) << 31);
+            //m = n_randtest_not_zero(state) % (UWORD(1) << 25);
 
         nmod_init(&mod, m);
 
