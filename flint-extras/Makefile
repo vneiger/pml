@@ -1,4 +1,4 @@
-DIRS = nmod_extra nmod_vec_extra nmod_poly_extra fmpz_extra nmod_mat_extra fmpz_mat_extra nmod_mat_poly_extra nmod_poly_mat_extra sagemath_extra
+DIRS = nmod_extra nmod_vec_extra nmod32_vec nmod_poly_extra fmpz_extra nmod_mat_extra fmpz_mat_extra nmod_mat_poly_extra nmod_poly_mat_extra sagemath_extra
 
 all:
 	$(foreach dir, $(DIRS), if [ -d $(dir) ]; then cd $(dir)/src ; make ; cd ../.. ; fi ;)
