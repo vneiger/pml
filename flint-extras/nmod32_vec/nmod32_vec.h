@@ -41,6 +41,7 @@ void _nmod32_vec_clear(n32_ptr vec)
 **********************************************************************/
 
 // duplicates flint's dot2_split based on avx2
+#define HAVE_AVX512 1   // TODO handle AVX flags
 uint _nmod32_vec_dot2_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
 #if HAVE_AVX512   // TODO handle AVX flags
 uint _nmod32_vec_dot2_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);

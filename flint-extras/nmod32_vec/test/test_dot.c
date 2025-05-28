@@ -28,8 +28,7 @@ TEST_FUNCTION_START(nmod_vec_dot, state)
 
         len = n_randint(state, 1000) + 1;
         while (m == 0)
-            m = n_randtest_not_zero(state) % (UWORD(1) << 31);
-            //m = n_randtest_not_zero(state) % (UWORD(1) << 25);
+            m = n_randtest_not_zero(state) % (UWORD(1) << 30);
 
         nmod_init(&mod, m);
 
@@ -63,7 +62,19 @@ TEST_FUNCTION_START(nmod_vec_dot, state)
                                    "len = %wd\n",
                                    i, m, len);
             }
+        }
 
+        {  // dot2_half_avx512
+            res = _nmod32_vec_dot2_split_avx512(x, y, len, mod, pow2_precomp);
+
+            flint_printf("%ld\n", i);
+            if ((ulong)res != correct)
+            {
+                TEST_FUNCTION_FAIL("i = %wu\n"
+                                   "m = %wu\n"
+                                   "len = %wd\n",
+                                   i, m, len);
+            }
         }
 
         _nmod32_vec_clear(x);
