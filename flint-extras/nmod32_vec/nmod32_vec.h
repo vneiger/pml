@@ -42,6 +42,8 @@ void _nmod32_vec_clear(n32_ptr vec)
 
 #define HAVE_AVX512 1   // TODO handle AVX flags
 
+// warning: current limit is around 2**(30.5), to accumulate 8 terms
+// could make up to 2**31, very slightly slower
 // duplicates flint's dot2_split based on avx2
 uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
 #if HAVE_AVX512   // TODO handle AVX flags
@@ -49,7 +51,13 @@ uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, n
 #endif
 
 // duplicate msolve's matrix-vector product (for single dot prod)
-uint _nmod32_vec_dot_msolve_avx2(n32_ptr vec1, n32_srcptr vec2, slong len, uint PRIME);
+uint _nmod32_vec_dot_msolve_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, uint PRIME);
+
+
+
+
+
+
 
 
 // faster nmod_vec for modulus close to 32 bits
