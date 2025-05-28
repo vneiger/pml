@@ -9,7 +9,7 @@ static inline
 void _nmod32_vec_rand(n32_ptr vec, flint_rand_t state, slong len, nmod_t mod)
 {
     for (slong i = 0; i < len; i++)
-        vec[i] = n_randint(state, mod.n);
+        vec[i] = (uint)n_randint(state, mod.n);
 }
 
 TEST_FUNCTION_START(nmod_vec_dot, state)
@@ -20,17 +20,22 @@ TEST_FUNCTION_START(nmod_vec_dot, state)
     {
         slong len;
         nmod_t mod;
-        ulong m, res;
+        ulong m = 0;
+        ulong res;
         n32_ptr x, y;
         nn_ptr xx, yy;
         ulong correct;
 
         len = n_randint(state, 1000) + 1;
-        m = n_randtest_not_zero(state) % (UWORD(1) << 32);
+        while (m == 0)
+            m = n_randtest_not_zero(state) % (UWORD(1) << 31);
 
         nmod_init(&mod, m);
 
         const dot_params_t params = _nmod_vec_dot_params(len, mod);
+        // force computation of pow2_precomp, as flint's dot might not need it (and then will not compute it)
+        ulong pow2_precomp;
+        NMOD_RED(pow2_precomp, (UWORD(1) << DOT_SPLIT_BITS), mod);
 
         x = _nmod32_vec_init(len);
         y = _nmod32_vec_init(len);
@@ -47,12 +52,16 @@ TEST_FUNCTION_START(nmod_vec_dot, state)
         correct = _nmod_vec_dot(xx, yy, len, mod, params);
 
         {  // dot2_half_avx2
-            res = _nmod32_vec_dot2_split_avx2(x, y, len, mod, params.pow2_precomp);
+            res = _nmod32_vec_dot2_split_avx2(x, y, len, mod, pow2_precomp);
 
+            flint_printf("%ld\n", i);
             if ((ulong)res != correct)
-                TEST_FUNCTION_FAIL("m = %wu\n"
+            {
+                TEST_FUNCTION_FAIL("i = %wu\n"
+                                   "m = %wu\n"
                                    "len = %wd\n",
-                                   m, len);
+                                   i, m, len);
+            }
 
         }
 
