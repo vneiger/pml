@@ -40,12 +40,17 @@ void _nmod32_vec_clear(n32_ptr vec)
 *                            DOT PRODUCT                             *
 **********************************************************************/
 
-// duplicates flint's dot2_split based on avx2
 #define HAVE_AVX512 1   // TODO handle AVX flags
-uint _nmod32_vec_dot2_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
+
+// duplicates flint's dot2_split based on avx2
+uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
 #if HAVE_AVX512   // TODO handle AVX flags
-uint _nmod32_vec_dot2_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
+uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
 #endif
+
+// duplicate msolve's matrix-vector product (for single dot prod)
+uint _nmod32_vec_dot_msolve_avx2(n32_ptr vec1, n32_srcptr vec2, slong len, uint PRIME);
+
 
 // faster nmod_vec for modulus close to 32 bits
 // (correctness bound related to how much we can accumulate in high part: probably same bound as for AVX already in flint?)

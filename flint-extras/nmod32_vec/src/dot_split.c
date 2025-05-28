@@ -1,6 +1,7 @@
+#include <immintrin.h>
+
 #include "flint/nmod_vec.h"  // for DOT_SPLIT_MASK
 #include "nmod32_vec.h"
-#include <immintrin.h>
 
 // horizontal sum
 FLINT_FORCE_INLINE ulong _mm256_hsum(__m256i a) {
@@ -15,7 +16,7 @@ FLINT_FORCE_INLINE ulong _mm512_hsum(__m512i a) {
     return _mm512_reduce_add_epi64(a);
 }
 
-uint _nmod32_vec_dot2_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp)
+uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp)
 {
     const __m256i low_bits = _mm256_set1_epi64x(DOT_SPLIT_MASK);
     __m256i dp_lo0 = _mm256_setzero_si256();
@@ -115,7 +116,7 @@ uint _nmod32_vec_dot2_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nm
 }
 
 #if HAVE_AVX512
-uint _nmod32_vec_dot2_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp)
+uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp)
 {
     const __m512i low_bits = _mm512_set1_epi64(DOT_SPLIT_MASK);
     __m512i dp_lo0 = _mm512_setzero_si512();
