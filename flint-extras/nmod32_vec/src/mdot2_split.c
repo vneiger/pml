@@ -42,11 +42,11 @@ void _nmod32_vec_mdot2_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
 
     slong i = 0;
     for ( ; i+1 < nrows; i+=2)
-        _nmod32_vec_dot2_split(mv+i, mv+i+1,
-                               vec, mat + i*stride, mat + (i+1)*stride,
-                               len, mod, pow2_precomp);
+        _nmod32_vec_dot2_split_avx512(mv+i, mv+i+1,
+                                      vec, mat + i*stride, mat + (i+1)*stride,
+                                      len, mod, pow2_precomp);
 
     if (i == nrows - 1)
-        mv[i] = _nmod32_vec_dot_split(vec, mat + i*stride, len, mod, pow2_precomp);
+        mv[i] = _nmod32_vec_dot_split_avx512(vec, mat + i*stride, len, mod, pow2_precomp);
 }
 

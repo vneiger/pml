@@ -53,9 +53,7 @@ uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmo
     __m256i dp_hi1 = _mm256_setzero_si256();
 
     slong i = 0;
-    // slightly faster with this 4-unrolling than with 2,
-    // but requires space for 8 terms (mod < 2**30.5)
-    // if up to 2**31 - 1 then should use 2-unrolling
+
     for ( ; i+31 < len; i += 32)
     {
         __m256i v1_0 = _mm256_loadu_si256((const __m256i *) (vec1+i+ 0));
@@ -155,8 +153,7 @@ uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, n
     __m512i dp_hi1 = _mm512_setzero_si512();
 
     slong i = 0;
-    // requires space for 8 terms (mod < 2**30.5)
-    // if up to 2**31 - 1 then should use 2-unrolling
+
     for ( ; i+31 < len; i += 32)
     {
         __m512i v1_0 = _mm512_loadu_si512((const __m512i *) (vec1+i+ 0));

@@ -71,9 +71,7 @@ void _nmod32_vec_dot2_split_avx2(uint * res0, uint * res1,
     __m256i dp_hi1 = _mm256_setzero_si256();
 
     slong i = 0;
-    // slightly faster with this 4-unrolling than with 2,
-    // but requires space for 8 terms (mod < 2**30.5)
-    // if up to 2**31 - 1 then should use 2-unrolling
+
     for ( ; i+15 < len; i += 16)
     {
         __m256i v1_0 = _mm256_loadu_si256((const __m256i *) (vec1+i+ 0));
@@ -165,9 +163,11 @@ void _nmod32_vec_dot2_split_avx2(uint * res0, uint * res1,
     NMOD_RED(*res1, pow2_precomp * hsum_hi1 + hsum_lo1, mod);
 }
 
-#if 0
 #if HAVE_AVX512
-uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp)
+
+void _nmod32_vec_dot2_split_avx512(uint * res0, uint * res1,
+                                   n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1,
+                                   slong len, nmod_t mod, ulong pow2_precomp)
 {
     const __m512i low_bits = _mm512_set1_epi64(DOT_SPLIT_MASK);
     __m512i dp_lo0 = _mm512_setzero_si512();
@@ -176,83 +176,97 @@ uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, n
     __m512i dp_hi1 = _mm512_setzero_si512();
 
     slong i = 0;
-    // requires space for 8 terms (mod < 2**30.5)
-    // if up to 2**31 - 1 then should use 2-unrolling
+
     for ( ; i+31 < len; i += 32)
     {
         __m512i v1_0 = _mm512_loadu_si512((const __m512i *) (vec1+i+ 0));
         __m512i v1_1 = _mm512_loadu_si512((const __m512i *) (vec1+i+16));
-        __m512i v2_0 = _mm512_loadu_si512((const __m512i *) (vec2+i+ 0));
-        __m512i v2_1 = _mm512_loadu_si512((const __m512i *) (vec2+i+16));
+        __m512i v2_0_0 = _mm512_loadu_si512((const __m512i *) (vec2_0+i+ 0));
+        __m512i v2_0_1 = _mm512_loadu_si512((const __m512i *) (vec2_0+i+16));
+        __m512i v2_1_0 = _mm512_loadu_si512((const __m512i *) (vec2_1+i+ 0));
+        __m512i v2_1_1 = _mm512_loadu_si512((const __m512i *) (vec2_1+i+16));
 
         // handle low 32 bit word of each 64 bit word
-        dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_mul_epu32(v1_0, v2_0));
-        dp_lo1 = _mm512_add_epi64(dp_lo1, _mm512_mul_epu32(v1_1, v2_1));
+        dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_mul_epu32(v1_0, v2_0_0));
+        dp_lo1 = _mm512_add_epi64(dp_lo1, _mm512_mul_epu32(v1_0, v2_1_0));
+        __m512i dp_lo2 = _mm512_mul_epu32(v1_1, v2_0_1);
+        __m512i dp_lo3 = _mm512_mul_epu32(v1_1, v2_1_1);
 
         // handle high 32 bit word of each 64 bit word
         // alternative 1: vpshufd
         // shuffle [0,1,2,3] => [1,0,3,2]    (imm8 = 0b10110001  -->  0xB1)
         v1_0 = _mm512_shuffle_epi32(v1_0, 0xB1);
         v1_1 = _mm512_shuffle_epi32(v1_1, 0xB1);
-        v2_0 = _mm512_shuffle_epi32(v2_0, 0xB1);
-        v2_1 = _mm512_shuffle_epi32(v2_1, 0xB1);
+        v2_0_0 = _mm512_shuffle_epi32(v2_0_0, 0xB1);
+        v2_0_1 = _mm512_shuffle_epi32(v2_0_1, 0xB1);
+        v2_1_0 = _mm512_shuffle_epi32(v2_1_0, 0xB1);
+        v2_1_1 = _mm512_shuffle_epi32(v2_1_1, 0xB1);
         // alternative 2: vpsrlq
         //v1_0 = _mm512_srli_epi64(v1_0, 32);
         //v2_0 = _mm512_srli_epi64(v2_0, 32);
-        dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_mul_epu32(v1_0, v2_0));
-        dp_lo1 = _mm512_add_epi64(dp_lo1, _mm512_mul_epu32(v1_1, v2_1));
+        dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_mul_epu32(v1_0, v2_0_0));
+        dp_lo1 = _mm512_add_epi64(dp_lo1, _mm512_mul_epu32(v1_0, v2_1_0));
+        dp_lo2 = _mm512_add_epi64(dp_lo2, _mm512_mul_epu32(v1_1, v2_0_1));
+        dp_lo3 = _mm512_add_epi64(dp_lo3, _mm512_mul_epu32(v1_1, v2_1_1));
 
+        dp_lo0 = _mm512_add_epi64(dp_lo0, dp_lo2);
+        dp_lo1 = _mm512_add_epi64(dp_lo1, dp_lo3);
         dp_hi0 = _mm512_add_epi64(dp_hi0, _mm512_srli_epi64(dp_lo0, DOT_SPLIT_BITS));
         dp_hi1 = _mm512_add_epi64(dp_hi1, _mm512_srli_epi64(dp_lo1, DOT_SPLIT_BITS));
         dp_lo0 = _mm512_and_si512(dp_lo0, low_bits);
         dp_lo1 = _mm512_and_si512(dp_lo1, low_bits);
     }
 
-    if (i+15 < len)
+    for ( ; i+15 < len; i += 16)
     {
-        __m512i v1_0 = _mm512_loadu_si512((const __m512i *) (vec1+i+ 0));
-        __m512i v2_0 = _mm512_loadu_si512((const __m512i *) (vec2+i+ 0));
+        __m512i v1_0 = _mm512_loadu_si512((const __m512i *) (vec1+i));
+        __m512i v2_0_0 = _mm512_loadu_si512((const __m512i *) (vec2_0+i));
+        __m512i v2_1_0 = _mm512_loadu_si512((const __m512i *) (vec2_1+i));
 
         // handle low 32 bit word of each 64 bit word
-        dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_mul_epu32(v1_0, v2_0));
+        dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_mul_epu32(v1_0, v2_0_0));
+        dp_lo1 = _mm512_add_epi64(dp_lo1, _mm512_mul_epu32(v1_0, v2_1_0));
 
         // handle high 32 bit word of each 64 bit word
         // alternative 1: vpshufd
         // shuffle [0,1,2,3] => [1,0,3,2]    (imm8 = 0b10110001  -->  0xB1)
         v1_0 = _mm512_shuffle_epi32(v1_0, 0xB1);
-        v2_0 = _mm512_shuffle_epi32(v2_0, 0xB1);
-        // alternative 2: vpsrlq
+        v2_0_0 = _mm512_shuffle_epi32(v2_0_0, 0xB1);
+        v2_1_0 = _mm512_shuffle_epi32(v2_1_0, 0xB1);
+        // alternative 2: vpsrlq (tested)
         //v1_0 = _mm512_srli_epi64(v1_0, 32);
         //v2_0 = _mm512_srli_epi64(v2_0, 32);
-        dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_mul_epu32(v1_0, v2_0));
+        dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_mul_epu32(v1_0, v2_0_0));
+        dp_lo1 = _mm512_add_epi64(dp_lo1, _mm512_mul_epu32(v1_0, v2_1_0));
 
         dp_hi0 = _mm512_add_epi64(dp_hi0, _mm512_srli_epi64(dp_lo0, DOT_SPLIT_BITS));
         dp_lo0 = _mm512_and_si512(dp_lo0, low_bits);
-
-        i += 16;
+        dp_hi1 = _mm512_add_epi64(dp_hi1, _mm512_srli_epi64(dp_lo1, DOT_SPLIT_BITS));
+        dp_lo1 = _mm512_and_si512(dp_lo1, low_bits);
     }
 
-    // from here on, not really careful about operations that could be done 
-    // with int rather than long
-    dp_lo0 = _mm512_add_epi64(dp_lo0, dp_lo1);
-    dp_hi0 = _mm512_add_epi64(dp_hi0, dp_hi1);
-    ulong hsum_lo = _mm512_hsum(dp_lo0);
-    ulong hsum_hi = _mm512_hsum(dp_hi0) + (hsum_lo >> DOT_SPLIT_BITS);
-    hsum_lo &= DOT_SPLIT_MASK;
+    ulong hsum_lo0 = _mm512_hsum(dp_lo0);
+    ulong hsum_hi0 = _mm512_hsum(dp_hi0) + (hsum_lo0 >> DOT_SPLIT_BITS);
+    hsum_lo0 &= DOT_SPLIT_MASK;
+    ulong hsum_lo1 = _mm512_hsum(dp_lo1);
+    ulong hsum_hi1 = _mm512_hsum(dp_hi1) + (hsum_lo1 >> DOT_SPLIT_BITS);
+    hsum_lo1 &= DOT_SPLIT_MASK;
 
-    // some accumulation could be done here
+    // some accumulation could be done here (but not up to 7 terms)
     for (; i < len; i++)
     {
-        hsum_lo += (ulong)vec1[i] * (ulong)vec2[i];
-        hsum_hi += (hsum_lo >> DOT_SPLIT_BITS);
-        hsum_lo &= DOT_SPLIT_MASK;
+        hsum_lo0 += (ulong)vec1[i] * (ulong)vec2_0[i];
+        hsum_hi0 += (hsum_lo0 >> DOT_SPLIT_BITS);
+        hsum_lo0 &= DOT_SPLIT_MASK;
+
+        hsum_lo1 += (ulong)vec1[i] * (ulong)vec2_1[i];
+        hsum_hi1 += (hsum_lo1 >> DOT_SPLIT_BITS);
+        hsum_lo1 &= DOT_SPLIT_MASK;
     }
 
-    ulong res;
-    NMOD_RED(res, pow2_precomp * hsum_hi + hsum_lo, mod);
-    return (uint)res;
+    NMOD_RED(*res0, pow2_precomp * hsum_hi0 + hsum_lo0, mod);
+    NMOD_RED(*res1, pow2_precomp * hsum_hi1 + hsum_lo1, mod);
 }
 
-#endif
 #endif
 

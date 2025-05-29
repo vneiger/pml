@@ -68,6 +68,9 @@ void _nmod32_vec_dot2_split(uint * res0, uint * res1,
 void _nmod32_vec_dot2_split_avx2(uint * res0, uint * res1,
                                  n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1,
                                  slong len, nmod_t mod, ulong pow2_precomp);
+void _nmod32_vec_dot2_split_avx512(uint * res0, uint * res1,
+                                   n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1,
+                                   slong len, nmod_t mod, ulong pow2_precomp);
 
 /**********************************************************************
 *                         MULTI DOT PRODUCT                          *
