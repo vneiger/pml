@@ -86,34 +86,35 @@ void time_dot_msolve_avx2(time_args targs, flint_rand_t state)
 /* indirect: multi-dot   */
 /*-----------------------*/
 
-#define TIME_MDOT(fun) \
-void time_##fun(time_args targs, flint_rand_t state) \
-{ \
-    const slong nrows = targs.nrows; \
-    const slong len = targs.len; \
-    const slong n = targs.modn; \
- \
-    nmod_t mod; \
-    nmod_init(&mod, n); \
- \
-    n32_ptr mat = _nmod32_vec_init(nrows*len); \
-    _nmod32_vec_rand(mat, state, nrows*len, mod); \
-    n32_ptr vec = _nmod32_vec_init(len); \
-    _nmod32_vec_rand(vec, state, len, mod); \
- \
-    n32_ptr res = _nmod32_vec_init(nrows); \
- \
-    double FLINT_SET_BUT_UNUSED(tcpu), twall; \
- \
-    TIMEIT_START \
-    _nmod32_vec_##fun(res, mat, vec, nrows, len, len, mod); \
-    TIMEIT_STOP_VALUES(tcpu, twall) \
- \
-    printf("%.2e", twall); \
- \
-    _nmod32_vec_clear(mat); \
-    _nmod32_vec_clear(vec); \
-    _nmod32_vec_clear(res); \
+#define TIME_MDOT(fun)                                  \
+void time_##fun(time_args targs, flint_rand_t state)    \
+{                                                       \
+    const slong nrows = targs.nrows;                    \
+    const slong len = targs.len;                        \
+    const slong n = targs.modn;                         \
+                                                        \
+    nmod_t mod;                                         \
+    nmod_init(&mod, n);                                 \
+                                                        \
+    n32_ptr mat = _nmod32_vec_init(nrows*len);          \
+    _nmod32_vec_rand(mat, state, nrows*len, mod);       \
+    n32_ptr vec = _nmod32_vec_init(len);                \
+    _nmod32_vec_rand(vec, state, len, mod);             \
+                                                        \
+    n32_ptr res = _nmod32_vec_init(nrows);              \
+                                                        \
+    double FLINT_SET_BUT_UNUSED(tcpu), twall;           \
+                                                        \
+    TIMEIT_START                                        \
+    _nmod32_vec_##fun(res, mat, vec,                    \
+                      nrows, len, len, mod);            \
+    TIMEIT_STOP_VALUES(tcpu, twall)                     \
+                                                        \
+    printf("%.2e", twall);                              \
+                                                        \
+    _nmod32_vec_clear(mat);                             \
+    _nmod32_vec_clear(vec);                             \
+    _nmod32_vec_clear(res);                             \
 }
 
 TIME_MDOT(mdot_split);
@@ -173,12 +174,12 @@ int main(int argc, char ** argv)
 
     if (argc == 1)  // show usage
     {
-        printf("Usage: `%s [fun] [nbits] [len]`\n", argv[0]);
+        printf("Usage: `%s [nbits] [len] [fun]`\n", argv[0]);
         printf("   Each argument is optional; no argument shows this help.\n");
-        printf("   - fun: id number of the timed function (see below),\n");
-        printf("          exception: fun == -1 times all available functions successively\n");
-        printf("   - nbits: number of bits for the modulus, chosen as nextprime(2**(nbits-1))\n");
+        printf("   - nbits: number of bits (in (0..31]) for the modulus, chosen as nextprime(2**(nbits-1))\n");
+        printf("        (nbits == -1 launches full suite)\n");
         printf("   - len: length of the vectors\n");
+        printf("   - fun: id number of the timed function (see below),\n");
         printf("\nAvailable functions:\n");
         for (slong j = 0; j < nfuns; j++)
             printf("   %s\n", description[j]);
@@ -187,7 +188,7 @@ int main(int argc, char ** argv)
     }
 
     printf("#warmup... ");
-    for (slong i = 0; i < 10; i++)
+    for (slong i = 0; i < 3; i++)
     {
         time_args targs = {1, 10000, UWORD(1) << 20};
         time_dot_split_avx2(targs, state);
@@ -197,23 +198,20 @@ int main(int argc, char ** argv)
 
     if (argc == 2 && atoi(argv[1]) == -1)  // launching full suite
     {
-        for (slong ifun = 0; ifun < nfuns; ifun++)
+        printf("       len");
+        for (slong i = 0; i < nlens; i++)
+            printf("%9ld", lens[i]);
+        printf("\n");
+        printf("bits fun\n");
+        for (slong j = 0; j < nbits; j++)
         {
-            const timefun tfun = funs[ifun];
-
-            printf("\n%s\n", description[ifun]);
-            printf("#bits\\len");
-            for (slong i = 0; i < nlens; i++)
-                printf("%9ld", lens[i]);
-            printf("\n");
-
-            for (slong j = 0; j < nbits; j++)
+            const slong b = bits[j];
+            ulong n;
+            n = n_nextprime(UWORD(1) << (b-1), 0);
+            for (slong ifun = 0; ifun < nfuns; ifun++)
             {
-                const slong b = bits[j];
-
-                printf("%-10ld", b);
-                ulong n;
-                n = n_nextprime(UWORD(1) << (b-1), 0);
+                const timefun tfun = funs[ifun];
+                printf("%-5ld#%-4ld", b, ifun);
                 for (slong i = 0; i < nlens; i++)
                 {
                     time_args targs = {1, lens[i], n};
@@ -224,28 +222,20 @@ int main(int argc, char ** argv)
             }
         }
     }
-    else if (argc == 2)  // function is given
+    else if (argc == 2)  // nbits is given
     {
-        const timefun tfun = funs[atoi(argv[1])];
-
-        printf("\n%s\n", description[atoi(argv[1])]);
-        printf("#bits\\len");
+        printf("       len");
         for (slong i = 0; i < nlens; i++)
             printf("%9ld", lens[i]);
         printf("\n");
-
-        for (slong j = 0; j < nbits; j++)
+        printf("bits fun\n");
+        const slong b = atoi(argv[1]);
+        ulong n;
+        n = n_nextprime(UWORD(1) << (b-1), 0);
+        for (slong ifun = 0; ifun < nfuns; ifun++)
         {
-            const slong b = bits[j];
-
-            printf("%-10ld", b);
-            ulong n;
-            if (b == 232)
-                n = UWORD(1) << 32;
-            else if (b == 263)
-                n = UWORD(1) << 63;
-            else
-                n = n_nextprime(UWORD(1) << (b-1), 0);
+            const timefun tfun = funs[ifun];
+            printf("%-5ld#%-4ld", b, ifun);
             for (slong i = 0; i < nlens; i++)
             {
                 time_args targs = {1, lens[i], n};
@@ -255,56 +245,42 @@ int main(int argc, char ** argv)
             printf("\n");
         }
     }
-    else if (argc == 3)  // function + nbits given
+    else if (argc == 3)  // nbits + len given
     {
-        const timefun tfun = funs[atoi(argv[1])];
-        const slong b = atoi(argv[2]);
-
-        printf("\n%s\n", description[atoi(argv[1])]);
-        printf("#bits\\len");
-        for (slong i = 0; i < nlens; i++)
-            printf("%9ld", lens[i]);
+        const slong len = atoi(argv[2]);
+        printf("       len");
+        printf("%9ld", len);
         printf("\n");
-
-        printf("%-10ld", b);
+        printf("bits fun\n");
+        const slong b = atoi(argv[1]);
         ulong n;
-        if (b == 232)
-            n = UWORD(1) << 32;
-        else if (b == 263)
-            n = UWORD(1) << 63;
-        else
-            n = n_nextprime(UWORD(1) << (b-1), 0);
-        for (slong i = 0; i < nlens; i++)
+        n = n_nextprime(UWORD(1) << (b-1), 0);
+        for (slong ifun = 0; ifun < nfuns; ifun++)
         {
-            time_args targs = {1, lens[i], n};
+            const timefun tfun = funs[ifun];
+            printf("%-5ld#%-4ld", b, ifun);
+            time_args targs = {1, len, n};
             tfun(targs, state);
             printf(" ");
+            printf("\n");
         }
-        printf("\n");
     }
     else if (argc == 4)  // function + nbits + len given
     {
-        const timefun tfun = funs[atoi(argv[1])];
-        const slong b = atoi(argv[2]);
-        const slong len = atoi(argv[3]);
-
-        printf("\n%s\n", description[atoi(argv[1])]);
-        printf("#bits\\len");
-        for (slong i = 0; i < nlens; i++)
-            printf("%9ld", lens[i]);
+        const slong b = atoi(argv[1]);
+        const slong len = atoi(argv[2]);
+        const slong ifun = atoi(argv[3]);
+        const timefun tfun = funs[ifun];
+        printf("       len");
+        printf("%9ld", len);
         printf("\n");
-
-        printf("%-10ld", b);
+        printf("bits fun\n");
         ulong n;
-        if (b == 232)
-            n = UWORD(1) << 32;
-        else if (b == 263)
-            n = UWORD(1) << 63;
-        else
-            n = n_nextprime(UWORD(1) << (b-1), 0);
-
+        n = n_nextprime(UWORD(1) << (b-1), 0);
+        printf("%-5ld#%-4ld", b, ifun);
         time_args targs = {1, len, n};
         tfun(targs, state);
+        printf(" ");
         printf("\n");
     }
 
