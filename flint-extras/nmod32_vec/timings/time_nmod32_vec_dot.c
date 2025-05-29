@@ -130,6 +130,8 @@ TIME_MDOT(mdot2_split_avx512);
 TIME_MDOT(mdot3_split_avx2);
 TIME_MDOT(mdot4_split_avx512);
 
+TIME_MDOT(mdot2_split_block_avx2);
+
 /*-------------------------*/
 /*  main                   */
 /*-------------------------*/
@@ -257,7 +259,7 @@ int main(int argc, char ** argv)
                             targs.nrows = lens[i];
 
                         if (nrows == 0 ||
-                            (ifun >= 4 && lens[i] * targs.nrows < 100000000))
+                            (ifun >= 4 && lens[i] * targs.nrows < 10000000000))
                             tfun(targs, state);
                         printf(" ");
                     }
