@@ -58,8 +58,6 @@ uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmo
     // if up to 2**31 - 1 then should use 2-unrolling
     for ( ; i+31 < len; i += 32)
     {
-        __m256i dp_lo2 = _mm256_setzero_si256();
-        __m256i dp_lo3 = _mm256_setzero_si256();
         __m256i v1_0 = _mm256_loadu_si256((const __m256i *) (vec1+i+ 0));
         __m256i v1_1 = _mm256_loadu_si256((const __m256i *) (vec1+i+ 8));
         __m256i v1_2 = _mm256_loadu_si256((const __m256i *) (vec1+i+16));
@@ -72,8 +70,8 @@ uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmo
         // handle low 32 bit word of each 64 bit word
         dp_lo0 = _mm256_add_epi64(dp_lo0, _mm256_mul_epu32(v1_0, v2_0));
         dp_lo1 = _mm256_add_epi64(dp_lo1, _mm256_mul_epu32(v1_1, v2_1));
-        dp_lo2 = _mm256_mul_epu32(v1_2, v2_2);
-        dp_lo3 = _mm256_mul_epu32(v1_3, v2_3);
+        __m256i dp_lo2 = _mm256_mul_epu32(v1_2, v2_2);
+        __m256i dp_lo3 = _mm256_mul_epu32(v1_3, v2_3);
 
         // handle high 32 bit word of each 64 bit word
         // alternative 1: vpshufd
