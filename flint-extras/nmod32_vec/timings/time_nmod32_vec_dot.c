@@ -127,6 +127,9 @@ TIME_MDOT(mdot2_split);
 TIME_MDOT(mdot2_split_avx2);
 TIME_MDOT(mdot2_split_avx512);
 
+TIME_MDOT(mdot3_split_avx2);
+TIME_MDOT(mdot4_split_avx512);
+
 /*-------------------------*/
 /*  main                   */
 /*-------------------------*/
@@ -150,7 +153,7 @@ int main(int argc, char ** argv)
     const ulong lens[] = {50, 100, 250, 500, 1000, 2500, 5000, 10000, 100000, 1000000};
 
     // bench functions
-    const slong nfuns = 12;
+    const slong nfuns = 14;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
         time_dot_split,                 // 0
@@ -165,6 +168,8 @@ int main(int argc, char ** argv)
         time_mdot2_split,               // 9
         time_mdot2_split_avx2,          // 10
         time_mdot2_split_avx512,        // 11
+        time_mdot3_split_avx2,          // 12
+        time_mdot4_split_avx512,        // 13
     };
 
     const char * description[] = {
@@ -180,6 +185,8 @@ int main(int argc, char ** argv)
         "#9  --> mdot2_split                   ",
         "#10 --> mdot2_split_avx2              ",
         "#11 --> mdot2_split_avx512            ",
+        "#12 --> mdot3_split_avx2              ",
+        "#13 --> mdot4_split_avx512            ",
     };
 
     if (argc == 1)  // show usage
@@ -231,7 +238,7 @@ int main(int argc, char ** argv)
             const slong b = bits[j];
             ulong n;
             n = n_nextprime(UWORD(1) << (b-1), 0);
-            for (slong nrows = 0; nrows < 5; nrows++)
+            for (slong nrows = 2; nrows < 5; nrows++)
             {
                 for (slong ifun = 0; ifun < nfuns; ifun++)
                 {

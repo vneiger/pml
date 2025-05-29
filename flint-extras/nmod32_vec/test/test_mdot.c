@@ -87,12 +87,20 @@ TEST_FUNCTION_START(nmod32_vec_mdot, state)
             n32_ptr res = _nmod32_vec_init(nrows);
             n32_ptr res_avx2 = _nmod32_vec_init(nrows);
             n32_ptr res_avx512 = _nmod32_vec_init(nrows);
+            n32_ptr res3_avx2 = _nmod32_vec_init(nrows);
+            n32_ptr res4_avx512 = _nmod32_vec_init(nrows);
             _nmod32_vec_mdot2_split(res, mat, vec, nrows, len, len, mod);
             _nmod32_vec_mdot2_split_avx2(res_avx2, mat, vec, nrows, len, len, mod);
             _nmod32_vec_mdot2_split_avx512(res_avx512, mat, vec, nrows, len, len, mod);
+            _nmod32_vec_mdot3_split_avx2(res3_avx2, mat, vec, nrows, len, len, mod);
+            _nmod32_vec_mdot4_split_avx512(res4_avx512, mat, vec, nrows, len, len, mod);
 
             for (slong k = 0; k < nrows; k++)
-                if (res[k] != correct[k] || res_avx2[k] != correct[k] || res_avx512[k] != correct[k])
+                if (res[k] != correct[k] ||
+                    res_avx2[k] != correct[k] ||
+                    res_avx512[k] != correct[k] ||
+                    res3_avx2[k] != correct[k] ||
+                    res4_avx512[k] != correct[k])
                 {
                     flint_printf("%ld\n", i);
                     TEST_FUNCTION_FAIL("mdot_split, m = %wu, len = %wd\n", m, len);
@@ -101,6 +109,8 @@ TEST_FUNCTION_START(nmod32_vec_mdot, state)
             _nmod32_vec_clear(res);
             _nmod32_vec_clear(res_avx2);
             _nmod32_vec_clear(res_avx512);
+            _nmod32_vec_clear(res3_avx2);
+            _nmod32_vec_clear(res4_avx512);
         }
 
         if (acc8)
