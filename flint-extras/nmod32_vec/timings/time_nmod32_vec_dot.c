@@ -1,22 +1,13 @@
-/*
-    Copyright 2024 Vincent Neiger
-
-    This file is part of FLINT.
-
-    FLINT is free software: you can redistribute it and/or modify it under
-    the terms of the GNU Lesser General Public License (LGPL) as published
-    by the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.  See <https://www.gnu.org/licenses/>.
-*/
-
 #include <stdlib.h>  // for atoi
 
-#include "flint/ulong_extras.h"
-#include "flint/profiler.h"
-#include "flint/nmod.h"
-#include "flint/nmod_vec.h"
+#include <flint/ulong_extras.h>
+#include <flint/profiler.h>
+#include <flint/nmod.h>
+#include <flint/nmod_vec.h>
 
 #include "nmod32_vec.h"
+
+typedef struct {slong nrows; slong len; slong modn;} time_args;
 
 // utility (nmod vec uniform random)
 static inline
@@ -26,96 +17,49 @@ void _nmod32_vec_rand(n32_ptr vec, flint_rand_t state, slong len, nmod_t mod)
         vec[i] = n_randint(state, mod.n);
 }
 
-/*------------------------------------*/
-/* direct: dot / dot_rev / dot expr   */
-/*------------------------------------*/
+/*---------------*/
+/* direct: dot   */
+/*---------------*/
 
-void time_dot_split(ulong len, ulong n, flint_rand_t state)
-{
-    nmod_t mod;
-    nmod_init(&mod, n);
-    ulong pow2_precomp;
-    NMOD_RED(pow2_precomp, (UWORD(1) << DOT_SPLIT_BITS), mod);
-
-    n32_ptr v1 = _nmod32_vec_init(len);
-    _nmod32_vec_rand(v1, state, len, mod);
-    n32_ptr v2 = _nmod32_vec_init(len);
-    _nmod32_vec_rand(v2, state, len, mod);
-
-    // store results in volatile variable to avoid that they
-    // are "optimized away" (especially for inlined part)
-    volatile uint FLINT_SET_BUT_UNUSED(res);
-
-    double FLINT_SET_BUT_UNUSED(tcpu), twall;
-
-    TIMEIT_START
-    res = _nmod32_vec_dot_split(v1, v2, len, mod, pow2_precomp);
-    TIMEIT_STOP_VALUES(tcpu, twall)
-
-    printf("%.2e", twall);
-
-    _nmod32_vec_clear(v1);
-    _nmod32_vec_clear(v2);
+#define TIME_DOT(fun, arg) \
+void time_##fun(time_args targs, flint_rand_t state) \
+{ \
+    const slong len = targs.len; \
+    const slong n = targs.modn; \
+    \
+    nmod_t mod; \
+    nmod_init(&mod, n); \
+    ulong pow2_precomp; \
+    NMOD_RED(pow2_precomp, (UWORD(1) << DOT_SPLIT_BITS), mod); \
+    \
+    n32_ptr v1 = _nmod32_vec_init(len); \
+    _nmod32_vec_rand(v1, state, len, mod); \
+    n32_ptr v2 = _nmod32_vec_init(len); \
+    _nmod32_vec_rand(v2, state, len, mod); \
+    \
+    volatile uint FLINT_SET_BUT_UNUSED(res); \
+    \
+    double FLINT_SET_BUT_UNUSED(tcpu), twall; \
+    \
+    TIMEIT_START \
+    res = _nmod32_vec_##fun(v1, v2, len, mod, arg); \
+    TIMEIT_STOP_VALUES(tcpu, twall) \
+    \
+    printf("%.2e", twall); \
+    \
+    _nmod32_vec_clear(v1); \
+    _nmod32_vec_clear(v2); \
 }
 
-void time_dot_split_avx2(ulong len, ulong n, flint_rand_t state)
+TIME_DOT(dot_split, pow2_precomp);
+TIME_DOT(dot_split_avx2, pow2_precomp);
+TIME_DOT(dot_split_avx512, pow2_precomp);
+
+void time_dot_msolve_avx2(time_args targs, flint_rand_t state)
 {
-    nmod_t mod;
-    nmod_init(&mod, n);
-    ulong pow2_precomp;
-    NMOD_RED(pow2_precomp, (UWORD(1) << DOT_SPLIT_BITS), mod);
+    const slong len = targs.len;
+    const slong n = targs.modn;
 
-    n32_ptr v1 = _nmod32_vec_init(len);
-    _nmod32_vec_rand(v1, state, len, mod);
-    n32_ptr v2 = _nmod32_vec_init(len);
-    _nmod32_vec_rand(v2, state, len, mod);
-
-    // store results in volatile variable to avoid that they
-    // are "optimized away" (especially for inlined part)
-    volatile uint FLINT_SET_BUT_UNUSED(res);
-
-    double FLINT_SET_BUT_UNUSED(tcpu), twall;
-
-    TIMEIT_START
-    res = _nmod32_vec_dot_split_avx2(v1, v2, len, mod, pow2_precomp);
-    TIMEIT_STOP_VALUES(tcpu, twall)
-
-    printf("%.2e", twall);
-
-    _nmod32_vec_clear(v1);
-    _nmod32_vec_clear(v2);
-}
-
-void time_dot_split_avx512(ulong len, ulong n, flint_rand_t state)
-{
-    nmod_t mod;
-    nmod_init(&mod, n);
-    ulong pow2_precomp;
-    NMOD_RED(pow2_precomp, (UWORD(1) << DOT_SPLIT_BITS), mod);
-
-    n32_ptr v1 = _nmod32_vec_init(len);
-    _nmod32_vec_rand(v1, state, len, mod);
-    n32_ptr v2 = _nmod32_vec_init(len);
-    _nmod32_vec_rand(v2, state, len, mod);
-
-    // store results in volatile variable to avoid that they
-    // are "optimized away" (especially for inlined part)
-    volatile uint FLINT_SET_BUT_UNUSED(res);
-
-    double FLINT_SET_BUT_UNUSED(tcpu), twall;
-
-    TIMEIT_START
-    res = _nmod32_vec_dot_split_avx512(v1, v2, len, mod, pow2_precomp);
-    TIMEIT_STOP_VALUES(tcpu, twall)
-
-    printf("%.2e", twall);
-
-    _nmod32_vec_clear(v1);
-    _nmod32_vec_clear(v2);
-}
-
-void time_dot_msolve_avx2(ulong len, ulong n, flint_rand_t state)
-{
     nmod_t mod;
     nmod_init(&mod, n);
 
@@ -124,8 +68,6 @@ void time_dot_msolve_avx2(ulong len, ulong n, flint_rand_t state)
     n32_ptr v2 = _nmod32_vec_init(len);
     _nmod32_vec_rand(v2, state, len, mod);
 
-    // store results in volatile variable to avoid that they
-    // are "optimized away" (especially for inlined part)
     volatile uint FLINT_SET_BUT_UNUSED(res);
 
     double FLINT_SET_BUT_UNUSED(tcpu), twall;
@@ -140,6 +82,45 @@ void time_dot_msolve_avx2(ulong len, ulong n, flint_rand_t state)
     _nmod32_vec_clear(v2);
 }
 
+/*-----------------------*/
+/* indirect: multi-dot   */
+/*-----------------------*/
+
+#define TIME_MDOT(fun) \
+void time_##fun(time_args targs, flint_rand_t state) \
+{ \
+    const slong nrows = targs.nrows; \
+    const slong len = targs.len; \
+    const slong n = targs.modn; \
+ \
+    nmod_t mod; \
+    nmod_init(&mod, n); \
+ \
+    n32_ptr mat = _nmod32_vec_init(nrows*len); \
+    _nmod32_vec_rand(mat, state, nrows*len, mod); \
+    n32_ptr vec = _nmod32_vec_init(len); \
+    _nmod32_vec_rand(vec, state, len, mod); \
+ \
+    n32_ptr res = _nmod32_vec_init(nrows); \
+ \
+    double FLINT_SET_BUT_UNUSED(tcpu), twall; \
+ \
+    TIMEIT_START \
+    _nmod32_vec_##fun(res, mat, vec, nrows, len, len, mod); \
+    TIMEIT_STOP_VALUES(tcpu, twall) \
+ \
+    printf("%.2e", twall); \
+ \
+    _nmod32_vec_clear(mat); \
+    _nmod32_vec_clear(vec); \
+    _nmod32_vec_clear(res); \
+}
+
+TIME_MDOT(mdot_split);
+TIME_MDOT(mdot_split_avx2);
+TIME_MDOT(mdot_split_avx512);
+TIME_MDOT(mdot_msolve_native_avx2);
+TIME_MDOT(mdot_msolve_via_dot_avx2);
 
 /*-------------------------*/
 /*  main                   */
@@ -164,20 +145,30 @@ int main(int argc, char ** argv)
     const ulong lens[] = {50, 100, 250, 500, 1000, 2500, 5000, 10000, 100000, 1000000};
 
     // bench functions
-    const slong nfuns = 4;
-    typedef void (*timefun) (ulong, ulong, flint_rand_t);
+    const slong nfuns = 9;
+    typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
-        time_dot_split,             // 0
-        time_dot_split_avx2,        // 1
-        time_dot_split_avx512,      // 2
-        time_dot_msolve_avx2,       // 3
+        time_dot_split,                 // 0
+        time_dot_split_avx2,            // 1
+        time_dot_split_avx512,          // 2
+        time_dot_msolve_avx2,           // 3
+        time_mdot_split,                // 4
+        time_mdot_split_avx2,           // 5
+        time_mdot_split_avx512,         // 6
+        time_mdot_msolve_via_dot_avx2,  // 7
+        time_mdot_msolve_native_avx2,   // 8
     };
 
     const char * description[] = {
-        "#0  --> dot_split            ",
-        "#1  --> dot_split_avx2       ",
-        "#2  --> dot_split_avx512     ",
-        "#3  --> dot_msolve_avx2      ",
+        "#0  --> dot_split                     ",
+        "#1  --> dot_split_avx2                ",
+        "#2  --> dot_split_avx512              ",
+        "#3  --> dot_msolve_avx2               ",
+        "#4  --> mdot_split                    ",
+        "#5  --> mdot_split_avx2               ",
+        "#6  --> mdot_split_avx2               ",
+        "#7  --> mdot_msolve_via_dot_avx2      ",
+        "#8  --> mdot_msolve_native_avx2       ",
     };
 
     if (argc == 1)  // show usage
@@ -198,7 +189,8 @@ int main(int argc, char ** argv)
     printf("#warmup... ");
     for (slong i = 0; i < 10; i++)
     {
-        time_dot_split_avx2(1000000, (UWORD(1)<<20)+5, state);
+        time_args targs = {1, 10000, UWORD(1) << 20};
+        time_dot_split_avx2(targs, state);
         printf(" ");
     }
     printf("\n");
@@ -221,15 +213,11 @@ int main(int argc, char ** argv)
 
                 printf("%-10ld", b);
                 ulong n;
-                if (b == 232)
-                    n = UWORD(1) << 32;
-                else if (b == 263)
-                    n = UWORD(1) << 63;
-                else
-                    n = n_nextprime(UWORD(1) << (b-1), 0);
+                n = n_nextprime(UWORD(1) << (b-1), 0);
                 for (slong i = 0; i < nlens; i++)
                 {
-                    tfun(lens[i], n, state);
+                    time_args targs = {1, lens[i], n};
+                    tfun(targs, state);
                     printf(" ");
                 }
                 printf("\n");
@@ -260,7 +248,8 @@ int main(int argc, char ** argv)
                 n = n_nextprime(UWORD(1) << (b-1), 0);
             for (slong i = 0; i < nlens; i++)
             {
-                tfun(lens[i], n, state);
+                time_args targs = {1, lens[i], n};
+                tfun(targs, state);
                 printf(" ");
             }
             printf("\n");
@@ -287,7 +276,8 @@ int main(int argc, char ** argv)
             n = n_nextprime(UWORD(1) << (b-1), 0);
         for (slong i = 0; i < nlens; i++)
         {
-            tfun(lens[i], n, state);
+            time_args targs = {1, lens[i], n};
+            tfun(targs, state);
             printf(" ");
         }
         printf("\n");
@@ -313,7 +303,8 @@ int main(int argc, char ** argv)
         else
             n = n_nextprime(UWORD(1) << (b-1), 0);
 
-        tfun(len, n, state);
+        time_args targs = {1, len, n};
+        tfun(targs, state);
         printf("\n");
     }
 

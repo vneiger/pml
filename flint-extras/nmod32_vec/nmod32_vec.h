@@ -80,9 +80,9 @@ void _nmod32_vec_mdot_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
 
 // duplicate msolve's matrix-vector product
 void _nmod32_vec_mdot_msolve_via_dot_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
-                                          slong nrows, slong len, slong stride, uint PRIME);
+                                          slong nrows, slong len, slong stride, nmod_t mod);
 void _nmod32_vec_mdot_msolve_native_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
-                                         slong nrows, slong len, slong stride, uint PRIME);
+                                         slong nrows, slong len, slong stride, nmod_t mod);
 
 #ifdef __cplusplus
 }

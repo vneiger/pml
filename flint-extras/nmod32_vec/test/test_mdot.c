@@ -83,17 +83,18 @@ TEST_FUNCTION_START(nmod32_vec_mdot, state)
             _nmod32_vec_clear(res_avx512);
         }
 
+        if (acc8)
         {  // dot_msolve
             n32_ptr res = _nmod32_vec_init(nrows);
             n32_ptr res_native = _nmod32_vec_init(nrows);
-            _nmod32_vec_mdot_msolve_via_dot_avx2(res, mat, vec, nrows, len, len, mod.n);
-            _nmod32_vec_mdot_msolve_native_avx2(res_native, mat, vec, nrows, len, len, mod.n);
+            _nmod32_vec_mdot_msolve_via_dot_avx2(res, mat, vec, nrows, len, len, mod);
+            _nmod32_vec_mdot_msolve_native_avx2(res_native, mat, vec, nrows, len, len, mod);
 
             for (slong k = 0; k < nrows; k++)
                 if (res[k] != correct[k] || res_native[k] != correct[k])
                 {
                     flint_printf("%ld\n", i);
-                    TEST_FUNCTION_FAIL("mdot_split, m = %wu, len = %wd\n", m, len);
+                    TEST_FUNCTION_FAIL("mdot_msolve, m = %wu, len = %wd\n", m, len);
                 }
             _nmod32_vec_clear(res);
             _nmod32_vec_clear(res_native);

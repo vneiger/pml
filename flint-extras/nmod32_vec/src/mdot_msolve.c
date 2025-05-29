@@ -26,16 +26,18 @@
 
 
 void _nmod32_vec_mdot_msolve_via_dot_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
-                                          slong nrows, slong len, slong stride, uint PRIME)
+                                          slong nrows, slong len, slong stride, nmod_t mod)
 {
+    const uint PRIME = mod.n;
     for (slong i = 0; i < nrows; i++)
         mv[i] = _nmod32_vec_dot_msolve_avx2(mat + i*stride, vec, len, PRIME);
 }
 
 
 void _nmod32_vec_mdot_msolve_native_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
-                                         slong nrows, slong len, slong stride, uint PRIME)
+                                         slong nrows, slong len, slong stride, nmod_t mod)
 {
+    const uint PRIME = mod.n;
     uint RED_32 = ((ulong)2<<31) % PRIME;
     uint RED_64 = ((ulong)1<<63) % PRIME;
     RED_64 = (RED_64*2) % PRIME;
