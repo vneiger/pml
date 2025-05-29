@@ -57,39 +57,32 @@ uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, n
 uint _nmod32_vec_dot_msolve_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, uint PRIME);
 
 
+/**********************************************************************
+*                         MULTI DOT PRODUCT                          *
+**********************************************************************/
 
-
-
-
-
-
-// faster nmod_vec for modulus close to 32 bits
-// (correctness bound related to how much we can accumulate in high part: probably same bound as for AVX already in flint?)
-ulong _nmod32_vec_dot2_half_avx2(n32_srcptr v1, n32_srcptr v2, ulong len, nmod_t mod);
-ulong _nmod32_vec_dot2_half_avx512(n32_srcptr v1, n32_srcptr v2, ulong len, nmod_t mod);
-
-// TODO in progress: ifma attempt  (may fail for large len's)
-#if HAVE_AVX512   // TODO handle AVX flags
-ulong _nmod32_vec_dot_product_ifma256(n32_srcptr v1, n32_srcptr v2, ulong len, nmod_t mod);
-ulong _nmod32_vec_dot_product_ifma512(n32_srcptr v1, n32_srcptr v2, ulong len, nmod_t mod);
-#endif
-#if HAVE_AVX_IFMA   // TODO handle AVX flags
-ulong _nmod_vec_dot_product_avx_ifma(n32_srcptr v1, n32_srcptr v2, ulong len, nmod_t mod);
-#endif
-
-
-/** Several dot products with same left operand, as in vector-matrix product.
+/** Several dot products with fixed operand, as in matrix-vector product.
  *
- * . u has length at least len, len < 2^FLINT_BITS
- * . all entries of u  have <= max_bits_u bits <= FLINT_BITS
- * . v points to at least len vectors v[0],..,v[len-1] each of length
- * at least k, with entries of <= max_bits_v bits <= FLINT_BITS
- * . computes uv[j] = sum(u[i]*v[i][j], 0 <= i < len) modulo mod.n,
- * for 0 <= j < k
- * . does not assume input entries are reduced modulo mod.n
+ * . vec: vector of length len
+ * . mat: matrix with nrows rows of length >= len, stored contiguously
+ * . stride: indicates how far away mat[i,j] and mat[i+1,j] are in memory
+ * . computes the matrix-vector product
+ *      mv[i] = sum(mat[i,j]*vec[j], 0 <= j < len) modulo mod.n, for 0 <= i < nrows
  */
-//void _nmod_vec_dot_product_multi_2_v1_8(nn_ptr uv, nn_srcptr u, nn_srcptr * v,
-//                                        ulong len, ulong k, nmod_t mod);
+
+// naive via dot_split
+void _nmod32_vec_mdot_split(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+                            slong nrows, slong len, slong stride, nmod_t mod);
+void _nmod32_vec_mdot_split_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+                                 slong nrows, slong len, slong stride, nmod_t mod);
+void _nmod32_vec_mdot_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+                                   slong nrows, slong len, slong stride, nmod_t mod);
+
+// duplicate msolve's matrix-vector product
+void _nmod32_vec_mdot_msolve_via_dot_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+                                          slong nrows, slong len, slong stride, uint PRIME);
+void _nmod32_vec_mdot_msolve_native_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+                                         slong nrows, slong len, slong stride, uint PRIME);
 
 #ifdef __cplusplus
 }

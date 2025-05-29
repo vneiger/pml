@@ -34,7 +34,8 @@ void time_dot_split(ulong len, ulong n, flint_rand_t state)
 {
     nmod_t mod;
     nmod_init(&mod, n);
-    const dot_params_t params = _nmod_vec_dot_params(len, mod);
+    ulong pow2_precomp;
+    NMOD_RED(pow2_precomp, (UWORD(1) << DOT_SPLIT_BITS), mod);
 
     n32_ptr v1 = _nmod32_vec_init(len);
     _nmod32_vec_rand(v1, state, len, mod);
@@ -48,7 +49,7 @@ void time_dot_split(ulong len, ulong n, flint_rand_t state)
     double FLINT_SET_BUT_UNUSED(tcpu), twall;
 
     TIMEIT_START
-    res = _nmod32_vec_dot_split(v1, v2, len, mod, params.pow2_precomp);
+    res = _nmod32_vec_dot_split(v1, v2, len, mod, pow2_precomp);
     TIMEIT_STOP_VALUES(tcpu, twall)
 
     printf("%.2e", twall);
@@ -61,7 +62,8 @@ void time_dot_split_avx2(ulong len, ulong n, flint_rand_t state)
 {
     nmod_t mod;
     nmod_init(&mod, n);
-    const dot_params_t params = _nmod_vec_dot_params(len, mod);
+    ulong pow2_precomp;
+    NMOD_RED(pow2_precomp, (UWORD(1) << DOT_SPLIT_BITS), mod);
 
     n32_ptr v1 = _nmod32_vec_init(len);
     _nmod32_vec_rand(v1, state, len, mod);
@@ -75,7 +77,7 @@ void time_dot_split_avx2(ulong len, ulong n, flint_rand_t state)
     double FLINT_SET_BUT_UNUSED(tcpu), twall;
 
     TIMEIT_START
-    res = _nmod32_vec_dot_split_avx2(v1, v2, len, mod, params.pow2_precomp);
+    res = _nmod32_vec_dot_split_avx2(v1, v2, len, mod, pow2_precomp);
     TIMEIT_STOP_VALUES(tcpu, twall)
 
     printf("%.2e", twall);
@@ -88,7 +90,8 @@ void time_dot_split_avx512(ulong len, ulong n, flint_rand_t state)
 {
     nmod_t mod;
     nmod_init(&mod, n);
-    const dot_params_t params = _nmod_vec_dot_params(len, mod);
+    ulong pow2_precomp;
+    NMOD_RED(pow2_precomp, (UWORD(1) << DOT_SPLIT_BITS), mod);
 
     n32_ptr v1 = _nmod32_vec_init(len);
     _nmod32_vec_rand(v1, state, len, mod);
@@ -102,7 +105,7 @@ void time_dot_split_avx512(ulong len, ulong n, flint_rand_t state)
     double FLINT_SET_BUT_UNUSED(tcpu), twall;
 
     TIMEIT_START
-    res = _nmod32_vec_dot_split_avx512(v1, v2, len, mod, params.pow2_precomp);
+    res = _nmod32_vec_dot_split_avx512(v1, v2, len, mod, pow2_precomp);
     TIMEIT_STOP_VALUES(tcpu, twall)
 
     printf("%.2e", twall);

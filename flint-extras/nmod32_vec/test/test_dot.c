@@ -13,7 +13,7 @@ void _nmod32_vec_rand(n32_ptr vec, flint_rand_t state, slong len, nmod_t mod)
         vec[i] = (uint)n_randint(state, mod.n);
 }
 
-TEST_FUNCTION_START(nmod_vec_dot, state)
+TEST_FUNCTION_START(nmod32_vec_dot, state)
 {
     flint_rand_set_seed(state, time(NULL), time(NULL)+12984125L);
 
@@ -115,6 +115,6 @@ TEST_FUNCTION_START(nmod_vec_dot, state)
 
 int main()
 {
-    test_nmod_vec_dot();
+    test_nmod32_vec_dot();
     return 0;
 }
