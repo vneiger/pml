@@ -166,15 +166,15 @@ int main(int argc, char ** argv)
     const timefun funs[] = {
         time_dot_split,             // 0
         time_dot_split_avx2,        // 1
-        time_dot_split_avx512,      // 3
-        time_dot_msolve_avx2,       // 5
+        time_dot_split_avx512,      // 2
+        time_dot_msolve_avx2,       // 3
     };
 
     const char * description[] = {
         "#0  --> dot_split            ",
         "#1  --> dot_split_avx2       ",
-        "#3  --> dot_split_avx512     ",
-        "#5  --> dot_msolve_avx2      ",
+        "#2  --> dot_split_avx512     ",
+        "#3  --> dot_msolve_avx2      ",
     };
 
     if (argc == 1)  // show usage
