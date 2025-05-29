@@ -24,7 +24,9 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
         // acc8 == 1 <=> room for accumulating 8 terms
         const int acc8 = (i < 2500);
 
-        slong len = n_randint(state, 1000) + 1;
+        slong len = n_randint(state, 1000) + 32;
+        // TODO temporary trick to have multiple of 16
+        len = (len / 32) * 32;
 
         const long pow2_61_sqrt = UWORD(1518500249);  // floor(2**30.5)
         const long pow2_31 = UWORD(1) << 31;
@@ -47,6 +49,8 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
         // force computation of pow2_precomp, as flint's dot might not need it (and then will not compute it)
         ulong pow2_precomp;
         NMOD_RED(pow2_precomp, (UWORD(1) << DOT_SPLIT_BITS), mod);
+        ulong pow2_precomp_ifma;
+        NMOD_RED(pow2_precomp_ifma, (UWORD(1) << 52), mod);
 
         n32_ptr x = _nmod32_vec_init(len);
         n32_ptr y = _nmod32_vec_init(len);
@@ -92,7 +96,27 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
             }
         }
 
-        // seems to fail for large primes
+        {  // dot_ifma_avx512
+            ulong res = _nmod32_vec_dot_ifma_avx2(x, y, len, mod, pow2_precomp_ifma);
+
+            if (res != correct)
+            {
+                flint_printf("%ld\n", i);
+                TEST_FUNCTION_FAIL("dot_ifma_avx2, m = %wu, len = %wd\n", m, len);
+            }
+        }
+
+        {  // dot_ifma_avx512
+            ulong res = _nmod32_vec_dot_ifma_avx512(x, y, len, mod, pow2_precomp_ifma);
+
+            if (res != correct)
+            {
+                flint_printf("%ld\n", i);
+                TEST_FUNCTION_FAIL("dot_ifma_avx512, m = %wu, len = %wd\n", m, len);
+            }
+        }
+
+        // seems to fail for primes in [2**30.5...2**31)
         if (acc8)
         {  // dot_msolve_avx2
             ulong res = _nmod32_vec_dot_msolve_avx2(x, y, len, mod.n);

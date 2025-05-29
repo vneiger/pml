@@ -54,6 +54,8 @@ void time_##fun(time_args targs, flint_rand_t state) \
 TIME_DOT(dot_split, pow2_precomp);
 TIME_DOT(dot_split_avx2, pow2_precomp);
 TIME_DOT(dot_split_avx512, pow2_precomp);
+TIME_DOT(dot_ifma_avx2, pow2_precomp);
+TIME_DOT(dot_ifma_avx512, pow2_precomp);
 
 void time_dot_msolve_avx2(time_args targs, flint_rand_t state)
 {
@@ -153,23 +155,25 @@ int main(int argc, char ** argv)
     const ulong lens[] = {50, 100, 250, 500, 1000, 2500, 5000, 10000, 100000, 1000000};
 
     // bench functions
-    const slong nfuns = 14;
+    const slong nfuns = 15;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
         time_dot_split,                 // 0
         time_dot_split_avx2,            // 1
         time_dot_split_avx512,          // 2
         time_dot_msolve_avx2,           // 3
-        time_mdot_split,                // 4
-        time_mdot_split_avx2,           // 5
-        time_mdot_split_avx512,         // 6
-        time_mdot_msolve_via_dot_avx2,  // 7
-        time_mdot_msolve_native_avx2,   // 8
-        time_mdot2_split,               // 9
-        time_mdot2_split_avx2,          // 10
-        time_mdot2_split_avx512,        // 11
-        time_mdot3_split_avx2,          // 12
-        time_mdot4_split_avx512,        // 13
+        time_dot_ifma_avx2,             // 4
+        time_dot_ifma_avx512,           // 5
+        time_mdot_split,                // 6
+        time_mdot_split_avx2,           // 7
+        time_mdot_split_avx512,         // 8
+        time_mdot_msolve_via_dot_avx2,  // 9
+        time_mdot_msolve_native_avx2,   // 10
+        time_mdot2_split,               // 11
+        time_mdot2_split_avx2,          // 12
+        time_mdot2_split_avx512,        // 13
+        time_mdot3_split_avx2,          // 14
+        time_mdot4_split_avx512,        // 15
     };
 
     const char * description[] = {
@@ -177,16 +181,18 @@ int main(int argc, char ** argv)
         "#1  --> dot_split_avx2                ",
         "#2  --> dot_split_avx512              ",
         "#3  --> dot_msolve_avx2               ",
-        "#4  --> mdot_split                    ",
-        "#5  --> mdot_split_avx2               ",
-        "#6  --> mdot_split_avx512             ",
-        "#7  --> mdot_msolve_via_dot_avx2      ",
-        "#8  --> mdot_msolve_native_avx2       ",
-        "#9  --> mdot2_split                   ",
-        "#10 --> mdot2_split_avx2              ",
-        "#11 --> mdot2_split_avx512            ",
-        "#12 --> mdot3_split_avx2              ",
-        "#13 --> mdot4_split_avx512            ",
+        "#4  --> dot_ifma_avx2                 ",
+        "#5  --> dot_ifma_avx512               ",
+        "#6  --> mdot_split                    ",
+        "#7  --> mdot_split_avx2               ",
+        "#8  --> mdot_split_avx512             ",
+        "#9  --> mdot_msolve_via_dot_avx2      ",
+        "#10 --> mdot_msolve_native_avx2       ",
+        "#11 --> mdot2_split                   ",
+        "#12 --> mdot2_split_avx2              ",
+        "#13 --> mdot2_split_avx512            ",
+        "#14 --> mdot3_split_avx2              ",
+        "#15 --> mdot4_split_avx512            ",
     };
 
     if (argc == 1)  // show usage
@@ -318,14 +324,28 @@ int main(int argc, char ** argv)
         printf("       len");
         printf("%9ld", len);
         printf("\n");
-        printf("bits fun\n");
+        printf("bits nrows fun\n");
         ulong n;
         n = n_nextprime(UWORD(1) << (b-1), 0);
-        printf("%-5ld#%-4ld", b, ifun);
-        time_args targs = {1, len, n};
-        tfun(targs, state);
-        printf(" ");
-        printf("\n");
+
+        for (slong nrows = 0; nrows < 5; nrows++)
+        {
+            printf("%-5ld#%-5ld#%-3ld", b, nrows, ifun);
+            time_args targs = {1, len, n};
+            if (nrows == 1)
+                targs.nrows = 4;
+            if (nrows == 2)
+                targs.nrows = FLINT_MAX(1, len/10);
+            if (nrows == 3)
+                targs.nrows = FLINT_MAX(1, len/2);
+            if (nrows == 4)
+                targs.nrows = len;
+            if (nrows == 0 ||
+                (ifun >= 4 && len * targs.nrows < WORD(10000000000)))
+                tfun(targs, state);
+            printf(" ");
+            printf("\n");
+        }
     }
 
     flint_rand_clear(state);

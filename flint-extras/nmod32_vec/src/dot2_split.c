@@ -99,6 +99,7 @@ void _nmod32_vec_dot2_split_avx2(uint * res0, uint * res1,
         // alternative 2: vpsrlq
         //v1_0 = _mm256_srli_epi64(v1_0, 32);
         //v2_0 = _mm256_srli_epi64(v2_0, 32);
+
         dp_lo0 = _mm256_add_epi64(dp_lo0, _mm256_mul_epu32(v1_0, v2_0_0));
         dp_lo1 = _mm256_add_epi64(dp_lo1, _mm256_mul_epu32(v1_0, v2_1_0));
         dp_lo2 = _mm256_add_epi64(dp_lo2, _mm256_mul_epu32(v1_1, v2_0_1));
