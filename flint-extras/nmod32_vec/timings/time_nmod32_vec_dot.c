@@ -123,6 +123,10 @@ TIME_MDOT(mdot_split_avx512);
 TIME_MDOT(mdot_msolve_native_avx2);
 TIME_MDOT(mdot_msolve_via_dot_avx2);
 
+TIME_MDOT(mdot2_split);
+TIME_MDOT(mdot2_split_avx2);
+TIME_MDOT(mdot2_split_avx512);
+
 /*-------------------------*/
 /*  main                   */
 /*-------------------------*/
@@ -146,7 +150,7 @@ int main(int argc, char ** argv)
     const ulong lens[] = {50, 100, 250, 500, 1000, 2500, 5000, 10000, 100000, 1000000};
 
     // bench functions
-    const slong nfuns = 9;
+    const slong nfuns = 12;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
         time_dot_split,                 // 0
@@ -158,6 +162,9 @@ int main(int argc, char ** argv)
         time_mdot_split_avx512,         // 6
         time_mdot_msolve_via_dot_avx2,  // 7
         time_mdot_msolve_native_avx2,   // 8
+        time_mdot2_split,               // 9
+        time_mdot2_split_avx2,          // 10
+        time_mdot2_split_avx512,        // 11
     };
 
     const char * description[] = {
@@ -167,9 +174,12 @@ int main(int argc, char ** argv)
         "#3  --> dot_msolve_avx2               ",
         "#4  --> mdot_split                    ",
         "#5  --> mdot_split_avx2               ",
-        "#6  --> mdot_split_avx2               ",
+        "#6  --> mdot_split_avx512             ",
         "#7  --> mdot_msolve_via_dot_avx2      ",
         "#8  --> mdot_msolve_native_avx2       ",
+        "#9  --> mdot2_split                   ",
+        "#10 --> mdot2_split_avx2              ",
+        "#11 --> mdot2_split_avx512            ",
     };
 
     if (argc == 1)  // show usage
@@ -186,39 +196,66 @@ int main(int argc, char ** argv)
 
         return 0;
     }
+    else
+    {
+        printf("\nAvailable functions:\n");
+        for (slong j = 0; j < nfuns; j++)
+            printf("   %s\n", description[j]);
+        printf("\nnrows types (indicated in column nrows):\n");
+        printf("#0  --> 1 row (== standard dot product) \n");
+        printf("#1  --> 4 rows                          \n");
+        printf("#2  --> max(1, len/10) rows             \n");
+        printf("#3  --> max(1, len/2) rows              \n");
+        printf("#4  --> len rows                        \n");
+        printf("\n");
+    }
 
-    printf("#warmup... ");
+    printf("#warmup...\n");
     for (slong i = 0; i < 3; i++)
     {
         time_args targs = {1, 10000, UWORD(1) << 20};
         time_dot_split_avx2(targs, state);
         printf(" ");
     }
-    printf("\n");
+    printf("\n\n");
 
     if (argc == 2 && atoi(argv[1]) == -1)  // launching full suite
     {
-        printf("       len");
+        printf("           len");
         for (slong i = 0; i < nlens; i++)
             printf("%9ld", lens[i]);
         printf("\n");
-        printf("bits fun\n");
+        printf("bits nrows fun\n");
         for (slong j = 0; j < nbits; j++)
         {
             const slong b = bits[j];
             ulong n;
             n = n_nextprime(UWORD(1) << (b-1), 0);
-            for (slong ifun = 0; ifun < nfuns; ifun++)
+            for (slong nrows = 0; nrows < 5; nrows++)
             {
-                const timefun tfun = funs[ifun];
-                printf("%-5ld#%-4ld", b, ifun);
-                for (slong i = 0; i < nlens; i++)
+                for (slong ifun = 0; ifun < nfuns; ifun++)
                 {
-                    time_args targs = {1, lens[i], n};
-                    tfun(targs, state);
-                    printf(" ");
+                    const timefun tfun = funs[ifun];
+                    printf("%-5ld#%-5ld#%-3ld", b, nrows, ifun);
+                    for (slong i = 0; i < nlens; i++)
+                    {
+                        time_args targs = {1, lens[i], n};
+                        if (nrows == 1)
+                            targs.nrows = 4;
+                        if (nrows == 2)
+                            targs.nrows = FLINT_MAX(1, lens[i]/10);
+                        if (nrows == 3)
+                            targs.nrows = FLINT_MAX(1, lens[i]/2);
+                        if (nrows == 4)
+                            targs.nrows = lens[i];
+
+                        if (nrows == 0 ||
+                            (ifun >= 4 && lens[i] * targs.nrows < 100000000))
+                            tfun(targs, state);
+                        printf(" ");
+                    }
+                    printf("\n");
                 }
-                printf("\n");
             }
         }
     }

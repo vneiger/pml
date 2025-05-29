@@ -58,6 +58,15 @@ uint _nmod32_vec_dot_msolve_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, ui
 
 
 /**********************************************************************
+*                          2-DOT PRODUCT                             *
+**********************************************************************/
+
+// similar to dot_split, computes res0 = vec1 * vec2_0 and res1 = vec1 * vec2_1
+void _nmod32_vec_dot2_split(uint * res0, uint * res1,
+                            n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1,
+                            slong len, nmod_t mod, ulong pow2_precomp);
+
+/**********************************************************************
 *                         MULTI DOT PRODUCT                          *
 **********************************************************************/
 
@@ -84,6 +93,13 @@ void _nmod32_vec_mdot_msolve_via_dot_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr
 void _nmod32_vec_mdot_msolve_native_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                                          slong nrows, slong len, slong stride, nmod_t mod);
 
+// like dot_split but handling two rows at a time
+void _nmod32_vec_mdot2_split(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+                             slong nrows, slong len, slong stride, nmod_t mod);
+void _nmod32_vec_mdot2_split_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+                                  slong nrows, slong len, slong stride, nmod_t mod);
+void _nmod32_vec_mdot2_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+                                    slong nrows, slong len, slong stride, nmod_t mod);
 #ifdef __cplusplus
 }
 #endif

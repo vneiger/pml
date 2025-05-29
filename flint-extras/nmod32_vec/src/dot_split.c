@@ -33,12 +33,11 @@ uint _nmod32_vec_dot_split(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t m
         dp_lo &= DOT_SPLIT_MASK;
     }
 
+    // less than 4 terms remaining, can be accumulated
     for ( ; i < len; i++)
-    {
         dp_lo += (ulong)vec1[i] * (ulong)vec2[i];
-        dp_hi += (dp_lo >> DOT_SPLIT_BITS);
-        dp_lo &= DOT_SPLIT_MASK;
-    }
+    dp_hi += (dp_lo >> DOT_SPLIT_BITS);
+    dp_lo &= DOT_SPLIT_MASK;
 
     ulong res;
     NMOD_RED(res, pow2_precomp * dp_hi + dp_lo, mod);
@@ -234,6 +233,4 @@ uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, n
     NMOD_RED(res, pow2_precomp * hsum_hi + hsum_lo, mod);
     return (uint)res;
 }
-
-#endif
-
+#endif  // HAVE_AVX512
