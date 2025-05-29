@@ -16,6 +16,35 @@ FLINT_FORCE_INLINE ulong _mm512_hsum(__m512i a) {
     return _mm512_reduce_add_epi64(a);
 }
 
+uint _nmod32_vec_dot_split(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp)
+{
+    ulong dp_lo = 0;
+    ulong dp_hi = 0;
+
+    slong i = 0;
+
+    for ( ; i+3 < len; i+=4)
+    {
+        dp_lo += (ulong)vec1[i+0] * (ulong)vec2[i+0];
+        dp_lo += (ulong)vec1[i+1] * (ulong)vec2[i+1];
+        dp_lo += (ulong)vec1[i+2] * (ulong)vec2[i+2];
+        dp_lo += (ulong)vec1[i+3] * (ulong)vec2[i+3];
+        dp_hi += (dp_lo >> DOT_SPLIT_BITS);
+        dp_lo &= DOT_SPLIT_MASK;
+    }
+
+    for ( ; i < len; i++)
+    {
+        dp_lo += (ulong)vec1[i] * (ulong)vec2[i];
+        dp_hi += (dp_lo >> DOT_SPLIT_BITS);
+        dp_lo &= DOT_SPLIT_MASK;
+    }
+
+    ulong res;
+    NMOD_RED(res, pow2_precomp * dp_hi + dp_lo, mod);
+    return (uint)res;
+}
+
 uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp)
 {
     const __m256i low_bits = _mm256_set1_epi64x(DOT_SPLIT_MASK);

@@ -54,6 +54,16 @@ TEST_FUNCTION_START(nmod_vec_dot, state)
         }
         correct = _nmod_vec_dot(xx, yy, len, mod, params);
 
+        {  // dot_split
+            res = _nmod32_vec_dot_split(x, y, len, mod, pow2_precomp);
+
+            if ((ulong)res != correct)
+            {
+                flint_printf("%ld\n", i);
+                TEST_FUNCTION_FAIL("dot_split, m = %wu, len = %wd\n", m, len);
+            }
+        }
+
         {  // dot_split_avx2
             res = _nmod32_vec_dot_split_avx2(x, y, len, mod, pow2_precomp);
 

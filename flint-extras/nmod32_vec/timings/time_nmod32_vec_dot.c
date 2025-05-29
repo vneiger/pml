@@ -30,6 +30,33 @@ void _nmod32_vec_rand(n32_ptr vec, flint_rand_t state, slong len, nmod_t mod)
 /* direct: dot / dot_rev / dot expr   */
 /*------------------------------------*/
 
+void time_dot_split(ulong len, ulong n, flint_rand_t state)
+{
+    nmod_t mod;
+    nmod_init(&mod, n);
+    const dot_params_t params = _nmod_vec_dot_params(len, mod);
+
+    n32_ptr v1 = _nmod32_vec_init(len);
+    _nmod32_vec_rand(v1, state, len, mod);
+    n32_ptr v2 = _nmod32_vec_init(len);
+    _nmod32_vec_rand(v2, state, len, mod);
+
+    // store results in volatile variable to avoid that they
+    // are "optimized away" (especially for inlined part)
+    volatile uint FLINT_SET_BUT_UNUSED(res);
+
+    double FLINT_SET_BUT_UNUSED(tcpu), twall;
+
+    TIMEIT_START
+    res = _nmod32_vec_dot_split(v1, v2, len, mod, params.pow2_precomp);
+    TIMEIT_STOP_VALUES(tcpu, twall)
+
+    printf("%.2e", twall);
+
+    _nmod32_vec_clear(v1);
+    _nmod32_vec_clear(v2);
+}
+
 void time_dot_split_avx2(ulong len, ulong n, flint_rand_t state)
 {
     nmod_t mod;
@@ -134,18 +161,20 @@ int main(int argc, char ** argv)
     const ulong lens[] = {50, 100, 250, 500, 1000, 2500, 5000, 10000, 100000, 1000000};
 
     // bench functions
-    const slong nfuns = 3;
+    const slong nfuns = 4;
     typedef void (*timefun) (ulong, ulong, flint_rand_t);
     const timefun funs[] = {
-        time_dot_split_avx2,        // 0
-        time_dot_split_avx512,      // 1
-        time_dot_msolve_avx2,       // 2
+        time_dot_split,             // 0
+        time_dot_split_avx2,        // 1
+        time_dot_split_avx512,      // 3
+        time_dot_msolve_avx2,       // 5
     };
 
     const char * description[] = {
-        "#0  --> dot_split_avx2       ",
-        "#1  --> dot_split_avx512     ",
-        "#2  --> dot_msolve_avx2      ",
+        "#0  --> dot_split            ",
+        "#1  --> dot_split_avx2       ",
+        "#3  --> dot_split_avx512     ",
+        "#5  --> dot_msolve_avx2      ",
     };
 
     if (argc == 1)  // show usage
