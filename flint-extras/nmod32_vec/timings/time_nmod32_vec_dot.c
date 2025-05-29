@@ -130,8 +130,6 @@ TIME_MDOT(mdot2_split_avx512);
 TIME_MDOT(mdot3_split_avx2);
 TIME_MDOT(mdot4_split_avx512);
 
-TIME_MDOT(mdot2_split_block_avx2);
-
 /*-------------------------*/
 /*  main                   */
 /*-------------------------*/

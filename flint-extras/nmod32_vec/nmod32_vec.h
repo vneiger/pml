@@ -119,8 +119,6 @@ void _nmod32_vec_mdot3_split_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
 void _nmod32_vec_mdot4_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                                     slong nrows, slong len, slong stride, nmod_t mod);
 
-void _nmod32_vec_mdot2_split_block_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
-                                        slong nrows, slong len, slong stride, nmod_t mod);
 #ifdef __cplusplus
 }
 #endif
