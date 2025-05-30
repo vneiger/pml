@@ -7,6 +7,8 @@
 
 #include "nmod32_vec.h"
 
+#define MEASURE_SAMPLE 1
+
 typedef struct {slong nrows; slong len; slong modn;} time_args;
 
 // utility (nmod vec uniform random)
@@ -51,11 +53,55 @@ void time_##fun(time_args targs, flint_rand_t state) \
     _nmod32_vec_clear(v2); \
 }
 
+#define SAMPLE_DOT(fun, precomp)                                \
+void sample_##fun(void * arg, ulong count)                      \
+{                                                               \
+    time_args * targs = (time_args *) arg;                      \
+    const slong len = targs->len;                               \
+    const slong n = targs->modn;                                \
+                                                                \
+    FLINT_TEST_INIT(state);                                     \
+                                                                \
+    nmod_t mod;                                                 \
+    nmod_init(&mod, n);                                         \
+    ulong pow2_precomp;                                         \
+    NMOD_RED(pow2_precomp, (UWORD(1) << DOT_SPLIT_BITS), mod);  \
+                                                                \
+    n32_ptr v1 = _nmod32_vec_init(len);                         \
+    _nmod32_vec_rand(v1, state, len, mod);                      \
+    n32_ptr v2 = _nmod32_vec_init(len);                         \
+    _nmod32_vec_rand(v2, state, len, mod);                      \
+	for (ulong i = 0; i < count; i++)                           \
+    {                                                           \
+        n32_ptr vv1 = _nmod32_vec_init(len);                    \
+        for (slong k = 0; k < len; k++)                         \
+            vv1[k] = v1[k];                                     \
+        n32_ptr vv2 = _nmod32_vec_init(len);                    \
+        for (slong k = 0; k < len; k++)                         \
+            vv2[k] = v2[k];                                     \
+        volatile uint FLINT_SET_BUT_UNUSED(res);                \
+        prof_start();                                           \
+        res = _nmod32_vec_##fun(vv1, vv2, len, mod, precomp);   \
+        prof_stop();                                            \
+        _nmod32_vec_clear(vv1);                                 \
+        _nmod32_vec_clear(vv2);                                 \
+    }                                                           \
+    _nmod32_vec_clear(v1);                                      \
+    _nmod32_vec_clear(v2);                                      \
+    FLINT_TEST_CLEAR(state);                                    \
+}
+
 TIME_DOT(dot_split, pow2_precomp);
 TIME_DOT(dot_split_avx2, pow2_precomp);
 TIME_DOT(dot_split_avx512, pow2_precomp);
 TIME_DOT(dot_ifma_avx2, pow2_precomp);
 TIME_DOT(dot_ifma_avx512, pow2_precomp);
+
+SAMPLE_DOT(dot_split, pow2_precomp);
+SAMPLE_DOT(dot_split_avx2, pow2_precomp);
+SAMPLE_DOT(dot_split_avx512, pow2_precomp);
+SAMPLE_DOT(dot_ifma_avx2, pow2_precomp);
+SAMPLE_DOT(dot_ifma_avx512, pow2_precomp);
 
 void time_dot_msolve_avx2(time_args targs, flint_rand_t state)
 {
@@ -82,6 +128,37 @@ void time_dot_msolve_avx2(time_args targs, flint_rand_t state)
 
     _nmod32_vec_clear(v1);
     _nmod32_vec_clear(v2);
+}
+
+void sample_dot_msolve_avx2(void * arg, ulong count)
+{
+    time_args * targs = (time_args *) arg;
+    const slong len = targs->len;
+    const slong n = targs->modn;
+
+    FLINT_TEST_INIT(state);
+
+    nmod_t mod;
+    nmod_init(&mod, n);
+
+    n32_ptr v1 = _nmod32_vec_init(len);
+    _nmod32_vec_rand(v1, state, len, mod);
+    n32_ptr v2 = _nmod32_vec_init(len);
+    _nmod32_vec_rand(v2, state, len, mod);
+	for (ulong i = 0; i < count; i++)
+    {
+        n32_ptr vv1 = _nmod32_vec_init(len);
+        n32_ptr vv2 = _nmod32_vec_init(len);
+        volatile uint FLINT_SET_BUT_UNUSED(res);
+        prof_start();
+        res = _nmod32_vec_dot_msolve_avx2(vv1, vv2, len, mod.n);
+        prof_stop();
+        _nmod32_vec_clear(vv1);
+        _nmod32_vec_clear(vv2);
+    }
+    _nmod32_vec_clear(v1);
+    _nmod32_vec_clear(v2);
+    FLINT_TEST_CLEAR(state);
 }
 
 /*-----------------------*/
@@ -119,6 +196,48 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     _nmod32_vec_clear(res);                             \
 }
 
+#define SAMPLE_MDOT(fun)                                \
+void sample_##fun(void * arg, ulong count)              \
+{                                                       \
+    time_args * targs = (time_args *) arg;              \
+    const slong nrows = targs->nrows;                   \
+    const slong len = targs->len;                       \
+    const slong n = targs->modn;                        \
+                                                        \
+    FLINT_TEST_INIT(state);                             \
+                                                        \
+    nmod_t mod;                                         \
+    nmod_init(&mod, n);                                 \
+                                                        \
+    n32_ptr mat = _nmod32_vec_init(nrows*len);          \
+    _nmod32_vec_rand(mat, state, nrows*len, mod);       \
+    n32_ptr vec = _nmod32_vec_init(len);                \
+    _nmod32_vec_rand(vec, state, len, mod);             \
+                                                        \
+	for (ulong i = 0; i < count; i++)                   \
+    {                                                   \
+        n32_ptr vvec = _nmod32_vec_init(len);           \
+        for (slong k = 0; k < len; k++)                 \
+            vvec[k] = vec[k];                           \
+        n32_ptr mmat = _nmod32_vec_init(nrows*len);     \
+        for (slong k = 0; k < nrows*len; k++)           \
+            mmat[k] = mat[k];                           \
+        n32_ptr res = _nmod32_vec_init(nrows);          \
+        prof_start();                                   \
+        _nmod32_vec_##fun(res, mmat, vvec,              \
+                          nrows, len, len, mod);        \
+        prof_stop();                                    \
+        _nmod32_vec_clear(res);                         \
+        _nmod32_vec_clear(vvec);                        \
+        _nmod32_vec_clear(mmat);                        \
+    }                                                   \
+                                                        \
+    _nmod32_vec_clear(mat);                             \
+    _nmod32_vec_clear(vec);                             \
+    FLINT_TEST_CLEAR(state);                            \
+}
+
+
 TIME_MDOT(mdot_split);
 TIME_MDOT(mdot_split_avx2);
 TIME_MDOT(mdot_split_avx512);
@@ -131,6 +250,20 @@ TIME_MDOT(mdot2_split_avx512);
 
 TIME_MDOT(mdot3_split_avx2);
 TIME_MDOT(mdot4_split_avx512);
+
+SAMPLE_MDOT(mdot_split);
+SAMPLE_MDOT(mdot_split_avx2);
+SAMPLE_MDOT(mdot_split_avx512);
+SAMPLE_MDOT(mdot_msolve_native_avx2);
+SAMPLE_MDOT(mdot_msolve_via_dot_avx2);
+
+SAMPLE_MDOT(mdot2_split);
+SAMPLE_MDOT(mdot2_split_avx2);
+SAMPLE_MDOT(mdot2_split_avx512);
+
+SAMPLE_MDOT(mdot3_split_avx2);
+SAMPLE_MDOT(mdot4_split_avx512);
+
 
 /*-------------------------*/
 /*  main                   */
@@ -155,7 +288,7 @@ int main(int argc, char ** argv)
     const ulong lens[] = {50, 100, 250, 500, 1000, 2500, 5000, 10000, 100000, 1000000};
 
     // bench functions
-    const slong nfuns = 15;
+    const slong nfuns = 16;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
         time_dot_split,                 // 0
@@ -174,6 +307,26 @@ int main(int argc, char ** argv)
         time_mdot2_split_avx512,        // 13
         time_mdot3_split_avx2,          // 14
         time_mdot4_split_avx512,        // 15
+    };
+
+    typedef void (*samplefun) (void*, ulong);
+    const samplefun sfuns[] = {
+        sample_dot_split,                 // 0
+        sample_dot_split_avx2,            // 1
+        sample_dot_split_avx512,          // 2
+        sample_dot_msolve_avx2,           // 3
+        sample_dot_ifma_avx2,             // 4
+        sample_dot_ifma_avx512,           // 5
+        sample_mdot_split,                // 6
+        sample_mdot_split_avx2,           // 7
+        sample_mdot_split_avx512,         // 8
+        sample_mdot_msolve_via_dot_avx2,  // 9
+        sample_mdot_msolve_native_avx2,   // 10
+        sample_mdot2_split,               // 11
+        sample_mdot2_split_avx2,          // 12
+        sample_mdot2_split_avx512,        // 13
+        sample_mdot3_split_avx2,          // 14
+        sample_mdot4_split_avx512,        // 15
     };
 
     const char * description[] = {
@@ -244,11 +397,10 @@ int main(int argc, char ** argv)
             const slong b = bits[j];
             ulong n;
             n = n_nextprime(UWORD(1) << (b-1), 0);
-            for (slong nrows = 2; nrows < 5; nrows++)
+            for (slong nrows = 0; nrows < 5; nrows++)
             {
                 for (slong ifun = 0; ifun < nfuns; ifun++)
                 {
-                    const timefun tfun = funs[ifun];
                     printf("%-5ld#%-5ld#%-3ld", b, nrows, ifun);
                     for (slong i = 0; i < nlens; i++)
                     {
@@ -263,8 +415,18 @@ int main(int argc, char ** argv)
                             targs.nrows = lens[i];
 
                         if (nrows == 0 ||
-                            (ifun >= 4 && lens[i] * targs.nrows < 10000000000))
+                            (ifun >= 6 && lens[i] * targs.nrows < 1000000000))
+                        {
+#if MEASURE_SAMPLE
+                            const samplefun sfun = sfuns[ifun];
+                            double min, max;
+                            prof_repeat(&min, &max, sfun, (void*) &targs);
+                            printf("%.2e", min/1000000);
+#else
+                            const timefun tfun = funs[ifun];
                             tfun(targs, state);
+#endif
+                        }
                         printf(" ");
                     }
                     printf("\n");
@@ -343,6 +505,7 @@ int main(int argc, char ** argv)
             if (nrows == 0 ||
                 (ifun >= 4 && len * targs.nrows < WORD(10000000000)))
                 tfun(targs, state);
+
             printf(" ");
             printf("\n");
         }
