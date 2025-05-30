@@ -12,9 +12,11 @@ FLINT_FORCE_INLINE ulong _mm256_hsum(__m256i a) {
     return (ulong) _mm_cvtsi128_si64(sum);
 }
 
+#if HAVE_AVX512   // TODO handle AVX flags
 FLINT_FORCE_INLINE ulong _mm512_hsum(__m512i a) {
     return _mm512_reduce_add_epi64(a);
 }
+#endif
 
 void _nmod32_vec_dot2_split(uint * res0, uint * res1, n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1, slong len, nmod_t mod, ulong pow2_precomp)
 {

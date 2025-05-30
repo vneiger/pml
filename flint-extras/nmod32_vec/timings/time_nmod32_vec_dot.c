@@ -53,6 +53,12 @@ void time_##fun(time_args targs, flint_rand_t state) \
     _nmod32_vec_clear(v2); \
 }
 
+#define TIME_VOID_DOT(fun, arg) \
+void time_##fun(time_args targs, flint_rand_t state) \
+{ \
+    printf("%.2e", -1.0); \
+}
+
 #define SAMPLE_DOT(fun, precomp)                                \
 void sample_##fun(void * arg, ulong count)                      \
 {                                                               \
@@ -91,17 +97,45 @@ void sample_##fun(void * arg, ulong count)                      \
     FLINT_TEST_CLEAR(state);                                    \
 }
 
+#define SAMPLE_VOID_DOT(fun, precomp)                           \
+void sample_##fun(void * arg, ulong count)                      \
+{                                                               \
+    FLINT_TEST_INIT(state);                                     \
+    ulong a = n_randint(state, 1L<<63);                         \
+    ulong b = n_randint(state, 1L<<63);                         \
+	for (ulong i = 0; i < count; i++)                           \
+    {                                                           \
+        ulong FLINT_SET_BUT_UNUSED(res);                        \
+        prof_start();                                           \
+        res = a*b;                                              \
+        prof_stop();                                            \
+    }                                                           \
+    FLINT_TEST_CLEAR(state);                                    \
+}
+
 TIME_DOT(dot_split, pow2_precomp);
 TIME_DOT(dot_split_avx2, pow2_precomp);
+#if HAVE_AVX512   // TODO handle AVX flags
 TIME_DOT(dot_split_avx512, pow2_precomp);
 TIME_DOT(dot_ifma_avx2, pow2_precomp);
 TIME_DOT(dot_ifma_avx512, pow2_precomp);
+#else
+TIME_VOID_DOT(dot_split_avx512, pow2_precomp);
+TIME_VOID_DOT(dot_ifma_avx2, pow2_precomp);
+TIME_VOID_DOT(dot_ifma_avx512, pow2_precomp);
+#endif
 
 SAMPLE_DOT(dot_split, pow2_precomp);
 SAMPLE_DOT(dot_split_avx2, pow2_precomp);
-SAMPLE_DOT(dot_split_avx512, pow2_precomp);
+#if HAVE_AVX512   // TODO handle AVX flags
 SAMPLE_DOT(dot_ifma_avx2, pow2_precomp);
+SAMPLE_DOT(dot_split_avx512, pow2_precomp);
 SAMPLE_DOT(dot_ifma_avx512, pow2_precomp);
+#else
+SAMPLE_VOID_DOT(dot_ifma_avx2, pow2_precomp);
+SAMPLE_VOID_DOT(dot_split_avx512, pow2_precomp);
+SAMPLE_VOID_DOT(dot_ifma_avx512, pow2_precomp);
+#endif
 
 void time_dot_msolve_avx2(time_args targs, flint_rand_t state)
 {
@@ -196,6 +230,12 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     _nmod32_vec_clear(res);                             \
 }
 
+#define TIME_VOID_MDOT(fun)                             \
+void time_##fun(time_args targs, flint_rand_t state)    \
+{                                                       \
+    printf("%.2e", -1.);                                \
+}
+
 #define SAMPLE_MDOT(fun)                                \
 void sample_##fun(void * arg, ulong count)              \
 {                                                       \
@@ -237,32 +277,58 @@ void sample_##fun(void * arg, ulong count)              \
     FLINT_TEST_CLEAR(state);                            \
 }
 
+#define SAMPLE_VOID_MDOT(fun)                                   \
+void sample_##fun(void * arg, ulong count)                      \
+{                                                               \
+    FLINT_TEST_INIT(state);                                     \
+    ulong a = n_randint(state, 1L<<63);                         \
+    ulong b = n_randint(state, 1L<<63);                         \
+	for (ulong i = 0; i < count; i++)                           \
+    {                                                           \
+        ulong FLINT_SET_BUT_UNUSED(res);                        \
+        prof_start();                                           \
+        res = a*b;                                              \
+        prof_stop();                                            \
+    }                                                           \
+    FLINT_TEST_CLEAR(state);                                    \
+}
+
 
 TIME_MDOT(mdot_split);
 TIME_MDOT(mdot_split_avx2);
-TIME_MDOT(mdot_split_avx512);
 TIME_MDOT(mdot_msolve_native_avx2);
 TIME_MDOT(mdot_msolve_via_dot_avx2);
-
 TIME_MDOT(mdot2_split);
 TIME_MDOT(mdot2_split_avx2);
-TIME_MDOT(mdot2_split_avx512);
-
 TIME_MDOT(mdot3_split_avx2);
+
+#if HAVE_AVX512   // TODO handle AVX flags
+TIME_MDOT(mdot_split_avx512);
+TIME_MDOT(mdot2_split_avx512);
 TIME_MDOT(mdot4_split_avx512);
+#else
+TIME_VOID_MDOT(mdot_split_avx512);
+TIME_VOID_MDOT(mdot2_split_avx512);
+TIME_VOID_MDOT(mdot4_split_avx512);
+#endif
 
 SAMPLE_MDOT(mdot_split);
 SAMPLE_MDOT(mdot_split_avx2);
-SAMPLE_MDOT(mdot_split_avx512);
 SAMPLE_MDOT(mdot_msolve_native_avx2);
 SAMPLE_MDOT(mdot_msolve_via_dot_avx2);
-
 SAMPLE_MDOT(mdot2_split);
 SAMPLE_MDOT(mdot2_split_avx2);
-SAMPLE_MDOT(mdot2_split_avx512);
-
 SAMPLE_MDOT(mdot3_split_avx2);
+
+#if HAVE_AVX512   // TODO handle AVX flags
+SAMPLE_MDOT(mdot_split_avx512);
+SAMPLE_MDOT(mdot2_split_avx512);
 SAMPLE_MDOT(mdot4_split_avx512);
+#else
+SAMPLE_VOID_MDOT(mdot_split_avx512);
+SAMPLE_VOID_MDOT(mdot2_split_avx512);
+SAMPLE_VOID_MDOT(mdot4_split_avx512);
+#endif
 
 
 /*-------------------------*/

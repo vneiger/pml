@@ -86,6 +86,7 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
             }
         }
 
+#if HAVE_AVX512   // TODO handle AVX flags
         {  // dot_split_avx512
             ulong res = _nmod32_vec_dot_split_avx512(x, y, len, mod, pow2_precomp);
 
@@ -115,6 +116,7 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
                 TEST_FUNCTION_FAIL("dot_ifma_avx512, m = %wu, len = %wd\n", m, len);
             }
         }
+#endif
 
         // seems to fail for primes in [2**30.5...2**31)
         if (acc8)
