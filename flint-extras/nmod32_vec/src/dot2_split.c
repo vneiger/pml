@@ -220,7 +220,8 @@ void _nmod32_vec_dot2_split_avx512(uint * res0, uint * res1,
         dp_lo1 = _mm512_and_si512(dp_lo1, low_bits);
     }
 
-    for ( ; i+15 < len; i += 16)
+    // here len - i <= 31
+    if (i+15 < len)
     {
         __m512i v1_0 = _mm512_loadu_si512((const __m512i *) (vec1+i));
         __m512i v2_0_0 = _mm512_loadu_si512((const __m512i *) (vec2_0+i));
@@ -246,7 +247,11 @@ void _nmod32_vec_dot2_split_avx512(uint * res0, uint * res1,
         dp_lo0 = _mm512_and_si512(dp_lo0, low_bits);
         dp_hi1 = _mm512_add_epi64(dp_hi1, _mm512_srli_epi64(dp_lo1, DOT_SPLIT_BITS));
         dp_lo1 = _mm512_and_si512(dp_lo1, low_bits);
+
+        i += 16;
     }
+
+    // TODO could handle 8 more terms via avx2
 
     ulong hsum_lo0 = _mm512_hsum(dp_lo0);
     ulong hsum_hi0 = _mm512_hsum(dp_hi0) + (hsum_lo0 >> DOT_SPLIT_BITS);
@@ -258,11 +263,11 @@ void _nmod32_vec_dot2_split_avx512(uint * res0, uint * res1,
     // some accumulation could be done here (but not up to 7 terms)
     for (; i < len; i++)
     {
-        hsum_lo0 += (ulong)vec1[i] * (ulong)vec2_0[i];
+        hsum_lo0 += (ulong)vec1[i] * vec2_0[i];
         hsum_hi0 += (hsum_lo0 >> DOT_SPLIT_BITS);
         hsum_lo0 &= DOT_SPLIT_MASK;
 
-        hsum_lo1 += (ulong)vec1[i] * (ulong)vec2_1[i];
+        hsum_lo1 += (ulong)vec1[i] * vec2_1[i];
         hsum_hi1 += (hsum_lo1 >> DOT_SPLIT_BITS);
         hsum_lo1 &= DOT_SPLIT_MASK;
     }

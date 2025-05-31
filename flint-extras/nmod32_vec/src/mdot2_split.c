@@ -88,7 +88,15 @@ void _nmod32_vec_mdot4_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                                       mat + (i+3)*stride,
                                       len, mod, pow2_precomp);
 
-    for ( ; i < nrows; i++)
+    if (nrows - i >= 2)
+    {
+        _nmod32_vec_dot2_split_avx512(mv+i, mv+i+1,
+                                      vec, mat + i*stride, mat + (i+1)*stride,
+                                      len, mod, pow2_precomp);
+        i += 2;
+    }
+
+    if (i == nrows - 1)
         mv[i] = _nmod32_vec_dot_split_avx512(vec, mat + i*stride, len, mod, pow2_precomp);
 }
 #endif

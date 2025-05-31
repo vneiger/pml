@@ -40,7 +40,7 @@ void _nmod32_vec_clear(n32_ptr vec)
 *                            DOT PRODUCT                             *
 **********************************************************************/
 
-#define HAVE_AVX512 0   // TODO handle AVX flags
+#define HAVE_AVX512 1   // TODO handle AVX flags
 
 // duplicates flint's dot2_split based on avx2
 
