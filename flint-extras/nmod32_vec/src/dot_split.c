@@ -12,14 +12,14 @@ uint _nmod32_vec_dot_split(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t m
 
     for ( ; i+7 < len; i+=8)
     {
-        dp_lo += (ulong)vec1[i+0] * vec2[i+0];
-        dp_lo += (ulong)vec1[i+1] * vec2[i+1];
-        dp_lo += (ulong)vec1[i+2] * vec2[i+2];
-        dp_lo += (ulong)vec1[i+3] * vec2[i+3];
-        dp_lo += (ulong)vec1[i+4] * vec2[i+4];
-        dp_lo += (ulong)vec1[i+5] * vec2[i+5];
-        dp_lo += (ulong)vec1[i+6] * vec2[i+6];
-        dp_lo += (ulong)vec1[i+7] * vec2[i+7];
+        dp_lo += (ulong)vec1[i+0] * vec2[i+0]
+               + (ulong)vec1[i+1] * vec2[i+1]
+               + (ulong)vec1[i+2] * vec2[i+2]
+               + (ulong)vec1[i+3] * vec2[i+3]
+               + (ulong)vec1[i+4] * vec2[i+4]
+               + (ulong)vec1[i+5] * vec2[i+5]
+               + (ulong)vec1[i+6] * vec2[i+6]
+               + (ulong)vec1[i+7] * vec2[i+7];
         dp_hi += (dp_lo >> DOT_SPLIT_BITS);
         dp_lo &= DOT_SPLIT_MASK;
     }
@@ -128,10 +128,6 @@ uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmo
     return (uint)res;
 }
 
-
-
-
-
 #if HAVE_AVX512
 uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp)
 {
@@ -237,6 +233,13 @@ uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, n
     return (uint)res;
 }
 #endif  // HAVE_AVX512
+
+
+
+
+/*-------------*/
+/* IN PROGRESS */
+/*-------------*/
 
 #if HAVE_AVX512
 uint _nmod32_vec_dot_ifma_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp)
