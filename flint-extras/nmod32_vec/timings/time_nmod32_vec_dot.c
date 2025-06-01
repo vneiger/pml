@@ -370,8 +370,8 @@ int main(int argc, char ** argv)
         time_mdot_msolve_native_avx2,   // 10
         time_mdot2_split,               // 11
         time_mdot2_split_avx2,          // 12
-        time_mdot2_split_avx512,        // 13
-        time_mdot3_split_avx2,          // 14
+        time_mdot3_split_avx2,          // 13
+        time_mdot2_split_avx512,        // 14
         time_mdot4_split_avx512,        // 15
     };
 
@@ -390,8 +390,8 @@ int main(int argc, char ** argv)
         sample_mdot_msolve_native_avx2,   // 10
         sample_mdot2_split,               // 11
         sample_mdot2_split_avx2,          // 12
-        sample_mdot2_split_avx512,        // 13
-        sample_mdot3_split_avx2,          // 14
+        sample_mdot3_split_avx2,          // 13
+        sample_mdot2_split_avx512,        // 14
         sample_mdot4_split_avx512,        // 15
     };
 
@@ -409,8 +409,8 @@ int main(int argc, char ** argv)
         "#10 --> mdot_msolve_native_avx2       ",
         "#11 --> mdot2_split                   ",
         "#12 --> mdot2_split_avx2              ",
-        "#13 --> mdot2_split_avx512            ",
-        "#14 --> mdot3_split_avx2              ",
+        "#13 --> mdot3_split_avx2              ",
+        "#14 --> mdot2_split_avx512            ",
         "#15 --> mdot4_split_avx512            ",
     };
 

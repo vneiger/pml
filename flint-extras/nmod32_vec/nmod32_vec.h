@@ -113,7 +113,7 @@ void _nmod32_vec_dot2_split_avx512(uint * res0, uint * res1,
                                    slong len, nmod_t mod, ulong pow2_precomp);
 
 // similar to dot_split, computes res[i] = vec1 * vec2_i for i = 0, 1, 2, 3
-void _nmod32_vec_dot4_split_avx512(uint * res0, uint * res1, uint * res2, uint * res3,
+void _nmod32_vec_dot4_split_avx512(uint * res,
                                    n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1, n32_srcptr vec2_2, n32_srcptr vec2_3,
                                    slong len, nmod_t mod, ulong pow2_precomp);
 #endif
