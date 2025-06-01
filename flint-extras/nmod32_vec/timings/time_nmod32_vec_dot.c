@@ -301,6 +301,7 @@ TIME_MDOT(mdot_msolve_via_dot_avx2);
 TIME_MDOT(mdot2_split);
 TIME_MDOT(mdot2_split_avx2);
 TIME_MDOT(mdot3_split_avx2);
+TIME_MDOT(mdot4_split_avx2);
 
 #if HAVE_AVX512   // TODO handle AVX flags
 TIME_MDOT(mdot_split_avx512);
@@ -319,6 +320,7 @@ SAMPLE_MDOT(mdot_msolve_via_dot_avx2);
 SAMPLE_MDOT(mdot2_split);
 SAMPLE_MDOT(mdot2_split_avx2);
 SAMPLE_MDOT(mdot3_split_avx2);
+SAMPLE_MDOT(mdot4_split_avx2);
 
 #if HAVE_AVX512   // TODO handle AVX flags
 SAMPLE_MDOT(mdot_split_avx512);
@@ -372,7 +374,7 @@ int main(int argc, char ** argv)
         time_mdot2_split_avx2,          // 12
         time_mdot2_split_avx512,        // 13
         time_mdot3_split_avx2,          // 14
-        time_mdot4_split_avx512,        // 15
+        time_mdot4_split_avx2,        // 15
     };
 
     typedef void (*samplefun) (void*, ulong);
@@ -392,7 +394,7 @@ int main(int argc, char ** argv)
         sample_mdot2_split_avx2,          // 12
         sample_mdot2_split_avx512,        // 13
         sample_mdot3_split_avx2,          // 14
-        sample_mdot4_split_avx512,        // 15
+        sample_mdot4_split_avx2,        // 15
     };
 
     const char * description[] = {
