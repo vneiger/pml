@@ -21,26 +21,14 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
 
     for (i = 0; i < 5000 * flint_test_multiplier(); i++)
     {
-        // acc8 == 1 <=> room for accumulating 8 terms
-        const int acc8 = (i < 2500);
-
         slong len = n_randint(state, 1000) + 32;
         // TODO temporary trick to have multiple of 16
         len = (len / 32) * 32;
 
-        const long pow2_61_sqrt = UWORD(1518500249);  // floor(2**30.5)
-        const long pow2_31 = UWORD(1) << 31;
+        const long nmax8 = UWORD(1515531528);  // slightly less than floor(2**30.5)
         ulong m = 0;
-        if (acc8)
-        {
-            while (m == 0)
-                m = n_randtest_not_zero(state) % pow2_61_sqrt;
-        }
-        else
-        {
-            while (m == 0)
-                m = n_randtest_not_zero(state) % pow2_31;
-        }
+        while (m == 0)
+            m = n_randtest_not_zero(state) % nmax8;
 
         nmod_t mod;
         nmod_init(&mod, m);
@@ -118,8 +106,6 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
         }
 #endif
 
-        // seems to fail for primes in [2**30.5...2**31)
-        if (acc8)
         {  // dot_msolve_avx2
             ulong res = _nmod32_vec_dot_msolve_avx2(x, y, len, mod.n);
 

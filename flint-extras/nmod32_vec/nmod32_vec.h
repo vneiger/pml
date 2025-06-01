@@ -15,6 +15,15 @@
 #include <flint/machine_vectors.h>
 #include <flint/nmod.h> // for NMOD_RED
 
+#define HAVE_AVX512 1   // TODO handle AVX flags
+
+// functions below accumulate 8 terms:
+//  -> modulus <= DOT2_ACC8_MAX_MODULUS
+//  -> len <= DOT2_ACC8_MAX_LEN
+// (see bottom of flint/src/nmod_vec/dot.c for more details)
+#define DOT2_ACC8_MAX_MODULUS UWORD(1515531528)
+#define DOT2_ACC8_MAX_LEN UWORD(380368697)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -35,21 +44,39 @@ void _nmod32_vec_clear(n32_ptr vec)
    flint_free(vec);
 }
 
+// avx2 horizontal sum
+FLINT_FORCE_INLINE ulong _mm256_hsum(__m256i a) {
+    __m256i a_hi = _mm256_shuffle_epi32(a, 14);  // 14 == 0b00001110
+    __m256i sum_lo = _mm256_add_epi64(a, a_hi);
+    __m128i sum_hi = _mm256_extracti128_si256(sum_lo, 1);
+    __m128i sum = _mm_add_epi64(_mm256_castsi256_si128(sum_lo), sum_hi);
+    return (ulong) _mm_cvtsi128_si64(sum);
+}
+
+#if HAVE_AVX512
+// avx512 horizontal sum
+FLINT_FORCE_INLINE ulong _mm512_hsum(__m512i a) {
+    return _mm512_reduce_add_epi64(a);
+}
+#endif
 
 /**********************************************************************
 *                            DOT PRODUCT                             *
 **********************************************************************/
 
-#define HAVE_AVX512 1   // TODO handle AVX flags
+// TODO
+// - try putting in same file / using inline for dot2 stuff
+// - finalize the mdot3 / mdot4 versions (multiple of 16 ??)
 
-// duplicates flint's dot2_split based on avx2
+// WARNING: everything below assumes both
+//     modulus <= DOT2_ACC8_MAX_MODULUS  (about 2**30.5)
+//     len <= DOT2_ACC8_MAX_LEN          (about 2**28.5)
+// behaviour is undefined if that is not satisfied
 
-// accumulates 4 terms, limit 2**31
 uint _nmod32_vec_dot_split(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
 
-// accumulate 4 or 8 terms
 uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
-#if HAVE_AVX512   // TODO handle AVX flags
+#if HAVE_AVX512
 uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
 #endif
 

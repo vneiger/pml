@@ -3,21 +3,6 @@
 #include "flint/nmod_vec.h"  // for DOT_SPLIT_MASK
 #include "nmod32_vec.h"
 
-// horizontal sum
-FLINT_FORCE_INLINE ulong _mm256_hsum(__m256i a) {
-    __m256i a_hi = _mm256_shuffle_epi32(a, 14);  // 14 == 0b00001110
-    __m256i sum_lo = _mm256_add_epi64(a, a_hi);
-    __m128i sum_hi = _mm256_extracti128_si256(sum_lo, 1);
-    __m128i sum = _mm_add_epi64(_mm256_castsi256_si128(sum_lo), sum_hi);
-    return (ulong) _mm_cvtsi128_si64(sum);
-}
-
-#if HAVE_AVX512   // TODO handle AVX flags
-FLINT_FORCE_INLINE ulong _mm512_hsum(__m512i a) {
-    return _mm512_reduce_add_epi64(a);
-}
-#endif
-
 void _nmod32_vec_dot2_split(uint * res0, uint * res1, n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1, slong len, nmod_t mod, ulong pow2_precomp)
 {
     ulong dp_lo0 = 0;
