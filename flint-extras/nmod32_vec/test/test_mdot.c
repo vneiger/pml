@@ -96,11 +96,9 @@ TEST_FUNCTION_START(nmod32_vec_mdot, state)
             n32_ptr res = _nmod32_vec_init(nrows);
             n32_ptr res_avx2 = _nmod32_vec_init(nrows);
             n32_ptr res3_avx2 = _nmod32_vec_init(nrows);
-            n32_ptr res4_avx2 = _nmod32_vec_init(nrows);
             _nmod32_vec_mdot2_split(res, mat, vec, nrows, len, len, mod);
             _nmod32_vec_mdot2_split_avx2(res_avx2, mat, vec, nrows, len, len, mod);
             _nmod32_vec_mdot3_split_avx2(res3_avx2, mat, vec, nrows, len, len, mod);
-            _nmod32_vec_mdot4_split_avx2(res4_avx2, mat, vec, nrows, len, len, mod);
 #if HAVE_AVX512   // TODO handle AVX flags
             n32_ptr res_avx512 = _nmod32_vec_init(nrows);
             n32_ptr res4_avx512 = _nmod32_vec_init(nrows);
@@ -112,14 +110,12 @@ TEST_FUNCTION_START(nmod32_vec_mdot, state)
                     res_avx2[k] != correct[k] ||
                     res_avx512[k] != correct[k] ||
                     res3_avx2[k] != correct[k] ||
-                    res4_avx2[k] != correct[k] ||
                     res4_avx512[k] != correct[k])
 #else
             for (slong k = 0; k < nrows; k++)
                 if (res[k] != correct[k] ||
                     res_avx2[k] != correct[k] ||
-                    res3_avx2[k] != correct[k] ||
-                    res4_avx2[k] != correct[k])
+                    res3_avx2[k] != correct[k])
 #endif
                 {
                     flint_printf("%ld\n", i);
