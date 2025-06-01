@@ -79,15 +79,14 @@ void _nmod32_vec_mdot4_split_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
 
     slong i = 0;
 
-    for ( ; i+3 < nrows; i+=4)
+    for ( ; i+2 < nrows; i+=3)
         _nmod32_vec_dot4_split_avx2(mv+i, vec,
                                     mat + i*stride,
                                     mat + (i+1)*stride,
                                     mat + (i+2)*stride,
-                                    mat + (i+3)*stride,
                                     len, mod, pow2_precomp);
 
-    if (nrows - i >= 2)
+    if (nrows - i == 2)
     {
         _nmod32_vec_dot2_split_avx2(mv+i, mv+i+1,
                                     vec, mat + i*stride, mat + (i+1)*stride,

@@ -112,7 +112,7 @@ void _nmod32_vec_dot3_split_avx2(uint * res0, uint * res1, uint * res2,
                                  n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1, n32_srcptr vec2_2,
                                  slong len, nmod_t mod, ulong pow2_precomp);
 void _nmod32_vec_dot4_split_avx2(uint * res, n32_srcptr vec1,
-                                 n32_srcptr vec2_0, n32_srcptr vec2_1, n32_srcptr vec2_2, n32_srcptr vec2_3,
+                                 n32_srcptr vec2_0, n32_srcptr vec2_1, n32_srcptr vec2_2,
                                  slong len, nmod_t mod, ulong pow2_precomp);
 #if HAVE_AVX512
 void _nmod32_vec_dot4_split_avx512(uint * res0, uint * res1, uint * res2, uint * res3,
