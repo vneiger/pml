@@ -128,6 +128,10 @@ uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmo
     return (uint)res;
 }
 
+
+
+
+
 #if HAVE_AVX512
 uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp)
 {

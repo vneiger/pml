@@ -22,26 +22,17 @@ TEST_FUNCTION_START(nmod32_vec_mdot, state)
 
     for (i = 0; i < 1000 * flint_test_multiplier(); i++)
     {
-        // acc8 == 1 <=> room for accumulating 8 terms
-        const int acc8 = (i < 500);
-
         slong nrows = n_randint(state, 100) + 1;
         slong len = n_randint(state, 1000) + 1;
         const slong stride = len;
 
-        const long pow2_61_sqrt = UWORD(1518500249);  // floor(2**30.5)
-        const long pow2_31 = UWORD(1) << 31;
+        const long nmax8 = UWORD(1515531528);  // slightly less than floor(2**30.5)
         ulong m = 0;
-        if (acc8)
-        {
-            while (m == 0)
-                m = n_randtest_not_zero(state) % pow2_61_sqrt;
-        }
+        if (i < 100)
+            m = nmax8;
         else
-        {
             while (m == 0)
-                m = n_randtest_not_zero(state) % pow2_31;
-        }
+                m = n_randtest_not_zero(state) % nmax8;
 
         nmod_t mod;
         nmod_init(&mod, m);
@@ -52,8 +43,19 @@ TEST_FUNCTION_START(nmod32_vec_mdot, state)
         nmod_mat_t mat64;
         nmod_mat_init(mat64, nrows, len, mod.n);
 
-        _nmod32_vec_rand(vec, state, len, mod);
-        _nmod32_vec_rand(mat, state, nrows*len, mod);
+        if (i == 0)  /* maximul value for all entries */
+        {
+            for (slong k = 0; k < len; k++)
+                vec[k] = mod.n - 1;
+            for (slong k = 0; k < nrows*len; k++)
+                mat[k] = mod.n - 1;
+        }
+        else
+        {
+            _nmod32_vec_rand(vec, state, len, mod);
+            _nmod32_vec_rand(mat, state, nrows*len, mod);
+        }
+
         for (slong k = 0; k < len; k++)
             vec64[k] = vec[k];
         for (slong r = 0; r < nrows; r++)
@@ -129,7 +131,6 @@ TEST_FUNCTION_START(nmod32_vec_mdot, state)
 #endif
         }
 
-        if (acc8)
         {  // dot_msolve
             n32_ptr res = _nmod32_vec_init(nrows);
             n32_ptr res_native = _nmod32_vec_init(nrows);

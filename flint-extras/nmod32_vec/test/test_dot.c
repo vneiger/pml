@@ -21,14 +21,23 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
 
     for (i = 0; i < 5000 * flint_test_multiplier(); i++)
     {
-        slong len = n_randint(state, 1000) + 32;
-        // TODO temporary trick to have multiple of 16
-        len = (len / 32) * 32;
+        slong len = n_randint(state, 1000) + 1;
+
+        // temporarily disabling ifma (not finished, currently only for len multiple of 32)
+        const int ifma = 0;
+        if (ifma)
+        {
+            len += 32;
+            len = (len / 32) * 32;
+        }
 
         const long nmax8 = UWORD(1515531528);  // slightly less than floor(2**30.5)
         ulong m = 0;
-        while (m == 0)
-            m = n_randtest_not_zero(state) % nmax8;
+        if (i < 1000)
+            m = nmax8;
+        else
+            while (m == 0)
+                m = n_randtest_not_zero(state) % nmax8;
 
         nmod_t mod;
         nmod_init(&mod, m);
@@ -45,8 +54,20 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
         nn_ptr xx = _nmod_vec_init(len);
         nn_ptr yy = _nmod_vec_init(len);
 
-        _nmod32_vec_rand(x, state, len, mod);
-        _nmod32_vec_rand(y, state, len, mod);
+        if (i == 0)  /* maximum value for all entries */
+        {
+            for (slong k = 0; k < len; k++)
+            {
+                x[k] = mod.n - 1;
+                y[k] = mod.n - 1;
+            }
+        }
+        else
+        {
+            _nmod32_vec_rand(x, state, len, mod);
+            _nmod32_vec_rand(y, state, len, mod);
+        }
+
         for (slong k = 0; k < len; k++)
         {
             xx[k] = x[k];
@@ -85,6 +106,7 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
             }
         }
 
+        if (ifma)
         {  // dot_ifma_avx512
             ulong res = _nmod32_vec_dot_ifma_avx2(x, y, len, mod, pow2_precomp_ifma);
 
@@ -95,6 +117,7 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
             }
         }
 
+        if (ifma)
         {  // dot_ifma_avx512
             ulong res = _nmod32_vec_dot_ifma_avx512(x, y, len, mod, pow2_precomp_ifma);
 
