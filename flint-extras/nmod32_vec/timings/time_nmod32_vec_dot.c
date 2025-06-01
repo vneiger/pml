@@ -463,7 +463,7 @@ int main(int argc, char ** argv)
             const slong b = bits[j];
             ulong n;
             n = n_nextprime(UWORD(1) << (b-1), 0);
-            for (slong nrows = 0; nrows < 5; nrows++)
+            for (slong nrows = 2; nrows < 5; nrows++)
             {
                 for (slong ifun = 0; ifun < nfuns; ifun++)
                 {

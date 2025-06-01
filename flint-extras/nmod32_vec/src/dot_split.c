@@ -43,7 +43,7 @@ uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmo
 
     slong i = 0;
 
-    for ( ; i+31 < len; i += 32)
+    for ( ; i+31 < len; i+=32)
     {
         __m256i v1_0 = _mm256_loadu_si256((const __m256i *) (vec1+i+ 0));
         __m256i v1_1 = _mm256_loadu_si256((const __m256i *) (vec1+i+ 8));
@@ -79,20 +79,18 @@ uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmo
         dp_lo3 = _mm256_add_epi64(dp_lo3, _mm256_mul_epu32(v1_3, v2_3));
 
         // gather results in dp_lo0
-        // (thus dp_lo0 will hold 4 * 2 == 8 terms,
-        // on top of previous dp_lo0 < 2**DOT_SPLIT_BITS)
         dp_lo0 = _mm256_add_epi64(dp_lo0, dp_lo1);
         dp_lo2 = _mm256_add_epi64(dp_lo2, dp_lo3);
         dp_lo0 = _mm256_add_epi64(dp_lo0, dp_lo2);
 
-        // split high and low parts to avoid overflows
+        // split
         dp_hi0 = _mm256_add_epi64(dp_hi0, _mm256_srli_epi64(dp_lo0, DOT_SPLIT_BITS));
         dp_lo0 = _mm256_and_si256(dp_lo0, low_bits);
     }
 
     // the following loop iterates < 4 times,
     // each iteration accumulates 2 terms in dp_lo0
-    for ( ; i+7 < len; i += 8)
+    for ( ; i+7 < len; i+=8)
     {
         __m256i v1_0 = _mm256_loadu_si256((const __m256i *) (vec1+i));
         __m256i v2_0 = _mm256_loadu_si256((const __m256i *) (vec2+i));
@@ -121,7 +119,7 @@ uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmo
     hsum_hi += (hsum_lo >> DOT_SPLIT_BITS);
     hsum_lo &= DOT_SPLIT_MASK;
 
-    // our requirement on "len <= DOT2_ACC8_MAX_LEN"
+    // the requirement on "len <= DOT2_ACC8_MAX_LEN"
     // ensures pow2_precomp * hsum_hi + hsum_lo fits in 64 bits
     ulong res;
     NMOD_RED(res, pow2_precomp * hsum_hi + hsum_lo, mod);
@@ -173,8 +171,6 @@ uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, n
         dp_lo3 = _mm512_add_epi64(dp_lo3, _mm512_mul_epu32(v1_3, v2_3));
 
         // gather results in dp_lo0
-        // (thus dp_lo0 will hold 4 * 2 == 8 terms,
-        // on top of previous dp_lo0 < 2**DOT_SPLIT_BITS)
         dp_lo0 = _mm512_add_epi64(dp_lo0, dp_lo1);
         dp_lo2 = _mm512_add_epi64(dp_lo2, dp_lo3);
         dp_lo0 = _mm512_add_epi64(dp_lo0, dp_lo2);
@@ -199,7 +195,7 @@ uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, n
         dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_mul_epu32(v1_0, v2_0));
     }
 
-    // last iteration may be "incomplete": use mask load
+    // finally, do a last iteration which may be "incomplete": use mask load
     // (at each position we accumulate 0 or 2 terms, so including the above
     // loop this is a total of <= 8 terms)
     if (i < len)
@@ -226,7 +222,7 @@ uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, n
     ulong hsum_hi = _mm512_hsum(dp_hi0) + (hsum_lo >> DOT_SPLIT_BITS);
     hsum_lo &= DOT_SPLIT_MASK;
 
-    // our requirement "len <= DOT2_ACC8_MAX_LEN"
+    // the requirement "len <= DOT2_ACC8_MAX_LEN"
     // ensures pow2_precomp * hsum_hi + hsum_lo fits in 64 bits
     ulong res;
     NMOD_RED(res, pow2_precomp * hsum_hi + hsum_lo, mod);
