@@ -121,7 +121,7 @@ uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmo
     hsum_hi += (hsum_lo >> DOT_SPLIT_BITS);
     hsum_lo &= DOT_SPLIT_MASK;
 
-    // our requirement on len <= DOT2_ACC8_MAX_LEN
+    // our requirement on "len <= DOT2_ACC8_MAX_LEN"
     // ensures pow2_precomp * hsum_hi + hsum_lo fits in 64 bits
     ulong res;
     NMOD_RED(res, pow2_precomp * hsum_hi + hsum_lo, mod);
@@ -179,11 +179,12 @@ uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, n
         dp_lo2 = _mm512_add_epi64(dp_lo2, dp_lo3);
         dp_lo0 = _mm512_add_epi64(dp_lo0, dp_lo2);
 
+        // split
         dp_hi0 = _mm512_add_epi64(dp_hi0, _mm512_srli_epi64(dp_lo0, DOT_SPLIT_BITS));
         dp_lo0 = _mm512_and_si512(dp_lo0, low_bits);
     }
 
-    // the following loop iterates < 4 times,
+    // the following loop iterates <= 3 times,
     // each iteration accumulates 2 terms in dp_lo0
     for ( ; i+15 < len; i+=16)
     {
@@ -191,53 +192,42 @@ uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, n
         __m512i v2_0 = _mm512_loadu_si512((const __m512i *) (vec2+i));
 
         // 1st term
-        __m512i mul0 = _mm512_mul_epu32(v1_0, v2_0);
+        dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_mul_epu32(v1_0, v2_0));
         // 2nd term
         v1_0 = _mm512_shuffle_epi32(v1_0, 0xB1);
         v2_0 = _mm512_shuffle_epi32(v2_0, 0xB1);
-        __m512i mul1 = _mm512_mul_epu32(v1_0, v2_0);
-
-        dp_lo0 = _mm512_add_epi64(dp_lo0, mul0);
-        dp_lo0 = _mm512_add_epi64(dp_lo0, mul1);
+        dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_mul_epu32(v1_0, v2_0));
     }
 
-    dp_hi0 = _mm512_add_epi64(dp_hi0, _mm512_srli_epi64(dp_lo0, DOT_SPLIT_BITS));
-    dp_lo0 = _mm512_and_si512(dp_lo0, low_bits);
-
-    // handle next 8 terms via avx2, if there are >= 8 left
-    if (i+7 < len)
+    // last iteration may be "incomplete": use mask load
+    // (at each position we accumulate 0 or 2 terms, so including the above
+    // loop this is a total of <= 8 terms)
+    if (i < len)
     {
-        __m256i v1_0 = _mm256_loadu_si256((const __m256i *) (vec1+i));
-        __m256i v2_0 = _mm256_loadu_si256((const __m256i *) (vec2+i));
+        // mask == 0b0...01...1 with number of 1's == number of remaining terms
+        __mmask16 mask = (1 << (len-i)) - 1;
+        __m512i v1_0 = _mm512_maskz_loadu_epi32(mask, (const __m512i *) (vec1+i));
+        __m512i v2_0 = _mm512_maskz_loadu_epi32(mask, (const __m512i *) (vec2+i));
 
         // 1st term
-        __m256i mul0 = _mm256_mul_epu32(v1_0, v2_0);
+        dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_mul_epu32(v1_0, v2_0));
         // 2nd term
-        v1_0 = _mm256_shuffle_epi32(v1_0, 0xB1);
-        v2_0 = _mm256_shuffle_epi32(v2_0, 0xB1);
-        __m256i mul1 = _mm256_mul_epu32(v1_0, v2_0);
-
-        mul0 = _mm256_add_epi64(mul0, mul1);
-        dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_castsi256_si512(mul0));
-
-        dp_hi0 = _mm512_add_epi64(dp_hi0, _mm512_srli_epi64(dp_lo0, DOT_SPLIT_BITS));
-        dp_lo0 = _mm512_and_si512(dp_lo0, low_bits);
-
-        i += 8;
+        v1_0 = _mm512_shuffle_epi32(v1_0, 0xB1);
+        v2_0 = _mm512_shuffle_epi32(v2_0, 0xB1);
+        dp_lo0 = _mm512_add_epi64(dp_lo0, _mm512_mul_epu32(v1_0, v2_0));
     }
+
+    // split
+    dp_hi0 = _mm512_add_epi64(dp_hi0, _mm512_srli_epi64(dp_lo0, DOT_SPLIT_BITS));
+    dp_lo0 = _mm512_and_si512(dp_lo0, low_bits);
 
     // gather 8 terms in single ulong
     ulong hsum_lo = _mm512_hsum(dp_lo0);
     ulong hsum_hi = _mm512_hsum(dp_hi0) + (hsum_lo >> DOT_SPLIT_BITS);
     hsum_lo &= DOT_SPLIT_MASK;
 
-    // handle last few (< 8) terms
-    for ( ; i < len; i++)
-        hsum_lo += (ulong)vec1[i] * vec2[i];
-
-    hsum_hi += (hsum_lo >> DOT_SPLIT_BITS);
-    hsum_lo &= DOT_SPLIT_MASK;
-
+    // our requirement "len <= DOT2_ACC8_MAX_LEN"
+    // ensures pow2_precomp * hsum_hi + hsum_lo fits in 64 bits
     ulong res;
     NMOD_RED(res, pow2_precomp * hsum_hi + hsum_lo, mod);
     return (uint)res;

@@ -428,19 +428,19 @@ int main(int argc, char ** argv)
 
         return 0;
     }
-    else
-    {
-        printf("\nAvailable functions:\n");
-        for (slong j = 0; j < nfuns; j++)
-            printf("   %s\n", description[j]);
-        printf("\nnrows types (indicated in column nrows):\n");
-        printf("#0  --> 1 row (== standard dot product) \n");
-        printf("#1  --> 4 rows                          \n");
-        printf("#2  --> max(1, len/10) rows             \n");
-        printf("#3  --> max(1, len/2) rows              \n");
-        printf("#4  --> len rows                        \n");
-        printf("\n");
-    }
+    //else
+    //{
+    //    printf("\nAvailable functions:\n");
+    //    for (slong j = 0; j < nfuns; j++)
+    //        printf("   %s\n", description[j]);
+    //    printf("\nnrows types (indicated in column nrows):\n");
+    //    printf("#0  --> 1 row (== standard dot product) \n");
+    //    printf("#1  --> 4 rows                          \n");
+    //    printf("#2  --> max(1, len/10) rows             \n");
+    //    printf("#3  --> max(1, len/2) rows              \n");
+    //    printf("#4  --> len rows                        \n");
+    //    printf("\n");
+    //}
 
     printf("#warmup...\n");
     for (slong i = 0; i < 3; i++)
