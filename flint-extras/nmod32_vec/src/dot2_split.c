@@ -509,12 +509,8 @@ void _nmod32_vec_dot2_split_avx512(uint * res0, uint * res1,
     NMOD_RED(*res1, pow2_precomp * hsum_hi1 + hsum_lo1, mod);
 }
 
-#endif
-
-#if HAVE_AVX512
-
-void _nmod32_vec_dot4_split_avx512(uint * res,
-                                   n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1, n32_srcptr vec2_2, n32_srcptr vec2_3,
+void _nmod32_vec_dot3_split_avx512(uint * res,
+                                   n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1, n32_srcptr vec2_2,
                                    slong len, nmod_t mod, ulong pow2_precomp)
 {
     const __m512i low_bits = _mm512_set1_epi64(DOT_SPLIT_MASK);
@@ -688,6 +684,5 @@ void _nmod32_vec_dot4_split_avx512(uint * res,
     NMOD_RED(res[0], pow2_precomp * hsum_hi0 + hsum_lo0, mod);
     NMOD_RED(res[1], pow2_precomp * hsum_hi1 + hsum_lo1, mod);
     NMOD_RED(res[2], pow2_precomp * hsum_hi2 + hsum_lo2, mod);
-    //NMOD_RED(res[3], pow2_precomp * hsum_hi3 + hsum_lo3, mod);
 }
 #endif

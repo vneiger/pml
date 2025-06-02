@@ -305,11 +305,11 @@ TIME_MDOT(mdot3_split_avx2);
 #if HAVE_AVX512   // TODO handle AVX flags
 TIME_MDOT(mdot_split_avx512);
 TIME_MDOT(mdot2_split_avx512);
-TIME_MDOT(mdot4_split_avx512);
+TIME_MDOT(mdot3_split_avx512);
 #else
 TIME_VOID_MDOT(mdot_split_avx512);
 TIME_VOID_MDOT(mdot2_split_avx512);
-TIME_VOID_MDOT(mdot4_split_avx512);
+TIME_VOID_MDOT(mdot3_split_avx512);
 #endif
 
 SAMPLE_MDOT(mdot_split);
@@ -323,11 +323,11 @@ SAMPLE_MDOT(mdot3_split_avx2);
 #if HAVE_AVX512   // TODO handle AVX flags
 SAMPLE_MDOT(mdot_split_avx512);
 SAMPLE_MDOT(mdot2_split_avx512);
-SAMPLE_MDOT(mdot4_split_avx512);
+SAMPLE_MDOT(mdot3_split_avx512);
 #else
 SAMPLE_VOID_MDOT(mdot_split_avx512);
 SAMPLE_VOID_MDOT(mdot2_split_avx512);
-SAMPLE_VOID_MDOT(mdot4_split_avx512);
+SAMPLE_VOID_MDOT(mdot3_split_avx512);
 #endif
 
 
@@ -372,7 +372,7 @@ int main(int argc, char ** argv)
         time_mdot2_split_avx2,          // 12
         time_mdot3_split_avx2,          // 13
         time_mdot2_split_avx512,        // 14
-        time_mdot4_split_avx512,        // 15
+        time_mdot3_split_avx512,        // 15
     };
 
     typedef void (*samplefun) (void*, ulong);
@@ -392,7 +392,7 @@ int main(int argc, char ** argv)
         sample_mdot2_split_avx2,          // 12
         sample_mdot3_split_avx2,          // 13
         sample_mdot2_split_avx512,        // 14
-        sample_mdot4_split_avx512,        // 15
+        sample_mdot3_split_avx512,        // 15
     };
 
     const char * description[] = {
@@ -411,7 +411,7 @@ int main(int argc, char ** argv)
         "#12 --> mdot2_split_avx2              ",
         "#13 --> mdot3_split_avx2              ",
         "#14 --> mdot2_split_avx512            ",
-        "#15 --> mdot4_split_avx512            ",
+        "#15 --> mdot3_split_avx512            ",
     };
 
     if (argc == 1)  // show usage

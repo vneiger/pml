@@ -64,10 +64,6 @@ FLINT_FORCE_INLINE ulong _mm512_hsum(__m512i a) {
 *                            DOT PRODUCT                             *
 **********************************************************************/
 
-// TODO
-// - try putting in same file / using inline for dot2 stuff
-// - finalize the mdot3 / mdot4 versions (multiple of 16 ??)
-
 // WARNING: everything below assumes both
 //     modulus <= DOT2_ACC8_MAX_MODULUS  (about 2**30.5)
 //     len <= DOT2_ACC8_MAX_LEN          (about 2**28.5)
@@ -86,7 +82,7 @@ uint _nmod32_vec_dot_msolve_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, ui
 // ifma variant
 // TODO unfinished, requires len multiple of 16 or 32
 uint _nmod32_vec_dot_ifma_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
-#if HAVE_AVX512   // TODO handle AVX flags
+#if HAVE_AVX512
 uint _nmod32_vec_dot_ifma_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
 #endif
 
@@ -113,8 +109,8 @@ void _nmod32_vec_dot2_split_avx512(uint * res0, uint * res1,
                                    slong len, nmod_t mod, ulong pow2_precomp);
 
 // similar to dot_split, computes res[i] = vec1 * vec2_i for i = 0, 1, 2, 3
-void _nmod32_vec_dot4_split_avx512(uint * res,
-                                   n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1, n32_srcptr vec2_2, n32_srcptr vec2_3,
+void _nmod32_vec_dot3_split_avx512(uint * res,
+                                   n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1, n32_srcptr vec2_2,
                                    slong len, nmod_t mod, ulong pow2_precomp);
 #endif
 
@@ -159,7 +155,7 @@ void _nmod32_vec_mdot3_split_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
 #if HAVE_AVX512
 void _nmod32_vec_mdot2_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                                     slong nrows, slong len, slong stride, nmod_t mod);
-void _nmod32_vec_mdot4_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+void _nmod32_vec_mdot3_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                                     slong nrows, slong len, slong stride, nmod_t mod);
 #endif
 

@@ -78,7 +78,7 @@ void _nmod32_vec_mdot2_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
         mv[i] = _nmod32_vec_dot_split_avx512(vec, mat + i*stride, len, mod, pow2_precomp);
 }
 
-void _nmod32_vec_mdot4_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+void _nmod32_vec_mdot3_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                                     slong nrows, slong len, slong stride, nmod_t mod)
 {
     ulong pow2_precomp;
@@ -87,12 +87,11 @@ void _nmod32_vec_mdot4_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
     slong i = 0;
 
     for ( ; i+2 < nrows; i+=3)
-        _nmod32_vec_dot4_split_avx512(mv+i,
+        _nmod32_vec_dot3_split_avx512(mv+i,
                                       vec,
                                       mat + i*stride,
                                       mat + (i+1)*stride,
                                       mat + (i+2)*stride,
-                                      mat + (i+3)*stride,
                                       len, mod, pow2_precomp);
 
     if (nrows - i == 2)
