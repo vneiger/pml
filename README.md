@@ -5,6 +5,11 @@ matrices, structured matrices, and their applications.
 
 Version 0.3
 
+Warning: the FLINT-based part of PML (flint-extras folder) is work in progress
+and currently unstable. Its components are continuously changing as some parts
+become obsolete after being integrated in FLINT directly. Furthermore, some of
+these components only compile with specific versions of FLINT.
+ 
 ## Authors
 
 Current maintainers:
