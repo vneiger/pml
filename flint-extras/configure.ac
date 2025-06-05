@@ -2,6 +2,10 @@
 # preamble
 ################################################################################
 
+## 
+# this file is adapted from FLINT's configure.ac (June 2025)
+##
+
 define(PML_COPYRIGHT,[[
 Copyright (C) 2019, 2025 Vincent Neiger, Eric Schost, Gilles Villard
 
@@ -15,7 +19,7 @@ later version. See <https://www.gnu.org/licenses/>.
 ]])
 define(PML_COPYRIGHT_C,[[/*
     Copyright (C) 2019 Seung Gyu Hyun, Vincent Neiger, Eric Schost
-    Copyright (C) 2019 Vincent Neiger, Eric Schost, Gilles Villard
+    Copyright (C) 2025 Vincent Neiger, Eric Schost, Gilles Villard
 
     This file is part of PML.
 
@@ -94,7 +98,7 @@ fi
 
 if test -n "$target_alias";
 then
-    AC_MSG_ERROR([FLINT does not support the use of specifying --target.])
+    AC_MSG_ERROR([PML does not support the use of specifying --target.])
 fi
 
 dnl Get system triplet
@@ -105,7 +109,7 @@ dnl AC_CANONICAL_HOST
 # configure headers
 ################################################################################
 
-AC_CONFIG_HEADERS(src/config.h src/flint-config.h)
+AC_CONFIG_HEADERS(src/config.h)
 
 ################################################################################
 # features
@@ -172,7 +176,7 @@ esac],
 enable_coverage="no")
 
 AC_ARG_ENABLE(debug,
-[AS_HELP_STRING([--enable-debug],[Compile FLINT with debug information [default=yes]])],
+[AS_HELP_STRING([--enable-debug],[Compile PML with debug information [default=yes]])],
 [case $enableval in
 yes|no)
     if test "$enableval" = "no" && test "$enable_coverage" = "yes";
@@ -251,29 +255,6 @@ yes|no)
     ;;
 esac],
 enable_avx512="no")
-
-# NOTE: This is maintainer level only. Currently only used for Nemo CI.
-AC_ARG_ENABLE(mpfr-check,[],
-[case $enableval in
-yes|no)
-    ;;
-*)
-    AC_MSG_ERROR([Bad value $enableval for --enable-mpfr-check. Need yes or no.])
-    ;;
-esac],
-enable_mpfr_check="yes")
-
-# NOTE: Maintainer level only. Avoids any sort of optimization to speed up
-# builds.
-AC_ARG_ENABLE(fast-build,[],
-[case $enableval in
-yes|no)
-    ;;
-*)
-    AC_MSG_ERROR([Bad value $enableval for --enable-fast-build. Need yes or no.])
-    ;;
-esac],
-enable_fast_build="no")
 
 ################################################################################
 # packages
@@ -481,10 +462,11 @@ fi
 gcc_cflags="$gcc_cflags-pedantic -std=c11"
 gcc_warnings="-Werror=implicit-function-declaration -Werror=newline-eof -Wall -Wno-stringop-overread -Wno-stringop-overflow"
 
+dnl from FLINT:
 dnl We only try to provide specifics for those systems that currently supports
 dnl our assembly routines. If more combinations are wished for than what is
 dnl specified, please open up an issue at
-dnl <https://github.com/flintlib/flint/issues/> and we will consider it.
+dnl <https://github.com/vneiger/pml/issues/> and we will consider it.
 dnl
 dnl For these systems we aim to provide:
 dnl
@@ -503,8 +485,8 @@ case $host in
   ARM64_PATTERN)
     gcc_cflags="$gcc_cflags"
     gcc_cflags_optlist="arch tune"
-    asm_path="arm64"
-    param_path="arm64"
+    ##asm_path="arm64"
+    ##param_path="arm64"
     flint_cv_have_fft_small_arm_i="yes"
 
     # NOTE: Cortex values where taken from
@@ -592,7 +574,7 @@ case $host in
         ;;
       *)
         AC_MSG_ERROR([Error in deciding flags for $host.
-Please report at <https://github.com/flintlib/flint/issues/>])
+Please report at <https://github.com/vneiger/pml/issues/>])
         ;;
     esac
     ;;
@@ -601,8 +583,8 @@ Please report at <https://github.com/flintlib/flint/issues/>])
   X86_64_ADX_PATTERN)
     gcc_cflags="$gcc_cflags"
     gcc_cflags_optlist="arch"
-    asm_path="x86_64/broadwell"
-    param_path="x86_64/broadwell"
+    #asm_path="x86_64/broadwell"
+    #param_path="x86_64/broadwell"
 
     have_avx512="no"
     have_avx2="yes"
@@ -610,104 +592,104 @@ Please report at <https://github.com/flintlib/flint/issues/>])
     case $host_cpu in
       zen)
         gcc_cflags_arch="-march=znver1"
-        param_path="x86_64/zen3"
+        #param_path="x86_64/zen3"
         ;;
       zen2)
         gcc_cflags_arch="-march=znver2"
-        param_path="x86_64/zen3"
+        #param_path="x86_64/zen3"
         ;;
       zen3)
         gcc_cflags_arch="-march=znver3"
-        param_path="x86_64/zen3"
+        #param_path="x86_64/zen3"
         ;;
       zen4)
         gcc_cflags_arch="-march=znver4"
-        param_path="x86_64/zen4"
+        #param_path="x86_64/zen4"
         have_avx512="yes"
         ;;
       zen5)
         gcc_cflags_arch="-march=znver5 -march=znver4"
-        param_path="x86_64/zen4"  # fallback, to be refined
+        #param_path="x86_64/zen4"  # fallback, to be refined
         have_avx512="yes"
         ;;
       broadwell)
         gcc_cflags_arch="-march=broadwell"
-        param_path="x86_64/broadwell"
+        #param_path="x86_64/broadwell"
         ;;
       skylake)
         gcc_cflags_arch="-march=skylake"
-        param_path="x86_64/skylake"
+        #param_path="x86_64/skylake"
         ;;
       skylake_server)
         gcc_cflags_arch="-march=skylake-avx512"
-        param_path="x86_64/skylake"
+        #param_path="x86_64/skylake"
         have_avx512="yes"
         ;;
       kabylake)
         gcc_cflags_arch="-march=skylake"
-        param_path="x86_64/skylake"
+        #param_path="x86_64/skylake"
         ;;
       cometlake)
         gcc_cflags_arch="-march=skylake"
-        param_path="x86_64/skylake"
+        #param_path="x86_64/skylake"
         ;;
       knightslanding)
         gcc_cflags_arch="-march=knl"
-        param_path="x86_64/skylake"
+        #param_path="x86_64/skylake"
         ;;
       cannonlake)
         gcc_cflags_arch="-march=cannonlake"
-        param_path="x86_64/icelake"  # fallback, to be refined
+        #param_path="x86_64/icelake"  # fallback, to be refined
         have_avx512="yes"
         ;;
       icelake)
         gcc_cflags_arch="-march=icelake-client"
-        param_path="x86_64/icelake"
+        #param_path="x86_64/icelake"
         have_avx512="yes"
         ;;
       icelake_server)
         gcc_cflags_arch="-march=icelake-server"
-        param_path="x86_64/icelake"
+        #param_path="x86_64/icelake"
         have_avx512="yes"
         ;;
       rocketlake)
         gcc_cflags_arch="-march=rocketlake"
-        param_path="x86_64/icelake"  # fallback, to be refined
+        #param_path="x86_64/icelake"  # fallback, to be refined
         have_avx512="yes"
         ;;
       tigerlake)
         gcc_cflags_arch="-march=tigerlake"
-        param_path="x86_64/tigerlake"
+        #param_path="x86_64/tigerlake"
         have_avx512="yes"
         ;;
       alderlake)
         gcc_cflags_arch="-march=alderlake"
-        param_path="x86_64/icelake"  # fallback, to be refined
+        #param_path="x86_64/icelake"  # fallback, to be refined
         ;;
       raptorlake)
         gcc_cflags_arch="-march=raptorlake -march=alderlake"
-        param_path="x86_64/raptorlake"
+        #param_path="x86_64/raptorlake"
         ;;
       meteorlake)
         gcc_cflags_arch="-march=meteorlake -march=alderlake"
-        param_path="x86_64/meteorlake"
+        #param_path="x86_64/meteorlake"
         ;;
       sapphirerapids)
         gcc_cflags_arch="-march=sapphirerapids"
-        param_path="x86_64/icelake"  # fallback, to be refined
+        #param_path="x86_64/icelake"  # fallback, to be refined
         have_avx512="yes"
         ;;
       *)
         AC_MSG_ERROR([Error in deciding flags for $host.
-Please report at <https://github.com/flintlib/flint/issues/>])
+Please report at <https://github.com/vneiger/pml/issues/>])
         ;;
     esac
 
     case $host in
 	  *-*-mingw* | *-*-msys | *-*-cygwin)
         flint_nonstd_abi="yes"
-        asm_path=""
-        param_path="x86_64"
+        #asm_path=""
+        #param_path="x86_64"
 	    ;;
 	esac
 
@@ -822,64 +804,64 @@ AC_C_BIGENDIAN(flint_big_endian=yes)
 
 case "$host_os" in
     darwin*)
-        flint_lib="libflint.dylib"
-        flint_lib_major="libflint.$FLINT_MAJOR_SO.dylib"
-        flint_lib_full="libflint.$FLINT_MAJOR_SO.$FLINT_MINOR_SO.dylib"
-        extra_shared_flags="-install_name '`pwd`/$flint_lib_full' -compatibility_version $FLINT_MAJOR_SO.$FLINT_MINOR_SO -current_version $FLINT_MAJOR_SO.$FLINT_MINOR_SO.$FLINT_PATCH_SO"
-        flint_dylib="yes"
+        pml_lib="libpml.dylib"
+        pml_lib_major="libpml.$PML_MAJOR_SO.dylib"
+        pml_lib_full="libpml.$PML_MAJOR_SO.$PML_MINOR_SO.dylib"
+        extra_shared_flags="-install_name '`pwd`/$pml_lib_full' -compatibility_version $PML_MAJOR_SO.$PML_MINOR_SO -current_version $PML_MAJOR_SO.$PML_MINOR_SO.$PML_PATCH_SO"
+        pml_dylib="yes"
         ;;
     cygwin|mingw*|msys)
-        flint_lib="libflint.dll"
-        flint_lib_major="libflint.$FLINT_MAJOR_SO.dll"
-        flint_lib_full="libflint.$FLINT_MAJOR_SO.$FLINT_MINOR_SO.$FLINT_PATCH_SO.dll"
-        flint_implib="$flint_lib.$libext"
-        extra_shared_flags="-static-libgcc $wl--export-all-symbols,--out-implib,$flint_implib"
-        flint_dlllib="yes"
+        pml_lib="libpml.dll"
+        pml_lib_major="libpml.$PML_MAJOR_SO.dll"
+        pml_lib_full="libpml.$PML_MAJOR_SO.$PML_MINOR_SO.$PML_PATCH_SO.dll"
+        pml_implib="$pml_lib.$libext"
+        extra_shared_flags="-static-libgcc $wl--export-all-symbols,--out-implib,$pml_implib"
+        pml_dlllib="yes"
         ;;
     *)
-        flint_lib="libflint.so"
-        flint_lib_major="libflint.so.$FLINT_MAJOR_SO"
-        flint_lib_full="libflint.so.$FLINT_MAJOR_SO.$FLINT_MINOR_SO.$FLINT_PATCH_SO"
-        extra_shared_flags="$wl-soname,$flint_lib_major"
-        flint_solib="yes"
+        pml_lib="libpml.so"
+        pml_lib_major="libpml.so.$PML_MAJOR_SO"
+        pml_lib_full="libpml.so.$PML_MAJOR_SO.$PML_MINOR_SO.$PML_PATCH_SO"
+        extra_shared_flags="$wl-soname,$pml_lib_major"
+        pml_solib="yes"
         ;;
 esac
 
-flint_lib_static="libflint.$libext"
+pml_lib_static="libpml.$libext"
 
 if test "`uname -s`" = "android";
 then
-    extra_shared_flags="$wl-soname,$flint_lib"
+    extra_shared_flags="$wl-soname,$pml_lib"
 fi
 
 AC_SUBST(WL,$wl)
 
-AC_SUBST(FLINT_LIB,$flint_lib)
-AC_SUBST(FLINT_LIB_MAJOR,$flint_lib_major)
-AC_SUBST(FLINT_LIB_FULL,$flint_lib_full)
-AC_SUBST(FLINT_IMPLIB,$flint_implib)
-AC_SUBST(FLINT_LIB_STATIC,$flint_lib_static)
+AC_SUBST(PML_LIB,$pml_lib)
+AC_SUBST(PML_LIB_MAJOR,$pml_lib_major)
+AC_SUBST(PML_LIB_FULL,$pml_lib_full)
+AC_SUBST(PML_IMPLIB,$pml_implib)
+AC_SUBST(PML_LIB_STATIC,$pml_lib_static)
 AC_SUBST(EXTRA_SHARED_FLAGS,$extra_shared_flags)
 
-if test "$flint_dlllib" = "yes";
+if test "$pml_dlllib" = "yes";
 then
-    AC_SUBST(FLINT_DLLLIB,1)
+    AC_SUBST(PML_DLLLIB,1)
 else
-    AC_SUBST(FLINT_DLLLIB,0)
+    AC_SUBST(PML_DLLLIB,0)
 fi
 
-if test "$flint_dylib" = "yes";
+if test "$pml_dylib" = "yes";
 then
-    AC_SUBST(FLINT_DYLIB,1)
+    AC_SUBST(PML_DYLIB,1)
 else
-    AC_SUBST(FLINT_DYLIB,0)
+    AC_SUBST(PML_DYLIB,0)
 fi
 
-if test "$flint_solib" = "yes";
+if test "$pml_solib" = "yes";
 then
-    AC_SUBST(FLINT_SOLIB,1)
+    AC_SUBST(PML_SOLIB,1)
 else
-    AC_SUBST(FLINT_SOLIB,0)
+    AC_SUBST(PML_SOLIB,0)
 fi
 
 case "$host_os" in
@@ -914,23 +896,6 @@ fi
 ################################################################################
 
 FLINT_CHECK_GMP_H(6,2,1)
-FLINT_GMP_LONG_LONG_LIMB([SLONG="long long int"
-                          ULONG="unsigned long long int"
-                          gmpcompat_h_in="gmpcompat-longlong.h.in"],
-                         [SLONG="long int"
-                          ULONG="unsigned long int"
-                          gmpcompat_h_in="gmpcompat.h.in"])
-
-AC_SUBST(SLONG)
-AC_SUBST(ULONG)
-
-if test "$flint_cv_gmp_long_long_limb" = "yes";
-then
-    AC_DEFINE(FLINT_LONG_LONG,1,[Define to use long long limbs])
-fi
-
-AC_CONFIG_LINKS([src/gmpcompat.h:src/$gmpcompat_h_in],[],[gmpcompat_h_in="$gmpcompat_h_in"])
-AC_SUBST(GMPCOMPAT_H_IN, $gmpcompat_h_in)
 
 ################################################################################
 # check MPFR
@@ -1010,13 +975,13 @@ AC_SEARCH_LIBS([atan2],[m],
 AC_SEARCH_LIBS([__gmpz_init],[gmp],
     [],
     [AC_MSG_ERROR(["GMP library was not found.  If you indeed have GMP installed, please
-submit a bug report to <https://github.com/flintlib/flint/issues/> so
+submit a bug report to <https://github.com/vneiger/pml/issues/> so
 that we can either fix the issue or give a more proper error message."])])
 
 AC_SEARCH_LIBS([__gmpn_mul_basecase],[gmp],
     [],
     [AC_MSG_ERROR([`mpn_mul_basecase' was not found in the GMP library, which is required by FLINT.
-Please submit a bug report to <https://github.com/flintlib/flint/issues/>.])])
+Please submit a bug report to <https://github.com/vneiger/pml/issues/>.])])
 
 if test "$enable_gmp_internals" = "yes";
 then
@@ -1068,20 +1033,20 @@ then
     AC_SEARCH_LIBS([mpfr_init],[mpfr],
         [],
         [AC_MSG_ERROR([MPFR library was not found.  If you indeed have MPFR installed, please
-submit a bug report to <https://github.com/flintlib/flint/issues/> so
+submit a bug report to <https://github.com/vneiger/pml/issues/> so
 that we can either fix the issue or give a more proper error message.])])
 
     AC_SEARCH_LIBS([mpfr_round_p],[mpfr],
         [],
-        [AC_MSG_ERROR(["`mpfr_round_p' was not found in the MPFR library. It is required for FLINT."])])
+        [AC_MSG_ERROR(["`mpfr_round_p' was not found in the MPFR library. It is required for PML/FLINT."])])
 
     AC_SEARCH_LIBS([mpfr_mulhigh_n],[mpfr],
         [],
-        [AC_MSG_ERROR(["`mpfr_mulhigh_n' was not found in the MPFR library. It is required for FLINT."])])
+        [AC_MSG_ERROR(["`mpfr_mulhigh_n' was not found in the MPFR library. It is required for PML/FLINT."])])
 
     AC_SEARCH_LIBS([mpfr_sqrhigh_n],[mpfr],
         [],
-        [AC_MSG_ERROR(["`mpfr_sqrhigh_n' was not found in the MPFR library. It is required for FLINT."])])
+        [AC_MSG_ERROR(["`mpfr_sqrhigh_n' was not found in the MPFR library. It is required for PML/FLINT."])])
 else
     LIBS="$LIBS -lmpfr"
 fi
@@ -1104,7 +1069,7 @@ if test "$with_blas" = "yes";
 then
     AC_SEARCH_LIBS([cblas_dgemm],[cblas openblas blas],[],
         [AC_MSG_ERROR([BLAS library was not found.  If you indeed have BLAS installed, please
-submit a bug report to <https://github.com/flintlib/flint/issues/> so
+submit a bug report to <https://github.com/vneiger/pml/issues/> so
 that we can either fix the issue or give a more proper error message.])]
     )
 fi
@@ -1112,7 +1077,7 @@ fi
 if test "$with_ntl" = "yes";
 then
     FLINT_CHECK_NTL(,[AC_MSG_ERROR([NTL library was not found.  If you indeed have NTL installed, please
-submit a bug report to <https://github.com/flintlib/flint/issues/> so
+submit a bug report to <https://github.com/vneiger/pml/issues/> so
 that we can either fix the issue or give a more proper error message.])])
 fi
 
@@ -1145,7 +1110,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 [AC_MSG_RESULT([yes])],
 [AC_MSG_RESULT([no])
 AC_MSG_ERROR([Couldn't find alloca, which is required for FLINT. Please submit a bug
-report to <https://github.com/flintlib/flint/issues/> and specify your
+report to <https://github.com/vneiger/pml/issues/> and specify your
 operating system.])])
 
 AC_CHECK_FUNCS([aligned_alloc _aligned_malloc])
@@ -1279,116 +1244,116 @@ FLINT_CHECK_FFT_SMALL(
 # Assembly
 ################################################################################
 
-if test "$enable_assembly" = "yes";
-then
-    if test "x$asm_path" = "x";
-    then
-        AC_MSG_WARN([Currently no assembly available for $host. Disabling assembly...])
-        enable_assembly="no"
-    elif test "$flint_cv_abi" != "64";
-    then
-        AC_MSG_WARN([Currently no assembly available for 32-bit systems. Disabling assembly...])
-        enable_assembly="no"
-    fi
-fi
-
-if test "$enable_assembly" = "yes";
-then
-    GMP_INIT(config.m4)
-
-    GMP_PROG_M4
-    GMP_PATH_NM
-
-    CL_ASM_NOEXECSTACK
-    GMP_ASM_TEXT
-    GMP_ASM_DATA
-    GMP_ASM_LABEL_SUFFIX
-    GMP_ASM_GLOBL
-    GMP_ASM_GLOBL_ATTR
-    GMP_ASM_UNDERSCORE
-    GMP_ASM_RODATA
-    GMP_ASM_TYPE
-    GMP_ASM_SIZE
-    GMP_ASM_LSYM_PREFIX
-    GMP_ASM_ALIGN_LOG
-
-    case $host in
-        ARM64_PATTERN)
-            AC_DEFINE([FLINT_HAVE_ASSEMBLY_armv8],1,[Define if Arm v8 assembly is available])
-            case $host in
-                *-*-darwin*)
-                    GMP_INCLUDE_MPN(src/mpn_extras/arm64/darwin.m4)
-                    ;;
-                *)
-                    GMP_INCLUDE_MPN(src/mpn_extras/arm64/arm64-defs.m4)
-                    ;;
-            esac
-            ;;
-        X86_64_ADX_PATTERN)
-            AC_DEFINE([FLINT_HAVE_ASSEMBLY_x86_64_adx],1,[Define if x86_64 ADX assembly is available])
-            GMP_ASM_ALIGN_FILL_0x90
-            GMP_ASM_COFF_TYPE
-            GMP_INCLUDE_MPN(src/mpn_extras/x86_64/x86_64-defs.m4)
-            case $host in
-                *-*-darwin*)
-                    GMP_INCLUDE_MPN(src/mpn_extras/x86_64/darwin.m4)
-                    ;;
-            esac
-            ;;
-        *)
-            AC_MSG_ERROR([Error in assembly. Report to <https://github.com/flintlib/flint/issues/>.])
-    esac
-
-    GMP_FINISH
-else
-    # LSYM_PREFIX is still needed for x86-64 and ARM64 in longlong_asm_gnu.h
-    case $host in
-        ARM64_PATTERN | X86_64_PATTERN)
-            GMP_INIT(tmpconf)
-            GMP_ASM_TEXT
-            GMP_ASM_LABEL_SUFFIX
-            GMP_ASM_LSYM_PREFIX
-            rm -f $gmp_tmpconfigm4 $gmp_tmpconfigm4i $gmp_tmpconfigm4p
-            ;;
-    esac
-fi
-
-if test "$enable_assembly" = "yes";
-then
-    AC_SUBST(WANT_ASSEMBLY,1)
-    AC_SUBST(ASM_PATH,$asm_path)
-else
-    AC_SUBST(WANT_ASSEMBLY,0)
-    AC_SUBST(ASM_PATH,)
-fi
+#if test "$enable_assembly" = "yes";
+#then
+#    if test "x$asm_path" = "x";
+#    then
+#        AC_MSG_WARN([Currently no assembly available for $host. Disabling assembly...])
+#        enable_assembly="no"
+#    elif test "$flint_cv_abi" != "64";
+#    then
+#        AC_MSG_WARN([Currently no assembly available for 32-bit systems. Disabling assembly...])
+#        enable_assembly="no"
+#    fi
+#fi
+#
+#if test "$enable_assembly" = "yes";
+#then
+#    GMP_INIT(config.m4)
+#
+#    GMP_PROG_M4
+#    GMP_PATH_NM
+#
+#    CL_ASM_NOEXECSTACK
+#    GMP_ASM_TEXT
+#    GMP_ASM_DATA
+#    GMP_ASM_LABEL_SUFFIX
+#    GMP_ASM_GLOBL
+#    GMP_ASM_GLOBL_ATTR
+#    GMP_ASM_UNDERSCORE
+#    GMP_ASM_RODATA
+#    GMP_ASM_TYPE
+#    GMP_ASM_SIZE
+#    GMP_ASM_LSYM_PREFIX
+#    GMP_ASM_ALIGN_LOG
+#
+#    case $host in
+#        ARM64_PATTERN)
+#            AC_DEFINE([FLINT_HAVE_ASSEMBLY_armv8],1,[Define if Arm v8 assembly is available])
+#            case $host in
+#                *-*-darwin*)
+#                    GMP_INCLUDE_MPN(src/mpn_extras/arm64/darwin.m4)
+#                    ;;
+#                *)
+#                    GMP_INCLUDE_MPN(src/mpn_extras/arm64/arm64-defs.m4)
+#                    ;;
+#            esac
+#            ;;
+#        X86_64_ADX_PATTERN)
+#            AC_DEFINE([FLINT_HAVE_ASSEMBLY_x86_64_adx],1,[Define if x86_64 ADX assembly is available])
+#            GMP_ASM_ALIGN_FILL_0x90
+#            GMP_ASM_COFF_TYPE
+#            GMP_INCLUDE_MPN(src/mpn_extras/x86_64/x86_64-defs.m4)
+#            case $host in
+#                *-*-darwin*)
+#                    GMP_INCLUDE_MPN(src/mpn_extras/x86_64/darwin.m4)
+#                    ;;
+#            esac
+#            ;;
+#        *)
+#            AC_MSG_ERROR([Error in assembly. Report to <https://github.com/vneiger/pml/issues/>.])
+#    esac
+#
+#    GMP_FINISH
+#else
+#    # LSYM_PREFIX is still needed for x86-64 and ARM64 in longlong_asm_gnu.h
+#    case $host in
+#        ARM64_PATTERN | X86_64_PATTERN)
+#            GMP_INIT(tmpconf)
+#            GMP_ASM_TEXT
+#            GMP_ASM_LABEL_SUFFIX
+#            GMP_ASM_LSYM_PREFIX
+#            rm -f $gmp_tmpconfigm4 $gmp_tmpconfigm4i $gmp_tmpconfigm4p
+#            ;;
+#    esac
+#fi
+#
+#if test "$enable_assembly" = "yes";
+#then
+#    AC_SUBST(WANT_ASSEMBLY,1)
+#    AC_SUBST(ASM_PATH,$asm_path)
+#else
+#    AC_SUBST(WANT_ASSEMBLY,0)
+#    AC_SUBST(ASM_PATH,)
+#fi
 
 ################################################################################
 # parameters
 ################################################################################
 
-AC_CONFIG_LINKS([src/flint-mparam.h:src/mpn_extras/$param_path/flint-mparam.h],[],[param_path="$param_path"])
-AC_SUBST(PARAM_PATH,$param_path)
+#AC_CONFIG_LINKS([src/flint-mparam.h:src/mpn_extras/$param_path/flint-mparam.h],[],[param_path="$param_path"])
+#AC_SUBST(PARAM_PATH,$param_path)
 
 ################################################################################
 # substitutions and definitions
 ################################################################################
 
-AC_SUBST(FLINT_VERSION_FULL, FLINT_VERSION)
+AC_SUBST(PML_VERSION_FULL, PML_VERSION)
 
 # split version into major/minor/patch using POSIX variable substitutions
-tail=FLINT_VERSION
-FLINT_MAJOR=${tail%%.*}
+tail=PML_VERSION
+PML_MAJOR=${tail%%.*}
 tail=${tail#*.}
-FLINT_MINOR=${tail%%.*}
+PML_MINOR=${tail%%.*}
 tail=${tail#*.}
-FLINT_PATCH=${tail%-*}
+PML_PATCH=${tail%-*}
 
-AC_SUBST(FLINT_MAJOR)
-AC_SUBST(FLINT_MINOR)
-AC_SUBST(FLINT_PATCH)
-AC_SUBST(FLINT_MAJOR_SO)
-AC_SUBST(FLINT_MINOR_SO)
-AC_SUBST(FLINT_PATCH_SO)
+AC_SUBST(PML_MAJOR)
+AC_SUBST(PML_MINOR)
+AC_SUBST(PML_PATCH)
+AC_SUBST(PML_MAJOR_SO)
+AC_SUBST(PML_MINOR_SO)
+AC_SUBST(PML_PATCH_SO)
 
 AC_SUBST(GMP_LIB_PATH,$gmp_lib_path)
 AC_SUBST(MPFR_LIB_PATH,$mpfr_lib_path)
@@ -1396,27 +1361,7 @@ AC_SUBST(BLAS_LIB_PATH,$blas_lib_path)
 AC_SUBST(GC_LIB_PATH,$gc_lib_path)
 AC_SUBST(NTL_LIB_PATH,$ntl_lib_path)
 
-AC_SUBST(LIB_CPPFLAGS,["-DFLINT_NOSTDIO -DFLINT_NOSTDARG"])
-
-# Configure fmpz's memory manager
-if test "$with_gc" = "yes";
-then
-    if test "$enable_thread_safe" = "yes";
-    then
-        AC_MSG_ERROR(["The Boehm-Demers-Weise garbage collector does not support thread-local storage!"])
-    fi
-    fmpz_c="src/fmpz/link/fmpz_gc.c"
-else
-    if test "$enable_reentrant" = "yes";
-    then
-        fmpz_c="src/fmpz/link/fmpz_reentrant.c"
-    else
-        fmpz_c="src/fmpz/link/fmpz_single.c"
-    fi
-fi
-
-AC_CONFIG_LINKS([src/fmpz/fmpz.c:$fmpz_c],[],[fmpz_c="$fmpz_c"])
-AC_SUBST(FMPZ_C_IN, $fmpz_c)
+AC_SUBST(LIB_CPPFLAGS,["-DPML_NOSTDIO -DPML_NOSTDARG"])
 
 if test "$enable_shared" = "yes";
 then
@@ -1435,7 +1380,7 @@ fi
 if test "$enable_coverage" = "yes";
 then
     AC_SUBST(COVERAGE,1)
-    AC_DEFINE(FLINT_COVERAGE,1,[Define to enable coverage.])
+    AC_DEFINE(PML_COVERAGE,1,[Define to enable coverage.])
 else
     AC_SUBST(COVERAGE,0)
 fi
@@ -1449,7 +1394,7 @@ fi
 
 if test "$enable_pretty_tests" = "yes";
 then
-    AC_DEFINE(FLINT_WANT_PRETTY_TESTS,1,[Define to enable pretty printing for tests.])
+    AC_DEFINE(PML_WANT_PRETTY_TESTS,1,[Define to enable pretty printing for tests.])
 fi
 
 if test "$with_ntl" = "yes";
@@ -1461,42 +1406,37 @@ fi
 
 if test "$with_blas" = "yes";
 then
-    AC_DEFINE(FLINT_USES_BLAS,1,[Define to enable BLAS.])
-fi
-
-if test "$with_gc" = "yes";
-then
-    AC_DEFINE(FLINT_USES_GC,1,[Define to enable the Boehm-Demers-Weise garbage collector.])
+    AC_DEFINE(PML_USES_BLAS,1,[Define to enable BLAS.])
 fi
 
 if test "$flint_big_endian" = "yes";
 then
-    AC_DEFINE(FLINT_BIG_ENDIAN,1,[Define if system is big endian.])
+    AC_DEFINE(PML_BIG_ENDIAN,1,[Define if system is big endian.])
 fi
 
 if test "$enable_pthread" = "yes";
 then
-    AC_DEFINE(FLINT_USES_PTHREAD,1,[Define to enable the use of pthread.])
+    AC_DEFINE(PML_USES_PTHREAD,1,[Define to enable the use of pthread.])
 fi
 
 if test "$enable_thread_safe" = "yes";
 then
-    AC_DEFINE(FLINT_USES_TLS,1,[Define to enable thread-local storage.])
+    AC_DEFINE(PML_USES_TLS,1,[Define to enable thread-local storage.])
 fi
 
 if test "$enable_reentrant" = "yes";
 then
-    AC_DEFINE(FLINT_REENTRANT,1,[Define to enable reentrant.])
+    AC_DEFINE(PML_REENTRANT,1,[Define to enable reentrant.])
 fi
 
 if test "$enable_assert" = "yes";
 then
-    AC_DEFINE(FLINT_WANT_ASSERT,1,[Define to enable use of asserts.])
+    AC_DEFINE(PML_WANT_ASSERT,1,[Define to enable use of asserts.])
 fi
 
 if test "$enable_gmp_internals" = "yes";
 then
-    AC_DEFINE(FLINT_WANT_GMP_INTERNALS,1,[Define to enable use of GMP internals.])
+    AC_DEFINE(PML_WANT_GMP_INTERNALS,1,[Define to enable use of GMP internals.])
 fi
 
 if test "$ac_abs_confdir" = "`pwd`";
@@ -1510,7 +1450,7 @@ fi
 # epilog
 ################################################################################
 
-AC_CONFIG_FILES([Makefile flint.pc src/flint.h])
+AC_CONFIG_FILES([Makefile pml.pc src/pml.h])
 AC_OUTPUT
 
 dnl Shorten the original help message

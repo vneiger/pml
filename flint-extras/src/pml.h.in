@@ -1,0 +1,42 @@
+/*
+    Copyright (C) 2025 Vincent Neiger
+
+    This file is part of PML. It is adapted from the files src/flint.h.in
+    in FLINT (GNU LGPL version 3 or later).
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 3 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
+#ifndef PML_H
+#define PML_H
+
+#include <flint/flint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* PML version number */
+
+#define __PML_VERSION @PML_MAJOR@
+#define __PML_VERSION_MINOR @PML_MINOR@
+#define __PML_VERSION_PATCHLEVEL @PML_PATCH@
+#define PML_VERSION "@PML_VERSION_FULL@"
+#define __PML_RELEASE_NUM(a,b,c) ((a)*10000 + (b)*100 + (c))
+#define __PML_RELEASE __PML_RELEASE_NUM(__PML_VERSION, __PML_VERSION_MINOR, __PML_VERSION_PATCHLEVEL)
+
+#if PML_WANT_ASSERT
+# define PML_ASSERT(param) assert(param)
+#else
+# define PML_ASSERT(param)
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  // PML_H
