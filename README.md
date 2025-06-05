@@ -16,6 +16,7 @@ Contributors:
 
  - Seung Gyu Hyun
  - Kevin Tran
+ - Gilles Villard 
 
 ## Licensing
 
