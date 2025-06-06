@@ -380,6 +380,18 @@ AC_PREPROC_IFELSE([AC_LANG_PROGRAM(
 )
 ])
 
+dnl  PML_CHECK_FLINT_H(MAJOR, MINOR, PATCHLEVEL)
+dnl  -----------------------
+dnl  Checks that flint.h can be found and that its version fullfills the version
+dnl  requirement.
+
+dnl GV do not check the version for the moment, see the format of FLINT version numbers
+
+AC_DEFUN([PML_CHECK_FLINT_H],
+[AC_REQUIRE([FLINT_CHECK_GMP_H])
+AC_CHECK_HEADER([flint/flint.h],,AC_MSG_ERROR([Could not find flint/flint.h]))
+])
+
 
 dnl  FLINT_GMP_LONG_LONG_LIMB([action-success][,action-fail])
 dnl  -----------------------
