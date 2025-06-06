@@ -326,6 +326,40 @@ fi,
 with_mpfr="yes"
 )
 
+AC_ARG_WITH(flint_include,
+[AS_HELP_STRING([--with-flint-include=DIR],[MPFR include directory])],
+CPPFLAGS="$CPPFLAGS -I$withval"
+flint_include_path="$withval"
+)
+
+AC_ARG_WITH(flint_lib,
+[AS_HELP_STRING([--with-flint-lib=DIR],[MPFR library directory])],
+LDFLAGS="$LDFLAGS -L$withval"
+flint_lib_path="$withval"
+)
+
+AC_ARG_WITH(flint,
+[AS_HELP_STRING([--with-flint[[=DIR]]],[MPFR install directory])],
+if test "$with_flint" = "no";
+then
+    AC_MSG_FAILURE([The use of MPFR is mandatory.])
+elif test "$with_flint" = "yes";
+then
+    :
+elif test -z "$flint_include_path" && test -z "$flint_lib_path";
+then
+    CPPFLAGS="$CPPFLAGS -I$withval/include"
+    LDFLAGS="$LDFLAGS -L$withval/lib"
+    flint_include_path="$withval/include"
+    flint_lib_path="$withval/lib"
+    with_flint="yes"
+else
+    AC_MSG_FAILURE([Cannot use --with-flint along with --with-flint-include or --with-flint-lib.])
+fi,
+with_flint="yes"
+)
+
+
 AC_ARG_WITH(blas_include,
 [AS_HELP_STRING([--with-blas-include=DIR],[Use BLAS and specify its include directory])],
 CPPFLAGS="$CPPFLAGS -I$withval"
@@ -904,6 +938,12 @@ FLINT_CHECK_GMP_H(6,2,1)
 FLINT_CHECK_MPFR_H(4,1,0)
 
 ################################################################################
+# check FLINT
+################################################################################
+
+PML_CHECK_FLINT_H(0,0,0) # GV which version ?  
+
+################################################################################
 # check ABI
 ################################################################################
 
@@ -1050,6 +1090,19 @@ that we can either fix the issue or give a more proper error message.])])
 else
     LIBS="$LIBS -lmpfr"
 fi
+
+if test "$enable_flint_check" = "yes";
+then
+    AC_SEARCH_LIBS([llo],[flint],
+        [],
+        [AC_MSG_ERROR([MPFR library was not found.  If you indeed have MPFR installed, please
+submit a bug report to <https://github.com/vneiger/pml/issues/> so
+that we can either fix the issue or give a more proper error message.])])
+
+else
+    LIBS="$LIBS -lflint"
+fi
+
 
 if test "$enable_pthread" = "yes";
 then
@@ -1357,6 +1410,7 @@ AC_SUBST(PML_PATCH_SO)
 
 AC_SUBST(GMP_LIB_PATH,$gmp_lib_path)
 AC_SUBST(MPFR_LIB_PATH,$mpfr_lib_path)
+AC_SUBST(FLINT_LIB_PATH,$flint_lib_path)
 AC_SUBST(BLAS_LIB_PATH,$blas_lib_path)
 AC_SUBST(GC_LIB_PATH,$gc_lib_path)
 AC_SUBST(NTL_LIB_PATH,$ntl_lib_path)
