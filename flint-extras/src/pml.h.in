@@ -16,6 +16,8 @@
 
 #include <flint/flint.h>
 
+#include "config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
