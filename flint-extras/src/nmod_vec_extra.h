@@ -97,7 +97,6 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ul
 // (correctness bound related to how much we can accumulate in high part: probably same bound as for AVX already in flint?)
 #if defined(__AVX2__) && FLINT_BITS == 64
 ulong _nmod_vec_dot2_half_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-ulong _nmod_vec_dot2_half_avx_int(const uint * v1, const uint * v2, ulong len, nmod_t mod);
 #endif
 // some timings on zen4 with modulus == 32 bits close to 2**32:
 //            bit/len 50      100     200     400     600     800     1000    2000    4000    8000    16000   50000   1000000

@@ -281,65 +281,6 @@ ulong _nmod_vec_dot2_half_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
     return res;
 }
 
-ulong _nmod_vec_dot2_half_avx_int(const uint * v1, const uint * v2, ulong len, nmod_t mod)
-{
-    const vec4n low_bits = vec4n_set_n(DOT_SPLIT_MASK);
-    vec4n dp_lo = vec4n_zero();
-    vec4n dp_hi = vec4n_zero();
-
-    ulong i = 0;
-    // DOT_SPLIT_BITS == 56: we can accumulate up to 2**8 == 256 integers of <= DOT_SPLIT_BITS bits without overflow
-    for ( ; i+255 < len; i += 256)
-    {
-        ulong j = 0;
-        for ( ; j+7 < 256; j += 8)
-        {
-            __m256i v1i = _mm256_loadu_si256((__m256i *) (v1+i+j));
-            __m256i v2i = _mm256_loadu_si256((__m256i *) (v2+i+j));
-            __m256i prod = vec4n_mul(v1i, v2i);
-            dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(prod, DOT_SPLIT_BITS));
-            dp_lo = vec4n_add(dp_lo, vec4n_bit_and(prod, low_bits));
-            prod = vec4n_mul(_mm256_srli_epi64(v1i, 32), _mm256_srli_epi64(v2i, 32));
-            dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(prod, DOT_SPLIT_BITS));
-            dp_lo = vec4n_add(dp_lo, vec4n_bit_and(prod, low_bits));
-        }
-        // dp_lo might be very close to full 64 bits: move its bits 56..63 to dp_hi
-        dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(dp_lo, DOT_SPLIT_BITS));
-        dp_lo = vec4n_bit_and(dp_lo, low_bits);
-    }
-
-    // less than 256 terms remaining
-    // we can accumulate all of the next <= 248 ones
-    for ( ; i+7 < len; i += 8)
-    {
-        __m256i v1i = _mm256_loadu_si256((__m256i *) (v1+i));
-        __m256i v2i = _mm256_loadu_si256((__m256i *) (v2+i));
-        __m256i prod = vec4n_mul(v1i, v2i);
-        dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(prod, DOT_SPLIT_BITS));
-        dp_lo = vec4n_add(dp_lo, vec4n_bit_and(prod, low_bits));
-        prod = vec4n_mul(_mm256_srli_epi64(v1i, 32), _mm256_srli_epi64(v2i, 32));
-        dp_hi = vec4n_add(dp_hi, vec4n_bit_shift_right(prod, DOT_SPLIT_BITS));
-        dp_lo = vec4n_add(dp_lo, vec4n_bit_and(prod, low_bits));
-    }
-
-    // since only <= 248 were accumulated, we can safely sum 4 terms horizontally
-    ulong hsum_lo = vec4n_horizontal_sum(dp_lo);
-    ulong hsum_hi = vec4n_horizontal_sum(dp_hi) + (hsum_lo >> DOT_SPLIT_BITS);
-    hsum_lo &= DOT_SPLIT_MASK;
-
-    for ( ; i < len; i++)
-    {
-        ulong prod = (ulong)v1[i] * v2[i];
-        hsum_hi += (prod >> DOT_SPLIT_BITS);
-        hsum_lo += (prod & DOT_SPLIT_MASK);
-    }
-
-    ulong res;
-    // TODO replace this with some powmod2_precomp
-    NMOD_RED(res, ((1L<<DOT_SPLIT_BITS) % mod.n) * hsum_hi + hsum_lo, mod);
-    return res;
-}
-
 // TODO benchmark more, integrate, give precise conditions for when this works
 // (or better, really do a hand-made avx512 version...)
 // --> if splitting at 26, each product is 52, can allow at most 12 additional bits,
