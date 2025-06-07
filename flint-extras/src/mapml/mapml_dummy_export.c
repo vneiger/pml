@@ -21,8 +21,8 @@
 #define MAPML_DUMMY_EXPORT_C
 
 
-#include "mapml.h"
-#include "conversion.h"
+#include "mapml_in.h"
+#include "mapml_conversion.h"
 
 
 

@@ -176,7 +176,7 @@ HEADER_DIRS :=                                                              \
         nmod_poly_extra                                                     \
         nmod_poly_mat_extra                                                 \
         nmod_vec_extra                                                      \
-        sagemath_extra
+        sagemath_extra                                                      
 
 DIRS := $(HEADLESS_DIRS) $(HEADER_DIRS)
 

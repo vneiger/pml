@@ -21,8 +21,8 @@
 #define MAPML_MATPOLY_EXPORT_C
 
 #include <string.h>
-#include "mapml.h"
-#include "conversion.h"
+#include "mapml_in.h"
+#include "mapml_conversion.h"
 
 /***********************************************************
  * 
