@@ -109,7 +109,7 @@ dnl AC_CANONICAL_HOST
 # configure headers
 ################################################################################
 
-AC_CONFIG_HEADERS(src/config.h)
+AC_CONFIG_HEADERS(src/config.h src/pml-config.h)
 
 ################################################################################
 # features
