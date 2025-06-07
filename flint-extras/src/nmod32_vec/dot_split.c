@@ -1,6 +1,14 @@
+
+#ifdef __AVX2__
+#define HAS_AVX2
+#endif
+
+#ifdef HAS_AVX2  // GV
+
 #include <immintrin.h>
 
 #include "flint/nmod_vec.h"  // for DOT_SPLIT_MASK
+
 #include "nmod32_vec.h"
 
 uint _nmod32_vec_dot_split(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp)
@@ -372,3 +380,5 @@ uint _nmod32_vec_dot_ifma_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nm
     return (uint)res;
 }
 #endif  // HAVE_AVX512
+
+#endif  // GV HAS_AVX2

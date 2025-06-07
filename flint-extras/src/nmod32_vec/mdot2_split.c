@@ -1,6 +1,12 @@
 #include <flint/flint.h>
 #include <flint/nmod_vec.h>
 
+#ifdef __AVX2__
+#define HAS_AVX2
+#endif
+
+#ifdef HAS_AVX2  // GV
+
 #include "nmod32_vec.h"
 
 void _nmod32_vec_mdot2_split(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
@@ -106,3 +112,4 @@ void _nmod32_vec_mdot3_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
 }
 #endif
 
+#endif  // GV HAS_AVX2

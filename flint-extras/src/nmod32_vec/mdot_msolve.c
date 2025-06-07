@@ -1,3 +1,9 @@
+#ifdef __AVX2__
+#define HAS_AVX2
+#endif
+
+#ifdef HAS_AVX2  // GV
+
 #include "nmod32_vec.h"
 
 #define MONE32 ((uint)0xFFFFFFFF)
@@ -126,3 +132,5 @@ void _nmod32_vec_mdot_msolve_native_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr 
         mv[j] = (mv[j] + tmp) % PRIME;
     }
 }
+
+#endif  // GV HAS_AVX2
