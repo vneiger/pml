@@ -385,11 +385,23 @@ dnl  -----------------------
 dnl  Checks that flint.h can be found and that its version fullfills the version
 dnl  requirement.
 
-dnl GV do not check the version for the moment, see the format of FLINT version numbers
-
 AC_DEFUN([PML_CHECK_FLINT_H],
-[AC_REQUIRE([FLINT_CHECK_GMP_H])
+[AC_REQUIRE([FLINT_CHECK_MPFR_H])
 AC_CHECK_HEADER([flint/flint.h],,AC_MSG_ERROR([Could not find flint/flint.h]))
+AC_MSG_CHECKING([if version of FLINT is greater than $1.$2.$3])
+AC_PREPROC_IFELSE([AC_LANG_PROGRAM(
+        [#include <flint/flint.h>
+        ],[#if (__FLINT_VERSION < $1) \
+         || (__FLINT_VERSION == $1 && __FLINT_VERSION_MINOR < $2) \
+         || (__FLINT_VERSION == $1 && __FLINT_VERSION_MINOR == $2 && __FLINT_VERSION_PATCHLEVEL < $3)
+        # error FLINT version $1.$2.$3 or later is required
+        #endif
+        ]
+    )],
+    AC_MSG_RESULT([yes]),
+    AC_MSG_RESULT([no])
+    AC_MSG_ERROR([FLINT version $1.$2.$3 or later is required.])
+)
 ])
 
 

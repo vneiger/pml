@@ -941,7 +941,7 @@ FLINT_CHECK_MPFR_H(4,1,0)
 # check FLINT
 ################################################################################
 
-PML_CHECK_FLINT_H(0,0,0) # GV which version ?  
+PML_CHECK_FLINT_H(3,2,0)
 
 ################################################################################
 # check ABI
@@ -1093,9 +1093,9 @@ fi
 
 if test "$enable_flint_check" = "yes";
 then
-    AC_SEARCH_LIBS([llo],[flint],
+    AC_SEARCH_LIBS([flint_malloc],[flint],
         [],
-        [AC_MSG_ERROR([MPFR library was not found.  If you indeed have MPFR installed, please
+        [AC_MSG_ERROR([FLINT library was not found.  If you indeed have FLINT installed, please
 submit a bug report to <https://github.com/vneiger/pml/issues/> so
 that we can either fix the issue or give a more proper error message.])])
 

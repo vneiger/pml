@@ -61,7 +61,7 @@
 /* Define if system has cpu_set_t */
 #undef FLINT_USES_CPUSET
 
-/* Define to 1 if you have the 'aligned_alloc' function. */
+/* Define to 1 if you have the `aligned_alloc' function. */
 #undef HAVE_ALIGNED_ALLOC
 
 /* Define to 1 if you have the <alloca.h> header file. */
@@ -130,7 +130,7 @@
 /* Define to 1 if you have the <windows.h> header file. */
 #undef HAVE_WINDOWS_H
 
-/* Define to 1 if you have the '_aligned_malloc' function. */
+/* Define to 1 if you have the `_aligned_malloc' function. */
 #undef HAVE__ALIGNED_MALLOC
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
@@ -201,7 +201,7 @@
 #define OPTIMIZE_OSIZE
 #define OPTIMIZE_UNROLL_LOOPS
 
-/* Define to 1 if all of the C89 standard headers exist (not just the ones
+/* Define to 1 if all of the C90 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
    backward compatibility; new code need not use it. */
 #undef STDC_HEADERS
@@ -218,7 +218,7 @@
 # endif
 #endif
 
-/* Define to '__inline__' or '__inline' if that's what the C compiler
+/* Define to `__inline__' or `__inline' if that's what the C compiler
    calls it, or to nothing if 'inline' is not supported under any name.  */
 #ifndef __cplusplus
 #undef inline
