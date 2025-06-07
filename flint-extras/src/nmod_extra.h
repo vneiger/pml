@@ -1,41 +1,36 @@
 #ifndef __NMOD_EXTRA__H
 #define __NMOD_EXTRA__H
 
-/*------------------------------------------------------------*/
-/*        TODO: safe to assume this exists?                   */
-/*------------------------------------------------------------*/
-
+#include <flint/flint.h>
+#include <flint/longlong.h>
 #include <flint/mpn_extras.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
-#include <flint/fft_small.h>
+#include <flint/ulong_extras.h>
 
-#if (defined __SIZEOF_INT128__ && GMP_LIMB_BITS == 64)
-#define HAS_INT128
-#define mp_dlimb_t unsigned __int128
+/* when possible, we rely on machine_vectors.h */
+/* some things are only implemented for avx2 or flavours of avx512 */
+#define PML_HAVE_MACHINE_VECTORS FLINT_HAVE_FFT_SMALL
+#if PML_HAVE_MACHINE_VECTORS
+# include <flint/machine_vectors.h>
 #endif
-
-/*------------------------------------------------------------*/
-/* TODO: find the proper way to test                          */
-/*------------------------------------------------------------*/
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-/*------------------------------------------------------------*/
-/* TODO: find which flags to test for                         */
-/*------------------------------------------------------------*/
-
-#ifdef HAS_AVX2 // TODO: use flint flags for avx512/avx2?
-#include <immintrin.h>
-#endif
-
-#if (GMP_LIMB_BITS == 64)
-#define mp_hlimb_t uint32_t     // half-limb
-#define mp_qlimb_t uint16_t     // quarter-limb
-#define mp_hlimb_signed_t int32_t      // signed half-limb
-#define mp_qlimb_signed_t int16_t       // signed quarter-limb
-#endif
+// TODO flags for AVX
+// GCC uses the following (e.g. on znver4):
+// #define __AVX__ 1
+// #define __AVX2__ 1
+// #define __AVXIFMA__ 1
+// #define __AVX512BF16__ 1
+// #define __AVX512BITALG__ 1
+// #define __AVX512BW__ 1
+// #define __AVX512CD__ 1
+// #define __AVX512DQ__ 1
+// #define __AVX512F__ 1
+// #define __AVX512IFMA__ 1
+// #define __AVX512VBMI__ 1
+// #define __AVX512VBMI2__ 1
+// #define __AVX512VL__ 1
+// #define __AVX512VNNI__ 1
+// #define __AVX512VPOPCNTDQ__ 1
 
 
 /*------------------------------------------------------------*/
@@ -62,8 +57,6 @@ ulong inverse_mod_power_of_two(ulong p, int k);
 ulong nmod_find_root(long n, nmod_t mod);
 
 
-#ifdef HAS_INT128
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -71,14 +64,19 @@ ulong nmod_find_root(long n, nmod_t mod);
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
+/* TODO unused for the moment:
+ * - what does this bring compared to n_mulmod_shoup in FLINT?
+ * - the lazy/unreduced variant could be defined locally in relevant files like FFT ones (?))
+ */
+
 /*------------------------------------------------------------*/
 /* high word of a*b, assuming words are 64 bits               */
 /*------------------------------------------------------------*/
 FLINT_FORCE_INLINE ulong mul_hi(ulong a, ulong b)
 {
-    mp_dlimb_t prod;
-    prod = a * (mp_dlimb_t)b;
-    return prod >> 64;
+    ulong p_hi, p_lo;
+    umul_ppmm(p_hi, p_lo, a, b);
+    return p_hi;
 }
 
 /*------------------------------------------------------------*/
@@ -86,7 +84,7 @@ FLINT_FORCE_INLINE ulong mul_hi(ulong a, ulong b)
 /*------------------------------------------------------------*/
 FLINT_FORCE_INLINE ulong prep_mul_mod_precon(ulong b, ulong p)
 {
-    return ((mp_dlimb_t) b << 64) / p;
+    return n_mulmod_precomp_shoup(b, p);
 }
 
 /*------------------------------------------------------------*/
@@ -96,15 +94,7 @@ FLINT_FORCE_INLINE ulong prep_mul_mod_precon(ulong b, ulong p)
 /*------------------------------------------------------------*/
 FLINT_FORCE_INLINE ulong mul_mod_precon(ulong a, ulong b, ulong p, ulong i_b)
 {
-    ulong q;
-    long t;
-
-    q = mul_hi(i_b, a);
-    t = a*b - q*p - p;
-    if (t < 0)
-        return t + p;
-    else
-        return t;
+    return n_mulmod_shoup(b, a, i_b, p);
 }
 
 /*------------------------------------------------------------*/
@@ -119,16 +109,14 @@ FLINT_FORCE_INLINE ulong mul_mod_precon_unreduced(ulong a, ulong b, ulong p, ulo
     return a*b - q*p;
 }
 
-#endif
-
-
-#ifdef HAS_AVX2 // GV
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* A few extra operations for the fft_small types             */
+/* A few extra operations for the machine_vectors types       */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+
+#if FLINT_HAVE_FFT_SMALL
 
 /*------------------------------------------------------------*/
 /* returns a + b mod n, assuming a,b reduced mod n            */
@@ -164,11 +152,12 @@ FLINT_FORCE_INLINE vec4d vec4d_addmod(vec4d a, vec4d b, vec4d n)
 /*------------------------------------------------------------*/
 FLINT_FORCE_INLINE vec4d vec4d_load_unaligned_nn_ptr(nn_ptr a)
 {
+// TODO flags AVX512
 #ifdef FLINT_HAVE_AVX512
     return  _mm256_setr_m128d( _mm_cvtepi64_pd(_mm_loadu_si128((vec2n *) a)),
                                _mm_cvtepi64_pd(_mm_loadu_si128((vec2n *) (a + 2))) );
-#else // TODO need to test if has avx2?
-// when AVX2 is available, this is a bit slower than the solution above
+#else
+    // when AVX2 is available, this is a bit slower than the above
     return vec4n_convert_limited_vec4d(vec4n_load_unaligned(a));
 #endif
 }
@@ -182,7 +171,7 @@ FLINT_FORCE_INLINE void vec4d_store_unaligned_nn_ptr(nn_ptr dest, vec4d a)
     vec4n_store_unaligned(dest, vec4d_convert_limited_vec4n(a));
 }
 
-#ifdef HAS_AVX2 // GV
+#if defined(__AVX2__)
 
 FLINT_FORCE_INLINE void vec4n_store_aligned(ulong* z, vec4n a)
 {

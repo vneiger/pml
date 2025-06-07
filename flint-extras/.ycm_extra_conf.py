@@ -36,13 +36,13 @@ import ycm_core
 flags = [
     '-x',
     'c',
-    '-I./include/',
-    '-I../../include/',
-    '-I../include/',
+    '-I./src/',
     '-Wall',
     '-Wextra',
     '-O3',
-    '-march=native'
+    '-march=native',
+    '-Wno-unused-includes',
+    '-Wno-unused-function',
 ]
 
 
