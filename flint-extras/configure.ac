@@ -327,22 +327,22 @@ with_mpfr="yes"
 )
 
 AC_ARG_WITH(flint_include,
-[AS_HELP_STRING([--with-flint-include=DIR],[MPFR include directory])],
+[AS_HELP_STRING([--with-flint-include=DIR],[FLINT include directory])],
 CPPFLAGS="$CPPFLAGS -I$withval"
 flint_include_path="$withval"
 )
 
 AC_ARG_WITH(flint_lib,
-[AS_HELP_STRING([--with-flint-lib=DIR],[MPFR library directory])],
+[AS_HELP_STRING([--with-flint-lib=DIR],[FLINT library directory])],
 LDFLAGS="$LDFLAGS -L$withval"
 flint_lib_path="$withval"
 )
 
 AC_ARG_WITH(flint,
-[AS_HELP_STRING([--with-flint[[=DIR]]],[MPFR install directory])],
+[AS_HELP_STRING([--with-flint[[=DIR]]],[FLINT install directory])],
 if test "$with_flint" = "no";
 then
-    AC_MSG_FAILURE([The use of MPFR is mandatory.])
+    AC_MSG_FAILURE([The use of FLINT is mandatory.])
 elif test "$with_flint" = "yes";
 then
     :
@@ -941,7 +941,7 @@ FLINT_CHECK_MPFR_H(4,1,0)
 # check FLINT
 ################################################################################
 
-PML_CHECK_FLINT_H(0,0,0) # GV which version ?  
+PML_CHECK_FLINT_H(3,2,0)
 
 ################################################################################
 # check ABI
@@ -1093,9 +1093,9 @@ fi
 
 if test "$enable_flint_check" = "yes";
 then
-    AC_SEARCH_LIBS([llo],[flint],
+    AC_SEARCH_LIBS([flint_malloc],[flint],
         [],
-        [AC_MSG_ERROR([MPFR library was not found.  If you indeed have MPFR installed, please
+        [AC_MSG_ERROR([FLINT library was not found.  If you indeed have FLINT installed, please
 submit a bug report to <https://github.com/vneiger/pml/issues/> so
 that we can either fix the issue or give a more proper error message.])])
 
