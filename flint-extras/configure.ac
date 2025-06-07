@@ -327,22 +327,22 @@ with_mpfr="yes"
 )
 
 AC_ARG_WITH(flint_include,
-[AS_HELP_STRING([--with-flint-include=DIR],[MPFR include directory])],
+[AS_HELP_STRING([--with-flint-include=DIR],[FLINT include directory])],
 CPPFLAGS="$CPPFLAGS -I$withval"
 flint_include_path="$withval"
 )
 
 AC_ARG_WITH(flint_lib,
-[AS_HELP_STRING([--with-flint-lib=DIR],[MPFR library directory])],
+[AS_HELP_STRING([--with-flint-lib=DIR],[FLINT library directory])],
 LDFLAGS="$LDFLAGS -L$withval"
 flint_lib_path="$withval"
 )
 
 AC_ARG_WITH(flint,
-[AS_HELP_STRING([--with-flint[[=DIR]]],[MPFR install directory])],
+[AS_HELP_STRING([--with-flint[[=DIR]]],[FLINT install directory])],
 if test "$with_flint" = "no";
 then
-    AC_MSG_FAILURE([The use of MPFR is mandatory.])
+    AC_MSG_FAILURE([The use of FLINT is mandatory.])
 elif test "$with_flint" = "yes";
 then
     :
