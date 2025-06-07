@@ -21,8 +21,8 @@
 #define MAPML_MATPOLY_EXPORT_H
 
 
-#include "mapml.h"
-#include "conversion.h"
+#include "mapml_in.h"
+#include "mapml_conversion.h"
 
 
 ALGEB pm_coeffs(MKernelVector kv, ALGEB *args);
