@@ -17,6 +17,13 @@
 
 #define HAVE_AVX512 1   // TODO handle AVX flags
 
+#ifdef __AVX2__
+#define HAS_AVX2
+#endif
+
+#ifdef HAS_AVX2  // GV
+
+
 // functions below accumulate 8 terms:
 //  -> modulus <= DOT2_ACC8_MAX_MODULUS
 //  -> len <= DOT2_ACC8_MAX_LEN
@@ -164,6 +171,8 @@ void _nmod32_vec_mdot3_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
 #endif
 
 #endif // ifndef  __NMOD32_VEC__H
+
+#endif // GV HAS_AVX2
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
