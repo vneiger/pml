@@ -485,6 +485,31 @@ then
     with_ntl="yes"
 fi
 
+
+# maple interface 
+
+AC_MSG_CHECKING([use of maple])
+
+AC_ARG_WITH(maplec,
+[AS_HELP_STRING([--with-maplec=DIR], [Maple include directory])],
+AC_MSG_RESULT([yes])
+CPPFLAGS="$CPPFLAGS -I$withval/include"
+maple_include_path="$withval", AC_MSG_RESULT([no])
+)
+
+
+AC_ARG_WITH(maplelib,
+[AS_HELP_STRING([--with-maplelib=DIR], [Maple library directory])], 
+LDFLAGS="$LDFLAGS -L$withval"
+maple_lib_path="$withval"
+)
+
+if test "$with_maplec" != "no" && test -n "$maple_include_path" && test -n "$maple_lib_path";
+then
+    with_maple="yes"
+fi
+
+
 ################################################################################
 # architecture specifics
 ################################################################################
@@ -999,6 +1024,13 @@ then
     AC_LANG_POP([C++])
 fi
 
+if test "$with_maple" = "yes";
+then
+    AC_CHECK_HEADER([maplec.h],,
+                    AC_MSG_ERROR([Could not find maplec.h!]))
+fi
+
+
 ################################################################################
 # check libraries
 ################################################################################
@@ -1133,6 +1165,15 @@ then
 submit a bug report to <https://github.com/vneiger/pml/issues/> so
 that we can either fix the issue or give a more proper error message.])])
 fi
+
+if test "$with_maple" = "yes";
+then 
+    AC_SEARCH_LIBS([MapleToInteger64],[maplec],,
+    [AC_MSG_ERROR(["MAPLE library was not found.  If you indeed have maple installed, please
+submit a bug report to <https://github.com/vneiger/pml/issues/> so
+that we can either fix the issue or give a more proper error message.])])
+fi
+
 
 ################################################################################
 # check settings and environment
