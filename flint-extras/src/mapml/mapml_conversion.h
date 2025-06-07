@@ -20,7 +20,7 @@
 #ifndef MAPML_CONVERSION_H
 #define MAPML_CONVERSION_H
 
-#include "mapml.h"
+#include "mapml_in.h"
 
 
 
