@@ -3,31 +3,11 @@
 
 #include <flint/flint.h>
 
-#if defined(FLINT_HAVE_FFT_SMALL)
-# define PML_HAVE_MACHINE_VECTORS 0
-#endif
-
-/** for AVX2 we just consider the standard set, e.g we ignore AVX-IFMA which is
- * supported by very few non-AVX512 processors */
-#if PML_HAVE_MACHINE_VECTORS && defined(__AVX2__)
-# define PML_HAVE_AVX2 1
-#endif
-
-/** for AVX512 we require many flags that tend to be supported by all recent
- * AVX512-capable processors */
-#if PML_HAVE_MACHINE_VECTORS     \
-     && defined(__AVX512F__)     \
-     && defined(__AVX512DQ__)    \
-     && defined(__AVX512IFMA__)  \
-     && defined(__AVX512BW__)    \
-     && defined(__AVX512VL__)    \
-     && defined(__AVX512CD__)    \
-     && defined(__AVX512VNNI__)
-# define PML_HAVE_AVX512 1
+#if PML_HAVE_MACHINE_VECTORS
+# include <flint/machine_vectors.h>
 #endif
 
 #if PML_HAVE_AVX2
-# include <flint/machine_vectors.h>
 # if defined(__GNUC__)
 #  include <immintrin.h>
 # elif defined(_MSC_VER)
