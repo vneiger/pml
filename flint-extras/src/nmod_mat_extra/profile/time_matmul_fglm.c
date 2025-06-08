@@ -78,7 +78,7 @@ void time_nmod_mat_mul(ulong nbits, ulong dim1, ulong dim2, ulong block, ulong i
         {
             tt = clock();
             for (ulong it = 0; it < iter; it++)
-                nmod_mat_mul_small_modulus(res, mat, vec);
+                nmod_mat_mul_2dot(res, mat, vec);
             t += (double)(clock()-tt) / CLOCKS_PER_SEC;
             nb_iter += 1;
         }
@@ -107,7 +107,7 @@ int main(int argc, char ** argv)
     //printf("  - mul: flint's nmod_mat_mul\n");
     printf("  - blas: flint's BLAS-based mul\n");
     printf("  - newdot: pml's mul using new nmod_vec_dot_product\n");
-    printf("  - small_mod: pml's mul for small moduli using AVX-based nmod_vec_dot_product\n\n");
+    printf("  - 2dot: pml's mul for small moduli using AVX-based nmod_vec_dot_product\n\n");
     printf("Args: nbits, matrix dim1, matrix dim2, block size, nb sequence terms\n\n");
     printf("      nbits == 0 --> test several nbits\n\n");
     printf("   (dim1 == nrows; dim2 == ncols; idea is dim1 == number of nontrivial rows)\n\n");
@@ -121,7 +121,7 @@ int main(int argc, char ** argv)
         long iter = atoi(argv[5]);
 
         //printf("nbits\tdim1\tdim2\tblock\titer\tmul\tblas\tnewdot\tsmall_mod\n");
-        printf("nbits\tdim1\tdim2\tblock\titer\tblas\tnewdot\tsmall_mod\n");
+        printf("nbits\tdim1\tdim2\tblock\titer\tblas\tnewdot\t2dot\n");
         if (nbits > 0)
         {
             time_nmod_mat_mul(nbits, dim1, dim2, block, iter, (1L << atoi(argv[1])) - 1, state);

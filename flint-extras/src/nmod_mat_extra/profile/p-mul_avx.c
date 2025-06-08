@@ -105,11 +105,11 @@ void time_nmod_mat_mul(ulong len, ulong nbits, ulong n, flint_rand_t state)
         while (t < 0.5)
         {
             tt = clock();
-            nmod_mat_mul_small_modulus(c, a, b);
-            nmod_mat_mul_small_modulus(c, a, b);
-            nmod_mat_mul_small_modulus(c, a, b);
-            nmod_mat_mul_small_modulus(c, a, b);
-            nmod_mat_mul_small_modulus(c, a, b);
+            nmod_mat_mul_2dot(c, a, b);
+            nmod_mat_mul_2dot(c, a, b);
+            nmod_mat_mul_2dot(c, a, b);
+            nmod_mat_mul_2dot(c, a, b);
+            nmod_mat_mul_2dot(c, a, b);
             t += (double)(clock()-tt) / CLOCKS_PER_SEC;
             nb_iter += 5;
         }
