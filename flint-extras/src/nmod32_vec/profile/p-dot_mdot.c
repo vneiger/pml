@@ -105,32 +105,32 @@ void sample_##fun(void * arg, ulong count)                      \
     FLINT_TEST_CLEAR(state);                                    \
 }
 
-TIME_DOT(dot_split, pow2_precomp);
+TIME_DOT(dot_split, pow2_precomp)
 #if PML_HAVE_AVX2
-TIME_DOT(dot_split_avx2, pow2_precomp);
+TIME_DOT(dot_split_avx2, pow2_precomp)
 #endif  /* PML_HAVE_AVX2 */
 #if PML_HAVE_AVX512
-TIME_DOT(dot_split_avx512, pow2_precomp);
-TIME_DOT(dot_ifma_avx2, pow2_precomp);
-TIME_DOT(dot_ifma_avx512, pow2_precomp);
+TIME_DOT(dot_split_avx512, pow2_precomp)
+TIME_DOT(dot_ifma_avx2, pow2_precomp)
+TIME_DOT(dot_ifma_avx512, pow2_precomp)
 #else
-TIME_VOID_DOT(dot_split_avx512, pow2_precomp);
-TIME_VOID_DOT(dot_ifma_avx2, pow2_precomp);
-TIME_VOID_DOT(dot_ifma_avx512, pow2_precomp);
+TIME_VOID_DOT(dot_split_avx512, pow2_precomp)
+TIME_VOID_DOT(dot_ifma_avx2, pow2_precomp)
+TIME_VOID_DOT(dot_ifma_avx512, pow2_precomp)
 #endif  /* PML_HAVE_AVX512 */
 
-SAMPLE_DOT(dot_split, pow2_precomp);
+SAMPLE_DOT(dot_split, pow2_precomp)
 #if PML_HAVE_AVX2
-SAMPLE_DOT(dot_split_avx2, pow2_precomp);
+SAMPLE_DOT(dot_split_avx2, pow2_precomp)
 #endif  /* PML_HAVE_AVX2 */
 #if PML_HAVE_AVX512
-SAMPLE_DOT(dot_ifma_avx2, pow2_precomp);
-SAMPLE_DOT(dot_split_avx512, pow2_precomp);
-SAMPLE_DOT(dot_ifma_avx512, pow2_precomp);
+SAMPLE_DOT(dot_ifma_avx2, pow2_precomp)
+SAMPLE_DOT(dot_split_avx512, pow2_precomp)
+SAMPLE_DOT(dot_ifma_avx512, pow2_precomp)
 #else
-SAMPLE_VOID_DOT(dot_ifma_avx2, pow2_precomp);
-SAMPLE_VOID_DOT(dot_split_avx512, pow2_precomp);
-SAMPLE_VOID_DOT(dot_ifma_avx512, pow2_precomp);
+SAMPLE_VOID_DOT(dot_ifma_avx2, pow2_precomp)
+SAMPLE_VOID_DOT(dot_split_avx512, pow2_precomp)
+SAMPLE_VOID_DOT(dot_ifma_avx512, pow2_precomp)
 #endif  /* PML_HAVE_AVX512 */
 
 #if PML_HAVE_AVX2
@@ -295,46 +295,46 @@ void sample_##fun(void * arg, ulong count)                      \
 }
 
 
-TIME_MDOT(mdot_split);
-TIME_MDOT(mdot2_split);
+TIME_MDOT(mdot_split)
+TIME_MDOT(mdot2_split)
 
 #if PML_HAVE_AVX2
-TIME_MDOT(mdot_split_avx2);
-TIME_MDOT(mdot2_split_avx2);
-TIME_MDOT(mdot3_split_avx2);
-TIME_MDOT(mdot_msolve_native_avx2);
-TIME_MDOT(mdot_msolve_via_dot_avx2);
+TIME_MDOT(mdot_split_avx2)
+TIME_MDOT(mdot2_split_avx2)
+TIME_MDOT(mdot3_split_avx2)
+TIME_MDOT(mdot_msolve_native_avx2)
+TIME_MDOT(mdot_msolve_via_dot_avx2)
 #endif  /* PML_HAVE_AVX2 */
 
 #if PML_HAVE_AVX512
-TIME_MDOT(mdot_split_avx512);
-TIME_MDOT(mdot2_split_avx512);
-TIME_MDOT(mdot3_split_avx512);
+TIME_MDOT(mdot_split_avx512)
+TIME_MDOT(mdot2_split_avx512)
+TIME_MDOT(mdot3_split_avx512)
 #else
-TIME_VOID_MDOT(mdot_split_avx512);
-TIME_VOID_MDOT(mdot2_split_avx512);
-TIME_VOID_MDOT(mdot3_split_avx512);
+TIME_VOID_MDOT(mdot_split_avx512)
+TIME_VOID_MDOT(mdot2_split_avx512)
+TIME_VOID_MDOT(mdot3_split_avx512)
 #endif  /* PML_HAVE_AVX512 */
 
-SAMPLE_MDOT(mdot_split);
-SAMPLE_MDOT(mdot2_split);
+SAMPLE_MDOT(mdot_split)
+SAMPLE_MDOT(mdot2_split)
 
 #if PML_HAVE_AVX2
-SAMPLE_MDOT(mdot_split_avx2);
-SAMPLE_MDOT(mdot2_split_avx2);
-SAMPLE_MDOT(mdot3_split_avx2);
-SAMPLE_MDOT(mdot_msolve_native_avx2);
-SAMPLE_MDOT(mdot_msolve_via_dot_avx2);
+SAMPLE_MDOT(mdot_split_avx2)
+SAMPLE_MDOT(mdot2_split_avx2)
+SAMPLE_MDOT(mdot3_split_avx2)
+SAMPLE_MDOT(mdot_msolve_native_avx2)
+SAMPLE_MDOT(mdot_msolve_via_dot_avx2)
 #endif  /* PML_HAVE_AVX2 */
 
 #if PML_HAVE_AVX512
-SAMPLE_MDOT(mdot_split_avx512);
-SAMPLE_MDOT(mdot2_split_avx512);
-SAMPLE_MDOT(mdot3_split_avx512);
+SAMPLE_MDOT(mdot_split_avx512)
+SAMPLE_MDOT(mdot2_split_avx512)
+SAMPLE_MDOT(mdot3_split_avx512)
 #else
-SAMPLE_VOID_MDOT(mdot_split_avx512);
-SAMPLE_VOID_MDOT(mdot2_split_avx512);
-SAMPLE_VOID_MDOT(mdot3_split_avx512);
+SAMPLE_VOID_MDOT(mdot_split_avx512)
+SAMPLE_VOID_MDOT(mdot2_split_avx512)
+SAMPLE_VOID_MDOT(mdot3_split_avx512)
 #endif  /* PML_HAVE_AVX512 */
 
 
@@ -470,7 +470,7 @@ int main(int argc, char ** argv)
             const slong b = bits[j];
             ulong n;
             n = n_nextprime(UWORD(1) << (b-1), 0);
-            for (slong nrows = 2; nrows < 5; nrows++)
+            for (slong nrows = 0; nrows < 5; nrows++)
             {
                 for (slong ifun = 0; ifun < nfuns; ifun++)
                 {
