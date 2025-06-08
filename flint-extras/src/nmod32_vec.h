@@ -12,7 +12,6 @@
  */
 
 #include <flint/flint.h>
-#include <flint/nmod.h> // for NMOD_RED
 
 #include "machine_vectors.h"
 

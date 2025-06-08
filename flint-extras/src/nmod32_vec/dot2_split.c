@@ -1,15 +1,8 @@
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-#ifdef HAS_AVX2  // GV
-
-#include <immintrin.h>
-
-#include "flint/nmod_vec.h"  // for DOT_SPLIT_MASK
-
+#include <flint/nmod.h> // for NMOD_RED
+#include <flint/nmod_vec.h>  // for DOT_SPLIT_MASK
 
 #include "nmod32_vec.h"
+
 
 void _nmod32_vec_dot2_split(uint * res0, uint * res1, n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1, slong len, nmod_t mod, ulong pow2_precomp)
 {
@@ -61,6 +54,7 @@ void _nmod32_vec_dot2_split(uint * res0, uint * res1, n32_srcptr vec1, n32_srcpt
     NMOD_RED(*res1, pow2_precomp * dp_hi1 + dp_lo1, mod);
 }
 
+#if PML_HAVE_AVX2
 void _nmod32_vec_dot2_split_avx2(uint * res0, uint * res1,
                                  n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1,
                                  slong len, nmod_t mod, ulong pow2_precomp)
@@ -370,10 +364,10 @@ void _nmod32_vec_dot3_split_avx2(uint * res, n32_srcptr vec1,
     NMOD_RED(res[1], pow2_precomp * hsum_hi[1] + hsum_lo[1], mod);
     NMOD_RED(res[2], pow2_precomp * hsum_hi[2] + hsum_lo[2], mod);
 }
+#endif  /* PML_HAVE_AVX2 */
 
 
-#if HAVE_AVX512
-
+#if PML_HAVE_AVX512
 void _nmod32_vec_dot2_split_avx512(uint * res0, uint * res1,
                                    n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1,
                                    slong len, nmod_t mod, ulong pow2_precomp)
@@ -693,5 +687,4 @@ void _nmod32_vec_dot3_split_avx512(uint * res,
     NMOD_RED(res[1], pow2_precomp * hsum_hi1 + hsum_lo1, mod);
     NMOD_RED(res[2], pow2_precomp * hsum_hi2 + hsum_lo2, mod);
 }
-#endif
-#endif  // GV HAS_AVX2
+#endif  /* PML_HAVE_AVX512 */
