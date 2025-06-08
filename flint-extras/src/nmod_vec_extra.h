@@ -22,11 +22,7 @@
 extern "C" {
 #endif
 
-
-// TODO augment/add documentation
-
 /** Random */
-// to be completed: random sparse? randtest small? randtest nonzero ? ...
 
 /** Fills the entries `0`, .., `len-1` of vector with uniformly random entries.
  * Vector must already be allocated with length at least `len`. */
@@ -69,20 +65,19 @@ ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2,
 
 
 /*------------------------------------------------------------*/
-/** dot product for moduli less than 2^30                     */
-/** reduction works if (p-1)^3*len < 2^96                     */
-/** res[0] = dot(a1, b), res[1] = dot(a2, b)                  */
-/** power_two = 2^45 mod p, p2 = (p,p), pinv2 = (1/p,1/p)     */
+/* identical to flint's _nmod_vec_dot2_split,                 */
+/* but handles 2 vectors at a time:                           */
+/*  res[0] = dot(vec10, vec2), res[1] = dot(vec11, vec2)      */
+/* FIXME constraints on input?                                */
 /*------------------------------------------------------------*/
-/**************
-*  NOTES:
-*  - on zen4, do not see an advantage for dot2_small_modulus
-*  - on intel icelake server, small advantage (<15%) for lengths about 200 and more
-**************/
-#if PML_HAVE_MACHINE_VECTORS
-void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ulong len,
-                                  ulong power_two, vec2d p2, vec2d pinv2);
-#endif
+//#if PML_HAVE_MACHINE_VECTORS
+//void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ulong len,
+//                                  ulong power_two, vec2d p2, vec2d pinv2);
+//#endif
+#if FLINT_BITS == 64
+void _nmod_vec_2dot2_split(nn_ptr res, nn_srcptr vec10, nn_srcptr vec11, nn_srcptr vec2,
+                           slong len, nmod_t mod, ulong pow2_precomp);
+#endif  /* FLINT_BITS == 64 */
 
 
 /*------------------------------------------------------------*/
