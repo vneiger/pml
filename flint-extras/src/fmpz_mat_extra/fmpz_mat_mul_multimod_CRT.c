@@ -1,10 +1,10 @@
 #include <flint/nmod_mat.h>
 
+#include "machine_vectors.h"
 #include "nmod_vec_extra.h"
 #include "nmod_mat_extra.h"
 #include "fmpz_extra.h"
 #include "fmpz_mat_extra.h"
-#include "machine_vectors.h"
 
 #if PML_HAVE_AVX2
 

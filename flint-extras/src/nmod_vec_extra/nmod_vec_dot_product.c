@@ -2,46 +2,7 @@
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
 
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-#ifdef HAS_AVX2  // GV 
-#include <immintrin.h>
-#endif 
 #include "nmod_vec_extra.h"
-
-#ifndef uint   //GV 
-#define uint unsigned int
-#endif
-
-
-
-/************
-*  hsum
-*  https://stackoverflow.com/questions/60108658/fastest-method-to-calculate-sum-of-all-packed-32-bit-integers-using-avx512-or-av
-************/
-
-
-//static inline
-//uint hsum_epi32_avx(__m128i x)
-//{
-//    __m128i hi64  = _mm_unpackhi_epi64(x, x);           // 3-operand non-destructive AVX lets us save a byte without needing a movdqa
-//    __m128i sum64 = _mm_add_epi32(hi64, x);
-//    __m128i hi32  = _mm_shuffle_epi32(sum64, _MM_SHUFFLE(2, 3, 0, 1));    // Swap the low two elements
-//    __m128i sum32 = _mm_add_epi32(sum64, hi32);
-//    return _mm_cvtsi128_si32(sum32);       // movd
-//}
-//
-//// only needs AVX2
-//uint hsum_8x32(__m256i v)
-//{
-//    __m128i sum128 = _mm_add_epi32(
-//                 _mm256_castsi256_si128(v),
-//                 _mm256_extracti128_si256(v, 1)); // silly GCC uses a longer AXV512VL instruction if AVX512 is enabled :/
-//    return hsum_epi32_avx(sum128);
-//}
-
 
 
 /* ------------------------------------------------------------ */
@@ -188,12 +149,11 @@ ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2, ulong len, ulo
 
 
 
-#ifdef HAS_AVX2  // GV 
 /*------------------------------------------------------------*/
 /* EXPERIMENTAL */
 /*------------------------------------------------------------*/
 
-#if HAVE_AVX512
+#if PML_HAVE_AVX512
 // dot product using single limb, avx512
 ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, nmod_t mod)
 {
@@ -221,7 +181,7 @@ ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, 
 
     return res;
 }
-#endif
+#endif  /* PML_HAVE_AVX512 */
 
 
 #define DOT_SPLITXX_BITS 26
@@ -230,7 +190,10 @@ ulong _nmod_vec_dot_product_1_avx512(nn_srcptr vec1, nn_srcptr vec2, ulong len, 
 #define __ll_lowhi_partsXX(tlo,thi,t)     \
       thi = (unsigned int) ((t) >> DOT_SPLITXX_BITS);           \
       tlo = ((unsigned int)(t)) & DOT_SPLITXX_MASK;
-#include <flint/machine_vectors.h>
+
+
+
+#if PML_HAVE_AVX2
 
 ulong _nmod_vec_dot2_half_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
@@ -281,6 +244,12 @@ ulong _nmod_vec_dot2_half_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
     return res;
 }
 
+#endif  /* PML_HAVE_AVX2 */
+
+
+
+
+
 // TODO benchmark more, integrate, give precise conditions for when this works
 // (or better, really do a hand-made avx512 version...)
 // --> if splitting at 26, each product is 52, can allow at most 12 additional bits,
@@ -289,7 +258,7 @@ ulong _nmod_vec_dot2_half_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 // but do this only if this really is interesting in terms of speed)
 ulong _nmod_vec_dot_product_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
-    uint v1hi, v1lo, v2hi, v2lo;
+    unsigned int v1hi, v1lo, v2hi, v2lo;
     ulong ulo = UWORD(0);
     ulong umi = UWORD(0);
     ulong uhi = UWORD(0);
@@ -309,6 +278,8 @@ ulong _nmod_vec_dot_product_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_
     NMOD2_RED2(res, uhi, ulo, mod);
     return res;
 }
+
+#if PML_HAVE_AVX2
 
 ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
@@ -354,10 +325,11 @@ ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, n
     return res;
 }
 
-#endif
+#endif  /* PML_HAVE_AVX2 */
 
 
-#if HAVE_AVX512
+#if PML_HAVE_AVX512
+
 ulong _nmod_vec_dot_product_ifma256(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
     ulong i = 0;
@@ -415,39 +387,8 @@ ulong _nmod_vec_dot_product_ifma512(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_
     NMOD2_RED2(res, dp_hi, dp_lo, mod);
     return res;
 }
-#endif
 
-#if HAVE_AVX_IFMA
-ulong _nmod_vec_dot_product_avx_ifma(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
-{
-    ulong i = 0;
-    vec4n dp_vlo = vec4n_zero();
-    vec4n dp_vhi = vec4n_zero();
-    for ( ; i+3 < len; i+=4)
-    {
-        __m256i v1i = vec4n_load_unaligned(v1+i);
-        __m256i v2i = vec4n_load_unaligned(v2+i);
-        dp_vlo = _mm256_madd52lo_avx_epu64(dp_vlo, v1i, v2i);
-        dp_vhi = _mm256_madd52hi_avx_epu64(dp_vhi, v1i, v2i);
-    }
-
-    ulong dp_lo = vec4n_horizontal_sum(dp_vlo);
-    ulong dp_hi = vec4n_horizontal_sum(dp_vhi);
-
-    add_ssaaaa(dp_hi, dp_lo, 0, (dp_hi<<52), (dp_hi>>12), dp_lo);
-    for ( ; i < len; i++)
-    {
-        ulong s0, s1;
-        umul_ppmm(s1, s0, v1[i], v2[i]);
-        add_ssaaaa(dp_hi, dp_lo, dp_hi, dp_lo, s1, s0);
-    }
-
-    ulong res;
-    NMOD2_RED2(res, dp_hi, dp_lo, mod);
-    return res;
-}
-#endif
-
+#endif  /* PML_HAVE_AVX512 */
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

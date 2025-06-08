@@ -1,9 +1,9 @@
 #include <flint/nmod_mat.h>
 #include <flint/nmod_vec.h>
 
+#include "machine_vectors.h"
 #include "nmod_extra.h"
 #include "nmod_vec_extra.h"
-#include "machine_vectors.h"
 
 /* TODO update code to make it work with FLINT's machine vectors in general,
  * not specifically avx2 */

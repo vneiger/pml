@@ -1,6 +1,6 @@
-#if PML_HAVE_AVX2
-
 #include "nmod32_vec.h"
+
+#if PML_HAVE_AVX2
 
 #define MONE32 ((uint)0xFFFFFFFF)
 /* Euclidean division of LENGTH by 8 */

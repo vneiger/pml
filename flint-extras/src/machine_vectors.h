@@ -5,23 +5,25 @@
 
 #if defined(FLINT_HAVE_FFT_SMALL)
 # define PML_HAVE_MACHINE_VECTORS 0
-#endif 
+#endif
 
 /** for AVX2 we just consider the standard set, e.g we ignore AVX-IFMA which is
  * supported by very few non-AVX512 processors */
-#if defined(__AVX2__)
-# define PML_HAVE_AVX2 0
+#if PML_HAVE_MACHINE_VECTORS && defined(__AVX2__)
+# define PML_HAVE_AVX2 1
 #endif
 
 /** for AVX512 we require many flags that tend to be supported by all recent
  * AVX512-capable processors */
-#if defined(__AVX512F__) && defined(__AVX512DQ__)    \
-                         && defined(__AVX512IFMA__)  \
-                         && defined(__AVX512BW__)    \
-                         && defined(__AVX512VL__)    \
-                         && defined(__AVX512CD__)    \
-                         && defined(__AVX512VNNI__)
-# define PML_HAVE_AVX512 0
+#if PML_HAVE_MACHINE_VECTORS     \
+     && defined(__AVX512F__)     \
+     && defined(__AVX512DQ__)    \
+     && defined(__AVX512IFMA__)  \
+     && defined(__AVX512BW__)    \
+     && defined(__AVX512VL__)    \
+     && defined(__AVX512CD__)    \
+     && defined(__AVX512VNNI__)
+# define PML_HAVE_AVX512 1
 #endif
 
 #if PML_HAVE_AVX2
@@ -94,19 +96,19 @@ FLINT_FORCE_INLINE void vec4n_store_aligned(ulong* z, vec4n a)
 
 /* reduce_to_pm1n(a, n, ninv): return a mod n in (-n,n) */
 FLINT_FORCE_INLINE vec2d vec2d_reduce_to_pm1no(vec2d a, vec2d n, vec2d ninv)
-{                                                               
-    return _mm_fnmadd_pd(_mm_round_pd(_mm_mul_pd(a, ninv), 4), n, a); 
+{
+    return _mm_fnmadd_pd(_mm_round_pd(_mm_mul_pd(a, ninv), 4), n, a);
 }
 
 /* reduce_pm1no_to_0n(a, n): return a mod n in [0,n) assuming a in (-n,n) */
 FLINT_FORCE_INLINE vec2d vec2d_reduce_pm1no_to_0n(vec2d a, vec2d n)
 {
-    return _mm_blendv_pd(a, _mm_add_pd(a, n), a); 
+    return _mm_blendv_pd(a, _mm_add_pd(a, n), a);
 }
 
 /* reduce_to_0n(a, n, ninv): return a mod n in [0,n) */
 FLINT_FORCE_INLINE vec2d vec2d_reduce_to_0n(vec2d a, vec2d n, vec2d ninv)
-{ 
+{
     return vec2d_reduce_pm1no_to_0n(vec2d_reduce_to_pm1no(a, n, ninv), n);
 }
 
