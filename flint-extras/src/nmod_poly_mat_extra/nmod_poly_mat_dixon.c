@@ -7,7 +7,8 @@
 
 
 /**
- *
+ *  TODO: probably only degree > 0 currently 
+ * 
  *  Truncated inverse of A mod x^order
  *  A is assumed to be invertible for x=0 (will produce an error otherwise) 
  * 
@@ -105,6 +106,9 @@ void nmod_poly_mat_inv_trunc(nmod_poly_mat_t S,
 
 
 /**
+ * 
+ * TODO: probably only degree > 0 currently 
+ *
  * x-adic iterations à la Dixon : AX=B mod x^sigma
  * A is nxn, B is nxm 
  * A is assumed to be invertible for x=0 (will produce an error otherwise) 
