@@ -1,17 +1,8 @@
-#include "flint/test_helpers.h"
-#include "flint/nmod.h"
-#include "flint/nmod_vec.h"
+#include <flint/test_helpers.h>
+#include <flint/nmod.h>
+#include <flint/nmod_vec.h>
 
 #include "nmod32_vec.h"
-#include <flint/ulong_extras.h>
-
-// utility (nmod vec uniform random)
-static inline
-void _nmod32_vec_rand(n32_ptr vec, flint_rand_t state, slong len, nmod_t mod)
-{
-    for (slong i = 0; i < len; i++)
-        vec[i] = (uint)n_randint(state, mod.n);
-}
 
 TEST_FUNCTION_START(nmod32_vec_dot, state)
 {
@@ -21,7 +12,7 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
 
     for (i = 0; i < 5000 * flint_test_multiplier(); i++)
     {
-        slong len = n_randint(state, 1000) + 1;
+        slong len = n_randint(state, 2000) + 1;
 
         // temporarily disabling ifma (not finished, currently only for len multiple of 32)
         const int ifma = 0;
@@ -79,31 +70,31 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
             ulong res = _nmod32_vec_dot_split(x, y, len, mod, pow2_precomp);
 
             if (res != correct)
-            {
-                flint_printf("%ld\n", i);
                 TEST_FUNCTION_FAIL("dot_split, m = %wu, len = %wd\n", m, len);
-            }
         }
 
+#if PML_HAVE_AVX2
         {  // dot_split_avx2
             ulong res = _nmod32_vec_dot_split_avx2(x, y, len, mod, pow2_precomp);
 
             if (res != correct)
-            {
-                flint_printf("%ld\n", i);
                 TEST_FUNCTION_FAIL("dot_split_avx2, m = %wu, len = %wd\n", m, len);
-            }
         }
 
-#if HAVE_AVX512   // TODO handle AVX flags
+        {  // dot_msolve_avx2
+            ulong res = _nmod32_vec_dot_msolve_avx2(x, y, len, mod.n);
+
+            if (res != correct)
+                TEST_FUNCTION_FAIL("dot_msolve_avx2, m = %wu, len = %wd\n", m, len);
+        }
+#endif  /* PML_HAVE_AVX2 */
+
+#if PML_HAVE_AVX512
         {  // dot_split_avx512
             ulong res = _nmod32_vec_dot_split_avx512(x, y, len, mod, pow2_precomp);
 
             if (res != correct)
-            {
-                flint_printf("%ld\n", i);
                 TEST_FUNCTION_FAIL("dot_split_avx512, m = %wu, len = %wd\n", m, len);
-            }
         }
 
         if (ifma)
@@ -111,10 +102,7 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
             ulong res = _nmod32_vec_dot_ifma_avx2(x, y, len, mod, pow2_precomp_ifma);
 
             if (res != correct)
-            {
-                flint_printf("%ld\n", i);
                 TEST_FUNCTION_FAIL("dot_ifma_avx2, m = %wu, len = %wd\n", m, len);
-            }
         }
 
         if (ifma)
@@ -122,22 +110,9 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
             ulong res = _nmod32_vec_dot_ifma_avx512(x, y, len, mod, pow2_precomp_ifma);
 
             if (res != correct)
-            {
-                flint_printf("%ld\n", i);
                 TEST_FUNCTION_FAIL("dot_ifma_avx512, m = %wu, len = %wd\n", m, len);
-            }
         }
-#endif
-
-        {  // dot_msolve_avx2
-            ulong res = _nmod32_vec_dot_msolve_avx2(x, y, len, mod.n);
-
-            if (res != correct)
-            {
-                flint_printf("%ld\n", i);
-                TEST_FUNCTION_FAIL("dot_msolve_avx2, m = %wu, len = %wd\n", m, len);
-            }
-        }
+#endif  /* PML_HAVE_AVX512 */
 
         _nmod32_vec_clear(x);
         _nmod32_vec_clear(y);
@@ -146,10 +121,4 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
     }
 
     TEST_FUNCTION_END(state);
-}
-
-int main()
-{
-    test_nmod32_vec_dot();
-    return 0;
 }

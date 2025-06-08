@@ -43,6 +43,9 @@ void _nmod32_vec_clear(n32_ptr vec)
    flint_free(vec);
 }
 
+// utility (nmod vec uniform random)
+void _nmod32_vec_rand(n32_ptr vec, flint_rand_t state, slong len, nmod_t mod);
+
 /**********************************************************************
 *                            DOT PRODUCT                             *
 **********************************************************************/
