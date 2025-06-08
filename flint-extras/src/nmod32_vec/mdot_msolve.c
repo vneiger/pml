@@ -1,8 +1,4 @@
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-#ifdef HAS_AVX2  // GV
+#if PML_HAVE_AVX2
 
 #include "nmod32_vec.h"
 
@@ -28,7 +24,6 @@
 #define AVX2ADD_64(A,B) _mm256_add_epi64(A,B)
 #define AVX2MUL(A,B) _mm256_mul_epu32(A,B)
 #define AVX2SRLI_64(A,i) _mm256_srli_epi64(A,i)
-
 
 
 void _nmod32_vec_mdot_msolve_via_dot_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
@@ -133,4 +128,4 @@ void _nmod32_vec_mdot_msolve_native_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr 
     }
 }
 
-#endif  // GV HAS_AVX2
+#endif  /* PML_HAVE_AVX2 */

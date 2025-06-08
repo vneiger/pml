@@ -1,12 +1,4 @@
-#include <flint/flint.h>
 #include <flint/nmod_vec.h>
-
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-#ifdef HAS_AVX2  // GV
-
 #include "nmod32_vec.h"
 
 void _nmod32_vec_mdot2_split(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
@@ -24,6 +16,8 @@ void _nmod32_vec_mdot2_split(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
     if (i == nrows - 1)
         mv[i] = _nmod32_vec_dot_split(vec, mat + i*stride, len, mod, pow2_precomp);
 }
+
+#if PML_HAVE_AVX2
 
 void _nmod32_vec_mdot2_split_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                                   slong nrows, slong len, slong stride, nmod_t mod)
@@ -66,7 +60,10 @@ void _nmod32_vec_mdot3_split_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
         mv[i] = _nmod32_vec_dot_split_avx2(vec, mat + i*stride, len, mod, pow2_precomp);
 }
 
-#if HAVE_AVX512
+#endif  /* PML_HAVE_AVX2 */
+
+#if PML_HAVE_AVX512
+
 void _nmod32_vec_mdot2_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                                     slong nrows, slong len, slong stride, nmod_t mod)
 {
@@ -110,6 +107,5 @@ void _nmod32_vec_mdot3_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
     else if (nrows - i == 1)
         mv[i] = _nmod32_vec_dot_split_avx512(vec, mat + i*stride, len, mod, pow2_precomp);
 }
-#endif
 
-#endif  // GV HAS_AVX2
+#endif  /* PML_HAVE_AVX512 */
