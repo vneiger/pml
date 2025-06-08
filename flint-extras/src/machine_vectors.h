@@ -23,11 +23,14 @@
 
 #if PML_HAVE_MACHINE_VECTORS
 
+
+#if PML_HAVE_AVX2  /* already in flint's machine_vectors for NEON/ARM64 */
 /* returns a + b mod n, assuming a,b reduced mod n            */
 FLINT_FORCE_INLINE vec1n vec1n_addmod(vec1n a, vec1n b, vec1n n)
 {
     return n - b > a ? a + b : a + b - n;
 }
+#endif  /* PML_HAVE_AVX2 */
 
 /* returns a + b mod n, assuming a,b reduced mod n            */
 FLINT_FORCE_INLINE vec1d vec1d_addmod(vec1d a, vec1d b, vec1d n)
