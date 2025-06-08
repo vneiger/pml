@@ -1,4 +1,5 @@
-#include <stdlib.h>
+#include <math.h>
+
 #include <flint/flint.h>
 #include <flint/ulong_extras.h>
 #include <flint/fmpz.h>
@@ -21,6 +22,7 @@ void fmpz_multimod_CRT_init(fmpz_multimod_CRT_t mmod, nn_srcptr primes, ulong nu
         size = num_primes;
     else
     {
+        // TODO ceil of integer division!
         quo = ceil(num_primes / MULTIMOD_CRT_LEAF_SIZE);
         size = num_primes / pow(2, ceil(log(quo)/log(2)));
     }
@@ -28,15 +30,15 @@ void fmpz_multimod_CRT_init(fmpz_multimod_CRT_t mmod, nn_srcptr primes, ulong nu
     mmod->num_primes = num_primes;
     mmod->size_leaves = size;
     mmod->num_leaves = (num_primes + size - 1) / size;
-    mmod->leaves_mod = (fmpz_multimod_naive_t *) malloc(mmod->num_leaves * sizeof(fmpz_multimod_naive_t));
-    mmod->products_leaves = (fmpz *) malloc(mmod->num_leaves * sizeof(fmpz));
-    mmod->leaves_CRT = (fmpz_CRT_naive_t *) malloc(mmod->num_leaves * sizeof(fmpz_CRT_naive_t));
+    mmod->leaves_mod = (fmpz_multimod_naive_t *) flint_malloc(mmod->num_leaves * sizeof(fmpz_multimod_naive_t));
+    mmod->products_leaves = (fmpz *) flint_malloc(mmod->num_leaves * sizeof(fmpz));
+    mmod->leaves_CRT = (fmpz_CRT_naive_t *) flint_malloc(mmod->num_leaves * sizeof(fmpz_CRT_naive_t));
     mmod->inverse_cofactors = _nmod_vec_init(num_primes);
     fmpz_init(mmod->product_primes);
     
     cofactors = _nmod_vec_init(num_primes);
     one = _nmod_vec_init(num_primes);
-    partial_products = (fmpz *) malloc(mmod->num_leaves * sizeof(fmpz));
+    partial_products = (fmpz *) flint_malloc(mmod->num_leaves * sizeof(fmpz));
     fmpz_init(linearized_product);
 
     for (i = 0; i < num_primes; i++)
@@ -88,7 +90,7 @@ void fmpz_multimod_CRT_init(fmpz_multimod_CRT_t mmod, nn_srcptr primes, ulong nu
     fmpz_clear(linearized_product);
     for (i = 0; i < mmod->num_leaves; i++)
         fmpz_clear(partial_products + i);
-    free(partial_products);
+    flint_free(partial_products);
     _nmod_vec_clear(cofactors);
     _nmod_vec_clear(one);
 }

@@ -4,13 +4,9 @@
 #include "nmod_mat_extra.h"
 #include "fmpz_extra.h"
 #include "fmpz_mat_extra.h"
+#include "machine_vectors.h"
 
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-#ifdef HAS_AVX2  // GV
-
+#if PML_HAVE_AVX2
 
 static void _fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_mat_t B, int sign, flint_bitcnt_t bits)
 {
@@ -140,4 +136,4 @@ void fmpz_mat_mul_multimod(fmpz_mat_t C, const fmpz_mat_t A, const fmpz_mat_t B)
     _fmpz_mat_mul_multimod(C, A, B, sign, Cbits);
 }
 
-#endif
+#endif  /* PML_HAVE_AVX2 */
