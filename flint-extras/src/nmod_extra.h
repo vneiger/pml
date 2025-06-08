@@ -2,36 +2,11 @@
 #define __NMOD_EXTRA__H
 
 #include <flint/flint.h>
-#include <flint/longlong.h>
-#include <flint/mpn_extras.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
+#include <flint/mpn_extras.h>
+#include <flint/longlong.h>
 #include <flint/ulong_extras.h>
-
-/* when possible, we rely on machine_vectors.h */
-/* some things are only implemented for avx2 or flavours of avx512 */
-#define PML_HAVE_MACHINE_VECTORS FLINT_HAVE_FFT_SMALL
-#if PML_HAVE_MACHINE_VECTORS
-# include <flint/machine_vectors.h>
-#endif
-// TODO flags for AVX
-// GCC uses the following (e.g. on znver4):
-// #define __AVX__ 1
-// #define __AVX2__ 1
-// #define __AVXIFMA__ 1
-// #define __AVX512BF16__ 1
-// #define __AVX512BITALG__ 1
-// #define __AVX512BW__ 1
-// #define __AVX512CD__ 1
-// #define __AVX512DQ__ 1
-// #define __AVX512F__ 1
-// #define __AVX512IFMA__ 1
-// #define __AVX512VBMI__ 1
-// #define __AVX512VBMI2__ 1
-// #define __AVX512VL__ 1
-// #define __AVX512VNNI__ 1
-// #define __AVX512VPOPCNTDQ__ 1
-
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -109,102 +84,6 @@ FLINT_FORCE_INLINE ulong mul_mod_precon_unreduced(ulong a, ulong b, ulong p, ulo
     return a*b - q*p;
 }
 
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* A few extra operations for the machine_vectors types       */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-#if FLINT_HAVE_FFT_SMALL
-
-/*------------------------------------------------------------*/
-/* returns a + b mod n, assuming a,b reduced mod n            */
-/*------------------------------------------------------------*/
-FLINT_FORCE_INLINE vec1n vec1n_addmod(vec1n a, vec1n b, vec1n n)
-{
-    return n - b > a ? a + b : a + b - n;
-}
-
-/*------------------------------------------------------------*/
-/* returns a + b mod n, assuming a,b reduced mod n            */
-/*------------------------------------------------------------*/
-FLINT_FORCE_INLINE vec1d vec1d_addmod(vec1d a, vec1d b, vec1d n)
-{
-    return a + b - n >= 0 ? a + b - n : a + b;
-}
-
-
-
-/*------------------------------------------------------------*/
-/* returns a + b mod n, assuming a,b reduced mod n            */
-/*------------------------------------------------------------*/
-FLINT_FORCE_INLINE vec4d vec4d_addmod(vec4d a, vec4d b, vec4d n)
-{
-    return vec4d_reduce_2n_to_n(vec4d_add(a, b), n);
-}
-
-#endif
-
-/*------------------------------------------------------------*/
-/* TODO: if AVX512 supported, use cvtepi64_pd instead         */
-/* loads a vec4n from a and converts it to double             */
-/*------------------------------------------------------------*/
-FLINT_FORCE_INLINE vec4d vec4d_load_unaligned_nn_ptr(nn_ptr a)
-{
-// TODO flags AVX512
-#ifdef FLINT_HAVE_AVX512
-    return  _mm256_setr_m128d( _mm_cvtepi64_pd(_mm_loadu_si128((vec2n *) a)),
-                               _mm_cvtepi64_pd(_mm_loadu_si128((vec2n *) (a + 2))) );
-#else
-    // when AVX2 is available, this is a bit slower than the above
-    return vec4n_convert_limited_vec4d(vec4n_load_unaligned(a));
-#endif
-}
-
-/*------------------------------------------------------------*/
-/* TODO: if AVX512 supported, use cvtpd_epi64 instead         */
-/* converts a vec4d to vec4n and stores it                    */
-/*------------------------------------------------------------*/
-FLINT_FORCE_INLINE void vec4d_store_unaligned_nn_ptr(nn_ptr dest, vec4d a)
-{
-    vec4n_store_unaligned(dest, vec4d_convert_limited_vec4n(a));
-}
-
-#if defined(__AVX2__)
-
-FLINT_FORCE_INLINE void vec4n_store_aligned(ulong* z, vec4n a)
-{
-    _mm256_store_si256((__m256i*) z, a);
-}
-
-/* reduce_to_pm1n(a, n, ninv): return a mod n in (-n,n) */
-FLINT_FORCE_INLINE vec2d vec2d_reduce_to_pm1no(vec2d a, vec2d n, vec2d ninv)
-{                                                               
-    return _mm_fnmadd_pd(_mm_round_pd(_mm_mul_pd(a, ninv), 4), n, a); 
-}
-
-/* reduce_pm1no_to_0n(a, n): return a mod n in [0,n) assuming a in (-n,n) */
-FLINT_FORCE_INLINE vec2d vec2d_reduce_pm1no_to_0n(vec2d a, vec2d n)
-{
-    return _mm_blendv_pd(a, _mm_add_pd(a, n), a); 
-}
-
-/* reduce_to_0n(a, n, ninv): return a mod n in [0,n) */
-FLINT_FORCE_INLINE vec2d vec2d_reduce_to_0n(vec2d a, vec2d n, vec2d ninv)
-{ 
-    return vec2d_reduce_pm1no_to_0n(vec2d_reduce_to_pm1no(a, n, ninv), n);
-}
-
-FLINT_FORCE_INLINE vec2d vec2d_set_d2(double a1, double a0)
-{
-    return _mm_set_pd(a0, a1);
-}
-
-#define vec4n_bit_shift_right_45(a) vec4n_bit_shift_right((a), 45)
-
-#endif
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*                    CRT and multimod                        */
@@ -263,6 +142,5 @@ void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod
 /* for i < nb, j < num_primes                                 */
 /*------------------------------------------------------------*/
 void nmod_multimod_CRT_reduce(nn_ptr *residues, nn_ptr input, ulong nb, nmod_multimod_CRT_t C);
-
 
 #endif

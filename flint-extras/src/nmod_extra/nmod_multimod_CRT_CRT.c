@@ -1,12 +1,7 @@
-#include <flint/flint.h>
-#include <flint/nmod.h>
-#include <flint/nmod_vec.h>
-#include <flint/fft_small.h>
-#include <flint/templates.h>
-#include <flint/machine_vectors.h>
 #include <flint/crt_helpers.h>
 
 #include "nmod_extra.h"
+#include "machine_vectors.h"
 
 #ifdef __AVX2__
 #define HAS_AVX2

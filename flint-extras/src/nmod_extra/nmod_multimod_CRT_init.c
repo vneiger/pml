@@ -1,6 +1,7 @@
 #include <flint/fmpz.h>
 
 #include "nmod_extra.h"
+#include "machine_vectors.h"
 
 /*------------------------------------------------------------*/
 /* initializes all data in C                                  */
@@ -33,7 +34,7 @@ void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, ulong modulus, ulong num_prim
         num_primes = 4;
     
 
-#if FLINT_HAVE_FFT_SMALL
+#if PML_HAVE_MACHINE_VECTORS
     if (modulus < (1L << 50)) // small modulus: case use SIMD floating-point representation 
     {
         C->pinv = 1 / (double)modulus;
