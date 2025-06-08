@@ -1174,6 +1174,10 @@ submit a bug report to <https://github.com/vneiger/pml/issues/> so
 that we can either fix the issue or give a more proper error message.])])
 fi
 
+if test "$with_maple" = "yes";
+then AC_SUBST(WANT_MAPLE,1)
+else AC_SUBST(WANT_MAPLE,0)
+fi
 
 ################################################################################
 # check settings and environment

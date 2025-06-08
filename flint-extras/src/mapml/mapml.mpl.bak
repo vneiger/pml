@@ -1,0 +1,557 @@
+
+
+
+mapml:= module()
+
+	local ModuleLoad, ModuleUnload;
+
+        description "XXX";
+
+	local pmlpath, mapmlpath, pml_lib, mapml_lib, ff, 
+	      tottest, succeeded;
+
+
+	# Local functions 
+	# ---------------
+
+	local convertpol; 
+
+
+
+	# High level submodule functions 
+	# ------------------------------
+
+	export pmPolyRT,pmPolyMatRT,pmMatPolyRT,pmCheckIo, pmCheckDeterminant, 
+	       pmCheck, pmDiffMBasis, Dev, pmgetcoeffs;
+
+	
+
+	# put global, otherwise and export of `mod/MDeterminant` does not seem to allow 
+	# a call using eg MDeterminant(A) mod q 
+
+	global `mod/MDeterminant`,`mod/WeakPopov`,`mod/RowWeakPopov`,
+			`mod/MBasis`,`mod/RowMBasis`,
+			`mod/PMBasis`,`mod/RowPMBasis`,
+			`mod/RightDescription`,`mod/LeftDescription`;
+
+	option package, load=Init, unload=End: 
+	
+	
+	pmlpath := "path1"; 
+
+	mapmlpath := "path2";
+
+	# How does maple find the other libraries? 
+	pml_lib := cat(pmlpath,"/lib/libpml.dylib");
+    mapml_lib := cat(mapmlpath,"/lib/libpml.dylib");
+
+	ModuleLoad:= proc( )
+		#define_external("nmod_poly_mat_init", MAPLE, LIB = "/usr/local/lib/libpml.dylib"):
+        printf("Loading mapml, ");
+    end proc:
+
+    # Explicitly call ModuleLoad here so the type is registered when this
+    # code is cut&pasted in.  ModuleLoad gets called when the module is
+    # read from the repository, but the code used to define a module
+    # (like the command below) is not called at library read time.
+
+    ModuleLoad();
+
+    #ModuleUnload:= proc( )
+    #printf("");
+    #end proc:
+
+    # GV rather put in ModuleLoad ? 
+    printf("external %s, %s\n",pml_lib,mapml_lib);
+	ff:=define_external("nmod_poly_mat_init", MAPLE, LIB = pml_lib):
+
+	printf("[MDeterminant, WeakPopov, RowWeakPopov, PMBasis, MBasis, RowPMBasis, RowMBasis, RightDescription, LeftDescription]");
+		
+
+	# Local functions for conversions
+	# -------------------------------
+
+
+	convertpol:=proc(p,modulus) local d,i,ll; if (degree(p) <0) then d:=-1: else d:=degree(p) fi:   
+    	ll:=sprintf("%a %a", d+1,modulus); 
+    	for i from 0 to d do ll:=cat(ll," ", sprintf(%a,coeff(p,x,i))); od: 
+	return(ll):
+	end proc:
+
+
+
+	#  Definition of the low level submodule 
+	#  -------------------------------------
+
+	Dev:= module()
+
+	    description "YYY";
+
+		export polynomial_rt,polymat_rt, matpoly_rt, pm_determinant, pm_diff_mbasis, pm_matrix_mbasis, pm_matrix_pmbasis,pm_coeffs,pm_weakpopov;					
+
+		polynomial_rt := define_external("polynomial_rt",MAPLE, LIB = mapml_lib);
+
+		polymat_rt := define_external("polymat_rt",MAPLE, LIB = mapml_lib);
+
+		matpoly_rt := define_external("matpoly_rt",MAPLE, LIB = mapml_lib);
+
+		pm_determinant := define_external("pm_determinant",MAPLE, LIB = mapml_lib);
+
+		pm_diff_mbasis := define_external("pm_diff_mbasis",MAPLE, LIB = mapml_lib);
+
+		pm_matrix_mbasis := define_external("pm_matrix_mbasis",MAPLE, LIB = mapml_lib);
+
+		pm_matrix_pmbasis := define_external("pm_matrix_pmbasis",MAPLE, LIB = mapml_lib);
+
+		pm_coeffs := define_external("pm_coeffs",MAPLE, LIB = mapml_lib);
+
+		pm_weakpopov := define_external("pm_weakpopov",MAPLE, LIB = mapml_lib);
+
+	end module: 	
+
+
+
+	#  Definition of the high level submodule 
+	#  --------------------------------------
+
+
+	pmgetcoeffs:=proc(rec,u,n,N) local i,vp,ord,V,cinits; 
+
+
+		#userinfo(1,'gfun',sprintf("+++++ : %a\n",rec));
+		#userinfo(1,'gfun',sprintf("+++++ : %a",u(n)));
+
+
+		ord:=nops(rec)-1;
+
+		vp:=Vector([seq(coeff(rec[1],u(n+i),1),i=0..ord)]):
+
+		V:=Vector(ord+1):
+		
+		for i from 1 to ord+1 do 
+			V[i]:=map(t->convert(t,string),PolynomialTools:-CoefficientVector(vp[i],n)); 
+		od: 
+
+		cinits:=[seq(convert(op(2,rec[i]),string),i=2..2+ord-1)];
+
+		return map(parse,Dev:-pm_coeffs(ord,V,N, seq(cinits[i],i=1..ord)));
+
+	end proc: 
+
+
+	`mod/MDeterminant`:=proc(A,x,q) local t, vect_A; 
+
+		vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),A);
+
+		return PolynomialTools:-FromCoefficientList(Dev:-pm_determinant(vect_A,q),x);
+
+	end proc: 
+
+
+	`mod/WeakPopov`:=proc(A,x,shift,q) local t, vect_A,res; 
+
+
+		vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),LinearAlgebra:-Transpose(A));
+	
+
+		res:=Dev:-pm_weakpopov(vect_A, shift, q);
+
+		res := map(t->PolynomialTools:-FromCoefficientList(t, x), res[1]);
+
+		return(LinearAlgebra:-Transpose(res));
+		
+
+	end proc: 
+
+	`mod/RowWeakPopov`:=proc(A,x,shift,q) local t, vect_A,res; 
+
+		#if (nargs=3) then q:=orient; orient=0; fi: 
+
+		vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),A); 
+
+		res:=Dev:-pm_weakpopov(vect_A, shift, q);
+
+		res := map(t->PolynomialTools:-FromCoefficientList(t, x), res[1]);
+
+		return res; 
+		 
+	end proc: 
+
+	pmDiffMBasis :=proc(shift, p, order, x, q,method) local t, vect_p,res,tt,i,M,dct; 
+
+
+		## !!!! Extraire un vecteur de la matrix 1 x n reçue 
+		## !!!!!!!!!
+
+		tt:=time();
+
+		vect_p:=PolynomialTools:-CoefficientVector(p,x);
+
+		tt:=time()-tt;
+
+		#userinfo(1,'gfun',sprintf("+++++ diffbasis 2: %f s",tt));
+
+		res:=Dev:-pm_diff_mbasis(shift, vect_p, order, q,method);
+
+		
+
+		#userinfo(1,'gfun',sprintf("+++++ diffbasis 2: %a",res[2]));
+
+		member(min(op(res[2])),res[2],'i');
+		res[1]:=res[1][i,1..-1];
+
+		tt:=time();
+
+		res := map(t->PolynomialTools:-FromCoefficientList(t, x), res[1]),res[2][i]: 
+
+		tt:=time()-tt;
+
+		#userinfo(1,'gfun',sprintf("+++++ diffbasis 2: %f s",tt));
+
+		#userinfo(1,'gfun',sprintf("+++++ diffbasis 2: %a",res[2]));
+
+		return(res):
+
+	end proc: 
+
+
+	`mod/RowMBasis` :=proc(A, x, shift, order, q) local t,vect_A,res,tt; 
+
+		tt:=time();
+
+		vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),A);
+
+		tt:=time()-tt;
+
+		userinfo(1,'gfun',sprintf("+++++ mbasis 1: %f ms",1000*tt));
+
+		res:=Dev:-pm_matrix_mbasis(shift, vect_A, order, q);
+
+		tt:=time();
+
+		res := map(t->PolynomialTools:-FromCoefficientList(t, x), res[1]),res[2]: 
+
+		tt:=time()-tt;
+
+		userinfo(1,'gfun',sprintf("+++++ mbasis 2: %f ms",1000*tt));
+
+		return(res):
+
+	end proc: 
+
+
+	`mod/MBasis` :=proc(A, x, shift, order, q) local res; 
+	
+
+		res:=`mod/RowMBasis`(LinearAlgebra:-Transpose(A), x, shift, order, q);
+
+
+		return(LinearAlgebra:-Transpose(res[1]),res[2]):
+
+	end proc: 
+
+
+
+	`mod/RowPMBasis` :=proc(A, x, shift, order, q) local t,vect_A,res,tt; 
+	
+		
+		tt:=time();
+
+		vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),A);
+
+		tt:=time()-tt;
+
+		#userinfo(1,'gfun',sprintf("+++++ pmbasis 1: %f ms",1000*tt));
+
+		res:=Dev:-pm_matrix_pmbasis(shift, vect_A, order, q);
+
+		tt:=time();
+
+		res := map(t->PolynomialTools:-FromCoefficientList(t, x), res[1]),res[2]: 
+
+		tt:=time()-tt;
+
+		#userinfo(1,'gfun',sprintf("+++++ pmbasis 2: %f ms",1000*tt));
+
+		return(res):
+
+	end proc: 
+
+
+	`mod/PMBasis` :=proc(A, x, shift, order, q) local res; 
+	
+
+		res:=`mod/RowPMBasis`(LinearAlgebra:-Transpose(A), x, shift, order, q);
+
+
+		return(LinearAlgebra:-Transpose(res[1]),res[2]):
+
+	end proc: 
+
+
+
+	`mod/LeftDescription` :=proc(A,x,delta,q) local sigma,res,m,n,M,H,dct,cols,i,P,Q,t,wstr;
+
+		m:=LinearAlgebra:-ColumnDimension(A);
+		n:=LinearAlgebra:-RowDimension(A);
+
+		sigma:=ceil((m+n)*delta/m) +1;
+
+
+		M:=map(t->convert(series(t,x,sigma),polynom),A) mod q:
+		H:=<M,-LinearAlgebra:-IdentityMatrix(m,m)> mod q;   # ulong do not forget for -1
+
+		res:=RowPMBasis(H,x,[0,seq(0,i=1..m+n)],sigma) mod q; 
+
+
+		dct:=res[2];
+		cols:=[]: for i from 1 to n+m do if dct[i] <= delta then cols:=[op(cols),i]: fi: od: 
+
+		wstr:="a description of degree at most %1 probably doesn't exist";
+
+		if (nops(cols) <> n) then 
+		WARNING(wstr,delta); 
+		return(0): fi:
+
+
+		P:=res[1][cols, n+1..n+m];
+
+		Q:=res[1][cols, 1..n];
+
+		if LinearAlgebra:-Equal( map(t-> Normal(t) mod q, Q.A-P) , LinearAlgebra:-ZeroMatrix(n,m))
+		then return(P,Q);
+		else WARNING(wstr,delta); return(0): 
+		fi:
+
+	end:
+
+
+	`mod/RightDescription` :=proc(A,x,delta,q) local res; 
+
+		res:=`mod/LeftDescription`(LinearAlgebra:-Transpose(A),x,delta,q);
+
+		if res <> 0 then return(LinearAlgebra:-Transpose(res[1]),LinearAlgebra:-Transpose(res[2])); 
+		else return(0); fi: 
+
+	end: 
+
+	#  Test functions  
+	#  --------------
+
+	tottest:=0: succeeded:=0:
+
+
+	# export
+	pmCheckDeterminant :=proc() local rr,A,val,q,n,d1,d2;
+
+		tottest:=0: succeeded:=0: # GV here or global ? 
+
+		q:=11;
+		n:=4; 
+		
+		rr:=t->randpoly(x,degree=2) mod q:
+		A:=LinearAlgebra:-RandomMatrix(n,n,generator=rr);
+		
+		d1:=MDeterminant(A,x,q);
+
+		d2:=LinearAlgebra:-Determinant(A) mod q;
+
+		val:= expand(d1-d2) mod q;
+
+		if (val=0) then tottest:=tottest+1: succeeded:=succeeded+1: else tottest:=tottest+1: fi:
+
+		q:=2;
+		n:=30; 
+		
+		rr:=t->randpoly(x,degree=4) mod q:
+		A:=LinearAlgebra:-RandomMatrix(n,n,generator=rr);
+		
+		d1:=MDeterminant(A,x,q);
+
+		d2:=LinearAlgebra:-Determinant(A) mod q;
+
+		val:= expand(d1-d2) mod q;
+
+		if (val=0) then tottest:=tottest+1: succeeded:=succeeded+1: else tottest:=tottest+1: fi:
+
+
+		q:=179424673;
+		n:=6; 
+		
+		rr:=t->randpoly(x,degree=36) mod q:
+		A:=LinearAlgebra:-RandomMatrix(n,n,generator=rr);
+		
+		d1:=MDeterminant(A,x,q);
+
+		d2:=LinearAlgebra:-Determinant(A) mod q;
+
+		val:= expand(d1-d2) mod q;
+
+		if (val=0) then tottest:=tottest+1: succeeded:=succeeded+1: else tottest:=tottest+1: fi:
+
+
+        printf("%d successful tests, out of %d (determinant)\n",succeeded,tottest);
+
+		return(val):
+
+	end proc: 
+
+	# export
+
+	pmPolyRT:=proc(p,modulus) local vect;
+
+   	   vect:=PolynomialTools:-CoefficientVector(p,x);
+
+	   return(PolynomialTools:-FromCoefficientList(Dev:-polynomial_rt(vect,modulus),x)): 
+
+	end proc:
+
+	pmMatPolyRT:=proc(A,modulus) local vect_A,t;
+
+   	   vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),A);
+
+	   return(map(t->PolynomialTools:-FromCoefficientList(t, x), Dev:-matpoly_rt(vect_A,modulus))): 
+
+	   #return(map(t->op(sscanf(t, "%a")), Dev:-polymat_rt(vect_A,modulus))):
+
+	end proc:
+
+	pmPolyMatRT:=proc(A,modulus) local vect_A;
+
+   		vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),A);
+
+		return(map(t->PolynomialTools:-FromCoefficientList(t, x), Dev:-polymat_rt(vect_A,modulus))): 
+
+		#return(map(t->op(sscanf(t, "%a")), Dev:-polymat_rt(vect_A,modulus))): 
+
+	end proc:
+
+	
+
+	# export
+	pmCheckIo :=proc() local rr,t,A,B,Z,val,q,m,n,p,pp;
+
+		tottest:=0: succeeded:=0: # GV here or global ? 
+
+		q:=11;
+		m:=80;
+		p:=randpoly(x,degree=m) mod q:
+		pp:=pmPolyRT(p,q);
+		val:=expand(p-pp) mod q; 
+
+		if (val=0) then tottest:=tottest+1: succeeded:=succeeded+1: else tottest:=tottest+1: fi:
+
+		q:=2;
+		m:=800;
+		p:=randpoly(x,degree=m,sparse) mod q:
+		pp:=pmPolyRT(p,q);
+		val:=expand(p-pp) mod q; 
+
+		if (val=0) then tottest:=tottest+1: succeeded:=succeeded+1: else tottest:=tottest+1: fi:
+
+
+		q:=7;
+		m:=12000;
+		p:=randpoly(x,degree=m,sparse) mod q:
+		pp:=pmPolyRT(p,q);
+		val:=expand(p-pp) mod q; 
+
+		if (val=0) then tottest:=tottest+1: succeeded:=succeeded+1: else tottest:=tottest+1: fi:
+
+
+		printf("%d successful tests, out of %d (round trip polynomial)\n",succeeded,tottest);
+
+		tottest:=0: succeeded:=0: # GV here or global ? 
+
+		q:=11;
+		m:=2; n:=4; 
+		Z:=Matrix(m,n,0);
+		rr:=t->randpoly(x,degree=2) mod q:
+		A:=LinearAlgebra:-RandomMatrix(m,n,generator=rr);
+		B:=pmPolyMatRT(A,q);
+
+		val:=LinearAlgebra:-Equal(map(t-> expand(t) mod q,A-B),Z);
+
+		if (val) then tottest:=tottest+1: succeeded:=succeeded+1: else tottest:=tottest+1: fi:
+
+		q:=2;
+		m:=40; n:=44; 
+		Z:=Matrix(m,n,0);
+		rr:=t->randpoly(x,degree=8) mod q:
+		A:=LinearAlgebra:-RandomMatrix(m,n,generator=rr);
+		B:=pmPolyMatRT(A,q);
+
+		val:=LinearAlgebra:-Equal(map(t-> expand(t) mod q,A-B),Z);
+
+		if (val) then tottest:=tottest+1: succeeded:=succeeded+1: else tottest:=tottest+1: fi:
+
+		q:=2;
+		m:=40; n:=44; 
+		Z:=Matrix(m,n,0);
+		rr:=t->randpoly(x,degree=1) mod q:
+		A:=LinearAlgebra:-RandomMatrix(m,n,generator=rr);
+		B:=pmPolyMatRT(A,q);
+
+		val:=LinearAlgebra:-Equal(map(t-> expand(t) mod q,A-B),Z);
+
+		if (val) then tottest:=tottest+1: succeeded:=succeeded+1: else tottest:=tottest+1: fi:
+
+		q:=179424673;
+		m:=20; n:=16; 
+		Z:=Matrix(m,n,0);
+		rr:=t->randpoly(x,degree=8) mod q:
+		A:=LinearAlgebra:-RandomMatrix(m,n,generator=rr);
+		B:=pmPolyMatRT(A,q);
+
+		val:=LinearAlgebra:-Equal(map(t-> expand(t) mod q,A-B),Z);
+
+		if (val) then tottest:=tottest+1: succeeded:=succeeded+1: else tottest:=tottest+1: fi:
+
+		printf("%d successful tests, out of %d (round trip polynomial matrix)\n",succeeded,tottest);
+
+
+		tottest:=0: succeeded:=0: # GV here or global ? 
+
+		q:=11;
+		m:=2; n:=4; 
+		Z:=Matrix(m,n,0);
+		rr:=t->randpoly(x,degree=2) mod q:
+		A:=LinearAlgebra:-RandomMatrix(m,n,generator=rr);
+		B:=pmMatPolyRT(A,q);
+
+		val:=LinearAlgebra:-Equal(map(t-> expand(t) mod q,A-B),Z);
+
+		if (val) then tottest:=tottest+1: succeeded:=succeeded+1: else tottest:=tottest+1: fi:
+
+		q:=2;
+		m:=40; n:=44; 
+		Z:=Matrix(m,n,0);
+		rr:=t->randpoly(x,degree=8) mod q:
+		A:=LinearAlgebra:-RandomMatrix(m,n,generator=rr);
+		B:=pmMatPolyRT(A,q);
+
+		val:=LinearAlgebra:-Equal(map(t-> expand(t) mod q,A-B),Z);
+
+		if (val) then tottest:=tottest+1: succeeded:=succeeded+1: else tottest:=tottest+1: fi:
+
+		printf("%d successful tests, out of %d (round trip matrix polynomial)\n",succeeded,tottest);
+
+		return(val);
+
+	end proc: 
+
+
+	# Check all 
+	# ---------
+
+	pmCheck :=proc() 
+
+		pmCheckIo();
+		pmCheckDeterminant();
+
+	end proc:
+
+
+end module: 	
+
+
