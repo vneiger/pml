@@ -1,10 +1,6 @@
+#if PML_HAVE_AVX2
+
 #include "nmod32_vec.h"
-
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-#ifdef HAS_AVX2  // GV
 
 #define MONE32 ((uint)0xFFFFFFFF)
 /* Euclidean division of LENGTH by 8 */
@@ -114,4 +110,4 @@ uint _nmod32_vec_dot_msolve_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, ui
     return res;
 }
 
-#endif  // GV HAS_AVX2
+#endif  /* PML_HAVE_AVX2 */
