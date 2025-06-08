@@ -256,6 +256,18 @@ yes|no)
 esac],
 enable_avx512="no")
 
+# NOTE: Maintainer level only. Avoids any sort of optimization to speed up
+# builds.
+AC_ARG_ENABLE(fast-build,[],
+[case $enableval in
+yes|no)
+    ;;
+*)
+    AC_MSG_ERROR([Bad value $enableval for --enable-fast-build. Need yes or no.])
+    ;;
+esac],
+enable_fast_build="no")
+
 ################################################################################
 # packages
 ################################################################################

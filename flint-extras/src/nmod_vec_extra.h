@@ -70,10 +70,6 @@ ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2,
 /*  res[0] = dot(vec10, vec2), res[1] = dot(vec11, vec2)      */
 /* FIXME constraints on input?                                */
 /*------------------------------------------------------------*/
-//#if PML_HAVE_MACHINE_VECTORS
-//void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ulong len,
-//                                  ulong power_two, vec2d p2, vec2d pinv2);
-//#endif
 #if FLINT_BITS == 64
 void _nmod_vec_2dot2_split(nn_ptr res, nn_srcptr vec10, nn_srcptr vec11, nn_srcptr vec2,
                            slong len, nmod_t mod, ulong pow2_precomp);

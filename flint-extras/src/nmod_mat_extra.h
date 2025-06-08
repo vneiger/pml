@@ -28,15 +28,15 @@ extern "C" {
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-#if PML_HAVE_AVX2
+#if FLINT_BITS == 64
 /** matrix multiplication using AVX2 instructions for moduli less than 2^30 (TODO refine bound) */
-void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B);
+void nmod_mat_mul_2dot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B);
 /** matrix-vector multiplication using AVX2 instructions for moduli less than 2^30 (TODO refine bound) */
 // v[:A->r] = A[:,:len]*u[:len], v may not alias u
-void nmod_mat_mul_nmod_vec_small_modulus(nn_ptr v, const nmod_mat_t A, nn_srcptr u, ulong len);
-#endif
+void nmod_mat_mul_nmod_vec_2dot(nn_ptr v, const nmod_mat_t A, nn_srcptr u, ulong len);
+#endif  /* FLINT_BITS == 64 */
 
-/** matrix multiplication not using AVX2 instructions */
+/** matrix multiplication */
 // C = A*B
 void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B);
 // v[:A->r] = A[:,:len]*u[:len], v may not alias u
@@ -47,7 +47,7 @@ void nmod_mat_mul_pml(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
 {
 #if PML_HAVE_AVX2
     if (A->mod.n < (1L < 29))
-        nmod_mat_mul_small_modulus(C, A, B);
+        nmod_mat_mul_2dot(C, A, B);
     else
 #endif
         nmod_mat_mul(C, A, B);

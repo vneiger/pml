@@ -1,8 +1,7 @@
-#include <assert.h>
-#include <gmp.h>
 #include <flint/flint.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
+#include <flint/test_helpers.h>
 
 #include "nmod_mat_extra.h"
  
@@ -10,7 +9,7 @@
 /*--------------------------------------------------------------*/
 /* computes a square matrix product in size len modulo n        */
 /*--------------------------------------------------------------*/
-void check_nmod_mat_mul_small_modulus(ulong len, ulong n)
+int check_nmod_mat_mul_2dot(ulong len, ulong n)
 {
     flint_rand_t state;
     nmod_mat_t a, b, c1, c2;
@@ -30,25 +29,36 @@ void check_nmod_mat_mul_small_modulus(ulong len, ulong n)
     nmod_mat_rand(c2, state);
     
     nmod_mat_mul(c1, a, b);
-    nmod_mat_mul_small_modulus(c2, a, b);
+    nmod_mat_mul_2dot(c2, a, b);
 
-    assert (nmod_mat_equal(c1, c2));
+    int res = nmod_mat_equal(c1, c2);
     
     nmod_mat_clear(a);
     nmod_mat_clear(b);
     nmod_mat_clear(c1);
     nmod_mat_clear(c2);
     flint_rand_clear(state);
+
+    return res;
 }
 
-/*--------------------------------------------------------------*/
-/* main calls check                                             */
-/*--------------------------------------------------------------*/
-int main(int argc, char **argv)
+TEST_FUNCTION_START(mul_2dot, state)
 {
-    ulong i;
-    for (i = 1; i < 1000; i += 11)
-	check_nmod_mat_mul_small_modulus(i, (1L << 29) + 1);
+    flint_rand_set_seed(state, time(NULL), time(NULL)+12984125L);
 
-    return 0;
+    int i;
+
+    for (i = 0; i < 1000 * flint_test_multiplier(); i++)
+    {
+        slong len = n_randint(state, 100) + 1;
+
+        ulong n = n_randint(state, UWORD(1)<<30);
+
+        int res = check_nmod_mat_mul_2dot(len, n);
+
+        if (!res)
+            TEST_FUNCTION_FAIL("mul_2dot, len = %wu, n = %wd\n", len, n);
+    }
+
+    TEST_FUNCTION_END(state);
 }
