@@ -12,17 +12,9 @@
  */
 
 #include <flint/flint.h>
-#include <flint/machine_vectors.h>
 #include <flint/nmod.h> // for NMOD_RED
 
-#define HAVE_AVX512 1   // TODO handle AVX flags
-
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-#ifdef HAS_AVX2  // GV
-
+#include "machine_vectors.h"
 
 // functions below accumulate 8 terms:
 //  -> modulus <= DOT2_ACC8_MAX_MODULUS
@@ -51,22 +43,6 @@ void _nmod32_vec_clear(n32_ptr vec)
    flint_free(vec);
 }
 
-// avx2 horizontal sum
-FLINT_FORCE_INLINE ulong _mm256_hsum(__m256i a) {
-    __m256i a_hi = _mm256_shuffle_epi32(a, 14);  // 14 == 0b00001110
-    __m256i sum_lo = _mm256_add_epi64(a, a_hi);
-    __m128i sum_hi = _mm256_extracti128_si256(sum_lo, 1);
-    __m128i sum = _mm_add_epi64(_mm256_castsi256_si128(sum_lo), sum_hi);
-    return (ulong) _mm_cvtsi128_si64(sum);
-}
-
-#if HAVE_AVX512
-// avx512 horizontal sum
-FLINT_FORCE_INLINE ulong _mm512_hsum(__m512i a) {
-    return _mm512_reduce_add_epi64(a);
-}
-#endif
-
 /**********************************************************************
 *                            DOT PRODUCT                             *
 **********************************************************************/
@@ -78,29 +54,37 @@ FLINT_FORCE_INLINE ulong _mm512_hsum(__m512i a) {
 
 uint _nmod32_vec_dot_split(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
 
+#if PML_HAVE_AVX2
 uint _nmod32_vec_dot_split_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
-#if HAVE_AVX512
-uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
-#endif
 
 // duplicate msolve's matrix-vector product (for single dot prod)
+// FIXME slower -> can be removed
 uint _nmod32_vec_dot_msolve_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, uint PRIME);
+#endif  /* PML_HAVE_AVX2 */
+
+#if PML_HAVE_AVX512
+uint _nmod32_vec_dot_split_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
 
 // ifma variant
 // TODO unfinished, requires len multiple of 16 or 32
+
+/* the following was written with avx_ifma flag in mind, but
+ * can probably be discarded */
 uint _nmod32_vec_dot_ifma_avx2(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
-#if HAVE_AVX512
 uint _nmod32_vec_dot_ifma_avx512(n32_srcptr vec1, n32_srcptr vec2, slong len, nmod_t mod, ulong pow2_precomp);
-#endif
+#endif  /* PML_HAVE_AVX512 */
 
 /**********************************************************************
-*                          k-DOT PRODUCT                             *
+*                      2-DOT and 3-DOT PRODUCT                       *
 **********************************************************************/
 
 // similar to dot_split, computes res0 = vec1 * vec2_0 and res1 = vec1 * vec2_1
 void _nmod32_vec_dot2_split(uint * res0, uint * res1,
                             n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1,
                             slong len, nmod_t mod, ulong pow2_precomp);
+
+
+#if PML_HAVE_AVX2
 void _nmod32_vec_dot2_split_avx2(uint * res0, uint * res1,
                                  n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1,
                                  slong len, nmod_t mod, ulong pow2_precomp);
@@ -109,8 +93,9 @@ void _nmod32_vec_dot2_split_avx2(uint * res0, uint * res1,
 void _nmod32_vec_dot3_split_avx2(uint * res, n32_srcptr vec1,
                                  n32_srcptr vec2_0, n32_srcptr vec2_1, n32_srcptr vec2_2,
                                  slong len, nmod_t mod, ulong pow2_precomp);
+#endif  /* PML_HAVE_AVX2 */
 
-#if HAVE_AVX512
+#if PML_HAVE_AVX512
 void _nmod32_vec_dot2_split_avx512(uint * res0, uint * res1,
                                    n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1,
                                    slong len, nmod_t mod, ulong pow2_precomp);
@@ -119,7 +104,7 @@ void _nmod32_vec_dot2_split_avx512(uint * res0, uint * res1,
 void _nmod32_vec_dot3_split_avx512(uint * res,
                                    n32_srcptr vec1, n32_srcptr vec2_0, n32_srcptr vec2_1, n32_srcptr vec2_2,
                                    slong len, nmod_t mod, ulong pow2_precomp);
-#endif
+#endif  /* PML_HAVE_AVX512 */
 
 /**********************************************************************
 *                         MULTI DOT PRODUCT                          *
@@ -137,42 +122,38 @@ void _nmod32_vec_dot3_split_avx512(uint * res,
 // naive via dot_split
 void _nmod32_vec_mdot_split(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                             slong nrows, slong len, slong stride, nmod_t mod);
+
+void _nmod32_vec_mdot2_split(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+                             slong nrows, slong len, slong stride, nmod_t mod);
+
+#if PML_HAVE_AVX2
 void _nmod32_vec_mdot_split_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                                  slong nrows, slong len, slong stride, nmod_t mod);
 
-#if HAVE_AVX512
-void _nmod32_vec_mdot_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
-                                   slong nrows, slong len, slong stride, nmod_t mod);
-#endif
+// like dot_split but handling 2 or 3 rows at a time
+void _nmod32_vec_mdot2_split_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+                                  slong nrows, slong len, slong stride, nmod_t mod);
+void _nmod32_vec_mdot3_split_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+                                  slong nrows, slong len, slong stride, nmod_t mod);
 
 // duplicate msolve's matrix-vector product
 void _nmod32_vec_mdot_msolve_via_dot_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                                           slong nrows, slong len, slong stride, nmod_t mod);
 void _nmod32_vec_mdot_msolve_native_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                                          slong nrows, slong len, slong stride, nmod_t mod);
+#endif  /* PML_HAVE_AVX2 */
 
-// like dot_split but handling two rows at a time
-void _nmod32_vec_mdot2_split(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
-                             slong nrows, slong len, slong stride, nmod_t mod);
-void _nmod32_vec_mdot2_split_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
-                                  slong nrows, slong len, slong stride, nmod_t mod);
-void _nmod32_vec_mdot3_split_avx2(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
-                                  slong nrows, slong len, slong stride, nmod_t mod);
-
-#if HAVE_AVX512
+#if PML_HAVE_AVX512
+void _nmod32_vec_mdot_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
+                                   slong nrows, slong len, slong stride, nmod_t mod);
 void _nmod32_vec_mdot2_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                                     slong nrows, slong len, slong stride, nmod_t mod);
 void _nmod32_vec_mdot3_split_avx512(n32_ptr mv, n32_srcptr mat, n32_srcptr vec,
                                     slong nrows, slong len, slong stride, nmod_t mod);
-#endif
+#endif  /* PML_HAVE_AVX512 */
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif // ifndef  __NMOD32_VEC__H
-
-#endif // GV HAS_AVX2
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -3,11 +3,6 @@
 #include "nmod_extra.h"
 #include "machine_vectors.h"
 
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
 /* helper functions for large modulus                           */
@@ -133,14 +128,13 @@ static void nmod_large_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
 }
 
 
-#ifdef HAS_AVX2  // GV 
-
-
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
 /* helper functions for small modulus                           */
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
+
+#if PML_HAVE_MACHINE_VECTORS
 
 /* ------------------------------------------------------------ */
 /* out[i] = residues0[i] mod p, i < nb                          */
@@ -224,10 +218,6 @@ FLINT_FORCE_INLINE void _crt_2_small(nn_ptr out,
         out[i] = vec1n_addmod(m0, a, p);
     }
 }
-
-#endif
-
-#ifdef HAS_AVX2  // GV 
 
 /* ------------------------------------------------------------ */
 /* out[i] = CRT(residues[j][i], j < 3) mod p, i < nb            */
@@ -326,10 +316,6 @@ FLINT_FORCE_INLINE void _crt_3_small(nn_ptr out,
                                       p);
     }
 }
-
-#endif
-
-#ifdef HAS_AVX2  // GV 
 
 /* ------------------------------------------------------------ */
 /* out[i] = CRT(residues[j][i], j < 4) mod p, i < nb            */
@@ -464,8 +450,6 @@ FLINT_FORCE_INLINE void _crt_4_small(nn_ptr out,
 }
 
 
-
-
 /* ------------------------------------------------------------ */
 /* out[i] = CRT(residues[j][i], j < k) mod p, i < nb            */
 /* k = 1,2,3,4                                                  */
@@ -503,10 +487,7 @@ static void nmod_small_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
     }
 }
 
-
-#endif 
-
-#ifdef HAS_AVX2  // GV 
+#endif
 
 /* ------------------------------------------------------------ */
 /* out[i] = CRT(residues[j][i], j < k) mod p, i < nb            */
@@ -514,24 +495,12 @@ static void nmod_small_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
 /* ------------------------------------------------------------ */
 void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod_CRT_t C)
 {
+#if PML_HAVE_MACHINE_VECTORS
     if (C->p < (1L << 50)) // small modulus: use SIMD floating-point representation 
         nmod_small_modulus_CRT(out, residues, nb, C);
     else
-        nmod_large_modulus_CRT(out, residues, nb, C);
-}
-
-#else 
-
-// GV attempt, not sufficient 
-void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod_CRT_t C)
-{
-        nmod_large_modulus_CRT(out, residues, nb, C);
-}
-
 #endif
-
-
-
-
+        nmod_large_modulus_CRT(out, residues, nb, C);
+}
 
 

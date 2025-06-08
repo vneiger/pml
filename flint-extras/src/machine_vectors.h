@@ -4,13 +4,13 @@
 #include <flint/flint.h>
 
 #if defined(FLINT_HAVE_FFT_SMALL)
-# define PML_HAVE_MACHINE_VECTORS 1
+# define PML_HAVE_MACHINE_VECTORS 0
 #endif 
 
 /** for AVX2 we just consider the standard set, e.g we ignore AVX-IFMA which is
  * supported by very few non-AVX512 processors */
 #if defined(__AVX2__)
-# define PML_HAVE_AVX2 1
+# define PML_HAVE_AVX2 0
 #endif
 
 /** for AVX512 we require many flags that tend to be supported by all recent
@@ -21,7 +21,7 @@
                          && defined(__AVX512VL__)    \
                          && defined(__AVX512CD__)    \
                          && defined(__AVX512VNNI__)
-# define PML_HAVE_AVX512 1
+# define PML_HAVE_AVX512 0
 #endif
 
 #if PML_HAVE_AVX2
@@ -117,7 +117,24 @@ FLINT_FORCE_INLINE vec2d vec2d_set_d2(double a1, double a0)
 
 #define vec4n_bit_shift_right_45(a) vec4n_bit_shift_right((a), 45)
 
-#endif
+
+// avx2 horizontal sum  (already in FLINT)
+FLINT_FORCE_INLINE ulong _mm256_hsum(__m256i a) {
+    __m256i a_hi = _mm256_shuffle_epi32(a, 14);  // 14 == 0b00001110
+    __m256i sum_lo = _mm256_add_epi64(a, a_hi);
+    __m128i sum_hi = _mm256_extracti128_si256(sum_lo, 1);
+    __m128i sum = _mm_add_epi64(_mm256_castsi256_si128(sum_lo), sum_hi);
+    return (ulong) _mm_cvtsi128_si64(sum);
+}
+
+#endif /* PML_HAVE_AVX2 */
+
+#if PML_HAVE_AVX512
+// avx512 horizontal sum
+FLINT_FORCE_INLINE ulong _mm512_hsum(__m512i a) {
+    return _mm512_reduce_add_epi64(a);
+}
+#endif /* PML_HAVE_AVX512 */
 
 
 #endif /* ifndef __MACHINE_VECTORS__H */

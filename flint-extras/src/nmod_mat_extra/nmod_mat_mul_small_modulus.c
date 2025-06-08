@@ -1,16 +1,14 @@
 #include <flint/nmod_mat.h>
-#include <flint/machine_vectors.h>
 #include <flint/nmod_vec.h>
 
 #include "nmod_extra.h"
 #include "nmod_vec_extra.h"
+#include "machine_vectors.h"
 
+/* TODO update code to make it work with FLINT's machine vectors in general,
+ * not specifically avx2 */
 
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-#ifdef HAS_AVX2  // GV 
+#if PML_HAVE_AVX2
 
 /** matrix multiplication using AVX2 instructions for moduli less than 2^30 */
 void nmod_mat_mul_small_modulus(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
@@ -118,4 +116,4 @@ void nmod_mat_mul_nmod_vec_small_modulus(nn_ptr v, const nmod_mat_t A, nn_srcptr
 #endif
 }
 
-#endif
+#endif  /* PML_HAVE_AVX2 */

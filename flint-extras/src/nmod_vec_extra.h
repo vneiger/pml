@@ -77,8 +77,10 @@ ulong nmod_vec_dot_product_unbalanced(nn_srcptr v1, nn_srcptr v2,
 *  - on zen4, do not see an advantage for dot2_small_modulus
 *  - on intel icelake server, small advantage (<15%) for lengths about 200 and more
 **************/
+#if PML_HAVE_MACHINE_VECTORS
 void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ulong len,
                                   ulong power_two, vec2d p2, vec2d pinv2);
+#endif
 
 
 /*------------------------------------------------------------*/
@@ -127,19 +129,16 @@ ulong _nmod_vec_dot2_half_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 // --> speed-up about 2 for lengths a few 100s
 // (TODO analyze correctness bounds)
 ulong _nmod_vec_dot_product_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+#ifdef PML_HAVE_AVX2
+    ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
+#endif // PML_HAVE_AVX2
+
 
 // TODO in progress: ifma attempt
-#if HAVE_AVX512   // TODO handle AVX flags
+#if PML_HAVE_AVX512
 ulong _nmod_vec_dot_product_ifma256(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
 ulong _nmod_vec_dot_product_ifma512(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-#endif
-#if HAVE_AVX_IFMA   // TODO handle AVX flags
-ulong _nmod_vec_dot_product_avx_ifma(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-#endif
-
-
-
+#endif  /* PML_HAVE_AVX512 */
 
 
 /** Several dot products with same left operand, as in vector-matrix product.

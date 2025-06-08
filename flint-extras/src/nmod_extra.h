@@ -32,58 +32,6 @@ ulong inverse_mod_power_of_two(ulong p, int k);
 ulong nmod_find_root(long n, nmod_t mod);
 
 
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-/* 64 bit modular multiplication using a preconditionner      */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/* TODO unused for the moment:
- * - what does this bring compared to n_mulmod_shoup in FLINT?
- * - the lazy/unreduced variant could be defined locally in relevant files like FFT ones (?))
- */
-
-/*------------------------------------------------------------*/
-/* high word of a*b, assuming words are 64 bits               */
-/*------------------------------------------------------------*/
-FLINT_FORCE_INLINE ulong mul_hi(ulong a, ulong b)
-{
-    ulong p_hi, p_lo;
-    umul_ppmm(p_hi, p_lo, a, b);
-    return p_hi;
-}
-
-/*------------------------------------------------------------*/
-/* returns floor (2^64*b)/p                                   */
-/*------------------------------------------------------------*/
-FLINT_FORCE_INLINE ulong prep_mul_mod_precon(ulong b, ulong p)
-{
-    return n_mulmod_precomp_shoup(b, p);
-}
-
-/*------------------------------------------------------------*/
-/* preconditioned product                                     */
-/* returns ab mod p                                           */
-/* a is in [0..2^64), b is in [0..p)                          */
-/*------------------------------------------------------------*/
-FLINT_FORCE_INLINE ulong mul_mod_precon(ulong a, ulong b, ulong p, ulong i_b)
-{
-    return n_mulmod_shoup(b, a, i_b, p);
-}
-
-/*------------------------------------------------------------*/
-/* returns ab mod p in [0..2p)                                */
-/* a is in [0..2^64), b is in [0..p)                          */
-/*------------------------------------------------------------*/
-FLINT_FORCE_INLINE ulong mul_mod_precon_unreduced(ulong a, ulong b, ulong p, ulong i_b)
-{
-    ulong q;
-
-    q = mul_hi(i_b, a);
-    return a*b - q*p;
-}
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*                    CRT and multimod                        */
@@ -97,7 +45,7 @@ FLINT_FORCE_INLINE ulong mul_mod_precon_unreduced(ulong a, ulong b, ulong p, ulo
 /*------------------------------------------------------------*/
 
 // 4 primes should be enough for all practical purposes involving nmods
-// TODO: make sure we test if so, just in case?
+// TODO make sure we test if so, just in case?
 //
 // PRIME0 < PRIME1 < PRIME2 < PRIME3 needed for the double implementation
 #define PRIME0 659706976665601

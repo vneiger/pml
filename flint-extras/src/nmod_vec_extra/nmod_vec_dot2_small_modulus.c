@@ -1,13 +1,8 @@
-#include "nmod_extra.h"  // for vec4n_zero and others
+#include "machine_vectors.h"
+#include "nmod_extra.h"
 #include "nmod_vec_extra.h"
 
-
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-
-#ifdef HAS_AVX2  // GV 
+#ifdef PML_HAVE_MACHINE_VECTORS
 
 /*------------------------------------------------------------*/
 /** dot product for moduli less than 2^30                     */
@@ -60,9 +55,9 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ul
         sum_low1 = vec4n_add(sum_low1, vec4n_mul(vec4n_load_unaligned((nn_ptr) a1_4n++), val_b));
         sum_low2 = vec4n_add(sum_low2, vec4n_mul(vec4n_load_unaligned((nn_ptr) a2_4n++), val_b));
 
-        sum_high1 = vec4n_add(sum_high1, vec4n_bit_shift_right_45(sum_low1));
+        sum_high1 = vec4n_add(sum_high1, vec4n_bit_shift_right(sum_low1, 45));
         sum_low1 = vec4n_bit_and(sum_low1, low_bits);
-        sum_high2 = vec4n_add(sum_high2, vec4n_bit_shift_right_45(sum_low2));
+        sum_high2 = vec4n_add(sum_high2, vec4n_bit_shift_right(sum_low2, 45));
         sum_low2 = vec4n_bit_and(sum_low2, low_bits);
     }
 
@@ -76,9 +71,9 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ul
         sum_low2 = vec4n_add(sum_low2, vec4n_mul(vec4n_load_unaligned((nn_ptr) a2_4n++), val_b));
     }
 
-    sum_high1 = vec4n_add(sum_high1, vec4n_bit_shift_right_45(sum_low1));
+    sum_high1 = vec4n_add(sum_high1, vec4n_bit_shift_right(sum_low1, 45));
     sum_low1 = vec4n_bit_and(sum_low1, low_bits);
-    sum_high2 = vec4n_add(sum_high2, vec4n_bit_shift_right_45(sum_low2));
+    sum_high2 = vec4n_add(sum_high2, vec4n_bit_shift_right(sum_low2, 45));
     sum_low2 = vec4n_bit_and(sum_low2, low_bits);
 
     // left with at most 3 coefficients
@@ -99,12 +94,17 @@ void _nmod_vec_dot2_small_modulus(nn_ptr res, nn_ptr a1, nn_ptr a2, nn_ptr b, ul
     const ulong total_low2 = sum_low2[0] + sum_low2[1] + sum_low2[2] + sum_low2[3] + (acc_last2 & ((1L << 45) - 1));
     const ulong total_high2 = sum_high2[0] + sum_high2[1] + sum_high2[2] + sum_high2[3] + (acc_last2 >> 45);
 
-    vec2d sum;
-    sum[0] = total_low1 + power_two*total_high1;
-    sum[1] = total_low2 + power_two*total_high2;
-    vec2d redsum = vec2d_reduce_to_0n(sum, p2, pinv2);
-    res[0] = (ulong) redsum[0];
-    res[1] = (ulong) redsum[1];
+    /* modified to avoid avx2-only functions and rely on avx2+neon from FLINT */
+    vec1d sum0, sum1;
+    sum0 = total_low1 + power_two*total_high1;
+    sum1 = total_low2 + power_two*total_high2;
+    sum0 = vec1d_reduce_to_0n(sum0, p2[0], pinv2[0]);
+    sum1 = vec1d_reduce_to_0n(sum1, p2[1], pinv2[1]);
+    /* vec2d redsum = vec2d_reduce_to_0n(sum, p2, pinv2); */
+    /* res[0] = (ulong) redsum[0]; */
+    /* res[1] = (ulong) redsum[1]; */
+    res[0] = (ulong) sum0;
+    res[1] = (ulong) sum1;
 }
 
-#endif 
+#endif  /* PML_HAVE_MACHINE_VECTORS */
