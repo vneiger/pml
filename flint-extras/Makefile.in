@@ -79,11 +79,15 @@ CP:=cp
 CP_A:=cp -pRP
 GDB:=gdb
 
+CD:=cd
+
 STATIC:=@STATIC@
 SHARED:=@SHARED@
 
 COVERAGE:=@COVERAGE@
 WANT_NTL:=@WANT_NTL@
+
+WANT_MAPLE:=@WANT_MAPLE@
 
 WANT_DEPS:=@WANT_DEPS@
 
@@ -176,7 +180,11 @@ HEADER_DIRS :=                                                              \
         nmod_poly_extra                                                     \
         nmod_poly_mat_extra                                                 \
         nmod_vec_extra                                                      \
-        sagemath_extra                                                      
+        sagemath_extra                                                     
+
+ifeq ($(WANT_MAPLE),1)
+        HEADER_DIRS += mapml
+endif
 
 DIRS := $(HEADLESS_DIRS) $(HEADER_DIRS)
 
@@ -209,7 +217,10 @@ endif
 
 HEADERS := $(wildcard $(ABS_SRC_DIR)/*.h) $(CFG_HEADERS)
 
-#HEADERS += $(wildcard $(ABS_SRC_DIR)/mapml/*.h) 
+ifeq ($(WANT_MAPLE),1)
+        HEADERS += $(wildcard $(ABS_SRC_DIR)/mapml/*.h) 
+endif
+
 
 ################################################################################
 # sources
@@ -785,6 +796,12 @@ ifneq ($(STATIC), 0)
 	$(CP) $(PML_DIR)/$(PML_LIB_STATIC) $(DESTDIR)$(LIBDIR)
 endif
 	$(CP) $(HEADERS) $(DESTDIR)$(INCLUDEDIR)/pml
+ifeq ($(WANT_MAPLE), 1)
+	$(CP_A) $(ABS_SRC_DIR)/mapml/mapml.mpl.bak $(BUILD_DIR)/mapml
+	$(CP_A) $(ABS_SRC_DIR)/mapml/maple-path.sh $(BUILD_DIR)/mapml
+	$(CD) $(BUILD_DIR)/mapml && sh maple-path.sh "$(prefix)"  "$(prefix)"
+	$(CP) $(BUILD_DIR)/mapml/mapml.mpl $(DESTDIR)$(INCLUDEDIR)/pml 
+endif
 	@echo ""
 	@echo '############################################################'
 	@echo '# NOTE:                                                    #'
