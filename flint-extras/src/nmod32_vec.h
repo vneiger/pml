@@ -13,6 +13,7 @@
 
 #include <flint/flint.h>
 
+#include "pml.h"
 #include "machine_vectors.h"
 
 // functions below accumulate 8 terms:

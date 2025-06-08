@@ -2,8 +2,9 @@
 #define __NMOD_POLY_EXTRA__H
 
 #include <flint/nmod_poly.h>
-#include <flint/fft_small.h>
-#include <flint/machine_vectors.h>
+
+#include "pml.h"
+#include "machine_vectors.h"
 
 #ifdef __cplusplus
 extern "C" {

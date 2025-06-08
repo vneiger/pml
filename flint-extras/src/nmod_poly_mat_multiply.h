@@ -3,6 +3,8 @@
 
 #include <flint/nmod_types.h>
 
+#include "pml.h"
+
 // several functions allocate arrays of matrices
 // setting this flag allocates all memory at once
 // slightly faster than using nmod_mat_init

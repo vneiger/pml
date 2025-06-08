@@ -16,6 +16,8 @@
 #include <flint/nmod_types.h>
 #include <flint/nmod.h> // for NMOD_RED
 
+#include "pml.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

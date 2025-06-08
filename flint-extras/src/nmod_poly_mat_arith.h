@@ -16,6 +16,8 @@
 
 #include <flint/nmod_types.h>
 
+#include "pml.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -16,6 +16,8 @@
 #include <flint/perm.h>
 #include <flint/nmod_mat.h>
 
+#include "pml.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

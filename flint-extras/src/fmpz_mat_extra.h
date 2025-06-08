@@ -4,6 +4,8 @@
 #include <flint/fmpz.h>
 #include <flint/fmpz_mat.h>
 
+#include "pml.h"
+
 /** ------------------------------------------------------------ */
 /** a multimodular algorithm for matrix multiplication           */
 /** based on flint's fmpz_mat_mul_multi_mod implementation       */

@@ -25,6 +25,8 @@
 // include flint's matrices
 #include <flint/nmod_poly_mat.h>
 
+#include "pml.h"
+
 // include flint-extra's files
 #include "nmod_poly_mat_utils.h"
 

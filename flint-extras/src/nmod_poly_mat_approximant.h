@@ -7,6 +7,7 @@
  * \todo CLEAN DOC
  */
 
+#include "pml.h"
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -96,7 +97,9 @@
 #define PMBASIS_THRES 32
 
 #include <flint/nmod_types.h>
+
 #include "nmod_poly_mat_forms.h" // for orientation_t
+#include "pml.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -932,24 +932,6 @@ case "$host_os" in
         ;;
 esac
 
-dnl FIXME: Improve this check to include more processors.
-AC_MSG_CHECKING([if memory is strongly-ordered])
-case "$host" in
-    X86_PATTERN | X86_64_PATTERN)
-        flint_know_strong_order="yes"
-        AC_MSG_RESULT([yes])
-        ;;
-    *)
-        flint_know_strong_order="no"
-        AC_MSG_RESULT([unsure])
-        ;;
-esac
-
-if test "$flint_know_strong_order" = "yes";
-then
-    AC_DEFINE(FLINT_KNOW_STRONG_ORDER,1,[Define if system is strongly ordered])
-fi
-
 ################################################################################
 # check GMP
 ################################################################################
@@ -967,14 +949,6 @@ FLINT_CHECK_MPFR_H(4,1,0)
 ################################################################################
 
 PML_CHECK_FLINT_H(3,2,0)
-
-################################################################################
-# check ABI
-################################################################################
-
-FLINT_ABI
-
-AC_DEFINE_UNQUOTED(FLINT_BITS,$flint_cv_abi,[Define according to the ABI FLINT was compiled with])
 
 ################################################################################
 # check headers
@@ -1068,36 +1042,6 @@ internals."])])
         [AC_MSG_ERROR([`mpn_div_q' was not found in the GMP library. It is needed to enable GMP
 internals.])])
 
-    dnl The following functions may or may not exist
-    AC_SEARCH_LIBS([__gmpn_invert_limb],[gmp],
-        [AC_DEFINE(FLINT_HAVE_NATIVE_mpn_invert_limb,1,Define if GMP has mpn_invert_limb)])
-
-    AC_SEARCH_LIBS([__gmpn_modexact_1_odd],[gmp],
-        [AC_DEFINE(FLINT_HAVE_NATIVE_mpn_modexact_1_odd,1,Define if GMP has mpn_modexact_1_odd)])
-
-    AC_SEARCH_LIBS([__gmpn_addmul_2],[gmp],
-        [AC_DEFINE(FLINT_HAVE_NATIVE_mpn_addmul_2,1,Define if GMP has mpn_addmul_2)])
-
-    AC_SEARCH_LIBS([__gmpn_add_n_sub_n],[gmp],
-        [AC_DEFINE(FLINT_HAVE_NATIVE_mpn_add_n_sub_n,1,Define if GMP has mpn_add_n_sub_n)])
-
-    AC_SEARCH_LIBS([__gmpn_add_nc],[gmp],
-        [AC_DEFINE(FLINT_HAVE_NATIVE_mpn_add_nc,1,Define if GMP has mpn_add_nc)])
-
-    AC_SEARCH_LIBS([__gmpn_sub_nc],[gmp],
-        [AC_DEFINE(FLINT_HAVE_NATIVE_mpn_sub_nc,1,Define if GMP has mpn_sub_nc)])
-
-    AC_SEARCH_LIBS([__gmpn_addlsh1_n],[gmp],
-        [AC_DEFINE(FLINT_HAVE_NATIVE_mpn_addlsh1_n,1,Define if GMP has mpn_addlsh1_n)])
-
-    AC_SEARCH_LIBS([__gmpn_addlsh1_n_ip1],[gmp],
-        [AC_DEFINE(FLINT_HAVE_NATIVE_mpn_addlsh1_n_ip1,1,Define if GMP has mpn_addlsh1_n_ip1)])
-
-    AC_SEARCH_LIBS([__gmpn_rsh1sub_n],[gmp],
-        [AC_DEFINE(FLINT_HAVE_NATIVE_mpn_rsh1sub_n,1,Define if GMP has mpn_rsh1sub_n)])
-
-    AC_SEARCH_LIBS([__gmpn_rsh1add_n],[gmp],
-        [AC_DEFINE(FLINT_HAVE_NATIVE_mpn_rsh1add_n,1,Define if GMP has mpn_rsh1add_n)])
 fi
 
 if test "$enable_mpfr_check" = "yes";
@@ -1184,8 +1128,6 @@ fi
 ################################################################################
 
 AC_SUBST(PIC_FLAG,$pic_flag)
-
-FLINT_CHECK_CPU_SET_T([AC_DEFINE([FLINT_USES_CPUSET],1,Define if system has cpu_set_t)])
 
 FLINT_CHECK_PRAGMAS
 
@@ -1328,15 +1270,6 @@ then
 else
     TESTCFLAGS="$TESTCFLAGS $save_CFLAGS"
 fi
-
-################################################################################
-# fft_small module
-################################################################################
-
-FLINT_CHECK_FFT_SMALL(
-    [AC_SUBST(FFT_SMALL, [fft_small\ \ \ ])
-     AC_DEFINE(FLINT_HAVE_FFT_SMALL, 1, [Define to use the fft_small module])],
-    [AC_SUBST(FFT_SMALL, [\ \ \ \ \ \ \ \ \ \ \ \ ])])
 
 ################################################################################
 # Assembly

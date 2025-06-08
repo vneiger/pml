@@ -7,6 +7,8 @@
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
 
+#include "pml.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

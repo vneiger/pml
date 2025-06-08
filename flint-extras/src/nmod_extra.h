@@ -8,6 +8,8 @@
 #include <flint/longlong.h>
 #include <flint/ulong_extras.h>
 
+#include "pml.h"
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /*        A few extra functionalities for Fp                  */
