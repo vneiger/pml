@@ -351,7 +351,8 @@ ltmain.sh
 m4/
 missing
 pml.pc
-src/config.h
-src/config.h.in~
-src/pml.h
+pml-config.h
+config.h
+config.h.in~
+pml.h
 test-driver
