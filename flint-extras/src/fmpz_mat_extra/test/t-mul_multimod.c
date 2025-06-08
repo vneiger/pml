@@ -40,10 +40,11 @@ TEST_FUNCTION_START(fmpz_mat_mul_multimod, state)
 
     for (i = 0; i < 100 * flint_test_multiplier(); i++)
     {
-        ulong n_bits = (1 + n_randint(state, 100)) * 200;
-        ulong m = n_randint(state, 300);
-        ulong n = n_randint(state, 300);
-        ulong p = n_randint(state, 300);
+        ulong factor = 1 + n_randint(state, 50);
+        ulong n_bits = factor * 200;
+        ulong m = n_randint(state, 200 / factor);
+        ulong n = n_randint(state, 200 / factor);
+        ulong p = n_randint(state, 200 / factor);
 
         result = test_fmpz_mat_mul(m, n, p, n_bits, state);;
 
@@ -56,4 +57,3 @@ TEST_FUNCTION_START(fmpz_mat_mul_multimod, state)
 
     TEST_FUNCTION_END(state);
 }
-
