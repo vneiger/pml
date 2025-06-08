@@ -45,6 +45,7 @@
 
 // #include "nmod_poly_mat_linearization.h"
 
+#include "nmod_poly_mat_dixon.h"
 
 // TODO remove once using flint's comp instead
 NMOD_POLY_MAT_INLINE void
