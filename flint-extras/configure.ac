@@ -1459,6 +1459,7 @@ AC_SUBST(FLINT_LIB_PATH,$flint_lib_path)
 AC_SUBST(BLAS_LIB_PATH,$blas_lib_path)
 AC_SUBST(GC_LIB_PATH,$gc_lib_path)
 AC_SUBST(NTL_LIB_PATH,$ntl_lib_path)
+AC_SUBST(MAPLE_LIB_PATH,$maple_lib_path)
 
 AC_SUBST(LIB_CPPFLAGS,["-DPML_NOSTDIO -DPML_NOSTDARG"])
 
