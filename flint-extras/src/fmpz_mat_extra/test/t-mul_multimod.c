@@ -3,10 +3,8 @@
 
 #include "fmpz_mat_extra.h"
 
+#if PML_HAVE_AVX2
 
-/*--------------------------------------------------------------*/
-/* multiplies matrices using different implementations          */
-/*--------------------------------------------------------------*/
 int test_fmpz_mat_mul(ulong m, ulong n, ulong p, ulong n_bits, flint_rand_t state)
 {
     fmpz_mat_t A, B, C1, C2;
@@ -57,3 +55,5 @@ TEST_FUNCTION_START(fmpz_mat_mul_multimod, state)
 
     TEST_FUNCTION_END(state);
 }
+
+#endif  /* PML_HAVE_AVX2 */
