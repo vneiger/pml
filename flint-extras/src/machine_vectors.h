@@ -3,6 +3,8 @@
 
 #include <flint/flint.h>
 
+#include "pml.h"
+
 #if PML_HAVE_MACHINE_VECTORS
 # include <flint/machine_vectors.h>
 #endif

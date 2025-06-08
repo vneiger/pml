@@ -22,6 +22,8 @@
 //#include <flint/nmod_types.h>
 #include <flint/nmod_poly_mat.h> // fmpz_types not enough, need NMOD_POLY_MAT_INLINE
 
+#include "pml.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

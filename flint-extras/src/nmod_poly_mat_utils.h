@@ -13,6 +13,8 @@
 #include <flint/fmpz_types.h> // for fmpz_mat degree matrix
 #include <flint/nmod_poly.h> // for nmod_poly_swap
 
+#include "pml.h"
+
 #include "nmod_poly_mat_forms.h" // for orientation
 #include "nmod_mat_poly.h"
 

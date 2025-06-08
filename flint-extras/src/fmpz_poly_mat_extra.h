@@ -4,6 +4,8 @@
 #include <flint/fmpz.h>
 #include <flint/fmpz_poly_mat.h>
 
+#include "pml.h"
+
 /** ------------------------------------------------------------ */
 /** Waksman's algorithm for matrix multiplication                */
 /** does n^3/2+O(n^2) products, but many additions               */

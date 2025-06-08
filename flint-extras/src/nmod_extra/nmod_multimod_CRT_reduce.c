@@ -1,7 +1,7 @@
 #include "nmod_extra.h"
 #include "machine_vectors.h"
 
-#if PML_HAVE_AVX2  // GV
+#if PML_HAVE_AVX2
 
 /*------------------------------------------------------------*/
 /* residues[j][i] = input[i] mod prime[j]                     */
