@@ -6,7 +6,6 @@
 #include <flint/fmpz.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
-#include <flint/machine_vectors.h>
 
 #ifdef __cplusplus
 extern "C" {

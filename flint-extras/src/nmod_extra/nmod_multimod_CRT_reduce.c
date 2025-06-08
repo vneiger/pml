@@ -1,13 +1,7 @@
-#include <flint/machine_vectors.h>
 #include "nmod_extra.h"
+#include "machine_vectors.h"
 
-
-#ifdef __AVX2__
-#define HAS_AVX2
-#endif
-
-#ifdef HAS_AVX2  // GV 
-
+#if PML_HAVE_AVX2  // GV
 
 /*------------------------------------------------------------*/
 /* residues[j][i] = input[i] mod prime[j]                     */
@@ -16,7 +10,7 @@
 void nmod_multimod_CRT_reduce(nn_ptr *residues, nn_ptr input, ulong nb, nmod_multimod_CRT_t C)
 {
     ulong i, j;
-    
+
     // if p < pi (and in particular if p < 2^49), nothing to do
     // else, use the 2^32 trick from nmod_poly_mul
     // TODO: if pi < p < 2^50, then since pi >= 2^49, we have p < 2pi, so we could use reduce_2n_to_n
@@ -34,7 +28,7 @@ void nmod_multimod_CRT_reduce(nn_ptr *residues, nn_ptr input, ulong nb, nmod_mul
             ninv = C->primes_inv[j];
             n4 = vec4d_set_d(n);
             ninv4 = vec4d_set_d(ninv);
-            
+
             i = 0;
             if (nb >= 4)
             {
@@ -50,7 +44,7 @@ void nmod_multimod_CRT_reduce(nn_ptr *residues, nn_ptr input, ulong nb, nmod_mul
                                                                            n4));
                     }
                 }
-            
+
             for (; i < nb; i++)
             {
                 vec1n t = input[i];
@@ -66,4 +60,4 @@ void nmod_multimod_CRT_reduce(nn_ptr *residues, nn_ptr input, ulong nb, nmod_mul
     }
 }
 
-#endif
+#endif  /* PML_HAVE_AVX2 */
