@@ -151,9 +151,9 @@ slong prime[]  =
                         sigma = 2*rdim[in]*degA[ida];
                         order = degA[ida];
 
-                        //printf("prime %ld, rdim %ld, degA %ld, order %ld, sigma %ld, Bcdim %ld, degB %ld. \n",\
-                            //prime[ip], rdim[in], degA[ida], order,\
-                            //sigma, Bcdim[bdim], degB[db]);
+                        /* //printf("prime %ld, rdim %ld, degA %ld, order %ld, sigma %ld, Bcdim %ld, degB %ld. \n",\ */
+                        /*     //prime[ip], rdim[in], degA[ida], order,\ */
+                        /*     //sigma, Bcdim[bdim], degB[db]); */
 
                         nmod_poly_mat_t A;
                         nmod_poly_mat_t B;
@@ -186,9 +186,9 @@ slong prime[]  =
                         sigma = 2*rdim[in]*degA[ida];
                         order = 2;
 
-                        //printf("prime %ld, rdim %ld, degA %ld, order %ld, sigma %ld, Bcdim %ld, degB %ld. \n",\
-                            //prime[ip], rdim[in], degA[ida], order,\
-                            //sigma, Bcdim[bdim], degB[db]);
+                        /* //printf("prime %ld, rdim %ld, degA %ld, order %ld, sigma %ld, Bcdim %ld, degB %ld. \n",\ */
+                        /*     //prime[ip], rdim[in], degA[ida], order,\ */
+                        /*     //sigma, Bcdim[bdim], degB[db]); */
 
                         nmod_poly_mat_t A;
                         nmod_poly_mat_t B;

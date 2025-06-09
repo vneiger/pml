@@ -3,7 +3,7 @@
 Additions to the NTL and FLINT libraries, with a focus on univariate polynomial
 matrices, structured matrices, and their applications.
 
-Version 0.4
+Version 0.5
 
 Warning: the FLINT-based part of PML (flint-extras folder) is work in progress
 and currently unstable. Its components are continuously changing as some parts
@@ -16,21 +16,21 @@ Current maintainers:
 
  - Vincent Neiger
  - Eric Schost
+ - Gilles Villard 
 
 Contributors:
 
  - Seung Gyu Hyun
  - Kevin Tran
- - Gilles Villard 
 
 ## Licensing
 
-PML v0.4 is distributed under the GNU General Public License version 2.0
+PML v0.5 is distributed under the GNU General Public License version 2.0
 (GPL-2.0-or-later). This applies to all files in the directory of this README
 as well as in all subdirectories. See the file COPYING for a copy of the
 license.
 
-PML v0.4 is heavily based on [NTL](https://libntl.org/) and
+PML v0.5 is heavily based on [NTL](https://libntl.org/) and
 [FLINT](https://flintlib.org/). See the file `ntl-extras/COPYING_NTL` for
 NTL's copyright notice. FLINT is distributed under LGPL 2.1 (GNU Lesser General
 Public License), see `flint-extras/COPYING_FLINT` for the license.
@@ -57,7 +57,7 @@ Public License), see `flint-extras/COPYING_FLINT` for the license.
     author = {The {PML} team},
     title = {{PML}: {P}olynomial {M}atrix {L}ibrary},
     year = {2025},
-    note = {Version 0.4, \url{https://github.com/vneiger/pml}}
+    note = {Version 0.5, \url{https://github.com/vneiger/pml}}
 }
 ```
 
