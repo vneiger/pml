@@ -5,10 +5,7 @@ matrices, structured matrices, and their applications.
 
 Version 0.5
 
-Warning: the FLINT-based part of PML (flint-extras folder) is work in progress
-and currently unstable. Its components are continuously changing as some parts
-become obsolete after being integrated in FLINT directly. Furthermore, some of
-these components only compile with specific versions of FLINT.
+Warning: the FLINT-based part of PML (flint-extras folder) is work in progress.
  
 ## Authors
 
@@ -32,7 +29,7 @@ license.
 
 PML v0.5 is heavily based on [NTL](https://libntl.org/) and
 [FLINT](https://flintlib.org/). See the file `ntl-extras/COPYING_NTL` for
-NTL's copyright notice. FLINT is distributed under LGPL 2.1 (GNU Lesser General
+NTL's copyright notice. FLINT is distributed under LGPL 3.0 (GNU Lesser General
 Public License), see `flint-extras/COPYING_FLINT` for the license.
 
 ## Citing PML
@@ -61,20 +58,29 @@ Public License), see `flint-extras/COPYING_FLINT` for the license.
 }
 ```
 
-## Installation
+## Installation (FLINT-based version)
+
+The FLINT-based version is work in progress, and currently compiles with FLINT
+3.2.0 or later versions, including the current development version.
+
+The build system is similar to (and directly derived from) FLINT's one. In
+short, for a standard configuration, the following steps should work:
+```
+./bootstrap.sh
+./configure
+make
+```
+
+It is also recommended to run `make check` to verify that all functionalities
+work as expected. If not, please submit a bug report.
+
+## Installation (NTL-based version)
 
 If compiling the NTL version, NTL should be installed, version at least 11.3.1
-required.
-
-The FLINT version is work in progress, and currently compiles with the latest
-git version of FLINT. Currently, some parts of flint-extras may not compile on
-processors without avx512 instructions.
-
-Building PML has mostly been tested on linux distributions. Installation relies
-on "make", and the documentation relies on Doxygen.
-
-Each directory should contain one or more .h file and subdirectories `src`,
-`test`, `timings` (sometimes also `tune`).
+required. Building PML/NTL has mostly been tested on linux distributions.
+Installation relies on "make", and the documentation relies on Doxygen. Each
+directory should contain one or more .h file and subdirectories `src`, `test`,
+`timings` (sometimes also `tune`).
 
 Running "make" at the root (of either ntl-extras or flint-extras) (re)builds
 the entire library from scratch. Running "make doc" (after "make") builds a
@@ -112,5 +118,5 @@ Code style:
   - no hard tabulation
   - soft tabulations, 4 spaces
   - scope delimiter \{ \} on their own line
-  - scope delimiters are not required here when they are not required by C++
+  - scope delimiters are not required here when they are not required by C/C++
     (e.g. for one-line if or for)
