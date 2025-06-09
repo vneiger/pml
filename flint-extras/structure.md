@@ -15,8 +15,8 @@ lib
 
 - fmpz_extra
   some CRT tools
-  macOS (with configure): ok  (+ #include <stdlib.h>)
-- fmpz_mat_extra
+  macOS (with configure): ok  (+ #include <stdlib.h>)  ==> ok 
+- fmpz_mat_extra.   ==> produits modulo p 
   multimodular matrix multiplication
   ~~macOS~~: cf nmod_mat_mul_small_modulus
 - fmpz_poly_mat_extra
@@ -41,7 +41,7 @@ no implementation yet
 
 # nmod -- arithmetic modulo word-size integers
 
-- nmod_extra
+- nmod_extra.    reprendre les fichiers 
   some small utility functions,
   some additions to machine_vectors.h,
   some CRT/multimod functions for nmod
