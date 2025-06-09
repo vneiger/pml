@@ -37,6 +37,15 @@ void _nmod_vec_rand(nn_ptr vec,
 /*--------------------------------------------------------------*/
 void nmod_vec_primes(nn_ptr v, slong n, flint_bitcnt_t s);
 
+/***************
+*  inversion  *
+***************/
+
+/* computes res[i] = inv(v[i]) for i = 0 ... len */
+/* res cannot alias inv */
+void _nmod_vec_inv(nn_ptr res, nn_srcptr vec, ulong len, nmod_t mod);
+void _nmod_vec_inv2(nn_ptr res, nn_srcptr vec, ulong len, nmod_t mod);
+
 /**********************************************************************
 *                            DOT PRODUCT                             *
 **********************************************************************/
