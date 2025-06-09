@@ -125,6 +125,9 @@ void _nmod_vec_2dot2_split(nn_ptr res, nn_srcptr vec10, nn_srcptr vec11, nn_srcp
 
         dp_hi0 += dp_lo0 >> DOT_SPLIT_BITS;
         dp_lo0 &= DOT_SPLIT_MASK;
+        dp_hi1 += dp_lo1 >> DOT_SPLIT_BITS;
+        dp_lo1 &= DOT_SPLIT_MASK;
+ 
     }
 
     for ( ; i < len; i++)
