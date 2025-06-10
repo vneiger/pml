@@ -13,15 +13,13 @@
 
 /* Include functions *********************************************************/
 
-#include "t-mul_multimod.c"  /* empty if not PML_HAVE_AVX2 */
+#include "t-mul_multimod.c"  /* dummy test if not PML_HAVE_AVX2 */
 
 /* Array of test functions ***************************************************/
 
 test_struct tests[] =
 {
-#if PML_HAVE_AVX2
     TEST_FUNCTION(fmpz_mat_mul_multimod),
-#endif  /* PML_HAVE_AVX2 */
 };
 
 /* main function *************************************************************/

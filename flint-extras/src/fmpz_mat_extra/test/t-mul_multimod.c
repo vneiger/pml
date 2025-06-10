@@ -56,4 +56,25 @@ TEST_FUNCTION_START(fmpz_mat_mul_multimod, state)
     TEST_FUNCTION_END(state);
 }
 
+#else  /* PML_HAVE_AVX2 */
+
+/* just to make sure to have at least one test in main.c */
+TEST_FUNCTION_START(fmpz_mat_mul_multimod, state)
+{
+    int i, result;
+
+    for (i = 0; i < flint_test_multiplier(); i++)
+    {
+        result = 1;
+
+        if (!result)
+            TEST_FUNCTION_FAIL(
+                    "m = %wu, n = %wu, p = %wu\n"
+                    "n_bits = %wu\n",
+                    m, n, p, n_bits);
+    }
+
+    TEST_FUNCTION_END(state);
+}
+
 #endif  /* PML_HAVE_AVX2 */
