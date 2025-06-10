@@ -101,9 +101,7 @@
 #include "nmod_poly_mat_forms.h" // for orientation_t
 #include "pml.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 /** @name General interfaces for approximant basis computation and verification */
 //@{

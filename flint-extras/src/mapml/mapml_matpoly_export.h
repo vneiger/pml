@@ -21,8 +21,11 @@
 #define MAPML_MATPOLY_EXPORT_H
 
 
-#include "mapml_in.h"
 #include "mapml_conversion.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 ALGEB pm_coeffs(MKernelVector kv, ALGEB *args);
@@ -133,7 +136,12 @@ ALGEB pm_matrix_pmbasis(MKernelVector kv, ALGEB *args);
 
  ALGEB pm_weakpopov(MKernelVector kv, ALGEB *args);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif
+
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

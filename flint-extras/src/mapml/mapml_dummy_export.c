@@ -17,11 +17,6 @@
 // *******************************************************
 
 
-#ifndef MAPML_DUMMY_EXPORT_C
-#define MAPML_DUMMY_EXPORT_C
-
-
-#include "mapml_in.h"
 #include "mapml_conversion.h"
 
 
@@ -114,7 +109,6 @@ ALGEB polymat_rt(MKernelVector kv, ALGEB *args){
 
 }
 
-#endif
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
