@@ -23,7 +23,7 @@ jobs:
   # ubuntu 24.04, gcc, flint dev
   ##############################################################################
   ubuntu-codecoverage:
-    name: Ubuntu 24.04, GCC, FLINT dev, (x10)
+    name: Ubuntu 24.04, GCC, FLINT dev (x10)
 
     runs-on: ubuntu-24.04
 
@@ -53,7 +53,6 @@ jobs:
           make --version
           autoconf --version
           libtool --version
-          python3 --version
           echo "MAKE=make -j$(expr $(nproc) + 1) --output-sync=target" >> $GITHUB_ENV
 
           # install FLINT dev version
@@ -184,10 +183,10 @@ jobs:
 
 
   ##############################################################################
-  # ubuntu arm
+  # ubuntu ARM 24.04, gcc flint dev
   ##############################################################################
   ubuntu-arm:
-    name: Ubuntu ARM (x5)
+    name: Ubuntu ARM 24.04, GCC, FLINT dev (x5)
 
     runs-on: ubuntu-24.04-arm
 
@@ -240,7 +239,7 @@ jobs:
         run: |
           cd flint-extras
           $MAKE
-          ldd libflint.so
+          ldd libpml.so
 
       - name: "Compile tests"
         run: |
