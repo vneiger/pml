@@ -291,10 +291,10 @@ jobs:
           $MAKE check
 
   ##############################################################################
-  # macos (M1), clang, flint-dev
+  # macos (M1), gcc, flint-dev
   ##############################################################################
   macos-m1-flintdev:
-    name: macOS-M1, Clang, flint-dev (x3)
+    name: macOS-M1, gcc, flint-dev (x3)
 
     runs-on: macos-15
 
@@ -320,10 +320,7 @@ jobs:
           brew install autoconf
           brew install libtool
           brew install automake
-          brew install llvm
-          brew install gmp
-          brew install mpfr
-          $(brew --prefix llvm)/bin/clang --version
+          gcc --version
           gmake --version
           autoconf --version
           echo "MAKE=gmake -j$(expr $(nproc) + 1) -l 10 --output-sync=target" >> $GITHUB_ENV
@@ -332,7 +329,11 @@ jobs:
           git clone https://github.com/flintlib/flint.git
           cd flint
           ./bootstrap.sh
-          ./configure
+          ./configure \
+            CC=$(CC) \
+            --with-gmp=$(brew --prefix) \
+            --with-mpfr=$(brew --prefix) \
+            --disable-debug
           make
           sudo make install
 
@@ -341,7 +342,7 @@ jobs:
           cd flint-extras
           ./bootstrap.sh
           ./configure \
-            CC=$(brew --prefix llvm)/bin/clang \
+            CC=$(CC) \
             --with-gmp=$(brew --prefix) \
             --with-mpfr=$(brew --prefix) \
             --disable-debug
