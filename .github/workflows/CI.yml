@@ -46,8 +46,15 @@ jobs:
             libgmp-dev \
             libmpfr-dev \
             autoconf \
-            libtool-bin \
-            lcov
+            libtool-bin
+
+          # Check versions
+          gcc --version
+          make --version
+          autoconf --version
+          libtool --version
+          python3 --version
+          echo "MAKE=make -j$(expr $(nproc) + 1) --output-sync=target" >> $GITHUB_ENV
 
           # install FLINT dev version
           git clone https://github.com/flintlib/flint.git
@@ -56,15 +63,7 @@ jobs:
           ./configure
           make
           sudo make install
-
-          # Check versions
-          gcc --version
-          make --version
-          autoconf --version
-          libtool --version
-          lcov --version
-          python3 --version
-          echo "MAKE=make -j$(expr $(nproc) + 1) --output-sync=target" >> $GITHUB_ENV
+          sudo ldconfig
 
       - name: "Configure"
         run: |
@@ -213,6 +212,13 @@ jobs:
             autoconf \
             libtool-bin
 
+          # Check versions
+          gcc --version
+          make --version
+          autoconf --version
+          libtool --version
+          echo "MAKE=make -j$(expr $(nproc) + 1) --output-sync=target" >> $GITHUB_ENV
+
           # install FLINT dev version
           git clone https://github.com/flintlib/flint.git
           cd flint
@@ -220,13 +226,7 @@ jobs:
           ./configure
           make
           sudo make install
-
-          # Check versions
-          gcc --version
-          make --version
-          autoconf --version
-          libtool --version
-          echo "MAKE=make -j$(expr $(nproc) + 1) --output-sync=target" >> $GITHUB_ENV
+          sudo ldconfig
 
       - name: "Configure"
         run: |
