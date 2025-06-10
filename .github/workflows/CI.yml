@@ -7,6 +7,8 @@ name: CI
 on:
   pull_request:
   push:
+    branches:
+      - main
 
 env:
   GLOBAL_MULTIPLIER: 1
