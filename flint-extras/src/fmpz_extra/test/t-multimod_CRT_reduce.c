@@ -40,7 +40,7 @@ int check_fmpz_multimod_CRT_reduce(ulong num_primes, ulong n_bits, flint_rand_t 
     ulong i = 0;
     while (res && i < num_primes)
     {
-        res = res && (residues[i] != fmpz_fdiv_ui(A, primes[i]));
+        res = res && (residues[i] == fmpz_fdiv_ui(A, primes[i]));
         if (!res)
         {
             printf("A=");
