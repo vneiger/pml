@@ -1,6 +1,6 @@
-######################################################
-#  (slightly) adapted from FLINT's workflows/CI.yml  #
-######################################################
+###########################################
+#  adapted from FLINT's workflows/CI.yml  #
+###########################################
 
 name: CI
 
@@ -20,10 +20,10 @@ concurrency:
 
 jobs:
   ##############################################################################
-  # ubuntu, gcc, code coverage
+  # ubuntu 24.04, gcc, flint dev
   ##############################################################################
   ubuntu-codecoverage:
-    name: Ubuntu GCC, Code Coverage (x10)
+    name: Ubuntu 24.04, GCC, FLINT dev, (x10)
 
     runs-on: ubuntu-24.04
 
@@ -45,10 +45,17 @@ jobs:
           sudo apt-get install -y \
             libgmp-dev \
             libmpfr-dev \
-            libflint-dev \
             autoconf \
             libtool-bin \
             lcov
+
+          # install FLINT dev version
+          git clone https://github.com/flintlib/flint.git
+          cd flint
+          ./bootstrap.sh
+          ./configure
+          make
+          sudo make install
 
           # Check versions
           gcc --version
@@ -64,9 +71,7 @@ jobs:
           cd flint-extras
           ./bootstrap.sh
           ./configure \
-            CC=${CC} \
-            --enable-avx2 \
-            --enable-coverage
+            CC=${CC}
 
       - name: "Compile library"
         run: |
@@ -205,9 +210,16 @@ jobs:
           sudo apt-get install -y \
             libgmp-dev \
             libmpfr-dev \
-            libflint-dev \
             autoconf \
             libtool-bin
+
+          # install FLINT dev version
+          git clone https://github.com/flintlib/flint.git
+          cd flint
+          ./bootstrap.sh
+          ./configure
+          make
+          sudo make install
 
           # Check versions
           gcc --version
@@ -564,7 +576,7 @@ jobs:
   #        $MAKE check
   #      shell: alpine.sh {0}
 
-##############################################
-#  TODO versions with flint dev current git  #
-##############################################
+##################################################################################
+#  TODO versions with flint dev current git / versions with flint 3.2.0 or such  #
+##################################################################################
 

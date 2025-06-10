@@ -1,6 +1,6 @@
-###########################################################
-#  (slightly) adapted from FLINT's workflows/push_CI.yml  #
-###########################################################
+################################################
+#  adapted from FLINT's workflows/push_CI.yml  #
+################################################
 
 name: CI on push
 
@@ -41,12 +41,19 @@ jobs:
           architecture: x86-64
           shell: bash
           run: |
-            sudo pkg install -y pkgconf gmake gmp mpfr libflint-dev autoconf libtool automake
+            sudo pkg install -y pkgconf gmake gmp mpfr autoconf libtool automake
             gmake --version
             clang --version
             autoconf --version
             libtool --version
             touch _is_setup
+
+            git clone https://github.com/flintlib/flint.git
+            cd flint
+            ./bootstrap.sh
+            ./configure
+            make
+            sudo make install
 
             cd flint-extras
             ./bootstrap.sh
@@ -58,7 +65,7 @@ jobs:
               --with-gmp-lib=$(pkgconf --variable=libdir gmp) \
               --with-mpfr-include=$(pkgconf --variable=includedir mpfr) \
               --with-mpfr-lib=$(pkgconf --variable=libdir mpfr) \
-              --with-mpfr-lib=$(pkgconf --variable=libdir flint) \
+              --with-flint-lib=$(pkgconf --variable=libdir flint) \
               --disable-debug
             touch _is_configured
 
