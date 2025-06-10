@@ -37,7 +37,7 @@ int check_fmpz_multimod_CRT_CRT(ulong num_primes, ulong n_bits, flint_rand_t sta
 
     int res = 1;
     ulong i = 0;
-    while (i < num_primes)
+    while (res && i < num_primes)
     {
         res = res && (fmpz_fdiv_ui(comb, primes[i]) == residues[i]);
         i++;

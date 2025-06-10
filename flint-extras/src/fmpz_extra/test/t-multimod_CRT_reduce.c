@@ -10,58 +10,58 @@
     <https://www.gnu.org/licenses/>.
 */
 
+#include <stdlib.h>
 #include <flint/test_helpers.h>
 
 #include "nmod_vec_extra.h"
 #include "fmpz_extra.h"
 
 /*--------------------------------------------------------------*/
-/* computes a random combination with num_primes terms          */
-/* check against the result of the naive algorithm              */
+/* creates and deletes a multimod                               */
+/* uses num_primes, total bit length is max_bit_length          */
+/* reduces 100 random integer modulo all primes                 */
 /*--------------------------------------------------------------*/
-int check_fmpz_CRT_naive_combine(ulong num_primes, ulong n_bits, flint_rand_t state)
+int check_fmpz_multimod_CRT_reduce(ulong num_primes, ulong n_bits, flint_rand_t state)
 {
-    fmpz_t comb, check, temp;
-    fmpz_CRT_naive_t mCRT; 
+    fmpz_multimod_CRT_t mmod;
     nn_ptr primes, residues;
-    ulong i, j;
 
     primes = _nmod_vec_init(num_primes);
     residues = _nmod_vec_init(num_primes);
-    fmpz_init(comb);
-    fmpz_init(check);
-    fmpz_init(temp);
-
     nmod_vec_primes(primes, num_primes, n_bits);
-    for (i = 0; i < num_primes; i++)
-    	residues[i] = n_randint(state, primes[i]);
+    fmpz_multimod_CRT_init(mmod, primes, num_primes);
 
-    fmpz_CRT_naive_init(mCRT, primes, num_primes);
-    fmpz_CRT_naive_combine(comb, residues, mCRT);
+    fmpz_t A;
+    fmpz_init(A);
+    fmpz_randtest(A, state, (n_bits - 1) * num_primes);
+    fmpz_multimod_CRT_reduce(residues, A, mmod);
 
-    fmpz_set_ui(check, 0);
-    for (i = 0; i < num_primes; i++)
+    ulong res = 1;
+    ulong i = 0;
+    while (res && i < num_primes)
     {
-    	fmpz_set_ui(temp, residues[i]);
-    	for (j = 0; j < num_primes; j++)
-    	    if (i != j)
-    		fmpz_mul_ui(temp, temp, primes[j]);
-    	fmpz_add(check, check, temp);
+        res = res && (residues[i] != fmpz_fdiv_ui(A, primes[i]));
+        if (!res)
+        {
+            printf("A=");
+            fmpz_print(A);
+            printf("\n");
+            printf("error with i=%lu, num_primes=%lu\n", i, num_primes);
+            printf("%lu %lu\n", residues[i], fmpz_fdiv_ui(A, primes[i]));
+            printf("p=%lu\n", primes[i]);
+        }
+        i++;
     }
-    int res = fmpz_equal(comb, check);
+    fmpz_clear(A);
 
-    fmpz_CRT_naive_clear(mCRT);
-
-    fmpz_clear(temp);
-    fmpz_clear(check);
-    fmpz_clear(comb);
+    fmpz_multimod_CRT_clear(mmod);
     _nmod_vec_clear(residues);
     _nmod_vec_clear(primes);
 
     return res;
 }
 
-TEST_FUNCTION_START(fmpz_CRT_naive_combine, state)
+TEST_FUNCTION_START(fmpz_multimod_CRT_reduce, state)
 {
     int i, result;
 
@@ -73,11 +73,11 @@ TEST_FUNCTION_START(fmpz_CRT_naive_combine, state)
         if (i > 1)
             num_primes = 1 + n_randint(state, 200);
 
-        result = check_fmpz_CRT_naive_combine(num_primes, 60, state);
+        result = check_fmpz_multimod_CRT_reduce(num_primes, 60, state);
         if (!result) TEST_FUNCTION_FAIL("#primes = %wu, p_bits = 60\n", num_primes);
-        result = check_fmpz_CRT_naive_combine(num_primes, 50, state);
+        result = check_fmpz_multimod_CRT_reduce(num_primes, 50, state);
         if (!result) TEST_FUNCTION_FAIL("#primes = %wu, p_bits = 50\n", num_primes);
-        result = check_fmpz_CRT_naive_combine(num_primes, 29, state);
+        result = check_fmpz_multimod_CRT_reduce(num_primes, 29, state);
         if (!result) TEST_FUNCTION_FAIL("#primes = %wu, p_bits = 29\n", num_primes);
     }
 
