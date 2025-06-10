@@ -15,6 +15,7 @@
 
 #include "t-CRT_naive_combine.c"
 #include "t-CRT_naive_CRT.c"
+#include "t-multimod_naive_reduce.c"
 #include "t-multimod_CRT_CRT.c"
 #include "t-multimod_CRT_reduce.c"
 
@@ -24,6 +25,7 @@ test_struct tests[] =
 {
     TEST_FUNCTION(fmpz_CRT_naive_combine),
     TEST_FUNCTION(fmpz_CRT_naive_CRT),
+    TEST_FUNCTION(fmpz_multimod_naive_reduce),
     TEST_FUNCTION(fmpz_multimod_CRT_CRT),
     TEST_FUNCTION(fmpz_multimod_CRT_reduce),
 };
