@@ -321,6 +321,8 @@ jobs:
           brew install libtool
           brew install automake
           brew install llvm
+          brew install gmp
+          brew install mpfr
           $(brew --prefix llvm)/bin/clang --version
           gmake --version
           autoconf --version
