@@ -17,11 +17,7 @@
 // *******************************************************
 
 
-#ifndef MAPML_MATPOLY_EXPORT_C
-#define MAPML_MATPOLY_EXPORT_C
-
 #include <string.h>
-#include "mapml_in.h"
 #include "mapml_conversion.h"
 
 /***********************************************************
@@ -570,8 +566,6 @@ ALGEB pm_weakpopov(MKernelVector kv, ALGEB *args){
 //            MapleToInteger64(kv,MapleListSelect(kv,coeffs,2*i+2)));
 
 
-
-#endif
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -20,9 +20,19 @@
 #ifndef MAPML_CONVERSION_H
 #define MAPML_CONVERSION_H
 
-#include "mapml_in.h"
+#include <time.h>
+#include <stdlib.h>
 
+#include <flint/fmpq.h>
+#include <flint/fmpq_poly.h>
 
+#include "nmod_poly_mat_extra.h"
+
+#include "maplec.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**********************************************************
  * 
@@ -108,7 +118,13 @@ void get_fmpq_poly(fmpq_poly_t p, MKernelVector kv, ALGEB vect);
 
 void get_fmpq_poly_array(fmpq_poly_t *vp, MKernelVector kv, ALGEB maple);
 
+
+#ifdef __cplusplus
+}
 #endif
+
+#endif
+
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

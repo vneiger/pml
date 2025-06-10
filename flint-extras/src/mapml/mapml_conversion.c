@@ -17,10 +17,6 @@
 // *******************************************************
 
 
-#ifndef MAPML_CONVERSION_C
-#define MAPML_CONVERSION_C
-
-#include "mapml_in.h"
 #include "mapml_conversion.h"
 
 
@@ -524,7 +520,6 @@ void get_fmpq_poly_array(fmpq_poly_t *vp, MKernelVector kv, ALGEB vmaple){
 
 }
 
-#endif
 
 /* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 // vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
