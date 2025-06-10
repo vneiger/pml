@@ -1,11 +1,15 @@
-/**
- * \file nmod_poly_mat_approximant.h
- * \brief Minimal approximant bases
- * \version 0.0
- * \date 2022-06-25
- *
- * \todo CLEAN DOC
- */
+/*
+    Copyright (C) 2025 Vincent Neiger, Kevin Tran
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 
 #include "pml.h"
 
