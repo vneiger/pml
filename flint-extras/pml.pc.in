@@ -7,6 +7,6 @@ Name: @PACKAGE_NAME@
 Description: Polynomial Matrix Library / FLINT
 Version: @PACKAGE_VERSION@
 URL: https://github.com/vneiger/pml
-Requires: gmp >= 6.2.1 mpfr >= 4.1.0 flint >= 3.2.0
+Requires: gmp >= 6.2.1 mpfr >= 4.1.0 flint >= 3.1.0
 Cflags: -I${includedir}
 Libs: -L${libdir} -lpml
