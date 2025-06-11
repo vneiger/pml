@@ -500,7 +500,7 @@ static void nmod_small_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
     }
 }
 
-#endif
+#endif  /* PML_HAVE_AVX2 */
 
 /* ------------------------------------------------------------ */
 /* out[i] = CRT(residues[j][i], j < k) mod p, i < nb            */
