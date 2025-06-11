@@ -1,3 +1,15 @@
+/*
+    Copyright (C) 2025 Vincent Neiger, Éric Schost
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #include <flint/fmpz_mat.h>
 #include <flint/test_helpers.h>
 
@@ -51,21 +63,6 @@ TEST_FUNCTION_START(fmpz_mat_mul_multimod, state)
                     "m = %wu, n = %wu, p = %wu\n"
                     "n_bits = %wu\n",
                     m, n, p, n_bits);
-    }
-
-    TEST_FUNCTION_END(state);
-}
-
-#else  /* PML_HAVE_AVX2 */
-
-/* just to make sure to have at least one test in main.c */
-TEST_FUNCTION_START(fmpz_mat_mul_multimod, state)
-{
-    int i, result;
-
-    for (i = 0; i < flint_test_multiplier(); i++)
-    {
-        result = 1;
     }
 
     TEST_FUNCTION_END(state);
