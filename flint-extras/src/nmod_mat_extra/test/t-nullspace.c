@@ -119,7 +119,7 @@ TEST_FUNCTION_START(nmod_mat_left_nullspace, state)
 
     for (i = 0; i < 100 * flint_test_multiplier(); i++)
     {
-        ulong bits = 1 + n_randint(state, 63);
+        ulong bits = 2 + n_randint(state, 63);
         slong prime = n_randprime(state, bits, 1);
 
         ulong m = 1 + n_randint(state, 100);

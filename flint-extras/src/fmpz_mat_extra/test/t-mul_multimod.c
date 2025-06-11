@@ -46,7 +46,8 @@ int test_fmpz_mat_mul(ulong m, ulong n, ulong p, ulong n_bits, flint_rand_t stat
 
 TEST_FUNCTION_START(fmpz_mat_mul_multimod, state)
 {
-    int i, result;
+    int i;
+    int FLINT_SET_BUT_UNUSED(result);
 
     for (i = 0; i < 100 * flint_test_multiplier(); i++)
     {
