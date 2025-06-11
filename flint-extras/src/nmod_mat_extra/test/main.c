@@ -14,12 +14,14 @@
 /* Include functions *********************************************************/
 
 #include "t-mul_2dot.c"
+#include "t-nullspace.c"
 
 /* Array of test functions ***************************************************/
 
 test_struct tests[] =
 {
-    TEST_FUNCTION(mul_2dot),
+    TEST_FUNCTION(nmod_mat_mul_2dot),
+    TEST_FUNCTION(nmod_mat_left_nullspace),
 };
 
 /* main function *************************************************************/

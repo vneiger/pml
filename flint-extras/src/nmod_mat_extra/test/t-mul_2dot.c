@@ -42,7 +42,7 @@ int check_nmod_mat_mul_2dot(ulong len, ulong n)
     return res;
 }
 
-TEST_FUNCTION_START(mul_2dot, state)
+TEST_FUNCTION_START(nmod_mat_mul_2dot, state)
 {
     flint_rand_set_seed(state, time(NULL), time(NULL)+12984125L);
 
