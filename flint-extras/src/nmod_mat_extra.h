@@ -14,7 +14,7 @@
  *
  * \todo
  * - helper: pivots | nonpivots of reduced row echelon form (rightmost/leftmost) ???
- * - PLUQ factorization (try naive + Crout)
+ * - PLUQ factorization (to be improved + Crout version to fix)
  * - left nullspace via PLUQ (or at least more direct than transposition)
  * - row/column rank profile (extract more information from Flint's nullspace?)
  *
