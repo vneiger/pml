@@ -330,7 +330,7 @@ mapml:= module()
 
 		res:=`mod/LeftDescription`(LinearAlgebra:-Transpose(A),x,delta,q);
 
-		if res <> 0 then return(LinearAlgebra:-Transpose(res[1]),LinearAlgebra:-Transpose(res[2])); 
+		if res <> 0 then return(LinearAlgebra:-Transpose(res[2]),LinearAlgebra:-Transpose(res[1])); 
 		else return(0); fi: 
 
 	end: 
