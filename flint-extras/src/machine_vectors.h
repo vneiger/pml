@@ -60,7 +60,8 @@ FLINT_FORCE_INLINE V V##f(V a, V b) { \
 }
 
 FLINT_FORCE_INLINE vec2d vec2d_reduce_2n_to_n(vec2d a, vec2d n) {
-    return vec2d_blendv(vec2d_sub(a, n), a, s);
+    vec2d s = vec2d_sub(a, n);
+    return vec2d_blendv(s, a, s);
 }
 
 EXTEND_VEC_DEF2(vec2d, vec4d, _reduce_2n_to_n)
