@@ -11,9 +11,9 @@
 */
 
 #include <flint/fmpz.h>
+#include <flint/machine_vectors.h>
 
 #include "nmod_extra.h"
-#includ
 
 /*------------------------------------------------------------*/
 /* initializes all data in C                                  */

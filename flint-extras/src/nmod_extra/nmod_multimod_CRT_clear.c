@@ -13,7 +13,7 @@
 #include "nmod_extra.h"
 
 /*------------------------------------------------------------*/
-/* clear
+/* clears all data in C                                       */
 /*------------------------------------------------------------*/
 void nmod_multimod_CRT_clear(nmod_multimod_CRT_t C)
 {
