@@ -319,7 +319,7 @@ mapml:= module()
 		Q:=res[1][cols, 1..n];
 
 		if LinearAlgebra:-Equal( map(t-> Normal(t) mod q, Q.A-P) , LinearAlgebra:-ZeroMatrix(n,m))
-		then return(P,Q);
+		then return(Q,P);
 		else WARNING(wstr,delta); return(0): 
 		fi:
 
@@ -330,7 +330,7 @@ mapml:= module()
 
 		res:=`mod/LeftDescription`(LinearAlgebra:-Transpose(A),x,delta,q);
 
-		if res <> 0 then return(LinearAlgebra:-Transpose(res[1]),LinearAlgebra:-Transpose(res[2])); 
+		if res <> 0 then return(LinearAlgebra:-Transpose(res[2]),LinearAlgebra:-Transpose(res[1])); 
 		else return(0); fi: 
 
 	end: 
