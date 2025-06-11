@@ -13,14 +13,19 @@
 
 /* Include functions *********************************************************/
 
-#include "t-multimod_CRT_reduce.c"
+#include "pml.h"
+#if PML_HAVE_AVX2
+# include "t-multimod_CRT_reduce.c"
+#endif  /* PML_HAVE_AVX2 */
 #include "t-multimod_CRT_CRT.c"
 
 /* Array of test functions ***************************************************/
 
 test_struct tests[] =
 {
+#if PML_HAVE_AVX2
     TEST_FUNCTION(nmod_multimod_CRT_reduce),
+#endif  /* PML_HAVE_AVX2 */
     TEST_FUNCTION(nmod_multimod_CRT_CRT),
 };
 
