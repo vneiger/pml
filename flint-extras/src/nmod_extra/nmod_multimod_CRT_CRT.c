@@ -147,7 +147,7 @@ static void nmod_large_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
 
-#if PML_HAVE_MACHINE_VECTORS
+#if PML_HAVE_AVX2
 
 /* ------------------------------------------------------------ */
 /* out[i] = residues0[i] mod p, i < nb                          */
@@ -508,7 +508,7 @@ static void nmod_small_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
 /* ------------------------------------------------------------ */
 void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod_CRT_t C)
 {
-#if PML_HAVE_MACHINE_VECTORS
+#if PML_HAVE_AVX2
     if (C->p < (1L << 50)) // small modulus: use SIMD floating-point representation 
         nmod_small_modulus_CRT(out, residues, nb, C);
     else

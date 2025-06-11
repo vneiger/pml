@@ -50,30 +50,13 @@ FLINT_FORCE_INLINE vec1d vec1d_addmod(vec1d a, vec1d b, vec1d n)
     return a + b - n >= 0 ? a + b - n : a + b;
 }
 
-#if PML_HAVE_AVX2 == 0 /* no 2n_to_n in flint's machine vectors for NEON/ARM64 */
-
-#define EXTEND_VEC_DEF2(U, V, f) \
-FLINT_FORCE_INLINE V V##f(V a, V b) { \
-    U z1 = U##f(a.e1, b.e1); \
-    U z2 = U##f(a.e2, b.e2); \
-    V z = {z1, z2}; return z; \
-}
-
-FLINT_FORCE_INLINE vec2d vec2d_reduce_2n_to_n(vec2d a, vec2d n) {
-    vec2d s = vec2d_sub(a, n);
-    return vec2d_blendv(s, a, s);
-}
-
-EXTEND_VEC_DEF2(vec2d, vec4d, _reduce_2n_to_n)
-
-#undef EXTEND_VEC_DEF2
-#endif  /* PML_HAVE_AVX2 == 0 */
-
+#if PML_HAVE_AVX2
 /* returns a + b mod n, assuming a,b reduced mod n            */
 FLINT_FORCE_INLINE vec4d vec4d_addmod(vec4d a, vec4d b, vec4d n)
 {
     return vec4d_reduce_2n_to_n(vec4d_add(a, b), n);
 }
+#endif  /* PML_HAVE_AVX2 */
 
 /* loads a vec4n from a and converts it to double             */
 #if PML_HAVE_AVX512
