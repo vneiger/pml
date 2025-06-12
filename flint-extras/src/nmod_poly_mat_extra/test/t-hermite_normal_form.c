@@ -472,7 +472,7 @@ TEST_FUNCTION_START(nmod_poly_mat_hnf, state)
                 result = collection_test_hermite_form(2, state);
 
                 if (!result)
-                    TEST_FUNCTION_FAIL("Failed Hermite form on testing collections\n");
+                    TEST_FUNCTION_FAIL("Failed Hermite form on testing collection\n");
             }
         }
     }
@@ -493,10 +493,17 @@ TEST_FUNCTION_START(nmod_poly_mat_hnf, state)
             {
                 nmod_poly_mat_randtest(mat, state, deg);
                 result = core_test_hermite_form(mat, 0, state);
+                if (!result)
+                    TEST_FUNCTION_FAIL("prime = %wu, rdim = %wu, cdim = %wu, deg = %wu\n",
+                                       prime, rdim, cdim, deg);
             }
+
             {
                 nmod_poly_mat_randtest_sparse(mat, state, deg, 0.2);
                 result = core_test_hermite_form(mat, 0, state);
+                if (!result)
+                    TEST_FUNCTION_FAIL("prime = %wu, rdim = %wu, cdim = %wu, deg = %wu\n",
+                                       prime, rdim, cdim, deg);
             }
 
             nmod_poly_mat_clear(mat);

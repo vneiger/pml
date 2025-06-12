@@ -68,7 +68,7 @@ TEST_FUNCTION_START(nmod_poly_mat_mul_waksman, state)
             TEST_FUNCTION_FAIL(
                     "m = %wu, n = %wu, p = %wu\n"
                     "n_bits = %wu\n",
-                    m, n, p);
+                    m, n, p, bits);
     }
 
     TEST_FUNCTION_END(state);
