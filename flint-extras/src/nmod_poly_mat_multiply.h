@@ -1,3 +1,15 @@
+/*
+    Copyright (C) 2025 Vincent Neiger, Éric Schost
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #ifndef NMOD_POLY_MAT_MULTIPLY_H
 #define NMOD_POLY_MAT_MULTIPLY_H
 
@@ -8,7 +20,7 @@
 // several functions allocate arrays of matrices
 // setting this flag allocates all memory at once
 // slightly faster than using nmod_mat_init
-#define DIRTY_ALLOC_MATRIX
+/* #define DIRTY_ALLOC_MATRIX */
 
 // temporarily disabling FFT_SMALL based variants
 #define FFT_SMALL_VARIANTS 0

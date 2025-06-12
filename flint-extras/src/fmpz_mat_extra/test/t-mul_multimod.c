@@ -1,3 +1,15 @@
+/*
+    Copyright (C) 2025 Vincent Neiger, Éric Schost
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #include <flint/fmpz_mat.h>
 #include <flint/test_helpers.h>
 
@@ -34,7 +46,8 @@ int test_fmpz_mat_mul(ulong m, ulong n, ulong p, ulong n_bits, flint_rand_t stat
 
 TEST_FUNCTION_START(fmpz_mat_mul_multimod, state)
 {
-    int i, result;
+    int i;
+    int FLINT_SET_BUT_UNUSED(result);
 
     for (i = 0; i < 100 * flint_test_multiplier(); i++)
     {
@@ -61,7 +74,7 @@ TEST_FUNCTION_START(fmpz_mat_mul_multimod, state)
 /* just to make sure to have at least one test in main.c */
 TEST_FUNCTION_START(fmpz_mat_mul_multimod, state)
 {
-    int i, result;
+    int i, FLINT_SET_BUT_UNUSED(result);
 
     for (i = 0; i < flint_test_multiplier(); i++)
     {

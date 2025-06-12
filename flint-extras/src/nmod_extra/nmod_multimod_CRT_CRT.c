@@ -1,3 +1,16 @@
+/*
+    Copyright (C) 2024 Éric Schost
+    Copyright (C) 2025 Vincent Neiger
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #include <flint/crt_helpers.h>
 
 #include "nmod_extra.h"
@@ -134,7 +147,7 @@ static void nmod_large_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
 
-#if PML_HAVE_MACHINE_VECTORS
+#if PML_HAVE_AVX2
 
 /* ------------------------------------------------------------ */
 /* out[i] = residues0[i] mod p, i < nb                          */
@@ -487,7 +500,7 @@ static void nmod_small_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
     }
 }
 
-#endif
+#endif  /* PML_HAVE_AVX2 */
 
 /* ------------------------------------------------------------ */
 /* out[i] = CRT(residues[j][i], j < k) mod p, i < nb            */
@@ -495,7 +508,7 @@ static void nmod_small_modulus_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_
 /* ------------------------------------------------------------ */
 void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod_CRT_t C)
 {
-#if PML_HAVE_MACHINE_VECTORS
+#if PML_HAVE_AVX2
     if (C->p < (1L << 50)) // small modulus: use SIMD floating-point representation 
         nmod_small_modulus_CRT(out, residues, nb, C);
     else

@@ -1,3 +1,15 @@
+/*
+    Copyright (C) 2025 Vincent Neiger, Éric Schost
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #include <flint/flint.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
@@ -42,7 +54,7 @@ int check_nmod_mat_mul_2dot(ulong len, ulong n)
     return res;
 }
 
-TEST_FUNCTION_START(mul_2dot, state)
+TEST_FUNCTION_START(nmod_mat_mul_2dot, state)
 {
     flint_rand_set_seed(state, time(NULL), time(NULL)+12984125L);
 

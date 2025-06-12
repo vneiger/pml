@@ -1,3 +1,15 @@
+/*
+    Copyright (C) 2025 Vincent Neiger, Éric Schost
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #ifndef __NMOD_EXTRA__H
 #define __NMOD_EXTRA__H
 
@@ -50,10 +62,10 @@ ulong nmod_find_root(long n, nmod_t mod);
 // TODO make sure we test if so, just in case?
 //
 // PRIME0 < PRIME1 < PRIME2 < PRIME3 needed for the double implementation
-#define PRIME0 659706976665601
-#define PRIME1 910395627798529
-#define PRIME2 1086317488242689
-#define PRIME3 1108307720798209
+#define PRIME0 UWORD(659706976665601)
+#define PRIME1 UWORD(910395627798529)
+#define PRIME2 UWORD(1086317488242689)
+#define PRIME3 UWORD(1108307720798209)
 
 typedef struct {
     ulong num_primes;

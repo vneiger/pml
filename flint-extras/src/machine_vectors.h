@@ -1,3 +1,15 @@
+/*
+    Copyright (C) 2025 Vincent Neiger, Éric Schost
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #ifndef __MACHINE_VECTORS__H
 #define __MACHINE_VECTORS__H
 
@@ -38,18 +50,13 @@ FLINT_FORCE_INLINE vec1d vec1d_addmod(vec1d a, vec1d b, vec1d n)
     return a + b - n >= 0 ? a + b - n : a + b;
 }
 
-#if PML_HAVE_AVX2 == 0 /* no 2n_to_n in flint's machine vectors for NEON/ARM64 */
-FLINT_FORCE_INLINE vec4d vec4d_reduce_2n_to_n(vec4d a, vec4d n) {
-    vec4d s = vec4d_sub(a, n);
-    return vec4d_blendv(s, a, s);
-}
-#endif  /* PML_HAVE_AVX2 == 0 */
-
+#if PML_HAVE_AVX2
 /* returns a + b mod n, assuming a,b reduced mod n            */
 FLINT_FORCE_INLINE vec4d vec4d_addmod(vec4d a, vec4d b, vec4d n)
 {
     return vec4d_reduce_2n_to_n(vec4d_add(a, b), n);
 }
+#endif  /* PML_HAVE_AVX2 */
 
 /* loads a vec4n from a and converts it to double             */
 #if PML_HAVE_AVX512

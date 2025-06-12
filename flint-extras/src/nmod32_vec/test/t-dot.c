@@ -1,3 +1,15 @@
+/*
+    Copyright (C) 2025 Vincent Neiger
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #include <flint/test_helpers.h>
 #include <flint/nmod.h>
 #include <flint/nmod_vec.h>
@@ -37,8 +49,10 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
         // force computation of pow2_precomp, as flint's dot might not need it (and then will not compute it)
         ulong pow2_precomp;
         NMOD_RED(pow2_precomp, (UWORD(1) << DOT_SPLIT_BITS), mod);
+#if PML_HAVE_AVX512
         ulong pow2_precomp_ifma;
         NMOD_RED(pow2_precomp_ifma, (UWORD(1) << 52), mod);
+#endif  /* PML_HAVE_AVX512 */
 
         n32_ptr x = _nmod32_vec_init(len);
         n32_ptr y = _nmod32_vec_init(len);

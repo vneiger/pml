@@ -1,27 +1,29 @@
-#include <time.h>
-#include <stdlib.h>
-#include <flint/nmod_types.h>
+/*
+    Copyright (C) 2025 Vincent Neiger
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
+#include <flint/test_helpers.h>
 
 #include "nmod_poly_mat_approximant.h"
 #include "nmod_poly_mat_io.h"
-#include "sagemath_extra.h"
 
 #include "testing_collection.h"
-
-int shift_equal(slong * shift1, slong * shift2, slong length)
-{
-    for (slong i = 0; i < length; i++)
-        if (shift1[i] != shift2[i])
-            return 0;
-    return 1;
-}
 
 // test one given input for pmbasis
 int core_test_pmbasis(nmod_poly_mat_t mat, slong order, slong * shift)
 {
+    int res = 1;
+
     const slong rdim = mat->r;
     nmod_poly_mat_t appbas;
-    nmod_poly_mat_init(appbas, rdim, rdim, mat->modulus);
 
     slong cshift[rdim];
     for (slong i = 0; i < rdim; i++)
@@ -33,78 +35,80 @@ int core_test_pmbasis(nmod_poly_mat_t mat, slong order, slong * shift)
     // testing correctness of nmod_poly_mat_pmbasis
     if (!nmod_poly_mat_is_approximant_basis(appbas, mat, order, shift, ROW_LOWER))
     {
-        printf("nmod_poly_mat_pmbasis output is not a minimal approximant basis\n");
-        printf("Input matrix:\n");
-        nmod_poly_mat_print_pretty(mat, "X");
-        printf("Output matrix:\n");
-        nmod_poly_mat_print(appbas,"X");
-        printf("Residual matrix:\n");
-        nmod_poly_mat_t res;
-        nmod_poly_mat_init(res, appbas->r, mat->c, mat->modulus);
-        nmod_poly_mat_mul(res, appbas, mat);
-        nmod_poly_mat_print_pretty(res,"X");
-        printf("Degree matrix:\n");
-        nmod_poly_mat_degree_matrix_print_pretty(appbas);
-        printf("Input shift:\t");
-        slongvec_print_sagemath(shift, rdim);
-        printf("Output shift:\t");
-        slongvec_print_sagemath(cshift, rdim);
-        printf("\n");
-        return 0;
-    }
-
-    nmod_poly_mat_clear(appbas);
-
-    return 1;
-}
-
-/** Test with specified parameters, uniform shift */
-int one_test_pmbasis(slong prime, slong rdim, slong cdim, slong order, slong len, slong iter)
-{
-    flint_rand_t state;
-    flint_rand_init(state);
-    srand(time(NULL));
-    flint_rand_set_seed(state, rand(), rand());
-
-    // random matrix
-    nmod_poly_mat_t mat;
-    nmod_poly_mat_init(mat, rdim, cdim, prime);
-
-    // shift random uniform entries
-    slong shift[rdim];
-    _test_collection_shift_uniform(shift, rdim);
-
-    for (slong i = 0; i < iter; i++)
-    {
-        //nmod_poly_mat_randtest(mat, state, len);
-        nmod_poly_mat_rand(mat, state, len);
-
-        //_perm_randtest(shift, rdim, state);
-        //for (slong i = 0; i < rdim; i++)
-        //    shift[i] = rand() % len - len/2;
-        int res = core_test_pmbasis(mat, order, shift);
-        if (res == 0)
+        res = 0;
+        if (0)  /* kept in case for debug */
         {
-            printf("failed at iteration %ld... exiting\n", i);
+            printf("nmod_poly_mat_pmbasis output is not a minimal approximant basis\n");
+            printf("Input matrix:\n");
+            nmod_poly_mat_print_pretty(mat, "X");
+            printf("Output matrix:\n");
+            nmod_poly_mat_print(appbas,"X");
+            printf("Residual matrix:\n");
+            nmod_poly_mat_t res;
+            nmod_poly_mat_init(res, appbas->r, mat->c, mat->modulus);
+            nmod_poly_mat_mul(res, appbas, mat);
+            nmod_poly_mat_print_pretty(res,"X");
+            printf("Degree matrix:\n");
+            nmod_poly_mat_degree_matrix_print_pretty(appbas);
+            printf("Input shift:\t");
+            flint_printf("%{slong*}\n", shift, rdim);
+            printf("Output shift:\t");
+            flint_printf("%{slong*}\n", cshift, rdim);
+            printf("\n");
             return 0;
         }
     }
 
-    printf("All %ld iterations went fine! exiting\n", iter);
-    nmod_poly_mat_clear(mat);
-    flint_rand_clear(state);
+    nmod_poly_mat_clear(appbas);
 
-    return 1;
+    return res;
+}
+
+/** Test with specified parameters, uniform shift */
+int one_test_pmbasis(slong prime, slong rdim, slong cdim, slong order, slong len, flint_rand_t state)
+{
+    int res;
+
+    // random matrix
+    nmod_poly_mat_t mat;
+    nmod_poly_mat_init(mat, rdim, cdim, prime);
+    nmod_poly_mat_randtest(mat, state, len);
+
+    slong * shift = flint_malloc(rdim * sizeof(slong));
+
+    _test_collection_shift_uniform(shift, rdim);
+    res = core_test_pmbasis(mat, order, shift);
+
+    _test_collection_shift_increasing(shift, rdim);
+    res = res && core_test_pmbasis(mat, order, shift);
+
+    _test_collection_shift_decreasing(shift, rdim);
+    res = res && core_test_pmbasis(mat, order, shift);
+
+    _test_collection_shift_shuffle(shift, rdim, state);
+    res = res && core_test_pmbasis(mat, order, shift);
+
+    _test_collection_shift_hermite(shift, rdim, order);
+    res = res && core_test_pmbasis(mat, order, shift);
+
+    _test_collection_shift_rhermite(shift, rdim, order);
+    res = res && core_test_pmbasis(mat, order, shift);
+
+    _test_collection_shift_plateau(shift, rdim, order);
+    res = res && core_test_pmbasis(mat, order, shift);
+
+    _test_collection_shift_rplateau(shift, rdim, order);
+    res = res && core_test_pmbasis(mat, order, shift);
+
+    nmod_poly_mat_clear(mat);
+    flint_free(shift);
+
+    return res;
 }
 
 /** Test against the whole testing collection */
-int collection_test_pmbasis(slong iter)
+int collection_test_pmbasis(slong iter, flint_rand_t state)
 {
-    flint_rand_t state;
-    flint_rand_init(state);
-    srand(time(NULL));
-    flint_rand_set_seed(state, rand(), rand());
-
     // input matrix for approximation
     nmod_poly_mat_t mat;
 
@@ -350,39 +354,42 @@ int collection_test_pmbasis(slong iter)
     return 1;
 }
 
-int main(int argc, char ** argv)
+TEST_FUNCTION_START(nmod_poly_mat_pmbasis, state)
 {
-    printf("Usage: %s OR %s [nbits] [rdim] [cdim] [order]\n--\n", argv[0], argv[0]);
+    int i, result;
 
-    if (argc != 1 && argc != 5)
-        return 1;
-
-    if (argc == 1)
+    /* TODO activate this for long test */
+    if (0)
     {
-        printf("launching test collection...\n");
-        collection_test_pmbasis(10);
+        for (i = 0; i < 5 * flint_test_multiplier(); i++)
+        {
+            {
+                result = collection_test_pmbasis(5, state);
+
+                if (!result)
+                    TEST_FUNCTION_FAIL("Failed pmbasis on testing collection\n");
+            }
+        }
     }
-    else if (argc == 5)
+    else
     {
-        slong nbits = atoi(argv[1]);
-        slong rdim = atoi(argv[2]);
-        slong cdim = atoi(argv[3]);
-        slong order = atoi(argv[4]);
+        for (i = 0; i < 100 * flint_test_multiplier(); i++)
+        {
+            ulong nbits = 2 + n_randint(state, 63);
+            ulong rdim = 1 + n_randint(state, 10);
+            ulong cdim = 1 + n_randint(state, 10);
+            ulong order = n_randint(state, 150);
+            ulong len = n_randint(state, 150);
 
-        flint_rand_t state;
-        flint_rand_init(state);
-        srand(time(NULL));
-        flint_rand_set_seed(state, rand(), rand());
-            
-        slong prime = n_randprime(state, nbits, 1);
-        printf("Launching test with\n\tprime = %ld,\n\trdim = %ld,\n\tcdim = %ld,\
-               \n\torder = %ld,\n\tlen = %ld...\n",prime,rdim,cdim,order,order);
+            slong prime = n_randprime(state, nbits, 1);
 
-        one_test_pmbasis(prime, rdim, cdim, order, order, 10000);
+            result = one_test_pmbasis(prime, rdim, cdim, order, len, state);
+
+            if (!result)
+                TEST_FUNCTION_FAIL("prime = %wu, rdim = %wu, cdim = %wu, order = %wu, len = %wu\n",
+                                   prime, rdim, cdim, order, len);
+        }
     }
 
-    return EXIT_SUCCESS;
+    TEST_FUNCTION_END(state);
 }
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

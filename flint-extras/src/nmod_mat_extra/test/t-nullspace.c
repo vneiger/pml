@@ -1,6 +1,17 @@
-#include <assert.h>
-#include <stdlib.h>
-#include <flint/flint.h>
+/*
+    Copyright (C) 2025 Vincent Neiger
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
+#include <flint/ulong_extras.h>
+#include <flint/test_helpers.h>
 
 #include "nmod_mat_extra.h"
 
@@ -70,11 +81,15 @@ int is_rref(nmod_mat_t X)
     return 1;
 }
 
-int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, slong ncols)
+int check(slong field_prime, slong iterations, slong nrows, slong ncols, flint_rand_t state)
 {
+    int res = 1;
+
     nmod_mat_t A;
     nmod_mat_init(A, nrows, ncols, field_prime);
-    for (slong k = 0; k < iterations; ++k)
+
+    slong k = 0;
+    while (res && k < iterations)
     {
         nmod_mat_randfull(A, state);
         nmod_mat_t X;
@@ -89,41 +104,32 @@ int check(slong field_prime, slong iterations, flint_rand_t state, slong nrows, 
         //is_rref(X);
         //printf("%ldOK\n",k);
         // <-- DEBUG
-        if (
-               is_in_nullspace(X, A) == 0 
-            || basis_of_nullspace(X, A) == 0
-            || is_rref(X) == 0
-           )
-            return 0;
+        res = res && (is_in_nullspace(X, A) && basis_of_nullspace(X, A) && is_rref(X));
+
         nmod_mat_clear(X);
+        k++;
     }
     nmod_mat_clear(A);
-    return 1;
+    return res;
 }
 
-int main(int argc, char *argv[])
+TEST_FUNCTION_START(nmod_mat_left_nullspace, state)
 {
-    printf("Usage: %s OR %s field_prime OR %s field_prime number_of_tests\n--\n", argv[0], argv[0], argv[0]);
-    if (argc > 3)
-        return 1;
+    int i, result;
 
-    flint_rand_t state;
-    flint_rand_init(state);
-    flint_rand_set_seed(state, rand(), rand());
+    for (i = 0; i < 100 * flint_test_multiplier(); i++)
+    {
+        ulong bits = 2 + n_randint(state, 63);
+        slong prime = n_randprime(state, bits, 1);
 
-    slong field_prime = (argc>=2) ? atol(argv[1]) : 3;
-    slong iterations = (argc==3) ? atol(argv[2]) : 10000;
+        ulong m = 1 + n_randint(state, 100);
+        ulong n = 1 + n_randint(state, 100);
 
-    //if (check(field_prime, iterations, state, 10, 4))
-    //    printf("Input dimension 10 x 4 --> ok\n");
-    if (check(field_prime, iterations, state, 6, 6))
-        printf("Input dimension 6 x 6 --> ok\n");
-    //if (check(field_prime, iterations, state, 4, 10))
-    //    printf("Input dimension 4 x 10 --> ok\n");
+        slong iterations = 10;
 
-    flint_rand_clear(state);
-    return 0;
+        result = check(prime, iterations, m, n, state);
+        if (!result) TEST_FUNCTION_FAIL("m = %wu, n = %wu, p = %wu\n", m, n, prime);
+    }
+
+    TEST_FUNCTION_END(state);
 }
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

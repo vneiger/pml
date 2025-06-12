@@ -1,14 +1,26 @@
+/*
+    Copyright (C) 2025 Vincent Neiger, Éric Schost
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #include <flint/fmpz.h>
+#include <flint/machine_vectors.h>
 
 #include "nmod_extra.h"
-#include "machine_vectors.h"
 
 /*------------------------------------------------------------*/
 /* initializes all data in C                                  */
 /*------------------------------------------------------------*/
 void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, ulong modulus, ulong num_primes)
 {
-    FLINT_ASSERT(num_primes <= 4);
+    PML_ASSERT(num_primes <= 4);
 
     C->num_primes = num_primes;
     C->p = modulus;
@@ -34,7 +46,7 @@ void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, ulong modulus, ulong num_prim
         num_primes = 4;
     
 
-#if PML_HAVE_MACHINE_VECTORS
+#if PML_HAVE_AVX2
     if (modulus < (1L << 50)) // small modulus: case use SIMD floating-point representation 
     {
         C->pinv = 1 / (double)modulus;
@@ -62,7 +74,7 @@ void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, ulong modulus, ulong num_prim
         C->invp0p1p2_p3 = (double) nmod_inv(p0p1p2_red3, mod3);
     }
     else // large modulus. this is inspired by multimod and CRT in fft_small
-#endif  // FLINT_HAVE_FFT_SMALL
+#endif  /* PML_HAVE_AVX2 */
     {
         ulong i, len;
         fmpz_t prod;
@@ -96,5 +108,4 @@ void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, ulong modulus, ulong num_prim
 
         fmpz_clear(prod);
     }
-    
 }

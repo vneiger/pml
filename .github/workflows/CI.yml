@@ -93,7 +93,7 @@ jobs:
   # ubuntu 24.04, clang, flint 3.2.0
   ##############################################################################
   ubuntu-clang-flint320:
-    name: Ubuntu 24.04, GCC, FLINT dev (x10)
+    name: Ubuntu 24.04, clang, FLINT 3.2.0 (x10)
 
     runs-on: ubuntu-24.04
 
