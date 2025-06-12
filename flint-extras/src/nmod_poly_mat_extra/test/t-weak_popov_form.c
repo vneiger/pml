@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <flint/nmod_types.h>
 #include <flint/test_helpers.h>
+#include <flint/profiler.h>
 
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_utils.h"

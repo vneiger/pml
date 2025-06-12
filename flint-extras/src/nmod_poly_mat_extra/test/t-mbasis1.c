@@ -15,14 +15,8 @@
 #include "nmod_poly_mat_approximant.h"
 #include "nmod_poly_mat_io.h" // for print_pretty
 
-// TODO make random choice for given prime (or for random prime of given size)
 #define PRIME_30_BITS 536870923
 #define PRIME_60_BITS 576460752303423619
-
-// TODO make more robust and reusable framework test for approximant basis algorithms
-// and use it for mbasis1
-
-// TODO general: test for memory leaks
 
 int test_mbasis1(void)
 {
