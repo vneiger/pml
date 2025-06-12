@@ -1,5 +1,15 @@
-#include <time.h>
-#include <stdlib.h>
+/*
+    Copyright (C) 2025 Vincent Neiger, Kevin Tran
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #include <flint/nmod_mat.h>
 
 #include "nmod_poly_mat_approximant.h"
@@ -24,8 +34,6 @@ int test_mbasis1(void)
 
     flint_rand_t state;
     flint_rand_init(state);
-    srand(time(NULL));
-    flint_rand_set_seed(state, rand(), rand());
 
     nmod_mat_randtest(mat, state);
 
@@ -39,7 +47,7 @@ int test_mbasis1(void)
     slong shift[rdim];
 
     for (slong i = 0; i < rdim; i++)
-        shift[i] =  rand() % 10 - 5;
+        shift[i] =  n_randint(state, 10) - 5;
 
     mbasis1(res, res_shift, mat, shift);
 
@@ -79,8 +87,5 @@ int test_mbasis1(void)
 int main(void)
 {
     test_mbasis1();
-    return EXIT_SUCCESS;
+    return 0;
 }
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

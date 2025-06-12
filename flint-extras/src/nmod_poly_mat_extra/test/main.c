@@ -18,6 +18,7 @@
 #include "t-dixon.c"
 #include "t-hnf.c"
 #include "t-mul_waksman.c"
+#include "t-rand.c"
 
 /* Array of test functions ***************************************************/
 
@@ -26,6 +27,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_det),
     TEST_FUNCTION(nmod_poly_mat_hnf),
     TEST_FUNCTION(nmod_poly_mat_mul_waksman),
+    TEST_FUNCTION(nmod_poly_mat_rand),
     TEST_FUNCTION(nmod_poly_mat_dixon)
 };
 
