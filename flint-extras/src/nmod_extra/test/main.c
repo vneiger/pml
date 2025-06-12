@@ -26,7 +26,7 @@ test_struct tests[] =
 #if PML_HAVE_AVX2
     TEST_FUNCTION(nmod_multimod_CRT_reduce),
 #endif  /* PML_HAVE_AVX2 */
-    TEST_FUNCTION(nmod_multimod_CRT_CRT),
+    TEST_FUNCTION(nmod_multimod_CRT_CRT),  /* TODO failing test for non-PML_HAVE_AVX2, see C file */
 };
 
 /* main function *************************************************************/

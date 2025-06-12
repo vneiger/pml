@@ -49,8 +49,10 @@ TEST_FUNCTION_START(nmod32_vec_dot, state)
         // force computation of pow2_precomp, as flint's dot might not need it (and then will not compute it)
         ulong pow2_precomp;
         NMOD_RED(pow2_precomp, (UWORD(1) << DOT_SPLIT_BITS), mod);
+#if PML_HAVE_AVX512
         ulong pow2_precomp_ifma;
         NMOD_RED(pow2_precomp_ifma, (UWORD(1) << 52), mod);
+#endif  /* PML_HAVE_AVX512 */
 
         n32_ptr x = _nmod32_vec_init(len);
         n32_ptr y = _nmod32_vec_init(len);

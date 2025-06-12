@@ -74,7 +74,7 @@ TEST_FUNCTION_START(fmpz_mat_mul_multimod, state)
 /* just to make sure to have at least one test in main.c */
 TEST_FUNCTION_START(fmpz_mat_mul_multimod, state)
 {
-    int i, result;
+    int i, FLINT_SET_BUT_UNUSED(result);
 
     for (i = 0; i < flint_test_multiplier(); i++)
     {
