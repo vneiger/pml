@@ -17,9 +17,9 @@
 /*------------------------------------------------------------*/
 void nmod_multimod_CRT_clear(nmod_multimod_CRT_t C)
 {
-#if FLINT_HAVE_AVX2
+#if PML_HAVE_AVX2
     if (C->p >= (1L << 50)) // large modulus
-#endif  // FLINT_HAVE_AVX2
+#endif  /* PML_HAVE_AVX2 */
         if (C->num_primes > 1)
             _nmod_vec_clear(C->data);
 }

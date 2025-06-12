@@ -74,7 +74,7 @@ void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, ulong modulus, ulong num_prim
         C->invp0p1p2_p3 = (double) nmod_inv(p0p1p2_red3, mod3);
     }
     else // large modulus. this is inspired by multimod and CRT in fft_small
-#endif  // FLINT_HAVE_AVX2
+#endif  /* PML_HAVE_AVX2 */
     {
         ulong i, len;
         fmpz_t prod;
