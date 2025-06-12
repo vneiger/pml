@@ -20,7 +20,7 @@
 /*------------------------------------------------------------*/
 void nmod_multimod_CRT_init(nmod_multimod_CRT_t C, ulong modulus, ulong num_primes)
 {
-    FLINT_ASSERT(num_primes <= 4);
+    PML_ASSERT(num_primes <= 4);
 
     C->num_primes = num_primes;
     C->p = modulus;
