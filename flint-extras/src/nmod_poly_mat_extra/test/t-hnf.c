@@ -1,13 +1,20 @@
+/*
+    Copyright (C) 2025 Vincent Neiger
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #include <flint/nmod_poly_mat.h>
-#include <flint/fmpz_mat.h>
-#include <stdlib.h>
-#include <flint/nmod_types.h>
-#include <flint/profiler.h>
+#include <flint/test_helpers.h>
 
 #include "nmod_poly_mat_forms.h"
-
 #include "nmod_poly_mat_utils.h"
-#include "testing_collection.h"
 
 #if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
 #  define MAT(i,j) (mat->rows[i] + j)
@@ -449,78 +456,52 @@ int collection_test_hermite_form(slong iter, flint_rand_t state)
 
                         nmod_poly_mat_clear(mat);
                     }
-
-    printf("--> Successful\n");
     return 1;
 }
 
-int main(int argc, char ** argv)
+TEST_FUNCTION_START(nmod_poly_mat_hnf, state)
 {
-    printf("Usage: %s OR %s [nbits] [rdim] [cdim] [order]\n--\n", argv[0], argv[0]);
+    int i, result;
 
-    // disable line buffering
-    setbuf(stdout, NULL);
-
-    if (argc != 1 && argc != 5)
-        return 1;
-
-    flint_rand_t state;
-    flint_rand_init(state);
-    srand(time(NULL));
-    flint_rand_set_seed(state, rand(), rand());
-
-    int res = 0;
-
-    if (argc == 1)
+    /* TODO activate this for long test */
+    if (0)
     {
-        printf("launching test collection...\n");
-        res = collection_test_hermite_form(10, state);
-    }
-    else if (argc == 5)
-    {
-        slong nbits = atoi(argv[1]);
-        slong rdim = atoi(argv[2]);
-        slong cdim = atoi(argv[3]);
-        slong deg = atoi(argv[4]);
+        for (i = 0; i < 2 * flint_test_multiplier(); i++)
+        {
+            {
+                result = collection_test_hermite_form(2, state);
 
-        slong prime = n_randprime(state, nbits, 1);
-        printf("Launching test with\n\tprime = %ld,\n\trdim = %ld,\n\tcdim = %ld,\
-               \n\tlen = %ld...\n", prime, rdim, cdim, deg);
-
-        nmod_poly_mat_t mat;
-        nmod_poly_mat_init(mat, rdim, cdim, prime);
-        nmod_poly_mat_rand(mat, state, deg);
-
-        res = core_test_hermite_form(mat, 1, state);
-
-        nmod_poly_mat_t ref;
-        nmod_poly_mat_init(ref, rdim, cdim, prime);
-        nmod_poly_t den;
-        nmod_poly_init(den, prime);
-        timeit_t timer;
-        timeit_start(timer);
-        nmod_poly_mat_rref(ref, den, mat);
-        timeit_stop(timer);
-        nmod_poly_mat_clear(ref);
-        nmod_poly_clear(den);
-        flint_printf("-- time FFLU: %wd ms (for comparison)\n", timer->wall);
-
-        nmod_poly_mat_clear(mat);
-    }
-
-    flint_rand_clear(state);
-
-    if (res == 0)
-    {
-        printf("FAILURE\n");
-        return 1;
+                if (!result)
+                    TEST_FUNCTION_FAIL("Failed Hermite form on testing collections\n");
+            }
+        }
     }
     else
     {
-        printf("SUCCESS\n");
-        return 0;
-    }
-}
+        for (i = 0; i < 100 * flint_test_multiplier(); i++)
+        {
+            ulong nbits = 2 + n_randint(state, 63);
+            ulong rdim = 1 + n_randint(state, 10);
+            ulong cdim = 1 + n_randint(state, 10);
+            ulong deg = n_randint(state, 40);
 
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
+            slong prime = n_randprime(state, nbits, 1);
+
+            nmod_poly_mat_t mat;
+            nmod_poly_mat_init(mat, rdim, cdim, prime);
+
+            {
+                nmod_poly_mat_randtest(mat, state, deg);
+                result = core_test_hermite_form(mat, 0, state);
+            }
+            {
+                nmod_poly_mat_randtest_sparse(mat, state, deg, 0.2);
+                result = core_test_hermite_form(mat, 0, state);
+            }
+
+            nmod_poly_mat_clear(mat);
+        }
+    }
+
+    TEST_FUNCTION_END(state);
+}

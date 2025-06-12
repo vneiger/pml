@@ -12,15 +12,19 @@
 
 /* Include functions *********************************************************/
 
+#include "testing_collection.h"
+
 #include "t-det.c"
 #include "t-dixon.c"
+#include "t-hnf.c"
 
 /* Array of test functions ***************************************************/
 
 test_struct tests[] =
 {
     TEST_FUNCTION(nmod_poly_mat_dixon),
-    TEST_FUNCTION(nmod_poly_mat_det)
+    TEST_FUNCTION(nmod_poly_mat_det),
+    TEST_FUNCTION(nmod_poly_mat_hnf)
 };
 
 /* main function *************************************************************/

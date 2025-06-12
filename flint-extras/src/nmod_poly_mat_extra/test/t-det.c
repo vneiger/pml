@@ -18,8 +18,6 @@
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_extra.h"  // det_iter currently in _extra.h
 
-#include "testing_collection.h"
-
 // test one given input
 int core_test_determinant(const nmod_poly_mat_t mat)
 {
