@@ -49,48 +49,48 @@ slong _test_collection_degs[] = {0, 1, 2, 3, 4, 5, 10, 15, 25, 50, 75, 100, 125,
 *******************/
 
 // uniform [0,...,0]
-inline void _test_collection_shift_uniform(slong * shift, slong cdim)
+static inline void _test_collection_shift_uniform(slong * shift, slong cdim)
 {
 	for (long i = 0; i < cdim; ++i)
         shift[i] = 0;
 }
 
 // increasing [0,1,2,..,rdim-1]
-inline void _test_collection_shift_increasing(slong * shift, slong cdim)
+static inline void _test_collection_shift_increasing(slong * shift, slong cdim)
 {
 	for (long i = 0; i < cdim; ++i)
         shift[i] = i;
 }
 
 // decreasing [rdim,..,3,2,1]
-inline void _test_collection_shift_decreasing(slong * shift, slong cdim)
+static inline void _test_collection_shift_decreasing(slong * shift, slong cdim)
 {
 	for (long i = 0; i < cdim; ++i)
         shift[i] = cdim-i;
 }
 
 // random shuffle of [0,1,...,rdim-1]
-inline void _test_collection_shift_shuffle(slong * shift, slong cdim, flint_rand_t state)
+static inline void _test_collection_shift_shuffle(slong * shift, slong cdim, flint_rand_t state)
 {
     _perm_randtest(shift, cdim, state);
 }
 
 // Hermite shift [0, cdim*deg, 2*cdim*deg, ..., (cdim-1)*cdim*deg]
-inline void _test_collection_shift_hermite(slong * shift, slong cdim, slong deg)
+static inline void _test_collection_shift_hermite(slong * shift, slong cdim, slong deg)
 {
     for (long i = 0; i < cdim; ++i)
         shift[i] = i*cdim*deg;
 }
 
 // reverse Hermite shift [cdim*cdim*deg, ..., 2*cdim*deg, cdim*deg]
-inline void _test_collection_shift_rhermite(slong * shift, slong cdim, slong deg)
+static inline void _test_collection_shift_rhermite(slong * shift, slong cdim, slong deg)
 {
     for (long i = 0; i < cdim; ++i)
         shift[i] = (cdim-i)*cdim*deg;
 }
 
 // plateau shift   [0 ... 0  cdim*deg ... cdim*deg]
-inline void _test_collection_shift_plateau(slong * shift, slong cdim, slong deg)
+static inline void _test_collection_shift_plateau(slong * shift, slong cdim, slong deg)
 {
     for (long i = 0; i < cdim/2; ++i)
         shift[i] = 0;
@@ -100,7 +100,7 @@ inline void _test_collection_shift_plateau(slong * shift, slong cdim, slong deg)
 
 
 // reverse plateau shift   [0 ... 0  cdim*deg ... cdim*deg]
-inline void _test_collection_shift_rplateau(slong * shift, slong cdim, slong deg)
+static inline void _test_collection_shift_rplateau(slong * shift, slong cdim, slong deg)
 {
     for (long i = 0; i < cdim/2; ++i)
         shift[i] = cdim*deg;
@@ -116,25 +116,25 @@ inline void _test_collection_shift_rplateau(slong * shift, slong cdim, slong deg
 // TODO : non-uniform degree profiles
 
 // zero matrices
-inline void _test_collection_mat_zero(nmod_poly_mat_t mat)
+static inline void _test_collection_mat_zero(nmod_poly_mat_t mat)
 {
     nmod_poly_mat_zero(mat);
 }
 
 // uniformly random matrices, uniform degree
-inline void _test_collection_mat_uniform(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
+static inline void _test_collection_mat_uniform(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
 {
     nmod_poly_mat_rand(mat, state, deg+1);
 }
 
 // randtest matrices
-inline void _test_collection_mat_test(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
+static inline void _test_collection_mat_test(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
 {
     nmod_poly_mat_randtest(mat, state, deg+1);
 }
 
 // sparse matrices
-inline void _test_collection_mat_sparse(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
+static inline void _test_collection_mat_sparse(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
 {
     nmod_poly_mat_randtest_sparse(mat, state, deg+1, 0.05);
 }
