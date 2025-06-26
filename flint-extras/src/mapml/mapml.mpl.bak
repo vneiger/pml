@@ -62,7 +62,8 @@ mapml:= module()
     #end proc:
 
     # GV rather put in ModuleLoad ? 
-    printf("external %s, %s\n",pml_lib,mapml_lib);
+    #printf("external %s, %s\n",pml_lib,mapml_lib);
+    printf("external %s\n",pml_lib);
 	ff:=define_external("nmod_poly_mat_init", MAPLE, LIB = pml_lib):
 
 	printf("[MDeterminant, WeakPopov, RowWeakPopov, PMBasis, MBasis, RowPMBasis, RowMBasis, RightDescription, LeftDescription]");
@@ -139,7 +140,9 @@ mapml:= module()
 	end proc: 
 
 
-	`mod/MDeterminant`:=proc(A,x,q) local t, vect_A; 
+	`mod/MDeterminant`:=proc(AA,x,q) local A, t, vect_A; 
+
+		A:=map(t->modp(expand(t),q),AA);
 
 		vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),A);
 
@@ -148,8 +151,9 @@ mapml:= module()
 	end proc: 
 
 
-	`mod/WeakPopov`:=proc(A,x,shift,q) local t, vect_A,res; 
+	`mod/WeakPopov`:=proc(AA,x,shift,q) local A, t, vect_A,res; 
 
+		A:=map(t->modp(expand(t),q),AA);
 
 		vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),LinearAlgebra:-Transpose(A));
 	
@@ -163,9 +167,11 @@ mapml:= module()
 
 	end proc: 
 
-	`mod/RowWeakPopov`:=proc(A,x,shift,q) local t, vect_A,res; 
+	`mod/RowWeakPopov`:=proc(AA,x,shift,q) local A, t, vect_A,res; 
 
 		#if (nargs=3) then q:=orient; orient=0; fi: 
+
+		A:=map(t->modp(expand(t),q),AA);
 
 		vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),A); 
 
@@ -177,6 +183,7 @@ mapml:= module()
 		 
 	end proc: 
 
+	# TODO modp
 	pmDiffMBasis :=proc(shift, p, order, x, q,method) local t, vect_p,res,tt,i,M,dct; 
 
 
@@ -215,7 +222,9 @@ mapml:= module()
 	end proc: 
 
 
-	`mod/RowMBasis` :=proc(A, x, shift, order, q) local t,vect_A,res,tt; 
+	`mod/RowMBasis` :=proc(AA, x, shift, order, q) local A, t,vect_A,res,tt; 
+
+		A:=map(t->modp(expand(t),q),AA);
 
 		tt:=time();
 
@@ -252,9 +261,10 @@ mapml:= module()
 
 
 
-	`mod/RowPMBasis` :=proc(A, x, shift, order, q) local t,vect_A,res,tt; 
+	`mod/RowPMBasis` :=proc(AA, x, shift, order, q) local A, t,vect_A,res,tt; 
 	
-		
+		A:=map(t->modp(expand(t),q),AA);
+
 		tt:=time();
 
 		vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),A);
@@ -295,10 +305,11 @@ mapml:= module()
 		m:=LinearAlgebra:-ColumnDimension(A);
 		n:=LinearAlgebra:-RowDimension(A);
 
-		sigma:=ceil((m+n)*delta/m) +1;
+		sigma:=ceil((m+n)*(delta+1)/m) +1;
 
 
 		M:=map(t->convert(series(t,x,sigma),polynom),A) mod q:
+		M:=map(t->modp(t,q),M);
 		H:=<M,-LinearAlgebra:-IdentityMatrix(m,m)> mod q;   # ulong do not forget for -1
 
 		res:=RowPMBasis(H,x,[0,seq(0,i=1..m+n)],sigma) mod q; 
