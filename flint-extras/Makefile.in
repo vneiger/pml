@@ -798,11 +798,18 @@ ifneq ($(STATIC), 0)
 endif
 	$(CP) $(HEADERS) $(DESTDIR)$(INCLUDEDIR)/pml
 ifeq ($(WANT_MAPLE), 1)
+ifeq (darwin, $(findstring darwin, $(HOST_OS)))
 	$(CP_A) $(ABS_SRC_DIR)/mapml/mapml.mpl.bak $(BUILD_DIR)/mapml
 	$(CP_A) $(ABS_SRC_DIR)/mapml/maple-path.sh $(BUILD_DIR)/mapml
-	$(CD) $(BUILD_DIR)/mapml && sh maple-path.sh "$(prefix)"  "$(prefix)"
+	$(CD) $(BUILD_DIR)/mapml && sh maple-path.sh "$(prefix)/lib/libpml.dylib"  "$(prefix)/lib/libpml.dylib"
+	$(CP) $(BUILD_DIR)/mapml/mapml.mpl $(DESTDIR)$(INCLUDEDIR)/pml 
+else 
+	$(CP_A) $(ABS_SRC_DIR)/mapml/mapml.mpl.bak $(BUILD_DIR)/mapml
+	$(CP_A) $(ABS_SRC_DIR)/mapml/maple-path.sh $(BUILD_DIR)/mapml
+	$(CD) $(BUILD_DIR)/mapml && sh maple-path.sh "$(prefix)/lib/libpml.so"  "$(prefix)/lib/libpml.so"
 	$(CP) $(BUILD_DIR)/mapml/mapml.mpl $(DESTDIR)$(INCLUDEDIR)/pml 
 endif
+endif 
 	@echo ""
 	@echo '############################################################'
 	@echo '# NOTE:                                                    #'
