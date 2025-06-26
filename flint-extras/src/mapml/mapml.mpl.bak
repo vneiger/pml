@@ -39,11 +39,11 @@ mapml:= module()
 	
 	pmlpath := "path1"; 
 
-	mapmlpath := "path2";
+	mapmlpath := "path2";  # New version, not necessary in fact 
 
 	# How does maple find the other libraries? 
-	pml_lib := cat(pmlpath,"/lib/libpml.dylib");
-    mapml_lib := cat(mapmlpath,"/lib/libpml.dylib");
+	pml_lib := pmlpath; 
+    mapml_lib := mapmlpath; 
 
 	ModuleLoad:= proc( )
 		#define_external("nmod_poly_mat_init", MAPLE, LIB = "/usr/local/lib/libpml.dylib"):
