@@ -1,6 +1,8 @@
 #include <NTL/lzz_pX.h>
 
 #include "lzz_pX_CRT.h"
+#include "mat_lzz_pX_forms.h"
+#include "mat_lzz_pX_kernel.h"
 #include "structured_lzz_p.h"
 #include "mat_lzz_pX_extra.h"
 #include "lzz_pXY.h"
@@ -607,6 +609,136 @@ long resultant_villard(zz_pX& res, const zz_pXY& f, const zz_pXY& g)
         matrix_recon_interpolation_geometric(basis, pts, a0, blocks);
 
     determinant_via_linsolve(res, basis);
+    return 1;
+}
+
+long resultant_villard_tdeg(zz_pX& res, const zz_pXY& f, const zz_pXY& g)
+{
+    // y-degrees
+    long nf = f.degY();
+    long ng = g.degY();
+
+    // expected resultant degree
+    long res_deg = f.tdeg() * g.tdeg();
+
+    // block projection parameters:
+    // block-size m and expansion length 1 + 2*ceil(d/m)
+    long m = (long) cbrt((nf+ng)/2);  // FIXME allow handpicked exponent
+    long d = 1 + nf+ng + 2 * (res_deg+m-1) / m;
+
+    /* std::cout << "res deg: " << res_deg << std::endl; */
+    /* std::cout << "Sylvester dim: " << nf+ng << std::endl; */
+    /* std::cout << "m: " << m << std::endl; */
+    /* std::cout << "d: " << d << std::endl; */
+
+    // handle case that will basically never work
+    // FIXME try again with smaller m in that case?
+    if (m > min(nf, ng))
+        return 0;
+    // FIXME if strange issue while debugging, think
+    // about checking that m >= 1 (or even m >= 2?)
+
+    Vec<zz_p> val_res, val_lcf, val_lcg;
+    Vec<zz_pX> val_f, val_g;
+
+    val_f.SetLength(d);
+    val_g.SetLength(d);
+
+    zz_p a0, b0;
+    long OK = 0;
+    long nb = 0;
+    zz_pX_Multipoint_Geometric evG;
+    do
+    {
+        nb++;
+        OK = 1;
+        a0 = random_zz_p();
+        // TODO: add randomness by using b0 as well
+        evG = zz_pX_Multipoint_Geometric(a0, max(f.degX(), g.degX())+1);
+        evG.evaluate(val_lcf, f.rep[nf], d);
+        evG.evaluate(val_lcg, g.rep[ng], d);
+        for (long i = 0; i < d; i++)
+            if (val_lcf[i] == 0 || val_lcg[i] == 0)
+            {
+                OK = 0;
+                break;
+            }
+    }
+    while (OK == 0 && nb < 5);
+  
+    if (nb == 5)
+        return 0;
+
+    for (long i = 0; i < d; i++)
+    {
+        val_f[i].rep.SetLength(nf + 1);
+        val_f[i][nf] = val_lcf[i];
+        val_g[i].rep.SetLength(ng + 1);
+        val_g[i][ng] = val_lcg[i];
+    }
+
+    Vec<zz_p> tmp;
+    for (long i = 0; i < nf; i++)
+    {
+        evG.evaluate(tmp, f.rep[i], d);
+        for (long j = 0; j < d; j++)
+            val_f[j][i] = tmp[j];
+    }
+    for (long i = 0; i < ng; i++)
+    {
+        evG.evaluate(tmp, g.rep[i], d);
+        for (long j = 0; j < d; j++)
+            val_g[j][i] = tmp[j];
+    }
+
+    // blocks have size mxm
+    Vec<Mat<zz_p>> blocks;
+    blocks.SetLength(d);
+    for (long i = 0; i < d; i++)
+    {
+        sylvester_lzz_p S(val_f[i], val_g[i]);
+        long r = S.top_right_block_inverse(blocks[i], m);
+        if (r == 0)
+            return 0;
+    }
+
+    Mat<zz_pX> basis;
+
+    // set up pts
+    zz_pX x;
+    SetCoeff(x, 1, 1);
+    Vec<zz_p> pts;
+    evG.evaluate(pts, x, d); // just gets powers of r
+
+    // uniform shift (0,..,0)
+    VecLong shift(2*m);
+
+    // add identity at the bottom of each matrix in sequence
+    for (long j = 0; j < d; j++)
+    {
+        blocks[j].SetDims(2*m, m);
+        for (long i = 0; i < m; i++)
+            set(blocks[j][m+i][i]);
+    }
+
+    // call pmbasis
+    Mat<zz_pX> intbas;
+    pmbasis_geometric(intbas, blocks, pts, a0, shift, 0, d);
+    /* std::cout << degree_matrix(intbas) << std::endl; */
+
+    basis.SetDims(m, m);
+    for (long i = 0; i < m; ++i)
+        for (long j = 0; j < m; ++j)
+            basis[i][j].swap(intbas[i+m][j]);
+
+    /* std::cout << degree_matrix(basis) << std::endl; */
+    determinant_via_linsolve(res, basis);  /* randomized! */
+
+    // TODO we may want to fix the missing constant factor
+    // for this, retrieve the leading term via the determinant
+    // of the tdeg-shifted leading matrix
+    // (for safety, make sure this takes negligible time)
+
     return 1;
 }
 

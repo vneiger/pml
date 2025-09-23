@@ -435,6 +435,7 @@ long resultant(zz_pX& res, const zz_pXY& f, const zz_pXY& g);
  *  Returns 0 if the computation failed.
  */
 long resultant_villard(zz_pX& res, const zz_pXY& f, const zz_pXY& g);
+long resultant_villard_tdeg(zz_pX& res, const zz_pXY& f, const zz_pXY& g);
 
 /** @}  */       // doxygen resultant
 
