@@ -44,7 +44,7 @@ void time_nmod_vec_dot_product_multi(ulong len, ulong k, ulong maxbits1, ulong m
         for (ulong j = 0; j < k; j++)
             nmod_mat_entry(vmat, i, j) = v[i][j] % n;
 
-    double t1, t2, t3;
+    double t1, t2;
     clock_t tt;
     long nb_iter;
 
@@ -311,11 +311,11 @@ void time_nmod_vec_dot_product_multi(ulong len, ulong k, ulong maxbits1, ulong m
         {
             nn_ptr uv = _nmod_vec_init(k);
             tt = clock();
-            nmod_mat_mul_nmod_vec_small_modulus(uv, vmattr, ur, len);
-            nmod_mat_mul_nmod_vec_small_modulus(uv, vmattr, ur, len);
-            nmod_mat_mul_nmod_vec_small_modulus(uv, vmattr, ur, len);
-            nmod_mat_mul_nmod_vec_small_modulus(uv, vmattr, ur, len);
-            nmod_mat_mul_nmod_vec_small_modulus(uv, vmattr, ur, len);
+            nmod_mat_mul_nmod_vec_2dot(uv, vmattr, ur, len);
+            nmod_mat_mul_nmod_vec_2dot(uv, vmattr, ur, len);
+            nmod_mat_mul_nmod_vec_2dot(uv, vmattr, ur, len);
+            nmod_mat_mul_nmod_vec_2dot(uv, vmattr, ur, len);
+            nmod_mat_mul_nmod_vec_2dot(uv, vmattr, ur, len);
             t2 += (double)(clock()-tt) / CLOCKS_PER_SEC;
             _nmod_vec_clear(uv);
             nb_iter += 5;
@@ -328,7 +328,7 @@ void time_nmod_vec_dot_product_multi(ulong len, ulong k, ulong maxbits1, ulong m
         nn_ptr uv1 = _nmod_vec_init(k);
         nn_ptr uv2 = _nmod_vec_init(k);
         nmod_mat_mul_nmod_vec_newdot(uv1, vmattr, ur, len);
-        nmod_mat_mul_nmod_vec_small_modulus(uv2, vmattr, ur, len);
+        nmod_mat_mul_nmod_vec_2dot(uv2, vmattr, ur, len);
         assert(_nmod_vec_equal(uv1, uv2, len));
         _nmod_vec_clear(uv1);
         _nmod_vec_clear(uv2);
