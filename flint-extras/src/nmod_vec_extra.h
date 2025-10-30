@@ -15,10 +15,6 @@
 
 /** \brief Extra functions for vectors over Z/nZ
  *
- * \file nmod_vec_extra.h
- * \version 0.0
- * \date 2023-01-23
- *
  * Some functions to deal with vectors over `nmod`.
  *
  */
@@ -38,6 +34,7 @@ extern "C" {
 
 /** Fills the entries `0`, .., `len-1` of vector with uniformly random entries.
  * Vector must already be allocated with length at least `len`. */
+/* TODO should be in FLINT soon: remove */
 void _nmod_vec_rand(nn_ptr vec,
             		flint_rand_t state,
             		slong len,
@@ -48,15 +45,6 @@ void _nmod_vec_rand(nn_ptr vec,
 /* vector of n consecutive primes of exactly s bits             */
 /*--------------------------------------------------------------*/
 void nmod_vec_primes(nn_ptr v, slong n, flint_bitcnt_t s);
-
-/***************
-*  inversion  *
-***************/
-
-/* computes res[i] = inv(v[i]) for i = 0 ... len */
-/* res cannot alias inv */
-void _nmod_vec_inv(nn_ptr res, nn_srcptr vec, ulong len, nmod_t mod);
-void _nmod_vec_inv2(nn_ptr res, nn_srcptr vec, ulong len, nmod_t mod);
 
 /**********************************************************************
 *                            DOT PRODUCT                             *

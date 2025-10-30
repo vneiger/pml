@@ -12,14 +12,12 @@
 
 /* Include functions *********************************************************/
 
-#include "t-inv.c"
 #include "t-integer_dot_product.c"
 
 /* Array of test functions ***************************************************/
 
 test_struct tests[] =
 {
-    TEST_FUNCTION(nmod_vec_inv),
     TEST_FUNCTION(nmod_vec_integer_dot_product),
 };
 
