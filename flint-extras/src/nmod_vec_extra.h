@@ -86,7 +86,7 @@ void _nmod_vec_2dot2_split(nn_ptr res, nn_srcptr vec10, nn_srcptr vec11, nn_srcp
 
 
 /*------------------------------------------------------------*/
-/* DRAFT / EXPERIMENTS                                        */
+/* DOT PRODUCT: DRAFT / EXPERIMENTS                           */
 /*------------------------------------------------------------*/
 
 // NOTES
@@ -95,53 +95,19 @@ void _nmod_vec_2dot2_split(nn_ptr res, nn_srcptr vec10, nn_srcptr vec11, nn_srcp
 //    and for 30 bits or less this does not bring much compared to the avx2 _nmod_vec_dot2_split already in FLINT
 // attempt: (not tried) vectorization with dp VNNI (less widely available), should bring the same issue of limiting to 30 bits
 
-
-// TODO incorporate FLINT (seems interesting in all cases, see below):
-// faster nmod_vec for modulus close to 32 bits (almost as fast as AVX-based version for modulus < 2**30.5 bits)
-// (correctness bound related to how much we can accumulate in high part: probably same bound as for AVX already in flint?)
-#if defined(__AVX2__) && FLINT_BITS == 64
-ulong _nmod_vec_dot2_half_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
-#endif
-// some timings on zen4 with modulus == 32 bits close to 2**32:
-//            bit/len 50      100     200     400     600     800     1000    2000    4000    8000    16000   50000   1000000
-// cf oldhalf 32hi    1.8e-08 3.3e-08 6.2e-08 1.2e-07 1.8e-07 2.4e-07 2.9e-07 5.9e-07 1.2e-06 2.4e-06 4.6e-06 1.4e-05 3.2e-04
-// cf newhalf 32hi    1.1e-08 1.5e-08 2.7e-08 4.1e-08 5.9e-08 7.4e-08 9.5e-08 1.9e-07 4.4e-07 9.1e-07 1.7e-06 6.4e-06 2.0e-04
-// cf new_int 32hi    1.0e-08 1.6e-08 2.4e-08 4.2e-08 6.2e-08 8.0e-08 9.5e-08 2.0e-07 3.8e-07 7.5e-07 1.5e-06 4.7e-06 9.7e-05
-// cu oldhalf 32hi    2.0e-08 3.5e-08 6.3e-08 1.4e-07 2.1e-07 2.9e-07 3.4e-07 7.3e-07 1.4e-06 3.2e-06 5.4e-06 1.8e-05 3.5e-04
-// cu newhalf 32hi    1.3e-08 1.9e-08 3.0e-08 9.3e-08 1.5e-07 2.3e-07 2.7e-07 6.7e-07 1.3e-06 2.8e-06 5.2e-06 1.7e-05 3.3e-04
-// cu new_int 32hi    1.1e-08 1.7e-08 2.8e-08 4.6e-08 6.8e-08 9.8e-08 1.5e-07 2.9e-07 7.2e-07 1.3e-06 2.7e-06 8.5e-06 1.6e-04
-// same on Groebner (icelake server)
-//            bit/len 50      100     200     400     600     800     1000    2000    4000    8000    16000   50000   1000000
-// cf oldhalf 32hi    3.2e-08 5.4e-08 1.0e-07 2.0e-07 2.9e-07 3.9e-07 4.9e-07 9.7e-07 2.1e-06 4.2e-06 8.4e-06 2.7e-05 5.7e-04
-// cf newhalf 32hi    2.0e-08 2.9e-08 5.0e-08 8.0e-08 1.1e-07 1.3e-07 1.7e-07 3.2e-07 9.2e-07 1.8e-06 3.6e-06 1.3e-05 4.9e-04
-// cf new_int 32hi    1.8e-08 2.5e-08 4.4e-08 7.3e-08 1.1e-07 1.4e-07 1.7e-07 3.3e-07 6.5e-07 1.3e-06 2.6e-06 8.7e-06 2.4e-04
-// cu oldhalf 32hi    3.7e-08 6.7e-08 1.2e-07 2.3e-07 4.1e-07 7.5e-07 1.0e-06 2.2e-06 4.6e-06 9.0e-06 1.8e-05 5.5e-05 1.0e-03
-// cu newhalf 32hi    2.5e-08 4.7e-08 9.4e-08 2.0e-07 3.4e-07 6.1e-07 9.0e-07 2.1e-06 4.2e-06 8.4e-06 1.6e-05 5.1e-05 9.8e-04
-// cu new_int 32hi    1.8e-08 3.0e-08 5.1e-08 9.5e-08 1.4e-07 1.9e-07 2.4e-07 7.5e-07 2.1e-06 4.4e-06 8.9e-06 2.7e-05 5.2e-04
-// same on machaon (skylake)
-//            bit/len 50      100     200     400     600     800     1000    2000    4000    8000    16000   50000   1000000
-// cf oldhalf 32hi    2.8e-08 4.2e-08 8.3e-08 1.6e-07 2.3e-07 3.3e-07 3.8e-07 7.8e-07 1.8e-06 3.4e-06 7.4e-06 2.3e-05
-// cf newhalf 32hi    2.3e-08 2.8e-08 5.1e-08 7.1e-08 1.0e-07 1.4e-07 1.6e-07 3.3e-07 7.6e-07 1.6e-06 3.7e-06 1.4e-05
-// cf new_int 32hi    2.5e-08 3.3e-08 4.3e-08 7.6e-08 1.0e-07 1.3e-07 1.7e-07 3.2e-07 6.6e-07 1.2e-06 2.9e-06 1.1e-05
-// cu oldhalf 32hi    3.0e-08 5.5e-08 9.3e-08 2.6e-07 4.2e-07 6.3e-07 7.6e-07 1.6e-06 3.2e-06 6.6e-06 1.3e-05 4.1e-05
-// cu newhalf 32hi    3.0e-08 3.8e-08 7.5e-08 1.7e-07 3.7e-07 5.1e-07 5.9e-07 1.3e-06 2.6e-06 5.3e-06 1.1e-05 3.5e-05
-// cu new_int 32hi    2.2e-08 3.8e-08 4.8e-08 9.8e-08 1.5e-07 2.6e-07 3.6e-07 7.7e-07 1.7e-06 3.5e-06 7.1e-06 2.1e-05
-
 // note: version split26_avx interesting (beyond 30-31 bits) on zen4 laptop
 // --> speed-up about 2 for lengths a few 100s
-// (TODO analyze correctness bounds)
+// (FIXME analyze correctness bounds)
 ulong _nmod_vec_dot_product_split26(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
 #ifdef PML_HAVE_AVX2
     ulong _nmod_vec_dot_product_split26_avx(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
 #endif // PML_HAVE_AVX2
 
-
-// TODO in progress: ifma attempt
+// FIXME in progress: ifma attempt
 #if PML_HAVE_AVX512
 ulong _nmod_vec_dot_product_ifma256(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
 ulong _nmod_vec_dot_product_ifma512(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod);
 #endif  /* PML_HAVE_AVX512 */
-
 
 /** Several dot products with same left operand, as in vector-matrix product.
  *
