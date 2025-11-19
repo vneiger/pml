@@ -1,10 +1,8 @@
-#include <stdlib.h>
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
 
 #include "nmod_extra.h"
-#include "nmod_poly_extra.h"
 #include "nmod_poly_mat_multiply.h"
 
 /** Middle product for polynomial matrices
@@ -65,8 +63,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     order = ellC;
     nmod_init(&mod, p);
     w = nmod_find_root(order, mod);
-    nmod_geometric_progression_init_set(F, w, order, mod);
-
+    nmod_geometric_progression_init(F, w, order, mod);
 
     mod_A = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
     mod_B = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
@@ -74,7 +71,6 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     val = _nmod_vec_init(ellC);
     val2 = _nmod_vec_init(ellC);
     nmod_poly_init2(tmp_poly, mod.n, dA+1);
-
 
 #ifdef DIRTY_ALLOC_MATRIX
     // we alloc the memory for all matrices at once
@@ -174,7 +170,6 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     }
 #endif
 
-
     for (i = 0; i < n; i++)
         for (j = 0; j < k; j++)
         {
@@ -189,7 +184,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
             tmp_poly->length = dA + 1;
             _nmod_poly_normalise(tmp_poly);
 
-            nmod_geometric_progression_evaluate(val, tmp_poly, F);
+            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, tmp_poly->coeffs, tmp_poly->length, F, ellC);
             for (ell = 0; ell < ellC; ell++)
                 nmod_mat_entry(mod_A[ell], i, j) = val[ell];
         }
@@ -204,7 +199,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
                 val2[u] = src[u];
             for (; u < ellC; u++)
                 val2[u] = 0;
-            nmod_geometric_progression_interpolate(tmp_poly, val2, F);
+            nmod_poly_interpolate_geometric_nmod_vec_fast_precomp(tmp_poly, val2, F, ellC);
             deg = nmod_poly_degree(tmp_poly);
             src = tmp_poly->coeffs;
             for (ell = 0; ell <= deg; ell++)
@@ -227,7 +222,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
             tmp_poly->length = ellC;
             _nmod_poly_normalise(tmp_poly);
 
-            nmod_geometric_progression_evaluate(val2, tmp_poly, F);
+            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val2, tmp_poly->coeffs, tmp_poly->length, F, ellC);
 
             nmod_poly_realloc(nmod_poly_mat_entry(C, i, j), dB + 1);
             nmod_poly_mat_entry(C, i, j)->length = dB + 1;
