@@ -2,8 +2,8 @@
 #include <flint/ulong_extras.h>
 #include <flint/nmod_poly_mat.h>
 
-#include "nmod_poly_mat_approximant.h"
-#include "time.h"
+#include "../../nmod_poly_mat_approximant.h"
+#include <time.h>
 
 // main function
 void benchmark_pmbasis(slong rdim, slong cdim, slong sigma, slong len,

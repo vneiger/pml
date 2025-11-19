@@ -1,4 +1,8 @@
+#include <NTL/FFT.h>
+#include <NTL/lzz_p.h>
+#include <NTL/vec_lzz_p.h>
 #include <iomanip>
+#include <ios>
 #include <limits.h>
 
 #include <NTL/FFT_impl.h>
@@ -15,49 +19,62 @@ PML_CLIENT
 
 void time_fft(long nbits, long depth)
 {
-    cout << nbits << "\t" << depth << "\t";
+    zz_pInfoT *info = zz_pInfo;
+    FFTPrimeInfo *p_info = info->p_info;
 
     const double thresh = 0.2;
 
     const long len = (1<<depth);
-    const long K = depth;
+
+    const long inc = len/16;
 
     long nb;
-    zz_pX a;
     double t_ntl_fft, t_ntl_ifft;
 
-    random(a, len);
-
-    t_ntl_fft = GetWallTime();
-    nb = 0;
-    do
+    long * a = (long *) malloc(len * sizeof(long));
+    long * x = (long *) malloc(len * sizeof(long));
+    for (long i = 0; i < len; i++)
     {
-        fftRep fr(INIT_SIZE, K);
-        TofftRep_trunc(fr, a, K, len);
-        nb++;
+        a[i] = random_zz_p()._zz_p__rep;
+        x[i] = random_zz_p()._zz_p__rep;
     }
-    while ((GetWallTime()-t_ntl_fft) <= thresh);
-    t_ntl_fft = (GetWallTime()-t_ntl_fft) / nb;
 
-    fftRep fr(INIT_SIZE, K);
-    TofftRep_trunc(fr, a, K, len);
-    t_ntl_ifft = GetWallTime();
-    nb = 0;
-    do
+
+    cout << nbits << "\t" << depth << "\t";
+    for (long xn = inc + len/2; xn <= len; xn += inc)
     {
-        FromfftRep(a, fr, 0, depth-1);
-        nb++;
+        nb = 0;
+        t_ntl_fft = GetWallTime();
+        do
+        {
+            new_fft(x, a, depth, *p_info, xn, xn);
+            nb++;
+        }
+        while ((GetWallTime()-t_ntl_fft) <= thresh);
+        t_ntl_fft = (GetWallTime()-t_ntl_fft) / nb;
+        cout << t_ntl_fft << "\t";
     }
-    while ((GetWallTime()-t_ntl_ifft) <= thresh);
-    t_ntl_ifft = (GetWallTime()-t_ntl_ifft) / nb;
 
-    cout << t_ntl_fft << "\t" << t_ntl_ifft << endl;
+    for (long xn = inc + len/2; xn <= len; xn += inc)
+    {
+        t_ntl_ifft = GetWallTime();
+        nb = 0;
+        do
+        {
+            new_ifft(x, a, depth, *p_info, xn);
+            nb++;
+        }
+        while ((GetWallTime()-t_ntl_ifft) <= thresh);
+        t_ntl_ifft = (GetWallTime()-t_ntl_ifft) / nb;
+        cout << t_ntl_ifft << "\t";
+    }
+    std::cout << std::endl;
 }
 
 int main(int argc, char ** argv)
 {
-    std::cout << std::fixed;
-    std::cout << std::setprecision(9);
+    std::cout << std::scientific;
+    std::cout << std::setprecision(1);
 
     if (argc != 2 && argc != 3)
     {
@@ -95,16 +112,16 @@ int main(int argc, char ** argv)
     {
         const long depth = atoi(argv[2]);
 
-        cout << "nbits\tdepth\tfft\t\tifft" << endl;
+        cout << "nbits\tdepth\tfft -->\t\t\t\t\t\t\t<--fft |ifft -->\t\t\t\t\t\t<--ifft" << endl;
         warmup();
         time_fft(nbits, depth);
     }
 
     if (argc == 2)
     {
-        cout << "nbits\tdepth\tfft\t\tifft" << endl;
+        cout << "nbits\tdepth\tfft -->\t\t\t\t\t\t\t<--fft |ifft -->\t\t\t\t\t\t<--ifft" << endl;
         warmup();
-        for (long depth = 0; depth < 25; depth++)
+        for (long depth = 4; depth < 25; depth++)
             time_fft(nbits, depth);
     }
     return 0;
