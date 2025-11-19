@@ -16,6 +16,7 @@
 #include "nmod_poly_mat_utils.h" // for rand
 #include "nmod_poly_mat_multiply.h"
 
+#if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 4)
 
 /*--------------------------------------------------------------*/
 /* middle product using different implementations               */
@@ -73,3 +74,5 @@ TEST_FUNCTION_START(nmod_poly_mat_middle_product_geometric, state)
 
     TEST_FUNCTION_END(state);
 }
+
+#endif
