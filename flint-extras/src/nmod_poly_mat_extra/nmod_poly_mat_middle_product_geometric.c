@@ -135,7 +135,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
             tmp_poly->length = dA + 1;
             _nmod_poly_normalise(tmp_poly);
 
-            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, tmp_poly->coeffs, tmp_poly->length, F, ellC);
+            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, tmp_poly->coeffs, tmp_poly->length, F, ellC, F->mod);
             for (ell = 0; ell < ellC; ell++)
                 nmod_mat_entry(mod_A[ell], i, j) = val[ell];
         }
@@ -173,7 +173,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
             tmp_poly->length = ellC;
             _nmod_poly_normalise(tmp_poly);
 
-            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val2, tmp_poly->coeffs, tmp_poly->length, F, ellC);
+            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val2, tmp_poly->coeffs, tmp_poly->length, F, ellC, F->mod);
 
             nmod_poly_realloc(nmod_poly_mat_entry(C, i, j), dB + 1);
             nmod_poly_mat_entry(C, i, j)->length = dB + 1;
