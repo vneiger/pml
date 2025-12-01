@@ -18,13 +18,13 @@
 /* finds an element of order at least n                       */
 /* returns 0 if not found                                     */
 /*------------------------------------------------------------*/
-ulong nmod_find_root(slong n, nmod_t mod)
+ulong nmod_find_root(ulong n, nmod_t mod)
 {
-    slong q;
-    for(q = 2; q < (slong) mod.n; q++)
+    ulong q;
+    for(q = 2; q < mod.n; q++)
     {
-        slong k = 1;
-        slong qk = q;
+        ulong k = 1;
+        ulong qk = q;
         while (qk != 1 && k < n)
         {
             qk = nmod_mul(qk, q, mod);

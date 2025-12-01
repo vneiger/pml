@@ -14,7 +14,6 @@
 #define NMOD_POLY_MAT_MULTIPLY_H
 
 #include <flint/nmod_types.h>
-
 #include "pml.h"
 
 // several functions allocate arrays of matrices

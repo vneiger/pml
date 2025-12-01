@@ -43,7 +43,7 @@ ulong inverse_mod_power_of_two(ulong p, int k);
 /* finds an element of order at least n                       */
 /* returns 0 if not found                                     */
 /*------------------------------------------------------------*/
-ulong nmod_find_root(long n, nmod_t mod);
+ulong nmod_find_root(ulong n, nmod_t mod);
 
 
 /*------------------------------------------------------------*/

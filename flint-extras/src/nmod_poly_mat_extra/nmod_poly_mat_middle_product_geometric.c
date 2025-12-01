@@ -76,7 +76,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
 
 #ifdef DIRTY_ALLOC_MATRIX
     // we alloc the memory for all matrices at once
-    nn_ptr tmp = (nn_ptr) malloc((m*k + k*n + m*n) * ellC * sizeof(ulong));
+    nn_ptr tmp = (nn_ptr) flint_malloc((m*k + k*n + m*n) * ellC * sizeof(ulong));
     nn_ptr bak;
 
     bak = tmp;
@@ -185,7 +185,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
 
 
 #ifdef DIRTY_ALLOC_MATRIX
-    free(tmp);
+    flint_free(tmp);
 #else
     for (i = 0; i < ellC; i++)
     {
