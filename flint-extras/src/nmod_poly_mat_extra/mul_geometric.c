@@ -67,39 +67,42 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
 
 #ifdef DIRTY_ALLOC_MATRIX
     // we alloc the memory for all matrices at once
-    nn_ptr tmp = (nn_ptr) flint_malloc((m*k + k*n + m*n) * ellC * sizeof(ulong));
+    nn_ptr tmp = flint_malloc((m*k + k*n + m*n) * ellC * sizeof(ulong));
+    nn_ptr ptr = tmp;
     for (i = 0; i < ellC; i++)
     {
-        mod_A[i]->entries = tmp + i*m*k;
+        mod_A[i]->entries = ptr + i*m*k;
+        mod_A[i]->stride = k;
         mod_A[i]->r = m;
         mod_A[i]->c = k;
         mod_A[i]->mod.n = mod.n;
         mod_A[i]->mod.norm = mod.norm;
         mod_A[i]->mod.ninv = mod.ninv;
     }
-    tmp += ellC*m*k;
+    ptr += ellC*m*k;
 
     for (i = 0; i < ellC; i++)
     {
-        mod_B[i]->entries = tmp + i*k*n;
+        mod_B[i]->entries = ptr + i*k*n;
+        mod_B[i]->stride = n;
         mod_B[i]->r = k;
         mod_B[i]->c = n;
         mod_B[i]->mod.n = mod.n;
         mod_B[i]->mod.norm = mod.norm;
         mod_B[i]->mod.ninv = mod.ninv;
     }
-    tmp += ellC*k*n;
+    ptr += ellC*k*n;
 
     for (i = 0; i < ellC; i++)
     {
-        mod_C[i]->entries = tmp + i*m*n;
+        mod_C[i]->entries = ptr + i*m*n;
+        mod_C[i]->stride = n;
         mod_C[i]->r = m;
         mod_C[i]->c = n;
         mod_C[i]->mod.n = mod.n;
         mod_C[i]->mod.norm = mod.norm;
         mod_C[i]->mod.ninv = mod.ninv;
     }
-    tmp = tmp - ellC*m*k - ellC*k*n;
 #else
     for (i = 0; i < ellC; i++)
     {
@@ -109,7 +112,6 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
     }
 #endif
 
-    flint_printf("starting work\n");
     nmod_poly_struct * pol;
 
     for (i = 0; i < m; i++)
@@ -133,11 +135,9 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
                 nmod_mat_entry(mod_B[ell], i, j) = val[ell];
         }
     }
-    flint_printf("eval ok\n");
 
     for (ell = 0; ell < ellC; ell++)
         nmod_mat_mul(mod_C[ell], mod_A[ell], mod_B[ell]);
-    flint_printf("matmul ok\n");
 
     for (i = 0; i < m; i++)
     {
@@ -148,7 +148,6 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
             nmod_poly_interpolate_geometric_nmod_vec_fast_precomp(nmod_poly_mat_entry(C, i, j), val, F, ellC);
         }
     }
-    flint_printf("interp ok\n");
 
 #ifdef DIRTY_ALLOC_MATRIX
     flint_free(tmp);

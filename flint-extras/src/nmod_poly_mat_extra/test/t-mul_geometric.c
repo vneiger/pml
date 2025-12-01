@@ -39,11 +39,8 @@ int test_mat_mul_geometric(ulong bits, ulong m, ulong n, ulong p, ulong deg, fli
     nmod_poly_mat_rand(C1, state, deg);
     nmod_poly_mat_rand(C2, state, deg);
 
-    flint_printf("OK\n");
     nmod_poly_mat_mul(C1, A, B);
-    flint_printf("OK\n");
     nmod_poly_mat_mul_geometric(C2, A, B);
-    flint_printf("OK\n");
 
     int res = nmod_poly_mat_equal(C1, C2);
 
@@ -68,10 +65,10 @@ TEST_FUNCTION_START(nmod_poly_mat_mul_geometric, state)
         ulong p = 1 + n_randint(state, 50);
         ulong deg = 0 + n_randint(state, 50);
 
-        flint_printf("~~~ test i = %d ~~~\n"
-                     "m = %wu, n = %wu, p = %wu\n"
-                     "deg = %wu, n_bits = %wu\n",
-                     i, m, n, p, deg, bits);
+        /* flint_printf("~~~ test i = %d ~~~\n" */
+        /*              "m = %wu, n = %wu, p = %wu\n" */
+        /*              "deg = %wu, n_bits = %wu\n", */
+        /*              i, m, n, p, deg, bits); */
 
         result = test_mat_mul_geometric(bits, m, n, p, deg, state);
 

@@ -261,7 +261,7 @@ void benchmark_nbits_dim_deg(long nbits, long dim, long deg, bool fftprime)
         std::cout << "Bench square polynomial matrix multiplication:" << std::endl;
         zz_p::init(GenPrime_long(nbits));
         std::cout << "p = " << zz_p::modulus() << "  (prime, bit length = " << NumBits(zz_p::modulus()) << ")" << std::endl;
-        std::cout << "dim\tdim\tdim\tdegree\tmult\t3pri\tev-geo\tvdmd\tvdmd2" << std::endl;
+        std::cout << "dim\tdim\tdim\tdegl\tdegr\tmult\t3pri\tev-geo\tvdmd\tvdmd2" << std::endl;
         benchmark_polmatmul(dim,dim,dim,deg,deg);
     }
 }
