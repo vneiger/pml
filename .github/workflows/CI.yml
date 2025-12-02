@@ -91,7 +91,7 @@ jobs:
   ##############################################################################
   # ubuntu 24.04, clang, flint 3.4.0
   ##############################################################################
-  ubuntu-clang-flint320:
+  ubuntu-clang-flint340:
     name: Ubuntu 24.04, clang, FLINT 3.4.0 (x10)
 
     runs-on: ubuntu-24.04
@@ -125,9 +125,8 @@ jobs:
           echo "MAKE=make -j$(expr $(nproc) + 1) --output-sync=target" >> $GITHUB_ENV
 
           # install FLINT dev version
-          git clone --depth=1 https://github.com/flintlib/flint.git
+          git clone --depth=1 https://github.com/flintlib/flint.git --branch v3.4.0 --single-branch
           cd flint
-          git checkout v3.4.0
           ./bootstrap.sh
           ./configure
           make
