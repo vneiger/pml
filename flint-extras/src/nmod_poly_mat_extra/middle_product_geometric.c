@@ -16,7 +16,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
                                             const ulong dA, const ulong dB)
 {
     nmod_mat_t *mod_A, *mod_B, *mod_C;
-    ulong ellA, ellB, ellC, order;
+    ulong ellC, order;
     ulong i, j, ell, m, k, n, u;
     long v;
     ulong p, w;
@@ -47,10 +47,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     }
 
     // length = 0 iff matrix is zero
-    ellA = nmod_poly_mat_max_length(A);
-    ellB = nmod_poly_mat_max_length(B);
-
-    if (ellA == 0 || ellB == 0)
+    if (nmod_poly_mat_max_length(A) == 0 || nmod_poly_mat_max_length(B) == 0)
     {
         nmod_poly_mat_zero(C);
         return;
@@ -58,7 +55,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
 
     nmod_init(&mod, p);
 
-    ellC = ellA + ellB - 1;  // length(C) = length(A) + length(B) - 1
+    ellC = dA + dB + 1;  // length(C) = length(A) + length(B) - 1
     order = ellC;
     nmod_init(&mod, p);
     w = nmod_find_root(2*order, mod);  /* TODO check necessary order */
