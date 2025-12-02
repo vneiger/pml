@@ -17,7 +17,7 @@
 #include "t-det.c"
 #include "t-dixon.c"
 #include "t-hermite_normal_form.c"
-/* #include "t-middle_product_geometric.c" */ /* TODO */
+#include "t-middle_product_geometric.c"
 #include "t-mul_geometric.c"
 #include "t-mbasis.c"
 #include "t-pmbasis.c"
@@ -29,6 +29,8 @@
 
 test_struct tests[] =
 {
+    TEST_FUNCTION(nmod_poly_mat_middle_product_geometric),
+    TEST_FUNCTION(nmod_poly_mat_mul_geometric),
     TEST_FUNCTION(nmod_poly_mat_det),
     TEST_FUNCTION(nmod_poly_mat_dixon),
     TEST_FUNCTION(nmod_poly_mat_hnf),
@@ -37,10 +39,6 @@ test_struct tests[] =
     /* TEST_FUNCTION(nmod_poly_mat_mul_waksman), */  /* TODO */
     TEST_FUNCTION(nmod_poly_mat_rand),
     TEST_FUNCTION(nmod_poly_mat_weak_popov_form),
-#if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 4)
-    /* TEST_FUNCTION(nmod_poly_mat_middle_product_geometric), */  /* TODO */
-    TEST_FUNCTION(nmod_poly_mat_mul_geometric),
-#endif  /* FLINT_VERSION */
 };
 
 /* main function *************************************************************/

@@ -18,8 +18,6 @@
 
 /* TODO more primes, more variations of degrees, etc. */
 
-#if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 4)
-
 /*--------------------------------------------------------------*/
 /* middle product using different implementations               */
 /*--------------------------------------------------------------*/
@@ -81,5 +79,3 @@ TEST_FUNCTION_START(nmod_poly_mat_mul_geometric, state)
 
     TEST_FUNCTION_END(state);
 }
-
-#endif
