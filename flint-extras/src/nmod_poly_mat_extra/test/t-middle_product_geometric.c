@@ -55,7 +55,7 @@ TEST_FUNCTION_START(nmod_poly_mat_middle_product_geometric, state)
     for (i = 0; i < 100 * flint_test_multiplier(); i++)
     {
         /* FIXME field must be "large enough" : add proper test/fallback */
-        ulong bits = 16 + n_randint(state, 48);
+        ulong bits = 16 + n_randint(state, 49);
         ulong m = 1 + n_randint(state, 50);
         ulong n = 1 + n_randint(state, 50);
         ulong p = 1 + n_randint(state, 50);
