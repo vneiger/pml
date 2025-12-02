@@ -14,10 +14,9 @@ env:
   GLOBAL_MULTIPLIER: 1
 
 concurrency:
-  # group by workflow and ref; the last slightly strange component ensures that for pull
-  # requests, we limit to 1 concurrent job, but for the main branch we don't
+  # Group by workflow and ref, and to limit to 1 concurrent job except for main
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.ref != 'refs/heads/main' || github.run_number }}
-  # Cancel intermediate builds, but only if it is a pull request build.
+  # Cancel intermediate builds for pull requests
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 jobs:
@@ -128,7 +127,7 @@ jobs:
           # install FLINT dev version
           git clone https://github.com/flintlib/flint.git
           cd flint
-          git checkout v3.2.0
+          git checkout v3.4.0
           ./bootstrap.sh
           ./configure
           make

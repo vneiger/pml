@@ -10,8 +10,11 @@
 
 /** Multiplication for polynomial matrices
  *  sets C = A * B
- *  output can alias input
+ *  output can alias input  (TODO make this consistent with existing functions)
  *  ASSUMPTION (not checked): existence of element of "large enough" order
+ *  TODO -> fail flag when element not found
+ *  FIXME -> version underscore with provided geometric progression?
+ *           (if will be used with various degrees, may require recrafting interpolation for more flexible npoints)
  *  uses evaluation and interpolation at a geometric progression
  */
 void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B)
@@ -57,7 +60,7 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
 
     ellC = ellA + ellB - 1;  // length(C) = length(A) + length(B) - 1
     nmod_init(&mod, p);
-    w = nmod_find_root(2*ellC, mod);
+    w = nmod_find_root(2*ellC, mod); /* TODO 2*ellC ok? */
     nmod_geometric_progression_init(F, w, ellC, mod);
 
     mod_A = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
@@ -66,6 +69,7 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
     val = _nmod_vec_init(ellC);
 
 #ifdef DIRTY_ALLOC_MATRIX
+    /* TODO check if still has any interest after FLINT's new mat storage */
     // we alloc the memory for all matrices at once
     nn_ptr tmp = flint_malloc((m*k + k*n + m*n) * ellC * sizeof(ulong));
     nn_ptr ptr = tmp;
