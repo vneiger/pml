@@ -35,9 +35,9 @@ void time_##fun(time_args targs, flint_rand_t state) \
     \
     double FLINT_SET_BUT_UNUSED(tcpu), twall; \
     \
-    TIMEIT_START \
+    TIMEIT_START; \
     res = _nmod32_vec_##fun(v1, v2, len, mod, arg); \
-    TIMEIT_STOP_VALUES(tcpu, twall) \
+    TIMEIT_STOP_VALUES(tcpu, twall); \
     \
     printf("%.2e", twall); \
     \
@@ -151,9 +151,9 @@ void time_dot_msolve_avx2(time_args targs, flint_rand_t state)
 
     double FLINT_SET_BUT_UNUSED(tcpu), twall;
 
-    TIMEIT_START
+    TIMEIT_START;
     res = _nmod32_vec_dot_msolve_avx2(v1, v2, len, mod.n);
-    TIMEIT_STOP_VALUES(tcpu, twall)
+    TIMEIT_STOP_VALUES(tcpu, twall);
 
     printf("%.2e", twall);
 
@@ -219,10 +219,10 @@ void time_##fun(time_args targs, flint_rand_t state)    \
                                                         \
     double FLINT_SET_BUT_UNUSED(tcpu), twall;           \
                                                         \
-    TIMEIT_START                                        \
+    TIMEIT_START;                                       \
     _nmod32_vec_##fun(res, mat, vec,                    \
                       nrows, len, len, mod);            \
-    TIMEIT_STOP_VALUES(tcpu, twall)                     \
+    TIMEIT_STOP_VALUES(tcpu, twall);                    \
                                                         \
     printf("%.2e", twall);                              \
                                                         \

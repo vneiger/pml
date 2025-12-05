@@ -5,8 +5,6 @@
 #include "nmod_extra.h"
 #include "nmod_poly_mat_multiply.h"
 
-#if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 4)
-
 /** Middle product for polynomial matrices
  *  sets C = ((A * B) div x^dA) mod x^(dB+1)
  *  output can alias input
@@ -18,7 +16,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
                                             const ulong dA, const ulong dB)
 {
     nmod_mat_t *mod_A, *mod_B, *mod_C;
-    ulong ellA, ellB, ellC, order;
+    ulong ellC, order;
     ulong i, j, ell, m, k, n, u;
     long v;
     ulong p, w;
@@ -48,12 +46,8 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
         return;
     }
 
-
     // length = 0 iff matrix is zero
-    ellA = nmod_poly_mat_max_length(A);
-    ellB = nmod_poly_mat_max_length(B);
-
-    if (ellA == 0 || ellB == 0)
+    if (nmod_poly_mat_max_length(A) == 0 || nmod_poly_mat_max_length(B) == 0)
     {
         nmod_poly_mat_zero(C);
         return;
@@ -61,10 +55,10 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
 
     nmod_init(&mod, p);
 
-    ellC = ellA + ellB - 1;  // length(C) = length(A) + length(B) - 1
+    ellC = dA + dB + 1;  // length(C) = length(A) + length(B) - 1
     order = ellC;
     nmod_init(&mod, p);
-    w = nmod_find_root(order, mod);
+    w = nmod_find_root(2*order, mod);  /* TODO check necessary order */
     nmod_geometric_progression_init(F, w, order, mod);
 
     mod_A = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
@@ -72,17 +66,18 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     mod_C = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
     val = _nmod_vec_init(ellC);
     val2 = _nmod_vec_init(ellC);
-    nmod_poly_init2(tmp_poly, mod.n, dA+1);
+    nmod_poly_init2(tmp_poly, mod.n, ellC);
 
 #ifdef DIRTY_ALLOC_MATRIX
     // we alloc the memory for all matrices at once
-    nn_ptr tmp = (nn_ptr) malloc((m*k + k*n + m*n) * ellC * sizeof(ulong));
+    nn_ptr tmp = (nn_ptr) flint_malloc((m*k + k*n + m*n) * ellC * sizeof(ulong));
     nn_ptr bak;
 
     bak = tmp;
     for (i = 0; i < ellC; i++)
     {
         mod_A[i]->entries = tmp + i*m*k;
+        mod_A[i]->stride = k;
         mod_A[i]->r = m;
         mod_A[i]->c = k;
         mod_A[i]->mod.n = mod.n;
@@ -94,6 +89,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     for (i = 0; i < ellC; i++)
     {
         mod_B[i]->entries = tmp + i*k*n;
+        mod_B[i]->stride = n;
         mod_B[i]->r = k;
         mod_B[i]->c = n;
         mod_B[i]->mod.n = mod.n;
@@ -105,6 +101,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     for (i = 0; i < ellC; i++)
     {
         mod_C[i]->entries = tmp + i*m*n;
+        mod_C[i]->stride = n;
         mod_C[i]->r = m;
         mod_C[i]->c = n;
         mod_C[i]->mod.n = mod.n;
@@ -121,14 +118,15 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     }
 #endif
 
-    for (i = 0; i < n; i++)
+    for (i = 0; i < m; i++)
+    {
         for (j = 0; j < k; j++)
         {
-            ulong deg = nmod_poly_degree(nmod_poly_mat_entry(A, i, j));
+            ulong len = nmod_poly_mat_entry(A, i, j)->length;
             nn_ptr src = nmod_poly_mat_entry(A, i, j)->coeffs;
             nn_ptr dest = tmp_poly->coeffs;
             v = dA;
-            for (u = 0; u <= deg; u++, v--)
+            for (u = 0; u < len; u++, v--)
                 dest[v] = src[u];
             for (; v >= 0; v--)
                 dest[v] = 0;
@@ -139,33 +137,35 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
             for (ell = 0; ell < ellC; ell++)
                 nmod_mat_entry(mod_A[ell], i, j) = val[ell];
         }
+    }
 
 
     for (i = 0; i < k; i++)
+    {
         for (j = 0; j < n; j++)
         {
-            ulong deg = nmod_poly_degree(nmod_poly_mat_entry(B, i, j));
+            ulong len = nmod_poly_mat_entry(B, i, j)->length;
             nn_ptr src = nmod_poly_mat_entry(B, i, j)->coeffs;
-            for (u = 0; u <= deg; u++)
+            for (u = 0; u < len; u++)
                 val2[u] = src[u];
             for (; u < ellC; u++)
                 val2[u] = 0;
             nmod_poly_interpolate_geometric_nmod_vec_fast_precomp(tmp_poly, val2, F, ellC);
-            deg = nmod_poly_degree(tmp_poly);
+            len = tmp_poly->length;
             src = tmp_poly->coeffs;
-            for (ell = 0; ell <= deg; ell++)
+            for (ell = 0; ell < len; ell++)
                 nmod_mat_entry(mod_B[ell], i, j) = src[ell];
             for (; ell < ellC; ell++)
                 nmod_mat_entry(mod_B[ell], i, j) = 0;
         }
+    }
 
     for (ell = 0; ell < ellC; ell++)
         nmod_mat_mul(mod_C[ell], mod_A[ell], mod_B[ell]);
 
-
-    nmod_poly_fit_length(tmp_poly, ellC);
-    for (i = 0; i < n; i++)
-        for (j = 0; j < m; j++)
+    for (i = 0; i < m; i++)
+    {
+        for (j = 0; j < n; j++)
         {
             nn_ptr dest = tmp_poly->coeffs;
             for (ell = 0; ell < ellC; ell++)
@@ -177,15 +177,15 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
 
             nmod_poly_realloc(nmod_poly_mat_entry(C, i, j), dB + 1);
             nmod_poly_mat_entry(C, i, j)->length = dB + 1;
-            dest = nmod_poly_mat_entry(A, i, j)->coeffs;
+            dest = nmod_poly_mat_entry(C, i, j)->coeffs;
             for (u = 0; u <= dB; u++)
                 dest[u] = val2[u];
-            _nmod_poly_normalise(nmod_poly_mat_entry(A, i, j));
+            _nmod_poly_normalise(nmod_poly_mat_entry(C, i, j));
         }
-
+    }
 
 #ifdef DIRTY_ALLOC_MATRIX
-    free(tmp);
+    flint_free(tmp);
 #else
     for (i = 0; i < ellC; i++)
     {
@@ -203,5 +203,3 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     _nmod_vec_clear(val);
     nmod_geometric_progression_clear(F);
 }
-
-#endif  /* (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 4) */

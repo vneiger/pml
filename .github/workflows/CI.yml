@@ -14,10 +14,9 @@ env:
   GLOBAL_MULTIPLIER: 1
 
 concurrency:
-  # group by workflow and ref; the last slightly strange component ensures that for pull
-  # requests, we limit to 1 concurrent job, but for the main branch we don't
+  # Group by workflow and ref, and to limit to 1 concurrent job except for main
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.ref != 'refs/heads/main' || github.run_number }}
-  # Cancel intermediate builds, but only if it is a pull request build.
+  # Cancel intermediate builds for pull requests
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 jobs:
@@ -40,7 +39,7 @@ jobs:
           echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}"
           echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Setup"
         run: |
@@ -58,7 +57,7 @@ jobs:
           echo "MAKE=make -j$(expr $(nproc) + 1) --output-sync=target" >> $GITHUB_ENV
 
           # install FLINT dev version
-          git clone https://github.com/flintlib/flint.git
+          git clone --depth=1 https://github.com/flintlib/flint.git
           cd flint
           ./bootstrap.sh
           ./configure
@@ -90,10 +89,10 @@ jobs:
           $MAKE check
 
   ##############################################################################
-  # ubuntu 24.04, clang, flint 3.2.0
+  # ubuntu 24.04, clang, flint 3.4.0
   ##############################################################################
-  ubuntu-clang-flint320:
-    name: Ubuntu 24.04, clang, FLINT 3.2.0 (x10)
+  ubuntu-clang-flint340:
+    name: Ubuntu 24.04, clang, FLINT 3.4.0 (x10)
 
     runs-on: ubuntu-24.04
 
@@ -108,7 +107,7 @@ jobs:
           echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}"
           echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Setup"
         run: |
@@ -126,9 +125,8 @@ jobs:
           echo "MAKE=make -j$(expr $(nproc) + 1) --output-sync=target" >> $GITHUB_ENV
 
           # install FLINT dev version
-          git clone https://github.com/flintlib/flint.git
+          git clone --depth=1 https://github.com/flintlib/flint.git --branch v3.4.0 --single-branch
           cd flint
-          git checkout v3.2.0
           ./bootstrap.sh
           ./configure
           make
@@ -177,7 +175,7 @@ jobs:
           echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}"
           echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Setup"
         run: |
@@ -195,7 +193,7 @@ jobs:
           echo "MAKE=make -j$(expr $(nproc) + 1) --output-sync=target" >> $GITHUB_ENV
 
           # install FLINT dev version
-          git clone https://github.com/flintlib/flint.git
+          git clone --depth=1 https://github.com/flintlib/flint.git
           cd flint
           ./bootstrap.sh
           ./configure
@@ -246,7 +244,7 @@ jobs:
           echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}"
           echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Setup"
         run: |
@@ -308,7 +306,7 @@ jobs:
           echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}"
           echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Setup"
         run: |
@@ -326,7 +324,7 @@ jobs:
           echo "MAKE=gmake -j$(expr $(nproc) + 1) -l 10 --output-sync=target" >> $GITHUB_ENV
 
           # install FLINT dev version
-          git clone https://github.com/flintlib/flint.git
+          git clone --depth=1 https://github.com/flintlib/flint.git
           cd flint
           ./bootstrap.sh
           ./configure \
@@ -380,7 +378,7 @@ jobs:
   #    FLINT_TEST_MULTIPLIER: "0.5"
 
   #  steps:
-  #    - uses: actions/checkout@v4
+  #    - uses: actions/checkout@v6
 
   #    - name: "Setup MinGW"
   #      uses: msys2/setup-msys2@v2
@@ -444,7 +442,7 @@ jobs:
   #        echo "TIMEOUT=$TIMEOUT | Out-File -Append -FilePath $env:GITHUB_ENV"
   #      shell: powershell
 
-  #    - uses: actions/checkout@v4
+  #    - uses: actions/checkout@v6
 
   #    - name: "Setup cache for dependencies"
   #      uses: actions/github-script@v7
@@ -509,7 +507,7 @@ jobs:
   #        echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}"
   #        echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}" >> $GITHUB_ENV
 
-  #    - uses: actions/checkout@v4
+  #    - uses: actions/checkout@v6
 
   #    - name: "Setup latest Alpine Linux"
   #      uses: jirutka/setup-alpine@v1

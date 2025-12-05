@@ -26,8 +26,8 @@ void one_check(long sz, long deg)
             random(a, sz, sz, dA + 1);
             random(b, sz, sz, dB + 1);
             random(c, sz, sz, dA + dB + 1);
-            
-            cout << sz << " " << dA << " " << dB << " ";
+
+            cout << sz << "\t" << dA << "\t" << dB << "\t";
 
             if (is_FFT_prime())
             {
@@ -99,19 +99,20 @@ void one_check(long sz, long deg)
                 }
                 while ((GetWallTime()-t_geom) <= thres);
                 t_geom = (GetWallTime()-t_geom) / nb;
-                
 
-                t_dense = GetWallTime();
-                nb = 0;
-                do
-                {
-                    middle_product_evaluate_dense(b, a, c, dA, dB);
-                    nb++;
-                }
-                while ((GetWallTime()-t_dense) <= thres);
-                t_dense = (GetWallTime()-t_dense) / nb;
-                
-                
+
+                t_dense=0.0;
+                /* t_dense = GetWallTime(); */
+                /* nb = 0; */
+                /* do */
+                /* { */
+                /*     middle_product_evaluate_dense(b, a, c, dA, dB); */
+                /*     nb++; */
+                /* } */
+                /* while ((GetWallTime()-t_dense) <= thres); */
+                /* t_dense = (GetWallTime()-t_dense) / nb; */
+
+
                 t_3_primes = GetWallTime();
                 nb = 0;
                 do
@@ -157,7 +158,7 @@ void one_check(long sz, long deg)
                 while ((GetWallTime()-t_naive) <= thres);
                 t_naive = (GetWallTime()-t_naive) / nb;
 
-                cout << t_geom << " " << t_dense << " " << t_3_primes << "   " << t_middle << "   " << t_direct << " " << t_naive;
+                cout << t_geom << "\t" << t_dense << "\t" << t_3_primes << "\t" << t_middle << "\t" << t_direct << "\t" << t_naive;
             }
             cout << endl;
         }
@@ -188,7 +189,7 @@ void check(long p)
         for (size_t j = 0; j < degrees.size(); j++)
             one_check(sizes[i], degrees[j]);
 
-    
+
 }
 
 /*------------------------------------------------------------*/
@@ -196,12 +197,26 @@ void check(long p)
 /*------------------------------------------------------------*/
 int main(int argc, char ** argv)
 {
-    std::cout << std::fixed;
-    std::cout << std::setprecision(8);
+    std::cout << std::scientific;
+    std::cout << std::setprecision(1);
     warmup();
-    // check(0);
-    // check(23068673);
-    check(288230376151711813);
+    if (argc == 1)
+    {
+        // check(0);
+        // check(23068673);
+        check(1108307720798209);
+        check(288230376151711813);
+    }
+    else if (argc == 3)
+    {
+        zz_p::init(1108307720798209);
+        cout << "dim\tdeg\tdeg\tgeom\tdense\t3primes\tmiddle\tdirect\tnaive" << endl;
+        one_check(atoi(argv[1]), atoi(argv[2]));
+    }
+    else
+    {
+        std::cout << "Usage: EXE dim deg" << std::endl;
+    }
     return 0;
 }
 
