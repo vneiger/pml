@@ -51,7 +51,6 @@
 #include "nmod_poly_mat_approximant.h"
 // #include "nmod_poly_mat_interpolant.h"
 
-// #include "nmod_poly_mat_kernel.h"
 // #include "nmod_poly_mat_determinant.h"
 
 // #include "nmod_poly_mat_inverse.h"
@@ -60,6 +59,9 @@
 // #include "nmod_poly_mat_linearization.h"
 
 #include "nmod_poly_mat_dixon.h"
+
+#include "nmod_poly_mat_kernel.h"
+
 
 // TODO remove once using flint's comp instead
 NMOD_POLY_MAT_INLINE void
