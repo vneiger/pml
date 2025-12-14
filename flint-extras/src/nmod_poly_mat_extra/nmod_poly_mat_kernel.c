@@ -448,9 +448,8 @@ int nmod_poly_mat_kernel(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat_t i
                          const slong *ishift, const slong kappa)
 {
 
-    slong i,j,k;
+    slong j,k;
 
-    slong m = iA->r;
     slong n = iA->c;
 
 
@@ -531,8 +530,6 @@ int nmod_poly_mat_approximant_kernel(nmod_poly_mat_t N, slong *degN, const nmod_
     slong m = A->r;
     slong n = A->c;
 
-
-    slong delta;
     slong deg[n];
 
     nmod_poly_mat_column_degree(deg, A, NULL);
