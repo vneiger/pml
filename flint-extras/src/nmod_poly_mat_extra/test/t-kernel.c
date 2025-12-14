@@ -134,6 +134,9 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel, state)
         }
     }
 
+    // Degree zero 
+    // -----------
+
     for (i = 0; i < 2; i++)
     {
         ulong rdim = 40 + n_randint(state, 8);
@@ -156,6 +159,9 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel, state)
                 rdim, cdim, deg, prime);
         }
     }
+
+    // Column dimension smaller that row dimension
+    // -------------------------------------------
 
     for (i = 0; i < 2; i++)
     {
