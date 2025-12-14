@@ -24,6 +24,7 @@
 #include "t-mul_waksman.c"
 #include "t-rand.c"
 #include "t-weak_popov_form.c"
+#include "t-kernel.c"
 
 /* Array of test functions ***************************************************/
 
@@ -39,6 +40,7 @@ test_struct tests[] =
     /* TEST_FUNCTION(nmod_poly_mat_mul_waksman), */  /* TODO */
     TEST_FUNCTION(nmod_poly_mat_rand),
     TEST_FUNCTION(nmod_poly_mat_weak_popov_form),
+    TEST_FUNCTION(nmod_poly_mat_kernel)
 };
 
 /* main function *************************************************************/
