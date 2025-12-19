@@ -151,6 +151,21 @@ void _nmod_poly_mat_permute_rows_by_sorting_vec(nmod_poly_mat_t mat,
 }
 
 
+void _nmod_poly_mat_permute_columns_by_sorting_vec(nmod_poly_mat_t mat,
+                                                slong r,
+                                                slong * vec,
+                                                slong * perm)
+{
+    slong_pair * tmp = flint_malloc(r * sizeof(slong_pair));
+    _vec_sort_permutation(perm, vec, vec, r, tmp);
+    for (slong i = r; i < mat->c; i++)
+        perm[i] = i;
+    flint_free(tmp);
+    nmod_poly_mat_permute_columns(mat, perm, NULL);
+}
+
+
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* SET FROM MATRIX POLYNOMIAL                                 */

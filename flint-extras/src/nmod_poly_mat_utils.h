@@ -138,6 +138,13 @@ void _nmod_poly_mat_permute_rows_by_sorting_vec(nmod_poly_mat_t mat,
                                                 slong * perm);
 
 
+
+void _nmod_poly_mat_permute_columns_by_sorting_vec(nmod_poly_mat_t mat,
+                                                slong r,
+                                                slong * vec,
+                                                slong * perm);
+
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* SWAP, PERMUTE, TRANSPOSE                                   */
