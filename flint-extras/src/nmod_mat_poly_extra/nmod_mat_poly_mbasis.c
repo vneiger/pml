@@ -125,12 +125,12 @@ _PROFILER_REGION_START
     const slong n = matp->c;
 
     // initialize output approximant basis with identity
-    // except when matp == 0: return appbas = x**order * identity
+    // except when matp == 0: return appbas = identity
     if (nmod_mat_poly_is_zero(matp))
     {
-        nmod_mat_poly_fit_length(appbas, order+1);
-        _nmod_mat_poly_set_length(appbas, order+1);
-        nmod_mat_one(appbas->coeffs + order);
+        nmod_mat_poly_fit_length(appbas, 1);
+        _nmod_mat_poly_set_length(appbas, 1);
+        nmod_mat_one(appbas->coeffs + 0);
 _PROFILER_REGION_STOP(t_others)
 _MBASIS_PROFILER_OUTPUT
         return;
