@@ -39,7 +39,7 @@ extern "C" {
  *      values should be at least 0 (even for zero columns in A
  *      "with entries arranged in non-decreasing order and bounding the 
  *       corresponding column degrees of A." 
- *    kappa, an integer >= 2, for the order of the order bases 
+ *    kappa, a double >= 2, for the order of the order bases 
  *              kappa * s instead of 3 *s in ZLS  
  *
  *  Output:
@@ -52,7 +52,7 @@ extern "C" {
  */
 
 int nmod_poly_mat_kernel(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat_t A, \
-                         const slong *ishift, const slong kappa); 
+                         const slong *ishift, const double kappa); 
 
 
 
