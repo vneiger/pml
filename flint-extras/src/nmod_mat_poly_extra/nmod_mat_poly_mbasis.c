@@ -125,19 +125,17 @@ _PROFILER_REGION_START
     const slong n = matp->c;
 
     // initialize output approximant basis with identity
-    // except when matp == 0: return appbas = identity
+    nmod_mat_poly_one(appbas);
+
+    // if matp == 0: return
     if (nmod_mat_poly_is_zero(matp))
     {
-        nmod_mat_poly_fit_length(appbas, 1);
-        _nmod_mat_poly_set_length(appbas, 1);
-        nmod_mat_one(appbas->coeffs + 0);
 _PROFILER_REGION_STOP(t_others)
 _MBASIS_PROFILER_OUTPUT
         return;
     }
-    else
-        nmod_mat_poly_one(appbas);
-    // -> ensures matp->length > 0 in what follows
+
+    // -> in what follows, matp->length > 0
 
     // residual matrix: m x n constant matrix, next coefficient of appbas *
     // matp to be annihilated
