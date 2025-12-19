@@ -19,6 +19,7 @@
 #include <flint/mpn_extras.h>
 #include <flint/longlong.h>
 #include <flint/ulong_extras.h>
+#include <stdint.h>
 
 #include "pml.h"
 
@@ -104,5 +105,207 @@ void nmod_multimod_CRT_CRT(nn_ptr out, nn_ptr *residues, ulong nb, nmod_multimod
 /* for i < nb, j < num_primes                                 */
 /*------------------------------------------------------------*/
 void nmod_multimod_CRT_reduce(nn_ptr *residues, nn_ptr input, ulong nb, nmod_multimod_CRT_t C);
+
+
+/*******************************************
+*  modular reduction with precomputation  *
+*******************************************/
+
+/* general */
+typedef struct
+{
+   ulong n;
+   ulong redp;
+   ulong shift;
+}
+nmod_redp_t;
+
+/* FLINT_BITS == 64, nbits < 32, storage uint64 */
+typedef struct
+{
+   ulong n;
+   ulong redp;
+   ulong shift;
+}
+nmod32_redp_t;
+
+/* nbits < 32, storage uint32 */
+typedef struct
+{
+   uint32_t n;
+   uint32_t redp;
+   uint32_t shift;
+}
+nmod32s_redp_t;
+
+/**************************
+*  ulong_extras, general  *
+**************************/
+
+/** Precomputation for modular reduction, general
+ * (supports up to FLINT_BITS in the number to reduce)
+ * Requirements: nbits == nbits(n) > 0
+ * Guarantee: reduced number is in [0,n+1]; for some n it is in [0,n]
+ * (TODO say more precisely which n have this)
+ * NOTE first row 64|nu|64 of table
+ */
+
+ULONG_EXTRAS_INLINE void n_red_precomp(ulong * redp, ulong * shift, ulong n, ulong nbits)
+{
+    FLINT_ASSERT(nbits > 0 && nbits <= FLINT_BITS);
+    *shift = nbits + FLINT_BITS - 1;
+    ulong FLINT_SET_BUT_UNUSED(rem);
+    udiv_qrnnd(*redp, rem, (UWORD(1) << (nbits - 1)), UWORD(0), n);
+}
+
+/** Modular reduction, given precomputation
+ * Requirements: those of n_red_precomp
+ * Output: in [0,n] or [0,n+1] (depends on n)
+ */
+ULONG_EXTRAS_INLINE ulong n_mod_redp_fast(ulong a, ulong n, ulong redp, ulong shift)
+{
+    ulong q, tmp;
+    umul_ppmm(q, tmp, a, redp);
+    return a - (q >> shift) * n;
+}
+
+ULONG_EXTRAS_INLINE ulong n_mod_redp(ulong a, ulong n, ulong redp, ulong shift)
+{
+    /* TODO call n_mod_redp_fast */
+    ulong q, tmp;
+    umul_ppmm(q, tmp, a, redp);
+    tmp = a - (q >> shift) * n;
+    if (tmp >= n)
+        tmp -= n;
+    return tmp;
+}
+
+/** Modular reduction, given precomputation
+ * Requirements: those of n_red_precomp, and nbits >= 33
+ * Output: ??
+ * TODO experimental!!
+ * based on 64 | nu | 64 of table, when nu >= 33
+ */
+ULONG_EXTRAS_INLINE ulong n_mod_redp_lazy(ulong a, ulong n, ulong redp, ulong shift)
+{
+    ulong q, a_red;
+    q = ((a >> 32) * (redp >> 32)) >> (shift - 64);
+    a_red = a - q * n;
+    return a_red;
+}
+
+ULONG_EXTRAS_INLINE ulong n_mod_redp_lazy_correct(ulong a, ulong n, ulong redp, ulong shift)
+{
+    ulong q, a_red;
+    q = ((a >> 32) * (redp >> 32)) >> (shift - 64);
+    a_red = a - q * n;
+    if (a_red >= n)
+        a_red -= n;
+    return a_red;
+}
+
+/**********************************
+*  ulong_extras, 64/32, uint64_t  *
+***********************************/
+
+/** Precomputation for modular reduction, general
+ * (supports up to 32 bits in the number to reduce)
+ * Requirements: nbits == nbits(n) > 0, FLINT_BITS == 64
+ * Guarantee: reduced number is in [0,n+1]; for some n it is in [0,n]
+ * (TODO say more precisely which n have this)
+ * NOTE first row 64|nu|32 of table
+ */
+
+ULONG_EXTRAS_INLINE void n32_red_precomp(ulong * redp, ulong * shift, ulong n, ulong nbits)
+{
+    FLINT_ASSERT(nbits > 0 && nbits <= FLINT_BITS/2);
+    *shift = nbits + 31;
+    *redp = (UWORD(1) << (nbits + 31)) / n;
+}
+
+/** Modular reduction, given precomputation
+ * Requirements: those of n_red_precomp
+ * Output: in [0,n] or [0,n+1] (depends on n)
+ */
+ULONG_EXTRAS_INLINE ulong n32_mod_redp_fast(ulong a, ulong n, ulong redp, ulong shift)
+{
+    ulong q = (a * redp) >> shift;
+    return a - q * n;
+}
+
+ULONG_EXTRAS_INLINE ulong n32_mod_redp(ulong a, ulong n, ulong redp, ulong shift)
+{
+    ulong a_red = n32_mod_redp_fast(a, n, redp, shift);
+    if (a_red >= n)
+        a_red -= n;
+    return a_red;
+}
+
+
+/**********************************
+*  ulong_extras, 64/32, uint32_t  *
+***********************************/
+
+/** Precomputation for modular reduction, general
+ * (supports up to 32 bits in the number to reduce)
+ * Requirements: nbits == nbits(n) > 0, FLINT_BITS == 64
+ * Guarantee: reduced number is in [0,n+1]; for some n it is in [0,n]
+ * (TODO say more precisely which n have this)
+ * NOTE first row 64|nu|32 of table
+ * TODO is the (u32) cast necessary?
+ */
+
+ULONG_EXTRAS_INLINE void n32s_red_precomp(uint32_t * redp, uint32_t * shift, uint32_t n, uint32_t nbits)
+{
+    FLINT_ASSERT(nbits > 0 && nbits <= FLINT_BITS/2);
+    *shift = nbits + 31;
+    *redp = (UWORD(1) << (nbits + 31)) / n;
+}
+
+/** Modular reduction, given precomputation
+ * Requirements: those of n_red_precomp
+ * Output: in [0,n] or [0,n+1] (depends on n)
+ */
+ULONG_EXTRAS_INLINE uint32_t n32s_mod_redp_fast(uint32_t a, uint32_t n, uint32_t redp, uint32_t shift)
+{
+    uint32_t q = ((ulong)a * redp) >> shift;
+    return a - q * n;
+}
+
+ULONG_EXTRAS_INLINE uint32_t n32s_mod_redp(uint32_t a, uint32_t n, uint32_t redp, uint32_t shift)
+{
+    uint32_t a_red = n32s_mod_redp_fast(a, n, redp, shift);
+    if (a_red >= n)
+        a_red -= n;
+    return a_red;
+}
+
+
+
+
+/**********
+*  nmod  *
+**********/
+
+NMOD_INLINE void nmod_redp_init(nmod_redp_t * mod, ulong n)
+{
+    mod->n = n;
+    ulong nbits = FLINT_BITS - flint_clz(n);
+    n_red_precomp(&mod->redp, &mod->shift, n, nbits);  /* selection to be done here? */
+}
+
+NMOD_INLINE void nmod32_redp_init(nmod32_redp_t * mod, ulong n)
+{
+    mod->n = n;
+    ulong nbits = FLINT_BITS - flint_clz(n);
+    n32_red_precomp(&mod->redp, &mod->shift, n, nbits);  /* selection to be done here? */
+}
+
+NMOD_INLINE void nmod32s_redp_init(nmod32s_redp_t * mod, uint32_t n)
+{
+    mod->n = n;
+    uint32_t nbits = FLINT_BITS - flint_clz(n);
+    n32s_red_precomp(&mod->redp, &mod->shift, n, nbits);  /* selection to be done here? */
+}
 
 #endif
