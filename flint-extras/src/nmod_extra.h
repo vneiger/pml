@@ -315,38 +315,47 @@ ULONG_EXTRAS_INLINE ulong n_mod_redp_lazy_correct(ulong a, ulong n, ulong redp, 
     return a_red;
 }
 
-/* /1* assumes a<n, b<n (or close to this) *1/ */
-/* ULONG_EXTRAS_INLINE ulong n_mod_mulmod_redp_lazy(ulong a, ulong b, ulong n, ulong redp, ulong shift) */
+/** Modular multiplication, given precomputation */
+/* assumes a<n, b<n (or close to this) */
+/* nbits == number of bits in n */
+/* ULONG_EXTRAS_INLINE ulong n_mod_mulmod_redp_lazy(ulong a, ulong b, ulong n, ulong redp, ulong nbits) */
 /* { */
 /*     ulong ab_hi, ab_lo, q, r; */
-/*     n_mul2(&ab_hi, &ab_lo, a, b); */
-/*     ab_hi = (ab_lo >> (shift-63)) + (ab_hi << (128 - shift));  /1* floor(a * b / 2**nbits) *1/ */
 
-/*     q = n_mulhi(ab_hi, redp);  /1* (ab_hi * redp) >> 63 *1/ */
-/*     r = ab_lo - q*n; */
+/*     /1* ab_lo = (a * b) % 2**64  |  ab_hi = (a * b) >> nbits *1/ */
+/*     n_mul2(&ab_hi, &ab_lo, a, b); */
+/*     ab_hi = (ab_lo >> nbits) + (ab_hi << (64 - nbits)); */
+
+/*     q = n_mulhi(ab_hi<<1, redp);  /1* (ab_hi * redp) >> 63 *1/ */
+/*     r = ab_lo - q * n; */
 /*     return r; */
 /* } */
 
+
+/** Modular multiplication, given precomputation */
 /* assumes a<n, b<n (or close to this) */
-/* TODO currently wrong but tries to minimize shifts, maybe can be done like this with proper pre/post-shifting */
-ULONG_EXTRAS_INLINE ulong n_mod_mulmod_redp_lazy(ulong a, ulong b, ulong n, ulong redp, ulong shift)
+/* nbits == number of bits in n */
+ULONG_EXTRAS_INLINE ulong n_mod_mulmod_redp_lazy(ulong a, ulong b, ulong n, ulong redp, ulong nbits)
 {
     ulong ab_hi, ab_lo, q, r;
-    n_mul2(&ab_hi, &ab_lo, a, b);
-    q = n_mulhi(ab_hi, redp);
+
+    /* ab_lo = (a * b) % 2**64  |  ab_hi = (a * b) >> nbits */
+    umul_ppmm(ab_hi, ab_lo, a, b);
+    ab_hi = (ab_lo >> nbits) + (ab_hi << (64 - nbits));
+
+    umul_ppmm(q, r, ab_hi<<1, redp);  /* (ab_hi * redp) >> 63 */
     r = ab_lo - q * n;
     return r;
 }
 
-
 /* assumes a<n, b<n (or close to this) */
-ULONG_EXTRAS_INLINE ulong n_mod_mulmod_redp(ulong a, ulong b, ulong n, ulong redp, ulong shift)
+ULONG_EXTRAS_INLINE ulong n_mod_mulmod_redp(ulong a, ulong b, ulong n, ulong redp, ulong nbits)
 {
-    ulong r = n_mod_mulmod_redp_lazy(a, b, n, redp, shift);
+    ulong r = n_mod_mulmod_redp_lazy(a, b, n, redp, nbits);
+    if (r >= 2*n)
+        return r - 2*n;
     if (r >= n)
-        r -= n;
-    if (r >= n)
-        r -= n;
+        return r - n;
     return r;
 }
 
