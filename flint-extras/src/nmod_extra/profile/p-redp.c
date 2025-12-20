@@ -93,6 +93,19 @@ FLINT_STATIC_NOINLINE void _loop_n_mod_redp_lazy_correct(nn_ptr xr, nn_srcptr x,
         xr[i] = n_mod_redp_lazy_correct(x[i], n, redp, shift);
 }
 
+FLINT_STATIC_NOINLINE void _loop_n_mod_mulmod_redp_lazy(nn_ptr xr, nn_srcptr x, nn_srcptr y, ulong n, ulong redp, ulong shift, slong N)
+{
+    slong i;
+    for (i = 0; i < N; i++)
+        xr[i] = n_mod_mulmod_redp_lazy(x[i], y[i], n, redp, shift);
+}
+
+FLINT_STATIC_NOINLINE void _loop_n_mod_mulmod_redp(nn_ptr xr, nn_srcptr x, nn_srcptr y, ulong n, ulong redp, ulong shift, slong N)
+{
+    slong i;
+    for (i = 0; i < N; i++)
+        xr[i] = n_mod_mulmod_redp(x[i], y[i], n, redp, shift);
+}
 
 int main()
 {
@@ -104,7 +117,7 @@ int main()
     nmod_redp_t modp;
     nmod32_redp_t modp_32;
     nmod32s_redp_t modp_32s;
-    nn_ptr x, xr;
+    nn_ptr x, y, xr;
     n32_ptr x_32, xr_32;
     ulong t_tmp;
     ulong pbits;
@@ -119,6 +132,7 @@ int main()
     N = 1000;
 
     x = _nmod_vec_init(N);
+    y = _nmod_vec_init(N);
     xr = _nmod_vec_init(N);
     x_32 = _nmod32_vec_init(N);
     xr_32 = _nmod32_vec_init(N);
@@ -238,10 +252,33 @@ int main()
                 flint_printf("!! Warning9 !!\n");
         }
 
+        for (i = 0; i < N; i++)
+        {
+            x[i] = n_randlimb(state) % n;
+            y[i] = n_randlimb(state) % n;
+        }
+
+        t_tmp = n_mulmod2(x[0], y[0], n);
+
+        TIMEIT_START;
+        _loop_n_mod_mulmod_redp_lazy(xr, x, y, n, modp.redp, modp.shift, N);
+        TIMEIT_STOP_VALUES(tcpu, t1);
+        PRINTF2("n_mod_mulmod_redp_lazy", t1);
+        if ((t_tmp != xr[0]) && (t_tmp != xr[0] + n) && (t_tmp != xr[0] + 2*n))
+            flint_printf("!! Warning10 !!\n");
+
+        TIMEIT_START;
+        _loop_n_mod_mulmod_redp(xr, x, y, n, modp.redp, modp.shift, N);
+        TIMEIT_STOP_VALUES(tcpu, t1);
+        PRINTF2("n_mod_mulmod_redp", t1);
+        if (t_tmp != xr[0])
+            flint_printf("!! Warning11 !!\n");
+
         flint_printf("\n");
     }
 
     _nmod_vec_clear(x);
+    _nmod_vec_clear(y);
     _nmod_vec_clear(xr);
     _nmod32_vec_clear(x_32);
     _nmod32_vec_clear(xr_32);

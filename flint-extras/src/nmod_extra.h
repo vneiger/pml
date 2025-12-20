@@ -180,30 +180,6 @@ ULONG_EXTRAS_INLINE ulong n_mod_redp(ulong a, ulong n, ulong redp, ulong shift)
     return tmp;
 }
 
-/** Modular reduction, given precomputation
- * Requirements: those of n_red_precomp, and nbits >= 33
- * Output: ??
- * TODO experimental!!
- * based on 64 | nu | 64 of table, when nu >= 33
- */
-ULONG_EXTRAS_INLINE ulong n_mod_redp_lazy(ulong a, ulong n, ulong redp, ulong shift)
-{
-    ulong q, a_red;
-    q = ((a >> 32) * (redp >> 32)) >> (shift - 64);
-    a_red = a - q * n;
-    return a_red;
-}
-
-ULONG_EXTRAS_INLINE ulong n_mod_redp_lazy_correct(ulong a, ulong n, ulong redp, ulong shift)
-{
-    ulong q, a_red;
-    q = ((a >> 32) * (redp >> 32)) >> (shift - 64);
-    a_red = a - q * n;
-    if (a_red >= n)
-        a_red -= n;
-    return a_red;
-}
-
 /**********************************
 *  ulong_extras, 64/32, uint64_t  *
 ***********************************/
@@ -306,6 +282,72 @@ NMOD_INLINE void nmod32s_redp_init(nmod32s_redp_t * mod, uint32_t n)
     mod->n = n;
     uint32_t nbits = FLINT_BITS - flint_clz(n);
     n32s_red_precomp(&mod->redp, &mod->shift, n, nbits);  /* selection to be done here? */
+}
+
+
+
+
+/**********************
+*  !!experimental!!  *
+**********************/
+
+/** Modular reduction, given precomputation
+ * Requirements: those of n_red_precomp, and nbits >= 33
+ * Output: ??
+ * TODO experimental!!
+ * based on 64 | nu | 64 of table, when nu >= 33
+ */
+ULONG_EXTRAS_INLINE ulong n_mod_redp_lazy(ulong a, ulong n, ulong redp, ulong shift)
+{
+    ulong q, a_red;
+    q = ((a >> 32) * (redp >> 32)) >> (shift - 64);
+    a_red = a - q * n;
+    return a_red;
+}
+
+ULONG_EXTRAS_INLINE ulong n_mod_redp_lazy_correct(ulong a, ulong n, ulong redp, ulong shift)
+{
+    ulong q, a_red;
+    q = ((a >> 32) * (redp >> 32)) >> (shift - 64);
+    a_red = a - q * n;
+    if (a_red >= n)
+        a_red -= n;
+    return a_red;
+}
+
+/* /1* assumes a<n, b<n (or close to this) *1/ */
+/* ULONG_EXTRAS_INLINE ulong n_mod_mulmod_redp_lazy(ulong a, ulong b, ulong n, ulong redp, ulong shift) */
+/* { */
+/*     ulong ab_hi, ab_lo, q, r; */
+/*     n_mul2(&ab_hi, &ab_lo, a, b); */
+/*     ab_hi = (ab_lo >> (shift-63)) + (ab_hi << (128 - shift));  /1* floor(a * b / 2**nbits) *1/ */
+
+/*     q = n_mulhi(ab_hi, redp);  /1* (ab_hi * redp) >> 63 *1/ */
+/*     r = ab_lo - q*n; */
+/*     return r; */
+/* } */
+
+/* assumes a<n, b<n (or close to this) */
+/* TODO currently wrong but tries to minimize shifts, maybe can be done like this with proper pre/post-shifting */
+ULONG_EXTRAS_INLINE ulong n_mod_mulmod_redp_lazy(ulong a, ulong b, ulong n, ulong redp, ulong shift)
+{
+    ulong ab_hi, ab_lo, q, r;
+    n_mul2(&ab_hi, &ab_lo, a, b);
+    q = n_mulhi(ab_hi, redp);
+    r = ab_lo - q * n;
+    return r;
+}
+
+
+/* assumes a<n, b<n (or close to this) */
+ULONG_EXTRAS_INLINE ulong n_mod_mulmod_redp(ulong a, ulong b, ulong n, ulong redp, ulong shift)
+{
+    ulong r = n_mod_mulmod_redp_lazy(a, b, n, redp, shift);
+    if (r >= n)
+        r -= n;
+    if (r >= n)
+        r -= n;
+    return r;
 }
 
 #endif
