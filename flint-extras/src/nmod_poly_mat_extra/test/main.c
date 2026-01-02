@@ -30,17 +30,17 @@
 
 test_struct tests[] =
 {
-    TEST_FUNCTION(nmod_poly_mat_middle_product_geometric),
-    TEST_FUNCTION(nmod_poly_mat_mul_geometric),
     TEST_FUNCTION(nmod_poly_mat_det),
     TEST_FUNCTION(nmod_poly_mat_dixon),
     TEST_FUNCTION(nmod_poly_mat_hnf),
+    TEST_FUNCTION(nmod_poly_mat_kernel_zls),
     TEST_FUNCTION(nmod_poly_mat_mbasis),
+    TEST_FUNCTION(nmod_poly_mat_middle_product_geometric),
+    TEST_FUNCTION(nmod_poly_mat_mul_geometric),
     TEST_FUNCTION(nmod_poly_mat_pmbasis),
     /* TEST_FUNCTION(nmod_poly_mat_mul_waksman), */  /* TODO */
     TEST_FUNCTION(nmod_poly_mat_rand),
     TEST_FUNCTION(nmod_poly_mat_weak_popov_form),
-    TEST_FUNCTION(nmod_poly_mat_kernel)
 };
 
 /* main function *************************************************************/
