@@ -7,40 +7,54 @@
 #include <flint/nmod_poly_mat.h>
 
 #include "nmod_poly_mat_utils.h"
-#include "nmod_poly_mat_multiply.h"
+#include "nmod_poly_mat_kernel.h"
 
 #define MEASURE_SAMPLE 0
 
+/* Shift types are:
+ * -1 -> [TODO not implemented yet] negative shift that represents known degree bound on a kernel basis
+ * 0 -> uniform, shift == (0,...,0)
+ * 1 -> input degrees: shift == row degrees of input matrix
+ * 100 -> shift that yields the kernel basis Hermite form
+ * */
+
 typedef struct
 {
-    slong rdim;  /* row outer dimension */
-    slong idim;  /* inner dimension */
-    slong cdim;  /* column outer dimension */
+    slong rdim;  /* row dimension */
+    slong cdim;  /* column dimension */
     slong deg;   /* degree */
+    slong rank;  /* rank */
+    slong stype; /* shift type */
     slong modn;  /* modulus */
 }
 time_args;
 
-#define TIME_MUL(fun)                                   \
+#define TIME_KER(fun)                                   \
 void time_##fun(time_args targs, flint_rand_t state)    \
 {                                                       \
     const slong rdim = targs.rdim;                      \
-    const slong idim = targs.idim;                      \
     const slong cdim = targs.cdim;                      \
     const slong deg = targs.deg;                        \
+    const slong rank = targs.rank; /* TODO */           \
+    const slong stype = targs.stype; /* TODO */         \
     const slong n = targs.modn;                         \
                                                         \
     nmod_t mod;                                         \
     nmod_init(&mod, n);                                 \
                                                         \
-    nmod_poly_mat_t A;                                  \
-    nmod_poly_mat_init(A, rdim, idim, n);               \
-    nmod_poly_mat_rand(A, state, deg);                  \
-    nmod_poly_mat_t B;                                  \
-    nmod_poly_mat_init(B, idim, cdim, n);               \
-    nmod_poly_mat_rand(B, state, deg);                  \
-    nmod_poly_mat_t C;                                  \
-    nmod_poly_mat_init(C, rdim, cdim, n);               \
+    nmod_poly_mat_t F;                                  \
+    nmod_poly_mat_init(F, rdim, cdim, n);               \
+    nmod_poly_mat_rand(F, state, deg);                  \
+                                                        \
+    /* TMP */                                           \
+    nmod_poly_mat_t Ft;                                 \
+    nmod_poly_mat_init(Ft, cdim, rdim, n);              \
+    nmod_poly_mat_transpose(Ft, F);                     \
+    /* END TMP */                                       \
+                                                        \
+    nmod_poly_mat_t K;                                  \
+    nmod_poly_mat_init(K, rdim, rdim, n);               \
+    nmod_poly_mat_kernel(K, degN, Ft, ishift, 3.);      \
                                                         \
     double FLINT_SET_BUT_UNUSED(tcpu), twall;           \
                                                         \
@@ -55,8 +69,7 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     nmod_poly_mat_clear(C);                             \
 }
 
-TIME_MUL(mul)
-TIME_MUL(mul_geometric)
+TIME_KER(mul)
 
 /*-------------------------*/
 /*  main                   */
@@ -85,7 +98,6 @@ int main(int argc, char ** argv)
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
         time_mul,                      // 0
-        time_mul_geometric,            // 1
     };
 
     // TODO
@@ -102,12 +114,13 @@ int main(int argc, char ** argv)
 
     if (argc == 1)  // show usage
     {
-        printf("Usage: `%s [nbits] [dim] [deg] [fun]`\n", argv[0]);
+        printf("Usage: `%s [nbits] [rdim] [cdim] [deg] [rank] [fun]`\n", argv[0]);
         printf("   Each argument is optional; no argument shows this help.\n");
         printf("   - nbits: number of bits (in (1..64]) for the modulus, chosen as nextprime(2**(nbits-1))\n");
         printf("        (nbits == -1 launches full suite)\n");
-        printf("   - dim: matrices are dim x dim\n");
-        printf("   - deg: matrices are random of degree < deg\n");
+        printf("   - rdim, cdim: input matrix is rdim x cdim\n");
+        printf("   - deg: matrix is random of degree < deg\n");
+        printf("   - rank: matrix is random of this rank\n");
         printf("   - fun: id number of the timed function (see below),\n");
         printf("\nAvailable functions:\n");
         for (slong j = 0; j < nfuns; j++)
