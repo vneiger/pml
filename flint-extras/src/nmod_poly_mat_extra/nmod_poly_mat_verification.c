@@ -11,7 +11,6 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
                                        const slong * shift,
                                        orientation_t orient)
 {
-    // context
     const slong rdim = pmat->r;
     const slong cdim = pmat->c;
     const ulong prime = pmat->modulus;
@@ -26,26 +25,26 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
 
     int success = 1;
 
-    // check appbas is square with the right dimension
+    /* check appbas is square with the right dimension */
     if (appbas->r != rdim || appbas->c != rdim)
     {
         printf("basis has wrong row dimension or column dimension\n");
         success = 0;
     }
 
-    // check appbas has form at least "form"
+    /* check appbas is shifted reduced */
     if (!nmod_poly_mat_is_ordered_weak_popov(appbas, shift, orient))
     {
-        printf("basis is not shifted-reduced\n");
+        printf("basis is not shifted-weak Popov\n");
         success = 0;
     }
 
-    // compute residual, check rows of appbas are approximants
+    /* compute residual, check rows of appbas are approximants */
     nmod_poly_mat_mul(residual, appbas, pmat);
 
-    for(slong i = 0; i < rdim; i++)
+    for (slong i = 0; i < rdim; i++)
     {
-        for(slong j = 0; j < cdim; j++)
+        for (slong j = 0; j < cdim; j++)
         {
             nmod_poly_set_trunc(pol, nmod_poly_mat_entry(residual, i, j), order);
             if (!nmod_poly_is_zero(pol))
@@ -56,10 +55,11 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
         }
     }
 
-    // check generation: follows ideas from Algorithm 1 in Giorgi-Neiger, ISSAC 2018
+    /* check generation: follows ideas from Algorithm 1 in Giorgi-Neiger, ISSAC 2018 */
 
-    // generation, test 1: check determinant of appbas is lambda * x**D
-    // since ordered weak Popov, deg-det is sum of diagonal degrees
+    /* generation, test 1: check determinant of appbas is lambda * x**D      *
+     * since ordered weak Popov, deg(det(appbas)) is sum of diagonal degrees *
+     */
     slong D = 0;
     for (slong i = 0; i < rdim; i++)
         D += nmod_poly_degree(nmod_poly_mat_entry(appbas, i, i));
@@ -70,9 +70,10 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
         success = 0;
     }
 
-    // generation, test 2: check that [P(0)  C] has full rank
-    // where C = (appbas * pmat * X^{-order})  mod X
-    // (coefficient "C" of degree order of the residual)
+    /* generation, test 2: check that [P(0)  C] has full rank *
+     * where C = (appbas * pmat * X^{-order})  mod X          *
+     * (coefficient "C" of degree order of the residual)      *
+     **/
     for (slong i = 0; i < rdim; i++)
     {
         for (slong j = 0; j < rdim; j++)
@@ -97,6 +98,61 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
     nmod_poly_clear(pol);
     nmod_poly_mat_clear(residual);
     nmod_mat_clear(CP0);
+
+    return success;
+}
+
+/* TODO currently specialized to ROW_LOWER (or at least ROW_stuff) */
+/* -> checks whether ker is a shift-ordered weak Popov left kernel basis of pmat */
+int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
+                            const nmod_poly_mat_t pmat,
+                            const slong * shift,
+                            orientation_t orient)
+{
+    const slong rdim = pmat->r;
+    const slong cdim = pmat->c;
+    const slong kdim = ker->r;
+    const ulong prime = pmat->modulus;
+
+    nmod_poly_mat_t residual;
+    nmod_poly_mat_init(residual, kdim, cdim, prime);
+
+    int success = 1;
+
+    /* check kernel has the right column dimension */
+    if (ker->c != rdim)
+    {
+        printf("basis has wrong column dimension\n");
+        success = 0;
+    }
+
+    /* check kernel is shifted reduced */
+    if (!nmod_poly_mat_is_ordered_weak_popov(ker, shift, orient))
+    {
+        printf("basis is not shifted-weak Popov\n");
+        success = 0;
+    }
+
+    /* compute residual, check rows of ker are in the kernel */
+    /* TODO enhancement: offer randomized option, using Freivalds-like randomized strategy (see ntl-extras) */
+    nmod_poly_mat_mul(residual, ker, pmat);
+    if (!nmod_poly_mat_is_zero(residual))
+    {
+        printf("not all rows are in the kernel\n");
+        success = 0;
+    }
+
+    /* check rank */
+    slong rk = nmod_poly_mat_rank(pmat);
+    if (kdim != rdim - rk)
+    {
+        printf("number of rows does not equal nullity\n");
+        success = 0;
+    }
+
+    /* !! TODO check generation !! */
+
+    nmod_poly_mat_clear(residual);
 
     return success;
 }

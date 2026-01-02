@@ -20,6 +20,7 @@
 
 // test one given input
 /* TODO does not test generation */
+/* TODO does not test reducedness */
 /* TODO does not seem tested with shifts */
 int core_test_kernel(const nmod_poly_mat_t mat)
 {

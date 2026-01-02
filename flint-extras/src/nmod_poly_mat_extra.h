@@ -63,6 +63,7 @@
 #include "nmod_poly_mat_kernel.h"
 
 
+
 // TODO remove once using flint's comp instead
 NMOD_POLY_MAT_INLINE void
 apply_perm_to_vector(slong *res, const slong *initial_vect,
@@ -72,9 +73,7 @@ apply_perm_to_vector(slong *res, const slong *initial_vect,
         res[perm[i]] = initial_vect[i];
 }
 
-/** \todo doc
- *  \todo move in suitable header
- **/
+/* TODO move in suitable header */
 void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat);
 
 // TODO implem + doc
@@ -85,6 +84,24 @@ void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat);
  *  \todo row reduction as in GJV (and via kernel?)
  *  \todo triangularization / Hermite
  */
+
+
+/*****************************
+*  Verification algorithms  *
+*****************************/
+
+int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
+                                       const nmod_poly_mat_t pmat,
+                                       slong order,
+                                       const slong * shift,
+                                       orientation_t orient);
+
+int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
+                            const nmod_poly_mat_t pmat,
+                            const slong * shift,
+                            orientation_t orient);
+
+
 
 #endif // NMOD_POLY_MAT_EXTRA_H
 
