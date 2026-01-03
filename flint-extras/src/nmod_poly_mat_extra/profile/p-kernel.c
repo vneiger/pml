@@ -68,7 +68,7 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     nmod_poly_mat_clear(Ft); /* TMP */                  \
 }
 
-TIME_KER(kernel)
+TIME_KER(kernel_zls)
 
 /*-------------------------*/
 /*  main                   */
@@ -100,7 +100,7 @@ int main(int argc, char ** argv)
     const slong nfuns = 1;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
-        time_kernel,                      // 0
+        time_kernel_zls,                      // 0
     };
 
     // TODO
@@ -148,7 +148,7 @@ int main(int argc, char ** argv)
     {
         /* rdim; cdim; deg; rank; stype; modn; */
         time_args targs = {8, 4, 1000, 4, 0, n_nextprime(UWORD(1) << 20, 0)};
-        time_kernel(targs, state);
+        time_kernel_zls(targs, state);
         printf(" ");
     }
     printf("\n\n");
