@@ -1,3 +1,15 @@
+/*
+    Copyright (C) 2025 Gilles Villard
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #include <math.h>
 #include <stdlib.h>
 
@@ -29,7 +41,6 @@
  *
  */
 
-
 // Dummy function for qsort
  int cmp(const void *a, const void *b)
 {
@@ -40,7 +51,6 @@
     if (*x > *y) return 1;
     return 0;
 }
-
 
 void _nmod_poly_mat_sort_permute_columns_zls(nmod_poly_mat_t M, slong *sdeg, \
                                             slong *perm, const slong *ishift)

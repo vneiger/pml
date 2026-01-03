@@ -1,3 +1,15 @@
+/*
+    Copyright (C) 2025 Vincent Neiger
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #include <flint/nmod_vec.h>
 #include "nmod_poly_mat_utils.h" // for permute_rows_by_sorting_vec
 #include "nmod_poly_mat_forms.h"
@@ -67,6 +79,3 @@ void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat)
         nmod_poly_mul(det, det, nmod_poly_mat_entry(view, i, i));
     nmod_poly_mat_window_clear(view);
 }
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

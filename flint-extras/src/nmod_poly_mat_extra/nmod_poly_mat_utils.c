@@ -1,8 +1,19 @@
+/*
+    Copyright (C) 2025 Vincent Neiger
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #include <stdlib.h> // for qsort
 #include <flint/nmod_poly.h>
 #include "nmod_poly_mat_utils.h"
 #include "nmod_mat_poly.h"
-
 
 /**********************************************************************
 *                    ROW ROTATION DOWNWARD/UPWARD                    *
@@ -165,7 +176,6 @@ void _nmod_poly_mat_permute_columns_by_sorting_vec(nmod_poly_mat_t mat,
 }
 
 
-
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* SET FROM MATRIX POLYNOMIAL                                 */
@@ -198,6 +208,3 @@ void nmod_poly_mat_set_trunc_from_mat_poly(nmod_poly_mat_t pmat,
             _nmod_poly_normalise(nmod_poly_mat_entry(pmat, i, j));
         }
 }
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
