@@ -19,6 +19,51 @@
 extern "C" {
 #endif
 
+/** \file nmod_poly_mat_kernel.h
+ * Definition (shifted minimal kernel basis).
+ * ------------------------------------------
+ * Consider:
+ *   - an m x n matrix of univariate polynomials F,
+ *   - a degree shift s (a list of m integers).
+ *
+ * A (left) kernel basis for F is a matrix over the univariate polynomials
+ * whose rows form a basis for the module
+ *   { p in K[X]^{1 x m}  |  p * F == 0 },
+ * whose rank is nz = m - rank(F), called the nullity of F. Such a basis
+ * matrix has dimensions nz x m and has full row rank.
+ *
+ * A kernel basis for (F,d) is said to be <em>a shift-minimal</em> (resp.
+ * <em>a shift-ordered weak Popov</em>, resp. <em>the shift-Popov</em>)
+ * kernel basis if it is in shift-reduced form (resp. in shift-ordered weak
+ * Popov form, resp. in shift-Popov form). See nmod_poly_mat_forms.h for
+ * definitions of these forms.
+ */
+
+/** \file nmod_poly_mat_kernel.h
+ * Conventions.
+ * ------------
+ * Apart from the general interfaces (TODO) which offer several choices of
+ * orientation, all other functions compute left kernel bases and use the
+ * following parameters:
+ *
+ * \param[out] ker the output kernel basis (cannot alias `pmat`)
+ * \param[in] pmat the input polynomial matrix (no restriction)
+ * \param[in,out] shift in: the input shift; and out: the output shifted row
+ * degree of `ker` (list of integers, length must be the number of rows of
+ * `pmat`)
+ *
+ * The computed `ker` is in shifted ordered weak Popov form, or in the canonical
+ * shifted Popov form when the name of the function indicates so.
+ */
+
+
+
+
+
+
+
+
+
 /**
  *
  *  Right shifted kernel of a polynomial matrix, assuming that the columns has been
