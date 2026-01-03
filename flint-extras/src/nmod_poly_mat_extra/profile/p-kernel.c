@@ -29,7 +29,7 @@ typedef struct
 }
 time_args;
 
-#define TIME_KER(fun)                                   \
+#define TIME_KER_ZLS(fun)                               \
 void time_##fun(time_args targs, flint_rand_t state)    \
 {                                                       \
     const slong rdim = targs.rdim;                      \
@@ -66,9 +66,47 @@ void time_##fun(time_args targs, flint_rand_t state)    \
                                                         \
     nmod_poly_mat_clear(F);                             \
     nmod_poly_mat_clear(Ft); /* TMP */                  \
+    nmod_poly_mat_clear(K);                             \
 }
 
-TIME_KER(kernel_zls)
+#define TIME_KER(fun)                                   \
+void time_##fun(time_args targs, flint_rand_t state)    \
+{                                                       \
+    const slong rdim = targs.rdim;                      \
+    const slong cdim = targs.cdim;                      \
+    const slong deg = targs.deg;                        \
+    /* const slong rank = targs.rank; */ /* TODO */           \
+    /* const slong stype = targs.stype; */ /* TODO */         \
+    const slong n = targs.modn;                         \
+                                                        \
+    nmod_t mod;                                         \
+    nmod_init(&mod, n);                                 \
+                                                        \
+    nmod_poly_mat_t pmat;                               \
+    nmod_poly_mat_init(pmat, rdim, cdim, n);            \
+    nmod_poly_mat_rand(pmat, state, deg);               \
+                                                        \
+    slong pivind[rdim];                                 \
+    slong shift[rdim];                                  \
+    for (slong i = 0; i < rdim; i++)                    \
+        shift[i] = 0;                                   \
+    nmod_poly_mat_t ker;                                \
+    nmod_poly_mat_init(ker, rdim, rdim, n);             \
+                                                        \
+    double FLINT_SET_BUT_UNUSED(tcpu), twall;           \
+                                                        \
+    TIMEIT_START;                                       \
+    nmod_poly_mat_##fun(ker, pivind, shift, pmat);      \
+    TIMEIT_STOP_VALUES(tcpu, twall);                    \
+                                                        \
+    printf("%.2e", twall);                              \
+                                                        \
+    nmod_poly_mat_clear(pmat);                          \
+    nmod_poly_mat_clear(ker);                           \
+}
+
+TIME_KER_ZLS(kernel_zls)
+TIME_KER(kernel_via_approx)
 
 /*-------------------------*/
 /*  main                   */
@@ -97,10 +135,11 @@ int main(int argc, char ** argv)
     /* TODO shift type */
 
     // bench functions
-    const slong nfuns = 1;
+    const slong nfuns = 2;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
-        time_kernel_zls,                      // 0
+        time_kernel_via_approx,               // 0
+        time_kernel_zls,                      // 1
     };
 
     // TODO
@@ -148,7 +187,7 @@ int main(int argc, char ** argv)
     {
         /* rdim; cdim; deg; rank; stype; modn; */
         time_args targs = {8, 4, 1000, 4, 0, n_nextprime(UWORD(1) << 20, 0)};
-        time_kernel_zls(targs, state);
+        time_kernel_via_approx(targs, state);
         printf(" ");
     }
     printf("\n\n");

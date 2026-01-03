@@ -100,11 +100,9 @@ slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
     const slong order = FLINT_MIN(m, n) * d + amp + d + 1;
 
     /* compute approximant basis and shifted row degree */
-    nmod_poly_mat_t appbas;
-    nmod_poly_mat_init(appbas, m, m, pmat->modulus);
-    nmod_poly_mat_pmbasis(appbas, pivind, pmat, order);
+    nmod_poly_mat_pmbasis(ker, pivind, pmat, order);
 
-    /* find rows which belong to the kernel and record their pivot information */
+    /* gather information for rows which belong to the kernel */
     /* note: at this stage, pivind == rdeg_s(appbas) */
     slong nz = 0;
     for (slong i = 0; i < m; i++)
@@ -113,18 +111,13 @@ slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
         {
             shift[nz] = pivind[i];
             pivind[nz] = i;
+            for (slong j = 0; j < m; j++)
+                FLINT_SWAP(nmod_poly_struct,
+                           *nmod_poly_mat_entry(ker, nz, j),
+                           *nmod_poly_mat_entry(ker, i, j));
             nz += 1;
         }
     }
-
-    /* swap the kernel rows */
-    for (slong i = 0; i < nz; i++)
-        for (slong j = 0; j < m; j++)
-            FLINT_SWAP(nmod_poly_struct,
-                       *nmod_poly_mat_entry(ker, i, j),
-                       *nmod_poly_mat_entry(appbas, pivind[i], j));
-
-    nmod_poly_mat_clear(appbas);
 
     return nz;
 }
