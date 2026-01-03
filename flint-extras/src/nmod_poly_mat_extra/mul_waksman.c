@@ -1,3 +1,15 @@
+/*
+    Copyright (C) 2025 Éric Schost
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
 
@@ -12,7 +24,7 @@ void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  cons
     n = B->r;
     p = B->c;
     mod = A->modulus;
-    
+
     if (m < 1 || n < 1 || p < 1)
     {
         nmod_poly_mat_zero(C);
@@ -29,7 +41,7 @@ void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  cons
         return;
     }
 
-    half = (mod+1) >> 1; // 1/2 
+    half = (mod+1) >> 1; // 1/2
 
     nmod_poly_init(val0, mod);
     nmod_poly_init(val1, mod);
@@ -54,14 +66,14 @@ void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  cons
     for (j = 1; j <= np; j++)
     {
         j2 = (j << 1) - 1;
-    
+
         for (k = 0; k < p; k++)
         {
             nmod_poly_add(val1, nmod_poly_mat_entry(A, 0, j2-1), nmod_poly_mat_entry(B, j2, k));
             nmod_poly_add(val2, nmod_poly_mat_entry(A, 0, j2), nmod_poly_mat_entry(B, j2-1, k));
             nmod_poly_mul(val1, val1, val2);
             nmod_poly_add(nmod_poly_mat_entry(C, 0, k), nmod_poly_mat_entry(C, 0, k), val1);
-            
+
             nmod_poly_sub(val1, nmod_poly_mat_entry(A, 0, j2-1), nmod_poly_mat_entry(B, j2, k));
             nmod_poly_sub(val2, nmod_poly_mat_entry(A, 0, j2), nmod_poly_mat_entry(B, j2-1, k));
             nmod_poly_mul(val1, val1, val2);
@@ -74,13 +86,13 @@ void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  cons
             nmod_poly_add(val2, nmod_poly_mat_entry(A, l, j2), nmod_poly_mat_entry(B, j2-1, 0));
             nmod_poly_mul(val1, val1, val2);
             nmod_poly_add(nmod_poly_mat_entry(C, l, 0), nmod_poly_mat_entry(C, l, 0), val1);
-            
+
             nmod_poly_sub(val1, nmod_poly_mat_entry(A, l, j2-1), nmod_poly_mat_entry(B, j2, 0));
             nmod_poly_sub(val2, nmod_poly_mat_entry(A, l, j2), nmod_poly_mat_entry(B, j2-1, 0));
             nmod_poly_mul(val1, val1, val2);
             nmod_poly_add(Ccol + l, Ccol + l, val1);
         }
-        
+
         for (k = 1; k < p; k++)
         {
             for (l = 1; l < m; l++)
@@ -92,7 +104,7 @@ void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  cons
             }
         }
     }
-    
+
     for (l=1; l<m; l++)
     {
         nmod_poly_add(val1, Ccol + l, nmod_poly_mat_entry(C, l, 0));
@@ -103,21 +115,21 @@ void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  cons
     nmod_poly_add(val1, Crow, nmod_poly_mat_entry(C, 0, 0));
     nmod_poly_scalar_mul_nmod(val0, val1, half);
     nmod_poly_sub(nmod_poly_mat_entry(C, 0, 0), nmod_poly_mat_entry(C, 0, 0), val0);
-    
+
     for (k = 1; k < p; k++)
     {
         nmod_poly_add(crow, Crow + k, nmod_poly_mat_entry(C, 0, k));
         nmod_poly_scalar_mul_nmod(val1, crow, half);
         nmod_poly_sub(nmod_poly_mat_entry(C, 0, k), nmod_poly_mat_entry(C, 0, k), val1);
         nmod_poly_sub(crow, val1, val0);
-        
+
         for (l = 1; l < m; l++)
         {
             nmod_poly_sub(val2, nmod_poly_mat_entry(C, l, k), crow);
             nmod_poly_sub(nmod_poly_mat_entry(C, l, k), val2, Ccol + l);
         }
     }
-    
+
     if (n & 1)
     {
         for (l = 0; l < m; l++)
@@ -130,17 +142,15 @@ void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  cons
 
     for (i = 0; i < p; i++)
         nmod_poly_clear(Crow+i);
-    
+
     for (i = 0; i < m; i++)
         nmod_poly_clear(Ccol+i);
-    
+
     flint_free(Crow);
     flint_free(Ccol);
-    
+
     nmod_poly_clear(val0);
     nmod_poly_clear(val1);
     nmod_poly_clear(val2);
     nmod_poly_clear(crow);
 }
-
-

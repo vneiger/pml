@@ -1,36 +1,47 @@
-#include <math.h> 
+/*
+    Copyright (C) 2025 Gilles Villard
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
+#include <math.h>
 #include <stdlib.h>
 
 #include "nmod_poly_mat_extra.h"
 #include "nmod_poly_mat_kernel.h"
 
 /**
- * 
+ *
  * The content of the file has not yet been tested very extensively
- * 
- */ 
+ *
+ */
 
 /**
- * 
- * In place, M is m x n, shifted column degrees 
- *   permute the columns in nondecreasing order 
- * 
- * Todo/to see: zero is set to degree 0 (not -1), for specific use 
+ *
+ * In place, M is m x n, shifted column degrees
+ *   permute the columns in nondecreasing order
+ *
+ * Todo/to see: zero is set to degree 0 (not -1), for specific use
  *     in ZLS algorithm for the kernel
- * 
+ *
  * Input:
  *  M  m x n
  *  ishift[m]
- * 
+ *
  * Output:
- *  M is modified in place 
- *  perm[n],initialized outside, the carried out permutation 
+ *  M is modified in place
+ *  perm[n],initialized outside, the carried out permutation
  *  sdeg[n] initialized outside
- * 
+ *
  */
- 
 
-// Dummy function for qsort 
+// Dummy function for qsort
  int cmp(const void *a, const void *b)
 {
     const slong *x = a;
@@ -41,7 +52,6 @@
     return 0;
 }
 
-
 void _nmod_poly_mat_sort_permute_columns_zls(nmod_poly_mat_t M, slong *sdeg, \
                                             slong *perm, const slong *ishift)
 {
@@ -51,7 +61,7 @@ void _nmod_poly_mat_sort_permute_columns_zls(nmod_poly_mat_t M, slong *sdeg, \
 
     nmod_poly_mat_column_degree(sdeg, M, ishift);
 
-    for (j=0; j<n; j++) 
+    for (j=0; j<n; j++)
         if (sdeg[j] < 0) sdeg[j]=0;
 
     _nmod_poly_mat_permute_columns_by_sorting_vec(M, n, sdeg, perm);
@@ -59,36 +69,36 @@ void _nmod_poly_mat_sort_permute_columns_zls(nmod_poly_mat_t M, slong *sdeg, \
 }
 
 /**
- *  
- *  Internal function 
- * 
- *  Right shifted kernel of a polynomial matrix, assuming that the columns has been 
- *     sorted by shifted degree 
- * 
+ *
+ *  Internal function
+ *
+ *  Right shifted kernel of a polynomial matrix, assuming that the columns has been
+ *     sorted by shifted degree
+ *
  *  Algorithm of Wei Zhou, George Labahn, and Arne Storjohann
  *   "Computing Minimal Nullspace Bases"
  *    ISSAC 2012, https://dl.acm.org/doi/abs/10.1145/2442829.2442881
- * 
- *  TODO/TO SEE: 
- *    
+ *
+ *  TODO/TO SEE:
+ *
  *  Input:
- *    A in m x n 
- *    ishift[n], NULL (the degrees are computed) or initialized outside, 
- *      the shift for the kernel   
+ *    A in m x n
+ *    ishift[n], NULL (the degrees are computed) or initialized outside,
+ *      the shift for the kernel
  *      values should be at least 0 (even for zero columns in A
- *      "with entries arranged in non-decreasing order and bounding the 
- *       corresponding column degrees of A." 
- *    kappa, a double >= 2, for the order of the order bases 
- *              kappa * s instead of 3 *s in ZLS  
- * 
+ *      "with entries arranged in non-decreasing order and bounding the
+ *       corresponding column degrees of A."
+ *    kappa, a double >= 2, for the order of the order bases
+ *              kappa * s instead of 3 *s in ZLS
+ *
  *  Output:
- *    returns the dimension w of the kernel, which may be zero 
- *    N, n x w, is initialized here only when w > 0, 
+ *    returns the dimension w of the kernel, which may be zero
+ *    N, n x w, is initialized here only when w > 0,
  *           should be freed outside in that case only,
- *            gives a minimal basis of the right kernel   
+ *            gives a minimal basis of the right kernel
  *    degN[n], initialized outside, its first w entries are concerned,
- *        they are the ishift shift degrees of the kernel basis 
- * 
+ *        they are the ishift shift degrees of the kernel basis
+ *
  */
 
 int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat_t A, \
@@ -104,13 +114,13 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
     slong min_mn;
     slong rho=0;
 
-    // Tuning the order of the subsequent approximant 
+    // Tuning the order of the subsequent approximant
     // ----------------------------------------------
 
-    long shift[n]; // temporary variable 
+    long shift[n]; // temporary variable
 
 
-    // In order to sort for computing the order of the approximant, for the test m=1 to be ok 
+    // In order to sort for computing the order of the approximant, for the test m=1 to be ok
     for (i=0; i<n; i++)
     {
         shift[i]=ishift[i];
@@ -119,26 +129,26 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
 
     qsort(shift, n, sizeof(slong), cmp);
 
-    if (m <= n) 
+    if (m <= n)
     {
         min_mn=m;
-        for (i=n-m; i<n; i++)   
-            rho+=shift[i];   
+        for (i=n-m; i<n; i++)
+            rho+=shift[i];
     }
-    else 
-    {   // No sort needed, we consider all degrees 
+    else
+    {   // No sort needed, we consider all degrees
         min_mn=n;
-        for (i=0; i<n; i++)   
-            rho+=ishift[i];  
-        // printf("\n m > n  %ld  %ld",m,n);   // To see, rectangular case 
-    }  
+        for (i=0; i<n; i++)
+            rho+=ishift[i];
+        // printf("\n m > n  %ld  %ld",m,n);   // To see, rectangular case
+    }
 
 
     slong s;
-    s = ceil((double) rho/min_mn); 
+    s = ceil((double) rho/min_mn);
 
-    // Transposed A for the approximant PT on the left 
-    // PT will then be use without transposing 
+    // Transposed A for the approximant PT on the left
+    // PT will then be use without transposing
 
     nmod_poly_mat_t AT;
     nmod_poly_mat_init(AT, n, m, A->modulus);
@@ -147,33 +157,33 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
     nmod_poly_mat_t PT;
     nmod_poly_mat_init(PT, n, n, A->modulus);
 
-    // Approximant PT 
-    // shift is modified in place 
+    // Approximant PT
+    // shift is modified in place
     // --------------------------
 
     for (i=0; i<n; i++)
     {
         shift[i]=ishift[i];
     }
-    
+
     slong ks;
-    ks=ceil((double) kappa*s); 
+    ks=ceil((double) kappa*s);
     nmod_poly_mat_pmbasis(PT, shift, AT, ks+1);
 
     // Looking for zero residues and non zero residues
-    //  the global residue is reused later 
+    //  the global residue is reused later
     // -----------------------------------------------
 
     nmod_poly_mat_t RT;
     nmod_poly_mat_init(RT, n, m, A->modulus);
     nmod_poly_mat_mul(RT,PT,AT);
-    
+
     slong cdeg[n];
     nmod_poly_mat_row_degree(cdeg, RT, NULL);
 
     nmod_poly_mat_clear(AT);
 
-    // Zero residue matrix P1  n x n1 
+    // Zero residue matrix P1  n x n1
     // nonzero residues matrix P2  n x n2
     //-----------------------------------
 
@@ -181,7 +191,7 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
     slong n2;
 
     for (j=0; j<n; j++) {
-        if (cdeg[j]<0) 
+        if (cdeg[j]<0)
             n1+=1;
     }
 
@@ -201,10 +211,10 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
             }
         }
     }
-    
+
     n2=n-n1;
 
-    // the kernel is found 
+    // the kernel is found
     if (n2==0) {
         nmod_poly_mat_init_set(N,P1);
         nmod_poly_mat_column_degree(degN, P1, ishift);
@@ -232,13 +242,13 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
 
     //  Special case m=1
     //  before the divide and conquer on m
-    //  the kernel is found 
+    //  the kernel is found
     // -----------------------------------
 
-    if (m==1){  
+    if (m==1){
 
-        if (n1==0) 
-            return 0; 
+        if (n1==0)
+            return 0;
         else {
 
             nmod_poly_mat_init_set(N,P1);
@@ -250,7 +260,7 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
     }
 
     //  Now n2 <> 0 and m > 1
-    //    one can proceed to the divide and conquer from the rows 
+    //    one can proceed to the divide and conquer from the rows
     //    of the nonzero residue P2, and of A.P2
     // --------------------------------------------------------
 
@@ -259,15 +269,15 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
 
     slong degP2[n2];
 
-    // perm will be used also later for G from RT 
+    // perm will be used also later for G from RT
     _nmod_poly_mat_sort_permute_columns_zls(P2,degP2,perm,ishift);
 
     for (i = 0; i < n2; i++) {
-        degP2[i]=degP2[i]-ks;  // used below for the recursive calls 
+        degP2[i]=degP2[i]-ks;  // used below for the recursive calls
     }
 
 
-    //+++++++++ OLD 
+    //+++++++++ OLD
 
     // nmod_poly_mat_t G;
     // nmod_poly_mat_init(G, m, n2, A->modulus);
@@ -279,7 +289,7 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
 
 
     // nmod_poly_mat_shift_right(TT,G,ks);
-    
+
 
     // slong new_m=floor((double) m/2);
 
@@ -302,7 +312,7 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
     // }
 
 
-    //++++++++  END OLD 
+    //++++++++  END OLD
 
 
     //++++++++++ NEW ++++++++++++++
@@ -310,7 +320,7 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
     nmod_poly_mat_init(TT, m, n2, A->modulus);
 
     // We extract G (temporary TT) from RT as we have been extracting P2 from PT
-    //   and apply above ordering of P2 
+    //   and apply above ordering of P2
     k=0;
     for (j = 0; j < n; j++)
     {
@@ -330,7 +340,7 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
     nmod_poly_mat_init(G, m, n2, A->modulus);
 
     nmod_poly_mat_shift_right(G,TT,ks);
-    
+
 
     // We split G for the recursive call
     // ---------------------------------
@@ -359,7 +369,7 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
     nmod_poly_mat_clear(G);
     //++++++++++++++  END NEW ++++++++++++++++++
 
-    // Recursive calls 
+    // Recursive calls
     // ---------------
 
     nmod_poly_mat_t N1;
@@ -369,11 +379,11 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
     slong c2=0;
 
 
-    c1=nmod_poly_mat_zls_sorted(N1, degN, G1, degP2, kappa); 
+    c1=nmod_poly_mat_zls_sorted(N1, degN, G1, degP2, kappa);
 
 
     if (c1 != 0) {
-        
+
         nmod_poly_mat_t G3;
         nmod_poly_mat_init(G3, m-new_m, c1, A->modulus);
 
@@ -383,7 +393,7 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
             shift[i]=degN[i];
         }
 
-        c2=nmod_poly_mat_zls_sorted(N2, degN, G3, shift, kappa); 
+        c2=nmod_poly_mat_zls_sorted(N2, degN, G3, shift, kappa);
         nmod_poly_mat_clear(G3);
 
     }
@@ -392,12 +402,12 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
     nmod_poly_mat_clear(G1);
     nmod_poly_mat_clear(G2);
 
-    // the recursive calls did not provide anything more 
+    // the recursive calls did not provide anything more
 
     if ((c1==0) || (c2==0)){
 
         if (n1==0) {
-            return 0; 
+            return 0;
         }
         else {
             nmod_poly_mat_init_set(N,P1);
@@ -425,15 +435,15 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
 
     nmod_poly_mat_clear(N1);
     nmod_poly_mat_clear(N2);
-    nmod_poly_mat_clear(Q1);    
+    nmod_poly_mat_clear(Q1);
     nmod_poly_mat_clear(P2);
 
     if (n1 ==0) {
 
-        nmod_poly_mat_init_set(N,Q); // We should not need to copy 
+        nmod_poly_mat_init_set(N,Q); // We should not need to copy
         nmod_poly_mat_column_degree(degN, Q, ishift);
 
-        nmod_poly_mat_clear(Q); 
+        nmod_poly_mat_clear(Q);
         return c2;
 
     }
@@ -452,7 +462,7 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
             }
         }
 
-        slong odeg[n1+c2]; 
+        slong odeg[n1+c2];
 
         nmod_poly_mat_column_degree(odeg, P1, ishift);
 
@@ -466,54 +476,54 @@ int nmod_poly_mat_zls_sorted(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
             degN[i+n1]=odeg[i];
         }
 
-        nmod_poly_mat_clear(P1); 
-        nmod_poly_mat_clear(Q); 
-        
+        nmod_poly_mat_clear(P1);
+        nmod_poly_mat_clear(Q);
+
         return n1+c2;
 
     }
 
-    return 0; 
+    return 0;
 }
 
 
 /**
- *  
- *  Right shifted kernel of a polynomial matrix, assuming that the columns has been 
- *     sorted by shifted degree 
- * 
+ *
+ *  Right shifted kernel of a polynomial matrix, assuming that the columns has been
+ *     sorted by shifted degree
+ *
  *  Algorithm of Wei Zhou, George Labahn, and Arne Storjohann
  *   "Computing Minimal Nullspace Bases"
  *    ISSAC 2012, https://dl.acm.org/doi/abs/10.1145/2442829.2442881
- * 
- *  Calls nmod_poly_mat_zls_sorted after an initial sorting 
- * 
- *  TODO/TO SEE: 
- *    
- * Input: 
- *    iA in m x n 
- *     ishift[n], NULL (the degrees are computed) or initialized outside, 
- *      the shift for the kernel    
+ *
+ *  Calls nmod_poly_mat_zls_sorted after an initial sorting
+ *
+ *  TODO/TO SEE:
+ *
+ * Input:
+ *    iA in m x n
+ *     ishift[n], NULL (the degrees are computed) or initialized outside,
+ *      the shift for the kernel
  *      values should be at least 0 (even for zero columns in A
- *      "with entries arranged in non-decreasing order and bounding the 
- *       corresponding column degrees of A." 
- *    kappa, a double >= 2, for the order of the order bases 
- *              kappa * s instead of 3 *s in ZLS  
+ *      "with entries arranged in non-decreasing order and bounding the
+ *       corresponding column degrees of A."
+ *    kappa, a double >= 2, for the order of the order bases
+ *              kappa * s instead of 3 *s in ZLS
  *
  *  Output:
- *    returns the dimension w of the kernel, which may be zero 
- *    N, is initialized  n x n outside  
- *       its first w columns give a minimal basis of the kernel   
+ *    returns the dimension w of the kernel, which may be zero
+ *    N, is initialized  n x n outside
+ *       its first w columns give a minimal basis of the kernel
  *    degN[n], initialized outside, its first w entries are concerned,
- *        they are the ishift shifted degrees of the kernel basis 
- * 
+ *        they are the ishift shifted degrees of the kernel basis
+ *
  */
 
 /**
- *  Calls nmod_poly_mat_zls_sorted after an initial sorting 
+ *  Calls nmod_poly_mat_zls_sorted after an initial sorting
  */
 
-int nmod_poly_mat_kernel(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat_t iA, \
+int nmod_poly_mat_kernel_zls(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat_t iA, \
                          const slong *ishift, const double kappa)
 {
 
@@ -528,26 +538,26 @@ int nmod_poly_mat_kernel(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat_t i
     slong * perm = flint_malloc(n * sizeof(slong));
     slong sdeg[n];
 
-    // No input shift, simply the column degrees, then ordered 
+    // No input shift, simply the column degrees, then ordered
     //   a permutation is carried out in place
     // -------------------------------------------------------
 
     if (ishift == NULL) {
         nmod_poly_mat_column_degree(sdeg, A, NULL);
 
-        for (j=0; j<n; j++) 
+        for (j=0; j<n; j++)
             if (sdeg[j] < 0) sdeg[j]=0;
 
         _nmod_poly_mat_permute_columns_by_sorting_vec(A, n, sdeg, perm);
     }
-    // Input shift, we sort  
+    // Input shift, we sort
     // --------------------
-    else {  
+    else {
 
-        for (j=0; j<n; j++) 
+        for (j=0; j<n; j++)
             sdeg[j]=ishift[j];
 
-        _nmod_poly_mat_permute_columns_by_sorting_vec(A, n, sdeg, perm);        
+        _nmod_poly_mat_permute_columns_by_sorting_vec(A, n, sdeg, perm);
     }
 
     // Call to ZLS
@@ -574,19 +584,19 @@ int nmod_poly_mat_kernel(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat_t i
 
         nmod_poly_mat_clear(NT); // Since nz > 0
 
-        return nz; 
+        return nz;
     }
 
     flint_free(perm);
     nmod_poly_mat_clear(A);
 
-    return 0; 
-    
+    return 0;
+
 }
 
 
 /**
- * Experimental, should not be really considered  
+ * Experimental, should not be really considered
  *
  */
 
@@ -605,11 +615,11 @@ int nmod_poly_mat_approximant_kernel(nmod_poly_mat_t N, slong *degN, const nmod_
 
     slong degmax=deg[0];
     for (i=1; i<n; i++)
-        if (degmax < deg[i]) 
+        if (degmax < deg[i])
             degmax=deg[i];
 
     slong min_nm=n;
-    if (n >m) 
+    if (n >m)
         min_nm=m;
 
     nmod_poly_mat_t AT;
@@ -620,8 +630,8 @@ int nmod_poly_mat_approximant_kernel(nmod_poly_mat_t N, slong *degN, const nmod_
     nmod_poly_mat_init(PT, n, n, A->modulus);
 
 
-    // Approximant PT 
-    // shift is modified in place 
+    // Approximant PT
+    // shift is modified in place
     // --------------------------
 
     slong shift[n];
@@ -629,18 +639,18 @@ int nmod_poly_mat_approximant_kernel(nmod_poly_mat_t N, slong *degN, const nmod_
     {
         shift[i]=ishift[i];
     }
-    
+
     nmod_poly_mat_pmbasis(PT, shift, AT, degmax*(min_nm +1)+1);
 
 
     // Looking for zero residues and non zero residues
-    //  the global residue is reused later 
+    //  the global residue is reused later
     // -----------------------------------------------
 
     nmod_poly_mat_t RT;
     nmod_poly_mat_init(RT, n, m, A->modulus);
     nmod_poly_mat_mul(RT,PT,AT);
-    
+
     slong cdeg[n];
     nmod_poly_mat_row_degree(cdeg, RT, NULL);
 
@@ -648,7 +658,7 @@ int nmod_poly_mat_approximant_kernel(nmod_poly_mat_t N, slong *degN, const nmod_
     nmod_poly_mat_clear(RT);
 
 
-    // Zero residue matrix P1  
+    // Zero residue matrix P1
     //-----------------------
 
     slong n1=0;
@@ -663,7 +673,7 @@ int nmod_poly_mat_approximant_kernel(nmod_poly_mat_t N, slong *degN, const nmod_
     if (n1 > 0) {
 
         k=0;
-        
+
         for (j=0; j<n; j++) {
 
             if (cdeg[j]<0) {
@@ -676,10 +686,7 @@ int nmod_poly_mat_approximant_kernel(nmod_poly_mat_t N, slong *degN, const nmod_
         nmod_poly_mat_clear(PT);
         return n1;
     }
-    
-    nmod_poly_mat_clear(PT);
-    return 0; 
-}
 
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
+    nmod_poly_mat_clear(PT);
+    return 0;
+}

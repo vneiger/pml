@@ -108,7 +108,7 @@ int main(int argc, char ** argv)
         printf("        (nbits == -1 launches full suite)\n");
         printf("   - dim: matrices are dim x dim\n");
         printf("   - deg: matrices are random of degree < deg\n");
-        printf("   - deg: id number of the timed function (see below),\n");
+        printf("   - fun: id number of the timed function (see below),\n");
         printf("\nAvailable functions:\n");
         for (slong j = 0; j < nfuns; j++)
             printf("   %s\n", description[j]);
