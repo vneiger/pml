@@ -587,7 +587,7 @@ nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat
  * The functions here compute a `shift`-minimal ordered weak Popov approximant
  * basis for `(pmat,orders)` in the case where `orders` is given by a single
  * integer `orders = (order,...order)`. They iterate from `1` to `order`,
- * computing at each step a basis at order `1` (see @ref mbasis1) and using it
+ * computing at each step a basis at order `1` and using it
  * to update the output `appbas`, the so-called _residual matrix_, and the
  * considered shift. At step `d`, we have `appbas*pmat = 0 mod x^{d-1}`, and we
  * want to update `appbas` so that this becomes zero modulo `x^d`.
@@ -614,8 +614,8 @@ nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat
  * \todo integrate
  */
 // Complexity: pmat is m x n
-//   - 'order' calls to mbasis1 with dimension m x n, each one gives a
-//   constant matrix K which is generically m-n x m  (may have more rows in
+//   - 'order' calls to constant nullspace with dimension m x n, each one gives
+//   a constant matrix K which is generically m-n x m  (may have more rows in
 //   exceptional cases)
 //   - order products (X Id + K ) * appbas to update the approximant basis
 //   - order computations of "coeff k of appbas*pmat" to find residuals
@@ -639,8 +639,8 @@ nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat
 // Residual (X^-d appbas*pmat mod X^(order-d)) is continuously updated along
 // the iterations
 // Complexity: pmat is m x n
-//   - 'order' calls to mbasis1 with dimension m x n, each one gives a
-//   constant matrix K which is generically m-n x m  (may have more rows in
+//   - 'order' calls to constant nullspace with dimension m x n, each one gives
+//   a constant matrix K which is generically m-n x m  (may have more rows in
 //   exceptional cases)
 //   - order products (X Id + K ) * appbas to update the approximant basis
 //   - order-1 products (X Id + K ) * (matrix of degree order-ord) to update
@@ -675,7 +675,6 @@ nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat
 //    // To understand the threshold (cdim > rdim/2 + 1), see the complexities
 //    // mentioned above for these two variants of mbasis
 //}
-// TODO DOC (see @ref mbasis1)
 // TODO resupdate version
 // TODO general version with choice
 void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
