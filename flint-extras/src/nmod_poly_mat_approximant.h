@@ -182,14 +182,13 @@
  * \param[in] order order
  * \param[in] shift shift
  * \param[in] form required form for `appbas` (see #poly_mat_form_t)
- * \param[in] row_wise indicates whether to compute left approximants (working row-wise) or right approximants (working column-wise)
+ * \param[in] orient indicates the orientation (left/right approximants) and the definition of pivots
  * \param[in] randomized if `true`, the algorithm may use a Monte Carlo or Las Vegas verification algorithm
  *
  * \return boolean, result of the verification
  *
- * \todo add parameter row_wise
+ * \todo update documentation
  * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
- * \todo WARNING! for the moment, does not really check generation!
  * \todo WARNING! for the moment, hardcoded to check for ordered weak Popov
  */
 int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,

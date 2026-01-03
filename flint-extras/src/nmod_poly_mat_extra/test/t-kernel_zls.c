@@ -49,7 +49,7 @@ int core_test_kernel_zls(const nmod_poly_mat_t mat)
     nmod_poly_mat_init(Mt, n, m, mat->modulus);
     nmod_poly_mat_transpose(Mt, mat);
 
-    int verif = nmod_poly_mat_is_kernel(Nt, Mt, rdeg, ROW_LOWER);
+    int verif = nmod_poly_mat_is_kernel(Nt, nz, rdeg, Mt, ROW_LOWER);
 
     nmod_poly_mat_clear(N);
     nmod_poly_mat_clear(Nt);
@@ -65,14 +65,10 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel_zls, state)
 
     for (i = 0; i < 16 * flint_test_multiplier(); i++)
     {
-        ulong nbits = 2 + n_randint(state, 4);
-        ulong rdim = 1 + n_randint(state, 4);
-        ulong cdim = rdim + 1 + n_randint(state, 2);
-        ulong deg = n_randint(state, 5);
-        /* ulong nbits = 2 + n_randint(state, 30); */
-        /* ulong rdim = 1 + n_randint(state, 60); */
-        /* ulong cdim = rdim + 1 + n_randint(state, 20); */
-        /* ulong deg = n_randint(state, 20); */
+        ulong nbits = 2 + n_randint(state, 63);
+        ulong rdim = 1 + n_randint(state, 60);
+        ulong cdim = rdim + 1 + n_randint(state, 20);
+        ulong deg = n_randint(state, 20);
 
         ulong prime = n_randprime(state, nbits, 1);
 

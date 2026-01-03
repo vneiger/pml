@@ -116,8 +116,9 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
 /* TODO currently specialized to ROW_LOWER (or at least ROW_stuff) */
 /* -> checks whether ker is a shift-ordered weak Popov left kernel basis of pmat */
 int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
-                            const nmod_poly_mat_t pmat,
+                            slong nz,
                             const slong * shift,
+                            const nmod_poly_mat_t pmat,
                             orientation_t orient)
 {
     const slong rdim = pmat->r;
@@ -136,6 +137,15 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
         printf("basis has wrong column dimension\n");
         success = 0;
     }
+
+    if (ker->r < nz)
+    {
+        printf("basis has wrong row dimension\n");
+        success = 0;
+    }
+
+    /* for the rest of tests, pretend ker->r is nz (DIRT: bypass const..) */
+    ((nmod_poly_mat_struct *) ker)->r = nz;
 
     /* check kernel is shifted reduced */
     if (!nmod_poly_mat_is_ordered_weak_popov(ker, shift, orient))
@@ -160,13 +170,16 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
 
     /* check rank */
     slong rk = nmod_poly_mat_rank(pmat);
-    if (kdim != rdim - rk)
+    if (nz != rdim - rk)
     {
         printf("number of rows does not equal nullity\n");
         success = 0;
     }
 
     /* !! TODO check generation !! */
+
+    /* revert row dimension of ker (DIRT: bypass const..) */
+    ((nmod_poly_mat_struct *) ker)->r = kdim;
 
     nmod_poly_mat_clear(residual);
 

@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2025 Gilles Villard
+    Copyright (C) 2026 Vincent Neiger
 
     This file is part of PML.
 
@@ -10,11 +11,124 @@
     <https://www.gnu.org/licenses/>.
 */
 
+#include <flint/flint.h>
+#include <flint/nmod_mat.h>
+#include <flint/nmod_poly_mat.h>
+#include <flint/perm.h>
 #include <math.h>
 #include <stdlib.h>
 
 #include "nmod_poly_mat_extra.h"
 #include "nmod_poly_mat_kernel.h"
+
+/* /1* requires len >= 1 *1/ */
+/* FLINT_INLINE slong _slong_vec_amplitude(slong * vec, slong len) */
+/* { */
+/*     slong min = vec[0]; */
+/*     slong max = vec[0]; */
+/*     for (slong i = 1; i < len; i++) */
+/*     { */
+/*         slong v = vec[i]; */
+/*         if (v < min) */
+/*             min = v; */
+/*         if (v > max) */
+/*             max = v; */
+/*     } */
+/*     return max - min; */
+/* } */
+
+slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
+                                      slong * pivind,
+                                      slong * shift,
+                                      const nmod_poly_mat_t pmat)
+{
+    const slong m = pmat->r;
+    const slong n = pmat->c;
+    const slong d = nmod_poly_mat_degree(pmat);
+
+    /* pmat == 0 => kernel is identity*/
+    if (d == -1)
+    {
+        nmod_poly_mat_one(ker);
+        for (slong i = 0; i < m; i++)
+            pivind[i] = i;
+        return m;
+    }
+
+    /* pmat full row rank => empty kernel */
+    /* full row rank implied by m == 1 or (m <= n && constant coefficient has full rank) */
+    if (m == 1)
+    {
+        nmod_poly_mat_zero(ker);
+        return 0;
+    }
+
+    if (m <= n)
+    {
+        nmod_mat_t coeff0;
+        nmod_mat_init(coeff0, m, n, pmat->modulus);
+        nmod_poly_mat_get_coeff_mat(coeff0, pmat, 0);
+        /* could use:
+         * const slong r = nmod_mat_rank(coeff0);
+         * but let's call more directly its core computation
+         * (this uses pivind as temporary of length m for row permutation)
+         */
+        const slong r = nmod_mat_lu(pivind, coeff0, 1);
+        if (r == m)
+        {
+            nmod_poly_mat_zero(ker);
+            return 0;
+        }
+    }
+
+    /* compute amplitude of `shift`, make `pivind` a temporary copy of `shift` */
+    slong min = shift[0];
+    slong amp = shift[0];
+    for (slong i = 0; i < m; i++)
+    {
+        slong s = shift[i];
+        pivind[i] = s;
+        if (s < min)
+            min = s;
+        else if (s > amp)
+            amp = s;
+    }
+    amp = amp - min;
+
+    /* order for approximation: bound on rdeg_s(ker) + deg(pmat) + 1 */
+    /* (see notes at end of file for rdeg_s(ker)) */
+    const slong order = FLINT_MIN(m, n) * d + amp + d + 1;
+
+    /* compute approximant basis and shifted row degree */
+    nmod_poly_mat_t appbas;
+    nmod_poly_mat_init(appbas, m, m, pmat->modulus);
+    nmod_poly_mat_pmbasis(appbas, pivind, pmat, order);
+
+    /* find rows which belong to the kernel and record their pivot information */
+    /* note: at this stage, pivind == rdeg_s(appbas) */
+    slong nz = 0;
+    for (slong i = 0; i < m; i++)
+    {
+        if (pivind[i] - shift[i] + amp < order - d)
+        {
+            shift[nz] = pivind[i];
+            pivind[nz] = i;
+            nz += 1;
+        }
+    }
+
+    /* swap the kernel rows */
+    for (slong i = 0; i < nz; i++)
+        for (slong j = 0; j < m; j++)
+            FLINT_SWAP(nmod_poly_struct,
+                       *nmod_poly_mat_entry(ker, i, j),
+                       *nmod_poly_mat_entry(appbas, pivind[i], j));
+
+    nmod_poly_mat_clear(appbas);
+
+    return nz;
+}
+
 
 /**
  *
@@ -690,3 +804,39 @@ int nmod_poly_mat_approximant_kernel(nmod_poly_mat_t N, slong *degN, const nmod_
     nmod_poly_mat_clear(PT);
     return 0;
 }
+
+
+
+
+/*------------------------------------------------------------*/
+/*                          NOTES                             */
+/*------------------------------------------------------------*/
+
+/** Degree bounds for kernel bases.
+ *
+ * Assume pmat is m x n and has rank r. Let P be some shifted ordered weak
+ * Popov kernel basis P of `pmat` (for a given, arbitrary shift).
+ *
+ * From Theorem 3.3 in
+ *    Labahn, Neiger, Vu, Zhou
+ *    Proceedings ISSAC 2022 (https://arxiv.org/pdf/2202.09329)
+ * we get non-strict upper bounds on the sum of pivot degree of P:
+ *   - it is <= sum of degrees of the r largest-degree rows of pmat
+ *   - in particular, <= r * deg(pmat) <= min(m, n) * deg(pmat)
+ *   - it is <= sum of degrees of the r largest-degree columns of pmat
+ *   - in particular, <= sum of cdeg(pmat)
+ * The third item above is not found directly in the mentioned Theorem 3.3,
+ * but is deduced from its second item (part with deg(det(S)))
+ *
+ * The maximum of pivot degrees can be equal to their sum (although this is not
+ * expected generically). This gives bounds on the non-pivot part of P: pick
+ * one of the bounds above, and add the amplitude `max(shift) - min(shift)`.
+ * Note that this might be pessimistic for shifts of large amplitude, since we
+ * also have bounds coming from formula with adjugate of some submatrix of `pmat`.
+ * For example, one can prove that the non-pivot part of the kernel basis in
+ * shifted Popov form has degree at most n * deg(pmat)  (cf Lemma 12 of a research
+ * internship report by Vu Thi Xuan).
+ *
+ * The maximum pivot degree also gives a bound on max(rdeg_s(ker)): pick one of
+ * the bounds above for sum of pivot degrees, and add max(s) - min(s).
+ */

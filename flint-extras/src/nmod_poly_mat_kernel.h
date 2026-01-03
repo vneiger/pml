@@ -13,7 +13,9 @@
 #ifndef NMOD_POLY_MAT_KERNEL_H
 #define NMOD_POLY_MAT_KERNEL_H
 
-#include "pml.h"
+#include <flint/nmod_poly_mat.h>
+
+#include "nmod_poly_mat_forms.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,23 +46,96 @@ extern "C" {
  * ------------
  * Apart from the general interfaces (TODO) which offer several choices of
  * orientation, all other functions compute left kernel bases and use the
- * following parameters:
+ * following parameters, where `nz` is the a priori unknown nullity of `pmat`:
  *
- * \param[out] ker the output kernel basis (cannot alias `pmat`)
- * \param[in] pmat the input polynomial matrix (no restriction)
+ * \param[out] ker the output kernel basis (cannot alias `pmat`, must be
+ * initialized with at least `nz` rows)
+ * \param[out] pivind the pivot index of `ker` (list of integers, length must
+ * be the number of rows of `pmat`, only the first `nz` entries matter in output)
  * \param[in,out] shift in: the input shift; and out: the output shifted row
  * degree of `ker` (list of integers, length must be the number of rows of
  * `pmat`)
+ * \param[in] pmat the input polynomial matrix (no restriction)
+ *
+ * \return slong, the nullity of `pmat`
  *
  * The computed `ker` is in shifted ordered weak Popov form, or in the canonical
  * shifted Popov form when the name of the function indicates so.
+ *
+ * FIXME what output dimensions for `ker`?
  */
 
 
+/* general interface */
+/* `form` not implemented yet */
+slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
+                           slong * pivind,
+                           slong * shift,
+                           const nmod_poly_mat_t pmat,
+                           poly_mat_form_t form,
+                           orientation_t orient);
+// ROW_LOWER -> direct call
+// COL_UPPER -> transpose input, call, transpose output
+// ROW_UPPER -> mirror rows of input, call, mirror columns+rows of output
+// COL_LOWER -> 
+
+/* using approximant basis at sufficiently large order */
+/** Computes a `shift`-ordered weak Popov left kernel basis `ker` for `pmat`,
+ * recovered as a subset of the rows of a minimal approximant basis at
+ * sufficiently large order. Computes the
+ * `shift`-pivot index `pivind` of `kerbas`, and `shift` becomes the shifted
+ * row degree of `kerbas` (for the input shift).
+ */
+
+slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
+                                      slong * pivind,
+                                      slong * shift,
+                                      const nmod_poly_mat_t pmat);
+
+/* FIXME not implemented yet: using interpolant basis at sufficiently many points */
+/* slong nmod_poly_mat_kernel_via_interp(nmod_poly_mat_t ker, */
+/*                                       slong * shift, */
+/*                                       const nmod_poly_mat_t pmat); */
+
+/* TODO */
+slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
+                                      slong * pivind,
+                                      slong * shift,
+                                      const nmod_poly_mat_t pmat);
+
+/* TODO */
+/* slong nmod_poly_mat_kernel_zls_interp(nmod_poly_mat_t ker, */
+/*                                       slong * shift, */
+/*                                       const nmod_poly_mat_t pmat); */
 
 
 
 
+/** Verifying if a matrix is a minimal kernel basis.
+ *
+ * This checks whether the matrix `ker` is a `shift`-minimal kernel basis for
+ * `pmat` for the required form `form`, with orientation described by `orient`.
+ *
+ * \param[in] ker kernel basis
+ * \param[in] nz nullity associated to ker
+ * \param[in] shift shift
+ * \param[in] pmat polynomial matrix
+ * \param[in] form [not implemented yet] required form for `kerbas` (see #poly_mat_form_t)
+ * \param[in] orient indicates the orientation (left/right kernel) and the definition of pivots
+ * \param[in] randomized [not implemented yet] if `true`, the algorithm may use a Monte Carlo or Las Vegas verification algorithm
+ *
+ * \return int, result of the verification
+ *
+ * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
+ * \todo WARNING! for the moment, does not really check generation!
+ * \todo WARNING! for the moment, hardcoded to check for ordered weak Popov
+ */
+int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
+                            slong nz,
+                            /* const slong * pivind, */  /* TODO */
+                            const slong * shift,
+                            const nmod_poly_mat_t pmat,
+                            orientation_t orient);
 
 
 
