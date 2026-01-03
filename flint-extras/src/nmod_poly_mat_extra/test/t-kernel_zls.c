@@ -18,12 +18,11 @@
 
 #include "nmod_poly_mat_extra.h"
 #include "nmod_poly_mat_forms.h"
-#include "nmod_poly_mat_io.h"
 
 // test one given input
 /* TODO does not test generation */
-/* TODO does not test reducedness */
-/* TODO does not seem tested with shifts */
+/* TODO tests reducedness instead of weak Popov */
+/* TODO does not test shifts */
 int core_test_kernel_zls(const nmod_poly_mat_t mat)
 {
     slong m = mat->r;
@@ -44,7 +43,7 @@ int core_test_kernel_zls(const nmod_poly_mat_t mat)
     nmod_poly_mat_init(Nt, nz, n, mat->modulus);
     for (long i = 0; i < n; i++)
         for (long j = 0; j < nz; j++)
-            nmod_poly_set(nmod_poly_mat_entry(Nt, j, i), nmod_poly_mat_entry(N, i, j));        
+            nmod_poly_set(nmod_poly_mat_entry(Nt, j, i), nmod_poly_mat_entry(N, i, j));
 
     nmod_poly_mat_t Mt;
     nmod_poly_mat_init(Mt, n, m, mat->modulus);

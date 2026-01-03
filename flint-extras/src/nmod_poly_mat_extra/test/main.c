@@ -17,6 +17,7 @@
 #include "t-det.c"
 #include "t-dixon.c"
 #include "t-hermite_normal_form.c"
+#include "t-kernel_zls.c"
 #include "t-middle_product_geometric.c"
 #include "t-mul_geometric.c"
 #include "t-mbasis.c"
@@ -24,7 +25,6 @@
 #include "t-mul_waksman.c"
 #include "t-rand.c"
 #include "t-weak_popov_form.c"
-#include "t-kernel.c"
 
 /* Array of test functions ***************************************************/
 
