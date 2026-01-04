@@ -42,32 +42,35 @@ extern "C" {
  */
 
 /** \file nmod_poly_mat_kernel.h
- * Conventions.
- * ------------
- * Apart from the general interfaces (TODO) which offer several choices of
+ * \anchor kernel_basis
+ *
+ * Apart from the general interfaces which offer several choices of
  * orientation, all other functions compute left kernel bases and use the
- * following parameters, where `nz` is the a priori unknown nullity of `pmat`:
+ * following parameters:
+ *
+ * \return slong, the nullity of `pmat` (called `nz` below)
  *
  * \param[out] ker the output kernel basis (cannot alias `pmat`, must be
  * initialized with at least `nz` rows)
  * \param[out] pivind the pivot index of `ker` (list of integers, length must
- * be the number of rows of `pmat`, only the first `nz` entries matter in output)
+ * be the number of rows of `pmat`)
  * \param[in,out] shift in: the input shift; and out: the output shifted row
  * degree of `ker` (list of integers, length must be the number of rows of
  * `pmat`)
  * \param[in] pmat the input polynomial matrix (no restriction)
  *
- * \return slong, the nullity of `pmat`
+ * The computed `ker` is in shifted ordered weak Popov form, or in the
+ * canonical shifted Popov form when the name of the function indicates so.
  *
- * The computed `ker` is in shifted ordered weak Popov form, or in the canonical
- * shifted Popov form when the name of the function indicates so.
+ * Some functions may overwrite data in pmat (check the presence of `const`).
  *
- * FIXME what output dimensions for `ker`?
+ * `ker` is not resized/reallocated: it keeps its original shape, but only the
+ * first `nz` rows contain useful entries. Similarly, for `pivind` and `shift`
+ * only the first `nz` entries matter in output.
  */
 
-
 /* general interface */
-/* `form` not implemented yet */
+/* `form` not really implemented yet, only shifted weak Popov */
 slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
                            slong * pivind,
                            slong * shift,
@@ -79,31 +82,32 @@ slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
 // ROW_UPPER -> mirror rows of input, call, mirror columns+rows of output
 // COL_LOWER -> 
 
-/* using approximant basis at sufficiently large order */
 /** Computes a `shift`-ordered weak Popov left kernel basis `ker` for `pmat`,
- * recovered as a subset of the rows of a minimal approximant basis at
- * sufficiently large order. Computes the
- * `shift`-pivot index `pivind` of `kerbas`, and `shift` becomes the shifted
- * row degree of `kerbas` (for the input shift).
+ * through a minimal approximant basis at sufficiently large order.
  */
-
 slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
                                       slong * pivind,
                                       slong * shift,
                                       const nmod_poly_mat_t pmat);
+
+/** Computes a `shift`-ordered weak Popov left kernel basis `ker` for `pmat`,
+ * using the Zhou-Labahn-Storjohann algorithm:
+ *   Wei Zhou, George Labahn, Arne Storjohann -- "Computing Minimal Nullspace Bases" 
+ *   Proceedings ISSAC 2012 -- https://doi.org/10.1145/2442829.2442881
+ */
+/* TODO middle_product currently naive */
+slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
+                                      slong * pivind,
+                                      slong * shift,
+                                      nmod_poly_mat_t pmat);
+
 
 /* FIXME not implemented yet: using interpolant basis at sufficiently many points */
 /* slong nmod_poly_mat_kernel_via_interp(nmod_poly_mat_t ker, */
 /*                                       slong * shift, */
 /*                                       const nmod_poly_mat_t pmat); */
 
-/* TODO */
-slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
-                                      slong * pivind,
-                                      slong * shift,
-                                      const nmod_poly_mat_t pmat);
-
-/* TODO */
+/* FIXME not implemented yet: ZLS algo using interpolant basis */
 /* slong nmod_poly_mat_kernel_zls_interp(nmod_poly_mat_t ker, */
 /*                                       slong * shift, */
 /*                                       const nmod_poly_mat_t pmat); */
@@ -117,26 +121,21 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
  * `pmat` for the required form `form`, with orientation described by `orient`.
  *
  * \param[in] ker kernel basis
- * \param[in] nz nullity associated to ker
  * \param[in] shift shift
  * \param[in] pmat polynomial matrix
- * \param[in] form [not implemented yet] required form for `kerbas` (see #poly_mat_form_t)
+ * \param[in] form required form for `kerbas` (see #poly_mat_form_t)
  * \param[in] orient indicates the orientation (left/right kernel) and the definition of pivots
  * \param[in] randomized [not implemented yet] if `true`, the algorithm may use a Monte Carlo or Las Vegas verification algorithm
  *
  * \return int, result of the verification
  *
- * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
- * \todo WARNING! for the moment, does not really check generation!
- * \todo WARNING! for the moment, hardcoded to check for ordered weak Popov
  */
+/* TODO WARNING! for the moment, does not really check generation! */
 int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
-                            slong nz,
-                            /* const slong * pivind, */  /* TODO */
                             const slong * shift,
                             const nmod_poly_mat_t pmat,
+                            poly_mat_form_t form,
                             orientation_t orient);
-
 
 
 /**

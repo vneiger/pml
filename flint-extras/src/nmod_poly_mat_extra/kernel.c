@@ -19,7 +19,6 @@
 #include <stdlib.h>
 
 #include "nmod_poly_mat_extra.h"
-#include "nmod_poly_mat_io.h"
 #include "nmod_poly_mat_kernel.h"
 #include "nmod_poly_mat_multiply.h"
 
@@ -111,13 +110,12 @@ slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
     return nz;
 }
 
-/* TODO make pmat non const */
 /* Follows the description of Zhou-Labahn-Storjohann algorithm in [LNVZ22, Algo.1]  */
 /* [LNVZ22] Labahn-Neiger-Vu-Zhou, Proceedings ISSAC 2022, arxiv.org/pdf/2202.09329 */
 slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
                                       slong * pivind,
                                       slong * shift,
-                                      const nmod_poly_mat_t pmat)
+                                      nmod_poly_mat_t pmat)
 {
     /* flint_printf("call %ld, %ld\n", pmat->r, pmat->c); */
     /* nmod_poly_mat_degree_matrix_print_pretty(pmat); */
@@ -979,7 +977,7 @@ int nmod_poly_mat_kernel_zls(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat
  *
  */
 
-int nmod_poly_mat_approximant_kernel(nmod_poly_mat_t N, slong *degN, const nmod_poly_mat_t A, \
+int nmod_poly_mat_approximant_kernel(nmod_poly_mat_t N, slong * FLINT_UNUSED(degN), const nmod_poly_mat_t A, \
                                  const slong *ishift)
 {
 

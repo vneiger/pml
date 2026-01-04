@@ -11,7 +11,6 @@
 */
 
 #include "nmod_poly_mat_forms.h"
-#include "nmod_poly_mat_io.h"
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
@@ -114,23 +113,40 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
     return success;
 }
 
-/* TODO currently specialized to ROW_LOWER (or at least ROW_stuff) */
-/* -> checks whether ker is a shift-ordered weak Popov left kernel basis of pmat */
+/* TODO currently does not check generation */
 int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
-                            slong nz,
                             const slong * shift,
-                            const nmod_poly_mat_t pmat,
+                            const nmod_poly_mat_t mat,
+                            poly_mat_form_t form,
                             orientation_t orient)
 {
-    const slong rdim = pmat->r;
-    const slong cdim = pmat->c;
-    const ulong prime = pmat->modulus;
+    if (orient == COL_UPPER || orient == COL_LOWER)
+    {
+        nmod_poly_mat_t ker_t;
+        nmod_poly_mat_t mat_t;
+        nmod_poly_mat_init(ker_t, ker->c, ker->r, ker->modulus);
+        nmod_poly_mat_transpose(ker_t, ker);
+        nmod_poly_mat_init(mat_t, mat->c, mat->r, mat->modulus);
+        nmod_poly_mat_transpose(mat_t, mat);
+
+        int result;
+        if (orient == COL_UPPER)
+            result = nmod_poly_mat_is_kernel(ker_t, shift, mat_t, form, ROW_LOWER);
+        else  /* orient == COL_LOWER */
+            result = nmod_poly_mat_is_kernel(ker_t, shift, mat_t, form, ROW_UPPER);
+
+        nmod_poly_mat_clear(ker_t);
+        nmod_poly_mat_clear(mat_t);
+
+        return result;
+    }
+
+    const slong rdim = mat->r;
+    const slong cdim = mat->c;
+    const ulong prime = mat->modulus;
 
     nmod_poly_mat_t residual;
-    nmod_poly_mat_init(residual, nz, cdim, prime);
-
-    nmod_poly_mat_t kernz;
-    nmod_poly_mat_window_init(kernz, ker, 0, 0, nz, rdim);
+    nmod_poly_mat_init(residual, rdim, cdim, prime);
 
     int success = 1;
 
@@ -141,43 +157,28 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
         success = 0;
     }
 
-    if (ker->r < nz)
-    {
-        printf("basis has wrong row dimension\n");
-        success = 0;
-    }
-
-    /* check kernel is shifted reduced */
-    if (!nmod_poly_mat_is_ordered_weak_popov(kernz, shift, orient))
-    {
-        /* printf("basis is not shifted-weak Popov\n"); */
-        /* TODO temporarily allow reduced but not s-weak Popov */
-        if (!nmod_poly_mat_is_reduced(kernz, shift, orient))
-        {
-            printf("basis is not shifted-reduced\n");
-            success = 0;
-        }
-    }
-
-    /* compute residual, check rows of ker are in the kernel */
-    /* TODO enhancement: offer randomized option, using Freivalds-like randomized strategy (see ntl-extras) */
-    nmod_poly_mat_mul(residual, kernz, pmat);
-    /* nmod_poly_mat_degree_matrix_print_pretty(residual); */
-    if (!nmod_poly_mat_is_zero(residual))
-    {
-        printf("not all rows are in the kernel\n");
-        success = 0;
-    }
-
     /* check rank */
-    slong rk = nmod_poly_mat_rank(pmat);
-    if (nz != rdim - rk)
+    slong rk = nmod_poly_mat_rank(mat);
+    if (ker->r != rdim - rk)
     {
         printf("number of rows does not equal nullity\n");
         success = 0;
     }
 
-    /* !! TODO check generation !! */
+    /* check kernel has the right form */
+    if (!nmod_poly_mat_is_form(ker, form, shift, orient))
+    {
+        printf("basis does not have the required form\n");
+        success = 0;
+    }
+
+    /* compute residual, check rows of ker are in the kernel */
+    nmod_poly_mat_mul(residual, ker, mat);
+    if (!nmod_poly_mat_is_zero(residual))
+    {
+        printf("not all rows are in the kernel\n");
+        success = 0;
+    }
 
     nmod_poly_mat_clear(residual);
 

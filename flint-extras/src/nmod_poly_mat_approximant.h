@@ -311,14 +311,6 @@ void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
  */
 //@{
 
-/** 
- * TODO old doc, to be cleaned (new doc below, maybe not complete enough)
- * F \in K[x]^{nxm} <-> F_prime K^{mxn}[x] FIX and
- * Compute P_{k-1} \in K[x]^{mxm} with the list structured_multiplication_blocks
- * Compute x^{-k} P_{k-1} F mod x iteratively with a naive polynomial multiplication  
- *
- * Use naive polynomial multiplication and list_structured_multiplication_blocks 
- */
 /** Computes a `shift`-ordered weak Popov approximant basis for `(pmat,order)`
  * using the algorithm PM-Basis (see @ref pmbasis) */
 

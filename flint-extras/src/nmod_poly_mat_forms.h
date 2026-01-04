@@ -52,10 +52,9 @@ extern "C" {
  * \enum poly_mat_form_t
  *
  * Note that the assigned numbers follow the "strength" of these forms:
- * - 0<-1<-2<-3<-4: Popov implies ordered weak Popov, which implies weak Popov,
+ * - 0<1<2<3<4: Popov implies ordered weak Popov, which implies weak Popov,
  *   which implies reduced.
- * - 0<-5<-6: Hermite implies echelon.
- *
+ * - 0<5<6: Hermite implies echelon.
  */
 typedef enum
 {
@@ -468,12 +467,36 @@ int nmod_poly_mat_is_popov(const nmod_poly_mat_t mat,
                            orientation_t orient);
 
 /** Tests whether `mat` is in echelon form (see @ref MatrixForms) */
-int nmod_poly_mat_is_echelon(const nmod_poly_mat_t pmat,
+int nmod_poly_mat_is_echelon(const nmod_poly_mat_t mat,
                              orientation_t orient);
 
 /** Tests whether `mat` is in Hermite form (see @ref MatrixForms) */
-int nmod_poly_mat_is_hermite(const nmod_poly_mat_t pmat,
+int nmod_poly_mat_is_hermite(const nmod_poly_mat_t mat,
                              orientation_t orient);
+
+/** Tests whether `mat` has the requested form (see @ref MatrixForms) */
+NMOD_POLY_MAT_INLINE
+int nmod_poly_mat_is_form(const nmod_poly_mat_t mat,
+                           poly_mat_form_t form,
+                           const slong * shift,
+                           orientation_t orient)
+{
+    if (form == NONE)
+        return 1;
+    if (form == REDUCED)
+        return nmod_poly_mat_is_reduced(mat, shift, orient);
+    if (form == WEAK_POPOV)
+        return nmod_poly_mat_is_weak_popov(mat, shift, orient);
+    if (form == ORD_WEAK_POPOV)
+        return nmod_poly_mat_is_ordered_weak_popov(mat, shift, orient);
+    if (form == POPOV)
+        return nmod_poly_mat_is_popov(mat, shift, orient);
+    if (form == ECHELON)
+        return nmod_poly_mat_is_echelon(mat, orient);
+    if (form == HERMITE)
+        return nmod_poly_mat_is_echelon(mat, orient);
+    return -1;
+}
 
 //@} // doxygen group: Testing polynomial matrix forms
 
@@ -831,6 +854,3 @@ slong nmod_poly_mat_ordered_weak_popov_iter(nmod_poly_mat_t mat,
 #endif
 
 #endif // NMOD_POLY_MAT_FORMS_H
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
