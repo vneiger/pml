@@ -52,7 +52,7 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     nmod_poly_mat_transpose(Ft, F);                     \
     /* END TMP */                                       \
                                                         \
-    slong degN[rdim];                                   \
+    slong * degN = FLINT_ARRAY_ALLOC(rdim, slong);      \
     nmod_poly_mat_t K;                                  \
     nmod_poly_mat_init(K, rdim, rdim, n);               \
                                                         \
@@ -62,8 +62,9 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     nmod_poly_mat_##fun(K, degN, Ft, NULL, 3.);         \
     TIMEIT_STOP_VALUES(tcpu, twall);                    \
                                                         \
-    printf("%.2e", twall);                              \
+    flint_printf("%.2e", twall);                        \
                                                         \
+    flint_free(degN);                                   \
     nmod_poly_mat_clear(F);                             \
     nmod_poly_mat_clear(Ft); /* TMP */                  \
     nmod_poly_mat_clear(K);                             \
@@ -86,8 +87,8 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     nmod_poly_mat_init(pmat, rdim, cdim, n);            \
     nmod_poly_mat_rand(pmat, state, deg);               \
                                                         \
-    slong pivind[rdim];                                 \
-    slong shift[rdim];                                  \
+    slong * pivind = FLINT_ARRAY_ALLOC(rdim, slong);    \
+    slong * shift = FLINT_ARRAY_ALLOC(rdim, slong);     \
     for (slong i = 0; i < rdim; i++)                    \
         shift[i] = 0;                                   \
     nmod_poly_mat_t ker;                                \
@@ -96,17 +97,24 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     double FLINT_SET_BUT_UNUSED(tcpu), twall;           \
                                                         \
     TIMEIT_START;                                       \
-    nmod_poly_mat_##fun(ker, pivind, shift, pmat);      \
+    nmod_poly_mat_t copy_pmat;                          \
+    nmod_poly_mat_init_set(copy_pmat, pmat);            \
+    for (slong i = 0; i < rdim; i++)                    \
+        shift[i] = 0;                                   \
+    nmod_poly_mat_##fun(ker, pivind, shift, copy_pmat); \
     TIMEIT_STOP_VALUES(tcpu, twall);                    \
                                                         \
-    printf("%.2e", twall);                              \
+    flint_printf("%.2e", twall);                        \
                                                         \
+    flint_free(pivind);                                 \
+    flint_free(shift);                                  \
     nmod_poly_mat_clear(pmat);                          \
     nmod_poly_mat_clear(ker);                           \
 }
 
 TIME_KER_ZLS(kernel_zls)
 TIME_KER(kernel_via_approx)
+TIME_KER(kernel_zls_approx)
 
 /*-------------------------*/
 /*  main                   */
@@ -135,11 +143,12 @@ int main(int argc, char ** argv)
     /* TODO shift type */
 
     // bench functions
-    const slong nfuns = 2;
+    const slong nfuns = 3;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
         time_kernel_via_approx,               // 0
-        time_kernel_zls,                      // 1
+        time_kernel_zls_approx,               // 1
+        time_kernel_zls,                      // 2
     };
 
     // TODO
@@ -159,22 +168,23 @@ int main(int argc, char ** argv)
     //#endif
 
     const char * description[] = {
-        "#0  --> kernel (general interface)   ",
-        "#1  --> .... TODO                ",
+        "#0  --> via approx       ",
+        "#1  --> ZLS via approx   ",
+        "#2  --> .... TODO                ",
     };
 
     if (argc < 4 || argc > 6)  // show usage
     {
-        printf("Usage: `%s [nbits] [rdim] [cdim] [deg] [rank] [shift] [fun]`\n", argv[0]);
+        printf("Usage: `%s [fun] [nbits] [rdim] [cdim] [deg] [rank] [shift]`\n", argv[0]);
         printf("   No argument shows this help.\n");
-        printf("   First 3 arguments are mandatory.\n");
+        printf("   First 4 arguments are mandatory.\n");
         printf("   [rank] and [shift] not supported yet.\n");
+        printf("   - fun: id number of the timed function (see below, -1 times all),\n");
         printf("   - nbits: number of bits in [2..64] for the modulus, chosen as nextprime(2**(nbits-1))\n");
         printf("   - rdim, cdim: input matrix is rdim x cdim\n");
         printf("   - deg: matrix is random of degree < deg (default: predefined list)\n");
         printf("   - rank: [unsupported] matrix is random of this rank\n");
         printf("   - shift: [unsupported] type of shift\n");
-        printf("   - fun: id number of the timed function (see below),\n");
         printf("\nAvailable functions:\n");
         for (slong j = 0; j < nfuns; j++)
             printf("   %s\n", description[j]);
@@ -192,44 +202,40 @@ int main(int argc, char ** argv)
     }
     printf("\n\n");
 
-    if (argc == 4)  // nbits + rdim + cdim given
+    if (argc == 5)  // fun + nbits + rdim + cdim given
     {
-        const slong rdim = atoi(argv[2]);
-        const slong cdim = atoi(argv[3]);
-        const slong b = atoi(argv[1]);
+        const slong ifun = atoi(argv[1]);
+        const slong bits = atoi(argv[2]);
+        const slong rdim = atoi(argv[3]);
+        const slong cdim = atoi(argv[4]);
+        const timefun tfun = funs[ifun];
+        const ulong n = n_nextprime(UWORD(1) << (bits-1), 0);
         printf("bits fun rdim cdim deg\n");
-        ulong n = n_nextprime(UWORD(1) << (b-1), 0);
-        for (slong ifun = 0; ifun < nfuns; ifun++)
+        for (slong d = 0; d < ndegs; d++)
         {
-            const timefun tfun = funs[ifun];
-            for (slong d = 0; d < ndegs; d++)
-            {
-                printf("%-5ld#%-3ld%-5ld%-5ld%-8ld", b, ifun, rdim, cdim, degs[d]);
-                time_args targs = {rdim, cdim, degs[d], FLINT_MIN(rdim, cdim), 0, n};
-                tfun(targs, state);
-                printf(" ");
-                printf("\n");
-            }
-        }
-    }
-    else if (argc == 5)  // nbits + rdim + cdim + deg given
-    {
-        const slong rdim = atoi(argv[2]);
-        const slong cdim = atoi(argv[3]);
-        const slong deg  = atoi(argv[4]);
-        const slong b = atoi(argv[1]);
-        printf("bits fun rdim cdim deg\n");
-        ulong n = n_nextprime(UWORD(1) << (b-1), 0);
-        for (slong ifun = 0; ifun < nfuns; ifun++)
-        {
-            const timefun tfun = funs[ifun];
-            printf("%-5ld#%-3ld%-5ld%-5ld%-8ld", b, ifun, rdim, cdim, deg);
-            /* rdim; cdim; deg; rank; stype; modn; */
-            time_args targs = {rdim, cdim, deg, FLINT_MIN(rdim, cdim), 0, n};
+            printf("%-5ld#%-3ld%-5ld%-5ld%-8ld", bits, ifun, rdim, cdim, degs[d]);
+            time_args targs = {rdim, cdim, degs[d], FLINT_MIN(rdim, cdim), 0, n};
             tfun(targs, state);
             printf(" ");
             printf("\n");
         }
+    }
+    else if (argc == 6)  // fun + nbits + rdim + cdim + deg given
+    {
+        const slong ifun = atoi(argv[1]);
+        const slong bits = atoi(argv[2]);
+        const slong rdim = atoi(argv[3]);
+        const slong cdim = atoi(argv[4]);
+        const slong deg  = atoi(argv[5]);
+        const timefun tfun = funs[ifun];
+        const ulong n = n_nextprime(UWORD(1) << (bits-1), 0);
+        printf("bits fun rdim cdim deg\n");
+        printf("%-5ld#%-3ld%-5ld%-5ld%-8ld", bits, ifun, rdim, cdim, deg);
+        /* rdim; cdim; deg; rank; stype; modn; */
+        time_args targs = {rdim, cdim, deg, FLINT_MIN(rdim, cdim), 0, n};
+        tfun(targs, state);
+        printf(" ");
+        printf("\n");
     }
 
     flint_rand_clear(state);

@@ -32,11 +32,11 @@
 
 test_struct tests[] =
 {
+    TEST_FUNCTION(nmod_poly_mat_kernel_zls_approx),
     TEST_FUNCTION(nmod_poly_mat_det),
     TEST_FUNCTION(nmod_poly_mat_dixon),
     TEST_FUNCTION(nmod_poly_mat_hnf),
     TEST_FUNCTION(nmod_poly_mat_kernel_via_approx),
-    TEST_FUNCTION(nmod_poly_mat_kernel_zls_approx),
     TEST_FUNCTION(nmod_poly_mat_kernel_zls),
     TEST_FUNCTION(nmod_poly_mat_mbasis),
     TEST_FUNCTION(nmod_poly_mat_middle_product_geometric),

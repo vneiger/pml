@@ -26,9 +26,9 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel_zls_approx, state)
     for (i = 0; i < 16 * flint_test_multiplier(); i++)
     {
         ulong nbits = 2 + n_randint(state, 63);
-        slong rdim = n_randint(state, 20);
-        slong cdim = n_randint(state, 20);
-        ulong len = 1 + n_randint(state, 40);
+        slong rdim = n_randint(state, 30);
+        slong cdim = n_randint(state, 30);
+        ulong len = 1 + n_randint(state, 100);
         flint_printf("TEST iter %ld -- %ld, %ld, %ld\n", i, rdim, cdim, len);
 
         slong * shift = FLINT_ARRAY_ALLOC(rdim, slong);
