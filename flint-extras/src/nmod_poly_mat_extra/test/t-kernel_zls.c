@@ -11,64 +11,55 @@
 */
 
 #include <flint/flint.h>
+#include <flint/ulong_extras.h>
+#include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
 #include <flint/nmod_types.h>
 #include <flint/profiler.h>
 #include <flint/test_helpers.h>
 
-#include "nmod_poly_mat_extra.h"
 #include "nmod_poly_mat_forms.h"
+#include "nmod_poly_mat_kernel.h"
 
 // test one given input
-/* TODO does not test generation */
-/* TODO tests reducedness instead of weak Popov */
-/* TODO does not test shifts */
-int core_test_kernel_zls(const nmod_poly_mat_t mat)
+int core_test_kernel_zls(const nmod_poly_mat_t mat, flint_rand_t state)
 {
-    slong m = mat->r;
     slong n = mat->c;
 
-    /* careful: this is currently the column degree due to working on the right */
-    slong * rdeg = FLINT_ARRAY_ALLOC(n, slong);
-    nmod_poly_mat_column_degree(rdeg, mat, NULL);
+    /* pick shift with entries >= cdeg */
+    slong * cdeg = FLINT_ARRAY_ALLOC(n, slong);
+    nmod_poly_mat_column_degree(cdeg, mat, NULL);
+    slong * shift = FLINT_ARRAY_ALLOC(n, slong);
+    for (slong j = 0; j < n; j++)
+        shift[j] = FLINT_MAX(0, cdeg[j]) + n_randint(state, 30);
 
     nmod_poly_mat_t N;
     nmod_poly_mat_init(N, n, n, mat->modulus);
-
     slong degN[n];
+    slong nz = nmod_poly_mat_kernel_zls(N, degN, mat, shift, 2.);
 
-    slong nz = nmod_poly_mat_kernel_zls(N, degN, mat, NULL, 2.);
-
-    nmod_poly_mat_t Nt;
-    nmod_poly_mat_init(Nt, nz, n, mat->modulus);
-    for (long i = 0; i < n; i++)
-        for (long j = 0; j < nz; j++)
-            nmod_poly_set(nmod_poly_mat_entry(Nt, j, i), nmod_poly_mat_entry(N, i, j));
-
-    nmod_poly_mat_t Mt;
-    nmod_poly_mat_init(Mt, n, m, mat->modulus);
-    nmod_poly_mat_transpose(Mt, mat);
-
-    int verif = nmod_poly_mat_is_kernel(Nt, nz, rdeg, Mt, ROW_LOWER);
+    nmod_poly_mat_t Nnz;
+    nmod_poly_mat_window_init(Nnz, N, 0, 0, n, nz);
+    int verif = nmod_poly_mat_is_kernel(Nnz, shift, mat, REDUCED, COL_UPPER);
 
     nmod_poly_mat_clear(N);
-    nmod_poly_mat_clear(Nt);
-    nmod_poly_mat_clear(Mt);
-    flint_free(rdeg);
+    nmod_poly_mat_window_clear(Nnz);
+    flint_free(cdeg);
+    flint_free(shift);
 
     return verif;
 }
 
 TEST_FUNCTION_START(nmod_poly_mat_kernel_zls, state)
 {
-    int i,result;
+    int i, result;
 
     for (i = 0; i < 16 * flint_test_multiplier(); i++)
     {
         ulong nbits = 2 + n_randint(state, 63);
-        ulong rdim = 1 + n_randint(state, 60);
+        ulong rdim = 1 + n_randint(state, 20);
         ulong cdim = rdim + 1 + n_randint(state, 20);
-        ulong deg = n_randint(state, 20);
+        ulong deg = n_randint(state, 100);
 
         ulong prime = n_randprime(state, nbits, 1);
 
@@ -97,7 +88,7 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel_zls, state)
             nmod_poly_mat_randtest_sparse(A, state, deg+1, 0.84);
         }
 
-        result = core_test_kernel_zls(A);
+        result = core_test_kernel_zls(A, state);
 
         nmod_poly_mat_clear(A);
 
@@ -124,7 +115,7 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel_zls, state)
         nmod_poly_mat_init(A, rdim, cdim, prime);
         nmod_poly_mat_randtest_sparse(A, state, deg+1, 0.8);
 
-        result = core_test_kernel_zls(A);
+        result = core_test_kernel_zls(A, state);
 
         nmod_poly_mat_clear(A);
 
@@ -151,7 +142,7 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel_zls, state)
         nmod_poly_mat_init(A, rdim, cdim, prime);
         nmod_poly_mat_randtest_sparse(A, state, deg+1, 0.2);
 
-        result = core_test_kernel_zls(A);
+        result = core_test_kernel_zls(A, state);
 
         nmod_poly_mat_clear(A);
 

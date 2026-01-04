@@ -18,8 +18,7 @@
 #include "t-dixon.c"
 #include "t-hermite_normal_form.c"
 #include "t-kernel.c"
-/* #include "t-kernel_zls_approx.c" */
-/* #include "t-kernel_zls.c" */
+#include "t-kernel_zls.c"
 #include "t-middle_product_geometric.c"
 #include "t-mul_geometric.c"
 #include "t-mbasis.c"
@@ -36,8 +35,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_dixon),
     TEST_FUNCTION(nmod_poly_mat_hnf),
     TEST_FUNCTION(nmod_poly_mat_kernel),
-    /* TEST_FUNCTION(nmod_poly_mat_kernel_zls_approx), */
-    /* TEST_FUNCTION(nmod_poly_mat_kernel_zls), */
+    TEST_FUNCTION(nmod_poly_mat_kernel_zls),
     TEST_FUNCTION(nmod_poly_mat_mbasis),
     TEST_FUNCTION(nmod_poly_mat_middle_product_geometric),
     TEST_FUNCTION(nmod_poly_mat_mul_geometric),
