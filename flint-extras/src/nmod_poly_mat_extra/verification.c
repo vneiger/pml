@@ -11,6 +11,7 @@
 */
 
 #include "nmod_poly_mat_forms.h"
+#include "nmod_poly_mat_io.h"
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
@@ -123,11 +124,13 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
 {
     const slong rdim = pmat->r;
     const slong cdim = pmat->c;
-    const slong kdim = ker->r;
     const ulong prime = pmat->modulus;
 
     nmod_poly_mat_t residual;
-    nmod_poly_mat_init(residual, kdim, cdim, prime);
+    nmod_poly_mat_init(residual, nz, cdim, prime);
+
+    nmod_poly_mat_t kernz;
+    nmod_poly_mat_window_init(kernz, ker, 0, 0, nz, rdim);
 
     int success = 1;
 
@@ -144,15 +147,12 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
         success = 0;
     }
 
-    /* for the rest of tests, pretend ker->r is nz (DIRT: bypass const..) */
-    ((nmod_poly_mat_struct *) ker)->r = nz;
-
     /* check kernel is shifted reduced */
-    if (!nmod_poly_mat_is_ordered_weak_popov(ker, shift, orient))
+    if (!nmod_poly_mat_is_ordered_weak_popov(kernz, shift, orient))
     {
         /* printf("basis is not shifted-weak Popov\n"); */
         /* TODO temporarily allow reduced but not s-weak Popov */
-        if (!nmod_poly_mat_is_reduced(ker, shift, orient))
+        if (!nmod_poly_mat_is_reduced(kernz, shift, orient))
         {
             printf("basis is not shifted-reduced\n");
             success = 0;
@@ -161,7 +161,8 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
 
     /* compute residual, check rows of ker are in the kernel */
     /* TODO enhancement: offer randomized option, using Freivalds-like randomized strategy (see ntl-extras) */
-    nmod_poly_mat_mul(residual, ker, pmat);
+    nmod_poly_mat_mul(residual, kernz, pmat);
+    /* nmod_poly_mat_degree_matrix_print_pretty(residual); */
     if (!nmod_poly_mat_is_zero(residual))
     {
         printf("not all rows are in the kernel\n");
@@ -177,9 +178,6 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
     }
 
     /* !! TODO check generation !! */
-
-    /* revert row dimension of ker (DIRT: bypass const..) */
-    ((nmod_poly_mat_struct *) ker)->r = kdim;
 
     nmod_poly_mat_clear(residual);
 

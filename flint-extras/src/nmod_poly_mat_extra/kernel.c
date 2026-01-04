@@ -21,22 +21,6 @@
 #include "nmod_poly_mat_extra.h"
 #include "nmod_poly_mat_kernel.h"
 
-/* /1* requires len >= 1 *1/ */
-/* FLINT_INLINE slong _slong_vec_amplitude(slong * vec, slong len) */
-/* { */
-/*     slong min = vec[0]; */
-/*     slong max = vec[0]; */
-/*     for (slong i = 1; i < len; i++) */
-/*     { */
-/*         slong v = vec[i]; */
-/*         if (v < min) */
-/*             min = v; */
-/*         if (v > max) */
-/*             max = v; */
-/*     } */
-/*     return max - min; */
-/* } */
-
 slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
                                       slong * pivind,
                                       slong * shift,
@@ -55,13 +39,12 @@ slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
         return m;
     }
 
+    /* FIXME may be reasonable to also have a case for d == 0 */
+
     /* pmat full row rank => empty kernel */
     /* full row rank implied by m == 1 or (m <= n && constant coefficient has full rank) */
     if (m == 1)
-    {
-        nmod_poly_mat_zero(ker);
         return 0;
-    }
 
     if (m <= n)
     {
@@ -75,10 +58,7 @@ slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
          */
         const slong r = nmod_mat_lu(pivind, coeff0, 1);
         if (r == m)
-        {
-            nmod_poly_mat_zero(ker);
             return 0;
-        }
     }
 
     /* compute amplitude of `shift`, make `pivind` a temporary copy of `shift` */
@@ -121,6 +101,328 @@ slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
 
     return nz;
 }
+
+/* TODO make pmat non const */
+/* TODO handle empty matrices? */
+/* NOTE requires shift >= rdeg(pmat) entrywise (?) */
+slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
+                                      slong * pivind,
+                                      slong * shift,
+                                      const nmod_poly_mat_t pmat)
+{
+    const slong m = pmat->r;
+    const slong n = pmat->c;
+
+    /* pmat == 0 => kernel is identity*/
+    if (nmod_poly_mat_is_zero(pmat))
+    {
+        nmod_poly_mat_one(ker);
+        for (slong i = 0; i < m; i++)
+            pivind[i] = i;
+        return m;
+    }
+
+    /* FIXME may be reasonable to also have a case for constant matrices */
+
+    /* pmat full row rank => empty kernel */
+    /* full row rank implied by m == 1 or (m <= n && constant coefficient has full rank) */
+    if (m == 1)
+        return 0;
+
+//    if (m <= n)
+//    {
+//        nmod_mat_t coeff0;
+//        nmod_mat_init(coeff0, m, n, pmat->modulus);
+//        nmod_poly_mat_get_coeff_mat(coeff0, pmat, 0);
+//        /* could use:
+//         * const slong r = nmod_mat_rank(coeff0);
+//         * but let's call more directly its core computation
+//         * (this uses pivind as temporary of length m for row permutation)
+//         */
+//        const slong r = nmod_mat_lu(pivind, coeff0, 1);
+//        if (r == m)
+//            return 0;
+//    }
+
+    /* if n > m/2 (with here m >= 2), straightforward recursion by splitting */
+    /* the matrix into two submatrices with n/2 columns                      */
+    if (2*n > m)
+    {
+        /* we split pmat == [ n - n/2 cols | n/2 cols]                       */
+        /* (we want more columns in left part, for the residual computation) */
+        slong nz;
+
+        nmod_poly_mat_t submat;    /* window only */
+        nmod_poly_mat_t residual;  /* window only */
+        nmod_poly_mat_t ker1;      /* window only */
+        nmod_poly_mat_t ker2;      /* actual init */
+        nmod_poly_mat_t ker3;      /* actual init */
+
+        /* first recursive call on left submatrix */
+        nmod_poly_mat_window_init(submat, pmat, 0, 0, m, n - n/2);
+        /* nz = nmod_poly_mat_kernel_zls_approx(ker, pivind, shift, submat); */
+        nz = nmod_poly_mat_kernel_zls_approx(ker, pivind, shift, submat);
+        nmod_poly_mat_window_clear(submat);
+
+        /* if first kernel is empty, early exit */
+        if (nz == 0)
+            return 0;
+
+        /* actual kernel: nz first rows */
+        nmod_poly_mat_window_init(ker1, ker, 0, 0, nz, m);
+
+        /* residual: (first ker) * (right submatrix) */
+        /* overwrite left columns of pmat */
+        nmod_poly_mat_window_init(submat, pmat, 0, n - n/2, m, n);
+        nmod_poly_mat_window_init(residual, pmat, 0, 0, nz, n/2);
+        nmod_poly_mat_mul_classical(residual, ker1, submat);
+        nmod_poly_mat_window_clear(submat);
+
+        /* recursive call 2, on residual */
+        nmod_poly_mat_init(ker2, nz, nz, pmat->modulus);
+        slong * pivind2 = FLINT_ARRAY_ALLOC(nz, slong);
+        /* nz = nmod_poly_mat_kernel_zls_approx(ker2, pivind2, shift, residual); */
+        nz = nmod_poly_mat_kernel_zls_approx(ker2, pivind2, shift, residual);
+        nmod_poly_mat_window_clear(residual);
+
+        /* multiply bases and update pivind */
+        nmod_poly_mat_init(ker3, nz, m, pmat->modulus);
+        nmod_poly_mat_window_init(submat, ker2, 0, 0, nz, ker2->c);
+        nmod_poly_mat_mul(ker3, submat, ker1);
+        nmod_poly_mat_window_clear(submat);
+        nmod_poly_mat_window_clear(ker1);
+
+        for (slong i = 0; i < nz; i++)
+        {
+            for (slong j = 0; j < m; j++)
+            {
+                FLINT_SWAP(nmod_poly_struct,
+                           *nmod_poly_mat_entry(ker, i, j),
+                           *nmod_poly_mat_entry(ker3, i, j));
+            }
+        }
+
+        for (slong i = 0; i < nz; i++)
+            pivind[i] = pivind[pivind2[i]];
+
+        nmod_poly_mat_clear(ker2);
+        nmod_poly_mat_clear(ker3);
+        flint_free(pivind2);
+
+        return nz;
+    }
+
+    /* here, we are in the case m >= 2, n <= m/2, pmat nonzero */
+    return nmod_poly_mat_kernel_via_approx(ker, pivind, shift, pmat);
+
+    /* FIXME see if useful: */
+    // add a constant to all the shift entries to ensure that the difference
+    // diff_shift = min(shift - rdeg(pmat))  is zero
+    // Recall that currently rdeg is rdeg(pmat)
+    //    long diff_shift = shift[0] - rdeg[0];
+    //    for (long i = 1; i < m; ++i)
+    //    {
+    //        const long diff = shift[i]-rdeg[i];
+    //        if (diff_shift > diff)
+    //            diff_shift = diff;
+    //    }
+    //    std::transform(shift.begin(), shift.end(), shift.begin(),
+    //                   [diff_shift](long x) -> long { return x - diff_shift;});
+
+//    // find parameter rho: sum of the n largest entries of (reduced) shift
+//    VecLong rdeg1(shift); // rdeg1 will be re-used later for another purpose, hence the name
+//    std::sort(rdeg1.begin(), rdeg1.end());
+//    const long rho = std::accumulate(rdeg1.begin()+m-n, rdeg1.end(), 0);
+//
+//    // order for call to approximation
+//    // choosing this order (with factor 2) is sufficient to ensure that the
+//    // approximant basis captures the whole kernel when n <= m/2 and pmat is
+//    // sufficiently generic
+//    const long order = 2 * ceil((double)rho / n) + 1;
+//
+//    // compute approximant basis, along with shift-row degree and pivot degree
+//    // --> it does not necessarily capture the whole kernel; but does in two
+//    // notable cases: if n=1, or in the generic situation mentioned above
+//
+//    // copy of input shift, will be needed at the end to compute shifted pivot index
+//    VecLong copy_shift(shift);
+//    Mat<zz_pX> appbas;
+//    pmbasis(appbas, pmat, order, shift); // does not modify pmat
+//
+//    // Identify submatrix of some rows of appbas which are in the kernel
+//    // Note the criterion: since before the call we have rdeg(pmat) <= shift,
+//    // the after the call we have rdeg(appbas*pmat) <= shift and therefore rows
+//    // with shift[i] < order are such that appbas[i] * pmat = 0.
+//    // Note that this may miss rows in the kernel, if there are some with shift >= order
+//    // which are in this appbas (this is usually not the case)
+//    rdeg1.clear();
+//    VecLong rows_app_ker;
+//    VecLong rdeg2, rows_app_notker;
+//    for (long i=0; i<m; ++i)
+//    {
+//        if (shift[i] < order)
+//        {
+//            rdeg1.emplace_back(shift[i]);
+//            rows_app_ker.emplace_back(i);
+//        }
+//        else
+//        {
+//            rdeg2.emplace_back(shift[i]);
+//            rows_app_notker.emplace_back(i);
+//        }
+//    }
+//
+//    // number of found kernel rows
+//    const long m1 = rdeg1.size();
+//    // number of non-kernel rows in the approximant basis
+//    const long m2 = rdeg2.size();
+//
+//    // if the sum of pivot degrees in the part of kernel basis computed is
+//    // equal to one of the upper bounds (here, sum of row degrees of pmat for
+//    // non-pivot rows), then we know that we have captured the whole kernel
+//    // --> this is often the case (e.g. in the generic situation mentioned
+//    // above), and testing this avoids going through a few multiplications and
+//    // the two recursive calls (which only lead to the conclusion that there is
+//    // no new kernel row to be found)
+//    long sum_matdeg = 0;
+//    for (long i = 0; i < m2; ++i)
+//        sum_matdeg += rdeg[rows_app_notker[i]];
+//    long sum_kerdeg = 0;
+//    for (long i = 0; i < m1; ++i)
+//        sum_kerdeg += deg(appbas[rows_app_ker[i]][rows_app_ker[i]]);
+//
+//    const bool early_exit = (sum_kerdeg == sum_matdeg);
+//
+//    // if the whole kernel was captured according to the above test, or if
+//    // there was just one column, or if the kernel is full (matrix was zero),
+//    // then we have the whole kernel: just copy and return
+//    if (early_exit || n == 1 || m1 == m)
+//    {
+//        kerbas.SetDims(m1, m);
+//        for (long i = 0; i < m1; ++i)
+//            kerbas[i].swap(appbas[rows_app_ker[i]]);
+//        shift.swap(rdeg1);
+//        return;
+//    }
+//
+//    // Note: for most input matrices/shifts, the following code will not be
+//    // executed because we will have taken early exit
+//
+//    // retrieve the non-kernel part of the approximant
+//    Mat<zz_pX> approx(INIT_SIZE, m2, m);
+//    for (long i = 0; i < m2; ++i)
+//        approx[i].swap(appbas[rows_app_notker[i]]);
+//
+//    // compute residual:
+//    // pmat = trunc(trunc(approx, dA+1)*pmat div x^order, deg(pmat)+deg(approx)-order+1)
+//    middle_product(pmat,approx,pmat,order,deg(pmat)+deg(approx)-order);
+//
+//    // pmat will be column-splitted into two submatrices of column dimension ~ n/2
+//    const long n1 = n/2;
+//    const long n2 = n-n1;
+//
+//    // recursive call 1, with left submatrix of the residual pmat
+//    Mat<zz_pX> pmat_sub(INIT_SIZE, m2, n1);
+//    for (long i = 0; i < m2; ++i)
+//        for (long j = 0; j < n1; ++j)
+//            pmat_sub[i][j] = pmat[i][j];
+//
+//    Mat<zz_pX> kerbas1;
+//    kernel_basis_zls_via_approximation(kerbas1, pmat_sub, rdeg2);
+//
+//    // recursive call 2, with right submatrix of the residual pmat
+//    pmat_sub.SetDims(m2, n2);
+//    for (long i = 0; i < m2; ++i)
+//        for (long j = 0; j < n2; ++j)
+//            pmat_sub[i][j] = pmat[i][n1+j];
+//    multiply(pmat, kerbas1, pmat_sub);
+//    pmat_sub.kill();
+//
+//    kernel_basis_zls_via_approximation(kerbas, pmat, rdeg2);
+//
+//    // if kerbas is empty: (i.e. the approximant basis already captured the
+//    // whole kernel, although we had not guessed it with early_exit)
+//    // --> just copy and return
+//    if (kerbas.NumRows() == 0)
+//    {
+//        kerbas.SetDims(m1, m);
+//        for (long i = 0; i < m1; ++i)
+//            kerbas[i].swap(appbas[rows_app_ker[i]]);
+//        shift.swap(rdeg1);
+//        return;
+//    }
+//
+//    // kerbas is non-empty: we have found new kernel rows
+//    // I/ complete the computation of these rows via
+//    //         kerbas =  kerbas * kerbas1 * approx
+//    // II/ merge this with rows from the kernel part of appbas
+//
+//    // I/ complete the computation of new kernel rows
+//    // We use pmat as a temp, and store the result in approx
+//    // v1:
+//    //multiply(pmat, kerbas, kerbas1);
+//    //multiply(approx, pmat, approx);
+//    // v2:
+//    multiply(pmat, kerbas1, approx);
+//    multiply(approx, kerbas, pmat);
+//    // TODO when FFT / eval is used, this kind of product may be faster by
+//    // avoiding interpolation in the middle (?)
+//
+//    // II/ merge with previously obtained kernel rows, ensuring that
+//    // the resulting basis is in shifted ordered weak Popov form
+//
+//    // Note concerning shift: to ensure that shift contains the correct shifted
+//    // row degree of kerbas, we add the constant diff_shift that had been
+//    // removed from the input shift
+//
+//    // Note that `rows_app_ker` is the shifted pivot index of the kernel part
+//    // of `appbas`
+//    // --> we need to compute the shifted pivot index of the newly found rows
+//    // of the kernel, as follows (note that copy_shift is a copy of the input
+//    // shift, while here `shift` is used as a temporary variable which will
+//    // store pivot degrees, which we discard):
+//    VecLong pivots_approx;
+//    row_pivots(pivots_approx, shift, approx, copy_shift);
+//
+//    const long ker_dim = m1 + approx.NumRows();
+//    kerbas.SetDims(ker_dim, m);
+//    shift.resize(ker_dim);
+//    long i=0, i_appbas=0, i_approx=0;
+//    while (i_appbas < m1 && i_approx < approx.NumRows())
+//    {
+//        if (rows_app_ker[i_appbas] < pivots_approx[i_approx])
+//        {
+//            // row already captured in preliminary appbas computation
+//            kerbas[i].swap(appbas[rows_app_ker[i_appbas]]);
+//            shift[i] = rdeg1[i_appbas]+diff_shift;
+//            ++i_appbas; ++i;
+//        }
+//        else
+//        {
+//            // row computed via recursive calls and stored in `approx`
+//            kerbas[i].swap(approx[i_approx]);
+//            shift[i] = rdeg2[i_approx]+diff_shift;
+//            ++i_approx; ++i;
+//        }
+//    }
+//    while (i_appbas < m1)
+//    {
+//        // row already captured in preliminary appbas computation
+//        kerbas[i].swap(appbas[rows_app_ker[i_appbas]]);
+//        shift[i] = rdeg1[i_appbas]+diff_shift;
+//        ++i_appbas; ++i;
+//    }
+//    while (i_approx < approx.NumRows())
+//    {
+//        // row computed via recursive calls and stored in `approx`
+//        kerbas[i].swap(approx[i_approx]);
+//        shift[i] = rdeg2[i_approx]+diff_shift;
+//        ++i_approx; ++i;
+//    }
+}
+
+
+
 
 
 /**

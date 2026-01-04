@@ -19,16 +19,16 @@
 
 #include "nmod_poly_mat_kernel.h"
 
-TEST_FUNCTION_START(nmod_poly_mat_kernel_via_approx, state)
+TEST_FUNCTION_START(nmod_poly_mat_kernel_zls_approx, state)
 {
     int i, result;
 
     for (i = 0; i < 16 * flint_test_multiplier(); i++)
     {
         ulong nbits = 2 + n_randint(state, 63);
-        slong rdim = n_randint(state, 30);
-        slong cdim = n_randint(state, 30);
-        ulong len = 1 + n_randint(state, 100);
+        slong rdim = n_randint(state, 20);
+        slong cdim = n_randint(state, 20);
+        ulong len = 1 + n_randint(state, 40);
         flint_printf("TEST iter %ld -- %ld, %ld, %ld\n", i, rdim, cdim, len);
 
         slong * shift = FLINT_ARRAY_ALLOC(rdim, slong);
@@ -45,17 +45,20 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel_via_approx, state)
         nmod_poly_mat_t pmat;
         nmod_poly_mat_init(pmat, rdim, cdim, prime);
         nmod_poly_mat_randtest(pmat, state, len);
+        nmod_poly_mat_t copy_pmat;
+        nmod_poly_mat_init_set(copy_pmat, pmat);
 
         nmod_poly_mat_t ker;
         nmod_poly_mat_init(ker, rdim, rdim, prime);
         /* TODO test weak Popov + pivind */
         /* TODO currently does not test generation */
-        slong nz = nmod_poly_mat_kernel_via_approx(ker, pivind, rdeg, pmat);
+        slong nz = nmod_poly_mat_kernel_zls_approx(ker, pivind, rdeg, pmat);
         flint_printf("kernel computed, now testing...\n");
-        result = nmod_poly_mat_is_kernel(ker, nz, shift, pmat, ROW_LOWER);
+        result = nmod_poly_mat_is_kernel(ker, nz, shift, copy_pmat, ROW_LOWER);
 
-        nmod_poly_mat_clear(pmat);
         nmod_poly_mat_clear(ker);
+        nmod_poly_mat_clear(pmat);
+        nmod_poly_mat_clear(copy_pmat);
         flint_free(shift);
         flint_free(rdeg);
         flint_free(pivind);
