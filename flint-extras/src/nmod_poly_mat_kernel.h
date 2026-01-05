@@ -69,8 +69,15 @@ extern "C" {
  * only the first `nz` entries matter in output.
  */
 
-/** general interface */
-/* TODO `form` not really implemented yet, only shifted weak Popov */
+/** general interface
+ * -> all four orientations are supported (ROW_LOWER|ROW_UPPER yield a left
+ *  kernel basis while COL_LOWER|COL_UPPER yield a right kernel basis)
+ * -> pivind may be NULL if that information is not wanted
+ * -> shift may be NULL in input, in which case it is left NULL in output, and
+ *  the basis is computed in weak Popov form with respect to row degrees of
+ *  `pmat` (if left kernel) or column degrees of `pmat` (if right kernel)
+ */
+/* TODO `form` not implemented yet, only shifted weak Popov */
 slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
                            slong * pivind,
                            slong * shift,

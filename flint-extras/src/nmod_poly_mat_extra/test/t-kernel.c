@@ -143,10 +143,6 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel, state)
 
             if (!result)
             {
-                flint_printf("true rdeg == %{slong*}\n", rdeg, nz);
-                flint_printf("got  rdeg == %{slong*}\n", rdeg_check, nz);
-                flint_printf("true pivind == %{slong*}\n", pivind, nz);
-                flint_printf("got  pivind == %{slong*}\n", pivind_check, nz);
                 TEST_FUNCTION_FAIL("(kernel, rdeg/pivind) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
                                    rdim, cdim, len, prime, orient);
             }
@@ -194,8 +190,7 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel, state)
         /* kernel interface */
         {
             poly_mat_form_t form = ORD_WEAK_POPOV;
-            /* orientation_t orient = (n_randint(state, 2)) ? COL_LOWER : COL_UPPER; */
-            orientation_t orient = COL_UPPER;
+            orientation_t orient = (n_randint(state, 2)) ? COL_LOWER : COL_UPPER;
 
             for (slong j = 0; j < cdim; j++)
                 cdeg[j] = shift[j];
@@ -219,10 +214,6 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel, state)
 
             if (!result)
             {
-                flint_printf("true cdeg == %{slong*}\n", cdeg, nz);
-                flint_printf("got  cdeg == %{slong*}\n", cdeg_check, nz);
-                flint_printf("true pivind == %{slong*}\n", pivind, nz);
-                flint_printf("got  pivind == %{slong*}\n", pivind_check, nz);
                 TEST_FUNCTION_FAIL("(kernel, rdeg/pivind) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
                                    rdim, cdim, len, prime, orient);
             }
