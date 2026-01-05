@@ -13,12 +13,14 @@
 
 #include <flint/flint.h>
 #include <flint/nmod_mat.h>
+#include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
 #include <flint/perm.h>
 #include <math.h>
 #include <stdlib.h>
 
 #include "nmod_poly_mat_extra.h"
+#include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_kernel.h"
 #include "nmod_poly_mat_multiply.h"
 
@@ -117,8 +119,6 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
                                       slong * shift,
                                       nmod_poly_mat_t pmat)
 {
-    /* flint_printf("call %ld, %ld\n", pmat->r, pmat->c); */
-    /* nmod_poly_mat_degree_matrix_print_pretty(pmat); */
     const slong m = pmat->r;
     const slong n = pmat->c;
 
@@ -126,7 +126,6 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     if (m == 0 || n == 0
         || ((m == 1 || n == 1) && (nmod_poly_mat_max_length(pmat) == 0)))
     {
-        /* flint_printf("base case empty||zero!\n"); */
         nmod_poly_mat_one(ker);
         for (slong i = 0; i < m; i++)
             pivind[i] = i;
@@ -136,11 +135,6 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     /* one (nonzero) row vector */
     if (m == 1)
         return 0;
-
-    /* one (nonzero) column vector */
-    /* TODO */
-    /* if (n == 1) */
-    /*     return 0; */
 
     /* if n > m/2 (with here m >= 2), straightforward recursion by splitting */
     /* the matrix into two submatrices with n/2 columns                      */
@@ -224,7 +218,6 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     /* early exit: pmat == 0 => kernel is identity */
     if (maxdeg == -1)
     {
-        /* flint_printf("second base case zero!\n"); */
         nmod_poly_mat_one(ker);
         for (slong i = 0; i < m; i++)
             pivind[i] = i;
@@ -248,6 +241,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     /* run an easy degree-based detection of rows in the kernel */
     /* permute ker into [kernel rows \\ other rows], preserving increasing pivots */
     slong nz = 0;
+    slong sum_pmatdeg = 0;  /* sum of degrees of rows of pmat in complement of pivind */
     for (slong i = 0; i < m; i++)
     {
         if (shift[i] < order + diff_shift)
@@ -256,44 +250,29 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
             nz += 1;
         }
         else
+        {
+            sum_pmatdeg += FLINT_MAX(0, buf[i]);
             buf[i - nz] = i;
+        }
     }
     for (slong i = nz; i < m; i++)
         pivind[i] = buf[i - nz];
 
     nmod_poly_mat_permute_rows(ker, pivind, shift);
-    /* flint_printf("pmbasis ok, found %ld rows\n", nz); */
-    /* flint_printf("pivind: %{slong*}\n", pivind, m); */
-    /* nmod_poly_mat_degree_matrix_print_pretty(ker); */
 
     /* early exit */
-    /* TODO */
-//    // if the sum of pivot degrees in the part of kernel basis computed is
-//    // equal to one of the upper bounds (here, sum of row degrees of pmat for
-//    // non-pivot rows), then we know that we have captured the whole kernel
-//    // --> this is often the case (e.g. in the generic situation mentioned
-//    // above), and testing this avoids going through a few multiplications and
-//    // the two recursive calls (which only lead to the conclusion that there is
-//    // no new kernel row to be found)
-//    long sum_matdeg = 0;
-//    for (long i = 0; i < m2; ++i)
-//        sum_matdeg += rdeg[rows_app_notker[i]];
-//    long sum_kerdeg = 0;
-//    for (long i = 0; i < m1; ++i)
-//        sum_kerdeg += deg(appbas[rows_app_ker[i]][rows_app_ker[i]]);
-//
-//    const bool early_exit = (sum_kerdeg == sum_matdeg);
-//
-//    // if the whole kernel was captured according to the above test, or if the kernel is full (matrix was zero),
-//    // then we have the whole kernel: just copy and return
-//    if (early_exit)
-//    {
-//        kerbas.SetDims(m1, m);
-//        for (long i = 0; i < m1; ++i)
-//            kerbas[i].swap(appbas[rows_app_ker[i]]);
-//        shift.swap(rdeg1);
-//        return;
-//    }
+    if (nz >= m - n)  /* otherwise, there must be some kernel rows not in ker yet */
+    {
+        slong sum_pivdeg = 0;
+        for (slong i = 0; i < nz; i++)
+            sum_pivdeg += nmod_poly_degree(nmod_poly_mat_entry(ker, i, pivind[i]));
+
+        if (sum_pivdeg == sum_pmatdeg)  /* whole kernel already found */
+        {
+            flint_free(buf);
+            return nz;
+        }
+    }
 
     /* proceed with remaining rows */
     nmod_poly_mat_t residual;  /* actual init */
@@ -306,14 +285,11 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     nmod_poly_mat_window_init(approx, ker, nz, 0, m, m);
     nmod_poly_mat_middle_product_naive(residual, approx, pmat, order, order + maxdeg + 1);
     /* FIXME provide (and use) general middle_product interface */
-
-    /* TODO handle zero rows in G? */
+    /* note: on non-generic input, one might want to check for zero rows in residual */
 
     /* kernel of residual */
     nmod_poly_mat_init(ker2, m - nz, m - nz, pmat->modulus);
     const slong nz2 = nmod_poly_mat_kernel_zls_approx(ker2, buf, shift + nz, residual);
-    /* flint_printf("second kernel ok, found %ld rows\n", nz2); */
-    /* flint_printf("pivind: %{slong*}\n", buf, m - nz); */
 
     /* if nz2 == 0, whole kernel already computed, just return */
     if (nz2 == 0)
@@ -326,22 +302,14 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     }
 
     /* multiply to get missing part of kernel */
-    /* flint_printf("nz2 == %ld\n", nz2); */
-    /* nmod_poly_mat_degree_matrix_print_pretty(ker2); */
-    /* nmod_poly_mat_degree_matrix_print_pretty(approx); */
     nmod_poly_mat_window_init(ker2nz, ker2, 0, 0, nz2, ker2->c);
     nmod_poly_mat_init(prod, nz2, m, pmat->modulus);
     nmod_poly_mat_mul(prod, ker2nz, approx);
-    /* flint_printf("before swap::\n"); */
-    /* nmod_poly_mat_degree_matrix_print_pretty(prod); */
-    /* nmod_poly_mat_degree_matrix_print_pretty(ker); */
     for (slong i = 0; i < nz2; i++)
         for (slong j = 0; j < m; j++)
             FLINT_SWAP(nmod_poly_struct,
                        *nmod_poly_mat_entry(prod, i, j),
                        *nmod_poly_mat_entry(approx, i, j));
-    /* flint_printf("after swap::\n"); */
-    /* nmod_poly_mat_degree_matrix_print_pretty(ker); */
 
     /* update pivind */
     for (slong i = 0; i < nz2; i++)
@@ -365,9 +333,9 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
             i2++;
         }
     }
-    /* flint_printf("permutation buf: %{slong*}\n", buf, nz + nz2); */
+
     nmod_poly_mat_permute_rows(approx, buf, NULL);
-    slong * tmp = FLINT_ARRAY_ALLOC(nz + nz2, slong);  /* use TMP_ALLOC */
+    slong * tmp = FLINT_ARRAY_ALLOC(nz + nz2, slong);
     for (slong i = 0; i < nz + nz2; i++)
         tmp[i] = pivind[i];
     for (slong i = 0; i < nz + nz2; i++)
@@ -385,7 +353,6 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     nmod_poly_mat_clear(prod);
     flint_free(buf);
 
-    /* nmod_poly_mat_degree_matrix_print_pretty(ker); */
     return nz + nz2;
 }
 

@@ -1,3 +1,15 @@
+/*
+    Copyright (C) 2026 Vincent Neiger
+
+    This file is part of PML.
+
+    PML is free software: you can redistribute it and/or modify it under
+    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+    as published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version. See
+    <https://www.gnu.org/licenses/>.
+*/
+
 #include <stdlib.h>  // for atoi
 
 #include <flint/ulong_extras.h>
@@ -112,6 +124,36 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     nmod_poly_mat_clear(ker);                           \
 }
 
+void time_nullspace(time_args targs, flint_rand_t state)
+{
+    const slong rdim = targs.rdim;
+    const slong cdim = targs.cdim;
+    const slong deg = targs.deg;
+    /* const slong rank = targs.rank; */ /* TODO */
+    const slong n = targs.modn;
+
+    nmod_t mod;
+    nmod_init(&mod, n);
+
+    nmod_poly_mat_t pmat;
+    nmod_poly_mat_init(pmat, cdim, rdim, n);
+    nmod_poly_mat_rand(pmat, state, deg);
+
+    nmod_poly_mat_t ker;
+    nmod_poly_mat_init(ker, rdim, rdim, n);
+
+    double FLINT_SET_BUT_UNUSED(tcpu), twall;
+
+    TIMEIT_START;
+    nmod_poly_mat_nullspace(ker, pmat);
+    TIMEIT_STOP_VALUES(tcpu, twall);
+
+    flint_printf("%.2e", twall);
+
+    nmod_poly_mat_clear(pmat);
+    nmod_poly_mat_clear(ker);
+}
+
 TIME_KER_ZLS(kernel_zls)
 TIME_KER(kernel_via_approx)
 TIME_KER(kernel_zls_approx)
@@ -126,15 +168,6 @@ int main(int argc, char ** argv)
     flint_rand_init(state);
     flint_rand_set_seed(state, time(NULL), time(NULL)+129384125L);
 
-    // modulus bitsize
-    /* const slong nbits = 7; */
-    /* const ulong bits[] = {12, 24, 30, 40, 50, 60, 63}; */
-
-    // matrix dimensions
-    /* const slong ndims = 10; */
-    /* const ulong rdims[] = {2, 4, 6, 8, 11, 15, 20, 30, 50, 100}; */
-    /* const ulong cdims[] = {1, 3, 5, 7,  9, 13, 17, 25, 40, 75}; */
-
     // matrix degrees
     const slong ndegs = 13;
     const ulong degs[] = {2, 5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240};
@@ -143,12 +176,13 @@ int main(int argc, char ** argv)
     /* TODO shift type */
 
     // bench functions
-    const slong nfuns = 3;
+    const slong nfuns = 4;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
         time_kernel_via_approx,               // 0
         time_kernel_zls_approx,               // 1
-        time_kernel_zls,                      // 2
+        time_nullspace,                       // 2
+        time_kernel_zls,                      // 3
     };
 
     // TODO
@@ -168,9 +202,10 @@ int main(int argc, char ** argv)
     //#endif
 
     const char * description[] = {
-        "#0  --> via approx       ",
-        "#1  --> ZLS via approx   ",
-        "#2  --> .... TODO                ",
+        "#0  --> via approx           ",
+        "#1  --> ZLS via approx       ",
+        "#2  --> FLINT's nullspace    ",
+        "#3  --> ZLS via approx(bis)  ",
     };
 
     if (argc < 4 || argc > 6)  // show usage

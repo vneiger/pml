@@ -28,8 +28,8 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel, state)
     for (i = 0; i < 100 * flint_test_multiplier(); i++)
     {
         ulong nbits = 2 + n_randint(state, 63);
-        slong rdim = n_randint(state, 12);
         slong cdim = n_randint(state, 12);
+        slong rdim = n_randint(state, 12);
         ulong len = 1 + n_randint(state, 150);
 
         slong * shift = FLINT_ARRAY_ALLOC(rdim, slong);
