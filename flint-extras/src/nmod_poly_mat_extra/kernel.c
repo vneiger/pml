@@ -23,14 +23,101 @@
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_kernel.h"
 #include "nmod_poly_mat_multiply.h"
+#include "nmod_poly_mat_utils.h"
 
-/* general interface:
- * A/ compute rdeg and cdeg
- * ->suppress zero columns
- * ->trivialize zero rows
- * B/ handle case of constant matrices
- * C/ go for zls
- * */
+slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
+                           slong * pivind,
+                           slong * shift,
+                           const nmod_poly_mat_t pmat,
+                           poly_mat_form_t form,
+                           orientation_t orient)
+{
+    if (form > ORD_WEAK_POPOV)
+        flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_kernel). form > ORD_WEAK_POPOV not implemented.");
+
+    if (orient == ROW_LOWER)
+    {
+        nmod_poly_mat_t mat;
+        nmod_poly_mat_init_set(mat, pmat);
+        slong nz = nmod_poly_mat_kernel_zls_approx(ker, pivind, shift, mat);
+        nmod_poly_mat_clear(mat);
+        return nz;
+    }
+
+    if (orient == COL_UPPER)
+    {
+        /* transpose input, call ROW_LOWER, transpose output */
+        nmod_poly_mat_t mat_t;
+        nmod_poly_mat_t ker_t;
+        nmod_poly_mat_init(mat_t, pmat->c, pmat->r, pmat->modulus);
+        nmod_poly_mat_init(ker_t, ker->c, ker->r, ker->modulus);
+        nmod_poly_mat_transpose(mat_t, pmat);
+        slong nz = nmod_poly_mat_kernel_zls_approx(ker_t, pivind, shift, mat_t);
+        nmod_poly_mat_transpose(ker, ker_t);
+        nmod_poly_mat_clear(ker_t);
+        nmod_poly_mat_clear(mat_t);
+        return nz;
+    }
+
+    if (orient == ROW_UPPER)
+    {
+        /* mirror rows of input, call ROW_LOWER, mirror columns+rows of output */
+        nmod_poly_mat_t mat_i;
+        nmod_poly_mat_init_set(mat_i, pmat);
+        nmod_poly_mat_invert_rows(mat_i, shift);
+        slong nz = nmod_poly_mat_kernel_zls_approx(ker, pivind, shift, mat_i);
+        nmod_poly_mat_t kernz;
+        nmod_poly_mat_window_init(kernz, ker, 0, 0, nz, ker->c);
+        nmod_poly_mat_invert_rows(kernz, shift);
+        nmod_poly_mat_invert_columns(kernz, NULL);
+        for (slong i = 0; i < nz/2; i++)
+        {
+            slong tmp = ker->c - 1 - pivind[i];
+            pivind[i] = ker->c - 1 - pivind[nz - 1 - i];
+            pivind[nz - 1 - i] = tmp;
+        }
+        if (nz % 2)
+            pivind[nz/2] = ker->c - 1 - pivind[nz/2];
+        nmod_poly_mat_window_clear(kernz);
+        nmod_poly_mat_clear(mat_i);
+        return nz;
+    }
+
+    if (orient == COL_LOWER)
+    {
+        /* transpose input, call ROW_UPPER, transpose output */
+        nmod_poly_mat_t mat_it;
+        nmod_poly_mat_t ker_it;
+        nmod_poly_mat_init(mat_it, pmat->c, pmat->r, pmat->modulus);
+        nmod_poly_mat_init(ker_it, ker->c, ker->r, ker->modulus);
+        nmod_poly_mat_transpose(mat_it, pmat);
+
+        nmod_poly_mat_invert_rows(mat_it, shift);
+        slong nz = nmod_poly_mat_kernel_zls_approx(ker_it, pivind, shift, mat_it);
+        nmod_poly_mat_t kernz;
+        nmod_poly_mat_window_init(kernz, ker_it, 0, 0, nz, ker_it->c);
+        nmod_poly_mat_invert_rows(kernz, shift);
+        nmod_poly_mat_invert_columns(kernz, NULL);
+        for (slong i = 0; i < nz/2; i++)
+        {
+            slong tmp = ker_it->c - 1 - pivind[i];
+            pivind[i] = ker_it->c - 1 - pivind[nz - 1 - i];
+            pivind[nz - 1 - i] = tmp;
+        }
+        if (nz % 2)
+            pivind[nz/2] = ker_it->c - 1 - pivind[nz/2];
+        nmod_poly_mat_window_clear(kernz);
+
+        nmod_poly_mat_transpose(ker, ker_it);
+        nmod_poly_mat_clear(ker_it);
+        nmod_poly_mat_clear(mat_it);
+        return nz;
+    }
+
+    flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_kernel). Requested orientation not implemented.");
+}
+
+
 
 slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
                                       slong * pivind,

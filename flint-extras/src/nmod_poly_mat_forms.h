@@ -30,11 +30,9 @@
  *
  */
 
-#include <flint/fmpz_types.h> // for fmpz_mat (degree matrix)
-//#include <flint/nmod_types.h>
-#include <flint/nmod_poly_mat.h> // fmpz_types not enough, need NMOD_POLY_MAT_INLINE
-
 #include "pml.h"
+#include <flint/fmpz_types.h> // for fmpz_mat (degree matrix)
+#include <flint/nmod_poly_mat.h> // fmpz_types not enough, need NMOD_POLY_MAT_INLINE
 
 #ifdef __cplusplus
 extern "C" {
@@ -495,7 +493,7 @@ int nmod_poly_mat_is_form(const nmod_poly_mat_t mat,
         return nmod_poly_mat_is_echelon(mat, orient);
     if (form == HERMITE)
         return nmod_poly_mat_is_echelon(mat, orient);
-    return -1;
+    flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_is_form). Requested form not implemented.");
 }
 
 //@} // doxygen group: Testing polynomial matrix forms

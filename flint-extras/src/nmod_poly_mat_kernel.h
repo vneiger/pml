@@ -69,18 +69,14 @@ extern "C" {
  * only the first `nz` entries matter in output.
  */
 
-/* general interface */
-/* `form` not really implemented yet, only shifted weak Popov */
+/** general interface */
+/* TODO `form` not really implemented yet, only shifted weak Popov */
 slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
                            slong * pivind,
                            slong * shift,
                            const nmod_poly_mat_t pmat,
                            poly_mat_form_t form,
                            orientation_t orient);
-// ROW_LOWER -> direct call
-// COL_UPPER -> transpose input, call, transpose output
-// ROW_UPPER -> mirror rows of input, call, mirror columns+rows of output
-// COL_LOWER -> 
 
 /** Computes a `shift`-ordered weak Popov left kernel basis `ker` for `pmat`,
  * through a minimal approximant basis at sufficiently large order.
@@ -112,6 +108,13 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
 /*                                       slong * shift, */
 /*                                       const nmod_poly_mat_t pmat); */
 
+/* FIXME could add a "prepare pmat" function:
+ * A/ compute rdeg and cdeg
+ * ->suppress zero columns
+ * ->trivialize zero rows
+ * B/ handle case of constant matrices
+ * C/ go for actual work
+ * */
 
 
 

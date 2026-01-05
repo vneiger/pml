@@ -120,67 +120,97 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
                             poly_mat_form_t form,
                             orientation_t orient)
 {
+    if (orient == ROW_UPPER || orient == ROW_LOWER)
+    {
+        const slong rdim = mat->r;
+        const slong cdim = mat->c;
+        const ulong prime = mat->modulus;
+
+        nmod_poly_mat_t residual;
+        nmod_poly_mat_init(residual, rdim, cdim, prime);
+
+        int success = 1;
+
+        /* check kernel has the right column dimension */
+        if (ker->c != rdim)
+        {
+            printf("basis has wrong column dimension\n");
+            success = 0;
+        }
+
+        /* check rank */
+        slong rk = nmod_poly_mat_rank(mat);
+        if (ker->r != rdim - rk)
+        {
+            printf("number of rows does not equal nullity\n");
+            success = 0;
+        }
+
+        /* check kernel has the right form */
+        if (!nmod_poly_mat_is_form(ker, form, shift, orient))
+        {
+            printf("basis does not have the required form\n");
+            success = 0;
+        }
+
+        /* compute residual, check rows of ker are in the kernel */
+        nmod_poly_mat_mul(residual, ker, mat);
+        if (!nmod_poly_mat_is_zero(residual))
+        {
+            printf("not all rows are in the kernel\n");
+            success = 0;
+        }
+
+        nmod_poly_mat_clear(residual);
+
+        return success;
+    }
+
     if (orient == COL_UPPER || orient == COL_LOWER)
     {
-        nmod_poly_mat_t ker_t;
-        nmod_poly_mat_t mat_t;
-        nmod_poly_mat_init(ker_t, ker->c, ker->r, ker->modulus);
-        nmod_poly_mat_transpose(ker_t, ker);
-        nmod_poly_mat_init(mat_t, mat->c, mat->r, mat->modulus);
-        nmod_poly_mat_transpose(mat_t, mat);
+        const slong rdim = mat->r;
+        const slong cdim = mat->c;
+        const ulong prime = mat->modulus;
 
-        int result;
-        if (orient == COL_UPPER)
-            result = nmod_poly_mat_is_kernel(ker_t, shift, mat_t, form, ROW_LOWER);
-        else  /* orient == COL_LOWER */
-            result = nmod_poly_mat_is_kernel(ker_t, shift, mat_t, form, ROW_UPPER);
+        nmod_poly_mat_t residual;
+        nmod_poly_mat_init(residual, rdim, cdim, prime);
 
-        nmod_poly_mat_clear(ker_t);
-        nmod_poly_mat_clear(mat_t);
+        int success = 1;
 
-        return result;
+        /* check kernel has the right column dimension */
+        if (ker->r != cdim)
+        {
+            printf("basis has wrong row dimension\n");
+            success = 0;
+        }
+
+        /* check rank */
+        slong rk = nmod_poly_mat_rank(mat);
+        if (ker->c != cdim - rk)
+        {
+            printf("number of rows does not equal nullity\n");
+            success = 0;
+        }
+
+        /* check kernel has the right form */
+        if (!nmod_poly_mat_is_form(ker, form, shift, orient))
+        {
+            printf("basis does not have the required form\n");
+            success = 0;
+        }
+
+        /* compute residual, check rows of ker are in the kernel */
+        nmod_poly_mat_mul(residual, mat, ker);
+        if (!nmod_poly_mat_is_zero(residual))
+        {
+            printf("not all rows are in the kernel\n");
+            success = 0;
+        }
+
+        nmod_poly_mat_clear(residual);
+
+        return success;
     }
 
-    const slong rdim = mat->r;
-    const slong cdim = mat->c;
-    const ulong prime = mat->modulus;
-
-    nmod_poly_mat_t residual;
-    nmod_poly_mat_init(residual, rdim, cdim, prime);
-
-    int success = 1;
-
-    /* check kernel has the right column dimension */
-    if (ker->c != rdim)
-    {
-        printf("basis has wrong column dimension\n");
-        success = 0;
-    }
-
-    /* check rank */
-    slong rk = nmod_poly_mat_rank(mat);
-    if (ker->r != rdim - rk)
-    {
-        printf("number of rows does not equal nullity\n");
-        success = 0;
-    }
-
-    /* check kernel has the right form */
-    if (!nmod_poly_mat_is_form(ker, form, shift, orient))
-    {
-        printf("basis does not have the required form\n");
-        success = 0;
-    }
-
-    /* compute residual, check rows of ker are in the kernel */
-    nmod_poly_mat_mul(residual, ker, mat);
-    if (!nmod_poly_mat_is_zero(residual))
-    {
-        printf("not all rows are in the kernel\n");
-        success = 0;
-    }
-
-    nmod_poly_mat_clear(residual);
-
-    return success;
+    flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_is_kernel). Requested orientation not implemented.");
 }
