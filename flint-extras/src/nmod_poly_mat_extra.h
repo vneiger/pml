@@ -86,24 +86,4 @@ void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat);
  */
 
 
-/*****************************
-*  Verification algorithms  *
-*****************************/
-
-int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
-                                       const nmod_poly_mat_t pmat,
-                                       slong order,
-                                       const slong * shift,
-                                       orientation_t orient);
-
-int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
-                            const nmod_poly_mat_t pmat,
-                            const slong * shift,
-                            orientation_t orient);
-
-
-
 #endif // NMOD_POLY_MAT_EXTRA_H
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

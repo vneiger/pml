@@ -182,14 +182,13 @@
  * \param[in] order order
  * \param[in] shift shift
  * \param[in] form required form for `appbas` (see #poly_mat_form_t)
- * \param[in] row_wise indicates whether to compute left approximants (working row-wise) or right approximants (working column-wise)
+ * \param[in] orient indicates the orientation (left/right approximants) and the definition of pivots
  * \param[in] randomized if `true`, the algorithm may use a Monte Carlo or Las Vegas verification algorithm
  *
  * \return boolean, result of the verification
  *
- * \todo add parameter row_wise
+ * \todo update documentation
  * \todo support all options, make doc more clear concerning Las Vegas / Monte Carlo
- * \todo WARNING! for the moment, does not really check generation!
  * \todo WARNING! for the moment, hardcoded to check for ordered weak Popov
  */
 int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
@@ -243,81 +242,15 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
 
 
 /** @name Approximant basis via linear algebra
- * \anchor mbasis1
+ * \anchor approx_linalg
  *
  *  These functions compute a shifted minimal or shifted Popov approximant
  *  basis using fast linear algebra on constant matrices.
- *
- *  Currently, this is only implemented for the uniform order `(1,...,1)`, following
- *  the algorithm _mbasis_ described in
- *  - P. Giorgi, C.-P. Jeannerod, G. Villard. Proceeding ISSAC 2003,
- *  - P. Giorgi, R. Lebreton. Proceedings ISSAC 2014,
- *  - C.-P. Jeannerod, V. Neiger, G. Villard. Preprint 2018.
- *
- *  The latter reference explicitly shows how to ensure that we obtain the
- *  canonical s-Popov approximant basis.
  *
  *  \todo implement the general Krylov-based approach from JNSV17, which
  *  efficiently solves the problem when the sum of the orders is small
  */
 //@{
-
-/** Computes a shifted Popov approximant basis at order `(1,...,1)` using fast
- * linear algebra on constant matrices. Thus, in this context, the input matrix
- * `pmat` is a constant matrix. This approximant basis consists of two sets of
- * rows:
- * - rows forming a left kernel basis in reduced row echelon form of some
- *   row-permutation of `pmat` (the permutation depends on the shift)
- * - the other rows are coordinate vectors multiplied by the variable `x`;
- *   there is one such row at each index `i` which is not among the pivot
- *   indices of the left kernel basis above.
- *
- * Here the whole approximant basis is stored in the OUT parameter `appbas`.
- *
- * \param[out] appbas polynomial matrix
- * \param[in] pmat constant matrix
- * \param[in] shift shift (vector of integers)
- *
- * \todo modify shift in place
- * \todo does it return Popov? if yes name it popov_mbasis1 and write mbasis1
- * if that makes sense; otherwise write other version popov_mbasis1
- * \todo safety correctness checks
- * \todo is output Popov by this method? check
- * \todo seems that it does not return owP ? (see test_mbasis1.c)
- */
-void mbasis1(nmod_poly_mat_t appbas,
-             slong * res_shift,
-             const nmod_mat_t mat,
-             const slong * shift);
-
-/** Computes a shifted Popov approximant basis at order `(1,...,1)` using fast
- * linear algebra on constant matrices. Thus, in this context, the input matrix
- * `pmat` is a constant matrix. This approximant basis consists of two sets of
- * rows:
- * - rows forming a left kernel basis in reduced row echelon form of some
- *   row-permutation of `pmat` (the permutation depends on the shift)
- * - the other rows are coordinate vectors multiplied by the variable `x`;
- *   there is one such row at each index `i` which is not among the pivot
- *   indices of the left kernel basis above.
- *
- * Here only the first set of rows is stored in the OUT parameter `kerbas`,
- * along with permutation...
- * \todo improve doc, to say exactly what this computes (and what is the return
- * value?)
- *
- * \param[out] kerbas constant matrix
- * \param[in] pmat constant matrix
- * \param[in] shift shift (vector of integers)
- *
- * \todo modify shift in place
- * \todo safety correctness checks
- * \todo is output Popov by this method? check
- */
-slong mbasis1_for_mbasis(nmod_mat_t kerbas,
-                         slong * res_shift,
-                         slong * res_perm,
-                         const nmod_mat_t mat,
-                         const slong * shift);
 
 //@} // doxygen group: Approximant basis via linear algebra
 
@@ -378,14 +311,6 @@ void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
  */
 //@{
 
-/** 
- * TODO old doc, to be cleaned (new doc below, maybe not complete enough)
- * F \in K[x]^{nxm} <-> F_prime K^{mxn}[x] FIX and
- * Compute P_{k-1} \in K[x]^{mxm} with the list structured_multiplication_blocks
- * Compute x^{-k} P_{k-1} F mod x iteratively with a naive polynomial multiplication  
- *
- * Use naive polynomial multiplication and list_structured_multiplication_blocks 
- */
 /** Computes a `shift`-ordered weak Popov approximant basis for `(pmat,order)`
  * using the algorithm PM-Basis (see @ref pmbasis) */
 
