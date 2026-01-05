@@ -1157,3 +1157,36 @@ int nmod_poly_mat_approximant_kernel(nmod_poly_mat_t N, slong * FLINT_UNUSED(deg
  * The maximum pivot degree also gives a bound on max(rdeg_s(ker)): pick one of
  * the bounds above for sum of pivot degrees, and add max(s) - min(s).
  */
+
+/** Expected degree / order for approximation in ZLS algorithm.
+ *
+ * For the moment, the code in zls_approx, when n <= m/2, uses the approximation order
+ *     order = 1 + max(maxdeg, 1 + floor((sum(shift) - 1) / (m - n)))
+ * where maxdeg is deg(pmat) and shift >= rdeg(pmat) entry-wise
+ * (more precisely, the code implicitly ensures min(shift - rdeg(pmat)) == 0)
+ *
+ * Note that any order > 0 is enough to guarantee that the algorithm terminates,
+ * but order too small may impact performance. We pick order that is large
+ * enough to provide the whole kernel in some generic/frequent situations.
+ *
+ * -> `1 + maxdeg` is because any lower order is too low: it means ignoring top
+ *  degree coefficients of `pmat`
+ *
+ * -> the other term, `1 + dbound` where
+ *      dbound = 1 + floor((sum(shift) - 1) / (m - n))
+ * is because this is the expected maximum entry of the shift-row degree of a
+ * shift-weak Popov kernel basis P, if degrees are balanced in a generic way.
+ *
+ * Indeed: let dbound = max(rdeg_s(P))
+ * . sum(rdeg_s(P)) <= sum(s) is known (Zhou-Labahn-Storjohann, 2012)
+ * . if we assume degrees are well balanced (which happens generically):
+ * then rdeg_s(P) consists of nz values all equal to dbound or dbound - 1
+ * -> dbound + (nz - 1) * (dbound - 1) <= sum(s)
+ * -> dbound <= floor((sum(s) + (nz - 1)) / nz)
+ *            = 1 + floor((sum(s) - 1) / nz)                                        
+ *           <= 1 + floor((sum(s) - 1) / (m - n)).
+ *
+ * Note also that since s >= rdeg(pmat), we have rdeg(p*pmat) <= rdeg_s(p) < order
+ * for any row vector p such that rdeg_s(p) <= dbound. So, approximants of pmat
+ * whose s-degree is <= dbound are necessarily actual kernel rows p*pmat == 0.
+ */
