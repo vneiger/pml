@@ -148,38 +148,6 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
                             orientation_t orient);
 
 
-/**
- *
- *  Right shifted kernel of a polynomial matrix, assuming that the columns has been
- *     sorted by shifted degree
- *
- *  Algorithm of Wei Zhou, George Labahn, and Arne Storjohann
- *   "Computing Minimal Nullspace Bases"
- *    ISSAC 2012, https://dl.acm.org/doi/abs/10.1145/2442829.2442881
- *
- *  Calls nmod_poly_mat_zls_sorted after an initial sorting
- *
- *  TODO/TO SEE:
- *
- * Input:
- *    iA in m x n
- *     ishift[n], NULL (the degrees are computed) or initialized outside,
- *      the shift for the kernel
- *      values should be at least 0 (even for zero columns in A
- *      "with entries arranged in non-decreasing order and bounding the
- *       corresponding column degrees of A."
- *    kappa, a double >= 2, for the order of the order bases
- *              kappa * s instead of 3 *s in ZLS
- *
- *  Output:
- *    returns the dimension w of the kernel, which may be zero
- *    N, is initialized  n x n outside
- *       its first w columns give a minimal basis of the kernel
- *    degN[n], initialized outside, its first w entries are concerned,
- *        they are the ishift shifted degrees of the kernel basis
- *
- */
-
 #ifdef __cplusplus
 }
 #endif
