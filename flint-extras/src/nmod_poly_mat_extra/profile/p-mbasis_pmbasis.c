@@ -30,8 +30,8 @@ void time_##fun(time_args targs, flint_rand_t state)    \
 {                                                       \
     const slong rdim = targs.rdim;                      \
     const slong cdim = targs.cdim;                      \
-    const slong order = targs.order;                    \
     const slong deg = targs.deg;                        \
+    const slong order = targs.order;                    \
     /* const slong rank = targs.rank; */ /* TODO */     \
     /* const slong stype = targs.stype; */ /* TODO */   \
     const slong n = targs.modn;                         \
@@ -44,6 +44,8 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     nmod_poly_mat_rand(F, state, deg);                  \
                                                         \
     slong * shift = FLINT_ARRAY_ALLOC(rdim, slong);     \
+    for (slong i = 0; i < rdim; i++)                    \
+        shift[i] = 0;                                   \
     nmod_poly_mat_t P;                                  \
     nmod_poly_mat_init(P, rdim, rdim, n);               \
                                                         \
