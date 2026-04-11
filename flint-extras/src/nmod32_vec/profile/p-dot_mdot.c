@@ -360,6 +360,7 @@ int main(int argc, char ** argv)
     const slong nlens = 10;
     const ulong lens[] = {50, 100, 250, 500, 1000, 2500, 5000, 10000, 100000, 1000000};
 
+#if PML_HAVE_AVX512
     // bench functions
     const slong nfuns = 16;
     typedef void (*timefun) (time_args, flint_rand_t);
@@ -421,6 +422,74 @@ int main(int argc, char ** argv)
         "#15 --> mdot3_split_avx512            ",
     };
 
+#elif PML_HAVE_AVX2
+    // bench functions
+    const slong nfuns = 11;
+    typedef void (*timefun) (time_args, flint_rand_t);
+    const timefun funs[] = {
+        time_dot_split,                 // 0
+        time_dot_split_avx2,            // 1
+        time_dot_msolve_avx2,           // 2
+        time_mdot_split,                // 3
+        time_mdot_split_avx2,           // 4
+        time_mdot_msolve_via_dot_avx2,  // 5
+        time_mdot_msolve_native_avx2,   // 6
+        time_mdot2_split,               // 7
+        time_mdot2_split_avx2,          // 8
+        time_mdot3_split_avx2,          // 9
+    };
+
+    typedef void (*samplefun) (void*, ulong);
+    const samplefun sfuns[] = {
+        sample_dot_split,                 // 0
+        sample_dot_split_avx2,            // 1
+        sample_dot_msolve_avx2,           // 2
+        sample_mdot_split,                // 3
+        sample_mdot_split_avx2,           // 4
+        sample_mdot_msolve_via_dot_avx2,  // 5
+        sample_mdot_msolve_native_avx2,   // 6
+        sample_mdot2_split,               // 7
+        sample_mdot2_split_avx2,          // 8
+        sample_mdot3_split_avx2,          // 9
+    };
+
+    const char * description[] = {
+        "#0  --> dot_split                     ",
+        "#1  --> dot_split_avx2                ",
+        "#2  --> dot_msolve_avx2               ",
+        "#3  --> mdot_split                    ",
+        "#4  --> mdot_split_avx2               ",
+        "#5  --> mdot_msolve_via_dot_avx2      ",
+        "#6  --> mdot_msolve_native_avx2       ",
+        "#7  --> mdot2_split                   ",
+        "#8  --> mdot2_split_avx2              ",
+        "#9  --> mdot3_split_avx2              ",
+    };
+
+#else /* i.e. neither PML_HAVE_AVX512 nor PML_HAVE_AVX2 */
+    // bench functions
+    const slong nfuns = 3;
+    typedef void (*timefun) (time_args, flint_rand_t);
+    const timefun funs[] = {
+        time_dot_split,                 // 0
+        time_mdot_split,                // 1
+        time_mdot2_split,               // 2
+    };
+
+    typedef void (*samplefun) (void*, ulong);
+    const samplefun sfuns[] = {
+        sample_dot_split,                 // 0
+        sample_mdot_split,                // 1
+        sample_mdot2_split,               // 2
+    };
+
+    const char * description[] = {
+        "#0  --> dot_split                     ",
+        "#1  --> mdot_split                    ",
+        "#2  --> mdot2_split                   ",
+    };
+#endif
+
     if (argc == 1)  // show usage
     {
         printf("Usage: `%s [nbits] [len] [fun]`\n", argv[0]);
@@ -453,7 +522,7 @@ int main(int argc, char ** argv)
     for (slong i = 0; i < 3; i++)
     {
         time_args targs = {1, 10000, UWORD(1) << 20};
-        time_dot_split_avx2(targs, state);
+        time_dot_split(targs, state);
         printf(" ");
     }
     printf("\n\n");
