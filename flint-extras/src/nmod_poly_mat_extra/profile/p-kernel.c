@@ -41,47 +41,6 @@ typedef struct
 }
 time_args;
 
-#define TIME_KER_ZLS(fun)                               \
-void time_##fun(time_args targs, flint_rand_t state)    \
-{                                                       \
-    const slong rdim = targs.rdim;                      \
-    const slong cdim = targs.cdim;                      \
-    const slong deg = targs.deg;                        \
-    /* const slong rank = targs.rank; */ /* TODO */           \
-    /* const slong stype = targs.stype; */ /* TODO */         \
-    const slong n = targs.modn;                         \
-                                                        \
-    nmod_t mod;                                         \
-    nmod_init(&mod, n);                                 \
-                                                        \
-    nmod_poly_mat_t F;                                  \
-    nmod_poly_mat_init(F, rdim, cdim, n);               \
-    nmod_poly_mat_rand(F, state, deg);                  \
-                                                        \
-    /* TMP */                                           \
-    nmod_poly_mat_t Ft;                                 \
-    nmod_poly_mat_init(Ft, cdim, rdim, n);              \
-    nmod_poly_mat_transpose(Ft, F);                     \
-    /* END TMP */                                       \
-                                                        \
-    slong * degN = FLINT_ARRAY_ALLOC(rdim, slong);      \
-    nmod_poly_mat_t K;                                  \
-    nmod_poly_mat_init(K, rdim, rdim, n);               \
-                                                        \
-    double FLINT_SET_BUT_UNUSED(tcpu), twall;           \
-                                                        \
-    TIMEIT_START;                                       \
-    nmod_poly_mat_##fun(K, degN, Ft, NULL, 3.);         \
-    TIMEIT_STOP_VALUES(tcpu, twall);                    \
-                                                        \
-    flint_printf("%.2e", twall);                        \
-                                                        \
-    flint_free(degN);                                   \
-    nmod_poly_mat_clear(F);                             \
-    nmod_poly_mat_clear(Ft); /* TMP */                  \
-    nmod_poly_mat_clear(K);                             \
-}
-
 #define TIME_KER(fun)                                   \
 void time_##fun(time_args targs, flint_rand_t state)    \
 {                                                       \
@@ -154,7 +113,6 @@ void time_nullspace(time_args targs, flint_rand_t state)
     nmod_poly_mat_clear(ker);
 }
 
-TIME_KER_ZLS(kernel_zls)
 TIME_KER(kernel_via_approx)
 TIME_KER(kernel_zls_approx)
 
@@ -176,13 +134,12 @@ int main(int argc, char ** argv)
     /* TODO shift type */
 
     // bench functions
-    const slong nfuns = 4;
+    const slong nfuns = 3;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
         time_kernel_via_approx,               // 0
         time_kernel_zls_approx,               // 1
         time_nullspace,                       // 2
-        time_kernel_zls,                      // 3
     };
 
     // TODO
@@ -205,7 +162,6 @@ int main(int argc, char ** argv)
         "#0  --> via approx           ",
         "#1  --> ZLS via approx       ",
         "#2  --> FLINT's nullspace    ",
-        "#3  --> ZLS via approx(bis)  ",
     };
 
     if (argc < 4 || argc > 6)  // show usage
