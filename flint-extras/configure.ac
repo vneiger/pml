@@ -134,7 +134,7 @@ esac],
 enable_coverage="no")
 
 AC_ARG_ENABLE(debug, [AS_HELP_STRING([--enable-debug],
-              [Compile FLINT with debug information [default=yes]])],
+              [Compile PML with debug information [default=yes]])],
 [case $enableval in
 yes|no)
    if test "$enableval" = "no" && test "$enable_coverage" = "yes";
