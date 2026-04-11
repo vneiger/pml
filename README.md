@@ -6,7 +6,9 @@ matrices, structured matrices, and their applications.
 Version 0.5
 
 Warning: the FLINT-based part of PML (flint-extras folder) is work in progress.
-Currently, it requires FLINT version 3.4.0 (November 2025) or later.
+Currently, it requires FLINT version 3.4.0 (November 2025) or later. Compiling
+benchmark files with `make profile` might further require the current
+development version of FLINT.
  
 ## Authors
 
