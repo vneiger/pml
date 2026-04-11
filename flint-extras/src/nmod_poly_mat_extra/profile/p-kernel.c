@@ -18,6 +18,7 @@
 #include <flint/nmod_vec.h>
 #include <flint/nmod_poly_mat.h>
 
+#include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_kernel.h"
 
@@ -25,9 +26,9 @@
 
 /* Shift types are:
  * -1 -> [TODO not implemented yet] negative shift that represents known degree bound on a kernel basis
- * 0 -> uniform, shift == (0,...,0)
- * 1 -> input degrees: shift == row degrees of input matrix
- * 100 -> shift that yields the kernel basis Hermite form
+ * 0 -> input degrees: shift == row degrees of input matrix
+ * 1 -> uniform: shift == (0,...,0)
+ * 100 -> [TODO not implemented yet] shift that yields the kernel basis Hermite form
  * */
 
 typedef struct
@@ -47,8 +48,8 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     const slong rdim = targs.rdim;                      \
     const slong cdim = targs.cdim;                      \
     const slong deg = targs.deg;                        \
-    /* const slong rank = targs.rank; */ /* TODO */           \
-    /* const slong stype = targs.stype; */ /* TODO */         \
+    /* const slong rank = targs.rank; */ /* TODO */     \
+    const slong stype = targs.stype;                    \
     const slong n = targs.modn;                         \
                                                         \
     nmod_t mod;                                         \
@@ -60,8 +61,10 @@ void time_##fun(time_args targs, flint_rand_t state)    \
                                                         \
     slong * pivind = FLINT_ARRAY_ALLOC(rdim, slong);    \
     slong * shift = FLINT_ARRAY_ALLOC(rdim, slong);     \
-    for (slong i = 0; i < rdim; i++)                    \
-        shift[i] = 0;                                   \
+                                                        \
+    if (stype != 0 && stype != 1)                       \
+        flint_printf("~warning~ unsupported stype\n");  \
+                                                        \
     nmod_poly_mat_t ker;                                \
     nmod_poly_mat_init(ker, rdim, rdim, n);             \
                                                         \
@@ -70,8 +73,11 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     TIMEIT_START;                                       \
     nmod_poly_mat_t copy_pmat;                          \
     nmod_poly_mat_init_set(copy_pmat, pmat);            \
-    for (slong i = 0; i < rdim; i++)                    \
-        shift[i] = 0;                                   \
+    if (stype == 1)                                     \
+        for (slong i = 0; i < rdim; i++)                \
+            shift[i] = 0;                               \
+    else if (stype == 0)                                \
+        nmod_poly_mat_row_degree(shift, pmat, NULL);    \
     nmod_poly_mat_##fun(ker, pivind, shift, copy_pmat); \
     TIMEIT_STOP_VALUES(tcpu, twall);                    \
                                                         \
@@ -126,12 +132,7 @@ int main(int argc, char ** argv)
     flint_rand_init(state);
     flint_rand_set_seed(state, time(NULL), time(NULL)+129384125L);
 
-    // matrix degrees
-    const slong ndegs = 13;
-    const ulong degs[] = {2, 5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240};
-
     /* TODO rank */
-    /* TODO shift type */
 
     // bench functions
     const slong nfuns = 3;
@@ -164,18 +165,18 @@ int main(int argc, char ** argv)
         "#2  --> FLINT's nullspace    ",
     };
 
-    if (argc < 4 || argc > 6)  // show usage
+    if (argc != 7)  // show usage
     {
-        printf("Usage: `%s [fun] [nbits] [rdim] [cdim] [deg] [rank] [shift]`\n", argv[0]);
+        printf("Usage: `%s [fun] [nbits] [rdim] [cdim] [deg] [shift] [rank]`\n", argv[0]);
         printf("   No argument shows this help.\n");
-        printf("   First 4 arguments are mandatory.\n");
-        printf("   [rank] and [shift] not supported yet.\n");
-        printf("   - fun: id number of the timed function (see below, -1 times all),\n");
+        printf("   All arguments are mandatory (except the unsupported rank).\n");
+        printf("   [rank] not supported yet.\n");
+        printf("   - fun: id number of the timed function (see list below)\n");
         printf("   - nbits: number of bits in [2..64] for the modulus, chosen as nextprime(2**(nbits-1))\n");
         printf("   - rdim, cdim: input matrix is rdim x cdim\n");
-        printf("   - deg: matrix is random of degree < deg (default: predefined list)\n");
+        printf("   - deg: matrix is random of degree < deg\n");
+        printf("   - shift: type of shift (0 : row degree | 1 : (0,..,0))\n");
         printf("   - rank: [unsupported] matrix is random of this rank\n");
-        printf("   - shift: [unsupported] type of shift\n");
         printf("\nAvailable functions:\n");
         for (slong j = 0; j < nfuns; j++)
             printf("   %s\n", description[j]);
@@ -193,37 +194,20 @@ int main(int argc, char ** argv)
     }
     printf("\n\n");
 
-    if (argc == 5)  // fun + nbits + rdim + cdim given
+    if (argc == 7)  // fun + nbits + rdim + cdim + deg + shift given
     {
-        const slong ifun = atoi(argv[1]);
-        const slong bits = atoi(argv[2]);
-        const slong rdim = atoi(argv[3]);
-        const slong cdim = atoi(argv[4]);
+        const slong ifun  = atoi(argv[1]);
+        const slong bits  = atoi(argv[2]);
+        const slong rdim  = atoi(argv[3]);
+        const slong cdim  = atoi(argv[4]);
+        const slong deg   = atoi(argv[5]);
+        const slong stype = atoi(argv[6]);
         const timefun tfun = funs[ifun];
         const ulong n = n_nextprime(UWORD(1) << (bits-1), 0);
         printf("bits fun rdim cdim deg\n");
-        for (slong d = 0; d < ndegs; d++)
-        {
-            printf("%-5ld#%-3ld%-5ld%-5ld%-8ld", bits, ifun, rdim, cdim, degs[d]);
-            time_args targs = {rdim, cdim, degs[d], FLINT_MIN(rdim, cdim), 0, n};
-            tfun(targs, state);
-            printf(" ");
-            printf("\n");
-        }
-    }
-    else if (argc == 6)  // fun + nbits + rdim + cdim + deg given
-    {
-        const slong ifun = atoi(argv[1]);
-        const slong bits = atoi(argv[2]);
-        const slong rdim = atoi(argv[3]);
-        const slong cdim = atoi(argv[4]);
-        const slong deg  = atoi(argv[5]);
-        const timefun tfun = funs[ifun];
-        const ulong n = n_nextprime(UWORD(1) << (bits-1), 0);
-        printf("bits fun rdim cdim deg\n");
-        printf("%-5ld#%-3ld%-5ld%-5ld%-8ld", bits, ifun, rdim, cdim, deg);
-        /* rdim; cdim; deg; rank; stype; modn; */
-        time_args targs = {rdim, cdim, deg, FLINT_MIN(rdim, cdim), 0, n};
+        printf("%-5ld#%-3ld%-5ld%-5ld%-8ld%-2ld", bits, ifun, rdim, cdim, deg, stype);
+        /* rdim; cdim; deg; stype; rank; modn; */
+        time_args targs = {rdim, cdim, deg, FLINT_MIN(rdim, cdim), stype, n};
         tfun(targs, state);
         printf(" ");
         printf("\n");
