@@ -127,7 +127,11 @@ ulong time_nmod_vec_dot_product_split26_cu(ulong len, ulong n, flint_rand_t stat
 
     { // TEST
         const dot_params_t params = _nmod_vec_dot_params(len, mod);
+#ifdef HAVE_AVX2
         ulong res_split = _nmod_vec_dot_product_split26_avx(v1[0], v2[0], len, mod);
+#else
+        ulong res_split = _nmod_vec_dot_product_split26(v1[0], v2[0], len, mod);
+#endif
         ulong res_correct = _nmod_vec_dot(v1[0], v2[0], len, mod, params);
         if (res_split != res_correct)
         {
@@ -144,11 +148,19 @@ ulong time_nmod_vec_dot_product_split26_cu(ulong len, ulong n, flint_rand_t stat
     while (t1 < TIME_THRES)
     {
         for (slong i = 0; i < NB_ITER; i++) // warmup
+#ifdef HAVE_AVX2
             res[i] += _nmod_vec_dot_product_split26_avx(v1[i], v2[i], len, mod);
+#else
+            res[i] += _nmod_vec_dot_product_split26(v1[i], v2[i], len, mod);
+#endif
 
         tt = clock();
         for (slong i = 0; i < NB_ITER; i++)
+#ifdef HAVE_AVX2
             res[i] += _nmod_vec_dot_product_split26_avx(v1[i], v2[i], len, mod);
+#else
+            res[i] += _nmod_vec_dot_product_split26(v1[i], v2[i], len, mod);
+#endif
         t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += NB_ITER;
     }
@@ -181,7 +193,11 @@ ulong time_nmod_vec_dot_product_split26_cf(ulong len, ulong n, flint_rand_t stat
 
     { // TEST
         const dot_params_t params = _nmod_vec_dot_params(len, mod);
+#ifdef HAVE_AVX2
         ulong res_split = _nmod_vec_dot_product_split26_avx(v1, v2, len, mod);
+#else
+        ulong res_split = _nmod_vec_dot_product_split26(v1, v2, len, mod);
+#endif
         ulong res_correct = _nmod_vec_dot(v1, v2, len, mod, params);
         if (res_split != res_correct)
         {
@@ -198,11 +214,19 @@ ulong time_nmod_vec_dot_product_split26_cf(ulong len, ulong n, flint_rand_t stat
     while (t1 < TIME_THRES)
     {
         for (slong i = 0; i < NB_ITER; i++) // warmup
+#ifdef HAVE_AVX2
             res += _nmod_vec_dot_product_split26_avx(v1, v2, len, mod);
+#else
+            res += _nmod_vec_dot_product_split26(v1, v2, len, mod);
+#endif
 
         tt = clock();
         for (slong i = 0; i < NB_ITER; i++)
+#ifdef HAVE_AVX2
             res += _nmod_vec_dot_product_split26_avx(v1, v2, len, mod);
+#else
+            res += _nmod_vec_dot_product_split26(v1, v2, len, mod);
+#endif
         t1 += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += NB_ITER;
     }
@@ -565,7 +589,14 @@ int main(int argc, char ** argv)
     const slong nbits = 19;
     const slong bits[] = {17, 20, 23, 26, 29, 30, 31, 32, 33, 40, 50, 55, 57, 59, 60, 61, 62, 63, 64};
 
+#ifdef HAVE_AVX512
+    const slong nfuns = 8;
+#elif HAVE_AVX_IFMA
     const slong nfuns = 6;
+#else
+    const slong nfuns = 4;
+#endif
+
     typedef ulong (*timefun) (ulong, ulong, flint_rand_t);
     const timefun funs[] = {
         time_nmod_vec_dot_product_flint_cf,      // 0
