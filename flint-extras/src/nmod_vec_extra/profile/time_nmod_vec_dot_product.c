@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <flint/flint.h>
 #include <time.h>
 #include <flint/nmod_vec.h>
@@ -55,7 +56,6 @@ ulong time_nmod_vec_dot_product_flint_cf(ulong len, ulong n, flint_rand_t state)
 
     return res;
 }
-
 
 ulong time_nmod_vec_dot_product_flint_cu(ulong len, ulong n, flint_rand_t state)
 {
