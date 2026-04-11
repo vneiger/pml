@@ -53,9 +53,9 @@ AC_CONFIG_SRCDIR(src/nmod_extra/nmod_extra.c)
 # clashes between different configurations.
 AX_INIT
 
-################################################################################
+###############################################################################
 # initialize libtool
-################################################################################
+###############################################################################
 
 # Later we want to overwrite the default CFLAGS. Check now whether they are set
 # or not as Libtool overwrites CFLAGS.
@@ -413,7 +413,7 @@ with_ntl="no"
 )
 
 if test "$with_ntl" != "no" || test -n "$ntl_include_path" || test -n "$ntl_lib_path";
-then with_ntl="yes" fi
+then with_ntl="yes"; fi
 
 
 # maple interface 
@@ -599,6 +599,7 @@ Please report at <https://github.com/vneiger/pml/issues/>])
 	    ;;
 	esac
 
+    # We cannot be sure that AVX2 and AVX512 are enabled.
     if test "$cflags_set" = "yes";
     then have_avx2="no"; have_avx512="no"; fi
 
@@ -626,6 +627,7 @@ Please report at <https://github.com/vneiger/pml/issues/>])
       x86_64v4) gcc_cflags_arch="-march=x86-64-v4"; have_avx512="yes" ;;
     esac
 
+    # We cannot be sure that AVX2 and AVX512 are enabled.
     if test "$cflags_set" = "yes";
     then have_avx2="no"; have_avx512="no"; fi
 
@@ -1111,7 +1113,7 @@ then AC_SUBST(IS_OUT_OF_TREE,0)
 else AC_SUBST(IS_OUT_OF_TREE,1) fi
 
 ###############################################################################
-# epilog
+# epilogue
 ###############################################################################
 
 AC_CONFIG_FILES([Makefile pml.pc src/pml.h])
