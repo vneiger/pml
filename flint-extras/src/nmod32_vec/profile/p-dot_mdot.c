@@ -192,8 +192,8 @@ void sample_dot_msolve_avx2(void * arg, ulong count)
     FLINT_TEST_CLEAR(state);
 }
 #else   /* PML_HAVE_AVX2 */
-TIME_VOID_DOT(dot_msolve_avx2, pow2_precomp);
-SAMPLE_VOID_DOT(dot_msolve_avx2, pow2_precomp);
+TIME_VOID_DOT(dot_msolve_avx2, pow2_precomp)
+SAMPLE_VOID_DOT(dot_msolve_avx2, pow2_precomp)
 #endif  /* PML_HAVE_AVX2 */
 
 /*-----------------------*/
