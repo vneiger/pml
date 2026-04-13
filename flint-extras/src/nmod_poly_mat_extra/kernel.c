@@ -53,12 +53,12 @@ slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
         if (orient == ROW_LOWER || orient == ROW_UPPER)  /* left kernel */
         {
             _shift = FLINT_ARRAY_ALLOC(pmat->r, slong);
-            nmod_poly_mat_row_degree(_shift, pmat, NULL);
+            nmod_poly_mat_row_degree_zero(_shift, pmat, NULL);
         }
         else  /* right kernel */
         {
             _shift = FLINT_ARRAY_ALLOC(pmat->c, slong);
-            nmod_poly_mat_column_degree(_shift, pmat, NULL);
+            nmod_poly_mat_column_degree_zero(_shift, pmat, NULL);
         }
     }
 
