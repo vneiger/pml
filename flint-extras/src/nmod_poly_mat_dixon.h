@@ -13,7 +13,7 @@
 #ifndef NMOD_POLY_MAT_DIXON_H
 #define NMOD_POLY_MAT_DIXON_H
 
-#include <nmod_poly_mat_approximant.h>
+#include "nmod_poly_mat_approximant.h"
 
 #ifdef __cplusplus
 extern "C" {

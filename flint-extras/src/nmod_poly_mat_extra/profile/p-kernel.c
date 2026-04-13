@@ -10,6 +10,8 @@
     <https://www.gnu.org/licenses/>.
 */
 
+#include <flint/flint.h>
+#include <flint/nmod_poly.h>
 #include <stdlib.h>  // for atoi
 
 #include <flint/ulong_extras.h>
@@ -77,7 +79,12 @@ void time_##fun(time_args targs, flint_rand_t state)    \
         for (slong i = 0; i < rdim; i++)                \
             shift[i] = 0;                               \
     else if (stype == 0)                                \
+    {                                                   \
         nmod_poly_mat_row_degree(shift, pmat, NULL);    \
+        for (slong i = 0; i < rdim; i++)                \
+            if (shift[i] == -1)                         \
+                shift[i] = 0;                           \
+    }                                                   \
     nmod_poly_mat_##fun(ker, pivind, shift, copy_pmat); \
     TIMEIT_STOP_VALUES(tcpu, twall);                    \
                                                         \
@@ -87,6 +94,65 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     flint_free(shift);                                  \
     nmod_poly_mat_clear(pmat);                          \
     nmod_poly_mat_clear(ker);                           \
+}
+
+/* similar function, but creating matrix with unbalanced row degrees */
+#define TIME_KER_UNBALANCED(fun)                                    \
+void time_##fun##_unbalanced(time_args targs, flint_rand_t state)     \
+{                                                                   \
+    const slong rdim = targs.rdim;                                  \
+    const slong cdim = targs.cdim;                                  \
+    const slong deg = targs.deg;                                    \
+    /* const slong rank = targs.rank; */ /* TODO */                 \
+    const slong stype = targs.stype;                                \
+    const slong n = targs.modn;                                     \
+                                                                    \
+    nmod_t mod;                                                     \
+    nmod_init(&mod, n);                                             \
+                                                                    \
+    nmod_poly_mat_t pmat;                                           \
+    nmod_poly_mat_init(pmat, rdim, cdim, n);                        \
+    for (slong i = 0; i < rdim; i++)                                \
+    {                                                               \
+        slong d = n_randint(state, deg);                            \
+        for (slong j = 0; j < cdim; j++)                            \
+            nmod_poly_randtest(nmod_poly_mat_entry(pmat, i, j),     \
+                               state, d);                           \
+    }                                                               \
+                                                                    \
+    slong * pivind = FLINT_ARRAY_ALLOC(rdim, slong);                \
+    slong * shift = FLINT_ARRAY_ALLOC(rdim, slong);                 \
+                                                                    \
+    if (stype != 0 && stype != 1)                                   \
+        flint_printf("~warning~ unsupported stype\n");              \
+                                                                    \
+    nmod_poly_mat_t ker;                                            \
+    nmod_poly_mat_init(ker, rdim, rdim, n);                         \
+                                                                    \
+    double FLINT_SET_BUT_UNUSED(tcpu), twall;                       \
+                                                                    \
+    TIMEIT_START;                                                   \
+    nmod_poly_mat_t copy_pmat;                                      \
+    nmod_poly_mat_init_set(copy_pmat, pmat);                        \
+    if (stype == 1)                                                 \
+        for (slong i = 0; i < rdim; i++)                            \
+            shift[i] = 0;                                           \
+    else if (stype == 0)                                            \
+    {                                                               \
+        nmod_poly_mat_row_degree(shift, pmat, NULL);                \
+        for (slong i = 0; i < rdim; i++)                            \
+            if (shift[i] == -1)                                     \
+                shift[i] = 0;                                       \
+    }                                                               \
+    nmod_poly_mat_##fun(ker, pivind, shift, copy_pmat);             \
+    TIMEIT_STOP_VALUES(tcpu, twall);                                \
+                                                                    \
+    flint_printf("%.2e", twall);                                    \
+                                                                    \
+    flint_free(pivind);                                             \
+    flint_free(shift);                                              \
+    nmod_poly_mat_clear(pmat);                                      \
+    nmod_poly_mat_clear(ker);                                       \
 }
 
 void time_nullspace(time_args targs, flint_rand_t state)
@@ -119,8 +185,47 @@ void time_nullspace(time_args targs, flint_rand_t state)
     nmod_poly_mat_clear(ker);
 }
 
+void time_nullspace_unbalanced(time_args targs, flint_rand_t state)
+{
+    const slong rdim = targs.rdim;
+    const slong cdim = targs.cdim;
+    const slong deg = targs.deg;
+    /* const slong rank = targs.rank; */ /* TODO */
+    const slong n = targs.modn;
+
+    nmod_t mod;
+    nmod_init(&mod, n);
+
+    nmod_poly_mat_t pmat;
+    nmod_poly_mat_init(pmat, cdim, rdim, n);
+    for (slong j = 0; j < rdim; j++)
+    {
+        slong d = n_randint(state, deg);
+        for (slong i = 0; i < cdim; i++)
+            nmod_poly_randtest(nmod_poly_mat_entry(pmat, i, j),
+                               state, d);
+    }
+
+    nmod_poly_mat_t ker;
+    nmod_poly_mat_init(ker, rdim, rdim, n);
+
+    double FLINT_SET_BUT_UNUSED(tcpu), twall;
+
+    TIMEIT_START;
+    nmod_poly_mat_nullspace(ker, pmat);
+    TIMEIT_STOP_VALUES(tcpu, twall);
+
+    flint_printf("%.2e", twall);
+
+    nmod_poly_mat_clear(pmat);
+    nmod_poly_mat_clear(ker);
+}
+
+
 TIME_KER(kernel_via_approx)
 TIME_KER(kernel_zls_approx)
+TIME_KER_UNBALANCED(kernel_via_approx)
+TIME_KER_UNBALANCED(kernel_zls_approx)
 
 /*-------------------------*/
 /*  main                   */
@@ -135,12 +240,15 @@ int main(int argc, char ** argv)
     /* TODO rank */
 
     // bench functions
-    const slong nfuns = 3;
+    const slong nfuns = 6;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
-        time_kernel_via_approx,               // 0
-        time_kernel_zls_approx,               // 1
-        time_nullspace,                       // 2
+        time_nullspace,                       // 0
+        time_kernel_via_approx,               // 1
+        time_kernel_zls_approx,               // 2
+        time_nullspace_unbalanced,            // 3
+        time_kernel_zls_approx_unbalanced,    // 4
+        time_kernel_via_approx_unbalanced,    // 5
     };
 
     // TODO
@@ -160,9 +268,12 @@ int main(int argc, char ** argv)
     //#endif
 
     const char * description[] = {
-        "#0  --> via approx           ",
-        "#1  --> ZLS via approx       ",
-        "#2  --> FLINT's nullspace    ",
+        "#0  --> FLINT's nullspace                            ",
+        "#1  --> via approx                                   ",
+        "#2  --> ZLS via approx                               ",
+        "#3  --> FLINT's nullspace, unbalanced row degrees    ",
+        "#4  --> via approx, unbalanced row degrees           ",
+        "#5  --> ZLS via approx, unbalanced row degrees       ",
     };
 
     if (argc != 7)  // show usage
