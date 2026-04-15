@@ -16,8 +16,6 @@
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
 #include <flint/perm.h>
-#include <math.h>
-#include <stdlib.h>
 
 #include "nmod_poly_mat_extra.h"
 #include "nmod_poly_mat_forms.h"
@@ -342,15 +340,17 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
 
     /* build order for approximation (this choice diverges from [LNVZ22, Algo.1]): */
     /*     order = 1 + max(maxdeg, 1 + floor((sum(shift) - 1) / (m - n)))          */
-    /* -> approx basis "generically" captures the whole kernel (see end of file)   */
-    /* FIXME could be improved in case of unbalanced cdeg(pmat),                   */
-    /* based on [LNVZ22, Theorem 3.3, Proof of Item (iii)]                         */
+    /* -> approx basis "generically" captures the whole kernel                     */
+    /* (see [note:choice_of_order] for explanations)                               */
+    /* FIXME could be improved in case of unbalanced cdeg(pmat), based on          */
+    /* [LNVZ22, Theorem 3.3, Proof of Item (iii)], see also [note:degree_bounds]   */
     slong order = - m * diff_shift - 1;
     for (slong i = 0; i < m; i++)
         order += shift[i];
     order = 1 + order / (m - n);
     order = 1 + FLINT_MAX(maxdeg, order);
 
+    flint_printf("order : %ld\n", order);
     nmod_poly_mat_pmbasis(ker, shift, pmat, order);
 
     /* run an easy degree-based detection of rows in the kernel */
@@ -359,13 +359,17 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     slong sum_pmatdeg = 0;  /* sum of degrees of rows of pmat in complement of pivind */
     for (slong i = 0; i < m; i++)
     {
+        flint_printf("i : %ld, order+diff_shift : %ld, shift[i] : %ld --> ", i, order+diff_shift, shift[i]);
         if (shift[i] < order + diff_shift)
         {
+            flint_printf("yes!\n");
+            /* this is a row in the kernel, see [note:row_in_kernel] */
             pivind[nz] = i;
             nz += 1;
         }
         else
         {
+            flint_printf("no..\n");
             sum_pmatdeg += FLINT_MAX(0, buf[i]);
             buf[i - nz] = i;
         }
@@ -378,11 +382,12 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     /* early exit */
     if (nz >= m - n)  /* otherwise, there must be some kernel rows not in ker yet */
     {
+        flint_printf("trying early exit...\n");
         slong sum_pivdeg = 0;
         for (slong i = 0; i < nz; i++)
             sum_pivdeg += nmod_poly_degree(nmod_poly_mat_entry(ker, i, pivind[i]));
 
-        if (sum_pivdeg == sum_pmatdeg)  /* whole kernel already found */
+        if (sum_pivdeg == sum_pmatdeg)  /* whole kernel already found, see [note:degree_bounds] */
         {
             flint_free(buf);
             return nz;
@@ -478,6 +483,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
 
 /** Degree bounds for kernel bases.
  *
+ * [note:degree_bounds]
  * Assume pmat is m x n and has rank r. Let P be some shifted ordered weak
  * Popov kernel basis P of `pmat` (for a given, arbitrary shift).
  *
@@ -507,6 +513,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
 
 /** Expected degree / order for approximation in ZLS algorithm.
  *
+ * [note:choice_of_order]
  * For the moment, the code in zls_approx, when n <= m/2, uses the approximation order
  *     order = 1 + max(maxdeg, 1 + floor((sum(shift) - 1) / (m - n)))
  * where maxdeg is deg(pmat) and shift >= rdeg(pmat) entry-wise
@@ -533,6 +540,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
  *            = 1 + floor((sum(s) - 1) / nz)                                        
  *           <= 1 + floor((sum(s) - 1) / (m - n)).
  *
+ * [note:row_in_kernel]
  * Note also that since s >= rdeg(pmat), we have rdeg(p*pmat) <= rdeg_s(p) < order
  * for any row vector p such that rdeg_s(p) <= dbound. So, approximants of pmat
  * whose s-degree is <= dbound are necessarily actual kernel rows p*pmat == 0.
