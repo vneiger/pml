@@ -1,6 +1,6 @@
 /*
-    Copyright (C) 2025 Gilles Villard
-    Copyright (C) 2026 Vincent Neiger
+    Copyright (C) 2025 Gilles Villard, Vincent Neiger
+    Copyright (C) 2026 Gilles Villard, Vincent Neiger
 
     This file is part of PML.
 
@@ -345,7 +345,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     /*     order = 1 + max(maxdeg, 1 + floor((sum(shift) - 1) / (m - n)))          */
     /* -> approx basis "generically" captures the whole kernel                     */
     /* (see [note:choice_of_order] for explanations)                               */
-    /* FIXME could be improved in case of unbalanced cdeg(pmat), based on          */
+    /* FIXME could be improved in case of unbalanced cdeg(pmat), e.g. based on     */
     /* [LNVZ22, Theorem 3.3, Proof of Item (iii)], see also [note:degree_bounds]   */
     slong order = - m * diff_shift - 1;
     for (slong i = 0; i < m; i++)
@@ -353,26 +353,25 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     order = 1 + order / (m - n);
     order = 1 + FLINT_MAX(maxdeg, order);
 
-    /* flint_printf("order : %ld\n", order); */
     nmod_poly_mat_pmbasis(ker, shift, pmat, order);
 
     /* run an easy degree-based detection of rows in the kernel */
     /* permute ker into [kernel rows \\ other rows], preserving increasing pivots */
     slong nullity = 0;
     slong sum_pmatdeg = 0;  /* sum of degrees of rows of pmat in complement of pivind */
+    int no_constant_pivot_and_row = 1;  /* for early exit below, condition [3.] */
     for (slong i = 0; i < m; i++)
     {
-        /* flint_printf("i : %ld, order+diff_shift : %ld, shift[i] : %ld --> ", i, order+diff_shift, shift[i]); */
         if (shift[i] < order + diff_shift)
         {
-            /* FIXME remove */ /* flint_printf("yes!\n"); */
             /* this is a row in the kernel, see [note:row_in_kernel] */
             pivind[nullity] = i;
             nullity += 1;
         }
         else
         {
-            /* FIXME remove */ /* flint_printf("no..\n"); */
+            if (buf[i] == 0 && nmod_poly_degree(nmod_poly_mat_entry(ker, i, i)) <= 0)
+                no_constant_pivot_and_row = 0;
             sum_pmatdeg += buf[i];
             buf[i - nullity] = i;
         }
@@ -382,15 +381,20 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
 
     nmod_poly_mat_permute_rows(ker, pivind, shift);
 
-    /* early exit */
-    if (nullity >= m - n)  /* otherwise, there must be some kernel rows not in ker yet */
+    /* early exit, subject to 3 conditions on the already identified `nullity`-many kernel rows  */
+    /* [1.] nullity >= m - n  (otherwise, we are missing >= m - n - nullity > 0 kernel rows)     */
+    /* [2.] sum_pmatdeg is equal to the sum of pivot degrees of already identified kernel rows   */
+    /* [3.] among the rows of `ker` that are possibly not in the kernel (those at indices from   */
+    /*    `nullity` to `m-1`), none has a pivot index `i` which is such that both the pivot      */
+    /*     degree of that row is zero and the row `i` of the input matrix has degree <= 0        */
+    /* see [note:early_exit] for more details                                                    */
+    if (nullity >= m - n && no_constant_pivot_and_row)  /* condition [1.] and [3.] */
     {
-        /* flint_printf("trying early exit...\n"); */
         slong sum_pivdeg = 0;
         for (slong i = 0; i < nullity; i++)
             sum_pivdeg += nmod_poly_degree(nmod_poly_mat_entry(ker, i, pivind[i]));
 
-        if (sum_pivdeg == sum_pmatdeg)  /* whole kernel already found, see [note:degree_bounds] */
+        if (sum_pivdeg == sum_pmatdeg)  /* condition [2.] */
         {
             flint_free(buf);
             return nullity;

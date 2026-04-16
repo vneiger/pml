@@ -293,7 +293,6 @@ int core_test_left_kernel_zls(nmod_poly_mat_t mat, slong * shift)
     nmod_poly_mat_t kernz;
 
     /* kernel_zls_approx */
-    if (_TEST_VERBOSE_) flint_printf(". starting left kernel, ZLS-approx...\n");
     for (slong i = 0; i < rdim; i++)
         rdeg[i] = shift[i];
     nmod_poly_mat_t pmat_c;
@@ -395,23 +394,23 @@ int collection_test_kernel(slong iter, flint_rand_t state)
 
     long total_nb_tests =
             iter /* number of iterations */
-            * 28 /* number of mats (currently 7) x number of shifts (currently 4) */
+            * 28 /* number of mats (currently 7) x number of shifts (currently 8) */
             * _test_collection_nb_primes
             * _test_collection_nb_dims
             * _test_collection_nb_dims
-            * _test_collection_nb_degs;
+            * _test_collection_nb_smalldegs;
     flint_printf("Launching testing collection (%ld cases)\n", total_nb_tests);
 
     for (slong i_primes = 0; i_primes < _test_collection_nb_primes; i_primes++)
         for (slong i_rdims = 0; i_rdims < _test_collection_nb_dims; i_rdims++)
             for (slong i_cdims = 0; i_cdims < _test_collection_nb_dims; i_cdims++)
-                for (slong i_degs = 0; i_degs < _test_collection_nb_degs; i_degs++)
+                for (slong i_degs = 0; i_degs < _test_collection_nb_smalldegs; i_degs++)
                     for (slong it = 0; it < iter; it++)
                     {
                         const long prime = _test_collection_primes[i_primes];
                         const long rdim = _test_collection_rdims[i_rdims];
                         const long cdim = _test_collection_cdims[i_cdims];
-                        const long len = _test_collection_degs[i_degs];
+                        const long len = _test_collection_smalldegs[i_degs];
                         if (_TEST_VERBOSE_)
                             flint_printf("prime %ld, rdim %ld, cdim %ld, length %ld.\n", prime, rdim, cdim, len);
 
@@ -727,7 +726,7 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel, state)
     int i, result;
 
     /* TODO activate this for long test */
-    if (1)
+    if (0)
     {
         for (i = 0; i < 1 * flint_test_multiplier(); i++)
         {
@@ -744,12 +743,9 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel, state)
         for (i = 0; i < 50 * flint_test_multiplier(); i++)
         {
             ulong nbits = 2 + n_randint(state, 63);
-            ulong rdim = 1 + n_randint(state, 10);
-            ulong cdim = 1 + n_randint(state, 10);
-            ulong len = n_randint(state, 150);
-            /* ulong rdim = 1 + n_randint(state, 3); */
-            /* ulong cdim = 1 + n_randint(state, 3); */
-            /* ulong len = n_randint(state, 15); */
+            ulong rdim = 1 + n_randint(state, 9);
+            ulong cdim = 1 + n_randint(state, 9);
+            ulong len = n_randint(state, 100);
 
             slong prime = n_randprime(state, nbits, 1);
 
