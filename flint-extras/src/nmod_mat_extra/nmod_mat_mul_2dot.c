@@ -10,10 +10,10 @@
     <https://www.gnu.org/licenses/>.
 */
 
-#include <flint/nmod_mat.h>
-#include <flint/nmod_vec.h>
+#include <flint/nmod_vec.h>  /* for DOT_SPLIT_BITS */
 
 #include "nmod_vec_extra.h"
+#include "nmod_mat_extra.h"
 
 #if FLINT_BITS == 64
 /** matrix multiplication using AVX2 instructions for moduli less than 2^30 */

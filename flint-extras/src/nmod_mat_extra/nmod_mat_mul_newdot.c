@@ -10,12 +10,11 @@
     <https://www.gnu.org/licenses/>.
 */
 
-#include <flint/longlong.h> // for BIT_COUNT
 #include <flint/flint.h>
-#include <flint/nmod_mat.h>
+#include <flint/longlong.h> // for BIT_COUNT
 #include <flint/nmod_vec.h>  // for _nmod_vec_init
 
-#include "nmod_vec_extra.h"
+#include "nmod_mat_extra.h"
 
 void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B)
 {
