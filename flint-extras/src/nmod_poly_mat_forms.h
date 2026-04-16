@@ -164,18 +164,6 @@ void nmod_poly_mat_column_degree(slong *cdeg,
                                  const nmod_poly_mat_t mat,
                                  const slong * shift);
 
-/** Same as `nmod_poly_mat_row_degree`, but zero rows have degree set to `min(shift)`
- * instead of `min(shift)-1`. */
-void nmod_poly_mat_row_degree_zero(slong *rdeg,
-                                   const nmod_poly_mat_t mat,
-                                   const slong * shift);
-
-/** Same as `nmod_poly_mat_column_degree`, but zero columns have degree set to
- * `min(shift)` instead of `min(shift)-1`. */
-void nmod_poly_mat_column_degree_zero(slong *cdeg,
-                                      const nmod_poly_mat_t mat,
-                                      const slong * shift);
-
 //@} // doxygen group: (Shifted) row and column degree
 
 /*------------------------------------------------------------*/
