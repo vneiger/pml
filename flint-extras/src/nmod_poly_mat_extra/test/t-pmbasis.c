@@ -448,7 +448,7 @@ TEST_FUNCTION_START(nmod_poly_mat_pmbasis, state)
     int i, result;
 
     /* TODO activate this for long test */
-    if (0)
+    if (1)
     {
         for (i = 0; i < 5 * flint_test_multiplier(); i++)
         {
