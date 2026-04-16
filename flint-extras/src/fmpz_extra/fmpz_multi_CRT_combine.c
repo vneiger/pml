@@ -10,7 +10,7 @@
     <https://www.gnu.org/licenses/>.
 */
 
-#include <flint/fmpz.h>
+#include "fmpz_extra.h"
 
 /*-------------------------------------------------------------------*/
 /* similar to fmpz_multi_CRT_precomp, except that we do not multiply */

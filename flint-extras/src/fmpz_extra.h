@@ -157,8 +157,13 @@ void fmpz_multimod_CRT_CRT(fmpz_t A, nn_srcptr m, const fmpz_multimod_CRT_t mmod
 /* by cofactors at the leaves                                        */
 /* result is still reduced modulo the product of moduli              */
 /*-------------------------------------------------------------------*/
-void fmpz_multi_CRT_combine(fmpz_t output, const fmpz_multi_CRT_t P, fmpz * inputs);
+void _fmpz_multi_CRT_combine(fmpz * outputs,
+                             const fmpz_multi_CRT_t P,
+                             fmpz * inputs);
 
+void fmpz_multi_CRT_combine(fmpz_t output,
+                            const fmpz_multi_CRT_t P,
+                            fmpz * inputs);
 
 
 #ifdef __cplusplus
