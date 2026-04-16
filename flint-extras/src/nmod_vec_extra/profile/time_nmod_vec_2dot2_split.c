@@ -13,8 +13,8 @@ void time_nmod_vec_2dot2_split(ulong len, ulong n, flint_rand_t state)
     nmod_t mod;
     nmod_init(&mod, n);
 
-    nn_ptr v11 = aligned_alloc(32, (4 + ((len >> 2) << 2)) * sizeof(ulong));
-    nn_ptr v12 = aligned_alloc(32, (4 + ((len >> 2) << 2)) * sizeof(ulong));
+    nn_ptr v11 = flint_aligned_alloc(32, (4 + ((len >> 2) << 2)) * sizeof(ulong));
+    nn_ptr v12 = flint_aligned_alloc(32, (4 + ((len >> 2) << 2)) * sizeof(ulong));
     nn_ptr v2 = _nmod_vec_init(len);
 
     const dot_params_t params = _nmod_vec_dot_params(len, mod);
@@ -75,7 +75,7 @@ void time_nmod_vec_2dot2_split(ulong len, ulong n, flint_rand_t state)
 /*--------------------------------------------------------------*/
 /* main calls time                                              */
 /*--------------------------------------------------------------*/
-int main()
+int main(int FLINT_UNUSED(argc), char ** FLINT_UNUSED(argv))
 {
     flint_rand_t state;
     flint_rand_init(state);

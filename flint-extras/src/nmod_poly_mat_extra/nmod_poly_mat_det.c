@@ -11,8 +11,9 @@
 */
 
 #include <flint/nmod_vec.h>
-#include "nmod_poly_mat_utils.h" // for permute_rows_by_sorting_vec
+#include "nmod_poly_mat_utils.h"  /* for permute_rows_by_sorting_vec */
 #include "nmod_poly_mat_forms.h"
+#include "nmod_poly_mat_extra.h"  /* for prototype of det_iter */
 
 // Mulders-Storjohann determinant algorithm
 // matrix must be square, not tested

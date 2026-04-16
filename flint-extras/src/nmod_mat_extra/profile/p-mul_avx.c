@@ -131,7 +131,7 @@ void time_nmod_mat_mul(ulong len, ulong nbits, ulong n, flint_rand_t state)
 /*--------------------------------------------------------------*/
 /* main calls time                                              */
 /*--------------------------------------------------------------*/
-int main()
+int main(int FLINT_UNUSED(argc), char ** FLINT_UNUSED(argv))
 {
     flint_rand_t state;
     flint_rand_init(state);

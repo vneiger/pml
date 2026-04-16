@@ -20,11 +20,12 @@
 /*        row degree - column degree - degree matrix          */
 /*------------------------------------------------------------*/
 
-void nmod_poly_mat_row_degree(slong *rdeg, const nmod_poly_mat_t mat, const slong *shift)
+ulong nmod_poly_mat_row_degree(slong *rdeg, const nmod_poly_mat_t mat, const slong *shift)
 {
     if (shift == NULL)
     {
         slong max, d;
+        ulong nnz = 0;  /* number of nonzero rows */
         for (slong i = 0; i < mat->r; i++)
         {
             max = -1;
@@ -34,39 +35,47 @@ void nmod_poly_mat_row_degree(slong *rdeg, const nmod_poly_mat_t mat, const slon
                 if (max < d)
                     max = d;
             }
+            if (max >= 0)
+                nnz += 1;
             rdeg[i] = max;
         }
+        return nnz;
     }
     else
     {
         slong max, d;
+        ulong nnz = 0;  /* number of nonzero rows */
         slong min_shift = (mat->c > 0) ? shift[0] : 0;
 
-        // find minimum of shift
+        /* find minimum of shift */
         for (slong j = 0; j < mat->c; ++j)
             if (shift[j] < min_shift)
                 min_shift = shift[j];
 
         for (slong i = 0; i < mat->r; i++)
         {
-            max = min_shift-1; // zero rows will have this as rdeg
+            max = min_shift - 1; /* zero rows will have this as rdeg */
             for (slong j = 0; j < mat->c; j++)
             {
                 d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shift[j];
-                // if new maximum at a nonzero entry, update
+                /* if new maximum at a nonzero entry, update */
                 if (shift[j] <= d && max < d)
                     max = d;
             }
+            if (max >= min_shift)
+                nnz += 1;
             rdeg[i] = max;
         }
+        return nnz;
     }
 }
 
-void nmod_poly_mat_column_degree(slong *cdeg, const nmod_poly_mat_t mat, const slong *shift)
+ulong nmod_poly_mat_column_degree(slong *cdeg, const nmod_poly_mat_t mat, const slong *shift)
 {
     if (shift == NULL)
     {
         slong max, d;
+        ulong nnz = 0;  /* number of nonzero columns */
         for (slong j = 0; j < mat->c; j++)
         {
             max = -1;
@@ -76,33 +85,157 @@ void nmod_poly_mat_column_degree(slong *cdeg, const nmod_poly_mat_t mat, const s
                 if (max < d)
                     max = d;
             }
+            if (max >= 0)
+                nnz += 1;
             cdeg[j] = max;
         }
+        return nnz;
     }
     else
     {
         slong max, d;
+        ulong nnz = 0;  /* number of nonzero columns */
         slong min_shift = (mat->r > 0) ? shift[0] : 0;
 
-        // find minimum of shift
+        /* find minimum of shift */
         for (slong i = 0; i < mat->r; ++i)
             if (shift[i] < min_shift)
                 min_shift = shift[i];
 
         for (slong j = 0; j < mat->c; j++)
         {
-            max = min_shift-1;
+            max = min_shift - 1;
             for (slong i = 0; i < mat->r; i++)
             {
                 d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shift[i];
-                // if new maximum at a nonzero entry, update
+                /* if new maximum at a nonzero entry, update */
                 if (shift[i] <= d && max < d)
                     max = d;
             }
+            if (max >= min_shift)
+                nnz += 1;
             cdeg[j] = max;
         }
+        return nnz;
     }
 }
+
+ulong nmod_poly_mat_row_degree_zero(slong *rdeg, const nmod_poly_mat_t mat, const slong *shift)
+{
+    if (shift == NULL)
+    {
+        slong max, d;
+        ulong nnz = 0;  /* number of nonzero rows */
+        for (slong i = 0; i < mat->r; i++)
+        {
+            max = -1;
+            for (slong j = 0; j < mat->c; j++)
+            {
+                d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
+                if (max < d)
+                    max = d;
+            }
+            if (max >= 0)
+            {
+                nnz += 1;
+                rdeg[i] = max;
+            }
+            else
+                rdeg[i] = 0;
+        }
+        return nnz;
+    }
+    else
+    {
+        slong max, d;
+        ulong nnz = 0;  /* number of nonzero rows */
+        slong min_shift = (mat->c > 0) ? shift[0] : 0;
+
+        /* find minimum of shift */
+        for (slong j = 0; j < mat->c; ++j)
+            if (shift[j] < min_shift)
+                min_shift = shift[j];
+
+        for (slong i = 0; i < mat->r; i++)
+        {
+            max = min_shift - 1; /* zero rows will have this as rdeg */
+            for (slong j = 0; j < mat->c; j++)
+            {
+                d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shift[j];
+                /* if new maximum at a nonzero entry, update */
+                if (shift[j] <= d && max < d)
+                    max = d;
+            }
+            if (max >= min_shift)
+            {
+                nnz += 1;
+                rdeg[i] = max;
+            }
+            else
+                rdeg[i] = min_shift;
+        }
+        return nnz;
+    }
+}
+
+ulong nmod_poly_mat_column_degree_zero(slong *cdeg, const nmod_poly_mat_t mat, const slong *shift)
+{
+    if (shift == NULL)
+    {
+        slong max, d;
+        ulong nnz = 0;  /* number of nonzero columns */
+        for (slong j = 0; j < mat->c; j++)
+        {
+            max = -1;
+            for (slong i = 0; i < mat->r; i++)
+            {
+                d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j));
+                if (max < d)
+                    max = d;
+            }
+            if (max >= 0)
+            {
+                nnz += 1;
+                cdeg[j] = max;
+            }
+            else
+                cdeg[j] = 0;
+        }
+        return nnz;
+    }
+    else
+    {
+        slong max, d;
+        ulong nnz = 0;  /* number of nonzero columns */
+        slong min_shift = (mat->r > 0) ? shift[0] : 0;
+
+        /* find minimum of shift */
+        for (slong i = 0; i < mat->r; ++i)
+            if (shift[i] < min_shift)
+                min_shift = shift[i];
+
+        for (slong j = 0; j < mat->c; j++)
+        {
+            max = min_shift - 1;
+            for (slong i = 0; i < mat->r; i++)
+            {
+                d = nmod_poly_degree(nmod_poly_mat_entry(mat, i, j)) + shift[i];
+                /* if new maximum at a nonzero entry, update */
+                if (shift[i] <= d && max < d)
+                    max = d;
+            }
+            if (max >= min_shift)
+            {
+                nnz += 1;
+                cdeg[j] = max;
+            }
+            else
+                cdeg[j] = min_shift;
+        }
+        return nnz;
+    }
+}
+
 
 void nmod_poly_mat_degree_matrix(fmpz_mat_t dmat, const nmod_poly_mat_t mat)
 {
@@ -138,7 +271,7 @@ void nmod_poly_mat_degree_matrix_shifted(fmpz_mat_t dmat,
 /*          shifted pivot profile (index + degree)            */
 /*------------------------------------------------------------*/
 
-void _nmod_poly_vec_pivot_profile(slong * pivind,
+ulong _nmod_poly_vec_pivot_profile(slong * pivind,
                                   slong * pivdeg,
                                   const nmod_poly_struct * vec,
                                   const slong * shift,
@@ -163,6 +296,7 @@ void _nmod_poly_vec_pivot_profile(slong * pivind,
             }
             *pivdeg = max;
             *pivind = piv;
+            return (piv >= 0);
         }
         else
         {
@@ -184,6 +318,7 @@ void _nmod_poly_vec_pivot_profile(slong * pivind,
             }
             *pivind = piv;
             *pivdeg = (piv == -1) ? -1 : (max - shift[piv]);
+            return (piv >= 0);
         }
     }
     else // orient == COL_LOWER || orient == ROW_UPPER
@@ -204,6 +339,7 @@ void _nmod_poly_vec_pivot_profile(slong * pivind,
             }
             *pivdeg = max;
             *pivind = (piv == -1) ? len : piv;
+            return (piv >= 0);
         }
         else
         {
@@ -225,56 +361,67 @@ void _nmod_poly_vec_pivot_profile(slong * pivind,
             }
             *pivind = piv;
             *pivdeg = (piv == -1) ? len : (max - shift[piv]);
+            return (piv >= 0);
         }
     }
 }
 
-void nmod_poly_mat_pivot_index(slong *pivind,
-                               const nmod_poly_mat_t mat,
-                               const slong * shift,
-                               orientation_t orient)
+ulong nmod_poly_mat_pivot_index(slong *pivind,
+                                const nmod_poly_mat_t mat,
+                                const slong * shift,
+                                orientation_t orient)
 {
     if (orient == ROW_LOWER || orient == ROW_UPPER)
     {
         slong buf;
+        ulong nnz = 0;
         for (slong i = 0; i < mat->r; i++)
-            _nmod_poly_vec_pivot_profile(pivind+i, &buf, nmod_poly_mat_entry(mat, i, 0), shift, mat->c, orient);
+            nnz += _nmod_poly_vec_pivot_profile(pivind+i, &buf, nmod_poly_mat_entry(mat, i, 0), shift, mat->c, orient);
+        return nnz;
     }
     else
     {
         slong buf;
-        // copy column into vec
+        ulong nnz = 0;
+        /* copy column into vec */
         nmod_poly_struct * vec = flint_malloc(mat->r * sizeof(nmod_poly_struct));
         for (slong j = 0; j < mat->c; j++)
         {
             for (slong i = 0; i < mat->r; i++)
                 vec[i] = *nmod_poly_mat_entry(mat, i, j);
-            _nmod_poly_vec_pivot_profile(pivind+j, &buf, vec, shift, mat->r, orient);
+            nnz += _nmod_poly_vec_pivot_profile(pivind+j, &buf, vec, shift, mat->r, orient);
         }
         flint_free(vec);
+        return nnz;
     }
 }
 
-void nmod_poly_mat_pivot_profile(slong * pivind,
-                                 slong * pivdeg,
-                                 const nmod_poly_mat_t mat,
-                                 const slong * shift,
-                                 orientation_t orient)
+ulong nmod_poly_mat_pivot_profile(slong * pivind,
+                                  slong * pivdeg,
+                                  const nmod_poly_mat_t mat,
+                                  const slong * shift,
+                                  orientation_t orient)
 {
     if (orient == ROW_LOWER || orient == ROW_UPPER)
+    {
+        ulong nnz = 0;
         for (slong i = 0; i < mat->r; i++)
-            _nmod_poly_vec_pivot_profile(pivind+i, pivdeg+i, nmod_poly_mat_entry(mat, i, 0), shift, mat->c, orient);
+            nnz += _nmod_poly_vec_pivot_profile(pivind+i, pivdeg+i, nmod_poly_mat_entry(mat, i, 0), shift, mat->c, orient);
+        return nnz;
+    }
     else
     {
-        // force access to column as a vec
+        ulong nnz = 0;
+        /* force access to column as a vec */
         nmod_poly_struct * vec = flint_malloc(mat->r * sizeof(nmod_poly_struct));
         for (slong j = 0; j < mat->c; j++)
         {
             for (slong i = 0; i < mat->r; i++)
                 vec[i] = *nmod_poly_mat_entry(mat, i, j);
-            _nmod_poly_vec_pivot_profile(pivind+j, pivdeg+j, vec, shift, mat->r, orient);
+            nnz += _nmod_poly_vec_pivot_profile(pivind+j, pivdeg+j, vec, shift, mat->r, orient);
         }
         flint_free(vec);
+        return nnz;
     }
 }
 
