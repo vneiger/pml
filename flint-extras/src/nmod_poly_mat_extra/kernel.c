@@ -113,11 +113,7 @@ slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
         nmod_poly_mat_init(mat_it, pmat->c, pmat->r, pmat->modulus);
         nmod_poly_mat_init(ker_it, ker->c, ker->r, ker->modulus);
         nmod_poly_mat_transpose(mat_it, pmat);
-
         nmod_poly_mat_invert_rows(mat_it, _shift);
-        /* flint_printf("calling zls approx, left kernel, on:\n"); */
-        /* nmod_poly_mat_print_pretty(mat_it, "x"); */
-        /* flint_printf("with shift %{slong*}\n", _shift, pmat->c); */
         
         nullity = nmod_poly_mat_kernel_zls_approx(ker_it, _pivind, _shift, mat_it);
         nmod_poly_mat_t kernz;
