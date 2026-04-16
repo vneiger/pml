@@ -232,9 +232,11 @@ ulong _nmod_poly_vec_pivot_profile(slong * pivind,
                                    slong len,
                                    orientation_t orient);
 
-/** Computes the `shift`-pivot index `pivind` of a polynomial matrix
- * `mat` (see @ref Pivots). Returns the number of nonzero rows or columns (depending on orientation).
- * \todo for some orientations this uses (shallow) column copies, is it worth trying to avoid that?
+/** Computes the `shift`-pivot index `pivind` of a polynomial matrix `mat` (see
+ * @ref Pivots). Returns the number of nonzero rows or columns (depending on
+ * orientation).
+ * \todo for some orientations this uses (shallow) column copies, is it worth
+ * trying to avoid that?
  **/
 ulong nmod_poly_mat_pivot_index(slong *pivind,
                                 const nmod_poly_mat_t mat,
