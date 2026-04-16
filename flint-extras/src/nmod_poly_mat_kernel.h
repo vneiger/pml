@@ -31,8 +31,8 @@ extern "C" {
  * A (left) kernel basis for F is a matrix over the univariate polynomials
  * whose rows form a basis for the module
  *   { p in K[X]^{1 x m}  |  p * F == 0 },
- * whose rank is nz = m - rank(F), called the nullity of F. Such a basis
- * matrix has dimensions nz x m and has full row rank.
+ * whose rank is nullity = m - rank(F), called the nullity of F. Such a basis
+ * matrix has dimensions nullity x m and has full row rank.
  *
  * A kernel basis for (F,d) is said to be <em>a shift-minimal</em> (resp.
  * <em>a shift-ordered weak Popov</em>, resp. <em>the shift-Popov</em>)
@@ -48,10 +48,10 @@ extern "C" {
  * orientation, all other functions compute left kernel bases and use the
  * following parameters:
  *
- * \return slong, the nullity of `pmat` (called `nz` below)
+ * \return slong, the nullity of `pmat`
  *
  * \param[out] ker the output kernel basis (cannot alias `pmat`, must be
- * initialized with at least `nz` rows)
+ * initialized with at least `nullity` rows)
  * \param[out] pivind the pivot index of `ker` (list of integers, length must
  * be the number of rows of `pmat`)
  * \param[in,out] shift in: the input shift; and out: the output shifted row
@@ -65,8 +65,8 @@ extern "C" {
  * Some functions may overwrite data in pmat (check the presence of `const`).
  *
  * `ker` is not resized/reallocated: it keeps its original shape, but only the
- * first `nz` rows contain useful entries. Similarly, for `pivind` and `shift`
- * only the first `nz` entries matter in output.
+ * first `nullity` rows contain useful entries. Similarly, for `pivind` and `shift`
+ * only the first `nullity` entries matter in output.
  */
 
 /** general interface

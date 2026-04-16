@@ -33,7 +33,7 @@ slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
     if (form > ORD_WEAK_POPOV)
         flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_kernel). form > ORD_WEAK_POPOV not implemented.");
 
-    slong nz = -1;
+    slong nullity = -1;
 
     slong * _pivind = pivind;
     slong * _shift = shift;
@@ -64,7 +64,7 @@ slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
     {
         nmod_poly_mat_t mat;
         nmod_poly_mat_init_set(mat, pmat);
-        nz = nmod_poly_mat_kernel_zls_approx(ker, _pivind, _shift, mat);
+        nullity = nmod_poly_mat_kernel_zls_approx(ker, _pivind, _shift, mat);
         nmod_poly_mat_clear(mat);
     }
 
@@ -76,7 +76,7 @@ slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
         nmod_poly_mat_init(mat_t, pmat->c, pmat->r, pmat->modulus);
         nmod_poly_mat_init(ker_t, ker->c, ker->r, ker->modulus);
         nmod_poly_mat_transpose(mat_t, pmat);
-        nz = nmod_poly_mat_kernel_zls_approx(ker_t, _pivind, _shift, mat_t);
+        nullity = nmod_poly_mat_kernel_zls_approx(ker_t, _pivind, _shift, mat_t);
         nmod_poly_mat_transpose(ker, ker_t);
         nmod_poly_mat_clear(ker_t);
         nmod_poly_mat_clear(mat_t);
@@ -88,19 +88,19 @@ slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
         nmod_poly_mat_t mat_i;
         nmod_poly_mat_init_set(mat_i, pmat);
         nmod_poly_mat_invert_rows(mat_i, _shift);
-        nz = nmod_poly_mat_kernel_zls_approx(ker, _pivind, _shift, mat_i);
+        nullity = nmod_poly_mat_kernel_zls_approx(ker, _pivind, _shift, mat_i);
         nmod_poly_mat_t kernz;
-        nmod_poly_mat_window_init(kernz, ker, 0, 0, nz, ker->c);
+        nmod_poly_mat_window_init(kernz, ker, 0, 0, nullity, ker->c);
         nmod_poly_mat_invert_rows(kernz, _shift);
         nmod_poly_mat_invert_columns(kernz, NULL);
-        for (slong i = 0; i < nz/2; i++)
+        for (slong i = 0; i < nullity/2; i++)
         {
             slong tmp = ker->c - 1 - _pivind[i];
-            _pivind[i] = ker->c - 1 - _pivind[nz - 1 - i];
-            _pivind[nz - 1 - i] = tmp;
+            _pivind[i] = ker->c - 1 - _pivind[nullity - 1 - i];
+            _pivind[nullity - 1 - i] = tmp;
         }
-        if (nz % 2)
-            _pivind[nz/2] = ker->c - 1 - _pivind[nz/2];
+        if (nullity % 2)
+            _pivind[nullity/2] = ker->c - 1 - _pivind[nullity/2];
         nmod_poly_mat_window_clear(kernz);
         nmod_poly_mat_clear(mat_i);
     }
@@ -115,19 +115,19 @@ slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
         nmod_poly_mat_transpose(mat_it, pmat);
 
         nmod_poly_mat_invert_rows(mat_it, _shift);
-        nz = nmod_poly_mat_kernel_zls_approx(ker_it, _pivind, _shift, mat_it);
+        nullity = nmod_poly_mat_kernel_zls_approx(ker_it, _pivind, _shift, mat_it);
         nmod_poly_mat_t kernz;
-        nmod_poly_mat_window_init(kernz, ker_it, 0, 0, nz, ker_it->c);
+        nmod_poly_mat_window_init(kernz, ker_it, 0, 0, nullity, ker_it->c);
         nmod_poly_mat_invert_rows(kernz, _shift);
         nmod_poly_mat_invert_columns(kernz, NULL);
-        for (slong i = 0; i < nz/2; i++)
+        for (slong i = 0; i < nullity/2; i++)
         {
             slong tmp = ker_it->c - 1 - _pivind[i];
-            _pivind[i] = ker_it->c - 1 - _pivind[nz - 1 - i];
-            _pivind[nz - 1 - i] = tmp;
+            _pivind[i] = ker_it->c - 1 - _pivind[nullity - 1 - i];
+            _pivind[nullity - 1 - i] = tmp;
         }
-        if (nz % 2)
-            _pivind[nz/2] = ker_it->c - 1 - _pivind[nz/2];
+        if (nullity % 2)
+            _pivind[nullity/2] = ker_it->c - 1 - _pivind[nullity/2];
         nmod_poly_mat_window_clear(kernz);
 
         nmod_poly_mat_transpose(ker, ker_it);
@@ -140,7 +140,7 @@ slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
     if (shift == NULL)
         flint_free(_shift);
 
-    return nz;
+    return nullity;
 }
 
 
@@ -207,22 +207,22 @@ slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
 
     /* gather information for rows which belong to the kernel */
     /* note: at this stage, pivind == rdeg_s(appbas) */
-    slong nz = 0;
+    slong nullity = 0;
     for (slong i = 0; i < m; i++)
     {
         if (pivind[i] - shift[i] + amp < order - d)
         {
-            shift[nz] = pivind[i];
-            pivind[nz] = i;
+            shift[nullity] = pivind[i];
+            pivind[nullity] = i;
             for (slong j = 0; j < m; j++)
                 FLINT_SWAP(nmod_poly_struct,
-                           *nmod_poly_mat_entry(ker, nz, j),
+                           *nmod_poly_mat_entry(ker, nullity, j),
                            *nmod_poly_mat_entry(ker, i, j));
-            nz += 1;
+            nullity += 1;
         }
     }
 
-    return nz;
+    return nullity;
 }
 
 /* Follows the description of Zhou-Labahn-Storjohann algorithm in [LNVZ22, Algo.1]  */
@@ -255,7 +255,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     {
         /* we split pmat == [ n - n/2 cols | n/2 cols]                       */
         /* (we want more columns in left part, for the residual computation) */
-        slong nz;
+        slong nullity;
 
         nmod_poly_mat_t submat;    /* window only */
         nmod_poly_mat_t residual;  /* window only */
@@ -265,81 +265,80 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
 
         /* first recursive call on left submatrix */
         nmod_poly_mat_window_init(submat, pmat, 0, 0, m, n - n/2);
-        nz = nmod_poly_mat_kernel_zls_approx(ker, pivind, shift, submat);
+        nullity = nmod_poly_mat_kernel_zls_approx(ker, pivind, shift, submat);
         nmod_poly_mat_window_clear(submat);
 
         /* if first kernel is empty, early exit */
-        if (nz == 0)
+        if (nullity == 0)
             return 0;
 
-        /* actual kernel: nz first rows */
-        nmod_poly_mat_window_init(ker1, ker, 0, 0, nz, m);
+        /* actual kernel: `nullity` first rows */
+        nmod_poly_mat_window_init(ker1, ker, 0, 0, nullity, m);
 
         /* residual: (first ker) * (right submatrix) */
         /* overwrite left columns of pmat */
         nmod_poly_mat_window_init(submat, pmat, 0, n - n/2, m, n);
-        nmod_poly_mat_window_init(residual, pmat, 0, 0, nz, n/2);
+        nmod_poly_mat_window_init(residual, pmat, 0, 0, nullity, n/2);
         nmod_poly_mat_mul_classical(residual, ker1, submat);
         nmod_poly_mat_window_clear(submat);
 
         /* recursive call 2, on residual */
-        nmod_poly_mat_init(ker2, nz, nz, pmat->modulus);
-        slong * pivind2 = FLINT_ARRAY_ALLOC(nz, slong);
-        nz = nmod_poly_mat_kernel_zls_approx(ker2, pivind2, shift, residual);
+        nmod_poly_mat_init(ker2, nullity, nullity, pmat->modulus);
+        slong * pivind2 = FLINT_ARRAY_ALLOC(nullity, slong);
+        nullity = nmod_poly_mat_kernel_zls_approx(ker2, pivind2, shift, residual);
         nmod_poly_mat_window_clear(residual);
 
         /* multiply bases and update pivind */
-        nmod_poly_mat_init(ker3, nz, m, pmat->modulus);
-        nmod_poly_mat_window_init(submat, ker2, 0, 0, nz, ker2->c);
+        nmod_poly_mat_init(ker3, nullity, m, pmat->modulus);
+        nmod_poly_mat_window_init(submat, ker2, 0, 0, nullity, ker2->c);
         nmod_poly_mat_mul(ker3, submat, ker1);
         nmod_poly_mat_window_clear(submat);
         nmod_poly_mat_window_clear(ker1);
 
-        for (slong i = 0; i < nz; i++)
+        for (slong i = 0; i < nullity; i++)
             for (slong j = 0; j < m; j++)
                 FLINT_SWAP(nmod_poly_struct,
                            *nmod_poly_mat_entry(ker, i, j),
                            *nmod_poly_mat_entry(ker3, i, j));
 
-        for (slong i = 0; i < nz; i++)
+        for (slong i = 0; i < nullity; i++)
             pivind[i] = pivind[pivind2[i]];
 
         nmod_poly_mat_clear(ker2);
         nmod_poly_mat_clear(ker3);
         flint_free(pivind2);
 
-        return nz;
+        return nullity;
     }
 
     /* here, we are in the case 1 <= n <= m/2 */
 
-    /* find rdeg, maxdeg, and diff_shift = min(shift - max(0, rdeg(pmat))) */
-    /* NOTE compute maxdeg with -1 for zero rows, in order to detect zero */
-    /* input matrix; but at the same time convert it to 0 for zero */
-    /* rows for the rest of the operations */
+    /* `nnz` <-- the number of nonzero rows of `pmat` */
+    /* `buf` <-- `max(0, rdeg(pmat))` */
     slong * buf = FLINT_ARRAY_ALLOC(m, slong);
-    nmod_poly_mat_row_degree(buf, pmat, NULL);
-    slong maxdeg = buf[0];
-    if (buf[0] == -1) buf[0] = 0;
-    slong diff_shift = shift[0] - buf[0];
-    for (slong i = 1; i < m; i++)
-    {
-        slong d = buf[i];
-        slong diff = shift[i] - FLINT_MAX(0, d);
-        if (d > maxdeg)
-            maxdeg = d;
-        if (diff_shift > diff)
-            diff_shift = diff;
-    }
+    ulong nnz = nmod_poly_mat_row_degree_zero(buf, pmat, NULL);
 
     /* early exit: pmat == 0 => kernel is identity */
-    if (maxdeg == -1)
+    if (nnz == 0)
     {
         nmod_poly_mat_one(ker);
         for (slong i = 0; i < m; i++)
             pivind[i] = i;
         flint_free(buf);
         return m;
+    }
+
+    /* find max(rdeg(pmat)), and diff_shift = min(shift - buf) */
+    slong maxdeg = buf[0];
+    slong diff_shift = shift[0] - maxdeg;
+    for (slong i = 1; i < m; i++)
+    {
+        slong d = buf[i];
+        slong diff = shift[i] - d;
+        if (d > maxdeg)
+            maxdeg = d;
+        if (diff_shift > diff)
+            diff_shift = diff;
     }
 
     /* build order for approximation (this choice diverges from [LNVZ22, Algo.1]): */
@@ -354,47 +353,47 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     order = 1 + order / (m - n);
     order = 1 + FLINT_MAX(maxdeg, order);
 
-    flint_printf("order : %ld\n", order);
+    /* flint_printf("order : %ld\n", order); */
     nmod_poly_mat_pmbasis(ker, shift, pmat, order);
 
     /* run an easy degree-based detection of rows in the kernel */
     /* permute ker into [kernel rows \\ other rows], preserving increasing pivots */
-    slong nz = 0;
+    slong nullity = 0;
     slong sum_pmatdeg = 0;  /* sum of degrees of rows of pmat in complement of pivind */
     for (slong i = 0; i < m; i++)
     {
-        flint_printf("i : %ld, order+diff_shift : %ld, shift[i] : %ld --> ", i, order+diff_shift, shift[i]);
+        /* flint_printf("i : %ld, order+diff_shift : %ld, shift[i] : %ld --> ", i, order+diff_shift, shift[i]); */
         if (shift[i] < order + diff_shift)
         {
-            flint_printf("yes!\n");
+            /* FIXME remove */ /* flint_printf("yes!\n"); */
             /* this is a row in the kernel, see [note:row_in_kernel] */
-            pivind[nz] = i;
-            nz += 1;
+            pivind[nullity] = i;
+            nullity += 1;
         }
         else
         {
-            flint_printf("no..\n");
+            /* FIXME remove */ /* flint_printf("no..\n"); */
             sum_pmatdeg += FLINT_MAX(0, buf[i]);
-            buf[i - nz] = i;
+            buf[i - nullity] = i;
         }
     }
-    for (slong i = nz; i < m; i++)
-        pivind[i] = buf[i - nz];
+    for (slong i = nullity; i < m; i++)
+        pivind[i] = buf[i - nullity];
 
     nmod_poly_mat_permute_rows(ker, pivind, shift);
 
     /* early exit */
-    if (nz >= m - n)  /* otherwise, there must be some kernel rows not in ker yet */
+    if (nullity >= m - n)  /* otherwise, there must be some kernel rows not in ker yet */
     {
-        flint_printf("trying early exit...\n");
+        /* flint_printf("trying early exit...\n"); */
         slong sum_pivdeg = 0;
-        for (slong i = 0; i < nz; i++)
+        for (slong i = 0; i < nullity; i++)
             sum_pivdeg += nmod_poly_degree(nmod_poly_mat_entry(ker, i, pivind[i]));
 
         if (sum_pivdeg == sum_pmatdeg)  /* whole kernel already found, see [note:degree_bounds] */
         {
             flint_free(buf);
-            return nz;
+            return nullity;
         }
     }
 
@@ -405,68 +404,68 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     nmod_poly_mat_t approx;    /* window only */
     nmod_poly_mat_t ker2nz;    /* window only */
 
-    nmod_poly_mat_init(residual, m - nz, n, pmat->modulus);
-    nmod_poly_mat_window_init(approx, ker, nz, 0, m, m);
+    nmod_poly_mat_init(residual, m - nullity, n, pmat->modulus);
+    nmod_poly_mat_window_init(approx, ker, nullity, 0, m, m);
     nmod_poly_mat_middle_product_naive(residual, approx, pmat, order, order + maxdeg + 1);
     /* FIXME provide (and use) general middle_product interface */
     /* note: on non-generic input, one might want to check for zero rows in residual */
 
     /* kernel of residual */
-    nmod_poly_mat_init(ker2, m - nz, m - nz, pmat->modulus);
-    const slong nz2 = nmod_poly_mat_kernel_zls_approx(ker2, buf, shift + nz, residual);
+    nmod_poly_mat_init(ker2, m - nullity, m - nullity, pmat->modulus);
+    const slong nullity2 = nmod_poly_mat_kernel_zls_approx(ker2, buf, shift + nullity, residual);
 
-    /* if nz2 == 0, whole kernel already computed, just return */
-    if (nz2 == 0)
+    /* if nullity2 == 0, whole kernel already computed, just return */
+    if (nullity2 == 0)
     {
         nmod_poly_mat_clear(residual);
         nmod_poly_mat_window_clear(approx);
         nmod_poly_mat_clear(ker2);
         flint_free(buf);
-        return nz;
+        return nullity;
     }
 
     /* multiply to get missing part of kernel */
-    nmod_poly_mat_window_init(ker2nz, ker2, 0, 0, nz2, ker2->c);
-    nmod_poly_mat_init(prod, nz2, m, pmat->modulus);
+    nmod_poly_mat_window_init(ker2nz, ker2, 0, 0, nullity2, ker2->c);
+    nmod_poly_mat_init(prod, nullity2, m, pmat->modulus);
     nmod_poly_mat_mul(prod, ker2nz, approx);
-    for (slong i = 0; i < nz2; i++)
+    for (slong i = 0; i < nullity2; i++)
         for (slong j = 0; j < m; j++)
             FLINT_SWAP(nmod_poly_struct,
                        *nmod_poly_mat_entry(prod, i, j),
                        *nmod_poly_mat_entry(approx, i, j));
 
     /* update pivind */
-    for (slong i = 0; i < nz2; i++)
-        pivind[nz + i] = pivind[nz + buf[i]];
+    for (slong i = 0; i < nullity2; i++)
+        pivind[nullity + i] = pivind[nullity + buf[i]];
 
     /* permute rows to get increasing pivot indices */
     nmod_poly_mat_window_clear(approx);
-    nmod_poly_mat_window_init(approx, ker, 0, 0, nz + nz2, m);
+    nmod_poly_mat_window_init(approx, ker, 0, 0, nullity + nullity2, m);
     slong i1 = 0;
     slong i2 = 0;
-    for (slong i = 0; i < nz + nz2; i++)
+    for (slong i = 0; i < nullity + nullity2; i++)
     {
-        if (i2 == nz2 || (i1 < nz && pivind[i1] < pivind[nz + i2]))
+        if (i2 == nullity2 || (i1 < nullity && pivind[i1] < pivind[nullity + i2]))
         {
             buf[i] = i1;
             i1++;
         }
         else
         {
-            buf[i] = nz + i2;
+            buf[i] = nullity + i2;
             i2++;
         }
     }
 
     nmod_poly_mat_permute_rows(approx, buf, NULL);
-    slong * tmp = FLINT_ARRAY_ALLOC(nz + nz2, slong);
-    for (slong i = 0; i < nz + nz2; i++)
+    slong * tmp = FLINT_ARRAY_ALLOC(nullity + nullity2, slong);
+    for (slong i = 0; i < nullity + nullity2; i++)
         tmp[i] = pivind[i];
-    for (slong i = 0; i < nz + nz2; i++)
+    for (slong i = 0; i < nullity + nullity2; i++)
         pivind[i] = tmp[buf[i]];
-    for (slong i = 0; i < nz + nz2; i++)
+    for (slong i = 0; i < nullity + nullity2; i++)
         tmp[i] = shift[i];
-    for (slong i = 0; i < nz + nz2; i++)
+    for (slong i = 0; i < nullity + nullity2; i++)
         shift[i] = tmp[buf[i]];
     flint_free(tmp);
 
@@ -477,7 +476,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     nmod_poly_mat_clear(prod);
     flint_free(buf);
 
-    return nz + nz2;
+    return nullity + nullity2;
 }
 
 
@@ -538,10 +537,10 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
  * Indeed: let dbound = max(rdeg_s(P))
  * . sum(rdeg_s(P)) <= sum(s) is known (Zhou-Labahn-Storjohann, 2012)
  * . if we assume degrees are well balanced (which happens generically):
- * then rdeg_s(P) consists of nz values all equal to dbound or dbound - 1
- * -> dbound + (nz - 1) * (dbound - 1) <= sum(s)
- * -> dbound <= floor((sum(s) + (nz - 1)) / nz)
- *            = 1 + floor((sum(s) - 1) / nz)                                        
+ * then rdeg_s(P) consists of `nullity` values all equal to dbound or dbound - 1
+ * -> dbound + (nullity - 1) * (dbound - 1) <= sum(s)
+ * -> dbound <= floor((sum(s) + (nullity - 1)) / nullity)
+ *            = 1 + floor((sum(s) - 1) / nullity)                                        
  *           <= 1 + floor((sum(s) - 1) / (m - n)).
  *
  * [note:row_in_kernel]
