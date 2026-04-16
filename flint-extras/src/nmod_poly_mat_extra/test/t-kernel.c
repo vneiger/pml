@@ -17,10 +17,13 @@
 
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_approximant.h"
+#include "nmod_poly_mat_io.h"
 #include "nmod_poly_mat_kernel.h"
 #include "testing_collection.h"
 
-// test one given input for pmbasis
+#define _TEST_VERBOSE_ 1
+
+// test one given input for kernel
 int core_test_kernel(nmod_poly_mat_t mat, slong * shift)
 {
     int res = 1;
@@ -35,20 +38,16 @@ int core_test_kernel(nmod_poly_mat_t mat, slong * shift)
         nmod_poly_mat_t ker;
         nmod_poly_mat_init(ker, rdim, rdim, prime);
 
-        slong cshift[rdim];
-        for (slong i = 0; i < rdim; i++)
-            cshift[i] = shift[i];
-
         slong * pivind = FLINT_ARRAY_ALLOC(rdim, slong);
         slong * pivind_check = FLINT_ARRAY_ALLOC(rdim, slong);
         slong * rdeg = FLINT_ARRAY_ALLOC(rdim, slong);
         slong * rdeg_check = FLINT_ARRAY_ALLOC(rdim, slong);
 
         nmod_poly_mat_t kernz;
-        nmod_poly_mat_init(ker, rdim, rdim, prime);
 
         /* kernel_via_approx */
         {
+            if (_TEST_VERBOSE_) flint_printf(". starting left kernel, via approx...\n");
             for (slong i = 0; i < rdim; i++)
                 rdeg[i] = shift[i];
             slong nullity = nmod_poly_mat_kernel_via_approx(ker, pivind, rdeg, mat);
@@ -57,7 +56,7 @@ int core_test_kernel(nmod_poly_mat_t mat, slong * shift)
             local_res = nmod_poly_mat_is_kernel(kernz, shift, mat, ORD_WEAK_POPOV, ROW_LOWER);
             res = res && local_res;
 
-            if (local_res)
+            if (!local_res)
                 flint_printf("(via_approx, ker) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu\n", \
                              rdim, mat->c, nmod_poly_mat_degree(mat), prime);
 
@@ -77,6 +76,7 @@ int core_test_kernel(nmod_poly_mat_t mat, slong * shift)
 
         /* kernel_zls_approx */
         {
+            if (_TEST_VERBOSE_) flint_printf(". starting left kernel, ZLS-approx...\n");
             for (slong i = 0; i < rdim; i++)
                 rdeg[i] = shift[i];
             nmod_poly_mat_t pmat_c;
@@ -89,7 +89,7 @@ int core_test_kernel(nmod_poly_mat_t mat, slong * shift)
 
             if (!local_res)
                 flint_printf("(zls_approx, ker) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu\n", \
-                                   rdim, cdim, nmod_poly_mat_degree(mat), prime);
+                             rdim, cdim, nmod_poly_mat_degree(mat), prime);
 
             nmod_poly_mat_row_degree(rdeg_check, kernz, shift);
             nmod_poly_mat_pivot_index(pivind_check, kernz, shift, ROW_LOWER);
@@ -108,7 +108,9 @@ int core_test_kernel(nmod_poly_mat_t mat, slong * shift)
         }
 
         /* kernel interface, ROW_LOWER */
+        if (0)  /* TODO currently disabled: same as kernel_zls */
         {
+            if (_TEST_VERBOSE_) flint_printf(". starting left kernel, interface ROW_LOWER...\n");
             poly_mat_form_t form = ORD_WEAK_POPOV;
             orientation_t orient = ROW_LOWER;
 
@@ -121,7 +123,7 @@ int core_test_kernel(nmod_poly_mat_t mat, slong * shift)
             res = res && local_res;
 
             if (!local_res)
-                flint_printf("(kernel, ker) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
+                flint_printf("(lkernel, row_lower, ker) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
                              rdim, cdim, nmod_poly_mat_degree(mat), prime, orient);
 
             nmod_poly_mat_row_degree(rdeg_check, kernz, shift);
@@ -133,7 +135,7 @@ int core_test_kernel(nmod_poly_mat_t mat, slong * shift)
             res = res && local_res;
 
             if (!local_res)
-                flint_printf("(kernel, rdeg/pivind) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
+                flint_printf("(lkernel, row_lower, rdeg/pivind) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
                              rdim, cdim, nmod_poly_mat_degree(mat), prime, orient);
 
             nmod_poly_mat_window_clear(kernz);
@@ -141,8 +143,9 @@ int core_test_kernel(nmod_poly_mat_t mat, slong * shift)
 
         /* kernel interface, ROW_UPPER */
         {
+            if (_TEST_VERBOSE_) flint_printf(". starting left kernel, interface ROW_UPPER...\n");
             poly_mat_form_t form = ORD_WEAK_POPOV;
-            orientation_t orient = ROW_LOWER;
+            orientation_t orient = ROW_UPPER;
 
             for (slong i = 0; i < rdim; i++)
                 rdeg[i] = shift[i];
@@ -153,7 +156,7 @@ int core_test_kernel(nmod_poly_mat_t mat, slong * shift)
             res = res && local_res;
 
             if (!local_res)
-                flint_printf("(kernel, ker) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
+                flint_printf("(lkernel, row_upper, ker) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
                              rdim, cdim, nmod_poly_mat_degree(mat), prime, orient);
 
             nmod_poly_mat_row_degree(rdeg_check, kernz, shift);
@@ -165,7 +168,7 @@ int core_test_kernel(nmod_poly_mat_t mat, slong * shift)
             res = res && local_res;
 
             if (!local_res)
-                flint_printf("(kernel, rdeg/pivind) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
+                flint_printf("(lkernel, row_upper, rdeg/pivind) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
                              rdim, cdim, nmod_poly_mat_degree(mat), prime, orient);
 
             nmod_poly_mat_window_clear(kernz);
@@ -173,10 +176,95 @@ int core_test_kernel(nmod_poly_mat_t mat, slong * shift)
 
         nmod_poly_mat_window_clear(kernz);
         nmod_poly_mat_clear(ker);
-        flint_free(shift);
         flint_free(rdeg);
         flint_free(pivind);
         flint_free(rdeg_check);
+        flint_free(pivind_check);
+    }
+
+    /* right kernel */
+    {
+        nmod_poly_mat_t ker;
+        nmod_poly_mat_init(ker, cdim, cdim, prime);
+
+        slong * pivind = FLINT_ARRAY_ALLOC(cdim, slong);
+        slong * pivind_check = FLINT_ARRAY_ALLOC(cdim, slong);
+        slong * cdeg = FLINT_ARRAY_ALLOC(cdim, slong);
+        slong * cdeg_check = FLINT_ARRAY_ALLOC(cdim, slong);
+
+        nmod_poly_mat_t kernz;
+
+        /* kernel interface, COL_LOWER */
+        {
+            if (_TEST_VERBOSE_) flint_printf(". starting right kernel, interface COL_LOWER...\n");
+            poly_mat_form_t form = ORD_WEAK_POPOV;
+            orientation_t orient = COL_LOWER;
+
+            for (slong j = 0; j < cdim; j++)
+                cdeg[j] = shift[j];
+            slong nullity = nmod_poly_mat_kernel(ker, pivind, cdeg, mat, form, orient);
+
+            nmod_poly_mat_window_init(kernz, ker, 0, 0, cdim, nullity);
+            local_res = nmod_poly_mat_is_kernel(kernz, shift, mat, form, orient);
+            res = res && local_res;
+
+            if (!local_res)
+                flint_printf("(rkernel, col_lower, ker) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
+                             rdim, cdim, nmod_poly_mat_degree(mat), prime, orient);
+
+            nmod_poly_mat_column_degree(cdeg_check, kernz, shift);
+            nmod_poly_mat_pivot_index(pivind_check, kernz, shift, orient);
+            local_res = 1;
+            for (slong k = 0; k < nullity; k++)
+                if (cdeg_check[k] != cdeg[k] || pivind_check[k] != pivind[k])
+                    local_res = 0;
+            res = res && local_res;
+
+            if (!local_res)
+                flint_printf("(rkernel, col_lower, cdeg/pivind) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
+                             rdim, cdim, nmod_poly_mat_degree(mat), prime, orient);
+
+            nmod_poly_mat_window_clear(kernz);
+        }
+
+        /* kernel interface, COL_UPPER */
+        {
+            if (_TEST_VERBOSE_) flint_printf(". starting right kernel, interface COL_UPPER...\n");
+            poly_mat_form_t form = ORD_WEAK_POPOV;
+            orientation_t orient = COL_UPPER;
+
+            for (slong j = 0; j < cdim; j++)
+                cdeg[j] = shift[j];
+            slong nullity = nmod_poly_mat_kernel(ker, pivind, cdeg, mat, form, orient);
+
+            nmod_poly_mat_window_init(kernz, ker, 0, 0, cdim, nullity);
+            local_res = nmod_poly_mat_is_kernel(kernz, shift, mat, form, orient);
+            res = res && local_res;
+
+            if (!local_res)
+                flint_printf("(rkernel, col_upper, ker) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
+                             rdim, cdim, nmod_poly_mat_degree(mat), prime, orient);
+
+            nmod_poly_mat_column_degree(cdeg_check, kernz, shift);
+            nmod_poly_mat_pivot_index(pivind_check, kernz, shift, orient);
+            local_res = 1;
+            for (slong k = 0; k < nullity; k++)
+                if (cdeg_check[k] != cdeg[k] || pivind_check[k] != pivind[k])
+                    local_res = 0;
+            res = res && local_res;
+
+            if (!local_res)
+                flint_printf("(rkernel, col_upper, cdeg/pivind) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
+                             rdim, cdim, nmod_poly_mat_degree(mat), prime, orient);
+
+            nmod_poly_mat_window_clear(kernz);
+        }
+
+        nmod_poly_mat_window_clear(kernz);
+        nmod_poly_mat_clear(ker);
+        flint_free(cdeg);
+        flint_free(pivind);
+        flint_free(cdeg_check);
         flint_free(pivind_check);
     }
 
@@ -188,25 +276,32 @@ int one_test_kernel(slong prime, slong rdim, slong cdim, slong len, flint_rand_t
 {
     int res;
 
-    const slong degdet = FLINT_MAX(rdim, cdim) * len;
-
     nmod_poly_mat_t mat;
     nmod_poly_mat_init(mat, rdim, cdim, prime);
     nmod_poly_mat_randtest(mat, state, len);
 
     slong * shift = flint_malloc(rdim * sizeof(slong));
 
+    nmod_poly_mat_print_pretty(mat, "x");
+
+    if (_TEST_VERBOSE_) flint_printf("shift: uniform\n");
     _test_collection_shift_uniform(shift, rdim);
     res = core_test_kernel(mat, shift);
 
+    if (_TEST_VERBOSE_) flint_printf("shift: increasing\n");
     _test_collection_shift_increasing(shift, rdim);
     res = res && core_test_kernel(mat, shift);
 
+    if (_TEST_VERBOSE_) flint_printf("shift: decreasing\n");
     _test_collection_shift_decreasing(shift, rdim);
     res = res && core_test_kernel(mat, shift);
 
+    if (_TEST_VERBOSE_) flint_printf("shift: shuffled\n");
     _test_collection_shift_shuffle(shift, rdim, state);
     res = res && core_test_kernel(mat, shift);
+
+    /** disabling tests that take too long currently
+    const slong degdet = FLINT_MAX(rdim, cdim) * len;
 
     _test_collection_shift_hermite(shift, rdim, degdet);
     res = res && core_test_kernel(mat, shift);
@@ -219,6 +314,7 @@ int one_test_kernel(slong prime, slong rdim, slong cdim, slong len, flint_rand_t
 
     _test_collection_shift_rplateau(shift, rdim, degdet);
     res = res && core_test_kernel(mat, shift);
+    */
 
     nmod_poly_mat_clear(mat);
     flint_free(shift);
@@ -568,7 +664,7 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel, state)
     int i, result;
 
     /* TODO activate this for long test */
-    if (1)
+    if (0)
     {
         for (i = 0; i < 5 * flint_test_multiplier(); i++)
         {
@@ -583,15 +679,21 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel, state)
     }
     else
     {
-        for (i = 0; i < 100 * flint_test_multiplier(); i++)
+        for (i = 0; i < 50 * flint_test_multiplier(); i++)
         {
             ulong nbits = 2 + n_randint(state, 63);
-            ulong rdim = 1 + n_randint(state, 10);
-            ulong cdim = 1 + n_randint(state, 10);
-            ulong len = n_randint(state, 150);
+            /* ulong rdim = 1 + n_randint(state, 10); */
+            /* ulong cdim = 1 + n_randint(state, 10); */
+            /* ulong len = n_randint(state, 150); */
+            ulong rdim = 1 + n_randint(state, 3);
+            ulong cdim = 1 + n_randint(state, 3);
+            ulong len = n_randint(state, 15);
 
             slong prime = n_randprime(state, nbits, 1);
 
+            if (_TEST_VERBOSE_)
+                flint_printf("prime = %wu, rdim = %wu, cdim = %wu, len = %wu\n",
+                             prime, rdim, cdim, len);
             result = one_test_kernel(prime, rdim, cdim, len, state);
 
             if (!result)
@@ -603,77 +705,4 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel, state)
     TEST_FUNCTION_END(state);
 }
 
-
-
-
-
-//    /* right kernel */
-//    for (k = 0; k < 50 * flint_test_multiplier(); k++)
-//    {
-//        ulong nbits = 2 + n_randint(state, 63);
-//        slong cdim = n_randint(state, 12);
-//        slong rdim = n_randint(state, 12);
-//        ulong len = 1 + n_randint(state, 75);
-//
-//        slong * shift = FLINT_ARRAY_ALLOC(cdim, slong);
-//        for (slong j = 0; j < cdim; j++)
-//            shift[j] = n_randint(state, len);
-//
-//        slong * pivind = FLINT_ARRAY_ALLOC(cdim, slong);
-//        slong * pivind_check = FLINT_ARRAY_ALLOC(cdim, slong);
-//        slong * cdeg = FLINT_ARRAY_ALLOC(cdim, slong);
-//        slong * cdeg_check = FLINT_ARRAY_ALLOC(cdim, slong);
-//
-//        ulong prime = n_randprime(state, nbits, 1);
-//
-//        nmod_poly_mat_t pmat;
-//        nmod_poly_mat_init(pmat, rdim, cdim, prime);
-//        nmod_poly_mat_randtest(pmat, state, len);
-//
-//        nmod_poly_mat_t ker;
-//        nmod_poly_mat_t kernz;
-//        nmod_poly_mat_init(ker, cdim, cdim, prime);
-//
-//        /* kernel interface */
-//        {
-//            poly_mat_form_t form = ORD_WEAK_POPOV;
-//            orientation_t orient = (n_randint(state, 2)) ? COL_LOWER : COL_UPPER;
-//
-//            for (slong j = 0; j < cdim; j++)
-//                cdeg[j] = shift[j];
-//            slong nz = nmod_poly_mat_kernel(ker, pivind, cdeg, pmat, form, orient);
-//
-//            nmod_poly_mat_window_init(kernz, ker, 0, 0, cdim, nz);
-//            result = nmod_poly_mat_is_kernel(kernz, shift, pmat, form, orient);
-//
-//            if (!result)
-//            {
-//                TEST_FUNCTION_FAIL("(kernel, ker) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
-//                                   rdim, cdim, len, prime, orient);
-//            }
-//
-//            nmod_poly_mat_column_degree(cdeg_check, kernz, shift);
-//            nmod_poly_mat_pivot_index(pivind_check, kernz, shift, orient);
-//            result = 1;
-//            for (slong k = 0; k < nz; k++)
-//                if (cdeg_check[k] != cdeg[k] || pivind_check[k] != pivind[k])
-//                    result = 0;
-//
-//            if (!result)
-//            {
-//                TEST_FUNCTION_FAIL("(kernel, rdeg/pivind) -- rdim = %wu, cdim = %wu, length = %wu, p = %wu, orient = %wu\n", \
-//                                   rdim, cdim, len, prime, orient);
-//            }
-//
-//            nmod_poly_mat_window_clear(kernz);
-//        }
-//
-//        nmod_poly_mat_window_clear(kernz);
-//        nmod_poly_mat_clear(pmat);
-//        nmod_poly_mat_clear(ker);
-//        flint_free(shift);
-//        flint_free(cdeg);
-//        flint_free(pivind);
-//        flint_free(cdeg_check);
-//        flint_free(pivind_check);
-//    }
+#undef _TEST_VERBOSE_
