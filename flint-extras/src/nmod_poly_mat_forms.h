@@ -152,20 +152,21 @@ typedef enum
  * @ref RowAndColumnDegrees). The result `rdeg` must be already initialized
  * with length (at least) the number of rows of `mat`. The shift `shift`
  * must be `NULL` or have (at least) as many elements as the number of columns
- * of `mat`.
+ * of `mat`. Return value: the number of nonzero rows of `mat`.
  */
-void nmod_poly_mat_row_degree(slong *rdeg,
-                              const nmod_poly_mat_t mat,
-                              const slong * shift);
+ulong nmod_poly_mat_row_degree(slong *rdeg,
+                               const nmod_poly_mat_t mat,
+                               const slong * shift);
 
 /** Computes the `shift`-column degree `cdeg` of a polynomial matrix `pmat`
  * (see @ref RowAndColumnDegrees). The result `cdeg` must be already initialized
  * with length (at least) the number of column of `mat`. The shift `shift` must
- * have (at least) as many elements as the number of rows of `mat`.
+ * have (at least) as many elements as the number of rows of `mat`. Return
+ * value: the number of nonzero columns of `mat`.
  */
-void nmod_poly_mat_column_degree(slong *cdeg,
-                                 const nmod_poly_mat_t mat,
-                                 const slong * shift);
+ulong nmod_poly_mat_column_degree(slong *cdeg,
+                                  const nmod_poly_mat_t mat,
+                                  const slong * shift);
 
 //@} // doxygen group: (Shifted) row and column degree
 
@@ -209,32 +210,33 @@ void nmod_poly_mat_column_degree(slong *cdeg,
 /** Computes the `shift`-pivot index (stored in integer `pivind`) and
  * `shift`-pivot degree (stored in integer `pivdeg`) of a given vector `vec`
  * (see @ref Pivots). In the unshifted case, `pivdeg` coincides with the degree
- * of this vector. ROW_LOWER / COLUMN_UPPER orientation. */
-void _nmod_poly_vec_pivot_profile(slong * pivind,
-                                  slong * pivdeg,
-                                  const nmod_poly_struct * vec,
-                                  const slong * shift,
-                                  slong len,
-                                  orientation_t orient);
+ * of this vector. Returns 0 if vector is zero, 1 otherwise. */
+ulong _nmod_poly_vec_pivot_profile(slong * pivind,
+                                   slong * pivdeg,
+                                   const nmod_poly_struct * vec,
+                                   const slong * shift,
+                                   slong len,
+                                   orientation_t orient);
 
 /** Computes the `shift`-pivot index `pivind` of a polynomial matrix
- * `mat` (see @ref Pivots). 
+ * `mat` (see @ref Pivots). Returns the number of nonzero rows or columns (depending on orientation).
  * \todo for some orientations this uses (shallow) column copies, is it worth trying to avoid that?
  **/
-void nmod_poly_mat_pivot_index(slong *pivind,
-                               const nmod_poly_mat_t mat,
-                               const slong * shift,
-                               orientation_t orient);
+ulong nmod_poly_mat_pivot_index(slong *pivind,
+                                const nmod_poly_mat_t mat,
+                                const slong * shift,
+                                orientation_t orient);
 
 /** Computes the row-wise `shift`-pivot index `pivind` and `shift`-pivot degree
  * `pivdeg` of a polynomial matrix `mat` (see @ref Pivots). In the unshifted
  * case, `pivdeg` coincides with the row or column degree of `mat` (depending
- * on column-wise/row-wise orientation). */
-void nmod_poly_mat_pivot_profile(slong * pivind,
-                                 slong * pivdeg,
-                                 const nmod_poly_mat_t mat,
-                                 const slong * shift,
-                                 orientation_t orient);
+ * on column-wise/row-wise orientation). Returns the number of nonzero rows or
+ * columns (depending on orientation). */
+ulong nmod_poly_mat_pivot_profile(slong * pivind,
+                                  slong * pivdeg,
+                                  const nmod_poly_mat_t mat,
+                                  const slong * shift,
+                                  orientation_t orient);
 
 //@} // doxygen group: (Shifted) pivot index and pivot degree
 
