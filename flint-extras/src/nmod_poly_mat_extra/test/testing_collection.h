@@ -1,5 +1,7 @@
 #ifndef __TESTING_COLLECTION__H
+#define __TESTING_COLLECTION__H
 
+#include <flint/flint.h>
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
 #include <flint/perm.h>
@@ -122,25 +124,47 @@ static inline void _test_collection_mat_zero(nmod_poly_mat_t mat)
 }
 
 // uniformly random matrices, uniform degree
-static inline void _test_collection_mat_uniform(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
+static inline void _test_collection_mat_uniform(nmod_poly_mat_t mat, slong len, flint_rand_t state)
 {
-    nmod_poly_mat_rand(mat, state, deg+1);
+    nmod_poly_mat_rand(mat, state, len);
+}
+
+// uniformly random matrices, unbalanced row degrees
+static inline void _test_collection_mat_unbalanced_rdeg(nmod_poly_mat_t mat, slong len, flint_rand_t state)
+{
+    slong * rlen = FLINT_ARRAY_ALLOC(mat->r, slong);
+    /* choose rlen[i] at random in [0,len], with skewed probability (notably, increased for 0 and 1) */
+    for (slong i = 0; i < mat->r; i++)
+        rlen[i] = n_randtest(state) % (len+1);
+    nmod_poly_mat_rand_row_degree(mat, state, rlen);
+    flint_free(rlen);
+}
+
+// uniformly random matrices, unbalanced column degrees
+static inline void _test_collection_mat_unbalanced_cdeg(nmod_poly_mat_t mat, slong len, flint_rand_t state)
+{
+    slong * clen = FLINT_ARRAY_ALLOC(mat->c, slong);
+    /* choose rlen[i] at random in [0,len], with skewed probability (notably, increased for 0 and 1) */
+    for (slong j = 0; j < mat->c; j++)
+        clen[j] = n_randtest(state) % (len+1);
+    nmod_poly_mat_rand_column_degree(mat, state, clen);
+    flint_free(clen);
 }
 
 // randtest matrices
-static inline void _test_collection_mat_test(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
+static inline void _test_collection_mat_test(nmod_poly_mat_t mat, slong len, flint_rand_t state)
 {
-    nmod_poly_mat_randtest(mat, state, deg+1);
+    nmod_poly_mat_randtest(mat, state, len);
 }
 
 // sparse matrices
-static inline void _test_collection_mat_sparse(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
+static inline void _test_collection_mat_sparse(nmod_poly_mat_t mat, slong len, flint_rand_t state)
 {
-    nmod_poly_mat_randtest_sparse(mat, state, deg+1, 0.05);
+    nmod_poly_mat_randtest_sparse(mat, state, len, 0.05);
 }
 
 // rank-deficient matrices
-void _test_collection_mat_rkdef(nmod_poly_mat_t mat, slong deg, flint_rand_t state)
+void _test_collection_mat_rkdef(nmod_poly_mat_t mat, slong len, flint_rand_t state)
 {
     if (mat->r <= 1 || mat->c <= 1)
         nmod_poly_mat_zero(mat);
@@ -152,13 +176,13 @@ void _test_collection_mat_rkdef(nmod_poly_mat_t mat, slong deg, flint_rand_t sta
         const long jj = n_randint(state, mat->c);
 
         // first fill with random entries
-        nmod_poly_mat_randtest(mat, state, deg+1);
+        nmod_poly_mat_randtest(mat, state, len);
 
         // build random polynomial linear combination of all rows except ii-th
         nmod_poly_mat_t comb_rows_coeffs, comb_rows;
         nmod_poly_mat_init(comb_rows, 1, mat->c, mat->modulus);
         nmod_poly_mat_init(comb_rows_coeffs, 1, mat->r, mat->modulus);
-        nmod_poly_mat_rand(comb_rows_coeffs, state, deg);
+        nmod_poly_mat_rand(comb_rows_coeffs, state, len);
         nmod_poly_zero(nmod_poly_mat_entry(comb_rows_coeffs, 0, ii));
         nmod_poly_mat_mul(comb_rows, comb_rows_coeffs, mat);
 
@@ -170,7 +194,7 @@ void _test_collection_mat_rkdef(nmod_poly_mat_t mat, slong deg, flint_rand_t sta
         nmod_poly_mat_t comb_cols_coeffs, comb_cols;
         nmod_poly_mat_init(comb_cols, mat->r, 1, mat->modulus);
         nmod_poly_mat_init(comb_cols_coeffs, mat->c, 1, mat->modulus);
-        nmod_poly_mat_rand(comb_cols_coeffs, state, deg);
+        nmod_poly_mat_rand(comb_cols_coeffs, state, len);
         nmod_poly_zero(nmod_poly_mat_entry(comb_cols_coeffs, jj, 0));
         nmod_poly_mat_mul(comb_cols, mat, comb_cols_coeffs);
 
@@ -185,5 +209,4 @@ void _test_collection_mat_rkdef(nmod_poly_mat_t mat, slong deg, flint_rand_t sta
     }
 }
 
-#define __TESTING_COLLECTION__H
 #endif /* ifndef __TESTING_COLLECTION__H */

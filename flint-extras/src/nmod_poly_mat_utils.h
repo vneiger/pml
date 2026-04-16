@@ -496,25 +496,25 @@ void nmod_poly_mat_rand(nmod_poly_mat_t mat,
                         slong len);
 
 /** Fills polynomial matrix `mat` with random dense polynomial entries such
- * that `mat[i,j] has length up to `rdeg[i]+1` for all `i`. Assumes `rdeg` has
+ * that `mat[i,j] has length up to `rlen[i]` for all `i`. Assumes `rlen` has
  * the right length, i.e. the number of rows of mat. */
 void nmod_poly_mat_rand_row_degree(nmod_poly_mat_t mat,
                                    flint_rand_t state,
-                                   const slong * rdeg);
+                                   const slong * rlen);
 
 /** Fills polynomial matrix `mat` with random dense polynomial entries such
- * that `mat[i,j] has length up to `cdeg[j]+1` for all `j`. Assumes `cdeg` has
+ * that `mat[i,j] has length up to `clen[j]` for all `j`. Assumes `clen` has
  * the right length, i.e. the number of columns of mat. */
 void nmod_poly_mat_rand_column_degree(nmod_poly_mat_t mat,
                                       flint_rand_t state,
-                                      const slong * cdeg);
+                                      const slong * clen);
 
 /** Fills polynomial matrix `mat` with random dense polynomial entries such
- * that `mat[i,j] has length up to `dmat[i,j]+1` for all `i,j`. Assumes `dmat`
+ * that `mat[i,j] has length up to `lenmat[i,j]` for all `i,j`. Assumes `lenmat`
  * has the right number of rows and columns (i.e. the same as those of mat). */
 void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
                                       flint_rand_t state,
-                                      const fmpz_mat_t dmat);
+                                      const fmpz_mat_t lenmat);
 
 //@} // doxygen group: Generation of random matrices with degree bounds
 

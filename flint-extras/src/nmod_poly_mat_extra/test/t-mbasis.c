@@ -143,210 +143,229 @@ int collection_test_mbasis(slong iter, flint_rand_t state)
                         shift = (slong *) flint_malloc(rdim * sizeof(slong));
                         nmod_poly_mat_init(mat, rdim, cdim, prime);
 
+                        /* uniform shift */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_uniform(shift, rdim);
                         _test_collection_mat_zero(mat);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "zero"); return 0; }
 
                         _test_collection_shift_uniform(shift, rdim);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "uniform"); return 0; }
 
                         _test_collection_shift_uniform(shift, rdim);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_unbalanced_rdeg(mat, order, state);
+                        if (! core_test_mbasis(mat, order, shift))
+                        { printf("failed %s -- %s,\n...exiting\n", "uniform", "unbalanced rdeg"); return 0; }
+
+                        _test_collection_shift_uniform(shift, rdim);
+                        _test_collection_mat_unbalanced_cdeg(mat, order, state);
+                        if (! core_test_mbasis(mat, order, shift))
+                        { printf("failed %s -- %s,\n...exiting\n", "uniform", "unbalanced cdeg"); return 0; }
+
+                        _test_collection_shift_uniform(shift, rdim);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "test"); return 0; }
 
                         _test_collection_shift_uniform(shift, rdim);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_sparse(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "sparse"); return 0; }
 
                         _test_collection_shift_uniform(shift, rdim);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_rkdef(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "rkdef"); return 0; }
 
-
+                        /* increasing shift */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_increasing(shift, rdim);
                         _test_collection_mat_zero(mat);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "increasing", "zero"); return 0; }
 
                         _test_collection_shift_increasing(shift, rdim);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "increasing", "uniform"); return 0; }
 
                         _test_collection_shift_increasing(shift, rdim);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "increasing", "test"); return 0; }
 
                         _test_collection_shift_increasing(shift, rdim);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_sparse(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "increasing", "sparse"); return 0; }
 
                         _test_collection_shift_increasing(shift, rdim);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_rkdef(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "increasing", "rkdef"); return 0; }
 
-
+                        /* decreasing shift */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_decreasing(shift, rdim);
                         _test_collection_mat_zero(mat);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "decreasing", "zero"); return 0; }
 
                         _test_collection_shift_decreasing(shift, rdim);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "decreasing", "uniform"); return 0; }
 
                         _test_collection_shift_decreasing(shift, rdim);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "decreasing", "test"); return 0; }
 
                         _test_collection_shift_decreasing(shift, rdim);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_sparse(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "decreasing", "sparse"); return 0; }
 
                         _test_collection_shift_decreasing(shift, rdim);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_rkdef(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "decreasing", "rkdef"); return 0; }
 
-
+                        /* shuffled shift */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_shuffle(shift, rdim, state);
                         _test_collection_mat_zero(mat);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "shuffle", "zero"); return 0; }
 
                         _test_collection_shift_shuffle(shift, rdim, state);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "shuffle", "uniform"); return 0; }
 
                         _test_collection_shift_shuffle(shift, rdim, state);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "shuffle", "test"); return 0; }
 
                         _test_collection_shift_shuffle(shift, rdim, state);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_sparse(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "shuffle", "sparse"); return 0; }
 
                         _test_collection_shift_shuffle(shift, rdim, state);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_rkdef(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "shuffle", "rkdef"); return 0; }
 
-
+                        /* HNF shift */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_hermite(shift, rdim, order);
                         _test_collection_mat_zero(mat);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "hermite", "zero"); return 0; }
 
                         _test_collection_shift_hermite(shift, rdim, order);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "hermite", "uniform"); return 0; }
 
                         _test_collection_shift_hermite(shift, rdim, order);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "hermite", "test"); return 0; }
 
                         _test_collection_shift_hermite(shift, rdim, order);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_sparse(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "hermite", "sparse"); return 0; }
 
                         _test_collection_shift_hermite(shift, rdim, order);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_rkdef(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "hermite", "rkdef"); return 0; }
 
-
+                        /* HNF shift, bis */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_rhermite(shift, rdim, order);
                         _test_collection_mat_zero(mat);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "rhermite", "zero"); return 0; }
 
                         _test_collection_shift_rhermite(shift, rdim, order);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "rhermite", "uniform"); return 0; }
 
                         _test_collection_shift_rhermite(shift, rdim, order);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "rhermite", "test"); return 0; }
 
                         _test_collection_shift_rhermite(shift, rdim, order);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_sparse(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "rhermite", "sparse"); return 0; }
 
                         _test_collection_shift_rhermite(shift, rdim, order);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_rkdef(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "rhermite", "rkdef"); return 0; }
 
-
+                        /* plateau shift */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_plateau(shift, rdim, order);
                         _test_collection_mat_zero(mat);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "plateau", "zero"); return 0; }
 
                         _test_collection_shift_plateau(shift, rdim, order);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "plateau", "uniform"); return 0; }
 
                         _test_collection_shift_plateau(shift, rdim, order);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "plateau", "test"); return 0; }
 
                         _test_collection_shift_plateau(shift, rdim, order);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_sparse(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "plateau", "sparse"); return 0; }
 
                         _test_collection_shift_plateau(shift, rdim, order);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_rkdef(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "plateau", "rkdef"); return 0; }
 
-
+                        /* plateau shift, bis */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_rplateau(shift, rdim, order);
                         _test_collection_mat_zero(mat);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "rplateau", "zero"); return 0; }
 
                         _test_collection_shift_rplateau(shift, rdim, order);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "rplateau", "uniform"); return 0; }
 
                         _test_collection_shift_rplateau(shift, rdim, order);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "rplateau", "test"); return 0; }
 
                         _test_collection_shift_rplateau(shift, rdim, order);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_sparse(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "rplateau", "sparse"); return 0; }
 
                         _test_collection_shift_rplateau(shift, rdim, order);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_rkdef(mat, order, state);
                         if (! core_test_mbasis(mat, order, shift))
                         { printf("failed %s -- %s,\n...exiting\n", "rplateau", "rkdef"); return 0; }
 
