@@ -329,6 +329,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     }
 
     /* find max(rdeg(pmat)), and diff_shift = min(shift - buf) */
+    /* (see [note:diff_shift]) */
     slong maxdeg = buf[0];
     slong diff_shift = shift[0] - maxdeg;
     for (slong i = 1; i < m; i++)
@@ -344,7 +345,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     /* build order for approximation (this choice diverges from [LNVZ22, Algo.1]): */
     /*     order = 1 + max(maxdeg, 1 + floor((sum(shift) - 1) / (m - n)))          */
     /* -> approx basis "generically" captures the whole kernel                     */
-    /* (see [note:choice_of_order] for explanations)                               */
+    /* (see [note:choice_of_order] and [note:diff_shift] for explanations)         */
     /* FIXME could be improved in case of unbalanced cdeg(pmat), e.g. based on     */
     /* [LNVZ22, Theorem 3.3, Proof of Item (iii)], see also [note:degree_bounds]   */
     slong order = - m * diff_shift - 1;
@@ -355,7 +356,8 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
 
     nmod_poly_mat_pmbasis(ker, shift, pmat, order);
 
-    /* run an easy degree-based detection of rows in the kernel */
+    /* run an easy degree-based detection of rows in the kernel                   */
+    /* (see [note:choice_of_order] and [note:diff_shift] for explanations)        */
     /* permute ker into [kernel rows \\ other rows], preserving increasing pivots */
     slong nullity = 0;
     slong sum_pmatdeg = 0;  /* sum of degrees of rows of pmat in complement of pivind */
@@ -387,7 +389,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     /* [3.] among the rows of `ker` that are possibly not in the kernel (those at indices from   */
     /*    `nullity` to `m-1`), none has a pivot index `i` which is such that both the pivot      */
     /*     degree of that row is zero and the row `i` of the input matrix has degree <= 0        */
-    /* see [note:early_exit] for more details                                                    */
+    /* (see [note:early_exit] for more details)                                                  */
     if (nullity >= m - n && no_constant_pivot_and_row)  /* condition [1.] and [3.] */
     {
         slong sum_pivdeg = 0;
@@ -551,4 +553,93 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
  * Note also that since s >= rdeg(pmat), we have rdeg(p*pmat) <= rdeg_s(p) < order
  * for any row vector p such that rdeg_s(p) <= dbound. So, approximants of pmat
  * whose s-degree is <= dbound are necessarily actual kernel rows p*pmat == 0.
+ */
+
+/** Minimizing the shift, and early exit.
+ *
+ * Here are some arguments, trying to make things clearer with respect to two
+ * things: the definition of `diff_shift`, and the design of some correct early
+ * exit.
+ *
+ * [note:diff_shift]
+ * Let's call `s` the shift `shift` before the call to `pmbasis` (currently around
+ * line 350), and let `t` be the same shift but to which we subtract `diff_shift`
+ * to all entries. The choice of `diff_shift` is such that the entries of `t` are
+ * at least the row degree of `pmat`, indeed,
+ * ```t[i] = s[i] - diff_shift >= s[i] - (s[i] - max(0,rdeg(pmat[i,:]))) >= rdeg(pmat[i,:]))```
+ * and in fact, `diff_shift` is the largest value such that this is true, or in
+ * other words, it minimizes `t` while ensuring `t >= rdeg(pmat)` (i.e., any
+ * larger `diff_shift` would lead to some entry of `t` being strictly less than
+ * the corresponding entry of `rdeg(pmat)`).
+ *
+ * This `pmbasis` call computes `ker` which is an `s`-ordered weak Popov
+ * approximant basis of `pmat` at order `order`. It also in-place modifies `shift`
+ * into the `s`-row degree of `ker`. Since `s` is `t` translated by `+diff_shift`,
+ * then `ker` is also in `t`-ordered weak Popov form, and the modified `shift`
+ * contains the `t`-row degree of `ker` translated by `+diff_shift`, that is,
+ * after the `pmbasis` call,
+ * ```shift[i] = rdeg_s(ker[i,:]) = rdeg_t(ker[i,:]) + diff_shift```
+ * from which we can deduce that
+ * ```shift[i] >= rdeg(ker[i,:] * pmat) + diff_shift```
+ *
+ * Then, what is said to be an "easy degree-based detection of rows in the kernel"
+ * in the code is based on the fact that any `i` such that ```shift[i] < order +
+ * diff_shift``` corresponds to a row in the kernel of `pmat`. Indeed this
+ * inequality is equivalent to the fact that the `t`-row degree of the row
+ * `ker[i,:]` is strictly less than `order`, and since `t >= rdeg(pmat)`
+ * entry-wise, this means that the row degree of `ker[i,:] * pmat` is strictly
+ * less than `order`. But at the same time this vector is zero modulo `x**order`,
+ * so it must be actually zero, meaning that `ker[i,:]` is in the kernel of
+ * `pmat`.
+ *
+ * This is in good part a mix of classical arguments concerning kernel bases via
+ * approximant bases, but hopefully this (technically) highlights the interplay
+ * between `diff_shift` and the row degree of `pmat`. Another classical thing is
+ * that every such row is actually minimal, in the sense that there is no vector
+ * in the kernel of `pmat` which would have `s`-pivot at index `i` and whose
+ * `s`-pivot degree would be strictly less than the `s`-pivot degree
+ * `deg(ker[i,i])` of the `i`-th row of the approximant basis `ker`.
+ * 
+ * [note:early_exit]
+ * Concerning the early exit, the quantity `sum_pmatdeg` is the sum of degrees of
+ * rows of `pmat` that are not indexed by some `i` that are already known to be an
+ * `s`-pivot index of some kernel row (based on the above detection of kernel
+ * rows). So this subset of rows includes all rows of `pmat` that are not indexed
+ * by the `s`-pivot index of some row in the kernel, and this means that
+ * `sum_pmatdeg` is a (non-strict) upper bound on the sum of `s`-pivot degrees of
+ * an `s`-weak Popov kernel basis. In particular, if the sum of `s`-pivot degrees
+ * of already found kernel rows is equal to `sum_pmatdeg`, then the only possibly
+ * missing kernel rows must have `s`-pivot degree equal to zero.
+ * 
+ * Expanding upon this, we can say a bit more: "the corresponding row of `pmat`
+ * must be constant as well".
+ * 
+ * Through `pmbasis`, we have found indices $i_0 < \cdots < i_{k-1}$ of rows that
+ * are in the kernel of `pmat` (where $k$ is the partial nullity computed in the
+ * code: number of already found kernel rows). Because they are extracted from an
+ * `s`-ordered weak Popov basis, their `s`-pivots are on the diagonal, so at the
+ * column positions $i_0 < \cdots < i_{k-1}$. Let $\delta_0,\ldots,\delta_{k-1}$
+ * be their `s`-pivot degrees. Let $j_0 < \cdots < j_{m-k-1}$ be the $m-k$ indices
+ * that form the complement, so that the union of the $i$'s and the $j$'s gives
+ * all row indices $\{0,\ldots,m-1\}$ of the input (or column indices of the
+ * kernel). Finally, let $r_0,\ldots,r_{m-k-1}$ be the degrees of the $m-k$ rows
+ * indexed by these $j$'s in the input matrix `pmat`, taken as `0` when the row is
+ * zero.
+ * 
+ * What we know is that $\delta_0 + \cdots + \delta_{k-1} \le r_0 + \cdots +
+ * r_{m-k-1}$. This is possibly a strict inequality, even when we have found the
+ * whole kernel. Now suppose this is an equality. If we are missing any row from
+ * the kernel, say a row with `s`-pivot index $\pi$, adding this row to the
+ * collection of "already known kernel rows" makes both the left-hand side
+ * increase (or stay the same) and the right-hand side decrease (or stay the
+ * same). But the inequality must remain valid, so, since we already had
+ * equality, both sides must stay the same. What this means is that this kernel
+ * row must have `s`-pivot degree `0`, and also, the corresponding row $\pi$ of
+ * `pmat` must have degree `0` (or be zero).
+ *
+ * This seems sufficient to make the existing early exit strategy correct without
+ * impacting its efficiency: to make sure we can early exit, we just have to add a
+ * check that, among the rows not detected to be in the kernel, none has pivot
+ * degree $0$ with also the corresponding row of `pmat` having degree $0$.
+ * 
  */

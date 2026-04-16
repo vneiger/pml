@@ -213,7 +213,6 @@ void time_nullspace_unbalanced(time_args targs, flint_rand_t state)
     nmod_poly_mat_clear(ker);
 }
 
-
 TIME_KER(kernel_via_approx)
 TIME_KER(kernel_zls_approx)
 TIME_KER_UNBALANCED(kernel_via_approx)
