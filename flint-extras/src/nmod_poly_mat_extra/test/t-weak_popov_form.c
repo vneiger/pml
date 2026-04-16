@@ -20,6 +20,8 @@
 
 #include "testing_collection.h"
 
+/* TODO for long test, add unbalanced rdeg / unbalanced cdeg variants */
+
 //#define NOTRANS
 
 // stack row at the bottom of mat
