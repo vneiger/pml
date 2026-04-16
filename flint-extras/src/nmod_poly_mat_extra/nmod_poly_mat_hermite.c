@@ -15,6 +15,7 @@
 #include <flint/nmod.h>
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_forms.h"
+#include "nmod_poly_mat_extra/impl.h"
 
 #if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
 #  define MAT(i,j) (mat->rows[i] + j)
