@@ -10,10 +10,11 @@
     <https://www.gnu.org/licenses/>.
 */
 
-#include "nmod_poly_mat_forms.h"
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
+#include "nmod_poly_mat_forms.h"
+#include "nmod_poly_mat_extra.h"  /* for prototypes */
 
 /* TODO currently specialized to ROW_LOWER (or at least ROW_stuff) */
 int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
