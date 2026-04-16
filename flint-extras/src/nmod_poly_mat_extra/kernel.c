@@ -314,10 +314,14 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     /* here, we are in the case 1 <= n <= m/2 */
 
     /* find rdeg, maxdeg, and diff_shift = min(shift - max(0, rdeg(pmat))) */
+    /* NOTE compute maxdeg with -1 for zero rows, in order to detect zero */
+    /* input matrix; but at the same time convert it to 0 for zero */
+    /* rows for the rest of the operations */
     slong * buf = FLINT_ARRAY_ALLOC(m, slong);
     nmod_poly_mat_row_degree(buf, pmat, NULL);
     slong maxdeg = buf[0];
-    slong diff_shift = shift[0] - FLINT_MAX(0, buf[0]);
+    if (buf[0] == -1) buf[0] = 0;
+    slong diff_shift = shift[0] - buf[0];
     for (slong i = 1; i < m; i++)
     {
         slong d = buf[i];
