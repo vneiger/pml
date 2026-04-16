@@ -158,6 +158,13 @@ ulong nmod_poly_mat_row_degree(slong *rdeg,
                                const nmod_poly_mat_t mat,
                                const slong * shift);
 
+/** Same as `nmod_poly_mat_row_degree`, except that zero rows are given
+ * degree 0 (or `min(shift)`) instead of -1 (or `min(shift)-1`).
+ */
+ulong nmod_poly_mat_row_degree_zero(slong *rdeg,
+                                    const nmod_poly_mat_t mat,
+                                    const slong * shift);
+
 /** Computes the `shift`-column degree `cdeg` of a polynomial matrix `pmat`
  * (see @ref RowAndColumnDegrees). The result `cdeg` must be already initialized
  * with length (at least) the number of column of `mat`. The shift `shift` must
@@ -167,6 +174,13 @@ ulong nmod_poly_mat_row_degree(slong *rdeg,
 ulong nmod_poly_mat_column_degree(slong *cdeg,
                                   const nmod_poly_mat_t mat,
                                   const slong * shift);
+
+/** Same as `nmod_poly_mat_column_degree`, except that zero columns are given
+ * degree 0 (or `min(shift)`) instead of -1 (or `min(shift)-1`).
+ */
+ulong nmod_poly_mat_column_degree_zero(slong *cdeg,
+                                       const nmod_poly_mat_t mat,
+                                       const slong * shift);
 
 //@} // doxygen group: (Shifted) row and column degree
 
