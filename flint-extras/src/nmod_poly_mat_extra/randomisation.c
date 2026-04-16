@@ -33,29 +33,29 @@ void nmod_poly_mat_rand(nmod_poly_mat_t mat,
 
 void nmod_poly_mat_rand_row_degree(nmod_poly_mat_t mat,
                                    flint_rand_t state,
-                                   const slong * rdeg)
+                                   const slong * rlen)
 {
     for (slong i = 0; i < mat->r; i++)
         for (slong j = 0; j < mat->c; j++)
-            nmod_poly_rand(nmod_poly_mat_entry(mat, i, j), state, rdeg[i]+1);
+            nmod_poly_rand(nmod_poly_mat_entry(mat, i, j), state, rlen[i]);
 }
 
 void nmod_poly_mat_rand_column_degree(nmod_poly_mat_t mat,
                                       flint_rand_t state,
-                                      const slong * cdeg)
+                                      const slong * clen)
 {
     for (slong i = 0; i < mat->r; i++)
         for (slong j = 0; j < mat->c; j++)
-            nmod_poly_rand(nmod_poly_mat_entry(mat, i, j), state, cdeg[j]+1);
+            nmod_poly_rand(nmod_poly_mat_entry(mat, i, j), state, clen[j]);
 }
 
 void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
                                       flint_rand_t state,
-                                      const fmpz_mat_t dmat)
+                                      const fmpz_mat_t lenmat)
 {
     for (slong i = 0; i < mat->r; i++)
         for (slong j = 0; j < mat->c; j++)
-            nmod_poly_rand(nmod_poly_mat_entry(mat, i, j), state, 1 + *fmpz_mat_entry(dmat, i, j));
+            nmod_poly_rand(nmod_poly_mat_entry(mat, i, j), state, *fmpz_mat_entry(lenmat, i, j));
 }
 
 

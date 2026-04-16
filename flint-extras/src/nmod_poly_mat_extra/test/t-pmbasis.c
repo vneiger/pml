@@ -17,6 +17,8 @@
 
 #include "testing_collection.h"
 
+#define _TEST_VERBOSE_ 0
+
 // test one given input for pmbasis
 int core_test_pmbasis(nmod_poly_mat_t mat, slong order, slong * shift)
 {
@@ -116,13 +118,13 @@ int collection_test_pmbasis(slong iter, flint_rand_t state)
     slong * shift;
 
     long total_nb_tests =
-            iter // number of iterations
-            * 40 // number of mats (currently 5) x number of shifts (currently 8)
+            iter  /* number of iterations */
+            * 56  /* number of mats (currently 7) x number of shifts (currently 8) */
             * _test_collection_nb_primes
             * _test_collection_nb_dims
             * _test_collection_nb_dims
             * _test_collection_nb_degs;
-    printf("Launching testing collection (%ld cases)\n", total_nb_tests);
+    flint_printf("Launching testing collection (%ld cases)\n", total_nb_tests);
 
     for (slong i_primes = 0; i_primes < _test_collection_nb_primes; i_primes++)
         for (slong i_rdims = 0; i_rdims < _test_collection_nb_dims; i_rdims++)
@@ -134,223 +136,313 @@ int collection_test_pmbasis(slong iter, flint_rand_t state)
                         const long rdim = _test_collection_rdims[i_rdims];
                         const long cdim = _test_collection_cdims[i_cdims];
                         const long order = _test_collection_degs[i_degs];
-                        printf("prime %ld, rdim %ld, cdim %ld, order %ld.\n", prime, rdim, cdim, order);
+                        if (_TEST_VERBOSE_)
+                            flint_printf("prime %ld, rdim %ld, cdim %ld, order %ld.\n", prime, rdim, cdim, order);
 
                         shift = (slong *) flint_malloc(rdim * sizeof(slong));
                         nmod_poly_mat_init(mat, rdim, cdim, prime);
 
+                        /* uniform shift */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_uniform(shift, rdim);
                         _test_collection_mat_zero(mat);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "uniform", "zero"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "uniform", "zero"); return 0; }
 
                         _test_collection_shift_uniform(shift, rdim);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "uniform", "uniform"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "uniform", "uniform"); return 0; }
 
                         _test_collection_shift_uniform(shift, rdim);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_unbalanced_rdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "uniform", "test"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "uniform", "unbalanced rdeg"); return 0; }
 
                         _test_collection_shift_uniform(shift, rdim);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_unbalanced_cdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "uniform", "sparse"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "uniform", "unbalanced cdeg"); return 0; }
 
                         _test_collection_shift_uniform(shift, rdim);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "uniform", "rkdef"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "uniform", "test"); return 0; }
 
+                        _test_collection_shift_uniform(shift, rdim);
+                        _test_collection_mat_sparse(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "uniform", "sparse"); return 0; }
 
+                        _test_collection_shift_uniform(shift, rdim);
+                        _test_collection_mat_rkdef(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "uniform", "rkdef"); return 0; }
+
+                        /* increasing shift */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_increasing(shift, rdim);
                         _test_collection_mat_zero(mat);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "increasing", "zero"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "increasing", "zero"); return 0; }
 
                         _test_collection_shift_increasing(shift, rdim);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "increasing", "uniform"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "increasing", "uniform"); return 0; }
 
                         _test_collection_shift_increasing(shift, rdim);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_unbalanced_rdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "increasing", "test"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "increasing", "unbalanced rdeg"); return 0; }
 
                         _test_collection_shift_increasing(shift, rdim);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_unbalanced_cdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "increasing", "sparse"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "increasing", "unbalanced cdeg"); return 0; }
 
                         _test_collection_shift_increasing(shift, rdim);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "increasing", "rkdef"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "increasing", "test"); return 0; }
 
+                        _test_collection_shift_increasing(shift, rdim);
+                        _test_collection_mat_sparse(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "increasing", "sparse"); return 0; }
 
+                        _test_collection_shift_increasing(shift, rdim);
+                        _test_collection_mat_rkdef(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "increasing", "rkdef"); return 0; }
+
+                        /* decreasing shift */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_decreasing(shift, rdim);
                         _test_collection_mat_zero(mat);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "decreasing", "zero"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "decreasing", "zero"); return 0; }
 
                         _test_collection_shift_decreasing(shift, rdim);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "decreasing", "uniform"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "decreasing", "uniform"); return 0; }
 
                         _test_collection_shift_decreasing(shift, rdim);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_unbalanced_rdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "decreasing", "test"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "decreasing", "unbalanced rdeg"); return 0; }
 
                         _test_collection_shift_decreasing(shift, rdim);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_unbalanced_cdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "decreasing", "sparse"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "decreasing", "unbalanced cdeg"); return 0; }
 
                         _test_collection_shift_decreasing(shift, rdim);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "decreasing", "rkdef"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "decreasing", "test"); return 0; }
 
+                        _test_collection_shift_decreasing(shift, rdim);
+                        _test_collection_mat_sparse(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "decreasing", "sparse"); return 0; }
 
+                        _test_collection_shift_decreasing(shift, rdim);
+                        _test_collection_mat_rkdef(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "decreasing", "rkdef"); return 0; }
+
+                        /* shuffled shift */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_shuffle(shift, rdim, state);
                         _test_collection_mat_zero(mat);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "shuffle", "zero"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "shuffle", "zero"); return 0; }
 
                         _test_collection_shift_shuffle(shift, rdim, state);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "shuffle", "uniform"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "shuffle", "uniform"); return 0; }
 
                         _test_collection_shift_shuffle(shift, rdim, state);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_unbalanced_rdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "shuffle", "test"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "shuffle", "unbalanced rdeg"); return 0; }
 
                         _test_collection_shift_shuffle(shift, rdim, state);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_unbalanced_cdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "shuffle", "sparse"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "shuffle", "unbalanced cdeg"); return 0; }
 
                         _test_collection_shift_shuffle(shift, rdim, state);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "shuffle", "rkdef"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "shuffle", "test"); return 0; }
 
+                        _test_collection_shift_shuffle(shift, rdim, state);
+                        _test_collection_mat_sparse(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "shuffle", "sparse"); return 0; }
 
+                        _test_collection_shift_shuffle(shift, rdim, state);
+                        _test_collection_mat_rkdef(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "shuffle", "rkdef"); return 0; }
+
+                        /* HNF shift */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_hermite(shift, rdim, order);
                         _test_collection_mat_zero(mat);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "hermite", "zero"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "hermite", "zero"); return 0; }
 
                         _test_collection_shift_hermite(shift, rdim, order);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "hermite", "uniform"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "hermite", "uniform"); return 0; }
 
                         _test_collection_shift_hermite(shift, rdim, order);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_unbalanced_rdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "hermite", "test"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "hermite", "unbalanced rdeg"); return 0; }
 
                         _test_collection_shift_hermite(shift, rdim, order);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_unbalanced_cdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "hermite", "sparse"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "hermite", "unbalanced cdeg"); return 0; }
 
                         _test_collection_shift_hermite(shift, rdim, order);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "hermite", "rkdef"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "hermite", "test"); return 0; }
 
+                        _test_collection_shift_hermite(shift, rdim, order);
+                        _test_collection_mat_sparse(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "hermite", "sparse"); return 0; }
 
+                        _test_collection_shift_hermite(shift, rdim, order);
+                        _test_collection_mat_rkdef(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "hermite", "rkdef"); return 0; }
+
+                        /* HNF shift, bis */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_rhermite(shift, rdim, order);
                         _test_collection_mat_zero(mat);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "rhermite", "zero"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rhermite", "zero"); return 0; }
 
                         _test_collection_shift_rhermite(shift, rdim, order);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "rhermite", "uniform"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rhermite", "uniform"); return 0; }
 
                         _test_collection_shift_rhermite(shift, rdim, order);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_unbalanced_rdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "rhermite", "test"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rhermite", "unbalanced rdeg"); return 0; }
 
                         _test_collection_shift_rhermite(shift, rdim, order);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_unbalanced_cdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "rhermite", "sparse"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rhermite", "unbalanced cdeg"); return 0; }
 
                         _test_collection_shift_rhermite(shift, rdim, order);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "rhermite", "rkdef"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rhermite", "test"); return 0; }
 
+                        _test_collection_shift_rhermite(shift, rdim, order);
+                        _test_collection_mat_sparse(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rhermite", "sparse"); return 0; }
 
+                        _test_collection_shift_rhermite(shift, rdim, order);
+                        _test_collection_mat_rkdef(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rhermite", "rkdef"); return 0; }
+
+                        /* plateau shift */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_plateau(shift, rdim, order);
                         _test_collection_mat_zero(mat);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "plateau", "zero"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "plateau", "zero"); return 0; }
 
                         _test_collection_shift_plateau(shift, rdim, order);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "plateau", "uniform"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "plateau", "uniform"); return 0; }
 
                         _test_collection_shift_plateau(shift, rdim, order);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_unbalanced_rdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "plateau", "test"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "plateau", "unbalanced rdeg"); return 0; }
 
                         _test_collection_shift_plateau(shift, rdim, order);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_unbalanced_cdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "plateau", "sparse"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "plateau", "unbalanced cdeg"); return 0; }
 
                         _test_collection_shift_plateau(shift, rdim, order);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "plateau", "rkdef"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "plateau", "test"); return 0; }
 
+                        _test_collection_shift_plateau(shift, rdim, order);
+                        _test_collection_mat_sparse(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "plateau", "sparse"); return 0; }
 
+                        _test_collection_shift_plateau(shift, rdim, order);
+                        _test_collection_mat_rkdef(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "plateau", "rkdef"); return 0; }
+
+                        /* plateau shift, bis */
+                        /* matrix: zero | uniform | rdeg | cdeg | test | sparse | rkdef */
                         _test_collection_shift_rplateau(shift, rdim, order);
                         _test_collection_mat_zero(mat);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "rplateau", "zero"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rplateau", "zero"); return 0; }
 
                         _test_collection_shift_rplateau(shift, rdim, order);
-                        _test_collection_mat_uniform(mat, order-1, state);
+                        _test_collection_mat_uniform(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "rplateau", "uniform"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rplateau", "uniform"); return 0; }
 
                         _test_collection_shift_rplateau(shift, rdim, order);
-                        _test_collection_mat_test(mat, order-1, state);
+                        _test_collection_mat_unbalanced_rdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "rplateau", "test"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rplateau", "unbalanced rdeg"); return 0; }
 
                         _test_collection_shift_rplateau(shift, rdim, order);
-                        _test_collection_mat_sparse(mat, order-1, state);
+                        _test_collection_mat_unbalanced_cdeg(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "rplateau", "sparse"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rplateau", "unbalanced cdeg"); return 0; }
 
                         _test_collection_shift_rplateau(shift, rdim, order);
-                        _test_collection_mat_rkdef(mat, order-1, state);
+                        _test_collection_mat_test(mat, order, state);
                         if (! core_test_pmbasis(mat, order, shift))
-                        { printf("failed %s -- %s,\n...exiting\n", "rplateau", "rkdef"); return 0; }
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rplateau", "test"); return 0; }
+
+                        _test_collection_shift_rplateau(shift, rdim, order);
+                        _test_collection_mat_sparse(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rplateau", "sparse"); return 0; }
+
+                        _test_collection_shift_rplateau(shift, rdim, order);
+                        _test_collection_mat_rkdef(mat, order, state);
+                        if (! core_test_pmbasis(mat, order, shift))
+                        { flint_printf("failed %s -- %s,\n...exiting\n", "rplateau", "rkdef"); return 0; }
 
                         nmod_poly_mat_clear(mat);
                         flint_free(shift);
                     }
 
-    printf("--> Successful\n");
+    flint_printf("--> Successful\n");
     return 1;
 }
 
@@ -358,13 +450,13 @@ TEST_FUNCTION_START(nmod_poly_mat_pmbasis, state)
 {
     int i, result;
 
-    /* TODO activate this for long test */
+    /* NOTE activate this for long test */
     if (0)
     {
-        for (i = 0; i < 5 * flint_test_multiplier(); i++)
+        for (i = 0; i < flint_test_multiplier(); i++)
         {
             {
-                result = collection_test_pmbasis(5, state);
+                result = collection_test_pmbasis(1, state);
 
                 if (!result)
                     TEST_FUNCTION_FAIL("Failed pmbasis on testing collection\n");
@@ -393,3 +485,5 @@ TEST_FUNCTION_START(nmod_poly_mat_pmbasis, state)
 
     TEST_FUNCTION_END(state);
 }
+
+#undef _TEST_VERBOSE_

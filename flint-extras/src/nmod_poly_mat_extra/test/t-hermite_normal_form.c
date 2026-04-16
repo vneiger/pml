@@ -438,19 +438,19 @@ int collection_test_hermite_form(slong iter, flint_rand_t state)
                         if (! core_test_hermite_form(mat, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "zero"); return 0; }
 
-                        _test_collection_mat_uniform(mat, len-1, state);
+                        _test_collection_mat_uniform(mat, len, state);
                         if (! core_test_hermite_form(mat, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "uniform"); return 0; }
 
-                        _test_collection_mat_test(mat, len-1, state);
+                        _test_collection_mat_test(mat, len, state);
                         if (! core_test_hermite_form(mat, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "test"); return 0; }
 
-                        _test_collection_mat_sparse(mat, len-1, state);
+                        _test_collection_mat_sparse(mat, len, state);
                         if (! core_test_hermite_form(mat, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "sparse"); return 0; }
 
-                        _test_collection_mat_rkdef(mat, len-1, state);
+                        _test_collection_mat_rkdef(mat, len, state);
                         if (! core_test_hermite_form(mat, 0, state))
                         { printf("failed %s -- %s,\n...exiting\n", "uniform", "rkdef"); return 0; }
 
