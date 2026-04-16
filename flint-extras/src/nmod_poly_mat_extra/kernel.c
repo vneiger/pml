@@ -115,6 +115,10 @@ slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
         nmod_poly_mat_transpose(mat_it, pmat);
 
         nmod_poly_mat_invert_rows(mat_it, _shift);
+        /* flint_printf("calling zls approx, left kernel, on:\n"); */
+        /* nmod_poly_mat_print_pretty(mat_it, "x"); */
+        /* flint_printf("with shift %{slong*}\n", _shift, pmat->c); */
+        
         nullity = nmod_poly_mat_kernel_zls_approx(ker_it, _pivind, _shift, mat_it);
         nmod_poly_mat_t kernz;
         nmod_poly_mat_window_init(kernz, ker_it, 0, 0, nullity, ker_it->c);
@@ -373,7 +377,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
         else
         {
             /* FIXME remove */ /* flint_printf("no..\n"); */
-            sum_pmatdeg += FLINT_MAX(0, buf[i]);
+            sum_pmatdeg += buf[i];
             buf[i - nullity] = i;
         }
     }

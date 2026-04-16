@@ -17,13 +17,13 @@
 
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_approximant.h"
-#include "nmod_poly_mat_io.h"
 #include "nmod_poly_mat_kernel.h"
 #include "testing_collection.h"
 
-#define _TEST_VERBOSE_ 1
+#define _TEST_VERBOSE_ 0
 
-// test one given input for kernel
+/* test one given input for kernel */
+/* note: length of shift should be at least max(mat->r, mat->c) */
 int core_test_kernel(nmod_poly_mat_t mat, slong * shift)
 {
     int res = 1;
@@ -280,24 +280,23 @@ int one_test_kernel(slong prime, slong rdim, slong cdim, slong len, flint_rand_t
     nmod_poly_mat_init(mat, rdim, cdim, prime);
     nmod_poly_mat_randtest(mat, state, len);
 
-    slong * shift = flint_malloc(rdim * sizeof(slong));
-
-    nmod_poly_mat_print_pretty(mat, "x");
+    const slong maxdim = FLINT_MAX(rdim, cdim);
+    slong * shift = flint_malloc(maxdim * sizeof(slong));
 
     if (_TEST_VERBOSE_) flint_printf("shift: uniform\n");
-    _test_collection_shift_uniform(shift, rdim);
+    _test_collection_shift_uniform(shift, maxdim);
     res = core_test_kernel(mat, shift);
 
     if (_TEST_VERBOSE_) flint_printf("shift: increasing\n");
-    _test_collection_shift_increasing(shift, rdim);
+    _test_collection_shift_increasing(shift, maxdim);
     res = res && core_test_kernel(mat, shift);
 
     if (_TEST_VERBOSE_) flint_printf("shift: decreasing\n");
-    _test_collection_shift_decreasing(shift, rdim);
+    _test_collection_shift_decreasing(shift, maxdim);
     res = res && core_test_kernel(mat, shift);
 
     if (_TEST_VERBOSE_) flint_printf("shift: shuffled\n");
-    _test_collection_shift_shuffle(shift, rdim, state);
+    _test_collection_shift_shuffle(shift, maxdim, state);
     res = res && core_test_kernel(mat, shift);
 
     /** disabling tests that take too long currently
@@ -682,12 +681,12 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel, state)
         for (i = 0; i < 50 * flint_test_multiplier(); i++)
         {
             ulong nbits = 2 + n_randint(state, 63);
-            /* ulong rdim = 1 + n_randint(state, 10); */
-            /* ulong cdim = 1 + n_randint(state, 10); */
-            /* ulong len = n_randint(state, 150); */
-            ulong rdim = 1 + n_randint(state, 3);
-            ulong cdim = 1 + n_randint(state, 3);
-            ulong len = n_randint(state, 15);
+            ulong rdim = 1 + n_randint(state, 10);
+            ulong cdim = 1 + n_randint(state, 10);
+            ulong len = n_randint(state, 150);
+            /* ulong rdim = 1 + n_randint(state, 3); */
+            /* ulong cdim = 1 + n_randint(state, 3); */
+            /* ulong len = n_randint(state, 15); */
 
             slong prime = n_randprime(state, nbits, 1);
 
