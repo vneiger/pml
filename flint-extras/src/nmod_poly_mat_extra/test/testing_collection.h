@@ -100,7 +100,6 @@ static inline void _test_collection_shift_plateau(slong * shift, slong cdim, slo
         shift[i] = cdim*deg;
 }
 
-
 // reverse plateau shift   [0 ... 0  cdim*deg ... cdim*deg]
 static inline void _test_collection_shift_rplateau(slong * shift, slong cdim, slong deg)
 {
@@ -114,8 +113,6 @@ static inline void _test_collection_shift_rplateau(slong * shift, slong cdim, sl
 /*********************
 *  tested matrices  *
 *********************/
-
-// TODO : non-uniform degree profiles
 
 // zero matrices
 static inline void _test_collection_mat_zero(nmod_poly_mat_t mat)
