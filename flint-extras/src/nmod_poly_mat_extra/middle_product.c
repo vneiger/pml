@@ -45,13 +45,13 @@ void nmod_poly_mat_middle_product_naive(nmod_poly_mat_t C, const nmod_poly_mat_t
     
     nmod_poly_mat_t BT;
     nmod_poly_mat_init(BT, A->c, B->c, B->modulus);
-    nmod_poly_mat_shift_right(BT, B, d1-degA);
+    nmod_poly_mat_shift_right(BT, B, d1-degA); // No aliasing specified for that?
 
     nmod_poly_mat_mul(C,A,BT);  
-       
-    nmod_poly_mat_shift_right(C, C, degA);
-
+    nmod_poly_mat_shift_right(C, C, degA);  
     nmod_poly_mat_truncate(C, d2+1);
+
+    nmod_poly_mat_clear(BT);
 }
 
 
