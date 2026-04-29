@@ -41,7 +41,6 @@ void nmod_poly_mat_middle_product_naive(nmod_poly_mat_t C, const nmod_poly_mat_t
                                          const nmod_poly_mat_t B, const ulong d1, const ulong d2)
 {
     slong degA;
-
     degA=nmod_poly_mat_degree(A);
     
     nmod_poly_mat_t BT;
