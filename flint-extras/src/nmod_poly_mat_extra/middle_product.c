@@ -22,12 +22,37 @@
  *  output can alias input
  *  naive implementation (multiply, shift, truncate)
  */
-void nmod_poly_mat_middle_product_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+void nmod_poly_mat_middle_product_naive_old(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
                                         const ulong dA, const ulong dB)
 {
     nmod_poly_mat_mul(C, A, B);
     nmod_poly_mat_shift_right(C, C, dA);
     nmod_poly_mat_truncate(C, dB + 1);
+}
+
+
+/** Middle product for polynomial matrices
+ *  sets C = ((A * B) div x^d1) mod x^(d2+1), assuming deg(A) <= d1 and deg(B) <= d1 + d2
+ *  output can alias input
+ *  naive implementation (multiply, shift, truncate)
+ */
+
+void nmod_poly_mat_middle_product_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A,\
+                                         const nmod_poly_mat_t B, const ulong d1, const ulong d2)
+{
+    slong degA;
+
+    degA=nmod_poly_mat_degree(A);
+    
+    nmod_poly_mat_t BT;
+    nmod_poly_mat_init(BT, A->c, B->c, B->modulus);
+    nmod_poly_mat_shift_right(BT, B, d1-degA);
+
+    nmod_poly_mat_mul(C,A,BT);  
+       
+    nmod_poly_mat_shift_right(C, C, degA);
+
+    nmod_poly_mat_truncate(C, d2+1);
 }
 
 
