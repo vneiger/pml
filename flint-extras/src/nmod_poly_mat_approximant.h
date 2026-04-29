@@ -316,6 +316,13 @@ void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
 
 // TODO doc
 // TODO middle_product currently naive
+
+
+void nmod_poly_mat_pmbasis_old(nmod_poly_mat_t appbas,
+                           slong * shift,
+                           const nmod_poly_mat_t pmat,
+                           slong order);
+
 void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
                            slong * shift,
                            const nmod_poly_mat_t pmat,
