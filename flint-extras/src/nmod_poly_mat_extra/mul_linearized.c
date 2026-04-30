@@ -130,8 +130,9 @@ void static compress_columns(nmod_poly_mat_t A, const slong* colAL,\
  * 
  *  Linearizes B by columns into chunks of length deg(A) + 1
  * 
- *  TODO ASSUMPTION (not checked): existence of element of "large enough" order
+ *  Todo ASSUMPTION (not checked): existence of element of "large enough" order
  *           and fail flag when element not found
+ *  Todo  no linearization in certain cases ?  
  *  
  */
 
@@ -160,14 +161,11 @@ void nmod_poly_mat_mul_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A, co
     slong chunk; 
     chunk = (nmod_poly_mat_degree(A)+1);
 
-
     slong dB[n];
     nmod_poly_mat_column_degree(dB, B, NULL);
 
-    // dim of new cols 
-
-    slong colBL[m];
-    slong ln=0;
+    slong colBL[m];  // column j of B gives colBL[j] columns in output  
+    slong ln=0;   // new column dimension 
 
     for (int j=0; j<n; j++)
     {
@@ -180,20 +178,16 @@ void nmod_poly_mat_mul_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A, co
 
     spread_columns(lin_B, colBL, B, chunk); 
 
-
     nmod_poly_mat_t lin_C;
     nmod_poly_mat_init(lin_C, m, ln, A->modulus);
 
-
-    //nmod_poly_mat_mul(lin_C,A,lin_B);
     nmod_poly_mat_mul_geometric(lin_C,A,lin_B);
 
     compress_columns(C, colBL, lin_C, chunk); 
 
+    nmod_poly_mat_clear(lin_B);
+    nmod_poly_mat_clear(lin_C);
 }
-
-
-
 
 
 

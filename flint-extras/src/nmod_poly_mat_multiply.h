@@ -82,7 +82,6 @@ void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  cons
  *           and fail flag when element not found
  *  
  */
-
 void nmod_poly_mat_mul_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
 
 
