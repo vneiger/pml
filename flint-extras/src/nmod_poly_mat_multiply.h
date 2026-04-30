@@ -78,8 +78,9 @@ void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  cons
  * 
  *  Linearizes B by columns into chunks of length deg(A) + 1
  * 
- *  TODO ASSUMPTION (not checked): existence of element of "large enough" order
+ *  Todo ASSUMPTION (not checked): existence of element of "large enough" order
  *           and fail flag when element not found
+ *  Todo  no linearization in certain cases ?  
  *  
  */
 void nmod_poly_mat_mul_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);

@@ -106,8 +106,7 @@ void static compress_columns(nmod_poly_mat_t A, const slong* colAL,\
 
                 for (l=1; l<colAL[j]; l++) 
                 {
-                    nmod_poly_shift_left(tpol, \
-                        nmod_poly_mat_entry(lin_A, i, dec+l), l*chunk);
+                    nmod_poly_shift_left(tpol,nmod_poly_mat_entry(lin_A, i, dec+l), l*chunk);
                     nmod_poly_add(taccu, taccu, tpol);
                 }
 
@@ -140,9 +139,10 @@ void nmod_poly_mat_mul_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A, co
 {
 
     slong m = A->r;
+    slong l = A->c;
     slong n = B->c;
 
-    if (m < 1 || A->c || n < 1)
+    if (m < 1 || (A->c) < 1 || n < 1)
     {
         nmod_poly_mat_zero(C);
         return;
@@ -161,8 +161,6 @@ void nmod_poly_mat_mul_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A, co
     slong chunk; 
     chunk = (nmod_poly_mat_degree(A)+1);
 
-    flint_printf("\n\n chunk: %ld\n",chunk);
-
     slong dB[n];
     nmod_poly_mat_column_degree(dB, B, NULL);
 
@@ -175,20 +173,29 @@ void nmod_poly_mat_mul_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A, co
         ln += colBL[j];
     }
 
-    nmod_poly_mat_t lin_B;
-    nmod_poly_mat_init(lin_B, m, ln, A->modulus);
+    if (ln == 0)
+    {
+        nmod_poly_mat_zero(C);
+        return;
+    }
+    else 
+    {
+        nmod_poly_mat_t lin_B;
+        nmod_poly_mat_init(lin_B, l, ln, A->modulus);
 
-    spread_columns(lin_B, colBL, B, chunk); 
+        spread_columns(lin_B, colBL, B, chunk); 
 
-    nmod_poly_mat_t lin_C;
-    nmod_poly_mat_init(lin_C, m, ln, A->modulus);
+        nmod_poly_mat_t lin_C;
+        nmod_poly_mat_init(lin_C, m, ln, A->modulus);
 
-    nmod_poly_mat_mul_geometric(lin_C,A,lin_B);
+        nmod_poly_mat_mul_geometric(lin_C,A,lin_B);
 
-    compress_columns(C, colBL, lin_C, chunk); 
+        compress_columns(C, colBL, lin_C, chunk); 
 
-    nmod_poly_mat_clear(lin_B);
-    nmod_poly_mat_clear(lin_C);
+        nmod_poly_mat_clear(lin_B);
+        nmod_poly_mat_clear(lin_C);
+    }
+    
 }
 
 
