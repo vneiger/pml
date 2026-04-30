@@ -105,6 +105,21 @@ void nmod_poly_mat_middle_product_naive(nmod_poly_mat_t C, const nmod_poly_mat_t
 
 
 /** Middle product for polynomial matrices
+ *  sets C = ((A * B) div x^d1) mod x^(d2+1), assuming deg(A) <= d1 and deg(B) <= d1 + d2
+ *  output can alias input
+ *  naive implementation (multiply, shift, truncate)
+ * 
+ *  uses geometric multiplication 
+ *  
+ *  Todo ASSUMPTION (not checked): existence of element of "large enough" order
+ *           and fail flag when element not found 
+ */
+void nmod_poly_mat_middle_product_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+                                        const ulong dA, const ulong dB);
+
+
+
+/** Middle product for polynomial matrices
  *  sets C = ((A * B) div x^dA) mod x^(dB+1)
  *  output can alias input
  *  ASSUME: deg(A) <= dA and deg(B) <= dA + dB
