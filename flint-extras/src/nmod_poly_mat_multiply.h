@@ -71,6 +71,19 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nm
  */
 void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  const nmod_poly_mat_t B);
 
+/** Multiplication for polynomial matrices
+ *  sets C = A * B
+ *  output can alias input 
+ *  uses mul_geometric 
+ * 
+ *  Linearizes B by columns into chunks of length deg(A) + 1
+ * 
+ *  TODO ASSUMPTION (not checked): existence of element of "large enough" order
+ *           and fail flag when element not found
+ *  
+ */
+
+void nmod_poly_mat_mul_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
 
 
 /** Middle product for polynomial matrices
