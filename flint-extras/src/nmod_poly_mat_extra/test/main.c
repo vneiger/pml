@@ -20,6 +20,7 @@
 #include "t-kernel.c"
 #include "t-middle_product_geometric.c"
 #include "t-mul_geometric.c"
+#include "t-mul_linearized.c"
 #include "t-mbasis.c"
 #include "t-pmbasis.c"
 #include "t-mul_waksman.c"
@@ -37,6 +38,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_mbasis),
     TEST_FUNCTION(nmod_poly_mat_middle_product_geometric),
     TEST_FUNCTION(nmod_poly_mat_mul_geometric),
+    TEST_FUNCTION(nmod_poly_mat_mul_linearized),
     TEST_FUNCTION(nmod_poly_mat_pmbasis),
     /* TEST_FUNCTION(nmod_poly_mat_mul_waksman), */  /* TODO */
     TEST_FUNCTION(nmod_poly_mat_rand),

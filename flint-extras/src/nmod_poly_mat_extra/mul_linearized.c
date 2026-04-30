@@ -161,6 +161,8 @@ void nmod_poly_mat_mul_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A, co
     slong chunk; 
     chunk = (nmod_poly_mat_degree(A)+1);
 
+    flint_printf("\n\n chunk: %ld\n",chunk);
+
     slong dB[n];
     nmod_poly_mat_column_degree(dB, B, NULL);
 
