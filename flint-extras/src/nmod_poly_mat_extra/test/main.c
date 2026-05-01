@@ -24,6 +24,7 @@
 #include "t-mul_linearized.c"
 #include "t-mbasis.c"
 #include "t-pmbasis.c"
+#include "t-pmbasis_linearized.c"
 #include "t-mul_waksman.c"
 #include "t-rand.c"
 #include "t-weak_popov_form.c"
@@ -42,6 +43,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_mul_geometric),
     TEST_FUNCTION(nmod_poly_mat_mul_linearized),
     TEST_FUNCTION(nmod_poly_mat_pmbasis),
+    TEST_FUNCTION(nmod_poly_mat_pmbasis_linearized),
     /* TEST_FUNCTION(nmod_poly_mat_mul_waksman), */  /* TODO */
     TEST_FUNCTION(nmod_poly_mat_rand),
     TEST_FUNCTION(nmod_poly_mat_weak_popov_form),

@@ -328,7 +328,7 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
                            const nmod_poly_mat_t pmat,
                            slong order);
 
-/** nmod_poly_mat_pmbasis srategy using geometric multiplications instead 
+/** nmod_poly_mat_pmbasis strategy using geometric multiplications instead 
  *   and linearization for the residual computation 
  */
 

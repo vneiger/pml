@@ -116,7 +116,8 @@ void nmod_poly_mat_pmbasis_linearized(nmod_poly_mat_t appbas,
     nmod_poly_mat_init(pmat, ipmat->r, ipmat->c, ipmat->modulus);
     nmod_poly_mat_set_trunc(pmat,ipmat,order);
 
-    if (order <= PMBASIS_THRES)
+    //if (order <= PMBASIS_THRES)
+    if (order <= (ipmat->r))    
     {
         nmod_poly_mat_mbasis(appbas, shift, pmat, order);
         return;

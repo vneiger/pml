@@ -1,6 +1,6 @@
 /*
-    Copyright (C) 2026 Gilles Villard 
-    from t-middle_product_geometric.
+    2026 Gilles Villard 
+    from t-middle_product_geometric.c
     Copyright (C) 2025 Vincent Neiger, Éric Schost
 
     This file is part of PML.
