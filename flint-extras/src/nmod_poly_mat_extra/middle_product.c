@@ -88,7 +88,6 @@ void nmod_poly_mat_middle_product_linearized(nmod_poly_mat_t C, const nmod_poly_
         nmod_poly_mat_mul_linearized(C,A,BT); 
     }
 
-    nmod_poly_mat_mul(C,A,BT);  
     nmod_poly_mat_shift_right(C, C, degA);  
     nmod_poly_mat_truncate(C, d2+1);
 

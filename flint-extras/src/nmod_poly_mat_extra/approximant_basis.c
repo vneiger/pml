@@ -103,6 +103,8 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
  *  todo: check using 'if (order <= (ipmat->r))' instead 
  *           improves things for large example 
  * 
+ *  todo: tune the test for switching to mbasis 
+ * 
  */
 
 void nmod_poly_mat_pmbasis_linearized(nmod_poly_mat_t appbas,
@@ -110,13 +112,11 @@ void nmod_poly_mat_pmbasis_linearized(nmod_poly_mat_t appbas,
                            const nmod_poly_mat_t ipmat,
                            slong order)
 {
-
     nmod_poly_mat_t pmat;
 
     nmod_poly_mat_init(pmat, ipmat->r, ipmat->c, ipmat->modulus);
     nmod_poly_mat_set_trunc(pmat,ipmat,order);
 
-    //if (order <= PMBASIS_THRES)
     if (order <= (ipmat->r))    
     {
         nmod_poly_mat_mbasis(appbas, shift, pmat, order);
