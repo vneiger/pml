@@ -261,6 +261,45 @@ int main(int argc, char ** argv)
         flint_printf("\n");
     }
 
+    /* Special: bench all mul */
+    if (argc == 4)
+    {
+        const slong b    = atoi(argv[1]);
+        const slong len1 = atoi(argv[2]);
+        const slong len2 = atoi(argv[3]);
+        ulong n = n_nextprime(UWORD(1) << (b-1), 1);
+
+        flint_printf("%-4ld %-5ld%-5ld", b, len1, len2);
+        for (slong ifun = 0; ifun < 5; ifun++)
+        {
+            time_args targs = {len1, len2, 0, 0, n};
+            funs[ifun](targs, state);
+            flint_printf(" ");
+        }
+        flint_printf("\n");
+    }
+
+    /* Special: bench all mulmid */
+    if (argc == 6)
+    {
+        const slong b    = atoi(argv[1]);
+        const slong len1 = atoi(argv[2]);
+        const slong len2 = atoi(argv[3]);
+        const slong nlo  = atoi(argv[4]);
+        const slong nhi  = atoi(argv[5]);
+        ulong n = n_nextprime(UWORD(1) << (b-1), 1);
+
+        flint_printf("%-4ld %-5ld%-5ld%-5ld%-5ld", b, len1, len2, nlo, nhi);
+        for (slong ifun = 5; ifun < 9; ifun++)
+        {
+            time_args targs = {len1, len2, nlo, nhi, n};
+            funs[ifun](targs, state);
+            flint_printf(" ");
+        }
+        flint_printf("\n");
+    }
+
+
     flint_rand_clear(state);
     return 0;
 }
