@@ -58,7 +58,7 @@ jobs:
           cd flint
           ./bootstrap.sh
           ./configure CC=${CC} --disable-debug
-          make
+          $MAKE
           sudo make install
           sudo ldconfig
 
@@ -126,7 +126,7 @@ jobs:
           cd flint
           ./bootstrap.sh
           ./configure CC=${CC} --disable-debug
-          make
+          $MAKE
           sudo make install
           sudo ldconfig
 
@@ -189,7 +189,7 @@ jobs:
           cd flint
           ./bootstrap.sh
           ./configure CC=${CC} --disable-debug
-          make
+          $MAKE
           sudo make install
           sudo ldconfig
 
@@ -357,7 +357,7 @@ jobs:
             --with-gmp=$(brew --prefix) \
             --with-mpfr=$(brew --prefix) \
             --disable-debug
-          make
+          $MAKE
           sudo make install
 
       - name: "Configure"
