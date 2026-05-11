@@ -909,10 +909,6 @@ slong nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
 
     // min-dim (estimated rank)
     const slong mdim = FLINT_MIN(mat->r,mat->c);
-    // permutation for putting into ordered weak Popov
-    slong * perm = flint_malloc(mat->r * sizeof(slong));
-    // TODO no need to allocate perm if both tsf==NULL and udet == NULL
-    // (yet currently permute_rows_by_sorting_vec requires an allocated perm)
 
     // reducing to (assumed) generic column rank profile: weak Popov of
     // mat[:,:mdim-1], with transformation applied to the whole mat and tsf
@@ -991,10 +987,17 @@ slong nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
     // (we only test mat[rk:,rk:]: the rest is zero for sure)
     nmod_poly_mat_t view;
     nmod_poly_mat_window_init(view, mat, rk, rk, mat->r, mat->c);
-    int pass = nmod_poly_mat_is_zero(view);
-    nmod_poly_mat_window_clear(view);
-    if (!pass)
+    if (!nmod_poly_mat_is_zero(view))
+    {
+        nmod_poly_mat_window_clear(view);
         return -rk-1;
+    }
+    nmod_poly_mat_window_clear(view);
+
+    // permutation for putting into ordered weak Popov
+    slong * perm = flint_malloc(mat->r * sizeof(slong));
+    // TODO no need to allocate perm if both tsf==NULL and udet == NULL
+    // (yet currently permute_rows_by_sorting_vec requires an allocated perm)
 
     // the algorithm can proceed with mat[:rk,:]
     slong i = rk;
@@ -1017,11 +1020,17 @@ slong nmod_poly_mat_uref_matrixgcd_iter(nmod_poly_mat_t mat,
         // test failed rank requirement, including early exit new_rk < 0
         // (note: early exit new_rk == 0 is well covered by this as well)
         if (new_rk < i-1)
+        {
+            flint_free(perm);
             return -rk;
+        }
         // else found <= 1 zero rows (thus exactly 1): the rank of MM is ok
         i = i-1;
         if (nmod_poly_is_zero(MAT(i,i))) // rank of M not ok
+        {
+            flint_free(perm);
             return -rk;
+        }
         // rank ok until now, permute into ordered weak Popov form
         _nmod_poly_mat_permute_rows_by_sorting_vec(mat, i, pivind, perm);
         if (tsf) nmod_poly_mat_permute_rows(tsf, perm, NULL);
