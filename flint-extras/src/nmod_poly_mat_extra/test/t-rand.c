@@ -234,8 +234,17 @@ int check_rand_form(slong field_prime, slong iterations, flint_rand_t state, slo
         }
     }
     nmod_poly_mat_clear(mat);
+    fmpz_mat_clear(dmat);
     flint_free(rdeg);
     flint_free(cdeg);
+    flint_free(rpivind);
+    flint_free(rpivdeg);
+    flint_free(cpivind);
+    flint_free(cpivdeg);
+    flint_free(urshift);
+    flint_free(ucshift);
+    flint_free(rshift);
+    flint_free(cshift);
     return 0;
 }
 

@@ -68,7 +68,6 @@ void nmod_poly_mat_rand_origin(nmod_poly_mat_t A, flint_rand_t state, slong orde
 // test one given input
 int core_test_dixon(const nmod_poly_mat_t A, const nmod_poly_mat_t B, slong order, slong sigma)
 {
-
     nmod_poly_mat_t X;
     nmod_poly_mat_init(X, B->r, B->c, A->modulus);
 
@@ -78,12 +77,11 @@ int core_test_dixon(const nmod_poly_mat_t A, const nmod_poly_mat_t B, slong orde
     nmod_poly_mat_sub(X, X, B);
     nmod_poly_mat_truncate(X,sigma);
 
-
     // printf("\n");
     // nmod_poly_mat_print_pretty(X, "x");
     // printf("\n");
 
-    if (nmod_poly_mat_is_zero(X) !=0) 
+    if (nmod_poly_mat_is_zero(X))
     {
         nmod_poly_mat_clear(X);  
         return 1;
@@ -222,14 +220,12 @@ slong prime[]  =
                         nmod_poly_mat_clear(A);
                         nmod_poly_mat_clear(B);
                     }
-return 1;
-    
+    return 1;
 }
 
 
 TEST_FUNCTION_START(nmod_poly_mat_dixon, state)
 {
-
     int res=0;  
 
     srand(time(NULL));
@@ -239,10 +235,10 @@ TEST_FUNCTION_START(nmod_poly_mat_dixon, state)
 
     if (res == 0)
     {
-       TEST_FUNCTION_FAIL("");
+        TEST_FUNCTION_FAIL("");
     }
     else
     {
-    TEST_FUNCTION_END(state);
+        TEST_FUNCTION_END(state);
     }
 }
