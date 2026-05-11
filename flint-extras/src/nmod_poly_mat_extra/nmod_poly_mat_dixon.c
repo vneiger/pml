@@ -10,12 +10,9 @@
     <https://www.gnu.org/licenses/>.
 */
 
-#include <flint/nmod_poly_mat.h>
-#include <stdlib.h>
-#include <math.h>
-
 #include <flint/nmod_types.h>
 #include <flint/nmod_poly.h>
+#include <flint/nmod_poly_mat.h>
 
 #include "nmod_poly_mat_dixon.h"
 
