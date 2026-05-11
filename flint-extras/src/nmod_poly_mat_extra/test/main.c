@@ -32,7 +32,7 @@ test_struct tests[] =
 {
     TEST_FUNCTION(nmod_poly_mat_det),
     /* TEST_FUNCTION(nmod_poly_mat_dixon),     /1* TODO memory leak *1/ */
-    /* TEST_FUNCTION(nmod_poly_mat_hnf), */  /* TODO memory leak */
+    TEST_FUNCTION(nmod_poly_mat_hnf),
     TEST_FUNCTION(nmod_poly_mat_kernel),
     TEST_FUNCTION(nmod_poly_mat_mbasis),
     TEST_FUNCTION(nmod_poly_mat_middle_product_geometric),
