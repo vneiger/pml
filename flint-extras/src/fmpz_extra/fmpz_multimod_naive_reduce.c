@@ -1,14 +1,14 @@
 /*
-    Copyright (C) 2025 Vincent Neiger, Éric Schost
+   Copyright (C) 2025 Vincent Neiger, Éric Schost
 
-    This file is part of PML.
+   This file is part of PML.
 
-    PML is free software: you can redistribute it and/or modify it under
-    the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
-    as published by the Free Software Foundation; either version 2 of the
-    License, or (at your option) any later version. See
-    <https://www.gnu.org/licenses/>.
-*/
+   PML is free software: you can redistribute it and/or modify it under
+   the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
+   as published by the Free Software Foundation; either version 2 of the
+   License, or (at your option) any later version. See
+   <https://www.gnu.org/licenses/>.
+   */
 
 #include <stdlib.h>
 #include <stdlib.h>
@@ -30,17 +30,17 @@ ulong _fmpz_reduce(const fmpz_t a, nn_srcptr powers_of_two, const nmod_t mod)
     ulong res;
     if (!COEFF_IS_MPZ(*a))
     {
-	fmpz s_a = *a;
-	if (s_a < 0)
-	{
-	    NMOD_RED(res, -s_a, mod);
-	    return nmod_neg(res, mod);
-	}
-	else
-	{
-	    NMOD_RED(res, s_a, mod);
-	    return res;
-	}
+        fmpz s_a = *a;
+        if (s_a < 0)
+        {
+            NMOD_RED(res, -s_a, mod);
+            return nmod_neg(res, mod);
+        }
+        else
+        {
+            NMOD_RED(res, s_a, mod);
+            return res;
+        }
     }
     else
     {
@@ -48,12 +48,12 @@ ulong _fmpz_reduce(const fmpz_t a, nn_srcptr powers_of_two, const nmod_t mod)
         nn_ptr a_coeffs;    
         slong slen;
         a_ptr = COEFF_TO_PTR(*a);
-	a_coeffs = a_ptr->_mp_d;
-        
+        a_coeffs = a_ptr->_mp_d;
+
         slen = a_ptr->_mp_size;
         if (slen < 0)
             return nmod_neg(nmod_vec_dot_product_unbalanced(powers_of_two, a_coeffs, -slen, FLINT_BIT_COUNT(mod.n), FLINT_BITS, mod), mod);
-	else
+        else
             return nmod_vec_dot_product_unbalanced(powers_of_two, a_coeffs, slen, FLINT_BIT_COUNT(mod.n), FLINT_BITS, mod);
     }
 }
@@ -71,19 +71,19 @@ void _fmpz_reduce_small_moduli(nn_ptr out, const fmpz_t a, const fmpz_multimod_n
     {
         ulong res;
         ulong i, num_primes;
-	fmpz s_a;
+        fmpz s_a;
 
         s_a = *a;
         num_primes = mmod->num_primes;
-	if (s_a < 0)
-	{
+        if (s_a < 0)
+        {
             for (i = 0; i < num_primes; i++)
             {
                 NMOD_RED(res, -s_a, mmod->mod[i]);
                 out[i] = nmod_neg(res, mmod->mod[i]);
             }
-	}
-	else
+        }
+        else
             for (i = 0; i < num_primes; i++)
                 NMOD_RED(out[i], s_a, mmod->mod[i]);
 
@@ -95,11 +95,11 @@ void _fmpz_reduce_small_moduli(nn_ptr out, const fmpz_t a, const fmpz_multimod_n
         ulong i, j, num_limbs, len;
         nn_ptr slice_A, a_coeffs;
         __mpz_struct *a_ptr;
-        
+
         a_ptr = COEFF_TO_PTR(*a);
-	a_coeffs = a_ptr->_mp_d;
+        a_coeffs = a_ptr->_mp_d;
         slen = a_ptr->_mp_size;
-        
+
         if (slen < 0)
             num_limbs = -slen;
         else
@@ -141,7 +141,7 @@ void _fmpz_reduce_small_moduli(nn_ptr out, const fmpz_t a, const fmpz_multimod_n
 }
 
 
-    
+
 /* ------------------------------------------------------------ */
 /* computes A mod mmod[i] for all i                             */
 /* ------------------------------------------------------------ */
