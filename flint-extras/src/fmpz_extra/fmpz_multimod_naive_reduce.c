@@ -10,8 +10,6 @@
    <https://www.gnu.org/licenses/>.
    */
 
-#include <stdlib.h>
-#include <stdlib.h>
 #include <flint/flint.h>
 #include <flint/fmpz.h>
 
@@ -107,7 +105,7 @@ void _fmpz_reduce_small_moduli(nn_ptr out, const fmpz_t a, const fmpz_multimod_n
 
         len = 3 * num_limbs;
         len = ((len + 3) >> 2) << 2; // must be a multiple of 4
-        slice_A = (nn_ptr) aligned_alloc(32, len * sizeof(ulong));
+        slice_A = flint_aligned_alloc(32, len * sizeof(ulong));
 
 
         j = 0;
@@ -137,6 +135,8 @@ void _fmpz_reduce_small_moduli(nn_ptr out, const fmpz_t a, const fmpz_multimod_n
             else
                 out[i] = dot;
         }
+
+        flint_aligned_free(slice_A);
     }
 }
 
