@@ -33,12 +33,11 @@ void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
 /** Middle product for polynomial matrices
  *  sets C = ((A * B) div x^dA) mod x^(dB+1)
  *  output can alias input
- *  ASSUME: deg(A) <= dA and deg(B) <= dA + dB
- *  ASSUME: existence of primitive root
+ *  ASSUME: len(A) <= nlo and len(B) <= nhi
+ *  ASSUME: existence of primitive root ( TODO replace by check!)
  *  uses geometric evaluation and interpolation
  */
-void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
-                                            const ulong dA, const ulong dB)
+void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B, slong nlo, slong nhi)
 {
     const slong m = A->r;
     const slong k = A->c;
@@ -54,7 +53,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     {
         nmod_poly_mat_t T;
         nmod_poly_mat_init(T, m, n, C->modulus);
-        nmod_poly_mat_middle_product_geometric(T, A, B, dA, dB);
+        nmod_poly_mat_middle_product_geometric(T, A, B, nlo, nhi);
         nmod_poly_mat_swap_entrywise(C, T);
         nmod_poly_mat_clear(T);
         return;
@@ -73,7 +72,7 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     const ulong modn = A->modulus;
     nmod_init(&mod, modn);
 
-    slong ellC = dA + dB + 1;
+    slong ellC = nhi;
     nmod_init(&mod, modn);
     ulong w = nmod_find_root(2*ellC, mod);  /* TODO check result for found! */
     nmod_geometric_progression_init(F, w, ellC, mod);
@@ -98,9 +97,9 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
             _nmod_poly_reverse(poly,
                                nmod_poly_mat_entry(A, i, j)->coeffs, 
                                nmod_poly_mat_entry(A, i, j)->length, 
-                               dA+1);
+                               nlo+1);
 
-            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, poly, dA+1, F, ellC, F->mod);
+            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, poly, nlo+1, F, ellC, F->mod);
             for (slong ell = 0; ell < ellC; ell++)
                 nmod_mat_entry(mod_A[ell], i, j) = val[ell];
         }
@@ -132,10 +131,10 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
 
             _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, poly, ellC, F, ellC, F->mod);
 
-            nmod_poly_realloc(nmod_poly_mat_entry(C, i, j), dB + 1);
-            nmod_poly_mat_entry(C, i, j)->length = dB + 1;
+            nmod_poly_realloc(nmod_poly_mat_entry(C, i, j), nhi - nlo);
+            nmod_poly_mat_entry(C, i, j)->length = nhi - nlo;
             nn_ptr dest = nmod_poly_mat_entry(C, i, j)->coeffs;
-            for (slong u = 0; u < (slong)dB+1; u++)
+            for (slong u = 0; u < nhi - nlo; u++)
                 dest[u] = val[u];
             _nmod_poly_normalise(nmod_poly_mat_entry(C, i, j));
         }

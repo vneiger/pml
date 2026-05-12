@@ -36,7 +36,7 @@ int test_mat_middle_product_geometric(ulong bits, ulong m, ulong n, ulong p, ulo
     nmod_poly_mat_rand(C2, state, len);
 
     nmod_poly_mat_mulmid_naive(C1, A, B, len-1, 2*len-1);
-    nmod_poly_mat_middle_product_geometric(C2, A, B, len-1, len-1);
+    nmod_poly_mat_middle_product_geometric(C2, A, B, len-1, 2*len-1);
 
     int res = nmod_poly_mat_equal(C1, C2);
     
