@@ -22,11 +22,33 @@
  *  length len1 and B of length len2 starting at offset nlo
  */
 void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
-                                const slong nlo, const slong nhi)
+                                slong nlo, slong nhi)
 {
+    /* TODO should have branches depending on how deg(A) and deg(B) compare, etc. */
+    /* below more or less assumes deg(A) <= deg(B) */
+    slong lenA = nmod_poly_mat_max_length(A);
+    if (lenA == 0)
+    {
+        nmod_poly_mat_zero(C);
+        return;
+    }
+    if (lenA <= nlo)
+    {
+        nmod_poly_mat_t B_tmp;
+        nmod_poly_mat_init(B_tmp, A->c, B->c, B->modulus);
+        nmod_poly_mat_shift_right(B_tmp, B, nlo - lenA + 1);
+        nmod_poly_mat_mul(C, A, B_tmp);
+        nmod_poly_mat_clear(B_tmp);
+        /* TODO add function for combined shift+truncate? */
+        nmod_poly_mat_shift_right(C, C, lenA - 1);
+        nmod_poly_mat_truncate(C, nhi - nlo);
+        return;
+    }
+
     nmod_poly_mat_mul(C, A, B);
-    nmod_poly_mat_truncate(C, nhi);
+    /* TODO add function for combined shift+truncate? */
     nmod_poly_mat_shift_right(C, C, nlo);
+    nmod_poly_mat_truncate(C, nhi - nlo);
 }
 
 
@@ -37,7 +59,8 @@ void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
  *  ASSUME: existence of primitive root ( TODO replace by check!)
  *  uses geometric evaluation and interpolation
  */
-void nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B, slong nlo, slong nhi)
+void nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+                                    slong nlo, slong nhi)
 {
     const slong m = A->r;
     const slong k = A->c;
