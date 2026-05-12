@@ -19,7 +19,7 @@
 /*--------------------------------------------------------------*/
 /* middle product using different implementations               */
 /*--------------------------------------------------------------*/
-int test_mat_middle_product_geometric(ulong bits, ulong m, ulong n, ulong p, ulong deg, flint_rand_t state)
+int test_mat_middle_product_geometric(ulong bits, ulong m, ulong n, ulong p, ulong len, flint_rand_t state)
 {
     ulong prime = n_randprime(state, bits, 1);
 
@@ -30,13 +30,13 @@ int test_mat_middle_product_geometric(ulong bits, ulong m, ulong n, ulong p, ulo
     nmod_poly_mat_init(C1, m, p, prime);
     nmod_poly_mat_init(C2, m, p, prime);
 
-    nmod_poly_mat_rand(A, state, deg);
-    nmod_poly_mat_rand(B, state, 2 * deg - 1);
-    nmod_poly_mat_rand(C1, state, deg);
-    nmod_poly_mat_rand(C2, state, deg);
+    nmod_poly_mat_rand(A, state, len);
+    nmod_poly_mat_rand(B, state, 2 * len - 1);
+    nmod_poly_mat_rand(C1, state, len);
+    nmod_poly_mat_rand(C2, state, len);
 
-    nmod_poly_mat_middle_product_naive(C1, A, B, deg-1, deg-1);
-    nmod_poly_mat_middle_product_geometric(C2, A, B, deg-1, deg-1);
+    nmod_poly_mat_middle_product_naive(C1, A, B, len-1, len-1);
+    nmod_poly_mat_middle_product_geometric(C2, A, B, len-1, len-1);
 
     int res = nmod_poly_mat_equal(C1, C2);
     
@@ -59,19 +59,19 @@ TEST_FUNCTION_START(nmod_poly_mat_middle_product_geometric, state)
         ulong m = 1 + n_randint(state, 50);
         ulong n = 1 + n_randint(state, 50);
         ulong p = 1 + n_randint(state, 50);
-        ulong deg = 0 + n_randint(state, 50);
+        ulong len = 1 + n_randint(state, 50);
 
         /* flint_printf("m = %wu, n = %wu, p = %wu\n" */
-        /*              "deg = %wu, n_bits = %wu\n", */
-        /*              m, n, p, deg, bits); */
+        /*              "len = %wu, n_bits = %wu\n", */
+        /*              m, n, p, len, bits); */
 
-        result = test_mat_middle_product_geometric(bits, m, n, p, deg, state);
+        result = test_mat_middle_product_geometric(bits, m, n, p, len, state);
 
         if (!result)
             TEST_FUNCTION_FAIL(
                     "m = %wu, n = %wu, p = %wu\n"
-                    "deg = %wu, n_bits = %wu\n",
-                    m, n, p, deg, bits);
+                    "len = %wu, n_bits = %wu\n",
+                    m, n, p, len, bits);
     }
 
     TEST_FUNCTION_END(state);
