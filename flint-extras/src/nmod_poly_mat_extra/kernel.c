@@ -412,7 +412,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
 
     nmod_poly_mat_init(residual, m - nullity, n, pmat->modulus);
     nmod_poly_mat_window_init(approx, ker, nullity, 0, m, m);
-    nmod_poly_mat_middle_product_naive(residual, approx, pmat, order, order + maxdeg + 1);
+    nmod_poly_mat_mulmid_naive(residual, approx, pmat, order, order + maxdeg + 1);
     /* FIXME provide (and use) general middle_product interface */
     /* note: on non-generic input, one might want to check for zero rows in residual */
 
