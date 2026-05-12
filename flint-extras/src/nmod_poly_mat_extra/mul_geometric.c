@@ -80,53 +80,12 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
     mod_C = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
     val = _nmod_vec_init(ellC);
 
-#ifdef DIRTY_ALLOC_MATRIX
-    /* TODO check if still has any interest after FLINT's new mat storage */
-    // we alloc the memory for all matrices at once
-    nn_ptr tmp = flint_malloc((m*k + k*n + m*n) * ellC * sizeof(ulong));
-    nn_ptr ptr = tmp;
-    for (i = 0; i < ellC; i++)
-    {
-        mod_A[i]->entries = ptr + i*m*k;
-        mod_A[i]->stride = k;
-        mod_A[i]->r = m;
-        mod_A[i]->c = k;
-        mod_A[i]->mod.n = mod.n;
-        mod_A[i]->mod.norm = mod.norm;
-        mod_A[i]->mod.ninv = mod.ninv;
-    }
-    ptr += ellC*m*k;
-
-    for (i = 0; i < ellC; i++)
-    {
-        mod_B[i]->entries = ptr + i*k*n;
-        mod_B[i]->stride = n;
-        mod_B[i]->r = k;
-        mod_B[i]->c = n;
-        mod_B[i]->mod.n = mod.n;
-        mod_B[i]->mod.norm = mod.norm;
-        mod_B[i]->mod.ninv = mod.ninv;
-    }
-    ptr += ellC*k*n;
-
-    for (i = 0; i < ellC; i++)
-    {
-        mod_C[i]->entries = ptr + i*m*n;
-        mod_C[i]->stride = n;
-        mod_C[i]->r = m;
-        mod_C[i]->c = n;
-        mod_C[i]->mod.n = mod.n;
-        mod_C[i]->mod.norm = mod.norm;
-        mod_C[i]->mod.ninv = mod.ninv;
-    }
-#else
     for (i = 0; i < ellC; i++)
     {
         nmod_mat_init(mod_A[i], m, k, p);
         nmod_mat_init(mod_B[i], k, n, p);
         nmod_mat_init(mod_C[i], m, n, p);
     }
-#endif
 
     nmod_poly_struct * pol;
 
@@ -165,16 +124,12 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, con
         }
     }
 
-#ifdef DIRTY_ALLOC_MATRIX
-    flint_free(tmp);
-#else
     for (i = 0; i < ellC; i++)
     {
         nmod_mat_clear(mod_A[i]);
         nmod_mat_clear(mod_B[i]);
         nmod_mat_clear(mod_C[i]);
     }
-#endif
 
     flint_free(mod_A);
     flint_free(mod_B);

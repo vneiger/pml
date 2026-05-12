@@ -82,68 +82,25 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     mod_B = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
     mod_C = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
     nn_ptr val = FLINT_ARRAY_ALLOC(ellC, ulong);
-    nn_ptr tmp_poly = FLINT_ARRAY_ALLOC(ellC, ulong);
+    nn_ptr poly = FLINT_ARRAY_ALLOC(ellC, ulong);
 
-#ifdef DIRTY_ALLOC_MATRIX
-    // we alloc the memory for all matrices at once
-    nn_ptr tmp = (nn_ptr) flint_malloc((m*k + k*n + m*n) * ellC * sizeof(ulong));
-    nn_ptr bak;
-
-    bak = tmp;
-    for (slong i = 0; i < ellC; i++)
-    {
-        mod_A[i]->entries = tmp + i*m*k;
-        mod_A[i]->stride = k;
-        mod_A[i]->r = m;
-        mod_A[i]->c = k;
-        mod_A[i]->mod.n = mod.n;
-        mod_A[i]->mod.norm = mod.norm;
-        mod_A[i]->mod.ninv = mod.ninv;
-    }
-    tmp += ellC*m*k;
-
-    for (slong i = 0; i < ellC; i++)
-    {
-        mod_B[i]->entries = tmp + i*k*n;
-        mod_B[i]->stride = n;
-        mod_B[i]->r = k;
-        mod_B[i]->c = n;
-        mod_B[i]->mod.n = mod.n;
-        mod_B[i]->mod.norm = mod.norm;
-        mod_B[i]->mod.ninv = mod.ninv;
-    }
-    tmp += ellC*k*n;
-
-    for (slong i = 0; i < ellC; i++)
-    {
-        mod_C[i]->entries = tmp + i*m*n;
-        mod_C[i]->stride = n;
-        mod_C[i]->r = m;
-        mod_C[i]->c = n;
-        mod_C[i]->mod.n = mod.n;
-        mod_C[i]->mod.norm = mod.norm;
-        mod_C[i]->mod.ninv = mod.ninv;
-    }
-    tmp = bak;
-#else
     for (slong i = 0; i < ellC; i++)
     {
         nmod_mat_init(mod_A[i], m, k, modn);
         nmod_mat_init(mod_B[i], k, n, modn);
         nmod_mat_init(mod_C[i], m, n, modn);
     }
-#endif
 
     for (slong i = 0; i < m; i++)
     {
         for (slong j = 0; j < k; j++)
         {
-            _nmod_poly_reverse(tmp_poly,
+            _nmod_poly_reverse(poly,
                                nmod_poly_mat_entry(A, i, j)->coeffs, 
                                nmod_poly_mat_entry(A, i, j)->length, 
                                dA+1);
 
-            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, tmp_poly, dA+1, F, ellC, F->mod);
+            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, poly, dA+1, F, ellC, F->mod);
             for (slong ell = 0; ell < ellC; ell++)
                 nmod_mat_entry(mod_A[ell], i, j) = val[ell];
         }
@@ -157,9 +114,9 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
             _nmod_vec_set(val, nmod_poly_mat_entry(B, i, j)->coeffs, len);
             _nmod_vec_zero(val + len, ellC - len);
 
-            _nmod_poly_interpolate_geometric_nmod_vec_fast_precomp(tmp_poly, val, F, ellC, mod);
+            _nmod_poly_interpolate_geometric_nmod_vec_fast_precomp(poly, val, F, ellC, mod);
             for (slong ell = 0; ell < ellC; ell++)
-                nmod_mat_entry(mod_B[ell], i, j) = tmp_poly[ell];
+                nmod_mat_entry(mod_B[ell], i, j) = poly[ell];
         }
     }
 
@@ -171,9 +128,9 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
         for (slong j = 0; j < n; j++)
         {
             for (slong ell = 0; ell < ellC; ell++)
-                tmp_poly[ell] = nmod_mat_entry(mod_C[ell], i, j);
+                poly[ell] = nmod_mat_entry(mod_C[ell], i, j);
 
-            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, tmp_poly, ellC, F, ellC, F->mod);
+            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, poly, ellC, F, ellC, F->mod);
 
             nmod_poly_realloc(nmod_poly_mat_entry(C, i, j), dB + 1);
             nmod_poly_mat_entry(C, i, j)->length = dB + 1;
@@ -184,21 +141,17 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
         }
     }
 
-#ifdef DIRTY_ALLOC_MATRIX
-    flint_free(tmp);
-#else
     for (slong i = 0; i < ellC; i++)
     {
         nmod_mat_clear(mod_A[i]);
         nmod_mat_clear(mod_B[i]);
         nmod_mat_clear(mod_C[i]);
     }
-#endif
 
     flint_free(mod_A);
     flint_free(mod_B);
     flint_free(mod_C);
-    flint_free(tmp_poly);
+    flint_free(poly);
     flint_free(val);
     nmod_geometric_progression_clear(F);
 }

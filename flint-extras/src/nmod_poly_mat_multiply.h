@@ -16,11 +16,6 @@
 #include <flint/nmod_types.h>
 #include "pml.h"
 
-// several functions allocate arrays of matrices
-// setting this flag allocates all memory at once
-// slightly faster than using nmod_mat_init
-/* #define DIRTY_ALLOC_MATRIX */
-
 // temporarily disabling FFT_SMALL based variants
 #define FFT_SMALL_VARIANTS 0
 
