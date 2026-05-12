@@ -73,9 +73,9 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
     const ulong modn = A->modulus;
     nmod_init(&mod, modn);
 
-    slong ellC = dA + dB + 1;  // length(C) = length(A) + length(B) - 1
+    slong ellC = dA + dB + 1;
     nmod_init(&mod, modn);
-    ulong w = nmod_find_root(2*ellC, mod);  /* TODO check necessary order */
+    ulong w = nmod_find_root(2*ellC, mod);  /* TODO check result for found! */
     nmod_geometric_progression_init(F, w, ellC, mod);
 
     mod_A = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
