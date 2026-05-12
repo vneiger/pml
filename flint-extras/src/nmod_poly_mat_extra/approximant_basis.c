@@ -94,6 +94,7 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
 
     nmod_poly_mat_clear(appbas2);
     nmod_poly_mat_clear(residual);
+    nmod_poly_mat_clear(pmat);
 }
 
 
@@ -131,6 +132,7 @@ void nmod_poly_mat_pmbasis_geometric(nmod_poly_mat_t appbas,
 
     nmod_poly_mat_clear(appbas2);
     nmod_poly_mat_clear(residual);
+    nmod_poly_mat_clear(pmat);
 }
 
 
