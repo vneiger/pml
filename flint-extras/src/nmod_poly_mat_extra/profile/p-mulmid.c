@@ -67,42 +67,8 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     nmod_poly_mat_clear(C);                             \
 }
 
-#define TIME_TMUL(fun)                                  \
-void time_##fun(time_args targs, flint_rand_t state)    \
-{                                                       \
-    const slong rdim = targs.rdim;                      \
-    const slong idim = targs.idim;                      \
-    const slong cdim = targs.cdim;                      \
-    const slong deg = targs.deg;                        \
-    const slong n = targs.modn;                         \
-                                                        \
-    nmod_t mod;                                         \
-    nmod_init(&mod, n);                                 \
-                                                        \
-    nmod_poly_mat_t A;                                  \
-    nmod_poly_mat_init(A, rdim, idim, n);               \
-    nmod_poly_mat_rand(A, state, deg);                  \
-    nmod_poly_mat_t B;                                  \
-    nmod_poly_mat_init(B, idim, cdim, n);               \
-    nmod_poly_mat_rand(B, state, 2*deg-1);              \
-    nmod_poly_mat_t C;                                  \
-    nmod_poly_mat_init(C, rdim, cdim, n);               \
-                                                        \
-    double FLINT_SET_BUT_UNUSED(tcpu), twall;           \
-                                                        \
-    TIMEIT_START;                                       \
-    nmod_poly_mat_##fun(C, A, B, deg-1, deg-1);         \
-    TIMEIT_STOP_VALUES(tcpu, twall);                    \
-                                                        \
-    printf("%.2e", twall);                              \
-                                                        \
-    nmod_poly_mat_clear(A);                             \
-    nmod_poly_mat_clear(B);                             \
-    nmod_poly_mat_clear(C);                             \
-}
-
 TIME_MULMID(mulmid_naive)
-TIME_TMUL(middle_product_geometric)
+TIME_MULMID(mulmid_geometric)
 
 /*-------------------------*/
 /*  main                   */
@@ -131,7 +97,7 @@ int main(int argc, char ** argv)
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
         time_mulmid_naive,                        // 0
-        time_middle_product_geometric,            // 1
+        time_mulmid_geometric,            // 1
     };
 
     // TODO
@@ -143,7 +109,7 @@ int main(int argc, char ** argv)
 
     const char * description[] = {
         "#0  --> mulmid_naive                            ",
-        "#1  --> middle_product_geometric                ",
+        "#1  --> mulmid_geometric                        ",
     };
 
     if (argc == 1)  // show usage

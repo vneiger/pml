@@ -114,7 +114,7 @@ void nmod_poly_mat_middle_product_3_primes(nmod_poly_mat_t C, const nmod_poly_ma
  */
 /* TODO check correctness carefully */
 /* TODO unify prototype mulmid */
-void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+void nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
                                             slong nlo, slong nhi);
 
 
