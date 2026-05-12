@@ -74,6 +74,7 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
     if (order <= PMBASIS_THRES)
     {
         nmod_poly_mat_mbasis(appbas, shift, pmat, order);
+        nmod_poly_mat_clear(pmat);
         return;
     }
 
