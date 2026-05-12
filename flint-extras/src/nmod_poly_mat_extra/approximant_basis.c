@@ -50,7 +50,7 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
 
     nmod_poly_mat_pmbasis(appbas, shift, pmat, order1);
 
-    nmod_poly_mat_middle_product_naive(residual, appbas, pmat, order1, order2-1);
+    nmod_poly_mat_mulmid_naive(residual, appbas, pmat, order1, order);
 
     nmod_poly_mat_pmbasis(appbas2, shift, residual, order2);
 
