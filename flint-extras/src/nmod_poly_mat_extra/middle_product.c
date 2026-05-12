@@ -20,12 +20,30 @@
 /** sets C to the first nhi - nlo middle coefficients of the product of A of
  *  length len1 and B of length len2 starting at offset nlo
  */
-void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+void nmod_poly_mat_mulmid_naive_old(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
                                 const slong nlo, const slong nhi)
 {
     nmod_poly_mat_mul(C, A, B);
     nmod_poly_mat_truncate(C, nhi);
     nmod_poly_mat_shift_right(C, C, nlo);
+}
+
+
+void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A,\
+                                         const nmod_poly_mat_t B, const slong nlo, const slong nhi)
+{
+    slong degA;
+    degA=nmod_poly_mat_degree(A);
+    
+    nmod_poly_mat_t BT;
+    nmod_poly_mat_init(BT, A->c, B->c, B->modulus);
+    nmod_poly_mat_shift_right(BT, B, nlo-degA); // No aliasing specified for that?
+
+    nmod_poly_mat_mul(C,A,BT);  
+    nmod_poly_mat_shift_right(C, C, degA);  
+    nmod_poly_mat_truncate(C, nhi-nlo);
+
+    nmod_poly_mat_clear(BT);
 }
 
 

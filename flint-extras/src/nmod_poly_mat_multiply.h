@@ -81,8 +81,21 @@ void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  cons
  *  output can alias input
  *  naive implementation (multiply, shift, truncate)
  */
+void nmod_poly_mat_mulmid_naive_old(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+                                const slong nlo, const slong nhi);
+
 void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
                                 const slong nlo, const slong nhi);
+
+
+/** Middle product for polynomial matrices
+ *  sets C = ((A * B) div x^d1) mod x^(d2+1), assuming deg(A) <= d1 and deg(B) <= d1 + d2
+ *  output can alias input
+ *  naive implementation (multiply, shift, truncate)
+ */
+void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+                                const slong nlo, const slong nhi);
+
 
 /** Middle product for polynomial matrices
  *  sets C = ((A * B) div x^dA) mod x^(dB+1)
