@@ -12,9 +12,11 @@
 
 #include <flint/nmod_poly_mat.h>
 #include <flint/test_helpers.h>
+#include <flint/profiler.h>
 
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_utils.h"
+#include "testing_collection.h"
 
 #if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
 #  define MAT(i,j) (mat->rows[i] + j)
@@ -351,7 +353,6 @@ int core_test_hermite_form(const nmod_poly_mat_t mat, int time, flint_rand_t sta
     }
 
     { // Mulder-Storjohann's algorithm
-        //slong * rrp = flint_malloc(mat->r * sizeof(slong));
         slong * rrp = NULL;
         nmod_poly_mat_set(hnf, mat);
         nmod_poly_mat_one(tsf);
