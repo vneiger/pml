@@ -30,12 +30,12 @@
 
 test_struct tests[] =
 {
+    TEST_FUNCTION(nmod_poly_mat_mulmid_geometric),
     TEST_FUNCTION(nmod_poly_mat_det),
     TEST_FUNCTION(nmod_poly_mat_dixon),
     TEST_FUNCTION(nmod_poly_mat_hnf),
     TEST_FUNCTION(nmod_poly_mat_kernel),
     TEST_FUNCTION(nmod_poly_mat_mbasis),
-    TEST_FUNCTION(nmod_poly_mat_mulmid_geometric),
     TEST_FUNCTION(nmod_poly_mat_mul_geometric),
     TEST_FUNCTION(nmod_poly_mat_pmbasis),
     /* TEST_FUNCTION(nmod_poly_mat_mul_waksman), */  /* TODO */
