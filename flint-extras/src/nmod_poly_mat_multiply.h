@@ -93,8 +93,8 @@ void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
  *  output can alias input
  *  naive implementation (multiply, shift, truncate)
  */
-void nmod_poly_mat_middle_product_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
-                                        const ulong dA, const ulong dB);
+void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+                                const slong nlo, const slong nhi);
 
 
 /** Middle product for polynomial matrices
@@ -130,6 +130,8 @@ void nmod_poly_mat_middle_product_3_primes(nmod_poly_mat_t C, const nmod_poly_ma
  *  uses geometric evaluation and interpolation
  *  \todo currently test fails
  */
+/* TODO check correctness carefully */
+/* TODO unify prototype mulmid */
 void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
                                             const ulong dA, const ulong dB);
 
@@ -140,6 +142,8 @@ void nmod_poly_mat_middle_product_geometric(nmod_poly_mat_t C, const nmod_poly_m
  *  uses evaluation and interpolation at arithmetic points, done by matrix products
  *  ASSUME: large enough field 
  */
+/* TODO currently disabled */
+/* TODO unify prototype mulmid */
 void nmod_poly_mat_middle_product_vdm1(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
                                        const ulong dA, const ulong dB);
 
