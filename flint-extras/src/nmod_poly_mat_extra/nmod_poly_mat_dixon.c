@@ -28,9 +28,9 @@
  *              is as expected
  *
  */
-void nmod_poly_mat_inv_trunc(nmod_poly_mat_t S,
-                            const nmod_poly_mat_t A,
-                            ulong order)
+slong nmod_poly_mat_inv_trunc(nmod_poly_mat_t S,
+                              const nmod_poly_mat_t A,
+                              ulong order)
 {
     const slong n = A->r;
 
@@ -61,21 +61,22 @@ void nmod_poly_mat_inv_trunc(nmod_poly_mat_t S,
     // Shifted approximant computation
     nmod_poly_mat_pmbasis(tsf, shift, H, order);
 
-    // Check whether the lower right part of the approximant is the identity matrix
+    // Check invertibility <=> bottom right block of approximant basis is the identity
     nmod_poly_mat_t view;
     nmod_poly_mat_window_init(view, tsf, n, n, 2*n, 2*n);
-    PML_ASSERT(nmod_poly_mat_is_one(view));
-    /* fails -> error in nmod_poly_mat_inv_trunc: check of identity, singular at origin? */
+    slong is_inv = nmod_poly_mat_is_one(view);
+
+    // Extract the truncated inverse from the approximant basis (bottom left block)
+    if (is_inv)
+        for (slong i = 0; i < n; i++)
+            for (slong j = 0; j < n; j++)
+                nmod_poly_set(nmod_poly_mat_entry(S, i, j), nmod_poly_mat_entry(tsf, n+i, j));
+
     nmod_poly_mat_window_clear(view);
-
-    // Extract the truncated inverse from the approximant basis
-    for (slong i = 0; i < n; i++)
-        for (slong j = 0; j < n; j++)
-            nmod_poly_set(nmod_poly_mat_entry(S, i, j), nmod_poly_mat_entry(tsf, n+i, j));
-
     flint_free(shift);
     nmod_poly_mat_clear(H);
     nmod_poly_mat_clear(tsf);
+    return is_inv;
 }
 
 /**
@@ -89,11 +90,11 @@ void nmod_poly_mat_inv_trunc(nmod_poly_mat_t S,
  * Iterations mod x^order to obtain a total approximation mod x^sigma
  *
  */
-void nmod_poly_mat_dixon(nmod_poly_mat_t X,
-                            const nmod_poly_mat_t A,
-                            const nmod_poly_mat_t B,
-                            ulong order,
-                            ulong sigma)
+slong nmod_poly_mat_dixon(nmod_poly_mat_t X,
+                          const nmod_poly_mat_t A,
+                          const nmod_poly_mat_t B,
+                          ulong order,
+                          ulong sigma)
 {
     const slong m = B->c;
     const slong n = A->r;
@@ -102,7 +103,9 @@ void nmod_poly_mat_dixon(nmod_poly_mat_t X,
     nmod_poly_mat_t C;
     nmod_poly_mat_init(C, n, n, A->modulus);
 
-    nmod_poly_mat_inv_trunc(C, A, order);
+    slong is_inv = nmod_poly_mat_inv_trunc(C, A, order);
+    if (!is_inv)
+        return 0;
 
     // Temporary matrices
     nmod_poly_mat_t S;
@@ -135,4 +138,5 @@ void nmod_poly_mat_dixon(nmod_poly_mat_t X,
     nmod_poly_mat_clear(BB);
     nmod_poly_mat_clear(S);
     nmod_poly_mat_clear(T);
+    return 1;
 }
