@@ -99,18 +99,30 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
 }
 
 
-void nmod_poly_mat_pmbasis_geometric(nmod_poly_mat_t appbas,
+/** nmod_poly_mat_pmbasis strategy using geometric multiplications instead 
+ *   and linearization for the residual computation 
+ * 
+ *  todo: check using 'if (order <= (ipmat->r))' instead 
+ *           improves things for large example 
+ * 
+ *  todo: tune the test for switching to mbasis 
+ * 
+ *  todo ASSUMPTION (not checked): existence of element of "large enough" order
+ *           and fail flag when element not found 
+ * 
+ */
+
+void nmod_poly_mat_pmbasis_linearized(nmod_poly_mat_t appbas,
                            slong * shift,
                            const nmod_poly_mat_t ipmat,
                            slong order)
 {
-
     nmod_poly_mat_t pmat;
 
     nmod_poly_mat_init(pmat, ipmat->r, ipmat->c, ipmat->modulus);
     nmod_poly_mat_set_trunc(pmat,ipmat,order);
 
-    if (order <= PMBASIS_THRES)
+    if (order <= (ipmat->r))    
     {
         nmod_poly_mat_mbasis(appbas, shift, pmat, order);
         nmod_poly_mat_clear(pmat);
@@ -124,11 +136,11 @@ void nmod_poly_mat_pmbasis_geometric(nmod_poly_mat_t appbas,
     nmod_poly_mat_init(appbas2, pmat->r, pmat->r, pmat->modulus);
     nmod_poly_mat_init(residual, pmat->r, pmat->c, pmat->modulus);
 
-    nmod_poly_mat_pmbasis_geometric(appbas, shift, pmat, order1);
+    nmod_poly_mat_pmbasis_linearized(appbas, shift, pmat, order1);
 
-    nmod_poly_mat_mulmid_naive(residual, appbas, pmat, order1, order);
+    nmod_poly_mat_mulmid_linearized(residual, appbas, pmat, order1, order);
 
-    nmod_poly_mat_pmbasis_geometric(appbas2, shift, residual, order2);
+    nmod_poly_mat_pmbasis_linearized(appbas2, shift, residual, order2);
 
     nmod_poly_mat_mul_geometric(appbas, appbas2, appbas);
 
@@ -136,5 +148,11 @@ void nmod_poly_mat_pmbasis_geometric(nmod_poly_mat_t appbas,
     nmod_poly_mat_clear(residual);
     nmod_poly_mat_clear(pmat);
 }
+
+
+
+
+
+
 
 
