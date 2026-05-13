@@ -20,46 +20,17 @@
 
 /** sets C to the first nhi - nlo middle coefficients of the product of A of
  *  length len1 and B of length len2 starting at offset nlo
+ *  assumes: 0 <= nlo, 0 <= nhi
+ *  output can alias input
  */
-void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
-                                slong nlo, slong nhi)
+void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C,
+                                 const nmod_poly_mat_t A, slong lenA,
+                                 const nmod_poly_mat_t B, slong lenB,
+                                 slong nlo, slong nhi)
 {
-    PML_ASSERT(nlo >= 0);
-    PML_ASSERT(nhi >= 0);
-
-    slong lenA = nmod_poly_mat_max_length(A);
-    slong lenB = nmod_poly_mat_max_length(B);
-    nhi = FLINT_MIN(nhi, lenA + lenB - 1);
-
     if (lenA == 0 || lenB == 0 || nlo >= nhi)
     {
         nmod_poly_mat_zero(C);
-        return;
-    }
-
-    if (lenA <= lenB && lenA <= nlo)
-    {
-        nmod_poly_mat_t B_tmp;
-        nmod_poly_mat_init(B_tmp, B->r, B->c, B->modulus);
-        nmod_poly_mat_shift_right(B_tmp, B, nlo - lenA + 1);
-        nmod_poly_mat_mul(C, A, B_tmp);
-        nmod_poly_mat_clear(B_tmp);
-        /* TODO add function for combined shift+truncate? */
-        nmod_poly_mat_shift_right(C, C, lenA - 1);
-        nmod_poly_mat_truncate(C, nhi - nlo);
-        return;
-    }
-
-    if (lenB <= lenA && lenB <= nlo)
-    {
-        nmod_poly_mat_t A_tmp;
-        nmod_poly_mat_init(A_tmp, A->r, A->c, A->modulus);
-        nmod_poly_mat_shift_right(A_tmp, A, nlo - lenB + 1);
-        nmod_poly_mat_mul(C, A_tmp, B);
-        nmod_poly_mat_clear(A_tmp);
-        /* TODO add function for combined shift+truncate? */
-        nmod_poly_mat_shift_right(C, C, lenB - 1);
-        nmod_poly_mat_truncate(C, nhi - nlo);
         return;
     }
 
@@ -77,14 +48,16 @@ void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
  *  ASSUME: existence of primitive root ( TODO replace by check!)
  *  uses geometric evaluation and interpolation
  */
-void nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+void _nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C,
+                                    const nmod_poly_mat_t A, slong lenA,
+                                    const nmod_poly_mat_t B, slong lenB,
                                     slong nlo, slong nhi)
 {
     const slong m = A->r;
     const slong k = A->c;
     const slong n = B->c;
 
-    if (m < 1 || n < 1 || k < 1)
+    if (lenA == 0 || lenB == 0)
     {
         nmod_poly_mat_zero(C);
         return;
@@ -92,17 +65,11 @@ void nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, 
 
     if (C == A || C == B)
     {
-        nmod_poly_mat_t T;
-        nmod_poly_mat_init(T, m, n, C->modulus);
-        nmod_poly_mat_mulmid_geometric(T, A, B, nlo, nhi);
-        nmod_poly_mat_swap_entrywise(C, T);
-        nmod_poly_mat_clear(T);
-        return;
-    }
-
-    if (nmod_poly_mat_max_length(A) == 0 || nmod_poly_mat_max_length(B) == 0)
-    {
-        nmod_poly_mat_zero(C);
+        nmod_poly_mat_t temp;
+        nmod_poly_mat_init(temp, A->r, B->c, A->modulus);
+        _nmod_poly_mat_mulmid_geometric(temp, A, lenA, B, lenB, nlo, nhi);
+        nmod_poly_mat_swap(C, temp);
+        nmod_poly_mat_clear(temp);
         return;
     }
 
@@ -194,4 +161,78 @@ void nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, 
     flint_free(poly);
     flint_free(val);
     nmod_geometric_progression_clear(F);
+}
+
+/** general interface
+ * TODO description
+ * requires: lenA <= lenB (required?)
+ * 0 <= nlo < nhi <= lenA + lenB - 1 (required?)
+ * aliasing is allowed
+ */
+void _nmod_poly_mat_mulmid(nmod_poly_mat_t C,
+                           const nmod_poly_mat_t A, slong lenA,
+                           const nmod_poly_mat_t B, slong lenB,
+                           slong nlo, slong nhi)
+{
+    /* zero matrices or empty target coefficient indices */
+    if (lenA == 0 || lenB == 0 || nlo >= nhi)
+    {
+        nmod_poly_mat_zero(C);
+        return;
+    }
+
+    _nmod_poly_mat_mulmid_naive(C, A, lenA, B, lenB, nlo, nhi);
+    /* _nmod_poly_mat_mulmid_geometric(C, A, lenA, B, lenB, nlo, nhi); */
+}
+
+/** general interface
+ * TODO description
+ * aliasing is allowed
+ */
+void nmod_poly_mat_mulmid(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+                          slong nlo, slong nhi)
+{
+    PML_ASSERT(nlo >= 0);
+    PML_ASSERT(nhi >= 0);
+
+    slong lenA = nmod_poly_mat_max_length(A);
+    slong lenB = nmod_poly_mat_max_length(B);
+    flint_printf("in lenA %wd, in lenB %wd, in nhi %wd\n", lenA, lenB, nhi);
+    nhi = FLINT_MIN(nhi, lenA + lenB - 1);
+    flint_printf("out nhi %wd\n", nhi);
+
+    /* zero matrices or empty target coefficient indices */
+    if (lenA == 0 || lenB == 0 || nlo >= nhi)
+    {
+        nmod_poly_mat_zero(C);
+        return;
+    }
+
+    /* lenA <= lenB and len(A) <= nlo: shift away useless coefficients of B */
+    if (lenA <= lenB && lenA <= nlo)
+    {
+        flint_printf("here3\n");
+        nmod_poly_mat_t B_tmp;
+        nmod_poly_mat_init(B_tmp, B->r, B->c, B->modulus);
+        nmod_poly_mat_shift_right(B_tmp, B, nlo - lenA + 1);
+        _nmod_poly_mat_mulmid(C, A, lenA, B_tmp, lenB - nlo + lenA - 1, lenA - 1, nhi - nlo + lenA - 1);
+        nmod_poly_mat_clear(B_tmp);
+        return;
+    }
+
+    /* if len(B) <= nlo (implies lenA > lenB), shift away useless coefficients of A */
+    if (lenB <= nlo)
+    {
+        flint_printf("here2\n");
+        nmod_poly_mat_t A_tmp;
+        nmod_poly_mat_init(A_tmp, A->r, A->c, A->modulus);
+        nmod_poly_mat_shift_right(A_tmp, A, nlo - lenB + 1);
+        _nmod_poly_mat_mulmid(C, A_tmp, lenA - nlo + lenB - 1, B, lenB, lenB - 1, nhi - nlo + lenB - 1);
+        nmod_poly_mat_clear(A_tmp);
+        return;
+    }
+
+    flint_printf("here3\n");
+    _nmod_poly_mat_mulmid(C, A, lenA, B, lenB, nlo, nhi);
+    return;
 }

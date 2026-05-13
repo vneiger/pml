@@ -76,8 +76,34 @@ void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  cons
  *  output can alias input
  *  naive implementation (multiply, shift, truncate)
  */
-void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
-                                slong nlo, slong nhi);
+void nmod_poly_mat_mulmid(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+                          slong nlo, slong nhi);
+void _nmod_poly_mat_mulmid(nmod_poly_mat_t C,
+                           const nmod_poly_mat_t A, slong lenA,
+                           const nmod_poly_mat_t B, slong lenB,
+                           slong nlo, slong nhi);
+void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C,
+                                 const nmod_poly_mat_t A, slong lenA,
+                                 const nmod_poly_mat_t B, slong lenB,
+                                 slong nlo, slong nhi);
+void _nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C,
+                                     const nmod_poly_mat_t A, slong lenA,
+                                     const nmod_poly_mat_t B, slong lenB,
+                                     slong nlo, slong nhi);
+
+/* TODO remove */
+/** Middle product for polynomial matrices
+ *  sets C = ((A * B) div x^dA) mod x^(dB+1)
+ *  sets C = ((A * B) div x^nlo) mod x^(nhi - nlo)
+ *  -> nlo == dA, nhi == nlo+dB+1
+ *  output can alias input
+ *  ASSUME: deg(A) <= dA and deg(B) <= dA + dB
+ *  i.e., lenA <= nlo+1 and lenB <= nhi
+ *  ASSUME: existence of primitive root
+ *  uses geometric evaluation and interpolation
+ */
+/* void nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B, */
+/*                                             slong nlo, slong nhi); */
 
 
 /** Middle product for polynomial matrices
@@ -104,19 +130,6 @@ void nmod_poly_mat_middle_product_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A
 void nmod_poly_mat_middle_product_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
                                       const ulong dA, const ulong dB);
 #endif
-
-/** Middle product for polynomial matrices
- *  sets C = ((A * B) div x^dA) mod x^(dB+1)
- *  output can alias input
- *  ASSUME: deg(A) <= dA and deg(B) <= dA + dB
- *  ASSUME: existence of primitive root
- *  uses geometric evaluation and interpolation
- *  \todo currently test fails
- */
-/* TODO check correctness carefully */
-/* TODO unify prototype mulmid */
-void nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
-                                            slong nlo, slong nhi);
 
 
 /** Middle product for polynomial matrices

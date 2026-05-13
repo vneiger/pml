@@ -58,7 +58,7 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
     nmod_poly_mat_pmbasis(appbas, shift, pmat, order1);
 
     /* TODO see about automatically using geometric (and TFT, etc.) */
-    nmod_poly_mat_mulmid_naive(residual, appbas, pmat, order1, order);
+    nmod_poly_mat_mulmid(residual, appbas, pmat, order1, order);
 
     nmod_poly_mat_pmbasis(appbas2, shift, residual, order2);
 
@@ -98,7 +98,7 @@ void nmod_poly_mat_pmbasis_geometric(nmod_poly_mat_t appbas,
 
     nmod_poly_mat_pmbasis_geometric(appbas, shift, pmat, order1);
 
-    nmod_poly_mat_mulmid_naive(residual, appbas, pmat, order1, order);
+    nmod_poly_mat_mulmid(residual, appbas, pmat, order1, order);
 
     nmod_poly_mat_pmbasis_geometric(appbas2, shift, residual, order2);
 

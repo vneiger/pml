@@ -16,35 +16,36 @@
 #include "nmod_poly_mat_utils.h" // for rand
 #include "nmod_poly_mat_multiply.h"
 
-int test_mat_mulmid_geometric(ulong prime, nmod_poly_mat_t A, nmod_poly_mat_t B, slong nlo, slong nhi)
-{
-    nmod_poly_mat_t C, D;
-    nmod_poly_mat_init(C, A->r, B->c, prime);
-    nmod_poly_mat_init(D, A->r, B->c, prime);
+/* int test_mat_mulmid_geometric(ulong prime, nmod_poly_mat_t A, nmod_poly_mat_t B, slong nlo, slong nhi) */
+/* { */
+/*     nmod_poly_mat_t C, D; */
+/*     nmod_poly_mat_init(C, A->r, B->c, prime); */
+/*     nmod_poly_mat_init(D, A->r, B->c, prime); */
 
-    /* most naive way */
-    nmod_poly_mat_mul(C, A, B);
-    nmod_poly_mat_shift_right(C, C, nlo);
-    nmod_poly_mat_truncate(C, nhi - nlo);
+/*     /1* most naive way *1/ */
+/*     nmod_poly_mat_mul(C, A, B); */
+/*     nmod_poly_mat_shift_right(C, C, nlo); */
+/*     nmod_poly_mat_truncate(C, nhi - nlo); */
 
-    /* mulmid_geometric */
-    nmod_poly_mat_mulmid_geometric(D, A, B, nlo, nhi);
+/*     /1* mulmid_geometric *1/ */
+/*     nmod_poly_mat_mulmid_geometric(D, A, B, nlo, nhi); */
 
-    int res = nmod_poly_mat_equal(C, D);
+/*     int res = nmod_poly_mat_equal(C, D); */
     
-    nmod_poly_mat_clear(C);
-    nmod_poly_mat_clear(D);
+/*     nmod_poly_mat_clear(C); */
+/*     nmod_poly_mat_clear(D); */
    
-    return res;
-}
+/*     return res; */
+/* } */
 
-int test_mat_mulmid_naive(ulong prime, nmod_poly_mat_t A, nmod_poly_mat_t B, slong nlo, slong nhi)
+int test_mat_mulmid(ulong prime, nmod_poly_mat_t A, nmod_poly_mat_t B, slong nlo, slong nhi)
 {
     nmod_poly_mat_t C, D;
     nmod_poly_mat_init(C, A->r, B->c, prime);
     nmod_poly_mat_init(D, A->r, B->c, prime);
 
     /* most naive way */
+    flint_printf("preparing test\n");
     if (nlo >= nhi)
         nmod_poly_mat_zero(C);
     else
@@ -55,8 +56,10 @@ int test_mat_mulmid_naive(ulong prime, nmod_poly_mat_t A, nmod_poly_mat_t B, slo
     }
 
     /* mulmid_naive */
-    nmod_poly_mat_mulmid_naive(D, A, B, nlo, nhi);
+    flint_printf("compute\n");
+    nmod_poly_mat_mulmid(D, A, B, nlo, nhi);
 
+    flint_printf("test equal\n");
     int res = nmod_poly_mat_equal(C, D);
     
     nmod_poly_mat_clear(C);
@@ -65,7 +68,7 @@ int test_mat_mulmid_naive(ulong prime, nmod_poly_mat_t A, nmod_poly_mat_t B, slo
     return res;
 }
 
-TEST_FUNCTION_START(nmod_poly_mat_mulmid_geometric, state)
+TEST_FUNCTION_START(nmod_poly_mat_mulmid, state)
 {
     int i, result;
 
@@ -81,22 +84,26 @@ TEST_FUNCTION_START(nmod_poly_mat_mulmid_geometric, state)
         ulong p = 1 + n_randint(state, 20);
 
         /* constraints: */
-        slong lenA = 1 + n_randint(state, 40);
-        slong lenB = 1 + n_randint(state, 40);
+        slong lenA = n_randint(state, 40);
+        slong lenB = n_randint(state, 40);
         slong nlo = n_randint(state, 80);
         slong nhi = n_randint(state, 140);
 
+        flint_printf("naive || prime = %wu, m = %wu, n = %wu, p = %wu\n"
+                     "bits = %wu, lenA = %wd, lenB = %wd, nlo = %wd, nhi = %wd\n",
+                     prime, m, n, p, bits, lenA, lenB, nlo, nhi);
+
         nmod_poly_mat_t A, B;
         nmod_poly_mat_init(A, m, n, prime);
-        nmod_poly_mat_rand(A, state, lenA);
+        if (lenA > 0)
+            nmod_poly_mat_rand(A, state, lenA);
         nmod_poly_mat_init(B, n, p, prime);
-        nmod_poly_mat_rand(B, state, lenB);
+        if (lenB > 0)
+            nmod_poly_mat_rand(B, state, lenB);
 
-        /* flint_printf("m = %wu, n = %wu, p = %wu\n" */
-        /*              "len = %wu, n_bits = %wu\n", */
-        /*              m, n, p, len, bits); */
 
-        result = test_mat_mulmid_naive(prime, A, B, nlo, nhi);
+        flint_printf("let's go\n");
+        result = test_mat_mulmid(prime, A, B, nlo, nhi);
 
         if (!result)
             TEST_FUNCTION_FAIL(

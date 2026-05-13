@@ -18,7 +18,7 @@
 #include "t-dixon.c"
 #include "t-hermite_normal_form.c"
 #include "t-kernel.c"
-#include "t-mulmid_geometric.c"
+#include "t-mulmid.c"
 #include "t-mul_geometric.c"
 #include "t-mbasis.c"
 #include "t-pmbasis.c"
@@ -30,7 +30,7 @@
 
 test_struct tests[] =
 {
-    TEST_FUNCTION(nmod_poly_mat_mulmid_geometric),
+    TEST_FUNCTION(nmod_poly_mat_mulmid),
     TEST_FUNCTION(nmod_poly_mat_det),
     TEST_FUNCTION(nmod_poly_mat_dixon),
     TEST_FUNCTION(nmod_poly_mat_hnf),
