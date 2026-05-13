@@ -17,40 +17,31 @@
 #include "nmod_extra.h"
 #include "nmod_poly_mat_multiply.h"
 
-/** Middle product for polynomial matrices
- *  sets C = ((A * B) div x^dA) mod x^(dB+1), assuming deg(A) <= dA and deg(B) <= dA + dB
- *  output can alias input 
- *  naive implementation (multiply, shift, truncate)
+/** sets C to the first nhi - nlo middle coefficients of the product of A of
+ *  length len1 and B of length len2 starting at offset nlo
  */
-void nmod_poly_mat_middle_product_naive_old(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
-                                        const ulong dA, const ulong dB)
+void nmod_poly_mat_mulmid_naive_old(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+                                const slong nlo, const slong nhi)
 {
     nmod_poly_mat_mul(C, A, B);
-    nmod_poly_mat_shift_right(C, C, dA);
-    nmod_poly_mat_truncate(C, dB + 1);
+    nmod_poly_mat_truncate(C, nhi);
+    nmod_poly_mat_shift_right(C, C, nlo);
 }
 
 
-/** Middle product for polynomial matrices
- *  sets C = ((A * B) div x^d1) mod x^(d2+1), assuming deg(A) <= d1 and deg(B) <= d1 + d2
- *  output can alias input
- *  naive implementation (multiply, shift, truncate)
- * 
- *  todo: rewrite if aliasing ok with nmod_poly_mat_shift_right and others 
- */
-void nmod_poly_mat_middle_product_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A,\
-                                         const nmod_poly_mat_t B, const ulong d1, const ulong d2)
+void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A,\
+                                         const nmod_poly_mat_t B, const slong nlo, const slong nhi)
 {
     slong degA;
     degA=nmod_poly_mat_degree(A);
     
     nmod_poly_mat_t BT;
     nmod_poly_mat_init(BT, A->c, B->c, B->modulus);
-    nmod_poly_mat_shift_right(BT, B, d1-degA); // No aliasing specified for that in flint?
+    nmod_poly_mat_shift_right(BT, B, nlo-degA); // No aliasing specified for that?
 
     nmod_poly_mat_mul(C,A,BT);  
     nmod_poly_mat_shift_right(C, C, degA);  
-    nmod_poly_mat_truncate(C, d2+1);
+    nmod_poly_mat_truncate(C, nhi-nlo);
 
     nmod_poly_mat_clear(BT);
 }

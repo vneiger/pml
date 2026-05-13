@@ -10,21 +10,17 @@
     <https://www.gnu.org/licenses/>.
 */
 
-#include <stdlib.h>
+/* #include <stdlib.h> */
 //#include <flint/profiler.h>
-#include <time.h>
+/* #include <time.h> */
 #include <flint/ulong_extras.h>
 #include <flint/test_helpers.h>
 
-#include <nmod_poly_mat_utils.h>
-#include <nmod_poly_mat_io.h>
-
-//#include "../../nmod_poly_mat_extras/test/testing_collection.h"
-
+#include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_dixon.h"
 
 // Random poly_mat which is nonsingular for x=0
-void nmod_poly_mat_rand_origin(nmod_poly_mat_t A, flint_rand_t state, slong order) 
+void nmod_poly_mat_rand_origin(nmod_poly_mat_t A, flint_rand_t state, slong order)
 {
 
     nmod_mat_t T1,T2;
@@ -60,15 +56,14 @@ void nmod_poly_mat_rand_origin(nmod_poly_mat_t A, flint_rand_t state, slong orde
     nmod_poly_mat_add(A,A,B);
 
     nmod_mat_clear(T1);
-    nmod_mat_clear(T2); 
-    nmod_poly_mat_clear(B); 
+    nmod_mat_clear(T2);
+    nmod_poly_mat_clear(B);
 }
 
 
 // test one given input
 int core_test_dixon(const nmod_poly_mat_t A, const nmod_poly_mat_t B, slong order, slong sigma)
 {
-
     nmod_poly_mat_t X;
     nmod_poly_mat_init(X, B->r, B->c, A->modulus);
 
@@ -78,44 +73,42 @@ int core_test_dixon(const nmod_poly_mat_t A, const nmod_poly_mat_t B, slong orde
     nmod_poly_mat_sub(X, X, B);
     nmod_poly_mat_truncate(X,sigma);
 
-
     // printf("\n");
     // nmod_poly_mat_print_pretty(X, "x");
     // printf("\n");
 
-    if (nmod_poly_mat_is_zero(X) !=0) 
+    if (nmod_poly_mat_is_zero(X))
     {
-        nmod_poly_mat_clear(X);  
+        nmod_poly_mat_clear(X);
         return 1;
     }
-    else 
+    else
     {
-        nmod_poly_mat_clear(X);  
+        nmod_poly_mat_clear(X);
         return 0;
     }
 }
 
 
-//Test against several parameters 
+//Test against several parameters
 int collection_test_dixon(flint_rand_t state)
 {
-
     int res;
 
 // #if FLINT64
-//     slong prime[]  = 
+//     slong prime[]  =
 //     {
 //     2, 3, 5,    // very small ones
 //     521, 524309, 536870923,  // 10, 20, 30 bits
 //     549755813911, 562949953421381, 576460752303423619  // 40, 50, 60 bits
 //     };
-// #else 
-// slong prime[]  = 
+// #else
+// slong prime[]  =
 //     {
 //     2, 3, 5,    // very small ones
 //     521, 524309, 536870923  // 10, 20, 30 bits
 //     };
-// #endif 
+// #endif
 
 //     slong rdim[] = {2, 5, 10, 20, 30};
 
@@ -126,19 +119,19 @@ int collection_test_dixon(flint_rand_t state)
 //     slong degB[] = {1, 2, 100};
 
 #if FLINT64
-    slong prime[]  = 
+    slong prime[]  =
     {
-    3,    // very small ones
-    521,  // 10, 20, 30 bits
-    576460752303423619  // 40, 50, 60 bits
+        3,    // very small ones
+        521,  // 10, 20, 30 bits
+        576460752303423619  // 40, 50, 60 bits
     };
-#else 
-slong prime[]  = 
+#else
+    slong prime[]  =
     {
-    2, 5,    // very small ones
-    521, 524309 // 10, 20, 30 bits
+        2, 5,    // very small ones
+        521, 524309 // 10, 20, 30 bits
     };
-#endif 
+#endif
 
     slong rdim[] = {2, 10, 20};
 
@@ -151,13 +144,11 @@ slong prime[]  =
     slong order;
     slong sigma;
 
-    //printf("Launching testing collection\n");
-
-    for (slong ip=0; ip<sizeof(prime)/sizeof(prime[0]); ip++)
-        for (slong in=0; in<sizeof(rdim)/sizeof(rdim[0]); in++)
-            for (slong ida=0; ida<sizeof(degA)/sizeof(degA[0]); ida++)
-                for (slong bdim=0; bdim<sizeof(Bcdim)/sizeof(Bcdim[0]); bdim++)
-                    for (slong db=0; db<sizeof(degB)/sizeof(degB[0]); db++)
+    for (ulong ip=0; ip<sizeof(prime)/sizeof(prime[0]); ip++)
+        for (ulong in=0; in<sizeof(rdim)/sizeof(rdim[0]); in++)
+            for (ulong ida=0; ida<sizeof(degA)/sizeof(degA[0]); ida++)
+                for (ulong bdim=0; bdim<sizeof(Bcdim)/sizeof(Bcdim[0]); bdim++)
+                    for (ulong db=0; db<sizeof(degB)/sizeof(degB[0]); db++)
                     {
 
                         sigma = 2*rdim[in]*degA[ida];
@@ -178,21 +169,21 @@ slong prime[]  =
 
                         res = core_test_dixon(A, B, order, sigma);
 
-                        if (res == 0 ) 
-                        {
-                            printf("failed ... exiting\n"); 
-                            return 0;
-                        }
-
                         nmod_poly_mat_clear(A);
                         nmod_poly_mat_clear(B);
+
+                        if (res == 0)
+                        {
+                            printf("failed ... exiting\n");
+                            return 0;
+                        }
                     }
 
-    for (slong ip=0; ip<sizeof(prime)/sizeof(prime[0]); ip++)
-        for (slong in=0; in<sizeof(rdim)/sizeof(rdim[0]); in++)
-            for (slong ida=0; ida<sizeof(degA)/sizeof(degA[0]); ida++)
-                for (slong bdim=0; bdim<sizeof(Bcdim)/sizeof(Bcdim[0]); bdim++)
-                    for (slong db=0; db<sizeof(degB)/sizeof(degB[0]); db++)
+    for (ulong ip=0; ip<sizeof(prime)/sizeof(prime[0]); ip++)
+        for (ulong in=0; in<sizeof(rdim)/sizeof(rdim[0]); in++)
+            for (ulong ida=0; ida<sizeof(degA)/sizeof(degA[0]); ida++)
+                for (ulong bdim=0; bdim<sizeof(Bcdim)/sizeof(Bcdim[0]); bdim++)
+                    for (ulong db=0; db<sizeof(degB)/sizeof(degB[0]); db++)
                     {
 
                         sigma = 2*rdim[in]*degA[ida];
@@ -213,24 +204,22 @@ slong prime[]  =
 
                         res = core_test_dixon(A, B, order, sigma);
 
-                        if (res == 0 ) 
-                        {
-                            printf("failed ... exiting\n"); 
-                            return 0;
-                        }
-
                         nmod_poly_mat_clear(A);
                         nmod_poly_mat_clear(B);
+
+                        if (res == 0)
+                        {
+                            printf("failed ... exiting\n");
+                            return 0;
+                        }
                     }
-return 1;
-    
+    return 1;
 }
 
 
 TEST_FUNCTION_START(nmod_poly_mat_dixon, state)
 {
-
-    int res=0;  
+    int res=0;
 
     srand(time(NULL));
     flint_rand_set_seed(state, rand(), rand());
@@ -239,10 +228,10 @@ TEST_FUNCTION_START(nmod_poly_mat_dixon, state)
 
     if (res == 0)
     {
-       TEST_FUNCTION_FAIL("");
+        TEST_FUNCTION_FAIL("");
     }
     else
     {
-    TEST_FUNCTION_END(state);
+        TEST_FUNCTION_END(state);
     }
 }

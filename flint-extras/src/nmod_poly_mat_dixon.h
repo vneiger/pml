@@ -23,7 +23,9 @@ extern "C" {
 /**
  *
  *  Truncated inverse of A mod x^order
- *  A is assumed to be invertible for x=0 (will produce an error otherwise) 
+ *  Returns 0 if A is not invertible as a power series (i.e., at x=0),
+ *  in which case S is not modified
+ *  Returns nonzero otherwise, and S is the truncated inverse
  * 
  *  CHECK TODO: uses a method based on a shifted approximant computation 
  *              check whether the specification of nmod_poly_mat_pmbasis 
@@ -31,33 +33,30 @@ extern "C" {
  * 
  */
 
-void nmod_poly_mat_inv_trunc(nmod_poly_mat_t S, 
-                            const nmod_poly_mat_t A, 
-                            ulong order);
+slong nmod_poly_mat_inv_trunc(nmod_poly_mat_t S, 
+                              const nmod_poly_mat_t A, 
+                              ulong order);
 
 
 /**
  * x-adic iterations à la Dixon : AX=B mod x^sigma
  * A is nxn, B is nxm 
- * A is assumed to be invertible for x=0 (will produce an error otherwise) 
+ *  Returns 0 if A is not invertible as a power series (i.e., at x=0),
+ *  in which case X is not modified
+ *  Returns nonzero otherwise, and X is the sought solution
  * 
  * Iterations mod x^order to obtain a total approximation mod x^sigma
  * 
  */
 
-void nmod_poly_mat_dixon(nmod_poly_mat_t X, 
-                            const nmod_poly_mat_t A, 
-                            const nmod_poly_mat_t B, 
-                            ulong order,
-                            ulong sigma);
+slong nmod_poly_mat_dixon(nmod_poly_mat_t X, 
+                          const nmod_poly_mat_t A, 
+                          const nmod_poly_mat_t B, 
+                          ulong order,
+                          ulong sigma);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
-
-
+#endif  /* NMOD_POLY_MAT_DIXON_H */

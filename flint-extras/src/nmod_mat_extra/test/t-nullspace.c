@@ -53,7 +53,7 @@ int basis_of_nullspace(nmod_mat_t X, nmod_mat_t A)
  * nonzero entry in a row; assumes X has full row rank */
 int is_rref(nmod_mat_t X)
 {
-    slong * pivot = malloc(X->r * sizeof(slong));
+    slong * pivot = FLINT_ARRAY_ALLOC(X->r, slong);
     for (slong i = 0; i < X->r; ++i)
     {
         pivot[i] = X->c - 1;
@@ -78,6 +78,7 @@ int is_rref(nmod_mat_t X)
             }
         }
     }
+    flint_free(pivot);
     return 1;
 }
 

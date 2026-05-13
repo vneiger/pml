@@ -30,14 +30,11 @@ jobs:
 
     env:
       CC: "gcc"
-      FLINT_TEST_MULTIPLIER: "10"
+      TESTCOEFF: "10"
 
     steps:
       - name: "Rescale multiplier"
-        run: |
-          FLINT_TEST_MULTIPLIER=$(echo "${FLINT_TEST_MULTIPLIER} * ${GLOBAL_MULTIPLIER}" | bc)
-          echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}"
-          echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}" >> $GITHUB_ENV
+        run: echo "FLINT_TEST_MULTIPLIER=$(echo "${TESTCOEFF} * ${GLOBAL_MULTIPLIER}" | bc)" >> $GITHUB_ENV
 
       - uses: actions/checkout@v6
 
@@ -60,8 +57,8 @@ jobs:
           git clone --depth=1 https://github.com/flintlib/flint.git
           cd flint
           ./bootstrap.sh
-          ./configure
-          make
+          ./configure CC=${CC} --disable-debug
+          $MAKE
           sudo make install
           sudo ldconfig
 
@@ -89,9 +86,7 @@ jobs:
           $MAKE profile
 
       - name: "Check"
-        run: |
-          cd flint-extras
-          $MAKE check
+        run: cd flint-extras && echo "FLINT_TEST_MULTIPLIER = $FLINT_TEST_MULTIPLIER" && $MAKE check
 
   ##############################################################################
   # ubuntu 24.04, clang, flint 3.4.0
@@ -103,14 +98,11 @@ jobs:
 
     env:
       CC: "clang"
-      FLINT_TEST_MULTIPLIER: "10"
+      TESTCOEFF: "10"
 
     steps:
       - name: "Rescale multiplier"
-        run: |
-          FLINT_TEST_MULTIPLIER=$(echo "${FLINT_TEST_MULTIPLIER} * ${GLOBAL_MULTIPLIER}" | bc)
-          echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}"
-          echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}" >> $GITHUB_ENV
+        run: echo "FLINT_TEST_MULTIPLIER=$(echo "${TESTCOEFF} * ${GLOBAL_MULTIPLIER}" | bc)" >> $GITHUB_ENV
 
       - uses: actions/checkout@v6
 
@@ -133,8 +125,8 @@ jobs:
           git clone --depth=1 https://github.com/flintlib/flint.git --branch v3.4.0 --single-branch
           cd flint
           ./bootstrap.sh
-          ./configure
-          make
+          ./configure CC=${CC} --disable-debug
+          $MAKE
           sudo make install
           sudo ldconfig
 
@@ -157,9 +149,7 @@ jobs:
           $MAKE tests
 
       - name: "Check"
-        run: |
-          cd flint-extras
-          $MAKE check
+        run: cd flint-extras && echo "FLINT_TEST_MULTIPLIER = $FLINT_TEST_MULTIPLIER" && $MAKE check
 
   ##############################################################################
   # ubuntu 24.04 ARM, gcc, flint dev
@@ -171,14 +161,11 @@ jobs:
 
     env:
       CC: "gcc"
-      FLINT_TEST_MULTIPLIER: "5"
+      TESTCOEFF: "5"
 
     steps:
       - name: "Rescale multiplier"
-        run: |
-          FLINT_TEST_MULTIPLIER=$(echo "${FLINT_TEST_MULTIPLIER} * ${GLOBAL_MULTIPLIER}" | bc)
-          echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}"
-          echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}" >> $GITHUB_ENV
+        run: echo "FLINT_TEST_MULTIPLIER=$(echo "${TESTCOEFF} * ${GLOBAL_MULTIPLIER}" | bc)" >> $GITHUB_ENV
 
       - uses: actions/checkout@v6
 
@@ -201,8 +188,8 @@ jobs:
           git clone --depth=1 https://github.com/flintlib/flint.git
           cd flint
           ./bootstrap.sh
-          ./configure
-          make
+          ./configure CC=${CC} --disable-debug
+          $MAKE
           sudo make install
           sudo ldconfig
 
@@ -226,10 +213,50 @@ jobs:
           $MAKE tests
 
       - name: "Check"
+        run: cd flint-extras && echo "FLINT_TEST_MULTIPLIER = $FLINT_TEST_MULTIPLIER" && $MAKE check
+
+  ##############################################################################
+  # ubuntu 24.04 clang, flint dev, BLAS, ASan
+  ##############################################################################
+  ubuntu-asan-clang:
+    name: Ubuntu 24.04, clang, FLINT dev with BLAS, ASan (x1)
+    runs-on: ubuntu-24.04
+    env:
+      CC: "clang"
+      TESTCOEFF: "1"
+    steps:
+      - name: "Rescale multiplier"
+        run: echo "FLINT_TEST_MULTIPLIER=$(echo "${TESTCOEFF} * ${GLOBAL_MULTIPLIER}" | bc)" >> $GITHUB_ENV
+      - uses: actions/checkout@v6
+      - name: "Setup"
+        run: |
+          sudo apt-get install -y libgmp-dev libmpfr-dev autoconf libtool-bin perl libopenblas-dev
+          clang --version
+          make --version
+          autoconf --version
+          libtool --version
+          echo "MAKE=make -j$(expr $(nproc) + 1) --output-sync=target" >> $GITHUB_ENV
+
+          # install FLINT dev version
+          git clone --depth=1 https://github.com/flintlib/flint.git
+          cd flint && ./bootstrap.sh && ./configure CC=${CC} --with-blas --disable-debug --enable-asan
+          $MAKE
+          sudo make install
+          sudo ldconfig
+
+      - name: "Configure"
         run: |
           cd flint-extras
-          $MAKE check
-
+          ./bootstrap.sh
+          ./configure CC=$(CC) --enable-asan --disable-debug
+      - name: "Compile library"
+        run: cd flint-extras && $MAKE && ldd libpml.so
+      - name: "Compile tests"
+        run: cd flint-extras && $MAKE tests
+      - name: "Compile profile"
+        run: cd flint-extras && $MAKE profile
+      - name: "Check"
+        run: cd flint-extras && echo "FLINT_TEST_MULTIPLIER = $FLINT_TEST_MULTIPLIER" && $MAKE check
 
   ##############################################################################
   # macos (M1), clang, homebrewed FLINT
@@ -240,14 +267,11 @@ jobs:
     runs-on: macos-15
 
     env:
-      FLINT_TEST_MULTIPLIER: "3"
+      TESTCOEFF: "3"
 
     steps:
       - name: "Rescale multiplier"
-        run: |
-          FLINT_TEST_MULTIPLIER=$(echo "${FLINT_TEST_MULTIPLIER} * ${GLOBAL_MULTIPLIER}" | bc)
-          echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}"
-          echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}" >> $GITHUB_ENV
+        run: echo "FLINT_TEST_MULTIPLIER=$(echo "${TESTCOEFF} * ${GLOBAL_MULTIPLIER}" | bc)" >> $GITHUB_ENV
 
       - uses: actions/checkout@v6
 
@@ -289,9 +313,8 @@ jobs:
           $MAKE tests
 
       - name: "Check"
-        run: |
-          cd flint-extras
-          $MAKE check
+        run: cd flint-extras && echo "FLINT_TEST_MULTIPLIER = $FLINT_TEST_MULTIPLIER" && $MAKE check
+
 
   ##############################################################################
   # macos (M1), gcc, flint-dev
@@ -302,14 +325,11 @@ jobs:
     runs-on: macos-15
 
     env:
-      FLINT_TEST_MULTIPLIER: "3"
+      TESTCOEFF: "3"
 
     steps:
       - name: "Rescale multiplier"
-        run: |
-          FLINT_TEST_MULTIPLIER=$(echo "${FLINT_TEST_MULTIPLIER} * ${GLOBAL_MULTIPLIER}" | bc)
-          echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}"
-          echo "FLINT_TEST_MULTIPLIER=${FLINT_TEST_MULTIPLIER}" >> $GITHUB_ENV
+        run: echo "FLINT_TEST_MULTIPLIER=$(echo "${TESTCOEFF} * ${GLOBAL_MULTIPLIER}" | bc)" >> $GITHUB_ENV
 
       - uses: actions/checkout@v6
 
@@ -337,7 +357,7 @@ jobs:
             --with-gmp=$(brew --prefix) \
             --with-mpfr=$(brew --prefix) \
             --disable-debug
-          make
+          $MAKE
           sudo make install
 
       - name: "Configure"
@@ -366,7 +386,5 @@ jobs:
           $MAKE profile
 
       - name: "Check"
-        run: |
-          cd flint-extras
-          $MAKE check
+        run: cd flint-extras && echo "FLINT_TEST_MULTIPLIER = $FLINT_TEST_MULTIPLIER" && $MAKE check
 

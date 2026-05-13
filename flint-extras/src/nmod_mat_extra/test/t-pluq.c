@@ -38,6 +38,7 @@ int check_pluq(nmod_mat_t LU, slong * P, slong * Q, const nmod_mat_t A, slong ra
     _nmod_mat_l_u_from_compactlu_zeroin(L, LU, LU, rank);
     // compute L*U, stored in LU
     nmod_mat_mul(LU, L, LU);
+    nmod_mat_clear(L);
     // permute rows and columns
     _perm_inv(P, P, LU->r);
     nmod_mat_permute_rows(LU, P, NULL);

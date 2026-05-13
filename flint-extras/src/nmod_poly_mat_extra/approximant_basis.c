@@ -50,7 +50,7 @@ void nmod_poly_mat_pmbasis_old(nmod_poly_mat_t appbas,
 
     nmod_poly_mat_pmbasis_old(appbas, shift, pmat, order1);
 
-    nmod_poly_mat_middle_product_naive_old(residual, appbas, pmat, order1, order2-1);
+    nmod_poly_mat_mulmid_naive_old(residual, appbas, pmat, order1, order);
 
     nmod_poly_mat_pmbasis_old(appbas2, shift, residual, order2);
 
@@ -74,6 +74,7 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
     if (order <= PMBASIS_THRES)
     {
         nmod_poly_mat_mbasis(appbas, shift, pmat, order);
+        nmod_poly_mat_clear(pmat);
         return;
     }
 
@@ -86,7 +87,7 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
 
     nmod_poly_mat_pmbasis(appbas, shift, pmat, order1);
 
-    nmod_poly_mat_middle_product_naive(residual, appbas, pmat, order1, order2-1);
+    nmod_poly_mat_mulmid_naive(residual, appbas, pmat, order1, order);
 
     nmod_poly_mat_pmbasis(appbas2, shift, residual, order2);
 
@@ -94,6 +95,7 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
 
     nmod_poly_mat_clear(appbas2);
     nmod_poly_mat_clear(residual);
+    nmod_poly_mat_clear(pmat);
 }
 
 
@@ -123,6 +125,7 @@ void nmod_poly_mat_pmbasis_linearized(nmod_poly_mat_t appbas,
     if (order <= (ipmat->r))    
     {
         nmod_poly_mat_mbasis(appbas, shift, pmat, order);
+        nmod_poly_mat_clear(pmat);
         return;
     }
 
@@ -143,6 +146,7 @@ void nmod_poly_mat_pmbasis_linearized(nmod_poly_mat_t appbas,
 
     nmod_poly_mat_clear(appbas2);
     nmod_poly_mat_clear(residual);
+    nmod_poly_mat_clear(pmat);
 }
 
 
