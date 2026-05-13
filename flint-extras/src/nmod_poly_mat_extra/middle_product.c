@@ -37,6 +37,8 @@ void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A,\
     
     nmod_poly_mat_t BT;
     nmod_poly_mat_init(BT, A->c, B->c, B->modulus);
+
+    // GV to see if nlo < deg A for ASan ? 
     nmod_poly_mat_shift_right(BT, B, nlo-degA); // No aliasing specified for that?
 
     nmod_poly_mat_mul(C,A,BT);  
@@ -69,6 +71,7 @@ void nmod_poly_mat_mulmid_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A,
     
     nmod_poly_mat_t BT;
     nmod_poly_mat_init(BT, A->c, B->c, B->modulus);
+    // GV to see if nlo < deg A for ASan ?
     nmod_poly_mat_shift_right(BT, B, nlo-degA); // No aliasing specified for that?
 
     if (degA < 4)
