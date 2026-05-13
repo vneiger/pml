@@ -173,7 +173,7 @@ void nmod_poly_mat_mul_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A, co
     slong dB[n];
     nmod_poly_mat_column_degree(dB, B, NULL);
 
-    slong colBL[m];  // column j of B gives colBL[j] columns in output  
+    slong colBL[n];  // column j of B gives colBL[j] columns in output  
     slong ln=0;   // new column dimension 
 
     for (int j=0; j<n; j++)

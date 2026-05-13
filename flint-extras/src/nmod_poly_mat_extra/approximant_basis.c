@@ -138,7 +138,7 @@ void nmod_poly_mat_pmbasis_linearized(nmod_poly_mat_t appbas,
 
     nmod_poly_mat_pmbasis_linearized(appbas, shift, pmat, order1);
 
-    nmod_poly_mat_middle_product_linearized(residual, appbas, pmat, order1, order2-1);
+    nmod_poly_mat_mulmid_linearized(residual, appbas, pmat, order1, order);
 
     nmod_poly_mat_pmbasis_linearized(appbas2, shift, residual, order2);
 

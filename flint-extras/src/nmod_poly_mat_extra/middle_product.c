@@ -47,9 +47,10 @@ void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A,\
 }
 
 /** Middle product for polynomial matrices
- *  sets C = ((A * B) div x^d1) mod x^(d2+1), assuming deg(A) <= d1 and deg(B) <= d1 + d2
- *  output can alias input
- *  naive implementation (multiply, shift, truncate)
+ *  
+ *  sets C to the first nhi - nlo middle coefficients of the product of A of
+ *  length len1 and B of length len2 starting at offset nlo
+ 
  * 
  *  todo: rewrite if aliasing ok with nmod_poly_mat_shift_right and others 
  * 
@@ -60,15 +61,15 @@ void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A,\
  *  Todo ASSUMPTION (not checked): existence of element of "large enough" order
  *           and fail flag when element not found 
  */
-void nmod_poly_mat_middle_product_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A,\
-                                         const nmod_poly_mat_t B, const ulong d1, const ulong d2)
+void nmod_poly_mat_mulmid_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A,\
+                                         const nmod_poly_mat_t B, const ulong nlo, const ulong nhi)
 {
     slong degA;
     degA=nmod_poly_mat_degree(A);
     
     nmod_poly_mat_t BT;
     nmod_poly_mat_init(BT, A->c, B->c, B->modulus);
-    nmod_poly_mat_shift_right(BT, B, d1-degA); // No aliasing specified for that?
+    nmod_poly_mat_shift_right(BT, B, nlo-degA); // No aliasing specified for that?
 
     if (degA < 4)
     {
@@ -80,7 +81,7 @@ void nmod_poly_mat_middle_product_linearized(nmod_poly_mat_t C, const nmod_poly_
     }
 
     nmod_poly_mat_shift_right(C, C, degA);  
-    nmod_poly_mat_truncate(C, d2+1);
+    nmod_poly_mat_truncate(C, nhi-nlo);
 
     nmod_poly_mat_clear(BT);
 }

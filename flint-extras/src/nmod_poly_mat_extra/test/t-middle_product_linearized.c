@@ -21,7 +21,7 @@
 /*--------------------------------------------------------------*/
 /* middle product using different implementations               */
 /*--------------------------------------------------------------*/
-int test_mat_middle_product_linearized(ulong bits, ulong m, ulong n, ulong p, ulong deg, flint_rand_t state)
+int test_mat_mulmid_linearized(ulong bits, ulong m, ulong n, ulong p, ulong deg, flint_rand_t state)
 {
     ulong prime = n_randprime(state, bits, 1);
 
@@ -37,8 +37,8 @@ int test_mat_middle_product_linearized(ulong bits, ulong m, ulong n, ulong p, ul
     nmod_poly_mat_rand(C1, state, deg);
     nmod_poly_mat_rand(C2, state, deg);
 
-    nmod_poly_mat_middle_product_naive(C1, A, B, deg-1, deg-1);
-    nmod_poly_mat_middle_product_linearized(C2, A, B, deg-1, deg-1);
+    nmod_poly_mat_mulmid_naive(C1, A, B, deg-1, 2*deg-1);
+    nmod_poly_mat_mulmid_linearized(C2, A, B, deg-1, 2*deg-1);
 
     int res = nmod_poly_mat_equal(C1, C2);
     
@@ -67,7 +67,7 @@ TEST_FUNCTION_START(nmod_poly_mat_middle_product_linearized, state)
         /*              "deg = %wu, n_bits = %wu\n", */
         /*              m, n, p, deg, bits); */
 
-        result = test_mat_middle_product_linearized(bits, m, n, p, deg, state);
+        result = test_mat_mulmid_linearized(bits, m, n, p, deg, state);
 
         if (!result)
             TEST_FUNCTION_FAIL(

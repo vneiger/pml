@@ -102,7 +102,9 @@ void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
 
 
 /** Middle product for polynomial matrices
- *  sets C = ((A * B) div x^d1) mod x^(d2+1), assuming deg(A) <= d1 and deg(B) <= d1 + d2
+ *  Sets C = ((A * B mod x^nhi) div x^nlo)
+ *  i.e., sets C to the first nhi - nlo middle coefficients of the product of A
+ *  of length len1 and B of length len2 starting at offset nlo
  *  output can alias input
  *  naive implementation (multiply, shift, truncate)
  */
@@ -111,18 +113,16 @@ void nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
 
 
 /** Middle product for polynomial matrices
- *  sets C = ((A * B) div x^d1) mod x^(d2+1), assuming deg(A) <= d1 and deg(B) <= d1 + d2
- *  output can alias input
- *  naive implementation (multiply, shift, truncate)
- * 
+ *  Sets C = ((A * B mod x^nhi) div x^nlo)
+ *  i.e., sets C to the first nhi - nlo middle coefficients of the product of A
+ *  of length len1 and B of length len2 starting at offset nlo
  *  uses geometric multiplication 
  *  
  *  Todo ASSUMPTION (not checked): existence of element of "large enough" order
  *           and fail flag when element not found 
  */
-void nmod_poly_mat_middle_product_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
-                                        const ulong dA, const ulong dB);
-
+void nmod_poly_mat_mulmid_linearized(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+                                        const ulong nlo, const ulong nhi);
 
 
 /** Middle product for polynomial matrices
