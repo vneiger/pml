@@ -185,7 +185,7 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t C,
     /* if (lenA == 1)  /1* TODO handle constant A or B properly *1/ */
     /*     _nmod_poly_mat_mulmid_naive(C, A, lenA, B, lenB, nlo, nhi); */
     /* else */
-    if (lenA <= nlo+1 && lenB <= nhi)
+    if (lenA <= nlo+1 && lenB <= nhi && A->modulus > (ulong)10*nhi) /* FIXME temporary condition to ensure existence of geometric progression */
     /* if (lenA <= nlo+1)  /1* TODO version once truncation has been inserted in main function *1/ */
     {
         _nmod_poly_mat_mulmid_geometric(C, A, lenA, B, lenB, nlo, nhi);

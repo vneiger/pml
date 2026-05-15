@@ -18,11 +18,11 @@
 #include "t-dixon.c"
 #include "t-hermite_normal_form.c"
 #include "t-kernel.c"
-#include "t-mulmid.c"
-#include "t-mul_geometric.c"
 #include "t-mbasis.c"
-#include "t-pmbasis.c"
+#include "t-mul_geometric.c"
 #include "t-mul_waksman.c"
+#include "t-mulmid.c"
+#include "t-pmbasis.c"
 #include "t-rand.c"
 #include "t-weak_popov_form.c"
 
@@ -30,13 +30,13 @@
 
 test_struct tests[] =
 {
-    TEST_FUNCTION(nmod_poly_mat_mulmid),
     TEST_FUNCTION(nmod_poly_mat_det),
     TEST_FUNCTION(nmod_poly_mat_dixon),
     TEST_FUNCTION(nmod_poly_mat_hnf),
     TEST_FUNCTION(nmod_poly_mat_kernel),
     TEST_FUNCTION(nmod_poly_mat_mbasis),
     TEST_FUNCTION(nmod_poly_mat_mul_geometric),
+    TEST_FUNCTION(nmod_poly_mat_mulmid),
     TEST_FUNCTION(nmod_poly_mat_pmbasis),
     /* TEST_FUNCTION(nmod_poly_mat_mul_waksman), */  /* TODO */
     TEST_FUNCTION(nmod_poly_mat_rand),

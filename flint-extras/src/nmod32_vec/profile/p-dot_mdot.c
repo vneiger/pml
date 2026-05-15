@@ -424,7 +424,7 @@ int main(int argc, char ** argv)
 
 #elif PML_HAVE_AVX2
     // bench functions
-    const slong nfuns = 11;
+    const slong nfuns = 10;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
         time_dot_split,                 // 0

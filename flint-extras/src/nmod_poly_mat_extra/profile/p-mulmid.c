@@ -28,43 +28,49 @@ typedef struct
     slong rdim;  /* row outer dimension */
     slong idim;  /* inner dimension */
     slong cdim;  /* column outer dimension */
-    slong deg;   /* degree */
+    slong len1;  /* length of left operand */
+    slong len2;  /* length of right operand */
+    slong nlo;   /* nlo of mulmid */
+    slong nhi;   /* nhi of mulmid */
     slong modn;  /* modulus */
 }
 time_args;
 
-#define TIME_MULMID(fun)                                \
-void time_##fun(time_args targs, flint_rand_t state)    \
-{                                                       \
-    const slong rdim = targs.rdim;                      \
-    const slong idim = targs.idim;                      \
-    const slong cdim = targs.cdim;                      \
-    const slong deg = targs.deg;                        \
-    const slong n = targs.modn;                         \
-                                                        \
-    nmod_t mod;                                         \
-    nmod_init(&mod, n);                                 \
-                                                        \
-    nmod_poly_mat_t A;                                  \
-    nmod_poly_mat_init(A, rdim, idim, n);               \
-    nmod_poly_mat_rand(A, state, deg);                  \
-    nmod_poly_mat_t B;                                  \
-    nmod_poly_mat_init(B, idim, cdim, n);               \
-    nmod_poly_mat_rand(B, state, 2*deg-1);              \
-    nmod_poly_mat_t C;                                  \
-    nmod_poly_mat_init(C, rdim, cdim, n);               \
-                                                        \
-    double FLINT_SET_BUT_UNUSED(tcpu), twall;           \
-                                                        \
-    TIMEIT_START;                                       \
-    nmod_poly_mat_##fun(C, A, B, deg-1, 2*deg-1);       \
-    TIMEIT_STOP_VALUES(tcpu, twall);                    \
-                                                        \
-    printf("%.2e", twall);                              \
-                                                        \
-    nmod_poly_mat_clear(A);                             \
-    nmod_poly_mat_clear(B);                             \
-    nmod_poly_mat_clear(C);                             \
+#define TIME_MULMID(fun)                                 \
+void time_##fun(time_args targs, flint_rand_t state)     \
+{                                                        \
+    const slong rdim = targs.rdim;                       \
+    const slong idim = targs.idim;                       \
+    const slong cdim = targs.cdim;                       \
+    const slong len1 = targs.len1;                       \
+    const slong len2 = targs.len2;                       \
+    const slong nlo = targs.nlo;                         \
+    const slong nhi = targs.nhi;                         \
+    const slong n = targs.modn;                          \
+                                                         \
+    nmod_t mod;                                          \
+    nmod_init(&mod, n);                                  \
+                                                         \
+    nmod_poly_mat_t A;                                   \
+    nmod_poly_mat_init(A, rdim, idim, n);                \
+    nmod_poly_mat_rand(A, state, len1);                  \
+    nmod_poly_mat_t B;                                   \
+    nmod_poly_mat_init(B, idim, cdim, n);                \
+    nmod_poly_mat_rand(B, state, len2);                  \
+    nmod_poly_mat_t C;                                   \
+    nmod_poly_mat_init(C, rdim, cdim, n);                \
+                                                         \
+    double FLINT_SET_BUT_UNUSED(tcpu), twall;            \
+                                                         \
+    TIMEIT_START;                                        \
+    _nmod_poly_mat_##fun(C, A, len1, B, len2, nlo, nhi); \
+    TIMEIT_STOP_VALUES(tcpu, twall);                     \
+                                                         \
+    printf("%.2e", twall);                               \
+                                                         \
+    nmod_poly_mat_clear(A);                              \
+    nmod_poly_mat_clear(B);                              \
+    nmod_poly_mat_clear(C);                              \
 }
 
 TIME_MULMID(mulmid_naive)
@@ -88,9 +94,9 @@ int main(int argc, char ** argv)
     const slong ndims = 10;
     const ulong dims[] = {2, 4, 6, 8, 11, 15, 20, 30, 50, 100};
 
-    // matrix degrees
-    const slong ndegs = 12;
-    const ulong degs[] = {5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240};
+    // matrix lengths
+    const slong nlens = 12;
+    const ulong lens[] = {5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240};
 
     // bench functions
     const slong nfuns = 2;
@@ -114,13 +120,13 @@ int main(int argc, char ** argv)
 
     if (argc == 1)  // show usage
     {
-        printf("Usage: `%s [nbits] [dim] [deg] [fun]`\n", argv[0]);
+        printf("Usage: `%s [nbits] [dim] [len] [fun]`\n", argv[0]);
         printf("   Each argument is optional; no argument shows this help.\n");
         printf("   - nbits: number of bits (in (1..64]) for the modulus, chosen as nextprime(2**(nbits-1))\n");
         printf("        (nbits == -1 launches full suite)\n");
         printf("   - dim: matrices are dim x dim\n");
-        printf("   - deg: matrices are random of degree < deg\n");
-        printf("   - deg: id number of the timed function (see below),\n");
+        printf("   - len: matrices are random of length < len\n");
+        printf("   - fun: id number of the timed function (see below),\n");
         printf("\nAvailable functions:\n");
         for (slong j = 0; j < nfuns; j++)
             printf("   %s\n", description[j]);
@@ -131,7 +137,7 @@ int main(int argc, char ** argv)
     printf("#warmup...\n");
     for (slong i = 0; i < 3; i++)
     {
-        time_args targs = {4, 4, 4, 1000, UWORD(1) << 20};
+        time_args targs = {4, 4, 4, 1000, 2000, 999, 2000, UWORD(1) << 20};
         time_mulmid_naive(targs, state);
         printf(" ");
     }
@@ -143,7 +149,7 @@ int main(int argc, char ** argv)
         for (slong i = 0; i < ndims; i++)
             printf("%17ld", dims[i]);
         printf("\n");
-        printf("bits fun deg\n");
+        printf("bits fun len\n");
         for (slong j = 0; j < nbits; j++)
         {
             const slong b = bits[j];
@@ -151,12 +157,13 @@ int main(int argc, char ** argv)
             n = n_nextprime(UWORD(1) << (b-1), 0);
             for (slong ifun = 0; ifun < nfuns; ifun++)
             {
-                for (slong d = 0; d < ndegs; d++)
+                for (slong d = 0; d < nlens; d++)
                 {
-                    printf("%-5ld#%-3ld%-8ld", b, ifun, degs[d]);
+                    printf("%-5ld#%-3ld%-8ld", b, ifun, lens[d]);
                     for (slong i = 0; i < ndims; i++)
                     {
-                        time_args targs = {dims[i], dims[i], dims[i], degs[d], n};
+                        time_args targs = {dims[i], dims[i], dims[i],
+                            lens[d], 2*lens[d]-1, lens[d]-1, 2*lens[d]-1, n};
 
 #if MEASURE_SAMPLE
                         const samplefun sfun = sfuns[ifun];
@@ -180,19 +187,20 @@ int main(int argc, char ** argv)
         for (slong i = 0; i < ndims; i++)
             printf("%17ld", dims[i]);
         printf("\n");
-        printf("bits fun deg\n");
+        printf("bits fun len\n");
         const slong b = atoi(argv[1]);
         ulong n;
         n = n_nextprime(UWORD(1) << (b-1), 0);
         for (slong ifun = 0; ifun < nfuns; ifun++)
         {
             const timefun tfun = funs[ifun];
-            for (slong d = 0; d < ndegs; d++)
+            for (slong d = 0; d < nlens; d++)
             {
-                printf("%-5ld#%-3ld%-8ld", b, ifun, degs[d]);
+                printf("%-5ld#%-3ld%-8ld", b, ifun, lens[d]);
                 for (slong i = 0; i < ndims; i++)
                 {
-                    time_args targs = {dims[i], dims[i], dims[i], degs[d], n};
+                    time_args targs = {dims[i], dims[i], dims[i],
+                        lens[d], 2*lens[d]-1, lens[d]-1, 2*lens[d]-1, n};
                     tfun(targs, state);
                     printf(" ");
                 }
@@ -206,60 +214,63 @@ int main(int argc, char ** argv)
         printf("       dim");
         printf("%17ld", dim);
         printf("\n");
-        printf("bits fun deg\n");
+        printf("bits fun len\n");
         const slong b = atoi(argv[1]);
         ulong n;
         n = n_nextprime(UWORD(1) << (b-1), 0);
         for (slong ifun = 0; ifun < nfuns; ifun++)
         {
             const timefun tfun = funs[ifun];
-            for (slong d = 0; d < ndegs; d++)
+            for (slong d = 0; d < nlens; d++)
             {
-                printf("%-5ld#%-3ld%-8ld", b, ifun, degs[d]);
-                time_args targs = {dim, dim, dim, degs[d], n};
+                printf("%-5ld#%-3ld%-8ld", b, ifun, lens[d]);
+                time_args targs = {dim, dim, dim,
+                    lens[d], 2*lens[d]-1, lens[d]-1, 2*lens[d]-1, n};
                 tfun(targs, state);
                 printf(" ");
                 printf("\n");
             }
         }
     }
-    else if (argc == 4)  // nbits + dim + deg given
+    else if (argc == 4)  // nbits + dim + len given
     {
         const slong dim = atoi(argv[2]);
-        const slong deg = atoi(argv[3]);
+        const slong len = atoi(argv[3]);
         printf("       dim");
         printf("%17ld", dim);
         printf("\n");
-        printf("bits fun deg\n");
+        printf("bits fun len\n");
         const slong b = atoi(argv[1]);
         ulong n;
         n = n_nextprime(UWORD(1) << (b-1), 0);
         for (slong ifun = 0; ifun < nfuns; ifun++)
         {
             const timefun tfun = funs[ifun];
-            printf("%-5ld#%-3ld%-8ld", b, ifun, deg);
-            time_args targs = {dim, dim, dim, deg, n};
+            printf("%-5ld#%-3ld%-8ld", b, ifun, len);
+            time_args targs = {dim, dim, dim,
+                len, 2*len-1, len-1, 2*len-1, n};
             tfun(targs, state);
             printf(" ");
             printf("\n");
         }
     }
-    else if (argc == 5)  // nbits + dim + deg + fun given
+    else if (argc == 5)  // nbits + dim + len + fun given
     {
         const slong b = atoi(argv[1]);
         const slong dim = atoi(argv[2]);
-        const slong deg = atoi(argv[3]);
+        const slong len = atoi(argv[3]);
         const slong ifun = atoi(argv[4]);
         const timefun tfun = funs[ifun];
         printf("       dim");
         printf("%17ld", dim);
         printf("\n");
-        printf("bits fun deg\n");
+        printf("bits fun len\n");
         ulong n;
         n = n_nextprime(UWORD(1) << (b-1), 0);
 
-        printf("%-5ld#%-3ld%-8ld", b, ifun, deg);
-        time_args targs = {dim, dim, dim, deg, n};
+        printf("%-5ld#%-3ld%-8ld", b, ifun, len);
+        time_args targs = {dim, dim, dim,
+            len, 2*len-1, len-1, 2*len-1, n};
         tfun(targs, state);
 
         printf(" ");
