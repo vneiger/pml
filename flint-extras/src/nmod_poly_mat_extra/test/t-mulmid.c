@@ -25,7 +25,6 @@ int test_mat_mulmid(ulong prime, nmod_poly_mat_t A, nmod_poly_mat_t B, slong nlo
     nmod_poly_mat_init(D, A->r, B->c, prime);
 
     /* most naive way */
-    /* flint_printf("preparing test\n"); */
     if (nlo >= nhi)
         nmod_poly_mat_zero(C);
     else
@@ -36,15 +35,13 @@ int test_mat_mulmid(ulong prime, nmod_poly_mat_t A, nmod_poly_mat_t B, slong nlo
     }
 
     /* mulmid */
-    /* flint_printf("compute\n"); */
     nmod_poly_mat_mulmid(D, A, B, nlo, nhi);
 
-    /* flint_printf("test equal\n"); */
     int res = nmod_poly_mat_equal(C, D);
-    
+
     nmod_poly_mat_clear(C);
     nmod_poly_mat_clear(D);
-   
+
     return res;
 }
 
@@ -67,8 +64,7 @@ TEST_FUNCTION_START(nmod_poly_mat_mulmid, state)
 
         /* constraints: */
         slong lenA, lenB, nlo, nhi;
-        /* if (i < 100 * flint_test_multiplier()) */
-        if (0)
+        if (i < 100 * flint_test_multiplier())
         {
             /* tests on random parameters */
             nlo = n_randint(state, 50);
@@ -76,7 +72,7 @@ TEST_FUNCTION_START(nmod_poly_mat_mulmid, state)
             lenA = n_randint(state, 50);
             lenB = n_randint(state, 50);
         }
-        else if (i < 10000 * flint_test_multiplier())
+        else if (i < 200 * flint_test_multiplier())
         {
             /* tests on "classical" parameters for transposed multiplication: */
             /* nlo < nhi, lenA <= nlo+1, lenB <= nhi */
@@ -89,7 +85,7 @@ TEST_FUNCTION_START(nmod_poly_mat_mulmid, state)
         {
             /* same as above, permuted: lenA <= nhi, lenB <= nlo+1 */
             nlo = n_randint(state, 50);
-            nhi = n_randint(state, 100);
+            nhi = nlo+1 + n_randint(state, 75);
             lenA = n_randint(state, nhi+1);
             lenB = n_randint(state, nlo+2);
         }
@@ -100,14 +96,10 @@ TEST_FUNCTION_START(nmod_poly_mat_mulmid, state)
 
         nmod_poly_mat_t A, B;
         nmod_poly_mat_init(A, m, n, prime);
-        if (lenA > 0)
-            nmod_poly_mat_randtest(A, state, lenA);  /* TODO use randtest */
+        nmod_poly_mat_randtest(A, state, lenA);
         nmod_poly_mat_init(B, n, p, prime);
-        if (lenB > 0)
-            nmod_poly_mat_randtest(B, state, lenB);  /* TODO use randtest */
+        nmod_poly_mat_randtest(B, state, lenB);
 
-
-        /* flint_printf("let's go\n"); */
         result = test_mat_mulmid(prime, A, B, nlo, nhi);
 
         if (!result)
