@@ -17,6 +17,7 @@
 
 #include "nmod_extra.h"
 #include "nmod_poly_mat_multiply.h"
+#include "nmod_poly_mat_io.h"  /* TODO remove */
 
 /** sets C to the first nhi - nlo middle coefficients of the product of A of
  *  length len1 and B of length len2 starting at offset nlo
@@ -80,7 +81,7 @@ void _nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C,
     const ulong modn = A->modulus;
     nmod_init(&mod, modn);
 
-    slong ellC = nhi;
+    slong ellC = nhi+1;  /* TODO nhi not enough?! */
     nmod_init(&mod, modn);
     ulong w = nmod_find_root(2*ellC, mod);  /* TODO check result for found! */
     nmod_geometric_progression_init(F, w, ellC, mod);
@@ -137,10 +138,10 @@ void _nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C,
             for (slong ell = 0; ell < ellC; ell++)
                 poly[ell] = nmod_mat_entry(mod_C[ell], i, j);
 
-            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, poly, ellC, F, ellC, F->mod);
+            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, poly, ellC, F, nhi - nlo, F->mod);
 
-            nmod_poly_realloc(nmod_poly_mat_entry(C, i, j), nhi - nlo);
-            nmod_poly_mat_entry(C, i, j)->length = nhi - nlo;
+            nmod_poly_fit_length(nmod_poly_mat_entry(C, i, j), nhi - nlo);
+            _nmod_poly_set_length(nmod_poly_mat_entry(C, i, j), nhi - nlo);
             nn_ptr dest = nmod_poly_mat_entry(C, i, j)->coeffs;
             for (slong u = 0; u < nhi - nlo; u++)
                 dest[u] = val[u];
@@ -181,8 +182,17 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t C,
         return;
     }
 
-    _nmod_poly_mat_mulmid_naive(C, A, lenA, B, lenB, nlo, nhi);
-    /* _nmod_poly_mat_mulmid_geometric(C, A, lenA, B, lenB, nlo, nhi); */
+    if (lenA == 1)  /* TODO handle constant A or B properly */
+        _nmod_poly_mat_mulmid_naive(C, A, lenA, B, lenB, nlo, nhi);
+    else if (lenA <= nlo+1 && lenB <= nhi)
+    {
+        /* flint_printf("=================YES==================\n"); */
+        /* nmod_poly_mat_degree_matrix_print_pretty(A); */
+        /* nmod_poly_mat_degree_matrix_print_pretty(B); */
+        _nmod_poly_mat_mulmid_geometric(C, A, lenA, B, lenB, nlo, nhi);
+    }
+    else
+        _nmod_poly_mat_mulmid_naive(C, A, lenA, B, lenB, nlo, nhi);
 }
 
 /** general interface
@@ -197,9 +207,8 @@ void nmod_poly_mat_mulmid(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod
 
     slong lenA = nmod_poly_mat_max_length(A);
     slong lenB = nmod_poly_mat_max_length(B);
-    flint_printf("in lenA %wd, in lenB %wd, in nhi %wd\n", lenA, lenB, nhi);
+    /* flint_printf("in lenA %wd, in lenB %wd, in nlo %wd, in nhi %wd\n", lenA, lenB, nlo, nhi); */
     nhi = FLINT_MIN(nhi, lenA + lenB - 1);
-    flint_printf("out nhi %wd\n", nhi);
 
     /* zero matrices or empty target coefficient indices */
     if (lenA == 0 || lenB == 0 || nlo >= nhi)
@@ -211,10 +220,11 @@ void nmod_poly_mat_mulmid(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod
     /* lenA <= lenB and len(A) <= nlo: shift away useless coefficients of B */
     if (lenA <= lenB && lenA <= nlo)
     {
-        flint_printf("here3\n");
+        /* flint_printf("here3\n"); */
         nmod_poly_mat_t B_tmp;
         nmod_poly_mat_init(B_tmp, B->r, B->c, B->modulus);
         nmod_poly_mat_shift_right(B_tmp, B, nlo - lenA + 1);
+        /* flint_printf("in lenA %wd, in lenB %wd, in nlo %wd, in nhi %wd\n", lenA, lenB - nlo + lenA - 1, lenA - 1, nhi - nlo + lenA - 1); */
         _nmod_poly_mat_mulmid(C, A, lenA, B_tmp, lenB - nlo + lenA - 1, lenA - 1, nhi - nlo + lenA - 1);
         nmod_poly_mat_clear(B_tmp);
         return;
@@ -223,16 +233,17 @@ void nmod_poly_mat_mulmid(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod
     /* if len(B) <= nlo (implies lenA > lenB), shift away useless coefficients of A */
     if (lenB <= nlo)
     {
-        flint_printf("here2\n");
+        /* flint_printf("here2\n"); */
         nmod_poly_mat_t A_tmp;
         nmod_poly_mat_init(A_tmp, A->r, A->c, A->modulus);
         nmod_poly_mat_shift_right(A_tmp, A, nlo - lenB + 1);
+        /* flint_printf("in lenA %wd, in lenB %wd, in nlo %wd, in nhi %wd\n", lenA - nlo + lenB - 1, lenB, lenB - 1, nhi - nlo + lenB - 1); */
         _nmod_poly_mat_mulmid(C, A_tmp, lenA - nlo + lenB - 1, B, lenB, lenB - 1, nhi - nlo + lenB - 1);
         nmod_poly_mat_clear(A_tmp);
         return;
     }
 
-    flint_printf("here3\n");
+    /* flint_printf("here3\n"); */
     _nmod_poly_mat_mulmid(C, A, lenA, B, lenB, nlo, nhi);
     return;
 }
