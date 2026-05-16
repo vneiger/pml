@@ -87,7 +87,7 @@ int main(int argc, char ** argv)
     flint_rand_set_seed(state, time(NULL), time(NULL)+129384125L);
 
     // bench functions
-    const slong nfuns = 3;
+    const slong nfuns = 6;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
         time_multiply,                      // 0
