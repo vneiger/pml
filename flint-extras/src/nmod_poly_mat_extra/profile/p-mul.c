@@ -69,9 +69,12 @@ void time_##fun(time_args targs, flint_rand_t state)    \
     nmod_poly_mat_clear(C);                             \
 }
 
+TIME_MUL(multiply)
 TIME_MUL(mul)
 TIME_MUL(mul_geometric)
 TIME_MUL(mul_waksman)
+TIME_MUL(mul_vandermonde1)
+TIME_MUL(mul_vandermonde2)
 
 /*-------------------------*/
 /*  main                   */
@@ -87,15 +90,21 @@ int main(int argc, char ** argv)
     const slong nfuns = 3;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
-        time_mul,                      // 0
-        time_mul_waksman,              // 1
-        time_mul_geometric,            // 2
+        time_multiply,                      // 0
+        time_mul,                           // 1
+        time_mul_waksman,                   // 2
+        time_mul_geometric,                 // 3
+        time_mul_vandermonde1,              // 4
+        time_mul_vandermonde2,              // 5
     };
 
     const char * description[] = {
-        "#0  --> mul                          ",
-        "#1  --> mul_waksman                  ",
-        "#2  --> mul_geometric                ",
+        "#0  --> multiply                     ",
+        "#1  --> mul                          ",
+        "#2  --> mul_waksman                  ",
+        "#3  --> mul_geometric                ",
+        "#4  --> mul_vandermonde1             ",
+        "#5  --> mul_vandermonde2             ",
     };
 
     if (argc == 1)  // show usage

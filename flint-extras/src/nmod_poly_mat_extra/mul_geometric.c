@@ -160,7 +160,6 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t res, const nmod_poly_mat_t pmat
 /* TODO naming "multiply" because FLINT already has "mul" */
 void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2)
 {
-    /* see if useful */
     slong len1 = nmod_poly_mat_max_length(pmat1);
     slong len2 = nmod_poly_mat_max_length(pmat2);
 

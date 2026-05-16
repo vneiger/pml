@@ -46,19 +46,14 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
 /** Multiplication for polynomial matrices
  *  sets C = A * B
  *  output can alias input
- *  ASSUME: existence of primitive root (assumption not checked)
- *  uses geometric evaluation and interpolation
- */
-void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
-
-/** Multiplication for polynomial matrices
- *  sets C = A * B
- *  output can alias input
  *  uses evaluation and interpolation at arithmetic points, done by matrix products
- *  ASSUME: large enough field 
+ *  v1 requires that the field contains distinct points 0, 1, 2, ..., max_length(A) + max_length(B) - 2
+ *     (for Z/pZ, equivalent to cardinality >= max_length(A) + max_length(B) - 1)
+ *  v2 requires that the field contains distinct points 1**2, 2**2, ..., (max_length(A) + max_length(B) - 1)**2
+ *     (for Z/pZ, implied by cardinality > (max_length(A) + max_length(B) - 1)**2)
  */
-void nmod_poly_mat_mul_vdm1(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
-void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
+void nmod_poly_mat_mul_vandermonde1(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
+void nmod_poly_mat_mul_vandermonde2(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
 
 /** Multiplication for polynomial matrices
  *  sets C = A * B
@@ -67,6 +62,23 @@ void nmod_poly_mat_mul_vdm2(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nm
  *  ASSUME: p != 2
  */
 void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  const nmod_poly_mat_t B);
+
+/** Multiplication for polynomial matrices, using evaluation-interpolation at geometric progression
+ *  output can alias input
+ *  in _precomp, G is precomputed to support evaluation and interpolation with G->len >= len1+len2-1
+ *  the other variant computes G, assuming this is feasible (not checked)
+ */
+void nmod_poly_mat_mul_geometric(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2);
+void _nmod_poly_mat_mul_geometric_precomp(nmod_poly_mat_t res,
+                                          const nmod_poly_mat_t pmat1, slong len1,
+                                          const nmod_poly_mat_t pmat2, slong len2,
+                                          nmod_geometric_progression_t G);
+
+
+/** general interface, picks an algorithm depending on parameters
+ * TODO thresholds to be tuned
+ */
+void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2);
 
 
 
