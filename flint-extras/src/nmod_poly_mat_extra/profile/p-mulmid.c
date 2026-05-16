@@ -10,6 +10,7 @@
     <https://www.gnu.org/licenses/>.
 */
 
+#include <flint/nmod_poly.h>
 #include <stdlib.h>  // for atoi
 
 #include <flint/ulong_extras.h>
@@ -18,10 +19,10 @@
 #include <flint/nmod_vec.h>
 #include <flint/nmod_poly_mat.h>
 
+#include "nmod_extra.h"
+#include "nmod_poly_extra.h"
 #include "nmod_poly_mat_utils.h"
 #include "nmod_poly_mat_multiply.h"
-
-#define MEASURE_SAMPLE 0
 
 typedef struct
 {
@@ -36,7 +37,44 @@ typedef struct
 }
 time_args;
 
-#define TIME_MULMID(fun)                                 \
+void time_mulmid(time_args targs, flint_rand_t state)
+{
+    const slong rdim = targs.rdim;
+    const slong idim = targs.idim;
+    const slong cdim = targs.cdim;
+    const slong len1 = targs.len1;
+    const slong len2 = targs.len2;
+    const slong nlo  = targs.nlo;
+    const slong nhi  = targs.nhi;
+    const slong modn = targs.modn;
+
+    nmod_t mod;
+    nmod_init(&mod, modn);
+
+    nmod_poly_mat_t pmat1;
+    nmod_poly_mat_init(pmat1, rdim, idim, modn);
+    nmod_poly_mat_rand(pmat1, state, len1);
+    nmod_poly_mat_t pmat2;
+    nmod_poly_mat_init(pmat2, idim, cdim, modn);
+    nmod_poly_mat_rand(pmat2, state, len2);
+    nmod_poly_mat_t res;
+    nmod_poly_mat_init(res, rdim, cdim, modn);
+
+    double FLINT_SET_BUT_UNUSED(tcpu), twall;
+
+    TIMEIT_START;
+    nmod_poly_mat_mulmid(res, pmat1, pmat2, nlo, nhi);
+    TIMEIT_STOP_VALUES(tcpu, twall);
+
+    flint_printf("%.2e", twall);
+
+    nmod_poly_mat_clear(pmat1);
+    nmod_poly_mat_clear(pmat2);
+    nmod_poly_mat_clear(res);
+}
+
+
+#define TIME_MULMID_METHOD(fun)                          \
 void time_##fun(time_args targs, flint_rand_t state)     \
 {                                                        \
     const slong rdim = targs.rdim;                       \
@@ -44,38 +82,82 @@ void time_##fun(time_args targs, flint_rand_t state)     \
     const slong cdim = targs.cdim;                       \
     const slong len1 = targs.len1;                       \
     const slong len2 = targs.len2;                       \
-    const slong nlo = targs.nlo;                         \
-    const slong nhi = targs.nhi;                         \
-    const slong n = targs.modn;                          \
+    const slong nlo  = targs.nlo;                        \
+    const slong nhi  = targs.nhi;                        \
+    const slong modn = targs.modn;                       \
                                                          \
     nmod_t mod;                                          \
-    nmod_init(&mod, n);                                  \
+    nmod_init(&mod, modn);                               \
                                                          \
-    nmod_poly_mat_t A;                                   \
-    nmod_poly_mat_init(A, rdim, idim, n);                \
-    nmod_poly_mat_rand(A, state, len1);                  \
-    nmod_poly_mat_t B;                                   \
-    nmod_poly_mat_init(B, idim, cdim, n);                \
-    nmod_poly_mat_rand(B, state, len2);                  \
-    nmod_poly_mat_t C;                                   \
-    nmod_poly_mat_init(C, rdim, cdim, n);                \
+    nmod_poly_mat_t pmat1;                               \
+    nmod_poly_mat_init(pmat1, rdim, idim, modn);         \
+    nmod_poly_mat_rand(pmat1, state, len1);              \
+    nmod_poly_mat_t pmat2;                               \
+    nmod_poly_mat_init(pmat2, idim, cdim, modn);         \
+    nmod_poly_mat_rand(pmat2, state, len2);              \
+    nmod_poly_mat_t res;                                 \
+    nmod_poly_mat_init(res, rdim, cdim, modn);           \
                                                          \
     double FLINT_SET_BUT_UNUSED(tcpu), twall;            \
                                                          \
     TIMEIT_START;                                        \
-    _nmod_poly_mat_##fun(C, A, len1, B, len2, nlo, nhi); \
+    _nmod_poly_mat_##fun(res, pmat1, len1, pmat2, len2, nlo, nhi); \
     TIMEIT_STOP_VALUES(tcpu, twall);                     \
                                                          \
-    printf("%.2e", twall);                               \
+    flint_printf("%.2e", twall);                         \
                                                          \
-    nmod_poly_mat_clear(A);                              \
-    nmod_poly_mat_clear(B);                              \
-    nmod_poly_mat_clear(C);                              \
+    nmod_poly_mat_clear(pmat1);                          \
+    nmod_poly_mat_clear(pmat2);                          \
+    nmod_poly_mat_clear(res);                            \
 }
 
-TIME_MULMID(mulmid_naive)
+TIME_MULMID_METHOD(mulmid_naive)
 #if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 6)
-TIME_MULMID(mulmid_geometric)
+TIME_MULMID_METHOD(mulmid_geometric)
+#endif
+
+#if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 6)
+void time_mulmid_geometric_precomp(time_args targs, flint_rand_t state)
+{
+    const slong rdim = targs.rdim;
+    const slong idim = targs.idim;
+    const slong cdim = targs.cdim;
+    const slong len1 = targs.len1;
+    const slong len2 = targs.len2;
+    const slong nlo  = targs.nlo;
+    const slong nhi  = targs.nhi;
+    const slong modn = targs.modn;
+
+    nmod_t mod;
+    nmod_init(&mod, modn);
+
+    nmod_poly_mat_t pmat1;
+    nmod_poly_mat_init(pmat1, rdim, idim, modn);
+    nmod_poly_mat_rand(pmat1, state, len1);
+    nmod_poly_mat_t pmat2;
+    nmod_poly_mat_init(pmat2, idim, cdim, modn);
+    nmod_poly_mat_rand(pmat2, state, len2);
+    nmod_poly_mat_t res;
+    nmod_poly_mat_init(res, rdim, cdim, modn);
+
+    double FLINT_SET_BUT_UNUSED(tcpu), twall;
+
+    nmod_geometric_progression_t G;
+    ulong w = nmod_find_root(2*nhi, mod);
+    _nmod_geometric_progression_init_function(G, w, nhi, mod, UWORD(3));
+
+    TIMEIT_START;
+    _nmod_poly_mat_mulmid_geometric_precomp(res, pmat1, len1, pmat2, len2, nlo, nhi, G);
+    TIMEIT_STOP_VALUES(tcpu, twall);
+
+    nmod_geometric_progression_clear(G);
+
+    flint_printf("%.2e", twall);
+
+    nmod_poly_mat_clear(pmat1);
+    nmod_poly_mat_clear(pmat2);
+    nmod_poly_mat_clear(res);
+}
 #endif
 
 /*-------------------------*/
@@ -88,195 +170,109 @@ int main(int argc, char ** argv)
     flint_rand_init(state);
     flint_rand_set_seed(state, time(NULL), time(NULL)+129384125L);
 
-    // modulus bitsize
-    const slong nbits = 7;
-    const ulong bits[] = {12, 24, 30, 40, 50, 60, 63};
-
-    // matrix dimensions (all square for the moment)
-    const slong ndims = 10;
-    const ulong dims[] = {2, 4, 6, 8, 11, 15, 20, 30, 50, 100};
-
-    // matrix lengths
-    const slong nlens = 12;
-    const ulong lens[] = {5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240};
-
     // bench functions
+#if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 6)
+    const slong nfuns = 4;
+    typedef void (*timefun) (time_args, flint_rand_t);
+    const timefun funs[] = {
+        time_mulmid,                              // 0
+        time_mulmid_naive,                        // 1
+        time_mulmid_geometric,                    // 2
+        time_mulmid_geometric_precomp,            // 3
+#else
     const slong nfuns = 2;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
-        time_mulmid_naive,                        // 0
-        time_mulmid_geometric,            // 1
+        time_mulmid,                              // 0
+        time_mulmid_naive,                        // 1
+#endif
     };
 
-    // TODO
-    //typedef void (*samplefun) (void*, ulong);
-    //const samplefun sfuns[] = {
-    //    sample_mul,                      // 0
-    //    sample_mul_geometric,            // 1
-    //};
-
     const char * description[] = {
-        "#0  --> mulmid_naive                            ",
-        "#1  --> mulmid_geometric                        ",
+        "#0  --> general interface                       ",
+        "#1  --> mulmid_naive                            ",
+        "#2  --> mulmid_geometric                        ",
+        "#3  --> mulmid_geometric_precomp                ",
     };
 
     if (argc == 1)  // show usage
     {
-        printf("Usage: `%s [nbits] [dim] [len] [fun]`\n", argv[0]);
-        printf("   Each argument is optional; no argument shows this help.\n");
-        printf("   - nbits: number of bits (in (1..64]) for the modulus, chosen as nextprime(2**(nbits-1))\n");
-        printf("        (nbits == -1 launches full suite)\n");
-        printf("   - dim: matrices are dim x dim\n");
-        printf("   - len: matrices are random of length < len\n");
-        printf("   - fun: id number of the timed function (see below),\n");
-        printf("\nAvailable functions:\n");
+        flint_printf("Usage: `%s [nbits] [fun] [dim1] [dim2] [dim3] [len1] [len2] [nlo] [nhi] [opt:hide_desc]`\n", argv[0]);
+        flint_printf("   No argument shows this help.\n");
+        flint_printf("   - nbits: number of bits (in (1..64]) for the modulus, chosen as nextprime(2**(nbits-1))\n");
+        flint_printf("   - fun: id number of the timed function (see below),\n");
+        flint_printf("      (fun == -1 launches all available functions)\n");
+        flint_printf("   - dim1, dim2, dim3: matrices are dim1 x dim2 and dim2 x dim3\n");
+        flint_printf("   - len1, len2: matrices are random of length <= len1 and <= len2\n");
+        flint_printf("   - nlo, nhi: compute middle coefficients nlo...nhi-1 of product\n");
+        flint_printf("   - hide_desc: optional, if nonzero, will not show the first line that describes parameters name\n");
+        flint_printf("\nAvailable functions:\n");
         for (slong j = 0; j < nfuns; j++)
-            printf("   %s\n", description[j]);
+            flint_printf("   %s\n", description[j]);
 
         return 0;
     }
 
-    printf("#warmup...\n");
-    for (slong i = 0; i < 3; i++)
+    if (argc >= 8)  // nbits + fun + dim1 + dim2 + dim3 + len1 + len2 + nlo + nhi
     {
-        time_args targs = {4, 4, 4, 1000, 2000, 999, 2000, UWORD(1) << 20};
-        time_mulmid_naive(targs, state);
-        printf(" ");
-    }
-    printf("\n\n");
+        const slong b = atol(argv[1]);
+        const slong ifun = atol(argv[2]);
+        const slong dim1 = atol(argv[3]);
+        const slong dim2 = atol(argv[4]);
+        const slong dim3 = atol(argv[5]);
+        const slong len1 = atol(argv[6]);
+        const slong len2 = atol(argv[7]);
+        const slong nlo = atol(argv[8]);
+        const slong nhi = atol(argv[9]);
 
-    if (argc == 2 && atoi(argv[1]) == -1)  // launching full suite
-    {
-        printf("           dim");
-        for (slong i = 0; i < ndims; i++)
-            printf("%17ld", dims[i]);
-        printf("\n");
-        printf("bits fun len\n");
-        for (slong j = 0; j < nbits; j++)
+        const int hide_desc = (argc == 11) ? atoi(argv[10]) : 0;
+        if (!hide_desc)
         {
-            const slong b = bits[j];
-            ulong n;
-            n = n_nextprime(UWORD(1) << (b-1), 0);
-            for (slong ifun = 0; ifun < nfuns; ifun++)
+            flint_printf("Available functions:\n");
+            for (slong j = 0; j < nfuns; j++)
+                flint_printf("   %s\n", description[j]);
+            if (ifun >= 0)
+                flint_printf("bits dim1 dim2 dim3 len1    len2    nlo     nhi     fun#%-5lu\n", ifun);
+            else
             {
-                for (slong d = 0; d < nlens; d++)
-                {
-                    printf("%-5ld#%-3ld%-8ld", b, ifun, lens[d]);
-                    for (slong i = 0; i < ndims; i++)
-                    {
-                        time_args targs = {dims[i], dims[i], dims[i],
-                            lens[d], 2*lens[d]-1, lens[d]-1, 2*lens[d]-1, n};
-
-#if MEASURE_SAMPLE
-                        const samplefun sfun = sfuns[ifun];
-                        double min, max;
-                        prof_repeat(&min, &max, sfun, (void*) &targs);
-                        printf("%.2e", min/1000000);
-#else
-                        const timefun tfun = funs[ifun];
-                        tfun(targs, state);
-#endif
-                        printf(" ");
-                    }
-                }
-                printf("\n");
+                flint_printf("bits dim1 dim2 dim3 len1    len2    nlo     nhi     ");
+                for (slong fun_nb = 0; fun_nb < nfuns; fun_nb++)
+                    flint_printf("fun#%-5lu", fun_nb);
+                flint_printf("\n");
             }
         }
-    }
-    else if (argc == 2)  // nbits is given
-    {
-        printf("       dim");
-        for (slong i = 0; i < ndims; i++)
-            printf("%17ld", dims[i]);
-        printf("\n");
-        printf("bits fun len\n");
-        const slong b = atoi(argv[1]);
-        ulong n;
-        n = n_nextprime(UWORD(1) << (b-1), 0);
-        for (slong ifun = 0; ifun < nfuns; ifun++)
+
+        ulong modn = n_nextprime(UWORD(1) << (b-1), 0);
+        const int can_use_geom = NMOD_CAN_USE_GEOMETRIC(modn, FLINT_MAX(len1, len2));
+
+        flint_printf("%-5ld%-5ld%-5ld%-5ld%-8ld%-8ld%-8ld%-8ld", b, dim1, dim2, dim3, len1, len2, nlo, nhi);
+        if (ifun == -1)
         {
-            const timefun tfun = funs[ifun];
-            for (slong d = 0; d < nlens; d++)
+            for (slong fun_nb = 0; fun_nb < nfuns; fun_nb++)
             {
-                printf("%-5ld#%-3ld%-8ld", b, ifun, lens[d]);
-                for (slong i = 0; i < ndims; i++)
+                if (fun_nb >= 2 && fun_nb <= 3 && !can_use_geom)  /* geometric not feasible */
+                    flint_printf("n/a      ");
+                else
                 {
-                    time_args targs = {dims[i], dims[i], dims[i],
-                        lens[d], 2*lens[d]-1, lens[d]-1, 2*lens[d]-1, n};
+                    const timefun tfun = funs[fun_nb];
+                    time_args targs = {dim1, dim2, dim3, len1, len2, nlo, nhi, modn};
                     tfun(targs, state);
-                    printf(" ");
+                    flint_printf(" ");
                 }
             }
-            printf("\n");
         }
-    }
-    else if (argc == 3)  // nbits + dim given
-    {
-        const slong dim = atoi(argv[2]);
-        printf("       dim");
-        printf("%17ld", dim);
-        printf("\n");
-        printf("bits fun len\n");
-        const slong b = atoi(argv[1]);
-        ulong n;
-        n = n_nextprime(UWORD(1) << (b-1), 0);
-        for (slong ifun = 0; ifun < nfuns; ifun++)
+        else
         {
-            const timefun tfun = funs[ifun];
-            for (slong d = 0; d < nlens; d++)
+            if (ifun >= 2 && ifun <= 3 && !can_use_geom)  /* geometric not feasible */
+                flint_printf("n/a      ");
+            else
             {
-                printf("%-5ld#%-3ld%-8ld", b, ifun, lens[d]);
-                time_args targs = {dim, dim, dim,
-                    lens[d], 2*lens[d]-1, lens[d]-1, 2*lens[d]-1, n};
+                const timefun tfun = funs[ifun];
+                time_args targs = {dim1, dim2, dim3, len1, len2, nlo, nhi, modn};
                 tfun(targs, state);
-                printf(" ");
-                printf("\n");
             }
         }
-    }
-    else if (argc == 4)  // nbits + dim + len given
-    {
-        const slong dim = atoi(argv[2]);
-        const slong len = atoi(argv[3]);
-        printf("       dim");
-        printf("%17ld", dim);
-        printf("\n");
-        printf("bits fun len\n");
-        const slong b = atoi(argv[1]);
-        ulong n;
-        n = n_nextprime(UWORD(1) << (b-1), 0);
-        for (slong ifun = 0; ifun < nfuns; ifun++)
-        {
-            const timefun tfun = funs[ifun];
-            printf("%-5ld#%-3ld%-8ld", b, ifun, len);
-            time_args targs = {dim, dim, dim,
-                len, 2*len-1, len-1, 2*len-1, n};
-            tfun(targs, state);
-            printf(" ");
-            printf("\n");
-        }
-    }
-    else if (argc == 5)  // nbits + dim + len + fun given
-    {
-        const slong b = atoi(argv[1]);
-        const slong dim = atoi(argv[2]);
-        const slong len = atoi(argv[3]);
-        const slong ifun = atoi(argv[4]);
-        const timefun tfun = funs[ifun];
-        printf("       dim");
-        printf("%17ld", dim);
-        printf("\n");
-        printf("bits fun len\n");
-        ulong n;
-        n = n_nextprime(UWORD(1) << (b-1), 0);
-
-        printf("%-5ld#%-3ld%-8ld", b, ifun, len);
-        time_args targs = {dim, dim, dim,
-            len, 2*len-1, len-1, 2*len-1, n};
-        tfun(targs, state);
-
-        printf(" ");
-        printf("\n");
+        flint_printf("\n");
     }
 
     flint_rand_clear(state);
