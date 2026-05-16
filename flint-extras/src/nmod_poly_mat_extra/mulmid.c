@@ -25,11 +25,6 @@
 /* naive: multiply, truncate, shift                           */
 /*------------------------------------------------------------*/
 
-/** sets res to the first nhi - nlo middle coefficients of the product of pmat1
- * of length <= len1 and pmat2 of length <= len2, starting at offset nlo
- *  assumes: 0 <= nlo, 0 <= nhi
- *  output can alias input
- */
 void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t res,
                                  const nmod_poly_mat_t pmat1, slong len1,
                                  const nmod_poly_mat_t pmat2, slong len2,
@@ -63,13 +58,11 @@ void _nmod_poly_mat_mulmid_geometric1_precomp(nmod_poly_mat_t res,
     const slong rdim = pmat1->r;
     const slong idim = pmat1->c;
     const slong cdim = pmat2->c;
-
-    nmod_mat_t *mod_pmat1, *mod_pmat2, *mod_res;
     const ulong modn = pmat1->modulus;
 
-    mod_pmat1 = FLINT_ARRAY_ALLOC(nhi, nmod_mat_t);
-    mod_pmat2 = FLINT_ARRAY_ALLOC(nhi, nmod_mat_t);
-    mod_res = FLINT_ARRAY_ALLOC(nhi, nmod_mat_t);
+    nmod_mat_t * mod_pmat1 = FLINT_ARRAY_ALLOC(nhi, nmod_mat_t);
+    nmod_mat_t * mod_pmat2 = FLINT_ARRAY_ALLOC(nhi, nmod_mat_t);
+    nmod_mat_t * mod_res = FLINT_ARRAY_ALLOC(nhi, nmod_mat_t);
     nn_ptr val = FLINT_ARRAY_ALLOC(nhi, ulong);
     nn_ptr poly = FLINT_ARRAY_ALLOC(nhi, ulong);
 
@@ -410,5 +403,4 @@ void nmod_poly_mat_mulmid(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, cons
     }
 
     _nmod_poly_mat_mulmid(res, pmat1, len1, pmat2, len2, nlo, nhi);
-    return;
 }

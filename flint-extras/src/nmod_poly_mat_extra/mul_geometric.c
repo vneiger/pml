@@ -18,6 +18,7 @@
 
 #include "nmod_extra.h" // for nmod_find_root
 
+#include "nmod_poly_extra.h"
 #include "nmod_poly_mat_multiply.h"
 
 /** Multiplication for polynomial matrices
@@ -26,114 +27,149 @@
  *  ASSUMPTION (not checked): existence of element of "large enough" order
  *  TODO -> fail flag when element not found
  *  FIXME -> version underscore with provided geometric progression?
- *           (if will be used with various degrees, may require recrafting interpolation for more flexible npoints)
  *  uses evaluation and interpolation at a geometric progression
  */
-void nmod_poly_mat_mul_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B)
+void _nmod_poly_mat_mul_geometric_precomp(nmod_poly_mat_t res,
+                                          const nmod_poly_mat_t pmat1, slong len1,
+                                          const nmod_poly_mat_t pmat2, slong len2,
+                                          nmod_geometric_progression_t G)
 {
-    nmod_mat_t *mod_A, *mod_B, *mod_C;
-    ulong ellA, ellB, ellC;
-    ulong i, j, ell, m, k, n;
-    ulong p, w;
-    nn_ptr val;
-    nmod_t mod;
-    nmod_geometric_progression_t F;
-
-    m = A->r;
-    k = A->c;
-    n = B->c;
-    p = A->modulus;
-
-    if (m < 1 || n < 1 || k < 1)
+    if (len1 == 0 || len2 == 0)
     {
-        nmod_poly_mat_zero(C);
+        nmod_poly_mat_zero(res);
         return;
     }
 
-    if (C == A || C == B)
+    if (res == pmat1 || res == pmat2)
+    {
+        nmod_poly_mat_t tmp;
+        nmod_poly_mat_init(tmp, pmat1->r, pmat2->c, pmat1->modulus);
+        _nmod_poly_mat_mul_geometric_precomp(tmp, pmat1, len1, pmat2, len2, G);
+        nmod_poly_mat_swap_entrywise(res, tmp);
+        nmod_poly_mat_clear(tmp);
+        return;
+    }
+
+    const slong rdim = pmat1->r;
+    const slong idim = pmat1->c;
+    const slong cdim = pmat2->c;
+    const ulong modn = pmat1->modulus;
+
+    const slong len = len1 + len2 - 1;
+
+    nmod_mat_t * mod_pmat1 = FLINT_ARRAY_ALLOC(len, nmod_mat_t);
+    nmod_mat_t * mod_pmat2 = FLINT_ARRAY_ALLOC(len, nmod_mat_t);
+    nmod_mat_t * mod_res = FLINT_ARRAY_ALLOC(len, nmod_mat_t);
+    nn_ptr val = FLINT_ARRAY_ALLOC(len, ulong);
+    nmod_poly_struct * pol;
+
+    for (slong i = 0; i < len; i++)
+    {
+        nmod_mat_init(mod_pmat1[i], rdim, idim, modn);
+        nmod_mat_init(mod_pmat2[i], idim, cdim, modn);
+        nmod_mat_init(mod_res[i], rdim, cdim, modn);
+    }
+
+    for (slong i = 0; i < rdim; i++)
+    {
+        for (slong j = 0; j < idim; j++)
+        {
+            pol = nmod_poly_mat_entry(pmat1, i, j);
+            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, pol->coeffs, pol->length, G, len, G->mod);
+            for (slong k = 0; k < len; k++)
+                nmod_mat_entry(mod_pmat1[k], i, j) = val[k];
+        }
+    }
+
+    for (slong i = 0; i < idim; i++)
+    {
+        for (slong j = 0; j < cdim; j++)
+        {
+            pol = nmod_poly_mat_entry(pmat2, i, j);
+            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, pol->coeffs, pol->length, G, len, G->mod);
+            for (slong k = 0; k < len; k++)
+                nmod_mat_entry(mod_pmat2[k], i, j) = val[k];
+        }
+    }
+
+    for (slong k = 0; k < len; k++)
+        nmod_mat_mul(mod_res[k], mod_pmat1[k], mod_pmat2[k]);
+
+    for (slong i = 0; i < rdim; i++)
+    {
+        for (slong j = 0; j < cdim; j++)
+        {
+            for (slong k = 0; k < len; k++)
+                val[k] = nmod_mat_entry(mod_res[k], i, j);
+            nmod_poly_interpolate_geometric_nmod_vec_fast_precomp(nmod_poly_mat_entry(res, i, j), val, G, len);
+        }
+    }
+
+    for (slong i = 0; i < len; i++)
+    {
+        nmod_mat_clear(mod_pmat1[i]);
+        nmod_mat_clear(mod_pmat2[i]);
+        nmod_mat_clear(mod_res[i]);
+    }
+
+    flint_free(mod_pmat1);
+    flint_free(mod_pmat2);
+    flint_free(mod_res);
+    _nmod_vec_clear(val);
+}
+
+void nmod_poly_mat_mul_geometric(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2)
+{
+    if (res == pmat1 || res == pmat2)
     {
         nmod_poly_mat_t T;
-        nmod_poly_mat_init(T, m, n, p);
-        nmod_poly_mat_mul_geometric(T, A, B);
-        nmod_poly_mat_swap_entrywise(C, T);
+        nmod_poly_mat_init(T, pmat1->r, pmat2->c, pmat1->modulus);
+        nmod_poly_mat_mul_geometric(T, pmat1, pmat2);
+        nmod_poly_mat_swap_entrywise(res, T);
         nmod_poly_mat_clear(T);
         return;
     }
 
-    // length = 0 iff matrix is zero
-    ellA = nmod_poly_mat_max_length(A);
-    ellB = nmod_poly_mat_max_length(B);
+    const slong len1 = nmod_poly_mat_max_length(pmat1);
+    const slong len2 = nmod_poly_mat_max_length(pmat2);
 
-    if (ellA == 0 || ellB == 0)
+    if (len1 == 0 || len2 == 0)
     {
-        nmod_poly_mat_zero(C);
+        nmod_poly_mat_zero(res);
         return;
     }
 
-    ellC = ellA + ellB - 1;  // length(C) = length(A) + length(B) - 1
-    nmod_init(&mod, p);
-    w = nmod_find_root(2*ellC, mod); /* TODO 2*ellC ok? */
-    nmod_geometric_progression_init(F, w, ellC, mod);
+    const slong len = len1 + len2 - 1;
 
-    mod_A = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
-    mod_B = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
-    mod_C = FLINT_ARRAY_ALLOC(ellC, nmod_mat_t);
-    val = _nmod_vec_init(ellC);
+    nmod_t mod;
+    nmod_init(&mod, pmat1->modulus);
+    nmod_geometric_progression_t G;
+    ulong w = nmod_find_root(2*len, mod);
+#if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 6)
+    _nmod_geometric_progression_init_function(G, w, len, mod, UWORD(3));
+#else
+    nmod_geometric_progression_init(G, w, len, mod);
+#endif
 
-    for (i = 0; i < ellC; i++)
-    {
-        nmod_mat_init(mod_A[i], m, k, p);
-        nmod_mat_init(mod_B[i], k, n, p);
-        nmod_mat_init(mod_C[i], m, n, p);
-    }
+    _nmod_poly_mat_mul_geometric_precomp(res, pmat1, len1, pmat2, len2, G);
 
-    nmod_poly_struct * pol;
+    nmod_geometric_progression_clear(G);
+}
 
-    for (i = 0; i < m; i++)
-    {
-        for (j = 0; j < k; j++)
-        {
-            pol = nmod_poly_mat_entry(A, i, j);
-            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, pol->coeffs, pol->length, F, ellC, mod);
-            for (ell = 0; ell < ellC; ell++)
-                nmod_mat_entry(mod_A[ell], i, j) = val[ell];
-        }
-    }
 
-    for (i = 0; i < k; i++)
-    {
-        for (j = 0; j < n; j++)
-        {
-            pol = nmod_poly_mat_entry(B, i, j);
-            _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(val, pol->coeffs, pol->length, F, ellC, mod);
-            for (ell = 0; ell < ellC; ell++)
-                nmod_mat_entry(mod_B[ell], i, j) = val[ell];
-        }
-    }
+/* TODO naming "multiply" because FLINT already has "mul" */
+void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2)
+{
+    /* see if useful */
+    slong len1 = nmod_poly_mat_max_length(pmat1);
+    slong len2 = nmod_poly_mat_max_length(pmat2);
 
-    for (ell = 0; ell < ellC; ell++)
-        nmod_mat_mul(mod_C[ell], mod_A[ell], mod_B[ell]);
+    /* TODO rough thresholds, not finely tuned */
+    if (NMOD_CAN_USE_GEOMETRIC(pmat1->modulus, len1+len2-1)
+        && ((pmat1->r >= 8 && pmat2->c >= 2) || (pmat1->r >= 2 && pmat2->c >= 8))
+        )
+        nmod_poly_mat_mul_geometric(res, pmat1, pmat2);
 
-    for (i = 0; i < m; i++)
-    {
-        for (j = 0; j < n; j++)
-        {
-            for (ell = 0; ell < ellC; ell++)
-                val[ell] = nmod_mat_entry(mod_C[ell], i, j);
-            nmod_poly_interpolate_geometric_nmod_vec_fast_precomp(nmod_poly_mat_entry(C, i, j), val, F, ellC);
-        }
-    }
-
-    for (i = 0; i < ellC; i++)
-    {
-        nmod_mat_clear(mod_A[i]);
-        nmod_mat_clear(mod_B[i]);
-        nmod_mat_clear(mod_C[i]);
-    }
-
-    flint_free(mod_A);
-    flint_free(mod_B);
-    flint_free(mod_C);
-    _nmod_vec_clear(val);
-    nmod_geometric_progression_clear(F);
+    else
+        nmod_poly_mat_mul(res, pmat1, pmat2);
 }
