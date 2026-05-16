@@ -20,8 +20,7 @@
 /*------------------------------------------------------------*/
 ulong nmod_find_root(ulong n, nmod_t mod)
 {
-    ulong q;
-    for(q = 2; q < mod.n; q++)
+    for (ulong q = 2; q < mod.n; q++)
     {
         ulong k = 1;
         ulong qk = q;

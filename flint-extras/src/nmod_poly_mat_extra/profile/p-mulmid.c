@@ -74,7 +74,9 @@ void time_##fun(time_args targs, flint_rand_t state)     \
 }
 
 TIME_MULMID(mulmid_naive)
+#if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 6)
 TIME_MULMID(mulmid_geometric)
+#endif
 
 /*-------------------------*/
 /*  main                   */

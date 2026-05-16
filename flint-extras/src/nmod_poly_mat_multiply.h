@@ -14,6 +14,8 @@
 #define NMOD_POLY_MAT_MULTIPLY_H
 
 #include <flint/nmod_types.h>
+#include <flint/nmod_poly.h>
+
 #include "pml.h"
 
 // temporarily disabling FFT_SMALL based variants
@@ -69,42 +71,75 @@ void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  cons
 
 
 /** Middle product for polynomial matrices
- *  Sets C = ((A * B mod x^nhi) div x^nlo)
- *  i.e., sets C to the first nhi - nlo middle coefficients of the product of A
- *  of length len1 and B of length len2 starting at offset nlo
+ * For all functions below:
+ * They compute
+ *       res  <-  (pmat1 * pmat2 mod x^nhi) div x^nlo
+ * i.e., they set res to the first nhi - nlo middle coefficients [nlo, nhi) of
+ * the product pmat1 * pmat2
+ * Input len1 and len2 is such that pmat1 has length <= len1 and pmat2 has
+ * length <= len2
+ * Output can alias input
  *
- *  output can alias input
- *  naive implementation (multiply, shift, truncate)
+ * TODO computation flow currently not ideal: reductions (e.g., if pmat1 has length << nlo)
+ * are done in the general interface, and so will not be done in case one wants to directly
+ * call the geometric variant
+ *
+ * TODO for evaluation-interpolation (currently, geometric), would be good to
+ * have separate functions for matrix evaluation and matrix interpolation, and just call them?
+ * (but then we also need it for "matrix evaluation of reverse"...)
+ *
+ * TODO faster matrix eval/interp by better handling the memory aspects
+
+ * TODO for naive, add and use function for combined shift+truncate
+ *
+ * TODO improve the case of constant pmat1 or pmat2, currently no specific function
  */
-void nmod_poly_mat_mulmid(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
+
+/** general interface
+ * tries a few reductions and calls _nmod_poly_mat_mulmid */
+void nmod_poly_mat_mulmid(nmod_poly_mat_t res,
+                          const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2,
                           slong nlo, slong nhi);
-void _nmod_poly_mat_mulmid(nmod_poly_mat_t C,
-                           const nmod_poly_mat_t A, slong lenA,
-                           const nmod_poly_mat_t B, slong lenB,
+
+/** main interface
+ * picks the fastest variant depending on parameters */
+void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
+                           const nmod_poly_mat_t pmat1, slong len1,
+                           const nmod_poly_mat_t pmat2, slong len2,
                            slong nlo, slong nhi);
-void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t C,
-                                 const nmod_poly_mat_t A, slong lenA,
-                                 const nmod_poly_mat_t B, slong lenB,
+
+/** actual worker: naive method, multiply + shift+truncate */
+void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t res,
+                                 const nmod_poly_mat_t pmat1, slong len1,
+                                 const nmod_poly_mat_t pmat2, slong len2,
                                  slong nlo, slong nhi);
-void _nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C,
-                                     const nmod_poly_mat_t A, slong lenA,
-                                     const nmod_poly_mat_t B, slong lenB,
+
+#if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 6)
+/** actual worker: transposed multiplication, via evaluation-interpolation at geometric progression
+ * - requires len1 <= nlo+1 or len2 <= nlo+1
+ * - requires the existence of a geometric progression of order (at least) nhi
+ * - finds such a progression, builds temporary precomputation data,
+ *   and calls `mulmid_geometric{1,2}_precomp`
+ */
+void _nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t res,
+                                     const nmod_poly_mat_t pmat1, slong len1,
+                                     const nmod_poly_mat_t pmat2, slong len2,
                                      slong nlo, slong nhi);
 
-/* TODO remove */
-/** Middle product for polynomial matrices
- *  sets C = ((A * B) div x^dA) mod x^(dB+1)
- *  sets C = ((A * B) div x^nlo) mod x^(nhi - nlo)
- *  -> nlo == dA, nhi == nlo+dB+1
- *  output can alias input
- *  ASSUME: deg(A) <= dA and deg(B) <= dA + dB
- *  i.e., lenA <= nlo+1 and lenB <= nhi
- *  ASSUME: existence of primitive root
- *  uses geometric evaluation and interpolation
+/** same as above, with additional G, precomputed data for evaluation and
+ * interpolation at a geometric progression of order at least nhi
+ * requires len1 <= nlo+1 or len2 <= nlo+1
  */
-/* void nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B, */
-/*                                             slong nlo, slong nhi); */
+void _nmod_poly_mat_mulmid_geometric_precomp(nmod_poly_mat_t res,
+                                             const nmod_poly_mat_t pmat1, slong len1,
+                                             const nmod_poly_mat_t pmat2, slong len2,
+                                             slong nlo, slong nhi, nmod_geometric_progression_t G);
+#endif
 
+
+/*------------------------------------------------------------*/
+/* TODO currently disabled variants                           */
+/*------------------------------------------------------------*/
 
 /** Middle product for polynomial matrices
  *  sets C = ((A * B) div x^dA) mod x^(dB+1)
@@ -112,7 +147,6 @@ void _nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t C,
  *  ASSUME: deg(A) <= dA and deg(B) <= dA + dB
  *  ASSUME: 2^(ceiling(log_2(dA + dB + 1))) divides p-1
  *  uses tft multiplication
- *  \todo temporarily disabled
  */
 #if FFT_SMALL_VARIANTS
 void nmod_poly_mat_middle_product_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
@@ -124,7 +158,6 @@ void nmod_poly_mat_middle_product_tft(nmod_poly_mat_t C, const nmod_poly_mat_t A
  *  output can alias input
  *  ASSUME: deg(A) <= dA and deg(B) <= dA + dB
  *  uses tft middle product modulo 50 bits fft primes
- *  \todo temporarily disabled
  */
 #if FFT_SMALL_VARIANTS
 void nmod_poly_mat_middle_product_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
@@ -138,8 +171,6 @@ void nmod_poly_mat_middle_product_3_primes(nmod_poly_mat_t C, const nmod_poly_ma
  *  uses evaluation and interpolation at arithmetic points, done by matrix products
  *  ASSUME: large enough field 
  */
-/* TODO currently disabled */
-/* TODO unify prototype mulmid */
 void nmod_poly_mat_middle_product_vdm1(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
                                        const ulong dA, const ulong dB);
 
