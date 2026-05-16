@@ -338,8 +338,11 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
     /*     _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi); */
     /* else */
 
+    /* TODO rough thresholds, not finely tuned */
 #if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 6)
-    if (NMOD_CAN_USE_GEOMETRIC(pmat1->modulus, nhi) && (len1 <= nlo+1 || len2 <= nlo+1))
+    if (NMOD_CAN_USE_GEOMETRIC(pmat1->modulus, nhi)
+        && ((pmat1->r >= 8 && pmat2->c >= 2) || (pmat1->r >= 2 && pmat2->c >= 8))
+        && (len1 <= nlo+1 || len2 <= nlo+1))
         _nmod_poly_mat_mulmid_geometric(res, pmat1, len1, pmat2, len2, nlo, nhi);
 
     else
