@@ -156,19 +156,3 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t res, const nmod_poly_mat_t pmat
     nmod_geometric_progression_clear(G);
 }
 
-
-/* TODO naming "multiply" because FLINT already has "mul" */
-void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2)
-{
-    slong len1 = nmod_poly_mat_max_length(pmat1);
-    slong len2 = nmod_poly_mat_max_length(pmat2);
-
-    /* TODO rough thresholds, not finely tuned */
-    if (NMOD_CAN_USE_GEOMETRIC(pmat1->modulus, len1+len2-1)
-        && ((pmat1->r >= 8 && pmat2->c >= 2) || (pmat1->r >= 2 && pmat2->c >= 8))
-        )
-        nmod_poly_mat_mul_geometric(res, pmat1, pmat2);
-
-    else
-        nmod_poly_mat_mul(res, pmat1, pmat2);
-}

@@ -243,7 +243,7 @@ int main(int argc, char ** argv)
         }
 
         ulong modn = n_nextprime(UWORD(1) << (b-1), 0);
-        const int can_use_geom = NMOD_CAN_USE_GEOMETRIC(modn, FLINT_MAX(len1, len2));
+        const int can_use_geom = NMOD_POLY_CAN_USE_GEOMETRIC(modn, FLINT_MAX(len1, len2));
 
         flint_printf("%-5ld%-5ld%-5ld%-5ld%-8ld%-8ld%-8ld%-8ld", b, dim1, dim2, dim3, len1, len2, nlo, nhi);
         if (ifun == -1)

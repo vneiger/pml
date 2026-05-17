@@ -18,8 +18,15 @@
 
 #include "pml.h"
 
-// temporarily disabling FFT_SMALL based variants
+// TODO temporarily disabling FFT_SMALL based variants
 #define FFT_SMALL_VARIANTS 0
+
+/* for Vandermonde1, we need 0, ..., len-1 to be distinct points in Z/modn Z */
+#define NMOD_POLY_CAN_USE_VANDERMONDE1(modn, len) ((modn) >= (ulong)(len))
+/* for Vandermonde2, we need 1**2, 2**2, ..., len**2 to be distinct points in Z/modn Z */
+#define NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len) ((modn) >= UWORD(2)*(len))
+/* for Waksman, we need modn != 2 */
+#define NMOD_POLY_MAT_CAN_USE_WAKSMAN(modn) ((modn) != UWORD(2))
 
 /** Multiplication for polynomial matrices
  *  sets C = A * B
@@ -47,10 +54,11 @@ void nmod_poly_mat_mul_3_primes(nmod_poly_mat_t C, const nmod_poly_mat_t A, cons
  *  sets C = A * B
  *  output can alias input
  *  uses evaluation and interpolation at arithmetic points, done by matrix products
- *  v1 requires that the field contains distinct points 0, 1, 2, ..., max_length(A) + max_length(B) - 2
- *     (for Z/pZ, equivalent to cardinality >= max_length(A) + max_length(B) - 1)
- *  v2 requires that the field contains distinct points 1**2, 2**2, ..., (max_length(A) + max_length(B) - 1)**2
- *     (for Z/pZ, implied by cardinality > (max_length(A) + max_length(B) - 1)**2)
+ *  v1 requires that the field contains distinct points 0, 1, 2, ..., len-1,
+ *  where len == max_length(A) + max_length(B) - 1
+ *     (for Z/pZ, equivalent to cardinality >= len, see NMOD_POLY_CAN_USE_VANDERMONDE1)
+ *  v2 requires that the field contains distinct points 1**2, 2**2, ..., len**2
+ *     (for Z/pZ, equivalent to cardinality >= 2 * len, see NMOD_POLY_CAN_USE_VANDERMONDE2)
  */
 void nmod_poly_mat_mul_vandermonde1(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
 void nmod_poly_mat_mul_vandermonde2(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
@@ -58,8 +66,8 @@ void nmod_poly_mat_mul_vandermonde2(nmod_poly_mat_t C, const nmod_poly_mat_t A, 
 /** Multiplication for polynomial matrices
  *  sets C = A * B
  *  output can alias input
- *  uses waksman's algorithm
- *  ASSUME: p != 2
+ *  uses Waksman's algorithm
+ *  requires p != 2, see NMOD_POLY_MAT_CAN_USE_WAKSMAN
  */
 void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  const nmod_poly_mat_t B);
 
@@ -67,6 +75,7 @@ void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  cons
  *  output can alias input
  *  in _precomp, G is precomputed to support evaluation and interpolation with G->len >= len1+len2-1
  *  the other variant computes G, assuming this is feasible (not checked)
+ *  see NMOD_POLY_CAN_USE_GEOMETRIC
  */
 void nmod_poly_mat_mul_geometric(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2);
 void _nmod_poly_mat_mul_geometric_precomp(nmod_poly_mat_t res,
@@ -77,9 +86,10 @@ void _nmod_poly_mat_mul_geometric_precomp(nmod_poly_mat_t res,
 
 /** general interface, picks an algorithm depending on parameters
  * TODO thresholds to be tuned
+ * TODO add function to multiply with constant
+ * TODO naming "multiply" because FLINT already has "mul"
  */
 void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2);
-
 
 
 /** Middle product for polynomial matrices

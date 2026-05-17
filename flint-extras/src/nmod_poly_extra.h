@@ -35,7 +35,7 @@ extern "C" {
  * store in some nmod context a primitive root of maximal order, so that there
  * is nothing to compute when we run some geometric progression functions
  * */
-#define NMOD_CAN_USE_GEOMETRIC(modn, len) ((modn) >= UWORD(10) * (len))
+#define NMOD_POLY_CAN_USE_GEOMETRIC(modn, len) ((modn) >= UWORD(10) * (len))
 
 /** Generates random polynomial `pol` of length up to `len` with uniformly
  * random coefficients. If `len` is nonpositive, `pol` is set to zero. */

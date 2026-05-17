@@ -1,5 +1,5 @@
 /*
-    resopyright (res) 2025 Vincent Neiger, Éric Schost
+    Copyright (C) 2025 Vincent Neiger, Éric Schost
 
     This file is part of PML.
 
@@ -16,7 +16,7 @@
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
 
-#include "nmod_poly_extra.h"  /* for NMOD_CAN_USE_GEOMETRIC */
+#include "nmod_poly_extra.h"  /* for NMOD_POLY_CAN_USE_GEOMETRIC */
 #include "nmod_extra.h"  /* for nmod_find_root */
 #include "nmod_poly_mat_multiply.h"
 #include "impl.h"
@@ -36,7 +36,7 @@ void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t res,
         return;
     }
 
-    nmod_poly_mat_mul(res, pmat1, pmat2);
+    nmod_poly_mat_multiply(res, pmat1, pmat2);
     nmod_poly_mat_shift_right(res, res, nlo);
     nmod_poly_mat_truncate(res, nhi - nlo);
 }
@@ -486,7 +486,7 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
 
     /* TODO rough thresholds, not finely tuned */
 #if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 6)
-    if (NMOD_CAN_USE_GEOMETRIC(pmat1->modulus, nhi)
+    if (NMOD_POLY_CAN_USE_GEOMETRIC(pmat1->modulus, nhi)
         && ((pmat1->r >= 8 && pmat2->c >= 2) || (pmat1->r >= 2 && pmat2->c >= 8))
         && (len1 <= nlo+1 || len2 <= nlo+1))
         _nmod_poly_mat_mulmid_geometric(res, pmat1, len1, pmat2, len2, nlo, nhi);

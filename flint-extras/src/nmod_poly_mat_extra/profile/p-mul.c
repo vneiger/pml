@@ -160,7 +160,12 @@ int main(int argc, char ** argv)
             {
                 const timefun tfun = funs[fun_nb];
                 time_args targs = {dim1, dim2, dim3, len1, len2, modn};
-                tfun(targs, state);
+                if (len1 + len2 > 800 && fun_nb == 4)
+                    flint_printf("inf     ");
+                else if (len1 + len2 > 1200 && fun_nb == 5)
+                    flint_printf("inf     ");
+                else
+                    tfun(targs, state);
                 flint_printf(" ");
             }
         }

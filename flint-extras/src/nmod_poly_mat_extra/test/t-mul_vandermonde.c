@@ -27,7 +27,7 @@ int test_mat_mul_vandermonde(ulong bits, ulong m, ulong n, ulong p, slong len, f
     ulong prod_len = 2*len - 1;
 
     /* for vandermonde1, we need 0, ..., prod_len-1 to be distinct points in Z/prime Z */
-    if (prime <= prod_len)
+    if (! NMOD_POLY_CAN_USE_VANDERMONDE1(prime, prod_len))
         return 0;
 
     nmod_poly_mat_t A, B, C1, C2;
@@ -49,7 +49,7 @@ int test_mat_mul_vandermonde(ulong bits, ulong m, ulong n, ulong p, slong len, f
 
     int res2 = 1;
     /* for vandermonde2, we need 1**2, 2**2, ..., prod_len**2 to be distinct points in Z/prime Z */
-    if (prime > prod_len*prod_len)
+    if (NMOD_POLY_CAN_USE_VANDERMONDE2(prime, prod_len))
     {
         nmod_poly_mat_mul_vandermonde2(C2, A, B);
         res2 = nmod_poly_mat_equal(C1, C2);

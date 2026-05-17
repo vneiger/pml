@@ -15,6 +15,7 @@
 #include <flint/nmod_poly_mat.h>
 
 #include "nmod_poly_mat_dixon.h"
+#include "nmod_poly_mat_multiply.h"
 
 
 /**
@@ -121,7 +122,7 @@ slong nmod_poly_mat_dixon(nmod_poly_mat_t X,
     // Main loop for Dixon's iterations
     for (slong l = 0; l * order < sigma; l++)
     {
-        nmod_poly_mat_mul(S, C, BB);
+        nmod_poly_mat_multiply(S, C, BB);
         nmod_poly_mat_truncate(S, order);
 
         // X is constructed matrix digit by matrix digit
@@ -129,7 +130,7 @@ slong nmod_poly_mat_dixon(nmod_poly_mat_t X,
         nmod_poly_mat_add(X, X, T);
 
         // New residue for next iteration
-        nmod_poly_mat_mul(T, A, S);
+        nmod_poly_mat_multiply(T, A, S);
         nmod_poly_mat_sub(T, BB, T);
         nmod_poly_mat_shift_right(BB, T, order);
     }

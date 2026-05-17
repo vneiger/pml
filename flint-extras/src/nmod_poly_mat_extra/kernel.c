@@ -279,7 +279,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
         /* overwrite left columns of pmat */
         nmod_poly_mat_window_init(submat, pmat, 0, n - n/2, m, n);
         nmod_poly_mat_window_init(residual, pmat, 0, 0, nullity, n/2);
-        nmod_poly_mat_mul_classical(residual, ker1, submat);
+        nmod_poly_mat_multiply(residual, ker1, submat);
         nmod_poly_mat_window_clear(submat);
 
         /* recursive call 2, on residual */
@@ -291,7 +291,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
         /* multiply bases and update pivind */
         nmod_poly_mat_init(ker3, nullity, m, pmat->modulus);
         nmod_poly_mat_window_init(submat, ker2, 0, 0, nullity, ker2->c);
-        nmod_poly_mat_mul(ker3, submat, ker1);
+        nmod_poly_mat_multiply(ker3, submat, ker1);
         nmod_poly_mat_window_clear(submat);
         nmod_poly_mat_window_clear(ker1);
 
@@ -413,7 +413,6 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     nmod_poly_mat_init(residual, m - nullity, n, pmat->modulus);
     nmod_poly_mat_window_init(approx, ker, nullity, 0, m, m);
     nmod_poly_mat_mulmid(residual, approx, pmat, order, order + maxdeg + 1);
-    /* FIXME provide (and use) general middle_product interface */
     /* note: on non-generic input, one might want to check for zero rows in residual */
 
     /* kernel of residual */
@@ -433,7 +432,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     /* multiply to get missing part of kernel */
     nmod_poly_mat_window_init(ker2nz, ker2, 0, 0, nullity2, ker2->c);
     nmod_poly_mat_init(prod, nullity2, m, pmat->modulus);
-    nmod_poly_mat_mul(prod, ker2nz, approx);
+    nmod_poly_mat_multiply(prod, ker2nz, approx);
     for (slong i = 0; i < nullity2; i++)
         for (slong j = 0; j < m; j++)
             FLINT_SWAP(nmod_poly_struct,
