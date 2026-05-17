@@ -13,7 +13,8 @@
 #ifndef NMOD_POLY_MAT_EXTRA_IMPL_H
 #define NMOD_POLY_MAT_EXTRA_IMPL_H
 
-#include <flint/nmod_poly_mat.h>
+#include <flint/nmod_types.h>
+#include <flint/nmod_poly.h>  /* for geometric_progression_t */
 
 /* Hermite form helpers */
 void _atomic_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
@@ -36,5 +37,14 @@ void _reduce_against_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
                                    nmod_poly_t u, nmod_poly_t v);
 ulong _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j);
 
-#endif  /* NMOD_POLY_MAT_EXTRA_IMPL_H */
+/* multiplication helpers */
+void _nmod_poly_mat_mulmid_geometric1_precomp(nmod_poly_mat_t res,
+                                              const nmod_poly_mat_t pmat1,
+                                              const nmod_poly_mat_t pmat2,
+                                              slong nlo, slong nhi, nmod_geometric_progression_t G);
+void _nmod_poly_mat_mulmid_geometric2_precomp(nmod_poly_mat_t res,
+                                              const nmod_poly_mat_t pmat1,
+                                              const nmod_poly_mat_t pmat2,
+                                              slong nlo, slong nhi, nmod_geometric_progression_t G);
 
+#endif  /* NMOD_POLY_MAT_EXTRA_IMPL_H */

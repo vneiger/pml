@@ -318,11 +318,6 @@ void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
 // TODO middle_product currently naive
 
 
-void nmod_poly_mat_pmbasis_old(nmod_poly_mat_t appbas,
-                           slong * shift,
-                           const nmod_poly_mat_t pmat,
-                           slong order);
-
 void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
                            slong * shift,
                            const nmod_poly_mat_t pmat,
@@ -333,9 +328,9 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
  */
 
 void nmod_poly_mat_pmbasis_geometric(nmod_poly_mat_t appbas,
-                           slong * shift,
-                           const nmod_poly_mat_t pmat,
-                           slong order);
+                                     slong * shift,
+                                     const nmod_poly_mat_t pmat,
+                                     slong order);
 
 
 
@@ -360,6 +355,3 @@ void nmod_poly_mat_pmbasis_geometric(nmod_poly_mat_t appbas,
 #endif
 
 #endif // NMOD_POLY_MAT_APPROXIMANT_H
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

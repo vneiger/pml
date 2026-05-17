@@ -109,16 +109,6 @@ int main(int argc, char ** argv)
         return 0;
     }
 
-    flint_printf("#warmup...\n");
-    for (slong i = 0; i < 3; i++)
-    {
-        /* rdim; cdim; deg; rank; stype; modn; */
-        time_args targs = {8, 4, 1000, 1000, 4, 0, n_nextprime(UWORD(1) << 20, 0)};
-        time_pmbasis(targs, state);
-        flint_printf(" ");
-    }
-    flint_printf("\n\n");
-
     if (argc == 7)  // nbits, fun, rdim, cdim, deg, order
     {
         const slong b     = atoi(argv[1]);

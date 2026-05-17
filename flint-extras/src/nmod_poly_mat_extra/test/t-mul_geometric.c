@@ -12,8 +12,8 @@
 
 #include <flint/nmod_poly_mat.h>
 #include <flint/test_helpers.h>
+#include <flint/ulong_extras.h>
 
-#include "nmod_poly_mat_utils.h" // for rand
 #include "nmod_poly_mat_multiply.h"
 
 /* TODO more primes, more variations of degrees, etc. */
@@ -32,10 +32,10 @@ int test_mat_mul_geometric(ulong bits, ulong m, ulong n, ulong p, ulong deg, fli
     nmod_poly_mat_init(C1, m, p, prime);
     nmod_poly_mat_init(C2, m, p, prime);
 
-    nmod_poly_mat_rand(A, state, deg);
-    nmod_poly_mat_rand(B, state, deg);
-    nmod_poly_mat_rand(C1, state, deg);
-    nmod_poly_mat_rand(C2, state, deg);
+    nmod_poly_mat_randtest(A, state, deg);
+    nmod_poly_mat_randtest(B, state, deg);
+    nmod_poly_mat_randtest(C1, state, deg);
+    nmod_poly_mat_randtest(C2, state, deg);
 
     nmod_poly_mat_mul(C1, A, B);
     nmod_poly_mat_mul_geometric(C2, A, B);

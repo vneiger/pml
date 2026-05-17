@@ -15,6 +15,7 @@
 #include <flint/nmod_poly_mat.h>
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_extra.h"  /* for prototypes */
+#include "nmod_poly_mat_multiply.h"
 
 /* TODO currently specialized to ROW_LOWER (or at least ROW_stuff) */
 int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
@@ -52,7 +53,7 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
     }
 
     /* compute residual, check rows of appbas are approximants */
-    nmod_poly_mat_mul(residual, appbas, pmat);
+    nmod_poly_mat_multiply(residual, appbas, pmat);
 
     for (slong i = 0; i < rdim; i++)
     {
@@ -155,7 +156,7 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
         }
 
         /* compute residual, check rows of ker are in the kernel */
-        nmod_poly_mat_mul(residual, ker, mat);
+        nmod_poly_mat_multiply(residual, ker, mat);
         if (!nmod_poly_mat_is_zero(residual))
         {
             printf("not all rows are in the kernel\n");
@@ -201,7 +202,7 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
         }
 
         /* compute residual, check rows of ker are in the kernel */
-        nmod_poly_mat_mul(residual, mat, ker);
+        nmod_poly_mat_multiply(residual, mat, ker);
         if (!nmod_poly_mat_is_zero(residual))
         {
             printf("not all rows are in the kernel\n");
