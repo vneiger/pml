@@ -24,11 +24,28 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
     /* TODO once available, call multiply with constant */
     /* TODO once available, call mat-vec | vec-mat multiply */
 
+    if (len1 == 0 || len2 == 0)
+    {
+        nmod_poly_mat_zero(res);
+        return;
+    }
+
     if (pmat1->r == 1 || pmat2->c == 1  /* vec-mat or mat-vec */
         || pmat1->c == 1                /* independent products */
         || len1 == 1 || len2 == 1)      /* constant lhs or rhs */
     {
         nmod_poly_mat_mul(res, pmat1, pmat2);
+        return;
+    }
+
+    /* FIXME decide where to handle this: currently done at multiply levels... */
+    if (res == pmat1 || res == pmat2)
+    {
+        nmod_poly_mat_t tmp;
+        nmod_poly_mat_init(tmp, pmat1->r, pmat2->c, pmat1->modulus);
+        nmod_poly_mat_multiply(tmp, pmat1, pmat2);
+        nmod_poly_mat_swap_entrywise(res, tmp);
+        nmod_poly_mat_clear(tmp);
         return;
     }
 
