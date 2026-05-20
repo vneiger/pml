@@ -209,7 +209,7 @@ mapml:= module()
 	end proc: 
 
 	# Flint procedure 
-	`mod/PMNullspace`:=proc(AA,q) local A, t, vect_A,res; 
+	`mod/PMNullspace`:=proc(AA,x,q) local A, t, vect_A,res; 
 
 		A:=map(t->modp(expand(t),q),AA);
 
