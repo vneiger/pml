@@ -32,7 +32,8 @@ mapml:= module()
 	global `mod/MDeterminant`,`mod/WeakPopov`,`mod/RowWeakPopov`,
 			`mod/MBasis`,`mod/RowMBasis`,
 			`mod/PMBasis`,`mod/RowPMBasis`,
-			`mod/RightDescription`,`mod/LeftDescription`;
+			`mod/RightDescription`,`mod/LeftDescription`,
+			`mod/Kernel`,`mod/RowKernel`,`mod/PMNullspace`;
 
 	option package, load=Init, unload=End: 
 	
@@ -66,7 +67,7 @@ mapml:= module()
     printf("external %s\n",pml_lib);
 	ff:=define_external("nmod_poly_mat_init", MAPLE, LIB = pml_lib):
 
-	printf("[MDeterminant, WeakPopov, RowWeakPopov, PMBasis, MBasis, RowPMBasis, RowMBasis, RightDescription, LeftDescription]");
+	printf("[MDeterminant, WeakPopov, RowWeakPopov, PMBasis, MBasis, RowPMBasis, RowMBasis, RightDescription, LeftDescription, Kernel, RowKernel, PMNullspace]");
 		
 
 	# Local functions for conversions
@@ -88,7 +89,7 @@ mapml:= module()
 
 	    description "YYY";
 
-		export polynomial_rt,polymat_rt, matpoly_rt, pm_determinant, pm_diff_mbasis, pm_matrix_mbasis, pm_matrix_pmbasis,pm_coeffs,pm_weakpopov;					
+		export polynomial_rt,polymat_rt, matpoly_rt, pm_determinant, pm_diff_mbasis, pm_matrix_mbasis, pm_matrix_pmbasis,pm_coeffs,pm_weakpopov,pm_kernel,pm_row_kernel,pm_nullspace;					
 
 		polynomial_rt := define_external("polynomial_rt",MAPLE, LIB = mapml_lib);
 
@@ -107,6 +108,13 @@ mapml:= module()
 		pm_coeffs := define_external("pm_coeffs",MAPLE, LIB = mapml_lib);
 
 		pm_weakpopov := define_external("pm_weakpopov",MAPLE, LIB = mapml_lib);
+
+		pm_kernel := define_external("pm_kernel",MAPLE, LIB = mapml_lib);
+
+		pm_row_kernel := define_external("pm_row_kernel",MAPLE, LIB = mapml_lib);
+
+		pm_nullspace := define_external("pm_nullspace",MAPLE, LIB = mapml_lib);
+
 
 	end module: 	
 
@@ -182,6 +190,57 @@ mapml:= module()
 		return res; 
 		 
 	end proc: 
+
+	`mod/Kernel`:=proc(AA,x,shift,q) local A, t, vect_A,res; 
+
+		#if (nargs=3) then q:=orient; orient=0; fi: 
+
+		A:=map(t->modp(expand(t),q),AA);
+
+		vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),A); 
+
+		res:=Dev:-pm_kernel(vect_A, shift, q);
+
+		if (res[1]=0) then return {}; fi: 
+		
+		res := map(t->PolynomialTools:-FromCoefficientList(t, x), res[2]);
+		return res; 
+		 
+	end proc: 
+
+	# Flint procedure 
+	`mod/PMNullspace`:=proc(AA,q) local A, t, vect_A,res; 
+
+		A:=map(t->modp(expand(t),q),AA);
+
+		vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),A); 
+
+		res:=Dev:-pm_nullspace(vect_A, q);
+
+		if (res[1]=0) then return {}; fi: 
+		
+		res := map(t->PolynomialTools:-FromCoefficientList(t, x), res[2]);
+		return res; 
+		 
+	end proc: 
+
+	`mod/RowKernel`:=proc(AA,x,shift,q) local A, t, vect_A,res; 
+
+		#if (nargs=3) then q:=orient; orient=0; fi: 
+
+		A:=map(t->modp(expand(t),q),AA);
+
+		vect_A:=map(t->PolynomialTools:-CoefficientVector(t,x),A); 
+
+		res:=Dev:-pm_row_kernel(vect_A, shift, q);
+
+		if (res[1]=0) then return {}; fi: 
+		
+		res := map(t->PolynomialTools:-FromCoefficientList(t, x), res[2]);
+		return res; 
+		 
+	end proc: 
+
 
 	# TODO modp
 	pmDiffMBasis :=proc(shift, p, order, x, q,method) local t, vect_p,res,tt,i,M,dct; 

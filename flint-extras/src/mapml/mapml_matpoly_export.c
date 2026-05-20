@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include "mapml_conversion.h"
+#include "mapml_matpoly_export.h"
 
 /***********************************************************
  * 
@@ -564,6 +565,162 @@ ALGEB pm_weakpopov(MKernelVector kv, ALGEB *args){
 
 //         nmod_poly_set_coeff_ui(p, ), 
 //            MapleToInteger64(kv,MapleListSelect(kv,coeffs,2*i+2)));
+
+
+
+/**********************************************************
+ * 
+ * modulo polynomial left kernel   
+ * 
+ * ++++++++ TODO COMMENT 
+ * 
+ *  ALGEB args[1]: matrix polynomial, vector entries 
+ *        args[2]: shift 
+ *        args[3]: modulus 
+ * 
+ *  Returns M,dct 
+ *    M: a polynomial matrix, list entries 
+ *    dct: the out defects  
+ * 
+ *     !!! Be careful with the sign either 
+ *         defect (e.g. in gfun) or shifts = -dct in pml
+ * 
+ * 
+ ***********************************************************/
+
+
+// SEE WHICH ENTRIES
+
+ALGEB pm_kernel(MKernelVector kv, ALGEB *args){
+
+
+
+    ALGEB vectmat=args[1];
+
+    ulong modulus = MapleToInteger64(kv,args[3]);
+
+    nmod_poly_mat_t A;
+
+    get_nmod_poly_mat(A, modulus, kv, vectmat);
+
+
+    ALGEB maple_shift = args[2];
+
+    slong m = A ->c;
+
+    slong shift[m];
+
+    for (ulong i = 0; i < m; i++) 
+        shift[i]=MapleToInteger64(kv,MapleListSelect(kv,maple_shift,i+1));
+
+
+    slong pivind[m];
+
+    nmod_poly_mat_t N;
+    nmod_poly_mat_init(N,m,m,modulus); 
+
+    slong nz;
+
+    nz=nmod_poly_mat_kernel(N, pivind, shift, A, ORD_WEAK_POPOV, COL_UPPER);
+
+    nmod_poly_mat_t kernz;
+    nmod_poly_mat_window_init(kernz, N, 0, 0, m, nz);
+
+   
+    ALGEB res= MapleListAlloc(kv,2);
+    MapleListAssign(kv,res,1,ToMapleInteger(kv,nz));
+    MapleListAssign(kv,res,2,nmod_poly_mat_to_algeb(kv,kernz));
+
+    nmod_poly_mat_clear(N);
+    nmod_poly_mat_window_clear(kernz);
+
+    return res;
+
+}
+
+
+ALGEB pm_row_kernel(MKernelVector kv, ALGEB *args){
+
+
+
+    ALGEB vectmat=args[1];
+
+    ulong modulus = MapleToInteger64(kv,args[3]);
+
+    nmod_poly_mat_t A;
+
+    get_nmod_poly_mat(A, modulus, kv, vectmat);
+
+
+    ALGEB maple_shift = args[2];
+
+    slong m = A ->r;
+
+    slong shift[m];
+
+    for (ulong i = 0; i < m; i++) 
+        shift[i]=MapleToInteger64(kv,MapleListSelect(kv,maple_shift,i+1));
+
+
+    slong pivind[m];
+
+    nmod_poly_mat_t N;
+    nmod_poly_mat_init(N,m,m,modulus); 
+
+    slong nz;
+
+    nz=nmod_poly_mat_kernel(N, pivind, shift, A, ORD_WEAK_POPOV, ROW_UPPER);
+
+    nmod_poly_mat_t kernz;
+    nmod_poly_mat_window_init(kernz, N, 0, 0, nz,m);
+
+   
+    ALGEB res= MapleListAlloc(kv,2);
+    MapleListAssign(kv,res,1,ToMapleInteger(kv,nz));
+    MapleListAssign(kv,res,2,nmod_poly_mat_to_algeb(kv,kernz));
+
+    nmod_poly_mat_clear(N);
+    nmod_poly_mat_window_clear(kernz);
+
+    return res;
+
+}
+
+
+// Flint procedure 
+ALGEB pm_nullspace(MKernelVector kv, ALGEB *args){
+
+    ALGEB vectmat=args[1];
+
+    ulong modulus = MapleToInteger64(kv,args[2]);
+
+    nmod_poly_mat_t A;
+
+    get_nmod_poly_mat(A, modulus, kv, vectmat);
+
+    slong n = A ->c;
+
+    nmod_poly_mat_t N;
+    nmod_poly_mat_init(N,n,n,modulus); 
+
+    slong nz;
+
+    nz=nmod_poly_mat_nullspace(N, A);
+
+    nmod_poly_mat_t kernz;
+    nmod_poly_mat_window_init(kernz, N, 0, 0, n, nz);
+
+   
+    ALGEB res= MapleListAlloc(kv,2);
+    MapleListAssign(kv,res,1,ToMapleInteger(kv,nz));
+    MapleListAssign(kv,res,2,nmod_poly_mat_to_algeb(kv,kernz));
+
+    nmod_poly_mat_clear(N);
+    nmod_poly_mat_window_clear(kernz);
+
+    return res;
+
+}
 
 
 

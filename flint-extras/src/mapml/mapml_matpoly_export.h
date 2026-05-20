@@ -130,6 +130,39 @@ ALGEB pm_matrix_pmbasis(MKernelVector kv, ALGEB *args);
 
  ALGEB pm_weakpopov(MKernelVector kv, ALGEB *args);
 
+
+
+
+/**********************************************************
+ * 
+ * modulo polynomial left kernel   
+ * 
+ * ++++++++ TODO COMMENT 
+ * 
+ *  ALGEB args[1]: matrix polynomial, vector entries 
+ *        args[2]: shift 
+ *        args[3]: modulus 
+ * 
+ *  Returns M,dct 
+ *    M: a polynomial matrix, list entries 
+ *    dct: the out defects  
+ * 
+ *     !!! Be careful with the sign either 
+ *         defect (e.g. in gfun) or shifts = -dct in pml
+ * 
+ * 
+ ***********************************************************/
+
+
+// SEE WHICH ENTRIES
+
+ALGEB pm_kernel(MKernelVector kv, ALGEB *args);
+
+ALGEB pm_row_kernel(MKernelVector kv, ALGEB *args);
+
+// Flint procedure 
+ALGEB pm_nullspace(MKernelVector kv, ALGEB *args);
+
 #ifdef __cplusplus
 }
 #endif
