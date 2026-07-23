@@ -248,7 +248,7 @@ jobs:
         run: |
           cd flint-extras
           ./bootstrap.sh
-          ./configure CC=$(CC) --enable-asan --disable-debug
+          ./configure CC=${CC} --enable-asan --disable-debug
       - name: "Compile library"
         run: cd flint-extras && $MAKE && ldd libpml.so
       - name: "Compile tests"
@@ -353,7 +353,7 @@ jobs:
           cd flint
           ./bootstrap.sh
           ./configure \
-            CC=$(CC) \
+            CC=${CC} \
             --with-gmp=$(brew --prefix) \
             --with-mpfr=$(brew --prefix) \
             --disable-debug
@@ -365,7 +365,7 @@ jobs:
           cd flint-extras
           ./bootstrap.sh
           ./configure \
-            CC=$(CC) \
+            CC=${CC} \
             --with-gmp=$(brew --prefix) \
             --with-mpfr=$(brew --prefix) \
             --disable-debug
