@@ -39,7 +39,7 @@
  * `d`, the number of points to use, is a separate explicit parameter 
  *    with  d <= (actual length of pts) and  d <= (actual length of E)
  * 
- *  pts and E may be longer than d, extra data is ignored byconvention.
+ *  pts and E may be longer than d, extra data is ignored by convention.
  * 
  * This is the point-evaluation analogue of an approximant basis (see
  * `nmod_poly_mat_approximant.h`): replacing "coefficient of `P*F`" (order
@@ -227,9 +227,13 @@ void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
  * r^{2(d-1)}` (`E_k` stored as the coefficient of degree `k`, see this
  * header's "Conventions" section), using the algorithm PM-IntBasis
  * specialized to geometric points (see @ref pmintbasis_geometric).
- * Requires a modulus `p > 2*d+1` so that `r`'s multiplicative order
- * suffices for the underlying geometric-progression machinery (matching
- * FLINT's own convention for that machinery, `nmod_poly/test/
+ * 
+ * TO SEE. Currently, the algorithm does not require r to be of 
+ *  sufficiently large order, to have pairwise distinct points. 
+ * The algorithms uses evaluation but no interpolation. 
+ * E.g. no condition such that modulus `p > 2*d+1` so that `r`'s 
+ * multiplicative order suffices for the underlying geometric-progression 
+ * machinery (matchingFLINT's own convention for that machinery, `nmod_poly/test/
  * t-evaluate_geometric_nmod_vec_fast.c`). If `pts` is non-null, it is
  * filled with the `d` points actually used (`pts[k] = r^{2k}`), matching
  * @ref nmod_poly_mat_pmintbasis's own point-array convention -- useful for
@@ -243,7 +247,9 @@ void nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
                                         slong d);
 
 
-/** Tries `nmod_find_root` (`nmod_extra.h`) first, rather than going
+/**  Targets the pairwise distinct points case.   
+ * 
+ * Tries `nmod_find_root` (`nmod_extra.h`) first, rather than going
  * straight to `n_primitive_root_prime`, 
  * the algorithm only needs an element of multiplicative order strictly
  * greater than `2*d` (so that `rho = r^2`'s own order exceeds `d`, the
