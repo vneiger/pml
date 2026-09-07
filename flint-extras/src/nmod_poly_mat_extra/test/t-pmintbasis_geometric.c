@@ -10,7 +10,10 @@
     <https://www.gnu.org/licenses/>.
 */
 
-/** Targets nmod_poly_mat_pmintbasis_geometric. Checks it against the
+/** Targets nmod_poly_mat_pmintbasis_geometric, in cases with  
+ *  pairwise distinc points. 
+ * 
+ * Checks it against the
  * general-points nmod_poly_mat_pmintbasis, called with the same points
  * (the ones the geometric version actually used, returned via its own
  * `pts` output parameter): since both make the same D&C splits and share
@@ -114,10 +117,8 @@ TEST_FUNCTION_START(nmod_poly_mat_pmintbasis_geometric, state)
         slong m = 1 + n_randint(state, 16);
         slong d = 1 + n_randint(state, 250);
 
-        /* nbits' floor must guarantee some prime of that bit length
-           exceeds bound = 2d+1 (this algorithm's own requirement), or the
-           retry loop below never terminates -- see t-pmintbasis.c's own
-           version of this same fix for the full rationale. */
+        /** Choose a random prime satisfying the bound p > 2*d+1 
+         * required to have pairwise distinct points for the pmintbasis_geometric algorithm".*/
         ulong bound = (ulong) (2 * d + 1);
         ulong nbits = FLINT_BIT_COUNT(bound) + 1 + n_randint(state, 50);
         ulong p;

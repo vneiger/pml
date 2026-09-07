@@ -210,12 +210,8 @@ TEST_FUNCTION_START(nmod_mat_poly_mintbasis, state)
         slong m = 1 + n_randint(state, 16); /* any m, n */
         slong d = n_randint(state, 150);
 
-        /* nbits' floor must guarantee some prime of that bit length exceeds
-           bound, or the retry loop below never terminates (nbits is fixed
-           before the retry starts). Tying the floor to bound lets nbits range
-           down as low as 3-4 bits when d is small, closing the gap between
-           this loop's main range and the explicit {2,3,5,7,11} block below,
-           see t-pmintbasis.c's own version of this same fix. */
+        /* Take a prime with nbits sufficiently large to ensure the existence
+            of a list of pairwise distinct points. */ 
         ulong bound = (ulong) (2 * FLINT_MAX(d, 1) + 2);
         ulong nbits = FLINT_BIT_COUNT(bound) + 1 + n_randint(state, 50);
         ulong prime;
