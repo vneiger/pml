@@ -174,32 +174,47 @@ void nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
     }
 }
 
-/**  Tries `nmod_find_root` (`nmod_extra.h`) first, rather than going
+/** Targets the pairwise distinct points case.    
+ * 
+ * Tries `nmod_find_root` (`nmod_extra.h`) first, rather than going
  * straight to `n_primitive_root_prime`, the algorithm only needs an 
- * element of multiplicative order strictly greater than `2*d`. */
+ * element of multiplicative order order at least 2d−1, so that 
+ *  rho = r^2 has order at least d and the d points 
+ * are distinct; 
+ * TO SEE nmod_find_root(2*d) is documented to return order at least 2d, 
+ * which suffices. 
+ * 
+ * Passing `2*d-1` would already suffice; `2*d` is used both for one unit
+ * of margin and because `nmod_find_root` then returns 0 exactly when
+ * `p <= 2*d+1`, that is, exactly when the precondition `p > 2*d+1` fails 
+ *  (one unit of margin is kept too). */
+
 void nmod_poly_mat_pmintbasis_geometric_auto(nmod_poly_mat_t intbas,
                                              slong * shift,
                                              ulong * pts,
                                              const nmod_mat_struct * E,
                                              slong d)
 {
-    if (d == 0)
-    {
-        nmod_poly_mat_one(intbas);
-        return;
-    }
+    /** With the best possible r (a primitive root), rho = r^2 has 
+     * order (p-1)/2, so d distinct points exist iff (p-1)/2 >= d, 
+     * i.e. p >= 2*d+1; we require the documented p > 2*d+1.  */
+    if (intbas->modulus <= (ulong) (2 * d + 1))
+        flint_throw(FLINT_ERROR,
+                    "Exception (nmod_poly_mat_pmintbasis_geometric_auto). "
+                    "Modulus %wu too small for d = %wd points "
+                    "(requires p > 2*d+1 = %wd).\n",
+                    intbas->modulus, d, 2 * d + 1);
 
     nmod_t mod;
     nmod_init(&mod, intbas->modulus);
 
-    ulong r = nmod_find_root(2 * d + 2, mod);
-    if (r == 0)
-        r = n_primitive_root_prime(mod.n);
-    if (r == 0)
-        flint_throw(FLINT_ERROR,
-                    "Exception (nmod_poly_mat_pmintbasis_geometric_auto). "
-                    "No element of multiplicative order > 2*d found "
-                    "(modulus too small for d = %wd points).\n", d);
+    ulong r = nmod_find_root(2 * d, mod);
+    
+    // if (r == 0)                     /* not reachable under the check above:
+    //                                    find_root(2*d) returns 0 iff p <= 2*d+1.
+    //                                    Kept as a potential guard in case the check or the
+    //                                    argument is ever changed independently. */
+    //     r = n_primitive_root_prime(mod.n);
 
     nmod_poly_mat_pmintbasis_geometric(intbas, shift, pts, E, r, d);
 }

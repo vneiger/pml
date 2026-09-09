@@ -213,10 +213,11 @@ void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
  * \anchor pmintbasis_geometric
  *
  * Same divide-and-conquer shape as @ref pmintbasis, specialized to
- * geometric points `pts_k = r^{2k}` (`r` a field element of sufficient
- * multiplicative order), via FLINT's Bostan-Schost fast geometric-
- * progression evaluate/interpolate machinery (`nmod_geometric_progression_t`,
- * `nmod_poly.h`). One such structure is built once, at the top of the
+ * geometric points `pts_k = r^{2k}` (`r` (r a field element; its order 
+ * governs whether the points are distinct — see the functions below)
+ * via FLINT's Bostan-Schost fast geometric-progression evaluate/interpolate 
+ * machinery (`nmod_geometric_progression_t`,`nmod_poly.h`). 
+ * One such structure is built once, at the top of the
  * whole recursion, and reused (at varying, always-shorter requested
  * lengths). 
  */
@@ -227,18 +228,21 @@ void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
  * r^{2(d-1)}` (`E_k` stored as the coefficient of degree `k`, see this
  * header's "Conventions" section), using the algorithm PM-IntBasis
  * specialized to geometric points (see @ref pmintbasis_geometric).
- * 
- * TO SEE. Currently, the algorithm does not require r to be of 
- *  sufficiently large order, to have pairwise distinct points. 
- * The algorithms uses evaluation but no interpolation. 
- * E.g. no condition such that modulus `p > 2*d+1` so that `r`'s 
- * multiplicative order suffices for the underlying geometric-progression 
- * machinery (matchingFLINT's own convention for that machinery, `nmod_poly/test/
- * t-evaluate_geometric_nmod_vec_fast.c`). If `pts` is non-null, it is
- * filled with the `d` points actually used (`pts[k] = r^{2k}`), matching
- * @ref nmod_poly_mat_pmintbasis's own point-array convention -- useful for
- * cross-checking against the general-points algorithm on the same
- * instance. */
+ *
+ * No condition on the modulus is needed or imposed: this algorithm only
+ * evaluates at the points, never interpolates, so it never divides by
+ * `r^{2k}-1` and cannot fail on a small field. If `r` has too low an
+ * order the points simply repeat, and the result is a correct basis for
+ * the interpolant module those repeated points define. For the usual `d`
+ * pairwise distinct points -- and with them the classical degree property
+ * `deg(det(intbas)) = sum_k rank(E_k)` -- the caller must supply `r` with
+ * `rho = r^2` of order at least `d`; @ref 
+ * nmod_poly_mat_pmintbasis_geometric_auto picks such an `r` itself.
+ *
+ * If `pts` is non-null it is filled with the `d` points actually used
+ * (`pts[k] = r^{2k}`), matching @ref nmod_poly_mat_pmintbasis's own
+ * point-array convention -- useful for cross-checking against the
+ * general-points algorithm on the same instance. */
 void nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
                                         slong * shift,
                                         ulong * pts,
@@ -247,35 +251,35 @@ void nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
                                         slong d);
 
 
-/**  Targets the pairwise distinct points case.   
- * 
- * Tries `nmod_find_root` (`nmod_extra.h`) first, rather than going
- * straight to `n_primitive_root_prime`, 
- * the algorithm only needs an element of multiplicative order strictly
- * greater than `2*d` (so that `rho = r^2`'s own order exceeds `d`, the
- * number of points requested -- see nmod_poly_mat_interpolant.h's own
- * "Requires a modulus p > 2*d+1" precondition on @ref
- * nmod_poly_mat_pmintbasis_geometric), not a genuine primitive root
- * (order exactly `p-1`, generating the whole multiplicative group).
- * Unlike `n_primitive_root_prime`, `nmod_find_root` needs no factoring of
- * `p-1` -- cheaper, and the natural choice for a caller who has no other
- * need for a genuine primitive root.
+/** Same as @ref nmod_poly_mat_pmintbasis_geometric, except that `r` is
+ * found internally instead of being supplied by the caller -- targeting
+ * the pairwise distinct points case.
  *
- * `nmod_find_root(2*d+2, mod)` is the right call for this: it guarantees
- * an element `r` of order `>= 2*d+2`, hence `rho = r^2` has order
- * `>= (2*d+2)/2 = d+1 > d` (the order of `rho` is `order(r)` divided by
- * `gcd(2,order(r))`, i.e. at worst halved), satisfying the precondition
- * with no factoring needed.
+ * What is needed is `rho = r^2` of order at least `d`, giving `d` distinct
+ * points; since `ord(r^2)` is `ord(r)` divided by `gcd(2,ord(r))`, i.e. at
+ * worst halved, an `r` of order at least `2*d-1` suffices. Such an `r` is
+ * obtained from `nmod_find_root(2*d, mod)` (`nmod_extra.h`), documented to
+ * return an element of order at least `2*d` -- cheaper than a genuine
+ * primitive root, since unlike `n_primitive_root_prime` it needs no
+ * factoring of `p-1`.
  *
- * Requires a modulus `p > 2*d+1` (same precondition as the `r`-explicit
- * version, inherited unchanged); throws if no element of sufficient order
- * is found, rather than silently proceeding with a degenerate `r` (0) --
- * mirroring how "cannot proceed" cases are handled elsewhere in this
- * project, rather than risking a wrong
- * answer. `d = 0` needs no such element at all (matching @ref
- * nmod_poly_mat_pmintbasis_geometric's own `d == 0` guard, which returns
- * before `r` is ever used), so this never throws when `d = 0`, regardless
- * of how small the modulus is. */
+ * Passing `2*d-1` would already suffice; `2*d` is used both for one unit
+ * of margin and because `nmod_find_root` then returns 0 exactly when
+ * `p <= 2*d+1`, that is, exactly when the precondition below fails --
+ * which is why `n_primitive_root_prime`, kept as a commented fallback, 
+ * is in fact unreachable. `2*d`also matches the 2*len convention 
+ * used by mul_geometric.c and mulmid.c",
+ *
+ * Requires a modulus `p > 2*d+1`, and throws otherwise. That this is a
+ * condition on `p` at all -- the `r`-explicit version above has none --
+ * is precisely because `r` must be found here: the best possible `r` is a
+ * primitive root, giving `ord(r^2) = (p-1)/2`, so `d` distinct points
+ * exist only when `(p-1)/2 >= d`. One unit of margin is
+ * kept here too: `p = 2*d+1` does work (`ord(r^2) = d` exactly, `d` points
+ * and none to spare) but is excluded, both for that room and so that the
+ * precondition is the exact complement of `nmod_find_root(2*d)`'s own
+ * failure condition `p <= 2*d+1`. `d = 0` needs no `r` (it returns before
+ * one is used) and so never throws, however small the modulus. */
 void nmod_poly_mat_pmintbasis_geometric_auto(nmod_poly_mat_t intbas,
                                              slong * shift,
                                              ulong * pts,
