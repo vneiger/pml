@@ -209,4 +209,43 @@ void _test_collection_mat_rkdef(nmod_poly_mat_t mat, slong len, flint_rand_t sta
     }
 }
 
+/* One of testing_collection.h's 8 shift forms, chosen by index (matching
+   t-pmbasis.c's own one_test_pmbasis, which tries all 8 on a single input;
+   here we pick one at random per trial instead */ 
+static void gen_shift(slong * shift, slong m, slong d, flint_rand_t state)
+{
+    switch (n_randint(state, 8))
+    {
+        case 0: _test_collection_shift_uniform(shift, m); break;
+        case 1: _test_collection_shift_increasing(shift, m); break;
+        case 2: _test_collection_shift_decreasing(shift, m); break;
+        case 3: _test_collection_shift_shuffle(shift, m, state); break;
+        case 4: _test_collection_shift_hermite(shift, m, d); break;
+        case 5: _test_collection_shift_rhermite(shift, m, d); break;
+        case 6: _test_collection_shift_plateau(shift, m, d); break;
+        default: _test_collection_shift_rplateau(shift, m, d); break;
+    }
+}
+
+/* One of testing_collection.h's matrix forms, chosen by index (same
+   rationale as gen_shift above: pick one per trial rather than looping over
+   all of them). _test_collection_mat_rkdef degrades to the zero matrix on
+   its own when m <= 1 or n <= 1 (its own convention), so no guard is needed
+   here for that case. */
+static void gen_E(nmod_poly_mat_t E, slong d, flint_rand_t state)
+{
+    switch (n_randint(state, 7))
+    {
+        case 0: _test_collection_mat_zero(E); break;
+        case 1: _test_collection_mat_uniform(E, d, state); break;
+        case 2: _test_collection_mat_unbalanced_rdeg(E, d, state); break;
+        case 3: _test_collection_mat_unbalanced_cdeg(E, d, state); break;
+        case 4: _test_collection_mat_test(E, d, state); break;
+        case 5: _test_collection_mat_sparse(E, d, state); break;
+        default: _test_collection_mat_rkdef(E, d, state); break;
+    }
+}
+
+
+
 #endif /* ifndef __TESTING_COLLECTION__H */
