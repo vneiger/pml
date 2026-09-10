@@ -150,6 +150,12 @@ void nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
         return;
     }
 
+    if (r == 0)
+    flint_throw(FLINT_ERROR,
+                "Exception (nmod_poly_mat_pmintbasis_geometric). "
+                "r must be nonzero (r=0 degenerates FLINT's geometric-"
+                "progression setup, which computes 1/r unconditionally).\n");
+
     const slong n = E[0].c;
 
     nmod_t mod;
@@ -181,14 +187,15 @@ void nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
  * element of multiplicative order order at least 2d−1, so that 
  *  rho = r^2 has order at least d and the d points 
  * are distinct; 
- * TO SEE nmod_find_root(2*d) is documented to return order at least 2d, 
+ * TO SEE: nmod_find_root(2*d) is documented to return order at least 2d, 
  * which suffices. 
  * 
  * Passing `2*d-1` would already suffice; `2*d` is used both for one unit
  * of margin and because `nmod_find_root` then returns 0 exactly when
  * `p <= 2*d+1`, that is, exactly when the precondition `p > 2*d+1` fails 
- *  (one unit of margin is kept too). */
-
+ *  (one unit of margin is kept too). 
+ * `2*d`also matches the 2*len convention used by mul_geometric.c and mulmid.c.
+ * */
 void nmod_poly_mat_pmintbasis_geometric_auto(nmod_poly_mat_t intbas,
                                              slong * shift,
                                              ulong * pts,

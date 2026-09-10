@@ -143,6 +143,11 @@ extern "C" {
  *   and the definition of pivots
  *
  * \return boolean, result of the verification
+ * 
+ * This function is safe to call even on a basis built where the distinct-points 
+ * precondition is not actually met, because it checks the points it's given, 
+ * not the precondition of whatever built them.
+ * 
  */
 int nmod_poly_mat_is_interpolant_basis(const nmod_poly_mat_t intbas,
                                        const ulong * pts,
@@ -268,7 +273,7 @@ void nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
  * `p <= 2*d+1`, that is, exactly when the precondition below fails --
  * which is why `n_primitive_root_prime`, kept as a commented fallback, 
  * is in fact unreachable. `2*d`also matches the 2*len convention 
- * used by mul_geometric.c and mulmid.c",
+ * used by mul_geometric.c and mulmid.c,
  *
  * Requires a modulus `p > 2*d+1`, and throws otherwise. That this is a
  * condition on `p` at all -- the `r`-explicit version above has none --
@@ -279,7 +284,12 @@ void nmod_poly_mat_pmintbasis_geometric(nmod_poly_mat_t intbas,
  * and none to spare) but is excluded, both for that room and so that the
  * precondition is the exact complement of `nmod_find_root(2*d)`'s own
  * failure condition `p <= 2*d+1`. `d = 0` needs no `r` (it returns before
- * one is used) and so never throws, however small the modulus. */
+ * one is used) and so never throws, however small the modulus. 
+ * 
+ * TO SEE. Deliberately not using PML's NMOD_POLY_CAN_USE_GEOMETRIC (modn >=
+ * 10*len, nmod_poly_extra.h) here: a mul.c/mulmid.c dispatch
+ * heuristic, not a tight bound -- p > 2*d+1 below is exact for ord(rho) >= d. 
+ * */ 
 void nmod_poly_mat_pmintbasis_geometric_auto(nmod_poly_mat_t intbas,
                                              slong * shift,
                                              ulong * pts,
