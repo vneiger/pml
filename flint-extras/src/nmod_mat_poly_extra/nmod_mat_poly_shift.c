@@ -54,15 +54,15 @@ void nmod_mat_poly_shift_left(nmod_mat_poly_t smatp,
         return;
     }
 
-    nmod_mat_poly_fit_length(smatp, matp->length + n);
-    _nmod_mat_poly_set_length(smatp, matp->length + n);
-    _nmod_mat_poly_shift_left(smatp, matp, matp->length - n, n);
+    /* read the length of the input before growing the output: when the two
+       are aliased, _nmod_mat_poly_set_length below changes it */
+    const slong len = matp->length;
+
+    nmod_mat_poly_fit_length(smatp, len + n);
+    _nmod_mat_poly_set_length(smatp, len + n);
+    _nmod_mat_poly_shift_left(smatp, matp, len, n);
 }
 
 //void nmod_mat_poly_shift_right(nmod_mat_poly_t smatp,
 //                               const nmod_mat_poly_t matp,
 //                               slong n);
-
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
