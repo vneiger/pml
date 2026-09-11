@@ -58,6 +58,28 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
     const slong len = len1 + len2 - 1;
     const ulong modn = pmat1->modulus;
 
+#if PML_HAVE_MACHINE_VECTORS
+    /* use FFT evaluation-interpolation with naive matrix product on the
+     * transforms
+     *
+     * -> faster than other methods for medium sizes and large degree
+     * -> for larger sizes, slower: pays the price of naive matrix product
+     * and also that of making these product np times where np is the number
+     * of primes used in the multimodular strategy
+     *
+     * TODO to be more finely tuned
+     *
+     * NOTE: unlike the other variants, this one allocates the transforms
+     * of the operands, up to a bounded budget (see
+     * NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_BUDGET, currently 256MB). */
+    if (len >= 128
+        && !(dim >= 224 && len > 300 && NMOD_POLY_CAN_USE_GEOMETRIC(modn, len)))
+    {
+        nmod_poly_mat_mul_sd_fft_direct(res, pmat1, pmat2);
+        return;
+    }
+#endif /* PML_HAVE_MACHINE_VECTORS */
+
     if (dim > 12)
     {
         if (NMOD_POLY_CAN_USE_GEOMETRIC(modn, len) && len > 300)

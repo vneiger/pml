@@ -84,6 +84,22 @@ void _nmod_poly_mat_mul_geometric_precomp(nmod_poly_mat_t res,
                                           nmod_geometric_progression_t G);
 
 
+/** Multiplication for polynomial matrices, using FLINT's fft_small
+ * evaluation-interpolation with the naive matrix multiplication algorithm
+ * performed directly on the transforms
+ *  sets C = A * B
+ *  output can alias input
+ *  Works for any modulus via a multi-modular strategy. The main computation
+ *  is done modulo 1 to 4 50-bit FFT primes, the number of which depends on the
+ *  modulus, on the inner dimension and on the lengths of the operands; this is
+ *  followed by CRT. In terms of memory, it takes about (rdim*idim + idim*cdim
+ *  + rdim*cdim) * nprimes * 2^depth doubles, where 2^depth is the transform
+ *  length, up to a soft budget beyond which the rows of A are processed by
+ *  groups.
+ *  This falls back on nmod_poly_mat_mul if FLINT was built without fft_small
+ */
+void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
+
 /** general interface, picks an algorithm depending on parameters
  * TODO thresholds to be tuned
  * TODO add function to multiply with constant
