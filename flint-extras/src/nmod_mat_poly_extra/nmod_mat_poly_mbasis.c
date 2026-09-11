@@ -202,7 +202,11 @@ _PROFILER_REGION_START
         // end of loop: appbas is an `s0`-ordered weak Popov approximant
         //    basis at order `ord+1` for `pmat`, and shift = rdeg_s0(appbas)
         if (ord == 0) // initially res = coeffs_matp[0] (note matp->length > 0 here)
-            nmod_mat_set(res, matp->coeffs + 0);
+        {
+            nmod_mat_t cmat;
+            nmod_mat_poly_coeff_attach(cmat, matp, 0);
+            nmod_mat_set(res, cmat);
+        }
         else // res = coefficient of degree ord in appbas*pmat
             nmod_mat_poly_mul_coeff(res, appbas, matp, ord);
         // TODO try another variant with res_tmp to save memory?
@@ -325,12 +329,13 @@ _PROFILER_REGION_START
             // TODO see if a convenient way to make this matrix fixed at the beginning;
             // note nullity is most often unchanged along iterations
             // TODO generally try to improve memory handling in here
-            nmod_mat_t ns_app, app_win_mul, app_win_add;
+            nmod_mat_t ns_app, app_win_mul, app_win_add, app_coeff;
             nmod_mat_init(ns_app, nullity, appbas->c, appbas->mod.n);
             for (slong d = 0; d < appbas->length; ++d)
             {
-                nmod_mat_window_init(app_win_mul, appbas->coeffs + d, 0, 0, m-nullity, m);
-                nmod_mat_window_init(app_win_add, appbas->coeffs + d, m-nullity, 0, m, m);
+                nmod_mat_poly_coeff_attach(app_coeff, appbas, d);
+                nmod_mat_window_init(app_win_mul, app_coeff, 0, 0, m-nullity, m);
+                nmod_mat_window_init(app_win_add, app_coeff, m-nullity, 0, m, m);
                 nmod_mat_mul(ns_app, nsbas, app_win_mul);
                 nmod_mat_add(app_win_add, app_win_add, ns_app);
             }
@@ -350,22 +355,6 @@ _PROFILER_REGION_START
 
             // rows not corresponding to pivots are multiplied by X
             // note: these rows currently have length strictly less than len(appbas)
-#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
-            ulong ** save_zero_rows = (ulong **) flint_malloc((m-nullity) * sizeof(ulong *));
-            for (slong i = 0; i < m-nullity; ++i)
-            {
-                save_zero_rows[i] = appbas->coeffs[appbas->length-1].rows[i];
-                appbas->coeffs[appbas->length-1].rows[i] = appbas->coeffs[appbas->length-2].rows[i];
-                // note: arrived at this stage, appbas->length must be >= 2
-            }
-            for (slong d = appbas->length-2; d > 0; d--)
-                for (slong i = 0; i < m-nullity; ++i)
-                    appbas->coeffs[d].rows[i] = appbas->coeffs[d-1].rows[i];
-            for (slong i = 0; i < m-nullity; ++i)
-                //_nmod_vec_zero(appbas->coeffs[0].rows[i], m);
-                appbas->coeffs[0].rows[i] = save_zero_rows[i];
-            flint_free(save_zero_rows);
-#else
             // note: arrived at this stage, appbas->length must be >= 2
             for (slong d = appbas->length-1; d > 0; d--)
                 for (slong i = 0; i < m-nullity; ++i)
@@ -374,7 +363,6 @@ _PROFILER_REGION_START
                                   m);
             for (slong i = 0; i < m-nullity; ++i)
                 _nmod_vec_zero(nmod_mat_poly_entry_ptr(appbas, 0, i, 0), m);
-#endif
 _PROFILER_REGION_STOP(t_appbas)
 
 _PROFILER_REGION_START
@@ -502,11 +490,15 @@ void nmod_mat_poly_mbasis_resupdate(nmod_mat_poly_t appbas,
     // appbas = Id so R[d] = matp[d] (zero beyond matp->length)
 
     nmod_mat_struct * R = (nmod_mat_struct *) flint_malloc(order * sizeof(nmod_mat_struct));
+    nmod_mat_t cmat;
     for (slong d = 0; d < order; d++)
     {
         nmod_mat_init(R + d, m, n, matp->mod.n);
         if (d < matp->length)
-            nmod_mat_set(R + d, matp->coeffs + d);
+        {
+            nmod_mat_poly_coeff_attach(cmat, matp, d);
+            nmod_mat_set(R + d, cmat);
+        }
     }
 
     // copy of the current residual, permuted for the nullspace step (keeps
@@ -557,11 +549,12 @@ void nmod_mat_poly_mbasis_resupdate(nmod_mat_poly_t appbas,
                 nmod_mat_permute_rows(R + d, pivots, NULL);
 
             // constant update on appbas: bottom nullity rows += nsbas*top (all coeffs)
-            nmod_mat_t win_mul, win_add;
+            nmod_mat_t win_mul, win_add, app_coeff;
             for (slong d = 0; d < appbas->length; ++d)
             {
-                nmod_mat_window_init(win_mul, appbas->coeffs + d, 0, 0, m-nullity, m);
-                nmod_mat_window_init(win_add, appbas->coeffs + d, m-nullity, 0, m, m);
+                nmod_mat_poly_coeff_attach(app_coeff, appbas, d);
+                nmod_mat_window_init(win_mul, app_coeff, 0, 0, m-nullity, m);
+                nmod_mat_window_init(win_add, app_coeff, m-nullity, 0, m, m);
                 _mbasis_low_rank_addmul(win_add, nsbas, win_mul);
                 nmod_mat_window_clear(win_mul);
                 nmod_mat_window_clear(win_add);
@@ -584,27 +577,12 @@ void nmod_mat_poly_mbasis_resupdate(nmod_mat_poly_t appbas,
                     _nmod_mat_poly_set_length(appbas, appbas->length+1);
                     i = m - nullity;
                 }
-#if __FLINT_VERSION < 3 || (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR < 3)
-            ulong ** save_zero_rows = (ulong **) flint_malloc((m-nullity) * sizeof(ulong *));
-            for (slong i = 0; i < m-nullity; ++i)
-            {
-                save_zero_rows[i] = appbas->coeffs[appbas->length-1].rows[i];
-                appbas->coeffs[appbas->length-1].rows[i] = appbas->coeffs[appbas->length-2].rows[i];
-            }
-            for (slong d = appbas->length-2; d > 0; d--)
-                for (slong i = 0; i < m-nullity; ++i)
-                    appbas->coeffs[d].rows[i] = appbas->coeffs[d-1].rows[i];
-            for (slong i = 0; i < m-nullity; ++i)
-                appbas->coeffs[0].rows[i] = save_zero_rows[i];
-            flint_free(save_zero_rows);
-#else
             for (slong d = appbas->length-1; d > 0; d--)
                 for (slong i = 0; i < m-nullity; ++i)
                     _nmod_vec_set(nmod_mat_poly_entry_ptr(appbas, d, i, 0),
                                   nmod_mat_poly_entry_ptr(appbas, d-1, i, 0), m);
             for (slong i = 0; i < m-nullity; ++i)
                 _nmod_vec_zero(nmod_mat_poly_entry_ptr(appbas, 0, i, 0), m);
-#endif
 
             // X-shift of the top rows of the residual vector: top(R[d]) <- top(R[d-1]),
             // for d = order-1 downto ord+1 (top(R[ord]) is the source for R[ord+1];

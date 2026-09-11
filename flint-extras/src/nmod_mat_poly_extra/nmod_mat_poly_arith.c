@@ -24,7 +24,10 @@ void nmod_mat_poly_mul_coeff(nmod_mat_t coeff,
 
     // now lbound < ubound
     // first handle i == lbound separately, to avoid wasting time zero-ing `coeff`
-    nmod_mat_mul(coeff, mat1->coeffs + lbound, mat2->coeffs + (k - lbound));
+    nmod_mat_t cmat1, cmat2;
+    nmod_mat_poly_coeff_attach(cmat1, mat1, lbound);
+    nmod_mat_poly_coeff_attach(cmat2, mat2, k - lbound);
+    nmod_mat_mul(coeff, cmat1, cmat2);
 
     // `if` just here to avoid initializing temp for nothing
     if (lbound + 1 < ubound)
@@ -33,7 +36,9 @@ void nmod_mat_poly_mul_coeff(nmod_mat_t coeff,
         nmod_mat_init(temp, mat1->r, mat2->c, mat1->mod.n);
         for (slong i = lbound+1; i < ubound; i++)
         {
-            nmod_mat_mul(temp, mat1->coeffs + i, mat2->coeffs + (k - i));
+            nmod_mat_poly_coeff_attach(cmat1, mat1, i);
+            nmod_mat_poly_coeff_attach(cmat2, mat2, k - i);
+            nmod_mat_mul(temp, cmat1, cmat2);
             nmod_mat_add(coeff, coeff, temp);
         }
         nmod_mat_clear(temp);
@@ -45,6 +50,7 @@ void nmod_mat_poly_evaluate_nmod(nmod_mat_t eval,
                                  ulong pt)
 {
     slong k = matp->length;
+    nmod_mat_t cmat;
 
     if (k == 0)
     {
@@ -54,18 +60,20 @@ void nmod_mat_poly_evaluate_nmod(nmod_mat_t eval,
 
     if (k == 1 || pt == 0)
     {
-        nmod_mat_set(eval, matp->coeffs + 0);
+        nmod_mat_poly_coeff_attach(cmat, matp, 0);
+        nmod_mat_set(eval, cmat);
         return;
     }
 
     k--; // k == degree
-    nmod_mat_set(eval, matp->coeffs + k);
+    nmod_mat_poly_coeff_attach(cmat, matp, k);
+    nmod_mat_set(eval, cmat);
     k--; // k == degree-1
 
     // Horner: eval = matp[k] + eval*pt, k = degree-1 ... 0
     for ( ; k >= 0; k--)
-        nmod_mat_scalar_addmul_ui(eval, nmod_mat_poly_coeff(matp, k), eval, pt);
+    {
+        nmod_mat_poly_coeff_attach(cmat, matp, k);
+        nmod_mat_scalar_addmul_ui(eval, cmat, eval, pt);
+    }
 }
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

@@ -10,8 +10,10 @@ void nmod_mat_poly_init_set_from_nmod_mat(nmod_mat_poly_t matp,
     // otherwise set length to 1 and copy data
     if (! nmod_mat_is_zero(cmat))
     {
-        nmod_mat_init_set(matp->coeffs + 0, cmat);
-        matp->length = 1;
+        nmod_mat_t coeff;
+        _nmod_mat_poly_set_length(matp, 1);
+        nmod_mat_poly_coeff_attach(coeff, matp, 0);
+        nmod_mat_set(coeff, cmat);
     }
 }
 
@@ -22,9 +24,11 @@ void nmod_mat_poly_set_from_nmod_mat(nmod_mat_poly_t matp,
         nmod_mat_poly_zero(matp);
     else
     {
+        nmod_mat_t coeff;
         nmod_mat_poly_fit_length(matp, 1);
         _nmod_mat_poly_set_length(matp, 1);
-        nmod_mat_set(matp->coeffs + 0, cmat);
+        nmod_mat_poly_coeff_attach(coeff, matp, 0);
+        nmod_mat_set(coeff, cmat);
     }
 }
 
