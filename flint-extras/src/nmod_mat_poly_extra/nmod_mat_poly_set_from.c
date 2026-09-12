@@ -37,14 +37,17 @@ void nmod_mat_poly_set_from_nmod_mat(nmod_mat_poly_t matp,
 }
 
 /*------------------------------------------------------------------------*/
-/* Conversion nmod_poly_mat -> nmod_mat_poly                               */
+/* Transposition between two collections of separately allocated rows      */
 /*                                                                         */
-/* This is a transposition.  Writing `n = r*c` for the number of matrix     */
-/* entries and `len` for the number of coefficients, the input is an        */
-/* `n x len` array whose rows (the coefficient arrays of the polynomial     */
-/* entries) are contiguous, and the output is a `len x n` array whose rows  */
-/* (the entry arrays of the matrix coefficients) are contiguous.  Both      */
-/* sides are collections of separately allocated rows.                      */
+/* Both conversions between nmod_poly_mat and nmod_mat_poly are the same    */
+/* transposition, with the two sides exchanged.  Writing `n = r*c` for the  */
+/* number of matrix entries and `len` for the number of coefficients, an    */
+/* nmod_poly_mat is an `n x len` array whose rows (the coefficient arrays   */
+/* of the polynomial entries) are contiguous, and an nmod_mat_poly is a     */
+/* `len x n` array whose rows (the entry arrays of the matrix coefficients) */
+/* are contiguous.  ::_pml_transpose does one such transposition and is     */
+/* used by both directions; only which table is passed as the source and    */
+/* which as the destination differs.                                       */
 /*                                                                         */
 /* The naive element-by-element loop uses 8 bytes of each cache line it     */
 /* touches on one of the two sides before moving on, so as soon as that     */
@@ -55,11 +58,12 @@ void nmod_mat_poly_set_from_nmod_mat(nmod_mat_poly_t matp,
 /* Zen 4 and 2x to 5x on Apple M4 over matrices 4x4 to 128x128 and lengths  */
 /* 32 to 2048.                                                             */
 /*                                                                         */
-/* The output rows being 64-byte aligned (see ::_nmod_mat_poly_coeff_alloc) */
-/* is what makes the 8-wide kernel worth having: a 64-byte store lands on   */
-/* one cache line rather than straddling two, which it would do at every    */
-/* single store if the rows were only 16-byte aligned, as a plain           */
-/* `flint_calloc` leaves them.                                             */
+/* Alignment decides how wide a kernel is worth using, and the two          */
+/* directions differ there: the coefficients of an nmod_mat_poly are        */
+/* 64-byte aligned (see ::_nmod_mat_poly_coeff_alloc) so a 64-byte access   */
+/* lands on one cache line, while the coefficient array of an nmod_poly is  */
+/* whatever `flint_realloc` returns, so the same access straddles two.      */
+/* Hence the two conversions do not pick the same default kernel.          */
 /*------------------------------------------------------------------------*/
 
 /* Load W words of `s` starting at index `k`, zero-padding past `l`.
@@ -157,23 +161,24 @@ FLINT_FORCE_INLINE __m512i _pml_conv_load8(nn_srcptr s, slong l, slong k)
     } while (0)
 #endif  /* _PML_HAVE_CONV_VEC8 */
 
-/* One conversion routine, for a given block width, block kernel and schedule.
+/* One transposition routine, for a given block width, block kernel and
+   schedule.
 
-   COEFF_MAJOR == 1: the coefficient index is the outer loop, so the stores
-   walk each output matrix from left to right (long sequential write streams,
-   scattered reads).  COEFF_MAJOR == 0 is the transposed schedule (long
-   sequential read streams, scattered writes).
+   DST_MAJOR == 1: the destination row index is the outer loop, so the stores
+   walk each destination row from left to right (long sequential write
+   streams, scattered reads).  DST_MAJOR == 0 is the transposed schedule
+   (long sequential read streams, scattered writes).
 
    Either way the two residual bands, at most W-1 wide each, are finished with
    plain scalar loops. */
-#define _PML_MK_CONV(NAME, W, KERNEL, COEFF_MAJOR)                           \
+#define _PML_MK_TRANSPOSE(NAME, W, KERNEL, DST_MAJOR)                           \
 static void NAME(nn_ptr * dst, slong len,                                    \
                  nn_srcptr * src, const slong * slen, slong n)               \
 {                                                                            \
     const slong nW = n - (n % (W));                                          \
     const slong lW = len - (len % (W));                                      \
                                                                              \
-    if (COEFF_MAJOR)                                                         \
+    if (DST_MAJOR)                                                         \
         for (slong k = 0; k < lW; k += (W))                                  \
             for (slong e = 0; e < nW; e += (W))                              \
                 KERNEL(e, k);                                                \
@@ -199,54 +204,56 @@ static void NAME(nn_ptr * dst, slong len,                                    \
     }                                                                        \
 }
 
-_PML_MK_CONV(_pml_conv_sca_cm, 8, _PML_KERNEL_SCALAR, 1)
-_PML_MK_CONV(_pml_conv_sca_em, 8, _PML_KERNEL_SCALAR, 0)
+_PML_MK_TRANSPOSE(_pml_tr_sca_dm, 8, _PML_KERNEL_SCALAR, 1)
+_PML_MK_TRANSPOSE(_pml_tr_sca_sm, 8, _PML_KERNEL_SCALAR, 0)
 #if _PML_HAVE_CONV_VEC4
-_PML_MK_CONV(_pml_conv_v4_cm, 4, _PML_KERNEL_VEC4, 1)
-_PML_MK_CONV(_pml_conv_v4_em, 4, _PML_KERNEL_VEC4, 0)
+_PML_MK_TRANSPOSE(_pml_tr_v4_dm, 4, _PML_KERNEL_VEC4, 1)
+_PML_MK_TRANSPOSE(_pml_tr_v4_sm, 4, _PML_KERNEL_VEC4, 0)
 #endif
 #if _PML_HAVE_CONV_VEC8
-_PML_MK_CONV(_pml_conv_v8_cm, 8, _PML_KERNEL_VEC8, 1)
-_PML_MK_CONV(_pml_conv_v8_em, 8, _PML_KERNEL_VEC8, 0)
+_PML_MK_TRANSPOSE(_pml_tr_v8_dm, 8, _PML_KERNEL_VEC8, 1)
+_PML_MK_TRANSPOSE(_pml_tr_v8_sm, 8, _PML_KERNEL_VEC8, 0)
 #endif
 
-/* dispatch on (kernel, schedule) */
-static void _pml_conv(nn_ptr * dst, slong len, nn_srcptr * src,
-                      const slong * slen, slong n, int kern, int cmaj)
+/* Dispatch on (kernel, schedule).  Documented in nmod_mat_poly_extra/impl.h. */
+void _pml_transpose(nn_ptr * dst, slong ndst, nn_srcptr * src,
+                    const slong * slen, slong nsrc, int kern, int dmaj)
 {
 #if _PML_HAVE_CONV_VEC8
     if (kern == NMOD_MAT_POLY_CONV_VEC8)
     {
-        if (cmaj) _pml_conv_v8_cm(dst, len, src, slen, n);
-        else      _pml_conv_v8_em(dst, len, src, slen, n);
+        if (dmaj) _pml_tr_v8_dm(dst, ndst, src, slen, nsrc);
+        else      _pml_tr_v8_sm(dst, ndst, src, slen, nsrc);
         return;
     }
 #endif
 #if _PML_HAVE_CONV_VEC4
     if (kern == NMOD_MAT_POLY_CONV_VEC4)
     {
-        if (cmaj) _pml_conv_v4_cm(dst, len, src, slen, n);
-        else      _pml_conv_v4_em(dst, len, src, slen, n);
+        if (dmaj) _pml_tr_v4_dm(dst, ndst, src, slen, nsrc);
+        else      _pml_tr_v4_sm(dst, ndst, src, slen, nsrc);
         return;
     }
 #endif
-    if (cmaj) _pml_conv_sca_cm(dst, len, src, slen, n);
-    else      _pml_conv_sca_em(dst, len, src, slen, n);
+    if (dmaj) _pml_tr_sca_dm(dst, ndst, src, slen, nsrc);
+    else      _pml_tr_sca_sm(dst, ndst, src, slen, nsrc);
 }
 
-/* Default kernel: the widest one the build provides.
- *
- * On Zen 4 the 8-wide AVX-512 kernel is 20% to 40% faster than the 4-wide one
- * as long as the data fits in cache (0.20 vs 0.28 ns per word at 32x32 and
- * length 128), and 10% to 20% slower once it does not (0.95 vs 0.86 at 64x64
- * and length 2048).  The two are close enough overall that the wider one is
- * kept for its advantage in the common, cache-resident range.
- *
- * The ranking depends on the output rows being 64-byte aligned, as
- * ::_nmod_mat_poly_coeff_alloc makes them: with the 16-byte alignment a plain
- * `flint_calloc` leaves, every 64-byte store straddles two cache lines and
- * the 4-wide kernel wins instead. */
-static int _pml_conv_default_kernel(void)
+/* Narrow `kern` to a kernel whose block fits inside a `ndst x nsrc`
+   transposition: a wider one would leave all the work to the scalar residual
+   bands.  This matters for small matrices -- an 8x8 kernel does nothing at
+   all on a 2x2 matrix (4 entries), where the 4x4 one is 4x faster. */
+int _pml_transpose_narrow_kernel(int kern, slong ndst, slong nsrc)
+{
+    if (kern == NMOD_MAT_POLY_CONV_VEC8 && (nsrc < 8 || ndst < 8))
+        kern = NMOD_MAT_POLY_CONV_VEC4;
+    if (kern == NMOD_MAT_POLY_CONV_VEC4 && (nsrc < 4 || ndst < 4))
+        kern = NMOD_MAT_POLY_CONV_SCALAR;
+    return kern;
+}
+
+/* The widest kernel this build provides. */
+int _pml_transpose_widest_kernel(void)
 {
 #if _PML_HAVE_CONV_VEC8
     return NMOD_MAT_POLY_CONV_VEC8;
@@ -269,7 +276,7 @@ void _nmod_mat_poly_set_trunc_from_poly_mat(nmod_mat_poly_t matp,
                                             const nmod_poly_mat_t pmat,
                                             slong order,
                                             int kern,
-                                            int cmaj)
+                                            int dmaj)
 {
     const slong len = nmod_poly_mat_max_length(pmat);
     if (order > len)
@@ -304,42 +311,27 @@ void _nmod_mat_poly_set_trunc_from_poly_mat(nmod_mat_poly_t matp,
        the coefficients are contiguous, one matrix row otherwise. */
     const slong nrows = (matp->stride == c) ? r * c : c;
 
+    /* Default kernel: the widest one available.  On Zen 4 the 8-wide AVX-512
+       kernel is 20% to 40% faster than the 4-wide one as long as the data
+       fits in cache (0.20 vs 0.28 ns per word at 32x32 and length 128), and
+       10% to 20% slower once it does not (0.95 vs 0.86 at 64x64 and length
+       2048); close enough overall to keep the wider one for its advantage in
+       the common, cache-resident range.  This relies on the destination rows
+       here being 64-byte aligned, as ::_nmod_mat_poly_coeff_alloc makes them;
+       the conversion in the other direction, whose destination rows are not,
+       makes a different choice. */
     if (kern < 0 || kern > NMOD_MAT_POLY_CONV_VEC8)
-        kern = _pml_conv_default_kernel();
+        kern = _pml_transpose_widest_kernel();
 
-    /* A kernel whose block does not fit inside the problem would leave all
-       the work to the scalar residual bands, so step down to a narrower one.
-       This matters for small matrices: an 8x8 kernel does nothing at all on a
-       2x2 matrix (4 entries), where the 4x4 one is 4x faster. */
-    if (kern == NMOD_MAT_POLY_CONV_VEC8 && (nrows < 8 || order < 8))
-        kern = NMOD_MAT_POLY_CONV_VEC4;
-    if (kern == NMOD_MAT_POLY_CONV_VEC4 && (nrows < 4 || order < 4))
-        kern = NMOD_MAT_POLY_CONV_SCALAR;
+    kern = _pml_transpose_narrow_kernel(kern, order, nrows);
 
-    /* Schedule.  Whichever loop is outermost, one side of the transposition
-       is visited in long sequential runs and the other one block at a time,
-       from rows that are separately allocated.  Entry-major puts the long
-       runs on the loads from the input polynomials and scatters the stores
-       into the output matrices; coefficient-major does the opposite.
-
-       Which one wins depends on how much of a cache line one scattered store
-       covers.  On x86, where a line is 64 bytes, a block is a whole line
-       (8-wide kernel) or half of one (4-wide), the store needs no line to be
-       kept around, and entry-major wins: on Zen 4 it is 1.6x to 2.4x faster
-       than coefficient-major from 16 MB of data upwards, and within noise
-       below.
-
-       On Apple silicon a line is 128 bytes, so a scattered store covers a
-       quarter of one (the 4-wide NEON kernel is the widest available there):
-       the line has to be fetched for ownership and then kept until the
-       remaining quarters are written, which only happens after a full sweep
-       of the inner loop.  Entry-major then loses badly -- on an M4 it is 3x
-       to 6x slower than coefficient-major as soon as the matrix reaches
-       16x16, and slower than the naive loop itself from 32x32 on.  With the
-       stores sequential instead, consecutive blocks fill each line back to
-       back and the line size stops mattering. */
-    if (cmaj < 0 || cmaj > 1)
-        cmaj = PML_CONV_COEFF_MAJOR;
+    /* Schedule; here destination-major is the coefficient-major schedule (the
+       stores walk each output matrix coefficient from left to right) and
+       source-major is the entry-major one (the loads walk each input
+       polynomial).  See nmod_mat_poly_extra/impl.h for why the default
+       depends on the target. */
+    if (dmaj < 0 || dmaj > 1)
+        dmaj = PML_CONV_DST_MAJOR;
 
     nn_srcptr * src = (nn_srcptr *) flint_malloc(r * c * sizeof(nn_srcptr));
     slong * slen = (slong *) flint_malloc(r * c * sizeof(slong));
@@ -357,7 +349,7 @@ void _nmod_mat_poly_set_trunc_from_poly_mat(nmod_mat_poly_t matp,
         /* the usual case: the entries of a coefficient are one contiguous run
            of r*c words, 64-byte aligned, so the whole matrix is a single row
            of the transposition */
-        _pml_conv(matp->coeffs, order, src, slen, r * c, kern, cmaj);
+        _pml_transpose(matp->coeffs, order, src, slen, r * c, kern, dmaj);
     }
     else
     {
@@ -367,7 +359,7 @@ void _nmod_mat_poly_set_trunc_from_poly_mat(nmod_mat_poly_t matp,
         {
             for (slong k = 0; k < order; k++)
                 dst[k] = matp->coeffs[k] + i * matp->stride;
-            _pml_conv(dst, order, src + i * c, slen + i * c, c, kern, cmaj);
+            _pml_transpose(dst, order, src + i * c, slen + i * c, c, kern, dmaj);
         }
         flint_free(dst);
     }

@@ -10,13 +10,18 @@
     <https://www.gnu.org/licenses/>.
 */
 
-/* Timings for the nmod_poly_mat -> nmod_mat_poly conversion.
+/* Timings for the nmod_mat_poly -> nmod_poly_mat conversion.
  *
  * Unit: nanoseconds per converted word
  *
  * The conversion is a transposition of r*c*order words and moves 8 bytes in
  * and 8 bytes out per word, so a value close to the cost of a plain memcpy of
- * the same volume is the target. */
+ * the same volume is the target.
+ *
+ * Unlike the other direction, the destination rows here are the coefficient
+ * arrays of the entries of an nmod_poly_mat, whose alignment is whatever
+ * `flint_realloc` returned; the source rows, the coefficients of the
+ * nmod_mat_poly, are the 64-byte aligned ones. */
 
 #include <stdlib.h>  // for atol, atoi
 #include <time.h>    // for time
@@ -29,91 +34,98 @@
 
 #include "pml.h"
 #include "nmod_mat_poly.h"
+#include "nmod_poly_mat_utils.h"
 #include "nmod_mat_poly_extra/impl.h"
+#include "nmod_poly_mat_extra/impl.h"
 
 /* Straightforward entry-by-entry conversion: the reference that the blocked
    implementation is checked against. */
-static void _set_trunc_from_poly_mat_naive(nmod_mat_poly_t matp,
-                                           const nmod_poly_mat_t pmat,
+static void _set_trunc_from_mat_poly_naive(nmod_poly_mat_t pmat,
+                                           const nmod_mat_poly_t matp,
                                            slong order)
 {
-    const slong len = nmod_poly_mat_max_length(pmat);
-    if (order > len)
-        order = len;
+    if (order > matp->length)
+        order = matp->length;
 
-    nmod_mat_poly_fit_length(matp, order);
-    _nmod_mat_poly_set_length(matp, order);
+    for (slong i = 0; i < pmat->r; i++)
+        for (slong j = 0; j < pmat->c; j++)
+            nmod_poly_fit_length(nmod_poly_mat_entry(pmat, i, j), order);
 
     for (slong k = 0; k < order; k++)
-        for (slong i = 0; i < matp->r; i++)
-            for (slong j = 0; j < matp->c; j++)
-                nmod_mat_poly_entry(matp, k, i, j) = nmod_poly_get_coeff_ui(nmod_poly_mat_entry(pmat, i, j), k);
+        for (slong i = 0; i < pmat->r; i++)
+            for (slong j = 0; j < pmat->c; j++)
+                nmod_poly_mat_entry(pmat, i, j)->coeffs[k] = nmod_mat_poly_entry(matp, k, i, j);
 
-    if (order < len)
-        _nmod_mat_poly_normalise(matp);
+    for (slong i = 0; i < pmat->r; i++)
+        for (slong j = 0; j < pmat->c; j++)
+        {
+            _nmod_poly_set_length(nmod_poly_mat_entry(pmat, i, j), order);
+            _nmod_poly_normalise(nmod_poly_mat_entry(pmat, i, j));
+        }
 }
 
 #define NFUNS 8
 
 static const char * description[NFUNS] = {
-    "#0  --> naive (entry by entry, local reference)      ",
-    "#1  --> blocked 8x8, scalar,          coeff-major    ",
-    "#2  --> blocked 8x8, scalar,          entry-major    ",
-    "#3  --> blocked 4x4, machine vectors, coeff-major    ",
-    "#4  --> blocked 4x4, machine vectors, entry-major    ",
-    "#5  --> blocked 8x8, AVX-512,         coeff-major    ",
-    "#6  --> blocked 8x8, AVX-512,         entry-major    ",
-    "#7  --> default kernel and schedule                  ",
+    "#0  --> naive (entry by entry, local reference)           ",
+    "#1  --> blocked 8x8, scalar,          entry-major (st seq)",
+    "#2  --> blocked 8x8, scalar,          coeff-major (ld seq)",
+    "#3  --> blocked 4x4, machine vectors, entry-major (st seq)",
+    "#4  --> blocked 4x4, machine vectors, coeff-major (ld seq)",
+    "#5  --> blocked 8x8, AVX-512,         entry-major (st seq)",
+    "#6  --> blocked 8x8, AVX-512,         coeff-major (ld seq)",
+    "#7  --> default kernel and schedule                       ",
 };
 
-/* (kernel, schedule) of function number f >= 1; -1 means "default" */
+/* (kernel, schedule) of function number f >= 1; -1 means "default".
+   `dmaj == 1` sweeps the destination rows, i.e. the output polynomials. */
 static const int fun_kern[NFUNS] = {0, NMOD_MAT_POLY_CONV_SCALAR, NMOD_MAT_POLY_CONV_SCALAR,
                                        NMOD_MAT_POLY_CONV_VEC4, NMOD_MAT_POLY_CONV_VEC4,
                                        NMOD_MAT_POLY_CONV_VEC8, NMOD_MAT_POLY_CONV_VEC8,
                                        -1};
 static const int fun_dmaj[NFUNS] = {0, 1, 0, 1, 0, 1, 0, -1};
 
-/* random polynomial matrix; if ragged, entry lengths are spread below len */
-static void _rand_pmat(nmod_poly_mat_t pmat, flint_rand_t state, slong len, int ragged)
+/* random matrix polynomial; if `ragged`, some coefficients are zeroed, so the
+   output entries come out with unequal lengths */
+static void _rand_matp(nmod_mat_poly_t matp, flint_rand_t state, slong len, int ragged)
 {
-    nmod_poly_mat_rand(pmat, state, len);
+    nmod_mat_poly_rand(matp, state, len);
     if (ragged)
-        for (slong i = 0; i < nmod_poly_mat_nrows(pmat); i++)
-            for (slong j = 0; j < nmod_poly_mat_ncols(pmat); j++)
-                nmod_poly_truncate(nmod_poly_mat_entry(pmat, i, j),
-                                   1 + n_randint(state, len));
-    /* keep the announced order: force one entry to have full length */
-    nmod_poly_set_coeff_ui(nmod_poly_mat_entry(pmat, 0, 0), len - 1, UWORD(1));
+        for (slong k = 0; k < matp->length; k++)
+            for (slong i = 0; i < matp->r; i++)
+                for (slong j = 0; j < matp->c; j++)
+                    if (n_randint(state, 3) == 0)
+                        nmod_mat_poly_entry(matp, k, i, j) = UWORD(0);
 }
 
 static double time_fun(slong fun_nb, slong dim1, slong dim2, slong len,
                        ulong modn, int ragged, flint_rand_t state)
 {
-    nmod_poly_mat_t pmat;
-    nmod_poly_mat_init(pmat, dim1, dim2, modn);
-    _rand_pmat(pmat, state, len, ragged);
-
     nmod_mat_poly_t matp;
     nmod_mat_poly_init(matp, dim1, dim2, modn);
+    _rand_matp(matp, state, len, ragged);
+
+    nmod_poly_mat_t pmat;
+    nmod_poly_mat_init(pmat, dim1, dim2, modn);
 
     double FLINT_SET_BUT_UNUSED(tcpu), twall;
 
     if (fun_nb == 0)
     {
         TIMEIT_START;
-        _set_trunc_from_poly_mat_naive(matp, pmat, len);
+        _set_trunc_from_mat_poly_naive(pmat, matp, len);
         TIMEIT_STOP_VALUES(tcpu, twall);
     }
     else
     {
         TIMEIT_START;
-        _nmod_mat_poly_set_trunc_from_poly_mat(matp, pmat, len,
+        _nmod_poly_mat_set_trunc_from_mat_poly(pmat, matp, len,
                                                fun_kern[fun_nb], fun_dmaj[fun_nb]);
         TIMEIT_STOP_VALUES(tcpu, twall);
     }
 
-    nmod_mat_poly_clear(matp);
     nmod_poly_mat_clear(pmat);
+    nmod_mat_poly_clear(matp);
 
     /* nanoseconds per converted word */
     return 1e9 * twall / ((double) dim1 * (double) dim2 * (double) len);
@@ -137,7 +149,7 @@ int main(int argc, char ** argv)
 #else
                  0,
 #endif
-                 PML_CONV_DST_MAJOR ? "coeff-major" : "entry-major"
+                 PML_CONV_DST_MAJOR ? "entry-major" : "coeff-major"
                 );
     flint_printf("(unavailable kernels silently fall back, columns then repeat)\n");
 
@@ -147,9 +159,9 @@ int main(int argc, char ** argv)
         flint_printf("   No argument runs a default grid with all functions.\n");
         flint_printf("   - nbits: number of bits in (1..64] for the modulus, nextprime(2**(nbits-1))\n");
         flint_printf("   - fun: id of the timed function, -1 for all (see below)\n");
-        flint_printf("   - dim1, dim2: the input matrix is dim1 x dim2\n");
+        flint_printf("   - dim1, dim2: the input matrix polynomial is dim1 x dim2\n");
         flint_printf("   - len: the input has length len (order of the conversion)\n");
-        flint_printf("   - ragged: optional, if nonzero the entries get unequal lengths\n");
+        flint_printf("   - ragged: optional, if nonzero some input coefficients are zeroed\n");
         flint_printf("\nAvailable functions:\n");
         for (slong j = 0; j < NFUNS; j++)
             flint_printf("   %s\n", description[j]);

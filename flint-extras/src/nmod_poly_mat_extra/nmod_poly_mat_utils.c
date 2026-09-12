@@ -14,6 +14,8 @@
 #include <flint/nmod_poly.h>
 #include "nmod_poly_mat_utils.h"
 #include "nmod_mat_poly.h"
+#include "nmod_mat_poly_extra/impl.h"   /* _pml_transpose */
+#include "nmod_poly_mat_extra/impl.h"
 
 /**********************************************************************
 *                    ROW ROTATION DOWNWARD/UPWARD                    *
@@ -182,29 +184,131 @@ void _nmod_poly_mat_permute_columns_by_sorting_vec(nmod_poly_mat_t mat,
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 
-void nmod_poly_mat_set_trunc_from_mat_poly(nmod_poly_mat_t pmat,
-                                           const nmod_mat_poly_t matp,
-                                           slong order)
+/* This is the transposition of the conversion in the other direction, so it
+   runs on the same blocked kernels; see nmod_mat_poly_extra/impl.h.  The two
+   sides are exchanged, and with them their alignments: here the source rows
+   (the coefficients of `matp`) are the 64-byte aligned ones and the
+   destination rows (the coefficient arrays of the entries of `pmat`) are
+   whatever `flint_realloc` returned, which is why this direction does not
+   pick the same default kernel as the other one. */
+
+/* Below this many words the pointer tables and their allocation dominate;
+   just run the naive loop. */
+#define _PML_SETFROM_TINY 512
+
+/* Default kernel.  Not the widest one, unlike the other direction: the
+   destination rows here are the coefficient arrays of nmod_poly entries, 16
+   byte aligned at best, so every 64-byte store straddles two cache lines
+   whereas a 32-byte one does so only half the time.  Measured over matrices
+   4x4 to 128x128 and lengths 32 to 8192, the 4-wide kernel and the widest
+   available one are within 2% of each other while the data fits in cache,
+   and the 4-wide one is 10% ahead once it does not. */
+#ifndef PML_SETFROM_MAT_POLY_KERNEL
+# define PML_SETFROM_MAT_POLY_KERNEL NMOD_MAT_POLY_CONV_VEC4
+#endif
+
+/* Default schedule: always sweep the destination rows, that is, write each
+   output polynomial from its constant coefficient upwards.  This direction
+   does not need the target test that PML_CONV_DST_MAJOR makes for the other
+   one, and for the same reason: what one wants is the *aligned* side of the
+   transposition to be the scattered one.  Here that side is the source (the
+   coefficients of the nmod_mat_poly, 64-byte aligned), so scattering the
+   loads and sweeping the stores is right everywhere -- and on Apple silicon
+   it is what the 128-byte cache line asks for anyway.  Measured on Zen 4 the
+   other schedule is 20% to 80% slower over the same grid. */
+#ifndef PML_SETFROM_MAT_POLY_DST_MAJOR
+# define PML_SETFROM_MAT_POLY_DST_MAJOR 1
+#endif
+
+void _nmod_poly_mat_set_trunc_from_mat_poly(nmod_poly_mat_t pmat,
+                                            const nmod_mat_poly_t matp,
+                                            slong order,
+                                            int kern,
+                                            int dmaj)
 {
     if (order > matp->length)
         order = matp->length;
 
+    const slong r = pmat->r;
+    const slong c = pmat->c;
+
     // prepare memory
-    for (slong i = 0; i < pmat->r; i++)
-        for (slong j = 0; j < pmat->c; j++)
+    for (slong i = 0; i < r; i++)
+        for (slong j = 0; j < c; j++)
             nmod_poly_fit_length(nmod_poly_mat_entry(pmat, i, j), order);
 
-    // fill data
-    for (slong k = 0; k < order; k++)
-        for (slong i = 0; i < pmat->r; i++)
-            for (slong j = 0; j < pmat->c; j++)
-                nmod_poly_mat_entry(pmat, i, j)->coeffs[k] = nmod_mat_poly_entry(matp, k, i, j);
+    if (order == 0 || r == 0 || c == 0)
+    {
+        for (slong i = 0; i < r; i++)
+            for (slong j = 0; j < c; j++)
+                _nmod_poly_set_length(nmod_poly_mat_entry(pmat, i, j), 0);
+        return;
+    }
+
+    if ((double) r * (double) c * (double) order < (double) _PML_SETFROM_TINY)
+    {
+        for (slong k = 0; k < order; k++)
+            for (slong i = 0; i < r; i++)
+                for (slong j = 0; j < c; j++)
+                    nmod_poly_mat_entry(pmat, i, j)->coeffs[k] = nmod_mat_poly_entry(matp, k, i, j);
+    }
+    else
+    {
+        /* Effective number of rows of the destination: the whole matrix when
+           the coefficients of `matp` are contiguous, one matrix row otherwise. */
+        const slong ndst = (matp->stride == c) ? r * c : c;
+
+        if (kern < 0 || kern > NMOD_MAT_POLY_CONV_VEC8)
+            kern = PML_SETFROM_MAT_POLY_KERNEL;
+        kern = _pml_transpose_narrow_kernel(kern, ndst, order);
+
+        if (dmaj < 0 || dmaj > 1)
+            dmaj = PML_SETFROM_MAT_POLY_DST_MAJOR;
+
+        nn_ptr * dst = (nn_ptr *) flint_malloc(r * c * sizeof(nn_ptr));
+        nn_srcptr * src = (nn_srcptr *) flint_malloc(order * sizeof(nn_srcptr));
+        slong * slen = (slong *) flint_malloc(order * sizeof(slong));
+
+        for (slong i = 0; i < r; i++)
+            for (slong j = 0; j < c; j++)
+                dst[i * c + j] = nmod_poly_mat_entry(pmat, i, j)->coeffs;
+
+        /* every source row is full: the coefficients of `matp` hold all the
+           entries of a matrix, with no truncation */
+        for (slong k = 0; k < order; k++)
+            slen[k] = ndst;
+
+        if (ndst == r * c)
+        {
+            for (slong k = 0; k < order; k++)
+                src[k] = matp->coeffs[k];
+            _pml_transpose(dst, r * c, src, slen, order, kern, dmaj);
+        }
+        else
+            for (slong i = 0; i < r; i++)
+            {
+                for (slong k = 0; k < order; k++)
+                    src[k] = matp->coeffs[k] + i * matp->stride;
+                _pml_transpose(dst + i * c, c, src, slen, order, kern, dmaj);
+            }
+
+        flint_free(dst);
+        flint_free(src);
+        flint_free(slen);
+    }
 
     // normalize
-    for (slong i = 0; i < pmat->r; i++)
-        for (slong j = 0; j < pmat->c; j++)
+    for (slong i = 0; i < r; i++)
+        for (slong j = 0; j < c; j++)
         {
             _nmod_poly_set_length(nmod_poly_mat_entry(pmat, i, j), order);
             _nmod_poly_normalise(nmod_poly_mat_entry(pmat, i, j));
         }
+}
+
+void nmod_poly_mat_set_trunc_from_mat_poly(nmod_poly_mat_t pmat,
+                                           const nmod_mat_poly_t matp,
+                                           slong order)
+{
+    _nmod_poly_mat_set_trunc_from_mat_poly(pmat, matp, order, -1, -1);
 }

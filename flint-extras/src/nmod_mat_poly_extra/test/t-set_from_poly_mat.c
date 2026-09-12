@@ -120,16 +120,16 @@ static int core_test_set_from_poly_mat(const nmod_poly_mat_t pmat,
         ok = 0;
 
     for (int kern = -1; ok && kern <= NMOD_MAT_POLY_CONV_VEC8; kern++)
-        for (int cmaj = -1; ok && cmaj <= 1; cmaj++)
+        for (int dmaj = -1; ok && dmaj <= 1; dmaj++)
         {
             /* leave some stale data behind, of a length unrelated to order */
             nmod_mat_poly_rand(res, state, n_randint(state, 2 * order + 3));
 
-            _nmod_mat_poly_set_trunc_from_poly_mat(res, pmat, order, kern, cmaj);
+            _nmod_mat_poly_set_trunc_from_poly_mat(res, pmat, order, kern, dmaj);
 
             if (! _matp_equal(ref, res))
             {
-                flint_printf("failure with kern = %d, cmaj = %d\n", kern, cmaj);
+                flint_printf("failure with kern = %d, dmaj = %d\n", kern, dmaj);
                 ok = 0;
             }
         }
