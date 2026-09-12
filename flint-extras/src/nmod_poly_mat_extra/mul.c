@@ -68,15 +68,22 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
      * transforms of the operands, up to a soft budget which is the larger
      * of a fixed floor (currently 256MB) and twice the size of the
      * operands and the result (see the two MEM_FLOOR constants). */
+    /* the cheap part of what makes fft_small transform directly modulo p,
+     * rather than modulo several CRT primes (primality is left to the
+     * plan, which checks it): the single-prime regime, where the FFT
+     * route needs no CRT and is ahead of mul_geometric at every
+     * measured parameters */
+    const int modn_direct_fft = (FLINT_BIT_COUNT(modn) <= 50)
+        && ((slong) flint_ctz(modn - 1) >= FLINT_BIT_COUNT((ulong) len + 3));
+
     if (len >= 128
-        && !(dim >= 224 && len > 300 && NMOD_POLY_CAN_USE_GEOMETRIC(modn, len)))
+        && !(dim >= 224 && len > 300 && !modn_direct_fft
+             && NMOD_POLY_CAN_USE_GEOMETRIC(modn, len)))
     {
         /* _matmul: storing evaluations as constant matrices and running nmod_mat_mul
          * (seems to be useful only when we use a single FFT prime) */
         /* _direct: doing cubic matrix multiplication directly on FFT transforms */
-        if (dim >= 448
-            && FLINT_BIT_COUNT(modn) <= 50
-            && (slong) flint_ctz(modn - 1) >= FLINT_BIT_COUNT((ulong) len + 3))
+        if (dim >= 448 && modn_direct_fft)
             nmod_poly_mat_mul_sd_fft_matmul(res, pmat1, pmat2);
         else
             nmod_poly_mat_mul_sd_fft_direct(res, pmat1, pmat2);
