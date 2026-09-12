@@ -10,12 +10,14 @@
     <https://www.gnu.org/licenses/>.
 */
 
+#include <flint/longlong.h>   /* for flint_ctz */
 #include <flint/nmod_poly_mat.h>
 #include <flint/ulong_extras.h>
 
 #include "nmod_poly_extra.h"  /* for NMOD_CAN_USE_GEOMETRIC */
 #include "nmod_poly_mat_multiply.h"
 
+/* TODO would benefit from automatic tuning */
 void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2)
 {
     slong len1 = nmod_poly_mat_max_length(pmat1);
@@ -59,23 +61,25 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
     const ulong modn = pmat1->modulus;
 
 #if PML_HAVE_MACHINE_VECTORS
-    /* use FFT evaluation-interpolation with naive matrix product on the
-     * transforms
-     *
-     * -> faster than other methods for medium sizes and large degree
-     * -> for larger sizes, slower: pays the price of naive matrix product
-     * and also that of making these product np times where np is the number
-     * of primes used in the multimodular strategy
-     *
+    /* use FFT evaluation-interpolation
      * TODO to be more finely tuned
      *
-     * NOTE: unlike the other variants, this one allocates the transforms
-     * of the operands, up to a bounded budget (see
-     * NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_BUDGET, currently 256MB). */
+     * NOTE: unlike the other variants, both of these allocate the
+     * transforms of the operands, up to a soft budget which is the larger
+     * of a fixed floor (currently 256MB) and twice the size of the
+     * operands and the result (see the two MEM_FLOOR constants). */
     if (len >= 128
         && !(dim >= 224 && len > 300 && NMOD_POLY_CAN_USE_GEOMETRIC(modn, len)))
     {
-        nmod_poly_mat_mul_sd_fft_direct(res, pmat1, pmat2);
+        /* _matmul: storing evaluations as constant matrices and running nmod_mat_mul
+         * (seems to be useful only when we use a single FFT prime) */
+        /* _direct: doing cubic matrix multiplication directly on FFT transforms */
+        if (dim >= 448
+            && FLINT_BIT_COUNT(modn) <= 50
+            && (slong) flint_ctz(modn - 1) >= FLINT_BIT_COUNT((ulong) len + 3))
+            nmod_poly_mat_mul_sd_fft_matmul(res, pmat1, pmat2);
+        else
+            nmod_poly_mat_mul_sd_fft_direct(res, pmat1, pmat2);
         return;
     }
 #endif /* PML_HAVE_MACHINE_VECTORS */

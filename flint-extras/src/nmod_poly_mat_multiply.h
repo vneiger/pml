@@ -70,10 +70,30 @@ void _nmod_poly_mat_mul_geometric_precomp(nmod_poly_mat_t res,
  *  followed by CRT. In terms of memory, it takes about (rdim*idim + idim*cdim
  *  + rdim*cdim) * nprimes * 2^depth doubles, where 2^depth is the transform
  *  length, up to a soft budget beyond which the rows of A are processed by
- *  groups.
+ *  groups; that budget is the larger of a fixed floor and twice the size of
+ *  the operands and the result, and the storage is retained across calls.
  *  This falls back on nmod_poly_mat_mul if FLINT was built without fft_small
  */
 void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
+
+/** Multiplication for polynomial matrices, using FLINT's fft_small
+ * evaluation-interpolation and calling nmod_mat_mul on the evaluations
+ *  sets C = A * B
+ *  output can alias input
+ *  Same evaluation-interpolation scheme as nmod_poly_mat_mul_sd_fft_direct,
+ *  and the same multi-modular strategy (1 to 4 50-bit FFT primes, then CRT),
+ *  but the products in the transformed domain are performed by nmod_mat_mul
+ *  on the matrix of evaluations at each point, rather than by a cubic kernel
+ *  running along the transforms.
+ *
+ *  In terms of memory, this takes about (rdim*idim + idim*cdim + rdim*cdim) *
+ *  nprimes * 2^depth words, where 2^depth is the transform length, up to a
+ *  soft budget beyond which the rows of A and the columns of B are processed
+ *  by groups; that budget is the larger of a fixed floor and twice the size
+ *  of the operands and the result, and the storage is retained across calls.
+ *  This falls back on nmod_poly_mat_mul if FLINT was built without fft_small
+ */
+void nmod_poly_mat_mul_sd_fft_matmul(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
 
 /** general interface, picks an algorithm depending on parameters
  * TODO thresholds to be tuned

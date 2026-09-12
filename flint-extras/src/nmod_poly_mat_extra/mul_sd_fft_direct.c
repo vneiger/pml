@@ -78,20 +78,38 @@ static double _now(void) { struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &t
     over the FLINT thread pool (see _sd_fft_direct_run).
 
     Memory: (m*k + k*n + m*n) transforms of np * ztrunc doubles when it
-    fits the budget NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_BUDGET, otherwise
+    fits the budget (see NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_FLOOR), otherwise
     the rows of A -- and, if that is still not enough, the columns of B
     -- are processed by groups until it does (see the choice of NRG and
     NCG below).
 */
 
-/* Soft bound, in bytes, on the memory used for the transforms.
+/*
+   Soft bound, in bytes, on the memory used for the transforms.
    Grouping the rows of A within it is free in transform count -- each
    entry of A and of B is still transformed exactly once -- and only
    trades memory for bandwidth, since every group of rows streams the
    transforms of B once. Grouping the columns of B, which only happens
    when the k*n transforms of B alone exceed the budget, does cost
-   transforms: A is then transformed once per group of columns. */
-#define NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_BUDGET (UWORD(1) << 28)
+   transforms: A is then transformed once per group of columns.
+
+   The bound is not a constant but scales with the problem: the
+   transforms of a product whose operands are themselves a gigabyte have
+   no reason to be capped at a few hundred megabytes, and the bandwidth
+   the grouping trades away is not free. Measured at dimension 256,
+   length 2*256, modulo a generic 60-bit prime (three primes): 26.2 s
+   within the constant below, against 20.9 s undivided. The constant is
+   therefore only a floor, for the small products where a fixed working
+   set is what one wants to bound, and the factor is about what an
+   undivided square product needs relative to its operands when a single
+   prime suffices.
+
+   The transforms are taken from the retained fft_small scratch buffer
+   for any request within that bound (see _sd_fft_direct_alloc), so a
+   thread that has performed one large product keeps a working set of
+   the order of a small multiple of the operands it was given.
+*/
+#define NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_FLOOR (UWORD(1) << 28)
 
 /* Soft bound, in bytes, on the tiles of B read by one call of the
    register-blocked kernel (8 columns of B, i.e. 8 * k tiles): kept within the
@@ -118,17 +136,17 @@ static double _now(void) { struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &t
     the madvise call, once per product, costs more than the page walks it
     saves.)
 */
-static double * _sd_fft_direct_alloc(mpn_ctx_struct * R, ulong nbytes)
+static double * _sd_fft_direct_alloc(mpn_ctx_struct * R, ulong nbytes, ulong budget)
 {
-    if (nbytes <= NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_BUDGET)
+    if (nbytes <= budget)
         return (double *) mpn_ctx_fit_buffer(R, nbytes);
     return flint_aligned_alloc(FLINT_FFT_SMALL_ALIGNMENT,
                                n_round_up(nbytes, FLINT_FFT_SMALL_ALIGNMENT));
 }
 
-static void _sd_fft_direct_free(double * buf, ulong nbytes)
+static void _sd_fft_direct_free(double * buf, ulong nbytes, ulong budget)
 {
-    if (nbytes > NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_BUDGET)
+    if (nbytes > budget)
         flint_aligned_free(buf);
 }
 
@@ -677,16 +695,20 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
        is used first and as much as needed; grouping columns costs one
        transform of A per group of columns, so it is used only when the
        transforms of B alone (plus one row) do not fit. */
+    /* words of the operands and of the result, as the scale of the bound
+       on the transforms (see NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_FLOOR) */
+    const ulong opwords = (ulong) m * k * lenA + (ulong) k * n * lenB
+                          + (ulong) m * n * zn;
+    ulong bbytes = n_max(NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_FLOOR,
+                         2 * opwords * sizeof(ulong));
+#ifdef PML_MUL_SD_FFT_DIRECT_TIMING
+    if (getenv("PML_MEM_BUDGET"))
+        bbytes = strtoul(getenv("PML_MEM_BUDGET"), NULL, 10);
+#endif
+
     slong NRG, NCG;
     {
-#ifdef PML_MUL_SD_FFT_DIRECT_TIMING
-        const ulong budget = (getenv("PML_MEM_BUDGET")
-              ? strtoul(getenv("PML_MEM_BUDGET"), NULL, 10)
-              : NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_BUDGET) / (opdbls * sizeof(double));
-#else
-        const ulong budget = NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_BUDGET
-                                 / (opdbls * sizeof(double));
-#endif
+        const ulong budget = bbytes / (opdbls * sizeof(double));
         const ulong scratch = ((ulong) nthreads * scratchdbls + opdbls - 1) / opdbls;
         const ulong avail = (budget > scratch + 2) ? budget - scratch : 2;
 
@@ -717,7 +739,7 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
     const ulong nbytes = ((ulong) nthreads * scratchdbls
                           + ((ulong) k * NCG + (ulong) NRG * (k + NCG)) * opdbls)
                          * sizeof(double);
-    double * buf = _sd_fft_direct_alloc(R, nbytes);
+    double * buf = _sd_fft_direct_alloc(R, nbytes, bbytes);
     double * tilebuf = buf + (ulong) nthreads * scratchdbls;
     _tiles_struct Bt = { tilebuf, (ulong) k * NCG, ntiles, T };
     _tiles_struct At = { Bt.data + Bt.nops * opdbls, (ulong) NRG * k, ntiles, T };
@@ -877,7 +899,7 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
     flint_free(zlen);
     flint_free(nzA);
     flint_free(cntA);
-    _sd_fft_direct_free(buf, nbytes);
+    _sd_fft_direct_free(buf, nbytes, bbytes);
     flint_give_back_threads(handles, nworkers);
     fft_small_plan_clear(P);
 }

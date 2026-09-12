@@ -22,7 +22,7 @@
    compared against the 3-prime CRT path.
 
    Usage: p-mul_sd_fft_direct alg dim1 dim2 dim3 len1 len2 modulus [threads]
-     alg: sd_fft_direct | geometric | waksman | mul | multiply
+     alg: sd_fft_direct | sd_fft_matmul | geometric | waksman | mul | multiply
    Prints the minimum wall time over a few repetitions, or "-" when the
    algorithm does not apply to that modulus.
 */
@@ -45,7 +45,7 @@ int main(int argc, char ** argv)
     if (argc < 8)
     {
         flint_printf("Usage: %s alg dim1 dim2 dim3 len1 len2 modulus [threads]\n", argv[0]);
-        flint_printf("   alg: sd_fft_direct | geometric | waksman | mul | multiply\n");
+        flint_printf("   alg: sd_fft_direct | sd_fft_matmul | geometric | waksman | mul | multiply\n");
         return 0;
     }
 
@@ -60,6 +60,7 @@ int main(int argc, char ** argv)
 
     mulfun fun;
     if (!strcmp(alg, "sd_fft_direct"))     fun = nmod_poly_mat_mul_sd_fft_direct;
+    else if (!strcmp(alg, "sd_fft_matmul")) fun = nmod_poly_mat_mul_sd_fft_matmul;
     else if (!strcmp(alg, "mul"))       fun = nmod_poly_mat_mul;
     else if (!strcmp(alg, "multiply"))  fun = nmod_poly_mat_multiply;
     else if (!strcmp(alg, "geometric"))
