@@ -121,20 +121,18 @@ static int core_test_set_from_poly_mat(const nmod_poly_mat_t pmat,
 
     for (int kern = -1; ok && kern <= NMOD_MAT_POLY_CONV_VEC8; kern++)
         for (int cmaj = -1; ok && cmaj <= 1; cmaj++)
-            for (int pf = -1; ok && pf <= 1; pf++)
+        {
+            /* leave some stale data behind, of a length unrelated to order */
+            nmod_mat_poly_rand(res, state, n_randint(state, 2 * order + 3));
+
+            _nmod_mat_poly_set_trunc_from_poly_mat(res, pmat, order, kern, cmaj);
+
+            if (! _matp_equal(ref, res))
             {
-                /* leave some stale data behind, of a length unrelated to order */
-                nmod_mat_poly_rand(res, state, n_randint(state, 2 * order + 3));
-
-                _nmod_mat_poly_set_trunc_from_poly_mat(res, pmat, order, kern, cmaj, pf);
-
-                if (! _matp_equal(ref, res))
-                {
-                    flint_printf("failure with kern = %d, cmaj = %d, pf = %d\n",
-                                 kern, cmaj, pf);
-                    ok = 0;
-                }
+                flint_printf("failure with kern = %d, cmaj = %d\n", kern, cmaj);
+                ok = 0;
             }
+        }
 
     /* the dispatcher, and the non-truncated entry point */
     if (ok)
@@ -224,8 +222,7 @@ TEST_FUNCTION_START(nmod_mat_poly_set_from_poly_mat, state)
         nmod_poly_mat_clear(pmat);
     }
 
-    /* larger instances, to reach the blocked path with both schedules and
-       with the prefetching on */
+    /* larger instances, to reach the blocked path with both schedules */
     {
         const ulong prime = UWORD(1099511627791);
         const slong shapes[4][2] = {{9, 9}, {5, 40}, {40, 5}, {16, 16}};

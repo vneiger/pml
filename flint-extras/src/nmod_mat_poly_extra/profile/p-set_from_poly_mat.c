@@ -53,7 +53,7 @@ static void _set_trunc_from_poly_mat_naive(nmod_mat_poly_t matp,
         _nmod_mat_poly_normalise(matp);
 }
 
-#define NFUNS 9
+#define NFUNS 8
 
 static const char * description[NFUNS] = {
     "#0  --> naive (entry by entry, local reference)      ",
@@ -63,17 +63,15 @@ static const char * description[NFUNS] = {
     "#4  --> blocked 4x4, machine vectors, entry-major    ",
     "#5  --> blocked 8x8, AVX-512,         coeff-major    ",
     "#6  --> blocked 8x8, AVX-512,         entry-major    ",
-    "#7  --> default kernel and schedule, no prefetch     ",
-    "#8  --> default kernel and schedule, prefetch        ",
+    "#7  --> default kernel and schedule                  ",
 };
 
-/* (kernel, schedule, prefetch) of function number f >= 1; -1 means "default" */
+/* (kernel, schedule) of function number f >= 1; -1 means "default" */
 static const int fun_kern[NFUNS] = {0, NMOD_MAT_POLY_CONV_SCALAR, NMOD_MAT_POLY_CONV_SCALAR,
                                        NMOD_MAT_POLY_CONV_VEC4, NMOD_MAT_POLY_CONV_VEC4,
                                        NMOD_MAT_POLY_CONV_VEC8, NMOD_MAT_POLY_CONV_VEC8,
-                                       -1, -1};
-static const int fun_cmaj[NFUNS] = {0, 1, 0, 1, 0, 1, 0, -1, -1};
-static const int fun_pf[NFUNS]   = {0, -1, -1, -1, -1, -1, -1, 0, 1};
+                                       -1};
+static const int fun_cmaj[NFUNS] = {0, 1, 0, 1, 0, 1, 0, -1};
 
 /* random polynomial matrix; if ragged, entry lengths are spread below len */
 static void _rand_pmat(nmod_poly_mat_t pmat, flint_rand_t state, slong len, int ragged)
@@ -108,11 +106,9 @@ static double time_fun(slong fun_nb, slong dim1, slong dim2, slong len,
     }
     else
     {
-        const int kern = fun_kern[fun_nb];
-        const int cmaj = fun_cmaj[fun_nb];
-        const int pf = fun_pf[fun_nb];
         TIMEIT_START;
-        _nmod_mat_poly_set_trunc_from_poly_mat(matp, pmat, len, kern, cmaj, pf);
+        _nmod_mat_poly_set_trunc_from_poly_mat(matp, pmat, len,
+                                               fun_kern[fun_nb], fun_cmaj[fun_nb]);
         TIMEIT_STOP_VALUES(tcpu, twall);
     }
 
@@ -129,17 +125,19 @@ int main(int argc, char ** argv)
     flint_rand_init(state);
     flint_rand_set_seed(state, time(NULL), time(NULL) + 129384125L);
 
-    flint_printf("build: 4x4 machine-vectors kernel: %d, 8x8 AVX-512 kernel: %d\n",
-#if defined(PML_HAVE_AVX2)
+    flint_printf("build: 4x4 machine-vectors kernel: %d, 8x8 AVX-512 kernel: %d,"
+                 " default schedule: %s\n",
+#if PML_HAVE_MACHINE_VECTORS
                  1,
 #else
                  0,
 #endif
-#if defined(PML_HAVE_AVX512)
-                 1
+#if PML_HAVE_AVX512
+                 1,
 #else
-                 0
+                 0,
 #endif
+                 PML_CONV_COEFF_MAJOR ? "coeff-major" : "entry-major"
                 );
     flint_printf("(unavailable kernels silently fall back, columns then repeat)\n");
 

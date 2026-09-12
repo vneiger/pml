@@ -25,8 +25,21 @@
 #define NMOD_MAT_POLY_CONV_VEC4   1  /* 4x4 blocks, FLINT machine vectors (AVX2, NEON) */
 #define NMOD_MAT_POLY_CONV_VEC8   2  /* 8x8 blocks, AVX-512 */
 
+/* Default loop schedule of the conversion: 1 for coefficient-major, 0 for
+ * entry-major.  Which one is faster depends on how much of a cache line one
+ * scattered store covers, and that makes Apple silicon (128-byte lines, and
+ * no kernel wider than 4 there) the odd one out; see the discussion in
+ * nmod_mat_poly_set_from.c.  Overridable at build time. */
+#ifndef PML_CONV_COEFF_MAJOR
+# if defined(__APPLE__) && defined(__aarch64__)
+#  define PML_CONV_COEFF_MAJOR 1
+# else
+#  define PML_CONV_COEFF_MAJOR 0
+# endif
+#endif
+
 /* Same as nmod_mat_poly_set_trunc_from_poly_mat, with explicit control over
- * the block kernel, the loop schedule and the prefetching
+ * the block kernel and the loop schedule.
  *
  * `kern` is one of NMOD_MAT_POLY_CONV_{SCALAR,VEC4,VEC8};
  * any other value selects the widest kernel the build provides, narrowed if
@@ -35,18 +48,12 @@
  * `cmaj` is 1 for the coefficient-major schedule (the blocks are visited so
  * that the stores into the output matrices are long sequential streams), 0
  * for the entry-major schedule (the loads from the input polynomials are long
- * sequential streams); any other value (e.g. -1) selects the default.
- *
- * `pf` is 1 to software-prefetch the side that is accessed one cache line per
- * row (the input polynomials under the coefficient-major schedule, the output
- * matrices under the entry-major one), 0 to disable it; any other value
- * (e.g. -1) enables it only when the data is large enough, see
- * PML_CONV_PREFETCH_BYTES. */
+ * sequential streams); any other value (e.g. -1) selects the default, which
+ * is PML_CONV_COEFF_MAJOR. */
 void _nmod_mat_poly_set_trunc_from_poly_mat(nmod_mat_poly_t matp,
                                             const nmod_poly_mat_t pmat,
                                             slong order,
                                             int kern,
-                                            int cmaj,
-                                            int pf);
+                                            int cmaj);
 
 #endif /* ifndef NMOD_MAT_POLY_EXTRA_IMPL_H */
