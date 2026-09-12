@@ -196,15 +196,22 @@ void _nmod_poly_mat_permute_columns_by_sorting_vec(nmod_poly_mat_t mat,
    just run the naive loop. */
 #define _PML_SETFROM_TINY 512
 
-/* Default kernel.  Not the widest one, unlike the other direction: the
-   destination rows here are the coefficient arrays of nmod_poly entries, 16
-   byte aligned at best, so every 64-byte store straddles two cache lines
-   whereas a 32-byte one does so only half the time.  Measured over matrices
-   4x4 to 128x128 and lengths 32 to 8192, the 4-wide kernel and the widest
-   available one are within 2% of each other while the data fits in cache,
-   and the 4-wide one is 10% ahead once it does not. */
-#ifndef PML_SETFROM_MAT_POLY_KERNEL
-# define PML_SETFROM_MAT_POLY_KERNEL NMOD_MAT_POLY_CONV_VEC4
+/* Default kernel: the widest one available while the data is small, the
+   4-wide one above that.
+
+   The destination rows here are the coefficient arrays of nmod_poly entries,
+   16-byte aligned at best, so a 64-byte store straddles two cache lines every
+   single time whereas a 32-byte one does so only half the time.  While the
+   working set is in cache both halves of such a store are there too and the
+   split costs next to nothing, so the wider kernel wins on its lower
+   instruction count; once the data no longer fits, those split stores compete
+   for the same store buffers and line fills as the misses, and the narrower
+   kernel wins.
+
+   Set the threshold to 0 to always use the 4-wide kernel, or to SIZE_MAX to
+   always use the widest one.  It is flat between about 256 KB and 4 MB. */
+#ifndef PML_SETFROM_MAT_POLY_WIDE_BYTES
+# define PML_SETFROM_MAT_POLY_WIDE_BYTES (1024 * 1024)
 #endif
 
 /* Default schedule: always sweep the destination rows, that is, write each
@@ -259,7 +266,10 @@ void _nmod_poly_mat_set_trunc_from_mat_poly(nmod_poly_mat_t pmat,
         const slong ndst = (matp->stride == c) ? r * c : c;
 
         if (kern < 0 || kern > NMOD_MAT_POLY_CONV_VEC8)
-            kern = PML_SETFROM_MAT_POLY_KERNEL;
+            kern = ((double) r * (double) c * (double) order * sizeof(ulong)
+                        <= (double) PML_SETFROM_MAT_POLY_WIDE_BYTES)
+                 ? _pml_transpose_widest_kernel()
+                 : NMOD_MAT_POLY_CONV_VEC4;
         kern = _pml_transpose_narrow_kernel(kern, ndst, order);
 
         if (dmaj < 0 || dmaj > 1)
