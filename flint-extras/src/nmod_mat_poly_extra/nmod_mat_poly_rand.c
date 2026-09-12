@@ -8,8 +8,12 @@ void nmod_mat_poly_randtest(nmod_mat_poly_t matp,
 {
     nmod_mat_poly_fit_length(matp, len);
     _nmod_mat_poly_set_length(matp, len);
+    nmod_mat_t cmat;
     for (slong i = 0; i < len; ++i)
-        nmod_mat_randtest(matp->coeffs + i, state);
+    {
+        nmod_mat_poly_coeff_attach(cmat, matp, i);
+        nmod_mat_randtest(cmat, state);
+    }
     _nmod_mat_poly_normalise(matp);
 }
 
@@ -19,10 +23,11 @@ void nmod_mat_poly_rand(nmod_mat_poly_t matp,
 {
     nmod_mat_poly_fit_length(matp, len);
     _nmod_mat_poly_set_length(matp, len);
+    nmod_mat_t cmat;
     for (slong i = 0; i < len; ++i)
-        nmod_mat_rand(matp->coeffs + i, state);
+    {
+        nmod_mat_poly_coeff_attach(cmat, matp, i);
+        nmod_mat_rand(cmat, state);
+    }
     _nmod_mat_poly_normalise(matp);
 }
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

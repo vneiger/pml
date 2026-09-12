@@ -21,6 +21,7 @@ void nmod_mat_poly_init_preinv(nmod_mat_poly_t matp,
 
     matp->r = r;
     matp->c = c;
+    matp->stride = c;
 
     matp->mod.n = n;
     matp->mod.ninv = ninv;
@@ -44,7 +45,7 @@ void nmod_mat_poly_init2_preinv(nmod_mat_poly_t matp,
                                 slong alloc)
 {
     if (alloc)
-        matp->coeffs = (nmod_mat_struct *) flint_malloc(alloc * sizeof(nmod_mat_struct));
+        matp->coeffs = (nn_ptr *) flint_malloc(alloc * sizeof(nn_ptr));
     else
         matp->coeffs = NULL;
 
@@ -53,6 +54,7 @@ void nmod_mat_poly_init2_preinv(nmod_mat_poly_t matp,
 
     matp->r = r;
     matp->c = c;
+    matp->stride = c;
 
     matp->mod.n = n;
     matp->mod.ninv = ninv;
@@ -82,8 +84,13 @@ void nmod_mat_poly_set(nmod_mat_poly_t matp1, const nmod_mat_poly_t matp2)
         nmod_mat_poly_fit_length(matp1, len);
         _nmod_mat_poly_set_length(matp1, len);
 
+        nmod_mat_t cmat1, cmat2;
         for (slong i = 0; i < len; i++)
-            nmod_mat_set(matp1->coeffs + i, matp2->coeffs + i);
+        {
+            nmod_mat_poly_coeff_attach(cmat1, matp1, i);
+            nmod_mat_poly_coeff_attach(cmat2, matp2, i);
+            nmod_mat_set(cmat1, cmat2);
+        }
     }
 }
 
@@ -99,7 +106,7 @@ void nmod_mat_poly_clear(nmod_mat_poly_t matp)
 {
     // clear any allocated matrix coefficient
     for (slong i=0; i < matp->length; i++)
-        nmod_mat_clear(matp->coeffs + i);
+        _nmod_mat_poly_coeff_free(matp->coeffs[i]);
     // free coeffs
     if (matp->coeffs)
         flint_free(matp->coeffs);
@@ -121,10 +128,10 @@ void nmod_mat_poly_realloc(nmod_mat_poly_t matp, slong alloc)
     {
         // truncate at order `alloc`
         nmod_mat_poly_truncate(matp, alloc);
-        matp->coeffs = (nmod_mat_struct *) flint_realloc(matp->coeffs, alloc * sizeof(nmod_mat_struct));
+        matp->coeffs = (nn_ptr *) flint_realloc(matp->coeffs, alloc * sizeof(nn_ptr));
     }
     else // not allocated yet, do it now
-        matp->coeffs = (nmod_mat_struct *) flint_malloc(alloc * sizeof(nmod_mat_struct));
+        matp->coeffs = (nn_ptr *) flint_malloc(alloc * sizeof(nn_ptr));
 
     matp->alloc = alloc;
 }

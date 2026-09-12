@@ -14,6 +14,7 @@
 
 
 #include "t-mbasis_variants.c"
+#include "t-mem.c"
 #include "t-mintbasis.c"
 
 
@@ -22,6 +23,7 @@
 test_struct tests[] =
 {
     TEST_FUNCTION(nmod_mat_poly_mbasis_variants),
+    TEST_FUNCTION(nmod_mat_poly_mem),
     TEST_FUNCTION(nmod_mat_poly_mintbasis),
 };
 

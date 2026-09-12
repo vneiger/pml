@@ -1,24 +1,34 @@
 #include "nmod_mat_poly.h"
 
-void _nmod_mat_poly_shift_left(nmod_mat_struct * smatp,
-                               const nmod_mat_struct * matp,
+void _nmod_mat_poly_shift_left(nmod_mat_poly_t smatp,
+                               const nmod_mat_poly_t matp,
                                slong len,
                                slong n)
 {
+    nmod_mat_t dst, src;
+
     if (smatp != matp)
     {
         for (slong i = 0; i < len; i++)
-            nmod_mat_set(smatp + n + i, matp + i);
+        {
+            nmod_mat_poly_coeff_attach(dst, smatp, n + i);
+            nmod_mat_poly_coeff_attach(src, matp, i);
+            nmod_mat_set(dst, src);
+        }
     }
     else
     {
-        /* Copy in reverse to avoid writing over unshifted coefficients */
+        /* Exchange the entry arrays; in reverse, to avoid writing over
+           unshifted coefficients */
         for (slong i = len-1; i >= 0; i--)
-            nmod_mat_swap(smatp + n + i, smatp + i);
+            FLINT_SWAP(nn_ptr, smatp->coeffs[n + i], smatp->coeffs[i]);
     }
 
     for (slong i = 0; i < n; i++)
-        nmod_mat_zero(smatp + i);
+    {
+        nmod_mat_poly_coeff_attach(dst, smatp, i);
+        nmod_mat_zero(dst);
+    }
 }
 
 //void _nmod_mat_poly_shift_right(nmod_mat_poly_t smatp,
@@ -44,15 +54,15 @@ void nmod_mat_poly_shift_left(nmod_mat_poly_t smatp,
         return;
     }
 
-    nmod_mat_poly_fit_length(smatp, matp->length + n);
-    _nmod_mat_poly_set_length(smatp, matp->length + n);
-    _nmod_mat_poly_shift_left(smatp->coeffs, matp->coeffs, matp->length - n, n);
+    /* read the length of the input before growing the output: when the two
+       are aliased, _nmod_mat_poly_set_length below changes it */
+    const slong len = matp->length;
+
+    nmod_mat_poly_fit_length(smatp, len + n);
+    _nmod_mat_poly_set_length(smatp, len + n);
+    _nmod_mat_poly_shift_left(smatp, matp, len, n);
 }
 
 //void nmod_mat_poly_shift_right(nmod_mat_poly_t smatp,
 //                               const nmod_mat_poly_t matp,
 //                               slong n);
-
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s

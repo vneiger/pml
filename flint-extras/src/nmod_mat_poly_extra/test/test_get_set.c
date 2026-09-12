@@ -50,14 +50,14 @@ int main(int argc, char *argv[])
            nmod_mat_poly_entry(matp, 1,1,1));
 
     printf("\nUsing nmod_mat_print in conjunction with nmod_mat_poly_lead:\n");
-    nmod_mat_print(nmod_mat_poly_lead(matp));
+    { nmod_mat_t lead; nmod_mat_poly_lead_attach(lead, matp); nmod_mat_print(lead); }
 
     printf("\nTruncating at order 2:\n");
     nmod_mat_poly_truncate(matp, 2);
     nmod_mat_poly_print_pretty(matp);
 
     printf("\nUsing nmod_mat_print in conjunction with nmod_mat_poly_lead:\n");
-    nmod_mat_print(nmod_mat_poly_lead(matp));
+    { nmod_mat_t lead; nmod_mat_poly_lead_attach(lead, matp); nmod_mat_print(lead); }
 
     // clears memory
     nmod_mat_poly_clear(matp);

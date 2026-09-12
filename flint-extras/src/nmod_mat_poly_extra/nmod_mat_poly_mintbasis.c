@@ -147,11 +147,12 @@ void nmod_mat_poly_mintbasis_rescomp(nmod_mat_poly_t intbas,
            _mintbasis_low_rank_addmul's own doc comments */ 
         if (m - nullity <= NMOD_MAT_POLY_MINTBASIS_LOWRANK_THRES)
         {
-            nmod_mat_t win_mul, win_add;
+            nmod_mat_t win_mul, win_add, int_coeff;
             for (slong deg = 0; deg < intbas->length; deg++)
             {
-                nmod_mat_window_init(win_mul, intbas->coeffs + deg, 0, 0, m - nullity, m);
-                nmod_mat_window_init(win_add, intbas->coeffs + deg, m - nullity, 0, m, m);
+                nmod_mat_poly_coeff_attach(int_coeff, intbas, deg);
+                nmod_mat_window_init(win_mul, int_coeff, 0, 0, m - nullity, m);
+                nmod_mat_window_init(win_add, int_coeff, m - nullity, 0, m, m);
                 _mintbasis_low_rank_addmul(win_add, nsbas, win_mul);
                 nmod_mat_window_clear(win_mul);
                 nmod_mat_window_clear(win_add);
@@ -159,12 +160,13 @@ void nmod_mat_poly_mintbasis_rescomp(nmod_mat_poly_t intbas,
         }
         else
         {
-            nmod_mat_t ns_app, win_mul, win_add;
+            nmod_mat_t ns_app, win_mul, win_add, int_coeff;
             nmod_mat_init(ns_app, nullity, intbas->c, intbas->mod.n);
             for (slong deg = 0; deg < intbas->length; deg++)
             {
-                nmod_mat_window_init(win_mul, intbas->coeffs + deg, 0, 0, m - nullity, m);
-                nmod_mat_window_init(win_add, intbas->coeffs + deg, m - nullity, 0, m, m);
+                nmod_mat_poly_coeff_attach(int_coeff, intbas, deg);
+                nmod_mat_window_init(win_mul, int_coeff, 0, 0, m - nullity, m);
+                nmod_mat_window_init(win_add, int_coeff, m - nullity, 0, m, m);
                 nmod_mat_mul(ns_app, nsbas, win_mul);
                 nmod_mat_add(win_add, win_add, ns_app);
                 nmod_mat_window_clear(win_mul);
@@ -325,13 +327,14 @@ void nmod_mat_poly_mintbasis_resupdate(nmod_mat_poly_t intbas,
            residuals Res[k+1..d-1] (Res[k] is dead after this iteration).
            Dispatches to explicit rank-1 updates below the same threshold
            as the rescomp variant above. */
-        nmod_mat_t win_mul, win_add;
+        nmod_mat_t win_mul, win_add, int_coeff;
         if (m - nullity <= NMOD_MAT_POLY_MINTBASIS_LOWRANK_THRES)
         {
             for (slong deg = 0; deg < intbas->length; deg++)
             {
-                nmod_mat_window_init(win_mul, intbas->coeffs + deg, 0, 0, m - nullity, m);
-                nmod_mat_window_init(win_add, intbas->coeffs + deg, m - nullity, 0, m, m);
+                nmod_mat_poly_coeff_attach(int_coeff, intbas, deg);
+                nmod_mat_window_init(win_mul, int_coeff, 0, 0, m - nullity, m);
+                nmod_mat_window_init(win_add, int_coeff, m - nullity, 0, m, m);
                 _mintbasis_low_rank_addmul(win_add, nsbas, win_mul);
                 nmod_mat_window_clear(win_mul);
                 nmod_mat_window_clear(win_add);
@@ -351,8 +354,9 @@ void nmod_mat_poly_mintbasis_resupdate(nmod_mat_poly_t intbas,
             nmod_mat_init(ns_app, nullity, m, intbas->mod.n);
             for (slong deg = 0; deg < intbas->length; deg++)
             {
-                nmod_mat_window_init(win_mul, intbas->coeffs + deg, 0, 0, m - nullity, m);
-                nmod_mat_window_init(win_add, intbas->coeffs + deg, m - nullity, 0, m, m);
+                nmod_mat_poly_coeff_attach(int_coeff, intbas, deg);
+                nmod_mat_window_init(win_mul, int_coeff, 0, 0, m - nullity, m);
+                nmod_mat_window_init(win_add, int_coeff, m - nullity, 0, m, m);
                 nmod_mat_mul(ns_app, nsbas, win_mul);
                 nmod_mat_add(win_add, win_add, ns_app);
                 nmod_mat_window_clear(win_mul);
