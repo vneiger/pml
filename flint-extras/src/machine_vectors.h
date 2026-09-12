@@ -137,5 +137,141 @@ FLINT_FORCE_INLINE ulong _mm512_hsum(__m512i a) {
 }
 #endif /* PML_HAVE_AVX512 */
 
+/*----------------------------------------------------*/
+/* small transposes of ulong blocks                   */
+/*----------------------------------------------------*/
+
+/* TODO these ulong lane shuffles, and the 4x4 transpose built from them, are
+ * the exact counterparts of vec4d_unpacklo, vec4d_unpackhi,
+ * vec4d_permute2_0_2, vec4d_permute2_1_3 and VEC4D_TRANSPOSE, which
+ * <flint/machine_vectors.h> already provides for both its AVX2 and its NEON
+ * backend; the ulong lane type simply has no lane-combining primitive there
+ * yet.  They belong next to their double counterparts in FLINT and should
+ * move there; they are kept here in the meantime. */
+#if PML_HAVE_MACHINE_VECTORS
+
+#if PML_HAVE_AVX2
+
+/* return {a[0], b[0], a[2], b[2]} */
+FLINT_FORCE_INLINE vec4n vec4n_unpacklo(vec4n a, vec4n b)
+{
+    return _mm256_unpacklo_epi64(a, b);
+}
+
+/* return {a[1], b[1], a[3], b[3]} */
+FLINT_FORCE_INLINE vec4n vec4n_unpackhi(vec4n a, vec4n b)
+{
+    return _mm256_unpackhi_epi64(a, b);
+}
+
+/* permute2_i0_i1(a, b): return {v[i0], v[i1]}
+                     |   v[0]     |    v[1]    |    v[2]    |   v[3]     |
+                       a[0], a[1]   a[2], a[3]   b[0], b[1]   b[2], b[3]  */
+FLINT_FORCE_INLINE vec4n vec4n_permute2_0_2(vec4n a, vec4n b)
+{
+    return _mm256_permute2x128_si256(a, b, 0 + 16 * 2);
+}
+
+FLINT_FORCE_INLINE vec4n vec4n_permute2_1_3(vec4n a, vec4n b)
+{
+    return _mm256_permute2x128_si256(a, b, 1 + 16 * 3);
+}
+
+#else  /* NEON: vec4n is a pair of uint64x2_t, as vec4d is a pair of
+          float64x2_t, and the same lane shuffles apply */
+
+/* return {a[0], b[0]} */
+FLINT_FORCE_INLINE vec2n vec2n_unpacklo(vec2n a, vec2n b)
+{
+    return vtrn1q_u64(a, b);
+}
+
+/* return {a[1], b[1]} */
+FLINT_FORCE_INLINE vec2n vec2n_unpackhi(vec2n a, vec2n b)
+{
+    return vtrn2q_u64(a, b);
+}
+
+/* return {a[0], b[0], a[2], b[2]} */
+FLINT_FORCE_INLINE vec4n vec4n_unpacklo(vec4n a, vec4n b)
+{
+    vec4n z = {vec2n_unpacklo(a.e1, b.e1), vec2n_unpacklo(a.e2, b.e2)};
+    return z;
+}
+
+/* return {a[1], b[1], a[3], b[3]} */
+FLINT_FORCE_INLINE vec4n vec4n_unpackhi(vec4n a, vec4n b)
+{
+    vec4n z = {vec2n_unpackhi(a.e1, b.e1), vec2n_unpackhi(a.e2, b.e2)};
+    return z;
+}
+
+/* return {a[0], a[1], b[0], b[1]} */
+FLINT_FORCE_INLINE vec4n vec4n_permute2_0_2(vec4n a, vec4n b)
+{
+    vec4n z = {a.e1, b.e1};
+    return z;
+}
+
+/* return {a[2], a[3], b[2], b[3]} */
+FLINT_FORCE_INLINE vec4n vec4n_permute2_1_3(vec4n a, vec4n b)
+{
+    vec4n z = {a.e2, b.e2};
+    return z;
+}
+
+#endif  /* PML_HAVE_AVX2 */
+
+/* view the 4 vectors as the rows of a 4x4 matrix */
+#define VEC4N_TRANSPOSE(z0, z1, z2, z3, a0, a1, a2, a3)                  \
+do {                                                                     \
+    vec4n _s0 = vec4n_unpacklo(a0, a1);                                  \
+    vec4n _s1 = vec4n_unpackhi(a0, a1);                                  \
+    vec4n _s2 = vec4n_unpacklo(a2, a3);                                  \
+    vec4n _s3 = vec4n_unpackhi(a2, a3);                                  \
+    z0 = vec4n_permute2_0_2(_s0, _s2);                                   \
+    z1 = vec4n_permute2_0_2(_s1, _s3);                                   \
+    z2 = vec4n_permute2_1_3(_s0, _s2);                                   \
+    z3 = vec4n_permute2_1_3(_s1, _s3);                                   \
+} while (0)
+
+#endif  /* PML_HAVE_MACHINE_VECTORS */
+
+/* 8x8 transpose of ulong blocks, AVX-512: 24 shuffle uops for 64 words. */
+#if PML_HAVE_AVX512
+
+/* view the 8 vectors as the rows of an 8x8 matrix; named arguments rather
+ * than arrays, as VEC4D_TRANSPOSE, so that nothing has to live in memory */
+#define VEC8N_TRANSPOSE(z0, z1, z2, z3, z4, z5, z6, z7,                  \
+                        a0, a1, a2, a3, a4, a5, a6, a7)                  \
+do {                                                                     \
+    __m512i _p0 = _mm512_unpacklo_epi64(a0, a1);                         \
+    __m512i _p1 = _mm512_unpackhi_epi64(a0, a1);                         \
+    __m512i _p2 = _mm512_unpacklo_epi64(a2, a3);                         \
+    __m512i _p3 = _mm512_unpackhi_epi64(a2, a3);                         \
+    __m512i _p4 = _mm512_unpacklo_epi64(a4, a5);                         \
+    __m512i _p5 = _mm512_unpackhi_epi64(a4, a5);                         \
+    __m512i _p6 = _mm512_unpacklo_epi64(a6, a7);                         \
+    __m512i _p7 = _mm512_unpackhi_epi64(a6, a7);                         \
+    __m512i _q0 = _mm512_shuffle_i64x2(_p0, _p2, 0x88);                  \
+    __m512i _q1 = _mm512_shuffle_i64x2(_p1, _p3, 0x88);                  \
+    __m512i _q2 = _mm512_shuffle_i64x2(_p0, _p2, 0xdd);                  \
+    __m512i _q3 = _mm512_shuffle_i64x2(_p1, _p3, 0xdd);                  \
+    __m512i _q4 = _mm512_shuffle_i64x2(_p4, _p6, 0x88);                  \
+    __m512i _q5 = _mm512_shuffle_i64x2(_p5, _p7, 0x88);                  \
+    __m512i _q6 = _mm512_shuffle_i64x2(_p4, _p6, 0xdd);                  \
+    __m512i _q7 = _mm512_shuffle_i64x2(_p5, _p7, 0xdd);                  \
+    z0 = _mm512_shuffle_i64x2(_q0, _q4, 0x88);                           \
+    z1 = _mm512_shuffle_i64x2(_q1, _q5, 0x88);                           \
+    z2 = _mm512_shuffle_i64x2(_q2, _q6, 0x88);                           \
+    z3 = _mm512_shuffle_i64x2(_q3, _q7, 0x88);                           \
+    z4 = _mm512_shuffle_i64x2(_q0, _q4, 0xdd);                           \
+    z5 = _mm512_shuffle_i64x2(_q1, _q5, 0xdd);                           \
+    z6 = _mm512_shuffle_i64x2(_q2, _q6, 0xdd);                           \
+    z7 = _mm512_shuffle_i64x2(_q3, _q7, 0xdd);                           \
+} while (0)
+
+#endif  /* PML_HAVE_AVX512 */
+
 
 #endif /* ifndef __MACHINE_VECTORS__H */

@@ -15,6 +15,7 @@
 
 #include "t-mbasis_variants.c"
 #include "t-mem.c"
+#include "t-set_from_poly_mat.c"
 #include "t-mintbasis.c"
 
 
@@ -24,6 +25,7 @@ test_struct tests[] =
 {
     TEST_FUNCTION(nmod_mat_poly_mbasis_variants),
     TEST_FUNCTION(nmod_mat_poly_mem),
+    TEST_FUNCTION(nmod_mat_poly_set_from_poly_mat),
     TEST_FUNCTION(nmod_mat_poly_mintbasis),
 };
 

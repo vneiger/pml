@@ -671,13 +671,20 @@ void nmod_mat_poly_init_set_from_nmod_mat(nmod_mat_poly_t matp,
 void nmod_mat_poly_set_from_nmod_mat(nmod_mat_poly_t matp, const nmod_mat_t cmat);
 
 /** Set from polynomial with matrix coefficients `matp`, truncated at the
- * specified `order` (a nonnegative integer). */
+ * specified `order` (a nonnegative integer).
+ *
+ * This conversion is a transposition: writing `n = r*c` for the number of
+ * matrix entries, the input is an `n x order` array stored by rows (one
+ * contiguous coefficient array per polynomial entry) and the output is an
+ * `order x n` array stored by rows (one contiguous entry array per
+ * coefficient). It is performed by blocks, so that every cache line touched
+ * is read, respectively written, in full; see the implementation notes in
+ * `nmod_mat_poly_extra/nmod_mat_poly_set_from.c`. */
 void nmod_mat_poly_set_trunc_from_poly_mat(nmod_mat_poly_t matp,
                                       const nmod_poly_mat_t pmat,
                                       slong order);
 
 /** Set from polynomial with matrix coefficients `matp`. */
-// TODO benchmark and try variants if needed
 NMOD_MAT_POLY_INLINE void
 nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat)
 {
