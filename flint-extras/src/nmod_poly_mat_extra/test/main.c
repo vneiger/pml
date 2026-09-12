@@ -23,6 +23,7 @@
 #include "t-mul_vandermonde.c"
 #include "t-mul_waksman.c"
 #include "t-mulmid.c"
+#include "t-set_from_mat_poly.c"
 #include "t-mbasis.c"
 #include "t-pmbasis.c"
 #include "t-pmintbasis.c"
@@ -46,6 +47,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_mul_waksman),
     TEST_FUNCTION(nmod_poly_mat_mul_vandermonde),
     TEST_FUNCTION(nmod_poly_mat_mulmid),
+    TEST_FUNCTION(nmod_poly_mat_set_from_mat_poly),
     TEST_FUNCTION(nmod_poly_mat_pmbasis),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis_nondistinct),
