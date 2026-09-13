@@ -328,6 +328,18 @@ static void _tiles_gather(fft_small_op_t X, const _tiles_struct * R, ulong o,
     }
 }
 
+/* zero the tiles of op o, for an entry which is the zero polynomial;
+   used when the sparsity structure is not built and the pointwise stage
+   therefore reads every tile (see use_sparse) */
+static void _tiles_zero(const _tiles_struct * R, ulong o, const fft_small_plan_t P)
+{
+    ulong pi, ti;
+    const ulong T = R->T;
+    for (pi = 0; pi < P->np; pi++)
+        for (ti = 0; ti < R->ntiles; ti++)
+            memset(_tile(R, pi, ti, o), 0, T * sizeof(double));
+}
+
 /* forward transform of the entry pol (assumed nonzero) into the scratch
    op X, optionally scaled by the normalization factors, then scattered
    into the tiles of op o */
@@ -388,6 +400,7 @@ typedef struct
     const slong * nzA;
     const slong * cntA;
     int Bdense;
+    int use_sparse;
 
     /* per worker */
     fft_small_op_t X;
@@ -416,6 +429,8 @@ static void _worker_fft_B(void * varg)
             nmod_poly_mat_entry(W->B, o % W->k, W->h + o / W->k);
         if (b->length > 0)
             _transform_entry(W->Bt, o, W->X, b, 1, W->mod, W->P);
+        else if (!W->use_sparse)
+            _tiles_zero(W->Bt, o, W->P);
     }
 }
 
@@ -430,6 +445,8 @@ static void _worker_fft_A(void * varg)
         const nmod_poly_struct * a = nmod_poly_mat_entry(W->A, W->g + o / W->k, o % W->k);
         if (a->length > 0)
             _transform_entry(W->At, o, W->X, a, 0, W->mod, W->P);
+        else if (!W->use_sparse)
+            _tiles_zero(W->At, o, W->P);
     }
 }
 
@@ -519,6 +536,11 @@ static void _worker_pointwise(void * varg)
                     for (i = 0; i < ca; i++)
                         W->bptr[nfull * k + i] = Bblk + (j * k + lstA[i]) * T;
                     W->zptr[nfull++] = Cblk + (r * cs + j) * T;
+                    if (nfull == 8)   /* the width _dot_tile works at */
+                    {
+                        _dot_tile(W->zptr, W->aptr, W->bcol, 8, ca, T, nn, ninv);
+                        nfull = 0;
+                    }
                 }
             if (nfull > 0)
                 _dot_tile(W->zptr, W->aptr, W->bcol, nfull, ca, T, nn, ninv);
@@ -745,16 +767,45 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
     _tiles_struct At = { Bt.data + Bt.nops * opdbls, (ulong) NRG * k, ntiles, T };
     _tiles_struct Ct = { At.data + At.nops * opdbls, (ulong) NRG * NCG, ntiles, T };
 
+    /*
+        Whether to build the per-pair sparsity structure. It costs
+        NRG*NCG*k words, and as many operations to build, against the
+        np*ztrunc doubles that each skipped product saves -- so it is
+        worth having only when the transforms are long compared with the
+        inner dimension, and it must not dwarf the storage it is meant to
+        save work on. Both conditions hold comfortably over the whole
+        range where this routine is selected; they fail together at large
+        dimension and short length, where NRG*NCG*k reaches tens of
+        gigabytes (dimension 4000, length 2: 68GB against a 1.8GB bound
+        on the transforms, and 15s spent building it at dimension 1000
+        alone).
+
+        Without it, the transforms of zero entries are materialised as
+        zeros so that the pointwise stage can read every tile, the dense
+        path is used throughout, and the lengths of the entries of C are
+        bounded by row and column maxima rather than computed exactly --
+        an upper bound is all they have to be, the export trims what it
+        does not need.
+    */
+    const int use_sparse = (np * ztrunc >= 64)
+        && ((double) NRG * NCG * k * sizeof(slong) <= (double) bbytes);
+
     /* structure of the products, for the current block of rows and
        columns: nzA[r*k ..] lists the l with A[g+r][l] != 0 (cntA[r] of
-       them); for each (r, jj), jlist[(r*NCG+jj)*k ..] lists the l with
-       A[g+r][l] and B[l][h+jj] both nonzero (jcount[r*NCG+jj] of them),
-       and zlen[r*NCG+jj] is the length of C[g+r][h+jj] */
-    slong * jlist = FLINT_ARRAY_ALLOC((ulong) NRG * NCG * k, slong);
+       them) and rowmaxA[r] is the largest of their lengths; colmaxB[jj]
+       is the same down the column h+jj of B; for each (r, jj),
+       jlist[(r*NCG+jj)*k ..] lists the l with A[g+r][l] and B[l][h+jj]
+       both nonzero (jcount[r*NCG+jj] of them, and only whether that is
+       zero is read when !use_sparse), and zlen[r*NCG+jj] bounds the
+       length of C[g+r][h+jj] */
+    slong * jlist = use_sparse ? FLINT_ARRAY_ALLOC((ulong) NRG * NCG * k, slong)
+                               : NULL;
     slong * jcount = FLINT_ARRAY_ALLOC((ulong) NRG * NCG, slong);
     slong * zlen = FLINT_ARRAY_ALLOC((ulong) NRG * NCG, slong);
     slong * nzA = FLINT_ARRAY_ALLOC((ulong) NRG * k, slong);
     slong * cntA = FLINT_ARRAY_ALLOC(NRG, slong);
+    slong * rowmaxA = FLINT_ARRAY_ALLOC(NRG, slong);
+    slong * colmaxB = FLINT_ARRAY_ALLOC(NCG, slong);
 
     _sd_fft_direct_worker_struct * W =
         FLINT_ARRAY_ALLOC(nthreads, _sd_fft_direct_worker_struct);
@@ -773,6 +824,7 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
             W[w].jlist = jlist; W[w].jcount = jcount; W[w].zlen = zlen;
             W[w].nzA = nzA; W[w].cntA = cntA;
             W[w].Bdense = 0;
+            W[w].use_sparse = use_sparse;
 
             fft_small_op_init_borrowed(W[w].X, P, buf + (ulong) w * scratchdbls);
             /* the transforms only write the ztrunc points they use, but
@@ -787,12 +839,12 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
             }
 
             W[w].aptr = FLINT_ARRAY_ALLOC(k, const double *);
-            W[w].bptr = FLINT_ARRAY_ALLOC((ulong) NCG * k, const double *);
-            W[w].bcol = FLINT_ARRAY_ALLOC(NCG, const double * const *);
+            W[w].bptr = FLINT_ARRAY_ALLOC(8 * (ulong) k, const double *);
+            W[w].bcol = FLINT_ARRAY_ALLOC(8, const double * const *);
             W[w].bfull = FLINT_ARRAY_ALLOC(8 * (ulong) k, const double *);
             W[w].bfullcol = FLINT_ARRAY_ALLOC(8, const double * const *);
-            W[w].zptr = FLINT_ARRAY_ALLOC(NCG, double *);
-            for (j = 0; j < NCG; j++)
+            W[w].zptr = FLINT_ARRAY_ALLOC(8, double *);
+            for (j = 0; j < 8; j++)
                 W[w].bcol[j] = W[w].bptr + j * k;
             for (j = 0; j < 8; j++)
                 W[w].bfullcol[j] = W[w].bfull + j * k;
@@ -808,11 +860,24 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
 
         /* a block of B without zero entries has every column full for
            every row of A, which lets the pointwise stage put the
-           columns of B outermost (see _worker_pointwise) */
-        for (l = 0; l < k; l++)
-            for (j = 0; j < ncols; j++)
-                if (nmod_poly_mat_entry(B, l, h + j)->length == 0)
+           columns of B outermost (see _worker_pointwise); the same scan
+           gives the largest length down each column, which bounds the
+           lengths of C when the sparsity structure is not built */
+        for (j = 0; j < ncols; j++)
+        {
+            slong cmax = 0;
+            for (l = 0; l < k; l++)
+            {
+                const slong lb = nmod_poly_mat_entry(B, l, h + j)->length;
+                if (lb == 0)
                     Bdense = 0;
+                else
+                    cmax = FLINT_MAX(cmax, lb);
+            }
+            colmaxB[j] = cmax;
+        }
+        if (!use_sparse)   /* every tile of B is materialised, zero or not */
+            Bdense = 1;
 
         for (w = 0; w < nthreads; w++)
         {
@@ -841,30 +906,55 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
 
             for (r = 0; r < nrows; r++)
             {
-                slong cnt = 0;
+                slong cnt = 0, rmax = 0;
                 for (l = 0; l < k; l++)
-                    if (nmod_poly_mat_entry(A, g + r, l)->length > 0)
-                        nzA[r * k + cnt++] = l;
-                cntA[r] = cnt;
-
-                for (j = 0; j < ncols; j++)
                 {
-                    slong zl = 0;
-                    slong * lst = jlist + ((ulong) r * NCG + j) * k;
-                    cnt = 0;
-                    for (l = 0; l < k; l++)
+                    const slong la = nmod_poly_mat_entry(A, g + r, l)->length;
+                    if (la > 0)
                     {
-                        const slong la = nmod_poly_mat_entry(A, g + r, l)->length;
-                        const slong lb = nmod_poly_mat_entry(B, l, h + j)->length;
-                        if (la > 0 && lb > 0)
-                        {
-                            lst[cnt++] = l;
-                            zl = FLINT_MAX(zl, la + lb - 1);
-                        }
+                        nzA[r * k + cnt++] = l;
+                        rmax = FLINT_MAX(rmax, la);
                     }
-                    jcount[r * NCG + j] = cnt;
-                    zlen[r * NCG + j] = zl;
                 }
+                cntA[r] = cnt;
+                rowmaxA[r] = rmax;
+            }
+
+            if (use_sparse)
+            {
+                for (r = 0; r < nrows; r++)
+                    for (j = 0; j < ncols; j++)
+                    {
+                        slong zl = 0, cnt = 0;
+                        slong * lst = jlist + ((ulong) r * NCG + j) * k;
+                        for (l = 0; l < k; l++)
+                        {
+                            const slong la = nmod_poly_mat_entry(A, g + r, l)->length;
+                            const slong lb = nmod_poly_mat_entry(B, l, h + j)->length;
+                            if (la > 0 && lb > 0)
+                            {
+                                lst[cnt++] = l;
+                                zl = FLINT_MAX(zl, la + lb - 1);
+                            }
+                        }
+                        jcount[r * NCG + j] = cnt;
+                        zlen[r * NCG + j] = zl;
+                    }
+            }
+            else
+            {
+                /* no per-pair scan: an entry of C is taken to be nonzero
+                   as soon as its row of A and its column of B are, and
+                   its length is bounded by the two maxima. Both are
+                   upper bounds, which is all the inverse transform and
+                   the export need */
+                for (r = 0; r < nrows; r++)
+                    for (j = 0; j < ncols; j++)
+                    {
+                        const int nz = (cntA[r] > 0 && colmaxB[j] > 0);
+                        jcount[r * NCG + j] = nz;
+                        zlen[r * NCG + j] = nz ? rowmaxA[r] + colmaxB[j] - 1 : 0;
+                    }
             }
             TIMING_MARK(_tA);
 
@@ -895,6 +985,8 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
     }
     flint_free(W);
     flint_free(jlist);
+    flint_free(rowmaxA);
+    flint_free(colmaxB);
     flint_free(jcount);
     flint_free(zlen);
     flint_free(nzA);
