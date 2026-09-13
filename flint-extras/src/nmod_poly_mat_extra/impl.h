@@ -58,6 +58,18 @@ void _nmod_poly_mat_set_trunc_from_mat_poly(nmod_poly_mat_t pmat,
                                             int kern,
                                             int dmaj);
 
+/* Same as _nmod_poly_mat_mul_geometric_precomp, with the soft bound (in
+ * bytes) on the memory used for the constant matrices given explicitly;
+ * 0 selects the default. Below the bound the product is performed in one
+ * go, above it the rows of A and then the columns of B are processed by
+ * groups. Exposed so that the tests can exercise the grouping at sizes
+ * that do not need hundreds of megabytes. */
+void _nmod_poly_mat_mul_geometric_precomp_bounded(nmod_poly_mat_t res,
+                                          const nmod_poly_mat_t pmat1, slong len1,
+                                          const nmod_poly_mat_t pmat2, slong len2,
+                                          nmod_geometric_progression_t G,
+                                          ulong membytes);
+
 /* multiplication helpers */
 void _nmod_poly_mat_mulmid_geometric1_precomp(nmod_poly_mat_t res,
                                               const nmod_poly_mat_t pmat1,
