@@ -32,21 +32,34 @@
                 for which the fft_small variants use a single transform
                 modulo the prime itself and no chinese remaindering
      nthreads   number of threads
-     fun        sd_fft_direct | sd_fft_matmul | geometric | multiply
+     fun        sd_fft_direct | sd_fft_matmul | geometric
+                | vandermonde1 | vandermonde2 | waksman | multiply
 
    Options of the table mode, in any order:
      rect         sweep rectangular shapes and unbalanced lengths
                   instead of the square grid
-     budget=SECS  give up on a parameter point after about SECS seconds
-                  (default 20); the grid is pruned monotonically from
-                  each point that exceeds it
+     budget=SECS  spend at most about SECS seconds on any one parameter
+                  point (default 20)
      mem=GB       skip a parameter point whose operands and result would
                   exceed about GB gigabytes (default 8)
 
-   A cell reads "-" when the point was pruned by one of the two limits
-   above, or when the algorithm does not apply to that modulus.
+   A cell reads "-" when the algorithm does not apply to that modulus and
+   length, or when the point was skipped by one of the two limits above.
+
+   The budget is enforced before the fact as well as after it, which
+   matters for the quadratic variants: vandermonde1, vandermonde2 and
+   waksman can be slower than the fft variants by two orders of magnitude
+   at the top of the grid, and a single call at such a point can run for
+   an hour. A point is attempted only when the points already timed at a
+   smaller dimension or a shorter length predict that it fits the budget,
+   the prediction extrapolating each of them with the growth rate
+   measured from its own two predecessors. Nothing is ever repeated once
+   the budget is spent, so the worst case is one call at a point the
+   prediction underestimated.
 */
 
+#include <float.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -65,8 +78,8 @@ typedef void (*mulfun)(nmod_poly_mat_t, const nmod_poly_mat_t, const nmod_poly_m
    enough 2-adicity for the transform lengths reachable here */
 #define FFT_PRIME UWORD(1108307720798209)
 
-static const slong SQ_DIMS[] = { 2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512 };
-static const slong SQ_LENS[] = { 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
+static const slong SQ_DIMS[] = { 2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 1024 };
+static const slong SQ_LENS[] = { 2, 5, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
 
 /* rectangular shapes, as multiples of a base dimension d: the fat and
    thin products that the thresholds, tuned on square ones, extrapolate
@@ -86,6 +99,11 @@ static const slong RECT_BASELENS[] = { 64, 512 };
 #define NRECT_LENS (slong)(sizeof(RECT_LENS) / sizeof(RECT_LENS[0]))
 #define NRECT_BASELENS (slong)(sizeof(RECT_BASELENS) / sizeof(RECT_BASELENS[0]))
 
+/* what a cell holds when it was not timed; any of these prints as "-",
+   but only _SKIPPED propagates to the points beyond it */
+#define _NOT_APPLICABLE (-1.0)   /* the algorithm needs a larger field */
+#define _SKIPPED        (-2.0)   /* too large, or predicted too slow */
+
 static mulfun _select(const char * alg, ulong modn, slong len)
 {
     if (!strcmp(alg, "sd_fft_direct"))  return nmod_poly_mat_mul_sd_fft_direct;
@@ -94,26 +112,131 @@ static mulfun _select(const char * alg, ulong modn, slong len)
     if (!strcmp(alg, "geometric"))
         return NMOD_POLY_CAN_USE_GEOMETRIC(modn, len)
                ? nmod_poly_mat_mul_geometric : NULL;
+    if (!strcmp(alg, "vandermonde1"))
+        return NMOD_POLY_CAN_USE_VANDERMONDE1(modn, len)
+               ? nmod_poly_mat_mul_vandermonde1 : NULL;
+    if (!strcmp(alg, "vandermonde2"))
+        return NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len)
+               ? nmod_poly_mat_mul_vandermonde2 : NULL;
+    if (!strcmp(alg, "waksman"))
+        return NMOD_POLY_MAT_CAN_USE_WAKSMAN(modn)
+               ? nmod_poly_mat_mul_waksman : NULL;
     return NULL;
 }
 
-/* bytes of the operands and of the result */
-static double _opbytes(slong d1, slong d2, slong d3, slong l1, slong l2)
+static int _known(const char * alg)
 {
-    return 8.0 * ((double) d1 * d2 * l1 + (double) d2 * d3 * l2
-                  + (double) d1 * d3 * (l1 + l2 - 1));
+    return !strcmp(alg, "sd_fft_direct") || !strcmp(alg, "sd_fft_matmul")
+        || !strcmp(alg, "multiply") || !strcmp(alg, "geometric")
+        || !strcmp(alg, "vandermonde1") || !strcmp(alg, "vandermonde2")
+        || !strcmp(alg, "waksman");
 }
 
-/* minimum wall time over a few repetitions, after one untimed call which
-   sizes the run and warms the scratch buffers that a sequence of
-   products would find warm anyway */
+/* bytes of the operands and of the result: their coefficients, and the
+   nmod_poly_struct and its allocation header for each entry -- at a
+   large dimension and a short length the latter is the larger of the two
+   and leaving it out makes the memory limit meaningless there */
+static double _opbytes(slong d1, slong d2, slong d3, slong l1, slong l2)
+{
+    const double entries = (double) d1 * d2 + (double) d2 * d3
+                           + (double) d1 * d3;
+    const double coeffs = (double) d1 * d2 * l1 + (double) d2 * d3 * l2
+                          + (double) d1 * d3 * (l1 + l2 - 1);
+
+    return 8.0 * coeffs + (double) (sizeof(nmod_poly_struct) + 32) * entries;
+}
+
+/*
+    t1 is the time at x1 and t0, if positive, the time at x0 < x1: the
+    time at x > x1, extrapolated with the growth rate between those two,
+    and with defexp when there is only one of them. The rate is clamped:
+    at the cheap end of the grid the timer resolution is a microsecond
+    and a ratio of two such readings says nothing, and a measured rate
+    below the floor is a cache effect of one particular step rather than
+    the growth of the algorithm -- no variant here is subcubic in the
+    dimension by more than the Strassen exponent. *fitted is set when the
+    rate was measured rather than assumed.
+*/
+static double _extrapolate(double t0, double t1, slong x0, slong x1, slong x,
+                           double defexp, double minexp, double maxexp,
+                           int * fitted)
+{
+    double e = defexp;
+
+    *fitted = 0;
+    if (t0 > 0.0 && t1 > 0.0 && x1 > x0 && t1 > 4e-6)
+    {
+        e = log(t1 / t0) / log((double) x1 / (double) x0);
+        e = FLINT_MAX(e, minexp);
+        e = FLINT_MIN(e, maxexp);
+        *fitted = 1;
+    }
+
+    return t1 * pow((double) x / (double) x1, e);
+}
+
+/*
+    An estimate of the time at (i, j) of the square grid from the points
+    already timed in the same column and in the same row. The larger of
+    the two is returned, and 0 when neither is available: the profile
+    must not launch a product it cannot afford, and the cost of erring on
+    that side is a missing cell rather than an hour of wall time.
+
+    An estimate whose growth rate was measured is preferred to one that
+    had to assume it, however: the grid jumps from length 3 to length 11
+    and from dimension 512 to 1024, and an assumed rate over a step that
+    wide would prune half the table.
+*/
+static double _predict_square(const double * T, slong i, slong j)
+{
+    const slong * D = SQ_DIMS;
+    const slong * L = SQ_LENS;
+    double pred = 0.0, guess = 0.0, p;
+    int fitted;
+
+#define _T(a, b) T[(a) * NSQ_LENS + (b)]
+
+    if (i > 0 && _T(i - 1, j) > 0.0)
+    {
+        p = _extrapolate(i > 1 ? _T(i - 2, j) : -1.0, _T(i - 1, j),
+                         i > 1 ? D[i - 2] : 0, D[i - 1], D[i],
+                         3.0, 2.5, 3.5, &fitted);
+        if (fitted)
+            pred = FLINT_MAX(pred, p);
+        else
+            guess = FLINT_MAX(guess, p);
+    }
+
+    if (j > 0 && _T(i, j - 1) > 0.0)
+    {
+        p = _extrapolate(j > 1 ? _T(i, j - 2) : -1.0, _T(i, j - 1),
+                         j > 1 ? 2 * L[j - 2] - 1 : 0, 2 * L[j - 1] - 1,
+                         2 * L[j] - 1, 1.5, 0.5, 2.5, &fitted);
+        if (fitted)
+            pred = FLINT_MAX(pred, p);
+        else
+            guess = FLINT_MAX(guess, p);
+    }
+
+#undef _T
+
+    return (pred > 0.0) ? pred : guess;
+}
+
+/*
+    Minimum wall time over a few repetitions. The first call is timed as
+    well -- it is the only guard against a point the prediction
+    underestimated -- and no call is started once the budget is spent, so
+    a point costs at most about `budget` seconds whatever it turns out to
+    be.
+*/
 static double _time_one(mulfun fun, slong d1, slong d2, slong d3,
-                        slong len1, slong len2, ulong modn)
+                        slong len1, slong len2, ulong modn, double budget)
 {
     flint_rand_t state;
     nmod_poly_mat_t A, B, C;
     timeit_t timer;
-    double best;
+    double best, total;
     slong reps, i;
 
     flint_rand_init(state);
@@ -129,12 +252,13 @@ static double _time_one(mulfun fun, slong d1, slong d2, slong d3,
     fun(C, A, B);
     timeit_stop_us(timer);
     best = 1e-6 * timer->wall;
+    total = best;
 
     reps = (slong) (0.5 / (best > 1e-6 ? best : 1e-6));
     reps = FLINT_MAX(reps, 1);
     reps = FLINT_MIN(reps, 20);
 
-    for (i = 0; i < reps; i++)
+    for (i = 0; i < reps && total + best <= budget; i++)
     {
         double t;
         timeit_start_us(timer);
@@ -142,6 +266,7 @@ static double _time_one(mulfun fun, slong d1, slong d2, slong d3,
         timeit_stop_us(timer);
         t = 1e-6 * timer->wall;
         best = FLINT_MIN(best, t);
+        total += t;
     }
 
     nmod_poly_mat_clear(A);
@@ -152,16 +277,24 @@ static double _time_one(mulfun fun, slong d1, slong d2, slong d3,
     return best;
 }
 
+/* the sentinels above are the only negative values a cell can hold, so
+   a reading of zero -- a product that took less than the microsecond the
+   timer resolves -- still prints as a number */
+static void _print_cell(double t)
+{
+    if (t >= 0.0)
+        flint_printf(" %10.3e", t);
+    else
+        flint_printf(" %10s", "-");
+    fflush(stdout);
+}
+
 static void _table_square(const char * alg, ulong modn, double budget, double membytes)
 {
-    /* blown[j] is the smallest row index at which column j exceeded a
-       limit; a point is skipped as soon as one at least as small in both
-       parameters has, since neither is cheaper */
-    slong blown[NSQ_LENS];
+    double * T = flint_malloc(NSQ_DIMS * NSQ_LENS * sizeof(double));
     slong i, j;
 
-    for (j = 0; j < NSQ_LENS; j++)
-        blown[j] = NSQ_DIMS;
+#define _T(a, b) T[(a) * NSQ_LENS + (b)]
 
     flint_printf("%-6s", "dim\\len");
     for (j = 0; j < NSQ_LENS; j++)
@@ -177,44 +310,80 @@ static void _table_square(const char * alg, ulong modn, double budget, double me
         {
             const slong l = SQ_LENS[j];
             mulfun fun = _select(alg, modn, 2 * l - 1);
-            double t;
+            double pred;
 
-            if (fun == NULL || i >= blown[j]
-                || _opbytes(d, d, d, l, l) > membytes)
+            if (fun == NULL)
             {
-                flint_printf(" %10s", "-");
+                _T(i, j) = _NOT_APPLICABLE;
+                _print_cell(_NOT_APPLICABLE);
                 continue;
             }
 
-            t = _time_one(fun, d, d, d, l, l, modn);
-            flint_printf(" %10.3e", t);
-            fflush(stdout);
-
-            if (t > budget)
+            /* neither parameter makes the product cheaper, so a point
+               that was skipped, or that spent its whole budget, stops
+               the column and the row at once */
+            if ((i > 0 && (_T(i - 1, j) == _SKIPPED || _T(i - 1, j) > budget))
+                || (j > 0 && (_T(i, j - 1) == _SKIPPED || _T(i, j - 1) > budget))
+                || _opbytes(d, d, d, l, l) > membytes)
             {
-                slong jj;
-                for (jj = j; jj < NSQ_LENS; jj++)
-                    blown[jj] = FLINT_MIN(blown[jj], i);
+                _T(i, j) = _SKIPPED;
+                _print_cell(_SKIPPED);
+                continue;
             }
+
+            pred = _predict_square(T, i, j);
+            if (pred > budget)
+            {
+                _T(i, j) = _SKIPPED;
+                _print_cell(_SKIPPED);
+                continue;
+            }
+
+            _T(i, j) = _time_one(fun, d, d, d, l, l, modn, budget);
+            _print_cell(_T(i, j));
         }
         flint_printf("\n");
     }
+
+#undef _T
+
+    flint_free(T);
+}
+
+static void _rect_len(slong c, slong * len1, slong * len2)
+{
+    const slong base = RECT_BASELENS[c / NRECT_LENS];
+    const slong l = c % NRECT_LENS;
+
+    *len1 = FLINT_MAX(base * RECT_LENS[l][0] / 8, 1);
+    *len2 = FLINT_MAX(base * RECT_LENS[l][1] / 8, 1);
 }
 
 static void _table_rect(const char * alg, ulong modn, double budget, double membytes)
 {
     const slong ncols = NRECT_BASELENS * NRECT_LENS;
+    /*
+        P[s][c] is what the same shape and column did at the previous
+        base: its time, _SKIPPED if it was skipped there, or
+        _NOT_APPLICABLE if the algorithm does not apply to that column.
+        The shape multipliers are fixed, so the product grows as the cube
+        of the base and a point skipped at one base is skipped at every
+        larger one -- without this the first column of a row has nothing
+        to predict from and the row runs unguarded.
+    */
+    double * P = flint_malloc(NRECT_SHAPES * ncols * sizeof(double));
     slong b, s, c;
+
+    for (s = 0; s < NRECT_SHAPES * ncols; s++)
+        P[s] = _NOT_APPLICABLE;
 
     flint_printf("%-18s", "m x k x n \\ len");
     for (c = 0; c < ncols; c++)
     {
-        const slong base = RECT_BASELENS[c / NRECT_LENS];
-        const slong l = c % NRECT_LENS;
-        const slong len1 = FLINT_MAX(base * RECT_LENS[l][0] / 8, 1);
-        const slong len2 = FLINT_MAX(base * RECT_LENS[l][1] / 8, 1);
+        slong len1, len2;
         char lab[32];
 
+        _rect_len(c, &len1, &len2);
         flint_sprintf(lab, "%wd+%wd", len1, len2);
         flint_printf(" %10s", lab);
     }
@@ -227,6 +396,8 @@ static void _table_rect(const char * alg, ulong modn, double budget, double memb
             const slong d1 = d * RECT_SHAPES[s][0];
             const slong d2 = d * RECT_SHAPES[s][1];
             const slong d3 = d * RECT_SHAPES[s][2];
+            double prev = -1.0, prevprev = -1.0;
+            slong prevlen = 0, prevprevlen = 0;
             int stop = 0;
             char shape[32];
 
@@ -235,28 +406,67 @@ static void _table_rect(const char * alg, ulong modn, double budget, double memb
 
             for (c = 0; c < ncols; c++)
             {
-                const slong base = RECT_BASELENS[c / NRECT_LENS];
-                const slong l = c % NRECT_LENS;
-                const slong len1 = FLINT_MAX(base * RECT_LENS[l][0] / 8, 1);
-                const slong len2 = FLINT_MAX(base * RECT_LENS[l][1] / 8, 1);
-                mulfun fun = _select(alg, modn, len1 + len2 - 1);
-                double t;
+                const double base_prev = (b > 0) ? P[s * ncols + c]
+                                                 : _NOT_APPLICABLE;
+                slong len1, len2;
+                mulfun fun;
+                double pred = 0.0, t;
 
-                if (stop || fun == NULL
-                    || _opbytes(d1, d2, d3, len1, len2) > membytes)
+                _rect_len(c, &len1, &len2);
+                fun = _select(alg, modn, len1 + len2 - 1);
+
+                if (fun == NULL)
                 {
-                    flint_printf(" %10s", "-");
+                    P[s * ncols + c] = _NOT_APPLICABLE;
+                    _print_cell(_NOT_APPLICABLE);
                     continue;
                 }
 
-                t = _time_one(fun, d1, d2, d3, len1, len2, modn);
-                flint_printf(" %10.3e", t);
-                fflush(stdout);
+                if (stop || base_prev == _SKIPPED || base_prev > budget
+                    || _opbytes(d1, d2, d3, len1, len2) > membytes)
+                {
+                    stop = 1;
+                    P[s * ncols + c] = _SKIPPED;
+                    _print_cell(_SKIPPED);
+                    continue;
+                }
+
+                /* from the previous column of this row, and from this
+                   column at the previous base */
+                if (prev > 0.0)
+                {
+                    int fitted;
+                    pred = _extrapolate(prevprev, prev, prevprevlen, prevlen,
+                                        len1 + len2 - 1, 1.5, 0.5, 2.5, &fitted);
+                }
+                if (base_prev > 0.0)
+                {
+                    const double q = base_prev
+                        * pow((double) d / (double) RECT_BASES[b - 1], 3.0);
+                    pred = FLINT_MAX(pred, q);
+                }
+
+                if (pred > budget)
+                {
+                    stop = 1;
+                    P[s * ncols + c] = _SKIPPED;
+                    _print_cell(_SKIPPED);
+                    continue;
+                }
+
+                t = _time_one(fun, d1, d2, d3, len1, len2, modn, budget);
+                P[s * ncols + c] = t;
+                _print_cell(t);
+
+                prevprev = prev; prevprevlen = prevlen;
+                prev = t; prevlen = len1 + len2 - 1;
                 if (t > budget)
                     stop = 1;
             }
             flint_printf("\n");
         }
+
+    flint_free(P);
 }
 
 int main(int argc, char ** argv)
@@ -272,7 +482,8 @@ int main(int argc, char ** argv)
         flint_printf("Usage: %s prime nthreads fun [opts]\n", argv[0]);
         flint_printf("       %s prime nthreads fun dim1 dim2 dim3 len1 len2\n", argv[0]);
         flint_printf("   prime: the modulus; 0 selects a 50-bit FFT prime\n");
-        flint_printf("   fun:   sd_fft_direct | sd_fft_matmul | geometric | multiply\n");
+        flint_printf("   fun:   sd_fft_direct | sd_fft_matmul | geometric\n");
+        flint_printf("          | vandermonde1 | vandermonde2 | waksman | multiply\n");
         flint_printf("   opts:  rect | budget=SECS | mem=GB\n");
         return 0;
     }
@@ -284,8 +495,7 @@ int main(int argc, char ** argv)
     alg = argv[3];
     flint_set_num_threads(nthreads);
 
-    if (_select(alg, modn, 2) == NULL
-        && strcmp(alg, "geometric"))   /* geometric may just not apply */
+    if (!_known(alg))
     {
         flint_printf("unknown algorithm %s\n", alg);
         return 1;
@@ -300,7 +510,8 @@ int main(int argc, char ** argv)
         if (fun == NULL)
             flint_printf("-\n");
         else
-            flint_printf("%.3e\n", _time_one(fun, d1, d2, d3, len1, len2, modn));
+            flint_printf("%.3e\n", _time_one(fun, d1, d2, d3, len1, len2, modn,
+                                             DBL_MAX));
         return 0;
     }
 
