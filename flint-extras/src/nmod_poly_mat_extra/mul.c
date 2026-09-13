@@ -56,6 +56,23 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
      * -> would be safe to check that they are ok for fat vectors */
     /* TODO see impact of FLINT+BLAS on thresholds */
 
+    /*
+        TODO 2026-09-13 
+        NOTE 1 : measurements were focused on "small" matrices (but
+        products already taking up to about 60s), with dimension <= 512. The
+        fft_matmul strategy is not called currently but might be interesting in
+        a corner case of large instances: with matrices of large dimensions
+        (gaining advantage from nmod_mat_mul) of large degree (otherwise the
+        Vandermonde approach may be faster) and when there is a single FFT
+        prime (otherwise geometric may be faster). Some specific measurements
+        with larger dimensions have not revealed such cases, but the function
+        is still kept for future investigations.
+        NOTE 2 : sd_fft_direct, as it is implemented, does not benefit from 
+        a smaller prime, unlike nmod_mat_mul. So in the case of a single
+        and small (say 20 bits) FFT prime, we should expect sd_fft_matmul
+        to win; but even there the comparison to geometric should be made.
+    */
+
     const slong dim = n_cbrt(pmat1->r * pmat1->c * pmat2->c);
     const slong len = len1 + len2 - 1;
     const ulong modn = pmat1->modulus;
@@ -66,36 +83,23 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
         fft_small (nmod_poly_mat_mul_sd_fft_direct) or at a geometric
         progression in Z/p itself (nmod_poly_mat_mul_geometric).
 
+        The sd_fft_matmul function is currently uncalled: it did not
+        stand out as useful in the experiments.
+
         NOTE
-        The FFT route evaluates at np * ztrunc points, where np is from 1
+        The FFT routes evaluate at np * ztrunc points, where np is from 1
         (fft_small can transform directly modulo p) to 3 or even 4 in rare
         cases. One thing is that ztrunc, the transform length, is rounded up
-        which potentially multiplies the number of points (and of pointwise
-        products) by up to 2. Also, the number of pointwise multiplications
+        which increases the number of points (and of pointwise products),
+        potentially by up to 2. Also, the number of pointwise multiplications
         is multiplied by `np` since they have to be done for each prime. The
-        geometric route evaluates at exactly len points.
+        geometric route evaluates at exactly len points and does exactly
+        len pointwise multiplications.
 
         2026-09-13 Thresholds fitted on square products over three machines
         (Zen 4, Ice Lake, Apple M4), three moduli (a 50-bit FFT prime, a 30-bit
         and a 60-bit prime), at 1, 2 and 8 threads, against the current
         FLINT-dev built without BLAS.
-
-        TODO fitted on square products; fat and thin ones are not covered.
-
-        TODO measurements were focused on "small" matrices (but products
-        already taking up to about 60s), with dimension <= 512. The fft_matmul
-        strategy is not called currently but should be interesting in a corner
-        case of large instances: with matrices of large dimensions (gaining
-        from nmod_mat_mul) of large degree (otherwise the Vandermonde approach
-        may be faster) and when there is a single FFT prime (otherwise
-        geometric may be faster).
-
-        TODO see if BLAS brings big changes to these thresholds
-
-        NOTE: unlike the other variants, these two allocate the
-        evaluations of the operands, up to a soft budget which is the
-        larger of a fixed floor (currently 256MB) and twice the size of
-        the operands and the result (see the MEM_FLOOR constants).
     */
 
     /* the cheap part of what makes fft_small transform directly modulo p
