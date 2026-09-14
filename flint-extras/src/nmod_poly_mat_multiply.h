@@ -147,12 +147,15 @@ void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t res,
                                  const nmod_poly_mat_t pmat2, slong len2,
                                  slong nlo, slong nhi);
 
-#if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 6)
 /** actual worker: transposed multiplication, via evaluation-interpolation at geometric progression
  * - requires len1 <= nlo+1 or len2 <= nlo+1
  * - requires the existence of a geometric progression of order (at least) nhi
  * - finds such a progression, builds temporary precomputation data,
- *   and calls `mulmid_geometric{1,2}_precomp`
+ *   and calls `_nmod_poly_mat_mulmid_geometric_precomp`
+ * - output may alias input; multithreaded (FLINT thread pool); the memory
+ *   used for the constant matrices is bounded by the larger of a fixed floor
+ *   and twice the size of the operands and the result, the rows of pmat1
+ *   and the columns of pmat2 being processed by groups beyond it
  */
 void _nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t res,
                                      const nmod_poly_mat_t pmat1, slong len1,
@@ -167,7 +170,6 @@ void _nmod_poly_mat_mulmid_geometric_precomp(nmod_poly_mat_t res,
                                              const nmod_poly_mat_t pmat1, slong len1,
                                              const nmod_poly_mat_t pmat2, slong len2,
                                              slong nlo, slong nhi, nmod_geometric_progression_t G);
-#endif
 
 
 /** Middle product for polynomial matrices

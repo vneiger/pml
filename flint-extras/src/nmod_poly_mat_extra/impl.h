@@ -39,6 +39,11 @@ void _reduce_against_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
                                    nmod_poly_t u, nmod_poly_t v);
 ulong _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j);
 
+
+/* ------------------------------------------------------------------------ */
+/* a few functions to help tests/profiles be more complete                  */
+/* ------------------------------------------------------------------------ */
+
 /* Same as nmod_poly_mat_set_trunc_from_mat_poly, with explicit control over
  * the block kernel and the loop schedule of the underlying transposition.
  *
@@ -70,14 +75,12 @@ void _nmod_poly_mat_mul_geometric_precomp_bounded(nmod_poly_mat_t res,
                                           nmod_geometric_progression_t G,
                                           ulong membytes);
 
-/* multiplication helpers */
-void _nmod_poly_mat_mulmid_geometric1_precomp(nmod_poly_mat_t res,
-                                              const nmod_poly_mat_t pmat1,
-                                              const nmod_poly_mat_t pmat2,
-                                              slong nlo, slong nhi, nmod_geometric_progression_t G);
-void _nmod_poly_mat_mulmid_geometric2_precomp(nmod_poly_mat_t res,
-                                              const nmod_poly_mat_t pmat1,
-                                              const nmod_poly_mat_t pmat2,
-                                              slong nlo, slong nhi, nmod_geometric_progression_t G);
+/* Same for the middle product _nmod_poly_mat_mulmid_geometric_precomp. */
+void _nmod_poly_mat_mulmid_geometric_precomp_bounded(nmod_poly_mat_t res,
+                                             const nmod_poly_mat_t pmat1, slong len1,
+                                             const nmod_poly_mat_t pmat2, slong len2,
+                                             slong nlo, slong nhi,
+                                             nmod_geometric_progression_t G,
+                                             ulong membytes);
 
 #endif  /* NMOD_POLY_MAT_EXTRA_IMPL_H */
