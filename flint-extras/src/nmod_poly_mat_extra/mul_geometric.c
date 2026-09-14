@@ -54,7 +54,7 @@ static double _now(void) { struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &t
         nmod_mat_mul reads and writes borrowed storage and the scattered
         side of the two transpositions has a constant, cache-line aligned
         stride (see _mats_struct);
-      * that buffer is retained across calls (see _geometric_fit_buffer):
+      * that buffer is retained across calls (see _nmod_poly_mat_geometric_fit_buffer):
         the first-touch page faults of a freshly mapped working set are
         a sizeable fraction of a large product, and the polynomial matrix
         algorithms of PML perform sequences of products of similar shape;
@@ -68,36 +68,24 @@ static double _now(void) { struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &t
         points as their true length rather than from all len of them.
 */
 
-/* Soft bound, in bytes, on the memory used for the constant matrices.
-   As in the two fft_small variants, this is not a constant but a floor:
-   the bound used is the larger of it and twice the size of the operands
-   and the result. The shape of a group matters -- the group sizes are
-   the outer dimensions of the matrices handed to nmod_mat_mul, and that
-   routine changes algorithm on the smallest of the three -- so the two
-   are balanced rather than the rows of A alone being cut. */
-#define NMOD_POLY_MAT_MUL_GEOMETRIC_MEM_FLOOR (UWORD(1) << 28)
+/*
+    Soft memory bound: the larger of NMOD_POLY_MAT_GEOMETRIC_MEM_FLOOR
+    and twice the size of the operands and the result (see impl.h). The
+    shape of a group matters -- the group sizes are the outer dimensions
+    of the matrices handed to nmod_mat_mul, and that routine changes
+    algorithm on the smallest of the three -- so the two are balanced
+    rather than the rows of A alone being cut (see _geometric_groups).
+*/
 
 /*
-    Retained scratch space for the constant matrices.
-
-    This deliberately does not use the scratch buffer of the fft_small
-    context, as the two variants based on it do: the geometric
-    evaluation and interpolation themselves call into that context
-    (_nmod_poly_mul_mid_default_mpn_ctx, for lengths above a couple of
-    hundred), so the buffer is not ours to hold across those calls.
+    Retained scratch space for the constant matrices, shared with the
+    middle product (mulmid.c) through impl.h.
 
     The buffer is thread local and is not given back between products,
     only grown; flint_cleanup() releases it. A thread that has performed
     one large product therefore keeps a working set of the order of the
     bound above.
 */
-
-/* a is rounded up to the next multiple of the power of two b (n_round_up
-   itself lives in fft_small.h, which this file must not depend on) */
-static inline ulong _round_up2(ulong a, ulong b)
-{
-    return (a + b - 1) & ~(b - 1);
-}
 
 static FLINT_TLS_PREFIX ulong * _geometric_buf = NULL;
 static FLINT_TLS_PREFIX ulong _geometric_buf_alloc = 0;   /* bytes */
@@ -109,9 +97,10 @@ static void _geometric_cleanup(void)
         flint_aligned_free(_geometric_buf);
     _geometric_buf = NULL;
     _geometric_buf_alloc = 0;
+    _geometric_buf_registered = 0;
 }
 
-static ulong * _geometric_fit_buffer(ulong nbytes)
+ulong * _nmod_poly_mat_geometric_fit_buffer(ulong nbytes)
 {
     if (nbytes > _geometric_buf_alloc)
     {
@@ -130,78 +119,6 @@ static ulong * _geometric_fit_buffer(ulong nbytes)
 }
 
 /* ------------------------------------------------------------------------ */
-/* the constant matrices                                                    */
-/* ------------------------------------------------------------------------ */
-
-/*
-    The evaluations of one region (the block of B, of A or of C currently
-    held) at one point form one matrix, laid out contiguously and row
-    major so that an nmod_mat can borrow it:
-
-        region + t * mstride,   mstride = r*c rounded up to 8,
-
-    where r and c are the dimensions of the region and the row stride
-    inside a matrix is c. Rounding the distance between consecutive
-    points up to 8 words, on a 64-byte aligned base, keeps each group of
-    8 consecutive entries of one point inside a single cache line: the
-    scatter below writes the region one such group at a time, and two
-    threads never write the same line.
-*/
-typedef struct
-{
-    ulong * data;
-    slong r;
-    slong c;
-    slong mstride;
-    slong len;
-}
-_mats_struct;
-
-static inline ulong * _mats_at(const _mats_struct * M, slong t)
-{
-    return M->data + t * M->mstride;
-}
-
-/* words occupied by a region of r x c matrices at len points */
-static inline ulong _mats_words(slong r, slong c, slong len)
-{
-    return (ulong) len * _round_up2((ulong) r * c, 8);
-}
-
-/* the len values of entry e, scattered over the matrices */
-static void _mats_scatter(const _mats_struct * M, slong e, nn_srcptr v)
-{
-    const slong len = M->len, ms = M->mstride;
-    ulong * dst = M->data + e;
-    slong t;
-
-    for (t = 0; t < len; t++)
-        dst[t * ms] = v[t];
-}
-
-/* the same for an entry which is the zero polynomial */
-static void _mats_scatter_zero(const _mats_struct * M, slong e)
-{
-    const slong len = M->len, ms = M->mstride;
-    ulong * dst = M->data + e;
-    slong t;
-
-    for (t = 0; t < len; t++)
-        dst[t * ms] = 0;
-}
-
-/* the first zl values of entry e, gathered from the matrices */
-static void _mats_gather(nn_ptr v, const _mats_struct * M, slong e, slong zl)
-{
-    const slong ms = M->mstride;
-    const ulong * src = M->data + e;
-    slong t;
-
-    for (t = 0; t < zl; t++)
-        v[t] = src[t * ms];
-}
-
-/* ------------------------------------------------------------------------ */
 /* parallel phases                                                          */
 /* ------------------------------------------------------------------------ */
 
@@ -215,6 +132,8 @@ static void _mats_gather(nn_ptr v, const _mats_struct * M, slong e, slong zl)
 */
 typedef struct
 {
+    _geometric_range_struct range;   /* the tasks of this worker; first, see _geometric_run */
+
     /* shared, read only */
     const nmod_geometric_progression_struct * G;
     const _mats_struct * Am;
@@ -235,8 +154,6 @@ typedef struct
 
     /* per worker */
     nn_ptr val;
-    slong start;
-    slong stop;
 }
 _geometric_worker_struct;
 
@@ -249,7 +166,7 @@ static void _worker_eval_B(void * varg)
     const slong nops = W->Bm->r * W->Bm->c;
     slong e;
 
-    for (e = 8 * W->start; e < 8 * W->stop && e < nops; e++)
+    for (e = 8 * W->range.start; e < 8 * W->range.stop && e < nops; e++)
     {
         const slong l = e / cs, jj = e % cs;
         const nmod_poly_struct * b;
@@ -278,7 +195,7 @@ static void _worker_eval_A(void * varg)
     const slong nops = W->nrows * k;
     slong e;
 
-    for (e = 8 * W->start; e < 8 * W->stop && e < nops; e++)
+    for (e = 8 * W->range.start; e < 8 * W->range.stop && e < nops; e++)
     {
         const nmod_poly_struct * a =
             nmod_poly_mat_entry(W->A, W->g + e / k, e % k);
@@ -301,7 +218,7 @@ static void _worker_matmul(void * varg)
     _geometric_worker_struct * W = (_geometric_worker_struct *) varg;
     slong t;
 
-    for (t = W->start; t < W->stop; t++)
+    for (t = W->range.start; t < W->range.stop; t++)
     {
         nmod_mat_struct MA, MB, MC;
 
@@ -325,7 +242,7 @@ static void _worker_interp(void * varg)
     const slong cs = W->cstride, nc = W->ncols;
     slong e;
 
-    for (e = W->start; e < W->stop; e++)
+    for (e = W->range.start; e < W->range.stop; e++)
     {
         /* the block is ncols wide but strided by cstride */
         const slong ee = (e / nc) * cs + e % nc;
@@ -342,31 +259,6 @@ static void _worker_interp(void * varg)
         _mats_gather(W->val, W->Cm, ee, zl);
         nmod_poly_interpolate_geometric_nmod_vec_fast_precomp(c, W->val, W->G, zl);
     }
-}
-
-/* split [0, ntasks) over the first `nthreads` worker descriptors and run */
-static void _geometric_run(void (* func)(void *),
-                           _geometric_worker_struct * W, slong nthreads,
-                           thread_pool_handle * handles, slong ntasks)
-{
-    slong i;
-
-    if (ntasks < 1)
-        return;
-
-    nthreads = FLINT_MIN(nthreads, ntasks);
-
-    for (i = 0; i < nthreads; i++)
-    {
-        W[i].start = (i + 0) * ntasks / nthreads;
-        W[i].stop  = (i + 1) * ntasks / nthreads;
-    }
-
-    for (i = nthreads - 1; i > 0; i--)
-        thread_pool_wake(global_thread_pool, handles[i - 1], 0, func, W + i);
-    func(W + 0);
-    for (i = nthreads - 1; i > 0; i--)
-        thread_pool_wait(global_thread_pool, handles[i - 1]);
 }
 
 /** Multiplication for polynomial matrices
@@ -440,7 +332,7 @@ void _nmod_poly_mat_mul_geometric_precomp_bounded(nmod_poly_mat_t res,
                           + (ulong) m * n * len;
     ulong bbytes = (membytes != 0)
                    ? membytes
-                   : FLINT_MAX(NMOD_POLY_MAT_MUL_GEOMETRIC_MEM_FLOOR,
+                   : FLINT_MAX(NMOD_POLY_MAT_GEOMETRIC_MEM_FLOOR,
                                2 * opwords * sizeof(ulong));
 #ifdef PML_MUL_GEOMETRIC_TIMING
     if (membytes == 0 && getenv("PML_MEM_BUDGET"))
@@ -455,26 +347,7 @@ void _nmod_poly_mat_mul_geometric_precomp_bounded(nmod_poly_mat_t res,
         const ulong scratch = (ulong) nthreads;   /* the val buffers */
         const ulong avail = (budget > scratch + 3) ? budget - scratch : 3;
 
-        NRG = m;
-        NCG = n;
-        if ((ulong) k * n + (ulong) m * k + (ulong) m * n > avail)
-        {
-            /* NRG = NCG = g uses 2*k*g + g^2 entries */
-            slong g = (slong) (n_sqrt((ulong) k * k + avail) - (ulong) k);
-            g = FLINT_MAX(g, 1);
-            NRG = FLINT_MIN(m, g);
-            /* the largest NCG for that NRG, and then the largest NRG for
-               that NCG: this gives back to one side what the other could
-               not use because m or n was the binding cap */
-            NCG = (avail > (ulong) NRG * k)
-                  ? (slong) ((avail - (ulong) NRG * k) / ((ulong) k + NRG)) : 1;
-            NCG = FLINT_MAX(NCG, 1);
-            NCG = FLINT_MIN(NCG, n);
-            NRG = (avail > (ulong) k * NCG)
-                  ? (slong) ((avail - (ulong) k * NCG) / ((ulong) k + NCG)) : 1;
-            NRG = FLINT_MAX(NRG, 1);
-            NRG = FLINT_MIN(NRG, m);
-        }
+        _geometric_groups(m, k, n, avail, &NRG, &NCG);
     }
 
     /* storage: the per-thread value buffers, then the evaluations of B
@@ -483,15 +356,15 @@ void _nmod_poly_mat_mul_geometric_precomp_bounded(nmod_poly_mat_t res,
     const ulong wordsA = _mats_words(NRG, k, len);
     const ulong wordsC = _mats_words(NRG, NCG, len);
     const ulong valwords = _round_up2((ulong) nthreads * len, 8);
-    ulong * buf = _geometric_fit_buffer((valwords + wordsB + wordsA + wordsC)
+    ulong * buf = _nmod_poly_mat_geometric_fit_buffer((valwords + wordsB + wordsA + wordsC)
                                         * sizeof(ulong));
     ulong * matbuf = buf + valwords;
 
-    _mats_struct Bm = { matbuf, k, NCG, (slong) _round_up2((ulong) k * NCG, 8), len };
+    _mats_struct Bm = { matbuf, k, NCG, _mats_stride(k, NCG), len };
     _mats_struct Am = { matbuf + wordsB, NRG, k,
-                        (slong) _round_up2((ulong) NRG * k, 8), len };
+                        _mats_stride(NRG, k), len };
     _mats_struct Cm = { matbuf + wordsB + wordsA, NRG, NCG,
-                        (slong) _round_up2((ulong) NRG * NCG, 8), len };
+                        _mats_stride(NRG, NCG), len };
 
     /* zlen[r*NCG+jj] is the length of C[g+r][h+jj], zero when that entry
        has no nonzero product contributing to it */
@@ -528,7 +401,7 @@ void _nmod_poly_mat_mul_geometric_precomp_bounded(nmod_poly_mat_t res,
             W[w].ncols = ncols;
         }
 
-        _geometric_run(_worker_eval_B, W, nthreads, handles,
+        _geometric_run(_worker_eval_B, W, sizeof(*W), nthreads, handles,
                        ((slong) k * NCG + 7) / 8);
 
         TIMING_MARK(_tB);
@@ -543,7 +416,7 @@ void _nmod_poly_mat_mul_geometric_precomp_bounded(nmod_poly_mat_t res,
                 W[w].nrows = nrows;
             }
 
-            _geometric_run(_worker_eval_A, W, nthreads, handles,
+            _geometric_run(_worker_eval_A, W, sizeof(*W), nthreads, handles,
                            (nrows * k + 7) / 8);
 
             for (r = 0; r < nrows; r++)
@@ -562,11 +435,11 @@ void _nmod_poly_mat_mul_geometric_precomp_bounded(nmod_poly_mat_t res,
 
             TIMING_MARK(_tA);
 
-            _geometric_run(_worker_matmul, W, nthreads, handles, len);
+            _geometric_run(_worker_matmul, W, sizeof(*W), nthreads, handles, len);
 
             TIMING_MARK(_tP);
 
-            _geometric_run(_worker_interp, W, nthreads, handles, nrows * ncols);
+            _geometric_run(_worker_interp, W, sizeof(*W), nthreads, handles, nrows * ncols);
 
             TIMING_MARK(_tC);
         }

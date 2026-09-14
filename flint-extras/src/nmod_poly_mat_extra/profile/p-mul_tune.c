@@ -58,6 +58,33 @@
    prediction underestimated.
 */
 
+/* bash script for an overall tune (possibly adapt budget=10) */
+
+/*
+# ╰─ ./build/nmod_poly_mat_extra/profile/p-mul_tune
+# Usage: ./build/nmod_poly_mat_extra/profile/p-mul_tune prime nthreads fun [opts]
+#        ./build/nmod_poly_mat_extra/profile/p-mul_tune prime nthreads fun dim1 dim2 dim3 len1 len2
+#    prime: the modulus; 0 selects a 50-bit FFT prime
+#    fun:   sd_fft_direct | sd_fft_matmul | geometric | multiply
+#    opts:  rect | budget=SECS | mem=GB
+
+# 21-bit FFT prime + 50 bit FFT prime + 30 bit prime + 60 bit prime
+for nthreads in 1 2 4 8
+do
+	for fun in "sd_fft_direct" "sd_fft_matmul" "geometric" "multiply"
+	do
+		for prime in 1179649 0 1073741789 1152921504606846883 
+		do
+			echo "--------------------------------------------------"
+			echo "nthreads = $nthreads | fun = $fun | prime = $prime"
+			./build/nmod_poly_mat_extra/profile/p-mul_tune $prime $nthreads $fun budget=10
+			echo "--------------------------------------------------"
+		done;
+	done;
+done
+*/
+
+
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>
