@@ -32,8 +32,9 @@ typedef struct
 }
 time_args;
 
-/* wall and cpu time of one call on the given input; cpu is that of the
-   whole process, so cpu/wall is the number of cores effectively busy */
+/* shift is modified by the functions,
+ * so it must be zero-ed before the call */
+
 #define TIME_APPROX(fun)                                            \
 void time_##fun(time_args targs, const nmod_poly_mat_t F,           \
                 double * tcpu, double * twall)                      \
@@ -45,12 +46,12 @@ void time_##fun(time_args targs, const nmod_poly_mat_t F,           \
     const slong n = targs.modn;                                     \
                                                                     \
     slong * shift = FLINT_ARRAY_ALLOC(rdim, slong);                 \
-    for (slong i = 0; i < rdim; i++)                                \
-        shift[i] = 0;                                               \
     nmod_poly_mat_t P;                                              \
     nmod_poly_mat_init(P, rdim, rdim, n);                           \
                                                                     \
     TIMEIT_START;                                                   \
+    for (slong i = 0; i < rdim; i++)                                \
+        shift[i] = 0;                                               \
     nmod_poly_mat_##fun(P, shift, F, order);                        \
     TIMEIT_STOP_VALUES(*tcpu, *twall);                              \
                                                                     \
