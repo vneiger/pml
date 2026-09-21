@@ -19,9 +19,10 @@
 #include <flint/thread_support.h>
 #include <flint/ulong_extras.h>
 
-#include "nmod_extra.h" // for nmod_find_root
+#include "nmod_extra.h" /* for nmod_find_root */
 
 #include "nmod_poly_extra.h"
+#include "nmod_poly_mat_forms.h" /* for row/column degrees */
 #include "nmod_poly_mat_multiply.h"
 #include "impl.h"
 
@@ -549,6 +550,17 @@ void _nmod_poly_mat_mul_geometric_precomp_bounded(nmod_poly_mat_t res,
        has no nonzero product contributing to it */
     slong * zlen = FLINT_ARRAY_ALLOC((ulong) NRG * NCG, slong);
 
+    /* The length of C[i][j] is bounded by rdegA[i] + cdegB[j] + 1. A zero row
+       or column is reported as degree -1, which gives zlen = 0.
+       Note that evaluating the more precise max_l (len(A[i][l]) +
+       len(B[l][j]) - 1) costs O(m*k*n) and has been observed too costly for
+       large dimensions and small lengths (for example, slowdown by a factor
+       of 2 for 1024x1024x1024 in input length 10). */
+    slong * rdegA = FLINT_ARRAY_ALLOC(m, slong);
+    slong * cdegB = FLINT_ARRAY_ALLOC(n, slong);
+    nmod_poly_mat_row_degree(rdegA, pmat1, NULL);
+    nmod_poly_mat_column_degree(cdegB, pmat2, NULL);
+
     _geometric_worker_struct * W =
         FLINT_ARRAY_ALLOC(nthreads, _geometric_worker_struct);
     {
@@ -572,7 +584,7 @@ void _nmod_poly_mat_mul_geometric_precomp_bounded(nmod_poly_mat_t res,
     for (h = 0; h < n; h += NCG)
     {
         const slong ncols = FLINT_MIN(NCG, n - h);
-        slong r, j, l, w;
+        slong r, j, w;
 
         for (w = 0; w < nthreads; w++)
         {
@@ -600,17 +612,9 @@ void _nmod_poly_mat_mul_geometric_precomp_bounded(nmod_poly_mat_t res,
 
             for (r = 0; r < nrows; r++)
                 for (j = 0; j < ncols; j++)
-                {
-                    slong zl = 0;
-                    for (l = 0; l < k; l++)
-                    {
-                        const slong la = nmod_poly_mat_entry(pmat1, g + r, l)->length;
-                        const slong lb = nmod_poly_mat_entry(pmat2, l, h + j)->length;
-                        if (la > 0 && lb > 0)
-                            zl = FLINT_MAX(zl, la + lb - 1);
-                    }
-                    zlen[r * NCG + j] = zl;
-                }
+                    zlen[r * NCG + j] =
+                        (rdegA[g + r] >= 0 && cdegB[h + j] >= 0)
+                        ? rdegA[g + r] + cdegB[h + j] + 1 : 0;
 
             TIMING_MARK(_tA);
 
@@ -628,6 +632,8 @@ void _nmod_poly_mat_mul_geometric_precomp_bounded(nmod_poly_mat_t res,
 
     flint_free(W);
     flint_free(zlen);
+    flint_free(rdegA);
+    flint_free(cdegB);
     flint_give_back_threads(handles, nworkers);
 }
 
@@ -950,6 +956,17 @@ void _nmod_poly_mat_mulmid_geometric_precomp_bounded(nmod_poly_mat_t res,
        range nlo..nhi-1, zero when no product reaches that range */
     slong * zlen = FLINT_ARRAY_ALLOC((ulong) NRG * NCG, slong);
 
+    /* The length of C[i][j] is bounded by rdegA[i] + cdegB[j] + 1. A zero row
+       or column is reported as degree -1, which gives zlen = 0.
+       Note that evaluating the more precise max_l (len(A[i][l]) +
+       len(B[l][j]) - 1) costs O(m*k*n) and has been observed too costly for
+       large dimensions and small lengths (for example, slowdown by a factor
+       of 2 for 1024x1024x1024 in input length 10). */
+    slong * rdegA = FLINT_ARRAY_ALLOC(m, slong);
+    slong * cdegB = FLINT_ARRAY_ALLOC(n, slong);
+    nmod_poly_mat_row_degree(rdegA, pmat1, NULL);
+    nmod_poly_mat_column_degree(cdegB, pmat2, NULL);
+
     _mulmid_worker_struct * W = FLINT_ARRAY_ALLOC(nthreads, _mulmid_worker_struct);
     {
         slong w;
@@ -974,7 +991,7 @@ void _nmod_poly_mat_mulmid_geometric_precomp_bounded(nmod_poly_mat_t res,
     for (h = 0; h < n; h += NCG)
     {
         const slong ncols = FLINT_MIN(NCG, n - h);
-        slong r, j, l, w;
+        slong r, j, w;
 
         for (w = 0; w < nthreads; w++)
         {
@@ -999,18 +1016,16 @@ void _nmod_poly_mat_mulmid_geometric_precomp_bounded(nmod_poly_mat_t res,
                            (nrows * k + 7) / 8);
 
             /* the product A[g+r][l] * B[l][h+j] has coefficients up to
-               index la+lb-2, of which those from nlo on are wanted */
+               index la+lb-2, of which those from nlo on are wanted;
+               min(nhi, .) - nlo is nondecreasing in the product length,
+               so the bound above applies here too */
             for (r = 0; r < nrows; r++)
                 for (j = 0; j < ncols; j++)
                 {
-                    slong zl = 0;
-                    for (l = 0; l < k; l++)
-                    {
-                        const slong la = nmod_poly_mat_entry(pmat1, g + r, l)->length;
-                        const slong lb = nmod_poly_mat_entry(pmat2, l, h + j)->length;
-                        if (la > 0 && lb > 0)
-                            zl = FLINT_MAX(zl, FLINT_MIN(nhi, la + lb - 1) - nlo);
-                    }
+                    const slong zl =
+                        (rdegA[g + r] >= 0 && cdegB[h + j] >= 0)
+                        ? FLINT_MIN(nhi, rdegA[g + r] + cdegB[h + j] + 1) - nlo
+                        : 0;
                     zlen[r * NCG + j] = FLINT_MAX(zl, 0);
                 }
 
@@ -1023,6 +1038,8 @@ void _nmod_poly_mat_mulmid_geometric_precomp_bounded(nmod_poly_mat_t res,
 
     flint_free(W);
     flint_free(zlen);
+    flint_free(rdegA);
+    flint_free(cdegB);
     flint_give_back_threads(handles, nworkers);
 }
 
