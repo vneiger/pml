@@ -17,6 +17,7 @@
 #include <flint/nmod_poly_mat.h>
 #include <flint/ulong_extras.h>
 
+#include "nmod_poly_mat_forms.h" // for column degrees
 #include "nmod_poly_mat_multiply.h"
 
 #if PML_HAVE_MACHINE_VECTORS
@@ -715,14 +716,17 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
 
     /* structure of the products, for the current block of rows and
        columns: nzA[r*k ..] lists the l with A[g+r][l] != 0 (cntA[r] of
-       them) and rowmaxA[r] is the largest of their lengths; colmaxB[jj]
-       is the same down the column h+jj of B; zlen[r*NCG+jj] bounds the
-       length of C[g+r][h+jj], and is zero when that entry is known to vanish */
+       them) and rowmaxA[r] is the largest of their lengths; cdegB[j] is
+       the degree of the column j of B, -1 for a zero column, and does not
+       depend on the grouping, so it is taken once for the whole of B;
+       zlen[r*NCG+jj] bounds the length of C[g+r][h+jj], and is zero when
+       that entry is known to vanish */
     slong * zlen = FLINT_ARRAY_ALLOC((ulong) NRG * NCG, slong);
     slong * nzA = FLINT_ARRAY_ALLOC((ulong) NRG * k, slong);
     slong * cntA = FLINT_ARRAY_ALLOC(NRG, slong);
     slong * rowmaxA = FLINT_ARRAY_ALLOC(NRG, slong);
-    slong * colmaxB = FLINT_ARRAY_ALLOC(NCG, slong);
+    slong * cdegB = FLINT_ARRAY_ALLOC(n, slong);
+    nmod_poly_mat_column_degree(cdegB, B, NULL);
 
     _sd_fft_direct_worker_struct * W =
         FLINT_ARRAY_ALLOC(nthreads, _sd_fft_direct_worker_struct);
@@ -772,17 +776,6 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
         const slong ncols = FLINT_MIN(NCG, n - h);
         slong r, j, l, w;
 
-        /* the largest length down each column of the block of B, which
-           bounds the lengths of the entries of C */
-        for (j = 0; j < ncols; j++)
-        {
-            slong cmax = 0;
-            for (l = 0; l < k; l++)
-                cmax = FLINT_MAX(cmax,
-                        nmod_poly_mat_entry(B, l, h + j)->length);
-            colmaxB[j] = cmax;
-        }
-
         for (w = 0; w < nthreads; w++)
         {
             W[w].h = h;
@@ -827,8 +820,8 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
             for (r = 0; r < nrows; r++)
                 for (j = 0; j < ncols; j++)
                 {
-                    const int nz = (cntA[r] > 0 && colmaxB[j] > 0);
-                    zlen[r * NCG + j] = nz ? rowmaxA[r] + colmaxB[j] - 1 : 0;
+                    const int nz = (cntA[r] > 0 && cdegB[h + j] >= 0);
+                    zlen[r * NCG + j] = nz ? rowmaxA[r] + cdegB[h + j] : 0;
                 }
             TIMING_MARK(_tA);
 
@@ -859,7 +852,7 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
     }
     flint_free(W);
     flint_free(rowmaxA);
-    flint_free(colmaxB);
+    flint_free(cdegB);
     flint_free(zlen);
     flint_free(nzA);
     flint_free(cntA);
