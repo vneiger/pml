@@ -18,6 +18,7 @@
 #include <flint/nmod_poly_mat.h>
 #include <flint/ulong_extras.h>
 
+#include "nmod_poly_mat_forms.h" /* for row/column degrees */
 #include "nmod_poly_mat_multiply.h"
 
 #if PML_HAVE_MACHINE_VECTORS
@@ -593,6 +594,15 @@ void nmod_poly_mat_mul_sd_fft_matmul(nmod_poly_mat_t C,
        has no nonzero product contributing to it */
     slong * zlen = FLINT_ARRAY_ALLOC((ulong) NRG * NCG, slong);
 
+    /* The length of C[i][j] is bounded by rdegA[i] + cdegB[j] + 1.
+       Note that evaluating more precisely max_l (len(A[i][l]) + len(B[l][j])
+       - 1) exactly can be too expensive at some dimensions/degrees.
+       A zero row or column is reported as degree -1, which gives zlen = 0. */
+    slong * rdegA = FLINT_ARRAY_ALLOC(m, slong);
+    slong * cdegB = FLINT_ARRAY_ALLOC(n, slong);
+    nmod_poly_mat_row_degree(rdegA, A, NULL);
+    nmod_poly_mat_column_degree(cdegB, B, NULL);
+
     _matmul_worker_struct * W =
         FLINT_ARRAY_ALLOC(nthreads, _matmul_worker_struct);
     {
@@ -627,7 +637,7 @@ void nmod_poly_mat_mul_sd_fft_matmul(nmod_poly_mat_t C,
     for (h = 0; h < n; h += NCG)
     {
         const slong ncols = FLINT_MIN(NCG, n - h);
-        slong r, j, l, w;
+        slong r, j, w;
 
         for (w = 0; w < nthreads; w++)
         {
@@ -656,17 +666,9 @@ void nmod_poly_mat_mul_sd_fft_matmul(nmod_poly_mat_t C,
 
             for (r = 0; r < nrows; r++)
                 for (j = 0; j < ncols; j++)
-                {
-                    slong zl = 0;
-                    for (l = 0; l < k; l++)
-                    {
-                        const slong la = nmod_poly_mat_entry(A, g + r, l)->length;
-                        const slong lb = nmod_poly_mat_entry(B, l, h + j)->length;
-                        if (la > 0 && lb > 0)
-                            zl = FLINT_MAX(zl, la + lb - 1);
-                    }
-                    zlen[r * NCG + j] = zl;
-                }
+                    zlen[r * NCG + j] =
+                        (rdegA[g + r] >= 0 && cdegB[h + j] >= 0)
+                        ? rdegA[g + r] + cdegB[h + j] + 1 : 0;
 
             TIMING_MARK(_tA);
 
@@ -685,6 +687,8 @@ void nmod_poly_mat_mul_sd_fft_matmul(nmod_poly_mat_t C,
 
     flint_free(W);
     flint_free(zlen);
+    flint_free(rdegA);
+    flint_free(cdegB);
     _matmul_free(buf, nbytes, bbytes);
     flint_give_back_threads(handles, nworkers);
     fft_small_plan_clear(P);
