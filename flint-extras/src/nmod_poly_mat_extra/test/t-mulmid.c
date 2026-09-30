@@ -191,5 +191,129 @@ TEST_FUNCTION_START(nmod_poly_mat_mulmid, state)
         flint_set_num_threads(nthreads_save);
     }
 
+    /* the two fft_small variants directly: any window and any operand
+       lengths (the balanced shape of the approximant basis algorithms,
+       where the plan takes the wraparound branch, one time in three),
+       moduli from tiny composites to 64 bits including FFT primes with a
+       direct transform, zero entries, aliasing, several threads, and a
+       memory bound small enough to force the grouping */
+    {
+        const slong nthreads_save = flint_get_num_threads();
+        const ulong fft_primes[3] = { UWORD(0x0003f00000000001),   /* fft_small's own */
+                                      UWORD(786433),               /* 3*2^18+1, 20 bits */
+                                      UWORD(1179649) };            /* 9*2^17+1, 21 bits */
+
+        for (i = 0; i < 200 * flint_test_multiplier(); i++)
+        {
+            ulong prime;
+            slong len1, len2, nlo, nhi, r, c;
+            const slong rdim = 1 + n_randint(state, 12);
+            const slong idim = 1 + n_randint(state, 12);
+            const slong cdim = 1 + n_randint(state, 12);
+            const slong big = (n_randint(state, 5) == 0) ? 600 : 100;
+            const ulong membytes = (n_randint(state, 3) == 0)
+                                   ? 1 + n_randint(state, 200000) : 0;
+            const int alias = (int) n_randint(state, 3);
+            const int fun = (int) n_randint(state, 2);
+
+            switch (n_randint(state, 4))
+            {
+                case 0: prime = fft_primes[n_randint(state, 3)]; break;
+                case 1: prime = 2 + n_randint(state, 40); break;   /* may be composite */
+                default: prime = n_randprime(state, 2 + n_randint(state, 63), 1);
+            }
+
+            switch (n_randint(state, 3))
+            {
+                case 0:   /* balanced */
+                    nlo = 1 + n_randint(state, big);
+                    nhi = 2 * nlo;
+                    len1 = nlo + 1;
+                    len2 = nhi;
+                    break;
+                case 1:   /* one operand below nlo+1, the other below nhi */
+                    nlo = n_randint(state, big);
+                    nhi = nlo + 1 + n_randint(state, big);
+                    len1 = 1 + n_randint(state, nlo + 1);
+                    len2 = 1 + n_randint(state, nhi);
+                    if (n_randint(state, 2))
+                        FLINT_SWAP(slong, len1, len2);
+                    break;
+                default:  /* anything, windows reaching past the product included */
+                    len1 = 1 + n_randint(state, big);
+                    len2 = 1 + n_randint(state, big);
+                    nlo = n_randint(state, len1 + len2);
+                    nhi = nlo + n_randint(state, len1 + len2 + 2);
+            }
+
+            flint_set_num_threads(1 + n_randint(state, 4));
+
+            nmod_poly_mat_t pmat1, pmat2, res, res_true;
+            nmod_poly_mat_init(pmat1, rdim, idim, prime);
+            nmod_poly_mat_init(pmat2, idim, cdim, prime);
+            nmod_poly_mat_init(res, rdim, cdim, prime);
+            nmod_poly_mat_init(res_true, rdim, cdim, prime);
+
+            for (r = 0; r < rdim; r++)
+                for (c = 0; c < idim; c++)
+                    if (n_randint(state, 5))
+                        nmod_poly_randtest(nmod_poly_mat_entry(pmat1, r, c), state,
+                                           n_randint(state, len1 + 1));
+            for (r = 0; r < idim; r++)
+                for (c = 0; c < cdim; c++)
+                    if (n_randint(state, 5))
+                        nmod_poly_randtest(nmod_poly_mat_entry(pmat2, r, c), state,
+                                           n_randint(state, len2 + 1));
+
+            nmod_poly_mat_mul(res_true, pmat1, pmat2);
+            if (nlo < nhi)
+            {
+                nmod_poly_mat_shift_right(res_true, res_true, nlo);
+                nmod_poly_mat_truncate(res_true, nhi - nlo);
+            }
+            else
+                nmod_poly_mat_zero(res_true);
+
+            nmod_poly_mat_randtest(res, state, 5);   /* stale data in the output */
+            {
+                void (* f)(nmod_poly_mat_t, const nmod_poly_mat_t, slong,
+                           const nmod_poly_mat_t, slong, slong, slong, ulong)
+                    = fun ? _nmod_poly_mat_mulmid_sd_fft_matmul_bounded
+                          : _nmod_poly_mat_mulmid_sd_fft_direct_bounded;
+
+                if (alias == 1 && cdim == idim)
+                {
+                    nmod_poly_mat_set(res, pmat1);
+                    f(res, res, len1, pmat2, len2, nlo, nhi, membytes);
+                }
+                else if (alias == 2 && rdim == idim)
+                {
+                    nmod_poly_mat_set(res, pmat2);
+                    f(res, pmat1, len1, res, len2, nlo, nhi, membytes);
+                }
+                else
+                    f(res, pmat1, len1, pmat2, len2, nlo, nhi, membytes);
+            }
+
+            result = nmod_poly_mat_equal(res_true, res);
+
+            if (!result)
+                TEST_FUNCTION_FAIL(
+                        "%s: prime = %wu, rdim = %wd, idim = %wd, cdim = %wd\n"
+                        "len1 = %wd, len2 = %wd, nlo = %wd, nhi = %wd, "
+                        "membytes = %wu, alias = %d, threads = %wd\n",
+                        fun ? "sd_fft_matmul" : "sd_fft_direct",
+                        prime, rdim, idim, cdim, len1, len2, nlo, nhi, membytes,
+                        alias, flint_get_num_threads());
+
+            nmod_poly_mat_clear(pmat1);
+            nmod_poly_mat_clear(pmat2);
+            nmod_poly_mat_clear(res);
+            nmod_poly_mat_clear(res_true);
+        }
+
+        flint_set_num_threads(nthreads_save);
+    }
+
     TEST_FUNCTION_END(state);
 }
