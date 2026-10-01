@@ -69,28 +69,41 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
 
 #if PML_HAVE_MACHINE_VECTORS
     /*
-        Evaluation-interpolation, either at the roots of unity of
-        fft_small (nmod_poly_mat_mul_sd_fft_direct and
-        nmod_poly_mat_mul_sd_fft_matmul) or at a geometric progression in
-        Z/p itself (nmod_poly_mat_mul_geometric).
+        Six routines compete. Evaluation-interpolation at the roots of
+        unity of fft_small, with the pointwise stage either a kernel on the
+        transforms (nmod_poly_mat_mul_sd_fft_direct) or nmod_mat_mul at each
+        point (nmod_poly_mat_mul_sd_fft_matmul); at small points with the
+        evaluations themselves done by nmod_mat_mul against a Vandermonde
+        matrix (nmod_poly_mat_mul_vandermonde1, and vandermonde2 which
+        uses the points in pairs +-x); Waksman's algorithm; and a geometric
+        progression (nmod_poly_mat_mul_geometric).
 
-        NOTE
-        The FFT routes evaluate at np * ztrunc points, where np is from 1
-        (fft_small can transform directly modulo p) to 3 or even 4 in rare
-        cases. One thing is that ztrunc, the transform length, is rounded up
-        which increases the number of points (and of pointwise products),
-        potentially by up to 2. Also, the number of pointwise multiplications
-        is multiplied by `np` since they have to be done for each prime. The
-        geometric route evaluates at exactly len points and does exactly
-        len pointwise multiplications. The two FFT routes differ in the
-        pointwise stage only: sd_fft_direct multiplies the transforms
-        entry by entry with its own kernels, sd_fft_matmul hands each
-        evaluation point to nmod_mat_mul.
+        2026-10-01 Thresholds fitted on square products on Zen 4, one
+        thread, against FLINT-dev with the u32/u52/fp50 kernels of
+        nmod_mat_mul (PR #2842), over six moduli: 21-, 30-, 40- and 50-bit
+        FFT primes (a single transform, np == 1), a 30-bit prime (np == 2)
+        and a 60-bit prime (np == 3). Against the previous thresholds, on
+        the same measurements: average slowdown with respect to the best
+        routine 1.38 -> 1.03, 95th percentile 4.2 -> 1.2.
 
-        2026-09-13 Thresholds fitted on square products over three machines
-        (Zen 4, Ice Lake, Apple M4), four moduli (a 21-bit and a 50-bit FFT
-        prime, a 30-bit and a 60-bit prime), at 1 thread, against the
-        current FLINT-dev built without an external BLAS.
+        What changed with those kernels is that nmod_mat_mul is now fast at
+        every modulus up to 52 bits, which is what the Vandermonde routines
+        and sd_fft_matmul spend their time in:
+
+        - short products go to vandermonde1 (result length <= 15) or
+          vandermonde2 (up to 127 or 255), at every dimension from 8 on,
+          by 1.2-3x over the next routine; geometric no longer wins
+          anywhere by more than a few percent and is not selected
+          (this would probably change for very large matrices of large degree);
+        - sd_fft_matmul takes over from sd_fft_direct at large dimension
+          for every modulus, not only in a 20-24-bit window as before; its
+          pointwise products are modulo the 50-bit fft_small primes, or
+          modulo p itself for an FFT prime, all within the new kernels.
+
+        The modulus enters through two properties: whether fft_small uses
+        a single transform (single_prime), and, when it does not, whether
+        nmod_mat_mul modulo p itself is within the fast kernels (at most
+        52 bits) -- which is what the Vandermonde routines need.
     */
 
     const flint_bitcnt_t modbits = FLINT_BIT_COUNT(modn);
@@ -98,87 +111,53 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
     /* the cheap part of what makes fft_small use a single transform
      * rather than several CRT primes, i.e. np == 1 (primality is
      * left to the plan, which checks it) */
-    /* TODO use some function already in fft_small for checking if prime is FFT of sufficient depth? */
     const int single_prime = (modbits <= 50)
         && ((slong) flint_ctz(modn - 1) >= FLINT_BIT_COUNT((ulong) len + 3));
 
-    /*
-        Whether that single transform is modulo p itself -- fft_small
-        does that only from 20 bits up, below which it uses one of its own
-        50-bit primes (see _nmod_poly_should_directly_fft in
-        fft_small/plan.c) -- and the resulting pointwise matrix products
-        are then at a modulus small enough for nmod_mat_mul to take its
-        fastest route: one gemm over doubles with no chinese remaindering,
-        which it does when the smallest dimension is above 100 and
-        FLINT_BIT_COUNT(k) + 2*bits < 58 (see nmod_mat/mul.c).
+    /* 0: one transform; 1: several, p of at most 52 bits; 2: several, larger p */
+    const int kind = single_prime ? 0 : (modbits <= 52 ? 1 : 2);
+    static const slong vdm2_len[3] = { 127, 255, 127 };   /* vandermonde2 up to this length */
+    static const slong vdm2_dim[3] = {  32,  16,  48 };   /* ... from this dimension on */
+    static const slong matmul_dim[3] = { 192, 96, 192 };  /* sd_fft_matmul from this dimension */
 
-        This is what pays for the extra evaluations of the matmul variant,
-        and sd_fft_direct cannot follow: its pointwise kernels work on the
-        transforms themselves and do not get cheaper as p shrinks. The
-        window is narrow -- 20 bits up to about 24 -- but inside it the
-        matmul variant is the fastest route by a wide margin: at dimension
-        512 and length 63 it is 1.8 times faster than sd_fft_direct on
-        Zen 4 and 4 times on Apple M4.
-    */
-    const int fast_matmul = single_prime && modbits >= 20 && dim > 100
-        && (FLINT_BIT_COUNT((ulong) pmat1->c) + 2 * modbits < 58);
-
-    int use_fft = 0, use_matmul = 0, use_geometric = 0;
-
-    if (fast_matmul)
+    /* Waksman divides by 2, and the Vandermonde routines invert differences
+       of their points, which the cardinality tests of the CAN_USE macros
+       do not ensure for a composite modulus (with modn = 1000, Waksman is
+       silently wrong and vandermonde2 raises "Impossible inverse"). The
+       fft_small routines work modulo their own primes and are correct for
+       any modulus, so they take those cases. The primality test is only
+       reached for the shapes where a Vandermonde routine is wanted. */
+    if (dim <= 4)
     {
-        if (len >= 32 || dim <= 128)
-            use_matmul = 1;
-        /* len < 32 and dim > 128: the tiers below */
-    }
-    else if (single_prime)
-    {
-        if (len >= 128 || dim <= (len >= 32 ? 256 : 128))
-            use_fft = 1;
-        else if (len >= 32)
-            use_geometric = 1;
-        /* len < 32 and dim > 128: the tiers below */
-    }
-    else if (len >= 128)
-    {
-        if (dim >= 384)
-            use_geometric = 1;
-        else
-            use_fft = 1;
-    }
-    else if (dim >= 8)   /* several primes, len < 128 */
-    {
-        if (len >= 63)
+        if (len < 31 && (modn & 1))
         {
-            /* the FFT route pays for the points it adds by rounding the
-               transform up, and the more matrix entries there are to
-               transform the less that costs relative to the pointwise
-               stage: the crossover sits at about dim == len */
-            if (dim < len)
-                use_fft = 1;
-            else if (dim <= 384)
-                use_geometric = 1;
-            /* dim > 384: the tiers below */
+            nmod_poly_mat_mul_waksman(res, pmat1, pmat2);
+            return;
         }
-        else if (dim >= 24 && dim <= 192)
-            use_geometric = 1;
+    }
+    else if (len <= 15)
+    {
+        if (NMOD_POLY_CAN_USE_VANDERMONDE1(modn, len) && n_is_prime(modn))
+        {
+            nmod_poly_mat_mul_vandermonde1(res, pmat1, pmat2);
+            return;
+        }
+    }
+    else if (len <= vdm2_len[kind] && dim >= vdm2_dim[kind])
+    {
+        if (NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len) && n_is_prime(modn))
+        {
+            nmod_poly_mat_mul_vandermonde2(res, pmat1, pmat2);
+            return;
+        }
     }
 
-    if (use_fft)
-    {
-        nmod_poly_mat_mul_sd_fft_direct(res, pmat1, pmat2);
-        return;
-    }
-    if (use_matmul)
-    {
+    if (len >= 127 && dim >= matmul_dim[kind])
         nmod_poly_mat_mul_sd_fft_matmul(res, pmat1, pmat2);
-        return;
-    }
-    if (use_geometric && NMOD_POLY_CAN_USE_GEOMETRIC(modn, len))
-    {
-        nmod_poly_mat_mul_geometric(res, pmat1, pmat2);
-        return;
-    }
+    else
+        nmod_poly_mat_mul_sd_fft_direct(res, pmat1, pmat2);
+    return;
+
 #endif /* PML_HAVE_MACHINE_VECTORS */
 
     if (dim > 12)
