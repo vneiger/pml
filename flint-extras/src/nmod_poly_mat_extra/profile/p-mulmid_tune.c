@@ -33,11 +33,16 @@
 
      prime      the modulus; 0 selects one of FLINT's 50-bit FFT primes
      nthreads   number of threads
-     fun        geometric | naive | mulmid | multiply
+     fun        geometric | sd_fft_direct | sd_fft_matmul | naive
+                | mulmid | multiply
 
                 geometric   _nmod_poly_mat_mulmid_geometric, which needs
                             len1 <= nlo+1 or len2 <= nlo+1 and a field
                             large enough for a progression of nhi points
+                sd_fft_direct, sd_fft_matmul
+                            _nmod_poly_mat_mulmid_sd_fft_{direct,matmul}:
+                            the fft_small products, with the plan built
+                            for the window [nlo, nhi)
                 naive       the full product, shifted and truncated
                 mulmid      nmod_poly_mat_mulmid, the dispatcher
                 multiply    not a middle product: nmod_poly_mat_multiply on
@@ -104,6 +109,18 @@ static void _run_geometric(nmod_poly_mat_t C, const nmod_poly_mat_t A,
     _nmod_poly_mat_mulmid_geometric(C, A, P->len1, B, P->len2, P->nlo, P->nhi);
 }
 
+static void _run_sd_fft_direct(nmod_poly_mat_t C, const nmod_poly_mat_t A,
+                               const nmod_poly_mat_t B, const tune_point_struct * P)
+{
+    _nmod_poly_mat_mulmid_sd_fft_direct(C, A, P->len1, B, P->len2, P->nlo, P->nhi);
+}
+
+static void _run_sd_fft_matmul(nmod_poly_mat_t C, const nmod_poly_mat_t A,
+                               const nmod_poly_mat_t B, const tune_point_struct * P)
+{
+    _nmod_poly_mat_mulmid_sd_fft_matmul(C, A, P->len1, B, P->len2, P->nlo, P->nhi);
+}
+
 static void _run_naive(nmod_poly_mat_t C, const nmod_poly_mat_t A,
                        const nmod_poly_mat_t B, const tune_point_struct * P)
 {
@@ -123,7 +140,8 @@ static void _run_multiply(nmod_poly_mat_t C, const nmod_poly_mat_t A,
     nmod_poly_mat_multiply(C, A, B);
 }
 
-static const char * ALGS[] = { "geometric", "naive", "mulmid", "multiply" };
+static const char * ALGS[] = { "geometric", "sd_fft_direct", "sd_fft_matmul",
+                               "naive", "mulmid", "multiply" };
 #define NALGS (slong)(sizeof(ALGS) / sizeof(ALGS[0]))
 
 /*
@@ -140,6 +158,8 @@ static tune_fun _select(const char * alg, ulong modn, tune_point_struct * P)
         return (NMOD_POLY_CAN_USE_GEOMETRIC(modn, P->nhi)
                 && (P->len1 <= P->nlo + 1 || P->len2 <= P->nlo + 1))
                ? _run_geometric : NULL;
+    if (!strcmp(alg, "sd_fft_direct"))  return _run_sd_fft_direct;
+    if (!strcmp(alg, "sd_fft_matmul"))  return _run_sd_fft_matmul;
     if (!strcmp(alg, "naive"))   return _run_naive;
     if (!strcmp(alg, "mulmid"))  return _run_mulmid;
     if (!strcmp(alg, "multiply"))
@@ -182,7 +202,7 @@ int main(int argc, char ** argv)
         flint_printf("       %s prime nthreads [fun1,fun2,...] [opts]\n", argv[0]);
         flint_printf("       %s prime nthreads fun dim1 dim2 dim3 len1 len2 nlo nhi\n", argv[0]);
         flint_printf("   prime: the modulus; 0 selects a 50-bit FFT prime\n");
-        flint_printf("   fun:   geometric | naive | mulmid | multiply\n");
+        flint_printf("   fun:   geometric | sd_fft_direct | sd_fft_matmul | naive | mulmid | multiply\n");
         flint_printf("          a list gives one line per point with the algorithms\n");
         flint_printf("          side by side; [] lists them all\n");
         flint_printf("   opts:  lo=N | hi=N | budget=SECS | mem=GB\n");

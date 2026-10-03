@@ -19,6 +19,7 @@
 
 #include "nmod_poly_mat_forms.h" // for column degrees
 #include "nmod_poly_mat_multiply.h"
+#include "impl.h"
 
 #if PML_HAVE_MACHINE_VECTORS
 
@@ -83,6 +84,25 @@ static double _now(void) { struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &t
     the rows of A -- and, if that is still not enough, the columns of B
     -- are processed by groups until it does (see the choice of NRG and
     NCG below).
+
+    The same routine computes middle products: only the coefficients
+    nlo, ..., nhi-1 of each entry of A*B are wanted, which is the window
+    [nlo, nhi) of a convolution of length lenA + lenB - 1. The plan is
+    built for that window, so that when a power of two N with
+    max(lenA, lenB, nhi) <= N and lenA + lenB - 1 - N <= nlo exists, the
+    transforms have length N and the coefficients the cyclic convolution
+    folds back land below nlo, where nothing is read (for the balanced
+    middle product of the approximant basis algorithms, lenA = nlo + 1 and
+    lenB = nhi, such an N always exists: the next power of two above nhi).
+    Otherwise the full product is transformed, as for a multiplication.
+    Either way only the window is reconstructed. Everything else --
+    transforms, tiles, pointwise stage, grouping, threads -- is shared with
+    the multiplication.
+
+    TODO the transposed algorithm, which transforms at length about nhi
+    whatever nhi is, would need the transposes of the fft_small transforms;
+    the only steps that change would be the transform of B and the inverse
+    transform of C.
 */
 
 /*
@@ -396,6 +416,8 @@ typedef struct
     const slong * zlen;
     const slong * nzA;
     const slong * cntA;
+    slong nlo;      /* the window of coefficients of C that is wanted */
+    slong nhi;
 
     /* per worker */
     fft_small_op_t X;
@@ -524,9 +546,11 @@ static void _worker_ifft(void * varg)
         const slong oo = (o / nc) * cs + o % nc;
         nmod_poly_struct * c =
             nmod_poly_mat_entry(W->C, W->g + o / nc, W->h + o % nc);
-        const slong zl = W->zlen[oo];
+        /* the coefficients nlo .. zh-1 of the product entry, the ones
+           above its length being zero */
+        const slong zh = FLINT_MIN(W->zlen[oo], W->nhi);
 
-        if (zl == 0)
+        if (zh <= W->nlo)
         {
             nmod_poly_zero(c);
             continue;
@@ -535,9 +559,9 @@ static void _worker_ifft(void * varg)
         _tiles_gather(W->X, W->Ct, oo, W->P);
         W->X->domain = FFT_SMALL_OP_PRODUCT;
         fft_small_ifft(W->X, W->P);
-        nmod_poly_fit_length(c, zl);
-        fft_small_export_nmod_range(c->coeffs, W->X, 0, zl, W->mod, W->P);
-        _nmod_poly_set_length(c, zl);
+        nmod_poly_fit_length(c, zh - W->nlo);
+        fft_small_export_nmod_range(c->coeffs, W->X, W->nlo, zh, W->mod, W->P);
+        _nmod_poly_set_length(c, zh - W->nlo);
         _nmod_poly_normalise(c);
     }
 }
@@ -567,58 +591,59 @@ static void _sd_fft_direct_run(void (* func)(void *),
         thread_pool_wait(global_thread_pool, handles[i - 1]);
 }
 
-void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
-                                  const nmod_poly_mat_t A,
-                                  const nmod_poly_mat_t B)
+/*
+    The driver: C = the coefficients nlo, ..., nhi-1 of A * B, where the
+    entries of A and B have length at most lenA and lenB (both > 0) and
+    0 <= nlo < nhi <= lenA + lenB - 1; a plain product is nlo = 0,
+    nhi = lenA + lenB - 1. C must not alias A or B, m, k, n are nonzero.
+    membytes is the soft bound on the memory for the transforms, 0 for
+    the default.
+*/
+static void _sd_fft_direct(nmod_poly_mat_t C,
+                           const nmod_poly_mat_t A, slong lenA,
+                           const nmod_poly_mat_t B, slong lenB,
+                           slong nlo, slong nhi, ulong membytes)
 {
     const slong m = A->r;
     const slong k = A->c;
     const slong n = B->c;
-    const slong lenA = nmod_poly_mat_max_length(A);
-    const slong lenB = nmod_poly_mat_max_length(B);
-
-    if (m == 0 || n == 0)
-        return;
-
-    if (k == 0 || lenA == 0 || lenB == 0)
-    {
-        nmod_poly_mat_zero(C);
-        return;
-    }
-
-    if (C == A || C == B)
-    {
-        nmod_poly_mat_t T;
-        nmod_poly_mat_init(T, m, n, A->modulus);
-        nmod_poly_mat_mul_sd_fft_direct(T, A, B);
-        nmod_poly_mat_swap_entrywise(C, T);
-        nmod_poly_mat_clear(T);
-        return;
-    }
 
     nmod_t mod;
     nmod_init(&mod, A->modulus);
 
-    /* plan: output window is the full product; at most
+    /* plan: output window [nlo, nhi) of the product of length zn; at most
        k * min(lenA, lenB) products of two residues accumulate onto one
        output coefficient. The direct single-prime transform modulo p is
        forced whenever p allows it (direct_len = UWORD_MAX): its setup
        cost, proportional to the transform length, is amortized over the
        m*k + k*n + m*n transforms performed here, unlike in a single
-       polynomial product. */
+       polynomial product.
+
+       xtrunc_max, the largest truncation an operand is transformed with,
+       only matters to the plan for the wraparound test (operands must
+       fit in the cyclic length). Below one block the operands are
+       transformed at the full transform length (see _op_trunc), so their
+       length itself is what must fit; for a plain product this makes no
+       difference and the historical value is kept. */
     const ulong zn = (ulong) lenA + lenB - 1;
-    const ulong xtrunc_max = n_max(n_round_up(lenA, BLK_SZ), n_round_up(lenB, BLK_SZ));
+    const ulong lmax = n_max(lenA, lenB);
+    const ulong xtrunc_max = (nlo == 0 || lmax >= BLK_SZ)
+                             ? n_max(n_round_up(lenA, BLK_SZ), n_round_up(lenB, BLK_SZ))
+                             : lmax;
     const ulong len_bound = (ulong) k * n_min(lenA, lenB);
     mpn_ctx_struct * R = get_default_mpn_ctx();
     fft_small_plan_t P;
 
-    if (!fft_small_plan_init_nmod(P, R, 0, zn, zn, xtrunc_max, len_bound,
+    if (!fft_small_plan_init_nmod(P, R, nlo, nhi, zn, xtrunc_max, len_bound,
                                   2 * NMOD_BITS(mod), mod, UWORD_MAX))
     {
         /* bound beyond the capacity of the eight primes: needs
            k * min(lenA, lenB) > 2^(400 - 2*64), which no representable
            matrix reaches */
-        nmod_poly_mat_mul(C, A, B);
+        if (nlo == 0 && (ulong) nhi == zn)
+            nmod_poly_mat_mul(C, A, B);
+        else
+            _nmod_poly_mat_mulmid_naive(C, A, lenA, B, lenB, nlo, nhi);
         return;
     }
 
@@ -667,11 +692,13 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
     /* words of the operands and of the result, as the scale of the bound
        on the transforms (see NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_FLOOR) */
     const ulong opwords = (ulong) m * k * lenA + (ulong) k * n * lenB
-                          + (ulong) m * n * zn;
-    ulong bbytes = n_max(NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_FLOOR,
-                         2 * opwords * sizeof(ulong));
+                          + (ulong) m * n * (nhi - nlo);
+    ulong bbytes = (membytes != 0)
+                   ? membytes
+                   : n_max(NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_FLOOR,
+                           2 * opwords * sizeof(ulong));
 #ifdef PML_MUL_SD_FFT_DIRECT_TIMING
-    if (getenv("PML_MEM_BUDGET"))
+    if (membytes == 0 && getenv("PML_MEM_BUDGET"))
         bbytes = strtoul(getenv("PML_MEM_BUDGET"), NULL, 10);
 #endif
 
@@ -744,6 +771,7 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
             W[w].T = T; W[w].ntiles = ntiles;
             W[w].zlen = zlen;
             W[w].nzA = nzA; W[w].cntA = cntA;
+            W[w].nlo = nlo; W[w].nhi = nhi;
 
             fft_small_op_init_borrowed(W[w].X, P, buf + (ulong) w * scratchdbls);
             /* the transforms only write the ztrunc points they use, but
@@ -861,6 +889,80 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
     fft_small_plan_clear(P);
 }
 
+void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
+                                  const nmod_poly_mat_t A,
+                                  const nmod_poly_mat_t B)
+{
+    const slong m = A->r;
+    const slong k = A->c;
+    const slong n = B->c;
+    const slong lenA = nmod_poly_mat_max_length(A);
+    const slong lenB = nmod_poly_mat_max_length(B);
+
+    if (m == 0 || n == 0)
+        return;
+
+    if (k == 0 || lenA == 0 || lenB == 0)
+    {
+        nmod_poly_mat_zero(C);
+        return;
+    }
+
+    if (C == A || C == B)
+    {
+        nmod_poly_mat_t T;
+        nmod_poly_mat_init(T, m, n, A->modulus);
+        nmod_poly_mat_mul_sd_fft_direct(T, A, B);
+        nmod_poly_mat_swap_entrywise(C, T);
+        nmod_poly_mat_clear(T);
+        return;
+    }
+
+    _sd_fft_direct(C, A, lenA, B, lenB, 0, lenA + lenB - 1, 0);
+}
+
+void _nmod_poly_mat_mulmid_sd_fft_direct_bounded(nmod_poly_mat_t res,
+                                        const nmod_poly_mat_t pmat1, slong len1,
+                                        const nmod_poly_mat_t pmat2, slong len2,
+                                        slong nlo, slong nhi, ulong membytes)
+{
+    const slong m = pmat1->r;
+    const slong k = pmat1->c;
+    const slong n = pmat2->c;
+
+    if (m == 0 || n == 0)
+        return;
+
+    nhi = FLINT_MIN(nhi, len1 + len2 - 1);
+    if (k == 0 || len1 <= 0 || len2 <= 0 || nlo >= nhi)
+    {
+        nmod_poly_mat_zero(res);
+        return;
+    }
+
+    if (res == pmat1 || res == pmat2)
+    {
+        nmod_poly_mat_t T;
+        nmod_poly_mat_init(T, m, n, pmat1->modulus);
+        _nmod_poly_mat_mulmid_sd_fft_direct_bounded(T, pmat1, len1, pmat2, len2,
+                                                    nlo, nhi, membytes);
+        nmod_poly_mat_swap_entrywise(res, T);
+        nmod_poly_mat_clear(T);
+        return;
+    }
+
+    _sd_fft_direct(res, pmat1, len1, pmat2, len2, nlo, nhi, membytes);
+}
+
+void _nmod_poly_mat_mulmid_sd_fft_direct(nmod_poly_mat_t res,
+                                        const nmod_poly_mat_t pmat1, slong len1,
+                                        const nmod_poly_mat_t pmat2, slong len2,
+                                        slong nlo, slong nhi)
+{
+    _nmod_poly_mat_mulmid_sd_fft_direct_bounded(res, pmat1, len1, pmat2, len2,
+                                                nlo, nhi, 0);
+}
+
 #else  /* PML_HAVE_MACHINE_VECTORS */
 
 void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
@@ -868,6 +970,23 @@ void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
                                   const nmod_poly_mat_t B)
 {
     nmod_poly_mat_mul(C, A, B);
+}
+
+void _nmod_poly_mat_mulmid_sd_fft_direct_bounded(nmod_poly_mat_t res,
+                                        const nmod_poly_mat_t pmat1, slong len1,
+                                        const nmod_poly_mat_t pmat2, slong len2,
+                                        slong nlo, slong nhi, ulong membytes)
+{
+    (void) membytes;
+    _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
+}
+
+void _nmod_poly_mat_mulmid_sd_fft_direct(nmod_poly_mat_t res,
+                                        const nmod_poly_mat_t pmat1, slong len1,
+                                        const nmod_poly_mat_t pmat2, slong len2,
+                                        slong nlo, slong nhi)
+{
+    _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
 }
 
 #endif  /* PML_HAVE_MACHINE_VECTORS */

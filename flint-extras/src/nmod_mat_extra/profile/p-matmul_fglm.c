@@ -31,31 +31,31 @@ void time_nmod_mat_mul(ulong nbits, ulong dim1, ulong dim2, ulong block, ulong i
     clock_t tt;
     long nb_iter;
 
-    //t = 0.0;
-    //nb_iter = 0;
-    //while (t < 0.5)
-    //{
-    //    tt = clock();
-    //    for (ulong it = 0; it < iter; it++)
-    //        nmod_mat_mul(vec, mat, vec);
-    //    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-    //    nb_iter += 1;
-    //}
-    //t /= nb_iter;
-    //printf("%.1e\t", t);
+    t = 0.0;
+    nb_iter = 0;
+    while (t < 0.5)
+    {
+        tt = clock();
+        for (ulong it = 0; it < iter; it++)
+            nmod_mat_mul(res, mat, vec);
+        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += 1;
+    }
+    t /= nb_iter;
+    printf("%.1e\t", t);
 
-    //t = 0.0;
-    //nb_iter = 0;
-    //while (t < 0.5)
-    //{
-    //    tt = clock();
-    //    for (ulong it = 0; it < iter; it++)
-    //        nmod_mat_mul_blas(res, mat, vec);
-    //    t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-    //    nb_iter += 1;
-    //}
-    //t /= nb_iter;
-    //printf("%.1e\t", t);
+    t = 0.0;
+    nb_iter = 0;
+    while (t < 0.5)
+    {
+        tt = clock();
+        for (ulong it = 0; it < iter; it++)
+            nmod_mat_mul_blas(res, mat, vec);
+        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
+        nb_iter += 1;
+    }
+    t /= nb_iter;
+    printf("%.1e\t", t);
 
     t = 0.0;
     nb_iter = 0;
@@ -93,6 +93,7 @@ void time_nmod_mat_mul(ulong nbits, ulong dim1, ulong dim2, ulong block, ulong i
 
     nmod_mat_clear(mat);
     nmod_mat_clear(vec);
+    nmod_mat_clear(res);
 }
 
 /*--------------------------------------------------------------*/
@@ -104,7 +105,7 @@ int main(int argc, char ** argv)
     flint_rand_init(state);
 
     printf("Block-Wied sequence generation over nmod:\n");
-    //printf("  - mul: flint's nmod_mat_mul\n");
+    printf("  - mul: flint's nmod_mat_mul\n");
     printf("  - blas: flint's BLAS-based mul\n");
     printf("  - newdot: pml's mul using new nmod_vec_dot_product\n");
     printf("  - 2dot: pml's mul for small moduli using AVX-based nmod_vec_dot_product\n\n");
@@ -120,8 +121,7 @@ int main(int argc, char ** argv)
         long block = atoi(argv[4]);
         long iter = atoi(argv[5]);
 
-        //printf("nbits\tdim1\tdim2\tblock\titer\tmul\tblas\tnewdot\tsmall_mod\n");
-        printf("nbits\tdim1\tdim2\tblock\titer\tblas\tnewdot\t2dot\n");
+        printf("nbits\tdim1\tdim2\tblock\titer\tmul\tblas\tnewdot\tsmall_mod\n");
         if (nbits > 0)
         {
             time_nmod_mat_mul(nbits, dim1, dim2, block, iter, (1L << atoi(argv[1])) - 1, state);

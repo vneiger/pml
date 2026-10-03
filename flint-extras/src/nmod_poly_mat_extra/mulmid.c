@@ -10,11 +10,13 @@
     <https://www.gnu.org/licenses/>.
 */
 
+#include <flint/longlong.h>   /* for flint_ctz */
 #include <flint/mpn_extras.h>
 #include <flint/nmod_mat.h>
 #include <flint/nmod_vec.h>
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
+#include <flint/ulong_extras.h>
 
 #include "nmod_poly_extra.h"  /* for NMOD_POLY_CAN_USE_GEOMETRIC */
 #include "nmod_poly_mat_multiply.h"
@@ -198,14 +200,6 @@ static void nmod_poly_mat_middle_product_vandermonde1(nmod_poly_mat_t c, const n
 
 
 /*------------------------------------------------------------*/
-/* via 3-prime FFT                                            */
-/*------------------------------------------------------------*/
-/* TODO */
-
-
-
-
-/*------------------------------------------------------------*/
 /* general interfaces                                         */
 /*------------------------------------------------------------*/
 
@@ -222,15 +216,77 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
     }
 
     /* TODO handle constant pmat1 or pmat2 properly */
-    /* if (len1 == 1)*/
-    /*     _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi); */
-    /* else */
+
+#if PML_HAVE_MACHINE_VECTORS
+    /*
+        2026-10-01 Thresholds fitted on square balanced middle products
+        (nlo = nhi/2, len1 = nlo + 1, len2 = nhi, the shape of the
+        approximant basis algorithms; nhi a power of two, and 1.5 times
+        one) on Zen 4, one thread, against FLINT-dev with the new
+        nmod_mat_mul kernels, over a 21- and a 50-bit FFT prime, a 30-bit
+        and a 60-bit prime. Against the previous rule (geometric from
+        dimension 8 on, naive below), on the same measurements: average
+        slowdown with respect to the best routine 2.29 -> 1.04, 95th
+        percentile 8.0 -> 1.3.
+
+        The windowed fft_small routines take almost everything: they
+        transform at length about nhi, as the transposed product would.
+        geometric keeps the short windows where several CRT primes make
+        the transforms expensive -- more of them when nmod_mat_mul modulo
+        p is fast (at most 52 bits) -- and naive the very short ones at
+        tiny or very large dimension.
+    */
+    {
+        const ulong modn = pmat1->modulus;
+        const slong dim = n_cbrt(pmat1->r * pmat1->c * pmat2->c);
+        const flint_bitcnt_t modbits = FLINT_BIT_COUNT(modn);
+        const int single_prime = (modbits <= 50)
+            && ((slong) flint_ctz(modn - 1) >= FLINT_BIT_COUNT((ulong) (len1 + len2 + 2)));
+        /* 0: one transform; 1: several, p of at most 52 bits; 2: several, larger p */
+        const int kind = single_prime ? 0 : (modbits <= 52 ? 1 : 2);
+        static const slong geom_nhi[3] = {  4, 64, 12 };   /* geometric up to this nhi */
+        static const slong geom_dim[3] = { 24, 48,  8 };   /* ... from this dimension on */
+
+        if (dim <= 4)
+        {
+            if (nhi >= 16)
+                _nmod_poly_mat_mulmid_sd_fft_direct(res, pmat1, len1, pmat2, len2, nlo, nhi);
+            else
+                _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
+            return;
+        }
+
+        if (nhi <= 4 && dim >= 192)
+        {
+            _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
+            return;
+        }
+
+        /* geometric needs an element of large enough order, hence the
+           primality test, which the cardinality test of the macro does not
+           replace for a composite modulus */
+        if (nhi <= geom_nhi[kind] && dim >= geom_dim[kind]
+            && (len1 <= nlo + 1 || len2 <= nlo + 1)
+            && NMOD_POLY_CAN_USE_GEOMETRIC(modn, nhi) && n_is_prime(modn))
+        {
+            _nmod_poly_mat_mulmid_geometric(res, pmat1, len1, pmat2, len2, nlo, nhi);
+            return;
+        }
+
+        if (dim >= 128)
+            _nmod_poly_mat_mulmid_sd_fft_matmul(res, pmat1, len1, pmat2, len2, nlo, nhi);
+        else
+            _nmod_poly_mat_mulmid_sd_fft_direct(res, pmat1, len1, pmat2, len2, nlo, nhi);
+        return;
+    }
+#endif /* PML_HAVE_MACHINE_VECTORS */
 
     /* TODO rough thresholds, not finely tuned */
 #if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 6)
     if (NMOD_POLY_CAN_USE_GEOMETRIC(pmat1->modulus, nhi)
         && ((pmat1->r >= 8 && pmat2->c >= 2) || (pmat1->r >= 2 && pmat2->c >= 8))
-        && (len1 <= nlo+1 || len2 <= nlo+1))
+        && (len1 <= nlo+1 || len2 <= nlo+1)
+        && n_is_prime(pmat1->modulus))
         _nmod_poly_mat_mulmid_geometric(res, pmat1, len1, pmat2, len2, nlo, nhi);
 
     else

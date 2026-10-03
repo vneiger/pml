@@ -22,8 +22,8 @@
 #define NMOD_POLY_CAN_USE_VANDERMONDE1(modn, len) ((modn) >= (ulong)(len))
 /* for Vandermonde2, we need 1**2, 2**2, ..., len**2 to be distinct points in Z/modn Z */
 #define NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len) ((modn) >= UWORD(2)*(len))
-/* for Waksman, we need modn != 2 */
-#define NMOD_POLY_MAT_CAN_USE_WAKSMAN(modn) ((modn) != UWORD(2))
+/* for Waksman, we need 2 to be invertible in Z/modn Z, i.e. modn odd */
+#define NMOD_POLY_MAT_CAN_USE_WAKSMAN(modn) (((modn) & UWORD(1)) != 0)
 
 /** Multiplication for polynomial matrices
  *  sets C = A * B
@@ -42,7 +42,7 @@ void nmod_poly_mat_mul_vandermonde2(nmod_poly_mat_t C, const nmod_poly_mat_t A, 
  *  sets C = A * B
  *  output can alias input
  *  uses Waksman's algorithm
- *  requires p != 2, see NMOD_POLY_MAT_CAN_USE_WAKSMAN
+ *  requires an odd modulus, see NMOD_POLY_MAT_CAN_USE_WAKSMAN
  */
 void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  const nmod_poly_mat_t B);
 
@@ -146,6 +146,28 @@ void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t res,
                                  const nmod_poly_mat_t pmat1, slong len1,
                                  const nmod_poly_mat_t pmat2, slong len2,
                                  slong nlo, slong nhi);
+
+/** actual workers: middle product via the fft_small transforms, as the
+ * multiplications nmod_poly_mat_mul_sd_fft_direct and
+ * nmod_poly_mat_mul_sd_fft_matmul but with the plan built for the window
+ * [nlo, nhi) of the convolution and only that window reconstructed
+ * - no constraint on len1, len2 (entries of pmat1, pmat2 have length at
+ *   most len1, len2); the transforms have the cyclic length N, a power of
+ *   two, when max(len1, len2, nhi) <= N and len1 + len2 - 1 - N <= nlo,
+ *   e.g. N = 2^ceil(log2(nhi)) when len1 <= nlo + 1 and len2 <= nhi, and
+ *   the length of the full product otherwise
+ * - output may alias input; multithreaded; memory bounded as in the
+ *   multiplications, the result counted as its nhi - nlo coefficients
+ */
+void _nmod_poly_mat_mulmid_sd_fft_direct(nmod_poly_mat_t res,
+                                         const nmod_poly_mat_t pmat1, slong len1,
+                                         const nmod_poly_mat_t pmat2, slong len2,
+                                         slong nlo, slong nhi);
+
+void _nmod_poly_mat_mulmid_sd_fft_matmul(nmod_poly_mat_t res,
+                                         const nmod_poly_mat_t pmat1, slong len1,
+                                         const nmod_poly_mat_t pmat2, slong len2,
+                                         slong nlo, slong nhi);
 
 /** actual worker: transposed multiplication, via evaluation-interpolation at geometric progression
  * - requires len1 <= nlo+1 or len2 <= nlo+1
