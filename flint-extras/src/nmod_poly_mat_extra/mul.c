@@ -160,11 +160,21 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
 
 #endif /* PML_HAVE_MACHINE_VECTORS */
 
+    /* the evaluation points of geometric and vandermonde2 need inverses of
+       their differences, which the cardinality tests of the CAN_USE macros
+       do not ensure for a composite modulus; Waksman needs an odd one (see
+       above). The primality test (< 1us for 64-bit moduli) comes
+       last, so that it is only reached when one of these routines is
+       wanted, never for the small products. */
+    /* TODO this is (as in some other places) a situation where one would like
+       to have a suitable point available in some nmod context provided to
+       functions (this points would give a good geometric progression) */
+
     if (dim > 12)
     {
-        if (NMOD_POLY_CAN_USE_GEOMETRIC(modn, len) && len > 300)
+        if (NMOD_POLY_CAN_USE_GEOMETRIC(modn, len) && len > 300 && n_is_prime(modn))
             nmod_poly_mat_mul_geometric(res, pmat1, pmat2);
-        else if (NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len))
+        else if (NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len) && n_is_prime(modn))
             nmod_poly_mat_mul_vandermonde2(res, pmat1, pmat2);
         else
             nmod_poly_mat_mul(res, pmat1, pmat2);
@@ -173,7 +183,7 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
 
     else if (dim > 10)
     {
-        if (NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len) && len < 200)
+        if (NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len) && len < 200 && n_is_prime(modn))
             nmod_poly_mat_mul_vandermonde2(res, pmat1, pmat2);
         else if (NMOD_POLY_MAT_CAN_USE_WAKSMAN(modn))
             nmod_poly_mat_mul_waksman(res, pmat1, pmat2);
@@ -183,7 +193,7 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
 
     else if (dim > 8)
     {
-        if (NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len) && len < 120)
+        if (NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len) && len < 120 && n_is_prime(modn))
             nmod_poly_mat_mul_vandermonde2(res, pmat1, pmat2);
         else if (NMOD_POLY_MAT_CAN_USE_WAKSMAN(modn))
             nmod_poly_mat_mul_waksman(res, pmat1, pmat2);

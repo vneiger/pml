@@ -22,8 +22,8 @@
 #define NMOD_POLY_CAN_USE_VANDERMONDE1(modn, len) ((modn) >= (ulong)(len))
 /* for Vandermonde2, we need 1**2, 2**2, ..., len**2 to be distinct points in Z/modn Z */
 #define NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len) ((modn) >= UWORD(2)*(len))
-/* for Waksman, we need modn != 2 */
-#define NMOD_POLY_MAT_CAN_USE_WAKSMAN(modn) ((modn) != UWORD(2))
+/* for Waksman, we need 2 to be invertible in Z/modn Z, i.e. modn odd */
+#define NMOD_POLY_MAT_CAN_USE_WAKSMAN(modn) (((modn) & UWORD(1)) != 0)
 
 /** Multiplication for polynomial matrices
  *  sets C = A * B
@@ -42,7 +42,7 @@ void nmod_poly_mat_mul_vandermonde2(nmod_poly_mat_t C, const nmod_poly_mat_t A, 
  *  sets C = A * B
  *  output can alias input
  *  uses Waksman's algorithm
- *  requires p != 2, see NMOD_POLY_MAT_CAN_USE_WAKSMAN
+ *  requires an odd modulus, see NMOD_POLY_MAT_CAN_USE_WAKSMAN
  */
 void nmod_poly_mat_mul_waksman(nmod_poly_mat_t C, const nmod_poly_mat_t A,  const nmod_poly_mat_t B);
 
