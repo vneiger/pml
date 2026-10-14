@@ -695,6 +695,11 @@ static void _sd_fft_matmul(nmod_poly_mat_t C,
 
     TIMING_PRINT;
 
+    {
+        slong w;
+        for (w = 0; w < nthreads; w++)
+            fft_small_op_clear(W[w].X);   /* borrowed: frees nothing */
+    }
     flint_free(W);
     flint_free(zlen);
     flint_free(rdegA);

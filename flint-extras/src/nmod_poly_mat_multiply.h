@@ -194,13 +194,29 @@ void _nmod_poly_mat_mulmid_geometric_precomp(nmod_poly_mat_t res,
                                              slong nlo, slong nhi, nmod_geometric_progression_t G);
 
 
-/** Middle product for polynomial matrices
- *  sets C = ((A * B) div x^dA) mod x^(dB+1)
- *  output can alias input
- *  uses evaluation and interpolation at arithmetic points, done by matrix products
- *  ASSUME: large enough field 
+/** actual workers: transposed multiplication, via evaluation-interpolation
+ * at small points with the evaluations and interpolations done by products
+ * of constant matrices (the transposes of nmod_poly_mat_mul_vandermonde1
+ * and nmod_poly_mat_mul_vandermonde2)
+ * - no constraint on len1, len2, nlo, nhi (entries of pmat1, pmat2 have
+ *   length at most len1, len2); the cost is that of the product of the
+ *   shorter operand, of length ls = min(len1, len2), by a matrix of length
+ *   nhi - nlo, i.e. P = ls + nhi - nlo - 1 points (after nhi is clamped to
+ *   len1 + len2 - 1), against len1 + len2 - 1 for the naive approach
+ * - v1 requires that 0, 1, ..., P-1 be distinct with invertible differences
+ *   (prime modulus, NMOD_POLY_CAN_USE_VANDERMONDE1(modn, P))
+ * - v2 requires that 1**2, 2**2, ..., P**2 be distinct with invertible
+ *   differences (prime modulus, NMOD_POLY_CAN_USE_VANDERMONDE2(modn, P))
+ * - output may alias input
  */
-void nmod_poly_mat_middle_product_vdm1(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B,
-                                       const ulong dA, const ulong dB);
+void _nmod_poly_mat_mulmid_vandermonde1(nmod_poly_mat_t res,
+                                        const nmod_poly_mat_t pmat1, slong len1,
+                                        const nmod_poly_mat_t pmat2, slong len2,
+                                        slong nlo, slong nhi);
+
+void _nmod_poly_mat_mulmid_vandermonde2(nmod_poly_mat_t res,
+                                        const nmod_poly_mat_t pmat1, slong len1,
+                                        const nmod_poly_mat_t pmat2, slong len2,
+                                        slong nlo, slong nhi);
 
 #endif

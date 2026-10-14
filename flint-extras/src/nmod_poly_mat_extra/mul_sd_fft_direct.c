@@ -876,6 +876,7 @@ static void _sd_fft_direct(nmod_poly_mat_t C,
             flint_free(W[w].bfull);
             flint_free(W[w].bfullcol);
             flint_free(W[w].zptr);
+            fft_small_op_clear(W[w].X);   /* borrowed: frees nothing */
         }
     }
     flint_free(W);

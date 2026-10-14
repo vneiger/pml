@@ -315,5 +315,113 @@ TEST_FUNCTION_START(nmod_poly_mat_mulmid, state)
         flint_set_num_threads(nthreads_save);
     }
 
+    /* the two Vandermonde variants directly: any window and any operand
+       lengths (balanced, one operand below nlo+1, anything including
+       windows reaching past the product), the shorter operand on either
+       side, primes from tiny to 64 bits for which the points exist, zero
+       entries, aliasing */
+    for (i = 0; i < 300 * flint_test_multiplier(); i++)
+    {
+        ulong prime;
+        slong len1, len2, nlo, nhi, npts, r, c;
+        const slong rdim = 1 + n_randint(state, 10);
+        const slong idim = 1 + n_randint(state, 10);
+        const slong cdim = 1 + n_randint(state, 10);
+        const slong big = (n_randint(state, 5) == 0) ? 150 : 40;
+        const int alias = (int) n_randint(state, 3);
+        const int fun = (int) n_randint(state, 2);
+
+        switch (n_randint(state, 3))
+        {
+            case 0:   /* balanced */
+                nlo = 1 + n_randint(state, big);
+                nhi = 2 * nlo;
+                len1 = nlo + 1;
+                len2 = nhi;
+                break;
+            case 1:   /* one operand below nlo+1, the other below nhi */
+                nlo = n_randint(state, big);
+                nhi = nlo + 1 + n_randint(state, big);
+                len1 = 1 + n_randint(state, nlo + 1);
+                len2 = 1 + n_randint(state, nhi);
+                break;
+            default:  /* anything, windows reaching past the product included */
+                len1 = 1 + n_randint(state, big);
+                len2 = 1 + n_randint(state, big);
+                nlo = n_randint(state, len1 + len2);
+                nhi = nlo + n_randint(state, len1 + len2 + 2);
+        }
+        if (n_randint(state, 2))
+            FLINT_SWAP(slong, len1, len2);
+
+        /* number of points needed, an upper bound for both variants */
+        npts = FLINT_MIN(len1, len2) + FLINT_MIN(nhi, len1 + len2 - 1) - nlo;
+        npts = FLINT_MAX(npts, 1);
+        do
+            prime = n_randprime(state, 2 + n_randint(state, 63), 1);
+        while (fun ? !NMOD_POLY_CAN_USE_VANDERMONDE2(prime, npts)
+                   : !NMOD_POLY_CAN_USE_VANDERMONDE1(prime, npts));
+
+        nmod_poly_mat_t pmat1, pmat2, res, res_true;
+        nmod_poly_mat_init(pmat1, rdim, idim, prime);
+        nmod_poly_mat_init(pmat2, idim, cdim, prime);
+        nmod_poly_mat_init(res, rdim, cdim, prime);
+        nmod_poly_mat_init(res_true, rdim, cdim, prime);
+
+        for (r = 0; r < rdim; r++)
+            for (c = 0; c < idim; c++)
+                if (n_randint(state, 5))
+                    nmod_poly_randtest(nmod_poly_mat_entry(pmat1, r, c), state,
+                                       n_randint(state, len1 + 1));
+        for (r = 0; r < idim; r++)
+            for (c = 0; c < cdim; c++)
+                if (n_randint(state, 5))
+                    nmod_poly_randtest(nmod_poly_mat_entry(pmat2, r, c), state,
+                                       n_randint(state, len2 + 1));
+
+        nmod_poly_mat_mul(res_true, pmat1, pmat2);
+        if (nlo < nhi)
+        {
+            nmod_poly_mat_shift_right(res_true, res_true, nlo);
+            nmod_poly_mat_truncate(res_true, nhi - nlo);
+        }
+        else
+            nmod_poly_mat_zero(res_true);
+
+        nmod_poly_mat_randtest(res, state, 5);   /* stale data in the output */
+        {
+            void (* f)(nmod_poly_mat_t, const nmod_poly_mat_t, slong,
+                       const nmod_poly_mat_t, slong, slong, slong)
+                = fun ? _nmod_poly_mat_mulmid_vandermonde2
+                      : _nmod_poly_mat_mulmid_vandermonde1;
+
+            if (alias == 1 && cdim == idim)
+            {
+                nmod_poly_mat_set(res, pmat1);
+                f(res, res, len1, pmat2, len2, nlo, nhi);
+            }
+            else if (alias == 2 && rdim == idim)
+            {
+                nmod_poly_mat_set(res, pmat2);
+                f(res, pmat1, len1, res, len2, nlo, nhi);
+            }
+            else
+                f(res, pmat1, len1, pmat2, len2, nlo, nhi);
+        }
+
+        result = nmod_poly_mat_equal(res_true, res);
+
+        if (!result)
+            TEST_FUNCTION_FAIL(
+                    "vandermonde%d: prime = %wu, rdim = %wd, idim = %wd, cdim = %wd\n"
+                    "len1 = %wd, len2 = %wd, nlo = %wd, nhi = %wd, alias = %d\n",
+                    fun + 1, prime, rdim, idim, cdim, len1, len2, nlo, nhi, alias);
+
+        nmod_poly_mat_clear(pmat1);
+        nmod_poly_mat_clear(pmat2);
+        nmod_poly_mat_clear(res);
+        nmod_poly_mat_clear(res_true);
+    }
+
     TEST_FUNCTION_END(state);
 }

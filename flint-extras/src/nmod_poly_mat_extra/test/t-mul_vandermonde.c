@@ -55,6 +55,20 @@ int test_mat_mul_vandermonde(ulong bits, ulong m, ulong n, ulong p, slong len, f
         res2 = nmod_poly_mat_equal(C1, C2);
     }
 
+    /* aliasing */
+    if (res1 && res2 && n == p)
+    {
+        nmod_poly_mat_set(C2, A);
+        nmod_poly_mat_mul_vandermonde1(C2, C2, B);
+        res1 = nmod_poly_mat_equal(C1, C2);
+        if (NMOD_POLY_CAN_USE_VANDERMONDE2(prime, prod_len))
+        {
+            nmod_poly_mat_set(C2, A);
+            nmod_poly_mat_mul_vandermonde2(C2, C2, B);
+            res2 = nmod_poly_mat_equal(C1, C2);
+        }
+    }
+
     nmod_poly_mat_clear(C1);
     nmod_poly_mat_clear(C2);
     nmod_poly_mat_clear(B);
