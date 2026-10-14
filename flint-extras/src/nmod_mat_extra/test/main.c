@@ -13,7 +13,6 @@
 
 /* Include functions *********************************************************/
 
-#include "t-mul_2dot.c"
 #include "t-nullspace.c"
 #include "t-pluq.c"
 
@@ -21,7 +20,6 @@
 
 test_struct tests[] =
 {
-    TEST_FUNCTION(nmod_mat_mul_2dot),
     TEST_FUNCTION(nmod_mat_left_nullspace),
     TEST_FUNCTION(nmod_mat_pluq),
 };
