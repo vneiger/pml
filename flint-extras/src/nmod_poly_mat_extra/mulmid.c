@@ -229,12 +229,29 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         slowdown with respect to the best routine 2.29 -> 1.04, 95th
         percentile 8.0 -> 1.3.
 
-        The windowed fft_small routines take almost everything: they
+        2026-10-15 Refitted on Zen 4 against FLINT main (#2842 merged,
+        SIMD transpose #2871) and the 2026-10-15 product thresholds, same
+        moduli and shapes. naive is the product followed by a truncation,
+        and the product of short operands now goes to the Vandermonde
+        routines, which made naive the best choice for short windows:
+        modulo a 30-bit prime (np == 2) up to nhi = min(dim, 128), a 1.5-5x
+        gain over the previous rule there. Over 1096 points: average
+        slowdown 1.13 -> 1.016, 95th percentile 2.44 -> 1.15, worst
+        11.1 -> 1.46.
+
+        The windowed fft_small routines take everything else: they
         transform at length about nhi, as the transposed product would.
-        geometric keeps the short windows where several CRT primes make
-        the transforms expensive -- more of them when nmod_mat_mul modulo
-        p is fast (at most 52 bits) -- and naive the very short ones at
-        tiny or very large dimension.
+        Short windows, by class of modulus:
+        - single transform: naive up to nhi = 10;
+        - several transforms, p of at most 52 bits: naive up to
+          nhi = max(10, min(dim, 128)), geometric instead from dimension
+          512 (up to nhi = 128);
+        - several transforms, larger p: geometric up to
+          nhi = min(max(10, dim/4), 48), the Vandermonde routines being
+          slow there.
+        sd_fft_matmul takes over from sd_fft_direct from dimension 96
+        (128 for p above 52 bits), except for nhi above 2048 below
+        dimension 192.
     */
     {
         const ulong modn = pmat1->modulus;
@@ -244,8 +261,8 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
             && ((slong) flint_ctz(modn - 1) >= FLINT_BIT_COUNT((ulong) (len1 + len2 + 2)));
         /* 0: one transform; 1: several, p of at most 52 bits; 2: several, larger p */
         const int kind = single_prime ? 0 : (modbits <= 52 ? 1 : 2);
-        static const slong geom_nhi[3] = {  4, 64, 12 };   /* geometric up to this nhi */
-        static const slong geom_dim[3] = { 24, 48,  8 };   /* ... from this dimension on */
+        static const slong matmul_dim[3] = { 96, 96, 128 };  /* sd_fft_matmul from this dimension */
+        slong naive_nhi, geom_nhi, geom_dim;
 
         if (dim <= 4)
         {
@@ -256,16 +273,27 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
             return;
         }
 
-        if (nhi <= 4 && dim >= 192)
+        if (kind == 0)
         {
-            _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
-            return;
+            naive_nhi = 10;
+            geom_nhi = 0; geom_dim = 0;
+        }
+        else if (kind == 1)
+        {
+            naive_nhi = FLINT_MAX(10, FLINT_MIN(dim, 128));
+            geom_nhi = 128; geom_dim = 512;
+        }
+        else
+        {
+            naive_nhi = 4;
+            geom_nhi = FLINT_MIN(FLINT_MAX(10, dim / 4), 48); geom_dim = 0;
         }
 
         /* geometric needs an element of large enough order, hence the
            primality test, which the cardinality test of the macro does not
-           replace for a composite modulus */
-        if (nhi <= geom_nhi[kind] && dim >= geom_dim[kind]
+           replace for a composite modulus; when it does not apply, the
+           window goes to naive or to the fft_small routines */
+        if (nhi <= geom_nhi && dim >= geom_dim
             && (len1 <= nlo + 1 || len2 <= nlo + 1)
             && NMOD_POLY_CAN_USE_GEOMETRIC(modn, nhi) && n_is_prime(modn))
         {
@@ -273,7 +301,13 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
             return;
         }
 
-        if (dim >= 128)
+        if (nhi <= naive_nhi)
+        {
+            _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
+            return;
+        }
+
+        if (dim >= matmul_dim[kind] && (nhi <= 2048 || dim >= 192))
             _nmod_poly_mat_mulmid_sd_fft_matmul(res, pmat1, len1, pmat2, len2, nlo, nhi);
         else
             _nmod_poly_mat_mulmid_sd_fft_direct(res, pmat1, len1, pmat2, len2, nlo, nhi);
