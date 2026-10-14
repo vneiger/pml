@@ -123,7 +123,7 @@ void nmod_poly_mat_mul_vandermonde1(nmod_poly_mat_t c, const nmod_poly_mat_t a, 
 
     // valA: column ell = i*n + j contains the evaluations of a[i][j]
     nmod_mat_init(valA, vA->r, tmp_mat->c, mod.n);
-    nmod_mat_mul_pml(valA, vA, tmp_mat);
+    nmod_mat_mul(valA, vA, tmp_mat);
 
     // evaluation of matrix b:
     // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
@@ -144,7 +144,7 @@ void nmod_poly_mat_mul_vandermonde1(nmod_poly_mat_t c, const nmod_poly_mat_t a, 
 
     // valB: column ell = i*n + j contains the evaluations of b[i][j]
     nmod_mat_init(valB, vB->r, tmp_mat->c, mod.n);
-    nmod_mat_mul_pml(valB, vB, tmp_mat);
+    nmod_mat_mul(valB, vB, tmp_mat);
 
     // perform the pointwise products
     nmod_mat_init(valAp, m, n, mod.n);
@@ -167,7 +167,7 @@ void nmod_poly_mat_mul_vandermonde1(nmod_poly_mat_t c, const nmod_poly_mat_t a, 
                 nmod_mat_entry(valBp, u, v) = nmod_mat_entry(valB, i, ell);
 
         // a*b evaluated at point i
-        nmod_mat_mul_pml(valCp, valAp, valBp);
+        nmod_mat_mul(valCp, valAp, valBp);
 
         // copy this into valC: column ell = i*n + j contains the evaluations
         // of the entry i,j of c = a*b
@@ -180,7 +180,7 @@ void nmod_poly_mat_mul_vandermonde1(nmod_poly_mat_t c, const nmod_poly_mat_t a, 
     // interpolate to find the entries of c
     nmod_mat_clear(tmp_mat);
     nmod_mat_init(tmp_mat, iv->r, valC->c, mod.n);
-    nmod_mat_mul_pml(tmp_mat, iv, valC);
+    nmod_mat_mul(tmp_mat, iv, valC);
 
     // copy to output (reorganize these entries into c)
     ell = 0;
@@ -337,8 +337,8 @@ void nmod_poly_mat_mul_vandermonde2(nmod_poly_mat_t c, const nmod_poly_mat_t a, 
     nmod_mat_init(valA_even, vA->r, tmp_mat_even->c, mod.n);
     nmod_mat_init(valA_odd, vA->r, tmp_mat_odd->c, mod.n);
 
-    nmod_mat_mul_pml(valA_even, vA, tmp_mat_even);
-    nmod_mat_mul_pml(valA_odd, vA, tmp_mat_odd);
+    nmod_mat_mul(valA_even, vA, tmp_mat_even);
+    nmod_mat_mul(valA_odd, vA, tmp_mat_odd);
 
     // evaluation of matrix b (even/odd part): build tmp_mat_even/odd, whose
     // column ell = i*n + j is the coefficient vector of the even/odd part of
@@ -384,8 +384,8 @@ void nmod_poly_mat_mul_vandermonde2(nmod_poly_mat_t c, const nmod_poly_mat_t a, 
     nmod_mat_init(valB_even, vB->r, tmp_mat_even->c, mod.n);
     nmod_mat_init(valB_odd, vB->r, tmp_mat_odd->c, mod.n);
 
-    nmod_mat_mul_pml(valB_even, vB, tmp_mat_even);
-    nmod_mat_mul_pml(valB_odd, vB, tmp_mat_odd);
+    nmod_mat_mul(valB_even, vB, tmp_mat_even);
+    nmod_mat_mul(valB_odd, vB, tmp_mat_odd);
 
     // perform the pointwise products for the points 1, 2, ..., nb_points
     nmod_mat_init(valAp_even, m, n, mod.n);
@@ -432,8 +432,8 @@ void nmod_poly_mat_mul_vandermonde2(nmod_poly_mat_t c, const nmod_poly_mat_t a, 
             }
 
         // a*b evaluated at point i (which is i+1)
-        nmod_mat_mul_pml(valCp_even, valAp_even, valBp_even);
-        nmod_mat_mul_pml(valCp_odd, valAp_odd, valBp_odd);
+        nmod_mat_mul(valCp_even, valAp_even, valBp_even);
+        nmod_mat_mul(valCp_odd, valAp_odd, valBp_odd);
 
         // copy this into valC: column ell = i*n + j contains the evaluations
         // of the entry i,j of c = a*b
@@ -463,8 +463,8 @@ void nmod_poly_mat_mul_vandermonde2(nmod_poly_mat_t c, const nmod_poly_mat_t a, 
     nmod_mat_init(tmp_mat_even, iv->r, valC_even->c, mod.n);
     nmod_mat_init(tmp_mat_odd, iv->r, valC_odd->c, mod.n);
 
-    nmod_mat_mul_pml(tmp_mat_even, iv, valC_even);
-    nmod_mat_mul_pml(tmp_mat_odd, iv, valC_odd);
+    nmod_mat_mul(tmp_mat_even, iv, valC_even);
+    nmod_mat_mul(tmp_mat_odd, iv, valC_odd);
 
     // copy to output (reorganize these entries into c)
     ell = 0;
