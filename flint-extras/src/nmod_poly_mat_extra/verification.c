@@ -427,7 +427,7 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
         const ulong prime = mat->modulus;
 
         nmod_poly_mat_t residual;
-        nmod_poly_mat_init(residual, rdim, cdim, prime);
+        nmod_poly_mat_init(residual, ker->r, cdim, prime);
 
         int success = 1;
 
@@ -454,8 +454,9 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
         }
 
         /* compute residual, check rows of ker are in the kernel */
-        nmod_poly_mat_multiply(residual, ker, mat);
-        if (!nmod_poly_mat_is_zero(residual))
+        if (success)
+            nmod_poly_mat_multiply(residual, ker, mat);
+        if (success && !nmod_poly_mat_is_zero(residual))
         {
             printf("not all rows are in the kernel\n");
             success = 0;
@@ -473,7 +474,7 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
         const ulong prime = mat->modulus;
 
         nmod_poly_mat_t residual;
-        nmod_poly_mat_init(residual, rdim, cdim, prime);
+        nmod_poly_mat_init(residual, rdim, ker->c, prime);
 
         int success = 1;
 
@@ -499,9 +500,10 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
             success = 0;
         }
 
-        /* compute residual, check rows of ker are in the kernel */
-        nmod_poly_mat_multiply(residual, mat, ker);
-        if (!nmod_poly_mat_is_zero(residual))
+        /* compute residual, check columns of ker are in the kernel */
+        if (success)
+            nmod_poly_mat_multiply(residual, mat, ker);
+        if (success && !nmod_poly_mat_is_zero(residual))
         {
             printf("not all rows are in the kernel\n");
             success = 0;

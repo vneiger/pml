@@ -83,4 +83,17 @@ void _nmod_poly_mat_mulmid_geometric_precomp_bounded(nmod_poly_mat_t res,
                                              nmod_geometric_progression_t G,
                                              ulong membytes);
 
+/* Same as _nmod_poly_mat_mulmid_sd_fft_direct and
+ * _nmod_poly_mat_mulmid_sd_fft_matmul, with the soft bound (in bytes) on the
+ * memory used for the transforms given explicitly; 0 selects the default.
+ * Exposed so that the tests can exercise the grouping of rows and columns. */
+void _nmod_poly_mat_mulmid_sd_fft_direct_bounded(nmod_poly_mat_t res,
+                                        const nmod_poly_mat_t pmat1, slong len1,
+                                        const nmod_poly_mat_t pmat2, slong len2,
+                                        slong nlo, slong nhi, ulong membytes);
+void _nmod_poly_mat_mulmid_sd_fft_matmul_bounded(nmod_poly_mat_t res,
+                                        const nmod_poly_mat_t pmat1, slong len1,
+                                        const nmod_poly_mat_t pmat2, slong len2,
+                                        slong nlo, slong nhi, ulong membytes);
+
 #endif  /* NMOD_POLY_MAT_EXTRA_IMPL_H */

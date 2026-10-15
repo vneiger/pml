@@ -62,6 +62,7 @@ void time_nmod_mat_mul(ulong nbits, ulong dim1, ulong dim2, ulong block, ulong i
 
     nmod_mat_clear(mat);
     nmod_mat_clear(vec);
+    nmod_mat_clear(res);
 }
 
 /*--------------------------------------------------------------*/
@@ -87,8 +88,7 @@ int main(int argc, char ** argv)
         long block = atoi(argv[4]);
         long iter = atoi(argv[5]);
 
-        //printf("nbits\tdim1\tdim2\tblock\titer\tmul\tblas\tnewdot\tsmall_mod\n");
-        printf("nbits\tdim1\tdim2\tblock\titer\tblas\tnewdot\t2dot\n");
+        printf("nbits\tdim1\tdim2\tblock\titer\tmul\tblas\tnewdot\tsmall_mod\n");
         if (nbits > 0)
         {
             time_nmod_mat_mul(nbits, dim1, dim2, block, iter, (1L << atoi(argv[1])) - 1, state);

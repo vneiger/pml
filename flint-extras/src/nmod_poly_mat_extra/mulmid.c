@@ -10,11 +10,13 @@
     <https://www.gnu.org/licenses/>.
 */
 
+#include <flint/longlong.h>   /* for flint_ctz */
 #include <flint/mpn_extras.h>
 #include <flint/nmod_mat.h>
 #include <flint/nmod_vec.h>
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
+#include <flint/ulong_extras.h>
 
 #include "nmod_poly_extra.h"  /* for NMOD_POLY_CAN_USE_GEOMETRIC */
 #include "nmod_poly_mat_multiply.h"
@@ -39,170 +41,6 @@ void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t res,
     nmod_poly_mat_truncate(res, nhi - nlo);
 }
 
-/*------------------------------------------------------------*/
-/* evaluation-interpolation using Vandermonde matrix          */
-/*------------------------------------------------------------*/
-
-/* TODO currently disabled: untested and unprofiled */
-#if 0
-/** Middle product for polynomial matrices
- *  sets C = ((A * B) div x^dA) mod x^(dB+1)
- *  output can alias input
- *  uses evaluation and interpolation at arithmetic points, done by matrix products
- *  ASSUME: large enough field 
- */
-static void nmod_poly_mat_middle_product_vandermonde1(nmod_poly_mat_t c, const nmod_poly_mat_t a, const nmod_poly_mat_t b,
-                                               const ulong dA, const ulong dB)
-{
-
-    ulong i, j, k, ellA, ellB, m, n, p, ell, u, v, nb_points;
-    nmod_mat_t vA, vB, vB_t, iv, iv_t, tmp_mat, valA, valB, valAp, valBp, valC, valCp;
-    nmod_t mod;
-    
-    ellA = nmod_poly_mat_max_length(a);
-    ellB = nmod_poly_mat_max_length(b);
-
-    if (ellA == 0 || ellB == 0)
-    {
-        nmod_poly_mat_zero(c);
-        return;
-    }
-
-    m = a->r;
-    n = a->c;
-    p = b->c;
-
-    if (c == a || c == b)
-    {
-        nmod_poly_mat_t T;
-        nmod_poly_mat_init(T, m, n, p);
-        nmod_poly_mat_middle_product_vandermonde1(T, a, b, dA, dB);
-        nmod_poly_mat_swap_entrywise(c, T);
-        nmod_poly_mat_clear(T);
-        return;
-    }
-    
-    nmod_init(&mod, a->modulus);
-    vandermonde_init1(vA, vB, iv, dA, dB, mod);
-    nb_points = dA + dB + 1;
-
-    // evaluation of matrix a:
-    // build tmp_mat, whose column ell = i*n + j is the coefficient vector 
-    // of reverse(a[i][j]) 
-    nmod_mat_init(tmp_mat, dA + 1, m * n, mod.n);
-    ell = 0;
-    for (i = 0; i < m; i++)
-        for (j = 0; j < n; j++, ell++)
-        {
-            ulong d;
-            nn_ptr ptr;
-            d = nmod_poly_degree(nmod_poly_mat_entry(a, i, j));
-            ptr = nmod_poly_mat_entry(a, i, j)->coeffs;
-            for (k = 0; k <= d; k++)
-                nmod_mat_entry(tmp_mat, dA - k, ell) = ptr[k];
-        }
-    // note: d = deg(a[i][j]) is -1 if a[i][j] == 0
-    // all non-touched entries already zero since tmp_mat was initialized as zero
-   
-    // valA: column ell = i*n + j contains the evaluations of a[i][j]
-    nmod_mat_init(valA, vA->r, tmp_mat->c, mod.n);
-    nmod_mat_mul_pml(valA, vA, tmp_mat);
-
-    // transpose interpolation of matrix b:
-    // build tmp_mat, whose column ell = i*n + j is the coefficient vector of
-    // b[i][j] (padded with zeroes up to length dB+1 if necessary)
-    nmod_mat_clear(tmp_mat);
-    nmod_mat_init(tmp_mat, dA + dB + 1, n * p, mod.n);
-    ell = 0;
-    for (i = 0; i < n; i++)
-        for ( j = 0; j < p; j++, ell++)
-        {
-            ulong d;
-            nn_ptr ptr;
-            d = nmod_poly_degree(nmod_poly_mat_entry(b, i, j));
-            ptr = nmod_poly_mat_entry(b, i, j)->coeffs;
-            for (k = 0; k <= d; k++)
-                nmod_mat_entry(tmp_mat, k, ell) = ptr[k];
-        }
-    // mul by transpose(iv)
-    nmod_mat_init(iv_t, iv->r, iv->c, mod.n);
-    nmod_mat_transpose(iv_t, iv);
-    nmod_mat_init(valB, iv_t->r, tmp_mat->c, mod.n);
-    nmod_mat_mul_pml(valB, iv_t, tmp_mat);
- 
-
-    // perform the pointwise products
-    nmod_mat_init(valAp, m, n, mod.n);
-    nmod_mat_init(valBp, n, p, mod.n);
-    nmod_mat_init(valC, nb_points, m * p, mod.n);
-    nmod_mat_init(valCp, m, p, mod.n);
-    
-    for (i = 0; i < nb_points; i++)
-    {
-        // a evaluated at point i
-        ell = 0;
-        for (u = 0; u < m; u++)
-            for (v = 0; v < n; v++, ell++)
-                nmod_mat_entry(valAp, u, v) = nmod_mat_entry(valA, i, ell);
-
-        ell = 0;
-        for (u = 0; u < n; u++)
-            for (v = 0; v < p; v++, ell++)
-                nmod_mat_entry(valBp, u, v) = nmod_mat_entry(valB, i, ell);
-
-        nmod_mat_mul_pml(valCp, valAp, valBp);
-
-        // copy this into valC
-        ell = 0;
-        for (u = 0; u < m; u++)
-            for (v = 0; v < p; v++, ell++)
-                nmod_mat_entry(valC, i, ell) = nmod_mat_entry(valCp, u, v);
-    }
-    
-    nmod_mat_init(vB_t, vB->c, vB->r, mod.n);
-    nmod_mat_transpose(vB_t, vB);
-    // transpose-evaluate to find the entries of c
-    nmod_mat_clear(tmp_mat);
-    nmod_mat_init(tmp_mat, vB_t->r, valC->c, mod.n);
-    nmod_mat_mul_pml(tmp_mat, vB_t, valC);
-
-
-    // copy to output (reorganize these entries into c)
-    ell = 0;
-    for (u = 0; u < m; u++)
-        for (v = 0; v < p; v++, ell++)
-        {
-            nn_ptr coeffs;
-            nmod_poly_realloc(nmod_poly_mat_entry(c, u, v), dB + 1);
-            coeffs = nmod_poly_mat_entry(c, u, v)->coeffs;
-            nmod_poly_mat_entry(c, u, v)->length = dB + 1; 
-            for (i = 0; i <= dB; i++)
-                coeffs[i] = nmod_mat_entry(tmp_mat, i, ell);
-            _nmod_poly_normalise(nmod_poly_mat_entry(c, u, v));
-        }
-    
-    nmod_mat_clear(vA);
-    nmod_mat_clear(vB_t);
-    nmod_mat_clear(vB);
-    nmod_mat_clear(iv_t);
-    nmod_mat_clear(iv);
-    nmod_mat_clear(tmp_mat);
-    nmod_mat_clear(valA);
-    nmod_mat_clear(valB);
-    nmod_mat_clear(valAp);
-    nmod_mat_clear(valBp);
-    nmod_mat_clear(valC);
-    nmod_mat_clear(valCp);
-}
-#endif
-
-
-/*------------------------------------------------------------*/
-/* via 3-prime FFT                                            */
-/*------------------------------------------------------------*/
-/* TODO */
-
-
 
 
 /*------------------------------------------------------------*/
@@ -222,15 +60,131 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
     }
 
     /* TODO handle constant pmat1 or pmat2 properly */
-    /* if (len1 == 1)*/
-    /*     _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi); */
-    /* else */
+
+#if PML_HAVE_MACHINE_VECTORS
+    /*
+        2026-10-01 Thresholds fitted on square balanced middle products
+        (nlo = nhi/2, len1 = nlo + 1, len2 = nhi, the shape of the
+        approximant basis algorithms; nhi a power of two, and 1.5 times
+        one) on Zen 4, one thread, against FLINT-dev with the new
+        nmod_mat_mul kernels, over a 21- and a 50-bit FFT prime, a 30-bit
+        and a 60-bit prime. Against the previous rule (geometric from
+        dimension 8 on, naive below), on the same measurements: average
+        slowdown with respect to the best routine 2.29 -> 1.04, 95th
+        percentile 8.0 -> 1.3.
+
+        2026-10-15 Refitted on Zen 4 against FLINT main (#2842 merged,
+        SIMD transpose #2871) and the 2026-10-15 product thresholds, same
+        moduli and shapes. naive is the product followed by a truncation,
+        and the product of short operands now goes to the Vandermonde
+        routines, which made naive the best choice for short windows:
+        modulo a 30-bit prime (np == 2) up to nhi = min(dim, 128), a 1.5-5x
+        gain over the previous rule there. Over 1096 points: average
+        slowdown 1.13 -> 1.016, 95th percentile 2.44 -> 1.15, worst
+        11.1 -> 1.46.
+
+        2026-10-16 thresholds fitted on Zen 4 with the transposed Vandermonde
+        routines (same shapes; a 21- and a 50-bit FFT prime, a 30-bit and
+        a generic 50-bit prime, a 60-bit prime; 1760 points). They replace
+        naive and geometric: on short windows they are faster than both
+        everywhere except at dimension 2, where all are within a few
+        microseconds. Average slowdown with respect to the best routine,
+        against the previous rule (which was fitted on a Xeon): 1.025 ->
+        1.014 for a single transform, 1.010 -> 1.004 with several
+        transforms and p of at most 52 bits, 1.058 -> 1.002 above 52 bits;
+        95th percentile at most 1.13.
+
+        The rule, by class of modulus:
+        - the Vandermonde routines up to nhi = 16 at dimension at most 4,
+          and above up to
+            single transform:          min(max(24, dim), 96)
+            several, p <= 40 bits:     min(8 dim, 384)
+            several, p <= 52 bits:     min(16 dim, 1024)
+            several, p > 52 bits:      min(max(16, dim/2), 48)
+          vandermonde1 up to nhi = 24 (32 for p <= 40 bits, 9 above 52
+          bits), vandermonde2 above; they need a prime modulus, and naive
+          takes their place otherwise up to nhi = 16;
+        - the windowed fft_small routines everything else: sd_fft_matmul
+          from dimension 128 (96 with several transforms and p of at most
+          52 bits), except for nhi above 2048 below dimension 192, and
+          sd_fft_direct otherwise; they transform at length about nhi, as
+          the transposed product would.
+    */
+    {
+        const ulong modn = pmat1->modulus;
+        const slong dim = n_cbrt(pmat1->r * pmat1->c * pmat2->c);
+        const flint_bitcnt_t modbits = FLINT_BIT_COUNT(modn);
+        const int single_prime = (modbits <= 50)
+            && ((flint_bitcnt_t) flint_ctz(modn - 1) >= FLINT_BIT_COUNT((ulong) (len1 + len2 + 2)));
+        slong vdm_nhi, vdm1_nhi, matmul_dim;
+
+        if (single_prime)
+        {
+            vdm_nhi = FLINT_MIN(FLINT_MAX(24, dim), 96);
+            vdm1_nhi = 24;
+            matmul_dim = 128;
+        }
+        else if (modbits <= 40)
+        {
+            vdm_nhi = FLINT_MIN(8 * dim, 384);
+            vdm1_nhi = 32;
+            matmul_dim = 96;
+        }
+        else if (modbits <= 52)
+        {
+            vdm_nhi = FLINT_MIN(16 * dim, 1024);
+            vdm1_nhi = 24;
+            matmul_dim = 96;
+        }
+        else
+        {
+            vdm_nhi = FLINT_MIN(FLINT_MAX(16, dim / 2), 48);
+            vdm1_nhi = 9;
+            matmul_dim = 128;
+        }
+        if (dim <= 4)
+            vdm_nhi = 16;
+
+        /* the Vandermonde points must be distinct with invertible
+           differences, hence the primality test, which comes last so as to
+           be reached only for the windows where they are wanted */
+        if (nhi <= vdm_nhi)
+        {
+            const slong npts = FLINT_MIN(len1, len2)
+                               + FLINT_MIN(nhi, len1 + len2 - 1) - nlo - 1;
+            if (nhi <= vdm1_nhi && NMOD_POLY_CAN_USE_VANDERMONDE1(modn, npts)
+                && n_is_prime(modn))
+            {
+                _nmod_poly_mat_mulmid_vandermonde1(res, pmat1, len1, pmat2, len2, nlo, nhi);
+                return;
+            }
+            if (NMOD_POLY_CAN_USE_VANDERMONDE2(modn, npts) && n_is_prime(modn))
+            {
+                _nmod_poly_mat_mulmid_vandermonde2(res, pmat1, len1, pmat2, len2, nlo, nhi);
+                return;
+            }
+            /* composite modulus, or not enough points */
+            if (nhi <= 16)
+            {
+                _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
+                return;
+            }
+        }
+
+        if (dim >= matmul_dim && (nhi <= 2048 || dim >= 192))
+            _nmod_poly_mat_mulmid_sd_fft_matmul(res, pmat1, len1, pmat2, len2, nlo, nhi);
+        else
+            _nmod_poly_mat_mulmid_sd_fft_direct(res, pmat1, len1, pmat2, len2, nlo, nhi);
+        return;
+    }
+#endif /* PML_HAVE_MACHINE_VECTORS */
 
     /* TODO rough thresholds, not finely tuned */
 #if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 6)
     if (NMOD_POLY_CAN_USE_GEOMETRIC(pmat1->modulus, nhi)
         && ((pmat1->r >= 8 && pmat2->c >= 2) || (pmat1->r >= 2 && pmat2->c >= 8))
-        && (len1 <= nlo+1 || len2 <= nlo+1))
+        && (len1 <= nlo+1 || len2 <= nlo+1)
+        && n_is_prime(pmat1->modulus))
         _nmod_poly_mat_mulmid_geometric(res, pmat1, len1, pmat2, len2, nlo, nhi);
 
     else
