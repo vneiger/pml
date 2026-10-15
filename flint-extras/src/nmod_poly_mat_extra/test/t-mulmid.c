@@ -114,13 +114,17 @@ TEST_FUNCTION_START(nmod_poly_mat_mulmid, state)
 
         for (i = 0; i < 200 * flint_test_multiplier(); i++)
         {
+            /* one time in eight, small dimensions and lengths for which
+               the stored transforms of G (below) are used */
+            const int large = (n_randint(state, 8) == 0);
+            const int with_fft = n_randint(state, 2);
             const ulong bits = 16 + n_randint(state, 49);
             const ulong prime = n_randprime(state, bits, 1);
-            const slong rdim = 1 + n_randint(state, 20);
-            const slong idim = 1 + n_randint(state, 20);
-            const slong cdim = 1 + n_randint(state, 20);
-            const slong nlo = n_randint(state, 40);
-            const slong nhi = nlo + 1 + n_randint(state, 40);
+            const slong rdim = 1 + n_randint(state, large ? 4 : 20);
+            const slong idim = 1 + n_randint(state, large ? 4 : 20);
+            const slong cdim = 1 + n_randint(state, large ? 4 : 20);
+            const slong nlo = n_randint(state, large ? 400 : 40);
+            const slong nhi = nlo + 1 + n_randint(state, large ? 400 : 40);
             const int swap = n_randint(state, 2);
             /* one operand fits below nlo+1, the other below nhi */
             const slong lenX = 1 + n_randint(state, nlo + 1);
@@ -167,6 +171,8 @@ TEST_FUNCTION_START(nmod_poly_mat_mulmid, state)
                 nmod_init(&mod, prime);
                 w = nmod_find_root(2 * nhi, mod);
                 _nmod_geometric_progression_init_function(G, w, nhi, mod, UWORD(3));
+                if (with_fft)
+                    _nmod_geometric_progression_init_fft(G, nhi, nhi, 0);
                 _nmod_poly_mat_mulmid_geometric_precomp_bounded(res, pmat1, len1,
                                                     pmat2, len2, nlo, nhi, G, membytes);
                 nmod_geometric_progression_clear(G);
