@@ -664,11 +664,14 @@ void nmod_poly_mat_mul_geometric(nmod_poly_mat_t res, const nmod_poly_mat_t pmat
     nmod_init(&mod, pmat1->modulus);
     nmod_geometric_progression_t G;
     ulong w = nmod_find_root(2*len, mod);
-#if (__FLINT_VERSION == 3 && __FLINT_VERSION_MINOR >= 6)
     _nmod_geometric_progression_init_function(G, w, len, mod, UWORD(3));
-#else
-    nmod_geometric_progression_init(G, w, len, mod);
-#endif
+
+    /* NOTE using different precomputation lengths (len1 and len2 individually
+     * for the evaluation of pmat1 and of pmat2) might give benefits for
+     * unbalanced products but only a few percents, and would make the code
+     * harder to follow -> not done */
+    if (pmat1->r >= 2 || pmat1->c >= 2 || pmat2->c >= 2)
+        _nmod_geometric_progression_init_fft(G, FLINT_MAX(len1, len2), len, 0);
 
     _nmod_poly_mat_mul_geometric_precomp(res, pmat1, len1, pmat2, len2, G);
 
@@ -1071,6 +1074,15 @@ void _nmod_poly_mat_mulmid_geometric(nmod_poly_mat_t res,
     nmod_init(&mod, pmat1->modulus);
     ulong w = nmod_find_root(2*nhi, mod);
     _nmod_geometric_progression_init_function(G, w, nhi, mod, UWORD(3));
+
+    /* the entries of the operand X (reversed, of length nlo+1) and of the
+       result (of length nhi) are evaluated, those of the operand Y are
+       interpolated from nhi points (see the description above) */
+    /* NOTE using different precomputation lengths for the evaluations
+     * might give benefits for unbalanced parameters, but only a few percents,
+     * and would make the code harder to follow -> not done */
+    if (pmat1->r >= 2 || pmat1->c >= 2 || pmat2->c >= 2)
+        _nmod_geometric_progression_init_fft(G, nhi, nhi, 0);
 
     _nmod_poly_mat_mulmid_geometric_precomp(res, pmat1, len1, pmat2, len2, nlo, nhi, G);
 

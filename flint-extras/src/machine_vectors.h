@@ -88,11 +88,6 @@ FLINT_FORCE_INLINE void vec4d_store_unaligned_nn_ptr(nn_ptr dest, vec4d a)
 
 #if PML_HAVE_AVX2
 
-FLINT_FORCE_INLINE void vec4n_store_aligned(ulong* z, vec4n a)
-{
-    _mm256_store_si256((__m256i*) z, a);
-}
-
 /* reduce_to_pm1n(a, n, ninv): return a mod n in (-n,n) */
 FLINT_FORCE_INLINE vec2d vec2d_reduce_to_pm1no(vec2d a, vec2d n, vec2d ninv)
 {
