@@ -37,7 +37,7 @@ void time_nmod_mat_mul(ulong nbits, ulong dim1, ulong dim2, ulong block, ulong i
     {
         tt = clock();
         for (ulong it = 0; it < iter; it++)
-            nmod_mat_mul(res, mat, vec);
+            nmod_mat_mul(vec, mat, vec);
         t += (double)(clock()-tt) / CLOCKS_PER_SEC;
         nb_iter += 1;
     }
@@ -56,37 +56,6 @@ void time_nmod_mat_mul(ulong nbits, ulong dim1, ulong dim2, ulong block, ulong i
     }
     t /= nb_iter;
     printf("%.1e\t", t);
-
-    t = 0.0;
-    nb_iter = 0;
-    while (t < 0.5)
-    {
-        tt = clock();
-        for (ulong it = 0; it < iter; it++)
-            nmod_mat_mul_newdot(res, mat, vec);
-        t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-        nb_iter += 1;
-    }
-    t /= nb_iter;
-    printf("%.1e\t", t);
-
-    if (n < (UWORD(1) << 30))
-    {
-        t = 0.0;
-        nb_iter = 0;
-        while (t < 0.5)
-        {
-            tt = clock();
-            for (ulong it = 0; it < iter; it++)
-                nmod_mat_mul_2dot(res, mat, vec);
-            t += (double)(clock()-tt) / CLOCKS_PER_SEC;
-            nb_iter += 1;
-        }
-        t /= nb_iter;
-        printf("%.1e\t", t);
-    }
-    else
-        printf("xxxxx\t");
 
     printf("\n");
     fflush(stdout);
@@ -107,8 +76,6 @@ int main(int argc, char ** argv)
     printf("Block-Wied sequence generation over nmod:\n");
     printf("  - mul: flint's nmod_mat_mul\n");
     printf("  - blas: flint's BLAS-based mul\n");
-    printf("  - newdot: pml's mul using new nmod_vec_dot_product\n");
-    printf("  - 2dot: pml's mul for small moduli using AVX-based nmod_vec_dot_product\n\n");
     printf("Args: nbits, matrix dim1, matrix dim2, block size, nb sequence terms\n\n");
     printf("      nbits == 0 --> test several nbits\n\n");
     printf("   (dim1 == nrows; dim2 == ncols; idea is dim1 == number of nontrivial rows)\n\n");

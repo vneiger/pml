@@ -36,26 +36,6 @@ extern "C" {
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* MATRIX MULTIPLICATION                                      */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-#if FLINT_BITS == 64
-/** matrix multiplication using AVX2 instructions for moduli less than 2^30 (TODO refine bound) */
-void nmod_mat_mul_2dot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B);
-/** matrix-vector multiplication using AVX2 instructions for moduli less than 2^30 (TODO refine bound) */
-// v[:A->r] = A[:,:len]*u[:len], v may not alias u
-void nmod_mat_mul_nmod_vec_2dot(nn_ptr v, const nmod_mat_t A, nn_srcptr u, ulong len);
-#endif  /* FLINT_BITS == 64 */
-
-/** matrix multiplication */
-// C = A*B
-void nmod_mat_mul_newdot(nmod_mat_t C, const nmod_mat_t A, const nmod_mat_t B);
-// v[:A->r] = A[:,:len]*u[:len], v may not alias u
-void nmod_mat_mul_nmod_vec_newdot(nn_ptr v, const nmod_mat_t A, nn_srcptr u, ulong len);
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
 /* RANDOM MATRICES                                            */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -522,6 +502,3 @@ slong nmod_mat_left_nullspace_compact(
 #endif
 
 #endif  // __NMOD_MAT_EXTRA__H
-
-/* -*- mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-// vim:sts=4:sw=4:ts=4:et:sr:cino=>s,f0,{0,g0,(0,\:0,t0,+0,=s
