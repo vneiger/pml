@@ -94,24 +94,42 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         transforms and p of at most 52 bits, 1.058 -> 1.002 above 52 bits;
         95th percentile at most 1.13.
 
+        2026-10-17 Refitted on Zen 4 with the transposed fft_small middle
+        products and the corrected point-major layout of sd_fft_matmul
+        (whose transforms had been slowed down severalfold by cache
+        conflicts, at dimensions such as 16, 32 and 64). sd_fft_matmul is
+        now the fastest fft_small routine from dimension 16-32, against
+        96-128 before, and it takes over a good part of the windows of
+        the Vandermonde routines. Same moduli; shapes lo=8 hi=16, lo=6
+        hi=12 and lo=4 hi=12 of p-mulmid_tune (the last one is the
+        residual of a generic pmbasis after the shift of
+        nmod_poly_mat_mulmid); budget 5 s; the 60-bit data stops at
+        dimension 512 of the first shape. Over 1771 points, slowdown with
+        respect to the best routine, previous rule -> new rule: average
+        1.144 -> 1.006 for a single transform, 1.027 -> 1.010 for
+        p <= 40 bits, 1.021 -> 1.006 for p <= 52 bits, 1.095 -> 1.007
+        above 52 bits; 95th percentile 1.64 -> 1.05; worst 2.55 -> 1.42.
+
         The rule, by class of modulus:
         - the Vandermonde routines up to nhi = 16 at dimension at most 4,
           and above up to
-            single transform:          min(max(24, dim), 96)
+            single transform:          min(2 dim, 24)
             several, p <= 40 bits:     min(8 dim, 384)
-            several, p <= 52 bits:     min(16 dim, 1024)
-            several, p > 52 bits:      min(max(16, dim/2), 48)
-          vandermonde1 up to nhi = 24 (32 for p <= 40 bits, 9 above 52
-          bits), vandermonde2 above; they need a prime modulus, and naive
-          takes their place otherwise up to nhi = 16;
+            several, p <= 52 bits:     min(16 dim, 384)
+            several, p > 52 bits:      min(2 dim, 16)
+          vandermonde1 up to nhi = 24 (32 for p <= 40 bits, 16 for
+          p <= 52 bits, 9 above 52 bits), vandermonde2 above; they need a
+          prime modulus, and naive takes their place otherwise up to
+          nhi = 16;
         - the windowed fft_small routines everything else: sd_fft_matmul
-          from dimension 128 (96 with several transforms and p of at most
-          52 bits), except for nhi above 2048 below dimension 192, and
-          sd_fft_direct otherwise; they transform at length about nhi
-          (a power of two N fitting the window, or the transposed product
-          when it is shorter, see impl.h). These thresholds were fitted
-          before the transposed product, which only makes the fft_small
-          routines faster.
+          from dimension 16 for a single transform, 24 for p <= 52 bits
+          and 32 above, except for long windows at moderate dimensions
+          (nhi above 2048 below dimension 96 for p <= 40 bits, nhi above
+          1536 below dimension 64 for p <= 52 bits, nhi above 1024 below
+          dimension 64 above 52 bits), where the grouping of sd_fft_matmul
+          costs more than it saves; sd_fft_direct otherwise. They transform
+          at length about nhi (a power of two N fitting the window, or the
+          transposed product when it is shorter, see impl.h).
     */
     {
         const ulong modn = pmat1->modulus;
@@ -119,31 +137,41 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         const flint_bitcnt_t modbits = FLINT_BIT_COUNT(modn);
         const int single_prime = (modbits <= 50)
             && ((flint_bitcnt_t) flint_ctz(modn - 1) >= FLINT_BIT_COUNT((ulong) (len1 + len2 + 2)));
-        slong vdm_nhi, vdm1_nhi, matmul_dim;
+        /* sd_fft_matmul from dimension matmul_dim, for nhi at most
+           matmul_nhi unless the dimension is at least matmul_long_dim */
+        slong vdm_nhi, vdm1_nhi, matmul_dim, matmul_nhi, matmul_long_dim;
 
         if (single_prime)
         {
-            vdm_nhi = FLINT_MIN(FLINT_MAX(24, dim), 96);
+            vdm_nhi = FLINT_MIN(2 * dim, 24);
             vdm1_nhi = 24;
-            matmul_dim = 128;
+            matmul_dim = 16;
+            matmul_nhi = WORD_MAX;
+            matmul_long_dim = 0;
         }
         else if (modbits <= 40)
         {
             vdm_nhi = FLINT_MIN(8 * dim, 384);
             vdm1_nhi = 32;
-            matmul_dim = 96;
+            matmul_dim = 24;
+            matmul_nhi = 2048;
+            matmul_long_dim = 96;
         }
         else if (modbits <= 52)
         {
-            vdm_nhi = FLINT_MIN(16 * dim, 1024);
-            vdm1_nhi = 24;
-            matmul_dim = 96;
+            vdm_nhi = FLINT_MIN(16 * dim, 384);
+            vdm1_nhi = 16;
+            matmul_dim = 24;
+            matmul_nhi = 1536;
+            matmul_long_dim = 64;
         }
         else
         {
-            vdm_nhi = FLINT_MIN(FLINT_MAX(16, dim / 2), 48);
+            vdm_nhi = FLINT_MIN(2 * dim, 16);
             vdm1_nhi = 9;
-            matmul_dim = 128;
+            matmul_dim = 32;
+            matmul_nhi = 1024;
+            matmul_long_dim = 64;
         }
         if (dim <= 4)
             vdm_nhi = 16;
@@ -174,7 +202,7 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
             }
         }
 
-        if (dim >= matmul_dim && (nhi <= 2048 || dim >= 192))
+        if (dim >= matmul_dim && (nhi <= matmul_nhi || dim >= matmul_long_dim))
             _nmod_poly_mat_mulmid_sd_fft_matmul(res, pmat1, len1, pmat2, len2, nlo, nhi);
         else
             _nmod_poly_mat_mulmid_sd_fft_direct(res, pmat1, len1, pmat2, len2, nlo, nhi);
