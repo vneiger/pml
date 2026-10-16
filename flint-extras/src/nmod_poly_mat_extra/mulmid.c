@@ -107,8 +107,11 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         - the windowed fft_small routines everything else: sd_fft_matmul
           from dimension 128 (96 with several transforms and p of at most
           52 bits), except for nhi above 2048 below dimension 192, and
-          sd_fft_direct otherwise; they transform at length about nhi, as
-          the transposed product would.
+          sd_fft_direct otherwise; they transform at length about nhi
+          (a power of two N fitting the window, or the transposed product
+          when it is shorter, see impl.h). These thresholds were fitted
+          before the transposed product, which only makes the fft_small
+          routines faster.
     */
     {
         const ulong modn = pmat1->modulus;

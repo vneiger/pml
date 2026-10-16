@@ -38,7 +38,7 @@
 static double _now(void) { struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts); return ts.tv_sec + 1e-9 * ts.tv_nsec; }
 # define TIMING_DECL double _t0 = _now(), _t1; double _tB = 0, _tA = 0, _tP = 0, _tC = 0;
 # define TIMING_MARK(acc) do { _t1 = _now(); acc += _t1 - _t0; _t0 = _t1; } while (0)
-# define TIMING_PRINT flint_fprintf(stderr, "  [sd_fft_matmul] np=%wu depth=%wu ztrunc=%wu NRG=%wd NCG=%wd | B fft %.3f, A fft %.3f, matmul %.3f, ifft+crt %.3f\n", np, P->depth, ztrunc, NRG, NCG, _tB, _tA, _tP, _tC)
+# define TIMING_PRINT flint_fprintf(stderr, "  [sd_fft_matmul] tr=%d np=%wu depth=%wu ztrunc=%wu NRG=%wd NCG=%wd | B fft %.3f, A fft %.3f, matmul %.3f, ifft+crt %.3f\n", tr->on, np, P->depth, ztrunc, NRG, NCG, _tB, _tA, _tP, _tC)
 #else
 # define TIMING_DECL
 # define TIMING_MARK(acc)
@@ -76,7 +76,9 @@ static double _now(void) { struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &t
     A*B -- are computed by the same routine, with the plan built for that
     window of the convolution, exactly as in mul_sd_fft_direct (see
     there): transforms of cyclic length N when a wraparound N fits the
-    window, only the window reconstructed.
+    window, only the window reconstructed; or, when it has a strictly
+    shorter transform, as a transposed product (see the middle products
+    section of impl.h), where only the transforms change.
 */
 
 /*
@@ -128,13 +130,6 @@ static void _matmul_free(ulong * buf, ulong nbytes, ulong budget)
 {
     if (nbytes > budget)
         flint_aligned_free(buf);
-}
-
-/* transform-space truncation of an operand of length an */
-static inline ulong _op_trunc(ulong an, const fft_small_plan_t P)
-{
-    return (P->depth < LG_BLK_SZ) ? n_pow2(P->depth)
-                                  : n_round_up(an, BLK_SZ);
 }
 
 /*
@@ -276,14 +271,34 @@ static void _pts_gather(fft_small_op_t X, const _pts_struct * R, ulong o,
     }
 }
 
-/* forward transform of the entry pol (assumed nonzero) into the scratch
-   op X, optionally scaled by the normalization factors, then scattered */
+/*
+    Transform of the entry pol (assumed nonzero) into the scratch op X,
+    optionally scaled by the normalization factors, then scattered. The
+    transform is the forward one, except for a transposed product
+    (tr->on), where it depends on the side, given by rev: the forward
+    transform of the entry reversed for the reversed side (rev = 1), the
+    transpose of the inverse transform of its shift for the other side
+    (rev = 0). If the latter is zero, zero residues are scattered instead.
+    t is scratch of _sd_fft_tr_scratch_len(tr) words.
+*/
 static void _transform_entry(const _pts_struct * R, ulong o, fft_small_op_t X,
-                             const nmod_poly_struct * pol, int scale,
+                             ulong * t, const nmod_poly_struct * pol, int scale,
+                             const _sd_fft_tr_struct * tr, int rev,
                              nmod_t mod, const fft_small_plan_t P)
 {
-    fft_small_fft_nmod(X, pol->coeffs, pol->length,
-                       _op_trunc(pol->length, P), mod, P);
+    if (!tr->on)
+        fft_small_fft_nmod(X, pol->coeffs, pol->length,
+                           _fft_small_op_trunc((ulong) pol->length, P), mod, P);
+    else if (rev)
+        _sd_fft_tr_fft_rev(X, t, pol, tr, mod, P);
+    else if (_sd_fft_tr_shift_is_zero(pol->length, tr))
+    {
+        _pts_scatter_zero(R, o, P);
+        return;
+    }
+    else
+        _sd_fft_tr_ifft_tr_shift(X, t, pol, tr, mod, P);
+
     if (scale)
         _op_scale_by_m(X, P);
     _pts_scatter(R, o, X, P);
@@ -327,9 +342,11 @@ typedef struct
     const slong * zlen;
     slong nlo;      /* the window of coefficients of C that is wanted */
     slong nhi;
+    const _sd_fft_tr_struct * tr;   /* the transposed product, if tr->on */
 
     /* per worker */
     fft_small_op_t X;
+    ulong * t;      /* scratch of _sd_fft_tr_scratch_len(tr) words */
     slong start;
     slong stop;
 }
@@ -355,7 +372,8 @@ static void _worker_fft_B(void * varg)
 
         b = nmod_poly_mat_entry(W->B, l, W->h + jj);
         if (b->length > 0)
-            _transform_entry(W->Bt, (ulong) o, W->X, b, 1, W->mod, W->P);
+            _transform_entry(W->Bt, (ulong) o, W->X, W->t, b, 1,
+                             W->tr, !W->tr->revA, W->mod, W->P);
         else
             _pts_scatter_zero(W->Bt, (ulong) o, W->P);
     }
@@ -375,7 +393,8 @@ static void _worker_fft_A(void * varg)
         const nmod_poly_struct * a =
             nmod_poly_mat_entry(W->A, W->g + o / k, o % k);
         if (a->length > 0)
-            _transform_entry(W->At, (ulong) o, W->X, a, 0, W->mod, W->P);
+            _transform_entry(W->At, (ulong) o, W->X, W->t, a, 0,
+                             W->tr, W->tr->revA, W->mod, W->P);
         else
             _pts_scatter_zero(W->At, (ulong) o, W->P);
     }
@@ -436,9 +455,14 @@ static void _worker_ifft(void * varg)
 
         _pts_gather(W->X, W->Ct, (ulong) oo, W->P);
         W->X->domain = FFT_SMALL_OP_PRODUCT;
-        fft_small_ifft(W->X, W->P);
         nmod_poly_fit_length(c, zh - W->nlo);
-        fft_small_export_nmod_range(c->coeffs, W->X, W->nlo, zh, W->mod, W->P);
+        if (W->tr->on)
+            _sd_fft_tr_export(c->coeffs, zh - W->nlo, W->X, W->mod, W->P);
+        else
+        {
+            fft_small_ifft(W->X, W->P);
+            fft_small_export_nmod_range(c->coeffs, W->X, W->nlo, zh, W->mod, W->P);
+        }
         _nmod_poly_set_length(c, zh - W->nlo);
         _nmod_poly_normalise(c);
     }
@@ -489,19 +513,15 @@ static void _sd_fft_matmul(nmod_poly_mat_t C,
     nmod_t mod;
     nmod_init(&mod, A->modulus);
 
-    /* the plan of mul_sd_fft_direct, for the window [nlo, nhi); see
-       there for xtrunc_max */
+    /* the plan of mul_sd_fft_direct, for the window [nlo, nhi) or the
+       transposed product (see _sd_fft_mulmid_plan_init) */
     const ulong zn = (ulong) lenA + lenB - 1;
-    const ulong lmax = n_max(lenA, lenB);
-    const ulong xtrunc_max = (nlo == 0 || lmax >= BLK_SZ)
-                             ? n_max(n_round_up(lenA, BLK_SZ), n_round_up(lenB, BLK_SZ))
-                             : lmax;
     const ulong len_bound = (ulong) k * n_min(lenA, lenB);
     mpn_ctx_struct * R = get_default_mpn_ctx();
     fft_small_plan_t P;
+    _sd_fft_tr_struct tr[1];
 
-    if (!fft_small_plan_init_nmod(P, R, nlo, nhi, zn, xtrunc_max, len_bound,
-                                  2 * NMOD_BITS(mod), mod, UWORD_MAX))
+    if (!_sd_fft_mulmid_plan_init(P, tr, R, lenA, lenB, nlo, nhi, len_bound, mod))
     {
         if (nlo == 0 && (ulong) nhi == zn)
             nmod_poly_mat_mul(C, A, B);
@@ -628,6 +648,9 @@ static void _sd_fft_matmul(nmod_poly_mat_t C,
             W[w].ztrunc = ztrunc;
             W[w].zlen = zlen;
             W[w].nlo = nlo; W[w].nhi = nhi;
+            W[w].tr = tr;
+            W[w].t = tr->on ? FLINT_ARRAY_ALLOC(_sd_fft_tr_scratch_len(tr), ulong)
+                            : NULL;
 
             fft_small_op_init_borrowed(W[w].X, P,
                                        (double *) (buf + (ulong) w * scratchdbls));
@@ -698,7 +721,10 @@ static void _sd_fft_matmul(nmod_poly_mat_t C,
     {
         slong w;
         for (w = 0; w < nthreads; w++)
+        {
+            flint_free(W[w].t);
             fft_small_op_clear(W[w].X);   /* borrowed: frees nothing */
+        }
     }
     flint_free(W);
     flint_free(zlen);
