@@ -163,7 +163,7 @@ static void _op_scale_by_m(fft_small_op_t X, const fft_small_plan_t P)
     held) modulo one prime at one evaluation point form one matrix, laid
     out contiguously and row major so that an nmod_mat can borrow it:
 
-        region + (pi * ztrunc + t) * stride,   stride = nops rounded up to 8,
+        region + (pi * ztrunc + t) * stride,   stride = _pts_stride(nops),
 
     where nops is the number of entries of the region (m*k, k*n or m*n for
     the current groups) and the row stride inside the matrix is its number
@@ -172,6 +172,18 @@ static void _op_scale_by_m(fft_small_op_t X, const fft_small_plan_t P)
     entries of one point inside a single cache line: the transposition
     below writes the array one such group at a time, and two threads never
     share a line.
+
+    That distance is moreover an odd number of cache lines. The
+    transposition writes one entry at all the ztrunc points, i.e. ztrunc
+    lines `stride` words apart, and keeps them in cache meanwhile (see
+    _pts_scatter); with a stride that is a multiple of a large power of two
+    (e.g. nops = 24*64 = 1536 words = 3 * 4096 bytes), all these lines map
+    to the same few cache sets and are evicted before the next entries
+    fill them. Measured at m = k = 64, n = 32, lengths 3000 and 3750, the
+    window [2999, 3749), modulo a 61-bit prime, where the grouping gives
+    NRG = NCG = 24 (1536 words): the transform phases of A and B took
+    3.0-3.2 s, against 2.2 s with the padding (and 2.0 s at the slightly
+    longer transforms of NRG = 23, whose 1472 words were harmless).
 */
 typedef struct
 {
@@ -182,6 +194,14 @@ typedef struct
 }
 _pts_struct;
 
+/* the distance between consecutive points: nops rounded up to an odd
+   number of cache lines (see above) */
+static inline ulong _pts_stride(ulong nops)
+{
+    ulong s = n_round_up(nops, 8);
+    return ((s / 8) % 2 == 0) ? s + 8 : s;
+}
+
 static inline ulong * _point(const _pts_struct * R, ulong pi, ulong t)
 {
     return R->data + (pi * R->ztrunc + t) * R->stride;
@@ -190,7 +210,7 @@ static inline ulong * _point(const _pts_struct * R, ulong pi, ulong t)
 /* number of ulongs of a region of nops entries */
 static inline ulong _pts_words(ulong nops, ulong np, ulong ztrunc)
 {
-    return np * ztrunc * n_round_up(nops, 8);
+    return np * ztrunc * _pts_stride(nops);
 }
 
 /*
@@ -613,11 +633,11 @@ static void _sd_fft_matmul(nmod_poly_mat_t C,
     ulong * ptsbuf = buf + (ulong) nthreads * scratchdbls;
 
     _pts_struct Bt = { ptsbuf, (ulong) k * NCG,
-                       n_round_up((ulong) k * NCG, 8), ztrunc };
+                       _pts_stride((ulong) k * NCG), ztrunc };
     _pts_struct At = { ptsbuf + wordsB, (ulong) NRG * k,
-                       n_round_up((ulong) NRG * k, 8), ztrunc };
+                       _pts_stride((ulong) NRG * k), ztrunc };
     _pts_struct Ct = { ptsbuf + wordsB + wordsA, (ulong) NRG * NCG,
-                       n_round_up((ulong) NRG * NCG, 8), ztrunc };
+                       _pts_stride((ulong) NRG * NCG), ztrunc };
 
     /* zlen[r*NCG+jj] is the length of C[g+r][h+jj], zero when that entry
        has no nonzero product contributing to it */
