@@ -104,11 +104,13 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         hi=12 and lo=4 hi=12 of p-mulmid_tune (the last one is the
         residual of a generic pmbasis after the shift of
         nmod_poly_mat_mulmid); budget 5 s; the 60-bit data stops at
-        dimension 512 of the first shape. Over 1771 points, slowdown with
-        respect to the best routine, previous rule -> new rule: average
-        1.144 -> 1.006 for a single transform, 1.027 -> 1.010 for
-        p <= 40 bits, 1.021 -> 1.006 for p <= 52 bits, 1.095 -> 1.007
-        above 52 bits; 95th percentile 1.64 -> 1.05; worst 2.55 -> 1.42.
+        dimension 512 of the first shape, and was completed by a separate
+        run (budget 15 s) from which the rule above 52 bits was adjusted.
+        Over 2074 points, slowdown with respect to the best routine,
+        previous rule -> new rule: average 1.144 -> 1.006 for a single
+        transform, 1.027 -> 1.010 for p <= 40 bits, 1.021 -> 1.006 for
+        p <= 52 bits, 1.075 -> 1.005 above 52 bits; 95th percentile
+        1.60 -> 1.05; worst 2.55 -> 1.42.
 
         The rule, by class of modulus:
         - the Vandermonde routines up to nhi = 16 at dimension at most 4,
@@ -116,7 +118,7 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
             single transform:          min(2 dim, 24)
             several, p <= 40 bits:     min(8 dim, 384)
             several, p <= 52 bits:     min(16 dim, 384)
-            several, p > 52 bits:      min(2 dim, 16)
+            several, p > 52 bits:      min(2 dim, 12)
           vandermonde1 up to nhi = 24 (32 for p <= 40 bits, 16 for
           p <= 52 bits, 9 above 52 bits), vandermonde2 above; they need a
           prime modulus, and naive takes their place otherwise up to
@@ -125,9 +127,9 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
           from dimension 16 for a single transform, 24 for p <= 52 bits
           and 32 above, except for long windows at moderate dimensions
           (nhi above 2048 below dimension 96 for p <= 40 bits, nhi above
-          1536 below dimension 64 for p <= 52 bits, nhi above 1024 below
-          dimension 64 above 52 bits), where the grouping of sd_fft_matmul
-          costs more than it saves; sd_fft_direct otherwise. They transform
+          1536 below dimension 64 for larger p), where the grouping of
+          sd_fft_matmul under the memory bound costs more than it saves;
+          sd_fft_direct otherwise. They transform
           at length about nhi (a power of two N fitting the window, or the
           transposed product when it is shorter, see impl.h).
     */
@@ -167,10 +169,10 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         }
         else
         {
-            vdm_nhi = FLINT_MIN(2 * dim, 16);
+            vdm_nhi = FLINT_MIN(2 * dim, 12);
             vdm1_nhi = 9;
             matmul_dim = 32;
-            matmul_nhi = 1024;
+            matmul_nhi = 1536;
             matmul_long_dim = 64;
         }
         if (dim <= 4)
