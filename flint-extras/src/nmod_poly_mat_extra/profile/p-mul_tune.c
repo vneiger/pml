@@ -36,6 +36,10 @@
    Options of the table modes, in any order:
      rect         sweep rectangular shapes and unbalanced lengths
                   instead of the square grid
+     scale=N      square grid only: operand lengths scaled by N/8 (default
+                  8); e.g. scale=12 gives result lengths about 1.5 times a
+                  power of two (5, 17, 23, 47, ..., 3071, 6143) instead of
+                  just below one (3, 11, 15, 31, ..., 2047, 4095)
      budget=SECS  spend at most about SECS seconds on any one parameter
                   point (default 20)
      mem=GB       skip a parameter point whose operands and result would
@@ -136,13 +140,20 @@ static void _set_point(tune_point_struct * P, slong d1, slong d2, slong d3,
     P->nlo = 0; P->nhi = len1 + len2 - 1;
 }
 
-/* the square grid: dimension i, both operands of length SQ_LENS[j] */
+/* the square grid: dimension i, both operands of length
+   SQ_LENS[j] * SQ_SCALE / 8 (at least 2) */
 static slong SQ_X[NSQ_LENS];
+static slong SQ_SCALE = 8;
+
+static slong _sq_len(slong j)
+{
+    return FLINT_MAX(2, SQ_LENS[j] * SQ_SCALE / 8);
+}
 
 static void _sq_point(slong i, slong j, tune_point_struct * P)
 {
     _set_point(P, TUNE_SQ_DIMS[i], TUNE_SQ_DIMS[i], TUNE_SQ_DIMS[i],
-               SQ_LENS[j], SQ_LENS[j]);
+               _sq_len(j), _sq_len(j));
 }
 static void _sq_rowlabel(slong i, char * buf) { flint_sprintf(buf, "%wd", TUNE_SQ_DIMS[i]); }
 static void _sq_collabel(slong j, char * buf) { flint_sprintf(buf, "%wd", SQ_X[j]); }
@@ -206,7 +217,8 @@ int main(int argc, char ** argv)
         flint_printf("          | vandermonde1 | vandermonde2 | waksman | multiply\n");
         flint_printf("          a list gives one line per point with the algorithms\n");
         flint_printf("          side by side; [] lists them all\n");
-        flint_printf("   opts:  rect | budget=SECS | mem=GB\n");
+        flint_printf("   opts:  rect | scale=N | budget=SECS | mem=GB\n");
+        flint_printf("          (scale: square grid lengths times N/8, default 8)\n");
         return 0;
     }
 
@@ -247,6 +259,8 @@ int main(int argc, char ** argv)
             budget = atof(argv[i] + 7);
         else if (!strncmp(argv[i], "mem=", 4))
             membytes = atof(argv[i] + 4) * (double) (1 << 30);
+        else if (!strncmp(argv[i], "scale=", 6) && atol(argv[i] + 6) > 0)
+            SQ_SCALE = atol(argv[i] + 6);
         else
         {
             flint_printf("unknown option %s\n", argv[i]);
@@ -256,6 +270,8 @@ int main(int argc, char ** argv)
 
     tune_print_header(algs, nalgs, modn, nthreads, budget, membytes);
     flint_printf("# columns are len1 + len2 - 1, the length of the result\n");
+    if (!rect && SQ_SCALE != 8)
+        flint_printf("# square grid lengths scaled by %wd/8\n", SQ_SCALE);
 
     if (rect)
     {
@@ -278,7 +294,7 @@ int main(int argc, char ** argv)
                                TUNE_SQ_DIMS, SQ_X, "dim\\len",
                                _sq_rowlabel, _sq_collabel, _sq_point, _select };
         for (j = 0; j < NSQ_LENS; j++)
-            SQ_X[j] = 2 * SQ_LENS[j] - 1;
+            SQ_X[j] = 2 * _sq_len(j) - 1;
         tune_run(&G, algs, nalgs, modn, nthreads, budget, membytes, listed, 0);
     }
 

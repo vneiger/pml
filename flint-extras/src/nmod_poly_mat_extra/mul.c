@@ -16,8 +16,8 @@
 
 #include "nmod_poly_extra.h"  /* for NMOD_CAN_USE_GEOMETRIC */
 #include "nmod_poly_mat_multiply.h"
+#include "impl.h"                 /* for PML_NMOD_MAT_MUL_IFMA */
 
-/* TODO would benefit from automatic tuning */
 void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2)
 {
     slong len1 = nmod_poly_mat_max_length(pmat1);
@@ -78,42 +78,18 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
         uses the points in pairs +-x); Waksman's algorithm; and a geometric
         progression (nmod_poly_mat_mul_geometric).
 
-        2026-10-01 Thresholds fitted on square products on Zen 4, one
-        thread, against FLINT-dev with the u32/u52/fp50 kernels of
-        nmod_mat_mul (PR #2842), over six moduli: 21-, 30-, 40- and 50-bit
-        FFT primes (a single transform, np == 1), a 30-bit prime (np == 2)
-        and a 60-bit prime (np == 3). Against the previous thresholds, on
-        the same measurements: average slowdown with respect to the best
-        routine 1.38 -> 1.03, 95th percentile 4.2 -> 1.2.
-
-        2026-10-15 Refined on Zen 4 against FLINT main with #2842 merged
-        and the SIMD transpose (#2871), same moduli except the 60-bit one
-        (whose thresholds are kept), the 30-bit prime up to dimension 48:
-        vandermonde1 up to length 31 from dimension 16, vandermonde2 in
-        tiers for np == 2, sd_fft_matmul from dimension 128 for a single
-        transform, and not at length 4095 below dimension 192 (where its
-        grouping makes it lose by 1.2-1.7x). Over 617 points: average
-        slowdown 1.025 -> 1.009, 95th percentile 1.19 -> 1.08, worst
-        2.33 -> 1.37.
-
-        What changed with those kernels is that nmod_mat_mul is now fast at
-        every modulus up to 52 bits, which is what the Vandermonde routines
-        and sd_fft_matmul spend their time in:
-
-        - short products go to vandermonde1 (result length <= 15) or
-          vandermonde2 (up to 127 or 255), at every dimension from 8 on,
-          by 1.2-3x over the next routine; geometric no longer wins
-          anywhere by more than a few percent and is not selected
-          (this would probably change for very large matrices of large degree);
-        - sd_fft_matmul takes over from sd_fft_direct at large dimension
-          for every modulus, not only in a 20-24-bit window as before; its
-          pointwise products are modulo the 50-bit fft_small primes, or
-          modulo p itself for an FFT prime, all within the new kernels.
+        The rule, for dimension above 4 (Waksman below, as before):
+        vandermonde1 up to result length vdm1_len; vandermonde2, for the
+        tiers of lengths up to 63, 127, ..., 2047, from the dimensions
+        vdm2_dim; otherwise sd_fft_matmul from dimension mm_dim, except for
+        long products (length above mm_len) below dimension mm_long_dim,
+        and sd_fft_direct; see the tables below.
 
         The modulus enters through two properties: whether fft_small uses
-        a single transform (single_prime), and, when it does not, whether
-        nmod_mat_mul modulo p itself is within the fast kernels (at most
-        52 bits) -- which is what the Vandermonde routines need.
+        a single transform (single_prime), and the size of p: nmod_mat_mul
+        modulo p itself, which the Vandermonde routines (and sd_fft_matmul
+        for a single transform) spend their time in, is fastest up to 32
+        or 40 bits and within the fast kernels up to 52 bits.
     */
 
     const flint_bitcnt_t modbits = FLINT_BIT_COUNT(modn);
@@ -124,10 +100,35 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
     const int single_prime = (modbits <= 50)
         && ((slong) flint_ctz(modn - 1) >= FLINT_BIT_COUNT((ulong) len + 3));
 
-    /* 0: one transform; 1: several, p of at most 52 bits; 2: several, larger p */
-    const int kind = single_prime ? 0 : (modbits <= 52 ? 1 : 2);
-    static const slong vdm1_dim = 16;                     /* vandermonde1 up to length 31 from this dimension */
-    static const slong matmul_dim[3] = { 128, 96, 192 };  /* sd_fft_matmul from this dimension */
+    /* 0, 1: a single transform, p of at most 32 bits or more; several
+       transforms and 2: p of at most PML_NMOD_MAT_MUL_SMALL_BITS bits,
+       3: at most 52 bits, 4: more */
+    const int kind = single_prime ? (modbits <= 32 ? 0 : 1)
+                                  : (modbits <= PML_NMOD_MAT_MUL_SMALL_BITS ? 2
+                                     : (modbits <= 52 ? 3 : 4));
+    /* vandermonde1 up to result length vdm1_len; vandermonde2 for result
+       lengths up to 63, 127, ..., 2047 from the dimensions vdm2_dim (N:
+       never); sd_fft_matmul from dimension mm_dim, for result lengths up to
+       mm_len unless the dimension is at least mm_long_dim */
+#define N WORD_MAX
+    typedef struct { slong vdm1_len, vdm2_dim[6], mm_dim, mm_len, mm_long_dim; } _thr_t;
+#if PML_NMOD_MAT_MUL_IFMA
+    static const _thr_t thr[5] = {
+        { 23, { N, N,  N,   N,  N, N }, 16,    N,  0 },
+        { 23, { N, N,  N,   N,  N, N }, 16,    N,  0 },
+        { 31, { 8, 8, 16, 128,  N, N }, 16,    N,  0 },
+        { 31, { 8, 8,  8,  16, 32, N }, 16, 3071, 64 },
+        { 11, { N, N,  N,   N,  N, N }, 16, 3071, 64 } };
+#else
+    static const _thr_t thr[5] = {
+        { 23, { 512,  N,   N,   N, N, N }, 12,    N,   0 },
+        {  5, { 512,  N,   N,   N, N, N }, 48,    N,   0 },
+        { 23, {   8,  8,  16,  32, 64, N }, 48, 1023, 128 },
+        { 23, {  24, 32,  48, 128, N, N }, 96,    N,   0 },
+        { 11, {   8, 32, 128, 256, N, N }, 48,  767, 128 } };
+#endif
+#undef N
+    const _thr_t * t = thr + kind;
 
     /* Waksman divides by 2, and the Vandermonde routines invert differences
        of their points, which the cardinality tests of the CAN_USE macros
@@ -144,7 +145,7 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
             return;
         }
     }
-    else if (len <= 15 || (len <= 31 && dim >= vdm1_dim && kind != 2))
+    else if (len <= t->vdm1_len)
     {
         if (NMOD_POLY_CAN_USE_VANDERMONDE1(modn, len) && n_is_prime(modn))
         {
@@ -152,20 +153,24 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
             return;
         }
     }
-    else if ((kind == 0 && len <= 127 && dim >= 32)
-             || (kind == 1 && ((len <= 63 && dim >= 8)
-                               || (len <= 127 && dim >= 16)
-                               || (len <= 255 && dim >= 48)))
-             || (kind == 2 && len <= 127 && dim >= 48))
+    else
     {
-        if (NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len) && n_is_prime(modn))
+        slong i, tier_len;
+        for (i = 0, tier_len = 63; i < 6; i++, tier_len = 2 * tier_len + 1)
         {
-            nmod_poly_mat_mul_vandermonde2(res, pmat1, pmat2);
-            return;
+            if (len <= tier_len && dim >= t->vdm2_dim[i])
+            {
+                if (NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len) && n_is_prime(modn))
+                {
+                    nmod_poly_mat_mul_vandermonde2(res, pmat1, pmat2);
+                    return;
+                }
+                break;
+            }
         }
     }
 
-    if (len >= 127 && dim >= matmul_dim[kind] && (len <= 2047 || dim >= 192))
+    if (dim >= t->mm_dim && (len <= t->mm_len || dim >= t->mm_long_dim))
         nmod_poly_mat_mul_sd_fft_matmul(res, pmat1, pmat2);
     else
         nmod_poly_mat_mul_sd_fft_direct(res, pmat1, pmat2);
