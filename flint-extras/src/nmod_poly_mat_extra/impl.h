@@ -19,6 +19,30 @@
 #include "pml.h"               /* for PML_HAVE_MACHINE_VECTORS */
 #include "nmod_mat_poly.h"     /* for nmod_mat_poly_t */
 
+/* Two families of thresholds for nmod_poly_mat_multiply and
+   nmod_poly_mat_mulmid (mul.c, mulmid.c): whether nmod_mat_mul has FLINT's
+   AVX512-IFMA kernel, which mirrors NMOD_MAT_HAVE_MUL_U52 in FLINT's
+   src/nmod_mat/impl.h (PML is assumed to be compiled for the same ISA as
+   FLINT). They were measured on machines with that kernel (Zen 4, Ice Lake)
+   and without it (Apple M4): the cost of nmod_mat_mul -- what the
+   Vandermonde routines and sd_fft_matmul spend their time in -- relative to
+   the fft_small transforms differs by up to 2x between them. */
+#if defined(__AVX512F__) && defined(__AVX512DQ__) && defined(__AVX512IFMA__)
+# define PML_NMOD_MAT_MUL_IFMA 1
+#else
+# define PML_NMOD_MAT_MUL_IFMA 0
+#endif
+
+/* With several transforms, the moduli up to this size form a class of their
+   own, for which nmod_mat_mul is fastest: up to 40 bits with the IFMA
+   kernel, up to 32 bits otherwise (on the M4, a 40-bit prime is closer to a
+   50-bit one) */
+#if PML_NMOD_MAT_MUL_IFMA
+# define PML_NMOD_MAT_MUL_SMALL_BITS 40
+#else
+# define PML_NMOD_MAT_MUL_SMALL_BITS 32
+#endif
+
 /* Hermite form helpers */
 void _atomic_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
                                                     slong pi1, slong pi2, slong j);
