@@ -13,14 +13,12 @@
 
 /* Include functions *********************************************************/
 
-#include "t-nullspace.c"
 #include "t-pluq.c"
 
 /* Array of test functions ***************************************************/
 
 test_struct tests[] =
 {
-    TEST_FUNCTION(nmod_mat_left_nullspace),
     TEST_FUNCTION(nmod_mat_pluq),
 };
 

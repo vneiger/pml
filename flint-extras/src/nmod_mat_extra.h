@@ -10,15 +10,7 @@
     <https://www.gnu.org/licenses/>.
 */
 
-/** \file nmod_mat_extra.h
- *
- * \todo
- * - helper: pivots | nonpivots of reduced row echelon form (rightmost/leftmost) ???
- * - PLUQ factorization (to be improved + Crout version to fix)
- * - left nullspace via PLUQ (or at least more direct than transposition)
- * - row/column rank profile (extract more information from Flint's nullspace?)
- *
- */
+/** \file nmod_mat_extra.h */
 
 #ifndef __NMOD_MAT_EXTRA__H
 #define __NMOD_MAT_EXTRA__H
@@ -453,26 +445,6 @@ void nmod_mat_permute_columns(nmod_mat_t mat, const slong * perm_act, slong * pe
 
 //@} // doxygen group: Rotations
 
-
-/** Left nullspace of A.
- *
- *  Computes a basis X for the left nullspace of A, in reduced row echelon form
- *  with pivots being the rightmost nonzero entries. X should be given
- *  uninitialized, it will be initialized during the call with the right number
- *  of rows.
- *
- *  This first calls nmod_mat_left_nullspace_compact(), and expands the compact
- *  nullspace representation given by this call into the complete dense
- *  nullspace representation.
- *
- * \param [out] X matrix where the nullspace will be stored (uninitialized)
- * \param [in] A input matrix
- * \return nullity of A (i.e. rank of X)
- *
- * @see nmod_mat_left_nullspace_compact
- */
-slong nmod_mat_left_nullspace(nmod_mat_t X, const nmod_mat_t A);
-
 /** Left nullspace of A in compact form.
  *
  *  Computes a basis X for the left nullspace of A, in reduced row echelon form
@@ -488,7 +460,8 @@ slong nmod_mat_left_nullspace(nmod_mat_t X, const nmod_mat_t A);
  * \param [in] A input matrix
  * \return nullity of A (i.e. rank of X)
  *
- * \todo efficiency is probably not best for small matrices: this uses Flint's
+ * \todo replace by more direct tools when PLE/PLUQ available in FLINT
+ * Efficiency probably not best for small matrices: this uses Flint's
  * right nullspace and matrix transposition
  */
 slong nmod_mat_left_nullspace_compact(
