@@ -20,8 +20,11 @@
 
 /* for Vandermonde1, we need 0, ..., len-1 to be distinct points in Z/modn Z */
 #define NMOD_POLY_CAN_USE_VANDERMONDE1(modn, len) ((modn) >= (ulong)(len))
-/* for Vandermonde2, we need 1**2, 2**2, ..., len**2 to be distinct points in Z/modn Z */
-#define NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len) ((modn) >= UWORD(2)*(len))
+/* for Vandermonde2, we need 1**2, 2**2, ..., len**2 to be distinct points in
+   Z/modn Z, and 2 to be invertible; for modn prime, this is modn odd and
+   modn >= 2*len (the parity test only excludes modn == 2, len <= 1) */
+#define NMOD_POLY_CAN_USE_VANDERMONDE2(modn, len) \
+    (((modn) & UWORD(1)) && (modn) >= UWORD(2)*(len))
 /* for Waksman, we need 2 to be invertible in Z/modn Z, i.e. modn odd */
 #define NMOD_POLY_MAT_CAN_USE_WAKSMAN(modn) (((modn) & UWORD(1)) != 0)
 
@@ -33,7 +36,8 @@
  *  where len == max_length(A) + max_length(B) - 1
  *     (for Z/pZ, equivalent to cardinality >= len, see NMOD_POLY_CAN_USE_VANDERMONDE1)
  *  v2 requires that the field contains distinct points 1**2, 2**2, ..., len**2
- *     (for Z/pZ, equivalent to cardinality >= 2 * len, see NMOD_POLY_CAN_USE_VANDERMONDE2)
+ *     and has characteristic != 2
+ *     (for Z/pZ, equivalent to p odd and p >= 2 * len, see NMOD_POLY_CAN_USE_VANDERMONDE2)
  */
 void nmod_poly_mat_mul_vandermonde1(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
 void nmod_poly_mat_mul_vandermonde2(nmod_poly_mat_t C, const nmod_poly_mat_t A, const nmod_poly_mat_t B);
@@ -206,7 +210,8 @@ void _nmod_poly_mat_mulmid_geometric_precomp(nmod_poly_mat_t res,
  * - v1 requires that 0, 1, ..., P-1 be distinct with invertible differences
  *   (prime modulus, NMOD_POLY_CAN_USE_VANDERMONDE1(modn, P))
  * - v2 requires that 1**2, 2**2, ..., P**2 be distinct with invertible
- *   differences (prime modulus, NMOD_POLY_CAN_USE_VANDERMONDE2(modn, P))
+ *   differences, and 2 be invertible (odd prime modulus,
+ *   NMOD_POLY_CAN_USE_VANDERMONDE2(modn, P))
  * - output may alias input
  */
 void _nmod_poly_mat_mulmid_vandermonde1(nmod_poly_mat_t res,
