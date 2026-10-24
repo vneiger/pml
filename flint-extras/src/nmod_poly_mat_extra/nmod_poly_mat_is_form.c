@@ -59,6 +59,7 @@ int nmod_poly_mat_is_weak_popov(const nmod_poly_mat_t mat,
     else // orient == COL_*
         { dim = mat->c; zpiv = mat->r; }
 
+    int res = 1;
     slong * pivind = flint_malloc(dim * sizeof(slong));
     nmod_poly_mat_pivot_index(pivind, mat, shift, orient);
 
@@ -66,20 +67,16 @@ int nmod_poly_mat_is_weak_popov(const nmod_poly_mat_t mat,
     qsort(pivind, dim, sizeof(slong), _slong_comparator);
 
     // pivot index must not indicate zero row/col
-    if (dim > 0 && pivind[0] == -1)
-        return 0;
+    if (dim > 0 && (pivind[0] == -1 || pivind[dim-1] == zpiv))
+        res = 0;
 
     // indices of pivots must increase strictly
-    for (slong i = 0; i < dim - 1; i++)
+    for (slong i = 0; res && i < dim - 1; i++)
         if (pivind[i] >= pivind[i+1])
-            return 0;
-
-    // pivot index must not indicate zero row/col
-    if (dim > 0 && pivind[dim-1] == zpiv)
-        return 0;
+            res = 0;
 
     flint_free(pivind);
-    return 1;
+    return res;
 }
 
 /**********************************************************************
@@ -96,24 +93,21 @@ int nmod_poly_mat_is_ordered_weak_popov(const nmod_poly_mat_t mat,
     else // orient == COL_*
         { dim = mat->c; zpiv = mat->r; }
 
-	slong * pivind = flint_malloc(dim * sizeof(slong));
+    int res = 1;
+    slong * pivind = flint_malloc(dim * sizeof(slong));
     nmod_poly_mat_pivot_index(pivind, mat, shift, orient);
 
-    // first row/col must be nonzero
-    if (dim > 0 && pivind[0] == -1)
-        return 0;
+    // first and last rows/cols must be nonzero
+    if (dim > 0 && (pivind[0] == -1 || pivind[dim-1] == zpiv))
+        res = 0;
 
     // indices of pivots must increase strictly
-    for (slong i = 0; i < dim - 1; i++)
+    for (slong i = 0; res && i < dim - 1; i++)
         if (pivind[i] >= pivind[i+1])
-            return 0;
-
-    // last row must be nonzero
-    if (dim > 0 && pivind[dim-1] == zpiv)
-        return 0;
+            res = 0;
 
     flint_free(pivind);
-    return 1;
+    return res;
 }
 
 /**********************************************************************
@@ -135,40 +129,41 @@ int nmod_poly_mat_is_popov(const nmod_poly_mat_t mat,
         return 0;
 
     // retrieve pivot profile
+    int res = 1;
     slong * pivind = flint_malloc(dim * sizeof(slong));
     slong * pivdeg = flint_malloc(dim * sizeof(slong));
     nmod_poly_mat_pivot_profile(pivind, pivdeg, mat, shift, orient);
 
-    if (orient == ROW_LOWER || orient == ROW_LOWER)
+    if (orient == ROW_LOWER || orient == ROW_UPPER)
     {
         // pivots must be monic
-        for (slong i = 0; i < dim; i++)
+        for (slong i = 0; res && i < dim; i++)
             if (!nmod_poly_is_monic(nmod_poly_mat_entry(mat, i, pivind[i])))
-                return 0;
+                res = 0;
 
         // pivots must have degree strictly larger than other entries in same column
-        for (slong i = 0; i < dim; i++)
-            for (slong ii = 0; ii < dim; ii++)
+        for (slong i = 0; res && i < dim; i++)
+            for (slong ii = 0; res && ii < dim; ii++)
                 if (i != ii && nmod_poly_degree(nmod_poly_mat_entry(mat, ii, pivind[i])) >= pivdeg[i])
-                    return 0;
+                    res = 0;
     }
     else // orient == COL_*
     {
         // pivots must be monic
-        for (slong j = 0; j < dim; j++)
+        for (slong j = 0; res && j < dim; j++)
             if (!nmod_poly_is_monic(nmod_poly_mat_entry(mat, pivind[j], j)))
-                return 0;
+                res = 0;
 
-        // pivots must have degree strictly larger than other entries in same column
-        for (slong j = 0; j < dim; j++)
-            for (slong jj = 0; jj < dim; jj++)
+        // pivots must have degree strictly larger than other entries in same row
+        for (slong j = 0; res && j < dim; j++)
+            for (slong jj = 0; res && jj < dim; jj++)
                 if (j != jj && nmod_poly_degree(nmod_poly_mat_entry(mat, pivind[j], jj)) >= pivdeg[j])
-                    return 0;
+                    res = 0;
     }
 
     flint_free(pivind);
     flint_free(pivdeg);
-    return 1;
+    return res;
 }
 
 /**********************************************************************
@@ -202,7 +197,10 @@ int nmod_poly_mat_is_echelon(const nmod_poly_mat_t mat,
         while (i+1 < dim)
         {
             if (pivind[i] >= pivind[i+1])
+            {
+                flint_free(pivind);
                 return 0;
+            }
             // note: the above test includes the case where row i+1 is zero (has index -1),
             // i.e. zero row below a nonzero row
             i++;
@@ -222,7 +220,10 @@ int nmod_poly_mat_is_echelon(const nmod_poly_mat_t mat,
         while (i > 0)
         {
             if (pivind[i-1] >= pivind[i])
+            {
+                flint_free(pivind);
                 return 0;
+            }
             // note: the above test includes the case where row i-1 is zero (has index other_dim),
             // i.e. zero row above a nonzero row
             i--;
@@ -253,62 +254,62 @@ int nmod_poly_mat_is_hermite(const nmod_poly_mat_t mat, orientation_t orient)
         return 0;
 
     // retrieve pivot index
+    int res = 1;
     slong * pivind = flint_malloc(dim * sizeof(slong));
     slong * pivdeg = flint_malloc(dim * sizeof(slong));
     nmod_poly_mat_echelon_pivot_profile(pivind, pivdeg, mat, orient);
 
     // make sure no zero row/col  (note len(pivind) == dim > 0)
     if (pivind[0] == -1 || pivind[dim-1] == zpiv)
-        return 0;
+        res = 0;
     // this is sufficient since is_echelon already forbids zero rows/cols
     // appearing after nonzero one (or before, depending on orientation)
 
-    if (orient == ROW_LOWER || orient == ROW_UPPER)
+    if (res && (orient == ROW_LOWER || orient == ROW_UPPER))
     {
         // scan rows starting from topmost one
-        for (slong i = 0; i < dim; i++)
+        for (slong i = 0; res && i < dim; i++)
         {
             // pivot entry must be monic
             if (! nmod_poly_is_monic(nmod_poly_mat_entry(mat, i, pivind[i])))
-                return 0;
-            if (orient == ROW_LOWER) // entries below pivot entry must have lower degree
+                res = 0;
+            else if (orient == ROW_LOWER) // entries below pivot entry must have lower degree
             {
-                for (slong ii = i+1; ii < dim; ii++)
+                for (slong ii = i+1; res && ii < dim; ii++)
                     if (nmod_poly_mat_entry(mat, ii, pivind[i])->length > pivdeg[i])
-                        return 0;
+                        res = 0;
             }
             else // ROW_UPPER, entries above pivot entry must have lower degree
             {
-                for (slong ii = 0; ii < i; ii++)
+                for (slong ii = 0; res && ii < i; ii++)
                     if (nmod_poly_mat_entry(mat, ii, pivind[i])->length > pivdeg[i])
-                        return 0;
+                        res = 0;
             }
         }
     }
-    else // orient == COL_*
+    else if (res) // orient == COL_*
     {
-        for (slong j = 0; j < dim; j++)
+        for (slong j = 0; res && j < dim; j++)
         {
             // pivot entry must be monic
             if (! nmod_poly_is_monic(nmod_poly_mat_entry(mat, pivind[j], j)))
-                return 0;
-
-            if (orient == COL_LOWER) // entries to the left of pivot must have lower degree
+                res = 0;
+            else if (orient == COL_LOWER) // entries to the left of pivot must have lower degree
             {
-                for (slong jj = 0; jj < j; jj++)
+                for (slong jj = 0; res && jj < j; jj++)
                     if (nmod_poly_mat_entry(mat, pivind[j], jj)->length > pivdeg[j])
-                        return 0;
+                        res = 0;
             }
             else // COL_UPPER, entries to the right of pivot entry must have lower degree
             {
-                for (slong jj = j+1; jj < dim; jj++)
+                for (slong jj = j+1; res && jj < dim; jj++)
                     if (nmod_poly_mat_entry(mat, pivind[j], jj)->length > pivdeg[j])
-                        return 0;
+                        res = 0;
             }
         }
     }
 
     flint_free(pivind);
     flint_free(pivdeg);
-    return 1;
+    return res;
 }

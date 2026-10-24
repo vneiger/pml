@@ -439,7 +439,7 @@ void nmod_poly_mat_leading_matrix(nmod_mat_t lmat,
  * - there is no zero row above a nonzero row (possible zero rows are grouped
  *   at the bottom),
  * - let r be the number of nonzero rows (thus at indices 0,...,r-1) and let
- *   j_i be the index of the rightmost nonzero entry in row i for 0 <= i < r,
+ *   j_i be the index of the leftmost nonzero entry in row i for 0 <= i < r,
  *   then j_0 < ... < j_{r-1}.
  * ==> equivalently: the row-wise upper echelon pivot profile of the matrix is
  * increasing, excepting zero rows
@@ -510,7 +510,7 @@ int nmod_poly_mat_is_form(const nmod_poly_mat_t mat,
     if (form == ECHELON)
         return nmod_poly_mat_is_echelon(mat, orient);
     if (form == HERMITE)
-        return nmod_poly_mat_is_echelon(mat, orient);
+        return nmod_poly_mat_is_hermite(mat, orient);
     flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_is_form). Requested form not implemented.");
 }
 
