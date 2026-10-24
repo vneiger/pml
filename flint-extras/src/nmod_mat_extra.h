@@ -275,73 +275,6 @@ nmod_mat_rand_fullrank_urcef(nmod_mat_t mat,
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
-/* PLUQ DECOMPOSITION                                         */
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
-
-/** @name PLUQ
- *
- *  These functions are for PLUQ decomposition and related tasks.
- *  \todo doc
- */
-//@{
-
-
-/** PLUQ decomposition.
- *
- * For an m x n matrix A, computes a PLUQ decomposition
- * --> returns P, LU, Q, rank such that:
- *  - LU is L and U compactly stored ## TODO be more precise
- *  - P is a row permutation (list [0...m-1], permuted)
- *  - Q is a column permutation (list [0...n-1], permuted)
- *  - rank is the rank of A
- *  - A = P*L*U*Q
- *
- * input: P and Q have been allocated as identity permutations of the right
- * length, typically with
- *  slong * P = _perm_init(A->r);
- *  slong * Q = _perm_init(A->c);
- *
- * Rotations are performed to preserve the row rank profile, so that in the end
- * we have P = rrp+nrrp, where rrp is the row rank profile of A and nrrp is the
- * list of row indices not in rrp (both rrp and nrrp are increasing).
- *
- * Using lexicographic order, using row rotations + column rotations
- * ==> preserves the rank profile matrix and row (resp.column) relations precedence
- *    
- * \todo with the current computation of P,Q,
- * the functions nmod_permute_{rows,columns} are such that one should
- * first invert P and Q before using them:
- * _perm_inv(P, P, LU->r);
- * nmod_permute_rows(LU, P, NULL);
- */
-slong nmod_mat_pluq(nmod_mat_t A, slong * P, slong * Q);
-slong nmod_mat_pluq_crout(nmod_mat_t A, slong * P, slong * Q);
-
-/** Expand LU stored in compact format into two triangular matrices L and U.
- * Conventions, for LU of dimensions m x n of rank rk:
- * - L is m x m unit lower triangular (with the 1's not stored in LU)
- * - only first rk columns of L are stored in LU, the rest are implicit
- *   identity columns
- * - U is m x n upper triangular, with only the first `rk` rows nonzero
- * Requirements:
- * - the rank rk has to be provided
- * - U may alias LU, L may not alias LU
- * - for "zeroin" variant only: on input, L is zero and (either U aliases LU or U is zero)
- **/
-void _nmod_mat_l_u_from_compactlu_zeroin(nmod_mat_t L,
-                                         nmod_mat_t U,
-                                         const nmod_mat_t LU,
-                                         slong rank);
-void nmod_mat_l_u_from_compactlu(nmod_mat_t L,
-                                 nmod_mat_t U,
-                                 const nmod_mat_t LU,
-                                 slong rank);
-
-//@} // doxygen group: PLUQ
-
-/*------------------------------------------------------------*/
-/*------------------------------------------------------------*/
 /* ROW/COLUMN ROTATIONS                                       */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
@@ -444,31 +377,6 @@ void _nmod_mat_rotate_columns_leftward(nmod_mat_t mat, slong * vec, slong i, slo
 void nmod_mat_permute_columns(nmod_mat_t mat, const slong * perm_act, slong * perm_store);
 
 //@} // doxygen group: Rotations
-
-/** Left nullspace of A in compact form.
- *
- *  Computes a basis X for the left nullspace of A, in reduced row echelon form
- *  with pivots being the rightmost nonzero entries. Only the nonpivot columns
- *  of X are stored, in the order they appear in the nullspace basis. The list
- *  permutation contains the concatenation of two lists, each in increasing
- *  order: the positions of the columns without pivots in the rref nullspace
- *  basis, and the positions of the columns with pivots in the rref nullspace
- *  basis (the former being also the row rank profile of A).
- *
- * \param [out] X matrix where the nullspace will be stored (uninitialized)
- * \param [out] permutation list, allocated with A->r elements
- * \param [in] A input matrix
- * \return nullity of A (i.e. rank of X)
- *
- * \todo replace by more direct tools when PLE/PLUQ available in FLINT
- * Efficiency probably not best for small matrices: this uses Flint's
- * right nullspace and matrix transposition
- */
-slong nmod_mat_left_nullspace_compact(
-                                      nmod_mat_t X,
-                                      slong * permutation,
-                                      const nmod_mat_t A
-                                     );
 
 #ifdef __cplusplus
 }
