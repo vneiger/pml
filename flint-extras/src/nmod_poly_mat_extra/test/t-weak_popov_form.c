@@ -620,9 +620,106 @@ int collection_test_weak_popov_form(slong iter, flint_rand_t state)
     return 1;
 }
 
+/* pivot profile of zero vectors, for all orientations, shifted or not; and
+ * row-wise upper shifted weak Popov forms of matrices with zero rows (which
+ * relies on the pivot index convention for zero rows) */
+static int test_upper_weak_popov_zero_rows(flint_rand_t state)
+{
+    const orientation_t orients[4] = {ROW_LOWER, ROW_UPPER, COL_LOWER, COL_UPPER};
+    const slong len = 3;
+    const slong vshift[3] = {2, -1, 5};
+    nmod_poly_struct zvec[3];
+    for (slong j = 0; j < len; j++)
+        nmod_poly_init(zvec + j, 7);
+    int res = 1;
+    for (slong k = 0; k < 4; k++)
+        for (slong sh = 0; sh < 2; sh++)
+        {
+            slong pivind = -2, pivdeg = -2;
+            const slong zpiv = (orients[k] == ROW_LOWER || orients[k] == COL_UPPER) ? -1 : len;
+            ulong nz = _nmod_poly_vec_pivot_profile(&pivind, &pivdeg, zvec, sh ? vshift : NULL,
+                                                    len, orients[k]);
+            if (nz != 0 || pivind != zpiv || pivdeg != -1)
+            {
+                printf("FAIL: pivot profile of zero vector, orientation %d, shifted %d\n",
+                       (int) orients[k], (int) sh);
+                res = 0;
+            }
+        }
+    for (slong j = 0; j < len; j++)
+        nmod_poly_clear(zvec + j);
+
+    for (slong iter = 0; res && iter < 200; iter++)
+    {
+        const slong rdim = 1 + n_randint(state, 6);
+        const slong cdim = 1 + n_randint(state, 6);
+        const ulong prime = n_randprime(state, 2 + n_randint(state, 30), 1);
+        nmod_poly_mat_t mat, wpf;
+        nmod_poly_mat_init(mat, rdim, cdim, prime);
+        nmod_poly_mat_init(wpf, rdim, cdim, prime);
+        if (iter == 0)
+        {
+            /* [[1, 0], [0, 0]] */
+            nmod_poly_mat_clear(mat);
+            nmod_poly_mat_init(mat, 2, 2, 7);
+            nmod_poly_one(nmod_poly_mat_entry(mat, 0, 0));
+            nmod_poly_mat_clear(wpf);
+            nmod_poly_mat_init(wpf, 2, 2, 7);
+        }
+        else
+        {
+            nmod_poly_mat_randtest_sparse(mat, state, 1 + n_randint(state, 5), 0.5);
+            for (slong i = 0; i < rdim; i++)
+                if (n_randint(state, 3) == 0)
+                    for (slong j = 0; j < cdim; j++)
+                        nmod_poly_zero(nmod_poly_mat_entry(mat, i, j));
+        }
+        slong * shift = flint_malloc(mat->c * sizeof(slong));
+        for (slong j = 0; j < mat->c; j++)
+            shift[j] = (iter == 0) ? 0 : (slong) n_randint(state, 7) - 3;
+        slong * pivind = flint_malloc(mat->r * sizeof(slong));
+        slong * check = flint_malloc(mat->r * sizeof(slong));
+        nmod_poly_mat_set(wpf, mat);
+        slong rk = nmod_poly_mat_weak_popov_iter(wpf, shift, NULL, pivind, NULL, ROW_UPPER);
+
+        /* rank, zero rows at the bottom, weak Popov form of nonzero rows */
+        if (rk != nmod_poly_mat_rank(mat))
+            res = 0;
+        for (slong i = rk; res && i < mat->r; i++)
+            for (slong j = 0; j < mat->c; j++)
+                if (!nmod_poly_is_zero(nmod_poly_mat_entry(wpf, i, j)))
+                    res = 0;
+        if (res)
+        {
+            nmod_poly_mat_t top;
+            nmod_poly_mat_window_init(top, wpf, 0, 0, rk, mat->c);
+            res = nmod_poly_mat_is_weak_popov(top, shift, ROW_UPPER);
+            nmod_poly_mat_pivot_index(check, top, shift, ROW_UPPER);
+            for (slong i = 0; res && i < rk; i++)
+                if (check[i] != pivind[i])
+                    res = 0;
+            nmod_poly_mat_window_clear(top);
+        }
+        if (!res)
+        {
+            printf("FAIL: upper shifted weak Popov form with zero rows\n");
+            nmod_poly_mat_print_pretty(mat, "x");
+        }
+        flint_free(check);
+        flint_free(pivind);
+        flint_free(shift);
+        nmod_poly_mat_clear(wpf);
+        nmod_poly_mat_clear(mat);
+    }
+    return res;
+}
+
 TEST_FUNCTION_START(nmod_poly_mat_weak_popov_form, state)
 {
     int i, result;
+
+    if (!test_upper_weak_popov_zero_rows(state))
+        TEST_FUNCTION_FAIL("upper shifted weak Popov form, matrix with zero rows\n");
 
     /* TODO activate this for long test */
     if (0)

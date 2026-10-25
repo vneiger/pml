@@ -359,8 +359,8 @@ ulong _nmod_poly_vec_pivot_profile(slong * pivind,
                     max = d+shift[piv];
                 }
             }
-            *pivind = piv;
-            *pivdeg = (piv == -1) ? len : (max - shift[piv]);
+            *pivind = (piv == -1) ? len : piv;
+            *pivdeg = (piv == -1) ? -1 : (max - shift[piv]);
             return (piv >= 0);
         }
     }

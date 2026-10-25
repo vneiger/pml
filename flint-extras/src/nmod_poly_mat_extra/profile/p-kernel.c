@@ -83,6 +83,7 @@ void time_##fun(time_args targs, flint_rand_t state)    \
                                       pmat, NULL);      \
                                                         \
     nmod_poly_mat_##fun(ker, pivind, shift, copy_pmat); \
+    nmod_poly_mat_clear(copy_pmat);                     \
     TIMEIT_STOP_VALUES(tcpu, twall);                    \
                                                         \
     flint_printf("%.2e", twall);                        \
@@ -137,6 +138,7 @@ void time_##fun##_unbalanced(time_args targs, flint_rand_t state)     \
     else if (stype == 0)                                            \
         nmod_poly_mat_row_degree_zero(shift, pmat, NULL);           \
     nmod_poly_mat_##fun(ker, pivind, shift, copy_pmat);             \
+    nmod_poly_mat_clear(copy_pmat);                                 \
     TIMEIT_STOP_VALUES(tcpu, twall);                                \
                                                                     \
     flint_printf("%.2e", twall);                                    \
