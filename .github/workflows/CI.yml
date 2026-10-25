@@ -249,7 +249,7 @@ jobs:
         run: |
           cd flint-extras
           ./bootstrap.sh
-          ./configure CC=$(CC) --enable-asan --disable-debug
+          ./configure CC=${CC} --enable-asan --disable-debug
       - name: "Compile library"
         run: cd flint-extras && $MAKE && ldd libpml.so
       - name: "Compile tests"
@@ -330,10 +330,10 @@ jobs:
 
 
   ##############################################################################
-  # macos 15, gcc, flint-dev
+  # macos 15, Apple clang, flint-dev
   ##############################################################################
   macos-15-flintdev:
-    name: macOS-15, gcc, flint-dev (x3)
+    name: macOS-15, Apple clang, flint-dev (x3)
 
     runs-on: macos-15
 
@@ -403,10 +403,10 @@ jobs:
 
 
   ##############################################################################
-  # macos 26, gcc, flint-dev
+  # macos 26, Apple clang, flint-dev
   ##############################################################################
   macos-26-flintdev:
-    name: macOS-26, gcc, flint-dev (x3)
+    name: macOS-26, Apple clang, flint-dev (x3)
 
     runs-on: macos-26-intel
 
@@ -476,10 +476,10 @@ jobs:
 
 
   ##############################################################################
-  # macos 26 arm64, gcc, flint-dev
+  # macos 26 arm64, Apple clang, flint-dev
   ##############################################################################
   macos-26-arm64-flintdev:
-    name: macOS-26 Arm64, gcc, flint-dev (x3)
+    name: macOS-26 Arm64, Apple clang, flint-dev (x3)
 
     runs-on: macos-26
 

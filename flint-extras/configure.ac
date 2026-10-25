@@ -667,6 +667,13 @@ fi
 save_CFLAGS="$CFLAGS"
 CFLAGS=""
 
+dnl A FLINT built with --enable-asan has unresolved references to the
+dnl AddressSanitizer runtime (built with clang, libflint does not even depend
+dnl on it), so that the link tests below, which link with -lflint once FLINT
+dnl is found, require -fsanitize=address.
+if test "$enable_asan" = "yes";
+then CFLAGS="-fsanitize=address"; fi
+
 AC_SEARCH_LIBS([atan2],[m],,[AC_MSG_ERROR([C math library was not found])])
 AC_SEARCH_LIBS([__gmpz_init],[gmp],[],
                [AC_MSG_ERROR([GMP library was not found!])])
@@ -689,7 +696,15 @@ fi
 
 AC_SEARCH_LIBS([flint_malloc],[flint],
     [],
-    [AC_MSG_ERROR([FLINT library was not found.  If you indeed have FLINT installed, please
+    [if test "$enable_asan" != "yes";
+     then
+         CFLAGS="-fsanitize=address"
+         LIBS="-lflint $LIBS"
+         AC_LINK_IFELSE([AC_LANG_CALL([],[flint_malloc])],
+             [AC_MSG_ERROR([FLINT was built with AddressSanitizer (--enable-asan):
+configure PML with --enable-asan as well.])])
+     fi
+     AC_MSG_ERROR([FLINT library was not found.  If you indeed have FLINT installed, please
 submit a bug report to <https://github.com/vneiger/pml/issues/> so
 that we can either fix the issue or give a more proper error message.])])
 
