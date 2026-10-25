@@ -3,7 +3,8 @@
 ################################################################################
 
 ## 
-# this file is adapted from FLINT's configure.ac (June 2025)
+# this file is adapted from FLINT's configure.ac; some parts are kept as
+# verbatim copies of FLINT's, see dev/SYNC_WITH_FLINT.md
 ##
 
 define(PML_COPYRIGHT,[[
@@ -25,7 +26,7 @@ define(PML_COPYRIGHT_C,[[/*
 
     PML is free software: you can redistribute it and/or modify it under
     the terms of the GNU General Public License version 2.0 (GPL-2.0-or-later)
-    as published by the Free Software Foundation; either version 3 of the
+    as published by the Free Software Foundation; either version 2 of the
     License, or (at your option) any later version. See
     <https://www.gnu.org/licenses/>.
 */]])
@@ -97,26 +98,6 @@ yes|no) ;;
 esac],
 enable_pthread="yes")
 
-AC_ARG_ENABLE(reentrant, [AS_HELP_STRING([--enable-reentrant],
-              [Build reentrant version of library [default=no]])],
-[case $enableval in
-yes|no) ;;
-*) AC_MSG_ERROR([Bad value $enableval for --enable-reentrant. Need yes or no.])
-esac],
-enable_reentrant="no")
-
-AC_ARG_ENABLE(thread-safe, [AS_HELP_STRING([--enable-thread-safe],
-              [Enable thread-local storage [default=yes]])],
-[case $enableval in
-yes|no) ;;
-*) AC_MSG_ERROR([Bad value $enableval for --enable-tls. Need yes or no.])
-esac],
-enable_thread_safe="yes")
-
-if test -n "$enable_tls";
-then AC_MSG_ERROR([Please use --enable-thread-safe instead of --enable-tls.])
-fi
-
 AC_ARG_ENABLE(assert, [AS_HELP_STRING([--enable-assert],
               [Enable use of asserts [default=no]])],
 [case $enableval in
@@ -160,22 +141,6 @@ yes|no) ;;
 esac],
 enable_pretty_tests="yes")
 
-AC_ARG_ENABLE(gmp-internals,
-[AS_HELP_STRING([--enable-gmp-internals],[Enable calling GMP internals directly [default=yes]])],
-[case $enableval in
-yes|no) ;;
-*) AC_MSG_ERROR([Bad value $enableval for --enable-gmp-internals. Need yes or no.])
-esac],
-enable_gmp_internals="yes")
-
-AC_ARG_ENABLE(assembly,
-[AS_HELP_STRING([--enable-assembly],[Enable assembly routines (if available) [default=yes]])],
-[case $enableval in
-yes|no) ;;
-*) AC_MSG_ERROR([Bad value $enableval for --enable-assembly. Need yes or no.])
-esac],
-enable_assembly="yes")
-
 AC_ARG_ENABLE(avx2,
 [AS_HELP_STRING([--enable-avx2],[Enable AVX2 instructions [default=no]])],
 [case $enableval in
@@ -185,7 +150,7 @@ esac],
 enable_avx2="no")
 
 AC_ARG_ENABLE(avx512,
-[AS_HELP_STRING([--enable-avx512],[Enable AVX512 instructions [default=no]])],
+[AS_HELP_STRING([--enable-avx512],[Enable AVX512 instructions, implies --enable-avx2 [default=no]])],
 [case $enableval in
 yes|no) ;;
 *) AC_MSG_ERROR([Bad value $enableval for --enable-avx512. Need yes or no.])
@@ -317,104 +282,6 @@ with_flint="yes"
 )
 
 
-AC_ARG_WITH(blas_include,[AS_HELP_STRING([--with-blas-include=DIR],
-            [Use BLAS and specify its include directory])],
-CPPFLAGS="$CPPFLAGS -I$withval"
-blas_include_path="$withval")
-
-AC_ARG_WITH(blas_lib,[AS_HELP_STRING([--with-blas-lib=DIR],
-            [Use BLAS and specify its library directory])],
-LDFLAGS="$LDFLAGS -L$withval"
-blas_lib_path="$withval")
-
-AC_ARG_WITH(blas,[AS_HELP_STRING([--with-blas[[=DIR]]],
-            [Use BLAS and specify its install directory])],
-if test "$with_blas" = "yes";
-then :
-elif test "$with_blas" = "no";
-then
-    if test -n "$blas_include_path" || test -n "$blas_lib_path";
-    then AC_MSG_FAILURE([--with-blas-(include|lib) with --without-blas.]); fi
-elif test -z "$blas_include_path" && test -z "$blas_lib_path";
-then
-    CPPFLAGS="$CPPFLAGS -I$withval/include"
-    LDFLAGS="$LDFLAGS -L$withval/lib"
-    blas_include_path="$withval/include"
-    blas_lib_path="$withval/lib"
-    with_blas="yes"
-fi,
-with_blas="no"
-)
-
-if test "$with_blas" != "no" || test -n "$blas_include_path" || test -n "$blas_lib_path";
-then with_blas="yes"; fi
-
-AC_ARG_WITH(gc_include,[AS_HELP_STRING([--with-gc-include=DIR],
-            [Use GC and specify its include directory])],
-CPPFLAGS="$CPPFLAGS -I$withval"
-gc_include_path="$withval",
-with_gc_include="no")
-
-AC_ARG_WITH(gc_lib,[AS_HELP_STRING([--with-gc-lib=DIR],
-            [Use GC and specify its library directory])],
-LDFLAGS="$LDFLAGS -L$withval"
-gc_lib_path="$withval",
-with_gc_lib="no")
-
-AC_ARG_WITH(gc,[AS_HELP_STRING([--with-gc[[=DIR]]],
-            [Use GC and optionally specify its install directory])],
-if test "$with_gc" = "yes";
-then :
-elif test "$with_gc" = "no";
-then
-    if test -n "$gc_include_path" || test -n "$gc_lib_path";
-    then AC_MSG_FAILURE([--with-gc-(include|lib) with --without-gc.]); fi
-elif test -z "$gc_include_path" && test -z "$gc_lib_path";
-then
-    CPPFLAGS="$CPPFLAGS -I$withval/include"
-    LDFLAGS="$LDFLAGS -L$withval/lib"
-    gc_include_path="$withval/include"
-    gc_lib_path="$withval/lib"
-    with_gc="yes"
-fi,
-with_gc="no"
-)
-
-if test "$with_gc" != "no" || test -n "$gc_include_path" || test -n "$gc_lib_path";
-then with_gc="yes"; fi
-
-AC_ARG_WITH(ntl_include,[AS_HELP_STRING([--with-ntl-include=DIR],
-            [Use NTL in tests and specify its include directory])],
-CPPFLAGS="$CPPFLAGS -I$withval"
-ntl_include_path="$withval")
-
-AC_ARG_WITH(ntl_lib,[AS_HELP_STRING([--with-ntl-lib=DIR],
-            [Use NTL in tests and specify its library directory])],
-LDFLAGS="$LDFLAGS -L$withval"
-ntl_lib_path="$withval")
-
-AC_ARG_WITH(ntl,[AS_HELP_STRING([--with-ntl[[=DIR]]],
-            [Use NTL in tests and specify its install directory])],
-if test "$with_ntl" = "yes";
-then :
-elif test "$with_ntl" = "no";
-then
-    if test -n "$ntl_include_path" || test -n "$ntl_lib_path";
-    then AC_MSG_FAILURE([--with-ntl-(include|lib) with --without-ntl.]); fi
-elif test -z "$ntl_include_path" && test -z "$ntl_lib_path";
-then
-    CPPFLAGS="$CPPFLAGS -I$withval/include"
-    LDFLAGS="$LDFLAGS -L$withval/lib"
-    ntl_include_path="$withval/include"
-    ntl_lib_path="$withval/lib"
-    with_ntl="yes"
-fi,
-with_ntl="no"
-)
-
-if test "$with_ntl" != "no" || test -n "$ntl_include_path" || test -n "$ntl_lib_path";
-then with_ntl="yes"; fi
-
 
 # maple interface 
 
@@ -443,6 +310,8 @@ fi
 
 ###############################################################################
 # architecture specifics
+# (verbatim copy of FLINT's, apart from the issue URL, see dev/SYNC_WITH_FLINT.md;
+# asm_path and param_path are unused in PML)
 ###############################################################################
 
 if test "$enable_fast_build" = "yes";
@@ -450,7 +319,6 @@ then gcc_cflags="-O1"; else gcc_cflags="-O3"; fi
 gcc_cflags="$gcc_cflags -pedantic -std=c11"
 gcc_warnings="-Wall -Werror=implicit-function-declaration -Werror=newline-eof -Wno-stringop-overread -Wno-stringop-overflow -Wmissing-prototypes -Wno-deprecated-declarations"
 
-dnl from FLINT:
 dnl We only try to provide specifics for those systems that currently supports
 dnl our assembly routines. If more combinations are wished for than what is
 dnl specified, please open up an issue at
@@ -473,8 +341,8 @@ case $host in
   ARM64_PATTERN)
     gcc_cflags="$gcc_cflags"
     gcc_cflags_optlist="arch tune"
-    ##asm_path="arm64"
-    ##param_path="arm64"
+    asm_path="arm64"
+    param_path="arm64"
     flint_cv_have_fft_small_arm_i="yes"
 
     # NOTE: Cortex values where taken from
@@ -532,8 +400,8 @@ Please report at <https://github.com/vneiger/pml/issues/>])
   X86_64_ADX_PATTERN)
     gcc_cflags="$gcc_cflags"
     gcc_cflags_optlist="arch"
-    #asm_path="x86_64/broadwell"
-    #param_path="x86_64/broadwell"
+    asm_path="x86_64/broadwell"
+    param_path="x86_64/broadwell"
 
     have_avx512="no"
     have_avx2="yes"
@@ -577,14 +445,18 @@ Please report at <https://github.com/vneiger/pml/issues/>])
         gcc_cflags_arch="-march=alderlake"; param_path="x86_64/icelake";;
       raptorlake)
         gcc_cflags_arch="-march=raptorlake -march=alderlake"
-        #param_path="x86_64/raptorlake"
+        param_path="x86_64/raptorlake"
         ;;
       meteorlake)
         gcc_cflags_arch="-march=meteorlake -march=alderlake"
-        #param_path="x86_64/meteorlake"
+        param_path="x86_64/meteorlake"
+        ;;
+      arrowlake)
+        gcc_cflags_arch="-march=arrowlake -march=meteorlake -march=alderlake"
+        param_path="x86_64/arrowlake"
         ;;
       sapphirerapids)
-        gcc_cflags_arch="-march=sapphirerapids"; param_path="x86_64/icelake"
+        gcc_cflags_arch="-march=sapphirerapids"; param_path="x86_64/sapphirerapids"
         have_avx512="yes";;
       *)
         AC_MSG_ERROR([Error in deciding flags for $host.
@@ -626,8 +498,7 @@ Please report at <https://github.com/vneiger/pml/issues/>])
       bd4)      gcc_cflags_arch="-march=bdver4"; have_avx2="yes" ;;
       x86_64v3) gcc_cflags_arch="-march=x86-64-v3"; have_avx2="yes" ;;
       x86_64v4) gcc_cflags_arch="-march=x86-64-v4"; have_avx512="yes" ;;
-     esac
-
+    esac
 
     # We cannot be sure that AVX2 and AVX512 are enabled.
     if test "$cflags_set" = "yes";
@@ -757,7 +628,7 @@ FLINT_CHECK_MPFR_H(4,1,0)
 # check FLINT
 ###############################################################################
 
-PML_CHECK_FLINT_H(3,4,0)
+PML_CHECK_FLINT_H(3,7,0)
 
 ###############################################################################
 # check headers
@@ -779,20 +650,6 @@ then AC_CHECK_HEADER([pthread.h],,AC_MSG_ERROR([Could not find pthread.h])) fi
 
 if test "$enable_assert" = "yes";
 then AC_CHECK_HEADER([assert.h],,AC_MSG_ERROR([Could not find assert.h])) fi
-
-if test "$with_blas" = "yes";
-then AC_CHECK_HEADER([cblas.h],,AC_MSG_ERROR([Could not find cblas.h])) fi
-
-if test "$with_gc" = "yes";
-then AC_CHECK_HEADER([gc.h],,AC_MSG_ERROR([Could not find gc.h])) fi
-
-if test "$with_ntl" = "yes";
-then
-    AC_PROG_CXX
-    AC_LANG_PUSH([C++])
-    AC_CHECK_HEADER([NTL/ZZ.h],,AC_MSG_ERROR([Could not find NTL/ZZ.h]))
-    AC_LANG_POP([C++])
-fi
 
 if test "$with_maple" = "yes";
 then
@@ -816,15 +673,6 @@ AC_SEARCH_LIBS([__gmpz_init],[gmp],[],
 AC_SEARCH_LIBS([__gmpn_mul_basecase],[gmp],[],
                [AC_MSG_ERROR(["Could not find `mpn_mul_basecase' in GMP"])])
 
-if test "$enable_gmp_internals" = "yes";
-then
-    dnl The following functions should exist in the GMP library regardless.
-    AC_SEARCH_LIBS([__gmpn_gcd_11],[gmp],[],
-                   [AC_MSG_ERROR(["Could not find `mpn_gcd_11' in GMP"])])
-    AC_SEARCH_LIBS([__gmpn_div_q],[gmp],[],
-                   [AC_MSG_ERROR(["Could not find `mpn_div_q' in GMP"])])
-fi
-
 if test "$enable_mpfr_check" = "yes";
 then
     AC_SEARCH_LIBS([mpfr_init],[mpfr],[],
@@ -839,17 +687,19 @@ else
     LIBS="$LIBS -lmpfr"
 fi
 
-if test "$enable_flint_check" = "yes";
-then
-    AC_SEARCH_LIBS([flint_malloc],[flint],
-        [],
-        [AC_MSG_ERROR([FLINT library was not found.  If you indeed have FLINT installed, please
+AC_SEARCH_LIBS([flint_malloc],[flint],
+    [],
+    [AC_MSG_ERROR([FLINT library was not found.  If you indeed have FLINT installed, please
 submit a bug report to <https://github.com/vneiger/pml/issues/> so
 that we can either fix the issue or give a more proper error message.])])
 
-else
-    LIBS="$LIBS -lflint"
-fi
+dnl The version number of FLINT's development branch only changes at
+dnl releases, so that a recent enough version number does not guarantee that
+dnl the functions PML uses are there: check for one of the most recent ones.
+AC_CHECK_FUNC([_nmod_geometric_progression_init_fft],[],
+    [AC_MSG_ERROR([FLINT was found, but it does not provide
+_nmod_geometric_progression_init_fft (added to FLINT's development version on
+2026-10-15): PML requires a more recent version of FLINT.])])
 
 
 if test "$enable_pthread" = "yes";
@@ -858,13 +708,6 @@ then
         AC_SEARCH_LIBS([pthread_create],[pthread],[],
                        [AC_MSG_ERROR(["POSIX threads was not found."])]))
 fi
-
-if test "$with_blas" = "yes";
-then AC_SEARCH_LIBS([cblas_dgemm],[cblas openblas blas],[],
-                    [AC_MSG_ERROR([BLAS library was not found.])]) fi
-
-if test "$with_ntl" = "yes";
-then FLINT_CHECK_NTL(,[AC_MSG_ERROR([NTL library was not found.])]) fi
 
 # Not done for the moment, see LD_LIBRARY_PATH with ubuntu #GV Jeu 26 jui 2025 13:04:19 CEST
 #if test "$with_maple" = "yes";
@@ -952,6 +795,15 @@ then
                           [AC_MSG_ERROR([$CC does not support -m$ABI])])
 fi
 
+# AVX512 (AVX512F and AVX512DQ) implies AVX2 and FMA, which -mavx512f
+# alone does not enable (with GCC, -mavx512f defines __AVX2__ but not
+# __FMA__, and the AVX2 code then fails to compile): add the flags of
+# --enable-avx2 too
+if test "$enable_avx512" = "yes";
+then
+    enable_avx2="yes"
+fi
+
 if test "$enable_avx2" = "yes";
 then
     AX_CHECK_COMPILE_FLAG([-mavx2],[save_CFLAGS="-mavx2 $save_CFLAGS"],
@@ -963,6 +815,7 @@ if test "$enable_avx512" = "yes";
 then
     AX_CHECK_COMPILE_FLAG([-mavx512f],[save_CFLAGS="-mavx512f $save_CFLAGS"],
                           [AC_MSG_ERROR([$CC does not support -mavx512f])])
+    AX_CHECK_COMPILE_FLAG([-mavx512dq],[save_CFLAGS="-mavx512dq $save_CFLAGS"])
 fi
 
 if test "$enable_asan" = "yes";
@@ -1022,16 +875,56 @@ else
 fi
 
 ###############################################################################
-# fft_small module - removed
+# instruction set consistency with FLINT
 ###############################################################################
 
-###############################################################################
-# assembly - removed
-###############################################################################
+dnl PML must be compiled for the same instruction set as FLINT: its vector code
+dnl is built on FLINT's machine_vectors.h, whose AVX2 part only exists when
+dnl compiling with AVX2. FLINT does not record its compiler flags, but on
+dnl x86_64 it only builds its fft_small module (FLINT_HAVE_FFT_SMALL, which
+dnl enables PML_HAVE_MACHINE_VECTORS) with AVX2.
 
-###############################################################################
-# parameters -- removed
-###############################################################################
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#if !(defined(__x86_64__) || defined(_M_X64))
+#error not x86_64
+#endif]],[])],
+    [pml_is_x86_64="yes"],[pml_is_x86_64="no"])
+
+if test "$pml_is_x86_64" = "yes";
+then
+    AC_MSG_CHECKING([whether FLINT was built with AVX2 (fft_small module)])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <flint/flint.h>
+#ifndef FLINT_HAVE_FFT_SMALL
+#error FLINT without fft_small
+#endif]],[])],
+        [pml_flint_avx2="yes"],[pml_flint_avx2="no"])
+    AC_MSG_RESULT([$pml_flint_avx2])
+
+    AC_MSG_CHECKING([whether the compiler flags enable AVX2])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#ifndef __AVX2__
+#error no AVX2
+#endif]],[])],
+        [pml_cflags_avx2="yes"],[pml_cflags_avx2="no"])
+    AC_MSG_RESULT([$pml_cflags_avx2])
+
+    if test "$pml_flint_avx2" = "yes" && test "$pml_cflags_avx2" = "no";
+    then
+        AC_MSG_ERROR([FLINT was built with AVX2 (it has the fft_small module), but
+the compiler flags for PML do not enable AVX2:
+    CFLAGS="$CFLAGS"
+PML must be compiled for the same instruction set as FLINT. Use the -march
+option found in the CFLAGS of FLINT's Makefile, for example
+    ./configure CFLAGS="-O3 -march=native"
+on the machine FLINT was configured for, or use --enable-avx2 (--enable-avx512
+if FLINT was built with AVX512).])
+    fi
+
+    if test "$pml_flint_avx2" = "no" && test "$pml_cflags_avx2" = "yes";
+    then
+        AC_MSG_WARN([the compiler flags for PML enable AVX2, but FLINT was built
+without AVX2 (it has no fft_small module): the vectorized code of PML will be
+disabled. To use it, rebuild FLINT for the same instruction set as PML.])
+    fi
+fi
 
 ###############################################################################
 # substitutions and definitions
@@ -1057,9 +950,6 @@ AC_SUBST(PML_PATCH_SO)
 AC_SUBST(GMP_LIB_PATH,$gmp_lib_path)
 AC_SUBST(MPFR_LIB_PATH,$mpfr_lib_path)
 AC_SUBST(FLINT_LIB_PATH,$flint_lib_path)
-AC_SUBST(BLAS_LIB_PATH,$blas_lib_path)
-AC_SUBST(GC_LIB_PATH,$gc_lib_path)
-AC_SUBST(NTL_LIB_PATH,$ntl_lib_path)
 AC_SUBST(MAPLE_LIB_PATH,$maple_lib_path)
 
 AC_SUBST(LIB_CPPFLAGS,["-DPML_NOSTDIO -DPML_NOSTDARG"])
@@ -1085,30 +975,14 @@ if test "$enable_pretty_tests" = "yes";
 then AC_DEFINE(PML_WANT_PRETTY_TESTS,1,
                [Define to enable pretty printing for tests.]) fi
 
-if test "$with_ntl" = "yes";
-then AC_SUBST(WANT_NTL,1)
-else AC_SUBST(WANT_NTL,0) fi
-
-if test "$with_blas" = "yes";
-then AC_DEFINE(PML_USES_BLAS,1,[Define to enable BLAS.]) fi
-
 if test "$flint_big_endian" = "yes";
 then AC_DEFINE(PML_BIG_ENDIAN,1,[Define if system is big endian.]) fi
 
 if test "$enable_pthread" = "yes";
 then AC_DEFINE(PML_USES_PTHREAD,1,[Define to enable the use of pthread.]) fi
 
-if test "$enable_thread_safe" = "yes";
-then AC_DEFINE(PML_USES_TLS,1,[Define to enable thread-local storage.]) fi
-
-if test "$enable_reentrant" = "yes";
-then AC_DEFINE(PML_REENTRANT,1,[Define to enable reentrant.]) fi
-
 if test "$enable_assert" = "yes";
 then AC_DEFINE(PML_WANT_ASSERT,1,[Define to enable use of asserts.]) fi
-
-if test "$enable_gmp_internals" = "yes";
-then AC_DEFINE(PML_WANT_GMP_INTERNALS,1,[Define to enable use of GMP internals.]) fi
 
 if test "$ac_abs_confdir" = "`pwd`";
 then AC_SUBST(IS_OUT_OF_TREE,0)
