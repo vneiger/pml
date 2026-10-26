@@ -711,10 +711,11 @@ that we can either fix the issue or give a more proper error message.])])
 dnl The version number of FLINT's development branch only changes at
 dnl releases, so that a recent enough version number does not guarantee that
 dnl the functions PML uses are there: check for one of the most recent ones.
-AC_CHECK_FUNC([_nmod_geometric_progression_init_fft],[],
+AC_CHECK_FUNC([nmod_mat_ple_left_nullspace_compact],[],
     [AC_MSG_ERROR([FLINT was found, but it does not provide
-_nmod_geometric_progression_init_fft (added to FLINT's development version on
-2026-10-15): PML requires a more recent version of FLINT.])])
+nmod_mat_ple_left_nullspace_compact (added to FLINT's development version
+on 2026-10-26, with the PLE decomposition nmod_mat_ple, FLINT pull request
+2907): PML requires a more recent version of FLINT.])])
 
 
 if test "$enable_pthread" = "yes";
