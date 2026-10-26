@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include "nmod_mat_poly.h"
 #include "nmod_mat_extra.h"
+#include "nmod_mat_poly_extra/impl.h"
 
 //#define MBASIS1_PROFILE
 //#define MBASIS_PROFILE
@@ -169,9 +170,12 @@ _MBASIS_PROFILER_OUTPUT
     slong_pair * pair_tmp = (slong_pair *) flint_malloc(m * sizeof(slong_pair));
 
     // to store the left constant nullspace bases, their ranks,
-    // and corresponding pivot information
+    // and corresponding pivot information (ple_P, ple_Q: scratch space for
+    // the PLE decomposition of the residual)
     slong nullity;
     slong * pivots = (slong *) flint_malloc(m * sizeof(slong));
+    slong * ple_P = (slong *) flint_malloc(m * sizeof(slong));
+    slong * ple_Q = (slong *) flint_malloc(n * sizeof(slong));
     // Bugfix: nsbas must be in a valid (clearable) state even if
     // `order == 0`, in which case the loop below never runs and nsbas would
     // otherwise stay uninitialized, making the unconditional nmod_mat_clear
@@ -238,12 +242,13 @@ _PROFILER_REGION_STOP(t_others)
 
 _PROFILER_REGION_START
         // find the left nullspace basis of the (permuted) residual, in reduced
-        // row echelon form and compact storage (see the documentation)
+        // row echelon form and compact storage, from the PLE decomposition of
+        // the residual (which overwrites res; see nmod_mat_poly_extra/impl.h)
         // (nsbas is always already in a valid state here -- see the trivial
         // init before this loop -- so this clear-before-reassign is
         // unconditional now, unlike the `ord >= 1` guard it replaces)
         nmod_mat_clear(nsbas);
-        nullity = nmod_mat_left_nullspace_compact(nsbas,pivots,res);
+        nullity = _nmod_mat_left_nullspace_compact_ple(nsbas, pivots, res, ple_P, ple_Q);
 _PROFILER_REGION_STOP(t_kernel)
 
 #ifdef MBASIS_DEBUG
@@ -391,6 +396,8 @@ _PROFILER_REGION_START
     _perm_clear(perm);
     flint_free(pair_tmp);
     flint_free(pivots);
+    flint_free(ple_P);
+    flint_free(ple_Q);
     nmod_mat_clear(nsbas);
 _PROFILER_REGION_STOP(t_others)
 _MBASIS_PROFILER_OUTPUT
@@ -512,6 +519,8 @@ void nmod_mat_poly_mbasis_resupdate(nmod_mat_poly_t appbas,
 
     slong nullity;
     slong * pivots = (slong *) flint_malloc(m * sizeof(slong));
+    slong * ple_P = (slong *) flint_malloc(m * sizeof(slong));
+    slong * ple_Q = (slong *) flint_malloc(n * sizeof(slong));
 
     // Bugfix: see the identical fix + comment in
     // nmod_mat_poly_mbasis_rescomp above -- nsbas must be valid even when
@@ -528,7 +537,7 @@ void nmod_mat_poly_mbasis_resupdate(nmod_mat_poly_t appbas,
         nmod_mat_permute_rows(res, perm, NULL);
 
         nmod_mat_clear(nsbas);
-        nullity = nmod_mat_left_nullspace_compact(nsbas, pivots, res);
+        nullity = _nmod_mat_left_nullspace_compact_ple(nsbas, pivots, res, ple_P, ple_Q);
 
         if (nullity == 0)
         {
@@ -609,6 +618,8 @@ void nmod_mat_poly_mbasis_resupdate(nmod_mat_poly_t appbas,
     _perm_clear(perm);
     flint_free(pair_tmp);
     flint_free(pivots);
+    flint_free(ple_P);
+    flint_free(ple_Q);
     nmod_mat_clear(nsbas);
 }
 

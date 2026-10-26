@@ -16,6 +16,7 @@
 #include <flint/perm.h>
 #include "nmod_mat_poly.h"
 #include "nmod_mat_extra.h"
+#include "nmod_mat_poly_extra/impl.h"
 
 /* pair used for a stable sort of row indices by shift value. */
 typedef struct
@@ -107,6 +108,9 @@ void nmod_mat_poly_mintbasis_rescomp(nmod_mat_poly_t intbas,
     slong * perm = _perm_init(m);
     slong_pair * tmp = (slong_pair *) flint_malloc(m * sizeof(slong_pair));
     slong * pivots = (slong *) flint_malloc(m * sizeof(slong));
+    /* scratch space for the PLE decomposition of the residual */
+    slong * ple_P = (slong *) flint_malloc(m * sizeof(slong));
+    slong * ple_Q = (slong *) flint_malloc(n * sizeof(slong));
     nmod_mat_t nsbas;
     /* trivial valid init before the loop, so the unconditional
        nmod_mat_clear at the end is always well-defined,
@@ -121,8 +125,10 @@ void nmod_mat_poly_mintbasis_rescomp(nmod_mat_poly_t intbas,
         _shift_sort_permutation(perm, shift, m, tmp);
         nmod_mat_permute_rows(res, perm, NULL);
 
+        /* left nullspace of the (permuted) residual, compact form, from its
+           PLE decomposition (overwrites res; see nmod_mat_poly_extra/impl.h) */
         nmod_mat_clear(nsbas);
-        slong nullity = nmod_mat_left_nullspace_compact(nsbas, pivots, res);
+        slong nullity = _nmod_mat_left_nullspace_compact_ple(nsbas, pivots, res, ple_P, ple_Q);
 
         if (nullity == m)
             /* res already zero (in the permuted world): intbas already
@@ -218,6 +224,8 @@ void nmod_mat_poly_mintbasis_rescomp(nmod_mat_poly_t intbas,
     _perm_clear(perm);
     flint_free(tmp);
     flint_free(pivots);
+    flint_free(ple_P);
+    flint_free(ple_Q);
     nmod_mat_clear(nsbas);
 }
 
@@ -299,6 +307,9 @@ void nmod_mat_poly_mintbasis_resupdate(nmod_mat_poly_t intbas,
     slong * perm = _perm_init(m);
     slong_pair * tmp = (slong_pair *) flint_malloc(m * sizeof(slong_pair));
     slong * pivots = (slong *) flint_malloc(m * sizeof(slong));
+    /* scratch space for the PLE decomposition of the residual */
+    slong * ple_P = (slong *) flint_malloc(m * sizeof(slong));
+    slong * ple_Q = (slong *) flint_malloc(n * sizeof(slong));
     nmod_mat_t nsbas;
     nmod_mat_init(nsbas, 0, 0, intbas->mod.n);
 
@@ -308,8 +319,10 @@ void nmod_mat_poly_mintbasis_resupdate(nmod_mat_poly_t intbas,
         _shift_sort_permutation(perm, shift, m, tmp);
         nmod_mat_permute_rows(res, perm, NULL);
 
+        /* left nullspace of the (permuted) residual, compact form, from its
+           PLE decomposition (overwrites res; see nmod_mat_poly_extra/impl.h) */
         nmod_mat_clear(nsbas);
-        slong nullity = nmod_mat_left_nullspace_compact(nsbas, pivots, res);
+        slong nullity = _nmod_mat_left_nullspace_compact_ple(nsbas, pivots, res, ple_P, ple_Q);
 
         if (nullity == m)
             continue;
@@ -430,6 +443,8 @@ void nmod_mat_poly_mintbasis_resupdate(nmod_mat_poly_t intbas,
     _perm_clear(perm);
     flint_free(tmp);
     flint_free(pivots);
+    flint_free(ple_P);
+    flint_free(ple_Q);
     nmod_mat_clear(nsbas);
 }
 

@@ -14,8 +14,28 @@
 #define NMOD_MAT_POLY_EXTRA_IMPL_H
 
 #include <flint/nmod_types.h>
+#include <flint/nmod_mat.h>
 
 #include "nmod_mat_poly.h"
+
+/* Left nullspace of the m x n matrix A, in the compact form computed by
+ * FLINT's nmod_mat_ple_left_nullspace_compact; used at each step of mbasis and
+ * mintbasis. A is overwritten by its PLE decomposition. On return, X is
+ * initialized (the caller clears it) to the (m - r) x r matrix of the basis
+ * without its identity part, where r is the rank of A, and `rows` (length m)
+ * holds the row rank profile of A followed by the other rows, both in
+ * increasing order: row k of the basis has a 1 in position rows[r+k], zeros at
+ * the other rows[r+j], and X[k][j] in position rows[j]. P and Q are scratch
+ * arrays of length m and n. Returns the nullity m - r. */
+static inline slong
+_nmod_mat_left_nullspace_compact_ple(nmod_mat_t X, slong * rows, nmod_mat_t A,
+                                     slong * P, slong * Q)
+{
+    const slong rank = nmod_mat_ple(P, Q, A, 0);
+    nmod_mat_init(X, A->r - rank, rank, A->mod.n);
+    nmod_mat_ple_left_nullspace_compact(X, rows, A, P, rank);
+    return A->r - rank;
+}
 
 /* Block kernels for the transposition that underlies both conversions
  * between nmod_poly_mat and nmod_mat_poly: values for the `kern` parameter
