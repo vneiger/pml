@@ -21,6 +21,7 @@
  */
 
 #include <flint/flint.h>
+#include <flint/nmod.h>
 #include <flint/nmod_types.h>
 #include <flint/fmpz_types.h> // for fmpz_mat degree matrix
 #include <flint/nmod_poly.h> // for nmod_poly_swap
@@ -69,6 +70,56 @@ _nmod_poly_mat_window_resize_columns(nmod_poly_mat_t window, slong c)
 // deterministic test, slow; and randomized test via evaluation (not reliable for small fields)
 int nmod_poly_mat_is_unimodular(const nmod_poly_mat_t pmat);
 int nmod_poly_mat_is_unimodular_randomized(const nmod_poly_mat_t pmat, flint_rand_t state);
+
+/** @name Rank at a point
+ *
+ * For an `m x n` polynomial matrix `pmat` and an element `a` of the base
+ * field, the rank of the constant matrix `pmat(a)` is at most the rank `r` of
+ * `pmat`. It is equal to `r` unless `a` is a common root of all the `r x r`
+ * minors of `pmat`; since a nonzero such minor has degree at most `r *
+ * deg(pmat)`, this excludes at most `r * deg(pmat)` points. In particular,
+ * if the rank at some point is `min(m, n)`, then `pmat` has full rank.
+ *
+ * These functions return this rank at a point, which is a cheap lower bound
+ * on the rank of `pmat` (and is equal to it with high probability for a
+ * random point in a large field). The evaluation at `0` only reads the
+ * constant coefficients, and the evaluation at an arbitrary point costs one
+ * Horner evaluation per entry; then the rank of the `m x n` constant matrix is
+ * computed. The point `0` is frequently special, e.g. approximant bases are
+ * rank deficient at `0` (note that similarly, `1` is frequently special:
+ * interpolant bases at geometric progressions 1,q,q**2,q**3,... are
+ * rank deficient at `1`), hence there is an additional variant at the fixed
+ * point #NMOD_POLY_MAT_SOME_POINT, which is hopefully "more random" (its
+ * result is deterministic; no randomness is involved).
+ */
+//@{
+
+/** Fixed evaluation point used by #nmod_poly_mat_rank_at_some_point, reduced
+ * modulo the modulus. This is the 64-bit golden ratio constant (the integer
+ * part of `2^64 / phi`, also used in multiplicative hashing); it is only
+ * meant to be an arbitrary-looking point. */
+#define NMOD_POLY_MAT_SOME_POINT UWORD(0x9e3779b97f4a7c15)
+
+/** Returns the rank of `pmat` evaluated at `pt`, which must be
+ * reduced modulo `pmat->modulus`. */
+slong nmod_poly_mat_rank_at_point(const nmod_poly_mat_t pmat, ulong pt);
+
+/** Returns the rank of `pmat` evaluated at `0`, i.e. the rank of its
+ * constant coefficient. */
+slong nmod_poly_mat_rank_at_zero(const nmod_poly_mat_t pmat);
+
+/** Returns the rank of `pmat` evaluated at #NMOD_POLY_MAT_SOME_POINT
+ * (reduced modulo `pmat->modulus`). */
+NMOD_POLY_MAT_INLINE slong
+nmod_poly_mat_rank_at_some_point(const nmod_poly_mat_t pmat)
+{
+    if (pmat->r == 0 || pmat->c == 0)
+        return 0;
+    const nmod_t mod = nmod_poly_mat_entry(pmat, 0, 0)->mod;
+    return nmod_poly_mat_rank_at_point(pmat, nmod_set_ui(NMOD_POLY_MAT_SOME_POINT, mod));
+}
+
+//@} // doxygen group: Rank at a point
 
 // rotate rows of mat from i to j (requirement: 0 <= i <= j < mat->r)
 // and apply the corresponding transformation to vec (requirement: j < len(vec))
