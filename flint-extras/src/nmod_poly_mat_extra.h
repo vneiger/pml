@@ -60,6 +60,8 @@
 
 #include "nmod_poly_mat_kernel.h"
 
+#include "nmod_poly_mat_row_basis.h"
+
 
 /* TODO move in suitable header */
 void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat);
