@@ -53,7 +53,7 @@ int nmod_poly_mat_is_unimodular_randomized(const nmod_poly_mat_t pmat, flint_ran
     nmod_mat_t ev2;
     nmod_mat_init(ev2, pmat->r, pmat->c, pmat->modulus);
     nmod_poly_mat_evaluate_nmod(ev2, pmat, pt2);
-    ulong det2 = nmod_mat_det(ev1);
+    ulong det2 = nmod_mat_det(ev2);
 
     nmod_mat_clear(ev1);
     nmod_mat_clear(ev2);
