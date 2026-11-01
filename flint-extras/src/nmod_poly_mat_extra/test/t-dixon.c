@@ -17,7 +17,7 @@
 #include <flint/test_helpers.h>
 
 #include "nmod_poly_mat_utils.h"
-#include "nmod_poly_mat_dixon.h"
+#include "nmod_poly_mat_linsolve.h"
 
 // Random poly_mat which is nonsingular for x=0
 void nmod_poly_mat_rand_origin(nmod_poly_mat_t A, flint_rand_t state, slong order)

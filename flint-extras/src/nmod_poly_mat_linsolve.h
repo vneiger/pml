@@ -10,35 +10,23 @@
     <https://www.gnu.org/licenses/>.
 */
 
-#ifndef NMOD_POLY_MAT_DIXON_H
-#define NMOD_POLY_MAT_DIXON_H
+#ifndef NMOD_POLY_MAT_LINSOLVE_H
+#define NMOD_POLY_MAT_LINSOLVE_H
 
-#include "nmod_poly_mat_approximant.h"
+/** \file nmod_poly_mat_linsolve.h
+ *
+ * Solving linear systems with univariate polynomial matrices, such as
+ * computing the truncated power series solution of a linear system.
+ *
+ * \todo series solving at low and high precision, high-order lifting, and
+ * solving via kernel bases (see ntl-extras, mat_lzz_pX_linsolve.h)
+ */
+
+#include <flint/nmod_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-/**
- *
- *  Truncated inverse of A mod x^order
- *  Returns 0 if A is not invertible as a power series (i.e., at x=0),
- *  in which case S is not modified
- *  Returns nonzero otherwise, and S is the truncated inverse
- * 
- *  CHECK TODO: uses a method based on a shifted approximant computation 
- *              check whether the specification of nmod_poly_mat_pmbasis 
- *              is as expected 
- * 
- *  Size of the integers (see @ref IntegerSizes): the shift used in the
- *  approximant basis computation has entries `0` and `order`, which then
- *  increase by at most `order`; it is assumed that `order <= WORD_MAX / 2`.
- */
-
-slong nmod_poly_mat_inv_trunc(nmod_poly_mat_t S, 
-                              const nmod_poly_mat_t A, 
-                              ulong order);
 
 
 /**
@@ -48,7 +36,9 @@ slong nmod_poly_mat_inv_trunc(nmod_poly_mat_t S,
  *  in which case X is not modified
  *  Returns nonzero otherwise, and X is the sought solution
  * 
- * Iterations mod x^order to obtain a total approximation mod x^sigma
+ * Iterations mod x^order to obtain a total approximation mod x^sigma; the
+ * truncated inverse of A at order `order` is computed by
+ * ::nmod_poly_mat_inv_trunc (see nmod_poly_mat_inverse.h)
  * 
  * Size of the integers (see @ref IntegerSizes): it is assumed that `order <=
  * WORD_MAX / 2` (see ::nmod_poly_mat_inv_trunc) and `sigma + order <=
@@ -65,4 +55,4 @@ slong nmod_poly_mat_dixon(nmod_poly_mat_t X,
 }
 #endif
 
-#endif  /* NMOD_POLY_MAT_DIXON_H */
+#endif  /* NMOD_POLY_MAT_LINSOLVE_H */

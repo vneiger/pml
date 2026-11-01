@@ -17,6 +17,7 @@
 #include "t-det.c"
 #include "t-dixon.c"
 #include "t-hermite_normal_form.c"
+#include "t-inv_series.c"
 #include "t-kernel.c"
 #include "t-degree_det_bound.c"
 #include "t-mul_sd_fft_direct.c"
@@ -44,6 +45,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_det),
     TEST_FUNCTION(nmod_poly_mat_dixon),
     TEST_FUNCTION(nmod_poly_mat_hnf),
+    TEST_FUNCTION(nmod_poly_mat_inv_series),
     TEST_FUNCTION(nmod_poly_mat_kernel),
     TEST_FUNCTION(nmod_poly_mat_degree_det_bound),
     TEST_FUNCTION(nmod_poly_mat_mbasis),

@@ -53,12 +53,10 @@
 
 // #include "nmod_poly_mat_determinant.h"
 
-// #include "nmod_poly_mat_inverse.h"
-// #include "nmod_poly_mat_linsolve.h"
+#include "nmod_poly_mat_inverse.h"
+#include "nmod_poly_mat_linsolve.h"
 
 // #include "nmod_poly_mat_linearization.h"
-
-#include "nmod_poly_mat_dixon.h"
 
 #include "nmod_poly_mat_kernel.h"
 
