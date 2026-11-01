@@ -167,6 +167,12 @@ int nmod_poly_mat_is_interpolant_basis(const nmod_poly_mat_t intbas,
  * around that dispatcher, converting to/from the entrywise `nmod_poly_mat_t`
  * representation used at this level, exactly mirroring
  * @ref nmod_poly_mat_mbasis's own role for `mbasis`).
+ *
+ * Size of the integers (see @ref IntegerSizes): each entry of `shift`
+ * increases by at most `d` (the number of points) during the computation; it
+ * is assumed that `max(shift) + d <= WORD_MAX` for the input `shift`. The
+ * same holds for the functions in @ref pmintbasis and
+ * @ref pmintbasis_geometric.
  */
 //@{
 
@@ -199,6 +205,10 @@ void nmod_poly_mat_mintbasis(nmod_poly_mat_t intbas,
  *
  * At the end of the computation, the vector `shift` contains the shifted
  * row degree of `intbas`, for the input shift.
+ *
+ * Size of the integers (see @ref IntegerSizes): it is assumed that
+ * `max(shift) + d <= WORD_MAX` for the input `shift`, where `d` is the number
+ * of points (each entry of `shift` increases by at most `d`).
  */
 //@{
 
@@ -225,6 +235,9 @@ void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
  * One such structure is built once, at the top of the
  * whole recursion, and reused (at varying, always-shorter requested
  * lengths). 
+ *
+ * Size of the integers (see @ref IntegerSizes): as in @ref pmintbasis, it is
+ * assumed that `max(shift) + d <= WORD_MAX` for the input `shift`.
  */
 //@{
 

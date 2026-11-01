@@ -485,6 +485,11 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
  *  In the functions below, when there is an OUT parameter `rmat`, it must
  *  have the same dimensions as the IN parameter `pmat`, and it may alias it.
  *
+ *  Size of the integers (see @ref IntegerSizes): the bounds `hi` are assumed
+ *  to be less than `WORD_MAX` (the computation uses `hi + 1`). Note also that
+ *  the output entries have length up to `hi + 1` (or up to `order`, for the
+ *  truncated version), and memory is allocated accordingly.
+ *
  */
 //@{
 
@@ -518,7 +523,8 @@ void nmod_poly_mat_reverse_columnwise(nmod_poly_mat_t rmat, const nmod_poly_mat_
  * k <= rhi[i] + chi[j]` and `k < order` (no truncation if `order` is
  * negative; the entry is zero if the bound is negative or if `order` is
  * zero). Either of `rhi` and `chi` may be `NULL`, meaning all zero. The sums
- * `rhi[i] + chi[j]` are assumed not to overflow.
+ * `rhi[i] + chi[j]` are assumed to be computed without overflow and to be
+ * less than `WORD_MAX` (see @ref Reverse).
  *
  * Shifted reversal: for a shift `s` (on the columns) and `d = rdeg_s(pmat)`,
  * taking `rhi = d` and `chi = -s` gives `x^d pmat(1/x) x^{-s}` (with `x^d` and
@@ -584,6 +590,15 @@ void nmod_poly_mat_rand_degree_matrix(nmod_poly_mat_t mat,
  *
  *  For definitions of pivot profiles, pivot indices and pivot degrees,
  *  see @ref Pivots and @ref MatrixForms.
+ *
+ *  Size of the integers (see @ref IntegerSizes): the random Popov form
+ *  functions compute degree constraints `pivdeg[i] + shift[pivind[i]] -
+ *  shift[j]` (minus one, for some entries), and assume `max(pivdeg) +
+ *  max(shift) <= WORD_MAX` and `max(pivdeg) + max(shift) - min(shift) <
+ *  WORD_MAX`; for example, both hold if all entries of `pivdeg` and all
+ *  `|shift[j]|` are at most `WORD_MAX / 4`. Note that the output entries may
+ *  have degree up to `max(pivdeg) + max(shift) - min(shift)`, and memory is
+ *  allocated accordingly.
  */
 //@{
 

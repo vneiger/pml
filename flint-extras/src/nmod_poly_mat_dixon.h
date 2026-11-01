@@ -31,6 +31,9 @@ extern "C" {
  *              check whether the specification of nmod_poly_mat_pmbasis 
  *              is as expected 
  * 
+ *  Size of the integers (see @ref IntegerSizes): the shift used in the
+ *  approximant basis computation has entries `0` and `order`, which then
+ *  increase by at most `order`; it is assumed that `order <= WORD_MAX / 2`.
  */
 
 slong nmod_poly_mat_inv_trunc(nmod_poly_mat_t S, 
@@ -47,6 +50,9 @@ slong nmod_poly_mat_inv_trunc(nmod_poly_mat_t S,
  * 
  * Iterations mod x^order to obtain a total approximation mod x^sigma
  * 
+ * Size of the integers (see @ref IntegerSizes): it is assumed that `order <=
+ * WORD_MAX / 2` (see ::nmod_poly_mat_inv_trunc) and `sigma + order <=
+ * WORD_MAX` (the iterations use multiples of `order` below `sigma + order`).
  */
 
 slong nmod_poly_mat_dixon(nmod_poly_mat_t X, 
