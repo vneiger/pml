@@ -17,7 +17,6 @@
 #include <flint/nmod_poly_mat.h>
 #include <flint/nmod_vec.h>
 
-#include "nmod_poly_mat_approximant.h"
 #include "nmod_poly_mat_inverse.h"
 #include "nmod_poly_mat_multiply.h"
 
@@ -358,60 +357,4 @@ int nmod_poly_mat_inv_series(nmod_poly_mat_t imat,
 
     nmod_mat_clear(inv0);
     return 1;
-}
-
-/*------------------------------------------------------------*/
-/* truncated inverse via approximant basis                    */
-/*------------------------------------------------------------*/
-
-/* see the documentation in nmod_poly_mat_inverse.h */
-slong nmod_poly_mat_inv_trunc(nmod_poly_mat_t S,
-                              const nmod_poly_mat_t A,
-                              ulong order)
-{
-    const slong n = A->r;
-
-    // build H = [A \\ -Id]
-    nmod_poly_mat_t H;
-    nmod_poly_mat_init(H, 2*n, n, A->modulus);
-    /* FIXME sets top n rows to A, but this is not really documented, so might change */
-    nmod_poly_mat_set(H, A);
-
-    for (slong i = n; i < 2*n; i++)
-    {
-        nmod_poly_fit_length(nmod_poly_mat_entry(H, i, i-n), 1);
-        nmod_poly_mat_entry(H, i, i-n)->coeffs[0] = A->modulus - 1;
-        _nmod_poly_set_length(nmod_poly_mat_entry(H, i, i-n), 1);
-    }
-
-    // Will be the approximant basis
-    nmod_poly_mat_t tsf;
-    nmod_poly_mat_init(tsf, 2*n, 2*n, A->modulus);
-
-    // Appropriate shift
-    slong * shift = FLINT_ARRAY_ALLOC(2*n, slong);
-    for (slong i = 0; i < n; i++)
-        shift[i] = 0;
-    for (slong i = n; i < 2*n; i++)
-        shift[i] = order;
-
-    // Shifted approximant computation
-    nmod_poly_mat_pmbasis(tsf, shift, H, order);
-
-    // Check invertibility <=> bottom right block of approximant basis is the identity
-    nmod_poly_mat_t view;
-    nmod_poly_mat_window_init(view, tsf, n, n, 2*n, 2*n);
-    slong is_inv = nmod_poly_mat_is_one(view);
-
-    // Extract the truncated inverse from the approximant basis (bottom left block)
-    if (is_inv)
-        for (slong i = 0; i < n; i++)
-            for (slong j = 0; j < n; j++)
-                nmod_poly_set(nmod_poly_mat_entry(S, i, j), nmod_poly_mat_entry(tsf, n+i, j));
-
-    nmod_poly_mat_window_clear(view);
-    flint_free(shift);
-    nmod_poly_mat_clear(H);
-    nmod_poly_mat_clear(tsf);
-    return is_inv;
 }

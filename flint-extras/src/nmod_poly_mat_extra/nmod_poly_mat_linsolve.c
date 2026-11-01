@@ -43,9 +43,11 @@ slong nmod_poly_mat_dixon(nmod_poly_mat_t X,
     nmod_poly_mat_t C;
     nmod_poly_mat_init(C, n, n, A->modulus);
 
-    slong is_inv = nmod_poly_mat_inv_trunc(C, A, order);
-    if (!is_inv)
+    if (! nmod_poly_mat_inv_series(C, A, order))
+    {
+        nmod_poly_mat_clear(C);
         return 0;
+    }
 
     // Temporary matrices
     nmod_poly_mat_t S;

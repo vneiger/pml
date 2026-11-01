@@ -22,8 +22,8 @@
 
 /* times the truncated inverse of a random dim x dim matrix of degree < deg,
  * at order `order`, with the general interface, the basecase algorithm,
- * Newton iteration (with the given cutoff, or the default one), and the
- * approximant-based nmod_poly_mat_inv_trunc; prints the times in seconds */
+ * and Newton iteration (with the given cutoff, or the default one); prints
+ * the times in seconds */
 
 #define TIME_INV(call)                                          \
     do {                                                        \
@@ -54,16 +54,15 @@
 
 int main(int argc, char ** argv)
 {
-    if (argc < 5 || argc > 7)
+    if (argc < 5 || argc > 6)
     {
-        flint_printf("Usage: `%s [nbits] [dim] [deg] [order] [cutoff] [old]`\n", argv[0]);
+        flint_printf("Usage: `%s [nbits] [dim] [deg] [order] [cutoff]`\n", argv[0]);
         flint_printf("   - nbits: number of bits in [2..64] for the modulus, chosen as nextprime(2**(nbits-1))\n");
         flint_printf("   - dim: the input matrix is dim x dim\n");
         flint_printf("   - deg: the input matrix is random of degree < deg\n");
         flint_printf("   - order: truncation order\n");
         flint_printf("   - cutoff: optional, cutoff for Newton iteration (default: 0, the default cutoff)\n");
-        flint_printf("   - old: optional, 1 (default) to also time the approximant-based nmod_poly_mat_inv_trunc\n");
-        flint_printf("Prints the times (in seconds) of: general interface, basecase, Newton iteration, [inv_trunc]\n");
+        flint_printf("Prints the times (in seconds) of: general interface, basecase, Newton iteration\n");
         return 0;
     }
 
@@ -72,7 +71,6 @@ int main(int argc, char ** argv)
     const slong deg = atoi(argv[3]);
     const slong order = atoi(argv[4]);
     const slong cutoff = (argc >= 6) ? atoi(argv[5]) : 0;
-    const int old = (argc >= 7) ? atoi(argv[6]) : 1;
     const ulong n = n_nextprime(UWORD(1) << (b-1), 0);
 
     flint_rand_t state;
@@ -95,8 +93,6 @@ int main(int argc, char ** argv)
     TIME_INV(nmod_poly_mat_inv_series(imat, pmat, order));
     TIME_INV(nmod_poly_mat_inv_series_basecase(imat, pmat, order));
     TIME_INV(nmod_poly_mat_inv_series_newton(imat, pmat, order, cutoff));
-    if (old)
-        TIME_INV(nmod_poly_mat_inv_trunc(imat, pmat, order));
     flint_printf("\n");
 
     nmod_mat_clear(inv0);

@@ -124,28 +124,6 @@ void _nmod_poly_mat_inv_series_newton(nmod_poly_mat_t imat,
                                       slong order,
                                       slong cutoff);
 
-/** Truncated inverse of `A` modulo `x^order`, via a shifted approximant
- * basis of `[A; -I]`.
- *
- * Returns `1` if the bottom-right block of the computed approximant basis is
- * the identity matrix, in which case `S` is the truncated inverse (the
- * bottom-left block of that basis); otherwise returns `0`, and `S` is not
- * modified. In particular, `0` is returned if `A(0)` is not invertible. This
- * function is kept for comparison with ::nmod_poly_mat_inv_series, which is
- * faster.
- *
- * CHECK TODO: check whether the specification of nmod_poly_mat_pmbasis
- * ensures that the bottom-right block is the identity when `A(0)` is
- * invertible
- *
- * Size of the integers (see @ref IntegerSizes): the shift used in the
- * approximant basis computation has entries `0` and `order`, which then
- * increase by at most `order`; it is assumed that `order <= WORD_MAX / 2`.
- */
-slong nmod_poly_mat_inv_trunc(nmod_poly_mat_t S,
-                              const nmod_poly_mat_t A,
-                              ulong order);
-
 //@} // doxygen group: Truncated inverse expansion
 
 #ifdef __cplusplus

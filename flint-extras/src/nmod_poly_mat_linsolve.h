@@ -38,10 +38,10 @@ extern "C" {
  * 
  * Iterations mod x^order to obtain a total approximation mod x^sigma; the
  * truncated inverse of A at order `order` is computed by
- * ::nmod_poly_mat_inv_trunc (see nmod_poly_mat_inverse.h)
+ * ::nmod_poly_mat_inv_series (see nmod_poly_mat_inverse.h)
  * 
  * Size of the integers (see @ref IntegerSizes): it is assumed that `order <=
- * WORD_MAX / 2` (see ::nmod_poly_mat_inv_trunc) and `sigma + order <=
+ * WORD_MAX / 2` (see ::nmod_poly_mat_inv_series) and `sigma + order <=
  * WORD_MAX` (the iterations use multiples of `order` below `sigma + order`).
  */
 

@@ -138,14 +138,6 @@ TEST_FUNCTION_START(nmod_poly_mat_inv_series, state)
             result = result && nmod_poly_mat_equal(X, Y);
         }
 
-        /* comparison with the approximant-based truncated inverse */
-        if (result && order >= 1 && order <= 40 && m > 0)
-        {
-            nmod_poly_mat_set(Z, A);
-            const slong res_old = nmod_poly_mat_inv_trunc(Z, A, order);
-            result = (res_old == invertible) && nmod_poly_mat_equal(Z, invertible ? X : A);
-        }
-
         if (!result)
             TEST_FUNCTION_FAIL("prime = %wu, m = %wd, len = %wd, order = %wd, rk0 = %wd, cutoff = %wd\n",
                                prime, m, len, order, rk0, cutoff);
