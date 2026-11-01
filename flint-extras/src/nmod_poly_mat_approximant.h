@@ -281,6 +281,9 @@ int nmod_poly_mat_is_approximant_basis(const nmod_poly_mat_t appbas,
 
 // TODO DOC
 // appbas must be initialized with right dimensions
+/** Size of the integers (see @ref IntegerSizes): as for
+ * ::nmod_mat_poly_mbasis, it is assumed that `order <= WORD_MAX` and
+ * `max(shift) + order <= WORD_MAX` for the input `shift`. */
 void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
                           slong * shift,
                           const nmod_poly_mat_t pmat,
@@ -306,6 +309,10 @@ void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
  *
  * At the end of the computation, the vector `shift` contains the shifted row
  * degree of `appbas`, for the input shift. 
+ *
+ * Size of the integers (see @ref IntegerSizes): as in `mbasis`, each entry of
+ * `shift` increases by at most `order` during the computation; it is assumed
+ * that `max(shift) + order <= WORD_MAX` for the input `shift`.
  *
  * This is inspired from the algorithm _pmbasis_ described in
  *  - P. Giorgi, C.-P. Jeannerod, G. Villard. Proceeding ISSAC 2003,

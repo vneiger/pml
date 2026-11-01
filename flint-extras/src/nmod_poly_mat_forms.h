@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2025 Vincent Neiger, Kevin Tran
+    Copyright (C) 2026 Vincent Neiger
 
     This file is part of PML.
 
@@ -142,6 +143,25 @@ typedef enum
  * `NULL` is provided as input for the shift, this is understood as the uniform
  * shift `[0,...,0]` of the right length.
  *
+ * \anchor IntegerSizes
+ * <b>Size of the integers.</b> Degrees, shifts, orders and degree bounds are
+ * `slong` values, and PML computes with them in `slong` arithmetic, without
+ * checking for overflow. Degrees of polynomials which are actually stored are
+ * bounded by their lengths, hence by the available memory: they are always far
+ * below `WORD_MAX` in practice, and this is assumed throughout PML. On the
+ * other hand, shift entries, as well as orders and degree bounds given as
+ * input, may be arbitrary `slong` values. Functions document a condition on
+ * these values which ensures that no overflow occurs (often a simple
+ * sufficient condition, with some margin). These conditions are assumed to
+ * hold and are not checked: if they do not hold, the behaviour is undefined
+ * (signed integer overflow).
+ *
+ * For the functions of this group, the condition is `|shift[j]| + deg(pmat) <
+ * WORD_MAX` for all `j`: it ensures that `deg(pmat[i,j]) + shift[j]`,
+ * `shift[j] - 1` (for zero entries) and `min(shift) - 1` (for zero vectors) are
+ * computed without overflow. Note that the `shift`-degree of a vector is
+ * smaller than `min(shift)` if and only if this vector is zero; the number of
+ * nonzero rows or columns is also given by the return value of the functions.
  */
 //@{
 
@@ -215,6 +235,11 @@ ulong nmod_poly_mat_column_degree_zero(slong *cdeg,
  *
  * Note: for ROW_UPPER/COLUMN_LOWER, the zero vector has pivot index equal to
  * the length of this vector.
+ *
+ * Size of the integers (see @ref IntegerSizes): these functions compute
+ * shifted degrees `deg(pmat[i,j]) + shift[j]`, and assume the same condition
+ * as in @ref RowAndColumnDegrees, that is, `|shift[j]| + deg(pmat) < WORD_MAX`
+ * for all `j`.
  */
 //@{
 
@@ -323,6 +348,11 @@ void nmod_poly_mat_echelon_pivot_profile(slong * pivind,
  * `shift`-degree matrix of `pmat` is the `m x n` integer matrix whose entry
  * `(i,j)` is `deg(pmat[i][j]) + shift[i]` if `pmat[i][j]` is nonzero, and
  * `shift[i]-1` otherwise.
+ *
+ * Size of the integers (see @ref IntegerSizes): these entries are computed in
+ * `slong` arithmetic before being stored as `fmpz`; this assumes the same
+ * condition as in @ref RowAndColumnDegrees, that is, `|shift[k]| + deg(pmat)
+ * < WORD_MAX` for all `k`.
  */
 //@{
 
@@ -434,7 +464,8 @@ void nmod_poly_mat_degree_matrix_shifted(fmpz_mat_t dmat,
  * assumed to be at most `WORD_MAX / (16 k)`; this is not checked. This
  * ensures that no overflow occurs (all integers computed by the algorithm are
  * at most `6 k B` in absolute value, where `B <= WORD_MAX / (8 k)` is the
- * largest absolute value of the shifted degrees; see the implementation).
+ * largest absolute value of the shifted degrees; see the implementation and
+ * @ref IntegerSizes).
  *
  * \todo exactness check via the dual potentials. The algorithm also computes
  * an optimal solution of the dual problem: integers `p[i]` for the rows and
@@ -577,6 +608,14 @@ slong nmod_poly_mat_degree_det_bound(slong * assign,
  * `NULL` is provided as input for the shift, this is understood as the uniform
  * shift `[0,...,0]` of the right length.
  *
+ * Size of the integers (see @ref IntegerSizes): besides the shifted row
+ * (resp. column) degree, which requires `|shift[k]| + deg(pmat) < WORD_MAX`
+ * for all `k` (see @ref RowAndColumnDegrees), the computation involves the
+ * differences `rdeg[i] - shift[j]` (resp. `cdeg[j] - shift[i]`), which are at
+ * most `deg(pmat) + max(shift) - min(shift)`; this is also assumed to be less
+ * than `WORD_MAX`. For example, both conditions hold if `|shift[k]| <=
+ * WORD_MAX / 4` for all `k`.
+ *
  * \todo minor enhancement: offer row-wise (resp column-wise) leading matrix
  * when the row degree (resp. column degree) is already known
  */
@@ -659,6 +698,12 @@ void nmod_poly_mat_leading_matrix(nmod_mat_t lmat,
  * `NULL` is provided as input for the shift, this is understood as the uniform
  * shift `[0,...,0]` of the right length.
  *
+ * Size of the integers (see @ref IntegerSizes): the functions with a `shift`
+ * parameter rely on shifted degrees and pivots, and assume `|shift[k]| +
+ * deg(mat) < WORD_MAX` for all `k` (see @ref Pivots);
+ * ::nmod_poly_mat_is_reduced relies on the shifted leading matrix and assumes
+ * in addition `deg(mat) + max(shift) - min(shift) < WORD_MAX` (see @ref
+ * LeadingMatrix).
  */
 //@{
 
@@ -929,6 +974,14 @@ slong nmod_poly_mat_hnf_ur_matrixgcd_iter(nmod_poly_mat_t mat,
 
 /** @name Computing weak Popov form
  * See @ref MatrixForms for definitions
+ *
+ * Size of the integers (see @ref IntegerSizes): these functions compute
+ * shifted pivots, and assume `|shift[k]| + deg(mat) < WORD_MAX` for all `k`,
+ * where `mat` is the input matrix (see @ref Pivots). This is enough for the
+ * whole computation, since the shifted degree of a row never increases.
+ * However, note that the degrees of the entries may increase, up to
+ * `deg(mat) + max(shift) - min(shift)` (in the transformed matrix, the entry
+ * `(i,j)` has degree at most the `shift`-degree of row `i` minus `shift[j]`).
  */
 //@{
 

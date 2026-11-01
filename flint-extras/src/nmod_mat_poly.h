@@ -716,6 +716,10 @@ nmod_mat_poly_set_from_poly_mat(nmod_mat_poly_t matp, const nmod_poly_mat_t pmat
  * At the end of the computation, the vector `shift` contains the shifted row
  * degree of `appbas`, for the input shift. 
  *
+ * Size of the integers (see @ref IntegerSizes): each entry of `shift`
+ * increases by at most `order` during the computation; it is assumed that
+ * `max(shift) + order <= WORD_MAX` for the input `shift`.
+ *
  * This is inspired from the algorithm _mbasis_ described in
  *  - P. Giorgi, C.-P. Jeannerod, G. Villard. Proceeding ISSAC 2003,
  *  - P. Giorgi, R. Lebreton. Proceedings ISSAC 2014.
@@ -840,6 +844,10 @@ void nmod_mat_poly_mbasis(nmod_mat_poly_t appbas,
  * 
  * At the end of the computation, the vector `shift` contains the shifted
  * row degree of `intbas`, for the input shift.
+ *
+ * Size of the integers (see @ref IntegerSizes): each entry of `shift`
+ * increases by at most `d` (the number of points) during the computation; it
+ * is assumed that `max(shift) + d <= WORD_MAX` for the input `shift`.
  *
  * This is the algorithm M-IntBasis inspired from: 
  *   - B. Beckermann and G. Labahn. 2000. Fraction-free computation of matrix 

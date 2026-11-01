@@ -76,6 +76,11 @@ extern "C" {
  * -> shift may be NULL in input, in which case it is left NULL in output, and
  *  the basis is computed in weak Popov form with respect to row degrees of
  *  `pmat` (if left kernel) or column degrees of `pmat` (if right kernel)
+ * -> size of the integers (see @ref IntegerSizes): this relies on
+ *  ::nmod_poly_mat_kernel_zls_approx, whose condition is assumed, with `m`
+ *  being the number of rows of `pmat` for a left kernel, and its number of
+ *  columns for a right kernel. When `shift` is NULL, the shift used is the
+ *  row or column degree of `pmat`, and this condition only involves degrees.
  */
 /* TODO `form` not implemented yet, only shifted weak Popov */
 slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
@@ -87,6 +92,16 @@ slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
 
 /** Computes a `shift`-ordered weak Popov left kernel basis `ker` for `pmat`,
  * through a minimal approximant basis at sufficiently large order.
+ *
+ * The approximation order is `min(m,n) * deg(pmat) + max(shift) - min(shift)
+ * + deg(pmat) + 1`, where `pmat` is `m x n`: the cost grows with the
+ * amplitude `max(shift) - min(shift)` of the shift.
+ *
+ * Size of the integers (see @ref IntegerSizes): the shift entries then
+ * increase by at most this order in the approximant basis computation. It is
+ * assumed that `|shift[i]| <= WORD_MAX / 8` for all `i` and that
+ * `(min(m,n) + 1) * deg(pmat) + 1 <= WORD_MAX / 8`; this ensures that no
+ * overflow occurs.
  */
 slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
                                       slong * pivind,
@@ -99,6 +114,16 @@ slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
  *   Proceedings ISSAC 2012 -- https://doi.org/10.1145/2442829.2442881
  */
 /* TODO middle_product currently naive */
+/** Size of the integers (see @ref IntegerSizes): at each step, the
+ * approximation order is computed from the sum of the shift entries (and `m`
+ * times their minimum, up to degrees), where `m` is the number of rows of
+ * `pmat`; then the shift entries increase by the degrees of the computed
+ * approximant bases, and are used as shifts in the subsequent recursive calls.
+ * It is assumed that `|shift[i]| <= WORD_MAX / (8 m)` for all `i`, and that
+ * `m` times the degrees of the polynomial matrices computed along the way
+ * (`pmat`, intermediate approximant bases, the output kernel basis) is at most
+ * `WORD_MAX / 8`; this ensures that no overflow occurs.
+ */
 slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
                                       slong * pivind,
                                       slong * shift,
