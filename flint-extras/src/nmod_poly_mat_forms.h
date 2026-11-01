@@ -342,6 +342,207 @@ void nmod_poly_mat_degree_matrix_shifted(fmpz_mat_t dmat,
 
 //@} // doxygen group: (Shifted) degree matrix
 
+/** @name Degree bound on the determinant and maximal minors
+ * \anchor DegreeDetBound
+ *
+ * For a square `n x n` polynomial matrix `pmat`, `deg(det(pmat))` is at most
+ * the maximum over all permutations `sigma` of `sum_i deg(pmat[i, sigma(i)])`
+ * (with zero entries excluded, that is, with degree minus infinity for them).
+ * This is the "tropical determinant" of the degree matrix of `pmat`; it is
+ * reached for generic coefficients (indeed the coefficient of this degree in
+ * the determinant is a nonzero polynomial in the leading coefficients of the
+ * entries). For a rectangular `m x n` matrix, the same bound, maximized over
+ * the choice of `min(m,n)` rows (if `m >= n`) or columns (if `m < n`), bounds
+ * the degree of all maximal minors.
+ *
+ * Shifted versions bound the shifted degree of the maximal minors, that is,
+ * the degree of the maximal minors of `pmat * x^shift` (row-wise orientation,
+ * `shift` of length `n`) or of `x^shift * pmat` (column-wise orientation,
+ * `shift` of length `m`), where `x^shift` is the diagonal matrix with entries
+ * `x^shift[k]`. For the minor on rows `I` and columns `J`, this shifted degree
+ * is `deg(det(pmat[I,J])) + sum_{j in J} shift[j]` (row-wise), or
+ * `deg(det(pmat[I,J])) + sum_{i in I} shift[i]` (column-wise). The shift only
+ * matters when it acts on the larger dimension: on the smaller one, all its
+ * indices are in every maximal minor, so it just adds `sum(shift)`. For
+ * example, if `pmat` has full row rank, is `shift`-row reduced and `m <= n`,
+ * the largest shifted degree of its maximal minors (row-wise orientation) is
+ * the sum of its `shift`-row degree.
+ *
+ * This is a maximum weight assignment problem, solved by the Hungarian
+ * method (H. W. Kuhn, "The Hungarian method for the assignment problem",
+ * Naval Research Logistics Quarterly 2, 1955; J. Munkres, "Algorithms for the
+ * assignment and transportation problems", J. SIAM 5, 1957), in its version
+ * with successive shortest augmenting paths and node potentials (N. Tomizawa,
+ * Networks 1, 1971; J. Edmonds and R. M. Karp, J. ACM 19, 1972), in `O(k^2 N)`
+ * integer operations where `k = min(m,n)` and `N = max(m,n)`.
+ *
+ * Using this method for this quantity is classical in several contexts:
+ *  - The bound and an algorithm for it essentially equivalent to the Hungarian
+ *  method already appear in Jacobi's work on the order of systems of ordinary
+ *  differential equations ("Jacobi's bound"; C. G. J.  Jacobi, "De
+ *  investigando ordine systematis aequationum differentialium vulgarium
+ *  cujuscunque", published posthumously in 1865, Gesammelte Werke V, 1890, pp.
+ *  193-216). See F. Ollivier, "Looking for the order of a system of arbitrary
+ *  ordinary differential equations", AAECC 20, 2009 (translation and
+ *  commentary), and H. W. Kuhn, "A tale of three eras: the discovery and
+ *  rediscovery of the Hungarian method", European J. Oper. Res. 219, 2012.
+ *  See also https://arxiv.org/pdf/2109.03620
+ *  - In max-plus algebra, this is the tropical determinant (or permanent),
+ *  computed as an assignment problem (e.g. P. Butkovič, "Max-linear systems:
+ *  theory and algorithms", Springer, 2010; J. Richter-Gebert, B. Sturmfels, T.
+ *  Theobald, "First steps in tropical geometry", Contemp. Math. 2005).
+ *  - For polynomial matrices, it is the first step of Murota's combinatorial
+ *  relaxation for the degree of the determinant, which uses the dual
+ *  potentials to check whether the bound is reached (K. Murota, "Computing the
+ *  degree of determinants via combinatorial relaxation", SIAM J. Comput. 24,
+ *  1995).
+ *
+ * The bound is also called GenericDetBnd in S. Gupta, S. Sarkar, A.
+ * Storjohann, J. Valeriote, "Triangular x-basis decompositions and
+ * derandomization of linear algebra algorithms over K[x]", J. Symbolic Comput.
+ * 47, 2012 (Fact 11), where it is not computed but approximated from below by
+ * a greedy choice. This is commented in more details after
+ * `nmod_poly_mat_degree_det_bound`.
+ */
+//@{
+
+/** Upper bound on the shifted degree of the maximal minors of `pmat` (see
+ * @ref DegreeDetBound). Writing `k = min(m,n)`, this returns the maximum,
+ * over all injective maps `sigma` from the `k` columns to the rows (if `m >=
+ * n`), or from the `k` rows to the columns (if `m < n`), of the sum of the
+ * shifted degrees of the entries selected by `sigma`, where the shifted
+ * degree of entry `(i,j)` is `deg(pmat[i,j]) + shift[j]` if `orient` is
+ * row-wise and `deg(pmat[i,j]) + shift[i]` if it is column-wise (`shift` may
+ * be `NULL`, meaning zero), and where zero entries cannot be selected.
+ *
+ * For example, if `m >= n` and the orientation is column-wise, this bounds
+ * `deg(det(pmat[J,:])) + sum_{i in J} shift[i]` for all `n`-subsets of rows
+ * `J`, with equality for some `J` for generic coefficients.
+ *
+ * Returns `0` if `k == 0`. If there is no such map avoiding zero entries
+ * (which happens if and only if all maximal minors of `pmat` are structurally
+ * zero, and implies that `pmat` does not have full rank), returns `k *
+ * min(shift) - 1`, where `min(shift)` is the minimum of all entries of `shift`
+ * (this is `-1` if `shift` is `NULL`): this is smaller than the value of any
+ * map, and for a square matrix with `shift` `NULL`, it is the degree `-1` of
+ * the zero determinant. If `assign` is not `NULL`, it must have room for `k`
+ * entries, and receives an optimal map if there is one (otherwise, it is not
+ * modified): `assign[j]` is the row of column `j` (if `m >= n`), or
+ * `assign[i]` is the column of row `i` (if `m < n`).
+ *
+ * The degree of `pmat` and the absolute values of the entries of `shift` are
+ * assumed to be at most `WORD_MAX / (16 k)`; this is not checked. This
+ * ensures that no overflow occurs (all integers computed by the algorithm are
+ * at most `6 k B` in absolute value, where `B <= WORD_MAX / (8 k)` is the
+ * largest absolute value of the shifted degrees; see the implementation).
+ *
+ * \todo exactness check via the dual potentials. The algorithm also computes
+ * an optimal solution of the dual problem: integers `p[i]` for the rows and
+ * `q[j]` for the columns, such that the shifted degree of each nonzero entry
+ * `(i,j)` is at most `p[i] + q[j]`, with equality on the returned map, and
+ * whose sum is the returned bound `b`. In the rectangular case, they can be
+ * taken with `p[i] >= 0`, and `p[i] = 0` on the rows not used by the map (if
+ * `m > n`; symmetrically for the columns if `m < n`), which the
+ * implementation provides. Let `A#` be the constant `m x n` matrix whose
+ * entry `(i,j)` is the coefficient of `pmat[i,j]` of degree `p[i] + q[j]`
+ * minus the shift (nonzero only where the inequality is an equality). Then:
+ *  - if `m == n`, the shifted degree of `det(pmat)` is `b` if and only if
+ *  `det(A#) != 0` (otherwise, it is at most `b - 1`). For the row-wise
+ *  orientation, `A#` is the `(shift - q)`-row leading matrix of `pmat`, so
+ *  that this holds if and only if `pmat` is `(shift - q)`-row reduced (with
+ *  `(shift - q)`-row degree `p`), and also if and only if `pmat` is row
+ *  reduced for some shift; similarly, for the column-wise orientation, with
+ *  `(shift - p)`-column reduced.
+ *  - if `m > n`, some maximal minor reaches the bound if and only if `A#` has
+ *  rank `n` and its rows `i` such that `p[i] > 0` are linearly independent
+ *  (symmetrically if `m < n`, with the columns such that `q[j] > 0`).
+ * This costs two constant rank computations once the potentials are returned
+ * (e.g. as optional output arrays). The bound is reached for generic
+ * coefficients, but not always for structured inputs, such as `[[x, x], [x,
+ * x+1]]` (bound 2, determinant `x`); this is the first step of Murota's
+ * combinatorial relaxation. When the check succeeds, the degree of the
+ * determinant, or the largest degree of maximal minors, is known exactly
+ * without reducing `pmat`. Besides, for a square matrix and `shift` `NULL`,
+ * the bound is at most `min(|rdeg|, |cdeg|)` and can be much smaller (e.g.
+ * `[[x^5, 1], [1, 0]]`: bound 0, while `|rdeg| = |cdeg| = 5`), so it could
+ * replace this quantity e.g. in `nmod_poly_mat_det_geometric`. */
+slong nmod_poly_mat_degree_det_bound(slong * assign,
+                                     const nmod_poly_mat_t pmat,
+                                     const slong * shift,
+                                     orientation_t orient);
+
+/* Link with partial linearization (notes for future work)
+ *
+ * \todo to be checked, summarize by Claude Opus 5.5
+ *
+ * Reference: [GSSV12] S. Gupta, S. Sarkar, A. Storjohann, J. Valeriote,
+ * "Triangular x-basis decompositions and derandomization of linear algebra
+ * algorithms over K[x]", J. Symbolic Comput. 47(4), 2012, Section 6.
+ *
+ * - [GSSV12, Fact 11] defines GenericDetBnd(A) = max over permutations sigma
+ *   of sum_i deg(A[i, sigma(i)]), that is, the quantity computed by
+ *   nmod_poly_mat_degree_det_bound (square case, no shift).
+ *
+ * - [GSSV12, Corollary 3] (partial linearization of both rows and columns)
+ *   does not compute it. It permutes A greedily (sorting the entries by
+ *   degree) so that d_i = deg(A[i,i]) bounds the degrees in the trailing
+ *   submatrix A[i:n, i:n], hence deg(A[i,j]) <= max(d_i, d_j); it sets E =
+ *   sum_i d_i, d = ceil(E/n), takes e_i minimal with d_i <= (e_i + 1) d,
+ *   and applies column linearization then row linearization with the same
+ *   e_i, adding 2 sum_i e_i < 2n rows and columns, with degree at most d.
+ *   The stated bound deg(D) <= ceil(GenericDetBnd(A) / n) relies on E <=
+ *   GenericDetBnd(A), which holds if zero entries are counted with degree 0,
+ *   but not if they are excluded (degree -infinity), as in this function.
+ *   Example: A = [[x^5, 1], [1, 0]], det(A) = -1: GenericDetBnd(A) = 0 (zero
+ *   entries excluded) while E = 5; and no constant D can have the
+ *   nonconstant A^{-1} as a principal submatrix of D^{-1}.
+ *
+ * - The quantity relevant for partial linearization: splitting row i into
+ *   e_i + 1 rows and column j into f_j + 1 columns ([GSSV12, Theorem 10],
+ *   applied to columns and then to rows) gives degree at most d if and only
+ *   if deg(A[i,j]) <= d (1 + e_i + f_j) for all nonzero entries. This is a
+ *   NONNEGATIVE cover p_i + q_j >= deg(A[i,j]), p, q >= 0, whose minimal
+ *   value sum(p) + sum(q) is, by the König-Egerváry theorem, the maximum
+ *   weight of a (not necessarily perfect) matching, denoted MWM; for
+ *   degrees >= 0, it equals GenericDetBnd with zero entries counted with
+ *   degree 0. The dual potentials of this function form a cover with
+ *   entries of any sign, of value GDB (this function's bound) <= MWM;
+ *   negative potentials cannot be realized by splitting, but they can by
+ *   shifts (see the reducedness interpretation in the \todo above). In
+ *   summary: GDB <= MWM <= min(|rdeg|, |cdeg|, 2E) and E <= MWM <= 2E (the
+ *   greedy choice is a 1/2-approximation; it depends on tie-breaking).
+ *   Column linearization ([GSSV12, Corollary 2]) is the cover (0, cdeg), row
+ *   linearization ([GSSV12, Example 3]) is (rdeg, 0), and Corollary 3 uses
+ *   a "hook" cover of value 2E. So E, within a factor 2 of MWM, has the
+ *   right order of magnitude; GDB can be much smaller (e.g. unimodular
+ *   matrices) but this cannot be exploited by linearization.
+ *
+ * - Optimal split counts, for a target degree d: the minimum of sum(e) +
+ *   sum(f) under e_i + f_j >= ceil(deg(A[i,j]) / d) - 1 (nonzero entries,
+ *   e, f >= 0 integers) is, again by König-Egerváry, the maximum weight of a
+ *   matching with weights max(0, ceil(deg(A[i,j]) / d) - 1). It can be
+ *   computed by the assignment algorithm used here (zero entries with weight
+ *   0, and a nonnegative optimal dual, obtained e.g. by adding k dummy jobs
+ *   of weight 0), and the dual gives the e_i and f_j. Guarantees: this is at
+ *   most the 2 sum_i e_i of [GSSV12, Corollary 3], and less than MWM / d;
+ *   hence fewer than 2n extra rows and columns at degree ceil(MWM / n) <=
+ *   ceil(2E / n), and never worse than [GSSV12] at its degree ceil(E / n).
+ *   Quick experiment (n = 40, at d = ceil(E/n); extra dimension of
+ *   [GSSV12, Cor. 3] vs optimal): random dense 50 vs 30; random with density
+ *   0.1: 54 vs 29; deg(A[i,j]) = r_i + c_j: 40 vs 35; one heavy row and
+ *   column: 76 vs 38; diagonal: 40 vs 20; [[x^50 I, I], [I, 0]]: 40 vs 20.
+ *   Equivalently, the extra dimension of [GSSV12] is reached at about 0.55 to
+ *   0.8 times their degree; the gain mainly comes from not splitting both
+ *   row i and column i.
+ *
+ * \todo when designing partial linearization functions, reuse this
+ * assignment algorithm to compute optimal split counts as above (this
+ * requires outputting the dual potentials, and a variant counting zero
+ * entries with weight 0).
+ */
+
+//@} // doxygen group: Degree bound on the determinant and maximal minors
+
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
 /* (SHIFTED) LEADING MATRIX                                   */
