@@ -482,38 +482,53 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
  *  are `f[hi]`, `f[hi-1]`, ..., `f[0]`. This definition can be extended for
  *  negative `hi` by considering that this reverse polynomial is zero.
  *
- *  In the functions below, when there is an OUT parameter `rmat`, it may alias
- *  the IN parameter `pmat`.
+ *  In the functions below, when there is an OUT parameter `rmat`, it must
+ *  have the same dimensions as the IN parameter `pmat`, and it may alias it.
  *
  */
 //@{
 
 /** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
- * respect to a bound `hi` (see @ref Reverse for more details).
- */
-//TODO
-//void reverse(nmod_poly_mat_t rmat, nmod_poly_mat_t pmat, long hi);
+ * respect to a bound `hi` (see @ref Reverse for more details). */
+void nmod_poly_mat_reverse(nmod_poly_mat_t rmat, const nmod_poly_mat_t pmat, slong hi);
 
 /** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
- * respect to the degree of `pmat` (see @ref Reverse for more details).
- */
-//TODO
-//inline void reverse(nmod_poly_mat_t rmat, nmod_poly_mat_t pmat)
-//{ reverse(rmat, pmat, deg(pmat)); }
+ * respect to the degree of `pmat` (see @ref Reverse for more details). */
+NMOD_POLY_MAT_INLINE void
+nmod_poly_mat_reverse_degree(nmod_poly_mat_t rmat, const nmod_poly_mat_t pmat)
+{
+    nmod_poly_mat_reverse(rmat, pmat, nmod_poly_mat_degree(pmat));
+}
 
 /** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
  * respect to a list of bounds `hi` for each row (see @ref Reverse for more
- * details). The length of `hi` must be the number of rows of `pmat`.
- */
-//TODO
-//void row_reverse(nmod_poly_mat_t rmat, nmod_poly_mat_t  pmat, long * hi);
+ * details). The length of `hi` must be the number of rows of `pmat`. */
+void nmod_poly_mat_reverse_rowwise(nmod_poly_mat_t rmat, const nmod_poly_mat_t pmat, const slong * hi);
 
 /** Computes the matrix reverse `rmat` of a polynomial matrix `pmat`, with
- * respect to a list of bounds `hi` for each column (see @ref Reverse for more
- * details). The length of `hi` must be the number of columns of `pmat`.
+ * respect to a list of bounds `hi` for each column (see @ref Reverse for
+ * more details). The length of `hi` must be the number of columns of `pmat`.
  */
-//TODO
-//void col_reverse(nmod_poly_mat_t rmat, nmod_poly_mat_t pmat, long * hi);
+void nmod_poly_mat_reverse_columnwise(nmod_poly_mat_t rmat, const nmod_poly_mat_t pmat, const slong * hi);
+
+/** General version: the entry `(i,j)` of `rmat` is the reverse of the entry
+ * `(i,j)` of `pmat` with respect to the bound `rhi[i] + chi[j]`, truncated
+ * at order `order`, that is, its coefficient of degree `k` is the coefficient
+ * of degree `rhi[i] + chi[j] - k` of the entry `(i,j)` of `pmat`, for `0 <=
+ * k <= rhi[i] + chi[j]` and `k < order` (no truncation if `order` is
+ * negative; the entry is zero if the bound is negative or if `order` is
+ * zero). Either of `rhi` and `chi` may be `NULL`, meaning all zero. The sums
+ * `rhi[i] + chi[j]` are assumed not to overflow.
+ *
+ * Shifted reversal: for a shift `s` (on the columns) and `d = rdeg_s(pmat)`,
+ * taking `rhi = d` and `chi = -s` gives `x^d pmat(1/x) x^{-s}` (with `x^d` and
+ * `x^{-s}` the diagonal matrices of the corresponding powers of `x`), a
+ * polynomial matrix whose constant coefficient is the `s`-leading matrix of
+ * `pmat`. Truncating it at some order gives the expansion of `pmat` "at
+ * infinity" up to that order.
+ */
+void nmod_poly_mat_reverse_trunc(nmod_poly_mat_t rmat, const nmod_poly_mat_t pmat,
+                                 const slong * rhi, const slong * chi, slong order);
 
 //@} // doxygen group: Reverse
 
