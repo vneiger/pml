@@ -15,10 +15,10 @@
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
-#include <flint/nmod_vec.h>
 
 #include "nmod_poly_mat_inverse.h"
 #include "nmod_poly_mat_multiply.h"
+#include "nmod_poly_mat_utils.h"
 
 /*------------------------------------------------------------*/
 /* thresholds                                                 */
@@ -233,8 +233,6 @@ void _nmod_poly_mat_inv_series_newton(nmod_poly_mat_t imat,
     nmod_poly_mat_init(E, m, m, pmat->modulus);
     nmod_poly_mat_init(F, m, m, pmat->modulus);
 
-    const nmod_t mod = nmod_poly_mat_entry(pmat, 0, 0)->mod;
-
     for (i--; i >= 0; i--)
     {
         const slong prec_src = steps[i+1];
@@ -245,20 +243,10 @@ void _nmod_poly_mat_inv_series_newton(nmod_poly_mat_t imat,
         /* F = X E mod x^(prec_tgt - prec_src) */
         nmod_poly_mat_mulmid(F, imat, E, 0, prec_tgt - prec_src);
 
-        /* coefficients prec_src .. prec_tgt-1 of X set to those of -F */
-        for (slong ii = 0; ii < m; ii++)
-            for (slong jj = 0; jj < m; jj++)
-            {
-                const nmod_poly_struct * f = nmod_poly_mat_entry(F, ii, jj);
-                if (f->length == 0)
-                    continue;
-                nmod_poly_struct * x = nmod_poly_mat_entry(imat, ii, jj);
-                nmod_poly_fit_length(x, prec_src + f->length);
-                if (x->length < prec_src)
-                    _nmod_vec_zero(x->coeffs + x->length, prec_src - x->length);
-                _nmod_vec_neg(x->coeffs + prec_src, f->coeffs, f->length, mod);
-                _nmod_poly_set_length(x, prec_src + f->length);
-            }
+        /* X = X - x^prec_src F: coefficients prec_src .. prec_tgt-1 of X set
+         * to those of -F, taking the fast path without arithmetic operations
+         * since X has length <= prec_src */
+        nmod_poly_mat_sub_shift_left(imat, imat, F, prec_src);
     }
 
     nmod_poly_mat_clear(E);

@@ -424,11 +424,43 @@ nmod_poly_mat_permute_columns(nmod_poly_mat_t mat,
  *  `smat`), this parameter may alias the corresponding IN parameter (`pvec` or
  *  `pmat`).
  *
- * \todo 
- *   - versions with different shifting orders on rows/columns; 
- *   - shiftAdd, shiftSub
+ * \todo versions with different shifting orders on rows/columns
  */
 //@{
+
+/** Computes `c = a + x^k b`, for polynomial matrices `a`, `b`, `c` with the
+ * same dimensions and modulus, and `k` nonnegative (assumed, not checked).
+ * The OUT parameter `c` may alias `a` and/or `b`.
+ *
+ * For entries such that `length(a) <= k`, there is no addition: the
+ * coefficients of `b` are copied into the coefficients of degree `k` and more
+ * of `c` (this is the typical use, for building a polynomial matrix chunk by
+ * chunk as in x-adic lifting or Newton iteration, with `c` aliasing `a`). In
+ * that case, the cost per entry is linear in `k - length(a) + length(b)`,
+ * instead of `k + length(b)` for a left shift followed by an addition.
+ */
+void nmod_poly_mat_add_shift_left(nmod_poly_mat_t c,
+                                  const nmod_poly_mat_t a,
+                                  const nmod_poly_mat_t b,
+                                  slong k);
+
+/** Computes `c = a - x^k b`; same as ::nmod_poly_mat_add_shift_left otherwise
+ * (for entries such that `length(a) <= k`, the opposites of the coefficients
+ * of `b` are copied). */
+void nmod_poly_mat_sub_shift_left(nmod_poly_mat_t c,
+                                  const nmod_poly_mat_t a,
+                                  const nmod_poly_mat_t b,
+                                  slong k);
+
+/** Computes `res = (pmat div x^k) mod x^len`.
+ *
+ * The OUT parameter `res` may alias `pmat`. The integer `k` is assumed
+ * nonnegative (not checked); if `len` is nonpositive, `res` is zero.
+ */
+void nmod_poly_mat_shift_right_trunc(nmod_poly_mat_t res,
+                                     const nmod_poly_mat_t pmat,
+                                     slong k,
+                                     slong len);
 
 /** Computes the left `n`-shift `svec` of the polynomial vector `pvec` */
 // TODO

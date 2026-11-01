@@ -36,7 +36,9 @@ extern "C" {
 
 // TODO missing in FLINT:
 // - add/sub nmod_mat with nmod_poly_mat 
-// - add/sub x**k * nmod_mat to nmod_poly_mat, or more generally combined add+shift of polymats?
+// - add/sub x**k * nmod_mat to nmod_poly_mat (for polynomial matrices, see
+//   nmod_poly_mat_add_shift_left and nmod_poly_mat_sub_shift_left in
+//   nmod_poly_mat_utils.h)
 // - left/right multiplication by a constant matrix
 
 /*------------------------------------------------------------*/
