@@ -131,19 +131,34 @@ void _nmod_poly_mat_mulmid_sd_fft_matmul_bounded(nmod_poly_mat_t res,
 
 /*
     Whether the fft_small plans of the routines below use a single transform
-    modulo p (np == 1) rather than several CRT primes, for transforms of
-    depth about `depth`. These plans force the direct transform whenever p
-    allows it (see _sd_fft_mulmid_plan_init), so the conditions are those of
-    fft_small for it: p of at least 20 bits, and
-    fft_small_prime_supports_depth (p of at most 50 bits satisfying the
-    bounds of its modular multiplication, 2^max(depth, 4) dividing p - 1).
-    Primality is not checked, it is left to the plan. Used by the dispatch
-    of nmod_poly_mat_multiply and _nmod_poly_mat_mulmid.
+    (np == 1) rather than several CRT primes, for transforms of depth about
+    `depth` and a bound len_bound on the number of products accumulated onto
+    one coefficient (k * min(lenA, lenB) for an inner dimension k). This
+    follows the choice made in fft_small_plan_init_nmod:
+    - the direct transform modulo p, which these plans force whenever p
+      allows it (see _sd_fft_mulmid_plan_init): p of at least 20 bits and
+      fft_small_prime_supports_depth (p of at most 50 bits satisfying the
+      bounds of its modular multiplication, 2^max(depth, 4) dividing p - 1);
+      primality is not checked, it is left to the plan;
+    - otherwise, a single CRT prime of the context when it is large enough,
+      at least len_bound * 2^(2 * bits(p)): typically for p below 20 bits
+      and products that are not too long, where the direct transform has
+      nothing to gain (a single transform is used anyway).
+    Used by the dispatch of nmod_poly_mat_multiply and _nmod_poly_mat_mulmid.
 */
-static inline int _pml_fft_small_single_prime(ulong modn, ulong depth)
+static inline int _pml_fft_small_single_transform(ulong modn, ulong depth,
+                                                  ulong len_bound)
 {
-    return FLINT_BIT_COUNT(modn) >= 20
-           && fft_small_prime_supports_depth(modn, depth);
+    const flint_bitcnt_t modbits = FLINT_BIT_COUNT(modn);
+    const mpn_ctx_struct * R;
+
+    if (modbits >= 20 && fft_small_prime_supports_depth(modn, depth))
+        return 1;
+
+    R = get_default_mpn_ctx();
+    return flint_mpn_cmp_ui_2exp(crt_data_prod_primes(R->crts),
+                                 R->crts[0].coeff_len,
+                                 len_bound, 2 * modbits) >= 0;
 }
 
 /*

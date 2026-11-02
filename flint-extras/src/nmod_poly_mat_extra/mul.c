@@ -96,7 +96,9 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
     /* whether fft_small uses a single transform rather than several CRT
      * primes, i.e. np == 1 (primality is left to the plan, which checks
      * it) */
-    const int single_prime = _pml_fft_small_single_prime(modn, FLINT_BIT_COUNT((ulong) len + 3));
+    const int single_prime = _pml_fft_small_single_transform(modn,
+                                    FLINT_BIT_COUNT((ulong) len + 3),
+                                    (ulong) pmat1->c * FLINT_MIN(len1, len2));
 
     /* 0, 1: a single transform, p of at most 32 bits or more; several
        transforms and 2: p of at most PML_NMOD_MAT_MUL_SMALL_BITS bits,
