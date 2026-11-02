@@ -130,6 +130,23 @@ void _nmod_poly_mat_mulmid_sd_fft_matmul_bounded(nmod_poly_mat_t res,
 #include <flint/fft_small.h>
 
 /*
+    Whether the fft_small plans of the routines below use a single transform
+    modulo p (np == 1) rather than several CRT primes, for transforms of
+    depth about `depth`. These plans force the direct transform whenever p
+    allows it (see _sd_fft_mulmid_plan_init), so the conditions are those of
+    fft_small for it: p of at least 20 bits, and
+    fft_small_prime_supports_depth (p of at most 50 bits satisfying the
+    bounds of its modular multiplication, 2^max(depth, 4) dividing p - 1).
+    Primality is not checked, it is left to the plan. Used by the dispatch
+    of nmod_poly_mat_multiply and _nmod_poly_mat_mulmid.
+*/
+static inline int _pml_fft_small_single_prime(ulong modn, ulong depth)
+{
+    return FLINT_BIT_COUNT(modn) >= 20
+           && fft_small_prime_supports_depth(modn, depth);
+}
+
+/*
     Middle products by transposition, shared by mul_sd_fft_direct.c and
     mul_sd_fft_matmul.c (only with PML_HAVE_MACHINE_VECTORS).
 

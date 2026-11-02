@@ -10,7 +10,6 @@
     <https://www.gnu.org/licenses/>.
 */
 
-#include <flint/longlong.h>   /* for flint_ctz */
 #include <flint/mpn_extras.h>
 #include <flint/nmod_mat.h>
 #include <flint/nmod_vec.h>
@@ -146,8 +145,8 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         const ulong modn = pmat1->modulus;
         const slong dim = n_cbrt(pmat1->r * pmat1->c * pmat2->c);
         const flint_bitcnt_t modbits = FLINT_BIT_COUNT(modn);
-        const int single_prime = (modbits <= 50)
-            && ((flint_bitcnt_t) flint_ctz(modn - 1) >= FLINT_BIT_COUNT((ulong) (len1 + len2 + 2)));
+        const int single_prime = _pml_fft_small_single_prime(modn,
+                                        FLINT_BIT_COUNT((ulong) (len1 + len2 + 2)));
         /* 0, 1: a single transform, p of at most 32 bits or more; several
            transforms and 2: p of at most PML_NMOD_MAT_MUL_SMALL_BITS bits,
            3: at most 52 bits, 4: more */
