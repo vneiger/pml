@@ -146,6 +146,49 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         const ulong modn = pmat1->modulus;
         const slong dim = n_cbrt(pmat1->r * pmat1->c * pmat2->c);
         const flint_bitcnt_t modbits = FLINT_BIT_COUNT(modn);
+
+        /* thin shapes, i.e. a row vector times a matrix (pmat1->r == 1) or
+           an inner dimension 1: the thresholds below were fitted on square
+           shapes, and the Vandermonde routines have little to amortize
+           their evaluations on. The rule: vandermonde1 for very short
+           products (at most 3 points, or 7 for p of at most
+           PML_NMOD_MAT_MUL_SMALL_BITS bits) of not too small matrices,
+           where the plain product is dominated by the overhead of its many
+           short polynomial products; the product (FLINT's nmod_poly_mat_mul
+           for such shapes, see nmod_poly_mat_multiply) followed by a
+           truncation for short operands; sd_fft_direct otherwise. On the
+           Xeon with IFMA, for 1 x m times m x m:
+           - from m = 16, vandermonde1 is 1.3-6.7x faster than naive with at
+             most 3 points; with 4 to 7-9 points, it is up to 1.5x faster
+             modulo a 30-bit prime (more so for larger m), and about as fast
+             modulo a 60-bit one; with more points, naive is faster, up to
+             3x; at m = 8, the two are within a few microseconds;
+           - naive is faster than sd_fft_direct up to len1 + len2 - 1 between
+             32 and 40 modulo a 30-bit prime, 48 and 64 modulo a 60-bit one
+             (the bound 32 below is on the safe side for large moduli);
+           - the previous rule picked the Vandermonde routines up to nhi =
+             16, or up to a few hundred depending on the modulus and the
+             dimension, where they are up to 2-4x slower than the better of
+             naive and sd_fft_direct.
+           A matrix times a column vector (pmat2->c == 1) keeps the rule for
+           square shapes: there, the Vandermonde routines are 1.1-1.5x
+           faster than naive modulo a 30-bit prime for m = 32..128 and
+           lengths 4..16, and within 25% of it modulo a 60-bit prime. */
+        if (pmat1->r == 1 || pmat1->c == 1)
+        {
+            const slong npts = FLINT_MIN(len1, len2)
+                               + FLINT_MIN(nhi, len1 + len2 - 1) - nlo - 1;
+            const slong vdm_npts = (modbits <= PML_NMOD_MAT_MUL_SMALL_BITS) ? 7 : 3;
+            if (dim >= 6 && npts <= vdm_npts && NMOD_POLY_CAN_USE_VANDERMONDE1(modn, npts)
+                && n_is_prime(modn))
+                _nmod_poly_mat_mulmid_vandermonde1(res, pmat1, len1, pmat2, len2, nlo, nhi);
+            else if (len1 + len2 - 1 <= 32)
+                _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
+            else
+                _nmod_poly_mat_mulmid_sd_fft_direct(res, pmat1, len1, pmat2, len2, nlo, nhi);
+            return;
+        }
+
         const int single_prime = (modbits <= 50)
             && ((flint_bitcnt_t) flint_ctz(modn - 1) >= FLINT_BIT_COUNT((ulong) (len1 + len2 + 2)));
         /* 0, 1: a single transform, p of at most 32 bits or more; several
@@ -225,14 +268,55 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
 }
 
+/* view of the coefficients [k, h) of the entries of pmat (k < h), i.e.
+ * view = (pmat mod x^h) div x^k, normalized, without copying coefficients:
+ * the entries of view point into those of pmat, which must be left unchanged
+ * while view is in use; view must be cleared by _mulmid_view_clear */
+static void _mulmid_view_init(nmod_poly_mat_t view, const nmod_poly_mat_t pmat, slong k, slong h)
+{
+    nmod_poly_mat_init(view, pmat->r, pmat->c, pmat->modulus);
+    for (slong i = 0; i < pmat->r; i++)
+    {
+        for (slong j = 0; j < pmat->c; j++)
+        {
+            const nmod_poly_struct * p = nmod_poly_mat_entry(pmat, i, j);
+            slong len = FLINT_MIN(p->length, h) - k;
+            while (len > 0 && p->coeffs[k + len - 1] == 0)
+                len--;
+            if (len > 0)
+            {
+                nmod_poly_struct * v = nmod_poly_mat_entry(view, i, j);
+                v->coeffs = p->coeffs + k;
+                v->alloc = len;
+                v->length = len;
+            }
+        }
+    }
+}
+
+static void _mulmid_view_clear(nmod_poly_mat_t view)
+{
+    for (slong i = 0; i < view->r; i++)
+    {
+        for (slong j = 0; j < view->c; j++)
+        {
+            nmod_poly_struct * v = nmod_poly_mat_entry(view, i, j);
+            v->coeffs = NULL;
+            v->alloc = 0;
+            v->length = 0;
+        }
+    }
+    nmod_poly_mat_clear(view);
+}
+
 void nmod_poly_mat_mulmid(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2,
                           slong nlo, slong nhi)
 {
     PML_ASSERT(nlo >= 0);
     PML_ASSERT(nhi >= 0);
 
-    slong len1 = nmod_poly_mat_max_length(pmat1);
-    slong len2 = nmod_poly_mat_max_length(pmat2);
+    const slong len1 = nmod_poly_mat_max_length(pmat1);
+    const slong len2 = nmod_poly_mat_max_length(pmat2);
     nhi = FLINT_MIN(nhi, len1 + len2 - 1);
 
     /* zero matrices or empty target coefficient indices */
@@ -242,47 +326,48 @@ void nmod_poly_mat_mulmid(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, cons
         return;
     }
 
-    if (len1 > nhi)
+    /* the coefficients [nlo, nhi) of the product only involve the
+     * coefficients [k1, h1) of pmat1 and [k2, h2) of pmat2, where
+     * k1 = max(0, nlo - len2 + 1), k2 = max(0, nlo - len1 + 1),
+     * h1 = min(len1, nhi - k2), h2 = min(len2, nhi - k1);
+     * one has k1 < h1, k2 < h2, and k1 + k2 <= nlo */
+    const slong k1 = FLINT_MAX(0, nlo - len2 + 1);
+    const slong k2 = FLINT_MAX(0, nlo - len1 + 1);
+    const slong h1 = FLINT_MIN(len1, nhi - k2);
+    const slong h2 = FLINT_MIN(len2, nhi - k1);
+    const int reduce1 = (k1 > 0 || h1 < len1);
+    const int reduce2 = (k2 > 0 || h2 < len2);
+
+    if (!reduce1 && !reduce2)
     {
-        nmod_poly_mat_t pmat1_tmp;
-        nmod_poly_mat_init(pmat1_tmp, pmat1->r, pmat1->c, pmat1->modulus);
-        nmod_poly_mat_set_trunc(pmat1_tmp, pmat1, nhi);
-        nmod_poly_mat_mulmid(res, pmat1_tmp, pmat2, nlo, nhi);
-        nmod_poly_mat_clear(pmat1_tmp);
+        _nmod_poly_mat_mulmid(res, pmat1, len1, pmat2, len2, nlo, nhi);
         return;
     }
 
-    if (len2 > nhi)
+    /* the operands are replaced by views of their useful coefficients,
+     * which the routines called below cannot detect as aliases of res */
+    if (res == pmat1 || res == pmat2)
     {
-        nmod_poly_mat_t pmat2_tmp;
-        nmod_poly_mat_init(pmat2_tmp, pmat2->r, pmat2->c, pmat2->modulus);
-        nmod_poly_mat_set_trunc(pmat2_tmp, pmat2, nhi);
-        nmod_poly_mat_mulmid(res, pmat1, pmat2_tmp, nlo, nhi);
-        nmod_poly_mat_clear(pmat2_tmp);
+        nmod_poly_mat_t tmp;
+        nmod_poly_mat_init(tmp, pmat1->r, pmat2->c, pmat1->modulus);
+        nmod_poly_mat_mulmid(tmp, pmat1, pmat2, nlo, nhi);
+        nmod_poly_mat_swap_entrywise(res, tmp);
+        nmod_poly_mat_clear(tmp);
         return;
     }
 
-    /* len1 <= len2 and len(pmat1) <= nlo: shift away useless coefficients of pmat2 */
-    if (len1 <= len2 && len1 <= nlo)
-    {
-        nmod_poly_mat_t pmat2_tmp;
-        nmod_poly_mat_init(pmat2_tmp, pmat2->r, pmat2->c, pmat2->modulus);
-        nmod_poly_mat_shift_right(pmat2_tmp, pmat2, nlo - len1 + 1);
-        _nmod_poly_mat_mulmid(res, pmat1, len1, pmat2_tmp, len2 - nlo + len1 - 1, len1 - 1, nhi - nlo + len1 - 1);
-        nmod_poly_mat_clear(pmat2_tmp);
-        return;
-    }
+    nmod_poly_mat_t view1, view2;
+    if (reduce1)
+        _mulmid_view_init(view1, pmat1, k1, h1);
+    if (reduce2)
+        _mulmid_view_init(view2, pmat2, k2, h2);
 
-    /* if len(pmat2) <= nlo (implies len1 > len2), shift away useless coefficients of pmat1 */
-    if (len2 <= nlo)
-    {
-        nmod_poly_mat_t pmat1_tmp;
-        nmod_poly_mat_init(pmat1_tmp, pmat1->r, pmat1->c, pmat1->modulus);
-        nmod_poly_mat_shift_right(pmat1_tmp, pmat1, nlo - len2 + 1);
-        _nmod_poly_mat_mulmid(res, pmat1_tmp, len1 - nlo + len2 - 1, pmat2, len2, len2 - 1, nhi - nlo + len2 - 1);
-        nmod_poly_mat_clear(pmat1_tmp);
-        return;
-    }
+    _nmod_poly_mat_mulmid(res, reduce1 ? view1 : pmat1, h1 - k1,
+                               reduce2 ? view2 : pmat2, h2 - k2,
+                               nlo - k1 - k2, nhi - k1 - k2);
 
-    _nmod_poly_mat_mulmid(res, pmat1, len1, pmat2, len2, nlo, nhi);
+    if (reduce1)
+        _mulmid_view_clear(view1);
+    if (reduce2)
+        _mulmid_view_clear(view2);
 }

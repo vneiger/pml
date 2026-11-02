@@ -131,7 +131,10 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
  */
 
 /** general interface
- * tries a few reductions and calls _nmod_poly_mat_mulmid */
+ * restricts pmat1 and pmat2 to their coefficients which contribute to the
+ * coefficients [nlo, nhi) of the product (by views of their entries, without
+ * copying coefficients; when res aliases pmat1 or pmat2, the result is
+ * computed in a temporary), and calls _nmod_poly_mat_mulmid */
 void nmod_poly_mat_mulmid(nmod_poly_mat_t res,
                           const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2,
                           slong nlo, slong nhi);
