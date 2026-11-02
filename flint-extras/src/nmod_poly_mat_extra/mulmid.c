@@ -189,7 +189,13 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
              as in the low product of Dixon's lifting), naive was 2-4x faster
              than all the others on a Xeon with IFMA;
            - gains against the rule for square shapes: up to 5-20x for
-             m <= 4, typically 1.5-2.7x elsewhere. */
+             m <= 4, typically 1.5-2.7x elsewhere.
+           Exception: with IFMA and the 50-bit prime (kind 3), for unbalanced
+           operands (the shorter at most a quarter of the longer) from
+           dimension 6, the rule for square shapes is kept: there, its
+           Vandermonde routines were 1.3-1.6x faster than both naive and
+           sd_fft_direct on Ice Lake (low products of Dixon's lifting with the
+           default order, lengths deg and 8 deg, deg = 4..32, m = 16..128). */
         if (pmat1->r == 1 || pmat1->c == 1)
         {
             const slong npts = FLINT_MIN(len1, len2)
@@ -197,18 +203,24 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
 #if PML_NMOD_MAT_MUL_IFMA
             const slong vdm_npts = (kind == 3) ? 31 : 7;
             const slong naive_len = (modbits <= PML_NMOD_MAT_MUL_SMALL_BITS) ? 16 : 8;
+            const int square_rule = (kind == 3 && dim >= 6
+                && 4 * FLINT_MIN(len1, len2) <= FLINT_MAX(len1, len2));
 #else
             const slong vdm_npts = (modbits <= PML_NMOD_MAT_MUL_SMALL_BITS) ? 7 : 3;
             const slong naive_len = 16;
+            const int square_rule = 0;
 #endif
-            if (dim >= 6 && npts <= vdm_npts && NMOD_POLY_CAN_USE_VANDERMONDE1(modn, npts)
-                && n_is_prime(modn))
-                _nmod_poly_mat_mulmid_vandermonde1(res, pmat1, len1, pmat2, len2, nlo, nhi);
-            else if (FLINT_MIN(len1, len2) <= naive_len)
-                _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
-            else
-                _nmod_poly_mat_mulmid_sd_fft_direct(res, pmat1, len1, pmat2, len2, nlo, nhi);
-            return;
+            if (! square_rule)
+            {
+                if (dim >= 6 && npts <= vdm_npts && NMOD_POLY_CAN_USE_VANDERMONDE1(modn, npts)
+                    && n_is_prime(modn))
+                    _nmod_poly_mat_mulmid_vandermonde1(res, pmat1, len1, pmat2, len2, nlo, nhi);
+                else if (FLINT_MIN(len1, len2) <= naive_len)
+                    _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
+                else
+                    _nmod_poly_mat_mulmid_sd_fft_direct(res, pmat1, len1, pmat2, len2, nlo, nhi);
+                return;
+            }
         }
         /* the Vandermonde routines up to nhi = min(max(lo, a2 * dim / 2), cap),
            vandermonde1 up to vdm1; sd_fft_matmul from dimension mm_dim, for
