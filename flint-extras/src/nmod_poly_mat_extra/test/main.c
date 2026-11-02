@@ -14,10 +14,12 @@
 
 #include "testing_collection.h"
 
+#include "t-add_shift_left.c"
 #include "t-det.c"
-#include "t-dixon.c"
 #include "t-hermite_normal_form.c"
+#include "t-inv_series.c"
 #include "t-kernel.c"
+#include "t-linsolve_via_kernel.c"
 #include "t-degree_det_bound.c"
 #include "t-mul_sd_fft_direct.c"
 #include "t-mul_sd_fft_matmul.c"
@@ -27,6 +29,8 @@
 #include "t-mulmid.c"
 #include "t-rank_at_point.c"
 #include "t-set_from_mat_poly.c"
+#include "t-shift_right_trunc.c"
+#include "t-solve_series_dixon.c"
 #include "t-mbasis.c"
 #include "t-pmbasis.c"
 #include "t-pmintbasis.c"
@@ -41,10 +45,12 @@
 
 test_struct tests[] =
 {
+    TEST_FUNCTION(nmod_poly_mat_add_shift_left),
     TEST_FUNCTION(nmod_poly_mat_det),
-    TEST_FUNCTION(nmod_poly_mat_dixon),
     TEST_FUNCTION(nmod_poly_mat_hnf),
+    TEST_FUNCTION(nmod_poly_mat_inv_series),
     TEST_FUNCTION(nmod_poly_mat_kernel),
+    TEST_FUNCTION(nmod_poly_mat_linsolve_via_kernel),
     TEST_FUNCTION(nmod_poly_mat_degree_det_bound),
     TEST_FUNCTION(nmod_poly_mat_mbasis),
     TEST_FUNCTION(nmod_poly_mat_mul_sd_fft_direct),
@@ -55,6 +61,8 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_mulmid),
     TEST_FUNCTION(nmod_poly_mat_rank_at_point),
     TEST_FUNCTION(nmod_poly_mat_set_from_mat_poly),
+    TEST_FUNCTION(nmod_poly_mat_shift_right_trunc),
+    TEST_FUNCTION(nmod_poly_mat_solve_series_dixon),
     TEST_FUNCTION(nmod_poly_mat_pmbasis),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis_nondistinct),

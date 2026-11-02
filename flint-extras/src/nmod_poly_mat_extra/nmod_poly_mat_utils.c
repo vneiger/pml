@@ -11,7 +11,9 @@
 */
 
 #include <stdlib.h> // for qsort
+#include <string.h> // for memmove
 #include <flint/nmod_poly.h>
+#include <flint/nmod_vec.h>
 #include "nmod_poly_mat_utils.h"
 #include "nmod_mat_poly.h"
 #include "nmod_mat_poly_extra/impl.h"   /* _pml_transpose */
@@ -177,6 +179,134 @@ void _nmod_poly_mat_permute_columns_by_sorting_vec(nmod_poly_mat_t mat,
     nmod_poly_mat_permute_columns(mat, perm, NULL);
 }
 
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* COMBINED LEFT SHIFT AND ADDITION/SUBTRACTION               */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/* c = a + x^k b if sub == 0, c = a - x^k b otherwise; k >= 0 */
+static void _nmod_poly_addsub_shift_left(nmod_poly_t c,
+                                         const nmod_poly_t a,
+                                         const nmod_poly_t b,
+                                         slong k, int sub)
+{
+    const slong lena = a->length;
+    const slong lenb = b->length;
+    const nmod_t mod = b->mod;
+
+    if (lenb == 0)
+    {
+        nmod_poly_set(c, a);
+        return;
+    }
+
+    if (c == b)  /* c may also alias a */
+    {
+        nmod_poly_t t;
+        nmod_poly_init_mod(t, mod);
+        _nmod_poly_addsub_shift_left(t, a, b, k, sub);
+        nmod_poly_swap(c, t);
+        nmod_poly_clear(t);
+        return;
+    }
+
+    /* from now on, c does not alias b (fit_length keeps a valid if c == a) */
+    const slong len = FLINT_MAX(lena, k + lenb);
+    nmod_poly_fit_length(c, len);
+
+    if (c != a)
+        _nmod_vec_set(c->coeffs, a->coeffs, FLINT_MIN(lena, k));
+
+    if (lena <= k)
+    {
+        /* no overlap: zero gap, then copy (or negate) b */
+        _nmod_vec_zero(c->coeffs + lena, k - lena);
+        if (sub)
+            _nmod_vec_neg(c->coeffs + k, b->coeffs, lenb, mod);
+        else
+            _nmod_vec_set(c->coeffs + k, b->coeffs, lenb);
+        _nmod_poly_set_length(c, len);  /* leading coefficient from b */
+        return;
+    }
+
+    /* overlap on [k, k + ov) */
+    const slong ov = FLINT_MIN(lena, k + lenb) - k;
+    if (sub)
+        _nmod_vec_sub(c->coeffs + k, a->coeffs + k, b->coeffs, ov, mod);
+    else
+        _nmod_vec_add(c->coeffs + k, a->coeffs + k, b->coeffs, ov, mod);
+
+    if (lena < k + lenb)  /* top part from b */
+    {
+        if (sub)
+            _nmod_vec_neg(c->coeffs + lena, b->coeffs + ov, lenb - ov, mod);
+        else
+            _nmod_vec_set(c->coeffs + lena, b->coeffs + ov, lenb - ov);
+    }
+    else if (c != a)  /* top part from a */
+        _nmod_vec_set(c->coeffs + k + lenb, a->coeffs + k + lenb, lena - k - lenb);
+
+    _nmod_poly_set_length(c, len);
+    _nmod_poly_normalise(c);  /* cancellation if lena == k + lenb */
+}
+
+void nmod_poly_mat_add_shift_left(nmod_poly_mat_t c,
+                                  const nmod_poly_mat_t a,
+                                  const nmod_poly_mat_t b,
+                                  slong k)
+{
+    for (slong i = 0; i < c->r; i++)
+        for (slong j = 0; j < c->c; j++)
+            _nmod_poly_addsub_shift_left(nmod_poly_mat_entry(c, i, j),
+                                         nmod_poly_mat_entry(a, i, j),
+                                         nmod_poly_mat_entry(b, i, j),
+                                         k, 0);
+}
+
+void nmod_poly_mat_sub_shift_left(nmod_poly_mat_t c,
+                                  const nmod_poly_mat_t a,
+                                  const nmod_poly_mat_t b,
+                                  slong k)
+{
+    for (slong i = 0; i < c->r; i++)
+        for (slong j = 0; j < c->c; j++)
+            _nmod_poly_addsub_shift_left(nmod_poly_mat_entry(c, i, j),
+                                         nmod_poly_mat_entry(a, i, j),
+                                         nmod_poly_mat_entry(b, i, j),
+                                         k, 1);
+}
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* COMBINED RIGHT SHIFT AND TRUNCATION                        */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/* res = (pmat div x^k) mod x^len, k >= 0 */
+void nmod_poly_mat_shift_right_trunc(nmod_poly_mat_t res,
+                                     const nmod_poly_mat_t pmat,
+                                     slong k, slong len)
+{
+    for (slong i = 0; i < res->r; i++)
+        for (slong j = 0; j < res->c; j++)
+        {
+            nmod_poly_struct * r = nmod_poly_mat_entry(res, i, j);
+            const nmod_poly_struct * p = nmod_poly_mat_entry(pmat, i, j);
+            const slong l = FLINT_MIN(p->length - k, len);
+            if (l <= 0)
+            {
+                nmod_poly_zero(r);
+                continue;
+            }
+            /* no-op if r == p, since l <= length <= alloc */
+            nmod_poly_fit_length(r, l);
+            memmove(r->coeffs, p->coeffs + k, l * sizeof(ulong));
+            _nmod_poly_set_length(r, l);
+            _nmod_poly_normalise(r);
+        }
+}
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/

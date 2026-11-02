@@ -20,6 +20,7 @@
 
 #include "nmod_poly_extra.h"  /* for NMOD_POLY_CAN_USE_GEOMETRIC */
 #include "nmod_poly_mat_multiply.h"
+#include "nmod_poly_mat_utils.h"
 #include "impl.h"                 /* for PML_NMOD_MAT_MUL_IFMA */
 
 /*------------------------------------------------------------*/
@@ -38,8 +39,7 @@ void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t res,
     }
 
     nmod_poly_mat_multiply(res, pmat1, pmat2);
-    nmod_poly_mat_shift_right(res, res, nlo);
-    nmod_poly_mat_truncate(res, nhi - nlo);
+    nmod_poly_mat_shift_right_trunc(res, res, nlo, nhi - nlo);
 }
 
 

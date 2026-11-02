@@ -127,8 +127,6 @@ void nmod_poly_mat_multiply(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, co
  *
  * TODO faster matrix eval/interp by better handling the memory aspects
 
- * TODO for naive, add and use function for combined shift+truncate
- *
  * TODO improve the case of constant pmat1 or pmat2, currently no specific function
  */
 
