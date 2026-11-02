@@ -11,7 +11,6 @@
 */
 
 #include <stdlib.h> // for qsort
-#include <string.h> // for memmove
 #include <flint/nmod_poly.h>
 #include <flint/nmod_vec.h>
 #include "nmod_poly_mat_utils.h"
@@ -216,37 +215,21 @@ static void _nmod_poly_addsub_shift_left(nmod_poly_t c,
     const slong len = FLINT_MAX(lena, k + lenb);
     nmod_poly_fit_length(c, len);
 
+    /* coefficients below k: those of a, then zero if length(a) < k */
     if (c != a)
         _nmod_vec_set(c->coeffs, a->coeffs, FLINT_MIN(lena, k));
-
-    if (lena <= k)
-    {
-        /* no overlap: zero gap, then copy (or negate) b */
+    if (lena < k)
         _nmod_vec_zero(c->coeffs + lena, k - lena);
-        if (sub)
-            _nmod_vec_neg(c->coeffs + k, b->coeffs, lenb, mod);
-        else
-            _nmod_vec_set(c->coeffs + k, b->coeffs, lenb);
-        _nmod_poly_set_length(c, len);  /* leading coefficient from b */
-        return;
-    }
 
-    /* overlap on [k, k + ov) */
-    const slong ov = FLINT_MIN(lena, k + lenb) - k;
+    /* coefficients from k: (a div x^k) +- b; if length(a) <= k, this only
+     * copies (or negates) b, the fast path without arithmetic operations;
+     * ahi is not read in that case (and avoids offsetting a NULL pointer) */
+    const slong lenahi = FLINT_MAX(lena - k, 0);
+    nn_srcptr ahi = (lenahi > 0) ? a->coeffs + k : c->coeffs + k;
     if (sub)
-        _nmod_vec_sub(c->coeffs + k, a->coeffs + k, b->coeffs, ov, mod);
+        _nmod_poly_sub(c->coeffs + k, ahi, lenahi, b->coeffs, lenb, mod);
     else
-        _nmod_vec_add(c->coeffs + k, a->coeffs + k, b->coeffs, ov, mod);
-
-    if (lena < k + lenb)  /* top part from b */
-    {
-        if (sub)
-            _nmod_vec_neg(c->coeffs + lena, b->coeffs + ov, lenb - ov, mod);
-        else
-            _nmod_vec_set(c->coeffs + lena, b->coeffs + ov, lenb - ov);
-    }
-    else if (c != a)  /* top part from a */
-        _nmod_vec_set(c->coeffs + k + lenb, a->coeffs + k + lenb, lena - k - lenb);
+        _nmod_poly_add(c->coeffs + k, ahi, lenahi, b->coeffs, lenb, mod);
 
     _nmod_poly_set_length(c, len);
     _nmod_poly_normalise(c);  /* cancellation if lena == k + lenb */
@@ -302,7 +285,8 @@ void nmod_poly_mat_shift_right_trunc(nmod_poly_mat_t res,
             }
             /* no-op if r == p, since l <= length <= alloc */
             nmod_poly_fit_length(r, l);
-            memmove(r->coeffs, p->coeffs + k, l * sizeof(ulong));
+            /* forward copy, valid for r == p since k >= 0 */
+            _nmod_poly_shift_right(r->coeffs, p->coeffs, l, k);
             _nmod_poly_set_length(r, l);
             _nmod_poly_normalise(r);
         }

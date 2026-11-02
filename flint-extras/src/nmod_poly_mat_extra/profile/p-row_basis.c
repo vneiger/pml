@@ -70,7 +70,7 @@ void time_row_basis(time_args targs, flint_rand_t state)
 
     double FLINT_SET_BUT_UNUSED(tcpu), twall;
     TIMEIT_START;
-    nmod_poly_mat_row_basis(rbas, pmat);
+    nmod_poly_mat_row_basis(rbas, NULL, pmat);
     TIMEIT_STOP_VALUES(tcpu, twall);
     flint_printf("%.2e", twall);
 
@@ -200,7 +200,7 @@ int main(int argc, char ** argv)
 {
     flint_rand_t state;
     flint_rand_init(state);
-    flint_rand_set_seed(state, time(NULL), time(NULL)+129384125L);
+    flint_rand_set_seed(state, 1234, 5678);
 
     const slong nfuns = 7;
     typedef void (*timefun) (time_args, flint_rand_t);

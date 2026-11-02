@@ -10,8 +10,6 @@
     <https://www.gnu.org/licenses/>.
 */
 
-#include <stdlib.h>  /* qsort */
-
 #include <flint/flint.h>
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly.h>
@@ -29,88 +27,22 @@
  * times as many rows as columns is processed by blocks of rows */
 #define ROW_BASIS_TALL_RATIO 3
 
-/* In the general interface, the iterative weak Popov form algorithm of
- * Mulders and Storjohann is used when cdim * deg is at most
- * NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES (see the header), or
- * ROW_BASIS_WEAK_POPOV_THRES_TALL for a matrix processed by blocks: for
- * tall matrices with nontrivial row space, the weak Popov approach remained
- * faster in all tested cases (Intel Xeon, AVX-512, 60-bit prime, dimensions
- * up to 400 x 40, degree up to 1000) 
- * \todo thresholds remain to be studied more thoroughly
- * */
-#define ROW_BASIS_WEAK_POPOV_THRES_TALL 20000
-
 /*------------------------------------------------------------*/
 /* helpers                                                    */
 /*------------------------------------------------------------*/
 
-/* zero the rows of mat starting from index i0 */
-static void _zero_rows_from(nmod_poly_mat_t mat, slong i0)
+/* pmat (m x n) has full row rank, hence m <= n: it is its own row basis,
+ * with left factor the identity; rbas (at least m rows) and lfac (if not
+ * NULL, at least m columns) are assumed to be zero */
+static void _set_full_row_rank(nmod_poly_mat_t rbas, nmod_poly_mat_t lfac,
+                               const nmod_poly_mat_t pmat)
 {
-    for (slong i = i0; i < mat->r; i++)
-        for (slong j = 0; j < mat->c; j++)
-            nmod_poly_zero(nmod_poly_mat_entry(mat, i, j));
-}
-
-/* zero the columns of mat starting from index j0 */
-static void _zero_columns_from(nmod_poly_mat_t mat, slong j0)
-{
-    for (slong i = 0; i < mat->r; i++)
-        for (slong j = j0; j < mat->c; j++)
-            nmod_poly_zero(nmod_poly_mat_entry(mat, i, j));
-}
-
-/* the first src->r rows of mat become src (with mat->c == src->c), the other
- * rows of mat become zero; src is destroyed if swap is nonzero */
-static void _set_top_rows(nmod_poly_mat_t mat, nmod_poly_mat_t src, int swap)
-{
-    if (swap)
-    {
-        for (slong i = 0; i < src->r; i++)
-            for (slong j = 0; j < src->c; j++)
-                nmod_poly_swap(nmod_poly_mat_entry(mat, i, j), nmod_poly_mat_entry(src, i, j));
-    }
-    else
-    {
-        for (slong i = 0; i < src->r; i++)
-            for (slong j = 0; j < src->c; j++)
-                nmod_poly_set(nmod_poly_mat_entry(mat, i, j), nmod_poly_mat_entry(src, i, j));
-    }
-    _zero_rows_from(mat, src->r);
-}
-
-/* the first src->c columns of mat become src (with mat->r == src->r), the
- * other columns of mat become zero; src is destroyed if swap is nonzero */
-static void _set_left_columns(nmod_poly_mat_t mat, nmod_poly_mat_t src, int swap)
-{
-    if (swap)
-    {
-        for (slong i = 0; i < src->r; i++)
-            for (slong j = 0; j < src->c; j++)
-                nmod_poly_swap(nmod_poly_mat_entry(mat, i, j), nmod_poly_mat_entry(src, i, j));
-    }
-    else
-    {
-        for (slong i = 0; i < src->r; i++)
-            for (slong j = 0; j < src->c; j++)
-                nmod_poly_set(nmod_poly_mat_entry(mat, i, j), nmod_poly_mat_entry(src, i, j));
-    }
-    _zero_columns_from(mat, src->c);
-}
-
-/* the first n rows of mat become the n x n identity (n <= mat->r, n == mat->c),
- * the other rows become zero */
-static void _set_top_identity(nmod_poly_mat_t mat, slong n)
-{
-    for (slong i = 0; i < n; i++)
-        for (slong j = 0; j < mat->c; j++)
-        {
-            if (i == j)
-                nmod_poly_one(nmod_poly_mat_entry(mat, i, j));
-            else
-                nmod_poly_zero(nmod_poly_mat_entry(mat, i, j));
-        }
-    _zero_rows_from(mat, n);
+    nmod_poly_mat_t top;
+    nmod_poly_mat_window_init(top, rbas, 0, 0, pmat->r, pmat->c);
+    nmod_poly_mat_set(top, pmat);
+    nmod_poly_mat_window_clear(top);
+    if (lfac)
+        nmod_poly_mat_one(lfac);
 }
 
 /* Let M be a matrix with r columns and rank r, and P M = L U its LU
@@ -249,14 +181,16 @@ static void _right_kernel_nonpositive(nmod_poly_mat_t C, slong * tt,
 /* Zhou-Labahn row basis, low level                           */
 /*------------------------------------------------------------*/
 
-slong _nmod_poly_mat_row_basis_zl(nmod_poly_mat_t rbas,
-                                  nmod_poly_mat_t lfac,
-                                  const nmod_poly_mat_t pmat,
-                                  const slong * shift,
-                                  const nmod_poly_mat_t ker,
-                                  const slong * ker_rdeg,
-                                  slong nullity,
-                                  int check_unimodular)
+/* _nmod_poly_mat_row_basis_zl without the full row rank shortcut; rbas and
+ * lfac (if not NULL) are assumed to be zero */
+static slong _row_basis_zl(nmod_poly_mat_t rbas,
+                           nmod_poly_mat_t lfac,
+                           const nmod_poly_mat_t pmat,
+                           const slong * shift,
+                           const nmod_poly_mat_t ker,
+                           const slong * ker_rdeg,
+                           slong nullity,
+                           int check_unimodular)
 {
     const slong m = pmat->r;
     const slong n = pmat->c;
@@ -264,12 +198,7 @@ slong _nmod_poly_mat_row_basis_zl(nmod_poly_mat_t rbas,
 
     /* empty matrix */
     if (m == 0 || n == 0)
-    {
-        _zero_rows_from(rbas, 0);
-        if (lfac)
-            _zero_columns_from(lfac, 0);
         return 0;
-    }
 
     /* shift */
     slong * s = FLINT_ARRAY_ALLOC(m, slong);
@@ -311,25 +240,13 @@ slong _nmod_poly_mat_row_basis_zl(nmod_poly_mat_t rbas,
 
     if (r == 0)
     {
-        /* pmat is zero */
-        _zero_rows_from(rbas, 0);
-        if (lfac)
-            _zero_columns_from(lfac, 0);
+        /* pmat is zero: rbas and lfac stay zero */
     }
 
     else if (k == 0)
     {
         /* full row rank: pmat is a row basis of itself (note m <= n) */
-        for (slong i = 0; i < m; i++)
-            for (slong j = 0; j < n; j++)
-                nmod_poly_set(nmod_poly_mat_entry(rbas, i, j), nmod_poly_mat_entry(pmat, i, j));
-        _zero_rows_from(rbas, m);
-        if (lfac)
-        {
-            _zero_columns_from(lfac, 0);
-            for (slong i = 0; i < m; i++)
-                nmod_poly_one(nmod_poly_mat_entry(lfac, i, i));
-        }
+        _set_full_row_rank(rbas, lfac, pmat);
     }
 
     else
@@ -368,14 +285,14 @@ slong _nmod_poly_mat_row_basis_zl(nmod_poly_mat_t rbas,
 
             if (_nmod_poly_mat_row_basis_certify_unimodular(pmat, s, sum_t))
             {
-                /* row space of pmat is K[x]^{1 x n} */
-                _set_top_identity(rbas, n);
+                /* row space of pmat is K[x]^{1 x n}: R = I and C = pmat */
+                nmod_poly_mat_one(rbas);
                 if (lfac)
                 {
-                    for (slong i = 0; i < m; i++)
-                        for (slong j = 0; j < n; j++)
-                            nmod_poly_set(nmod_poly_mat_entry(lfac, i, j), nmod_poly_mat_entry(pmat, i, j));
-                    _zero_columns_from(lfac, n);
+                    nmod_poly_mat_t left;
+                    nmod_poly_mat_window_init(left, lfac, 0, 0, m, n);
+                    nmod_poly_mat_set(left, pmat);
+                    nmod_poly_mat_window_clear(left);
                 }
                 done = 1;
             }
@@ -428,9 +345,16 @@ slong _nmod_poly_mat_row_basis_zl(nmod_poly_mat_t rbas,
             nmod_poly_mat_init(R, r, n, mod);
             nmod_poly_mat_mulmid(R, X, AJ, 0, sigma);
 
-            _set_top_rows(rbas, R, 1);
+            nmod_poly_mat_t win;
+            nmod_poly_mat_window_init(win, rbas, 0, 0, r, n);
+            nmod_poly_mat_swap_entrywise(win, R);
+            nmod_poly_mat_window_clear(win);
             if (lfac)
-                _set_left_columns(lfac, C, 1);
+            {
+                nmod_poly_mat_window_init(win, lfac, 0, 0, m, r);
+                nmod_poly_mat_swap_entrywise(win, C);
+                nmod_poly_mat_window_clear(win);
+            }
 
             nmod_poly_mat_clear(R);
             nmod_poly_mat_clear(X);
@@ -453,6 +377,32 @@ slong _nmod_poly_mat_row_basis_zl(nmod_poly_mat_t rbas,
     return r;
 }
 
+slong _nmod_poly_mat_row_basis_zl(nmod_poly_mat_t rbas,
+                                  nmod_poly_mat_t lfac,
+                                  const nmod_poly_mat_t pmat,
+                                  const slong * shift,
+                                  const nmod_poly_mat_t ker,
+                                  const slong * ker_rdeg,
+                                  slong nullity,
+                                  int check_unimodular)
+{
+    nmod_poly_mat_zero(rbas);
+    if (lfac)
+        nmod_poly_mat_zero(lfac);
+
+    /* no kernel basis given, m <= n, and full row rank at some point: then
+     * pmat has full row rank (the rank at a point is a lower bound on the
+     * rank), and computing a kernel basis is avoided */
+    if (ker == NULL && pmat->r > 0 && pmat->r <= pmat->c
+        && nmod_poly_mat_rank_at_some_point(pmat) == pmat->r)
+    {
+        _set_full_row_rank(rbas, lfac, pmat);
+        return pmat->r;
+    }
+
+    return _row_basis_zl(rbas, lfac, pmat, shift, ker, ker_rdeg, nullity, check_unimodular);
+}
+
 /*------------------------------------------------------------*/
 /* interfaces                                                 */
 /*------------------------------------------------------------*/
@@ -470,41 +420,24 @@ slong _nmod_poly_mat_row_basis_weak_popov(nmod_poly_mat_t rbas,
     const slong m = pmat->r;
     const slong n = pmat->c;
 
+    nmod_poly_mat_zero(rbas);
     if (m == 0 || n == 0)
-    {
-        _zero_rows_from(rbas, 0);
         return 0;
-    }
 
     nmod_poly_mat_t copy;
     nmod_poly_mat_init_set(copy, pmat);
     slong * pivind = FLINT_ARRAY_ALLOC(m, slong);
     /* zero rows are moved to the bottom */
     const slong r = nmod_poly_mat_weak_popov_iter(copy, NULL, NULL, pivind, NULL, ROW_LOWER);
-    for (slong i = 0; i < r; i++)
-        for (slong j = 0; j < n; j++)
-            nmod_poly_swap(nmod_poly_mat_entry(rbas, i, j), nmod_poly_mat_entry(copy, i, j));
-    _zero_rows_from(rbas, r);
+    nmod_poly_mat_t top, ctop;
+    nmod_poly_mat_window_init(top, rbas, 0, 0, r, n);
+    nmod_poly_mat_window_init(ctop, copy, 0, 0, r, n);
+    nmod_poly_mat_swap_entrywise(top, ctop);
+    nmod_poly_mat_window_clear(ctop);
+    nmod_poly_mat_window_clear(top);
     flint_free(pivind);
     nmod_poly_mat_clear(copy);
     return r;
-}
-
-/* for sorting rows by degree */
-typedef struct
-{
-    slong deg;
-    slong idx;
-}
-_deg_idx_t;
-
-static int _deg_idx_cmp(const void * a, const void * b)
-{
-    const _deg_idx_t * x = (const _deg_idx_t *) a;
-    const _deg_idx_t * y = (const _deg_idx_t *) b;
-    if (x->deg != y->deg)
-        return (x->deg < y->deg) ? -1 : 1;
-    return (x->idx < y->idx) ? -1 : (x->idx > y->idx);
 }
 
 slong _nmod_poly_mat_row_basis_zl_blocks(nmod_poly_mat_t rbas,
@@ -514,51 +447,40 @@ slong _nmod_poly_mat_row_basis_zl_blocks(nmod_poly_mat_t rbas,
     const slong m = pmat->r;
     const slong n = pmat->c;
 
+    nmod_poly_mat_zero(rbas);
     if (m == 0 || n == 0)
-    {
-        _zero_rows_from(rbas, 0);
         return 0;
-    }
 
     if (bsize < 1)
         bsize = 1;
     else if (bsize > m)
         bsize = m;
 
-    /* tall matrix: nonzero rows sorted by increasing degree [ZL13, Section 6] */
+    /* tall matrix: rows sorted by increasing degree [ZL13, Section 6]; the
+     * z = m - nnz zero rows (degree -1) come first, and are skipped */
+    nmod_poly_mat_t P;
+    nmod_poly_mat_init_set(P, pmat);
     slong * rdeg = FLINT_ARRAY_ALLOC(m, slong);
-    nmod_poly_mat_row_degree(rdeg, pmat, NULL);
-    _deg_idx_t * order = FLINT_ARRAY_ALLOC(m, _deg_idx_t);
-    slong nnz = 0;
-    for (slong i = 0; i < m; i++)
-    {
-        if (rdeg[i] >= 0)
-        {
-            order[nnz].deg = rdeg[i];
-            order[nnz].idx = i;
-            nnz++;
-        }
-    }
+    slong * perm = FLINT_ARRAY_ALLOC(m, slong);
+    const slong nnz = nmod_poly_mat_row_degree(rdeg, P, NULL);
+    _nmod_poly_mat_permute_rows_by_sorting_vec(P, m, rdeg, perm);
+    flint_free(perm);
     flint_free(rdeg);
-    qsort(order, nnz, sizeof(_deg_idx_t), _deg_idx_cmp);
 
     if (nnz == 0)
     {
-        flint_free(order);
-        _zero_rows_from(rbas, 0);
+        nmod_poly_mat_clear(P);
         return 0;
     }
 
     /* first block: n + bsize rows (or all nonzero rows if fewer) */
+    const slong z = m - nnz;
     slong pos = FLINT_MIN(nnz, n + bsize);
-    nmod_poly_mat_t W, Rcur;
-    nmod_poly_mat_init(W, pos, n, pmat->modulus);
-    for (slong i = 0; i < pos; i++)
-        for (slong j = 0; j < n; j++)
-            nmod_poly_set(nmod_poly_mat_entry(W, i, j), nmod_poly_mat_entry(pmat, order[i].idx, j));
+    nmod_poly_mat_t W, Rcur, Rtop;
+    nmod_poly_mat_window_init(W, P, z, 0, z + pos, n);
     nmod_poly_mat_init(Rcur, n, n, pmat->modulus);
     slong r = _nmod_poly_mat_row_basis_zl(Rcur, NULL, W, NULL, NULL, NULL, 0, 1);
-    nmod_poly_mat_clear(W);
+    nmod_poly_mat_window_clear(W);
 
     /* next blocks: bsize rows at a time, appended to the current row basis */
     while (pos < nnz)
@@ -568,26 +490,28 @@ slong _nmod_poly_mat_row_basis_zl_blocks(nmod_poly_mat_t rbas,
             break;
 
         const slong nb = FLINT_MIN(bsize, nnz - pos);
+        nmod_poly_mat_t B;
+        nmod_poly_mat_window_init(Rtop, Rcur, 0, 0, r, n);
+        nmod_poly_mat_window_init(B, P, z + pos, 0, z + pos + nb, n);
         nmod_poly_mat_init(W, r + nb, n, pmat->modulus);
-        for (slong i = 0; i < r; i++)
-            for (slong j = 0; j < n; j++)
-                nmod_poly_swap(nmod_poly_mat_entry(W, i, j), nmod_poly_mat_entry(Rcur, i, j));
-        for (slong i = 0; i < nb; i++)
-            for (slong j = 0; j < n; j++)
-                nmod_poly_set(nmod_poly_mat_entry(W, r + i, j), nmod_poly_mat_entry(pmat, order[pos + i].idx, j));
+        nmod_poly_mat_concat_vertical(W, Rtop, B);
+        nmod_poly_mat_window_clear(B);
+        nmod_poly_mat_window_clear(Rtop);
         r = _nmod_poly_mat_row_basis_zl(Rcur, NULL, W, NULL, NULL, NULL, 0, 1);
         nmod_poly_mat_clear(W);
         pos += nb;
     }
 
-    /* copy result */
-    for (slong i = 0; i < r; i++)
-        for (slong j = 0; j < n; j++)
-            nmod_poly_swap(nmod_poly_mat_entry(rbas, i, j), nmod_poly_mat_entry(Rcur, i, j));
-    _zero_rows_from(rbas, r);
+    /* result: first r rows of Rcur (rbas is zero) */
+    nmod_poly_mat_t top;
+    nmod_poly_mat_window_init(top, rbas, 0, 0, r, n);
+    nmod_poly_mat_window_init(Rtop, Rcur, 0, 0, r, n);
+    nmod_poly_mat_swap_entrywise(top, Rtop);
+    nmod_poly_mat_window_clear(Rtop);
+    nmod_poly_mat_window_clear(top);
 
     nmod_poly_mat_clear(Rcur);
-    flint_free(order);
+    nmod_poly_mat_clear(P);
     return r;
 }
 
@@ -597,34 +521,84 @@ slong _nmod_poly_mat_row_basis_zl_blocks(nmod_poly_mat_t rbas,
  * AVX-512, 60-bit prime, 2n x n inputs of rank n/2, n = 4 ... 30) */
 #define ROW_BASIS_RANK_DEFICIENT_FACTOR 3
 
-slong nmod_poly_mat_row_basis(nmod_poly_mat_t rbas, const nmod_poly_mat_t pmat)
+slong _nmod_poly_mat_row_basis(nmod_poly_mat_t rbas,
+                               nmod_poly_mat_t lfac,
+                               const nmod_poly_mat_t pmat,
+                               slong thres,
+                               slong thres_tall)
 {
     const slong m = pmat->r;
     const slong n = pmat->c;
     const slong d = nmod_poly_mat_degree(pmat);
 
+    nmod_poly_mat_zero(rbas);
+    if (lfac)
+        nmod_poly_mat_zero(lfac);
+
     if (m == 0 || n == 0 || d < 0)
-    {
-        _zero_rows_from(rbas, 0);
         return 0;
-    }
 
     const int tall = (m > ROW_BASIS_TALL_RATIO * n);
 
     /* small degree: weak Popov form, iterative algorithm */
-    if (n * d <= (tall ? ROW_BASIS_WEAK_POPOV_THRES_TALL : NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES))
-        return _nmod_poly_mat_row_basis_weak_popov(rbas, pmat);
+    int weak_popov = (n * d <= (tall ? thres_tall : thres));
 
-    /* moderate degree and (probably) rank deficient: the rank at a point is
-     * a lower bound on the rank, this only affects the choice of algorithm */
-    if (!tall && n * d <= ROW_BASIS_RANK_DEFICIENT_FACTOR * NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES
-        && nmod_poly_mat_rank_at_some_point(pmat) < FLINT_MIN(m, n))
-        return _nmod_poly_mat_row_basis_weak_popov(rbas, pmat);
+    if (!weak_popov && !tall)
+    {
+        /* the rank at a point is a lower bound on the rank */
+        const slong rk_pt = nmod_poly_mat_rank_at_some_point(pmat);
 
-    if (!tall)
-        return _nmod_poly_mat_row_basis_zl(rbas, NULL, pmat, NULL, NULL, NULL, 0, 1);
+        /* full row rank (m <= n), certified: pmat is its own row basis */
+        if (rk_pt == m)
+        {
+            _set_full_row_rank(rbas, lfac, pmat);
+            return m;
+        }
 
-    return _nmod_poly_mat_row_basis_zl_blocks(rbas, pmat, n);
+        /* moderate degree and (probably) rank deficient: weak Popov form
+         * (this only affects the choice of algorithm); otherwise
+         * Zhou-Labahn, which also computes the left factor */
+        if (n * d <= ROW_BASIS_RANK_DEFICIENT_FACTOR * thres && rk_pt < FLINT_MIN(m, n))
+            weak_popov = 1;
+        else
+            return _row_basis_zl(rbas, lfac, pmat, NULL, NULL, NULL, 0, 1);
+    }
+
+    slong r;
+    if (weak_popov)
+        r = _nmod_poly_mat_row_basis_weak_popov(rbas, pmat);
+    else
+    {
+        /* tall matrix: Zhou-Labahn by blocks, which does not give the left
+         * factor; for computing it, the row basis is first reduced (it has r
+         * rows and degree at most deg(pmat), this is cheap compared to the
+         * blocks) */
+        r = _nmod_poly_mat_row_basis_zl_blocks(rbas, pmat, n);
+        if (lfac && r > 0)
+        {
+            nmod_poly_mat_t top, R;
+            nmod_poly_mat_window_init(top, rbas, 0, 0, r, n);
+            nmod_poly_mat_init_set(R, top);
+            nmod_poly_mat_window_clear(top);
+            _nmod_poly_mat_row_basis_weak_popov(rbas, R);
+            nmod_poly_mat_clear(R);
+        }
+    }
+
+    /* left factor from the reduced row basis */
+    if (lfac && r > 0)
+        nmod_poly_mat_row_basis_left_factor(lfac, pmat, rbas, r, NULL, 0);
+
+    return r;
+}
+
+slong nmod_poly_mat_row_basis(nmod_poly_mat_t rbas,
+                              nmod_poly_mat_t lfac,
+                              const nmod_poly_mat_t pmat)
+{
+    return _nmod_poly_mat_row_basis(rbas, lfac, pmat,
+                                    NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES,
+                                    NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES_TALL);
 }
 
 /*------------------------------------------------------------*/
@@ -700,27 +674,21 @@ int nmod_poly_mat_row_basis_left_factor(nmod_poly_mat_t lfac,
         nmod_mat_clear(LT);
     }
 
-    /* a = rdeg_s(pmat) on nonzero rows (0 on zero rows); sigma = max(a) -
-     * min(d) + 1 */
-    slong * a = flint_calloc(m, sizeof(slong));
-    char * nz = flint_calloc(m, sizeof(char));
+    /* a = rdeg_s(pmat), zero rows getting min(s) - 1 (they are zero in the
+     * reversals below, whatever their bound); sigma = max(a) - min(d) + 1,
+     * where the maximum of a is reached on a nonzero row if pmat is nonzero
+     * (sigma stays WORD_MIN if pmat is zero) */
+    slong * a = FLINT_ARRAY_ALLOC(m, slong);
     slong sigma = WORD_MIN;
-    slong mind = WORD_MAX;
-    for (slong j = 0; res && j < r; j++)
-        mind = FLINT_MIN(mind, d[j]);
-    for (slong i = 0; res && i < m; i++)
+    if (res && nmod_poly_mat_row_degree(a, pmat, s) > 0)
     {
-        for (slong k = 0; k < n; k++)
-        {
-            const slong dk = nmod_poly_degree(nmod_poly_mat_entry(pmat, i, k));
-            if (dk >= 0 && (!nz[i] || dk + s[k] > a[i]))
-            {
-                a[i] = dk + s[k];
-                nz[i] = 1;
-            }
-        }
-        if (nz[i])
-            sigma = FLINT_MAX(sigma, a[i] - mind + 1);
+        slong maxa = a[0];
+        for (slong i = 1; i < m; i++)
+            maxa = FLINT_MAX(maxa, a[i]);
+        slong mind = d[0];
+        for (slong j = 1; j < r; j++)
+            mind = FLINT_MIN(mind, d[j]);
+        sigma = maxa - mind + 1;
     }
 
     if (res && sigma != WORD_MIN)  /* otherwise pmat is zero, and so is C */
@@ -800,7 +768,6 @@ int nmod_poly_mat_row_basis_left_factor(nmod_poly_mat_t lfac,
         nmod_poly_mat_window_clear(C);
     }
 
-    flint_free(nz);
     flint_free(a);
     nmod_mat_clear(inv0);
     flint_free(J);

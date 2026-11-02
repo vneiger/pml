@@ -92,7 +92,7 @@ TEST_FUNCTION_START(nmod_poly_mat_row_basis_left_factor, state)
 
     for (i = 0; i < 400 * flint_test_multiplier(); i++)
     {
-        const ulong prime = n_randprime(state, 2 + n_randint(state, 61), 1);
+        const ulong prime = n_randprime(state, 2 + n_randint(state, 63), 1);
         const slong m = n_randint(state, 9);
         const slong n = n_randint(state, 7);
         const slong len = 1 + n_randint(state, 8);

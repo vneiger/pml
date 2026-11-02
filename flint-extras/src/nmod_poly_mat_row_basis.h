@@ -55,36 +55,65 @@ extern "C" {
  * \param[in] pmat the input polynomial matrix (no restriction)
  */
 
-/** Computes a row basis `rbas` of `pmat` (see @ref row_basis). This is the
- * general interface. Writing `m x n` for the dimensions of `pmat` and `d`
- * for its degree:
+/** Computes a row basis `rbas` of `pmat` (see @ref row_basis), and if `lfac`
+ * is not `NULL`, the corresponding left factor. This is the general
+ * interface. Writing `m x n` for the dimensions of `pmat` and `d` for its
+ * degree:
  * - if `n * d` is at most #NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES (or
- *   20000 if `m > 3 n`), it uses the iterative weak Popov form algorithm of
- *   Mulders and Storjohann (see #nmod_poly_mat_weak_popov_iter), so that the
- *   computed basis is in weak Popov form;
- * - this is also the case if `m <= 3 n`, `n * d` is at most 3 times this
- *   threshold, and `pmat` evaluated at some point has rank less than `min(m,
- *   n)` (see #nmod_poly_mat_rank_at_some_point): then `pmat` is probably rank
- *   deficient, so that the unimodularity certificate of the Zhou-Labahn
- *   approach does not apply (since this evaluation only gives a lower bound
- *   on the rank, it only affects the choice of the algorithm);
+ *   #NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES_TALL if `m > 3 n`), it uses the
+ *   iterative weak Popov form algorithm of Mulders and Storjohann (see
+ *   ::nmod_poly_mat_weak_popov_iter), so that the computed basis is in weak
+ *   Popov form;
+ * - otherwise, if `m <= 3 n`, `pmat` is evaluated at some point (see
+ *   ::nmod_poly_mat_rank_at_some_point), which gives a lower bound on its
+ *   rank: if this rank is `m` (which implies `m <= n`), then `pmat` has full
+ *   row rank and is returned as its own row basis, with the identity as left
+ *   factor; if it is less than `min(m, n)` and `n * d` is at most 3 times the
+ *   threshold, then `pmat` is probably rank deficient, so that the
+ *   unimodularity certificate of the Zhou-Labahn approach does not apply,
+ *   and the weak Popov form algorithm is used (this only affects the choice
+ *   of the algorithm);
  * - otherwise, it uses the algorithm of Zhou and Labahn (see
- *   #nmod_poly_mat_row_basis_zl), and if `m > 3 n`, it processes the rows by
+ *   ::nmod_poly_mat_row_basis_zl), and if `m > 3 n`, it processes the rows by
  *   blocks of `n` rows sorted by increasing degree (see
- *   #_nmod_poly_mat_row_basis_zl_blocks and Section 6 of the reference
+ *   ::_nmod_poly_mat_row_basis_zl_blocks and Section 6 of the reference
  *   below), with an early exit as soon as the row span is found to be the
  *   whole of `K[x]^{1 x n}`.
  *
+ * The computed row basis is not necessarily reduced: the full row rank case
+ * returns `pmat`, and the Zhou-Labahn approach often returns a non-reduced
+ * basis.
+ * In particular, ::nmod_poly_mat_row_basis_left_factor may not apply to it:
+ * the left factor should be obtained through `lfac`. In the weak Popov
+ * branches, and in the blocks branch when `lfac` is not `NULL` (whose row
+ * basis is then reduced first, which is cheap), the left factor is computed
+ * by ::nmod_poly_mat_row_basis_left_factor; in the other branches it is a
+ * byproduct of the algorithm.
+ *
  * Size of the integers (see @ref IntegerSizes): no shift is given as input,
- * and the conditions are those of #nmod_poly_mat_row_basis_zl, which only
- * involve degrees and dimensions (they hold in practice).
+ * and the conditions are those of ::nmod_poly_mat_row_basis_zl and of
+ * ::nmod_poly_mat_row_basis_left_factor, which only involve degrees and
+ * dimensions (they hold in practice).
  */
-slong nmod_poly_mat_row_basis(nmod_poly_mat_t rbas, const nmod_poly_mat_t pmat);
+slong nmod_poly_mat_row_basis(nmod_poly_mat_t rbas,
+                              nmod_poly_mat_t lfac,
+                              const nmod_poly_mat_t pmat);
+
+/** Same as ::nmod_poly_mat_row_basis, with the thresholds given as input:
+ * `thres` replaces #NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES (also in the
+ * rank deficient case) and `thres_tall` replaces
+ * #NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES_TALL. Meant for testing and
+ * tuning (a negative threshold disables the corresponding weak Popov
+ * branch). */
+slong _nmod_poly_mat_row_basis(nmod_poly_mat_t rbas,
+                               nmod_poly_mat_t lfac,
+                               const nmod_poly_mat_t pmat,
+                               slong thres,
+                               slong thres_tall);
 
 /** Threshold on `pmat->c * deg(pmat)` below which the general interface uses
- * #_nmod_poly_mat_row_basis_weak_popov rather than the Zhou-Labahn approach,
- * for matrices with at most 3 times more rows than columns (a larger
- * threshold, 20000, is used for matrices with more rows). Rough value from
+ * ::_nmod_poly_mat_row_basis_weak_popov rather than the Zhou-Labahn approach,
+ * for matrices with at most 3 times more rows than columns. Rough value from
  * timings on an Intel Xeon (AVX-512) with a 60-bit prime: with 2n x n
  * inputs, the crossover is around n * deg = 5000 for n <= 4 and around
  * n * deg = 12000 for n = 10, 20.
@@ -92,10 +121,19 @@ slong nmod_poly_mat_row_basis(nmod_poly_mat_t rbas, const nmod_poly_mat_t pmat);
  * */
 #define NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES 8000
 
+/** Same as #NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES, for matrices with more
+ * than 3 times more rows than columns, which the Zhou-Labahn approach
+ * processes by blocks: for tall matrices with nontrivial row space, the weak
+ * Popov approach remained faster in all tested cases (Intel Xeon, AVX-512,
+ * 60-bit prime, dimensions up to 400 x 40, degree up to 1000).
+ * \todo threshold to be studied more thoroughly
+ * */
+#define NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES_TALL 20000
+
 /** Computes a row basis `rbas` of `pmat` (see @ref row_basis), which is in
  * (row-wise, lower) weak Popov form, by computing a weak Popov form of `pmat`
  * with the iterative algorithm of Mulders and Storjohann (see
- * #nmod_poly_mat_weak_popov_iter) and discarding its zero rows.
+ * ::nmod_poly_mat_weak_popov_iter) and discarding its zero rows.
  *
  * Size of the integers (see @ref IntegerSizes): no shift is involved, and
  * there is no condition beyond the general assumption on degrees. */
@@ -106,7 +144,7 @@ slong _nmod_poly_mat_row_basis_weak_popov(nmod_poly_mat_t rbas,
  * matrix). Let `R` be the first `r` rows of `rbas`, assumed to be
  * `shift`-reduced (row-wise) with no zero row, where `shift` has length
  * `pmat->c` (`NULL` meaning the uniform shift); for example a row basis
- * computed by #_nmod_poly_mat_row_basis_weak_popov, or any row basis in
+ * computed by ::_nmod_poly_mat_row_basis_weak_popov, or any row basis in
  * `shift`-weak Popov form. Assuming that the rows of `pmat` are in the row
  * span of `R`, this computes the unique matrix `C` such that `pmat = C * R`,
  * and stores it in the first `r` columns of `lfac`, which must have
@@ -131,7 +169,7 @@ slong _nmod_poly_mat_row_basis_weak_popov(nmod_poly_mat_t rbas,
  * + max(deg(pmat), deg(R)) <= WORD_MAX / 8` for all `k`. This ensures that
  * the shifted degrees `a` and `d`, their differences, the reversal bounds,
  * and the truncation order `max(a) - min(d) + 1` (at most `WORD_MAX / 2`, as
- * required by #_nmod_poly_mat_inv_series), are computed without overflow. */
+ * required by ::_nmod_poly_mat_inv_series), are computed without overflow. */
 int nmod_poly_mat_row_basis_left_factor(nmod_poly_mat_t lfac,
                                         const nmod_poly_mat_t pmat,
                                         const nmod_poly_mat_t rbas,
@@ -145,18 +183,21 @@ int nmod_poly_mat_row_basis_left_factor(nmod_poly_mat_t lfac,
  *   Wei Zhou, George Labahn -- "Computing column bases of polynomial matrices"
  *   Proceedings ISSAC 2013 -- https://doi.org/10.1145/2465506.2465947
  * with the shift `s = rdeg(pmat)` (zero rows being given degree zero),
- * in its row-wise / transposed version. See #_nmod_poly_mat_row_basis_zl for
+ * in its row-wise / transposed version. See ::_nmod_poly_mat_row_basis_zl for
  * more details.
  *
  * The row degree of the computed row basis is bounded entrywise by the
  * nonnegative tuple `t = -cdeg_{-s}(C)`, where `C` is the left factor; once
  * sorted increasingly, `t` is bounded entrywise by the `r` largest entries of
- * `s` (sorted increasingly).
+ * `s` (sorted increasingly). However, this row basis is often not reduced
+ * (about two thirds of the tested random inputs with more rows than
+ * columns), so that ::nmod_poly_mat_row_basis_left_factor may not apply to
+ * it: the left factor should be obtained through `lfac`.
  *
  * Size of the integers (see @ref IntegerSizes): these are the conditions of
- * #_nmod_poly_mat_row_basis_zl with the shift `rdeg(pmat)`, that is, `m *
+ * ::_nmod_poly_mat_row_basis_zl with the shift `rdeg(pmat)`, that is, `m *
  * deg(pmat) <= WORD_MAX / 64` (where `m` is the number of rows of `pmat`)
- * and the condition of #nmod_poly_mat_kernel_zls_approx for this shift; they
+ * and the condition of ::nmod_poly_mat_kernel_zls_approx for this shift; they
  * only involve degrees and dimensions, and hold in practice.
  */
 slong nmod_poly_mat_row_basis_zl(nmod_poly_mat_t rbas,
@@ -169,12 +210,12 @@ slong nmod_poly_mat_row_basis_zl(nmod_poly_mat_t rbas,
  * computed (where `n = pmat->c`), and then `R` is iteratively replaced by a
  * row basis of `R` augmented with the next `bsize` rows (see Section 6 of
  * ZL13). Each of these row bases is computed by
- * #nmod_poly_mat_row_basis_zl. The iteration stops early if the row span is
+ * ::nmod_poly_mat_row_basis_zl. The iteration stops early if the row span is
  * found to be the whole of `K[x]^{1 x n}`. This is meant for matrices with
  * many more rows than columns, with `bsize` about `n`.
  *
  * Size of the integers (see @ref IntegerSizes): the conditions of
- * #nmod_poly_mat_row_basis_zl are assumed for matrices with `n + bsize` rows
+ * ::nmod_poly_mat_row_basis_zl are assumed for matrices with `n + bsize` rows
  * and degree `deg(pmat)` (each row basis computation involves at most `n +
  * bsize` rows, and the row bases have degree at most `deg(pmat)`).
  */
@@ -193,7 +234,7 @@ slong _nmod_poly_mat_row_basis_zl_blocks(nmod_poly_mat_t rbas,
  * `|shift| + b = sum_t` for some upper bound `b` on `w`, which certifies that
  * the row bases of `pmat` are unimodular, and 0 otherwise. The bounds tried
  * are `|cdeg_{-shift}(pmat)|` and then the sharper bound given by
- * #nmod_poly_mat_degree_det_bound (column-wise, with the shift `-shift`),
+ * ::nmod_poly_mat_degree_det_bound (column-wise, with the shift `-shift`),
  * which is the maximum over injective maps `sigma` from columns to rows of
  * the sum over columns `j` of `deg(pmat[sigma(j), j]) - shift[sigma(j)]`;
  * with the latter, the certificate succeeds for generic matrices with any
@@ -204,7 +245,7 @@ slong _nmod_poly_mat_row_basis_zl_blocks(nmod_poly_mat_t rbas,
  * Size of the integers (see @ref IntegerSizes): it is assumed that
  * `deg(pmat)` and the absolute values of the entries of `shift` are at most
  * `WORD_MAX / (16 m)`. This is the condition of
- * #nmod_poly_mat_degree_det_bound (recall `n <= m`), and it ensures that the
+ * ::nmod_poly_mat_degree_det_bound (recall `n <= m`), and it ensures that the
  * sums over the rows or the columns computed here do not overflow. */
 int _nmod_poly_mat_row_basis_certify_unimodular(const nmod_poly_mat_t pmat,
                                                 const slong * shift,
@@ -219,7 +260,7 @@ int _nmod_poly_mat_row_basis_certify_unimodular(const nmod_poly_mat_t pmat,
  * form a `shift`-reduced left kernel basis of `pmat` (for example, a
  * `shift`-ordered weak Popov one), and `ker_rdeg` must be its `shift`-row
  * degree; if `ker` is `NULL`, then `ker_rdeg` and `nullity` are ignored and
- * this kernel basis is computed by #nmod_poly_mat_kernel_zls_approx.
+ * this kernel basis is computed by ::nmod_poly_mat_kernel_zls_approx.
  *
  * Only the differences between the entries of `shift` matter: below, `s`
  * stands for `shift - c` where `c` is the minimum of `shift[i] -
@@ -231,20 +272,25 @@ int _nmod_poly_mat_row_basis_certify_unimodular(const nmod_poly_mat_t pmat,
  * `deg(pmat)` and the absolute values of the entries of `shift` and of
  * `ker_rdeg` (if `ker` is given) are at most `WORD_MAX / (64 m)`, where `m`
  * is the number of rows of `pmat`, and that the condition of
- * #nmod_poly_mat_kernel_zls_approx holds (if `ker` is `NULL`). Then the
+ * ::nmod_poly_mat_kernel_zls_approx holds (if `ker` is `NULL`). Then the
  * entries of the normalized shift `s` stay below `WORD_MAX / (16 m)` in
  * absolute value, which ensures the condition of
- * #_nmod_poly_mat_row_basis_certify_unimodular, that the shift and order of
+ * ::_nmod_poly_mat_row_basis_certify_unimodular, that the shift and order of
  * the approximant basis computation of step 3 satisfy the condition of
- * #nmod_poly_mat_pmbasis, and that the sums of shifted degrees computed here
+ * ::nmod_poly_mat_pmbasis, and that the sums of shifted degrees computed here
  * do not overflow.
+ *
+ * If `ker` is `NULL`, `m <= n`, and `pmat` evaluated at some point has rank
+ * `m` (see ::nmod_poly_mat_rank_at_some_point), then `pmat` has full row
+ * rank: it is returned as its own row basis, with the identity as left
+ * factor, and no kernel basis is computed.
  *
  * Writing `A = pmat`, `K` for the kernel basis, `k` for the nullity and `r =
  * m - k` for the rank, the algorithm is:
  * 1. if `k == 0`, `A` has full row rank: return `R = A` and `C = I`;
  * 2. if `r == n` and `check_unimodular` is nonzero, test whether the row
  *    span of `A` is certified to be the whole of `K[x]^{1 x n}` (see below
- *    and #_nmod_poly_mat_row_basis_certify_unimodular); if so, return `R = I`
+ *    and ::_nmod_poly_mat_row_basis_certify_unimodular); if so, return `R = I`
  *    and `C = A`;
  * 3. compute `C`, the `(-s)`-minimal right kernel basis of `K`, as the
  *    approximants of nonpositive `(-s)`-degree in an approximant basis of

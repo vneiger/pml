@@ -45,18 +45,6 @@ static int _linsolvetest_check(const nmod_poly_mat_t u, const nmod_poly_t den,
     return ok;
 }
 
-/* [A ; b], with b appended as last row */
-static void _linsolvetest_stack(nmod_poly_mat_t Ab, const nmod_poly_mat_t A,
-                                const nmod_poly_mat_t b)
-{
-    for (slong j = 0; j < A->c; j++)
-    {
-        for (slong i = 0; i < A->r; i++)
-            nmod_poly_set(nmod_poly_mat_entry(Ab, i, j), nmod_poly_mat_entry(A, i, j));
-        nmod_poly_set(nmod_poly_mat_entry(Ab, A->r, j), nmod_poly_mat_entry(b, 0, j));
-    }
-}
-
 /* shifted degree of the solution [u, den] for the shift s = row degree of
  * [A ; b] (zero rows counting as degree 0), that is,
  * max(max_i (deg(u_i) + s_i), deg(den) + s_m) */
@@ -207,7 +195,7 @@ TEST_FUNCTION_START(nmod_poly_mat_linsolve_via_kernel, state)
         else
             nmod_poly_mat_randtest(b, state, len);
 
-        _linsolvetest_stack(Ab, A, b);
+        nmod_poly_mat_concat_vertical(Ab, A, b);
         const slong rkA = nmod_poly_mat_rank(A);
         const int expected = (nmod_poly_mat_rank(Ab) == rkA);
 

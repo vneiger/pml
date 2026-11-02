@@ -15,7 +15,6 @@
 #include <flint/nmod.h>
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
-#include <flint/ulong_extras.h>
 
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_inverse.h"
@@ -72,7 +71,7 @@ int nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
 
     const slong lenA = nmod_poly_mat_max_length(A);
     if (order <= 0)
-        order = FLINT_MAX(lenA, 1);
+        order = FLINT_MAX(8 * lenA, 1);
     if (order > prec)
         order = prec;
 
@@ -156,12 +155,7 @@ int nmod_poly_mat_linsolve_via_kernel(nmod_poly_mat_t u,
     /* pmat = [A ; b], of size (m+1) x n */
     nmod_poly_mat_t pmat;
     nmod_poly_mat_init(pmat, m + 1, n, A->modulus);
-    for (slong j = 0; j < n; j++)
-    {
-        for (slong i = 0; i < m; i++)
-            nmod_poly_set(nmod_poly_mat_entry(pmat, i, j), nmod_poly_mat_entry(A, i, j));
-        nmod_poly_set(nmod_poly_mat_entry(pmat, m, j), nmod_poly_mat_entry(b, 0, j));
-    }
+    nmod_poly_mat_concat_vertical(pmat, A, b);
 
     /* left kernel basis, shift = row degree of pmat; in output, shift
      * contains the shifted row degree of the kernel basis */
@@ -186,13 +180,12 @@ int nmod_poly_mat_linsolve_via_kernel(nmod_poly_mat_t u,
     {
         /* den = ker[best, m] made monic, u = -ker[best, 0:m] / lc */
         const nmod_poly_struct * d = nmod_poly_mat_entry(ker, best, m);
-        const nmod_t mod = d->mod;
-        const ulong inv = n_invmod(d->coeffs[d->length - 1], mod.n);
-        const ulong neginv = nmod_neg(inv, mod);
-        for (slong i = 0; i < m; i++)
-            nmod_poly_scalar_mul_nmod(nmod_poly_mat_entry(u, 0, i),
-                                      nmod_poly_mat_entry(ker, best, i), neginv);
-        nmod_poly_scalar_mul_nmod(den, d, inv);
+        const ulong neginv = nmod_neg(nmod_inv(d->coeffs[d->length - 1], d->mod), d->mod);
+        nmod_poly_mat_t kerrow;
+        nmod_poly_mat_window_init(kerrow, ker, best, 0, best + 1, m);
+        nmod_poly_mat_scalar_mul_nmod(u, kerrow, neginv);
+        nmod_poly_mat_window_clear(kerrow);
+        nmod_poly_make_monic(den, d);
     }
 
     nmod_poly_mat_clear(ker);

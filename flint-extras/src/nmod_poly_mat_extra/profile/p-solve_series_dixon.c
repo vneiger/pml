@@ -27,7 +27,7 @@
  * rdim x dim matrix B of degree < degB (default: deg):
  *  - by nmod_poly_mat_solve_series_dixon, with the given order (truncated
  *    inverse of A at this order, then about prec/order lifting steps; order
- *    0 means the default, deg(A) + 1);
+ *    0 means the default, 8 (deg(A) + 1));
  *  - optionally, directly, as the truncated inverse of A at order prec
  *    followed by the product with B modulo x^prec;
  * prints the times in seconds */
@@ -77,7 +77,7 @@ int main(int argc, char ** argv)
         flint_printf("   - dim: A is dim x dim\n");
         flint_printf("   - rdim: B is rdim x dim\n");
         flint_printf("   - deg: A is random of degree < deg\n");
-        flint_printf("   - order: order of the truncated inverse used in Dixon's iteration (0: default, deg(A) + 1)\n");
+        flint_printf("   - order: order of the truncated inverse used in Dixon's iteration (0: default, 8 (deg(A) + 1))\n");
         flint_printf("   - prec: the solution is computed modulo x^prec\n");
         flint_printf("   - direct: optional, 0 to skip the timing of the direct approach (default 1)\n");
         flint_printf("   - degB: optional, B is random of degree < degB (default: deg)\n");

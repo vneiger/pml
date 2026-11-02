@@ -207,11 +207,38 @@ static int _one_test_row_basis(const nmod_poly_mat_t A, flint_rand_t state)
         flint_free(shift);
     }
 
-    /* general interface */
+    /* general interface, with and without left factor */
     if (res)
     {
-        r = nmod_poly_mat_row_basis(rbas, A);
-        res = _verify_row_basis(A, rbas, r, NULL, s, "row_basis");
+        r = nmod_poly_mat_row_basis(rbas, lfac, A);
+        res = _verify_row_basis(A, rbas, r, lfac, s, "row_basis");
+    }
+    if (res)
+    {
+        r = nmod_poly_mat_row_basis(rbas, NULL, A);
+        res = _verify_row_basis(A, rbas, r, NULL, s, "row_basis, no left factor");
+    }
+
+    /* general interface with random thresholds in [-1, n * deg(A)], so that
+     * all its branches are reached on these small inputs (weak Popov, full
+     * row rank, probably rank deficient, Zhou-Labahn, by blocks if tall) */
+    if (res)
+    {
+        const slong nd = n * FLINT_MAX(nmod_poly_mat_degree(A), 0);
+        const slong thres = (slong) n_randint(state, nd + 2) - 1;
+        const slong thres_tall = (slong) n_randint(state, nd + 2) - 1;
+        if (n_randint(state, 2))
+        {
+            r = _nmod_poly_mat_row_basis(rbas, lfac, A, thres, thres_tall);
+            res = _verify_row_basis(A, rbas, r, lfac, s, "_row_basis, thresholds");
+        }
+        else
+        {
+            r = _nmod_poly_mat_row_basis(rbas, NULL, A, thres, thres_tall);
+            res = _verify_row_basis(A, rbas, r, NULL, s, "_row_basis, thresholds, no left factor");
+        }
+        if (!res)
+            flint_printf("thresholds: %wd, %wd\n", thres, thres_tall);
     }
 
     flint_free(s);
@@ -292,24 +319,32 @@ TEST_FUNCTION_START(nmod_poly_mat_row_basis, state)
         const slong m = n * (4 + n_randint(state, 5)) + n_randint(state, n);
         const slong len = 1 + n_randint(state, 5);
 
-        nmod_poly_mat_t A, rbas;
+        nmod_poly_mat_t A, rbas, lfac;
         nmod_poly_mat_init(A, m, n, prime);
         nmod_poly_mat_init(rbas, n, n, prime);
+        nmod_poly_mat_init(lfac, m, n, prime);
         _rbtest_rand_input(A, len, state);
 
         slong * s = flint_malloc(m * sizeof(slong));
         nmod_poly_mat_row_degree_zero(s, A, NULL);
-        slong r = nmod_poly_mat_row_basis(rbas, A);
-        result = _verify_row_basis(A, rbas, r, NULL, s, "row_basis, tall");
+        slong r = nmod_poly_mat_row_basis(rbas, lfac, A);
+        result = _verify_row_basis(A, rbas, r, lfac, s, "row_basis, tall");
         if (result)
         {
             const slong bsize = 1 + n_randint(state, n + 1);
             r = _nmod_poly_mat_row_basis_zl_blocks(rbas, A, bsize);
             result = _verify_row_basis(A, rbas, r, NULL, s, "row_basis_zl_blocks");
         }
+        /* blocks branch of the general interface, with left factor */
+        if (result)
+        {
+            r = _nmod_poly_mat_row_basis(rbas, lfac, A, -1, -1);
+            result = _verify_row_basis(A, rbas, r, lfac, s, "_row_basis, tall, blocks");
+        }
         flint_free(s);
         nmod_poly_mat_clear(A);
         nmod_poly_mat_clear(rbas);
+        nmod_poly_mat_clear(lfac);
 
         if (!result)
             TEST_FUNCTION_FAIL("(tall) prime = %wu, m = %wd, n = %wd, len = %wd\n", prime, m, n, len);
