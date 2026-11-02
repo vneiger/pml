@@ -39,6 +39,8 @@
 #include "t-pmintbasis_geometric_auto.c"
 #include "t-reverse.c"
 #include "t-rand.c"
+#include "t-row_basis.c"
+#include "t-row_basis_left_factor.c"
 #include "t-weak_popov_form.c"
 
 /* Array of test functions ***************************************************/
@@ -70,6 +72,8 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_pmintbasis_geometric_auto),
     TEST_FUNCTION(nmod_poly_mat_reverse),
     TEST_FUNCTION(nmod_poly_mat_rand),
+    TEST_FUNCTION(nmod_poly_mat_row_basis),
+    TEST_FUNCTION(nmod_poly_mat_row_basis_left_factor),
     TEST_FUNCTION(nmod_poly_mat_weak_popov_form),
 };
 

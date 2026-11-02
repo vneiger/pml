@@ -39,7 +39,12 @@ slong _nmod_poly_mat_inv_series_cutoff(slong m)
     return 24;
 }
 
-/* \todo tuning */
+/* \todo tuning. First data points (order 8000, 60-bit prime, Intel Xeon
+ * AVX-512), basecase vs Newton: for m = 4, the basecase is faster up to length
+ * about 14-16 (4.1 vs 6.3 ms at length 10, 6.0 vs 6.2 ms at length 16, 8.6 vs
+ * 6.8 ms at length 24), so that 9 is too small there; for m = 16, the
+ * crossover is close to 9 (185 vs 172 ms at length 10); for m = 48, both are
+ * within 6% at length 10 (3.41 vs 3.23 s), so that 5 may be slightly small */
 slong _nmod_poly_mat_inv_series_short_length(slong m)
 {
     return (m <= 32) ? 9 : 5;
@@ -59,7 +64,13 @@ slong _nmod_poly_mat_inv_series_short_length(slong m)
  * reverse order in the (d*m) x m constant matrix Ahat = [Ahat_d; ...; Ahat_1].
  * With k' = min(k,d), the sum above is then the product of two windows:
  * [X_{k-k'} | ... | X_{k-1}] (columns (k-k')*m to k*m-1 of W) times
- * [Ahat_{k'}; ...; Ahat_1] (the last k'*m rows of Ahat). */
+ * [Ahat_{k'}; ...; Ahat_1] (the last k'*m rows of Ahat).
+ *
+ * \todo memory consumption: W is a full copy of the output (order*m*m
+ * coefficients), so that the peak memory is twice the size of the output.
+ * Only the last d blocks of W are read at each step: a ring buffer of (d+1)*m
+ * columns, whose blocks are copied into imat as they are computed, would
+ * halve the peak memory for long orders. */
 void _nmod_poly_mat_inv_series_basecase(nmod_poly_mat_t imat,
                                         const nmod_poly_mat_t pmat,
                                         const nmod_mat_t inv0,
@@ -137,42 +148,6 @@ void _nmod_poly_mat_inv_series_basecase(nmod_poly_mat_t imat,
 
     nmod_mat_clear(W);
     nmod_mat_clear(Ahat);
-}
-
-int nmod_poly_mat_inv_series_basecase(nmod_poly_mat_t imat,
-                                      const nmod_poly_mat_t pmat,
-                                      slong order)
-{
-    const slong m = pmat->r;
-
-    if (order <= 0 || m == 0)
-    {
-        nmod_poly_mat_zero(imat);
-        return 1;
-    }
-
-    nmod_mat_t inv0;
-    nmod_mat_init(inv0, m, m, pmat->modulus);
-    nmod_poly_mat_get_coeff_mat(inv0, pmat, 0);
-    if (! nmod_mat_inv(inv0, inv0))
-    {
-        nmod_mat_clear(inv0);
-        return 0;
-    }
-
-    if (imat == pmat)
-    {
-        nmod_poly_mat_t tmp;
-        nmod_poly_mat_init(tmp, m, m, pmat->modulus);
-        _nmod_poly_mat_inv_series_basecase(tmp, pmat, inv0, order);
-        nmod_poly_mat_swap_entrywise(imat, tmp);
-        nmod_poly_mat_clear(tmp);
-    }
-    else
-        _nmod_poly_mat_inv_series_basecase(imat, pmat, inv0, order);
-
-    nmod_mat_clear(inv0);
-    return 1;
 }
 
 /*------------------------------------------------------------*/
@@ -253,46 +228,6 @@ void _nmod_poly_mat_inv_series_newton(nmod_poly_mat_t imat,
     nmod_poly_mat_clear(F);
 }
 
-int nmod_poly_mat_inv_series_newton(nmod_poly_mat_t imat,
-                                    const nmod_poly_mat_t pmat,
-                                    slong order,
-                                    slong cutoff)
-{
-    const slong m = pmat->r;
-
-    if (order <= 0 || m == 0)
-    {
-        nmod_poly_mat_zero(imat);
-        return 1;
-    }
-
-    if (cutoff <= 0)
-        cutoff = _nmod_poly_mat_inv_series_cutoff(m);
-
-    nmod_mat_t inv0;
-    nmod_mat_init(inv0, m, m, pmat->modulus);
-    nmod_poly_mat_get_coeff_mat(inv0, pmat, 0);
-    if (! nmod_mat_inv(inv0, inv0))
-    {
-        nmod_mat_clear(inv0);
-        return 0;
-    }
-
-    if (imat == pmat)
-    {
-        nmod_poly_mat_t tmp;
-        nmod_poly_mat_init(tmp, m, m, pmat->modulus);
-        _nmod_poly_mat_inv_series_newton(tmp, pmat, inv0, order, cutoff);
-        nmod_poly_mat_swap_entrywise(imat, tmp);
-        nmod_poly_mat_clear(tmp);
-    }
-    else
-        _nmod_poly_mat_inv_series_newton(imat, pmat, inv0, order, cutoff);
-
-    nmod_mat_clear(inv0);
-    return 1;
-}
-
 /*------------------------------------------------------------*/
 /* truncated inverse: general interface                       */
 /*------------------------------------------------------------*/
@@ -311,9 +246,22 @@ void _nmod_poly_mat_inv_series(nmod_poly_mat_t imat,
         _nmod_poly_mat_inv_series_newton(imat, pmat, inv0, order, cutoff);
 }
 
-int nmod_poly_mat_inv_series(nmod_poly_mat_t imat,
-                             const nmod_poly_mat_t pmat,
-                             slong order)
+/*------------------------------------------------------------*/
+/* interfaces without the inverse of the constant coefficient */
+/*------------------------------------------------------------*/
+
+#define INV_SERIES_GENERAL 0
+#define INV_SERIES_BASECASE 1
+#define INV_SERIES_NEWTON 2
+
+/* Common part of the interfaces below: zero output for nonpositive order or
+ * empty matrix, inverse of pmat(0) (failure if singular, imat not modified),
+ * aliasing between imat and pmat, then call to the variant with inv0 given */
+static int _inv_series_interface(nmod_poly_mat_t imat,
+                                 const nmod_poly_mat_t pmat,
+                                 slong order,
+                                 slong cutoff,
+                                 int algo)
 {
     const slong m = pmat->r;
 
@@ -332,17 +280,51 @@ int nmod_poly_mat_inv_series(nmod_poly_mat_t imat,
         return 0;
     }
 
+    nmod_poly_mat_t tmp;
+    nmod_poly_mat_struct * res = imat;
     if (imat == pmat)
     {
-        nmod_poly_mat_t tmp;
         nmod_poly_mat_init(tmp, m, m, pmat->modulus);
-        _nmod_poly_mat_inv_series(tmp, pmat, inv0, order);
+        res = tmp;
+    }
+
+    if (algo == INV_SERIES_BASECASE)
+        _nmod_poly_mat_inv_series_basecase(res, pmat, inv0, order);
+    else if (algo == INV_SERIES_NEWTON)
+        _nmod_poly_mat_inv_series_newton(res, pmat, inv0, order, cutoff);
+    else
+        _nmod_poly_mat_inv_series(res, pmat, inv0, order);
+
+    if (imat == pmat)
+    {
         nmod_poly_mat_swap_entrywise(imat, tmp);
         nmod_poly_mat_clear(tmp);
     }
-    else
-        _nmod_poly_mat_inv_series(imat, pmat, inv0, order);
 
     nmod_mat_clear(inv0);
     return 1;
+}
+
+int nmod_poly_mat_inv_series_basecase(nmod_poly_mat_t imat,
+                                      const nmod_poly_mat_t pmat,
+                                      slong order)
+{
+    return _inv_series_interface(imat, pmat, order, 0, INV_SERIES_BASECASE);
+}
+
+int nmod_poly_mat_inv_series_newton(nmod_poly_mat_t imat,
+                                    const nmod_poly_mat_t pmat,
+                                    slong order,
+                                    slong cutoff)
+{
+    if (cutoff <= 0)
+        cutoff = _nmod_poly_mat_inv_series_cutoff(pmat->r);
+    return _inv_series_interface(imat, pmat, order, cutoff, INV_SERIES_NEWTON);
+}
+
+int nmod_poly_mat_inv_series(nmod_poly_mat_t imat,
+                             const nmod_poly_mat_t pmat,
+                             slong order)
+{
+    return _inv_series_interface(imat, pmat, order, 0, INV_SERIES_GENERAL);
 }

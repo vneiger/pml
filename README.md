@@ -61,8 +61,8 @@ Public License), see `flint-extras/COPYING_FLINT` for the license.
 
 ## Installation (FLINT-based version)
 
-The FLINT-based version is work in progress, and currently compiles with FLINT
-3.4.0 or later versions, including the current development version.
+The FLINT-based version is work in progress, and currently compiles with the
+current development version (FLINT 3.7.0-dev).
 
 The build system is similar to (and directly derived from) FLINT's one. In
 short, for a standard configuration, the following steps should work:

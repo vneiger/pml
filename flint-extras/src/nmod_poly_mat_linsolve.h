@@ -20,6 +20,15 @@
  * solution (truncated at some order), and solution over the polynomials (with
  * a denominator).
  *
+ * Orientation: the systems below are row-wise, that is, `X A = B` or `u A =
+ * den b` with the unknown on the left of `A`, as for the left kernel and
+ * approximant bases elsewhere in PML. This differs from FLINT's solving
+ * functions (`nmod_mat_solve`, `nmod_poly_mat_solve`, ...), which solve `A X =
+ * B`. 
+ *
+ * \todo Warning: these solving functions are not finalized yet, and this
+ * convention (as well as their interfaces) may change in the future.
+ *
  * \todo series solving at low precision, high-order lifting, solving via
  * series and rational reconstruction (see ntl-extras, mat_lzz_pX_linsolve.h)
  */
@@ -62,19 +71,24 @@ extern "C" {
  *  `A` or `B`;
  *  - the return value is `1` if `A(0)` is invertible (or if `prec` is zero,
  *  or if `m` is zero), and `0` otherwise, in which case `X` is not modified;
- *  - if `order` is nonpositive, the default `order = length(A) = deg(A) + 1`
- *  is used (or `1` if `A` is zero); in any case, `order` is reduced to `prec`
- *  if it is larger;
+ *  - if `order` is nonpositive, the default `order = 8 length(A) = 8 (deg(A)
+ *  + 1)` is used (or `1` if `A` is zero); in any case, `order` is reduced to
+ *  `prec` if it is larger;
  *  - only the coefficients of `A` and `B` of degree less than `prec` are used;
  *  - nonpositive values of `prec` are considered as `0`.
  *
  * Size of the integers (see @ref IntegerSizes): `min(order, prec)` is
  * assumed to be at most `WORD_MAX / 2` (see ::nmod_poly_mat_inv_series).
  *
- * \todo choice of `order` and of the algorithm: tuning (the iterations are
- * cheaper with a longer truncated inverse if `A` has small degree, while for
- * `n` close to `m` and `prec` not much larger than `deg(A)`, it is faster to
- * compute the truncated inverse of `A` at order `prec` and multiply by `B`)
+ * \todo choice of `order` and of the algorithm: tuning. The default `order =
+ * 8 length(A)` is provisional: with `order = length(A)`, timings were 2 to 4
+ * times slower in all tested cases (dimensions 4 to 32, `n = 1` or `n = m`,
+ * `length(A)` 10 or 20, `prec = 4000`, 60-bit prime, Intel Xeon AVX-512),
+ * while `order` between 4 and 8 times `length(A)` was the fastest; this
+ * remains to be tuned, also depending on `n`, `m`, the modulus and `prec`.
+ * Besides, for `n` close to `m` and `prec` not much larger than `deg(A)`, it
+ * may be faster to compute the truncated inverse of `A` at order `prec` and
+ * multiply by `B`.
  * \todo precomputed transforms of `A` and of its truncated inverse, shared by
  * all iterations
  */
