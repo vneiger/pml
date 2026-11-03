@@ -197,7 +197,7 @@ static int _hnf_diagonal_iter(nmod_poly_struct * diag, const nmod_poly_mat_t F)
 }
 
 static int _hnf_diagonal_lnz_rec(nmod_poly_struct * diag, const nmod_poly_mat_t F,
-                                 slong wp_thres, slong iter_thres)
+                                 slong wp_thres, slong iter_dim, slong iter_thres)
 {
     const slong n = F->r;
 
@@ -218,7 +218,7 @@ static int _hnf_diagonal_lnz_rec(nmod_poly_struct * diag, const nmod_poly_mat_t 
     /* TODO n * deg uses the maximum degree, which misjudges unbalanced inputs
      * (see the todo at NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM): when retuning,
      * consider the sum of the row degrees and revisit the dimension bound */
-    if (iter_thres >= 0 && n <= NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM
+    if (iter_thres >= 0 && n <= iter_dim
         && n * nmod_poly_mat_degree(F) <= iter_thres)
         return _hnf_diagonal_iter(diag, F);
 
@@ -235,12 +235,12 @@ static int _hnf_diagonal_lnz_rec(nmod_poly_struct * diag, const nmod_poly_mat_t 
     else
     {
         const int unimodular = (res == 0);
-        res = _hnf_diagonal_lnz_rec(diag, G1, wp_thres, iter_thres);
+        res = _hnf_diagonal_lnz_rec(diag, G1, wp_thres, iter_dim, iter_thres);
         if (res && unimodular)
             for (slong i = k; i < n; i++)
                 nmod_poly_one(diag + i);
         else if (res)
-            res = _hnf_diagonal_lnz_rec(diag + k, R, wp_thres, iter_thres);
+            res = _hnf_diagonal_lnz_rec(diag + k, R, wp_thres, iter_dim, iter_thres);
     }
 
     nmod_poly_mat_clear(G1);
@@ -255,12 +255,13 @@ static int _hnf_diagonal_lnz_rec(nmod_poly_struct * diag, const nmod_poly_mat_t 
 int _nmod_poly_mat_hnf_diagonal_lnz(nmod_poly_struct * diag,
                                     const nmod_poly_mat_t pmat,
                                     slong wp_thres,
+                                    slong iter_dim,
                                     slong iter_thres)
 {
     if (pmat->r != pmat->c)
         flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_hnf_diagonal_lnz). Non-square matrix.\n");
 
-    return _hnf_diagonal_lnz_rec(diag, pmat, wp_thres, iter_thres);
+    return _hnf_diagonal_lnz_rec(diag, pmat, wp_thres, iter_dim, iter_thres);
 }
 
 int nmod_poly_mat_hnf_diagonal_lnz(nmod_poly_struct * diag,
@@ -268,6 +269,7 @@ int nmod_poly_mat_hnf_diagonal_lnz(nmod_poly_struct * diag,
 {
     return _nmod_poly_mat_hnf_diagonal_lnz(diag, pmat,
                                            NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES,
+                                           NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM,
                                            NMOD_POLY_MAT_HNF_DIAGONAL_ITER_NDEG);
 }
 

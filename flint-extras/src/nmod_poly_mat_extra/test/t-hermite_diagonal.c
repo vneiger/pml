@@ -62,14 +62,17 @@ static int _one_test_hermite_diagonal(const nmod_poly_mat_t F, orientation_t ori
             const slong wp = (variant == 0) ? NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES
                            : (variant == 1) ? -1 : (slong) n_randint(state, 60);
             const slong it = (variant < 2) ? -1 : (slong) n_randint(state, 60);
-            const int nonsing2 = _nmod_poly_mat_hnf_diagonal_lnz(diag_ref, F, wp, it);
+            const slong itd = (variant < 2) ? NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM
+                                            : (slong) n_randint(state, 16);
+            const int nonsing2 = _nmod_poly_mat_hnf_diagonal_lnz(diag_ref, F, wp, itd, it);
             res = (nonsing == nonsing2);
             for (slong i = 0; res && nonsing && i < n; i++)
                 if (!nmod_poly_equal(diag + i, diag_ref + i))
                     res = 0;
             if (!res)
                 flint_printf("FAIL: different results for variant %wd of the recursion "
-                             "(wp_thres = %wd, iter_thres = %wd)\n", variant, wp, it);
+                             "(wp_thres = %wd, iter_dim = %wd, iter_thres = %wd)\n",
+                             variant, wp, itd, it);
         }
     }
     else

@@ -146,7 +146,7 @@ static void _build_input(nmod_poly_mat_t F, time_args targs, flint_rand_t state)
 
 /* hnf_diagonal_lnz with given thresholds */
 static void _time_hnf_diagonal_lnz(time_args targs, flint_rand_t state,
-                                   slong wp_thres, slong iter_thres)
+                                   slong wp_thres, slong iter_dim, slong iter_thres)
 {
     const slong n = targs.dim;
     nmod_poly_mat_t F;
@@ -158,7 +158,7 @@ static void _time_hnf_diagonal_lnz(time_args targs, flint_rand_t state,
 
     double FLINT_SET_BUT_UNUSED(tcpu), twall;
     TIMEIT_START;
-    _nmod_poly_mat_hnf_diagonal_lnz(diag, F, wp_thres, iter_thres);
+    _nmod_poly_mat_hnf_diagonal_lnz(diag, F, wp_thres, iter_dim, iter_thres);
     TIMEIT_STOP_VALUES(tcpu, twall);
     flint_printf("%.2e", twall);
 
@@ -172,25 +172,39 @@ static void _time_hnf_diagonal_lnz(time_args targs, flint_rand_t state,
 static void time_hnf_diagonal_lnz(time_args targs, flint_rand_t state)
 {
     _time_hnf_diagonal_lnz(targs, state, NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES,
+                           NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM,
                            NMOD_POLY_MAT_HNF_DIAGONAL_ITER_NDEG);
 }
 
 /* recursion only: Mulders-Storjohann base case disabled */
 static void time_hnf_diagonal_lnz_rec(time_args targs, flint_rand_t state)
 {
-    _time_hnf_diagonal_lnz(targs, state, NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES, -1);
+    _time_hnf_diagonal_lnz(targs, state, NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES,
+                           NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM, -1);
 }
 
 /* Zhou-Labahn row bases only (default base case) */
 static void time_hnf_diagonal_lnz_zl(time_args targs, flint_rand_t state)
 {
-    _time_hnf_diagonal_lnz(targs, state, -1, NMOD_POLY_MAT_HNF_DIAGONAL_ITER_NDEG);
+    _time_hnf_diagonal_lnz(targs, state, -1, NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM,
+                           NMOD_POLY_MAT_HNF_DIAGONAL_ITER_NDEG);
 }
 
 /* Mulders-Storjohann base case whenever dim <= NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM */
 static void time_hnf_diagonal_lnz_iter(time_args targs, flint_rand_t state)
 {
-    _time_hnf_diagonal_lnz(targs, state, NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES, WORD_MAX);
+    _time_hnf_diagonal_lnz(targs, state, NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES,
+                           NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM, WORD_MAX);
+}
+
+/* one recursion step at the top level, default thresholds below: compared
+ * with the default where the latter uses the base case, this tells whether
+ * the base case thresholds should be lowered */
+static void time_hnf_diagonal_lnz_step(time_args targs, flint_rand_t state)
+{
+    _time_hnf_diagonal_lnz(targs, state, NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES,
+                           FLINT_MIN(targs.dim - 1, NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM),
+                           NMOD_POLY_MAT_HNF_DIAGONAL_ITER_NDEG);
 }
 
 /* existing upper row-wise HNF algorithms, applied to the matrix with reversed
@@ -237,7 +251,7 @@ int main(int argc, char ** argv)
     flint_rand_init(state);
     flint_rand_set_seed(state, 1234, 5678);
 
-    const slong nfuns = 9;
+    const slong nfuns = 10;
     typedef void (*timefun) (time_args, flint_rand_t);
     const timefun funs[] = {
         time_hnf_diagonal_lnz,       // 0
@@ -249,6 +263,7 @@ int main(int argc, char ** argv)
         time_hnf_revlex_xgcd,        // 6
         time_hnf_lex_xgcd,           // 7
         time_hnf_maxdeg_atomic,      // 8
+        time_hnf_diagonal_lnz_step,  // 9
     };
 
     const char * description[] = {
@@ -261,6 +276,7 @@ int main(int argc, char ** argv)
         "#6  --> HNF, revlex_xgcd (Bradley-like)                    ",
         "#7  --> HNF, lex_xgcd                                      ",
         "#8  --> HNF, maxdeg_atomic (Rosser-like)                   ",
+        "#9  --> hnf_diagonal_lnz, one recursion step at the top level",
     };
 
     if (argc != 6)  // show usage
@@ -300,7 +316,7 @@ int main(int argc, char ** argv)
     else if (ifun == -1 || ifun == -2)
     {
         const slong nf = (ifun == -1) ? 6 : nfuns;
-        flint_printf("bits dim  deg     type   hd_lnz   hd_rec    hd_zl  hd_iter det_iter hnf_mgcd  hnf_rlx  hnf_lex hnf_rssr\n");
+        flint_printf("bits dim  deg     type   hd_lnz   hd_rec    hd_zl  hd_iter det_iter hnf_mgcd  hnf_rlx  hnf_lex hnf_rssr  hd_step\n");
         flint_printf("%-5ld%-5ld%-8ld%-6ld", bits, dim, deg, itype);
         for (slong i = 0; i < nf; i++)
         {

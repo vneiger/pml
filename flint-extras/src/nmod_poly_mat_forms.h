@@ -1034,12 +1034,13 @@ slong nmod_poly_mat_hnf_ur_matrixgcd_iter(nmod_poly_mat_t mat,
  * #NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES (with m = floor(n/2) the number
  * of columns of F_R), and otherwise by the Zhou-Labahn approach reusing the
  * kernel basis K (see ::_nmod_poly_mat_row_basis_zl). Besides, for small
- * matrices (see #NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM), the recursion stops
- * and the Mulders-Storjohann triangularization (see
- * ::_nmod_poly_mat_upper_triangularize_iter) is applied to the matrix with
- * reversed rows and columns: since all its transformations are unimodular,
- * the diagonal of the obtained triangular matrix gives the Hermite diagonal
- * up to normalization.
+ * matrices (see #NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM), the recursion stops:
+ * the Mulders-Storjohann triangularization (see
+ * ::_nmod_poly_mat_upper_triangularize_iter) yields an upper triangular
+ * matrix through unimodular row operations, so that its diagonal is that of
+ * the upper Hermite form up to normalization; applied to the matrix with
+ * reversed rows and columns, it gives the lower Hermite diagonal in reverse
+ * order.
  *
  * \todo the certificate may fail at deeper levels of the recursion while R
  * is unimodular (observed for generic matrices with some non-uniform degree
@@ -1062,14 +1063,17 @@ int nmod_poly_mat_hnf_diagonal_lnz(nmod_poly_struct * diag,
 /** Same as ::nmod_poly_mat_hnf_diagonal_lnz, with the threshold
  * #NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES replaced by ``wp_thres`` (a
  * negative value means that the Zhou-Labahn approach is always used for row
- * bases), and the threshold #NMOD_POLY_MAT_HNF_DIAGONAL_ITER_NDEG on n * deg
- * for the Mulders-Storjohann base case replaced by ``iter_thres`` (a negative
- * value means that this base case is never used). The dimension bound
- * #NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM of this base case is unchanged.
- * Meant for testing and tuning. */
+ * bases), and the thresholds #NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM on n and
+ * #NMOD_POLY_MAT_HNF_DIAGONAL_ITER_NDEG on n * deg for the Mulders-Storjohann
+ * base case replaced by ``iter_dim`` and ``iter_thres`` (a negative value of
+ * ``iter_thres`` means that this base case is never used). Meant for testing
+ * and tuning; for example, ``iter_dim = min(n - 1, ITER_DIM)`` performs one
+ * step of the recursion at the top level and uses the default thresholds
+ * below. */
 int _nmod_poly_mat_hnf_diagonal_lnz(nmod_poly_struct * diag,
                                     const nmod_poly_mat_t pmat,
                                     slong wp_thres,
+                                    slong iter_dim,
                                     slong iter_thres);
 
 /** Diagonal entries of the Hermite normal form for the orientation
