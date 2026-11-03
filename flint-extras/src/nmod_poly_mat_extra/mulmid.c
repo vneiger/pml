@@ -10,7 +10,6 @@
     <https://www.gnu.org/licenses/>.
 */
 
-#include <flint/longlong.h>   /* for flint_ctz */
 #include <flint/mpn_extras.h>
 #include <flint/nmod_mat.h>
 #include <flint/nmod_vec.h>
@@ -146,14 +145,83 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         const ulong modn = pmat1->modulus;
         const slong dim = n_cbrt(pmat1->r * pmat1->c * pmat2->c);
         const flint_bitcnt_t modbits = FLINT_BIT_COUNT(modn);
-        const int single_prime = (modbits <= 50)
-            && ((flint_bitcnt_t) flint_ctz(modn - 1) >= FLINT_BIT_COUNT((ulong) (len1 + len2 + 2)));
+        const int single_prime = _pml_fft_small_single_transform(modn,
+                                        FLINT_BIT_COUNT((ulong) (len1 + len2 + 2)),
+                                        (ulong) pmat1->c * FLINT_MIN(len1, len2));
         /* 0, 1: a single transform, p of at most 32 bits or more; several
            transforms and 2: p of at most PML_NMOD_MAT_MUL_SMALL_BITS bits,
            3: at most 52 bits, 4: more */
         const int kind = single_prime ? (modbits <= 32 ? 0 : 1)
                                       : (modbits <= PML_NMOD_MAT_MUL_SMALL_BITS ? 2
                                          : (modbits <= 52 ? 3 : 4));
+
+        /* thin shapes, i.e. a row vector times a matrix (pmat1->r == 1) or
+           an inner dimension 1: the thresholds below were fitted on square
+           shapes, and the Vandermonde routines have little to amortize
+           their evaluations on, except for very few points. The rule:
+           - vandermonde1 for short products, with at most vdm_npts points,
+             of not too small matrices (dimension at least 6, e.g. 1 x 16
+             times 16 x 16), where the plain product is dominated by the
+             overhead of its many short polynomial products;
+           - otherwise the product (FLINT's nmod_poly_mat_mul for such
+             shapes, see nmod_poly_mat_multiply) followed by a truncation,
+             when the shorter operand has length at most naive_len: its cost
+             is about len1 * len2 per entry, against about the transform
+             length of the longer one for sd_fft_direct;
+           - sd_fft_direct otherwise.
+           A matrix times a column vector (pmat2->c == 1) keeps the rule for
+           square shapes: there, the Vandermonde routines are faster than
+           naive modulo a 30-bit prime.
+
+           2026-11 Measured with mulmid_bench.sh on Zen 4 and Ice Lake (with
+           AVX512-IFMA) and Apple M4, 30-, 50- and 60-bit primes, 1 x m times
+           m x m for m = 2..128, operands of length 4..64, low and balanced
+           windows, against the rule for square shapes:
+           - with IFMA, vandermonde1 is the fastest up to about 7 points,
+             and for the 50-bit prime (several transforms, kind 3) up to
+             about 31 points; beyond, it is up to 2-3x slower than naive or
+             sd_fft_direct; without IFMA (M4), it only helps for very few
+             points (3 for p above PML_NMOD_MAT_MUL_SMALL_BITS bits);
+           - naive is the fastest for balanced operands up to length 16,
+             except with IFMA for p above PML_NMOD_MAT_MUL_SMALL_BITS bits,
+             where sd_fft_direct is faster from length 16 (by 1.2-1.7x for
+             m >= 16); for unbalanced operands (e.g. lengths 4 and 32 or 64,
+             as in the low product of Dixon's lifting), naive was 2-4x faster
+             than all the others on a Xeon with IFMA;
+           - gains against the rule for square shapes: up to 5-20x for
+             m <= 4, typically 1.5-2.7x elsewhere.
+           Exception: with IFMA and the 50-bit prime (kind 3), for unbalanced
+           operands (the shorter at most a quarter of the longer) from
+           dimension 6, the rule for square shapes is kept: there, its
+           Vandermonde routines were 1.3-1.6x faster than both naive and
+           sd_fft_direct on Ice Lake (low products of Dixon's lifting with the
+           default order, lengths deg and 8 deg, deg = 4..32, m = 16..128). */
+        if (pmat1->r == 1 || pmat1->c == 1)
+        {
+            const slong npts = FLINT_MIN(len1, len2)
+                               + FLINT_MIN(nhi, len1 + len2 - 1) - nlo - 1;
+#if PML_NMOD_MAT_MUL_IFMA
+            const slong vdm_npts = (kind == 3) ? 31 : 7;
+            const slong naive_len = (modbits <= PML_NMOD_MAT_MUL_SMALL_BITS) ? 16 : 8;
+            const int square_rule = (kind == 3 && dim >= 6
+                && 4 * FLINT_MIN(len1, len2) <= FLINT_MAX(len1, len2));
+#else
+            const slong vdm_npts = (modbits <= PML_NMOD_MAT_MUL_SMALL_BITS) ? 7 : 3;
+            const slong naive_len = 16;
+            const int square_rule = 0;
+#endif
+            if (! square_rule)
+            {
+                if (dim >= 6 && npts <= vdm_npts && NMOD_POLY_CAN_USE_VANDERMONDE1(modn, npts)
+                    && n_is_prime(modn))
+                    _nmod_poly_mat_mulmid_vandermonde1(res, pmat1, len1, pmat2, len2, nlo, nhi);
+                else if (FLINT_MIN(len1, len2) <= naive_len)
+                    _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
+                else
+                    _nmod_poly_mat_mulmid_sd_fft_direct(res, pmat1, len1, pmat2, len2, nlo, nhi);
+                return;
+            }
+        }
         /* the Vandermonde routines up to nhi = min(max(lo, a2 * dim / 2), cap),
            vandermonde1 up to vdm1; sd_fft_matmul from dimension mm_dim, for
            nhi at most mm_nhi unless the dimension is at least mm_long_dim */
@@ -225,14 +293,55 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
 }
 
+/* view of the coefficients [k, h) of the entries of pmat (k < h), i.e.
+ * view = (pmat mod x^h) div x^k, normalized, without copying coefficients:
+ * the entries of view point into those of pmat, which must be left unchanged
+ * while view is in use; view must be cleared by _mulmid_view_clear */
+static void _mulmid_view_init(nmod_poly_mat_t view, const nmod_poly_mat_t pmat, slong k, slong h)
+{
+    nmod_poly_mat_init(view, pmat->r, pmat->c, pmat->modulus);
+    for (slong i = 0; i < pmat->r; i++)
+    {
+        for (slong j = 0; j < pmat->c; j++)
+        {
+            const nmod_poly_struct * p = nmod_poly_mat_entry(pmat, i, j);
+            slong len = FLINT_MIN(p->length, h) - k;
+            while (len > 0 && p->coeffs[k + len - 1] == 0)
+                len--;
+            if (len > 0)
+            {
+                nmod_poly_struct * v = nmod_poly_mat_entry(view, i, j);
+                v->coeffs = p->coeffs + k;
+                v->alloc = len;
+                v->length = len;
+            }
+        }
+    }
+}
+
+static void _mulmid_view_clear(nmod_poly_mat_t view)
+{
+    for (slong i = 0; i < view->r; i++)
+    {
+        for (slong j = 0; j < view->c; j++)
+        {
+            nmod_poly_struct * v = nmod_poly_mat_entry(view, i, j);
+            v->coeffs = NULL;
+            v->alloc = 0;
+            v->length = 0;
+        }
+    }
+    nmod_poly_mat_clear(view);
+}
+
 void nmod_poly_mat_mulmid(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2,
                           slong nlo, slong nhi)
 {
     PML_ASSERT(nlo >= 0);
     PML_ASSERT(nhi >= 0);
 
-    slong len1 = nmod_poly_mat_max_length(pmat1);
-    slong len2 = nmod_poly_mat_max_length(pmat2);
+    const slong len1 = nmod_poly_mat_max_length(pmat1);
+    const slong len2 = nmod_poly_mat_max_length(pmat2);
     nhi = FLINT_MIN(nhi, len1 + len2 - 1);
 
     /* zero matrices or empty target coefficient indices */
@@ -242,47 +351,59 @@ void nmod_poly_mat_mulmid(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, cons
         return;
     }
 
-    if (len1 > nhi)
+    /* reductions, as views of the operands (no coefficient is copied):
+     * - an operand longer than nhi is truncated at nhi;
+     * - then, as in the shapes for which the routines were tuned, at most
+     *   one operand drops its useless low coefficients: if len1 <= len2 and
+     *   len1 <= nlo, the coefficients of pmat2 below k2 = nlo - len1 + 1
+     *   do not contribute to [nlo, nhi); otherwise, if len2 <= nlo, those of
+     *   pmat1 below k1 = nlo - len2 + 1 do not contribute.
+     * Dropping the useless coefficients of both operands would be valid as
+     * well, but it shortens the window without changing the number of
+     * points of the evaluation-based routines, and the dispatch, which uses
+     * nhi, then makes worse choices: e.g. 2x slower on Zen 4 for 64 x 64
+     * matrices of length 32 and the window [48, 63), modulo a 30-bit prime.
+     * One has k1 < h1 and k2 < h2. */
+    const slong h1 = FLINT_MIN(len1, nhi);
+    const slong h2 = FLINT_MIN(len2, nhi);
+    slong k1 = 0, k2 = 0;
+    if (h1 <= h2 && h1 <= nlo)
+        k2 = nlo - h1 + 1;
+    else if (h2 <= nlo)
+        k1 = nlo - h2 + 1;
+    const int reduce1 = (k1 > 0 || h1 < len1);
+    const int reduce2 = (k2 > 0 || h2 < len2);
+
+    if (!reduce1 && !reduce2)
     {
-        nmod_poly_mat_t pmat1_tmp;
-        nmod_poly_mat_init(pmat1_tmp, pmat1->r, pmat1->c, pmat1->modulus);
-        nmod_poly_mat_set_trunc(pmat1_tmp, pmat1, nhi);
-        nmod_poly_mat_mulmid(res, pmat1_tmp, pmat2, nlo, nhi);
-        nmod_poly_mat_clear(pmat1_tmp);
+        _nmod_poly_mat_mulmid(res, pmat1, len1, pmat2, len2, nlo, nhi);
         return;
     }
 
-    if (len2 > nhi)
+    /* the operands are replaced by views of their useful coefficients,
+     * which the routines called below cannot detect as aliases of res */
+    if (res == pmat1 || res == pmat2)
     {
-        nmod_poly_mat_t pmat2_tmp;
-        nmod_poly_mat_init(pmat2_tmp, pmat2->r, pmat2->c, pmat2->modulus);
-        nmod_poly_mat_set_trunc(pmat2_tmp, pmat2, nhi);
-        nmod_poly_mat_mulmid(res, pmat1, pmat2_tmp, nlo, nhi);
-        nmod_poly_mat_clear(pmat2_tmp);
+        nmod_poly_mat_t tmp;
+        nmod_poly_mat_init(tmp, pmat1->r, pmat2->c, pmat1->modulus);
+        nmod_poly_mat_mulmid(tmp, pmat1, pmat2, nlo, nhi);
+        nmod_poly_mat_swap_entrywise(res, tmp);
+        nmod_poly_mat_clear(tmp);
         return;
     }
 
-    /* len1 <= len2 and len(pmat1) <= nlo: shift away useless coefficients of pmat2 */
-    if (len1 <= len2 && len1 <= nlo)
-    {
-        nmod_poly_mat_t pmat2_tmp;
-        nmod_poly_mat_init(pmat2_tmp, pmat2->r, pmat2->c, pmat2->modulus);
-        nmod_poly_mat_shift_right(pmat2_tmp, pmat2, nlo - len1 + 1);
-        _nmod_poly_mat_mulmid(res, pmat1, len1, pmat2_tmp, len2 - nlo + len1 - 1, len1 - 1, nhi - nlo + len1 - 1);
-        nmod_poly_mat_clear(pmat2_tmp);
-        return;
-    }
+    nmod_poly_mat_t view1, view2;
+    if (reduce1)
+        _mulmid_view_init(view1, pmat1, k1, h1);
+    if (reduce2)
+        _mulmid_view_init(view2, pmat2, k2, h2);
 
-    /* if len(pmat2) <= nlo (implies len1 > len2), shift away useless coefficients of pmat1 */
-    if (len2 <= nlo)
-    {
-        nmod_poly_mat_t pmat1_tmp;
-        nmod_poly_mat_init(pmat1_tmp, pmat1->r, pmat1->c, pmat1->modulus);
-        nmod_poly_mat_shift_right(pmat1_tmp, pmat1, nlo - len2 + 1);
-        _nmod_poly_mat_mulmid(res, pmat1_tmp, len1 - nlo + len2 - 1, pmat2, len2, len2 - 1, nhi - nlo + len2 - 1);
-        nmod_poly_mat_clear(pmat1_tmp);
-        return;
-    }
+    _nmod_poly_mat_mulmid(res, reduce1 ? view1 : pmat1, h1 - k1,
+                               reduce2 ? view2 : pmat2, h2 - k2,
+                               nlo - k1 - k2, nhi - k1 - k2);
 
-    _nmod_poly_mat_mulmid(res, pmat1, len1, pmat2, len2, nlo, nhi);
+    if (reduce1)
+        _mulmid_view_clear(view1);
+    if (reduce2)
+        _mulmid_view_clear(view2);
 }

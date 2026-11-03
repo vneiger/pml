@@ -429,5 +429,108 @@ TEST_FUNCTION_START(nmod_poly_mat_mulmid, state)
         nmod_poly_mat_clear(res_true);
     }
 
+    /* the general interface: windows for which the operands are restricted
+       to their useful coefficients (on one side or both, from below or from
+       above), thin shapes (a vector operand, or inner dimension 1) with
+       short and long operands, entries of unequal lengths, possibly
+       composite moduli, aliasing; the operands must be left unchanged */
+    for (i = 0; i < 300 * flint_test_multiplier(); i++)
+    {
+        const int shape = (int) n_randint(state, 4);
+        const int alias = (int) n_randint(state, 3);
+        const ulong prime = (n_randint(state, 4) == 0)
+                            ? 2 + n_randint(state, 40)   /* may be composite */
+                            : n_randprime(state, 2 + n_randint(state, 63), 1);
+        /* sometimes larger thin shapes with short operands, for which the
+         * dispatch may use vandermonde1 */
+        const int big_thin = (shape != 0 && n_randint(state, 3) == 0);
+        slong rdim = 1 + n_randint(state, big_thin ? 24 : 10);
+        slong idim = 1 + n_randint(state, big_thin ? 24 : 10);
+        slong cdim = 1 + n_randint(state, big_thin ? 24 : 10);
+        if (shape == 1)
+            rdim = 1;
+        else if (shape == 2)
+            cdim = 1;
+        else if (shape == 3)
+            idim = 1;
+        /* aliasing res with pmat1 requires cdim == idim, with pmat2
+         * requires rdim == idim (keeping the thin shape) */
+        if (alias == 1)
+        {
+            if (shape == 2)
+                idim = 1;
+            cdim = idim;
+        }
+        else if (alias == 2)
+        {
+            if (shape == 1)
+                idim = 1;
+            rdim = idim;
+        }
+        const slong maxlen = big_thin ? 4 : (n_randint(state, 2) ? 20 : 60);
+        const slong len1 = n_randint(state, maxlen + 1);
+        const slong len2 = n_randint(state, maxlen + 1);
+        const slong nlo = n_randint(state, len1 + len2 + 2);
+        const slong nhi = n_randint(state, len1 + len2 + 4);
+        slong r, c;
+
+        nmod_poly_mat_t pmat1, pmat2, copy1, copy2, res, res_true;
+        nmod_poly_mat_init(pmat1, rdim, idim, prime);
+        nmod_poly_mat_init(pmat2, idim, cdim, prime);
+        nmod_poly_mat_init(res, rdim, cdim, prime);
+        nmod_poly_mat_init(res_true, rdim, cdim, prime);
+
+        for (r = 0; r < rdim; r++)
+            for (c = 0; c < idim; c++)
+                nmod_poly_randtest(nmod_poly_mat_entry(pmat1, r, c), state,
+                                   n_randint(state, len1 + 1));
+        for (r = 0; r < idim; r++)
+            for (c = 0; c < cdim; c++)
+                nmod_poly_randtest(nmod_poly_mat_entry(pmat2, r, c), state,
+                                   n_randint(state, len2 + 1));
+        nmod_poly_mat_init_set(copy1, pmat1);
+        nmod_poly_mat_init_set(copy2, pmat2);
+
+        if (nlo >= nhi)
+            nmod_poly_mat_zero(res_true);
+        else
+        {
+            nmod_poly_mat_mul(res_true, pmat1, pmat2);
+            nmod_poly_mat_shift_right(res_true, res_true, nlo);
+            nmod_poly_mat_truncate(res_true, nhi - nlo);
+        }
+
+        nmod_poly_mat_randtest(res, state, 5);   /* stale data in the output */
+        if (alias == 1)
+        {
+            nmod_poly_mat_set(res, pmat1);
+            nmod_poly_mat_mulmid(res, res, pmat2, nlo, nhi);
+        }
+        else if (alias == 2)
+        {
+            nmod_poly_mat_set(res, pmat2);
+            nmod_poly_mat_mulmid(res, pmat1, res, nlo, nhi);
+        }
+        else
+            nmod_poly_mat_mulmid(res, pmat1, pmat2, nlo, nhi);
+
+        result = nmod_poly_mat_equal(res_true, res)
+                 && nmod_poly_mat_equal(pmat1, copy1)
+                 && nmod_poly_mat_equal(pmat2, copy2);
+
+        if (!result)
+            TEST_FUNCTION_FAIL(
+                    "general interface: prime = %wu, rdim = %wd, idim = %wd, cdim = %wd\n"
+                    "len1 = %wd, len2 = %wd, nlo = %wd, nhi = %wd, alias = %d\n",
+                    prime, rdim, idim, cdim, len1, len2, nlo, nhi, alias);
+
+        nmod_poly_mat_clear(pmat1);
+        nmod_poly_mat_clear(pmat2);
+        nmod_poly_mat_clear(copy1);
+        nmod_poly_mat_clear(copy2);
+        nmod_poly_mat_clear(res);
+        nmod_poly_mat_clear(res_true);
+    }
+
     TEST_FUNCTION_END(state);
 }
