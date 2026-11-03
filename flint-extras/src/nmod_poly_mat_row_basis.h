@@ -116,7 +116,8 @@ slong _nmod_poly_mat_row_basis(nmod_poly_mat_t rbas,
  * for matrices with at most 3 times more rows than columns. Rough value from
  * timings on an Intel Xeon (AVX-512) with a 60-bit prime: with 2n x n
  * inputs, the crossover is around n * deg = 5000 for n <= 4 and around
- * n * deg = 12000 for n = 10, 20.
+ * n * deg = 12000 for n = 10, 20. It is also used for the row bases
+ * computed in ::nmod_poly_mat_hnf_diagonal_lnz.
  * \todo threshold to be retuned and tested on a few machines
  * */
 #define NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES 8000

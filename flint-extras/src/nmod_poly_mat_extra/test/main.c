@@ -16,6 +16,7 @@
 
 #include "t-add_shift_left.c"
 #include "t-det.c"
+#include "t-hermite_diagonal.c"
 #include "t-hermite_normal_form.c"
 #include "t-inv_series.c"
 #include "t-kernel.c"
@@ -50,6 +51,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_add_shift_left),
     TEST_FUNCTION(nmod_poly_mat_det),
     TEST_FUNCTION(nmod_poly_mat_hnf),
+    TEST_FUNCTION(nmod_poly_mat_hnf_diagonal),
     TEST_FUNCTION(nmod_poly_mat_inv_series),
     TEST_FUNCTION(nmod_poly_mat_kernel),
     TEST_FUNCTION(nmod_poly_mat_linsolve_via_kernel),

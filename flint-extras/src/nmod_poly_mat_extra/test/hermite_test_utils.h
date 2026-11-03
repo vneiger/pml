@@ -27,6 +27,7 @@
 #include <flint/ulong_extras.h>
 
 #include "nmod_poly_mat_forms.h"
+#include "nmod_poly_mat_io.h"
 #include "nmod_poly_mat_utils.h"
 
 /*------------------------------------------------------------*/
@@ -71,6 +72,46 @@ static int _htest_same_row_space(const nmod_poly_mat_t A1, slong r1,
     nmod_poly_mat_clear(H2);
     nmod_poly_mat_window_clear(B1);
     nmod_poly_mat_window_clear(B2);
+    return res;
+}
+
+/* for square mat, computes the diagonal of its upper row-wise (ROW_UPPER)
+ * Hermite normal form; returns 0 if mat is singular (then diag is
+ * undefined), 1 otherwise */
+static int _htest_upper_hnf_diagonal(nmod_poly_struct * diag, const nmod_poly_mat_t mat)
+{
+    const slong n = mat->r;
+    if (n == 0)
+        return 1;
+    nmod_poly_mat_t hnf;
+    nmod_poly_mat_init(hnf, n, n, mat->modulus);
+    slong rk = _htest_upper_hnf(hnf, mat);
+    if (rk == n)
+        for (slong i = 0; i < n; i++)
+            nmod_poly_set(diag + i, nmod_poly_mat_entry(hnf, i, i));
+    nmod_poly_mat_clear(hnf);
+    return (rk == n);
+}
+
+/* for square mat, computes the diagonal of its lower row-wise (ROW_LOWER)
+ * Hermite normal form, using the upper row-wise algorithm on the matrix with
+ * reversed rows and columns; returns 0 if mat is singular (then diag is
+ * undefined), 1 otherwise */
+static int _htest_lower_hnf_diagonal(nmod_poly_struct * diag, const nmod_poly_mat_t mat)
+{
+    const slong n = mat->r;
+    if (n == 0)
+        return 1;
+    nmod_poly_mat_t rev;
+    nmod_poly_mat_init(rev, n, n, mat->modulus);
+    for (slong i = 0; i < n; i++)
+        for (slong j = 0; j < n; j++)
+            nmod_poly_set(nmod_poly_mat_entry(rev, n-1-i, n-1-j), nmod_poly_mat_entry(mat, i, j));
+    int res = _htest_upper_hnf_diagonal(diag, rev);
+    if (res)
+        for (slong i = 0; i < n/2; i++)
+            nmod_poly_swap(diag + i, diag + n - 1 - i);
+    nmod_poly_mat_clear(rev);
     return res;
 }
 
