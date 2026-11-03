@@ -32,6 +32,19 @@
 *                          HELPER FUNCTIONS                          *
 **********************************************************************/
 
+/* res[i] += c * vec[i], where c_pr is either the Shoup precomputation of c,
+ * or 0 (when c is 0, 1, or -1, or when the modulus has FLINT_BITS bits), in
+ * which case this calls FLINT's _nmod_vec_scalar_addmul_nmod */
+static inline void _addmul_precomp(nn_ptr res, nn_srcptr vec, slong len,
+                                   ulong c, ulong c_pr, nmod_t mod)
+{
+    if (c_pr == 0)
+        _nmod_vec_scalar_addmul_nmod(res, vec, len, c, mod);
+    else
+        for (slong i = 0; i < len; i++)
+            res[i] = _nmod_add(res[i], n_mulmod_shoup(c, vec[i], c_pr, mod.n), mod);
+}
+
 // Context: row-wise
 // two "shifted weak Popov pivots" have been found in the same column j, i.e.
 // j is the shift-pivot index of two distinct rows pi1 and pi2 (thus pi1 != pi2).
@@ -47,15 +60,23 @@
 //             <=  mat->c * (rdeg(mat[pi2,:])+1)
 //  - for other: sum_{jj = 0 ... other->c-1} (deg(other[pi2,jj]) + 1)
 //             <=  other->c * (rdeg(other[pi2,:])+1)
-void _atomic_solve_pivot_collision_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
-                                           slong pi1, slong pi2, slong j)
+
+// This variant takes inv_lc = 1 / leading_coeff(mat[pi2,j]) as input, so that
+// callers can reuse it across collisions with the same pivot row; the
+// function _atomic_solve_pivot_collision_rowwise below computes it.
+static void _atomic_solve_pivot_collision_rowwise_inv(nmod_poly_mat_t mat, nmod_poly_mat_t other,
+                                                      slong pi1, slong pi2, slong j, ulong inv_lc)
 {
+    const nmod_t mod = MAT(pi1, j)->mod;
     // compute exp = deg(mat[pi1,j]) - deg(mat[pi2,j])
     const slong exp = MAT(pi1, j)->length - MAT(pi2, j)->length;
     // compute cst = - leading_coeff(mat[pi1,j]) / leading_coeff(mat[pi2,j])
-    ulong cst = n_invmod(MAT(pi2, j)->coeffs[MAT(pi2, j)->length -1], mat->modulus);
-    cst = nmod_mul(MAT(pi1, j)->coeffs[MAT(pi1, j)->length -1], cst, MAT(pi1, j)->mod);
-    cst = nmod_neg(cst, MAT(pi1, j)->mod);
+    ulong cst = nmod_mul(MAT(pi1, j)->coeffs[MAT(pi1, j)->length -1], inv_lc, mod);
+    cst = nmod_neg(cst, mod);
+    // Shoup precomputation, shared by all entries of the row (not for the
+    // special values 0, 1, -1, for which FLINT uses vector add/sub)
+    const ulong cst_pr = (NMOD_BITS(mod) != FLINT_BITS && cst > 1 && cst != mod.n - 1)
+                         ? n_mulmod_precomp_shoup(cst, mod.n) : 0;
     // update other entries in row pi1
     for (slong jj = 0; jj < mat->c; jj++)
     {
@@ -66,7 +87,7 @@ void _atomic_solve_pivot_collision_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
             _nmod_vec_zero(MAT(pi1, jj)->coeffs + MAT(pi1, jj)->length, len - MAT(pi1, jj)->length);
             _nmod_poly_set_length(MAT(pi1, jj), len);
         }
-        _nmod_vec_scalar_addmul_nmod(MAT(pi1, jj)->coeffs+exp, MAT(pi2, jj)->coeffs, MAT(pi2, jj)->length, cst, MAT(pi1, jj)->mod);
+        _addmul_precomp(MAT(pi1, jj)->coeffs+exp, MAT(pi2, jj)->coeffs, MAT(pi2, jj)->length, cst, cst_pr, MAT(pi1, jj)->mod);
         _nmod_poly_normalise(MAT(pi1, jj));
     }
     // update the row pi1 of other
@@ -79,9 +100,16 @@ void _atomic_solve_pivot_collision_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
             _nmod_vec_zero(OTHER(pi1, jj)->coeffs + OTHER(pi1, jj)->length, len - OTHER(pi1, jj)->length);
             _nmod_poly_set_length(OTHER(pi1, jj), len);
         }
-        _nmod_vec_scalar_addmul_nmod(OTHER(pi1, jj)->coeffs+exp, OTHER(pi2, jj)->coeffs, OTHER(pi2, jj)->length, cst, OTHER(pi1, jj)->mod);
+        _addmul_precomp(OTHER(pi1, jj)->coeffs+exp, OTHER(pi2, jj)->coeffs, OTHER(pi2, jj)->length, cst, cst_pr, OTHER(pi1, jj)->mod);
         _nmod_poly_normalise(OTHER(pi1, jj));
     }
+}
+
+void _atomic_solve_pivot_collision_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
+                                           slong pi1, slong pi2, slong j)
+{
+    const ulong inv = n_invmod(MAT(pi2, j)->coeffs[MAT(pi2, j)->length -1], mat->modulus);
+    _atomic_solve_pivot_collision_rowwise_inv(mat, other, pi1, pi2, j, inv);
 }
 
 // Context: row-wise
@@ -218,9 +246,18 @@ slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
 
     // -> pivot_row[j] is either -1 (not among the pivots discovered so far)
     // or is the index (in submatrix) of the row with pivot j
-    slong * pivot_row = flint_malloc(cdim * sizeof(slong));
+    // -> cache of inverses of pivot leading coefficients, indexed by row of
+    // submat: lc_inv[i] is the inverse of lc_val[i] (lc_val[i] == 0 means no
+    // cached value); always checked against the current coefficient
+    // (one allocation for both, so that the heap is used as before the cache
+    // was introduced)
+    slong * pivot_row = flint_malloc(cdim * sizeof(slong) + 2 * rdim * sizeof(ulong));
+    ulong * lc_val = (ulong *) (pivot_row + cdim);
+    ulong * lc_inv = lc_val + rdim;
     for (slong i = 0; i < cdim; i++)
         pivot_row[i] = -1L;
+    for (slong i = 0; i < rdim; i++)
+        lc_val[i] = 0;
 
     slong pivdeg; // will be used to store pivot degrees
 
@@ -248,9 +285,11 @@ slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
         {
             // pivind[rk] == pivind[pi]: pivot collision, let's actually do some work
             slong pi = pivot_row[pivind[rk]];
+            // column of mat holding the two pivots (pivind is relative to submat)
+            const slong j = cstart + pivind[rk];
             // see who has greatest pivot degree, and swap accordingly
             // (note that this does not disturb the row rank profile)
-            if (pivdeg < nmod_poly_degree(MAT(rstart+pi, pivind[rk])))
+            if (pivdeg < nmod_poly_degree(MAT(rstart+pi, j)))
             {
                 nmod_poly_mat_swap_rows(mat, NULL, rstart+pi, rstart+rk);
                 if (tsf) nmod_poly_mat_swap_rows(tsf, NULL, rstart+pi, rstart+rk);
@@ -259,7 +298,14 @@ slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
 
             // perform atomic collision solving:
             //    mat[rstart+rk,:] = mat[rstart+rk,:] + cst * x**exp * mat[rstart+pi,:]
-            _atomic_solve_pivot_collision_rowwise(mat, tsf, rstart+rk, rstart+pi, pivind[rk]);
+            const nmod_poly_struct * piv = MAT(rstart+pi, j);
+            const ulong lc = piv->coeffs[piv->length - 1];
+            if (lc_val[pi] != lc)
+            {
+                lc_val[pi] = lc;
+                lc_inv[pi] = n_invmod(lc, mat->modulus);
+            }
+            _atomic_solve_pivot_collision_rowwise_inv(mat, tsf, rstart+rk, rstart+pi, j, lc_inv[pi]);
         }
     }
 
