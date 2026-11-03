@@ -954,6 +954,142 @@ slong nmod_poly_mat_hnf_ur_matrixgcd_iter(nmod_poly_mat_t mat,
 
 //@} // doxygen group: Computing Hermite normal form
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* DIAGONAL OF HERMITE NORMAL FORM                            */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name Diagonal entries of the Hermite normal form
+ * See @ref MatrixForms for definitions
+ *
+ * For a square, nonsingular matrix ``pmat``, these functions compute the
+ * diagonal entries of its Hermite normal form, without computing the Hermite
+ * form itself. The output ``diag`` must be an array of ``pmat->r``
+ * polynomials initialized with modulus ``pmat->modulus``, which are not
+ * entries of ``pmat``. The return value is 1 if ``pmat`` is nonsingular, in
+ * which case ``diag[i]`` is the ``i``-th diagonal entry of the Hermite form;
+ * and it is 0 if ``pmat`` is singular, in which case the entries of ``diag``
+ * are undefined.
+ *
+ * Size of the integers (see @ref IntegerSizes): no shift is given as input;
+ * the conditions are those of ::nmod_poly_mat_kernel_zls_approx (with the
+ * row degree of the current matrix as shift), of
+ * ::_nmod_poly_mat_row_basis_zl and of
+ * ::_nmod_poly_mat_row_basis_certify_unimodular, for the matrices
+ * encountered in the recursion; they only involve degrees and dimensions,
+ * and hold in practice.
+ */
+//@{
+
+/** Dimension bound for the Mulders-Storjohann base case of
+ * ::nmod_poly_mat_hnf_diagonal_lnz: the recursion stops for matrices of
+ * dimension `n` at most #NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM such that `n *
+ * deg` is at most #NMOD_POLY_MAT_HNF_DIAGONAL_ITER_NDEG. Rough values from
+ * timings on an Intel Xeon (AVX-512) with a 60-bit prime: the base case is
+ * 1.6-2.2x faster than the recursion for `n <= 16`, and 1.1-1.4x for `n =
+ * 24`.
+ * \todo thresholds to be retuned and tested on a few machines
+ * \todo `n * deg` uses the maximum degree, which misjudges unbalanced
+ * inputs: with one row of high degree, the recursion is much slower than
+ * the Mulders-Storjohann triangularization, at all dimensions (Apple M4:
+ * row 0 of degree < d and other rows of degree < 2, d >= 20-40, n up to
+ * 256: 10-40x slower than ::nmod_poly_mat_det_iter; with one column of high
+ * degree, up to 3x), the kernel basis computation dominating since its
+ * approximation order follows the maximum row degree. For uniform degrees,
+ * one recursion step already beats the base case from n = 12 (up to 2x
+ * at n = 24), so the dimension bound is too high. When retuning, consider
+ * a rule on n, the maximum degree md and D = min(sum of row degrees, sum
+ * of column degrees), e.g. base case iff (n <= 6 and n * md <= 480) or
+ * (n * md >= 3 D and D <= 8 md), which was within 1.25x of the best on
+ * 850 of 886 measured inputs (M4, 30- and 60-bit primes).
+ * */
+#define NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM 24
+
+/** See #NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM */
+#define NMOD_POLY_MAT_HNF_DIAGONAL_ITER_NDEG 480
+
+/** Diagonal entries of the lower row-wise Hermite normal form (ROW_LOWER),
+ * using a row-wise version of the triangularization algorithm of
+ *   George Labahn, Vincent Neiger, Wei Zhou -- "Fast, deterministic
+ *   computation of the Hermite normal form and determinant of a polynomial
+ *   matrix", Journal of Complexity 42, 2017 -- arxiv.org/abs/1607.04176
+ *
+ * Write pmat = [F_L | F_R] with F_L having ceil(n/2) columns, s =
+ * rdeg(pmat), K an s-minimal left kernel basis of F_R and R a row basis of
+ * F_R. Then the diagonal is formed by the diagonal of the Hermite form of K
+ * * F_L followed by the diagonal of the Hermite form of R, and both are
+ * computed recursively.
+ *
+ * The row basis R is computed only when it may be non-unimodular: from the
+ * shifted row degree of K and the degrees in F_R, the function
+ * ::_nmod_poly_mat_row_basis_certify_unimodular may certify that R is
+ * unimodular, and then the corresponding diagonal entries are all 1. At the
+ * top level of the recursion, this certificate succeeds for generic matrices
+ * with any given degree pattern. At deeper levels, the matrix K * F_L is not
+ * generic; the certificate was observed to succeed at all levels for generic
+ * matrices with uniform, row-wise or column-wise degrees, in which case the
+ * whole computation consists of a kernel basis computation and a product at
+ * each level of the recursion, and the computed diagonal is (det(pmat), 1,
+ * ..., 1) up to normalization.
+ *
+ * When R must be computed, this is done by the iterative weak Popov form
+ * algorithm if m * deg(F_R) is at most
+ * #NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES (with m = floor(n/2) the number
+ * of columns of F_R), and otherwise by the Zhou-Labahn approach reusing the
+ * kernel basis K (see ::_nmod_poly_mat_row_basis_zl). Besides, for small
+ * matrices (see #NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM), the recursion stops:
+ * the Mulders-Storjohann triangularization (see
+ * ::_nmod_poly_mat_upper_triangularize_iter) yields an upper triangular
+ * matrix through unimodular row operations, so that its diagonal is that of
+ * the upper Hermite form up to normalization; applied to the matrix with
+ * reversed rows and columns, it gives the lower Hermite diagonal in reverse
+ * order.
+ *
+ * \todo the certificate may fail at deeper levels of the recursion while R
+ * is unimodular (observed for generic matrices with some non-uniform degree
+ * patterns, in 1-7% of the steps), which costs a row basis computation
+ * and a recursive call returning (1, ..., 1); to be taken into account when
+ * tuning
+ *
+ * \todo the kernel basis computation and the product K * F_L do not exploit
+ * unbalanced degrees (the approximation order of the kernel basis follows the
+ * maximum row degree, and K may have unbalanced degrees); the cost bound of
+ * LNZ17 for inputs with unbalanced degrees requires partial linearization
+ * techniques, which are not available yet
+ *
+ * \todo similarly to what happens in ZLS15 inversion, there may be situations
+ * where one wants to store intermediate kernel bases
+ */
+int nmod_poly_mat_hnf_diagonal_lnz(nmod_poly_struct * diag,
+                                   const nmod_poly_mat_t pmat);
+
+/** Same as ::nmod_poly_mat_hnf_diagonal_lnz, with the threshold
+ * #NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES replaced by ``wp_thres`` (a
+ * negative value means that the Zhou-Labahn approach is always used for row
+ * bases), and the thresholds #NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM on n and
+ * #NMOD_POLY_MAT_HNF_DIAGONAL_ITER_NDEG on n * deg for the Mulders-Storjohann
+ * base case replaced by ``iter_dim`` and ``iter_thres`` (a negative value of
+ * ``iter_thres`` means that this base case is never used). Meant for testing
+ * and tuning; for example, ``iter_dim = min(n - 1, ITER_DIM)`` performs one
+ * step of the recursion at the top level and uses the default thresholds
+ * below. */
+int _nmod_poly_mat_hnf_diagonal_lnz(nmod_poly_struct * diag,
+                                    const nmod_poly_mat_t pmat,
+                                    slong wp_thres,
+                                    slong iter_dim,
+                                    slong iter_thres);
+
+/** Diagonal entries of the Hermite normal form for the orientation
+ * ``orient`` (see @ref orientation_t). This is obtained from
+ * ::nmod_poly_mat_hnf_diagonal_lnz by transposition and/or by reversing the
+ * order of rows and columns. */
+int nmod_poly_mat_hnf_diagonal(nmod_poly_struct * diag,
+                               const nmod_poly_mat_t pmat,
+                               orientation_t orient);
+
+//@} // doxygen group: Diagonal of Hermite normal form
+
 // TODO mod det version (see e.g. Domich) ? quite often for nmod_poly_mat's,
 // computing the determinant is not really easier than computing the HNF...
 // --> YET once may imagine e.g. approximant/interpolant basis computation,

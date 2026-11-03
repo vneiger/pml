@@ -15,49 +15,40 @@
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_extra.h"  /* for prototype of det_iter */
 
-// Mulders-Storjohann determinant algorithm
-// matrix must be square, not tested
-// this modifies mat, if all goes well (input matrix nonsingular) at the end it
-// is upper triangular (up to permutation)
-void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat)
+// Mulders-Storjohann triangularization, see the documentation in
+// nmod_poly_mat_extra.h
+slong _nmod_poly_mat_upper_triangularize_iter(nmod_poly_struct * diag, nmod_poly_mat_t mat)
 {
-    if (mat->r == 0) { nmod_poly_one(det); return; }
+    const slong n = mat->r;
+    if (n == 0)
+        return 1;
 
-    // determinant (+1 or -1), pivot index, and rank for weak Popov form computations
-    slong udet = 1; 
-    slong rk;
-    slong * pivind = flint_malloc(mat->r * sizeof(slong));
+    // determinant (+1 or -1) of the unimodular transformation, 0 if singular
+    slong udet = 1;
+    slong * pivind = flint_malloc(n * sizeof(slong));
     // permutation for putting into ordered weak Popov
-    slong * perm = flint_malloc(mat->r * sizeof(slong));
+    slong * perm = flint_malloc(n * sizeof(slong));
 
     // window of original mat
     nmod_poly_mat_t view;
-    nmod_poly_mat_window_init(view, mat, 0, 0, mat->r, mat->r);
-    // TODO the following is necessary for Flint <= v3.0.0
-    //view->modulus = mat->modulus; 
+    nmod_poly_mat_window_init(view, mat, 0, 0, n, n);
 
-    for (slong i = mat->r -1; i >= 1; i--)
+    for (slong i = n - 1; i >= 1; i--)
     {
         //            [ V  * ]                 [ V ]
-        // mat is now [ 0  D ] and view is now [ 0 ] of size mat->r x (i+1),
-        // with det = det(D) and V of size (i+1) x (i+1)
+        // mat is now [ 0  D ] and view is now [ 0 ] of size n x (i+1),
+        // with V of size (i+1) x (i+1)
         //                 [ V'  *  * ]
         // -> transform to [ 0   d  * ] via weak Popov form of V[:,:i]
         //                 [ 0   0  D ]
+        // (weak Popov form of view[:i+1,:i], with transformations applied to
+        // the whole rows view[:i+1,:] = V, early exit if rank < i)
+        const slong rk = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(view, NULL, NULL, &udet, pivind, NULL, 0, 0, i+1, i, 2, ROW_UPPER);
 
-        // this applies weak Popov form on view[:i+1,:i],
-        // with transformations applied to the whole rows view[:i+1,:] = V
-        // with early exit if detecting rank < i (in which case rk < 0)
-        // with update of the determinant of unimodular transformation (+1 or -1)
-        rk = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(view, NULL, NULL, &udet, pivind, NULL, 0, 0, i+1, i, 2, ROW_UPPER);
-
-        // early exit if rank-deficient
         if (rk < i || nmod_poly_is_zero(nmod_poly_mat_entry(view, i, i)))
         {
-            nmod_poly_zero(det);
-            flint_free(pivind);
-            flint_free(perm);
-            return;
+            udet = 0;
+            break;
         }
 
         // permute into ordered weak Popov form
@@ -67,22 +58,47 @@ void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat)
             udet = -udet;
     }
 
-    // retrieve determinant as product of diagonal entries
-    // use view rather than mat, since mat has not been row-permuted
-    // so it is only triangular up to permutation
-    _nmod_poly_mat_window_resize_columns(view, mat->r -1); // reset view->c to mat->c
-    nmod_poly_set(det, nmod_poly_mat_entry(view, 0, 0)); // recall here mat->r == mat->c > 0
-    if (!nmod_poly_is_zero(det))
-    {
-        if (udet == -1)
-            _nmod_vec_neg(det->coeffs, det->coeffs, det->length, det->mod);
-        for (slong i = 1; i < view->r; i++)
-            nmod_poly_mul(det, det, nmod_poly_mat_entry(view, i, i));
-    }
-    /* else, if zero, rank deficient early exit */
+    // read the diagonal through view rather than mat, since with FLINT < 3.3
+    // the rows of mat have not been permuted
+    _nmod_poly_mat_window_resize_columns(view, n - view->c);
+    if (udet != 0 && nmod_poly_is_zero(nmod_poly_mat_entry(view, 0, 0)))
+        udet = 0;
+    if (udet != 0)
+        for (slong i = 0; i < n; i++)
+            nmod_poly_swap(diag + i, nmod_poly_mat_entry(view, i, i));
 
     flint_free(pivind);
     flint_free(perm);
     nmod_poly_mat_window_clear(view);
-    return;
+    return udet;
+}
+
+// Mulders-Storjohann determinant algorithm
+// matrix must be square, not tested; this modifies mat (see
+// _nmod_poly_mat_upper_triangularize_iter)
+void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat)
+{
+    const slong n = mat->r;
+    nmod_poly_struct * diag = flint_malloc(FLINT_MAX(1, n) * sizeof(nmod_poly_struct));
+    for (slong i = 0; i < n; i++)
+        nmod_poly_init(diag + i, mat->modulus);
+
+    const slong udet = _nmod_poly_mat_upper_triangularize_iter(diag, mat);
+    if (udet == 0)
+        nmod_poly_zero(det);
+    else if (n == 0)
+        nmod_poly_one(det);
+    else
+    {
+        /* determinant = udet * product of the diagonal entries */
+        nmod_poly_swap(det, diag + 0);
+        for (slong i = 1; i < n; i++)
+            nmod_poly_mul(det, det, diag + i);
+        if (udet == -1)
+            nmod_poly_neg(det, det);
+    }
+
+    for (slong i = 0; i < n; i++)
+        nmod_poly_clear(diag + i);
+    flint_free(diag);
 }
