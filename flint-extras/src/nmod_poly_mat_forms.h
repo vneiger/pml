@@ -1039,7 +1039,8 @@ slong nmod_poly_mat_hnf_ur_matrixgcd_iter(nmod_poly_mat_t mat,
  *   transformation will be applied to its rows rstart:rstart+rdim
  *   ... pivind must be allocated with at least rdim entries; its first rdim
  *   entries will be populated with the shifted pivot index of the output weak
- *   Popov form (undefined behaviour for entries beyond rdim)
+ *   Popov form, as column indices of submat, i.e. in 0..cdim-1 (pivot index
+ *   cstart + pivind[i] in mat); undefined behaviour for entries beyond rdim
  *   ... rrp  must be NULL or allocated with >= rank(submat) entries, it will
  *   eventually contain the row rank profile of submat as its first
  *   ``rank(submat)`` entries

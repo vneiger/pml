@@ -714,12 +714,127 @@ static int test_upper_weak_popov_zero_rows(flint_rand_t state)
     return res;
 }
 
+/* Mulders-Storjohann iteration on a submatrix
+ * mat[rstart:rstart+rdim, cstart:cstart+cdim] with rstart, cstart > 0 (all
+ * other callers use 0, 0): the transformations act on whole rows of mat and
+ * on rows rstart:rstart+rdim of tsf; pivind is relative to the submatrix */
+static int test_weak_popov_iter_submat(flint_rand_t state)
+{
+    int res = 1;
+    for (slong iter = 0; res && iter < 300; iter++)
+    {
+        const slong rstart = n_randint(state, 4);
+        const slong cstart = 1 + n_randint(state, 3);
+        const slong rdim = 1 + n_randint(state, 6);
+        const slong cdim = 1 + n_randint(state, 6);
+        const slong r = rstart + rdim + n_randint(state, 3);
+        const slong c = cstart + cdim + n_randint(state, 3);
+        const ulong prime = n_randprime(state, 2 + n_randint(state, 59), 1);
+        const orientation_t orient = n_randint(state, 2) ? ROW_LOWER : ROW_UPPER;
+
+        nmod_poly_mat_t mat, wpf, tsf, tmp;
+        nmod_poly_mat_init(mat, r, c, prime);
+        nmod_poly_mat_init(wpf, r, c, prime);
+        nmod_poly_mat_init(tsf, r, r, prime);
+        nmod_poly_mat_init(tmp, r, c, prime);
+        if (n_randint(state, 2))
+            nmod_poly_mat_randtest(mat, state, 1 + n_randint(state, 6));
+        else
+            nmod_poly_mat_randtest_sparse(mat, state, 1 + n_randint(state, 6), 0.5);
+        /* rank deficiency in the submatrix: copy a row, scaled by a constant */
+        if (rdim > 1 && n_randint(state, 2))
+        {
+            const slong i1 = rstart + n_randint(state, rdim);
+            const slong i2 = rstart + n_randint(state, rdim);
+            const ulong cst = n_randint(state, prime);
+            for (slong j = cstart; j < cstart + cdim; j++)
+                nmod_poly_scalar_mul_nmod(nmod_poly_mat_entry(mat, i1, j),
+                                          nmod_poly_mat_entry(mat, i2, j), cst);
+        }
+
+        slong * shift = flint_malloc(cdim * sizeof(slong));
+        for (slong j = 0; j < cdim; j++)
+            shift[j] = (slong) n_randint(state, 7) - 3;
+        slong * pivind = flint_malloc(rdim * sizeof(slong));
+        slong * check = flint_malloc(rdim * sizeof(slong));
+        slong * rrp = flint_malloc(rdim * sizeof(slong));
+
+        nmod_poly_mat_set(wpf, mat);
+        nmod_poly_mat_one(tsf);
+        slong rk = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(wpf, shift, tsf, NULL, pivind, rrp,
+                                                                  rstart, cstart, rdim, cdim, rdim, orient);
+
+        /* wpf = tsf * mat, rows outside rstart:rstart+rdim unchanged */
+        nmod_poly_mat_mul(tmp, tsf, mat);
+        if (!nmod_poly_mat_equal(tmp, wpf))
+            res = 0;
+        for (slong i = 0; res && i < r; i++)
+        {
+            if (i >= rstart && i < rstart + rdim)
+                continue;
+            for (slong j = 0; j < r; j++)
+            {
+                const nmod_poly_struct * e = nmod_poly_mat_entry(tsf, i, j);
+                if (i == j ? !nmod_poly_is_one(e) : !nmod_poly_is_zero(e))
+                    res = 0;
+            }
+        }
+
+        /* rank, zero rows of submat at the bottom, weak Popov form and pivot
+         * index (relative to submat) of its nonzero rows, unimodular block
+         * of tsf */
+        nmod_poly_mat_t sub, top, tblock;
+        nmod_poly_mat_window_init(sub, mat, rstart, cstart, rstart + rdim, cstart + cdim);
+        if (res && rk != nmod_poly_mat_rank(sub))
+            res = 0;
+        nmod_poly_mat_window_clear(sub);
+        for (slong i = rstart + rk; res && i < rstart + rdim; i++)
+            for (slong j = cstart; j < cstart + cdim; j++)
+                if (!nmod_poly_is_zero(nmod_poly_mat_entry(wpf, i, j)))
+                    res = 0;
+        if (res && rk > 0)
+        {
+            nmod_poly_mat_window_init(top, wpf, rstart, cstart, rstart + rk, cstart + cdim);
+            res = nmod_poly_mat_is_weak_popov(top, shift, orient);
+            nmod_poly_mat_pivot_index(check, top, shift, orient);
+            for (slong i = 0; res && i < rk; i++)
+                if (check[i] != pivind[i])
+                    res = 0;
+            nmod_poly_mat_window_clear(top);
+        }
+        if (res)
+        {
+            nmod_poly_mat_window_init(tblock, tsf, rstart, rstart, rstart + rdim, rstart + rdim);
+            res = nmod_poly_mat_is_unimodular(tblock);
+            nmod_poly_mat_window_clear(tblock);
+        }
+
+        if (!res)
+            flint_printf("FAIL: weak Popov iteration on a submatrix, rstart %wd, cstart %wd, "
+                         "rdim %wd, cdim %wd, %s\n", rstart, cstart, rdim, cdim,
+                         orient == ROW_LOWER ? "ROW_LOWER" : "ROW_UPPER");
+
+        flint_free(rrp);
+        flint_free(check);
+        flint_free(pivind);
+        flint_free(shift);
+        nmod_poly_mat_clear(tmp);
+        nmod_poly_mat_clear(tsf);
+        nmod_poly_mat_clear(wpf);
+        nmod_poly_mat_clear(mat);
+    }
+    return res;
+}
+
 TEST_FUNCTION_START(nmod_poly_mat_weak_popov_form, state)
 {
     int i, result;
 
     if (!test_upper_weak_popov_zero_rows(state))
         TEST_FUNCTION_FAIL("upper shifted weak Popov form, matrix with zero rows\n");
+
+    if (!test_weak_popov_iter_submat(state))
+        TEST_FUNCTION_FAIL("weak Popov iteration on a submatrix with cstart > 0\n");
 
     /* TODO activate this for long test */
     if (0)
