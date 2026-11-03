@@ -991,14 +991,18 @@ slong nmod_poly_mat_hnf_ur_matrixgcd_iter(nmod_poly_mat_t mat,
  * 24`.
  * \todo thresholds to be retuned and tested on a few machines
  * \todo `n * deg` uses the maximum degree, which misjudges unbalanced
- * inputs: with one row of high degree, the recursion is 30-50x slower than
- * the Mulders-Storjohann triangularization (e.g. `n = 16`, row degrees
- * `(199, 1, ..., 1)`: 35 ms vs 1.2 ms; `n = 32`, row degrees `(299, 2, ...,
- * 2)`: 0.38 s vs 7 ms for ::nmod_poly_mat_det_iter), the kernel basis
- * computation taking 92% of the time since its
- * approximation order follows the maximum row degree. When retuning,
- * consider the sum of the row degrees (equal to `n * deg` for uniform
- * degrees) and revisit the dimension bound.
+ * inputs: with one row of high degree, the recursion is much slower than
+ * the Mulders-Storjohann triangularization, at all dimensions (Apple M4:
+ * row 0 of degree < d and other rows of degree < 2, d >= 20-40, n up to
+ * 256: 10-40x slower than ::nmod_poly_mat_det_iter; with one column of high
+ * degree, up to 3x), the kernel basis computation dominating since its
+ * approximation order follows the maximum row degree. For uniform degrees,
+ * one recursion step already beats the base case from n = 12 (up to 2x
+ * at n = 24), so the dimension bound is too high. When retuning, consider
+ * a rule on n, the maximum degree md and D = min(sum of row degrees, sum
+ * of column degrees), e.g. base case iff (n <= 6 and n * md <= 480) or
+ * (n * md >= 3 D and D <= 8 md), which was within 1.25x of the best on
+ * 850 of 886 measured inputs (M4, 30- and 60-bit primes).
  * */
 #define NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM 24
 
