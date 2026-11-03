@@ -51,7 +51,7 @@
 #include "nmod_poly_mat_approximant.h"
 // #include "nmod_poly_mat_interpolant.h"
 
-// #include "nmod_poly_mat_determinant.h"
+#include "nmod_poly_mat_determinant.h"
 
 #include "nmod_poly_mat_inverse.h"
 #include "nmod_poly_mat_linsolve.h"
@@ -62,19 +62,6 @@
 
 #include "nmod_poly_mat_row_basis.h"
 
-
-/* TODO move in suitable header */
-void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat);
-
-/** Mulders-Storjohann triangularization (as in ::nmod_poly_mat_det_iter) of
- * the square matrix `mat`, in place, by unimodular row operations. If `mat`
- * is nonsingular, this returns the determinant (+1 or -1) of the
- * transformation and swaps into `diag[i]` the `i`-th diagonal entry of the
- * obtained upper triangular matrix (`diag` must have `mat->r` initialized
- * entries, which are not entries of `mat`; the entries of `mat` are
- * meaningless afterwards); otherwise, it returns 0 and `diag` is not
- * modified. A `0 x 0` matrix is nonsingular (return value 1). */
-slong _nmod_poly_mat_upper_triangularize_iter(nmod_poly_struct * diag, nmod_poly_mat_t mat);
 
 // TODO implem + doc
 //slong nmod_poly_mat_linsolve_mulders_storjohann(nmod_poly_mat_t mat);

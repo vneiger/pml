@@ -10,13 +10,21 @@
     <https://www.gnu.org/licenses/>.
 */
 
+#include <flint/nmod.h>
+#include <flint/nmod_mat.h>
+#include <flint/nmod_poly.h>
 #include <flint/nmod_vec.h>
+#include <flint/perm.h>
+#include <flint/ulong_extras.h>
+
+#include "nmod_extra.h"  /* for nmod_find_root */
+#include "nmod_poly_extra.h"  /* for NMOD_POLY_CAN_USE_GEOMETRIC */
 #include "nmod_poly_mat_utils.h"  /* for permute_rows_by_sorting_vec */
 #include "nmod_poly_mat_forms.h"
-#include "nmod_poly_mat_extra.h"  /* for prototype of det_iter */
+#include "nmod_poly_mat_determinant.h"
 
 // Mulders-Storjohann triangularization, see the documentation in
-// nmod_poly_mat_extra.h
+// nmod_poly_mat_determinant.h
 slong _nmod_poly_mat_upper_triangularize_iter(nmod_poly_struct * diag, nmod_poly_mat_t mat)
 {
     const slong n = mat->r;
@@ -101,4 +109,458 @@ void nmod_poly_mat_det_iter(nmod_poly_t det, nmod_poly_mat_t mat)
     for (slong i = 0; i < n; i++)
         nmod_poly_clear(diag + i);
     flint_free(diag);
+}
+
+/*------------------------------------------------------------*/
+/* expansion by minors                                        */
+/*------------------------------------------------------------*/
+
+#define _ENTRY(i, j) (nmod_poly_mat_entry(pmat, (i), (j)))
+
+/* d2 = det of the 2 x 2 submatrix of pmat at rows i0, i1 and columns j0, j1,
+ * tmp is a temporary */
+static void _det22(nmod_poly_t d2, const nmod_poly_mat_t pmat,
+                   slong i0, slong i1, slong j0, slong j1, nmod_poly_t tmp)
+{
+    nmod_poly_mul(d2, _ENTRY(i0, j0), _ENTRY(i1, j1));
+    nmod_poly_mul(tmp, _ENTRY(i0, j1), _ENTRY(i1, j0));
+    nmod_poly_sub(d2, d2, tmp);
+}
+
+/* explicit formulas for dimension 3, as in the NTL-based part of PML:
+ * expansion along the last row, with the 2 x 2 minors of the first two rows */
+static void _det_minors_3(nmod_poly_t det, const nmod_poly_mat_t pmat)
+{
+    nmod_poly_t buf, det22;
+    nmod_poly_init_mod(buf, det->mod);
+    nmod_poly_init_mod(det22, det->mod);
+
+    /* det = pmat[2][0] * det(pmat[0,1][1,2]) */
+    _det22(det22, pmat, 0, 1, 1, 2, buf);
+    nmod_poly_mul(det, _ENTRY(2, 0), det22);
+
+    /* det -= pmat[2][1] * det(pmat[0,1][0,2]) */
+    _det22(det22, pmat, 0, 1, 0, 2, buf);
+    nmod_poly_mul(buf, _ENTRY(2, 1), det22);
+    nmod_poly_sub(det, det, buf);
+
+    /* det += pmat[2][2] * det(pmat[0,1][0,1]) */
+    _det22(det22, pmat, 0, 1, 0, 1, buf);
+    nmod_poly_mul(buf, _ENTRY(2, 2), det22);
+    nmod_poly_add(det, det, buf);
+
+    nmod_poly_clear(buf);
+    nmod_poly_clear(det22);
+}
+
+/* explicit formulas for dimension 4, as in the NTL-based part of PML: the six
+ * 2 x 2 minors of the first two rows are computed once, the four 3 x 3
+ * minors of the first three rows are deduced, and then the expansion along
+ * the last row */
+static void _det_minors_4(nmod_poly_t det, const nmod_poly_mat_t pmat)
+{
+    nmod_poly_t buf, det33;
+    nmod_poly_struct d22[6];
+    nmod_poly_init_mod(buf, det->mod);
+    nmod_poly_init_mod(det33, det->mod);
+    for (slong i = 0; i < 6; i++)
+        nmod_poly_init_mod(d22 + i, det->mod);
+
+    /* 2 x 2 minors of rows 0,1, columns [0,1], [0,2], [0,3], [1,2], [1,3], [2,3] */
+    _det22(d22 + 0, pmat, 0, 1, 0, 1, buf);
+    _det22(d22 + 1, pmat, 0, 1, 0, 2, buf);
+    _det22(d22 + 2, pmat, 0, 1, 0, 3, buf);
+    _det22(d22 + 3, pmat, 0, 1, 1, 2, buf);
+    _det22(d22 + 4, pmat, 0, 1, 1, 3, buf);
+    _det22(d22 + 5, pmat, 0, 1, 2, 3, buf);
+
+    /* det = - pmat[3][0] * det(pmat[0,1,2][1,2,3]) */
+    nmod_poly_mul(det33, _ENTRY(2, 1), d22 + 5);
+    nmod_poly_mul(buf, _ENTRY(2, 2), d22 + 4);
+    nmod_poly_sub(det33, det33, buf);
+    nmod_poly_mul(buf, _ENTRY(2, 3), d22 + 3);
+    nmod_poly_add(det33, det33, buf);
+    nmod_poly_mul(det, _ENTRY(3, 0), det33);
+    nmod_poly_neg(det, det);
+
+    /* det += pmat[3][1] * det(pmat[0,1,2][0,2,3]) */
+    nmod_poly_mul(det33, _ENTRY(2, 0), d22 + 5);
+    nmod_poly_mul(buf, _ENTRY(2, 2), d22 + 2);
+    nmod_poly_sub(det33, det33, buf);
+    nmod_poly_mul(buf, _ENTRY(2, 3), d22 + 1);
+    nmod_poly_add(det33, det33, buf);
+    nmod_poly_mul(buf, _ENTRY(3, 1), det33);
+    nmod_poly_add(det, det, buf);
+
+    /* det -= pmat[3][2] * det(pmat[0,1,2][0,1,3]) */
+    nmod_poly_mul(det33, _ENTRY(2, 0), d22 + 4);
+    nmod_poly_mul(buf, _ENTRY(2, 1), d22 + 2);
+    nmod_poly_sub(det33, det33, buf);
+    nmod_poly_mul(buf, _ENTRY(2, 3), d22 + 0);
+    nmod_poly_add(det33, det33, buf);
+    nmod_poly_mul(buf, _ENTRY(3, 2), det33);
+    nmod_poly_sub(det, det, buf);
+
+    /* det += pmat[3][3] * det(pmat[0,1,2][0,1,2]) */
+    nmod_poly_mul(det33, _ENTRY(2, 0), d22 + 3);
+    nmod_poly_mul(buf, _ENTRY(2, 1), d22 + 1);
+    nmod_poly_sub(det33, det33, buf);
+    nmod_poly_mul(buf, _ENTRY(2, 2), d22 + 0);
+    nmod_poly_add(det33, det33, buf);
+    nmod_poly_mul(buf, _ENTRY(3, 3), det33);
+    nmod_poly_add(det, det, buf);
+
+    nmod_poly_clear(buf);
+    nmod_poly_clear(det33);
+    for (slong i = 0; i < 6; i++)
+        nmod_poly_clear(d22 + i);
+}
+
+/* general dimension n: minors[S] = det(pmat[0:k, S]) for all subsets S of
+ * the columns with |S| = k, computed for k = 1, ..., n by expansion along
+ * row k-1:
+ *   det(pmat[0:k, S]) = sum_{j in S} (-1)^(k-1+pos(j,S)) pmat[k-1][j] det(pmat[0:k-1, S \ {j}])
+ * where pos(j,S) is the number of elements of S smaller than j. Subsets are
+ * represented by bitmasks; minors of size k-1 are cleared once those of size
+ * k are known. */
+static void _det_minors_subsets(nmod_poly_t det, const nmod_poly_mat_t pmat)
+{
+    const slong n = pmat->r;
+    const ulong nsub = UWORD(1) << n;
+
+    nmod_poly_struct * minors = flint_malloc(nsub * sizeof(nmod_poly_struct));
+    char * isinit = flint_calloc(nsub, sizeof(char));
+    nmod_poly_t tmp;
+    nmod_poly_init_mod(tmp, det->mod);
+
+    /* k == 1 */
+    for (slong j = 0; j < n; j++)
+    {
+        const ulong S = UWORD(1) << j;
+        nmod_poly_init_mod(minors + S, det->mod);
+        nmod_poly_set(minors + S, _ENTRY(0, j));
+        isinit[S] = 1;
+    }
+
+    for (slong k = 2; k <= n; k++)
+    {
+        /* subsets of size k: iterate over all masks with popcount k (Gosper's hack) */
+        ulong S = (UWORD(1) << k) - 1;
+        while (S < nsub)
+        {
+            nmod_poly_init_mod(minors + S, det->mod);
+            isinit[S] = 1;
+            slong pos = 0;
+            for (slong j = 0; j < n; j++)
+            {
+                if (!(S & (UWORD(1) << j)))
+                    continue;
+                const ulong Sj = S & ~(UWORD(1) << j);
+                if (!nmod_poly_is_zero(_ENTRY(k-1, j)) && !nmod_poly_is_zero(minors + Sj))
+                {
+                    nmod_poly_mul(tmp, _ENTRY(k-1, j), minors + Sj);
+                    if ((k - 1 + pos) % 2 == 0)
+                        nmod_poly_add(minors + S, minors + S, tmp);
+                    else
+                        nmod_poly_sub(minors + S, minors + S, tmp);
+                }
+                pos++;
+            }
+            /* next mask with the same popcount */
+            const ulong c = S & (-S);
+            const ulong r = S + c;
+            S = (((r ^ S) >> 2) / c) | r;
+        }
+
+        /* clear minors of size k-1 */
+        S = (UWORD(1) << (k-1)) - 1;
+        while (S < nsub)
+        {
+            if (isinit[S])
+            {
+                nmod_poly_clear(minors + S);
+                isinit[S] = 0;
+            }
+            const ulong c = S & (-S);
+            const ulong r = S + c;
+            S = (((r ^ S) >> 2) / c) | r;
+        }
+    }
+
+    nmod_poly_swap(det, minors + (nsub - 1));
+    nmod_poly_clear(minors + (nsub - 1));
+    flint_free(minors);
+    flint_free(isinit);
+    nmod_poly_clear(tmp);
+}
+
+void nmod_poly_mat_det_minors(nmod_poly_t det, const nmod_poly_mat_t pmat)
+{
+    const slong n = pmat->r;
+
+    if (pmat->r != pmat->c)
+        flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_det_minors). Non-square matrix.\n");
+
+    if (n == 0)
+        nmod_poly_one(det);
+    else if (n == 1)
+        nmod_poly_set(det, _ENTRY(0, 0));
+    else if (n == 2)
+    {
+        nmod_poly_t tmp;
+        nmod_poly_init_mod(tmp, det->mod);
+        _det22(det, pmat, 0, 1, 0, 1, tmp);
+        nmod_poly_clear(tmp);
+    }
+    else if (n == 3)
+        _det_minors_3(det, pmat);
+    else if (n == 4)
+        _det_minors_4(det, pmat);
+    else if (n <= 16)
+        _det_minors_subsets(det, pmat);
+    else
+        flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_det_minors). Dimension %wd too large (max 16).\n", n);
+}
+
+#undef _ENTRY
+
+/*------------------------------------------------------------*/
+/* evaluation at a geometric progression                      */
+/*------------------------------------------------------------*/
+
+int nmod_poly_mat_det_geometric(nmod_poly_t det, const nmod_poly_mat_t pmat)
+{
+    const slong n = pmat->r;
+
+    if (pmat->r != pmat->c)
+        flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_det_geometric). Non-square matrix.\n");
+
+    if (n == 0)
+    {
+        nmod_poly_one(det);
+        return 1;
+    }
+
+    /* degree bound min(|rdeg|, |cdeg|); zero row or column means det == 0 */
+    slong * degs = FLINT_ARRAY_ALLOC(n, slong);
+    slong sum_rdeg = 0, sum_cdeg = 0;
+    const ulong nzr = nmod_poly_mat_row_degree(degs, pmat, NULL);
+    for (slong i = 0; i < n; i++)
+        sum_rdeg += degs[i];
+    const ulong nzc = nmod_poly_mat_column_degree(degs, pmat, NULL);
+    for (slong j = 0; j < n; j++)
+        sum_cdeg += degs[j];
+    flint_free(degs);
+    if (nzr < (ulong) n || nzc < (ulong) n)
+    {
+        nmod_poly_zero(det);
+        return 1;
+    }
+
+    const slong len = FLINT_MIN(sum_rdeg, sum_cdeg) + 1;
+    const ulong p = pmat->modulus;
+    if (!NMOD_POLY_CAN_USE_GEOMETRIC(p, len) || !n_is_prime(p))
+        return 0;
+
+    nmod_t mod;
+    nmod_init(&mod, p);
+    const ulong w = nmod_find_root(2*len, mod);
+    if (w == 0)
+        return 0;
+
+    /* note: each entry has length at most len, since its degree is at most
+     * the row degree and column degree it belongs to */
+    nmod_geometric_progression_t G;
+    _nmod_geometric_progression_init_function(G, w, len, mod, UWORD(3));
+
+    /* evaluations: evals[(i*n + j) * len + k] = pmat[i][j](point k) */
+    nn_ptr evals = _nmod_vec_init(n * n * len);
+    for (slong i = 0; i < n; i++)
+        for (slong j = 0; j < n; j++)
+        {
+            const nmod_poly_struct * f = nmod_poly_mat_entry(pmat, i, j);
+            nn_ptr v = evals + (i * n + j) * len;
+            if (f->length == 0)
+                _nmod_vec_zero(v, len);
+            else if (f->length == 1)
+                for (slong k = 0; k < len; k++)
+                    v[k] = f->coeffs[0];
+            else
+                _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(v, f->coeffs, f->length, G, len, mod);
+        }
+
+    /* determinants at each point; for n > 8, in-place LU (nmod_mat_det would
+     * copy the matrix and test the primality of p at each point; for n <= 8
+     * it uses the division-free Berkowitz algorithm, which is faster) */
+    nn_ptr dets = _nmod_vec_init(len);
+    nmod_mat_t M;
+    nmod_mat_init(M, n, n, p);
+    slong * P = FLINT_ARRAY_ALLOC(n, slong);
+    for (slong k = 0; k < len; k++)
+    {
+        for (slong i = 0; i < n; i++)
+            for (slong j = 0; j < n; j++)
+                nmod_mat_entry(M, i, j) = evals[(i * n + j) * len + k];
+        if (n <= 8)
+            dets[k] = nmod_mat_det(M);
+        else if (nmod_mat_lu(P, M, 1) < n)
+            dets[k] = 0;
+        else
+        {
+            ulong dk = nmod_mat_entry(M, 0, 0);
+            for (slong i = 1; i < n; i++)
+                dk = nmod_mul(dk, nmod_mat_entry(M, i, i), mod);
+            dets[k] = _perm_parity(P, n) ? nmod_neg(dk, mod) : dk;
+        }
+    }
+    flint_free(P);
+    nmod_mat_clear(M);
+    _nmod_vec_clear(evals);
+
+    /* interpolation */
+    nmod_poly_interpolate_geometric_nmod_vec_fast_precomp(det, dets, G, len);
+
+    _nmod_vec_clear(dets);
+    nmod_geometric_progression_clear(G);
+    return 1;
+}
+
+/*------------------------------------------------------------*/
+/* general interface                                          */
+/*------------------------------------------------------------*/
+
+/* Degree 1, pmat = x A + B: if A is invertible, det(pmat) = det(A) *
+ * charpoly(-A^{-1} B); otherwise if B is invertible, det(pmat) = det(B) *
+ * x^n * charpoly(-B^{-1} A)(1/x). Returns 0 (det unchanged) if both A and B
+ * are singular or if the modulus is not prime. */
+static int _det_degree1(nmod_poly_t det, const nmod_poly_mat_t pmat)
+{
+    const slong n = pmat->r;
+    const ulong p = pmat->modulus;
+
+    if (!n_is_prime(p))
+        return 0;
+
+    nmod_mat_t A, B, X;
+    nmod_mat_init(A, n, n, p);
+    nmod_mat_init(B, n, n, p);
+    nmod_mat_init(X, n, n, p);
+    nmod_poly_mat_get_coeff_mat(A, pmat, 1);
+    nmod_poly_mat_get_coeff_mat(B, pmat, 0);
+
+    int ok = 1;
+    ulong c = nmod_mat_det(A);
+    if (c != 0)
+    {
+        nmod_mat_solve(X, A, B);
+        nmod_mat_neg(X, X);
+        nmod_mat_charpoly(det, X);
+    }
+    else if ((c = nmod_mat_det(B)) != 0)
+    {
+        nmod_mat_solve(X, B, A);
+        nmod_mat_neg(X, X);
+        nmod_mat_charpoly(det, X);
+        nmod_poly_reverse(det, det, n + 1);
+    }
+    else
+        ok = 0;
+
+    if (ok)
+        nmod_poly_scalar_mul_nmod(det, det, c);
+
+    nmod_mat_clear(A);
+    nmod_mat_clear(B);
+    nmod_mat_clear(X);
+    return ok;
+}
+
+void nmod_poly_mat_determinant(nmod_poly_t det, const nmod_poly_mat_t pmat)
+{
+    const slong n = pmat->r;
+
+    if (pmat->r != pmat->c)
+        flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_determinant). Non-square matrix.\n");
+
+    if (n <= 5)
+    {
+        nmod_poly_mat_det_minors(det, pmat);
+        return;
+    }
+
+    const slong d = nmod_poly_mat_degree(pmat);
+    if (d < 0)
+    {
+        nmod_poly_zero(det);
+        return;
+    }
+
+    /* constant matrix */
+    if (d == 0)
+    {
+        nmod_mat_t M;
+        nmod_mat_init(M, n, n, pmat->modulus);
+        nmod_poly_mat_get_coeff_mat(M, pmat, 0);
+        const ulong c = nmod_mat_det(M);
+        nmod_mat_clear(M);
+        nmod_poly_zero(det);
+        nmod_poly_set_coeff_ui(det, 0, c);
+        return;
+    }
+
+    /* degree 1, with invertible leading or constant coefficient:
+     * characteristic polynomial of a constant matrix */
+    if (d == 1 && _det_degree1(det, pmat))
+        return;
+
+    /* zero row or column means det == 0; the algorithms below work on rows
+     * (LNZ uses rdeg(pmat) as a shift): use the transpose if it has a
+     * smaller sum of row degrees */
+    slong D;  /* bound min(|rdeg|, |cdeg|) on the degree of the determinant */
+    {
+        slong * degs = FLINT_ARRAY_ALLOC(n, slong);
+        slong sum_rdeg = 0, sum_cdeg = 0;
+        const ulong nzr = nmod_poly_mat_row_degree(degs, pmat, NULL);
+        for (slong i = 0; i < n; i++)
+            sum_rdeg += degs[i];
+        const ulong nzc = nmod_poly_mat_column_degree(degs, pmat, NULL);
+        for (slong j = 0; j < n; j++)
+            sum_cdeg += degs[j];
+        flint_free(degs);
+        if (nzr < (ulong) n || nzc < (ulong) n)
+        {
+            nmod_poly_zero(det);
+            return;
+        }
+        D = FLINT_MIN(sum_rdeg, sum_cdeg);
+        if (sum_cdeg < sum_rdeg)
+        {
+            nmod_poly_mat_t T;
+            nmod_poly_mat_init(T, n, n, pmat->modulus);
+            nmod_poly_mat_transpose(T, pmat);
+            nmod_poly_mat_determinant(det, T);
+            nmod_poly_mat_clear(T);
+            return;
+        }
+    }
+
+    /* evaluation / interpolation: small dimension, large degree, provided
+     * the n^2 (D+1) stored evaluations fit in 256 MiB */
+    if (n <= 24 && (d >= 100 || (n <= 12 && d >= 30) || (n <= 8 && d >= 20))
+        && (ulong) n * n * (D + 1) <= (UWORD(1) << 25)
+        && nmod_poly_mat_det_geometric(det, pmat))
+        return;
+
+    /* Mulders-Storjohann: small dimension and degree */
+    if ((n <= 16 && n * d <= 320) || (d <= 1 && n <= 32))
+    {
+        nmod_poly_mat_t copy;
+        nmod_poly_mat_init_set(copy, pmat);
+        nmod_poly_mat_det_iter(det, copy);
+        nmod_poly_mat_clear(copy);
+        return;
+    }
+
+    /* Labahn-Neiger-Zhou triangularization step, then recursively */
+    _nmod_poly_mat_det_lnz(det, pmat, 1);
 }
