@@ -87,7 +87,7 @@ static void _atomic_solve_pivot_collision_rowwise_inv(nmod_poly_mat_t mat, nmod_
             _nmod_vec_zero(MAT(pi1, jj)->coeffs + MAT(pi1, jj)->length, len - MAT(pi1, jj)->length);
             _nmod_poly_set_length(MAT(pi1, jj), len);
         }
-        _addmul_precomp(MAT(pi1, jj)->coeffs+exp, MAT(pi2, jj)->coeffs, MAT(pi2, jj)->length, cst, cst_pr, mod);
+        _addmul_precomp(MAT(pi1, jj)->coeffs+exp, MAT(pi2, jj)->coeffs, MAT(pi2, jj)->length, cst, cst_pr, MAT(pi1, jj)->mod);
         _nmod_poly_normalise(MAT(pi1, jj));
     }
     // update the row pi1 of other
@@ -100,7 +100,7 @@ static void _atomic_solve_pivot_collision_rowwise_inv(nmod_poly_mat_t mat, nmod_
             _nmod_vec_zero(OTHER(pi1, jj)->coeffs + OTHER(pi1, jj)->length, len - OTHER(pi1, jj)->length);
             _nmod_poly_set_length(OTHER(pi1, jj), len);
         }
-        _addmul_precomp(OTHER(pi1, jj)->coeffs+exp, OTHER(pi2, jj)->coeffs, OTHER(pi2, jj)->length, cst, cst_pr, mod);
+        _addmul_precomp(OTHER(pi1, jj)->coeffs+exp, OTHER(pi2, jj)->coeffs, OTHER(pi2, jj)->length, cst, cst_pr, OTHER(pi1, jj)->mod);
         _nmod_poly_normalise(OTHER(pi1, jj));
     }
 }
@@ -246,15 +246,18 @@ slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
 
     // -> pivot_row[j] is either -1 (not among the pivots discovered so far)
     // or is the index (in submatrix) of the row with pivot j
-    slong * pivot_row = flint_malloc(cdim * sizeof(slong));
+    // -> cache of inverses of pivot leading coefficients, indexed by row of
+    // submat: lc_inv[i] is the inverse of lc_val[i] (lc_val[i] == 0 means no
+    // cached value); always checked against the current coefficient
+    // (one allocation for both, so that the heap is used as before the cache
+    // was introduced)
+    slong * pivot_row = flint_malloc(cdim * sizeof(slong) + 2 * rdim * sizeof(ulong));
+    ulong * lc_val = (ulong *) (pivot_row + cdim);
+    ulong * lc_inv = lc_val + rdim;
     for (slong i = 0; i < cdim; i++)
         pivot_row[i] = -1L;
-
-    // cache of inverses of pivot leading coefficients, indexed by row of
-    // submat: lc_inv[i] is the inverse of lc_val[i] (lc_val[i] == 0 means
-    // no cached value); always checked against the current coefficient
-    ulong * lc_val = flint_calloc(2 * rdim, sizeof(ulong));
-    ulong * lc_inv = lc_val + rdim;
+    for (slong i = 0; i < rdim; i++)
+        lc_val[i] = 0;
 
     slong pivdeg; // will be used to store pivot degrees
 
@@ -306,7 +309,6 @@ slong _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(nmod_poly_mat_t mat,
         }
     }
 
-    flint_free(lc_val);
     flint_free(pivot_row);
 
     if (zr >= early_exit_zr)
