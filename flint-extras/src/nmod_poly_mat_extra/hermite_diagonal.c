@@ -11,7 +11,6 @@
 */
 
 #include <flint/flint.h>
-#include <flint/nmod.h>
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
 
@@ -20,6 +19,7 @@
 #include "nmod_poly_mat_multiply.h"
 #include "nmod_poly_mat_row_basis.h"
 #include "nmod_poly_mat_utils.h"
+#include "nmod_poly_mat_extra.h"  /* for _nmod_poly_mat_upper_triangularize_iter */
 
 /* This file implements the triangularization of
  *   [LNZ17] George Labahn, Vincent Neiger, Wei Zhou -- "Fast, deterministic
@@ -66,12 +66,12 @@ static int _lnz_kernel_step(nmod_poly_mat_t G1,
     if (nmod_poly_mat_row_degree(s, F, NULL) < (ulong) n)
         return -1;
 
-    /* s-minimal left kernel basis of F_R, in ker[0:k,:], t = rdeg_s(K) */
-    nmod_poly_mat_t FR;
+    /* s-minimal left kernel basis of F_R, in ker[0:k,:], t = rdeg_s(K)
+     * (on a copy of F_R, which nmod_poly_mat_kernel_zls_approx modifies) */
+    nmod_poly_mat_t FRw, FR;
+    nmod_poly_mat_window_init(FRw, F, 0, k, n, n);
     nmod_poly_mat_init(FR, n, m, F->modulus);
-    for (slong i = 0; i < n; i++)
-        for (slong j = 0; j < m; j++)
-            nmod_poly_set(nmod_poly_mat_entry(FR, i, j), nmod_poly_mat_entry(F, i, k + j));
+    nmod_poly_mat_set(FR, FRw);
     slong * pivind = FLINT_ARRAY_ALLOC(n, slong);
     for (slong i = 0; i < n; i++)
         t[i] = s[i];
@@ -81,7 +81,10 @@ static int _lnz_kernel_step(nmod_poly_mat_t G1,
 
     /* F_R is rank deficient */
     if (nullity != k)
+    {
+        nmod_poly_mat_window_clear(FRw);
         return -1;
+    }
 
     /* G1 = K * F_L */
     nmod_poly_mat_t K, FL;
@@ -95,8 +98,6 @@ static int _lnz_kernel_step(nmod_poly_mat_t G1,
     slong sum_t = 0;
     for (slong i = 0; i < k; i++)
         sum_t += t[i];
-    nmod_poly_mat_t FRw;
-    nmod_poly_mat_window_init(FRw, F, 0, k, n, n);
     const int cert = _nmod_poly_mat_row_basis_certify_unimodular(FRw, s, sum_t);
     nmod_poly_mat_window_clear(FRw);
 
@@ -150,36 +151,27 @@ static int _hnf_diagonal_lnz_step(nmod_poly_mat_t G1,
  * normalization, where g = gcd(b, d) */
 static int _hnf_diagonal_2x2(nmod_poly_struct * diag, const nmod_poly_mat_t F)
 {
-    const nmod_poly_struct * a = nmod_poly_mat_entry(F, 0, 0);
-    const nmod_poly_struct * b = nmod_poly_mat_entry(F, 0, 1);
-    const nmod_poly_struct * c = nmod_poly_mat_entry(F, 1, 0);
-    const nmod_poly_struct * d = nmod_poly_mat_entry(F, 1, 1);
-
-    nmod_poly_t det, tmp;
-    nmod_poly_init_mod(det, a->mod);
-    nmod_poly_init_mod(tmp, a->mod);
-    nmod_poly_mul(det, a, d);
-    nmod_poly_mul(tmp, b, c);
-    nmod_poly_sub(det, det, tmp);
+    nmod_poly_t det;
+    nmod_poly_init(det, F->modulus);
+    nmod_poly_mat_det(det, F);
 
     int res = 0;
     if (!nmod_poly_is_zero(det))
     {
         /* g == gcd(b, d) is nonzero since det is nonzero; it is monic */
-        nmod_poly_gcd(diag + 1, b, d);
-        nmod_poly_div(diag + 0, det, diag + 1);
+        nmod_poly_gcd(diag + 1, nmod_poly_mat_entry(F, 0, 1), nmod_poly_mat_entry(F, 1, 1));
+        nmod_poly_divexact(diag + 0, det, diag + 1);
         nmod_poly_make_monic(diag + 0, diag + 0);
         res = 1;
     }
 
     nmod_poly_clear(det);
-    nmod_poly_clear(tmp);
     return res;
 }
 
-/* Base case for small dimension: Mulders-Storjohann triangularization, as in
- * nmod_poly_mat_det_iter, applied to J F J where J is the reversal
- * permutation. All transformations are unimodular, so that the diagonal
+/* Base case for small dimension: Mulders-Storjohann triangularization (see
+ * _nmod_poly_mat_upper_triangularize_iter) applied to J F J, where J is the
+ * reversal permutation. All transformations are unimodular, so that the diagonal
  * entries of the obtained upper triangular matrix are, up to units, those of
  * the upper row-wise Hermite form of J F J, that is, those of the lower
  * row-wise Hermite form of F in reverse order. */
@@ -187,54 +179,22 @@ static int _hnf_diagonal_iter(nmod_poly_struct * diag, const nmod_poly_mat_t F)
 {
     const slong n = F->r;
 
-    nmod_poly_mat_t M, view;
-    nmod_poly_mat_init(M, n, n, F->modulus);
-    for (slong i = 0; i < n; i++)
-        for (slong j = 0; j < n; j++)
-            nmod_poly_set(nmod_poly_mat_entry(M, i, j), nmod_poly_mat_entry(F, n-1-i, n-1-j));
+    nmod_poly_mat_t M;
+    nmod_poly_mat_init_set(M, F);
+    nmod_poly_mat_invert_rows(M, NULL);
+    nmod_poly_mat_invert_columns(M, NULL);
 
-    slong * pivind = FLINT_ARRAY_ALLOC(n, slong);
-    slong * perm = FLINT_ARRAY_ALLOC(n, slong);
-    nmod_poly_mat_window_init(view, M, 0, 0, n, n);
-
-    int res = 1;
-    for (slong i = n - 1; i >= 1; i--)
-    {
-        /* weak Popov form of view[:i+1, :i], transformations applied to the
-         * rows view[:i+1, :]; early exit if two zero rows are found */
-        const slong rk = _nmod_poly_mat_weak_popov_iter_submat_rowbyrow(view, NULL, NULL, NULL,
-                                                         pivind, NULL, 0, 0, i+1, i, 2, ROW_UPPER);
-        if (rk < i || nmod_poly_is_zero(nmod_poly_mat_entry(view, i, i)))
-        {
-            res = 0;
-            break;
-        }
-        _nmod_poly_mat_permute_rows_by_sorting_vec(view, rk, pivind, perm);
-        _nmod_poly_mat_window_resize_columns(view, -1);
-    }
-
-    /* read the diagonal through the window, whose rows have been permuted
-     * (with FLINT < 3.3, the rows of M itself are not) */
-    _nmod_poly_mat_window_resize_columns(view, n - view->c);
-    if (res && nmod_poly_is_zero(nmod_poly_mat_entry(view, 0, 0)))
-        res = 0;
-
+    /* diagonal of the upper triangular form of J F J, in reverse order */
+    const int res = (_nmod_poly_mat_upper_triangularize_iter(diag, M) != 0);
     if (res)
-        for (slong i = 0; i < n; i++)
-            nmod_poly_make_monic(diag + n - 1 - i, nmod_poly_mat_entry(view, i, i));
+        for (slong i = 0; i < n / 2; i++)
+            nmod_poly_swap(diag + i, diag + n - 1 - i);
+    for (slong i = 0; res && i < n; i++)
+        nmod_poly_make_monic(diag + i, diag + i);
 
-    nmod_poly_mat_window_clear(view);
     nmod_poly_mat_clear(M);
-    flint_free(pivind);
-    flint_free(perm);
     return res;
 }
-
-/* by default, the Mulders-Storjohann base case is used for n <= HD_ITER_DIM
- * and n * deg <= HD_ITER_NDEG (timings on Intel Xeon, AVX-512, 60-bit prime:
- * 1.6-2.2x faster than the recursion for n <= 16, 1.1-1.4x for n = 24) */
-#define HD_ITER_DIM 24
-#define HD_ITER_NDEG 480
 
 static int _hnf_diagonal_lnz_rec(nmod_poly_struct * diag, const nmod_poly_mat_t F,
                                  slong wp_thres, slong iter_thres)
@@ -255,7 +215,11 @@ static int _hnf_diagonal_lnz_rec(nmod_poly_struct * diag, const nmod_poly_mat_t 
     if (n == 2)
         return _hnf_diagonal_2x2(diag, F);
 
-    if (iter_thres >= 0 && n <= HD_ITER_DIM && n * nmod_poly_mat_degree(F) <= iter_thres)
+    /* TODO n * deg uses the maximum degree, which misjudges unbalanced inputs
+     * (see the todo at NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM): when retuning,
+     * consider the sum of the row degrees and revisit the dimension bound */
+    if (iter_thres >= 0 && n <= NMOD_POLY_MAT_HNF_DIAGONAL_ITER_DIM
+        && n * nmod_poly_mat_degree(F) <= iter_thres)
         return _hnf_diagonal_iter(diag, F);
 
     const slong k = (n + 1) / 2;
@@ -304,7 +268,7 @@ int nmod_poly_mat_hnf_diagonal_lnz(nmod_poly_struct * diag,
 {
     return _nmod_poly_mat_hnf_diagonal_lnz(diag, pmat,
                                            NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES,
-                                           HD_ITER_NDEG);
+                                           NMOD_POLY_MAT_HNF_DIAGONAL_ITER_NDEG);
 }
 
 int nmod_poly_mat_hnf_diagonal(nmod_poly_struct * diag,
@@ -313,11 +277,11 @@ int nmod_poly_mat_hnf_diagonal(nmod_poly_struct * diag,
 {
     const slong n = pmat->r;
 
+    if (orient == ROW_LOWER)
+        return nmod_poly_mat_hnf_diagonal_lnz(diag, pmat);
+
     if (pmat->r != pmat->c)
         flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_hnf_diagonal). Non-square matrix.\n");
-
-    if (orient == ROW_LOWER)
-        return _hnf_diagonal_lnz_rec(diag, pmat, NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES, HD_ITER_NDEG);
 
     /* other orientations: transpose and/or reverse rows and columns
      *  ROW_UPPER(F) == reversed ROW_LOWER(J F J)
@@ -326,17 +290,17 @@ int nmod_poly_mat_hnf_diagonal(nmod_poly_struct * diag,
      * where J is the reversal permutation */
     nmod_poly_mat_t F;
     nmod_poly_mat_init(F, n, n, pmat->modulus);
-    for (slong i = 0; i < n; i++)
-        for (slong j = 0; j < n; j++)
-        {
-            const nmod_poly_struct * entry =
-                (orient == ROW_UPPER) ? nmod_poly_mat_entry(pmat, n-1-i, n-1-j) :
-                (orient == COL_UPPER) ? nmod_poly_mat_entry(pmat, j, i) :
-                                        nmod_poly_mat_entry(pmat, n-1-j, n-1-i);
-            nmod_poly_set(nmod_poly_mat_entry(F, i, j), entry);
-        }
+    if (orient == ROW_UPPER)
+        nmod_poly_mat_set(F, pmat);
+    else
+        nmod_poly_mat_transpose(F, pmat);
+    if (orient != COL_UPPER)
+    {
+        nmod_poly_mat_invert_rows(F, NULL);
+        nmod_poly_mat_invert_columns(F, NULL);
+    }
 
-    int res = _hnf_diagonal_lnz_rec(diag, F, NMOD_POLY_MAT_ROW_BASIS_WEAK_POPOV_THRES, HD_ITER_NDEG);
+    int res = nmod_poly_mat_hnf_diagonal_lnz(diag, F);
 
     /* reverse the diagonal for ROW_UPPER and COL_LOWER */
     if (res && orient != COL_UPPER)

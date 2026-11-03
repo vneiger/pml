@@ -103,10 +103,9 @@ static int _htest_lower_hnf_diagonal(nmod_poly_struct * diag, const nmod_poly_ma
     if (n == 0)
         return 1;
     nmod_poly_mat_t rev;
-    nmod_poly_mat_init(rev, n, n, mat->modulus);
-    for (slong i = 0; i < n; i++)
-        for (slong j = 0; j < n; j++)
-            nmod_poly_set(nmod_poly_mat_entry(rev, n-1-i, n-1-j), nmod_poly_mat_entry(mat, i, j));
+    nmod_poly_mat_init_set(rev, mat);
+    nmod_poly_mat_invert_rows(rev, NULL);
+    nmod_poly_mat_invert_columns(rev, NULL);
     int res = _htest_upper_hnf_diagonal(diag, rev);
     if (res)
         for (slong i = 0; i < n/2; i++)
