@@ -27,6 +27,8 @@
  * 1 -> U * D * V with U, V random of degree < deg/2 and D diagonal with
  *      D[i,i] = 1 for i < n/2 and D[i,i] = x^2+x otherwise
  * 2 -> x*I - M with M random constant (characteristic matrix; deg ignored)
+ * 3 -> x*I - M with M similar to a block diagonal matrix diag(B, B) with B
+ *      random (derogatory: two nontrivial invariant factors; deg ignored)
  * 4 -> unbalanced row degrees: row 0 has degree < deg, the other rows have
  *      degree < 2
  * 5 -> unbalanced column degrees: the last column has degree < deg, the other
@@ -88,7 +90,37 @@ static void _build_input(nmod_poly_mat_t F, time_args targs, flint_rand_t state)
     {
         nmod_mat_t M;
         nmod_mat_init(M, n, n, targs.modn);
-        nmod_mat_rand(M, state);
+        if (targs.itype == 2)
+            nmod_mat_rand(M, state);
+        else
+        {
+            /* random similarity of diag(B, B), as in p-hermite_diagonal.c */
+            const slong b = n / 2;
+            nmod_mat_t B, P, Pinv, T;
+            nmod_mat_init(B, b, b, targs.modn);
+            nmod_mat_rand(B, state);
+            nmod_mat_zero(M);
+            for (slong i = 0; i < b; i++)
+                for (slong j = 0; j < b; j++)
+                {
+                    nmod_mat_entry(M, i, j) = nmod_mat_entry(B, i, j);
+                    nmod_mat_entry(M, b + i, b + j) = nmod_mat_entry(B, i, j);
+                }
+            if (n % 2)
+                nmod_mat_entry(M, n-1, n-1) = n_randint(state, targs.modn);
+            nmod_mat_clear(B);
+            nmod_mat_init(P, n, n, targs.modn);
+            nmod_mat_init(Pinv, n, n, targs.modn);
+            do
+                nmod_mat_rand(P, state);
+            while (!nmod_mat_inv(Pinv, P));
+            nmod_mat_init(T, n, n, targs.modn);
+            nmod_mat_mul(T, P, M);
+            nmod_mat_mul(M, T, Pinv);
+            nmod_mat_clear(T);
+            nmod_mat_clear(P);
+            nmod_mat_clear(Pinv);
+        }
         nmod_poly_mat_zero(F);
         for (slong i = 0; i < n; i++)
         {
@@ -140,10 +172,11 @@ TIME_DET(det_lnz, 1, nmod_poly_mat_det_lnz(det, F))
 TIME_DET(determinant, 1, nmod_poly_mat_determinant(det, F))
 
 /* FLINT's charpoly of the constant matrix M, for the characteristic matrix
- * F = x I - M (type 2), since det(F) = charpoly(M); n/a for other types */
+ * F = x I - M (types 2 and 3), since det(F) = charpoly(M); n/a for other
+ * types */
 static void time_charpoly(time_args targs, flint_rand_t state)
 {
-    if (targs.itype != 2)
+    if (targs.itype != 2 && targs.itype != 3)
     {
         flint_printf("    n/a ");
         return;
@@ -200,7 +233,7 @@ int main(int argc, char ** argv)
         "#3  --> FLINT's nmod_poly_mat_det                          ",
         "#4  --> det_lnz (Labahn-Neiger-Zhou)                       ",
         "#5  --> determinant (general interface)                    ",
-        "#6  --> FLINT's nmod_mat_charpoly of M (type 2 only)       ",
+        "#6  --> FLINT's nmod_mat_charpoly of M (types 2, 3 only)   ",
     };
 
     if (argc != 6)  // show usage
@@ -212,7 +245,7 @@ int main(int argc, char ** argv)
         flint_printf("   - dim: input matrix is dim x dim\n");
         flint_printf("   - deg: input matrix has degree < deg (for types 0, 1, 4, 5)\n");
         flint_printf("   - type: 0 random, 1 product U * diag(1, .., 1, x^2+x, .., x^2+x) * V,\n");
-        flint_printf("           2 characteristic matrix x I - M,\n");
+        flint_printf("           2 characteristic matrix x I - M, 3 same with M derogatory,\n");
         flint_printf("           4 row 0 of degree < deg and other rows of degree < 2,\n");
         flint_printf("           5 last column of degree < deg and other columns of degree < 2\n");
         flint_printf("\nAvailable functions:\n");
@@ -228,6 +261,12 @@ int main(int argc, char ** argv)
     const slong itype = atoi(argv[5]);
     const ulong n = n_nextprime(UWORD(1) << (bits-1), 0);
     time_args targs = {dim, deg, itype, n};
+
+    if (itype < 0 || itype > 5)
+    {
+        flint_printf("Unknown input type %wd (see the usage, without arguments)\n", itype);
+        return 1;
+    }
 
     if (ifun >= 0 && ifun < nfuns)
     {

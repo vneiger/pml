@@ -16,9 +16,9 @@
 #define __NMOD_MAT_EXTRA__H
 
 #include <flint/flint.h>
-#include <flint/flint-config.h>
 #include <flint/perm.h>
 #include <flint/nmod_mat.h>
+#include <flint/nmod_poly.h>
 
 #include "pml.h"
 
@@ -377,6 +377,74 @@ void _nmod_mat_rotate_columns_leftward(nmod_mat_t mat, slong * vec, slong i, slo
 void nmod_mat_permute_columns(nmod_mat_t mat, const slong * perm_act, slong * perm_store);
 
 //@} // doxygen group: Rotations
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* CHARACTERISTIC POLYNOMIAL                                  */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name Characteristic polynomial
+ *
+ * Characteristic polynomial `cp = det(x I - A)` of a square matrix `A`, for
+ * a prime modulus, through the determinant of a smaller polynomial matrix
+ * (see nmod_poly_mat_determinant.h). The `_lnz` family uses the
+ * Labahn-Neiger-Zhou determinant, after a reduction by linear algebra; it
+ * may fail on non-generic matrices, and choosing another method then is left
+ * to the caller.
+ */
+//@{
+
+/** Characteristic polynomial `cp = det(x I - A)` of the `n x n` matrix `A`,
+ * for a prime modulus, through a block Krylov reduction followed by a
+ * polynomial matrix determinant. Let `k = ceil(n / nlevels)` (with `nlevels`
+ * first clamped to `[1, n]`), and write `n = q*k + r` with `0 <= r < k`.
+ *
+ * If `k == n` (in particular if `nlevels <= 1`), there is no reduction:
+ * `cp` is the determinant of `x I - A` computed by
+ * ::_nmod_poly_mat_det_lnz (first step of the Labahn-Neiger-Zhou
+ * triangularization, then the general interface), and the function returns
+ * 1.
+ *
+ * Otherwise, the Krylov matrix `K = [E | A E | ... | A^(q-1) E | A^q E_r]`
+ * of the first `k` unit vectors is formed, where `E` is made of the first
+ * `k` columns of the identity and `E_r` of its first `r` columns, so that
+ * the column `A^j e_i` is at position `j*k + i`. If `K` is invertible, then
+ * `K^{-1} A K` is a block companion matrix, and `cp` is the determinant of
+ * the `k x k` polynomial matrix `P` with column degrees `q+1` (`r` times) and
+ * `q`, whose column `i` is `x^(delta_i) e_i - sum_j x^j z_(j,i)`, where
+ * `delta_i` is the column degree and `z_(j,i)` is the block of `k`
+ * coefficients of `A^(delta_i) e_i` on the vectors `A^j e_0, ..., A^j
+ * e_(k-1)` in the basis `K`. This determinant is computed by
+ * ::nmod_poly_mat_determinant, and the function returns 1. For `nlevels =
+ * 2` (resp. 4), `P` is about `n/2 x n/2` of degree 2 (resp. `n/4 x n/4` of
+ * degree 4).
+ *
+ * If `K` is singular, the function returns 0 and `cp` is unchanged. Writing
+ * `K = [[I_k, X], [0, Y]]`, this happens if and only if `Y` (dimension
+ * `n-k`) is singular, which is not the case for a generic `A`, but is the
+ * case for example for triangular, diagonal, block diagonal (with blocks
+ * larger than `k`), or companion matrices, and for any matrix with more than
+ * `k` invariant factors. When `K` has at least two nontrivial blocks of
+ * columns (`n - k > k`), the rank of the first one is checked before
+ * computing the next ones, which detects most structured cases at little
+ * cost.
+ *
+ * Cost: `n^2 (n - k)` operations for the Krylov matrix (as `q` products by
+ * `A` of `n x k` matrices), `(n-k)^3/3 + (n-k)^2 k + (n-k) k^2` for the
+ * coefficients `z_(j,i)` by linear system solving, and then the determinant
+ * of `P`. On random matrices, the latter dominates for small `nlevels`
+ * (e.g. 2 or 4) while it is negligible for `nlevels` around 64, which is
+ * the fastest choice in practice: for `n >= 20` and `nlevels = 64`, this is
+ * 1.1 to 4 times faster than FLINT's `nmod_mat_charpoly` for a 60-bit prime,
+ * and 3 to 11 times faster for a 20-bit prime (Intel Xeon with AVX-512,
+ * dimension up to 1024).
+ *
+ * \todo nlevels threshold to be finely tuned
+ */
+int _nmod_mat_charpoly_lnz_block_krylov(nmod_poly_t cp, const nmod_mat_t A, slong nlevels);
+
+//@} // doxygen group: Characteristic polynomial
 
 #ifdef __cplusplus
 }

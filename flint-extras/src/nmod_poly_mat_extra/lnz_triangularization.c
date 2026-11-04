@@ -279,9 +279,7 @@ static ulong _det_lnz_constant(const nmod_poly_mat_t ker, slong k, const nmod_ma
     const slong n = ker->c;
     const slong m = n - k;
     const ulong p = ker->modulus;
-
-    nmod_t mod;
-    nmod_init(&mod, p);
+    const nmod_t mod = C0->mod;
 
     /* K(0), and its pivot / nonpivot columns: P K(0) = L U with U in echelon
      * form, whose pivot columns are J = pivnp[0:k] */
@@ -316,7 +314,7 @@ static ulong _det_lnz_constant(const nmod_poly_mat_t ker, slong k, const nmod_ma
         for (slong j = 0; j < m; j++)
             nmod_mat_entry(CJc, i, j) = nmod_mat_entry(C0, jc, j);
     }
-    const ulong dC = nmod_mat_det(CJc);
+    const ulong dC = _nmod_mat_det(CJc);  /* in place, CJc is a temporary */
     if (dM == 0 || dC == 0)
         flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_det_lnz). Unexpected singular constant matrix.\n");
 

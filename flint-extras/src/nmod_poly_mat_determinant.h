@@ -93,6 +93,16 @@ int nmod_poly_mat_det_geometric(nmod_poly_t det, const nmod_poly_mat_t pmat);
  * \todo as for the Hermite diagonal, inputs with unbalanced degrees (e.g. one
  * row of much higher degree) are slow, since the approximation order of the
  * kernel basis follows the maximum row degree
+ *
+ * \todo for degree-1 inputs, the kernel step could be done by linear
+ * algebra: for F_R = [A2 ; x I - A1] with A2 invertible, K = [x I - S | -A2]
+ * with S = A2 A1 A2^{-1} is a minimal kernel basis and K F_L is monic
+ * (n = 800, 60-bit: first step 1000 ms -> 163 ms); in general, kernel rows
+ * correspond to linear relations among the rows of A2, A2 A1, A2 A1^2, ...
+ * (observability indices of (A1, A2)), and the same holds at deeper levels
+ * for [N ; D] with D monic, via the block companion of D (an all-linear-
+ * algebra LNZ for characteristic matrices); see also the Hermite diagonal
+ * of characteristic matrices
  */
 void nmod_poly_mat_det_lnz(nmod_poly_t det, const nmod_poly_mat_t pmat);
 
@@ -107,25 +117,38 @@ void _nmod_poly_mat_det_lnz(nmod_poly_t det, const nmod_poly_mat_t pmat, int hyb
  * modulus:
  * - expansion by minors for `n <= 5`;
  * - determinant of a constant matrix if `d == 0`;
+ * - zero if `pmat` has a zero row or column;
  * - for `d == 1`, writing `pmat = x A + B`: characteristic polynomial of
  *   `-A^{-1} B` if `A` is invertible, or reversed characteristic polynomial
- *   of `-B^{-1} A` if `B` is invertible;
- * - zero if `pmat` has a zero row or column;
+ *   of `-B^{-1} A` if `B` is invertible (for a characteristic matrix `x I -
+ *   M`, calling a characteristic polynomial function directly avoids the
+ *   factorization of `A = I`);
  * - otherwise, the transpose is used if it has smaller sum of row degrees,
- *   and then: evaluation/interpolation at a geometric progression for `n <=
- *   24` and large `d` (`d >= 100`, or `d >= 30` for `n <= 12`, or `d >= 20`
- *   for `n <= 8`) if the modulus allows it and the memory needed is at most
- *   256 MiB; Mulders-Storjohann's iterative algorithm for `n <= 16` and `n*d
- *   <= 320`, or `d <= 1` and `n <= 32`; and otherwise, one step of the
- *   Labahn-Neiger-Zhou triangularization with the two resulting determinants
- *   computed by this same interface.
+ *   and then, with `D = min(|rdeg(pmat)|, |cdeg(pmat)|)`: evaluation /
+ *   interpolation at a geometric progression for `n <= 24` and large `d`
+ *   (`d >= 100`, or `d >= 30` for `n <= 12`, or `d >= 20` for `n <= 8`) if
+ *   `n*d <= 3*D`, the modulus allows it and the memory needed is at most 256
+ *   MiB; Mulders-Storjohann's iterative algorithm if `n*d > 3*D` (strongly
+ *   unbalanced degrees, e.g. a few rows of much larger degree), or `n <= 16`
+ *   and `n*d <= 320`, or `d <= 1` and `n <= 32`; and otherwise, one step of
+ *   the Labahn-Neiger-Zhou triangularization with the two resulting
+ *   determinants computed by this same interface.
  *
  * \todo thresholds to be retuned on a few machines and moduli: they come
  * from timings on an Intel Xeon with AVX-512 with a 60-bit prime, before the
- * speed-up of the weak Popov iteration; as for the Hermite diagonal, the
- * criteria use the maximum degree `d`, which misjudges unbalanced inputs
+ * speed-up of the weak Popov iteration; the ratio 3 between `n*d` and `D` is
+ * the crossover observed between Mulders-Storjohann and LNZ for `n <= 256`
+ *
+ * \todo a well-made degree-1 path: the characteristic polynomial of `-A^{-1}
+ * B` is computed by FLINT's `nmod_mat_charpoly` (Danilevsky), whereas
+ * ::_nmod_mat_charpoly_lnz_block_krylov (nmod_mat_extra.h) is 1.1 to 11
+ * times faster on generic matrices of dimension 20 to 1024; this needs a
+ * charpoly interface with a fallback for the non-generic matrices on which
+ * it fails, and `A^{-1} B` could be applied to the Krylov blocks instead of
+ * being formed
  */
 void nmod_poly_mat_determinant(nmod_poly_t det, const nmod_poly_mat_t pmat);
+
 
 #ifdef __cplusplus
 }

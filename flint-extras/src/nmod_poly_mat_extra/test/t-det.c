@@ -207,5 +207,44 @@ TEST_FUNCTION_START(nmod_poly_mat_det, state)
                     n, len, prime);
     }
 
+    /* characteristic matrices x I - M, with M random or structured (zero,
+     * scalar, diagonal, upper triangular), and zero matrices: degree 1 with
+     * identity leading coefficient, degree -1 */
+    for (i = 0; i < 40 * flint_test_multiplier(); i++)
+    {
+        const ulong prime = _htest_rand_prime(state);
+        const slong n = 6 + n_randint(state, 35);
+        const slong type = n_randint(state, 6);
+
+        nmod_poly_mat_t mat;
+        nmod_poly_mat_init(mat, n, n, prime);
+        if (type < 5)
+        {
+            const ulong c = n_randint(state, prime);
+            for (slong r = 0; r < n; r++)
+            {
+                for (slong s = 0; s < n; s++)
+                {
+                    ulong mrs = 0;
+                    if (type == 0 || (type == 3 && r == s) || (type == 4 && r <= s))
+                        mrs = n_randint(state, prime);
+                    else if (type == 2 && r == s)
+                        mrs = c;
+                    nmod_poly_set_coeff_ui(nmod_poly_mat_entry(mat, r, s), 0,
+                                           nmod_neg(mrs, nmod_poly_mat_entry(mat, r, s)->mod));
+                }
+                nmod_poly_set_coeff_ui(nmod_poly_mat_entry(mat, r, r), 1, 1);
+            }
+        }
+
+        result = core_test_determinant(mat);
+
+        nmod_poly_mat_clear(mat);
+
+        if (!result)
+            TEST_FUNCTION_FAIL("(characteristic) dim = %wd, type = %wd, p = %wu\n",
+                    n, type, prime);
+    }
+
     TEST_FUNCTION_END(state);
 }

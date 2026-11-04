@@ -229,7 +229,6 @@ static void _det_minors_subsets(nmod_poly_t det, const nmod_poly_mat_t pmat)
     const ulong nsub = UWORD(1) << n;
 
     nmod_poly_struct * minors = flint_malloc(nsub * sizeof(nmod_poly_struct));
-    char * isinit = flint_calloc(nsub, sizeof(char));
     nmod_poly_t tmp;
     nmod_poly_init_mod(tmp, det->mod);
 
@@ -239,7 +238,6 @@ static void _det_minors_subsets(nmod_poly_t det, const nmod_poly_mat_t pmat)
         const ulong S = UWORD(1) << j;
         nmod_poly_init_mod(minors + S, det->mod);
         nmod_poly_set(minors + S, _ENTRY(0, j));
-        isinit[S] = 1;
     }
 
     for (slong k = 2; k <= n; k++)
@@ -249,12 +247,10 @@ static void _det_minors_subsets(nmod_poly_t det, const nmod_poly_mat_t pmat)
         while (S < nsub)
         {
             nmod_poly_init_mod(minors + S, det->mod);
-            isinit[S] = 1;
             slong pos = 0;
-            for (slong j = 0; j < n; j++)
+            for (ulong T = S; T != 0; T &= T - 1)
             {
-                if (!(S & (UWORD(1) << j)))
-                    continue;
+                const slong j = flint_ctz(T);
                 const ulong Sj = S & ~(UWORD(1) << j);
                 if (!nmod_poly_is_zero(_ENTRY(k-1, j)) && !nmod_poly_is_zero(minors + Sj))
                 {
@@ -272,15 +268,11 @@ static void _det_minors_subsets(nmod_poly_t det, const nmod_poly_mat_t pmat)
             S = (((r ^ S) >> 2) / c) | r;
         }
 
-        /* clear minors of size k-1 */
+        /* clear minors of size k-1 (all of them have been initialized) */
         S = (UWORD(1) << (k-1)) - 1;
         while (S < nsub)
         {
-            if (isinit[S])
-            {
-                nmod_poly_clear(minors + S);
-                isinit[S] = 0;
-            }
+            nmod_poly_clear(minors + S);
             const ulong c = S & (-S);
             const ulong r = S + c;
             S = (((r ^ S) >> 2) / c) | r;
@@ -290,7 +282,6 @@ static void _det_minors_subsets(nmod_poly_t det, const nmod_poly_mat_t pmat)
     nmod_poly_swap(det, minors + (nsub - 1));
     nmod_poly_clear(minors + (nsub - 1));
     flint_free(minors);
-    flint_free(isinit);
     nmod_poly_clear(tmp);
 }
 
@@ -342,15 +333,9 @@ int nmod_poly_mat_det_geometric(nmod_poly_t det, const nmod_poly_mat_t pmat)
     }
 
     /* degree bound min(|rdeg|, |cdeg|); zero row or column means det == 0 */
-    slong * degs = FLINT_ARRAY_ALLOC(n, slong);
-    slong sum_rdeg = 0, sum_cdeg = 0;
-    const ulong nzr = nmod_poly_mat_row_degree(degs, pmat, NULL);
-    for (slong i = 0; i < n; i++)
-        sum_rdeg += degs[i];
-    const ulong nzc = nmod_poly_mat_column_degree(degs, pmat, NULL);
-    for (slong j = 0; j < n; j++)
-        sum_cdeg += degs[j];
-    flint_free(degs);
+    slong sum_rdeg, sum_cdeg;
+    const ulong nzr = nmod_poly_mat_row_degree_sum(&sum_rdeg, pmat, NULL);
+    const ulong nzc = nmod_poly_mat_column_degree_sum(&sum_cdeg, pmat, NULL);
     if (nzr < (ulong) n || nzc < (ulong) n)
     {
         nmod_poly_zero(det);
@@ -369,9 +354,14 @@ int nmod_poly_mat_det_geometric(nmod_poly_t det, const nmod_poly_mat_t pmat)
         return 0;
 
     /* note: each entry has length at most len, since its degree is at most
-     * the row degree and column degree it belongs to */
+     * the row degree and column degree it belongs to; the n^2 evaluations
+     * share the stored transform for inputs of length at most maxlen
+     * (shorter than for length len), the single interpolation does not need
+     * one */
+    const slong maxlen = nmod_poly_mat_max_length(pmat);
     nmod_geometric_progression_t G;
     _nmod_geometric_progression_init_function(G, w, len, mod, UWORD(3));
+    _nmod_geometric_progression_init_fft(G, maxlen, 0, 0);
 
     /* evaluations: evals[(i*n + j) * len + k] = pmat[i][j](point k) */
     nn_ptr evals = _nmod_vec_init(n * n * len);
@@ -389,31 +379,20 @@ int nmod_poly_mat_det_geometric(nmod_poly_t det, const nmod_poly_mat_t pmat)
                 _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(v, f->coeffs, f->length, G, len, mod);
         }
 
-    /* determinants at each point; for n > 8, in-place LU (nmod_mat_det would
-     * copy the matrix and test the primality of p at each point; for n <= 8
-     * it uses the division-free Berkowitz algorithm, which is faster) */
+    /* determinants at each point; for n > 8, in-place LU by _nmod_mat_det
+     * (nmod_mat_det would copy the matrix and test the primality of p at
+     * each point; for n <= 8 it uses explicit formulas or the
+     * division-free Berkowitz algorithm, which are faster) */
     nn_ptr dets = _nmod_vec_init(len);
     nmod_mat_t M;
     nmod_mat_init(M, n, n, p);
-    slong * P = FLINT_ARRAY_ALLOC(n, slong);
     for (slong k = 0; k < len; k++)
     {
         for (slong i = 0; i < n; i++)
             for (slong j = 0; j < n; j++)
                 nmod_mat_entry(M, i, j) = evals[(i * n + j) * len + k];
-        if (n <= 8)
-            dets[k] = nmod_mat_det(M);
-        else if (nmod_mat_lu(P, M, 1) < n)
-            dets[k] = 0;
-        else
-        {
-            ulong dk = nmod_mat_entry(M, 0, 0);
-            for (slong i = 1; i < n; i++)
-                dk = nmod_mul(dk, nmod_mat_entry(M, i, i), mod);
-            dets[k] = _perm_parity(P, n) ? nmod_neg(dk, mod) : dk;
-        }
+        dets[k] = (n <= 8) ? nmod_mat_det(M) : _nmod_mat_det(M);
     }
-    flint_free(P);
     nmod_mat_clear(M);
     _nmod_vec_clear(evals);
 
@@ -429,10 +408,47 @@ int nmod_poly_mat_det_geometric(nmod_poly_t det, const nmod_poly_mat_t pmat)
 /* general interface                                          */
 /*------------------------------------------------------------*/
 
+/* If the square matrix A is invertible, sets c = det(A) and X = A^{-1} B
+ * and returns 1; otherwise returns 0 (c and X undefined). The modulus must
+ * be prime. This is nmod_mat_det(A) followed by nmod_mat_solve(X, A, B),
+ * with a single LU factorization. */
+static int _det_and_solve(ulong * c, nmod_mat_t X, const nmod_mat_t A, const nmod_mat_t B)
+{
+    const slong n = A->r;
+    nmod_mat_t LU;
+    nmod_mat_init_set(LU, A);
+    slong * perm = _perm_init(n);
+
+    const int ok = (nmod_mat_lu(perm, LU, 1) == n);
+    if (ok)
+    {
+        ulong dA = 1;
+        for (slong i = 0; i < n; i++)
+            dA = nmod_mul(dA, nmod_mat_entry(LU, i, i), A->mod);
+        *c = _perm_parity(perm, n) ? nmod_neg(dA, A->mod) : dA;
+
+        nmod_mat_t PB;
+        nmod_mat_init(PB, n, B->c, A->mod.n);
+        for (slong i = 0; i < n; i++)
+            _nmod_vec_set(nmod_mat_entry_ptr(PB, i, 0), nmod_mat_entry_ptr(B, perm[i], 0), B->c);
+        nmod_mat_solve_tril(X, LU, PB, 1);
+        nmod_mat_solve_triu(X, LU, X, 0);
+        nmod_mat_clear(PB);
+    }
+
+    _perm_clear(perm);
+    nmod_mat_clear(LU);
+    return ok;
+}
+
 /* Degree 1, pmat = x A + B: if A is invertible, det(pmat) = det(A) *
  * charpoly(-A^{-1} B); otherwise if B is invertible, det(pmat) = det(B) *
  * x^n * charpoly(-B^{-1} A)(1/x). Returns 0 (det unchanged) if both A and B
- * are singular or if the modulus is not prime. */
+ * are singular or if the modulus is not prime. There is deliberately no
+ * shortcut for A == I: callers who know that pmat is a characteristic matrix
+ * call a characteristic polynomial function directly. */
+/* TODO well-made degree-1 path, see the todo of nmod_poly_mat_determinant
+ * about _nmod_mat_charpoly_lnz_block_krylov */
 static int _det_degree1(nmod_poly_t det, const nmod_poly_mat_t pmat)
 {
     const slong n = pmat->r;
@@ -449,16 +465,14 @@ static int _det_degree1(nmod_poly_t det, const nmod_poly_mat_t pmat)
     nmod_poly_mat_get_coeff_mat(B, pmat, 0);
 
     int ok = 1;
-    ulong c = nmod_mat_det(A);
-    if (c != 0)
+    ulong c = 1;
+    if (_det_and_solve(&c, X, A, B))
     {
-        nmod_mat_solve(X, A, B);
         nmod_mat_neg(X, X);
         nmod_mat_charpoly(det, X);
     }
-    else if ((c = nmod_mat_det(B)) != 0)
+    else if (_det_and_solve(&c, X, B, A))
     {
-        nmod_mat_solve(X, B, A);
         nmod_mat_neg(X, X);
         nmod_mat_charpoly(det, X);
         nmod_poly_reverse(det, det, n + 1);
@@ -466,7 +480,7 @@ static int _det_degree1(nmod_poly_t det, const nmod_poly_mat_t pmat)
     else
         ok = 0;
 
-    if (ok)
+    if (ok && c != 1)
         nmod_poly_scalar_mul_nmod(det, det, c);
 
     nmod_mat_clear(A);
@@ -508,51 +522,54 @@ void nmod_poly_mat_determinant(nmod_poly_t det, const nmod_poly_mat_t pmat)
         return;
     }
 
+    /* zero row or column means det == 0; D = min(|rdeg|, |cdeg|) bounds the
+     * degree of the determinant */
+    slong sum_rdeg, sum_cdeg;
+    const ulong nzr = nmod_poly_mat_row_degree_sum(&sum_rdeg, pmat, NULL);
+    const ulong nzc = nmod_poly_mat_column_degree_sum(&sum_cdeg, pmat, NULL);
+    if (nzr < (ulong) n || nzc < (ulong) n)
+    {
+        nmod_poly_zero(det);
+        return;
+    }
+    const slong D = FLINT_MIN(sum_rdeg, sum_cdeg);
+
     /* degree 1, with invertible leading or constant coefficient:
      * characteristic polynomial of a constant matrix */
     if (d == 1 && _det_degree1(det, pmat))
         return;
 
-    /* zero row or column means det == 0; the algorithms below work on rows
-     * (LNZ uses rdeg(pmat) as a shift): use the transpose if it has a
-     * smaller sum of row degrees */
-    slong D;  /* bound min(|rdeg|, |cdeg|) on the degree of the determinant */
+    /* the algorithms below work on rows (LNZ uses rdeg(pmat) as a shift):
+     * use the transpose if it has a smaller sum of row degrees */
+    if (sum_cdeg < sum_rdeg)
     {
-        slong * degs = FLINT_ARRAY_ALLOC(n, slong);
-        slong sum_rdeg = 0, sum_cdeg = 0;
-        const ulong nzr = nmod_poly_mat_row_degree(degs, pmat, NULL);
-        for (slong i = 0; i < n; i++)
-            sum_rdeg += degs[i];
-        const ulong nzc = nmod_poly_mat_column_degree(degs, pmat, NULL);
-        for (slong j = 0; j < n; j++)
-            sum_cdeg += degs[j];
-        flint_free(degs);
-        if (nzr < (ulong) n || nzc < (ulong) n)
-        {
-            nmod_poly_zero(det);
-            return;
-        }
-        D = FLINT_MIN(sum_rdeg, sum_cdeg);
-        if (sum_cdeg < sum_rdeg)
-        {
-            nmod_poly_mat_t T;
-            nmod_poly_mat_init(T, n, n, pmat->modulus);
-            nmod_poly_mat_transpose(T, pmat);
-            nmod_poly_mat_determinant(det, T);
-            nmod_poly_mat_clear(T);
-            return;
-        }
+        nmod_poly_mat_t T;
+        nmod_poly_mat_init(T, n, n, pmat->modulus);
+        nmod_poly_mat_transpose(T, pmat);
+        nmod_poly_mat_determinant(det, T);
+        nmod_poly_mat_clear(T);
+        return;
     }
 
-    /* evaluation / interpolation: small dimension, large degree, provided
-     * the n^2 (D+1) stored evaluations fit in 256 MiB */
-    if (n <= 24 && (d >= 100 || (n <= 12 && d >= 30) || (n <= 8 && d >= 20))
+    /* strongly unbalanced degrees (e.g. a few rows of much larger degree):
+     * the cost of Mulders-Storjohann follows D, whereas that of LNZ follows
+     * n*d since its approximation orders depend on the maximum row degree
+     * (see the todo at ::nmod_poly_mat_det_lnz); the ratio 3 is the observed
+     * crossover between the two */
+    /* TODO revisit when LNZ handles unbalanced degrees (partial
+     * linearization), and for dimensions beyond 256 (not measured) */
+    const int unbalanced = (n * d > 3 * D);
+
+    /* evaluation / interpolation: small dimension, large degree, balanced
+     * degrees, provided the n^2 (D+1) stored evaluations fit in 256 MiB */
+    if (!unbalanced
+        && n <= 24 && (d >= 100 || (n <= 12 && d >= 30) || (n <= 8 && d >= 20))
         && (ulong) n * n * (D + 1) <= (UWORD(1) << 25)
         && nmod_poly_mat_det_geometric(det, pmat))
         return;
 
-    /* Mulders-Storjohann: small dimension and degree */
-    if ((n <= 16 && n * d <= 320) || (d <= 1 && n <= 32))
+    /* Mulders-Storjohann: unbalanced degrees, or small dimension and degree */
+    if (unbalanced || (n <= 16 && n * d <= 320) || (d <= 1 && n <= 32))
     {
         nmod_poly_mat_t copy;
         nmod_poly_mat_init_set(copy, pmat);
