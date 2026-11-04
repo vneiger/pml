@@ -101,7 +101,11 @@ static void _build_input(nmod_poly_mat_t F, time_args targs, flint_rand_t state)
     }
 }
 
-#define TIME_DET(name, call)                                     \
+/* applicable: whether the method applies (evaluated once, before timing: an
+ * empty timed loop may be optimized away, and the timing loop of
+ * TIMEIT_START, which multiplies the number of repetitions by 10 until 0.1 s
+ * of cpu time is reached, would then never stop) */
+#define TIME_DET(name, applicable, call)                         \
 static void time_##name(time_args targs, flint_rand_t state)     \
 {                                                                \
     const slong n = targs.dim;                                   \
@@ -111,14 +115,15 @@ static void time_##name(time_args targs, flint_rand_t state)     \
     _build_input(F, targs, state);                               \
     nmod_poly_t det;                                             \
     nmod_poly_init(det, targs.modn);                             \
-    int FLINT_SET_BUT_UNUSED(ok) = 1;                            \
                                                                  \
-    double FLINT_SET_BUT_UNUSED(tcpu), twall;                    \
-    TIMEIT_START;                                                \
-    call;                                                        \
-    TIMEIT_STOP_VALUES(tcpu, twall);                             \
-    if (ok)                                                      \
+    if (applicable)                                              \
+    {                                                            \
+        double FLINT_SET_BUT_UNUSED(tcpu), twall;                \
+        TIMEIT_START;                                            \
+        call;                                                    \
+        TIMEIT_STOP_VALUES(tcpu, twall);                         \
         flint_printf("%.2e", twall);                             \
+    }                                                            \
     else                                                         \
         flint_printf("    n/a ");                                \
                                                                  \
@@ -127,12 +132,12 @@ static void time_##name(time_args targs, flint_rand_t state)     \
     nmod_poly_mat_clear(copy);                                   \
 }
 
-TIME_DET(det_iter, nmod_poly_mat_set(copy, F); nmod_poly_mat_det_iter(det, copy))
-TIME_DET(det_minors, if (n <= 12) nmod_poly_mat_det_minors(det, F); else ok = 0)
-TIME_DET(det_geometric, ok = nmod_poly_mat_det_geometric(det, F))
-TIME_DET(det_flint, nmod_poly_mat_det(det, F))
-TIME_DET(det_lnz, nmod_poly_mat_det_lnz(det, F))
-TIME_DET(determinant, nmod_poly_mat_determinant(det, F))
+TIME_DET(det_iter, 1, nmod_poly_mat_set(copy, F); nmod_poly_mat_det_iter(det, copy))
+TIME_DET(det_minors, n <= 12, nmod_poly_mat_det_minors(det, F))
+TIME_DET(det_geometric, nmod_poly_mat_det_geometric(det, F), nmod_poly_mat_det_geometric(det, F))
+TIME_DET(det_flint, 1, nmod_poly_mat_det(det, F))
+TIME_DET(det_lnz, 1, nmod_poly_mat_det_lnz(det, F))
+TIME_DET(determinant, 1, nmod_poly_mat_determinant(det, F))
 
 /* FLINT's charpoly of the constant matrix M, for the characteristic matrix
  * F = x I - M (type 2), since det(F) = charpoly(M); n/a for other types */
