@@ -450,7 +450,7 @@ void _nmod_poly_mat_mulmid_precomp_right_init(nmod_poly_mat_mulmid_precomp_right
      * dimensions (see the rule of nmod_poly_mat_solve_series_dixon); for
      * now, the callers decide */
     const ulong maxbytes = (method == 1) ? 0
-        : n_max(UWORD(1) << 30, 16 * (ulong) pmat2->r * pmat2->c * (h2 - k2) * sizeof(ulong));
+        : FLINT_MAX(UWORD(1) << 30, 16 * (ulong) pmat2->r * pmat2->c * (h2 - k2) * sizeof(ulong));
 
     if (k2 > 0 || h2 < len2)
     {
