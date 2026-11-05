@@ -199,6 +199,32 @@ ulong nmod_poly_mat_column_degree_zero(slong *cdeg,
                                        const nmod_poly_mat_t mat,
                                        const slong * shift);
 
+/** Computes the sum `sum` of the entries of the `shift`-row degree of `mat`,
+ * as given by ::nmod_poly_mat_row_degree_zero (in particular, a zero row
+ * contributes `0`, or `min(shift)`). The shift `shift` must be `NULL` or
+ * have (at least) as many elements as the number of columns of `mat`. Return
+ * value: the number of nonzero rows of `mat`. Size of the integers: in
+ * addition to the condition of this group, it is assumed that `mat->r *
+ * (max(|shift|) + deg(mat) + 1) < WORD_MAX`, so that the sum does not
+ * overflow.
+ */
+ulong nmod_poly_mat_row_degree_sum(slong * sum,
+                                   const nmod_poly_mat_t mat,
+                                   const slong * shift);
+
+/** Computes the sum `sum` of the entries of the `shift`-column degree of
+ * `mat`, as given by ::nmod_poly_mat_column_degree_zero (in particular, a zero
+ * column contributes `0`, or `min(shift)`). The shift `shift` must be
+ * `NULL` or have (at least) as many elements as the number of rows of `mat`.
+ * Return value: the number of nonzero columns of `mat`. Size of the
+ * integers: in addition to the condition of this group, it is assumed that
+ * `mat->c * (max(|shift|) + deg(mat) + 1) < WORD_MAX`, so that the sum does
+ * not overflow.
+ */
+ulong nmod_poly_mat_column_degree_sum(slong * sum,
+                                      const nmod_poly_mat_t mat,
+                                      const slong * shift);
+
 //@} // doxygen group: (Shifted) row and column degree
 
 /*------------------------------------------------------------*/

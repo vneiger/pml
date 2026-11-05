@@ -77,32 +77,24 @@ int _nmod_poly_mat_row_basis_certify_unimodular(const nmod_poly_mat_t pmat,
     for (slong i = 0; i < m; i++)
         sum_s += shift[i];
 
-    /* first, bound w <= |cdeg_{-s}(pmat)| */
-    slong sum_u = 0;
-    for (slong j = 0; j < n; j++)
-    {
-        slong u = WORD_MIN;
-        for (slong i = 0; i < m; i++)
-        {
-            const slong d = nmod_poly_degree(nmod_poly_mat_entry(pmat, i, j));
-            if (d >= 0 && d - shift[i] > u)
-                u = d - shift[i];
-        }
-        if (u == WORD_MIN)  /* zero column: not of full column rank */
-            return 0;
-        sum_u += u;
-    }
-    if (sum_t == sum_s + sum_u)
-        return 1;
-
-    /* then, the sharper bound given by the best assignment of the columns to
-     * distinct rows (which exists since pmat has full column rank) */
+    /* first, bound w <= |cdeg_{-s}(pmat)|; a zero column means that pmat is
+     * not of full column rank */
     slong * ms = FLINT_ARRAY_ALLOC(m, slong);
     for (slong i = 0; i < m; i++)
         ms[i] = -shift[i];
-    const slong w_bound = nmod_poly_mat_degree_det_bound(NULL, pmat, ms, COL_UPPER);
+    slong sum_u;
+    int cert = 0;
+    if (nmod_poly_mat_column_degree_sum(&sum_u, pmat, ms) == (ulong) n)
+    {
+        cert = (sum_t == sum_s + sum_u);
+
+        /* then, the sharper bound given by the best assignment of the columns
+         * to distinct rows (which exists since pmat has full column rank) */
+        if (!cert)
+            cert = (sum_t == sum_s + nmod_poly_mat_degree_det_bound(NULL, pmat, ms, COL_UPPER));
+    }
     flint_free(ms);
-    return (sum_t == sum_s + w_bound);
+    return cert;
 }
 
 /* Input: K, an s-reduced basis (first k rows of K) of the left kernel of

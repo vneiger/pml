@@ -120,6 +120,28 @@ ulong nmod_poly_mat_column_degree(slong *cdeg, const nmod_poly_mat_t mat, const 
     }
 }
 
+ulong nmod_poly_mat_row_degree_sum(slong * sum, const nmod_poly_mat_t mat, const slong * shift)
+{
+    slong * rdeg = FLINT_ARRAY_ALLOC(FLINT_MAX(1, mat->r), slong);
+    const ulong nnz = nmod_poly_mat_row_degree_zero(rdeg, mat, shift);
+    *sum = 0;
+    for (slong i = 0; i < mat->r; i++)
+        *sum += rdeg[i];
+    flint_free(rdeg);
+    return nnz;
+}
+
+ulong nmod_poly_mat_column_degree_sum(slong * sum, const nmod_poly_mat_t mat, const slong * shift)
+{
+    slong * cdeg = FLINT_ARRAY_ALLOC(FLINT_MAX(1, mat->c), slong);
+    const ulong nnz = nmod_poly_mat_column_degree_zero(cdeg, mat, shift);
+    *sum = 0;
+    for (slong j = 0; j < mat->c; j++)
+        *sum += cdeg[j];
+    flint_free(cdeg);
+    return nnz;
+}
+
 ulong nmod_poly_mat_row_degree_zero(slong *rdeg, const nmod_poly_mat_t mat, const slong *shift)
 {
     if (shift == NULL)

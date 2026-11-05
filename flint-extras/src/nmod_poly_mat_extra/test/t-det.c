@@ -15,36 +15,96 @@
 #include <flint/profiler.h>
 #include <flint/test_helpers.h>
 
+#include "nmod_poly_extra.h"  /* for NMOD_POLY_CAN_USE_GEOMETRIC */
 #include "nmod_poly_mat_utils.h"
-#include "nmod_poly_mat_extra.h"  // det_iter currently in _extra.h
+#include "nmod_poly_mat_determinant.h"
+#include "hermite_test_utils.h"
 
-// test one given input
-int core_test_determinant(const nmod_poly_mat_t mat)
+/* test one given input, comparing with FLINT's nmod_poly_mat_det */
+static int core_test_determinant(const nmod_poly_mat_t mat)
 {
-    nmod_poly_t det;
+    const slong n = mat->r;
+    int res = 1;
+
+    nmod_poly_t det, det_correct;
     nmod_poly_init(det, mat->modulus);
-    nmod_poly_t det_correct;
     nmod_poly_init(det_correct, mat->modulus);
-    // init copy of mat
-    nmod_poly_mat_t copy_mat;
-    nmod_poly_mat_init(copy_mat, mat->r, mat->c, mat->modulus);
-
-    // verification of determinant
-    int verif_det;
-
     nmod_poly_mat_det(det_correct, mat);
 
-    { // Mulders and Storjohann's algorithm, row by row variant
-        nmod_poly_mat_set(copy_mat, mat);
+    /* Mulders and Storjohann's algorithm, row by row variant */
+    {
+        nmod_poly_mat_t copy_mat;
+        nmod_poly_mat_init_set(copy_mat, mat);
         nmod_poly_mat_det_iter(det, copy_mat);
-        verif_det = nmod_poly_equal(det_correct, det);
+        nmod_poly_mat_clear(copy_mat);
+        if (!nmod_poly_equal(det_correct, det))
+        {
+            flint_printf("FAIL: det_iter\n");
+            res = 0;
+        }
     }
 
-    nmod_poly_mat_clear(copy_mat);
+    /* expansion by minors */
+    if (res && n <= 9)
+    {
+        nmod_poly_mat_det_minors(det, mat);
+        if (!nmod_poly_equal(det_correct, det))
+        {
+            flint_printf("FAIL: det_minors\n");
+            res = 0;
+        }
+    }
+
+    /* Labahn-Neiger-Zhou */
+    if (res)
+    {
+        nmod_poly_mat_det_lnz(det, mat);
+        if (!nmod_poly_equal(det_correct, det))
+        {
+            flint_printf("FAIL: det_lnz\n");
+            res = 0;
+        }
+    }
+
+    /* general interface */
+    if (res)
+    {
+        nmod_poly_mat_determinant(det, mat);
+        if (!nmod_poly_equal(det_correct, det))
+        {
+            flint_printf("FAIL: determinant (general interface)\n");
+            res = 0;
+        }
+    }
+
+    /* evaluation at geometric progression */
+    if (res)
+    {
+        nmod_poly_one(det);
+        const int ok = nmod_poly_mat_det_geometric(det, mat);
+        if (ok && !nmod_poly_equal(det_correct, det))
+        {
+            flint_printf("FAIL: det_geometric\n");
+            res = 0;
+        }
+        if (!ok && (!nmod_poly_is_one(det)
+                    || NMOD_POLY_CAN_USE_GEOMETRIC(mat->modulus, n * (nmod_poly_mat_degree(mat) + 1) + 1)))
+        {
+            flint_printf("FAIL: det_geometric refused a large enough modulus, or modified det\n");
+            res = 0;
+        }
+    }
+
+    if (!res)
+    {
+        flint_printf("input matrix (%wd x %wd, modulus %wu):\n", n, n, mat->modulus);
+        nmod_poly_mat_print_pretty(mat, "x");
+        flint_printf("\n");
+    }
+
     nmod_poly_clear(det_correct);
     nmod_poly_clear(det);
-
-    return verif_det;
+    return res;
 }
 
 TEST_FUNCTION_START(nmod_poly_mat_det, state)
@@ -76,6 +136,114 @@ TEST_FUNCTION_START(nmod_poly_mat_det, state)
         if (!result)
             TEST_FUNCTION_FAIL("dim = %wu, degree = %wu, p = %wu\n",
                     rdim, order, prime);
+    }
+
+    /* structured matrices, small dimensions, small primes */
+    for (i = 0; i < 400 * flint_test_multiplier(); i++)
+    {
+        const ulong prime = _htest_rand_prime(state);
+        const slong n = n_randint(state, 13);
+        const slong len = 1 + n_randint(state, 7);
+
+        nmod_poly_mat_t mat;
+        nmod_poly_mat_init(mat, n, n, prime);
+        _htest_rand_square(mat, len, state);
+
+        result = core_test_determinant(mat);
+
+        nmod_poly_mat_clear(mat);
+
+        if (!result)
+            TEST_FUNCTION_FAIL("(structured) dim = %wd, len = %wd, p = %wu\n",
+                    n, len, prime);
+    }
+
+    /* unbalanced degrees: one row (or one column) of degree < len, the
+     * others of degree < 2 */
+    for (i = 0; i < 40 * flint_test_multiplier(); i++)
+    {
+        const ulong prime = n_randprime(state, 2 + n_randint(state, 62), 1);
+        const slong n = 2 + n_randint(state, 30);
+        const slong len = 2 + n_randint(state, 60);
+
+        nmod_poly_mat_t mat;
+        nmod_poly_mat_init(mat, n, n, prime);
+        slong * lens = flint_malloc(n * sizeof(slong));
+        for (slong j = 0; j < n; j++)
+            lens[j] = 2;
+        lens[n_randint(state, n)] = len;
+        if (i % 2 == 0)
+            nmod_poly_mat_rand_row_degree(mat, state, lens);
+        else
+            nmod_poly_mat_rand_column_degree(mat, state, lens);
+        flint_free(lens);
+
+        result = core_test_determinant(mat);
+
+        nmod_poly_mat_clear(mat);
+
+        if (!result)
+            TEST_FUNCTION_FAIL("(unbalanced) dim = %wd, len = %wd, p = %wu\n",
+                    n, len, prime);
+    }
+
+    /* a few larger matrices, for the recursive algorithms */
+    for (i = 0; i < 4 * flint_test_multiplier(); i++)
+    {
+        const ulong prime = n_randprime(state, 20 + n_randint(state, 44), 1);
+        const slong n = 24 + n_randint(state, 25);
+        const slong len = 1 + n_randint(state, 6);
+
+        nmod_poly_mat_t mat;
+        nmod_poly_mat_init(mat, n, n, prime);
+        _htest_rand_square(mat, len, state);
+
+        result = core_test_determinant(mat);
+
+        nmod_poly_mat_clear(mat);
+
+        if (!result)
+            TEST_FUNCTION_FAIL("(larger) dim = %wd, len = %wd, p = %wu\n",
+                    n, len, prime);
+    }
+
+    /* characteristic matrices x I - M, with M random or structured (zero,
+     * scalar, diagonal, upper triangular), and zero matrices: degree 1 with
+     * identity leading coefficient, degree -1 */
+    for (i = 0; i < 40 * flint_test_multiplier(); i++)
+    {
+        const ulong prime = _htest_rand_prime(state);
+        const slong n = 6 + n_randint(state, 35);
+        const slong type = n_randint(state, 6);
+
+        nmod_poly_mat_t mat;
+        nmod_poly_mat_init(mat, n, n, prime);
+        if (type < 5)
+        {
+            const ulong c = n_randint(state, prime);
+            for (slong r = 0; r < n; r++)
+            {
+                for (slong s = 0; s < n; s++)
+                {
+                    ulong mrs = 0;
+                    if (type == 0 || (type == 3 && r == s) || (type == 4 && r <= s))
+                        mrs = n_randint(state, prime);
+                    else if (type == 2 && r == s)
+                        mrs = c;
+                    nmod_poly_set_coeff_ui(nmod_poly_mat_entry(mat, r, s), 0,
+                                           nmod_neg(mrs, nmod_poly_mat_entry(mat, r, s)->mod));
+                }
+                nmod_poly_set_coeff_ui(nmod_poly_mat_entry(mat, r, r), 1, 1);
+            }
+        }
+
+        result = core_test_determinant(mat);
+
+        nmod_poly_mat_clear(mat);
+
+        if (!result)
+            TEST_FUNCTION_FAIL("(characteristic) dim = %wd, type = %wd, p = %wu\n",
+                    n, type, prime);
     }
 
     TEST_FUNCTION_END(state);
