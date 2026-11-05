@@ -121,6 +121,27 @@ void _nmod_poly_mat_mulmid_sd_fft_matmul_bounded(nmod_poly_mat_t res,
                                         const nmod_poly_mat_t pmat2, slong len2,
                                         slong nlo, slong nhi, ulong membytes);
 
+/* Precomputed transforms of a right operand for the middle products of
+ * mul_sd_fft_direct.c (see nmod_poly_mat_mulmid_precomp_right_init in
+ * nmod_poly_mat_multiply.h): the plan for the window [nlo, nhi) of products
+ * A * B with A having entries of length at most lenA and B (fixed) entries
+ * of length at most lenB, and the transforms of B. Returns NULL if
+ * PML_HAVE_MACHINE_VECTORS is not set, if the plan fails, if the arguments
+ * are degenerate (B with no row or column, lenA or lenB not positive, empty
+ * window, nhi > lenA + lenB - 1), or if the transforms would take more than
+ * maxbytes bytes (0: no bound). B is not used after the call. The product
+ * computes the window [nlo, nhi') of A * B, for nlo < nhi' <= nhi, into C
+ * (A->r x B->c, not aliasing A); A must have B->r columns and entries of
+ * length at most lenA. */
+void * _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right_init(const nmod_poly_mat_t B,
+                                                              slong lenA, slong lenB,
+                                                              slong nlo, slong nhi,
+                                                              ulong maxbytes);
+void _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right(nmod_poly_mat_t C,
+                                                       const nmod_poly_mat_t A,
+                                                       const void * pre, slong nhi);
+void _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right_clear(void * pre);
+
 /* ------------------------------------------------------------------------ */
 /* middle products of the fft_small based multiplications                   */
 /* ------------------------------------------------------------------------ */

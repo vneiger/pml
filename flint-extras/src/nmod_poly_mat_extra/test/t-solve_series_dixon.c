@@ -89,6 +89,9 @@ TEST_FUNCTION_START(nmod_poly_mat_solve_series_dixon, state)
             case 2: order = 1 + n_randint(state, 20); break;
             default: order = FLINT_MAX(prec, 0) + n_randint(state, 5);
         }
+        /* stored transforms: automatic choice, or forced (see
+         * _nmod_poly_mat_solve_series_dixon) */
+        const int precomp = (int) n_randint(state, 3) - 1;
         /* rank of A(0): mostly full */
         const slong rk0 = (n_randint(state, 4) == 0) ? (slong) n_randint(state, m + 1) : m;
 
@@ -106,7 +109,7 @@ TEST_FUNCTION_START(nmod_poly_mat_solve_series_dixon, state)
         /* return value, correctness, X not modified in case of failure */
         nmod_poly_mat_randtest(X, state, 3);
         nmod_poly_mat_set(Z, X);
-        result = (nmod_poly_mat_solve_series_dixon(X, A, B, order, prec) == expected);
+        result = (_nmod_poly_mat_solve_series_dixon(X, A, B, order, prec, precomp) == expected);
         if (result && expected)
             result = _dixontest_check(X, A, B, prec);
         if (result && !expected)
@@ -127,7 +130,7 @@ TEST_FUNCTION_START(nmod_poly_mat_solve_series_dixon, state)
         if (result)
         {
             nmod_poly_mat_set(Y, B);
-            result = (nmod_poly_mat_solve_series_dixon(Y, A, Y, order, prec) == expected)
+            result = (_nmod_poly_mat_solve_series_dixon(Y, A, Y, order, prec, precomp) == expected)
                      && nmod_poly_mat_equal(Y, expected ? X : B);
         }
 
@@ -140,8 +143,8 @@ TEST_FUNCTION_START(nmod_poly_mat_solve_series_dixon, state)
         }
 
         if (!result)
-            TEST_FUNCTION_FAIL("prime = %wu, m = %wd, n = %wd, lenA = %wd, lenB = %wd, prec = %wd, order = %wd, rk0 = %wd\n",
-                               prime, m, n, lenA, lenB, prec, order, rk0);
+            TEST_FUNCTION_FAIL("prime = %wu, m = %wd, n = %wd, lenA = %wd, lenB = %wd, prec = %wd, order = %wd, rk0 = %wd, precomp = %d\n",
+                               prime, m, n, lenA, lenB, prec, order, rk0, precomp);
 
         nmod_poly_mat_clear(A);
         nmod_poly_mat_clear(B);

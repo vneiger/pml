@@ -15,6 +15,7 @@
 #include <flint/nmod.h>
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
+#include <flint/ulong_extras.h>
 
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_inverse.h"
@@ -22,10 +23,82 @@
 #include "nmod_poly_mat_linsolve.h"
 #include "nmod_poly_mat_multiply.h"
 #include "nmod_poly_mat_utils.h"
+#include "impl.h"  /* for _pml_fft_small_single_transform */
 
 /*------------------------------------------------------------*/
 /* power series solution, Dixon's x-adic lifting              */
 /*------------------------------------------------------------*/
+
+/* Whether the products of Dixon's lifting use stored transforms of the
+ * truncated inverse C and of A (see nmod_poly_mat_mulmid_precomp_right_init), for
+ * an m x m matrix A of degree d = lenA - 1 >= 1 and n rows in B, and the
+ * length N of the transforms of the low product, which fixes the default
+ * order (about N - d, see nmod_poly_mat_solve_series_dixon).
+ *
+ * With stored transforms, an iteration costs about n m^2 np N pointwise
+ * products, np being the number of primes of the transforms, plus the
+ * transforms of the n m entries of the left operands, for N - d new
+ * coefficients; the truncated inverse costs about m^omega M(N - d), once. For
+ * one row, the best N is the smallest power of two N >= max(16, 2 d), so that
+ * the order is about d; with more rows the transforms of C are reused more
+ * and longer orders pay: N >= 2 d f with f = 2 up to 4 rows, 4 up to 16, 8
+ * above. Without stored transforms, each product transforms C again (or
+ * multiplies short polynomials), and the default order is 8 lenA.
+ *
+ * Products of short polynomials (as the middle products use for short
+ * operands) are faster for small degrees and dimensions.
+ *
+ * 2026-11 Measured on an Intel Xeon (AVX-512, session VM), against the
+ * previous version (no stored transforms, order 8 lenA), for one row and
+ * prec = 2 m d + 1, m = 2..256, d = 1..4096, primes of 20 to 60 bits: with
+ * the rule below the stored transforms are 1.5-6x faster from d^2 m of a few
+ * thousands on (e.g. m = 64, d = 32: 0.18 s against 1.24 s for a 60-bit
+ * prime; geometric mean of the ratios over the grid 1.6-2.0), and lose at
+ * most 10-20% near the thresholds; for 2 to 64 rows, 1.2-2.2x faster with the
+ * factor f above, except for degrees below 4, where the products of
+ * several rows by C and A without stored transforms use the constant matrix
+ * products of the Vandermonde routines and are up to 2.6x faster (e.g. 128
+ * rows, m = 128, d = 2, 30-bit prime): stored transforms are not used there
+ * for more than 4 rows; for B of length prec, 2-6x faster. The thresholds depend
+ * on the number of transforms np (1 for p of at most about 20 bits, or for p
+ * supporting a direct transform; 2 for p of at most about 44 bits; 3 above):
+ * - np = 1: d^2 m >= 64 and d m >= 32;
+ * - np = 2: d^2 m >= 256 and d m >= 64;
+ * - np = 3: d^2 m >= 256 and d m >= 32.
+ * \todo thresholds and factor measured on one machine only (tuning PR)
+ *
+ * precomp: 0 or 1 to force the choice (1: when stored transforms are
+ * available, i.e. with PML_HAVE_MACHINE_VECTORS), -1 for the rule above. */
+static int _dixon_use_precomp(ulong modn, slong m, slong n, slong lenA,
+                              int precomp, slong * N)
+{
+#if PML_HAVE_MACHINE_VECTORS
+    const slong d = lenA - 1;
+    if (precomp == 0 || d <= 0)
+        return 0;
+
+    const slong f = (n <= 1) ? 1 : (n <= 4 ? 2 : (n <= 16 ? 4 : 8));
+    *N = FLINT_MAX(16, WORD(1) << n_clog2(2 * d * f));
+    if (precomp == 1)
+        return 1;
+
+    if ((ulong) d * m < 32 || (n > 4 && d < 4))
+        return 0;
+    const int single = _pml_fft_small_single_transform(modn, n_clog2(*N),
+                                                       (ulong) m * FLINT_MIN(lenA, *N));
+    const slong np = single ? 1 : (FLINT_BIT_COUNT(modn) <= 44 ? 2 : 3);
+    const ulong d2m = (ulong) d * d * m;
+    const ulong dm = (ulong) d * m;
+    if (np == 1)
+        return (d2m >= 64);
+    if (np == 2)
+        return (d2m >= 256 && dm >= 64);
+    return (d2m >= 256);
+#else
+    (void) modn; (void) m; (void) n; (void) lenA; (void) precomp; (void) N;
+    return 0;
+#endif
+}
 
 /* With C = A^{-1} mod x^order, the chunks X_k of X (coefficients of degree k
  * to k+order-1, for k = 0, order, 2*order, ...) are obtained from the
@@ -42,11 +115,12 @@
  * Then X A = B mod x^prec for X = sum_k x^k X_k. At each iteration, only the
  * coefficients needed for the remaining precision rem = prec - k are
  * computed, and the last iteration computes X_k mod x^rem and no residue. */
-int nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
-                                     const nmod_poly_mat_t A,
-                                     const nmod_poly_mat_t B,
-                                     slong order,
-                                     slong prec)
+int _nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
+                                      const nmod_poly_mat_t A,
+                                      const nmod_poly_mat_t B,
+                                      slong order,
+                                      slong prec,
+                                      int precomp)
 {
     const slong m = A->r;
     const slong n = B->r;
@@ -62,7 +136,7 @@ int nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
     {
         nmod_poly_mat_t T;
         nmod_poly_mat_init(T, n, m, A->modulus);
-        const int ok = nmod_poly_mat_solve_series_dixon(T, A, B, order, prec);
+        const int ok = _nmod_poly_mat_solve_series_dixon(T, A, B, order, prec, precomp);
         if (ok)
             nmod_poly_mat_swap_entrywise(X, T);
         nmod_poly_mat_clear(T);
@@ -70,8 +144,27 @@ int nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
     }
 
     const slong lenA = nmod_poly_mat_max_length(A);
+    const slong lenB = nmod_poly_mat_max_length(B);
+
+    /* products with stored transforms or not, and default order: with
+     * stored transforms, the order is about deg(A), so that the transforms
+     * of the low product have length N (the left operand W has length at
+     * most w, see below), and the truncated inverse is cheap; without, each
+     * product transforms C again (or uses products of short polynomials)
+     * and longer orders amortize this, see nmod_poly_mat_solve_series_dixon
+     * in nmod_poly_mat_linsolve.h */
+    slong N = 0;
+    const int use_precomp = _dixon_use_precomp(A->modulus, m, n, lenA, precomp, &N);
     if (order <= 0)
-        order = FLINT_MAX(8 * lenA, 1);
+    {
+        if (use_precomp)
+        {
+            const slong w = FLINT_MAX(lenA - 1, FLINT_MIN(lenB, (N + 1) / 2));
+            order = N + 1 - w;
+        }
+        else
+            order = FLINT_MAX(8 * lenA, 1);
+    }
     if (order > prec)
         order = prec;
 
@@ -96,6 +189,20 @@ int nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
     nmod_poly_mat_t Ash;
     nmod_poly_mat_init(Ash, m, m, A->modulus);
     nmod_poly_mat_shift_right_trunc(Ash, A, 1, prec - 1);
+    const slong lenAsh = nmod_poly_mat_max_length(Ash);
+
+    /* the right operands C and Ash are the same in all iterations: their
+     * transforms are computed once (see nmod_poly_mat_mulmid_precomp_right_init).
+     * The left operands are W, of length at most lenW (the window of B, and
+     * E, of length less than lenA), truncated at order, and S, of length at
+     * most order. */
+    const slong lenW = FLINT_MIN(order, FLINT_MAX(FLINT_MIN(order, lenB), lenA - 1));
+    nmod_poly_mat_mulmid_precomp_right_t preC, preA;
+    _nmod_poly_mat_mulmid_precomp_right_init(preC, C, FLINT_MAX(lenW, 1), 0, order,
+                                             use_precomp);
+    if (prec > order)
+        _nmod_poly_mat_mulmid_precomp_right_init(preA, Ash, order, order - 1, order + lenAsh - 1,
+                                                 use_precomp);
 
     nmod_poly_mat_zero(X);
 
@@ -110,7 +217,9 @@ int nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
          * copy path without arithmetic, since X has length <= k) */
         nmod_poly_mat_shift_right_trunc(W, B, k, p);
         nmod_poly_mat_add(W, W, E);
-        nmod_poly_mat_mulmid(S, W, C, 0, p);
+        if (lenA - 1 > p)
+            nmod_poly_mat_truncate(W, p);
+        nmod_poly_mat_mulmid_precomp_right(S, W, preC, p);
         nmod_poly_mat_add_shift_left(X, X, S, k);
 
         if (rem <= order)
@@ -119,11 +228,14 @@ int nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
         /* E = (E div x^order) - (S A) div x^order, mod x^(rem - order);
          * length of S A is <= lenA + order - 1 */
         const slong hi = (lenA - 1 < rem - order) ? order + lenA - 1 : rem;
-        nmod_poly_mat_mulmid(T, S, Ash, order - 1, hi - 1);
+        nmod_poly_mat_mulmid_precomp_right(T, S, preA, hi - 1);
         nmod_poly_mat_shift_right_trunc(E, E, order, rem - order);
         nmod_poly_mat_sub(E, E, T);
     }
 
+    nmod_poly_mat_mulmid_precomp_right_clear(preC);
+    if (prec > order)
+        nmod_poly_mat_mulmid_precomp_right_clear(preA);
     nmod_poly_mat_clear(C);
     nmod_poly_mat_clear(Ash);
     nmod_poly_mat_clear(E);
@@ -131,6 +243,15 @@ int nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
     nmod_poly_mat_clear(S);
     nmod_poly_mat_clear(T);
     return 1;
+}
+
+int nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
+                                     const nmod_poly_mat_t A,
+                                     const nmod_poly_mat_t B,
+                                     slong order,
+                                     slong prec)
+{
+    return _nmod_poly_mat_solve_series_dixon(X, A, B, order, prec, -1);
 }
 
 /*------------------------------------------------------------*/

@@ -407,3 +407,106 @@ void nmod_poly_mat_mulmid(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, cons
     if (reduce2)
         _mulmid_view_clear(view2);
 }
+
+/*------------------------------------------------------------*/
+/* middle products by a fixed right operand                   */
+/*------------------------------------------------------------*/
+
+void _nmod_poly_mat_mulmid_precomp_right_init(nmod_poly_mat_mulmid_precomp_right_t pre,
+                                              const nmod_poly_mat_t pmat2,
+                                              slong len1, slong nlo, slong nhi,
+                                              int method)
+{
+    PML_ASSERT(nlo >= 0);
+
+    const slong len2 = nmod_poly_mat_max_length(pmat2);
+
+    pre->pmat2 = pmat2;
+    pre->len1 = len1;
+    pre->nlo = nlo;
+    pre->nhi = FLINT_MIN(nhi, len1 + len2 - 1);
+    pre->shift = 0;
+    pre->fft = NULL;
+
+    if (method == 0 || len1 <= 0 || len2 == 0 || nlo >= pre->nhi
+        || pmat2->r == 0 || pmat2->c == 0)
+        return;
+
+    nhi = pre->nhi;
+
+    /* as in nmod_poly_mat_mulmid: pmat2 is truncated at nhi, and when the
+     * entries of pmat1 are not longer than those of pmat2 nor than nlo, its
+     * coefficients below nlo - len1 + 1 are dropped; the products then
+     * compute the window [nlo - shift, nhi - shift) */
+    const slong h1 = FLINT_MIN(len1, nhi);
+    const slong h2 = FLINT_MIN(len2, nhi);
+    const slong k2 = (h1 <= h2 && h1 <= nlo) ? nlo - h1 + 1 : 0;
+
+    /* automatic choice: stored transforms whenever they are available,
+     * within a memory bound of the larger of 1 GiB and 16 times the
+     * coefficients of pmat2 (method 1: no bound)
+     * TODO for short operands, products of short polynomials or the
+     * Vandermonde routines are faster than the stored transforms for small
+     * dimensions (see the rule of nmod_poly_mat_solve_series_dixon); for
+     * now, the callers decide */
+    const ulong maxbytes = (method == 1) ? 0
+        : FLINT_MAX(UWORD(1) << 30, 16 * (ulong) pmat2->r * pmat2->c * (h2 - k2) * sizeof(ulong));
+
+    if (k2 > 0 || h2 < len2)
+    {
+        nmod_poly_mat_t view2;
+        _mulmid_view_init(view2, pmat2, k2, h2);
+        pre->fft = _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right_init(view2,
+                                h1, h2 - k2, nlo - k2, nhi - k2, maxbytes);
+        _mulmid_view_clear(view2);
+    }
+    else
+        pre->fft = _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right_init(pmat2,
+                                h1, h2, nlo, nhi, maxbytes);
+
+    pre->len1 = h1;
+    pre->shift = k2;
+}
+
+void nmod_poly_mat_mulmid_precomp_right_init(nmod_poly_mat_mulmid_precomp_right_t pre,
+                                             const nmod_poly_mat_t pmat2,
+                                             slong len1, slong nlo, slong nhi)
+{
+    _nmod_poly_mat_mulmid_precomp_right_init(pre, pmat2, len1, nlo, nhi, -1);
+}
+
+void nmod_poly_mat_mulmid_precomp_right(nmod_poly_mat_t res,
+                                        const nmod_poly_mat_t pmat1,
+                                        const nmod_poly_mat_mulmid_precomp_right_t pre,
+                                        slong nhi)
+{
+    nhi = FLINT_MIN(nhi, pre->nhi);
+
+    if (pre->fft == NULL || nhi <= pre->nlo
+        || nmod_poly_mat_max_length(pmat1) > pre->len1)
+    {
+        nmod_poly_mat_mulmid(res, pmat1, pre->pmat2, pre->nlo, nhi);
+        return;
+    }
+
+    if (pmat1->r == 0 || pre->pmat2->c == 0)
+        return;
+
+    if (res == pmat1)
+    {
+        nmod_poly_mat_t tmp;
+        nmod_poly_mat_init(tmp, pmat1->r, pre->pmat2->c, pmat1->modulus);
+        _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right(tmp, pmat1, pre->fft, nhi - pre->shift);
+        nmod_poly_mat_swap_entrywise(res, tmp);
+        nmod_poly_mat_clear(tmp);
+        return;
+    }
+
+    _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right(res, pmat1, pre->fft, nhi - pre->shift);
+}
+
+void nmod_poly_mat_mulmid_precomp_right_clear(nmod_poly_mat_mulmid_precomp_right_t pre)
+{
+    _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right_clear(pre->fft);
+    pre->fft = NULL;
+}

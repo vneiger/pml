@@ -628,6 +628,88 @@ static void _sd_fft_direct_run(void (* func)(void *),
 }
 
 /*
+    The worker descriptors of a product: the shared context, and per worker
+    a scratch transform, taken from buf (nthreads * scratchdbls doubles,
+    aligned as fft_small_op_init_borrowed requires), and the pointer tables
+    of the pointwise stage. The fields of the current groups of rows and of
+    columns (g, nrows, h, ncols) are set by the callers.
+*/
+static _sd_fft_direct_worker_struct *
+_workers_init(slong nthreads, double * buf, ulong scratchdbls,
+              const fft_small_plan_struct * P, const _sd_fft_tr_struct * tr,
+              const _tiles_struct * At, const _tiles_struct * Bt,
+              const _tiles_struct * Ct,
+              const nmod_poly_mat_struct * A, const nmod_poly_mat_struct * B,
+              nmod_poly_mat_struct * C, nmod_t mod, slong k, slong n,
+              slong cstride, ulong T, ulong ntiles, const slong * zlen,
+              const slong * nzA, const slong * cntA, slong nlo, slong nhi)
+{
+    _sd_fft_direct_worker_struct * W =
+        FLINT_ARRAY_ALLOC(nthreads, _sd_fft_direct_worker_struct);
+    slong w, j;
+
+    for (w = 0; w < nthreads; w++)
+    {
+        W[w].P = P;
+        W[w].At = At; W[w].Bt = Bt; W[w].Ct = Ct;
+        W[w].A = A; W[w].B = B; W[w].C = C;
+        W[w].mod = mod;
+        W[w].k = k; W[w].n = n;
+        W[w].g = 0; W[w].nrows = 0;
+        W[w].h = 0; W[w].ncols = 0; W[w].cstride = cstride;
+        W[w].T = T; W[w].ntiles = ntiles;
+        W[w].zlen = zlen;
+        W[w].nzA = nzA; W[w].cntA = cntA;
+        W[w].nlo = nlo; W[w].nhi = nhi;
+        W[w].tr = tr;
+        W[w].t = tr->on ? FLINT_ARRAY_ALLOC(_sd_fft_tr_scratch_len(tr), ulong)
+                        : NULL;
+
+        fft_small_op_init_borrowed(W[w].X, P, buf + (ulong) w * scratchdbls);
+        /* the transforms only write the ztrunc points they use, but
+           sd_ifft_trunc works on the whole 2^depth array; zeroing
+           once keeps every value it ever sees a finite residue
+           (after this, each pass leaves bounded values behind) */
+        {
+            ulong pi;
+            for (pi = 0; pi < P->np; pi++)
+                memset(W[w].X->data + pi * P->stride + P->ztrunc, 0,
+                       (sd_fft_ctx_data_size(P->depth) - P->ztrunc) * sizeof(double));
+        }
+
+        W[w].aptr = FLINT_ARRAY_ALLOC(k, const double *);
+        W[w].bptr = FLINT_ARRAY_ALLOC(8 * (ulong) k, const double *);
+        W[w].bcol = FLINT_ARRAY_ALLOC(8, const double * const *);
+        W[w].bfull = FLINT_ARRAY_ALLOC(8 * (ulong) k, const double *);
+        W[w].bfullcol = FLINT_ARRAY_ALLOC(8, const double * const *);
+        W[w].zptr = FLINT_ARRAY_ALLOC(8, double *);
+        for (j = 0; j < 8; j++)
+            W[w].bcol[j] = W[w].bptr + j * k;
+        for (j = 0; j < 8; j++)
+            W[w].bfullcol[j] = W[w].bfull + j * k;
+    }
+
+    return W;
+}
+
+static void _workers_clear(_sd_fft_direct_worker_struct * W, slong nthreads)
+{
+    slong w;
+    for (w = 0; w < nthreads; w++)
+    {
+        flint_free(W[w].aptr);
+        flint_free(W[w].bptr);
+        flint_free(W[w].bcol);
+        flint_free(W[w].bfull);
+        flint_free(W[w].bfullcol);
+        flint_free(W[w].zptr);
+        flint_free(W[w].t);
+        fft_small_op_clear(W[w].X);   /* borrowed: frees nothing */
+    }
+    flint_free(W);
+}
+
+/*
     The driver: C = the coefficients nlo, ..., nhi-1 of A * B, where the
     entries of A and B have length at most lenA and lenB (both > 0) and
     0 <= nlo < nhi <= lenA + lenB - 1; a plain product is nlo = 0,
@@ -778,50 +860,9 @@ static void _sd_fft_direct(nmod_poly_mat_t C,
     nmod_poly_mat_column_degree(cdegB, B, NULL);
 
     _sd_fft_direct_worker_struct * W =
-        FLINT_ARRAY_ALLOC(nthreads, _sd_fft_direct_worker_struct);
-    {
-        slong w, j;
-        for (w = 0; w < nthreads; w++)
-        {
-            W[w].P = P;
-            W[w].At = &At; W[w].Bt = &Bt; W[w].Ct = &Ct;
-            W[w].A = A; W[w].B = B; W[w].C = C;
-            W[w].mod = mod;
-            W[w].k = k; W[w].n = n;
-            W[w].g = 0; W[w].nrows = 0;
-            W[w].h = 0; W[w].ncols = 0; W[w].cstride = NCG;
-            W[w].T = T; W[w].ntiles = ntiles;
-            W[w].zlen = zlen;
-            W[w].nzA = nzA; W[w].cntA = cntA;
-            W[w].nlo = nlo; W[w].nhi = nhi;
-            W[w].tr = tr;
-            W[w].t = tr->on ? FLINT_ARRAY_ALLOC(_sd_fft_tr_scratch_len(tr), ulong)
-                            : NULL;
-
-            fft_small_op_init_borrowed(W[w].X, P, buf + (ulong) w * scratchdbls);
-            /* the transforms only write the ztrunc points they use, but
-               sd_ifft_trunc works on the whole 2^depth array; zeroing
-               once keeps every value it ever sees a finite residue
-               (after this, each pass leaves bounded values behind) */
-            {
-                ulong pi;
-                for (pi = 0; pi < np; pi++)
-                    memset(W[w].X->data + pi * P->stride + ztrunc, 0,
-                           (sd_fft_ctx_data_size(P->depth) - ztrunc) * sizeof(double));
-            }
-
-            W[w].aptr = FLINT_ARRAY_ALLOC(k, const double *);
-            W[w].bptr = FLINT_ARRAY_ALLOC(8 * (ulong) k, const double *);
-            W[w].bcol = FLINT_ARRAY_ALLOC(8, const double * const *);
-            W[w].bfull = FLINT_ARRAY_ALLOC(8 * (ulong) k, const double *);
-            W[w].bfullcol = FLINT_ARRAY_ALLOC(8, const double * const *);
-            W[w].zptr = FLINT_ARRAY_ALLOC(8, double *);
-            for (j = 0; j < 8; j++)
-                W[w].bcol[j] = W[w].bptr + j * k;
-            for (j = 0; j < 8; j++)
-                W[w].bfullcol[j] = W[w].bfull + j * k;
-        }
-    }
+        _workers_init(nthreads, buf, scratchdbls, P, tr, &At, &Bt, &Ct,
+                      A, B, C, mod, k, n, NCG, T, ntiles, zlen, nzA, cntA,
+                      nlo, nhi);
 
     slong g, h;
     for (h = 0; h < n; h += NCG)
@@ -891,21 +932,7 @@ static void _sd_fft_direct(nmod_poly_mat_t C,
 
     TIMING_PRINT;
 
-    {
-        slong w;
-        for (w = 0; w < nthreads; w++)
-        {
-            flint_free(W[w].aptr);
-            flint_free(W[w].bptr);
-            flint_free(W[w].bcol);
-            flint_free(W[w].bfull);
-            flint_free(W[w].bfullcol);
-            flint_free(W[w].zptr);
-            flint_free(W[w].t);
-            fft_small_op_clear(W[w].X);   /* borrowed: frees nothing */
-        }
-    }
-    flint_free(W);
+    _workers_clear(W, nthreads);
     flint_free(rowmaxA);
     flint_free(cdegB);
     flint_free(zlen);
@@ -990,6 +1017,268 @@ void _nmod_poly_mat_mulmid_sd_fft_direct(nmod_poly_mat_t res,
                                                 nlo, nhi, 0);
 }
 
+/* ------------------------------------------------------------------------ */
+/* precomputed transforms of the right operand                              */
+/* ------------------------------------------------------------------------ */
+
+/*
+    Repeated products by a fixed right operand B (k x n): the plan, for
+    left operands A with entries of length at most lenA and the window
+    [nlo, nhi), and the transforms of the entries of B (scaled by the
+    normalization factors, as in _worker_fft_B) are computed once, and kept
+    in the tile layout of the pointwise stage, in storage owned by the
+    precomputation. A product then costs the transforms of the entries of
+    A, the pointwise products and the inverse transforms of the entries of
+    C, as in _sd_fft_direct; the k*n transforms of B are not redone. For a
+    single row of A, as in Dixon's lifting, those were most of the cost.
+
+    The window may be shortened at each product, to [nlo, nhi') with
+    nhi' <= nhi, and the entries of A may be shorter than lenA: the plan
+    stays valid (for a cyclic window plan, the coefficients the cyclic
+    convolution folds back still land below nlo; for the transposed
+    product, the entries of the reversed side are reversed to the bound
+    sn = min(lenA, lenB), and those of the other side are read on the
+    coefficients of the shift, whatever their length).
+*/
+typedef struct
+{
+    fft_small_plan_t P;
+    _sd_fft_tr_struct tr[1];
+    _tiles_struct Bt;       /* the transforms of B, data owned */
+    slong * cdegB;          /* column degrees of B, -1 for a zero column */
+    nmod_t mod;
+    slong k;
+    slong n;
+    slong lenA;
+    slong nlo;
+    slong nhi;
+}
+_sd_fft_direct_precomp_right_struct;
+
+void * _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right_init(const nmod_poly_mat_t B,
+                                                              slong lenA, slong lenB,
+                                                              slong nlo, slong nhi,
+                                                              ulong maxbytes)
+{
+    const slong k = B->r;
+    const slong n = B->c;
+    _sd_fft_direct_precomp_right_struct * S;
+
+    if (k == 0 || n == 0 || lenA <= 0 || lenB <= 0
+        || nlo < 0 || nhi > lenA + lenB - 1 || nlo >= nhi)
+        return NULL;
+
+    S = flint_malloc(sizeof(_sd_fft_direct_precomp_right_struct));
+    nmod_init(&S->mod, B->modulus);
+
+    mpn_ctx_struct * R = get_default_mpn_ctx();
+    const ulong len_bound = (ulong) k * n_min(lenA, lenB);
+    if (!_sd_fft_mulmid_plan_init(S->P, S->tr, R, lenA, lenB, nlo, nhi, len_bound, S->mod))
+    {
+        flint_free(S);
+        return NULL;
+    }
+
+    const ulong np = S->P->np;
+    const ulong ztrunc = S->P->ztrunc;
+    const ulong opdbls = np * ztrunc;
+    const ulong bbytes = n_round_up((ulong) k * n * opdbls * sizeof(double),
+                                    FLINT_FFT_SMALL_ALIGNMENT);
+    if (maxbytes != 0 && bbytes > maxbytes)
+    {
+        fft_small_plan_clear(S->P);
+        flint_free(S);
+        return NULL;
+    }
+
+    /* same tile size as _sd_fft_direct for the inner dimension k */
+    ulong T = n_min(ztrunc, BLK_SZ);
+    while (T > 16 && 8 * (ulong) k * T * sizeof(double)
+                     > NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_TILE_BUDGET)
+        T /= 2;
+
+    S->Bt.data = flint_aligned_alloc(FLINT_FFT_SMALL_ALIGNMENT, bbytes);
+    S->Bt.nops = (ulong) k * n;
+    S->Bt.ntiles = ztrunc / T;
+    S->Bt.T = T;
+    S->k = k;
+    S->n = n;
+    S->lenA = lenA;
+    S->nlo = nlo;
+    S->nhi = nhi;
+    S->cdegB = FLINT_ARRAY_ALLOC(n, slong);
+    nmod_poly_mat_column_degree(S->cdegB, B, NULL);
+
+    /* transforms of B, as in _sd_fft_direct */
+    thread_pool_handle * handles = NULL;
+    slong nworkers = 0;
+    slong nthreads = 1;
+    if ((ulong) k * n >= 4 && (ulong) k * n * opdbls >= (UWORD(1) << 20))
+    {
+        nworkers = flint_request_threads(&handles, flint_get_num_threads());
+        nthreads = nworkers + 1;
+    }
+
+    const ulong scratchdbls = fft_small_op_sizeof_data(S->P) / sizeof(double);
+    const ulong nbytes = (ulong) nthreads * scratchdbls * sizeof(double);
+    double * buf = _sd_fft_direct_alloc(R, nbytes, NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_FLOOR);
+    _sd_fft_direct_worker_struct * W =
+        _workers_init(nthreads, buf, scratchdbls, S->P, S->tr, NULL, &S->Bt, NULL,
+                      NULL, B, NULL, S->mod, k, n, n, T, S->Bt.ntiles,
+                      NULL, NULL, NULL, nlo, nhi);
+    {
+        slong w;
+        for (w = 0; w < nthreads; w++)
+        {
+            W[w].h = 0;
+            W[w].ncols = n;
+        }
+    }
+
+    _sd_fft_direct_run(_worker_fft_B, W, nthreads, handles, n * k);
+
+    _workers_clear(W, nthreads);
+    _sd_fft_direct_free(buf, nbytes, NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_FLOOR);
+    flint_give_back_threads(handles, nworkers);
+
+    return S;
+}
+
+void _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right(nmod_poly_mat_t C,
+                                                       const nmod_poly_mat_t A,
+                                                       const void * pre, slong nhi)
+{
+    const _sd_fft_direct_precomp_right_struct * S =
+        (const _sd_fft_direct_precomp_right_struct *) pre;
+    const fft_small_plan_struct * P = S->P;
+    const _sd_fft_tr_struct * tr = S->tr;
+    const slong m = A->r;
+    const slong k = S->k;
+    const slong n = S->n;
+    const slong nlo = S->nlo;
+
+    if (m == 0)
+        return;
+
+    const ulong np = P->np;
+    const ulong ztrunc = P->ztrunc;
+    const ulong opdbls = np * ztrunc;
+    const ulong scratchdbls = fft_small_op_sizeof_data(P) / sizeof(double);
+    const ulong T = S->Bt.T;
+    const ulong ntiles = S->Bt.ntiles;
+    mpn_ctx_struct * R = get_default_mpn_ctx();
+
+    /* threads, as in _sd_fft_direct */
+    thread_pool_handle * handles = NULL;
+    slong nworkers = 0;
+    slong nthreads = 1;
+    if ((ulong) m * k * n >= 4
+        && (ulong) m * k * n * np * ztrunc >= (UWORD(1) << 20))
+    {
+        nworkers = flint_request_threads(&handles, flint_get_num_threads());
+        nthreads = nworkers + 1;
+    }
+
+    /* grouping of the rows of A and C, as in _sd_fft_direct, the
+       transforms of B being stored elsewhere */
+    const ulong opwords = (ulong) m * k * S->lenA + (ulong) m * n * (nhi - nlo);
+    const ulong bbytes = n_max(NMOD_POLY_MAT_MUL_SD_FFT_DIRECT_MEM_FLOOR,
+                               2 * opwords * sizeof(ulong));
+    slong NRG;
+    {
+        const ulong budget = bbytes / (opdbls * sizeof(double));
+        const ulong scratch = ((ulong) nthreads * scratchdbls + opdbls - 1) / opdbls;
+        const ulong avail = (budget > scratch + 2) ? budget - scratch : 2;
+        NRG = (slong) (avail / ((ulong) k + n));
+        NRG = FLINT_MAX(NRG, 1);
+        NRG = FLINT_MIN(NRG, m);
+    }
+
+    const ulong nbytes = ((ulong) nthreads * scratchdbls
+                          + (ulong) NRG * (k + n) * opdbls) * sizeof(double);
+    double * buf = _sd_fft_direct_alloc(R, nbytes, bbytes);
+    double * tilebuf = buf + (ulong) nthreads * scratchdbls;
+    _tiles_struct At = { tilebuf, (ulong) NRG * k, ntiles, T };
+    _tiles_struct Ct = { At.data + At.nops * opdbls, (ulong) NRG * n, ntiles, T };
+
+    slong * zlen = FLINT_ARRAY_ALLOC((ulong) NRG * n, slong);
+    slong * nzA = FLINT_ARRAY_ALLOC((ulong) NRG * k, slong);
+    slong * cntA = FLINT_ARRAY_ALLOC(NRG, slong);
+    slong * rowmaxA = FLINT_ARRAY_ALLOC(NRG, slong);
+
+    _sd_fft_direct_worker_struct * W =
+        _workers_init(nthreads, buf, scratchdbls, P, tr, &At, &S->Bt, &Ct,
+                      A, NULL, C, S->mod, k, n, n, T, ntiles, zlen, nzA, cntA,
+                      nlo, nhi);
+
+    slong g, r, j, l, w;
+    for (w = 0; w < nthreads; w++)
+    {
+        W[w].h = 0;
+        W[w].ncols = n;
+    }
+
+    for (g = 0; g < m; g += NRG)
+    {
+        const slong nrows = FLINT_MIN(NRG, m - g);
+
+        for (w = 0; w < nthreads; w++)
+        {
+            W[w].g = g;
+            W[w].nrows = nrows;
+        }
+
+        _sd_fft_direct_run(_worker_fft_A, W, nthreads, handles, nrows * k);
+
+        for (r = 0; r < nrows; r++)
+        {
+            slong cnt = 0, rmax = 0;
+            for (l = 0; l < k; l++)
+            {
+                const nmod_poly_struct * a = nmod_poly_mat_entry(A, g + r, l);
+                if (_entry_A_nonzero(a, tr))
+                {
+                    nzA[r * k + cnt++] = l;
+                    rmax = FLINT_MAX(rmax, a->length);
+                }
+            }
+            cntA[r] = cnt;
+            rowmaxA[r] = rmax;
+        }
+
+        for (r = 0; r < nrows; r++)
+            for (j = 0; j < n; j++)
+            {
+                const int nz = (cntA[r] > 0 && S->cdegB[j] >= 0);
+                zlen[r * n + j] = nz ? rowmaxA[r] + S->cdegB[j] : 0;
+            }
+
+        _sd_fft_direct_run(_worker_pointwise, W, nthreads, handles,
+                           (slong) (np * ntiles));
+
+        _sd_fft_direct_run(_worker_ifft, W, nthreads, handles, nrows * n);
+    }
+
+    _workers_clear(W, nthreads);
+    flint_free(rowmaxA);
+    flint_free(zlen);
+    flint_free(nzA);
+    flint_free(cntA);
+    _sd_fft_direct_free(buf, nbytes, bbytes);
+    flint_give_back_threads(handles, nworkers);
+}
+
+void _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right_clear(void * pre)
+{
+    _sd_fft_direct_precomp_right_struct * S = (_sd_fft_direct_precomp_right_struct *) pre;
+    if (S == NULL)
+        return;
+    flint_aligned_free(S->Bt.data);
+    flint_free(S->cdegB);
+    fft_small_plan_clear(S->P);
+    flint_free(S);
+}
+
 #else  /* PML_HAVE_MACHINE_VECTORS */
 
 void nmod_poly_mat_mul_sd_fft_direct(nmod_poly_mat_t C,
@@ -1014,6 +1303,28 @@ void _nmod_poly_mat_mulmid_sd_fft_direct(nmod_poly_mat_t res,
                                         slong nlo, slong nhi)
 {
     _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
+}
+
+void * _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right_init(const nmod_poly_mat_t B,
+                                                              slong lenA, slong lenB,
+                                                              slong nlo, slong nhi,
+                                                              ulong maxbytes)
+{
+    (void) B; (void) lenA; (void) lenB; (void) nlo; (void) nhi; (void) maxbytes;
+    return NULL;
+}
+
+void _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right(nmod_poly_mat_t C,
+                                                       const nmod_poly_mat_t A,
+                                                       const void * pre, slong nhi)
+{
+    (void) C; (void) A; (void) pre; (void) nhi;
+    flint_throw(FLINT_ERROR, "_nmod_poly_mat_mulmid_sd_fft_direct_precomp_right: not available\n");
+}
+
+void _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right_clear(void * pre)
+{
+    (void) pre;
 }
 
 #endif  /* PML_HAVE_MACHINE_VECTORS */

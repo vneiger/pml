@@ -147,6 +147,83 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
                            const nmod_poly_mat_t pmat2, slong len2,
                            slong nlo, slong nhi);
 
+/** Middle products by a fixed right operand.
+ *
+ * (The suffix `_right` leaves room for the same with a fixed left operand.)
+ *
+ * Precomputation for repeated middle products
+ *       res  <-  (pmat1 * pmat2 mod x^nhi') div x^nlo
+ * with pmat2 fixed, pmat1 varying with entries of length at most `len1`, nlo
+ * fixed, and nhi' at most the `nhi` given at initialization (e.g. the low
+ * products by a truncated inverse in Dixon's lifting, where pmat1 is a row
+ * vector). When the product goes through the fft_small transforms
+ * (::_nmod_poly_mat_mulmid_sd_fft_direct), the plan and the transforms of the
+ * entries of pmat2 are computed once and stored, and each product only
+ * transforms pmat1, multiplies pointwise and transforms back the result.
+ * Otherwise nothing is precomputed and each product calls
+ * ::nmod_poly_mat_mulmid.
+ *
+ * - `pmat2` must not be modified or cleared while the precomputation is in
+ *   use (it is read again by the products that do not use stored transforms)
+ * - in ::nmod_poly_mat_mulmid_precomp_right, `res` may alias `pmat1` but not
+ *   `pmat2`; if `pmat1` has an entry longer than `len1`, or if `nhi` is
+ *   larger than at initialization (it is then reduced to that value), the
+ *   result is still correct (::nmod_poly_mat_mulmid is called in the first
+ *   case)
+ * - memory: the stored transforms take about np * N doubles per entry of
+ *   pmat2, where N is the transform length (about len1 + length(pmat2), or
+ *   less for a window, see ::_nmod_poly_mat_mulmid_sd_fft_direct) and np the
+ *   number of primes (1 to 4); see the code for the bound used by
+ *   ::nmod_poly_mat_mulmid_precomp_right_init
+ */
+typedef struct
+{
+    const nmod_poly_mat_struct * pmat2;
+    slong len1;     /* bound on the lengths of the entries of pmat1 */
+    slong nlo;
+    slong nhi;
+    slong shift;    /* coefficients of pmat2 dropped below shift */
+    void * fft;     /* stored transforms, or NULL */
+} nmod_poly_mat_mulmid_precomp_right_struct;
+
+typedef nmod_poly_mat_mulmid_precomp_right_struct nmod_poly_mat_mulmid_precomp_right_t[1];
+
+/** Initializes the precomputation; stores transforms whenever they are
+ * available (fft_small transforms, and a plan exists), unless they would take
+ * more than the larger of 1 GiB and 16 times the coefficients of pmat2
+ *
+ * \todo for short operands and small dimensions, products of short
+ * polynomials or the Vandermonde routines are faster than stored transforms
+ * (see the rule of ::nmod_poly_mat_solve_series_dixon, which makes this
+ * choice itself) */
+void nmod_poly_mat_mulmid_precomp_right_init(nmod_poly_mat_mulmid_precomp_right_t pre,
+                                             const nmod_poly_mat_t pmat2,
+                                             slong len1, slong nlo, slong nhi);
+
+/** Same as ::nmod_poly_mat_mulmid_precomp_right_init, with the choice given by
+ * `method`: 0 for no precomputation, 1 for stored transforms when available
+ * (without memory bound), -1 for the automatic choice */
+void _nmod_poly_mat_mulmid_precomp_right_init(nmod_poly_mat_mulmid_precomp_right_t pre,
+                                              const nmod_poly_mat_t pmat2,
+                                              slong len1, slong nlo, slong nhi,
+                                              int method);
+
+/** Middle product `res = (pmat1 * pmat2 mod x^nhi) div x^nlo`, with pmat2
+ * and nlo those of the precomputation */
+void nmod_poly_mat_mulmid_precomp_right(nmod_poly_mat_t res,
+                                        const nmod_poly_mat_t pmat1,
+                                        const nmod_poly_mat_mulmid_precomp_right_t pre,
+                                        slong nhi);
+
+/** Whether the precomputation stores transforms */
+static inline int
+nmod_poly_mat_mulmid_precomp_right_is_fft(const nmod_poly_mat_mulmid_precomp_right_t pre)
+{
+    return pre->fft != NULL;
+}
+
+void nmod_poly_mat_mulmid_precomp_right_clear(nmod_poly_mat_mulmid_precomp_right_t pre);
+
 /** actual worker: naive method, multiply + shift+truncate */
 void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t res,
                                  const nmod_poly_mat_t pmat1, slong len1,
