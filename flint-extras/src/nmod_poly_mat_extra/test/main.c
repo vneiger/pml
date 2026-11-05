@@ -29,6 +29,7 @@
 #include "t-mul_vandermonde.c"
 #include "t-mul_waksman.c"
 #include "t-mulmid.c"
+#include "t-mulmid_precomp_right.c"
 #include "t-rank_at_point.c"
 #include "t-set_from_mat_poly.c"
 #include "t-shift_right_trunc.c"
@@ -65,6 +66,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_mul_waksman),
     TEST_FUNCTION(nmod_poly_mat_mul_vandermonde),
     TEST_FUNCTION(nmod_poly_mat_mulmid),
+    TEST_FUNCTION(nmod_poly_mat_mulmid_precomp_right),
     TEST_FUNCTION(nmod_poly_mat_rank_at_point),
     TEST_FUNCTION(nmod_poly_mat_set_from_mat_poly),
     TEST_FUNCTION(nmod_poly_mat_shift_right_trunc),
