@@ -27,7 +27,10 @@
  * rdim x dim matrix B of degree < degB (default: deg):
  *  - by nmod_poly_mat_solve_series_dixon, with the given order (truncated
  *    inverse of A at this order, then about prec/order lifting steps; order
- *    0 means the default, 8 (deg(A) + 1));
+ *    0 means the default, see nmod_poly_mat_solve_series_dixon);
+ *  - by the same without stored transforms (_nmod_poly_mat_solve_series_dixon
+ *    with precomp = 0; for order 0 its default order is 8 (deg(A) + 1)), the
+ *    version before stored transforms;
  *  - optionally, directly, as the truncated inverse of A at order prec
  *    followed by the product with B modulo x^prec;
  * prints the times in seconds */
@@ -77,11 +80,11 @@ int main(int argc, char ** argv)
         flint_printf("   - dim: A is dim x dim\n");
         flint_printf("   - rdim: B is rdim x dim\n");
         flint_printf("   - deg: A is random of degree < deg\n");
-        flint_printf("   - order: order of the truncated inverse used in Dixon's iteration (0: default, 8 (deg(A) + 1))\n");
+        flint_printf("   - order: order of the truncated inverse used in Dixon's iteration (0: default)\n");
         flint_printf("   - prec: the solution is computed modulo x^prec\n");
         flint_printf("   - direct: optional, 0 to skip the timing of the direct approach (default 1)\n");
         flint_printf("   - degB: optional, B is random of degree < degB (default: deg)\n");
-        flint_printf("Prints the times (in seconds) of: nmod_poly_mat_solve_series_dixon, [truncated inverse at order prec + product]\n");
+        flint_printf("Prints the times (in seconds) of: nmod_poly_mat_solve_series_dixon, the same without stored transforms, [truncated inverse at order prec + product]\n");
         return 0;
     }
 
@@ -116,6 +119,7 @@ int main(int argc, char ** argv)
     flint_printf("nbits %wu, dim %wd, rdim %wd, deg %wd, order %wd, prec %wd, degB %wd:",
                  b, dim, rdim, deg, order, prec, degB);
     TIME_SOLVE(nmod_poly_mat_solve_series_dixon(X, A, B, order, prec));
+    TIME_SOLVE(_nmod_poly_mat_solve_series_dixon(X, A, B, order, prec, 0));
     if (direct)
         TIME_SOLVE(_solve_via_inverse(X, Ainv, A, B, prec));
     else

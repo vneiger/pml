@@ -67,36 +67,66 @@ extern "C" {
  * reads only the `order` coefficients of `B` it needs, so that the data
  * movements are linear in `prec` even if `B` has large length.
  *
+ * The truncated inverse and `A` are the right operands of all the products:
+ * except for small degrees and dimensions (see the code for the rule), their
+ * fft_small transforms are computed once and stored (see
+ * ::nmod_poly_mat_mulmid_precomp_right_init), so that an iteration only transforms
+ * the left operands and the results. The default order is then short, about
+ * `deg(A)` for one row in `B` (for one row, the stored transforms make each
+ * iteration cost about `m^2` pointwise products per coefficient of `X`, and a
+ * longer order only makes the truncated inverse more expensive), longer for
+ * more rows. Without stored transforms, the default order is `8 length(A)`.
+ *
  *  - `X` must be initialized with the same dimensions as `B`; it may alias
  *  `A` or `B`;
  *  - the return value is `1` if `A(0)` is invertible (or if `prec` is zero,
  *  or if `m` is zero), and `0` otherwise, in which case `X` is not modified;
- *  - if `order` is nonpositive, the default `order = 8 length(A) = 8 (deg(A)
- *  + 1)` is used (or `1` if `A` is zero); in any case, `order` is reduced to
- *  `prec` if it is larger;
+ *  - if `order` is nonpositive, the default order is used: `N - w + 1` with
+ *  stored transforms, where `N` is the smallest power of two at least
+ *  `max(16, 2 f deg(A))` (`f = 1` for one row in `B`, 2 up to 4 rows, 4 up to
+ *  16 rows, 8 beyond) and `w = max(deg(A), min(length(B), (N+1)/2))`, so that
+ *  the transforms of the low product have length `N`; and `8 length(A)` (or
+ *  `1` if `A` is zero) otherwise; in any case, `order` is reduced to `prec`
+ *  if it is larger;
  *  - only the coefficients of `A` and `B` of degree less than `prec` are used;
  *  - nonpositive values of `prec` are considered as `0`.
  *
  * Size of the integers (see @ref IntegerSizes): `min(order, prec)` is
  * assumed to be at most `WORD_MAX / 2` (see ::nmod_poly_mat_inv_series).
  *
- * \todo choice of `order` and of the algorithm: tuning. The default `order =
- * 8 length(A)` is provisional: with `order = length(A)`, timings were 2 to 4
- * times slower in all tested cases (dimensions 4 to 32, `n = 1` or `n = m`,
- * `length(A)` 10 or 20, `prec = 4000`, 60-bit prime, Intel Xeon AVX-512),
- * while `order` between 4 and 8 times `length(A)` was the fastest; this
- * remains to be tuned, also depending on `n`, `m`, the modulus and `prec`.
+ * Memory: the stored transforms take about `np` times the size of the
+ * truncated inverse and of `A` at the transform length (np = 1 to 3 primes),
+ * that is, a few times the size of `A` with the default order.
+ *
+ * \todo tuning, on several machines and moduli: the rule for stored
+ * transforms and the default orders were measured on one machine (Intel Xeon
+ * with AVX-512); on it, against the version without stored transforms (and
+ * its default order `8 length(A)`), for one row and `prec = 2 m deg(A) + 1`:
+ * 1.5 to 6 times faster from `deg(A)^2 m` of a few thousands (e.g. `m = 64`,
+ * `deg(A) = 32`, 60-bit prime: 0.18 s against 1.24 s), 1.2 to 2.2 times
+ * faster for 2 to 64 rows, 2 to 6 times faster for `B` of length `prec`.
  * Besides, for `n` close to `m` and `prec` not much larger than `deg(A)`, it
  * may be faster to compute the truncated inverse of `A` at order `prec` and
  * multiply by `B`.
- * \todo precomputed transforms of `A` and of its truncated inverse, shared by
- * all iterations
  */
 int nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
                                      const nmod_poly_mat_t A,
                                      const nmod_poly_mat_t B,
                                      slong order,
                                      slong prec);
+
+/** Same as ::nmod_poly_mat_solve_series_dixon, with the use of stored
+ * transforms given by `precomp`: 1 to use them (when available, see
+ * ::nmod_poly_mat_mulmid_precomp_right_init), 0 not to, -1 for the automatic
+ * choice; the default order (nonpositive `order`) follows this choice. For
+ * tests and profiles (with `precomp = 0`, this is the version without stored
+ * transforms). */
+int _nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
+                                      const nmod_poly_mat_t A,
+                                      const nmod_poly_mat_t B,
+                                      slong order,
+                                      slong prec,
+                                      int precomp);
 
 //@} // doxygen group: Power series solution
 
