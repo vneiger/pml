@@ -186,14 +186,18 @@ TEST_FUNCTION_START(nmod_poly_mat_linsolve_via_kernel, state)
         else
             nmod_poly_mat_randtest(A, state, len);
 
-        /* b: random, or v A for some random v (kind 2) */
+        /* b: random, sometimes of much larger degree than A (up to about 8
+         * (n+1) len, the degree of the numerators of the solution being
+         * about n len), or v A for some random v (kind 2) */
+        const slong lenb = (kind != 2 && n_randint(state, 3) == 0)
+                           ? len * (n + 1) * (1 + (slong) n_randint(state, 8)) : len;
         if (kind == 2)
         {
             nmod_poly_mat_randtest(v, state, len);
             nmod_poly_mat_mul(b, v, A);
         }
         else
-            nmod_poly_mat_randtest(b, state, len);
+            nmod_poly_mat_randtest(b, state, lenb);
 
         nmod_poly_mat_concat_vertical(Ab, A, b);
         const slong rkA = nmod_poly_mat_rank(A);
@@ -274,8 +278,8 @@ TEST_FUNCTION_START(nmod_poly_mat_linsolve_via_kernel, state)
         }
 
         if (!result)
-            TEST_FUNCTION_FAIL("prime = %wu, kind = %wd, m = %wd, n = %wd, len = %wd, rank = %wd\n",
-                               prime, kind, m, n, len, rkA);
+            TEST_FUNCTION_FAIL("prime = %wu, kind = %wd, m = %wd, n = %wd, len = %wd, lenb = %wd, rank = %wd\n",
+                               prime, kind, m, n, len, lenb, rkA);
 
         nmod_poly_mat_clear(A);
         nmod_poly_mat_clear(b);

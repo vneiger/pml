@@ -228,7 +228,8 @@ int main(int argc, char ** argv)
 {
     flint_rand_t state;
     flint_rand_init(state);
-    flint_rand_set_seed(state, time(NULL), time(NULL)+129384125L);
+    /* fixed seed: the same inputs at each run, e.g. to compare versions */
+    flint_rand_set_seed(state, 1234, 5678);
 
     /* TODO rank */
 

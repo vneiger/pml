@@ -112,8 +112,14 @@ slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
  * using the Zhou-Labahn-Storjohann algorithm:
  *   Wei Zhou, George Labahn, Arne Storjohann -- "Computing Minimal Nullspace Bases" 
  *   Proceedings ISSAC 2012 -- https://doi.org/10.1145/2442829.2442881
+ *
+ * \todo unbalanced row degrees (e.g. a few rows of large degree) are partly
+ * handled (in particular with linear system solving instances in mind, one row
+ * of very large degree), but we expect some improvements to still be possible
+ *
+ * \todo unbalanced column degrees (e.g. a few columns of large degree) are not
+ * handled specifically
  */
-/* TODO middle_product currently naive */
 /** Size of the integers (see @ref IntegerSizes): at each step, the
  * approximation order is computed from the sum of the shift entries (and `m`
  * times their minimum, up to degrees), where `m` is the number of rows of
