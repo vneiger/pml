@@ -29,7 +29,7 @@
  * \todo Warning: these solving functions are not finalized yet, and this
  * convention (as well as their interfaces) may change in the future.
  *
- * \todo series solving at low precision, high-order lifting (see ntl-extras,
+ * \todo series solving at low precision (see ntl-extras,
  * mat_lzz_pX_linsolve.h); general interface for the solution over the
  * polynomials, choosing among the algorithms below
  */
@@ -128,6 +128,59 @@ int _nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
                                       slong order,
                                       slong prec,
                                       int precomp);
+
+/** Computes the power series solution `X = B A^{-1} mod x^prec` (see @ref
+ * SeriesSolve) by high-order lifting (Storjohann, "High-order lifting and
+ * integrality certification", J. Symbolic Comput., 2003).
+ *
+ * With a block size `e >= deg(A)` and `B` of degree less than `e`, the
+ * solution is `X = sum_k x^(k e) (R_k A^{-1} mod x^e)`, where `R_k` (of
+ * degree less than `e`) is the residue of Dixon's lifting at order `e`
+ * after `k` steps, with `R_0 = B`. These residues are computed by doubling:
+ * `R_{k+s} = ((((R_k S_s) div x^(e-1)) mod x^e) A) mod x^e`, where `S_s` is
+ * the slice of the coefficients of degree `s e - e + 1` to `s e + e - 1` of
+ * `A^{-1}`. From `R_0, ..., R_{s-1}` (stacked in one matrix) and `S_s`, two
+ * products give `R_s, ..., R_{2s-1}`, and four products of `m x m` matrices
+ * of degree less than `2 e` give `S_{2s}` from `S_s`. With `nb =
+ * ceil(prec/e)` residues, there are about `log2(nb)` such steps; the last
+ * ones multiply matrices with about `nb n / 2` rows (times the number of
+ * chunks of `B`, see below). If `B` has degree at least `e`, its rows are
+ * split into chunks of `e` coefficients, `B = sum_t x^(t e) B_t`, and the
+ * solutions for all chunks are computed at once (all at precision
+ * `prec`).
+ *
+ * The block size is `e = deg(A)`, or `e = length(B)` if `deg(A) < length(B)
+ * <= 2 deg(A)` (then `B` is not split), where `A` and `B` are first
+ * truncated at precision `prec`. For constant `A`, this calls
+ * ::nmod_poly_mat_solve_series_dixon.
+ *
+ * Same conventions as ::nmod_poly_mat_solve_series_dixon (dimensions,
+ * aliasing, return value, coefficients used).
+ *
+ * Note: for one row in `B` (and `m` rows or less), Dixon's lifting
+ * (::nmod_poly_mat_solve_series_dixon) is faster in practice, even though
+ * the cost of high-order lifting, `O~(m^omega e log(nb))` for the slices and
+ * the residues when `nb n` is about `m`, is asymptotically smaller than the
+ * `O~(m^2 prec)` of Dixon's lifting.
+ *
+ * Size of the integers (see @ref IntegerSizes): `prec` is assumed to be at
+ * most `WORD_MAX / 4` (see ::nmod_poly_mat_inv_series).
+ *
+ * \todo stored transforms (see ::nmod_poly_mat_mulmid_precomp_right_init):
+ * `A` is the right operand of three of the six products of each step, and
+ * of the products for the residues; the slice is the right operand of two
+ * products of each step; the truncated inverse, of one product of each
+ * step and of the final product.
+ *
+ * \todo `B` of large degree: the chunk `B_t` only needs precision `prec - t
+ * e`, and the chunks could rather be added to the residues as they are
+ * reached (as in Dixon's lifting) than solved for separately; currently,
+ * for one row of degree about `m deg(A)`, the residues have about `m` rows.
+ */
+int nmod_poly_mat_solve_series_high_order_lifting(nmod_poly_mat_t X,
+                                                  const nmod_poly_mat_t A,
+                                                  const nmod_poly_mat_t B,
+                                                  slong prec);
 
 //@} // doxygen group: Power series solution
 
@@ -250,6 +303,15 @@ int nmod_poly_mat_linsolve_via_series(nmod_poly_mat_t u,
                                       const nmod_poly_mat_t A,
                                       const nmod_poly_mat_t b,
                                       linsolve_den_t den_method);
+
+/** Same as ::nmod_poly_mat_linsolve_via_series, with the power series
+ * solution computed by ::nmod_poly_mat_solve_series_high_order_lifting
+ * instead of Dixon's lifting. */
+int nmod_poly_mat_linsolve_via_high_order_lifting(nmod_poly_mat_t u,
+                                                  nmod_poly_t den,
+                                                  const nmod_poly_mat_t A,
+                                                  const nmod_poly_mat_t b,
+                                                  linsolve_den_t den_method);
 
 /** Computes `u` and `den` such that `u A = den b` (see @ref PolySolve), for a
  * square matrix `A`, by evaluation and interpolation. Same specification as

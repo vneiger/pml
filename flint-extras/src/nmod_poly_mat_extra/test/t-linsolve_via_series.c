@@ -45,10 +45,20 @@ static int _lsseriestest_check(const nmod_poly_mat_t u, const nmod_poly_t den,
     return ok;
 }
 
+/* the solver under test: nmod_poly_mat_linsolve_via_series, or
+ * nmod_poly_mat_linsolve_via_high_order_lifting if hol is nonzero */
+static int _lsseriestest_solve(nmod_poly_mat_t u, nmod_poly_t den,
+                               const nmod_poly_mat_t A, const nmod_poly_mat_t b,
+                               linsolve_den_t den_method, int hol)
+{
+    return hol ? nmod_poly_mat_linsolve_via_high_order_lifting(u, den, A, b, den_method)
+               : nmod_poly_mat_linsolve_via_series(u, den, A, b, den_method);
+}
+
 /* fixed examples: [[x, 0], [0, 1]] (A(0) singular), whose solution for b =
  * [1, 1] is [1, x] / x; and over GF(2), [[x^2 + x]] whose determinant vanishes
  * at all elements of the field (via_kernel is used), with b = [1] */
-static int _lsseriestest_examples(linsolve_den_t den_method)
+static int _lsseriestest_examples(linsolve_den_t den_method, int hol)
 {
     int ok;
     nmod_poly_mat_t A, b, u, v;
@@ -65,7 +75,7 @@ static int _lsseriestest_examples(linsolve_den_t den_method)
     nmod_poly_set_coeff_ui(nmod_poly_mat_entry(b, 0, 1), 0, 1);
     nmod_poly_set_coeff_ui(nmod_poly_mat_entry(v, 0, 0), 0, 1);
     nmod_poly_set_coeff_ui(nmod_poly_mat_entry(v, 0, 1), 1, 1);
-    ok = nmod_poly_mat_linsolve_via_series(u, den, A, b, den_method)
+    ok = _lsseriestest_solve(u, den, A, b, den_method, hol)
          && nmod_poly_mat_equal(u, v) && nmod_poly_degree(den) == 1
          && den->coeffs[0] == 0 && den->coeffs[1] == 1;
     nmod_poly_mat_clear(A);
@@ -81,7 +91,7 @@ static int _lsseriestest_examples(linsolve_den_t den_method)
     nmod_poly_set_coeff_ui(nmod_poly_mat_entry(A, 0, 0), 1, 1);
     nmod_poly_set_coeff_ui(nmod_poly_mat_entry(A, 0, 0), 2, 1);
     nmod_poly_set_coeff_ui(nmod_poly_mat_entry(b, 0, 0), 0, 1);
-    ok = ok && nmod_poly_mat_linsolve_via_series(u, den, A, b, den_method)
+    ok = ok && _lsseriestest_solve(u, den, A, b, den_method, hol)
          && nmod_poly_is_one(nmod_poly_mat_entry(u, 0, 0))
          && nmod_poly_equal(den, nmod_poly_mat_entry(A, 0, 0));
     nmod_poly_mat_clear(A);
@@ -96,9 +106,10 @@ TEST_FUNCTION_START(nmod_poly_mat_linsolve_via_series, state)
 {
     int i, result;
 
-    if (!_lsseriestest_examples(LINSOLVE_RECONSTRUCTION)
-        || !_lsseriestest_examples(LINSOLVE_DETERMINANT))
-        TEST_FUNCTION_FAIL("fixed examples\n");
+    for (int hol = 0; hol < 2; hol++)
+        if (!_lsseriestest_examples(LINSOLVE_RECONSTRUCTION, hol)
+            || !_lsseriestest_examples(LINSOLVE_DETERMINANT, hol))
+            TEST_FUNCTION_FAIL("fixed examples, hol = %d\n", hol);
 
     for (i = 0; i < 300 * flint_test_multiplier(); i++)
     {
@@ -190,8 +201,12 @@ TEST_FUNCTION_START(nmod_poly_mat_linsolve_via_series, state)
         /* reference: via_kernel */
         const int expected = nmod_poly_mat_linsolve_via_kernel(w, den0, A, b);
 
-        for (int dm = 0; dm < 2; dm++)
+        /* dm: den_method; hol: series by Dixon's lifting or by high-order
+         * lifting */
+        for (int k = 0; k < 4; k++)
         {
+            const int dm = k & 1;
+            const int hol = k >> 1;
             const linsolve_den_t den_method = (dm == 0) ? LINSOLVE_RECONSTRUCTION
                                                         : LINSOLVE_DETERMINANT;
 
@@ -201,7 +216,7 @@ TEST_FUNCTION_START(nmod_poly_mat_linsolve_via_series, state)
             nmod_poly_randtest(den, state, 3);
             nmod_poly_mat_set(u0, u);
             nmod_poly_set(f, den);
-            result = (nmod_poly_mat_linsolve_via_series(u, den, A, b, den_method) == expected);
+            result = (_lsseriestest_solve(u, den, A, b, den_method, hol) == expected);
             if (result && expected)
                 result = _lsseriestest_check(u, den, A, b);
             if (result && expected && nonsingular)
@@ -215,14 +230,14 @@ TEST_FUNCTION_START(nmod_poly_mat_linsolve_via_series, state)
             if (result)
             {
                 nmod_poly_mat_set(u0, b);
-                result = (nmod_poly_mat_linsolve_via_series(u0, f, A, u0, den_method) == expected)
+                result = (_lsseriestest_solve(u0, f, A, u0, den_method, hol) == expected)
                          && nmod_poly_mat_equal(u0, expected ? u : b)
                          && nmod_poly_equal(f, den);
             }
 
             if (!result)
-                TEST_FUNCTION_FAIL("prime = %wu, kindA = %wd, kindb = %wd, n = %wd, len = %wd, lenb = %wd, den_method = %d, nonsingular = %d\n",
-                                   prime, kindA, kindb, n, len, lenb, dm, nonsingular);
+                TEST_FUNCTION_FAIL("prime = %wu, kindA = %wd, kindb = %wd, n = %wd, len = %wd, lenb = %wd, den_method = %d, hol = %d, nonsingular = %d\n",
+                                   prime, kindA, kindb, n, len, lenb, dm, hol, nonsingular);
         }
 
         nmod_poly_mat_clear(A);

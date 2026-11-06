@@ -36,6 +36,7 @@
 #include "t-set_from_mat_poly.c"
 #include "t-shift_right_trunc.c"
 #include "t-solve_series_dixon.c"
+#include "t-solve_series_high_order_lifting.c"
 #include "t-mbasis.c"
 #include "t-pmbasis.c"
 #include "t-pmintbasis.c"
@@ -75,6 +76,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_set_from_mat_poly),
     TEST_FUNCTION(nmod_poly_mat_shift_right_trunc),
     TEST_FUNCTION(nmod_poly_mat_solve_series_dixon),
+    TEST_FUNCTION(nmod_poly_mat_solve_series_high_order_lifting),
     TEST_FUNCTION(nmod_poly_mat_pmbasis),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis_nondistinct),

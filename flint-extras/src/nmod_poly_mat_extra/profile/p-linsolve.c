@@ -56,6 +56,18 @@ static int _ls_geometric(nmod_poly_mat_t u, nmod_poly_t den,
     return nmod_poly_mat_linsolve_geometric(u, den, A, b);
 }
 
+static int _ls_hol_rr(nmod_poly_mat_t u, nmod_poly_t den,
+                      const nmod_poly_mat_t A, const nmod_poly_mat_t b)
+{
+    return nmod_poly_mat_linsolve_via_high_order_lifting(u, den, A, b, LINSOLVE_RECONSTRUCTION);
+}
+
+static int _ls_hol_det(nmod_poly_mat_t u, nmod_poly_t den,
+                       const nmod_poly_mat_t A, const nmod_poly_mat_t b)
+{
+    return nmod_poly_mat_linsolve_via_high_order_lifting(u, den, A, b, LINSOLVE_DETERMINANT);
+}
+
 typedef struct
 {
     const char * name;
@@ -69,6 +81,8 @@ static const linsolve_method_t methods[] =
     {"series_rr", _ls_series_rr},
     {"series_det", _ls_series_det},
     {"geometric", _ls_geometric},
+    {"hol_rr", _ls_hol_rr},
+    {"hol_det", _ls_hol_det},
 };
 
 #define NMETHODS ((slong) (sizeof(methods) / sizeof(methods[0])))

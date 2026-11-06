@@ -261,6 +261,173 @@ int nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
 }
 
 /*------------------------------------------------------------*/
+/* power series solution, high-order lifting                  */
+/*------------------------------------------------------------*/
+
+/* For m x m A of degree at most e >= 1 with A(0) invertible, and inv = A^{-1}
+ * mod x^e: replaces the slice S_s of A^{-1} (its coefficients of degree s e -
+ * e + 1 to s e + e - 1, for some s >= 1) by S_{2s}. This is the row-wise
+ * version of high_order_lift_inverse_odd in ntl-extras (mat_lzz_pX_linsolve):
+ *   T = (S_s mod x^e) A mod x^e
+ *   N = ((T S_s) div x^(e-1)) mod x^e
+ *   M = ((N A) div x^e) mod x^(e-1)
+ *   S_{2s} = N - x^e (M inv mod x^(e-1)) */
+static void _hol_lift_slice(nmod_poly_mat_t slice, const nmod_poly_mat_t A,
+                            const nmod_poly_mat_t inv, slong e)
+{
+    const slong m = A->r;
+    nmod_poly_mat_t T, N, M;
+    nmod_poly_mat_init(T, m, m, A->modulus);
+    nmod_poly_mat_init(N, m, m, A->modulus);
+    nmod_poly_mat_init(M, m, m, A->modulus);
+
+    nmod_poly_mat_set(T, slice);
+    nmod_poly_mat_truncate(T, e);
+    nmod_poly_mat_mulmid(T, T, A, 0, e);
+    nmod_poly_mat_mulmid(N, T, slice, e - 1, 2 * e - 1);
+    nmod_poly_mat_mulmid(M, N, A, e, 2 * e - 1);
+    nmod_poly_mat_mulmid(M, M, inv, 0, e - 1);
+    nmod_poly_mat_sub_shift_left(slice, N, M, e);
+
+    nmod_poly_mat_clear(T);
+    nmod_poly_mat_clear(N);
+    nmod_poly_mat_clear(M);
+}
+
+/* With e >= deg(A), the residues R_k of Dixon's lifting at order e, R_0 = B
+ * (of degree less than e) and R_{k+1} = (R_k - Y_k A) div x^e with Y_k = R_k
+ * A^{-1} mod x^e, satisfy R_{k+s} = (((R_k A^{-1}) div x^(s e)) mod x^e) A mod
+ * x^e: with R_k A^{-1} = P + x^(s e) Q, P = R_k A^{-1} mod x^(s e), x^(s e)
+ * R_{k+s} = R_k - P A by definition, so that R_{k+s} = Q A, which has degree
+ * less than e. Since R_k has degree less than e, ((R_k A^{-1}) div x^(s e))
+ * mod x^e = ((R_k S_s) div x^(e-1)) mod x^e, where S_s is the slice of
+ * coefficients of degree s e - e + 1 to s e + e - 1 of A^{-1}. Starting from
+ * R_0 and S_1, each step computes R_s, ..., R_{2s-1} from R_0, ..., R_{s-1}
+ * (all residues are stacked in one matrix) and S_{2s} from S_s; then X = sum_k
+ * x^(k e) Y_k mod x^prec. */
+int nmod_poly_mat_solve_series_high_order_lifting(nmod_poly_mat_t X,
+                                                  const nmod_poly_mat_t A,
+                                                  const nmod_poly_mat_t B,
+                                                  slong prec)
+{
+    const slong m = A->r;
+    const slong n = B->r;
+    const ulong p = A->modulus;
+
+    if (prec <= 0 || m == 0)
+    {
+        nmod_poly_mat_zero(X);
+        return 1;
+    }
+
+    if (X == A || X == B)
+    {
+        nmod_poly_mat_t T;
+        nmod_poly_mat_init(T, n, m, p);
+        const int ok = nmod_poly_mat_solve_series_high_order_lifting(T, A, B, prec);
+        if (ok)
+            nmod_poly_mat_swap_entrywise(X, T);
+        nmod_poly_mat_clear(T);
+        return ok;
+    }
+
+    /* only A mod x^prec and B mod x^prec matter */
+    if (nmod_poly_mat_max_length(A) > prec || nmod_poly_mat_max_length(B) > prec)
+    {
+        nmod_poly_mat_t Ap, Bp;
+        nmod_poly_mat_init_set(Ap, A);
+        nmod_poly_mat_init_set(Bp, B);
+        nmod_poly_mat_truncate(Ap, prec);
+        nmod_poly_mat_truncate(Bp, prec);
+        const int ok = nmod_poly_mat_solve_series_high_order_lifting(X, Ap, Bp, prec);
+        nmod_poly_mat_clear(Ap);
+        nmod_poly_mat_clear(Bp);
+        return ok;
+    }
+
+    /* constant A (or zero): a single product (Dixon at order prec) */
+    const slong dA = nmod_poly_mat_degree(A);
+    if (dA <= 0)
+        return nmod_poly_mat_solve_series_dixon(X, A, B, prec, prec);
+
+    /* block size e >= deg(A); the rows of B are split into nc chunks of e
+     * coefficients, B = sum_t x^(t e) B_t, stacked into a matrix with R =
+     * nc n rows; nb blocks of e coefficients of the solution */
+    const slong lenB = nmod_poly_mat_max_length(B);
+    const slong e = (lenB <= 2 * dA) ? FLINT_MAX(dA, lenB) : dA;
+    const slong nc = FLINT_MAX(1, (lenB + e - 1) / e);
+    const slong R = nc * n;
+    const slong nb = (prec + e - 1) / e;
+
+    /* inv = A^{-1} mod x^e, slice = S_1 (coefficients 1 to 2 e - 1) */
+    nmod_poly_mat_t inv, slice;
+    nmod_poly_mat_init(inv, m, m, p);
+    if (! nmod_poly_mat_inv_series(inv, A, 2 * e))
+    {
+        nmod_poly_mat_clear(inv);
+        return 0;
+    }
+    nmod_poly_mat_init(slice, m, m, p);
+    nmod_poly_mat_shift_right_trunc(slice, inv, 1, 2 * e - 1);
+    nmod_poly_mat_truncate(inv, e);
+
+    /* res: the residues, R_k in rows [k R, (k+1) R) */
+    nmod_poly_mat_t res, next, win;
+    nmod_poly_mat_init(res, nb * R, m, p);
+    for (slong t = 0; t < nc; t++)
+        for (slong i = 0; i < n; i++)
+            for (slong j = 0; j < m; j++)
+            {
+                nmod_poly_struct * r = nmod_poly_mat_entry(res, t * n + i, j);
+                nmod_poly_shift_right(r, nmod_poly_mat_entry(B, i, j), t * e);
+                nmod_poly_truncate(r, e);
+            }
+
+    for (slong s = 1; s < nb; s *= 2)
+    {
+        /* R_s, ..., R_{s+k-1} from R_0, ..., R_{k-1} */
+        const slong k = FLINT_MIN(s, nb - s);
+        nmod_poly_mat_window_init(win, res, 0, 0, k * R, m);
+        nmod_poly_mat_init(next, k * R, m, p);
+        nmod_poly_mat_mulmid(next, win, slice, e - 1, 2 * e - 1);
+        nmod_poly_mat_window_clear(win);
+        nmod_poly_mat_window_init(win, res, s * R, 0, (s + k) * R, m);
+        nmod_poly_mat_mulmid(win, next, A, 0, e);
+        nmod_poly_mat_window_clear(win);
+        nmod_poly_mat_clear(next);
+        if (2 * s < nb)
+            _hol_lift_slice(slice, A, inv, e);
+    }
+
+    /* Y_k = R_k inv mod x^e, and X = sum_{t,k} x^((t+k) e) (rows of Y_k
+     * for B_t) mod x^prec */
+    nmod_poly_mat_mulmid(res, res, inv, 0, e);
+    nmod_poly_mat_zero(X);
+    for (slong i = 0; i < n; i++)
+        for (slong j = 0; j < m; j++)
+        {
+            nmod_poly_struct * x = nmod_poly_mat_entry(X, i, j);
+            nmod_poly_fit_length(x, prec);
+            _nmod_vec_zero(x->coeffs, prec);
+            for (slong t = 0; t < nc; t++)
+                for (slong k = 0; k < nb && (t + k) * e < prec; k++)
+                {
+                    const nmod_poly_struct * y = nmod_poly_mat_entry(res, k * R + t * n + i, j);
+                    const slong off = (t + k) * e;
+                    _nmod_vec_add(x->coeffs + off, x->coeffs + off, y->coeffs,
+                                  FLINT_MIN(y->length, prec - off), x->mod);
+                }
+            _nmod_poly_set_length(x, prec);
+            _nmod_poly_normalise(x);
+        }
+
+    nmod_poly_mat_clear(res);
+    nmod_poly_mat_clear(slice);
+    nmod_poly_mat_clear(inv);
+    return 1;
+}
+
+/*------------------------------------------------------------*/
 /* solution over the polynomials, via kernel basis            */
 /*------------------------------------------------------------*/
 
@@ -623,6 +790,17 @@ int nmod_poly_mat_linsolve_via_series(nmod_poly_mat_t u,
     return _linsolve_via_series(u, den, A, b, den_method,
                                 _solve_series_dixon_default_order,
                                 "nmod_poly_mat_linsolve_via_series");
+}
+
+int nmod_poly_mat_linsolve_via_high_order_lifting(nmod_poly_mat_t u,
+                                                  nmod_poly_t den,
+                                                  const nmod_poly_mat_t A,
+                                                  const nmod_poly_mat_t b,
+                                                  linsolve_den_t den_method)
+{
+    return _linsolve_via_series(u, den, A, b, den_method,
+                                nmod_poly_mat_solve_series_high_order_lifting,
+                                "nmod_poly_mat_linsolve_via_high_order_lifting");
 }
 
 /*------------------------------------------------------------*/
