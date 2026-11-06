@@ -23,12 +23,12 @@
 
 /* times the solution of u A = den b, for a random dim x dim matrix A of
  * degree < deg (with A(0) invertible) and a random 1 x dim vector b of
- * degree < deg:
+ * degree < degb (by default degb = deg):
  *  - by nmod_poly_mat_linsolve_via_kernel;
  *  - for reference, the power series solution b A^{-1} mod x^prec by
  *    nmod_poly_mat_solve_series_dixon (default order), at the precision
- *    prec = 2 dim (deg-1) + 1 which suffices to recover u / den by rational
- *    reconstruction (not included);
+ *    prec = 2 dim (deg-1) + max(degb-deg, 0) + 1 which suffices to recover
+ *    u / den by rational reconstruction (not included);
  *  - optionally, by FLINT's nmod_poly_mat_solve on the transposed system
  *    (fraction-free elimination, den = +-det(A), not reduced).
  * prints the times in seconds, and the degree of den */
@@ -62,24 +62,27 @@
 
 int main(int argc, char ** argv)
 {
-    if (argc < 4 || argc > 5)
+    if (argc < 4 || argc > 6)
     {
-        flint_printf("Usage: `%s [nbits] [dim] [deg] [flint]`\n", argv[0]);
+        flint_printf("Usage: `%s [nbits] [dim] [deg] [flint] [degb]`\n", argv[0]);
         flint_printf("   - nbits: number of bits in [2..64] for the modulus, chosen as nextprime(2**(nbits-1))\n");
         flint_printf("   - dim: A is dim x dim, b is 1 x dim\n");
-        flint_printf("   - deg: A and b are random of degree < deg\n");
+        flint_printf("   - deg: A is random of degree < deg\n");
         flint_printf("   - flint: optional, 1 to also time FLINT's nmod_poly_mat_solve (default 0)\n");
+        flint_printf("   - degb: optional, b is random of degree < degb (default deg)\n");
         flint_printf("Prints the times (in seconds) of: nmod_poly_mat_linsolve_via_kernel,\n");
-        flint_printf("    nmod_poly_mat_solve_series_dixon at precision 2*dim*(deg-1)+1, [nmod_poly_mat_solve]; and deg(den)\n");
+        flint_printf("    nmod_poly_mat_solve_series_dixon at precision 2*dim*(deg-1)+max(degb-deg,0)+1,\n");
+        flint_printf("    [nmod_poly_mat_solve]; and deg(den)\n");
         return 0;
     }
 
     const ulong b = strtoul(argv[1], NULL, 10);
     const slong dim = atoi(argv[2]);
     const slong deg = atoi(argv[3]);
-    const int with_flint = (argc == 5) ? atoi(argv[4]) : 0;
+    const int with_flint = (argc >= 5) ? atoi(argv[4]) : 0;
+    const slong degb = (argc == 6) ? atoi(argv[5]) : deg;
     const ulong n = n_nextprime(UWORD(1) << (b-1), 0);
-    const slong prec = 2 * dim * FLINT_MAX(deg - 1, 0) + 1;
+    const slong prec = 2 * dim * FLINT_MAX(deg - 1, 0) + FLINT_MAX(degb - deg, 0) + 1;
 
     flint_rand_t state;
     flint_rand_init(state);
@@ -99,9 +102,12 @@ int main(int argc, char ** argv)
         nmod_poly_mat_rand(A, state, deg);
         nmod_poly_mat_get_coeff_mat(A0, A, 0);
     } while (nmod_mat_rank(A0) < dim);
-    nmod_poly_mat_rand(vb, state, deg);
+    nmod_poly_mat_rand(vb, state, degb);
 
-    flint_printf("nbits %wu, dim %wd, deg %wd:", b, dim, deg);
+    if (degb == deg)
+        flint_printf("nbits %wu, dim %wd, deg %wd:", b, dim, deg);
+    else
+        flint_printf("nbits %wu, dim %wd, deg %wd, degb %wd:", b, dim, deg, degb);
     TIME_SOLVE(nmod_poly_mat_linsolve_via_kernel(u, den, A, vb));
     TIME_SOLVE(nmod_poly_mat_solve_series_dixon(X, A, vb, 0, prec));
     if (with_flint)

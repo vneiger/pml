@@ -20,7 +20,7 @@
 #include "nmod_poly_extra.h"  /* for NMOD_POLY_CAN_USE_GEOMETRIC */
 #include "nmod_poly_mat_multiply.h"
 #include "nmod_poly_mat_utils.h"
-#include "impl.h"                 /* for PML_NMOD_MAT_MUL_IFMA */
+#include "impl.h"                 /* for PML_NMOD_MAT_MUL_IFMA, views */
 
 /*------------------------------------------------------------*/
 /* naive: multiply, truncate, shift                           */
@@ -293,47 +293,6 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         _nmod_poly_mat_mulmid_naive(res, pmat1, len1, pmat2, len2, nlo, nhi);
 }
 
-/* view of the coefficients [k, h) of the entries of pmat (k < h), i.e.
- * view = (pmat mod x^h) div x^k, normalized, without copying coefficients:
- * the entries of view point into those of pmat, which must be left unchanged
- * while view is in use; view must be cleared by _mulmid_view_clear */
-static void _mulmid_view_init(nmod_poly_mat_t view, const nmod_poly_mat_t pmat, slong k, slong h)
-{
-    nmod_poly_mat_init(view, pmat->r, pmat->c, pmat->modulus);
-    for (slong i = 0; i < pmat->r; i++)
-    {
-        for (slong j = 0; j < pmat->c; j++)
-        {
-            const nmod_poly_struct * p = nmod_poly_mat_entry(pmat, i, j);
-            slong len = FLINT_MIN(p->length, h) - k;
-            while (len > 0 && p->coeffs[k + len - 1] == 0)
-                len--;
-            if (len > 0)
-            {
-                nmod_poly_struct * v = nmod_poly_mat_entry(view, i, j);
-                v->coeffs = p->coeffs + k;
-                v->alloc = len;
-                v->length = len;
-            }
-        }
-    }
-}
-
-static void _mulmid_view_clear(nmod_poly_mat_t view)
-{
-    for (slong i = 0; i < view->r; i++)
-    {
-        for (slong j = 0; j < view->c; j++)
-        {
-            nmod_poly_struct * v = nmod_poly_mat_entry(view, i, j);
-            v->coeffs = NULL;
-            v->alloc = 0;
-            v->length = 0;
-        }
-    }
-    nmod_poly_mat_clear(view);
-}
-
 void nmod_poly_mat_mulmid(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, const nmod_poly_mat_t pmat2,
                           slong nlo, slong nhi)
 {
@@ -394,18 +353,18 @@ void nmod_poly_mat_mulmid(nmod_poly_mat_t res, const nmod_poly_mat_t pmat1, cons
 
     nmod_poly_mat_t view1, view2;
     if (reduce1)
-        _mulmid_view_init(view1, pmat1, k1, h1);
+        _nmod_poly_mat_view_init_coeffs(view1, pmat1, k1, h1);
     if (reduce2)
-        _mulmid_view_init(view2, pmat2, k2, h2);
+        _nmod_poly_mat_view_init_coeffs(view2, pmat2, k2, h2);
 
     _nmod_poly_mat_mulmid(res, reduce1 ? view1 : pmat1, h1 - k1,
                                reduce2 ? view2 : pmat2, h2 - k2,
                                nlo - k1 - k2, nhi - k1 - k2);
 
     if (reduce1)
-        _mulmid_view_clear(view1);
+        _nmod_poly_mat_view_clear(view1);
     if (reduce2)
-        _mulmid_view_clear(view2);
+        _nmod_poly_mat_view_clear(view2);
 }
 
 /*------------------------------------------------------------*/
@@ -455,10 +414,10 @@ void _nmod_poly_mat_mulmid_precomp_right_init(nmod_poly_mat_mulmid_precomp_right
     if (k2 > 0 || h2 < len2)
     {
         nmod_poly_mat_t view2;
-        _mulmid_view_init(view2, pmat2, k2, h2);
+        _nmod_poly_mat_view_init_coeffs(view2, pmat2, k2, h2);
         pre->fft = _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right_init(view2,
                                 h1, h2 - k2, nlo - k2, nhi - k2, maxbytes);
-        _mulmid_view_clear(view2);
+        _nmod_poly_mat_view_clear(view2);
     }
     else
         pre->fft = _nmod_poly_mat_mulmid_sd_fft_direct_precomp_right_init(pmat2,

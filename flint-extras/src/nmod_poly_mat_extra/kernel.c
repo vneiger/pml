@@ -11,6 +11,7 @@
     <https://www.gnu.org/licenses/>.
 */
 
+#include <stdlib.h>  /* for qsort */
 #include <flint/flint.h>
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly.h>
@@ -22,6 +23,7 @@
 #include "nmod_poly_mat_kernel.h"
 #include "nmod_poly_mat_multiply.h"
 #include "nmod_poly_mat_utils.h"
+#include "impl.h"    /* for _slong_comparator, views */
 
 slong nmod_poly_mat_kernel(nmod_poly_mat_t ker,
                            slong * pivind,
@@ -225,6 +227,223 @@ slong nmod_poly_mat_kernel_via_approx(nmod_poly_mat_t ker,
     return nullity;
 }
 
+/*------------------------------------------------------------*/
+/* products with a few long rows                              */
+/*------------------------------------------------------------*/
+/* \todo this is temporary, until a more general mechanism is exposed,
+ * for multiplication with unbalanced degrees */
+
+/* Splits the rows of F into short and long ones: with med the median of the
+ * row degrees of F (zero rows counting as degree 0), a row is long if its
+ * degree exceeds 4 med + 4. Writes in idx the indices of the short rows, in
+ * increasing order, followed by those of the long rows, and returns the
+ * number of long rows. */
+static slong _kernel_long_rows(slong * idx, const nmod_poly_mat_t F)
+{
+    const slong k = F->r;
+    if (k == 0)
+        return 0;
+
+    slong * rdeg = FLINT_ARRAY_ALLOC(k, slong);
+    slong * sorted = FLINT_ARRAY_ALLOC(k, slong);
+    nmod_poly_mat_row_degree_zero(rdeg, F, NULL);
+    for (slong i = 0; i < k; i++)
+        sorted[i] = rdeg[i];
+    qsort(sorted, k, sizeof(slong), _slong_comparator);
+    const slong thres = 4 * sorted[(k - 1) / 2] + 4;
+
+    slong ns = 0, nl = 0;
+    for (slong i = 0; i < k; i++)
+        if (rdeg[i] <= thres)
+            idx[ns++] = i;
+    for (slong i = 0; i < k; i++)
+        if (rdeg[i] > thres)
+            idx[ns + nl++] = i;
+
+    flint_free(rdeg);
+    flint_free(sorted);
+    return nl;
+}
+
+/* res = P F if nlo < 0, otherwise res = (P F mod x^nhi) div x^nlo */
+static void _kernel_mul(nmod_poly_mat_t res, const nmod_poly_mat_t P,
+                        const nmod_poly_mat_t F, slong nlo, slong nhi)
+{
+    if (nlo < 0)
+        nmod_poly_mat_multiply(res, P, F);
+    else
+        nmod_poly_mat_mulmid(res, P, F, nlo, nhi);
+}
+
+/* Same as _kernel_mul, with the rows of F split into short and long ones
+ * (see _kernel_long_rows): res = Ps Fs + Pl Fl, where Fs, Fl are the short
+ * and long rows of F and Ps, Pl the corresponding columns of P. */
+static void _kernel_mul_split_right(nmod_poly_mat_t res, const nmod_poly_mat_t P,
+                                    const nmod_poly_mat_t F, slong nlo, slong nhi)
+{
+    const slong k = F->r;
+    slong * idx = FLINT_ARRAY_ALLOC(FLINT_MAX(k, 1), slong);
+    const slong nl = _kernel_long_rows(idx, F);
+    const slong ns = k - nl;
+
+    if (nl == 0 || ns == 0)
+        _kernel_mul(res, P, F, nlo, nhi);
+    else
+    {
+        nmod_poly_mat_t Ps, Pl, Fs, Fl, T;
+        _nmod_poly_mat_view_init_submatrix(Ps, P, NULL, P->r, idx, ns);
+        _nmod_poly_mat_view_init_submatrix(Pl, P, NULL, P->r, idx + ns, nl);
+        _nmod_poly_mat_view_init_submatrix(Fs, F, idx, ns, NULL, F->c);
+        _nmod_poly_mat_view_init_submatrix(Fl, F, idx + ns, nl, NULL, F->c);
+        nmod_poly_mat_init(T, P->r, F->c, P->modulus);
+        _kernel_mul(res, Ps, Fs, nlo, nhi);
+        _kernel_mul(T, Pl, Fl, nlo, nhi);
+        nmod_poly_mat_add(res, res, T);
+        nmod_poly_mat_clear(T);
+        _nmod_poly_mat_view_clear(Ps);
+        _nmod_poly_mat_view_clear(Pl);
+        _nmod_poly_mat_view_clear(Fs);
+        _nmod_poly_mat_view_clear(Fl);
+    }
+    flint_free(idx);
+}
+
+/* Product res = P F (if nlo < 0) or middle product res = (P F mod x^nhi) div
+ * x^nlo (if nlo >= 0), for operands which may have a few rows of much larger
+ * degree than the others, as happens in the ZLS algorithm when the input has
+ * unbalanced row degrees (e.g. [A ; b] with deg(b) much larger than deg(A),
+ * in linear system solving): the product routines work at the largest length
+ * of the entries of their operands, so that a single long row would make the
+ * whole product as expensive as if all entries were long. Here, the long rows
+ * of P are multiplied by F apart from the short ones, and the short rows of P
+ * are multiplied by F with the rows of F split in the same way (see
+ * _kernel_mul_split_right). Without long rows, this is a single product.
+ * res must not alias P or F (it may be a window). */
+/* \todo this is temporary, until a more general mechanism is exposed,
+ * for multiplication with unbalanced degrees */
+static void _kernel_mul_split(nmod_poly_mat_t res, const nmod_poly_mat_t P,
+                              const nmod_poly_mat_t F, slong nlo, slong nhi)
+{
+    const slong r = P->r;
+    slong * idx = FLINT_ARRAY_ALLOC(FLINT_MAX(r, 1), slong);
+    const slong nl = _kernel_long_rows(idx, P);
+    const slong ns = r - nl;
+
+    if (nl == 0 || ns == 0)
+        _kernel_mul_split_right(res, P, F, nlo, nhi);
+    else
+    {
+        nmod_poly_mat_t Ps, Pl, Rs, Rl;
+        _nmod_poly_mat_view_init_submatrix(Ps, P, idx, ns, NULL, P->c);
+        _nmod_poly_mat_view_init_submatrix(Pl, P, idx + ns, nl, NULL, P->c);
+        nmod_poly_mat_init(Rs, ns, F->c, P->modulus);
+        nmod_poly_mat_init(Rl, nl, F->c, P->modulus);
+        _kernel_mul_split_right(Rs, Ps, F, nlo, nhi);
+        _kernel_mul(Rl, Pl, F, nlo, nhi);
+        for (slong i = 0; i < r; i++)
+            for (slong j = 0; j < F->c; j++)
+                nmod_poly_swap(nmod_poly_mat_entry(res, idx[i], j),
+                               (i < ns) ? nmod_poly_mat_entry(Rs, i, j)
+                                        : nmod_poly_mat_entry(Rl, i - ns, j));
+        nmod_poly_mat_clear(Rs);
+        nmod_poly_mat_clear(Rl);
+        _nmod_poly_mat_view_clear(Ps);
+        _nmod_poly_mat_view_clear(Pl);
+    }
+    flint_free(idx);
+}
+
+/*------------------------------------------------------------*/
+/* zero rows                                                  */
+/*------------------------------------------------------------*/
+
+/* Kernel basis of pmat when pmat has at least one zero row and one nonzero
+ * row, by removing the zero rows (see [note:zero_rows]); same specification
+ * as nmod_poly_mat_kernel_zls_approx, with in addition rdeg = rdeg(pmat), -1
+ * on zero rows. With Z and N the indices of the zero and nonzero rows of
+ * pmat, the output rows are:
+ * - the unit vectors e_i, i in Z, of shifted degree shift[i] and pivot i;
+ * - the rows of a shift[N]-ordered weak Popov kernel basis of pmat[N,:]
+ *   (recursive call), with zeros inserted at the indices in Z: their shifted
+ *   degrees are unchanged, and the pivot index j becomes the j-th element
+ *   of N.
+ * The pivot indices are pairwise distinct; the rows are sorted by increasing
+ * pivot index, which gives a shift-ordered weak Popov kernel basis of pmat.
+ * pmat is overwritten: the entries of its nonzero rows are moved out. */
+static slong _kernel_zls_zero_rows(nmod_poly_mat_t ker,
+                                   slong * pivind,
+                                   slong * shift,
+                                   nmod_poly_mat_t pmat,
+                                   const slong * rdeg)
+{
+    const slong m = pmat->r;
+    const slong n = pmat->c;
+
+    /* idx: the nonzero rows, then the zero rows, in increasing order */
+    slong * idx = FLINT_ARRAY_ALLOC(m, slong);
+    slong nnz = 0;
+    for (slong i = 0; i < m; i++)
+        if (rdeg[i] >= 0)
+            idx[nnz++] = i;
+    for (slong i = 0, k = nnz; i < m; i++)
+        if (rdeg[i] < 0)
+            idx[k++] = i;
+
+    /* kernel of the nonzero rows */
+    nmod_poly_mat_t sub, subker;
+    nmod_poly_mat_init(sub, nnz, n, pmat->modulus);
+    nmod_poly_mat_init(subker, nnz, nnz, pmat->modulus);
+    slong * subshift = FLINT_ARRAY_ALLOC(nnz, slong);
+    slong * subpiv = FLINT_ARRAY_ALLOC(nnz, slong);
+    for (slong k = 0; k < nnz; k++)
+    {
+        subshift[k] = shift[idx[k]];
+        for (slong j = 0; j < n; j++)
+            nmod_poly_swap(nmod_poly_mat_entry(sub, k, j),
+                           nmod_poly_mat_entry(pmat, idx[k], j));
+    }
+    const slong subnull = nmod_poly_mat_kernel_zls_approx(subker, subpiv, subshift, sub);
+
+    /* merge, by increasing pivot index */
+    const slong nullity = (m - nnz) + subnull;
+    slong * zshift = FLINT_ARRAY_ALLOC(m - nnz, slong);
+    for (slong k = 0; k < m - nnz; k++)
+        zshift[k] = shift[idx[nnz + k]];
+    for (slong r = 0, k1 = 0, k2 = 0; r < nullity; r++)
+    {
+        for (slong j = 0; j < m; j++)
+            nmod_poly_zero(nmod_poly_mat_entry(ker, r, j));
+        if (k2 == m - nnz || (k1 < subnull && idx[subpiv[k1]] < idx[nnz + k2]))
+        {
+            for (slong j = 0; j < nnz; j++)
+                nmod_poly_swap(nmod_poly_mat_entry(ker, r, idx[j]),
+                               nmod_poly_mat_entry(subker, k1, j));
+            pivind[r] = idx[subpiv[k1]];
+            shift[r] = subshift[k1];
+            k1++;
+        }
+        else
+        {
+            nmod_poly_one(nmod_poly_mat_entry(ker, r, idx[nnz + k2]));
+            pivind[r] = idx[nnz + k2];
+            shift[r] = zshift[k2];
+            k2++;
+        }
+    }
+
+    nmod_poly_mat_clear(sub);
+    nmod_poly_mat_clear(subker);
+    flint_free(idx);
+    flint_free(subshift);
+    flint_free(subpiv);
+    flint_free(zshift);
+    return nullity;
+}
+
+/*------------------------------------------------------------*/
+/* Zhou-Labahn-Storjohann                                     */
+/*------------------------------------------------------------*/
+
 /* Follows the description of Zhou-Labahn-Storjohann algorithm in [LNVZ22, Algo.1]  */
 /* [LNVZ22] Labahn-Neiger-Vu-Zhou, Proceedings ISSAC 2022, arxiv.org/pdf/2202.09329 */
 slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
@@ -251,6 +470,13 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
 
     /* if n > m/2 (with here m >= 2), straightforward recursion by splitting */
     /* the matrix into two submatrices with n/2 columns                      */
+    /* TODO tune this threshold: for m slightly below 2n (e.g. after zero    */
+    /* rows are removed, see [note:zero_rows]), a single approximant basis   */
+    /* (case n <= m/2 below, order about 1 + sum(t) / (m - n)) can be faster */
+    /* at small degrees. Measured, 60-bit prime, 60 x 32 with row degrees    */
+    /* uniform in [0, 9], shift = row degrees: 9.5 ms with the split, 4.7 ms */
+    /* when splitting only if n > 2m/3 (56 x 32: 9.1 ms -> 3.4 ms); with row */
+    /* degrees up to 99, no difference.                                      */
     if (2*n > m)
     {
         /* we split pmat == [ n - n/2 cols | n/2 cols]                       */
@@ -279,7 +505,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
         /* overwrite left columns of pmat */
         nmod_poly_mat_window_init(submat, pmat, 0, n - n/2, m, n);
         nmod_poly_mat_window_init(residual, pmat, 0, 0, nullity, n/2);
-        nmod_poly_mat_multiply(residual, ker1, submat);
+        _kernel_mul_split(residual, ker1, submat, -1, 0);
         nmod_poly_mat_window_clear(submat);
 
         /* recursive call 2, on residual */
@@ -291,7 +517,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
         /* multiply bases and update pivind */
         nmod_poly_mat_init(ker3, nullity, m, pmat->modulus);
         nmod_poly_mat_window_init(submat, ker2, 0, 0, nullity, ker2->c);
-        nmod_poly_mat_multiply(ker3, submat, ker1);
+        _kernel_mul_split(ker3, submat, ker1, -1, 0);
         nmod_poly_mat_window_clear(submat);
         nmod_poly_mat_window_clear(ker1);
 
@@ -314,9 +540,9 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     /* here, we are in the case 1 <= n <= m/2 */
 
     /* `nnz` <-- the number of nonzero rows of `pmat` */
-    /* `buf` <-- `max(0, rdeg(pmat))` */
+    /* `buf` <-- `rdeg(pmat)`, -1 on zero rows        */
     slong * buf = FLINT_ARRAY_ALLOC(m, slong);
-    ulong nnz = nmod_poly_mat_row_degree_zero(buf, pmat, NULL);
+    ulong nnz = nmod_poly_mat_row_degree(buf, pmat, NULL);
 
     /* early exit: pmat == 0 => kernel is identity */
     if (nnz == 0)
@@ -328,31 +554,42 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
         return m;
     }
 
-    /* find max(rdeg(pmat)), and diff_shift = min(shift - buf) */
-    /* (see [note:diff_shift]) */
-    slong maxdeg = buf[0];
-    slong diff_shift = shift[0] - maxdeg;
-    for (slong i = 1; i < m; i++)
+    /* zero rows: kernel of the nonzero rows, completed by unit vectors */
+    /* (see [note:zero_rows])                                           */
+    if (nnz < (ulong) m)
     {
-        slong d = buf[i];
-        slong diff = shift[i] - d;
-        if (d > maxdeg)
-            maxdeg = d;
-        if (diff_shift > diff)
-            diff_shift = diff;
+        const slong nullity = _kernel_zls_zero_rows(ker, pivind, shift, pmat, buf);
+        flint_free(buf);
+        return nullity;
     }
 
-    /* build order for approximation (this choice diverges from [LNVZ22, Algo.1]): */
-    /*     order = 1 + max(maxdeg, 1 + floor((sum(shift) - 1) / (m - n)))          */
-    /* -> approx basis "generically" captures the whole kernel                     */
-    /* (see [note:choice_of_order] and [note:diff_shift] for explanations)         */
-    /* FIXME could be improved in case of unbalanced cdeg(pmat), e.g. based on     */
-    /* [LNVZ22, Theorem 3.3, Proof of Item (iii)], see also [note:degree_bounds]   */
-    slong order = - m * diff_shift - 1;
+    /* from here on, pmat has no zero row: buf = rdeg(pmat) >= 0 */
+
+    /* diff_shift = min(shift - buf) (see [note:diff_shift]) */
+    slong diff_shift = shift[0] - buf[0];
+    for (slong i = 1; i < m; i++)
+        if (diff_shift > shift[i] - buf[i])
+            diff_shift = shift[i] - buf[i];
+
+    /* approximation order (see [note:choice_of_order]), with                */
+    /* t = shift - diff_shift >= rdeg(pmat):                                 */
+    /*     order = 1 + dbound,                                               */
+    /*     dbound = 1 + floor((sum(t) - 1) / (m - n))                        */
+    /*            = ceil(sum(t) / (m - n))                                   */
+    /* generically, every row of a t-ordered weak Popov kernel basis has     */
+    /* t-degree <= dbound, so the approximant basis contains the kernel. The */
+    /* order depends on sum(t), not on deg(pmat): a few rows of large degree */
+    /* do not make it large. It is about half the order of                   */
+    /* [LNVZ22, Algo. 1].                                                    */
+    /* FIXME could be improved in case of unbalanced cdeg(pmat), e.g. based  */
+    /* on [LNVZ22, Theorem 3.3, Proof of Item (iii)], see also               */
+    /* [note:degree_bounds]                                                  */
+    slong order = - m * diff_shift - 1;  /* order <- sum(t) - 1 */
     for (slong i = 0; i < m; i++)
         order += shift[i];
-    order = 1 + order / (m - n);
-    order = 1 + FLINT_MAX(maxdeg, order);
+    /* C division rounds toward zero: the case sum(t) == 0, for which      */
+    /* dbound = 0 (then pmat is constant), is treated apart                */
+    order = (order < 0) ? 1 : 2 + order / (m - n);
 
     nmod_poly_mat_pmbasis(ker, shift, pmat, order);
 
@@ -388,7 +625,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     /* [2.] sum_pmatdeg is equal to the sum of pivot degrees of already identified kernel rows   */
     /* [3.] among the rows of `ker` that are possibly not in the kernel (those at indices from   */
     /*    `nullity` to `m-1`), none has a pivot index `i` which is such that both the pivot      */
-    /*     degree of that row is zero and the row `i` of the input matrix has degree <= 0        */
+    /*     degree of that row is zero and the row `i` of the input matrix has degree 0           */
     /* (see [note:early_exit] for more details)                                                  */
     if (nullity >= m - n && no_constant_pivot_and_row)  /* condition [1.] and [3.] */
     {
@@ -412,8 +649,18 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
 
     nmod_poly_mat_init(residual, m - nullity, n, pmat->modulus);
     nmod_poly_mat_window_init(approx, ker, nullity, 0, m, m);
-    nmod_poly_mat_mulmid(residual, approx, pmat, order, order + maxdeg + 1);
-    /* note: on non-generic input, one might want to check for zero rows in residual */
+    /* residual = (approx * pmat) div x^order; for each row p of approx,     */
+    /* rdeg(p * pmat) <= rdeg_t(p) = rdeg_s(p) - diff_shift, where rdeg_s(p) */
+    /* is the corresponding entry of shift (see [note:diff_shift])           */
+    slong nhi = order + 1;
+    for (slong i = nullity; i < m; i++)
+        nhi = FLINT_MAX(nhi, shift[i] - diff_shift + 1);
+    _kernel_mul_split(residual, approx, pmat, order, nhi);
+    /* a zero row of residual comes from a row of approx which is already in */
+    /* the kernel (with t-degree >= order); the recursive call handles it as */
+    /* a unit vector (see [note:zero_rows]). [LNVZ22, Algo. 1, line 24]      */
+    /* moves such rows to the kernel directly, which would save part of the  */
+    /* final product.                                                        */
 
     /* kernel of residual */
     nmod_poly_mat_init(ker2, m - nullity, m - nullity, pmat->modulus);
@@ -432,7 +679,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
     /* multiply to get missing part of kernel */
     nmod_poly_mat_window_init(ker2nz, ker2, 0, 0, nullity2, ker2->c);
     nmod_poly_mat_init(prod, nullity2, m, pmat->modulus);
-    nmod_poly_mat_multiply(prod, ker2nz, approx);
+    _kernel_mul_split(prod, ker2nz, approx, -1, 0);
     for (slong i = 0; i < nullity2; i++)
         for (slong j = 0; j < m; j++)
             FLINT_SWAP(nmod_poly_struct,
@@ -522,36 +769,87 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
 /** Expected degree / order for approximation in ZLS algorithm.
  *
  * [note:choice_of_order]
- * For the moment, the code in zls_approx, when n <= m/2, uses the approximation order
- *     order = 1 + max(maxdeg, 1 + floor((sum(shift) - 1) / (m - n)))
- * where maxdeg is deg(pmat) and shift >= rdeg(pmat) entry-wise
- * (more precisely, the code implicitly ensures min(shift - rdeg(pmat)) == 0)
+ * In the branch n <= m/2 of zls_approx, pmat has no zero row (see
+ * [note:zero_rows]) and the approximant basis is computed at order
+ *     order = 1 + dbound,
+ *     dbound = 1 + floor((sum(t) - 1) / (m - n)) = ceil(sum(t) / (m - n)),
+ * where t = shift - diff_shift satisfies t >= rdeg(pmat) entry-wise, with
+ * equality for at least one entry (see [note:diff_shift]). The two
+ * expressions of dbound are equal for any integer sum(t) >= 0; the code uses
+ * the first one.
  *
- * Note that any order > 0 is enough to guarantee that the algorithm terminates,
- * but order too small may impact performance. We pick order that is large
- * enough to provide the whole kernel in some generic/frequent situations.
+ * The choice of order only matters for efficiency. Any order > 0 gives a
+ * correct result: the rows of the approximant basis of t-degree < order are
+ * kernel rows (see [note:row_in_kernel]), and the missing kernel rows are
+ * obtained from the recursive call on the residual. The aim is that, in the
+ * generic case, the approximant basis already contains the whole kernel, so
+ * that the recursive call is skipped (see [note:early_exit]).
  *
- * -> `1 + maxdeg` is because any lower order is too low: it means ignoring top
- *  degree coefficients of `pmat`
+ * -> Why dbound. Let P be a t-ordered weak Popov kernel basis of pmat. It has
+ * nullity >= m - n rows (the rank of pmat is at most n), and
+ * sum(rdeg_t(P)) <= sum(t) since t >= rdeg(pmat) (Zhou-Labahn-Storjohann,
+ * 2012; [LNVZ22, Thm. 3.3 (iii)]). Generically, the entries of rdeg_t(P) are
+ * balanced: each is D = max(rdeg_t(P)) or D - 1. Then
+ * D + (nullity - 1) (D - 1) <= sum(t), hence
+ *     D <= ceil(sum(t) / nullity) <= ceil(sum(t) / (m - n)) = dbound < order,
+ * so that the rows of the approximant basis of t-degree < order form a
+ * kernel basis.
  *
- * -> the other term, `1 + dbound` where
- *      dbound = 1 + floor((sum(shift) - 1) / (m - n))
- * is because this is the expected maximum entry of the shift-row degree of a
- * shift-weak Popov kernel basis P, if degrees are balanced in a generic way.
+ * -> Why not deg(pmat). The order can be <= deg(pmat). A kernel row p with a
+ * nonzero entry at index i has rdeg_t(p) >= t[i] >= rdeg(pmat[i,:]): if
+ * t[i] >= order, p cannot be detected at this step, and it is obtained from
+ * the recursive call on the residual, as in the Zhou-Labahn-Storjohann
+ * algorithm. For balanced row degrees this does not happen: if all rows of
+ * pmat have degree d, then sum(t) >= m d, so dbound >= d and
+ * order > deg(pmat). It does happen when a few rows have much larger degree,
+ * e.g. [A ; b] in linear system solving with deg(b) about dim(A) deg(A):
+ * then, requiring order > deg(pmat) would mean an approximant basis at order
+ * about dim(A) deg(A), whereas dbound is a small multiple of deg(A). The
+ * products of the residual stage then have operands with a few long rows,
+ * which are handled by _kernel_mul_split.
  *
- * Indeed: let dbound = max(rdeg_s(P))
- * . sum(rdeg_s(P)) <= sum(s) is known (Zhou-Labahn-Storjohann, 2012)
- * . if we assume degrees are well balanced (which happens generically):
- * then rdeg_s(P) consists of `nullity` values all equal to dbound or dbound - 1
- * -> dbound + (nullity - 1) * (dbound - 1) <= sum(s)
- * -> dbound <= floor((sum(s) + (nullity - 1)) / nullity)
- *            = 1 + floor((sum(s) - 1) / nullity)                                        
- *           <= 1 + floor((sum(s) - 1) / (m - n)).
+ * -> Difference with [LNVZ22, Algo. 1]. The paper uses the order
+ * ceil(2 sum(t) / (m - n)), about twice ours: with it, at most (m + n) / 2
+ * rows of the approximant basis are not kernel rows [LNVZ22, Lemma 4.3,
+ * Cor. 4.4], which bounds the size of the residual in the cost analysis.
+ * Here the target is the generic case above. The order 1 + dbound still
+ * ensures that at least one kernel row is detected: if k rows of the
+ * approximant basis have t-degree >= order, then, since all t-degrees are
+ * nonnegative, k order <= sum(t) + n order (the sum of the t-degrees of
+ * the approximant basis), so k <= sum(t) / order + n < (m - n) + n = m.
  *
  * [note:row_in_kernel]
- * Note also that since s >= rdeg(pmat), we have rdeg(p*pmat) <= rdeg_s(p) < order
- * for any row vector p such that rdeg_s(p) <= dbound. So, approximants of pmat
- * whose s-degree is <= dbound are necessarily actual kernel rows p*pmat == 0.
+ * Since t >= rdeg(pmat), we have rdeg(p*pmat) <= rdeg_t(p) for any row vector
+ * p. So, an approximant p of pmat at order `order` with rdeg_t(p) < order
+ * (in particular, with rdeg_t(p) <= dbound) is an actual kernel row:
+ * p*pmat has degree < order and is zero modulo x^order, hence p*pmat == 0.
+ *
+ * [note:zero_rows]
+ * Let Z and N be the indices of the zero rows and of the nonzero rows of
+ * pmat. A row vector p is in the kernel of pmat if and only if p[N] is in the
+ * kernel of pmat[N,:], whatever p[Z]. Hence a kernel basis of pmat is formed
+ * by the unit vectors e_i for i in Z (s-degree s[i], s-pivot i), together
+ * with a kernel basis of pmat[N,:] extended by zeros at the indices in Z
+ * (which keeps its s-degrees and its s-pivots, renumbered). This is what
+ * _kernel_zls_zero_rows computes.
+ *
+ * Removing the zero rows only matters for efficiency. The order of
+ * [note:choice_of_order] assumes that the t-degrees of the m - n kernel rows
+ * are balanced, which the e_i break:
+ * - if t is small on Z (typically t[i] = 0 when shift = rdeg(pmat)), the e_i
+ *   use almost none of sum(t), and the other kernel rows, about |N| - n of
+ *   them, have t-degree about sum(t) / (|N| - n), which can exceed dbound =
+ *   ceil(sum(t) / (m - n)): they are only found through the residual;
+ * - if t is large on Z, t[Z] increases sum(t) and thus the order, although
+ *   it only concerns the e_i; if t[i] >= order, e_i itself is not detected,
+ *   and is recovered through the residual (typically from a zero row of it).
+ * When there is no zero row, this costs nothing, since the number of nonzero
+ * rows is computed anyway.
+ *
+ * Zero rows are only removed in the branch n <= m/2 (the column split passes
+ * them to its recursive calls). If |N| < 2n, the kernel of pmat[N,:] is
+ * computed by the column split, which at small degrees can be slower than a
+ * single approximant basis (see the TODO on the threshold of the split).
  */
 
 /** Minimizing the shift, and early exit.
@@ -561,11 +859,12 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
  * exit.
  *
  * [note:diff_shift]
- * Let's call `s` the shift `shift` before the call to `pmbasis` (currently around
- * line 350), and let `t` be the same shift but to which we subtract `diff_shift`
- * to all entries. The choice of `diff_shift` is such that the entries of `t` are
- * at least the row degree of `pmat`, indeed,
- * ```t[i] = s[i] - diff_shift >= s[i] - (s[i] - max(0,rdeg(pmat[i,:]))) >= rdeg(pmat[i,:]))```
+ * Let's call `s` the shift `shift` before the call to `pmbasis` in zls_approx
+ * (at this point, `pmat` has no zero row, see [note:zero_rows]), and let `t` be
+ * the same shift but to which we subtract `diff_shift` to all entries. The
+ * choice of `diff_shift` is such that the entries of `t` are at least the row
+ * degree of `pmat`, indeed,
+ * ```t[i] = s[i] - diff_shift >= s[i] - (s[i] - rdeg(pmat[i,:])) = rdeg(pmat[i,:])```
  * and in fact, `diff_shift` is the largest value such that this is true, or in
  * other words, it minimizes `t` while ensuring `t >= rdeg(pmat)` (i.e., any
  * larger `diff_shift` would lead to some entry of `t` being strictly less than
@@ -622,8 +921,8 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
  * that form the complement, so that the union of the $i$'s and the $j$'s gives
  * all row indices $\{0,\ldots,m-1\}$ of the input (or column indices of the
  * kernel). Finally, let $r_0,\ldots,r_{m-k-1}$ be the degrees of the $m-k$ rows
- * indexed by these $j$'s in the input matrix `pmat`, taken as `0` when the row is
- * zero.
+ * indexed by these $j$'s in the input matrix `pmat` (which has no zero row at
+ * this point, see [note:zero_rows]).
  * 
  * What we know is that $\delta_0 + \cdots + \delta_{k-1} \le r_0 + \cdots +
  * r_{m-k-1}$. This is possibly a strict inequality, even when we have found the
@@ -634,7 +933,7 @@ slong nmod_poly_mat_kernel_zls_approx(nmod_poly_mat_t ker,
  * same). But the inequality must remain valid, so, since we already had
  * equality, both sides must stay the same. What this means is that this kernel
  * row must have `s`-pivot degree `0`, and also, the corresponding row $\pi$ of
- * `pmat` must have degree `0` (or be zero).
+ * `pmat` must have degree `0`.
  *
  * This seems sufficient to make the existing early exit strategy correct without
  * impacting its efficiency: to make sure we can early exit, we just have to add a

@@ -385,6 +385,85 @@ int one_test_kernel(slong prime, slong rdim, slong cdim, slong len, flint_rand_t
     return res;
 }
 
+/** Tests with the row degrees as shift, and with the shifts of
+ * one_test_kernel */
+int _test_kernel_rdeg_and_usual_shifts(nmod_poly_mat_t mat, flint_rand_t state)
+{
+    int res;
+    const slong maxdim = FLINT_MAX(mat->r, mat->c);
+    slong * shift = flint_malloc(maxdim * sizeof(slong));
+
+    /* (only the first rdim entries are used for left kernels; the others,
+     * used for right kernels, are set to zero) */
+    if (_TEST_VERBOSE_) flint_printf("shift: row degrees\n");
+    for (slong i = 0; i < maxdim; i++)
+        shift[i] = 0;
+    nmod_poly_mat_row_degree_zero(shift, mat, NULL);
+    res = core_test_kernel(mat, shift);
+
+    _test_collection_shift_uniform(shift, maxdim);
+    res = res && core_test_kernel(mat, shift);
+
+    _test_collection_shift_increasing(shift, maxdim);
+    res = res && core_test_kernel(mat, shift);
+
+    _test_collection_shift_decreasing(shift, maxdim);
+    res = res && core_test_kernel(mat, shift);
+
+    _test_collection_shift_shuffle(shift, maxdim, state);
+    res = res && core_test_kernel(mat, shift);
+
+    flint_free(shift);
+    return res;
+}
+
+/** Test with a few rows of much larger degree than the others (as [A ; b]
+ * with deg(b) large in linear system solving), with the row degrees as
+ * shift and with the shifts of one_test_kernel */
+int one_test_kernel_unbalanced(slong prime, slong rdim, slong cdim, slong len, flint_rand_t state)
+{
+    nmod_poly_mat_t mat;
+    nmod_poly_mat_init(mat, rdim, cdim, prime);
+    nmod_poly_mat_randtest(mat, state, len);
+
+    /* a few long rows, of length up to 2 (rdim + 1) len + 1 */
+    const slong nlong = 1 + n_randint(state, FLINT_MAX(rdim / 3, 1));
+    for (slong k = 0; k < nlong; k++)
+    {
+        const slong i = n_randint(state, rdim);
+        const slong llen = 1 + n_randint(state, 2 * (rdim + 1) * len + 1);
+        for (slong j = 0; j < cdim; j++)
+            nmod_poly_randtest(nmod_poly_mat_entry(mat, i, j), state, llen);
+    }
+
+    int res = _test_kernel_rdeg_and_usual_shifts(mat, state);
+
+    nmod_poly_mat_clear(mat);
+    return res;
+}
+
+/** Test with some zero rows (possibly all), with the row degrees as shift
+ * and with the shifts of one_test_kernel */
+int one_test_kernel_zero_rows(slong prime, slong rdim, slong cdim, slong len, flint_rand_t state)
+{
+    nmod_poly_mat_t mat;
+    nmod_poly_mat_init(mat, rdim, cdim, prime);
+    nmod_poly_mat_randtest(mat, state, len);
+
+    const slong nzero = 1 + n_randint(state, rdim);
+    for (slong k = 0; k < nzero; k++)
+    {
+        const slong i = n_randint(state, rdim);
+        for (slong j = 0; j < cdim; j++)
+            nmod_poly_zero(nmod_poly_mat_entry(mat, i, j));
+    }
+
+    int res = _test_kernel_rdeg_and_usual_shifts(mat, state);
+
+    nmod_poly_mat_clear(mat);
+    return res;
+}
+
 /** Test against the whole testing collection */
 int collection_test_kernel(slong iter, flint_rand_t state)
 {
@@ -756,6 +835,21 @@ TEST_FUNCTION_START(nmod_poly_mat_kernel, state)
 
             if (!result)
                 TEST_FUNCTION_FAIL("prime = %wu, rdim = %wu, cdim = %wu, len = %wu\n",
+                                   prime, rdim, cdim, len);
+
+            /* a few rows of much larger degree */
+            const ulong ulen = 1 + n_randint(state, 10);
+            result = one_test_kernel_unbalanced(prime, rdim, cdim, ulen, state);
+
+            if (!result)
+                TEST_FUNCTION_FAIL("(unbalanced) prime = %wu, rdim = %wu, cdim = %wu, len = %wu\n",
+                                   prime, rdim, cdim, ulen);
+
+            /* some zero rows */
+            result = one_test_kernel_zero_rows(prime, rdim, cdim, len, state);
+
+            if (!result)
+                TEST_FUNCTION_FAIL("(zero rows) prime = %wu, rdim = %wu, cdim = %wu, len = %wu\n",
                                    prime, rdim, cdim, len);
         }
     }
