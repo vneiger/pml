@@ -13,10 +13,12 @@
 
 #include <flint/flint.h>
 #include <flint/nmod.h>
+#include <flint/nmod_mat.h>
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
 #include <flint/ulong_extras.h>
 
+#include "nmod_poly_mat_determinant.h"
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_inverse.h"
 #include "nmod_poly_mat_kernel.h"
@@ -314,4 +316,307 @@ int nmod_poly_mat_linsolve_via_kernel(nmod_poly_mat_t u,
     flint_free(shift);
     flint_free(pivind);
     return (best >= 0);
+}
+
+/*------------------------------------------------------------*/
+/* square systems: common tools                               */
+/*------------------------------------------------------------*/
+
+/* Degree bounds for u A = den b, with A square n x n (n >= 1) and b nonzero
+ * (see nmod_poly_mat_linsolve_via_series in nmod_poly_mat_linsolve.h):
+ * deg(det(A)) <= D, and the entries of b adj(A) have degree at most N.
+ * Returns 0 if A has a zero row or a zero column (then A is singular), and 1
+ * otherwise. */
+static int _linsolve_degree_bounds(slong * N, slong * D,
+                                   const nmod_poly_mat_t A,
+                                   const nmod_poly_mat_t b)
+{
+    const slong n = A->r;
+    slong * rdeg = FLINT_ARRAY_ALLOC(n, slong);
+    slong * cdeg = FLINT_ARRAY_ALLOC(n, slong);
+    const ulong nzr = nmod_poly_mat_row_degree(rdeg, A, NULL);
+    const ulong nzc = nmod_poly_mat_column_degree(cdeg, A, NULL);
+    const int ok = (nzr == (ulong) n && nzc == (ulong) n);
+    if (ok)
+    {
+        slong sum_r = 0, sum_c = 0, min_r = rdeg[0], degb = -1, max_bc = WORD_MIN;
+        for (slong k = 0; k < n; k++)
+        {
+            const slong dbk = nmod_poly_degree(nmod_poly_mat_entry(b, 0, k));
+            sum_r += rdeg[k];
+            sum_c += cdeg[k];
+            min_r = FLINT_MIN(min_r, rdeg[k]);
+            degb = FLINT_MAX(degb, dbk);
+            if (dbk >= 0)
+                max_bc = FLINT_MAX(max_bc, dbk - cdeg[k]);
+        }
+        *D = FLINT_MIN(sum_r, sum_c);
+        *N = FLINT_MIN(degb + sum_r - min_r, max_bc + sum_c);
+    }
+    flint_free(rdeg);
+    flint_free(cdeg);
+    return ok;
+}
+
+/* Finds a such that A(a) is invertible, for A square n x n with n >= 1: a =
+ * 0 if A(0) is invertible, and otherwise a random value, among a few trials
+ * (if A is nonsingular, at most deg(det(A)) values are unsuitable). Returns 1
+ * if such an a was found, and 0 otherwise. */
+static int _linsolve_expansion_point(ulong * a, const nmod_poly_mat_t A,
+                                     flint_rand_t state)
+{
+    const slong n = A->r;
+    nmod_mat_t M;
+    nmod_mat_init(M, n, n, A->modulus);
+    int found = 0;
+    for (slong trial = 0; trial < 8 && !found; trial++)
+    {
+        *a = (trial == 0) ? 0 : n_randint(state, A->modulus);
+        nmod_poly_mat_evaluate_nmod(M, A, *a);
+        found = (nmod_mat_rank(M) == n);
+    }
+    nmod_mat_clear(M);
+    return found;
+}
+
+/* B = A(x + a), entrywise (B may alias A) */
+static void _linsolve_taylor_shift(nmod_poly_mat_t B, const nmod_poly_mat_t A, ulong a)
+{
+    for (slong i = 0; i < A->r; i++)
+        for (slong j = 0; j < A->c; j++)
+            nmod_poly_taylor_shift(nmod_poly_mat_entry(B, i, j),
+                                   nmod_poly_mat_entry(A, i, j), a);
+}
+
+/* makes den (nonzero) monic, dividing the entries of u by the same constant */
+static void _linsolve_make_monic(nmod_poly_mat_t u, nmod_poly_t den)
+{
+    const ulong lc = den->coeffs[den->length - 1];
+    if (lc != 1)
+    {
+        const ulong inv = nmod_inv(lc, den->mod);
+        nmod_poly_scalar_mul_nmod(den, den, inv);
+        nmod_poly_mat_scalar_mul_nmod(u, u, inv);
+    }
+}
+
+/* divides den (nonzero) and the entries of u by their gcd */
+static void _linsolve_reduce(nmod_poly_mat_t u, nmod_poly_t den)
+{
+    nmod_poly_t g;
+    nmod_poly_init_mod(g, den->mod);
+    nmod_poly_set(g, den);
+    for (slong j = 0; j < u->c && nmod_poly_degree(g) > 0; j++)
+        nmod_poly_gcd(g, g, nmod_poly_mat_entry(u, 0, j));
+    if (nmod_poly_degree(g) > 0)
+    {
+        nmod_poly_divexact(den, den, g);
+        for (slong j = 0; j < u->c; j++)
+            nmod_poly_divexact(nmod_poly_mat_entry(u, 0, j), nmod_poly_mat_entry(u, 0, j), g);
+    }
+    nmod_poly_clear(g);
+}
+
+/*------------------------------------------------------------*/
+/* solution over the polynomials, via power series            */
+/*------------------------------------------------------------*/
+
+/* Rational reconstruction: for s = r / q mod x^(Np + D + 1), with deg(r) <=
+ * Np, deg(q) <= D, q(0) != 0, and Np >= D - 1, computes q in lowest terms,
+ * up to a constant factor (if s is not of this form, q is some polynomial of
+ * degree at most D).
+ *
+ * The coefficients of degree Np + 1 to Np + D of q s are those of degree D to
+ * 2 D - 1 of q t, where t = (s div x^(Np - D + 1)) mod x^(2 D): the low part
+ * s mod x^(Np - D + 1), multiplied by q, has degree at most Np. Hence q is
+ * the denominator of the fraction t' / q with deg(t') < D and t' = q t mod
+ * x^(2 D): the cofactor of t in the first remainder of degree less than D in
+ * the Euclidean algorithm on (x^(2 D), t), which also gives it in lowest
+ * terms (any solution (t', q) of these constraints is a polynomial multiple
+ * of this remainder and its cofactors, since deg(t') + deg(q) < 2 D). It is
+ * m11 in the output of nmod_poly_hgcd: the remainders A, B with deg(A) >= D >
+ * deg(B) satisfy B = +- (m11 t - m21 x^(2 D)). */
+static void _linsolve_reconstruct_den(nmod_poly_t q, const nmod_poly_t s, slong Np, slong D)
+{
+    if (D == 0)
+    {
+        nmod_poly_one(q);
+        return;
+    }
+
+    nmod_poly_t t;
+    nmod_poly_init_mod(t, s->mod);
+    nmod_poly_shift_right(t, s, Np - D + 1);
+    nmod_poly_truncate(t, 2 * D);
+
+    if (nmod_poly_is_zero(t))
+        nmod_poly_one(q);
+    else
+    {
+        nmod_poly_t a, m12, m21, m22, Ar, Br;
+        nmod_poly_init_mod(a, s->mod);
+        nmod_poly_init_mod(m12, s->mod);
+        nmod_poly_init_mod(m21, s->mod);
+        nmod_poly_init_mod(m22, s->mod);
+        nmod_poly_init_mod(Ar, s->mod);
+        nmod_poly_init_mod(Br, s->mod);
+        nmod_poly_set_coeff_ui(a, 2 * D, 1);
+        nmod_poly_hgcd(q, m12, m21, m22, Ar, Br, a, t);
+        nmod_poly_clear(a);
+        nmod_poly_clear(m12);
+        nmod_poly_clear(m21);
+        nmod_poly_clear(m22);
+        nmod_poly_clear(Ar);
+        nmod_poly_clear(Br);
+    }
+    nmod_poly_clear(t);
+}
+
+/* solver of X A = B mod x^prec, A(0) invertible (see @ref SeriesSolve) */
+typedef int (*_linsolve_series_solver_t)(nmod_poly_mat_t X,
+                                         const nmod_poly_mat_t A,
+                                         const nmod_poly_mat_t B,
+                                         slong prec);
+
+static int _solve_series_dixon_default_order(nmod_poly_mat_t X,
+                                             const nmod_poly_mat_t A,
+                                             const nmod_poly_mat_t B,
+                                             slong prec)
+{
+    return nmod_poly_mat_solve_series_dixon(X, A, B, 0, prec);
+}
+
+/* nmod_poly_mat_linsolve_via_series, with the power series solutions
+ * computed by `series`; `name` is used in exceptions */
+static int _linsolve_via_series(nmod_poly_mat_t u, nmod_poly_t den,
+                                const nmod_poly_mat_t A, const nmod_poly_mat_t b,
+                                linsolve_den_t den_method,
+                                _linsolve_series_solver_t series,
+                                const char * name)
+{
+    const slong n = A->r;
+
+    if (A->c != n)
+        flint_throw(FLINT_ERROR, "Exception (%s). Non-square matrix.\n", name);
+    if (den_method != LINSOLVE_RECONSTRUCTION && den_method != LINSOLVE_DETERMINANT)
+        flint_throw(FLINT_ERROR, "Exception (%s). Invalid den_method.\n", name);
+
+    if (n == 0 || nmod_poly_mat_is_zero(b))
+    {
+        nmod_poly_mat_zero(u);
+        nmod_poly_one(den);
+        return 1;
+    }
+
+    /* degree bounds, and expansion point a: A(a) invertible */
+    slong N, D;
+    ulong a = 0;
+    flint_rand_t state;
+    flint_rand_init(state);
+    const int ok = _linsolve_degree_bounds(&N, &D, A, b)
+                   && _linsolve_expansion_point(&a, A, state);
+    if (!ok)
+    {
+        flint_rand_clear(state);
+        return nmod_poly_mat_linsolve_via_kernel(u, den, A, b);
+    }
+
+    const ulong p = A->modulus;
+
+    /* solve with A1 = A(x + a), b1 = b(x + a), whose constant coefficient A1(0) = A(a) is invertible */
+    nmod_poly_mat_t As, bs;
+    const nmod_poly_mat_struct * A1 = A;
+    const nmod_poly_mat_struct * b1 = b;
+    if (a != 0)
+    {
+        nmod_poly_mat_init(As, n, n, p);
+        nmod_poly_mat_init(bs, 1, n, p);
+        _linsolve_taylor_shift(As, A, a);
+        _linsolve_taylor_shift(bs, b, a);
+        A1 = As;
+        b1 = bs;
+    }
+
+    nmod_poly_mat_t X, w;
+    nmod_poly_t q;
+    nmod_poly_mat_init(X, 1, n, p);
+    nmod_poly_mat_init(w, 1, n, p);
+    nmod_poly_init(q, p);
+
+    int done = 0;
+    int have_X = 0;
+    if (den_method == LINSOLVE_RECONSTRUCTION)
+    {
+        /* X = b1 A1^{-1} mod x^prec, prec = Np + D + 1, then q = denominator
+         * of a random linear combination s of its entries, and w = q X mod
+         * x^prec: if w has degree at most Np, then w / q is the solution in
+         * lowest terms (see nmod_poly_mat_linsolve_via_series in
+         * nmod_poly_mat_linsolve.h) */
+        const slong Np = FLINT_MAX(N, D - 1);
+        const slong prec = Np + D + 1;
+        series(X, A1, b1, prec);
+        have_X = 1;
+
+        nmod_poly_t s;
+        nmod_poly_init(s, p);
+        for (slong trial = 0; trial < 3 && !done; trial++)
+        {
+            nmod_poly_zero(s);
+            for (slong j = 0; j < n; j++)
+                nmod_poly_scalar_addmul_nmod(s, nmod_poly_mat_entry(X, 0, j), n_randint(state, p));
+            _linsolve_reconstruct_den(q, s, Np, D);
+
+            done = (! nmod_poly_is_zero(q) && q->coeffs[0] != 0);
+            for (slong j = 0; j < n && done; j++)
+            {
+                nmod_poly_struct * wj = nmod_poly_mat_entry(w, 0, j);
+                nmod_poly_mullow(wj, q, nmod_poly_mat_entry(X, 0, j), prec);
+                done = (wj->length <= Np + 1);
+            }
+        }
+        nmod_poly_clear(s);
+    }
+
+    if (!done)
+    {
+        /* w = det(A1) X mod x^(N+1), which is b1 adj(A1), and then w and
+         * det(A1) are divided by their gcd */
+        if (!have_X)
+            series(X, A1, b1, N + 1);
+        nmod_poly_mat_determinant(q, A1);
+        for (slong j = 0; j < n; j++)
+            nmod_poly_mullow(nmod_poly_mat_entry(w, 0, j), q, nmod_poly_mat_entry(X, 0, j), N + 1);
+        _linsolve_reduce(w, q);
+    }
+
+    /* back to x: w(x - a), q(x - a) */
+    if (a != 0)
+    {
+        const ulong mina = p - a;
+        _linsolve_taylor_shift(w, w, mina);
+        nmod_poly_taylor_shift(q, q, mina);
+        nmod_poly_mat_clear(As);
+        nmod_poly_mat_clear(bs);
+    }
+    _linsolve_make_monic(w, q);
+
+    nmod_poly_mat_swap_entrywise(u, w);
+    nmod_poly_swap(den, q);
+
+    nmod_poly_mat_clear(X);
+    nmod_poly_mat_clear(w);
+    nmod_poly_clear(q);
+    flint_rand_clear(state);
+    return 1;
+}
+
+int nmod_poly_mat_linsolve_via_series(nmod_poly_mat_t u,
+                                      nmod_poly_t den,
+                                      const nmod_poly_mat_t A,
+                                      const nmod_poly_mat_t b,
+                                      linsolve_den_t den_method)
+{
+    return _linsolve_via_series(u, den, A, b, den_method,
+                                _solve_series_dixon_default_order,
+                                "nmod_poly_mat_linsolve_via_series");
 }
