@@ -251,6 +251,52 @@ int nmod_poly_mat_linsolve_via_series(nmod_poly_mat_t u,
                                       const nmod_poly_mat_t b,
                                       linsolve_den_t den_method);
 
+/** Computes `u` and `den` such that `u A = den b` (see @ref PolySolve), for a
+ * square matrix `A`, by evaluation and interpolation. Same specification as
+ * ::nmod_poly_mat_linsolve_via_series (there is no random choice here).
+ *
+ * Algorithm, for `A` of size `n x n` with `n >= 1`, and `b` nonzero: with the
+ * degree bounds `N` and `D` of ::nmod_poly_mat_linsolve_via_series, the
+ * determinant of `A` and the numerators `b adj(A)` of Cramer's rule have
+ * degree less than `L = max(N, D) + 1`. They are evaluated at `L` points in
+ * geometric progression, and interpolated:
+ *  - at each point `a`, `A(a)` and `b(a)` are obtained by multipoint
+ *  evaluation (for `A`, by chunks of points, to limit the memory); then
+ *  `det(A(a))` and `b(a) adj(A(a)) = det(A(a)) b(a) A(a)^{-1}` are obtained
+ *  from an LU decomposition of `A(a)`;
+ *  - if `A(a)` is singular, `b(a) adj(A(a))` is zero if `A(a)` has rank less
+ *  than `n - 1`, and otherwise it is computed from vectors `v` and `w` such
+ *  that `A(a) v = 0` and `w A(a) = 0`: then `adj(A(a)) = c v w` for some
+ *  constant `c`, found from one cofactor;
+ *  - the interpolated `b adj(A)` and `det(A)` are divided by their gcd.
+ *
+ * If the interpolated determinant is zero (`A` is singular), or if the
+ * modulus does not allow `L` points in geometric progression (it must be a
+ * prime at least `10 L`, see `NMOD_POLY_CAN_USE_GEOMETRIC`), the solution is
+ * computed by ::nmod_poly_mat_linsolve_via_kernel.
+ *
+ * Cost: for `A` of degree `d` (and `b` of degree at most `d`), `L` is about
+ * `n d`, and the `L` LU decompositions cost `O(n^3 L) = O(n^4 d)`, which is
+ * the dominant part except for small `n`; the evaluations cost `O~(n^2 L)`
+ * and the interpolations `O~(n L)`. Memory: about `(2 n + 1) L` words for
+ * the values at the points, and at most `max(n^2 (d + 1), 2^22)` words for
+ * the evaluations of `A` at a chunk of points.
+ */
+int nmod_poly_mat_linsolve_geometric(nmod_poly_mat_t u,
+                                     nmod_poly_t den,
+                                     const nmod_poly_mat_t A,
+                                     const nmod_poly_mat_t b);
+
+/** Same as ::nmod_poly_mat_linsolve_geometric, with `chunk` points per chunk
+ * for the evaluation of `A` (increased to `deg(A) + 1` if it is smaller, and
+ * reduced to the number of points if it is larger; for `chunk <= 0`, the
+ * default choice). For tests and profiles. */
+int _nmod_poly_mat_linsolve_geometric(nmod_poly_mat_t u,
+                                      nmod_poly_t den,
+                                      const nmod_poly_mat_t A,
+                                      const nmod_poly_mat_t b,
+                                      slong chunk);
+
 //@} // doxygen group: Solution over the polynomials
 
 #ifdef __cplusplus

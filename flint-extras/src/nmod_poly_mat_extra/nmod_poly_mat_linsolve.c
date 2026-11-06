@@ -16,8 +16,12 @@
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly.h>
 #include <flint/nmod_poly_mat.h>
+#include <flint/nmod_vec.h>
+#include <flint/perm.h>
 #include <flint/ulong_extras.h>
 
+#include "nmod_extra.h"       /* for nmod_find_root */
+#include "nmod_poly_extra.h"  /* for NMOD_POLY_CAN_USE_GEOMETRIC */
 #include "nmod_poly_mat_determinant.h"
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_inverse.h"
@@ -619,4 +623,273 @@ int nmod_poly_mat_linsolve_via_series(nmod_poly_mat_t u,
     return _linsolve_via_series(u, den, A, b, den_method,
                                 _solve_series_dixon_default_order,
                                 "nmod_poly_mat_linsolve_via_series");
+}
+
+/*------------------------------------------------------------*/
+/* solution over the polynomials, by evaluation/interpolation */
+/*------------------------------------------------------------*/
+
+/* u = b adj(M), for a constant n x n matrix M which is singular (n >= 1) and
+ * a constant vector b of length n. For n >= 2: adj(M) is zero if rank(M) <
+ * n - 1, and otherwise, since M adj(M) = adj(M) M = det(M) I = 0, adj(M) =
+ * lambda v w for nonzero vectors v and w such that M v = 0 and w M = 0, so
+ * that u = lambda (b v) w. The scalar lambda is found from one entry:
+ * adj(M)[k,j] = (-1)^(j+k) det(M without row j and column k), for indices j,
+ * k such that w[j] and v[k] are nonzero. */
+static void _linsolve_adjugate_singular(nn_ptr u, const nmod_mat_t M, nn_srcptr b, nmod_t mod)
+{
+    const slong n = M->r;
+
+    if (n == 1)  /* adj(M) = [1] */
+    {
+        u[0] = b[0];
+        return;
+    }
+
+    _nmod_vec_zero(u, n);
+    if (nmod_mat_rank(M) < n - 1)
+        return;
+
+    /* v: right kernel of M; w: right kernel of M^T */
+    nmod_mat_t K, Mt, Kt;
+    nmod_mat_init(K, n, n, mod.n);
+    nmod_mat_init(Mt, n, n, mod.n);
+    nmod_mat_init(Kt, n, n, mod.n);
+    nmod_mat_nullspace(K, M);
+    nmod_mat_transpose(Mt, M);
+    nmod_mat_nullspace(Kt, Mt);
+
+    slong j0 = 0, k0 = 0;
+    while (nmod_mat_entry(Kt, j0, 0) == 0)
+        j0++;
+    while (nmod_mat_entry(K, k0, 0) == 0)
+        k0++;
+
+    /* c = (-1)^(j0+k0) det(M without row j0 and column k0) = adj(M)[k0,j0] */
+    nmod_mat_t S;
+    nmod_mat_init(S, n - 1, n - 1, mod.n);
+    for (slong i = 0, ii = 0; i < n; i++)
+    {
+        if (i == j0)
+            continue;
+        for (slong k = 0, kk = 0; k < n; k++)
+            if (k != k0)
+                nmod_mat_entry(S, ii, kk++) = nmod_mat_entry(M, i, k);
+        ii++;
+    }
+    ulong c = nmod_mat_det(S);
+    if ((j0 + k0) & 1)
+        c = nmod_neg(c, mod);
+
+    /* lambda (b v) = c (b v) / (v[k0] w[j0]) */
+    ulong bv = 0;
+    for (slong k = 0; k < n; k++)
+        bv = nmod_add(bv, nmod_mul(b[k], nmod_mat_entry(K, k, 0), mod), mod);
+    const ulong vw = nmod_mul(nmod_mat_entry(K, k0, 0), nmod_mat_entry(Kt, j0, 0), mod);
+    const ulong scale = nmod_mul(nmod_mul(c, bv, mod), nmod_inv(vw, mod), mod);
+    for (slong j = 0; j < n; j++)
+        u[j] = nmod_mul(scale, nmod_mat_entry(Kt, j, 0), mod);
+
+    nmod_mat_clear(S);
+    nmod_mat_clear(K);
+    nmod_mat_clear(Mt);
+    nmod_mat_clear(Kt);
+}
+
+int _nmod_poly_mat_linsolve_geometric(nmod_poly_mat_t u,
+                                      nmod_poly_t den,
+                                      const nmod_poly_mat_t A,
+                                      const nmod_poly_mat_t b,
+                                      slong chunk)
+{
+    const slong n = A->r;
+
+    if (A->c != n)
+        flint_throw(FLINT_ERROR, "Exception (nmod_poly_mat_linsolve_geometric). Non-square matrix.\n");
+
+    if (n == 0 || nmod_poly_mat_is_zero(b))
+    {
+        nmod_poly_mat_zero(u);
+        nmod_poly_one(den);
+        return 1;
+    }
+
+    /* det(A) and b adj(A) have degree less than L; the L points are q^k,
+     * k < L, with q = r^2 for r of order at least 2 L */
+    slong N, D;
+    if (! _linsolve_degree_bounds(&N, &D, A, b))
+        return nmod_poly_mat_linsolve_via_kernel(u, den, A, b);
+    const slong L = FLINT_MAX(N, D) + 1;
+    const ulong p = A->modulus;
+    if (! NMOD_POLY_CAN_USE_GEOMETRIC(p, L) || ! n_is_prime(p))
+        return nmod_poly_mat_linsolve_via_kernel(u, den, A, b);
+    nmod_t mod;
+    nmod_init(&mod, p);
+    const ulong r = nmod_find_root(2 * L, mod);
+    if (r == 0)
+        return nmod_poly_mat_linsolve_via_kernel(u, den, A, b);
+
+    /* lengths: lenA <= D + 1 <= L (an entry has degree at most its row
+     * degree) and lenb <= N + 1 <= L (N >= deg(b)) */
+    const slong lenA = nmod_poly_mat_max_length(A);
+    const slong lenb = nmod_poly_mat_max_length(b);
+
+    /* G: the L points, for the evaluation of b and the interpolations;
+     * Gc: the first c points, for the evaluation of A by chunks of c points:
+     * f(q^(k0 + k)) = f_{k0}(q^k) with f_{k0}(x) = f(q^k0 x), whose
+     * coefficients are those of f scaled by the powers of z = q^k0. By
+     * default, the chunks hold at most max(n^2 lenA, 2^22) values: longer
+     * chunks make fewer and longer products, which are more efficient */
+    if (chunk <= 0)
+        chunk = (WORD(1) << 22) / (n * n);
+    const slong c = FLINT_MIN(L, FLINT_MAX(lenA, chunk));
+    nmod_geometric_progression_t G, Gc;
+    _nmod_geometric_progression_init_function(G, r, L, mod, UWORD(3));
+    _nmod_geometric_progression_init_fft(G, lenb, L, 0);
+    _nmod_geometric_progression_init_function(Gc, r, c, mod, UWORD(1));
+    _nmod_geometric_progression_init_fft(Gc, lenA, 0, 0);
+
+    /* evb[j*L + k] = b[j](q^k) */
+    nn_ptr evb = _nmod_vec_init(n * L);
+    for (slong j = 0; j < n; j++)
+    {
+        const nmod_poly_struct * f = nmod_poly_mat_entry(b, 0, j);
+        _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(evb + j * L, f->coeffs, f->length, G, L, mod);
+    }
+
+    /* vals[k] = det(A(q^k)); vals[(1+j)*L + k] = (b adj(A))[j](q^k) */
+    nn_ptr vals = _nmod_vec_init((n + 1) * L);
+
+    /* chunk: ev[(i*n + j)*c + k] = A[i][j](q^(k0 + k)) */
+    nn_ptr ev = _nmod_vec_init(n * n * c);
+    nn_ptr zpow = _nmod_vec_init(lenA);
+    nn_ptr scaled = _nmod_vec_init(lenA);
+    const ulong q = nmod_mul(r, r, mod);
+    const ulong qc = nmod_pow_ui(q, c, mod);
+    ulong z = 1;
+
+    nmod_mat_t M, PB, X;
+    nmod_mat_init(M, n, n, p);
+    nmod_mat_init(PB, n, 1, p);
+    nmod_mat_init(X, n, 1, p);
+    slong * perm = _perm_init(n);
+    nn_ptr bpt = _nmod_vec_init(n);
+    nn_ptr upt = _nmod_vec_init(n);
+
+    for (slong k0 = 0; k0 < L; k0 += c)
+    {
+        const slong cl = FLINT_MIN(c, L - k0);
+
+        zpow[0] = 1;
+        for (slong t = 1; t < lenA; t++)
+            zpow[t] = nmod_mul(zpow[t - 1], z, mod);
+        for (slong i = 0; i < n; i++)
+            for (slong j = 0; j < n; j++)
+            {
+                const nmod_poly_struct * f = nmod_poly_mat_entry(A, i, j);
+                nn_ptr v = ev + (i * n + j) * c;
+                if (f->length <= 1)
+                {
+                    const ulong f0 = (f->length == 1) ? f->coeffs[0] : 0;
+                    for (slong k = 0; k < cl; k++)
+                        v[k] = f0;
+                }
+                else
+                {
+                    for (slong t = 0; t < f->length; t++)
+                        scaled[t] = nmod_mul(f->coeffs[t], zpow[t], mod);
+                    _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(v, scaled, f->length, Gc, cl, mod);
+                }
+            }
+
+        for (slong k = 0; k < cl; k++)
+        {
+            /* M = A(q^(k0+k))^T, LU decomposition P M = L U; then
+             * det(A(pt)) = +- prod(U[i][i]) and, from M x = b(pt)^T,
+             * b(pt) adj(A(pt)) = det(A(pt)) x^T */
+            for (slong i = 0; i < n; i++)
+                for (slong j = 0; j < n; j++)
+                    nmod_mat_entry(M, j, i) = ev[(i * n + j) * c + k];
+            for (slong j = 0; j < n; j++)
+                bpt[j] = evb[j * L + k0 + k];
+
+            if (nmod_mat_lu(perm, M, 1) == n)
+            {
+                ulong d = 1;
+                for (slong i = 0; i < n; i++)
+                    d = nmod_mul(d, nmod_mat_entry(M, i, i), mod);
+                if (_perm_parity(perm, n))
+                    d = nmod_neg(d, mod);
+                for (slong i = 0; i < n; i++)
+                    nmod_mat_entry(PB, i, 0) = bpt[perm[i]];
+                nmod_mat_solve_tril(X, M, PB, 1);
+                nmod_mat_solve_triu(X, M, X, 0);
+                vals[k0 + k] = d;
+                for (slong j = 0; j < n; j++)
+                    vals[(1 + j) * L + k0 + k] = nmod_mul(d, nmod_mat_entry(X, j, 0), mod);
+            }
+            else
+            {
+                /* singular point (M was overwritten) */
+                for (slong i = 0; i < n; i++)
+                    for (slong j = 0; j < n; j++)
+                        nmod_mat_entry(M, i, j) = ev[(i * n + j) * c + k];
+                _linsolve_adjugate_singular(upt, M, bpt, mod);
+                vals[k0 + k] = 0;
+                for (slong j = 0; j < n; j++)
+                    vals[(1 + j) * L + k0 + k] = upt[j];
+            }
+        }
+
+        z = nmod_mul(z, qc, mod);
+    }
+
+    _perm_clear(perm);
+    nmod_mat_clear(M);
+    nmod_mat_clear(PB);
+    nmod_mat_clear(X);
+    _nmod_vec_clear(bpt);
+    _nmod_vec_clear(upt);
+    _nmod_vec_clear(ev);
+    _nmod_vec_clear(zpow);
+    _nmod_vec_clear(scaled);
+    _nmod_vec_clear(evb);
+
+    /* interpolation */
+    nmod_poly_mat_t w;
+    nmod_poly_t d;
+    nmod_poly_mat_init(w, 1, n, p);
+    nmod_poly_init(d, p);
+    nmod_poly_interpolate_geometric_nmod_vec_fast_precomp(d, vals, G, L);
+    int ok = ! nmod_poly_is_zero(d);
+    for (slong j = 0; j < n && ok; j++)
+        nmod_poly_interpolate_geometric_nmod_vec_fast_precomp(nmod_poly_mat_entry(w, 0, j),
+                                                            vals + (1 + j) * L, G, L);
+    _nmod_vec_clear(vals);
+    nmod_geometric_progression_clear(G);
+    nmod_geometric_progression_clear(Gc);
+
+    if (ok)
+    {
+        _linsolve_reduce(w, d);
+        _linsolve_make_monic(w, d);
+        nmod_poly_mat_swap_entrywise(u, w);
+        nmod_poly_swap(den, d);
+    }
+
+    nmod_poly_mat_clear(w);
+    nmod_poly_clear(d);
+
+    /* det(A) = 0: A is singular */
+    if (!ok)
+        return nmod_poly_mat_linsolve_via_kernel(u, den, A, b);
+    return 1;
+}
+
+int nmod_poly_mat_linsolve_geometric(nmod_poly_mat_t u,
+                                     nmod_poly_t den,
+                                     const nmod_poly_mat_t A,
+                                     const nmod_poly_mat_t b)
+{
+    return _nmod_poly_mat_linsolve_geometric(u, den, A, b, 0);
 }
