@@ -14,17 +14,7 @@
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly.h>
 #include "nmod_poly_mat_forms.h"
-
-// helper function for qsort
-static int _slong_comparator(const void * a, const void * b)
-{
-    if ( *(slong *)a  <  *(slong *)b )
-        return -1;
-    if ( *(slong *)a  == *(slong *)b )
-        return 0;
-    else // if ( *(slong *)a  >  *(slong *)b )
-        return 1;
-}
+#include "impl.h"  /* for _slong_comparator */
 
 /**********************************************************************
 *                              reduced                               *

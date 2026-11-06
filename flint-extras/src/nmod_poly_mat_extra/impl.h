@@ -64,6 +64,32 @@ void _reduce_against_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t 
                                    nmod_poly_t u, nmod_poly_t v);
 ulong _normalize_pivot_general_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other, slong i, slong j);
 
+/* comparator for qsort on slong's, increasing order */
+static inline int _slong_comparator(const void * a, const void * b)
+{
+    const slong x = *(const slong *) a;
+    const slong y = *(const slong *) b;
+    return (x > y) - (x < y);
+}
+
+/* Views (nmod_poly_mat_utils.c): a view of a polynomial matrix pmat is a
+ * polynomial matrix whose entries are shallow copies of (parts of) entries
+ * of pmat. No coefficient is copied: pmat must be left unchanged while the
+ * view is in use, and the view must be cleared by _nmod_poly_mat_view_clear
+ * (not by nmod_poly_mat_clear). */
+
+/* view = the submatrix of pmat with rows ridx[0..nr) and columns cidx[0..nc)
+ * (ridx, resp. cidx, NULL: the first nr rows, resp. nc columns, in order) */
+void _nmod_poly_mat_view_init_submatrix(nmod_poly_mat_t view, const nmod_poly_mat_t pmat,
+                                        const slong * ridx, slong nr,
+                                        const slong * cidx, slong nc);
+
+/* view = (pmat mod x^h) div x^k (requires k < h), with normalized entries */
+void _nmod_poly_mat_view_init_coeffs(nmod_poly_mat_t view, const nmod_poly_mat_t pmat,
+                                     slong k, slong h);
+
+void _nmod_poly_mat_view_clear(nmod_poly_mat_t view);
+
 
 /* ------------------------------------------------------------------------ */
 /* a few functions to help tests/profiles be more complete                  */

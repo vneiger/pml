@@ -181,6 +181,62 @@ void _nmod_poly_mat_permute_columns_by_sorting_vec(nmod_poly_mat_t mat,
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/* VIEWS (SHALLOW COPIES OF ENTRIES, see impl.h)              */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+void _nmod_poly_mat_view_init_submatrix(nmod_poly_mat_t view, const nmod_poly_mat_t pmat,
+                                        const slong * ridx, slong nr,
+                                        const slong * cidx, slong nc)
+{
+    nmod_poly_mat_init(view, nr, nc, pmat->modulus);
+    for (slong i = 0; i < nr; i++)
+        for (slong j = 0; j < nc; j++)
+            *nmod_poly_mat_entry(view, i, j) =
+                *nmod_poly_mat_entry(pmat, ridx ? ridx[i] : i, cidx ? cidx[j] : j);
+}
+
+void _nmod_poly_mat_view_init_coeffs(nmod_poly_mat_t view, const nmod_poly_mat_t pmat,
+                                     slong k, slong h)
+{
+    nmod_poly_mat_init(view, pmat->r, pmat->c, pmat->modulus);
+    for (slong i = 0; i < pmat->r; i++)
+    {
+        for (slong j = 0; j < pmat->c; j++)
+        {
+            const nmod_poly_struct * p = nmod_poly_mat_entry(pmat, i, j);
+            slong len = FLINT_MIN(p->length, h) - k;
+            while (len > 0 && p->coeffs[k + len - 1] == 0)
+                len--;
+            if (len > 0)
+            {
+                nmod_poly_struct * v = nmod_poly_mat_entry(view, i, j);
+                v->coeffs = p->coeffs + k;
+                v->alloc = len;
+                v->length = len;
+            }
+        }
+    }
+}
+
+void _nmod_poly_mat_view_clear(nmod_poly_mat_t view)
+{
+    for (slong i = 0; i < view->r; i++)
+    {
+        for (slong j = 0; j < view->c; j++)
+        {
+            nmod_poly_struct * v = nmod_poly_mat_entry(view, i, j);
+            v->coeffs = NULL;
+            v->alloc = 0;
+            v->length = 0;
+        }
+    }
+    nmod_poly_mat_clear(view);
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 /* COMBINED LEFT SHIFT AND ADDITION/SUBTRACTION               */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
