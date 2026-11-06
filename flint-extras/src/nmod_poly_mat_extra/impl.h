@@ -90,6 +90,37 @@ void _nmod_poly_mat_view_init_coeffs(nmod_poly_mat_t view, const nmod_poly_mat_t
 
 void _nmod_poly_mat_view_clear(nmod_poly_mat_t view);
 
+/* Evaluation at a geometric progression, by chunks of points
+ * (nmod_poly_mat_utils.c), as in nmod_poly_mat_det_geometric and
+ * nmod_poly_mat_linsolve_geometric. */
+
+/* vals[(i * pmat->c + j) * npts + k] = pmat[i][j](z q^k), for all entries
+ * (i, j) and 0 <= k < npts, where q = r^2 for the ratio r of G. G must be
+ * prepared for evaluation, with G->len at least npts and at least the length
+ * of the entries of pmat. Each entry f is evaluated as f(z x) at 1, q, ...,
+ * q^(npts-1): its coefficients are scaled by the powers of z (no scaling if
+ * z == 1). For the points q^k0, ..., q^(k0 + npts - 1), take z = q^k0. */
+void _nmod_poly_mat_evaluate_geometric(nn_ptr vals, const nmod_poly_mat_t pmat, ulong z,
+                                       const nmod_geometric_progression_t G, slong npts);
+
+/* Number of points per chunk for the evaluation of pmat at npts points by
+ * _nmod_poly_mat_evaluate_geometric: `chunk` if it is positive, and
+ * otherwise such that a chunk holds at most max(r c len, 2^22) values, where
+ * r x c are the dimensions of pmat and len the largest length of its entries
+ * (longer chunks make fewer and longer products, which are more efficient);
+ * in any case, at least len and at most npts (npts must be at least len). */
+slong _nmod_poly_mat_evaluate_geometric_chunk_length(const nmod_poly_mat_t pmat,
+                                                     slong npts, slong chunk);
+
+/* For a square n x n matrix A and an n x k matrix B, modulo a prime: if A is
+ * invertible, sets c = det(A) and X = A^{-1} B and returns 1; otherwise
+ * returns 0 (c and X undefined). A is overwritten by its LU decomposition
+ * (nmod_mat_lu). perm (n entries) and PB (n x k) are temporary storage
+ * provided by the caller, so that repeated calls do not allocate. X may
+ * alias B, but not A or PB. (nmod_poly_mat_det.c) */
+int _nmod_mat_det_solve_lu(ulong * c, nmod_mat_t X, nmod_mat_t A, const nmod_mat_t B,
+                           slong * perm, nmod_mat_t PB);
+
 
 /* ------------------------------------------------------------------------ */
 /* a few functions to help tests/profiles be more complete                  */

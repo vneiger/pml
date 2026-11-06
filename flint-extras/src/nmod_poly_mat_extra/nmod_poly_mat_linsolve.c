@@ -29,7 +29,8 @@
 #include "nmod_poly_mat_linsolve.h"
 #include "nmod_poly_mat_multiply.h"
 #include "nmod_poly_mat_utils.h"
-#include "impl.h"  /* for _pml_fft_small_single_transform */
+#include "impl.h"  /* for _pml_fft_small_single_transform, _nmod_mat_det_solve_lu,
+                      _nmod_poly_mat_evaluate_geometric */
 
 /*------------------------------------------------------------*/
 /* power series solution, Dixon's x-adic lifting              */
@@ -265,13 +266,21 @@ int nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
 /*------------------------------------------------------------*/
 
 /* For m x m A of degree at most e >= 1 with A(0) invertible, and inv = A^{-1}
- * mod x^e: replaces the slice S_s of A^{-1} (its coefficients of degree s e -
- * e + 1 to s e + e - 1, for some s >= 1) by S_{2s}. This is the row-wise
- * version of high_order_lift_inverse_odd in ntl-extras (mat_lzz_pX_linsolve):
+ * mod x^e: replaces the slice S_s of A^{-1} (its coefficients of degree
+ * s e - e + 1 to s e + e - 1, for some s >= 1) by S_{2s}:
  *   T = (S_s mod x^e) A mod x^e
  *   N = ((T S_s) div x^(e-1)) mod x^e
  *   M = ((N A) div x^e) mod x^(e-1)
- *   S_{2s} = N - x^e (M inv mod x^(e-1)) */
+ *   S_{2s} = N - x^e (M inv mod x^(e-1))
+ * This is the row-wise version of high_order_lift_inverse_odd in ntl-extras
+ * (mat_lzz_pX_linsolve). Why: T is the residue of Dixon's lifting for B = I
+ * at offset s e - e + 1 (see the comment of
+ * nmod_poly_mat_solve_series_high_order_lifting), so that the coefficients of
+ * A^{-1} from degree 2 s e - e + 1 on are those of T A^{-1} from degree s e
+ * on; the first e of them are N, as for the residues. For the other e - 1:
+ * W = A^{-1} div x^(2 s e - e + 1) = N + x^e W' is such that W A has degree
+ * less than e, hence W' A = -(N A) div x^e, and W' mod x^(e-1) = -(M inv)
+ * mod x^(e-1). */
 static void _hol_lift_slice(nmod_poly_mat_t slice, const nmod_poly_mat_t A,
                             const nmod_poly_mat_t inv, slong e)
 {
@@ -281,9 +290,8 @@ static void _hol_lift_slice(nmod_poly_mat_t slice, const nmod_poly_mat_t A,
     nmod_poly_mat_init(N, m, m, A->modulus);
     nmod_poly_mat_init(M, m, m, A->modulus);
 
-    nmod_poly_mat_set(T, slice);
-    nmod_poly_mat_truncate(T, e);
-    nmod_poly_mat_mulmid(T, T, A, 0, e);
+    /* T = (S_s mod x^e) A mod x^e: the product mod x^e only reads S_s mod x^e */
+    nmod_poly_mat_mulmid(T, slice, A, 0, e);
     nmod_poly_mat_mulmid(N, T, slice, e - 1, 2 * e - 1);
     nmod_poly_mat_mulmid(M, N, A, e, 2 * e - 1);
     nmod_poly_mat_mulmid(M, M, inv, 0, e - 1);
@@ -294,17 +302,26 @@ static void _hol_lift_slice(nmod_poly_mat_t slice, const nmod_poly_mat_t A,
     nmod_poly_mat_clear(M);
 }
 
-/* With e >= deg(A), the residues R_k of Dixon's lifting at order e, R_0 = B
- * (of degree less than e) and R_{k+1} = (R_k - Y_k A) div x^e with Y_k = R_k
- * A^{-1} mod x^e, satisfy R_{k+s} = (((R_k A^{-1}) div x^(s e)) mod x^e) A mod
- * x^e: with R_k A^{-1} = P + x^(s e) Q, P = R_k A^{-1} mod x^(s e), x^(s e)
- * R_{k+s} = R_k - P A by definition, so that R_{k+s} = Q A, which has degree
- * less than e. Since R_k has degree less than e, ((R_k A^{-1}) div x^(s e))
- * mod x^e = ((R_k S_s) div x^(e-1)) mod x^e, where S_s is the slice of
- * coefficients of degree s e - e + 1 to s e + e - 1 of A^{-1}. Starting from
- * R_0 and S_1, each step computes R_s, ..., R_{2s-1} from R_0, ..., R_{s-1}
- * (all residues are stacked in one matrix) and S_{2s} from S_s; then X = sum_k
- * x^(k e) Y_k mod x^prec. */
+/* High-order lifting, for e >= deg(A) and B of degree less than e.
+ *
+ * Residues. Dixon's lifting at order e defines R_0 = B and
+ *     Y_k = R_k A^{-1} mod x^e,   R_{k+1} = (R_k - Y_k A) div x^e,
+ * so that X = sum_k x^(k e) Y_k mod x^prec; each R_k has degree less than e.
+ *
+ * Jumping s steps. Write R_k A^{-1} = P + x^(s e) Q with deg(P) < s e. Then
+ * x^(s e) R_{k+s} = R_k - P A, hence R_{k+s} = Q A, and since R_{k+s} has
+ * degree less than e:
+ *     R_{k+s} = ((Q mod x^e) A) mod x^e.
+ *
+ * Slices. As R_k has degree less than e, Q mod x^e = ((R_k A^{-1}) div
+ * x^(s e)) mod x^e only involves the coefficients of A^{-1} of degree
+ * s e - e + 1 to s e + e - 1, that is, the slice S_s of A^{-1}:
+ *     Q mod x^e = ((R_k S_s) div x^(e-1)) mod x^e.
+ *
+ * Doubling. The residues R_0, ..., R_{s-1} are stacked in one matrix. One
+ * step computes R_s, ..., R_{2s-1} from them and S_s (two products), and
+ * S_{2s} from S_s (_hol_lift_slice). Starting from R_0 and S_1, about
+ * log2(nb) steps give the nb residues, then all Y_k come from one product. */
 int nmod_poly_mat_solve_series_high_order_lifting(nmod_poly_mat_t X,
                                                   const nmod_poly_mat_t A,
                                                   const nmod_poly_mat_t B,
@@ -359,17 +376,21 @@ int nmod_poly_mat_solve_series_high_order_lifting(nmod_poly_mat_t X,
     const slong R = nc * n;
     const slong nb = (prec + e - 1) / e;
 
-    /* inv = A^{-1} mod x^e, slice = S_1 (coefficients 1 to 2 e - 1) */
+    /* inv = A^{-1} mod x^e, and if nb > 1, slice = S_1 (coefficients 1 to
+     * 2 e - 1); with nb == 1, there is no doubling step and no slice */
     nmod_poly_mat_t inv, slice;
     nmod_poly_mat_init(inv, m, m, p);
-    if (! nmod_poly_mat_inv_series(inv, A, 2 * e))
+    if (! nmod_poly_mat_inv_series(inv, A, (nb > 1) ? 2 * e : e))
     {
         nmod_poly_mat_clear(inv);
         return 0;
     }
     nmod_poly_mat_init(slice, m, m, p);
-    nmod_poly_mat_shift_right_trunc(slice, inv, 1, 2 * e - 1);
-    nmod_poly_mat_truncate(inv, e);
+    if (nb > 1)
+    {
+        nmod_poly_mat_shift_right_trunc(slice, inv, 1, 2 * e - 1);
+        nmod_poly_mat_truncate(inv, e);
+    }
 
     /* res: the residues, R_k in rows [k R, (k+1) R) */
     nmod_poly_mat_t res, next, win;
@@ -592,21 +613,28 @@ static void _linsolve_reduce(nmod_poly_mat_t u, nmod_poly_t den)
 /* solution over the polynomials, via power series            */
 /*------------------------------------------------------------*/
 
-/* Rational reconstruction: for s = r / q mod x^(Np + D + 1), with deg(r) <=
- * Np, deg(q) <= D, q(0) != 0, and Np >= D - 1, computes q in lowest terms,
- * up to a constant factor (if s is not of this form, q is some polynomial of
- * degree at most D).
+/* Rational reconstruction of a denominator. Input: s = r / q mod
+ * x^(Np + D + 1) for polynomials r, q with deg(r) <= Np, deg(q) <= D and
+ * q(0) != 0, where Np >= D - 1. Output: q in lowest terms (the denominator of
+ * r / q after cancelling gcd(r, q)), up to a constant factor. If s is not of
+ * this form, the output is some polynomial of degree at most D.
  *
- * The coefficients of degree Np + 1 to Np + D of q s are those of degree D to
- * 2 D - 1 of q t, where t = (s div x^(Np - D + 1)) mod x^(2 D): the low part
- * s mod x^(Np - D + 1), multiplied by q, has degree at most Np. Hence q is
- * the denominator of the fraction t' / q with deg(t') < D and t' = q t mod
- * x^(2 D): the cofactor of t in the first remainder of degree less than D in
- * the Euclidean algorithm on (x^(2 D), t), which also gives it in lowest
- * terms (any solution (t', q) of these constraints is a polynomial multiple
- * of this remainder and its cofactors, since deg(t') + deg(q) < 2 D). It is
- * m11 in the output of nmod_poly_hgcd: the remainders A, B with deg(A) >= D >
- * deg(B) satisfy B = +- (m11 t - m21 x^(2 D)). */
+ * Only 2 D coefficients of s are needed. Write s = s_lo + x^(Np - D + 1)
+ * s_hi with deg(s_lo) <= Np - D, and t = s_hi mod x^(2 D), that is, the
+ * coefficients of s of degree Np - D + 1 to Np + D. Since q s = r mod
+ * x^(Np + D + 1) and deg(r) <= Np, the coefficients of q s of degree Np + 1
+ * to Np + D are zero; since deg(q s_lo) <= Np, these are the coefficients of
+ * q s_hi of degree D to 2 D - 1, which only depend on t. Hence
+ *     q t = t' mod x^(2 D),   with deg(t') < D and deg(q) <= D.
+ *
+ * The solutions (t', q) of this Pade problem come from the extended
+ * Euclidean algorithm on (x^(2 D), t): stop at the first remainder B of
+ * degree less than D, and write B = c1 t + c2 x^(2 D). Every solution is a
+ * polynomial multiple of (B, c1), since deg(t') + deg(q) < 2 D; so c1 is the
+ * denominator in lowest terms. nmod_poly_hgcd on (a, b) = (x^(2 D), t)
+ * returns remainders A, B with deg(A) >= D > deg(B), and a matrix M with
+ * (a, b) = M (A, B) and det(M) = +-1, so that
+ * B = +- (m11 t - m21 x^(2 D)): c1 = +- m11. */
 static void _linsolve_reconstruct_den(nmod_poly_t q, const nmod_poly_t s, slong Np, slong D)
 {
     if (D == 0)
@@ -669,7 +697,8 @@ static int _linsolve_via_series(nmod_poly_mat_t u, nmod_poly_t den,
 
     if (A->c != n)
         flint_throw(FLINT_ERROR, "Exception (%s). Non-square matrix.\n", name);
-    if (den_method != LINSOLVE_RECONSTRUCTION && den_method != LINSOLVE_DETERMINANT)
+    if (den_method != NMOD_POLY_MAT_LINSOLVE_RECONSTRUCTION
+        && den_method != NMOD_POLY_MAT_LINSOLVE_DETERMINANT)
         flint_throw(FLINT_ERROR, "Exception (%s). Invalid den_method.\n", name);
 
     if (n == 0 || nmod_poly_mat_is_zero(b))
@@ -716,7 +745,7 @@ static int _linsolve_via_series(nmod_poly_mat_t u, nmod_poly_t den,
 
     int done = 0;
     int have_X = 0;
-    if (den_method == LINSOLVE_RECONSTRUCTION)
+    if (den_method == NMOD_POLY_MAT_LINSOLVE_RECONSTRUCTION)
     {
         /* X = b1 A1^{-1} mod x^prec, prec = Np + D + 1, then q = denominator
          * of a random linear combination s of its entries, and w = q X mod
@@ -913,14 +942,9 @@ int _nmod_poly_mat_linsolve_geometric(nmod_poly_mat_t u,
     const slong lenb = nmod_poly_mat_max_length(b);
 
     /* G: the L points, for the evaluation of b and the interpolations;
-     * Gc: the first c points, for the evaluation of A by chunks of c points:
-     * f(q^(k0 + k)) = f_{k0}(q^k) with f_{k0}(x) = f(q^k0 x), whose
-     * coefficients are those of f scaled by the powers of z = q^k0. By
-     * default, the chunks hold at most max(n^2 lenA, 2^22) values: longer
-     * chunks make fewer and longer products, which are more efficient */
-    if (chunk <= 0)
-        chunk = (WORD(1) << 22) / (n * n);
-    const slong c = FLINT_MIN(L, FLINT_MAX(lenA, chunk));
+     * Gc: the first c points, for the evaluation of A by chunks of c points
+     * (see _nmod_poly_mat_evaluate_geometric) */
+    const slong c = _nmod_poly_mat_evaluate_geometric_chunk_length(A, L, chunk);
     nmod_geometric_progression_t G, Gc;
     _nmod_geometric_progression_init_function(G, r, L, mod, UWORD(3));
     _nmod_geometric_progression_init_fft(G, lenb, L, 0);
@@ -938,16 +962,16 @@ int _nmod_poly_mat_linsolve_geometric(nmod_poly_mat_t u,
     /* vals[k] = det(A(q^k)); vals[(1+j)*L + k] = (b adj(A))[j](q^k) */
     nn_ptr vals = _nmod_vec_init((n + 1) * L);
 
-    /* chunk: ev[(i*n + j)*c + k] = A[i][j](q^(k0 + k)) */
+    /* chunk of points q^(k0 + k), k < cl, with z = q^k0:
+     * ev[(i*n + j)*cl + k] = A[i][j](q^(k0 + k)) */
     nn_ptr ev = _nmod_vec_init(n * n * c);
-    nn_ptr zpow = _nmod_vec_init(lenA);
-    nn_ptr scaled = _nmod_vec_init(lenA);
     const ulong q = nmod_mul(r, r, mod);
     const ulong qc = nmod_pow_ui(q, c, mod);
     ulong z = 1;
 
-    nmod_mat_t M, PB, X;
+    nmod_mat_t M, Bm, PB, X;
     nmod_mat_init(M, n, n, p);
+    nmod_mat_init(Bm, n, 1, p);
     nmod_mat_init(PB, n, 1, p);
     nmod_mat_init(X, n, 1, p);
     slong * perm = _perm_init(n);
@@ -957,51 +981,24 @@ int _nmod_poly_mat_linsolve_geometric(nmod_poly_mat_t u,
     for (slong k0 = 0; k0 < L; k0 += c)
     {
         const slong cl = FLINT_MIN(c, L - k0);
-
-        zpow[0] = 1;
-        for (slong t = 1; t < lenA; t++)
-            zpow[t] = nmod_mul(zpow[t - 1], z, mod);
-        for (slong i = 0; i < n; i++)
-            for (slong j = 0; j < n; j++)
-            {
-                const nmod_poly_struct * f = nmod_poly_mat_entry(A, i, j);
-                nn_ptr v = ev + (i * n + j) * c;
-                if (f->length <= 1)
-                {
-                    const ulong f0 = (f->length == 1) ? f->coeffs[0] : 0;
-                    for (slong k = 0; k < cl; k++)
-                        v[k] = f0;
-                }
-                else
-                {
-                    for (slong t = 0; t < f->length; t++)
-                        scaled[t] = nmod_mul(f->coeffs[t], zpow[t], mod);
-                    _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(v, scaled, f->length, Gc, cl, mod);
-                }
-            }
+        _nmod_poly_mat_evaluate_geometric(ev, A, z, Gc, cl);
 
         for (slong k = 0; k < cl; k++)
         {
-            /* M = A(q^(k0+k))^T, LU decomposition P M = L U; then
-             * det(A(pt)) = +- prod(U[i][i]) and, from M x = b(pt)^T,
+            /* M = A(pt)^T and Bm = b(pt)^T at pt = q^(k0+k): from M x = Bm,
              * b(pt) adj(A(pt)) = det(A(pt)) x^T */
             for (slong i = 0; i < n; i++)
                 for (slong j = 0; j < n; j++)
-                    nmod_mat_entry(M, j, i) = ev[(i * n + j) * c + k];
+                    nmod_mat_entry(M, j, i) = ev[(i * n + j) * cl + k];
             for (slong j = 0; j < n; j++)
-                bpt[j] = evb[j * L + k0 + k];
-
-            if (nmod_mat_lu(perm, M, 1) == n)
             {
-                ulong d = 1;
-                for (slong i = 0; i < n; i++)
-                    d = nmod_mul(d, nmod_mat_entry(M, i, i), mod);
-                if (_perm_parity(perm, n))
-                    d = nmod_neg(d, mod);
-                for (slong i = 0; i < n; i++)
-                    nmod_mat_entry(PB, i, 0) = bpt[perm[i]];
-                nmod_mat_solve_tril(X, M, PB, 1);
-                nmod_mat_solve_triu(X, M, X, 0);
+                bpt[j] = evb[j * L + k0 + k];
+                nmod_mat_entry(Bm, j, 0) = bpt[j];
+            }
+
+            ulong d;
+            if (_nmod_mat_det_solve_lu(&d, X, M, Bm, perm, PB))
+            {
                 vals[k0 + k] = d;
                 for (slong j = 0; j < n; j++)
                     vals[(1 + j) * L + k0 + k] = nmod_mul(d, nmod_mat_entry(X, j, 0), mod);
@@ -1011,7 +1008,7 @@ int _nmod_poly_mat_linsolve_geometric(nmod_poly_mat_t u,
                 /* singular point (M was overwritten) */
                 for (slong i = 0; i < n; i++)
                     for (slong j = 0; j < n; j++)
-                        nmod_mat_entry(M, i, j) = ev[(i * n + j) * c + k];
+                        nmod_mat_entry(M, i, j) = ev[(i * n + j) * cl + k];
                 _linsolve_adjugate_singular(upt, M, bpt, mod);
                 vals[k0 + k] = 0;
                 for (slong j = 0; j < n; j++)
@@ -1024,13 +1021,12 @@ int _nmod_poly_mat_linsolve_geometric(nmod_poly_mat_t u,
 
     _perm_clear(perm);
     nmod_mat_clear(M);
+    nmod_mat_clear(Bm);
     nmod_mat_clear(PB);
     nmod_mat_clear(X);
     _nmod_vec_clear(bpt);
     _nmod_vec_clear(upt);
     _nmod_vec_clear(ev);
-    _nmod_vec_clear(zpow);
-    _nmod_vec_clear(scaled);
     _nmod_vec_clear(evb);
 
     /* interpolation */

@@ -11,13 +11,13 @@
 */
 
 #include <flint/nmod.h>
-#include <flint/nmod_vec.h>
 
 #include "nmod_extra.h"
 #include "nmod_poly_mat_multiply.h"
 #include "nmod_poly_mat_interpolant.h"
 #include "nmod_mat_poly.h"
 #include "nmod_poly_mat_utils.h"
+#include "impl.h"  /* for _nmod_poly_mat_evaluate_geometric */
 
 /* Same D&C shape as nmod_poly_mat_pmintbasis (interpolant_basis.c), but
    points are rho_start * rho^k (k=0..d-1), rho = r^2, using one shared,
@@ -66,7 +66,8 @@ static void _pmintbasis_geometric_rec(nmod_poly_mat_t intbas,
        entries at zeta*rho^i is done by rescaling each entry's coefficient
        k by zeta^k (Q(x) := entry(zeta*x)) and then evaluating the rescaled
        polynomial at the *first* d2 points of the shared G -- no offset
-       handling needed inside G itself. */
+       handling needed inside G itself (see _nmod_poly_mat_evaluate_geometric).
+       P1vals[(i*m + j)*d2 + idx] = P1[i][j](zeta*rho^idx). */
     ulong zeta = nmod_mul(rho_start, nmod_pow_ui(rho, d1, mod), mod);
 
     /* a row of an order-d1 interpolant basis can have degree up to d1
@@ -75,36 +76,11 @@ static void _pmintbasis_geometric_rec(nmod_poly_mat_t intbas,
        (if non-minimal) solution, so minimality never needs to exceed this
        -- same role X^d1*e_i plays for approximants, just a different
        degree-d1 witness since X^d1 alone isn't in the interpolant module
-       (evaluation doesn't vanish automatically the way truncation does). */
-    ulong * zeta_pow = (ulong *) flint_malloc((d1 + 1) * sizeof(ulong));
-    zeta_pow[0] = 1;
-    for (slong k = 1; k <= d1; k++)
-        zeta_pow[k] = nmod_mul(zeta_pow[k - 1], zeta, mod);
-
-    ulong * scaled = (ulong *) flint_malloc((d1 + 1) * sizeof(ulong));
-    ulong * vs = (ulong *) flint_malloc(d2 * sizeof(ulong));
+       (evaluation doesn't vanish automatically the way truncation does).
+       In particular, the entries of P1 are not longer than G->len, as
+       _nmod_poly_mat_evaluate_geometric requires. */
     ulong * P1vals = (ulong *) flint_malloc(m * m * d2 * sizeof(ulong));
-
-    for (slong i = 0; i < m; i++)
-        for (slong j = 0; j < m; j++)
-        {
-            const nmod_poly_struct * entry = nmod_poly_mat_entry(P1, i, j);
-            slong len = nmod_poly_length(entry);
-            if (len == 0)
-                _nmod_vec_zero(vs, d2);
-            else
-            {
-                for (slong k = 0; k < len; k++)
-                    scaled[k] = nmod_mul(nmod_poly_get_coeff_ui(entry, k), zeta_pow[k], mod);
-                _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(vs, scaled, len, G, d2, mod);
-            }
-            for (slong idx = 0; idx < d2; idx++)
-                P1vals[(i * m + j) * d2 + idx] = vs[idx];
-        }
-
-    flint_free(scaled);
-    flint_free(vs);
-    flint_free(zeta_pow);
+    _nmod_poly_mat_evaluate_geometric(P1vals, P1, zeta, G, d2);
 
     /* R, the "new E" for the second half's recursive call, is a plain
        array too -- nmod_mat_mul writes each R_i directly. */

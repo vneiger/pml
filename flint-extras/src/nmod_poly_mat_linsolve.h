@@ -244,8 +244,8 @@ int nmod_poly_mat_linsolve_via_kernel(nmod_poly_mat_t u,
 /** Computation of the denominator in ::nmod_poly_mat_linsolve_via_series */
 typedef enum
 {
-    LINSOLVE_RECONSTRUCTION = 0, /**< by rational reconstruction */
-    LINSOLVE_DETERMINANT = 1,    /**< as the determinant, then reduced */
+    NMOD_POLY_MAT_LINSOLVE_RECONSTRUCTION = 0, /**< by rational reconstruction */
+    NMOD_POLY_MAT_LINSOLVE_DETERMINANT = 1,    /**< as the determinant, then reduced */
 } linsolve_den_t;
 
 /** Computes `u` and `den` such that `u A = den b` (see @ref PolySolve), for a
@@ -253,39 +253,50 @@ typedef enum
  * ::nmod_poly_mat_linsolve_via_kernel (return value, normalization of the
  * output, aliasing), except that `A` must be square: an exception is thrown
  * otherwise. If `A` is nonsingular, `u / den` is the solution of `y A = b`
- * in lowest terms, with `den` monic.
+ * in lowest terms, with `den` monic. The modulus must be prime. An exception
+ * is thrown if `den_method` is not one of
+ * ::NMOD_POLY_MAT_LINSOLVE_RECONSTRUCTION and
+ * ::NMOD_POLY_MAT_LINSOLVE_DETERMINANT.
  *
  * Algorithm, for `A` of size `n x n` with `n >= 1`, and `b` nonzero:
- *  - degree bounds: `deg(det(A)) <= D = min(|rdeg(A)|, |cdeg(A)|)`, and the
- *  entries of `b adj(A)` (the numerators of Cramer's rule) have degree at
- *  most `N = min(deg(b) + |rdeg(A)| - min(rdeg(A)), max_k (deg(b_k) -
- *  cdeg_k(A)) + |cdeg(A)|)`: the `j`-th one is the determinant of `A` with
- *  row `j` replaced by `b`, that is, `sum_k b_k C_{j,k}` with `C_{j,k}` the
- *  cofactor of `A` at `(j,k)`, of degree at most `|rdeg(A)| - rdeg_j(A)` and
- *  at most `|cdeg(A)| - cdeg_k(A)`. The solution in lowest terms satisfies
- *  the same bounds;
+ *  - degree bounds: by Cramer's rule, the solution is `(b adj(A)) /
+ *  det(A)`. The `j`-th entry of `b adj(A)` is the determinant of `A` with
+ *  row `j` replaced by `b`, that is, `sum_k b_k C_{j,k}`, where the cofactor
+ *  `C_{j,k}` has degree at most `|rdeg(A)| - rdeg_j(A)` and at most
+ *  `|cdeg(A)| - cdeg_k(A)`. Hence
+ *
+ *      deg(det(A)) <= D = min(|rdeg(A)|, |cdeg(A)|),
+ *      deg(b adj(A)) <= N = min(deg(b) + |rdeg(A)| - min(rdeg(A)),
+ *                               max_k (deg(b_k) - cdeg_k(A)) + |cdeg(A)|),
+ *
+ *  and the solution in lowest terms has a denominator of degree at most `D`
+ *  and numerators of degree at most `N`;
  *  - expansion point: if `A(0)` is singular, the system is solved for `A(x +
  *  a)` and `b(x + a)` instead, for some `a` such that `A(a)` is invertible,
  *  and the solution is shifted back. The point `a` is chosen at random among
  *  a few values; if none is suitable (this is the case for all of them if `A`
  *  is singular, and may also happen for small moduli), the solution is
  *  computed by ::nmod_poly_mat_linsolve_via_kernel;
- *  - with `den_method` being ::LINSOLVE_RECONSTRUCTION: the power series
- *  solution `X = b A^{-1} mod x^prec` (see @ref SeriesSolve) is computed by
- *  ::nmod_poly_mat_solve_series_dixon at precision `prec = N' + D + 1`, where
- *  `N' = max(N, D-1)`. The denominator `q` of a random linear combination
- *  `s` of the entries of `X` is found by rational reconstruction with degree
- *  bounds `N'` and `D`, by a half-gcd on the `2 D` coefficients of `s` of
- *  degree `N' - D + 1` to `N' + D` (see the code); `q` divides the
- *  denominator of the solution in lowest terms. If `w = q X mod x^prec` has
- *  degree at most `N'`, then `w / q` is the solution and `q` is a multiple
- *  of its denominator: this certifies that `w / q` is the solution in lowest
- *  terms. Generically, this holds for the first linear combination;
- *  otherwise, this is repeated with another one, and after a few failures,
- *  the denominator is computed as below. The output is always correct; only
- *  the running time depends on the random choices;
- *  - with `den_method` being ::LINSOLVE_DETERMINANT: `X` is computed at
- *  precision `N + 1`, the determinant of `A` by
+ *  - with `den_method` being ::NMOD_POLY_MAT_LINSOLVE_RECONSTRUCTION, with
+ *  `N' = max(N, D-1)` and `prec = N' + D + 1`:
+ *     1. the power series solution `X = b A^{-1} mod x^prec` (see @ref
+ *     SeriesSolve) is computed by ::nmod_poly_mat_solve_series_dixon;
+ *     2. for a random linear combination `s` of the entries of `X`, the
+ *     denominator `q` of `s` is found by rational reconstruction with
+ *     degree bounds `N'` and `D`, by a half-gcd on the `2 D` coefficients of
+ *     `s` of degree `N' - D + 1` to `N' + D` (see the code); `q` divides the
+ *     denominator `Q` of the solution `U / Q` in lowest terms;
+ *     3. certification: let `w = q X mod x^prec`. If `w` has degree at most
+ *     `N'`, then `Q w = q U` (they agree modulo `x^prec`, and both have
+ *     degree less than `prec`), so that `Q` divides `q`: then `q` is `Q` up
+ *     to a constant, and `w / q` is the solution in lowest terms;
+ *     4. generically, steps 2 and 3 succeed for the first linear combination;
+ *     otherwise they are repeated with another one, and after 3 failures the
+ *     denominator is computed as for ::NMOD_POLY_MAT_LINSOLVE_DETERMINANT,
+ *     from the same `X`. The output is always correct; only the running time
+ *     depends on the random choices;
+ *  - with `den_method` being ::NMOD_POLY_MAT_LINSOLVE_DETERMINANT: `X` is
+ *  computed at precision `N + 1`, the determinant of `A` by
  *  ::nmod_poly_mat_determinant, and `u = det(A) X mod x^(N+1)` is `b
  *  adj(A)`; then `u` and `det(A)` are divided by their gcd. This avoids the
  *  rational reconstruction, which needs a precision larger by about `D`.
@@ -297,6 +308,14 @@ typedef enum
  * ::nmod_poly_mat_solve_series_dixon at precision `N' + D + 1`, of
  * ::nmod_poly_mat_determinant, and of ::nmod_poly_mat_linsolve_via_kernel
  * (in case it is called) are assumed.
+ *
+ * \todo sharper degree bounds: ::nmod_poly_mat_degree_det_bound applied to
+ * `A` for `D`, and to `[A ; b]` for `N` (the numerators of Cramer's rule are
+ * maximal minors of `[A ; b]`); these are at most the bounds above, and lower
+ * the precision of the series. For ::nmod_poly_mat_linsolve_geometric, fewer
+ * points than the length of the entries would then be possible, which
+ * requires evaluating entries longer than the number of points (see the
+ * \todo of ::nmod_poly_mat_det_geometric).
  */
 int nmod_poly_mat_linsolve_via_series(nmod_poly_mat_t u,
                                       nmod_poly_t den,

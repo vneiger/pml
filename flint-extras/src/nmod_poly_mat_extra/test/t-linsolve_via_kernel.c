@@ -16,34 +16,7 @@
 #include <flint/ulong_extras.h>
 
 #include "nmod_poly_mat_linsolve.h"
-
-/* checks that den is monic, that u A = den b, and that den and the entries
- * of u have no nontrivial common divisor */
-static int _linsolvetest_check(const nmod_poly_mat_t u, const nmod_poly_t den,
-                               const nmod_poly_mat_t A, const nmod_poly_mat_t b)
-{
-    if (nmod_poly_is_zero(den) || den->coeffs[den->length - 1] != 1)
-        return 0;
-
-    nmod_poly_mat_t P, Q;
-    nmod_poly_mat_init(P, 1, A->c, A->modulus);
-    nmod_poly_mat_init(Q, 1, A->c, A->modulus);
-    nmod_poly_mat_mul(P, u, A);
-    nmod_poly_mat_scalar_mul_nmod_poly(Q, b, den);
-    int ok = nmod_poly_mat_equal(P, Q);
-    nmod_poly_mat_clear(P);
-    nmod_poly_mat_clear(Q);
-
-    nmod_poly_t g;
-    nmod_poly_init_mod(g, den->mod);
-    nmod_poly_set(g, den);
-    for (slong i = 0; i < u->c; i++)
-        nmod_poly_gcd(g, g, nmod_poly_mat_entry(u, 0, i));
-    ok = ok && nmod_poly_is_one(g);
-    nmod_poly_clear(g);
-
-    return ok;
-}
+#include "linsolve_test_utils.h"  /* for _linsolvetest_check */
 
 /* shifted degree of the solution [u, den] for the shift s = row degree of
  * [A ; b] (zero rows counting as degree 0), that is,

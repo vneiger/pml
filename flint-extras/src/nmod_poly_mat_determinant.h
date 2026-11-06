@@ -64,8 +64,11 @@ void nmod_poly_mat_det_minors(nmod_poly_t det, const nmod_poly_mat_t pmat);
  * #NMOD_POLY_CAN_USE_GEOMETRIC): if this is not satisfied, the function
  * returns 0 and `det` is left unchanged; otherwise, the function returns 1.
  * Exception: if `pmat` has a zero row or a zero column, `det` is set to zero
- * and 1 is returned, whatever the modulus. The memory used is about `n^2
- * (D+1)` words (all evaluations are stored).
+ * and 1 is returned, whatever the modulus. The evaluations are computed by
+ * chunks of points, as in ::nmod_poly_mat_linsolve_geometric: they take at
+ * most `max(n^2 (d + 1), 2^22)` words, where `d = deg(pmat)` (by default a
+ * chunk holds all `D + 1` points if `n^2 (D + 1) <= 2^22`), plus `D + 1`
+ * words for the determinants at the points.
  *
  * \todo ::nmod_poly_mat_degree_det_bound gives a sharper bound `D`, but then
  * the entries may have degree larger than `D` and the evaluation must

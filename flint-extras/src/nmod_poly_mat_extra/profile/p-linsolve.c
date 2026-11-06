@@ -11,7 +11,7 @@
 */
 
 #include <stdlib.h>  // for atoi, strtoul
-#include <string.h>  // for strstr
+#include <string.h>  // for strchr, strlen, strncmp
 
 #include <flint/flint.h>
 #include <flint/nmod_mat.h>
@@ -27,7 +27,8 @@
  * 1 x dim vector b of degree < degb (by default degb = deg), by the
  * functions below; prints the times in seconds, the degree of den, and
  * "MISMATCH" if the outputs differ (they should not: A is nonsingular, and
- * all functions give the solution in lowest terms with den monic) */
+ * all functions except FLINT's give the solution in lowest terms with den
+ * monic; the output of FLINT's is not compared) */
 
 typedef int (*linsolve_fun_t)(nmod_poly_mat_t u, nmod_poly_t den,
                               const nmod_poly_mat_t A, const nmod_poly_mat_t b);
@@ -41,13 +42,13 @@ static int _ls_kernel(nmod_poly_mat_t u, nmod_poly_t den,
 static int _ls_series_rr(nmod_poly_mat_t u, nmod_poly_t den,
                          const nmod_poly_mat_t A, const nmod_poly_mat_t b)
 {
-    return nmod_poly_mat_linsolve_via_series(u, den, A, b, LINSOLVE_RECONSTRUCTION);
+    return nmod_poly_mat_linsolve_via_series(u, den, A, b, NMOD_POLY_MAT_LINSOLVE_RECONSTRUCTION);
 }
 
 static int _ls_series_det(nmod_poly_mat_t u, nmod_poly_t den,
                           const nmod_poly_mat_t A, const nmod_poly_mat_t b)
 {
-    return nmod_poly_mat_linsolve_via_series(u, den, A, b, LINSOLVE_DETERMINANT);
+    return nmod_poly_mat_linsolve_via_series(u, den, A, b, NMOD_POLY_MAT_LINSOLVE_DETERMINANT);
 }
 
 static int _ls_geometric(nmod_poly_mat_t u, nmod_poly_t den,
@@ -59,33 +60,75 @@ static int _ls_geometric(nmod_poly_mat_t u, nmod_poly_t den,
 static int _ls_hol_rr(nmod_poly_mat_t u, nmod_poly_t den,
                       const nmod_poly_mat_t A, const nmod_poly_mat_t b)
 {
-    return nmod_poly_mat_linsolve_via_high_order_lifting(u, den, A, b, LINSOLVE_RECONSTRUCTION);
+    return nmod_poly_mat_linsolve_via_high_order_lifting(u, den, A, b, NMOD_POLY_MAT_LINSOLVE_RECONSTRUCTION);
 }
 
 static int _ls_hol_det(nmod_poly_mat_t u, nmod_poly_t den,
                        const nmod_poly_mat_t A, const nmod_poly_mat_t b)
 {
-    return nmod_poly_mat_linsolve_via_high_order_lifting(u, den, A, b, LINSOLVE_DETERMINANT);
+    return nmod_poly_mat_linsolve_via_high_order_lifting(u, den, A, b, NMOD_POLY_MAT_LINSOLVE_DETERMINANT);
 }
 
+/* FLINT's nmod_poly_mat_solve on the transposed system A^T u^T = den b^T
+ * (fraction-free elimination: den = +-det(A), not reduced); the
+ * transpositions are included in the time */
+static int _ls_flint(nmod_poly_mat_t u, nmod_poly_t den,
+                     const nmod_poly_mat_t A, const nmod_poly_mat_t b)
+{
+    const slong n = A->r;
+    nmod_poly_mat_t At, bt, ut;
+    nmod_poly_mat_init(At, n, n, A->modulus);
+    nmod_poly_mat_init(bt, n, 1, A->modulus);
+    nmod_poly_mat_init(ut, n, 1, A->modulus);
+    nmod_poly_mat_transpose(At, A);
+    nmod_poly_mat_transpose(bt, b);
+    const int ok = nmod_poly_mat_solve(ut, den, At, bt);
+    nmod_poly_mat_transpose(u, ut);
+    nmod_poly_mat_clear(At);
+    nmod_poly_mat_clear(bt);
+    nmod_poly_mat_clear(ut);
+    return ok;
+}
+
+/* by_default: timed when no method is given; lowest_terms: the output is
+ * the solution in lowest terms with den monic, compared with the others */
 typedef struct
 {
     const char * name;
     linsolve_fun_t fun;
+    int by_default;
+    int lowest_terms;
 }
 linsolve_method_t;
 
 static const linsolve_method_t methods[] =
 {
-    {"kernel", _ls_kernel},
-    {"series_rr", _ls_series_rr},
-    {"series_det", _ls_series_det},
-    {"geometric", _ls_geometric},
-    {"hol_rr", _ls_hol_rr},
-    {"hol_det", _ls_hol_det},
+    {"kernel", _ls_kernel, 1, 1},
+    {"series_rr", _ls_series_rr, 1, 1},
+    {"series_det", _ls_series_det, 1, 1},
+    {"geometric", _ls_geometric, 1, 1},
+    {"hol_rr", _ls_hol_rr, 1, 1},
+    {"hol_det", _ls_hol_det, 1, 1},
+    {"flint", _ls_flint, 0, 0},
 };
 
 #define NMETHODS ((slong) (sizeof(methods) / sizeof(methods[0])))
+
+/* whether name is one of the comma-separated names in which */
+static int _ls_selected(const char * which, const char * name)
+{
+    const size_t len = strlen(name);
+    while (1)
+    {
+        const char * end = strchr(which, ',');
+        const size_t l = (end != NULL) ? (size_t) (end - which) : strlen(which);
+        if (l == len && strncmp(which, name, len) == 0)
+            return 1;
+        if (end == NULL)
+            return 0;
+        which = end + 1;
+    }
+}
 
 /* best of 3, each repeated until it takes at least 50 ms */
 static double _time_method(linsolve_fun_t fun, nmod_poly_mat_t u, nmod_poly_t den,
@@ -125,11 +168,13 @@ int main(int argc, char ** argv)
         flint_printf("   - dim: A is dim x dim, b is 1 x dim\n");
         flint_printf("   - deg: A is random of degree < deg\n");
         flint_printf("   - degb: optional, b is random of degree < degb (default deg)\n");
-        flint_printf("   - methods: optional, comma-separated names of the methods to time (default: all)\n");
+        flint_printf("   - methods: optional, comma-separated names of the methods to time\n");
+        flint_printf("     (default: all except flint, FLINT's nmod_poly_mat_solve, which is slow)\n");
         flint_printf("Methods:");
         for (slong k = 0; k < NMETHODS; k++)
             flint_printf(" %s", methods[k].name);
         flint_printf("\nPrints the times in seconds, deg(den), and MISMATCH if the outputs differ\n");
+        flint_printf("(the output of flint is not reduced, and is not compared)\n");
         return 0;
     }
 
@@ -165,10 +210,12 @@ int main(int argc, char ** argv)
     int first = 1, mismatch = 0;
     for (slong k = 0; k < NMETHODS; k++)
     {
-        if (which != NULL && strstr(which, methods[k].name) == NULL)
+        if ((which == NULL) ? !methods[k].by_default : !_ls_selected(which, methods[k].name))
             continue;
         const double t = _time_method(methods[k].fun, u, den, A, b);
         flint_printf("  %s %.3e", methods[k].name, t);
+        if (!methods[k].lowest_terms)
+            continue;
         if (first)
         {
             nmod_poly_mat_set(u1, u);
@@ -178,7 +225,10 @@ int main(int argc, char ** argv)
         else if (!nmod_poly_mat_equal(u, u1) || !nmod_poly_equal(den, den1))
             mismatch = 1;
     }
-    flint_printf("  deg(den) %wd%s\n", nmod_poly_degree(den1), mismatch ? "  MISMATCH" : "");
+    if (first)  /* no output in lowest terms */
+        flint_printf("\n");
+    else
+        flint_printf("  deg(den) %wd%s\n", nmod_poly_degree(den1), mismatch ? "  MISMATCH" : "");
 
     nmod_mat_clear(A0);
     nmod_poly_mat_clear(A);

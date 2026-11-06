@@ -16,34 +16,7 @@
 #include <flint/ulong_extras.h>
 
 #include "nmod_poly_mat_linsolve.h"
-
-/* checks that den is monic, that u A = den b, and that den and the entries
- * of u have no nontrivial common divisor */
-static int _lsseriestest_check(const nmod_poly_mat_t u, const nmod_poly_t den,
-                               const nmod_poly_mat_t A, const nmod_poly_mat_t b)
-{
-    if (nmod_poly_is_zero(den) || den->coeffs[den->length - 1] != 1)
-        return 0;
-
-    nmod_poly_mat_t P, Q;
-    nmod_poly_mat_init(P, 1, A->c, A->modulus);
-    nmod_poly_mat_init(Q, 1, A->c, A->modulus);
-    nmod_poly_mat_mul(P, u, A);
-    nmod_poly_mat_scalar_mul_nmod_poly(Q, b, den);
-    int ok = nmod_poly_mat_equal(P, Q);
-    nmod_poly_mat_clear(P);
-    nmod_poly_mat_clear(Q);
-
-    nmod_poly_t g;
-    nmod_poly_init_mod(g, den->mod);
-    nmod_poly_set(g, den);
-    for (slong i = 0; i < u->c; i++)
-        nmod_poly_gcd(g, g, nmod_poly_mat_entry(u, 0, i));
-    ok = ok && nmod_poly_is_one(g);
-    nmod_poly_clear(g);
-
-    return ok;
-}
+#include "linsolve_test_utils.h"
 
 /* the solver under test: nmod_poly_mat_linsolve_via_series, or
  * nmod_poly_mat_linsolve_via_high_order_lifting if hol is nonzero */
@@ -107,8 +80,8 @@ TEST_FUNCTION_START(nmod_poly_mat_linsolve_via_series, state)
     int i, result;
 
     for (int hol = 0; hol < 2; hol++)
-        if (!_lsseriestest_examples(LINSOLVE_RECONSTRUCTION, hol)
-            || !_lsseriestest_examples(LINSOLVE_DETERMINANT, hol))
+        if (!_lsseriestest_examples(NMOD_POLY_MAT_LINSOLVE_RECONSTRUCTION, hol)
+            || !_lsseriestest_examples(NMOD_POLY_MAT_LINSOLVE_DETERMINANT, hol))
             TEST_FUNCTION_FAIL("fixed examples, hol = %d\n", hol);
 
     for (i = 0; i < 300 * flint_test_multiplier(); i++)
@@ -119,9 +92,9 @@ TEST_FUNCTION_START(nmod_poly_mat_linsolve_via_series, state)
          * few rows of large degree; kind of b: 0 random, 1 zero, 2 v A for
          * some random v (then den = 1 if A is nonsingular) */
         const slong kindA = n_randint(state, 4);
-        const slong kindb = (n_randint(state, 8) == 0) ? 1 : (n_randint(state, 4) == 0 ? 2 : 0);
-        const slong n = (n_randint(state, 8) == 0) ? 8 + n_randint(state, 5) : n_randint(state, 7);
-        const slong len = 1 + n_randint(state, (n <= 6) ? 6 : 3);
+        const slong kindb = _linsolvetest_rand_kindb(state);
+        slong n, len;
+        _linsolvetest_rand_dims(&n, &len, state);
 
         nmod_poly_mat_t A, b, u, u0, v, w;
         nmod_poly_t den, den0, f;
@@ -135,20 +108,7 @@ TEST_FUNCTION_START(nmod_poly_mat_linsolve_via_series, state)
         nmod_poly_init(den0, prime);
         nmod_poly_init(f, prime);
 
-        if (kindA == 2 && n > 0)
-        {
-            const slong r = n_randint(state, n);
-            nmod_poly_mat_t L, R;
-            nmod_poly_mat_init(L, n, r, prime);
-            nmod_poly_mat_init(R, r, n, prime);
-            nmod_poly_mat_randtest(L, state, len);
-            nmod_poly_mat_randtest(R, state, len);
-            nmod_poly_mat_mul(A, L, R);
-            nmod_poly_mat_clear(L);
-            nmod_poly_mat_clear(R);
-        }
-        else
-            nmod_poly_mat_randtest(A, state, len);
+        _linsolvetest_rand_A(A, state, len, kindA == 2);
 
         if (kindA == 1 && n > 0)
         {
@@ -166,35 +126,9 @@ TEST_FUNCTION_START(nmod_poly_mat_linsolve_via_series, state)
         }
 
         if (kindA == 3 && n > 0)
-        {
-            const slong nlong = 1 + n_randint(state, FLINT_MAX(n / 3, 1));
-            for (slong k = 0; k < nlong; k++)
-            {
-                const slong ii = n_randint(state, n);
-                const slong llen = 1 + n_randint(state, (n + 1) * len + 1);
-                for (slong j = 0; j < n; j++)
-                    nmod_poly_randtest(nmod_poly_mat_entry(A, ii, j), state, llen);
-            }
-        }
+            _linsolvetest_long_rows(A, state, len);
 
-        /* b: random of length len, or shorter, or much longer (up to about 4
-         * (n+1) len, the numerators of the solution having degree about n
-         * len), sometimes with zero entries */
-        slong lenb = len;
-        if (kindb == 0)
-        {
-            const slong r = n_randint(state, 3);
-            lenb = (r == 0) ? len : (r == 1 ? 1 + (slong) n_randint(state, len)
-                                            : len * (n + 1) * (1 + (slong) n_randint(state, 4)));
-            nmod_poly_mat_randtest(b, state, lenb);
-            if (n > 1 && n_randint(state, 4) == 0)
-                nmod_poly_zero(nmod_poly_mat_entry(b, 0, n_randint(state, n)));
-        }
-        else if (kindb == 2)
-        {
-            nmod_poly_mat_randtest(v, state, len);
-            nmod_poly_mat_mul(b, v, A);
-        }
+        const slong lenb = _linsolvetest_rand_b(b, v, A, state, kindb, len);
 
         const int nonsingular = (nmod_poly_mat_rank(A) == n);
 
@@ -207,8 +141,8 @@ TEST_FUNCTION_START(nmod_poly_mat_linsolve_via_series, state)
         {
             const int dm = k & 1;
             const int hol = k >> 1;
-            const linsolve_den_t den_method = (dm == 0) ? LINSOLVE_RECONSTRUCTION
-                                                        : LINSOLVE_DETERMINANT;
+            const linsolve_den_t den_method = (dm == 0) ? NMOD_POLY_MAT_LINSOLVE_RECONSTRUCTION
+                                                        : NMOD_POLY_MAT_LINSOLVE_DETERMINANT;
 
             /* return value, correctness, and u and den not modified in case
              * of failure; if A is nonsingular, the solution is unique */
@@ -218,7 +152,7 @@ TEST_FUNCTION_START(nmod_poly_mat_linsolve_via_series, state)
             nmod_poly_set(f, den);
             result = (_lsseriestest_solve(u, den, A, b, den_method, hol) == expected);
             if (result && expected)
-                result = _lsseriestest_check(u, den, A, b);
+                result = _linsolvetest_check(u, den, A, b);
             if (result && expected && nonsingular)
                 result = nmod_poly_mat_equal(u, w) && nmod_poly_equal(den, den0);
             if (result && expected && nonsingular && kindb == 2)
