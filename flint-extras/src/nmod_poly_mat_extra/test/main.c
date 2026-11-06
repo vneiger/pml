@@ -20,7 +20,9 @@
 #include "t-hermite_normal_form.c"
 #include "t-inv_series.c"
 #include "t-kernel.c"
+#include "t-linsolve_geometric.c"
 #include "t-linsolve_via_kernel.c"
+#include "t-linsolve_via_series.c"
 #include "t-degree_det_bound.c"
 #include "t-degree_sum.c"
 #include "t-mul_sd_fft_direct.c"
@@ -34,6 +36,7 @@
 #include "t-set_from_mat_poly.c"
 #include "t-shift_right_trunc.c"
 #include "t-solve_series_dixon.c"
+#include "t-solve_series_high_order_lifting.c"
 #include "t-mbasis.c"
 #include "t-pmbasis.c"
 #include "t-pmintbasis.c"
@@ -56,7 +59,9 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_hnf_diagonal),
     TEST_FUNCTION(nmod_poly_mat_inv_series),
     TEST_FUNCTION(nmod_poly_mat_kernel),
+    TEST_FUNCTION(nmod_poly_mat_linsolve_geometric),
     TEST_FUNCTION(nmod_poly_mat_linsolve_via_kernel),
+    TEST_FUNCTION(nmod_poly_mat_linsolve_via_series),
     TEST_FUNCTION(nmod_poly_mat_degree_det_bound),
     TEST_FUNCTION(nmod_poly_mat_degree_sum),
     TEST_FUNCTION(nmod_poly_mat_mbasis),
@@ -71,6 +76,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_set_from_mat_poly),
     TEST_FUNCTION(nmod_poly_mat_shift_right_trunc),
     TEST_FUNCTION(nmod_poly_mat_solve_series_dixon),
+    TEST_FUNCTION(nmod_poly_mat_solve_series_high_order_lifting),
     TEST_FUNCTION(nmod_poly_mat_pmbasis),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis_nondistinct),

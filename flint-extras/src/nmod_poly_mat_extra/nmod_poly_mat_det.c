@@ -22,6 +22,7 @@
 #include "nmod_poly_mat_utils.h"  /* for permute_rows_by_sorting_vec */
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_determinant.h"
+#include "impl.h"  /* for _nmod_mat_det_solve_lu, _nmod_poly_mat_evaluate_geometric */
 
 // Mulders-Storjohann triangularization, see the documentation in
 // nmod_poly_mat_determinant.h
@@ -354,44 +355,44 @@ int nmod_poly_mat_det_geometric(nmod_poly_t det, const nmod_poly_mat_t pmat)
         return 0;
 
     /* note: each entry has length at most len, since its degree is at most
-     * the row degree and column degree it belongs to; the n^2 evaluations
-     * share the stored transform for inputs of length at most maxlen
-     * (shorter than for length len), the single interpolation does not need
-     * one */
+     * the row degree and column degree it belongs to. The evaluations are
+     * done by chunks of c points (see _nmod_poly_mat_evaluate_geometric),
+     * with Gc for the first c points: the n^2 evaluations of a chunk share
+     * the stored transform for inputs of length at most maxlen (shorter than
+     * for length c). G, for the len points, serves the single interpolation,
+     * which does not need a stored transform. */
     const slong maxlen = nmod_poly_mat_max_length(pmat);
-    nmod_geometric_progression_t G;
-    _nmod_geometric_progression_init_function(G, w, len, mod, UWORD(3));
-    _nmod_geometric_progression_init_fft(G, maxlen, 0, 0);
+    const slong c = _nmod_poly_mat_evaluate_geometric_chunk_length(pmat, len, 0);
+    nmod_geometric_progression_t G, Gc;
+    _nmod_geometric_progression_init_function(G, w, len, mod, UWORD(2));
+    _nmod_geometric_progression_init_function(Gc, w, c, mod, UWORD(1));
+    _nmod_geometric_progression_init_fft(Gc, maxlen, 0, 0);
 
-    /* evaluations: evals[(i*n + j) * len + k] = pmat[i][j](point k) */
-    nn_ptr evals = _nmod_vec_init(n * n * len);
-    for (slong i = 0; i < n; i++)
-        for (slong j = 0; j < n; j++)
-        {
-            const nmod_poly_struct * f = nmod_poly_mat_entry(pmat, i, j);
-            nn_ptr v = evals + (i * n + j) * len;
-            if (f->length == 0)
-                _nmod_vec_zero(v, len);
-            else if (f->length == 1)
-                for (slong k = 0; k < len; k++)
-                    v[k] = f->coeffs[0];
-            else
-                _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(v, f->coeffs, f->length, G, len, mod);
-        }
-
-    /* determinants at each point; for n > 8, in-place LU by _nmod_mat_det
+    /* determinants at the points q^k, k < len, with q = w^2, by chunks of
+     * points q^(k0 + k), k < cl, with z = q^k0: evals[(i*n + j) * cl + k] =
+     * pmat[i][j](q^(k0 + k)); for n > 8, in-place LU by _nmod_mat_det
      * (nmod_mat_det would copy the matrix and test the primality of p at
      * each point; for n <= 8 it uses explicit formulas or the
      * division-free Berkowitz algorithm, which are faster) */
+    nn_ptr evals = _nmod_vec_init(n * n * c);
     nn_ptr dets = _nmod_vec_init(len);
+    const ulong q = nmod_mul(w, w, mod);
+    const ulong qc = nmod_pow_ui(q, c, mod);
+    ulong z = 1;
     nmod_mat_t M;
     nmod_mat_init(M, n, n, p);
-    for (slong k = 0; k < len; k++)
+    for (slong k0 = 0; k0 < len; k0 += c)
     {
-        for (slong i = 0; i < n; i++)
-            for (slong j = 0; j < n; j++)
-                nmod_mat_entry(M, i, j) = evals[(i * n + j) * len + k];
-        dets[k] = (n <= 8) ? nmod_mat_det(M) : _nmod_mat_det(M);
+        const slong cl = FLINT_MIN(c, len - k0);
+        _nmod_poly_mat_evaluate_geometric(evals, pmat, z, Gc, cl);
+        for (slong k = 0; k < cl; k++)
+        {
+            for (slong i = 0; i < n; i++)
+                for (slong j = 0; j < n; j++)
+                    nmod_mat_entry(M, i, j) = evals[(i * n + j) * cl + k];
+            dets[k0 + k] = (n <= 8) ? nmod_mat_det(M) : _nmod_mat_det(M);
+        }
+        z = nmod_mul(z, qc, mod);
     }
     nmod_mat_clear(M);
     _nmod_vec_clear(evals);
@@ -401,12 +402,33 @@ int nmod_poly_mat_det_geometric(nmod_poly_t det, const nmod_poly_mat_t pmat)
 
     _nmod_vec_clear(dets);
     nmod_geometric_progression_clear(G);
+    nmod_geometric_progression_clear(Gc);
     return 1;
 }
 
 /*------------------------------------------------------------*/
 /* general interface                                          */
 /*------------------------------------------------------------*/
+
+int _nmod_mat_det_solve_lu(ulong * c, nmod_mat_t X, nmod_mat_t A, const nmod_mat_t B,
+                           slong * perm, nmod_mat_t PB)
+{
+    const slong n = A->r;
+    if (nmod_mat_lu(perm, A, 1) != n)
+        return 0;
+
+    /* P A = L U: det(A) = +- prod(U[i][i]), and A^{-1} B = U^{-1} L^{-1} P B */
+    ulong dA = 1;
+    for (slong i = 0; i < n; i++)
+        dA = nmod_mul(dA, nmod_mat_entry(A, i, i), A->mod);
+    *c = _perm_parity(perm, n) ? nmod_neg(dA, A->mod) : dA;
+
+    for (slong i = 0; i < n; i++)
+        _nmod_vec_set(nmod_mat_entry_ptr(PB, i, 0), nmod_mat_entry_ptr(B, perm[i], 0), B->c);
+    nmod_mat_solve_tril(X, A, PB, 1);
+    nmod_mat_solve_triu(X, A, X, 0);
+    return 1;
+}
 
 /* If the square matrix A is invertible, sets c = det(A) and X = A^{-1} B
  * and returns 1; otherwise returns 0 (c and X undefined). The modulus must
@@ -415,28 +437,15 @@ int nmod_poly_mat_det_geometric(nmod_poly_t det, const nmod_poly_mat_t pmat)
 static int _det_and_solve(ulong * c, nmod_mat_t X, const nmod_mat_t A, const nmod_mat_t B)
 {
     const slong n = A->r;
-    nmod_mat_t LU;
+    nmod_mat_t LU, PB;
     nmod_mat_init_set(LU, A);
+    nmod_mat_init(PB, n, B->c, A->mod.n);
     slong * perm = _perm_init(n);
 
-    const int ok = (nmod_mat_lu(perm, LU, 1) == n);
-    if (ok)
-    {
-        ulong dA = 1;
-        for (slong i = 0; i < n; i++)
-            dA = nmod_mul(dA, nmod_mat_entry(LU, i, i), A->mod);
-        *c = _perm_parity(perm, n) ? nmod_neg(dA, A->mod) : dA;
-
-        nmod_mat_t PB;
-        nmod_mat_init(PB, n, B->c, A->mod.n);
-        for (slong i = 0; i < n; i++)
-            _nmod_vec_set(nmod_mat_entry_ptr(PB, i, 0), nmod_mat_entry_ptr(B, perm[i], 0), B->c);
-        nmod_mat_solve_tril(X, LU, PB, 1);
-        nmod_mat_solve_triu(X, LU, X, 0);
-        nmod_mat_clear(PB);
-    }
+    const int ok = _nmod_mat_det_solve_lu(c, X, LU, B, perm, PB);
 
     _perm_clear(perm);
+    nmod_mat_clear(PB);
     nmod_mat_clear(LU);
     return ok;
 }

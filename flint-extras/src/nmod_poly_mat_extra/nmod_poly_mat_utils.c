@@ -237,6 +237,67 @@ void _nmod_poly_mat_view_clear(nmod_poly_mat_t view)
 
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
+/* EVALUATION AT A GEOMETRIC PROGRESSION, BY CHUNKS (impl.h)  */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+void _nmod_poly_mat_evaluate_geometric(nn_ptr vals, const nmod_poly_mat_t pmat, ulong z,
+                                       const nmod_geometric_progression_t G, slong npts)
+{
+    const nmod_t mod = G->mod;
+    const slong len = nmod_poly_mat_max_length(pmat);
+
+    /* zpow: powers of z, for the entries of length at least 2 */
+    nn_ptr zpow = NULL, scaled = NULL;
+    if (z != 1 && len > 1)
+    {
+        zpow = _nmod_vec_init(2 * len);
+        scaled = zpow + len;
+        zpow[0] = 1;
+        for (slong t = 1; t < len; t++)
+            zpow[t] = nmod_mul(zpow[t - 1], z, mod);
+    }
+
+    for (slong i = 0; i < pmat->r; i++)
+        for (slong j = 0; j < pmat->c; j++)
+        {
+            const nmod_poly_struct * f = nmod_poly_mat_entry(pmat, i, j);
+            nn_ptr v = vals + (i * pmat->c + j) * npts;
+            if (f->length <= 1)
+            {
+                const ulong f0 = (f->length == 1) ? f->coeffs[0] : 0;
+                for (slong k = 0; k < npts; k++)
+                    v[k] = f0;
+            }
+            else if (zpow == NULL)
+                _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(v, f->coeffs, f->length, G, npts, mod);
+            else
+            {
+                for (slong t = 0; t < f->length; t++)
+                    scaled[t] = nmod_mul(f->coeffs[t], zpow[t], mod);
+                _nmod_poly_evaluate_geometric_nmod_vec_fast_precomp(v, scaled, f->length, G, npts, mod);
+            }
+        }
+
+    if (zpow != NULL)
+        _nmod_vec_clear(zpow);
+}
+
+slong _nmod_poly_mat_evaluate_geometric_chunk_length(const nmod_poly_mat_t pmat,
+                                                     slong npts, slong chunk)
+{
+    const slong len = nmod_poly_mat_max_length(pmat);
+    if (chunk <= 0)
+    {
+        const slong entries = FLINT_MAX(pmat->r * pmat->c, 1);
+        chunk = (WORD(1) << 22) / entries;
+    }
+    return FLINT_MIN(npts, FLINT_MAX(len, chunk));
+}
+
+
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
 /* COMBINED LEFT SHIFT AND ADDITION/SUBTRACTION               */
 /*------------------------------------------------------------*/
 /*------------------------------------------------------------*/
