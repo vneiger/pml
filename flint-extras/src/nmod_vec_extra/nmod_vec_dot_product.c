@@ -44,16 +44,38 @@ ulong _nmod_vec_dot_product_1(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
     return res;
 }
 
-/*  ------------------------------------------------------------ */
-/** v1 and v2 have length at least len, len < 2^FLINT_BITS       */
-/** computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n         */
-/** uses 2 limbs to store the result before reduction            */
-/*  ------------------------------------------------------------ */
+/*  ------------------------------------------------------------   */
+/* v1 and v2 have length at least len, len < 2^FLINT_BITS          */
+/* computes sum(v1[i]*v2[i], 0 <= i < len) modulo mod.n            */
+/* uses 2 limbs to store the result before reduction               */
+/* entries need not be reduced, the sum must be < 2^(2*FLINT_BITS) */
+/* (FLINT's _NMOD_VEC_DOT2 is not used: since FLINT #2942 its      */
+/* final reduction assumes entries reduced modulo mod.n)           */
+/*  ------------------------------------------------------------   */
 static inline
 ulong _nmod_vec_dot_product_2(nn_srcptr v1, nn_srcptr v2, ulong len, nmod_t mod)
 {
-    ulong res; slong i;
-    _NMOD_VEC_DOT2(res, i, len, v1[i], v2[i], mod);
+    ulong s0, s1, res;
+    ulong u0 = UWORD(0), u1 = UWORD(0);
+    ulong w0 = UWORD(0), w1 = UWORD(0);
+    ulong i = 0;
+
+    /* two accumulators: the additions with carry do not wait for each other */
+    for (; i + 1 < len; i += 2)
+    {
+        umul_ppmm(s1, s0, v1[i], v2[i]);
+        add_ssaaaa(u1, u0, u1, u0, s1, s0);
+        umul_ppmm(s1, s0, v1[i+1], v2[i+1]);
+        add_ssaaaa(w1, w0, w1, w0, s1, s0);
+    }
+    if (i < len)
+    {
+        umul_ppmm(s1, s0, v1[i], v2[i]);
+        add_ssaaaa(u1, u0, u1, u0, s1, s0);
+    }
+
+    add_ssaaaa(u1, u0, u1, u0, w1, w0);
+    NMOD2_RED2(res, u1, u0, mod);
     return res;
 }
 
