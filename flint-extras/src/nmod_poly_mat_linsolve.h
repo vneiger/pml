@@ -29,8 +29,9 @@
  * \todo Warning: these solving functions are not finalized yet, and this
  * convention (as well as their interfaces) may change in the future.
  *
- * \todo series solving at low precision, high-order lifting, solving via
- * series and rational reconstruction (see ntl-extras, mat_lzz_pX_linsolve.h)
+ * \todo series solving at low precision (see ntl-extras,
+ * mat_lzz_pX_linsolve.h); general interface for the solution over the
+ * polynomials, choosing among the algorithms below
  */
 
 #include <flint/nmod_types.h>
@@ -128,6 +129,59 @@ int _nmod_poly_mat_solve_series_dixon(nmod_poly_mat_t X,
                                       slong prec,
                                       int precomp);
 
+/** Computes the power series solution `X = B A^{-1} mod x^prec` (see @ref
+ * SeriesSolve) by high-order lifting (Storjohann, "High-order lifting and
+ * integrality certification", J. Symbolic Comput., 2003).
+ *
+ * With a block size `e >= deg(A)` and `B` of degree less than `e`, the
+ * solution is `X = sum_k x^(k e) (R_k A^{-1} mod x^e)`, where `R_k` (of
+ * degree less than `e`) is the residue of Dixon's lifting at order `e`
+ * after `k` steps, with `R_0 = B`. These residues are computed by doubling:
+ * `R_{k+s} = ((((R_k S_s) div x^(e-1)) mod x^e) A) mod x^e`, where `S_s` is
+ * the slice of the coefficients of degree `s e - e + 1` to `s e + e - 1` of
+ * `A^{-1}`. From `R_0, ..., R_{s-1}` (stacked in one matrix) and `S_s`, two
+ * products give `R_s, ..., R_{2s-1}`, and four products of `m x m` matrices
+ * of degree less than `2 e` give `S_{2s}` from `S_s`. With `nb =
+ * ceil(prec/e)` residues, there are about `log2(nb)` such steps; the last
+ * ones multiply matrices with about `nb n / 2` rows (times the number of
+ * chunks of `B`, see below). If `B` has degree at least `e`, its rows are
+ * split into chunks of `e` coefficients, `B = sum_t x^(t e) B_t`, and the
+ * solutions for all chunks are computed at once (all at precision
+ * `prec`).
+ *
+ * The block size is `e = deg(A)`, or `e = length(B)` if `deg(A) < length(B)
+ * <= 2 deg(A)` (then `B` is not split), where `A` and `B` are first
+ * truncated at precision `prec`. For constant `A`, this calls
+ * ::nmod_poly_mat_solve_series_dixon.
+ *
+ * Same conventions as ::nmod_poly_mat_solve_series_dixon (dimensions,
+ * aliasing, return value, coefficients used).
+ *
+ * Note: for one row in `B` (and `m` rows or less), Dixon's lifting
+ * (::nmod_poly_mat_solve_series_dixon) is faster in practice, even though
+ * the cost of high-order lifting, `O~(m^omega e log(nb))` for the slices and
+ * the residues when `nb n` is about `m`, is asymptotically smaller than the
+ * `O~(m^2 prec)` of Dixon's lifting.
+ *
+ * Size of the integers (see @ref IntegerSizes): `prec` is assumed to be at
+ * most `WORD_MAX / 4` (see ::nmod_poly_mat_inv_series).
+ *
+ * \todo stored transforms (see ::nmod_poly_mat_mulmid_precomp_right_init):
+ * `A` is the right operand of three of the six products of each step, and
+ * of the products for the residues; the slice is the right operand of two
+ * products of each step; the truncated inverse, of one product of each
+ * step and of the final product.
+ *
+ * \todo `B` of large degree: the chunk `B_t` only needs precision `prec - t
+ * e`, and the chunks could rather be added to the residues as they are
+ * reached (as in Dixon's lifting) than solved for separately; currently,
+ * for one row of degree about `m deg(A)`, the residues have about `m` rows.
+ */
+int nmod_poly_mat_solve_series_high_order_lifting(nmod_poly_mat_t X,
+                                                  const nmod_poly_mat_t A,
+                                                  const nmod_poly_mat_t B,
+                                                  slong prec);
+
 //@} // doxygen group: Power series solution
 
 /*------------------------------------------------------------*/
@@ -186,6 +240,143 @@ int nmod_poly_mat_linsolve_via_kernel(nmod_poly_mat_t u,
                                       nmod_poly_t den,
                                       const nmod_poly_mat_t A,
                                       const nmod_poly_mat_t b);
+
+/** Computation of the denominator in ::nmod_poly_mat_linsolve_via_series */
+typedef enum
+{
+    NMOD_POLY_MAT_LINSOLVE_RECONSTRUCTION = 0, /**< by rational reconstruction */
+    NMOD_POLY_MAT_LINSOLVE_DETERMINANT = 1,    /**< as the determinant, then reduced */
+} linsolve_den_t;
+
+/** Computes `u` and `den` such that `u A = den b` (see @ref PolySolve), for a
+ * square matrix `A`, from a power series solution. Same specification as
+ * ::nmod_poly_mat_linsolve_via_kernel (return value, normalization of the
+ * output, aliasing), except that `A` must be square: an exception is thrown
+ * otherwise. If `A` is nonsingular, `u / den` is the solution of `y A = b`
+ * in lowest terms, with `den` monic. The modulus must be prime. An exception
+ * is thrown if `den_method` is not one of
+ * ::NMOD_POLY_MAT_LINSOLVE_RECONSTRUCTION and
+ * ::NMOD_POLY_MAT_LINSOLVE_DETERMINANT.
+ *
+ * Algorithm, for `A` of size `n x n` with `n >= 1`, and `b` nonzero:
+ *  - degree bounds: by Cramer's rule, the solution is `(b adj(A)) /
+ *  det(A)`. The `j`-th entry of `b adj(A)` is the determinant of `A` with
+ *  row `j` replaced by `b`, that is, `sum_k b_k C_{j,k}`, where the cofactor
+ *  `C_{j,k}` has degree at most `|rdeg(A)| - rdeg_j(A)` and at most
+ *  `|cdeg(A)| - cdeg_k(A)`. Hence
+ *
+ *      deg(det(A)) <= D = min(|rdeg(A)|, |cdeg(A)|),
+ *      deg(b adj(A)) <= N = min(deg(b) + |rdeg(A)| - min(rdeg(A)),
+ *                               max_k (deg(b_k) - cdeg_k(A)) + |cdeg(A)|),
+ *
+ *  and the solution in lowest terms has a denominator of degree at most `D`
+ *  and numerators of degree at most `N`;
+ *  - expansion point: if `A(0)` is singular, the system is solved for `A(x +
+ *  a)` and `b(x + a)` instead, for some `a` such that `A(a)` is invertible,
+ *  and the solution is shifted back. The point `a` is chosen at random among
+ *  a few values; if none is suitable (this is the case for all of them if `A`
+ *  is singular, and may also happen for small moduli), the solution is
+ *  computed by ::nmod_poly_mat_linsolve_via_kernel;
+ *  - with `den_method` being ::NMOD_POLY_MAT_LINSOLVE_RECONSTRUCTION, with
+ *  `N' = max(N, D-1)` and `prec = N' + D + 1`:
+ *     1. the power series solution `X = b A^{-1} mod x^prec` (see @ref
+ *     SeriesSolve) is computed by ::nmod_poly_mat_solve_series_dixon;
+ *     2. for a random linear combination `s` of the entries of `X`, the
+ *     denominator `q` of `s` is found by rational reconstruction with
+ *     degree bounds `N'` and `D`, by a half-gcd on the `2 D` coefficients of
+ *     `s` of degree `N' - D + 1` to `N' + D` (see the code); `q` divides the
+ *     denominator `Q` of the solution `U / Q` in lowest terms;
+ *     3. certification: let `w = q X mod x^prec`. If `w` has degree at most
+ *     `N'`, then `Q w = q U` (they agree modulo `x^prec`, and both have
+ *     degree less than `prec`), so that `Q` divides `q`: then `q` is `Q` up
+ *     to a constant, and `w / q` is the solution in lowest terms;
+ *     4. generically, steps 2 and 3 succeed for the first linear combination;
+ *     otherwise they are repeated with another one, and after 3 failures the
+ *     denominator is computed as for ::NMOD_POLY_MAT_LINSOLVE_DETERMINANT,
+ *     from the same `X`. The output is always correct; only the running time
+ *     depends on the random choices;
+ *  - with `den_method` being ::NMOD_POLY_MAT_LINSOLVE_DETERMINANT: `X` is
+ *  computed at precision `N + 1`, the determinant of `A` by
+ *  ::nmod_poly_mat_determinant, and `u = det(A) X mod x^(N+1)` is `b
+ *  adj(A)`; then `u` and `det(A)` are divided by their gcd. This avoids the
+ *  rational reconstruction, which needs a precision larger by about `D`.
+ *
+ * The random choices use a local state with a fixed seed, so that the
+ * results and the running times are reproducible.
+ *
+ * Size of the integers (see @ref IntegerSizes): the conditions of
+ * ::nmod_poly_mat_solve_series_dixon at precision `N' + D + 1`, of
+ * ::nmod_poly_mat_determinant, and of ::nmod_poly_mat_linsolve_via_kernel
+ * (in case it is called) are assumed.
+ *
+ * \todo sharper degree bounds: ::nmod_poly_mat_degree_det_bound applied to
+ * `A` for `D`, and to `[A ; b]` for `N` (the numerators of Cramer's rule are
+ * maximal minors of `[A ; b]`); these are at most the bounds above, and lower
+ * the precision of the series. For ::nmod_poly_mat_linsolve_geometric, fewer
+ * points than the length of the entries would then be possible, which
+ * requires evaluating entries longer than the number of points (see the
+ * \todo of ::nmod_poly_mat_det_geometric).
+ */
+int nmod_poly_mat_linsolve_via_series(nmod_poly_mat_t u,
+                                      nmod_poly_t den,
+                                      const nmod_poly_mat_t A,
+                                      const nmod_poly_mat_t b,
+                                      linsolve_den_t den_method);
+
+/** Same as ::nmod_poly_mat_linsolve_via_series, with the power series
+ * solution computed by ::nmod_poly_mat_solve_series_high_order_lifting
+ * instead of Dixon's lifting. */
+int nmod_poly_mat_linsolve_via_high_order_lifting(nmod_poly_mat_t u,
+                                                  nmod_poly_t den,
+                                                  const nmod_poly_mat_t A,
+                                                  const nmod_poly_mat_t b,
+                                                  linsolve_den_t den_method);
+
+/** Computes `u` and `den` such that `u A = den b` (see @ref PolySolve), for a
+ * square matrix `A`, by evaluation and interpolation. Same specification as
+ * ::nmod_poly_mat_linsolve_via_series (there is no random choice here).
+ *
+ * Algorithm, for `A` of size `n x n` with `n >= 1`, and `b` nonzero: with the
+ * degree bounds `N` and `D` of ::nmod_poly_mat_linsolve_via_series, the
+ * determinant of `A` and the numerators `b adj(A)` of Cramer's rule have
+ * degree less than `L = max(N, D) + 1`. They are evaluated at `L` points in
+ * geometric progression, and interpolated:
+ *  - at each point `a`, `A(a)` and `b(a)` are obtained by multipoint
+ *  evaluation (for `A`, by chunks of points, to limit the memory); then
+ *  `det(A(a))` and `b(a) adj(A(a)) = det(A(a)) b(a) A(a)^{-1}` are obtained
+ *  from an LU decomposition of `A(a)`;
+ *  - if `A(a)` is singular, `b(a) adj(A(a))` is zero if `A(a)` has rank less
+ *  than `n - 1`, and otherwise it is computed from vectors `v` and `w` such
+ *  that `A(a) v = 0` and `w A(a) = 0`: then `adj(A(a)) = c v w` for some
+ *  constant `c`, found from one cofactor;
+ *  - the interpolated `b adj(A)` and `det(A)` are divided by their gcd.
+ *
+ * If the interpolated determinant is zero (`A` is singular), or if the
+ * modulus does not allow `L` points in geometric progression (it must be a
+ * prime at least `10 L`, see `NMOD_POLY_CAN_USE_GEOMETRIC`), the solution is
+ * computed by ::nmod_poly_mat_linsolve_via_kernel.
+ *
+ * Cost: for `A` of degree `d` (and `b` of degree at most `d`), `L` is about
+ * `n d`, and the `L` LU decompositions cost `O(n^3 L) = O(n^4 d)`, which is
+ * the dominant part except for small `n`; the evaluations cost `O~(n^2 L)`
+ * and the interpolations `O~(n L)`. Memory: about `(2 n + 1) L` words for
+ * the values at the points, and at most `max(n^2 (d + 1), 2^22)` words for
+ * the evaluations of `A` at a chunk of points.
+ */
+int nmod_poly_mat_linsolve_geometric(nmod_poly_mat_t u,
+                                     nmod_poly_t den,
+                                     const nmod_poly_mat_t A,
+                                     const nmod_poly_mat_t b);
+
+/** Same as ::nmod_poly_mat_linsolve_geometric, with `chunk` points per chunk
+ * for the evaluation of `A` (increased to `deg(A) + 1` if it is smaller, and
+ * reduced to the number of points if it is larger; for `chunk <= 0`, the
+ * default choice). For tests and profiles. */
+int _nmod_poly_mat_linsolve_geometric(nmod_poly_mat_t u,
+                                      nmod_poly_t den,
+                                      const nmod_poly_mat_t A,
+                                      const nmod_poly_mat_t b,
+                                      slong chunk);
 
 //@} // doxygen group: Solution over the polynomials
 
