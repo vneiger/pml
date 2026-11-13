@@ -446,6 +446,193 @@ int _nmod_mat_charpoly_lnz_block_krylov(nmod_poly_t cp, const nmod_mat_t A, slon
 
 //@} // doxygen group: Characteristic polynomial
 
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+/* KRYLOV MATRICES, BASES AND KERNELS                         */
+/*------------------------------------------------------------*/
+/*------------------------------------------------------------*/
+
+/** @name Krylov matrices, bases and kernels
+ * \anchor KrylovMatrices
+ *
+ * <b>Krylov matrix.</b> Let `E` be an `m x n` matrix with rows `E_0, ...,
+ * E_{m-1}`, `M` an `n x n` matrix, `s = shift` a tuple of `m` integers (the
+ * shift) and `d = degrees` a tuple of `m` nonnegative degree bounds. The row
+ * `E_i M^j` is designated by the pair `(i, j)`, and the pairs are sorted by
+ * increasing priority `(s[i] + j, i)`, lexicographically: a smaller `s[i] +
+ * j` comes first, and ties are broken by the row index. The Krylov matrix
+ * `K_{s,d}(E, M)` is formed by the rows `(i, j)` for `0 <= j <= d[i]`, in
+ * this order. For the zero shift and `d[i] = d` for all `i`, it is `[E ; E M ;
+ * ... ; E M^d]`; for `s = (0, k, 2k, ...)` with `k > max(d)`, the iterates of
+ * `E_0` come first, then those of `E_1`, and so on. Only the differences
+ * between the entries of `s` matter.
+ *
+ * <b>Krylov basis.</b> If `E_i M^j` is a linear combination of the rows which
+ * precede it, then so is `E_i M^{j+1}` (staircase property, [JNSV17, Lemma
+ * 7.6]). Hence the row rank profile of the Krylov matrix (its first `r`
+ * linearly independent rows, `r` being its rank) consists of the rows `(i,
+ * j)` with `j < delta[i]`, for some integers `delta[i]` called the minimal
+ * degrees, with `delta[0] + ... + delta[m-1] = r <= n`, provided that the
+ * degree bounds are valid: `delta[i] <= d[i]` for all `i`, that is, each `E_i
+ * M^{d[i]}` is a linear combination of the rows which precede it. The bounds
+ * `d[i] = n` are always valid (Cayley-Hamilton), and so is the degree of the
+ * minimal polynomial of `M`. These rows form the Krylov basis.
+ *
+ * <b>Kernel.</b> The vectors `p = (p_0, ..., p_{m-1})` of polynomials such
+ * that `E_0 p_0(M) + ... + E_{m-1} p_{m-1}(M) = 0` form a free module of rank
+ * `m` (the coefficients of such a `p` form a vector in the left kernel of a
+ * Krylov matrix). Its basis in `s`-Popov form (see @ref MatrixForms;
+ * row-wise, with ROW_LOWER pivots) is unique: its pivots are on the diagonal,
+ * of degrees `delta[0], ..., delta[m-1]`, and its row `i` is
+ * `x^{delta[i]} e_i - sum_k R[i,k] x^{exps[k]} e_{rows[k]}`, where `(rows[k],
+ * exps[k])` runs over the Krylov basis and `E_i M^{delta[i]} = sum_k R[i,k]
+ * E_{rows[k]} M^{exps[k]}` [JNSV17, Lemma 7.11]. The functions below give
+ * this basis in compact form (`R`, `rows`, `exps`, `deltas`);
+ * ::nmod_poly_mat_krylov_kernel_basis gives it as a polynomial matrix.
+ *
+ * <b>Jordan matrices.</b> The functions with suffix `_jordan` take for `M` a
+ * Jordan matrix, block diagonal with `nblocks` blocks `x_b I_{t_b} +
+ * Z_{t_b}`, where `Z_t` is the `t x t` matrix with ones on its superdiagonal
+ * (so that the row vector `v Z_t` is `v` shifted by one position to the
+ * right), given by `eig[b] = x_b` (`eig == NULL`: all zero) and `sizes[b] =
+ * t_b > 0` (`sizes == NULL`: all one). A row is then multiplied by `M` in
+ * `O(n)` operations. Identifying the block `b` of columns of `E_i` with the
+ * coefficients of a polynomial `f_{i,b}` of degree less than `t_b`, the row
+ * `E_i p(M)` corresponds to the polynomials `p(x + x_b) f_{i,b} mod x^{t_b}`
+ * [JNSV17, Section 1.2]: all eigenvalues zero gives approximants
+ * (Hermite-Pade approximation), all sizes one gives interpolants, and the
+ * general case M-Pade approximants; see
+ * ::nmod_poly_mat_approximant_basis_krylov,
+ * ::nmod_poly_mat_interpolant_basis_krylov and
+ * ::nmod_poly_mat_mpade_basis_krylov.
+ *
+ * <b>Conventions.</b>
+ * - The modulus must be prime.
+ * - `shift == NULL` means the zero shift; `degrees == NULL` means `d[i] = n`
+ *   for all `i`. Except for the Krylov matrix functions, degree bounds larger
+ *   than `n` are replaced by `n`, and the bounds must be valid; the kernel
+ *   functions detect when they are not.
+ * - Size of the integers (see @ref IntegerSizes): there is no condition on
+ *   the shift, whose entries may be arbitrary `slong` values (they are only
+ *   compared, after an internal normalization); degree bounds must be
+ *   nonnegative (an exception is raised otherwise).
+ *
+ * Algorithm: the rows are processed in priority order, generated only when
+ * needed and stopped at the first dependent row of each index, and they are
+ * eliminated by chunks of at most `c` consecutive rows (`c <= 128`) using
+ * `nmod_mat_ple` and matrix products. At most `r + m` rows are needed: the
+ * `r` rows of the basis and, for the kernels, the first dependent row of each
+ * index. When `r = n`, the elimination stops, since all later rows are
+ * dependent: the basis alone may then cost about `n` rows (for instance,
+ * generically, the first `n` rows of `E` when `m >= n`), and the kernels
+ * compute the remaining dependent rows `E_i M^{delta[i]}` without
+ * eliminating them. A few more rows may be computed: the rows of an index
+ * computed in the same chunk after its first dependent row are discarded, at
+ * most `min(c, delta[i]) - 1` for index `i` (fewer than `r` in total). The
+ * cost is `O((r + m) n^2)` plus `O(r^3 + m r^2)` for the kernel; see
+ * `nmod_mat_extra/krylov_basis.c` for details. The interface follows the
+ * methods `krylov_matrix`, `krylov_basis` and `krylov_kernel_basis` of
+ * SageMath matrices.
+ *
+ * Reference: [JNSV17] C.-P. Jeannerod, V. Neiger, E. Schost, G. Villard.
+ * Computing minimal interpolation bases. Journal of Symbolic Computation 83
+ * (2017), Section 7.
+ */
+//@{
+
+/** Sets `K` to the Krylov matrix `K_{s,d}(E, M)` (see @ref KrylovMatrices),
+ * where `s = shift` and `d = degrees`. The matrix `K` must have `N` rows and
+ * `n` columns, where `N` is the sum of the `d[i] + 1` for `0 <= i < m`. The degree bounds need not be
+ * valid, and they are not replaced by `n` when larger.
+ */
+void nmod_mat_krylov_matrix(nmod_mat_t K,
+                            const nmod_mat_t E,
+                            const nmod_mat_t M,
+                            const slong * shift,
+                            const slong * degrees);
+
+/** Same as ::nmod_mat_krylov_matrix, for a Jordan matrix `M` given by `eig`,
+ * `sizes` and `nblocks` (see @ref KrylovMatrices). */
+void nmod_mat_krylov_matrix_jordan(nmod_mat_t K,
+                                   const nmod_mat_t E,
+                                   nn_srcptr eig,
+                                   const slong * sizes,
+                                   slong nblocks,
+                                   const slong * shift,
+                                   const slong * degrees);
+
+/** Computes the Krylov basis of `K_{s,d}(E, M)` (see @ref KrylovMatrices),
+ * where `s = shift` and `d = degrees`, and returns its rank `r`. The first
+ * `r` rows of `B` are set to the Krylov basis, in priority order, and
+ * `(rows[k], exps[k])` to the pair `(i, j)` of its row `k`, for `0 <= k < r`.
+ * The matrix `B` must have `n` columns and at least `min(n, N)` rows, where
+ * `N` is the sum of the `d[i] + 1` (`n` rows always suffice); `rows` and `exps` must
+ * have room for `r` entries (`n` always suffices).
+ *
+ * The validity of the degree bounds is not checked. If they are not valid,
+ * the output is the row rank profile of a matrix which differs from
+ * `K_{s,d}(E, M)`, and some pair `(i, d[i])` appears in it (this can be
+ * checked in `O(r)`).
+ */
+slong nmod_mat_krylov_basis(nmod_mat_t B,
+                            slong * rows,
+                            slong * exps,
+                            const nmod_mat_t E,
+                            const nmod_mat_t M,
+                            const slong * shift,
+                            const slong * degrees);
+
+/** Same as ::nmod_mat_krylov_basis, for a Jordan matrix `M` given by `eig`,
+ * `sizes` and `nblocks` (see @ref KrylovMatrices). */
+slong nmod_mat_krylov_basis_jordan(nmod_mat_t B,
+                                   slong * rows,
+                                   slong * exps,
+                                   const nmod_mat_t E,
+                                   nn_srcptr eig,
+                                   const slong * sizes,
+                                   slong nblocks,
+                                   const slong * shift,
+                                   const slong * degrees);
+
+/** Computes the kernel of the Krylov matrix `K_{s,d}(E, M)` in compact form
+ * (see @ref KrylovMatrices), where `s = shift` and `d = degrees`: on
+ * success, returns the rank `r` of the Krylov matrix, sets `(rows[k],
+ * exps[k])` to the Krylov basis as in ::nmod_mat_krylov_basis, `deltas[i]` to
+ * the minimal degrees for `0 <= i < m`, and the first `r` columns of `R` to
+ * the relations
+ * `E_i M^{deltas[i]} = sum_k R[i,k] E_{rows[k]} M^{exps[k]}`. The matrix `R`
+ * must have `m` rows and at least `r` columns (`n` columns always suffice);
+ * `rows` and `exps` must have room for `r` entries and `deltas` for `m`
+ * entries.
+ *
+ * Returns `-1` if the degree bounds are found not to be valid (some row
+ * `(i, d[i])` is in the row rank profile); the outputs are then undefined.
+ * This detection is exact.
+ */
+slong nmod_mat_krylov_kernel(nmod_mat_t R,
+                             slong * rows,
+                             slong * exps,
+                             slong * deltas,
+                             const nmod_mat_t E,
+                             const nmod_mat_t M,
+                             const slong * shift,
+                             const slong * degrees);
+
+/** Same as ::nmod_mat_krylov_kernel, for a Jordan matrix `M` given by `eig`,
+ * `sizes` and `nblocks` (see @ref KrylovMatrices). */
+slong nmod_mat_krylov_kernel_jordan(nmod_mat_t R,
+                                    slong * rows,
+                                    slong * exps,
+                                    slong * deltas,
+                                    const nmod_mat_t E,
+                                    nn_srcptr eig,
+                                    const slong * sizes,
+                                    slong nblocks,
+                                    const slong * shift,
+                                    const slong * degrees);
+
+//@} // doxygen group: Krylov matrices, bases and kernels
+
 #ifdef __cplusplus
 }
 #endif
