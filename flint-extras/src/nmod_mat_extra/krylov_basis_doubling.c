@@ -151,19 +151,19 @@ _krylov_pow_apply(nmod_mat_t Out, const nmod_mat_t In, const _krylov_pow_struct 
     }
 }
 
-/* pairs (i, j) sorted by priority (s_i + j, i), for normalized shifts */
+/* pairs (i, j) sorted by priority (s_i + j, i), for normalized shift */
 static int
-_krylov_pair_less(slong i1, slong j1, slong i2, slong j2, const slong * shifts)
+_krylov_pair_less(slong i1, slong j1, slong i2, slong j2, const slong * shift)
 {
-    slong k1 = shifts[i1] + j1;
-    slong k2 = shifts[i2] + j2;
+    slong k1 = shift[i1] + j1;
+    slong k2 = shift[i2] + j2;
     return k1 < k2 || (k1 == k2 && i1 < i2);
 }
 
 slong
 _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows, slong * exps,
         slong * deltas, int * ok, const nmod_mat_t E,
-        const _nmod_mat_krylov_op_t op, const slong * shifts,
+        const _nmod_mat_krylov_op_t op, const slong * shift,
         const slong * degrees)
 {
     slong m = E->r, n = E->c, i, a, t, r, maxd, cnt, nnew, nmerged;
@@ -190,7 +190,7 @@ _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows, slong * exps,
     order = d + m;
     nsh = order + m;
     _nmod_mat_krylov_degrees(d, m, degrees, n, 1);
-    _nmod_mat_krylov_normalize_shifts(nsh, shifts, m, n);
+    _nmod_mat_krylov_normalize_shift(nsh, shift, m, n);
 
     maxd = 0;
     for (i = 0; i < m; i++)

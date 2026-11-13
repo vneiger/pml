@@ -50,13 +50,13 @@ _krylov_shift_index_cmp(const void * a, const void * b)
 }
 
 void
-_nmod_mat_krylov_normalize_shifts(slong * t, const slong * shifts,
+_nmod_mat_krylov_normalize_shift(slong * t, const slong * shift,
         slong m, slong D)
 {
     slong k, cur;
     _krylov_shift_index_struct * v;
 
-    if (shifts == NULL)
+    if (shift == NULL)
     {
         for (k = 0; k < m; k++)
             t[k] = 0;
@@ -66,8 +66,8 @@ _nmod_mat_krylov_normalize_shifts(slong * t, const slong * shifts,
     if (m == 0)
         return;
 
-    /* shifts already nondecreasing (for instance uniform): no sorting */
-    for (k = 1; k < m && shifts[k] >= shifts[k - 1]; k++)
+    /* shift already nondecreasing (for instance uniform): no sorting */
+    for (k = 1; k < m && shift[k] >= shift[k - 1]; k++)
         ;
 
     if (k == m)
@@ -76,7 +76,7 @@ _nmod_mat_krylov_normalize_shifts(slong * t, const slong * shifts,
         t[0] = 0;
         for (k = 1; k < m; k++)
         {
-            ulong gap = (ulong) shifts[k] - (ulong) shifts[k - 1];
+            ulong gap = (ulong) shift[k] - (ulong) shift[k - 1];
 
             if (gap > (ulong) D + 1)
                 gap = D + 1;
@@ -89,7 +89,7 @@ _nmod_mat_krylov_normalize_shifts(slong * t, const slong * shifts,
     v = flint_malloc(m * sizeof(_krylov_shift_index_struct));
     for (k = 0; k < m; k++)
     {
-        v[k].s = shifts[k];
+        v[k].s = shift[k];
         v[k].i = k;
     }
 
@@ -124,7 +124,7 @@ _nmod_mat_krylov_nrows(slong m, const slong * degrees)
 
 slong
 _nmod_mat_krylov_order(slong * rows, slong * exps, slong m,
-        const slong * shifts, const slong * degrees)
+        const slong * shift, const slong * degrees)
 {
     slong i, k, len, D;
     slong * key, * nextj, * heap;
@@ -137,7 +137,7 @@ _nmod_mat_krylov_order(slong * rows, slong * exps, slong m,
     for (i = 0; i < m; i++)
         D = FLINT_MAX(D, degrees[i]);
 
-    _nmod_mat_krylov_normalize_shifts(key, shifts, m, D);
+    _nmod_mat_krylov_normalize_shift(key, shift, m, D);
 
     len = 0;
     for (i = 0; i < m; i++)

@@ -319,12 +319,14 @@ void nmod_poly_mat_pmintbasis_geometric_auto(nmod_poly_mat_t intbas,
  */
 //@{
 
-/** Computes the basis `P` in `shifts`-Popov form (row-wise, with ROW_LOWER
+/** Computes the basis `P` in `shift`-Popov form (row-wise, with ROW_LOWER
  * pivots, see @ref MatrixForms), which is unique, of the module of vectors
  * `p` of `m` polynomials such that `p_0(pts[j]) V[0,j] + ... +
  * p_{m-1}(pts[j]) V[m-1,j] = 0` for each column `j` of the `m x sigma`
  * matrix `V`, by linear algebra on the Krylov matrix of `V` with respect to
- * the diagonal matrix `diag(pts)` (see @ref KrylovMatrices).
+ * the diagonal matrix `diag(pts)` (see @ref KrylovMatrices, and
+ * ::nmod_poly_mat_krylov_kernel_basis_jordan for general relation bases, in
+ * nmod_poly_mat_relation_basis.h).
  *
  * Each column of `V` is one condition of order 1. Points may be repeated: a
  * point repeated in several columns gives several such conditions with
@@ -333,7 +335,7 @@ void nmod_poly_mat_pmintbasis_geometric_auto(nmod_poly_mat_t intbas,
  * derivatives, see ::nmod_poly_mat_mpade_basis_krylov, of which this is the
  * case of a constant matrix with all orders 1.
  *
- * The output `P` must be initialized with dimensions `m x m`; `shifts == NULL`
+ * The output `P` must be initialized with dimensions `m x m`; `shift == NULL`
  * means the zero shift; the modulus must be prime. Size of the integers (see
  * @ref IntegerSizes): there is no condition on the shift, whose entries may
  * be arbitrary `slong` values. The cost is about `sigma^2 (sigma + m)`
@@ -342,7 +344,7 @@ void nmod_poly_mat_pmintbasis_geometric_auto(nmod_poly_mat_t intbas,
 void nmod_poly_mat_interpolant_basis_krylov(nmod_poly_mat_t P,
                                             const nmod_mat_t V,
                                             nn_srcptr pts,
-                                            const slong * shifts);
+                                            const slong * shift);
 
 //@} // doxygen group: Interpolant bases via Krylov matrices
 

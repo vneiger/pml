@@ -361,7 +361,7 @@ void nmod_poly_mat_pmbasis_geometric(nmod_poly_mat_t appbas,
 
 /** @name Approximant and M-Pade bases via Krylov matrices
  *
- * These functions compute the basis in `shifts`-Popov form (row-wise, with
+ * These functions compute the basis in `shift`-Popov form (row-wise, with
  * ROW_LOWER pivots, see @ref MatrixForms), which is unique, of the module of
  * vectors `p` of `m` polynomials such that, for each column `j` of the
  * matrix `F` (of size `m x nc`):
@@ -375,7 +375,8 @@ void nmod_poly_mat_pmbasis_geometric(nmod_poly_mat_t appbas,
  * (at 0 for approximants), and compute the kernel of its Krylov matrix with
  * respect to the Jordan matrix with one block `(pts[j], orders[j])` per
  * column, where `sigma` is the sum of the orders (see @ref KrylovMatrices
- * and ::nmod_poly_mat_krylov_kernel_basis_jordan).
+ * and ::nmod_poly_mat_krylov_kernel_basis_jordan, which computes general
+ * relation bases, in nmod_poly_mat_relation_basis.h).
  *
  * M-Pade approximation covers the two other problems: approximants are the
  * case of all points zero, and interpolants
@@ -385,7 +386,7 @@ void nmod_poly_mat_pmbasis_geometric(nmod_poly_mat_t appbas,
  * a point repeated in several columns gives several conditions of order 1
  * at that point, with different vectors of values.
  *
- * The output `P` must be initialized with dimensions `m x m`; `shifts == NULL`
+ * The output `P` must be initialized with dimensions `m x m`; `shift == NULL`
  * means the zero shift; the orders must be nonnegative, and the modulus
  * prime. Size of the integers (see @ref IntegerSizes): there is no condition
  * on the shift, whose entries may be arbitrary `slong` values; `sigma` is the
@@ -401,20 +402,20 @@ void nmod_poly_mat_pmbasis_geometric(nmod_poly_mat_t appbas,
  */
 //@{
 
-/** Approximant basis in `shifts`-Popov form of `F` at order `orders`, by
+/** Approximant basis in `shift`-Popov form of `F` at order `orders`, by
  * linear algebra on Krylov matrices. */
 void nmod_poly_mat_approximant_basis_krylov(nmod_poly_mat_t P,
                                             const nmod_poly_mat_t F,
                                             const slong * orders,
-                                            const slong * shifts);
+                                            const slong * shift);
 
-/** M-Pade basis in `shifts`-Popov form of `F` at the points `pts` and orders
+/** M-Pade basis in `shift`-Popov form of `F` at the points `pts` and orders
  * `orders`, by linear algebra on Krylov matrices. */
 void nmod_poly_mat_mpade_basis_krylov(nmod_poly_mat_t P,
                                       const nmod_poly_mat_t F,
                                       nn_srcptr pts,
                                       const slong * orders,
-                                      const slong * shifts);
+                                      const slong * shift);
 
 //@} // doxygen group: Approximant and M-Pade bases via Krylov matrices
 

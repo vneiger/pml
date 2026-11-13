@@ -16,29 +16,34 @@
 #include "nmod_mat_extra/krylov_impl.h"
 
 /* default maximal number of rows processed at once: n / 8 (n = number of
-   columns), clamped to [16, 128] (tuned on x86_64 with AVX-512, 30 and 60
-   bit primes, profile p-krylov chunk) */
+   columns), clamped to [16, 128] (profile p-krylov chunk; on Zen 4, Ice
+   Lake, Cascade Lake and Apple M4, Nov 2026, within 1.05 times the best
+   size except at 60 bits for sigma = 128: 1.08 to 1.17) */
 #define KRYLOV_CHUNK_DEFAULT(n) FLINT_MAX(16, FLINT_MIN(128, (n) / 8))
 
 /*
     Automatic choice of the powers of M used to generate the rows (dense
     M, see krylov_impl.h): for n >= KRYLOV_POW_MIN_DIM, where the products
-    of a few rows by M are limited by the memory bandwidth, and in the
-    chunks with at most KRYLOV_POW_MAX_RUNS indices (otherwise the rows
-    are already computed by products with several rows). The exponents
-    depend on the relative speed of nmod_mat_mul, which computes the
-    squarings and the products of a few rows: only for moduli below 2^32
-    (fast SIMD kernels for the squarings; products of 1 to 6 rows by a large
-    matrix limited by the memory bandwidth); tuned on x86_64 with AVX-512
-    and without IFMA (profile p-krylov pow, 1.3 to 2.3 times faster for
-    n = 1600 and 3200; no gain at 50 bits). Above 2^52, it paid off too
-    (e <= 4) until FLINT's SIMD vector-matrix products for these moduli
-    (FLINT #2907): with them, n rows as single-row products cost 1.7
-    products by M at n = 1600 instead of 15, and powers are 1.4 to 3.3
-    times slower.
+    of a few rows by M are limited by the memory bandwidth, and only in the
+    chunks where KRYLOV_POW_MAX_RUNS = 1 index generates rows (m = 1, or a
+    Hermite-type shift; with more indices, the rows are already computed by
+    products with several rows). The squarings and the products of a few
+    rows are done by nmod_mat_mul, so the gain depends on its speed for the
+    modulus: M^2 and M^4 (logpow 2) for moduli below 2^32, and below 2^52
+    with AVX-512 IFMA (FLINT's IFMA products).
+
+    Measured at n = 1600, dense M, relative to products by M only (profile
+    p-krylov pow; Nov 2026, Zen 4, Ice Lake, Cascade Lake, Apple M4): with
+    one index, 0.66 to 0.95 below 2^32 (0.88 to 1.08 on Cascade Lake), where
+    logpow 2 is within 1.17 times the best logpow and the former logpow 5 up
+    to 1.37; 0.68 to 0.80 at 50 bits with IFMA, against 1.04 to 1.22
+    without (logpow 1); with two indices, up to 1.88 times slower on x86
+    (logpow 5). Above 2^52 there is no gain (1.25 to 1.72 with logpow 1)
+    since FLINT's SIMD vector-matrix products for these moduli (FLINT
+    #2907).
 */
 #define KRYLOV_POW_MIN_DIM 1200
-#define KRYLOV_POW_MAX_RUNS 2
+#define KRYLOV_POW_MAX_RUNS 1
 
 static slong
 _krylov_auto_logpow(slong n, ulong p)
@@ -47,24 +52,14 @@ _krylov_auto_logpow(slong n, ulong p)
 
     if (n < KRYLOV_POW_MIN_DIM)
         return 0;
+#if defined(__AVX512IFMA__)
+    if (bits <= 52)
+        return 2;
+#else
     if (bits <= 32)
-        return 5;
+        return 2;
+#endif
     return 0;
-}
-
-/*
-    For the basis alone (nmod_mat_krylov_basis), the row echelon basis (LU
-    mode, see _nmod_mat_krylov_basis_iter_lu) instead of the reduced one:
-    measured with uniform and Hermite shifts, Hermite-Pade and dense M, n
-    = 64 to 1024 (x86_64 AVX-512 without IFMA), it takes 0.69 to 0.95 times
-    the time at 60 bits; at 50 bits, 0.82 to 1.05 for n = 1024, 0.91 to 1.08
-    for n = 256 and 1.06 to 1.16 for n = 64; at 30 bits, 0.92 to 1.22.
-*/
-static int
-_krylov_basis_lu_wanted(slong n, nmod_t mod)
-{
-    flint_bitcnt_t bits = NMOD_BITS(mod);
-    return bits > 52 || (bits > 32 && n >= 512);
 }
 
 /* row states */
@@ -184,7 +179,7 @@ _krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
         slong * deltas, nmod_mat_t T, nmod_mat_t G, int lumode, nmod_mat_t LU,
         slong * bpos, slong * piv, int * ok,
         const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
-        const slong * shifts, const slong * degrees, slong chunk)
+        const slong * shift, const slong * degrees, slong chunk)
 {
     slong m = E->r, n = E->c;
     ulong p = E->mod.n;
@@ -286,8 +281,8 @@ _krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
                     "columns and at least min(E->c, sum (d_i + 1)) rows\n");
     }
 
-    /* priorities: keys s_i + j with equivalent shifts in a small range */
-    _nmod_mat_krylov_normalize_shifts(key, shifts, m, n);
+    /* priorities: keys s_i + j with equivalent shift in a small range */
+    _nmod_mat_krylov_normalize_shift(key, shift, m, n);
 
     hlen = 0;
     for (i = 0; i < m; i++)
@@ -820,26 +815,26 @@ slong
 _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
         slong * deltas, nmod_mat_t T, nmod_mat_t G, slong * piv, int * ok,
         const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
-        const slong * shifts, const slong * degrees, slong chunk)
+        const slong * shift, const slong * degrees, slong chunk)
 {
     return _krylov_basis_iter(B, rows, exps, deltas, T, G, 0, NULL, NULL, piv, ok,
-                              E, op, shifts, degrees, chunk);
+                              E, op, shift, degrees, chunk);
 }
 
 slong
 _nmod_mat_krylov_basis_iter_lu(nmod_mat_t B, slong * rows, slong * exps,
         slong * deltas, nmod_mat_t T, nmod_mat_t LU, slong * bpos, slong * piv,
         int * ok, const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
-        const slong * shifts, const slong * degrees, slong chunk)
+        const slong * shift, const slong * degrees, slong chunk)
 {
     return _krylov_basis_iter(B, rows, exps, deltas, T, NULL, 1, LU, bpos, piv, ok,
-                              E, op, shifts, degrees, chunk);
+                              E, op, shift, degrees, chunk);
 }
 
 slong
 _nmod_mat_krylov_basis_naive(nmod_mat_t B, slong * rows, slong * exps,
         const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
-        const slong * shifts, const slong * degrees)
+        const slong * shift, const slong * degrees)
 {
     slong m = E->r, n = E->c, N, a, r, t;
     slong * d, * ri, * rj;
@@ -855,7 +850,7 @@ _nmod_mat_krylov_basis_naive(nmod_mat_t B, slong * rows, slong * exps,
     indep = flint_malloc(N + 1);
 
     nmod_mat_init(K, N, n, E->mod.n);
-    _nmod_mat_krylov_matrix(K, ri, rj, E, op, shifts, d);
+    _nmod_mat_krylov_matrix(K, ri, rj, E, op, shift, d);
 
     nmod_mat_init_set(X, K);
     r = _nmod_mat_row_rank_profile(indep, X);
@@ -882,10 +877,18 @@ _nmod_mat_krylov_basis_naive(nmod_mat_t B, slong * rows, slong * exps,
     return r;
 }
 
+/*
+    The basis alone is computed in row echelon form (LU mode, see
+    _nmod_mat_krylov_basis_iter_lu) rather than in reduced form: measured
+    with uniform and Hermite shifts, Hermite-Pade and dense M, n = 64 to
+    1024 (Nov 2026, Zen 4, Ice Lake, Cascade Lake, Apple M4), it takes 0.54
+    to 1.03 times the time, except at n = 128 on x86 below 2^52 (0.78 to
+    1.19 at 30 bits, 1.01 to 1.06 at 50 bits).
+*/
 slong
 nmod_mat_krylov_basis(nmod_mat_t B, slong * rows, slong * exps,
         const nmod_mat_t E, const nmod_mat_t M,
-        const slong * shifts, const slong * degrees)
+        const slong * shift, const slong * degrees)
 {
     _nmod_mat_krylov_op_t op;
     slong r;
@@ -894,12 +897,8 @@ nmod_mat_krylov_basis(nmod_mat_t B, slong * rows, slong * exps,
         flint_throw(FLINT_ERROR, "nmod_mat_krylov_basis: incompatible dimensions\n");
 
     _nmod_mat_krylov_op_init_dense(op, M);
-    if (_krylov_basis_lu_wanted(E->c, E->mod))
-        r = _nmod_mat_krylov_basis_iter_lu(B, rows, exps, NULL, NULL, NULL, NULL,
-                                           NULL, NULL, E, op, shifts, degrees, 0);
-    else
-        r = _nmod_mat_krylov_basis_iter(B, rows, exps, NULL, NULL, NULL, NULL, NULL,
-                                        E, op, shifts, degrees, 0);
+    r = _nmod_mat_krylov_basis_iter_lu(B, rows, exps, NULL, NULL, NULL, NULL,
+                                       NULL, NULL, E, op, shift, degrees, 0);
     _nmod_mat_krylov_op_clear(op);
 
     return r;
@@ -908,7 +907,7 @@ nmod_mat_krylov_basis(nmod_mat_t B, slong * rows, slong * exps,
 slong
 nmod_mat_krylov_basis_jordan(nmod_mat_t B, slong * rows, slong * exps,
         const nmod_mat_t E, nn_srcptr eig, const slong * sizes, slong nblocks,
-        const slong * shifts, const slong * degrees)
+        const slong * shift, const slong * degrees)
 {
     _nmod_mat_krylov_op_t op;
     slong r;
@@ -918,12 +917,8 @@ nmod_mat_krylov_basis_jordan(nmod_mat_t B, slong * rows, slong * exps,
     if (op->n != E->c)
         flint_throw(FLINT_ERROR, "nmod_mat_krylov_basis_jordan: incompatible dimensions\n");
 
-    if (_krylov_basis_lu_wanted(E->c, E->mod))
-        r = _nmod_mat_krylov_basis_iter_lu(B, rows, exps, NULL, NULL, NULL, NULL,
-                                           NULL, NULL, E, op, shifts, degrees, 0);
-    else
-        r = _nmod_mat_krylov_basis_iter(B, rows, exps, NULL, NULL, NULL, NULL, NULL,
-                                        E, op, shifts, degrees, 0);
+    r = _nmod_mat_krylov_basis_iter_lu(B, rows, exps, NULL, NULL, NULL, NULL,
+                                       NULL, NULL, E, op, shift, degrees, 0);
     _nmod_mat_krylov_op_clear(op);
 
     return r;

@@ -17,7 +17,7 @@
 void
 _nmod_mat_krylov_matrix(nmod_mat_t K, slong * rows, slong * exps,
         const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
-        const slong * shifts, const slong * degrees)
+        const slong * shift, const slong * degrees)
 {
     slong m = E->r, n = E->c, N, i, j, k, maxd;
     slong * ri, * rj, * off, * pos;
@@ -38,7 +38,7 @@ _nmod_mat_krylov_matrix(nmod_mat_t K, slong * rows, slong * exps,
     pos = rj + N;
     off = pos + N;
 
-    _nmod_mat_krylov_order(ri, rj, m, shifts, degrees);
+    _nmod_mat_krylov_order(ri, rj, m, shift, degrees);
 
     /* pos[off[i] + j] = index in K of the row (i, j) */
     off[0] = 0;
@@ -125,7 +125,7 @@ _nmod_mat_krylov_matrix(nmod_mat_t K, slong * rows, slong * exps,
 
 void
 nmod_mat_krylov_matrix(nmod_mat_t K, const nmod_mat_t E, const nmod_mat_t M,
-        const slong * shifts, const slong * degrees)
+        const slong * shift, const slong * degrees)
 {
     _nmod_mat_krylov_op_t op;
     slong * d;
@@ -136,7 +136,7 @@ nmod_mat_krylov_matrix(nmod_mat_t K, const nmod_mat_t E, const nmod_mat_t M,
     d = flint_malloc((E->r + 1) * sizeof(slong));
     _nmod_mat_krylov_degrees(d, E->r, degrees, E->c, 0);
     _nmod_mat_krylov_op_init_dense(op, M);
-    _nmod_mat_krylov_matrix(K, NULL, NULL, E, op, shifts, d);
+    _nmod_mat_krylov_matrix(K, NULL, NULL, E, op, shift, d);
     _nmod_mat_krylov_op_clear(op);
     flint_free(d);
 }
@@ -144,7 +144,7 @@ nmod_mat_krylov_matrix(nmod_mat_t K, const nmod_mat_t E, const nmod_mat_t M,
 void
 nmod_mat_krylov_matrix_jordan(nmod_mat_t K, const nmod_mat_t E,
         nn_srcptr eig, const slong * sizes, slong nblocks,
-        const slong * shifts, const slong * degrees)
+        const slong * shift, const slong * degrees)
 {
     _nmod_mat_krylov_op_t op;
     slong * d;
@@ -156,7 +156,7 @@ nmod_mat_krylov_matrix_jordan(nmod_mat_t K, const nmod_mat_t E,
 
     d = flint_malloc((E->r + 1) * sizeof(slong));
     _nmod_mat_krylov_degrees(d, E->r, degrees, E->c, 0);
-    _nmod_mat_krylov_matrix(K, NULL, NULL, E, op, shifts, d);
+    _nmod_mat_krylov_matrix(K, NULL, NULL, E, op, shift, d);
     _nmod_mat_krylov_op_clear(op);
     flint_free(d);
 }

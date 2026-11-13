@@ -16,7 +16,7 @@
 #include <flint/nmod_poly.h>
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly_mat.h>
-#include "nmod_poly_mat_kernel.h"
+#include "nmod_poly_mat_relation_basis.h"
 #include "nmod_poly_mat_approximant.h"
 #include "nmod_poly_mat_interpolant.h"
 
@@ -32,7 +32,7 @@
 
 void
 nmod_poly_mat_approximant_basis_krylov(nmod_poly_mat_t P,
-        const nmod_poly_mat_t F, const slong * orders, const slong * shifts)
+        const nmod_poly_mat_t F, const slong * orders, const slong * shift)
 {
     slong m = F->r, n = F->c, i, j, sigma, nb, off;
     slong * sizes;
@@ -71,7 +71,7 @@ nmod_poly_mat_approximant_basis_krylov(nmod_poly_mat_t P,
     }
 
     if (!nmod_poly_mat_krylov_kernel_basis_jordan(P, E, NULL, sizes, nb,
-                                                  shifts, NULL))
+                                                  shift, NULL))
         flint_throw(FLINT_ERROR, "nmod_poly_mat_approximant_basis_krylov: unexpected failure\n");
 
     nmod_mat_clear(E);
@@ -80,19 +80,19 @@ nmod_poly_mat_approximant_basis_krylov(nmod_poly_mat_t P,
 
 void
 nmod_poly_mat_interpolant_basis_krylov(nmod_poly_mat_t P, const nmod_mat_t V,
-        nn_srcptr pts, const slong * shifts)
+        nn_srcptr pts, const slong * shift)
 {
     if (P->r != V->r || P->c != V->r)
         flint_throw(FLINT_ERROR, "nmod_poly_mat_interpolant_basis_krylov: P must be V->r x V->r\n");
 
     if (!nmod_poly_mat_krylov_kernel_basis_jordan(P, V, pts, NULL, V->c,
-                                                  shifts, NULL))
+                                                  shift, NULL))
         flint_throw(FLINT_ERROR, "nmod_poly_mat_interpolant_basis_krylov: unexpected failure\n");
 }
 
 void
 nmod_poly_mat_mpade_basis_krylov(nmod_poly_mat_t P, const nmod_poly_mat_t F,
-        nn_srcptr pts, const slong * orders, const slong * shifts)
+        nn_srcptr pts, const slong * orders, const slong * shift)
 {
     slong m = F->r, n = F->c, i, j, sigma, nb, off;
     slong * sizes;
@@ -147,7 +147,7 @@ nmod_poly_mat_mpade_basis_krylov(nmod_poly_mat_t P, const nmod_poly_mat_t F,
     }
 
     if (!nmod_poly_mat_krylov_kernel_basis_jordan(P, E, eig, sizes, nb,
-                                                  shifts, NULL))
+                                                  shift, NULL))
         flint_throw(FLINT_ERROR, "nmod_poly_mat_mpade_basis_krylov: unexpected failure\n");
 
     nmod_mat_clear(E);

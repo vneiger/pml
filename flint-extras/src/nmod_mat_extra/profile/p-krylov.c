@@ -127,7 +127,7 @@ profile_dense(flint_bitcnt_t bits, flint_rand_t state)
             for (s = 0; s < 2; s++)
             {
                 slong m = ms[j], i, r = 0;
-                slong * shifts = flint_malloc(m * sizeof(slong));
+                slong * shift = flint_malloc(m * sizeof(slong));
                 slong * rows = flint_malloc(n * sizeof(slong));
                 slong * exps = flint_malloc(n * sizeof(slong));
                 slong * deltas = flint_malloc(m * sizeof(slong));
@@ -138,12 +138,12 @@ profile_dense(flint_bitcnt_t bits, flint_rand_t state)
 
                 if (s == 1 && m == 1)
                 {
-                    flint_free(shifts); flint_free(rows); flint_free(exps); flint_free(deltas);
+                    flint_free(shift); flint_free(rows); flint_free(exps); flint_free(deltas);
                     continue;
                 }
 
                 for (i = 0; i < m; i++)
-                    shifts[i] = (s == 0) ? 0 : i * (n + 1);
+                    shift[i] = (s == 0) ? 0 : i * (n + 1);
 
                 nmod_mat_init(E, m, n, p);
                 nmod_mat_init(M, n, n, p);
@@ -154,11 +154,11 @@ profile_dense(flint_bitcnt_t bits, flint_rand_t state)
                 _nmod_mat_krylov_op_init_dense(op, M);
 
                 TIME_IT(tb, r = _nmod_mat_krylov_basis_iter(B, rows, exps, NULL,
-                            NULL, NULL, NULL, &ok, E, op, shifts, NULL, 0));
+                            NULL, NULL, NULL, &ok, E, op, shift, NULL, 0));
                 TIME_IT(td, _nmod_mat_krylov_basis_doubling(B, rows, exps, NULL,
-                            &ok, E, op, shifts, NULL));
+                            &ok, E, op, shift, NULL));
                 TIME_IT(tk, _nmod_mat_krylov_kernel(R, rows, exps, deltas, E, op,
-                            shifts, NULL, 0, _NMOD_MAT_KRYLOV_KERNEL_AUTO));
+                            shift, NULL, 0, _NMOD_MAT_KRYLOV_KERNEL_AUTO));
 
                 flint_printf("%5wd %5wd  %s  %.2e %.2e %.2e %.2e   (%6.2f %6.2f %6.2f)   rank %wd\n",
                     n, m, s == 0 ? "unif" : "herm", tmul, tb, td, tk,
@@ -169,7 +169,7 @@ profile_dense(flint_bitcnt_t bits, flint_rand_t state)
                 nmod_mat_clear(M);
                 nmod_mat_clear(B);
                 nmod_mat_clear(R);
-                flint_free(shifts);
+                flint_free(shift);
                 flint_free(rows);
                 flint_free(exps);
                 flint_free(deltas);
@@ -215,7 +215,7 @@ profile_pow(flint_bitcnt_t bits, slong nmax, flint_rand_t state)
         for (c = 0; c < 5; c++)
         {
             slong m = cfg_m[c], r0, r;
-            slong * shifts = flint_malloc(m * sizeof(slong));
+            slong * shift = flint_malloc(m * sizeof(slong));
             slong * rows0 = flint_malloc(n * sizeof(slong));
             slong * exps0 = flint_malloc(n * sizeof(slong));
             slong * rows = flint_malloc(n * sizeof(slong));
@@ -226,7 +226,7 @@ profile_pow(flint_bitcnt_t bits, slong nmax, flint_rand_t state)
             int ok, bad = 0;
 
             for (i = 0; i < m; i++)
-                shifts[i] = cfg_herm[c] ? i * (n + 1) : 0;
+                shift[i] = cfg_herm[c] ? i * (n + 1) : 0;
 
             nmod_mat_init(E, m, n, p);
             nmod_mat_init(M, n, n, p);
@@ -237,7 +237,7 @@ profile_pow(flint_bitcnt_t bits, slong nmax, flint_rand_t state)
 
             op->logpow = 0;
             TIME_IT(t0, r0 = _nmod_mat_krylov_basis_iter(B, rows0, exps0, NULL,
-                        NULL, NULL, NULL, &ok, E, op, shifts, NULL, 0));
+                        NULL, NULL, NULL, &ok, E, op, shift, NULL, 0));
 
             flint_printf("%5wd %5wd  %s  %.2e  %.2e  |                  ",
                     n, m, cfg_herm[c] ? "herm" : "unif", tmul, t0);
@@ -248,7 +248,7 @@ profile_pow(flint_bitcnt_t bits, slong nmax, flint_rand_t state)
 
                 op->logpow = (l < nlp) ? lps[l] : (l == nlp) ? FLINT_BITS : -1;
                 TIME_IT(t, r = _nmod_mat_krylov_basis_iter(B, rows, exps, NULL,
-                            NULL, NULL, NULL, &ok, E, op, shifts, NULL, chunk));
+                            NULL, NULL, NULL, &ok, E, op, shift, NULL, chunk));
                 flint_printf(" %5.2f", t / t0);
                 fflush(stdout);
 
@@ -262,7 +262,7 @@ profile_pow(flint_bitcnt_t bits, slong nmax, flint_rand_t state)
             if (n <= 1600)
             {
                 TIME_IT(t, r = _nmod_mat_krylov_basis_doubling(B, rows, exps, NULL,
-                            &ok, E, op, shifts, NULL));
+                            &ok, E, op, shift, NULL));
                 flint_printf("  %5.2f", t / t0);
                 if (r != r0)
                     bad = 1;
@@ -276,7 +276,7 @@ profile_pow(flint_bitcnt_t bits, slong nmax, flint_rand_t state)
             nmod_mat_clear(E);
             nmod_mat_clear(M);
             nmod_mat_clear(B);
-            flint_free(shifts);
+            flint_free(shift);
             flint_free(rows0);
             flint_free(exps0);
             flint_free(rows);

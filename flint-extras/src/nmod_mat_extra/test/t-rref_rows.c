@@ -12,27 +12,9 @@
 
 #include <flint/test_helpers.h>
 #include <flint/ulong_extras.h>
+#include <flint/nmod_vec.h>
 #include <flint/nmod_mat.h>
 #include "nmod_mat_extra/krylov_impl.h"
-
-/* rank of the rows [r0, r1) and columns [0, c) of A */
-static slong
-_rank_window(const nmod_mat_t A, slong r0, slong r1, slong c)
-{
-    nmod_mat_t W, C;
-    slong r;
-
-    if (r1 <= r0 || c == 0)
-        return 0;
-
-    nmod_mat_window_init(W, A, r0, 0, r1, c);
-    nmod_mat_init_set(C, W);
-    r = nmod_mat_rank(C);
-    nmod_mat_clear(C);
-    nmod_mat_window_clear(W);
-
-    return r;
-}
 
 TEST_FUNCTION_START(nmod_mat_rref_rows, state)
 {
@@ -110,7 +92,12 @@ TEST_FUNCTION_START(nmod_mat_rref_rows, state)
         t = 0;
         for (a = 0; a < k; a++)
         {
-            rk = _rank_window(X0, 0, a + 1, lim);
+            nmod_mat_t Wa;
+
+            /* nmod_mat_rank works on a copy */
+            nmod_mat_window_init(Wa, X0, 0, 0, a + 1, lim);
+            rk = nmod_mat_rank(Wa);
+            nmod_mat_window_clear(Wa);
             if (indep[a] != (rk > prev))
                 TEST_FUNCTION_FAIL("independence of row %wd\nX = %{nmod_mat}\n", a, X0);
             t += (indep[a] != 0);
@@ -132,20 +119,21 @@ TEST_FUNCTION_START(nmod_mat_rref_rows, state)
         /* same span as the independent input rows (all the columns) */
         if (r > 0)
         {
+            nmod_mat_t Sb;
+
             nmod_mat_init(S, 2 * r, n, p);
             t = 0;
             for (a = 0; a < k; a++)
                 if (indep[a])
-                {
-                    for (i = 0; i < n; i++)
-                        nmod_mat_entry(S, t, i) = nmod_mat_entry(X0, a, i);
-                    t++;
-                }
+                    _nmod_vec_set(nmod_mat_entry_ptr(S, t++, 0),
+                                  nmod_mat_entry_ptr(X0, a, 0), n);
             for (t = 0; t < r; t++)
-                for (i = 0; i < n; i++)
-                    nmod_mat_entry(S, r + t, i) = nmod_mat_entry(X, t, i);
-            if (_rank_window(S, 0, 2 * r, n) != r || _rank_window(S, r, 2 * r, n) != r)
+                _nmod_vec_set(nmod_mat_entry_ptr(S, r + t, 0),
+                              nmod_mat_entry_ptr(X, t, 0), n);
+            nmod_mat_window_init(Sb, S, r, 0, 2 * r, n);
+            if (nmod_mat_rank(S) != r || nmod_mat_rank(Sb) != r)
                 TEST_FUNCTION_FAIL("span\n");
+            nmod_mat_window_clear(Sb);
             nmod_mat_clear(S);
         }
 

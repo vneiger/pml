@@ -129,14 +129,14 @@ _nmod_mat_krylov_heap_pop(slong * h, slong * len, const slong * key)
 }
 
 /*
-    Shifts equivalent to shifts (NULL: zero shifts) for degree bounds at
-    most D: writes in t (m entries) shifts in [0, (m - 1)(D + 1)] such that
-    the order (t_i + j, i) for 0 <= j <= D coincides with the order
+    A shift equivalent to s = shift (NULL: zero shift) for degree bounds at
+    most D: writes in t (m entries) a shift with entries in [0, (m - 1)(D + 1)]
+    such that the order (t_i + j, i) for 0 <= j <= D coincides with the order
     (s_i + j, i), by replacing the gaps larger than D + 1 between the
-    sorted shift values by D + 1. This avoids overflows with arbitrary
-    slong shifts.
+    sorted shift entries by D + 1. This avoids overflows with arbitrary
+    slong shift entries.
 */
-void _nmod_mat_krylov_normalize_shifts(slong * t, const slong * shifts,
+void _nmod_mat_krylov_normalize_shift(slong * t, const slong * shift,
         slong m, slong D);
 
 /*
@@ -150,11 +150,11 @@ void _nmod_mat_krylov_degrees(slong * d, slong m, const slong * degrees,
 /*
     Priority order: writes in (rows[k], exps[k]), k < N = sum (d_i + 1),
     the pairs (i, j) with 0 <= j <= d_i sorted by increasing (s_i + j, i);
-    returns N. shifts == NULL means zero shifts. The arrays must have
+    returns N. shift == NULL means zero shift. The arrays must have
     room for N entries.
 */
 slong _nmod_mat_krylov_order(slong * rows, slong * exps, slong m,
-        const slong * shifts, const slong * degrees);
+        const slong * shift, const slong * degrees);
 
 /* number of rows sum (d_i + 1) */
 slong _nmod_mat_krylov_nrows(slong m, const slong * degrees);
@@ -165,7 +165,7 @@ slong _nmod_mat_krylov_nrows(slong m, const slong * degrees);
 */
 void _nmod_mat_krylov_matrix(nmod_mat_t K, slong * rows, slong * exps,
         const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
-        const slong * shifts, const slong * degrees);
+        const slong * shift, const slong * degrees);
 
 /*
     Reduced row echelon form of a k x n matrix X, processing its rows in
@@ -215,7 +215,7 @@ slong _nmod_mat_row_rank_profile(char * indep, nmod_mat_t X);
         and row i of T is undefined for such i).
 
     Degree bounds larger than n are replaced by n; degrees == NULL means
-    n for all rows, shifts == NULL means zero shifts. The parameter chunk
+    n for all rows, shift == NULL means zero shift. The parameter chunk
     is the maximal number of rows processed at once (0: default).
 
     For a dense operator, a run of c rows (i, j0), ..., (i, j0 + c - 1) of
@@ -226,13 +226,13 @@ slong _nmod_mat_row_rank_profile(char * indep, nmod_mat_t X);
     far are kept, and the runs which would need a lower power use M.
     logpow = 0 means that each row is the previous one times M. This pays
     off when the products of a few rows by M are limited by the memory
-    bandwidth (large n) and few indices are active (Hermite-type shifts),
+    bandwidth (large n) and few indices are active (Hermite-type shift),
     which the automatic choice targets.
 */
 slong _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
         slong * deltas, nmod_mat_t T, nmod_mat_t G, slong * piv, int * ok,
         const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
-        const slong * shifts, const slong * degrees, slong chunk);
+        const slong * shift, const slong * degrees, slong chunk);
 
 /*
     Same, with the basis kept in row echelon form instead of reduced row
@@ -250,7 +250,7 @@ slong _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
 slong _nmod_mat_krylov_basis_iter_lu(nmod_mat_t B, slong * rows, slong * exps,
         slong * deltas, nmod_mat_t T, nmod_mat_t LU, slong * bpos, slong * piv,
         int * ok, const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
-        const slong * shifts, const slong * degrees, slong chunk);
+        const slong * shift, const slong * degrees, slong chunk);
 
 /*
     Same output (B, rows, exps, deltas, ok) by the Keller-Gehrig-type
@@ -261,7 +261,7 @@ slong _nmod_mat_krylov_basis_iter_lu(nmod_mat_t B, slong * rows, slong * exps,
 slong _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows,
         slong * exps, slong * deltas, int * ok,
         const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
-        const slong * shifts, const slong * degrees);
+        const slong * shift, const slong * degrees);
 
 /*
     Row rank profile of the full matrix K_{s,d}(E, M), built explicitly
@@ -269,7 +269,7 @@ slong _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows,
 */
 slong _nmod_mat_krylov_basis_naive(nmod_mat_t B, slong * rows, slong * exps,
         const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
-        const slong * shifts, const slong * degrees);
+        const slong * shift, const slong * degrees);
 
 /*
     Kernel of the Krylov matrix in compact form: on success (return value
@@ -299,7 +299,7 @@ slong _nmod_mat_krylov_basis_naive(nmod_mat_t B, slong * rows, slong * exps,
 
 slong _nmod_mat_krylov_kernel(nmod_mat_t R, slong * rows, slong * exps,
         slong * deltas, const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
-        const slong * shifts, const slong * degrees, slong chunk, int method);
+        const slong * shift, const slong * degrees, slong chunk, int method);
 
 #ifdef __cplusplus
 }

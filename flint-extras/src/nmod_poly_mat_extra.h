@@ -59,6 +59,7 @@
 // #include "nmod_poly_mat_linearization.h"
 
 #include "nmod_poly_mat_kernel.h"
+#include "nmod_poly_mat_relation_basis.h"
 
 #include "nmod_poly_mat_row_basis.h"
 

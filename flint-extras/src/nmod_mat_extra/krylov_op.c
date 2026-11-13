@@ -127,14 +127,14 @@ _nmod_mat_krylov_op_apply_vec(nn_ptr out, nn_srcptr in,
     switch (op->kind)
     {
         case _NMOD_MAT_KRYLOV_SHIFT:
-            /* within each block, shift the entries by one position */
+            /* within each block, shift the entries by one position:
+               -> one shifted copy of the whole row, then the first entry of each
+               block is set to zero (measured faster than one copy per block
+               when the blocks are small) */
+            if (op->n > 1)
+                memcpy(out + 1, in, (op->n - 1) * sizeof(ulong));
             for (b = 0; b < nb; b++)
-            {
-                slong o = off[b], t = off[b + 1] - off[b];
-                out[o] = 0;
-                if (t > 1)
-                    memcpy(out + o + 1, in + o, (t - 1) * sizeof(ulong));
-            }
+                out[off[b]] = 0;
             break;
 
         case _NMOD_MAT_KRYLOV_DIAGONAL:
