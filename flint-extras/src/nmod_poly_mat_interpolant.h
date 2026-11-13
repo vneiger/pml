@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2026 Gilles Villard
+    Copyright (C) 2026 Vincent Neiger
 
     This file is part of PML.
 
@@ -313,6 +314,37 @@ void nmod_poly_mat_pmintbasis_geometric_auto(nmod_poly_mat_t intbas,
 
 
 
+
+/** @name Interpolant bases via Krylov matrices
+ */
+//@{
+
+/** Computes the basis `P` in `shifts`-Popov form (row-wise, with ROW_LOWER
+ * pivots, see @ref MatrixForms), which is unique, of the module of vectors
+ * `p` of `m` polynomials such that `p_0(pts[j]) V[0,j] + ... +
+ * p_{m-1}(pts[j]) V[m-1,j] = 0` for each column `j` of the `m x sigma`
+ * matrix `V`, by linear algebra on the Krylov matrix of `V` with respect to
+ * the diagonal matrix `diag(pts)` (see @ref KrylovMatrices).
+ *
+ * Each column of `V` is one condition of order 1. Points may be repeated: a
+ * point repeated in several columns gives several such conditions with
+ * different vectors of values (as with ::nmod_poly_mat_mintbasis), not a
+ * multiplicity; for conditions modulo `(x - pt)^k`, which involve
+ * derivatives, see ::nmod_poly_mat_mpade_basis_krylov, of which this is the
+ * case of a constant matrix with all orders 1.
+ *
+ * The output `P` must be initialized with dimensions `m x m`; `shifts == NULL`
+ * means the zero shift; the modulus must be prime. Size of the integers (see
+ * @ref IntegerSizes): there is no condition on the shift, whose entries may
+ * be arbitrary `slong` values. The cost is about `sigma^2 (sigma + m)`
+ * operations, suited to `sigma` not much larger than `m`.
+ */
+void nmod_poly_mat_interpolant_basis_krylov(nmod_poly_mat_t P,
+                                            const nmod_mat_t V,
+                                            nn_srcptr pts,
+                                            const slong * shifts);
+
+//@} // doxygen group: Interpolant bases via Krylov matrices
 
 #ifdef __cplusplus
 }

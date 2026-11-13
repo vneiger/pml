@@ -48,6 +48,8 @@
 #include "t-row_basis.c"
 #include "t-row_basis_left_factor.c"
 #include "t-weak_popov_form.c"
+#include "t-krylov_kernel_basis.c"
+#include "t-approximant_basis_krylov.c"
 
 /* Array of test functions ***************************************************/
 
@@ -87,6 +89,8 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_row_basis),
     TEST_FUNCTION(nmod_poly_mat_row_basis_left_factor),
     TEST_FUNCTION(nmod_poly_mat_weak_popov_form),
+    TEST_FUNCTION(nmod_poly_mat_krylov_kernel_basis),
+    TEST_FUNCTION(nmod_poly_mat_approximant_basis_krylov),
 };
 
 /* main function *************************************************************/

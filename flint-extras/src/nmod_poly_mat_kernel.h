@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2025 Gilles Villard
+    Copyright (C) 2026 Vincent Neiger
 
     This file is part of PML.
 
@@ -178,6 +179,41 @@ int nmod_poly_mat_is_kernel(const nmod_poly_mat_t ker,
                             poly_mat_form_t form,
                             orientation_t orient);
 
+
+/** @name Kernel of a Krylov matrix
+ *
+ * \todo this is not at the right place: where should it go?
+ * a general relation basis header?
+ */
+//@{
+
+/** Sets `P` to the basis in `shifts`-Popov form (row-wise, with ROW_LOWER
+ * pivots, see @ref MatrixForms), which is unique, of the module of vectors
+ * `p` of `m` polynomials such that `E_0 p_0(M) + ... + E_{m-1} p_{m-1}(M) =
+ * 0`, where `E` is `m x n` and `M` is `n x n` (see @ref KrylovMatrices).
+ * The output `P` must be initialized with dimensions `m x m`. Returns 1, or
+ * 0 if the degree bounds `degrees` are found not to be valid (`P` is then
+ * undefined). The other arguments and the conditions on them are as in
+ * ::nmod_mat_krylov_kernel, which gives the same basis in compact form.
+ */
+int nmod_poly_mat_krylov_kernel_basis(nmod_poly_mat_t P,
+                                      const nmod_mat_t E,
+                                      const nmod_mat_t M,
+                                      const slong * shifts,
+                                      const slong * degrees);
+
+/** Same as ::nmod_poly_mat_krylov_kernel_basis, for a Jordan matrix `M`
+ * given by `eig`, `sizes` and `nblocks` (as in
+ * ::nmod_mat_krylov_kernel_jordan). */
+int nmod_poly_mat_krylov_kernel_basis_jordan(nmod_poly_mat_t P,
+                                             const nmod_mat_t E,
+                                             nn_srcptr eig,
+                                             const slong * sizes,
+                                             slong nblocks,
+                                             const slong * shifts,
+                                             const slong * degrees);
+
+//@} // doxygen group: Kernel of a Krylov matrix
 
 #ifdef __cplusplus
 }
