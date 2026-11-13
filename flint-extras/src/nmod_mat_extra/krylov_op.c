@@ -27,6 +27,8 @@ _nmod_mat_krylov_op_init_dense(_nmod_mat_krylov_op_t op, const nmod_mat_t M)
     op->n = M->r;
     op->mod = M->mod;
     op->M = M;
+    op->logpow = -1;
+    op->powruns = 0;
     op->nblocks = 0;
     op->eig = NULL;
     op->eig_pre = NULL;
@@ -46,6 +48,8 @@ _nmod_mat_krylov_op_init_jordan(_nmod_mat_krylov_op_t op, nn_srcptr eig,
 
     op->mod = mod;
     op->M = NULL;
+    op->logpow = 0;
+    op->powruns = 0;
     op->nblocks = nblocks;
     op->off = flint_malloc((nblocks + 1) * sizeof(slong));
     op->off[0] = 0;

@@ -249,6 +249,12 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
         {
             slong chunk = (k == 0) ? 0 : (k == 1) ? 1 : (k == 2) ? 2 : 1 + n_randint(state, (k == 3) ? 10 : 100);
 
+            /* dense operator: rows generated from powers M^(2^t), t <= logpow,
+               in the chunks with at most powruns indices (0: any), or the
+               automatic choice (logpow < 0) */
+            op->logpow = (k == 0) ? 0 : (slong) n_randint(state, 7) - 1;
+            op->powruns = n_randint(state, 4);
+
             if (k % 2 == 0)
             {
                 r = _nmod_mat_krylov_basis_iter(B, rows, exps, deltas, NULL, NULL, NULL, &ok,
@@ -370,6 +376,9 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
                     TEST_FUNCTION_FAIL("jordan vs dense: profile\n");
             _nmod_mat_krylov_op_clear(op2);
         }
+
+        op->logpow = (slong) n_randint(state, 7) - 1;
+        op->powruns = n_randint(state, 4);
 
         /* random degree bounds: when declared valid, the profile is that
            of the Krylov matrix with these bounds */

@@ -49,6 +49,13 @@ typedef struct
     slong n;                    /* dimension */
     nmod_t mod;
     const nmod_mat_struct * M;  /* dense kind: the matrix */
+    slong logpow;               /* dense kind: powers M^(2^t), t <= logpow,
+                                   may be used to generate rows (see
+                                   _nmod_mat_krylov_basis_iter); 0: M only,
+                                   negative: automatic choice (default) */
+    slong powruns;              /* chunks with more than powruns indices
+                                   only use M (0: no limit); ignored by
+                                   the automatic choice */
     slong nblocks;              /* Jordan kinds: number of blocks */
     nn_ptr eig;                 /* eigenvalues (reduced), NULL for SHIFT */
     nn_ptr eig_pre;             /* Shoup precomputations, or NULL */
@@ -210,6 +217,17 @@ slong _nmod_mat_row_rank_profile(char * indep, nmod_mat_t X);
     Degree bounds larger than n are replaced by n; degrees == NULL means
     n for all rows, shifts == NULL means zero shifts. The parameter chunk
     is the maximal number of rows processed at once (0: default).
+
+    For a dense operator, a run of c rows (i, j0), ..., (i, j0 + c - 1) of
+    one index in a chunk is generated from the rows at distance
+    e = min(2^logpow, largest power of two <= c), as (i, j) = (i, j - e) M^e,
+    with the powers M^e computed by squaring when first needed (as in
+    Keller-Gehrig's algorithm); only M and the highest power computed so
+    far are kept, and the runs which would need a lower power use M.
+    logpow = 0 means that each row is the previous one times M. This pays
+    off when the products of a few rows by M are limited by the memory
+    bandwidth (large n) and few indices are active (Hermite-type shifts),
+    which the automatic choice targets.
 */
 slong _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
         slong * deltas, nmod_mat_t T, nmod_mat_t G, slong * piv, int * ok,

@@ -299,7 +299,11 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
             slong * rows2 = flint_malloc((n + 1) * sizeof(slong));
             slong * exps2 = flint_malloc((n + 1) * sizeof(slong));
             slong * deltas2 = flint_malloc((m + 1) * sizeof(slong));
-            slong r2, chunk = 1 + n_randint(state, 6);
+            slong r2, chunk = 1 + n_randint(state, n_randint(state, 2) ? 6 : 64);
+
+            /* dense operator: rows generated from powers M^(2^t), t <= logpow */
+            op->logpow = (slong) n_randint(state, 6) - 1;
+            op->powruns = n_randint(state, 4);
 
             nmod_mat_init(R2, m, n, p);
             r2 = _nmod_mat_krylov_kernel(R2, rows2, exps2, deltas2, E, op,

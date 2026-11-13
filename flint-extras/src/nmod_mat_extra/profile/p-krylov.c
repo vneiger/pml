@@ -23,6 +23,9 @@
                      blocks of size d), in shifted Popov form
       mode = interp  interpolation at sigma points (diagonal matrix)
       mode = chunk   effect of the chunk size (Hermite-Pade, m = sigma)
+      mode = pow     dense random M, generation of the rows from powers
+                     M^(2^t) (Keller-Gehrig-type doubling), n up to nmax:
+                     p-krylov pow [bits] [nmax]
 
     Times in seconds; "mul" is the time of nmod_mat_mul for n x n (dense)
     or sigma x sigma (hp, interp) matrices.
@@ -65,6 +68,26 @@ _time_mul(slong n, ulong p, flint_rand_t state)
     nmod_mat_init(A, n, n, p);
     nmod_mat_init(B, n, n, p);
     nmod_mat_init(C, n, n, p);
+    nmod_mat_rand(A, state);
+    nmod_mat_rand(B, state);
+    TIME_IT(t, nmod_mat_mul(C, A, B));
+    nmod_mat_clear(A);
+    nmod_mat_clear(B);
+    nmod_mat_clear(C);
+
+    return t;
+}
+
+/* time of c x n times n x n */
+static double
+_time_mul_rows(slong c, slong n, ulong p, flint_rand_t state)
+{
+    nmod_mat_t A, B, C;
+    double t;
+
+    nmod_mat_init(A, c, n, p);
+    nmod_mat_init(B, n, n, p);
+    nmod_mat_init(C, c, n, p);
     nmod_mat_rand(A, state);
     nmod_mat_rand(B, state);
     TIME_IT(t, nmod_mat_mul(C, A, B));
@@ -147,6 +170,113 @@ profile_dense(flint_bitcnt_t bits, flint_rand_t state)
                 flint_free(exps);
                 flint_free(deltas);
             }
+        }
+    }
+}
+
+/*
+    Generation of the rows from powers M^(2^t) (op->logpow), dense random
+    M: Hermite shift (the iterates of each row of E in turn), or uniform
+    shift with few rows. Times relative to logpow = 0; "KG" uses chunks of
+    up to m + n rows and all the powers needed (Keller-Gehrig doubling with
+    incremental elimination); "auto" is the default (automatic choice);
+    "paper" is _nmod_mat_krylov_basis_doubling.
+*/
+static void
+profile_pow(flint_bitcnt_t bits, slong nmax, flint_rand_t state)
+{
+    slong ns[] = {200, 400, 800, 1600, 3200, 6400, 0};
+    slong cfg_m[] = {1, 4, 2, 4, 16};
+    int cfg_herm[] = {0, 1, 0, 0, 0};
+    slong lps[] = {1, 2, 3, 4, 5, 7};
+    slong nlp = 6, k, c, l, i;
+    ulong p = n_randprime(state, bits, 1);
+
+    flint_printf("powers of M for generating rows, dense random M, %wu-bit prime\n", bits);
+    flint_printf("rho1, rho8: time of n rows as products of 1 or 8 rows by M, relative to mul\n");
+    flint_printf("    n     m shift      mul  logpow=0  | ratio for logpow =");
+    for (l = 0; l < nlp; l++)
+        flint_printf(" %4wd", lps[l]);
+    flint_printf("    KG  auto  paper\n");
+
+    for (k = 0; ns[k] != 0 && ns[k] <= nmax; k++)
+    {
+        slong n = ns[k];
+        double tmul = _time_mul(n, p, state);
+        double rho1 = n * _time_mul_rows(1, n, p, state) / tmul;
+        double rho8 = (n / 8) * _time_mul_rows(8, n, p, state) / tmul;
+
+        flint_printf("n = %wd: rho1 = %.2f, rho8 = %.2f\n", n, rho1, rho8);
+
+        for (c = 0; c < 5; c++)
+        {
+            slong m = cfg_m[c], r0, r;
+            slong * shifts = flint_malloc(m * sizeof(slong));
+            slong * rows0 = flint_malloc(n * sizeof(slong));
+            slong * exps0 = flint_malloc(n * sizeof(slong));
+            slong * rows = flint_malloc(n * sizeof(slong));
+            slong * exps = flint_malloc(n * sizeof(slong));
+            nmod_mat_t E, M, B;
+            _nmod_mat_krylov_op_t op;
+            double t0, t;
+            int ok, bad = 0;
+
+            for (i = 0; i < m; i++)
+                shifts[i] = cfg_herm[c] ? i * (n + 1) : 0;
+
+            nmod_mat_init(E, m, n, p);
+            nmod_mat_init(M, n, n, p);
+            nmod_mat_init(B, n, n, p);
+            nmod_mat_rand(E, state);
+            nmod_mat_rand(M, state);
+            _nmod_mat_krylov_op_init_dense(op, M);
+
+            op->logpow = 0;
+            TIME_IT(t0, r0 = _nmod_mat_krylov_basis_iter(B, rows0, exps0, NULL,
+                        NULL, NULL, NULL, &ok, E, op, shifts, NULL, 0));
+
+            flint_printf("%5wd %5wd  %s  %.2e  %.2e  |                  ",
+                    n, m, cfg_herm[c] ? "herm" : "unif", tmul, t0);
+
+            for (l = 0; l <= nlp + 1; l++)
+            {
+                slong chunk = (l == nlp) ? m + n : 0;
+
+                op->logpow = (l < nlp) ? lps[l] : (l == nlp) ? FLINT_BITS : -1;
+                TIME_IT(t, r = _nmod_mat_krylov_basis_iter(B, rows, exps, NULL,
+                            NULL, NULL, NULL, &ok, E, op, shifts, NULL, chunk));
+                flint_printf(" %5.2f", t / t0);
+                fflush(stdout);
+
+                if (r != r0)
+                    bad = 1;
+                for (i = 0; i < r && !bad; i++)
+                    if (rows[i] != rows0[i] || exps[i] != exps0[i])
+                        bad = 1;
+            }
+
+            if (n <= 1600)
+            {
+                TIME_IT(t, r = _nmod_mat_krylov_basis_doubling(B, rows, exps, NULL,
+                            &ok, E, op, shifts, NULL));
+                flint_printf("  %5.2f", t / t0);
+                if (r != r0)
+                    bad = 1;
+            }
+            else
+                flint_printf("      -");
+
+            flint_printf("%s\n", bad ? "  MISMATCH" : "");
+
+            _nmod_mat_krylov_op_clear(op);
+            nmod_mat_clear(E);
+            nmod_mat_clear(M);
+            nmod_mat_clear(B);
+            flint_free(shifts);
+            flint_free(rows0);
+            flint_free(exps0);
+            flint_free(rows);
+            flint_free(exps);
         }
     }
 }
@@ -301,8 +431,10 @@ main(int argc, char ** argv)
         profile_interp(bits, state);
     else if (!strcmp(mode, "chunk"))
         profile_chunk(bits, state);
+    else if (!strcmp(mode, "pow"))
+        profile_pow(bits, (argc > 3) ? atol(argv[3]) : 1600, state);
     else
-        flint_printf("unknown mode %s (dense, hp, interp, chunk)\n", mode);
+        flint_printf("unknown mode %s (dense, hp, interp, chunk, pow)\n", mode);
 
     flint_rand_clear(state);
     flint_cleanup_master();

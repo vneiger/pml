@@ -20,6 +20,38 @@
    bit primes, profile p-krylov chunk) */
 #define KRYLOV_CHUNK_DEFAULT(n) FLINT_MAX(16, FLINT_MIN(128, (n) / 8))
 
+/*
+    Automatic choice of the powers of M used to generate the rows (dense
+    M, see krylov_impl.h): for n >= KRYLOV_POW_MIN_DIM, where the products
+    of a few rows by M are limited by the memory bandwidth, and in the
+    chunks with at most KRYLOV_POW_MAX_RUNS indices (otherwise the rows
+    are already computed by products with several rows). The exponents
+    depend on the relative speed of nmod_mat_mul, which computes the
+    squarings and the products of a few rows: only for moduli below 2^32
+    (fast SIMD kernels for the squarings; products of 1 to 6 rows by a large
+    matrix limited by the memory bandwidth); tuned on x86_64 with AVX-512
+    and without IFMA (profile p-krylov pow, 1.3 to 2.3 times faster for
+    n = 1600 and 3200; no gain at 50 bits). Above 2^52, it paid off too
+    (e <= 4) until FLINT's SIMD vector-matrix products for these moduli
+    (FLINT #2907): with them, n rows as single-row products cost 1.7
+    products by M at n = 1600 instead of 15, and powers are 1.4 to 3.3
+    times slower.
+*/
+#define KRYLOV_POW_MIN_DIM 1200
+#define KRYLOV_POW_MAX_RUNS 2
+
+static slong
+_krylov_auto_logpow(slong n, ulong p)
+{
+    flint_bitcnt_t bits = FLINT_BIT_COUNT(p);
+
+    if (n < KRYLOV_POW_MIN_DIM)
+        return 0;
+    if (bits <= 32)
+        return 5;
+    return 0;
+}
+
 /* row states */
 #define ACTIVE 0
 #define DEAD 1       /* a dependent row (i, delta_i) was found */
@@ -38,6 +70,55 @@ _gather_cols(nmod_mat_t G, const nmod_mat_t A, const slong * cols, slong r, slon
         for (t = 0; t < c; t++)
             g[t] = a[cols[t]];
     }
+}
+
+/* M and its highest power computed so far, P = M^(2^len) (len > 0); only
+   these are kept, to limit the memory to one more n x n matrix */
+typedef struct
+{
+    const nmod_mat_struct * M;
+    nmod_mat_t P;
+    slong len;
+}
+_krylov_pow_cache_struct;
+
+/* raises P to M^(2^t), for t >= len */
+static void
+_krylov_pow_cache_raise(_krylov_pow_cache_struct * C, slong t)
+{
+    while (C->len < t)
+    {
+        nmod_mat_t T;
+
+        nmod_mat_init(T, C->M->r, C->M->c, C->M->mod.n);
+        if (C->len == 0)
+        {
+            nmod_mat_mul(T, C->M, C->M);
+            nmod_mat_init(C->P, C->M->r, C->M->c, C->M->mod.n);
+        }
+        else
+        {
+            nmod_mat_mul(T, C->P, C->P);
+        }
+        nmod_mat_swap(C->P, T);
+        nmod_mat_clear(T);
+        C->len++;
+    }
+}
+
+/* M^(2^t), for t = 0 or t = len */
+static const nmod_mat_struct *
+_krylov_pow_cache_get(_krylov_pow_cache_struct * C, slong t)
+{
+    FLINT_ASSERT(t == 0 || t == C->len);
+    return (t == 0) ? C->M : C->P;
+}
+
+static void
+_krylov_pow_cache_clear(_krylov_pow_cache_struct * C)
+{
+    if (C->len > 0)
+        nmod_mat_clear(C->P);
 }
 
 /*
@@ -84,12 +165,14 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
 {
     slong m = E->r, n = E->c;
     ulong p = E->mod.n;
-    slong i, j, a, t, u, k, kk, q, r, rb, nf, hlen, budget, maxdepth, aug;
+    slong i, j, a, t, u, k, kk, r, rb, nf, hlen, budget, maxstep, aug, logpow, powruns;
     slong * d, * key, * nextj, * last, * cnt, * prevpos, * heap;
     slong * ci, * cj, * cdepth, * csrc, * Q, * L, * colperm, * orig_at, * cur_of;
+    slong * crun, * roff, * rlist, * bsrc, * clog, * cstep, * bprev;
     char * state, * indep;
     int dense = (op->kind == _NMOD_MAT_KRYLOV_DENSE);
     nmod_mat_t V, Vp, W, Xf, Xa, Vpiv, Wf, Y, Wq, S, O;
+    _krylov_pow_cache_struct C;
 
     if (op->n != n)
         flint_throw(FLINT_ERROR, "nmod_mat_krylov_basis: incompatible dimensions\n");
@@ -116,16 +199,46 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
     heap = prevpos + m;
     state = flint_malloc(m + 1);
 
-    ci = flint_malloc((6 * chunk + 3 * n + 1) * sizeof(slong));
+    ci = flint_malloc((12 * chunk + 4 * n + 1) * sizeof(slong));
     cj = ci + chunk;
     cdepth = cj + chunk;
     csrc = cdepth + chunk;
     Q = csrc + chunk;
     L = Q + chunk;
-    colperm = L + chunk;
+    crun = L + chunk;
+    roff = crun + chunk;
+    rlist = roff + chunk;
+    bsrc = rlist + chunk;
+    clog = bsrc + chunk;
+    cstep = clog + chunk;
+    colperm = cstep + chunk;
     orig_at = colperm + n;
     cur_of = orig_at + n;
+    bprev = cur_of + n;
     indep = flint_malloc(chunk + 1);
+
+    /* powers of M for generating rows, at most 2^logpow <= chunk, in the
+       chunks with at most powruns indices (0: no limit) */
+    logpow = 0;
+    powruns = 0;
+    if (dense)
+    {
+        if (op->logpow < 0)
+        {
+            logpow = _krylov_auto_logpow(n, p);
+            powruns = KRYLOV_POW_MAX_RUNS;
+        }
+        else
+        {
+            logpow = op->logpow;
+            powruns = op->powruns;
+        }
+
+        logpow = FLINT_MIN(logpow, FLINT_BITS - 2);
+        logpow = FLINT_MIN(logpow, (slong) FLINT_BIT_COUNT(chunk) - 1);
+    }
+    C.M = op->M;
+    C.len = 0;
 
     _nmod_mat_krylov_degrees(d, m, degrees, n, 1);
 
@@ -169,7 +282,6 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
         /* form the chunk                                               */
         /* ------------------------------------------------------------ */
         k = 0;
-        maxdepth = 0;
 
         while (k < chunk && hlen > 0)
         {
@@ -192,7 +304,6 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
             cj[k] = nextj[i];
             cdepth[k] = cnt[i];
             csrc[k] = (cnt[i] == 0) ? -1 : prevpos[i];
-            maxdepth = FLINT_MAX(maxdepth, cnt[i] + 1);
             prevpos[i] = k;
             cnt[i]++;
             k++;
@@ -205,6 +316,9 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
             }
         }
 
+        /* run lengths: cnt[i] is the number of rows of i in the chunk */
+        for (a = 0; a < k; a++)
+            crun[a] = cnt[ci[a]];
         for (a = 0; a < k; a++)
             cnt[ci[a]] = 0;
 
@@ -221,39 +335,111 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
 
         if (dense)
         {
-            /* rows at depth q are computed from rows at depth q - 1 in
-               the chunk, or from the basis rows for q = 0 */
-            for (q = 0; q < maxdepth; q++)
+            /* row a, at position cdepth[a] of the run of its index, is
+               computed from the row at distance e = 2^clog[a] in the run
+               (or in the basis, for the first e rows of the run), at step
+               cdepth[a] / e; rlist[roff[a] + u] is the chunk position of
+               the row at position u of the run, and bsrc[roff[a] + u], for
+               u < e, the basis position of the row at distance e before.
+               The exponent of a run of c rows is the largest power of two
+               at most min(2^lp, c) if it is the highest power of M
+               available after raising it for the chunk, and 1 otherwise */
+            slong nxt = 0, s, tt, c, e, lp = logpow;
+
+            /* number of runs to generate */
+            if (powruns > 0)
             {
-                slong c = 0;
+                c = 0;
+                for (a = 0; a < k; a++)
+                    c += (cdepth[a] == 0 && cj[a] > 0);
+                if (c > powruns)
+                    lp = 0;
+            }
+
+            if (lp > 0)
+            {
+                slong tmax = 0;
 
                 for (a = 0; a < k; a++)
-                    if (cdepth[a] == q && cj[a] > 0)
-                        L[c++] = a;
+                    if (cdepth[a] == 0 && cj[a] > 0)
+                        tmax = FLINT_MAX(tmax, FLINT_MIN(lp,
+                                    (slong) FLINT_BIT_COUNT(crun[a]) - 1));
 
-                if (c == 0)
-                    continue;
+                _krylov_pow_cache_raise(&C, tmax);
+            }
 
-                nmod_mat_init(S, c, n, p);
-                nmod_mat_init(O, c, n, p);
-
-                for (u = 0; u < c; u++)
+            maxstep = 0;
+            for (a = 0; a < k; a++)
+            {
+                if (cdepth[a] == 0)
                 {
-                    a = L[u];
-                    memcpy(nmod_mat_entry_ptr(S, u, 0),
-                           (q == 0) ? nmod_mat_entry_ptr(B, last[ci[a]], 0)
-                                    : nmod_mat_entry_ptr(V, csrc[a], 0),
-                           n * sizeof(ulong));
+                    roff[a] = nxt;
+                    nxt += crun[a];
+                }
+                else
+                {
+                    roff[a] = roff[csrc[a]];
                 }
 
-                nmod_mat_mul(O, S, op->M);
+                rlist[roff[a] + cdepth[a]] = a;
+                clog[a] = FLINT_MIN(lp, (slong) FLINT_BIT_COUNT(crun[a]) - 1);
+                if (clog[a] != C.len)
+                    clog[a] = 0;
+                cstep[a] = cdepth[a] >> clog[a];
+                if (cj[a] > 0)
+                    maxstep = FLINT_MAX(maxstep, cstep[a]);
 
-                for (u = 0; u < c; u++)
-                    memcpy(nmod_mat_entry_ptr(V, L[u], 0),
-                           nmod_mat_entry_ptr(O, u, 0), n * sizeof(ulong));
+                /* the basis rows (i, j0 - e), ..., (i, j0 - 1) before the
+                   first row (i, j0) of the run (e <= crun[a] <= j0) */
+                if (cdepth[a] == 0 && cj[a] > 0)
+                {
+                    slong pos = last[ci[a]];
 
-                nmod_mat_clear(S);
-                nmod_mat_clear(O);
+                    e = WORD(1) << clog[a];
+                    for (u = e - 1; u >= 0; u--)
+                    {
+                        bsrc[roff[a] + u] = pos;
+                        if (u > 0)
+                            pos = bprev[pos];
+                    }
+                }
+            }
+
+            /* one product per step and exponent */
+            for (s = 0; s <= maxstep; s++)
+            {
+                for (tt = 0; tt <= logpow; tt++)
+                {
+                    c = 0;
+                    for (a = 0; a < k; a++)
+                        if (cj[a] > 0 && cstep[a] == s && clog[a] == tt)
+                            L[c++] = a;
+
+                    if (c == 0)
+                        continue;
+
+                    e = WORD(1) << tt;
+                    nmod_mat_init(S, c, n, p);
+                    nmod_mat_init(O, c, n, p);
+
+                    for (u = 0; u < c; u++)
+                    {
+                        a = L[u];
+                        memcpy(nmod_mat_entry_ptr(S, u, 0), (cdepth[a] < e)
+                            ? nmod_mat_entry_ptr(B, bsrc[roff[a] + cdepth[a]], 0)
+                            : nmod_mat_entry_ptr(V, rlist[roff[a] + cdepth[a] - e], 0),
+                            n * sizeof(ulong));
+                    }
+
+                    nmod_mat_mul(O, S, _krylov_pow_cache_get(&C, tt));
+
+                    for (u = 0; u < c; u++)
+                        memcpy(nmod_mat_entry_ptr(V, L[u], 0),
+                               nmod_mat_entry_ptr(O, u, 0), n * sizeof(ulong));
+
+                    nmod_mat_clear(S);
+                    nmod_mat_clear(O);
+                }
             }
         }
         else
@@ -320,9 +506,11 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
                 rows[rb] = i;
                 exps[rb] = cj[a];
                 L[rb - r] = a;   /* chunk position of the new basis row */
+                bprev[rb] = -1;
 
                 if (state[i] == ACTIVE)
                 {
+                    bprev[rb] = last[i];
                     last[i] = rb;
 
                     if (cj[a] == d[i])
@@ -519,6 +707,7 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
         for (t = 0; t < r; t++)
             piv[t] = colperm[t];
 
+    _krylov_pow_cache_clear(&C);
     nmod_mat_clear(V);
     nmod_mat_clear(Vp);
     nmod_mat_clear(W);
