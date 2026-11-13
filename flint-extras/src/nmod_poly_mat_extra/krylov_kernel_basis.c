@@ -85,7 +85,8 @@ _nmod_poly_mat_krylov_kernel_basis(nmod_poly_mat_t P, const nmod_mat_t E,
 
     nmod_mat_init(R, m, n, E->mod.n);
 
-    r = _nmod_mat_krylov_kernel(R, rows, exps, deltas, E, op, shifts, degrees, 0);
+    r = _nmod_mat_krylov_kernel(R, rows, exps, deltas, E, op, shifts, degrees, 0,
+                                _NMOD_MAT_KRYLOV_KERNEL_AUTO);
 
     if (r >= 0)
         _nmod_poly_mat_set_krylov_kernel(P, R, rows, exps, deltas, r);

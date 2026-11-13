@@ -235,6 +235,24 @@ slong _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
         const slong * shifts, const slong * degrees, slong chunk);
 
 /*
+    Same, with the basis kept in row echelon form instead of reduced row
+    echelon form (each chunk is reduced by a triangular solve and one
+    product, then decomposed by nmod_mat_ple): no update of the previous
+    rows, and a factorization of the pivot block instead of G. On output
+    (r = the returned rank), with C = B[:, piv] (r x r): the leading r x r
+    block of LU holds U (on and above the diagonal, invertible) and L
+    (strictly below, unit lower triangular), such that row t of L U is the
+    row bpos[t] of C (bpos: room for n entries). Then the relations of a
+    row vector v in the row space of B are v = x B with
+    x[bpos[t]] = (v[piv] U^-1 L^-1)[t]. LU can be NULL (then bpos is
+    ignored), for the basis only.
+*/
+slong _nmod_mat_krylov_basis_iter_lu(nmod_mat_t B, slong * rows, slong * exps,
+        slong * deltas, nmod_mat_t T, nmod_mat_t LU, slong * bpos, slong * piv,
+        int * ok, const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
+        const slong * shifts, const slong * degrees, slong chunk);
+
+/*
     Same output (B, rows, exps, deltas, ok) by the Keller-Gehrig-type
     doubling algorithm of Jeannerod, Neiger, Schost, Villard (JSC 2017,
     Algorithm KrylovRankProfile), relying on the same assumption on the
@@ -261,10 +279,27 @@ slong _nmod_mat_krylov_basis_naive(nmod_mat_t B, slong * rows, slong * exps,
     E_i M^{delta_i} on the rows of the Krylov basis. Returns -1 if the
     degree bounds are found insufficient (some row (i, d_i) in the
     profile), in which case the outputs are undefined.
+
+    The relations R = T[:, piv] C^{-1}, with C = B[:, piv] the r x r
+    invertible submatrix of the basis B and T the target rows, are
+    obtained by one of two methods (the output is the same):
+      - _NMOD_MAT_KRYLOV_KERNEL_TRACK: C^{-1} is maintained along the
+        elimination (_nmod_mat_krylov_basis_iter with G), then one product
+        T[:, piv] C^{-1}; extra cost about r^3 whatever m is;
+      - _NMOD_MAT_KRYLOV_KERNEL_LU: the basis is kept in row echelon form
+        (_nmod_mat_krylov_basis_iter_lu), which gives C = Pi^T L U along
+        the elimination, then two triangular solves with m right-hand
+        sides (nmod_mat_solve_triu_right, nmod_mat_solve_tril_right);
+      - _NMOD_MAT_KRYLOV_KERNEL_AUTO: LU unless m is large compared with n
+        (see krylov_kernel.c).
 */
+#define _NMOD_MAT_KRYLOV_KERNEL_AUTO 0
+#define _NMOD_MAT_KRYLOV_KERNEL_TRACK 1
+#define _NMOD_MAT_KRYLOV_KERNEL_LU 2
+
 slong _nmod_mat_krylov_kernel(nmod_mat_t R, slong * rows, slong * exps,
         slong * deltas, const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
-        const slong * shifts, const slong * degrees, slong chunk);
+        const slong * shifts, const slong * degrees, slong chunk, int method);
 
 #ifdef __cplusplus
 }

@@ -52,6 +52,21 @@ _krylov_auto_logpow(slong n, ulong p)
     return 0;
 }
 
+/*
+    For the basis alone (nmod_mat_krylov_basis), the row echelon basis (LU
+    mode, see _nmod_mat_krylov_basis_iter_lu) instead of the reduced one:
+    measured with uniform and Hermite shifts, Hermite-Pade and dense M, n
+    = 64 to 1024 (x86_64 AVX-512 without IFMA), it takes 0.69 to 0.95 times
+    the time at 60 bits; at 50 bits, 0.82 to 1.05 for n = 1024, 0.91 to 1.08
+    for n = 256 and 1.06 to 1.16 for n = 64; at 30 bits, 0.92 to 1.22.
+*/
+static int
+_krylov_basis_lu_wanted(slong n, nmod_t mod)
+{
+    flint_bitcnt_t bits = NMOD_BITS(mod);
+    return bits > 52 || (bits > 32 && n >= 512);
+}
+
 /* row states */
 #define ACTIVE 0
 #define DEAD 1       /* a dependent row (i, delta_i) was found */
@@ -144,22 +159,30 @@ _krylov_pow_cache_clear(_krylov_pow_cache_struct * C)
     permutation are the pivot columns, so that W = [I_r | Wf]. A chunk V of
     rows (in the permuted column order) is reduced as Vf - Vp * Wf, where
     Vp and Vf are the pivot and free columns of V, then echelonized by
-    _nmod_mat_rref_rows (FLINT's nmod_mat_ple, which reveals the rank
-    profile matrix, and two triangular solves), which gives which rows are
-    independent and the reduced row echelon form Y of the new rows, with
-    pivots Q among the free columns; then Wf is updated as
-    Wf - Wf[:, Q] * Y, Y is appended, and the columns Q are moved to the
-    front of the free columns.
+    _nmod_mat_rref_rows, which gives which rows are independent and the
+    reduced row echelon form Y of the new rows, with pivots Q among the free
+    columns; then Wf is updated as Wf - Wf[:, Q] * Y, Y is appended, and the
+    columns Q are moved to the front of the free columns.
 
     If G is requested, the transformation W = G B is maintained (B being
     the basis rows, that is, the independent rows of the Krylov matrix):
     the chunk is echelonized with the identity matrix appended to it, which
     gives Y = H V - H Vp W = H V - H Vp G B for some H, supported on the
     independent rows of the chunk.
+
+    In the row echelon mode (lumode, _nmod_mat_krylov_basis_iter_lu), the
+    basis is W = [U | Wf] with U upper triangular, and its rows are never
+    updated: a chunk is reduced as Vf - (Vp U^-1) Wf, by a triangular solve
+    with the matrix on the right and one product, then decomposed by
+    nmod_mat_ple, whose echelon rows are appended to W. The multipliers
+    Vp U^-1 of the independent rows, followed by the unit lower triangular
+    factor of the chunk, form the new rows of L, so that B[:, piv] = Pi^T L U
+    for a row permutation Pi (given by bpos).
 */
-slong
-_nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
-        slong * deltas, nmod_mat_t T, nmod_mat_t G, slong * piv, int * ok,
+static slong
+_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
+        slong * deltas, nmod_mat_t T, nmod_mat_t G, int lumode, nmod_mat_t LU,
+        slong * bpos, slong * piv, int * ok,
         const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
         const slong * shifts, const slong * degrees, slong chunk)
 {
@@ -169,6 +192,7 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
     slong * d, * key, * nextj, * last, * cnt, * prevpos, * heap;
     slong * ci, * cj, * cdepth, * csrc, * Q, * L, * colperm, * orig_at, * cur_of;
     slong * crun, * roff, * rlist, * bsrc, * clog, * cstep, * bprev;
+    slong * Pc = NULL, * Qc = NULL, * bidx = NULL;
     char * state, * indep;
     int dense = (op->kind == _NMOD_MAT_KRYLOV_DENSE);
     nmod_mat_t V, Vp, W, Xf, Xa, Vpiv, Wf, Y, Wq, S, O;
@@ -216,6 +240,14 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
     cur_of = orig_at + n;
     bprev = cur_of + n;
     indep = flint_malloc(chunk + 1);
+
+    /* LU mode: PLE of the chunks, the pivot rows and the multipliers */
+    if (lumode)
+    {
+        Pc = flint_malloc((2 * chunk + n + 1) * sizeof(slong));
+        Qc = Pc + chunk;
+        bidx = Qc + n;
+    }
 
     /* powers of M for generating rows, at most 2^logpow <= chunk, in the
        chunks with at most powruns indices (0: no limit) */
@@ -479,6 +511,15 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
         {
             nmod_mat_window_init(Xf, Vp, 0, r, k, n);
             nmod_mat_window_init(Wf, W, 0, r, r, n);
+            if (lumode)
+            {
+                /* W = [U | Wf], U upper triangular: Vpiv <- Vpiv U^-1,
+                   the coefficients of the chunk rows on the rows of W */
+                nmod_mat_t Uw;
+                nmod_mat_window_init(Uw, W, 0, 0, r, r);
+                nmod_mat_solve_triu_right(Vpiv, Uw, Vpiv, 0);
+                nmod_mat_window_clear(Uw);
+            }
             nmod_mat_submul(Xf, Xf, Vpiv, Wf);
             nmod_mat_window_clear(Xf);
             nmod_mat_window_clear(Wf);
@@ -487,9 +528,24 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
         /* ------------------------------------------------------------ */
         /* echelonize the chunk                                         */
         /* ------------------------------------------------------------ */
-        nmod_mat_window_init(Xa, Vp, 0, r, k, n + (aug ? k : 0));
-        kk = _nmod_mat_rref_rows(Xa, nf, Q, indep);
-        nmod_mat_window_clear(Xa);
+        if (lumode)
+        {
+            nmod_mat_window_init(Xa, Vp, 0, r, k, n);
+            kk = nmod_mat_ple(Pc, Qc, Xa, 0);
+            nmod_mat_window_clear(Xa);
+            memset(indep, 0, k);
+            for (t = 0; t < kk; t++)
+            {
+                indep[Pc[t]] = 1;
+                Q[t] = Qc[t];
+            }
+        }
+        else
+        {
+            nmod_mat_window_init(Xa, Vp, 0, r, k, n + (aug ? k : 0));
+            kk = _nmod_mat_rref_rows(Xa, nf, Q, indep);
+            nmod_mat_window_clear(Xa);
+        }
 
         /* ------------------------------------------------------------ */
         /* record independent and dependent rows                        */
@@ -506,6 +562,8 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
                 rows[rb] = i;
                 exps[rb] = cj[a];
                 L[rb - r] = a;   /* chunk position of the new basis row */
+                if (bidx != NULL)
+                    bidx[a] = rb;
                 bprev[rb] = -1;
 
                 if (state[i] == ACTIVE)
@@ -546,7 +604,35 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
         /* ------------------------------------------------------------ */
         /* update the basis                                             */
         /* ------------------------------------------------------------ */
-        if (kk > 0)
+        if (kk > 0 && lumode)
+        {
+            /* new rows of W: the echelon form of the chunk (zero before the
+               pivot, where the PLE output holds multipliers); new rows of
+               the multipliers: those on the old rows of W (Vpiv, whose rows
+               the PLE did not move) and the unit lower triangular factor
+               of the chunk */
+            for (t = 0; t < kk; t++)
+            {
+                nn_ptr w = nmod_mat_entry_ptr(W, r + t, 0);
+                nn_srcptr x = nmod_mat_entry_ptr(Vp, t, 0);
+
+                for (u = 0; u < r; u++)
+                    w[u] = 0;
+                for (u = 0; u < nf; u++)
+                    w[r + u] = (u >= Qc[t]) ? x[r + u] : 0;
+
+                if (LU != NULL)
+                {
+                    nn_ptr l = nmod_mat_entry_ptr(LU, r + t, 0);
+                    memcpy(l, nmod_mat_entry_ptr(Vp, Pc[t], 0), r * sizeof(ulong));
+                    for (u = 0; u < t; u++)
+                        l[r + u] = x[r + u];
+                    bpos[r + t] = bidx[Pc[t]];
+                }
+            }
+        }
+
+        if (kk > 0 && !lumode)
         {
             nmod_mat_window_init(Y, Vp, 0, r, kk, n);
             nmod_mat_init(Wq, r, kk, p);
@@ -617,7 +703,10 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
                        nmod_mat_entry_ptr(Y, t, 0), nf * sizeof(ulong));
 
             nmod_mat_window_clear(Y);
+        }
 
+        if (kk > 0)
+        {
             /* move the free columns Q[0], ..., Q[kk-1] to the front */
             for (t = 0; t < nf; t++)
             {
@@ -707,6 +796,12 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
         for (t = 0; t < r; t++)
             piv[t] = colperm[t];
 
+    /* U: the leading r x r block of W, upper triangular */
+    if (LU != NULL)
+        for (t = 0; t < r; t++)
+            memcpy(nmod_mat_entry_ptr(LU, t, t), nmod_mat_entry_ptr(W, t, t),
+                   (r - t) * sizeof(ulong));
+
     _krylov_pow_cache_clear(&C);
     nmod_mat_clear(V);
     nmod_mat_clear(Vp);
@@ -715,8 +810,30 @@ _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
     flint_free(state);
     flint_free(ci);
     flint_free(indep);
+    if (Pc != NULL)
+        flint_free(Pc);
 
     return r;
+}
+
+slong
+_nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
+        slong * deltas, nmod_mat_t T, nmod_mat_t G, slong * piv, int * ok,
+        const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
+        const slong * shifts, const slong * degrees, slong chunk)
+{
+    return _krylov_basis_iter(B, rows, exps, deltas, T, G, 0, NULL, NULL, piv, ok,
+                              E, op, shifts, degrees, chunk);
+}
+
+slong
+_nmod_mat_krylov_basis_iter_lu(nmod_mat_t B, slong * rows, slong * exps,
+        slong * deltas, nmod_mat_t T, nmod_mat_t LU, slong * bpos, slong * piv,
+        int * ok, const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
+        const slong * shifts, const slong * degrees, slong chunk)
+{
+    return _krylov_basis_iter(B, rows, exps, deltas, T, NULL, 1, LU, bpos, piv, ok,
+                              E, op, shifts, degrees, chunk);
 }
 
 slong
@@ -777,8 +894,12 @@ nmod_mat_krylov_basis(nmod_mat_t B, slong * rows, slong * exps,
         flint_throw(FLINT_ERROR, "nmod_mat_krylov_basis: incompatible dimensions\n");
 
     _nmod_mat_krylov_op_init_dense(op, M);
-    r = _nmod_mat_krylov_basis_iter(B, rows, exps, NULL, NULL, NULL, NULL, NULL,
-                                    E, op, shifts, degrees, 0);
+    if (_krylov_basis_lu_wanted(E->c, E->mod))
+        r = _nmod_mat_krylov_basis_iter_lu(B, rows, exps, NULL, NULL, NULL, NULL,
+                                           NULL, NULL, E, op, shifts, degrees, 0);
+    else
+        r = _nmod_mat_krylov_basis_iter(B, rows, exps, NULL, NULL, NULL, NULL, NULL,
+                                        E, op, shifts, degrees, 0);
     _nmod_mat_krylov_op_clear(op);
 
     return r;
@@ -797,8 +918,12 @@ nmod_mat_krylov_basis_jordan(nmod_mat_t B, slong * rows, slong * exps,
     if (op->n != E->c)
         flint_throw(FLINT_ERROR, "nmod_mat_krylov_basis_jordan: incompatible dimensions\n");
 
-    r = _nmod_mat_krylov_basis_iter(B, rows, exps, NULL, NULL, NULL, NULL, NULL,
-                                    E, op, shifts, degrees, 0);
+    if (_krylov_basis_lu_wanted(E->c, E->mod))
+        r = _nmod_mat_krylov_basis_iter_lu(B, rows, exps, NULL, NULL, NULL, NULL,
+                                           NULL, NULL, E, op, shifts, degrees, 0);
+    else
+        r = _nmod_mat_krylov_basis_iter(B, rows, exps, NULL, NULL, NULL, NULL, NULL,
+                                        E, op, shifts, degrees, 0);
     _nmod_mat_krylov_op_clear(op);
 
     return r;

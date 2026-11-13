@@ -257,23 +257,35 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
 
             if (k % 2 == 0)
             {
-                r = _nmod_mat_krylov_basis_iter(B, rows, exps, deltas, NULL, NULL, NULL, &ok,
-                        E, op, use_shifts ? shifts : NULL, NULL, chunk);
+                /* reduced or row echelon basis */
+                if (n_randint(state, 2))
+                    r = _nmod_mat_krylov_basis_iter(B, rows, exps, deltas, NULL, NULL, NULL, &ok,
+                            E, op, use_shifts ? shifts : NULL, NULL, chunk);
+                else
+                    r = _nmod_mat_krylov_basis_iter_lu(B, rows, exps, deltas, NULL, NULL, NULL,
+                            NULL, &ok, E, op, use_shifts ? shifts : NULL, NULL, chunk);
             }
             else
             {
-                /* with the transformation G: G * B[:, piv] = I */
+                /* with the transformation G: G * B[:, piv] = I, or with the
+                   factorization: row t of L U is row bpos[t] of B[:, piv] */
                 nmod_mat_t G, C, P;
                 slong * piv = flint_malloc((n + 1) * sizeof(slong));
+                slong * bpos = flint_malloc((n + 1) * sizeof(slong));
                 slong u, v;
+                int lu = n_randint(state, 2);
 
                 nmod_mat_t T, vv, ww, Mp;
                 slong c;
 
                 nmod_mat_init(G, n, n, p);
                 nmod_mat_init(T, m, n, p);
-                r = _nmod_mat_krylov_basis_iter(B, rows, exps, deltas, T, G, piv, &ok,
-                        E, op, use_shifts ? shifts : NULL, NULL, chunk);
+                if (lu)
+                    r = _nmod_mat_krylov_basis_iter_lu(B, rows, exps, deltas, T, G, bpos, piv,
+                            &ok, E, op, use_shifts ? shifts : NULL, NULL, chunk);
+                else
+                    r = _nmod_mat_krylov_basis_iter(B, rows, exps, deltas, T, G, piv, &ok,
+                            E, op, use_shifts ? shifts : NULL, NULL, chunk);
 
                 /* target rows: T_i = E_i M^deltas[i] */
                 nmod_mat_init(vv, 1, n, p);
@@ -298,19 +310,53 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
                 for (u = 0; u < r; u++)
                     for (v = 0; v < r; v++)
                         nmod_mat_entry(C, u, v) = nmod_mat_entry(B, u, piv[v]);
+                if (lu)
+                {
+                    nmod_mat_t Lm, Um;
+                    nmod_mat_init(Lm, r, r, p);
+                    nmod_mat_init(Um, r, r, p);
+                    for (u = 0; u < r; u++)
+                        for (v = 0; v < r; v++)
+                        {
+                            if (v < u)
+                                nmod_mat_entry(Lm, u, v) = nmod_mat_entry(G, u, v);
+                            else
+                                nmod_mat_entry(Um, u, v) = nmod_mat_entry(G, u, v);
+                        }
+                    for (u = 0; u < r; u++)
+                    {
+                        nmod_mat_entry(Lm, u, u) = 1;
+                        if (nmod_mat_entry(Um, u, u) == 0)
+                            TEST_FUNCTION_FAIL("factorization: singular U (chunk %wd)\n", chunk);
+                    }
+                    nmod_mat_mul(P, Lm, Um);
+                    for (u = 0; u < r; u++)
+                    {
+                        if (bpos[u] < 0 || bpos[u] >= r)
+                            TEST_FUNCTION_FAIL("factorization: bpos (chunk %wd)\n", chunk);
+                        for (v = 0; v < r; v++)
+                            if (nmod_mat_entry(P, u, v) != nmod_mat_entry(C, bpos[u], v))
+                                TEST_FUNCTION_FAIL("factorization L U (chunk %wd)\np = %wu, E = %{nmod_mat}\nM = %{nmod_mat}\n",
+                                        chunk, p, E, M);
+                    }
+                    nmod_mat_clear(Lm);
+                    nmod_mat_clear(Um);
+                }
+                else
                 {
                     nmod_mat_t Gw;
                     nmod_mat_window_init(Gw, G, 0, 0, r, r);
                     nmod_mat_mul(P, Gw, C);
                     nmod_mat_window_clear(Gw);
+                    if (!nmod_mat_is_one(P))
+                        TEST_FUNCTION_FAIL("transformation G (chunk %wd)\np = %wu, E = %{nmod_mat}\nM = %{nmod_mat}\n",
+                                chunk, p, E, M);
                 }
-                if (!nmod_mat_is_one(P))
-                    TEST_FUNCTION_FAIL("transformation G (chunk %wd)\np = %wu, E = %{nmod_mat}\nM = %{nmod_mat}\n",
-                            chunk, p, E, M);
                 nmod_mat_clear(G);
                 nmod_mat_clear(C);
                 nmod_mat_clear(P);
                 flint_free(piv);
+                flint_free(bpos);
             }
 
             if (r != r2 || !ok)

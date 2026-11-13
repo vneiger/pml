@@ -300,23 +300,26 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
             slong * exps2 = flint_malloc((n + 1) * sizeof(slong));
             slong * deltas2 = flint_malloc((m + 1) * sizeof(slong));
             slong r2, chunk = 1 + n_randint(state, n_randint(state, 2) ? 6 : 64);
+            int method;
 
             /* dense operator: rows generated from powers M^(2^t), t <= logpow */
             op->logpow = (slong) n_randint(state, 6) - 1;
             op->powruns = n_randint(state, 4);
 
             nmod_mat_init(R2, m, n, p);
+            /* both methods for the relations give the same output */
+            method = n_randint(state, 3);
             r2 = _nmod_mat_krylov_kernel(R2, rows2, exps2, deltas2, E, op,
-                    use_shifts ? shifts : NULL, NULL, chunk);
+                    use_shifts ? shifts : NULL, NULL, chunk, method);
             if (r2 != r)
-                TEST_FUNCTION_FAIL("compact kernel, chunk %wd: rank\n", chunk);
+                TEST_FUNCTION_FAIL("compact kernel, chunk, method %wd, method %d: rank\n", chunk, method);
             for (i = 0; i < m; i++)
             {
                 if (deltas2[i] != deltas[i])
-                    TEST_FUNCTION_FAIL("compact kernel, chunk %wd: deltas\n", chunk);
+                    TEST_FUNCTION_FAIL("compact kernel, chunk, method %wd, method %d: deltas\n", chunk, method);
                 for (t = 0; t < r; t++)
                     if (nmod_mat_entry(R2, i, t) != nmod_mat_entry(R, i, t))
-                        TEST_FUNCTION_FAIL("compact kernel, chunk %wd: relations\n", chunk);
+                        TEST_FUNCTION_FAIL("compact kernel, chunk, method %wd, method %d: relations\n", chunk, method);
             }
             nmod_mat_clear(R2);
             flint_free(rows2);

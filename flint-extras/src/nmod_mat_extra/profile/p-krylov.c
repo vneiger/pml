@@ -23,6 +23,10 @@
                      blocks of size d), in shifted Popov form
       mode = interp  interpolation at sigma points (diagonal matrix)
       mode = chunk   effect of the chunk size (Hermite-Pade, m = sigma)
+      mode = kernel  the two methods for the relations of the compact kernel
+                     (reduced basis and G, or row echelon basis and
+                     triangular solves) for m / n from 1/16 to 4,
+                     Hermite-Pade (one nilpotent block) and dense M
       mode = pow     dense random M, generation of the rows from powers
                      M^(2^t) (Keller-Gehrig-type doubling), n up to nmax:
                      p-krylov pow [bits] [nmax]
@@ -154,7 +158,7 @@ profile_dense(flint_bitcnt_t bits, flint_rand_t state)
                 TIME_IT(td, _nmod_mat_krylov_basis_doubling(B, rows, exps, NULL,
                             &ok, E, op, shifts, NULL));
                 TIME_IT(tk, _nmod_mat_krylov_kernel(R, rows, exps, deltas, E, op,
-                            shifts, NULL, 0));
+                            shifts, NULL, 0, _NMOD_MAT_KRYLOV_KERNEL_AUTO));
 
                 flint_printf("%5wd %5wd  %s  %.2e %.2e %.2e %.2e   (%6.2f %6.2f %6.2f)   rank %wd\n",
                     n, m, s == 0 ? "unif" : "herm", tmul, tb, td, tk,
@@ -281,6 +285,93 @@ profile_pow(flint_bitcnt_t bits, slong nmax, flint_rand_t state)
     }
 }
 
+/*
+    Methods for the relations (_NMOD_MAT_KRYLOV_KERNEL_TRACK: reduced row
+    echelon basis and transformation G; _LU: row echelon basis and
+    triangular solves) and the automatic choice, for m / n from 1/16 to 4:
+    Hermite-Pade (one nilpotent block of size n, uniform shift) and dense
+    random M. The methods are run in turn, and the minimum of three runs of
+    each is kept.
+*/
+static void
+profile_kernel(flint_bitcnt_t bits, flint_rand_t state)
+{
+    slong ns[] = {64, 256, 1024, 0};
+    slong num[] = {1, 1, 1, 1, 1, 2, 4, 0};
+    slong den[] = {16, 8, 4, 2, 1, 1, 1, 0};
+    slong k, c, kind;
+    ulong p = n_randprime(state, bits, 1);
+
+    flint_printf("compact kernel: reduced (G) vs row echelon basis (LU), %wu-bit prime\n", bits);
+    flint_printf(" kind     n     m        track           lu     lu/track  auto/track\n");
+
+    for (kind = 0; kind < 2; kind++)
+    {
+        for (k = 0; ns[k] != 0; k++)
+        {
+            slong n = ns[k];
+
+            if (kind == 1 && n > 256)
+                continue;
+
+            for (c = 0; num[c] != 0; c++)
+            {
+                slong m = FLINT_MAX(1, (n * num[c]) / den[c]);
+                slong * rows = flint_malloc(n * sizeof(slong));
+                slong * exps = flint_malloc(n * sizeof(slong));
+                slong * deltas = flint_malloc(m * sizeof(slong));
+                nmod_mat_t E, M, R;
+                _nmod_mat_krylov_op_t op;
+                double t1, t2, t0;
+
+                nmod_mat_init(E, m, n, p);
+                nmod_mat_init(M, n, n, p);
+                nmod_mat_init(R, m, n, p);
+                nmod_mat_rand(E, state);
+                if (kind == 0)
+                {
+                    slong sz = n;
+                    _nmod_mat_krylov_op_init_jordan(op, NULL, &sz, 1, E->mod);
+                }
+                else
+                {
+                    nmod_mat_rand(M, state);
+                    _nmod_mat_krylov_op_init_dense(op, M);
+                }
+
+                {
+                    double u0, u1, u2;
+                    slong rep;
+                    t0 = t1 = t2 = 1e300;
+                    for (rep = 0; rep < 3; rep++)
+                    {
+                        TIME_IT(u1, _nmod_mat_krylov_kernel(R, rows, exps, deltas, E, op,
+                                    NULL, NULL, 0, _NMOD_MAT_KRYLOV_KERNEL_TRACK));
+                        TIME_IT(u2, _nmod_mat_krylov_kernel(R, rows, exps, deltas, E, op,
+                                    NULL, NULL, 0, _NMOD_MAT_KRYLOV_KERNEL_LU));
+                        TIME_IT(u0, _nmod_mat_krylov_kernel(R, rows, exps, deltas, E, op,
+                                    NULL, NULL, 0, _NMOD_MAT_KRYLOV_KERNEL_AUTO));
+                        t0 = FLINT_MIN(t0, u0);
+                        t1 = FLINT_MIN(t1, u1);
+                        t2 = FLINT_MIN(t2, u2);
+                    }
+                }
+
+                flint_printf("%5s %5wd %5wd  %.3e  %.3e  %11.2f  %10.2f\n",
+                    kind == 0 ? "hp" : "dense", n, m, t1, t2, t2 / t1, t0 / t1);
+
+                _nmod_mat_krylov_op_clear(op);
+                nmod_mat_clear(E);
+                nmod_mat_clear(M);
+                nmod_mat_clear(R);
+                flint_free(rows);
+                flint_free(exps);
+                flint_free(deltas);
+            }
+        }
+    }
+}
+
 static void
 profile_hp(flint_bitcnt_t bits, flint_rand_t state)
 {
@@ -400,7 +491,7 @@ profile_chunk(flint_bitcnt_t bits, flint_rand_t state)
         {
             double t;
             TIME_IT(t, _nmod_mat_krylov_kernel(R, rows, exps, deltas, E, op,
-                        NULL, NULL, chunks[c]));
+                        NULL, NULL, chunks[c], _NMOD_MAT_KRYLOV_KERNEL_AUTO));
             flint_printf("   %.3e", t);
         }
         flint_printf("\n");
@@ -431,10 +522,12 @@ main(int argc, char ** argv)
         profile_interp(bits, state);
     else if (!strcmp(mode, "chunk"))
         profile_chunk(bits, state);
+    else if (!strcmp(mode, "kernel"))
+        profile_kernel(bits, state);
     else if (!strcmp(mode, "pow"))
         profile_pow(bits, (argc > 3) ? atol(argv[3]) : 1600, state);
     else
-        flint_printf("unknown mode %s (dense, hp, interp, chunk, pow)\n", mode);
+        flint_printf("unknown mode %s (dense, hp, interp, chunk, kernel, pow)\n", mode);
 
     flint_rand_clear(state);
     flint_cleanup_master();
