@@ -19,10 +19,10 @@
 
 /* random Jordan matrix description with few distinct eigenvalues */
 static slong
-_rand_jordan(ulong * eig, slong * sizes, slong n, int kind,
+_rand_jordan(ulong * eig, slong * sizes, slong D, int kind,
         flint_rand_t state, ulong p)
 {
-    slong nb = 0, left = n;
+    slong nb = 0, left = D;
     ulong vals[3];
     slong t;
 
@@ -77,7 +77,7 @@ _jordan_to_dense(nmod_mat_t J, const ulong * eig, const slong * sizes, slong nb)
 static void
 _rand_mult_matrix(nmod_mat_t M, flint_rand_t state)
 {
-    slong n = M->r;
+    slong D = M->r;
     ulong p = M->mod.n;
 
     switch (n_randint(state, 6))
@@ -91,22 +91,22 @@ _rand_mult_matrix(nmod_mat_t M, flint_rand_t state)
         case 2:
         case 3:
         {
-            ulong * eig = flint_malloc((n + 1) * sizeof(ulong));
-            slong * sizes = flint_malloc((n + 1) * sizeof(slong));
-            slong nb = _rand_jordan(eig, sizes, n, n_randint(state, 3), state, p);
+            ulong * eig = flint_malloc((D + 1) * sizeof(ulong));
+            slong * sizes = flint_malloc((D + 1) * sizeof(slong));
+            slong nb = _rand_jordan(eig, sizes, D, n_randint(state, 3), state, p);
             _jordan_to_dense(M, eig, sizes, nb);
             flint_free(eig);
             flint_free(sizes);
 
-            if (n_randint(state, 2) && n > 0)
+            if (n_randint(state, 2) && D > 0)
             {
                 /* similarity transform by a random invertible matrix */
                 nmod_mat_t U, Ui, T;
-                nmod_mat_init(U, n, n, p);
-                nmod_mat_init(Ui, n, n, p);
-                nmod_mat_init(T, n, n, p);
-                nmod_mat_randrank(U, state, n);
-                nmod_mat_randops(U, state, 2 * n);
+                nmod_mat_init(U, D, D, p);
+                nmod_mat_init(Ui, D, D, p);
+                nmod_mat_init(T, D, D, p);
+                nmod_mat_randrank(U, state, D);
+                nmod_mat_randops(U, state, 2 * D);
                 nmod_mat_inv(Ui, U);
                 nmod_mat_mul(T, U, M);
                 nmod_mat_mul(M, T, Ui);
@@ -125,40 +125,40 @@ _rand_mult_matrix(nmod_mat_t M, flint_rand_t state)
     }
 }
 
-/* random E with various structures */
+/* random V with various structures */
 static void
-_rand_input(nmod_mat_t E, flint_rand_t state)
+_rand_input(nmod_mat_t V, flint_rand_t state)
 {
-    slong m = E->r, n = E->c, i;
+    slong m = V->r, D = V->c, i;
 
     switch (n_randint(state, 4))
     {
         case 0:
-            nmod_mat_randtest(E, state);
+            nmod_mat_randtest(V, state);
             break;
         case 1:
-            if (m > 0 && n > 0)
+            if (m > 0 && D > 0)
             {
-                nmod_mat_randrank(E, state, n_randint(state, FLINT_MIN(m, n) + 1));
-                nmod_mat_randops(E, state, n_randint(state, 2 * m * n + 1));
+                nmod_mat_randrank(V, state, n_randint(state, FLINT_MIN(m, D) + 1));
+                nmod_mat_randops(V, state, n_randint(state, 2 * m * D + 1));
             }
             break;
         case 2:
-            nmod_mat_zero(E);
-            for (i = 0; i < m && n > 0; i++)
-                nmod_mat_entry(E, i, n_randint(state, n)) = 1;
+            nmod_mat_zero(V);
+            for (i = 0; i < m && D > 0; i++)
+                nmod_mat_entry(V, i, n_randint(state, D)) = 1;
             break;
         default:
-            nmod_mat_randfull(E, state);
+            nmod_mat_randfull(V, state);
             if (m > 1)
-                for (i = 0; i < n; i++)  /* duplicate a row */
-                    nmod_mat_entry(E, m - 1, i) = nmod_mat_entry(E, 0, i);
+                for (i = 0; i < D; i++)  /* duplicate a row */
+                    nmod_mat_entry(V, m - 1, i) = nmod_mat_entry(V, 0, i);
             break;
     }
 }
 
 static void
-_rand_shift(slong * s, slong m, slong n, flint_rand_t state)
+_rand_shift(slong * s, slong m, slong D, flint_rand_t state)
 {
     slong i;
     int mode = n_randint(state, 5);
@@ -170,9 +170,9 @@ _rand_shift(slong * s, slong m, slong n, flint_rand_t state)
         else if (mode == 1)
             s[i] = n_randint(state, 5) - 2;
         else if (mode == 2)
-            s[i] = i * (n + 1);   /* "Hermite" shift */
+            s[i] = i * (D + 1);   /* "Hermite" shift */
         else if (mode == 3)
-            s[i] = (m - i) * (n + 1);
+            s[i] = (m - i) * (D + 1);
         else
             s[i] = (slong) n_randint(state, 2000000) - 1000000;
     }
@@ -184,10 +184,10 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
 
     for (iter = 0; iter < 2000 * flint_test_multiplier(); iter++)
     {
-        slong m, n, i, k, r, r2, N;
+        slong m, D, i, k, r, r2, N;
         ulong p;
-        nmod_mat_t E, M, J, B, B2, K;
-        slong * shift, * degs, * rows, * exps, * rows2, * exps2, * deltas;
+        nmod_mat_t V, M, J, B, B2, K;
+        slong * shift, * beta, * rows, * exps, * rows2, * exps2, * deltas;
         slong * sizes;
         ulong * eig;
         slong nb;
@@ -195,11 +195,11 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
         _nmod_mat_krylov_op_t op, op2;
 
         m = n_randint(state, 10);
-        n = n_randint(state, 10);
+        D = n_randint(state, 10);
         if (n_randint(state, 8) == 0)
         {
             m = n_randint(state, 30);
-            n = n_randint(state, 30);
+            D = n_randint(state, 30);
         }
 
         if (n_randint(state, 3) == 0)
@@ -207,30 +207,30 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
         else
             p = n_randtest_prime(state, 0);
 
-        nmod_mat_init(E, m, n, p);
-        nmod_mat_init(M, n, n, p);
-        nmod_mat_init(J, n, n, p);
-        nmod_mat_init(B, n, n, p);
-        nmod_mat_init(B2, n, n, p);
+        nmod_mat_init(V, m, D, p);
+        nmod_mat_init(M, D, D, p);
+        nmod_mat_init(J, D, D, p);
+        nmod_mat_init(B, D, D, p);
+        nmod_mat_init(B2, D, D, p);
 
         shift = flint_malloc((m + 1) * sizeof(slong));
-        degs = flint_malloc((m + 1) * sizeof(slong));
+        beta = flint_malloc((m + 1) * sizeof(slong));
         deltas = flint_malloc((m + 1) * sizeof(slong));
-        rows = flint_malloc((n + 1) * sizeof(slong));
-        exps = flint_malloc((n + 1) * sizeof(slong));
-        rows2 = flint_malloc((m * (n + 4) + 1) * sizeof(slong));
-        exps2 = flint_malloc((m * (n + 4) + 1) * sizeof(slong));
-        sizes = flint_malloc((n + 1) * sizeof(slong));
-        eig = flint_malloc((n + 1) * sizeof(ulong));
+        rows = flint_malloc((D + 1) * sizeof(slong));
+        exps = flint_malloc((D + 1) * sizeof(slong));
+        rows2 = flint_malloc((m * (D + 4) + 1) * sizeof(slong));
+        exps2 = flint_malloc((m * (D + 4) + 1) * sizeof(slong));
+        sizes = flint_malloc((D + 1) * sizeof(slong));
+        eig = flint_malloc((D + 1) * sizeof(ulong));
 
-        _rand_input(E, state);
-        _rand_shift(shift, m, n, state);
+        _rand_input(V, state);
+        _rand_shift(shift, m, D, state);
         use_shift = n_randint(state, 4) != 0;
 
         use_jordan = n_randint(state, 2);
         if (use_jordan)
         {
-            nb = _rand_jordan(eig, sizes, n, n_randint(state, 3), state, p);
+            nb = _rand_jordan(eig, sizes, D, n_randint(state, 3), state, p);
             _jordan_to_dense(M, eig, sizes, nb);
             _nmod_mat_krylov_op_init_jordan(op, eig, sizes, nb, M->mod);
 
@@ -253,7 +253,7 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
         }
 
         /* reference: row rank profile of the full Krylov matrix */
-        r2 = _nmod_mat_krylov_basis_naive(B2, rows2, exps2, E, op,
+        r2 = _nmod_mat_krylov_basis_naive(B2, rows2, exps2, V, op,
                             use_shift ? shift : NULL, NULL);
 
         /* default degree bounds */
@@ -275,44 +275,44 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
                 /* reduced or row echelon basis */
                 if (n_randint(state, 2))
                     r = _nmod_mat_krylov_basis_iter(B, rows, exps, deltas, NULL, NULL, NULL, &ok,
-                            E, op, use_shift ? shift : NULL, NULL, chunk);
+                            V, op, use_shift ? shift : NULL, NULL, chunk);
                 else
                     r = _nmod_mat_krylov_basis_iter_lu(B, rows, exps, deltas, NULL, NULL, NULL,
-                            NULL, &ok, E, op, use_shift ? shift : NULL, NULL, chunk);
+                            NULL, &ok, V, op, use_shift ? shift : NULL, NULL, chunk);
             }
             else
             {
                 /* with the transformation G: G * B[:, piv] = I, or with the
                    factorization: row t of L U is row bpos[t] of B[:, piv] */
                 nmod_mat_t G, C, P;
-                slong * piv = flint_malloc((n + 1) * sizeof(slong));
-                slong * bpos = flint_malloc((n + 1) * sizeof(slong));
+                slong * piv = flint_malloc((D + 1) * sizeof(slong));
+                slong * bpos = flint_malloc((D + 1) * sizeof(slong));
                 slong u, v;
                 int lu = n_randint(state, 2);
 
                 nmod_mat_t T, vv, ww, Mp;
                 slong c;
 
-                nmod_mat_init(G, n, n, p);
-                nmod_mat_init(T, m, n, p);
+                nmod_mat_init(G, D, D, p);
+                nmod_mat_init(T, m, D, p);
                 if (lu)
                     r = _nmod_mat_krylov_basis_iter_lu(B, rows, exps, deltas, T, G, bpos, piv,
-                            &ok, E, op, use_shift ? shift : NULL, NULL, chunk);
+                            &ok, V, op, use_shift ? shift : NULL, NULL, chunk);
                 else
                     r = _nmod_mat_krylov_basis_iter(B, rows, exps, deltas, T, G, piv, &ok,
-                            E, op, use_shift ? shift : NULL, NULL, chunk);
+                            V, op, use_shift ? shift : NULL, NULL, chunk);
 
-                /* target rows: T_i = E_i M^deltas[i] */
-                nmod_mat_init(vv, 1, n, p);
-                nmod_mat_init(ww, 1, n, p);
-                nmod_mat_init(Mp, n, n, p);
+                /* target rows: T_i = V_i M^deltas[i] */
+                nmod_mat_init(vv, 1, D, p);
+                nmod_mat_init(ww, 1, D, p);
+                nmod_mat_init(Mp, D, D, p);
                 for (u = 0; u < m; u++)
                 {
-                    for (c = 0; c < n; c++)
-                        nmod_mat_entry(vv, 0, c) = nmod_mat_entry(E, u, c);
+                    for (c = 0; c < D; c++)
+                        nmod_mat_entry(vv, 0, c) = nmod_mat_entry(V, u, c);
                     nmod_mat_pow(Mp, M, deltas[u]);
                     nmod_mat_mul(ww, vv, Mp);
-                    for (c = 0; c < n; c++)
+                    for (c = 0; c < D; c++)
                         if (nmod_mat_entry(ww, 0, c) != nmod_mat_entry(T, u, c))
                             TEST_FUNCTION_FAIL("target rows (chunk %wd)\n", chunk);
                 }
@@ -351,8 +351,8 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
                             TEST_FUNCTION_FAIL("factorization: bpos (chunk %wd)\n", chunk);
                         for (v = 0; v < r; v++)
                             if (nmod_mat_entry(P, u, v) != nmod_mat_entry(C, bpos[u], v))
-                                TEST_FUNCTION_FAIL("factorization L U (chunk %wd)\np = %wu, E = %{nmod_mat}\nM = %{nmod_mat}\n",
-                                        chunk, p, E, M);
+                                TEST_FUNCTION_FAIL("factorization L U (chunk %wd)\np = %wu, V = %{nmod_mat}\nM = %{nmod_mat}\n",
+                                        chunk, p, V, M);
                     }
                     nmod_mat_clear(Lm);
                     nmod_mat_clear(Um);
@@ -364,8 +364,8 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
                     nmod_mat_mul(P, Gw, C);
                     nmod_mat_window_clear(Gw);
                     if (!nmod_mat_is_one(P))
-                        TEST_FUNCTION_FAIL("transformation G (chunk %wd)\np = %wu, E = %{nmod_mat}\nM = %{nmod_mat}\n",
-                                chunk, p, E, M);
+                        TEST_FUNCTION_FAIL("transformation G (chunk %wd)\np = %wu, V = %{nmod_mat}\nM = %{nmod_mat}\n",
+                                chunk, p, V, M);
                 }
                 nmod_mat_clear(G);
                 nmod_mat_clear(C);
@@ -376,17 +376,17 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
 
             if (r != r2 || !ok)
                 TEST_FUNCTION_FAIL("rank (r = %wd, naive %wd, ok = %d, chunk %wd)\n"
-                    "p = %wu, E = %{nmod_mat}\nM = %{nmod_mat}\n", r, r2, ok, chunk, p, E, M);
+                    "p = %wu, V = %{nmod_mat}\nM = %{nmod_mat}\n", r, r2, ok, chunk, p, V, M);
 
             for (i = 0; i < r; i++)
                 if (rows[i] != rows2[i] || exps[i] != exps2[i])
-                    TEST_FUNCTION_FAIL("profile (chunk %wd)\np = %wu, E = %{nmod_mat}\nM = %{nmod_mat}\n",
-                            chunk, p, E, M);
+                    TEST_FUNCTION_FAIL("profile (chunk %wd)\np = %wu, V = %{nmod_mat}\nM = %{nmod_mat}\n",
+                            chunk, p, V, M);
 
             {
                 nmod_mat_t W1, W2;
-                nmod_mat_window_init(W1, B, 0, 0, r, n);
-                nmod_mat_window_init(W2, B2, 0, 0, r, n);
+                nmod_mat_window_init(W1, B, 0, 0, r, D);
+                nmod_mat_window_init(W2, B2, 0, 0, r, D);
                 if (!nmod_mat_equal(W1, W2))
                     TEST_FUNCTION_FAIL("basis (chunk %wd)\n", chunk);
                 nmod_mat_window_clear(W1);
@@ -407,17 +407,17 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
 
         /* Keller-Gehrig-type doubling algorithm */
         r = _nmod_mat_krylov_basis_doubling(B, rows, exps, deltas, &ok,
-                E, op, use_shift ? shift : NULL, NULL);
+                V, op, use_shift ? shift : NULL, NULL);
         if (r != r2 || !ok)
             TEST_FUNCTION_FAIL("doubling: rank (r = %wd, naive %wd, ok = %d)\n"
-                "p = %wu, E = %{nmod_mat}\nM = %{nmod_mat}\n", r, r2, ok, p, E, M);
+                "p = %wu, V = %{nmod_mat}\nM = %{nmod_mat}\n", r, r2, ok, p, V, M);
         for (i = 0; i < r; i++)
             if (rows[i] != rows2[i] || exps[i] != exps2[i])
-                TEST_FUNCTION_FAIL("doubling: profile\np = %wu, E = %{nmod_mat}\nM = %{nmod_mat}\n", p, E, M);
+                TEST_FUNCTION_FAIL("doubling: profile\np = %wu, V = %{nmod_mat}\nM = %{nmod_mat}\n", p, V, M);
         {
             nmod_mat_t W1, W2;
-            nmod_mat_window_init(W1, B, 0, 0, r, n);
-            nmod_mat_window_init(W2, B2, 0, 0, r, n);
+            nmod_mat_window_init(W1, B, 0, 0, r, D);
+            nmod_mat_window_init(W2, B2, 0, 0, r, D);
             if (!nmod_mat_equal(W1, W2))
                 TEST_FUNCTION_FAIL("doubling: basis\n");
             nmod_mat_window_clear(W1);
@@ -429,7 +429,7 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
         {
             _nmod_mat_krylov_op_init_dense(op2, M);
             r = _nmod_mat_krylov_basis_iter(B, rows, exps, NULL, NULL, NULL, NULL, &ok,
-                    E, op2, use_shift ? shift : NULL, NULL, 0);
+                    V, op2, use_shift ? shift : NULL, NULL, 0);
             if (r != r2 || !ok)
                 TEST_FUNCTION_FAIL("jordan vs dense: rank\n");
             for (i = 0; i < r; i++)
@@ -445,17 +445,17 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
         /* random degree bounds: when declared valid, the profile is that
            of the Krylov matrix with these bounds */
         for (i = 0; i < m; i++)
-            degs[i] = n_randint(state, n + 3);
+            beta[i] = n_randint(state, D + 3);
 
         r = _nmod_mat_krylov_basis_iter(B, rows, exps, deltas, NULL, NULL, NULL, &ok,
-                E, op, use_shift ? shift : NULL, degs, 1 + n_randint(state, 8));
+                V, op, use_shift ? shift : NULL, beta, 1 + n_randint(state, 8));
 
         {
-            /* validity: for each i, the rows (i, j <= min(d_i, n)) of the
-               full profile do not reach d_i */
+            /* validity: for each i, the rows (i, e <= min(beta_i, D)) of
+               the full profile do not reach beta_i */
             int valid = 1;
             for (i = 0; i < r2; i++)
-                if (exps2[i] >= FLINT_MIN(degs[rows2[i]], n))
+                if (exps2[i] >= FLINT_MIN(beta[rows2[i]], D))
                     valid = 0;
 
             if (ok != valid)
@@ -465,12 +465,12 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
             {
                 slong r3;
                 nmod_mat_t B3;
-                slong * rows3 = flint_malloc((n + 1) * sizeof(slong));
-                slong * exps3 = flint_malloc((n + 1) * sizeof(slong));
+                slong * rows3 = flint_malloc((D + 1) * sizeof(slong));
+                slong * exps3 = flint_malloc((D + 1) * sizeof(slong));
 
-                nmod_mat_init(B3, n, n, p);
-                r3 = _nmod_mat_krylov_basis_naive(B3, rows3, exps3, E, op,
-                            use_shift ? shift : NULL, degs);
+                nmod_mat_init(B3, D, D, p);
+                r3 = _nmod_mat_krylov_basis_naive(B3, rows3, exps3, V, op,
+                            use_shift ? shift : NULL, beta);
 
                 if (r3 != r || r != r2)
                     TEST_FUNCTION_FAIL("degree bounds: rank\n");
@@ -480,7 +480,7 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
 
                 /* the doubling algorithm with the same bounds */
                 r3 = _nmod_mat_krylov_basis_doubling(B3, rows3, exps3, NULL, &ok,
-                        E, op, use_shift ? shift : NULL, degs);
+                        V, op, use_shift ? shift : NULL, beta);
                 if (r3 != r || !ok)
                     TEST_FUNCTION_FAIL("doubling, degree bounds: rank\n");
                 for (i = 0; i < r; i++)
@@ -494,7 +494,7 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
             else
             {
                 r = _nmod_mat_krylov_basis_doubling(B, rows, exps, NULL, &ok,
-                        E, op, use_shift ? shift : NULL, degs);
+                        V, op, use_shift ? shift : NULL, beta);
                 if (ok)
                     TEST_FUNCTION_FAIL("doubling: invalid degree bounds not detected\n");
             }
@@ -506,8 +506,8 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
         {
             slong * sm = flint_malloc((m + 1) * sizeof(slong));
             slong * sx = flint_malloc((m + 1) * sizeof(slong));
-            slong * rows3 = flint_malloc((n + 1) * sizeof(slong));
-            slong * exps3 = flint_malloc((n + 1) * sizeof(slong));
+            slong * rows3 = flint_malloc((D + 1) * sizeof(slong));
+            slong * exps3 = flint_malloc((D + 1) * sizeof(slong));
             nmod_mat_t B3;
             slong r3, r4;
 
@@ -519,11 +519,11 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
                 sx[i] = high ? WORD_MAX - 3 + small : WORD_MIN + 3 + small;
             }
 
-            nmod_mat_init(B3, n, n, p);
-            r3 = _nmod_mat_krylov_basis_naive(B3, rows3, exps3, E, op, sm, NULL);
+            nmod_mat_init(B3, D, D, p);
+            r3 = _nmod_mat_krylov_basis_naive(B3, rows3, exps3, V, op, sm, NULL);
 
             r4 = _nmod_mat_krylov_basis_iter(B, rows, exps, NULL, NULL, NULL, NULL, &ok,
-                    E, op, sx, NULL, 1 + n_randint(state, 20));
+                    V, op, sx, NULL, 1 + n_randint(state, 20));
             if (r4 != r3 || !ok)
                 TEST_FUNCTION_FAIL("extreme shift: rank\n");
             for (i = 0; i < r3; i++)
@@ -531,14 +531,14 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
                     TEST_FUNCTION_FAIL("extreme shift: profile\n");
 
             r4 = _nmod_mat_krylov_basis_doubling(B, rows, exps, NULL, &ok,
-                    E, op, sx, NULL);
+                    V, op, sx, NULL);
             if (r4 != r3 || !ok)
                 TEST_FUNCTION_FAIL("extreme shift, doubling: rank\n");
             for (i = 0; i < r3; i++)
                 if (rows[i] != rows3[i] || exps[i] != exps3[i])
                     TEST_FUNCTION_FAIL("extreme shift, doubling: profile\n");
 
-            r4 = _nmod_mat_krylov_basis_naive(B, rows, exps, E, op, sx, NULL);
+            r4 = _nmod_mat_krylov_basis_naive(B, rows, exps, V, op, sx, NULL);
             if (r4 != r3)
                 TEST_FUNCTION_FAIL("extreme shift, naive: rank\n");
             for (i = 0; i < r3; i++)
@@ -554,10 +554,10 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
 
         /* public interfaces */
         if (use_jordan)
-            r = nmod_mat_krylov_basis_jordan(B, rows, exps, E, eig, sizes, nb,
+            r = nmod_mat_krylov_basis_jordan(B, rows, exps, V, eig, sizes, nb,
                     use_shift ? shift : NULL, NULL);
         else
-            r = nmod_mat_krylov_basis(B, rows, exps, E, M,
+            r = nmod_mat_krylov_basis(B, rows, exps, V, M,
                     use_shift ? shift : NULL, NULL);
         if (r != r2)
             TEST_FUNCTION_FAIL("public interface\n");
@@ -565,18 +565,18 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
             if (rows[i] != rows2[i] || exps[i] != exps2[i])
                 TEST_FUNCTION_FAIL("public interface: profile\n");
 
-        /* Krylov matrix: rows are E_i M^j, sorted by priority */
+        /* Krylov matrix: rows are V_i M^e, sorted by priority */
         for (i = 0; i < m; i++)
-            degs[i] = n_randint(state, 4);
-        N = _nmod_mat_krylov_nrows(m, degs);
-        nmod_mat_init(K, N, n, p);
+            beta[i] = n_randint(state, 4);
+        N = _nmod_mat_krylov_nrows(m, beta);
+        nmod_mat_init(K, N, D, p);
         if (use_jordan)
-            nmod_mat_krylov_matrix_jordan(K, E, eig, sizes, nb,
-                    use_shift ? shift : NULL, degs);
+            nmod_mat_krylov_matrix_jordan(K, V, eig, sizes, nb,
+                    use_shift ? shift : NULL, beta);
         else
-            nmod_mat_krylov_matrix(K, E, M, use_shift ? shift : NULL, degs);
+            nmod_mat_krylov_matrix(K, V, M, use_shift ? shift : NULL, beta);
 
-        _nmod_mat_krylov_order(rows2, exps2, m, use_shift ? shift : NULL, degs);
+        _nmod_mat_krylov_order(rows2, exps2, m, use_shift ? shift : NULL, beta);
         for (k = 0; k < N; k++)
         {
             nmod_mat_t v, w, Mp;
@@ -590,14 +590,14 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
                     TEST_FUNCTION_FAIL("order\n");
             }
 
-            nmod_mat_init(v, 1, n, p);
-            nmod_mat_init(w, 1, n, p);
-            nmod_mat_init(Mp, n, n, p);
-            for (i = 0; i < n; i++)
-                nmod_mat_entry(v, 0, i) = nmod_mat_entry(E, rows2[k], i);
+            nmod_mat_init(v, 1, D, p);
+            nmod_mat_init(w, 1, D, p);
+            nmod_mat_init(Mp, D, D, p);
+            for (i = 0; i < D; i++)
+                nmod_mat_entry(v, 0, i) = nmod_mat_entry(V, rows2[k], i);
             nmod_mat_pow(Mp, M, exps2[k]);
             nmod_mat_mul(w, v, Mp);
-            for (i = 0; i < n; i++)
+            for (i = 0; i < D; i++)
                 if (nmod_mat_entry(w, 0, i) != nmod_mat_entry(K, k, i))
                     TEST_FUNCTION_FAIL("krylov_matrix\n");
             nmod_mat_clear(v);
@@ -607,13 +607,13 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
         nmod_mat_clear(K);
 
         _nmod_mat_krylov_op_clear(op);
-        nmod_mat_clear(E);
+        nmod_mat_clear(V);
         nmod_mat_clear(M);
         nmod_mat_clear(J);
         nmod_mat_clear(B);
         nmod_mat_clear(B2);
         flint_free(shift);
-        flint_free(degs);
+        flint_free(beta);
         flint_free(deltas);
         flint_free(rows);
         flint_free(exps);

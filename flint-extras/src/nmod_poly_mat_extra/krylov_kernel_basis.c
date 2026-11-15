@@ -68,24 +68,24 @@ _nmod_poly_mat_set_krylov_kernel(nmod_poly_mat_t P, const nmod_mat_t R,
 }
 
 static int
-_nmod_poly_mat_krylov_kernel_basis(nmod_poly_mat_t P, const nmod_mat_t E,
+_nmod_poly_mat_krylov_kernel_basis(nmod_poly_mat_t P, const nmod_mat_t V,
         const _nmod_mat_krylov_op_t op, const slong * shift,
         const slong * degrees)
 {
-    slong m = E->r, n = E->c, r;
+    slong m = V->r, D = V->c, r;
     slong * rows, * exps, * deltas;
     nmod_mat_t R;
 
     if (P->r != m || P->c != m)
-        flint_throw(FLINT_ERROR, "nmod_poly_mat_krylov_kernel_basis: P must be E->r x E->r\n");
+        flint_throw(FLINT_ERROR, "nmod_poly_mat_krylov_kernel_basis: P must be V->r x V->r\n");
 
-    rows = flint_malloc((2 * n + m + 1) * sizeof(slong));
-    exps = rows + n;
-    deltas = exps + n;
+    rows = flint_malloc((2 * D + m + 1) * sizeof(slong));
+    exps = rows + D;
+    deltas = exps + D;
 
-    nmod_mat_init(R, m, n, E->mod.n);
+    nmod_mat_init(R, m, D, V->mod.n);
 
-    r = _nmod_mat_krylov_kernel(R, rows, exps, deltas, E, op, shift, degrees, 0,
+    r = _nmod_mat_krylov_kernel(R, rows, exps, deltas, V, op, shift, degrees, 0,
                                 _NMOD_MAT_KRYLOV_KERNEL_AUTO);
 
     if (r >= 0)
@@ -98,17 +98,17 @@ _nmod_poly_mat_krylov_kernel_basis(nmod_poly_mat_t P, const nmod_mat_t E,
 }
 
 int
-nmod_poly_mat_krylov_kernel_basis(nmod_poly_mat_t P, const nmod_mat_t E,
+nmod_poly_mat_krylov_kernel_basis(nmod_poly_mat_t P, const nmod_mat_t V,
         const nmod_mat_t M, const slong * shift, const slong * degrees)
 {
     _nmod_mat_krylov_op_t op;
     int res;
 
-    if (M->r != E->c || M->c != E->c)
+    if (M->r != V->c || M->c != V->c)
         flint_throw(FLINT_ERROR, "nmod_poly_mat_krylov_kernel_basis: incompatible dimensions\n");
 
     _nmod_mat_krylov_op_init_dense(op, M);
-    res = _nmod_poly_mat_krylov_kernel_basis(P, E, op, shift, degrees);
+    res = _nmod_poly_mat_krylov_kernel_basis(P, V, op, shift, degrees);
     _nmod_mat_krylov_op_clear(op);
 
     return res;
@@ -116,18 +116,18 @@ nmod_poly_mat_krylov_kernel_basis(nmod_poly_mat_t P, const nmod_mat_t E,
 
 int
 nmod_poly_mat_krylov_kernel_basis_jordan(nmod_poly_mat_t P,
-        const nmod_mat_t E, nn_srcptr eig, const slong * sizes, slong nblocks,
+        const nmod_mat_t V, nn_srcptr eig, const slong * sizes, slong nblocks,
         const slong * shift, const slong * degrees)
 {
     _nmod_mat_krylov_op_t op;
     int res;
 
-    _nmod_mat_krylov_op_init_jordan(op, eig, sizes, nblocks, E->mod);
+    _nmod_mat_krylov_op_init_jordan(op, eig, sizes, nblocks, V->mod);
 
-    if (op->n != E->c)
+    if (op->D != V->c)
         flint_throw(FLINT_ERROR, "nmod_poly_mat_krylov_kernel_basis_jordan: incompatible dimensions\n");
 
-    res = _nmod_poly_mat_krylov_kernel_basis(P, E, op, shift, degrees);
+    res = _nmod_poly_mat_krylov_kernel_basis(P, V, op, shift, degrees);
     _nmod_mat_krylov_op_clear(op);
 
     return res;

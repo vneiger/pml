@@ -23,11 +23,11 @@ extern "C" {
 /** \file nmod_poly_mat_relation_basis.h
  * Relation bases.
  * ---------------
- * Given an `m x n` matrix `E` with rows `E_0, ..., E_{m-1}` and an `n x n`
+ * Given an `m x D` matrix `V` with rows `V_0, ..., V_{m-1}` and a `D x D`
  * matrix `M`, the vectors `p` of `m` polynomials such that
- * `E_0 p_0(M) + ... + E_{m-1} p_{m-1}(M) = 0` form a module of rank `m`,
- * the module of relations of `E` with respect to `M`. Its bases are the
- * kernel bases of the Krylov matrix of `E` and `M` (see @ref KrylovMatrices).
+ * `V_0 p_0(M) + ... + V_{m-1} p_{m-1}(M) = 0` form a module of rank `m`,
+ * the module of relations of `V` with respect to `M`. Its bases are the
+ * kernel bases of the Krylov matrix of `V` and `M` (see @ref KrylovMatrices).
  *
  * Approximant, M-Pade and interpolant bases are relation bases with respect
  * to Jordan matrices (nilpotent blocks for approximants, a diagonal matrix
@@ -42,15 +42,15 @@ extern "C" {
 
 /** Sets `P` to the basis in `shift`-Popov form (row-wise, with ROW_LOWER
  * pivots, see @ref MatrixForms), which is unique, of the module of vectors
- * `p` of `m` polynomials such that `E_0 p_0(M) + ... + E_{m-1} p_{m-1}(M) =
- * 0`, where `E` is `m x n` and `M` is `n x n` (see @ref KrylovMatrices).
+ * `p` of `m` polynomials such that `V_0 p_0(M) + ... + V_{m-1} p_{m-1}(M) =
+ * 0`, where `V` is `m x D` and `M` is `D x D` (see @ref KrylovMatrices).
  * The output `P` must be initialized with dimensions `m x m`. Returns 1, or
  * 0 if the degree bounds `degrees` are found not to be valid (`P` is then
  * undefined). The other arguments and the conditions on them are as in
  * ::nmod_mat_krylov_kernel, which gives the same basis in compact form.
  */
 int nmod_poly_mat_krylov_kernel_basis(nmod_poly_mat_t P,
-                                      const nmod_mat_t E,
+                                      const nmod_mat_t V,
                                       const nmod_mat_t M,
                                       const slong * shift,
                                       const slong * degrees);
@@ -59,7 +59,7 @@ int nmod_poly_mat_krylov_kernel_basis(nmod_poly_mat_t P,
  * given by `eig`, `sizes` and `nblocks` (as in
  * ::nmod_mat_krylov_kernel_jordan). */
 int nmod_poly_mat_krylov_kernel_basis_jordan(nmod_poly_mat_t P,
-                                             const nmod_mat_t E,
+                                             const nmod_mat_t V,
                                              nn_srcptr eig,
                                              const slong * sizes,
                                              slong nblocks,

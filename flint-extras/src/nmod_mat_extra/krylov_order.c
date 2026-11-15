@@ -15,19 +15,19 @@
 #include "nmod_mat_extra/krylov_impl.h"
 
 void
-_nmod_mat_krylov_degrees(slong * d, slong m, const slong * degrees,
-        slong n, int clamp)
+_nmod_mat_krylov_degrees(slong * beta, slong m, const slong * degrees,
+        slong D, int clamp)
 {
     slong i;
 
     for (i = 0; i < m; i++)
     {
         if (degrees == NULL)
-            d[i] = n;
+            beta[i] = D;
         else if (degrees[i] < 0)
             flint_throw(FLINT_ERROR, "nmod_mat_krylov: negative degree bound\n");
         else
-            d[i] = (clamp && degrees[i] > n) ? n : degrees[i];
+            beta[i] = (clamp && degrees[i] > D) ? D : degrees[i];
     }
 }
 
@@ -51,7 +51,7 @@ _krylov_shift_index_cmp(const void * a, const void * b)
 
 void
 _nmod_mat_krylov_normalize_shift(slong * t, const slong * shift,
-        slong m, slong D)
+        slong m, slong bmax)
 {
     slong k, cur;
     _krylov_shift_index_struct * v;
@@ -78,8 +78,8 @@ _nmod_mat_krylov_normalize_shift(slong * t, const slong * shift,
         {
             ulong gap = (ulong) shift[k] - (ulong) shift[k - 1];
 
-            if (gap > (ulong) D + 1)
-                gap = D + 1;
+            if (gap > (ulong) bmax + 1)
+                gap = bmax + 1;
             cur += gap;
             t[k] = cur;
         }
@@ -102,8 +102,8 @@ _nmod_mat_krylov_normalize_shift(slong * t, const slong * shift,
         /* exact difference of two slongs, as an unsigned word */
         ulong gap = (ulong) v[k].s - (ulong) v[k - 1].s;
 
-        if (gap > (ulong) D + 1)
-            gap = D + 1;
+        if (gap > (ulong) bmax + 1)
+            gap = bmax + 1;
         cur += gap;
         t[v[k].i] = cur;
     }
@@ -126,23 +126,23 @@ slong
 _nmod_mat_krylov_order(slong * rows, slong * exps, slong m,
         const slong * shift, const slong * degrees)
 {
-    slong i, k, len, D;
-    slong * key, * nextj, * heap;
+    slong i, k, len, bmax;
+    slong * key, * nexte, * heap;
 
     key = flint_malloc((3 * m + 1) * sizeof(slong));
-    nextj = key + m;
-    heap = nextj + m;
+    nexte = key + m;
+    heap = nexte + m;
 
-    D = 0;
+    bmax = 0;
     for (i = 0; i < m; i++)
-        D = FLINT_MAX(D, degrees[i]);
+        bmax = FLINT_MAX(bmax, degrees[i]);
 
-    _nmod_mat_krylov_normalize_shift(key, shift, m, D);
+    _nmod_mat_krylov_normalize_shift(key, shift, m, bmax);
 
     len = 0;
     for (i = 0; i < m; i++)
     {
-        nextj[i] = 0;
+        nexte[i] = 0;
         _nmod_mat_krylov_heap_push(heap, &len, i, key);
     }
 
@@ -151,10 +151,10 @@ _nmod_mat_krylov_order(slong * rows, slong * exps, slong m,
     {
         i = _nmod_mat_krylov_heap_pop(heap, &len, key);
         rows[k] = i;
-        exps[k] = nextj[i];
+        exps[k] = nexte[i];
         k++;
-        nextj[i]++;
-        if (nextj[i] <= degrees[i])
+        nexte[i]++;
+        if (nexte[i] <= degrees[i])
         {
             key[i]++;
             _nmod_mat_krylov_heap_push(heap, &len, i, key);

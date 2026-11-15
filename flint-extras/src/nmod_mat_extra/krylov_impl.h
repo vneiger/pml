@@ -24,18 +24,18 @@ extern "C" {
 /*
     Internal interface of the Krylov functions (krylov_*.c).
 
-    Notation: E is m x n with rows E_0, ..., E_{m-1}, M is n x n, s is a
-    shift (m integers), d is a list of degree bounds (m nonnegative
-    integers). The Krylov matrix K_{s,d}(E, M) is formed by the rows
-    E_i M^j for 0 <= j <= d_i, sorted by increasing (s_i + j, i). The pair
-    (i, j) designates the row E_i M^j.
+    Notation: V is m x D with rows V_0, ..., V_{m-1}, M is D x D, s is a
+    shift (m integers), beta is a list of degree bounds (m nonnegative
+    integers). The Krylov matrix K_{s,beta}(V, M) is formed by the rows
+    V_i M^e for 0 <= e <= beta_i, sorted by increasing (s_i + e, i). The pair
+    (i, e) designates the row V_i M^e.
 
     The multiplication matrix M is described by an "operator": either a
     dense matrix, or a Jordan matrix given by the eigenvalues and sizes of
-    its blocks. A Jordan block of size t with eigenvalue x is x I + Z with
-    Z the upper shift matrix (ones on the superdiagonal), so that on the
-    row vector v of length t, (v (x I + Z))_c = x v_c + v_{c-1} (with
-    v_{-1} = 0).
+    its blocks. The Jordan block b, of size D_b and eigenvalue x_b, is
+    x_b I + Z with Z the upper shift matrix (ones on the superdiagonal), so
+    that on the row vector v of length D_b, (v (x_b I + Z))_c = x_b v_c +
+    v_{c-1} (with v_{-1} = 0).
 */
 
 #define _NMOD_MAT_KRYLOV_DENSE 0     /* dense matrix */
@@ -46,7 +46,7 @@ extern "C" {
 typedef struct
 {
     int kind;
-    slong n;                    /* dimension */
+    slong D;                    /* dimension */
     nmod_t mod;
     const nmod_mat_struct * M;  /* dense kind: the matrix */
     slong logpow;               /* dense kind: powers M^(2^t), t <= logpow,
@@ -57,7 +57,7 @@ typedef struct
                                    only use M (0: no limit); ignored by
                                    the automatic choice */
     slong mpdeg;                /* degree of the minimal polynomial of M
-                                   (Jordan kinds; n for the dense kind):
+                                   (Jordan kinds; D for the dense kind):
                                    degree bounds are capped at mpdeg */
     int predict;                /* budget of the indices in a chunk (see
                                    _nmod_mat_krylov_basis_iter): 1 (default)
@@ -115,14 +115,14 @@ _nmod_mat_krylov_heap_push(slong * h, slong * len, slong i, const slong * key)
 FLINT_FORCE_INLINE slong
 _nmod_mat_krylov_heap_pop(slong * h, slong * len, const slong * key)
 {
-    slong top = h[0], last, c = 0, ch, n;
+    slong top = h[0], last, c = 0, ch, hl;
 
-    n = --(*len);
-    last = h[n];
+    hl = --(*len);
+    last = h[hl];
 
-    while ((ch = 2 * c + 1) < n)
+    while ((ch = 2 * c + 1) < hl)
     {
-        if (ch + 1 < n && _nmod_mat_krylov_less(key, h[ch + 1], h[ch]))
+        if (ch + 1 < hl && _nmod_mat_krylov_less(key, h[ch + 1], h[ch]))
             ch++;
         if (!_nmod_mat_krylov_less(key, h[ch], last))
             break;
@@ -130,7 +130,7 @@ _nmod_mat_krylov_heap_pop(slong * h, slong * len, const slong * key)
         c = ch;
     }
 
-    if (n > 0)
+    if (hl > 0)
         h[c] = last;
 
     return top;
@@ -138,41 +138,41 @@ _nmod_mat_krylov_heap_pop(slong * h, slong * len, const slong * key)
 
 /*
     A shift equivalent to s = shift (NULL: zero shift) for degree bounds at
-    most D: writes in t (m entries) a shift with entries in [0, (m - 1)(D + 1)]
-    such that the order (t_i + j, i) for 0 <= j <= D coincides with the order
-    (s_i + j, i), by replacing the gaps larger than D + 1 between the
-    sorted shift entries by D + 1. This avoids overflows with arbitrary
-    slong shift entries.
+    most bmax: writes in t (m entries) a shift with entries in
+    [0, (m - 1)(bmax + 1)] such that the order (t_i + e, i) for
+    0 <= e <= bmax coincides with the order (s_i + e, i), by replacing the
+    gaps larger than bmax + 1 between the sorted shift entries by bmax + 1.
+    This avoids overflows with arbitrary slong shift entries.
 */
 void _nmod_mat_krylov_normalize_shift(slong * t, const slong * shift,
-        slong m, slong D);
+        slong m, slong bmax);
 
 /*
-    Fills d (m entries) with the degree bounds: degrees[i], or n if
-    degrees is NULL; if clamp is nonzero, bounds larger than n are
-    replaced by n. Throws if a bound is negative.
+    Fills beta (m entries) with the degree bounds: degrees[i], or D if
+    degrees is NULL; if clamp is nonzero, bounds larger than D are
+    replaced by D. Throws if a bound is negative.
 */
-void _nmod_mat_krylov_degrees(slong * d, slong m, const slong * degrees,
-        slong n, int clamp);
+void _nmod_mat_krylov_degrees(slong * beta, slong m, const slong * degrees,
+        slong D, int clamp);
 
 /*
-    Priority order: writes in (rows[k], exps[k]), k < N = sum (d_i + 1),
-    the pairs (i, j) with 0 <= j <= d_i sorted by increasing (s_i + j, i);
+    Priority order: writes in (rows[k], exps[k]), k < N = sum (beta_i + 1),
+    the pairs (i, e) with 0 <= e <= beta_i sorted by increasing (s_i + e, i);
     returns N. shift == NULL means zero shift. The arrays must have
     room for N entries.
 */
 slong _nmod_mat_krylov_order(slong * rows, slong * exps, slong m,
         const slong * shift, const slong * degrees);
 
-/* number of rows sum (d_i + 1) */
+/* number of rows sum (beta_i + 1) */
 slong _nmod_mat_krylov_nrows(slong m, const slong * degrees);
 
 /*
-    Builds K_{s,d}(E, M) in K (N x n, N = sum (d_i + 1)); if rows and exps
-    are not NULL, they receive the pair (i, j) of each row of K.
+    Builds K_{s,beta}(V, M) in K (N x D, N = sum (beta_i + 1)); if rows and exps
+    are not NULL, they receive the pair (i, e) of each row of K.
 */
 void _nmod_mat_krylov_matrix(nmod_mat_t K, slong * rows, slong * exps,
-        const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
+        const nmod_mat_t V, const _nmod_mat_krylov_op_t op,
         const slong * shift, const slong * degrees);
 
 /*
@@ -200,53 +200,53 @@ slong _nmod_mat_rref_rows(nmod_mat_t X, slong lim, slong * Q, char * indep);
 slong _nmod_mat_row_rank_profile(char * indep, nmod_mat_t X);
 
 /*
-    Computes the row rank profile of K_{s,d}(E, M) assuming the degree
-    bounds are valid (that is, for each i, E_i M^{d_i} is in the span of
-    the rows which precede it in K_{s,d}): returns its rank r, writes the
+    Computes the row rank profile of K_{s,beta}(V, M) assuming the degree
+    bounds are valid (that is, for each i, V_i M^{beta_i} is in the span of
+    the rows which precede it in K_{s,beta}): returns its rank r, writes the
     corresponding rows (the Krylov basis, in increasing priority) in the
-    first r rows of B (which must have at least min(n, N) rows and n
-    columns, where N = sum (d_i + 1)) and their pairs (i, j) in rows and
+    first r rows of B (which must have at least min(D, N) rows and D
+    columns, where N = sum (beta_i + 1)) and their pairs (i, e) in rows and
     exps (room for r entries).
 
     The following outputs are optional (NULL to ignore):
       - deltas[i] (length m): the minimal degree delta_i, that is,
-        1 + the largest j such that (i, j) is in the profile, or 0;
-      - T (m x n): row i is E_i M^{delta_i} (the target rows);
-      - G (n x n): its leading r x r submatrix is set to the inverse of
+        1 + the largest e such that (i, e) is in the profile, or 0;
+      - T (m x D): row i is V_i M^{delta_i} (the target rows);
+      - G (D x D): its leading r x r submatrix is set to the inverse of
         B restricted to the columns piv (requires piv), so that any row
         vector v in the row space of B is v[piv] G B;
-      - piv (length n): r columns such that B restricted to these columns
+      - piv (length D): r columns such that B restricted to these columns
         is invertible;
       - ok: set to 1 if the degree bounds were verified to be valid, to 0
-        otherwise (some row (i, d_i) is in the profile; then the profile
-        computed may differ from that of K_{s,d}, and deltas[i] = d_i + 1
+        otherwise (some row (i, beta_i) is in the profile; then the profile
+        computed may differ from that of K_{s,beta}, and deltas[i] = beta_i + 1
         and row i of T is undefined for such i).
 
-    Degree bounds larger than n are replaced by n, and by op->mpdeg if
-    larger (this does not change the profile); degrees == NULL means n for
+    Degree bounds larger than D are replaced by D, and by op->mpdeg if
+    larger (this does not change the profile); degrees == NULL means D for
     all rows, shift == NULL means zero shift. The parameter chunk is the
     maximal number of rows processed at once (0: default). Index i takes at
     most max(1, f_i) rows in a chunk, f_i being its number of rows already
     in the profile, or max(1, f_i, p_i - f_i) as long as the prediction
     holds (op->predict) and f_i >= 2^logpow, p_i being its number of rows
-    (i, j), j < d_i, among the first n rows in priority order: these rows
+    (i, e), e < beta_i, among the first D rows in priority order: these rows
     form the profile for generic inputs.
 
-    For a dense operator, a run of c rows (i, j0), ..., (i, j0 + c - 1) of
+    For a dense operator, a run of c rows (i, e0), ..., (i, e0 + c - 1) of
     one index in a chunk is generated from the rows at distance
-    e = min(2^logpow, largest power of two <= min(c, j0)) (or 1 if j0 = 0),
-    as (i, j) = (i, j - e) M^e,
-    with the powers M^e computed by squaring when first needed (as in
+    q = min(2^logpow, largest power of two <= min(c, e0)) (or 1 if e0 = 0),
+    as (i, e) = (i, e - q) M^q,
+    with the powers M^q computed by squaring when first needed (as in
     Keller-Gehrig's algorithm); only M and the highest power computed so
     far are kept, and the runs which would need a lower power use M.
     logpow = 0 means that each row is the previous one times M. This pays
     off when the products of a few rows by M are limited by the memory
-    bandwidth (large n) and few indices are active (Hermite-type shift),
+    bandwidth (large D) and few indices are active (Hermite-type shift),
     which the automatic choice targets.
 */
 slong _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
         slong * deltas, nmod_mat_t T, nmod_mat_t G, slong * piv, int * ok,
-        const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
+        const nmod_mat_t V, const _nmod_mat_krylov_op_t op,
         const slong * shift, const slong * degrees, slong chunk);
 
 /*
@@ -257,14 +257,14 @@ slong _nmod_mat_krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
     (r = the returned rank), with C = B[:, piv] (r x r): the leading r x r
     block of LU holds U (on and above the diagonal, invertible) and L
     (strictly below, unit lower triangular), such that row t of L U is the
-    row bpos[t] of C (bpos: room for n entries). Then the relations of a
+    row bpos[t] of C (bpos: room for D entries). Then the relations of a
     row vector v in the row space of B are v = x B with
     x[bpos[t]] = (v[piv] U^-1 L^-1)[t]. LU can be NULL (then bpos is
     ignored), for the basis only.
 */
 slong _nmod_mat_krylov_basis_iter_lu(nmod_mat_t B, slong * rows, slong * exps,
         slong * deltas, nmod_mat_t T, nmod_mat_t LU, slong * bpos, slong * piv,
-        int * ok, const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
+        int * ok, const nmod_mat_t V, const _nmod_mat_krylov_op_t op,
         const slong * shift, const slong * degrees, slong chunk);
 
 /*
@@ -275,24 +275,24 @@ slong _nmod_mat_krylov_basis_iter_lu(nmod_mat_t B, slong * rows, slong * exps,
 */
 slong _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows,
         slong * exps, slong * deltas, int * ok,
-        const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
+        const nmod_mat_t V, const _nmod_mat_krylov_op_t op,
         const slong * shift, const slong * degrees);
 
 /*
-    Row rank profile of the full matrix K_{s,d}(E, M), built explicitly
-    (no assumption on the degree bounds; degrees == NULL means n).
+    Row rank profile of the full matrix K_{s,beta}(V, M), built explicitly
+    (no assumption on the degree bounds; degrees == NULL means D).
 */
 slong _nmod_mat_krylov_basis_naive(nmod_mat_t B, slong * rows, slong * exps,
-        const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
+        const nmod_mat_t V, const _nmod_mat_krylov_op_t op,
         const slong * shift, const slong * degrees);
 
 /*
     Kernel of the Krylov matrix in compact form: on success (return value
     r >= 0), writes the profile (rows, exps, r entries), the minimal
     degrees deltas (m entries) and the m x r relation matrix in the first
-    r columns of R (m x n): row i of R contains the coefficients of
-    E_i M^{delta_i} on the rows of the Krylov basis. Returns -1 if the
-    degree bounds are found insufficient (some row (i, d_i) in the
+    r columns of R (m x D): row i of R contains the coefficients of
+    V_i M^{delta_i} on the rows of the Krylov basis. Returns -1 if the
+    degree bounds are found insufficient (some row (i, beta_i) in the
     profile), in which case the outputs are undefined.
 
     The relations R = T[:, piv] C^{-1}, with C = B[:, piv] the r x r
@@ -305,7 +305,7 @@ slong _nmod_mat_krylov_basis_naive(nmod_mat_t B, slong * rows, slong * exps,
         (_nmod_mat_krylov_basis_iter_lu), which gives C = Pi^T L U along
         the elimination, then two triangular solves with m right-hand
         sides (nmod_mat_solve_triu_right, nmod_mat_solve_tril_right);
-      - _NMOD_MAT_KRYLOV_KERNEL_AUTO: LU unless m is large compared with n
+      - _NMOD_MAT_KRYLOV_KERNEL_AUTO: LU unless m is large compared with D
         (see krylov_kernel.c).
 */
 #define _NMOD_MAT_KRYLOV_KERNEL_AUTO 0
@@ -313,7 +313,7 @@ slong _nmod_mat_krylov_basis_naive(nmod_mat_t B, slong * rows, slong * exps,
 #define _NMOD_MAT_KRYLOV_KERNEL_LU 2
 
 slong _nmod_mat_krylov_kernel(nmod_mat_t R, slong * rows, slong * exps,
-        slong * deltas, const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
+        slong * deltas, const nmod_mat_t V, const _nmod_mat_krylov_op_t op,
         const slong * shift, const slong * degrees, slong chunk, int method);
 
 #ifdef __cplusplus

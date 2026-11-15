@@ -24,7 +24,7 @@ _nmod_mat_krylov_op_init_dense(_nmod_mat_krylov_op_t op, const nmod_mat_t M)
         flint_throw(FLINT_ERROR, "nmod_mat_krylov: M must be square\n");
 
     op->kind = _NMOD_MAT_KRYLOV_DENSE;
-    op->n = M->r;
+    op->D = M->r;
     op->mod = M->mod;
     op->M = M;
     op->logpow = -1;
@@ -132,7 +132,7 @@ _nmod_mat_krylov_op_init_jordan(_nmod_mat_krylov_op_t op, nn_srcptr eig,
             all_one = 0;
     }
 
-    op->n = op->off[nblocks];
+    op->D = op->off[nblocks];
 
     op->eig = NULL;
     op->eig_pre = NULL;
@@ -198,8 +198,8 @@ _nmod_mat_krylov_op_apply_vec(nn_ptr out, nn_srcptr in,
                -> one shifted copy of the whole row, then the first entry of each
                block is set to zero (measured faster than one copy per block
                when the blocks are small) */
-            if (op->n > 1)
-                memcpy(out + 1, in, (op->n - 1) * sizeof(ulong));
+            if (op->D > 1)
+                memcpy(out + 1, in, (op->D - 1) * sizeof(ulong));
             for (b = 0; b < nb; b++)
                 out[off[b]] = 0;
             break;

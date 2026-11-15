@@ -19,16 +19,16 @@
 
 /*
     Powers M^(2^l) of the operator, applied to rows. Dense kind: the
-    matrix itself, by repeated squaring. Jordan kinds: on a block of size t
-    with eigenvalue x, the row v is multiplied by the polynomial
-    h = (x + X)^(2^l) mod X^t, in the sense v <- coefficients of
-    v(X) h(X) mod X^t; h is computed by repeated squaring.
+    matrix itself, by repeated squaring. Jordan kinds: on the block b, of
+    size D_b and eigenvalue x_b, the row v is multiplied by the polynomial
+    h = (x_b + X)^(2^l) mod X^(D_b), in the sense v <- coefficients of
+    v(X) h(X) mod X^(D_b); h is computed by repeated squaring.
 */
 typedef struct
 {
     const _nmod_mat_krylov_op_struct * op;
-    slong e;                /* current exponent 2^l */
-    nmod_mat_t Mp;          /* dense: M^e */
+    slong q;                /* current exponent 2^l */
+    nmod_mat_t Mp;          /* dense: M^q */
     nn_ptr * h;             /* Jordan: per block, h of length size */
 }
 _krylov_pow_struct;
@@ -39,7 +39,7 @@ _krylov_pow_init(_krylov_pow_struct * P, const _nmod_mat_krylov_op_struct * op)
     slong b;
 
     P->op = op;
-    P->e = 1;
+    P->q = 1;
     P->h = NULL;
 
     if (op->kind == _NMOD_MAT_KRYLOV_DENSE)
@@ -76,7 +76,7 @@ _krylov_pow_clear(_krylov_pow_struct * P)
     }
 }
 
-/* e <- 2 e */
+/* q <- 2 q */
 static void
 _krylov_pow_square(_krylov_pow_struct * P)
 {
@@ -86,7 +86,7 @@ _krylov_pow_square(_krylov_pow_struct * P)
     if (op->kind == _NMOD_MAT_KRYLOV_DENSE)
     {
         nmod_mat_t T;
-        nmod_mat_init(T, op->n, op->n, op->mod.n);
+        nmod_mat_init(T, op->D, op->D, op->mod.n);
         nmod_mat_mul(T, P->Mp, P->Mp);
         nmod_mat_swap(T, P->Mp);
         nmod_mat_clear(T);
@@ -103,10 +103,10 @@ _krylov_pow_square(_krylov_pow_struct * P)
         }
     }
 
-    P->e *= 2;
+    P->q *= 2;
 }
 
-/* Out = In * M^e (Out and In distinct) */
+/* Out = In * M^q (Out and In distinct) */
 static void
 _krylov_pow_apply(nmod_mat_t Out, const nmod_mat_t In, const _krylov_pow_struct * P)
 {
@@ -133,11 +133,11 @@ _krylov_pow_apply(nmod_mat_t Out, const nmod_mat_t In, const _krylov_pow_struct 
 
             if (op->kind == _NMOD_MAT_KRYLOV_SHIFT)
             {
-                slong e = FLINT_MIN(P->e, t);
-                for (c = 0; c < e; c++)
+                slong qe = FLINT_MIN(P->q, t);
+                for (c = 0; c < qe; c++)
                     w[o + c] = 0;
-                for (c = e; c < t; c++)
-                    w[o + c] = v[o + c - e];
+                for (c = qe; c < t; c++)
+                    w[o + c] = v[o + c - qe];
             }
             else if (t == 1)
             {
@@ -151,34 +151,34 @@ _krylov_pow_apply(nmod_mat_t Out, const nmod_mat_t In, const _krylov_pow_struct 
     }
 }
 
-/* pairs (i, j) sorted by priority (s_i + j, i), for normalized shift */
+/* pairs (i, e) sorted by priority (s_i + e, i), for normalized shift */
 static int
-_krylov_pair_less(slong i1, slong j1, slong i2, slong j2, const slong * shift)
+_krylov_pair_less(slong i1, slong e1, slong i2, slong e2, const slong * shift)
 {
-    slong k1 = shift[i1] + j1;
-    slong k2 = shift[i2] + j2;
+    slong k1 = shift[i1] + e1;
+    slong k2 = shift[i2] + e2;
     return k1 < k2 || (k1 == k2 && i1 < i2);
 }
 
 slong
 _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows, slong * exps,
-        slong * deltas, int * ok, const nmod_mat_t E,
+        slong * deltas, int * ok, const nmod_mat_t V,
         const _nmod_mat_krylov_op_t op, const slong * shift,
         const slong * degrees)
 {
-    slong m = E->r, n = E->c, i, a, t, r, maxd, cnt, nnew, nmerged;
-    slong * d, * order, * nsh, * ri, * rj, * Q, * mi, * mj, * src;
+    slong m = V->r, D = V->c, i, a, t, r, maxbeta, cnt, nnew, nmerged;
+    slong * beta, * order, * nsh, * ri, * re, * Q, * mi, * me, * src;
     char * indep;
     nmod_mat_t X, Cur, New, Mrg;
     _krylov_pow_struct P;
 
-    if (op->n != n)
+    if (op->D != D)
         flint_throw(FLINT_ERROR, "nmod_mat_krylov_basis: incompatible dimensions\n");
 
     if (ok != NULL)
         *ok = 1;
 
-    if (n == 0 || m == 0)
+    if (D == 0 || m == 0)
     {
         if (deltas != NULL)
             for (i = 0; i < m; i++)
@@ -186,48 +186,48 @@ _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows, slong * exps,
         return 0;
     }
 
-    d = flint_malloc((3 * m + 1) * sizeof(slong));
-    order = d + m;
+    beta = flint_malloc((3 * m + 1) * sizeof(slong));
+    order = beta + m;
     nsh = order + m;
-    _nmod_mat_krylov_degrees(d, m, degrees, n, 1);
-    _nmod_mat_krylov_normalize_shift(nsh, shift, m, n);
+    _nmod_mat_krylov_degrees(beta, m, degrees, D, 1);
+    _nmod_mat_krylov_normalize_shift(nsh, shift, m, D);
 
-    maxd = 0;
+    maxbeta = 0;
     for (i = 0; i < m; i++)
-        maxd = FLINT_MAX(maxd, d[i]);
+        maxbeta = FLINT_MAX(maxbeta, beta[i]);
 
-    ri = flint_malloc((7 * (m + 2 * n) + 1) * sizeof(slong));
-    rj = ri + (m + 2 * n);
-    Q = rj + (m + 2 * n);
-    mi = Q + (m + 2 * n);
-    mj = mi + (m + 2 * n);
-    src = mj + (m + 2 * n);
-    indep = flint_malloc(m + 2 * n + 1);
+    ri = flint_malloc((7 * (m + 2 * D) + 1) * sizeof(slong));
+    re = ri + (m + 2 * D);
+    Q = re + (m + 2 * D);
+    mi = Q + (m + 2 * D);
+    me = mi + (m + 2 * D);
+    src = me + (m + 2 * D);
+    indep = flint_malloc(m + 2 * D + 1);
 
-    /* step 1: row rank profile of E, rows sorted by priority (s_i, i) */
+    /* step 1: row rank profile of V, rows sorted by priority (s_i, i) */
     {
         slong * zeros = flint_calloc(m + 1, sizeof(slong));
         _nmod_mat_krylov_order(order, ri, m, nsh, zeros);
         flint_free(zeros);
     }
 
-    nmod_mat_init(X, m, n, E->mod.n);
+    nmod_mat_init(X, m, D, V->mod.n);
     for (a = 0; a < m; a++)
-        memcpy(nmod_mat_entry_ptr(X, a, 0), nmod_mat_entry_ptr(E, order[a], 0),
-               n * sizeof(ulong));
+        memcpy(nmod_mat_entry_ptr(X, a, 0), nmod_mat_entry_ptr(V, order[a], 0),
+               D * sizeof(ulong));
     r = _nmod_mat_row_rank_profile(indep, X);
     nmod_mat_clear(X);
 
-    nmod_mat_init(Cur, FLINT_MAX(r, 1), n, E->mod.n);
+    nmod_mat_init(Cur, FLINT_MAX(r, 1), D, V->mod.n);
     t = 0;
     for (a = 0; a < m; a++)
     {
         if (indep[a])
         {
             ri[t] = order[a];
-            rj[t] = 0;
+            re[t] = 0;
             memcpy(nmod_mat_entry_ptr(Cur, t, 0),
-                   nmod_mat_entry_ptr(E, order[a], 0), n * sizeof(ulong));
+                   nmod_mat_entry_ptr(V, order[a], 0), D * sizeof(ulong));
             t++;
         }
     }
@@ -235,30 +235,30 @@ _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows, slong * exps,
     /* step 2: doubling */
     _krylov_pow_init(&P, op);
 
-    while (r > 0 && P.e <= maxd)
+    while (r > 0 && P.q <= maxbeta)
     {
         nmod_mat_t Sel;
 
-        /* new rows: (i, j + e) for the profile rows (i, j) */
+        /* new rows: (i, e + q) for the profile rows (i, e) */
         nnew = 0;
         for (t = 0; t < r; t++)
-            if (rj[t] + P.e <= d[ri[t]])
+            if (re[t] + P.q <= beta[ri[t]])
                 nnew++;
 
         if (nnew == 0)
             break;
 
-        nmod_mat_init(Sel, nnew, n, E->mod.n);
-        nmod_mat_init(New, nnew, n, E->mod.n);
+        nmod_mat_init(Sel, nnew, D, V->mod.n);
+        nmod_mat_init(New, nnew, D, V->mod.n);
         cnt = 0;
         for (t = 0; t < r; t++)
         {
-            if (rj[t] + P.e <= d[ri[t]])
+            if (re[t] + P.q <= beta[ri[t]])
             {
                 memcpy(nmod_mat_entry_ptr(Sel, cnt, 0),
-                       nmod_mat_entry_ptr(Cur, t, 0), n * sizeof(ulong));
+                       nmod_mat_entry_ptr(Cur, t, 0), D * sizeof(ulong));
                 mi[r + cnt] = ri[t];
-                mj[r + cnt] = rj[t] + P.e;
+                me[r + cnt] = re[t] + P.q;
                 cnt++;
             }
         }
@@ -271,20 +271,20 @@ _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows, slong * exps,
             nmerged = r + nnew;
             for (t = 0; t < nmerged; t++)
             {
-                if (v >= nnew || (u < r && _krylov_pair_less(ri[u], rj[u],
-                                            mi[r + v], mj[r + v], nsh)))
+                if (v >= nnew || (u < r && _krylov_pair_less(ri[u], re[u],
+                                            mi[r + v], me[r + v], nsh)))
                     src[t] = u++;
                 else
                     src[t] = r + v++;
             }
         }
 
-        nmod_mat_init(Mrg, nmerged, n, E->mod.n);
+        nmod_mat_init(Mrg, nmerged, D, V->mod.n);
         for (t = 0; t < nmerged; t++)
         {
             nn_srcptr row = (src[t] < r) ? nmod_mat_entry_ptr(Cur, src[t], 0)
                                          : nmod_mat_entry_ptr(New, src[t] - r, 0);
-            memcpy(nmod_mat_entry_ptr(Mrg, t, 0), row, n * sizeof(ulong));
+            memcpy(nmod_mat_entry_ptr(Mrg, t, 0), row, D * sizeof(ulong));
         }
 
         /* row rank profile of the merged rows */
@@ -296,14 +296,14 @@ _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows, slong * exps,
             nmod_mat_clear(X);
 
             nmod_mat_clear(Cur);
-            nmod_mat_init(Cur, FLINT_MAX(r, 1), n, E->mod.n);
+            nmod_mat_init(Cur, FLINT_MAX(r, 1), D, V->mod.n);
             cnt = 0;
             for (t = 0; t < nmerged; t++)
             {
                 if (indep[t])
                 {
                     memcpy(nmod_mat_entry_ptr(Cur, cnt, 0),
-                           nmod_mat_entry_ptr(Mrg, t, 0), n * sizeof(ulong));
+                           nmod_mat_entry_ptr(Mrg, t, 0), D * sizeof(ulong));
                     cnt++;
                 }
             }
@@ -311,7 +311,7 @@ _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows, slong * exps,
             /* pairs of the kept rows, written to temporary arrays */
             {
                 slong * ni = flint_malloc((2 * r + 1) * sizeof(slong));
-                slong * nj = ni + r;
+                slong * ne = ni + r;
                 cnt = 0;
                 for (t = 0; t < nmerged; t++)
                 {
@@ -319,14 +319,14 @@ _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows, slong * exps,
                     {
                         slong sidx = src[t];
                         ni[cnt] = (sidx < r_old) ? ri[sidx] : mi[sidx];
-                        nj[cnt] = (sidx < r_old) ? rj[sidx] : mj[sidx];
+                        ne[cnt] = (sidx < r_old) ? re[sidx] : me[sidx];
                         cnt++;
                     }
                 }
                 for (t = 0; t < r; t++)
                 {
                     ri[t] = ni[t];
-                    rj[t] = nj[t];
+                    re[t] = ne[t];
                 }
                 flint_free(ni);
             }
@@ -335,7 +335,7 @@ _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows, slong * exps,
         nmod_mat_clear(Mrg);
         nmod_mat_clear(New);
 
-        if (2 * P.e > maxd)
+        if (2 * P.q > maxbeta)
             break;
 
         _krylov_pow_square(&P);
@@ -347,9 +347,9 @@ _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows, slong * exps,
     for (t = 0; t < r; t++)
     {
         memcpy(nmod_mat_entry_ptr(B, t, 0), nmod_mat_entry_ptr(Cur, t, 0),
-               n * sizeof(ulong));
+               D * sizeof(ulong));
         rows[t] = ri[t];
-        exps[t] = rj[t];
+        exps[t] = re[t];
     }
 
     if (ok != NULL)
@@ -358,17 +358,17 @@ _nmod_mat_krylov_basis_doubling(nmod_mat_t B, slong * rows, slong * exps,
     for (i = 0; i < m; i++)
         order[i] = 0;
     for (t = 0; t < r; t++)
-        order[ri[t]] = FLINT_MAX(order[ri[t]], rj[t] + 1);
+        order[ri[t]] = FLINT_MAX(order[ri[t]], re[t] + 1);
     for (i = 0; i < m; i++)
     {
         if (deltas != NULL)
             deltas[i] = order[i];
-        if (order[i] > d[i] && ok != NULL)
+        if (order[i] > beta[i] && ok != NULL)
             *ok = 0;
     }
 
     nmod_mat_clear(Cur);
-    flint_free(d);
+    flint_free(beta);
     flint_free(ri);
     flint_free(indep);
 

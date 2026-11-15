@@ -19,38 +19,38 @@
     basis (LU) saves the transformation G, whose cost is about r^3
     whatever m is, but its final step is two triangular solves with m
     right-hand sides instead of one product: it pays off unless m is large
-    compared with n. Measured with uniform shift, Hermite-Pade (one
-    nilpotent block) and dense M, n = 64 to 1024 (Krylov tuning kit, Nov
+    compared with D. Measured with uniform shift, Hermite-Pade (one
+    nilpotent block) and dense M, D = 64 to 1024 (Krylov tuning kit, Nov
     2026, Zen 4, Ice Lake, Cascade Lake, Apple M4), LU relative to TRACK:
-    0.32 to 0.97 for m <= n / 2; for m = n, 0.77 to 1.04 below 2^32, 0.60
-    to 0.85 at 60 bits, and at 50 bits 0.91 to 1.21 for n <= 256 and 0.77
-    to 1.00 for n >= 512 on x86, 0.69 to 0.83 on the M4; for m = 2 n, 0.94
+    0.32 to 0.97 for m <= D / 2; for m = D, 0.77 to 1.04 below 2^32, 0.60
+    to 0.85 at 60 bits, and at 50 bits 0.91 to 1.21 for D <= 256 and 0.77
+    to 1.00 for D >= 512 on x86, 0.69 to 0.83 on the M4; for m = 2 D, 0.94
     to 1.59 below 2^52 except 0.88 to 0.99 on the M4 at 50 bits, and 0.70
-    to 1.03 at 60 bits; for m = 4 n, 1.06 to 2.13 below 2^52 and 0.79 to
+    to 1.03 at 60 bits; for m = 4 D, 1.06 to 2.13 below 2^52 and 0.79 to
     1.31 at 60 bits. The aarch64 rule between 2^32 and 2^52 comes from the
     M4 alone.
 */
 static int
-_krylov_kernel_lu_wanted(slong m, slong n, nmod_t mod)
+_krylov_kernel_lu_wanted(slong m, slong D, nmod_t mod)
 {
     flint_bitcnt_t bits = NMOD_BITS(mod);
 
-    if (2 * m <= n)
+    if (2 * m <= D)
         return 1;
     if (bits > 52)
-        return m <= 2 * n;
+        return m <= 2 * D;
     if (bits <= 32)
-        return m <= n;
+        return m <= D;
 #if defined(__aarch64__)
-    return m <= 2 * n;
+    return m <= 2 * D;
 #else
-    return m <= n && n >= 512;
+    return m <= D && D >= 512;
 #endif
 }
 
 /*
-    With B the Krylov basis (r x n, full rank), piv r columns such that
-    C = B[:, piv] is invertible, and T the target rows (m x n), which are
+    With B the Krylov basis (r x D, full rank), piv r columns such that
+    C = B[:, piv] is invertible, and T the target rows (m x D), which are
     in the span of B: T = T[:, piv] C^-1 B, so that the relations are
     R = T[:, piv] C^-1 (JNSV 2017, Lemma 7.11). Either G = C^-1 is obtained
     along the elimination (TRACK, reduced row echelon basis), and
@@ -60,36 +60,36 @@ _krylov_kernel_lu_wanted(slong m, slong n, nmod_t mod)
 */
 slong
 _nmod_mat_krylov_kernel(nmod_mat_t R, slong * rows, slong * exps,
-        slong * deltas, const nmod_mat_t E, const _nmod_mat_krylov_op_t op,
+        slong * deltas, const nmod_mat_t V, const _nmod_mat_krylov_op_t op,
         const slong * shift, const slong * degrees, slong chunk, int method)
 {
-    slong m = E->r, n = E->c, r, i, t;
+    slong m = V->r, D = V->c, r, i, t;
     slong * piv, * bpos = NULL;
     int ok;
     nmod_mat_t B, T, G;
 
     if (R->r != m)
-        flint_throw(FLINT_ERROR, "nmod_mat_krylov_kernel: R must have E->r rows\n");
+        flint_throw(FLINT_ERROR, "nmod_mat_krylov_kernel: R must have V->r rows\n");
 
     if (method == _NMOD_MAT_KRYLOV_KERNEL_AUTO)
-        method = _krylov_kernel_lu_wanted(m, n, E->mod)
+        method = _krylov_kernel_lu_wanted(m, D, V->mod)
                     ? _NMOD_MAT_KRYLOV_KERNEL_LU : _NMOD_MAT_KRYLOV_KERNEL_TRACK;
 
-    nmod_mat_init(B, n, n, E->mod.n);
-    nmod_mat_init(T, m, n, E->mod.n);
-    nmod_mat_init(G, n, n, E->mod.n);   /* G, or L and U */
-    piv = flint_malloc((n + 1) * sizeof(slong));
+    nmod_mat_init(B, D, D, V->mod.n);
+    nmod_mat_init(T, m, D, V->mod.n);
+    nmod_mat_init(G, D, D, V->mod.n);   /* G, or L and U */
+    piv = flint_malloc((D + 1) * sizeof(slong));
 
     if (method == _NMOD_MAT_KRYLOV_KERNEL_LU)
     {
-        bpos = flint_malloc((n + 1) * sizeof(slong));
+        bpos = flint_malloc((D + 1) * sizeof(slong));
         r = _nmod_mat_krylov_basis_iter_lu(B, rows, exps, deltas, T, G, bpos,
-                                           piv, &ok, E, op, shift, degrees, chunk);
+                                           piv, &ok, V, op, shift, degrees, chunk);
     }
     else
     {
         r = _nmod_mat_krylov_basis_iter(B, rows, exps, deltas, T, G, piv, &ok,
-                                        E, op, shift, degrees, chunk);
+                                        V, op, shift, degrees, chunk);
     }
 
     if (!ok)
@@ -103,7 +103,7 @@ _nmod_mat_krylov_kernel(nmod_mat_t R, slong * rows, slong * exps,
         if (R->c < r)
             flint_throw(FLINT_ERROR, "nmod_mat_krylov_kernel: R has too few columns\n");
 
-        nmod_mat_init(Tp, m, r, E->mod.n);
+        nmod_mat_init(Tp, m, r, V->mod.n);
         for (i = 0; i < m; i++)
         {
             nn_srcptr y = nmod_mat_entry_ptr(T, i, 0);
@@ -152,17 +152,17 @@ _nmod_mat_krylov_kernel(nmod_mat_t R, slong * rows, slong * exps,
 
 slong
 nmod_mat_krylov_kernel(nmod_mat_t R, slong * rows, slong * exps,
-        slong * deltas, const nmod_mat_t E, const nmod_mat_t M,
+        slong * deltas, const nmod_mat_t V, const nmod_mat_t M,
         const slong * shift, const slong * degrees)
 {
     _nmod_mat_krylov_op_t op;
     slong r;
 
-    if (M->r != E->c || M->c != E->c)
+    if (M->r != V->c || M->c != V->c)
         flint_throw(FLINT_ERROR, "nmod_mat_krylov_kernel: incompatible dimensions\n");
 
     _nmod_mat_krylov_op_init_dense(op, M);
-    r = _nmod_mat_krylov_kernel(R, rows, exps, deltas, E, op, shift, degrees, 0,
+    r = _nmod_mat_krylov_kernel(R, rows, exps, deltas, V, op, shift, degrees, 0,
                                 _NMOD_MAT_KRYLOV_KERNEL_AUTO);
     _nmod_mat_krylov_op_clear(op);
 
@@ -171,19 +171,19 @@ nmod_mat_krylov_kernel(nmod_mat_t R, slong * rows, slong * exps,
 
 slong
 nmod_mat_krylov_kernel_jordan(nmod_mat_t R, slong * rows, slong * exps,
-        slong * deltas, const nmod_mat_t E,
+        slong * deltas, const nmod_mat_t V,
         nn_srcptr eig, const slong * sizes, slong nblocks,
         const slong * shift, const slong * degrees)
 {
     _nmod_mat_krylov_op_t op;
     slong r;
 
-    _nmod_mat_krylov_op_init_jordan(op, eig, sizes, nblocks, E->mod);
+    _nmod_mat_krylov_op_init_jordan(op, eig, sizes, nblocks, V->mod);
 
-    if (op->n != E->c)
+    if (op->D != V->c)
         flint_throw(FLINT_ERROR, "nmod_mat_krylov_kernel_jordan: incompatible dimensions\n");
 
-    r = _nmod_mat_krylov_kernel(R, rows, exps, deltas, E, op, shift, degrees, 0,
+    r = _nmod_mat_krylov_kernel(R, rows, exps, deltas, V, op, shift, degrees, 0,
                                 _NMOD_MAT_KRYLOV_KERNEL_AUTO);
     _nmod_mat_krylov_op_clear(op);
 

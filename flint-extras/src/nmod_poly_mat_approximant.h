@@ -363,42 +363,43 @@ void nmod_poly_mat_pmbasis_geometric(nmod_poly_mat_t appbas,
  *
  * These functions compute the basis in `shift`-Popov form (row-wise, with
  * ROW_LOWER pivots, see @ref MatrixForms), which is unique, of the module of
- * vectors `p` of `m` polynomials such that, for each column `j` of the
- * matrix `F` (of size `m x nc`):
- * - for ::nmod_poly_mat_approximant_basis_krylov, the product `p F[:,j]` is
- *   zero modulo `x^{orders[j]}`;
- * - for ::nmod_poly_mat_mpade_basis_krylov, the product `p F[:,j]` is zero
- *   modulo `(x - pts[j])^{orders[j]}` (points may be repeated).
+ * vectors `p` of `m` polynomials such that, for each column `b` of the
+ * `m x n` matrix `F`, with `d_b = orders[b]`:
+ * - for ::nmod_poly_mat_approximant_basis_krylov, the product `p F[:,b]` is
+ *   zero modulo `x^{d_b}`;
+ * - for ::nmod_poly_mat_mpade_basis_krylov, the product `p F[:,b]` is zero
+ *   modulo `(x - pts[b])^{d_b}` (points may be repeated).
  *
- * They form the `m x sigma` matrix `E` holding, for each column `j`, the
- * first `orders[j]` coefficients of the expansion of `F[:,j]` at `pts[j]`
- * (at 0 for approximants), and compute the kernel of its Krylov matrix with
- * respect to the Jordan matrix with one block `(pts[j], orders[j])` per
- * column, where `sigma` is the sum of the orders (see @ref KrylovMatrices
- * and ::nmod_poly_mat_krylov_kernel_basis_jordan, which computes general
- * relation bases, in nmod_poly_mat_relation_basis.h).
+ * With `D = d_0 + ... + d_{n-1}`, they form the `m x D` matrix `V` whose
+ * block `b` of `d_b` columns holds the first `d_b` coefficients of the
+ * expansion of `F[:,b]` at `pts[b]` (at 0 for approximants), and compute the
+ * kernel of its Krylov matrix with respect to the `D x D` Jordan matrix with
+ * `n` blocks, the block `b` having eigenvalue `pts[b]` and size `d_b` (see
+ * @ref KrylovMatrices, where `D` and the block sizes `D_b = d_b` have the
+ * same meaning, and ::nmod_poly_mat_krylov_kernel_basis_jordan, which
+ * computes general relation bases, in nmod_poly_mat_relation_basis.h).
  *
  * M-Pade approximation covers the two other problems: approximants are the
  * case of all points zero, and interpolants
  * (::nmod_poly_mat_interpolant_basis_krylov) the case of a constant matrix
- * `F = V` with all orders 1. The order `orders[j]` at `pts[j]` involves the
- * derivatives of `p F[:,j]` at `pts[j]`, whereas in the interpolant function
+ * `F = V` with all orders 1. The order `d_b` at `pts[b]` involves the
+ * derivatives of `p F[:,b]` at `pts[b]`, whereas in the interpolant function
  * a point repeated in several columns gives several conditions of order 1
  * at that point, with different vectors of values.
  *
  * The output `P` must be initialized with dimensions `m x m`; `shift == NULL`
  * means the zero shift; the orders must be nonnegative, and the modulus
  * prime. Size of the integers (see @ref IntegerSizes): there is no condition
- * on the shift, whose entries may be arbitrary `slong` values; `sigma` is the
- * number of columns of `E`, so it is bounded by the available memory.
+ * on the shift, whose entries may be arbitrary `slong` values; `D` is the
+ * number of columns of `V`, so it is bounded by the available memory.
  *
- * The cost is about `sigma^2 (sigma + m)` operations, whatever the shift:
- * this is suited to `sigma` not much larger than `m`, with few columns. For
- * example, for one column with `sigma` up to `8 m`, this is 2 to 28 times
- * faster than ::nmod_poly_mat_mbasis (which gives an ordered weak Popov
- * basis), whereas for many columns of small order (`2m x m` at order 8 or
- * more) ::nmod_poly_mat_mbasis and ::nmod_poly_mat_pmbasis are faster (Intel
- * Xeon with AVX-512, 30- and 60-bit primes).
+ * The cost is about `D^2 (D + m)` operations, whatever the shift: this is
+ * suited to `D` not much larger than `m`, with few columns. For example, for
+ * one column with `D` up to `8 m`, this is 2 to 28 times faster than
+ * ::nmod_poly_mat_mbasis (which gives an ordered weak Popov basis), whereas
+ * for many columns of small order (`n = m/2` columns at order 8 or more)
+ * ::nmod_poly_mat_mbasis and ::nmod_poly_mat_pmbasis are faster (Intel Xeon
+ * with AVX-512, 30- and 60-bit primes).
  */
 //@{
 

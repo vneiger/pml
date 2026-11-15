@@ -21,16 +21,16 @@
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_relation_basis.h"
 
-/* whether every row p of P satisfies sum_c p_c(M) applied to E_c = 0 */
+/* whether every row p of P satisfies sum_c p_c(M) applied to V_c = 0 */
 static int
-_is_kernel(const nmod_poly_mat_t P, const nmod_mat_t E, const nmod_mat_t M)
+_is_kernel(const nmod_poly_mat_t P, const nmod_mat_t V, const nmod_mat_t M)
 {
-    slong m = E->r, n = E->c, i, c, t;
+    slong m = V->r, D = V->c, i, c, t;
     nmod_mat_t acc, w;
     int res = 1;
 
-    nmod_mat_init(acc, 1, n, E->mod.n);
-    nmod_mat_init(w, 1, n, E->mod.n);
+    nmod_mat_init(acc, 1, D, V->mod.n);
+    nmod_mat_init(w, 1, D, V->mod.n);
 
     for (i = 0; i < m && res; i++)
     {
@@ -39,12 +39,12 @@ _is_kernel(const nmod_poly_mat_t P, const nmod_mat_t E, const nmod_mat_t M)
         {
             const nmod_poly_struct * p = nmod_poly_mat_entry(P, i, c);
             nmod_mat_zero(w);
-            /* Horner: w = w M + p_t E_c */
+            /* Horner: w = w M + p_t V_c */
             for (t = p->length - 1; t >= 0; t--)
             {
                 nmod_mat_mul(w, w, M);
                 _nmod_vec_scalar_addmul_nmod(nmod_mat_entry_ptr(w, 0, 0),
-                        nmod_mat_entry_ptr(E, c, 0), n, p->coeffs[t], E->mod);
+                        nmod_mat_entry_ptr(V, c, 0), D, p->coeffs[t], V->mod);
             }
             nmod_mat_add(acc, acc, w);
         }
@@ -60,7 +60,7 @@ _is_kernel(const nmod_poly_mat_t P, const nmod_mat_t E, const nmod_mat_t M)
 static void
 _sage_examples(void)
 {
-    ulong Ev[9] = {27, 49, 29, 50, 58, 0, 77, 10, 29};
+    ulong Vv[9] = {27, 49, 29, 50, 58, 0, 77, 10, 29};
     slong sh[3][3] = {{0, 0, 0}, {0, 3, 6}, {3, 0, 2}};
     /* expected coefficients, low degree first, rows of P, -1 terminates */
     slong expected[3][9][5] = {
@@ -68,15 +68,15 @@ _sage_examples(void)
         {{0, 0, 0, 1, -1}, {-1}, {-1}, {70, 72, 60, -1}, {1, -1}, {-1}, {69, 72, 60, -1}, {-1}, {1, -1}},
         {{1, -1}, {79, 49, 26, -1}, {-1}, {-1}, {0, 0, 0, 1, -1}, {-1}, {-1}, {78, 49, 26, -1}, {1, -1}}};
     slong s, i, j, t, sz = 3;
-    nmod_mat_t E, M;
+    nmod_mat_t V, M;
     nmod_poly_mat_t P;
 
-    nmod_mat_init(E, 3, 3, 97);
+    nmod_mat_init(V, 3, 3, 97);
     nmod_mat_init(M, 3, 3, 97);
     nmod_poly_mat_init(P, 3, 3, 97);
 
     for (i = 0; i < 9; i++)
-        nmod_mat_entry(E, i / 3, i % 3) = Ev[i];
+        nmod_mat_entry(V, i / 3, i % 3) = Vv[i];
     nmod_mat_entry(M, 0, 1) = 1;
     nmod_mat_entry(M, 1, 2) = 1;
 
@@ -84,8 +84,8 @@ _sage_examples(void)
     {
         for (int jordan = 0; jordan < 2; jordan++)
         {
-            int ok = jordan ? nmod_poly_mat_krylov_kernel_basis_jordan(P, E, NULL, &sz, 1, sh[s], NULL)
-                            : nmod_poly_mat_krylov_kernel_basis(P, E, M, sh[s], NULL);
+            int ok = jordan ? nmod_poly_mat_krylov_kernel_basis_jordan(P, V, NULL, &sz, 1, sh[s], NULL)
+                            : nmod_poly_mat_krylov_kernel_basis(P, V, M, sh[s], NULL);
             if (!ok)
                 flint_throw(FLINT_TEST_FAIL, "Sage example %wd: failure\n", s);
 
@@ -104,7 +104,7 @@ _sage_examples(void)
         }
     }
 
-    nmod_mat_clear(E);
+    nmod_mat_clear(V);
     nmod_mat_clear(M);
     nmod_poly_mat_clear(P);
 }
@@ -117,21 +117,21 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
 
     for (iter = 0; iter < 1000 * flint_test_multiplier(); iter++)
     {
-        slong m, n, i, r, rnaive, sumdeg, nb, t, k;
+        slong m, D, i, r, rnaive, sumdeg, nb, t, k;
         ulong p;
-        nmod_mat_t E, M, B, R, Rel;
+        nmod_mat_t V, M, B, R, Rel;
         nmod_poly_mat_t P, P2;
-        slong * shift, * rows, * exps, * deltas, * degs, * sizes;
+        slong * shift, * rows, * exps, * deltas, * beta, * sizes;
         ulong * eig;
         int use_shift, use_jordan, res;
         _nmod_mat_krylov_op_t op;
 
         m = n_randint(state, 8);
-        n = n_randint(state, 10);
+        D = n_randint(state, 10);
         if (n_randint(state, 10) == 0)
         {
             m = n_randint(state, 40);
-            n = n_randint(state, 40);
+            D = n_randint(state, 40);
         }
 
         if (n_randint(state, 3) == 0)
@@ -139,29 +139,29 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
         else
             p = n_randtest_prime(state, 0);
 
-        nmod_mat_init(E, m, n, p);
-        nmod_mat_init(M, n, n, p);
-        nmod_mat_init(B, n, n, p);
-        nmod_mat_init(R, m, n, p);
+        nmod_mat_init(V, m, D, p);
+        nmod_mat_init(M, D, D, p);
+        nmod_mat_init(B, D, D, p);
+        nmod_mat_init(R, m, D, p);
         nmod_poly_mat_init(P, m, m, p);
         nmod_poly_mat_init(P2, m, m, p);
 
         shift = flint_malloc((m + 1) * sizeof(slong));
-        degs = flint_malloc((m + 1) * sizeof(slong));
+        beta = flint_malloc((m + 1) * sizeof(slong));
         deltas = flint_malloc((m + 1) * sizeof(slong));
-        rows = flint_malloc((n + 1) * sizeof(slong));
-        exps = flint_malloc((n + 1) * sizeof(slong));
-        sizes = flint_malloc((n + 1) * sizeof(slong));
-        eig = flint_malloc((n + 1) * sizeof(ulong));
+        rows = flint_malloc((D + 1) * sizeof(slong));
+        exps = flint_malloc((D + 1) * sizeof(slong));
+        sizes = flint_malloc((D + 1) * sizeof(slong));
+        eig = flint_malloc((D + 1) * sizeof(ulong));
 
         /* input: random matrix with a random rank, sometimes zero */
-        if (m > 0 && n > 0 && n_randint(state, 4) != 0)
+        if (m > 0 && D > 0 && n_randint(state, 4) != 0)
         {
-            nmod_mat_randrank(E, state, n_randint(state, FLINT_MIN(m, n) + 1));
-            nmod_mat_randops(E, state, n_randint(state, 2 * m * n + 1));
+            nmod_mat_randrank(V, state, n_randint(state, FLINT_MIN(m, D) + 1));
+            nmod_mat_randops(V, state, n_randint(state, 2 * m * D + 1));
         }
         else
-            nmod_mat_randtest(E, state);
+            nmod_mat_randtest(V, state);
 
         for (i = 0; i < m; i++)
         {
@@ -169,7 +169,7 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
             {
                 case 0: shift[i] = 0; break;
                 case 1: shift[i] = n_randint(state, 7) - 3; break;
-                case 2: shift[i] = i * (n + 1); break;
+                case 2: shift[i] = i * (D + 1); break;
                 default: shift[i] = (slong) n_randint(state, 100) - 50;
             }
         }
@@ -179,7 +179,7 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
            transform, or random */
         use_jordan = n_randint(state, 2);
         {
-            slong left = n;
+            slong left = D;
             ulong vals[2];
             int kind = n_randint(state, 3);
             vals[0] = n_randint(state, p);
@@ -213,13 +213,13 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
 
         if (use_jordan)
         {
-            res = nmod_poly_mat_krylov_kernel_basis_jordan(P, E, eig, sizes, nb,
+            res = nmod_poly_mat_krylov_kernel_basis_jordan(P, V, eig, sizes, nb,
                     use_shift ? shift : NULL, NULL);
-            _nmod_mat_krylov_op_init_jordan(op, eig, sizes, nb, E->mod);
+            _nmod_mat_krylov_op_init_jordan(op, eig, sizes, nb, V->mod);
         }
         else
         {
-            res = nmod_poly_mat_krylov_kernel_basis(P, E, M,
+            res = nmod_poly_mat_krylov_kernel_basis(P, V, M,
                     use_shift ? shift : NULL, NULL);
             _nmod_mat_krylov_op_init_dense(op, M);
         }
@@ -228,16 +228,16 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
             TEST_FUNCTION_FAIL("failure with default degree bounds\n");
 
         if (!nmod_poly_mat_is_popov(P, use_shift ? shift : NULL, ROW_LOWER))
-            TEST_FUNCTION_FAIL("not in shifted Popov form\nE = %{nmod_mat}\nM = %{nmod_mat}\n", E, M);
+            TEST_FUNCTION_FAIL("not in shifted Popov form\nV = %{nmod_mat}\nM = %{nmod_mat}\n", V, M);
 
-        if (!_is_kernel(P, E, M))
-            TEST_FUNCTION_FAIL("not in the kernel\nE = %{nmod_mat}\nM = %{nmod_mat}\n", E, M);
+        if (!_is_kernel(P, V, M))
+            TEST_FUNCTION_FAIL("not in the kernel\nV = %{nmod_mat}\nM = %{nmod_mat}\n", V, M);
 
         /* the sum of the diagonal degrees is the rank of the Krylov matrix:
            the rows generate the whole kernel (JNSV 2017, Lemma 7.5); P is
            in s-Popov form (checked above), so its column degrees are its
            diagonal degrees */
-        rnaive = _nmod_mat_krylov_basis_naive(B, rows, exps, E, op,
+        rnaive = _nmod_mat_krylov_basis_naive(B, rows, exps, V, op,
                     use_shift ? shift : NULL, NULL);
         nmod_poly_mat_column_degree_sum(&sumdeg, P, NULL);
         if (sumdeg != rnaive)
@@ -246,40 +246,40 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
         /* dense version of the Jordan matrix gives the same basis */
         if (use_jordan)
         {
-            res = nmod_poly_mat_krylov_kernel_basis(P2, E, M,
+            res = nmod_poly_mat_krylov_kernel_basis(P2, V, M,
                     use_shift ? shift : NULL, NULL);
             if (!res || !nmod_poly_mat_equal(P, P2))
                 TEST_FUNCTION_FAIL("jordan vs dense\n");
         }
 
-        /* compact form: R * B = rows E_i M^{delta_i} */
+        /* compact form: R * B = rows V_i M^{delta_i} */
         if (use_jordan)
-            r = nmod_mat_krylov_kernel_jordan(R, rows, exps, deltas, E, eig, sizes, nb,
+            r = nmod_mat_krylov_kernel_jordan(R, rows, exps, deltas, V, eig, sizes, nb,
                     use_shift ? shift : NULL, NULL);
         else
-            r = nmod_mat_krylov_kernel(R, rows, exps, deltas, E, M,
+            r = nmod_mat_krylov_kernel(R, rows, exps, deltas, V, M,
                     use_shift ? shift : NULL, NULL);
         if (r != rnaive)
             TEST_FUNCTION_FAIL("compact kernel: rank\n");
         if (r > 0)
         {
             nmod_mat_t Rw, Bw, Mp, row, rowM;
-            r = _nmod_mat_krylov_basis_naive(B, rows, exps, E, op,
+            r = _nmod_mat_krylov_basis_naive(B, rows, exps, V, op,
                     use_shift ? shift : NULL, NULL);
-            nmod_mat_init(Rel, m, n, p);
+            nmod_mat_init(Rel, m, D, p);
             nmod_mat_window_init(Rw, R, 0, 0, m, r);
-            nmod_mat_window_init(Bw, B, 0, 0, r, n);
+            nmod_mat_window_init(Bw, B, 0, 0, r, D);
             nmod_mat_mul(Rel, Rw, Bw);
-            nmod_mat_init(Mp, n, n, p);
-            nmod_mat_init(row, 1, n, p);
-            nmod_mat_init(rowM, 1, n, p);
+            nmod_mat_init(Mp, D, D, p);
+            nmod_mat_init(row, 1, D, p);
+            nmod_mat_init(rowM, 1, D, p);
             for (i = 0; i < m; i++)
             {
-                for (t = 0; t < n; t++)
-                    nmod_mat_entry(row, 0, t) = nmod_mat_entry(E, i, t);
+                for (t = 0; t < D; t++)
+                    nmod_mat_entry(row, 0, t) = nmod_mat_entry(V, i, t);
                 nmod_mat_pow(Mp, M, deltas[i]);
                 nmod_mat_mul(rowM, row, Mp);
-                for (t = 0; t < n; t++)
+                for (t = 0; t < D; t++)
                     if (nmod_mat_entry(rowM, 0, t) != nmod_mat_entry(Rel, i, t))
                         TEST_FUNCTION_FAIL("compact kernel: relation\n");
             }
@@ -295,8 +295,8 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
         if (r >= 0)
         {
             nmod_mat_t R2;
-            slong * rows2 = flint_malloc((n + 1) * sizeof(slong));
-            slong * exps2 = flint_malloc((n + 1) * sizeof(slong));
+            slong * rows2 = flint_malloc((D + 1) * sizeof(slong));
+            slong * exps2 = flint_malloc((D + 1) * sizeof(slong));
             slong * deltas2 = flint_malloc((m + 1) * sizeof(slong));
             slong r2, chunk = 1 + n_randint(state, n_randint(state, 2) ? 6 : 64);
             int method;
@@ -306,10 +306,10 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
             op->powruns = n_randint(state, 4);
             op->predict = n_randint(state, 3);
 
-            nmod_mat_init(R2, m, n, p);
+            nmod_mat_init(R2, m, D, p);
             /* both methods for the relations give the same output */
             method = n_randint(state, 3);
-            r2 = _nmod_mat_krylov_kernel(R2, rows2, exps2, deltas2, E, op,
+            r2 = _nmod_mat_krylov_kernel(R2, rows2, exps2, deltas2, V, op,
                     use_shift ? shift : NULL, NULL, chunk, method);
             if (r2 != r)
                 TEST_FUNCTION_FAIL("compact kernel, chunk, method %wd, method %d: rank\n", chunk, method);
@@ -330,19 +330,19 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
         /* degree bounds: valid ones give the same basis, the function
            fails exactly when they are not valid */
         for (i = 0; i < m; i++)
-            degs[i] = n_randint(state, n + 2);
+            beta[i] = n_randint(state, D + 2);
         {
             int valid = 1;
             for (i = 0; i < rnaive; i++)
-                if (exps[i] >= FLINT_MIN(degs[rows[i]], n))
+                if (exps[i] >= FLINT_MIN(beta[rows[i]], D))
                     valid = 0;
 
             if (use_jordan)
-                res = nmod_poly_mat_krylov_kernel_basis_jordan(P2, E, eig, sizes, nb,
-                        use_shift ? shift : NULL, degs);
+                res = nmod_poly_mat_krylov_kernel_basis_jordan(P2, V, eig, sizes, nb,
+                        use_shift ? shift : NULL, beta);
             else
-                res = nmod_poly_mat_krylov_kernel_basis(P2, E, M,
-                        use_shift ? shift : NULL, degs);
+                res = nmod_poly_mat_krylov_kernel_basis(P2, V, M,
+                        use_shift ? shift : NULL, beta);
 
             if (res != valid)
                 TEST_FUNCTION_FAIL("degree bounds: res = %d, valid = %d\n", res, valid);
@@ -351,14 +351,14 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
         }
 
         _nmod_mat_krylov_op_clear(op);
-        nmod_mat_clear(E);
+        nmod_mat_clear(V);
         nmod_mat_clear(M);
         nmod_mat_clear(B);
         nmod_mat_clear(R);
         nmod_poly_mat_clear(P);
         nmod_poly_mat_clear(P2);
         flint_free(shift);
-        flint_free(degs);
+        flint_free(beta);
         flint_free(deltas);
         flint_free(rows);
         flint_free(exps);

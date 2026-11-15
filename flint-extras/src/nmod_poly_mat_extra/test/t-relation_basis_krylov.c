@@ -22,19 +22,19 @@
 #include "nmod_poly_mat_forms.h"
 #include "nmod_poly_mat_interpolant.h"
 
-/* rank of the Krylov matrix of E with respect to the Jordan matrix */
+/* rank of the Krylov matrix of V with respect to the Jordan matrix */
 static slong
-_rbk_krylov_rank(const nmod_mat_t E, nn_srcptr eig, const slong * sizes, slong nb)
+_rbk_krylov_rank(const nmod_mat_t V, nn_srcptr eig, const slong * sizes, slong nb)
 {
     _nmod_mat_krylov_op_t op;
     nmod_mat_t B;
     slong * rows, * exps, r;
 
-    nmod_mat_init(B, E->c, E->c, E->mod.n);
-    rows = flint_malloc((E->c + 1) * sizeof(slong));
-    exps = flint_malloc((E->c + 1) * sizeof(slong));
-    _nmod_mat_krylov_op_init_jordan(op, eig, sizes, nb, E->mod);
-    r = _nmod_mat_krylov_basis_naive(B, rows, exps, E, op, NULL, NULL);
+    nmod_mat_init(B, V->c, V->c, V->mod.n);
+    rows = flint_malloc((V->c + 1) * sizeof(slong));
+    exps = flint_malloc((V->c + 1) * sizeof(slong));
+    _nmod_mat_krylov_op_init_jordan(op, eig, sizes, nb, V->mod);
+    r = _nmod_mat_krylov_basis_naive(B, rows, exps, V, op, NULL, NULL);
     _nmod_mat_krylov_op_clear(op);
     nmod_mat_clear(B);
     flint_free(rows);
@@ -49,10 +49,10 @@ TEST_FUNCTION_START(nmod_poly_mat_relation_basis_krylov, state)
 
     for (iter = 0; iter < 300 * flint_test_multiplier(); iter++)
     {
-        slong m, n, i, j, k, sigma, nb, off, sumdeg;
+        slong m, n, i, j, k, D, nb, off, sumdeg;
         ulong p;
         nmod_poly_mat_t F, P, PF;
-        nmod_mat_t E;
+        nmod_mat_t V;
         slong * orders, * shift, * sizes;
         nn_ptr pts, eig;
         int use_shift;
@@ -74,11 +74,11 @@ TEST_FUNCTION_START(nmod_poly_mat_relation_basis_krylov, state)
         pts = _nmod_vec_init(n + 1);
         eig = _nmod_vec_init(n + 1);
 
-        sigma = 0;
+        D = 0;
         for (j = 0; j < n; j++)
         {
             orders[j] = n_randint(state, 7);
-            sigma += orders[j];
+            D += orders[j];
             pts[j] = n_randint(state, p);
         }
         if (n > 1 && n_randint(state, 2))
@@ -108,7 +108,7 @@ TEST_FUNCTION_START(nmod_poly_mat_relation_basis_krylov, state)
                     if (nmod_poly_get_coeff_ui(nmod_poly_mat_entry(PF, i, j), k) != 0)
                         TEST_FUNCTION_FAIL("approximant: P F != 0 mod x^order\n");
 
-        nmod_mat_init(E, m, sigma, p);
+        nmod_mat_init(V, m, D, p);
         nb = 0;
         off = 0;
         for (j = 0; j < n; j++)
@@ -117,7 +117,7 @@ TEST_FUNCTION_START(nmod_poly_mat_relation_basis_krylov, state)
                 continue;
             for (i = 0; i < m; i++)
                 for (k = 0; k < orders[j]; k++)
-                    nmod_mat_entry(E, i, off + k) =
+                    nmod_mat_entry(V, i, off + k) =
                         nmod_poly_get_coeff_ui(nmod_poly_mat_entry(F, i, j), k);
             sizes[nb++] = orders[j];
             off += orders[j];
@@ -126,9 +126,9 @@ TEST_FUNCTION_START(nmod_poly_mat_relation_basis_krylov, state)
         /* P is in s-Popov form (checked above), so its column degrees are
            its diagonal degrees; their sum is the rank of the Krylov matrix */
         nmod_poly_mat_column_degree_sum(&sumdeg, P, NULL);
-        if (sumdeg != _rbk_krylov_rank(E, NULL, sizes, nb))
+        if (sumdeg != _rbk_krylov_rank(V, NULL, sizes, nb))
             TEST_FUNCTION_FAIL("approximant: not a basis (degree)\n");
-        nmod_mat_clear(E);
+        nmod_mat_clear(V);
 
         /* ------------------------------------------------------------ */
         /* M-Pade approximation                                         */
@@ -153,7 +153,7 @@ TEST_FUNCTION_START(nmod_poly_mat_relation_basis_krylov, state)
             }
         }
 
-        nmod_mat_init(E, m, sigma, p);
+        nmod_mat_init(V, m, D, p);
         nb = 0;
         off = 0;
         for (j = 0; j < n; j++)
@@ -166,7 +166,7 @@ TEST_FUNCTION_START(nmod_poly_mat_relation_basis_krylov, state)
                 nmod_poly_init(g, p);
                 nmod_poly_taylor_shift(g, nmod_poly_mat_entry(F, i, j), pts[j]);
                 for (k = 0; k < orders[j]; k++)
-                    nmod_mat_entry(E, i, off + k) = nmod_poly_get_coeff_ui(g, k);
+                    nmod_mat_entry(V, i, off + k) = nmod_poly_get_coeff_ui(g, k);
                 nmod_poly_clear(g);
             }
             eig[nb] = pts[j];
@@ -175,9 +175,9 @@ TEST_FUNCTION_START(nmod_poly_mat_relation_basis_krylov, state)
         }
 
         nmod_poly_mat_column_degree_sum(&sumdeg, P, NULL);
-        if (sumdeg != _rbk_krylov_rank(E, eig, sizes, nb))
+        if (sumdeg != _rbk_krylov_rank(V, eig, sizes, nb))
             TEST_FUNCTION_FAIL("mpade: not a basis (degree)\n");
-        nmod_mat_clear(E);
+        nmod_mat_clear(V);
 
         /* ------------------------------------------------------------ */
         /* interpolation at (possibly repeated) points                  */
