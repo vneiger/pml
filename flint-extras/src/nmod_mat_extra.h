@@ -511,7 +511,12 @@ int _nmod_mat_charpoly_lnz_block_krylov(nmod_poly_t cp, const nmod_mat_t A, slon
  * - `shift == NULL` means the zero shift; `degrees == NULL` means `d[i] = n`
  *   for all `i`. Except for the Krylov matrix functions, degree bounds larger
  *   than `n` are replaced by `n`, and the bounds must be valid; the kernel
- *   functions detect when they are not.
+ *   functions detect when they are not. Valid bounds smaller than `n` save
+ *   work: for instance the degree of a known polynomial `p` such that
+ *   `p(M) = 0`, or `E_i p(M) = 0` for the bound `d[i]`. For a Jordan matrix,
+ *   bounds larger than the degree of its minimal polynomial (the sum, over
+ *   its distinct eigenvalues, of their largest block size) are replaced by
+ *   this degree.
  * - Size of the integers (see @ref IntegerSizes): there is no condition on
  *   the shift, whose entries may be arbitrary `slong` values (they are only
  *   compared, after an internal normalization); degree bounds must be
@@ -526,13 +531,16 @@ int _nmod_mat_charpoly_lnz_block_krylov(nmod_poly_t cp, const nmod_mat_t A, slon
  * dependent: the basis alone may then cost about `n` rows (for instance,
  * generically, the first `n` rows of `E` when `m >= n`), and the kernels
  * compute the remaining dependent rows `E_i M^{delta[i]}` without
- * eliminating them. A few more rows may be computed: the rows of an index
- * computed in the same chunk after its first dependent row are discarded, at
- * most `min(c, delta[i]) - 1` for index `i` (fewer than `r` in total). The
- * cost is `O((r + m) n^2)` plus `O(r^3 + m r^2)` for the kernel; see
- * `nmod_mat_extra/krylov_basis.c` for details. The interface follows the
- * methods `krylov_matrix`, `krylov_basis` and `krylov_kernel_basis` of
- * SageMath matrices.
+ * eliminating them. Each index first takes, chunk after chunk, its rows among
+ * the first `n` rows in priority order, which generically form the basis
+ * whatever the shift; once an index stops earlier, each index takes at most
+ * as many rows in a chunk as it has in the basis so far. A few more rows may
+ * be computed: the rows of an index computed in the same chunk after its
+ * first dependent row are discarded, fewer than `r + c` in total, and none
+ * for generic inputs. The cost is `O((r + m) n^2)` plus `O(r^3 + m r^2)` for
+ * the kernel; see `nmod_mat_extra/krylov_basis.c` for details. The interface
+ * follows the methods `krylov_matrix`, `krylov_basis` and
+ * `krylov_kernel_basis` of SageMath matrices.
  *
  * Reference: [JNSV17] C.-P. Jeannerod, V. Neiger, E. Schost, G. Villard.
  * Computing minimal interpolation bases. Journal of Symbolic Computation 83

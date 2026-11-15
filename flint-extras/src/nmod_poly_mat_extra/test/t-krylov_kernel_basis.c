@@ -304,6 +304,7 @@ TEST_FUNCTION_START(nmod_poly_mat_krylov_kernel_basis, state)
             /* dense operator: rows generated from powers M^(2^t), t <= logpow */
             op->logpow = (slong) n_randint(state, 6) - 1;
             op->powruns = n_randint(state, 4);
+            op->predict = n_randint(state, 3);
 
             nmod_mat_init(R2, m, n, p);
             /* both methods for the relations give the same output */

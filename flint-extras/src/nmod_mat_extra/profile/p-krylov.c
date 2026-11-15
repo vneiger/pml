@@ -30,6 +30,10 @@
       mode = pow     dense random M, generation of the rows from powers
                      M^(2^t) (Keller-Gehrig-type doubling), n up to nmax:
                      p-krylov pow [bits] [nmax]
+      mode = budget  budget of the indices in a chunk (op->predict): from
+                     the generic profile (default) against max(1, f_i)
+                     alone, uniform, staggered, random and Hermite shifts,
+                     n up to nmax: p-krylov budget [bits] [nmax]
 
     Times in seconds; "mul" is the time of nmod_mat_mul for n x n (dense)
     or sigma x sigma (hp, interp) matrices.
@@ -372,6 +376,136 @@ profile_kernel(flint_bitcnt_t bits, flint_rand_t state)
     }
 }
 
+/*
+    Budget of the indices in a chunk: from the generic profile until an
+    index stops early (op->predict = 1, the default) against max(1, f_i)
+    alone (op->predict = 0), for the compact kernel (automatic method) and
+    the basis (row echelon form). Shifts: uniform, staggered s_i = i
+    ceil(n / 2m), random in [0, 2n / m], Hermite s_i = i (n + 1); M dense
+    random, one nilpotent Jordan block of size n (Hermite-Pade with one
+    column), or 4 nilpotent blocks of size n / 4 (four columns, not
+    cyclic). Ratios time(predict = 0) / time(predict = 1) (above 1: the
+    default is faster), best of 3 interleaved runs; the outputs of both are
+    compared.
+*/
+static void
+profile_budget(flint_bitcnt_t bits, slong nmax, flint_rand_t state)
+{
+    slong ns[] = {256, 512, 1024, 2048, 0};
+    const char * kinds[] = {"dense", "hp", "hp4"};
+    const char * shname[] = {"unif", "stag", "rand", "herm"};
+    slong k, kind, c, sh, i;
+    ulong p = n_randprime(state, bits, 1);
+
+    flint_printf("budget from the generic profile (default) against max(1, f_i), %wu-bit prime\n", bits);
+    flint_printf(" kind     n     m shift   kernel     basis   (time predict=0 / predict=1)\n");
+
+    for (k = 0; ns[k] != 0 && ns[k] <= nmax; k++)
+    for (kind = 0; kind < 3; kind++)
+    {
+        slong n = ns[k];
+        slong ms[4];
+        nmod_mat_t M;
+        _nmod_mat_krylov_op_t op;
+
+        ms[0] = 1; ms[1] = n / 16; ms[2] = n / 4; ms[3] = n;
+
+        nmod_mat_init(M, n, n, p);
+        if (kind == 0)
+        {
+            nmod_mat_rand(M, state);
+            _nmod_mat_krylov_op_init_dense(op, M);
+        }
+        else
+        {
+            slong sz[4];
+            slong nb = (kind == 1) ? 1 : 4;
+            for (i = 0; i < nb; i++)
+                sz[i] = n / nb;
+            _nmod_mat_krylov_op_init_jordan(op, NULL, sz, nb, M->mod);
+        }
+
+        for (c = 0; c < 4; c++)
+        for (sh = 0; sh < 4; sh++)
+        {
+            slong m = ms[c], q, rep, r0 = 0, r1 = 0;
+            slong * shift, * rows0, * exps0, * deltas0, * rows1, * exps1, * deltas1;
+            nmod_mat_t E, R0, R1, B;
+            double tk[2] = {1e300, 1e300}, tb[2] = {1e300, 1e300}, t;
+            int bad = 0;
+
+            if (m == 1 && sh != 0)
+                continue;
+
+            shift = flint_malloc(m * sizeof(slong));
+            deltas0 = flint_malloc(m * sizeof(slong));
+            deltas1 = flint_malloc(m * sizeof(slong));
+            rows0 = flint_malloc(n * sizeof(slong));
+            exps0 = flint_malloc(n * sizeof(slong));
+            rows1 = flint_malloc(n * sizeof(slong));
+            exps1 = flint_malloc(n * sizeof(slong));
+            q = FLINT_MAX(1, (n + 2 * m - 1) / (2 * m));
+            for (i = 0; i < m; i++)
+                shift[i] = (sh == 0) ? 0 : (sh == 1) ? i * q
+                         : (sh == 2) ? (slong) n_randint(state, 2 * n / m + 1) : i * (n + 1);
+
+            nmod_mat_init(E, m, n, p);
+            nmod_mat_init(R0, m, n, p);
+            nmod_mat_init(R1, m, n, p);
+            nmod_mat_init(B, n, n, p);
+            nmod_mat_rand(E, state);
+
+            for (rep = 0; rep < 3; rep++)
+            {
+                op->predict = 0;
+                TIME_IT(t, r0 = _nmod_mat_krylov_kernel(R0, rows0, exps0, deltas0, E, op,
+                            shift, NULL, 0, _NMOD_MAT_KRYLOV_KERNEL_AUTO));
+                tk[0] = FLINT_MIN(tk[0], t);
+                op->predict = 1;
+                TIME_IT(t, r1 = _nmod_mat_krylov_kernel(R1, rows1, exps1, deltas1, E, op,
+                            shift, NULL, 0, _NMOD_MAT_KRYLOV_KERNEL_AUTO));
+                tk[1] = FLINT_MIN(tk[1], t);
+                op->predict = 0;
+                TIME_IT(t, _nmod_mat_krylov_basis_iter_lu(B, rows0, exps0, NULL, NULL,
+                            NULL, NULL, NULL, NULL, E, op, shift, NULL, 0));
+                tb[0] = FLINT_MIN(tb[0], t);
+                op->predict = 1;
+                TIME_IT(t, _nmod_mat_krylov_basis_iter_lu(B, rows1, exps1, NULL, NULL,
+                            NULL, NULL, NULL, NULL, E, op, shift, NULL, 0));
+                tb[1] = FLINT_MIN(tb[1], t);
+            }
+
+            if (r0 != r1 || (r0 > 0 && !nmod_mat_equal(R0, R1)))
+                bad = 1;
+            for (i = 0; i < r0 && !bad; i++)
+                if (rows0[i] != rows1[i] || exps0[i] != exps1[i])
+                    bad = 1;
+            for (i = 0; i < m && !bad; i++)
+                if (deltas0[i] != deltas1[i])
+                    bad = 1;
+
+            flint_printf("%5s %5wd %5wd  %s  %8.2f  %8.2f%s\n", kinds[kind], n, m,
+                    shname[sh], tk[0] / tk[1], tb[0] / tb[1], bad ? "  MISMATCH" : "");
+            fflush(stdout);
+
+            nmod_mat_clear(E);
+            nmod_mat_clear(R0);
+            nmod_mat_clear(R1);
+            nmod_mat_clear(B);
+            flint_free(shift);
+            flint_free(deltas0);
+            flint_free(deltas1);
+            flint_free(rows0);
+            flint_free(exps0);
+            flint_free(rows1);
+            flint_free(exps1);
+        }
+
+        _nmod_mat_krylov_op_clear(op);
+        nmod_mat_clear(M);
+    }
+}
+
 static void
 profile_hp(flint_bitcnt_t bits, flint_rand_t state)
 {
@@ -526,8 +660,10 @@ main(int argc, char ** argv)
         profile_kernel(bits, state);
     else if (!strcmp(mode, "pow"))
         profile_pow(bits, (argc > 3) ? atol(argv[3]) : 1600, state);
+    else if (!strcmp(mode, "budget"))
+        profile_budget(bits, (argc > 3) ? atol(argv[3]) : 1024, state);
     else
-        flint_printf("unknown mode %s (dense, hp, interp, chunk, kernel, pow)\n", mode);
+        flint_printf("unknown mode %s (dense, hp, interp, chunk, kernel, pow, budget)\n", mode);
 
     flint_rand_clear(state);
     flint_cleanup_master();

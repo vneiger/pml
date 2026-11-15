@@ -143,11 +143,35 @@ _krylov_pow_cache_clear(_krylov_pow_cache_struct * C)
     a chunk that follow a dependent row of the same index i.
 
     A chunk is a run of consecutive rows in the priority order, of at most
-    `chunk` rows, with at most max(1, f_i) rows for each index i, where f_i
-    is the number of rows of i found independent before the chunk: the
-    rows of an index i which appears several times in a chunk are computed
-    from each other before knowing whether they are independent, and this
-    bounds the number of such rows which may be wasted.
+    `chunk` rows, with a budget of rows for each index i: the rows of an
+    index which appears several times in a chunk are computed from each
+    other before knowing whether they are independent, and the budget
+    bounds the number of such rows which may be wasted. Let f_i be the
+    number of rows of i found independent before the chunk, and p_i the
+    number of rows (i, j), j < d_i, among the first n rows in priority
+    order. For generic inputs (M cyclic and E random), these n rows are
+    independent whatever the shift (their determinant is a nonzero
+    polynomial in the entries of E), so they form the profile and
+    p_i = delta_i. As long as no index has stopped before its p_i rows, the
+    budget of i is max(1, f_i, p_i - f_i) (once f_i >= 2^logpow when rows
+    come from powers of M), so that the chunks are full and generically no
+    row is wasted; afterwards, it is max(1, f_i). Hence fewer than
+    r + chunk rows are wasted in total: the budget max(1, f_i) wastes fewer
+    than delta_i rows of i, the rows taken beyond it have j < p_i and are
+    not wasted as long as no index stops early, and fewer than `chunk` rows
+    are wasted in the chunk where one does.
+
+    Other strategy measured and not kept: taking the first n rows in priority
+    order as one speculative chunk, eliminated by one nmod_mat_ple. Correct,
+    and no work is lost when the guess fails (the chunk is a prefix of the
+    priority order, so its independent rows and the first dependent row of each
+    index are final, and the iteration resumes from there), but 0.91 to 1.03
+    times as fast as the chunks for the kernel: one PLE of n rows is about 1.2
+    times slower than the elimination by chunks (0.6 to 1.0 against 0.5 to 0.9
+    products at 30 bits, n = 256 to 1024), and the n x n chunk costs copies. It
+    only gains in corner cases, e.g. for one nilpotent block driven by one
+    index at 60 bits (1.7 to 5 times, as Crout's PLE skips the zeros of the
+    triangular Krylov matrix).
 
     The span of the processed rows is kept as a basis W in reduced row
     echelon form, stored with permuted columns: the first r columns of the
@@ -184,7 +208,9 @@ _krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
     slong m = E->r, n = E->c;
     ulong p = E->mod.n;
     slong i, j, a, t, u, k, kk, r, rb, nf, hlen, budget, maxstep, aug, logpow, powruns;
-    slong * d, * key, * nextj, * last, * cnt, * prevpos, * heap;
+    slong * d, * key, * nextj, * last, * cnt, * prevpos, * heap, * pcnt;
+    slong pmin;
+    int predict = op->predict;
     slong * ci, * cj, * cdepth, * csrc, * Q, * L, * colperm, * orig_at, * cur_of;
     slong * crun, * roff, * rlist, * bsrc, * clog, * cstep, * bprev;
     slong * Pc = NULL, * Qc = NULL, * bidx = NULL;
@@ -202,20 +228,21 @@ _krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
     if (chunk <= 0)
         chunk = KRYLOV_CHUNK_DEFAULT(n);
 
-    /* a chunk has at most max(1, f_i) rows of index i, where the f_i sum
-       to at most n */
+    /* larger chunks are not useful: at most r + m <= n + m rows are
+       needed */
     chunk = FLINT_MAX(1, FLINT_MIN(chunk, m + n));
 
     /* number of columns appended to the chunk to record row operations */
     aug = (G != NULL) ? chunk : 0;
 
-    d = flint_malloc((7 * m + 1) * sizeof(slong));
+    d = flint_malloc((8 * m + 1) * sizeof(slong));
     key = d + m;
     nextj = key + m;
     last = nextj + m;
     cnt = last + m;
     prevpos = cnt + m;
     heap = prevpos + m;
+    pcnt = heap + m;
     state = flint_malloc(m + 1);
 
     ci = flint_malloc((12 * chunk + 4 * n + 1) * sizeof(slong));
@@ -267,6 +294,12 @@ _krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
     C.M = op->M;
     C.len = 0;
 
+    /* with powers of M, a run of rows (i, j0), ... is generated from the
+       rows (i, j0 - e), ... with e <= j0: the larger budget only starts
+       once f_i >= 2^logpow, so that the run can use the power (measured:
+       otherwise 2 to 6 percent slower with one index at n = 1600) */
+    pmin = (logpow > 0) ? (WORD(1) << logpow) : 0;
+
     _nmod_mat_krylov_degrees(d, m, degrees, n, 1);
 
     /* at most min(n, sum (d_i + 1)) rows are written in B */
@@ -281,8 +314,47 @@ _krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
                     "columns and at least min(E->c, sum (d_i + 1)) rows\n");
     }
 
+    /* E_i M^j depends on the rows E_i M^j' with j' < j as soon as j is
+       the degree of the minimal polynomial of M (op->mpdeg, which is n for
+       a dense operator): the bounds min(d_i, mpdeg) give the same profile, and
+       are valid if the d_i are. For a Jordan matrix which is not cyclic, this
+       saves the rows of an index beyond mpdeg (measured: 4 nilpotent blocks of
+       size n / 4 with a Hermite shift, 1.16 to 1.21 times faster for the
+       kernel, 1.30 to 1.34 for the basis) */
+    for (i = 0; i < m; i++)
+        d[i] = FLINT_MIN(d[i], op->mpdeg);
+
     /* priorities: keys s_i + j with equivalent shift in a small range */
     _nmod_mat_krylov_normalize_shift(key, shift, m, n);
+
+    /* predicted number of rows p_i of each index: its rows (i, j), j < d_i,
+       among the first n rows in priority order (the heap is used as
+       workspace, with keys in nextj) */
+    if (predict)
+    {
+        slong tot = 0;
+
+        hlen = 0;
+        for (i = 0; i < m; i++)
+        {
+            pcnt[i] = 0;
+            nextj[i] = key[i];
+            if (d[i] > 0)
+                _nmod_mat_krylov_heap_push(heap, &hlen, i, nextj);
+        }
+
+        while (tot < n && hlen > 0)
+        {
+            i = _nmod_mat_krylov_heap_pop(heap, &hlen, nextj);
+            pcnt[i]++;
+            tot++;
+            if (pcnt[i] < d[i])
+            {
+                nextj[i]++;
+                _nmod_mat_krylov_heap_push(heap, &hlen, i, nextj);
+            }
+        }
+    }
 
     hlen = 0;
     for (i = 0; i < m; i++)
@@ -320,8 +392,12 @@ _krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
                 continue;
             }
 
-            /* nextj[i] - cnt[i] rows of i are in the profile */
+            /* f_i = nextj[i] - cnt[i] rows of i are in the profile; the
+               budget is max(1, f_i), or max(1, f_i, p_i - f_i) while the
+               prediction holds */
             budget = FLINT_MAX(1, nextj[i] - cnt[i]);
+            if (predict && nextj[i] - cnt[i] >= pmin)
+                budget = FLINT_MAX(budget, pcnt[i] - (nextj[i] - cnt[i]));
             if (cnt[i] >= budget)
                 break;
 
@@ -368,9 +444,11 @@ _krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
                cdepth[a] / e; rlist[roff[a] + u] is the chunk position of
                the row at position u of the run, and bsrc[roff[a] + u], for
                u < e, the basis position of the row at distance e before.
-               The exponent of a run of c rows is the largest power of two
-               at most min(2^lp, c) if it is the highest power of M
-               available after raising it for the chunk, and 1 otherwise */
+               The exponent of a run of c rows starting at (i, j0) is the
+               largest power of two at most min(2^lp, c, j0) if it is the
+               highest power of M available after raising it for the
+               chunk, and 1 otherwise (j0 < c is possible with the
+               predicted budget) */
             slong nxt = 0, s, tt, c, e, lp = logpow;
 
             /* number of runs to generate */
@@ -389,8 +467,8 @@ _krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
 
                 for (a = 0; a < k; a++)
                     if (cdepth[a] == 0 && cj[a] > 0)
-                        tmax = FLINT_MAX(tmax, FLINT_MIN(lp,
-                                    (slong) FLINT_BIT_COUNT(crun[a]) - 1));
+                        tmax = FLINT_MAX(tmax, FLINT_MIN(lp, (slong)
+                                    FLINT_BIT_COUNT(FLINT_MIN(crun[a], cj[a])) - 1));
 
                 _krylov_pow_cache_raise(&C, tmax);
             }
@@ -409,7 +487,8 @@ _krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
                 }
 
                 rlist[roff[a] + cdepth[a]] = a;
-                clog[a] = FLINT_MIN(lp, (slong) FLINT_BIT_COUNT(crun[a]) - 1);
+                clog[a] = FLINT_MAX(0, FLINT_MIN(lp, (slong) FLINT_BIT_COUNT(
+                            FLINT_MIN(crun[a], cj[a] - cdepth[a])) - 1));
                 if (clog[a] != C.len)
                     clog[a] = 0;
                 cstep[a] = cdepth[a] >> clog[a];
@@ -417,7 +496,7 @@ _krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
                     maxstep = FLINT_MAX(maxstep, cstep[a]);
 
                 /* the basis rows (i, j0 - e), ..., (i, j0 - 1) before the
-                   first row (i, j0) of the run (e <= crun[a] <= j0) */
+                   first row (i, j0) of the run (e <= min(crun[a], j0)) */
                 if (cdepth[a] == 0 && cj[a] > 0)
                 {
                     slong pos = last[ci[a]];
@@ -588,6 +667,9 @@ _krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
             else if (state[i] == ACTIVE)
             {
                 state[i] = DEAD;
+                /* the prediction fails: the budgets go back to max(1, f_i) */
+                if (predict == 1 && cj[a] < pcnt[i])
+                    predict = 0;
                 if (deltas != NULL)
                     deltas[i] = cj[a];
                 if (T != NULL)

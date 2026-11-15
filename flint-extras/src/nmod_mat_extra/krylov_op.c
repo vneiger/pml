@@ -29,10 +29,74 @@ _nmod_mat_krylov_op_init_dense(_nmod_mat_krylov_op_t op, const nmod_mat_t M)
     op->M = M;
     op->logpow = -1;
     op->powruns = 0;
+    op->mpdeg = M->r;
+    op->predict = 1;
     op->nblocks = 0;
     op->eig = NULL;
     op->eig_pre = NULL;
     op->off = NULL;
+}
+
+/* (eigenvalue, block size) */
+typedef struct
+{
+    ulong e;
+    slong t;
+}
+_krylov_block_struct;
+
+static int
+_krylov_block_cmp(const void * a, const void * b, void * data)
+{
+    ulong x = ((const _krylov_block_struct *) a)->e;
+    ulong y = ((const _krylov_block_struct *) b)->e;
+
+    (void) data;
+    return (x > y) - (x < y);
+}
+
+/* degree of the minimal polynomial of the Jordan matrix: the sum, over
+   the distinct eigenvalues, of their largest block size (eig == NULL: all
+   eigenvalues zero) */
+static slong
+_krylov_jordan_minpoly_degree(nn_srcptr eig, const slong * off, slong nblocks)
+{
+    slong b, deg = 0, tmax;
+    _krylov_block_struct * blk;
+
+    if (nblocks == 0)
+        return 0;
+
+    if (eig == NULL)
+    {
+        for (b = 0; b < nblocks; b++)
+            deg = FLINT_MAX(deg, off[b + 1] - off[b]);
+        return deg;
+    }
+
+    blk = flint_malloc(nblocks * sizeof(_krylov_block_struct));
+    for (b = 0; b < nblocks; b++)
+    {
+        blk[b].e = eig[b];
+        blk[b].t = off[b + 1] - off[b];
+    }
+    flint_sort(blk, nblocks, sizeof(_krylov_block_struct),
+               _krylov_block_cmp, NULL);
+
+    tmax = blk[0].t;
+    for (b = 1; b < nblocks; b++)
+    {
+        if (blk[b].e != blk[b - 1].e)
+        {
+            deg += tmax;
+            tmax = 0;
+        }
+        tmax = FLINT_MAX(tmax, blk[b].t);
+    }
+    deg += tmax;
+
+    flint_free(blk);
+    return deg;
 }
 
 void
@@ -50,6 +114,7 @@ _nmod_mat_krylov_op_init_jordan(_nmod_mat_krylov_op_t op, nn_srcptr eig,
     op->M = NULL;
     op->logpow = 0;
     op->powruns = 0;
+    op->predict = 1;
     op->nblocks = nblocks;
     op->off = flint_malloc((nblocks + 1) * sizeof(slong));
     op->off[0] = 0;
@@ -82,6 +147,8 @@ _nmod_mat_krylov_op_init_jordan(_nmod_mat_krylov_op_t op, nn_srcptr eig,
                 all_zero = 0;
         }
     }
+
+    op->mpdeg = _krylov_jordan_minpoly_degree(op->eig, op->off, nblocks);
 
     if (all_zero)
     {

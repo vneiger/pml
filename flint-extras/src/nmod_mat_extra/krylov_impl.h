@@ -56,6 +56,14 @@ typedef struct
     slong powruns;              /* chunks with more than powruns indices
                                    only use M (0: no limit); ignored by
                                    the automatic choice */
+    slong mpdeg;                /* degree of the minimal polynomial of M
+                                   (Jordan kinds; n for the dense kind):
+                                   degree bounds are capped at mpdeg */
+    int predict;                /* budget of the indices in a chunk (see
+                                   _nmod_mat_krylov_basis_iter): 1 (default)
+                                   from the generic profile until an index
+                                   stops before its predicted rows, 0 never
+                                   (max(1, f_i) only), 2 always (tests) */
     slong nblocks;              /* Jordan kinds: number of blocks */
     nn_ptr eig;                 /* eigenvalues (reduced), NULL for SHIFT */
     nn_ptr eig_pre;             /* Shoup precomputations, or NULL */
@@ -214,13 +222,20 @@ slong _nmod_mat_row_rank_profile(char * indep, nmod_mat_t X);
         computed may differ from that of K_{s,d}, and deltas[i] = d_i + 1
         and row i of T is undefined for such i).
 
-    Degree bounds larger than n are replaced by n; degrees == NULL means
-    n for all rows, shift == NULL means zero shift. The parameter chunk
-    is the maximal number of rows processed at once (0: default).
+    Degree bounds larger than n are replaced by n, and by op->mpdeg if
+    larger (this does not change the profile); degrees == NULL means n for
+    all rows, shift == NULL means zero shift. The parameter chunk is the
+    maximal number of rows processed at once (0: default). Index i takes at
+    most max(1, f_i) rows in a chunk, f_i being its number of rows already
+    in the profile, or max(1, f_i, p_i - f_i) as long as the prediction
+    holds (op->predict) and f_i >= 2^logpow, p_i being its number of rows
+    (i, j), j < d_i, among the first n rows in priority order: these rows
+    form the profile for generic inputs.
 
     For a dense operator, a run of c rows (i, j0), ..., (i, j0 + c - 1) of
     one index in a chunk is generated from the rows at distance
-    e = min(2^logpow, largest power of two <= c), as (i, j) = (i, j - e) M^e,
+    e = min(2^logpow, largest power of two <= min(c, j0)) (or 1 if j0 = 0),
+    as (i, j) = (i, j - e) M^e,
     with the powers M^e computed by squaring when first needed (as in
     Keller-Gehrig's algorithm); only M and the highest power computed so
     far are kept, and the runs which would need a lower power use M.

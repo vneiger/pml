@@ -14,6 +14,7 @@
 #include <flint/ulong_extras.h>
 #include <flint/nmod.h>
 #include <flint/nmod_mat.h>
+#include <flint/nmod_poly.h>
 #include "nmod_mat_extra/krylov_impl.h"
 
 /* random Jordan matrix description with few distinct eigenvalues */
@@ -232,6 +233,17 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
             nb = _rand_jordan(eig, sizes, n, n_randint(state, 3), state, p);
             _jordan_to_dense(M, eig, sizes, nb);
             _nmod_mat_krylov_op_init_jordan(op, eig, sizes, nb, M->mod);
+
+            /* degree of the minimal polynomial */
+            {
+                nmod_poly_t mu;
+                nmod_poly_init(mu, p);
+                nmod_mat_minpoly(mu, M);
+                if (nmod_poly_degree(mu) != op->mpdeg)
+                    TEST_FUNCTION_FAIL("degree of the minimal polynomial: %wd, expected %wd\n",
+                            op->mpdeg, nmod_poly_degree(mu));
+                nmod_poly_clear(mu);
+            }
         }
         else
         {
@@ -254,6 +266,9 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
                automatic choice (logpow < 0) */
             op->logpow = (k == 0) ? 0 : (slong) n_randint(state, 7) - 1;
             op->powruns = n_randint(state, 4);
+            /* budgets: from the predicted profile until it fails (default),
+               doubling only, or from the prediction always */
+            op->predict = n_randint(state, 3);
 
             if (k % 2 == 0)
             {
@@ -425,6 +440,7 @@ TEST_FUNCTION_START(nmod_mat_krylov_basis, state)
 
         op->logpow = (slong) n_randint(state, 7) - 1;
         op->powruns = n_randint(state, 4);
+        op->predict = n_randint(state, 3);
 
         /* random degree bounds: when declared valid, the profile is that
            of the Krylov matrix with these bounds */
