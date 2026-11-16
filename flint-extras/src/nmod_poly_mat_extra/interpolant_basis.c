@@ -153,17 +153,20 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
 
     /* R_i = P1(pts[d1+i]) * E_{d1+i}, i = 0..d2-1 -- unlike pmbasis's
        residual (a middle product), these are d2 evaluate-then-multiply
-       operations. With few columns (n^2 <= m and 8 n <= m), they are
+       operations. With few columns (n^2 <= m and 16 n <= m), they are
        computed from the coefficients of P1, deg(P1) + 1 products by
        [E_{d1} | ... | E_{d-1}] (_nmod_poly_mat_evaluate_mul_columns),
-       otherwise with one evaluation of P1 per point. Sandbox (30-bit
-       prime, 128 points, P1 of degree 1 to 16): coefficients / evaluations
-       0.04 to 0.4 for n = 1 and m = 16 to 256, about 1 at n^2 = m for
-       m >= 64; for m = 16 and n = 4, up to 1.6 (pmintbasis 0.7x before
-       8 n <= m). */
+       otherwise with one evaluation of P1 per point. Sandbox, 30-bit
+       prime, pmintbasis with one or the other at every level, d up to
+       4096: the coefficients are faster at every d when 16 n <= m (16 x 1
+       1.25x, 32 x 2 1.5x, 64 x 2 3.2x, 64 x 4 1.6x, 128 x 8 1.3 to 1.4x,
+       256 x 16 1.1 to 1.2x); at 8 n = m they are faster for small d but
+       slower for large d (16 x 2: 1.14x at d = 64, 0.74x at d = 4096;
+       32 x 4: 0.90x at d = 2048; 64 x 8: 0.89x at d = 2048), and at
+       4 n = m slower (pmintbasis 16 x 4 0.7x). */
     nmod_mat_struct * R = (nmod_mat_struct *) flint_malloc(FLINT_MAX(d2, 1) * sizeof(nmod_mat_struct));
     nmod_mat_t Rcat;
-    const int coeffs = (n * n <= m && 8 * n <= m);
+    const int coeffs = (n * n <= m && 16 * n <= m);
     if (coeffs)
     {
         nmod_mat_t Ecat, W;

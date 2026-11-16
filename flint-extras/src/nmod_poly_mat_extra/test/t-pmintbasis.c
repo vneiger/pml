@@ -132,6 +132,14 @@ TEST_FUNCTION_START(nmod_poly_mat_pmintbasis, state)
             m = 4 + n_randint(state, 17);
             n = 1 + n_randint(state, FLINT_MAX(1, m / 4));
         }
+        /* every fourth input: n^2 <= m and 16 n <= m, so that the residual
+           is computed from the coefficients of the first basis (when the
+           order is too large for the leaf at the top) */
+        if (i % 4 == 1)
+        {
+            m = 16 + n_randint(state, 17);
+            n = 1 + n_randint(state, m / 16);
+        }
 
         /* nbits' floor must guarantee some prime of that bit length exceeds
            bound, or the retry loop below never terminates (nbits is fixed

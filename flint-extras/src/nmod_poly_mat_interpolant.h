@@ -202,7 +202,7 @@ void nmod_poly_mat_mintbasis(nmod_poly_mat_t intbas,
  *
  * The residual here is `d2` evaluate-then-multiply operations,
  * `R_i = P1(pts[d1+i])*E_{d1+i}`, `i=0..d2-1`. When `n^2 <= m` and
- * `8 n <= m`, they are computed from the coefficients of `P1`, as
+ * `16 n <= m`, they are computed from the coefficients of `P1`, as
  * `deg(P1)+1` products of constant matrices by `[E_{d1} | ... | E_{d-1}]`
  * combined by Horner's rule at the points, otherwise by one evaluation of
  * `P1` per point.

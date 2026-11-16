@@ -82,9 +82,10 @@ TEST_FUNCTION_START(nmod_poly_mat_interpolant_basis, state)
         int shift_kind, ok = 1;
         _nmod_poly_mat_relation_basis_dac_params_t prm;
 
+        /* m up to 20: the residual from the coefficients needs 16 n <= m */
         if (n_randint(state, 2))
         {
-            m = 1 + n_randint(state, 12);
+            m = 1 + n_randint(state, 20);
             D = n_randint(state, 120);
         }
         else

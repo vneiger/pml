@@ -108,7 +108,7 @@ _nmod_poly_mat_interpolant_basis(nmod_poly_mat_t P, slong * shift,
         nmod_mat_window_clear(V1);
 
         /* residual: from the coefficients of P1 when the second half has few
-         * columns per point (n^2 <= m and 8 n <= m for its average n, as in
+         * columns per point (n^2 <= m and 16 n <= m for its average n, as in
          * pmintbasis), otherwise one evaluation of P1 for each of its
          * points */
         nmod_mat_init(V2, m, D - c, V->mod.n);
@@ -121,7 +121,7 @@ _nmod_poly_mat_interpolant_basis(nmod_poly_mat_t P, slong * shift,
                 np2++;
             n2 = (D - c + np2 - 1) / np2;
 
-            if (n2 * n2 <= m && 8 * n2 <= m)
+            if (n2 * n2 <= m && 16 * n2 <= m)
             {
                 nmod_mat_window_init(W, V, 0, c, m, D);
                 _nmod_poly_mat_evaluate_mul_columns(V2, P1, W, pts + c);
