@@ -139,13 +139,13 @@ int _nmod_mat_det_solve_lu(ulong * c, nmod_mat_t X, nmod_mat_t A, const nmod_mat
  * the shift and however D is split into columns, whereas the cost of pmbasis
  * and pmintbasis grows with m and decreases with the number of columns n.
  * Krylov is chosen when
- *     n < m   and   D <= alpha m / n^(1/3),
- * with two values of alpha:
- * - NMOD_POLY_MAT_PMBASIS_KRYLOV_ALPHA, inside pmbasis and pmintbasis (one
+ *     n < m   and   D <= c m / n^(1/3),
+ * with two values of the cutoff c:
+ * - NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF, inside pmbasis and pmintbasis (one
  *   order d, D = n d): the test is made at each node of the recursion, so
  *   that Krylov replaces the whole subtree below the first node where it
  *   holds;
- * - NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_ALPHA, in the divide and conquer
+ * - NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF, in the divide and conquer
  *   for orders per column (nmod_poly_mat_approximant_basis and
  *   nmod_poly_mat_interpolant_basis), where the alternative to a direct call
  *   is a split whose two halves have dense m x m products, and where nodes
@@ -157,26 +157,26 @@ int _nmod_mat_det_solve_lu(ulong * c, nmod_mat_t X, nmod_mat_t A, const nmod_mat
  * The values are first estimates from one machine (Intel Xeon with AVX-512
  * and IFMA, 30-bit prime; n = 1 to m/2, D = m/4 to 32m), not yet tuned.
  * TODO tune these values */
-#ifndef NMOD_POLY_MAT_PMBASIS_KRYLOV_ALPHA
-# define NMOD_POLY_MAT_PMBASIS_KRYLOV_ALPHA 8.0
+#ifndef NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF
+# define NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF 8.0
 #endif
 
-#ifndef NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_ALPHA
-# define NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_ALPHA 8.0
+#ifndef NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF
+# define NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF 8.0
 #endif
 
 /* whether a node with m rows, n columns (or conditions per point) and D
- * conditions in total goes to Krylov: n < m and D^3 n <= (alpha m)^3; never
- * for n = 0, D = 0 or alpha <= 0 */
+ * conditions in total goes to Krylov: n < m and D^3 n <= (cutoff m)^3; never
+ * for n = 0, D = 0 or cutoff <= 0 */
 static inline int
-_nmod_poly_mat_krylov_leaf_wanted(slong m, slong n, slong D, double alpha)
+_nmod_poly_mat_krylov_wanted(slong m, slong n, slong D, double cutoff)
 {
     double a;
 
-    if (n < 1 || n >= m || D < 1 || alpha <= 0.0)
+    if (n < 1 || n >= m || D < 1 || cutoff <= 0.0)
         return 0;
 
-    a = alpha * (double) m;
+    a = cutoff * (double) m;
     return (double) D * (double) D * (double) D * (double) n <= a * a * a;
 }
 
@@ -196,16 +196,17 @@ void _nmod_poly_mat_pmintbasis_krylov_leaf(nmod_poly_mat_t P, slong * shift,
                                            const ulong * pts,
                                            const nmod_mat_struct * E, slong d);
 
-/* pmbasis and pmintbasis with the value of alpha as a parameter (alpha = 0:
- * no Krylov leaf); nmod_poly_mat_pmbasis and nmod_poly_mat_pmintbasis use
- * NMOD_POLY_MAT_PMBASIS_KRYLOV_ALPHA. For profiling. */
+/* pmbasis and pmintbasis with the Krylov cutoff as a parameter
+ * (krylov_cutoff = 0: no Krylov leaf); nmod_poly_mat_pmbasis and
+ * nmod_poly_mat_pmintbasis use NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF. For
+ * profiling and tests. */
 void _nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas, slong * shift,
                             const nmod_poly_mat_t pmat, slong order,
-                            double alpha);
+                            double krylov_cutoff);
 
 void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas, slong * shift,
                                const ulong * pts, const nmod_mat_struct * E,
-                               slong d, double alpha);
+                               slong d, double krylov_cutoff);
 
 
 /* ------------------------------------------------------------------------ */

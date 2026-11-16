@@ -126,7 +126,7 @@ TEST_FUNCTION_START(nmod_poly_mat_pmintbasis, state)
         slong d = n_randint(state, 250); /* well beyond a small overridden threshold */
         /* every other input: few columns compared to the number of rows, so
            that the Krylov leaf is used, at the top of the recursion or below
-           (n < m and n d <= alpha m / n^(1/3)) */
+           (n < m and n d <= c m / n^(1/3)) */
         if (i % 2)
         {
             m = 4 + n_randint(state, 17);

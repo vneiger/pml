@@ -77,7 +77,7 @@ void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
                               slong d)
 {
     _nmod_poly_mat_pmintbasis(intbas, shift, pts, E, d,
-                              NMOD_POLY_MAT_PMBASIS_KRYLOV_ALPHA);
+                              NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF);
 }
 
 void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
@@ -85,10 +85,10 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
                                const ulong * pts,
                                const nmod_mat_struct * E,
                                slong d,
-                               double alpha)
+                               double krylov_cutoff)
 {
     /* Krylov leaf: replaces the subtree below this node */
-    if (d > 0 && _nmod_poly_mat_krylov_leaf_wanted(intbas->r, E[0].c, E[0].c * d, alpha))
+    if (d > 0 && _nmod_poly_mat_krylov_wanted(intbas->r, E[0].c, E[0].c * d, krylov_cutoff))
     {
         _nmod_poly_mat_pmintbasis_krylov_leaf(intbas, shift, pts, E, d);
         return;
@@ -110,7 +110,7 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
        than d1, extra entries simply unused. */
     nmod_poly_mat_t P1;
     nmod_poly_mat_init(P1, m, m, intbas->modulus);
-    _nmod_poly_mat_pmintbasis(P1, shift, pts, E, d1, alpha);
+    _nmod_poly_mat_pmintbasis(P1, shift, pts, E, d1, krylov_cutoff);
 
    /* R_i = P1(pts[d1+i]) * E_{d1+i}, i = 0..d2-1 -- unlike pmbasis's
        residual (a middle product), this is d2 independent evaluate-then-
@@ -129,7 +129,7 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
 
     nmod_poly_mat_t P2;
     nmod_poly_mat_init(P2, m, m, intbas->modulus);
-    _nmod_poly_mat_pmintbasis(P2, shift, pts + d1, R, d2, alpha);
+    _nmod_poly_mat_pmintbasis(P2, shift, pts + d1, R, d2, krylov_cutoff);
     for (slong idx = 0; idx < d2; idx++)
         nmod_mat_clear(R + idx);
     flint_free(R);

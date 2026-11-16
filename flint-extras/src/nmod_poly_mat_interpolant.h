@@ -209,7 +209,7 @@ void nmod_poly_mat_mintbasis(nmod_poly_mat_t intbas,
  *
  * Krylov leaves: as in pmbasis (see @ref pmbasis), at each node of the
  * recursion, with `E_k` of size `m x n` and `d` points at this node, if `n <
- * m` and `n d <= alpha m / n^(1/3)`, the basis of this node is computed
+ * m` and `n d <= c m / n^(1/3)`, the basis of this node is computed
  * directly by ::nmod_poly_mat_interpolant_basis_krylov, on the `m x nd`
  * matrix `[E_0 | ... | E_{d-1}]` with each point repeated `n` times. The
  * output is then `shift`-Popov if such a leaf is used at the top of the

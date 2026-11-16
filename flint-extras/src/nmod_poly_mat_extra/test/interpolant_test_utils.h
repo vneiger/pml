@@ -33,7 +33,7 @@
    a valid interpolant basis. */
 static int _pmintbasis_uses_krylov(slong m, slong n, slong d)
 {
-    if (_nmod_poly_mat_krylov_leaf_wanted(m, n, n * d, NMOD_POLY_MAT_PMBASIS_KRYLOV_ALPHA))
+    if (_nmod_poly_mat_krylov_wanted(m, n, n * d, NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF))
         return 1;
     if (d <= PMINTBASIS_THRES)
         return 0;

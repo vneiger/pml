@@ -312,15 +312,15 @@ void nmod_poly_mat_mbasis(nmod_poly_mat_t appbas,
  *
  * Krylov leaves: at each node of the recursion, with `m x n` the dimensions
  * of `pmat` and `order` the order at this node, if `n < m` and `n order <=
- * alpha m / n^(1/3)` (for a constant alpha, see below), the basis of this node
+ * c m / n^(1/3)` (for a constant c, see below), the basis of this node
  * is computed directly by ::nmod_poly_mat_approximant_basis_krylov (linear
  * algebra on a Krylov matrix, about `D^2 (D + m)` operations for `D = n
  * order`), which is faster than the recursion for inputs with few columns and
  * an order that is not too large compared to `m / n`. This gives the
  * `shift`-Popov basis of the node; when such a leaf is used at the top of the
  * recursion, `appbas` is the `shift`-Popov basis, and in any case it is
- * `shift`-ordered weak Popov. The value of `alpha` is
- * NMOD_POLY_MAT_PMBASIS_KRYLOV_ALPHA (nmod_poly_mat_extra/impl.h).
+ * `shift`-ordered weak Popov. The value of `c` is
+ * NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF (nmod_poly_mat_extra/impl.h).
  *
  * Size of the integers (see @ref IntegerSizes): as in `mbasis`, each entry of
  * `shift` increases by at most `order` during the computation; it is assumed

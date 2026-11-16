@@ -39,7 +39,7 @@ static void _pmintbasis_geometric_rec(nmod_poly_mat_t intbas,
     const slong m = intbas->r;
 
     /* Krylov leaf: replaces the subtree below this node */
-    if (_nmod_poly_mat_krylov_leaf_wanted(m, n, n * d, NMOD_POLY_MAT_PMBASIS_KRYLOV_ALPHA))
+    if (_nmod_poly_mat_krylov_wanted(m, n, n * d, NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF))
     {
         ulong * pts = (ulong *) flint_malloc(d * sizeof(ulong));
         ulong cur = rho_start;

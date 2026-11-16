@@ -47,10 +47,10 @@ void _nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
                             slong * shift,
                             const nmod_poly_mat_t ipmat,
                             slong order,
-                            double alpha)
+                            double krylov_cutoff)
 {
     /* Krylov leaf: replaces the subtree below this node */
-    if (_nmod_poly_mat_krylov_leaf_wanted(ipmat->r, ipmat->c, ipmat->c * order, alpha))
+    if (_nmod_poly_mat_krylov_wanted(ipmat->r, ipmat->c, ipmat->c * order, krylov_cutoff))
     {
         slong * orders = flint_malloc(ipmat->c * sizeof(slong));
         for (slong j = 0; j < ipmat->c; j++)
@@ -79,11 +79,11 @@ void _nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
     nmod_poly_mat_init(appbas2, pmat->r, pmat->r, pmat->modulus);
     nmod_poly_mat_init(residual, pmat->r, pmat->c, pmat->modulus);
 
-    _nmod_poly_mat_pmbasis(appbas, shift, pmat, order1, alpha);
+    _nmod_poly_mat_pmbasis(appbas, shift, pmat, order1, krylov_cutoff);
 
     nmod_poly_mat_mulmid(residual, appbas, pmat, order1, order);
 
-    _nmod_poly_mat_pmbasis(appbas2, shift, residual, order2, alpha);
+    _nmod_poly_mat_pmbasis(appbas2, shift, residual, order2, krylov_cutoff);
 
     nmod_poly_mat_multiply(appbas, appbas2, appbas);
 
@@ -98,5 +98,5 @@ void nmod_poly_mat_pmbasis(nmod_poly_mat_t appbas,
                            slong order)
 {
     _nmod_poly_mat_pmbasis(appbas, shift, pmat, order,
-                           NMOD_POLY_MAT_PMBASIS_KRYLOV_ALPHA);
+                           NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF);
 }
