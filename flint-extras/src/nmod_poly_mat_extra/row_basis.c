@@ -122,12 +122,12 @@ static void _right_kernel_nonpositive(nmod_poly_mat_t C, slong * tt,
     for (slong l = 0; l < k; l++)
         orders[l] = FLINT_MAX(t[l] + 1, 0);
 
-    /* M = K^T */
-    nmod_poly_mat_t M;
+    /* M = K^T, K being the first k rows of the input */
+    nmod_poly_mat_t Kwin, M;
+    nmod_poly_mat_window_init(Kwin, K, 0, 0, k, m);
     nmod_poly_mat_init(M, m, k, K->modulus);
-    for (slong l = 0; l < k; l++)
-        for (slong i = 0; i < m; i++)
-            nmod_poly_set(nmod_poly_mat_entry(M, i, l), nmod_poly_mat_entry(K, l, i));
+    nmod_poly_mat_transpose(M, Kwin);
+    nmod_poly_mat_window_clear(Kwin);
 
     nmod_poly_mat_t P;
     nmod_poly_mat_init(P, m, m, K->modulus);

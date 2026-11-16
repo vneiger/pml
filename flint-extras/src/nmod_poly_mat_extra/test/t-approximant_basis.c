@@ -99,7 +99,7 @@ TEST_FUNCTION_START(nmod_poly_mat_approximant_basis, state)
         nmod_poly_mat_t F, P, Q, Pe, Fe;
         slong * orders, * shift, * rdeg, * rdeg_ref, * sh;
         int shift_kind, use_krylov_ref, ok = 1;
-        _nmod_poly_mat_basis_dac_param_t prm;
+        _nmod_poly_mat_relation_basis_dac_params_t prm;
 
         /* small m with large orders makes the divide and conquer split */
         if (n_randint(state, 2))
@@ -229,11 +229,11 @@ TEST_FUNCTION_START(nmod_poly_mat_approximant_basis, state)
          * many, both splits, close orders or not */
         for (int variant = 0; variant < 4 && ok; variant++)
         {
-            _nmod_poly_mat_basis_dac_param_init(prm);
+            _nmod_poly_mat_relation_basis_dac_params_init(prm);
             prm->leaf_cutoff = n_randint(state, 2) ? 0.0 : 8.0;
             prm->direct_cutoff = (variant & 1) ? 0.0 : 0.5 + n_randint(state, 64);
             prm->split = (variant >> 1) & 1;
-            prm->raise_slack = n_randint(state, 2) ? -1.0 : 0.25 * n_randint(state, 8);
+            prm->order_slack = n_randint(state, 2) ? -1.0 : 0.25 * n_randint(state, 8);
 
             for (slong i = 0; i < m; i++)
                 sh[i] = shift[i];

@@ -80,7 +80,7 @@ TEST_FUNCTION_START(nmod_poly_mat_interpolant_basis, state)
         nn_ptr pts, spts;
         slong * shift, * rdeg, * rdeg_ref, * sh, * perm;
         int shift_kind, ok = 1;
-        _nmod_poly_mat_basis_dac_param_t prm;
+        _nmod_poly_mat_relation_basis_dac_params_t prm;
 
         if (n_randint(state, 2))
         {
@@ -210,7 +210,7 @@ TEST_FUNCTION_START(nmod_poly_mat_interpolant_basis, state)
 
         for (int variant = 0; variant < 2 && ok; variant++)
         {
-            _nmod_poly_mat_basis_dac_param_init(prm);
+            _nmod_poly_mat_relation_basis_dac_params_init(prm);
             prm->leaf_cutoff = n_randint(state, 2) ? 0.0 : 6.0;
             prm->direct_cutoff = variant ? 0.0 : 0.5 + n_randint(state, 64);
 

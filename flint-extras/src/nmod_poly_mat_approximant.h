@@ -138,7 +138,7 @@ extern "C" {
  *   remaining orders (middle products, columns with windows of similar
  *   lengths grouped together), and their product.
  * The values of c and eps are NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF
- * and NMOD_POLY_MAT_APPROXIMANT_BASIS_RAISE_SLACK (nmod_poly_mat_extra/impl.h).
+ * and NMOD_POLY_MAT_APPROXIMANT_BASIS_ORDER_SLACK (nmod_poly_mat_extra/impl.h).
  * For `POPOV`, unless the basis found is already in `shift`-Popov form, a
  * second basis is computed with the shift `-delta`, where `delta` is the
  * `shift`-pivot degree, and normalized by the inverse of its leading matrix,

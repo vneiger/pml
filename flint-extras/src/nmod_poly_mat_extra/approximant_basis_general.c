@@ -57,7 +57,7 @@ _quasi_uniform_cut(const slong * orders, slong n, slong D, slong dmax)
 void
 _nmod_poly_mat_approximant_basis(nmod_poly_mat_t P, slong * shift,
                                  const nmod_poly_mat_t F, const slong * orders,
-                                 const _nmod_poly_mat_basis_dac_param_t prm)
+                                 const _nmod_poly_mat_relation_basis_dac_params_t prm)
 {
     const slong m = F->r, n = F->c;
     slong nact = 0, D = 0, dmin = WORD_MAX, dmax = 0;
@@ -108,7 +108,7 @@ _nmod_poly_mat_approximant_basis(nmod_poly_mat_t P, slong * shift,
     }
 
     /* close orders: pmbasis on x^(dmax - d_b) F[:,b], at order dmax */
-    if (prm->raise_slack >= 0.0 && (double) nact * dmax <= (1.0 + prm->raise_slack) * D)
+    if (prm->order_slack >= 0.0 && (double) nact * dmax <= (1.0 + prm->order_slack) * D)
     {
         nmod_poly_mat_t G;
         nmod_poly_mat_init(G, m, nact, F->modulus);
@@ -214,7 +214,7 @@ _nmod_poly_mat_approximant_basis(nmod_poly_mat_t P, slong * shift,
 
 /* Popov form, from a second basis computed with the shift -delta */
 void
-_nmod_poly_mat_popov_from_second_basis(nmod_poly_mat_t P,
+_nmod_poly_mat_popov_from_second_relation_basis(nmod_poly_mat_t P,
         const slong * shift, const slong * rdeg,
         void (* basis)(nmod_poly_mat_t, slong *, const void *), const void * data)
 {
@@ -240,7 +240,8 @@ _nmod_poly_mat_popov_from_second_basis(nmod_poly_mat_t P,
     nmod_mat_init(C, m, m, P->modulus);
     nmod_poly_mat_leading_matrix(C, R, mdelta, ROW_LOWER);
     if (!nmod_mat_inv(L, C))
-        flint_throw(FLINT_ERROR, "_nmod_poly_mat_popov_from_second_basis: singular leading matrix\n");
+        flint_throw(FLINT_ERROR, "_nmod_poly_mat_popov_from_second_relation_basis: "
+                    "singular leading matrix\n");
 
     /* P = L^(-1) R, coefficient by coefficient */
     nmod_mat_poly_init(Rp, m, m, P->modulus);
@@ -266,7 +267,7 @@ typedef struct
 {
     const nmod_poly_mat_struct * F;
     const slong * orders;
-    const _nmod_poly_mat_basis_dac_param_struct * prm;
+    const _nmod_poly_mat_relation_basis_dac_params_struct * prm;
 }
 _approximant_basis_data_struct;
 
@@ -284,7 +285,7 @@ nmod_poly_mat_approximant_basis(nmod_poly_mat_t P, slong * rdeg,
 {
     const slong m = F->r;
     slong * s;
-    _nmod_poly_mat_basis_dac_param_t prm;
+    _nmod_poly_mat_relation_basis_dac_params_t prm;
 
     if (P->r != m || P->c != m)
         flint_throw(FLINT_ERROR, "nmod_poly_mat_approximant_basis: P must be F->r x F->r\n");
@@ -303,7 +304,7 @@ nmod_poly_mat_approximant_basis(nmod_poly_mat_t P, slong * rdeg,
     for (slong i = 0; i < m; i++)
         s[i] = shift ? shift[i] : 0;
 
-    _nmod_poly_mat_basis_dac_param_init(prm);
+    _nmod_poly_mat_relation_basis_dac_params_init(prm);
     _nmod_poly_mat_approximant_basis(P, s, F, orders, prm);
 
     if (form == POPOV)
@@ -315,8 +316,8 @@ nmod_poly_mat_approximant_basis(nmod_poly_mat_t P, slong * rdeg,
         if (!nmod_poly_mat_is_popov(P, s0, ROW_LOWER))
         {
             _approximant_basis_data_struct dt = {F, orders, prm};
-            _nmod_poly_mat_popov_from_second_basis(P, s0, s,
-                                                   _approximant_basis_callback, &dt);
+            _nmod_poly_mat_popov_from_second_relation_basis(P, s0, s,
+                                                            _approximant_basis_callback, &dt);
         }
         flint_free(s0);
     }

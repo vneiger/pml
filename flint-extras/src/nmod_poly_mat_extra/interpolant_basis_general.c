@@ -30,7 +30,7 @@
 
         V2[:, b] = P1(pts[b]) V[:, b],
 
-    computed from the coefficients of P1 (_nmod_poly_mat_evaluate_columns)
+    computed from the coefficients of P1 (_nmod_poly_mat_evaluate_mul_columns)
     when there are few columns per point, and with one evaluation of P1 for
     each point otherwise. The basis is P2 P1, as in pmintbasis.
 */
@@ -38,7 +38,7 @@
 void
 _nmod_poly_mat_interpolant_basis(nmod_poly_mat_t P, slong * shift,
                                  const nmod_mat_t V, nn_srcptr pts,
-                                 const _nmod_poly_mat_basis_dac_param_t prm)
+                                 const _nmod_poly_mat_relation_basis_dac_params_t prm)
 {
     const slong m = V->r, D = V->c;
     slong ndist = 0, nmin = WORD_MAX, nmax = 0;
@@ -124,7 +124,7 @@ _nmod_poly_mat_interpolant_basis(nmod_poly_mat_t P, slong * shift,
             if (n2 * n2 <= m && 8 * n2 <= m)
             {
                 nmod_mat_window_init(W, V, 0, c, m, D);
-                _nmod_poly_mat_evaluate_columns(V2, P1, W, pts + c);
+                _nmod_poly_mat_evaluate_mul_columns(V2, P1, W, pts + c);
                 nmod_mat_window_clear(W);
             }
             else
@@ -163,7 +163,7 @@ typedef struct
 {
     const nmod_mat_struct * V;
     nn_srcptr pts;
-    const _nmod_poly_mat_basis_dac_param_struct * prm;
+    const _nmod_poly_mat_relation_basis_dac_params_struct * prm;
 }
 _interpolant_basis_data_struct;
 
@@ -200,7 +200,7 @@ nmod_poly_mat_interpolant_basis(nmod_poly_mat_t P, slong * rdeg,
     int sorted = 1;
     nmod_mat_t Vs;
     nn_ptr spts;
-    _nmod_poly_mat_basis_dac_param_t prm;
+    _nmod_poly_mat_relation_basis_dac_params_t prm;
 
     if (P->r != m || P->c != m)
         flint_throw(FLINT_ERROR, "nmod_poly_mat_interpolant_basis: P must be V->r x V->r\n");
@@ -246,7 +246,7 @@ nmod_poly_mat_interpolant_basis(nmod_poly_mat_t P, slong * rdeg,
     for (slong i = 0; i < m; i++)
         s[i] = shift ? shift[i] : 0;
 
-    _nmod_poly_mat_basis_dac_param_init(prm);
+    _nmod_poly_mat_relation_basis_dac_params_init(prm);
     _nmod_poly_mat_interpolant_basis(P, s, Vs, spts, prm);
 
     if (form == POPOV)
@@ -264,8 +264,8 @@ nmod_poly_mat_interpolant_basis(nmod_poly_mat_t P, slong * rdeg,
         if (!nmod_poly_mat_is_popov(P, s0, ROW_LOWER))
         {
             _interpolant_basis_data_struct dt = {Vs, spts, prm};
-            _nmod_poly_mat_popov_from_second_basis(P, s0, s,
-                                                   _interpolant_basis_callback, &dt);
+            _nmod_poly_mat_popov_from_second_relation_basis(P, s0, s,
+                                                            _interpolant_basis_callback, &dt);
         }
         flint_free(s0);
     }

@@ -348,7 +348,7 @@ profile_orders(ulong p, slong mmax, slong rmax, flint_rand_t state)
     const double fr[6] = {1, 2, 4, 8, 16, 32};
     /* variants of the divide and conquer: direct cutoff, split, eps (the
      * default first: NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF,
-     * quasi-uniform cut, NMOD_POLY_MAT_APPROXIMANT_BASIS_RAISE_SLACK) */
+     * quasi-uniform cut, NMOD_POLY_MAT_APPROXIMANT_BASIS_ORDER_SLACK) */
     const double va[7] = {-1, 4, 16, -1, -1, -1, -1};
     const int vs[7] = {0, 0, 0, 1, 0, 0, 0};
     const double ve[7] = {-2, -2, -2, -2, -1.0, 0.5, 1.0};
@@ -363,7 +363,7 @@ profile_orders(ulong p, slong mmax, slong rmax, flint_rand_t state)
         double te, tk = -1, t[7];
         slong * sh0, * sh, * ref;
         nmod_poly_mat_t F, Fe, P;
-        _nmod_poly_mat_basis_dac_param_t prm;
+        _nmod_poly_mat_relation_basis_dac_params_t prm;
         int ok = 1;
 
         n = _profile_orders(orders, k, m, fr[c] * m, state);
@@ -403,12 +403,12 @@ profile_orders(ulong p, slong mmax, slong rmax, flint_rand_t state)
         }
         for (int v = 0; v < 7; v++)
         {
-            _nmod_poly_mat_basis_dac_param_init(prm);
+            _nmod_poly_mat_relation_basis_dac_params_init(prm);
             if (va[v] > 0)
                 prm->direct_cutoff = va[v];
             prm->split = vs[v];
             if (ve[v] > -2)
-                prm->raise_slack = ve[v];
+                prm->order_slack = ve[v];
             if (v == 0)  /* warm-up run, not timed */
             {
                 memcpy(sh, sh0, m * sizeof(slong));
@@ -514,7 +514,7 @@ profile_interp(ulong p, slong mmax, slong rmax, flint_rand_t state)
         ulong * pts;
         nmod_mat_t V;
         nmod_poly_mat_t P;
-        _nmod_poly_mat_basis_dac_param_t prm;
+        _nmod_poly_mat_relation_basis_dac_params_t prm;
         int ok = 1;
 
         if ((ulong) D + 2 >= p)
@@ -531,7 +531,7 @@ profile_interp(ulong p, slong mmax, slong rmax, flint_rand_t state)
 
         for (int v = 0; v < 3; v++)
         {
-            _nmod_poly_mat_basis_dac_param_init(prm);
+            _nmod_poly_mat_relation_basis_dac_params_init(prm);
             if (va[v] > 0)
                 prm->direct_cutoff = va[v];
             if (v == 0)  /* warm-up run, not timed */
