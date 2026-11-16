@@ -215,6 +215,11 @@ void _nmod_poly_mat_approximant_basis_krylov_leaf(nmod_poly_mat_t P, slong * shi
                                                   const nmod_poly_mat_t F,
                                                   const slong * orders);
 
+/* interpolant basis of (V, pts), one point per column of V */
+void _nmod_poly_mat_interpolant_basis_krylov_leaf(nmod_poly_mat_t P, slong * shift,
+                                                  const nmod_mat_t V,
+                                                  nn_srcptr pts);
+
 /* interpolant basis of (E, pts) as in nmod_poly_mat_pmintbasis: d matrices
  * E[k] of size m x n at the points pts[0], ..., pts[d-1] */
 void _nmod_poly_mat_pmintbasis_krylov_leaf(nmod_poly_mat_t P, slong * shift,
@@ -287,6 +292,13 @@ _nmod_poly_mat_basis_dac_param_init(_nmod_poly_mat_basis_dac_param_t prm)
 void _nmod_poly_mat_approximant_basis(nmod_poly_mat_t P, slong * shift,
                                       const nmod_poly_mat_t F,
                                       const slong * orders,
+                                      const _nmod_poly_mat_basis_dac_param_t prm);
+
+/* shift-ordered weak Popov interpolant basis of (V, pts), one point per
+ * column of V, with the contract of pmintbasis (shift in, shifted row degree
+ * out); the columns of V must be sorted by point (equal points adjacent) */
+void _nmod_poly_mat_interpolant_basis(nmod_poly_mat_t P, slong * shift,
+                                      const nmod_mat_t V, nn_srcptr pts,
                                       const _nmod_poly_mat_basis_dac_param_t prm);
 
 /* the s-Popov basis from an s-ordered weak Popov basis P of the same module,

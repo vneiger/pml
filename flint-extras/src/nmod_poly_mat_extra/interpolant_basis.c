@@ -37,6 +37,18 @@ void nmod_poly_mat_mintbasis(nmod_poly_mat_t intbas,
 
 
 
+void _nmod_poly_mat_interpolant_basis_krylov_leaf(nmod_poly_mat_t P,
+                                                  slong * shift,
+                                                  const nmod_mat_t V,
+                                                  nn_srcptr pts)
+{
+    nmod_poly_mat_interpolant_basis_krylov(P, V, pts, shift);
+
+    /* P is shift-Popov: the pivot of row i is P[i,i] */
+    for (slong i = 0; i < P->r; i++)
+        shift[i] += nmod_poly_degree(nmod_poly_mat_entry(P, i, i));
+}
+
 void _nmod_poly_mat_pmintbasis_krylov_leaf(nmod_poly_mat_t P,
                                            slong * shift,
                                            const ulong * pts,
@@ -60,11 +72,7 @@ void _nmod_poly_mat_pmintbasis_krylov_leaf(nmod_poly_mat_t P,
             vpts[k * n + j] = pts[k];
     }
 
-    nmod_poly_mat_interpolant_basis_krylov(P, V, vpts, shift);
-
-    /* P is shift-Popov: the pivot of row i is P[i,i] */
-    for (slong i = 0; i < m; i++)
-        shift[i] += nmod_poly_degree(nmod_poly_mat_entry(P, i, i));
+    _nmod_poly_mat_interpolant_basis_krylov_leaf(P, shift, V, vpts);
 
     _nmod_vec_clear(vpts);
     nmod_mat_clear(V);
