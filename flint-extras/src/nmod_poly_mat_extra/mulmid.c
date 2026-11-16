@@ -20,6 +20,7 @@
 #include "nmod_poly_extra.h"  /* for NMOD_POLY_CAN_USE_GEOMETRIC */
 #include "nmod_poly_mat_multiply.h"
 #include "nmod_poly_mat_utils.h"
+#include "nmod_mat_poly.h"
 #include "impl.h"                 /* for PML_NMOD_MAT_MUL_IFMA, views */
 
 /*------------------------------------------------------------*/
@@ -44,6 +45,104 @@ void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t res,
 
 
 /*------------------------------------------------------------*/
+/* coeffs: products of coefficient matrices                   */
+/*------------------------------------------------------------*/
+
+/* res = sum over l < len1 of A_l * B_[nlo-l, nhi-l), where A_l is the
+ * coefficient of degree l of pmat1 and B_[a, b) the matrix of coefficients
+ * a, ..., b-1 of each entry of pmat2: for each l, one product of the m x k
+ * coefficient A_l by a k x (n (nhi - nlo)) constant matrix (the window of
+ * coefficients of each column of pmat2, side by side). */
+
+/* TODO: threshold is a first estimate from one machine, not tuned:
+ * NMOD_POLY_MAT_MULMID_COEFFS_K = 64 (impl.h).
+ *
+ * TODO: the name of the function should probably be asymetric (this
+ * is good when e.g. pmat1 has low degree compared to pmat2, pmat2 has
+ * few columns, etc: we would not apply the same function in the
+ * transposed situation); or there could be a switch in this function
+ * so that it performs the other symetric action when the parameters are
+ * relevant.
+ *
+ * TODO maybe the input should be mat_poly for pmat1, and poly_mat for pmat2?
+ */
+void _nmod_poly_mat_mulmid_coeffs(nmod_poly_mat_t res,
+                                  const nmod_poly_mat_t pmat1, slong len1,
+                                  const nmod_poly_mat_t pmat2, slong len2,
+                                  slong nlo, slong nhi)
+{
+    const slong m = pmat1->r, k = pmat1->c, n = pmat2->c;
+    slong L;
+    nmod_mat_poly_t A;
+    nmod_mat_t Al, B, R;
+
+    nhi = FLINT_MIN(nhi, len1 + len2 - 1);
+    if (len1 == 0 || len2 == 0 || nlo >= nhi || m == 0 || n == 0)
+    {
+        nmod_poly_mat_zero(res);
+        return;
+    }
+    L = nhi - nlo;
+
+    nmod_mat_poly_init(A, m, k, pmat1->modulus);
+    nmod_mat_poly_set_trunc_from_poly_mat(A, pmat1, len1);
+
+    nmod_mat_init(B, k, n * L, pmat1->modulus);
+    nmod_mat_init(R, m, n * L, pmat1->modulus);
+
+    for (slong l = 0; l < A->length; l++)
+    {
+        /* B[t, b L + j] = coefficient nlo + j - l of pmat2[t, b] */
+        for (slong t = 0; t < k; t++)
+        {
+            for (slong b = 0; b < n; b++)
+            {
+                const nmod_poly_struct * f = nmod_poly_mat_entry(pmat2, t, b);
+                const slong flen = FLINT_MIN(f->length, len2);
+                const slong lo = nlo - l;   /* coefficient of index j = 0 */
+                const slong j0 = FLINT_MAX(0, -lo);
+                const slong j1 = FLINT_MIN(L, flen - lo);
+                nn_ptr row = nmod_mat_entry_ptr(B, t, b * L);
+
+                if (j1 <= j0)
+                {
+                    _nmod_vec_zero(row, L);
+                    continue;
+                }
+                _nmod_vec_zero(row, j0);
+                _nmod_vec_set(row + j0, f->coeffs + lo + j0, j1 - j0);
+                _nmod_vec_zero(row + j1, L - j1);
+            }
+        }
+
+        nmod_mat_poly_coeff_attach(Al, A, l);
+        if (l == 0)
+            nmod_mat_mul(R, Al, B);
+        else
+            nmod_mat_addmul(R, R, Al, B);
+    }
+
+    if (A->length == 0)
+        nmod_mat_zero(R);
+
+    for (slong i = 0; i < m; i++)
+    {
+        for (slong b = 0; b < n; b++)
+        {
+            nmod_poly_struct * g = nmod_poly_mat_entry(res, i, b);
+            nmod_poly_fit_length(g, L);
+            _nmod_vec_set(g->coeffs, nmod_mat_entry_ptr(R, i, b * L), L);
+            _nmod_poly_set_length(g, L);
+            _nmod_poly_normalise(g);
+        }
+    }
+
+    nmod_mat_clear(R);
+    nmod_mat_clear(B);
+    nmod_mat_poly_clear(A);
+}
+
+/*------------------------------------------------------------*/
 /* general interfaces                                         */
 /*------------------------------------------------------------*/
 
@@ -60,6 +159,23 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
     }
 
     /* TODO handle constant pmat1 or pmat2 properly */
+
+    /*
+        2026-11 A short left operand and few columns: products of
+        coefficient matrices (_nmod_poly_mat_mulmid_coeffs), whose cost is
+        about len1 constant matrix products k x k x (n (nhi - nlo)) for pmat1 
+        of size k x k and pmat2 with n columns.
+    */
+    {
+        const slong k = FLINT_MIN(pmat1->r, pmat1->c);
+        const double t = (double) len1 * (double) pmat2->c;
+
+        if (k >= 2 && t * t <= (double) NMOD_POLY_MAT_MULMID_COEFFS_K * (double) k)
+        {
+            _nmod_poly_mat_mulmid_coeffs(res, pmat1, len1, pmat2, len2, nlo, nhi);
+            return;
+        }
+    }
 
 #if PML_HAVE_MACHINE_VECTORS
     /*

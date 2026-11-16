@@ -429,6 +429,77 @@ TEST_FUNCTION_START(nmod_poly_mat_mulmid, state)
         nmod_poly_mat_clear(res_true);
     }
 
+    /* products of coefficient matrices (short pmat1), directly: any
+       lengths and windows, entries of unequal lengths, possibly composite
+       moduli, aliasing */
+    for (i = 0; i < 200 * flint_test_multiplier(); i++)
+    {
+        const int alias = (int) n_randint(state, 3);
+        const ulong prime = (n_randint(state, 4) == 0)
+                            ? 2 + n_randint(state, 40)
+                            : n_randprime(state, 2 + n_randint(state, 63), 1);
+        slong rdim = 1 + n_randint(state, 12);
+        slong idim = 1 + n_randint(state, 12);
+        slong cdim = 1 + n_randint(state, 4);
+        if (alias == 1)
+            cdim = idim;
+        else if (alias == 2)
+            rdim = idim;
+        const slong len1 = n_randint(state, 12);
+        const slong len2 = n_randint(state, 80);
+        const slong nlo = n_randint(state, 60);
+        const slong nhi = n_randint(state, 100);
+
+        nmod_poly_mat_t pmat1, pmat2, res, res_true;
+        nmod_poly_mat_init(pmat1, rdim, idim, prime);
+        nmod_poly_mat_init(pmat2, idim, cdim, prime);
+        nmod_poly_mat_init(res, rdim, cdim, prime);
+        nmod_poly_mat_init(res_true, rdim, cdim, prime);
+        for (slong r = 0; r < rdim; r++)
+            for (slong c = 0; c < idim; c++)
+                nmod_poly_randtest(nmod_poly_mat_entry(pmat1, r, c), state,
+                                   n_randint(state, len1 + 1));
+        for (slong r = 0; r < idim; r++)
+            for (slong c = 0; c < cdim; c++)
+                if (n_randint(state, 5))
+                    nmod_poly_randtest(nmod_poly_mat_entry(pmat2, r, c), state,
+                                       n_randint(state, len2 + 1));
+
+        nmod_poly_mat_mul(res_true, pmat1, pmat2);
+        if (nlo < nhi)
+        {
+            nmod_poly_mat_shift_right(res_true, res_true, nlo);
+            nmod_poly_mat_truncate(res_true, nhi - nlo);
+        }
+        else
+            nmod_poly_mat_zero(res_true);
+
+        nmod_poly_mat_randtest(res, state, 5);   /* stale data in the output */
+        if (alias == 1)
+        {
+            nmod_poly_mat_set(res, pmat1);
+            _nmod_poly_mat_mulmid_coeffs(res, res, len1, pmat2, len2, nlo, nhi);
+        }
+        else if (alias == 2)
+        {
+            nmod_poly_mat_set(res, pmat2);
+            _nmod_poly_mat_mulmid_coeffs(res, pmat1, len1, res, len2, nlo, nhi);
+        }
+        else
+            _nmod_poly_mat_mulmid_coeffs(res, pmat1, len1, pmat2, len2, nlo, nhi);
+
+        if (!nmod_poly_mat_equal(res_true, res))
+            TEST_FUNCTION_FAIL(
+                    "coeffs: prime = %wu, rdim = %wd, idim = %wd, cdim = %wd\n"
+                    "len1 = %wd, len2 = %wd, nlo = %wd, nhi = %wd, alias = %d\n",
+                    prime, rdim, idim, cdim, len1, len2, nlo, nhi, alias);
+
+        nmod_poly_mat_clear(pmat1);
+        nmod_poly_mat_clear(pmat2);
+        nmod_poly_mat_clear(res);
+        nmod_poly_mat_clear(res_true);
+    }
+
     /* the general interface: windows for which the operands are restricted
        to their useful coefficients (on one side or both, from below or from
        above), thin shapes (a vector operand, or inner dimension 1) with

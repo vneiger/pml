@@ -43,6 +43,14 @@
 # define PML_NMOD_MAT_MUL_SMALL_BITS 32
 #endif
 
+/* Middle products with a short left operand and few columns go to products
+   of coefficient matrices (_nmod_poly_mat_mulmid_coeffs, mulmid.c) when
+   (len1 n)^2 <= NMOD_POLY_MAT_MULMID_COEFFS_K k, for pmat1 of size at least
+   k x k, k >= 2, and pmat2 with n columns */
+#ifndef NMOD_POLY_MAT_MULMID_COEFFS_K
+# define NMOD_POLY_MAT_MULMID_COEFFS_K 64
+#endif
+
 /* Hermite form helpers */
 void _atomic_solve_pivot_collision_uechelon_rowwise(nmod_poly_mat_t mat, nmod_poly_mat_t other,
                                                     slong pi1, slong pi2, slong j);
