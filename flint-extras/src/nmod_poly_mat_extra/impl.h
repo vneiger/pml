@@ -233,6 +233,22 @@ void _nmod_poly_mat_pmintbasis_krylov_leaf(nmod_poly_mat_t P, slong * shift,
 void _nmod_poly_mat_evaluate_mul_columns(nmod_mat_t R, const nmod_poly_mat_t P,
                                          const nmod_mat_t V, nn_srcptr pts);
 
+/* Whether the residual of an interpolant basis with m rows and n columns per
+ * point is computed from the coefficients of the first basis
+ * (_nmod_poly_mat_evaluate_mul_columns) rather than by one evaluation of it
+ * per point: n^2 <= m and 16 n <= m for a modulus of at most
+ * NMOD_POLY_MAT_MULMID_COEFFS_BITS bits (see interpolant_basis.c); above,
+ * where nmod_mat_mul has no SIMD kernel in FLINT, n = 1 with m >= 32, or
+ * n^2 <= m and 64 n <= m. Comes from measurements on 2026-11-16 on 4
+ * Intel / AMD / Apple machines. */
+static inline int
+_nmod_poly_mat_evaluate_mul_columns_wanted(slong m, slong n, ulong modulus)
+{
+    if (FLINT_BIT_COUNT(modulus) <= NMOD_POLY_MAT_MULMID_COEFFS_BITS)
+        return (n * n <= m && 16 * n <= m);
+    return (n == 1) ? (m >= 32) : (n * n <= m && 64 * n <= m);
+}
+
 /* pmbasis and pmintbasis with the Krylov cutoff as a parameter
  * (krylov_cutoff = 0: no Krylov leaf); nmod_poly_mat_pmbasis and
  * nmod_poly_mat_pmintbasis use NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF. For

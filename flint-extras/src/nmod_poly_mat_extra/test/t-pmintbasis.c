@@ -134,10 +134,11 @@ TEST_FUNCTION_START(nmod_poly_mat_pmintbasis, state)
         }
         /* every fourth input: n^2 <= m and 16 n <= m, so that the residual
            is computed from the coefficients of the first basis (when the
-           order is too large for the leaf at the top) */
+           order is too large for the leaf at the top; for moduli of more
+           than 52 bits, when n = 1 and m >= 32) */
         if (i % 4 == 1)
         {
-            m = 16 + n_randint(state, 17);
+            m = 16 + n_randint(state, 33);
             n = 1 + n_randint(state, m / 16);
         }
 

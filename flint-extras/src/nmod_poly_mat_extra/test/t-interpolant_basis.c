@@ -237,5 +237,52 @@ TEST_FUNCTION_START(nmod_poly_mat_interpolant_basis, state)
         flint_free(sh);
     }
 
+    /* _nmod_poly_mat_evaluate_mul_columns against one evaluation per column,
+       for any modulus (the rule of the residual sends few shapes to it above
+       52 bits) */
+    for (slong iter = 0; iter < 200 * flint_test_multiplier(); iter++)
+    {
+        const ulong p = 2 + n_randtest(state) % (UWORD_MAX - 1);
+        const slong m = 1 + n_randint(state, 10);
+        const slong k = 1 + n_randint(state, 10);
+        const slong c = n_randint(state, 20);
+        nmod_poly_mat_t P;
+        nmod_mat_t V, R, Pe, col, prod;
+        nn_ptr pts = _nmod_vec_init(FLINT_MAX(c, 1));
+
+        nmod_poly_mat_init(P, m, k, p);
+        nmod_poly_mat_randtest(P, state, n_randint(state, 12));
+        nmod_mat_init(V, k, c, p);
+        nmod_mat_randtest(V, state);
+        for (slong b = 0; b < c; b++)
+            pts[b] = n_randint(state, p);
+
+        nmod_mat_init(R, m, c, p);
+        _nmod_poly_mat_evaluate_mul_columns(R, P, V, pts);
+
+        nmod_mat_init(Pe, m, k, p);
+        nmod_mat_init(col, k, 1, p);
+        nmod_mat_init(prod, m, 1, p);
+        for (slong b = 0; b < c; b++)
+        {
+            nmod_poly_mat_evaluate_nmod(Pe, P, pts[b]);
+            for (slong j = 0; j < k; j++)
+                nmod_mat_entry(col, j, 0) = nmod_mat_entry(V, j, b);
+            nmod_mat_mul(prod, Pe, col);
+            for (slong r = 0; r < m; r++)
+                if (nmod_mat_entry(prod, r, 0) != nmod_mat_entry(R, r, b))
+                    TEST_FUNCTION_FAIL("evaluate_mul_columns: m = %wd, k = %wd, c = %wd, p = %wu\n",
+                                       m, k, c, p);
+        }
+
+        nmod_mat_clear(prod);
+        nmod_mat_clear(col);
+        nmod_mat_clear(Pe);
+        nmod_mat_clear(R);
+        nmod_mat_clear(V);
+        nmod_poly_mat_clear(P);
+        _nmod_vec_clear(pts);
+    }
+
     TEST_FUNCTION_END(state);
 }

@@ -153,7 +153,8 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
 
     /* R_i = P1(pts[d1+i]) * E_{d1+i}, i = 0..d2-1 -- unlike pmbasis's
        residual (a middle product), these are d2 evaluate-then-multiply
-       operations. With few columns (n^2 <= m and 16 n <= m), they are
+       operations. With few columns (n^2 <= m and 16 n <= m up to 52 bits,
+       fewer above: _nmod_poly_mat_evaluate_mul_columns_wanted), they are
        computed from the coefficients of P1, deg(P1) + 1 products by
        [E_{d1} | ... | E_{d-1}] (_nmod_poly_mat_evaluate_mul_columns),
        otherwise with one evaluation of P1 per point. Sandbox, 30-bit
@@ -166,7 +167,7 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
        4 n = m slower (pmintbasis 16 x 4 0.7x). */
     nmod_mat_struct * R = (nmod_mat_struct *) flint_malloc(FLINT_MAX(d2, 1) * sizeof(nmod_mat_struct));
     nmod_mat_t Rcat;
-    const int coeffs = (n * n <= m && 16 * n <= m);
+    const int coeffs = _nmod_poly_mat_evaluate_mul_columns_wanted(m, n, intbas->modulus);
     if (coeffs)
     {
         nmod_mat_t Ecat, W;
