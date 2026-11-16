@@ -54,10 +54,7 @@ void _nmod_poly_mat_mulmid_naive(nmod_poly_mat_t res,
  * coefficient A_l by a k x (n (nhi - nlo)) constant matrix (the window of
  * coefficients of each column of pmat2, side by side). */
 
-/* TODO: threshold is a first estimate from one machine, not tuned:
- * NMOD_POLY_MAT_MULMID_COEFFS_K = 64 (impl.h).
- *
- * TODO: the name of the function should probably be asymetric (this
+/* TODO: the name of the function should probably be asymetric (this
  * is good when e.g. pmat1 has low degree compared to pmat2, pmat2 has
  * few columns, etc: we would not apply the same function in the
  * transposed situation); or there could be a switch in this function
@@ -165,12 +162,27 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         coefficient matrices (_nmod_poly_mat_mulmid_coeffs), whose cost is
         about len1 constant matrix products k x k x (n (nhi - nlo)) for pmat1 
         of size k x k and pmat2 with n columns.
+
+        Rule (impl.h) measured with on Zen 4, Ice Lake, Cascade Lake and Apple
+        M4 (k = 2 to 256, n = 1 to 16, len1 = 2 to 64, windows of len1 to 64
+        len1 coefficients): time of the rule over the best routine 1.01 to 1.06
+        on average at 30 and 50 bits with K = 64, and 1.01 to 1.02 at 60 bits
+        with K_LARGE = 16 and MAX_LARGE = 32 (K = 64 there: 1.07 to 1.11); the
+        switch at 52 bits is where FLINT's SIMD kernels for nmod_mat_mul stop
+        (sandbox: K = 64 still best at 52 bits, the other rule at 56).
     */
     {
         const slong k = FLINT_MIN(pmat1->r, pmat1->c);
         const double t = (double) len1 * (double) pmat2->c;
+        int coeffs;
 
-        if (k >= 2 && t * t <= (double) NMOD_POLY_MAT_MULMID_COEFFS_K * (double) k)
+        if (FLINT_BIT_COUNT(pmat1->modulus) <= NMOD_POLY_MAT_MULMID_COEFFS_BITS)
+            coeffs = (t * t <= (double) NMOD_POLY_MAT_MULMID_COEFFS_K * (double) k);
+        else
+            coeffs = (t <= (double) NMOD_POLY_MAT_MULMID_COEFFS_MAX_LARGE
+                      && t * t <= (double) NMOD_POLY_MAT_MULMID_COEFFS_K_LARGE * (double) k);
+
+        if (k >= 2 && coeffs)
         {
             _nmod_poly_mat_mulmid_coeffs(res, pmat1, len1, pmat2, len2, nlo, nhi);
             return;

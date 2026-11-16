@@ -44,11 +44,28 @@
 #endif
 
 /* Middle products with a short left operand and few columns go to products
-   of coefficient matrices (_nmod_poly_mat_mulmid_coeffs, mulmid.c) when
-   (len1 n)^2 <= NMOD_POLY_MAT_MULMID_COEFFS_K k, for pmat1 of size at least
-   k x k, k >= 2, and pmat2 with n columns */
+   of coefficient matrices (_nmod_poly_mat_mulmid_coeffs, mulmid.c), for
+   pmat1 of size at least k x k, k >= 2, and pmat2 with n columns, when
+   - (len1 n)^2 <= NMOD_POLY_MAT_MULMID_COEFFS_K k, for a modulus of at most
+     NMOD_POLY_MAT_MULMID_COEFFS_BITS bits;
+   - (len1 n)^2 <= NMOD_POLY_MAT_MULMID_COEFFS_K_LARGE k and
+     len1 n <= NMOD_POLY_MAT_MULMID_COEFFS_MAX_LARGE, for larger moduli, where
+     nmod_mat_mul has no SIMD kernel in FLINT and the products of constant
+     matrices lose sooner against the FFT routines. */
 #ifndef NMOD_POLY_MAT_MULMID_COEFFS_K
 # define NMOD_POLY_MAT_MULMID_COEFFS_K 64
+#endif
+
+#ifndef NMOD_POLY_MAT_MULMID_COEFFS_BITS
+# define NMOD_POLY_MAT_MULMID_COEFFS_BITS 52
+#endif
+
+#ifndef NMOD_POLY_MAT_MULMID_COEFFS_K_LARGE
+# define NMOD_POLY_MAT_MULMID_COEFFS_K_LARGE 16
+#endif
+
+#ifndef NMOD_POLY_MAT_MULMID_COEFFS_MAX_LARGE
+# define NMOD_POLY_MAT_MULMID_COEFFS_MAX_LARGE 32
 #endif
 
 /* Hermite form helpers */
@@ -154,11 +171,19 @@ int _nmod_mat_det_solve_lu(ulong * c, nmod_mat_t X, nmod_mat_t A, const nmod_mat
  *   ceil(D / number of points) for interpolants), which is n for one order
  *   and is smaller than the number of columns when few columns have the
  *   largest orders.
- * The values are first estimates from one machine (Intel Xeon with AVX-512
- * and IFMA, 30-bit prime; n = 1 to m/2, D = m/4 to 32m), not yet tuned.
- * TODO tune these values */
+ * 2026-11 Values measured with p-approximant_basis (modes leaf, ileaf, orders,
+ * interp) on Zen 4, Ice Lake, Cascade Lake and Apple M4, at 30, 50 and 60 bits
+ * (m = 16 to 256, n = 1 to m/2, D = m/4 to 32m).
+ * Inside pmbasis and pmintbasis, c = 6 is the best of 4, 6, 8, 12, 16 on
+ * all twelve machine and modulus pairs (1.02 to 1.04 of the best value on
+ * average, 1.04 to 1.09 for 8). For the direct calls, c = 8 is the best of
+ * 4, 8, 16 or within 0.03 of it; c = 4 would be better for m = 256 (about
+ * 1.2x at D = 4m) and worse for m = 16.
+ * TODO a cutoff depending on m for the direct calls; for pmintbasis, the
+ * leaf can lose up to 1.5x at n = m/2 with small orders (m <= 64), which
+ * n < m/2 would avoid. */
 #ifndef NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF
-# define NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF 8.0
+# define NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF 6.0
 #endif
 
 #ifndef NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF
