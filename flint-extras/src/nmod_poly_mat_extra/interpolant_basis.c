@@ -49,6 +49,37 @@ void _nmod_poly_mat_interpolant_basis_krylov_leaf(nmod_poly_mat_t P,
         shift[i] += nmod_poly_degree(nmod_poly_mat_entry(P, i, i));
 }
 
+void _nmod_poly_mat_evaluate_columns(nmod_mat_t R, const nmod_poly_mat_t P,
+                                     const nmod_mat_t V, nn_srcptr pts)
+{
+    const slong len = nmod_poly_mat_degree(P) + 1, c = V->c;
+    const nmod_t mod = V->mod;
+    nmod_mat_poly_t Pc;
+    nmod_mat_t Pk, T;
+
+    nmod_mat_zero(R);
+    if (len <= 0 || c == 0)
+        return;
+
+    nmod_mat_poly_init(Pc, P->r, P->c, mod.n);
+    nmod_mat_poly_set_from_poly_mat(Pc, P);
+    nmod_mat_init(T, R->r, c, mod.n);
+    for (slong k = len - 1; k >= 0; k--)
+    {
+        nmod_mat_poly_coeff_attach(Pk, Pc, k);
+        nmod_mat_mul(T, Pk, V);
+        for (slong i = 0; i < R->r; i++)
+        {
+            nn_ptr r = nmod_mat_entry_ptr(R, i, 0);
+            nn_srcptr t = nmod_mat_entry_ptr(T, i, 0);
+            for (slong b = 0; b < c; b++)
+                r[b] = nmod_add(nmod_mul(r[b], pts[b], mod), t[b], mod);
+        }
+    }
+    nmod_mat_clear(T);
+    nmod_mat_poly_clear(Pc);
+}
+
 void _nmod_poly_mat_pmintbasis_krylov_leaf(nmod_poly_mat_t P,
                                            slong * shift,
                                            const ulong * pts,
@@ -120,26 +151,63 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
     nmod_poly_mat_init(P1, m, m, intbas->modulus);
     _nmod_poly_mat_pmintbasis(P1, shift, pts, E, d1, krylov_cutoff);
 
-   /* R_i = P1(pts[d1+i]) * E_{d1+i}, i = 0..d2-1 -- unlike pmbasis's
-       residual (a middle product), this is d2 independent evaluate-then-
-       multiply operations; no polynomial-arithmetic trick applies here
-       (see this file's header comment / nmod_poly_mat_interpolant.h). */
+    /* R_i = P1(pts[d1+i]) * E_{d1+i}, i = 0..d2-1 -- unlike pmbasis's
+       residual (a middle product), these are d2 evaluate-then-multiply
+       operations. With few columns (n^2 <= m and 8 n <= m), they are
+       computed from the coefficients of P1, deg(P1) + 1 products by
+       [E_{d1} | ... | E_{d-1}] (_nmod_poly_mat_evaluate_columns), otherwise
+       with one evaluation of P1 per point. Sandbox (30-bit prime, 128
+       points, P1 of degree 1 to 16): coefficients / evaluations 0.04 to 0.4
+       for n = 1 and m = 16 to 256, about 1 at n^2 = m for m >= 64; for
+       m = 16 and n = 4, up to 1.6 (pmintbasis 0.7x before 8 n <= m). */
     nmod_mat_struct * R = (nmod_mat_struct *) flint_malloc(FLINT_MAX(d2, 1) * sizeof(nmod_mat_struct));
-    nmod_mat_t evalP1;
-    nmod_mat_init(evalP1, m, m, intbas->modulus);
-    for (slong idx = 0; idx < d2; idx++)
+    nmod_mat_t Rcat;
+    const int coeffs = (n * n <= m && 8 * n <= m);
+    if (coeffs)
     {
-        nmod_poly_mat_evaluate_nmod(evalP1, P1, pts[d1 + idx]);
-        nmod_mat_init(R + idx, m, n, intbas->modulus);
-        nmod_mat_mul(R + idx, evalP1, E + (d1 + idx));
+        nmod_mat_t Ecat, W;
+        nn_ptr cpts = _nmod_vec_init(FLINT_MAX(n * d2, 1));
+        nmod_mat_init(Ecat, m, n * d2, intbas->modulus);
+        nmod_mat_init(Rcat, m, n * d2, intbas->modulus);
+        for (slong idx = 0; idx < d2; idx++)
+        {
+            nmod_mat_window_init(W, Ecat, 0, idx * n, m, (idx + 1) * n);
+            nmod_mat_set(W, E + (d1 + idx));
+            nmod_mat_window_clear(W);
+            for (slong j = 0; j < n; j++)
+                cpts[idx * n + j] = pts[d1 + idx];
+        }
+        _nmod_poly_mat_evaluate_columns(Rcat, P1, Ecat, cpts);
+        for (slong idx = 0; idx < d2; idx++)
+            nmod_mat_window_init(R + idx, Rcat, 0, idx * n, m, (idx + 1) * n);
+        nmod_mat_clear(Ecat);
+        _nmod_vec_clear(cpts);
     }
-    nmod_mat_clear(evalP1);
+    else
+    {
+        nmod_mat_t evalP1;
+        nmod_mat_init(evalP1, m, m, intbas->modulus);
+        for (slong idx = 0; idx < d2; idx++)
+        {
+            nmod_poly_mat_evaluate_nmod(evalP1, P1, pts[d1 + idx]);
+            nmod_mat_init(R + idx, m, n, intbas->modulus);
+            nmod_mat_mul(R + idx, evalP1, E + (d1 + idx));
+        }
+        nmod_mat_clear(evalP1);
+    }
 
     nmod_poly_mat_t P2;
     nmod_poly_mat_init(P2, m, m, intbas->modulus);
     _nmod_poly_mat_pmintbasis(P2, shift, pts + d1, R, d2, krylov_cutoff);
     for (slong idx = 0; idx < d2; idx++)
-        nmod_mat_clear(R + idx);
+    {
+        if (coeffs)
+            nmod_mat_window_clear(R + idx);
+        else
+            nmod_mat_clear(R + idx);
+    }
+    if (coeffs)
+        nmod_mat_clear(Rcat);
     flint_free(R);
 
     nmod_poly_mat_multiply(intbas, P2, P1);

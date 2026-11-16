@@ -226,6 +226,13 @@ void _nmod_poly_mat_pmintbasis_krylov_leaf(nmod_poly_mat_t P, slong * shift,
                                            const ulong * pts,
                                            const nmod_mat_struct * E, slong d);
 
+/* R[:, b] = P(pts[b]) V[:, b] for each column b of V, from the coefficients
+ * of P: R = sum_k P_k V diag(pts)^k by Horner's rule, deg(P) + 1 products of
+ * constant matrices; with c columns, R is P->r x c and V is P->c x c, and R
+ * must not alias V (interpolant_basis.c) */
+void _nmod_poly_mat_evaluate_columns(nmod_mat_t R, const nmod_poly_mat_t P,
+                                     const nmod_mat_t V, nn_srcptr pts);
+
 /* pmbasis and pmintbasis with the Krylov cutoff as a parameter
  * (krylov_cutoff = 0: no Krylov leaf); nmod_poly_mat_pmbasis and
  * nmod_poly_mat_pmintbasis use NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF. For
