@@ -233,6 +233,72 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas, slong * shift,
                                const ulong * pts, const nmod_mat_struct * E,
                                slong d, double krylov_cutoff);
 
+/* Divide and conquer for orders per column (approximant_basis_general.c)
+ * and for one point per column (interpolant_basis_general.c), behind
+ * nmod_poly_mat_approximant_basis and nmod_poly_mat_interpolant_basis. A
+ * node with one order for all its columns (resp. as many columns at each of
+ * its points) goes to pmbasis (resp. pmintbasis); otherwise a node with
+ * few conditions goes to the direct Krylov function; otherwise, for
+ * approximants whose orders are close to each other, the node goes to
+ * pmbasis on its input with each column multiplied by x^(dmax - d_b), at
+ * order dmax; otherwise the node is split into two halves of about D/2
+ * conditions each. */
+
+/* close orders: pmbasis on the input raised to the largest order when
+ * n dmax <= (1 + eps) D, eps = NMOD_POLY_MAT_APPROXIMANT_BASIS_RAISE_SLACK
+ * (never if eps is negative). 2026-11 measurements (Zen 4, Ice Lake, Cascade
+ * Lake, Apple M4; 30, 50, 60 bits): 0.25 is the best of -1, 0.25, 0.5, 1 on
+ * average; with two distinct orders (d, d, d/2, d/2: n dmax = 1.33 D), the
+ * split gives two pmbasis calls and eps must be at most 0.25, while many
+ * distinct orders (m/2 columns in [d/4, d]: 1.6 D) prefer eps = 1.
+ * TODO a slack depending on the number of distinct orders */
+#ifndef NMOD_POLY_MAT_APPROXIMANT_BASIS_RAISE_SLACK
+# define NMOD_POLY_MAT_APPROXIMANT_BASIS_RAISE_SLACK 0.25
+#endif
+
+typedef struct
+{
+    double leaf_cutoff;    /* cutoff of the Krylov leaf of pmbasis, pmintbasis */
+    double direct_cutoff;  /* cutoff of the direct Krylov calls */
+    double raise_slack;    /* close orders, see above (approximants) */
+    int split;             /* approximants: 0 to cut at a quasi-uniform order
+                            * tau (orders min(d_b, tau) in the first half),
+                            * 1 to cut each order in half (interpolants always
+                            * cut at D/2) */
+}
+_nmod_poly_mat_basis_dac_param_struct;
+
+typedef _nmod_poly_mat_basis_dac_param_struct _nmod_poly_mat_basis_dac_param_t[1];
+
+/* the parameters used by nmod_poly_mat_approximant_basis and
+ * nmod_poly_mat_interpolant_basis */
+static inline void
+_nmod_poly_mat_basis_dac_param_init(_nmod_poly_mat_basis_dac_param_t prm)
+{
+    prm->leaf_cutoff = NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF;
+    prm->direct_cutoff = NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF;
+    prm->raise_slack = NMOD_POLY_MAT_APPROXIMANT_BASIS_RAISE_SLACK;
+    prm->split = 0;
+}
+
+/* shift-ordered weak Popov approximant basis of F at order orders[j] for
+ * column j, with the contract of pmbasis (shift in, shifted row degree out;
+ * shift entries plus the sum of the orders at most WORD_MAX) */
+void _nmod_poly_mat_approximant_basis(nmod_poly_mat_t P, slong * shift,
+                                      const nmod_poly_mat_t F,
+                                      const slong * orders,
+                                      const _nmod_poly_mat_basis_dac_param_t prm);
+
+/* the s-Popov basis from an s-ordered weak Popov basis P of the same module,
+ * with shifted row degree rdeg (in place): with delta = rdeg - s, a basis R
+ * computed by `basis` with shift -delta has (-delta)-row degree 0, and P =
+ * lm(R)^(-1) R, with lm(R) its (-delta)-leading matrix; `basis` computes a
+ * shift-ordered weak Popov basis of the module with the contract of pmbasis
+ * (shift in, shifted row degree out), `data` is passed to it */
+void _nmod_poly_mat_popov_from_second_basis(nmod_poly_mat_t P,
+        const slong * shift, const slong * rdeg,
+        void (* basis)(nmod_poly_mat_t, slong *, const void *), const void * data);
+
 
 /* ------------------------------------------------------------------------ */
 /* a few functions to help tests/profiles be more complete                  */

@@ -1,5 +1,6 @@
 /*
     Copyright (C) 2025 Vincent Neiger, Kevin Tran
+    Copyright (C) 2026 Vincent Neiger
 
     This file is part of PML.
 
@@ -114,63 +115,51 @@ extern "C" {
 
 /** General interface for approximant basis computation.
  *
- * Computes a `shift`-minimal approximant basis `appbas` for (`pmat`,`order`).
- * If the user requires a specific shifted form (minimal, ordered weak Popov,
- * Popov), the algorithm returns an approximant basis which has the required
- * form (possibly a stronger one). Approximants can be considered either as
- * left approximants (`row_wise` set to `true`) or as right approximants
- * (`row_wise` set to `false`).
- * TODO everywhere: add support for orientation
+ * Computes a `shift`-ordered weak Popov approximant basis `P` of `F` at
+ * order `orders[b]` for column `b`, or the `shift`-Popov one if `form` is
+ * `POPOV`; with `form` among `NONE`, `REDUCED`, `WEAK_POPOV`,
+ * `ORD_WEAK_POPOV`, the basis is `shift`-ordered weak Popov, which implies
+ * these forms. Left approximants (rows), ROW_LOWER pivots.
  *
- * If the user knows that the input matrix is sufficiently generic (for
- * example, it was randomly generated, working over a large prime field), then
- * it may be beneficial to set `generic` to `true`, which indicates that
- * specific code for this case may be used. For the moment, specific code has
- * been written only for matrices of dimensions n = 2m, with uniform shift and
- * uniform order; this does speed up computations by a factor ranging from
- * about 1x to about 2x (larger speed-up when the order is not very large).
- * Setting the generic flag in other contexts will have no effect (falling back
- * to the general algorithms).
+ * With `D` the sum of the orders and `n` the number of columns of positive
+ * order, the algorithm is a divide and conquer on `D` (see
+ * nmod_poly_mat_extra/approximant_basis_general.c):
+ * - when all these columns have the same order, ::nmod_poly_mat_pmbasis
+ *   (with its Krylov leaves, see @ref pmbasis);
+ * - otherwise, when `n' < m` and `D <= c m / n'^(1/3)` for
+ *   `n' = ceil(D / max(orders))` (the average number of columns per order,
+ *   at most `n`), one call to ::nmod_poly_mat_approximant_basis_krylov (the
+ *   `shift`-Popov basis);
+ * - otherwise, when the orders are close to each other (`n max(orders) <=
+ *   (1 + eps) D`), ::nmod_poly_mat_pmbasis on the input whose column `b` is
+ *   multiplied by `x^(max(orders) - orders[b])`, at order `max(orders)`;
+ * - otherwise, a first basis at the orders `min(orders[b], tau)`, with tau
+ *   such that they sum to about `D/2`, a second one for the residual at the
+ *   remaining orders (middle products, columns with windows of similar
+ *   lengths grouped together), and their product.
+ * The values of c and eps are NMOD_POLY_MAT_APPROXIMANT_BASIS_KRYLOV_CUTOFF
+ * and NMOD_POLY_MAT_APPROXIMANT_BASIS_RAISE_SLACK (nmod_poly_mat_extra/impl.h).
+ * For `POPOV`, unless the basis found is already in `shift`-Popov form, a
+ * second basis is computed with the shift `-delta`, where `delta` is the
+ * `shift`-pivot degree, and normalized by the inverse of its leading matrix,
+ * which takes about the time of the first one.
  *
- * \todo With `generic` set to `true`, correctness is currently not guaranteed
- * (Monte Carlo algorithm). The user may want to use is_approximant_basis to
- * verify correctness.
+ * \param[out] P approximant basis, initialized with dimensions `m x m`
+ * \param[out] rdeg the `shift`-row degree of `P` (length `m`), or `NULL`; it may alias `shift`
+ * \param[in] F input polynomial matrix, `m x n'`
+ * \param[in] orders list of `n'` nonnegative integers (0: no condition on that column)
+ * \param[in] shift input shift (length `m`), or `NULL` for the zero shift
+ * \param[in] form required form for the output basis (see #poly_mat_form_t), at most `POPOV`
  *
- * \param[out] appbas output approximant basis
- * \param[out] rdeg the `shift`-row degree of `appbas`
- * \param[in] pmat input polynomial matrix
- * \param[in] order input order
- * \param[in] shift input shift
- * \param[in] form indicates the required form for the output basis (see #poly_mat_form_t)
- * \param[in] row_wise indicates whether to compute left approximants (working row-wise) or right approximants (working column-wise)
- * \param[in] generic if `true`, specific code for generic instances may be used
- *
- * \todo The `row_wise` and `generic` flags are currently not supported.
- * \todo
+ * Size of the integers (see @ref IntegerSizes): it is assumed that
+ * `max(shift) - min(shift) + D <= WORD_MAX`.
  */
-//void approximant_basis(
-//                       appbas,
-//                       rdeg,
-//                       pmat,
-//                       order,
-//                       shift = vec of long's,
-//                       form = ORD_WEAK_POPOV,
-//                       row_wise = true,
-//                       generic = false
-//                      );
-
-/** General user-friendly interface for approximant basis computation.
- *
- * Same function as above, but taking a single positive integer for the
- * parameter `order` instead of a list. This simply interprets this as
- * specifying a list of integers all equal to `order` (with the right length),
- * and then calls the function above.
- *
- * \todo `row_wise` false not handled
- * \todo
- */
-
-
+void nmod_poly_mat_approximant_basis(nmod_poly_mat_t P,
+                                     slong * rdeg,
+                                     const nmod_poly_mat_t F,
+                                     const slong * orders,
+                                     const slong * shift,
+                                     poly_mat_form_t form);
 
 /** Verifying if a matrix is a minimal approximant basis.
  *

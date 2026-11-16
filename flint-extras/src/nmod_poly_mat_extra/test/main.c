@@ -39,6 +39,7 @@
 #include "t-solve_series_high_order_lifting.c"
 #include "t-mbasis.c"
 #include "t-pmbasis.c"
+#include "t-approximant_basis.c"
 #include "t-pmintbasis.c"
 #include "t-pmintbasis_nondistinct.c"
 #include "t-pmintbasis_geometric.c"
@@ -80,6 +81,7 @@ test_struct tests[] =
     TEST_FUNCTION(nmod_poly_mat_solve_series_dixon),
     TEST_FUNCTION(nmod_poly_mat_solve_series_high_order_lifting),
     TEST_FUNCTION(nmod_poly_mat_pmbasis),
+    TEST_FUNCTION(nmod_poly_mat_approximant_basis),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis_nondistinct),
     TEST_FUNCTION(nmod_poly_mat_pmintbasis_geometric),
