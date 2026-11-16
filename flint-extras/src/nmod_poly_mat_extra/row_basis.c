@@ -107,8 +107,7 @@ int _nmod_poly_mat_row_basis_certify_unimodular(const nmod_poly_mat_t pmat,
  *
  * Following [ZL13, Lemma 4.3], C is formed by the approximants of
  * nonpositive (-s)-degree in a (-s)-minimal approximant basis of K^T at order
- * t+1, the latter being obtained from an approximant basis at the uniform
- * order max(t)+1 of K^T with its column l multiplied by x^(max(t) - t[l]).
+ * t+1 (one order per column, nmod_poly_mat_approximant_basis).
  */
 static void _right_kernel_nonpositive(nmod_poly_mat_t C, slong * tt,
                                       const nmod_poly_mat_t K, const slong * t, slong k,
@@ -117,23 +116,18 @@ static void _right_kernel_nonpositive(nmod_poly_mat_t C, slong * tt,
     const slong m = K->c;
     const slong r = m - k;
 
-    /* beta = max(t, 0): the order beta+1 of the approximant basis below is
-     * positive, and the resulting order for column l of K^T is t[l]+1 (no
-     * constraint if t[l] < 0, which may only happen for kernel vectors
-     * supported on zero rows of the matrix) */
-    slong beta = 0;
+    /* order t[l]+1 for column l of K^T (no constraint if t[l] < 0, which may
+     * only happen for kernel vectors supported on zero rows of the matrix) */
+    slong * orders = FLINT_ARRAY_ALLOC(FLINT_MAX(k, 1), slong);
     for (slong l = 0; l < k; l++)
-        if (t[l] > beta)
-            beta = t[l];
+        orders[l] = FLINT_MAX(t[l] + 1, 0);
 
-    /* M = K^T * diag(x^(beta - t)) */
+    /* M = K^T */
     nmod_poly_mat_t M;
     nmod_poly_mat_init(M, m, k, K->modulus);
     for (slong l = 0; l < k; l++)
         for (slong i = 0; i < m; i++)
-            nmod_poly_shift_left(nmod_poly_mat_entry(M, i, l),
-                                 nmod_poly_mat_entry(K, l, i),
-                                 beta - t[l]);
+            nmod_poly_set(nmod_poly_mat_entry(M, i, l), nmod_poly_mat_entry(K, l, i));
 
     nmod_poly_mat_t P;
     nmod_poly_mat_init(P, m, m, K->modulus);
@@ -141,7 +135,7 @@ static void _right_kernel_nonpositive(nmod_poly_mat_t C, slong * tt,
     for (slong i = 0; i < m; i++)
         sh[i] = -s[i];
 
-    nmod_poly_mat_pmbasis(P, sh, M, beta + 1);
+    nmod_poly_mat_approximant_basis(P, sh, M, orders, sh, ORD_WEAK_POPOV);
 
     /* rows of nonpositive (-s)-degree */
     slong nb = 0;
@@ -165,6 +159,7 @@ static void _right_kernel_nonpositive(nmod_poly_mat_t C, slong * tt,
     }
 
     flint_free(sh);
+    flint_free(orders);
     nmod_poly_mat_clear(P);
     nmod_poly_mat_clear(M);
 }
