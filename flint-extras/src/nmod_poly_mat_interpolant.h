@@ -207,6 +207,15 @@ void nmod_poly_mat_mintbasis(nmod_poly_mat_t intbas,
  * At the end of the computation, the vector `shift` contains the shifted
  * row degree of `intbas`, for the input shift.
  *
+ * Krylov leaves: as in pmbasis (see @ref pmbasis), at each node of the
+ * recursion, with `E_k` of size `m x n` and `d` points at this node, if `n <
+ * m` and `n d <= alpha m / n^(1/3)`, the basis of this node is computed
+ * directly by ::nmod_poly_mat_interpolant_basis_krylov, on the `m x nd`
+ * matrix `[E_0 | ... | E_{d-1}]` with each point repeated `n` times. The
+ * output is then `shift`-Popov if such a leaf is used at the top of the
+ * recursion, and `shift`-ordered weak Popov (with the same `shift`-row degree)
+ * in any case. This also holds for the functions in @ref pmintbasis_geometric.
+ *
  * Size of the integers (see @ref IntegerSizes): it is assumed that
  * `max(shift) + d <= WORD_MAX` for the input `shift`, where `d` is the number
  * of points (each entry of `shift` increases by at most `d`).

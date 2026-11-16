@@ -11,10 +11,13 @@
 */
 
 
+#include <flint/nmod_vec.h>
+
 #include "nmod_poly_mat_multiply.h"
 #include "nmod_poly_mat_interpolant.h"
 #include "nmod_mat_poly.h"
 #include "nmod_poly_mat_utils.h"
+#include "impl.h"
 
 /** nmod_mat_poly_mintbasis takes E as a plain, flat array of at 
  *     least `d` already-initialized nmod_mat_t's (nmod_mat_struct *)*/ 
@@ -34,12 +37,63 @@ void nmod_poly_mat_mintbasis(nmod_poly_mat_t intbas,
 
 
 
+void _nmod_poly_mat_pmintbasis_krylov_leaf(nmod_poly_mat_t P,
+                                           slong * shift,
+                                           const ulong * pts,
+                                           const nmod_mat_struct * E,
+                                           slong d)
+{
+    const slong m = P->r;
+    const slong n = (d > 0) ? E[0].c : 0;
+    nmod_mat_t V;
+    nn_ptr vpts;
+
+    /* V = [E_0 | ... | E_{d-1}], column k n + j at the point pts[k] */
+    nmod_mat_init(V, m, n * d, P->modulus);
+    vpts = _nmod_vec_init(n * d + 1);
+    for (slong k = 0; k < d; k++)
+    {
+        for (slong i = 0; i < m; i++)
+            _nmod_vec_set(nmod_mat_entry_ptr(V, i, k * n),
+                          nmod_mat_entry_ptr(E + k, i, 0), n);
+        for (slong j = 0; j < n; j++)
+            vpts[k * n + j] = pts[k];
+    }
+
+    nmod_poly_mat_interpolant_basis_krylov(P, V, vpts, shift);
+
+    /* P is shift-Popov: the pivot of row i is P[i,i] */
+    for (slong i = 0; i < m; i++)
+        shift[i] += nmod_poly_degree(nmod_poly_mat_entry(P, i, i));
+
+    _nmod_vec_clear(vpts);
+    nmod_mat_clear(V);
+}
+
 void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
                               slong * shift,
                               const ulong * pts,
                               const nmod_mat_struct * E,
                               slong d)
 {
+    _nmod_poly_mat_pmintbasis(intbas, shift, pts, E, d,
+                              NMOD_POLY_MAT_PMBASIS_KRYLOV_ALPHA);
+}
+
+void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
+                               slong * shift,
+                               const ulong * pts,
+                               const nmod_mat_struct * E,
+                               slong d,
+                               double alpha)
+{
+    /* Krylov leaf: replaces the subtree below this node */
+    if (d > 0 && _nmod_poly_mat_krylov_leaf_wanted(intbas->r, E[0].c, E[0].c * d, alpha))
+    {
+        _nmod_poly_mat_pmintbasis_krylov_leaf(intbas, shift, pts, E, d);
+        return;
+    }
+
     if (d <= PMINTBASIS_THRES)
     {
         nmod_poly_mat_mintbasis(intbas, shift, pts, E, d);
@@ -56,7 +110,7 @@ void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
        than d1, extra entries simply unused. */
     nmod_poly_mat_t P1;
     nmod_poly_mat_init(P1, m, m, intbas->modulus);
-    nmod_poly_mat_pmintbasis(P1, shift, pts, E, d1);
+    _nmod_poly_mat_pmintbasis(P1, shift, pts, E, d1, alpha);
 
    /* R_i = P1(pts[d1+i]) * E_{d1+i}, i = 0..d2-1 -- unlike pmbasis's
        residual (a middle product), this is d2 independent evaluate-then-
@@ -75,7 +129,7 @@ void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
 
     nmod_poly_mat_t P2;
     nmod_poly_mat_init(P2, m, m, intbas->modulus);
-    nmod_poly_mat_pmintbasis(P2, shift, pts + d1, R, d2);
+    _nmod_poly_mat_pmintbasis(P2, shift, pts + d1, R, d2, alpha);
     for (slong idx = 0; idx < d2; idx++)
         nmod_mat_clear(R + idx);
     flint_free(R);

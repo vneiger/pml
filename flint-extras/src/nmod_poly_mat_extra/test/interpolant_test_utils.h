@@ -23,6 +23,24 @@
 #include <flint/nmod_mat.h>
 #include <flint/nmod_poly_mat.h>
 
+#include "nmod_poly_mat_interpolant.h"
+#include "nmod_poly_mat_extra/impl.h"  /* for the Krylov leaf rule */
+
+/* Whether nmod_poly_mat_pmintbasis uses a Krylov leaf somewhere in its
+   recursion, for d matrices of size m x n. Note: using Krylov may change
+   the output, since the output of Krylov leaves is not necessarily
+   the same as the output of nmod_poly_mat_mintbasis. But it remains
+   a valid interpolant basis. */
+static int _pmintbasis_uses_krylov(slong m, slong n, slong d)
+{
+    if (_nmod_poly_mat_krylov_leaf_wanted(m, n, n * d, NMOD_POLY_MAT_PMBASIS_KRYLOV_ALPHA))
+        return 1;
+    if (d <= PMINTBASIS_THRES)
+        return 0;
+    return _pmintbasis_uses_krylov(m, n, (d + 1) / 2)
+           || _pmintbasis_uses_krylov(m, n, d / 2);
+}
+
 /* Converts a filled nmod_poly_mat_t (built via gen_E / nmod_poly_mat_rand,
    which operate on that entrywise representation) into the plain array
    nmod_poly_mat_pmintbasis/mintbasis/pmintbasis_geometric{,_auto} 

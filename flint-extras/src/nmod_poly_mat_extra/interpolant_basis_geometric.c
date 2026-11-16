@@ -17,7 +17,7 @@
 #include "nmod_poly_mat_interpolant.h"
 #include "nmod_mat_poly.h"
 #include "nmod_poly_mat_utils.h"
-#include "impl.h"  /* for _nmod_poly_mat_evaluate_geometric */
+#include "impl.h"  /* for _nmod_poly_mat_evaluate_geometric and the Krylov leaf */
 
 /* Same D&C shape as nmod_poly_mat_pmintbasis (interpolant_basis.c), but
    points are rho_start * rho^k (k=0..d-1), rho = r^2, using one shared,
@@ -37,6 +37,21 @@ static void _pmintbasis_geometric_rec(nmod_poly_mat_t intbas,
 {
     ulong rho = nmod_mul(r, r, mod);
     const slong m = intbas->r;
+
+    /* Krylov leaf: replaces the subtree below this node */
+    if (_nmod_poly_mat_krylov_leaf_wanted(m, n, n * d, NMOD_POLY_MAT_PMBASIS_KRYLOV_ALPHA))
+    {
+        ulong * pts = (ulong *) flint_malloc(d * sizeof(ulong));
+        ulong cur = rho_start;
+        for (slong k = 0; k < d; k++)
+        {
+            pts[k] = cur;
+            cur = nmod_mul(cur, rho, mod);
+        }
+        _nmod_poly_mat_pmintbasis_krylov_leaf(intbas, shift, pts, E, d);
+        flint_free(pts);
+        return;
+    }
 
     if (d <= PMINTBASIS_THRES)
     {

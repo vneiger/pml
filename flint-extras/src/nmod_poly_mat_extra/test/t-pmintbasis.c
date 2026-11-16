@@ -60,8 +60,10 @@ static int core_test_pmintbasis(const nmod_mat_struct * E, slong m, slong n, ulo
 
     /* base-case agreement: pmintbasis's own base case is a direct call to
        mintbasis, so when d is within the threshold they must agree
-       bit-for-bit */
-    if (d <= PMINTBASIS_THRES)
+       bit-for-bit, unless pmintbasis uses a Krylov leaf: this gives the
+       shift-Popov basis, with the same shifted row degree */
+    const int krylov = _pmintbasis_uses_krylov(m, n, d);
+    if (d <= PMINTBASIS_THRES || krylov)
     {
         slong * sh_m = flint_malloc(m * sizeof(slong));
         for (slong i = 0; i < m; i++)
@@ -70,7 +72,7 @@ static int core_test_pmintbasis(const nmod_mat_struct * E, slong m, slong n, ulo
         nmod_poly_mat_init(out_m, m, m, prime);
         nmod_poly_mat_mintbasis(out_m, sh_m, pts, E, d);
 
-        if (!nmod_poly_mat_equal(out_pm, out_m))
+        if (!krylov && !nmod_poly_mat_equal(out_pm, out_m))
             res = 0;
         for (slong i = 0; i < m; i++)
             if (sh_pm[i] != sh_m[i])
@@ -122,6 +124,14 @@ TEST_FUNCTION_START(nmod_poly_mat_pmintbasis, state)
         slong n = 1 + n_randint(state, 16);
         slong m = 1 + n_randint(state, 16); /* any m, n */
         slong d = n_randint(state, 250); /* well beyond a small overridden threshold */
+        /* every other input: few columns compared to the number of rows, so
+           that the Krylov leaf is used, at the top of the recursion or below
+           (n < m and n d <= alpha m / n^(1/3)) */
+        if (i % 2)
+        {
+            m = 4 + n_randint(state, 17);
+            n = 1 + n_randint(state, FLINT_MAX(1, m / 4));
+        }
 
         /* nbits' floor must guarantee some prime of that bit length exceeds
            bound, or the retry loop below never terminates (nbits is fixed
