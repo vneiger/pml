@@ -319,9 +319,11 @@ _krylov_basis_iter(nmod_mat_t B, slong * rows, slong * exps,
        a dense operator): the bounds min(beta_i, mpdeg) give the same
        profile, and are valid if the beta_i are. For a Jordan matrix which
        is not cyclic, this saves the rows of an index beyond mpdeg
-       (measured: 4 nilpotent blocks of size D / 4 with a Hermite shift,
-       1.16 to 1.21 times faster for the kernel, 1.30 to 1.34 for the
-       basis) */
+       (measured 2026-11 on Ice Lake, Cascade Lake and Apple M4, 30 and 60
+       bits, D = 256 to 1024, Hermite shift, median per machine and modulus:
+       4 nilpotent blocks of size D / 4, 1.24 to 1.34 times faster for the
+       kernel and 1.46 to 1.58 for the basis; a diagonal matrix with each
+       value repeated 4 times, 1.20 to 1.29 and 1.38 to 1.51) */
     for (i = 0; i < m; i++)
         beta[i] = FLINT_MIN(beta[i], op->mpdeg);
 

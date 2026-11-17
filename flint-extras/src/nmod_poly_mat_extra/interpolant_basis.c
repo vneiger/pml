@@ -157,14 +157,17 @@ void _nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
        fewer above: _nmod_poly_mat_evaluate_mul_columns_wanted), they are
        computed from the coefficients of P1, deg(P1) + 1 products by
        [E_{d1} | ... | E_{d-1}] (_nmod_poly_mat_evaluate_mul_columns),
-       otherwise with one evaluation of P1 per point. Sandbox, 30-bit
-       prime, pmintbasis with one or the other at every level, d up to
-       4096: the coefficients are faster at every d when 16 n <= m (16 x 1
-       1.25x, 32 x 2 1.5x, 64 x 2 3.2x, 64 x 4 1.6x, 128 x 8 1.3 to 1.4x,
-       256 x 16 1.1 to 1.2x); at 8 n = m they are faster for small d but
-       slower for large d (16 x 2: 1.14x at d = 64, 0.74x at d = 4096;
-       32 x 4: 0.90x at d = 2048; 64 x 8: 0.89x at d = 2048), and at
-       4 n = m slower (pmintbasis 16 x 4 0.7x). */
+       otherwise with one evaluation of P1 per point. The residual step
+       alone (2026-11-17, Ice Lake, Cascade Lake, Apple M4; m = 16 to 256,
+       n up to m/8, deg(P1) = n d2 / m and 4 times smaller or larger): up to
+       52 bits, with n^2 <= m and 16 n <= m, the coefficients are faster on
+       156 to 194 of 194 shapes (one evaluation per point takes 1.8 to 4.8
+       times their time on average); at 8 n = m it depends on deg(P1) (0.24
+       to 6.9 times), and on the whole of pmintbasis the coefficients lose
+       at large d (sandbox, 30 bits: 32 x 4 at d = 4096, 0.84x). At 60 bits
+       they are faster for n = 1 with m >= 32 (49 of 49 shapes) and for
+       64 n <= m (23 to 25 of 25), slower on average for 16 n <= m < 64 n
+       (0.84 to 0.91), and faster on 14 to 17 of 23 shapes for 16 x 1. */
     nmod_mat_struct * R = (nmod_mat_struct *) flint_malloc(FLINT_MAX(d2, 1) * sizeof(nmod_mat_struct));
     nmod_mat_t Rcat;
     const int coeffs = _nmod_poly_mat_evaluate_mul_columns_wanted(m, n, intbas->modulus);

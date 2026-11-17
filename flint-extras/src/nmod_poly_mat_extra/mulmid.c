@@ -163,7 +163,7 @@ void _nmod_poly_mat_mulmid(nmod_poly_mat_t res,
         about len1 constant matrix products k x k x (n (nhi - nlo)) for pmat1 
         of size k x k and pmat2 with n columns.
 
-        Rule (impl.h) measured with on Zen 4, Ice Lake, Cascade Lake and Apple
+        Rule (impl.h) measured on Zen 4, Ice Lake, Cascade Lake and Apple
         M4 (k = 2 to 256, n = 1 to 16, len1 = 2 to 64, windows of len1 to 64
         len1 coefficients): time of the rule over the best routine 1.01 to 1.06
         on average at 30 and 50 bits with K = 64, and 1.01 to 1.02 at 60 bits

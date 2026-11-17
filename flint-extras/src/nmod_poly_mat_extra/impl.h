@@ -179,9 +179,12 @@ int _nmod_mat_det_solve_lu(ulong * c, nmod_mat_t X, nmod_mat_t A, const nmod_mat
  * average, 1.04 to 1.09 for 8). For the direct calls, c = 8 is the best of
  * 4, 8, 16 or within 0.03 of it; c = 4 would be better for m = 256 (about
  * 1.2x at D = 4m) and worse for m = 16.
- * TODO a cutoff depending on m for the direct calls; for pmintbasis, the
- * leaf can lose up to 1.5x at n = m/2 with small orders (m <= 64), which
- * n < m/2 would avoid. */
+ * TODO a cutoff depending on m for the direct calls; at the smallest orders
+ * with n = m/4 to m/2 the leaf can lose (PR table, 2026-11, the four machines,
+ * 30 to 60 bits: pmintbasis 64 x 16 at d = 8 down to 0.56x, 32 x 16 at d = 4
+ * down to 0.61x, pmbasis 64 x 16 at d = 8 down to 0.72x, all below 2 ms),
+ * but n < m/4 would lose more than it saves (at n = m/4 the leaf is 1.07 to
+ * 1.52 times faster on average over all orders). */
 #ifndef NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF
 # define NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF 6.0
 #endif
@@ -240,7 +243,12 @@ void _nmod_poly_mat_evaluate_mul_columns(nmod_mat_t R, const nmod_poly_mat_t P,
  * NMOD_POLY_MAT_MULMID_COEFFS_BITS bits (see interpolant_basis.c); above,
  * where nmod_mat_mul has no SIMD kernel in FLINT, n = 1 with m >= 32, or
  * n^2 <= m and 64 n <= m. Comes from measurements on 2026-11-16 on 4
- * Intel / AMD / Apple machines. */
+ * Intel / AMD / Apple machines. On the residual step alone (2026-11-17, Ice
+ * Lake, Cascade Lake, Apple M4; 30, 50, 60 bits; m = 16 to 256, n up to m/8,
+ * deg(P1) = n d2 / m and 4 times smaller or larger), this rule takes 1.05 to
+ * 1.16 times the time of the better of the two on average (at worst 2.4 to
+ * 6.9): the better choice also depends on deg(P1), as in the rule below.
+ * TODO a rule depending on deg(P1) */
 static inline int
 _nmod_poly_mat_evaluate_mul_columns_wanted(slong m, slong n, ulong modulus)
 {
@@ -255,11 +263,21 @@ _nmod_poly_mat_evaluate_mul_columns_wanted(slong m, slong n, ulong modulus)
  * degree deg: the coefficients when n^(3/2) (deg + 1) <= 2 m for a modulus of
  * at most NMOD_POLY_MAT_MULMID_COEFFS_BITS bits, and <= m above.
  *
- * Measured 2026-11, the residual step alone on Ice Lake, Cascade Lake, Apple
+ * Measured 2026-11, the residual step alone (Ice Lake, Cascade Lake, Apple
  * M4; 30, 50, 60 bits; m = 16 to 256, n up to m/8, d2 = 16 to 8192, deg = n d2 / m
  * and 4 times smaller or larger): this rule takes 1.00 to 1.06 times the time
  * of the better of the two on average (at worst 2.7); the ratio geometric /
  * coefficients fits m^(0.4 to 0.8) / (n^0.95 (deg + 1)^0.65) up to a constant.
+ *
+ * On the whole of pmintbasis_geometric (PR table, 2026-11-17, same machines,
+ * m = 16 to 512), this takes 0.65 to 1.05 times the time of pmintbasis at
+ * 30 and 50 bits (median over the orders of each m x n). At 50 bits on x86,
+ * where the geometric evaluation takes twice its 30-bit time and the
+ * products of coefficients the same, the geometric version is up to 1.8
+ * times slower than pmintbasis at the largest orders with few columns (32 x 1
+ * at d = 4096), and the constant 3 would be better there (residual step: 1.01
+ * instead of 1.03 to 1.06 on average).
+ * TODO a constant depending on the modulus size and the architecture
  **/
 static inline int
 _nmod_poly_mat_evaluate_mul_columns_wanted_geometric(slong m, slong n,
