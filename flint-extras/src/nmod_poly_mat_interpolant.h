@@ -249,7 +249,10 @@ void nmod_poly_mat_pmintbasis(nmod_poly_mat_t intbas,
  * machinery (`nmod_geometric_progression_t`,`nmod_poly.h`). 
  * One such structure is built once, at the top of the
  * whole recursion, and reused (at varying, always-shorter requested
- * lengths). 
+ * lengths). When the first basis of a node has a small degree, the residual
+ * is instead computed from its coefficients, as in @ref pmintbasis (rule
+ * `_nmod_poly_mat_evaluate_mul_columns_wanted_geometric` in
+ * nmod_poly_mat_extra/impl.h).
  *
  * Size of the integers (see @ref IntegerSizes): as in @ref pmintbasis, it is
  * assumed that `max(shift) + d <= WORD_MAX` for the input `shift`.

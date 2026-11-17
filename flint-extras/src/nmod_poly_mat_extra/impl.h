@@ -249,6 +249,28 @@ _nmod_poly_mat_evaluate_mul_columns_wanted(slong m, slong n, ulong modulus)
     return (n == 1) ? (m >= 32) : (n * n <= m && 64 * n <= m);
 }
 
+/* The same choice in pmintbasis_geometric, where the alternative is the
+ * evaluation of all the entries of the first basis at the geometric points
+ * (_nmod_poly_mat_evaluate_geometric), whose cost does not depend on its
+ * degree deg: the coefficients when n^(3/2) (deg + 1) <= 2 m for a modulus of
+ * at most NMOD_POLY_MAT_MULMID_COEFFS_BITS bits, and <= m above.
+ *
+ * Measured 2026-11, the residual step alone on Ice Lake, Cascade Lake, Apple
+ * M4; 30, 50, 60 bits; m = 16 to 256, n up to m/8, d2 = 16 to 8192, deg = n d2 / m
+ * and 4 times smaller or larger): this rule takes 1.00 to 1.06 times the time
+ * of the better of the two on average (at worst 2.7); the ratio geometric /
+ * coefficients fits m^(0.4 to 0.8) / (n^0.95 (deg + 1)^0.65) up to a constant.
+ **/
+static inline int
+_nmod_poly_mat_evaluate_mul_columns_wanted_geometric(slong m, slong n,
+                                                     slong deg, ulong modulus)
+{
+    const double c = (FLINT_BIT_COUNT(modulus) <= NMOD_POLY_MAT_MULMID_COEFFS_BITS) ? 2.0 : 1.0;
+    const double y = (double) (deg + 1);
+    /* n^(3/2) (deg + 1) <= c m, squared */
+    return (double) n * n * n * y * y <= c * c * (double) m * (double) m;
+}
+
 /* pmbasis and pmintbasis with the Krylov cutoff as a parameter
  * (krylov_cutoff = 0: no Krylov leaf); nmod_poly_mat_pmbasis and
  * nmod_poly_mat_pmintbasis use NMOD_POLY_MAT_PMBASIS_KRYLOV_CUTOFF. For
